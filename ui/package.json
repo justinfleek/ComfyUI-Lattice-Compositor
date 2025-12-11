@@ -1,0 +1,32 @@
+{
+  "name": "weyl-compositor-ui",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "build:check": "vue-tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@vueuse/core": "^14.1.0",
+    "allotment": "^1.20.4",
+    "bezier-js": "^6.1.4",
+    "fabric": "^6.0.0",
+    "jszip": "^3.10.0",
+    "pinia": "^2.2.0",
+    "primeicons": "^7.0.0",
+    "primevue": "^4.2.0",
+    "simplex-noise": "^4.0.3",
+    "vue": "^3.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@vitejs/plugin-vue": "^5.0.0",
+    "@webgpu/types": "^0.1.40",
+    "typescript": "^5.4.0",
+    "vite": "^5.4.0",
+    "vue-tsc": "^2.0.0"
+  }
+}
