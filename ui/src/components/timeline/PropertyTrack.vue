@@ -11,7 +11,34 @@
         {{ hasKeyframeAtCurrentFrame ? '◆' : '◇' }}
       </button>
       <span class="property-name">{{ name }}</span>
-      <span class="property-value">{{ formattedValue }}</span>
+      <div class="property-value-inputs">
+        <template v-if="isVectorValue">
+          <input
+            type="number"
+            :value="property.value.x"
+            @change="updateVectorX"
+            class="value-input"
+            step="1"
+          />
+          <span class="value-separator">,</span>
+          <input
+            type="number"
+            :value="property.value.y"
+            @change="updateVectorY"
+            class="value-input"
+            step="1"
+          />
+        </template>
+        <template v-else>
+          <input
+            type="number"
+            :value="property.value"
+            @change="updateScalarValue"
+            class="value-input"
+            :step="name === 'Opacity' ? 1 : 0.1"
+          />
+        </template>
+      </div>
     </div>
     <div class="property-keyframes">
       <!-- Existing keyframe diamonds - these show WHERE keyframes are on timeline -->
@@ -60,17 +87,49 @@ const hasKeyframeAtCurrentFrame = computed(() => {
   return props.property.keyframes?.some(kf => kf.frame === currentFrame.value) ?? false;
 });
 
-const formattedValue = computed(() => {
+const isVectorValue = computed(() => {
   const val = props.property.value;
-  if (typeof val === 'number') {
-    return val.toFixed(1);
-  } else if (typeof val === 'object' && val !== null) {
-    if ('x' in val && 'y' in val) {
-      return `${(val as any).x.toFixed(1)}, ${(val as any).y.toFixed(1)}`;
-    }
-  }
-  return String(val);
+  return typeof val === 'object' && val !== null && 'x' in val && 'y' in val;
 });
+
+function updateVectorX(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const newX = parseFloat(input.value);
+  if (!isNaN(newX)) {
+    const newValue = { ...props.property.value, x: newX };
+    updatePropertyValue(newValue);
+  }
+}
+
+function updateVectorY(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const newY = parseFloat(input.value);
+  if (!isNaN(newY)) {
+    const newValue = { ...props.property.value, y: newY };
+    updatePropertyValue(newValue);
+  }
+}
+
+function updateScalarValue(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const newValue = parseFloat(input.value);
+  if (!isNaN(newValue)) {
+    updatePropertyValue(newValue);
+  }
+}
+
+function updatePropertyValue(newValue: any) {
+  // Update the property value in the store
+  const layer = store.layers.find(l => l.id === props.layerId);
+  if (!layer) return;
+
+  if (props.propertyPath === 'opacity') {
+    layer.opacity.value = newValue;
+  } else if (props.propertyPath.startsWith('transform.')) {
+    const propName = props.propertyPath.split('.')[1];
+    (layer.transform as any)[propName].value = newValue;
+  }
+}
 
 function selectKeyframe(id: string, event: MouseEvent) {
   emit('selectKeyframe', id, event.shiftKey);
@@ -147,12 +206,34 @@ function toggleKeyframe() {
   min-width: 55px;
 }
 
-.property-value {
+.property-value-inputs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+  padding-right: 4px;
+}
+
+.value-input {
+  width: 45px;
+  padding: 1px 4px;
+  border: 1px solid #333;
+  background: #1a1a1a;
   color: #7c9cff;
   font-family: monospace;
   font-size: 10px;
-  margin-left: auto;
-  padding-right: 8px;
+  border-radius: 2px;
+  text-align: right;
+}
+
+.value-input:focus {
+  outline: none;
+  border-color: #7c9cff;
+}
+
+.value-separator {
+  color: #555;
+  font-size: 10px;
 }
 
 .property-keyframes {
