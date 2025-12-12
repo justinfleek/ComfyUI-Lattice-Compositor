@@ -7,9 +7,12 @@ export default defineConfig({
   resolve: {
     alias: { '@': resolve(__dirname, 'src') },
   },
+  define: {
+    'process.env.NODE_ENV': '"production"'
+  },
   build: {
-    outDir: '../web/dist',
-    emptyOutDir: true,
+    outDir: '../web/js',
+    emptyOutDir: false,
     lib: {
       entry: resolve(__dirname, 'src/main.ts'),
       name: 'WeylCompositor',
@@ -23,7 +26,7 @@ export default defineConfig({
       }
     },
     assetsInlineLimit: 100000,
-    sourcemap: true,
+    sourcemap: false,
   },
   server: {
     port: 5173,

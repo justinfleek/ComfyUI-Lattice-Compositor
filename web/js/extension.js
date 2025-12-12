@@ -60,7 +60,7 @@ async function renderCompositor(el, base) {
   container.style.cssText = 'width:100%;height:100%;min-height:600px;overflow:hidden;background:#1a1a2e;';
   el.appendChild(container);
 
-  const cssUrl = `${base}/dist/weyl-compositor.css`;
+  const cssUrl = `${base}/js/weyl-compositor.css`;
   if (!document.querySelector(`link[href="${cssUrl}"]`)) {
     const link = document.createElement('link');
     link.rel = 'stylesheet';
@@ -69,7 +69,7 @@ async function renderCompositor(el, base) {
   }
 
   try {
-    const module = await import(`${base}/dist/weyl-compositor.js`);
+    const module = await import(`${base}/js/weyl-compositor.js`);
     if (module.mountApp) module.mountApp(container);
     vueAppLoaded = true;
     pendingMessages.forEach(data => {
