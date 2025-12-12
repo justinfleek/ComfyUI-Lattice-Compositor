@@ -96,19 +96,15 @@ export class AnimatedText extends Group {
         evented: false
       });
 
-      // CRITICAL: Force Fabric to calculate text dimensions BEFORE layout
+      // Force Fabric to calculate text dimensions
       letter.initDimensions();
       letter.setCoords();
       this._letterObjects.push(letter);
       this.add(letter);
     }
 
-    // Initial layout (horizontal)
+    // Layout and update group bounds
     this._layoutLettersHorizontal();
-
-    // Ensure group updates its bounds
-    this.set({ width: x || 100, height: this.fontSize * 1.2 });
-    this.setCoords();
   }
 
   /**
@@ -118,25 +114,26 @@ export class AnimatedText extends Group {
     let x = 0;
 
     for (const letter of this._letterObjects) {
-      const letterWidth = letter.width || 0;
+      // Use fontSize as fallback if width not calculated
+      const letterWidth = letter.width || (this.fontSize * 0.6);
       letter.set({
         left: x + letterWidth / 2,
         top: this.fontSize / 2,
         angle: 0
       });
-
       x += letterWidth + this.letterSpacing;
     }
 
-    this.set({ width: x || 100, height: this.fontSize * 1.2 });
+    // Update group dimensions to prevent clipping
+    this.set({ 
+      width: x || 100, 
+      height: this.fontSize * 1.2 
+    });
     this.setCoords();
   }
 
   /**
    * Position letters along a bezier path
-   *
-   * @param arcLengthParam - ArcLengthParameterizer instance
-   * @param offset - 0-1 offset along path
    */
   positionOnPath(
     arcLengthParam: ArcLengthParameterizer,
@@ -144,9 +141,11 @@ export class AnimatedText extends Group {
   ): void {
     const totalLength = arcLengthParam.totalLength;
     let currentDistance = offset * totalLength;
+    let maxX = 0;
+    let maxY = 0;
 
     for (const letter of this._letterObjects) {
-      const charWidth = letter.width || 0;
+      const charWidth = letter.width || (this.fontSize * 0.6);
 
       // Clamp distance to valid range
       const clampedDistance = Math.max(0, Math.min(currentDistance, totalLength));
@@ -163,10 +162,12 @@ export class AnimatedText extends Group {
         angle: angle
       });
 
+      maxX = Math.max(maxX, point.x + charWidth);
+      maxY = Math.max(maxY, point.y + this.fontSize);
       currentDistance += charWidth + this.letterSpacing;
     }
 
-    this.set({ width: x || 100, height: this.fontSize * 1.2 });
+    this.set({ width: maxX || 100, height: maxY || this.fontSize * 1.2 });
     this.setCoords();
     this.dirty = true;
   }
@@ -177,8 +178,6 @@ export class AnimatedText extends Group {
   setText(text: string): void {
     this.textContent = text;
     this._createLetterObjects();
-    this.set({ width: x || 100, height: this.fontSize * 1.2 });
-    this.setCoords();
     this.dirty = true;
 
     // Force canvas to re-render
