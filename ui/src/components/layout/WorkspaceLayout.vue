@@ -91,11 +91,11 @@
       </div>
     </div>
 
-    <!-- Main Workspace with Allotment -->
+    <!-- Main Workspace with Splitpanes -->
     <div class="workspace-content">
-      <Allotment :defaultSizes="[15, 60, 25]" class="horizontal-split">
+      <Splitpanes class="default-theme horizontal-split">
         <!-- Left Panel: Project/Effects -->
-        <Allotment.Pane :minSize="150" :maxSize="400">
+        <Pane :size="15" :min-size="10" :max-size="25">
           <div class="panel left-panel">
             <div class="panel-tabs">
               <button
@@ -116,13 +116,13 @@
               <EffectsPanel v-else-if="leftTab === 'effects'" />
             </div>
           </div>
-        </Allotment.Pane>
+        </Pane>
 
         <!-- Center: Viewport + Timeline -->
-        <Allotment.Pane :minSize="400">
-          <Allotment vertical :defaultSizes="[65, 35]">
+        <Pane :size="60" :min-size="30">
+          <Splitpanes horizontal class="default-theme">
             <!-- Viewport -->
-            <Allotment.Pane :minSize="200">
+            <Pane :size="65" :min-size="20">
               <div class="panel viewport-panel">
                 <div class="viewport-header">
                   <div class="viewport-tabs">
@@ -181,28 +181,31 @@
                   <CompositionCanvas v-else ref="canvasRef" />
                 </div>
               </div>
-            </Allotment.Pane>
+            </Pane>
 
             <!-- Timeline + Graph Editor -->
-            <Allotment.Pane :minSize="150">
-              <Allotment vertical :defaultSizes="showGraphEditor ? [50, 50] : [100, 0]">
-                <Allotment.Pane :minSize="100">
+            <Pane :size="35" :min-size="15">
+              <Splitpanes v-if="showGraphEditor" horizontal class="default-theme">
+                <Pane :size="50" :min-size="20">
                   <div class="panel timeline-panel">
                     <TimelinePanel />
                   </div>
-                </Allotment.Pane>
-                <Allotment.Pane v-if="showGraphEditor" :minSize="100">
+                </Pane>
+                <Pane :size="50" :min-size="20">
                   <div class="panel graph-editor-panel">
                     <GraphEditor @close="showGraphEditor = false" />
                   </div>
-                </Allotment.Pane>
-              </Allotment>
-            </Allotment.Pane>
-          </Allotment>
-        </Allotment.Pane>
+                </Pane>
+              </Splitpanes>
+              <div v-else class="panel timeline-panel">
+                <TimelinePanel />
+              </div>
+            </Pane>
+          </Splitpanes>
+        </Pane>
 
         <!-- Right Panel: Properties/Camera -->
-        <Allotment.Pane :minSize="200" :maxSize="450">
+        <Pane :size="25" :min-size="15" :max-size="30">
           <div class="panel right-panel">
             <div class="panel-tabs">
               <button
@@ -234,8 +237,8 @@
               <AudioPanel v-else-if="rightTab === 'audio'" />
             </div>
           </div>
-        </Allotment.Pane>
-      </Allotment>
+        </Pane>
+      </Splitpanes>
     </div>
 
     <!-- Status Bar -->
@@ -268,8 +271,8 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { Allotment } from 'allotment';
-import 'allotment/dist/style.css';
+import { Splitpanes, Pane } from 'splitpanes';
+import 'splitpanes/dist/splitpanes.css';
 
 import { useCompositorStore } from '@/stores/compositorStore';
 import { detectGPUTier, type GPUTier } from '@/services/gpuDetection';
@@ -780,17 +783,27 @@ onUnmounted(() => {
   color: #4a90d9;
 }
 
-/* Allotment Overrides */
-:deep(.split-view-view) {
-  overflow: hidden;
+/* Splitpanes Theme Overrides */
+:deep(.splitpanes.default-theme .splitpanes__pane) {
+  background: transparent;
 }
 
-:deep(.sash) {
+:deep(.splitpanes.default-theme .splitpanes__splitter) {
   background: #2a2a2a;
+  border: none;
 }
 
-:deep(.sash:hover),
-:deep(.sash.active) {
+:deep(.splitpanes.default-theme .splitpanes__splitter:hover) {
   background: #4a90d9;
+}
+
+:deep(.splitpanes--vertical > .splitpanes__splitter) {
+  width: 4px;
+  min-width: 4px;
+}
+
+:deep(.splitpanes--horizontal > .splitpanes__splitter) {
+  height: 4px;
+  min-height: 4px;
 }
 </style>

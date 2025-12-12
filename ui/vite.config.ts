@@ -1,41 +1,35 @@
-import { defineConfig } from 'vite';
-import vue from '@vitejs/plugin-vue';
-import { resolve } from 'path';
+import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
+import { resolve } from 'path'
 
 export default defineConfig({
   plugins: [vue()],
-
+  resolve: {
+    alias: { '@': resolve(__dirname, 'src') },
+  },
   build: {
-    outDir: '../dist',
+    outDir: '../web/dist',
     emptyOutDir: true,
-
     lib: {
       entry: resolve(__dirname, 'src/main.ts'),
       name: 'WeylCompositor',
-      formats: ['es'],
-      fileName: () => 'weyl-compositor.js'
+      fileName: () => 'weyl-compositor.js',
+      formats: ['es']
     },
-
     rollupOptions: {
-      external: [],
       output: {
-        assetFileNames: 'weyl-[name].[ext]',
-        chunkFileNames: 'weyl-[name].js'
+        inlineDynamicImports: true,
+        assetFileNames: 'weyl-compositor[extname]'
       }
     },
-
-    commonjsOptions: {
-      include: [/bezier-js/, /node_modules/]
+    assetsInlineLimit: 100000,
+    sourcemap: true,
+  },
+  server: {
+    port: 5173,
+    proxy: {
+      '/weyl': 'http://localhost:8188',
+      '/api': 'http://localhost:8188',
     }
   },
-
-  optimizeDeps: {
-    include: ['bezier-js']
-  },
-
-  resolve: {
-    alias: {
-      '@': resolve(__dirname, 'src')
-    }
-  }
-});
+})

@@ -374,7 +374,7 @@ export function getCameraViewMatrices(
   const projection = perspectiveMat4(fovY, aspect, camera.nearClip, camera.farClip);
 
   // Combined view-projection
-  const viewProjection = multiplyMat4(projection, view);
+  const viewProjection = multiplyMat4Local(projection, view);
 
   return { view, projection, viewProjection };
 }
@@ -483,7 +483,7 @@ export function getOrthoViewMatrices(
     10000
   );
 
-  const viewProjection = multiplyMat4(projection, view);
+  const viewProjection = multiplyMat4Local(projection, view);
 
   return { view, projection, viewProjection };
 }
@@ -516,7 +516,7 @@ export function projectToScreen(
   screenWidth: number,
   screenHeight: number
 ): { x: number; y: number; z: number; visible: boolean } {
-  const transformed = transformPoint(point, viewProjection);
+  const transformed = transformPoint(viewProjection, point);
   const vp = viewProjection.elements;
 
   // Check if point is behind camera

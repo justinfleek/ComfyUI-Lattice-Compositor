@@ -11,57 +11,61 @@
       let
         pkgs = import nixpkgs {
           inherit system;
-          config = {
-            allowUnfree = true;
-            cudaSupport = true;
-          };
+          config.allowUnfree = true;
         };
 
-        pythonEnv = pkgs.python311.withPackages (ps: with ps; [
-          torch
-          torchvision
+        # Base Python WITHOUT torch - we'll pip install the ML stack
+        pythonBase = pkgs.python311.withPackages (ps: with ps; [
+          pip
+          virtualenv
           numpy
           pillow
-          opencv4
           aiohttp
+          websockets
         ]);
 
       in {
-        packages.default = pkgs.stdenv.mkDerivation {
-          pname = "comfyui-weyl-compositor";
-          version = "1.0.0";
-
-          src = ./.;
-
-          buildInputs = [
-            pythonEnv
-            pkgs.nodejs_20
-          ];
-
-          buildPhase = ''
-            cd ui
-            npm ci
-            npm run build
-            cd ..
-          '';
-
-          installPhase = ''
-            mkdir -p $out/custom_nodes/comfyui-weyl-compositor
-            cp -r nodes server web dist $out/custom_nodes/comfyui-weyl-compositor/
-            cp __init__.py pyproject.toml $out/custom_nodes/comfyui-weyl-compositor/
-          '';
-        };
-
         devShells.default = pkgs.mkShell {
           buildInputs = [
-            pythonEnv
+            pythonBase
             pkgs.nodejs_20
             pkgs.nodePackages.npm
+            
+            # Build tools for pip packages that need compilation
+            pkgs.gcc
+            pkgs.stdenv.cc.cc.lib
+            pkgs.zlib
+            pkgs.libGL
+            pkgs.glib
+          ];
+
+          # Make sure CUDA libs are findable if present
+          LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [
+            pkgs.stdenv.cc.cc.lib
+            pkgs.zlib
+            pkgs.libGL
+            pkgs.glib
           ];
 
           shellHook = ''
-            echo "Weyl Compositor development environment"
-            echo "Run 'cd ui && npm install && npm run dev' for frontend"
+            echo "═══════════════════════════════════════════════════════"
+            echo "  Weyl Compositor Dev Environment"
+            echo "═══════════════════════════════════════════════════════"
+            echo ""
+            echo "Node: $(node --version)"
+            echo "Python: $(python --version)"
+            echo ""
+            echo "SETUP (first time only):"
+            echo "  1. cd ui && npm install"
+            echo "  2. python -m venv .venv"
+            echo "  3. source .venv/bin/activate"
+            echo "  4. pip install torch torchvision --index-url https://download.pytorch.org/whl/cu124"
+            echo "  5. pip install opencv-python aiohttp"
+            echo ""
+            echo "RUN:"
+            echo "  Frontend: cd ui && npm run dev"
+            echo "  Backend:  source .venv/bin/activate && python -m comfyui"
+            echo "═══════════════════════════════════════════════════════"
           '';
         };
       }

@@ -1,0 +1,4 @@
+# Weyl Compositor dependencies
+# Most deps are already in ComfyUI, this is just for any extras
+numpy
+Pillow
