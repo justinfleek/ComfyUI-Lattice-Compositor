@@ -14,7 +14,7 @@
     <!-- Layer info sidebar -->
     <div class="layer-info">
       <!-- Label color indicator -->
-      <div class="label-color" @click.stop="showLabelPicker = !showLabelPicker">
+      <div class="label-color" @click.stop="showLabelPicker = !showLabelPicker" title="Click to change label color">
         <div
           v-if="showLabelPicker"
           class="label-picker"
@@ -25,6 +25,7 @@
             :key="color"
             :style="{ background: color }"
             @click="setLabelColor(color)"
+            :title="`Set label color to ${color}`"
           />
         </div>
       </div>
@@ -72,12 +73,12 @@
 
       <!-- Layer name with type icon -->
       <div class="layer-name-container">
-        <span class="layer-type-icon" :title="layer.type">
+        <span class="layer-type-icon" :title="`Layer type: ${layer.type}`">
           {{ getTypeIcon(layer.type) }}
         </span>
         <span
           class="layer-name"
-          :title="layer.name"
+          :title="`${layer.name} (double-click to rename)`"
           @dblclick.stop="startRename"
         >
           <input

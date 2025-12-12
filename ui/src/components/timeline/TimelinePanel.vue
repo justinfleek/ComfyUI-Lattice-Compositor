@@ -50,19 +50,19 @@
         />
 
         <!-- Add layer button -->
-        <button class="add-layer-btn" @click="showAddLayerMenu = !showAddLayerMenu">
+        <button class="add-layer-btn" @click="showAddLayerMenu = !showAddLayerMenu" title="Add Layer (Ctrl+Shift+N)">
           <span class="icon">+</span>
           Add Layer
         </button>
 
         <!-- Add layer dropdown -->
         <div v-if="showAddLayerMenu" class="add-layer-menu">
-          <button @click="addLayer('spline')">Spline Path</button>
-          <button @click="addLayer('text')">Text</button>
-          <button @click="addLayer('solid')">Solid</button>
-          <button @click="addLayer('null')">Null Object</button>
-          <button @click="addLayer('camera')">Camera</button>
-          <button @click="addLayer('light')">Light</button>
+          <button @click="addLayer('spline')" title="Create a bezier spline path">Spline Path</button>
+          <button @click="addLayer('text')" title="Create a text layer">Text</button>
+          <button @click="addLayer('solid')" title="Create a solid color layer">Solid</button>
+          <button @click="addLayer('null')" title="Create a null object for parenting">Null Object</button>
+          <button @click="addLayer('camera')" title="Create a 3D camera">Camera</button>
+          <button @click="addLayer('light')" title="Create a light source">Light</button>
         </div>
       </div>
     </div>
@@ -226,9 +226,9 @@
           <textarea v-model="editingMarker.comment" rows="3" />
         </div>
         <div class="dialog-actions">
-          <button @click="deleteMarker(editingMarker.id)">Delete</button>
-          <button @click="editingMarker = null">Cancel</button>
-          <button class="primary" @click="saveMarker">Save</button>
+          <button @click="deleteMarker(editingMarker.id)" title="Delete this marker">Delete</button>
+          <button @click="editingMarker = null" title="Cancel changes (Esc)">Cancel</button>
+          <button class="primary" @click="saveMarker" title="Save marker changes">Save</button>
         </div>
       </div>
     </div>
