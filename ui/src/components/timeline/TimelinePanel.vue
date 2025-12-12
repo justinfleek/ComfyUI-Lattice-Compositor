@@ -598,6 +598,8 @@ function startScrub(event: MouseEvent) {
 }
 
 // Ruler track scrubbing (main timeline)
+let rulerScrubRect: DOMRect | null = null;
+
 function startRulerScrub(event: MouseEvent) {
   // Don't start scrub if clicking on work area or its handles
   const target = event.target as HTMLElement;
@@ -606,43 +608,52 @@ function startRulerScrub(event: MouseEvent) {
     return;
   }
 
+  if (!rulerTrackRef.value) return;
+
   isRulerScrubbing = true;
+  // Capture rect ONCE at scrub start
+  rulerScrubRect = rulerTrackRef.value.getBoundingClientRect();
   rulerScrubClick(event);
   document.addEventListener('mousemove', handleRulerScrub);
   document.addEventListener('mouseup', stopRulerScrub);
 }
 
 function rulerScrubClick(event: MouseEvent) {
-  if (!rulerTrackRef.value) return;
+  if (!rulerScrubRect) return;
 
-  const rect = rulerTrackRef.value.getBoundingClientRect();
-  const x = event.clientX - rect.left;
-  const progress = Math.max(0, Math.min(1, x / rect.width));
+  const x = event.clientX - rulerScrubRect.left;
+  const progress = Math.max(0, Math.min(1, x / rulerScrubRect.width));
   const frame = Math.round(progress * store.frameCount);
   store.setFrame(Math.min(frame, store.frameCount - 1));
 }
 
 function handleRulerScrub(event: MouseEvent) {
-  if (!isRulerScrubbing || !rulerTrackRef.value) return;
+  if (!isRulerScrubbing || !rulerScrubRect) return;
 
-  const rect = rulerTrackRef.value.getBoundingClientRect();
-  const x = event.clientX - rect.left;
-  const progress = Math.max(0, Math.min(1, x / rect.width));
+  const x = event.clientX - rulerScrubRect.left;
+  const progress = Math.max(0, Math.min(1, x / rulerScrubRect.width));
   const frame = Math.round(progress * store.frameCount);
   store.setFrame(Math.min(frame, store.frameCount - 1));
 }
 
 function stopRulerScrub() {
   isRulerScrubbing = false;
+  rulerScrubRect = null;
   document.removeEventListener('mousemove', handleRulerScrub);
   document.removeEventListener('mouseup', stopRulerScrub);
 }
 
 // Playhead dragging
 let isPlayheadDragging = false;
+let playheadDragRect: DOMRect | null = null;
 
 function startPlayheadDrag(event: MouseEvent) {
+  if (!rulerTrackRef.value) return;
+
   isPlayheadDragging = true;
+  // Capture rect ONCE at drag start - don't recalculate during drag
+  playheadDragRect = rulerTrackRef.value.getBoundingClientRect();
+
   document.addEventListener('mousemove', handlePlayheadDrag);
   document.addEventListener('mouseup', stopPlayheadDrag);
   // Prevent text selection while dragging
@@ -650,17 +661,18 @@ function startPlayheadDrag(event: MouseEvent) {
 }
 
 function handlePlayheadDrag(event: MouseEvent) {
-  if (!isPlayheadDragging || !rulerTrackRef.value) return;
+  if (!isPlayheadDragging || !playheadDragRect) return;
 
-  const rect = rulerTrackRef.value.getBoundingClientRect();
-  const x = event.clientX - rect.left;
-  const progress = Math.max(0, Math.min(1, x / rect.width));
+  // Use the rect captured at drag start for consistent tracking
+  const x = event.clientX - playheadDragRect.left;
+  const progress = Math.max(0, Math.min(1, x / playheadDragRect.width));
   const frame = Math.round(progress * store.frameCount);
   store.setFrame(Math.min(frame, store.frameCount - 1));
 }
 
 function stopPlayheadDrag() {
   isPlayheadDragging = false;
+  playheadDragRect = null;
   document.removeEventListener('mousemove', handlePlayheadDrag);
   document.removeEventListener('mouseup', stopPlayheadDrag);
 }
