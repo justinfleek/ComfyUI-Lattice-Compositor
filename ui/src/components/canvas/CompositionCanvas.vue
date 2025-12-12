@@ -242,7 +242,7 @@ onUnmounted(() => {
   fabricCanvas.value?.dispose();
 });
 
-// Setup zoom and pan controls
+// Setup zoom and pan controls and tool handlers
 function setupZoomPan() {
   const canvas = fabricCanvas.value;
   if (!canvas) return;
@@ -261,24 +261,71 @@ function setupZoomPan() {
     opt.e.stopPropagation();
   });
 
-  // Pan with middle mouse button or alt + drag
+  // Tool state variables
   let isPanning = false;
+  let isZooming = false;
   let lastPosX = 0;
   let lastPosY = 0;
+  let zoomStartY = 0;
+  let zoomStartLevel = 1;
 
   canvas.on('mouse:down', (opt) => {
     const evt = opt.e as MouseEvent;
-    if (evt.button === 1 || (evt.button === 0 && evt.altKey)) {
+    const currentTool = store.currentTool;
+
+    // Hand tool: pan the canvas
+    if (currentTool === 'hand' || evt.button === 1 || (evt.button === 0 && evt.altKey)) {
       isPanning = true;
       lastPosX = evt.clientX;
       lastPosY = evt.clientY;
       canvas.selection = false;
+      canvas.defaultCursor = 'grabbing';
+      return;
     }
+
+    // Zoom tool: click to zoom in, shift+click to zoom out
+    if (currentTool === 'zoom') {
+      if (evt.shiftKey) {
+        // Zoom out
+        const newZoom = Math.max(canvas.getZoom() * 0.7, 0.1);
+        const point = new Point(evt.offsetX, evt.offsetY);
+        canvas.zoomToPoint(point, newZoom);
+        zoom.value = newZoom;
+      } else {
+        // Start drag-zoom or click to zoom in
+        isZooming = true;
+        zoomStartY = evt.clientY;
+        zoomStartLevel = canvas.getZoom();
+      }
+      return;
+    }
+
+    // Text tool: create text layer at click position
+    if (currentTool === 'text') {
+      const pointer = canvas.getPointer(evt);
+      const newLayer = store.createLayer('text');
+      // Update position to click location
+      store.updateLayer(newLayer.id, {
+        transform: {
+          ...newLayer.transform,
+          position: { value: { x: pointer.x, y: pointer.y }, animated: false, keyframes: [] }
+        }
+      });
+      store.selectLayer(newLayer.id);
+      // Switch back to select tool after placing text
+      store.setTool('select');
+      return;
+    }
+
+    // Select tool: handled by fabric's built-in selection
+    // Pen tool: handled by SplineEditor overlay
   });
 
   canvas.on('mouse:move', (opt) => {
+    const evt = opt.e as MouseEvent;
+
+    // Panning with hand tool
     if (isPanning) {
-      const evt = opt.e as MouseEvent;
       const vpt = canvas.viewportTransform;
       if (vpt) {
         vpt[4] += evt.clientX - lastPosX;
@@ -287,6 +334,32 @@ function setupZoomPan() {
       }
       lastPosX = evt.clientX;
       lastPosY = evt.clientY;
+      return;
+    }
+
+    // Drag-zoom with zoom tool
+    if (isZooming) {
+      const dy = zoomStartY - evt.clientY;
+      const zoomFactor = 1 + dy * 0.01;
+      const newZoom = Math.max(0.1, Math.min(10, zoomStartLevel * zoomFactor));
+      canvas.setZoom(newZoom);
+      zoom.value = newZoom;
+      canvas.requestRenderAll();
+      return;
+    }
+
+    // Update cursor based on tool
+    const currentTool = store.currentTool;
+    if (currentTool === 'hand') {
+      canvas.defaultCursor = 'grab';
+    } else if (currentTool === 'zoom') {
+      canvas.defaultCursor = 'zoom-in';
+    } else if (currentTool === 'text') {
+      canvas.defaultCursor = 'text';
+    } else if (currentTool === 'pen') {
+      canvas.defaultCursor = 'crosshair';
+    } else {
+      canvas.defaultCursor = 'default';
     }
   });
 
@@ -294,6 +367,10 @@ function setupZoomPan() {
     if (isPanning) {
       isPanning = false;
       canvas.selection = true;
+      canvas.defaultCursor = store.currentTool === 'hand' ? 'grab' : 'default';
+    }
+    if (isZooming) {
+      isZooming = false;
     }
   });
 
