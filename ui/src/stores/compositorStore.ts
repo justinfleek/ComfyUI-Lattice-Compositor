@@ -648,13 +648,15 @@ export const useCompositorStore = defineStore('compositor', {
       // Find the property
       let property: AnimatableProperty<T> | undefined;
 
-      // Check transform properties
-      if (propertyName === 'position') {
+      // Check transform properties (support both 'position' and 'transform.position' formats)
+      if (propertyName === 'position' || propertyName === 'transform.position') {
         property = layer.transform.position as unknown as AnimatableProperty<T>;
-      } else if (propertyName === 'scale') {
+      } else if (propertyName === 'scale' || propertyName === 'transform.scale') {
         property = layer.transform.scale as unknown as AnimatableProperty<T>;
-      } else if (propertyName === 'rotation') {
+      } else if (propertyName === 'rotation' || propertyName === 'transform.rotation') {
         property = layer.transform.rotation as unknown as AnimatableProperty<T>;
+      } else if (propertyName === 'anchorPoint' || propertyName === 'transform.anchorPoint') {
+        property = layer.transform.anchorPoint as unknown as AnimatableProperty<T>;
       } else if (propertyName === 'opacity') {
         property = layer.opacity as unknown as AnimatableProperty<T>;
       } else {
@@ -703,15 +705,17 @@ export const useCompositorStore = defineStore('compositor', {
       const layer = this.project.layers.find(l => l.id === layerId);
       if (!layer) return;
 
-      // Find the property
+      // Find the property (support both 'position' and 'transform.position' formats)
       let property: AnimatableProperty<any> | undefined;
 
-      if (propertyName === 'position') {
+      if (propertyName === 'position' || propertyName === 'transform.position') {
         property = layer.transform.position;
-      } else if (propertyName === 'scale') {
+      } else if (propertyName === 'scale' || propertyName === 'transform.scale') {
         property = layer.transform.scale;
-      } else if (propertyName === 'rotation') {
+      } else if (propertyName === 'rotation' || propertyName === 'transform.rotation') {
         property = layer.transform.rotation;
+      } else if (propertyName === 'anchorPoint' || propertyName === 'transform.anchorPoint') {
+        property = layer.transform.anchorPoint;
       } else if (propertyName === 'opacity') {
         property = layer.opacity;
       } else {

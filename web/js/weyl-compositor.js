@@ -3038,9 +3038,9 @@ function um(i, e) {
       }
       const N = Fe ? dm(te) : pi;
       for (oe = N.length - 1, q = Me - 1; q >= 0; q--) {
-        const re = ke + q, Ce = $[re], ze = $[re + 1], Ze = re + 1 < ve ? (
+        const re = ke + q, Ce = $[re], je = $[re + 1], Ze = re + 1 < ve ? (
           // #13559, fallback to el placeholder for unresolved async component
-          ze.el || ze.placeholder
+          je.el || je.placeholder
         ) : w;
         te[q] === 0 ? b(
           null,
@@ -6257,7 +6257,7 @@ const Pg = [
       if (!s)
         return console.log("[Store] addKeyframe: layer not found"), null;
       let r;
-      if (e === "position" ? r = s.transform.position : e === "scale" ? r = s.transform.scale : e === "rotation" ? r = s.transform.rotation : e === "opacity" ? r = s.opacity : r = s.properties.find((l) => l.name === e), !r)
+      if (e === "position" || e === "transform.position" ? r = s.transform.position : e === "scale" || e === "transform.scale" ? r = s.transform.scale : e === "rotation" || e === "transform.rotation" ? r = s.transform.rotation : e === "anchorPoint" || e === "transform.anchorPoint" ? r = s.transform.anchorPoint : e === "opacity" ? r = s.opacity : r = s.properties.find((l) => l.name === e), !r)
         return console.log("[Store] addKeyframe: property not found:", e), null;
       r.animated = !0;
       const o = {
@@ -6278,7 +6278,7 @@ const Pg = [
       const s = this.project.layers.find((a) => a.id === i);
       if (!s) return;
       let r;
-      if (e === "position" ? r = s.transform.position : e === "scale" ? r = s.transform.scale : e === "rotation" ? r = s.transform.rotation : e === "opacity" ? r = s.opacity : r = s.properties.find((a) => a.name === e), !r) return;
+      if (e === "position" || e === "transform.position" ? r = s.transform.position : e === "scale" || e === "transform.scale" ? r = s.transform.scale : e === "rotation" || e === "transform.rotation" ? r = s.transform.rotation : e === "anchorPoint" || e === "transform.anchorPoint" ? r = s.transform.anchorPoint : e === "opacity" ? r = s.opacity : r = s.properties.find((a) => a.name === e), !r) return;
       const o = r.keyframes.findIndex((a) => a.id === n);
       o >= 0 && (r.keyframes.splice(o, 1), r.keyframes.length === 0 && (r.animated = !1)), this.project.meta.modified = (/* @__PURE__ */ new Date()).toISOString();
     },
@@ -20758,8 +20758,8 @@ const h5 = {
         const re = N.e.deltaY;
         let Ce = X.getZoom() * (re > 0 ? 0.9 : 1.1);
         Ce = Math.min(Math.max(Ce, 0.1), 10);
-        const ze = new xe(N.e.offsetX, N.e.offsetY);
-        X.zoomToPoint(ze, Ce), b.value = Ce, N.e.preventDefault(), N.e.stopPropagation();
+        const je = new xe(N.e.offsetX, N.e.offsetY);
+        X.zoomToPoint(je, Ce), b.value = Ce, N.e.preventDefault(), N.e.stopPropagation();
       });
       let oe = !1, ye = !1, Me = 0, Fe = 0, Ie = 0, te = 1;
       X.on("mouse:down", (N) => {
@@ -20770,20 +20770,20 @@ const h5 = {
         }
         if (Ce === "zoom") {
           if (re.shiftKey) {
-            const ze = Math.max(X.getZoom() * 0.7, 0.1), Ze = new xe(re.offsetX, re.offsetY);
-            X.zoomToPoint(Ze, ze), b.value = ze;
+            const je = Math.max(X.getZoom() * 0.7, 0.1), Ze = new xe(re.offsetX, re.offsetY);
+            X.zoomToPoint(Ze, je), b.value = je;
           } else
             ye = !0, Ie = re.clientY, te = X.getZoom();
           return;
         }
         if (Ce === "text") {
-          const ze = X.getScenePoint(re), Ze = n.createLayer("text");
-          Ze.transform && Ze.transform.position && (Ze.transform.position.value = { x: ze.x, y: ze.y }), n.updateLayer(Ze.id, {
+          const je = X.getScenePoint(re), Ze = n.createLayer("text");
+          Ze.transform && Ze.transform.position && (Ze.transform.position.value = { x: je.x, y: je.y }), n.updateLayer(Ze.id, {
             transform: {
               ...Ze.transform,
               position: {
                 ...Ze.transform.position,
-                value: { x: ze.x, y: ze.y }
+                value: { x: je.x, y: je.y }
               }
             }
           }), n.selectLayer(Ze.id), n.setTool("select"), se();
@@ -20792,8 +20792,8 @@ const h5 = {
       }), X.on("mouse:move", (N) => {
         const re = N.e;
         if (oe) {
-          const ze = X.viewportTransform;
-          ze && (ze[4] += re.clientX - Me, ze[5] += re.clientY - Fe, X.requestRenderAll()), Me = re.clientX, Fe = re.clientY;
+          const je = X.viewportTransform;
+          je && (je[4] += re.clientX - Me, je[5] += re.clientY - Fe, X.requestRenderAll()), Me = re.clientX, Fe = re.clientY;
           return;
         }
         if (ye) {
@@ -20919,7 +20919,7 @@ const h5 = {
         const N = te.data;
         if (!N) continue;
         let re = u.value.get(te.id);
-        const Ce = le((Me = te.transform) == null ? void 0 : Me.position, { x: 0, y: 0 }), ze = le((Fe = te.transform) == null ? void 0 : Fe.scale, { x: 1, y: 1 }), Ze = le((Ie = te.transform) == null ? void 0 : Ie.rotation, 0), mt = le(te.opacity, 1);
+        const Ce = le((Me = te.transform) == null ? void 0 : Me.position, { x: 0, y: 0 }), je = le((Fe = te.transform) == null ? void 0 : Fe.scale, { x: 1, y: 1 }), Ze = le((Ie = te.transform) == null ? void 0 : Ie.rotation, 0), mt = le(te.opacity, 1);
         re ? (re.controlPoints = N.controlPoints || [], re.set({
           stroke: N.stroke,
           strokeWidth: N.strokeWidth,
@@ -20933,8 +20933,8 @@ const h5 = {
         }), re.layerId = te.id, u.value.set(te.id, re), X.add(re)), re.set({
           left: Ce.x,
           top: Ce.y,
-          scaleX: ze.x,
-          scaleY: ze.y,
+          scaleX: je.x,
+          scaleY: je.y,
           angle: Ze,
           opacity: mt,
           visible: te.visible,
@@ -20954,7 +20954,7 @@ const h5 = {
       f.value || (f.value = /* @__PURE__ */ new Map());
       for (const te of oe) {
         let N = f.value.get(te.id);
-        const re = le((Me = te.transform) == null ? void 0 : Me.position, { x: 0, y: 0 }), Ce = le((Fe = te.transform) == null ? void 0 : Fe.scale, { x: 1, y: 1 }), ze = le((Ie = te.transform) == null ? void 0 : Ie.rotation, 0), Ze = le(te.opacity, 1), mt = te.data, Dt = (mt == null ? void 0 : mt.color) || "#808080", zt = n.width || 1920, jt = n.height || 1080;
+        const re = le((Me = te.transform) == null ? void 0 : Me.position, { x: 0, y: 0 }), Ce = le((Fe = te.transform) == null ? void 0 : Fe.scale, { x: 1, y: 1 }), je = le((Ie = te.transform) == null ? void 0 : Ie.rotation, 0), Ze = le(te.opacity, 1), mt = te.data, Dt = (mt == null ? void 0 : mt.color) || "#808080", zt = n.width || 1920, jt = n.height || 1080;
         N ? N.set({
           fill: Dt,
           width: zt,
@@ -20972,7 +20972,7 @@ const h5 = {
           top: re.y,
           scaleX: Ce.x,
           scaleY: Ce.y,
-          angle: ze,
+          angle: je,
           opacity: Ze,
           visible: te.visible,
           selectable: !te.locked
@@ -20991,7 +20991,7 @@ const h5 = {
       p.value || (p.value = /* @__PURE__ */ new Map());
       for (const te of oe) {
         let N = p.value.get(te.id);
-        const re = le((Me = te.transform) == null ? void 0 : Me.position, { x: 0, y: 0 }), Ce = le((Fe = te.transform) == null ? void 0 : Fe.scale, { x: 1, y: 1 }), ze = le((Ie = te.transform) == null ? void 0 : Ie.rotation, 0), Ze = le(te.opacity, 1), mt = (n.width || 1920) / 2, Dt = (n.height || 1080) / 2, zt = re.x !== void 0 && re.x !== null ? re.x : mt, jt = re.y !== void 0 && re.y !== null ? re.y : Dt, St = 40;
+        const re = le((Me = te.transform) == null ? void 0 : Me.position, { x: 0, y: 0 }), Ce = le((Fe = te.transform) == null ? void 0 : Fe.scale, { x: 1, y: 1 }), je = le((Ie = te.transform) == null ? void 0 : Ie.rotation, 0), Ze = le(te.opacity, 1), mt = (n.width || 1920) / 2, Dt = (n.height || 1080) / 2, zt = re.x !== void 0 && re.x !== null ? re.x : mt, jt = re.y !== void 0 && re.y !== null ? re.y : Dt, St = 40;
         if (!N) {
           const ut = new At({
             left: zt - St / 2,
@@ -21018,7 +21018,7 @@ const h5 = {
           width: St * Ce.x,
           scaleX: 1,
           scaleY: Ce.y,
-          angle: ze,
+          angle: je,
           opacity: Ze,
           visible: te.visible
         }), N.v.set({
@@ -21028,7 +21028,7 @@ const h5 = {
           height: St * Ce.y,
           scaleX: Ce.x,
           scaleY: 1,
-          angle: ze,
+          angle: je,
           opacity: Ze,
           visible: te.visible
         }), N.h.setCoords(), N.v.setCoords();
@@ -21047,9 +21047,9 @@ const h5 = {
         const re = N.data;
         if (!re) continue;
         let Ce = h.value.get(N.id);
-        const ze = le((Me = N.transform) == null ? void 0 : Me.position, { x: 0, y: 0 }), Ze = le((Fe = N.transform) == null ? void 0 : Fe.scale, { x: 1, y: 1 }), mt = le((Ie = N.transform) == null ? void 0 : Ie.rotation, 0);
+        const je = le((Me = N.transform) == null ? void 0 : Me.position, { x: 0, y: 0 }), Ze = le((Fe = N.transform) == null ? void 0 : Fe.scale, { x: 1, y: 1 }), mt = le((Ie = N.transform) == null ? void 0 : Ie.rotation, 0);
         (te = N.transform) == null || te.anchor;
-        const Dt = le(N.opacity, 1), zt = (n.width || 1920) / 2, jt = (n.height || 1080) / 2, St = ze.x !== void 0 && ze.x !== null ? ze.x : zt, ut = ze.y !== void 0 && ze.y !== null ? ze.y : jt;
+        const Dt = le(N.opacity, 1), zt = (n.width || 1920) / 2, jt = (n.height || 1080) / 2, St = je.x !== void 0 && je.x !== null ? je.x : zt, ut = je.y !== void 0 && je.y !== null ? je.y : jt;
         Ce ? (re.text !== Ce.textContent && Ce.setText(re.text || "Text"), (re.fontFamily !== Ce.fontFamily || re.fontSize !== Ce.fontSize || re.fontWeight !== Ce.fontWeight) && Ce.setFont(
           re.fontFamily || "Arial",
           re.fontSize || 48,
@@ -21237,12 +21237,12 @@ const h5 = {
         ye.save();
         const Ce = X.viewportTransform;
         Ce && ye.transform(Ce[0], Ce[1], Ce[2], Ce[3], Ce[4], Ce[5]);
-        const ze = Ie.getConfig(), Ze = Math.abs(te.position - te.previousPosition);
-        if (ze.motionBlur && Ze > 1e-3) {
+        const je = Ie.getConfig(), Ze = Math.abs(te.position - te.previousPosition);
+        if (je.motionBlur && Ze > 1e-3) {
           const mt = Ie.getMotionBlurTrail(8);
           ye.lineCap = "round", ye.lineJoin = "round";
           for (let Dt = 0; Dt < mt.length - 1; Dt++) {
-            const zt = mt[Dt], jt = mt[Dt + 1], St = zt.opacity * ze.motionBlurStrength * 0.5;
+            const zt = mt[Dt], jt = mt[Dt + 1], St = zt.opacity * je.motionBlurStrength * 0.5;
             ye.strokeStyle = `rgba(255, 255, 255, ${St})`, ye.lineWidth = Math.max(2, (Fe.fontSize || 48) * 0.1 * (1 - Dt / mt.length)), ye.beginPath(), ye.moveTo(zt.x, zt.y), ye.lineTo(jt.x, jt.y), ye.stroke();
           }
         }
@@ -21321,7 +21321,7 @@ const h5 = {
       }
       if (A.value) {
         [oe / 3, oe * 2 / 3].forEach((Ce) => {
-          const ze = new At({
+          const je = new At({
             left: Ce,
             top: 0,
             width: 1,
@@ -21330,9 +21330,9 @@ const h5 = {
             selectable: !1,
             evented: !1
           });
-          ze.isGridOrGuide = !0, X.add(ze);
+          je.isGridOrGuide = !0, X.add(je);
         }), [ye / 3, ye * 2 / 3].forEach((Ce) => {
-          const ze = new At({
+          const je = new At({
             left: 0,
             top: Ce,
             width: oe,
@@ -21341,7 +21341,7 @@ const h5 = {
             selectable: !1,
             evented: !1
           });
-          ze.isGridOrGuide = !0, X.add(ze);
+          je.isGridOrGuide = !0, X.add(je);
         });
         const Fe = oe / 2, Ie = ye / 2, te = 30, N = new At({
           left: Fe - te,
@@ -21932,17 +21932,17 @@ const h5 = {
       };
     }), P = Ee(() => O.value), R = Ee(() => {
       const te = [], N = e.frameCount, re = Math.max(1, Math.floor(N / 20)), Ce = re * 2;
-      for (let ze = 0; ze <= N; ze += re)
+      for (let je = 0; je <= N; je += re)
         te.push({
-          frame: ze,
-          position: ze / N * 100,
-          major: ze % Ce === 0
+          frame: je,
+          position: je / N * 100,
+          major: je % Ce === 0
         });
       return te;
     });
     function U(te) {
-      const N = e.fps, re = te / N, Ce = Math.floor(re / 60), ze = Math.floor(re % 60), Ze = te % N;
-      return `${Ce.toString().padStart(2, "0")}:${ze.toString().padStart(2, "0")}:${Ze.toString().padStart(2, "0")}`;
+      const N = e.fps, re = te / N, Ce = Math.floor(re / 60), je = Math.floor(re % 60), Ze = te % N;
+      return `${Ce.toString().padStart(2, "0")}:${je.toString().padStart(2, "0")}:${Ze.toString().padStart(2, "0")}`;
     }
     function he() {
       if (s.value) {
@@ -22023,7 +22023,7 @@ const h5 = {
       else if (le === "end")
         b.end = Math.min(e.frameCount - 1, Math.max(Ce, b.start + 1));
       else if (le === "move") {
-        const ze = te.clientX - G, Ze = Math.round(ze / N.width * e.frameCount), mt = b.start + Ze, Dt = b.end + Ze;
+        const je = te.clientX - G, Ze = Math.round(je / N.width * e.frameCount), mt = b.start + Ze, Dt = b.end + Ze;
         mt >= 0 && Dt <= e.frameCount - 1 && (b.start = mt, b.end = Dt), G = te.clientX;
       }
     }
@@ -22032,14 +22032,14 @@ const h5 = {
     }
     function I(te) {
       if (!s.value) return;
-      const N = s.value.getBoundingClientRect(), re = te.clientX - N.left, Ce = Math.round(re / N.width * e.frameCount), ze = {
+      const N = s.value.getBoundingClientRect(), re = te.clientX - N.left, Ce = Math.round(re / N.width * e.frameCount), je = {
         id: `marker-${Date.now()}`,
         frame: Ce,
         label: `Marker ${y.value.length + 1}`,
         color: "#ffc107",
         comment: ""
       };
-      y.value.push(ze), C.value = { ...ze };
+      y.value.push(je), C.value = { ...je };
     }
     function E(te) {
       g.value = g.value === te ? null : te;
@@ -22062,21 +22062,17 @@ const h5 = {
     }
     function D(te) {
       const N = te.target;
-      if (N.classList.contains("work-area-handle") || N.classList.contains("work-area")) {
-        console.log("[TimelinePanel] startRulerScrub: clicked on work area, ignoring");
-        return;
-      }
-      console.log("[TimelinePanel] startRulerScrub: starting scrub"), L = !0, B(te), document.addEventListener("mousemove", q), document.addEventListener("mouseup", ve);
+      N.closest(".work-area-handle") || N.closest(".work-area") || (L = !0, B(te), document.addEventListener("mousemove", q), document.addEventListener("mouseup", ve));
     }
     function B(te) {
       if (!s.value) return;
-      const N = s.value.getBoundingClientRect(), re = te.clientX - N.left, Ce = Math.max(0, Math.min(1, re / N.width)), ze = Math.round(Ce * e.frameCount);
-      l.value = N.width, console.log("[TimelinePanel] rulerScrubClick: setting frame to", ze), e.setFrame(Math.min(ze, e.frameCount - 1));
+      const N = s.value.getBoundingClientRect(), re = te.clientX - N.left, Ce = Math.max(0, Math.min(1, re / N.width)), je = Math.round(Ce * e.frameCount);
+      e.setFrame(Math.min(je, e.frameCount - 1));
     }
     function q(te) {
       if (!L || !s.value) return;
-      const N = s.value.getBoundingClientRect(), re = te.clientX - N.left, Ce = Math.max(0, Math.min(1, re / N.width)), ze = Math.round(Ce * e.frameCount);
-      l.value = N.width, e.setFrame(Math.min(ze, e.frameCount - 1));
+      const N = s.value.getBoundingClientRect(), re = te.clientX - N.left, Ce = Math.max(0, Math.min(1, re / N.width)), je = Math.round(Ce * e.frameCount);
+      e.setFrame(Math.min(je, e.frameCount - 1));
     }
     function ve() {
       L = !1, document.removeEventListener("mousemove", q), document.removeEventListener("mouseup", ve);
@@ -22087,21 +22083,21 @@ const h5 = {
     }
     function Oe(te) {
       if (!Y || !s.value) return;
-      const N = s.value.getBoundingClientRect(), re = te.clientX - N.left, Ce = Math.max(0, Math.min(1, re / N.width)), ze = Math.round(Ce * e.frameCount);
-      l.value = N.width, e.setFrame(Math.min(ze, e.frameCount - 1));
+      const N = s.value.getBoundingClientRect(), re = te.clientX - N.left, Ce = Math.max(0, Math.min(1, re / N.width)), je = Math.round(Ce * e.frameCount);
+      e.setFrame(Math.min(je, e.frameCount - 1));
     }
     function ke() {
       Y = !1, document.removeEventListener("mousemove", Oe), document.removeEventListener("mouseup", ke);
     }
     function X(te) {
-      const re = te.currentTarget.getBoundingClientRect(), Ce = te.clientX - re.left, ze = Math.max(0, Math.min(1, Ce / re.width)), Ze = Math.round(ze * e.frameCount);
+      const re = te.currentTarget.getBoundingClientRect(), Ce = te.clientX - re.left, je = Math.max(0, Math.min(1, Ce / re.width)), Ze = Math.round(je * e.frameCount);
       e.setFrame(Math.min(Ze, e.frameCount - 1));
     }
     function oe(te) {
       if (!j) return;
       const N = document.querySelector(".scrubber-track");
       if (!N) return;
-      const re = N.getBoundingClientRect(), Ce = te.clientX - re.left, ze = Math.max(0, Math.min(1, Ce / re.width)), Ze = Math.round(ze * e.frameCount);
+      const re = N.getBoundingClientRect(), Ce = te.clientX - re.left, je = Math.max(0, Math.min(1, Ce / re.width)), Ze = Math.round(je * e.frameCount);
       e.setFrame(Math.min(Ze, e.frameCount - 1));
     }
     function ye() {
@@ -22242,7 +22238,7 @@ const h5 = {
           ])) : De("", !0)
         ])
       ]),
-      N[33] || (N[33] = ki('<div class="column-headers" data-v-2225f70a><div class="layer-columns-header" data-v-2225f70a><span class="col-header col-label" title="Label Color" data-v-2225f70a>Label</span><span class="col-header col-av" title="Visibility" data-v-2225f70a>👁</span><span class="col-header col-solo" title="Solo" data-v-2225f70a>⚡</span><span class="col-header col-lock" title="Lock" data-v-2225f70a>🔒</span><span class="col-header col-name" data-v-2225f70a>Layer Name</span><span class="col-header col-parent" title="Parent &amp; Link" data-v-2225f70a>Parent</span><span class="col-header col-switches" title="Layer Switches" data-v-2225f70a>Switches</span></div><div class="track-header" data-v-2225f70a></div></div>', 1)),
+      N[33] || (N[33] = ki('<div class="column-headers" data-v-b0b7bc39><div class="layer-columns-header" data-v-b0b7bc39><span class="col-header col-label" title="Label Color" data-v-b0b7bc39>Label</span><span class="col-header col-av" title="Visibility" data-v-b0b7bc39>👁</span><span class="col-header col-solo" title="Solo" data-v-b0b7bc39>⚡</span><span class="col-header col-lock" title="Lock" data-v-b0b7bc39>🔒</span><span class="col-header col-name" data-v-b0b7bc39>Layer Name</span><span class="col-header col-parent" title="Parent &amp; Link" data-v-b0b7bc39>Parent</span><span class="col-header col-switches" title="Layer Switches" data-v-b0b7bc39>Switches</span></div><div class="track-header" data-v-b0b7bc39></div></div>', 1)),
       d("div", {
         class: "timeline-content",
         ref_key: "timelineContentRef",
@@ -22433,7 +22429,7 @@ const h5 = {
       ])) : De("", !0)
     ]));
   }
-}), Uu = /* @__PURE__ */ Ot(vO, [["__scopeId", "data-v-2225f70a"]]), yO = { class: "graph-editor" }, bO = { class: "graph-header" }, xO = { class: "mode-toggle" }, _O = { class: "preset-buttons" }, wO = ["onClick", "title"], SO = { class: "toolbar" }, CO = { class: "graph-content" }, kO = { class: "property-list" }, TO = { class: "property-list-header" }, OO = ["title"], MO = ["onClick"], EO = ["onClick"], PO = { class: "property-name" }, DO = {
+}), Uu = /* @__PURE__ */ Ot(vO, [["__scopeId", "data-v-b0b7bc39"]]), yO = { class: "graph-editor" }, bO = { class: "graph-header" }, xO = { class: "mode-toggle" }, _O = { class: "preset-buttons" }, wO = ["onClick", "title"], SO = { class: "toolbar" }, CO = { class: "graph-content" }, kO = { class: "property-list" }, TO = { class: "property-list-header" }, OO = ["title"], MO = ["onClick"], EO = ["onClick"], PO = { class: "property-name" }, DO = {
   key: 0,
   class: "keyframe-count"
 }, AO = {
@@ -22525,26 +22521,26 @@ const h5 = {
     function ee(J, ne) {
       const be = J.keyframes[ne], Re = J.keyframes[ne + 1];
       if (!be || !Re) return 0;
-      const Se = Re.frame - be.frame, je = be.frame + be.outHandle.x * Se;
-      return V(je);
+      const Se = Re.frame - be.frame, ze = be.frame + be.outHandle.x * Se;
+      return V(ze);
     }
     function Ae(J, ne) {
       const be = J.keyframes[ne], Re = J.keyframes[ne + 1];
       if (!be || !Re) return 0;
-      const Se = Z(Re.value) - Z(be.value), je = Z(be.value) + be.outHandle.y * Se;
-      return z(je);
+      const Se = Z(Re.value) - Z(be.value), ze = Z(be.value) + be.outHandle.y * Se;
+      return z(ze);
     }
     function le(J, ne) {
       const be = J.keyframes[ne], Re = J.keyframes[ne - 1];
       if (!be || !Re) return 0;
-      const Se = be.frame - Re.frame, je = be.frame - be.inHandle.x * Se;
-      return V(je);
+      const Se = be.frame - Re.frame, ze = be.frame - be.inHandle.x * Se;
+      return V(ze);
     }
     function G(J, ne) {
       const be = J.keyframes[ne], Re = J.keyframes[ne - 1];
       if (!be || !Re) return 0;
-      const Se = Z(be.value) - Z(Re.value), je = Z(be.value) - be.inHandle.y * Se;
-      return z(je);
+      const Se = Z(be.value) - Z(Re.value), ze = Z(be.value) - be.inHandle.y * Se;
+      return z(ze);
     }
     function Z(J) {
       return typeof J == "number" ? J : typeof J == "object" ? J.x ?? J.y ?? J.z ?? 0 : 0;
@@ -22590,8 +22586,8 @@ const h5 = {
           const Ke = Z(ht.value);
           Re = Math.min(Re, Ke), Se = Math.max(Se, Ke);
         }
-      const je = (be - ne) * 0.1 || 10, Ne = (Se - Re) * 0.1 || 10;
-      m.frameStart = ne - je, m.frameEnd = be + je, m.valueMin = Re - Ne, m.valueMax = Se + Ne;
+      const ze = (be - ne) * 0.1 || 10, Ne = (Se - Re) * 0.1 || 10;
+      m.frameStart = ne - ze, m.frameEnd = be + ze, m.valueMin = Re - Ne, m.valueMax = Se + Ne;
     }
     function L() {
       j();
@@ -22629,14 +22625,14 @@ const h5 = {
       const be = J.clientX - ne.left, Re = J.clientY - ne.top;
       if (Oe(be, Re), !!_.value)
         if (_.value.type === "pan") {
-          const je = be - (_.value.startX ?? 0), Ne = Re - (_.value.startY ?? 0), it = h.value - R.left - R.right, ht = f.value - R.top - R.bottom, Ke = -je / it * (m.frameEnd - m.frameStart), Rt = Ne / ht * (m.valueMax - m.valueMin);
+          const ze = be - (_.value.startX ?? 0), Ne = Re - (_.value.startY ?? 0), it = h.value - R.left - R.right, ht = f.value - R.top - R.bottom, Ke = -ze / it * (m.frameEnd - m.frameStart), Rt = Ne / ht * (m.valueMax - m.valueMin);
           m.frameStart += Ke, m.frameEnd += Ke, m.valueMin += Rt, m.valueMax += Rt, _.value.startX = be, _.value.startY = Re, ut();
         } else if (_.value.type === "select" && T.value) {
-          const je = _.value.startX ?? 0, Ne = _.value.startY ?? 0;
+          const ze = _.value.startX ?? 0, Ne = _.value.startY ?? 0;
           T.value = {
-            x: Math.min(be, je),
+            x: Math.min(be, ze),
             y: Math.min(Re, Ne),
-            width: Math.abs(be - je),
+            width: Math.abs(be - ze),
             height: Math.abs(Re - Ne)
           };
         } else _.value.type === "keyframe" ? oe(be, Re) : (_.value.type === "outHandle" || _.value.type === "inHandle") && Fe(be, Re);
@@ -22650,11 +22646,11 @@ const h5 = {
       J.preventDefault();
       const ne = (it = r.value) == null ? void 0 : it.getBoundingClientRect();
       if (!ne) return;
-      const be = J.clientX - ne.left, Re = J.deltaY > 0 ? 1.1 : 0.9, Se = ce(be), je = Se - (Se - m.frameStart) * Re, Ne = Se + (m.frameEnd - Se) * Re;
+      const be = J.clientX - ne.left, Re = J.deltaY > 0 ? 1.1 : 0.9, Se = ce(be), ze = Se - (Se - m.frameStart) * Re, Ne = Se + (m.frameEnd - Se) * Re;
       if (J.shiftKey)
-        m.frameStart = je, m.frameEnd = Ne;
+        m.frameStart = ze, m.frameEnd = Ne;
       else {
-        m.frameStart = je, m.frameEnd = Ne;
+        m.frameStart = ze, m.frameEnd = Ne;
         const ht = J.clientY - ne.top, Ke = ue(ht);
         m.valueMin = Ke - (Ke - m.valueMin) * Re, m.valueMax = Ke + (m.valueMax - Ke) * Re;
       }
@@ -22664,15 +22660,15 @@ const h5 = {
       C.value = null;
       for (const be of A.value)
         for (let Re = 0; Re < be.keyframes.length; Re++) {
-          const Se = be.keyframes[Re], je = pe(Se), Ne = Te(be, Se);
-          if (Math.sqrt((J - je) ** 2 + (ne - Ne) ** 2) < 10) {
+          const Se = be.keyframes[Re], ze = pe(Se), Ne = Te(be, Se);
+          if (Math.sqrt((J - ze) ** 2 + (ne - Ne) ** 2) < 10) {
             C.value = { propId: be.id, index: Re };
             return;
           }
         }
     }
     function ke(J, ne, be) {
-      const Re = de.value.find((je) => je.id === J);
+      const Re = de.value.find((ze) => ze.id === J);
       if (!Re) return;
       const Se = Re.keyframes[ne];
       be.shiftKey || (g.value = []), M(J, ne) || g.value.push({ propId: J, index: ne, keyframe: Se }), _.value = { type: "keyframe", propId: J, index: ne };
@@ -22682,8 +22678,8 @@ const h5 = {
       const J = T.value;
       for (const ne of A.value)
         for (let be = 0; be < ne.keyframes.length; be++) {
-          const Re = ne.keyframes[be], Se = pe(Re), je = Te(ne, Re);
-          Se >= J.x && Se <= J.x + J.width && je >= J.y && je <= J.y + J.height && (M(ne.id, be) || g.value.push({ propId: ne.id, index: be, keyframe: Re }));
+          const Re = ne.keyframes[be], Se = pe(Re), ze = Te(ne, Re);
+          Se >= J.x && Se <= J.x + J.width && ze >= J.y && ze <= J.y + J.height && (M(ne.id, be) || g.value.push({ propId: ne.id, index: be, keyframe: Re }));
         }
     }
     function oe(J, ne) {
@@ -22706,22 +22702,22 @@ const h5 = {
     }
     function Fe(J, ne) {
       if (!_.value || !_.value.propId) return;
-      const be = de.value.find((je) => je.id === _.value.propId);
+      const be = de.value.find((ze) => ze.id === _.value.propId);
       if (!be) return;
       const Re = _.value.index, Se = be.keyframes[Re];
       if (Se) {
         if (_.value.type === "outHandle") {
-          const je = be.keyframes[Re + 1];
-          if (!je) return;
-          const Ne = je.frame - Se.frame, it = Z(je.value) - Z(Se.value), ht = ce(J), Ke = ue(ne);
+          const ze = be.keyframes[Re + 1];
+          if (!ze) return;
+          const Ne = ze.frame - Se.frame, it = Z(ze.value) - Z(Se.value), ht = ce(J), Ke = ue(ne);
           Se.outHandle = {
             x: Math.max(0, Math.min(1, (ht - Se.frame) / Ne)),
             y: it !== 0 ? (Ke - Z(Se.value)) / it : 0
           }, Se.interpolation = "bezier";
         } else if (_.value.type === "inHandle") {
-          const je = be.keyframes[Re - 1];
-          if (!je) return;
-          const Ne = Se.frame - je.frame, it = Z(Se.value) - Z(je.value), ht = ce(J), Ke = ue(ne);
+          const ze = be.keyframes[Re - 1];
+          if (!ze) return;
+          const Ne = Se.frame - ze.frame, it = Z(Se.value) - Z(ze.value), ht = ce(J), Ke = ue(ne);
           Se.inHandle = {
             x: Math.max(0, Math.min(1, (Se.frame - ht) / Ne)),
             y: it !== 0 ? (Z(Se.value) - Ke) / it : 0
@@ -22748,7 +22744,7 @@ const h5 = {
           inHandle: { x: 0.33, y: 0 },
           outHandle: { x: 0.33, y: 0 },
           handlesBroken: !1
-        }, Se = be.keyframes.findIndex((je) => je.frame > J);
+        }, Se = be.keyframes.findIndex((ze) => ze.frame > J);
         Se === -1 ? be.keyframes.push(Re) : be.keyframes.splice(Se, 0, Re), be.animated = !0, ut();
       }
       S.value = null;
@@ -22766,14 +22762,14 @@ const h5 = {
     function Ce() {
       x.value = g.value.map((J) => ({ ...J.keyframe }));
     }
-    function ze() {
+    function je() {
       if (!x.value || A.value.length === 0) return;
       const J = A.value[0], ne = s.currentFrame - x.value[0].frame;
       for (const be of x.value) {
         const Re = {
           ...be,
           frame: be.frame + ne
-        }, Se = J.keyframes.findIndex((je) => je.frame > Re.frame);
+        }, Se = J.keyframes.findIndex((ze) => ze.frame > Re.frame);
         Se === -1 ? J.keyframes.push(Re) : J.keyframes.splice(Se, 0, Re);
       }
       J.animated = !0, ut();
@@ -22829,7 +22825,7 @@ const h5 = {
     function Sf(J) {
       const ne = h.value - R.left - R.right, be = f.value - R.top - R.bottom;
       J.strokeStyle = "#2a2a2a", J.lineWidth = 1;
-      const Re = m.frameEnd - m.frameStart, Se = Pr(Re, ne, 50), je = m.valueMax - m.valueMin, Ne = Pr(je, be, 30), it = Math.ceil(m.frameStart / Se) * Se;
+      const Re = m.frameEnd - m.frameStart, Se = Pr(Re, ne, 50), ze = m.valueMax - m.valueMin, Ne = Pr(ze, be, 30), it = Math.ceil(m.frameStart / Se) * Se;
       for (let Ke = it; Ke <= m.frameEnd; Ke += Se) {
         const Rt = V(Ke);
         J.beginPath(), J.moveTo(Rt, R.top), J.lineTo(Rt, f.value - R.bottom), J.stroke();
@@ -22849,8 +22845,8 @@ const h5 = {
       }
     }
     function Pr(J, ne, be) {
-      const Re = J * be / ne, Se = Math.pow(10, Math.floor(Math.log10(Re))), je = Re / Se;
-      return je <= 1 ? Se : je <= 2 ? 2 * Se : je <= 5 ? 5 * Se : 10 * Se;
+      const Re = J * be / ne, Se = Math.pow(10, Math.floor(Math.log10(Re))), ze = Re / Se;
+      return ze <= 1 ? Se : ze <= 2 ? 2 * Se : ze <= 5 ? 5 * Se : 10 * Se;
     }
     function Cf(J, ne) {
       if (ne.keyframes.length < 2) return;
@@ -22858,15 +22854,15 @@ const h5 = {
       J.strokeStyle = be, J.lineWidth = 2, J.beginPath();
       let Re = !1;
       for (let Se = 0; Se < ne.keyframes.length - 1; Se++) {
-        const je = ne.keyframes[Se], Ne = ne.keyframes[Se + 1];
-        if (Ne.frame < m.frameStart || je.frame > m.frameEnd) continue;
-        const it = pe(je), ht = Te(ne, je), Ke = pe(Ne), Rt = Te(ne, Ne);
-        if (Re || (J.moveTo(it, ht), Re = !0), je.interpolation === "hold")
+        const ze = ne.keyframes[Se], Ne = ne.keyframes[Se + 1];
+        if (Ne.frame < m.frameStart || ze.frame > m.frameEnd) continue;
+        const it = pe(ze), ht = Te(ne, ze), Ke = pe(Ne), Rt = Te(ne, Ne);
+        if (Re || (J.moveTo(it, ht), Re = !0), ze.interpolation === "hold")
           J.lineTo(Ke, ht), J.lineTo(Ke, Rt);
-        else if (je.interpolation === "linear")
+        else if (ze.interpolation === "linear")
           J.lineTo(Ke, Rt);
         else {
-          const Dr = it + (Ke - it) * je.outHandle.x, Ar = ht + (Rt - ht) * je.outHandle.y, Fr = Ke - (Ke - it) * Ne.inHandle.x, Ir = Rt - (Rt - ht) * Ne.inHandle.y;
+          const Dr = it + (Ke - it) * ze.outHandle.x, Ar = ht + (Rt - ht) * ze.outHandle.y, Fr = Ke - (Ke - it) * Ne.inHandle.x, Ir = Rt - (Rt - ht) * Ne.inHandle.y;
           J.bezierCurveTo(Dr, Ar, Fr, Ir, Ke, Rt);
         }
       }
@@ -22884,8 +22880,8 @@ const h5 = {
       be.fillStyle = "#252525", be.fillRect(0, 0, J.width, J.height);
       const Re = m.frameEnd - m.frameStart, Se = Pr(Re, J.width, 60);
       be.fillStyle = "#888", be.font = "10px system-ui", be.textAlign = "center";
-      const je = Math.ceil(m.frameStart / Se) * Se;
-      for (let ht = je; ht <= m.frameEnd; ht += Se) {
+      const ze = Math.ceil(m.frameStart / Se) * Se;
+      for (let ht = ze; ht <= m.frameEnd; ht += Se) {
         const Ke = V(ht);
         be.fillText(ht.toString(), Ke, 16), be.strokeStyle = "#444", be.beginPath(), be.moveTo(Ke, 20), be.lineTo(Ke, 24), be.stroke();
       }
@@ -22904,8 +22900,8 @@ const h5 = {
       be.fillStyle = "#252525", be.fillRect(0, 0, J.width, J.height);
       const Re = m.valueMax - m.valueMin, Se = Pr(Re, J.height, 30);
       be.fillStyle = "#888", be.font = "10px system-ui", be.textAlign = "right";
-      const je = Math.ceil(m.valueMin / Se) * Se;
-      for (let it = je; it <= m.valueMax; it += Se) {
+      const ze = Math.ceil(m.valueMin / Se) * Se;
+      for (let it = ze; it <= m.valueMax; it += Se) {
         const ht = z(it);
         be.fillText(it.toFixed(0), 36, ht + 4);
       }
@@ -22943,7 +22939,7 @@ const h5 = {
             (H(), K(Be, null, Xe(he, (Se) => d("button", {
               key: Se.key,
               class: Pe(["preset-btn", { active: D(Se.key) }]),
-              onClick: (je) => B(Se.key),
+              onClick: (ze) => B(Se.key),
               title: Se.label
             }, me(Se.shortLabel), 11, wO)), 64))
           ]),
@@ -22995,11 +22991,11 @@ const h5 = {
             }, [
               d("div", {
                 class: "property-row",
-                onClick: (je) => E(Se.id)
+                onClick: (ze) => E(Se.id)
               }, [
                 d("span", {
                   class: Pe(["visibility-toggle", { visible: b.value.includes(Se.id) }]),
-                  onClick: Ye((je) => $(Se.id), ["stop"])
+                  onClick: Ye((ze) => $(Se.id), ["stop"])
                 }, null, 10, EO),
                 d("span", {
                   class: "property-color",
@@ -23009,16 +23005,16 @@ const h5 = {
                 Se.animated ? (H(), K("span", DO, me(Se.keyframes.length), 1)) : De("", !0)
               ], 8, MO),
               Se.name === "Position" || Se.name === "Scale" ? (H(), K("div", AO, [
-                (H(), K(Be, null, Xe(["x", "y", "z"], (je) => {
+                (H(), K(Be, null, Xe(["x", "y", "z"], (ze) => {
                   var Ne;
                   return d("button", {
-                    key: je,
+                    key: ze,
                     class: Pe({
-                      active: (Ne = y.value[Se.id]) == null ? void 0 : Ne.includes(je),
-                      hasValue: I(Se, je)
+                      active: (Ne = y.value[Se.id]) == null ? void 0 : Ne.includes(ze),
+                      hasValue: I(Se, ze)
                     }),
-                    onClick: (it) => w(Se.id, je)
-                  }, me(je.toUpperCase()), 11, FO);
+                    onClick: (it) => w(Se.id, ze)
+                  }, me(ze.toUpperCase()), 11, FO);
                 }), 64))
               ])) : De("", !0)
             ], 2))), 128)),
@@ -23069,10 +23065,10 @@ const h5 = {
                   key: Se.id,
                   class: "property-handles"
                 }, [
-                  (H(!0), K(Be, null, Xe(Se.keyframes, (je, Ne) => {
+                  (H(!0), K(Be, null, Xe(Se.keyframes, (ze, Ne) => {
                     var it, ht, Ke, Rt, Dr, Ar, Fr, Ir;
                     return H(), K(Be, { key: Ne }, [
-                      se(je) ? (H(), K("g", {
+                      se(ze) ? (H(), K("g", {
                         key: 0,
                         class: Pe(["keyframe-marker", {
                           selected: M(Se.id, Ne),
@@ -23081,20 +23077,20 @@ const h5 = {
                         onMousedown: Ye((Ca) => ke(Se.id, Ne, Ca), ["stop"])
                       }, [
                         d("rect", {
-                          x: pe(je) - 5,
-                          y: Te(Se, je) - 5,
+                          x: pe(ze) - 5,
+                          y: Te(Se, ze) - 5,
                           width: "10",
                           height: "10",
                           fill: we(Se.id),
                           "transform-origin": "center",
-                          transform: `rotate(45, ${pe(je)}, ${Te(Se, je)})`
+                          transform: `rotate(45, ${pe(ze)}, ${Te(Se, ze)})`
                         }, null, 8, jO)
                       ], 42, zO)) : De("", !0),
-                      M(Se.id, Ne) && je.interpolation === "bezier" ? (H(), K("g", BO, [
+                      M(Se.id, Ne) && ze.interpolation === "bezier" ? (H(), K("g", BO, [
                         Se.keyframes[Ne + 1] ? (H(), K("g", $O, [
                           d("line", {
-                            x1: pe(je),
-                            y1: Te(Se, je),
+                            x1: pe(ze),
+                            y1: Te(Se, ze),
                             x2: ee(Se, Ne),
                             y2: Ae(Se, Ne),
                             class: "handle-line"
@@ -23109,8 +23105,8 @@ const h5 = {
                         ])) : De("", !0),
                         Ne > 0 ? (H(), K("g", NO, [
                           d("line", {
-                            x1: pe(je),
-                            y1: Te(Se, je),
+                            x1: pe(ze),
+                            y1: Te(Se, ze),
                             x2: le(Se, Ne),
                             y2: G(Se, Ne),
                             class: "handle-line"
@@ -23198,7 +23194,7 @@ const h5 = {
             disabled: g.value.length === 0
           }, "Copy", 8, t4),
           d("button", {
-            onClick: ze,
+            onClick: je,
             disabled: !x.value
           }, "Paste", 8, n4),
           ne[16] || (ne[16] = d("hr", null, null, -1)),
@@ -27983,15 +27979,15 @@ var wf = { exports: {} };
         for (B.max_code = oe, q = D.heap_len >> 1; 1 <= q; q--) E(D, _e, q);
         for (Y = X; q = D.heap[1], D.heap[1] = D.heap[D.heap_len--], E(D, _e, 1), ve = D.heap[1], D.heap[--D.heap_max] = q, D.heap[--D.heap_max] = ve, _e[2 * Y] = _e[2 * q] + _e[2 * ve], D.depth[Y] = (D.depth[q] >= D.depth[ve] ? D.depth[q] : D.depth[ve]) + 1, _e[2 * q + 1] = _e[2 * ve + 1] = Y, D.heap[1] = Y++, E(D, _e, 1), 2 <= D.heap_len; ) ;
         D.heap[--D.heap_max] = D.heap[1], function(ye, Me) {
-          var Fe, Ie, te, N, re, Ce, ze = Me.dyn_tree, Ze = Me.max_code, mt = Me.stat_desc.static_tree, Dt = Me.stat_desc.has_stree, zt = Me.stat_desc.extra_bits, jt = Me.stat_desc.extra_base, St = Me.stat_desc.max_length, ut = 0;
+          var Fe, Ie, te, N, re, Ce, je = Me.dyn_tree, Ze = Me.max_code, mt = Me.stat_desc.static_tree, Dt = Me.stat_desc.has_stree, zt = Me.stat_desc.extra_bits, jt = Me.stat_desc.extra_base, St = Me.stat_desc.max_length, ut = 0;
           for (N = 0; N <= g; N++) ye.bl_count[N] = 0;
-          for (ze[2 * ye.heap[ye.heap_max] + 1] = 0, Fe = ye.heap_max + 1; Fe < y; Fe++) St < (N = ze[2 * ze[2 * (Ie = ye.heap[Fe]) + 1] + 1] + 1) && (N = St, ut++), ze[2 * Ie + 1] = N, Ze < Ie || (ye.bl_count[N]++, re = 0, jt <= Ie && (re = zt[Ie - jt]), Ce = ze[2 * Ie], ye.opt_len += Ce * (N + re), Dt && (ye.static_len += Ce * (mt[2 * Ie + 1] + re)));
+          for (je[2 * ye.heap[ye.heap_max] + 1] = 0, Fe = ye.heap_max + 1; Fe < y; Fe++) St < (N = je[2 * je[2 * (Ie = ye.heap[Fe]) + 1] + 1] + 1) && (N = St, ut++), je[2 * Ie + 1] = N, Ze < Ie || (ye.bl_count[N]++, re = 0, jt <= Ie && (re = zt[Ie - jt]), Ce = je[2 * Ie], ye.opt_len += Ce * (N + re), Dt && (ye.static_len += Ce * (mt[2 * Ie + 1] + re)));
           if (ut !== 0) {
             do {
               for (N = St - 1; ye.bl_count[N] === 0; ) N--;
               ye.bl_count[N]--, ye.bl_count[N + 1] += 2, ye.bl_count[St]--, ut -= 2;
             } while (0 < ut);
-            for (N = St; N !== 0; N--) for (Ie = ye.bl_count[N]; Ie !== 0; ) Ze < (te = ye.heap[--Fe]) || (ze[2 * te + 1] !== N && (ye.opt_len += (N - ze[2 * te + 1]) * ze[2 * te], ze[2 * te + 1] = N), Ie--);
+            for (N = St; N !== 0; N--) for (Ie = ye.bl_count[N]; Ie !== 0; ) Ze < (te = ye.heap[--Fe]) || (je[2 * te + 1] !== N && (ye.opt_len += (N - je[2 * te + 1]) * je[2 * te], je[2 * te + 1] = N), Ie--);
           }
         }(D, B), we(_e, oe, D.bl_count);
       }

@@ -599,14 +599,13 @@ function startScrub(event: MouseEvent) {
 
 // Ruler track scrubbing (main timeline)
 function startRulerScrub(event: MouseEvent) {
-  // Don't start scrub if clicking on work area handles
+  // Don't start scrub if clicking on work area or its handles
   const target = event.target as HTMLElement;
-  if (target.classList.contains('work-area-handle') || target.classList.contains('work-area')) {
-    console.log('[TimelinePanel] startRulerScrub: clicked on work area, ignoring');
+  if (target.closest('.work-area-handle') || target.closest('.work-area')) {
+    // Let the work area handle its own drag
     return;
   }
 
-  console.log('[TimelinePanel] startRulerScrub: starting scrub');
   isRulerScrubbing = true;
   rulerScrubClick(event);
   document.addEventListener('mousemove', handleRulerScrub);
@@ -620,9 +619,6 @@ function rulerScrubClick(event: MouseEvent) {
   const x = event.clientX - rect.left;
   const progress = Math.max(0, Math.min(1, x / rect.width));
   const frame = Math.round(progress * store.frameCount);
-  // Update trackWidth to match getBoundingClientRect for consistency
-  trackWidth.value = rect.width;
-  console.log('[TimelinePanel] rulerScrubClick: setting frame to', frame);
   store.setFrame(Math.min(frame, store.frameCount - 1));
 }
 
@@ -633,8 +629,6 @@ function handleRulerScrub(event: MouseEvent) {
   const x = event.clientX - rect.left;
   const progress = Math.max(0, Math.min(1, x / rect.width));
   const frame = Math.round(progress * store.frameCount);
-  // Update trackWidth to match getBoundingClientRect for consistency
-  trackWidth.value = rect.width;
   store.setFrame(Math.min(frame, store.frameCount - 1));
 }
 
@@ -662,8 +656,6 @@ function handlePlayheadDrag(event: MouseEvent) {
   const x = event.clientX - rect.left;
   const progress = Math.max(0, Math.min(1, x / rect.width));
   const frame = Math.round(progress * store.frameCount);
-  // Update trackWidth to match getBoundingClientRect for consistency
-  trackWidth.value = rect.width;
   store.setFrame(Math.min(frame, store.frameCount - 1));
 }
 
