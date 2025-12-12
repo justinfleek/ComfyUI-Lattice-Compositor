@@ -496,13 +496,18 @@ function handleResize(entries: ResizeObserverEntry[]) {
   const canvas = fabricCanvas.value;
   if (!canvas) return;
 
+  // Guard against Fabric.js 6.x initialization race condition
+  if (!canvas.lowerCanvasEl) return;
+
   for (const entry of entries) {
     const { width, height } = entry.contentRect;
-    canvas.setDimensions({ width, height });
-    canvasWidth.value = width;
-    canvasHeight.value = height;
-    canvas.requestRenderAll();
+    if (width > 0 && height > 0) {
+      canvas.setDimensions({ width, height });
+      canvasWidth.value = width;
+      canvasHeight.value = height;
+    }
   }
+  canvas.requestRenderAll();
 }
 
 // Load source image from store

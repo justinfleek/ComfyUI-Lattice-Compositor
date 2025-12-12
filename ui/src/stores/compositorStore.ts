@@ -231,6 +231,31 @@ export const useCompositorStore = defineStore('compositor', {
     createLayer(type: Layer['type'], name?: string): Layer {
       const id = `layer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
+      // Initialize type-specific data
+      let layerData: any = null;
+      if (type === 'text') {
+        layerData = {
+          text: 'Text',
+          fontFamily: 'Arial',
+          fontSize: 48,
+          fontWeight: '400',
+          fontStyle: 'normal',
+          fill: '#ffffff',
+          stroke: '',
+          strokeWidth: 0,
+          letterSpacing: 0,
+          lineHeight: 1.2,
+          textAlign: 'left',
+          pathLayerId: null,
+          pathOffset: 0,
+          pathAlign: 'left'
+        };
+      } else if (type === 'solid') {
+        layerData = {
+          color: '#808080'
+        };
+      }
+
       const layer: Layer = {
         id,
         name: name || `${type.charAt(0).toUpperCase() + type.slice(1)} ${this.project.layers.length + 1}`,
@@ -246,7 +271,7 @@ export const useCompositorStore = defineStore('compositor', {
         transform: createDefaultTransform(),
         properties: [],
         effects: [],
-        data: null
+        data: layerData
       };
 
       this.project.layers.unshift(layer);
@@ -390,8 +415,8 @@ export const useCompositorStore = defineStore('compositor', {
     },
 
     goToEnd(): void {
-      // frameCount is the last frame index (not count), so use directly
-      this.project.currentFrame = this.project.composition.frameCount;
+      // Frame indices are 0-based, so last frame is frameCount - 1
+      this.project.currentFrame = this.project.composition.frameCount - 1;
     },
 
     /**
