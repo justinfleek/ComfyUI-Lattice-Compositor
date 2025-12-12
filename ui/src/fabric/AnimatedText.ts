@@ -107,6 +107,7 @@ export class AnimatedText extends Group {
     this._layoutLettersHorizontal();
 
     // Ensure group updates its bounds
+    this.set({ width: x || 100, height: this.fontSize * 1.2 });
     this.setCoords();
   }
 
@@ -127,6 +128,7 @@ export class AnimatedText extends Group {
       x += letterWidth + this.letterSpacing;
     }
 
+    this.set({ width: x || 100, height: this.fontSize * 1.2 });
     this.setCoords();
   }
 
@@ -164,6 +166,7 @@ export class AnimatedText extends Group {
       currentDistance += charWidth + this.letterSpacing;
     }
 
+    this.set({ width: x || 100, height: this.fontSize * 1.2 });
     this.setCoords();
     this.dirty = true;
   }
@@ -174,6 +177,7 @@ export class AnimatedText extends Group {
   setText(text: string): void {
     this.textContent = text;
     this._createLetterObjects();
+    this.set({ width: x || 100, height: this.fontSize * 1.2 });
     this.setCoords();
     this.dirty = true;
 
