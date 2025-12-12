@@ -21923,7 +21923,7 @@ const h5 = {
     Ee(() => e.currentFrame / e.frameCount * l.value), Ee(() => e.currentFrame / e.frameCount * 100);
     const S = Ee(() => {
       const N = l.value || 600;
-      return 220 + e.currentFrame / Math.max(1, e.frameCount) * N;
+      return 236 + e.currentFrame / Math.max(1, e.frameCount) * N;
     }), x = Ee(() => e.currentFrame / (e.frameCount - 1) * 100), O = Ee(() => {
       const te = b.start / e.frameCount * 100, N = (b.end + 1) / e.frameCount * 100;
       return {
@@ -22239,7 +22239,7 @@ const h5 = {
           ])) : De("", !0)
         ])
       ]),
-      N[33] || (N[33] = ki('<div class="column-headers" data-v-5e1c2364><div class="layer-columns-header" data-v-5e1c2364><span class="col-header col-label" title="Label Color" data-v-5e1c2364>Label</span><span class="col-header col-av" title="Visibility" data-v-5e1c2364>👁</span><span class="col-header col-solo" title="Solo" data-v-5e1c2364>⚡</span><span class="col-header col-lock" title="Lock" data-v-5e1c2364>🔒</span><span class="col-header col-name" data-v-5e1c2364>Layer Name</span><span class="col-header col-parent" title="Parent &amp; Link" data-v-5e1c2364>Parent</span><span class="col-header col-switches" title="Layer Switches" data-v-5e1c2364>Switches</span></div><div class="track-header" data-v-5e1c2364></div></div>', 1)),
+      N[33] || (N[33] = ki('<div class="column-headers" data-v-2a18796c><div class="layer-columns-header" data-v-2a18796c><span class="col-header col-label" title="Label Color" data-v-2a18796c>Label</span><span class="col-header col-av" title="Visibility" data-v-2a18796c>👁</span><span class="col-header col-solo" title="Solo" data-v-2a18796c>⚡</span><span class="col-header col-lock" title="Lock" data-v-2a18796c>🔒</span><span class="col-header col-name" data-v-2a18796c>Layer Name</span><span class="col-header col-parent" title="Parent &amp; Link" data-v-2a18796c>Parent</span><span class="col-header col-switches" title="Layer Switches" data-v-2a18796c>Switches</span></div><div class="track-header" data-v-2a18796c></div></div>', 1)),
       d("div", {
         class: "timeline-content",
         ref_key: "timelineContentRef",
@@ -22430,7 +22430,7 @@ const h5 = {
       ])) : De("", !0)
     ]));
   }
-}), Uu = /* @__PURE__ */ Ot(vO, [["__scopeId", "data-v-5e1c2364"]]), yO = { class: "graph-editor" }, bO = { class: "graph-header" }, xO = { class: "mode-toggle" }, _O = { class: "preset-buttons" }, wO = ["onClick", "title"], SO = { class: "toolbar" }, CO = { class: "graph-content" }, kO = { class: "property-list" }, TO = { class: "property-list-header" }, OO = ["title"], MO = ["onClick"], EO = ["onClick"], PO = { class: "property-name" }, DO = {
+}), Uu = /* @__PURE__ */ Ot(vO, [["__scopeId", "data-v-2a18796c"]]), yO = { class: "graph-editor" }, bO = { class: "graph-header" }, xO = { class: "mode-toggle" }, _O = { class: "preset-buttons" }, wO = ["onClick", "title"], SO = { class: "toolbar" }, CO = { class: "graph-content" }, kO = { class: "property-list" }, TO = { class: "property-list-header" }, OO = ["title"], MO = ["onClick"], EO = ["onClick"], PO = { class: "property-name" }, DO = {
   key: 0,
   class: "keyframe-count"
 }, AO = {

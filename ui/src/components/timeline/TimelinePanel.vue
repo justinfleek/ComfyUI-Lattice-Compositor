@@ -311,8 +311,8 @@ const playheadPercent = computed(() => {
 });
 
 const playheadLeftPx = computed(() => {
-  // Sidebar is fixed at 220px, playhead positioned relative to track start
-  const sidebarWidth = 220;
+  // Sidebar is fixed at 236px (16px twirl-down + 220px layer-info), playhead positioned relative to track start
+  const sidebarWidth = 236;
   const trackWidthValue = trackWidth.value || 600;
   const framePercent = store.currentFrame / Math.max(1, store.frameCount);
   return sidebarWidth + (framePercent * trackWidthValue);
@@ -938,9 +938,9 @@ watch(() => store.frameCount, (newCount) => {
 }
 
 .layer-columns-header {
-  width: 220px;
-  min-width: 220px;
-  max-width: 220px;
+  width: 236px;
+  min-width: 236px;
+  max-width: 236px;
   display: flex;
   align-items: center;
   gap: 2px;
@@ -985,9 +985,9 @@ watch(() => store.frameCount, (newCount) => {
 }
 
 .ruler-sidebar {
-  width: 220px;
-  min-width: 220px;
-  max-width: 220px;
+  width: 236px;
+  min-width: 236px;
+  max-width: 236px;
   border-right: 1px solid #333;
 }
 
@@ -1090,8 +1090,8 @@ watch(() => store.frameCount, (newCount) => {
 }
 
 .scrubber-sidebar {
-  width: 220px;
-  min-width: 220px;
+  width: 236px;
+  min-width: 236px;
   display: flex;
   align-items: center;
   gap: 8px;
