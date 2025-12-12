@@ -315,7 +315,7 @@ function setupZoomPan() {
 
     // Text tool: create text layer at click position
     if (currentTool === 'text') {
-      const pointer = canvas.getPointer(evt);
+      const pointer = canvas.getScenePoint(evt);
       const newLayer = store.createLayer('text');
       // Update position to click location
       store.updateLayer(newLayer.id, {
@@ -393,6 +393,17 @@ function setupZoomPan() {
     if (selected && (selected as any).layerId) {
       store.selectLayer((selected as any).layerId);
     }
+  });
+
+  canvas.on('selection:updated', (e) => {
+    const selected = e.selected?.[0];
+    if (selected && (selected as any).layerId) {
+      store.selectLayer((selected as any).layerId);
+    }
+  });
+
+  canvas.on('selection:cleared', () => {
+    store.clearSelection();
   });
 }
 

@@ -1,18 +1,28 @@
 <template>
-  <div
-    class="enhanced-layer-track"
-    :class="{
-      selected: isSelected,
-      locked: layer.locked,
-      hidden: !layer.visible,
-      soloed: isSoloed,
-      'dimmed-by-solo': isDimmedBySolo
-    }"
-    @click="selectLayer"
-    :style="{ '--label-color': effectiveLabelColor }"
-  >
-    <!-- Layer info sidebar -->
-    <div class="layer-info">
+  <div class="layer-track-container">
+    <div
+      class="enhanced-layer-track"
+      :class="{
+        selected: isSelected,
+        locked: layer.locked,
+        hidden: !layer.visible,
+        soloed: isSoloed,
+        'dimmed-by-solo': isDimmedBySolo
+      }"
+      @click="selectLayer"
+      :style="{ '--label-color': effectiveLabelColor }"
+    >
+      <!-- Twirl down for property expansion -->
+      <div
+        class="twirl-down"
+        @click.stop="isExpanded = !isExpanded"
+        :class="{ expanded: isExpanded }"
+      >
+        <span class="twirl-arrow">{{ isExpanded ? '▼' : '▶' }}</span>
+      </div>
+
+      <!-- Layer info sidebar -->
+      <div class="layer-info">
       <!-- Label color indicator -->
       <div class="label-color" @click.stop="showLabelPicker = !showLabelPicker" title="Click to change label color">
         <div
@@ -210,13 +220,31 @@
         =
       </div>
     </div>
+    </div>
+
+    <!-- Expanded property tracks -->
+    <template v-if="isExpanded">
+      <PropertyTrack
+        v-for="prop in animatableProperties"
+        :key="prop.path"
+        :layerId="layer.id"
+        :propertyPath="prop.path"
+        :name="prop.name"
+        :property="prop.property"
+        :trackWidth="600"
+        :frameCount="frameCount"
+        :selectedKeyframeIds="selectedKeyframeIds"
+        @selectKeyframe="(id, add) => $emit('selectKeyframe', id, add)"
+      />
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, nextTick } from 'vue';
 import { useCompositorStore } from '@/stores/compositorStore';
-import type { Layer, Keyframe } from '@/types/project';
+import type { Layer, Keyframe, AnimatableProperty } from '@/types/project';
+import PropertyTrack from './PropertyTrack.vue';
 
 interface Props {
   layer: Layer;
@@ -260,6 +288,7 @@ const renameInput = ref<HTMLInputElement | null>(null);
 const showLabelPicker = ref(false);
 const isRenaming = ref(false);
 const renameValue = ref('');
+const isExpanded = ref(false);
 
 // Label colors
 const labelColors = [
@@ -361,6 +390,24 @@ const expressionIndicators = computed(() => {
     }
   });
   return exprs;
+});
+
+// Animatable properties for expansion
+const animatableProperties = computed(() => {
+  const result: { path: string; name: string; property: AnimatableProperty<any> }[] = [];
+
+  // Transform properties
+  result.push({ path: 'transform.position', name: 'Position', property: props.layer.transform.position });
+  result.push({ path: 'transform.scale', name: 'Scale', property: props.layer.transform.scale });
+  result.push({ path: 'transform.rotation', name: 'Rotation', property: props.layer.transform.rotation });
+  result.push({ path: 'opacity', name: 'Opacity', property: props.layer.opacity });
+
+  // Add anchor point if available
+  if (props.layer.transform.anchorPoint) {
+    result.push({ path: 'transform.anchorPoint', name: 'Anchor Point', property: props.layer.transform.anchorPoint });
+  }
+
+  return result;
 });
 
 // Get keyframe position as percentage
@@ -840,5 +887,32 @@ function stopDrag() {
 .icon {
   font-family: monospace;
   font-weight: bold;
+}
+
+.layer-track-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.twirl-down {
+  width: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #666;
+}
+
+.twirl-down:hover {
+  color: #aaa;
+}
+
+.twirl-arrow {
+  font-size: 8px;
+  transition: transform 0.15s;
+}
+
+.twirl-down.expanded .twirl-arrow {
+  color: #7c9cff;
 }
 </style>

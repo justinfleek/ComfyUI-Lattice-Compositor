@@ -233,27 +233,159 @@ export const useCompositorStore = defineStore('compositor', {
 
       // Initialize type-specific data
       let layerData: any = null;
-      if (type === 'text') {
-        layerData = {
-          text: 'Text',
-          fontFamily: 'Arial',
-          fontSize: 48,
-          fontWeight: '400',
-          fontStyle: 'normal',
-          fill: '#ffffff',
-          stroke: '',
-          strokeWidth: 0,
-          letterSpacing: 0,
-          lineHeight: 1.2,
-          textAlign: 'left',
-          pathLayerId: null,
-          pathOffset: 0,
-          pathAlign: 'left'
-        };
-      } else if (type === 'solid') {
-        layerData = {
-          color: '#808080'
-        };
+
+      switch (type) {
+        case 'text':
+          layerData = {
+            text: 'Text',
+            fontFamily: 'Arial',
+            fontSize: 48,
+            fontWeight: '400',
+            fontStyle: 'normal',
+            fill: '#ffffff',
+            stroke: '',
+            strokeWidth: 0,
+            letterSpacing: 0,
+            lineHeight: 1.2,
+            textAlign: 'left',
+            pathLayerId: null,
+            pathOffset: 0,
+            pathAlign: 'left'
+          };
+          break;
+
+        case 'solid':
+          layerData = {
+            color: '#808080',
+            width: this.project.composition.width,
+            height: this.project.composition.height
+          };
+          break;
+
+        case 'null':
+          layerData = {
+            size: 40
+          };
+          break;
+
+        case 'spline':
+          layerData = {
+            pathData: '',
+            controlPoints: [],
+            closed: false,
+            stroke: '#00ff00',
+            strokeWidth: 2,
+            fill: ''
+          };
+          break;
+
+        case 'particles':
+          layerData = {
+            systemConfig: {
+              maxParticles: 1000,
+              gravity: 0,
+              windStrength: 0,
+              windDirection: 0,
+              warmupPeriod: 0,
+              respectMaskBoundary: false,
+              boundaryBehavior: 'kill',
+              friction: 0.01
+            },
+            emitters: [{
+              id: 'emitter_1',
+              name: 'Emitter 1',
+              x: this.project.composition.width / 2,
+              y: this.project.composition.height / 2,
+              direction: -90,
+              spread: 30,
+              speed: 5,
+              speedVariance: 0.2,
+              size: 10,
+              sizeVariance: 0.3,
+              color: [255, 255, 255],
+              emissionRate: 10,
+              initialBurst: 0,
+              particleLifetime: 60,
+              lifetimeVariance: 0.2,
+              enabled: true,
+              burstOnBeat: false,
+              burstCount: 20
+            }],
+            gravityWells: [],
+            vortices: [],
+            modulations: [],
+            renderOptions: {
+              blendMode: 'additive',
+              renderTrails: false,
+              trailLength: 10,
+              trailOpacityFalloff: 0.9,
+              particleShape: 'circle',
+              glowEnabled: false,
+              glowRadius: 5,
+              glowIntensity: 0.5,
+              motionBlur: false,
+              motionBlurStrength: 0.5,
+              motionBlurSamples: 4,
+              connections: {
+                enabled: false,
+                maxDistance: 100,
+                maxConnections: 3,
+                lineWidth: 1,
+                lineOpacity: 0.5,
+                fadeByDistance: true
+              }
+            }
+          };
+          break;
+
+        case 'depthflow':
+          layerData = {
+            sourceLayerId: null,
+            depthLayerId: null,
+            config: {
+              preset: 'static',
+              zoom: 1,
+              offsetX: 0,
+              offsetY: 0,
+              rotation: 0,
+              depthScale: 1,
+              focusDepth: 0.5,
+              dollyZoom: 0,
+              orbitRadius: 0,
+              orbitSpeed: 1,
+              swingAmplitude: 0,
+              swingFrequency: 1,
+              edgeDilation: 0,
+              inpaintEdges: false
+            }
+          };
+          break;
+
+        case 'light':
+          layerData = {
+            lightType: 'point',
+            color: '#ffffff',
+            intensity: 1,
+            radius: 500,
+            falloff: 'quadratic',
+            castShadows: false
+          };
+          break;
+
+        case 'camera':
+          // Camera layers are created via createCameraLayer(), but handle here too
+          layerData = {
+            cameraId: null,
+            isActiveCamera: false
+          };
+          break;
+
+        case 'image':
+          layerData = {
+            assetId: null,
+            fit: 'contain'
+          };
+          break;
       }
 
       const layer: Layer = {
@@ -273,6 +405,11 @@ export const useCompositorStore = defineStore('compositor', {
         effects: [],
         data: layerData
       };
+
+      // Camera layers should use createCameraLayer() instead
+      if (type === 'camera') {
+        console.warn('Use createCameraLayer() for camera layers');
+      }
 
       this.project.layers.unshift(layer);
       this.project.meta.modified = new Date().toISOString();

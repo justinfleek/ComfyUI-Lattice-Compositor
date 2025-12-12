@@ -3,10 +3,21 @@
     <div class="panel-header">
       <span class="panel-title">Project</span>
       <div class="header-actions">
+        <button @click="triggerFileImport" title="Import File (Ctrl+I)">📥</button>
         <button @click="createNewItem" title="New Item">+</button>
         <button @click="showSearch = !showSearch" title="Search">🔍</button>
       </div>
     </div>
+
+    <!-- Hidden file input -->
+    <input
+      ref="fileInputRef"
+      type="file"
+      multiple
+      accept="image/*,video/*,audio/*,.json"
+      style="display: none"
+      @change="handleFileImport"
+    />
 
     <div v-if="showSearch" class="search-bar">
       <input
@@ -113,6 +124,9 @@ interface Folder {
 
 const store = useCompositorStore();
 
+// Refs
+const fileInputRef = ref<HTMLInputElement | null>(null);
+
 // State
 const showSearch = ref(false);
 const searchQuery = ref('');
@@ -214,6 +228,53 @@ function openItem(item: ProjectItem) {
 function createNewItem() {
   // Show new item dialog
   console.log('Create new item');
+}
+
+function triggerFileImport() {
+  fileInputRef.value?.click();
+}
+
+function handleFileImport(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const files = input.files;
+  if (!files || files.length === 0) return;
+
+  for (const file of Array.from(files)) {
+    const type = getFileType(file);
+    const newItem: ProjectItem = {
+      id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      name: file.name,
+      type,
+    };
+
+    // Add to appropriate folder
+    if (type === 'audio') {
+      // Handle audio loading through store
+      store.loadAudio(file);
+    }
+
+    const folder = folders.value.find(f =>
+      f.id === (type === 'audio' ? 'footage' : 'footage')
+    );
+    if (folder) {
+      folder.items.push(newItem);
+    } else {
+      items.value.push(newItem);
+    }
+
+    console.log('[ProjectPanel] Imported:', file.name, type);
+  }
+
+  // Reset input
+  input.value = '';
+}
+
+function getFileType(file: File): ProjectItem['type'] {
+  const mime = file.type;
+  if (mime.startsWith('audio/')) return 'audio';
+  if (mime.startsWith('video/')) return 'footage';
+  if (mime.startsWith('image/')) return 'footage';
+  return 'footage';
 }
 
 function getItemIcon(type: ProjectItem['type']): string {
