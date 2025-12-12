@@ -80,6 +80,8 @@ const sourceImageObj = ref<FabricImage | null>(null);
 const depthMapObj = ref<DepthMapImage | null>(null);
 const splineObjects = ref<Map<string, SplinePath>>(new Map());
 const textObjects = ref<Map<string, AnimatedText>>(new Map());
+const solidObjects = ref<Map<string, Rect>>(new Map());
+const nullObjects = ref<Map<string, { h: Rect; v: Rect }>>(new Map());
 const compositionBounds = ref<Rect | null>(null);
 const loading = ref(false);
 const zoom = ref(1);
@@ -182,6 +184,12 @@ onMounted(() => {
   // Watch for text layers
   watch(() => store.layers, renderTextLayers, { deep: true, immediate: true });
 
+  // Watch for solid layers
+  watch(() => store.layers, renderSolidLayers, { deep: true, immediate: true });
+
+  // Watch for null layers
+  watch(() => store.layers, renderNullLayers, { deep: true, immediate: true });
+
   // Watch for particle layers
   watch(() => store.layers, syncParticleSystems, { deep: true, immediate: true });
 
@@ -224,6 +232,12 @@ onUnmounted(() => {
 
   // Clear spline objects
   splineObjects.value.clear();
+
+  // Clear solid objects
+  solidObjects.value.clear();
+
+  // Clear null objects
+  nullObjects.value.clear();
 
   fabricCanvas.value?.dispose();
 });
@@ -311,13 +325,13 @@ function createCompositionBounds() {
     canvas.remove(compositionBounds.value as unknown as FabricObject);
   }
 
-  // Create the bounds rectangle
+  // Create the bounds rectangle - transparent fill so layers show through
   compositionBounds.value = new Rect({
     left: 0,
     top: 0,
     width: compWidth,
     height: compHeight,
-    fill: '#2a2a2a',  // Dark fill so we can see it
+    fill: 'transparent',  // Transparent so layers are visible
     stroke: '#4a90d9',  // Blue border
     strokeWidth: 2,
     selectable: false,
@@ -553,6 +567,192 @@ function renderSplineLayers() {
   canvas.requestRenderAll();
 }
 
+// Render solid layers from store
+function renderSolidLayers() {
+  const canvas = fabricCanvas.value;
+  if (!canvas) return;
+
+  const solidLayers = store.layers.filter(l => l.type === 'solid');
+
+  // Track solid objects by layer ID
+  if (!solidObjects.value) {
+    solidObjects.value = new Map();
+  }
+
+  // Update or create solid objects
+  for (const layer of solidLayers) {
+    let solidObj = solidObjects.value.get(layer.id);
+
+    // Get transform values from layer.transform (AnimatableProperty structure)
+    const position = getAnimatedValue(layer.transform?.position, { x: 0, y: 0 });
+    const scale = getAnimatedValue(layer.transform?.scale, { x: 1, y: 1 });
+    const rotation = getAnimatedValue(layer.transform?.rotation, 0);
+    const opacity = getAnimatedValue(layer.opacity, 1);
+
+    // Get solid color from layer data or use default
+    const solidData = layer.data as { color?: string } | null;
+    const color = solidData?.color || '#808080';
+
+    // Default to composition size
+    const width = store.width || 1920;
+    const height = store.height || 1080;
+
+    if (!solidObj) {
+      // Create new solid rectangle
+      solidObj = new Rect({
+        left: position.x,
+        top: position.y,
+        width: width,
+        height: height,
+        fill: color,
+        selectable: !layer.locked,
+        evented: !layer.locked
+      });
+      (solidObj as any).layerId = layer.id;
+
+      solidObjects.value.set(layer.id, solidObj);
+      canvas.add(solidObj as unknown as FabricObject);
+    } else {
+      // Update existing
+      solidObj.set({
+        fill: color,
+        width: width,
+        height: height
+      });
+    }
+
+    // Apply transform and visibility (always update these)
+    solidObj.set({
+      left: position.x,
+      top: position.y,
+      scaleX: scale.x,
+      scaleY: scale.y,
+      angle: rotation,
+      opacity: opacity,
+      visible: layer.visible,
+      selectable: !layer.locked
+    });
+
+    solidObj.setCoords();
+  }
+
+  // Remove deleted solids
+  const layerIds = new Set(solidLayers.map(l => l.id));
+  for (const [id, obj] of solidObjects.value) {
+    if (!layerIds.has(id)) {
+      canvas.remove(obj as unknown as FabricObject);
+      solidObjects.value.delete(id);
+    }
+  }
+
+  canvas.requestRenderAll();
+}
+
+// Render null layers from store (crosshair markers)
+function renderNullLayers() {
+  const canvas = fabricCanvas.value;
+  if (!canvas) return;
+
+  const nullLayers = store.layers.filter(l => l.type === 'null');
+
+  // Track null objects by layer ID
+  if (!nullObjects.value) {
+    nullObjects.value = new Map();
+  }
+
+  // Update or create null objects
+  for (const layer of nullLayers) {
+    let nullGroup = nullObjects.value.get(layer.id);
+
+    // Get transform values from layer.transform (AnimatableProperty structure)
+    const position = getAnimatedValue(layer.transform?.position, { x: 0, y: 0 });
+    const scale = getAnimatedValue(layer.transform?.scale, { x: 1, y: 1 });
+    const rotation = getAnimatedValue(layer.transform?.rotation, 0);
+    const opacity = getAnimatedValue(layer.opacity, 1);
+
+    // Default position is center of composition
+    const centerX = (store.width || 1920) / 2;
+    const centerY = (store.height || 1080) / 2;
+    const posX = position.x || centerX;
+    const posY = position.y || centerY;
+
+    // Crosshair size
+    const crosshairSize = 40;
+
+    if (!nullGroup) {
+      // Create crosshair using two lines (as a group represented by lines)
+      // We'll use a custom rendering approach - draw directly as lines
+      const horizontalLine = new Rect({
+        left: posX - crosshairSize / 2,
+        top: posY - 1,
+        width: crosshairSize,
+        height: 2,
+        fill: '#ff9900',
+        selectable: false,
+        evented: false
+      });
+
+      const verticalLine = new Rect({
+        left: posX - 1,
+        top: posY - crosshairSize / 2,
+        width: 2,
+        height: crosshairSize,
+        fill: '#ff9900',
+        selectable: false,
+        evented: false
+      });
+
+      // Store as array of objects
+      (horizontalLine as any).layerId = layer.id;
+      (verticalLine as any).layerId = layer.id;
+
+      nullObjects.value.set(layer.id, { h: horizontalLine, v: verticalLine });
+      canvas.add(horizontalLine as unknown as FabricObject);
+      canvas.add(verticalLine as unknown as FabricObject);
+      nullGroup = { h: horizontalLine, v: verticalLine };
+    }
+
+    // Update positions
+    nullGroup.h.set({
+      left: posX - (crosshairSize * scale.x) / 2,
+      top: posY - 1,
+      width: crosshairSize * scale.x,
+      scaleX: 1,
+      scaleY: scale.y,
+      angle: rotation,
+      opacity: opacity,
+      visible: layer.visible
+    });
+
+    nullGroup.v.set({
+      left: posX - 1,
+      top: posY - (crosshairSize * scale.y) / 2,
+      width: 2,
+      height: crosshairSize * scale.y,
+      scaleX: scale.x,
+      scaleY: 1,
+      angle: rotation,
+      opacity: opacity,
+      visible: layer.visible
+    });
+
+    nullGroup.h.setCoords();
+    nullGroup.v.setCoords();
+  }
+
+  // Remove deleted nulls
+  const layerIds = new Set(nullLayers.map(l => l.id));
+  for (const [id, obj] of nullObjects.value) {
+    if (!layerIds.has(id)) {
+      canvas.remove(obj.h as unknown as FabricObject);
+      canvas.remove(obj.v as unknown as FabricObject);
+      nullObjects.value.delete(id);
+    }
+  }
+
+  canvas.requestRenderAll();
+}
+
 // Render text layers from store
 function renderTextLayers() {
   const canvas = fabricCanvas.value;
@@ -599,6 +799,7 @@ function renderTextLayers() {
 
       textObjects.value.set(layer.id, textObj);
       canvas.add(textObj as unknown as FabricObject);
+      canvas.bringObjectToFront(textObj as unknown as FabricObject);
     } else {
       // Update existing text object
       if (textData.text !== textObj.textContent) {
@@ -1186,6 +1387,8 @@ defineExpose({
   depthflowRenderers,
   textObjects,
   splineObjects,
+  solidObjects,
+  nullObjects,
   getParticleCount,
   getTextPathPosition,
   pathAnimationStates,
