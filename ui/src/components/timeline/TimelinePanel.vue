@@ -369,14 +369,15 @@ function formatTimecode(frame: number): string {
 // Update track width on mount and resize
 function updateTrackWidth() {
   if (rulerTrackRef.value) {
-    trackWidth.value = rulerTrackRef.value.offsetWidth;
+    // Use getBoundingClientRect().width for consistency with drag handlers
+    const rect = rulerTrackRef.value.getBoundingClientRect();
+    trackWidth.value = rect.width;
 
     // Calculate the real offset from the timeline content to the ruler track
     if (timelineContentRef.value) {
       const contentRect = timelineContentRef.value.getBoundingClientRect();
-      const rulerRect = rulerTrackRef.value.getBoundingClientRect();
-      dynamicTrackOffset.value = rulerRect.left - contentRect.left;
-      console.log('[TimelinePanel] dynamicTrackOffset calculated:', dynamicTrackOffset.value, 'trackWidth:', trackWidth.value);
+      dynamicTrackOffset.value = rect.left - contentRect.left;
+      console.log('[TimelinePanel] updateTrackWidth: trackWidth:', trackWidth.value, 'dynamicTrackOffset:', dynamicTrackOffset.value);
     }
   }
 }

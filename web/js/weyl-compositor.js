@@ -21945,9 +21945,12 @@ const h5 = {
       return `${Ce.toString().padStart(2, "0")}:${ze.toString().padStart(2, "0")}:${Ze.toString().padStart(2, "0")}`;
     }
     function he() {
-      if (s.value && (l.value = s.value.offsetWidth, n.value)) {
-        const te = n.value.getBoundingClientRect(), N = s.value.getBoundingClientRect();
-        c.value = N.left - te.left, console.log("[TimelinePanel] dynamicTrackOffset calculated:", c.value, "trackWidth:", l.value);
+      if (s.value) {
+        const te = s.value.getBoundingClientRect();
+        if (l.value = te.width, n.value) {
+          const N = n.value.getBoundingClientRect();
+          c.value = te.left - N.left, console.log("[TimelinePanel] updateTrackWidth: trackWidth:", l.value, "dynamicTrackOffset:", c.value);
+        }
       }
     }
     function de() {
@@ -22239,7 +22242,7 @@ const h5 = {
           ])) : De("", !0)
         ])
       ]),
-      N[33] || (N[33] = ki('<div class="column-headers" data-v-af365c76><div class="layer-columns-header" data-v-af365c76><span class="col-header col-label" title="Label Color" data-v-af365c76>Label</span><span class="col-header col-av" title="Visibility" data-v-af365c76>👁</span><span class="col-header col-solo" title="Solo" data-v-af365c76>⚡</span><span class="col-header col-lock" title="Lock" data-v-af365c76>🔒</span><span class="col-header col-name" data-v-af365c76>Layer Name</span><span class="col-header col-parent" title="Parent &amp; Link" data-v-af365c76>Parent</span><span class="col-header col-switches" title="Layer Switches" data-v-af365c76>Switches</span></div><div class="track-header" data-v-af365c76></div></div>', 1)),
+      N[33] || (N[33] = ki('<div class="column-headers" data-v-2225f70a><div class="layer-columns-header" data-v-2225f70a><span class="col-header col-label" title="Label Color" data-v-2225f70a>Label</span><span class="col-header col-av" title="Visibility" data-v-2225f70a>👁</span><span class="col-header col-solo" title="Solo" data-v-2225f70a>⚡</span><span class="col-header col-lock" title="Lock" data-v-2225f70a>🔒</span><span class="col-header col-name" data-v-2225f70a>Layer Name</span><span class="col-header col-parent" title="Parent &amp; Link" data-v-2225f70a>Parent</span><span class="col-header col-switches" title="Layer Switches" data-v-2225f70a>Switches</span></div><div class="track-header" data-v-2225f70a></div></div>', 1)),
       d("div", {
         class: "timeline-content",
         ref_key: "timelineContentRef",
@@ -22430,7 +22433,7 @@ const h5 = {
       ])) : De("", !0)
     ]));
   }
-}), Uu = /* @__PURE__ */ Ot(vO, [["__scopeId", "data-v-af365c76"]]), yO = { class: "graph-editor" }, bO = { class: "graph-header" }, xO = { class: "mode-toggle" }, _O = { class: "preset-buttons" }, wO = ["onClick", "title"], SO = { class: "toolbar" }, CO = { class: "graph-content" }, kO = { class: "property-list" }, TO = { class: "property-list-header" }, OO = ["title"], MO = ["onClick"], EO = ["onClick"], PO = { class: "property-name" }, DO = {
+}), Uu = /* @__PURE__ */ Ot(vO, [["__scopeId", "data-v-2225f70a"]]), yO = { class: "graph-editor" }, bO = { class: "graph-header" }, xO = { class: "mode-toggle" }, _O = { class: "preset-buttons" }, wO = ["onClick", "title"], SO = { class: "toolbar" }, CO = { class: "graph-content" }, kO = { class: "property-list" }, TO = { class: "property-list-header" }, OO = ["title"], MO = ["onClick"], EO = ["onClick"], PO = { class: "property-name" }, DO = {
   key: 0,
   class: "keyframe-count"
 }, AO = {
