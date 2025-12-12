@@ -146,11 +146,13 @@
                     </button>
                   </div>
                   <div class="viewport-controls">
-                    <select v-model="viewZoom" class="zoom-select">
+                    <select v-model="viewZoom" @change="handleZoomChange" class="zoom-select">
                       <option value="fit">Fit</option>
                       <option value="25">25%</option>
                       <option value="50">50%</option>
+                      <option value="75">75%</option>
                       <option value="100">100%</option>
+                      <option value="150">150%</option>
                       <option value="200">200%</option>
                     </select>
                     <button
@@ -270,7 +272,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { Splitpanes, Pane } from 'splitpanes';
 import 'splitpanes/dist/splitpanes.css';
 
@@ -408,6 +410,36 @@ function updateCamera(camera: Camera3D) {
 
 function onExportComplete() {
   console.log('[Weyl] Export completed');
+}
+
+// Sync grid/guides state with canvas
+watch(showGrid, (value) => {
+  if (canvasRef.value) {
+    canvasRef.value.showGrid = value;
+  }
+});
+
+watch(showGuides, (value) => {
+  if (canvasRef.value) {
+    canvasRef.value.showGuides = value;
+  }
+});
+
+// Handle zoom dropdown change
+function handleZoomChange() {
+  const canvas = canvasRef.value;
+  if (!canvas) return;
+
+  if (viewZoom.value === 'fit') {
+    canvas.fitToView();
+  } else {
+    const zoomVal = parseInt(viewZoom.value) / 100;
+    if (canvas.fabricCanvas) {
+      canvas.fabricCanvas.setZoom(zoomVal);
+      canvas.zoom = zoomVal;
+      canvas.fabricCanvas.requestRenderAll();
+    }
+  }
 }
 
 // Keyboard shortcuts

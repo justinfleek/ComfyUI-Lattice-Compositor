@@ -132,6 +132,7 @@
           <EnhancedLayerTrack
             :layer="layer"
             :frameCount="store.frameCount"
+            :currentFrame="store.currentFrame"
             :allLayers="store.layers"
             :soloedLayerIds="soloedLayerIds"
             :showSwitches="showLayerSwitches"
@@ -881,6 +882,7 @@ watch(() => store.frameCount, (newCount) => {
 .layer-columns-header {
   width: 220px;
   min-width: 220px;
+  max-width: 220px;
   display: flex;
   align-items: center;
   gap: 2px;
@@ -926,6 +928,7 @@ watch(() => store.frameCount, (newCount) => {
 .ruler-sidebar {
   width: 220px;
   min-width: 220px;
+  max-width: 220px;
   border-right: 1px solid #333;
 }
 

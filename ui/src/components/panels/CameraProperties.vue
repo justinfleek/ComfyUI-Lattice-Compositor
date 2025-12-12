@@ -648,20 +648,36 @@ function createCamera() {
 }
 
 .type-select,
-.property-group select {
+.property-group select,
+select {
   width: 100%;
   padding: 6px 8px;
   background: #2a2a2a;
-  border: 1px solid #3d3d3d;
-  border-radius: 4px;
-  color: #e0e0e0;
+  border: 1px solid #444;
+  border-radius: 3px;
+  color: #ddd;
   font-size: 12px;
   cursor: pointer;
 }
 
+.type-select option,
+.property-group select option,
+select option {
+  background: #2a2a2a;
+  color: #ddd;
+}
+
 .type-select:hover,
-.property-group select:hover {
+.property-group select:hover,
+select:hover {
   border-color: #555;
+}
+
+.type-select:focus,
+.property-group select:focus,
+select:focus {
+  outline: 1px solid #5a8fd9;
+  border-color: #5a8fd9;
 }
 
 .preset-row {

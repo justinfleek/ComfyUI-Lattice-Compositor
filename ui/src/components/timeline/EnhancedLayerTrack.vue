@@ -219,6 +219,12 @@
       >
         =
       </div>
+
+      <!-- Playhead line -->
+      <div
+        class="playhead-line"
+        :style="{ left: `${playheadPercent}%` }"
+      ></div>
     </div>
     </div>
 
@@ -249,6 +255,7 @@ import PropertyTrack from './PropertyTrack.vue';
 interface Props {
   layer: Layer;
   frameCount: number;
+  currentFrame: number;
   allLayers: Layer[];
   soloedLayerIds: string[];
   showSwitches: boolean;
@@ -289,6 +296,11 @@ const showLabelPicker = ref(false);
 const isRenaming = ref(false);
 const renameValue = ref('');
 const isExpanded = ref(false);
+
+// Playhead position
+const playheadPercent = computed(() => {
+  return (props.currentFrame / props.frameCount) * 100;
+});
 
 // Label colors
 const labelColors = [
@@ -607,6 +619,7 @@ function stopDrag() {
 .layer-info {
   width: 220px;
   min-width: 220px;
+  max-width: 220px;
   display: flex;
   align-items: center;
   gap: 2px;
@@ -882,6 +895,16 @@ function stopDrag() {
   justify-content: center;
   transform: translateX(-50%);
   z-index: 3;
+}
+
+.playhead-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: #ff4444;
+  pointer-events: none;
+  z-index: 10;
 }
 
 .icon {

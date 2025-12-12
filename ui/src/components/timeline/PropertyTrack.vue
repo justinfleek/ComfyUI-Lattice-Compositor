@@ -1,11 +1,20 @@
 <template>
   <div class="property-track-row">
     <div class="property-info">
-      <span class="property-indent"></span>
+      <!-- STOPWATCH BUTTON - Fixed position on left -->
+      <button
+        class="stopwatch-btn"
+        :class="{ active: hasKeyframeAtCurrentFrame }"
+        @click.stop="toggleKeyframe"
+        :title="hasKeyframeAtCurrentFrame ? 'Remove Keyframe' : 'Add Keyframe'"
+      >
+        {{ hasKeyframeAtCurrentFrame ? '◆' : '◇' }}
+      </button>
       <span class="property-name">{{ name }}</span>
       <span class="property-value">{{ formattedValue }}</span>
     </div>
     <div class="property-keyframes" :style="{ width: trackWidth + 'px' }">
+      <!-- Existing keyframe diamonds - these show WHERE keyframes are on timeline -->
       <div
         v-for="kf in property.keyframes"
         :key="kf.id"
@@ -17,15 +26,11 @@
         :title="`Frame ${kf.frame}: ${JSON.stringify(kf.value)}`"
       >◆</div>
 
+      <!-- Playhead position indicator (vertical line showing current frame) -->
       <div
-        class="keyframe-toggle"
+        class="playhead-marker"
         :style="{ left: `${(currentFrame / frameCount) * 100}%` }"
-        @click.stop="toggleKeyframe"
-        :title="hasKeyframeAtCurrentFrame ? 'Remove Keyframe' : 'Add Keyframe'"
-      >
-        <span v-if="hasKeyframeAtCurrentFrame" class="kf-filled">◆</span>
-        <span v-else class="kf-empty">◇</span>
-      </div>
+      ></div>
     </div>
   </div>
 </template>
@@ -92,8 +97,8 @@ function toggleKeyframe() {
 <style scoped>
 .property-track-row {
   display: flex;
-  height: 20px;
-  background: #252525;
+  height: 22px;
+  background: #222;
   border-bottom: 1px solid #1a1a1a;
 }
 
@@ -101,46 +106,65 @@ function toggleKeyframe() {
   display: flex;
   align-items: center;
   width: 220px;
-  padding-left: 24px;
-  font-size: 11px;
-  color: #999;
-  gap: 8px;
+  min-width: 220px;
+  padding-left: 20px;
+  gap: 6px;
+  background: #1e1e1e;
+  border-right: 1px solid #333;
 }
 
-.property-indent {
+.stopwatch-btn {
   width: 16px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #555;
+  cursor: pointer;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.stopwatch-btn:hover {
+  color: #999;
+}
+
+.stopwatch-btn.active {
+  color: #f5c542;
 }
 
 .property-name {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: 11px;
+  color: #888;
+  min-width: 55px;
 }
 
 .property-value {
   color: #7c9cff;
   font-family: monospace;
   font-size: 10px;
-  min-width: 60px;
-  text-align: right;
+  margin-left: auto;
   padding-right: 8px;
 }
 
 .property-keyframes {
   position: relative;
   flex: 1;
-  background: #1e1e1e;
+  background: #1a1a1a;
 }
 
 .keyframe-diamond {
   position: absolute;
   top: 50%;
   transform: translate(-50%, -50%);
-  font-size: 10px;
+  font-size: 9px;
   color: #f5c542;
   cursor: pointer;
   user-select: none;
+  z-index: 2;
 }
 
 .keyframe-diamond:hover {
@@ -152,29 +176,13 @@ function toggleKeyframe() {
   color: #ff9500;
 }
 
-.keyframe-toggle {
+.playhead-marker {
   position: absolute;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 12px;
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.15s;
-}
-
-.property-track-row:hover .keyframe-toggle {
-  opacity: 1;
-}
-
-.kf-filled {
-  color: #f5c542;
-}
-
-.kf-empty {
-  color: #666;
-}
-
-.kf-empty:hover {
-  color: #999;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: #ff4444;
+  pointer-events: none;
+  z-index: 1;
 }
 </style>

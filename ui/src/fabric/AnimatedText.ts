@@ -77,11 +77,11 @@ export class AnimatedText extends Group {
    * Create individual letter objects for per-character animation
    */
   private _createLetterObjects(): void {
-    // Remove existing letters
+    // Remove existing letter objects completely
     this.removeAll();
     this._letterObjects = [];
 
-    // Create new letter objects
+    // Create new letter objects for each character in the text
     for (const char of this.textContent) {
       const letter = new FabricText(char, {
         fontFamily: this.fontFamily,
@@ -102,6 +102,9 @@ export class AnimatedText extends Group {
 
     // Initial layout (horizontal)
     this._layoutLettersHorizontal();
+
+    // Ensure group updates its bounds
+    this.setCoords();
   }
 
   /**
@@ -168,6 +171,13 @@ export class AnimatedText extends Group {
   setText(text: string): void {
     this.textContent = text;
     this._createLetterObjects();
+    this.setCoords();
+    this.dirty = true;
+
+    // Force canvas to re-render
+    if (this.canvas) {
+      this.canvas.requestRenderAll();
+    }
   }
 
   /**

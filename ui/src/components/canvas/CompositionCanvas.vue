@@ -16,27 +16,6 @@
       ref="splineEditorRef"
     />
 
-    <!-- Zoom controls -->
-    <div class="zoom-controls">
-      <button @click="zoomIn" title="Zoom In">+</button>
-      <select
-        class="zoom-select"
-        :value="Math.round(zoom * 100)"
-        @change="setZoomFromSelect"
-        title="Select zoom level"
-      >
-        <option value="25">25%</option>
-        <option value="50">50%</option>
-        <option value="75">75%</option>
-        <option value="100">100%</option>
-        <option value="150">150%</option>
-        <option value="200">200%</option>
-        <option value="400">400%</option>
-      </select>
-      <button @click="zoomOut" title="Zoom Out">-</button>
-      <button @click="fitToView" title="Fit to View">Fit</button>
-    </div>
-
     <!-- Depth overlay toggle -->
     <div class="overlay-controls" v-if="hasDepthMap">
       <label>
@@ -116,6 +95,10 @@ const pathAnimationStates = ref<Map<string, PathAnimatorState>>(new Map());
 
 // Effect processing canvases (one per layer that has effects)
 const effectCanvases = ref<Map<string, HTMLCanvasElement>>(new Map());
+
+// Grid and guides state
+const showGrid = ref(false);
+const showGuides = ref(false);
 
 // Computed
 const hasDepthMap = computed(() => store.depthMap !== null);
@@ -317,16 +300,28 @@ function setupZoomPan() {
     if (currentTool === 'text') {
       const pointer = canvas.getScenePoint(evt);
       const newLayer = store.createLayer('text');
-      // Update position to click location
+
+      // Update position to click location - must match AnimatableProperty structure
+      if (newLayer.transform && newLayer.transform.position) {
+        newLayer.transform.position.value = { x: pointer.x, y: pointer.y };
+      }
+
+      // Also update via store to trigger reactivity
       store.updateLayer(newLayer.id, {
         transform: {
           ...newLayer.transform,
-          position: { value: { x: pointer.x, y: pointer.y }, animated: false, keyframes: [] }
+          position: {
+            ...newLayer.transform.position,
+            value: { x: pointer.x, y: pointer.y }
+          }
         }
       });
+
       store.selectLayer(newLayer.id);
-      // Switch back to select tool after placing text
       store.setTool('select');
+
+      // Force immediate re-render
+      renderTextLayers();
       return;
     }
 
@@ -1495,11 +1490,139 @@ function applyEffectResultToObject(obj: FabricObject, effectCanvas: HTMLCanvasEl
   fabricCanvas.value?.requestRenderAll();
 }
 
+// ============================================================
+// GRID AND GUIDES RENDERING
+// ============================================================
+
+function renderGridAndGuides() {
+  const canvas = fabricCanvas.value;
+  if (!canvas) return;
+
+  const compWidth = store.width || 1920;
+  const compHeight = store.height || 1080;
+
+  // Remove old grid/guide objects
+  const oldObjects = canvas.getObjects().filter((o: any) => o.isGridOrGuide);
+  oldObjects.forEach(o => canvas.remove(o));
+
+  // Render grid
+  if (showGrid.value) {
+    const gridSize = 100;
+
+    // Vertical lines
+    for (let x = 0; x <= compWidth; x += gridSize) {
+      const line = new Rect({
+        left: x,
+        top: 0,
+        width: 1,
+        height: compHeight,
+        fill: 'rgba(80, 80, 80, 0.4)',
+        selectable: false,
+        evented: false
+      });
+      (line as any).isGridOrGuide = true;
+      canvas.add(line as unknown as FabricObject);
+      canvas.sendObjectToBack(line as unknown as FabricObject);
+    }
+
+    // Horizontal lines
+    for (let y = 0; y <= compHeight; y += gridSize) {
+      const line = new Rect({
+        left: 0,
+        top: y,
+        width: compWidth,
+        height: 1,
+        fill: 'rgba(80, 80, 80, 0.4)',
+        selectable: false,
+        evented: false
+      });
+      (line as any).isGridOrGuide = true;
+      canvas.add(line as unknown as FabricObject);
+      canvas.sendObjectToBack(line as unknown as FabricObject);
+    }
+  }
+
+  // Render guides (rule of thirds + center)
+  if (showGuides.value) {
+    // Rule of thirds - vertical
+    [compWidth / 3, compWidth * 2 / 3].forEach(x => {
+      const line = new Rect({
+        left: x,
+        top: 0,
+        width: 1,
+        height: compHeight,
+        fill: 'rgba(0, 180, 255, 0.4)',
+        selectable: false,
+        evented: false
+      });
+      (line as any).isGridOrGuide = true;
+      canvas.add(line as unknown as FabricObject);
+    });
+
+    // Rule of thirds - horizontal
+    [compHeight / 3, compHeight * 2 / 3].forEach(y => {
+      const line = new Rect({
+        left: 0,
+        top: y,
+        width: compWidth,
+        height: 1,
+        fill: 'rgba(0, 180, 255, 0.4)',
+        selectable: false,
+        evented: false
+      });
+      (line as any).isGridOrGuide = true;
+      canvas.add(line as unknown as FabricObject);
+    });
+
+    // Center crosshair
+    const cx = compWidth / 2;
+    const cy = compHeight / 2;
+    const size = 30;
+
+    const hLine = new Rect({
+      left: cx - size,
+      top: cy,
+      width: size * 2,
+      height: 1,
+      fill: 'rgba(255, 100, 100, 0.6)',
+      selectable: false,
+      evented: false
+    });
+    const vLine = new Rect({
+      left: cx,
+      top: cy - size,
+      width: 1,
+      height: size * 2,
+      fill: 'rgba(255, 100, 100, 0.6)',
+      selectable: false,
+      evented: false
+    });
+    (hLine as any).isGridOrGuide = true;
+    (vLine as any).isGridOrGuide = true;
+    canvas.add(hLine as unknown as FabricObject);
+    canvas.add(vLine as unknown as FabricObject);
+  }
+
+  // Move composition bounds to back but above grid
+  if (compositionBounds.value) {
+    canvas.bringObjectForward(compositionBounds.value as unknown as FabricObject);
+  }
+
+  canvas.requestRenderAll();
+}
+
+// Add watchers for grid/guides
+watch(showGrid, renderGridAndGuides);
+watch(showGuides, renderGridAndGuides);
+
 // Expose canvas for external use
 defineExpose({
   fabricCanvas,
   fitToView,
   zoom,
+  showGrid,
+  showGuides,
+  renderGridAndGuides,
   particleSystems,
   depthflowRenderers,
   textObjects,
@@ -1524,58 +1647,6 @@ defineExpose({
 
 .composition-canvas canvas {
   display: block;
-}
-
-.zoom-controls {
-  position: absolute;
-  bottom: 12px;
-  left: 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(0, 0, 0, 0.7);
-  padding: 6px 10px;
-  border-radius: 6px;
-  font-size: 12px;
-  z-index: 10;
-}
-
-.zoom-controls button {
-  width: 24px;
-  height: 24px;
-  border: none;
-  background: #3a3a3a;
-  color: #e0e0e0;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.zoom-controls button:hover {
-  background: #4a4a4a;
-}
-
-.zoom-select {
-  min-width: 60px;
-  padding: 2px 4px;
-  background: #3a3a3a;
-  border: none;
-  border-radius: 4px;
-  color: #e0e0e0;
-  font-size: 12px;
-  cursor: pointer;
-  text-align: center;
-}
-
-.zoom-select:hover {
-  background: #4a4a4a;
-}
-
-.zoom-select:focus {
-  outline: 1px solid #7c9cff;
 }
 
 .overlay-controls {
