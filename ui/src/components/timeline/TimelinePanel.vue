@@ -1000,6 +1000,8 @@ watch(() => store.frameCount, (newCount) => {
 
 .time-ruler {
   display: flex;
+  width: 100%;
+  max-width: 100%;
   height: 24px;
   background: #222;
   border-bottom: 1px solid #333;
@@ -1007,8 +1009,8 @@ watch(() => store.frameCount, (newCount) => {
   top: 0;
   z-index: 5;
   overflow: visible;
-  /* Prevent ruler from expanding with scrollable content */
   min-width: 0;
+  box-sizing: border-box;
 }
 
 .ruler-sidebar {

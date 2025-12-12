@@ -22234,7 +22234,7 @@ const h5 = {
           ])) : Ae("", !0)
         ])
       ]),
-      X[33] || (X[33] = ki('<div class="column-headers" data-v-3bd37171><div class="layer-columns-header" data-v-3bd37171><span class="col-header col-label" title="Label Color" data-v-3bd37171>Label</span><span class="col-header col-av" title="Visibility" data-v-3bd37171>👁</span><span class="col-header col-solo" title="Solo" data-v-3bd37171>⚡</span><span class="col-header col-lock" title="Lock" data-v-3bd37171>🔒</span><span class="col-header col-name" data-v-3bd37171>Layer Name</span><span class="col-header col-parent" title="Parent &amp; Link" data-v-3bd37171>Parent</span><span class="col-header col-switches" title="Layer Switches" data-v-3bd37171>Switches</span></div><div class="track-header" data-v-3bd37171></div></div>', 1)),
+      X[33] || (X[33] = ki('<div class="column-headers" data-v-ce30a8a7><div class="layer-columns-header" data-v-ce30a8a7><span class="col-header col-label" title="Label Color" data-v-ce30a8a7>Label</span><span class="col-header col-av" title="Visibility" data-v-ce30a8a7>👁</span><span class="col-header col-solo" title="Solo" data-v-ce30a8a7>⚡</span><span class="col-header col-lock" title="Lock" data-v-ce30a8a7>🔒</span><span class="col-header col-name" data-v-ce30a8a7>Layer Name</span><span class="col-header col-parent" title="Parent &amp; Link" data-v-ce30a8a7>Parent</span><span class="col-header col-switches" title="Layer Switches" data-v-ce30a8a7>Switches</span></div><div class="track-header" data-v-ce30a8a7></div></div>', 1)),
       d("div", {
         class: "timeline-content",
         ref_key: "timelineContentRef",
@@ -22425,7 +22425,7 @@ const h5 = {
       ])) : Ae("", !0)
     ]));
   }
-}), Uu = /* @__PURE__ */ Mt(yO, [["__scopeId", "data-v-3bd37171"]]), bO = { class: "graph-editor" }, xO = { class: "graph-header" }, _O = { class: "mode-toggle" }, wO = { class: "preset-buttons" }, SO = ["onClick", "title"], CO = { class: "toolbar" }, kO = { class: "graph-content" }, TO = { class: "property-list" }, OO = { class: "property-list-header" }, MO = ["title"], EO = ["onClick"], PO = ["onClick"], DO = { class: "property-name" }, AO = {
+}), Uu = /* @__PURE__ */ Mt(yO, [["__scopeId", "data-v-ce30a8a7"]]), bO = { class: "graph-editor" }, xO = { class: "graph-header" }, _O = { class: "mode-toggle" }, wO = { class: "preset-buttons" }, SO = ["onClick", "title"], CO = { class: "toolbar" }, kO = { class: "graph-content" }, TO = { class: "property-list" }, OO = { class: "property-list-header" }, MO = ["title"], EO = ["onClick"], PO = ["onClick"], DO = { class: "property-name" }, AO = {
   key: 0,
   class: "keyframe-count"
 }, FO = {
