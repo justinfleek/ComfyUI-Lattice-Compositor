@@ -88,7 +88,7 @@
       <!-- Time ruler with work area -->
       <div class="time-ruler">
         <div class="ruler-sidebar" />
-        <div class="ruler-track" ref="rulerTrackRef" @dblclick="setMarkerAtClick">
+        <div class="ruler-track" ref="rulerTrackRef" @mousedown="startRulerScrub" @dblclick="setMarkerAtClick">
           <!-- Work area -->
           <div
             class="work-area"
@@ -555,12 +555,53 @@ function deleteMarker(markerId: string) {
 
 // Scrubbing
 let isScrubbing = false;
+let isRulerScrubbing = false;
 
 function startScrub(event: MouseEvent) {
   isScrubbing = true;
   scrubClick(event);
   document.addEventListener('mousemove', handleScrub);
   document.addEventListener('mouseup', stopScrub);
+}
+
+// Ruler track scrubbing (main timeline)
+function startRulerScrub(event: MouseEvent) {
+  // Don't start scrub if clicking on work area handles
+  const target = event.target as HTMLElement;
+  if (target.classList.contains('work-area-handle') || target.classList.contains('work-area')) {
+    return;
+  }
+
+  isRulerScrubbing = true;
+  rulerScrubClick(event);
+  document.addEventListener('mousemove', handleRulerScrub);
+  document.addEventListener('mouseup', stopRulerScrub);
+}
+
+function rulerScrubClick(event: MouseEvent) {
+  if (!rulerTrackRef.value) return;
+
+  const rect = rulerTrackRef.value.getBoundingClientRect();
+  const x = event.clientX - rect.left;
+  const progress = Math.max(0, Math.min(1, x / rect.width));
+  const frame = Math.round(progress * (store.frameCount - 1));
+  store.setFrame(frame);
+}
+
+function handleRulerScrub(event: MouseEvent) {
+  if (!isRulerScrubbing || !rulerTrackRef.value) return;
+
+  const rect = rulerTrackRef.value.getBoundingClientRect();
+  const x = event.clientX - rect.left;
+  const progress = Math.max(0, Math.min(1, x / rect.width));
+  const frame = Math.round(progress * (store.frameCount - 1));
+  store.setFrame(frame);
+}
+
+function stopRulerScrub() {
+  isRulerScrubbing = false;
+  document.removeEventListener('mousemove', handleRulerScrub);
+  document.removeEventListener('mouseup', stopRulerScrub);
 }
 
 function scrubClick(event: MouseEvent) {

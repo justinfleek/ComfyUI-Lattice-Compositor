@@ -58,6 +58,7 @@ import { Canvas, FabricImage, Point, type FabricObject } from 'fabric';
 import { useCompositorStore } from '@/stores/compositorStore';
 import { DepthMapImage, type ColormapType } from '@/fabric/DepthMapImage';
 import { SplinePath } from '@/fabric/SplinePath';
+import { AnimatedText } from '@/fabric/AnimatedText';
 import SplineEditor from './SplineEditor.vue';
 import type { SplineData, ControlPoint, ParticleLayerData, DepthflowLayerData, TextData } from '@/types/project';
 import { ParticleSystem } from '@/services/particleSystem';
@@ -77,6 +78,7 @@ const fabricCanvas = ref<Canvas | null>(null);
 const sourceImageObj = ref<FabricImage | null>(null);
 const depthMapObj = ref<DepthMapImage | null>(null);
 const splineObjects = ref<Map<string, SplinePath>>(new Map());
+const textObjects = ref<Map<string, AnimatedText>>(new Map());
 const loading = ref(false);
 const zoom = ref(1);
 const showDepthOverlay = ref(true);
@@ -154,6 +156,9 @@ onMounted(() => {
   // Watch for layer changes to render splines
   watch(() => store.layers, renderSplineLayers, { deep: true, immediate: true });
 
+  // Watch for text layers
+  watch(() => store.layers, renderTextLayers, { deep: true, immediate: true });
+
   // Watch for particle layers
   watch(() => store.layers, syncParticleSystems, { deep: true, immediate: true });
 
@@ -185,6 +190,12 @@ onUnmounted(() => {
     renderer.dispose();
   });
   depthflowRenderers.value.clear();
+
+  // Clear text objects
+  textObjects.value.clear();
+
+  // Clear spline objects
+  splineObjects.value.clear();
 
   fabricCanvas.value?.dispose();
 });
@@ -340,6 +351,14 @@ async function loadDepthMap(depthData: string | null) {
   }
 }
 
+// Helper to get the current value from an AnimatableProperty
+// For now, just return the base value - keyframe interpolation can be added later
+function getAnimatedValue<T>(prop: { value: T; animated?: boolean; keyframes?: any[] } | undefined, defaultValue: T): T {
+  if (!prop) return defaultValue;
+  // TODO: If prop.animated && prop.keyframes.length > 0, interpolate based on store.currentFrame
+  return prop.value ?? defaultValue;
+}
+
 // Render spline layers from store
 function renderSplineLayers() {
   const canvas = fabricCanvas.value;
@@ -353,6 +372,12 @@ function renderSplineLayers() {
     if (!splineData) continue;
 
     let splineObj = splineObjects.value.get(layer.id);
+
+    // Get transform values from layer.transform (AnimatableProperty structure)
+    const position = getAnimatedValue(layer.transform?.position, { x: 0, y: 0 });
+    const scale = getAnimatedValue(layer.transform?.scale, { x: 1, y: 1 });
+    const rotation = getAnimatedValue(layer.transform?.rotation, 0);
+    const opacity = getAnimatedValue(layer.opacity, 1);
 
     if (!splineObj) {
       // Create new SplinePath
@@ -373,13 +398,24 @@ function renderSplineLayers() {
       splineObj.set({
         stroke: splineData.stroke,
         strokeWidth: splineData.strokeWidth,
-        fill: splineData.fill,
-        selectable: !layer.locked,
-        visible: layer.visible
+        fill: splineData.fill
       });
     }
 
+    // Apply transform and visibility (always update these)
+    splineObj.set({
+      left: position.x,
+      top: position.y,
+      scaleX: scale.x,
+      scaleY: scale.y,
+      angle: rotation,
+      opacity: opacity,
+      visible: layer.visible,
+      selectable: !layer.locked
+    });
+
     splineObj.updatePathFromControlPoints();
+    splineObj.setCoords();
   }
 
   // Remove deleted splines
@@ -388,6 +424,118 @@ function renderSplineLayers() {
     if (!layerIds.has(id)) {
       canvas.remove(obj as unknown as FabricObject);
       splineObjects.value.delete(id);
+    }
+  }
+
+  canvas.requestRenderAll();
+}
+
+// Render text layers from store
+function renderTextLayers() {
+  const canvas = fabricCanvas.value;
+  if (!canvas) return;
+
+  const textLayers = store.layers.filter(l => l.type === 'text');
+
+  // Update or create text objects
+  for (const layer of textLayers) {
+    const textData = layer.data as TextData | null;
+    if (!textData) continue;
+
+    let textObj = textObjects.value.get(layer.id);
+
+    // Get transform values from layer.transform (AnimatableProperty structure)
+    const position = getAnimatedValue(layer.transform?.position, { x: 0, y: 0 });
+    const scale = getAnimatedValue(layer.transform?.scale, { x: 1, y: 1 });
+    const rotation = getAnimatedValue(layer.transform?.rotation, 0);
+    const anchor = layer.transform?.anchor ?? { x: 0, y: 0 };
+    const opacity = getAnimatedValue(layer.opacity, 1);
+
+    // Default position is center of composition
+    const centerX = (store.width || 1920) / 2;
+    const centerY = (store.height || 1080) / 2;
+    const posX = position.x || centerX;
+    const posY = position.y || centerY;
+
+    if (!textObj) {
+      // Create new AnimatedText
+      textObj = new AnimatedText({
+        text: textData.text || 'Text',
+        fontFamily: textData.fontFamily || 'Arial',
+        fontSize: textData.fontSize || 48,
+        fontWeight: textData.fontWeight || '400',
+        fill: textData.fill || '#ffffff',
+        stroke: textData.stroke || '',
+        strokeWidth: textData.strokeWidth || 0,
+        letterSpacing: textData.letterSpacing || 0,
+        pathLayerId: textData.pathLayerId,
+        pathOffset: textData.pathOffset || 0,
+        selectable: !layer.locked
+      });
+      (textObj as any).layerId = layer.id;
+
+      textObjects.value.set(layer.id, textObj);
+      canvas.add(textObj as unknown as FabricObject);
+    } else {
+      // Update existing text object
+      if (textData.text !== textObj.textContent) {
+        textObj.setText(textData.text || 'Text');
+      }
+
+      // Update font if changed
+      if (textData.fontFamily !== textObj.fontFamily ||
+          textData.fontSize !== textObj.fontSize ||
+          textData.fontWeight !== textObj.fontWeight) {
+        textObj.setFont(
+          textData.fontFamily || 'Arial',
+          textData.fontSize || 48,
+          textData.fontWeight || '400'
+        );
+      }
+
+      // Update colors
+      if (textData.fill !== textObj.textFill) {
+        textObj.setFillColor(textData.fill || '#ffffff');
+      }
+
+      if (textData.stroke !== textObj.textStroke ||
+          textData.strokeWidth !== textObj.textStrokeWidth) {
+        textObj.setStroke(textData.stroke || '', textData.strokeWidth || 0);
+      }
+
+      // Update letter spacing
+      if (textData.letterSpacing !== textObj.letterSpacing) {
+        textObj.setLetterSpacing(textData.letterSpacing || 0);
+      }
+
+      // Update path binding
+      textObj.pathLayerId = textData.pathLayerId || null;
+      textObj.pathOffset = textData.pathOffset || 0;
+    }
+
+    // Apply transform and visibility (always update these)
+    textObj.set({
+      left: posX,
+      top: posY,
+      originX: 'center',
+      originY: 'center',
+      scaleX: scale.x,
+      scaleY: scale.y,
+      angle: rotation,
+      opacity: opacity,
+      visible: layer.visible,
+      selectable: !layer.locked
+    });
+
+    textObj.setCoords();
+  }
+
+  // Remove deleted text layers
+  const layerIds = new Set(textLayers.map(l => l.id));
+  for (const [id, obj] of textObjects.value) {
+    if (!layerIds.has(id)) {
+      canvas.remove(obj as unknown as FabricObject);
+      textObjects.value.delete(id);
     }
   }
 
@@ -815,6 +963,8 @@ defineExpose({
   zoom,
   particleSystems,
   depthflowRenderers,
+  textObjects,
+  splineObjects,
   getParticleCount,
   getTextPathPosition,
   pathAnimationStates
