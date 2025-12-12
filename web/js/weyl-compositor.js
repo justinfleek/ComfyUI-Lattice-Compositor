@@ -21828,7 +21828,7 @@ const h5 = { class: "zoom-controls" }, d5 = { class: "zoom-level" }, f5 = {
           ])) : Et("", !0)
         ])
       ]),
-      z[33] || (z[33] = Ci('<div class="column-headers" data-v-974e8539><div class="layer-columns-header" data-v-974e8539><span class="col-header col-label" title="Label Color" data-v-974e8539>L</span><span class="col-header col-av" title="Audio/Video" data-v-974e8539>AV</span><span class="col-header col-solo" title="Solo" data-v-974e8539>S</span><span class="col-header col-lock" title="Lock" data-v-974e8539>Lk</span><span class="col-header col-name" data-v-974e8539>Layer Name</span><span class="col-header col-parent" title="Parent &amp; Link" data-v-974e8539>Par</span><span class="col-header col-switches" title="Layer Switches" data-v-974e8539>Switches</span></div><div class="track-header" data-v-974e8539></div></div>', 1)),
+      z[33] || (z[33] = Ci('<div class="column-headers" data-v-50323020><div class="layer-columns-header" data-v-50323020><span class="col-header col-label" title="Label Color" data-v-50323020>Label</span><span class="col-header col-av" title="Visibility" data-v-50323020>👁</span><span class="col-header col-solo" title="Solo" data-v-50323020>⚡</span><span class="col-header col-lock" title="Lock" data-v-50323020>🔒</span><span class="col-header col-name" data-v-50323020>Layer Name</span><span class="col-header col-parent" title="Parent &amp; Link" data-v-50323020>Parent</span><span class="col-header col-switches" title="Layer Switches" data-v-50323020>Switches</span></div><div class="track-header" data-v-50323020></div></div>', 1)),
       d("div", {
         class: "timeline-content",
         ref_key: "timelineContentRef",
@@ -22010,7 +22010,7 @@ const h5 = { class: "zoom-controls" }, d5 = { class: "zoom-level" }, f5 = {
       ])) : Et("", !0)
     ]));
   }
-}), Nu = /* @__PURE__ */ Me(uO, [["__scopeId", "data-v-974e8539"]]), hO = { class: "graph-editor" }, dO = { class: "graph-header" }, fO = { class: "mode-toggle" }, pO = { class: "preset-buttons" }, gO = ["onClick", "title"], mO = { class: "toolbar" }, vO = { class: "graph-content" }, yO = { class: "property-list" }, bO = { class: "property-list-header" }, _O = ["title"], xO = ["onClick"], wO = ["onClick"], SO = { class: "property-name" }, CO = {
+}), Nu = /* @__PURE__ */ Me(uO, [["__scopeId", "data-v-50323020"]]), hO = { class: "graph-editor" }, dO = { class: "graph-header" }, fO = { class: "mode-toggle" }, pO = { class: "preset-buttons" }, gO = ["onClick", "title"], mO = { class: "toolbar" }, vO = { class: "graph-content" }, yO = { class: "property-list" }, bO = { class: "property-list-header" }, _O = ["title"], xO = ["onClick"], wO = ["onClick"], SO = { class: "property-name" }, CO = {
   key: 0,
   class: "keyframe-count"
 }, kO = {
@@ -22789,7 +22789,7 @@ const h5 = { class: "zoom-controls" }, d5 = { class: "zoom-level" }, f5 = {
 function Hi(i) {
   return i < 0 ? -fn(-i, 1 / 3) : fn(i, 1 / 3);
 }
-const gf = Math.PI, uo = 2 * gf, _s = gf / 2, QO = 1e-6, Za = Number.MAX_SAFE_INTEGER || 9007199254740991, Ja = Number.MIN_SAFE_INTEGER || -9007199254740991, t4 = { x: 0, y: 0, z: 0 }, Ft = {
+const gf = Math.PI, uo = 2 * gf, _s = gf / 2, QO = 1e-6, Za = Number.MAX_SAFE_INTEGER || 9007199254740991, Ja = Number.MIN_SAFE_INTEGER || -9007199254740991, tM = { x: 0, y: 0, z: 0 }, Ft = {
   // Legendre-Gauss abscissae with n=24 (x_i values, defined at i=n as the roots of the nth order Legendre polynomial Pn(x))
   Tvalues: [
     -0.06405689286260563,
@@ -22869,7 +22869,7 @@ const gf = Math.PI, uo = 2 * gf, _s = gf / 2, QO = 1e-6, Za = Number.MAX_SAFE_IN
     }
     if (s < 4) {
       let l = r * r, c = i * i, u, h, f, g = 0;
-      s === 2 ? (o = [o[0], o[1], o[2], t4], u = l, h = r * i * 2, f = c) : s === 3 && (u = l * r, h = l * i * 3, f = r * c * 3, g = i * c);
+      s === 2 ? (o = [o[0], o[1], o[2], tM], u = l, h = r * i * 2, f = c) : s === 3 && (u = l * r, h = l * i * 3, f = r * c * 3, g = i * c);
       const p = {
         x: u * o[0].x + h * o[1].x + f * o[2].x + g * o[3].x,
         y: u * o[0].y + h * o[1].y + f * o[2].y + g * o[3].y,
@@ -23241,7 +23241,7 @@ class ar {
     }), new ar(n);
   }
 }
-const { abs: Xi, min: Uu, max: Hu, cos: e4, sin: n4, acos: s4, sqrt: Gi } = Math, i4 = Math.PI;
+const { abs: Xi, min: Uu, max: Hu, cos: eM, sin: nM, acos: sM, sqrt: Gi } = Math, iM = Math.PI;
 let mf = class xe {
   constructor(e) {
     let n = e && e.forEach ? e : Array.from(arguments).slice(), s = !1;
@@ -23532,7 +23532,7 @@ let mf = class xe {
     }
     const e = this.normal(0), n = this.normal(1);
     let s = e.x * n.x + e.y * n.y;
-    return this._3d && (s += e.z * n.z), Xi(s4(s)) < i4 / 3;
+    return this._3d && (s += e.z * n.z), Xi(sM(s)) < iM / 3;
   }
   reduce() {
     let e, n = 0, s = 0, r = 0.01, o, a = [], l = [], c = this.extrema().values;
@@ -23700,8 +23700,8 @@ let mf = class xe {
           if (r >= 1) {
             if (u.interval.end = _ = 1, h = u, r > 1) {
               let m = {
-                x: u.x + u.r * e4(u.e),
-                y: u.y + u.r * n4(u.e)
+                x: u.x + u.r * eM(u.e),
+                y: u.y + u.r * nM(u.e)
               };
               u.e += Ft.angle({ x: u.x, y: u.y }, m, this.get(1));
             }
@@ -23718,11 +23718,11 @@ let mf = class xe {
     return n;
   }
 };
-const r4 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const rM = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   Bezier: mf
-}, Symbol.toStringTag, { value: "Module" })), Xu = r4;
-class o4 {
+}, Symbol.toStringTag, { value: "Module" })), Xu = rM;
+class oM {
   /**
    * @param curve - Bezier.js curve instance
    * @param resolution - Number of samples for LUT (higher = more accurate)
@@ -23797,7 +23797,7 @@ class o4 {
     return n;
   }
 }
-function a4(i) {
+function aM(i) {
   if (!i || i.length < 2)
     return null;
   let e = null;
@@ -23835,7 +23835,7 @@ function a4(i) {
   }
   return null;
 }
-class l4 {
+class lM {
   constructor() {
     Wt(this, "offscreenCanvas", null);
     Wt(this, "ctx", null);
@@ -23940,9 +23940,9 @@ class l4 {
     if (!(h != null && h.controlPoints) || h.controlPoints.length < 2) return;
     const f = this.buildPathCommands(h);
     if (!f || f.length < 2) return;
-    const g = a4(f);
+    const g = aM(f);
     if (!g) return;
-    const p = new o4(g), v = n.properties.find((b) => b.name === "pathOffset"), _ = v ? Os(v, o) : s.pathOffset, y = p.totalLength;
+    const p = new oM(g), v = n.properties.find((b) => b.name === "pathOffset"), _ = v ? Os(v, o) : s.pathOffset, y = p.totalLength;
     let m = _ * y;
     const w = 4 * Math.min(l, c);
     for (const b of s.text) {
@@ -24001,7 +24001,7 @@ class l4 {
    * Download frames as ZIP
    */
   async downloadAsZip(e, n = "matte_sequence", s) {
-    const r = (await Promise.resolve().then(() => MM)).default, o = new r();
+    const r = (await Promise.resolve().then(() => M4)).default, o = new r();
     e.forEach((u, h) => {
       const f = `${n}_${String(h).padStart(4, "0")}.png`;
       o.file(f, u);
@@ -24068,16 +24068,16 @@ class l4 {
     this.offscreenCanvas = null, this.ctx = null, this.particleSystems.clear();
   }
 }
-const Bs = new l4(), c4 = { class: "export-dialog" }, u4 = { class: "dialog-header" }, h4 = { class: "dialog-content" }, d4 = { class: "form-group" }, f4 = { class: "resolution-presets" }, p4 = ["onClick"], g4 = { class: "custom-resolution" }, m4 = { class: "dimension-input" }, v4 = { class: "dimension-input" }, y4 = {
+const Bs = new lM(), cM = { class: "export-dialog" }, uM = { class: "dialog-header" }, hM = { class: "dialog-content" }, dM = { class: "form-group" }, fM = { class: "resolution-presets" }, pM = ["onClick"], gM = { class: "custom-resolution" }, mM = { class: "dimension-input" }, vM = { class: "dimension-input" }, yM = {
   key: 0,
   class: "dimension-warning"
-}, b4 = { class: "form-group" }, _4 = { class: "matte-mode-options" }, x4 = { class: "form-group" }, w4 = { class: "preview-container" }, S4 = ["src"], C4 = {
+}, bM = { class: "form-group" }, _M = { class: "matte-mode-options" }, xM = { class: "form-group" }, wM = { class: "preview-container" }, SM = ["src"], CM = {
   key: 1,
   class: "preview-placeholder"
-}, k4 = {
+}, kM = {
   key: 0,
   class: "progress-section"
-}, T4 = { class: "progress-bar" }, O4 = { class: "progress-text" }, M4 = { class: "dialog-footer" }, E4 = { class: "export-info" }, P4 = ["disabled"], D4 = ["disabled"], A4 = /* @__PURE__ */ Ce({
+}, TM = { class: "progress-bar" }, OM = { class: "progress-text" }, MM = { class: "dialog-footer" }, EM = { class: "export-info" }, PM = ["disabled"], DM = ["disabled"], AM = /* @__PURE__ */ Ce({
   __name: "ExportDialog",
   emits: ["close", "exported"],
   setup(i, { emit: e }) {
@@ -24164,8 +24164,8 @@ const Bs = new l4(), c4 = { class: "export-dialog" }, u4 = { class: "dialog-head
       class: "export-dialog-overlay",
       onClick: x[6] || (x[6] = Xt((S) => n("close"), ["self"]))
     }, [
-      d("div", c4, [
-        d("div", u4, [
+      d("div", cM, [
+        d("div", uM, [
           x[8] || (x[8] = d("h3", null, "Export Matte Sequence", -1)),
           d("button", {
             class: "close-btn",
@@ -24174,18 +24174,18 @@ const Bs = new l4(), c4 = { class: "export-dialog" }, u4 = { class: "dialog-head
             d("i", { class: "pi pi-times" }, null, -1)
           ])])
         ]),
-        d("div", h4, [
-          d("div", d4, [
+        d("div", hM, [
+          d("div", dM, [
             x[13] || (x[13] = d("label", null, "Resolution", -1)),
-            d("div", f4, [
+            d("div", fM, [
               (H(!0), Z(Bt, null, Ht(Vt(r), (S) => (H(), Z("button", {
                 key: S.label,
                 class: Pt(["preset-btn", { active: o.value === S.label }]),
                 onClick: (E) => y(S)
-              }, ft(S.label), 11, p4))), 128))
+              }, ft(S.label), 11, pM))), 128))
             ]),
-            d("div", g4, [
-              d("div", m4, [
+            d("div", gM, [
+              d("div", mM, [
                 x[9] || (x[9] = d("label", null, "Width", -1)),
                 qt(d("input", {
                   "onUpdate:modelValue": x[1] || (x[1] = (S) => a.value = S),
@@ -24203,7 +24203,7 @@ const Bs = new l4(), c4 = { class: "export-dialog" }, u4 = { class: "dialog-head
                 ])
               ]),
               x[11] || (x[11] = d("span", { class: "dimension-x" }, "×", -1)),
-              d("div", v4, [
+              d("div", vM, [
                 x[10] || (x[10] = d("label", null, "Height", -1)),
                 qt(d("input", {
                   "onUpdate:modelValue": x[2] || (x[2] = (S) => l.value = S),
@@ -24221,14 +24221,14 @@ const Bs = new l4(), c4 = { class: "export-dialog" }, u4 = { class: "dialog-head
                 ])
               ])
             ]),
-            c.value ? (H(), Z("p", y4, [
+            c.value ? (H(), Z("p", yM, [
               x[12] || (x[12] = d("i", { class: "pi pi-info-circle" }, null, -1)),
               ne(" " + ft(c.value), 1)
             ])) : Et("", !0)
           ]),
-          d("div", b4, [
+          d("div", bM, [
             x[16] || (x[16] = d("label", null, "Matte Mode", -1)),
-            d("div", _4, [
+            d("div", _M, [
               d("button", {
                 class: Pt(["mode-btn", { active: u.value === "exclude_text" }]),
                 onClick: x[3] || (x[3] = (S) => u.value = "exclude_text")
@@ -24247,15 +24247,15 @@ const Bs = new l4(), c4 = { class: "export-dialog" }, u4 = { class: "dialog-head
               ])], 2)
             ])
           ]),
-          d("div", x4, [
+          d("div", xM, [
             x[18] || (x[18] = d("label", null, "Preview (Frame 0)", -1)),
-            d("div", w4, [
+            d("div", wM, [
               h.value ? (H(), Z("img", {
                 key: 0,
                 src: h.value,
                 alt: "Matte preview",
                 class: "preview-image"
-              }, null, 8, S4)) : (H(), Z("div", C4, [...x[17] || (x[17] = [
+              }, null, 8, SM)) : (H(), Z("div", CM, [...x[17] || (x[17] = [
                 d("i", { class: "pi pi-image" }, null, -1),
                 d("span", null, "Generating preview...", -1)
               ])]))
@@ -24266,25 +24266,25 @@ const Bs = new l4(), c4 = { class: "export-dialog" }, u4 = { class: "dialog-head
               ne(" Black = Exclude from generation ")
             ], -1))
           ]),
-          f.value ? (H(), Z("div", k4, [
-            d("div", T4, [
+          f.value ? (H(), Z("div", kM, [
+            d("div", TM, [
               d("div", {
                 class: "progress-fill",
                 style: ce({ width: `${g.value}%` })
               }, null, 4)
             ]),
-            d("p", O4, ft(p.value), 1)
+            d("p", OM, ft(p.value), 1)
           ])) : Et("", !0)
         ]),
-        d("div", M4, [
-          d("div", E4, [
+        d("div", MM, [
+          d("div", EM, [
             d("span", null, ft(Vt(s).frameCount) + " frames @ " + ft(v.value) + "×" + ft(_.value), 1)
           ]),
           d("button", {
             class: "cancel-btn",
             onClick: x[5] || (x[5] = (S) => n("close")),
             disabled: f.value
-          }, " Cancel ", 8, P4),
+          }, " Cancel ", 8, PM),
           d("button", {
             class: "export-btn",
             onClick: b,
@@ -24292,18 +24292,18 @@ const Bs = new l4(), c4 = { class: "export-dialog" }, u4 = { class: "dialog-head
           }, [
             x[20] || (x[20] = d("i", { class: "pi pi-download" }, null, -1)),
             ne(" " + ft(f.value ? "Exporting..." : "Export ZIP"), 1)
-          ], 8, D4)
+          ], 8, DM)
         ])
       ])
     ]));
   }
-}), F4 = /* @__PURE__ */ Me(A4, [["__scopeId", "data-v-34eee532"]]), I4 = { class: "workspace-layout" }, L4 = { class: "toolbar" }, R4 = { class: "tool-group" }, z4 = { class: "tool-group" }, j4 = ["title"], B4 = { class: "icon" }, V4 = { class: "timecode-display" }, $4 = { class: "tool-group" }, W4 = { class: "tool-group" }, N4 = ["disabled"], U4 = ["disabled"], H4 = { class: "workspace-content" }, X4 = { class: "panel left-panel" }, G4 = { class: "panel-tabs" }, Y4 = { class: "panel-content" }, K4 = { class: "panel viewport-panel" }, q4 = { class: "viewport-header" }, Z4 = { class: "viewport-tabs" }, J4 = { class: "viewport-controls" }, Q4 = { class: "viewport-content" }, tM = { class: "panel timeline-panel" }, eM = { class: "panel graph-editor-panel" }, nM = {
+}), FM = /* @__PURE__ */ Me(AM, [["__scopeId", "data-v-34eee532"]]), IM = { class: "workspace-layout" }, LM = { class: "toolbar" }, RM = { class: "tool-group" }, zM = { class: "tool-group" }, jM = ["title"], BM = { class: "icon" }, VM = { class: "timecode-display" }, $M = { class: "tool-group" }, WM = { class: "tool-group" }, NM = ["disabled"], UM = ["disabled"], HM = { class: "workspace-content" }, XM = { class: "panel left-panel" }, GM = { class: "panel-tabs" }, YM = { class: "panel-content" }, KM = { class: "panel viewport-panel" }, qM = { class: "viewport-header" }, ZM = { class: "viewport-tabs" }, JM = { class: "viewport-controls" }, QM = { class: "viewport-content" }, t4 = { class: "panel timeline-panel" }, e4 = { class: "panel graph-editor-panel" }, n4 = {
   key: 1,
   class: "panel timeline-panel"
-}, sM = { class: "panel right-panel" }, iM = { class: "panel-tabs" }, rM = { class: "panel-content" }, oM = { class: "status-bar" }, aM = { class: "status-left" }, lM = { class: "status-item" }, cM = { class: "status-item" }, uM = { class: "status-center" }, hM = {
+}, s4 = { class: "panel right-panel" }, i4 = { class: "panel-tabs" }, r4 = { class: "panel-content" }, o4 = { class: "status-bar" }, a4 = { class: "status-left" }, l4 = { class: "status-item" }, c4 = { class: "status-item" }, u4 = { class: "status-center" }, h4 = {
   key: 0,
   class: "render-progress"
-}, dM = { class: "status-right" }, fM = { class: "status-item" }, pM = { class: "status-item" }, gM = /* @__PURE__ */ Ce({
+}, d4 = { class: "status-right" }, f4 = { class: "status-item" }, p4 = { class: "status-item" }, g4 = /* @__PURE__ */ Ce({
   __name: "WorkspaceLayout",
   setup(i) {
     const e = He(), n = Mt({
@@ -24414,9 +24414,9 @@ const Bs = new l4(), c4 = { class: "export-dialog" }, u4 = { class: "dialog-head
       p.value = xt.tier, window.addEventListener("keydown", St), tt = window.setInterval(K, 1e3);
     }), Dn(() => {
       window.removeEventListener("keydown", St), clearInterval(tt);
-    }), (xt, q) => (H(), Z("div", I4, [
-      d("div", L4, [
-        d("div", R4, [
+    }), (xt, q) => (H(), Z("div", IM, [
+      d("div", LM, [
+        d("div", RM, [
           d("button", {
             class: Pt({ active: n.value === "select" }),
             onClick: q[0] || (q[0] = (vt) => n.value = "select"),
@@ -24454,7 +24454,7 @@ const Bs = new l4(), c4 = { class: "export-dialog" }, u4 = { class: "dialog-head
           ])], 2)
         ]),
         q[33] || (q[33] = d("div", { class: "divider" }, null, -1)),
-        d("div", z4, [
+        d("div", zM, [
           d("button", {
             onClick: F,
             title: "Go to Start (Home)"
@@ -24471,8 +24471,8 @@ const Bs = new l4(), c4 = { class: "export-dialog" }, u4 = { class: "dialog-head
             onClick: ht,
             title: g.value ? "Pause (Space)" : "Play (Space)"
           }, [
-            d("span", B4, ft(g.value ? "⏸" : "▶"), 1)
-          ], 8, j4),
+            d("span", BM, ft(g.value ? "⏸" : "▶"), 1)
+          ], 8, jM),
           d("button", {
             onClick: C,
             title: "Step Forward"
@@ -24486,9 +24486,9 @@ const Bs = new l4(), c4 = { class: "export-dialog" }, u4 = { class: "dialog-head
             d("span", { class: "icon" }, "⏭", -1)
           ])])
         ]),
-        d("div", V4, ft(E.value), 1),
+        d("div", VM, ft(E.value), 1),
         q[34] || (q[34] = d("div", { class: "divider" }, null, -1)),
-        d("div", $4, [
+        d("div", $M, [
           qt(d("select", {
             "onUpdate:modelValue": q[5] || (q[5] = (vt) => s.value = vt),
             class: "workspace-selector"
@@ -24502,7 +24502,7 @@ const Bs = new l4(), c4 = { class: "export-dialog" }, u4 = { class: "dialog-head
           ])
         ]),
         q[35] || (q[35] = d("div", { class: "spacer" }, null, -1)),
-        d("div", W4, [
+        d("div", WM, [
           d("span", {
             class: Pt(["gpu-badge", p.value])
           }, ft(p.value.toUpperCase()), 3),
@@ -24512,14 +24512,14 @@ const Bs = new l4(), c4 = { class: "export-dialog" }, u4 = { class: "dialog-head
             title: "Undo (Ctrl+Z)"
           }, [...q[30] || (q[30] = [
             d("span", { class: "icon" }, "↩", -1)
-          ])], 8, N4),
+          ])], 8, NM),
           d("button", {
             onClick: R,
             disabled: !ut.value,
             title: "Redo (Ctrl+Shift+Z)"
           }, [...q[31] || (q[31] = [
             d("span", { class: "icon" }, "↪", -1)
-          ])], 8, U4),
+          ])], 8, UM),
           d("button", {
             onClick: q[6] || (q[6] = (vt) => f.value = !0),
             title: "Export"
@@ -24529,7 +24529,7 @@ const Bs = new l4(), c4 = { class: "export-dialog" }, u4 = { class: "dialog-head
           ])])
         ])
       ]),
-      d("div", H4, [
+      d("div", HM, [
         jt(Vt(Ia), { class: "default-theme horizontal-split" }, {
           default: bn(() => [
             jt(Vt(js), {
@@ -24538,8 +24538,8 @@ const Bs = new l4(), c4 = { class: "export-dialog" }, u4 = { class: "dialog-head
               "max-size": 25
             }, {
               default: bn(() => [
-                d("div", X4, [
-                  d("div", G4, [
+                d("div", XM, [
+                  d("div", GM, [
                     d("button", {
                       class: Pt({ active: r.value === "project" }),
                       onClick: q[7] || (q[7] = (vt) => r.value = "project")
@@ -24549,7 +24549,7 @@ const Bs = new l4(), c4 = { class: "export-dialog" }, u4 = { class: "dialog-head
                       onClick: q[8] || (q[8] = (vt) => r.value = "effects")
                     }, " Effects ", 2)
                   ]),
-                  d("div", Y4, [
+                  d("div", YM, [
                     r.value === "project" ? (H(), ve(sv, { key: 0 })) : r.value === "effects" ? (H(), ve(Rv, { key: 1 })) : Et("", !0)
                   ])
                 ])
@@ -24571,9 +24571,9 @@ const Bs = new l4(), c4 = { class: "export-dialog" }, u4 = { class: "dialog-head
                       "min-size": 20
                     }, {
                       default: bn(() => [
-                        d("div", K4, [
-                          d("div", q4, [
-                            d("div", Z4, [
+                        d("div", KM, [
+                          d("div", qM, [
+                            d("div", ZM, [
                               d("button", {
                                 class: Pt({ active: a.value === "composition" }),
                                 onClick: q[9] || (q[9] = (vt) => a.value = "composition")
@@ -24587,7 +24587,7 @@ const Bs = new l4(), c4 = { class: "export-dialog" }, u4 = { class: "dialog-head
                                 onClick: q[11] || (q[11] = (vt) => a.value = "footage")
                               }, " Footage ", 2)
                             ]),
-                            d("div", J4, [
+                            d("div", JM, [
                               qt(d("select", {
                                 "onUpdate:modelValue": q[12] || (q[12] = (vt) => l.value = vt),
                                 class: "zoom-select"
@@ -24616,7 +24616,7 @@ const Bs = new l4(), c4 = { class: "export-dialog" }, u4 = { class: "dialog-head
                               ])], 2)
                             ])
                           ]),
-                          d("div", Q4, [
+                          d("div", QM, [
                             a.value === "composition" ? (H(), ve(qC, {
                               key: 0,
                               camera: _.value,
@@ -24650,7 +24650,7 @@ const Bs = new l4(), c4 = { class: "export-dialog" }, u4 = { class: "dialog-head
                               "min-size": 20
                             }, {
                               default: bn(() => [
-                                d("div", tM, [
+                                d("div", t4, [
                                   jt(Nu)
                                 ])
                               ]),
@@ -24661,7 +24661,7 @@ const Bs = new l4(), c4 = { class: "export-dialog" }, u4 = { class: "dialog-head
                               "min-size": 20
                             }, {
                               default: bn(() => [
-                                d("div", eM, [
+                                d("div", e4, [
                                   jt(ZO, {
                                     onClose: q[15] || (q[15] = (vt) => h.value = !1)
                                   })
@@ -24671,7 +24671,7 @@ const Bs = new l4(), c4 = { class: "export-dialog" }, u4 = { class: "dialog-head
                             })
                           ]),
                           _: 1
-                        })) : (H(), Z("div", nM, [
+                        })) : (H(), Z("div", n4, [
                           jt(Nu)
                         ]))
                       ]),
@@ -24689,8 +24689,8 @@ const Bs = new l4(), c4 = { class: "export-dialog" }, u4 = { class: "dialog-head
               "max-size": 30
             }, {
               default: bn(() => [
-                d("div", sM, [
-                  d("div", iM, [
+                d("div", s4, [
+                  d("div", i4, [
                     d("button", {
                       class: Pt({ active: o.value === "properties" }),
                       onClick: q[16] || (q[16] = (vt) => o.value = "properties")
@@ -24704,7 +24704,7 @@ const Bs = new l4(), c4 = { class: "export-dialog" }, u4 = { class: "dialog-head
                       onClick: q[18] || (q[18] = (vt) => o.value = "audio")
                     }, " Audio ", 2)
                   ]),
-                  d("div", rM, [
+                  d("div", r4, [
                     o.value === "properties" ? (H(), ve(kw, { key: 0 })) : o.value === "camera" ? (H(), ve(WS, {
                       key: 1,
                       camera: _.value,
@@ -24719,32 +24719,32 @@ const Bs = new l4(), c4 = { class: "export-dialog" }, u4 = { class: "dialog-head
           _: 1
         })
       ]),
-      d("div", oM, [
-        d("div", aM, [
-          d("span", lM, ft(A.value), 1),
+      d("div", o4, [
+        d("div", a4, [
+          d("span", l4, ft(A.value), 1),
           q[39] || (q[39] = d("span", { class: "status-divider" }, "|", -1)),
-          d("span", cM, ft(j.value), 1)
+          d("span", c4, ft(j.value), 1)
         ]),
-        d("div", uM, [
-          S.value > 0 ? (H(), Z("span", hM, " Rendering: " + ft(Math.round(S.value * 100)) + "% ", 1)) : Et("", !0)
+        d("div", u4, [
+          S.value > 0 ? (H(), Z("span", h4, " Rendering: " + ft(Math.round(S.value * 100)) + "% ", 1)) : Et("", !0)
         ]),
-        d("div", dM, [
-          d("span", fM, ft(x.value), 1),
+        d("div", d4, [
+          d("span", f4, ft(x.value), 1),
           q[40] || (q[40] = d("span", { class: "status-divider" }, "|", -1)),
-          d("span", pM, ft(k.value) + " fps", 1)
+          d("span", p4, ft(k.value) + " fps", 1)
         ])
       ]),
-      f.value ? (H(), ve(F4, {
+      f.value ? (H(), ve(FM, {
         key: 0,
         onClose: q[19] || (q[19] = (vt) => f.value = !1),
         onExported: ct
       })) : Et("", !0)
     ]));
   }
-}), mM = /* @__PURE__ */ Me(gM, [["__scopeId", "data-v-a7b6388b"]]), vM = /* @__PURE__ */ Ce({
+}), m4 = /* @__PURE__ */ Me(g4, [["__scopeId", "data-v-a7b6388b"]]), v4 = /* @__PURE__ */ Ce({
   __name: "App",
   setup(i) {
-    return (e, n) => (H(), ve(mM));
+    return (e, n) => (H(), ve(m4));
   }
 }), vf = [
   512,
@@ -25266,11 +25266,11 @@ function bf(i) {
     n.next = { r: 0, g: 0, b: 0, a: 0, next: null }, n = n.next;
   return n.next = e, e;
 }
-function yM(i, e, n) {
+function y4(i, e, n) {
   const s = i.data, r = i.width, o = i.height;
-  e = Math.max(0, Math.min(255, Math.round(e))), n = Math.max(0, Math.min(255, Math.round(n))), !(e === 0 && n === 0) && (e > 0 && bM(s, r, o, e), n > 0 && _M(s, r, o, n));
+  e = Math.max(0, Math.min(255, Math.round(e))), n = Math.max(0, Math.min(255, Math.round(n))), !(e === 0 && n === 0) && (e > 0 && b4(s, r, o, e), n > 0 && _4(s, r, o, n));
 }
-function bM(i, e, n, s) {
+function b4(i, e, n, s) {
   const r = s + s + 1, o = e - 1, a = vf[s], l = yf[s], c = bf(r);
   for (let u = 0; u < n; u++) {
     let h = 0, f = 0, g = 0, p = 0, v = 0, _ = 0, y = 0, m = 0, w = 0, b = 0, k = 0, x = 0;
@@ -25300,7 +25300,7 @@ function bM(i, e, n, s) {
     }
   }
 }
-function _M(i, e, n, s) {
+function _4(i, e, n, s) {
   const r = s + s + 1, o = n - 1, a = vf[s], l = yf[s], c = bf(r);
   for (let u = 0; u < e; u++) {
     let h = 0, f = 0, g = 0, p = 0, v = 0, _ = 0, y = 0, m = 0, w = 0, b = 0, k = 0, x = 0, S = c, E = c;
@@ -25328,7 +25328,7 @@ function _M(i, e, n, s) {
     }
   }
 }
-function xM(i, e) {
+function x4(i, e) {
   const n = e.blurriness ?? 10, s = e.blur_dimensions ?? "both";
   if (n <= 0)
     return i;
@@ -25346,28 +25346,28 @@ function xM(i, e) {
       a = n, l = n;
       break;
   }
-  return yM(o, a, l), r.ctx.putImageData(o, 0, 0), r;
+  return y4(o, a, l), r.ctx.putImageData(o, 0, 0), r;
 }
-function wM() {
-  o5("gaussian-blur", xM);
+function w4() {
+  o5("gaussian-blur", x4);
 }
-function SM() {
-  wM();
+function S4() {
+  w4();
 }
 let _f = null;
 function Gu(i) {
   let e = null;
   if (typeof i == "string" ? e = document.getElementById(i) || document.querySelector(i) : i instanceof HTMLElement ? e = i : e = document.getElementById("weyl-compositor-root") || document.getElementById("app"), !e) return null;
-  SM();
-  const n = Qg(vM);
-  return n.use(nm()), n.mount(e), _f = n, CM(), n;
+  S4();
+  const n = Qg(v4);
+  return n.use(nm()), n.mount(e), _f = n, C4(), n;
 }
-function CM() {
+function C4() {
   window.addEventListener("weyl:inputs-ready", (i) => {
     window.dispatchEvent(new CustomEvent("weyl:load-project-inputs", { detail: i.detail }));
   });
 }
-async function PM(i, e) {
+async function P4(i, e) {
   var n, s;
   return ((s = (n = window.WeylCompositor) == null ? void 0 : n.sendOutput) == null ? void 0 : s.call(n, i, e)) ?? !1;
 }
@@ -25375,7 +25375,7 @@ document.readyState === "loading" ? document.addEventListener("DOMContentLoaded"
   _f || Gu();
 }, 0);
 var ho = typeof globalThis < "u" ? globalThis : typeof window < "u" ? window : typeof global < "u" ? global : typeof self < "u" ? self : {};
-function kM(i) {
+function k4(i) {
   return i && i.__esModule && Object.prototype.hasOwnProperty.call(i, "default") ? i.default : i;
 }
 function fo(i) {
@@ -27694,12 +27694,12 @@ var xf = { exports: {} };
     }, {}] }, {}, [10])(10);
   });
 })(xf);
-var TM = xf.exports;
-const OM = /* @__PURE__ */ kM(TM), MM = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+var T4 = xf.exports;
+const O4 = /* @__PURE__ */ k4(T4), M4 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  default: OM
+  default: O4
 }, Symbol.toStringTag, { value: "Module" }));
 export {
   Gu as mountApp,
-  PM as sendToComfyUI
+  P4 as sendToComfyUI
 };

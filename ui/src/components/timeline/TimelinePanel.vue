@@ -70,12 +70,12 @@
     <!-- Column headers -->
     <div class="column-headers">
       <div class="layer-columns-header">
-        <span class="col-header col-label" title="Label Color">L</span>
-        <span class="col-header col-av" title="Audio/Video">AV</span>
-        <span class="col-header col-solo" title="Solo">S</span>
-        <span class="col-header col-lock" title="Lock">Lk</span>
+        <span class="col-header col-label" title="Label Color">Label</span>
+        <span class="col-header col-av" title="Visibility">👁</span>
+        <span class="col-header col-solo" title="Solo">⚡</span>
+        <span class="col-header col-lock" title="Lock">🔒</span>
         <span class="col-header col-name">Layer Name</span>
-        <span class="col-header col-parent" title="Parent & Link">Par</span>
+        <span class="col-header col-parent" title="Parent & Link">Parent</span>
         <span class="col-header col-switches" title="Layer Switches">Switches</span>
       </div>
       <div class="track-header">
@@ -889,12 +889,12 @@ watch(() => store.frameCount, (newCount) => {
   justify-content: center;
 }
 
-.col-label { width: 14px; }
-.col-av { width: 18px; }
-.col-solo { width: 14px; }
-.col-lock { width: 14px; }
+.col-label { width: 32px; }
+.col-av { width: 20px; }
+.col-solo { width: 20px; }
+.col-lock { width: 20px; }
 .col-name { flex: 1; text-align: left; padding-left: 4px; }
-.col-parent { width: 30px; }
+.col-parent { width: 42px; }
 .col-switches { width: 60px; }
 
 .track-header {
