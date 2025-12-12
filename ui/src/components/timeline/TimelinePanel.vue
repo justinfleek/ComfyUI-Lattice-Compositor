@@ -123,6 +123,17 @@
           >
             <span v-if="mark.major" class="mark-label">{{ formatTimecode(mark.frame) }}</span>
           </div>
+
+          <!-- Playhead (inside ruler-track for correct positioning) -->
+          <div
+            class="playhead-in-ruler"
+            :style="{ left: `${playheadPercent}%` }"
+          >
+            <div
+              class="playhead-head"
+              @mousedown.stop="startPlayheadDrag"
+            />
+          </div>
         </div>
       </div>
 
@@ -154,14 +165,6 @@
         </div>
       </div>
 
-      <!-- Playhead -->
-      <div
-        class="playhead"
-        :style="{ left: `${trackOffset + playheadPosition}px` }"
-      >
-        <div class="playhead-head" />
-        <div class="playhead-line" />
-      </div>
     </div>
 
     <!-- Timeline scrubber / mini-timeline -->
@@ -249,9 +252,9 @@ const rulerTrackRef = ref<HTMLDivElement | null>(null);
 const layerTracksRef = ref<HTMLDivElement | null>(null);
 const showAddLayerMenu = ref(false);
 
-// Track dimensions
-const trackOffset = 220; // Width of layer info sidebar (increased for switches)
+// Track dimensions - dynamically calculated
 const trackWidth = ref(0);
+const dynamicTrackOffset = ref(220); // Will be calculated from actual DOM
 
 // Search filter
 const searchFilter = ref('');
@@ -298,6 +301,10 @@ const filteredLayers = computed(() => {
 
 const playheadPosition = computed(() => {
   return (store.currentFrame / store.frameCount) * trackWidth.value;
+});
+
+const playheadPercent = computed(() => {
+  return (store.currentFrame / store.frameCount) * 100;
 });
 
 const scrubProgress = computed(() => {
@@ -352,6 +359,14 @@ function formatTimecode(frame: number): string {
 function updateTrackWidth() {
   if (rulerTrackRef.value) {
     trackWidth.value = rulerTrackRef.value.offsetWidth;
+
+    // Calculate the real offset from the timeline content to the ruler track
+    if (timelineContentRef.value) {
+      const contentRect = timelineContentRef.value.getBoundingClientRect();
+      const rulerRect = rulerTrackRef.value.getBoundingClientRect();
+      dynamicTrackOffset.value = rulerRect.left - contentRect.left;
+      console.log('[TimelinePanel] dynamicTrackOffset calculated:', dynamicTrackOffset.value, 'trackWidth:', trackWidth.value);
+    }
   }
 }
 
@@ -575,9 +590,11 @@ function startRulerScrub(event: MouseEvent) {
   // Don't start scrub if clicking on work area handles
   const target = event.target as HTMLElement;
   if (target.classList.contains('work-area-handle') || target.classList.contains('work-area')) {
+    console.log('[TimelinePanel] startRulerScrub: clicked on work area, ignoring');
     return;
   }
 
+  console.log('[TimelinePanel] startRulerScrub: starting scrub');
   isRulerScrubbing = true;
   rulerScrubClick(event);
   document.addEventListener('mousemove', handleRulerScrub);
@@ -591,6 +608,7 @@ function rulerScrubClick(event: MouseEvent) {
   const x = event.clientX - rect.left;
   const progress = Math.max(0, Math.min(1, x / rect.width));
   const frame = Math.round(progress * (store.frameCount - 1));
+  console.log('[TimelinePanel] rulerScrubClick: setting frame to', frame);
   store.setFrame(frame);
 }
 
@@ -608,6 +626,33 @@ function stopRulerScrub() {
   isRulerScrubbing = false;
   document.removeEventListener('mousemove', handleRulerScrub);
   document.removeEventListener('mouseup', stopRulerScrub);
+}
+
+// Playhead dragging
+let isPlayheadDragging = false;
+
+function startPlayheadDrag(event: MouseEvent) {
+  isPlayheadDragging = true;
+  document.addEventListener('mousemove', handlePlayheadDrag);
+  document.addEventListener('mouseup', stopPlayheadDrag);
+  // Prevent text selection while dragging
+  event.preventDefault();
+}
+
+function handlePlayheadDrag(event: MouseEvent) {
+  if (!isPlayheadDragging || !rulerTrackRef.value) return;
+
+  const rect = rulerTrackRef.value.getBoundingClientRect();
+  const x = event.clientX - rect.left;
+  const progress = Math.max(0, Math.min(1, x / rect.width));
+  const frame = Math.round(progress * (store.frameCount - 1));
+  store.setFrame(frame);
+}
+
+function stopPlayheadDrag() {
+  isPlayheadDragging = false;
+  document.removeEventListener('mousemove', handlePlayheadDrag);
+  document.removeEventListener('mouseup', stopPlayheadDrag);
 }
 
 function scrubClick(event: MouseEvent) {
@@ -1040,6 +1085,8 @@ watch(() => store.frameCount, (newCount) => {
   height: 10px;
   background: #ff4444;
   clip-path: polygon(0 0, 100% 0, 50% 100%);
+  pointer-events: auto;
+  cursor: ew-resize;
 }
 
 .playhead-line {
@@ -1230,5 +1277,36 @@ watch(() => store.frameCount, (newCount) => {
 .icon {
   font-family: monospace;
   font-weight: bold;
+}
+
+.playhead-in-ruler {
+  position: absolute;
+  top: 0;
+  bottom: -1000px; /* Extend down through layer tracks */
+  width: 1px;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.playhead-in-ruler .playhead-head {
+  position: absolute;
+  top: 0;
+  left: -5px;
+  width: 10px;
+  height: 10px;
+  background: #ff4444;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  pointer-events: auto;
+  cursor: ew-resize;
+}
+
+.playhead-in-ruler::after {
+  content: '';
+  position: absolute;
+  top: 10px;
+  left: 0;
+  width: 1px;
+  height: 100%;
+  background: #ff4444;
 }
 </style>

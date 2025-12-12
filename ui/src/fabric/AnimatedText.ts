@@ -80,6 +80,12 @@ export class AnimatedText extends Group {
     this.removeAll();
     this._letterObjects = [];
 
+    console.log('[AnimatedText] Creating letters for text:', this.textContent, 'fontSize:', this.fontSize, 'fill:', this.textFill);
+
+    // Create a temporary canvas for measuring text dimensions
+    const measureCanvas = document.createElement('canvas');
+    const measureCtx = measureCanvas.getContext('2d');
+
     for (const char of this.textContent) {
       const letter = new FabricText(char, {
         fontFamily: this.fontFamily,
@@ -94,8 +100,17 @@ export class AnimatedText extends Group {
         evented: false
       });
 
-      letter.initDimensions();
-      letter.setCoords();
+      // Measure text width using temp canvas if letter.width is 0
+      let letterWidth = letter.width;
+      if ((!letterWidth || letterWidth === 0) && measureCtx) {
+        measureCtx.font = `${this.fontWeight} ${this.fontSize}px ${this.fontFamily}`;
+        const metrics = measureCtx.measureText(char);
+        letterWidth = metrics.width;
+        // Set the width on the letter object
+        letter.set({ width: letterWidth });
+      }
+
+      console.log('[AnimatedText] Letter:', char, 'width:', letterWidth, 'height:', letter.height || this.fontSize);
       this._letterObjects.push(letter);
       this.add(letter);
     }
@@ -107,23 +122,57 @@ export class AnimatedText extends Group {
    * Layout letters horizontally and update group bounds
    */
   private _layoutLettersHorizontal(): void {
+    // Create a temporary canvas for measuring if needed
+    const measureCanvas = document.createElement('canvas');
+    const measureCtx = measureCanvas.getContext('2d');
+    if (measureCtx) {
+      measureCtx.font = `${this.fontWeight} ${this.fontSize}px ${this.fontFamily}`;
+    }
+
+    // First pass: calculate total width
+    let totalWidth = 0;
+    for (const letter of this._letterObjects) {
+      let letterWidth = letter.width;
+      if (!letterWidth || letterWidth === 0) {
+        if (measureCtx) {
+          const metrics = measureCtx.measureText(letter.text || ' ');
+          letterWidth = metrics.width;
+          letter.set({ width: letterWidth });
+        } else {
+          letterWidth = this.fontSize * 0.6;
+        }
+      }
+      totalWidth += letterWidth + this.letterSpacing;
+    }
+    totalWidth -= this.letterSpacing; // Remove trailing spacing
+
+    // Second pass: position letters centered in group
+    const startX = -totalWidth / 2;
     let x = 0;
 
     for (const letter of this._letterObjects) {
       const letterWidth = letter.width || (this.fontSize * 0.6);
       letter.set({
-        left: x + letterWidth / 2,
-        top: this.fontSize / 2,
+        left: startX + x + letterWidth / 2,
+        top: 0,
         angle: 0
       });
       x += letterWidth + this.letterSpacing;
     }
 
-    // Update group dimensions
-    const totalWidth = x || 100;
-    const totalHeight = this.fontSize * 1.2;
-    this.set({ width: totalWidth, height: totalHeight });
+    // Update group dimensions - add padding to prevent clipping
+    const groupWidth = Math.max(totalWidth, 10);
+    const groupHeight = this.fontSize * 1.5; // Extra height for descenders
+
+    this.set({
+      width: groupWidth,
+      height: groupHeight,
+      // Disable clipping
+      clipPath: undefined
+    });
     this.setCoords();
+
+    console.log('[AnimatedText] Layout complete. Group width:', groupWidth, 'height:', groupHeight, 'letterCount:', this._letterObjects.length, 'totalTextWidth:', totalWidth);
   }
 
   /**

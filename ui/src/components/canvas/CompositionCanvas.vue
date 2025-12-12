@@ -883,6 +883,7 @@ function renderTextLayers() {
 
     if (!textObj) {
       // Create new AnimatedText
+      console.log('[CompositionCanvas] Creating new AnimatedText for layer:', layer.id, 'text:', textData.text, 'fill:', textData.fill);
       textObj = new AnimatedText({
         text: textData.text || 'Text',
         fontFamily: textData.fontFamily || 'Arial',
@@ -903,6 +904,7 @@ function renderTextLayers() {
       // Force re-layout now that object is on canvas
       textObj.setText(textObj.textContent);
       canvas.bringObjectToFront(textObj as unknown as FabricObject);
+      console.log('[CompositionCanvas] AnimatedText added at position:', posX, posY, 'width:', textObj.width, 'height:', textObj.height);
     } else {
       // Update existing text object
       if (textData.text !== textObj.textContent) {
@@ -955,6 +957,7 @@ function renderTextLayers() {
     });
 
     textObj.setCoords();
+    console.log('[CompositionCanvas] Text transform applied:', { left: posX, top: posY, visible: layer.visible, opacity, scale, width: textObj.width, height: textObj.height });
   }
 
   // Remove deleted text layers

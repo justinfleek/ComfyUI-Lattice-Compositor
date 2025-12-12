@@ -638,8 +638,12 @@ export const useCompositorStore = defineStore('compositor', {
       propertyName: string,
       value: T
     ): Keyframe<T> | null {
+      console.log('[Store] addKeyframe called:', { layerId, propertyName, value, frame: this.project.currentFrame });
       const layer = this.project.layers.find(l => l.id === layerId);
-      if (!layer) return null;
+      if (!layer) {
+        console.log('[Store] addKeyframe: layer not found');
+        return null;
+      }
 
       // Find the property
       let property: AnimatableProperty<T> | undefined;
@@ -658,7 +662,10 @@ export const useCompositorStore = defineStore('compositor', {
         property = layer.properties.find(p => p.name === propertyName) as AnimatableProperty<T> | undefined;
       }
 
-      if (!property) return null;
+      if (!property) {
+        console.log('[Store] addKeyframe: property not found:', propertyName);
+        return null;
+      }
 
       // Enable animation
       property.animated = true;
@@ -678,9 +685,11 @@ export const useCompositorStore = defineStore('compositor', {
       const existingIndex = property.keyframes.findIndex(k => k.frame === this.project.currentFrame);
       if (existingIndex >= 0) {
         property.keyframes[existingIndex] = keyframe;
+        console.log('[Store] addKeyframe: replaced existing keyframe at frame', this.project.currentFrame);
       } else {
         property.keyframes.push(keyframe);
         property.keyframes.sort((a, b) => a.frame - b.frame);
+        console.log('[Store] addKeyframe: added new keyframe at frame', this.project.currentFrame, 'total keyframes:', property.keyframes.length);
       }
 
       this.project.meta.modified = new Date().toISOString();

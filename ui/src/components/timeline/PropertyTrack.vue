@@ -86,10 +86,15 @@ function toggleKeyframe() {
   const frame = currentFrame.value;
   const existingKf = props.property.keyframes?.find(kf => kf.frame === frame);
 
+  console.log('[PropertyTrack] toggleKeyframe called for layer:', props.layerId, 'property:', props.propertyPath, 'frame:', frame, 'existing:', existingKf?.id);
+
   if (existingKf) {
+    console.log('[PropertyTrack] Removing keyframe:', existingKf.id);
     store.removeKeyframe(props.layerId, props.propertyPath, existingKf.id);
   } else {
-    store.addKeyframe(props.layerId, props.propertyPath, frame, props.property.value);
+    // Note: store.addKeyframe uses store.currentFrame internally, so we don't pass frame
+    console.log('[PropertyTrack] Adding keyframe at frame', frame, 'with value:', props.property.value);
+    store.addKeyframe(props.layerId, props.propertyPath, props.property.value);
   }
 }
 </script>
