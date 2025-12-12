@@ -64,6 +64,7 @@ import type { SplineData, ControlPoint, ParticleLayerData, DepthflowLayerData, T
 import { ParticleSystem } from '@/services/particleSystem';
 import { DepthflowRenderer } from '@/services/depthflow';
 import type { PathAnimatorState } from '@/services/audioPathAnimator';
+import { processEffectStack, hasEnabledEffects } from '@/services/effectProcessor';
 
 // Store
 const store = useCompositorStore();
@@ -97,6 +98,9 @@ const animationFrameId = ref<number | null>(null);
 
 // Path animation state cache (for text-on-path with audio)
 const pathAnimationStates = ref<Map<string, PathAnimatorState>>(new Map());
+
+// Effect processing canvases (one per layer that has effects)
+const effectCanvases = ref<Map<string, HTMLCanvasElement>>(new Map());
 
 // Computed
 const hasDepthMap = computed(() => store.depthMap !== null);
@@ -866,6 +870,9 @@ function startRenderLoop() {
       updateParticleSystems();
     }
 
+    // Apply effects to layers
+    applyLayerEffects();
+
     // Render particles on top of fabric canvas
     renderParticles();
 
@@ -1075,6 +1082,101 @@ function getTextPathPosition(layerId: string): { x: number; y: number; angle: nu
   };
 }
 
+// ============================================================
+// EFFECT PROCESSING FUNCTIONS
+// ============================================================
+
+/**
+ * Apply effects to all layers that have enabled effects.
+ * This is called each frame during the render loop.
+ *
+ * The approach:
+ * 1. For each layer with effects, render it to an offscreen canvas
+ * 2. Process the effect stack
+ * 3. Replace the fabric object's source with the processed result
+ */
+function applyLayerEffects() {
+  const canvas = fabricCanvas.value;
+  if (!canvas) return;
+
+  const currentFrame = store.currentFrame;
+
+  // Process layers with effects
+  for (const layer of store.layers) {
+    if (!layer.visible || !layer.effects || !hasEnabledEffects(layer.effects)) {
+      continue;
+    }
+
+    // Get the fabric object for this layer
+    let fabricObj: FabricObject | null = null;
+
+    if (layer.type === 'spline') {
+      fabricObj = splineObjects.value.get(layer.id) as unknown as FabricObject;
+    } else if (layer.type === 'text') {
+      fabricObj = textObjects.value.get(layer.id) as unknown as FabricObject;
+    }
+    // TODO: Add support for image layers, depth layers, etc.
+
+    if (!fabricObj) continue;
+
+    // Render the object to an offscreen canvas
+    const objectCanvas = renderObjectToCanvas(fabricObj);
+    if (!objectCanvas) continue;
+
+    // Process the effect stack
+    const result = processEffectStack(layer.effects, objectCanvas, currentFrame);
+
+    // Store the processed canvas for this layer
+    effectCanvases.value.set(layer.id, result.canvas);
+
+    // Update the fabric object to use the processed result
+    // For now, we'll overlay the effect result - proper integration would
+    // replace the object's render method
+    applyEffectResultToObject(fabricObj, result.canvas);
+  }
+}
+
+/**
+ * Render a fabric object to an offscreen canvas
+ */
+function renderObjectToCanvas(obj: FabricObject): HTMLCanvasElement | null {
+  const bounds = obj.getBoundingRect();
+  if (bounds.width <= 0 || bounds.height <= 0) return null;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.ceil(bounds.width);
+  canvas.height = Math.ceil(bounds.height);
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+
+  // Save current transform
+  const left = obj.left || 0;
+  const top = obj.top || 0;
+
+  // Temporarily move object to origin
+  obj.set({ left: -bounds.left, top: -bounds.top });
+
+  // Render to our canvas
+  obj.render(ctx);
+
+  // Restore position
+  obj.set({ left, top });
+
+  return canvas;
+}
+
+/**
+ * Apply the processed effect result back to a fabric object
+ * This creates a temporary overlay - for Phase 1, we use a simple approach
+ */
+function applyEffectResultToObject(obj: FabricObject, effectCanvas: HTMLCanvasElement) {
+  // Store the effect canvas on the object for custom rendering
+  (obj as any)._effectCanvas = effectCanvas;
+
+  // Mark the canvas as needing a redraw
+  fabricCanvas.value?.requestRenderAll();
+}
+
 // Expose canvas for external use
 defineExpose({
   fabricCanvas,
@@ -1086,7 +1188,8 @@ defineExpose({
   splineObjects,
   getParticleCount,
   getTextPathPosition,
-  pathAnimationStates
+  pathAnimationStates,
+  effectCanvases
 });
 </script>
 

@@ -3,6 +3,8 @@
  * Defines effects, presets, and animation templates
  */
 
+import type { AnimatableProperty, Keyframe, BezierHandle } from './project';
+
 export type EffectCategory =
   | 'blur-sharpen'
   | 'color-correction'
@@ -40,6 +42,46 @@ export interface Effect {
   parameters: EffectParameter[];
   // Optional GPU shader code
   fragmentShader?: string;
+}
+
+/**
+ * Effect instance stored on a layer - parameters are animatable
+ */
+export interface EffectInstance {
+  id: string;
+  effectKey: string;  // Key into EFFECT_DEFINITIONS (e.g., 'gaussian-blur')
+  name: string;
+  category: EffectCategory;
+  enabled: boolean;
+  expanded: boolean;
+  // Parameters as AnimatableProperty for keyframe support
+  parameters: Record<string, AnimatableProperty<any>>;
+}
+
+/**
+ * Parameter type mapping for effect definitions
+ */
+export type EffectParameterType = 'number' | 'color' | 'point' | 'angle' | 'checkbox' | 'dropdown' | 'layer';
+
+/**
+ * Get the AnimatableProperty type string for a parameter type
+ */
+export function getAnimatableType(paramType: EffectParameterType): 'number' | 'position' | 'color' | 'enum' {
+  switch (paramType) {
+    case 'number':
+    case 'angle':
+      return 'number';
+    case 'point':
+      return 'position';
+    case 'color':
+      return 'color';
+    case 'checkbox':
+    case 'dropdown':
+    case 'layer':
+      return 'enum';
+    default:
+      return 'number';
+  }
 }
 
 export interface EffectDefinition {
@@ -401,7 +443,10 @@ export const EFFECT_CATEGORIES: Record<EffectCategory, { label: string; icon: st
   'utility': { label: 'Utility', icon: 'U', description: 'Utility effects' }
 };
 
-// Create effect instance from definition
+/**
+ * Create effect instance from definition (legacy - returns Effect)
+ * @deprecated Use createEffectInstance instead
+ */
 export function createEffect(definitionKey: string): Effect | null {
   const def = EFFECT_DEFINITIONS[definitionKey];
   if (!def) return null;
@@ -418,6 +463,44 @@ export function createEffect(definitionKey: string): Effect | null {
       value: p.defaultValue
     })),
     fragmentShader: def.fragmentShader
+  };
+}
+
+/**
+ * Create effect instance with animatable parameters
+ * This is the proper way to create effects for layers
+ */
+export function createEffectInstance(definitionKey: string): EffectInstance | null {
+  const def = EFFECT_DEFINITIONS[definitionKey];
+  if (!def) return null;
+
+  const parameters: Record<string, AnimatableProperty<any>> = {};
+
+  def.parameters.forEach((param, index) => {
+    // Generate a safe key from the parameter name (e.g., "Blur Dimensions" -> "blurDimensions")
+    const paramKey = param.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_|_$/g, '');
+
+    parameters[paramKey] = {
+      id: `${definitionKey}-${paramKey}-${index}`,
+      name: param.name,
+      type: getAnimatableType(param.type as EffectParameterType),
+      value: param.defaultValue,
+      animated: false,
+      keyframes: []
+    };
+  });
+
+  return {
+    id: `effect-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    effectKey: definitionKey,
+    name: def.name,
+    category: def.category,
+    enabled: true,
+    expanded: true,
+    parameters
   };
 }
 

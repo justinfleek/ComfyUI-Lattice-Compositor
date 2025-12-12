@@ -49,7 +49,7 @@ Main 2D canvas for rendering composition layers.
 | Transform handles | [ ] Missing | No move/rotate/scale handles |
 | Selection highlighting | [ ] Missing | Selected objects not highlighted |
 | Multi-select | [ ] Missing | No multi-selection support |
-| Layer effects rendering | [ ] Missing | Effects not applied during render |
+| Layer effects rendering | [x] Working | **FIXED** - Effects processed via StackBlur algorithm |
 | Shape layer rendering | [ ] Missing | No implementation |
 | Image layer rendering | [ ] Missing | No implementation |
 
@@ -489,11 +489,11 @@ Canvas handlers for select/text/hand/zoom tools still need implementation.
 #### Blur & Sharpen
 | Effect | Key | Has Controls | Applied | Status |
 |--------|-----|--------------|---------|--------|
-| Gaussian Blur | gaussian-blur | [x] Radius | [ ] No | **UI Only** |
-| Directional Blur | directional-blur | [x] Direction, Length | [ ] No | **UI Only** |
-| Radial Blur | radial-blur | [x] Type, Amount, Center | [ ] No | **UI Only** |
-| Sharpen | sharpen | [x] Amount | [ ] No | **UI Only** |
-| Unsharp Mask | unsharp-mask | [x] Amount, Radius, Threshold | [ ] No | **UI Only** |
+| Gaussian Blur | gaussian-blur | [x] Radius, Dimensions | [x] Yes | **WORKING** - StackBlur algorithm |
+| Directional Blur | directional-blur | [x] Direction, Length | [ ] No | UI Only |
+| Radial Blur | radial-blur | [x] Type, Amount, Center | [ ] No | UI Only |
+| Sharpen | sharpen | [x] Amount | [ ] No | UI Only |
+| Unsharp Mask | unsharp-mask | [x] Amount, Radius, Threshold | [ ] No | UI Only |
 
 #### Color Correction
 | Effect | Key | Has Controls | Applied | Status |
@@ -542,13 +542,26 @@ Canvas handlers for select/text/hand/zoom tools still need implementation.
 
 | Component | Status | Notes |
 |-----------|--------|-------|
-| Effect type definitions | [x] Complete | 19 effects defined |
-| Effect parameters | [x] Complete | Full param specs |
+| Effect type definitions | [x] Complete | 19 effects defined in effects.ts |
+| Effect parameters | [x] Complete | Full param specs with AnimatableProperty |
 | Effects panel UI | [x] Working | Browse, search, favorites |
 | Apply to layer | [x] Working | Adds to layer.effects |
-| **Render effects** | [ ] Missing | **No GPU shaders** |
-| **CPU processing** | [ ] Missing | **No image processing** |
+| **Effect processor** | [x] Working | **FIXED** - effectProcessor.ts handles stack processing |
+| **CPU processing** | [x] Working | **FIXED** - StackBlur algorithm in blurRenderer.ts |
+| **Keyframe support** | [x] Working | **FIXED** - Parameters use AnimatableProperty<T> |
 | Effect controls in Properties | [ ] Missing | No per-effect UI |
+| Store actions | [x] Working | addEffectToLayer, removeEffectFromLayer, etc. |
+
+### 7.4 Effects Architecture (NEW)
+
+| File | Purpose | Status |
+|------|---------|--------|
+| src/types/effects.ts | Effect definitions, EffectInstance interface | [x] Complete |
+| src/services/effectProcessor.ts | evaluateEffectParameters(), processEffectStack() | [x] Complete |
+| src/services/effects/blurRenderer.ts | StackBlur algorithm for Gaussian Blur | [x] Complete |
+| src/services/effects/index.ts | Effect registry initialization | [x] Complete |
+| src/main.ts | Calls initializeEffects() on startup | [x] Complete |
+| CompositionCanvas.vue | applyLayerEffects() in render loop | [x] Complete |
 
 ---
 

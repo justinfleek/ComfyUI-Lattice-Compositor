@@ -2,6 +2,8 @@
 // WEYL PROJECT SCHEMA - Complete Type Definitions
 // ============================================================
 
+import type { EffectInstance } from './effects';
+
 export interface WeylProject {
   version: "1.0.0";
   meta: ProjectMeta;
@@ -55,6 +57,7 @@ export interface Layer {
   opacity: AnimatableProperty<number>;
   transform: LayerTransform;
   properties: AnimatableProperty<any>[];
+  effects: EffectInstance[];  // Effect stack - processed top to bottom
   data: SplineData | TextData | ParticleData | ParticleLayerData | DepthflowLayerData | GeneratedMapData | null;
 }
 

@@ -2,6 +2,7 @@ import { createApp, App as VueApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
 import 'splitpanes/dist/splitpanes.css'
+import { initializeEffects } from './services/effects'
 
 let appInstance: VueApp | null = null;
 
@@ -18,6 +19,9 @@ export function mountApp(container?: HTMLElement | string): VueApp | null {
   
   if (!el) return null;
   
+  // Initialize effects system before mounting
+  initializeEffects();
+
   const app = createApp(App);
   app.use(createPinia());
   app.mount(el);

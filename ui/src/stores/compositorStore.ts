@@ -24,6 +24,7 @@ import { interpolateProperty } from '@/services/interpolation';
 import type { AudioMapping, TargetParameter } from '@/services/audioReactiveMapping';
 import { AudioReactiveMapper } from '@/services/audioReactiveMapping';
 import { AudioPathAnimator, type PathAnimatorConfig } from '@/services/audioPathAnimator';
+import { createEffectInstance } from '@/types/effects';
 
 interface CompositorState {
   // Project data
@@ -210,6 +211,7 @@ export const useCompositorStore = defineStore('compositor', {
         opacity: createAnimatableProperty('opacity', 100, 'number'),
         transform: createDefaultTransform(),
         properties: [],
+        effects: [],
         data: null
       };
 
@@ -765,6 +767,107 @@ export const useCompositorStore = defineStore('compositor', {
       const data = layer.data as DepthflowLayerData;
       Object.assign(data.config, updates);
       this.project.meta.modified = new Date().toISOString();
+    },
+
+    // ============================================================
+    // EFFECT ACTIONS
+    // ============================================================
+
+    /**
+     * Add effect to layer
+     */
+    addEffectToLayer(layerId: string, effectKey: string): void {
+      const layer = this.project.layers.find(l => l.id === layerId);
+      if (!layer) return;
+
+      const effect = createEffectInstance(effectKey);
+      if (!effect) return;
+
+      if (!layer.effects) {
+        layer.effects = [];
+      }
+      layer.effects.push(effect);
+      this.project.meta.modified = new Date().toISOString();
+      this.pushHistory();
+    },
+
+    /**
+     * Remove effect from layer
+     */
+    removeEffectFromLayer(layerId: string, effectId: string): void {
+      const layer = this.project.layers.find(l => l.id === layerId);
+      if (!layer || !layer.effects) return;
+
+      const index = layer.effects.findIndex(e => e.id === effectId);
+      if (index >= 0) {
+        layer.effects.splice(index, 1);
+        this.project.meta.modified = new Date().toISOString();
+        this.pushHistory();
+      }
+    },
+
+    /**
+     * Update effect parameter value
+     */
+    updateEffectParameter(layerId: string, effectId: string, paramKey: string, value: any): void {
+      const layer = this.project.layers.find(l => l.id === layerId);
+      if (!layer || !layer.effects) return;
+
+      const effect = layer.effects.find(e => e.id === effectId);
+      if (!effect || !effect.parameters[paramKey]) return;
+
+      effect.parameters[paramKey].value = value;
+      this.project.meta.modified = new Date().toISOString();
+    },
+
+    /**
+     * Toggle effect enabled state
+     */
+    toggleEffect(layerId: string, effectId: string): void {
+      const layer = this.project.layers.find(l => l.id === layerId);
+      if (!layer || !layer.effects) return;
+
+      const effect = layer.effects.find(e => e.id === effectId);
+      if (!effect) return;
+
+      effect.enabled = !effect.enabled;
+      this.project.meta.modified = new Date().toISOString();
+    },
+
+    /**
+     * Reorder effects in stack
+     */
+    reorderEffects(layerId: string, fromIndex: number, toIndex: number): void {
+      const layer = this.project.layers.find(l => l.id === layerId);
+      if (!layer || !layer.effects) return;
+      if (fromIndex < 0 || fromIndex >= layer.effects.length) return;
+      if (toIndex < 0 || toIndex >= layer.effects.length) return;
+
+      const [effect] = layer.effects.splice(fromIndex, 1);
+      layer.effects.splice(toIndex, 0, effect);
+      this.project.meta.modified = new Date().toISOString();
+      this.pushHistory();
+    },
+
+    /**
+     * Get evaluated effect parameter value at a given frame
+     */
+    getEffectParameterValue(layerId: string, effectId: string, paramKey: string, frame?: number): any {
+      const layer = this.project.layers.find(l => l.id === layerId);
+      if (!layer || !layer.effects) return null;
+
+      const effect = layer.effects.find(e => e.id === effectId);
+      if (!effect || !effect.parameters[paramKey]) return null;
+
+      const param = effect.parameters[paramKey];
+      const targetFrame = frame ?? this.project.currentFrame;
+
+      // Use interpolation if animated
+      if (param.animated && param.keyframes.length > 0) {
+        return interpolateProperty(param, targetFrame);
+      }
+
+      return param.value;
     },
 
     // ============================================================
