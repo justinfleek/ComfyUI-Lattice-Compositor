@@ -300,8 +300,11 @@ import ExportDialog from '@/components/dialogs/ExportDialog.vue';
 // Store
 const store = useCompositorStore();
 
-// State
-const currentTool = ref<'select' | 'pen' | 'text' | 'hand' | 'zoom'>('select');
+// Tool state - synced with store
+const currentTool = computed({
+  get: () => store.currentTool,
+  set: (tool: 'select' | 'pen' | 'text' | 'hand' | 'zoom') => store.setTool(tool)
+});
 const activeWorkspace = ref('standard');
 const leftTab = ref<'project' | 'effects'>('project');
 const rightTab = ref<'properties' | 'camera' | 'audio'>('properties');

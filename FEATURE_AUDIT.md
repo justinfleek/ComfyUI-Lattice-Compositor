@@ -92,7 +92,7 @@ Main application layout with resizable panels.
 | Panel layout | [x] Working | Splitpanes resizable |
 | Tool buttons | [x] Working | Visual selection |
 | Tool keyboard shortcuts | [x] Working | V/P/T/H/Z keys |
-| **Tool state sync to store** | [ ] Broken | **Local ref, never calls store.setTool()** |
+| **Tool state sync to store** | [x] Working | **FIXED** - Uses computed with store.setTool() |
 | Playback toggle | [x] Working | Space key |
 | Undo/Redo | [x] Working | Ctrl+Z/Y |
 | GPU tier display | [x] Working | Shows rendering tier |
@@ -265,7 +265,7 @@ Main application layout with resizable panels.
 
 | Action | Status | Called From | Notes |
 |--------|--------|-------------|-------|
-| setTool | [ ] Broken | **Not called anywhere** | WorkspaceLayout uses local ref |
+| setTool | [x] Working | WorkspaceLayout computed | **FIXED** - Now synced via computed |
 
 ### 2.7 History Actions
 
@@ -369,24 +369,24 @@ Main application layout with resizable panels.
 
 | Tool | Button | Keyboard | Store Connected | Canvas Handler | Status |
 |------|--------|----------|-----------------|----------------|--------|
-| Select | [x] WorkspaceLayout | [x] V | [ ] **Not connected** | [ ] None | **Broken** |
-| Pen | [x] WorkspaceLayout | [x] P | [ ] **Not connected** | [?] isPenMode check | **Broken** |
-| Text | [x] WorkspaceLayout | [x] T | [ ] **Not connected** | [ ] None | **Broken** |
-| Hand | [x] WorkspaceLayout | [x] H | [ ] **Not connected** | [ ] None (alt-drag works) | **Broken** |
-| Zoom | [x] WorkspaceLayout | [x] Z | [ ] **Not connected** | [ ] None (wheel works) | **Broken** |
+| Select | [x] WorkspaceLayout | [x] V | [x] **FIXED** | [ ] None | **Partial** |
+| Pen | [x] WorkspaceLayout | [x] P | [x] **FIXED** | [x] isPenMode check | **Working** |
+| Text | [x] WorkspaceLayout | [x] T | [x] **FIXED** | [ ] None | **Partial** |
+| Hand | [x] WorkspaceLayout | [x] H | [x] **FIXED** | [ ] None (alt-drag works) | **Partial** |
+| Zoom | [x] WorkspaceLayout | [x] Z | [x] **FIXED** | [ ] None (wheel works) | **Partial** |
 
-### Critical Issue
-WorkspaceLayout.vue line 304:
+### Fixed Issue (2024-12)
+WorkspaceLayout.vue now uses a computed property synced to store:
 ```typescript
-const currentTool = ref<'select' | 'pen' | 'text' | 'hand' | 'zoom'>('select');
+const currentTool = computed({
+  get: () => store.currentTool,
+  set: (tool) => store.setTool(tool)
+});
 ```
-This is a **local ref** that is **never synced** to `store.setTool()`.
+Tool state now properly flows to CompositionCanvas via `store.currentTool`.
 
-CompositionCanvas.vue line 103 checks:
-```typescript
-const isPenMode = computed(() => store.currentTool === 'pen');
-```
-But `store.currentTool` is always 'select' because `setTool()` is never called.
+### Remaining Work
+Canvas handlers for select/text/hand/zoom tools still need implementation.
 
 ---
 
@@ -804,7 +804,7 @@ But `store.currentTool` is always 'select' because `setTool()` is never called.
 ## Critical Fix Priority
 
 ### P0 - Blocking Issues
-1. [ ] **Tools not connected to store** - Nothing works
+1. [x] **Tools not connected to store** - **FIXED** (2024-12)
 2. [ ] **Effects not rendered** - UI-only placeholders
 3. [ ] **Audio blocks main thread** - Freezes browser
 4. [ ] **No camera layers** - Can't animate cameras

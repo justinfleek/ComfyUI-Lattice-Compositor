@@ -47,7 +47,7 @@ interface CompositorState {
   selectedKeyframeIds: string[];
 
   // Tool state
-  currentTool: 'select' | 'pen' | 'text' | 'hand';
+  currentTool: 'select' | 'pen' | 'text' | 'hand' | 'zoom';
 
   // UI state
   graphEditorVisible: boolean;

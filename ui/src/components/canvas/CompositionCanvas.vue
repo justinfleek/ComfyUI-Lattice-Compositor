@@ -53,8 +53,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, computed } from 'vue';
-import { Canvas, FabricImage, Point, type FabricObject } from 'fabric';
+import { ref, onMounted, onUnmounted, watch, computed, nextTick } from 'vue';
+import { Canvas, FabricImage, Point, Rect, type FabricObject } from 'fabric';
 import { useCompositorStore } from '@/stores/compositorStore';
 import { DepthMapImage, type ColormapType } from '@/fabric/DepthMapImage';
 import { SplinePath } from '@/fabric/SplinePath';
@@ -79,6 +79,7 @@ const sourceImageObj = ref<FabricImage | null>(null);
 const depthMapObj = ref<DepthMapImage | null>(null);
 const splineObjects = ref<Map<string, SplinePath>>(new Map());
 const textObjects = ref<Map<string, AnimatedText>>(new Map());
+const compositionBounds = ref<Rect | null>(null);
 const loading = ref(false);
 const zoom = ref(1);
 const showDepthOverlay = ref(true);
@@ -127,10 +128,19 @@ const viewportTransformArray = computed(() => {
 
 // Initialize Fabric.js canvas
 onMounted(() => {
-  if (!canvasRef.value || !containerRef.value) return;
+  console.log('[CompositionCanvas] onMounted called');
+  console.log('[CompositionCanvas] canvasRef:', canvasRef.value);
+  console.log('[CompositionCanvas] containerRef:', containerRef.value);
+
+  if (!canvasRef.value || !containerRef.value) {
+    console.error('[CompositionCanvas] Missing refs - canvasRef:', !!canvasRef.value, 'containerRef:', !!containerRef.value);
+    return;
+  }
 
   const container = containerRef.value;
   const rect = container.getBoundingClientRect();
+  console.log('[CompositionCanvas] Container rect:', rect.width, 'x', rect.height);
+
   canvasWidth.value = rect.width;
   canvasHeight.value = rect.height;
 
@@ -142,8 +152,17 @@ onMounted(() => {
     preserveObjectStacking: true
   });
 
+  console.log('[CompositionCanvas] Fabric canvas created:', fabricCanvas.value);
+  console.log('[CompositionCanvas] Store dimensions:', store.width, 'x', store.height);
+
   // Enable zoom/pan
   setupZoomPan();
+
+  // Add composition bounds rectangle (visible frame boundary)
+  // Use nextTick to ensure DOM has fully rendered with proper dimensions
+  nextTick(() => {
+    createCompositionBounds();
+  });
 
   // Handle resize
   const resizeObserver = new ResizeObserver(handleResize);
@@ -165,12 +184,17 @@ onMounted(() => {
   // Watch for depthflow layers
   watch(() => store.layers, syncDepthflowRenderers, { deep: true, immediate: true });
 
+  // Watch for composition size changes
+  watch(() => [store.width, store.height], updateCompositionBounds, { immediate: false });
+
   // Create particle overlay canvas
   particleCanvas.value = document.createElement('canvas');
   particleCtx.value = particleCanvas.value.getContext('2d');
 
   // Start render loop
   startRenderLoop();
+
+  console.log('[CompositionCanvas] Initialization complete');
 });
 
 onUnmounted(() => {
@@ -262,6 +286,101 @@ function setupZoomPan() {
       store.selectLayer((selected as any).layerId);
     }
   });
+}
+
+// Create composition bounds rectangle (visible frame boundary)
+function createCompositionBounds() {
+  const canvas = fabricCanvas.value;
+  if (!canvas) {
+    console.error('[CompositionCanvas] createCompositionBounds - no canvas');
+    return;
+  }
+
+  // Use store dimensions or defaults
+  const compWidth = store.width || 1920;
+  const compHeight = store.height || 1080;
+
+  console.log('[CompositionCanvas] Creating bounds:', compWidth, 'x', compHeight);
+
+  // Remove existing bounds if any
+  if (compositionBounds.value) {
+    canvas.remove(compositionBounds.value as unknown as FabricObject);
+  }
+
+  // Create the bounds rectangle
+  compositionBounds.value = new Rect({
+    left: 0,
+    top: 0,
+    width: compWidth,
+    height: compHeight,
+    fill: '#2a2a2a',  // Dark fill so we can see it
+    stroke: '#4a90d9',  // Blue border
+    strokeWidth: 2,
+    selectable: false,
+    evented: false,
+    strokeUniform: true,  // Keep stroke width consistent at any zoom
+  });
+
+  canvas.add(compositionBounds.value as unknown as FabricObject);
+  canvas.sendObjectToBack(compositionBounds.value as unknown as FabricObject);
+
+  console.log('[CompositionCanvas] Bounds added, object count:', canvas.getObjects().length);
+
+  // Center the view on the composition
+  centerOnComposition();
+
+  canvas.requestRenderAll();
+}
+
+// Update composition bounds when size changes
+function updateCompositionBounds() {
+  const canvas = fabricCanvas.value;
+  if (!canvas || !compositionBounds.value) return;
+
+  const compWidth = store.width || 1920;
+  const compHeight = store.height || 1080;
+
+  console.log('[CompositionCanvas] Updating bounds:', compWidth, 'x', compHeight);
+
+  compositionBounds.value.set({
+    width: compWidth,
+    height: compHeight,
+  });
+
+  compositionBounds.value.setCoords();
+  centerOnComposition();
+  canvas.requestRenderAll();
+}
+
+// Center the viewport on the composition
+function centerOnComposition() {
+  const canvas = fabricCanvas.value;
+  const container = containerRef.value;
+  if (!canvas || !container) return;
+
+  const compWidth = store.width || 1920;
+  const compHeight = store.height || 1080;
+
+  const containerRect = container.getBoundingClientRect();
+
+  // Calculate zoom to fit with padding
+  const padding = 60;
+  const scaleX = (containerRect.width - padding * 2) / compWidth;
+  const scaleY = (containerRect.height - padding * 2) / compHeight;
+  const scale = Math.min(scaleX, scaleY, 1);
+
+  // Center the composition
+  const vpt = canvas.viewportTransform;
+  if (vpt) {
+    vpt[0] = scale;
+    vpt[3] = scale;
+    vpt[4] = (containerRect.width - compWidth * scale) / 2;
+    vpt[5] = (containerRect.height - compHeight * scale) / 2;
+  }
+
+  zoom.value = scale;
+
+  console.log('[CompositionCanvas] Centered at zoom:', scale);
 }
 
 // Handle container resize
