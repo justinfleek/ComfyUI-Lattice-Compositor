@@ -15,8 +15,11 @@ import type {
   ParticleLayerData,
   DepthflowLayerData,
   ParticleEmitterConfig,
-  AudioParticleMapping
+  AudioParticleMapping,
+  CameraLayerData
 } from '@/types/project';
+import type { Camera3D, ViewportState, ViewOptions } from '@/types/camera';
+import { createDefaultCamera, createDefaultViewportState, createDefaultViewOptions } from '@/types/camera';
 import type { AudioAnalysis, PeakData, PeakDetectionConfig } from '@/services/audioFeatures';
 import { loadAudioFile, analyzeAudio, getFeatureAtFrame, detectPeaks, isBeatAtFrame } from '@/services/audioFeatures';
 import { createEmptyProject, createDefaultTransform, createAnimatableProperty } from '@/types/project';
@@ -70,6 +73,12 @@ interface CompositorState {
   audioReactiveMappings: AudioMapping[];
   audioReactiveMapper: AudioReactiveMapper | null;
   pathAnimators: Map<string, AudioPathAnimator>;
+
+  // Camera system
+  cameras: Map<string, Camera3D>;           // All cameras by ID
+  activeCameraId: string | null;            // Which camera is currently active
+  viewportState: ViewportState;             // Multi-view layout state
+  viewOptions: ViewOptions;                 // Display options (wireframes, etc.)
 }
 
 export const useCompositorStore = defineStore('compositor', {
@@ -95,7 +104,13 @@ export const useCompositorStore = defineStore('compositor', {
     peakData: null,
     audioReactiveMappings: [],
     audioReactiveMapper: null,
-    pathAnimators: new Map()
+    pathAnimators: new Map(),
+
+    // Camera system
+    cameras: new Map(),
+    activeCameraId: null,
+    viewportState: createDefaultViewportState(),
+    viewOptions: createDefaultViewOptions()
   }),
 
   getters: {
@@ -128,7 +143,15 @@ export const useCompositorStore = defineStore('compositor', {
 
     // History
     canUndo: (state): boolean => state.historyIndex > 0,
-    canRedo: (state): boolean => state.historyIndex < state.historyStack.length - 1
+    canRedo: (state): boolean => state.historyIndex < state.historyStack.length - 1,
+
+    // Camera
+    activeCamera: (state): Camera3D | null => {
+      if (!state.activeCameraId) return null;
+      return state.cameras.get(state.activeCameraId) || null;
+    },
+    allCameras: (state): Camera3D[] => Array.from(state.cameras.values()),
+    cameraLayers: (state): Layer[] => state.project.layers.filter(l => l.type === 'camera')
   },
 
   actions: {
@@ -868,6 +891,149 @@ export const useCompositorStore = defineStore('compositor', {
       }
 
       return param.value;
+    },
+
+    // ============================================================
+    // CAMERA ACTIONS
+    // ============================================================
+
+    /**
+     * Create a new camera and corresponding layer
+     * Returns both the camera and the layer
+     */
+    createCameraLayer(name?: string): { camera: Camera3D; layer: Layer } {
+      const cameraId = `camera_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const cameraName = name || `Camera ${this.cameras.size + 1}`;
+
+      // Create the camera object
+      const camera = createDefaultCamera(
+        cameraId,
+        this.project.composition.width,
+        this.project.composition.height
+      );
+      camera.name = cameraName;
+
+      // Add to cameras map
+      this.cameras.set(cameraId, camera);
+
+      // If this is the first camera, make it active
+      if (!this.activeCameraId) {
+        this.activeCameraId = cameraId;
+      }
+
+      // Create the layer
+      const layerId = `layer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const layer: Layer = {
+        id: layerId,
+        name: cameraName,
+        type: 'camera',
+        visible: true,
+        locked: false,
+        solo: false,
+        inPoint: 0,
+        outPoint: this.project.composition.frameCount - 1,
+        parentId: null,
+        blendMode: 'normal',
+        opacity: createAnimatableProperty('opacity', 100, 'number'),
+        transform: createDefaultTransform(),
+        properties: [],
+        effects: [],
+        data: {
+          cameraId,
+          isActiveCamera: !this.activeCameraId || this.activeCameraId === cameraId
+        } as CameraLayerData
+      };
+
+      this.project.layers.unshift(layer);
+      this.project.meta.modified = new Date().toISOString();
+      this.pushHistory();
+
+      return { camera, layer };
+    },
+
+    /**
+     * Get a camera by ID
+     */
+    getCamera(cameraId: string): Camera3D | null {
+      return this.cameras.get(cameraId) || null;
+    },
+
+    /**
+     * Update camera properties
+     */
+    updateCamera(cameraId: string, updates: Partial<Camera3D>): void {
+      const camera = this.cameras.get(cameraId);
+      if (!camera) return;
+
+      Object.assign(camera, updates);
+      this.project.meta.modified = new Date().toISOString();
+    },
+
+    /**
+     * Set the active camera
+     */
+    setActiveCamera(cameraId: string): void {
+      if (!this.cameras.has(cameraId)) return;
+
+      this.activeCameraId = cameraId;
+
+      // Update all camera layers' isActiveCamera flag
+      for (const layer of this.project.layers) {
+        if (layer.type === 'camera' && layer.data) {
+          const cameraData = layer.data as CameraLayerData;
+          cameraData.isActiveCamera = cameraData.cameraId === cameraId;
+        }
+      }
+
+      this.project.meta.modified = new Date().toISOString();
+    },
+
+    /**
+     * Delete a camera (and its layer)
+     */
+    deleteCamera(cameraId: string): void {
+      // Find the associated layer
+      const layerIndex = this.project.layers.findIndex(
+        l => l.type === 'camera' && (l.data as CameraLayerData)?.cameraId === cameraId
+      );
+
+      // Remove the layer if found
+      if (layerIndex !== -1) {
+        const layerId = this.project.layers[layerIndex].id;
+        this.project.layers.splice(layerIndex, 1);
+        this.selectedLayerIds = this.selectedLayerIds.filter(id => id !== layerId);
+      }
+
+      // Remove the camera
+      this.cameras.delete(cameraId);
+
+      // If this was the active camera, select another or set to null
+      if (this.activeCameraId === cameraId) {
+        const remaining = Array.from(this.cameras.keys());
+        this.activeCameraId = remaining.length > 0 ? remaining[0] : null;
+
+        // Update layer flags
+        if (this.activeCameraId) {
+          this.setActiveCamera(this.activeCameraId);
+        }
+      }
+
+      this.project.meta.modified = new Date().toISOString();
+      this.pushHistory();
+    },
+
+    /**
+     * Update viewport state
+     */
+    updateViewportState(updates: Partial<ViewportState>): void {
+      Object.assign(this.viewportState, updates);
+    },
+
+    /**
+     * Update view options
+     */
+    updateViewOptions(updates: Partial<ViewOptions>): void {
+      Object.assign(this.viewOptions, updates);
     },
 
     // ============================================================

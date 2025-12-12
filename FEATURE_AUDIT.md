@@ -668,20 +668,33 @@ Canvas handlers for select/text/hand/zoom tools still need implementation.
 | | Rotation XYZ | [x] Working | Sliders |
 | | Focal length | [x] Working | Slider |
 | | DoF settings | [x] Working | All params |
-| | Create Camera | [ ] Broken | **No handler** |
+| | Create Camera | [x] Working | **FIXED** - Calls store.createCameraLayer() |
+| | Store connection | [x] Working | **FIXED** - Connected to store |
+| ViewportRenderer.vue | Store connection | [x] Working | **FIXED** - Connected to store |
 
-### 9.4 Camera Issues
+### 9.4 Camera Store Integration (NEW)
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| cameras: Map<string, Camera3D> | [x] Working | Multiple cameras supported |
+| activeCameraId | [x] Working | Tracks active camera |
+| viewportState | [x] Working | Multi-view layout state |
+| viewOptions | [x] Working | Display options |
+| createCameraLayer() | [x] Working | Creates camera + layer |
+| updateCamera() | [x] Working | Updates camera properties |
+| setActiveCamera() | [x] Working | Switches active camera |
+| deleteCamera() | [x] Working | Removes camera + layer |
+| 'camera' LayerType | [x] Working | Added to LayerType union |
+| CameraLayerData | [x] Working | References Camera3D by ID |
+
+### 9.5 Remaining Camera Issues
 
 | Issue | Severity | Notes |
 |-------|----------|-------|
-| **No camera layer type** | Critical | Cannot add camera to timeline |
-| **No camera in store** | Critical | Props only, no persistence |
-| **No createCameraLayer()** | Critical | Button does nothing |
-| No camera animation | High | No keyframe support |
-| No camera switching | High | Single camera only |
+| No camera animation | High | No keyframe support yet |
 | No camera import | Medium | Can't load camera data |
 
-### 9.5 Camera Export (Works)
+### 9.6 Camera Export (Works)
 
 | Format | Function | Status |
 |--------|----------|--------|

@@ -428,28 +428,33 @@
 
     <div v-else class="no-camera">
       <p>No camera selected</p>
-      <button @click="$emit('createCamera')">Create Camera</button>
+      <button @click="createCamera">Create Camera</button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue';
+import { reactive, computed } from 'vue';
 import type { Camera3D } from '../../types/camera';
 import { CAMERA_PRESETS } from '../../types/camera';
 import { focalLengthToFOV, fovToFocalLength } from '../../services/math3d';
 import { ScrubableNumber, SliderInput, AngleDial } from '../controls';
+import { useCompositorStore } from '@/stores/compositorStore';
 
-interface Props {
-  camera: Camera3D | null;
-}
+// Store connection
+const store = useCompositorStore();
 
-const props = defineProps<Props>();
-
-const emit = defineEmits<{
-  (e: 'update:camera', camera: Camera3D): void;
-  (e: 'createCamera'): void;
-}>();
+// Get camera from store (active camera or selected camera layer)
+const camera = computed<Camera3D | null>(() => {
+  // First, check if a camera layer is selected
+  const selectedLayer = store.selectedLayer;
+  if (selectedLayer?.type === 'camera' && selectedLayer.data) {
+    const cameraData = selectedLayer.data as { cameraId: string };
+    return store.getCamera(cameraData.cameraId);
+  }
+  // Otherwise, return the active camera
+  return store.activeCamera;
+});
 
 const expandedSections = reactive({
   transform: true,
@@ -466,86 +471,81 @@ function toggleSection(section: keyof typeof expandedSections) {
 }
 
 function updateProperty<K extends keyof Camera3D>(key: K, value: Camera3D[K]) {
-  if (!props.camera) return;
-  emit('update:camera', { ...props.camera, [key]: value });
+  if (!camera.value) return;
+  store.updateCamera(camera.value.id, { [key]: value });
 }
 
 function updatePosition(axis: 'x' | 'y' | 'z', value: number) {
-  if (!props.camera) return;
-  emit('update:camera', {
-    ...props.camera,
-    position: { ...props.camera.position, [axis]: value }
+  if (!camera.value) return;
+  store.updateCamera(camera.value.id, {
+    position: { ...camera.value.position, [axis]: value }
   });
 }
 
 function updatePOI(axis: 'x' | 'y' | 'z', value: number) {
-  if (!props.camera) return;
-  emit('update:camera', {
-    ...props.camera,
-    pointOfInterest: { ...props.camera.pointOfInterest, [axis]: value }
+  if (!camera.value) return;
+  store.updateCamera(camera.value.id, {
+    pointOfInterest: { ...camera.value.pointOfInterest, [axis]: value }
   });
 }
 
 function updateOrientation(axis: 'x' | 'y' | 'z', value: number) {
-  if (!props.camera) return;
-  emit('update:camera', {
-    ...props.camera,
-    orientation: { ...props.camera.orientation, [axis]: value }
+  if (!camera.value) return;
+  store.updateCamera(camera.value.id, {
+    orientation: { ...camera.value.orientation, [axis]: value }
   });
 }
 
 function updateFocalLength(value: number) {
-  if (!props.camera) return;
-  const angleOfView = focalLengthToFOV(value, props.camera.filmSize);
-  emit('update:camera', {
-    ...props.camera,
+  if (!camera.value) return;
+  const angleOfView = focalLengthToFOV(value, camera.value.filmSize);
+  store.updateCamera(camera.value.id, {
     focalLength: value,
     angleOfView
   });
 }
 
 function updateAngleOfView(value: number) {
-  if (!props.camera) return;
-  const focalLength = fovToFocalLength(value, props.camera.filmSize);
-  emit('update:camera', {
-    ...props.camera,
+  if (!camera.value) return;
+  const focalLength = fovToFocalLength(value, camera.value.filmSize);
+  store.updateCamera(camera.value.id, {
     angleOfView: value,
     focalLength
   });
 }
 
 function updateDOF<K extends keyof Camera3D['depthOfField']>(key: K, value: Camera3D['depthOfField'][K]) {
-  if (!props.camera) return;
-  emit('update:camera', {
-    ...props.camera,
-    depthOfField: { ...props.camera.depthOfField, [key]: value }
+  if (!camera.value) return;
+  store.updateCamera(camera.value.id, {
+    depthOfField: { ...camera.value.depthOfField, [key]: value }
   });
 }
 
 function updateIris<K extends keyof Camera3D['iris']>(key: K, value: Camera3D['iris'][K]) {
-  if (!props.camera) return;
-  emit('update:camera', {
-    ...props.camera,
-    iris: { ...props.camera.iris, [key]: value }
+  if (!camera.value) return;
+  store.updateCamera(camera.value.id, {
+    iris: { ...camera.value.iris, [key]: value }
   });
 }
 
 function updateHighlight<K extends keyof Camera3D['highlight']>(key: K, value: Camera3D['highlight'][K]) {
-  if (!props.camera) return;
-  emit('update:camera', {
-    ...props.camera,
-    highlight: { ...props.camera.highlight, [key]: value }
+  if (!camera.value) return;
+  store.updateCamera(camera.value.id, {
+    highlight: { ...camera.value.highlight, [key]: value }
   });
 }
 
 function applyPreset(preset: typeof CAMERA_PRESETS[number]) {
-  if (!props.camera) return;
-  emit('update:camera', {
-    ...props.camera,
+  if (!camera.value) return;
+  store.updateCamera(camera.value.id, {
     focalLength: preset.focalLength,
     angleOfView: preset.angleOfView,
     zoom: preset.zoom
   });
+}
+
+function createCamera() {
+  store.createCameraLayer();
 }
 </script>
 

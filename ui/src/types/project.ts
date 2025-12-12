@@ -58,7 +58,7 @@ export interface Layer {
   transform: LayerTransform;
   properties: AnimatableProperty<any>[];
   effects: EffectInstance[];  // Effect stack - processed top to bottom
-  data: SplineData | TextData | ParticleData | ParticleLayerData | DepthflowLayerData | GeneratedMapData | null;
+  data: SplineData | TextData | ParticleData | ParticleLayerData | DepthflowLayerData | GeneratedMapData | CameraLayerData | null;
 }
 
 export type LayerType =
@@ -72,6 +72,7 @@ export type LayerType =
   | 'depthflow'  // Depthflow parallax layer
   | 'image'      // Static/animated image
   | 'generated'  // AI-generated map (depth, normal, edge, etc.)
+  | 'camera'     // 2.5D/3D camera layer
   | 'group';     // Layer group
 
 export type BlendMode = 'normal' | 'multiply' | 'screen' | 'overlay' | 'add' | 'difference';
@@ -366,6 +367,15 @@ export interface DepthflowConfig {
   swingFrequency: number;
   edgeDilation: number;
   inpaintEdges: boolean;
+}
+
+// ============================================================
+// CAMERA LAYER DATA
+// ============================================================
+
+export interface CameraLayerData {
+  cameraId: string;      // Reference to the Camera3D object
+  isActiveCamera: boolean;  // Is this the composition's active camera?
 }
 
 // ============================================================

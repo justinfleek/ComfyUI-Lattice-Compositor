@@ -93,29 +93,33 @@ import {
   type ViewMatrices
 } from '../../services/camera3DVisualization';
 import { vec3 } from '../../services/math3d';
+import { useCompositorStore } from '@/stores/compositorStore';
 
-interface Props {
-  camera: Camera3D | null;
-  compWidth: number;
-  compHeight: number;
-  viewportState: ViewportState;
-  viewOptions: ViewOptions;
-  layers?: Array<{
-    id: string;
-    name: string;
-    position: { x: number; y: number; z: number };
-    selected: boolean;
-  }>;
-}
+// Store connection
+const store = useCompositorStore();
 
-const props = withDefaults(defineProps<Props>(), {
-  layers: () => []
+// Get data from store
+const camera = computed<Camera3D | null>(() => store.activeCamera);
+const compWidth = computed(() => store.width);
+const compHeight = computed(() => store.height);
+const viewportState = computed(() => store.viewportState);
+const viewOptions = computed(() => store.viewOptions);
+
+// Build layers array from store layers
+const layers = computed(() => {
+  return store.layers
+    .filter(l => l.type !== 'camera') // Exclude camera layers themselves
+    .map(l => ({
+      id: l.id,
+      name: l.name,
+      position: {
+        x: l.transform.position.value.x,
+        y: l.transform.position.value.y,
+        z: 0 // 2D layers at z=0
+      },
+      selected: store.selectedLayerIds.includes(l.id)
+    }));
 });
-
-const emit = defineEmits<{
-  (e: 'update:viewportState', state: ViewportState): void;
-  (e: 'selectLayer', layerId: string): void;
-}>();
 
 // Canvas refs for each view
 const canvasRefs = ref<(HTMLCanvasElement | null)[]>([null, null, null, null]);
@@ -136,21 +140,21 @@ const layoutOptions = [
 ];
 
 // Computed properties
-const layout = computed(() => props.viewportState.layout);
-const activeViewIndex = computed(() => props.viewportState.activeViewIndex);
-const customViews = computed(() => props.viewportState.customViews);
+const layout = computed(() => viewportState.value.layout);
+const activeViewIndex = computed(() => viewportState.value.activeViewIndex);
+const customViews = computed(() => viewportState.value.customViews);
 
 const activeViews = computed(() => {
-  switch (props.viewportState.layout) {
+  switch (viewportState.value.layout) {
     case '1-view':
-      return [props.viewportState.views[0]];
+      return [viewportState.value.views[0]];
     case '2-view-horizontal':
     case '2-view-vertical':
-      return props.viewportState.views.slice(0, 2);
+      return viewportState.value.views.slice(0, 2);
     case '4-view':
-      return props.viewportState.views.slice(0, 4);
+      return viewportState.value.views.slice(0, 4);
     default:
-      return [props.viewportState.views[0]];
+      return [viewportState.value.views[0]];
   }
 });
 
@@ -182,33 +186,30 @@ function getViewDisplayName(viewType: ViewType): string {
 }
 
 function setActiveView(index: number) {
-  emit('update:viewportState', {
-    ...props.viewportState,
+  store.updateViewportState({
     activeViewIndex: index
   });
 }
 
 function updateViewType(index: number, viewType: ViewType) {
-  const newViews = [...props.viewportState.views];
+  const newViews = [...viewportState.value.views];
   newViews[index] = viewType;
-  emit('update:viewportState', {
-    ...props.viewportState,
+  store.updateViewportState({
     views: newViews
   });
 }
 
 function setLayout(newLayout: ViewLayout) {
   // Ensure we have enough views
-  let newViews = [...props.viewportState.views];
+  let newViews = [...viewportState.value.views];
   while (newViews.length < 4) {
     newViews.push('front');
   }
 
-  emit('update:viewportState', {
-    ...props.viewportState,
+  store.updateViewportState({
     layout: newLayout,
     views: newViews,
-    activeViewIndex: Math.min(props.viewportState.activeViewIndex, getViewCount(newLayout) - 1)
+    activeViewIndex: Math.min(viewportState.value.activeViewIndex, getViewCount(newLayout) - 1)
   });
 }
 
@@ -224,7 +225,7 @@ function getViewCount(layout: ViewLayout): number {
 
 function resetCustomView(viewType: 'custom-1' | 'custom-2' | 'custom-3') {
   const defaultView: CustomViewState = {
-    orbitCenter: { x: props.compWidth / 2, y: props.compHeight / 2, z: 0 },
+    orbitCenter: { x: compWidth.value / 2, y: compHeight.value / 2, z: 0 },
     orbitDistance: 2000,
     orbitPhi: 60,
     orbitTheta: 45,
@@ -232,10 +233,9 @@ function resetCustomView(viewType: 'custom-1' | 'custom-2' | 'custom-3') {
     orthoOffset: { x: 0, y: 0 }
   };
 
-  emit('update:viewportState', {
-    ...props.viewportState,
+  store.updateViewportState({
     customViews: {
-      ...props.viewportState.customViews,
+      ...viewportState.value.customViews,
       [viewType]: defaultView
     }
   });
@@ -269,10 +269,9 @@ function onCanvasMouseMove(e: MouseEvent) {
       const newTheta = customView.orbitTheta + dx * 0.5;
       const newPhi = Math.max(1, Math.min(179, customView.orbitPhi + dy * 0.5));
 
-      emit('update:viewportState', {
-        ...props.viewportState,
+      store.updateViewportState({
         customViews: {
-          ...props.viewportState.customViews,
+          ...viewportState.value.customViews,
           [viewType]: {
             ...customView,
             orbitTheta: newTheta,
@@ -282,10 +281,9 @@ function onCanvasMouseMove(e: MouseEvent) {
       });
     } else if (dragButton.value === 1 || dragButton.value === 2) {
       // Middle/right button: pan
-      emit('update:viewportState', {
-        ...props.viewportState,
+      store.updateViewportState({
         customViews: {
-          ...props.viewportState.customViews,
+          ...viewportState.value.customViews,
           [viewType]: {
             ...customView,
             orthoOffset: {
@@ -314,10 +312,9 @@ function onCanvasWheel(e: WheelEvent, viewIndex: number) {
     const customView = customViews.value[viewType];
     const zoomFactor = e.deltaY > 0 ? 1.1 : 0.9;
 
-    emit('update:viewportState', {
-      ...props.viewportState,
+    store.updateViewportState({
       customViews: {
-        ...props.viewportState.customViews,
+        ...viewportState.value.customViews,
         [viewType]: {
           ...customView,
           orbitDistance: customView.orbitDistance * zoomFactor
@@ -347,33 +344,33 @@ function render() {
 
     // Get view matrices
     let matrices: ViewMatrices;
-    if (viewType === 'active-camera' && props.camera) {
-      matrices = getCameraViewMatrices(props.camera, props.compWidth, props.compHeight);
+    if (viewType === 'active-camera' && camera.value) {
+      matrices = getCameraViewMatrices(camera.value, compWidth.value, compHeight.value);
     } else if (isCustomView(viewType)) {
-      matrices = getOrthoViewMatrices(viewType, props.compWidth, props.compHeight, customViews.value[viewType]);
+      matrices = getOrthoViewMatrices(viewType, compWidth.value, compHeight.value, customViews.value[viewType]);
     } else {
-      matrices = getOrthoViewMatrices(viewType, props.compWidth, props.compHeight);
+      matrices = getOrthoViewMatrices(viewType, compWidth.value, compHeight.value);
     }
 
     // Collect all lines to draw
     const lines: LineSegment[] = [];
 
     // Grid
-    if (props.viewOptions.showGrid) {
-      lines.push(...generateGrid(props.compWidth, props.compHeight));
+    if (viewOptions.value.showGrid) {
+      lines.push(...generateGrid(compWidth.value, compHeight.value));
     }
 
     // 3D axes
-    if (props.viewOptions.show3DReferenceAxes) {
-      lines.push(...generate3DAxes(vec3(props.compWidth / 2, props.compHeight / 2, 0)));
+    if (viewOptions.value.show3DReferenceAxes) {
+      lines.push(...generate3DAxes(vec3(compWidth.value / 2, compHeight.value / 2, 0)));
     }
 
     // Composition bounds
-    if (props.viewOptions.showCompositionBounds) {
+    if (viewOptions.value.showCompositionBounds) {
       const viz = generateCameraVisualization(
-        props.camera ?? createDummyCamera(),
-        props.compWidth,
-        props.compHeight,
+        camera.value ?? createDummyCamera(),
+        compWidth.value,
+        compHeight.value,
         false,
         true,
         false
@@ -382,18 +379,18 @@ function render() {
     }
 
     // Camera visualization (not for active-camera view)
-    if (viewType !== 'active-camera' && props.camera) {
-      const showWireframe = props.viewOptions.cameraWireframes === 'always' ||
-        (props.viewOptions.cameraWireframes === 'selected');
+    if (viewType !== 'active-camera' && camera.value) {
+      const showWireframe = viewOptions.value.cameraWireframes === 'always' ||
+        (viewOptions.value.cameraWireframes === 'selected');
 
       if (showWireframe) {
         const viz = generateCameraVisualization(
-          props.camera,
-          props.compWidth,
-          props.compHeight,
+          camera.value,
+          compWidth.value,
+          compHeight.value,
           true,
           false,
-          props.viewOptions.showFocalPlane
+          viewOptions.value.showFocalPlane
         );
         lines.push(...viz.body);
         lines.push(...viz.frustum);
@@ -420,8 +417,8 @@ function render() {
     }
 
     // Draw layer handles
-    if (props.viewOptions.showLayerHandles) {
-      for (const layer of props.layers) {
+    if (viewOptions.value.showLayerHandles) {
+      for (const layer of layers.value) {
         const pos = projectToScreen(layer.position, matrices.viewProjection, rect.width, rect.height);
         if (!pos.visible) continue;
 
@@ -443,8 +440,8 @@ function createDummyCamera(): Camera3D {
     id: 'dummy',
     name: 'Dummy',
     type: 'two-node',
-    position: { x: props.compWidth / 2, y: props.compHeight / 2, z: -1500 },
-    pointOfInterest: { x: props.compWidth / 2, y: props.compHeight / 2, z: 0 },
+    position: { x: compWidth.value / 2, y: compHeight.value / 2, z: -1500 },
+    pointOfInterest: { x: compWidth.value / 2, y: compHeight.value / 2, z: 0 },
     orientation: { x: 0, y: 0, z: 0 },
     xRotation: 0,
     yRotation: 0,
@@ -496,8 +493,8 @@ onUnmounted(() => {
   cancelAnimationFrame(animationId);
 });
 
-// Re-render when props change
-watch(() => [props.camera, props.viewportState, props.viewOptions, props.layers], () => {
+// Re-render when store values change
+watch([camera, viewportState, viewOptions, layers], () => {
   // Animation loop handles this
 }, { deep: true });
 </script>
