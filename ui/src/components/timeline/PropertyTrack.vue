@@ -110,12 +110,13 @@ function toggleKeyframe() {
 .property-info {
   display: flex;
   align-items: center;
-  width: 220px;
-  min-width: 220px;
-  padding-left: 20px;
+  width: 236px;
+  min-width: 236px;
+  padding-left: 32px; /* 16px (twirl-down width) + 16px indent */
   gap: 6px;
   background: #1e1e1e;
   border-right: 1px solid #333;
+  box-sizing: border-box;
 }
 
 .stopwatch-btn {

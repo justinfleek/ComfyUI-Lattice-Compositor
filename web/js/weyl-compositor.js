@@ -21504,7 +21504,7 @@ const h5 = {
       ], 4)
     ]));
   }
-}), w5 = /* @__PURE__ */ Ot(_5, [["__scopeId", "data-v-47c0db1f"]]), S5 = { class: "layer-track-container" }, C5 = { class: "twirl-arrow" }, k5 = { class: "layer-info" }, T5 = ["onClick", "title"], O5 = { class: "av-switches" }, M5 = ["title"], E5 = { class: "icon" }, P5 = ["title"], D5 = { class: "icon" }, A5 = { class: "layer-name-container" }, F5 = ["title"], I5 = ["title"], L5 = { class: "parent-picker" }, R5 = ["value", "disabled"], z5 = ["value"], j5 = {
+}), w5 = /* @__PURE__ */ Ot(_5, [["__scopeId", "data-v-063365bd"]]), S5 = { class: "layer-track-container" }, C5 = { class: "twirl-arrow" }, k5 = { class: "layer-info" }, T5 = ["onClick", "title"], O5 = { class: "av-switches" }, M5 = ["title"], E5 = { class: "icon" }, P5 = ["title"], D5 = { class: "icon" }, A5 = { class: "layer-name-container" }, F5 = ["title"], I5 = ["title"], L5 = { class: "parent-picker" }, R5 = ["value", "disabled"], z5 = ["value"], j5 = {
   key: 0,
   class: "layer-switches"
 }, B5 = {
