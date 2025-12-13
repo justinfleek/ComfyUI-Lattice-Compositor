@@ -61,22 +61,13 @@
         v-for="kf in property.keyframes"
         :key="kf.id"
         class="keyframe-diamond"
-        :class="[
-          { selected: selectedKeyframeIds.includes(kf.id) },
-          `easing-${getEasingCategory(kf.interpolation)}`
-        ]"
+        :class="{ selected: selectedKeyframeIds.includes(kf.id) }"
         :style="{ left: `${(kf.frame / frameCount) * 100}%` }"
         @mousedown.stop="startKeyframeDrag(kf, $event)"
         @click.stop="selectKeyframe(kf.id, $event)"
-        @dblclick.stop="showEasingMenu(kf, $event)"
         @contextmenu.prevent="showEasingMenu(kf, $event)"
-        :title="`Frame ${kf.frame}: ${formatValue(kf.value)}\nEasing: ${kf.interpolation || 'linear'}\n(Double-click or right-click to change easing)`"
-      >
-        <span class="kf-icon">◆</span>
-        <span v-if="kf.interpolation && kf.interpolation !== 'linear'" class="easing-badge">
-          {{ getEasingBadge(kf.interpolation) }}
-        </span>
-      </div>
+        :title="`Frame ${kf.frame}: ${JSON.stringify(kf.value)} (${kf.interpolation || 'linear'})`"
+      >◆</div>
       <div
         class="playhead-marker"
         :style="{ left: `${(currentFrame / frameCount) * 100}%` }"
@@ -312,39 +303,6 @@ function formatEasingName(name: EasingName): string {
   if (name.startsWith('easeOut')) return 'Out';
   return name;
 }
-
-function getEasingCategory(interpolation: string | undefined): string {
-  if (!interpolation || interpolation === 'linear') return 'linear';
-  if (interpolation === 'hold') return 'hold';
-  if (interpolation === 'bezier') return 'bezier';
-  if (interpolation.includes('Elastic')) return 'elastic';
-  if (interpolation.includes('Bounce')) return 'bounce';
-  if (interpolation.includes('Back')) return 'back';
-  return 'ease';
-}
-
-function getEasingBadge(interpolation: string | undefined): string {
-  if (!interpolation || interpolation === 'linear') return '';
-  if (interpolation === 'hold') return '▬';
-  if (interpolation === 'bezier') return '~';
-  if (interpolation.includes('InOut')) return '⟷';
-  if (interpolation.includes('Out')) return '⟶';
-  if (interpolation.includes('In')) return '⟵';
-  return '~';
-}
-
-function formatValue(value: any): string {
-  if (typeof value === 'number') {
-    return value.toFixed(1);
-  }
-  if (typeof value === 'object' && value !== null) {
-    if ('x' in value && 'y' in value) {
-      const z = 'z' in value ? `, ${(value.z as number).toFixed(0)}` : '';
-      return `(${(value.x as number).toFixed(0)}, ${(value.y as number).toFixed(0)}${z})`;
-    }
-  }
-  return String(value);
-}
 </script>
 
 <style scoped>
@@ -469,60 +427,6 @@ function formatValue(value: any): string {
 
 .keyframe-diamond:active {
   cursor: grabbing;
-}
-
-/* Keyframe icon and badge */
-.kf-icon {
-  display: block;
-}
-
-.easing-badge {
-  position: absolute;
-  bottom: -2px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 8px;
-  color: #fff;
-  background: rgba(0, 0, 0, 0.6);
-  padding: 0 2px;
-  border-radius: 2px;
-  white-space: nowrap;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.15s ease;
-}
-
-.keyframe-diamond:hover .easing-badge {
-  opacity: 1;
-}
-
-/* Easing category colors */
-.keyframe-diamond.easing-linear {
-  color: #f5c542;
-}
-
-.keyframe-diamond.easing-hold {
-  color: #888;
-}
-
-.keyframe-diamond.easing-bezier {
-  color: #4ecdc4;
-}
-
-.keyframe-diamond.easing-ease {
-  color: #7c9cff;
-}
-
-.keyframe-diamond.easing-elastic {
-  color: #ff6b9d;
-}
-
-.keyframe-diamond.easing-bounce {
-  color: #96ceb4;
-}
-
-.keyframe-diamond.easing-back {
-  color: #ffa726;
 }
 
 .playhead-marker {
