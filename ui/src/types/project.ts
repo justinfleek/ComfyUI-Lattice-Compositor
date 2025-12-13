@@ -447,7 +447,24 @@ export interface Keyframe<T> {
   handlesBroken: boolean;
 }
 
-export type InterpolationType = 'linear' | 'bezier' | 'hold';
+// Base interpolation types
+export type BaseInterpolationType = 'linear' | 'bezier' | 'hold';
+
+// All easing function names
+export type EasingType =
+  | 'easeInSine' | 'easeOutSine' | 'easeInOutSine'
+  | 'easeInQuad' | 'easeOutQuad' | 'easeInOutQuad'
+  | 'easeInCubic' | 'easeOutCubic' | 'easeInOutCubic'
+  | 'easeInQuart' | 'easeOutQuart' | 'easeInOutQuart'
+  | 'easeInQuint' | 'easeOutQuint' | 'easeInOutQuint'
+  | 'easeInExpo' | 'easeOutExpo' | 'easeInOutExpo'
+  | 'easeInCirc' | 'easeOutCirc' | 'easeInOutCirc'
+  | 'easeInBack' | 'easeOutBack' | 'easeInOutBack'
+  | 'easeInElastic' | 'easeOutElastic' | 'easeInOutElastic'
+  | 'easeInBounce' | 'easeOutBounce' | 'easeInOutBounce';
+
+// Combined interpolation type (base types + easing functions)
+export type InterpolationType = BaseInterpolationType | EasingType;
 
 export interface BezierHandle {
   x: number;  // 0-1, time influence (cannot go backwards)

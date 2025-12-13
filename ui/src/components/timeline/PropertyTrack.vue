@@ -65,12 +65,69 @@
         :style="{ left: `${(kf.frame / frameCount) * 100}%` }"
         @mousedown.stop="startKeyframeDrag(kf, $event)"
         @click.stop="selectKeyframe(kf.id, $event)"
-        :title="`Frame ${kf.frame}: ${JSON.stringify(kf.value)}`"
+        @contextmenu.prevent="showEasingMenu(kf, $event)"
+        :title="`Frame ${kf.frame}: ${JSON.stringify(kf.value)} (${kf.interpolation || 'linear'})`"
       >◆</div>
       <div
         class="playhead-marker"
         :style="{ left: `${(currentFrame / frameCount) * 100}%` }"
       ></div>
+
+      <!-- Easing dropdown popup -->
+      <div
+        v-if="easingMenuKeyframe"
+        class="easing-menu"
+        :style="easingMenuPosition"
+        @click.stop
+      >
+        <div class="easing-menu-header">
+          <span>Easing</span>
+          <button class="close-btn" @click="closeEasingMenu">×</button>
+        </div>
+        <div class="easing-menu-content">
+          <div
+            v-for="(groupEasings, groupName) in easingGroups"
+            :key="groupName"
+            class="easing-group"
+          >
+            <div class="easing-group-name">{{ groupName }}</div>
+            <div class="easing-options">
+              <button
+                v-for="easingName in groupEasings"
+                :key="easingName"
+                class="easing-option"
+                :class="{ active: easingMenuKeyframe?.interpolation === easingName }"
+                @click="setEasing(easingName)"
+                :title="easingName"
+              >
+                {{ formatEasingName(easingName) }}
+              </button>
+            </div>
+          </div>
+          <!-- Special options -->
+          <div class="easing-group">
+            <div class="easing-group-name">Special</div>
+            <div class="easing-options">
+              <button
+                class="easing-option"
+                :class="{ active: easingMenuKeyframe?.interpolation === 'hold' }"
+                @click="setEasing('hold')"
+                title="Hold (step)"
+              >
+                Hold
+              </button>
+              <button
+                class="easing-option"
+                :class="{ active: easingMenuKeyframe?.interpolation === 'bezier' }"
+                @click="setEasing('bezier')"
+                title="Custom Bezier"
+              >
+                Bezier
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -78,7 +135,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useCompositorStore } from '@/stores/compositorStore';
-import type { AnimatableProperty } from '@/types/project';
+import type { AnimatableProperty, Keyframe, InterpolationType } from '@/types/project';
+import { easingGroups, type EasingName } from '@/services/easing';
 
 const props = defineProps<{
   layerId: string;
@@ -96,6 +154,10 @@ const emit = defineEmits<{
 const store = useCompositorStore();
 const currentFrame = computed(() => store.currentFrame);
 const keyframeTrackRef = ref<HTMLDivElement | null>(null);
+
+// Easing menu state
+const easingMenuKeyframe = ref<Keyframe<any> | null>(null);
+const easingMenuPosition = ref({ left: '0px', top: '0px' });
 
 const hasKeyframeAtCurrentFrame = computed(() => {
   return props.property.keyframes?.some(kf => kf.frame === currentFrame.value) ?? false;
@@ -185,6 +247,61 @@ function stopKeyframeDrag() {
   draggingKeyframe = null;
   document.removeEventListener('mousemove', handleKeyframeDrag);
   document.removeEventListener('mouseup', stopKeyframeDrag);
+}
+
+// Easing menu functions
+function showEasingMenu(kf: Keyframe<any>, event: MouseEvent) {
+  easingMenuKeyframe.value = kf;
+
+  // Position menu near the keyframe
+  const trackRect = keyframeTrackRef.value?.getBoundingClientRect();
+  if (trackRect) {
+    const kfX = (kf.frame / props.frameCount) * trackRect.width;
+    easingMenuPosition.value = {
+      left: `${Math.min(kfX, trackRect.width - 200)}px`,
+      top: '36px'
+    };
+  }
+
+  // Close menu when clicking outside
+  setTimeout(() => {
+    document.addEventListener('click', closeEasingMenuOnOutsideClick);
+  }, 0);
+}
+
+function closeEasingMenu() {
+  easingMenuKeyframe.value = null;
+  document.removeEventListener('click', closeEasingMenuOnOutsideClick);
+}
+
+function closeEasingMenuOnOutsideClick(event: MouseEvent) {
+  const target = event.target as HTMLElement;
+  if (!target.closest('.easing-menu')) {
+    closeEasingMenu();
+  }
+}
+
+function setEasing(easingName: InterpolationType) {
+  if (!easingMenuKeyframe.value) return;
+
+  store.setKeyframeInterpolation(
+    props.layerId,
+    props.propertyPath,
+    easingMenuKeyframe.value.id,
+    easingName
+  );
+
+  // Update local reference
+  easingMenuKeyframe.value.interpolation = easingName;
+}
+
+function formatEasingName(name: EasingName): string {
+  // Convert easeInQuad -> In, easeOutQuad -> Out, easeInOutQuad -> InOut
+  if (name === 'linear') return 'Lin';
+  if (name.startsWith('easeInOut')) return 'IO';
+  if (name.startsWith('easeIn')) return 'In';
+  if (name.startsWith('easeOut')) return 'Out';
+  return name;
 }
 </script>
 
@@ -314,5 +431,89 @@ function stopKeyframeDrag() {
   background: #ff4444;
   pointer-events: none;
   z-index: 1;
+}
+
+/* Easing menu styles */
+.easing-menu {
+  position: absolute;
+  z-index: 100;
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  min-width: 180px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.easing-menu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  border-bottom: 1px solid #444;
+  font-size: 11px;
+  font-weight: 600;
+  color: #ccc;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: #888;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0 4px;
+}
+
+.close-btn:hover {
+  color: #fff;
+}
+
+.easing-menu-content {
+  padding: 6px;
+}
+
+.easing-group {
+  margin-bottom: 6px;
+}
+
+.easing-group:last-child {
+  margin-bottom: 0;
+}
+
+.easing-group-name {
+  font-size: 10px;
+  color: #777;
+  padding: 2px 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.easing-options {
+  display: flex;
+  gap: 2px;
+}
+
+.easing-option {
+  flex: 1;
+  padding: 4px 6px;
+  border: none;
+  background: #333;
+  color: #aaa;
+  font-size: 10px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.1s;
+}
+
+.easing-option:hover {
+  background: #444;
+  color: #fff;
+}
+
+.easing-option.active {
+  background: #4a90d9;
+  color: #fff;
 }
 </style>

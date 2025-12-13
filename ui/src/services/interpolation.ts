@@ -1,9 +1,10 @@
 /**
  * Keyframe Interpolation Engine
  *
- * Handles linear, bezier, and hold interpolation between keyframes.
+ * Handles linear, bezier, easing, and hold interpolation between keyframes.
  */
 import type { Keyframe, AnimatableProperty, BezierHandle } from '@/types/project';
+import { getEasing, easings, type EasingName } from './easing';
 
 /**
  * Interpolate a property value at a given frame
@@ -47,18 +48,22 @@ export function interpolateProperty<T>(
   let t = duration > 0 ? elapsed / duration : 0;
 
   // Apply interpolation based on type
-  switch (k1.interpolation) {
-    case 'hold':
-      return k1.value;
+  const interpolation = k1.interpolation || 'linear';
 
-    case 'bezier':
-      t = cubicBezierEasing(t, k1.outHandle, k2.inHandle);
-      break;
-
-    case 'linear':
-    default:
-      // t stays linear
-      break;
+  if (interpolation === 'hold') {
+    return k1.value;
+  } else if (interpolation === 'bezier') {
+    // Use bezier handles for custom curves
+    t = cubicBezierEasing(t, k1.outHandle, k2.inHandle);
+  } else if (interpolation === 'linear') {
+    // t stays linear
+  } else if (interpolation in easings) {
+    // Apply named easing function
+    const easingFn = getEasing(interpolation);
+    t = easingFn(t);
+  } else {
+    // Unknown interpolation type, default to linear
+    console.warn(`Unknown interpolation type: ${interpolation}, using linear`);
   }
 
   // Interpolate the value based on type

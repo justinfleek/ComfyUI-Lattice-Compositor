@@ -16,7 +16,8 @@ import type {
   DepthflowLayerData,
   ParticleEmitterConfig,
   AudioParticleMapping,
-  CameraLayerData
+  CameraLayerData,
+  InterpolationType
 } from '@/types/project';
 import type { Camera3D, ViewportState, ViewOptions } from '@/types/camera';
 import { createDefaultCamera, createDefaultViewportState, createDefaultViewOptions } from '@/types/camera';
@@ -850,6 +851,44 @@ export const useCompositorStore = defineStore('compositor', {
 
       // Re-sort keyframes by frame
       property.keyframes.sort((a, b) => a.frame - b.frame);
+
+      this.project.meta.modified = new Date().toISOString();
+    },
+
+    /**
+     * Set keyframe interpolation type
+     */
+    setKeyframeInterpolation(
+      layerId: string,
+      propertyPath: string,
+      keyframeId: string,
+      interpolation: InterpolationType
+    ): void {
+      const layer = this.project.layers.find(l => l.id === layerId);
+      if (!layer) return;
+
+      let property: AnimatableProperty<any> | undefined;
+
+      if (propertyPath === 'position' || propertyPath === 'transform.position') {
+        property = layer.transform.position;
+      } else if (propertyPath === 'scale' || propertyPath === 'transform.scale') {
+        property = layer.transform.scale;
+      } else if (propertyPath === 'rotation' || propertyPath === 'transform.rotation') {
+        property = layer.transform.rotation;
+      } else if (propertyPath === 'anchorPoint' || propertyPath === 'transform.anchorPoint') {
+        property = layer.transform.anchorPoint;
+      } else if (propertyPath === 'opacity') {
+        property = layer.opacity;
+      } else {
+        property = layer.properties.find(p => p.name === propertyPath);
+      }
+
+      if (!property) return;
+
+      const keyframe = property.keyframes.find(kf => kf.id === keyframeId);
+      if (!keyframe) return;
+
+      keyframe.interpolation = interpolation;
 
       this.project.meta.modified = new Date().toISOString();
     },
