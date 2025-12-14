@@ -83,15 +83,17 @@
 
         <!-- LEFT: SIDEBAR -->
         <div class="property-tree-sidebar" :style="{ width: sidebarWidth + 'px' }">
-          <template v-for="layer in filteredLayers" :key="'sidebar-' + layer.id">
+          <template v-for="(layer, idx) in filteredLayers" :key="'sidebar-' + layer.id">
             <EnhancedLayerTrack
               :layer="layer"
+              :index="idx + 1"
               layoutMode="sidebar"
               :viewMode="viewMode"
               :isExpandedExternal="expandedLayers[layer.id]"
               :selectedPropertyIds="Array.from(selectedPropertyIds)"
               :allLayers="store.layers"
               :soloedLayerIds="soloedLayerIds"
+              :gridStyle="sidebarGridStyle"
               @select="selectLayer"
               @updateLayer="updateLayer"
               @toggleExpand="handleToggleExpand"
@@ -168,6 +170,14 @@ const isResizing = ref(false);
 const filteredLayers = computed(() => store.layers || []);
 const totalTrackWidth = computed(() => (store.frameCount + 50) * pixelsPerFrame.value); // Add buffer
 const playheadPosition = computed(() => store.currentFrame * pixelsPerFrame.value);
+
+// Grid layout style for sidebar rows (consistent column widths)
+const sidebarGridStyle = computed(() => ({
+  display: 'grid',
+  gridTemplateColumns: '20px 16px 24px 24px 24px 1fr 70px 80px',
+  alignItems: 'center',
+  height: '28px'
+}));
 
 // Ruler Marks
 const rulerMarks = computed(() => {

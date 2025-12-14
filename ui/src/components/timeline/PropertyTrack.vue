@@ -2,10 +2,12 @@
   <div class="prop-wrapper">
 
     <!-- SIDEBAR MODE -->
-    <div v-if="layoutMode === 'sidebar'" class="prop-sidebar" :class="{ selected: isSelected }" @click="selectProp">
+    <div v-if="layoutMode === 'sidebar'" class="prop-sidebar" :class="{ selected: isSelected }" :style="gridStyle" @click="selectProp">
+
+      <!-- Indent spacer (spans arrow + color + id columns) -->
       <div class="indent-spacer"></div>
 
-      <!-- 1. Diamond FIRST (Add Keyframe) -->
+      <!-- 1. Diamond FIRST (Add Keyframe) - in icon columns -->
       <div class="icon-box" @click.stop="addKeyframeAtCurrent" title="Add Keyframe">
         <span class="kf-btn" :class="{ active: hasKeyframeAtCurrent }">◇</span>
       </div>
@@ -15,33 +17,70 @@
         <span class="stopwatch" :class="{ active: property.animated }">⏱</span>
       </div>
 
-      <div class="prop-name">{{ name }}</div>
+      <!-- Property Name + Values (spans name column) -->
+      <div class="prop-content">
+        <span class="prop-name">{{ name }}</span>
 
-      <!-- 3. Editable Value Display -->
-      <div class="prop-value-container">
-        <!-- Number type -->
-        <template v-if="typeof property.value === 'number'">
-          <input type="number" class="val-input" :value="property.value.toFixed(1)" @change="updateVal(0, $event)" />
-        </template>
+        <!-- Editable Value Display using ScrubableNumber for hot-text feel -->
+        <div class="prop-value-container">
+          <!-- Number type -->
+          <template v-if="typeof property.value === 'number'">
+            <ScrubableNumber
+              :modelValue="property.value"
+              @update:modelValue="(v) => updateValDirect(v)"
+              :precision="1"
+              :sensitivity="0.5"
+            />
+          </template>
 
-        <!-- X/Y type -->
-        <template v-else-if="property.value?.x !== undefined && property.value?.z === undefined">
-          <input type="number" class="val-input small" :value="property.value.x.toFixed(0)" @change="updateVal(0, $event)" />
-          <input type="number" class="val-input small" :value="property.value.y.toFixed(0)" @change="updateVal(1, $event)" />
-        </template>
+          <!-- X/Y type -->
+          <template v-else-if="property.value?.x !== undefined && property.value?.z === undefined">
+            <ScrubableNumber
+              :modelValue="property.value.x"
+              @update:modelValue="(v) => updateValByIndex(0, v)"
+              :precision="0"
+              :sensitivity="1"
+            />
+            <ScrubableNumber
+              :modelValue="property.value.y"
+              @update:modelValue="(v) => updateValByIndex(1, v)"
+              :precision="0"
+              :sensitivity="1"
+            />
+          </template>
 
-        <!-- X/Y/Z type -->
-        <template v-else-if="property.value?.z !== undefined">
-          <input type="number" class="val-input small" :value="property.value.x.toFixed(0)" @change="updateVal(0, $event)" />
-          <input type="number" class="val-input small" :value="property.value.y.toFixed(0)" @change="updateVal(1, $event)" />
-          <input type="number" class="val-input small" :value="property.value.z.toFixed(0)" @change="updateVal(2, $event)" />
-        </template>
+          <!-- X/Y/Z type -->
+          <template v-else-if="property.value?.z !== undefined">
+            <ScrubableNumber
+              :modelValue="property.value.x"
+              @update:modelValue="(v) => updateValByIndex(0, v)"
+              :precision="0"
+              :sensitivity="1"
+            />
+            <ScrubableNumber
+              :modelValue="property.value.y"
+              @update:modelValue="(v) => updateValByIndex(1, v)"
+              :precision="0"
+              :sensitivity="1"
+            />
+            <ScrubableNumber
+              :modelValue="property.value.z"
+              @update:modelValue="(v) => updateValByIndex(2, v)"
+              :precision="0"
+              :sensitivity="1"
+            />
+          </template>
 
-        <!-- Fallback -->
-        <template v-else>
-          <span class="val-display">{{ formatValue(property.value) }}</span>
-        </template>
+          <!-- Fallback -->
+          <template v-else>
+            <span class="val-display">{{ formatValue(property.value) }}</span>
+          </template>
+        </div>
       </div>
+
+      <!-- Empty columns for mode/parent alignment -->
+      <div class="col-spacer"></div>
+      <div class="col-spacer"></div>
     </div>
 
     <!-- TRACK MODE -->
@@ -63,8 +102,9 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useCompositorStore } from '@/stores/compositorStore';
+import ScrubableNumber from '@/components/controls/ScrubableNumber.vue';
 
-const props = defineProps(['name', 'property', 'layerId', 'propertyPath', 'layoutMode', 'viewMode', 'frameCount', 'selectedPropertyIds', 'pixelsPerFrame']);
+const props = defineProps(['name', 'property', 'layerId', 'propertyPath', 'layoutMode', 'viewMode', 'frameCount', 'selectedPropertyIds', 'pixelsPerFrame', 'gridStyle']);
 const emit = defineEmits(['selectProperty', 'selectKeyframe']);
 const store = useCompositorStore();
 
@@ -99,7 +139,16 @@ function selectProp(e: MouseEvent) {
 function updateVal(idx: number, e: Event) {
   const num = parseFloat((e.target as HTMLInputElement).value);
   if (isNaN(num)) return;
+  updateValByIndex(idx, num);
+}
 
+// Direct value update for scalar properties
+function updateValDirect(num: number) {
+  store.setPropertyValue(props.layerId, props.propertyPath, num);
+}
+
+// Update value by component index (0=x, 1=y, 2=z)
+function updateValByIndex(idx: number, num: number) {
   let newVal = props.property.value;
 
   if (typeof newVal === 'number') {
@@ -145,46 +194,81 @@ function startKeyframeDrag(kf: any, e: MouseEvent) {
 <style scoped>
 .prop-wrapper { width: 100%; display: flex; flex-direction: column; }
 
-/* SIDEBAR */
+/* SIDEBAR - Grid layout matching parent */
 .prop-sidebar {
-  display: flex; height: 24px; align-items: center;
+  display: grid;
+  height: 24px;
+  align-items: center;
   border-bottom: 1px solid #2a2a2a;
-  background: #1e1e1e;
+  background: #1a1a1a;
   color: #bbb;
   font-size: 12px;
-  padding-right: 5px; cursor: pointer;
+  cursor: pointer;
 }
-.prop-sidebar:hover { background: #252525; color: #fff; }
-.prop-sidebar.selected { background: #2c2c2c; border-left: 2px solid #3ea6ff; }
+.prop-sidebar:hover { background: #222; color: #fff; }
+.prop-sidebar.selected { background: #252525; border-left: 2px solid #3ea6ff; }
 
-.indent-spacer { width: 35px; flex-shrink: 0; }
+/* Indent spans arrow + color + id columns */
+.indent-spacer { grid-column: span 3; }
 
-.icon-box { width: 24px; text-align: center; cursor: pointer; display: flex; justify-content: center; align-items: center; flex-shrink: 0; }
+.icon-box {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+}
 
-/* Diamond FIRST - now highlighted */
-.kf-btn { font-size: 14px; color: #666; }
+/* Diamond FIRST - highlighted when keyframe exists */
+.kf-btn { font-size: 12px; color: #555; }
 .kf-btn:hover { color: #fff; }
 .kf-btn.active { color: #ebcb8b; }
 
-.stopwatch { font-size: 14px; color: #666; }
+.stopwatch { font-size: 12px; color: #555; }
 .stopwatch.active { color: #3ea6ff; }
 
-.prop-name { flex: 1; padding-left: 4px; min-width: 60px; }
+/* Property content (name + values) */
+.prop-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 4px;
+  overflow: hidden;
+}
 
-/* Value Container with editable inputs */
+.prop-name {
+  color: #888;
+  font-size: 11px;
+  white-space: nowrap;
+  min-width: 60px;
+}
+
+/* Value Container with ScrubableNumber components */
 .prop-value-container {
-  display: flex; gap: 4px; align-items: center; margin-right: 4px;
+  display: flex;
+  gap: 2px;
+  align-items: center;
 }
 
-.val-input {
-  background: #111; border: 1px solid #333; color: #3ea6ff;
-  font-family: monospace; font-size: 11px; padding: 2px 4px;
-  width: 50px; text-align: right; border-radius: 2px;
+/* Scrubable number overrides for compact timeline display */
+.prop-value-container :deep(.scrubable-number) {
+  gap: 0;
 }
-.val-input:focus { border-color: #3ea6ff; outline: none; }
-.val-input.small { width: 40px; }
+.prop-value-container :deep(.scrub-input) {
+  width: 45px;
+  padding: 2px 3px;
+  font-size: 11px;
+  background: #111;
+  border: 1px solid #333;
+  color: #3ea6ff;
+}
+.prop-value-container :deep(.scrub-label) {
+  display: none;
+}
 
-.val-display { color: #3ea6ff; font-family: monospace; font-size: 12px; }
+.val-display { color: #3ea6ff; font-family: monospace; font-size: 11px; }
+
+/* Spacers for mode/parent columns */
+.col-spacer { }
 
 /* TRACK */
 .prop-track { height: 24px; border-bottom: 1px solid #2a2a2a; position: relative; background: #161616; }

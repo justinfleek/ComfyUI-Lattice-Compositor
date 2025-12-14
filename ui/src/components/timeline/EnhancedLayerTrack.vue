@@ -2,8 +2,8 @@
   <div class="track-wrapper" v-if="layer">
 
     <!-- SIDEBAR MODE -->
-    <div v-if="layoutMode === 'sidebar'" class="sidebar-row" :class="{ selected: isSelected }">
-      <div class="row-content" @click="selectLayer">
+    <template v-if="layoutMode === 'sidebar'">
+      <div class="sidebar-row" :class="{ selected: isSelected }" :style="gridStyle" @click="selectLayer">
 
         <!-- 1. Twirl Arrow (LEFTMOST) -->
         <div class="arrow-col" @click.stop="toggleExpand">
@@ -57,11 +57,12 @@
           v-for="prop in properties" :key="prop.path"
           :layerId="layer.id" :propertyPath="prop.path" :name="prop.name" :property="prop.property"
           layoutMode="sidebar"
+          :gridStyle="gridStyle"
           :selectedPropertyIds="selectedPropertyIds"
           @selectProperty="(id, add) => $emit('selectProperty', id, add)"
         />
       </div>
-    </div>
+    </template>
 
     <!-- TRACK MODE -->
     <div v-else-if="layoutMode === 'track'" class="track-row-container">
@@ -99,7 +100,7 @@ import { computed, ref, watch, nextTick } from 'vue';
 import { useCompositorStore } from '@/stores/compositorStore';
 import PropertyTrack from './PropertyTrack.vue';
 
-const props = defineProps(['layer', 'layoutMode', 'isExpandedExternal', 'selectedPropertyIds', 'frameCount', 'viewMode', 'allLayers', 'soloedLayerIds', 'pixelsPerFrame']);
+const props = defineProps(['layer', 'index', 'layoutMode', 'isExpandedExternal', 'selectedPropertyIds', 'frameCount', 'viewMode', 'allLayers', 'soloedLayerIds', 'pixelsPerFrame', 'gridStyle']);
 const emit = defineEmits(['toggleExpand', 'select', 'updateLayer', 'selectProperty', 'selectKeyframe', 'toggleSolo', 'setParent']);
 const store = useCompositorStore();
 
@@ -111,8 +112,9 @@ const isRenaming = ref(false);
 const renameVal = ref('');
 const renameInput = ref<HTMLInputElement | null>(null);
 
-// Layer index for display
+// Layer index for display (use passed index prop or compute from allLayers)
 const layerIndex = computed(() => {
+  if (props.index !== undefined) return props.index;
   const idx = props.allLayers?.findIndex((l: any) => l.id === props.layer.id);
   return idx !== undefined && idx >= 0 ? idx + 1 : 1;
 });
@@ -280,10 +282,11 @@ watch(() => props.isExpandedExternal, v => localExpanded.value = v);
   color: #ccc;
   font-size: 13px;
   min-height: 28px;
+  /* Support both flex and grid layout */
+  display: grid;
+  align-items: center;
 }
 .sidebar-row.selected { background: #333; color: #fff; }
-
-.row-content { display: flex; height: 28px; align-items: center; }
 
 /* Arrow column FIRST */
 .arrow-col { width: 20px; text-align: center; cursor: pointer; font-size: 9px; color: #888; flex-shrink: 0; }

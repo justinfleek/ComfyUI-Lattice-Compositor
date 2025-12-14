@@ -52,11 +52,12 @@ import { DepthMapImage, type ColormapType } from '@/fabric/DepthMapImage';
 import { SplinePath } from '@/fabric/SplinePath';
 import { AnimatedText } from '@/fabric/AnimatedText';
 import SplineEditor from './SplineEditor.vue';
-import type { SplineData, ControlPoint, ParticleLayerData, DepthflowLayerData, TextData } from '@/types/project';
+import type { SplineData, ControlPoint, ParticleLayerData, DepthflowLayerData, TextData, AnimatableProperty } from '@/types/project';
 import { ParticleSystem } from '@/services/particleSystem';
 import { DepthflowRenderer } from '@/services/depthflow';
 import type { PathAnimatorState } from '@/services/audioPathAnimator';
 import { processEffectStack, hasEnabledEffects } from '@/services/effectProcessor';
+import { interpolateProperty } from '@/services/interpolation';
 
 // Store
 const store = useCompositorStore();
@@ -597,66 +598,14 @@ async function loadDepthMap(depthData: string | null) {
   }
 }
 
-// Helper to get the current value from an AnimatableProperty with keyframe interpolation
-function getAnimatedValue<T>(prop: { value: T; animated?: boolean; keyframes?: Array<{ frame: number; value: T }> } | undefined, defaultValue: T): T {
+/**
+ * Helper to get the current animated value from an AnimatableProperty
+ * Uses the full interpolation engine with Bezier/Easing support
+ */
+function getAnimatedValue<T>(prop: AnimatableProperty<T> | undefined, defaultValue: T): T {
   if (!prop) return defaultValue;
-
-  // If not animated or no keyframes, return static value
-  if (!prop.animated || !prop.keyframes || prop.keyframes.length === 0) {
-    return prop.value ?? defaultValue;
-  }
-
-  const currentFrame = store.currentFrame;
-  const keyframes = prop.keyframes;
-
-  // Sort keyframes by frame
-  const sorted = [...keyframes].sort((a, b) => a.frame - b.frame);
-
-  // Before first keyframe
-  if (currentFrame <= sorted[0].frame) {
-    return sorted[0].value;
-  }
-
-  // After last keyframe
-  if (currentFrame >= sorted[sorted.length - 1].frame) {
-    return sorted[sorted.length - 1].value;
-  }
-
-  // Find surrounding keyframes
-  let prevKf = sorted[0];
-  let nextKf = sorted[1];
-
-  for (let i = 0; i < sorted.length - 1; i++) {
-    if (currentFrame >= sorted[i].frame && currentFrame <= sorted[i + 1].frame) {
-      prevKf = sorted[i];
-      nextKf = sorted[i + 1];
-      break;
-    }
-  }
-
-  // Calculate interpolation factor (0-1)
-  const frameDiff = nextKf.frame - prevKf.frame;
-  const t = frameDiff > 0 ? (currentFrame - prevKf.frame) / frameDiff : 0;
-
-  // Interpolate based on value type
-  const prevVal = prevKf.value;
-  const nextVal = nextKf.value;
-
-  if (typeof prevVal === 'number' && typeof nextVal === 'number') {
-    return (prevVal + (nextVal - prevVal) * t) as T;
-  }
-
-  if (typeof prevVal === 'object' && prevVal !== null && 'x' in prevVal && 'y' in prevVal) {
-    const prev = prevVal as { x: number; y: number };
-    const next = nextVal as { x: number; y: number };
-    return {
-      x: prev.x + (next.x - prev.x) * t,
-      y: prev.y + (next.y - prev.y) * t
-    } as T;
-  }
-
-  // Fallback for non-interpolatable types
-  return prevVal;
+  // Use the central interpolation engine (Bezier/Easing support)
+  return interpolateProperty(prop, store.currentFrame);
 }
 
 // Render spline layers from store
