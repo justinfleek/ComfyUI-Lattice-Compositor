@@ -673,15 +673,16 @@ export const useCompositorStore = defineStore('compositor', {
       // Enable animation
       property.animated = true;
 
-      // Create keyframe
+      // Create keyframe with new handle structure
+      // Default handles are disabled (linear interpolation until graph editor enables them)
       const keyframe: Keyframe<T> = {
         id: `kf_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         frame: this.project.currentFrame,
         value,
-        interpolation: 'bezier',
-        inHandle: { x: 0.33, y: 0.33 },
-        outHandle: { x: 0.33, y: 0.33 },
-        handlesBroken: false
+        interpolation: 'linear',
+        inHandle: { frame: 0, value: 0, enabled: false },
+        outHandle: { frame: 0, value: 0, enabled: false },
+        controlMode: 'smooth'
       };
 
       // Check for existing keyframe at this frame

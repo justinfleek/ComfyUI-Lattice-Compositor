@@ -444,8 +444,11 @@ export interface Keyframe<T> {
   interpolation: InterpolationType;
   inHandle: BezierHandle;
   outHandle: BezierHandle;
-  handlesBroken: boolean;
+  controlMode: ControlMode;  // How handles behave when dragged
 }
+
+// Control mode for bezier handles (matches After Effects / Friction)
+export type ControlMode = 'symmetric' | 'smooth' | 'corner';
 
 // Base interpolation types
 export type BaseInterpolationType = 'linear' | 'bezier' | 'hold';
@@ -467,8 +470,9 @@ export type EasingType =
 export type InterpolationType = BaseInterpolationType | EasingType;
 
 export interface BezierHandle {
-  x: number;  // 0-1, time influence (cannot go backwards)
-  y: number;  // Unbounded, value influence (can overshoot)
+  frame: number;   // Frame offset from keyframe (negative for inHandle, positive for outHandle)
+  value: number;   // Value offset from keyframe (can be positive or negative)
+  enabled: boolean; // Whether this handle is active (for graph editor)
 }
 
 // ============================================================

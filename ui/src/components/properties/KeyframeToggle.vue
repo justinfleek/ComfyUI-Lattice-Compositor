@@ -78,16 +78,16 @@ function toggleKeyframe(): void {
 }
 
 function addKeyframe(): void {
-  const defaultHandles: BezierHandle = { x: 0.33, y: 0.33 };
+  const defaultHandle: BezierHandle = { frame: 0, value: 0, enabled: false };
 
   const newKeyframe: Keyframe<any> = {
     id: `kf_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     frame: store.currentFrame,
     value: props.property.value,
-    interpolation: 'bezier',
-    inHandle: { ...defaultHandles },
-    outHandle: { ...defaultHandles },
-    handlesBroken: false
+    interpolation: 'linear',
+    inHandle: { ...defaultHandle },
+    outHandle: { ...defaultHandle },
+    controlMode: 'smooth'
   };
 
   // Enable animation if not already

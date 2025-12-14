@@ -917,10 +917,10 @@ function addKeyframeAtPosition(): void {
       id: `kf_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       frame,
       value: typeof prop.value === 'number' ? value : { x: value, y: value },
-      interpolation: 'bezier',
-      inHandle: { x: 0.33, y: 0 },
-      outHandle: { x: 0.33, y: 0 },
-      handlesBroken: false
+      interpolation: 'linear',
+      inHandle: { frame: 0, value: 0, enabled: false },
+      outHandle: { frame: 0, value: 0, enabled: false },
+      controlMode: 'smooth'
     };
 
     // Insert in sorted order
