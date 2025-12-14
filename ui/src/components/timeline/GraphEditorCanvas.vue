@@ -1,7 +1,34 @@
 <template>
   <div class="graph-editor-canvas" ref="containerRef">
+    <!-- Graph Toolbar -->
+    <div class="graph-toolbar">
+      <div class="graph-mode-toggle">
+        <button
+          :class="{ active: graphMode === 'value' }"
+          @click="setGraphMode('value')"
+          title="Edit Value Graph"
+        >
+          <span class="icon">📈</span> Value
+        </button>
+        <button
+          :class="{ active: graphMode === 'speed' }"
+          @click="setGraphMode('speed')"
+          title="Edit Speed Graph"
+        >
+          <span class="icon">⚡</span> Speed
+        </button>
+      </div>
+      <div class="zoom-controls">
+        <button @click="zoomIn" title="Zoom In">+</button>
+        <span class="zoom-level">{{ zoomLevel.toFixed(1) }}px/f</span>
+        <button @click="zoomOut" title="Zoom Out">−</button>
+        <button @click="fitToView" title="Fit All">⊡</button>
+      </div>
+    </div>
+
     <!-- Y-axis value labels -->
     <div class="y-axis">
+      <div class="y-axis-unit">{{ yAxisUnit }}</div>
       <div
         v-for="label in yAxisLabels"
         :key="label.value"
@@ -17,62 +44,64 @@
       <canvas
         ref="canvasRef"
         @mousedown="handleMouseDown"
-        @wheel="handleWheel"
+        @wheel.prevent="handleWheel"
       ></canvas>
 
-      <!-- Keyframe points (rendered as DOM for easier interaction) -->
-      <template v-for="curve in visibleCurves" :key="curve.id">
-        <div
-          v-for="kf in curve.keyframes"
-          :key="kf.id"
-          class="keyframe-point"
-          :class="{ selected: selectedKeyframeIds.includes(kf.id) }"
-          :style="getKeyframeStyle(curve, kf)"
-          @mousedown.stop="startKeyframeDrag(curve, kf, $event)"
-          @click.stop="selectKeyframe(kf.id, $event)"
-          :title="`${curve.name}: ${formatValue(kf.value)} @ Frame ${kf.frame}`"
-        >
-          <div class="point-inner" :style="{ background: curve.color }"></div>
-        </div>
+      <!-- Keyframe points (DOM for interaction) - Only in Value mode -->
+      <template v-if="graphMode === 'value'">
+        <template v-for="curve in visibleCurves" :key="curve.id">
+          <div
+            v-for="kf in curve.keyframes"
+            :key="kf.id"
+            class="keyframe-point"
+            :class="{ selected: selectedKeyframeIds.includes(kf.id) }"
+            :style="getKeyframeStyle(curve, kf)"
+            @mousedown.stop="startKeyframeDrag(curve, kf, $event)"
+            @click.stop="selectKeyframe(kf.id, $event)"
+            :title="`${curve.name}: ${formatValue(kf.value)} @ Frame ${kf.frame}`"
+          >
+            <div class="point-inner" :style="{ background: curve.color }"></div>
+          </div>
 
-        <!-- Bezier handles for selected keyframes -->
-        <template v-for="kf in curve.keyframes" :key="'handles-' + kf.id">
-          <template v-if="selectedKeyframeIds.includes(kf.id) && kf.interpolation === 'bezier'">
-            <!-- In handle -->
-            <template v-if="kf.inHandle?.enabled">
-              <div
-                class="bezier-handle"
-                :style="getHandleStyle(curve, kf, 'in')"
-                @mousedown.stop="startHandleDrag(curve, kf, 'in', $event)"
-              ></div>
-              <svg class="handle-line-svg">
-                <line
-                  :x1="getHandleLineCoords(curve, kf, 'in').x1"
-                  :y1="getHandleLineCoords(curve, kf, 'in').y1"
-                  :x2="getHandleLineCoords(curve, kf, 'in').x2"
-                  :y2="getHandleLineCoords(curve, kf, 'in').y2"
-                  :stroke="curve.color"
-                  stroke-width="1"
-                />
-              </svg>
-            </template>
-            <!-- Out handle -->
-            <template v-if="kf.outHandle?.enabled">
-              <div
-                class="bezier-handle"
-                :style="getHandleStyle(curve, kf, 'out')"
-                @mousedown.stop="startHandleDrag(curve, kf, 'out', $event)"
-              ></div>
-              <svg class="handle-line-svg">
-                <line
-                  :x1="getHandleLineCoords(curve, kf, 'out').x1"
-                  :y1="getHandleLineCoords(curve, kf, 'out').y1"
-                  :x2="getHandleLineCoords(curve, kf, 'out').x2"
-                  :y2="getHandleLineCoords(curve, kf, 'out').y2"
-                  :stroke="curve.color"
-                  stroke-width="1"
-                />
-              </svg>
+          <!-- Bezier handles for selected keyframes -->
+          <template v-for="kf in curve.keyframes" :key="'handles-' + kf.id">
+            <template v-if="selectedKeyframeIds.includes(kf.id) && kf.interpolation === 'bezier'">
+              <!-- In handle -->
+              <template v-if="kf.inHandle?.enabled">
+                <div
+                  class="bezier-handle"
+                  :style="getHandleStyle(curve, kf, 'in')"
+                  @mousedown.stop="startHandleDrag(curve, kf, 'in', $event)"
+                ></div>
+                <svg class="handle-line-svg">
+                  <line
+                    :x1="getHandleLineCoords(curve, kf, 'in').x1"
+                    :y1="getHandleLineCoords(curve, kf, 'in').y1"
+                    :x2="getHandleLineCoords(curve, kf, 'in').x2"
+                    :y2="getHandleLineCoords(curve, kf, 'in').y2"
+                    :stroke="curve.color"
+                    stroke-width="1"
+                  />
+                </svg>
+              </template>
+              <!-- Out handle -->
+              <template v-if="kf.outHandle?.enabled">
+                <div
+                  class="bezier-handle"
+                  :style="getHandleStyle(curve, kf, 'out')"
+                  @mousedown.stop="startHandleDrag(curve, kf, 'out', $event)"
+                ></div>
+                <svg class="handle-line-svg">
+                  <line
+                    :x1="getHandleLineCoords(curve, kf, 'out').x1"
+                    :y1="getHandleLineCoords(curve, kf, 'out').y1"
+                    :x2="getHandleLineCoords(curve, kf, 'out').x2"
+                    :y2="getHandleLineCoords(curve, kf, 'out').y2"
+                    :stroke="curve.color"
+                    stroke-width="1"
+                  />
+                </svg>
+              </template>
             </template>
           </template>
         </template>
@@ -81,7 +110,7 @@
       <!-- Playhead -->
       <div
         class="playhead"
-        :style="{ left: `${playheadPercent}%` }"
+        :style="{ left: `${playheadPx}px` }"
       ></div>
     </div>
   </div>
@@ -90,24 +119,27 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import { useCompositorStore } from '@/stores/compositorStore';
-import type { Layer, Keyframe, AnimatableProperty } from '@/types/project';
+import type { Keyframe } from '@/types/project';
 
-// Property curve colors
+// ═══════════════════════════════════════════════════════════════════
+// CONSTANTS - Exact AE Colors
+// ═══════════════════════════════════════════════════════════════════
+
 const CURVE_COLORS: Record<string, string> = {
-  'Position X': '#ff6b6b',
-  'Position Y': '#4ecdc4',
-  'Position Z': '#ab47bc',
-  'Scale X': '#ffa726',
-  'Scale Y': '#ffee58',
-  'Scale Z': '#7c9cff',
-  'Rotation': '#ab47bc',
-  'Rotation X': '#ff6b6b',
-  'Rotation Y': '#4ecdc4',
-  'Rotation Z': '#ab47bc',
-  'Opacity': '#7c9cff',
-  'Anchor Point X': '#90a4ae',
-  'Anchor Point Y': '#78909c',
+  'Position X': '#ff4d4d',    // AE Red
+  'Position Y': '#4dff4d',    // AE Green
+  'Position Z': '#4d4dff',    // AE Blue
+  'Scale X': '#ffb34d',       // Orange
+  'Scale Y': '#ffff4d',       // Yellow
+  'Rotation': '#d94dff',      // Purple
+  'Opacity': '#4dffff',       // Cyan
+  'Anchor Point X': '#ff4d4d',
+  'Anchor Point Y': '#4dff4d',
 };
+
+// ═══════════════════════════════════════════════════════════════════
+// TYPES
+// ═══════════════════════════════════════════════════════════════════
 
 interface CurveData {
   id: string;
@@ -116,38 +148,86 @@ interface CurveData {
   name: string;
   color: string;
   keyframes: Keyframe<any>[];
-  visible: boolean;
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// PROPS & EMITS
+// ═══════════════════════════════════════════════════════════════════
 
 const props = defineProps<{
   frameCount: number;
   currentFrame: number;
+  selectedPropertyIds: string[];
+  graphMode: 'value' | 'speed';
 }>();
 
 const emit = defineEmits<{
   (e: 'selectKeyframe', id: string, addToSelection: boolean): void;
+  (e: 'update:graphMode', mode: 'value' | 'speed'): void;
 }>();
 
 const store = useCompositorStore();
+
+// ═══════════════════════════════════════════════════════════════════
+// REFS
+// ═══════════════════════════════════════════════════════════════════
 
 const containerRef = ref<HTMLDivElement | null>(null);
 const canvasAreaRef = ref<HTMLDivElement | null>(null);
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 
-// View state
-const viewMin = ref(0);
-const viewMax = ref(500);
-const pan = ref({ x: 0, y: 0 });
+// ═══════════════════════════════════════════════════════════════════
+// VIEWPORT STATE (Zoom & Pan)
+// ═══════════════════════════════════════════════════════════════════
 
-// Selection
+const zoomLevel = ref(5.0);       // Pixels per frame
+const scrollOffset = ref(0);      // Frame at left edge
+
+// ═══════════════════════════════════════════════════════════════════
+// COORDINATE TRANSFORMS
+// ═══════════════════════════════════════════════════════════════════
+
+function frameToPixel(frame: number): number {
+  return (frame - scrollOffset.value) * zoomLevel.value;
+}
+
+function pixelToFrame(pixel: number): number {
+  return (pixel / zoomLevel.value) + scrollOffset.value;
+}
+
+function valueToPixel(value: number, height: number): number {
+  const range = valueRange.value;
+  const normalized = (value - range.min) / (range.max - range.min);
+  return height - (normalized * height); // Flip Y (0 at bottom)
+}
+
+function pixelToValue(pixel: number, height: number): number {
+  const range = valueRange.value;
+  const normalized = (height - pixel) / height;
+  return range.min + (normalized * (range.max - range.min));
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// COMPUTED - Selection
+// ═══════════════════════════════════════════════════════════════════
+
 const selectedKeyframeIds = computed(() => store.selectedKeyframeIds);
 
-// Collect all animated properties as curves
+// ═══════════════════════════════════════════════════════════════════
+// COMPUTED - Playhead Position
+// ═══════════════════════════════════════════════════════════════════
+
+const playheadPx = computed(() => frameToPixel(props.currentFrame));
+
+// ═══════════════════════════════════════════════════════════════════
+// COMPUTED - Collect All Curves (with Separated Dimensions)
+// ═══════════════════════════════════════════════════════════════════
+
 const allCurves = computed<CurveData[]>(() => {
   const curves: CurveData[] = [];
 
   store.layers.forEach(layer => {
-    // Transform position (split into X, Y, Z)
+    // Position X/Y (always separated for graph editing)
     if (layer.transform.position.animated && layer.transform.position.keyframes.length > 0) {
       const pos = layer.transform.position;
       curves.push({
@@ -159,8 +239,7 @@ const allCurves = computed<CurveData[]>(() => {
         keyframes: pos.keyframes.map(kf => ({
           ...kf,
           value: typeof kf.value === 'object' ? kf.value.x : kf.value
-        })),
-        visible: true
+        }))
       });
       curves.push({
         id: `${layer.id}-position-y`,
@@ -171,12 +250,11 @@ const allCurves = computed<CurveData[]>(() => {
         keyframes: pos.keyframes.map(kf => ({
           ...kf,
           value: typeof kf.value === 'object' ? kf.value.y : kf.value
-        })),
-        visible: true
+        }))
       });
     }
 
-    // Scale
+    // Scale X/Y
     if (layer.transform.scale.animated && layer.transform.scale.keyframes.length > 0) {
       const scale = layer.transform.scale;
       curves.push({
@@ -188,8 +266,7 @@ const allCurves = computed<CurveData[]>(() => {
         keyframes: scale.keyframes.map(kf => ({
           ...kf,
           value: typeof kf.value === 'object' ? kf.value.x : kf.value
-        })),
-        visible: true
+        }))
       });
       curves.push({
         id: `${layer.id}-scale-y`,
@@ -200,8 +277,7 @@ const allCurves = computed<CurveData[]>(() => {
         keyframes: scale.keyframes.map(kf => ({
           ...kf,
           value: typeof kf.value === 'object' ? kf.value.y : kf.value
-        })),
-        visible: true
+        }))
       });
     }
 
@@ -213,8 +289,7 @@ const allCurves = computed<CurveData[]>(() => {
         propertyPath: 'transform.rotation',
         name: 'Rotation',
         color: CURVE_COLORS['Rotation'],
-        keyframes: layer.transform.rotation.keyframes,
-        visible: true
+        keyframes: layer.transform.rotation.keyframes
       });
     }
 
@@ -226,8 +301,7 @@ const allCurves = computed<CurveData[]>(() => {
         propertyPath: 'opacity',
         name: 'Opacity',
         color: CURVE_COLORS['Opacity'],
-        keyframes: layer.opacity.keyframes,
-        visible: true
+        keyframes: layer.opacity.keyframes
       });
     }
   });
@@ -235,12 +309,33 @@ const allCurves = computed<CurveData[]>(() => {
   return curves;
 });
 
-const visibleCurves = computed(() => allCurves.value.filter(c => c.visible));
+// Filter by selected properties
+const visibleCurves = computed(() => {
+  if (props.selectedPropertyIds.length === 0) {
+    return allCurves.value;
+  }
+  return allCurves.value.filter(c => props.selectedPropertyIds.includes(c.id));
+});
 
-// Calculate value range from all visible curves
+// ═══════════════════════════════════════════════════════════════════
+// COMPUTED - Value Range (Auto-scale Y axis)
+// ═══════════════════════════════════════════════════════════════════
+
 const valueRange = computed(() => {
-  const values: number[] = [];
+  if (props.graphMode === 'speed') {
+    // Speed mode: 0 to max speed
+    let maxSpeed = 100;
+    visibleCurves.value.forEach(curve => {
+      for (let f = 0; f < props.frameCount - 1; f++) {
+        const speed = calculateSpeedAtFrame(curve, f);
+        maxSpeed = Math.max(maxSpeed, speed);
+      }
+    });
+    return { min: 0, max: maxSpeed * 1.2 };
+  }
 
+  // Value mode
+  const values: number[] = [];
   visibleCurves.value.forEach(curve => {
     curve.keyframes.forEach(kf => {
       const v = typeof kf.value === 'number' ? kf.value : 0;
@@ -256,13 +351,25 @@ const valueRange = computed(() => {
   const max = Math.max(...values);
   const padding = Math.max((max - min) * 0.15, 20);
 
-  return {
-    min: min - padding,
-    max: max + padding
-  };
+  return { min: min - padding, max: max + padding };
 });
 
-// Y-axis labels
+// ═══════════════════════════════════════════════════════════════════
+// COMPUTED - Y-Axis Labels & Units
+// ═══════════════════════════════════════════════════════════════════
+
+const yAxisUnit = computed(() => {
+  if (props.graphMode === 'speed') {
+    const hasRotation = visibleCurves.value.some(c => c.name.includes('Rotation'));
+    return hasRotation ? 'deg/sec' : 'px/sec';
+  }
+  const hasRotation = visibleCurves.value.some(c => c.name.includes('Rotation'));
+  const hasOpacity = visibleCurves.value.some(c => c.name.includes('Opacity'));
+  if (hasRotation) return 'deg';
+  if (hasOpacity) return '%';
+  return 'px';
+});
+
 const yAxisLabels = computed(() => {
   const range = valueRange.value;
   const labels: { value: number; percent: number; text: string }[] = [];
@@ -281,40 +388,230 @@ const yAxisLabels = computed(() => {
   return labels;
 });
 
-// Playhead position
-const playheadPercent = computed(() => {
-  return (props.currentFrame / props.frameCount) * 100;
-});
+// ═══════════════════════════════════════════════════════════════════
+// SPEED GRAPH MATH - Calculate derivative
+// ═══════════════════════════════════════════════════════════════════
 
-// Coordinate transforms
-function frameToX(frame: number): number {
-  return (frame / props.frameCount) * 100;
+function calculateSpeedAtFrame(curve: CurveData, frame: number): number {
+  const fps = store.fps || 30;
+  const epsilon = 1 / fps;
+
+  const v1 = sampleCurveValue(curve, frame);
+  const v2 = sampleCurveValue(curve, frame + epsilon);
+
+  return Math.abs(v2 - v1) * fps;
 }
 
-function valueToY(value: number): number {
+// Sample curve value at any float frame (with bezier interpolation)
+function sampleCurveValue(curve: CurveData, t: number): number {
+  const kfs = [...curve.keyframes].sort((a, b) => a.frame - b.frame);
+  if (kfs.length === 0) return 0;
+  if (kfs.length === 1) return kfs[0].value;
+
+  // Before first keyframe
+  if (t <= kfs[0].frame) return kfs[0].value;
+  // After last keyframe
+  if (t >= kfs[kfs.length - 1].frame) return kfs[kfs.length - 1].value;
+
+  // Find segment
+  let i = 0;
+  while (i < kfs.length - 1 && kfs[i + 1].frame < t) i++;
+
+  const kf1 = kfs[i];
+  const kf2 = kfs[i + 1];
+  const duration = kf2.frame - kf1.frame;
+  const localT = (t - kf1.frame) / duration;
+
+  const v1 = typeof kf1.value === 'number' ? kf1.value : 0;
+  const v2 = typeof kf2.value === 'number' ? kf2.value : 0;
+
+  const interp = kf1.interpolation || 'linear';
+
+  if (interp === 'hold') {
+    return v1;
+  } else if (interp === 'bezier' && kf1.outHandle?.enabled && kf2.inHandle?.enabled) {
+    // Cubic bezier interpolation
+    return cubicBezierValue(
+      v1,
+      v1 + (kf1.outHandle?.value || 0),
+      v2 + (kf2.inHandle?.value || 0),
+      v2,
+      localT
+    );
+  } else {
+    // Linear
+    return v1 + (v2 - v1) * localT;
+  }
+}
+
+// Cubic bezier value calculation
+function cubicBezierValue(p0: number, p1: number, p2: number, p3: number, t: number): number {
+  const mt = 1 - t;
+  return (
+    mt * mt * mt * p0 +
+    3 * mt * mt * t * p1 +
+    3 * mt * t * t * p2 +
+    t * t * t * p3
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// DRAWING
+// ═══════════════════════════════════════════════════════════════════
+
+function draw() {
+  const canvas = canvasRef.value;
+  const container = canvasAreaRef.value;
+  if (!canvas || !container) return;
+
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  const rect = container.getBoundingClientRect();
+  canvas.width = rect.width;
+  canvas.height = rect.height;
+
+  const w = canvas.width;
+  const h = canvas.height;
   const range = valueRange.value;
-  return ((range.max - value) / (range.max - range.min)) * 100;
+
+  ctx.clearRect(0, 0, w, h);
+
+  // Grid
+  drawGrid(ctx, w, h, range);
+
+  // Curves
+  visibleCurves.value.forEach(curve => {
+    if (curve.keyframes.length < 1) return;
+
+    // Two-pass: black outline then colored
+    for (let pass = 0; pass < 2; pass++) {
+      ctx.strokeStyle = pass === 0 ? '#000' : curve.color;
+      ctx.lineWidth = pass === 0 ? 4 : 2;
+      ctx.beginPath();
+
+      if (props.graphMode === 'value') {
+        drawValueCurve(ctx, curve, h, range);
+      } else {
+        drawSpeedCurve(ctx, curve, h);
+      }
+
+      ctx.stroke();
+    }
+  });
 }
 
-function xToFrame(xPercent: number): number {
-  return (xPercent / 100) * props.frameCount;
+function drawGrid(ctx: CanvasRenderingContext2D, w: number, h: number, range: { min: number; max: number }) {
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 1;
+
+  // Vertical grid (time) - based on zoom
+  const frameStep = Math.max(1, Math.floor(50 / zoomLevel.value));
+  const startFrame = Math.floor(scrollOffset.value);
+  const endFrame = Math.ceil(scrollOffset.value + w / zoomLevel.value);
+
+  for (let f = startFrame; f <= endFrame; f += frameStep) {
+    const x = frameToPixel(f);
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, h);
+    ctx.stroke();
+  }
+
+  // Horizontal grid (value)
+  const valueStep = (range.max - range.min) / 5;
+  for (let v = range.min; v <= range.max; v += valueStep) {
+    const y = valueToPixel(v, h);
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(w, y);
+    ctx.stroke();
+  }
+
+  // Zero line
+  if (range.min < 0 && range.max > 0) {
+    ctx.strokeStyle = '#555';
+    ctx.lineWidth = 1;
+    const zeroY = valueToPixel(0, h);
+    ctx.beginPath();
+    ctx.moveTo(0, zeroY);
+    ctx.lineTo(w, zeroY);
+    ctx.stroke();
+  }
 }
 
-function yToValue(yPercent: number): number {
-  const range = valueRange.value;
-  return range.max - (yPercent / 100) * (range.max - range.min);
+function drawValueCurve(ctx: CanvasRenderingContext2D, curve: CurveData, h: number, range: { min: number; max: number }) {
+  const sorted = [...curve.keyframes].sort((a, b) => a.frame - b.frame);
+
+  for (let i = 0; i < sorted.length; i++) {
+    const kf = sorted[i];
+    const v = typeof kf.value === 'number' ? kf.value : 0;
+    const x = frameToPixel(kf.frame);
+    const y = valueToPixel(v, h);
+
+    if (i === 0) {
+      ctx.moveTo(x, y);
+      continue;
+    }
+
+    const prev = sorted[i - 1];
+    const prevV = typeof prev.value === 'number' ? prev.value : 0;
+    const interp = prev.interpolation || 'linear';
+
+    if (interp === 'hold') {
+      const prevX = frameToPixel(prev.frame);
+      const prevY = valueToPixel(prevV, h);
+      ctx.lineTo(x, prevY);
+      ctx.lineTo(x, y);
+    } else if (interp === 'bezier' && prev.outHandle?.enabled && kf.inHandle?.enabled) {
+      const cp1x = frameToPixel(prev.frame + prev.outHandle.frame);
+      const cp1y = valueToPixel(prevV + prev.outHandle.value, h);
+      const cp2x = frameToPixel(kf.frame + kf.inHandle.frame);
+      const cp2y = valueToPixel(v + kf.inHandle.value, h);
+      ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x, y);
+    } else {
+      ctx.lineTo(x, y);
+    }
+  }
 }
 
-// Get keyframe position style
+// SPEED GRAPH - The "Bell Curve" (derivative visualization)
+function drawSpeedCurve(ctx: CanvasRenderingContext2D, curve: CurveData, h: number) {
+  const speedRange = valueRange.value;
+  const step = 0.5; // Sample every half frame for smoothness
+
+  const startFrame = Math.max(0, scrollOffset.value - 10);
+  const endFrame = Math.min(props.frameCount, scrollOffset.value + (ctx.canvas.width / zoomLevel.value) + 10);
+
+  let first = true;
+
+  for (let f = startFrame; f <= endFrame; f += step) {
+    const speed = calculateSpeedAtFrame(curve, f);
+    const x = frameToPixel(f);
+    const y = valueToPixel(speed, h);
+
+    if (first) {
+      ctx.moveTo(x, y);
+      first = false;
+    } else {
+      ctx.lineTo(x, y);
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// POSITIONING HELPERS
+// ═══════════════════════════════════════════════════════════════════
+
 function getKeyframeStyle(curve: CurveData, kf: Keyframe<any>) {
   const value = typeof kf.value === 'number' ? kf.value : 0;
+  const h = canvasRef.value?.height || 300;
   return {
-    left: `${frameToX(kf.frame)}%`,
-    top: `${valueToY(value)}%`
+    left: `${frameToPixel(kf.frame)}px`,
+    top: `${valueToPixel(value, h)}px`
   };
 }
 
-// Get handle position style
 function getHandleStyle(curve: CurveData, kf: Keyframe<any>, type: 'in' | 'out') {
   const handle = type === 'in' ? kf.inHandle : kf.outHandle;
   if (!handle?.enabled) return { display: 'none' };
@@ -322,28 +619,27 @@ function getHandleStyle(curve: CurveData, kf: Keyframe<any>, type: 'in' | 'out')
   const kfValue = typeof kf.value === 'number' ? kf.value : 0;
   const handleFrame = kf.frame + handle.frame;
   const handleValue = kfValue + handle.value;
+  const h = canvasRef.value?.height || 300;
 
   return {
-    left: `${frameToX(handleFrame)}%`,
-    top: `${valueToY(handleValue)}%`,
+    left: `${frameToPixel(handleFrame)}px`,
+    top: `${valueToPixel(handleValue, h)}px`,
     background: curve.color
   };
 }
 
-// Get handle line coordinates
 function getHandleLineCoords(curve: CurveData, kf: Keyframe<any>, type: 'in' | 'out') {
   const handle = type === 'in' ? kf.inHandle : kf.outHandle;
-  if (!handle?.enabled) return { x1: '0', y1: '0', x2: '0', y2: '0' };
+  if (!handle?.enabled) return { x1: 0, y1: 0, x2: 0, y2: 0 };
 
   const kfValue = typeof kf.value === 'number' ? kf.value : 0;
-  const handleFrame = kf.frame + handle.frame;
-  const handleValue = kfValue + handle.value;
+  const h = canvasRef.value?.height || 300;
 
   return {
-    x1: `${frameToX(kf.frame)}%`,
-    y1: `${valueToY(kfValue)}%`,
-    x2: `${frameToX(handleFrame)}%`,
-    y2: `${valueToY(handleValue)}%`
+    x1: frameToPixel(kf.frame),
+    y1: valueToPixel(kfValue, h),
+    x2: frameToPixel(kf.frame + handle.frame),
+    y2: valueToPixel(kfValue + handle.value, h)
   };
 }
 
@@ -353,113 +649,48 @@ function formatValue(value: any): string {
   return String(value);
 }
 
-// Draw the graph
-function draw() {
-  const canvas = canvasRef.value;
-  const container = canvasAreaRef.value;
-  if (!canvas || !container) return;
+// ═══════════════════════════════════════════════════════════════════
+// ZOOM & PAN CONTROLS
+// ═══════════════════════════════════════════════════════════════════
 
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
-
-  // Set canvas size
-  const rect = container.getBoundingClientRect();
-  canvas.width = rect.width;
-  canvas.height = rect.height;
-
-  const w = canvas.width;
-  const h = canvas.height;
-  const range = valueRange.value;
-
-  // Clear
-  ctx.clearRect(0, 0, w, h);
-
-  // Draw grid
-  ctx.strokeStyle = '#333';
-  ctx.lineWidth = 1;
-
-  // Vertical grid lines (time)
-  const frameStep = Math.max(1, Math.floor(props.frameCount / 20));
-  for (let f = 0; f <= props.frameCount; f += frameStep) {
-    const x = (f / props.frameCount) * w;
-    ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, h);
-    ctx.stroke();
+function handleWheel(event: WheelEvent) {
+  if (event.ctrlKey || event.metaKey) {
+    // Zoom
+    const zoomFactor = event.deltaY > 0 ? 0.9 : 1.1;
+    zoomLevel.value = Math.max(0.5, Math.min(50, zoomLevel.value * zoomFactor));
+  } else {
+    // Pan
+    scrollOffset.value += event.deltaY / zoomLevel.value;
+    scrollOffset.value = Math.max(0, scrollOffset.value);
   }
-
-  // Horizontal grid lines (value)
-  const valueStep = (range.max - range.min) / 5;
-  for (let v = range.min; v <= range.max; v += valueStep) {
-    const y = ((range.max - v) / (range.max - range.min)) * h;
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(w, y);
-    ctx.stroke();
-  }
-
-  // Zero line (if in range)
-  if (range.min < 0 && range.max > 0) {
-    ctx.strokeStyle = '#555';
-    ctx.lineWidth = 1;
-    const zeroY = ((range.max - 0) / (range.max - range.min)) * h;
-    ctx.beginPath();
-    ctx.moveTo(0, zeroY);
-    ctx.lineTo(w, zeroY);
-    ctx.stroke();
-  }
-
-  // Draw curves
-  visibleCurves.value.forEach(curve => {
-    if (curve.keyframes.length < 2) return;
-
-    const sorted = [...curve.keyframes].sort((a, b) => a.frame - b.frame);
-
-    // Two-pass: black outline then colored
-    for (let pass = 0; pass < 2; pass++) {
-      ctx.strokeStyle = pass === 0 ? '#000' : curve.color;
-      ctx.lineWidth = pass === 0 ? 4 : 2;
-
-      ctx.beginPath();
-
-      for (let i = 0; i < sorted.length - 1; i++) {
-        const kf1 = sorted[i];
-        const kf2 = sorted[i + 1];
-
-        const v1 = typeof kf1.value === 'number' ? kf1.value : 0;
-        const v2 = typeof kf2.value === 'number' ? kf2.value : 0;
-
-        const x1 = (kf1.frame / props.frameCount) * w;
-        const y1 = ((range.max - v1) / (range.max - range.min)) * h;
-        const x2 = (kf2.frame / props.frameCount) * w;
-        const y2 = ((range.max - v2) / (range.max - range.min)) * h;
-
-        if (i === 0) {
-          ctx.moveTo(x1, y1);
-        }
-
-        const interp = kf1.interpolation || 'linear';
-
-        if (interp === 'hold') {
-          ctx.lineTo(x2, y1);
-          ctx.lineTo(x2, y2);
-        } else if (interp === 'bezier' && kf1.outHandle?.enabled && kf2.inHandle?.enabled) {
-          const cp1x = ((kf1.frame + kf1.outHandle.frame) / props.frameCount) * w;
-          const cp1y = ((range.max - (v1 + kf1.outHandle.value)) / (range.max - range.min)) * h;
-          const cp2x = ((kf2.frame + kf2.inHandle.frame) / props.frameCount) * w;
-          const cp2y = ((range.max - (v2 + kf2.inHandle.value)) / (range.max - range.min)) * h;
-          ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x2, y2);
-        } else {
-          ctx.lineTo(x2, y2);
-        }
-      }
-
-      ctx.stroke();
-    }
-  });
+  draw();
 }
 
-// Mouse interactions
+function zoomIn() {
+  zoomLevel.value = Math.min(50, zoomLevel.value * 1.2);
+  draw();
+}
+
+function zoomOut() {
+  zoomLevel.value = Math.max(0.5, zoomLevel.value / 1.2);
+  draw();
+}
+
+function fitToView() {
+  const w = canvasRef.value?.width || 800;
+  zoomLevel.value = w / props.frameCount;
+  scrollOffset.value = 0;
+  draw();
+}
+
+function setGraphMode(mode: 'value' | 'speed') {
+  emit('update:graphMode', mode);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// INTERACTION - Dragging
+// ═══════════════════════════════════════════════════════════════════
+
 let isDragging = false;
 let dragType: 'keyframe' | 'handle' | 'pan' | null = null;
 let dragCurve: CurveData | null = null;
@@ -506,19 +737,20 @@ function handleMouseMove(event: MouseEvent) {
   const rect = canvasAreaRef.value.getBoundingClientRect();
   const x = event.clientX - rect.left;
   const y = event.clientY - rect.top;
-  const xPercent = (x / rect.width) * 100;
-  const yPercent = (y / rect.height) * 100;
+  const h = rect.height;
 
-  if (dragType === 'keyframe' && dragCurve && dragKeyframe) {
-    const newFrame = Math.round(xToFrame(xPercent));
-    const newValue = yToValue(yPercent);
+  if (dragType === 'pan') {
+    const dx = event.clientX - dragStartPos.x;
+    scrollOffset.value -= dx / zoomLevel.value;
+    scrollOffset.value = Math.max(0, scrollOffset.value);
+    dragStartPos = { x: event.clientX, y: event.clientY };
+  } else if (dragType === 'keyframe' && dragCurve && dragKeyframe) {
+    const newFrame = Math.round(pixelToFrame(x));
     const clampedFrame = Math.max(0, Math.min(props.frameCount - 1, newFrame));
-
     store.moveKeyframe(dragCurve.layerId, dragCurve.propertyPath, dragKeyframe.id, clampedFrame);
-    // Note: Value update would need to handle vector properties properly
   } else if (dragType === 'handle' && dragCurve && dragKeyframe && dragHandleType) {
-    const mouseFrame = xToFrame(xPercent);
-    const mouseValue = yToValue(yPercent);
+    const mouseFrame = pixelToFrame(x);
+    const mouseValue = pixelToValue(y, h);
     const kfValue = typeof dragKeyframe.value === 'number' ? dragKeyframe.value : 0;
 
     const frameOffset = mouseFrame - dragKeyframe.frame;
@@ -546,18 +778,16 @@ function handleMouseUp() {
   document.removeEventListener('mouseup', handleMouseUp);
 }
 
-function handleWheel(event: WheelEvent) {
-  // Could implement zoom here
-  event.preventDefault();
-}
-
 function selectKeyframe(id: string, event: MouseEvent) {
   emit('selectKeyframe', id, event.shiftKey);
 }
 
-// Watch and redraw
+// ═══════════════════════════════════════════════════════════════════
+// LIFECYCLE
+// ═══════════════════════════════════════════════════════════════════
+
 watch(
-  () => [visibleCurves.value, props.frameCount, props.currentFrame],
+  () => [visibleCurves.value, props.frameCount, props.currentFrame, props.graphMode],
   () => nextTick(draw),
   { deep: true }
 );
@@ -575,17 +805,96 @@ onUnmounted(() => {
 <style scoped>
 .graph-editor-canvas {
   display: flex;
+  flex-direction: column;
   width: 100%;
   height: 100%;
   min-height: 300px;
   background: #1a1a1a;
 }
 
+.graph-toolbar {
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  background: #252525;
+  border-bottom: 1px solid #333;
+}
+
+.graph-mode-toggle {
+  display: flex;
+  gap: 4px;
+}
+
+.graph-mode-toggle button {
+  padding: 4px 10px;
+  border: 1px solid #444;
+  background: #2a2a2a;
+  color: #888;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  transition: all 0.15s ease;
+}
+
+.graph-mode-toggle button:hover {
+  background: #333;
+  color: #fff;
+}
+
+.graph-mode-toggle button.active {
+  background: #7c9cff;
+  border-color: #7c9cff;
+  color: #fff;
+}
+
+.zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.zoom-controls button {
+  width: 24px;
+  height: 24px;
+  border: 1px solid #444;
+  background: #2a2a2a;
+  color: #888;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.zoom-controls button:hover {
+  background: #333;
+  color: #fff;
+}
+
+.zoom-level {
+  font-size: 10px;
+  color: #666;
+  min-width: 50px;
+  text-align: center;
+}
+
 .y-axis {
+  position: absolute;
+  left: 0;
+  top: 32px;
+  bottom: 0;
   width: 50px;
-  position: relative;
   border-right: 1px solid #333;
   background: #1e1e1e;
+}
+
+.y-axis-unit {
+  position: absolute;
+  top: 4px;
+  right: 8px;
+  font-size: 9px;
+  color: #888;
+  text-transform: uppercase;
 }
 
 .y-label {
@@ -601,6 +910,7 @@ onUnmounted(() => {
   flex: 1;
   position: relative;
   overflow: hidden;
+  margin-left: 50px;
 }
 
 .canvas-area canvas {

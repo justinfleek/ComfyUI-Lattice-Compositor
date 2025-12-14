@@ -137,63 +137,78 @@
         </div>
       </div>
 
-      <!-- Layer tracks (Keyframe mode) -->
-      <div v-if="viewMode === 'keyframes'" class="layer-tracks" ref="layerTracksRef">
-        <template v-for="layer in filteredLayers" :key="layer.id">
-          <EnhancedLayerTrack
-            :layer="layer"
-            :frameCount="store.frameCount"
-            :currentFrame="store.currentFrame"
-            :allLayers="store.layers"
-            :soloedLayerIds="soloedLayerIds"
-            :showSwitches="showLayerSwitches"
-            @select="selectLayer"
-            @updateLayer="updateLayer"
-            @selectKeyframe="selectKeyframe"
-            @setParent="setLayerParent"
-            @toggleSolo="toggleSolo"
-          />
-        </template>
-
-        <!-- Empty state -->
-        <div v-if="filteredLayers.length === 0" class="empty-state">
-          <p v-if="searchFilter">No layers match "{{ searchFilter }}"</p>
-          <template v-else>
-            <p>No layers yet</p>
-            <p class="hint">Click "Add Layer" to create a layer</p>
+      <!-- Persistent Split Layout - Sidebar + Track Content -->
+      <div class="timeline-split-layout">
+        <!-- LEFT: Property tree sidebar - ALWAYS VISIBLE in both modes -->
+        <div class="property-tree-sidebar" ref="layerTracksRef">
+          <template v-for="layer in filteredLayers" :key="layer.id">
+            <EnhancedLayerTrack
+              :layer="layer"
+              :frameCount="store.frameCount"
+              :currentFrame="store.currentFrame"
+              :allLayers="store.layers"
+              :soloedLayerIds="soloedLayerIds"
+              :showSwitches="showLayerSwitches"
+              :viewMode="viewMode"
+              layoutMode="sidebar"
+              :isExpandedExternal="expandedLayerIds.has(layer.id)"
+              :selectedPropertyIds="Array.from(selectedPropertyIds)"
+              @select="selectLayer"
+              @updateLayer="updateLayer"
+              @selectKeyframe="selectKeyframe"
+              @setParent="setLayerParent"
+              @toggleSolo="toggleSolo"
+              @selectProperty="handlePropertySelect"
+              @toggleExpand="handleToggleExpand"
+            />
           </template>
-        </div>
-      </div>
 
-      <!-- Graph Editor (Graph mode) -->
-      <div v-else class="graph-editor-area">
-        <!-- Property list sidebar -->
-        <div class="graph-property-sidebar">
-          <div class="property-list-header">Properties</div>
-          <div class="property-list">
-            <template v-for="layer in store.layers" :key="layer.id">
-              <div class="property-layer-group">
-                <div class="property-layer-name">{{ layer.name }}</div>
-                <div
-                  v-for="prop in getLayerAnimatedProperties(layer)"
-                  :key="prop.id"
-                  class="property-item"
-                  :class="{ visible: prop.visible }"
-                  @click="togglePropertyVisibility(prop.id)"
-                >
-                  <span class="property-color" :style="{ background: prop.color }"></span>
-                  <span class="property-prop-name">{{ prop.name }}</span>
-                </div>
-              </div>
+          <!-- Empty state -->
+          <div v-if="filteredLayers.length === 0" class="empty-state">
+            <p v-if="searchFilter">No layers match "{{ searchFilter }}"</p>
+            <template v-else>
+              <p>No layers yet</p>
+              <p class="hint">Click "Add Layer" to create a layer</p>
             </template>
           </div>
         </div>
-        <!-- Unified graph canvas -->
-        <div class="graph-canvas-wrapper">
+
+        <!-- RIGHT: Track viewport - shows tracks OR graph canvas -->
+        <div class="track-viewport">
+          <!-- Keyframes mode: show layer tracks -->
+          <template v-if="viewMode === 'keyframes'">
+            <template v-for="layer in filteredLayers" :key="`track-${layer.id}`">
+              <EnhancedLayerTrack
+                :layer="layer"
+                :frameCount="store.frameCount"
+                :currentFrame="store.currentFrame"
+                :allLayers="store.layers"
+                :soloedLayerIds="soloedLayerIds"
+                :showSwitches="showLayerSwitches"
+                :viewMode="viewMode"
+                layoutMode="track"
+                :isExpandedExternal="expandedLayerIds.has(layer.id)"
+                :selectedPropertyIds="Array.from(selectedPropertyIds)"
+                @select="selectLayer"
+                @updateLayer="updateLayer"
+                @selectKeyframe="selectKeyframe"
+                @setParent="setLayerParent"
+                @toggleSolo="toggleSolo"
+                @selectProperty="handlePropertySelect"
+                @toggleExpand="handleToggleExpand"
+              />
+            </template>
+          </template>
+
+          <!-- Graph mode: show graph canvas -->
           <GraphEditorCanvas
+            v-else
             :frameCount="store.frameCount"
             :currentFrame="store.currentFrame"
+            :selectedPropertyIds="Array.from(selectedPropertyIds)"
+            :graphMode="graphDisplayMode"
             @selectKeyframe="selectKeyframe"
+            @update:graphMode="graphDisplayMode = $event"
           />
         </div>
       </div>
@@ -312,92 +327,44 @@ const showLayerSwitches = ref(true);
 // View mode: 'keyframes' shows diamonds, 'graph' shows bezier curves
 const viewMode = ref<'keyframes' | 'graph'>('keyframes');
 
+// Graph editor state
+const graphDisplayMode = ref<'value' | 'speed'>('value');
+const selectedPropertyIds = ref<Set<string>>(new Set());
+
+// Layer expansion state - synced between sidebar and track instances
+const expandedLayerIds = ref<Set<string>>(new Set());
+
 function toggleViewMode() {
   viewMode.value = viewMode.value === 'keyframes' ? 'graph' : 'keyframes';
 }
 
-// Graph mode property visibility
-const visiblePropertyIds = ref<Set<string>>(new Set());
-
-// Property colors for graph editor
-const PROPERTY_COLORS: Record<string, string> = {
-  'Position X': '#ff6b6b',
-  'Position Y': '#4ecdc4',
-  'Position Z': '#ab47bc',
-  'Scale X': '#ffa726',
-  'Scale Y': '#ffee58',
-  'Scale Z': '#7c9cff',
-  'Rotation': '#ab47bc',
-  'Opacity': '#7c9cff',
-};
-
-interface GraphProperty {
-  id: string;
-  name: string;
-  color: string;
-  visible: boolean;
-}
-
-function getLayerAnimatedProperties(layer: Layer): GraphProperty[] {
-  const props: GraphProperty[] = [];
-
-  if (layer.transform.position.animated) {
-    props.push({
-      id: `${layer.id}-position-x`,
-      name: 'Position X',
-      color: PROPERTY_COLORS['Position X'],
-      visible: visiblePropertyIds.value.has(`${layer.id}-position-x`)
-    });
-    props.push({
-      id: `${layer.id}-position-y`,
-      name: 'Position Y',
-      color: PROPERTY_COLORS['Position Y'],
-      visible: visiblePropertyIds.value.has(`${layer.id}-position-y`)
-    });
-  }
-
-  if (layer.transform.scale.animated) {
-    props.push({
-      id: `${layer.id}-scale-x`,
-      name: 'Scale X',
-      color: PROPERTY_COLORS['Scale X'],
-      visible: visiblePropertyIds.value.has(`${layer.id}-scale-x`)
-    });
-    props.push({
-      id: `${layer.id}-scale-y`,
-      name: 'Scale Y',
-      color: PROPERTY_COLORS['Scale Y'],
-      visible: visiblePropertyIds.value.has(`${layer.id}-scale-y`)
-    });
-  }
-
-  if (layer.transform.rotation.animated) {
-    props.push({
-      id: `${layer.id}-rotation`,
-      name: 'Rotation',
-      color: PROPERTY_COLORS['Rotation'],
-      visible: visiblePropertyIds.value.has(`${layer.id}-rotation`)
-    });
-  }
-
-  if (layer.opacity.animated) {
-    props.push({
-      id: `${layer.id}-opacity`,
-      name: 'Opacity',
-      color: PROPERTY_COLORS['Opacity'],
-      visible: visiblePropertyIds.value.has(`${layer.id}-opacity`)
-    });
-  }
-
-  return props;
-}
-
-function togglePropertyVisibility(propId: string) {
-  if (visiblePropertyIds.value.has(propId)) {
-    visiblePropertyIds.value.delete(propId);
+// Handle layer expansion toggle - keeps sidebar and track in sync
+function handleToggleExpand(layerId: string, expanded: boolean) {
+  if (expanded) {
+    expandedLayerIds.value.add(layerId);
   } else {
-    visiblePropertyIds.value.add(propId);
+    expandedLayerIds.value.delete(layerId);
   }
+  // Force reactivity update
+  expandedLayerIds.value = new Set(expandedLayerIds.value);
+}
+
+// Handle property selection from EnhancedLayerTrack
+function handlePropertySelect(propertyId: string, addToSelection: boolean) {
+  if (addToSelection) {
+    // Toggle in selection
+    if (selectedPropertyIds.value.has(propertyId)) {
+      selectedPropertyIds.value.delete(propertyId);
+    } else {
+      selectedPropertyIds.value.add(propertyId);
+    }
+  } else {
+    // Replace selection
+    selectedPropertyIds.value.clear();
+    selectedPropertyIds.value.add(propertyId);
+  }
+  // Force reactivity update
+  selectedPropertyIds.value = new Set(selectedPropertyIds.value);
 }
 
 // Playback state
@@ -1236,8 +1203,28 @@ watch(() => store.frameCount, (newCount) => {
   white-space: nowrap;
 }
 
-.layer-tracks {
+/* Persistent Split Layout - After Effects style */
+.timeline-split-layout {
+  display: flex;
+  flex: 1;
   min-height: 100px;
+  overflow: hidden;
+}
+
+.property-tree-sidebar {
+  width: 200px;
+  min-width: 200px;
+  max-width: 200px;
+  overflow-y: auto;
+  background: #222;
+  border-right: 1px solid #333;
+}
+
+.track-viewport {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
 }
 
 .empty-state {
@@ -1493,90 +1480,4 @@ watch(() => store.frameCount, (newCount) => {
   box-shadow: 0 0 4px rgba(255, 68, 68, 0.3);
 }
 
-/* Graph Editor Area */
-.graph-editor-area {
-  display: flex;
-  flex: 1;
-  min-height: 300px;
-}
-
-.graph-property-sidebar {
-  width: 200px;
-  min-width: 200px;
-  background: #222;
-  border-right: 1px solid #333;
-  display: flex;
-  flex-direction: column;
-}
-
-.property-list-header {
-  padding: 8px 12px;
-  font-size: 11px;
-  font-weight: 600;
-  color: #888;
-  text-transform: uppercase;
-  border-bottom: 1px solid #333;
-  background: #252525;
-}
-
-.property-list {
-  flex: 1;
-  overflow-y: auto;
-  padding: 4px 0;
-}
-
-.property-layer-group {
-  margin-bottom: 8px;
-}
-
-.property-layer-name {
-  padding: 6px 12px 4px;
-  font-size: 11px;
-  font-weight: 500;
-  color: #aaa;
-  border-bottom: 1px solid #2a2a2a;
-}
-
-.property-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 12px 4px 20px;
-  cursor: pointer;
-  transition: background 0.1s ease;
-}
-
-.property-item:hover {
-  background: #2a2a2a;
-}
-
-.property-item.visible {
-  background: rgba(124, 156, 255, 0.1);
-}
-
-.property-color {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.property-item:not(.visible) .property-color {
-  opacity: 0.3;
-}
-
-.property-prop-name {
-  font-size: 11px;
-  color: #888;
-}
-
-.property-item.visible .property-prop-name {
-  color: #e0e0e0;
-}
-
-.graph-canvas-wrapper {
-  flex: 1;
-  position: relative;
-  overflow: hidden;
-}
 </style>

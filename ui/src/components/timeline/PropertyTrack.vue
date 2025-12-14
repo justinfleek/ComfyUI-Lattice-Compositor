@@ -56,19 +56,25 @@
         </template>
       </div>
     </div>
-    <div class="property-keyframes" ref="keyframeTrackRef">
-      <!-- Keyframe diamonds -->
-      <div
-        v-for="kf in property.keyframes"
-        :key="kf.id"
-        class="keyframe-diamond"
-        :class="{ selected: selectedKeyframeIds.includes(kf.id) }"
-        :style="{ left: `${(kf.frame / frameCount) * 100}%` }"
-        @mousedown.stop="startKeyframeDrag(kf, $event)"
-        @click.stop="selectKeyframe(kf.id, $event)"
-        @contextmenu.prevent="showEasingMenu(kf, $event)"
-        :title="`Frame ${kf.frame}: ${JSON.stringify(kf.value)} (${kf.interpolation || 'linear'})`"
-      >◆</div>
+    <div
+      class="property-keyframes"
+      ref="keyframeTrackRef"
+      @click="handleTrackClick"
+    >
+      <!-- Keyframe diamonds - only in keyframes mode -->
+      <template v-if="viewMode === 'keyframes'">
+        <div
+          v-for="kf in property.keyframes"
+          :key="kf.id"
+          class="keyframe-diamond"
+          :class="{ selected: selectedKeyframeIds.includes(kf.id) }"
+          :style="{ left: `${(kf.frame / frameCount) * 100}%` }"
+          @mousedown.stop="startKeyframeDrag(kf, $event)"
+          @click.stop="selectKeyframe(kf.id, $event)"
+          @contextmenu.prevent="showEasingMenu(kf, $event)"
+          :title="`Frame ${kf.frame}: ${JSON.stringify(kf.value)} (${kf.interpolation || 'linear'})`"
+        >◆</div>
+      </template>
 
       <div
         class="playhead-marker"
@@ -147,11 +153,18 @@ const props = defineProps<{
   property: AnimatableProperty<any>;
   frameCount: number;
   selectedKeyframeIds: string[];
+  viewMode: 'keyframes' | 'graph';
 }>();
 
 const emit = defineEmits<{
   (e: 'selectKeyframe', id: string, addToSelection: boolean): void;
+  (e: 'selectProperty', propertyId: string, addToSelection: boolean): void;
 }>();
+
+// Property ID for graph selection
+const propertyId = computed(() => {
+  return `${props.layerId}-${props.propertyPath.replace('.', '-')}`;
+});
 
 const store = useCompositorStore();
 const currentFrame = computed(() => store.currentFrame);
@@ -172,6 +185,13 @@ const isVectorValue = computed(() => {
 
 function selectKeyframe(id: string, event: MouseEvent) {
   emit('selectKeyframe', id, event.shiftKey);
+}
+
+// Handle click on track area - in graph mode, select this property
+function handleTrackClick(event: MouseEvent) {
+  if (props.viewMode === 'graph') {
+    emit('selectProperty', propertyId.value, event.shiftKey);
+  }
 }
 
 function toggleAnimation() {
