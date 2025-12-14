@@ -895,6 +895,54 @@ export const useCompositorStore = defineStore('compositor', {
     },
 
     /**
+     * Set keyframe bezier handle
+     */
+    setKeyframeHandle(
+      layerId: string,
+      propertyPath: string,
+      keyframeId: string,
+      handleType: 'in' | 'out',
+      handle: BezierHandle
+    ): void {
+      const layer = this.project.layers.find(l => l.id === layerId);
+      if (!layer) return;
+
+      let property: AnimatableProperty<any> | undefined;
+
+      if (propertyPath === 'position' || propertyPath === 'transform.position') {
+        property = layer.transform.position;
+      } else if (propertyPath === 'scale' || propertyPath === 'transform.scale') {
+        property = layer.transform.scale;
+      } else if (propertyPath === 'rotation' || propertyPath === 'transform.rotation') {
+        property = layer.transform.rotation;
+      } else if (propertyPath === 'opacity') {
+        property = layer.opacity;
+      } else if (propertyPath === 'anchorPoint' || propertyPath === 'transform.anchorPoint') {
+        property = layer.transform.anchorPoint;
+      } else {
+        property = layer.properties.find(p => p.id === propertyPath || p.name === propertyPath);
+      }
+
+      if (!property) return;
+
+      const keyframe = property.keyframes.find(kf => kf.id === keyframeId);
+      if (!keyframe) return;
+
+      if (handleType === 'in') {
+        keyframe.inHandle = { ...handle };
+      } else {
+        keyframe.outHandle = { ...handle };
+      }
+
+      // Enable bezier interpolation when handles are modified
+      if (handle.enabled && keyframe.interpolation === 'linear') {
+        keyframe.interpolation = 'bezier';
+      }
+
+      this.project.meta.modified = new Date().toISOString();
+    },
+
+    /**
      * Create a text layer with proper data structure
      */
     createTextLayer(text: string = 'Text'): Layer {

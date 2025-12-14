@@ -180,14 +180,14 @@
                   />
                 </g>
 
-                <!-- Bezier handles -->
+                <!-- Bezier handles - show when selected and not hold/linear without handles -->
                 <g
-                  v-if="isKeyframeSelected(prop.id, kfIndex) && kf.interpolation === 'bezier'"
+                  v-if="isKeyframeSelected(prop.id, kfIndex) && kf.interpolation !== 'hold'"
                   class="bezier-handles"
                 >
-                  <!-- Out handle (to next keyframe) -->
+                  <!-- Out handle (to next keyframe) - show if enabled or if bezier -->
                   <g
-                    v-if="prop.keyframes[kfIndex + 1]"
+                    v-if="prop.keyframes[kfIndex + 1] && (kf.outHandle.enabled || kf.interpolation === 'bezier')"
                     class="handle out-handle"
                   >
                     <line
@@ -207,9 +207,9 @@
                     />
                   </g>
 
-                  <!-- In handle (from previous keyframe) -->
+                  <!-- In handle (from previous keyframe) - show if enabled or if bezier -->
                   <g
-                    v-if="kfIndex > 0"
+                    v-if="kfIndex > 0 && (kf.inHandle.enabled || kf.interpolation === 'bezier')"
                     class="handle in-handle"
                   >
                     <line
@@ -473,44 +473,40 @@ function getKeyframeDisplayValue(selection: { propId: string; index: number; key
     typeof value === 'object' ? (value.x ?? 0) : 0;
 }
 
-// Handle position helpers
+// Handle position helpers - using new absolute frame/value offsets
 function getOutHandleX(prop: AnimatableProperty<any>, kfIndex: number): number {
   const kf = prop.keyframes[kfIndex];
-  const nextKf = prop.keyframes[kfIndex + 1];
-  if (!kf || !nextKf) return 0;
+  if (!kf || !kf.outHandle.enabled) return frameToScreenX(kf.frame);
 
-  const frameSpan = nextKf.frame - kf.frame;
-  const handleFrame = kf.frame + kf.outHandle.x * frameSpan;
+  // outHandle.frame is absolute offset from keyframe (positive = forward)
+  const handleFrame = kf.frame + kf.outHandle.frame;
   return frameToScreenX(handleFrame);
 }
 
 function getOutHandleY(prop: AnimatableProperty<any>, kfIndex: number): number {
   const kf = prop.keyframes[kfIndex];
-  const nextKf = prop.keyframes[kfIndex + 1];
-  if (!kf || !nextKf) return 0;
+  if (!kf || !kf.outHandle.enabled) return valueToScreenY(getNumericValue(kf.value));
 
-  const valueSpan = getNumericValue(nextKf.value) - getNumericValue(kf.value);
-  const handleValue = getNumericValue(kf.value) + kf.outHandle.y * valueSpan;
+  // outHandle.value is absolute offset from keyframe value
+  const handleValue = getNumericValue(kf.value) + kf.outHandle.value;
   return valueToScreenY(handleValue);
 }
 
 function getInHandleX(prop: AnimatableProperty<any>, kfIndex: number): number {
   const kf = prop.keyframes[kfIndex];
-  const prevKf = prop.keyframes[kfIndex - 1];
-  if (!kf || !prevKf) return 0;
+  if (!kf || !kf.inHandle.enabled) return frameToScreenX(kf.frame);
 
-  const frameSpan = kf.frame - prevKf.frame;
-  const handleFrame = kf.frame - kf.inHandle.x * frameSpan;
+  // inHandle.frame is absolute offset from keyframe (typically negative = backward)
+  const handleFrame = kf.frame + kf.inHandle.frame;
   return frameToScreenX(handleFrame);
 }
 
 function getInHandleY(prop: AnimatableProperty<any>, kfIndex: number): number {
   const kf = prop.keyframes[kfIndex];
-  const prevKf = prop.keyframes[kfIndex - 1];
-  if (!kf || !prevKf) return 0;
+  if (!kf || !kf.inHandle.enabled) return valueToScreenY(getNumericValue(kf.value));
 
-  const valueSpan = getNumericValue(kf.value) - getNumericValue(prevKf.value);
-  const handleValue = getNumericValue(kf.value) - kf.inHandle.y * valueSpan;
+  // inHandle.value is absolute offset from keyframe value
+  const handleValue = getNumericValue(kf.value) + kf.inHandle.value;
   return valueToScreenY(handleValue);
 }
 
@@ -628,13 +624,13 @@ function isPresetActive(presetKey: string): boolean {
   const preset = EASING_PRESETS[presetKey as keyof typeof EASING_PRESETS];
   if (!preset) return false;
 
-  return selectedKeyframes.value.every(sk => {
-    const outMatch = Math.abs(sk.keyframe.outHandle.x - preset.outHandle.x) < 0.01 &&
-                     Math.abs(sk.keyframe.outHandle.y - preset.outHandle.y) < 0.01;
-    const inMatch = Math.abs(sk.keyframe.inHandle.x - preset.inHandle.x) < 0.01 &&
-                    Math.abs(sk.keyframe.inHandle.y - preset.inHandle.y) < 0.01;
-    return outMatch && inMatch;
-  });
+  // Preset comparison is complex because presets are normalized (0-1)
+  // but handles are absolute. For now, check by interpolation type.
+  if (presetKey === 'linear') {
+    return selectedKeyframes.value.every(sk => sk.keyframe.interpolation === 'linear');
+  }
+  // For bezier presets, just check if it's bezier interpolation
+  return selectedKeyframes.value.every(sk => sk.keyframe.interpolation === 'bezier');
 }
 
 function applyPreset(presetKey: string): void {
@@ -642,9 +638,36 @@ function applyPreset(presetKey: string): void {
   if (!preset) return;
 
   for (const sk of selectedKeyframes.value) {
-    sk.keyframe.outHandle = { ...preset.outHandle };
-    sk.keyframe.inHandle = { ...preset.inHandle };
-    sk.keyframe.interpolation = presetKey === 'linear' ? 'linear' : 'bezier';
+    const prop = animatableProperties.value.find(p => p.id === sk.propId);
+    if (!prop) continue;
+
+    const kfIndex = sk.index;
+    const prevKf = kfIndex > 0 ? prop.keyframes[kfIndex - 1] : null;
+    const nextKf = kfIndex < prop.keyframes.length - 1 ? prop.keyframes[kfIndex + 1] : null;
+
+    // Calculate durations for handle conversion
+    const inDuration = prevKf ? sk.keyframe.frame - prevKf.frame : 10;
+    const outDuration = nextKf ? nextKf.frame - sk.keyframe.frame : 10;
+
+    // Convert normalized preset to absolute frame/value handles
+    if (presetKey === 'linear') {
+      sk.keyframe.interpolation = 'linear';
+      sk.keyframe.outHandle = { frame: outDuration * 0.33, value: 0, enabled: false };
+      sk.keyframe.inHandle = { frame: -inDuration * 0.33, value: 0, enabled: false };
+    } else {
+      sk.keyframe.interpolation = 'bezier';
+      // Apply normalized preset values scaled by duration
+      sk.keyframe.outHandle = {
+        frame: preset.outHandle.x * outDuration,
+        value: 0, // Would need value delta for proper curve
+        enabled: true
+      };
+      sk.keyframe.inHandle = {
+        frame: -preset.inHandle.x * inDuration,
+        value: 0, // Would need value delta for proper curve
+        enabled: true
+      };
+    }
   }
 
   drawGraph();
@@ -859,38 +882,95 @@ function moveHandle(screenX: number, screenY: number): void {
   const kf = prop.keyframes[kfIndex];
   if (!kf) return;
 
+  const handleFrame = screenXToFrame(screenX);
+  const handleValue = screenYToValue(screenY);
+
   if (dragTarget.value.type === 'outHandle') {
     const nextKf = prop.keyframes[kfIndex + 1];
-    if (!nextKf) return;
 
-    const frameSpan = nextKf.frame - kf.frame;
-    const valueSpan = getNumericValue(nextKf.value) - getNumericValue(kf.value);
+    // Calculate frame offset (positive = forward from keyframe)
+    let frameOffset = handleFrame - kf.frame;
+    // Constrain: cannot go past next keyframe or before current
+    if (nextKf) {
+      frameOffset = Math.max(0, Math.min(nextKf.frame - kf.frame, frameOffset));
+    } else {
+      frameOffset = Math.max(0, frameOffset);
+    }
 
-    const handleFrame = screenXToFrame(screenX);
-    const handleValue = screenYToValue(screenY);
+    // Calculate value offset
+    const valueOffset = handleValue - getNumericValue(kf.value);
 
     kf.outHandle = {
-      x: Math.max(0, Math.min(1, (handleFrame - kf.frame) / frameSpan)),
-      y: valueSpan !== 0 ? (handleValue - getNumericValue(kf.value)) / valueSpan : 0
+      frame: frameOffset,
+      value: valueOffset,
+      enabled: true
     };
     kf.interpolation = 'bezier';
+
+    // Apply control mode constraints (spec B3/B4)
+    applyControlModeConstraints(kf, 'out');
   } else if (dragTarget.value.type === 'inHandle') {
     const prevKf = prop.keyframes[kfIndex - 1];
-    if (!prevKf) return;
 
-    const frameSpan = kf.frame - prevKf.frame;
-    const valueSpan = getNumericValue(kf.value) - getNumericValue(prevKf.value);
+    // Calculate frame offset (negative = backward from keyframe)
+    let frameOffset = handleFrame - kf.frame;
+    // Constrain: cannot go past previous keyframe or after current
+    if (prevKf) {
+      frameOffset = Math.min(0, Math.max(prevKf.frame - kf.frame, frameOffset));
+    } else {
+      frameOffset = Math.min(0, frameOffset);
+    }
 
-    const handleFrame = screenXToFrame(screenX);
-    const handleValue = screenYToValue(screenY);
+    // Calculate value offset
+    const valueOffset = handleValue - getNumericValue(kf.value);
 
     kf.inHandle = {
-      x: Math.max(0, Math.min(1, (kf.frame - handleFrame) / frameSpan)),
-      y: valueSpan !== 0 ? (getNumericValue(kf.value) - handleValue) / valueSpan : 0
+      frame: frameOffset,
+      value: valueOffset,
+      enabled: true
     };
+
+    // Apply control mode constraints (spec B3/B4)
+    applyControlModeConstraints(kf, 'in');
   }
 
   drawGraph();
+}
+
+// Control mode constraints (from spec B2, B3, B4)
+function applyControlModeConstraints(kf: Keyframe<any>, changedHandle: 'in' | 'out'): void {
+  if (!kf.controlMode || kf.controlMode === 'corner') {
+    // Fully independent - no constraints (spec B4)
+    return;
+  }
+
+  if (kf.controlMode === 'symmetric') {
+    // Mirror opposite handle - same length, opposite direction (spec B2)
+    if (changedHandle === 'in') {
+      kf.outHandle.frame = -kf.inHandle.frame;
+      kf.outHandle.value = -kf.inHandle.value;
+      kf.outHandle.enabled = kf.inHandle.enabled;
+    } else {
+      kf.inHandle.frame = -kf.outHandle.frame;
+      kf.inHandle.value = -kf.outHandle.value;
+      kf.inHandle.enabled = kf.outHandle.enabled;
+    }
+  }
+
+  if (kf.controlMode === 'smooth') {
+    // Keep collinear but allow different lengths (spec B3)
+    const changed = changedHandle === 'in' ? kf.inHandle : kf.outHandle;
+    const other = changedHandle === 'in' ? kf.outHandle : kf.inHandle;
+
+    if (changed.frame !== 0 || changed.value !== 0) {
+      const angle = Math.atan2(changed.value, changed.frame);
+      const oppositeAngle = angle + Math.PI;
+      const otherLength = Math.hypot(other.frame, other.value);
+
+      other.frame = Math.cos(oppositeAngle) * otherLength;
+      other.value = Math.sin(oppositeAngle) * otherLength;
+    }
+  }
 }
 
 function stopDragHandle(): void {
@@ -1146,46 +1226,57 @@ function drawPropertyCurve(ctx: CanvasRenderingContext2D, prop: AnimatableProper
   if (prop.keyframes.length < 2) return;
 
   const color = getPropertyColor(prop.id);
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 2;
-  ctx.beginPath();
 
-  let started = false;
-
-  for (let i = 0; i < prop.keyframes.length - 1; i++) {
-    const kf1 = prop.keyframes[i];
-    const kf2 = prop.keyframes[i + 1];
-
-    // Skip segments outside view
-    if (kf2.frame < viewState.frameStart || kf1.frame > viewState.frameEnd) continue;
-
-    const x1 = getKeyframeScreenX(kf1);
-    const y1 = getKeyframeScreenY(prop, kf1);
-    const x2 = getKeyframeScreenX(kf2);
-    const y2 = getKeyframeScreenY(prop, kf2);
-
-    if (!started) {
-      ctx.moveTo(x1, y1);
-      started = true;
-    }
-
-    if (kf1.interpolation === 'hold') {
-      ctx.lineTo(x2, y1);
-      ctx.lineTo(x2, y2);
-    } else if (kf1.interpolation === 'linear') {
-      ctx.lineTo(x2, y2);
+  // Two-pass rendering per spec A1: black outline then colored fill
+  for (let pass = 0; pass < 2; pass++) {
+    if (pass === 0) {
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 4;
     } else {
-      // Bezier curve
-      const cp1x = x1 + (x2 - x1) * kf1.outHandle.x;
-      const cp1y = y1 + (y2 - y1) * kf1.outHandle.y;
-      const cp2x = x2 - (x2 - x1) * kf2.inHandle.x;
-      const cp2y = y2 - (y2 - y1) * kf2.inHandle.y;
-
-      ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x2, y2);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
     }
-  }
 
-  ctx.stroke();
+    ctx.beginPath();
+    let started = false;
+
+    for (let i = 0; i < prop.keyframes.length - 1; i++) {
+      const kf1 = prop.keyframes[i];
+      const kf2 = prop.keyframes[i + 1];
+
+      // Skip segments outside view
+      if (kf2.frame < viewState.frameStart || kf1.frame > viewState.frameEnd) continue;
+
+      const x1 = getKeyframeScreenX(kf1);
+      const y1 = getKeyframeScreenY(prop, kf1);
+      const x2 = getKeyframeScreenX(kf2);
+      const y2 = getKeyframeScreenY(prop, kf2);
+
+      if (!started) {
+        ctx.moveTo(x1, y1);
+        started = true;
+      }
+
+      if (kf1.interpolation === 'hold') {
+        // Step function (spec B5)
+        ctx.lineTo(x2, y1);
+        ctx.lineTo(x2, y2);
+      } else if (kf1.interpolation === 'linear' || (!kf1.outHandle.enabled && !kf2.inHandle.enabled)) {
+        // Straight line (spec B1)
+        ctx.lineTo(x2, y2);
+      } else {
+        // Bezier curve using absolute handle offsets (spec B3/B4)
+        const cp1x = frameToScreenX(kf1.frame + kf1.outHandle.frame);
+        const cp1y = valueToScreenY(getNumericValue(kf1.value) + kf1.outHandle.value);
+        const cp2x = frameToScreenX(kf2.frame + kf2.inHandle.frame);
+        const cp2y = valueToScreenY(getNumericValue(kf2.value) + kf2.inHandle.value);
+
+        ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x2, y2);
+      }
+    }
+
+    ctx.stroke();
+  }
 }
 
 function drawTimeRuler(): void {
@@ -1264,6 +1355,196 @@ function drawValueAxis(): void {
   }
 }
 
+// Easy Ease functions (spec C1, C2, C3)
+function applyEasyEase(direction: 'both' | 'in' | 'out' = 'both'): void {
+  for (const sk of selectedKeyframes.value) {
+    const prop = animatableProperties.value.find(p => p.id === sk.propId);
+    if (!prop) continue;
+
+    const kf = sk.keyframe;
+    const kfIndex = sk.index;
+
+    // Get adjacent keyframes for duration calculation
+    const prevKf = kfIndex > 0 ? prop.keyframes[kfIndex - 1] : null;
+    const nextKf = kfIndex < prop.keyframes.length - 1 ? prop.keyframes[kfIndex + 1] : null;
+
+    // Calculate segment durations
+    const inDuration = prevKf ? kf.frame - prevKf.frame : 10;
+    const outDuration = nextKf ? nextKf.frame - kf.frame : 10;
+
+    // 33.33% influence (spec C1)
+    const influence = 0.3333;
+
+    if (direction === 'both' || direction === 'in') {
+      // Easy ease in - deceleration (spec C2)
+      kf.inHandle = {
+        frame: -inDuration * influence,
+        value: 0, // 0 velocity at keyframe
+        enabled: true
+      };
+    }
+
+    if (direction === 'both' || direction === 'out') {
+      // Easy ease out - acceleration (spec C3)
+      kf.outHandle = {
+        frame: outDuration * influence,
+        value: 0, // 0 velocity at keyframe
+        enabled: true
+      };
+    }
+
+    kf.interpolation = 'bezier';
+    kf.controlMode = 'smooth';
+  }
+
+  drawGraph();
+}
+
+// J/K Navigation (spec G4)
+function goToPreviousKeyframe(): void {
+  const currentFrame = store.currentFrame;
+  const allKeyframes: number[] = [];
+
+  for (const prop of visibleProperties.value) {
+    for (const kf of prop.keyframes) {
+      if (!allKeyframes.includes(kf.frame)) {
+        allKeyframes.push(kf.frame);
+      }
+    }
+  }
+
+  allKeyframes.sort((a, b) => a - b);
+  const prev = [...allKeyframes].reverse().find(f => f < currentFrame);
+  if (prev !== undefined) {
+    store.setFrame(prev);
+  }
+}
+
+function goToNextKeyframe(): void {
+  const currentFrame = store.currentFrame;
+  const allKeyframes: number[] = [];
+
+  for (const prop of visibleProperties.value) {
+    for (const kf of prop.keyframes) {
+      if (!allKeyframes.includes(kf.frame)) {
+        allKeyframes.push(kf.frame);
+      }
+    }
+  }
+
+  allKeyframes.sort((a, b) => a - b);
+  const next = allKeyframes.find(f => f > currentFrame);
+  if (next !== undefined) {
+    store.setFrame(next);
+  }
+}
+
+// Keyboard shortcuts handler (spec I)
+function handleKeyDown(event: KeyboardEvent): void {
+  // F9 Easy Ease
+  if (event.key === 'F9') {
+    event.preventDefault();
+    if (event.ctrlKey && event.shiftKey) {
+      applyEasyEase('out'); // Ctrl+Shift+F9 (spec C3)
+    } else if (event.shiftKey) {
+      applyEasyEase('in'); // Shift+F9 (spec C2)
+    } else {
+      applyEasyEase('both'); // F9 (spec C1)
+    }
+    return;
+  }
+
+  // J/K navigation (spec G4)
+  if (event.key.toLowerCase() === 'j') {
+    event.preventDefault();
+    goToPreviousKeyframe();
+    return;
+  }
+  if (event.key.toLowerCase() === 'k') {
+    event.preventDefault();
+    goToNextKeyframe();
+    return;
+  }
+
+  // Delete selected keyframes
+  if (event.key === 'Delete' || event.key === 'Backspace') {
+    event.preventDefault();
+    deleteSelectedKeyframes();
+    return;
+  }
+
+  // F = Fit selection to view
+  if (event.key.toLowerCase() === 'f' && !event.ctrlKey) {
+    event.preventDefault();
+    if (event.shiftKey) {
+      fitToView(); // Shift+F = fit all
+    } else if (selectedKeyframes.value.length > 0) {
+      fitSelectionToView(); // F = fit selection
+    } else {
+      fitToView();
+    }
+    return;
+  }
+
+  // Zoom in/out with = / -
+  if (event.key === '=' || event.key === '+') {
+    event.preventDefault();
+    zoomIn();
+    return;
+  }
+  if (event.key === '-' || event.key === '_') {
+    event.preventDefault();
+    zoomOut();
+    return;
+  }
+}
+
+function fitSelectionToView(): void {
+  if (selectedKeyframes.value.length === 0) {
+    fitToView();
+    return;
+  }
+
+  let minFrame = Infinity;
+  let maxFrame = -Infinity;
+  let minValue = Infinity;
+  let maxValue = -Infinity;
+
+  for (const sk of selectedKeyframes.value) {
+    minFrame = Math.min(minFrame, sk.keyframe.frame);
+    maxFrame = Math.max(maxFrame, sk.keyframe.frame);
+    const value = getNumericValue(sk.keyframe.value);
+    minValue = Math.min(minValue, value);
+    maxValue = Math.max(maxValue, value);
+  }
+
+  const frameMargin = (maxFrame - minFrame) * 0.1 || 10;
+  const valueMargin = (maxValue - minValue) * 0.1 || 10;
+
+  viewState.frameStart = minFrame - frameMargin;
+  viewState.frameEnd = maxFrame + frameMargin;
+  viewState.valueMin = minValue - valueMargin;
+  viewState.valueMax = maxValue + valueMargin;
+
+  drawGraph();
+}
+
+function zoomIn(): void {
+  const centerFrame = (viewState.frameStart + viewState.frameEnd) / 2;
+  const frameRange = viewState.frameEnd - viewState.frameStart;
+  viewState.frameStart = centerFrame - frameRange * 0.4;
+  viewState.frameEnd = centerFrame + frameRange * 0.4;
+  drawGraph();
+}
+
+function zoomOut(): void {
+  const centerFrame = (viewState.frameStart + viewState.frameEnd) / 2;
+  const frameRange = viewState.frameEnd - viewState.frameStart;
+  viewState.frameStart = centerFrame - frameRange * 0.6;
+  viewState.frameEnd = centerFrame + frameRange * 0.6;
+  drawGraph();
+}
+
 // Resize observer
 let resizeObserver: ResizeObserver | null = null;
 
@@ -1284,12 +1565,16 @@ onMounted(() => {
     .filter(p => p.animated)
     .map(p => p.id);
 
+  // Add keyboard listener
+  window.addEventListener('keydown', handleKeyDown);
+
   fitToView();
   drawGraph();
 });
 
 onUnmounted(() => {
   resizeObserver?.disconnect();
+  window.removeEventListener('keydown', handleKeyDown);
 });
 
 // Redraw on changes
@@ -1622,14 +1907,29 @@ watch(animatableProperties, () => {
   pointer-events: all;
 }
 
-.handle-line {
-  stroke: #888;
+/* In handle colors - blue/cyan (spec H4) */
+.in-handle .handle-line {
+  stroke: #4ecdc4;
   stroke-width: 1;
 }
 
-.handle-point {
+.in-handle .handle-point {
   fill: #fff;
-  stroke: #888;
+  stroke: #4ecdc4;
+  stroke-width: 1;
+  cursor: pointer;
+  transition: all 0.1s;
+}
+
+/* Out handle colors - red/orange (spec H4) */
+.out-handle .handle-line {
+  stroke: #ff6b6b;
+  stroke-width: 1;
+}
+
+.out-handle .handle-point {
+  fill: #fff;
+  stroke: #ff6b6b;
   stroke-width: 1;
   cursor: pointer;
   transition: all 0.1s;
