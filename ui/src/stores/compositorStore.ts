@@ -387,6 +387,23 @@ export const useCompositorStore = defineStore('compositor', {
             fit: 'contain'
           };
           break;
+
+        case 'video':
+          layerData = {
+            assetId: null,
+            loop: false,
+            startTime: 0,
+            speed: 1.0
+          };
+          break;
+      }
+
+      // Initialize audio props for video/audio layers
+      let audioProps = undefined;
+      if (type === 'video' || type === 'audio') {
+        audioProps = {
+          level: createAnimatableProperty('Audio Levels', 0, 'number') // 0dB default
+        };
       }
 
       const layer: Layer = {
@@ -397,12 +414,14 @@ export const useCompositorStore = defineStore('compositor', {
         locked: false,
         solo: false,
         threeD: false,
+        motionBlur: false,
         inPoint: 0,
         outPoint: this.project.composition.frameCount - 1,
         parentId: null,
         blendMode: 'normal',
         opacity: createAnimatableProperty('opacity', 100, 'number'),
         transform: createDefaultTransform(),
+        audio: audioProps,
         properties: [],
         effects: [],
         data: layerData
@@ -996,7 +1015,7 @@ export const useCompositorStore = defineStore('compositor', {
     createTextLayer(text: string = 'Text'): Layer {
       const layer = this.createLayer('text', text.substring(0, 20));
 
-      // Set up text data
+      // Set up text data with full AE parity
       const textData: TextData = {
         text,
         fontFamily: 'Arial',
@@ -1006,19 +1025,43 @@ export const useCompositorStore = defineStore('compositor', {
         fill: '#ffffff',
         stroke: '',
         strokeWidth: 0,
+
+        // Character Properties (AE Animator defaults)
+        tracking: 0,
+        lineSpacing: 0,
+        lineAnchor: 0,
+        characterOffset: 0,
+        characterValue: 0,
+        blur: { x: 0, y: 0 },
+
+        // Paragraph (legacy aliases)
         letterSpacing: 0,
         lineHeight: 1.2,
         textAlign: 'left',
+
+        // Path Options
         pathLayerId: null,
         pathOffset: 0,
-        pathAlign: 'left'
+        pathAlign: 'left',
+
+        // More Options (AE Advanced)
+        anchorPointGrouping: 'character',
+        groupingAlignment: { x: 0, y: 0 },
+        fillAndStroke: 'fill-over-stroke',
+        interCharacterBlending: 'normal',
+
+        // 3D Text
+        perCharacter3D: false
       };
 
       layer.data = textData;
 
-      // Add animatable properties for text
+      // Add animatable properties for text (matching AE stopwatches)
       layer.properties.push(createAnimatableProperty('fontSize', 48, 'number'));
       layer.properties.push(createAnimatableProperty('pathOffset', 0, 'number'));
+      layer.properties.push(createAnimatableProperty('tracking', 0, 'number'));
+      layer.properties.push(createAnimatableProperty('lineSpacing', 0, 'number'));
+      layer.properties.push(createAnimatableProperty('characterOffset', 0, 'number'));
       layer.properties.push(createAnimatableProperty('letterSpacing', 0, 'number'));
 
       return layer;
@@ -1371,6 +1414,7 @@ export const useCompositorStore = defineStore('compositor', {
         locked: false,
         solo: false,
         threeD: true,  // Cameras are always 3D
+        motionBlur: false,
         inPoint: 0,
         outPoint: this.project.composition.frameCount - 1,
         parentId: null,

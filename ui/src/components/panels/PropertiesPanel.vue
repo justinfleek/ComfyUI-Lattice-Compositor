@@ -208,6 +208,7 @@ import ParticleProperties from '@/components/properties/ParticleProperties.vue';
 import DepthflowProperties from '@/components/properties/DepthflowProperties.vue';
 import LightProperties from '@/components/properties/LightProperties.vue';
 import ShapeProperties from '@/components/properties/ShapeProperties.vue';
+import VideoProperties from '@/components/properties/VideoProperties.vue';
 
 const store = useCompositorStore();
 
@@ -271,6 +272,8 @@ const layerPropertiesComponent = computed<Component | null>(() => {
       return markRaw(LightProperties);
     case 'spline':
       return markRaw(ShapeProperties);
+    case 'video':
+      return markRaw(VideoProperties);
     default:
       return null;
   }

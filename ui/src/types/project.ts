@@ -51,15 +51,22 @@ export interface Layer {
   locked: boolean;
   solo: boolean;
   threeD: boolean;      // 3D Layer Switch
+  motionBlur: boolean;  // Motion Blur Switch
   inPoint: number;      // Start frame (0-80)
   outPoint: number;     // End frame (0-80)
   parentId: string | null;
   blendMode: BlendMode;
   opacity: AnimatableProperty<number>;
   transform: LayerTransform;
+
+  // Video/Audio specific properties
+  audio?: {
+    level: AnimatableProperty<number>; // Audio Levels in dB
+  };
+
   properties: AnimatableProperty<any>[];
   effects: EffectInstance[];  // Effect stack - processed top to bottom
-  data: SplineData | TextData | ParticleData | ParticleLayerData | DepthflowLayerData | GeneratedMapData | CameraLayerData | null;
+  data: SplineData | TextData | ParticleData | ParticleLayerData | DepthflowLayerData | GeneratedMapData | CameraLayerData | VideoData | null;
 }
 
 export type LayerType =
@@ -72,6 +79,8 @@ export type LayerType =
   | 'particles'  // New particle system layer
   | 'depthflow'  // Depthflow parallax layer
   | 'image'      // Static/animated image
+  | 'video'      // Video layer
+  | 'audio'      // Audio-only layer
   | 'generated'  // AI-generated map (depth, normal, edge, etc.)
   | 'camera'     // 2.5D/3D camera layer
   | 'light'      // 3D Light layer
@@ -80,6 +89,17 @@ export type LayerType =
   | 'group';     // Layer group
 
 export type BlendMode = 'normal' | 'multiply' | 'screen' | 'overlay' | 'add' | 'difference';
+
+// ============================================================
+// VIDEO DATA
+// ============================================================
+
+export interface VideoData {
+  assetId: string | null;
+  loop: boolean;
+  startTime: number;
+  speed: number;
+}
 
 // ============================================================
 // GENERATED MAP DATA (AI-powered layer generation)
@@ -516,26 +536,46 @@ export interface ControlPoint {
 }
 
 // ============================================================
-// TEXT DATA
+// TEXT DATA (Complete AE Parity)
 // ============================================================
 
 export interface TextData {
+  // Source Text
   text: string;
   fontFamily: string;
   fontSize: number;
   fontWeight: string;
   fontStyle: 'normal' | 'italic';
-  fill: string;
-  stroke: string;
+  fill: string;         // Color hex
+  stroke: string;       // Color hex
   strokeWidth: number;
-  letterSpacing: number;
-  lineHeight: number;
+
+  // Character Properties (from Context Menu / Animators)
+  tracking: number;           // Tracking (spacing)
+  lineSpacing: number;        // Leading
+  lineAnchor: number;         // 0% to 100%
+  characterOffset: number;    // Integer shift
+  characterValue: number;     // Unicode shift
+  blur: { x: number; y: number }; // Per-character blur
+
+  // Paragraph (legacy aliases)
+  letterSpacing: number;      // Alias for tracking
+  lineHeight: number;         // Alias for lineSpacing
   textAlign: 'left' | 'center' | 'right';
 
-  // Text on path
+  // Path Options
   pathLayerId: string | null;
-  pathOffset: number;     // 0-1, animatable
+  pathOffset: number;         // 0-1, animatable
   pathAlign: 'left' | 'center' | 'right';
+
+  // More Options (AE Advanced)
+  anchorPointGrouping: 'character' | 'word' | 'line' | 'all';
+  groupingAlignment: { x: number; y: number }; // Percentages
+  fillAndStroke: 'fill-over-stroke' | 'stroke-over-fill';
+  interCharacterBlending: 'normal' | 'multiply' | 'screen' | 'overlay';
+
+  // 3D Text
+  perCharacter3D: boolean;
 }
 
 // ============================================================
