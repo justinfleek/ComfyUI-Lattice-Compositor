@@ -1,442 +1,243 @@
 <template>
   <div class="text-properties">
-    <!-- Text Section -->
-    <div class="property-section">
-      <div class="section-header">
-        <span class="expand-icon">▼</span>
-        <span>Text</span>
-      </div>
-      <div class="section-content">
-        <div class="property-group">
-          <label>Source Text</label>
-          <textarea
-            v-model="textData.text"
-            class="text-input"
-            rows="2"
-            @input="emit('update')"
-          />
-        </div>
+    <div class="property-group">
+      <label>Source Text</label>
+      <textarea
+        v-model="textData.text"
+        class="main-text-input"
+        rows="3"
+        @input="emit('update')"
+      ></textarea>
+    </div>
 
-        <div class="property-group">
+    <div class="property-group">
+      <div class="row">
+        <div class="col">
           <label>Font</label>
-          <div class="font-row">
-            <select v-model="textData.fontFamily" class="font-select" @change="updateFont">
-              <option value="Arial">Arial</option>
-              <option value="Helvetica">Helvetica</option>
-              <option value="Times New Roman">Times New Roman</option>
-              <option value="Courier New">Courier New</option>
-              <option value="Georgia">Georgia</option>
-              <option value="Verdana">Verdana</option>
-            </select>
-            <select v-model="textData.fontWeight" class="weight-select" @change="emit('update')">
-              <option value="400">Regular</option>
-              <option value="500">Medium</option>
-              <option value="600">Semibold</option>
-              <option value="700">Bold</option>
-            </select>
-          </div>
+          <select v-model="textData.fontFamily" class="select-input" @change="emit('update')">
+            <option value="Arial">Arial</option>
+            <option value="Helvetica">Helvetica</option>
+            <option value="Times New Roman">Times New Roman</option>
+            <option value="Courier New">Courier New</option>
+            <option value="Georgia">Georgia</option>
+            <option value="Verdana">Verdana</option>
+          </select>
         </div>
-
-        <div class="property-row">
+        <div class="col">
           <label>Size</label>
-          <div class="control-with-keyframe">
-            <ScrubableNumber
-              v-model="textData.fontSize"
-              :min="1"
-              :max="500"
-              unit="px"
-              @update:modelValue="updateAnimatable('Font Size', $event)"
-            />
-            <KeyframeToggle :property="getProperty('Font Size')" :layerId="layer.id" />
-          </div>
+          <ScrubableNumber :modelValue="textData.fontSize" @update:modelValue="v => updateData('fontSize', v)" :min="1" :max="500" />
         </div>
+      </div>
+    </div>
 
-        <div class="property-row">
-          <label>Fill</label>
-          <ColorPicker
-            :modelValue="textData.fill"
-            @update:modelValue="v => { textData.fill = v; emit('update'); }"
-          />
+    <div class="property-group">
+      <div class="row">
+        <div class="col">
+          <label>Fill Color</label>
+          <ColorPicker :modelValue="textData.fill" @update:modelValue="v => updateData('fill', v)" />
         </div>
-
-        <div class="property-row">
-          <label>Stroke</label>
-          <div class="stroke-row">
-            <ColorPicker
-              :modelValue="textData.stroke || '#000000'"
-              @update:modelValue="v => { textData.stroke = v; emit('update'); }"
-            />
-            <ScrubableNumber
-              v-model="textData.strokeWidth"
-              :min="0"
-              :max="100"
-              unit="px"
-              @update:modelValue="emit('update')"
-            />
-          </div>
+        <div class="col">
+          <label>Stroke Color</label>
+          <ColorPicker :modelValue="textData.stroke || '#000000'" @update:modelValue="v => updateData('stroke', v)" />
         </div>
-
-        <div class="property-row">
+      </div>
+      <div class="row">
+        <div class="col">
+          <label>Stroke Width</label>
+          <ScrubableNumber :modelValue="textData.strokeWidth || 0" @update:modelValue="v => updateData('strokeWidth', v)" :min="0" :max="50" />
+        </div>
+        <div class="col">
           <label>Alignment</label>
-          <div class="icon-toggle-group">
-            <button :class="{ active: textData.textAlign === 'left' }" @click="setAlign('left')" title="Left">◀</button>
-            <button :class="{ active: textData.textAlign === 'center' }" @click="setAlign('center')" title="Center">▬</button>
-            <button :class="{ active: textData.textAlign === 'right' }" @click="setAlign('right')" title="Right">▶</button>
+          <div class="align-buttons">
+            <button :class="{ active: textData.textAlign === 'left' }" @click="setAlign('left')">◀</button>
+            <button :class="{ active: textData.textAlign === 'center' }" @click="setAlign('center')">▬</button>
+            <button :class="{ active: textData.textAlign === 'right' }" @click="setAlign('right')">▶</button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Path Options Section -->
-    <div class="property-section">
-      <div class="section-header" @click="toggleSection('pathOptions')">
-        <span class="expand-icon">{{ expandedSections.has('pathOptions') ? '▼' : '►' }}</span>
-        <span>Path Options</span>
+    <div class="property-group">
+      <div class="row">
+        <label>Tracking</label>
+        <ScrubableNumber :modelValue="textData.tracking || 0" @update:modelValue="v => updateAnimatable('Tracking', v)" />
+        <KeyframeToggle :property="getProperty('Tracking')" :layerId="layer.id" />
       </div>
-      <div v-if="expandedSections.has('pathOptions')" class="section-content">
-        <div class="property-row">
-          <label>Path</label>
-          <select v-model="textData.pathLayerId" class="full-select" @change="emit('update')">
-            <option :value="null">None</option>
-            <option v-for="p in splineLayers" :key="p.id" :value="p.id">{{ p.name }}</option>
-          </select>
-        </div>
-        <template v-if="textData.pathLayerId">
-          <div class="property-row">
-            <label>Path Offset</label>
-            <div class="control-with-keyframe">
-              <ScrubableNumber
-                :modelValue="(textData.pathOffset || 0) * 100"
-                @update:modelValue="v => { textData.pathOffset = v / 100; updateAnimatable('Path Offset', v / 100); }"
-                :min="0"
-                :max="100"
-                unit="%"
-              />
-              <KeyframeToggle :property="getProperty('Path Offset')" :layerId="layer.id" />
-            </div>
-          </div>
-          <div class="property-row">
-            <label>Path Align</label>
-            <select v-model="textData.pathAlign" class="full-select" @change="emit('update')">
-              <option value="left">Left</option>
-              <option value="center">Center</option>
-              <option value="right">Right</option>
-            </select>
-          </div>
-        </template>
+      <div class="row">
+        <label>Line Spacing</label>
+        <ScrubableNumber :modelValue="textData.lineSpacing || 0" @update:modelValue="v => updateAnimatable('Line Spacing', v)" />
+        <KeyframeToggle :property="getProperty('Line Spacing')" :layerId="layer.id" />
+      </div>
+      <div class="row">
+        <label>Character Offset</label>
+        <ScrubableNumber :modelValue="textData.characterOffset || 0" @update:modelValue="v => updateAnimatable('Character Offset', v)" :precision="0" />
+        <KeyframeToggle :property="getProperty('Character Offset')" :layerId="layer.id" />
       </div>
     </div>
 
-    <!-- More Options Section -->
-    <div class="property-section">
-      <div class="section-header" @click="toggleSection('moreOptions')">
-        <span class="expand-icon">{{ expandedSections.has('moreOptions') ? '▼' : '►' }}</span>
-        <span>More Options</span>
-      </div>
-      <div v-if="expandedSections.has('moreOptions')" class="section-content">
-        <div class="property-row">
-          <label>Grouping</label>
-          <select v-model="textData.anchorPointGrouping" class="full-select" @change="emit('update')">
-            <option value="character">Character</option>
-            <option value="word">Word</option>
-            <option value="line">Line</option>
-            <option value="all">All</option>
-          </select>
-        </div>
-
-        <div class="property-row">
-          <label>Alignment</label>
-          <div class="multi-value">
-            <ScrubableNumber
-              :modelValue="textData.groupingAlignment.x"
-              :min="-100"
-              :max="100"
-              unit="X%"
-              @update:modelValue="v => updateVec2Property('Grouping Alignment', 'x', v)"
-            />
-            <ScrubableNumber
-              :modelValue="textData.groupingAlignment.y"
-              :min="-100"
-              :max="100"
-              unit="Y%"
-              @update:modelValue="v => updateVec2Property('Grouping Alignment', 'y', v)"
-            />
-          </div>
-          <KeyframeToggle :property="getProperty('Grouping Alignment')" :layerId="layer.id" />
-        </div>
-
-        <div class="property-row">
-          <label>Fill & Stroke</label>
-          <select v-model="textData.fillAndStroke" class="full-select" @change="emit('update')">
-            <option value="fill-over-stroke">Fill Over Stroke</option>
-            <option value="stroke-over-fill">Stroke Over Fill</option>
-          </select>
-        </div>
-
-        <div class="property-row">
-          <label>Blending</label>
-          <select v-model="textData.interCharacterBlending" class="full-select" @change="emit('update')">
-            <option value="normal">Normal</option>
-            <option value="multiply">Multiply</option>
-            <option value="screen">Screen</option>
-            <option value="overlay">Overlay</option>
-          </select>
-        </div>
-      </div>
-    </div>
-
-    <!-- Advanced Section -->
-    <div class="property-section">
-      <div class="section-header" @click="toggleSection('advanced')">
-        <span class="expand-icon">{{ expandedSections.has('advanced') ? '▼' : '►' }}</span>
-        <span>Advanced</span>
-      </div>
-      <div v-if="expandedSections.has('advanced')" class="section-content">
-        <div class="property-row checkbox-row">
-          <label>
-            <input type="checkbox" v-model="textData.perCharacter3D" @change="emit('update')" />
-            Enable Per-character 3D
-          </label>
-        </div>
-
-        <div class="property-row">
-          <label>Tracking</label>
-          <div class="control-with-keyframe">
-            <ScrubableNumber
-              v-model="textData.tracking"
-              unit="em"
-              @update:modelValue="updateAnimatable('Tracking', $event)"
-            />
-            <KeyframeToggle :property="getProperty('Tracking')" :layerId="layer.id" />
-          </div>
-        </div>
-
-        <div class="property-row">
-          <label>Line Spacing</label>
-          <div class="control-with-keyframe">
-            <ScrubableNumber
-              v-model="textData.lineSpacing"
-              unit="px"
-              @update:modelValue="updateAnimatable('Line Spacing', $event)"
-            />
-            <KeyframeToggle :property="getProperty('Line Spacing')" :layerId="layer.id" />
-          </div>
-        </div>
-
-        <div class="property-row">
-          <label>Line Anchor</label>
-          <ScrubableNumber
-            v-model="textData.lineAnchor"
-            :min="0"
-            :max="100"
-            unit="%"
-            @update:modelValue="emit('update')"
-          />
-        </div>
-
-        <div class="property-row">
-          <label>Char Offset</label>
-          <div class="control-with-keyframe">
-            <ScrubableNumber
-              v-model="textData.characterOffset"
-              :precision="0"
-              @update:modelValue="updateAnimatable('Character Offset', $event)"
-            />
-            <KeyframeToggle :property="getProperty('Character Offset')" :layerId="layer.id" />
-          </div>
-        </div>
-
-        <div class="property-row">
-          <label>Blur</label>
-          <div class="multi-value">
-            <ScrubableNumber
-              :modelValue="textData.blur.x"
-              unit="X"
-              @update:modelValue="v => updateVec2Property('Blur', 'x', v)"
-            />
-            <ScrubableNumber
-              :modelValue="textData.blur.y"
-              unit="Y"
-              @update:modelValue="v => updateVec2Property('Blur', 'y', v)"
-            />
-          </div>
-          <KeyframeToggle :property="getProperty('Blur')" :layerId="layer.id" />
-        </div>
-      </div>
+    <div class="property-group checkbox">
+      <label>
+        <input type="checkbox" v-model="textData.perCharacter3D" @change="emit('update')" />
+        Enable Per-Character 3D
+      </label>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { computed } from 'vue';
 import { useCompositorStore } from '@/stores/compositorStore';
 import { ScrubableNumber, ColorPicker } from '@/components/controls';
 import KeyframeToggle from './KeyframeToggle.vue';
-import { fontService } from '@/services/fontService';
-import type { Layer, TextData } from '@/types/project';
 
-const props = defineProps<{ layer: Layer }>();
+const props = defineProps<{ layer: any }>();
 const emit = defineEmits(['update']);
 const store = useCompositorStore();
 
-const expandedSections = ref(new Set(['pathOptions', 'moreOptions', 'advanced']));
-
-const textData = computed<TextData>(() => {
-  return props.layer.data as TextData || {
-    text: 'Text',
-    fontFamily: 'Arial',
-    fontSize: 48,
-    fontWeight: '400',
-    fontStyle: 'normal',
-    fill: '#ffffff',
-    stroke: '',
-    strokeWidth: 0,
-    tracking: 0,
-    lineSpacing: 0,
-    lineAnchor: 0,
-    characterOffset: 0,
-    characterValue: 0,
-    blur: { x: 0, y: 0 },
-    letterSpacing: 0,
-    lineHeight: 1.2,
-    textAlign: 'left',
-    pathLayerId: null,
-    pathOffset: 0,
-    pathAlign: 'left',
-    anchorPointGrouping: 'character',
-    groupingAlignment: { x: 0, y: 0 },
-    fillAndStroke: 'fill-over-stroke',
-    interCharacterBlending: 'normal',
-    perCharacter3D: false
-  };
+const textData = computed(() => props.layer.data || {
+  text: 'Text',
+  fontFamily: 'Arial',
+  fontSize: 48,
+  fill: '#ffffff',
+  stroke: '#000000',
+  strokeWidth: 0,
+  textAlign: 'left',
+  tracking: 0,
+  lineSpacing: 0,
+  characterOffset: 0,
+  perCharacter3D: false
 });
 
-const splineLayers = computed(() => store.layers.filter(l => l.type === 'spline'));
-
-function toggleSection(sec: string) {
-  if (expandedSections.value.has(sec)) expandedSections.value.delete(sec);
-  else expandedSections.value.add(sec);
+function getProperty(name: string) {
+  return props.layer.properties?.find((p: any) => p.name === name);
 }
 
-function getProperty(name: string) {
-  return props.layer.properties.find(p => p.name === name);
+function updateData(key: string, val: any) {
+  if (textData.value) {
+    textData.value[key] = val;
+    emit('update');
+  }
+}
+
+function setAlign(align: 'left' | 'center' | 'right') {
+  if (textData.value) {
+    textData.value.textAlign = align;
+    emit('update');
+  }
 }
 
 function updateAnimatable(name: string, val: number) {
-  // 1. Update the store (AnimatableProperty)
   const prop = getProperty(name);
   if (prop) {
     prop.value = val;
     store.project.meta.modified = new Date().toISOString();
   }
 
-  // 2. Also update the local textData for immediate render feedback
-  // Map property name to data key (e.g., "Font Size" -> "fontSize", "Line Spacing" -> "lineSpacing")
-  const nameToDataKey: Record<string, string> = {
-    'Font Size': 'fontSize',
+  // Also update static data for immediate render
+  const keyMap: Record<string, string> = {
     'Tracking': 'tracking',
     'Line Spacing': 'lineSpacing',
-    'Character Offset': 'characterOffset',
-    'Character Value': 'characterValue',
-    'Path Offset': 'pathOffset',
-    'Stroke Width': 'strokeWidth'
+    'Character Offset': 'characterOffset'
   };
-
-  const dataKey = nameToDataKey[name];
-  if (dataKey && textData.value[dataKey as keyof typeof textData.value] !== undefined) {
-    (textData.value as any)[dataKey] = val;
+  const dataKey = keyMap[name];
+  if (dataKey && textData.value) {
+    textData.value[dataKey] = val;
   }
-
   emit('update');
 }
-
-function updateVec2Property(name: string, axis: 'x' | 'y', value: number) {
-  const prop = getProperty(name);
-  if (prop && typeof prop.value === 'object') {
-    // Update the animatable property for keyframing
-    prop.value = { ...prop.value, [axis]: value };
-    store.project.meta.modified = new Date().toISOString();
-
-    // Also update the static textData for immediate rendering
-    if (name === 'Grouping Alignment') {
-      textData.value.groupingAlignment[axis] = value;
-    } else if (name === 'Blur') {
-      textData.value.blur[axis] = value;
-    }
-
-    emit('update');
-  }
-}
-
-function updateFont() {
-  fontService.ensureFont(textData.value.fontFamily);
-  emit('update');
-}
-
-function setAlign(align: 'left' | 'center' | 'right') {
-  textData.value.textAlign = align;
-  emit('update');
-}
-
-onMounted(async () => {
-  await fontService.initialize();
-});
 </script>
 
 <style scoped>
-.text-properties { padding: 0; }
-.property-section { border-bottom: 1px solid #2a2a2a; }
-.section-header {
-  padding: 8px 10px;
-  background: #252525;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 600;
-  font-size: 12px;
-  color: #aaa;
+.text-properties { padding: 12px; font-size: 14px; color: #ccc; }
+
+.property-group {
+  margin-bottom: 16px;
+  border-bottom: 1px solid #333;
+  padding-bottom: 12px;
 }
-.section-header:hover { background: #2a2a2a; }
-.expand-icon { font-size: 8px; color: #666; width: 10px; }
-.section-content { padding: 10px; background: #1e1e1e; display: flex; flex-direction: column; gap: 8px; }
+.property-group:last-child { border-bottom: none; }
 
-.property-group { margin-bottom: 4px; }
-.property-group label { display: block; color: #888; font-size: 10px; margin-bottom: 4px; }
+label {
+  display: block;
+  color: #888;
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 500;
+}
 
-.property-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.property-row > label { width: 80px; color: #888; font-size: 11px; flex-shrink: 0; }
-
-.text-input {
+.main-text-input {
   width: 100%;
   background: #111;
-  border: 1px solid #333;
-  color: #eee;
-  padding: 6px;
+  color: #fff;
+  border: 1px solid #444;
+  padding: 10px;
+  font-size: 15px;
   font-family: inherit;
-  font-size: 12px;
-  border-radius: 3px;
+  border-radius: 4px;
   resize: vertical;
+  min-height: 60px;
 }
-.text-input:focus { outline: none; border-color: #4a90d9; }
+.main-text-input:focus { border-color: #4a90d9; outline: none; }
 
-.font-row { display: flex; gap: 4px; }
-.font-select { flex: 2; background: #111; color: #ccc; border: 1px solid #333; padding: 4px; font-size: 11px; }
-.weight-select { flex: 1; background: #111; color: #ccc; border: 1px solid #333; padding: 4px; font-size: 11px; }
-.full-select { flex: 1; background: #111; color: #ccc; border: 1px solid #333; padding: 4px; font-size: 11px; }
-
-.control-with-keyframe { flex: 1; display: flex; align-items: center; gap: 4px; }
-.stroke-row { flex: 1; display: flex; align-items: center; gap: 8px; }
-.multi-value { flex: 1; display: flex; gap: 4px; }
-
-.icon-toggle-group { display: flex; background: #111; border-radius: 3px; border: 1px solid #333; }
-.icon-toggle-group button {
-  background: transparent; border: none; color: #666; padding: 4px 8px; cursor: pointer; font-size: 10px;
-  border-right: 1px solid #333;
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
 }
-.icon-toggle-group button:last-child { border-right: none; }
-.icon-toggle-group button.active { background: #4a90d9; color: #fff; }
-.icon-toggle-group button:hover:not(.active) { background: #333; }
+.row:last-child { margin-bottom: 0; }
 
-.checkbox-row label { display: flex; align-items: center; gap: 6px; cursor: pointer; color: #ccc; font-size: 11px; }
+.row > label {
+  min-width: 110px;
+  margin-bottom: 0;
+  font-size: 13px;
+}
+
+.col { flex: 1; }
+
+.select-input {
+  width: 100%;
+  background: #111;
+  color: #ccc;
+  border: 1px solid #444;
+  padding: 6px 8px;
+  font-size: 13px;
+  border-radius: 3px;
+}
+.select-input:focus { border-color: #4a90d9; outline: none; }
+
+.align-buttons {
+  display: flex;
+  background: #111;
+  border: 1px solid #444;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.align-buttons button {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #666;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 12px;
+  border-right: 1px solid #444;
+}
+.align-buttons button:last-child { border-right: none; }
+.align-buttons button.active { background: #4a90d9; color: #fff; }
+.align-buttons button:hover:not(.active) { background: #333; color: #fff; }
+
+.checkbox label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  color: #eee;
+  font-size: 13px;
+}
+.checkbox input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
 </style>

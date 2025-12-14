@@ -1,101 +1,60 @@
 <template>
   <div class="prop-wrapper">
-
-    <!-- SIDEBAR MODE -->
     <div v-if="layoutMode === 'sidebar'" class="prop-sidebar" :class="{ selected: isSelected }" :style="gridStyle" @click="selectProp">
-
-      <!-- Indent spacer (spans arrow + color + id columns) -->
       <div class="indent-spacer"></div>
 
-      <!-- 1. Diamond FIRST (Add Keyframe) - in icon columns -->
-      <div class="icon-box" @click.stop="addKeyframeAtCurrent" title="Add Keyframe">
+      <div class="icon-box" @click.stop="addKeyframeAtCurrent">
         <span class="kf-btn" :class="{ active: hasKeyframeAtCurrent }">◇</span>
       </div>
 
-      <!-- 2. Stopwatch -->
       <div class="icon-box" @click.stop="toggleAnim">
         <span class="stopwatch" :class="{ active: property.animated }">⏱</span>
       </div>
 
-      <!-- Property Name + Values (spans name column) -->
       <div class="prop-content">
         <span class="prop-name">{{ name }}</span>
 
-        <!-- Editable Value Display using ScrubableNumber for hot-text feel -->
-        <div class="prop-value-container">
+        <div class="prop-inputs">
           <!-- Number type -->
           <template v-if="typeof property.value === 'number'">
-            <ScrubableNumber
-              :modelValue="property.value"
-              @update:modelValue="(v) => updateValDirect(v)"
-              :precision="1"
-              :sensitivity="0.5"
-            />
+             <ScrubableNumber :modelValue="property.value" @update:modelValue="updateValDirect" :precision="1" />
           </template>
 
-          <!-- X/Y type -->
-          <template v-else-if="property.value?.x !== undefined && property.value?.z === undefined">
-            <ScrubableNumber
-              :modelValue="property.value.x"
-              @update:modelValue="(v) => updateValByIndex(0, v)"
-              :precision="0"
-              :sensitivity="1"
-            />
-            <ScrubableNumber
-              :modelValue="property.value.y"
-              @update:modelValue="(v) => updateValByIndex(1, v)"
-              :precision="0"
-              :sensitivity="1"
-            />
+          <!-- Object type (X/Y or X/Y/Z) -->
+          <template v-else-if="typeof property.value === 'object' && property.value !== null">
+             <div class="vec-item">
+               <span class="label x-label">X</span>
+               <ScrubableNumber :modelValue="property.value.x" @update:modelValue="v => updateValByIndex('x', v)" />
+             </div>
+             <div class="vec-item">
+               <span class="label y-label">Y</span>
+               <ScrubableNumber :modelValue="property.value.y" @update:modelValue="v => updateValByIndex('y', v)" />
+             </div>
+             <div class="vec-item" v-if="property.value.z !== undefined">
+               <span class="label z-label">Z</span>
+               <ScrubableNumber :modelValue="property.value.z" @update:modelValue="v => updateValByIndex('z', v)" />
+             </div>
           </template>
 
-          <!-- X/Y/Z type -->
-          <template v-else-if="property.value?.z !== undefined">
-            <ScrubableNumber
-              :modelValue="property.value.x"
-              @update:modelValue="(v) => updateValByIndex(0, v)"
-              :precision="0"
-              :sensitivity="1"
-            />
-            <ScrubableNumber
-              :modelValue="property.value.y"
-              @update:modelValue="(v) => updateValByIndex(1, v)"
-              :precision="0"
-              :sensitivity="1"
-            />
-            <ScrubableNumber
-              :modelValue="property.value.z"
-              @update:modelValue="(v) => updateValByIndex(2, v)"
-              :precision="0"
-              :sensitivity="1"
-            />
+          <!-- Color type -->
+          <template v-else-if="property.type === 'color'">
+             <input type="color" :value="property.value" @input="e => updateValDirect((e.target as HTMLInputElement).value)" class="color-input" />
+             <span class="color-text">{{ property.value }}</span>
           </template>
 
           <!-- Fallback -->
           <template v-else>
-            <span class="val-display">{{ formatValue(property.value) }}</span>
+             <span class="val-display">{{ formatValue(property.value) }}</span>
           </template>
         </div>
       </div>
-
-      <!-- Empty columns for mode/parent alignment -->
-      <div class="col-spacer"></div>
-      <div class="col-spacer"></div>
     </div>
 
-    <!-- TRACK MODE -->
-    <div v-else-if="layoutMode === 'track'" class="prop-track">
-      <div class="track-bg"></div>
-      <template v-if="viewMode === 'keyframes'">
-        <div v-for="kf in property.keyframes" :key="kf.id"
-             class="keyframe"
-             :style="{ left: `${kf.frame * pixelsPerFrame}px` }"
-             @mousedown.stop="startKeyframeDrag(kf, $event)"
-             @click.stop="$emit('selectKeyframe', kf.id, true)"
-        ></div>
-      </template>
+    <div v-else class="prop-track">
+       <div v-for="kf in property.keyframes" :key="kf.id"
+            class="keyframe" :style="{ left: `${kf.frame * pixelsPerFrame}px` }">
+       </div>
     </div>
-
   </div>
 </template>
 
@@ -104,209 +63,109 @@ import { computed } from 'vue';
 import { useCompositorStore } from '@/stores/compositorStore';
 import ScrubableNumber from '@/components/controls/ScrubableNumber.vue';
 
-const props = defineProps(['name', 'property', 'layerId', 'propertyPath', 'layoutMode', 'viewMode', 'frameCount', 'selectedPropertyIds', 'pixelsPerFrame', 'gridStyle']);
-const emit = defineEmits(['selectProperty', 'selectKeyframe']);
+const props = defineProps(['name', 'property', 'layerId', 'propertyPath', 'layoutMode', 'pixelsPerFrame', 'gridStyle']);
 const store = useCompositorStore();
 
-const propId = computed(() => `${props.layerId}-${props.propertyPath}`);
-const isSelected = computed(() => props.selectedPropertyIds?.includes(propId.value));
+const hasKeyframeAtCurrent = computed(() => props.property.keyframes?.some((k: any) => k.frame === store.currentFrame));
+const isSelected = false;
 
 function formatValue(v: any) {
   if (typeof v === 'number') return v.toFixed(1);
-  if (typeof v === 'object') {
-    if (v?.z !== undefined) return `${v.x.toFixed(0)},${v.y.toFixed(0)},${v.z.toFixed(0)}`;
-    if (v?.x !== undefined) return `${v.x.toFixed(0)},${v.y.toFixed(0)}`;
+  if (typeof v === 'object' && v !== null) {
+    if (v.z !== undefined) return `${v.x?.toFixed(0)}, ${v.y?.toFixed(0)}, ${v.z?.toFixed(0)}`;
+    if (v.x !== undefined) return `${v.x?.toFixed(0)}, ${v.y?.toFixed(0)}`;
   }
   return String(v);
 }
 
-const hasKeyframeAtCurrent = computed(() => {
-  return props.property.keyframes?.some((k: any) => k.frame === store.currentFrame);
-});
-
-function toggleAnim() {
-  store.setPropertyAnimated(props.layerId, props.propertyPath, !props.property.animated);
-}
-
-function addKeyframeAtCurrent() {
-  store.addKeyframe(props.layerId, props.propertyPath, props.property.value);
-}
-
-function selectProp(e: MouseEvent) {
-  emit('selectProperty', propId.value, e.shiftKey);
-}
-
-function updateVal(idx: number, e: Event) {
-  const num = parseFloat((e.target as HTMLInputElement).value);
-  if (isNaN(num)) return;
-  updateValByIndex(idx, num);
-}
-
-// Direct value update for scalar properties
-function updateValDirect(num: number) {
-  store.setPropertyValue(props.layerId, props.propertyPath, num);
-}
-
-// Update value by component index (0=x, 1=y, 2=z)
-function updateValByIndex(idx: number, num: number) {
-  let newVal = props.property.value;
-
-  if (typeof newVal === 'number') {
-    newVal = num;
-  } else if (typeof newVal === 'object' && newVal !== null) {
-    newVal = { ...newVal };
-    if (idx === 0) newVal.x = num;
-    if (idx === 1) newVal.y = num;
-    if (idx === 2 && newVal.z !== undefined) newVal.z = num;
-  }
-
+function toggleAnim() { store.setPropertyAnimated(props.layerId, props.propertyPath, !props.property.animated); }
+function addKeyframeAtCurrent() { store.addKeyframe(props.layerId, props.propertyPath, props.property.value); }
+function updateValDirect(v: any) { store.setPropertyValue(props.layerId, props.propertyPath, v); }
+function updateValByIndex(axis: string, v: number) {
+  const newVal = { ...props.property.value, [axis]: v };
   store.setPropertyValue(props.layerId, props.propertyPath, newVal);
 }
-
-function startKeyframeDrag(kf: any, e: MouseEvent) {
-  e.stopPropagation();
-  const ppf = props.pixelsPerFrame || 5;
-  const startX = e.clientX;
-  const startFrame = kf.frame;
-
-  const onMove = (ev: MouseEvent) => {
-    const dx = ev.clientX - startX;
-    const dFrames = Math.round(dx / ppf);
-    const newFrame = Math.max(0, Math.min(props.frameCount - 1, startFrame + dFrames));
-    if (newFrame !== kf.frame) {
-      store.moveKeyframe(props.layerId, props.propertyPath, kf.id, newFrame);
-    }
-  };
-
-  const onUp = () => {
-    window.removeEventListener('mousemove', onMove);
-    window.removeEventListener('mouseup', onUp);
-  };
-
-  window.addEventListener('mousemove', onMove);
-  window.addEventListener('mouseup', onUp);
-
-  // Also select the keyframe
-  emit('selectKeyframe', kf.id, true);
-}
+function selectProp() {}
 </script>
 
 <style scoped>
 .prop-wrapper { width: 100%; display: flex; flex-direction: column; }
 
-/* SIDEBAR - Grid layout matching parent Layer Track */
-/* Columns: 20 | 20 | 30 | 24 | 24 | 24 | 1fr | 60 | 60 */
 .prop-sidebar {
   display: grid;
-  grid-template-columns: 20px 20px 30px 24px 24px 24px 1fr 60px 60px;
-  height: 24px;
+  /* Must match parent grid: 24 24 30 24 24 24 1fr 70 70 */
+  grid-template-columns: 24px 24px 30px 24px 24px 24px 1fr 70px 70px;
   align-items: center;
+  height: 32px;
   border-bottom: 1px solid #2a2a2a;
   background: #1a1a1a;
-  color: #bbb;
-  font-size: 11px;
-  cursor: pointer;
-  width: 100%;
-  box-sizing: border-box;
+  font-size: 13px;
+  color: #ccc;
 }
-.prop-sidebar:hover { background: #222; color: #fff; }
-.prop-sidebar.selected { background: #252525; border-left: 2px solid #3ea6ff; }
+.prop-sidebar:hover { background: #222; }
+.prop-sidebar.selected { background: #2a2a2a; border-left: 2px solid #3ea6ff; }
 
-/* 1. Indent spacer (Spans Arrow + Color + ID) -> Cols 1-3 */
 .indent-spacer { grid-column: span 3; }
 
-/* Icon boxes for diamond and stopwatch */
-.icon-box {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  cursor: pointer;
-}
-
-/* Diamond / Stopwatch Styles */
-.kf-btn { font-size: 10px; color: #555; }
+.icon-box { display: flex; justify-content: center; cursor: pointer; font-size: 14px; }
+.kf-btn { color: #555; }
 .kf-btn:hover { color: #fff; }
-.kf-btn.active { color: #ebcb8b; }
+.kf-btn.active { color: #f1c40f; }
+.stopwatch { color: #555; }
+.stopwatch:hover { color: #fff; }
+.stopwatch.active { color: #3498db; }
 
-.stopwatch { font-size: 10px; color: #555; }
-.stopwatch.active { color: #3ea6ff; }
-
-/* 4. Property Name & Values (Spans 3D Icon + Name + Mode + Parent) -> Cols 6-End */
-/* CRITICAL FIX: This makes the inputs expand to fill the row */
+/* Content spans from column 7 (Name) to the end */
 .prop-content {
-  grid-column: 6 / -1;
+  grid-column: 7 / -1;
   display: flex;
   align-items: center;
-  padding-right: 8px;
+  padding-right: 10px;
   overflow: hidden;
+  gap: 12px;
 }
 
-.prop-name {
-  color: #888;
-  margin-right: 12px;
-  white-space: nowrap;
-  min-width: 80px;
-}
+.prop-name { min-width: 100px; color: #999; font-size: 13px; white-space: nowrap; }
 
-/* Value Container */
-.prop-value-container {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  flex: 1;
-}
+.prop-inputs { display: flex; gap: 10px; flex: 1; align-items: center; }
 
-/* Override ScrubableNumber styles for timeline compactness */
-.prop-value-container :deep(.scrubable-number) {
-  gap: 0;
-  display: flex;
-}
-.prop-value-container :deep(.scrub-input) {
-  width: 50px;
-  padding: 1px 2px;
-  font-size: 11px;
-  background: transparent;
-  border: none;
+.vec-item { display: flex; align-items: center; gap: 4px; }
+.label { font-size: 11px; font-weight: bold; width: 14px; text-align: center; }
+.x-label { color: #e74c3c; }
+.y-label { color: #2ecc71; }
+.z-label { color: #3498db; }
+
+.color-input { width: 32px; height: 24px; border: 1px solid #444; cursor: pointer; }
+.color-text { font-family: monospace; font-size: 12px; color: #888; }
+
+.val-display { color: #3ea6ff; font-family: monospace; font-size: 13px; }
+
+/* Override ScrubableNumber for compact display */
+.prop-inputs :deep(.scrubable-number) { gap: 0; }
+.prop-inputs :deep(.scrub-input) {
+  width: 55px;
+  padding: 3px 4px;
+  font-size: 13px;
+  background: #111;
+  border: 1px solid #333;
   color: #3ea6ff;
   font-family: 'Consolas', monospace;
-  cursor: ew-resize;
+  border-radius: 2px;
 }
-.prop-value-container :deep(.scrub-input):hover {
-  background: #111;
-  color: #fff;
-}
-.prop-value-container :deep(.scrub-label) {
-  display: none;
-}
+.prop-inputs :deep(.scrub-input):hover { background: #1a1a1a; border-color: #4a90d9; }
+.prop-inputs :deep(.scrub-input):focus { border-color: #4a90d9; outline: none; }
+.prop-inputs :deep(.scrub-label) { display: none; }
 
-.val-display { color: #3ea6ff; font-family: monospace; font-size: 11px; }
-
-/* Spacers for mode/parent columns - no longer needed with grid-column: 6 / -1 */
-.col-spacer { display: none; }
-
-/* TRACK */
-.prop-track {
-  height: 24px;
-  border-bottom: 1px solid #2a2a2a;
-  position: relative;
-  background: #161616;
-  width: 100%;
-  box-sizing: border-box;
-}
-
+.prop-track { height: 32px; background: #151515; border-bottom: 1px solid #2a2a2a; position: relative; }
 .keyframe {
   position: absolute;
-  width: 9px;
-  height: 9px;
-  background: #ebcb8b;
-  transform: rotate(45deg) translateX(-50%);
-  top: 7px;
+  width: 10px;
+  height: 10px;
+  background: #f1c40f;
+  transform: rotate(45deg);
+  top: 11px;
   border: 1px solid #000;
-  z-index: 5;
   cursor: pointer;
 }
-.keyframe:hover {
-  background: #fff;
-  transform: rotate(45deg) translateX(-50%) scale(1.2);
-}
+.keyframe:hover { background: #fff; transform: rotate(45deg) scale(1.2); }
 </style>
