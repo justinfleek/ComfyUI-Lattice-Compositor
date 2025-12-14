@@ -4,13 +4,19 @@
     <!-- SIDEBAR MODE -->
     <div v-if="layoutMode === 'sidebar'" class="sidebar-row" :class="{ selected: isSelected }">
       <div class="row-content" @click="selectLayer">
-        <!-- 1. Color Strip (Button) -->
+
+        <!-- 1. Twirl Arrow (LEFTMOST) -->
+        <div class="arrow-col" @click.stop="toggleExpand">
+          <span class="arrow">{{ isExpanded ? '▼' : '▶' }}</span>
+        </div>
+
+        <!-- 2. Color Strip -->
         <div class="label-box" @click.stop="toggleColorPicker" :style="{ background: layer.labelColor || '#999' }"></div>
 
-        <!-- 2. ID -->
-        <div class="layer-id">1</div>
+        <!-- 3. ID -->
+        <div class="layer-id">{{ layerIndex }}</div>
 
-        <!-- 3. Icons -->
+        <!-- 4. Icons -->
         <div class="icon-col" @click.stop="toggleVis">
           <span v-if="layer.visible">👁</span><span v-else class="dim">●</span>
         </div>
@@ -18,38 +24,24 @@
           <span v-if="layer.locked">🔒</span><span v-else class="dim">🔓</span>
         </div>
 
-        <!-- 4. Twirl Arrow -->
-        <div class="arrow-col" @click.stop="toggleExpand">
-          <span class="arrow">{{ isExpanded ? '▼' : '▶' }}</span>
-        </div>
-
         <!-- 5. Layer Name -->
         <div class="layer-name-col" @dblclick.stop="startRename">
-          <span class="type-icon" :style="{ color: getLayerColor(layer.type) }">■</span>
+          <span class="type-icon" :style="{ color: getLayerColor(layer.type) }">{{ getLayerIcon(layer.type) }}</span>
           <span v-if="!isRenaming" class="name-text">{{ layer.name }}</span>
           <input v-else v-model="renameVal" @blur="saveRename" @keydown.enter="saveRename" class="rename-input" ref="renameInput" />
         </div>
 
-        <!-- 6. Switches / Mode / Parent -->
-        <!-- Mode Dropdown -->
+        <!-- 6. Mode Dropdown -->
         <div class="col-mode">
-          <select class="mini-select">
-            <option>Normal</option>
-            <option>Add</option>
-            <option>Multiply</option>
-            <option>Screen</option>
+          <select class="mini-select" :value="layer.blendMode || 'normal'" @change="setBlendMode">
+            <option value="normal">Normal</option>
+            <option value="add">Add</option>
+            <option value="multiply">Multiply</option>
+            <option value="screen">Screen</option>
           </select>
         </div>
 
-        <!-- TrkMat Dropdown -->
-        <div class="col-trkmat">
-          <select class="mini-select">
-            <option>None</option>
-            <option>Alpha</option>
-          </select>
-        </div>
-
-        <!-- Parent Dropdown -->
+        <!-- 7. Parent Dropdown -->
         <div class="col-parent">
           <span class="pickwhip-icon">@</span>
           <select :value="layer.parentId || ''" @change="setParent" class="mini-select">
@@ -59,7 +51,7 @@
         </div>
       </div>
 
-      <!-- Recursive Children (Sidebar) -->
+      <!-- Expanded Children (Sidebar) -->
       <div v-if="isExpanded" class="children-container">
         <PropertyTrack
           v-for="prop in properties" :key="prop.path"
@@ -74,7 +66,7 @@
     <!-- TRACK MODE -->
     <div v-else-if="layoutMode === 'track'" class="track-row-container">
       <div class="track-row">
-        <!-- Duration Bar (Clicking selects layer) -->
+        <!-- Duration Bar using pixelsPerFrame -->
         <div class="duration-bar" :style="barStyle" @mousedown.stop="startDrag" @click.stop="selectLayer">
           <div class="bar-fill" :style="{ background: layer.labelColor || '#777', opacity: isSelected ? 0.8 : 0.5 }"></div>
           <div class="trim-handle trim-in" @mousedown.stop="startTrimIn"></div>
@@ -84,15 +76,15 @@
         <!-- Keyframe Markers (Summary) -->
         <div v-for="kf in allKeyframes" :key="kf.id"
              class="keyframe-marker"
-             :style="{ left: `${(kf.frame / frameCount) * 100}%` }">◆</div>
+             :style="{ left: `${kf.frame * pixelsPerFrame}px` }">◆</div>
       </div>
 
-      <!-- Recursive Children (Track) -->
+      <!-- Expanded Children (Track) -->
       <div v-if="isExpanded" class="children-container">
         <PropertyTrack
           v-for="prop in properties" :key="prop.path"
           :layerId="layer.id" :propertyPath="prop.path" :name="prop.name" :property="prop.property"
-          layoutMode="track" :viewMode="viewMode" :frameCount="frameCount"
+          layoutMode="track" :viewMode="viewMode" :frameCount="frameCount" :pixelsPerFrame="pixelsPerFrame"
           :selectedKeyframeIds="[]"
           @selectKeyframe="(id, add) => $emit('selectKeyframe', id, add)"
         />
@@ -107,7 +99,7 @@ import { computed, ref, watch, nextTick } from 'vue';
 import { useCompositorStore } from '@/stores/compositorStore';
 import PropertyTrack from './PropertyTrack.vue';
 
-const props = defineProps(['layer', 'layoutMode', 'isExpandedExternal', 'selectedPropertyIds', 'frameCount', 'viewMode', 'allLayers', 'soloedLayerIds']);
+const props = defineProps(['layer', 'layoutMode', 'isExpandedExternal', 'selectedPropertyIds', 'frameCount', 'viewMode', 'allLayers', 'soloedLayerIds', 'pixelsPerFrame']);
 const emit = defineEmits(['toggleExpand', 'select', 'updateLayer', 'selectProperty', 'selectKeyframe', 'toggleSolo', 'setParent']);
 const store = useCompositorStore();
 
@@ -119,41 +111,161 @@ const isRenaming = ref(false);
 const renameVal = ref('');
 const renameInput = ref<HTMLInputElement | null>(null);
 
-const properties = computed(() => [
-  { path: 'transform.position', name: 'Position', property: props.layer.transform.position },
-  { path: 'transform.scale', name: 'Scale', property: props.layer.transform.scale },
-  { path: 'transform.rotation', name: 'Rotation', property: props.layer.transform.rotation },
-  { path: 'opacity', name: 'Opacity', property: props.layer.opacity }
-]);
+// Layer index for display
+const layerIndex = computed(() => {
+  const idx = props.allLayers?.findIndex((l: any) => l.id === props.layer.id);
+  return idx !== undefined && idx >= 0 ? idx + 1 : 1;
+});
+
+const properties = computed(() => {
+  const baseProps = [
+    { path: 'transform.position', name: 'Position', property: props.layer.transform.position },
+    { path: 'transform.scale', name: 'Scale', property: props.layer.transform.scale },
+    { path: 'transform.rotation', name: 'Rotation', property: props.layer.transform.rotation },
+    { path: 'opacity', name: 'Opacity', property: props.layer.opacity }
+  ];
+
+  // Add type-specific properties
+  if (props.layer.type === 'camera' && props.layer.data) {
+    // Camera: Point of Interest, Zoom
+    baseProps.push({ path: 'transform.anchorPoint', name: 'Point of Interest', property: props.layer.transform.anchorPoint });
+  }
+
+  return baseProps;
+});
 
 const allKeyframes = computed(() => {
   const kfs: any[] = [];
-  properties.value.forEach(p => { if(p.property.animated) kfs.push(...p.property.keyframes); });
+  properties.value.forEach(p => { if (p.property?.animated) kfs.push(...(p.property.keyframes || [])); });
   return kfs;
 });
 
+// Bar style using pixelsPerFrame for pixel-accurate positioning
 const barStyle = computed(() => {
-  const start = (props.layer.inPoint / props.frameCount) * 100;
-  const end = ((props.layer.outPoint || props.frameCount) / props.frameCount) * 100;
-  return { left: `${start}%`, width: `${end - start}%` };
+  const ppf = props.pixelsPerFrame || 5;
+  const startPx = props.layer.inPoint * ppf;
+  const endPx = (props.layer.outPoint || props.frameCount) * ppf;
+  return { left: `${startPx}px`, width: `${endPx - startPx}px` };
 });
 
-const availableParents = computed(() => props.allLayers.filter((l: any) => l.id !== props.layer.id));
+const availableParents = computed(() => props.allLayers?.filter((l: any) => l.id !== props.layer.id) || []);
 
 function toggleExpand() { emit('toggleExpand', props.layer.id, !isExpanded.value); }
 function selectLayer() { emit('select', props.layer.id); }
 function toggleVis() { emit('updateLayer', props.layer.id, { visible: !props.layer.visible }); }
 function toggleLock() { emit('updateLayer', props.layer.id, { locked: !props.layer.locked }); }
-function setParent(e: Event) { emit('updateLayer', props.layer.id, { parentId: (e.target as HTMLSelectElement).value }); }
-function getLayerColor(t: string) { return t === 'solid' ? '#e74c3c' : t === 'text' ? '#f1c40f' : '#95a5a6'; }
+function setParent(e: Event) { emit('updateLayer', props.layer.id, { parentId: (e.target as HTMLSelectElement).value || null }); }
+function setBlendMode(e: Event) { emit('updateLayer', props.layer.id, { blendMode: (e.target as HTMLSelectElement).value }); }
+
+function getLayerColor(t: string) {
+  const colors: Record<string, string> = {
+    solid: '#e74c3c',
+    text: '#f1c40f',
+    spline: '#2ecc71',
+    null: '#9b59b6',
+    camera: '#3498db',
+    light: '#f39c12',
+    particles: '#e91e63',
+    depthflow: '#00bcd4',
+    image: '#95a5a6'
+  };
+  return colors[t] || '#95a5a6';
+}
+
+function getLayerIcon(t: string) {
+  const icons: Record<string, string> = {
+    solid: '■',
+    text: 'T',
+    spline: '~',
+    null: '□',
+    camera: '📷',
+    light: '💡',
+    particles: '✦',
+    depthflow: '◐',
+    image: '🖼'
+  };
+  return icons[t] || '■';
+}
 
 function startRename() { isRenaming.value = true; renameVal.value = props.layer.name; nextTick(() => renameInput.value?.focus()); }
 function saveRename() { emit('updateLayer', props.layer.id, { name: renameVal.value }); isRenaming.value = false; }
 
-function startDrag() {}
-function startTrimIn() {}
-function startTrimOut() {}
-function toggleColorPicker() {}
+function startDrag(e: MouseEvent) {
+  const ppf = props.pixelsPerFrame || 5;
+  const startX = e.clientX;
+  const startIn = props.layer.inPoint;
+  const startOut = props.layer.outPoint || props.frameCount;
+  const duration = startOut - startIn;
+
+  const onMove = (ev: MouseEvent) => {
+    const dx = ev.clientX - startX;
+    const dFrames = Math.round(dx / ppf);
+    const newIn = Math.max(0, Math.min(props.frameCount - duration, startIn + dFrames));
+    const newOut = newIn + duration;
+    emit('updateLayer', props.layer.id, { inPoint: newIn, outPoint: newOut });
+  };
+
+  const onUp = () => {
+    window.removeEventListener('mousemove', onMove);
+    window.removeEventListener('mouseup', onUp);
+  };
+
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('mouseup', onUp);
+}
+
+function startTrimIn(e: MouseEvent) {
+  e.stopPropagation();
+  const ppf = props.pixelsPerFrame || 5;
+  const startX = e.clientX;
+  const startIn = props.layer.inPoint;
+
+  const onMove = (ev: MouseEvent) => {
+    const dx = ev.clientX - startX;
+    const dFrames = Math.round(dx / ppf);
+    const newIn = Math.max(0, Math.min((props.layer.outPoint || props.frameCount) - 1, startIn + dFrames));
+    emit('updateLayer', props.layer.id, { inPoint: newIn });
+  };
+
+  const onUp = () => {
+    window.removeEventListener('mousemove', onMove);
+    window.removeEventListener('mouseup', onUp);
+  };
+
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('mouseup', onUp);
+}
+
+function startTrimOut(e: MouseEvent) {
+  e.stopPropagation();
+  const ppf = props.pixelsPerFrame || 5;
+  const startX = e.clientX;
+  const startOut = props.layer.outPoint || props.frameCount;
+
+  const onMove = (ev: MouseEvent) => {
+    const dx = ev.clientX - startX;
+    const dFrames = Math.round(dx / ppf);
+    const newOut = Math.max(props.layer.inPoint + 1, Math.min(props.frameCount, startOut + dFrames));
+    emit('updateLayer', props.layer.id, { outPoint: newOut });
+  };
+
+  const onUp = () => {
+    window.removeEventListener('mousemove', onMove);
+    window.removeEventListener('mouseup', onUp);
+  };
+
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('mouseup', onUp);
+}
+
+function toggleColorPicker() {
+  // Simple color cycle for now
+  const colors = ['#e74c3c', '#f39c12', '#f1c40f', '#2ecc71', '#3498db', '#9b59b6', '#95a5a6'];
+  const current = props.layer.labelColor || '#999';
+  const idx = colors.indexOf(current);
+  const next = colors[(idx + 1) % colors.length];
+  emit('updateLayer', props.layer.id, { labelColor: next });
+}
 
 watch(() => props.isExpandedExternal, v => localExpanded.value = v);
 </script>
@@ -173,27 +285,31 @@ watch(() => props.isExpandedExternal, v => localExpanded.value = v);
 
 .row-content { display: flex; height: 28px; align-items: center; }
 
-.label-box { width: 12px; height: 12px; margin: 0 4px; border-radius: 2px; cursor: pointer; border: 1px solid #000; }
-.layer-id { width: 24px; text-align: center; font-size: 10px; color: #666; }
-.icon-col { width: 24px; text-align: center; cursor: pointer; color: #aaa; font-size: 12px; }
+/* Arrow column FIRST */
+.arrow-col { width: 20px; text-align: center; cursor: pointer; font-size: 9px; color: #888; flex-shrink: 0; }
+.arrow-col:hover { color: #fff; }
+
+.label-box { width: 12px; height: 12px; margin: 0 4px; border-radius: 2px; cursor: pointer; border: 1px solid #000; flex-shrink: 0; }
+.layer-id { width: 24px; text-align: center; font-size: 10px; color: #666; flex-shrink: 0; }
+.icon-col { width: 24px; text-align: center; cursor: pointer; color: #aaa; font-size: 12px; flex-shrink: 0; }
 .icon-col .dim { color: #444; }
-.arrow-col { width: 20px; text-align: center; cursor: pointer; font-size: 9px; color: #888; }
+.icon-col:hover { color: #fff; }
 
 .layer-name-col { flex: 1; display: flex; align-items: center; padding: 0 5px; overflow: hidden; min-width: 100px; }
 .type-icon { font-size: 10px; margin-right: 6px; }
 .name-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px; }
 .rename-input { background: #000; border: 1px solid #4a90d9; color: #fff; width: 100%; font-size: 13px; padding: 2px; }
 
-/* New Columns */
-.col-mode, .col-trkmat, .col-parent { border-left: 1px solid #333; padding: 0 4px; height: 100%; display: flex; align-items: center; }
-.col-mode { width: 60px; }
-.col-trkmat { width: 40px; }
-.col-parent { width: 60px; gap: 4px; }
+/* Columns */
+.col-mode, .col-parent { border-left: 1px solid #333; padding: 0 4px; height: 100%; display: flex; align-items: center; flex-shrink: 0; }
+.col-mode { width: 70px; }
+.col-parent { width: 80px; gap: 4px; }
 
 .mini-select {
   width: 100%; background: transparent; border: none; color: #aaa;
-  font-size: 10px; -webkit-appearance: none; cursor: pointer;
+  font-size: 11px; -webkit-appearance: none; cursor: pointer;
 }
+.mini-select:hover { color: #fff; }
 .pickwhip-icon { font-family: serif; font-weight: bold; color: #666; cursor: crosshair; }
 
 .children-container { display: flex; flex-direction: column; }
@@ -204,6 +320,8 @@ watch(() => props.isExpandedExternal, v => localExpanded.value = v);
 .duration-bar { position: absolute; height: 18px; top: 5px; border-radius: 2px; cursor: move; }
 .bar-fill { width: 100%; height: 100%; border: 1px solid rgba(0,0,0,0.4); border-radius: 2px; }
 .trim-handle { position: absolute; top: 0; bottom: 0; width: 6px; cursor: ew-resize; background: rgba(255,255,255,0.1); }
-.trim-in { left: 0; } .trim-out { right: 0; }
-.keyframe-marker { position: absolute; top: 10px; width: 8px; height: 8px; margin-left: -4px; background: #ccc; transform: rotate(45deg); border: 1px solid #000; z-index: 5; pointer-events: none; }
+.trim-handle:hover { background: rgba(255,255,255,0.3); }
+.trim-in { left: 0; border-radius: 2px 0 0 2px; }
+.trim-out { right: 0; border-radius: 0 2px 2px 0; }
+.keyframe-marker { position: absolute; top: 10px; font-size: 8px; color: #ebcb8b; transform: translateX(-50%); z-index: 5; pointer-events: none; }
 </style>
