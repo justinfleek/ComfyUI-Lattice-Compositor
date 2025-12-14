@@ -23,6 +23,14 @@
         <div class="icon-col" @click.stop="toggleLock">
           <span v-if="layer.locked">🔒</span><span v-else class="dim">🔓</span>
         </div>
+        <div
+          class="icon-col cube-icon"
+          :class="{ active: layer.threeD }"
+          @click.stop="toggle3D"
+          title="3D Layer"
+        >
+          <span>⬡</span>
+        </div>
 
         <!-- 5. Layer Name -->
         <div class="layer-name-col" @dblclick.stop="startRename">
@@ -120,20 +128,52 @@ const layerIndex = computed(() => {
 });
 
 const properties = computed(() => {
-  const baseProps = [
-    { path: 'transform.position', name: 'Position', property: props.layer.transform.position },
-    { path: 'transform.scale', name: 'Scale', property: props.layer.transform.scale },
-    { path: 'transform.rotation', name: 'Rotation', property: props.layer.transform.rotation },
-    { path: 'opacity', name: 'Opacity', property: props.layer.opacity }
-  ];
+  const list: { path: string; name: string; property: any }[] = [];
+  const t = props.layer.transform;
 
-  // Add type-specific properties
-  if (props.layer.type === 'camera' && props.layer.data) {
-    // Camera: Point of Interest, Zoom
-    baseProps.push({ path: 'transform.anchorPoint', name: 'Point of Interest', property: props.layer.transform.anchorPoint });
+  // 1. Position (always present)
+  if (t.position) {
+    list.push({ path: 'transform.position', name: 'Position', property: t.position });
   }
 
-  return baseProps;
+  // 2. Scale (always present)
+  if (t.scale) {
+    list.push({ path: 'transform.scale', name: 'Scale', property: t.scale });
+  }
+
+  // 3. Rotation logic (2D vs 3D)
+  if (props.layer.threeD) {
+    // 3D mode: show Orientation and X/Y/Z Rotations
+    if (t.orientation) {
+      list.push({ path: 'transform.orientation', name: 'Orientation', property: t.orientation });
+    }
+    if (t.rotationX) {
+      list.push({ path: 'transform.rotationX', name: 'X Rotation', property: t.rotationX });
+    }
+    if (t.rotationY) {
+      list.push({ path: 'transform.rotationY', name: 'Y Rotation', property: t.rotationY });
+    }
+    if (t.rotationZ) {
+      list.push({ path: 'transform.rotationZ', name: 'Z Rotation', property: t.rotationZ });
+    }
+  } else {
+    // 2D mode: show standard Rotation
+    if (t.rotation) {
+      list.push({ path: 'transform.rotation', name: 'Rotation', property: t.rotation });
+    }
+  }
+
+  // 4. Opacity (always present)
+  if (props.layer.opacity) {
+    list.push({ path: 'opacity', name: 'Opacity', property: props.layer.opacity });
+  }
+
+  // 5. Camera-specific: Point of Interest
+  if (props.layer.type === 'camera' && t.anchorPoint) {
+    list.push({ path: 'transform.anchorPoint', name: 'Point of Interest', property: t.anchorPoint });
+  }
+
+  return list;
 });
 
 const allKeyframes = computed(() => {
@@ -156,6 +196,7 @@ function toggleExpand() { emit('toggleExpand', props.layer.id, !isExpanded.value
 function selectLayer() { emit('select', props.layer.id); }
 function toggleVis() { emit('updateLayer', props.layer.id, { visible: !props.layer.visible }); }
 function toggleLock() { emit('updateLayer', props.layer.id, { locked: !props.layer.locked }); }
+function toggle3D() { store.toggleLayer3D(props.layer.id); }
 function setParent(e: Event) { emit('updateLayer', props.layer.id, { parentId: (e.target as HTMLSelectElement).value || null }); }
 function setBlendMode(e: Event) { emit('updateLayer', props.layer.id, { blendMode: (e.target as HTMLSelectElement).value }); }
 
@@ -297,6 +338,9 @@ watch(() => props.isExpandedExternal, v => localExpanded.value = v);
 .icon-col { width: 24px; text-align: center; cursor: pointer; color: #aaa; font-size: 12px; flex-shrink: 0; }
 .icon-col .dim { color: #444; }
 .icon-col:hover { color: #fff; }
+.icon-col.cube-icon { color: #555; }
+.icon-col.cube-icon.active { color: #4a90d9; }
+.icon-col.cube-icon:hover { color: #fff; }
 
 .layer-name-col { flex: 1; display: flex; align-items: center; padding: 0 5px; overflow: hidden; min-width: 100px; }
 .type-icon { font-size: 10px; margin-right: 6px; }

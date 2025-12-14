@@ -50,6 +50,7 @@ export interface Layer {
   visible: boolean;
   locked: boolean;
   solo: boolean;
+  threeD: boolean;      // 3D Layer Switch
   inPoint: number;      // Start frame (0-80)
   outPoint: number;     // End frame (0-80)
   parentId: string | null;
@@ -73,6 +74,9 @@ export type LayerType =
   | 'image'      // Static/animated image
   | 'generated'  // AI-generated map (depth, normal, edge, etc.)
   | 'camera'     // 2.5D/3D camera layer
+  | 'light'      // 3D Light layer
+  | 'solid'      // Solid color plane
+  | 'null'       // Null object
   | 'group';     // Layer group
 
 export type BlendMode = 'normal' | 'multiply' | 'screen' | 'overlay' | 'add' | 'difference';
@@ -417,11 +421,24 @@ export interface ExtractedTexture {
   resolution: { width: number; height: number };
 }
 
+// ============================================================
+// LAYER TRANSFORM (2D/3D Hybrid)
+// ============================================================
+
 export interface LayerTransform {
-  position: AnimatableProperty<{ x: number; y: number }>;
-  anchor: { x: number; y: number };
-  scale: AnimatableProperty<{ x: number; y: number }>;
+  // Position can be {x,y} or {x,y,z} depending on threeD flag
+  position: AnimatableProperty<{ x: number; y: number; z?: number }>;
+  anchorPoint: AnimatableProperty<{ x: number; y: number; z?: number }>;
+  scale: AnimatableProperty<{ x: number; y: number; z?: number }>;
+
+  // 2D Rotation
   rotation: AnimatableProperty<number>;
+
+  // 3D Rotations (Only active if threeD is true)
+  orientation?: AnimatableProperty<{ x: number; y: number; z: number }>;
+  rotationX?: AnimatableProperty<number>;
+  rotationY?: AnimatableProperty<number>;
+  rotationZ?: AnimatableProperty<number>;
 }
 
 // ============================================================
@@ -431,7 +448,7 @@ export interface LayerTransform {
 export interface AnimatableProperty<T> {
   id: string;
   name: string;
-  type: 'number' | 'position' | 'color' | 'enum';
+  type: 'number' | 'position' | 'color' | 'enum' | 'vector3';
   value: T;             // Default/current value
   animated: boolean;
   keyframes: Keyframe<T>[];
@@ -553,10 +570,10 @@ export interface ExportOptions {
 export function createAnimatableProperty<T>(
   name: string,
   value: T,
-  type: 'number' | 'position' | 'color' | 'enum' = 'number'
+  type: 'number' | 'position' | 'color' | 'enum' | 'vector3' = 'number'
 ): AnimatableProperty<T> {
   return {
-    id: `prop_${name}_${Date.now()}`,
+    id: `prop_${name}_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
     name,
     type,
     value,
@@ -571,8 +588,8 @@ export function createAnimatableProperty<T>(
 export function createDefaultTransform(): LayerTransform {
   return {
     position: createAnimatableProperty('position', { x: 0, y: 0 }, 'position'),
-    anchor: { x: 0, y: 0 },
-    scale: createAnimatableProperty('scale', { x: 1, y: 1 }, 'position'),
+    anchorPoint: createAnimatableProperty('anchorPoint', { x: 0, y: 0 }, 'position'),
+    scale: createAnimatableProperty('scale', { x: 100, y: 100 }, 'position'),
     rotation: createAnimatableProperty('rotation', 0, 'number')
   };
 }

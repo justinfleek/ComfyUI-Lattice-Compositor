@@ -245,10 +245,10 @@ watch(selectedLayer, (layer) => {
   if (layer) {
     layerName.value = layer.name;
     transform.value = {
-      position: { x: layer.position?.value?.[0] || 0, y: layer.position?.value?.[1] || 0 },
-      scale: { x: layer.scale?.value?.[0] || 100, y: layer.scale?.value?.[1] || 100 },
-      rotation: layer.rotation?.value || 0,
-      anchorPoint: { x: layer.anchorPoint?.value?.[0] || 0, y: layer.anchorPoint?.value?.[1] || 0 },
+      position: { x: layer.transform?.position?.value?.x || 0, y: layer.transform?.position?.value?.y || 0 },
+      scale: { x: layer.transform?.scale?.value?.x || 100, y: layer.transform?.scale?.value?.y || 100 },
+      rotation: layer.transform?.rotation?.value || 0,
+      anchorPoint: { x: layer.transform?.anchorPoint?.value?.x || 0, y: layer.transform?.anchorPoint?.value?.y || 0 },
       opacity: layer.opacity?.value || 100
     };
     blendMode.value = layer.blendMode || 'normal';
@@ -282,17 +282,17 @@ function updateLayerName() {
 function updateTransform() {
   if (!selectedLayer.value) return;
 
-  if (selectedLayer.value.position) {
-    selectedLayer.value.position.value = [transform.value.position.x, transform.value.position.y];
+  if (selectedLayer.value.transform?.position) {
+    selectedLayer.value.transform.position.value = { x: transform.value.position.x, y: transform.value.position.y };
   }
-  if (selectedLayer.value.scale) {
-    selectedLayer.value.scale.value = [transform.value.scale.x, transform.value.scale.y];
+  if (selectedLayer.value.transform?.scale) {
+    selectedLayer.value.transform.scale.value = { x: transform.value.scale.x, y: transform.value.scale.y };
   }
-  if (selectedLayer.value.rotation) {
-    selectedLayer.value.rotation.value = transform.value.rotation;
+  if (selectedLayer.value.transform?.rotation) {
+    selectedLayer.value.transform.rotation.value = transform.value.rotation;
   }
-  if (selectedLayer.value.anchorPoint) {
-    selectedLayer.value.anchorPoint.value = [transform.value.anchorPoint.x, transform.value.anchorPoint.y];
+  if (selectedLayer.value.transform?.anchorPoint) {
+    selectedLayer.value.transform.anchorPoint.value = { x: transform.value.anchorPoint.x, y: transform.value.anchorPoint.y };
   }
   if (selectedLayer.value.opacity) {
     selectedLayer.value.opacity.value = transform.value.opacity;

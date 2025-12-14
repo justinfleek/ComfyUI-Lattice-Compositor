@@ -396,6 +396,7 @@ export const useCompositorStore = defineStore('compositor', {
         visible: true,
         locked: false,
         solo: false,
+        threeD: false,
         inPoint: 0,
         outPoint: this.project.composition.frameCount - 1,
         parentId: null,
@@ -440,6 +441,53 @@ export const useCompositorStore = defineStore('compositor', {
       if (!layer) return;
 
       Object.assign(layer, updates);
+      this.project.meta.modified = new Date().toISOString();
+    },
+
+    /**
+     * Toggle 3D mode for a layer
+     */
+    toggleLayer3D(layerId: string): void {
+      const layer = this.project.layers.find(l => l.id === layerId);
+      if (!layer) return;
+
+      layer.threeD = !layer.threeD;
+
+      if (layer.threeD) {
+        // Initialize 3D properties if they don't exist
+        if (layer.transform.position.value.z === undefined) {
+          layer.transform.position.value = { ...layer.transform.position.value, z: 0 };
+        }
+        if (layer.transform.anchorPoint.value.z === undefined) {
+          layer.transform.anchorPoint.value = { ...layer.transform.anchorPoint.value, z: 0 };
+        }
+        if (layer.transform.scale.value.z === undefined) {
+          layer.transform.scale.value = { ...layer.transform.scale.value, z: 100 };
+        }
+
+        // Initialize 3D rotations
+        if (!layer.transform.orientation) {
+          layer.transform.orientation = createAnimatableProperty('orientation', { x: 0, y: 0, z: 0 }, 'vector3');
+        }
+        if (!layer.transform.rotationX) {
+          layer.transform.rotationX = createAnimatableProperty('rotationX', 0, 'number');
+        }
+        if (!layer.transform.rotationY) {
+          layer.transform.rotationY = createAnimatableProperty('rotationY', 0, 'number');
+        }
+        if (!layer.transform.rotationZ) {
+          layer.transform.rotationZ = createAnimatableProperty('rotationZ', 0, 'number');
+          // Copy existing 2D rotation to Z rotation
+          layer.transform.rotationZ.value = layer.transform.rotation.value;
+        }
+      } else {
+        // Reverting to 2D
+        // Map Z rotation back to standard rotation
+        if (layer.transform.rotationZ) {
+          layer.transform.rotation.value = layer.transform.rotationZ.value;
+        }
+      }
+
       this.project.meta.modified = new Date().toISOString();
     },
 
@@ -1322,6 +1370,7 @@ export const useCompositorStore = defineStore('compositor', {
         visible: true,
         locked: false,
         solo: false,
+        threeD: true,  // Cameras are always 3D
         inPoint: 0,
         outPoint: this.project.composition.frameCount - 1,
         parentId: null,

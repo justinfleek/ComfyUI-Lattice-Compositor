@@ -171,6 +171,7 @@ function bezierDerivative(t: number, p0: number, p1: number, p2: number, p3: num
 
 /**
  * Interpolate between two values based on their type
+ * UPDATED: Now supports Z-axis interpolation for 3D transforms
  */
 function interpolateValue<T>(v1: T, v2: T, t: number): T {
   // Number
@@ -178,17 +179,33 @@ function interpolateValue<T>(v1: T, v2: T, t: number): T {
     return (v1 + (v2 - v1) * t) as T;
   }
 
-  // Position object
+  // Position/Vector object (Supports 2D and 3D)
   if (
     typeof v1 === 'object' && v1 !== null &&
-    'x' in v1 && 'y' in v1 &&
     typeof v2 === 'object' && v2 !== null &&
+    'x' in v1 && 'y' in v1 &&
     'x' in v2 && 'y' in v2
   ) {
-    return {
-      x: (v1 as any).x + ((v2 as any).x - (v1 as any).x) * t,
-      y: (v1 as any).y + ((v2 as any).y - (v1 as any).y) * t
-    } as T;
+    const val1 = v1 as any;
+    const val2 = v2 as any;
+
+    const result: any = {
+      x: val1.x + (val2.x - val1.x) * t,
+      y: val1.y + (val2.y - val1.y) * t
+    };
+
+    // Handle Z if present in both
+    if ('z' in val1 && 'z' in val2) {
+      result.z = val1.z + (val2.z - val1.z) * t;
+    } else if ('z' in val1) {
+      // Transitioning from 3D to 2D (rare, but handle it)
+      result.z = val1.z * (1 - t);
+    } else if ('z' in val2) {
+      // Transitioning from 2D to 3D
+      result.z = val2.z * t;
+    }
+
+    return result as T;
   }
 
   // Color (hex string)
