@@ -138,11 +138,11 @@ function showEasingMenu(kf: Keyframe<any>, event: MouseEvent) {
 .property-sidebar-row {
   display: flex;
   align-items: center;
-  height: 24px;
+  height: 32px;
   padding-left: 20px;
   border-bottom: 1px solid #2a2a2a;
   color: #aaa;
-  font-size: 11px;
+  font-size: 18px;
   cursor: pointer;
   background: #1e1e1e;
 }
@@ -150,13 +150,14 @@ function showEasingMenu(kf: Keyframe<any>, event: MouseEvent) {
 .property-sidebar-row.selected { background: rgba(124, 156, 255, 0.15); border-left: 2px solid #7c9cff; padding-left: 18px; }
 .prop-indent { width: 16px; }
 .stopwatch-btn { background: none; border: none; color: #666; cursor: pointer; padding: 0 4px; display: flex; align-items: center; }
+.stopwatch-btn .icon { font-size: 18px; }
 .stopwatch-btn.active { color: #7c9cff; }
-.prop-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.prop-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 18px; }
 .prop-value { margin-right: 8px; color: #7c9cff; font-family: monospace; }
 
 /* TRACK STYLES */
 .property-track-row {
-  height: 24px;
+  height: 32px;
   border-bottom: 1px solid #2a2a2a;
   position: relative;
   background: #1a1a1a;

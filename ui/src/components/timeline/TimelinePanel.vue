@@ -41,6 +41,16 @@
       </div>
 
       <div class="header-right">
+        <!-- Delete layer button -->
+        <button
+          class="delete-btn"
+          @click="deleteSelectedLayers"
+          :disabled="store.selectedLayerIds.length === 0"
+          title="Delete selected layer (Delete)"
+        >
+          🗑️ Delete
+        </button>
+
         <!-- Graph Editor toggle - switches view mode -->
         <button
           class="graph-editor-toggle"
@@ -595,6 +605,14 @@ function toggleSolo(layerId: string) {
   }
 }
 
+function deleteSelectedLayers() {
+  if (store.selectedLayerIds.length === 0) return;
+
+  // Copy array since we're modifying it
+  const idsToDelete = [...store.selectedLayerIds];
+  idsToDelete.forEach(id => store.deleteLayer(id));
+}
+
 // Work area
 let workAreaDragType: 'move' | 'start' | 'end' | null = null;
 let workAreaDragStart = 0;
@@ -831,9 +849,29 @@ function setFrameFromInput(event: Event) {
 
 // Keyboard shortcuts
 function handleKeyDown(event: KeyboardEvent) {
-  // Don't handle if in input
-  if ((event.target as HTMLElement).tagName === 'INPUT' ||
-      (event.target as HTMLElement).tagName === 'TEXTAREA') {
+  // Don't trigger shortcuts when typing in input fields
+  if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+    return;
+  }
+
+  // Undo: Ctrl+Z
+  if ((event.ctrlKey || event.metaKey) && event.key === 'z' && !event.shiftKey) {
+    event.preventDefault();
+    store.undo();
+    return;
+  }
+
+  // Redo: Ctrl+Shift+Z or Ctrl+Y
+  if ((event.ctrlKey || event.metaKey) && (event.key === 'y' || (event.key === 'z' && event.shiftKey))) {
+    event.preventDefault();
+    store.redo();
+    return;
+  }
+
+  // Delete selected layers
+  if (event.key === 'Delete' || event.key === 'Backspace') {
+    event.preventDefault();
+    deleteSelectedLayers();
     return;
   }
 
@@ -930,10 +968,11 @@ watch(() => store.frameCount, (newCount) => {
 
 .timeline-title {
   font-weight: 500;
+  font-size: 18px;
 }
 
 .timeline-info {
-  font-size: 11px;
+  font-size: 16px;
   color: #888;
 }
 
@@ -1029,6 +1068,24 @@ watch(() => store.frameCount, (newCount) => {
   background: #8cacff;
 }
 
+.delete-btn {
+  padding: 4px 8px;
+  background: #3a3a3a;
+  border: 1px solid #555;
+  color: #e0e0e0;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.delete-btn:hover:not(:disabled) {
+  background: #ff4444;
+  border-color: #ff4444;
+}
+.delete-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .add-layer-menu {
   position: absolute;
   top: 100%;
@@ -1068,9 +1125,9 @@ watch(() => store.frameCount, (newCount) => {
 }
 
 .layer-columns-header {
-  width: 200px;
-  min-width: 200px;
-  max-width: 200px;
+  width: 300px;
+  min-width: 300px;
+  max-width: 300px;
   display: flex;
   align-items: center;
   gap: 1px;
@@ -1099,9 +1156,11 @@ watch(() => store.frameCount, (newCount) => {
 .timeline-content {
   flex: 1;
   position: relative;
-  overflow-x: hidden; /* Prevent horizontal scrolling that could affect track width */
-  overflow-y: auto;
+  overflow-x: hidden;
+  overflow-y: auto;  /* THIS is the scroll container */
   min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .time-ruler {
@@ -1120,9 +1179,9 @@ watch(() => store.frameCount, (newCount) => {
 }
 
 .ruler-sidebar {
-  width: 200px;
-  min-width: 200px;
-  max-width: 200px;
+  width: 300px;
+  min-width: 300px;
+  max-width: 300px;
   border-right: 1px solid #333;
 }
 
@@ -1206,25 +1265,28 @@ watch(() => store.frameCount, (newCount) => {
 /* Persistent Split Layout - After Effects style */
 .timeline-split-layout {
   display: flex;
-  flex: 1;
-  min-height: 100px;
-  overflow: hidden;
+  width: 100%;
+  /* NO overflow here - let it expand to full height of children */
 }
 
 .property-tree-sidebar {
-  width: 200px;
-  min-width: 200px;
-  max-width: 200px;
-  overflow-y: auto;
+  width: 300px;
+  min-width: 300px;
+  max-width: 300px;
   background: #222;
   border-right: 1px solid #333;
+  /* NO overflow-y - parent scrolls */
+  overflow: visible;
 }
 
 .track-viewport {
   flex: 1;
   position: relative;
-  overflow: hidden;
   min-width: 0;
+  background: #1a1a1a;
+  /* NO overflow-y - parent scrolls */
+  /* overflow-x: auto if needed for horizontal timeline scroll */
+  overflow-y: visible;
 }
 
 .empty-state {
@@ -1268,8 +1330,8 @@ watch(() => store.frameCount, (newCount) => {
 }
 
 .scrubber-sidebar {
-  width: 200px;
-  min-width: 200px;
+  width: 300px;
+  min-width: 300px;
   display: flex;
   align-items: center;
   gap: 6px;

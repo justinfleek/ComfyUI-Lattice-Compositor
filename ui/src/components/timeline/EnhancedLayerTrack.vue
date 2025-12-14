@@ -182,6 +182,7 @@ const labelColors = ['#ff6b6b', '#ffc107', '#4ecdc4', '#45b7d1', '#96ceb4', '#7c
 // Expansion
 const isExpanded = computed(() => props.isExpandedExternal !== undefined ? props.isExpandedExternal : localExpanded.value);
 function toggleExpand() {
+  console.log('[TWIRL] toggleExpand called for layer:', props.layer.name, 'current isExpanded:', isExpanded.value);
   const newState = !isExpanded.value;
   localExpanded.value = newState;
   emit('toggleExpand', props.layer.id, newState);
@@ -284,11 +285,11 @@ watch(() => props.isExpandedExternal, (v) => { if(v !== undefined) localExpanded
 .sidebar-mode.selected { background: rgba(124, 156, 255, 0.15); }
 .sidebar-mode.hidden { opacity: 0.4; }
 .sidebar-mode.dimmed-by-solo { opacity: 0.3; }
-.sidebar-mode .layer-info { display: flex; align-items: center; gap: 2px; padding: 0 4px; height: 28px; border-bottom: 1px solid #2a2a2a; background: #1e1e1e; }
+.sidebar-mode .layer-info { display: flex; align-items: center; gap: 2px; padding: 0 4px; height: 36px; min-height: 36px; border-bottom: 1px solid #2a2a2a; background: #1e1e1e; }
 
 /* Track Mode */
 .track-area-container { width: 100%; }
-.track-row { height: 28px; border-bottom: 1px solid #2a2a2a; position: relative; width: 100%; background: #1e1e1e; }
+.track-row { height: 36px; min-height: 36px; border-bottom: 1px solid #2a2a2a; position: relative; width: 100%; background: #1e1e1e; }
 .track-area { position: absolute; inset: 0; }
 
 /* Shared */
@@ -299,13 +300,13 @@ watch(() => props.isExpandedExternal, (v) => { if(v !== undefined) localExpanded
 .label-picker { position: absolute; top: 100%; left: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; padding: 4px; background: #2a2a2a; border: 1px solid #444; z-index: 100; }
 .label-picker button { width: 14px; height: 14px; border: 1px solid transparent; cursor: pointer; padding: 0; }
 .av-switches { display: flex; }
-.icon-btn { width: 20px; height: 20px; border: none; background: transparent; color: #555; cursor: pointer; font-size: 10px; display: flex; align-items: center; justify-content: center; }
+.icon-btn { width: 28px; height: 28px; border: none; background: transparent; color: #555; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; }
 .icon-btn.active { color: #7c9cff; }
 .solo-btn.active { color: #ffc107; }
 .lock-btn.active { color: #ff6b6b; }
 .layer-name-container { flex: 1; display: flex; align-items: center; gap: 4px; overflow: hidden; }
-.layer-type-icon { font-size: 10px; opacity: 0.7; }
-.layer-name { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #e0e0e0; }
+.layer-type-icon { font-size: 16px; opacity: 0.7; }
+.layer-name { font-size: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #e0e0e0; }
 .rename-input { width: 100%; background: #1a1a1a; border: 1px solid #7c9cff; color: #fff; font-size: 11px; }
 .parent-picker { width: 24px; }
 .parent-select { width: 100%; background: #1a1a1a; border: 1px solid #333; color: #666; font-size: 8px; }
