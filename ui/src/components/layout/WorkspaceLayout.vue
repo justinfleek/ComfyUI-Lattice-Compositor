@@ -206,21 +206,27 @@
           </Splitpanes>
         </Pane>
 
-        <!-- Right Panel: Properties/Camera -->
+        <!-- Right Panel: Effects/Properties/Camera -->
         <Pane :size="18" :min-size="12" :max-size="25">
           <div class="panel right-panel">
             <div class="panel-tabs">
               <button
+                :class="{ active: rightTab === 'effects' }"
+                @click="rightTab = 'effects'"
+              >
+                Effects
+              </button>
+              <button
                 :class="{ active: rightTab === 'properties' }"
                 @click="rightTab = 'properties'"
               >
-                Properties
+                Props
               </button>
               <button
                 :class="{ active: rightTab === 'camera' }"
                 @click="rightTab = 'camera'"
               >
-                Camera
+                Cam
               </button>
               <button
                 :class="{ active: rightTab === 'audio' }"
@@ -230,7 +236,8 @@
               </button>
             </div>
             <div class="panel-content">
-              <PropertiesPanel v-if="rightTab === 'properties'" />
+              <EffectControlsPanel v-if="rightTab === 'effects'" />
+              <PropertiesPanel v-else-if="rightTab === 'properties'" />
               <CameraProperties
                 v-else-if="rightTab === 'camera'"
                 :camera="activeCamera"
@@ -284,6 +291,7 @@ import type { Camera3D, ViewportState } from '@/types/camera';
 // Panels
 import ProjectPanel from '@/components/panels/ProjectPanel.vue';
 import EffectsPanel from '@/components/panels/EffectsPanel.vue';
+import EffectControlsPanel from '@/components/panels/EffectControlsPanel.vue';
 import PropertiesPanel from '@/components/panels/PropertiesPanel.vue';
 import CameraProperties from '@/components/panels/CameraProperties.vue';
 import AudioPanel from '@/components/panels/AudioPanel.vue';
@@ -309,7 +317,7 @@ const currentTool = computed({
 });
 const activeWorkspace = ref('standard');
 const leftTab = ref<'project' | 'effects'>('project');
-const rightTab = ref<'properties' | 'camera' | 'audio'>('properties');
+const rightTab = ref<'effects' | 'properties' | 'camera' | 'audio'>('effects');
 const viewportTab = ref<'composition' | 'layer' | 'footage'>('composition');
 
 const viewZoom = ref('fit');
