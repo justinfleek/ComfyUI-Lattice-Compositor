@@ -6,7 +6,7 @@
         v-model="textData.text"
         class="main-text-input"
         rows="3"
-        @input="emit('update')"
+        @input="e => updateData('text', (e.target as HTMLTextAreaElement).value)"
       ></textarea>
     </div>
 
@@ -113,10 +113,31 @@ function getProperty(name: string) {
 }
 
 function updateData(key: string, val: any) {
+  // 1. Update static data (for immediate render)
   if (textData.value) {
     textData.value[key] = val;
-    emit('update');
   }
+
+  // 2. Update Animatable Property (for Timeline/Keyframes)
+  // Map internal keys to Property Names
+  const keyMap: Record<string, string> = {
+    'fill': 'Fill Color',
+    'stroke': 'Stroke Color',
+    'fontSize': 'Font Size',
+    'strokeWidth': 'Stroke Width',
+    'text': 'Source Text'
+  };
+
+  const propName = keyMap[key];
+  if (propName) {
+    const prop = getProperty(propName);
+    if (prop) {
+      prop.value = val;
+      store.project.meta.modified = new Date().toISOString();
+    }
+  }
+
+  emit('update');
 }
 
 function setAlign(align: 'left' | 'center' | 'right') {

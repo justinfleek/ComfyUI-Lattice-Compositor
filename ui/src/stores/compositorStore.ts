@@ -1019,7 +1019,7 @@ export const useCompositorStore = defineStore('compositor', {
       const textData: TextData = {
         text,
         fontFamily: 'Arial',
-        fontSize: 48,
+        fontSize: 24,
         fontWeight: '400',
         fontStyle: 'normal',
         fill: '#ffffff',
@@ -1059,7 +1059,7 @@ export const useCompositorStore = defineStore('compositor', {
       // --- TEXT PROPERTIES (Timeline) ---
 
       // Text Section
-      layer.properties.push(createAnimatableProperty('Font Size', 48, 'number', 'Text'));
+      layer.properties.push(createAnimatableProperty('Font Size', 24, 'number', 'Text'));
       layer.properties.push(createAnimatableProperty('Fill Color', '#ffffff', 'color', 'Text'));
       layer.properties.push(createAnimatableProperty('Stroke Color', '#000000', 'color', 'Text'));
       layer.properties.push(createAnimatableProperty('Stroke Width', 0, 'number', 'Text'));

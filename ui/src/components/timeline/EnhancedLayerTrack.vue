@@ -169,10 +169,17 @@ const groupedProperties = computed(() => {
     transformProps.push({ path: 'transform.position', name: 'Position', property: t.position });
   }
 
-  // Position Z (3D only)
-  if (props.layer.threeD && t.position?.z !== undefined) {
-    // Position Z is separate in AE for 3D layers
-    transformProps.push({ path: 'transform.position.z', name: 'Position Z', property: { value: t.position.z || 0, animated: false, keyframes: [] } });
+  // Position Z (3D only) - CRITICAL: Check value.z, not property.z
+  if (props.layer.threeD && t.position?.value?.z !== undefined) {
+    transformProps.push({
+      path: 'transform.position.z',
+      name: 'Z Position',
+      property: {
+        value: t.position.value.z,
+        animated: t.position.animated,
+        keyframes: []
+      }
+    });
   }
 
   // Scale
