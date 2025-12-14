@@ -41,14 +41,14 @@
       </div>
 
       <div class="header-right">
-        <!-- Graph Editor toggle -->
+        <!-- Graph Editor toggle - switches view mode -->
         <button
           class="graph-editor-toggle"
-          :class="{ active: showGraphEditor }"
-          @click="showGraphEditor = !showGraphEditor"
+          :class="{ active: viewMode === 'graph' }"
+          @click="toggleViewMode"
           title="Toggle Graph Editor (Shift+F3)"
         >
-          <span class="icon">📈</span>
+          <span class="icon">{{ viewMode === 'graph' ? '◆' : '📈' }}</span>
         </button>
 
         <!-- Search filter -->
@@ -147,6 +147,7 @@
             :allLayers="store.layers"
             :soloedLayerIds="soloedLayerIds"
             :showSwitches="showLayerSwitches"
+            :viewMode="viewMode"
             @select="selectLayer"
             @updateLayer="updateLayer"
             @selectKeyframe="selectKeyframe"
@@ -177,16 +178,6 @@
         />
         <div class="playhead-line" />
       </div>
-    </div>
-
-    <!-- Graph Editor Panel -->
-    <div
-      v-if="showGraphEditor"
-      class="graph-editor-container"
-      :style="{ height: graphEditorHeight + 'px' }"
-    >
-      <div class="graph-editor-resize-handle" @mousedown="startResizeGraphEditor" />
-      <GraphEditor @close="showGraphEditor = false" />
     </div>
 
     <!-- Timeline scrubber / mini-timeline -->
@@ -266,7 +257,6 @@ import { ref, computed, onMounted, onUnmounted, reactive, watch, nextTick } from
 import { useCompositorStore } from '@/stores/compositorStore';
 import type { Layer } from '@/types/project';
 import EnhancedLayerTrack from './EnhancedLayerTrack.vue';
-import GraphEditor from '@/components/graph-editor/GraphEditor.vue';
 
 const store = useCompositorStore();
 
@@ -286,31 +276,11 @@ const searchFilter = ref('');
 // Layer switches visibility
 const showLayerSwitches = ref(true);
 
-// Graph editor state
-const showGraphEditor = ref(false);
-const graphEditorHeight = ref(200);
-let graphEditorResizing = false;
-let graphEditorStartY = 0;
-let graphEditorStartHeight = 0;
+// View mode: 'keyframes' shows diamonds, 'graph' shows bezier curves
+const viewMode = ref<'keyframes' | 'graph'>('keyframes');
 
-function startResizeGraphEditor(event: MouseEvent): void {
-  graphEditorResizing = true;
-  graphEditorStartY = event.clientY;
-  graphEditorStartHeight = graphEditorHeight.value;
-  document.addEventListener('mousemove', resizeGraphEditor);
-  document.addEventListener('mouseup', stopResizeGraphEditor);
-}
-
-function resizeGraphEditor(event: MouseEvent): void {
-  if (!graphEditorResizing) return;
-  const deltaY = graphEditorStartY - event.clientY;
-  graphEditorHeight.value = Math.max(100, Math.min(500, graphEditorStartHeight + deltaY));
-}
-
-function stopResizeGraphEditor(): void {
-  graphEditorResizing = false;
-  document.removeEventListener('mousemove', resizeGraphEditor);
-  document.removeEventListener('mouseup', stopResizeGraphEditor);
+function toggleViewMode() {
+  viewMode.value = viewMode.value === 'keyframes' ? 'graph' : 'keyframes';
 }
 
 // Playback state
@@ -1162,28 +1132,6 @@ watch(() => store.frameCount, (newCount) => {
 .empty-state .hint {
   font-size: 11px;
   margin-top: 4px;
-}
-
-/* Graph Editor Container */
-.graph-editor-container {
-  position: relative;
-  background: #1a1a1a;
-  border-top: 1px solid #333;
-}
-
-.graph-editor-resize-handle {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  cursor: ns-resize;
-  background: #333;
-  z-index: 10;
-}
-
-.graph-editor-resize-handle:hover {
-  background: #7c9cff;
 }
 
 .graph-editor-toggle {

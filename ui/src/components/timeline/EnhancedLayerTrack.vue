@@ -239,6 +239,7 @@
         :property="prop.property"
         :frameCount="frameCount"
         :selectedKeyframeIds="selectedKeyframeIds"
+        :viewMode="viewMode"
         @selectKeyframe="(id, add) => $emit('selectKeyframe', id, add)"
       />
     </template>
@@ -258,6 +259,7 @@ interface Props {
   allLayers: Layer[];
   soloedLayerIds: string[];
   showSwitches: boolean;
+  viewMode: 'keyframes' | 'graph';
 }
 
 const props = defineProps<Props>();
