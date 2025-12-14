@@ -137,8 +137,8 @@
         </div>
       </div>
 
-      <!-- Layer tracks -->
-      <div class="layer-tracks" ref="layerTracksRef">
+      <!-- Layer tracks (Keyframe mode) -->
+      <div v-if="viewMode === 'keyframes'" class="layer-tracks" ref="layerTracksRef">
         <template v-for="layer in filteredLayers" :key="layer.id">
           <EnhancedLayerTrack
             :layer="layer"
@@ -147,7 +147,6 @@
             :allLayers="store.layers"
             :soloedLayerIds="soloedLayerIds"
             :showSwitches="showLayerSwitches"
-            :viewMode="viewMode"
             @select="selectLayer"
             @updateLayer="updateLayer"
             @selectKeyframe="selectKeyframe"
@@ -163,6 +162,39 @@
             <p>No layers yet</p>
             <p class="hint">Click "Add Layer" to create a layer</p>
           </template>
+        </div>
+      </div>
+
+      <!-- Graph Editor (Graph mode) -->
+      <div v-else class="graph-editor-area">
+        <!-- Property list sidebar -->
+        <div class="graph-property-sidebar">
+          <div class="property-list-header">Properties</div>
+          <div class="property-list">
+            <template v-for="layer in store.layers" :key="layer.id">
+              <div class="property-layer-group">
+                <div class="property-layer-name">{{ layer.name }}</div>
+                <div
+                  v-for="prop in getLayerAnimatedProperties(layer)"
+                  :key="prop.id"
+                  class="property-item"
+                  :class="{ visible: prop.visible }"
+                  @click="togglePropertyVisibility(prop.id)"
+                >
+                  <span class="property-color" :style="{ background: prop.color }"></span>
+                  <span class="property-prop-name">{{ prop.name }}</span>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+        <!-- Unified graph canvas -->
+        <div class="graph-canvas-wrapper">
+          <GraphEditorCanvas
+            :frameCount="store.frameCount"
+            :currentFrame="store.currentFrame"
+            @selectKeyframe="selectKeyframe"
+          />
         </div>
       </div>
 
@@ -257,6 +289,7 @@ import { ref, computed, onMounted, onUnmounted, reactive, watch, nextTick } from
 import { useCompositorStore } from '@/stores/compositorStore';
 import type { Layer } from '@/types/project';
 import EnhancedLayerTrack from './EnhancedLayerTrack.vue';
+import GraphEditorCanvas from './GraphEditorCanvas.vue';
 
 const store = useCompositorStore();
 
@@ -281,6 +314,90 @@ const viewMode = ref<'keyframes' | 'graph'>('keyframes');
 
 function toggleViewMode() {
   viewMode.value = viewMode.value === 'keyframes' ? 'graph' : 'keyframes';
+}
+
+// Graph mode property visibility
+const visiblePropertyIds = ref<Set<string>>(new Set());
+
+// Property colors for graph editor
+const PROPERTY_COLORS: Record<string, string> = {
+  'Position X': '#ff6b6b',
+  'Position Y': '#4ecdc4',
+  'Position Z': '#ab47bc',
+  'Scale X': '#ffa726',
+  'Scale Y': '#ffee58',
+  'Scale Z': '#7c9cff',
+  'Rotation': '#ab47bc',
+  'Opacity': '#7c9cff',
+};
+
+interface GraphProperty {
+  id: string;
+  name: string;
+  color: string;
+  visible: boolean;
+}
+
+function getLayerAnimatedProperties(layer: Layer): GraphProperty[] {
+  const props: GraphProperty[] = [];
+
+  if (layer.transform.position.animated) {
+    props.push({
+      id: `${layer.id}-position-x`,
+      name: 'Position X',
+      color: PROPERTY_COLORS['Position X'],
+      visible: visiblePropertyIds.value.has(`${layer.id}-position-x`)
+    });
+    props.push({
+      id: `${layer.id}-position-y`,
+      name: 'Position Y',
+      color: PROPERTY_COLORS['Position Y'],
+      visible: visiblePropertyIds.value.has(`${layer.id}-position-y`)
+    });
+  }
+
+  if (layer.transform.scale.animated) {
+    props.push({
+      id: `${layer.id}-scale-x`,
+      name: 'Scale X',
+      color: PROPERTY_COLORS['Scale X'],
+      visible: visiblePropertyIds.value.has(`${layer.id}-scale-x`)
+    });
+    props.push({
+      id: `${layer.id}-scale-y`,
+      name: 'Scale Y',
+      color: PROPERTY_COLORS['Scale Y'],
+      visible: visiblePropertyIds.value.has(`${layer.id}-scale-y`)
+    });
+  }
+
+  if (layer.transform.rotation.animated) {
+    props.push({
+      id: `${layer.id}-rotation`,
+      name: 'Rotation',
+      color: PROPERTY_COLORS['Rotation'],
+      visible: visiblePropertyIds.value.has(`${layer.id}-rotation`)
+    });
+  }
+
+  if (layer.opacity.animated) {
+    props.push({
+      id: `${layer.id}-opacity`,
+      name: 'Opacity',
+      color: PROPERTY_COLORS['Opacity'],
+      visible: visiblePropertyIds.value.has(`${layer.id}-opacity`)
+    });
+  }
+
+  return props;
+}
+
+function togglePropertyVisibility(propId: string) {
+  if (visiblePropertyIds.value.has(propId)) {
+    visiblePropertyIds.value.delete(propId);
+  } else {
+    visiblePropertyIds.value.add(propId);
+  }
 }
 
 // Playback state
@@ -1374,5 +1491,92 @@ watch(() => store.frameCount, (newCount) => {
   background: #ff4444;
   pointer-events: none;
   box-shadow: 0 0 4px rgba(255, 68, 68, 0.3);
+}
+
+/* Graph Editor Area */
+.graph-editor-area {
+  display: flex;
+  flex: 1;
+  min-height: 300px;
+}
+
+.graph-property-sidebar {
+  width: 200px;
+  min-width: 200px;
+  background: #222;
+  border-right: 1px solid #333;
+  display: flex;
+  flex-direction: column;
+}
+
+.property-list-header {
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  border-bottom: 1px solid #333;
+  background: #252525;
+}
+
+.property-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.property-layer-group {
+  margin-bottom: 8px;
+}
+
+.property-layer-name {
+  padding: 6px 12px 4px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #aaa;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.property-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px 4px 20px;
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.property-item:hover {
+  background: #2a2a2a;
+}
+
+.property-item.visible {
+  background: rgba(124, 156, 255, 0.1);
+}
+
+.property-color {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.property-item:not(.visible) .property-color {
+  opacity: 0.3;
+}
+
+.property-prop-name {
+  font-size: 11px;
+  color: #888;
+}
+
+.property-item.visible .property-prop-name {
+  color: #e0e0e0;
+}
+
+.graph-canvas-wrapper {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
 }
 </style>
