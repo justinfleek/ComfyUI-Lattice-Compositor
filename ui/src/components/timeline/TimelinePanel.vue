@@ -11,25 +11,37 @@
       </div>
 
       <div class="header-center">
-        <!-- Main Controls moved here as requested -->
-        <button class="add-layer-btn" @click="showAddLayerMenu = !showAddLayerMenu">
-          <span class="icon">+</span> Layer
-        </button>
-        <button class="graph-toggle" :class="{ active: viewMode === 'graph' }" @click="toggleViewMode">
-          {{ viewMode === 'graph' ? 'Graphs' : 'Layers' }}
-        </button>
-        <button class="delete-btn" @click="deleteSelectedLayers" :disabled="store.selectedLayerIds.length === 0" title="Delete">
-          🗑️
-        </button>
+        <div class="tool-group add-layer-wrapper" ref="addLayerContainer">
+          <button
+            class="add-layer-btn"
+            :class="{ active: showAddLayerMenu }"
+            @click.stop="toggleAddLayerMenu"
+            title="Add New Layer"
+          >
+            <span class="icon">+</span> Layer
+          </button>
 
-        <!-- Dropdown Menu -->
-        <div v-if="showAddLayerMenu" class="add-layer-menu">
-          <button @click="addLayer('solid')"><span class="icon">■</span> Solid</button>
-          <button @click="addLayer('text')"><span class="icon">T</span> Text</button>
-          <button @click="addLayer('spline')"><span class="icon">~</span> Shape</button>
-          <button @click="addLayer('null')"><span class="icon">□</span> Null</button>
-          <button @click="addLayer('camera')"><span class="icon">📷</span> Camera</button>
-          <button @click="addLayer('light')"><span class="icon">💡</span> Light</button>
+          <div v-if="showAddLayerMenu" class="add-layer-menu">
+            <button @click="addLayer('solid')"><span class="icon">■</span> Solid</button>
+            <button @click="addLayer('text')"><span class="icon">T</span> Text</button>
+            <button @click="addLayer('spline')"><span class="icon">~</span> Shape</button>
+            <button @click="addLayer('null')"><span class="icon">□</span> Null</button>
+            <button @click="addLayer('camera')"><span class="icon">📷</span> Camera</button>
+            <button @click="addLayer('light')"><span class="icon">💡</span> Light</button>
+            <button @click="addLayer('video')"><span class="icon">🎞️</span> Video</button>
+          </div>
+        </div>
+
+        <div class="tool-group">
+          <button class="graph-toggle" :class="{ active: viewMode === 'graph' }" @click="toggleViewMode" title="Toggle Graph Editor (Shift+F3)">
+            Graph
+          </button>
+        </div>
+
+        <div class="tool-group">
+           <button class="delete-btn" @click="deleteSelectedLayers" :disabled="store.selectedLayerIds.length === 0" title="Delete">
+            🗑️
+          </button>
         </div>
       </div>
 
@@ -160,6 +172,7 @@ const showAddLayerMenu = ref(false);
 const rulerTrackRef = ref<HTMLDivElement | null>(null);
 const trackViewportRef = ref<HTMLDivElement | null>(null);
 const soloedLayerIds = ref<string[]>([]);
+const addLayerContainer = ref<HTMLDivElement | null>(null);
 
 // VIEWPORT STATE
 const sidebarWidth = ref(400);
@@ -209,7 +222,28 @@ function handlePropertySelect(propId: string, add: boolean) {
   else { selectedPropertyIds.value.clear(); selectedPropertyIds.value.add(propId); }
   selectedPropertyIds.value = new Set(selectedPropertyIds.value);
 }
-function addLayer(type: string) { store.createLayer(type as any); showAddLayerMenu.value = false; }
+// Toggle menu
+function toggleAddLayerMenu() {
+  showAddLayerMenu.value = !showAddLayerMenu.value;
+}
+
+// Add layer and close menu
+function addLayer(type: string) {
+  if (type === 'video') {
+    store.createLayer('video');
+  } else if (type === 'text') {
+    store.createTextLayer();
+  } else if (type === 'camera') {
+    store.createCameraLayer();
+  } else if (type === 'spline') {
+    store.createSplineLayer();
+  } else if (type === 'particles') {
+    store.createParticleLayer();
+  } else {
+    store.createLayer(type as any);
+  }
+  showAddLayerMenu.value = false;
+}
 function selectLayer(id: string) { store.selectLayer(id); }
 function updateLayer(id: string, u: any) { store.updateLayer(id, u); }
 function deleteSelectedLayers() { store.selectedLayerIds.forEach(id => store.deleteLayer(id)); }
@@ -250,8 +284,22 @@ function handleKeydown(e: KeyboardEvent) {
   if (e.key === ' ') { e.preventDefault(); togglePlayback(); }
 }
 
-onMounted(() => window.addEventListener('keydown', handleKeydown));
-onUnmounted(() => window.removeEventListener('keydown', handleKeydown));
+// Close menu when clicking outside
+function handleClickOutside(event: MouseEvent) {
+  if (addLayerContainer.value && !addLayerContainer.value.contains(event.target as Node)) {
+    showAddLayerMenu.value = false;
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', handleKeydown);
+  window.addEventListener('mousedown', handleClickOutside);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeydown);
+  window.removeEventListener('mousedown', handleClickOutside);
+});
 </script>
 
 <style scoped>
@@ -308,15 +356,29 @@ button.active { background: #4a90d9; border-color: #4a90d9; }
 .frame-input { width: 50px; background: #111; border: 1px solid #444; color: #3ea6ff; padding: 2px; text-align: center; }
 .zoom-slider { width: 80px; }
 
+/* Tool Groups */
+.tool-group { position: relative; }
+
 /* Add Layer Menu */
 .add-layer-wrapper { position: relative; }
 .add-layer-menu {
-  position: absolute; top: 100%; left: 0;
-  background: #252525; border: 1px solid #000;
-  display: flex; flex-direction: column;
-  z-index: 1000; width: 140px; margin-top: 4px;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: #252525;
+  border: 1px solid #000;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+  z-index: 2000;
+  min-width: 140px;
+  margin-top: 4px;
+  border-radius: 4px;
 }
 .add-layer-menu button { text-align: left; border: none; padding: 8px 12px; border-bottom: 1px solid #333; }
+.add-layer-menu button:last-child { border-bottom: none; }
 .add-layer-menu button:hover { background: #4a90d9; color: #fff; }
+.add-layer-menu button:first-child { border-radius: 4px 4px 0 0; }
+.add-layer-menu button:last-child { border-radius: 0 0 4px 4px; }
 .empty-state { padding: 40px; text-align: center; color: #555; }
 </style>
