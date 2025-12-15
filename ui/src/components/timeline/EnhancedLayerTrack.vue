@@ -1,7 +1,7 @@
 <template>
   <div class="track-wrapper" v-if="layer">
     <template v-if="layoutMode === 'sidebar'">
-      <div class="sidebar-row" :class="{ selected: isSelected }" :style="gridStyle" @mousedown="selectLayer">
+      <div class="sidebar-row" :class="{ selected: isSelected }" :style="gridStyle" @mousedown="selectLayer" @contextmenu.prevent="showContextMenu">
         <div class="arrow-col" @mousedown.stop="toggleExpand">
           <span class="arrow">{{ isExpanded ? '▼' : '▶' }}</span>
         </div>
@@ -99,11 +99,32 @@
         </div>
       </div>
     </template>
+
+    <!-- Context Menu -->
+    <Teleport to="body">
+      <div
+        v-if="contextMenuVisible"
+        class="layer-context-menu"
+        :style="{ left: contextMenuX + 'px', top: contextMenuY + 'px' }"
+        @click.stop
+      >
+        <button @click="duplicateLayer">Duplicate Layer</button>
+        <button @click="renameFromMenu">Rename</button>
+        <hr />
+        <button @click="toggleLayerVisibility">{{ layer.visible ? 'Hide' : 'Show' }} Layer</button>
+        <button @click="toggleLayerLock">{{ layer.locked ? 'Unlock' : 'Lock' }} Layer</button>
+        <button @click="toggleLayer3D">{{ layer.threeD ? 'Make 2D' : 'Make 3D' }}</button>
+        <hr />
+        <button @click="precomposeLayer">Pre-compose...</button>
+        <hr />
+        <button @click="deleteLayer" class="danger">Delete Layer</button>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick } from 'vue';
+import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue';
 import { useCompositorStore } from '@/stores/compositorStore';
 import PropertyTrack from './PropertyTrack.vue';
 
@@ -118,6 +139,11 @@ const expandedGroups = ref<string[]>(['Transform', 'Text', 'More Options']);
 const isRenaming = ref(false);
 const renameVal = ref('');
 const renameInput = ref<HTMLInputElement | null>(null);
+
+// Context menu state
+const contextMenuVisible = ref(false);
+const contextMenuX = ref(0);
+const contextMenuY = ref(0);
 
 const availableParents = computed(() => props.allLayers?.filter((l: any) => l.id !== props.layer.id) || []);
 
@@ -190,6 +216,76 @@ function startDrag() { /* Drag logic */ }
 function toggleVis() { emit('updateLayer', props.layer.id, { visible: !props.layer.visible }); }
 function toggleLock() { emit('updateLayer', props.layer.id, { locked: !props.layer.locked }); }
 function toggleColorPicker() { /* Color logic */ }
+
+// Context menu functions
+function showContextMenu(e: MouseEvent) {
+  contextMenuX.value = e.clientX;
+  contextMenuY.value = e.clientY;
+  contextMenuVisible.value = true;
+  // Select the layer when showing context menu
+  if (!isSelected.value) {
+    emit('select', props.layer.id);
+  }
+}
+
+function hideContextMenu() {
+  contextMenuVisible.value = false;
+}
+
+function duplicateLayer() {
+  store.duplicateLayer(props.layer.id);
+  hideContextMenu();
+}
+
+function renameFromMenu() {
+  hideContextMenu();
+  nextTick(() => {
+    isRenaming.value = true;
+    renameVal.value = props.layer.name;
+    nextTick(() => renameInput.value?.focus());
+  });
+}
+
+function toggleLayerVisibility() {
+  emit('updateLayer', props.layer.id, { visible: !props.layer.visible });
+  hideContextMenu();
+}
+
+function toggleLayerLock() {
+  emit('updateLayer', props.layer.id, { locked: !props.layer.locked });
+  hideContextMenu();
+}
+
+function toggleLayer3D() {
+  store.toggleLayer3D(props.layer.id);
+  hideContextMenu();
+}
+
+function precomposeLayer() {
+  store.selectLayer(props.layer.id);
+  store.precomposeSelectedLayers(props.layer.name + ' Precomp');
+  hideContextMenu();
+}
+
+function deleteLayer() {
+  store.deleteLayer(props.layer.id);
+  hideContextMenu();
+}
+
+// Close context menu on outside click
+function handleOutsideClick(e: MouseEvent) {
+  if (contextMenuVisible.value) {
+    hideContextMenu();
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleOutsideClick);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleOutsideClick);
+});
 </script>
 
 <style scoped>
@@ -211,4 +307,49 @@ function toggleColorPicker() { /* Color logic */ }
 .track-bg { height: 32px; background: #191919; border-bottom: 1px solid #333; position: relative; }
 .duration-bar { position: absolute; height: 20px; top: 6px; border: 1px solid rgba(0,0,0,0.5); border-radius: 2px; background: #888; opacity: 0.6; }
 .bar-fill { width: 100%; height: 100%; }
+
+/* Context Menu - must NOT be scoped to work with Teleport */
+</style>
+
+<style>
+.layer-context-menu {
+  position: fixed;
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  z-index: 9999;
+  min-width: 180px;
+  padding: 4px 0;
+}
+
+.layer-context-menu button {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  color: #e0e0e0;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.layer-context-menu button:hover {
+  background: #3a5070;
+}
+
+.layer-context-menu button.danger {
+  color: #e57373;
+}
+
+.layer-context-menu button.danger:hover {
+  background: #5a3030;
+}
+
+.layer-context-menu hr {
+  border: none;
+  border-top: 1px solid #444;
+  margin: 4px 0;
+}
 </style>

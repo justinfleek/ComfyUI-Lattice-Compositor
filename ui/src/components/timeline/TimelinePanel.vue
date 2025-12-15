@@ -51,7 +51,7 @@
           <div class="col-header col-mode">Mode</div>
           <div class="col-header col-parent">Parent</div>
         </div>
-        <div class="sidebar-scroll-area">
+        <div class="sidebar-scroll-area" ref="sidebarScrollRef" @scroll="syncSidebarScroll">
           <EnhancedLayerTrack
             v-for="(layer, idx) in filteredLayers"
             :key="layer.id"
@@ -70,10 +70,10 @@
 
       <div class="sidebar-resizer" @mousedown="startResize"></div>
 
-      <div class="track-viewport" ref="trackViewportRef" @scroll="syncScrollX">
-        <div class="track-scroll-content" :style="{ width: computedWidthStyle }">
-
-          <div class="time-ruler" @mousedown="startRulerScrub">
+      <div class="track-viewport" ref="trackViewportRef">
+        <!-- Ruler stays fixed at top, scrolls horizontally with content -->
+        <div class="ruler-scroll-wrapper" @scroll="syncRulerScroll" ref="rulerScrollRef">
+          <div class="time-ruler" :style="{ width: computedWidthStyle }" @mousedown="startRulerScrub">
              <canvas ref="rulerCanvas" height="30"></canvas>
 
              <div class="playhead-head" :style="{ left: playheadPosition + 'px' }"></div>
@@ -82,8 +82,11 @@
                   @mousedown.stop="startRulerScrub"
              ></div>
           </div>
+        </div>
 
-          <div class="layer-bars-container">
+        <!-- Layer bars scroll both horizontally and vertically -->
+        <div class="track-scroll-area" ref="trackScrollRef" @scroll="handleTrackScroll">
+          <div class="layer-bars-container" :style="{ width: computedWidthStyle }">
              <div class="grid-background"></div>
 
              <EnhancedLayerTrack
@@ -124,6 +127,11 @@ const showAddLayerMenu = ref(false);
 const addLayerContainer = ref<HTMLElement | null>(null);
 const trackViewportRef = ref<HTMLElement | null>(null);
 const rulerCanvas = ref<HTMLCanvasElement | null>(null);
+const sidebarScrollRef = ref<HTMLElement | null>(null);
+const trackScrollRef = ref<HTMLElement | null>(null);
+const rulerScrollRef = ref<HTMLElement | null>(null);
+let isScrollingSidebar = false;
+let isScrollingTrack = false;
 const viewportWidth = ref(1000); // Default, updated by observer
 
 const filteredLayers = computed(() => store.layers || []);
@@ -275,10 +283,11 @@ function drawRuler() {
 
 function startRulerScrub(e: MouseEvent) {
   const rect = rulerCanvas.value!.getBoundingClientRect();
-  const scrollX = trackViewportRef.value?.scrollLeft || 0;
+  const scrollX = rulerScrollRef.value?.scrollLeft || trackScrollRef.value?.scrollLeft || 0;
 
   const update = (ev: MouseEvent) => {
-    const x = (ev.clientX - rect.left) + scrollX;
+    const currentScrollX = rulerScrollRef.value?.scrollLeft || trackScrollRef.value?.scrollLeft || 0;
+    const x = (ev.clientX - rect.left) + currentScrollX;
     const f = Math.max(0, Math.min(store.frameCount - 1, x / pixelsPerFrame.value));
     store.setFrame(Math.round(f));
   };
@@ -296,13 +305,51 @@ function startResize(e: MouseEvent) {
   window.addEventListener('mouseup', () => window.removeEventListener('mousemove', onMove), { once: true });
 }
 
-function syncScrollX(e: Event) {
-    // Trigger redraw on scroll if dynamic culling is used (optional)
+// Scroll synchronization between sidebar and track area
+function syncSidebarScroll(e: Event) {
+  if (isScrollingTrack) return;
+  isScrollingSidebar = true;
+  const target = e.target as HTMLElement;
+  if (trackScrollRef.value) {
+    trackScrollRef.value.scrollTop = target.scrollTop;
+  }
+  requestAnimationFrame(() => { isScrollingSidebar = false; });
+}
+
+// Handle track scroll - syncs vertical scroll to sidebar and horizontal to ruler
+function handleTrackScroll(e: Event) {
+  const target = e.target as HTMLElement;
+
+  // Sync vertical scroll to sidebar
+  if (!isScrollingSidebar) {
+    isScrollingTrack = true;
+    if (sidebarScrollRef.value) {
+      sidebarScrollRef.value.scrollTop = target.scrollTop;
+    }
+    requestAnimationFrame(() => { isScrollingTrack = false; });
+  }
+
+  // Sync horizontal scroll to ruler
+  if (rulerScrollRef.value) {
+    rulerScrollRef.value.scrollLeft = target.scrollLeft;
+  }
+}
+
+// Sync ruler horizontal scroll to track area
+function syncRulerScroll(e: Event) {
+  const target = e.target as HTMLElement;
+  if (trackScrollRef.value) {
+    trackScrollRef.value.scrollLeft = target.scrollLeft;
+  }
 }
 
 function handleKeydown(e: KeyboardEvent) {
   if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
   if (e.code === 'Space') { e.preventDefault(); togglePlayback(); }
+  if (e.code === 'Delete' || e.code === 'Backspace') {
+    e.preventDefault();
+    deleteSelectedLayers();
+  }
 }
 
 let resizeObserver: ResizeObserver | null = null;
@@ -315,14 +362,15 @@ onMounted(() => {
   });
 
   // Track viewport size for accurate width calculation
-  if (trackViewportRef.value) {
+  const elementToObserve = trackScrollRef.value || trackViewportRef.value;
+  if (elementToObserve) {
     resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
         viewportWidth.value = entry.contentRect.width;
         drawRuler(); // Redraw ruler on resize
       }
     });
-    resizeObserver.observe(trackViewportRef.value);
+    resizeObserver.observe(elementToObserve);
   }
 
   setTimeout(drawRuler, 100);
@@ -370,20 +418,43 @@ watch(() => [computedWidthStyle.value, pixelsPerFrame.value, store.frameCount], 
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow: hidden;
   position: relative;
   background: #151515;
 }
-.track-scroll-content {
-  min-height: 100%;
-  /* Width controlled by computedWidthStyle */
-  display: flex;
-  flex-direction: column;
+
+/* Ruler wrapper - scrolls horizontally only */
+.ruler-scroll-wrapper {
+  height: 30px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex-shrink: 0;
+  scrollbar-width: none; /* Firefox */
+}
+.ruler-scroll-wrapper::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
 }
 
-.time-ruler { height: 30px; position: relative; background: #222; border-bottom: 1px solid #000; cursor: pointer; z-index: 10; flex-shrink: 0; }
-.layer-bars-container { flex: 1; position: relative; }
+.time-ruler {
+  height: 30px;
+  position: relative;
+  background: #222;
+  border-bottom: 1px solid #000;
+  cursor: pointer;
+  z-index: 10;
+}
+
+/* Track scroll area - scrolls both horizontally and vertically */
+.track-scroll-area {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
+}
+
+.layer-bars-container {
+  position: relative;
+  min-height: 100%;
+}
 
 /* Playhead Visuals */
 .playhead-head {

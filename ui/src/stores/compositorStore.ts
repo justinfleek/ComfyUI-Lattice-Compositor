@@ -861,6 +861,54 @@ export const useCompositorStore = defineStore('compositor', {
     },
 
     /**
+     * Duplicate a layer
+     */
+    duplicateLayer(layerId: string): Layer | null {
+      const layers = this.getActiveCompLayers();
+      const original = layers.find(l => l.id === layerId);
+      if (!original) return null;
+
+      // Deep clone the layer
+      const duplicate: Layer = JSON.parse(JSON.stringify(original));
+
+      // Generate new IDs
+      duplicate.id = crypto.randomUUID();
+      duplicate.name = original.name + ' Copy';
+
+      // Generate new keyframe IDs to avoid conflicts
+      if (duplicate.transform) {
+        for (const key of Object.keys(duplicate.transform)) {
+          const prop = (duplicate.transform as any)[key];
+          if (prop?.keyframes) {
+            prop.keyframes = prop.keyframes.map((kf: any) => ({
+              ...kf,
+              id: crypto.randomUUID()
+            }));
+          }
+        }
+      }
+      if (duplicate.properties) {
+        for (const prop of duplicate.properties) {
+          if (prop.keyframes) {
+            prop.keyframes = prop.keyframes.map((kf: any) => ({
+              ...kf,
+              id: crypto.randomUUID()
+            }));
+          }
+        }
+      }
+
+      // Insert after the original
+      const index = layers.findIndex(l => l.id === layerId);
+      layers.splice(index, 0, duplicate);
+
+      this.project.meta.modified = new Date().toISOString();
+      this.pushHistory();
+
+      return duplicate;
+    },
+
+    /**
      * Update layer properties
      */
     updateLayer(layerId: string, updates: Partial<Layer>): void {

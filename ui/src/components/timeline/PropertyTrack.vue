@@ -54,21 +54,30 @@
       </div>
     </div>
 
-    <div v-else class="prop-track">
+    <div v-else class="prop-track" @mousedown="handleTrackClick">
        <div v-for="kf in property.keyframes" :key="kf.id"
-            class="keyframe" :style="{ left: `${kf.frame * pixelsPerFrame}px` }">
+            class="keyframe"
+            :class="{ selected: selectedKeyframeIds.has(kf.id) }"
+            :style="{ left: `${kf.frame * pixelsPerFrame}px` }"
+            @mousedown.stop="startKeyframeDrag($event, kf)"
+            @dblclick.stop="deleteKeyframe(kf.id)"
+       >
        </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useCompositorStore } from '@/stores/compositorStore';
 import ScrubableNumber from '@/components/controls/ScrubableNumber.vue';
+import type { Keyframe } from '@/types/project';
 
 const props = defineProps(['name', 'property', 'layerId', 'propertyPath', 'layoutMode', 'pixelsPerFrame', 'gridStyle']);
+const emit = defineEmits(['selectKeyframe', 'deleteKeyframe', 'moveKeyframe']);
 const store = useCompositorStore();
+
+const selectedKeyframeIds = ref<Set<string>>(new Set());
 
 const hasKeyframeAtCurrent = computed(() => props.property.keyframes?.some((k:any) => k.frame === store.currentFrame));
 const isSelected = computed(() => store.selectedPropertyPath === props.propertyPath);
@@ -81,6 +90,58 @@ function updateValByIndex(axis: string, v: number) {
   store.setPropertyValue(props.layerId, props.propertyPath, newVal);
 }
 function selectProp() { store.selectProperty(props.propertyPath); }
+
+// Click on empty track area to add keyframe at that position
+function handleTrackClick(e: MouseEvent) {
+  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const frame = Math.round(x / props.pixelsPerFrame);
+  // Navigate to that frame
+  store.setFrame(Math.max(0, Math.min(store.frameCount - 1, frame)));
+}
+
+// Keyframe selection and dragging
+function startKeyframeDrag(e: MouseEvent, kf: Keyframe) {
+  // Toggle selection with Shift, otherwise single select
+  if (e.shiftKey) {
+    if (selectedKeyframeIds.value.has(kf.id)) {
+      selectedKeyframeIds.value.delete(kf.id);
+    } else {
+      selectedKeyframeIds.value.add(kf.id);
+    }
+  } else {
+    selectedKeyframeIds.value.clear();
+    selectedKeyframeIds.value.add(kf.id);
+  }
+
+  // Set up drag
+  const startX = e.clientX;
+  const startFrame = kf.frame;
+
+  const onMove = (ev: MouseEvent) => {
+    const dx = ev.clientX - startX;
+    const frameDelta = Math.round(dx / props.pixelsPerFrame);
+    const newFrame = Math.max(0, Math.min(store.frameCount - 1, startFrame + frameDelta));
+
+    if (newFrame !== kf.frame) {
+      store.moveKeyframe(props.layerId, props.propertyPath, kf.id, newFrame);
+    }
+  };
+
+  const onUp = () => {
+    window.removeEventListener('mousemove', onMove);
+    window.removeEventListener('mouseup', onUp);
+  };
+
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('mouseup', onUp);
+}
+
+// Delete keyframe
+function deleteKeyframe(kfId: string) {
+  store.removeKeyframe(props.layerId, props.propertyPath, kfId);
+  selectedKeyframeIds.value.delete(kfId);
+}
 </script>
 
 <style scoped>
@@ -119,6 +180,24 @@ function selectProp() { store.selectProperty(props.propertyPath); }
 .color-input-wrapper { display: flex; align-items: center; gap: 8px; }
 .color-hex { font-family: monospace; font-size: 11px; color: #aaa; }
 
-.prop-track { height: 32px; background: #151515; border-bottom: 1px solid #2a2a2a; position: relative; }
-.keyframe { position: absolute; width: 10px; height: 10px; background: #f1c40f; transform: rotate(45deg); top: 11px; border: 1px solid #000; }
+.prop-track { height: 32px; background: #151515; border-bottom: 1px solid #2a2a2a; position: relative; cursor: pointer; }
+.keyframe {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: #f1c40f;
+  transform: rotate(45deg);
+  top: 11px;
+  border: 1px solid #000;
+  cursor: ew-resize;
+  transition: transform 0.1s;
+}
+.keyframe:hover {
+  transform: rotate(45deg) scale(1.2);
+}
+.keyframe.selected {
+  background: #fff;
+  border-color: #4a90d9;
+  box-shadow: 0 0 4px #4a90d9;
+}
 </style>
