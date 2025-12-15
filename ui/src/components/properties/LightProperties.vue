@@ -10,10 +10,10 @@
             @change="update('lightType', ($event.target as HTMLSelectElement).value)"
             class="type-select"
           >
-            <option value="point">Point</option>
+            <option value="parallel">Parallel</option>
             <option value="spot">Spot</option>
+            <option value="point">Point</option>
             <option value="ambient">Ambient</option>
-            <option value="directional">Directional</option>
           </select>
         </div>
 
@@ -68,11 +68,34 @@
           </div>
         </template>
 
-        <div class="property-group" v-if="lightData.lightType !== 'ambient' && lightData.lightType !== 'directional'">
-          <label>Falloff Radius</label>
+        <div class="property-row" v-if="lightData.lightType !== 'ambient'">
+          <label>Falloff</label>
+          <select
+            :value="lightData.falloff"
+            @change="update('falloff', ($event.target as HTMLSelectElement).value)"
+            class="type-select"
+          >
+            <option value="none">None</option>
+            <option value="smooth">Smooth</option>
+            <option value="inverseSquareClamped">Inverse Square Clamped</option>
+          </select>
+        </div>
+
+        <div class="property-group" v-if="lightData.lightType !== 'ambient' && lightData.lightType !== 'parallel'">
+          <label>Radius</label>
           <ScrubableNumber
             :modelValue="lightData.radius"
             @update:modelValue="(v) => update('radius', v)"
+            :min="0"
+            unit="px"
+          />
+        </div>
+
+        <div class="property-group" v-if="lightData.lightType !== 'ambient'">
+          <label>Falloff Distance</label>
+          <ScrubableNumber
+            :modelValue="lightData.falloffDistance ?? 500"
+            @update:modelValue="(v) => update('falloffDistance', v)"
             :min="0"
             unit="px"
           />
@@ -88,6 +111,33 @@
             Casts Shadows
           </label>
         </div>
+
+        <template v-if="lightData.castShadows">
+          <div class="property-group">
+            <label>Shadow Darkness</label>
+            <SliderInput
+              :modelValue="lightData.shadowDarkness ?? 100"
+              @update:modelValue="(v) => update('shadowDarkness', v)"
+              :min="0"
+              :max="100"
+              unit="%"
+            />
+          </div>
+
+          <div class="property-group">
+            <label>Shadow Diffusion</label>
+            <ScrubableNumber
+              :modelValue="lightData.shadowDiffusion ?? 0"
+              @update:modelValue="(v) => update('shadowDiffusion', v)"
+              :min="0"
+              unit="px"
+            />
+          </div>
+        </template>
+
+        <div class="note" v-if="lightData.castShadows">
+          Note: Shadows are only cast from layers with 'Cast Shadows' enabled to layers with 'Accepts Shadows' enabled.
+        </div>
       </div>
     </div>
   </div>
@@ -100,12 +150,15 @@ import { useCompositorStore } from '@/stores/compositorStore';
 import { ScrubableNumber, SliderInput, AngleDial, ColorPicker } from '@/components/controls';
 
 interface LightData {
-  lightType: 'point' | 'spot' | 'ambient' | 'directional';
+  lightType: 'parallel' | 'spot' | 'point' | 'ambient';
   color: string;
   intensity: number;
   radius: number;
-  falloff: string;
+  falloff: 'none' | 'smooth' | 'inverseSquareClamped';
+  falloffDistance: number;
   castShadows: boolean;
+  shadowDarkness: number;
+  shadowDiffusion: number;
   coneAngle?: number;
   coneFeather?: number;
 }
@@ -116,12 +169,17 @@ const store = useCompositorStore();
 
 const lightData = computed<LightData>(() => {
   return props.layer.data as LightData || {
-    lightType: 'point',
+    lightType: 'spot',
     color: '#ffffff',
     intensity: 100,
     radius: 500,
-    falloff: 'quadratic',
-    castShadows: false
+    falloff: 'none',
+    falloffDistance: 500,
+    castShadows: false,
+    shadowDarkness: 100,
+    shadowDiffusion: 0,
+    coneAngle: 90,
+    coneFeather: 50
   };
 });
 
@@ -164,5 +222,15 @@ function update(key: keyof LightData, value: any) {
   color: #ccc;
   font-size: 11px;
   cursor: pointer;
+}
+
+.note {
+  font-size: 10px;
+  color: #888;
+  padding: 8px;
+  background: #1a1a1a;
+  border-radius: 3px;
+  line-height: 1.4;
+  margin-top: 8px;
 }
 </style>

@@ -2,7 +2,7 @@
   <div class="timeline-panel" tabindex="0" @keydown="handleKeydown">
     <div class="timeline-header">
       <div class="header-left">
-        <span class="timeline-title">Timeline</span>
+        <span class="timecode">{{ formatTimecode(store.currentFrame) }}</span>
         <div class="frame-display">
            <input type="number" :value="store.currentFrame" @change="setFrame" class="frame-input" />
            <span class="fps-label">{{ store.fps }} fps</span>
@@ -154,6 +154,19 @@ function setFrame(e: Event) { store.setFrame(parseInt((e.target as HTMLInputElem
 function togglePlayback() { store.togglePlayback(); }
 function handleToggleExpand(id: string, val: boolean) { expandedLayers.value[id] = val; }
 
+// Format frame as timecode (HH;MM;SS;FF) like After Effects
+function formatTimecode(frame: number): string {
+  const fps = store.fps;
+  const totalSeconds = Math.floor(frame / fps);
+  const frames = Math.floor(frame % fps);
+  const seconds = totalSeconds % 60;
+  const minutes = Math.floor(totalSeconds / 60) % 60;
+  const hours = Math.floor(totalSeconds / 3600);
+
+  const pad = (n: number, len: number = 2) => String(n).padStart(len, '0');
+  return `${pad(hours)};${pad(minutes)};${pad(seconds)};${pad(frames)}`;
+}
+
 function drawRuler() {
   const cvs = rulerCanvas.value;
   if (!cvs) return;
@@ -260,6 +273,9 @@ watch(() => [computedWidthStyle.value, pixelsPerFrame.value, store.frameCount], 
 .timeline-panel { display: flex; flex-direction: column; height: 100%; background: #111; color: #eee; font-family: 'Segoe UI', sans-serif; font-size: 13px; user-select: none; }
 .timeline-header { height: 40px; background: #2a2a2a; border-bottom: 1px solid #000; display: flex; justify-content: space-between; padding: 0 10px; align-items: center; z-index: 20; flex-shrink: 0; }
 .header-left, .header-center, .header-right { display: flex; gap: 10px; align-items: center; }
+
+/* Timecode display like After Effects */
+.timecode { font-family: 'Consolas', 'Courier New', monospace; font-size: 16px; color: #4a90d9; font-weight: bold; letter-spacing: 1px; }
 
 /* Menus */
 .add-layer-wrapper { position: relative; }

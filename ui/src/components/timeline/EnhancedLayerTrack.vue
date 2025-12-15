@@ -17,10 +17,44 @@
         </div>
         <div class="col-mode">
           <select :value="layer.blendMode" class="mini-select" @change="setBlendMode" @mousedown.stop>
-            <option value="normal">Normal</option>
-            <option value="add">Add</option>
-            <option value="multiply">Mult</option>
-            <option value="screen">Scrn</option>
+            <optgroup label="Normal">
+              <option value="normal">Normal</option>
+              <option value="dissolve">Dissolve</option>
+            </optgroup>
+            <optgroup label="Darken">
+              <option value="darken">Darken</option>
+              <option value="multiply">Multiply</option>
+              <option value="colorBurn">Color Burn</option>
+              <option value="linearBurn">Linear Burn</option>
+            </optgroup>
+            <optgroup label="Lighten">
+              <option value="add">Add</option>
+              <option value="lighten">Lighten</option>
+              <option value="screen">Screen</option>
+              <option value="colorDodge">Color Dodge</option>
+              <option value="linearDodge">Linear Dodge</option>
+            </optgroup>
+            <optgroup label="Contrast">
+              <option value="overlay">Overlay</option>
+              <option value="softLight">Soft Light</option>
+              <option value="hardLight">Hard Light</option>
+              <option value="vividLight">Vivid Light</option>
+              <option value="linearLight">Linear Light</option>
+              <option value="pinLight">Pin Light</option>
+              <option value="hardMix">Hard Mix</option>
+            </optgroup>
+            <optgroup label="Inversion">
+              <option value="difference">Difference</option>
+              <option value="exclusion">Exclusion</option>
+              <option value="subtract">Subtract</option>
+              <option value="divide">Divide</option>
+            </optgroup>
+            <optgroup label="Component">
+              <option value="hue">Hue</option>
+              <option value="saturation">Saturation</option>
+              <option value="color">Color</option>
+              <option value="luminosity">Luminosity</option>
+            </optgroup>
           </select>
         </div>
         <div class="col-parent">
