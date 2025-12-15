@@ -208,6 +208,30 @@ function setupZoomPan() {
   const canvas = fabricCanvas.value;
   if (!canvas) return;
 
+  // Tool state variables (declared before event handlers)
+  let isPanning = false;
+  let isZooming = false;
+  let lastPosX = 0;
+  let lastPosY = 0;
+  let zoomStartY = 0;
+  let zoomStartLevel = 1;
+
+  // Prevent default middle mouse button behavior (auto-scroll)
+  const container = containerRef.value;
+  if (container) {
+    container.addEventListener('mousedown', (e: MouseEvent) => {
+      if (e.button === 1) {
+        e.preventDefault();
+      }
+    });
+    // Also prevent the auxclick which can trigger on middle mouse
+    container.addEventListener('auxclick', (e: MouseEvent) => {
+      if (e.button === 1) {
+        e.preventDefault();
+      }
+    });
+  }
+
   canvas.on('mouse:wheel', (opt) => {
     const delta = opt.e.deltaY;
     let newZoom = canvas.getZoom() * (delta > 0 ? 0.9 : 1.1);
@@ -219,24 +243,20 @@ function setupZoomPan() {
     opt.e.stopPropagation();
   });
 
-  // Tool state variables
-  let isPanning = false;
-  let isZooming = false;
-  let lastPosX = 0;
-  let lastPosY = 0;
-  let zoomStartY = 0;
-  let zoomStartLevel = 1;
-
   canvas.on('mouse:down', (opt) => {
     const evt = opt.e as MouseEvent;
     const currentTool = store.currentTool;
 
-    if (currentTool === 'hand' || evt.button === 1 || (evt.button === 0 && evt.altKey)) {
+    // Middle mouse button (button === 1) or Alt+Left click for panning
+    if (evt.button === 1 || currentTool === 'hand' || (evt.button === 0 && evt.altKey)) {
       isPanning = true;
       lastPosX = evt.clientX;
       lastPosY = evt.clientY;
       canvas.selection = false;
       canvas.defaultCursor = 'grabbing';
+      canvas.discardActiveObject();
+      evt.preventDefault();
+      evt.stopPropagation();
       return;
     }
 
@@ -287,6 +307,7 @@ function setupZoomPan() {
       }
       lastPosX = evt.clientX;
       lastPosY = evt.clientY;
+      evt.preventDefault();
       return;
     }
     if (isZooming) {
@@ -306,11 +327,13 @@ function setupZoomPan() {
     else canvas.defaultCursor = 'default';
   });
 
-  canvas.on('mouse:up', () => {
+  canvas.on('mouse:up', (opt) => {
+    const evt = opt.e as MouseEvent;
     if (isPanning) {
       isPanning = false;
       canvas.selection = true;
       canvas.defaultCursor = store.currentTool === 'hand' ? 'grab' : 'default';
+      evt.preventDefault();
     }
     if (isZooming) isZooming = false;
   });
