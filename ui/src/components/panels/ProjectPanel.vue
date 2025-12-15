@@ -115,6 +115,10 @@
 import { ref, computed } from 'vue';
 import { useCompositorStore } from '@/stores/compositorStore';
 
+const emit = defineEmits<{
+  (e: 'openCompositionSettings'): void;
+}>();
+
 interface ProjectItem {
   id: string;
   name: string;
@@ -237,8 +241,7 @@ function openItem(item: ProjectItem) {
 
 function createNewComposition() {
   showNewMenu.value = false;
-  // TODO: Show composition settings dialog
-  console.log('Create new composition');
+  emit('openCompositionSettings');
 }
 
 function createNewSolid() {

@@ -115,7 +115,7 @@
               </button>
             </div>
             <div class="panel-content">
-              <ProjectPanel v-if="leftTab === 'project'" />
+              <ProjectPanel v-if="leftTab === 'project'" @openCompositionSettings="showCompositionSettingsDialog = true" />
               <EffectsPanel v-else-if="leftTab === 'effects'" />
             </div>
           </div>
@@ -297,6 +297,13 @@
       @close="showComfyUIExportDialog = false"
       @exported="onComfyUIExportComplete"
     />
+
+    <!-- Composition Settings Dialog -->
+    <CompositionSettingsDialog
+      :visible="showCompositionSettingsDialog"
+      @close="showCompositionSettingsDialog = false"
+      @confirm="onCompositionSettingsConfirm"
+    />
   </div>
 </template>
 
@@ -330,6 +337,7 @@ import GraphEditor from '@/components/graph-editor/GraphEditor.vue';
 // Dialogs
 import ExportDialog from '@/components/dialogs/ExportDialog.vue';
 import ComfyUIExportDialog from '@/components/export/ComfyUIExportDialog.vue';
+import CompositionSettingsDialog from '@/components/dialogs/CompositionSettingsDialog.vue';
 
 // Store
 const store = useCompositorStore();
@@ -350,6 +358,7 @@ const showGrid = ref(true);
 const showGraphEditor = ref(false);
 const showExportDialog = ref(false);
 const showComfyUIExportDialog = ref(false);
+const showCompositionSettingsDialog = ref(false);
 const useThreeCanvas = ref(true); // Toggle between Fabric.js and Three.js canvas
 
 const isPlaying = ref(false);
@@ -460,6 +469,36 @@ function onComfyUIExportComplete(result: any) {
   showComfyUIExportDialog.value = false;
 }
 
+function onCompositionSettingsConfirm(settings: {
+  name: string;
+  width: number;
+  height: number;
+  fps: number;
+  frameCount: number;
+  backgroundColor: string;
+  autoResizeToContent: boolean;
+}) {
+  console.log('[Weyl] Composition settings updated:', settings);
+
+  // Update project name
+  if (store.project?.meta) {
+    store.project.meta.name = settings.name;
+  }
+
+  // Update composition dimensions and frame count
+  store.resizeComposition(settings.width, settings.height, settings.frameCount);
+
+  // Update fps
+  if (store.project?.composition) {
+    store.project.composition.fps = settings.fps;
+    store.project.composition.duration = settings.frameCount / settings.fps;
+    store.project.composition.backgroundColor = settings.backgroundColor;
+    store.project.composition.autoResizeToContent = settings.autoResizeToContent;
+  }
+
+  showCompositionSettingsDialog.value = false;
+}
+
 // Get camera keyframes for the active camera
 const activeCameraKeyframes = computed(() => {
   const activeCam = store.getActiveCameraAtFrame();
@@ -553,6 +592,12 @@ function handleKeydown(e: KeyboardEvent) {
     case 'g':
       if (e.shiftKey) {
         showGraphEditor.value = !showGraphEditor.value;
+      }
+      break;
+    case 'k':
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        showCompositionSettingsDialog.value = true;
       }
       break;
   }
