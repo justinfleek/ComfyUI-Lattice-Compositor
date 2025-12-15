@@ -114,6 +114,7 @@ import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { useCompositorStore } from '@/stores/compositorStore';
 import EnhancedLayerTrack from './EnhancedLayerTrack.vue';
 import CompositionTabs from './CompositionTabs.vue';
+import { findNearestSnap } from '@/services/timelineSnap';
 
 const emit = defineEmits<{
   (e: 'openCompositionSettings'): void;
@@ -288,7 +289,20 @@ function startRulerScrub(e: MouseEvent) {
   const update = (ev: MouseEvent) => {
     const currentScrollX = rulerScrollRef.value?.scrollLeft || trackScrollRef.value?.scrollLeft || 0;
     const x = (ev.clientX - rect.left) + currentScrollX;
-    const f = Math.max(0, Math.min(store.frameCount - 1, x / pixelsPerFrame.value));
+    let f = Math.max(0, Math.min(store.frameCount - 1, x / pixelsPerFrame.value));
+
+    // Apply snapping (hold Alt/Option to disable)
+    if (!ev.altKey && store.snapConfig.enabled) {
+      const snap = findNearestSnap(Math.round(f), store.snapConfig, pixelsPerFrame.value, {
+        layers: store.layers,
+        audioAnalysis: store.audioAnalysis,
+        peakData: store.peakData
+      });
+      if (snap) {
+        f = snap.frame;
+      }
+    }
+
     store.setFrame(Math.round(f));
   };
 
@@ -345,10 +359,42 @@ function syncRulerScroll(e: Event) {
 
 function handleKeydown(e: KeyboardEvent) {
   if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+  // Playback
   if (e.code === 'Space') { e.preventDefault(); togglePlayback(); }
+
+  // Delete
   if (e.code === 'Delete' || e.code === 'Backspace') {
     e.preventDefault();
     deleteSelectedLayers();
+  }
+
+  // Copy/Cut/Paste
+  if ((e.ctrlKey || e.metaKey) && e.code === 'KeyC') {
+    e.preventDefault();
+    store.copySelectedLayers();
+  }
+  if ((e.ctrlKey || e.metaKey) && e.code === 'KeyX') {
+    e.preventDefault();
+    store.cutSelectedLayers();
+  }
+  if ((e.ctrlKey || e.metaKey) && e.code === 'KeyV') {
+    e.preventDefault();
+    store.pasteLayers();
+  }
+
+  // Select All
+  if ((e.ctrlKey || e.metaKey) && e.code === 'KeyA') {
+    e.preventDefault();
+    store.selectedLayerIds = store.layers.map(l => l.id);
+  }
+
+  // Duplicate (Ctrl+D)
+  if ((e.ctrlKey || e.metaKey) && e.code === 'KeyD') {
+    e.preventDefault();
+    for (const id of store.selectedLayerIds) {
+      store.duplicateLayer(id);
+    }
   }
 }
 

@@ -124,6 +124,12 @@ interface CompositorState {
 
   // Timeline snapping
   snapConfig: SnapConfig;
+
+  // Clipboard for copy/paste
+  clipboard: {
+    layers: Layer[];
+    keyframes: { layerId: string; propertyPath: string; keyframes: Keyframe[] }[];
+  };
 }
 
 export const useCompositorStore = defineStore('compositor', {
@@ -170,7 +176,13 @@ export const useCompositorStore = defineStore('compositor', {
     propertyDrivers: [],
 
     // Timeline snapping
-    snapConfig: { ...DEFAULT_SNAP_CONFIG }
+    snapConfig: { ...DEFAULT_SNAP_CONFIG },
+
+    // Clipboard
+    clipboard: {
+      layers: [],
+      keyframes: []
+    }
   }),
 
   getters: {
@@ -909,6 +921,87 @@ export const useCompositorStore = defineStore('compositor', {
     },
 
     /**
+     * Copy selected layers to clipboard
+     */
+    copySelectedLayers(): void {
+      const layers = this.getActiveCompLayers();
+      const selectedLayers = layers.filter(l => this.selectedLayerIds.includes(l.id));
+      if (selectedLayers.length === 0) return;
+
+      // Deep clone layers to clipboard
+      this.clipboard.layers = selectedLayers.map(layer => JSON.parse(JSON.stringify(layer)));
+      console.log(`[Store] Copied ${this.clipboard.layers.length} layer(s) to clipboard`);
+    },
+
+    /**
+     * Paste layers from clipboard
+     */
+    pasteLayers(): Layer[] {
+      if (this.clipboard.layers.length === 0) return [];
+
+      const layers = this.getActiveCompLayers();
+      const pastedLayers: Layer[] = [];
+
+      for (const clipboardLayer of this.clipboard.layers) {
+        // Deep clone from clipboard
+        const newLayer: Layer = JSON.parse(JSON.stringify(clipboardLayer));
+
+        // Generate new IDs
+        newLayer.id = crypto.randomUUID();
+        newLayer.name = clipboardLayer.name + ' Copy';
+
+        // Generate new keyframe IDs
+        if (newLayer.transform) {
+          for (const key of Object.keys(newLayer.transform)) {
+            const prop = (newLayer.transform as any)[key];
+            if (prop?.keyframes) {
+              prop.keyframes = prop.keyframes.map((kf: any) => ({
+                ...kf,
+                id: crypto.randomUUID()
+              }));
+            }
+          }
+        }
+        if (newLayer.properties) {
+          for (const prop of newLayer.properties) {
+            if (prop.keyframes) {
+              prop.keyframes = prop.keyframes.map((kf: any) => ({
+                ...kf,
+                id: crypto.randomUUID()
+              }));
+            }
+          }
+        }
+
+        // Clear parent reference (may not exist in this comp)
+        newLayer.parentId = null;
+
+        layers.unshift(newLayer);
+        pastedLayers.push(newLayer);
+      }
+
+      // Select pasted layers
+      this.selectedLayerIds = pastedLayers.map(l => l.id);
+
+      this.project.meta.modified = new Date().toISOString();
+      this.pushHistory();
+
+      console.log(`[Store] Pasted ${pastedLayers.length} layer(s)`);
+      return pastedLayers;
+    },
+
+    /**
+     * Cut selected layers (copy + delete)
+     */
+    cutSelectedLayers(): void {
+      this.copySelectedLayers();
+      const layerIds = [...this.selectedLayerIds];
+      for (const id of layerIds) {
+        this.deleteLayer(id);
+      }
+    },
+
+    /**
      * Update layer properties
      */
     updateLayer(layerId: string, updates: Partial<Layer>): void {
@@ -1500,6 +1593,47 @@ export const useCompositorStore = defineStore('compositor', {
 
       // Re-sort keyframes by frame
       property.keyframes.sort((a, b) => a.frame - b.frame);
+
+      this.project.meta.modified = new Date().toISOString();
+    },
+
+    /**
+     * Set keyframe value (for graph editor numeric input)
+     */
+    setKeyframeValue(layerId: string, propertyPath: string, keyframeId: string, newValue: number): void {
+      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
+      if (!layer) return;
+
+      let property: AnimatableProperty<any> | undefined;
+
+      if (propertyPath === 'position' || propertyPath === 'transform.position') {
+        property = layer.transform.position;
+      } else if (propertyPath === 'scale' || propertyPath === 'transform.scale') {
+        property = layer.transform.scale;
+      } else if (propertyPath === 'rotation' || propertyPath === 'transform.rotation') {
+        property = layer.transform.rotation;
+      } else if (propertyPath === 'anchorPoint' || propertyPath === 'transform.anchorPoint') {
+        property = layer.transform.anchorPoint;
+      } else if (propertyPath === 'opacity') {
+        property = layer.opacity;
+      } else {
+        property = layer.properties.find(p => p.name === propertyPath);
+      }
+
+      if (!property) return;
+
+      const keyframe = property.keyframes.find(kf => kf.id === keyframeId);
+      if (!keyframe) return;
+
+      // Handle vector values (Position X/Y are separated in graph editor)
+      if (typeof keyframe.value === 'object' && keyframe.value !== null) {
+        // For graph editor, the curve name tells us which dimension
+        // This is a simplified update - for full support, we'd need curve dimension info
+        // For now, just update scalar values directly
+        console.warn('[Store] setKeyframeValue: Cannot directly update vector keyframes from graph editor. Use separate dimension curves.');
+      } else {
+        keyframe.value = newValue;
+      }
 
       this.project.meta.modified = new Date().toISOString();
     },

@@ -69,7 +69,10 @@
         <div v-for="(groupProps, groupName) in groupedProperties" :key="groupName" class="property-group">
           <div class="group-header sidebar-row" :style="gridStyle" @mousedown.stop="toggleGroup(groupName)">
              <div class="arrow-col"><span class="arrow">{{ expandedGroups.includes(groupName) ? '▼' : '▶' }}</span></div>
-             <div class="group-label">{{ groupName }}</div>
+             <div class="group-label">
+               {{ groupName }}
+               <span v-if="groupName === 'Transform'" class="reset-link" @click.stop="resetTransform">Reset</span>
+             </div>
           </div>
           <div v-if="expandedGroups.includes(groupName)">
              <PropertyTrack v-for="prop in groupProps" :key="prop.path"
@@ -217,6 +220,42 @@ function toggleVis() { emit('updateLayer', props.layer.id, { visible: !props.lay
 function toggleLock() { emit('updateLayer', props.layer.id, { locked: !props.layer.locked }); }
 function toggleColorPicker() { /* Color logic */ }
 
+// Reset transform to default values
+function resetTransform() {
+  const comp = store.getActiveComp();
+  if (!comp) return;
+
+  // Default values
+  const defaultTransform = {
+    anchorPoint: { x: comp.settings.width / 2, y: comp.settings.height / 2 },
+    position: { x: comp.settings.width / 2, y: comp.settings.height / 2, z: 0 },
+    scale: { x: 100, y: 100, z: 100 },
+    rotation: 0,
+    rotationX: 0,
+    rotationY: 0,
+    rotationZ: 0,
+    orientation: { x: 0, y: 0, z: 0 },
+    opacity: 100
+  };
+
+  // Reset each transform property value (keep keyframes but update current value)
+  const t = props.layer.transform;
+  if (t.anchorPoint) t.anchorPoint.value = { ...defaultTransform.anchorPoint };
+  if (t.position) t.position.value = props.layer.threeD
+    ? { ...defaultTransform.position }
+    : { x: defaultTransform.position.x, y: defaultTransform.position.y };
+  if (t.scale) t.scale.value = { x: defaultTransform.scale.x, y: defaultTransform.scale.y };
+  if (t.rotation) t.rotation.value = defaultTransform.rotation;
+  if (t.rotationX) t.rotationX.value = defaultTransform.rotationX;
+  if (t.rotationY) t.rotationY.value = defaultTransform.rotationY;
+  if (t.rotationZ) t.rotationZ.value = defaultTransform.rotationZ;
+  if (t.orientation) t.orientation.value = { ...defaultTransform.orientation };
+  if (props.layer.opacity) props.layer.opacity.value = defaultTransform.opacity;
+
+  store.project.meta.modified = new Date().toISOString();
+  console.log('[EnhancedLayerTrack] Reset transform for layer:', props.layer.name);
+}
+
 // Context menu functions
 function showContextMenu(e: MouseEvent) {
   contextMenuX.value = e.clientX;
@@ -303,7 +342,24 @@ onUnmounted(() => {
 .mini-select { width: 100%; background: transparent; border: none; color: #aaa; font-size: 11px; }
 .children-container { background: #151515; }
 .group-header { background: #222; font-weight: 600; color: #999; cursor: pointer; }
-.group-label { grid-column: 7 / -1; padding-left: 4px; font-size: 12px; }
+.group-label {
+  grid-column: 7 / -1;
+  padding-left: 4px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.reset-link {
+  font-size: 10px;
+  color: #4a90d9;
+  cursor: pointer;
+  font-weight: normal;
+}
+.reset-link:hover {
+  color: #6bb3ff;
+  text-decoration: underline;
+}
 .track-bg { height: 32px; background: #191919; border-bottom: 1px solid #333; position: relative; }
 .duration-bar { position: absolute; height: 20px; top: 6px; border: 1px solid rgba(0,0,0,0.5); border-radius: 2px; background: #888; opacity: 0.6; }
 .bar-fill { width: 100%; height: 100%; }

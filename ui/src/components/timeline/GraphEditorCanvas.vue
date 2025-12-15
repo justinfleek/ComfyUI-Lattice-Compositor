@@ -18,6 +18,28 @@
           <span class="icon">⚡</span> Speed
         </button>
       </div>
+
+      <!-- Keyframe Value Editor -->
+      <div v-if="selectedKeyframeData" class="keyframe-value-editor">
+        <span class="value-label">Frame:</span>
+        <input
+          type="number"
+          class="value-input frame-input"
+          :value="selectedKeyframeData.frame"
+          @change="updateSelectedKeyframeFrame"
+          @keydown.enter="($event.target as HTMLInputElement).blur()"
+        />
+        <span class="value-label">Value:</span>
+        <input
+          type="number"
+          class="value-input"
+          :value="formatValueForInput(selectedKeyframeData.value)"
+          @change="updateSelectedKeyframeValue"
+          @keydown.enter="($event.target as HTMLInputElement).blur()"
+          step="0.1"
+        />
+      </div>
+
       <div class="zoom-controls">
         <button @click="zoomIn" title="Zoom In">+</button>
         <span class="zoom-level">{{ zoomLevel.toFixed(1) }}px/f</span>
@@ -387,6 +409,64 @@ const yAxisLabels = computed(() => {
 
   return labels;
 });
+
+// ═══════════════════════════════════════════════════════════════════
+// COMPUTED - Selected Keyframe Data for Value Editing
+// ═══════════════════════════════════════════════════════════════════
+
+interface SelectedKeyframeInfo {
+  curve: CurveData;
+  keyframe: Keyframe<any>;
+  frame: number;
+  value: number;
+}
+
+const selectedKeyframeData = computed<SelectedKeyframeInfo | null>(() => {
+  if (selectedKeyframeIds.value.length !== 1) return null;
+
+  const selectedId = selectedKeyframeIds.value[0];
+
+  for (const curve of visibleCurves.value) {
+    const kf = curve.keyframes.find(k => k.id === selectedId);
+    if (kf) {
+      return {
+        curve,
+        keyframe: kf,
+        frame: kf.frame,
+        value: typeof kf.value === 'number' ? kf.value : 0
+      };
+    }
+  }
+
+  return null;
+});
+
+function formatValueForInput(value: number): string {
+  return value.toFixed(2);
+}
+
+function updateSelectedKeyframeFrame(e: Event) {
+  const data = selectedKeyframeData.value;
+  if (!data) return;
+
+  const input = e.target as HTMLInputElement;
+  const newFrame = Math.max(0, Math.min(props.frameCount - 1, parseInt(input.value) || 0));
+
+  store.moveKeyframe(data.curve.layerId, data.curve.propertyPath, data.keyframe.id, newFrame);
+  draw();
+}
+
+function updateSelectedKeyframeValue(e: Event) {
+  const data = selectedKeyframeData.value;
+  if (!data) return;
+
+  const input = e.target as HTMLInputElement;
+  const newValue = parseFloat(input.value) || 0;
+
+  // Update the keyframe value
+  store.setKeyframeValue(data.curve.layerId, data.curve.propertyPath, data.keyframe.id, newValue);
+  draw();
+}
 
 // ═══════════════════════════════════════════════════════════════════
 // SPEED GRAPH MATH - Calculate derivative
@@ -847,6 +927,41 @@ onUnmounted(() => {
   background: #7c9cff;
   border-color: #7c9cff;
   color: #fff;
+}
+
+/* Keyframe Value Editor */
+.keyframe-value-editor {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border-left: 1px solid #333;
+  border-right: 1px solid #333;
+}
+
+.value-label {
+  font-size: 11px;
+  color: #888;
+}
+
+.value-input {
+  width: 70px;
+  padding: 3px 6px;
+  border: 1px solid #444;
+  border-radius: 3px;
+  background: #2a2a2a;
+  color: #3498db;
+  font-size: 11px;
+  text-align: right;
+}
+
+.value-input:focus {
+  outline: none;
+  border-color: #7c9cff;
+}
+
+.value-input.frame-input {
+  width: 50px;
 }
 
 .zoom-controls {

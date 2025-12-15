@@ -72,6 +72,7 @@ import { computed, ref } from 'vue';
 import { useCompositorStore } from '@/stores/compositorStore';
 import ScrubableNumber from '@/components/controls/ScrubableNumber.vue';
 import type { Keyframe } from '@/types/project';
+import { findNearestSnap } from '@/services/timelineSnap';
 
 const props = defineProps(['name', 'property', 'layerId', 'propertyPath', 'layoutMode', 'pixelsPerFrame', 'gridStyle']);
 const emit = defineEmits(['selectKeyframe', 'deleteKeyframe', 'moveKeyframe']);
@@ -121,7 +122,21 @@ function startKeyframeDrag(e: MouseEvent, kf: Keyframe) {
   const onMove = (ev: MouseEvent) => {
     const dx = ev.clientX - startX;
     const frameDelta = Math.round(dx / props.pixelsPerFrame);
-    const newFrame = Math.max(0, Math.min(store.frameCount - 1, startFrame + frameDelta));
+    let newFrame = Math.max(0, Math.min(store.frameCount - 1, startFrame + frameDelta));
+
+    // Apply snapping if enabled (hold Alt/Option to disable temporarily)
+    if (!ev.altKey && store.snapConfig.enabled) {
+      const snap = findNearestSnap(newFrame, store.snapConfig, props.pixelsPerFrame, {
+        layers: store.layers,
+        selectedLayerId: props.layerId,
+        currentFrame: store.currentFrame,
+        audioAnalysis: store.audioAnalysis,
+        peakData: store.peakData
+      });
+      if (snap) {
+        newFrame = snap.frame;
+      }
+    }
 
     if (newFrame !== kf.frame) {
       store.moveKeyframe(props.layerId, props.propertyPath, kf.id, newFrame);
