@@ -489,7 +489,7 @@ function renderSplineLayers() {
 
     let splineObj = splineObjects.value.get(layer.id);
     const position = getAnimatedValue(layer.transform?.position, { x: 0, y: 0 });
-    const scale = getAnimatedValue(layer.transform?.scale, { x: 1, y: 1 });
+    const scale = getAnimatedValue(layer.transform?.scale, { x: 100, y: 100 });
     const rotation = getAnimatedValue(layer.transform?.rotation, 0);
     const opacity = getAnimatedValue(layer.opacity, 100) / 100;
 
@@ -547,7 +547,7 @@ function renderSolidLayers() {
   for (const layer of solidLayers) {
     let solidObj = solidObjects.value.get(layer.id);
     const position = getAnimatedValue(layer.transform?.position, { x: 0, y: 0 });
-    const scale = getAnimatedValue(layer.transform?.scale, { x: 1, y: 1 });
+    const scale = getAnimatedValue(layer.transform?.scale, { x: 100, y: 100 });
     const rotation = getAnimatedValue(layer.transform?.rotation, 0);
     const opacity = getAnimatedValue(layer.opacity, 100) / 100;
     const solidData = layer.data as { color?: string } | null;
@@ -604,7 +604,7 @@ function renderNullLayers() {
   for (const layer of nullLayers) {
     let nullGroup = nullObjects.value.get(layer.id);
     const position = getAnimatedValue(layer.transform?.position, { x: 0, y: 0 });
-    const scale = getAnimatedValue(layer.transform?.scale, { x: 1, y: 1 });
+    const scale = getAnimatedValue(layer.transform?.scale, { x: 100, y: 100 });
     const rotation = getAnimatedValue(layer.transform?.rotation, 0);
     const opacity = getAnimatedValue(layer.opacity, 100) / 100;
     const centerX = (store.width || 1920) / 2;
@@ -693,11 +693,14 @@ function renderTextLayers() {
 
     let textObj = textObjects.value.get(layer.id);
     const position = getAnimatedValue(layer.transform?.position, { x: 0, y: 0 });
-    const scale = getAnimatedValue(layer.transform?.scale, { x: 1, y: 1 });
+    const anchorPoint = getAnimatedValue(layer.transform?.anchorPoint, { x: 0, y: 0 });
+    const scale = getAnimatedValue(layer.transform?.scale, { x: 100, y: 100 });  // Default 100% not 1
     const rotation = getAnimatedValue(layer.transform?.rotation, 0);
     const opacity = getAnimatedValue(layer.opacity, 100) / 100;
     const centerX = (store.width || 1920) / 2;
     const centerY = (store.height || 1080) / 2;
+
+    // Position is layer position; anchor point offsets the object's origin
     const posX = (position.x !== undefined && position.x !== null) ? position.x : centerX;
     const posY = (position.y !== undefined && position.y !== null) ? position.y : centerY;
 
@@ -705,12 +708,14 @@ function renderTextLayers() {
       textObj = new AnimatedText({
         text: textData.text || 'Text',
         fontFamily: textData.fontFamily || 'Arial',
-        fontSize: textData.fontSize || 48,
+        fontSize: textData.fontSize || 72,
         fontWeight: textData.fontWeight || '400',
+        fontStyle: textData.fontStyle || 'normal',
         fill: textData.fill || '#ffffff',
         stroke: textData.stroke || '',
         strokeWidth: textData.strokeWidth || 0,
         letterSpacing: textData.letterSpacing || 0,
+        textAlign: textData.textAlign || 'left',
         pathLayerId: textData.pathLayerId,
         pathOffset: textData.pathOffset || 0,
         selectable: !layer.locked
@@ -721,31 +726,71 @@ function renderTextLayers() {
       textObj.setText(textObj.textContent);
       canvas.bringObjectToFront(textObj as unknown as FabricObject);
     } else {
+      // Update text content
       if (textData.text !== textObj.textContent) textObj.setText(textData.text || 'Text');
-      if (textData.fontFamily !== textObj.fontFamily || textData.fontSize !== textObj.fontSize || textData.fontWeight !== textObj.fontWeight) {
-        textObj.setFont(textData.fontFamily || 'Arial', textData.fontSize || 48, textData.fontWeight || '400');
+
+      // Update font properties - check all font-related properties
+      const fontChanged = textData.fontFamily !== textObj.fontFamily ||
+                          textData.fontSize !== textObj.fontSize ||
+                          textData.fontWeight !== textObj.fontWeight ||
+                          textData.fontStyle !== textObj.fontStyle;
+      if (fontChanged) {
+        textObj.setFont(
+          textData.fontFamily || 'Arial',
+          textData.fontSize || 72,
+          textData.fontWeight || '400',
+          textData.fontStyle || 'normal'
+        );
       }
+
+      // Update colors
       if (textData.fill !== textObj.textFill) textObj.setFillColor(textData.fill || '#ffffff');
       if (textData.stroke !== textObj.textStroke || textData.strokeWidth !== textObj.textStrokeWidth) {
         textObj.setStroke(textData.stroke || '', textData.strokeWidth || 0);
       }
+
+      // Update spacing and alignment
       if (textData.letterSpacing !== textObj.letterSpacing) textObj.setLetterSpacing(textData.letterSpacing || 0);
+      if (textData.textAlign !== textObj.textAlign) textObj.setTextAlign(textData.textAlign || 'left');
+
       textObj.pathLayerId = textData.pathLayerId || null;
       textObj.pathOffset = textData.pathOffset || 0;
     }
 
+    // Convert scale from percentage (100 = 100%) to multiplier (1.0)
+    const scaleX = scale.x / 100;
+    const scaleY = scale.y / 100;
+
     textObj.set({
       left: posX,
       top: posY,
+      // Anchor point affects the transformation origin
+      // In Fabric.js, we offset the position by the anchor point
       originX: 'center',
       originY: 'center',
-      scaleX: scale.x / 100,  // Convert from percentage (100 = 100%) to multiplier (1.0)
-      scaleY: scale.y / 100,
+      scaleX: scaleX,
+      scaleY: scaleY,
       angle: rotation,
       opacity: opacity,
       visible: layer.visible,
       selectable: !layer.locked
     });
+
+    // Apply anchor point as an offset to the object's position
+    // Anchor point is relative to the object's bounding box
+    if (anchorPoint.x !== 0 || anchorPoint.y !== 0) {
+      const offsetX = anchorPoint.x * scaleX;
+      const offsetY = anchorPoint.y * scaleY;
+      // Rotate the offset by the object's angle
+      const rad = rotation * Math.PI / 180;
+      const rotatedOffsetX = offsetX * Math.cos(rad) - offsetY * Math.sin(rad);
+      const rotatedOffsetY = offsetX * Math.sin(rad) + offsetY * Math.cos(rad);
+      textObj.set({
+        left: posX - rotatedOffsetX,
+        top: posY - rotatedOffsetY
+      });
+    }
+
     textObj.setCoords();
   }
 

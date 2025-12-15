@@ -317,7 +317,7 @@ const currentTool = computed({
 });
 const activeWorkspace = ref('standard');
 const leftTab = ref<'project' | 'effects'>('project');
-const rightTab = ref<'effects' | 'properties' | 'camera' | 'audio'>('effects');
+const rightTab = ref<'effects' | 'properties' | 'camera' | 'audio'>('properties');
 const viewportTab = ref<'composition' | 'layer' | 'footage'>('composition');
 
 const viewZoom = ref('fit');

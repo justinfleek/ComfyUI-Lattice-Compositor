@@ -12,10 +12,12 @@ interface AnimatedTextOptions {
   fontFamily?: string;
   fontSize?: number;
   fontWeight?: string;
+  fontStyle?: 'normal' | 'italic';
   fill?: string;
   stroke?: string;
   strokeWidth?: number;
   letterSpacing?: number;
+  textAlign?: 'left' | 'center' | 'right';
   pathLayerId?: string | null;
   pathOffset?: number;
   selectable?: boolean;
@@ -29,10 +31,12 @@ export class AnimatedText extends Group {
     fontFamily: 'Arial',
     fontSize: 48,
     fontWeight: '400',
+    fontStyle: 'normal',
     fill: '#ffffff',
     stroke: '',
     strokeWidth: 0,
     letterSpacing: 0,
+    textAlign: 'left',
     pathLayerId: null,
     pathOffset: 0,
     selectable: true
@@ -42,10 +46,12 @@ export class AnimatedText extends Group {
   declare fontFamily: string;
   declare fontSize: number;
   declare fontWeight: string;
+  declare fontStyle: 'normal' | 'italic';
   declare textFill: string;
   declare textStroke: string;
   declare textStrokeWidth: number;
   declare letterSpacing: number;
+  declare textAlign: 'left' | 'center' | 'right';
   declare pathLayerId: string | null;
   declare pathOffset: number;
   declare _letterObjects: FabricText[];
@@ -62,10 +68,12 @@ export class AnimatedText extends Group {
     this.fontFamily = options.fontFamily || 'Arial';
     this.fontSize = options.fontSize || 48;
     this.fontWeight = options.fontWeight || '400';
+    this.fontStyle = options.fontStyle || 'normal';
     this.textFill = options.fill || '#ffffff';
     this.textStroke = options.stroke || '';
     this.textStrokeWidth = options.strokeWidth || 0;
     this.letterSpacing = options.letterSpacing || 0;
+    this.textAlign = options.textAlign || 'left';
     this.pathLayerId = options.pathLayerId || null;
     this.pathOffset = options.pathOffset || 0;
     this._letterObjects = [];
@@ -91,6 +99,7 @@ export class AnimatedText extends Group {
         fontFamily: this.fontFamily,
         fontSize: this.fontSize,
         fontWeight: this.fontWeight,
+        fontStyle: this.fontStyle,
         fill: this.textFill,
         stroke: this.textStroke,
         strokeWidth: this.textStrokeWidth,
@@ -218,11 +227,26 @@ export class AnimatedText extends Group {
     }
   }
 
-  setFont(family: string, size: number, weight?: string): void {
+  setFont(family: string, size: number, weight?: string, style?: 'normal' | 'italic'): void {
     this.fontFamily = family;
     this.fontSize = size;
     if (weight) this.fontWeight = weight;
+    if (style) this.fontStyle = style;
     this._createLetterObjects();
+  }
+
+  setFontStyle(style: 'normal' | 'italic'): void {
+    this.fontStyle = style;
+    for (const letter of this._letterObjects) {
+      letter.set('fontStyle', style);
+    }
+    this.dirty = true;
+  }
+
+  setTextAlign(align: 'left' | 'center' | 'right'): void {
+    this.textAlign = align;
+    this._layoutLettersHorizontal();
+    this.dirty = true;
   }
 
   setFillColor(color: string): void {
