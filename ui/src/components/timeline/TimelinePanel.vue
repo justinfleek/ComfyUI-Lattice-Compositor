@@ -186,25 +186,82 @@ function drawRuler() {
   ctx.font = '11px sans-serif';
 
   const ppf = pixelsPerFrame.value;
-  // Dynamic tick step based on zoom
-  let step = 10;
-  if (ppf < 5) step = 20;
+
+  // Dynamic tick step based on zoom level - ensure labels don't overlap
+  // At low ppf (zoomed out), we need larger steps
+  // At high ppf (zoomed in), we can show every frame
+  let majorStep: number;
+  let minorStep: number;
+
+  if (ppf >= 20) {
+    // Very zoomed in: show every frame
+    majorStep = 1;
+    minorStep = 0; // No minor ticks needed
+  } else if (ppf >= 10) {
+    // Zoomed in: major every 5, minor every 1
+    majorStep = 5;
+    minorStep = 1;
+  } else if (ppf >= 5) {
+    // Medium zoom: major every 10, minor every 5
+    majorStep = 10;
+    minorStep = 5;
+  } else if (ppf >= 2) {
+    // Zoomed out: major every 20, minor every 10
+    majorStep = 20;
+    minorStep = 10;
+  } else if (ppf >= 1) {
+    // Very zoomed out: major every 50, minor every 25
+    majorStep = 50;
+    minorStep = 25;
+  } else if (ppf >= 0.5) {
+    // Extremely zoomed out: major every 100, minor every 50
+    majorStep = 100;
+    minorStep = 50;
+  } else {
+    // Ultra zoomed out: major every 200, no minor ticks
+    majorStep = 200;
+    minorStep = 0;
+  }
 
   // Loop EXACTLY to frameCount - no extra frames
   for (let f = 0; f <= store.frameCount; f++) {
     const x = f * ppf;
-    if (f % step === 0) {
+
+    if (f % majorStep === 0) {
       // Major Tick
-      ctx.beginPath(); ctx.moveTo(x, 15); ctx.lineTo(x, 30); ctx.stroke();
-      ctx.fillText(String(f), x + 4, 12);
-    } else if (f % (step / 2) === 0) {
+      ctx.strokeStyle = '#888';
+      ctx.beginPath();
+      ctx.moveTo(x, 12);
+      ctx.lineTo(x, 30);
+      ctx.stroke();
+
+      // Label - ensure minimum spacing between labels
+      const labelText = String(f);
+      const textMetrics = ctx.measureText(labelText);
+      const nextLabelX = (f + majorStep) * ppf;
+      const minSpacing = textMetrics.width + 20;
+
+      // Only draw label if there's enough space
+      if (nextLabelX - x >= minSpacing || f === 0 || f >= store.frameCount - majorStep) {
+        ctx.fillStyle = '#ccc';
+        ctx.fillText(labelText, x + 3, 10);
+      }
+    } else if (minorStep > 0 && f % minorStep === 0) {
       // Minor Tick
-      ctx.beginPath(); ctx.moveTo(x, 22); ctx.lineTo(x, 30); ctx.stroke();
+      ctx.strokeStyle = '#555';
+      ctx.beginPath();
+      ctx.moveTo(x, 22);
+      ctx.lineTo(x, 30);
+      ctx.stroke();
     }
   }
 
   // Draw bottom border line
-  ctx.beginPath(); ctx.moveTo(0, 29.5); ctx.lineTo(cvs.width, 29.5); ctx.stroke();
+  ctx.strokeStyle = '#444';
+  ctx.beginPath();
+  ctx.moveTo(0, 29.5);
+  ctx.lineTo(cvs.width, 29.5);
+  ctx.stroke();
 }
 
 function startRulerScrub(e: MouseEvent) {
@@ -324,15 +381,28 @@ watch(() => [computedWidthStyle.value, pixelsPerFrame.value, store.frameCount], 
   position: absolute; top: 0; width: 2px; height: 30px;
   background: #e74c3c; z-index: 20; pointer-events: none;
 }
+/* Playhead triangle at top */
+.playhead-head::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 10px solid #e74c3c;
+}
 /* Playhead Hit Area - Invisible but wider for easier grabbing */
 .playhead-hit-area {
-  position: absolute; top: 0; bottom: 0; width: 20px;
-  margin-left: -10px; /* Center on position */
+  position: absolute; top: 0; bottom: 0; width: 24px;
+  margin-left: -12px; /* Center on position */
   background: transparent;
   z-index: 30; cursor: ew-resize;
 }
 .playhead-hit-area:hover {
-  background: rgba(231, 76, 60, 0.1); /* Slight highlight on hover */
+  background: rgba(231, 76, 60, 0.15); /* Slight highlight on hover */
 }
 
 .playhead-line { position: absolute; top: 0; bottom: 0; width: 1px; background: #e74c3c; pointer-events: none; z-index: 10; }

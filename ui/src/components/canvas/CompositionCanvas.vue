@@ -516,8 +516,8 @@ function renderSplineLayers() {
     splineObj.set({
       left: position.x,
       top: position.y,
-      scaleX: scale.x,
-      scaleY: scale.y,
+      scaleX: scale.x / 100,  // Convert from percentage (100 = 100%) to multiplier (1.0)
+      scaleY: scale.y / 100,
       angle: rotation,
       opacity: opacity,
       visible: layer.visible,
@@ -575,8 +575,8 @@ function renderSolidLayers() {
     solidObj.set({
       left: position.x,
       top: position.y,
-      scaleX: scale.x,
-      scaleY: scale.y,
+      scaleX: scale.x / 100,  // Convert from percentage (100 = 100%) to multiplier (1.0)
+      scaleY: scale.y / 100,
       angle: rotation,
       opacity: opacity,
       visible: layer.visible,
@@ -640,12 +640,16 @@ function renderNullLayers() {
       nullGroup = { h: horizontalLine, v: verticalLine };
     }
 
+    // Convert scale from percentage (100 = 100%) to multiplier
+    const scaleMultX = scale.x / 100;
+    const scaleMultY = scale.y / 100;
+
     nullGroup.h.set({
-      left: posX - (crosshairSize * scale.x) / 2,
+      left: posX - (crosshairSize * scaleMultX) / 2,
       top: posY - 1,
-      width: crosshairSize * scale.x,
+      width: crosshairSize * scaleMultX,
       scaleX: 1,
-      scaleY: scale.y,
+      scaleY: scaleMultY,
       angle: rotation,
       opacity: opacity,
       visible: layer.visible
@@ -653,10 +657,10 @@ function renderNullLayers() {
 
     nullGroup.v.set({
       left: posX - 1,
-      top: posY - (crosshairSize * scale.y) / 2,
+      top: posY - (crosshairSize * scaleMultY) / 2,
       width: 2,
-      height: crosshairSize * scale.y,
-      scaleX: scale.x,
+      height: crosshairSize * scaleMultY,
+      scaleX: scaleMultX,
       scaleY: 1,
       angle: rotation,
       opacity: opacity,
@@ -735,8 +739,8 @@ function renderTextLayers() {
       top: posY,
       originX: 'center',
       originY: 'center',
-      scaleX: scale.x,
-      scaleY: scale.y,
+      scaleX: scale.x / 100,  // Convert from percentage (100 = 100%) to multiplier (1.0)
+      scaleY: scale.y / 100,
       angle: rotation,
       opacity: opacity,
       visible: layer.visible,

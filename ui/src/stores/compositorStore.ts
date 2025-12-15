@@ -240,12 +240,13 @@ export const useCompositorStore = defineStore('compositor', {
           layerData = {
             text: 'Text',
             fontFamily: 'Arial',
-            fontSize: 48,
+            fontSize: 72,
             fontWeight: '400',
             fontStyle: 'normal',
             fill: '#ffffff',
             stroke: '',
             strokeWidth: 0,
+            tracking: 0,
             letterSpacing: 0,
             lineHeight: 1.2,
             textAlign: 'left',
@@ -366,10 +367,13 @@ export const useCompositorStore = defineStore('compositor', {
           layerData = {
             lightType: 'point',
             color: '#ffffff',
-            intensity: 1,
+            intensity: 100,
             radius: 500,
-            falloff: 'quadratic',
-            castShadows: false
+            falloff: 'none',
+            falloffDistance: 500,
+            castShadows: false,
+            shadowDarkness: 100,
+            shadowDiffusion: 0
           };
           break;
 
@@ -1026,7 +1030,7 @@ export const useCompositorStore = defineStore('compositor', {
       const textData: TextData = {
         text,
         fontFamily: 'Arial',
-        fontSize: 24,
+        fontSize: 72,
         fontWeight: '400',
         fontStyle: 'normal',
         fill: '#ffffff',
@@ -1066,7 +1070,7 @@ export const useCompositorStore = defineStore('compositor', {
       // --- TEXT PROPERTIES (Timeline) ---
 
       // Text Section
-      layer.properties.push(createAnimatableProperty('Font Size', 24, 'number', 'Text'));
+      layer.properties.push(createAnimatableProperty('Font Size', 72, 'number', 'Text'));
       layer.properties.push(createAnimatableProperty('Fill Color', '#ffffff', 'color', 'Text'));
       layer.properties.push(createAnimatableProperty('Stroke Color', '#000000', 'color', 'Text'));
       layer.properties.push(createAnimatableProperty('Stroke Width', 0, 'number', 'Text'));

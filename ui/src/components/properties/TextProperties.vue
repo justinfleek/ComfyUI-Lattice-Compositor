@@ -12,19 +12,25 @@
 
     <div class="prop-section">
       <div class="section-title">Character</div>
-      <div class="row">
-         <select :value="textData.fontFamily" @change="e => updateData('fontFamily', (e.target as HTMLSelectElement).value)" class="font-select">
-            <option value="Arial">Arial</option>
-            <option value="Helvetica">Helvetica</option>
-            <option value="Times New Roman">Times New Roman</option>
-            <option value="Courier New">Courier New</option>
-            <option value="Verdana">Verdana</option>
-            <option value="Georgia">Georgia</option>
+      <div class="row font-row">
+         <select :value="textData.fontFamily" @change="e => handleFontChange((e.target as HTMLSelectElement).value)" class="font-select">
+            <template v-for="category in fontCategories" :key="category.name">
+              <optgroup :label="category.name">
+                <option v-for="font in category.fonts" :key="font.family" :value="font.family">
+                  {{ font.family }}
+                </option>
+              </optgroup>
+            </template>
          </select>
          <div class="style-toggles">
             <button :class="{active: textData.fontWeight === 'bold'}" @click="toggleBold">B</button>
             <button :class="{active: textData.fontStyle === 'italic'}" @click="toggleItalic">I</button>
          </div>
+      </div>
+      <div class="row" v-if="!hasSystemFonts">
+         <button class="font-access-btn" @click="requestFontAccess" :disabled="loadingFonts">
+           {{ loadingFonts ? 'Loading...' : '+ Load System Fonts' }}
+         </button>
       </div>
 
       <div class="row">
@@ -129,13 +135,39 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 import { useCompositorStore } from '@/stores/compositorStore';
 import { ScrubableNumber } from '@/components/controls';
+import { fontService, type FontCategory } from '@/services/fontService';
 
 const props = defineProps<{ layer: any }>();
 const emit = defineEmits(['update']);
 const store = useCompositorStore();
+
+// Font loading state
+const fontCategories = ref<FontCategory[]>([]);
+const hasSystemFonts = ref(false);
+const loadingFonts = ref(false);
+
+onMounted(async () => {
+  await fontService.initialize();
+  fontCategories.value = fontService.getFontCategories();
+  hasSystemFonts.value = fontService.hasSystemFonts();
+});
+
+// Request system font access (requires user interaction)
+async function requestFontAccess() {
+  loadingFonts.value = true;
+  try {
+    const success = await fontService.requestSystemFontAccess();
+    if (success) {
+      fontCategories.value = fontService.getFontCategories();
+      hasSystemFonts.value = true;
+    }
+  } finally {
+    loadingFonts.value = false;
+  }
+}
 
 const textData = computed(() => props.layer.data);
 const transform = computed(() => props.layer.transform);
@@ -220,6 +252,13 @@ function toggleBold() {
 function toggleItalic() {
     updateData('fontStyle', textData.value.fontStyle === 'italic' ? 'normal' : 'italic');
 }
+
+// Handle font change - ensure Google fonts are loaded
+async function handleFontChange(family: string) {
+    // Ensure the font is loaded before applying
+    await fontService.ensureFont(family);
+    updateData('fontFamily', family);
+}
 </script>
 
 <style scoped>
@@ -233,8 +272,26 @@ function toggleItalic() {
 .text-area { width: 100%; background: #222; border: 1px solid #444; color: #fff; padding: 8px; font-family: sans-serif; resize: vertical; border-radius: 3px; }
 .text-area:focus { border-color: #4a90d9; outline: none; }
 
-.font-select, .full-select { flex: 1; background: #222; color: #fff; border: 1px solid #444; padding: 6px; border-radius: 3px; }
+.font-select, .full-select { flex: 1; background: #222; color: #fff; border: 1px solid #444; padding: 6px; border-radius: 3px; max-width: 200px; }
 .font-select:focus, .full-select:focus { border-color: #4a90d9; outline: none; }
+.font-select optgroup { color: #888; font-style: normal; background: #1a1a1a; }
+.font-select option { color: #fff; background: #222; padding: 4px; }
+
+.font-row { flex-wrap: nowrap; }
+
+.font-access-btn {
+  flex: 1;
+  background: #333;
+  border: 1px dashed #555;
+  color: #888;
+  padding: 8px 12px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 11px;
+  transition: all 0.2s;
+}
+.font-access-btn:hover:not(:disabled) { background: #444; color: #aaa; border-color: #666; }
+.font-access-btn:disabled { cursor: not-allowed; opacity: 0.6; }
 
 .style-toggles { display: flex; gap: 2px; }
 .style-toggles button { background: #333; border: 1px solid #444; color: #aaa; width: 28px; height: 28px; cursor: pointer; font-weight: bold; border-radius: 3px; }
