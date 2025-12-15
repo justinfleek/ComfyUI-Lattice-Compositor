@@ -11,7 +11,12 @@
 
       <div class="header-center">
         <div class="tool-group add-layer-wrapper" ref="addLayerContainer">
-          <button class="add-layer-btn" :class="{ active: showAddLayerMenu }" @click.stop="toggleAddLayerMenu">
+          <button
+            class="add-layer-btn"
+            :class="{ active: showAddLayerMenu }"
+            @mousedown.stop.prevent="toggleAddLayerMenu"
+            title="Add New Layer"
+          >
             <span class="icon">+</span> Layer
           </button>
           <div v-if="showAddLayerMenu" class="add-layer-menu">
@@ -230,12 +235,14 @@ onUnmounted(() => {
 
 <style scoped>
 .timeline-panel { display: flex; flex-direction: column; height: 100%; background: #111; color: #eee; font-family: 'Segoe UI', sans-serif; font-size: 13px; }
-.timeline-header { height: 40px; background: #2a2a2a; border-bottom: 1px solid #000; display: flex; justify-content: space-between; padding: 0 10px; align-items: center; }
+.timeline-header { height: 40px; background: #2a2a2a; border-bottom: 1px solid #000; display: flex; justify-content: space-between; padding: 0 10px; align-items: center; z-index: 20; position: relative; }
 .header-left, .header-center, .header-right { display: flex; gap: 10px; align-items: center; }
-.add-layer-menu { position: absolute; top: 100%; left: 0; background: #333; z-index: 1000; border: 1px solid #000; display: flex; flex-direction: column; min-width: 120px; }
-.add-layer-menu button { text-align: left; padding: 8px; border: none; background: transparent; color: #eee; cursor: pointer; }
-.add-layer-menu button:hover { background: #4a90d9; }
+.add-layer-wrapper { position: relative; }
+.add-layer-menu { position: absolute; top: 100%; left: 0; background: #333; z-index: 9999; border: 1px solid #000; display: flex; flex-direction: column; min-width: 140px; box-shadow: 0 4px 8px rgba(0,0,0,0.5); }
+.add-layer-menu button { text-align: left; padding: 10px; border: none; background: transparent; color: #eee; cursor: pointer; border-bottom: 1px solid #444; }
+.add-layer-menu button:hover { background: #4a90d9; color: white; }
 .add-layer-btn { padding: 6px 12px; background: #444; border: 1px solid #555; color: white; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold; }
+.add-layer-btn:hover, .add-layer-btn.active { background: #555; }
 
 .timeline-content { flex: 1; display: flex; overflow: hidden; }
 .timeline-sidebar { background: #1e1e1e; border-right: 1px solid #000; display: flex; flex-direction: column; flex-shrink: 0; }

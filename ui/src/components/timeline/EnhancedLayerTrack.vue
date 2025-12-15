@@ -1,22 +1,22 @@
 <template>
   <div class="track-wrapper" v-if="layer">
     <template v-if="layoutMode === 'sidebar'">
-      <div class="sidebar-row" :class="{ selected: isSelected }" :style="gridStyle" @click="selectLayer">
-        <div class="arrow-col" @click.stop="toggleExpand">
+      <div class="sidebar-row" :class="{ selected: isSelected }" :style="gridStyle" @mousedown="selectLayer">
+        <div class="arrow-col" @mousedown.stop="toggleExpand">
           <span class="arrow">{{ isExpanded ? '▼' : '▶' }}</span>
         </div>
-        <div class="label-box" @click.stop="toggleColorPicker" :style="{ background: layer.labelColor || '#999' }"></div>
+        <div class="label-box" @mousedown.stop="toggleColorPicker" :style="{ background: layer.labelColor || '#999' }"></div>
         <div class="layer-id">{{ index }}</div>
-        <div class="icon-col" @click.stop="toggleVis">{{ layer.visible ? '👁' : '•' }}</div>
-        <div class="icon-col" @click.stop="toggleLock">{{ layer.locked ? '🔒' : '🔓' }}</div>
-        <div class="icon-col cube-icon" :class="{ active: layer.threeD }" @click.stop="store.toggleLayer3D(layer.id)">⬡</div>
+        <div class="icon-col" @mousedown.stop="toggleVis">{{ layer.visible ? '👁' : '•' }}</div>
+        <div class="icon-col" @mousedown.stop="toggleLock">{{ layer.locked ? '🔒' : '🔓' }}</div>
+        <div class="icon-col cube-icon" :class="{ active: layer.threeD }" @mousedown.stop="store.toggleLayer3D(layer.id)">⬡</div>
         <div class="layer-name-col" @dblclick.stop="startRename">
           <span class="type-icon">{{ getLayerIcon(layer.type) }}</span>
           <span v-if="!isRenaming" class="name-text">{{ layer.name }}</span>
           <input v-else v-model="renameVal" @blur="saveRename" @keydown.enter="saveRename" class="rename-input" ref="renameInput" />
         </div>
         <div class="col-mode">
-          <select :value="layer.blendMode" class="mini-select" @change="setBlendMode">
+          <select :value="layer.blendMode" class="mini-select" @change="setBlendMode" @mousedown.stop>
             <option value="normal">Normal</option>
             <option value="add">Add</option>
             <option value="multiply">Mult</option>
@@ -24,7 +24,7 @@
           </select>
         </div>
         <div class="col-parent">
-          <select :value="layer.parentId || ''" class="mini-select" @change="setParent">
+          <select :value="layer.parentId || ''" class="mini-select" @change="setParent" @mousedown.stop>
             <option value="">None</option>
             <option v-for="p in availableParents" :key="p.id" :value="p.id">{{ p.index }}</option>
           </select>
@@ -33,7 +33,7 @@
 
       <div v-if="isExpanded" class="children-container">
         <div v-for="(groupProps, groupName) in groupedProperties" :key="groupName" class="property-group">
-          <div class="group-header sidebar-row" :style="gridStyle" @click="toggleGroup(groupName)">
+          <div class="group-header sidebar-row" :style="gridStyle" @mousedown.stop="toggleGroup(groupName)">
              <div class="arrow-col"><span class="arrow">{{ expandedGroups.includes(groupName) ? '▼' : '▶' }}</span></div>
              <div class="group-label">{{ groupName }}</div>
           </div>
@@ -48,7 +48,7 @@
     </template>
 
     <template v-else>
-      <div class="layer-row track-bg">
+      <div class="layer-row track-bg" @mousedown="selectLayer">
         <div class="duration-bar" :style="barStyle" @mousedown.stop="startDrag">
            <div class="bar-fill" :style="{ background: layer.labelColor || '#777' }"></div>
         </div>
@@ -100,8 +100,19 @@ const groupedProperties = computed(() => {
 
   add('transform.anchorPoint', 'Anchor Point', t.anchorPoint);
   add('transform.position', 'Position', t.position);
-  // Note: PropertyTrack will automatically show X, Y, Z inputs if position.value.z exists
-  // No need for separate Z Position row - toggleLayer3D adds z to position.value when 3D enabled
+
+  // FIX: Check VALUE.z to show Z Position row for 3D layers
+  if (props.layer.threeD) {
+      const zVal = t.position?.value?.z;
+      if (zVal !== undefined) {
+          transformProps.push({
+              path: 'transform.position.z',
+              name: 'Z Position',
+              property: { value: zVal, animated: false, keyframes: [] }
+          });
+      }
+  }
+
   add('transform.scale', 'Scale', t.scale);
 
   if (props.layer.threeD) {
@@ -151,8 +162,8 @@ function toggleColorPicker() { /* Color logic */ }
 
 <style scoped>
 .track-wrapper { display: flex; flex-direction: column; width: 100%; }
-.sidebar-row { /* Styles controlled by gridStyle prop now, just basics here */ border-bottom: 1px solid #2a2a2a; background: #1e1e1e; color: #ccc; font-size: 13px; user-select: none; }
-.sidebar-row.selected { background: #333; color: #fff; }
+.sidebar-row { border-bottom: 1px solid #2a2a2a; background: #1e1e1e; color: #ccc; font-size: 13px; user-select: none; cursor: pointer; }
+.sidebar-row.selected { background: #333; color: #fff; border-left: 2px solid #4a90d9; }
 .arrow-col, .icon-col { display: flex; justify-content: center; align-items: center; cursor: pointer; color: #888; height: 100%; }
 .arrow-col:hover, .icon-col:hover { color: #fff; }
 .icon-col.active { color: #4a90d9; }
