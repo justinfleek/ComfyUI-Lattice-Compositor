@@ -163,18 +163,18 @@ onMounted(() => {
   // Render loop watchers
   watch(() => store.layers, () => {
       renderSplineLayers();
-      renderTextLayers();
       renderSolidLayers();
       renderNullLayers();
+      renderTextLayers();  // Renders last, then calls syncLayerZOrder
       syncParticleSystems();
       syncDepthflowRenderers();
   }, { deep: true, immediate: true });
 
   watch(() => store.currentFrame, () => {
     renderSplineLayers();
-    renderTextLayers();
     renderSolidLayers();
     renderNullLayers();
+    renderTextLayers();  // Renders last, then calls syncLayerZOrder
   });
 
   watch(() => [store.width, store.height], updateCompositionBounds, { immediate: false });
@@ -488,7 +488,7 @@ function renderSplineLayers() {
     if (!splineData) continue;
 
     let splineObj = splineObjects.value.get(layer.id);
-    const position = getAnimatedValue(layer.transform?.position, { x: 0, y: 0 });
+    const position = getAnimatedValue(layer.transform?.position, { x: 0, y: 0, z: 0 });
     const scale = getAnimatedValue(layer.transform?.scale, { x: 100, y: 100 });
     const rotation = getAnimatedValue(layer.transform?.rotation, 0);
     const opacity = getAnimatedValue(layer.opacity, 100) / 100;
@@ -546,7 +546,7 @@ function renderSolidLayers() {
 
   for (const layer of solidLayers) {
     let solidObj = solidObjects.value.get(layer.id);
-    const position = getAnimatedValue(layer.transform?.position, { x: 0, y: 0 });
+    const position = getAnimatedValue(layer.transform?.position, { x: 0, y: 0, z: 0 });
     const scale = getAnimatedValue(layer.transform?.scale, { x: 100, y: 100 });
     const rotation = getAnimatedValue(layer.transform?.rotation, 0);
     const opacity = getAnimatedValue(layer.opacity, 100) / 100;
@@ -603,7 +603,7 @@ function renderNullLayers() {
 
   for (const layer of nullLayers) {
     let nullGroup = nullObjects.value.get(layer.id);
-    const position = getAnimatedValue(layer.transform?.position, { x: 0, y: 0 });
+    const position = getAnimatedValue(layer.transform?.position, { x: 0, y: 0, z: 0 });
     const scale = getAnimatedValue(layer.transform?.scale, { x: 100, y: 100 });
     const rotation = getAnimatedValue(layer.transform?.rotation, 0);
     const opacity = getAnimatedValue(layer.opacity, 100) / 100;
@@ -692,9 +692,9 @@ function renderTextLayers() {
     if (!textData) continue;
 
     let textObj = textObjects.value.get(layer.id);
-    const position = getAnimatedValue(layer.transform?.position, { x: 0, y: 0 });
-    const anchorPoint = getAnimatedValue(layer.transform?.anchorPoint, { x: 0, y: 0 });
-    const scale = getAnimatedValue(layer.transform?.scale, { x: 100, y: 100 });  // Default 100% not 1
+    const position = getAnimatedValue(layer.transform?.position, { x: 0, y: 0, z: 0 });
+    const anchorPoint = getAnimatedValue(layer.transform?.anchorPoint, { x: 0, y: 0, z: 0 });
+    const scale = getAnimatedValue(layer.transform?.scale, { x: 100, y: 100, z: 100 });  // Default 100%
     const rotation = getAnimatedValue(layer.transform?.rotation, 0);
     const opacity = getAnimatedValue(layer.opacity, 100) / 100;
     const centerX = (store.width || 1920) / 2;
@@ -802,6 +802,73 @@ function renderTextLayers() {
     }
   }
   canvas.requestRenderAll();
+
+  // After rendering all layers, sync Z-order
+  syncLayerZOrder();
+}
+
+/**
+ * Synchronize Fabric.js object stacking order based on layer Z position.
+ * Higher Z = closer to camera = rendered on top.
+ * This ensures 3D layers render in the correct depth order.
+ */
+function syncLayerZOrder() {
+  const canvas = fabricCanvas.value;
+  if (!canvas) return;
+
+  // Collect all layer objects with their Z positions
+  type LayerZInfo = { layerId: string; zPos: number; obj: FabricObject };
+  const layerZInfos: LayerZInfo[] = [];
+
+  // Helper to get Z position from layer
+  const getLayerZ = (layer: any): number => {
+    if (!layer.threeD) return 0;
+    const pos = layer.transform?.position?.value;
+    return pos?.z ?? 0;
+  };
+
+  // Collect from all object maps
+  for (const layer of store.layers) {
+    const z = getLayerZ(layer);
+
+    // Text objects
+    const textObj = textObjects.value.get(layer.id);
+    if (textObj) {
+      layerZInfos.push({ layerId: layer.id, zPos: z, obj: textObj as unknown as FabricObject });
+    }
+
+    // Spline objects
+    const splineObj = splineObjects.value.get(layer.id);
+    if (splineObj) {
+      layerZInfos.push({ layerId: layer.id, zPos: z, obj: splineObj as unknown as FabricObject });
+    }
+
+    // Solid objects
+    const solidObj = solidObjects.value.get(layer.id);
+    if (solidObj) {
+      layerZInfos.push({ layerId: layer.id, zPos: z, obj: solidObj as unknown as FabricObject });
+    }
+
+    // Null objects (both horizontal and vertical lines)
+    const nullObj = nullObjects.value.get(layer.id);
+    if (nullObj) {
+      layerZInfos.push({ layerId: layer.id, zPos: z, obj: nullObj.h as unknown as FabricObject });
+      layerZInfos.push({ layerId: layer.id, zPos: z, obj: nullObj.v as unknown as FabricObject });
+    }
+  }
+
+  // Sort by Z position (ascending = furthest first, so they render behind)
+  // Lower Z = further from camera = render first (behind)
+  // Higher Z = closer to camera = render last (on top)
+  layerZInfos.sort((a, b) => a.zPos - b.zPos);
+
+  // Reorder objects in canvas
+  // moveTo uses index where 0 is bottom (behind everything)
+  layerZInfos.forEach((info, index) => {
+    // Skip the composition bounds rect (always at bottom)
+    const baseIndex = compositionBounds.value ? 1 : 0;
+    canvas.moveTo(info.obj, baseIndex + index);
+  });
 }
 
 // Event handlers for SplineEditor
