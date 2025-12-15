@@ -1,1 +1,12 @@
 ui/node_modules/
+frontend/node_modules/
+
+# Internal testing - never push
+reference_images/
+screenshots/
+*.md
+!README.md
+
+# Python
+__pycache__/
+*.pyc
