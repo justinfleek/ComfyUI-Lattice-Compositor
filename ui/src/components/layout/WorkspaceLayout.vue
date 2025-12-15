@@ -172,18 +172,10 @@
                     >
                       <span class="icon">▦</span>
                     </button>
-                    <button
-                      :class="{ active: useThreeCanvas }"
-                      @click="useThreeCanvas = !useThreeCanvas"
-                      :title="useThreeCanvas ? 'Using Three.js (click for Fabric.js)' : 'Using Fabric.js (click for Three.js)'"
-                    >
-                      <span class="icon">{{ useThreeCanvas ? '3D' : '2D' }}</span>
-                    </button>
                   </div>
                 </div>
                 <div class="viewport-content">
-                  <ThreeCanvas v-if="viewportTab === 'composition' && useThreeCanvas" ref="threeCanvasRef" />
-                  <CompositionCanvas v-else-if="viewportTab === 'composition'" ref="canvasRef" />
+                  <ThreeCanvas v-if="viewportTab === 'composition'" ref="threeCanvasRef" />
                   <ViewportRenderer
                     v-else
                     :camera="activeCamera"
@@ -308,7 +300,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { Splitpanes, Pane } from 'splitpanes';
 import 'splitpanes/dist/splitpanes.css';
 
@@ -327,7 +319,6 @@ import AudioPanel from '@/components/panels/AudioPanel.vue';
 
 // Viewport
 import ViewportRenderer from '@/components/viewport/ViewportRenderer.vue';
-import CompositionCanvas from '@/components/canvas/CompositionCanvas.vue';
 import ThreeCanvas from '@/components/canvas/ThreeCanvas.vue';
 
 // Timeline
@@ -359,12 +350,10 @@ const showGraphEditor = ref(false);
 const showExportDialog = ref(false);
 const showComfyUIExportDialog = ref(false);
 const showCompositionSettingsDialog = ref(false);
-const useThreeCanvas = ref(true); // Toggle between Fabric.js and Three.js canvas
 
 const isPlaying = ref(false);
 const gpuTier = ref<GPUTier['tier']>('cpu');
 
-const canvasRef = ref<InstanceType<typeof CompositionCanvas> | null>(null);
 const threeCanvasRef = ref<InstanceType<typeof ThreeCanvas> | null>(null);
 
 // Camera state - use computed to get from store, fallback to default
@@ -503,34 +492,10 @@ const activeCameraKeyframes = computed(() => {
   return store.getCameraKeyframes(activeCam.id);
 });
 
-// Sync grid/guides state with canvas
-watch(showGrid, (value) => {
-  if (canvasRef.value) {
-    canvasRef.value.showGrid = value;
-  }
-});
-
-watch(showGuides, (value) => {
-  if (canvasRef.value) {
-    canvasRef.value.showGuides = value;
-  }
-});
-
 // Handle zoom dropdown change
 function handleZoomChange() {
-  const canvas = canvasRef.value;
-  if (!canvas) return;
-
-  if (viewZoom.value === 'fit') {
-    canvas.fitToView();
-  } else {
-    const zoomVal = parseInt(viewZoom.value) / 100;
-    if (canvas.fabricCanvas) {
-      canvas.fabricCanvas.setZoom(zoomVal);
-      canvas.zoom = zoomVal;
-      canvas.fabricCanvas.requestRenderAll();
-    }
-  }
+  // TODO: Implement zoom change for ThreeCanvas
+  console.log('[WorkspaceLayout] Zoom changed to:', viewZoom.value);
 }
 
 // Keyboard shortcuts

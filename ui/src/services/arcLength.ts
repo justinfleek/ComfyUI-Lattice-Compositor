@@ -134,9 +134,10 @@ export class ArcLengthParameterizer {
 }
 
 /**
- * Convert Fabric.js path commands to Bezier.js curves
+ * Convert SVG-style path commands to Bezier.js curves
+ * Path commands format: [['M', x, y], ['C', cp1x, cp1y, cp2x, cp2y, x, y], ...]
  */
-export function fabricPathToBezier(pathCommands: any[]): Bezier | null {
+export function pathCommandsToBezier(pathCommands: any[]): Bezier | null {
   if (!pathCommands || pathCommands.length < 2) {
     return null;
   }

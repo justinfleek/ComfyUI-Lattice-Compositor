@@ -5,7 +5,7 @@
  */
 import type { WeylProject, Layer, TextData, SplineData, ParticleLayerData } from '@/types/project';
 import { interpolateProperty } from './interpolation';
-import { ArcLengthParameterizer, fabricPathToBezier } from './arcLength';
+import { ArcLengthParameterizer, pathCommandsToBezier } from './arcLength';
 import { ParticleSystem } from './particleSystem';
 
 export interface ExportProgress {
@@ -261,7 +261,7 @@ class MatteExporter {
     if (!pathCommands || pathCommands.length < 2) return;
 
     // Parse path to Bezier curve
-    const bezierCurve = fabricPathToBezier(pathCommands);
+    const bezierCurve = pathCommandsToBezier(pathCommands);
     if (!bezierCurve) return;
 
     // Create arc length parameterizer
