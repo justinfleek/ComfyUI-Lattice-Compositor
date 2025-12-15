@@ -4,7 +4,16 @@
       <span class="panel-title">Project</span>
       <div class="header-actions">
         <button @click="triggerFileImport" title="Import File (Ctrl+I)">📥</button>
-        <button @click="createNewItem" title="New Item">+</button>
+        <div class="dropdown-container">
+          <button @click="showNewMenu = !showNewMenu" title="New Item">+</button>
+          <div v-if="showNewMenu" class="dropdown-menu">
+            <button @click="createNewComposition">🎬 New Composition</button>
+            <button @click="createNewSolid">⬜ New Solid</button>
+            <button @click="createNewText">T New Text</button>
+            <button @click="createNewNull">◇ New Null</button>
+            <button @click="createNewSpline">✏ New Spline</button>
+          </div>
+        </div>
         <button @click="showSearch = !showSearch" title="Search">🔍</button>
       </div>
     </div>
@@ -129,6 +138,7 @@ const fileInputRef = ref<HTMLInputElement | null>(null);
 
 // State
 const showSearch = ref(false);
+const showNewMenu = ref(false);
 const searchQuery = ref('');
 const selectedItem = ref<string | null>(null);
 const expandedFolders = ref<string[]>(['compositions', 'footage']);
@@ -225,9 +235,34 @@ function openItem(item: ProjectItem) {
   }
 }
 
-function createNewItem() {
-  // Show new item dialog
-  console.log('Create new item');
+function createNewComposition() {
+  showNewMenu.value = false;
+  // TODO: Show composition settings dialog
+  console.log('Create new composition');
+}
+
+function createNewSolid() {
+  showNewMenu.value = false;
+  const layer = store.createLayer('solid', 'Solid');
+  console.log('[ProjectPanel] Created solid layer:', layer.id);
+}
+
+function createNewText() {
+  showNewMenu.value = false;
+  const layer = store.createTextLayer('Text');
+  console.log('[ProjectPanel] Created text layer:', layer.id);
+}
+
+function createNewNull() {
+  showNewMenu.value = false;
+  const layer = store.createLayer('null', 'Null');
+  console.log('[ProjectPanel] Created null layer:', layer.id);
+}
+
+function createNewSpline() {
+  showNewMenu.value = false;
+  const layer = store.createSplineLayer();
+  console.log('[ProjectPanel] Created spline layer:', layer.id);
 }
 
 function triggerFileImport() {
@@ -387,6 +422,38 @@ function onDragStart(item: ProjectItem, event: DragEvent) {
 .header-actions button:hover {
   background: #3a3a3a;
   color: #e0e0e0;
+}
+
+.dropdown-container {
+  position: relative;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  z-index: 100;
+  min-width: 140px;
+}
+
+.dropdown-menu button {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  color: #e0e0e0;
+  font-size: 11px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dropdown-menu button:hover {
+  background: #3a5070;
 }
 
 .search-bar {

@@ -222,11 +222,22 @@ export const useCompositorStore = defineStore('compositor', {
       this.sourceImage = inputs.source_image;
       this.depthMap = inputs.depth_map;
 
+      const oldFrameCount = this.project.composition.frameCount;
+
       // Update project composition settings
       this.project.composition.width = inputs.width;
       this.project.composition.height = inputs.height;
       this.project.composition.frameCount = inputs.frame_count;
       this.project.composition.duration = inputs.frame_count / this.project.composition.fps;
+
+      // Extend layer outPoints if frameCount increased
+      if (inputs.frame_count > oldFrameCount) {
+        for (const layer of this.project.layers) {
+          if (layer.outPoint === oldFrameCount - 1) {
+            layer.outPoint = inputs.frame_count - 1;
+          }
+        }
+      }
 
       // Store as assets
       if (inputs.source_image) {
@@ -1651,12 +1662,25 @@ export const useCompositorStore = defineStore('compositor', {
      * Used for manual resize or when importing video
      */
     resizeComposition(width: number, height: number, frameCount?: number): void {
+      const oldFrameCount = this.project.composition.frameCount;
+
       this.project.composition.width = width;
       this.project.composition.height = height;
 
       if (frameCount !== undefined) {
         this.project.composition.frameCount = frameCount;
         this.project.composition.duration = frameCount / this.project.composition.fps;
+
+        // Extend layer outPoints if frameCount increased
+        // Only extend layers that were at the old max frame
+        if (frameCount > oldFrameCount) {
+          for (const layer of this.project.layers) {
+            // If layer ended at the old composition end, extend it to new end
+            if (layer.outPoint === oldFrameCount - 1) {
+              layer.outPoint = frameCount - 1;
+            }
+          }
+        }
       }
 
       // Update current frame if it's now out of bounds

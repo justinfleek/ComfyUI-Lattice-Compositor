@@ -103,6 +103,7 @@ export class AnimatedText extends Group {
         fill: this.textFill,
         stroke: this.textStroke,
         strokeWidth: this.textStrokeWidth,
+        paintFirst: 'stroke', // Render stroke behind fill so fill is visible
         originX: 'center',
         originY: 'center',
         selectable: false,
@@ -261,7 +262,7 @@ export class AnimatedText extends Group {
     this.textStroke = color;
     this.textStrokeWidth = width;
     for (const letter of this._letterObjects) {
-      letter.set({ stroke: color, strokeWidth: width });
+      letter.set({ stroke: color, strokeWidth: width, paintFirst: 'stroke' });
     }
     this.dirty = true;
   }
