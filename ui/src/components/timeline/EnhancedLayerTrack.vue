@@ -171,7 +171,8 @@ const groupedProperties = computed(() => {
 
 const barStyle = computed(() => {
   const ppf = props.pixelsPerFrame || 10;
-  return { left: `${props.layer.inPoint * ppf}px`, width: `${(props.layer.outPoint - props.layer.inPoint) * ppf}px` };
+  // Width includes both inPoint and outPoint frames (+1 for inclusive range)
+  return { left: `${props.layer.inPoint * ppf}px`, width: `${(props.layer.outPoint - props.layer.inPoint + 1) * ppf}px` };
 });
 
 function selectLayer() { emit('select', props.layer.id); }

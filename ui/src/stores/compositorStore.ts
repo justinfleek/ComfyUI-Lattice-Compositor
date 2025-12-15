@@ -420,7 +420,7 @@ export const useCompositorStore = defineStore('compositor', {
         threeD: false,
         motionBlur: false,
         inPoint: 0,
-        outPoint: this.project.composition.frameCount, // Full duration, not -1
+        outPoint: this.project.composition.frameCount - 1, // Last frame index (0-indexed)
         parentId: null,
         blendMode: 'normal',
         opacity: createAnimatableProperty('opacity', 100, 'number'),
@@ -1441,7 +1441,7 @@ export const useCompositorStore = defineStore('compositor', {
         threeD: true,  // Cameras are always 3D
         motionBlur: false,
         inPoint: 0,
-        outPoint: this.project.composition.frameCount, // Full duration
+        outPoint: this.project.composition.frameCount - 1, // Last frame index (0-indexed)
         parentId: null,
         blendMode: 'normal',
         opacity: createAnimatableProperty('opacity', 100, 'number'),

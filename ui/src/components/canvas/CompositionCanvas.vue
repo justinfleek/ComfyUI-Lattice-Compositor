@@ -695,8 +695,19 @@ function renderTextLayers() {
     const position = getAnimatedValue(layer.transform?.position, { x: 0, y: 0, z: 0 });
     const anchorPoint = getAnimatedValue(layer.transform?.anchorPoint, { x: 0, y: 0, z: 0 });
     const scale = getAnimatedValue(layer.transform?.scale, { x: 100, y: 100, z: 100 });  // Default 100%
-    const rotation = getAnimatedValue(layer.transform?.rotation, 0);
     const opacity = getAnimatedValue(layer.opacity, 100) / 100;
+
+    // Get rotation - use rotationZ for 3D layers, rotation for 2D
+    let rotation = 0;
+    let rotationX = 0;
+    let rotationY = 0;
+    if (layer.threeD) {
+      rotationX = getAnimatedValue(layer.transform?.rotationX, 0);
+      rotationY = getAnimatedValue(layer.transform?.rotationY, 0);
+      rotation = getAnimatedValue(layer.transform?.rotationZ, 0);
+    } else {
+      rotation = getAnimatedValue(layer.transform?.rotation, 0);
+    }
     const centerX = (store.width || 1920) / 2;
     const centerY = (store.height || 1080) / 2;
 
@@ -758,14 +769,37 @@ function renderTextLayers() {
     }
 
     // Convert scale from percentage (100 = 100%) to multiplier (1.0)
-    const scaleX = scale.x / 100;
-    const scaleY = scale.y / 100;
+    let scaleX = scale.x / 100;
+    let scaleY = scale.y / 100;
+
+    // Apply 3D effects for 3D layers
+    if (layer.threeD) {
+      // Z Position: Perspective scaling - closer objects (higher Z) appear larger
+      // Using a simple linear perspective with Z=0 at normal size
+      // Positive Z = closer = larger, Negative Z = further = smaller
+      const perspectiveDistance = 1000; // Virtual camera distance
+      const zPos = position.z || 0;
+      const perspectiveFactor = perspectiveDistance / (perspectiveDistance - zPos);
+      scaleX *= perspectiveFactor;
+      scaleY *= perspectiveFactor;
+
+      // X Rotation: Simulates tilting forward/backward by compressing Y scale
+      // cos(angle) gives the foreshortening factor
+      if (rotationX !== 0) {
+        const radX = rotationX * Math.PI / 180;
+        scaleY *= Math.cos(radX);
+      }
+
+      // Y Rotation: Simulates turning left/right by compressing X scale
+      if (rotationY !== 0) {
+        const radY = rotationY * Math.PI / 180;
+        scaleX *= Math.cos(radY);
+      }
+    }
 
     textObj.set({
       left: posX,
       top: posY,
-      // Anchor point affects the transformation origin
-      // In Fabric.js, we offset the position by the anchor point
       originX: 'center',
       originY: 'center',
       scaleX: scaleX,
