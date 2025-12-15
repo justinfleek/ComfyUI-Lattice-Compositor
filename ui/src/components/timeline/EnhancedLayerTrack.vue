@@ -101,27 +101,24 @@ const groupedProperties = computed(() => {
   add('transform.anchorPoint', 'Anchor Point', t.anchorPoint);
   add('transform.position', 'Position', t.position);
 
-  // FIX: Check VALUE.z to show Z Position row for 3D layers
+  // Z Position: Trust the layer.threeD flag. Pass the position property for Z extraction.
   if (props.layer.threeD) {
-      const zVal = t.position?.value?.z;
-      if (zVal !== undefined) {
-          transformProps.push({
-              path: 'transform.position.z',
-              name: 'Z Position',
-              property: { value: zVal, animated: false, keyframes: [] }
-          });
-      }
+    transformProps.push({
+      path: 'transform.position.z',
+      name: 'Z Position',
+      property: t.position // Pass full position property, PropertyTrack handles .z
+    });
   }
 
   add('transform.scale', 'Scale', t.scale);
 
   if (props.layer.threeD) {
-      if(t.orientation) transformProps.push({ path: 'transform.orientation', name: 'Orientation', property: t.orientation });
-      if(t.rotationX) transformProps.push({ path: 'transform.rotationX', name: 'X Rotation', property: t.rotationX });
-      if(t.rotationY) transformProps.push({ path: 'transform.rotationY', name: 'Y Rotation', property: t.rotationY });
-      if(t.rotationZ) transformProps.push({ path: 'transform.rotationZ', name: 'Z Rotation', property: t.rotationZ });
+    if (t.orientation) transformProps.push({ path: 'transform.orientation', name: 'Orientation', property: t.orientation });
+    if (t.rotationX) transformProps.push({ path: 'transform.rotationX', name: 'X Rotation', property: t.rotationX });
+    if (t.rotationY) transformProps.push({ path: 'transform.rotationY', name: 'Y Rotation', property: t.rotationY });
+    if (t.rotationZ) transformProps.push({ path: 'transform.rotationZ', name: 'Z Rotation', property: t.rotationZ });
   } else {
-      if(t.rotation) transformProps.push({ path: 'transform.rotation', name: 'Rotation', property: t.rotation });
+    if (t.rotation) transformProps.push({ path: 'transform.rotation', name: 'Rotation', property: t.rotation });
   }
   if (props.layer.opacity) transformProps.push({ path: 'opacity', name: 'Opacity', property: props.layer.opacity });
 
@@ -129,11 +126,11 @@ const groupedProperties = computed(() => {
 
   // Custom Properties (Text, etc.)
   if (props.layer.properties) {
-      props.layer.properties.forEach((p: any) => {
-          const g = p.group || 'Properties';
-          if (!groups[g]) groups[g] = [];
-          groups[g].push({ path: p.name, name: p.name, property: p });
-      });
+    props.layer.properties.forEach((p: any) => {
+      const g = p.group || 'Properties';
+      if (!groups[g]) groups[g] = [];
+      groups[g].push({ path: p.name, name: p.name, property: p });
+    });
   }
   return groups;
 });

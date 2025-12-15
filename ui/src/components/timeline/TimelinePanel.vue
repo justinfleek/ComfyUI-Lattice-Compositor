@@ -121,12 +121,11 @@ const viewportWidth = ref(1000); // Default, updated by observer
 const filteredLayers = computed(() => store.layers || []);
 const playheadPosition = computed(() => store.currentFrame * pixelsPerFrame.value);
 
-// CSS Width string - Fixes the scroll issue
+// Width calculation - EXACT frame count, no buffer
 const computedWidthStyle = computed(() => {
-  const contentPx = (store.frameCount + 5) * pixelsPerFrame.value; // Small buffer
-  // If content is smaller than view, force 100% to fill background.
-  // If content is larger, use pixel width to enable scrolling.
-  return contentPx > viewportWidth.value ? `${contentPx}px` : '100%';
+  const frameWidth = store.frameCount * pixelsPerFrame.value;
+  // Use max of frame width or viewport to fill screen when zoomed out
+  return Math.max(frameWidth, viewportWidth.value) + 'px';
 });
 
 const sidebarGridStyle = computed(() => ({
@@ -157,44 +156,42 @@ function handleToggleExpand(id: string, val: boolean) { expandedLayers.value[id]
 
 function drawRuler() {
   const cvs = rulerCanvas.value;
-  if (!cvs || !trackViewportRef.value) return;
+  if (!cvs) return;
   const ctx = cvs.getContext('2d');
   if (!ctx) return;
 
-  // Canvas width matches the container width exactly
-  const width = trackViewportRef.value.scrollWidth;
+  // Width is EXACT: frameCount * pixelsPerFrame (or viewport, whichever is larger)
+  const frameWidth = store.frameCount * pixelsPerFrame.value;
+  const width = Math.max(frameWidth, viewportWidth.value);
   cvs.width = width;
   cvs.height = 30;
 
   ctx.fillStyle = '#222';
   ctx.fillRect(0, 0, cvs.width, cvs.height);
-  ctx.strokeStyle = '#555';
+  ctx.strokeStyle = '#666';
   ctx.fillStyle = '#aaa';
-  ctx.font = '10px sans-serif';
+  ctx.font = '11px sans-serif';
 
   const ppf = pixelsPerFrame.value;
   // Dynamic tick step based on zoom
-  let step = 1;
-  if (ppf < 2) step = 50;
-  else if (ppf < 5) step = 20;
-  else if (ppf < 10) step = 10;
-  else if (ppf < 20) step = 5;
+  let step = 10;
+  if (ppf < 5) step = 20;
 
-  // Only draw visible range + buffer for performance if needed,
-  // but for now simple loop is fine for < 10000px
-  const maxFrame = width / ppf;
-
-  for(let f=0; f<=maxFrame; f++) {
+  // Loop EXACTLY to frameCount - no extra frames
+  for (let f = 0; f <= store.frameCount; f++) {
     const x = f * ppf;
-    if(f % step === 0) {
+    if (f % step === 0) {
       // Major Tick
       ctx.beginPath(); ctx.moveTo(x, 15); ctx.lineTo(x, 30); ctx.stroke();
       ctx.fillText(String(f), x + 4, 12);
-    } else if (f % (step/5) === 0 && step >= 5) {
+    } else if (f % (step / 2) === 0) {
       // Minor Tick
       ctx.beginPath(); ctx.moveTo(x, 22); ctx.lineTo(x, 30); ctx.stroke();
     }
   }
+
+  // Draw bottom border line
+  ctx.beginPath(); ctx.moveTo(0, 29.5); ctx.lineTo(cvs.width, 29.5); ctx.stroke();
 }
 
 function startRulerScrub(e: MouseEvent) {

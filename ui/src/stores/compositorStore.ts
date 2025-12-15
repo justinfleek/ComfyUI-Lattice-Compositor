@@ -416,7 +416,7 @@ export const useCompositorStore = defineStore('compositor', {
         threeD: false,
         motionBlur: false,
         inPoint: 0,
-        outPoint: this.project.composition.frameCount - 1,
+        outPoint: this.project.composition.frameCount, // Full duration, not -1
         parentId: null,
         blendMode: 'normal',
         opacity: createAnimatableProperty('opacity', 100, 'number'),
@@ -473,31 +473,38 @@ export const useCompositorStore = defineStore('compositor', {
       layer.threeD = !layer.threeD;
 
       if (layer.threeD) {
-        // Initialize 3D properties if they don't exist
-        if (layer.transform.position.value.z === undefined) {
-          layer.transform.position.value = { ...layer.transform.position.value, z: 0 };
-        }
-        if (layer.transform.anchorPoint.value.z === undefined) {
-          layer.transform.anchorPoint.value = { ...layer.transform.anchorPoint.value, z: 0 };
-        }
-        if (layer.transform.scale.value.z === undefined) {
-          layer.transform.scale.value = { ...layer.transform.scale.value, z: 100 };
-        }
+        const t = layer.transform;
+
+        // Force reactivity by replacing the entire value objects
+        // Position - always create new object with z
+        const pos = t.position.value;
+        t.position.value = { x: pos.x, y: pos.y, z: pos.z ?? 0 };
+        t.position.type = 'vector3';
+
+        // Anchor Point
+        const anch = t.anchorPoint.value;
+        t.anchorPoint.value = { x: anch.x, y: anch.y, z: anch.z ?? 0 };
+        t.anchorPoint.type = 'vector3';
+
+        // Scale
+        const scl = t.scale.value;
+        t.scale.value = { x: scl.x, y: scl.y, z: scl.z ?? 100 };
+        t.scale.type = 'vector3';
 
         // Initialize 3D rotations
-        if (!layer.transform.orientation) {
-          layer.transform.orientation = createAnimatableProperty('orientation', { x: 0, y: 0, z: 0 }, 'vector3');
+        if (!t.orientation) {
+          t.orientation = createAnimatableProperty('orientation', { x: 0, y: 0, z: 0 }, 'vector3');
         }
-        if (!layer.transform.rotationX) {
-          layer.transform.rotationX = createAnimatableProperty('rotationX', 0, 'number');
+        if (!t.rotationX) {
+          t.rotationX = createAnimatableProperty('rotationX', 0, 'number');
         }
-        if (!layer.transform.rotationY) {
-          layer.transform.rotationY = createAnimatableProperty('rotationY', 0, 'number');
+        if (!t.rotationY) {
+          t.rotationY = createAnimatableProperty('rotationY', 0, 'number');
         }
-        if (!layer.transform.rotationZ) {
-          layer.transform.rotationZ = createAnimatableProperty('rotationZ', 0, 'number');
+        if (!t.rotationZ) {
+          t.rotationZ = createAnimatableProperty('rotationZ', 0, 'number');
           // Copy existing 2D rotation to Z rotation
-          layer.transform.rotationZ.value = layer.transform.rotation.value;
+          t.rotationZ.value = t.rotation.value;
         }
       } else {
         // Reverting to 2D
@@ -1430,7 +1437,7 @@ export const useCompositorStore = defineStore('compositor', {
         threeD: true,  // Cameras are always 3D
         motionBlur: false,
         inPoint: 0,
-        outPoint: this.project.composition.frameCount - 1,
+        outPoint: this.project.composition.frameCount, // Full duration
         parentId: null,
         blendMode: 'normal',
         opacity: createAnimatableProperty('opacity', 100, 'number'),
