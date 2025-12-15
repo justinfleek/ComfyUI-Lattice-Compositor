@@ -197,6 +197,25 @@ onMounted(async () => {
       (cameraId: string, frame: number) => store.getCameraAtFrame(cameraId, frame)
     );
 
+    // Wire up precomp rendering - allows precomp layers to render nested compositions
+    engine.value.setPrecompRenderContext({
+      renderComposition: (compositionId: string, frame: number) => {
+        // Get the composition
+        const comp = store.getComposition(compositionId);
+        if (!comp) return null;
+
+        // For now, render nested compositions using a simple approach:
+        // We'll render them inline by temporarily switching the active composition
+        // In the future, this should render to an offscreen texture
+        console.log('[ThreeCanvas] Precomp render requested:', compositionId, 'frame:', frame);
+
+        // TODO: Implement proper render-to-texture for precomps
+        // For now, return null - the precomp will show a placeholder
+        return null;
+      },
+      getComposition: (compositionId: string) => store.getComposition(compositionId)
+    });
+
     // Wire up audio reactivity - connects audio analysis to layer properties
     engine.value.setAudioReactiveCallback(
       (layerId: string, frame: number) => store.getAudioReactiveValuesForLayer(layerId, frame)

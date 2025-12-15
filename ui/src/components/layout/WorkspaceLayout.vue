@@ -201,7 +201,7 @@
               <Splitpanes v-if="showGraphEditor" horizontal class="default-theme">
                 <Pane :size="50" :min-size="20">
                   <div class="panel timeline-panel">
-                    <TimelinePanel />
+                    <TimelinePanel @openCompositionSettings="showCompositionSettingsDialog = true" />
                   </div>
                 </Pane>
                 <Pane :size="50" :min-size="20">
@@ -211,7 +211,7 @@
                 </Pane>
               </Splitpanes>
               <div v-else class="panel timeline-panel">
-                <TimelinePanel />
+                <TimelinePanel @openCompositionSettings="showCompositionSettingsDialog = true" />
               </div>
             </Pane>
           </Splitpanes>
@@ -480,21 +480,18 @@ function onCompositionSettingsConfirm(settings: {
 }) {
   console.log('[Weyl] Composition settings updated:', settings);
 
-  // Update project name
-  if (store.project?.meta) {
-    store.project.meta.name = settings.name;
-  }
+  // Update active composition's settings
+  store.updateCompositionSettings(store.activeCompositionId, {
+    width: settings.width,
+    height: settings.height,
+    fps: settings.fps,
+    frameCount: settings.frameCount,
+    backgroundColor: settings.backgroundColor,
+    autoResizeToContent: settings.autoResizeToContent
+  });
 
-  // Update composition dimensions and frame count
-  store.resizeComposition(settings.width, settings.height, settings.frameCount);
-
-  // Update fps
-  if (store.project?.composition) {
-    store.project.composition.fps = settings.fps;
-    store.project.composition.duration = settings.frameCount / settings.fps;
-    store.project.composition.backgroundColor = settings.backgroundColor;
-    store.project.composition.autoResizeToContent = settings.autoResizeToContent;
-  }
+  // Rename the composition
+  store.renameComposition(store.activeCompositionId, settings.name);
 
   showCompositionSettingsDialog.value = false;
 }

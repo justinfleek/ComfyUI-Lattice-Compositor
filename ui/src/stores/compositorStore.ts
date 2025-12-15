@@ -7,6 +7,8 @@ import { defineStore } from 'pinia';
 import type {
   WeylProject,
   Layer,
+  Composition,
+  CompositionSettings,
   AssetReference,
   AnimatableProperty,
   Keyframe,
@@ -56,6 +58,10 @@ import {
 interface CompositorState {
   // Project data
   project: WeylProject;
+
+  // Active composition (for multi-composition support)
+  activeCompositionId: string;
+  openCompositionIds: string[];  // Tabs - which comps are open
 
   // ComfyUI connection
   comfyuiNodeId: string | null;
@@ -123,6 +129,8 @@ interface CompositorState {
 export const useCompositorStore = defineStore('compositor', {
   state: (): CompositorState => ({
     project: createEmptyProject(1024, 1024),
+    activeCompositionId: 'main',
+    openCompositionIds: ['main'],
     comfyuiNodeId: null,
     sourceImage: null,
     depthMap: null,
@@ -166,28 +174,74 @@ export const useCompositorStore = defineStore('compositor', {
   }),
 
   getters: {
-    // Project info
+    // Active composition helper
+    activeComposition: (state): Composition | null => {
+      return state.project.compositions[state.activeCompositionId] || null;
+    },
+
+    // Project info - now uses active composition
     hasProject: (state): boolean => state.sourceImage !== null,
-    width: (state): number => state.project.composition.width,
-    height: (state): number => state.project.composition.height,
-    frameCount: (state): number => state.project.composition.frameCount,
-    fps: (state): number => state.project.composition.fps,
-    duration: (state): number => state.project.composition.duration,
+    width(state): number {
+      const comp = state.project.compositions[state.activeCompositionId];
+      return comp?.settings.width || 1024;
+    },
+    height(state): number {
+      const comp = state.project.compositions[state.activeCompositionId];
+      return comp?.settings.height || 1024;
+    },
+    frameCount(state): number {
+      const comp = state.project.compositions[state.activeCompositionId];
+      return comp?.settings.frameCount || 81;
+    },
+    fps(state): number {
+      const comp = state.project.compositions[state.activeCompositionId];
+      return comp?.settings.fps || 16;
+    },
+    duration(state): number {
+      const comp = state.project.compositions[state.activeCompositionId];
+      return comp?.settings.duration || 5;
+    },
 
-    // Current frame
-    currentFrame: (state): number => state.project.currentFrame,
-    currentTime: (state): number => state.project.currentFrame / state.project.composition.fps,
+    // Current frame - per composition
+    currentFrame(state): number {
+      const comp = state.project.compositions[state.activeCompositionId];
+      return comp?.currentFrame || 0;
+    },
+    currentTime(state): number {
+      const comp = state.project.compositions[state.activeCompositionId];
+      if (!comp) return 0;
+      return comp.currentFrame / comp.settings.fps;
+    },
 
-    // Layers
-    layers: (state): Layer[] => state.project.layers,
-    visibleLayers: (state): Layer[] => state.project.layers.filter(l => l.visible),
+    // Layers - from active composition
+    layers(state): Layer[] {
+      const comp = state.project.compositions[state.activeCompositionId];
+      return comp?.layers || [];
+    },
+    visibleLayers(state): Layer[] {
+      const comp = state.project.compositions[state.activeCompositionId];
+      return (comp?.layers || []).filter((l: Layer) => l.visible);
+    },
 
     // Selection
-    selectedLayers: (state): Layer[] =>
-      state.project.layers.filter(l => state.selectedLayerIds.includes(l.id)),
-    selectedLayer: (state): Layer | null => {
+    selectedLayers(state): Layer[] {
+      const comp = state.project.compositions[state.activeCompositionId];
+      return (comp?.layers || []).filter((l: Layer) => state.selectedLayerIds.includes(l.id));
+    },
+    selectedLayer(state): Layer | null {
       if (state.selectedLayerIds.length !== 1) return null;
-      return state.project.layers.find(l => l.id === state.selectedLayerIds[0]) || null;
+      const comp = state.project.compositions[state.activeCompositionId];
+      return (comp?.layers || []).find((l: Layer) => l.id === state.selectedLayerIds[0]) || null;
+    },
+
+    // All compositions for tabs
+    allCompositions: (state): Composition[] => {
+      return Object.values(state.project.compositions);
+    },
+    openCompositions(state): Composition[] {
+      return state.openCompositionIds
+        .map((id: string) => state.project.compositions[id])
+        .filter(Boolean);
     },
 
     // Assets
@@ -203,10 +257,290 @@ export const useCompositorStore = defineStore('compositor', {
       return state.cameras.get(state.activeCameraId) || null;
     },
     allCameras: (state): Camera3D[] => Array.from(state.cameras.values()),
-    cameraLayers: (state): Layer[] => state.project.layers.filter(l => l.type === 'camera')
+    cameraLayers(state): Layer[] {
+      const comp = state.project.compositions[state.activeCompositionId];
+      return (comp?.layers || []).filter((l: Layer) => l.type === 'camera');
+    }
   },
 
   actions: {
+    // ============================================================
+    // HELPER METHODS
+    // ============================================================
+
+    /**
+     * Get the layers array for the active composition (mutable reference)
+     */
+    getActiveCompLayers(): Layer[] {
+      const comp = this.project.compositions[this.activeCompositionId];
+      return comp?.layers || [];
+    },
+
+    /**
+     * Get the active composition (mutable reference)
+     */
+    getActiveComp(): Composition | null {
+      return this.project.compositions[this.activeCompositionId] || null;
+    },
+
+    // ============================================================
+    // COMPOSITION MANAGEMENT
+    // ============================================================
+
+    /**
+     * Create a new composition
+     */
+    createComposition(
+      name: string,
+      settings?: Partial<CompositionSettings>,
+      isPrecomp: boolean = false
+    ): Composition {
+      const id = `comp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+      // Get settings from active comp or use defaults
+      const activeComp = this.project.compositions[this.activeCompositionId];
+      const defaultSettings: CompositionSettings = {
+        width: settings?.width ?? activeComp?.settings.width ?? 1024,
+        height: settings?.height ?? activeComp?.settings.height ?? 1024,
+        frameCount: settings?.frameCount ?? activeComp?.settings.frameCount ?? 81,
+        fps: settings?.fps ?? activeComp?.settings.fps ?? 16,
+        duration: 0,
+        backgroundColor: settings?.backgroundColor ?? '#000000',
+        autoResizeToContent: settings?.autoResizeToContent ?? true
+      };
+      defaultSettings.duration = defaultSettings.frameCount / defaultSettings.fps;
+
+      const composition: Composition = {
+        id,
+        name,
+        settings: defaultSettings,
+        layers: [],
+        currentFrame: 0,
+        isPrecomp
+      };
+
+      this.project.compositions[id] = composition;
+
+      // Open and switch to new composition
+      if (!this.openCompositionIds.includes(id)) {
+        this.openCompositionIds.push(id);
+      }
+      this.activeCompositionId = id;
+
+      console.log('[Weyl] Created composition:', name, id);
+      return composition;
+    },
+
+    /**
+     * Delete a composition
+     */
+    deleteComposition(compId: string): boolean {
+      // Can't delete main composition
+      if (compId === this.project.mainCompositionId) {
+        console.warn('[Weyl] Cannot delete main composition');
+        return false;
+      }
+
+      const comp = this.project.compositions[compId];
+      if (!comp) return false;
+
+      // Remove from compositions
+      delete this.project.compositions[compId];
+
+      // Remove from open tabs
+      const openIdx = this.openCompositionIds.indexOf(compId);
+      if (openIdx >= 0) {
+        this.openCompositionIds.splice(openIdx, 1);
+      }
+
+      // If this was active, switch to another
+      if (this.activeCompositionId === compId) {
+        this.activeCompositionId = this.openCompositionIds[0] || this.project.mainCompositionId;
+      }
+
+      console.log('[Weyl] Deleted composition:', compId);
+      return true;
+    },
+
+    /**
+     * Switch to a different composition (tab)
+     */
+    switchComposition(compId: string): void {
+      if (!this.project.compositions[compId]) {
+        console.warn('[Weyl] Composition not found:', compId);
+        return;
+      }
+
+      // Add to open tabs if not already
+      if (!this.openCompositionIds.includes(compId)) {
+        this.openCompositionIds.push(compId);
+      }
+
+      // Clear selection when switching
+      this.selectedLayerIds = [];
+      this.selectedKeyframeIds = [];
+
+      this.activeCompositionId = compId;
+      console.log('[Weyl] Switched to composition:', compId);
+    },
+
+    /**
+     * Close a composition tab
+     */
+    closeCompositionTab(compId: string): void {
+      // Can't close if it's the only open tab
+      if (this.openCompositionIds.length <= 1) {
+        console.warn('[Weyl] Cannot close the last tab');
+        return;
+      }
+
+      const idx = this.openCompositionIds.indexOf(compId);
+      if (idx >= 0) {
+        this.openCompositionIds.splice(idx, 1);
+      }
+
+      // If closing active, switch to another
+      if (this.activeCompositionId === compId) {
+        this.activeCompositionId = this.openCompositionIds[Math.max(0, idx - 1)];
+      }
+    },
+
+    /**
+     * Rename a composition
+     */
+    renameComposition(compId: string, newName: string): void {
+      const comp = this.project.compositions[compId];
+      if (comp) {
+        comp.name = newName;
+      }
+    },
+
+    /**
+     * Update composition settings
+     */
+    updateCompositionSettings(compId: string, settings: Partial<CompositionSettings>): void {
+      const comp = this.project.compositions[compId];
+      if (!comp) return;
+
+      const oldFrameCount = comp.settings.frameCount;
+
+      // Update settings
+      Object.assign(comp.settings, settings);
+
+      // Recalculate duration
+      comp.settings.duration = comp.settings.frameCount / comp.settings.fps;
+
+      // Extend layer outPoints if frameCount increased
+      if (settings.frameCount && settings.frameCount > oldFrameCount) {
+        for (const layer of comp.layers) {
+          if (layer.outPoint === oldFrameCount - 1) {
+            layer.outPoint = settings.frameCount - 1;
+          }
+        }
+      }
+
+      // Keep legacy alias in sync for main comp
+      if (compId === this.project.mainCompositionId) {
+        Object.assign(this.project.composition, comp.settings);
+      }
+    },
+
+    /**
+     * Get a composition by ID
+     */
+    getComposition(compId: string): Composition | null {
+      return this.project.compositions[compId] || null;
+    },
+
+    /**
+     * Pre-compose selected layers into a new composition
+     */
+    precomposeSelectedLayers(name?: string): Composition | null {
+      if (this.selectedLayerIds.length === 0) {
+        console.warn('[Weyl] No layers selected for pre-compose');
+        return null;
+      }
+
+      const activeComp = this.project.compositions[this.activeCompositionId];
+      if (!activeComp) return null;
+
+      // Create new composition with same settings
+      const precomp = this.createComposition(
+        name || 'Pre-comp',
+        activeComp.settings,
+        true
+      );
+
+      // Move selected layers to precomp
+      const selectedLayers = activeComp.layers.filter(l =>
+        this.selectedLayerIds.includes(l.id)
+      );
+
+      // Find earliest inPoint to normalize timing
+      const earliestIn = Math.min(...selectedLayers.map(l => l.inPoint));
+
+      // Move layers to precomp and adjust timing
+      for (const layer of selectedLayers) {
+        // Adjust timing relative to precomp start
+        layer.inPoint -= earliestIn;
+        layer.outPoint -= earliestIn;
+
+        // Remove from parent
+        const idx = activeComp.layers.indexOf(layer);
+        if (idx >= 0) {
+          activeComp.layers.splice(idx, 1);
+        }
+
+        // Add to precomp
+        precomp.layers.push(layer);
+      }
+
+      // Update precomp duration to fit layers
+      const maxOut = Math.max(...precomp.layers.map(l => l.outPoint));
+      precomp.settings.frameCount = maxOut + 1;
+      precomp.settings.duration = precomp.settings.frameCount / precomp.settings.fps;
+
+      // Create precomp layer in parent composition
+      const precompLayer: Layer = {
+        id: `layer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        name: precomp.name,
+        type: 'precomp',
+        visible: true,
+        locked: false,
+        solo: false,
+        threeD: false,
+        inPoint: earliestIn,
+        outPoint: earliestIn + precomp.settings.frameCount - 1,
+        parentId: null,
+        transform: createDefaultTransform(),
+        opacity: createAnimatableProperty('opacity', 100, 'number'),
+        properties: [],
+        effects: [],
+        blendMode: 'normal',
+        motionBlur: false,
+        data: {
+          compositionId: precomp.id,
+          timeRemapEnabled: false,
+          collapseTransformations: false
+        } as PrecompData
+      };
+
+      activeComp.layers.push(precompLayer);
+
+      // Clear selection
+      this.selectedLayerIds = [];
+
+      // Switch back to parent composition
+      this.activeCompositionId = activeComp.id;
+
+      console.log('[Weyl] Pre-composed layers into:', precomp.name);
+      return precomp;
+    },
+
+    // ============================================================
+    // COMFYUI INTEGRATION
+    // ============================================================
+
     /**
      * Load inputs from ComfyUI node
      */
@@ -222,9 +556,19 @@ export const useCompositorStore = defineStore('compositor', {
       this.sourceImage = inputs.source_image;
       this.depthMap = inputs.depth_map;
 
-      const oldFrameCount = this.project.composition.frameCount;
+      // Update active composition
+      const comp = this.project.compositions[this.activeCompositionId];
+      if (!comp) return;
 
-      // Update project composition settings
+      const oldFrameCount = comp.settings.frameCount;
+
+      // Update composition settings
+      comp.settings.width = inputs.width;
+      comp.settings.height = inputs.height;
+      comp.settings.frameCount = inputs.frame_count;
+      comp.settings.duration = inputs.frame_count / comp.settings.fps;
+
+      // Keep legacy alias in sync
       this.project.composition.width = inputs.width;
       this.project.composition.height = inputs.height;
       this.project.composition.frameCount = inputs.frame_count;
@@ -232,7 +576,7 @@ export const useCompositorStore = defineStore('compositor', {
 
       // Extend layer outPoints if frameCount increased
       if (inputs.frame_count > oldFrameCount) {
-        for (const layer of this.project.layers) {
+        for (const layer of comp.layers) {
           if (layer.outPoint === oldFrameCount - 1) {
             layer.outPoint = inputs.frame_count - 1;
           }
@@ -264,7 +608,7 @@ export const useCompositorStore = defineStore('compositor', {
         };
       }
 
-      this.project.currentFrame = 0;
+      if (comp) comp.currentFrame = 0;
       this.project.meta.modified = new Date().toISOString();
 
       console.log('[Weyl] Loaded inputs from ComfyUI:', {
@@ -466,9 +810,12 @@ export const useCompositorStore = defineStore('compositor', {
         };
       }
 
+      const comp = this.getActiveComp();
+      const layers = this.getActiveCompLayers();
+
       const layer: Layer = {
         id,
-        name: name || `${type.charAt(0).toUpperCase() + type.slice(1)} ${this.project.layers.length + 1}`,
+        name: name || `${type.charAt(0).toUpperCase() + type.slice(1)} ${layers.length + 1}`,
         type,
         visible: true,
         locked: false,
@@ -476,7 +823,7 @@ export const useCompositorStore = defineStore('compositor', {
         threeD: false,
         motionBlur: false,
         inPoint: 0,
-        outPoint: this.project.composition.frameCount - 1, // Last frame index (0-indexed)
+        outPoint: (comp?.settings.frameCount || 81) - 1, // Last frame index (0-indexed)
         parentId: null,
         blendMode: 'normal',
         opacity: createAnimatableProperty('opacity', 100, 'number'),
@@ -492,7 +839,7 @@ export const useCompositorStore = defineStore('compositor', {
         console.warn('Use createCameraLayer() for camera layers');
       }
 
-      this.project.layers.unshift(layer);
+      layers.unshift(layer);
       this.project.meta.modified = new Date().toISOString();
       this.pushHistory();
 
@@ -503,10 +850,11 @@ export const useCompositorStore = defineStore('compositor', {
      * Delete a layer
      */
     deleteLayer(layerId: string): void {
-      const index = this.project.layers.findIndex(l => l.id === layerId);
+      const layers = this.getActiveCompLayers();
+      const index = layers.findIndex(l => l.id === layerId);
       if (index === -1) return;
 
-      this.project.layers.splice(index, 1);
+      layers.splice(index, 1);
       this.selectedLayerIds = this.selectedLayerIds.filter(id => id !== layerId);
       this.project.meta.modified = new Date().toISOString();
       this.pushHistory();
@@ -516,7 +864,7 @@ export const useCompositorStore = defineStore('compositor', {
      * Update layer properties
      */
     updateLayer(layerId: string, updates: Partial<Layer>): void {
-      const layer = this.project.layers.find(l => l.id === layerId);
+      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
       if (!layer) return;
 
       Object.assign(layer, updates);
@@ -527,7 +875,7 @@ export const useCompositorStore = defineStore('compositor', {
      * Update layer-specific data (e.g., text content, image path, etc.)
      */
     updateLayerData(layerId: string, dataUpdates: Record<string, any>): void {
-      const layer = this.project.layers.find(l => l.id === layerId);
+      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
       if (!layer || !layer.data) return;
 
       Object.assign(layer.data, dataUpdates);
@@ -538,7 +886,7 @@ export const useCompositorStore = defineStore('compositor', {
      * Add a control point to a spline layer
      */
     addSplineControlPoint(layerId: string, point: { id: string; x: number; y: number; handleIn?: { x: number; y: number } | null; handleOut?: { x: number; y: number } | null; type: 'corner' | 'smooth' | 'symmetric' }): void {
-      const layer = this.project.layers.find(l => l.id === layerId);
+      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
       if (!layer || layer.type !== 'spline' || !layer.data) return;
 
       const splineData = layer.data as any;
@@ -553,7 +901,7 @@ export const useCompositorStore = defineStore('compositor', {
      * Update a spline control point
      */
     updateSplineControlPoint(layerId: string, pointId: string, updates: Partial<{ x: number; y: number; handleIn: { x: number; y: number } | null; handleOut: { x: number; y: number } | null; type: 'corner' | 'smooth' | 'symmetric' }>): void {
-      const layer = this.project.layers.find(l => l.id === layerId);
+      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
       if (!layer || layer.type !== 'spline' || !layer.data) return;
 
       const splineData = layer.data as any;
@@ -568,7 +916,7 @@ export const useCompositorStore = defineStore('compositor', {
      * Delete a spline control point
      */
     deleteSplineControlPoint(layerId: string, pointId: string): void {
-      const layer = this.project.layers.find(l => l.id === layerId);
+      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
       if (!layer || layer.type !== 'spline' || !layer.data) return;
 
       const splineData = layer.data as any;
@@ -585,7 +933,7 @@ export const useCompositorStore = defineStore('compositor', {
      * Toggle 3D mode for a layer
      */
     toggleLayer3D(layerId: string): void {
-      const layer = this.project.layers.find(l => l.id === layerId);
+      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
       if (!layer) return;
 
       layer.threeD = !layer.threeD;
@@ -639,11 +987,12 @@ export const useCompositorStore = defineStore('compositor', {
      * Reorder layers
      */
     moveLayer(layerId: string, newIndex: number): void {
-      const currentIndex = this.project.layers.findIndex(l => l.id === layerId);
+      const layers = this.getActiveCompLayers();
+      const currentIndex = layers.findIndex(l => l.id === layerId);
       if (currentIndex === -1) return;
 
-      const [layer] = this.project.layers.splice(currentIndex, 1);
-      this.project.layers.splice(newIndex, 0, layer);
+      const [layer] = layers.splice(currentIndex, 1);
+      layers.splice(newIndex, 0, layer);
       this.project.meta.modified = new Date().toISOString();
       this.pushHistory();
     },
@@ -669,7 +1018,8 @@ export const useCompositorStore = defineStore('compositor', {
      * Set a layer's parent for parenting/hierarchy
      */
     setLayerParent(layerId: string, parentId: string | null): void {
-      const layer = this.project.layers.find(l => l.id === layerId);
+      const layers = this.getActiveCompLayers();
+      const layer = layers.find(l => l.id === layerId);
       if (!layer) return;
 
       // Prevent self-parenting
@@ -678,7 +1028,7 @@ export const useCompositorStore = defineStore('compositor', {
       // Prevent circular parenting (parent can't be a descendant)
       if (parentId) {
         const getDescendantIds = (id: string): string[] => {
-          const children = this.project.layers.filter(l => l.parentId === id);
+          const children = layers.filter(l => l.parentId === id);
           let ids = children.map(c => c.id);
           for (const child of children) {
             ids = ids.concat(getDescendantIds(child.id));
@@ -717,9 +1067,12 @@ export const useCompositorStore = defineStore('compositor', {
     play(): void {
       if (this.isPlaying) return;
 
+      const comp = this.getActiveComp();
+      if (!comp) return;
+
       this.isPlaying = true;
       this.playbackStartTime = performance.now();
-      this.playbackStartFrame = this.project.currentFrame;
+      this.playbackStartFrame = comp.currentFrame;
 
       this.playbackLoop();
     },
@@ -746,9 +1099,12 @@ export const useCompositorStore = defineStore('compositor', {
     playbackLoop(): void {
       if (!this.isPlaying) return;
 
+      const comp = this.getActiveComp();
+      if (!comp) return;
+
       const elapsed = performance.now() - (this.playbackStartTime || 0);
-      const fps = this.project.composition.fps;
-      const frameCount = this.project.composition.frameCount;
+      const fps = comp.settings.fps;
+      const frameCount = comp.settings.frameCount;
 
       const elapsedFrames = Math.floor((elapsed / 1000) * fps);
       let newFrame = this.playbackStartFrame + elapsedFrames;
@@ -760,34 +1116,43 @@ export const useCompositorStore = defineStore('compositor', {
         this.playbackStartTime = performance.now();
       }
 
-      this.project.currentFrame = newFrame;
+      comp.currentFrame = newFrame;
 
       this.playbackRequestId = requestAnimationFrame(() => this.playbackLoop());
     },
 
     setFrame(frame: number): void {
-      this.project.currentFrame = Math.max(0, Math.min(frame, this.project.composition.frameCount - 1));
+      const comp = this.getActiveComp();
+      if (!comp) return;
+      comp.currentFrame = Math.max(0, Math.min(frame, comp.settings.frameCount - 1));
     },
 
     nextFrame(): void {
-      if (this.project.currentFrame < this.project.composition.frameCount - 1) {
-        this.project.currentFrame++;
+      const comp = this.getActiveComp();
+      if (!comp) return;
+      if (comp.currentFrame < comp.settings.frameCount - 1) {
+        comp.currentFrame++;
       }
     },
 
     prevFrame(): void {
-      if (this.project.currentFrame > 0) {
-        this.project.currentFrame--;
+      const comp = this.getActiveComp();
+      if (!comp) return;
+      if (comp.currentFrame > 0) {
+        comp.currentFrame--;
       }
     },
 
     goToStart(): void {
-      this.project.currentFrame = 0;
+      const comp = this.getActiveComp();
+      if (comp) comp.currentFrame = 0;
     },
 
     goToEnd(): void {
+      const comp = this.getActiveComp();
+      if (!comp) return;
       // Frame indices are 0-based, so last frame is frameCount - 1
-      this.project.currentFrame = this.project.composition.frameCount - 1;
+      comp.currentFrame = comp.settings.frameCount - 1;
     },
 
     /**
@@ -861,7 +1226,7 @@ export const useCompositorStore = defineStore('compositor', {
      * Get interpolated value for any animatable property at current frame
      */
     getInterpolatedValue<T>(property: AnimatableProperty<T>): T {
-      return interpolateProperty(property, this.project.currentFrame);
+      return interpolateProperty(property, (this.getActiveComp()?.currentFrame ?? 0));
     },
 
     /**
@@ -873,9 +1238,9 @@ export const useCompositorStore = defineStore('compositor', {
       value: T,
       atFrame?: number
     ): Keyframe<T> | null {
-      const frame = atFrame ?? this.project.currentFrame;
+      const frame = atFrame ?? (this.getActiveComp()?.currentFrame ?? 0);
       console.log('[Store] addKeyframe called:', { layerId, propertyName, value, frame });
-      const layer = this.project.layers.find(l => l.id === layerId);
+      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
       if (!layer) {
         console.log('[Store] addKeyframe: layer not found');
         return null;
@@ -924,11 +1289,11 @@ export const useCompositorStore = defineStore('compositor', {
       const existingIndex = property.keyframes.findIndex(k => k.frame === frame);
       if (existingIndex >= 0) {
         property.keyframes[existingIndex] = keyframe;
-        console.log('[Store] addKeyframe: replaced existing keyframe at frame', this.project.currentFrame);
+        console.log('[Store] addKeyframe: replaced existing keyframe at frame', (this.getActiveComp()?.currentFrame ?? 0));
       } else {
         property.keyframes.push(keyframe);
         property.keyframes.sort((a, b) => a.frame - b.frame);
-        console.log('[Store] addKeyframe: added new keyframe at frame', this.project.currentFrame, 'total keyframes:', property.keyframes.length);
+        console.log('[Store] addKeyframe: added new keyframe at frame', (this.getActiveComp()?.currentFrame ?? 0), 'total keyframes:', property.keyframes.length);
       }
 
       this.project.meta.modified = new Date().toISOString();
@@ -939,7 +1304,7 @@ export const useCompositorStore = defineStore('compositor', {
      * Remove a keyframe
      */
     removeKeyframe(layerId: string, propertyName: string, keyframeId: string): void {
-      const layer = this.project.layers.find(l => l.id === layerId);
+      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
       if (!layer) return;
 
       // Find the property (support both 'position' and 'transform.position' formats)
@@ -978,7 +1343,7 @@ export const useCompositorStore = defineStore('compositor', {
      * Set a property's value (for direct editing in timeline)
      */
     setPropertyValue(layerId: string, propertyPath: string, value: any): void {
-      const layer = this.project.layers.find(l => l.id === layerId);
+      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
       if (!layer) return;
 
       // Find the property
@@ -1004,7 +1369,7 @@ export const useCompositorStore = defineStore('compositor', {
 
       // If animated and at a keyframe, update that keyframe's value too
       if (property.animated && property.keyframes.length > 0) {
-        const existingKf = property.keyframes.find(kf => kf.frame === this.project.currentFrame);
+        const existingKf = property.keyframes.find(kf => kf.frame === (this.getActiveComp()?.currentFrame ?? 0));
         if (existingKf) {
           existingKf.value = value;
         }
@@ -1017,7 +1382,7 @@ export const useCompositorStore = defineStore('compositor', {
      * Set a property's animated state
      */
     setPropertyAnimated(layerId: string, propertyPath: string, animated: boolean): void {
-      const layer = this.project.layers.find(l => l.id === layerId);
+      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
       if (!layer) return;
 
       let property: AnimatableProperty<any> | undefined;
@@ -1052,7 +1417,7 @@ export const useCompositorStore = defineStore('compositor', {
      * Move a keyframe to a new frame
      */
     moveKeyframe(layerId: string, propertyPath: string, keyframeId: string, newFrame: number): void {
-      const layer = this.project.layers.find(l => l.id === layerId);
+      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
       if (!layer) return;
 
       let property: AnimatableProperty<any> | undefined;
@@ -1100,7 +1465,7 @@ export const useCompositorStore = defineStore('compositor', {
       keyframeId: string,
       interpolation: InterpolationType
     ): void {
-      const layer = this.project.layers.find(l => l.id === layerId);
+      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
       if (!layer) return;
 
       let property: AnimatableProperty<any> | undefined;
@@ -1138,7 +1503,7 @@ export const useCompositorStore = defineStore('compositor', {
       keyframeId: string,
       updates: { frame?: number; value?: any }
     ): void {
-      const layer = this.project.layers.find(l => l.id === layerId);
+      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
       if (!layer) return;
 
       let property: AnimatableProperty<any> | undefined;
@@ -1185,7 +1550,7 @@ export const useCompositorStore = defineStore('compositor', {
       handleType: 'in' | 'out',
       handle: BezierHandle
     ): void {
-      const layer = this.project.layers.find(l => l.id === layerId);
+      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
       if (!layer) return;
 
       let property: AnimatableProperty<any> | undefined;
@@ -1409,7 +1774,7 @@ export const useCompositorStore = defineStore('compositor', {
      * Update particle layer data
      */
     updateParticleLayerData(layerId: string, updates: Partial<ParticleLayerData>): void {
-      const layer = this.project.layers.find(l => l.id === layerId);
+      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
       if (!layer || layer.type !== 'particles') return;
 
       const data = layer.data as ParticleLayerData;
@@ -1421,7 +1786,7 @@ export const useCompositorStore = defineStore('compositor', {
      * Add emitter to particle layer
      */
     addParticleEmitter(layerId: string, config: ParticleEmitterConfig): void {
-      const layer = this.project.layers.find(l => l.id === layerId);
+      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
       if (!layer || layer.type !== 'particles') return;
 
       const data = layer.data as ParticleLayerData;
@@ -1433,7 +1798,7 @@ export const useCompositorStore = defineStore('compositor', {
      * Update particle emitter
      */
     updateParticleEmitter(layerId: string, emitterId: string, updates: Partial<ParticleEmitterConfig>): void {
-      const layer = this.project.layers.find(l => l.id === layerId);
+      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
       if (!layer || layer.type !== 'particles') return;
 
       const data = layer.data as ParticleLayerData;
@@ -1448,7 +1813,7 @@ export const useCompositorStore = defineStore('compositor', {
      * Remove particle emitter
      */
     removeParticleEmitter(layerId: string, emitterId: string): void {
-      const layer = this.project.layers.find(l => l.id === layerId);
+      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
       if (!layer || layer.type !== 'particles') return;
 
       const data = layer.data as ParticleLayerData;
@@ -1502,7 +1867,7 @@ export const useCompositorStore = defineStore('compositor', {
      * Update depthflow config
      */
     updateDepthflowConfig(layerId: string, updates: Partial<DepthflowLayerData['config']>): void {
-      const layer = this.project.layers.find(l => l.id === layerId);
+      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
       if (!layer || layer.type !== 'depthflow') return;
 
       const data = layer.data as DepthflowLayerData;
@@ -1624,7 +1989,7 @@ export const useCompositorStore = defineStore('compositor', {
      * Update video layer data
      */
     updateVideoLayerData(layerId: string, updates: Partial<VideoData>): void {
-      const layer = this.project.layers.find(l => l.id === layerId);
+      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
       if (!layer || layer.type !== 'video') return;
 
       const data = layer.data as VideoData;
@@ -1637,7 +2002,7 @@ export const useCompositorStore = defineStore('compositor', {
      * Called by LayerManager when a video finishes loading
      */
     onVideoMetadataLoaded(layerId: string, metadata: VideoMetadata): void {
-      const layer = this.project.layers.find(l => l.id === layerId);
+      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
       if (!layer || layer.type !== 'video') return;
 
       const videoData = layer.data as VideoData;
@@ -1662,19 +2027,30 @@ export const useCompositorStore = defineStore('compositor', {
      * Used for manual resize or when importing video
      */
     resizeComposition(width: number, height: number, frameCount?: number): void {
-      const oldFrameCount = this.project.composition.frameCount;
+      const comp = this.getActiveComp();
+      if (!comp) return;
 
+      const oldFrameCount = comp.settings.frameCount;
+
+      comp.settings.width = width;
+      comp.settings.height = height;
+
+      // Keep legacy alias in sync
       this.project.composition.width = width;
       this.project.composition.height = height;
 
       if (frameCount !== undefined) {
+        comp.settings.frameCount = frameCount;
+        comp.settings.duration = frameCount / comp.settings.fps;
+
+        // Keep legacy alias in sync
         this.project.composition.frameCount = frameCount;
         this.project.composition.duration = frameCount / this.project.composition.fps;
 
         // Extend layer outPoints if frameCount increased
         // Only extend layers that were at the old max frame
         if (frameCount > oldFrameCount) {
-          for (const layer of this.project.layers) {
+          for (const layer of comp.layers) {
             // If layer ended at the old composition end, extend it to new end
             if (layer.outPoint === oldFrameCount - 1) {
               layer.outPoint = frameCount - 1;
@@ -1684,8 +2060,8 @@ export const useCompositorStore = defineStore('compositor', {
       }
 
       // Update current frame if it's now out of bounds
-      if (this.project.currentFrame >= this.project.composition.frameCount) {
-        this.project.currentFrame = this.project.composition.frameCount - 1;
+      if (comp.currentFrame >= comp.settings.frameCount) {
+        comp.currentFrame = comp.settings.frameCount - 1;
       }
 
       this.project.meta.modified = new Date().toISOString();
@@ -1694,7 +2070,7 @@ export const useCompositorStore = defineStore('compositor', {
       console.log('[Weyl] Composition resized:', {
         width,
         height,
-        frameCount: this.project.composition.frameCount
+        frameCount: comp.settings.frameCount
       });
     },
 
@@ -1730,7 +2106,7 @@ export const useCompositorStore = defineStore('compositor', {
      * Update precomp layer data
      */
     updatePrecompLayerData(layerId: string, updates: Partial<PrecompData>): void {
-      const layer = this.project.layers.find(l => l.id === layerId);
+      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
       if (!layer || layer.type !== 'precomp') return;
 
       const data = layer.data as PrecompData;
@@ -1746,7 +2122,7 @@ export const useCompositorStore = defineStore('compositor', {
      * Add effect to layer
      */
     addEffectToLayer(layerId: string, effectKey: string): void {
-      const layer = this.project.layers.find(l => l.id === layerId);
+      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
       if (!layer) return;
 
       const effect = createEffectInstance(effectKey);
@@ -1764,7 +2140,7 @@ export const useCompositorStore = defineStore('compositor', {
      * Remove effect from layer
      */
     removeEffectFromLayer(layerId: string, effectId: string): void {
-      const layer = this.project.layers.find(l => l.id === layerId);
+      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
       if (!layer || !layer.effects) return;
 
       const index = layer.effects.findIndex(e => e.id === effectId);
@@ -1779,7 +2155,7 @@ export const useCompositorStore = defineStore('compositor', {
      * Update effect parameter value
      */
     updateEffectParameter(layerId: string, effectId: string, paramKey: string, value: any): void {
-      const layer = this.project.layers.find(l => l.id === layerId);
+      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
       if (!layer || !layer.effects) return;
 
       const effect = layer.effects.find(e => e.id === effectId);
@@ -1793,7 +2169,7 @@ export const useCompositorStore = defineStore('compositor', {
      * Toggle effect parameter animation state
      */
     setEffectParamAnimated(layerId: string, effectId: string, paramKey: string, animated: boolean): void {
-      const layer = this.project.layers.find(l => l.id === layerId);
+      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
       if (!layer || !layer.effects) return;
 
       const effect = layer.effects.find(e => e.id === effectId);
@@ -1823,7 +2199,7 @@ export const useCompositorStore = defineStore('compositor', {
      * Toggle effect enabled state
      */
     toggleEffect(layerId: string, effectId: string): void {
-      const layer = this.project.layers.find(l => l.id === layerId);
+      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
       if (!layer || !layer.effects) return;
 
       const effect = layer.effects.find(e => e.id === effectId);
@@ -1837,7 +2213,7 @@ export const useCompositorStore = defineStore('compositor', {
      * Reorder effects in stack
      */
     reorderEffects(layerId: string, fromIndex: number, toIndex: number): void {
-      const layer = this.project.layers.find(l => l.id === layerId);
+      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
       if (!layer || !layer.effects) return;
       if (fromIndex < 0 || fromIndex >= layer.effects.length) return;
       if (toIndex < 0 || toIndex >= layer.effects.length) return;
@@ -1852,14 +2228,14 @@ export const useCompositorStore = defineStore('compositor', {
      * Get evaluated effect parameter value at a given frame
      */
     getEffectParameterValue(layerId: string, effectId: string, paramKey: string, frame?: number): any {
-      const layer = this.project.layers.find(l => l.id === layerId);
+      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
       if (!layer || !layer.effects) return null;
 
       const effect = layer.effects.find(e => e.id === effectId);
       if (!effect || !effect.parameters[paramKey]) return null;
 
       const param = effect.parameters[paramKey];
-      const targetFrame = frame ?? this.project.currentFrame;
+      const targetFrame = frame ?? (this.getActiveComp()?.currentFrame ?? 0);
 
       // Use interpolation if animated
       if (param.animated && param.keyframes.length > 0) {
@@ -1878,14 +2254,17 @@ export const useCompositorStore = defineStore('compositor', {
      * Returns both the camera and the layer
      */
     createCameraLayer(name?: string): { camera: Camera3D; layer: Layer } {
+      const comp = this.getActiveComp();
+      const layers = this.getActiveCompLayers();
+
       const cameraId = `camera_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       const cameraName = name || `Camera ${this.cameras.size + 1}`;
 
       // Create the camera object
       const camera = createDefaultCamera(
         cameraId,
-        this.project.composition.width,
-        this.project.composition.height
+        comp?.settings.width || 1024,
+        comp?.settings.height || 1024
       );
       camera.name = cameraName;
 
@@ -1909,7 +2288,7 @@ export const useCompositorStore = defineStore('compositor', {
         threeD: true,  // Cameras are always 3D
         motionBlur: false,
         inPoint: 0,
-        outPoint: this.project.composition.frameCount - 1, // Last frame index (0-indexed)
+        outPoint: (comp?.settings.frameCount || 81) - 1, // Last frame index (0-indexed)
         parentId: null,
         blendMode: 'normal',
         opacity: createAnimatableProperty('opacity', 100, 'number'),
@@ -1922,7 +2301,7 @@ export const useCompositorStore = defineStore('compositor', {
         } as CameraLayerData
       };
 
-      this.project.layers.unshift(layer);
+      layers.unshift(layer);
       this.project.meta.modified = new Date().toISOString();
       this.pushHistory();
 
@@ -1959,7 +2338,8 @@ export const useCompositorStore = defineStore('compositor', {
       this.activeCameraId = cameraId;
 
       // Update all camera layers' isActiveCamera flag
-      for (const layer of this.project.layers) {
+      const layers = this.getActiveCompLayers();
+      for (const layer of layers) {
         if (layer.type === 'camera' && layer.data) {
           const cameraData = layer.data as CameraLayerData;
           cameraData.isActiveCamera = cameraData.cameraId === cameraId;
@@ -1973,15 +2353,17 @@ export const useCompositorStore = defineStore('compositor', {
      * Delete a camera (and its layer)
      */
     deleteCamera(cameraId: string): void {
+      const layers = this.getActiveCompLayers();
+
       // Find the associated layer
-      const layerIndex = this.project.layers.findIndex(
+      const layerIndex = layers.findIndex(
         l => l.type === 'camera' && (l.data as CameraLayerData)?.cameraId === cameraId
       );
 
       // Remove the layer if found
       if (layerIndex !== -1) {
-        const layerId = this.project.layers[layerIndex].id;
-        this.project.layers.splice(layerIndex, 1);
+        const layerId = layers[layerIndex].id;
+        layers.splice(layerIndex, 1);
         this.selectedLayerIds = this.selectedLayerIds.filter(id => id !== layerId);
       }
 
@@ -2191,7 +2573,7 @@ export const useCompositorStore = defineStore('compositor', {
      */
     getAudioFeatureAtFrame(feature: string, frame?: number): number {
       if (!this.audioAnalysis) return 0;
-      return getFeatureAtFrame(this.audioAnalysis, feature, frame ?? this.project.currentFrame);
+      return getFeatureAtFrame(this.audioAnalysis, feature, frame ?? (this.getActiveComp()?.currentFrame ?? 0));
     },
 
     /**
@@ -2313,7 +2695,7 @@ export const useCompositorStore = defineStore('compositor', {
      */
     getAllMappedValuesAtFrame(frame?: number): Map<TargetParameter, number> {
       if (!this.audioReactiveMapper) return new Map();
-      return this.audioReactiveMapper.getAllValuesAtFrame(frame ?? this.project.currentFrame);
+      return this.audioReactiveMapper.getAllValuesAtFrame(frame ?? (this.getActiveComp()?.currentFrame ?? 0));
     },
 
     /**
@@ -2339,7 +2721,7 @@ export const useCompositorStore = defineStore('compositor', {
      */
     isBeatAtCurrentFrame(): boolean {
       if (!this.audioAnalysis) return false;
-      return isBeatAtFrame(this.audioAnalysis, this.project.currentFrame);
+      return isBeatAtFrame(this.audioAnalysis, (this.getActiveComp()?.currentFrame ?? 0));
     },
 
     // ============================================================
@@ -2356,7 +2738,7 @@ export const useCompositorStore = defineStore('compositor', {
       return findNearestSnap(frame, this.snapConfig, pixelsPerFrame, {
         layers: this.layers,
         selectedLayerId,
-        currentFrame: this.project.currentFrame,
+        currentFrame: (this.getActiveComp()?.currentFrame ?? 0),
         audioAnalysis: this.audioAnalysis,
         peakData: this.peakData,
       });
@@ -2460,7 +2842,7 @@ export const useCompositorStore = defineStore('compositor', {
     updatePathAnimators(): void {
       if (!this.audioAnalysis) return;
 
-      const frame = this.project.currentFrame;
+      const frame = (this.getActiveComp()?.currentFrame ?? 0);
       const amplitude = getFeatureAtFrame(this.audioAnalysis, 'amplitude', frame);
       const isBeat = isBeatAtFrame(this.audioAnalysis, frame);
 
@@ -2528,7 +2910,7 @@ export const useCompositorStore = defineStore('compositor', {
      * Used by the driver system to read source properties
      */
     getPropertyValueAtFrame(layerId: string, propertyPath: PropertyPath, frame: number): number | null {
-      const layer = this.project.layers.find(l => l.id === layerId);
+      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
       if (!layer) return null;
 
       // Parse property path
@@ -2583,12 +2965,12 @@ export const useCompositorStore = defineStore('compositor', {
         return new Map();
       }
 
-      const layer = this.project.layers.find(l => l.id === layerId);
+      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
       if (!layer) return new Map();
 
       // Build base values map
       const baseValues = new Map<PropertyPath, number>();
-      const frame = this.project.currentFrame;
+      const frame = (this.getActiveComp()?.currentFrame ?? 0);
 
       // Position
       const pos = interpolateProperty(layer.transform.position, frame);

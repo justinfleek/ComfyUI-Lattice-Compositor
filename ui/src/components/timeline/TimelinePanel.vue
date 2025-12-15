@@ -1,5 +1,8 @@
 <template>
   <div class="timeline-panel" tabindex="0" @keydown="handleKeydown">
+    <!-- Composition Tabs -->
+    <CompositionTabs @newComposition="emit('openCompositionSettings')" />
+
     <div class="timeline-header">
       <div class="header-left">
         <span class="timecode">{{ formatTimecode(store.currentFrame) }}</span>
@@ -107,6 +110,11 @@
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { useCompositorStore } from '@/stores/compositorStore';
 import EnhancedLayerTrack from './EnhancedLayerTrack.vue';
+import CompositionTabs from './CompositionTabs.vue';
+
+const emit = defineEmits<{
+  (e: 'openCompositionSettings'): void;
+}>();
 
 const store = useCompositorStore();
 const pixelsPerFrame = ref(10);
