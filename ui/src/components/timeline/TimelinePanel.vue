@@ -30,11 +30,6 @@
       </div>
 
       <div class="header-right">
-        <div class="playback-controls">
-          <button @click="goToStart">|&lt;</button>
-          <button @click="togglePlayback" :class="{ active: isPlaying }">{{ isPlaying ? '||' : '▶' }}</button>
-          <button @click="goToEnd">&gt;|</button>
-        </div>
         <input type="range" min="1" max="50" v-model.number="pixelsPerFrame" class="zoom-slider" title="Zoom" />
       </div>
     </div>
@@ -101,13 +96,12 @@ import EnhancedLayerTrack from './EnhancedLayerTrack.vue';
 
 const store = useCompositorStore();
 const pixelsPerFrame = ref(10);
-const sidebarWidth = ref(450);
+const sidebarWidth = ref(450); // Increased default width for readability
 const expandedLayers = ref<Record<string, boolean>>({});
 const showAddLayerMenu = ref(false);
 const addLayerContainer = ref<null | HTMLElement>(null);
 const trackViewportRef = ref<HTMLElement | null>(null);
 const rulerCanvas = ref<HTMLCanvasElement | null>(null);
-const isResizing = ref(false);
 
 const filteredLayers = computed(() => store.layers || []);
 const playheadPosition = computed(() => store.currentFrame * pixelsPerFrame.value);
@@ -115,6 +109,7 @@ const playheadPosition = computed(() => store.currentFrame * pixelsPerFrame.valu
 // Force track to cover frames OR viewport, whichever is larger
 const trackContentWidth = computed(() => {
   const frameWidth = (store.frameCount + 50) * pixelsPerFrame.value;
+  // If we can't measure viewport yet, assume a reasonable min width (e.g. 1920)
   const viewWidth = trackViewportRef.value?.clientWidth || 1920;
   return Math.max(frameWidth, viewWidth);
 });
@@ -123,7 +118,7 @@ const sidebarGridStyle = computed(() => ({
   display: 'grid',
   gridTemplateColumns: '24px 24px 30px 24px 24px 24px 1fr 70px 70px',
   alignItems: 'center',
-  height: '32px',
+  height: '32px', // Taller rows
   width: '100%',
   boxSizing: 'border-box'
 }));
@@ -131,9 +126,8 @@ const sidebarGridStyle = computed(() => ({
 // Actions
 function toggleAddLayerMenu() { showAddLayerMenu.value = !showAddLayerMenu.value; }
 function addLayer(type: string) {
-  if (type === 'text') store.createTextLayer();
-  else if (type === 'camera') store.createCameraLayer();
-  else if (type === 'spline') store.createSplineLayer();
+  if(type === 'text') store.createTextLayer();
+  else if(type === 'video') store.createLayer('video');
   else store.createLayer(type as any);
   showAddLayerMenu.value = false;
 }
@@ -142,12 +136,9 @@ function selectLayer(id: string) { store.selectLayer(id); }
 function updateLayer(id: string, u: any) { store.updateLayer(id, u); }
 function deleteSelectedLayers() { store.selectedLayerIds.forEach(id => store.deleteLayer(id)); }
 function setFrame(e: Event) { store.setFrame(parseInt((e.target as HTMLInputElement).value) || 0); }
-
-// Playback
-const isPlaying = ref(false);
-function togglePlayback() { isPlaying.value = !isPlaying.value; }
-function goToStart() { store.setFrame(0); }
-function goToEnd() { store.setFrame(store.frameCount - 1); }
+function togglePlayback() { store.togglePlayback(); }
+function goToStart() { store.goToStart(); }
+function goToEnd() { store.goToEnd(); }
 
 // Ruler Draw
 function drawRuler() {
@@ -163,17 +154,17 @@ function drawRuler() {
   ctx.fillRect(0, 0, cvs.width, cvs.height);
   ctx.strokeStyle = '#666';
   ctx.fillStyle = '#aaa';
-  ctx.font = '12px sans-serif';
+  ctx.font = '11px sans-serif';
 
   const ppf = pixelsPerFrame.value;
   const step = ppf < 5 ? 20 : 10;
 
-  for (let f = 0; f <= store.frameCount + 50; f++) {
+  for(let f=0; f<=store.frameCount + 50; f++) {
     const x = f * ppf;
-    if (f % step === 0) {
+    if(f % step === 0) {
       ctx.beginPath(); ctx.moveTo(x, 15); ctx.lineTo(x, 30); ctx.stroke();
       ctx.fillText(String(f), x + 2, 12);
-    } else if (f % (step / 2) === 0) {
+    } else if (f % (step/2) === 0) {
       ctx.beginPath(); ctx.moveTo(x, 22); ctx.lineTo(x, 30); ctx.stroke();
     }
   }
@@ -183,7 +174,7 @@ function drawRuler() {
 function startRulerScrub(e: MouseEvent) {
   const update = (ev: MouseEvent) => {
     const rect = rulerCanvas.value!.getBoundingClientRect();
-    const x = ev.clientX - rect.left + (trackViewportRef.value?.scrollLeft || 0);
+    const x = ev.clientX - rect.left;
     const f = Math.max(0, Math.min(store.frameCount - 1, x / pixelsPerFrame.value));
     store.setFrame(Math.round(f));
   };
@@ -193,25 +184,21 @@ function startRulerScrub(e: MouseEvent) {
 }
 
 function startResize(e: MouseEvent) {
-  isResizing.value = true;
   const startX = e.clientX;
   const startW = sidebarWidth.value;
-  const onMove = (ev: MouseEvent) => { sidebarWidth.value = Math.max(300, Math.min(800, startW + (ev.clientX - startX))); };
-  const onUp = () => { isResizing.value = false; window.removeEventListener('mousemove', onMove); };
+  const onMove = (ev: MouseEvent) => { sidebarWidth.value = Math.max(300, startW + (ev.clientX - startX)); };
   window.addEventListener('mousemove', onMove);
-  window.addEventListener('mouseup', onUp, { once: true });
+  window.addEventListener('mouseup', () => window.removeEventListener('mousemove', onMove), { once: true });
 }
 
-function syncScrollX(e: Event) { /* Sync logic if needed */ }
+function syncScrollX(e: Event) { /* Sync logic if needed later */ }
 
 function handleKeydown(e: KeyboardEvent) {
-  if (e.target instanceof HTMLInputElement) return;
-  if (e.key === 'Delete') deleteSelectedLayers();
-  if (e.key === ' ') { e.preventDefault(); togglePlayback(); }
+  if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+  if (e.code === 'Space') { e.preventDefault(); togglePlayback(); }
 }
 
 watch(() => [trackContentWidth.value, pixelsPerFrame.value], () => nextTick(drawRuler));
-
 onMounted(() => {
   drawRuler();
   window.addEventListener('mousedown', (e) => {
@@ -221,49 +208,28 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.timeline-panel { display: flex; flex-direction: column; height: 100%; background: #111; color: #eee; font-family: 'Segoe UI', sans-serif; font-size: 14px; }
-.timeline-header { height: 44px; background: #2a2a2a; border-bottom: 1px solid #000; display: flex; justify-content: space-between; padding: 0 12px; align-items: center; }
-.header-left, .header-center, .header-right { display: flex; gap: 12px; align-items: center; }
-.timeline-title { font-weight: 600; font-size: 15px; color: #ddd; }
-.frame-display { display: flex; align-items: center; gap: 6px; }
-.frame-input { width: 60px; background: #111; border: 1px solid #444; color: #3ea6ff; padding: 4px 6px; text-align: center; font-size: 14px; border-radius: 3px; }
-.fps-label { color: #888; font-size: 12px; }
-
-.add-layer-menu { position: absolute; top: 100%; left: 0; background: #333; z-index: 1000; border: 1px solid #000; display: flex; flex-direction: column; min-width: 140px; border-radius: 4px; }
-.add-layer-menu button { text-align: left; padding: 10px 12px; border: none; background: transparent; color: #eee; cursor: pointer; font-size: 13px; }
+.timeline-panel { display: flex; flex-direction: column; height: 100%; background: #111; color: #eee; font-family: 'Segoe UI', sans-serif; font-size: 13px; }
+.timeline-header { height: 40px; background: #2a2a2a; border-bottom: 1px solid #000; display: flex; justify-content: space-between; padding: 0 10px; align-items: center; }
+.header-left, .header-center, .header-right { display: flex; gap: 10px; align-items: center; }
+.add-layer-menu { position: absolute; top: 100%; left: 0; background: #333; z-index: 1000; border: 1px solid #000; display: flex; flex-direction: column; min-width: 120px; }
+.add-layer-menu button { text-align: left; padding: 8px; border: none; background: transparent; color: #eee; cursor: pointer; }
 .add-layer-menu button:hover { background: #4a90d9; }
-.add-layer-btn { padding: 8px 14px; background: #444; border: 1px solid #555; color: white; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; }
-
-.playback-controls { display: flex; gap: 4px; }
-.playback-controls button { padding: 6px 10px; font-size: 12px; }
+.add-layer-btn { padding: 6px 12px; background: #444; border: 1px solid #555; color: white; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold; }
 
 .timeline-content { flex: 1; display: flex; overflow: hidden; }
 .timeline-sidebar { background: #1e1e1e; border-right: 1px solid #000; display: flex; flex-direction: column; flex-shrink: 0; }
-.sidebar-header-row { height: 32px; background: #252525; display: flex; align-items: center; border-bottom: 1px solid #000; font-weight: bold; padding-left: 4px; }
-.col-header { padding: 0 6px; font-size: 13px; color: #aaa; }
-.col-arrow { width: 24px; }
-.col-name { flex: 1; padding-left: 8px; }
-.col-mode { width: 70px; }
-.col-parent { width: 70px; }
+.sidebar-header-row { height: 30px; background: #252525; display: flex; align-items: center; border-bottom: 1px solid #000; font-weight: bold; padding-left: 4px; }
+.col-header { padding: 0 4px; font-size: 12px; color: #aaa; }
 .sidebar-scroll-area { flex: 1; overflow-y: auto; overflow-x: hidden; }
 
-.sidebar-resizer { width: 5px; background: #111; cursor: col-resize; flex-shrink: 0; }
+.sidebar-resizer { width: 4px; background: #111; cursor: col-resize; flex-shrink: 0; }
 .sidebar-resizer:hover { background: #4a90d9; }
 
-.track-viewport { flex: 1; display: flex; flex-direction: column; overflow-x: auto; overflow-y: hidden; position: relative; background: #151515; min-width: 100%; }
-.track-scroll-content { min-height: 100%; min-width: 100%; position: relative; display: flex; flex-direction: column; }
-.time-ruler { height: 32px; position: relative; background: #222; border-bottom: 1px solid #000; cursor: pointer; flex-shrink: 0; }
-.time-ruler canvas { display: block; }
+.track-viewport { flex: 1; display: flex; flex-direction: column; overflow-x: auto; overflow-y: hidden; position: relative; background: #151515; }
+.track-scroll-content { min-height: 100%; position: relative; display: flex; flex-direction: column; }
+.time-ruler { height: 30px; position: relative; background: #222; border-bottom: 1px solid #000; cursor: pointer; }
 .layer-bars-container { flex: 1; position: relative; }
-.playhead-head { position: absolute; top: 0; width: 2px; height: 32px; background: #e74c3c; z-index: 10; pointer-events: none; }
-.playhead-line { position: absolute; top: 0; bottom: 0; width: 2px; background: #e74c3c; pointer-events: none; z-index: 10; }
+.playhead-head { position: absolute; top: 0; width: 2px; height: 30px; background: #e74c3c; z-index: 10; pointer-events: none; }
+.playhead-line { position: absolute; top: 0; bottom: 0; width: 1px; background: #e74c3c; pointer-events: none; z-index: 10; }
 .grid-background { position: absolute; inset: 0; pointer-events: none; background-image: linear-gradient(to right, #222 1px, transparent 1px); background-size: 100px 100%; opacity: 0.3; }
-
-button { background: #333; border: 1px solid #444; color: #eee; cursor: pointer; padding: 6px 12px; border-radius: 4px; font-size: 14px; }
-button:hover { background: #444; }
-button.active { background: #4a90d9; border-color: #4a90d9; }
-button:disabled { opacity: 0.5; cursor: not-allowed; }
-.zoom-slider { width: 100px; }
-.tool-group { position: relative; }
-.add-layer-wrapper { position: relative; }
 </style>
