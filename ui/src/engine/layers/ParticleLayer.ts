@@ -40,6 +40,12 @@ export class ParticleLayer extends BaseLayer {
   /** Composition FPS for time calculation */
   private fps: number = 60;
 
+  /** Deterministic seed derived from layer ID */
+  private readonly layerSeed: number;
+
+  /** Last evaluated frame (for scrub detection) */
+  private lastEvaluatedFrame: number = -1;
+
   /** Performance stats */
   private stats = {
     particleCount: 0,
@@ -50,14 +56,33 @@ export class ParticleLayer extends BaseLayer {
   constructor(layerData: Layer) {
     super(layerData);
 
-    // Build configuration from layer data
-    this.systemConfig = this.buildSystemConfig(layerData);
+    // Generate deterministic seed from layer ID
+    // DETERMINISM: Same layer ID always produces same seed
+    this.layerSeed = this.generateSeedFromId(layerData.id);
 
-    // Create particle system
+    // Build configuration from layer data (with deterministic seed)
+    this.systemConfig = this.buildSystemConfig(layerData);
+    this.systemConfig.randomSeed = this.layerSeed;
+
+    // Create particle system with deterministic seed
     this.particleSystem = new GPUParticleSystem(this.systemConfig);
 
     // Apply initial blend mode
     this.initializeBlendMode();
+  }
+
+  /**
+   * Generate deterministic seed from layer ID
+   * DETERMINISM: Same layer ID always produces identical seed
+   */
+  private generateSeedFromId(layerId: string): number {
+    let hash = 0;
+    for (let i = 0; i < layerId.length; i++) {
+      const char = layerId.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32bit integer
+    }
+    return Math.abs(hash) || 12345; // Fallback to 12345 if 0
   }
 
   /**
@@ -452,24 +477,68 @@ export class ParticleLayer extends BaseLayer {
 
   /**
    * Reset the particle system
+   * DETERMINISM: Resets to initial state with original seed
    */
   reset(): void {
     this.particleSystem.reset();
+    this.lastEvaluatedFrame = -1;
   }
 
   // ============================================================================
   // ABSTRACT IMPLEMENTATIONS
   // ============================================================================
 
-  protected onEvaluateFrame(_frame: number): void {
-    // Calculate delta time based on composition frame rate
-    const deltaTime = 1 / this.fps;
+  protected onEvaluateFrame(frame: number): void {
+    // DETERMINISM: Scrub-safe particle evaluation
+    // When scrubbing backwards or to a non-sequential frame, we must
+    // reset and replay to ensure consistent results
+    const isSequential = frame === this.lastEvaluatedFrame + 1;
+    const needsReplay = !isSequential && frame !== this.lastEvaluatedFrame;
 
-    // Apply audio-reactive values to particle system
+    if (needsReplay) {
+      // Reset to initial state (restores RNG seed)
+      this.particleSystem.reset();
+
+      // Replay from frame 0 to target frame
+      // This ensures identical results regardless of scrub order
+      const deltaTime = 1 / this.fps;
+      for (let f = 0; f < frame; f++) {
+        this.particleSystem.step(deltaTime);
+      }
+    } else if (isSequential) {
+      // Sequential playback - just step once
+      const deltaTime = 1 / this.fps;
+      this.particleSystem.step(deltaTime);
+    }
+    // If frame === lastEvaluatedFrame, no stepping needed (cached result)
+
+    this.lastEvaluatedFrame = frame;
+
+    // Apply audio-reactive values after simulation
     this.applyAudioReactivity();
 
-    // Step the simulation
-    this.step(deltaTime);
+    // Update stats
+    const state = this.particleSystem.getState();
+    this.stats.particleCount = state.particleCount;
+    this.stats.updateTimeMs = state.updateTimeMs;
+    this.stats.renderTimeMs = state.renderTimeMs;
+  }
+
+  /**
+   * Evaluate particles at a specific frame (scrub-safe)
+   * DETERMINISM: Returns identical results regardless of evaluation order
+   */
+  evaluateAtFrame(frame: number): void {
+    // Reset to initial state
+    this.particleSystem.reset();
+
+    // Step to target frame
+    const deltaTime = 1 / this.fps;
+    for (let f = 0; f < frame; f++) {
+      this.particleSystem.step(deltaTime);
+    }
+
+    this.lastEvaluatedFrame = frame;
   }
 
   /**
@@ -546,11 +615,17 @@ export class ParticleLayer extends BaseLayer {
         type: 'particles',
       } as Layer);
 
+      // DETERMINISM: Preserve the layer-specific seed
+      this.systemConfig.randomSeed = this.layerSeed;
+
       // Dispose old system
       this.particleSystem.dispose();
 
-      // Create new system
+      // Create new system with deterministic seed
       this.particleSystem = new GPUParticleSystem(this.systemConfig);
+
+      // Reset evaluation state
+      this.lastEvaluatedFrame = -1;
 
       // Reinitialize if we have a renderer
       if (this.rendererRef) {

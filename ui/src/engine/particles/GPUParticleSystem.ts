@@ -2305,6 +2305,7 @@ export class GPUParticleSystem {
 
   /**
    * Reset the particle system
+   * DETERMINISM: Resets RNG to initial seed for reproducible simulation
    */
   reset(): void {
     this.particleBufferA.fill(0);
@@ -2317,6 +2318,26 @@ export class GPUParticleSystem {
     this.state.simulationTime = 0;
     this.state.frameCount = 0;
     this.spatialHash.clear();
+
+    // Reset RNG to initial seed for deterministic replay
+    // This ensures reset() + step(N) always produces same result
+    this.rng = this.createSeededRandom(this.config.randomSeed ?? 12345);
+  }
+
+  /**
+   * Get the current seed
+   */
+  getSeed(): number {
+    return this.config.randomSeed ?? 12345;
+  }
+
+  /**
+   * Set a new seed and reset the system
+   * DETERMINISM: Used to ensure layer-specific reproducible seeds
+   */
+  setSeed(seed: number): void {
+    this.config.randomSeed = seed;
+    this.reset();
   }
 
   /**
