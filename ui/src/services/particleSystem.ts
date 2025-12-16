@@ -28,6 +28,12 @@ export interface Particle {
   baseColor: [number, number, number, number];
   emitterId: string;
   isSubParticle: boolean;
+  // Sprite/texture support
+  rotation: number;           // Current rotation in radians
+  angularVelocity: number;    // Rotation speed in radians/frame
+  spriteIndex: number;        // For sprite sheets (frame index)
+  // Collision tracking
+  collisionCount: number;     // Number of collisions this particle has had
 }
 
 export interface TurbulenceConfig {
@@ -67,6 +73,30 @@ interface SpatialGrid {
   cells: Map<string, Particle[]>;
 }
 
+// Emitter shape types for geometric emission
+export type EmitterShape = 'point' | 'line' | 'circle' | 'box' | 'sphere' | 'ring';
+
+// Sprite/texture configuration for particles
+export interface SpriteConfig {
+  enabled: boolean;
+  imageUrl: string | null;        // URL or data URL for sprite image
+  imageData: ImageBitmap | HTMLImageElement | null;  // Loaded image data
+  // Sprite sheet settings
+  isSheet: boolean;               // Is this a sprite sheet?
+  columns: number;                // Grid columns for sprite sheet
+  rows: number;                   // Grid rows for sprite sheet
+  totalFrames: number;            // Total frames in sheet
+  frameRate: number;              // Animation FPS
+  playMode: 'loop' | 'once' | 'pingpong' | 'random';
+  // Billboard behavior
+  billboard: boolean;             // Always face camera
+  // Rotation
+  rotationEnabled: boolean;
+  rotationSpeed: number;          // Degrees per frame
+  rotationSpeedVariance: number;
+  alignToVelocity: boolean;       // Rotate to face movement direction
+}
+
 export interface EmitterConfig {
   id: string;
   name: string;
@@ -86,6 +116,18 @@ export interface EmitterConfig {
   enabled: boolean;
   burstOnBeat: boolean;
   burstCount: number;
+  // Geometric emitter shape
+  shape: EmitterShape;
+  // Shape parameters (normalized 0-1 coordinates)
+  shapeRadius: number;            // For circle, sphere, ring
+  shapeWidth: number;             // For box, line
+  shapeHeight: number;            // For box
+  shapeDepth: number;             // For box (3D), sphere
+  shapeInnerRadius: number;       // For ring (donut)
+  emitFromEdge: boolean;          // Emit from edge only (not filled)
+  emitFromVolume: boolean;        // Emit from volume (3D shapes)
+  // Sprite/texture configuration
+  sprite: SpriteConfig;
 }
 
 export interface GravityWellConfig {
@@ -120,6 +162,31 @@ export interface ParticleModulation {
   easing: string;
 }
 
+// Collision detection configuration
+export interface CollisionConfig {
+  enabled: boolean;
+  // Particle-to-particle collision
+  particleCollision: boolean;
+  particleCollisionRadius: number;  // Multiplier on particle size for collision
+  particleCollisionResponse: 'bounce' | 'absorb' | 'explode';
+  particleCollisionDamping: number; // 0-1, velocity retained after collision
+  // Layer/boundary collision
+  layerCollision: boolean;
+  layerCollisionLayerId: string | null;  // Depth map layer for collision
+  layerCollisionThreshold: number;       // Depth threshold for collision
+  // Floor/ceiling collision
+  floorEnabled: boolean;
+  floorY: number;                   // Normalized Y position of floor (0-1)
+  ceilingEnabled: boolean;
+  ceilingY: number;                 // Normalized Y position of ceiling
+  wallsEnabled: boolean;
+  // Collision physics
+  bounciness: number;               // 0-1, how much velocity is preserved
+  friction: number;                 // Surface friction on collision
+  // Spatial hashing for performance
+  spatialHashCellSize: number;      // Cell size for spatial hash (pixels)
+}
+
 export interface ParticleSystemConfig {
   maxParticles: number;
   gravity: number;
@@ -131,6 +198,8 @@ export interface ParticleSystemConfig {
   friction: number;
   turbulenceFields: TurbulenceConfig[];
   subEmitters: SubEmitterConfig[];
+  // Collision configuration
+  collision: CollisionConfig;
 }
 
 export interface RenderOptions {
@@ -138,7 +207,7 @@ export interface RenderOptions {
   renderTrails: boolean;
   trailLength: number;
   trailOpacityFalloff: number;
-  particleShape: 'circle' | 'square' | 'triangle' | 'star';
+  particleShape: 'circle' | 'square' | 'triangle' | 'star' | 'sprite';
   glowEnabled: boolean;
   glowRadius: number;
   glowIntensity: number;
@@ -148,11 +217,54 @@ export interface RenderOptions {
   motionBlurSamples: number;    // Number of samples for blur (1-16)
   // Particle connection settings
   connections: ConnectionConfig;
+  // Sprite rendering settings
+  spriteSmoothing: boolean;     // Enable image smoothing for sprites
+  spriteOpacityByAge: boolean;  // Fade sprites based on particle age
 }
 
 // ============================================================================
 // Default Configurations
 // ============================================================================
+
+export function createDefaultSpriteConfig(): SpriteConfig {
+  return {
+    enabled: false,
+    imageUrl: null,
+    imageData: null,
+    isSheet: false,
+    columns: 1,
+    rows: 1,
+    totalFrames: 1,
+    frameRate: 30,
+    playMode: 'loop',
+    billboard: true,
+    rotationEnabled: false,
+    rotationSpeed: 0,
+    rotationSpeedVariance: 0,
+    alignToVelocity: false
+  };
+}
+
+export function createDefaultCollisionConfig(): CollisionConfig {
+  return {
+    enabled: false,
+    particleCollision: false,
+    particleCollisionRadius: 1.0,
+    particleCollisionResponse: 'bounce',
+    particleCollisionDamping: 0.8,
+    layerCollision: false,
+    layerCollisionLayerId: null,
+    layerCollisionThreshold: 0.5,
+    floorEnabled: false,
+    floorY: 1.0,
+    ceilingEnabled: false,
+    ceilingY: 0.0,
+    wallsEnabled: false,
+    bounciness: 0.7,
+    friction: 0.1,
+    spatialHashCellSize: 50
+  };
+}
 
 export function createDefaultEmitterConfig(id?: string): EmitterConfig {
   return {
@@ -173,7 +285,18 @@ export function createDefaultEmitterConfig(id?: string): EmitterConfig {
     lifetimeVariance: 10,
     enabled: true,
     burstOnBeat: false,
-    burstCount: 20
+    burstCount: 20,
+    // Geometric emitter defaults
+    shape: 'point',
+    shapeRadius: 0.1,
+    shapeWidth: 0.2,
+    shapeHeight: 0.2,
+    shapeDepth: 0.2,
+    shapeInnerRadius: 0.05,
+    emitFromEdge: false,
+    emitFromVolume: false,
+    // Sprite configuration
+    sprite: createDefaultSpriteConfig()
   };
 }
 
@@ -253,7 +376,8 @@ export function createDefaultSystemConfig(): ParticleSystemConfig {
     boundaryBehavior: 'kill',
     friction: 0.01,
     turbulenceFields: [],
-    subEmitters: []
+    subEmitters: [],
+    collision: createDefaultCollisionConfig()
   };
 }
 
@@ -270,7 +394,9 @@ export function createDefaultRenderOptions(): RenderOptions {
     motionBlur: false,
     motionBlurStrength: 0.5,
     motionBlurSamples: 8,
-    connections: createDefaultConnectionConfig()
+    connections: createDefaultConnectionConfig(),
+    spriteSmoothing: true,
+    spriteOpacityByAge: true
   };
 }
 
@@ -301,9 +427,61 @@ export class ParticleSystem {
   // Render options cache for spatial grid
   private renderOptions: RenderOptions = createDefaultRenderOptions();
 
+  // Sprite image cache - maps emitter ID to loaded image
+  private spriteCache: Map<string, HTMLImageElement | ImageBitmap> = new Map();
+
+  // Collision spatial hash grid
+  private collisionGrid: Map<string, Particle[]> = new Map();
+  private collisionGridCellSize: number = 50;
+
   constructor(config: Partial<ParticleSystemConfig> = {}) {
     this.config = { ...createDefaultSystemConfig(), ...config };
     this.noise2D = createNoise2D();
+    if (this.config.collision) {
+      this.collisionGridCellSize = this.config.collision.spatialHashCellSize;
+    }
+  }
+
+  // ============================================================================
+  // Sprite Management
+  // ============================================================================
+
+  /**
+   * Load a sprite image for an emitter
+   */
+  async loadSprite(emitterId: string, imageUrl: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        this.spriteCache.set(emitterId, img);
+        const emitter = this.emitters.get(emitterId);
+        if (emitter && emitter.sprite) {
+          emitter.sprite.imageData = img;
+        }
+        resolve();
+      };
+      img.onerror = reject;
+      img.src = imageUrl;
+    });
+  }
+
+  /**
+   * Set sprite image directly (for pre-loaded images)
+   */
+  setSpriteImage(emitterId: string, image: HTMLImageElement | ImageBitmap): void {
+    this.spriteCache.set(emitterId, image);
+    const emitter = this.emitters.get(emitterId);
+    if (emitter && emitter.sprite) {
+      emitter.sprite.imageData = image;
+    }
+  }
+
+  /**
+   * Get sprite image for an emitter
+   */
+  getSpriteImage(emitterId: string): HTMLImageElement | ImageBitmap | null {
+    return this.spriteCache.get(emitterId) ?? null;
   }
 
   // ============================================================================
@@ -555,6 +733,22 @@ export class ParticleSystem {
       p.vx *= frictionFactor;
       p.vy *= frictionFactor;
 
+      // f2. Update rotation (for sprites)
+      if (p.angularVelocity !== 0) {
+        p.rotation += p.angularVelocity * deltaTime;
+      }
+
+      // f3. Align to velocity if emitter configured for it
+      const emitter = this.emitters.get(p.emitterId);
+      if (emitter?.sprite?.alignToVelocity && (p.vx !== 0 || p.vy !== 0)) {
+        p.rotation = Math.atan2(p.vy, p.vx);
+      }
+
+      // f4. Update sprite animation frame
+      if (emitter?.sprite?.isSheet && emitter.sprite.totalFrames > 1) {
+        this.updateSpriteFrame(p, emitter.sprite, deltaTime);
+      }
+
       // g. Update position
       p.x += p.vx * deltaTime;
       p.y += p.vy * deltaTime;
@@ -584,13 +778,218 @@ export class ParticleSystem {
       }
     }
 
+    // Particle-to-particle collision detection (after all positions updated)
+    if (this.config.collision?.enabled && this.config.collision.particleCollision) {
+      this.handleParticleCollisions();
+    }
+
+    // Floor/ceiling/wall collision
+    if (this.config.collision?.enabled) {
+      this.handleEnvironmentCollisions();
+    }
+
     // Increment noise time for turbulence evolution
     this.noiseTime += deltaTime;
     this.frameCount++;
   }
 
+  /**
+   * Update sprite animation frame based on age and play mode
+   */
+  private updateSpriteFrame(p: Particle, sprite: SpriteConfig, _deltaTime: number): void {
+    const totalFrames = sprite.totalFrames;
+    const lifeRatio = p.age / p.lifetime;
+
+    switch (sprite.playMode) {
+      case 'loop': {
+        // Calculate frame based on age and frame rate
+        const framesElapsed = Math.floor(p.age * sprite.frameRate / 60); // Assuming 60fps base
+        p.spriteIndex = framesElapsed % totalFrames;
+        break;
+      }
+      case 'once': {
+        // Play through once, stop at last frame
+        const framesElapsed = Math.floor(p.age * sprite.frameRate / 60);
+        p.spriteIndex = Math.min(framesElapsed, totalFrames - 1);
+        break;
+      }
+      case 'pingpong': {
+        // Play forward then backward
+        const framesElapsed = Math.floor(p.age * sprite.frameRate / 60);
+        const cycle = Math.floor(framesElapsed / (totalFrames - 1));
+        const frameInCycle = framesElapsed % (totalFrames - 1);
+        p.spriteIndex = cycle % 2 === 0 ? frameInCycle : (totalFrames - 1 - frameInCycle);
+        break;
+      }
+      case 'random': {
+        // Frame already set randomly at spawn, but can also change over time
+        if (Math.random() < 0.1) { // 10% chance per frame to change
+          p.spriteIndex = Math.floor(Math.random() * totalFrames);
+        }
+        break;
+      }
+    }
+  }
+
+  /**
+   * Handle particle-to-particle collisions using spatial hashing
+   */
+  private handleParticleCollisions(): void {
+    const collision = this.config.collision;
+    if (!collision || !collision.particleCollision) return;
+
+    // Build spatial hash grid
+    this.collisionGrid.clear();
+    const cellSize = this.collisionGridCellSize / 1000; // Normalize to 0-1 space
+
+    for (const p of this.particles) {
+      const cellX = Math.floor(p.x / cellSize);
+      const cellY = Math.floor(p.y / cellSize);
+      const key = `${cellX},${cellY}`;
+      if (!this.collisionGrid.has(key)) {
+        this.collisionGrid.set(key, []);
+      }
+      this.collisionGrid.get(key)!.push(p);
+    }
+
+    // Check collisions within neighboring cells
+    const checked = new Set<string>();
+
+    for (const p of this.particles) {
+      const cellX = Math.floor(p.x / cellSize);
+      const cellY = Math.floor(p.y / cellSize);
+
+      // Check this cell and 8 neighbors
+      for (let dx = -1; dx <= 1; dx++) {
+        for (let dy = -1; dy <= 1; dy++) {
+          const key = `${cellX + dx},${cellY + dy}`;
+          const cell = this.collisionGrid.get(key);
+          if (!cell) continue;
+
+          for (const other of cell) {
+            if (other.id <= p.id) continue; // Only check each pair once
+
+            const pairKey = `${Math.min(p.id, other.id)}-${Math.max(p.id, other.id)}`;
+            if (checked.has(pairKey)) continue;
+            checked.add(pairKey);
+
+            // Calculate collision distance
+            const radiusP = (p.size / 1000) * collision.particleCollisionRadius;
+            const radiusO = (other.size / 1000) * collision.particleCollisionRadius;
+            const minDist = radiusP + radiusO;
+
+            const dx2 = other.x - p.x;
+            const dy2 = other.y - p.y;
+            const distSq = dx2 * dx2 + dy2 * dy2;
+
+            if (distSq < minDist * minDist && distSq > 0.000001) {
+              // Collision detected!
+              const dist = Math.sqrt(distSq);
+              const nx = dx2 / dist;
+              const ny = dy2 / dist;
+
+              // Response based on collision type
+              switch (collision.particleCollisionResponse) {
+                case 'bounce': {
+                  // Elastic collision with damping
+                  const dvx = p.vx - other.vx;
+                  const dvy = p.vy - other.vy;
+                  const dvDotN = dvx * nx + dvy * ny;
+
+                  if (dvDotN > 0) { // Only if moving towards each other
+                    const damping = collision.particleCollisionDamping;
+                    p.vx -= dvDotN * nx * damping;
+                    p.vy -= dvDotN * ny * damping;
+                    other.vx += dvDotN * nx * damping;
+                    other.vy += dvDotN * ny * damping;
+
+                    // Separate particles to prevent overlap
+                    const overlap = minDist - dist;
+                    p.x -= nx * overlap * 0.5;
+                    p.y -= ny * overlap * 0.5;
+                    other.x += nx * overlap * 0.5;
+                    other.y += ny * overlap * 0.5;
+                  }
+                  break;
+                }
+                case 'absorb': {
+                  // Smaller particle dies, larger grows
+                  if (p.size > other.size) {
+                    p.size += other.size * 0.1;
+                    other.age = other.lifetime + 1; // Kill
+                  } else {
+                    other.size += p.size * 0.1;
+                    p.age = p.lifetime + 1; // Kill
+                  }
+                  break;
+                }
+                case 'explode': {
+                  // Both particles die (sub-emitters will trigger)
+                  p.age = p.lifetime + 1;
+                  other.age = other.lifetime + 1;
+                  break;
+                }
+              }
+
+              p.collisionCount++;
+              other.collisionCount++;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Handle floor, ceiling, and wall collisions
+   */
+  private handleEnvironmentCollisions(): void {
+    const collision = this.config.collision;
+    if (!collision?.enabled) return;
+
+    const bounciness = collision.bounciness;
+    const friction = collision.friction;
+
+    for (const p of this.particles) {
+      // Floor collision
+      if (collision.floorEnabled && p.y > collision.floorY) {
+        p.y = collision.floorY;
+        p.vy = -p.vy * bounciness;
+        p.vx *= (1 - friction);
+        p.collisionCount++;
+      }
+
+      // Ceiling collision
+      if (collision.ceilingEnabled && p.y < collision.ceilingY) {
+        p.y = collision.ceilingY;
+        p.vy = -p.vy * bounciness;
+        p.vx *= (1 - friction);
+        p.collisionCount++;
+      }
+
+      // Wall collisions
+      if (collision.wallsEnabled) {
+        if (p.x < 0) {
+          p.x = 0;
+          p.vx = -p.vx * bounciness;
+          p.vy *= (1 - friction);
+          p.collisionCount++;
+        }
+        if (p.x > 1) {
+          p.x = 1;
+          p.vx = -p.vx * bounciness;
+          p.vy *= (1 - friction);
+          p.collisionCount++;
+        }
+      }
+    }
+  }
+
   private spawnParticle(emitter: EmitterConfig): void {
     if (this.particles.length >= this.config.maxParticles) return;
+
+    // Calculate spawn position based on emitter shape
+    const spawnPos = this.getEmitterSpawnPosition(emitter);
 
     // Calculate emission direction with spread
     const spreadRad = (emitter.spread * Math.PI) / 180;
@@ -607,12 +1006,34 @@ export class ParticleSystem {
     // Calculate lifetime with variance
     const lifetime = Math.max(1, emitter.particleLifetime + (Math.random() - 0.5) * 2 * emitter.lifetimeVariance);
 
+    // Calculate initial rotation and angular velocity
+    let rotation = 0;
+    let angularVelocity = 0;
+    const sprite = emitter.sprite;
+    if (sprite && sprite.rotationEnabled) {
+      rotation = Math.random() * Math.PI * 2; // Random initial rotation
+      const rotSpeed = sprite.rotationSpeed * (Math.PI / 180); // Convert to radians
+      const rotVariance = sprite.rotationSpeedVariance * (Math.PI / 180);
+      angularVelocity = rotSpeed + (Math.random() - 0.5) * 2 * rotVariance;
+    }
+
+    // Align to velocity if configured
+    if (sprite && sprite.alignToVelocity) {
+      rotation = angle;
+    }
+
+    // Calculate sprite frame for animated sprites
+    let spriteIndex = 0;
+    if (sprite && sprite.isSheet && sprite.playMode === 'random') {
+      spriteIndex = Math.floor(Math.random() * sprite.totalFrames);
+    }
+
     const particle: Particle = {
       id: this.nextParticleId++,
-      x: emitter.x,
-      y: emitter.y,
-      prevX: emitter.x,
-      prevY: emitter.y,
+      x: spawnPos.x,
+      y: spawnPos.y,
+      prevX: spawnPos.x,
+      prevY: spawnPos.y,
       vx: Math.cos(angle) * speedNormalized,
       vy: Math.sin(angle) * speedNormalized,
       age: 0,
@@ -622,11 +1043,133 @@ export class ParticleSystem {
       color: [...emitter.color, 255] as [number, number, number, number],
       baseColor: [...emitter.color, 255] as [number, number, number, number],
       emitterId: emitter.id,
-      isSubParticle: false
+      isSubParticle: false,
+      rotation,
+      angularVelocity,
+      spriteIndex,
+      collisionCount: 0
     };
 
     this.particles.push(particle);
     this.trailHistory.set(particle.id, [{ x: particle.x, y: particle.y }]);
+  }
+
+  /**
+   * Calculate spawn position based on emitter shape
+   */
+  private getEmitterSpawnPosition(emitter: EmitterConfig): { x: number; y: number } {
+    const shape = emitter.shape || 'point';
+
+    switch (shape) {
+      case 'point':
+        return { x: emitter.x, y: emitter.y };
+
+      case 'line': {
+        // Line from emitter position extending in direction
+        const t = Math.random();
+        const halfWidth = emitter.shapeWidth / 2;
+        const dirRad = (emitter.direction * Math.PI) / 180;
+        // Perpendicular to direction
+        const perpX = -Math.sin(dirRad);
+        const perpY = Math.cos(dirRad);
+        return {
+          x: emitter.x + perpX * (t - 0.5) * halfWidth * 2,
+          y: emitter.y + perpY * (t - 0.5) * halfWidth * 2
+        };
+      }
+
+      case 'circle': {
+        const radius = emitter.shapeRadius;
+        if (emitter.emitFromEdge) {
+          // Emit from edge only
+          const angle = Math.random() * Math.PI * 2;
+          return {
+            x: emitter.x + Math.cos(angle) * radius,
+            y: emitter.y + Math.sin(angle) * radius
+          };
+        } else {
+          // Emit from filled circle (uniform distribution)
+          const angle = Math.random() * Math.PI * 2;
+          const r = radius * Math.sqrt(Math.random()); // sqrt for uniform area distribution
+          return {
+            x: emitter.x + Math.cos(angle) * r,
+            y: emitter.y + Math.sin(angle) * r
+          };
+        }
+      }
+
+      case 'ring': {
+        // Donut shape - emit between inner and outer radius
+        const innerR = emitter.shapeInnerRadius;
+        const outerR = emitter.shapeRadius;
+        const angle = Math.random() * Math.PI * 2;
+        // Uniform distribution in ring area
+        const r = Math.sqrt(Math.random() * (outerR * outerR - innerR * innerR) + innerR * innerR);
+        return {
+          x: emitter.x + Math.cos(angle) * r,
+          y: emitter.y + Math.sin(angle) * r
+        };
+      }
+
+      case 'box': {
+        const halfW = emitter.shapeWidth / 2;
+        const halfH = emitter.shapeHeight / 2;
+        if (emitter.emitFromEdge) {
+          // Emit from edges only
+          const perimeter = 2 * (emitter.shapeWidth + emitter.shapeHeight);
+          const t = Math.random() * perimeter;
+          if (t < emitter.shapeWidth) {
+            // Top edge
+            return { x: emitter.x - halfW + t, y: emitter.y - halfH };
+          } else if (t < emitter.shapeWidth + emitter.shapeHeight) {
+            // Right edge
+            return { x: emitter.x + halfW, y: emitter.y - halfH + (t - emitter.shapeWidth) };
+          } else if (t < 2 * emitter.shapeWidth + emitter.shapeHeight) {
+            // Bottom edge
+            return { x: emitter.x + halfW - (t - emitter.shapeWidth - emitter.shapeHeight), y: emitter.y + halfH };
+          } else {
+            // Left edge
+            return { x: emitter.x - halfW, y: emitter.y + halfH - (t - 2 * emitter.shapeWidth - emitter.shapeHeight) };
+          }
+        } else {
+          // Emit from filled box
+          return {
+            x: emitter.x + (Math.random() - 0.5) * emitter.shapeWidth,
+            y: emitter.y + (Math.random() - 0.5) * emitter.shapeHeight
+          };
+        }
+      }
+
+      case 'sphere': {
+        // 3D sphere projected to 2D - use rejection sampling for uniform distribution
+        const radius = emitter.shapeRadius;
+        if (emitter.emitFromEdge) {
+          // Surface of sphere
+          const theta = Math.random() * Math.PI * 2;
+          const phi = Math.acos(2 * Math.random() - 1);
+          return {
+            x: emitter.x + Math.sin(phi) * Math.cos(theta) * radius,
+            y: emitter.y + Math.sin(phi) * Math.sin(theta) * radius
+            // z would be: Math.cos(phi) * radius
+          };
+        } else {
+          // Volume of sphere - use cube rejection
+          let x, y, z;
+          do {
+            x = (Math.random() - 0.5) * 2;
+            y = (Math.random() - 0.5) * 2;
+            z = (Math.random() - 0.5) * 2;
+          } while (x * x + y * y + z * z > 1);
+          return {
+            x: emitter.x + x * radius,
+            y: emitter.y + y * radius
+          };
+        }
+      }
+
+      default:
+        return { x: emitter.x, y: emitter.y };
+    }
   }
 
   private handleBoundaryCollision(p: Particle): void {
@@ -799,7 +1342,11 @@ export class ParticleSystem {
           color: [...sub.color, 255] as [number, number, number, number],
           baseColor: [...sub.color, 255] as [number, number, number, number],
           emitterId: sub.id,
-          isSubParticle: true
+          isSubParticle: true,
+          rotation: deadParticle.rotation, // Inherit parent rotation
+          angularVelocity: 0,
+          spriteIndex: 0,
+          collisionCount: 0
         };
 
         this.particles.push(particle);
@@ -1029,8 +1576,8 @@ export class ParticleSystem {
       if (options.motionBlur && (p.vx !== 0 || p.vy !== 0)) {
         this.renderParticleWithMotionBlur(ctx, p, x, y, size, width, height, options);
       } else {
-        // Standard particle rendering
-        this.renderParticleShape(ctx, x, y, size, p.color, options.particleShape);
+        // Standard particle rendering (pass particle for sprite rendering)
+        this.renderParticleShape(ctx, x, y, size, p.color, options.particleShape, p, options);
       }
     }
 
@@ -1087,12 +1634,12 @@ export class ParticleSystem {
       ctx.fillStyle = `rgba(${p.color[0]}, ${p.color[1]}, ${p.color[2]}, ${Math.min(1, alpha)})`;
 
       // Draw sample
-      this.renderParticleShape(ctx, sampleX, sampleY, sampleSize, null, options.particleShape);
+      this.renderParticleShape(ctx, sampleX, sampleY, sampleSize, null, options.particleShape, p, options);
     }
 
     // Draw the main particle at full opacity
     ctx.fillStyle = `rgba(${p.color[0]}, ${p.color[1]}, ${p.color[2]}, ${p.color[3] / 255})`;
-    this.renderParticleShape(ctx, x, y, size, p.color, options.particleShape);
+    this.renderParticleShape(ctx, x, y, size, p.color, options.particleShape, p, options);
   }
 
   /**
@@ -1104,39 +1651,176 @@ export class ParticleSystem {
     y: number,
     size: number,
     color: [number, number, number, number] | null,
-    shape: RenderOptions['particleShape']
+    shape: RenderOptions['particleShape'],
+    particle?: Particle,
+    options?: RenderOptions
   ): void {
     // Set fill color if provided
     if (color) {
       ctx.fillStyle = `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${color[3] / 255})`;
     }
 
-    // Draw particle shape
+    // Handle sprite rendering
+    if (shape === 'sprite' && particle) {
+      this.renderSprite(ctx, x, y, size, particle, options);
+      return;
+    }
+
+    // Check if this particle has rotation (for non-sprite shapes)
+    const hasRotation = particle && particle.rotation !== 0;
+
+    if (hasRotation && particle) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(particle.rotation);
+      // Draw at origin since we've translated
+      this.drawShapeAtOrigin(ctx, size, shape);
+      ctx.restore();
+    } else {
+      // Draw particle shape without rotation
+      switch (shape) {
+        case 'circle':
+          ctx.beginPath();
+          ctx.arc(x, y, size / 2, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+
+        case 'square':
+          ctx.fillRect(x - size / 2, y - size / 2, size, size);
+          break;
+
+        case 'triangle':
+          ctx.beginPath();
+          ctx.moveTo(x, y - size / 2);
+          ctx.lineTo(x - size / 2, y + size / 2);
+          ctx.lineTo(x + size / 2, y + size / 2);
+          ctx.closePath();
+          ctx.fill();
+          break;
+
+        case 'star':
+          this.drawStar(ctx, x, y, 5, size / 2, size / 4);
+          ctx.fill();
+          break;
+      }
+    }
+  }
+
+  /**
+   * Draw shape at origin (for rotated shapes)
+   */
+  private drawShapeAtOrigin(
+    ctx: CanvasRenderingContext2D,
+    size: number,
+    shape: RenderOptions['particleShape']
+  ): void {
     switch (shape) {
       case 'circle':
         ctx.beginPath();
-        ctx.arc(x, y, size / 2, 0, Math.PI * 2);
+        ctx.arc(0, 0, size / 2, 0, Math.PI * 2);
         ctx.fill();
         break;
 
       case 'square':
-        ctx.fillRect(x - size / 2, y - size / 2, size, size);
+        ctx.fillRect(-size / 2, -size / 2, size, size);
         break;
 
       case 'triangle':
         ctx.beginPath();
-        ctx.moveTo(x, y - size / 2);
-        ctx.lineTo(x - size / 2, y + size / 2);
-        ctx.lineTo(x + size / 2, y + size / 2);
+        ctx.moveTo(0, -size / 2);
+        ctx.lineTo(-size / 2, size / 2);
+        ctx.lineTo(size / 2, size / 2);
         ctx.closePath();
         ctx.fill();
         break;
 
       case 'star':
-        this.drawStar(ctx, x, y, 5, size / 2, size / 4);
+        this.drawStar(ctx, 0, 0, 5, size / 2, size / 4);
         ctx.fill();
         break;
     }
+  }
+
+  /**
+   * Render a sprite/texture particle
+   */
+  private renderSprite(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    size: number,
+    particle: Particle,
+    options?: RenderOptions
+  ): void {
+    const emitter = this.emitters.get(particle.emitterId);
+    if (!emitter?.sprite?.enabled) {
+      // Fallback to circle if no sprite
+      ctx.beginPath();
+      ctx.arc(x, y, size / 2, 0, Math.PI * 2);
+      ctx.fill();
+      return;
+    }
+
+    const sprite = emitter.sprite;
+    const image = sprite.imageData || this.spriteCache.get(particle.emitterId);
+    if (!image) {
+      // Fallback to circle if no image loaded
+      ctx.beginPath();
+      ctx.arc(x, y, size / 2, 0, Math.PI * 2);
+      ctx.fill();
+      return;
+    }
+
+    ctx.save();
+
+    // Set image smoothing
+    ctx.imageSmoothingEnabled = options?.spriteSmoothing ?? true;
+
+    // Apply opacity based on particle age if enabled
+    let alpha = particle.color[3] / 255;
+    if (options?.spriteOpacityByAge) {
+      const lifeRatio = particle.age / particle.lifetime;
+      // Fade out in the last 20% of life
+      if (lifeRatio > 0.8) {
+        alpha *= 1 - (lifeRatio - 0.8) / 0.2;
+      }
+    }
+    ctx.globalAlpha = alpha;
+
+    // Calculate sprite sheet frame coordinates
+    let sx = 0;
+    let sy = 0;
+    let sw = image.width;
+    let sh = image.height;
+
+    if (sprite.isSheet && sprite.columns > 1 || sprite.rows > 1) {
+      const frameWidth = image.width / sprite.columns;
+      const frameHeight = image.height / sprite.rows;
+      const col = particle.spriteIndex % sprite.columns;
+      const row = Math.floor(particle.spriteIndex / sprite.columns) % sprite.rows;
+      sx = col * frameWidth;
+      sy = row * frameHeight;
+      sw = frameWidth;
+      sh = frameHeight;
+    }
+
+    // Translate to particle position
+    ctx.translate(x, y);
+
+    // Apply rotation
+    if (particle.rotation !== 0) {
+      ctx.rotate(particle.rotation);
+    }
+
+    // Draw the sprite centered at the particle position
+    const halfSize = size / 2;
+    ctx.drawImage(
+      image,
+      sx, sy, sw, sh,      // Source rectangle
+      -halfSize, -halfSize, size, size  // Destination rectangle
+    );
+
+    ctx.restore();
   }
 
   private drawStar(

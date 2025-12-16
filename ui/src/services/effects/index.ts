@@ -26,5 +26,17 @@ export {
   hueSaturationRenderer,
   levelsRenderer,
   tintRenderer,
-  dropShadowRenderer
+  curvesRenderer,
+  glowRenderer,
+  dropShadowRenderer,
+  createSCurve,
+  createLiftCurve
 } from './colorRenderer';
+
+// Mask system
+export {
+  renderMask,
+  combineMasks,
+  applyTrackMatte,
+  applyMasksToLayer
+} from './maskRenderer';
