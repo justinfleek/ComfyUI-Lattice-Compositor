@@ -130,7 +130,7 @@ function evaluatedLayersEqual(a: EvaluatedLayer, b: EvaluatedLayer): boolean {
 
   if (Math.abs(ta.position.x - tb.position.x) > 0.0001) return false;
   if (Math.abs(ta.position.y - tb.position.y) > 0.0001) return false;
-  if (Math.abs(ta.position.z - tb.position.z) > 0.0001) return false;
+  if (Math.abs((ta.position.z ?? 0) - (tb.position.z ?? 0)) > 0.0001) return false;
 
   if (Math.abs(ta.scale.x - tb.scale.x) > 0.0001) return false;
   if (Math.abs(ta.scale.y - tb.scale.y) > 0.0001) return false;

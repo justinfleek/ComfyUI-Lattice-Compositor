@@ -477,7 +477,8 @@ export class WeylEngine {
 
     // Apply evaluated layer states - NO RE-EVALUATION
     // Layers only apply pre-computed values from MotionEngine
-    this.layers.applyEvaluatedState(frameState.layers);
+    // Pass frame for animated spline evaluation in text-on-path
+    this.layers.applyEvaluatedState(frameState.layers, frameState.frame);
 
     // Apply camera state if present
     if (frameState.camera) {

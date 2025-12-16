@@ -921,8 +921,15 @@ export interface SplineData {
   stroke: string;
   strokeWidth: number;
   fill: string;
+
+  // Animated spline support (Phase 1)
+  animatedControlPoints?: AnimatableControlPoint[];
+  animated?: boolean;   // True if using animatedControlPoints
 }
 
+/**
+ * Static control point - for non-animated splines (legacy/default)
+ */
 export interface ControlPoint {
   id: string;
   x: number;
@@ -931,6 +938,88 @@ export interface ControlPoint {
   handleIn: { x: number; y: number } | null;
   handleOut: { x: number; y: number } | null;
   type: 'corner' | 'smooth' | 'symmetric';
+}
+
+/**
+ * Animated control point - for keyframe-animated splines
+ * x and y are AnimatableProperty<number> enabling per-frame interpolation
+ */
+export interface AnimatableControlPoint {
+  id: string;
+  x: AnimatableProperty<number>;
+  y: AnimatableProperty<number>;
+  depth?: AnimatableProperty<number>;  // Can also be animated in Phase 2
+  handleIn: AnimatableHandle | null;   // Handles can be animated too
+  handleOut: AnimatableHandle | null;
+  type: 'corner' | 'smooth' | 'symmetric';
+}
+
+/**
+ * Animated bezier handle - for advanced handle animation
+ */
+export interface AnimatableHandle {
+  x: AnimatableProperty<number>;
+  y: AnimatableProperty<number>;
+}
+
+/**
+ * Evaluated control point at a specific frame
+ * Result of interpolating an AnimatableControlPoint
+ */
+export interface EvaluatedControlPoint {
+  id: string;
+  x: number;
+  y: number;
+  depth: number;
+  handleIn: { x: number; y: number } | null;
+  handleOut: { x: number; y: number } | null;
+  type: 'corner' | 'smooth' | 'symmetric';
+}
+
+/**
+ * Convert a static ControlPoint to an AnimatableControlPoint
+ * Used for migration and enabling animation on existing splines
+ */
+export function controlPointToAnimatable(cp: ControlPoint): AnimatableControlPoint {
+  return {
+    id: cp.id,
+    x: createAnimatableProperty('x', cp.x, 'number'),
+    y: createAnimatableProperty('y', cp.y, 'number'),
+    depth: cp.depth !== undefined
+      ? createAnimatableProperty('depth', cp.depth, 'number')
+      : undefined,
+    handleIn: cp.handleIn ? {
+      x: createAnimatableProperty('handleIn.x', cp.handleIn.x, 'number'),
+      y: createAnimatableProperty('handleIn.y', cp.handleIn.y, 'number'),
+    } : null,
+    handleOut: cp.handleOut ? {
+      x: createAnimatableProperty('handleOut.x', cp.handleOut.x, 'number'),
+      y: createAnimatableProperty('handleOut.y', cp.handleOut.y, 'number'),
+    } : null,
+    type: cp.type,
+  };
+}
+
+/**
+ * Convert an AnimatableControlPoint back to a static ControlPoint
+ * Uses current/default values (not frame-evaluated)
+ */
+export function animatableToControlPoint(acp: AnimatableControlPoint): ControlPoint {
+  return {
+    id: acp.id,
+    x: acp.x.value,
+    y: acp.y.value,
+    depth: acp.depth?.value,
+    handleIn: acp.handleIn ? {
+      x: acp.handleIn.x.value,
+      y: acp.handleIn.y.value,
+    } : null,
+    handleOut: acp.handleOut ? {
+      x: acp.handleOut.x.value,
+      y: acp.handleOut.y.value,
+    } : null,
+    type: acp.type,
+  };
 }
 
 // ============================================================

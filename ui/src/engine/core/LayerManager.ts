@@ -385,15 +385,25 @@ export class LayerManager {
    * NO interpolation or time sampling happens here.
    *
    * @param evaluatedLayers - Pre-evaluated layer states from MotionEngine
+   * @param frame - Optional frame number for animated spline evaluation
    */
-  applyEvaluatedState(evaluatedLayers: readonly EvaluatedLayer[]): void {
-    // First, update text-on-path connections
-    this.updateTextPathConnections();
-
-    // Apply evaluated state to each layer
+  applyEvaluatedState(evaluatedLayers: readonly EvaluatedLayer[], frame?: number): void {
+    // First, apply state to spline layers so they evaluate their control points
+    // This ensures animated splines are ready before text layers query them
     for (const evalLayer of evaluatedLayers) {
       const layer = this.layers.get(evalLayer.id);
-      if (layer) {
+      if (layer && layer.type === 'spline') {
+        layer.applyEvaluatedState(evalLayer);
+      }
+    }
+
+    // Update text-on-path connections (with frame for animated splines)
+    this.updateTextPathConnections(frame);
+
+    // Apply evaluated state to remaining layers
+    for (const evalLayer of evaluatedLayers) {
+      const layer = this.layers.get(evalLayer.id);
+      if (layer && layer.type !== 'spline') {
         layer.applyEvaluatedState(evalLayer);
       }
     }
@@ -475,8 +485,13 @@ export class LayerManager {
   /**
    * Update text layer connections to spline paths
    * Called before frame evaluation to ensure paths are current
+   *
+   * For animated splines, this must be called with the current frame
+   * to get properly evaluated control points.
+   *
+   * @param frame - Optional frame number for animated spline evaluation
    */
-  private updateTextPathConnections(): void {
+  private updateTextPathConnections(frame?: number): void {
     for (const layer of this.layers.values()) {
       if (layer.type === 'text') {
         const textLayer = layer as TextLayer;
@@ -486,10 +501,30 @@ export class LayerManager {
           const splineLayer = this.layers.get(textData.pathLayerId) as SplineLayer | undefined;
 
           if (splineLayer && splineLayer.type === 'spline') {
-            // Get the curve from the spline layer
-            const curve = splineLayer.getCurve();
-            if (curve) {
-              textLayer.setPathFromCurve(curve);
+            // Check if spline is animated and we have a frame
+            if (splineLayer.isAnimated() && frame !== undefined) {
+              // Get evaluated control points for this frame
+              const evaluatedPoints = splineLayer.getEvaluatedControlPoints(frame);
+
+              // Convert EvaluatedControlPoint to ControlPoint for TextLayer
+              const controlPoints = evaluatedPoints.map(ep => ({
+                id: ep.id,
+                x: ep.x,
+                y: ep.y,
+                depth: ep.depth,
+                handleIn: ep.handleIn,
+                handleOut: ep.handleOut,
+                type: ep.type,
+              }));
+
+              // Update text layer with animated path
+              textLayer.setPathFromControlPoints(controlPoints, splineLayer.isClosed());
+            } else {
+              // Static spline - use cached curve
+              const curve = splineLayer.getCurve();
+              if (curve) {
+                textLayer.setPathFromCurve(curve);
+              }
             }
           }
         }
