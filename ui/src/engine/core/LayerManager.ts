@@ -3,6 +3,21 @@
  *
  * Manages creation, updating, and disposal of layer instances.
  * Acts as a factory for different layer types.
+ *
+ * ARCHITECTURAL NOTE:
+ * ===================
+ * This manager supports TWO evaluation modes:
+ *
+ * 1. DEPRECATED: evaluateFrame(frame)
+ *    - Layers internally call interpolateProperty()
+ *    - VIOLATES single-source-of-truth
+ *
+ * 2. NEW: applyEvaluatedState(evaluatedLayers)
+ *    - Receives pre-evaluated state from MotionEngine
+ *    - Layers only APPLY values, never compute them
+ *    - ENFORCES single-source-of-truth
+ *
+ * All new code should use applyEvaluatedState().
  */
 
 import * as THREE from 'three';
@@ -10,6 +25,7 @@ import type { Layer, LayerType } from '@/types/project';
 import type { SceneManager } from './SceneManager';
 import type { ResourceManager } from './ResourceManager';
 import type { LayerInstance } from '../types';
+import type { EvaluatedLayer } from '../MotionEngine';
 import { BaseLayer } from '../layers/BaseLayer';
 import { ImageLayer } from '../layers/ImageLayer';
 import { SolidLayer } from '../layers/SolidLayer';
@@ -362,7 +378,37 @@ export class LayerManager {
   // ============================================================================
 
   /**
+   * Apply pre-evaluated state from MotionEngine
+   *
+   * This is the NEW canonical way to update layer state.
+   * Layers receive already-computed values and only APPLY them.
+   * NO interpolation or time sampling happens here.
+   *
+   * @param evaluatedLayers - Pre-evaluated layer states from MotionEngine
+   */
+  applyEvaluatedState(evaluatedLayers: readonly EvaluatedLayer[]): void {
+    // First, update text-on-path connections
+    this.updateTextPathConnections();
+
+    // Apply evaluated state to each layer
+    for (const evalLayer of evaluatedLayers) {
+      const layer = this.layers.get(evalLayer.id);
+      if (layer) {
+        layer.applyEvaluatedState(evalLayer);
+      }
+    }
+
+    // Re-sort by Z after evaluation (positions may have changed)
+    this.scene.sortByZ();
+  }
+
+  /**
    * Evaluate all layers at a given frame
+   *
+   * @deprecated Use applyEvaluatedState() with pre-evaluated state from MotionEngine.
+   * This method causes layers to internally call interpolateProperty(), violating
+   * the single-source-of-truth principle.
+   *
    * @param frame - The frame number
    * @param audioReactiveGetter - Optional callback to get audio reactive values
    */

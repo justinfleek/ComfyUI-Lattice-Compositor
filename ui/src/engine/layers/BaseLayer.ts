@@ -309,8 +309,73 @@ export abstract class BaseLayer implements LayerInstance {
 
   /**
    * Override in subclasses for type-specific frame evaluation
+   * @deprecated Use onApplyEvaluatedState instead
    */
   protected abstract onEvaluateFrame(frame: number): void;
+
+  // ============================================================================
+  // EVALUATED STATE APPLICATION (NEW - SINGLE SOURCE OF TRUTH)
+  // ============================================================================
+
+  /**
+   * Apply pre-evaluated state from MotionEngine
+   *
+   * This is the NEW canonical way to update layer visual state.
+   * All values are already computed - layers only APPLY them.
+   * NO interpolation or time sampling happens here.
+   *
+   * @param state - Pre-evaluated layer state from MotionEngine
+   */
+  applyEvaluatedState(state: import('../MotionEngine').EvaluatedLayer): void {
+    // Set visibility
+    this.group.visible = state.visible;
+
+    if (!state.visible) {
+      return; // Skip applying state to invisible layers
+    }
+
+    // Apply opacity
+    this.applyOpacity(state.opacity);
+
+    // Apply transform (convert from evaluated values)
+    const transform = state.transform;
+    this.applyTransform({
+      position: {
+        x: transform.position.x,
+        y: transform.position.y,
+        z: transform.position.z ?? 0,
+      },
+      rotation: {
+        x: transform.rotationX ?? 0,
+        y: transform.rotationY ?? 0,
+        z: transform.rotation,
+      },
+      scale: {
+        x: (transform.scale.x ?? 100) / 100,
+        y: (transform.scale.y ?? 100) / 100,
+        z: (transform.scale.z ?? 100) / 100,
+      },
+      anchorPoint: {
+        x: transform.anchorPoint.x,
+        y: transform.anchorPoint.y,
+        z: transform.anchorPoint.z ?? 0,
+      },
+    });
+
+    // Call subclass-specific state application
+    this.onApplyEvaluatedState(state);
+  }
+
+  /**
+   * Override in subclasses for type-specific state application
+   * Default implementation calls legacy onEvaluateFrame for compatibility
+   */
+  protected onApplyEvaluatedState(state: import('../MotionEngine').EvaluatedLayer): void {
+    // Default: fall back to legacy evaluation for backwards compatibility
+    // Subclasses should override this to use evaluated state directly
+    // NOTE: This is a transitional measure - eventually all layers should
+    // implement proper onApplyEvaluatedState and not call onEvaluateFrame
+  }
 
   // ============================================================================
   // PROPERTY UPDATES

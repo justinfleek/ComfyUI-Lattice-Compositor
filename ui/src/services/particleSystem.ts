@@ -4,9 +4,136 @@
  * Comprehensive particle simulation matching RyanOnTheInside's implementation.
  * Supports emitters, gravity wells, vortices, modulations, and audio reactivity.
  * Extended with turbulence fields, particle connections, sub-emitters, and burst on beat.
+ *
+ * DETERMINISM NOTICE:
+ * ===================
+ * This module uses a SEEDED RNG for all randomness to ensure deterministic
+ * simulation. The same seed + config + frame produces identical results.
+ * Math.random() is NEVER used directly.
  */
 import { EASING_PRESETS, applyEasing } from './interpolation';
 import { createNoise2D } from 'simplex-noise';
+
+// ============================================================================
+// DETERMINISTIC ID GENERATOR
+// Counter-based ID generation for deterministic project creation
+// ============================================================================
+
+let idCounter = 0;
+
+/**
+ * Generate a deterministic, unique ID
+ * Uses a counter to ensure uniqueness without Date.now() or Math.random()
+ */
+function generateDeterministicId(prefix: string): string {
+  return `${prefix}_${(++idCounter).toString(36).padStart(8, '0')}`;
+}
+
+/**
+ * Reset ID counter (for testing purposes)
+ */
+export function resetIdCounter(value: number = 0): void {
+  idCounter = value;
+}
+
+// ============================================================================
+// SEEDED RANDOM NUMBER GENERATOR
+// Uses mulberry32 algorithm for deterministic, reproducible randomness
+// ============================================================================
+
+/**
+ * Seeded pseudo-random number generator
+ * Same seed always produces same sequence of numbers
+ */
+export class SeededRandom {
+  private state: number;
+  private initialSeed: number;
+
+  constructor(seed: number = 12345) {
+    this.initialSeed = seed;
+    this.state = seed;
+  }
+
+  /** Reset to initial seed */
+  reset(): void {
+    this.state = this.initialSeed;
+  }
+
+  /** Reset to a new seed */
+  setSeed(seed: number): void {
+    this.initialSeed = seed;
+    this.state = seed;
+  }
+
+  /** Get current state for checkpointing */
+  getState(): number {
+    return this.state;
+  }
+
+  /** Restore state from checkpoint */
+  setState(state: number): void {
+    this.state = state;
+  }
+
+  /** Get initial seed */
+  getSeed(): number {
+    return this.initialSeed;
+  }
+
+  /**
+   * Get next random number in [0, 1)
+   * Uses mulberry32 algorithm
+   */
+  next(): number {
+    let t = (this.state += 0x6d2b79f5);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  }
+
+  /** Get random in range [min, max] */
+  range(min: number, max: number): number {
+    return min + this.next() * (max - min);
+  }
+
+  /** Get random integer in range [min, max] inclusive */
+  int(min: number, max: number): number {
+    return Math.floor(this.range(min, max + 1));
+  }
+
+  /** Get random value with variance: base + random(-variance, +variance) */
+  variance(base: number, variance: number): number {
+    return base + (this.next() - 0.5) * 2 * variance;
+  }
+
+  /** Get random boolean with given probability of true */
+  bool(probability: number = 0.5): boolean {
+    return this.next() < probability;
+  }
+
+  /** Get random angle in radians [0, 2π) */
+  angle(): number {
+    return this.next() * Math.PI * 2;
+  }
+
+  /** Get random point in unit circle */
+  inCircle(): { x: number; y: number } {
+    const angle = this.angle();
+    const r = Math.sqrt(this.next());
+    return { x: r * Math.cos(angle), y: r * Math.sin(angle) };
+  }
+
+  /** Get random point on unit sphere */
+  onSphere(): { x: number; y: number; z: number } {
+    const theta = this.angle();
+    const phi = Math.acos(2 * this.next() - 1);
+    return {
+      x: Math.sin(phi) * Math.cos(theta),
+      y: Math.sin(phi) * Math.sin(theta),
+      z: Math.cos(phi),
+    };
+  }
+}
 
 // ============================================================================
 // Types
@@ -268,7 +395,7 @@ export function createDefaultCollisionConfig(): CollisionConfig {
 
 export function createDefaultEmitterConfig(id?: string): EmitterConfig {
   return {
-    id: id || `emitter_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    id: id || generateDeterministicId('emitter'),
     name: 'Emitter',
     x: 0.5,
     y: 0.5,
@@ -302,7 +429,7 @@ export function createDefaultEmitterConfig(id?: string): EmitterConfig {
 
 export function createDefaultTurbulenceConfig(id?: string): TurbulenceConfig {
   return {
-    id: id || `turb_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    id: id || generateDeterministicId('turb'),
     enabled: true,
     scale: 0.005,
     strength: 100,
@@ -323,7 +450,7 @@ export function createDefaultConnectionConfig(): ConnectionConfig {
 
 export function createDefaultSubEmitterConfig(id?: string): SubEmitterConfig {
   return {
-    id: id || `sub_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    id: id || generateDeterministicId('sub'),
     parentEmitterId: '*',
     trigger: 'death',
     spawnCount: 3,
@@ -340,7 +467,7 @@ export function createDefaultSubEmitterConfig(id?: string): SubEmitterConfig {
 
 export function createDefaultGravityWellConfig(id?: string): GravityWellConfig {
   return {
-    id: id || `well_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    id: id || generateDeterministicId('well'),
     name: 'Gravity Well',
     x: 0.5,
     y: 0.5,
@@ -353,7 +480,7 @@ export function createDefaultGravityWellConfig(id?: string): GravityWellConfig {
 
 export function createDefaultVortexConfig(id?: string): VortexConfig {
   return {
-    id: id || `vortex_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    id: id || generateDeterministicId('vortex'),
     name: 'Vortex',
     x: 0.5,
     y: 0.5,
@@ -420,7 +547,7 @@ export class ParticleSystem {
   // Audio reactivity state
   private featureOverrides: Map<string, number> = new Map();
 
-  // Turbulence noise generator
+  // Turbulence noise generator (seeded for determinism)
   private noise2D: ReturnType<typeof createNoise2D>;
   private noiseTime: number = 0;
 
@@ -434,12 +561,34 @@ export class ParticleSystem {
   private collisionGrid: Map<string, Particle[]> = new Map();
   private collisionGridCellSize: number = 50;
 
-  constructor(config: Partial<ParticleSystemConfig> = {}) {
+  // SEEDED RNG - For deterministic simulation
+  // Same seed + same config + same frame = identical particle state
+  private rng: SeededRandom;
+
+  constructor(config: Partial<ParticleSystemConfig> = {}, seed: number = 12345) {
     this.config = { ...createDefaultSystemConfig(), ...config };
-    this.noise2D = createNoise2D();
+    this.rng = new SeededRandom(seed);
+    // Create seeded noise using our RNG to seed simplex
+    this.noise2D = createNoise2D(() => this.rng.next());
     if (this.config.collision) {
       this.collisionGridCellSize = this.config.collision.spatialHashCellSize;
     }
+  }
+
+  /**
+   * Get the RNG instance (for external access/checkpointing)
+   */
+  getRng(): SeededRandom {
+    return this.rng;
+  }
+
+  /**
+   * Set new seed and reset RNG
+   */
+  setSeed(seed: number): void {
+    this.rng.setSeed(seed);
+    // Recreate noise with new seed
+    this.noise2D = createNoise2D(() => this.rng.next());
   }
 
   // ============================================================================
@@ -823,8 +972,8 @@ export class ParticleSystem {
       }
       case 'random': {
         // Frame already set randomly at spawn, but can also change over time
-        if (Math.random() < 0.1) { // 10% chance per frame to change
-          p.spriteIndex = Math.floor(Math.random() * totalFrames);
+        if (this.rng.bool(0.1)) { // 10% chance per frame to change
+          p.spriteIndex = this.rng.int(0, totalFrames - 1);
         }
         break;
       }
@@ -991,30 +1140,30 @@ export class ParticleSystem {
     // Calculate spawn position based on emitter shape
     const spawnPos = this.getEmitterSpawnPosition(emitter);
 
-    // Calculate emission direction with spread
+    // Calculate emission direction with spread (using seeded RNG)
     const spreadRad = (emitter.spread * Math.PI) / 180;
     const baseRad = (emitter.direction * Math.PI) / 180;
-    const angle = baseRad + (Math.random() - 0.5) * spreadRad;
+    const angle = baseRad + (this.rng.next() - 0.5) * spreadRad;
 
-    // Calculate speed with variance
-    const speed = emitter.speed + (Math.random() - 0.5) * 2 * emitter.speedVariance;
+    // Calculate speed with variance (using seeded RNG)
+    const speed = this.rng.variance(emitter.speed, emitter.speedVariance);
     const speedNormalized = speed * 0.001;
 
-    // Calculate size with variance
-    const size = Math.max(1, emitter.size + (Math.random() - 0.5) * 2 * emitter.sizeVariance);
+    // Calculate size with variance (using seeded RNG)
+    const size = Math.max(1, this.rng.variance(emitter.size, emitter.sizeVariance));
 
-    // Calculate lifetime with variance
-    const lifetime = Math.max(1, emitter.particleLifetime + (Math.random() - 0.5) * 2 * emitter.lifetimeVariance);
+    // Calculate lifetime with variance (using seeded RNG)
+    const lifetime = Math.max(1, this.rng.variance(emitter.particleLifetime, emitter.lifetimeVariance));
 
     // Calculate initial rotation and angular velocity
     let rotation = 0;
     let angularVelocity = 0;
     const sprite = emitter.sprite;
     if (sprite && sprite.rotationEnabled) {
-      rotation = Math.random() * Math.PI * 2; // Random initial rotation
+      rotation = this.rng.angle(); // Random initial rotation (seeded)
       const rotSpeed = sprite.rotationSpeed * (Math.PI / 180); // Convert to radians
       const rotVariance = sprite.rotationSpeedVariance * (Math.PI / 180);
-      angularVelocity = rotSpeed + (Math.random() - 0.5) * 2 * rotVariance;
+      angularVelocity = this.rng.variance(rotSpeed, rotVariance);
     }
 
     // Align to velocity if configured
@@ -1022,10 +1171,10 @@ export class ParticleSystem {
       rotation = angle;
     }
 
-    // Calculate sprite frame for animated sprites
+    // Calculate sprite frame for animated sprites (using seeded RNG)
     let spriteIndex = 0;
     if (sprite && sprite.isSheet && sprite.playMode === 'random') {
-      spriteIndex = Math.floor(Math.random() * sprite.totalFrames);
+      spriteIndex = this.rng.int(0, sprite.totalFrames - 1);
     }
 
     const particle: Particle = {
@@ -1056,6 +1205,7 @@ export class ParticleSystem {
 
   /**
    * Calculate spawn position based on emitter shape
+   * DETERMINISM: Uses seeded RNG (this.rng) for all randomness
    */
   private getEmitterSpawnPosition(emitter: EmitterConfig): { x: number; y: number } {
     const shape = emitter.shape || 'point';
@@ -1066,7 +1216,7 @@ export class ParticleSystem {
 
       case 'line': {
         // Line from emitter position extending in direction
-        const t = Math.random();
+        const t = this.rng.next();
         const halfWidth = emitter.shapeWidth / 2;
         const dirRad = (emitter.direction * Math.PI) / 180;
         // Perpendicular to direction
@@ -1082,15 +1232,15 @@ export class ParticleSystem {
         const radius = emitter.shapeRadius;
         if (emitter.emitFromEdge) {
           // Emit from edge only
-          const angle = Math.random() * Math.PI * 2;
+          const angle = this.rng.angle();
           return {
             x: emitter.x + Math.cos(angle) * radius,
             y: emitter.y + Math.sin(angle) * radius
           };
         } else {
           // Emit from filled circle (uniform distribution)
-          const angle = Math.random() * Math.PI * 2;
-          const r = radius * Math.sqrt(Math.random()); // sqrt for uniform area distribution
+          const angle = this.rng.angle();
+          const r = radius * Math.sqrt(this.rng.next()); // sqrt for uniform area distribution
           return {
             x: emitter.x + Math.cos(angle) * r,
             y: emitter.y + Math.sin(angle) * r
@@ -1102,9 +1252,9 @@ export class ParticleSystem {
         // Donut shape - emit between inner and outer radius
         const innerR = emitter.shapeInnerRadius;
         const outerR = emitter.shapeRadius;
-        const angle = Math.random() * Math.PI * 2;
+        const angle = this.rng.angle();
         // Uniform distribution in ring area
-        const r = Math.sqrt(Math.random() * (outerR * outerR - innerR * innerR) + innerR * innerR);
+        const r = Math.sqrt(this.rng.next() * (outerR * outerR - innerR * innerR) + innerR * innerR);
         return {
           x: emitter.x + Math.cos(angle) * r,
           y: emitter.y + Math.sin(angle) * r
@@ -1117,7 +1267,7 @@ export class ParticleSystem {
         if (emitter.emitFromEdge) {
           // Emit from edges only
           const perimeter = 2 * (emitter.shapeWidth + emitter.shapeHeight);
-          const t = Math.random() * perimeter;
+          const t = this.rng.next() * perimeter;
           if (t < emitter.shapeWidth) {
             // Top edge
             return { x: emitter.x - halfW + t, y: emitter.y - halfH };
@@ -1134,8 +1284,8 @@ export class ParticleSystem {
         } else {
           // Emit from filled box
           return {
-            x: emitter.x + (Math.random() - 0.5) * emitter.shapeWidth,
-            y: emitter.y + (Math.random() - 0.5) * emitter.shapeHeight
+            x: emitter.x + (this.rng.next() - 0.5) * emitter.shapeWidth,
+            y: emitter.y + (this.rng.next() - 0.5) * emitter.shapeHeight
           };
         }
       }
@@ -1145,8 +1295,8 @@ export class ParticleSystem {
         const radius = emitter.shapeRadius;
         if (emitter.emitFromEdge) {
           // Surface of sphere
-          const theta = Math.random() * Math.PI * 2;
-          const phi = Math.acos(2 * Math.random() - 1);
+          const theta = this.rng.angle();
+          const phi = Math.acos(2 * this.rng.next() - 1);
           return {
             x: emitter.x + Math.sin(phi) * Math.cos(theta) * radius,
             y: emitter.y + Math.sin(phi) * Math.sin(theta) * radius
@@ -1156,9 +1306,9 @@ export class ParticleSystem {
           // Volume of sphere - use cube rejection
           let x, y, z;
           do {
-            x = (Math.random() - 0.5) * 2;
-            y = (Math.random() - 0.5) * 2;
-            z = (Math.random() - 0.5) * 2;
+            x = (this.rng.next() - 0.5) * 2;
+            y = (this.rng.next() - 0.5) * 2;
+            z = (this.rng.next() - 0.5) * 2;
           } while (x * x + y * y + z * z > 1);
           return {
             x: emitter.x + x * radius,
@@ -1200,9 +1350,9 @@ export class ParticleSystem {
           p.age = p.lifetime + 1;
           break;
         case 'wrap':
-          // Find valid position (simplified)
-          p.x = Math.random();
-          p.y = Math.random();
+          // Find valid position (simplified) - DETERMINISM: use seeded RNG
+          p.x = this.rng.next();
+          p.y = this.rng.next();
           break;
       }
     }
@@ -1314,6 +1464,10 @@ export class ParticleSystem {
   // Sub-Emitters
   // ============================================================================
 
+  /**
+   * Trigger sub-emitters when a particle dies
+   * DETERMINISM: Uses seeded RNG (this.rng) for all randomness
+   */
   private triggerSubEmitters(deadParticle: Particle): void {
     const subEmitters = this.config.subEmitters || [];
     for (const sub of subEmitters) {
@@ -1321,7 +1475,7 @@ export class ParticleSystem {
       if (sub.parentEmitterId !== '*' && sub.parentEmitterId !== deadParticle.emitterId) continue;
 
       for (let i = 0; i < sub.spawnCount; i++) {
-        const angle = (Math.random() - 0.5) * sub.spread * Math.PI / 180;
+        const angle = (this.rng.next() - 0.5) * sub.spread * Math.PI / 180;
         const baseAngle = Math.atan2(deadParticle.vy, deadParticle.vx);
         const emitAngle = baseAngle + angle;
         const inheritedSpeed = Math.sqrt(deadParticle.vx ** 2 + deadParticle.vy ** 2) * sub.inheritVelocity;
@@ -1336,8 +1490,8 @@ export class ParticleSystem {
           vx: Math.cos(emitAngle) * totalSpeed + deadParticle.vx * sub.inheritVelocity,
           vy: Math.sin(emitAngle) * totalSpeed + deadParticle.vy * sub.inheritVelocity,
           age: 0,
-          lifetime: sub.lifetime * (1 + (Math.random() - 0.5) * 0.2),
-          size: sub.size * (1 + (Math.random() - 0.5) * sub.sizeVariance / sub.size),
+          lifetime: sub.lifetime * (1 + (this.rng.next() - 0.5) * 0.2),
+          size: sub.size * (1 + (this.rng.next() - 0.5) * sub.sizeVariance / sub.size),
           baseSize: sub.size,
           color: [...sub.color, 255] as [number, number, number, number],
           baseColor: [...sub.color, 255] as [number, number, number, number],

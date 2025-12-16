@@ -1,6 +1,21 @@
 /**
  * Audio Feature Extraction Service
  *
+ * PURE LOOKUP MODULE – DO NOT MUTATE
+ * ===================================
+ * The lookup functions in this module (getFeatureAtFrame, isBeatAtFrame) are
+ * PURE FUNCTIONS used by MotionEngine for deterministic audio-reactive evaluation.
+ *
+ * CONTRACT:
+ * - getFeatureAtFrame(analysis, feature, frame) is PURE: same inputs → same outputs
+ * - isBeatAtFrame(analysis, frame) is PURE: same inputs → same outputs
+ * - Analysis is computed ONCE at load time, then only read
+ * - No functions mutate the analysis data
+ *
+ * The analysis functions (analyzeAudio) ARE side-effectful (create AudioContext)
+ * but only during the initial analysis phase. Once analysis is complete,
+ * all frame lookups are pure array index operations.
+ *
  * Uses Web Audio API for comprehensive audio analysis.
  * Supports amplitude, RMS, spectral analysis, onset detection, and BPM estimation.
  * Matches ATI_AudioReactive and Yvann-Nodes functionality.

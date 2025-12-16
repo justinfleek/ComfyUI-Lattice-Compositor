@@ -1,6 +1,21 @@
 /**
  * Keyframe Interpolation Engine
  *
+ * PURE MODULE – DO NOT MUTATE
+ * ===========================
+ * This module contains PURE FUNCTIONS that are reference implementations
+ * for deterministic frame evaluation. They are used by MotionEngine.
+ *
+ * CONTRACT:
+ * - All functions are PURE: same inputs always produce same outputs
+ * - No functions mutate their inputs or any external state
+ * - No Math.random(), Date.now(), or other non-deterministic operations
+ * - No global mutable state
+ *
+ * CALLERS MUST NOT:
+ * - Mutate returned values
+ * - Store returned references expecting them to update
+ *
  * Handles linear, bezier, easing, and hold interpolation between keyframes.
  *
  * Performance optimizations:

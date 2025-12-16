@@ -19,8 +19,16 @@ export function initializeEffects(): void {
   // registerGenerateEffects();
 }
 
-// Re-export for convenience
-export { gaussianBlurRenderer } from './blurRenderer';
+// Re-export blur effects
+export {
+  gaussianBlurRenderer,
+  directionalBlurRenderer,
+  radialBlurRenderer,
+  boxBlurRenderer,
+  sharpenRenderer
+} from './blurRenderer';
+
+// Re-export color effects
 export {
   brightnessContrastRenderer,
   hueSaturationRenderer,
@@ -29,6 +37,12 @@ export {
   curvesRenderer,
   glowRenderer,
   dropShadowRenderer,
+  colorBalanceRenderer,
+  exposureRenderer,
+  vibranceRenderer,
+  invertRenderer,
+  posterizeRenderer,
+  thresholdRenderer,
   createSCurve,
   createLiftCurve
 } from './colorRenderer';

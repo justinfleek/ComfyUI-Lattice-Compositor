@@ -2,8 +2,26 @@
  * Main Compositor Store
  *
  * Manages project state, layers, playback, and ComfyUI communication.
+ *
+ * ARCHITECTURAL NOTE - Time Authority:
+ * ====================================
+ * This store maintains `currentFrame` as UI STATE ONLY.
+ * The store does NOT evaluate frame state - that responsibility belongs
+ * to MotionEngine.
+ *
+ * The correct data flow is:
+ *   1. UI sets `currentFrame` via setFrame(), play(), nextFrame(), etc.
+ *   2. Components call `motionEngine.evaluate(currentFrame, project)` to get FrameState
+ *   3. FrameState is passed to renderer via `engine.applyFrameState()`
+ *
+ * This store should NEVER:
+ *   - Call interpolateProperty() for rendering purposes
+ *   - Mutate layer state during playback
+ *   - Be the source of truth for evaluated values
  */
 import { defineStore } from 'pinia';
+import { motionEngine } from '@/engine/MotionEngine';
+import type { FrameState } from '@/engine/MotionEngine';
 import { storeLogger } from '@/utils/logger';
 import type {
   WeylProject,
@@ -1203,8 +1221,38 @@ export const useCompositorStore = defineStore('compositor', {
       this.selectedPropertyPath = propertyPath;
     },
 
+    // ============================================================
+    // MOTION ENGINE INTEGRATION
+    // ============================================================
+
     /**
-     * Playback controls
+     * Get evaluated FrameState for the current frame
+     *
+     * This is the CANONICAL way to get evaluated state for rendering.
+     * Uses MotionEngine.evaluate() which is PURE and deterministic.
+     *
+     * @param frame - Optional frame override (defaults to currentFrame)
+     * @returns Immutable FrameState snapshot
+     */
+    getFrameState(frame?: number): FrameState {
+      const comp = this.getActiveComp();
+      const targetFrame = frame ?? (comp?.currentFrame ?? 0);
+      return motionEngine.evaluate(
+        targetFrame,
+        this.project,
+        this.audioAnalysis,
+        this.activeCameraId
+      );
+    },
+
+    // ============================================================
+    // PLAYBACK CONTROLS
+    // ============================================================
+
+    /**
+     * Start playback
+     * NOTE: This only updates UI state (currentFrame).
+     * Actual frame evaluation happens via getFrameState().
      */
     play(): void {
       if (this.isPlaying) return;
@@ -1219,6 +1267,9 @@ export const useCompositorStore = defineStore('compositor', {
       this.playbackLoop();
     },
 
+    /**
+     * Pause playback
+     */
     pause(): void {
       this.isPlaying = false;
       if (this.playbackRequestId !== null) {
@@ -1227,6 +1278,9 @@ export const useCompositorStore = defineStore('compositor', {
       }
     },
 
+    /**
+     * Toggle playback state
+     */
     togglePlayback(): void {
       if (this.isPlaying) {
         this.pause();
@@ -1237,6 +1291,12 @@ export const useCompositorStore = defineStore('compositor', {
 
     /**
      * Animation loop for playback
+     *
+     * ARCHITECTURAL NOTE:
+     * This method ONLY updates the UI state (currentFrame).
+     * It does NOT evaluate or render frames directly.
+     * The render loop in Vue components should watch currentFrame
+     * and call getFrameState() → engine.applyFrameState().
      */
     playbackLoop(): void {
       if (!this.isPlaying) return;
@@ -1258,17 +1318,25 @@ export const useCompositorStore = defineStore('compositor', {
         this.playbackStartTime = performance.now();
       }
 
+      // Only update UI state - do not evaluate/render here
       comp.currentFrame = newFrame;
 
       this.playbackRequestId = requestAnimationFrame(() => this.playbackLoop());
     },
 
+    /**
+     * Set current frame (UI state only)
+     * Components watching currentFrame should call getFrameState() to evaluate.
+     */
     setFrame(frame: number): void {
       const comp = this.getActiveComp();
       if (!comp) return;
       comp.currentFrame = Math.max(0, Math.min(frame, comp.settings.frameCount - 1));
     },
 
+    /**
+     * Advance to next frame (UI state only)
+     */
     nextFrame(): void {
       const comp = this.getActiveComp();
       if (!comp) return;
@@ -1277,6 +1345,9 @@ export const useCompositorStore = defineStore('compositor', {
       }
     },
 
+    /**
+     * Go to previous frame (UI state only)
+     */
     prevFrame(): void {
       const comp = this.getActiveComp();
       if (!comp) return;
@@ -1285,11 +1356,17 @@ export const useCompositorStore = defineStore('compositor', {
       }
     },
 
+    /**
+     * Jump to first frame (UI state only)
+     */
     goToStart(): void {
       const comp = this.getActiveComp();
       if (comp) comp.currentFrame = 0;
     },
 
+    /**
+     * Jump to last frame (UI state only)
+     */
     goToEnd(): void {
       const comp = this.getActiveComp();
       if (!comp) return;
@@ -1904,14 +1981,40 @@ export const useCompositorStore = defineStore('compositor', {
           speedVariance: 50,
           size: 17,
           sizeVariance: 5,
-          color: [255, 255, 255],
+          color: [255, 255, 255] as [number, number, number],
           emissionRate: 10,
           initialBurst: 0,
           particleLifetime: 60,
           lifetimeVariance: 10,
           enabled: true,
           burstOnBeat: false,
-          burstCount: 20
+          burstCount: 20,
+          // Geometric emitter shape defaults
+          shape: 'point' as const,
+          shapeRadius: 0.1,
+          shapeWidth: 0.2,
+          shapeHeight: 0.2,
+          shapeDepth: 0.2,
+          shapeInnerRadius: 0.05,
+          emitFromEdge: false,
+          emitFromVolume: false,
+          // Sprite configuration
+          sprite: {
+            enabled: false,
+            imageUrl: null,
+            imageData: null,
+            isSheet: false,
+            columns: 1,
+            rows: 1,
+            totalFrames: 1,
+            frameRate: 30,
+            playMode: 'loop' as const,
+            billboard: true,
+            rotationEnabled: false,
+            rotationSpeed: 0,
+            rotationSpeedVariance: 0,
+            alignToVelocity: false
+          }
         }],
         gravityWells: [],
         vortices: [],

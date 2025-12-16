@@ -92,6 +92,26 @@ export class CameraController {
   }
 
   /**
+   * Set camera position directly (no coordinate transformation)
+   * Used by MotionEngine when applying pre-evaluated camera state.
+   */
+  setPositionDirect(x: number, y: number, z: number): void {
+    this.camera.position.set(x, -y, z);
+    this.camera.lookAt(this.target);
+    this.camera.updateProjectionMatrix();
+  }
+
+  /**
+   * Set camera target directly (no coordinate transformation)
+   * Used by MotionEngine when applying pre-evaluated camera state.
+   */
+  setTargetDirect(x: number, y: number, z: number): void {
+    this.target.set(x, -y, z);
+    this.camera.lookAt(this.target);
+    this.camera.updateProjectionMatrix();
+  }
+
+  /**
    * Get camera target (in screen coordinates)
    */
   getTarget(): { x: number; y: number; z: number } {

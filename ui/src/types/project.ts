@@ -12,6 +12,9 @@
 
 import type { EffectInstance } from './effects';
 
+// Re-export EffectInstance for consumers who import from project.ts
+export type { EffectInstance } from './effects';
+
 export interface WeylProject {
   version: "1.0.0";
   meta: ProjectMeta;
@@ -294,6 +297,24 @@ export interface MaskVertex {
 }
 
 /**
+ * Helper to create a mask AnimatableProperty (uses late-bound createAnimatableProperty)
+ */
+function createMaskAnimatableProperty<T>(
+  name: string,
+  value: T,
+  type: 'number' | 'position' | 'color' | 'enum' | 'vector3' = 'number'
+): AnimatableProperty<T> {
+  return {
+    id: `mask_prop_${name}_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+    name,
+    type,
+    value,
+    animated: false,
+    keyframes: [],
+  };
+}
+
+/**
  * Create a default rectangular mask covering the full layer
  */
 export function createDefaultMask(id: string, width: number, height: number): LayerMask {
@@ -304,21 +325,18 @@ export function createDefaultMask(id: string, width: number, height: number): La
     locked: false,
     mode: 'add',
     inverted: false,
-    path: {
-      value: {
-        closed: true,
-        vertices: [
-          { x: 0, y: 0, inTangentX: 0, inTangentY: 0, outTangentX: 0, outTangentY: 0 },
-          { x: width, y: 0, inTangentX: 0, inTangentY: 0, outTangentX: 0, outTangentY: 0 },
-          { x: width, y: height, inTangentX: 0, inTangentY: 0, outTangentX: 0, outTangentY: 0 },
-          { x: 0, y: height, inTangentX: 0, inTangentY: 0, outTangentX: 0, outTangentY: 0 },
-        ],
-      },
-      keyframes: [],
-    },
-    opacity: { value: 100, keyframes: [] },
-    feather: { value: 0, keyframes: [] },
-    expansion: { value: 0, keyframes: [] },
+    path: createMaskAnimatableProperty<MaskPath>('Mask Path', {
+      closed: true,
+      vertices: [
+        { x: 0, y: 0, inTangentX: 0, inTangentY: 0, outTangentX: 0, outTangentY: 0 },
+        { x: width, y: 0, inTangentX: 0, inTangentY: 0, outTangentX: 0, outTangentY: 0 },
+        { x: width, y: height, inTangentX: 0, inTangentY: 0, outTangentX: 0, outTangentY: 0 },
+        { x: 0, y: height, inTangentX: 0, inTangentY: 0, outTangentX: 0, outTangentY: 0 },
+      ],
+    }, 'position'),
+    opacity: createMaskAnimatableProperty<number>('Mask Opacity', 100, 'number'),
+    feather: createMaskAnimatableProperty<number>('Mask Feather', 0, 'number'),
+    expansion: createMaskAnimatableProperty<number>('Mask Expansion', 0, 'number'),
     color: '#FFFF00',  // Yellow default
   };
 }
@@ -345,37 +363,34 @@ export function createEllipseMask(
     locked: false,
     mode: 'add',
     inverted: false,
-    path: {
-      value: {
-        closed: true,
-        vertices: [
-          {
-            x: centerX, y: centerY - radiusY,
-            inTangentX: -ox, inTangentY: 0,
-            outTangentX: ox, outTangentY: 0,
-          },
-          {
-            x: centerX + radiusX, y: centerY,
-            inTangentX: 0, inTangentY: -oy,
-            outTangentX: 0, outTangentY: oy,
-          },
-          {
-            x: centerX, y: centerY + radiusY,
-            inTangentX: ox, inTangentY: 0,
-            outTangentX: -ox, outTangentY: 0,
-          },
-          {
-            x: centerX - radiusX, y: centerY,
-            inTangentX: 0, inTangentY: oy,
-            outTangentX: 0, outTangentY: -oy,
-          },
-        ],
-      },
-      keyframes: [],
-    },
-    opacity: { value: 100, keyframes: [] },
-    feather: { value: 0, keyframes: [] },
-    expansion: { value: 0, keyframes: [] },
+    path: createMaskAnimatableProperty<MaskPath>('Mask Path', {
+      closed: true,
+      vertices: [
+        {
+          x: centerX, y: centerY - radiusY,
+          inTangentX: -ox, inTangentY: 0,
+          outTangentX: ox, outTangentY: 0,
+        },
+        {
+          x: centerX + radiusX, y: centerY,
+          inTangentX: 0, inTangentY: -oy,
+          outTangentX: 0, outTangentY: oy,
+        },
+        {
+          x: centerX, y: centerY + radiusY,
+          inTangentX: ox, inTangentY: 0,
+          outTangentX: -ox, outTangentY: 0,
+        },
+        {
+          x: centerX - radiusX, y: centerY,
+          inTangentX: 0, inTangentY: oy,
+          outTangentX: 0, outTangentY: -oy,
+        },
+      ],
+    }, 'position'),
+    opacity: createMaskAnimatableProperty<number>('Mask Opacity', 100, 'number'),
+    feather: createMaskAnimatableProperty<number>('Mask Feather', 0, 'number'),
+    expansion: createMaskAnimatableProperty<number>('Mask Expansion', 0, 'number'),
     color: '#00FFFF',  // Cyan
   };
 }
@@ -602,6 +617,25 @@ export interface SubEmitterConfig {
   enabled: boolean;
 }
 
+export type EmitterShape = 'point' | 'line' | 'circle' | 'box' | 'sphere' | 'ring';
+
+export interface SpriteConfig {
+  enabled: boolean;
+  imageUrl: string | null;
+  imageData: ImageBitmap | HTMLImageElement | null;
+  isSheet: boolean;
+  columns: number;
+  rows: number;
+  totalFrames: number;
+  frameRate: number;
+  playMode: 'loop' | 'once' | 'pingpong' | 'random';
+  billboard: boolean;
+  rotationEnabled: boolean;
+  rotationSpeed: number;
+  rotationSpeedVariance: number;
+  alignToVelocity: boolean;
+}
+
 export interface ParticleEmitterConfig {
   id: string;
   name: string;
@@ -621,6 +655,17 @@ export interface ParticleEmitterConfig {
   enabled: boolean;
   burstOnBeat: boolean;
   burstCount: number;
+  // Geometric emitter shape (required by EmitterConfig)
+  shape: EmitterShape;
+  shapeRadius: number;
+  shapeWidth: number;
+  shapeHeight: number;
+  shapeDepth: number;
+  shapeInnerRadius: number;
+  emitFromEdge: boolean;
+  emitFromVolume: boolean;
+  // Sprite configuration
+  sprite: SpriteConfig;
 }
 
 export interface GravityWellConfig {
@@ -724,9 +769,34 @@ export interface DepthflowConfig {
 // CAMERA LAYER DATA
 // ============================================================
 
+export interface CameraDepthOfField {
+  enabled: boolean;
+  focusDistance: number;
+  aperture: number;
+  blurLevel: number;
+}
+
+export interface Vec3 {
+  x: number;
+  y: number;
+  z: number;
+}
+
 export interface CameraLayerData {
   cameraId: string;      // Reference to the Camera3D object
   isActiveCamera: boolean;  // Is this the composition's active camera?
+
+  // Optional animated camera properties (for MotionEngine evaluation)
+  animatedPosition?: AnimatableProperty<Vec3>;
+  animatedTarget?: AnimatableProperty<Vec3>;
+  animatedFov?: AnimatableProperty<number>;
+  animatedFocalLength?: AnimatableProperty<number>;
+
+  // Depth of field settings
+  depthOfField?: CameraDepthOfField;
+  animatedFocusDistance?: AnimatableProperty<number>;
+  animatedAperture?: AnimatableProperty<number>;
+  animatedBlurLevel?: AnimatableProperty<number>;
 }
 
 // ============================================================

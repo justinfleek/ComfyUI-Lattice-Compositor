@@ -457,14 +457,371 @@ export function gaussianBlurRenderer(
   return output;
 }
 
+// ============================================================================
+// DIRECTIONAL BLUR
+// ============================================================================
+
 /**
- * Register the Gaussian Blur effect renderer
+ * Directional Blur (Motion Blur) effect renderer
+ * Blurs along a specific angle to simulate motion
+ *
+ * Parameters:
+ * - direction: 0-360 degrees (default 0, horizontal right)
+ * - blur_length: 0-500 pixels (default 10)
+ */
+export function directionalBlurRenderer(
+  input: EffectStackResult,
+  params: EvaluatedEffectParams
+): EffectStackResult {
+  const direction = (params.direction ?? 0) * Math.PI / 180;
+  const blurLength = Math.max(0, Math.min(500, params.blur_length ?? 10));
+
+  if (blurLength <= 0) {
+    return input;
+  }
+
+  const { width, height } = input.canvas;
+  const output = createMatchingCanvas(input.canvas);
+
+  const inputData = input.ctx.getImageData(0, 0, width, height);
+  const outputData = output.ctx.createImageData(width, height);
+  const src = inputData.data;
+  const dst = outputData.data;
+
+  // Calculate direction vector
+  const dx = Math.cos(direction);
+  const dy = Math.sin(direction);
+
+  // Number of samples (more = smoother but slower)
+  const samples = Math.max(3, Math.ceil(blurLength));
+  const halfSamples = Math.floor(samples / 2);
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      let r = 0, g = 0, b = 0, a = 0;
+      let count = 0;
+
+      // Sample along the blur direction
+      for (let i = -halfSamples; i <= halfSamples; i++) {
+        const sampleX = Math.round(x + dx * i * (blurLength / samples));
+        const sampleY = Math.round(y + dy * i * (blurLength / samples));
+
+        // Clamp to bounds
+        const sx = Math.max(0, Math.min(width - 1, sampleX));
+        const sy = Math.max(0, Math.min(height - 1, sampleY));
+
+        const idx = (sy * width + sx) * 4;
+        r += src[idx];
+        g += src[idx + 1];
+        b += src[idx + 2];
+        a += src[idx + 3];
+        count++;
+      }
+
+      const outIdx = (y * width + x) * 4;
+      dst[outIdx] = Math.round(r / count);
+      dst[outIdx + 1] = Math.round(g / count);
+      dst[outIdx + 2] = Math.round(b / count);
+      dst[outIdx + 3] = Math.round(a / count);
+    }
+  }
+
+  output.ctx.putImageData(outputData, 0, 0);
+  return output;
+}
+
+// ============================================================================
+// RADIAL BLUR
+// ============================================================================
+
+/**
+ * Radial Blur effect renderer
+ * Spin or zoom blur radiating from a center point
+ *
+ * Parameters:
+ * - type: 'spin' | 'zoom' (default 'spin')
+ * - amount: 0-100 (default 10)
+ * - center_x: 0-100 percent (default 50)
+ * - center_y: 0-100 percent (default 50)
+ * - quality: 'draft' | 'good' | 'best' (affects sample count)
+ */
+export function radialBlurRenderer(
+  input: EffectStackResult,
+  params: EvaluatedEffectParams
+): EffectStackResult {
+  const type = params.type ?? 'spin';
+  const amount = Math.max(0, Math.min(100, params.amount ?? 10));
+  const centerX = (params.center_x ?? 50) / 100;
+  const centerY = (params.center_y ?? 50) / 100;
+  const quality = params.quality ?? 'good';
+
+  if (amount <= 0) {
+    return input;
+  }
+
+  const { width, height } = input.canvas;
+  const output = createMatchingCanvas(input.canvas);
+
+  const inputData = input.ctx.getImageData(0, 0, width, height);
+  const outputData = output.ctx.createImageData(width, height);
+  const src = inputData.data;
+  const dst = outputData.data;
+
+  // Center point in pixels
+  const cx = centerX * width;
+  const cy = centerY * height;
+
+  // Sample count based on quality
+  const samples = quality === 'best' ? 32 : quality === 'good' ? 16 : 8;
+
+  if (type === 'spin') {
+    // Spin blur - rotate around center
+    const maxAngle = (amount / 100) * Math.PI * 0.5; // Max 90 degrees at amount=100
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        let r = 0, g = 0, b = 0, a = 0;
+
+        // Vector from center to pixel
+        const dx = x - cx;
+        const dy = y - cy;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const baseAngle = Math.atan2(dy, dx);
+
+        // Sample at different rotation angles
+        for (let i = 0; i < samples; i++) {
+          const t = (i / (samples - 1)) - 0.5; // -0.5 to 0.5
+          const angle = baseAngle + t * maxAngle;
+
+          const sampleX = Math.round(cx + Math.cos(angle) * dist);
+          const sampleY = Math.round(cy + Math.sin(angle) * dist);
+
+          // Clamp to bounds
+          const sx = Math.max(0, Math.min(width - 1, sampleX));
+          const sy = Math.max(0, Math.min(height - 1, sampleY));
+
+          const idx = (sy * width + sx) * 4;
+          r += src[idx];
+          g += src[idx + 1];
+          b += src[idx + 2];
+          a += src[idx + 3];
+        }
+
+        const outIdx = (y * width + x) * 4;
+        dst[outIdx] = Math.round(r / samples);
+        dst[outIdx + 1] = Math.round(g / samples);
+        dst[outIdx + 2] = Math.round(b / samples);
+        dst[outIdx + 3] = Math.round(a / samples);
+      }
+    }
+  } else {
+    // Zoom blur - radiate from center
+    const maxZoom = amount / 100; // 0 to 1
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        let r = 0, g = 0, b = 0, a = 0;
+
+        // Vector from center to pixel
+        const dx = x - cx;
+        const dy = y - cy;
+
+        // Sample at different zoom levels
+        for (let i = 0; i < samples; i++) {
+          const t = (i / (samples - 1)); // 0 to 1
+          const scale = 1 - t * maxZoom; // 1 down to (1-maxZoom)
+
+          const sampleX = Math.round(cx + dx * scale);
+          const sampleY = Math.round(cy + dy * scale);
+
+          // Clamp to bounds
+          const sx = Math.max(0, Math.min(width - 1, sampleX));
+          const sy = Math.max(0, Math.min(height - 1, sampleY));
+
+          const idx = (sy * width + sx) * 4;
+          r += src[idx];
+          g += src[idx + 1];
+          b += src[idx + 2];
+          a += src[idx + 3];
+        }
+
+        const outIdx = (y * width + x) * 4;
+        dst[outIdx] = Math.round(r / samples);
+        dst[outIdx + 1] = Math.round(g / samples);
+        dst[outIdx + 2] = Math.round(b / samples);
+        dst[outIdx + 3] = Math.round(a / samples);
+      }
+    }
+  }
+
+  output.ctx.putImageData(outputData, 0, 0);
+  return output;
+}
+
+// ============================================================================
+// BOX BLUR (Fast Blur)
+// ============================================================================
+
+/**
+ * Box Blur effect renderer - Fast uniform blur
+ *
+ * Parameters:
+ * - radius: 0-100 pixels (default 5)
+ * - iterations: 1-5 (more = smoother, approaches gaussian)
+ */
+export function boxBlurRenderer(
+  input: EffectStackResult,
+  params: EvaluatedEffectParams
+): EffectStackResult {
+  const radius = Math.max(0, Math.min(100, Math.round(params.radius ?? 5)));
+  const iterations = Math.max(1, Math.min(5, params.iterations ?? 1));
+
+  if (radius <= 0) {
+    return input;
+  }
+
+  const { width, height } = input.canvas;
+  let current = createMatchingCanvas(input.canvas);
+  current.ctx.drawImage(input.canvas, 0, 0);
+
+  // Multiple iterations make box blur approach gaussian
+  for (let iter = 0; iter < iterations; iter++) {
+    const imageData = current.ctx.getImageData(0, 0, width, height);
+    const src = imageData.data;
+    const dst = new Uint8ClampedArray(src.length);
+
+    const size = radius * 2 + 1;
+    const area = size * size;
+
+    // Horizontal pass
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        let r = 0, g = 0, b = 0, a = 0;
+
+        for (let dx = -radius; dx <= radius; dx++) {
+          const sx = Math.max(0, Math.min(width - 1, x + dx));
+          const idx = (y * width + sx) * 4;
+          r += src[idx];
+          g += src[idx + 1];
+          b += src[idx + 2];
+          a += src[idx + 3];
+        }
+
+        const outIdx = (y * width + x) * 4;
+        dst[outIdx] = Math.round(r / size);
+        dst[outIdx + 1] = Math.round(g / size);
+        dst[outIdx + 2] = Math.round(b / size);
+        dst[outIdx + 3] = Math.round(a / size);
+      }
+    }
+
+    // Copy to src for vertical pass
+    src.set(dst);
+
+    // Vertical pass
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        let r = 0, g = 0, b = 0, a = 0;
+
+        for (let dy = -radius; dy <= radius; dy++) {
+          const sy = Math.max(0, Math.min(height - 1, y + dy));
+          const idx = (sy * width + x) * 4;
+          r += src[idx];
+          g += src[idx + 1];
+          b += src[idx + 2];
+          a += src[idx + 3];
+        }
+
+        const outIdx = (y * width + x) * 4;
+        dst[outIdx] = Math.round(r / size);
+        dst[outIdx + 1] = Math.round(g / size);
+        dst[outIdx + 2] = Math.round(b / size);
+        dst[outIdx + 3] = Math.round(a / size);
+      }
+    }
+
+    imageData.data.set(dst);
+    current.ctx.putImageData(imageData, 0, 0);
+  }
+
+  return current;
+}
+
+// ============================================================================
+// SHARPEN
+// ============================================================================
+
+/**
+ * Sharpen effect renderer - Unsharp mask
+ *
+ * Parameters:
+ * - amount: 0-500 percent (default 100)
+ * - radius: 0-100 pixels (default 1)
+ * - threshold: 0-255 (default 0) - minimum difference to sharpen
+ */
+export function sharpenRenderer(
+  input: EffectStackResult,
+  params: EvaluatedEffectParams
+): EffectStackResult {
+  const amount = (params.amount ?? 100) / 100;
+  const radius = Math.max(1, Math.min(100, params.radius ?? 1));
+  const threshold = params.threshold ?? 0;
+
+  if (amount <= 0) {
+    return input;
+  }
+
+  const { width, height } = input.canvas;
+
+  // Create blurred version
+  const blurred = createMatchingCanvas(input.canvas);
+  blurred.ctx.drawImage(input.canvas, 0, 0);
+  const blurredData = blurred.ctx.getImageData(0, 0, width, height);
+  stackBlur(blurredData, radius, radius);
+
+  // Get original
+  const output = createMatchingCanvas(input.canvas);
+  const originalData = input.ctx.getImageData(0, 0, width, height);
+  const orig = originalData.data;
+  const blur = blurredData.data;
+
+  // Unsharp mask: original + amount * (original - blurred)
+  for (let i = 0; i < orig.length; i += 4) {
+    for (let c = 0; c < 3; c++) {
+      const diff = orig[i + c] - blur[i + c];
+
+      // Apply threshold
+      if (Math.abs(diff) >= threshold) {
+        const sharpened = orig[i + c] + diff * amount;
+        orig[i + c] = Math.max(0, Math.min(255, Math.round(sharpened)));
+      }
+    }
+  }
+
+  output.ctx.putImageData(originalData, 0, 0);
+  return output;
+}
+
+// ============================================================================
+// REGISTRATION
+// ============================================================================
+
+/**
+ * Register all blur effect renderers
  */
 export function registerBlurEffects(): void {
   registerEffectRenderer('gaussian-blur', gaussianBlurRenderer);
+  registerEffectRenderer('directional-blur', directionalBlurRenderer);
+  registerEffectRenderer('radial-blur', radialBlurRenderer);
+  registerEffectRenderer('box-blur', boxBlurRenderer);
+  registerEffectRenderer('sharpen', sharpenRenderer);
 }
 
 export default {
   gaussianBlurRenderer,
+  directionalBlurRenderer,
+  radialBlurRenderer,
+  boxBlurRenderer,
+  sharpenRenderer,
   registerBlurEffects
 };

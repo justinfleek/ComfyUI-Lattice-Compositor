@@ -40,6 +40,7 @@ import type {
 import type { Layer } from '@/types/project';
 import type { TargetParameter } from '@/services/audioReactiveMapping';
 import { engineLogger } from '@/utils/logger';
+import type { FrameState } from './MotionEngine';
 
 /** Callback to get audio reactive values at a frame */
 export type AudioReactiveGetter = (frame: number) => Map<TargetParameter, number>;
@@ -122,8 +123,12 @@ export class WeylEngine {
     };
 
     // Initialize state
+    // NOTE: state.currentFrame is DEPRECATED as time authority
+    // The sole authority is now MotionEngine.evaluate(frame)
+    // This field is kept for backwards compatibility but should not be
+    // used as source of truth. Use applyFrameState() instead of setFrame().
     this.state = {
-      currentFrame: 0,
+      currentFrame: 0, // DEPRECATED: Use MotionEngine as time authority
       isRendering: false,
       isDisposed: false,
       viewport: {
@@ -452,7 +457,69 @@ export class WeylEngine {
   // ============================================================================
 
   /**
+   * Apply a pre-evaluated FrameState from MotionEngine
+   *
+   * This is the CANONICAL way to update the rendering state.
+   * FrameState is computed by MotionEngine.evaluate() which is PURE.
+   *
+   * ARCHITECTURAL RULE:
+   * - Layers receive already-evaluated values via applyEvaluatedState()
+   * - NO interpolation or time sampling happens here
+   * - Single source of truth: MotionEngine
+   *
+   * @param frameState - Pre-evaluated state from MotionEngine.evaluate()
+   */
+  applyFrameState(frameState: FrameState): void {
+    this.assertNotDisposed();
+
+    // Update internal frame reference (for events and backwards compat)
+    this.state.currentFrame = frameState.frame;
+
+    // Apply evaluated layer states - NO RE-EVALUATION
+    // Layers only apply pre-computed values from MotionEngine
+    this.layers.applyEvaluatedState(frameState.layers);
+
+    // Apply camera state if present
+    if (frameState.camera) {
+      this.applyCameraState(frameState.camera);
+    } else {
+      // Sync render camera from active CameraLayer (if set)
+      this.syncActiveCamera();
+
+      // Fallback: evaluate CameraController's own animation
+      if (!this.activeCameraId) {
+        this.camera.evaluateFrame(frameState.frame);
+      }
+    }
+  }
+
+  /**
+   * Apply evaluated camera state directly
+   */
+  private applyCameraState(cameraState: FrameState['camera']): void {
+    if (!cameraState) return;
+
+    // Update camera controller with evaluated values
+    this.camera.setPositionDirect(
+      cameraState.position.x,
+      cameraState.position.y,
+      cameraState.position.z
+    );
+    this.camera.setTargetDirect(
+      cameraState.target.x,
+      cameraState.target.y,
+      cameraState.target.z
+    );
+    this.camera.setFOV(cameraState.fov);
+  }
+
+  /**
    * Set the current frame for animation evaluation
+   *
+   * @deprecated Use applyFrameState() with MotionEngine.evaluate() instead.
+   * This method evaluates frames directly, bypassing the single time authority.
+   * It is kept for backwards compatibility but should be phased out.
+   *
    * @param frame - The frame number (0-indexed)
    */
   setFrame(frame: number): void {
@@ -484,6 +551,7 @@ export class WeylEngine {
 
   /**
    * Get the current frame
+   * @deprecated Frame authority is now MotionEngine. This returns cached value.
    */
   getCurrentFrame(): number {
     return this.state.currentFrame;

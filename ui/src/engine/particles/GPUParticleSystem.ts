@@ -408,7 +408,7 @@ export class GPUParticleSystem {
       // Create force field texture for passing force field data to shader
       this.forceFieldBuffer = new Float32Array(MAX_FORCE_FIELDS * 16); // 16 floats per force field
       this.forceFieldTexture = new THREE.DataTexture(
-        this.forceFieldBuffer,
+        this.forceFieldBuffer as unknown as BufferSource,
         MAX_FORCE_FIELDS,
         4, // 4 rows of 4 floats = 16 floats per force field
         THREE.RGBAFormat,
@@ -1551,7 +1551,8 @@ export class GPUParticleSystem {
     // Bind force field texture
     if (this.forceFieldTexture) {
       gl.activeTexture(gl.TEXTURE0);
-      const tex = this.renderer?.properties.get(this.forceFieldTexture).__webglTexture;
+      const textureProps = this.renderer?.properties.get(this.forceFieldTexture) as { __webglTexture?: WebGLTexture } | undefined;
+      const tex = textureProps?.__webglTexture;
       if (tex) {
         gl.bindTexture(gl.TEXTURE_2D, tex);
         gl.uniform1i(ffTexLoc, 0);
