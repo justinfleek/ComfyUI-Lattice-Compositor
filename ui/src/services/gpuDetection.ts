@@ -4,6 +4,8 @@
  * Detects GPU capabilities and returns appropriate rendering tier.
  */
 
+import { engineLogger } from '@/utils/logger';
+
 export interface GPUTier {
   tier: 'cpu' | 'webgl' | 'webgpu' | 'blackwell';
   vram: number;
@@ -68,7 +70,7 @@ export async function detectGPUTier(): Promise<GPUTier> {
         };
       }
     } catch (error) {
-      console.warn('[Weyl] WebGPU detection failed:', error);
+      engineLogger.warn('WebGPU detection failed:', error);
     }
   }
 
@@ -81,7 +83,7 @@ export async function detectGPUTier(): Promise<GPUTier> {
       ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)
       : 'Unknown';
 
-    console.log('[Weyl] WebGL renderer:', renderer);
+    engineLogger.debug('WebGL renderer:', renderer);
 
     return {
       tier: 'webgl',

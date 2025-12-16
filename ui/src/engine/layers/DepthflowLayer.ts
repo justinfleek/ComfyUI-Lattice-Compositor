@@ -12,6 +12,7 @@ import * as THREE from 'three';
 import type { Layer, DepthflowLayerData, DepthflowConfig, AnimatableProperty } from '@/types/project';
 import type { ResourceManager } from '../core/ResourceManager';
 import { BaseLayer } from './BaseLayer';
+import { layerLogger } from '@/utils/logger';
 
 // ============================================================================
 // SHADERS
@@ -235,7 +236,7 @@ export class DepthflowLayer extends BaseLayer {
     const texture = this.resources.getLayerTexture(layerId);
     if (texture) return texture;
 
-    console.warn(`[DepthflowLayer] Could not load texture for layer ${layerId}`);
+    layerLogger.warn(`DepthflowLayer: Could not load texture for layer ${layerId}`);
     return null;
   }
 

@@ -2,9 +2,44 @@
  * Keyframe Interpolation Engine
  *
  * Handles linear, bezier, easing, and hold interpolation between keyframes.
+ *
+ * Performance optimizations:
+ * - Binary search for keyframe lookup (O(log n) instead of O(n))
+ * - Early exit in Newton-Raphson iteration
+ * - Cached computations where possible
  */
 import type { Keyframe, AnimatableProperty, BezierHandle } from '@/types/project';
 import { getEasing, easings, type EasingName } from './easing';
+import { renderLogger } from '@/utils/logger';
+
+/**
+ * Binary search to find the keyframe index where frame falls between [i] and [i+1]
+ * Returns the index of the keyframe just before or at the given frame.
+ * Assumes keyframes are sorted by frame (ascending).
+ *
+ * @returns Index i where keyframes[i].frame <= frame < keyframes[i+1].frame
+ */
+function findKeyframeIndex<T>(keyframes: Keyframe<T>[], frame: number): number {
+  let low = 0;
+  let high = keyframes.length - 2; // -2 because we need i and i+1
+
+  while (low <= high) {
+    const mid = (low + high) >>> 1; // Bitwise divide by 2 (faster)
+    const midFrame = keyframes[mid].frame;
+    const nextFrame = keyframes[mid + 1].frame;
+
+    if (frame >= midFrame && frame <= nextFrame) {
+      return mid;
+    } else if (frame < midFrame) {
+      high = mid - 1;
+    } else {
+      low = mid + 1;
+    }
+  }
+
+  // Fallback (shouldn't happen if bounds are checked first)
+  return Math.max(0, Math.min(low, keyframes.length - 2));
+}
 
 /**
  * Calculate the scalar delta between two values for bezier normalization
@@ -47,17 +82,10 @@ export function interpolateProperty<T>(
     return keyframes[keyframes.length - 1].value;
   }
 
-  // Find surrounding keyframes
-  let k1: Keyframe<T> = keyframes[0];
-  let k2: Keyframe<T> = keyframes[1];
-
-  for (let i = 0; i < keyframes.length - 1; i++) {
-    if (frame >= keyframes[i].frame && frame <= keyframes[i + 1].frame) {
-      k1 = keyframes[i];
-      k2 = keyframes[i + 1];
-      break;
-    }
-  }
+  // Find surrounding keyframes using binary search (O(log n) instead of O(n))
+  const idx = findKeyframeIndex(keyframes, frame);
+  const k1 = keyframes[idx];
+  const k2 = keyframes[idx + 1];
 
   // Calculate t (0-1) between keyframes
   const duration = k2.frame - k1.frame;
@@ -82,7 +110,7 @@ export function interpolateProperty<T>(
     t = easingFn(t);
   } else {
     // Unknown interpolation type, default to linear
-    console.warn(`Unknown interpolation type: ${interpolation}, using linear`);
+    renderLogger.warn(`Unknown interpolation type: ${interpolation}, using linear`);
   }
 
   // Interpolate the value based on type
@@ -126,17 +154,22 @@ function cubicBezierEasing(
   const y2 = valueDelta !== 0 ? 1 - inHandle.value / valueDelta : 0.67;
 
   // Find t value for given x using Newton-Raphson iteration
+  // With early exit when error is small enough (typically converges in 2-4 iterations)
   let guessT = t;
+  const EPSILON = 1e-6;
+  const MAX_ITERATIONS = 8;
 
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < MAX_ITERATIONS; i++) {
     const currentX = bezierPoint(guessT, 0, x1, x2, 1);
-    const currentSlope = bezierDerivative(guessT, 0, x1, x2, 1);
-
-    if (Math.abs(currentSlope) < 1e-6) break;
-
     const error = currentX - t;
-    guessT -= error / currentSlope;
 
+    // Early exit if we've converged
+    if (Math.abs(error) < EPSILON) break;
+
+    const currentSlope = bezierDerivative(guessT, 0, x1, x2, 1);
+    if (Math.abs(currentSlope) < EPSILON) break;
+
+    guessT -= error / currentSlope;
     guessT = Math.max(0, Math.min(1, guessT));
   }
 

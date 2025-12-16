@@ -3,6 +3,8 @@
  * HSV, RGB, HSL conversions and hex parsing
  */
 
+import { clamp } from './arrayUtils';
+
 export type RGB = [number, number, number];
 export type HSV = [number, number, number];
 export type HSL = [number, number, number];
@@ -265,13 +267,6 @@ export function parseColor(color: string): RGB | null {
   }
 
   return null;
-}
-
-/**
- * Clamp a number between min and max
- */
-export function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
 }
 
 /**

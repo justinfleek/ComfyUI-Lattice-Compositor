@@ -3,6 +3,7 @@
  * HTTP and WebSocket client for ComfyUI server communication
  */
 
+import { createLogger } from '@/utils/logger';
 import type {
   ComfyUIWorkflow,
   ComfyUIPromptResult,
@@ -18,6 +19,8 @@ export interface ComfyUIClientConfig {
   serverAddress: string;
   clientId?: string;
 }
+
+const comfyLogger = createLogger('ComfyUI');
 
 export interface UploadResult {
   name: string;
@@ -338,17 +341,17 @@ export class ComfyUIClient {
       this.ws = new WebSocket(wsUrl);
 
       this.ws.onopen = () => {
-        console.log('[ComfyUI] WebSocket connected');
+        comfyLogger.debug('WebSocket connected');
         resolve();
       };
 
       this.ws.onerror = (event) => {
-        console.error('[ComfyUI] WebSocket error:', event);
+        comfyLogger.error('WebSocket error:', event);
         reject(new Error('WebSocket connection failed'));
       };
 
       this.ws.onclose = () => {
-        console.log('[ComfyUI] WebSocket disconnected');
+        comfyLogger.debug('WebSocket disconnected');
         this.ws = null;
       };
 
@@ -357,7 +360,7 @@ export class ComfyUIClient {
           const data = JSON.parse(event.data);
           this.handleWebSocketMessage(data);
         } catch (e) {
-          console.error('[ComfyUI] Failed to parse WebSocket message:', e);
+          comfyLogger.error('Failed to parse WebSocket message:', e);
         }
       };
     });

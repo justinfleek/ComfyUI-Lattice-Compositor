@@ -11,6 +11,7 @@
 
 import type { AudioAnalysis } from './audioFeatures';
 import { getFeatureAtFrame } from './audioFeatures';
+import { storeLogger } from '@/utils/logger';
 
 // ============================================================================
 // Types
@@ -135,7 +136,7 @@ export class PropertyDriverSystem {
     // Check for circular dependencies before adding
     if (driver.sourceType === 'property' && driver.sourceLayerId && driver.sourceProperty) {
       if (this.wouldCreateCycle(driver)) {
-        console.warn('[PropertyDriverSystem] Cannot add driver: would create circular dependency');
+        storeLogger.warn('PropertyDriverSystem: Cannot add driver: would create circular dependency');
         return false;
       }
     }

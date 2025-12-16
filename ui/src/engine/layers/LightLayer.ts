@@ -11,6 +11,7 @@
 import * as THREE from 'three';
 import type { Layer, AnimatableProperty } from '@/types/project';
 import { BaseLayer } from './BaseLayer';
+import { layerLogger } from '@/utils/logger';
 
 export type LightType = 'point' | 'spot' | 'parallel' | 'ambient';
 export type FalloffType = 'none' | 'smooth' | 'inverseSquareClamped';
@@ -116,7 +117,7 @@ export class LightLayer extends BaseLayer {
       }
 
       default:
-        console.warn(`[LightLayer] Unknown light type: ${this.lightData.lightType}, defaulting to point`);
+        layerLogger.warn(`LightLayer: Unknown light type: ${this.lightData.lightType}, defaulting to point`);
         return new THREE.PointLight(color, intensity);
     }
   }

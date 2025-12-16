@@ -23,6 +23,7 @@ import { CameraLayer, type CameraGetter, type CameraUpdater } from '../layers/Ca
 import { LightLayer } from '../layers/LightLayer';
 import { DepthflowLayer } from '../layers/DepthflowLayer';
 import type { TargetParameter } from '@/services/audioReactiveMapping';
+import { layerLogger } from '@/utils/logger';
 
 /** Callback to get audio reactive values for a specific layer at a frame */
 export type LayerAudioReactiveGetter = (layerId: string, frame: number) => Map<TargetParameter, number>;
@@ -164,7 +165,7 @@ export class LayerManager {
   create(layerData: Layer): BaseLayer {
     // Check for duplicate ID
     if (this.layers.has(layerData.id)) {
-      console.warn(`[LayerManager] Layer ${layerData.id} already exists, updating instead`);
+      layerLogger.warn(`LayerManager: Layer ${layerData.id} already exists, updating instead`);
       this.update(layerData.id, layerData);
       return this.layers.get(layerData.id)!;
     }
@@ -279,7 +280,7 @@ export class LayerManager {
         return new DepthflowLayer(layerData, this.resources);
 
       default:
-        console.warn(`[LayerManager] Unknown layer type: ${layerData.type}, creating NullLayer`);
+        layerLogger.warn(`LayerManager: Unknown layer type: ${layerData.type}, creating NullLayer`);
         return new NullLayer(layerData);
     }
   }
@@ -295,7 +296,7 @@ export class LayerManager {
     const layer = this.layers.get(layerId);
 
     if (!layer) {
-      console.warn(`[LayerManager] Layer ${layerId} not found for update`);
+      layerLogger.warn(`LayerManager: Layer ${layerId} not found for update`);
       return;
     }
 
@@ -322,7 +323,7 @@ export class LayerManager {
     const layer = this.layers.get(layerId);
 
     if (!layer) {
-      console.warn(`[LayerManager] Layer ${layerId} not found for removal`);
+      layerLogger.warn(`LayerManager: Layer ${layerId} not found for removal`);
       return;
     }
 
@@ -457,7 +458,7 @@ export class LayerManager {
     const textLayer = this.layers.get(textLayerId) as TextLayer | undefined;
 
     if (!textLayer || textLayer.type !== 'text') {
-      console.warn(`[LayerManager] Text layer ${textLayerId} not found`);
+      layerLogger.warn(`LayerManager: Text layer ${textLayerId} not found`);
       return;
     }
 
@@ -469,7 +470,7 @@ export class LayerManager {
     const splineLayer = this.layers.get(splineLayerId) as SplineLayer | undefined;
 
     if (!splineLayer || splineLayer.type !== 'spline') {
-      console.warn(`[LayerManager] Spline layer ${splineLayerId} not found`);
+      layerLogger.warn(`LayerManager: Spline layer ${splineLayerId} not found`);
       return;
     }
 

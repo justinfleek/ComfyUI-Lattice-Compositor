@@ -29,6 +29,13 @@ export class SceneManager {
   private compositionWidth: number = 1920;
   private compositionHeight: number = 1080;
 
+  /** O(1) layer lookup map - optimization for frequent ID-based lookups */
+  private layerLookupMap: Map<string, THREE.Object3D> = new Map();
+
+  /** Track Z positions to avoid unnecessary sorting */
+  private zPositionCache: Map<THREE.Object3D, number> = new Map();
+  private needsZSort: boolean = false;
+
   constructor(backgroundColor: string | null = null) {
     // Create main scene
     this.scene = new THREE.Scene();
@@ -94,7 +101,13 @@ export class SceneManager {
    */
   addToComposition(object: THREE.Object3D): void {
     this.compositionGroup.add(object);
-    this.sortByZ();
+    this.markNeedsZSort(); // Mark for sorting instead of immediate sort
+
+    // Update lookup map for O(1) access
+    const layerId = object.userData?.layerId;
+    if (layerId) {
+      this.layerLookupMap.set(layerId, object);
+    }
   }
 
   /**
@@ -102,15 +115,57 @@ export class SceneManager {
    */
   removeFromComposition(object: THREE.Object3D): void {
     this.compositionGroup.remove(object);
+
+    // Remove from lookup map
+    const layerId = object.userData?.layerId;
+    if (layerId) {
+      this.layerLookupMap.delete(layerId);
+    }
+
+    // Clean up Z position cache
+    this.zPositionCache.delete(object);
   }
 
   /**
    * Sort composition layers by Z position for proper depth ordering
+   * Optimized to only sort when Z positions have actually changed
    */
   sortByZ(): void {
+    // Check if any Z positions have changed since last sort
+    if (!this.needsZSort) {
+      let hasChanges = false;
+      for (const child of this.compositionGroup.children) {
+        const cachedZ = this.zPositionCache.get(child);
+        const currentZ = child.position.z || 0;
+        if (cachedZ === undefined || cachedZ !== currentZ) {
+          hasChanges = true;
+          break;
+        }
+      }
+      if (!hasChanges) {
+        return; // No Z changes, skip sorting
+      }
+    }
+
+    // Perform the sort
     this.compositionGroup.children.sort((a, b) => {
       return (a.position.z || 0) - (b.position.z || 0);
     });
+
+    // Update the Z position cache
+    for (const child of this.compositionGroup.children) {
+      this.zPositionCache.set(child, child.position.z || 0);
+    }
+
+    // Clear the dirty flag
+    this.needsZSort = false;
+  }
+
+  /**
+   * Mark that Z sorting is needed (call when Z positions may have changed)
+   */
+  markNeedsZSort(): void {
+    this.needsZSort = true;
   }
 
   /**
@@ -307,12 +362,10 @@ export class SceneManager {
   }
 
   /**
-   * Find layer object by ID
+   * Find layer object by ID - O(1) lookup via Map
    */
   findLayerById(layerId: string): THREE.Object3D | null {
-    return this.compositionGroup.children.find(
-      obj => obj.userData.layerId === layerId
-    ) ?? null;
+    return this.layerLookupMap.get(layerId) ?? null;
   }
 
   // ============================================================================
@@ -371,6 +424,10 @@ export class SceneManager {
       this.compositionGroup.remove(child);
       this.disposeObject(child);
     }
+
+    // Clear lookup map and Z cache
+    this.layerLookupMap.clear();
+    this.zPositionCache.clear();
 
     // Dispose overlay
     this.clearOverlay();

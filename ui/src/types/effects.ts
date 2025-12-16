@@ -61,18 +61,21 @@ export interface EffectInstance {
 /**
  * Parameter type mapping for effect definitions
  */
-export type EffectParameterType = 'number' | 'color' | 'point' | 'angle' | 'checkbox' | 'dropdown' | 'layer';
+export type EffectParameterType = 'number' | 'color' | 'point' | 'point3d' | 'angle' | 'checkbox' | 'dropdown' | 'layer';
 
 /**
  * Get the AnimatableProperty type string for a parameter type
+ * Returns the type that matches AnimatableProperty.type in project.ts
  */
-export function getAnimatableType(paramType: EffectParameterType): 'number' | 'position' | 'color' | 'enum' {
+export function getAnimatableType(paramType: EffectParameterType): 'number' | 'position' | 'color' | 'enum' | 'vector3' {
   switch (paramType) {
     case 'number':
     case 'angle':
       return 'number';
     case 'point':
       return 'position';
+    case 'point3d':
+      return 'vector3';
     case 'color':
       return 'color';
     case 'checkbox':

@@ -3,7 +3,54 @@
  *
  * Creates 2.5D parallax animation from image + depth map.
  * Matches akatz-ai/ComfyUI-Depthflow-Nodes functionality.
+ *
+ * Enhanced with stackable motion components (Depthflow-style).
  */
+
+import { renderLogger } from '@/utils/logger';
+
+// ============================================================================
+// Motion Component Types (Depthflow-style stackable effects)
+// ============================================================================
+
+export type MotionType = 'linear' | 'exponential' | 'sine' | 'cosine' | 'arc' | 'setTarget' | 'bounce' | 'elastic';
+
+export type MotionParameter = 'zoom' | 'offsetX' | 'offsetY' | 'rotation' | 'depthScale' | 'focusDepth';
+
+export type EasingType = 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'bounce' | 'elastic' | 'back';
+
+export interface MotionComponent {
+  id: string;
+  type: MotionType;
+  parameter: MotionParameter;
+  startValue: number;
+  endValue: number;
+  startFrame: number;      // Relative to layer start
+  endFrame: number;        // Relative to layer start
+  easing: EasingType;
+  amplitude?: number;      // For sine/cosine/arc
+  frequency?: number;      // For sine/cosine
+  loops?: number;          // Number of cycles
+  phase?: number;          // Starting phase (0-1)
+  enabled: boolean;
+}
+
+export interface DOFConfig {
+  enabled: boolean;
+  focusDepth: number;      // 0-1, depth value to focus on
+  aperture: number;        // Blur strength
+  bokehShape: 'circle' | 'hexagon' | 'heart';
+  bokehSize: number;
+}
+
+export interface DepthflowEnhanced {
+  motions: MotionComponent[];
+  dof: DOFConfig;
+  vignette: number;        // 0-1, edge darkening
+  quality: number;         // 1-100
+  ssaa: number;            // 0-2 supersampling
+  tilingMode: 'none' | 'repeat' | 'mirror';
+}
 
 // ============================================================================
 // Types
@@ -69,6 +116,449 @@ export function createDefaultDepthflowConfig(): DepthflowConfig {
     edgeDilation: 5,
     inpaintEdges: true
   };
+}
+
+export function createDefaultDOFConfig(): DOFConfig {
+  return {
+    enabled: false,
+    focusDepth: 0.5,
+    aperture: 2.8,
+    bokehShape: 'circle',
+    bokehSize: 1.0
+  };
+}
+
+export function createDefaultEnhancedConfig(): DepthflowEnhanced {
+  return {
+    motions: [],
+    dof: createDefaultDOFConfig(),
+    vignette: 0,
+    quality: 80,
+    ssaa: 1,
+    tilingMode: 'none'
+  };
+}
+
+// ============================================================================
+// Motion Component Functions
+// ============================================================================
+
+let motionIdCounter = 0;
+
+export function createMotionComponent(overrides?: Partial<MotionComponent>): MotionComponent {
+  return {
+    id: `motion_${++motionIdCounter}`,
+    type: 'linear',
+    parameter: 'zoom',
+    startValue: 1.0,
+    endValue: 1.2,
+    startFrame: 0,
+    endFrame: 30,
+    easing: 'ease-in-out',
+    enabled: true,
+    ...overrides
+  };
+}
+
+/**
+ * Apply easing function to normalized time
+ */
+export function applyEasing(t: number, easing: EasingType): number {
+  switch (easing) {
+    case 'linear':
+      return t;
+
+    case 'ease-in':
+      return t * t;
+
+    case 'ease-out':
+      return 1 - (1 - t) * (1 - t);
+
+    case 'ease-in-out':
+      return t < 0.5
+        ? 2 * t * t
+        : 1 - Math.pow(-2 * t + 2, 2) / 2;
+
+    case 'bounce': {
+      const n1 = 7.5625;
+      const d1 = 2.75;
+      if (t < 1 / d1) {
+        return n1 * t * t;
+      } else if (t < 2 / d1) {
+        return n1 * (t -= 1.5 / d1) * t + 0.75;
+      } else if (t < 2.5 / d1) {
+        return n1 * (t -= 2.25 / d1) * t + 0.9375;
+      } else {
+        return n1 * (t -= 2.625 / d1) * t + 0.984375;
+      }
+    }
+
+    case 'elastic': {
+      const c4 = (2 * Math.PI) / 3;
+      return t === 0
+        ? 0
+        : t === 1
+        ? 1
+        : Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
+    }
+
+    case 'back': {
+      const c1 = 1.70158;
+      const c3 = c1 + 1;
+      return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+    }
+
+    default:
+      return t;
+  }
+}
+
+/**
+ * Evaluate a single motion component at a specific frame
+ */
+export function evaluateMotionComponent(
+  motion: MotionComponent,
+  frame: number
+): number | null {
+  if (!motion.enabled) return null;
+
+  // Check if frame is within motion range
+  if (frame < motion.startFrame || frame > motion.endFrame) {
+    // Return start or end value depending on whether we're before or after
+    if (frame < motion.startFrame) return motion.startValue;
+    return motion.endValue;
+  }
+
+  // Calculate normalized time within motion range
+  const duration = motion.endFrame - motion.startFrame;
+  const localFrame = frame - motion.startFrame;
+  const t = duration > 0 ? localFrame / duration : 1;
+
+  // Apply easing
+  const easedT = applyEasing(t, motion.easing);
+
+  // Calculate value based on motion type
+  switch (motion.type) {
+    case 'linear':
+      return motion.startValue + (motion.endValue - motion.startValue) * easedT;
+
+    case 'exponential': {
+      const ratio = motion.endValue / motion.startValue;
+      return motion.startValue * Math.pow(ratio, easedT);
+    }
+
+    case 'sine': {
+      const amplitude = motion.amplitude ?? (motion.endValue - motion.startValue) / 2;
+      const frequency = motion.frequency ?? 1;
+      const phase = motion.phase ?? 0;
+      const loops = motion.loops ?? 1;
+      const baseValue = (motion.startValue + motion.endValue) / 2;
+      return baseValue + amplitude * Math.sin((easedT * loops + phase) * Math.PI * 2 * frequency);
+    }
+
+    case 'cosine': {
+      const amplitude = motion.amplitude ?? (motion.endValue - motion.startValue) / 2;
+      const frequency = motion.frequency ?? 1;
+      const phase = motion.phase ?? 0;
+      const loops = motion.loops ?? 1;
+      const baseValue = (motion.startValue + motion.endValue) / 2;
+      return baseValue + amplitude * Math.cos((easedT * loops + phase) * Math.PI * 2 * frequency);
+    }
+
+    case 'arc': {
+      // Arc motion: follows a curved path
+      const amplitude = motion.amplitude ?? 1;
+      const midValue = (motion.startValue + motion.endValue) / 2;
+      const range = motion.endValue - motion.startValue;
+      // Parabolic arc
+      const arcOffset = amplitude * 4 * easedT * (1 - easedT);
+      return motion.startValue + range * easedT + arcOffset;
+    }
+
+    case 'setTarget':
+      // Instant jump to end value at start frame
+      return frame >= motion.startFrame ? motion.endValue : motion.startValue;
+
+    case 'bounce': {
+      // Bouncy transition
+      const baseValue = motion.startValue + (motion.endValue - motion.startValue) * easedT;
+      const bounceDecay = Math.exp(-easedT * 5);
+      const bounce = Math.sin(easedT * Math.PI * 4) * bounceDecay * 0.2;
+      return baseValue * (1 + bounce);
+    }
+
+    case 'elastic': {
+      // Elastic overshoot
+      const baseValue = motion.startValue + (motion.endValue - motion.startValue) * easedT;
+      if (easedT === 0 || easedT === 1) return baseValue;
+      const elasticDecay = Math.exp(-easedT * 3);
+      const elastic = Math.sin(easedT * Math.PI * 6) * elasticDecay * 0.3;
+      return baseValue * (1 + elastic);
+    }
+
+    default:
+      return motion.startValue + (motion.endValue - motion.startValue) * easedT;
+  }
+}
+
+/**
+ * Evaluate all motion components for a parameter and combine them
+ */
+export function evaluateMotionsForParameter(
+  motions: MotionComponent[],
+  parameter: MotionParameter,
+  frame: number,
+  baseValue: number
+): number {
+  const parameterMotions = motions.filter(m => m.parameter === parameter && m.enabled);
+
+  if (parameterMotions.length === 0) {
+    return baseValue;
+  }
+
+  // Combine all motion values additively (relative to base)
+  let result = baseValue;
+
+  for (const motion of parameterMotions) {
+    const value = evaluateMotionComponent(motion, frame);
+    if (value !== null) {
+      // Calculate delta from start value and add to result
+      const delta = value - motion.startValue;
+      result += delta;
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Get all animated values for a frame from motion components
+ */
+export function evaluateAllMotions(
+  motions: MotionComponent[],
+  frame: number,
+  baseConfig: DepthflowConfig
+): {
+  zoom: number;
+  offsetX: number;
+  offsetY: number;
+  rotation: number;
+  depthScale: number;
+  focusDepth: number;
+} {
+  return {
+    zoom: evaluateMotionsForParameter(motions, 'zoom', frame, baseConfig.zoom),
+    offsetX: evaluateMotionsForParameter(motions, 'offsetX', frame, baseConfig.offsetX),
+    offsetY: evaluateMotionsForParameter(motions, 'offsetY', frame, baseConfig.offsetY),
+    rotation: evaluateMotionsForParameter(motions, 'rotation', frame, baseConfig.rotation),
+    depthScale: evaluateMotionsForParameter(motions, 'depthScale', frame, baseConfig.depthScale),
+    focusDepth: evaluateMotionsForParameter(motions, 'focusDepth', frame, baseConfig.focusDepth),
+  };
+}
+
+// ============================================================================
+// Motion Presets
+// ============================================================================
+
+export const MOTION_PRESETS: Record<string, MotionComponent[]> = {
+  // Gentle zoom in
+  'zoom_in_gentle': [
+    createMotionComponent({
+      type: 'linear',
+      parameter: 'zoom',
+      startValue: 1.0,
+      endValue: 1.15,
+      easing: 'ease-in-out'
+    })
+  ],
+
+  // Ken Burns effect
+  'ken_burns': [
+    createMotionComponent({
+      type: 'linear',
+      parameter: 'zoom',
+      startValue: 1.0,
+      endValue: 1.2,
+      easing: 'ease-out'
+    }),
+    createMotionComponent({
+      type: 'linear',
+      parameter: 'offsetX',
+      startValue: -0.1,
+      endValue: 0.1,
+      easing: 'ease-in-out'
+    })
+  ],
+
+  // Vertigo (dolly zoom)
+  'vertigo': [
+    createMotionComponent({
+      type: 'linear',
+      parameter: 'zoom',
+      startValue: 1.0,
+      endValue: 1.5,
+      easing: 'ease-in'
+    }),
+    createMotionComponent({
+      type: 'linear',
+      parameter: 'depthScale',
+      startValue: 1.0,
+      endValue: 0.3,
+      easing: 'ease-in'
+    })
+  ],
+
+  // Breathing effect
+  'breathing': [
+    createMotionComponent({
+      type: 'sine',
+      parameter: 'zoom',
+      startValue: 1.0,
+      endValue: 1.0,
+      amplitude: 0.03,
+      frequency: 0.5,
+      loops: 2,
+      easing: 'linear'
+    }),
+    createMotionComponent({
+      type: 'cosine',
+      parameter: 'depthScale',
+      startValue: 1.0,
+      endValue: 1.0,
+      amplitude: 0.1,
+      frequency: 0.5,
+      loops: 2,
+      easing: 'linear'
+    })
+  ],
+
+  // Swing left to right
+  'swing_horizontal': [
+    createMotionComponent({
+      type: 'sine',
+      parameter: 'offsetX',
+      startValue: 0,
+      endValue: 0,
+      amplitude: 0.15,
+      frequency: 1,
+      loops: 1,
+      easing: 'linear'
+    })
+  ],
+
+  // Circular orbit
+  'orbit': [
+    createMotionComponent({
+      type: 'sine',
+      parameter: 'offsetX',
+      startValue: 0,
+      endValue: 0,
+      amplitude: 0.1,
+      frequency: 1,
+      loops: 1,
+      phase: 0,
+      easing: 'linear'
+    }),
+    createMotionComponent({
+      type: 'cosine',
+      parameter: 'offsetY',
+      startValue: 0,
+      endValue: 0,
+      amplitude: 0.1,
+      frequency: 1,
+      loops: 1,
+      phase: 0,
+      easing: 'linear'
+    })
+  ],
+
+  // Focus pull (rack focus)
+  'rack_focus': [
+    createMotionComponent({
+      type: 'linear',
+      parameter: 'focusDepth',
+      startValue: 0.2,
+      endValue: 0.8,
+      easing: 'ease-in-out'
+    })
+  ],
+
+  // Dramatic reveal
+  'reveal': [
+    createMotionComponent({
+      type: 'exponential',
+      parameter: 'zoom',
+      startValue: 1.5,
+      endValue: 1.0,
+      easing: 'ease-out'
+    }),
+    createMotionComponent({
+      type: 'linear',
+      parameter: 'depthScale',
+      startValue: 0.5,
+      endValue: 1.0,
+      easing: 'ease-out'
+    })
+  ],
+
+  // Tilt shift simulation
+  'tilt_shift': [
+    createMotionComponent({
+      type: 'sine',
+      parameter: 'focusDepth',
+      startValue: 0.5,
+      endValue: 0.5,
+      amplitude: 0.3,
+      frequency: 0.25,
+      loops: 1,
+      easing: 'linear'
+    })
+  ]
+};
+
+/**
+ * Apply a motion preset with custom duration
+ */
+export function applyMotionPreset(
+  presetName: string,
+  startFrame: number,
+  duration: number
+): MotionComponent[] {
+  const preset = MOTION_PRESETS[presetName];
+  if (!preset) return [];
+
+  return preset.map(motion => ({
+    ...motion,
+    id: `motion_${++motionIdCounter}`,
+    startFrame,
+    endFrame: startFrame + duration
+  }));
+}
+
+/**
+ * Get available motion preset names
+ */
+export function getMotionPresetNames(): string[] {
+  return Object.keys(MOTION_PRESETS);
+}
+
+/**
+ * Get description for a motion preset
+ */
+export function getMotionPresetDescription(presetName: string): string {
+  const descriptions: Record<string, string> = {
+    'zoom_in_gentle': 'Smooth zoom in effect',
+    'ken_burns': 'Classic documentary-style pan and zoom',
+    'vertigo': 'Hitchcock-style dolly zoom (background changes size)',
+    'breathing': 'Subtle pulsing effect that simulates breathing',
+    'swing_horizontal': 'Gentle left-right swinging motion',
+    'orbit': 'Circular orbiting motion around center',
+    'rack_focus': 'Shift focus from foreground to background',
+    'reveal': 'Dramatic zoom-out reveal',
+    'tilt_shift': 'Animated miniature/tilt-shift focus effect'
+  };
+
+  return descriptions[presetName] || 'Custom motion effect';
 }
 
 // ============================================================================
@@ -203,7 +693,7 @@ export class DepthflowRenderer {
     });
 
     if (!gl) {
-      console.warn('[Depthflow] WebGL2 not available, using Canvas2D fallback');
+      renderLogger.warn('Depthflow: WebGL2 not available, using Canvas2D fallback');
       this.useWebGL = false;
       return;
     }
@@ -226,7 +716,7 @@ export class DepthflowRenderer {
     gl.linkProgram(program);
 
     if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-      console.error('[Depthflow] Program link error:', gl.getProgramInfoLog(program));
+      renderLogger.error('Depthflow: Program link error:', gl.getProgramInfoLog(program));
       this.useWebGL = false;
       return;
     }
@@ -268,7 +758,7 @@ export class DepthflowRenderer {
     gl.compileShader(shader);
 
     if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-      console.error('[Depthflow] Shader compile error:', gl.getShaderInfoLog(shader));
+      renderLogger.error('Depthflow: Shader compile error:', gl.getShaderInfoLog(shader));
       gl.deleteShader(shader);
       return null;
     }

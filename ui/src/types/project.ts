@@ -158,6 +158,57 @@ export type LayerType =
   | 'group'      // Layer group
   | 'precomp';   // Pre-composition (nested composition)
 
+// ============================================================
+// LAYER DATA TYPE MAPPING
+// Maps LayerType to its corresponding data type for type safety
+// ============================================================
+
+export type LayerDataMap = {
+  spline: SplineData;
+  text: TextData;
+  particle: ParticleData;
+  particles: ParticleLayerData;
+  depthflow: DepthflowLayerData;
+  generated: GeneratedMapData;
+  camera: CameraLayerData;
+  video: VideoData;
+  precomp: PrecompData;
+  // Layers with no special data
+  depth: null;
+  normal: null;
+  shape: null;
+  image: null;
+  audio: null;
+  light: null;
+  solid: null;
+  null: null;
+  group: null;
+};
+
+/**
+ * Type guard to check if a layer has specific data type
+ */
+export function isLayerOfType<T extends LayerType>(
+  layer: Layer,
+  type: T
+): layer is Layer & { type: T; data: LayerDataMap[T] } {
+  return layer.type === type;
+}
+
+/**
+ * Get typed data from a layer
+ * Returns null if layer type doesn't match
+ */
+export function getLayerData<T extends LayerType>(
+  layer: Layer,
+  type: T
+): LayerDataMap[T] | null {
+  if (layer.type === type) {
+    return layer.data as LayerDataMap[T];
+  }
+  return null;
+}
+
 export type BlendMode = 'normal' | 'multiply' | 'screen' | 'overlay' | 'add' | 'difference';
 
 // ============================================================

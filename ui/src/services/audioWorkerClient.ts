@@ -94,6 +94,7 @@ function ensureWorker(): Worker {
     };
 
     worker.onerror = (error) => {
+      // Use console.error directly as this is in a worker context
       console.error('[AudioWorker] Worker error:', error);
       if (currentReject) {
         currentReject(new Error(`Worker error: ${error.message}`));

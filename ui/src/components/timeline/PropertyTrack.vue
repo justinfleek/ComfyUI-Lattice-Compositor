@@ -60,18 +60,40 @@
 
        <div v-for="kf in property.keyframes" :key="kf.id"
             class="keyframe"
-            :class="{ selected: selectedKeyframeIds.has(kf.id) }"
+            :class="{ selected: selectedKeyframeIds.has(kf.id), [kf.interpolation || 'linear']: true }"
             :style="{ left: `${kf.frame * pixelsPerFrame}px` }"
             @mousedown.stop="startKeyframeDrag($event, kf)"
             @dblclick.stop="deleteKeyframe(kf.id)"
+            @contextmenu.prevent.stop="showContextMenu($event, kf)"
        >
+       </div>
+
+       <!-- Context Menu -->
+       <div v-if="contextMenu.visible" class="keyframe-context-menu" :style="contextMenuStyle">
+         <div class="menu-header">Interpolation</div>
+         <div class="menu-item" :class="{ active: contextMenu.keyframe?.interpolation === 'linear' }" @click="setInterpolation('linear')">
+           <span class="icon">📈</span> Linear
+         </div>
+         <div class="menu-item" :class="{ active: contextMenu.keyframe?.interpolation === 'bezier' }" @click="setInterpolation('bezier')">
+           <span class="icon">〰️</span> Bezier
+         </div>
+         <div class="menu-item" :class="{ active: contextMenu.keyframe?.interpolation === 'hold' }" @click="setInterpolation('hold')">
+           <span class="icon">⏸️</span> Hold
+         </div>
+         <div class="menu-divider"></div>
+         <div class="menu-item" @click="goToKeyframe">
+           <span class="icon">➡️</span> Go to Frame
+         </div>
+         <div class="menu-item delete" @click="deleteSelectedKeyframes">
+           <span class="icon">🗑️</span> Delete
+         </div>
        </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { useCompositorStore } from '@/stores/compositorStore';
 import ScrubableNumber from '@/components/controls/ScrubableNumber.vue';
 import type { Keyframe } from '@/types/project';
@@ -88,6 +110,24 @@ const trackRef = ref<HTMLElement | null>(null);
 const isBoxSelecting = ref(false);
 const boxStartX = ref(0);
 const boxCurrentX = ref(0);
+
+// Context menu state
+const contextMenu = ref<{
+  visible: boolean;
+  x: number;
+  y: number;
+  keyframe: Keyframe<any> | null;
+}>({
+  visible: false,
+  x: 0,
+  y: 0,
+  keyframe: null
+});
+
+const contextMenuStyle = computed(() => ({
+  left: `${contextMenu.value.x}px`,
+  top: `${contextMenu.value.y}px`
+}));
 
 const selectionBoxStyle = computed(() => {
   const left = Math.min(boxStartX.value, boxCurrentX.value);
@@ -163,7 +203,7 @@ function handleTrackMouseDown(e: MouseEvent) {
 }
 
 // Keyframe selection and dragging
-function startKeyframeDrag(e: MouseEvent, kf: Keyframe) {
+function startKeyframeDrag(e: MouseEvent, kf: Keyframe<any>) {
   // Toggle selection with Shift, otherwise single select
   if (e.shiftKey) {
     if (selectedKeyframeIds.value.has(kf.id)) {
@@ -218,6 +258,69 @@ function deleteKeyframe(kfId: string) {
   store.removeKeyframe(props.layerId, props.propertyPath, kfId);
   selectedKeyframeIds.value.delete(kfId);
 }
+
+// Context menu functions
+function showContextMenu(e: MouseEvent, kf: Keyframe<any>) {
+  // Select the keyframe if not already selected
+  if (!selectedKeyframeIds.value.has(kf.id)) {
+    selectedKeyframeIds.value.clear();
+    selectedKeyframeIds.value.add(kf.id);
+  }
+
+  // Position relative to track
+  const trackRect = trackRef.value?.getBoundingClientRect();
+  if (trackRect) {
+    contextMenu.value = {
+      visible: true,
+      x: e.clientX - trackRect.left,
+      y: e.clientY - trackRect.top,
+      keyframe: kf
+    };
+  }
+}
+
+function hideContextMenu() {
+  contextMenu.value.visible = false;
+  contextMenu.value.keyframe = null;
+}
+
+function setInterpolation(type: 'linear' | 'bezier' | 'hold') {
+  // Apply to all selected keyframes
+  for (const kfId of selectedKeyframeIds.value) {
+    store.setKeyframeInterpolation(props.layerId, props.propertyPath, kfId, type);
+  }
+  hideContextMenu();
+}
+
+function goToKeyframe() {
+  if (contextMenu.value.keyframe) {
+    store.setFrame(contextMenu.value.keyframe.frame);
+  }
+  hideContextMenu();
+}
+
+function deleteSelectedKeyframes() {
+  for (const kfId of selectedKeyframeIds.value) {
+    store.removeKeyframe(props.layerId, props.propertyPath, kfId);
+  }
+  selectedKeyframeIds.value.clear();
+  hideContextMenu();
+}
+
+// Close context menu on click outside
+function handleGlobalClick(e: MouseEvent) {
+  if (contextMenu.value.visible) {
+    hideContextMenu();
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleGlobalClick);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleGlobalClick);
+});
 </script>
 
 <style scoped>
@@ -286,5 +389,74 @@ function deleteKeyframe(kfId: string) {
   border: 1px solid rgba(74, 144, 217, 0.6);
   pointer-events: none;
   z-index: 5;
+}
+
+/* Context Menu */
+.keyframe-context-menu {
+  position: absolute;
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  min-width: 140px;
+  z-index: 100;
+  padding: 4px 0;
+  font-size: 12px;
+}
+
+.menu-header {
+  padding: 4px 12px;
+  color: #888;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #333;
+  margin-bottom: 4px;
+}
+
+.menu-item {
+  padding: 6px 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #ddd;
+  transition: background 0.1s;
+}
+
+.menu-item:hover {
+  background: #3a3a3a;
+}
+
+.menu-item.active {
+  background: #4a90d9;
+  color: #fff;
+}
+
+.menu-item.delete {
+  color: #e74c3c;
+}
+
+.menu-item.delete:hover {
+  background: rgba(231, 76, 60, 0.2);
+}
+
+.menu-item .icon {
+  font-size: 14px;
+}
+
+.menu-divider {
+  height: 1px;
+  background: #333;
+  margin: 4px 0;
+}
+
+/* Keyframe interpolation visual styles */
+.keyframe.bezier {
+  border-radius: 2px;
+}
+
+.keyframe.hold {
+  background: #e74c3c;
 }
 </style>

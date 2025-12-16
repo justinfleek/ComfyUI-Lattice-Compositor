@@ -4,6 +4,10 @@
  * Handles: Web-safe fonts, Google Fonts, and Local Font Access API (Chrome/Edge)
  */
 
+import { createLogger } from '@/utils/logger';
+
+const fontLogger = createLogger('Font');
+
 export interface FontInfo {
   family: string;
   fullName: string;
@@ -83,12 +87,12 @@ class FontService {
       this.systemFonts = Array.from(familyMap.values())
         .sort((a, b) => a.family.localeCompare(b.family));
 
-      console.log(`[FontService] Loaded ${this.systemFonts.length} system fonts`);
+      fontLogger.debug(`Loaded ${this.systemFonts.length} system fonts`);
     } catch (error) {
       if ((error as Error).name === 'NotAllowedError') {
-        console.log('[FontService] User denied font access permission');
+        fontLogger.info('User denied font access permission');
       } else {
-        console.error('[FontService] Error loading system fonts:', error);
+        fontLogger.error('Error loading system fonts:', error);
       }
     }
   }
@@ -159,9 +163,9 @@ class FontService {
     try {
       await document.fonts.load(`400 16px "${family}"`);
       this.loadedGoogleFonts.add(family);
-      console.log(`[FontService] Loaded Google Font: ${family}`);
+      fontLogger.debug(`Loaded Google Font: ${family}`);
     } catch (error) {
-      console.error(`[FontService] Failed to load Google Font: ${family}`, error);
+      fontLogger.error(`Failed to load Google Font: ${family}`, error);
     }
   }
 
@@ -234,7 +238,7 @@ class FontService {
    */
   async requestSystemFontAccess(): Promise<boolean> {
     if (!('queryLocalFonts' in window)) {
-      console.log('[FontService] Local Font Access API not available');
+      fontLogger.info('Local Font Access API not available');
       return false;
     }
 

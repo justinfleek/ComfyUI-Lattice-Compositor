@@ -4,6 +4,7 @@
  * Manages project state, layers, playback, and ComfyUI communication.
  */
 import { defineStore } from 'pinia';
+import { storeLogger } from '@/utils/logger';
 import type {
   WeylProject,
   Layer,
@@ -128,7 +129,7 @@ interface CompositorState {
   // Clipboard for copy/paste
   clipboard: {
     layers: Layer[];
-    keyframes: { layerId: string; propertyPath: string; keyframes: Keyframe[] }[];
+    keyframes: { layerId: string; propertyPath: string; keyframes: Keyframe<any>[] }[];
   };
 }
 
@@ -339,7 +340,7 @@ export const useCompositorStore = defineStore('compositor', {
       }
       this.activeCompositionId = id;
 
-      console.log('[Weyl] Created composition:', name, id);
+      storeLogger.debug('Created composition:', name, id);
       return composition;
     },
 
@@ -349,7 +350,7 @@ export const useCompositorStore = defineStore('compositor', {
     deleteComposition(compId: string): boolean {
       // Can't delete main composition
       if (compId === this.project.mainCompositionId) {
-        console.warn('[Weyl] Cannot delete main composition');
+        storeLogger.warn('Cannot delete main composition');
         return false;
       }
 
@@ -370,7 +371,7 @@ export const useCompositorStore = defineStore('compositor', {
         this.activeCompositionId = this.openCompositionIds[0] || this.project.mainCompositionId;
       }
 
-      console.log('[Weyl] Deleted composition:', compId);
+      storeLogger.debug('Deleted composition:', compId);
       return true;
     },
 
@@ -379,7 +380,7 @@ export const useCompositorStore = defineStore('compositor', {
      */
     switchComposition(compId: string): void {
       if (!this.project.compositions[compId]) {
-        console.warn('[Weyl] Composition not found:', compId);
+        storeLogger.warn('Composition not found:', compId);
         return;
       }
 
@@ -393,7 +394,7 @@ export const useCompositorStore = defineStore('compositor', {
       this.selectedKeyframeIds = [];
 
       this.activeCompositionId = compId;
-      console.log('[Weyl] Switched to composition:', compId);
+      storeLogger.debug('Switched to composition:', compId);
     },
 
     /**
@@ -402,7 +403,7 @@ export const useCompositorStore = defineStore('compositor', {
     closeCompositionTab(compId: string): void {
       // Can't close if it's the only open tab
       if (this.openCompositionIds.length <= 1) {
-        console.warn('[Weyl] Cannot close the last tab');
+        storeLogger.warn('Cannot close the last tab');
         return;
       }
 
@@ -469,7 +470,7 @@ export const useCompositorStore = defineStore('compositor', {
      */
     precomposeSelectedLayers(name?: string): Composition | null {
       if (this.selectedLayerIds.length === 0) {
-        console.warn('[Weyl] No layers selected for pre-compose');
+        storeLogger.warn('No layers selected for pre-compose');
         return null;
       }
 
@@ -545,7 +546,7 @@ export const useCompositorStore = defineStore('compositor', {
       // Switch back to parent composition
       this.activeCompositionId = activeComp.id;
 
-      console.log('[Weyl] Pre-composed layers into:', precomp.name);
+      storeLogger.debug('Pre-composed layers into:', precomp.name);
       return precomp;
     },
 
@@ -623,7 +624,7 @@ export const useCompositorStore = defineStore('compositor', {
       if (comp) comp.currentFrame = 0;
       this.project.meta.modified = new Date().toISOString();
 
-      console.log('[Weyl] Loaded inputs from ComfyUI:', {
+      storeLogger.debug('Loaded inputs from ComfyUI:', {
         width: inputs.width,
         height: inputs.height,
         frameCount: inputs.frame_count
@@ -848,7 +849,7 @@ export const useCompositorStore = defineStore('compositor', {
 
       // Camera layers should use createCameraLayer() instead
       if (type === 'camera') {
-        console.warn('Use createCameraLayer() for camera layers');
+        storeLogger.warn('Use createCameraLayer() for camera layers');
       }
 
       layers.unshift(layer);
@@ -930,7 +931,7 @@ export const useCompositorStore = defineStore('compositor', {
 
       // Deep clone layers to clipboard
       this.clipboard.layers = selectedLayers.map(layer => JSON.parse(JSON.stringify(layer)));
-      console.log(`[Store] Copied ${this.clipboard.layers.length} layer(s) to clipboard`);
+      storeLogger.debug(`Copied ${this.clipboard.layers.length} layer(s) to clipboard`);
     },
 
     /**
@@ -986,7 +987,7 @@ export const useCompositorStore = defineStore('compositor', {
       this.project.meta.modified = new Date().toISOString();
       this.pushHistory();
 
-      console.log(`[Store] Pasted ${pastedLayers.length} layer(s)`);
+      storeLogger.debug(`Pasted ${pastedLayers.length} layer(s)`);
       return pastedLayers;
     },
 
@@ -1179,7 +1180,7 @@ export const useCompositorStore = defineStore('compositor', {
 
         const descendants = new Set(getDescendantIds(layerId));
         if (descendants.has(parentId)) {
-          console.warn('[Store] Cannot set parent: would create circular reference');
+          storeLogger.warn('Cannot set parent: would create circular reference');
           return;
         }
       }
@@ -1352,7 +1353,7 @@ export const useCompositorStore = defineStore('compositor', {
         this.project = project;
         this.pushHistory();
       } catch (err) {
-        console.error('[Weyl] Failed to import project:', err);
+        storeLogger.error('Failed to import project:', err);
       }
     },
 
@@ -1380,10 +1381,10 @@ export const useCompositorStore = defineStore('compositor', {
       atFrame?: number
     ): Keyframe<T> | null {
       const frame = atFrame ?? (this.getActiveComp()?.currentFrame ?? 0);
-      console.log('[Store] addKeyframe called:', { layerId, propertyName, value, frame });
+      storeLogger.debug('addKeyframe called:', { layerId, propertyName, value, frame });
       const layer = this.getActiveCompLayers().find(l => l.id === layerId);
       if (!layer) {
-        console.log('[Store] addKeyframe: layer not found');
+        storeLogger.debug('addKeyframe: layer not found');
         return null;
       }
 
@@ -1407,7 +1408,7 @@ export const useCompositorStore = defineStore('compositor', {
       }
 
       if (!property) {
-        console.log('[Store] addKeyframe: property not found:', propertyName);
+        storeLogger.debug('addKeyframe: property not found:', propertyName);
         return null;
       }
 
@@ -1430,11 +1431,11 @@ export const useCompositorStore = defineStore('compositor', {
       const existingIndex = property.keyframes.findIndex(k => k.frame === frame);
       if (existingIndex >= 0) {
         property.keyframes[existingIndex] = keyframe;
-        console.log('[Store] addKeyframe: replaced existing keyframe at frame', (this.getActiveComp()?.currentFrame ?? 0));
+        storeLogger.debug('addKeyframe: replaced existing keyframe at frame', (this.getActiveComp()?.currentFrame ?? 0));
       } else {
         property.keyframes.push(keyframe);
         property.keyframes.sort((a, b) => a.frame - b.frame);
-        console.log('[Store] addKeyframe: added new keyframe at frame', (this.getActiveComp()?.currentFrame ?? 0), 'total keyframes:', property.keyframes.length);
+        storeLogger.debug('addKeyframe: added new keyframe at frame', (this.getActiveComp()?.currentFrame ?? 0), 'total keyframes:', property.keyframes.length);
       }
 
       this.project.meta.modified = new Date().toISOString();
@@ -1630,7 +1631,7 @@ export const useCompositorStore = defineStore('compositor', {
         // For graph editor, the curve name tells us which dimension
         // This is a simplified update - for full support, we'd need curve dimension info
         // For now, just update scalar values directly
-        console.warn('[Store] setKeyframeValue: Cannot directly update vector keyframes from graph editor. Use separate dimension curves.');
+        storeLogger.warn('setKeyframeValue: Cannot directly update vector keyframes from graph editor. Use separate dimension curves.');
       } else {
         keyframe.value = newValue;
       }
@@ -2108,7 +2109,7 @@ export const useCompositorStore = defineStore('compositor', {
       if (autoResizeComposition) {
         const compSettings = calculateCompositionFromVideo(metadata, this.project.composition.fps);
 
-        console.log('[Weyl] Auto-resizing composition for video:', {
+        storeLogger.debug('Auto-resizing composition for video:', {
           originalWidth: this.project.composition.width,
           originalHeight: this.project.composition.height,
           originalFrameCount: this.project.composition.frameCount,
@@ -2155,7 +2156,7 @@ export const useCompositorStore = defineStore('compositor', {
       this.project.meta.modified = new Date().toISOString();
       this.pushHistory();
 
-      console.log('[Weyl] Created video layer:', {
+      storeLogger.debug('Created video layer:', {
         layerId: layer.id,
         assetId,
         dimensions: `${metadata.width}x${metadata.height}`,
@@ -2201,7 +2202,7 @@ export const useCompositorStore = defineStore('compositor', {
         asset.hasAudio = metadata.hasAudio;
       }
 
-      console.log('[Weyl] Video metadata loaded:', { layerId, metadata });
+      storeLogger.debug('Video metadata loaded:', { layerId, metadata });
     },
 
     /**
@@ -2249,7 +2250,7 @@ export const useCompositorStore = defineStore('compositor', {
       this.project.meta.modified = new Date().toISOString();
       this.pushHistory();
 
-      console.log('[Weyl] Composition resized:', {
+      storeLogger.debug('Composition resized:', {
         width,
         height,
         frameCount: comp.settings.frameCount
@@ -2712,13 +2713,13 @@ export const useCompositorStore = defineStore('compositor', {
           this.propertyDriverSystem.setAudioAnalysis(this.audioAnalysis);
         }
 
-        console.log('[Weyl] Audio loaded:', {
+        storeLogger.debug('Audio loaded:', {
           duration: this.audioBuffer.duration,
           bpm: this.audioAnalysis.bpm,
           frameCount: this.audioAnalysis.frameCount
         });
       } catch (error) {
-        console.error('[Weyl] Failed to load audio:', error);
+        storeLogger.error('Failed to load audio:', error);
         this.audioFile = null;
         this.audioBuffer = null;
         this.audioAnalysis = null;
@@ -3199,7 +3200,7 @@ export const useCompositorStore = defineStore('compositor', {
       if (this.propertyDriverSystem) {
         const added = this.propertyDriverSystem.addDriver(driver);
         if (!added) {
-          console.warn('[Store] Cannot add property driver: would create circular dependency');
+          storeLogger.warn('Cannot add property driver: would create circular dependency');
           return false;
         }
       }

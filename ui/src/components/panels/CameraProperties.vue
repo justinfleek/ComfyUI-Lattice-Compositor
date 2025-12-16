@@ -424,6 +424,125 @@
           </div>
         </div>
       </div>
+
+      <!-- Camera Trajectory (Uni3C-style) -->
+      <div class="property-section">
+        <div class="section-header" @click="toggleSection('trajectory')">
+          <span class="toggle-icon">{{ expandedSections.trajectory ? '▼' : '►' }}</span>
+          Trajectory
+        </div>
+        <div v-show="expandedSections.trajectory" class="section-content">
+          <!-- Trajectory Preset Selector -->
+          <div class="property-group">
+            <label>Motion Preset</label>
+            <select v-model="trajectoryConfig.type" class="trajectory-select">
+              <optgroup v-for="(types, category) in trajectoryTypesByCategory" :key="category" :label="category">
+                <option v-for="type in types" :key="type" :value="type">
+                  {{ formatTrajectoryName(type) }}
+                </option>
+              </optgroup>
+            </select>
+          </div>
+
+          <!-- Trajectory Description -->
+          <div class="trajectory-description">
+            {{ trajectoryDescription }}
+          </div>
+
+          <!-- Duration -->
+          <div class="property-group">
+            <label>Duration (frames)</label>
+            <ScrubableNumber
+              :modelValue="trajectoryConfig.duration"
+              @update:modelValue="v => trajectoryConfig.duration = v"
+              :min="1"
+              :max="600"
+              :precision="0"
+            />
+          </div>
+
+          <!-- Amplitude/Strength -->
+          <div class="property-group">
+            <label>Amplitude</label>
+            <SliderInput
+              :modelValue="Math.abs(trajectoryConfig.amplitude)"
+              @update:modelValue="v => trajectoryConfig.amplitude = v * Math.sign(trajectoryConfig.amplitude || 1)"
+              :min="0.1"
+              :max="2"
+              :step="0.1"
+            />
+          </div>
+
+          <!-- Loops (for orbital/circular) -->
+          <div v-if="isOrbitalTrajectory" class="property-group">
+            <label>Loops</label>
+            <ScrubableNumber
+              :modelValue="trajectoryConfig.loops"
+              @update:modelValue="v => trajectoryConfig.loops = v"
+              :min="0.25"
+              :max="5"
+              :precision="2"
+            />
+          </div>
+
+          <!-- Easing -->
+          <div class="property-group">
+            <label>Easing</label>
+            <select v-model="trajectoryConfig.easing">
+              <option value="linear">Linear</option>
+              <option value="ease-in">Ease In</option>
+              <option value="ease-out">Ease Out</option>
+              <option value="ease-in-out">Ease In-Out</option>
+              <option value="bounce">Bounce</option>
+            </select>
+          </div>
+
+          <!-- Audio Reactive -->
+          <div class="property-group checkbox-group">
+            <label>
+              <input
+                type="checkbox"
+                v-model="trajectoryConfig.audioReactive"
+              />
+              Audio Reactive
+            </label>
+          </div>
+
+          <template v-if="trajectoryConfig.audioReactive">
+            <div class="property-group">
+              <label>Audio Feature</label>
+              <select v-model="trajectoryConfig.audioFeature">
+                <option value="amplitude">Amplitude</option>
+                <option value="bass">Bass</option>
+                <option value="mid">Mid</option>
+                <option value="high">High</option>
+                <option value="onsets">Onsets</option>
+              </select>
+            </div>
+
+            <div class="property-group">
+              <label>Sensitivity</label>
+              <SliderInput
+                :modelValue="trajectoryConfig.audioSensitivity ?? 1"
+                @update:modelValue="v => trajectoryConfig.audioSensitivity = v"
+                :min="0.1"
+                :max="3"
+                :step="0.1"
+              />
+            </div>
+          </template>
+
+          <!-- Action Buttons -->
+          <div class="trajectory-actions">
+            <button class="action-btn preview" @click="previewTrajectory">
+              Preview
+            </button>
+            <button class="action-btn apply" @click="applyTrajectory">
+              Apply Keyframes
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div v-else class="no-camera">
@@ -434,12 +553,23 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, computed } from 'vue';
+import { reactive, computed, ref } from 'vue';
 import type { Camera3D, CameraType, MeasureFilmSize, AutoOrientMode } from '../../types/camera';
 import { CAMERA_PRESETS } from '../../types/camera';
 import { focalLengthToFOV, fovToFocalLength } from '../../services/math3d';
 import { ScrubableNumber, SliderInput, AngleDial } from '../controls';
 import { useCompositorStore } from '@/stores/compositorStore';
+import {
+  type TrajectoryType,
+  type TrajectoryConfig,
+  DEFAULT_TRAJECTORY,
+  TRAJECTORY_PRESETS,
+  getTrajectoryDescription,
+  getTrajectoryTypesByCategory,
+  getTrajectoryPosition,
+  generateTrajectoryKeyframes,
+  createTrajectoryFromPreset
+} from '@/services/cameraTrajectory';
 
 // Store connection
 const store = useCompositorStore();
@@ -463,8 +593,109 @@ const expandedSections = reactive({
   iris: false,
   highlight: false,
   autoOrient: false,
-  clipping: false
+  clipping: false,
+  trajectory: false
 });
+
+// Trajectory configuration
+const trajectoryConfig = reactive<TrajectoryConfig>({
+  ...DEFAULT_TRAJECTORY
+});
+
+// Get trajectory types grouped by category
+const trajectoryTypesByCategory = computed(() => getTrajectoryTypesByCategory());
+
+// Get description for current trajectory type
+const trajectoryDescription = computed(() => getTrajectoryDescription(trajectoryConfig.type));
+
+// Check if current trajectory is orbital (shows loops control)
+const isOrbitalTrajectory = computed(() => {
+  const orbitalTypes: TrajectoryType[] = ['orbit', 'orbit_reverse', 'circle', 'figure8', 'spiral_in', 'spiral_out'];
+  return orbitalTypes.includes(trajectoryConfig.type);
+});
+
+// Format trajectory name for display
+function formatTrajectoryName(type: TrajectoryType): string {
+  return type
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
+// Preview animation timer
+const previewAnimationId = ref<number | null>(null);
+
+// Preview the trajectory motion
+function previewTrajectory() {
+  if (!camera.value) return;
+
+  // Cancel any existing preview
+  if (previewAnimationId.value !== null) {
+    cancelAnimationFrame(previewAnimationId.value);
+  }
+
+  const startTime = performance.now();
+  const duration = (trajectoryConfig.duration / 30) * 1000; // Convert frames to ms at 30fps
+
+  // Use current camera position as center
+  const config: TrajectoryConfig = {
+    ...trajectoryConfig,
+    center: { ...camera.value.pointOfInterest },
+    baseDistance: Math.sqrt(
+      Math.pow(camera.value.position.x - camera.value.pointOfInterest.x, 2) +
+      Math.pow(camera.value.position.y - camera.value.pointOfInterest.y, 2) +
+      Math.pow(camera.value.position.z - camera.value.pointOfInterest.z, 2)
+    )
+  };
+
+  function animate() {
+    const elapsed = performance.now() - startTime;
+    const t = Math.min(elapsed / duration, 1);
+
+    const { position, target } = getTrajectoryPosition(config, t);
+
+    // Update camera position live
+    store.updateCamera(camera.value!.id, {
+      position,
+      pointOfInterest: target
+    });
+
+    if (t < 1) {
+      previewAnimationId.value = requestAnimationFrame(animate);
+    } else {
+      previewAnimationId.value = null;
+    }
+  }
+
+  animate();
+}
+
+// Apply trajectory as keyframes
+function applyTrajectory() {
+  if (!camera.value) return;
+
+  // Calculate base distance from current camera setup
+  const baseDistance = Math.sqrt(
+    Math.pow(camera.value.position.x - camera.value.pointOfInterest.x, 2) +
+    Math.pow(camera.value.position.y - camera.value.pointOfInterest.y, 2) +
+    Math.pow(camera.value.position.z - camera.value.pointOfInterest.z, 2)
+  );
+
+  const config: TrajectoryConfig = {
+    ...trajectoryConfig,
+    center: { ...camera.value.pointOfInterest },
+    baseDistance
+  };
+
+  const keyframes = generateTrajectoryKeyframes(config, store.currentFrame);
+
+  // TODO: Apply keyframes to camera
+  // This will need a store method to add camera keyframes
+  console.log('Generated trajectory keyframes:', keyframes);
+
+  // For now, show feedback
+  alert(`Generated ${keyframes.position.length} keyframes for camera trajectory.\nKeyframe application will be added in a future update.`);
+}
 
 function toggleSection(section: keyof typeof expandedSections) {
   expandedSections[section] = !expandedSections[section];
@@ -731,6 +962,65 @@ select:focus {
 
 .no-camera button:hover {
   background: #7c9cff;
+  color: #fff;
+}
+
+/* Trajectory Section */
+.trajectory-select {
+  font-size: 11px;
+}
+
+.trajectory-description {
+  padding: 8px;
+  background: #252525;
+  border-radius: 4px;
+  color: #888;
+  font-size: 10px;
+  font-style: italic;
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+.trajectory-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.action-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background: #2a2a2a;
+  color: #ddd;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.action-btn:hover {
+  background: #333;
+  border-color: #555;
+}
+
+.action-btn.preview {
+  border-color: #5a8fd9;
+  color: #5a8fd9;
+}
+
+.action-btn.preview:hover {
+  background: #5a8fd9;
+  color: #fff;
+}
+
+.action-btn.apply {
+  border-color: #4caf50;
+  color: #4caf50;
+}
+
+.action-btn.apply:hover {
+  background: #4caf50;
   color: #fff;
 }
 </style>

@@ -79,15 +79,19 @@
           </div>
 
           <div v-if="expandedMappings.has(mapping.id)" class="mapping-details">
+            <!-- Feature Selection (Categorized) -->
             <div class="property-row">
               <label>Feature</label>
               <select v-model="mapping.feature">
-                <option v-for="feat in allFeatures" :key="feat" :value="feat">
-                  {{ getFeatureDisplayName(feat) }}
-                </option>
+                <optgroup v-for="(feats, category) in featuresByCategory" :key="category" :label="category">
+                  <option v-for="feat in feats" :key="feat" :value="feat">
+                    {{ getFeatureDisplayName(feat) }}
+                  </option>
+                </optgroup>
               </select>
             </div>
 
+            <!-- Target Selection -->
             <div class="property-row">
               <label>Target</label>
               <select v-model="mapping.target">
@@ -98,6 +102,8 @@
                 </optgroup>
               </select>
             </div>
+
+            <div class="subsection-header">Basic Controls</div>
 
             <div class="property-row">
               <label>Sensitivity</label>
@@ -152,10 +158,76 @@
               />
             </div>
 
+            <div class="subsection-header">ATI-Style Effects</div>
+
+            <!-- Amplitude Curve (Expander/Compressor) -->
             <div class="property-row">
+              <label title="&gt;1 = expander (emphasize loud), &lt;1 = compressor (boost quiet)">Amp Curve</label>
+              <input
+                type="range"
+                v-model.number="mapping.amplitudeCurve"
+                min="0.1"
+                max="4"
+                step="0.1"
+              />
+              <span class="value-display">{{ mapping.amplitudeCurve?.toFixed(1) || '1.0' }}</span>
+            </div>
+
+            <!-- Release Envelope -->
+            <div class="property-row">
+              <label title="How slowly the value decays after a peak (0=instant, 1=slow)">Release</label>
+              <input
+                type="range"
+                v-model.number="mapping.release"
+                min="0"
+                max="1"
+                step="0.01"
+              />
+              <span class="value-display">{{ mapping.release?.toFixed(2) || '0.50' }}</span>
+            </div>
+
+            <!-- Value Curve Shaping -->
+            <div class="property-row">
+              <label>Curve</label>
+              <select v-model="mapping.curve" class="curve-select">
+                <option value="linear">Linear</option>
+                <option value="exponential">Exponential</option>
+                <option value="logarithmic">Logarithmic</option>
+                <option value="smoothstep">Smoothstep</option>
+                <option value="bounce">Bounce</option>
+              </select>
+            </div>
+
+            <div class="subsection-header">Beat Response</div>
+
+            <!-- Beat Response Mode -->
+            <div class="property-row">
+              <label>On Beat</label>
+              <select v-model="mapping.beatResponse" class="beat-select">
+                <option value="none">None</option>
+                <option value="flip">Flip (reverse direction)</option>
+                <option value="pulse">Pulse (spike to max)</option>
+                <option value="toggle">Toggle (0/1 switch)</option>
+              </select>
+            </div>
+
+            <!-- Beat Threshold -->
+            <div class="property-row" v-if="mapping.beatResponse !== 'none'">
+              <label title="Lower = more sensitive to quieter beats">Beat Sens.</label>
+              <input
+                type="range"
+                v-model.number="mapping.beatThreshold"
+                min="0.01"
+                max="1"
+                step="0.01"
+              />
+              <span class="value-display">{{ mapping.beatThreshold?.toFixed(2) || '0.50' }}</span>
+            </div>
+
+            <div class="property-row checkbox-row">
               <label>
                 <input type="checkbox" v-model="mapping.invert" />
-                Invert
+                Invert Output
               </label>
             </div>
           </div>
@@ -221,6 +293,7 @@ import {
   getFeatureDisplayName,
   getTargetDisplayName,
   getAllFeatures,
+  getFeaturesByCategory,
   getTargetsByCategory
 } from '@/services/audioReactiveMapping';
 
@@ -249,6 +322,7 @@ const visualizerCanvas = ref<HTMLCanvasElement | null>(null);
 
 // Computed
 const allFeatures = computed(() => getAllFeatures());
+const featuresByCategory = computed(() => getFeaturesByCategory());
 const targetsByCategory = computed(() => getTargetsByCategory());
 
 const playheadPosition = computed(() =>
@@ -352,6 +426,42 @@ function drawVisualizer(): void {
       break;
     case 'highMid':
       featureData = analysis.frequencyBands.highMid;
+      break;
+    // New enhanced features
+    case 'spectralFlux':
+      featureData = analysis.spectralFlux || [];
+      break;
+    case 'zeroCrossingRate':
+      featureData = analysis.zeroCrossingRate || [];
+      break;
+    case 'spectralRolloff':
+      featureData = analysis.spectralRolloff || [];
+      break;
+    case 'spectralFlatness':
+      featureData = analysis.spectralFlatness || [];
+      break;
+    case 'chromaEnergy':
+      featureData = analysis.chromaFeatures?.chromaEnergy || [];
+      break;
+    // Chroma pitch classes
+    case 'chromaC':
+    case 'chromaCs':
+    case 'chromaD':
+    case 'chromaDs':
+    case 'chromaE':
+    case 'chromaF':
+    case 'chromaFs':
+    case 'chromaG':
+    case 'chromaGs':
+    case 'chromaA':
+    case 'chromaAs':
+    case 'chromaB':
+      if (analysis.chromaFeatures?.chroma) {
+        const pitchIndex = ['chromaC', 'chromaCs', 'chromaD', 'chromaDs', 'chromaE', 'chromaF',
+                           'chromaFs', 'chromaG', 'chromaGs', 'chromaA', 'chromaAs', 'chromaB']
+                          .indexOf(visualizerFeature.value);
+        featureData = analysis.chromaFeatures.chroma.map(frame => frame[pitchIndex] || 0);
+      }
       break;
     case 'onsets':
       // Create binary array for onsets
@@ -651,5 +761,52 @@ onMounted(() => {
   font-size: 10px;
   color: #666;
   text-align: center;
+}
+
+/* Subsection headers for organizing mapping controls */
+.subsection-header {
+  font-size: 10px;
+  color: #4a90d9;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 12px 0 6px 0;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #333;
+}
+
+.curve-select,
+.beat-select {
+  flex: 1;
+  min-width: 120px;
+}
+
+.checkbox-row {
+  margin-top: 8px;
+}
+
+.checkbox-row label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  min-width: auto;
+}
+
+.checkbox-row input[type="checkbox"] {
+  margin: 0;
+}
+
+/* Optgroup styling for categorized dropdowns */
+select optgroup {
+  font-weight: 600;
+  font-style: normal;
+  color: #4a90d9;
+  background: #252525;
+}
+
+select option {
+  font-weight: normal;
+  color: #e0e0e0;
+  padding: 4px 8px;
 }
 </style>

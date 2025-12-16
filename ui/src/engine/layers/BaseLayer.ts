@@ -15,6 +15,7 @@ import type { LayerInstance } from '../types';
 import type { TargetParameter } from '@/services/audioReactiveMapping';
 import { KeyframeEvaluator } from '../animation/KeyframeEvaluator';
 import { processEffectStack, hasEnabledEffects } from '@/services/effectProcessor';
+import { layerLogger } from '@/utils/logger';
 
 export abstract class BaseLayer implements LayerInstance {
   /** Unique layer identifier */
@@ -524,7 +525,7 @@ export abstract class BaseLayer implements LayerInstance {
       const result = processEffectStack(this.effects, sourceCanvas, frame);
       return result.canvas;
     } catch (error) {
-      console.error(`[BaseLayer] Error processing effects for layer ${this.id}:`, error);
+      layerLogger.error(`Error processing effects for layer ${this.id}:`, error);
       return null;
     }
   }

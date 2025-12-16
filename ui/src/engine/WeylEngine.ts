@@ -39,6 +39,7 @@ import type {
 } from './types';
 import type { Layer } from '@/types/project';
 import type { TargetParameter } from '@/services/audioReactiveMapping';
+import { engineLogger } from '@/utils/logger';
 
 /** Callback to get audio reactive values at a frame */
 export type AudioReactiveGetter = (frame: number) => Map<TargetParameter, number>;
@@ -159,7 +160,7 @@ export class WeylEngine {
     this.setupContextLossHandling();
 
     if (this.config.debug) {
-      console.log('[WeylEngine] Initialized', this.config);
+      engineLogger.debug('Initialized', this.config);
     }
   }
 
@@ -196,7 +197,7 @@ export class WeylEngine {
     this.emit('layerAdded', { layerId: layerData.id });
 
     if (this.config.debug) {
-      console.log('[WeylEngine] Layer added:', layerData.id, layerData.type);
+      engineLogger.debug('Layer added:', layerData.id, layerData.type);
     }
   }
 
@@ -223,7 +224,7 @@ export class WeylEngine {
     this.emit('layerRemoved', { layerId });
 
     if (this.config.debug) {
-      console.log('[WeylEngine] Layer removed:', layerId);
+      engineLogger.debug('Layer removed:', layerId);
     }
   }
 
@@ -570,7 +571,7 @@ export class WeylEngine {
     this.assertNotDisposed();
 
     if (width <= 0 || height <= 0) {
-      console.warn('[WeylEngine] Invalid resize dimensions:', width, height);
+      engineLogger.warn('Invalid resize dimensions:', width, height);
       return;
     }
 
@@ -1254,7 +1255,7 @@ export class WeylEngine {
       try {
         handler(event);
       } catch (error) {
-        console.error(`[WeylEngine] Event handler error for ${type}:`, error);
+        engineLogger.error(`Event handler error for ${type}:`, error);
       }
     });
   }
@@ -1270,12 +1271,12 @@ export class WeylEngine {
       event.preventDefault();
       this.stopRenderLoop();
       this.emit('contextLost', null);
-      console.warn('[WeylEngine] WebGL context lost');
+      engineLogger.warn('WebGL context lost');
     });
 
     canvas.addEventListener('webglcontextrestored', () => {
       this.emit('contextRestored', null);
-      console.log('[WeylEngine] WebGL context restored');
+      engineLogger.info('WebGL context restored');
     });
   }
 
@@ -1331,7 +1332,7 @@ export class WeylEngine {
     this.emit('dispose', null);
 
     if (this.config.debug) {
-      console.log('[WeylEngine] Disposed');
+      engineLogger.debug('Disposed');
     }
   }
 }

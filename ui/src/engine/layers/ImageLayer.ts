@@ -11,6 +11,7 @@ import * as THREE from 'three';
 import type { Layer } from '@/types/project';
 import type { ResourceManager } from '../core/ResourceManager';
 import { BaseLayer } from './BaseLayer';
+import { layerLogger } from '@/utils/logger';
 
 export class ImageLayer extends BaseLayer {
   private mesh: THREE.Mesh;
@@ -105,7 +106,7 @@ export class ImageLayer extends BaseLayer {
 
       this.setTexture(texture);
     } catch (error) {
-      console.error(`[ImageLayer] Failed to load image: ${url}`, error);
+      layerLogger.error(`ImageLayer: Failed to load image: ${url}`, error);
     }
   }
 

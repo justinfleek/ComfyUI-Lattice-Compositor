@@ -9,6 +9,7 @@
 
 import * as THREE from 'three';
 import type { AssetReference } from '@/types/project';
+import { renderLogger } from '@/utils/logger';
 
 export interface TextureOptions {
   wrapS?: THREE.Wrapping;
@@ -123,7 +124,7 @@ export class ResourceManager {
         },
         undefined, // Progress callback
         (error) => {
-          console.error('[ResourceManager] Failed to load texture:', url, error);
+          renderLogger.error('ResourceManager: Failed to load texture:', url, error);
           reject(error);
         }
       );
@@ -464,6 +465,6 @@ export class ResourceManager {
     // A full implementation would track reference counts
 
     // For now, just log stats
-    console.log('[ResourceManager] Resource stats:', this.getStats());
+    renderLogger.debug('ResourceManager: Resource stats:', this.getStats());
   }
 }

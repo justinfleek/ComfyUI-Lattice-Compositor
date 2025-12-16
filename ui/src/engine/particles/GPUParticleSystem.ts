@@ -1559,6 +1559,23 @@ export class GPUParticleSystem {
   }
 
   /**
+   * Get current configuration (emitters and force fields)
+   */
+  getConfig(): { emitters: EmitterConfig[]; forceFields: ForceFieldConfig[] } {
+    // Extract EmitterConfig from the stored emitters (removing runtime-only fields)
+    const emitters: EmitterConfig[] = Array.from(this.emitters.values()).map(e => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { accumulator, velocity, ...config } = e;
+      return config;
+    });
+
+    return {
+      emitters,
+      forceFields: Array.from(this.forceFields.values()),
+    };
+  }
+
+  /**
    * Reset the particle system
    */
   reset(): void {

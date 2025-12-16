@@ -5,6 +5,8 @@
  * Supports H.264/AVC and VP9 codecs with configurable quality.
  */
 
+import { exportLogger } from '@/utils/logger';
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -121,7 +123,7 @@ export class WebCodecsVideoEncoder {
         this.handleChunk(chunk, metadata);
       },
       error: (error: DOMException) => {
-        console.error('[VideoEncoder] Encoding error:', error);
+        exportLogger.error('VideoEncoder: Encoding error:', error);
         throw error;
       },
     });

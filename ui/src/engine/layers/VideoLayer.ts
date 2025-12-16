@@ -15,6 +15,7 @@ import type { Layer, VideoData, AnimatableProperty, AssetReference } from '@/typ
 import type { ResourceManager } from '../core/ResourceManager';
 import { BaseLayer } from './BaseLayer';
 import { KeyframeEvaluator } from '../animation/KeyframeEvaluator';
+import { layerLogger } from '@/utils/logger';
 
 // ============================================================================
 // TYPES
@@ -148,7 +149,7 @@ export class VideoLayer extends BaseLayer {
     const asset = this.resources.getAsset(assetId);
 
     if (!asset || asset.type !== 'video') {
-      console.warn(`[VideoLayer] Asset ${assetId} not found or not a video`);
+      layerLogger.warn(`VideoLayer: Asset ${assetId} not found or not a video`);
       return;
     }
 
@@ -248,7 +249,7 @@ export class VideoLayer extends BaseLayer {
     // Notify listeners (for composition auto-resize)
     this.onMetadataLoaded?.(this.metadata);
 
-    console.log(`[VideoLayer] Loaded: ${width}x${height}, ${frameCount} frames @ ${fps}fps, ${duration.toFixed(2)}s`);
+    layerLogger.debug(`VideoLayer: Loaded: ${width}x${height}, ${frameCount} frames @ ${fps}fps, ${duration.toFixed(2)}s`);
   }
 
   /**

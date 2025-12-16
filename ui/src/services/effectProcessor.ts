@@ -8,6 +8,7 @@
 import type { EffectInstance } from '@/types/effects';
 import type { AnimatableProperty } from '@/types/project';
 import { interpolateProperty } from './interpolation';
+import { renderLogger } from '@/utils/logger';
 
 /**
  * Evaluated effect parameters at a specific frame
@@ -106,7 +107,7 @@ export function processEffectStack(
 
     const renderer = effectRenderers.get(effect.effectKey);
     if (!renderer) {
-      console.warn(`No renderer registered for effect: ${effect.effectKey}`);
+      renderLogger.warn(`No renderer registered for effect: ${effect.effectKey}`);
       continue;
     }
 
@@ -117,7 +118,7 @@ export function processEffectStack(
     try {
       current = renderer(current, params);
     } catch (error) {
-      console.error(`Error applying effect ${effect.name}:`, error);
+      renderLogger.error(`Error applying effect ${effect.name}:`, error);
       // Continue with current state on error
     }
   }

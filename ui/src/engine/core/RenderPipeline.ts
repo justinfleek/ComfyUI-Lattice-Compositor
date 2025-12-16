@@ -527,6 +527,78 @@ export class RenderPipeline {
   }
 
   // ============================================================================
+  // PRECOMP RENDER-TO-TEXTURE
+  // ============================================================================
+
+  /** Cache of render targets for precomps (keyed by compositionId) */
+  private precompTargets: Map<string, THREE.WebGLRenderTarget> = new Map();
+
+  /**
+   * Create or get a render target for a precomp composition
+   */
+  getPrecompRenderTarget(compositionId: string, width: number, height: number): THREE.WebGLRenderTarget {
+    const key = `${compositionId}_${width}_${height}`;
+
+    let target = this.precompTargets.get(key);
+    if (!target) {
+      target = new THREE.WebGLRenderTarget(width, height, {
+        minFilter: THREE.LinearFilter,
+        magFilter: THREE.LinearFilter,
+        format: THREE.RGBAFormat,
+        type: THREE.UnsignedByteType,
+        colorSpace: THREE.SRGBColorSpace,
+        depthBuffer: true,
+        stencilBuffer: false,
+      });
+      this.precompTargets.set(key, target);
+    }
+
+    return target;
+  }
+
+  /**
+   * Render a scene to an offscreen target and return the texture
+   * Used for precomp rendering
+   */
+  renderSceneToTexture(
+    scene: THREE.Scene,
+    camera: THREE.Camera,
+    target: THREE.WebGLRenderTarget
+  ): THREE.Texture {
+    const prevTarget = this.renderer.getRenderTarget();
+
+    this.renderer.setRenderTarget(target);
+    this.renderer.clear();
+    this.renderer.render(scene, camera);
+    this.renderer.setRenderTarget(prevTarget);
+
+    return target.texture;
+  }
+
+  /**
+   * Dispose a precomp render target
+   */
+  disposePrecompTarget(compositionId: string): void {
+    // Find and dispose all targets for this composition
+    for (const [key, target] of this.precompTargets.entries()) {
+      if (key.startsWith(compositionId + '_')) {
+        target.dispose();
+        this.precompTargets.delete(key);
+      }
+    }
+  }
+
+  /**
+   * Dispose all precomp render targets
+   */
+  disposeAllPrecompTargets(): void {
+    for (const target of this.precompTargets.values()) {
+      target.dispose();
+    }
+    this.precompTargets.clear();
+  }
+
+  // ============================================================================
   // DISPOSAL
   // ============================================================================
 
@@ -547,6 +619,9 @@ export class RenderPipeline {
       this.composer.removePass(this.bokehPass);
       this.bokehPass = null;
     }
+
+    // Dispose precomp targets
+    this.disposeAllPrecompTargets();
 
     this.colorTarget.dispose();
     this.depthTarget.dispose();

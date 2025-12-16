@@ -282,14 +282,24 @@ function applyEffect(effectKey: string) {
 
 function applyPreset(preset: AnimationPreset) {
   const selectedLayer = store.selectedLayer;
-  if (!selectedLayer) {
-    console.warn('No layer selected to apply preset');
-    return;
-  }
+  if (!selectedLayer) return;
 
-  // Apply preset keyframes to layer
-  // This would need to be implemented based on your keyframe system
-  console.log('Applying preset:', preset.name);
+  const comp = store.getActiveComp();
+  if (!comp) return;
+
+  // Calculate frame range for preset (use layer duration)
+  const startFrame = selectedLayer.inPoint;
+  const endFrame = selectedLayer.outPoint;
+  const duration = endFrame - startFrame;
+
+  // Apply keyframes from preset to layer properties
+  for (const propDef of preset.keyframes) {
+    for (const kf of propDef.keyframes) {
+      // Convert normalized time (0-1) to frame number
+      const frame = Math.round(startFrame + kf.time * duration);
+      store.addKeyframe(selectedLayer.id, propDef.property, kf.value, frame);
+    }
+  }
 }
 
 // Drag and drop
