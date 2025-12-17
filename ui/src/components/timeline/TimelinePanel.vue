@@ -26,6 +26,7 @@
             <button @mousedown="addLayer('solid')"><span class="icon">■</span> Solid</button>
             <button @mousedown="addLayer('text')"><span class="icon">T</span> Text</button>
             <button @mousedown="addLayer('spline')"><span class="icon">~</span> Shape</button>
+            <button @mousedown="addLayer('particles')"><span class="icon">✨</span> Particles</button>
             <button @mousedown="addLayer('null')"><span class="icon">□</span> Null</button>
             <button @mousedown="addLayer('camera')"><span class="icon">📷</span> Camera</button>
             <button @mousedown="addLayer('light')"><span class="icon">💡</span> Light</button>
@@ -178,6 +179,7 @@ function addLayer(type: string) {
   if (type === 'text') store.createTextLayer();
   else if (type === 'video') store.createLayer('video');
   else if (type === 'camera') store.createCameraLayer();
+  else if (type === 'particles') store.createParticleLayer();
   else store.createLayer(type as any);
   showAddLayerMenu.value = false;
 }

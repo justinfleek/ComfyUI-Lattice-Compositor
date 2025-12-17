@@ -77238,6 +77238,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
       if (type === "text") store.createTextLayer();
       else if (type === "video") store.createLayer("video");
       else if (type === "camera") store.createCameraLayer();
+      else if (type === "particles") store.createParticleLayer();
       else store.createLayer(type);
       showAddLayerMenu.value = false;
     }
@@ -77469,50 +77470,56 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
               createBaseVNode("button", {
                 class: normalizeClass(["add-layer-btn", { active: showAddLayerMenu.value }]),
                 onMousedown: withModifiers(toggleAddLayerMenu, ["stop", "prevent"])
-              }, [..._cache[9] || (_cache[9] = [
+              }, [..._cache[10] || (_cache[10] = [
                 createBaseVNode("span", { class: "icon" }, "+", -1),
                 createTextVNode(" Layer ", -1)
               ])], 34),
               showAddLayerMenu.value ? (openBlock(), createElementBlock("div", _hoisted_8$7, [
                 createBaseVNode("button", {
                   onMousedown: _cache[1] || (_cache[1] = ($event) => addLayer("solid"))
-                }, [..._cache[10] || (_cache[10] = [
+                }, [..._cache[11] || (_cache[11] = [
                   createBaseVNode("span", { class: "icon" }, "■", -1),
                   createTextVNode(" Solid", -1)
                 ])], 32),
                 createBaseVNode("button", {
                   onMousedown: _cache[2] || (_cache[2] = ($event) => addLayer("text"))
-                }, [..._cache[11] || (_cache[11] = [
+                }, [..._cache[12] || (_cache[12] = [
                   createBaseVNode("span", { class: "icon" }, "T", -1),
                   createTextVNode(" Text", -1)
                 ])], 32),
                 createBaseVNode("button", {
                   onMousedown: _cache[3] || (_cache[3] = ($event) => addLayer("spline"))
-                }, [..._cache[12] || (_cache[12] = [
+                }, [..._cache[13] || (_cache[13] = [
                   createBaseVNode("span", { class: "icon" }, "~", -1),
                   createTextVNode(" Shape", -1)
                 ])], 32),
                 createBaseVNode("button", {
-                  onMousedown: _cache[4] || (_cache[4] = ($event) => addLayer("null"))
-                }, [..._cache[13] || (_cache[13] = [
+                  onMousedown: _cache[4] || (_cache[4] = ($event) => addLayer("particles"))
+                }, [..._cache[14] || (_cache[14] = [
+                  createBaseVNode("span", { class: "icon" }, "✨", -1),
+                  createTextVNode(" Particles", -1)
+                ])], 32),
+                createBaseVNode("button", {
+                  onMousedown: _cache[5] || (_cache[5] = ($event) => addLayer("null"))
+                }, [..._cache[15] || (_cache[15] = [
                   createBaseVNode("span", { class: "icon" }, "□", -1),
                   createTextVNode(" Null", -1)
                 ])], 32),
                 createBaseVNode("button", {
-                  onMousedown: _cache[5] || (_cache[5] = ($event) => addLayer("camera"))
-                }, [..._cache[14] || (_cache[14] = [
+                  onMousedown: _cache[6] || (_cache[6] = ($event) => addLayer("camera"))
+                }, [..._cache[16] || (_cache[16] = [
                   createBaseVNode("span", { class: "icon" }, "📷", -1),
                   createTextVNode(" Camera", -1)
                 ])], 32),
                 createBaseVNode("button", {
-                  onMousedown: _cache[6] || (_cache[6] = ($event) => addLayer("light"))
-                }, [..._cache[15] || (_cache[15] = [
+                  onMousedown: _cache[7] || (_cache[7] = ($event) => addLayer("light"))
+                }, [..._cache[17] || (_cache[17] = [
                   createBaseVNode("span", { class: "icon" }, "💡", -1),
                   createTextVNode(" Light", -1)
                 ])], 32),
                 createBaseVNode("button", {
-                  onMousedown: _cache[7] || (_cache[7] = ($event) => addLayer("video"))
-                }, [..._cache[16] || (_cache[16] = [
+                  onMousedown: _cache[8] || (_cache[8] = ($event) => addLayer("video"))
+                }, [..._cache[18] || (_cache[18] = [
                   createBaseVNode("span", { class: "icon" }, "🎞️", -1),
                   createTextVNode(" Video", -1)
                 ])], 32)
@@ -77532,7 +77539,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
               min: "0",
               max: "100",
               step: "1",
-              "onUpdate:modelValue": _cache[8] || (_cache[8] = ($event) => zoomPercent.value = $event),
+              "onUpdate:modelValue": _cache[9] || (_cache[9] = ($event) => zoomPercent.value = $event),
               class: "zoom-slider",
               title: "Zoom Timeline"
             }, null, 512), [
@@ -77550,7 +77557,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
             class: "timeline-sidebar",
             style: normalizeStyle({ width: sidebarWidth.value + "px" })
           }, [
-            _cache[17] || (_cache[17] = createStaticVNode('<div class="sidebar-header-row" data-v-51baba2c><div class="col-header col-arrow" data-v-51baba2c></div><div class="col-header col-name" data-v-51baba2c>Layer Name</div><div class="col-header col-mode" data-v-51baba2c>Mode</div><div class="col-header col-parent" data-v-51baba2c>Parent</div></div>', 1)),
+            _cache[19] || (_cache[19] = createStaticVNode('<div class="sidebar-header-row" data-v-0e53325f><div class="col-header col-arrow" data-v-0e53325f></div><div class="col-header col-name" data-v-0e53325f>Layer Name</div><div class="col-header col-mode" data-v-0e53325f>Mode</div><div class="col-header col-parent" data-v-0e53325f>Parent</div></div>', 1)),
             createBaseVNode("div", {
               class: "sidebar-scroll-area",
               ref_key: "sidebarScrollRef",
@@ -77619,7 +77626,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
                 class: "layer-bars-container",
                 style: normalizeStyle({ width: computedWidthStyle.value })
               }, [
-                _cache[18] || (_cache[18] = createBaseVNode("div", { class: "grid-background" }, null, -1)),
+                _cache[20] || (_cache[20] = createBaseVNode("div", { class: "grid-background" }, null, -1)),
                 (openBlock(true), createElementBlock(Fragment, null, renderList(filteredLayers.value, (layer) => {
                   return openBlock(), createBlock(EnhancedLayerTrack, {
                     key: layer.id,
@@ -77645,7 +77652,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
   }
 });
 
-const TimelinePanel = /* @__PURE__ */ _export_sfc(_sfc_main$8, [["__scopeId", "data-v-51baba2c"]]);
+const TimelinePanel = /* @__PURE__ */ _export_sfc(_sfc_main$8, [["__scopeId", "data-v-0e53325f"]]);
 
 const _hoisted_1$6 = { class: "graph-editor" };
 const _hoisted_2$6 = { class: "graph-header" };
