@@ -219,6 +219,33 @@ npm run dev      # Development server
 npm run build    # Build to web/dist/
 ```
 
+## Acknowledgments & Inspirations
+
+Weyl Compositor draws inspiration from and incorporates techniques from several outstanding research projects:
+
+### Mask Generation
+- **[Saber](https://github.com/franciszzj/Saber)** - Procedural mask generation with topology-preserving operations. Our `maskGenerator.ts` is ported from their excellent Python implementation.
+
+### Vector Graphics & Animation
+- **[Vector-PRISM](https://github.com/YeolJ00/vector-prism)** ([Project Page](https://yeolj00.github.io/personal-projects/vector-prism/)) - Semantic SVG animation via vision-language models. Inspiration for future text-to-animation features.
+
+### 3D & Motion
+- **[DragMesh](https://github.com/AIGeeksGroup/DragMesh)** - Interactive 3D articulation with kinematic constraints. Concepts applicable to 3D layer manipulation.
+
+### Alpha Matting & Compositing
+- **[OmniAlpha](https://github.com/Longin-Yu/OmniAlpha)** - Unified RGBA generation framework. Inspiration for alpha matte workflows.
+
+### Audio-Visual Synthesis
+- **[SelVA](https://huggingface.co/jnwnlee/SelVA)** - Text-conditioned selective video-to-audio generation. Future integration for audio-reactive motion graphics.
+
+### Research Papers
+- [DragMesh: Interactive 3D Generation](https://arxiv.org/abs/2512.06424)
+- [SelVA: Selective Video-to-Audio](https://arxiv.org/abs/2512.02650)
+
+We're grateful to these researchers for open-sourcing their work and advancing the field of generative media.
+
+---
+
 ## License
 
 MIT
