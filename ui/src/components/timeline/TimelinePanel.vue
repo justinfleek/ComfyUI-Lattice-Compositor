@@ -39,7 +39,7 @@
       </div>
 
       <div class="header-right">
-        <input type="range" min="0.1" max="50" step="0.1" v-model.number="pixelsPerFrame" class="zoom-slider" title="Zoom Timeline" />
+        <input type="range" min="0" max="100" step="1" v-model.number="zoomPercent" class="zoom-slider" title="Zoom Timeline" />
       </div>
     </div>
 
@@ -95,7 +95,7 @@
                 :layer="layer"
                 layoutMode="track"
                 :frameCount="store.frameCount"
-                :pixelsPerFrame="pixelsPerFrame"
+                :pixelsPerFrame="effectivePpf"
                 :isExpandedExternal="expandedLayers[layer.id]"
                 @select="selectLayer"
                 @updateLayer="updateLayer"
@@ -121,7 +121,7 @@ const emit = defineEmits<{
 }>();
 
 const store = useCompositorStore();
-const pixelsPerFrame = ref(10);
+const zoomPercent = ref(0); // 0 = fit to viewport, 100 = max zoom
 const sidebarWidth = ref(450);
 const expandedLayers = ref<Record<string, boolean>>({});
 const showAddLayerMenu = ref(false);
@@ -139,14 +139,17 @@ const filteredLayers = computed(() => store.layers || []);
 // Playhead position as percentage of timeline
 const playheadPositionPct = computed(() => (store.currentFrame / store.frameCount) * 100);
 
-// Effective pixels per frame - ensures timeline always fills viewport at minimum zoom
-// The minimum ppf is viewport width / frame count (so full comp fills viewport)
+// Zoom calculation: 0% = fit viewport, 100% = max zoom (50 ppf)
+// minPpf = viewport fills with all frames, maxPpf = very zoomed in
+const MAX_PPF = 50;
+
 const effectivePpf = computed(() => {
   const minPpf = viewportWidth.value / store.frameCount;
-  return Math.max(pixelsPerFrame.value, minPpf);
+  // Linear interpolation from minPpf (0%) to maxPpf (100%)
+  return minPpf + (zoomPercent.value / 100) * (MAX_PPF - minPpf);
 });
 
-// Width is simply frameCount * effectivePpf (always >= viewportWidth)
+// Width is frameCount * effectivePpf
 const timelineWidth = computed(() => store.frameCount * effectivePpf.value);
 
 const computedWidthStyle = computed(() => timelineWidth.value + 'px');
@@ -269,7 +272,7 @@ function startRulerScrub(e: MouseEvent) {
 
     // Apply snapping (hold Alt/Option to disable)
     if (!ev.altKey && store.snapConfig.enabled) {
-      const snap = findNearestSnap(Math.round(f), store.snapConfig, pixelsPerFrame.value, {
+      const snap = findNearestSnap(Math.round(f), store.snapConfig, effectivePpf.value, {
         layers: store.layers,
         audioAnalysis: store.audioAnalysis,
         peakData: store.peakData
@@ -411,7 +414,7 @@ onUnmounted(() => {
   if (resizeObserver) resizeObserver.disconnect();
 });
 
-watch(() => [computedWidthStyle.value, pixelsPerFrame.value, store.frameCount], () => nextTick(drawRuler));
+watch(() => [computedWidthStyle.value, zoomPercent.value, store.frameCount], () => nextTick(drawRuler));
 </script>
 
 <style scoped>

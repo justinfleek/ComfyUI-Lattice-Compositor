@@ -77190,13 +77190,14 @@ const _hoisted_9$7 = { class: "tool-group" };
 const _hoisted_10$7 = ["disabled"];
 const _hoisted_11$7 = { class: "header-right" };
 const _hoisted_12$7 = { class: "timeline-content" };
+const MAX_PPF = 50;
 const _sfc_main$8 = /* @__PURE__ */ defineComponent({
   __name: "TimelinePanel",
   emits: ["openCompositionSettings"],
   setup(__props, { emit: __emit }) {
     const emit = __emit;
     const store = useCompositorStore();
-    const pixelsPerFrame = ref(10);
+    const zoomPercent = ref(0);
     const sidebarWidth = ref(450);
     const expandedLayers = ref({});
     const showAddLayerMenu = ref(false);
@@ -77213,7 +77214,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
     const playheadPositionPct = computed(() => store.currentFrame / store.frameCount * 100);
     const effectivePpf = computed(() => {
       const minPpf = viewportWidth.value / store.frameCount;
-      return Math.max(pixelsPerFrame.value, minPpf);
+      return minPpf + zoomPercent.value / 100 * (MAX_PPF - minPpf);
     });
     const timelineWidth = computed(() => store.frameCount * effectivePpf.value);
     const computedWidthStyle = computed(() => timelineWidth.value + "px");
@@ -77314,7 +77315,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
         const x = ev.clientX - rect.left + currentScrollX;
         let f = Math.max(0, Math.min(store.frameCount - 1, x / timelineWidth.value * store.frameCount));
         if (!ev.altKey && store.snapConfig.enabled) {
-          const snap = findNearestSnap(Math.round(f), store.snapConfig, pixelsPerFrame.value, {
+          const snap = findNearestSnap(Math.round(f), store.snapConfig, effectivePpf.value, {
             layers: store.layers,
             audioAnalysis: store.audioAnalysis,
             peakData: store.peakData
@@ -77431,7 +77432,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
     onUnmounted(() => {
       if (resizeObserver) resizeObserver.disconnect();
     });
-    watch(() => [computedWidthStyle.value, pixelsPerFrame.value, store.frameCount], () => nextTick(drawRuler));
+    watch(() => [computedWidthStyle.value, zoomPercent.value, store.frameCount], () => nextTick(drawRuler));
     return (_ctx, _cache) => {
       return openBlock(), createElementBlock("div", {
         class: "timeline-panel",
@@ -77523,16 +77524,16 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
           createBaseVNode("div", _hoisted_11$7, [
             withDirectives(createBaseVNode("input", {
               type: "range",
-              min: "0.1",
-              max: "50",
-              step: "0.1",
-              "onUpdate:modelValue": _cache[8] || (_cache[8] = ($event) => pixelsPerFrame.value = $event),
+              min: "0",
+              max: "100",
+              step: "1",
+              "onUpdate:modelValue": _cache[8] || (_cache[8] = ($event) => zoomPercent.value = $event),
               class: "zoom-slider",
               title: "Zoom Timeline"
             }, null, 512), [
               [
                 vModelText,
-                pixelsPerFrame.value,
+                zoomPercent.value,
                 void 0,
                 { number: true }
               ]
@@ -77544,7 +77545,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
             class: "timeline-sidebar",
             style: normalizeStyle({ width: sidebarWidth.value + "px" })
           }, [
-            _cache[17] || (_cache[17] = createStaticVNode('<div class="sidebar-header-row" data-v-0cf2fc99><div class="col-header col-arrow" data-v-0cf2fc99></div><div class="col-header col-name" data-v-0cf2fc99>Layer Name</div><div class="col-header col-mode" data-v-0cf2fc99>Mode</div><div class="col-header col-parent" data-v-0cf2fc99>Parent</div></div>', 1)),
+            _cache[17] || (_cache[17] = createStaticVNode('<div class="sidebar-header-row" data-v-348a5df5><div class="col-header col-arrow" data-v-348a5df5></div><div class="col-header col-name" data-v-348a5df5>Layer Name</div><div class="col-header col-mode" data-v-348a5df5>Mode</div><div class="col-header col-parent" data-v-348a5df5>Parent</div></div>', 1)),
             createBaseVNode("div", {
               class: "sidebar-scroll-area",
               ref_key: "sidebarScrollRef",
@@ -77620,7 +77621,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
                     layer,
                     layoutMode: "track",
                     frameCount: unref(store).frameCount,
-                    pixelsPerFrame: pixelsPerFrame.value,
+                    pixelsPerFrame: effectivePpf.value,
                     isExpandedExternal: expandedLayers.value[layer.id],
                     onSelect: selectLayer,
                     onUpdateLayer: updateLayer
@@ -77639,7 +77640,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
   }
 });
 
-const TimelinePanel = /* @__PURE__ */ _export_sfc(_sfc_main$8, [["__scopeId", "data-v-0cf2fc99"]]);
+const TimelinePanel = /* @__PURE__ */ _export_sfc(_sfc_main$8, [["__scopeId", "data-v-348a5df5"]]);
 
 const _hoisted_1$6 = { class: "graph-editor" };
 const _hoisted_2$6 = { class: "graph-header" };
