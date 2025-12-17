@@ -8,6 +8,7 @@
 import { storeLogger } from '@/utils/logger';
 import type { Layer, AnimatableProperty } from '@/types/project';
 import { createDefaultTransform, createAnimatableProperty } from '@/types/project';
+import { useSelectionStore } from '../selectionStore';
 
 // ============================================================================
 // STORE INTERFACE
@@ -18,7 +19,6 @@ export interface LayerStore {
     composition: { width: number; height: number };
     meta: { modified: string };
   };
-  selectedLayerIds: string[];
   clipboard: {
     layers: Layer[];
     keyframes: any[];
@@ -298,7 +298,7 @@ export function deleteLayer(store: LayerStore, layerId: string): void {
   if (index === -1) return;
 
   layers.splice(index, 1);
-  store.selectedLayerIds = store.selectedLayerIds.filter(id => id !== layerId);
+  useSelectionStore().removeFromSelection(layerId);
   store.project.meta.modified = new Date().toISOString();
   store.pushHistory();
 }
@@ -344,7 +344,8 @@ export function duplicateLayer(store: LayerStore, layerId: string): Layer | null
  */
 export function copySelectedLayers(store: LayerStore): void {
   const layers = store.getActiveCompLayers();
-  const selectedLayers = layers.filter(l => store.selectedLayerIds.includes(l.id));
+  const selection = useSelectionStore();
+  const selectedLayers = layers.filter(l => selection.selectedLayerIds.includes(l.id));
   if (selectedLayers.length === 0) return;
 
   // Deep clone layers to clipboard
@@ -380,7 +381,7 @@ export function pasteLayers(store: LayerStore): Layer[] {
   }
 
   // Select pasted layers
-  store.selectedLayerIds = pastedLayers.map(l => l.id);
+  useSelectionStore().selectLayers(pastedLayers.map(l => l.id));
 
   store.project.meta.modified = new Date().toISOString();
   store.pushHistory();
@@ -394,7 +395,7 @@ export function pasteLayers(store: LayerStore): Layer[] {
  */
 export function cutSelectedLayers(store: LayerStore): void {
   copySelectedLayers(store);
-  const layerIds = [...store.selectedLayerIds];
+  const layerIds = [...useSelectionStore().selectedLayerIds];
   for (const id of layerIds) {
     deleteLayer(store, id);
   }
@@ -605,34 +606,33 @@ export function deleteSplineControlPoint(store: LayerStore, layerId: string, poi
 }
 
 // ============================================================================
-// SELECTION
+// SELECTION (delegated to selectionStore)
 // ============================================================================
 
 /**
  * Select a layer
  */
-export function selectLayer(store: LayerStore, layerId: string, addToSelection = false): void {
+export function selectLayer(_store: LayerStore, layerId: string, addToSelection = false): void {
+  const selection = useSelectionStore();
   if (addToSelection) {
-    if (!store.selectedLayerIds.includes(layerId)) {
-      store.selectedLayerIds.push(layerId);
-    }
+    selection.addToSelection(layerId);
   } else {
-    store.selectedLayerIds = [layerId];
+    selection.selectLayer(layerId);
   }
 }
 
 /**
  * Deselect a layer
  */
-export function deselectLayer(store: LayerStore, layerId: string): void {
-  store.selectedLayerIds = store.selectedLayerIds.filter(id => id !== layerId);
+export function deselectLayer(_store: LayerStore, layerId: string): void {
+  useSelectionStore().removeFromSelection(layerId);
 }
 
 /**
  * Clear all selection
  */
-export function clearSelection(store: LayerStore): void {
-  store.selectedLayerIds = [];
+export function clearSelection(_store: LayerStore): void {
+  useSelectionStore().clearLayerSelection();
 }
 
 // ============================================================================

@@ -99,7 +99,12 @@ import { saveProject, loadProject, listProjects } from '@/services/projectStorag
 import * as layerActions from './actions/layerActions';
 import * as keyframeActions from './actions/keyframeActions';
 import * as projectActions from './actions/projectActions';
-import * as timelineActions from './actions/timelineActions';
+// Note: timelineActions is available but currently not used - playback handled via playbackStore
+
+// Domain-specific stores (for delegation)
+import { usePlaybackStore } from './playbackStore';
+import { useAudioStore } from './audioStore';
+import { useSelectionStore } from './selectionStore';
 
 interface CompositorState {
   // Project data
@@ -116,19 +121,12 @@ interface CompositorState {
   sourceImage: string | null;
   depthMap: string | null;
 
-  // Playback state
+  // Playback state (delegated to playbackStore, kept here for backwards compat)
   isPlaying: boolean;
-  playbackRequestId: number | null;
-  playbackStartTime: number | null;
-  playbackStartFrame: number;
 
-  // Selection state
-  selectedLayerIds: string[];
-  selectedKeyframeIds: string[];
-  selectedPropertyPath: string | null;  // e.g. "transform.position" for graph editor focus
-
-  // Tool state
-  currentTool: 'select' | 'pen' | 'text' | 'hand' | 'zoom' | 'segment';
+  // Selection state is now in selectionStore (accessed via getters)
+  // Tool 'segment' is compositor-specific, handled separately
+  segmentToolActive: boolean;
 
   // Segmentation state
   segmentMode: 'point' | 'box';
@@ -152,6 +150,8 @@ interface CompositorState {
   audioBuffer: AudioBuffer | null;
   audioAnalysis: AudioAnalysis | null;
   audioFile: File | null;
+  audioVolume: number;  // 0-100
+  audioMuted: boolean;
 
   // Audio loading state (for Web Worker progress)
   audioLoadingState: 'idle' | 'decoding' | 'analyzing' | 'complete' | 'error';
@@ -210,13 +210,7 @@ export const useCompositorStore = defineStore('compositor', {
     sourceImage: null,
     depthMap: null,
     isPlaying: false,
-    playbackRequestId: null,
-    playbackStartTime: null,
-    playbackStartFrame: 0,
-    selectedLayerIds: [],
-    selectedKeyframeIds: [],
-    selectedPropertyPath: null,
-    currentTool: 'select',
+    segmentToolActive: false,
     segmentMode: 'point',
     segmentPendingMask: null,
     segmentBoxStart: null,
@@ -227,6 +221,8 @@ export const useCompositorStore = defineStore('compositor', {
     audioBuffer: null,
     audioAnalysis: null,
     audioFile: null,
+    audioVolume: 100,
+    audioMuted: false,
     audioLoadingState: 'idle',
     audioLoadingProgress: 0,
     audioLoadingPhase: '',
@@ -320,15 +316,30 @@ export const useCompositorStore = defineStore('compositor', {
       return (comp?.layers || []).filter((l: Layer) => l.visible);
     },
 
-    // Selection
+    // Selection (delegated to selectionStore)
+    selectedLayerIds(): string[] {
+      return useSelectionStore().selectedLayerIds;
+    },
+    selectedKeyframeIds(): string[] {
+      return useSelectionStore().selectedKeyframeIds;
+    },
+    selectedPropertyPath(): string | null {
+      return useSelectionStore().selectedPropertyPath;
+    },
+    currentTool(state): 'select' | 'pen' | 'text' | 'hand' | 'zoom' | 'segment' {
+      if (state.segmentToolActive) return 'segment';
+      return useSelectionStore().currentTool;
+    },
     selectedLayers(state): Layer[] {
       const comp = state.project.compositions[state.activeCompositionId];
-      return (comp?.layers || []).filter((l: Layer) => state.selectedLayerIds.includes(l.id));
+      const selectionStore = useSelectionStore();
+      return (comp?.layers || []).filter((l: Layer) => selectionStore.selectedLayerIds.includes(l.id));
     },
     selectedLayer(state): Layer | null {
-      if (state.selectedLayerIds.length !== 1) return null;
+      const selectionStore = useSelectionStore();
+      if (selectionStore.selectedLayerIds.length !== 1) return null;
       const comp = state.project.compositions[state.activeCompositionId];
-      return (comp?.layers || []).find((l: Layer) => l.id === state.selectedLayerIds[0]) || null;
+      return (comp?.layers || []).find((l: Layer) => l.id === selectionStore.selectedLayerIds[0]) || null;
     },
 
     // All compositions for tabs
@@ -474,8 +485,9 @@ export const useCompositorStore = defineStore('compositor', {
       }
 
       // Clear selection when switching
-      this.selectedLayerIds = [];
-      this.selectedKeyframeIds = [];
+      const selection = useSelectionStore();
+      selection.clearLayerSelection();
+      selection.clearKeyframeSelection();
 
       this.activeCompositionId = compId;
       storeLogger.debug('Switched to composition:', compId);
@@ -625,7 +637,7 @@ export const useCompositorStore = defineStore('compositor', {
       activeComp.layers.push(precompLayer);
 
       // Clear selection
-      this.selectedLayerIds = [];
+      useSelectionStore().clearLayerSelection();
 
       // Switch back to parent composition
       this.activeCompositionId = activeComp.id;
@@ -1046,16 +1058,15 @@ export const useCompositorStore = defineStore('compositor', {
     },
 
     clearSelection(): void {
-      layerActions.clearSelection(this);
-      this.selectedKeyframeIds = [];
-      this.selectedPropertyPath = null;
+      const selection = useSelectionStore();
+      selection.clearAll();
     },
 
     /**
      * Select a property path for graph editor focus
      */
     selectProperty(propertyPath: string | null): void {
-      this.selectedPropertyPath = propertyPath;
+      useSelectionStore().setSelectedPropertyPath(propertyPath);
     },
 
     // ============================================================
@@ -1092,73 +1103,43 @@ export const useCompositorStore = defineStore('compositor', {
      * Actual frame evaluation happens via getFrameState().
      */
     play(): void {
-      if (this.isPlaying) return;
+      const playback = usePlaybackStore();
+      if (playback.isPlaying) return;
 
       const comp = this.getActiveComp();
       if (!comp) return;
 
-      this.isPlaying = true;
-      this.playbackStartTime = performance.now();
-      this.playbackStartFrame = comp.currentFrame;
+      // Delegate to playbackStore with callback to update frame
+      playback.play(
+        comp.settings.fps,
+        comp.settings.frameCount,
+        comp.currentFrame,
+        (frame: number) => { comp.currentFrame = frame; }
+      );
 
-      this.playbackLoop();
+      // Sync state for backwards compatibility
+      this.isPlaying = true;
     },
 
     /**
      * Pause playback
      */
     pause(): void {
+      const playback = usePlaybackStore();
+      playback.stop();
       this.isPlaying = false;
-      if (this.playbackRequestId !== null) {
-        cancelAnimationFrame(this.playbackRequestId);
-        this.playbackRequestId = null;
-      }
     },
 
     /**
      * Toggle playback state
      */
     togglePlayback(): void {
-      if (this.isPlaying) {
+      const playback = usePlaybackStore();
+      if (playback.isPlaying) {
         this.pause();
       } else {
         this.play();
       }
-    },
-
-    /**
-     * Animation loop for playback
-     *
-     * ARCHITECTURAL NOTE:
-     * This method ONLY updates the UI state (currentFrame).
-     * It does NOT evaluate or render frames directly.
-     * The render loop in Vue components should watch currentFrame
-     * and call getFrameState() → engine.applyFrameState().
-     */
-    playbackLoop(): void {
-      if (!this.isPlaying) return;
-
-      const comp = this.getActiveComp();
-      if (!comp) return;
-
-      const elapsed = performance.now() - (this.playbackStartTime || 0);
-      const fps = comp.settings.fps;
-      const frameCount = comp.settings.frameCount;
-
-      const elapsedFrames = Math.floor((elapsed / 1000) * fps);
-      let newFrame = this.playbackStartFrame + elapsedFrames;
-
-      // Loop playback
-      if (newFrame >= frameCount) {
-        newFrame = 0;
-        this.playbackStartFrame = 0;
-        this.playbackStartTime = performance.now();
-      }
-
-      // Only update UI state - do not evaluate/render here
-      comp.currentFrame = newFrame;
-
-      this.playbackRequestId = requestAnimationFrame(() => this.playbackLoop());
     },
 
     /**
@@ -1214,10 +1195,14 @@ export const useCompositorStore = defineStore('compositor', {
     /**
      * Tool selection
      */
-    setTool(tool: CompositorState['currentTool']): void {
-      this.currentTool = tool;
-      // Clear segmentation state when switching away from segment tool
-      if (tool !== 'segment') {
+    setTool(tool: 'select' | 'pen' | 'text' | 'hand' | 'zoom' | 'segment'): void {
+      if (tool === 'segment') {
+        // Segment tool is compositor-specific
+        this.segmentToolActive = true;
+      } else {
+        // Regular tools are handled by selectionStore
+        this.segmentToolActive = false;
+        useSelectionStore().setTool(tool);
         this.clearSegmentPendingMask();
       }
     },
@@ -2500,7 +2485,7 @@ export const useCompositorStore = defineStore('compositor', {
       if (layerIndex !== -1) {
         const layerId = layers[layerIndex].id;
         layers.splice(layerIndex, 1);
-        this.selectedLayerIds = this.selectedLayerIds.filter(id => id !== layerId);
+        useSelectionStore().removeFromSelection(layerId);
       }
 
       // Remove the camera
@@ -2702,6 +2687,27 @@ export const useCompositorStore = defineStore('compositor', {
       this.audioBuffer = null;
       this.audioAnalysis = null;
       this.audioMappings.clear();
+    },
+
+    /**
+     * Set audio master volume (0-100)
+     */
+    setAudioVolume(volume: number): void {
+      this.audioVolume = Math.max(0, Math.min(100, volume));
+    },
+
+    /**
+     * Set audio muted state
+     */
+    setAudioMuted(muted: boolean): void {
+      this.audioMuted = muted;
+    },
+
+    /**
+     * Toggle audio muted state
+     */
+    toggleAudioMute(): void {
+      this.audioMuted = !this.audioMuted;
     },
 
     /**

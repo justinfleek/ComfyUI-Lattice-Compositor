@@ -201,15 +201,15 @@
                       <option value="200">200%</option>
                     </select>
                     <button
-                      :class="{ active: showGuides }"
-                      @click="showGuides = !showGuides"
-                      title="Toggle Guides"
+                      :class="{ active: viewOptions.showRulers }"
+                      @click="viewOptions.showRulers = !viewOptions.showRulers"
+                      title="Toggle Rulers/Guides"
                     >
                       <span class="icon">📏</span>
                     </button>
                     <button
-                      :class="{ active: showGrid }"
-                      @click="showGrid = !showGrid"
+                      :class="{ active: viewOptions.showGrid }"
+                      @click="viewOptions.showGrid = !viewOptions.showGrid"
                       title="Toggle Grid"
                     >
                       <span class="icon">▦</span>
@@ -217,6 +217,19 @@
                   </div>
                 </div>
                 <div class="viewport-content">
+                  <!-- Rulers overlay -->
+                  <div v-if="viewOptions.showRulers" class="rulers-overlay">
+                    <div class="ruler ruler-horizontal">
+                      <span v-for="i in 20" :key="'h'+i" class="tick" :style="{ left: (i * 5) + '%' }">
+                        {{ Math.round((i * 5 / 100) * compWidth) }}
+                      </span>
+                    </div>
+                    <div class="ruler ruler-vertical">
+                      <span v-for="i in 20" :key="'v'+i" class="tick" :style="{ top: (i * 5) + '%' }">
+                        {{ Math.round((i * 5 / 100) * compHeight) }}
+                      </span>
+                    </div>
+                  </div>
                   <ThreeCanvas v-if="viewportTab === 'composition'" ref="threeCanvasRef" />
                   <ViewportRenderer
                     v-else
@@ -265,7 +278,7 @@
                 :class="{ active: rightTab === 'properties' }"
                 @click="rightTab = 'properties'"
               >
-                Props
+                Properties
               </button>
               <button
                 :class="{ active: rightTab === 'camera' }"
@@ -427,8 +440,6 @@ const rightTab = ref<'effects' | 'properties' | 'camera' | 'audio'>('properties'
 const viewportTab = ref<'composition' | 'layer' | 'footage'>('composition');
 
 const viewZoom = ref('fit');
-const showGuides = ref(false);
-const showGrid = ref(true);
 const showGraphEditor = ref(false);
 const showExportDialog = ref(false);
 const showComfyUIExportDialog = ref(false);
@@ -454,11 +465,13 @@ const activeCamera = computed<Camera3D>(() => {
 const viewportState = ref<ViewportState>(createDefaultViewportState());
 const viewOptions = ref({
   showGrid: true,
+  showRulers: false,
   showAxes: true,
   showCameraFrustum: true,
   showCompositionBounds: true,
   showFocalPlane: false,
   showLayerOutlines: true,
+  showSafeZones: false,
   gridSize: 100,
   gridDivisions: 10
 });
@@ -700,7 +713,7 @@ function handleZoomChange() {
   } else {
     // Convert percentage string to decimal (e.g., '100' → 1.0, '200' → 2.0)
     const zoomLevel = parseInt(viewZoom.value) / 100;
-    threeCanvasRef.value.zoom = zoomLevel;
+    threeCanvasRef.value.setZoom(zoomLevel);
   }
 }
 
@@ -1056,6 +1069,58 @@ onUnmounted(() => {
   justify-content: center;
   background: #111;
   overflow: hidden;
+  position: relative;
+}
+
+/* Rulers */
+.rulers-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.ruler {
+  position: absolute;
+  background: rgba(30, 30, 30, 0.9);
+  font-size: 9px;
+  color: #888;
+}
+
+.ruler-horizontal {
+  top: 0;
+  left: 20px;
+  right: 0;
+  height: 20px;
+  border-bottom: 1px solid #444;
+}
+
+.ruler-vertical {
+  top: 20px;
+  left: 0;
+  bottom: 0;
+  width: 20px;
+  border-right: 1px solid #444;
+}
+
+.ruler .tick {
+  position: absolute;
+  font-size: 8px;
+  color: #666;
+}
+
+.ruler-horizontal .tick {
+  transform: translateX(-50%);
+  top: 4px;
+}
+
+.ruler-vertical .tick {
+  transform: translateY(-50%) rotate(-90deg);
+  left: 2px;
+  white-space: nowrap;
 }
 
 /* Timeline Panel */

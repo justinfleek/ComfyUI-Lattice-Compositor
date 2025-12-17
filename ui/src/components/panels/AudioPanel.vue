@@ -67,8 +67,16 @@ import AudioProperties from '@/components/properties/AudioProperties.vue';
 const store = useCompositorStore();
 const audioFileInput = ref<HTMLInputElement | null>(null);
 const waveformCanvas = ref<HTMLCanvasElement | null>(null);
-const masterVolume = ref(100);
-const isMuted = ref(false);
+
+// Audio volume/mute now uses store state
+const masterVolume = computed({
+  get: () => store.audioVolume,
+  set: (val: number) => store.setAudioVolume(val)
+});
+const isMuted = computed({
+  get: () => store.audioMuted,
+  set: (val: boolean) => store.setAudioMuted(val)
+});
 
 const hasAudio = computed(() => !!store.audioBuffer);
 const audioFileName = computed(() => store.audioFile?.name || 'Unknown');
@@ -90,7 +98,7 @@ async function handleAudioFileSelected(e: Event) {
 
 function removeAudio() { store.clearAudio(); }
 
-function toggleMute() { isMuted.value = !isMuted.value; }
+function toggleMute() { store.toggleAudioMute(); }
 
 function drawWaveform() {
   if (!waveformCanvas.value || !store.audioBuffer) return;

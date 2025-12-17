@@ -360,7 +360,7 @@ onUnmounted(() => {
   color: #6bb3ff;
   text-decoration: underline;
 }
-.track-bg { height: 32px; background: #191919; border-bottom: 1px solid #333; position: relative; }
+.track-bg { height: 32px; background: #191919; border-bottom: 1px solid #333; position: relative; width: 100%; }
 .duration-bar { position: absolute; height: 20px; top: 6px; border: 1px solid rgba(0,0,0,0.5); border-radius: 2px; background: #888; opacity: 0.6; }
 .bar-fill { width: 100%; height: 100%; }
 

@@ -1051,6 +1051,19 @@ function fitToView() {
   centerOnComposition();
 }
 
+/**
+ * Set zoom to a specific level (0.1 to 10)
+ */
+function setZoom(newZoom: number) {
+  newZoom = Math.max(0.1, Math.min(10, newZoom));
+  zoom.value = newZoom;
+  viewportTransform.value[0] = newZoom;
+  viewportTransform.value[3] = newZoom;
+  if (engine.value) {
+    engine.value.setViewportTransform(viewportTransform.value);
+  }
+}
+
 // Capture frame for export
 async function captureFrame(): Promise<string | null> {
   if (!engine.value) return null;
@@ -1123,6 +1136,7 @@ defineExpose({
   zoomIn,
   zoomOut,
   zoom,
+  setZoom,
   captureFrame,
   captureDepth,
   showPerformance,

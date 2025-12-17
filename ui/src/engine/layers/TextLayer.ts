@@ -274,6 +274,10 @@ export class TextLayer extends BaseLayer {
     text.font = this.getFontUrl(this.textData.fontFamily) ?? null;
     text.fontSize = this.textData.fontSize;
 
+    // Font weight and style (using type assertions - Troika supports these but types are incomplete)
+    (text as any).fontWeight = this.textData.fontWeight || '400';
+    (text as any).fontStyle = this.textData.fontStyle || 'normal';
+
     // Colors
     text.color = this.textData.fill;
     if (this.textData.stroke && this.textData.strokeWidth > 0) {
@@ -290,9 +294,17 @@ export class TextLayer extends BaseLayer {
     text.anchorX = this.getAnchorX();
     text.anchorY = 'middle';
 
-    // Rendering
+    // Rendering quality settings
     text.depthOffset = 0;
     text.renderOrder = 0;
+
+    // Improve text rendering quality - higher SDF glyph size for sharper edges
+    (text as any).sdfGlyphSize = 128; // Default is 64, higher = sharper text
+
+    // Enable smooth outline edges
+    if (this.textData.strokeWidth > 0) {
+      (text as any).outlineBlur = 0.005; // Slight blur for smoother outline edges
+    }
 
     // Trigger initial sync
     text.sync();
@@ -327,11 +339,14 @@ export class TextLayer extends BaseLayer {
 
   /**
    * Get anchor X based on text alignment
+   * Note: Swapped to match intuitive arrow button behavior:
+   * - ◀ (left) button makes text appear on LEFT (anchor right edge)
+   * - ▶ (right) button makes text appear on RIGHT (anchor left edge)
    */
   private getAnchorX(): 'left' | 'center' | 'right' {
     switch (this.textData.textAlign) {
-      case 'left': return 'left';
-      case 'right': return 'right';
+      case 'left': return 'right';  // Anchor right edge so text extends left
+      case 'right': return 'left';  // Anchor left edge so text extends right
       default: return 'center';
     }
   }
@@ -550,6 +565,8 @@ export class TextLayer extends BaseLayer {
       charMesh.text = char;
       charMesh.font = this.getFontUrl(this.textData.fontFamily) ?? null;
       charMesh.fontSize = this.textData.fontSize;
+      (charMesh as any).fontWeight = this.textData.fontWeight || '400';
+      (charMesh as any).fontStyle = this.textData.fontStyle || 'normal';
       charMesh.color = this.textData.fill;
       charMesh.anchorX = 'center';
       charMesh.anchorY = 'middle';
@@ -557,7 +574,11 @@ export class TextLayer extends BaseLayer {
       if (this.textData.stroke && this.textData.strokeWidth > 0) {
         charMesh.outlineWidth = this.textData.strokeWidth / this.textData.fontSize;
         charMesh.outlineColor = this.textData.stroke;
+        (charMesh as any).outlineBlur = 0.005;
       }
+
+      // Quality settings for character mesh
+      (charMesh as any).sdfGlyphSize = 128;
 
       // Position character (for horizontal layout)
       const charWidth = this.characterWidths[i];
@@ -641,12 +662,41 @@ export class TextLayer extends BaseLayer {
     }
   }
 
+  setFontWeight(weight: string): void {
+    this.textData.fontWeight = weight;
+    (this.textMesh as any).fontWeight = weight;
+    this.textMesh.sync();
+
+    for (const charMesh of this.characterMeshes) {
+      (charMesh as any).fontWeight = weight;
+      charMesh.sync();
+    }
+  }
+
+  setFontStyle(style: string): void {
+    this.textData.fontStyle = style as 'normal' | 'italic';
+    (this.textMesh as any).fontStyle = style;
+    this.textMesh.sync();
+
+    for (const charMesh of this.characterMeshes) {
+      (charMesh as any).fontStyle = style;
+      charMesh.sync();
+    }
+  }
+
   setFillColor(color: string): void {
     this.textData.fill = color;
     this.textMesh.color = color;
+    // Force material update for color changes
+    if (this.textMesh.material) {
+      (this.textMesh.material as THREE.Material).needsUpdate = true;
+    }
 
     for (const charMesh of this.characterMeshes) {
       charMesh.color = color;
+      if (charMesh.material) {
+        (charMesh.material as THREE.Material).needsUpdate = true;
+      }
     }
   }
 
@@ -654,13 +704,20 @@ export class TextLayer extends BaseLayer {
     this.textData.stroke = color;
     this.textData.strokeWidth = width;
 
-    const outlineWidth = width / this.textData.fontSize;
+    const outlineWidth = width > 0 ? width / this.textData.fontSize : 0;
     this.textMesh.outlineWidth = outlineWidth;
-    this.textMesh.outlineColor = color;
+    this.textMesh.outlineColor = width > 0 ? color : '';
+    // Force material update for stroke changes
+    if (this.textMesh.material) {
+      (this.textMesh.material as THREE.Material).needsUpdate = true;
+    }
 
     for (const charMesh of this.characterMeshes) {
       charMesh.outlineWidth = outlineWidth;
-      charMesh.outlineColor = color;
+      charMesh.outlineColor = width > 0 ? color : '';
+      if (charMesh.material) {
+        (charMesh.material as THREE.Material).needsUpdate = true;
+      }
     }
   }
 
@@ -921,6 +978,12 @@ export class TextLayer extends BaseLayer {
       if (data.fontSize !== undefined) {
         this.setFontSize(data.fontSize);
       }
+      if (data.fontWeight !== undefined) {
+        this.setFontWeight(data.fontWeight);
+      }
+      if (data.fontStyle !== undefined) {
+        this.setFontStyle(data.fontStyle);
+      }
       if (data.fill !== undefined) {
         this.setFillColor(data.fill);
       }
@@ -976,6 +1039,27 @@ export class TextLayer extends BaseLayer {
     // Re-extract animatable properties if properties array changed
     if (properties.properties) {
       this.extractAnimatableProperties(properties as Layer);
+    }
+  }
+
+  // ============================================================================
+  // OPACITY OVERRIDE FOR TROIKA TEXT
+  // ============================================================================
+
+  /**
+   * Override base class opacity to use Troika's fillOpacity
+   */
+  protected override applyOpacity(opacity: number): void {
+    const normalizedOpacity = Math.max(0, Math.min(100, opacity)) / 100;
+
+    // Apply to main text mesh using Troika's fillOpacity
+    this.textMesh.fillOpacity = normalizedOpacity;
+    this.textMesh.outlineOpacity = normalizedOpacity;
+
+    // Apply to character meshes if in per-character mode
+    for (const charMesh of this.characterMeshes) {
+      charMesh.fillOpacity = normalizedOpacity;
+      charMesh.outlineOpacity = normalizedOpacity;
     }
   }
 

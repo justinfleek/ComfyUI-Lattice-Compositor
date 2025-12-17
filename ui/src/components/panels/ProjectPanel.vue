@@ -112,7 +112,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, type Ref } from 'vue';
 import { useCompositorStore } from '@/stores/compositorStore';
 
 const emit = defineEmits<{
@@ -147,13 +147,21 @@ const searchQuery = ref('');
 const selectedItem = ref<string | null>(null);
 const expandedFolders = ref<string[]>(['compositions', 'footage']);
 
-// Demo data - in real app this would come from store
-const folders = ref<Folder[]>([
+// Folders computed from store
+const folders = computed<Folder[]>(() => [
   {
     id: 'compositions',
     name: 'Compositions',
     items: [
-      { id: 'comp-1', name: 'Main Comp', type: 'composition', width: 1920, height: 1080, fps: 30, duration: 300 }
+      {
+        id: 'comp-main',
+        name: 'Main Comp',
+        type: 'composition',
+        width: store.width,
+        height: store.height,
+        fps: store.fps,
+        duration: store.frameCount
+      }
     ]
   },
   {
@@ -440,7 +448,8 @@ function onDragStart(item: ProjectItem, event: DragEvent) {
   border-radius: 4px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   z-index: 100;
-  min-width: 140px;
+  min-width: 180px;
+  white-space: nowrap;
 }
 
 .dropdown-menu button {

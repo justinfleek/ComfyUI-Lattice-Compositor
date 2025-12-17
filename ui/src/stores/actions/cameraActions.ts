@@ -10,6 +10,7 @@ import type { Camera3D, CameraKeyframe, ViewportState, ViewOptions } from '@/typ
 import { createDefaultCamera, createDefaultViewportState, createDefaultViewOptions } from '@/types/camera';
 import { interpolateCameraAtFrame } from '@/services/export/cameraExportFormats';
 import { createDefaultTransform, createAnimatableProperty } from '@/types/project';
+import { useSelectionStore } from '../selectionStore';
 
 export interface CameraStore {
   cameras: Map<string, Camera3D>;
@@ -17,7 +18,6 @@ export interface CameraStore {
   activeCameraId: string | null;
   viewportState: ViewportState;
   viewOptions: ViewOptions;
-  selectedLayerIds: string[];
   project: {
     composition: { fps: number };
     meta: { modified: string };
@@ -150,7 +150,7 @@ export function deleteCamera(store: CameraStore, cameraId: string): void {
   if (layerIndex !== -1) {
     const layerId = layers[layerIndex].id;
     layers.splice(layerIndex, 1);
-    store.selectedLayerIds = store.selectedLayerIds.filter(id => id !== layerId);
+    useSelectionStore().removeFromSelection(layerId);
   }
 
   // Remove the camera

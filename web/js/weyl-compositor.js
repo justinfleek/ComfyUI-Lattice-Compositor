@@ -7172,9 +7172,12 @@ function defineStore(idOrOptions, setup, setupOptions) {
   let id;
   let options;
   const isSetupStore = typeof setup === "function";
-  {
+  if (typeof idOrOptions === "string") {
     id = idOrOptions;
     options = isSetupStore ? setupOptions : setup;
+  } else {
+    options = idOrOptions;
+    id = idOrOptions.id;
   }
   function useStore(pinia, hot) {
     const hasContext = hasInjectionContext();
@@ -38102,12 +38105,168 @@ async function deleteProject(projectId) {
   }
 }
 
+const useSelectionStore = defineStore("selection", {
+  state: () => ({
+    selectedLayerIds: [],
+    selectedKeyframeIds: [],
+    selectedPropertyPath: null,
+    currentTool: "select"
+  }),
+  getters: {
+    hasSelection: (state) => state.selectedLayerIds.length > 0,
+    hasMultipleSelected: (state) => state.selectedLayerIds.length > 1,
+    hasKeyframeSelection: (state) => state.selectedKeyframeIds.length > 0,
+    singleSelectedLayerId: (state) => state.selectedLayerIds.length === 1 ? state.selectedLayerIds[0] : null
+  },
+  actions: {
+    // ============================================================
+    // LAYER SELECTION
+    // ============================================================
+    /**
+     * Select a single layer (replaces current selection)
+     */
+    selectLayer(layerId) {
+      this.selectedLayerIds = [layerId];
+      storeLogger.debug("Selected layer:", layerId);
+    },
+    /**
+     * Select multiple layers (replaces current selection)
+     */
+    selectLayers(layerIds) {
+      this.selectedLayerIds = [...layerIds];
+      storeLogger.debug("Selected layers:", layerIds.length);
+    },
+    /**
+     * Add layer to selection (multi-select)
+     */
+    addToSelection(layerId) {
+      if (!this.selectedLayerIds.includes(layerId)) {
+        this.selectedLayerIds.push(layerId);
+      }
+    },
+    /**
+     * Remove layer from selection
+     */
+    removeFromSelection(layerId) {
+      const index = this.selectedLayerIds.indexOf(layerId);
+      if (index >= 0) {
+        this.selectedLayerIds.splice(index, 1);
+      }
+    },
+    /**
+     * Toggle layer selection
+     */
+    toggleLayerSelection(layerId) {
+      if (this.selectedLayerIds.includes(layerId)) {
+        this.removeFromSelection(layerId);
+      } else {
+        this.addToSelection(layerId);
+      }
+    },
+    /**
+     * Clear layer selection
+     */
+    clearLayerSelection() {
+      this.selectedLayerIds = [];
+    },
+    /**
+     * Check if layer is selected
+     */
+    isLayerSelected(layerId) {
+      return this.selectedLayerIds.includes(layerId);
+    },
+    // ============================================================
+    // KEYFRAME SELECTION
+    // ============================================================
+    /**
+     * Select a single keyframe
+     */
+    selectKeyframe(keyframeId) {
+      this.selectedKeyframeIds = [keyframeId];
+    },
+    /**
+     * Select multiple keyframes
+     */
+    selectKeyframes(keyframeIds) {
+      this.selectedKeyframeIds = [...keyframeIds];
+    },
+    /**
+     * Add keyframe to selection
+     */
+    addKeyframeToSelection(keyframeId) {
+      if (!this.selectedKeyframeIds.includes(keyframeId)) {
+        this.selectedKeyframeIds.push(keyframeId);
+      }
+    },
+    /**
+     * Remove keyframe from selection
+     */
+    removeKeyframeFromSelection(keyframeId) {
+      const index = this.selectedKeyframeIds.indexOf(keyframeId);
+      if (index >= 0) {
+        this.selectedKeyframeIds.splice(index, 1);
+      }
+    },
+    /**
+     * Toggle keyframe selection
+     */
+    toggleKeyframeSelection(keyframeId) {
+      if (this.selectedKeyframeIds.includes(keyframeId)) {
+        this.removeKeyframeFromSelection(keyframeId);
+      } else {
+        this.addKeyframeToSelection(keyframeId);
+      }
+    },
+    /**
+     * Clear keyframe selection
+     */
+    clearKeyframeSelection() {
+      this.selectedKeyframeIds = [];
+    },
+    /**
+     * Check if keyframe is selected
+     */
+    isKeyframeSelected(keyframeId) {
+      return this.selectedKeyframeIds.includes(keyframeId);
+    },
+    // ============================================================
+    // PROPERTY SELECTION
+    // ============================================================
+    /**
+     * Set selected property path (for graph editor focus)
+     */
+    setSelectedPropertyPath(path) {
+      this.selectedPropertyPath = path;
+    },
+    // ============================================================
+    // TOOL STATE
+    // ============================================================
+    /**
+     * Set current tool
+     */
+    setTool(tool) {
+      this.currentTool = tool;
+    },
+    // ============================================================
+    // CLEAR ALL
+    // ============================================================
+    /**
+     * Clear all selections
+     */
+    clearAll() {
+      this.selectedLayerIds = [];
+      this.selectedKeyframeIds = [];
+      this.selectedPropertyPath = null;
+    }
+  }
+});
+
 function deleteLayer(store, layerId) {
   const layers = store.getActiveCompLayers();
   const index = layers.findIndex((l) => l.id === layerId);
   if (index === -1) return;
   layers.splice(index, 1);
-  store.selectedLayerIds = store.selectedLayerIds.filter((id) => id !== layerId);
+  useSelectionStore().removeFromSelection(layerId);
   store.project.meta.modified = (/* @__PURE__ */ new Date()).toISOString();
   store.pushHistory();
 }
@@ -38127,7 +38286,8 @@ function duplicateLayer(store, layerId) {
 }
 function copySelectedLayers(store) {
   const layers = store.getActiveCompLayers();
-  const selectedLayers = layers.filter((l) => store.selectedLayerIds.includes(l.id));
+  const selection = useSelectionStore();
+  const selectedLayers = layers.filter((l) => selection.selectedLayerIds.includes(l.id));
   if (selectedLayers.length === 0) return;
   store.clipboard.layers = selectedLayers.map((layer) => JSON.parse(JSON.stringify(layer)));
   storeLogger.debug(`Copied ${store.clipboard.layers.length} layer(s) to clipboard`);
@@ -38145,7 +38305,7 @@ function pasteLayers(store) {
     layers.unshift(newLayer);
     pastedLayers.push(newLayer);
   }
-  store.selectedLayerIds = pastedLayers.map((l) => l.id);
+  useSelectionStore().selectLayers(pastedLayers.map((l) => l.id));
   store.project.meta.modified = (/* @__PURE__ */ new Date()).toISOString();
   store.pushHistory();
   storeLogger.debug(`Pasted ${pastedLayers.length} layer(s)`);
@@ -38153,7 +38313,7 @@ function pasteLayers(store) {
 }
 function cutSelectedLayers(store) {
   copySelectedLayers(store);
-  const layerIds = [...store.selectedLayerIds];
+  const layerIds = [...useSelectionStore().selectedLayerIds];
   for (const id of layerIds) {
     deleteLayer(store, id);
   }
@@ -38270,20 +38430,16 @@ function deleteSplineControlPoint(store, layerId, pointId) {
     store.project.meta.modified = (/* @__PURE__ */ new Date()).toISOString();
   }
 }
-function selectLayer(store, layerId, addToSelection = false) {
+function selectLayer(_store, layerId, addToSelection = false) {
+  const selection = useSelectionStore();
   if (addToSelection) {
-    if (!store.selectedLayerIds.includes(layerId)) {
-      store.selectedLayerIds.push(layerId);
-    }
+    selection.addToSelection(layerId);
   } else {
-    store.selectedLayerIds = [layerId];
+    selection.selectLayer(layerId);
   }
 }
-function deselectLayer(store, layerId) {
-  store.selectedLayerIds = store.selectedLayerIds.filter((id) => id !== layerId);
-}
-function clearSelection(store) {
-  store.selectedLayerIds = [];
+function deselectLayer(_store, layerId) {
+  useSelectionStore().removeFromSelection(layerId);
 }
 function regenerateKeyframeIds(layer) {
   if (layer.transform) {
@@ -38605,6 +38761,125 @@ async function deleteServerProject(projectId) {
   }
 }
 
+const usePlaybackStore = defineStore("playback", {
+  state: () => ({
+    isPlaying: false,
+    playbackRequestId: null,
+    playbackStartTime: null,
+    playbackStartFrame: 0,
+    loopPlayback: true
+  }),
+  getters: {
+    playing: (state) => state.isPlaying
+  },
+  actions: {
+    /**
+     * Start playback
+     * @param fps - Frames per second
+     * @param frameCount - Total frame count
+     * @param currentFrame - Starting frame
+     * @param onFrame - Callback for each frame
+     */
+    play(fps, frameCount, currentFrame, onFrame) {
+      if (this.isPlaying) return;
+      this.isPlaying = true;
+      this.playbackStartTime = performance.now();
+      this.playbackStartFrame = currentFrame;
+      const frameDuration = 1e3 / fps;
+      let lastFrameTime = this.playbackStartTime;
+      const tick = (now) => {
+        if (!this.isPlaying) return;
+        const elapsed = now - lastFrameTime;
+        if (elapsed >= frameDuration) {
+          const framesToAdvance = Math.floor(elapsed / frameDuration);
+          let newFrame = currentFrame + framesToAdvance;
+          if (newFrame >= frameCount) {
+            if (this.loopPlayback) {
+              newFrame = newFrame % frameCount;
+            } else {
+              newFrame = frameCount - 1;
+              this.stop();
+              onFrame(newFrame);
+              return;
+            }
+          }
+          currentFrame = newFrame;
+          lastFrameTime = now - elapsed % frameDuration;
+          onFrame(currentFrame);
+        }
+        this.playbackRequestId = requestAnimationFrame(tick);
+      };
+      this.playbackRequestId = requestAnimationFrame(tick);
+      storeLogger.debug("Playback started at frame", currentFrame);
+    },
+    /**
+     * Stop playback
+     */
+    stop() {
+      if (this.playbackRequestId !== null) {
+        cancelAnimationFrame(this.playbackRequestId);
+        this.playbackRequestId = null;
+      }
+      this.isPlaying = false;
+      this.playbackStartTime = null;
+      storeLogger.debug("Playback stopped");
+    },
+    /**
+     * Toggle playback
+     */
+    toggle(fps, frameCount, currentFrame, onFrame) {
+      if (this.isPlaying) {
+        this.stop();
+      } else {
+        this.play(fps, frameCount, currentFrame, onFrame);
+      }
+    },
+    /**
+     * Set loop playback mode
+     */
+    setLoopPlayback(loop) {
+      this.loopPlayback = loop;
+    },
+    /**
+     * Go to first frame
+     */
+    goToStart(onFrame) {
+      this.stop();
+      onFrame(0);
+    },
+    /**
+     * Go to last frame
+     */
+    goToEnd(frameCount, onFrame) {
+      this.stop();
+      onFrame(frameCount - 1);
+    },
+    /**
+     * Step forward one frame
+     */
+    stepForward(currentFrame, frameCount, onFrame) {
+      this.stop();
+      const newFrame = Math.min(currentFrame + 1, frameCount - 1);
+      onFrame(newFrame);
+    },
+    /**
+     * Step backward one frame
+     */
+    stepBackward(currentFrame, onFrame) {
+      this.stop();
+      const newFrame = Math.max(currentFrame - 1, 0);
+      onFrame(newFrame);
+    },
+    /**
+     * Jump to specific frame
+     */
+    goToFrame(frame, frameCount, onFrame) {
+      const clampedFrame = Math.max(0, Math.min(frame, frameCount - 1));
+      onFrame(clampedFrame);
+    }
+  }
+});
+
 const useCompositorStore = defineStore("compositor", {
   state: () => ({
     project: createEmptyProject(1024, 1024),
@@ -38614,13 +38889,7 @@ const useCompositorStore = defineStore("compositor", {
     sourceImage: null,
     depthMap: null,
     isPlaying: false,
-    playbackRequestId: null,
-    playbackStartTime: null,
-    playbackStartFrame: 0,
-    selectedLayerIds: [],
-    selectedKeyframeIds: [],
-    selectedPropertyPath: null,
-    currentTool: "select",
+    segmentToolActive: false,
     segmentMode: "point",
     segmentPendingMask: null,
     segmentBoxStart: null,
@@ -38631,6 +38900,8 @@ const useCompositorStore = defineStore("compositor", {
     audioBuffer: null,
     audioAnalysis: null,
     audioFile: null,
+    audioVolume: 100,
+    audioMuted: false,
     audioLoadingState: "idle",
     audioLoadingProgress: 0,
     audioLoadingPhase: "",
@@ -38713,15 +38984,30 @@ const useCompositorStore = defineStore("compositor", {
       const comp = state.project.compositions[state.activeCompositionId];
       return (comp?.layers || []).filter((l) => l.visible);
     },
-    // Selection
+    // Selection (delegated to selectionStore)
+    selectedLayerIds() {
+      return useSelectionStore().selectedLayerIds;
+    },
+    selectedKeyframeIds() {
+      return useSelectionStore().selectedKeyframeIds;
+    },
+    selectedPropertyPath() {
+      return useSelectionStore().selectedPropertyPath;
+    },
+    currentTool(state) {
+      if (state.segmentToolActive) return "segment";
+      return useSelectionStore().currentTool;
+    },
     selectedLayers(state) {
       const comp = state.project.compositions[state.activeCompositionId];
-      return (comp?.layers || []).filter((l) => state.selectedLayerIds.includes(l.id));
+      const selectionStore = useSelectionStore();
+      return (comp?.layers || []).filter((l) => selectionStore.selectedLayerIds.includes(l.id));
     },
     selectedLayer(state) {
-      if (state.selectedLayerIds.length !== 1) return null;
+      const selectionStore = useSelectionStore();
+      if (selectionStore.selectedLayerIds.length !== 1) return null;
       const comp = state.project.compositions[state.activeCompositionId];
-      return (comp?.layers || []).find((l) => l.id === state.selectedLayerIds[0]) || null;
+      return (comp?.layers || []).find((l) => l.id === selectionStore.selectedLayerIds[0]) || null;
     },
     // All compositions for tabs
     allCompositions: (state) => {
@@ -38830,8 +39116,9 @@ const useCompositorStore = defineStore("compositor", {
       if (!this.openCompositionIds.includes(compId)) {
         this.openCompositionIds.push(compId);
       }
-      this.selectedLayerIds = [];
-      this.selectedKeyframeIds = [];
+      const selection = useSelectionStore();
+      selection.clearLayerSelection();
+      selection.clearKeyframeSelection();
       this.activeCompositionId = compId;
       storeLogger.debug("Switched to composition:", compId);
     },
@@ -38941,7 +39228,7 @@ const useCompositorStore = defineStore("compositor", {
         }
       };
       activeComp.layers.push(precompLayer);
-      this.selectedLayerIds = [];
+      useSelectionStore().clearLayerSelection();
       this.activeCompositionId = activeComp.id;
       storeLogger.debug("Pre-composed layers into:", precomp.name);
       return precomp;
@@ -39298,15 +39585,14 @@ const useCompositorStore = defineStore("compositor", {
       setLayerParent(this, layerId, parentId);
     },
     clearSelection() {
-      clearSelection(this);
-      this.selectedKeyframeIds = [];
-      this.selectedPropertyPath = null;
+      const selection = useSelectionStore();
+      selection.clearAll();
     },
     /**
      * Select a property path for graph editor focus
      */
     selectProperty(propertyPath) {
-      this.selectedPropertyPath = propertyPath;
+      useSelectionStore().setSelectedPropertyPath(propertyPath);
     },
     // ============================================================
     // MOTION ENGINE INTEGRATION
@@ -39339,59 +39625,38 @@ const useCompositorStore = defineStore("compositor", {
      * Actual frame evaluation happens via getFrameState().
      */
     play() {
-      if (this.isPlaying) return;
+      const playback = usePlaybackStore();
+      if (playback.isPlaying) return;
       const comp = this.getActiveComp();
       if (!comp) return;
+      playback.play(
+        comp.settings.fps,
+        comp.settings.frameCount,
+        comp.currentFrame,
+        (frame) => {
+          comp.currentFrame = frame;
+        }
+      );
       this.isPlaying = true;
-      this.playbackStartTime = performance.now();
-      this.playbackStartFrame = comp.currentFrame;
-      this.playbackLoop();
     },
     /**
      * Pause playback
      */
     pause() {
+      const playback = usePlaybackStore();
+      playback.stop();
       this.isPlaying = false;
-      if (this.playbackRequestId !== null) {
-        cancelAnimationFrame(this.playbackRequestId);
-        this.playbackRequestId = null;
-      }
     },
     /**
      * Toggle playback state
      */
     togglePlayback() {
-      if (this.isPlaying) {
+      const playback = usePlaybackStore();
+      if (playback.isPlaying) {
         this.pause();
       } else {
         this.play();
       }
-    },
-    /**
-     * Animation loop for playback
-     *
-     * ARCHITECTURAL NOTE:
-     * This method ONLY updates the UI state (currentFrame).
-     * It does NOT evaluate or render frames directly.
-     * The render loop in Vue components should watch currentFrame
-     * and call getFrameState() → engine.applyFrameState().
-     */
-    playbackLoop() {
-      if (!this.isPlaying) return;
-      const comp = this.getActiveComp();
-      if (!comp) return;
-      const elapsed = performance.now() - (this.playbackStartTime || 0);
-      const fps = comp.settings.fps;
-      const frameCount = comp.settings.frameCount;
-      const elapsedFrames = Math.floor(elapsed / 1e3 * fps);
-      let newFrame = this.playbackStartFrame + elapsedFrames;
-      if (newFrame >= frameCount) {
-        newFrame = 0;
-        this.playbackStartFrame = 0;
-        this.playbackStartTime = performance.now();
-      }
-      comp.currentFrame = newFrame;
-      this.playbackRequestId = requestAnimationFrame(() => this.playbackLoop());
     },
     /**
      * Set current frame (UI state only)
@@ -39441,8 +39706,11 @@ const useCompositorStore = defineStore("compositor", {
      * Tool selection
      */
     setTool(tool) {
-      this.currentTool = tool;
-      if (tool !== "segment") {
+      if (tool === "segment") {
+        this.segmentToolActive = true;
+      } else {
+        this.segmentToolActive = false;
+        useSelectionStore().setTool(tool);
         this.clearSegmentPendingMask();
       }
     },
@@ -40445,7 +40713,7 @@ const useCompositorStore = defineStore("compositor", {
       if (layerIndex !== -1) {
         const layerId = layers[layerIndex].id;
         layers.splice(layerIndex, 1);
-        this.selectedLayerIds = this.selectedLayerIds.filter((id) => id !== layerId);
+        useSelectionStore().removeFromSelection(layerId);
       }
       this.cameras.delete(cameraId);
       if (this.activeCameraId === cameraId) {
@@ -40610,6 +40878,24 @@ const useCompositorStore = defineStore("compositor", {
       this.audioBuffer = null;
       this.audioAnalysis = null;
       this.audioMappings.clear();
+    },
+    /**
+     * Set audio master volume (0-100)
+     */
+    setAudioVolume(volume) {
+      this.audioVolume = Math.max(0, Math.min(100, volume));
+    },
+    /**
+     * Set audio muted state
+     */
+    setAudioMuted(muted) {
+      this.audioMuted = muted;
+    },
+    /**
+     * Toggle audio muted state
+     */
+    toggleAudioMute() {
+      this.audioMuted = !this.audioMuted;
     },
     /**
      * Get audio feature value at current frame
@@ -41386,12 +41672,20 @@ const _sfc_main$y = /* @__PURE__ */ defineComponent({
     const searchQuery = ref("");
     const selectedItem = ref(null);
     const expandedFolders = ref(["compositions", "footage"]);
-    const folders = ref([
+    const folders = computed(() => [
       {
         id: "compositions",
         name: "Compositions",
         items: [
-          { id: "comp-1", name: "Main Comp", type: "composition", width: 1920, height: 1080, fps: 30, duration: 300 }
+          {
+            id: "comp-main",
+            name: "Main Comp",
+            type: "composition",
+            width: store.width,
+            height: store.height,
+            fps: store.fps,
+            duration: store.frameCount
+          }
         ]
       },
       {
@@ -41699,7 +41993,7 @@ const _export_sfc = (sfc, props) => {
   return target;
 };
 
-const ProjectPanel = /* @__PURE__ */ _export_sfc(_sfc_main$y, [["__scopeId", "data-v-8f208c83"]]);
+const ProjectPanel = /* @__PURE__ */ _export_sfc(_sfc_main$y, [["__scopeId", "data-v-1bb54be2"]]);
 
 const _hoisted_1$w = { class: "effects-panel" };
 const _hoisted_2$v = { class: "panel-header" };
@@ -43710,9 +44004,9 @@ const _hoisted_34$8 = { class: "row" };
 const _hoisted_35$8 = { class: "row" };
 const _hoisted_36$8 = { class: "row" };
 const _hoisted_37$8 = { class: "row checkbox-row" };
-const _hoisted_38$7 = ["checked"];
-const _hoisted_39$7 = { class: "row checkbox-row" };
-const _hoisted_40$6 = ["checked"];
+const _hoisted_38$8 = ["checked"];
+const _hoisted_39$8 = { class: "row checkbox-row" };
+const _hoisted_40$7 = ["checked"];
 const _hoisted_41$6 = { class: "row checkbox-row" };
 const _hoisted_42$5 = ["checked"];
 const _hoisted_43$5 = { class: "prop-section" };
@@ -44054,17 +44348,17 @@ const _sfc_main$r = /* @__PURE__ */ defineComponent({
                   type: "checkbox",
                   checked: textData.value.pathReversed,
                   onChange: _cache[22] || (_cache[22] = ($event) => updateData("pathReversed", !textData.value.pathReversed))
-                }, null, 40, _hoisted_38$7),
+                }, null, 40, _hoisted_38$8),
                 _cache[47] || (_cache[47] = createTextVNode(" Reverse Path ", -1))
               ])
             ]),
-            createBaseVNode("div", _hoisted_39$7, [
+            createBaseVNode("div", _hoisted_39$8, [
               createBaseVNode("label", null, [
                 createBaseVNode("input", {
                   type: "checkbox",
                   checked: textData.value.pathPerpendicularToPath ?? true,
                   onChange: _cache[23] || (_cache[23] = ($event) => updateData("pathPerpendicularToPath", !textData.value.pathPerpendicularToPath))
-                }, null, 40, _hoisted_40$6),
+                }, null, 40, _hoisted_40$7),
                 _cache[48] || (_cache[48] = createTextVNode(" Perpendicular to Path ", -1))
               ])
             ]),
@@ -44168,9 +44462,9 @@ const _hoisted_34$7 = { class: "value-display" };
 const _hoisted_35$7 = { class: "property-row" };
 const _hoisted_36$7 = ["value", "onInput"];
 const _hoisted_37$7 = { class: "value-display" };
-const _hoisted_38$6 = { class: "property-row" };
-const _hoisted_39$6 = ["value", "onInput"];
-const _hoisted_40$5 = { class: "value-display" };
+const _hoisted_38$7 = { class: "property-row" };
+const _hoisted_39$7 = ["value", "onInput"];
+const _hoisted_40$6 = { class: "value-display" };
 const _hoisted_41$5 = { class: "property-row" };
 const _hoisted_42$4 = ["value", "onInput"];
 const _hoisted_43$4 = { class: "value-display" };
@@ -44845,7 +45139,7 @@ const _sfc_main$q = /* @__PURE__ */ defineComponent({
                     }, null, 40, _hoisted_36$7),
                     createBaseVNode("span", _hoisted_37$7, toDisplayString(emitter.direction) + "°", 1)
                   ]),
-                  createBaseVNode("div", _hoisted_38$6, [
+                  createBaseVNode("div", _hoisted_38$7, [
                     _cache[44] || (_cache[44] = createBaseVNode("label", null, "Spread", -1)),
                     createBaseVNode("input", {
                       type: "range",
@@ -44854,8 +45148,8 @@ const _sfc_main$q = /* @__PURE__ */ defineComponent({
                       max: "360",
                       step: "5",
                       onInput: ($event) => updateEmitter(emitter.id, "spread", Number($event.target.value))
-                    }, null, 40, _hoisted_39$6),
-                    createBaseVNode("span", _hoisted_40$5, toDisplayString(emitter.spread) + "°", 1)
+                    }, null, 40, _hoisted_39$7),
+                    createBaseVNode("span", _hoisted_40$6, toDisplayString(emitter.spread) + "°", 1)
                   ]),
                   createBaseVNode("div", _hoisted_41$5, [
                     _cache[45] || (_cache[45] = createBaseVNode("label", null, "Speed", -1)),
@@ -45835,12 +46129,12 @@ const _hoisted_34$6 = ["value"];
 const _hoisted_35$6 = { class: "value-display" };
 const _hoisted_36$6 = { class: "property-row" };
 const _hoisted_37$6 = ["value"];
-const _hoisted_38$5 = { class: "value-display" };
-const _hoisted_39$5 = {
+const _hoisted_38$6 = { class: "value-display" };
+const _hoisted_39$6 = {
   key: 0,
   class: "property-section"
 };
-const _hoisted_40$4 = {
+const _hoisted_40$5 = {
   key: 0,
   class: "section-content"
 };
@@ -46290,7 +46584,7 @@ const _sfc_main$o = /* @__PURE__ */ defineComponent({
                 step: "0.01",
                 onInput: _cache[12] || (_cache[12] = ($event) => updateDepthflowConfig("focusDepth", Number($event.target.value)))
               }, null, 40, _hoisted_37$6),
-              createBaseVNode("span", _hoisted_38$5, toDisplayString(depthflowConfig.value.focusDepth.toFixed(2)), 1)
+              createBaseVNode("span", _hoisted_38$6, toDisplayString(depthflowConfig.value.focusDepth.toFixed(2)), 1)
             ]),
             _cache[48] || (_cache[48] = createBaseVNode("div", { class: "depth-hint" }, [
               createTextVNode(" Objects at focus depth stay stationary."),
@@ -46299,7 +46593,7 @@ const _sfc_main$o = /* @__PURE__ */ defineComponent({
             ], -1))
           ])) : createCommentVNode("", true)
         ]),
-        showPresetSettings.value ? (openBlock(), createElementBlock("div", _hoisted_39$5, [
+        showPresetSettings.value ? (openBlock(), createElementBlock("div", _hoisted_39$6, [
           createBaseVNode("div", {
             class: "section-header",
             onClick: _cache[13] || (_cache[13] = ($event) => toggleSection("presetSettings"))
@@ -46309,7 +46603,7 @@ const _sfc_main$o = /* @__PURE__ */ defineComponent({
             }, null, 2),
             createBaseVNode("span", null, toDisplayString(presetSettingsTitle.value), 1)
           ]),
-          expandedSections.value.has("presetSettings") ? (openBlock(), createElementBlock("div", _hoisted_40$4, [
+          expandedSections.value.has("presetSettings") ? (openBlock(), createElementBlock("div", _hoisted_40$5, [
             isOrbitPreset.value ? (openBlock(), createElementBlock(Fragment, { key: 0 }, [
               createBaseVNode("div", _hoisted_41$4, [
                 _cache[49] || (_cache[49] = createBaseVNode("label", null, "Orbit Radius", -1)),
@@ -46976,12 +47270,12 @@ const _hoisted_34$5 = { class: "section-content" };
 const _hoisted_35$5 = { class: "checkbox-group" };
 const _hoisted_36$5 = { class: "checkbox-row" };
 const _hoisted_37$5 = ["checked"];
-const _hoisted_38$4 = {
+const _hoisted_38$5 = {
   key: 0,
   class: "property-row"
 };
-const _hoisted_39$4 = { class: "control-with-keyframe" };
-const _hoisted_40$3 = {
+const _hoisted_39$5 = { class: "control-with-keyframe" };
+const _hoisted_40$4 = {
   key: 1,
   class: "property-row"
 };
@@ -47232,9 +47526,9 @@ const _sfc_main$l = /* @__PURE__ */ defineComponent({
                 _cache[17] || (_cache[17] = createBaseVNode("span", null, "Audio Enabled", -1))
               ])
             ]),
-            videoData.value.audioEnabled ? (openBlock(), createElementBlock("div", _hoisted_38$4, [
+            videoData.value.audioEnabled ? (openBlock(), createElementBlock("div", _hoisted_38$5, [
               _cache[18] || (_cache[18] = createBaseVNode("label", null, "Level", -1)),
-              createBaseVNode("div", _hoisted_39$4, [
+              createBaseVNode("div", _hoisted_39$5, [
                 audioLevel.value ? (openBlock(), createBlock(unref(ScrubableNumber), {
                   key: 0,
                   modelValue: audioLevel.value.value,
@@ -47251,7 +47545,7 @@ const _sfc_main$l = /* @__PURE__ */ defineComponent({
                 }, null, 8, ["property", "layerId"])) : createCommentVNode("", true)
               ])
             ])) : createCommentVNode("", true),
-            videoData.value.audioEnabled ? (openBlock(), createElementBlock("div", _hoisted_40$3, [
+            videoData.value.audioEnabled ? (openBlock(), createElementBlock("div", _hoisted_40$4, [
               _cache[19] || (_cache[19] = createBaseVNode("label", null, "Volume", -1)),
               createVNode(unref(ScrubableNumber), {
                 modelValue: videoData.value.audioLevel,
@@ -48799,9 +49093,9 @@ const _hoisted_34$4 = ["checked"];
 const _hoisted_35$4 = { class: "property-group" };
 const _hoisted_36$4 = { class: "property-group" };
 const _hoisted_37$4 = { class: "property-group" };
-const _hoisted_38$3 = { class: "property-group checkbox-group" };
-const _hoisted_39$3 = ["checked"];
-const _hoisted_40$2 = { class: "property-section" };
+const _hoisted_38$4 = { class: "property-group checkbox-group" };
+const _hoisted_39$4 = ["checked"];
+const _hoisted_40$3 = { class: "property-section" };
 const _hoisted_41$2 = { class: "toggle-icon" };
 const _hoisted_42$2 = { class: "section-content" };
 const _hoisted_43$2 = { class: "property-group" };
@@ -49267,13 +49561,13 @@ const _sfc_main$h = /* @__PURE__ */ defineComponent({
                     step: 0.01
                   }, null, 8, ["modelValue"])
                 ]),
-                createBaseVNode("div", _hoisted_38$3, [
+                createBaseVNode("div", _hoisted_38$4, [
                   createBaseVNode("label", null, [
                     createBaseVNode("input", {
                       type: "checkbox",
                       checked: camera.value.depthOfField.lockToZoom,
                       onChange: _cache[22] || (_cache[22] = ($event) => updateDOF("lockToZoom", $event.target.checked))
-                    }, null, 40, _hoisted_39$3),
+                    }, null, 40, _hoisted_39$4),
                     _cache[68] || (_cache[68] = createTextVNode(" Lock to Zoom ", -1))
                   ])
                 ])
@@ -49282,7 +49576,7 @@ const _sfc_main$h = /* @__PURE__ */ defineComponent({
               [vShow, expandedSections.dof]
             ])
           ]),
-          createBaseVNode("div", _hoisted_40$2, [
+          createBaseVNode("div", _hoisted_40$3, [
             createBaseVNode("div", {
               class: "section-header",
               onClick: _cache[23] || (_cache[23] = ($event) => toggleSection("iris"))
@@ -49620,9 +49914,9 @@ const _hoisted_34$3 = { class: "value-display" };
 const _hoisted_35$3 = { class: "property-row" };
 const _hoisted_36$3 = ["onUpdate:modelValue"];
 const _hoisted_37$3 = { class: "value-display" };
-const _hoisted_38$2 = { class: "property-row" };
-const _hoisted_39$2 = ["onUpdate:modelValue"];
-const _hoisted_40$1 = ["onUpdate:modelValue"];
+const _hoisted_38$3 = { class: "property-row" };
+const _hoisted_39$3 = ["onUpdate:modelValue"];
+const _hoisted_40$2 = ["onUpdate:modelValue"];
 const _hoisted_41$1 = { class: "property-row" };
 const _hoisted_42$1 = ["onUpdate:modelValue"];
 const _hoisted_43$1 = { class: "value-display" };
@@ -50077,14 +50371,14 @@ const _sfc_main$g = /* @__PURE__ */ defineComponent({
                     ]),
                     createBaseVNode("span", _hoisted_37$3, toDisplayString(mapping.smoothing.toFixed(2)), 1)
                   ]),
-                  createBaseVNode("div", _hoisted_38$2, [
+                  createBaseVNode("div", _hoisted_38$3, [
                     _cache[20] || (_cache[20] = createBaseVNode("label", null, "Min/Max", -1)),
                     withDirectives(createBaseVNode("input", {
                       type: "number",
                       "onUpdate:modelValue": ($event) => mapping.min = $event,
                       step: "0.1",
                       class: "small-input"
-                    }, null, 8, _hoisted_39$2), [
+                    }, null, 8, _hoisted_39$3), [
                       [
                         vModelText,
                         mapping.min,
@@ -50098,7 +50392,7 @@ const _sfc_main$g = /* @__PURE__ */ defineComponent({
                       "onUpdate:modelValue": ($event) => mapping.max = $event,
                       step: "0.1",
                       class: "small-input"
-                    }, null, 8, _hoisted_40$1), [
+                    }, null, 8, _hoisted_40$2), [
                       [
                         vModelText,
                         mapping.max,
@@ -50286,8 +50580,14 @@ const _sfc_main$f = /* @__PURE__ */ defineComponent({
     const store = useCompositorStore();
     const audioFileInput = ref(null);
     const waveformCanvas = ref(null);
-    const masterVolume = ref(100);
-    const isMuted = ref(false);
+    const masterVolume = computed({
+      get: () => store.audioVolume,
+      set: (val) => store.setAudioVolume(val)
+    });
+    const isMuted = computed({
+      get: () => store.audioMuted,
+      set: (val) => store.setAudioMuted(val)
+    });
     const hasAudio = computed(() => !!store.audioBuffer);
     const audioFileName = computed(() => store.audioFile?.name || "Unknown");
     const audioSampleRate = computed(() => store.audioBuffer ? `${(store.audioBuffer.sampleRate / 1e3).toFixed(1)} kHz` : "");
@@ -50309,7 +50609,7 @@ const _sfc_main$f = /* @__PURE__ */ defineComponent({
       store.clearAudio();
     }
     function toggleMute() {
-      isMuted.value = !isMuted.value;
+      store.toggleAudioMute();
     }
     function drawWaveform() {
       if (!waveformCanvas.value || !store.audioBuffer) return;
@@ -50433,7 +50733,7 @@ const _sfc_main$f = /* @__PURE__ */ defineComponent({
   }
 });
 
-const AudioPanel = /* @__PURE__ */ _export_sfc(_sfc_main$f, [["__scopeId", "data-v-66384e06"]]);
+const AudioPanel = /* @__PURE__ */ _export_sfc(_sfc_main$f, [["__scopeId", "data-v-a7c33cfc"]]);
 
 const CAMERA_BODY_SIZE = 40;
 const CAMERA_LENS_LENGTH = 30;
@@ -63942,6 +64242,8 @@ class TextLayer extends BaseLayer {
     text.text = this.textData.text;
     text.font = this.getFontUrl(this.textData.fontFamily) ?? null;
     text.fontSize = this.textData.fontSize;
+    text.fontWeight = this.textData.fontWeight || "400";
+    text.fontStyle = this.textData.fontStyle || "normal";
     text.color = this.textData.fill;
     if (this.textData.stroke && this.textData.strokeWidth > 0) {
       text.outlineWidth = this.textData.strokeWidth / this.textData.fontSize;
@@ -63954,6 +64256,10 @@ class TextLayer extends BaseLayer {
     text.anchorY = "middle";
     text.depthOffset = 0;
     text.renderOrder = 0;
+    text.sdfGlyphSize = 128;
+    if (this.textData.strokeWidth > 0) {
+      text.outlineBlur = 5e-3;
+    }
     text.sync();
     return text;
   }
@@ -63988,13 +64294,16 @@ class TextLayer extends BaseLayer {
   }
   /**
    * Get anchor X based on text alignment
+   * Note: Swapped to match intuitive arrow button behavior:
+   * - ◀ (left) button makes text appear on LEFT (anchor right edge)
+   * - ▶ (right) button makes text appear on RIGHT (anchor left edge)
    */
   getAnchorX() {
     switch (this.textData.textAlign) {
       case "left":
-        return "left";
-      case "right":
         return "right";
+      case "right":
+        return "left";
       default:
         return "center";
     }
@@ -64153,13 +64462,17 @@ class TextLayer extends BaseLayer {
       charMesh.text = char;
       charMesh.font = this.getFontUrl(this.textData.fontFamily) ?? null;
       charMesh.fontSize = this.textData.fontSize;
+      charMesh.fontWeight = this.textData.fontWeight || "400";
+      charMesh.fontStyle = this.textData.fontStyle || "normal";
       charMesh.color = this.textData.fill;
       charMesh.anchorX = "center";
       charMesh.anchorY = "middle";
       if (this.textData.stroke && this.textData.strokeWidth > 0) {
         charMesh.outlineWidth = this.textData.strokeWidth / this.textData.fontSize;
         charMesh.outlineColor = this.textData.stroke;
+        charMesh.outlineBlur = 5e-3;
       }
+      charMesh.sdfGlyphSize = 128;
       const charWidth = this.characterWidths[i];
       charMesh.position.x = xOffset + charWidth / 2;
       charMesh.position.y = 0;
@@ -64226,22 +64539,52 @@ class TextLayer extends BaseLayer {
       }
     }
   }
+  setFontWeight(weight) {
+    this.textData.fontWeight = weight;
+    this.textMesh.fontWeight = weight;
+    this.textMesh.sync();
+    for (const charMesh of this.characterMeshes) {
+      charMesh.fontWeight = weight;
+      charMesh.sync();
+    }
+  }
+  setFontStyle(style) {
+    this.textData.fontStyle = style;
+    this.textMesh.fontStyle = style;
+    this.textMesh.sync();
+    for (const charMesh of this.characterMeshes) {
+      charMesh.fontStyle = style;
+      charMesh.sync();
+    }
+  }
   setFillColor(color) {
     this.textData.fill = color;
     this.textMesh.color = color;
+    if (this.textMesh.material) {
+      this.textMesh.material.needsUpdate = true;
+    }
     for (const charMesh of this.characterMeshes) {
       charMesh.color = color;
+      if (charMesh.material) {
+        charMesh.material.needsUpdate = true;
+      }
     }
   }
   setStroke(color, width) {
     this.textData.stroke = color;
     this.textData.strokeWidth = width;
-    const outlineWidth = width / this.textData.fontSize;
+    const outlineWidth = width > 0 ? width / this.textData.fontSize : 0;
     this.textMesh.outlineWidth = outlineWidth;
-    this.textMesh.outlineColor = color;
+    this.textMesh.outlineColor = width > 0 ? color : "";
+    if (this.textMesh.material) {
+      this.textMesh.material.needsUpdate = true;
+    }
     for (const charMesh of this.characterMeshes) {
       charMesh.outlineWidth = outlineWidth;
-      charMesh.outlineColor = color;
+      charMesh.outlineColor = width > 0 ? color : "";
+      if (charMesh.material) {
+        charMesh.material.needsUpdate = true;
+      }
     }
   }
   setTracking(tracking) {
@@ -64441,6 +64784,12 @@ class TextLayer extends BaseLayer {
       if (data.fontSize !== void 0) {
         this.setFontSize(data.fontSize);
       }
+      if (data.fontWeight !== void 0) {
+        this.setFontWeight(data.fontWeight);
+      }
+      if (data.fontStyle !== void 0) {
+        this.setFontStyle(data.fontStyle);
+      }
       if (data.fill !== void 0) {
         this.setFillColor(data.fill);
       }
@@ -64494,6 +64843,21 @@ class TextLayer extends BaseLayer {
     }
     if (properties.properties) {
       this.extractAnimatableProperties(properties);
+    }
+  }
+  // ============================================================================
+  // OPACITY OVERRIDE FOR TROIKA TEXT
+  // ============================================================================
+  /**
+   * Override base class opacity to use Troika's fillOpacity
+   */
+  applyOpacity(opacity) {
+    const normalizedOpacity = Math.max(0, Math.min(100, opacity)) / 100;
+    this.textMesh.fillOpacity = normalizedOpacity;
+    this.textMesh.outlineOpacity = normalizedOpacity;
+    for (const charMesh of this.characterMeshes) {
+      charMesh.fillOpacity = normalizedOpacity;
+      charMesh.outlineOpacity = normalizedOpacity;
     }
   }
   // ============================================================================
@@ -75656,6 +76020,15 @@ const _sfc_main$c = /* @__PURE__ */ defineComponent({
     function fitToView() {
       centerOnComposition();
     }
+    function setZoom(newZoom) {
+      newZoom = Math.max(0.1, Math.min(10, newZoom));
+      zoom.value = newZoom;
+      viewportTransform.value[0] = newZoom;
+      viewportTransform.value[3] = newZoom;
+      if (engine.value) {
+        engine.value.setViewportTransform(viewportTransform.value);
+      }
+    }
     async function captureFrame() {
       if (!engine.value) return null;
       const result = engine.value.captureFrame();
@@ -75710,6 +76083,7 @@ const _sfc_main$c = /* @__PURE__ */ defineComponent({
       zoomIn,
       zoomOut,
       zoom,
+      setZoom,
       captureFrame,
       captureDepth,
       showPerformance,
@@ -75857,7 +76231,7 @@ const _sfc_main$c = /* @__PURE__ */ defineComponent({
   }
 });
 
-const ThreeCanvas = /* @__PURE__ */ _export_sfc(_sfc_main$c, [["__scopeId", "data-v-8dfcdece"]]);
+const ThreeCanvas = /* @__PURE__ */ _export_sfc(_sfc_main$c, [["__scopeId", "data-v-3318aac3"]]);
 
 const _hoisted_1$a = { class: "prop-wrapper" };
 const _hoisted_2$a = { class: "prop-content" };
@@ -76458,7 +76832,7 @@ const _sfc_main$a = /* @__PURE__ */ defineComponent({
                 onMousedown: _cache[2] || (_cache[2] = withModifiers(() => {
                 }, ["stop"]))
               }, [..._cache[5] || (_cache[5] = [
-                createStaticVNode('<optgroup label="Normal" data-v-fb7680b0><option value="normal" data-v-fb7680b0>Normal</option><option value="dissolve" data-v-fb7680b0>Dissolve</option></optgroup><optgroup label="Darken" data-v-fb7680b0><option value="darken" data-v-fb7680b0>Darken</option><option value="multiply" data-v-fb7680b0>Multiply</option><option value="colorBurn" data-v-fb7680b0>Color Burn</option><option value="linearBurn" data-v-fb7680b0>Linear Burn</option></optgroup><optgroup label="Lighten" data-v-fb7680b0><option value="add" data-v-fb7680b0>Add</option><option value="lighten" data-v-fb7680b0>Lighten</option><option value="screen" data-v-fb7680b0>Screen</option><option value="colorDodge" data-v-fb7680b0>Color Dodge</option><option value="linearDodge" data-v-fb7680b0>Linear Dodge</option></optgroup><optgroup label="Contrast" data-v-fb7680b0><option value="overlay" data-v-fb7680b0>Overlay</option><option value="softLight" data-v-fb7680b0>Soft Light</option><option value="hardLight" data-v-fb7680b0>Hard Light</option><option value="vividLight" data-v-fb7680b0>Vivid Light</option><option value="linearLight" data-v-fb7680b0>Linear Light</option><option value="pinLight" data-v-fb7680b0>Pin Light</option><option value="hardMix" data-v-fb7680b0>Hard Mix</option></optgroup><optgroup label="Inversion" data-v-fb7680b0><option value="difference" data-v-fb7680b0>Difference</option><option value="exclusion" data-v-fb7680b0>Exclusion</option><option value="subtract" data-v-fb7680b0>Subtract</option><option value="divide" data-v-fb7680b0>Divide</option></optgroup><optgroup label="Component" data-v-fb7680b0><option value="hue" data-v-fb7680b0>Hue</option><option value="saturation" data-v-fb7680b0>Saturation</option><option value="color" data-v-fb7680b0>Color</option><option value="luminosity" data-v-fb7680b0>Luminosity</option></optgroup>', 6)
+                createStaticVNode('<optgroup label="Normal" data-v-3ea5e46d><option value="normal" data-v-3ea5e46d>Normal</option><option value="dissolve" data-v-3ea5e46d>Dissolve</option></optgroup><optgroup label="Darken" data-v-3ea5e46d><option value="darken" data-v-3ea5e46d>Darken</option><option value="multiply" data-v-3ea5e46d>Multiply</option><option value="colorBurn" data-v-3ea5e46d>Color Burn</option><option value="linearBurn" data-v-3ea5e46d>Linear Burn</option></optgroup><optgroup label="Lighten" data-v-3ea5e46d><option value="add" data-v-3ea5e46d>Add</option><option value="lighten" data-v-3ea5e46d>Lighten</option><option value="screen" data-v-3ea5e46d>Screen</option><option value="colorDodge" data-v-3ea5e46d>Color Dodge</option><option value="linearDodge" data-v-3ea5e46d>Linear Dodge</option></optgroup><optgroup label="Contrast" data-v-3ea5e46d><option value="overlay" data-v-3ea5e46d>Overlay</option><option value="softLight" data-v-3ea5e46d>Soft Light</option><option value="hardLight" data-v-3ea5e46d>Hard Light</option><option value="vividLight" data-v-3ea5e46d>Vivid Light</option><option value="linearLight" data-v-3ea5e46d>Linear Light</option><option value="pinLight" data-v-3ea5e46d>Pin Light</option><option value="hardMix" data-v-3ea5e46d>Hard Mix</option></optgroup><optgroup label="Inversion" data-v-3ea5e46d><option value="difference" data-v-3ea5e46d>Difference</option><option value="exclusion" data-v-3ea5e46d>Exclusion</option><option value="subtract" data-v-3ea5e46d>Subtract</option><option value="divide" data-v-3ea5e46d>Divide</option></optgroup><optgroup label="Component" data-v-3ea5e46d><option value="hue" data-v-3ea5e46d>Hue</option><option value="saturation" data-v-3ea5e46d>Saturation</option><option value="color" data-v-3ea5e46d>Color</option><option value="luminosity" data-v-3ea5e46d>Luminosity</option></optgroup>', 6)
               ])], 40, _hoisted_7$9)
             ]),
             createBaseVNode("div", _hoisted_8$9, [
@@ -76587,7 +76961,7 @@ const _sfc_main$a = /* @__PURE__ */ defineComponent({
   }
 });
 
-const EnhancedLayerTrack = /* @__PURE__ */ _export_sfc(_sfc_main$a, [["__scopeId", "data-v-fb7680b0"]]);
+const EnhancedLayerTrack = /* @__PURE__ */ _export_sfc(_sfc_main$a, [["__scopeId", "data-v-3ea5e46d"]]);
 
 const _hoisted_1$8 = { class: "composition-tabs" };
 const _hoisted_2$8 = { class: "tabs-container" };
@@ -77337,8 +77711,8 @@ const _hoisted_34$2 = ["value"];
 const _hoisted_35$2 = { class: "info-row" };
 const _hoisted_36$2 = ["value"];
 const _hoisted_37$2 = ["disabled"];
-const _hoisted_38$1 = ["disabled"];
-const _hoisted_39$1 = ["disabled"];
+const _hoisted_38$2 = ["disabled"];
+const _hoisted_39$2 = ["disabled"];
 const _sfc_main$7 = /* @__PURE__ */ defineComponent({
   __name: "GraphEditor",
   emits: ["close"],
@@ -78601,11 +78975,11 @@ const _sfc_main$7 = /* @__PURE__ */ defineComponent({
           createBaseVNode("button", {
             onClick: copyKeyframes,
             disabled: selectedKeyframes.value.length === 0
-          }, "Copy", 8, _hoisted_38$1),
+          }, "Copy", 8, _hoisted_38$2),
           createBaseVNode("button", {
             onClick: pasteKeyframes,
             disabled: !clipboard.value
-          }, "Paste", 8, _hoisted_39$1),
+          }, "Paste", 8, _hoisted_39$2),
           _cache[16] || (_cache[16] = createBaseVNode("hr", null, null, -1)),
           createBaseVNode("button", { onClick: selectAllKeyframes }, "Select All"),
           createBaseVNode("button", { onClick: invertSelection }, "Invert Selection")
@@ -84118,9 +84492,9 @@ const _hoisted_34$1 = {
 const _hoisted_35$1 = { class: "settings-section" };
 const _hoisted_36$1 = { class: "server-row" };
 const _hoisted_37$1 = { key: 0 };
-const _hoisted_38 = { key: 1 };
-const _hoisted_39 = { key: 2 };
-const _hoisted_40 = { key: 3 };
+const _hoisted_38$1 = { key: 1 };
+const _hoisted_39$1 = { key: 2 };
+const _hoisted_40$1 = { key: 3 };
 const _hoisted_41 = { class: "settings-section" };
 const _hoisted_42 = { class: "checkbox-large" };
 const _hoisted_43 = {
@@ -84626,7 +85000,7 @@ const _sfc_main$5 = /* @__PURE__ */ defineComponent({
                 createBaseVNode("div", {
                   class: normalizeClass(["connection-status", connectionStatus.value])
                 }, [
-                  connectionStatus.value === "connected" ? (openBlock(), createElementBlock("span", _hoisted_37$1, "Connected")) : connectionStatus.value === "error" ? (openBlock(), createElementBlock("span", _hoisted_38, "Connection failed")) : connectionStatus.value === "connecting" ? (openBlock(), createElementBlock("span", _hoisted_39, "Connecting...")) : (openBlock(), createElementBlock("span", _hoisted_40, "Not connected"))
+                  connectionStatus.value === "connected" ? (openBlock(), createElementBlock("span", _hoisted_37$1, "Connected")) : connectionStatus.value === "error" ? (openBlock(), createElementBlock("span", _hoisted_38$1, "Connection failed")) : connectionStatus.value === "connecting" ? (openBlock(), createElementBlock("span", _hoisted_39$1, "Connecting...")) : (openBlock(), createElementBlock("span", _hoisted_40$1, "Not connected"))
                 ], 2)
               ]),
               createBaseVNode("div", _hoisted_41, [
@@ -87029,27 +87403,33 @@ const _hoisted_19 = { class: "viewport-header" };
 const _hoisted_20 = { class: "viewport-tabs" };
 const _hoisted_21 = { class: "viewport-controls" };
 const _hoisted_22 = { class: "viewport-content" };
-const _hoisted_23 = { class: "panel timeline-panel" };
-const _hoisted_24 = { class: "panel graph-editor-panel" };
-const _hoisted_25 = {
+const _hoisted_23 = {
+  key: 0,
+  class: "rulers-overlay"
+};
+const _hoisted_24 = { class: "ruler ruler-horizontal" };
+const _hoisted_25 = { class: "ruler ruler-vertical" };
+const _hoisted_26 = { class: "panel timeline-panel" };
+const _hoisted_27 = { class: "panel graph-editor-panel" };
+const _hoisted_28 = {
   key: 1,
   class: "panel timeline-panel"
 };
-const _hoisted_26 = { class: "panel right-panel" };
-const _hoisted_27 = { class: "panel-tabs" };
-const _hoisted_28 = { class: "panel-content" };
-const _hoisted_29 = { class: "status-bar" };
-const _hoisted_30 = { class: "status-left" };
-const _hoisted_31 = { class: "status-item" };
-const _hoisted_32 = { class: "status-item" };
-const _hoisted_33 = { class: "status-center" };
-const _hoisted_34 = {
+const _hoisted_29 = { class: "panel right-panel" };
+const _hoisted_30 = { class: "panel-tabs" };
+const _hoisted_31 = { class: "panel-content" };
+const _hoisted_32 = { class: "status-bar" };
+const _hoisted_33 = { class: "status-left" };
+const _hoisted_34 = { class: "status-item" };
+const _hoisted_35 = { class: "status-item" };
+const _hoisted_36 = { class: "status-center" };
+const _hoisted_37 = {
   key: 0,
   class: "render-progress"
 };
-const _hoisted_35 = { class: "status-right" };
-const _hoisted_36 = { class: "status-item" };
-const _hoisted_37 = { class: "status-item" };
+const _hoisted_38 = { class: "status-right" };
+const _hoisted_39 = { class: "status-item" };
+const _hoisted_40 = { class: "status-item" };
 const _sfc_main$1 = /* @__PURE__ */ defineComponent({
   __name: "WorkspaceLayout",
   setup(__props) {
@@ -87075,8 +87455,6 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
     const rightTab = ref("properties");
     const viewportTab = ref("composition");
     const viewZoom = ref("fit");
-    const showGuides = ref(false);
-    const showGrid = ref(true);
     const showGraphEditor = ref(false);
     const showExportDialog = ref(false);
     const showComfyUIExportDialog = ref(false);
@@ -87095,11 +87473,13 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
     const viewportState = ref(createDefaultViewportState());
     const viewOptions = ref({
       showGrid: true,
+      showRulers: false,
       showAxes: true,
       showCameraFrustum: true,
       showCompositionBounds: true,
       showFocalPlane: false,
       showLayerOutlines: true,
+      showSafeZones: false,
       gridSize: 100,
       gridDivisions: 10
     });
@@ -87266,7 +87646,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
         threeCanvasRef.value.fitToView();
       } else {
         const zoomLevel = parseInt(viewZoom.value) / 100;
-        threeCanvasRef.value.zoom = zoomLevel;
+        threeCanvasRef.value.setZoom(zoomLevel);
       }
     }
     function handleKeydown(e) {
@@ -87606,15 +87986,15 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
                                   [vModelSelect, viewZoom.value]
                                 ]),
                                 createBaseVNode("button", {
-                                  class: normalizeClass({ active: showGuides.value }),
-                                  onClick: _cache[19] || (_cache[19] = ($event) => showGuides.value = !showGuides.value),
-                                  title: "Toggle Guides"
+                                  class: normalizeClass({ active: viewOptions.value.showRulers }),
+                                  onClick: _cache[19] || (_cache[19] = ($event) => viewOptions.value.showRulers = !viewOptions.value.showRulers),
+                                  title: "Toggle Rulers/Guides"
                                 }, [..._cache[59] || (_cache[59] = [
                                   createBaseVNode("span", { class: "icon" }, "📏", -1)
                                 ])], 2),
                                 createBaseVNode("button", {
-                                  class: normalizeClass({ active: showGrid.value }),
-                                  onClick: _cache[20] || (_cache[20] = ($event) => showGrid.value = !showGrid.value),
+                                  class: normalizeClass({ active: viewOptions.value.showGrid }),
+                                  onClick: _cache[20] || (_cache[20] = ($event) => viewOptions.value.showGrid = !viewOptions.value.showGrid),
                                   title: "Toggle Grid"
                                 }, [..._cache[60] || (_cache[60] = [
                                   createBaseVNode("span", { class: "icon" }, "▦", -1)
@@ -87622,12 +88002,32 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
                               ])
                             ]),
                             createBaseVNode("div", _hoisted_22, [
+                              viewOptions.value.showRulers ? (openBlock(), createElementBlock("div", _hoisted_23, [
+                                createBaseVNode("div", _hoisted_24, [
+                                  (openBlock(), createElementBlock(Fragment, null, renderList(20, (i) => {
+                                    return createBaseVNode("span", {
+                                      key: "h" + i,
+                                      class: "tick",
+                                      style: normalizeStyle({ left: i * 5 + "%" })
+                                    }, toDisplayString(Math.round(i * 5 / 100 * compWidth.value)), 5);
+                                  }), 64))
+                                ]),
+                                createBaseVNode("div", _hoisted_25, [
+                                  (openBlock(), createElementBlock(Fragment, null, renderList(20, (i) => {
+                                    return createBaseVNode("span", {
+                                      key: "v" + i,
+                                      class: "tick",
+                                      style: normalizeStyle({ top: i * 5 + "%" })
+                                    }, toDisplayString(Math.round(i * 5 / 100 * compHeight.value)), 5);
+                                  }), 64))
+                                ])
+                              ])) : createCommentVNode("", true),
                               viewportTab.value === "composition" ? (openBlock(), createBlock(ThreeCanvas, {
-                                key: 0,
+                                key: 1,
                                 ref_key: "threeCanvasRef",
                                 ref: threeCanvasRef
                               }, null, 512)) : (openBlock(), createBlock(ViewportRenderer, {
-                                key: 1,
+                                key: 2,
                                 camera: activeCamera.value,
                                 viewportState: viewportState.value,
                                 viewOptions: viewOptions.value,
@@ -87655,7 +88055,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
                                 "min-size": 20
                               }, {
                                 default: withCtx(() => [
-                                  createBaseVNode("div", _hoisted_23, [
+                                  createBaseVNode("div", _hoisted_26, [
                                     createVNode(TimelinePanel, {
                                       onOpenCompositionSettings: _cache[21] || (_cache[21] = ($event) => showCompositionSettingsDialog.value = true)
                                     })
@@ -87668,7 +88068,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
                                 "min-size": 20
                               }, {
                                 default: withCtx(() => [
-                                  createBaseVNode("div", _hoisted_24, [
+                                  createBaseVNode("div", _hoisted_27, [
                                     createVNode(GraphEditor, {
                                       onClose: _cache[22] || (_cache[22] = ($event) => showGraphEditor.value = false)
                                     })
@@ -87678,7 +88078,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
                               })
                             ]),
                             _: 1
-                          })) : (openBlock(), createElementBlock("div", _hoisted_25, [
+                          })) : (openBlock(), createElementBlock("div", _hoisted_28, [
                             createVNode(TimelinePanel, {
                               onOpenCompositionSettings: _cache[23] || (_cache[23] = ($event) => showCompositionSettingsDialog.value = true)
                             })
@@ -87698,8 +88098,8 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
                 "max-size": 25
               }, {
                 default: withCtx(() => [
-                  createBaseVNode("div", _hoisted_26, [
-                    createBaseVNode("div", _hoisted_27, [
+                  createBaseVNode("div", _hoisted_29, [
+                    createBaseVNode("div", _hoisted_30, [
                       createBaseVNode("button", {
                         class: normalizeClass({ active: rightTab.value === "effects" }),
                         onClick: _cache[24] || (_cache[24] = ($event) => rightTab.value = "effects")
@@ -87707,7 +88107,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
                       createBaseVNode("button", {
                         class: normalizeClass({ active: rightTab.value === "properties" }),
                         onClick: _cache[25] || (_cache[25] = ($event) => rightTab.value = "properties")
-                      }, " Props ", 2),
+                      }, " Properties ", 2),
                       createBaseVNode("button", {
                         class: normalizeClass({ active: rightTab.value === "camera" }),
                         onClick: _cache[26] || (_cache[26] = ($event) => rightTab.value = "camera")
@@ -87717,7 +88117,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
                         onClick: _cache[27] || (_cache[27] = ($event) => rightTab.value = "audio")
                       }, " Audio ", 2)
                     ]),
-                    createBaseVNode("div", _hoisted_28, [
+                    createBaseVNode("div", _hoisted_31, [
                       rightTab.value === "effects" ? (openBlock(), createBlock(EffectControlsPanel, { key: 0 })) : rightTab.value === "properties" ? (openBlock(), createBlock(PropertiesPanel, { key: 1 })) : rightTab.value === "camera" ? (openBlock(), createBlock(CameraProperties, {
                         key: 2,
                         camera: activeCamera.value,
@@ -87732,19 +88132,19 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
             _: 1
           })
         ]),
-        createBaseVNode("div", _hoisted_29, [
-          createBaseVNode("div", _hoisted_30, [
-            createBaseVNode("span", _hoisted_31, toDisplayString(projectName.value), 1),
-            _cache[61] || (_cache[61] = createBaseVNode("span", { class: "status-divider" }, "|", -1)),
-            createBaseVNode("span", _hoisted_32, toDisplayString(compositionInfo.value), 1)
-          ]),
+        createBaseVNode("div", _hoisted_32, [
           createBaseVNode("div", _hoisted_33, [
-            renderProgress.value > 0 ? (openBlock(), createElementBlock("span", _hoisted_34, " Rendering: " + toDisplayString(Math.round(renderProgress.value * 100)) + "% ", 1)) : createCommentVNode("", true)
+            createBaseVNode("span", _hoisted_34, toDisplayString(projectName.value), 1),
+            _cache[61] || (_cache[61] = createBaseVNode("span", { class: "status-divider" }, "|", -1)),
+            createBaseVNode("span", _hoisted_35, toDisplayString(compositionInfo.value), 1)
           ]),
-          createBaseVNode("div", _hoisted_35, [
-            createBaseVNode("span", _hoisted_36, toDisplayString(memoryUsage.value), 1),
+          createBaseVNode("div", _hoisted_36, [
+            renderProgress.value > 0 ? (openBlock(), createElementBlock("span", _hoisted_37, " Rendering: " + toDisplayString(Math.round(renderProgress.value * 100)) + "% ", 1)) : createCommentVNode("", true)
+          ]),
+          createBaseVNode("div", _hoisted_38, [
+            createBaseVNode("span", _hoisted_39, toDisplayString(memoryUsage.value), 1),
             _cache[62] || (_cache[62] = createBaseVNode("span", { class: "status-divider" }, "|", -1)),
-            createBaseVNode("span", _hoisted_37, toDisplayString(fps.value) + " fps", 1)
+            createBaseVNode("span", _hoisted_40, toDisplayString(fps.value) + " fps", 1)
           ])
         ]),
         showExportDialog.value ? (openBlock(), createBlock(ExportDialog, {
@@ -87789,7 +88189,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
   }
 });
 
-const WorkspaceLayout = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-05c5905a"]]);
+const WorkspaceLayout = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-fe57857e"]]);
 
 const _sfc_main = /* @__PURE__ */ defineComponent({
   __name: "App",
