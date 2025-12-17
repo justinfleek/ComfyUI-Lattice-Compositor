@@ -47,6 +47,20 @@
         </button>
       </div>
 
+      <div class="divider"></div>
+
+      <!-- Import Button -->
+      <div class="tool-group">
+        <button
+          @click="triggerAssetImport"
+          title="Import Asset (Ctrl+I)"
+          class="import-btn"
+        >
+          <span class="icon">📥</span>
+          <span class="btn-label">Import</span>
+        </button>
+      </div>
+
       <!-- Segment Tool Options (shown when segment tool is active) -->
       <template v-if="currentTool === 'segment'">
         <div class="divider"></div>
@@ -155,10 +169,24 @@
               >
                 Effects
               </button>
+              <button
+                :class="{ active: leftTab === 'assets' }"
+                @click="leftTab = 'assets'"
+              >
+                Assets
+              </button>
             </div>
             <div class="panel-content">
               <ProjectPanel v-if="leftTab === 'project'" @openCompositionSettings="showCompositionSettingsDialog = true" />
               <EffectsPanel v-else-if="leftTab === 'effects'" />
+              <AssetsPanel
+                v-else-if="leftTab === 'assets'"
+                @create-layers-from-svg="onCreateLayersFromSvg"
+                @use-mesh-as-emitter="onUseMeshAsEmitter"
+                @environment-update="onEnvironmentUpdate"
+                @environment-load="onEnvironmentLoad"
+                @environment-clear="onEnvironmentClear"
+              />
             </div>
           </div>
         </Pane>
@@ -292,6 +320,12 @@
               >
                 Audio
               </button>
+              <button
+                :class="{ active: rightTab === 'export' }"
+                @click="rightTab = 'export'"
+              >
+                Export
+              </button>
             </div>
             <div class="panel-content">
               <EffectControlsPanel v-if="rightTab === 'effects'" />
@@ -302,6 +336,7 @@
                 @update:camera="updateCamera"
               />
               <AudioPanel v-else-if="rightTab === 'audio'" />
+              <ExportPanel v-else-if="rightTab === 'export'" />
             </div>
           </div>
         </Pane>
@@ -390,6 +425,8 @@ import EffectControlsPanel from '@/components/panels/EffectControlsPanel.vue';
 import PropertiesPanel from '@/components/panels/PropertiesPanel.vue';
 import CameraProperties from '@/components/panels/CameraProperties.vue';
 import AudioPanel from '@/components/panels/AudioPanel.vue';
+import AssetsPanel from '@/components/panels/AssetsPanel.vue';
+import ExportPanel from '@/components/panels/ExportPanel.vue';
 
 // Viewport
 import ViewportRenderer from '@/components/viewport/ViewportRenderer.vue';
@@ -408,8 +445,10 @@ import PathSuggestionDialog from '@/components/dialogs/PathSuggestionDialog.vue'
 // Canvas overlays
 import PathPreviewOverlay from '@/components/canvas/PathPreviewOverlay.vue';
 
-// Store
+// Stores
 const store = useCompositorStore();
+import { useAssetStore } from '@/stores/assetStore';
+const assetStore = useAssetStore();
 
 // Tool state - synced with store
 const currentTool = computed({
@@ -435,7 +474,7 @@ function clearSegmentMask() {
 }
 
 const activeWorkspace = ref('standard');
-const leftTab = ref<'project' | 'effects'>('project');
+const leftTab = ref<'project' | 'effects' | 'assets'>('project');
 const rightTab = ref<'effects' | 'properties' | 'camera' | 'audio'>('properties');
 const viewportTab = ref<'composition' | 'layer' | 'footage'>('composition');
 
@@ -717,6 +756,128 @@ function handleZoomChange() {
   }
 }
 
+// ========================================================================
+// ASSETS PANEL HANDLERS
+// ========================================================================
+
+/**
+ * Create layers from imported SVG paths
+ */
+function onCreateLayersFromSvg(svgId: string) {
+  const storedSvg = assetStore.svgDocuments.get(svgId);
+  if (!storedSvg) return;
+
+  // Create a model layer for each path in the SVG
+  storedSvg.document.paths.forEach((path, index) => {
+    const config = storedSvg.layerConfigs[index];
+
+    // Create a 3D model layer
+    // Note: This would ideally create a proper ModelLayer with the extruded geometry
+    // For now, we'll create a shape layer with the path data
+    const layer = store.createShapeLayer();
+    store.renameLayer(layer.id, `${storedSvg.name}_${path.id}`);
+
+    // Store the SVG path reference in the layer data
+    store.updateLayerData(layer.id, {
+      svgDocumentId: svgId,
+      svgPathId: path.id,
+      svgPathIndex: index,
+      extrusionConfig: config,
+      // Set Z position based on layer depth
+      transform: {
+        ...layer.transform,
+        position: {
+          ...layer.transform.position,
+          value: {
+            ...layer.transform.position.value,
+            z: config?.depth || 0
+          }
+        }
+      }
+    });
+  });
+
+  console.log(`[Weyl] Created ${storedSvg.document.paths.length} layers from SVG: ${storedSvg.name}`);
+}
+
+/**
+ * Configure a particle emitter to use a mesh shape
+ */
+function onUseMeshAsEmitter(meshId: string) {
+  const emitterConfig = assetStore.getMeshEmitterConfig(meshId);
+  if (!emitterConfig) return;
+
+  // Get the selected layer if it's a particle layer
+  const selectedLayerIds = store.selectedLayerIds;
+  if (selectedLayerIds.length === 0) {
+    console.warn('[Weyl] No layer selected for mesh emitter');
+    return;
+  }
+
+  const layer = store.layers.find(l => l.id === selectedLayerIds[0]);
+  if (!layer || layer.type !== 'particle') {
+    console.warn('[Weyl] Selected layer is not a particle layer');
+    return;
+  }
+
+  // Update the particle layer's emitter config with mesh vertices
+  store.updateLayerData(layer.id, {
+    emitter: {
+      ...(layer.data as any).emitter,
+      shape: 'mesh',
+      meshVertices: emitterConfig.meshVertices,
+      meshNormals: emitterConfig.meshNormals,
+    }
+  });
+
+  console.log(`[Weyl] Set mesh emitter for layer: ${layer.name}`);
+}
+
+/**
+ * Update environment settings in the engine
+ */
+function onEnvironmentUpdate(settings: any) {
+  if (!threeCanvasRef.value) return;
+  const engine = threeCanvasRef.value.getEngine?.();
+  if (!engine) return;
+
+  engine.setEnvironmentConfig(settings);
+}
+
+/**
+ * Load environment map into the engine
+ */
+async function onEnvironmentLoad(settings: any) {
+  if (!threeCanvasRef.value) return;
+  const engine = threeCanvasRef.value.getEngine?.();
+  if (!engine) return;
+
+  if (settings.url) {
+    try {
+      await engine.loadEnvironmentMap(settings.url, {
+        intensity: settings.intensity,
+        rotation: settings.rotation,
+        backgroundBlur: settings.backgroundBlur,
+        useAsBackground: settings.useAsBackground,
+      });
+      console.log('[Weyl] Environment map loaded');
+    } catch (error) {
+      console.error('[Weyl] Failed to load environment map:', error);
+    }
+  }
+}
+
+/**
+ * Clear environment map from the engine
+ */
+function onEnvironmentClear() {
+  if (!threeCanvasRef.value) return;
+  const engine = threeCanvasRef.value.getEngine?.();
+  if (!engine) return;
+
+  engine.setEnvironmentEnabled(false);
+}
+
 // Keyboard shortcuts
 function handleKeydown(e: KeyboardEvent) {
   // Don't handle if input is focused
@@ -781,7 +942,48 @@ function handleKeydown(e: KeyboardEvent) {
         showCompositionSettingsDialog.value = true;
       }
       break;
+    case 'i':
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        triggerAssetImport();
+      }
+      break;
+    case 'a':
+      if (!e.ctrlKey && !e.metaKey) {
+        // Switch to Assets tab
+        leftTab.value = 'assets';
+      }
+      break;
   }
+}
+
+// Import dialog trigger
+const importFileInput = ref<HTMLInputElement | null>(null);
+
+function triggerAssetImport() {
+  // Create a temporary file input for import
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.svg,.gltf,.glb,.obj,.fbx,.hdr,.exr,.png,.jpg';
+  input.multiple = true;
+  input.onchange = async (e) => {
+    const files = (e.target as HTMLInputElement).files;
+    if (!files) return;
+
+    for (const file of files) {
+      const ext = file.name.split('.').pop()?.toLowerCase();
+      if (ext === 'svg') {
+        await assetStore.importSvgFromFile(file);
+      } else if (['hdr', 'exr'].includes(ext || '')) {
+        await assetStore.loadEnvironment(file);
+      }
+      // Models and other assets handled by AssetsPanel
+    }
+
+    // Switch to assets tab to show imported items
+    leftTab.value = 'assets';
+  };
+  input.click();
 }
 
 // Performance monitoring

@@ -56,6 +56,28 @@
       >
         <i class="pi pi-compass" />
       </button>
+      <div class="controls-divider"></div>
+      <button
+        @click="resetCamera"
+        title="Reset Camera (Home)"
+      >
+        <i class="pi pi-home" />
+      </button>
+      <div class="controls-divider"></div>
+      <button
+        :class="{ active: showGrid }"
+        @click="toggleGrid"
+        title="Toggle Grid"
+      >
+        <i class="pi pi-th-large" />
+      </button>
+      <button
+        :class="{ active: showOutsideOverlay }"
+        @click="toggleOutsideOverlay"
+        title="Toggle Safe Area Overlay"
+      >
+        <i class="pi pi-stop" />
+      </button>
     </div>
 
     <div class="transform-mode-controls" v-if="store.selectedLayerIds.length > 0">
@@ -168,6 +190,10 @@ const viewportTransform = ref<number[]>([1, 0, 0, 1, 0, 0]);
 // Transform mode for transform controls
 const transformMode = ref<'translate' | 'rotate' | 'scale'>('translate');
 
+// Composition guide toggles
+const showGrid = ref(true);
+const showOutsideOverlay = ref(true);
+
 // Segmentation state
 const isDrawingSegmentBox = ref(false);
 const segmentBoxEnd = ref<{ x: number; y: number } | null>(null);
@@ -271,28 +297,34 @@ onMounted(async () => {
     );
 
     // Wire up precomp rendering - allows precomp layers to render nested compositions
-    // NOTE: Full precomp render-to-texture requires:
-    // 1. Creating a separate render target for each precomp
-    // 2. Temporarily setting up the precomp's layers in the scene
-    // 3. Rendering to the offscreen target
-    // 4. Managing texture lifecycle (cache/dispose)
-    // This is a complex feature that needs careful architecture to avoid
-    // recursive rendering issues and performance problems.
+    // The engine maintains a cache of layer managers and scenes per composition
+    // and renders them to offscreen textures when requested.
     engine.value.setPrecompRenderContext({
       renderComposition: (compositionId: string, frame: number) => {
-        // Get the composition
+        // Get the composition data from store
         const comp = store.getComposition(compositionId);
-        if (!comp) return null;
+        if (!comp) {
+          console.warn('[ThreeCanvas] Precomp composition not found:', compositionId);
+          return null;
+        }
 
-        // FUTURE: Implement proper render-to-texture for precomps
-        // This would involve:
-        // - engine.renderCompositionToTexture(compositionId, frame)
-        // - Caching rendered textures per frame
-        // - Handling composition changes
-        console.log('[ThreeCanvas] Precomp render requested:', compositionId, 'frame:', frame);
+        // Get layers for this composition (they're stored directly on the composition)
+        if (!comp.layers || comp.layers.length === 0) {
+          // Empty composition - return null (precomp will show placeholder)
+          return null;
+        }
 
-        // For now, precomps show placeholder - render-to-texture not yet implemented
-        return null;
+        // Render the composition to a texture using the engine's precomp system
+        return engine.value!.renderCompositionToTexture(
+          compositionId,
+          comp.layers,
+          {
+            width: comp.settings.width,
+            height: comp.settings.height,
+            fps: comp.settings.fps
+          },
+          frame
+        );
       },
       getComposition: (compositionId: string) => store.getComposition(compositionId)
     });
@@ -311,6 +343,12 @@ onMounted(async () => {
     // Initialize particle systems with renderer and composition FPS
     engine.value.initializeParticleSystems();
     engine.value.setCompositionFPS(store.fps || 60);
+
+    // Initialize 3D services (material system, environment maps)
+    engine.value.initialize3DServices();
+
+    // Enable 3D orbit controls (right-click = orbit, middle = pan, scroll = dolly)
+    engine.value.enableOrbitControls();
 
     // Start render loop
     engine.value.start();
@@ -1052,6 +1090,36 @@ function fitToView() {
 }
 
 /**
+ * Reset camera to default 3D viewing position
+ * Perfect focal length to see full composition
+ */
+function resetCamera() {
+  if (engine.value) {
+    engine.value.resetCameraToDefault();
+  }
+}
+
+/**
+ * Toggle composition grid visibility
+ */
+function toggleGrid() {
+  showGrid.value = !showGrid.value;
+  if (engine.value) {
+    engine.value.setCompositionGridVisible(showGrid.value);
+  }
+}
+
+/**
+ * Toggle outside overlay (safe area) visibility
+ */
+function toggleOutsideOverlay() {
+  showOutsideOverlay.value = !showOutsideOverlay.value;
+  if (engine.value) {
+    engine.value.setOutsideOverlayVisible(showOutsideOverlay.value);
+  }
+}
+
+/**
  * Set zoom to a specific level (0.1 to 10)
  */
 function setZoom(newZoom: number) {
@@ -1144,7 +1212,8 @@ defineExpose({
   renderMode,
   setRenderMode,
   transformMode,
-  setTransformModeTo
+  setTransformModeTo,
+  resetCamera
 });
 </script>
 
@@ -1230,6 +1299,13 @@ defineExpose({
 .render-mode-controls button.active {
   background: #4a90d9;
   color: #fff;
+}
+
+.controls-divider {
+  width: 1px;
+  height: 20px;
+  background: #555;
+  margin: 0 4px;
 }
 
 .transform-mode-controls {

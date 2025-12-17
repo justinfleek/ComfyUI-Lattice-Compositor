@@ -220,7 +220,7 @@ export class RenderPipeline {
   // ============================================================================
 
   private createColorTarget(width: number, height: number): THREE.WebGLRenderTarget {
-    return new THREE.WebGLRenderTarget(width, height, {
+    const target = new THREE.WebGLRenderTarget(width, height, {
       minFilter: THREE.LinearFilter,
       magFilter: THREE.LinearFilter,
       format: THREE.RGBAFormat,
@@ -230,6 +230,14 @@ export class RenderPipeline {
       stencilBuffer: false,
       samples: 4, // MSAA
     });
+
+    // Attach depth texture for depth visualization
+    // This allows us to read the depth buffer in post-processing
+    target.depthTexture = new THREE.DepthTexture(width, height);
+    target.depthTexture.format = THREE.DepthFormat;
+    target.depthTexture.type = THREE.UnsignedIntType;
+
+    return target;
   }
 
   private createDepthTarget(width: number, height: number): THREE.WebGLRenderTarget {
@@ -713,19 +721,182 @@ export class RenderPipeline {
   // RENDER MODE
   // ============================================================================
 
+  // Depth visualization pass for post-processing
+  private depthVisualizationPass: ShaderPass | null = null;
+
+  // Normal visualization pass for post-processing
+  private normalVisualizationPass: ShaderPass | null = null;
+
   /**
    * Set the render mode (color, depth, normal)
+   * Uses post-processing to visualize depth/normals from the depth buffer
+   * This works with ALL geometry including text since it reads from the depth buffer
    */
   setRenderMode(mode: 'color' | 'depth' | 'normal'): void {
     this.renderMode = mode;
 
-    if (mode === 'depth' || mode === 'normal') {
-      // Override scene materials
-      this.scene.scene.overrideMaterial = mode === 'depth' ? this.depthMaterial : this.normalMaterial;
-    } else {
-      // Clear override to use original materials
-      this.scene.scene.overrideMaterial = null;
+    // Remove existing visualization passes
+    if (this.depthVisualizationPass) {
+      this.composer.removePass(this.depthVisualizationPass);
+      this.depthVisualizationPass = null;
     }
+    if (this.normalVisualizationPass) {
+      this.composer.removePass(this.normalVisualizationPass);
+      this.normalVisualizationPass = null;
+    }
+
+    // Clear any override material
+    this.scene.scene.overrideMaterial = null;
+
+    if (mode === 'depth') {
+      // Create depth visualization pass that reads from the depth buffer
+      // Uses the colorTarget's depth texture which contains actual Z-depth of ALL geometry
+      this.depthVisualizationPass = new ShaderPass({
+        uniforms: {
+          tDiffuse: { value: null },
+          tDepth: { value: this.colorTarget.depthTexture },
+          cameraNear: { value: this.camera.camera.near },
+          cameraFar: { value: this.camera.camera.far },
+        },
+        vertexShader: `
+          varying vec2 vUv;
+          void main() {
+            vUv = uv;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        fragmentShader: `
+          #include <packing>
+          uniform sampler2D tDiffuse;
+          uniform sampler2D tDepth;
+          uniform float cameraNear;
+          uniform float cameraFar;
+          varying vec2 vUv;
+
+          float readDepth(sampler2D depthSampler, vec2 coord) {
+            float fragCoordZ = texture2D(depthSampler, coord).x;
+            float viewZ = perspectiveDepthToViewZ(fragCoordZ, cameraNear, cameraFar);
+            return viewZToOrthographicDepth(viewZ, cameraNear, cameraFar);
+          }
+
+          void main() {
+            float depth = readDepth(tDepth, vUv);
+            // White = close, Black = far (standard depth map convention for AI video)
+            gl_FragColor = vec4(vec3(1.0 - depth), 1.0);
+          }
+        `,
+      });
+
+      // Insert before output pass
+      const outputIndex = this.composer.passes.findIndex(
+        p => p.constructor.name === 'OutputPass'
+      );
+      if (outputIndex > -1) {
+        this.composer.insertPass(this.depthVisualizationPass, outputIndex);
+      } else {
+        this.composer.addPass(this.depthVisualizationPass);
+      }
+    } else if (mode === 'normal') {
+      // Screen-space normal reconstruction from depth buffer
+      // This works with ALL geometry including text, particles, etc.
+      // Reconstructs normals by computing gradients in the depth buffer
+      const scaledWidth = Math.floor(this.width * this.pixelRatio);
+      const scaledHeight = Math.floor(this.height * this.pixelRatio);
+
+      this.normalVisualizationPass = new ShaderPass({
+        uniforms: {
+          tDiffuse: { value: null },
+          tDepth: { value: this.colorTarget.depthTexture },
+          cameraNear: { value: this.camera.camera.near },
+          cameraFar: { value: this.camera.camera.far },
+          resolution: { value: new THREE.Vector2(scaledWidth, scaledHeight) },
+          cameraProjectionMatrix: { value: this.camera.camera.projectionMatrix },
+          cameraProjectionMatrixInverse: { value: this.camera.camera.projectionMatrixInverse },
+        },
+        vertexShader: `
+          varying vec2 vUv;
+          void main() {
+            vUv = uv;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        fragmentShader: `
+          #include <packing>
+          uniform sampler2D tDiffuse;
+          uniform sampler2D tDepth;
+          uniform float cameraNear;
+          uniform float cameraFar;
+          uniform vec2 resolution;
+          uniform mat4 cameraProjectionMatrix;
+          uniform mat4 cameraProjectionMatrixInverse;
+          varying vec2 vUv;
+
+          // Convert depth buffer value to linear depth
+          float getLinearDepth(vec2 coord) {
+            float fragCoordZ = texture2D(tDepth, coord).x;
+            float viewZ = perspectiveDepthToViewZ(fragCoordZ, cameraNear, cameraFar);
+            return viewZToOrthographicDepth(viewZ, cameraNear, cameraFar);
+          }
+
+          // Reconstruct view-space position from depth
+          vec3 getViewPosition(vec2 coord, float depth) {
+            vec4 clipPos = vec4(coord * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
+            vec4 viewPos = cameraProjectionMatrixInverse * clipPos;
+            return viewPos.xyz / viewPos.w;
+          }
+
+          void main() {
+            // Sample depth at current pixel and neighbors
+            vec2 texelSize = 1.0 / resolution;
+
+            float depthC = getLinearDepth(vUv);
+            float depthL = getLinearDepth(vUv - vec2(texelSize.x, 0.0));
+            float depthR = getLinearDepth(vUv + vec2(texelSize.x, 0.0));
+            float depthU = getLinearDepth(vUv + vec2(0.0, texelSize.y));
+            float depthD = getLinearDepth(vUv - vec2(0.0, texelSize.y));
+
+            // Handle edges and background (depth = 1.0)
+            if (depthC > 0.999) {
+              gl_FragColor = vec4(0.5, 0.5, 1.0, 1.0); // Default normal pointing at camera
+              return;
+            }
+
+            // Reconstruct view-space positions
+            vec3 posC = getViewPosition(vUv, depthC);
+            vec3 posL = getViewPosition(vUv - vec2(texelSize.x, 0.0), depthL);
+            vec3 posR = getViewPosition(vUv + vec2(texelSize.x, 0.0), depthR);
+            vec3 posU = getViewPosition(vUv + vec2(0.0, texelSize.y), depthU);
+            vec3 posD = getViewPosition(vUv - vec2(0.0, texelSize.y), depthD);
+
+            // Calculate screen-space derivatives
+            // Use the neighbor with smaller depth difference to reduce artifacts at edges
+            vec3 ddx = abs(depthR - depthC) < abs(depthC - depthL) ? posR - posC : posC - posL;
+            vec3 ddy = abs(depthU - depthC) < abs(depthC - depthD) ? posU - posC : posC - posD;
+
+            // Calculate normal from cross product
+            vec3 normal = normalize(cross(ddx, ddy));
+
+            // Flip normal to face camera if needed
+            if (normal.z < 0.0) normal = -normal;
+
+            // Convert from view-space normal (-1 to 1) to color (0 to 1)
+            // Standard normal map convention: RGB = (normal + 1) / 2
+            gl_FragColor = vec4(normal * 0.5 + 0.5, 1.0);
+          }
+        `,
+      });
+
+      // Insert before output pass
+      const outputIndex = this.composer.passes.findIndex(
+        p => p.constructor.name === 'OutputPass'
+      );
+      if (outputIndex > -1) {
+        this.composer.insertPass(this.normalVisualizationPass, outputIndex);
+      } else {
+        this.composer.addPass(this.normalVisualizationPass);
+      }
+    }
+    // For 'color' mode, passes are already removed and override cleared
   }
 
   /**

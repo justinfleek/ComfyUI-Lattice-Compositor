@@ -59,7 +59,7 @@ import { interpolateProperty } from '@/services/interpolation';
 import type { AudioMapping, TargetParameter } from '@/services/audioReactiveMapping';
 import { AudioReactiveMapper } from '@/services/audioReactiveMapping';
 import { AudioPathAnimator, type PathAnimatorConfig } from '@/services/audioPathAnimator';
-import { createEffectInstance } from '@/types/effects';
+// Effect creation delegated to effectActions
 import {
   PropertyDriverSystem,
   type PropertyDriver,
@@ -76,29 +76,19 @@ import {
   getBeatFrames,
   getPeakFrames
 } from '@/services/timelineSnap';
-import {
-  segmentByPoint,
-  segmentByBox,
-  segmentByMultiplePoints,
-  autoSegment,
-  applyMaskToImage,
-  cropImage,
-  type SegmentationPoint,
-  type SegmentationMask,
-  type SegmentationResult
-} from '@/services/segmentation';
-import {
-  getFrameCache,
-  initializeFrameCache,
-  type FrameCache,
-  type CacheStats
-} from '@/services/frameCache';
-import { saveProject, loadProject, listProjects } from '@/services/projectStorage';
+import { type SegmentationPoint } from '@/services/segmentation';
+import { type CacheStats } from '@/services/frameCache';
 
 // Extracted action modules
 import * as layerActions from './actions/layerActions';
 import * as keyframeActions from './actions/keyframeActions';
 import * as projectActions from './actions/projectActions';
+import * as audioActions from './actions/audioActions';
+import * as propertyDriverActions from './actions/propertyDriverActions';
+import * as cacheActions from './actions/cacheActions';
+import * as cameraActions from './actions/cameraActions';
+import * as segmentationActions from './actions/segmentationActions';
+import * as effectActions from './actions/effectActions';
 // Note: timelineActions is available but currently not used - playback handled via playbackStore
 
 // Domain-specific stores (for delegation)
@@ -1977,954 +1967,185 @@ export const useCompositorStore = defineStore('compositor', {
     },
 
     // ============================================================
-    // SEGMENTATION → LAYER PIPELINE (Vision Model Integration)
+    // SEGMENTATION ACTIONS (delegated to segmentationActions)
     // ============================================================
 
-    /**
-     * Segment source image by clicking a point and create a layer from the result.
-     * This is the primary entry point for the Vision → Layer pipeline used by
-     * Time-to-Move and other diffusion model integrations.
-     *
-     * @param point - Click coordinates in image space
-     * @param options - Additional options
-     * @returns Promise resolving to the created layer, or null if failed
-     */
     async segmentToLayerByPoint(
       point: SegmentationPoint,
-      options: {
-        model?: 'sam2' | 'matseg';
-        layerName?: string;
-        positionAtCenter?: boolean;
-      } = {}
+      options: { model?: 'sam2' | 'matseg'; layerName?: string; positionAtCenter?: boolean } = {}
     ): Promise<Layer | null> {
-      // Use source image or first available image asset
-      const sourceImage = this.sourceImage;
-      if (!sourceImage) {
-        storeLogger.error('No source image available for segmentation');
-        return null;
-      }
-
-      try {
-        // Call segmentation service
-        const result = await segmentByPoint(sourceImage, point, options.model || 'sam2');
-
-        if (result.status !== 'success' || !result.masks || result.masks.length === 0) {
-          storeLogger.error('Segmentation failed:', result.message);
-          return null;
-        }
-
-        // Use the first (best) mask
-        const mask = result.masks[0];
-
-        // Create the layer from the mask
-        return this._createLayerFromMask(sourceImage, mask, options.layerName, options.positionAtCenter);
-      } catch (err) {
-        storeLogger.error('Segmentation error:', err);
-        return null;
-      }
+      return segmentationActions.segmentToLayerByPoint(this, point, options);
     },
-
-    /**
-     * Segment source image by box selection and create a layer from the result.
-     *
-     * @param box - Selection box [x1, y1, x2, y2] in image space
-     * @param options - Additional options
-     * @returns Promise resolving to the created layer, or null if failed
-     */
     async segmentToLayerByBox(
       box: [number, number, number, number],
-      options: {
-        model?: 'sam2' | 'matseg';
-        layerName?: string;
-        positionAtCenter?: boolean;
-      } = {}
+      options: { model?: 'sam2' | 'matseg'; layerName?: string; positionAtCenter?: boolean } = {}
     ): Promise<Layer | null> {
-      const sourceImage = this.sourceImage;
-      if (!sourceImage) {
-        storeLogger.error('No source image available for segmentation');
-        return null;
-      }
-
-      try {
-        const result = await segmentByBox(sourceImage, box, options.model || 'sam2');
-
-        if (result.status !== 'success' || !result.masks || result.masks.length === 0) {
-          storeLogger.error('Segmentation failed:', result.message);
-          return null;
-        }
-
-        const mask = result.masks[0];
-        return this._createLayerFromMask(sourceImage, mask, options.layerName, options.positionAtCenter);
-      } catch (err) {
-        storeLogger.error('Segmentation error:', err);
-        return null;
-      }
+      return segmentationActions.segmentToLayerByBox(this, box, options);
     },
-
-    /**
-     * Segment source image with multiple positive/negative points.
-     *
-     * @param foregroundPoints - Points to include in selection
-     * @param backgroundPoints - Points to exclude from selection
-     * @param options - Additional options
-     */
     async segmentToLayerByMultiplePoints(
       foregroundPoints: SegmentationPoint[],
       backgroundPoints: SegmentationPoint[] = [],
-      options: {
-        model?: 'sam2' | 'matseg';
-        layerName?: string;
-        positionAtCenter?: boolean;
-      } = {}
+      options: { model?: 'sam2' | 'matseg'; layerName?: string; positionAtCenter?: boolean } = {}
     ): Promise<Layer | null> {
-      const sourceImage = this.sourceImage;
-      if (!sourceImage) {
-        storeLogger.error('No source image available for segmentation');
-        return null;
-      }
-
-      try {
-        const result = await segmentByMultiplePoints(
-          sourceImage,
-          foregroundPoints,
-          backgroundPoints,
-          options.model || 'sam2'
-        );
-
-        if (result.status !== 'success' || !result.masks || result.masks.length === 0) {
-          storeLogger.error('Segmentation failed:', result.message);
-          return null;
-        }
-
-        const mask = result.masks[0];
-        return this._createLayerFromMask(sourceImage, mask, options.layerName, options.positionAtCenter);
-      } catch (err) {
-        storeLogger.error('Segmentation error:', err);
-        return null;
-      }
+      return segmentationActions.segmentToLayerByMultiplePoints(this, foregroundPoints, backgroundPoints, options);
     },
-
-    /**
-     * Auto-segment all objects in the source image and create layers.
-     *
-     * @param options - Segmentation options
-     * @returns Promise resolving to array of created layers
-     */
     async autoSegmentToLayers(
-      options: {
-        model?: 'sam2' | 'matseg';
-        minArea?: number;
-        maxMasks?: number;
-        namePrefix?: string;
-      } = {}
+      options: { model?: 'sam2' | 'matseg'; minArea?: number; maxMasks?: number; namePrefix?: string } = {}
     ): Promise<Layer[]> {
-      const sourceImage = this.sourceImage;
-      if (!sourceImage) {
-        storeLogger.error('No source image available for segmentation');
-        return [];
-      }
-
-      try {
-        const result = await autoSegment(sourceImage, {
-          model: options.model || 'sam2',
-          minArea: options.minArea || 1000,
-          maxMasks: options.maxMasks || 10
-        });
-
-        if (result.status !== 'success' || !result.masks || result.masks.length === 0) {
-          storeLogger.error('Auto-segmentation failed:', result.message);
-          return [];
-        }
-
-        const layers: Layer[] = [];
-        const prefix = options.namePrefix || 'Segment';
-
-        for (let i = 0; i < result.masks.length; i++) {
-          const mask = result.masks[i];
-          const layer = await this._createLayerFromMask(
-            sourceImage,
-            mask,
-            `${prefix} ${i + 1}`,
-            false // Don't center - preserve original position
-          );
-          if (layer) {
-            layers.push(layer);
-          }
-        }
-
-        return layers;
-      } catch (err) {
-        storeLogger.error('Auto-segmentation error:', err);
-        return [];
-      }
-    },
-
-    /**
-     * Internal: Create an image layer from a segmentation mask
-     */
-    async _createLayerFromMask(
-      sourceImageBase64: string,
-      mask: SegmentationMask,
-      name?: string,
-      positionAtCenter: boolean = false
-    ): Promise<Layer | null> {
-      try {
-        // Apply mask to source image to get transparent PNG
-        const maskedImageBase64 = await applyMaskToImage(
-          sourceImageBase64,
-          mask.mask,
-          mask.bounds
-        );
-
-        // Generate asset ID
-        const assetId = `seg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-        // Create asset reference
-        const asset: AssetReference = {
-          id: assetId,
-          type: 'image',
-          source: 'generated',
-          width: mask.bounds.width,
-          height: mask.bounds.height,
-          data: maskedImageBase64
-        };
-
-        // Add asset to project
-        this.project.assets[assetId] = asset;
-
-        // Create image layer
-        const layer = this.createLayer('image', name || 'Segmented');
-
-        // Set image data
-        const imageData: ImageLayerData = {
-          assetId,
-          fit: 'none', // Don't scale - use original size
-          sourceType: 'segmented'
-        };
-        layer.data = imageData;
-
-        // Position layer at the correct location
-        if (positionAtCenter) {
-          // Center of composition
-          layer.transform.position.value = {
-            x: this.project.composition.width / 2,
-            y: this.project.composition.height / 2
-          };
-        } else {
-          // Position at the mask's center in the original image
-          layer.transform.position.value = {
-            x: mask.bounds.x + mask.bounds.width / 2,
-            y: mask.bounds.y + mask.bounds.height / 2
-          };
-        }
-
-        // Set anchor point to center of layer
-        layer.transform.anchorPoint.value = {
-          x: mask.bounds.width / 2,
-          y: mask.bounds.height / 2
-        };
-
-        this.project.meta.modified = new Date().toISOString();
-        this.pushHistory();
-
-        storeLogger.info(`Created segmented layer: ${layer.name} (${mask.bounds.width}x${mask.bounds.height})`);
-        return layer;
-      } catch (err) {
-        storeLogger.error('Failed to create layer from mask:', err);
-        return null;
-      }
+      return segmentationActions.autoSegmentToLayers(this, options);
     },
 
     // ============================================================
-    // EFFECT ACTIONS
+    // EFFECT ACTIONS (delegated to effectActions)
     // ============================================================
 
-    /**
-     * Add effect to layer
-     */
     addEffectToLayer(layerId: string, effectKey: string): void {
-      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
-      if (!layer) return;
-
-      const effect = createEffectInstance(effectKey);
-      if (!effect) return;
-
-      if (!layer.effects) {
-        layer.effects = [];
-      }
-      layer.effects.push(effect);
-      this.project.meta.modified = new Date().toISOString();
-      this.pushHistory();
+      effectActions.addEffectToLayer(this, layerId, effectKey);
     },
-
-    /**
-     * Remove effect from layer
-     */
     removeEffectFromLayer(layerId: string, effectId: string): void {
-      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
-      if (!layer || !layer.effects) return;
-
-      const index = layer.effects.findIndex(e => e.id === effectId);
-      if (index >= 0) {
-        layer.effects.splice(index, 1);
-        this.project.meta.modified = new Date().toISOString();
-        this.pushHistory();
-      }
+      effectActions.removeEffectFromLayer(this, layerId, effectId);
     },
-
-    /**
-     * Update effect parameter value
-     */
     updateEffectParameter(layerId: string, effectId: string, paramKey: string, value: any): void {
-      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
-      if (!layer || !layer.effects) return;
-
-      const effect = layer.effects.find(e => e.id === effectId);
-      if (!effect || !effect.parameters[paramKey]) return;
-
-      effect.parameters[paramKey].value = value;
-      this.project.meta.modified = new Date().toISOString();
+      effectActions.updateEffectParameter(this, layerId, effectId, paramKey, value);
     },
-
-    /**
-     * Toggle effect parameter animation state
-     */
     setEffectParamAnimated(layerId: string, effectId: string, paramKey: string, animated: boolean): void {
-      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
-      if (!layer || !layer.effects) return;
-
-      const effect = layer.effects.find(e => e.id === effectId);
-      if (!effect || !effect.parameters[paramKey]) return;
-
-      const param = effect.parameters[paramKey];
-      param.animated = animated;
-
-      // If enabling animation and no keyframes exist, add one at current frame
-      if (animated && (!param.keyframes || param.keyframes.length === 0)) {
-        param.keyframes = [{
-          id: `kf_${Date.now()}`,
-          frame: this.currentFrame,
-          value: param.value,
-          interpolation: 'linear' as InterpolationType,
-          inHandle: { frame: -5, value: 0, enabled: false },
-          outHandle: { frame: 5, value: 0, enabled: false },
-          controlMode: 'smooth' as const,
-        }];
-      }
-
-      this.project.meta.modified = new Date().toISOString();
-      this.pushHistory();
+      effectActions.setEffectParamAnimated(this, layerId, effectId, paramKey, animated);
     },
-
-    /**
-     * Toggle effect enabled state
-     */
     toggleEffect(layerId: string, effectId: string): void {
-      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
-      if (!layer || !layer.effects) return;
-
-      const effect = layer.effects.find(e => e.id === effectId);
-      if (!effect) return;
-
-      effect.enabled = !effect.enabled;
-      this.project.meta.modified = new Date().toISOString();
+      effectActions.toggleEffect(this, layerId, effectId);
     },
-
-    /**
-     * Reorder effects in stack
-     */
     reorderEffects(layerId: string, fromIndex: number, toIndex: number): void {
-      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
-      if (!layer || !layer.effects) return;
-      if (fromIndex < 0 || fromIndex >= layer.effects.length) return;
-      if (toIndex < 0 || toIndex >= layer.effects.length) return;
-
-      const [effect] = layer.effects.splice(fromIndex, 1);
-      layer.effects.splice(toIndex, 0, effect);
-      this.project.meta.modified = new Date().toISOString();
-      this.pushHistory();
+      effectActions.reorderEffects(this, layerId, fromIndex, toIndex);
     },
-
-    /**
-     * Get evaluated effect parameter value at a given frame
-     */
     getEffectParameterValue(layerId: string, effectId: string, paramKey: string, frame?: number): any {
-      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
-      if (!layer || !layer.effects) return null;
-
-      const effect = layer.effects.find(e => e.id === effectId);
-      if (!effect || !effect.parameters[paramKey]) return null;
-
-      const param = effect.parameters[paramKey];
-      const targetFrame = frame ?? (this.getActiveComp()?.currentFrame ?? 0);
-
-      // Use interpolation if animated
-      if (param.animated && param.keyframes.length > 0) {
-        return interpolateProperty(param, targetFrame);
-      }
-
-      return param.value;
+      return effectActions.getEffectParameterValue(this, layerId, effectId, paramKey, frame);
     },
 
     // ============================================================
-    // CAMERA ACTIONS
+    // CAMERA ACTIONS (delegated to cameraActions module)
     // ============================================================
 
-    /**
-     * Create a new camera and corresponding layer
-     * Returns both the camera and the layer
-     */
     createCameraLayer(name?: string): { camera: Camera3D; layer: Layer } {
-      const comp = this.getActiveComp();
-      const layers = this.getActiveCompLayers();
-
-      const cameraId = `camera_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const cameraName = name || `Camera ${this.cameras.size + 1}`;
-
-      // Create the camera object
-      const camera = createDefaultCamera(
-        cameraId,
-        comp?.settings.width || 1024,
-        comp?.settings.height || 1024
-      );
-      camera.name = cameraName;
-
-      // Add to cameras map
-      this.cameras.set(cameraId, camera);
-
-      // If this is the first camera, make it active
-      if (!this.activeCameraId) {
-        this.activeCameraId = cameraId;
-      }
-
-      // Create the layer
-      const layerId = `layer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const layer: Layer = {
-        id: layerId,
-        name: cameraName,
-        type: 'camera',
-        visible: true,
-        locked: false,
-        solo: false,
-        threeD: true,  // Cameras are always 3D
-        motionBlur: false,
-        inPoint: 0,
-        outPoint: (comp?.settings.frameCount || 81) - 1, // Last frame index (0-indexed)
-        parentId: null,
-        blendMode: 'normal',
-        opacity: createAnimatableProperty('opacity', 100, 'number'),
-        transform: createDefaultTransform(),
-        properties: [],
-        effects: [],
-        data: {
-          cameraId,
-          isActiveCamera: !this.activeCameraId || this.activeCameraId === cameraId
-        } as CameraLayerData
-      };
-
-      layers.unshift(layer);
-      this.project.meta.modified = new Date().toISOString();
-      this.pushHistory();
-
-      // Auto-select the new camera layer
-      this.selectLayer(layerId);
-
-      return { camera, layer };
+      return cameraActions.createCameraLayer(this, name);
     },
-
-    /**
-     * Get a camera by ID
-     */
     getCamera(cameraId: string): Camera3D | null {
-      return this.cameras.get(cameraId) || null;
+      return cameraActions.getCamera(this, cameraId);
     },
-
-    /**
-     * Update camera properties
-     */
     updateCamera(cameraId: string, updates: Partial<Camera3D>): void {
-      const camera = this.cameras.get(cameraId);
-      if (!camera) return;
-
-      Object.assign(camera, updates);
-      this.project.meta.modified = new Date().toISOString();
+      cameraActions.updateCamera(this, cameraId, updates);
     },
-
-    /**
-     * Set the active camera
-     */
     setActiveCamera(cameraId: string): void {
-      if (!this.cameras.has(cameraId)) return;
-
-      this.activeCameraId = cameraId;
-
-      // Update all camera layers' isActiveCamera flag
-      const layers = this.getActiveCompLayers();
-      for (const layer of layers) {
-        if (layer.type === 'camera' && layer.data) {
-          const cameraData = layer.data as CameraLayerData;
-          cameraData.isActiveCamera = cameraData.cameraId === cameraId;
-        }
-      }
-
-      this.project.meta.modified = new Date().toISOString();
+      cameraActions.setActiveCamera(this, cameraId);
     },
-
-    /**
-     * Delete a camera (and its layer)
-     */
     deleteCamera(cameraId: string): void {
-      const layers = this.getActiveCompLayers();
-
-      // Find the associated layer
-      const layerIndex = layers.findIndex(
-        l => l.type === 'camera' && (l.data as CameraLayerData)?.cameraId === cameraId
-      );
-
-      // Remove the layer if found
-      if (layerIndex !== -1) {
-        const layerId = layers[layerIndex].id;
-        layers.splice(layerIndex, 1);
-        useSelectionStore().removeFromSelection(layerId);
-      }
-
-      // Remove the camera
-      this.cameras.delete(cameraId);
-
-      // If this was the active camera, select another or set to null
-      if (this.activeCameraId === cameraId) {
-        const remaining = Array.from(this.cameras.keys());
-        this.activeCameraId = remaining.length > 0 ? remaining[0] : null;
-
-        // Update layer flags
-        if (this.activeCameraId) {
-          this.setActiveCamera(this.activeCameraId);
-        }
-      }
-
-      this.project.meta.modified = new Date().toISOString();
-      this.pushHistory();
+      cameraActions.deleteCamera(this, cameraId);
     },
-
-    /**
-     * Get camera keyframes for a specific camera
-     */
     getCameraKeyframes(cameraId: string): CameraKeyframe[] {
-      return this.cameraKeyframes.get(cameraId) || [];
+      return cameraActions.getCameraKeyframes(this, cameraId);
     },
-
-    /**
-     * Add a keyframe to a camera
-     */
     addCameraKeyframe(cameraId: string, keyframe: CameraKeyframe): void {
-      let keyframes = this.cameraKeyframes.get(cameraId);
-      if (!keyframes) {
-        keyframes = [];
-        this.cameraKeyframes.set(cameraId, keyframes);
-      }
-
-      // Remove existing keyframe at same frame
-      const existingIndex = keyframes.findIndex(k => k.frame === keyframe.frame);
-      if (existingIndex >= 0) {
-        keyframes[existingIndex] = keyframe;
-      } else {
-        keyframes.push(keyframe);
-        // Keep sorted by frame
-        keyframes.sort((a, b) => a.frame - b.frame);
-      }
-
-      this.project.meta.modified = new Date().toISOString();
+      cameraActions.addCameraKeyframe(this, cameraId, keyframe);
     },
-
-    /**
-     * Remove a keyframe from a camera
-     */
     removeCameraKeyframe(cameraId: string, frame: number): void {
-      const keyframes = this.cameraKeyframes.get(cameraId);
-      if (!keyframes) return;
-
-      const index = keyframes.findIndex(k => k.frame === frame);
-      if (index >= 0) {
-        keyframes.splice(index, 1);
-        this.project.meta.modified = new Date().toISOString();
-      }
+      cameraActions.removeCameraKeyframe(this, cameraId, frame);
     },
-
-    /**
-     * Get camera with keyframe interpolation applied at a specific frame
-     * This is the main method for getting animated camera values
-     */
     getCameraAtFrame(cameraId: string, frame: number): Camera3D | null {
-      const camera = this.cameras.get(cameraId);
-      if (!camera) return null;
-
-      const keyframes = this.cameraKeyframes.get(cameraId);
-      if (!keyframes || keyframes.length === 0) {
-        return camera; // No animation, return base camera
-      }
-
-      // Use the interpolation function from camera export service
-      const interpolated = interpolateCameraAtFrame(camera, keyframes, frame);
-
-      // Merge interpolated values back onto camera (return modified copy, not original)
-      return {
-        ...camera,
-        position: interpolated.position,
-        orientation: interpolated.rotation,
-        focalLength: interpolated.focalLength,
-        zoom: interpolated.zoom,
-        depthOfField: {
-          ...camera.depthOfField,
-          focusDistance: interpolated.focusDistance,
-        },
-      };
+      return cameraActions.getCameraAtFrame(this, cameraId, frame);
     },
-
-    /**
-     * Get the active camera with interpolation at current frame
-     */
     getActiveCameraAtFrame(frame?: number): Camera3D | null {
-      if (!this.activeCameraId) return null;
-      return this.getCameraAtFrame(this.activeCameraId, frame ?? this.currentFrame);
+      return cameraActions.getActiveCameraAtFrame(this, frame);
     },
-
-    /**
-     * Update viewport state
-     */
     updateViewportState(updates: Partial<ViewportState>): void {
-      Object.assign(this.viewportState, updates);
+      cameraActions.updateViewportState(this, updates);
     },
-
-    /**
-     * Update view options
-     */
     updateViewOptions(updates: Partial<ViewOptions>): void {
-      Object.assign(this.viewOptions, updates);
+      cameraActions.updateViewOptions(this, updates);
     },
 
     // ============================================================
-    // AUDIO ACTIONS
+    // AUDIO ACTIONS (delegated to audioActions module)
     // ============================================================
 
-    /**
-     * Load audio file using Web Worker (non-blocking)
-     */
     async loadAudio(file: File): Promise<void> {
-      // Reset state
-      this.audioFile = file;
-      this.audioBuffer = null;
-      this.audioAnalysis = null;
-      this.audioLoadingState = 'decoding';
-      this.audioLoadingProgress = 0;
-      this.audioLoadingPhase = 'Preparing...';
-      this.audioLoadingError = null;
-
-      try {
-        const result = await loadAndAnalyzeAudio(
-          file,
-          this.project.composition.fps,
-          {
-            onProgress: (progress) => {
-              // Update loading state based on phase
-              if (progress.phase === 'decoding') {
-                this.audioLoadingState = 'decoding';
-              } else {
-                this.audioLoadingState = 'analyzing';
-              }
-              this.audioLoadingProgress = progress.progress;
-              this.audioLoadingPhase = progress.message;
-            }
-          }
-        );
-
-        this.audioBuffer = result.buffer;
-        this.audioAnalysis = result.analysis;
-        this.audioLoadingState = 'complete';
-        this.audioLoadingProgress = 1;
-        this.audioLoadingPhase = 'Complete';
-
-        // Initialize the audio reactive mapper
-        this.initializeAudioReactiveMapper();
-
-        // Update property driver system with new audio data
-        if (this.propertyDriverSystem && this.audioAnalysis) {
-          this.propertyDriverSystem.setAudioAnalysis(this.audioAnalysis);
-        }
-
-        storeLogger.debug('Audio loaded:', {
-          duration: this.audioBuffer.duration,
-          bpm: this.audioAnalysis.bpm,
-          frameCount: this.audioAnalysis.frameCount
-        });
-      } catch (error) {
-        storeLogger.error('Failed to load audio:', error);
-        this.audioFile = null;
-        this.audioBuffer = null;
-        this.audioAnalysis = null;
-        this.audioReactiveMapper = null;
-        this.audioLoadingState = 'error';
-        this.audioLoadingError = (error as Error).message;
-      }
+      return audioActions.loadAudio(this, file);
     },
-
-    /**
-     * Cancel ongoing audio analysis
-     */
     cancelAudioLoad(): void {
-      cancelAnalysis();
-      this.audioLoadingState = 'idle';
-      this.audioLoadingProgress = 0;
-      this.audioLoadingPhase = '';
-      this.audioLoadingError = null;
+      audioActions.cancelAudioLoad(this);
     },
-
-    /**
-     * Clear loaded audio
-     */
     clearAudio(): void {
-      this.cancelAudioLoad();
-      this.audioFile = null;
-      this.audioBuffer = null;
-      this.audioAnalysis = null;
-      this.audioMappings.clear();
+      audioActions.clearAudio(this);
     },
-
-    /**
-     * Set audio master volume (0-100)
-     */
     setAudioVolume(volume: number): void {
       this.audioVolume = Math.max(0, Math.min(100, volume));
     },
-
-    /**
-     * Set audio muted state
-     */
     setAudioMuted(muted: boolean): void {
       this.audioMuted = muted;
     },
-
-    /**
-     * Toggle audio muted state
-     */
     toggleAudioMute(): void {
       this.audioMuted = !this.audioMuted;
     },
-
-    /**
-     * Get audio feature value at current frame
-     */
     getAudioFeatureAtFrame(feature: string, frame?: number): number {
-      if (!this.audioAnalysis) return 0;
-      return getFeatureAtFrame(this.audioAnalysis, feature, frame ?? (this.getActiveComp()?.currentFrame ?? 0));
+      return audioActions.getAudioFeatureAtFrame(this, feature, frame);
     },
-
-    /**
-     * Apply audio reactivity mapping to particle layer
-     */
     applyAudioToParticles(layerId: string, mapping: AudioParticleMapping): void {
-      const existing = this.audioMappings.get(layerId) || [];
-      existing.push(mapping);
-      this.audioMappings.set(layerId, existing);
+      audioActions.applyAudioToParticles(this, layerId, mapping);
     },
-
-    /**
-     * Remove audio mapping (legacy)
-     */
     removeLegacyAudioMapping(layerId: string, index: number): void {
-      const mappings = this.audioMappings.get(layerId);
-      if (mappings) {
-        mappings.splice(index, 1);
-        if (mappings.length === 0) {
-          this.audioMappings.delete(layerId);
-        }
-      }
+      audioActions.removeLegacyAudioMapping(this, layerId, index);
     },
-
-    /**
-     * Get audio mappings for a layer (legacy)
-     */
     getAudioMappingsForLayer(layerId: string): AudioParticleMapping[] {
-      return this.audioMappings.get(layerId) || [];
+      return audioActions.getAudioMappingsForLayer(this, layerId);
     },
-
-    // ============================================================
-    // NEW AUDIO REACTIVE SYSTEM
-    // ============================================================
-
-    /**
-     * Set peak data
-     */
     setPeakData(peakData: PeakData): void {
-      this.peakData = peakData;
-      if (this.audioReactiveMapper) {
-        this.audioReactiveMapper.setPeakData(peakData);
-      }
+      audioActions.setPeakData(this, peakData);
     },
-
-    /**
-     * Detect peaks with config
-     */
     detectAudioPeaks(config: PeakDetectionConfig): PeakData | null {
-      if (!this.audioAnalysis) return null;
-
-      const weights = this.audioAnalysis.amplitudeEnvelope;
-      const peakData = detectPeaks(weights, config);
-      this.peakData = peakData;
-
-      if (this.audioReactiveMapper) {
-        this.audioReactiveMapper.setPeakData(peakData);
-      }
-
-      return peakData;
+      return audioActions.detectAudioPeaks(this, config);
     },
-
-    /**
-     * Add new audio mapping
-     */
     addAudioMapping(mapping: AudioMapping): void {
-      this.audioReactiveMappings.push(mapping);
-
-      if (this.audioReactiveMapper) {
-        this.audioReactiveMapper.addMapping(mapping);
-      }
+      audioActions.addAudioMapping(this, mapping);
     },
-
-    /**
-     * Remove audio mapping by ID
-     */
     removeAudioMapping(mappingId: string): void {
-      const index = this.audioReactiveMappings.findIndex(m => m.id === mappingId);
-      if (index >= 0) {
-        this.audioReactiveMappings.splice(index, 1);
-      }
-
-      if (this.audioReactiveMapper) {
-        this.audioReactiveMapper.removeMapping(mappingId);
-      }
+      audioActions.removeAudioMapping(this, mappingId);
     },
-
-    /**
-     * Update audio mapping
-     */
     updateAudioMapping(mappingId: string, updates: Partial<AudioMapping>): void {
-      const mapping = this.audioReactiveMappings.find(m => m.id === mappingId);
-      if (mapping) {
-        Object.assign(mapping, updates);
-      }
-
-      if (this.audioReactiveMapper) {
-        this.audioReactiveMapper.updateMapping(mappingId, updates);
-      }
+      audioActions.updateAudioMapping(this, mappingId, updates);
     },
-
-    /**
-     * Get all audio mappings
-     */
     getAudioMappings(): AudioMapping[] {
       return this.audioReactiveMappings;
     },
-
-    /**
-     * Get mapped value at frame
-     */
     getMappedValueAtFrame(mappingId: string, frame: number): number {
-      if (!this.audioReactiveMapper) return 0;
-      return this.audioReactiveMapper.getValueAtFrame(mappingId, frame);
+      return audioActions.getMappedValueAtFrame(this, mappingId, frame);
     },
-
-    /**
-     * Get all mapped values at current frame
-     */
     getAllMappedValuesAtFrame(frame?: number): Map<TargetParameter, number> {
-      if (!this.audioReactiveMapper) return new Map();
-      return this.audioReactiveMapper.getAllValuesAtFrame(frame ?? (this.getActiveComp()?.currentFrame ?? 0));
+      return audioActions.getAllMappedValuesAtFrame(this, frame);
     },
-
-    /**
-     * Get active mappings for a specific layer
-     */
     getActiveMappingsForLayer(layerId: string): AudioMapping[] {
-      return this.audioReactiveMappings.filter(
-        m => m.enabled && (m.targetLayerId === layerId || m.targetLayerId === undefined)
-      );
+      return audioActions.getActiveMappingsForLayer(this, layerId);
     },
-
-    /**
-     * Get audio reactive values for a specific layer at a specific frame
-     * This is called by the engine during frame evaluation
-     */
     getAudioReactiveValuesForLayer(layerId: string, frame: number): Map<TargetParameter, number> {
-      if (!this.audioReactiveMapper) return new Map();
-      return this.audioReactiveMapper.getValuesForLayerAtFrame(layerId, frame);
+      return audioActions.getAudioReactiveValuesForLayer(this, layerId, frame);
     },
-
-    /**
-     * Check if current frame is a beat
-     */
     isBeatAtCurrentFrame(): boolean {
-      if (!this.audioAnalysis) return false;
-      return isBeatAtFrame(this.audioAnalysis, (this.getActiveComp()?.currentFrame ?? 0));
+      return audioActions.isBeatAtCurrentFrame(this);
     },
 
-    // ============================================================
-    // TIMELINE SNAPPING
-    // ============================================================
-
-    /**
-     * Find nearest snap point for a given frame
-     * @param frame - The frame to snap
-     * @param pixelsPerFrame - Current zoom level
-     * @param selectedLayerId - Currently selected layer (excluded from keyframe snapping)
-     */
+    // Timeline snapping (simple inline - no need for delegation)
     findSnapPoint(frame: number, pixelsPerFrame: number, selectedLayerId?: string | null): SnapResult | null {
       return findNearestSnap(frame, this.snapConfig, pixelsPerFrame, {
-        layers: this.layers,
-        selectedLayerId,
+        layers: this.layers, selectedLayerId,
         currentFrame: (this.getActiveComp()?.currentFrame ?? 0),
-        audioAnalysis: this.audioAnalysis,
-        peakData: this.peakData,
+        audioAnalysis: this.audioAnalysis, peakData: this.peakData,
       });
     },
-
-    /**
-     * Get all beat frames from audio analysis
-     */
-    getAudioBeatFrames(): number[] {
-      return getBeatFrames(this.audioAnalysis);
-    },
-
-    /**
-     * Get all peak frames from peak data
-     */
-    getAudioPeakFrames(): number[] {
-      return getPeakFrames(this.peakData);
-    },
-
-    /**
-     * Update snap configuration
-     */
-    setSnapConfig(config: Partial<SnapConfig>): void {
-      this.snapConfig = { ...this.snapConfig, ...config };
-    },
-
-    /**
-     * Toggle snapping enabled
-     */
-    toggleSnapping(): void {
-      this.snapConfig.enabled = !this.snapConfig.enabled;
-    },
-
-    /**
-     * Toggle specific snap type
-     */
+    getAudioBeatFrames(): number[] { return getBeatFrames(this.audioAnalysis); },
+    getAudioPeakFrames(): number[] { return getPeakFrames(this.peakData); },
+    setSnapConfig(config: Partial<SnapConfig>): void { this.snapConfig = { ...this.snapConfig, ...config }; },
+    toggleSnapping(): void { this.snapConfig.enabled = !this.snapConfig.enabled; },
     toggleSnapType(type: 'grid' | 'keyframes' | 'beats' | 'peaks' | 'layerBounds' | 'playhead'): void {
       const typeMap: Record<string, keyof SnapConfig> = {
-        'grid': 'snapToGrid',
-        'keyframes': 'snapToKeyframes',
-        'beats': 'snapToBeats',
-        'peaks': 'snapToPeaks',
-        'layerBounds': 'snapToLayerBounds',
-        'playhead': 'snapToPlayhead',
+        'grid': 'snapToGrid', 'keyframes': 'snapToKeyframes', 'beats': 'snapToBeats',
+        'peaks': 'snapToPeaks', 'layerBounds': 'snapToLayerBounds', 'playhead': 'snapToPlayhead',
       };
       const key = typeMap[type];
       if (key && typeof this.snapConfig[key] === 'boolean') {
@@ -2932,337 +2153,100 @@ export const useCompositorStore = defineStore('compositor', {
       }
     },
 
-    // ============================================================
-    // PATH ANIMATOR ACTIONS
-    // ============================================================
-
-    /**
-     * Create path animator for a layer
-     */
+    // Path animator (delegated to audioActions module)
     createPathAnimator(layerId: string, config: Partial<PathAnimatorConfig> = {}): void {
-      const animator = new AudioPathAnimator(config);
-      this.pathAnimators.set(layerId, animator);
+      audioActions.createPathAnimator(this, layerId, config);
     },
-
-    /**
-     * Set path for an animator
-     */
     setPathAnimatorPath(layerId: string, pathData: string): void {
-      const animator = this.pathAnimators.get(layerId);
-      if (animator) {
-        animator.setPath(pathData);
-      }
+      audioActions.setPathAnimatorPath(this, layerId, pathData);
     },
-
-    /**
-     * Update path animator config
-     */
     updatePathAnimatorConfig(layerId: string, config: Partial<PathAnimatorConfig>): void {
-      const animator = this.pathAnimators.get(layerId);
-      if (animator) {
-        animator.setConfig(config);
-      }
+      audioActions.updatePathAnimatorConfig(this, layerId, config);
     },
-
-    /**
-     * Remove path animator
-     */
     removePathAnimator(layerId: string): void {
-      this.pathAnimators.delete(layerId);
+      audioActions.removePathAnimator(this, layerId);
     },
-
-    /**
-     * Get path animator for layer
-     */
     getPathAnimator(layerId: string): AudioPathAnimator | undefined {
-      return this.pathAnimators.get(layerId) as AudioPathAnimator | undefined;
+      return audioActions.getPathAnimator(this, layerId);
     },
-
-    /**
-     * Update all path animators for current frame
-     */
     updatePathAnimators(): void {
-      if (!this.audioAnalysis) return;
-
-      const frame = (this.getActiveComp()?.currentFrame ?? 0);
-      const amplitude = getFeatureAtFrame(this.audioAnalysis, 'amplitude', frame);
-      const isBeat = isBeatAtFrame(this.audioAnalysis, frame);
-
-      for (const [_layerId, animator] of this.pathAnimators) {
-        animator.update(amplitude, isBeat);
-      }
+      audioActions.updatePathAnimators(this);
     },
-
-    /**
-     * Reset all path animators
-     */
     resetPathAnimators(): void {
-      for (const animator of this.pathAnimators.values()) {
-        animator.reset();
-      }
+      audioActions.resetPathAnimators(this);
     },
-
-    /**
-     * Initialize audio reactive mapper when audio is loaded
-     */
     initializeAudioReactiveMapper(): void {
-      if (!this.audioAnalysis) return;
-
-      this.audioReactiveMapper = new AudioReactiveMapper(this.audioAnalysis);
-
-      // Add existing mappings
-      for (const mapping of this.audioReactiveMappings) {
-        this.audioReactiveMapper.addMapping(mapping);
-      }
-
-      // Set peak data if available
-      if (this.peakData) {
-        this.audioReactiveMapper.setPeakData(this.peakData);
-      }
+      audioActions.initializeAudioReactiveMapper(this);
     },
 
     // ============================================================
-    // PROPERTY DRIVER SYSTEM (Expressions/Links)
+    // PROPERTY DRIVER SYSTEM (delegated to propertyDriverActions)
     // ============================================================
 
-    /**
-     * Initialize the property driver system
-     */
     initializePropertyDriverSystem(): void {
       this.propertyDriverSystem = new PropertyDriverSystem();
-
-      // Set up property getter that reads from store
       this.propertyDriverSystem.setPropertyGetter((layerId, propertyPath, frame) => {
         return this.getPropertyValueAtFrame(layerId, propertyPath, frame);
       });
-
-      // Connect audio if available
-      if (this.audioAnalysis) {
-        this.propertyDriverSystem.setAudioAnalysis(this.audioAnalysis);
-      }
-
-      // Load existing drivers
-      for (const driver of this.propertyDrivers) {
-        this.propertyDriverSystem.addDriver(driver);
-      }
+      if (this.audioAnalysis) this.propertyDriverSystem.setAudioAnalysis(this.audioAnalysis);
+      for (const driver of this.propertyDrivers) this.propertyDriverSystem.addDriver(driver);
     },
-
-    /**
-     * Get a property value at a specific frame
-     * Used by the driver system to read source properties
-     */
     getPropertyValueAtFrame(layerId: string, propertyPath: PropertyPath, frame: number): number | null {
       const layer = this.getActiveCompLayers().find(l => l.id === layerId);
       if (!layer) return null;
-
-      // Parse property path
       const parts = propertyPath.split('.');
-
       if (parts[0] === 'transform') {
         const t = layer.transform;
         if (parts[1] === 'position') {
-          const pos = interpolateProperty(t.position, frame);
-          if (parts[2] === 'x') return pos.x;
-          if (parts[2] === 'y') return pos.y;
-          if (parts[2] === 'z') return pos.z ?? 0;
+          const p = interpolateProperty(t.position, frame);
+          return parts[2] === 'x' ? p.x : parts[2] === 'y' ? p.y : (p.z ?? 0);
         }
         if (parts[1] === 'anchorPoint') {
-          const anchor = interpolateProperty(t.anchorPoint, frame);
-          if (parts[2] === 'x') return anchor.x;
-          if (parts[2] === 'y') return anchor.y;
-          if (parts[2] === 'z') return anchor.z ?? 0;
+          const a = interpolateProperty(t.anchorPoint, frame);
+          return parts[2] === 'x' ? a.x : parts[2] === 'y' ? a.y : (a.z ?? 0);
         }
         if (parts[1] === 'scale') {
-          const scale = interpolateProperty(t.scale, frame);
-          if (parts[2] === 'x') return scale.x;
-          if (parts[2] === 'y') return scale.y;
-          if (parts[2] === 'z') return scale.z ?? 100;
+          const s = interpolateProperty(t.scale, frame);
+          return parts[2] === 'x' ? s.x : parts[2] === 'y' ? s.y : (s.z ?? 100);
         }
-        if (parts[1] === 'rotation') {
-          return interpolateProperty(t.rotation, frame);
-        }
-        if (parts[1] === 'rotationX' && t.rotationX) {
-          return interpolateProperty(t.rotationX, frame);
-        }
-        if (parts[1] === 'rotationY' && t.rotationY) {
-          return interpolateProperty(t.rotationY, frame);
-        }
-        if (parts[1] === 'rotationZ' && t.rotationZ) {
-          return interpolateProperty(t.rotationZ, frame);
-        }
+        if (parts[1] === 'rotation') return interpolateProperty(t.rotation, frame);
+        if (parts[1] === 'rotationX' && t.rotationX) return interpolateProperty(t.rotationX, frame);
+        if (parts[1] === 'rotationY' && t.rotationY) return interpolateProperty(t.rotationY, frame);
+        if (parts[1] === 'rotationZ' && t.rotationZ) return interpolateProperty(t.rotationZ, frame);
       }
-
-      if (parts[0] === 'opacity') {
-        return interpolateProperty(layer.opacity, frame);
-      }
-
-      return null;
+      return parts[0] === 'opacity' ? interpolateProperty(layer.opacity, frame) : null;
     },
-
-    /**
-     * Get driven property values for a layer at current frame
-     */
     getDrivenValuesForLayer(layerId: string): Map<PropertyPath, number> {
-      if (!this.propertyDriverSystem) {
-        return new Map();
-      }
-
-      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
-      if (!layer) return new Map();
-
-      // Build base values map
-      const baseValues = new Map<PropertyPath, number>();
-      const frame = (this.getActiveComp()?.currentFrame ?? 0);
-
-      // Position
-      const pos = interpolateProperty(layer.transform.position, frame);
-      baseValues.set('transform.position.x', pos.x);
-      baseValues.set('transform.position.y', pos.y);
-      baseValues.set('transform.position.z', pos.z ?? 0);
-
-      // Anchor point
-      const anchor = interpolateProperty(layer.transform.anchorPoint, frame);
-      baseValues.set('transform.anchorPoint.x', anchor.x);
-      baseValues.set('transform.anchorPoint.y', anchor.y);
-      baseValues.set('transform.anchorPoint.z', anchor.z ?? 0);
-
-      // Scale
-      const scale = interpolateProperty(layer.transform.scale, frame);
-      baseValues.set('transform.scale.x', scale.x);
-      baseValues.set('transform.scale.y', scale.y);
-      baseValues.set('transform.scale.z', scale.z ?? 100);
-
-      // Rotation
-      baseValues.set('transform.rotation', interpolateProperty(layer.transform.rotation, frame));
-      if (layer.transform.rotationX) {
-        baseValues.set('transform.rotationX', interpolateProperty(layer.transform.rotationX, frame));
-      }
-      if (layer.transform.rotationY) {
-        baseValues.set('transform.rotationY', interpolateProperty(layer.transform.rotationY, frame));
-      }
-      if (layer.transform.rotationZ) {
-        baseValues.set('transform.rotationZ', interpolateProperty(layer.transform.rotationZ, frame));
-      }
-
-      // Opacity
-      baseValues.set('opacity', interpolateProperty(layer.opacity, frame));
-
-      return this.propertyDriverSystem.evaluateLayerDrivers(layerId, frame, baseValues);
+      return propertyDriverActions.getEvaluatedLayerProperties(this, layerId, this.getActiveComp()?.currentFrame ?? 0);
     },
-
-    /**
-     * Add a property driver
-     * Returns false if adding would create a circular dependency
-     */
     addPropertyDriver(driver: PropertyDriver): boolean {
-      // Check for cycles before adding
-      if (this.propertyDriverSystem) {
-        const added = this.propertyDriverSystem.addDriver(driver);
-        if (!added) {
-          storeLogger.warn('Cannot add property driver: would create circular dependency');
-          return false;
-        }
-      }
-
-      this.propertyDrivers.push(driver);
-      this.project.meta.modified = new Date().toISOString();
-      this.pushHistory();
-      return true;
+      return propertyDriverActions.addPropertyDriver(this, driver);
     },
-
-    /**
-     * Create and add an audio-driven property driver
-     */
     createAudioPropertyDriver(
-      targetLayerId: string,
-      targetProperty: PropertyPath,
+      targetLayerId: string, targetProperty: PropertyPath,
       audioFeature: 'amplitude' | 'bass' | 'mid' | 'high' | 'rms',
       options: { threshold?: number; scale?: number; offset?: number; smoothing?: number } = {}
     ): PropertyDriver {
-      const driver = createAudioDriver(targetLayerId, targetProperty, audioFeature, options);
-      this.addPropertyDriver(driver);
-      return driver;
+      return propertyDriverActions.createAudioPropertyDriver(this, targetLayerId, targetProperty, audioFeature, options);
     },
-
-    /**
-     * Create and add a property-to-property link
-     * Returns null if creating would cause a circular dependency
-     */
     createPropertyLink(
-      targetLayerId: string,
-      targetProperty: PropertyPath,
-      sourceLayerId: string,
-      sourceProperty: PropertyPath,
+      targetLayerId: string, targetProperty: PropertyPath,
+      sourceLayerId: string, sourceProperty: PropertyPath,
       options: { scale?: number; offset?: number; blendMode?: 'replace' | 'add' | 'multiply' } = {}
     ): PropertyDriver | null {
-      const driver = createPropertyLink(
-        targetLayerId,
-        targetProperty,
-        sourceLayerId,
-        sourceProperty,
-        options
-      );
-
-      const success = this.addPropertyDriver(driver);
-      if (!success) {
-        return null; // Circular dependency detected
-      }
-
-      return driver;
+      return propertyDriverActions.createPropertyLinkDriver(this, targetLayerId, targetProperty, sourceLayerId, sourceProperty, options);
     },
-
-    /**
-     * Remove a property driver
-     */
     removePropertyDriver(driverId: string): void {
-      const index = this.propertyDrivers.findIndex(d => d.id === driverId);
-      if (index >= 0) {
-        this.propertyDrivers.splice(index, 1);
-      }
-
-      if (this.propertyDriverSystem) {
-        this.propertyDriverSystem.removeDriver(driverId);
-      }
-
-      this.project.meta.modified = new Date().toISOString();
-      this.pushHistory();
+      propertyDriverActions.removePropertyDriver(this, driverId);
     },
-
-    /**
-     * Update a property driver
-     */
     updatePropertyDriver(driverId: string, updates: Partial<PropertyDriver>): void {
-      const driver = this.propertyDrivers.find(d => d.id === driverId);
-      if (driver) {
-        Object.assign(driver, updates);
-      }
-
-      if (this.propertyDriverSystem) {
-        this.propertyDriverSystem.updateDriver(driverId, updates);
-      }
-
-      this.project.meta.modified = new Date().toISOString();
+      propertyDriverActions.updatePropertyDriver(this, driverId, updates);
     },
-
-    /**
-     * Get all drivers for a layer
-     */
     getDriversForLayer(layerId: string): PropertyDriver[] {
-      return this.propertyDrivers.filter(d => d.targetLayerId === layerId);
+      return propertyDriverActions.getDriversForLayer(this, layerId);
     },
-
-    /**
-     * Toggle driver enabled state
-     */
     togglePropertyDriver(driverId: string): void {
-      const driver = this.propertyDrivers.find(d => d.id === driverId);
-      if (driver) {
-        driver.enabled = !driver.enabled;
-        if (this.propertyDriverSystem) {
-          this.propertyDriverSystem.updateDriver(driverId, { enabled: driver.enabled });
-        }
-        this.project.meta.modified = new Date().toISOString();
-      }
+      propertyDriverActions.togglePropertyDriver(this, driverId);
     },
 
     // ============================================================
@@ -3305,268 +2289,75 @@ export const useCompositorStore = defineStore('compositor', {
     },
 
     // ============================================================
-    // AUTOSAVE ACTIONS
+    // AUTOSAVE/PROJECT ACTIONS (delegated to projectActions)
     // ============================================================
 
-    /**
-     * Enable autosave with optional interval
-     * @param intervalMs - Autosave interval in milliseconds (default: 60000)
-     */
     enableAutosave(intervalMs?: number): void {
-      if (intervalMs) {
-        this.autosaveIntervalMs = intervalMs;
-      }
-      this.autosaveEnabled = true;
-      this.startAutosaveTimer();
-      storeLogger.info('Autosave enabled, interval:', this.autosaveIntervalMs, 'ms');
+      projectActions.configureAutosave(this, { enabled: true, intervalMs }, () => this.performAutosave());
     },
-
-    /**
-     * Disable autosave
-     */
     disableAutosave(): void {
+      projectActions.stopAutosave(this);
       this.autosaveEnabled = false;
-      this.stopAutosaveTimer();
-      storeLogger.info('Autosave disabled');
     },
-
-    /**
-     * Start the autosave timer
-     */
     startAutosaveTimer(): void {
-      this.stopAutosaveTimer();
-      if (!this.autosaveEnabled) return;
-
-      this.autosaveTimerId = window.setInterval(() => {
-        if (this.hasUnsavedChanges) {
-          this.performAutosave();
-        }
-      }, this.autosaveIntervalMs);
+      projectActions.startAutosave(this, () => this.performAutosave());
     },
-
-    /**
-     * Stop the autosave timer
-     */
     stopAutosaveTimer(): void {
-      if (this.autosaveTimerId !== null) {
-        clearInterval(this.autosaveTimerId);
-        this.autosaveTimerId = null;
-      }
+      projectActions.stopAutosave(this);
     },
-
-    /**
-     * Perform an autosave
-     */
     async performAutosave(): Promise<void> {
-      if (!this.hasUnsavedChanges) return;
-
-      try {
-        const existingProjectId = this.lastSaveProjectId || undefined;
-        const result = await saveProject(this.project, existingProjectId);
-
-        if (result.status === 'success' && result.project_id) {
-          this.lastSaveProjectId = result.project_id;
-          this.lastSaveTime = Date.now();
-          this.hasUnsavedChanges = false;
-          storeLogger.info('Autosaved project:', result.project_id);
-        } else {
-          storeLogger.error('Autosave failed:', result.message);
-        }
-      } catch (error) {
-        storeLogger.error('Autosave failed:', error);
-      }
+      return projectActions.performAutosave(this);
     },
-
-    /**
-     * Mark the project as having unsaved changes
-     * Called automatically when project state changes
-     */
     markUnsavedChanges(): void {
-      this.hasUnsavedChanges = true;
+      projectActions.markUnsavedChanges(this);
       this.invalidateFrameCache();
     },
-
-    /**
-     * Manual save to backend
-     */
     async saveProjectToBackend(): Promise<string> {
-      try {
-        const result = await saveProject(this.project, this.lastSaveProjectId || undefined);
-        if (result.status === 'success' && result.project_id) {
-          this.lastSaveProjectId = result.project_id;
-          this.lastSaveTime = Date.now();
-          this.hasUnsavedChanges = false;
-          storeLogger.info('Saved project:', result.project_id);
-          return result.project_id;
-        } else {
-          throw new Error(result.message || 'Save failed');
-        }
-      } catch (error) {
-        storeLogger.error('Save failed:', error);
-        throw error;
-      }
+      const result = await projectActions.saveProjectToServer(this);
+      if (!result) throw new Error('Save failed');
+      return result;
     },
-
-    /**
-     * Load project from backend
-     */
     async loadProjectFromBackend(projectId: string): Promise<void> {
-      try {
-        const result = await loadProject(projectId);
-        if (result.status === 'success' && result.project) {
-          this.project = result.project;
-          this.pushHistory();
-          this.lastSaveProjectId = projectId;
-          this.lastSaveTime = Date.now();
-          this.hasUnsavedChanges = false;
-          storeLogger.info('Loaded project:', projectId);
-        } else {
-          throw new Error(result.message || 'Load failed');
-        }
-      } catch (error) {
-        storeLogger.error('Load failed:', error);
-        throw error;
-      }
+      const success = await projectActions.loadProjectFromServer(this, projectId, () => this.pushHistory());
+      if (!success) throw new Error('Load failed');
     },
-
-    /**
-     * List available projects from backend
-     */
     async listSavedProjects(): Promise<Array<{ id: string; name: string; modified?: string }>> {
-      try {
-        const result = await listProjects();
-        if (result.status === 'success' && result.projects) {
-          return result.projects;
-        } else {
-          storeLogger.error('List projects failed:', result.message);
-          return [];
-        }
-      } catch (error) {
-        storeLogger.error('List projects failed:', error);
-        return [];
-      }
+      return projectActions.listServerProjects();
     },
 
     // ============================================================
-    // FRAME CACHE ACTIONS
+    // FRAME CACHE ACTIONS (delegated to cacheActions)
     // ============================================================
 
-    /**
-     * Initialize the frame cache
-     * Should be called on app startup
-     */
     async initializeFrameCache(): Promise<void> {
-      if (this.frameCacheEnabled) {
-        await initializeFrameCache();
-        storeLogger.info('Frame cache initialized');
-      }
+      return cacheActions.initializeCache(this);
     },
-
-    /**
-     * Enable or disable frame caching
-     */
     setFrameCacheEnabled(enabled: boolean): void {
-      this.frameCacheEnabled = enabled;
-      if (!enabled) {
-        this.clearFrameCache();
-      }
-      storeLogger.info('Frame cache', enabled ? 'enabled' : 'disabled');
+      cacheActions.setFrameCacheEnabled(this, enabled);
     },
-
-    /**
-     * Get frame from cache or null if not cached
-     */
     getCachedFrame(frame: number): ImageData | null {
-      if (!this.frameCacheEnabled) return null;
-
-      const cache = getFrameCache();
-      return cache.get(frame, this.activeCompositionId, this.projectStateHash);
+      return cacheActions.getCachedFrame(this, frame);
     },
-
-    /**
-     * Cache a rendered frame
-     */
     async cacheFrame(frame: number, imageData: ImageData): Promise<void> {
-      if (!this.frameCacheEnabled) return;
-
-      const cache = getFrameCache();
-      await cache.set(frame, this.activeCompositionId, imageData, this.projectStateHash);
+      return cacheActions.cacheFrame(this, frame, imageData);
     },
-
-    /**
-     * Check if a frame is cached
-     */
     isFrameCached(frame: number): boolean {
-      if (!this.frameCacheEnabled) return false;
-
-      const cache = getFrameCache();
-      return cache.has(frame, this.activeCompositionId);
+      return cacheActions.isFrameCached(this, frame);
     },
-
-    /**
-     * Start pre-caching frames around current position
-     */
     async startPreCache(currentFrame: number, direction: 'forward' | 'backward' | 'both' = 'both'): Promise<void> {
-      if (!this.frameCacheEnabled) return;
-
-      const cache = getFrameCache();
-      await cache.startPreCache(currentFrame, this.activeCompositionId, this.projectStateHash, direction);
+      return cacheActions.startPreCache(this, currentFrame, direction);
     },
-
-    /**
-     * Invalidate frame cache (called when project changes)
-     */
     invalidateFrameCache(): void {
-      // Update project state hash
-      this.projectStateHash = this.computeProjectHash();
-
-      // Clear cache for current composition
-      const cache = getFrameCache();
-      cache.invalidate(this.activeCompositionId, this.projectStateHash);
+      cacheActions.invalidateFrameCache(this);
     },
-
-    /**
-     * Clear all cached frames
-     */
     clearFrameCache(): void {
-      const cache = getFrameCache();
-      cache.clear();
-      storeLogger.info('Frame cache cleared');
+      cacheActions.clearFrameCache();
     },
-
-    /**
-     * Get frame cache statistics
-     */
     getFrameCacheStats(): CacheStats {
-      const cache = getFrameCache();
-      return cache.getStats();
+      return cacheActions.getFrameCacheStats();
     },
-
-    /**
-     * Compute a hash of the project state for cache invalidation
-     * Uses a simplified hash of key state that affects rendering
-     */
     computeProjectHash(): string {
-      const comp = this.project.compositions[this.activeCompositionId];
-      if (!comp) return '';
-
-      // Create a simplified fingerprint of the composition state
-      const fingerprint = {
-        layerCount: comp.layers.length,
-        layerIds: comp.layers.map(l => l.id).join(','),
-        modified: this.project.meta.modified,
-        settings: comp.settings,
-      };
-
-      // Simple hash function
-      const str = JSON.stringify(fingerprint);
-      let hash = 0;
-      for (let i = 0; i < str.length; i++) {
-        const char = str.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash = hash & hash; // Convert to 32-bit integer
-      }
-      return hash.toString(16);
+      return cacheActions.computeProjectHash(this);
     }
   }
 });

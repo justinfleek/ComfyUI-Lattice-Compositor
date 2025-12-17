@@ -42,6 +42,12 @@ import type { TargetParameter } from '@/services/audioReactiveMapping';
 import { engineLogger } from '@/utils/logger';
 import type { FrameState } from './MotionEngine';
 
+// Import 3D services for initialization
+import { materialSystem } from '@/services/materialSystem';
+import { svgExtrusionService } from '@/services/svgExtrusion';
+import { meshParticleManager } from '@/services/meshParticleManager';
+import { spriteSheetService } from '@/services/spriteSheet';
+
 /** Callback to get audio reactive values at a frame */
 export type AudioReactiveGetter = (frame: number) => Map<TargetParameter, number>;
 
@@ -395,6 +401,60 @@ export class WeylEngine {
   }
 
   /**
+   * Initialize all 3D services with WebGL renderer
+   * This enables:
+   * - Material system PMREM for environment map prefiltering
+   * - Environment map support in SceneManager
+   * Call this after engine construction for full 3D pipeline support
+   */
+  initialize3DServices(): void {
+    const renderer = this.renderer.getWebGLRenderer();
+
+    // Initialize material system for PMREM
+    materialSystem.initialize(renderer);
+
+    // Initialize environment map support
+    this.scene.initializeEnvironmentSupport(renderer);
+
+    // Log initialization
+    if (this.config.debug) {
+      engineLogger.debug('3D services initialized');
+    }
+  }
+
+  // ============================================================================
+  // 3D SERVICE ACCESS
+  // ============================================================================
+
+  /**
+   * Get the material system for PBR material management
+   */
+  getMaterialSystem() {
+    return materialSystem;
+  }
+
+  /**
+   * Get the SVG extrusion service for logo workflows
+   */
+  getSVGExtrusionService() {
+    return svgExtrusionService;
+  }
+
+  /**
+   * Get the mesh particle manager for custom particle shapes
+   */
+  getMeshParticleManager() {
+    return meshParticleManager;
+  }
+
+  /**
+   * Get the sprite sheet service for particle animations
+   */
+  getSpriteSheetService() {
+    return spriteSheetService;
+  }
+
+  /**
    * Get the current camera position (for particle systems, etc.)
    * Returns world-space position of the active camera
    */
@@ -571,6 +631,9 @@ export class WeylEngine {
     this.performance.beginFrame();
     this.emit('frameStart', { frame: this.state.currentFrame });
 
+    // Update orbit controls if enabled (for smooth damping)
+    this.camera.updateOrbitControls();
+
     this.renderer.render();
 
     this.emit('frameEnd', { frame: this.state.currentFrame });
@@ -671,6 +734,36 @@ export class WeylEngine {
    */
   getCameraController(): CameraController {
     return this.camera;
+  }
+
+  /**
+   * Enable 3D orbit controls for camera navigation
+   * Right-click = orbit, middle-click = pan, scroll = dolly
+   */
+  enableOrbitControls(): void {
+    const domElement = this.renderer.getDomElement();
+    this.camera.enableOrbitControls(domElement);
+  }
+
+  /**
+   * Disable 3D orbit controls
+   */
+  disableOrbitControls(): void {
+    this.camera.disableOrbitControls();
+  }
+
+  /**
+   * Reset camera to default viewing position
+   */
+  resetCameraToDefault(): void {
+    this.camera.resetToDefault();
+  }
+
+  /**
+   * Check if orbit controls are enabled
+   */
+  hasOrbitControls(): boolean {
+    return this.camera.hasOrbitControls();
   }
 
   /**
@@ -1091,6 +1184,120 @@ export class WeylEngine {
   }
 
   // ============================================================================
+  // ENVIRONMENT MAP (HDRI)
+  // ============================================================================
+
+  /**
+   * Initialize environment map support
+   * Must be called before loading environment maps
+   */
+  initializeEnvironmentSupport(): void {
+    this.scene.initializeEnvironmentSupport(this.renderer.getWebGLRenderer());
+  }
+
+  /**
+   * Load and set an environment map from URL
+   * Supports HDR, EXR, and standard image formats
+   * @param url - URL to the environment map file
+   * @param config - Optional environment configuration
+   */
+  async loadEnvironmentMap(
+    url: string,
+    config?: Partial<import('./core/SceneManager').EnvironmentMapConfig>
+  ): Promise<THREE.Texture> {
+    // Ensure environment support is initialized
+    this.initializeEnvironmentSupport();
+    return this.scene.loadEnvironmentMap(url, config);
+  }
+
+  /**
+   * Set environment map configuration
+   * @param config - Partial configuration to update
+   */
+  setEnvironmentConfig(
+    config: Partial<import('./core/SceneManager').EnvironmentMapConfig>
+  ): void {
+    this.scene.setEnvironmentConfig(config);
+  }
+
+  /**
+   * Get current environment map configuration
+   */
+  getEnvironmentConfig(): import('./core/SceneManager').EnvironmentMapConfig {
+    return this.scene.getEnvironmentConfig();
+  }
+
+  /**
+   * Enable or disable environment map
+   */
+  setEnvironmentEnabled(enabled: boolean): void {
+    this.scene.setEnvironmentEnabled(enabled);
+  }
+
+  /**
+   * Set environment map intensity
+   * @param intensity - Intensity multiplier (0-2 typical range)
+   */
+  setEnvironmentIntensity(intensity: number): void {
+    this.scene.setEnvironmentIntensity(intensity);
+  }
+
+  /**
+   * Set environment map rotation
+   * @param degrees - Y-axis rotation in degrees
+   */
+  setEnvironmentRotation(degrees: number): void {
+    this.scene.setEnvironmentRotation(degrees);
+  }
+
+  /**
+   * Set background blur amount for HDRI background
+   * @param blur - Blur amount (0-1)
+   */
+  setEnvironmentBackgroundBlur(blur: number): void {
+    this.scene.setBackgroundBlur(blur);
+  }
+
+  /**
+   * Toggle whether to use HDRI as scene background
+   */
+  setEnvironmentAsBackground(use: boolean): void {
+    this.scene.setUseAsBackground(use);
+  }
+
+  /**
+   * Get the current environment map texture
+   */
+  getEnvironmentMap(): THREE.Texture | null {
+    return this.scene.getEnvironmentMap();
+  }
+
+  // ============================================================================
+  // COMPOSITION GUIDES
+  // ============================================================================
+
+  /**
+   * Show/hide composition grid
+   */
+  setCompositionGridVisible(visible: boolean): void {
+    this.scene.setCompositionGridVisible(visible);
+  }
+
+  /**
+   * Show/hide dark overlay outside composition
+   */
+  setOutsideOverlayVisible(visible: boolean): void {
+    this.scene.setOutsideOverlayVisible(visible);
+  }
+
+  /**
+   * Show/hide composition bounds frame
+   */
+  setCompositionBoundsVisible(visible: boolean): void {
+    this.scene.setCompositionBoundsVisible(visible);
+  }
+
+  // ============================================================================
   // RAYCASTING
   // ============================================================================
 
@@ -1459,6 +1666,152 @@ export class WeylEngine {
   }
 
   // ============================================================================
+  // PRECOMP RENDER-TO-TEXTURE
+  // ============================================================================
+
+  /** Cache of layer managers for precomp compositions */
+  private precompLayerManagers: Map<string, LayerManager> = new Map();
+
+  /** Cache of scenes for precomp compositions */
+  private precompScenes: Map<string, SceneManager> = new Map();
+
+  /** Cache of last rendered frame per composition (for texture caching) */
+  private precompLastFrame: Map<string, number> = new Map();
+
+  /**
+   * Render a composition to a texture
+   * Used by PrecompLayer to render nested compositions
+   *
+   * @param compositionId - The composition ID to render
+   * @param layers - The layers in that composition
+   * @param settings - Composition settings (width, height, fps)
+   * @param frame - The frame to render
+   * @returns The rendered texture, or null if rendering fails
+   */
+  renderCompositionToTexture(
+    compositionId: string,
+    layers: Layer[],
+    settings: { width: number; height: number; fps: number },
+    frame: number
+  ): THREE.Texture | null {
+    this.assertNotDisposed();
+
+    try {
+      // Check if we already rendered this frame (texture caching)
+      const lastFrame = this.precompLastFrame.get(compositionId);
+      const target = this.renderer.getPrecompRenderTarget(
+        compositionId,
+        settings.width,
+        settings.height
+      );
+
+      // If same frame, return cached texture
+      if (lastFrame === frame) {
+        return target.texture;
+      }
+
+      // Get or create scene for this composition
+      let precompScene = this.precompScenes.get(compositionId);
+      if (!precompScene) {
+        precompScene = new SceneManager(null);
+        precompScene.setCompositionSize(settings.width, settings.height);
+        this.precompScenes.set(compositionId, precompScene);
+      }
+
+      // Get or create layer manager for this composition
+      let precompLayers = this.precompLayerManagers.get(compositionId);
+      if (!precompLayers) {
+        precompLayers = new LayerManager(precompScene, this.resources);
+        precompLayers.setRenderer(this.renderer.getWebGLRenderer());
+        precompLayers.setCompositionFPS(settings.fps);
+        precompLayers.setCamera(this.camera.camera);
+        this.precompLayerManagers.set(compositionId, precompLayers);
+      }
+
+      // Sync layers - add new, update existing, remove deleted
+      const currentLayerIds = new Set(precompLayers.getLayerIds());
+      const targetLayerIds = new Set(layers.map(l => l.id));
+
+      // Remove layers that are no longer in the composition
+      for (const id of currentLayerIds) {
+        if (!targetLayerIds.has(id)) {
+          precompLayers.remove(id);
+        }
+      }
+
+      // Add or update layers
+      for (const layerData of layers) {
+        if (currentLayerIds.has(layerData.id)) {
+          precompLayers.update(layerData.id, layerData);
+        } else {
+          precompLayers.create(layerData);
+        }
+      }
+
+      // Evaluate layers at the given frame
+      precompLayers.evaluateFrame(frame, this.audioReactiveGetter);
+
+      // Create a camera for this composition size
+      const precompCamera = new THREE.OrthographicCamera(
+        -settings.width / 2,
+        settings.width / 2,
+        settings.height / 2,
+        -settings.height / 2,
+        0.1,
+        10000
+      );
+      precompCamera.position.set(0, 0, 1000);
+      precompCamera.lookAt(0, 0, 0);
+
+      // Render to texture
+      const texture = this.renderer.renderSceneToTexture(
+        precompScene.scene,
+        precompCamera,
+        target
+      );
+
+      // Cache the frame number
+      this.precompLastFrame.set(compositionId, frame);
+
+      return texture;
+    } catch (error) {
+      engineLogger.error('Failed to render composition to texture:', compositionId, error);
+      return null;
+    }
+  }
+
+  /**
+   * Clear precomp cache for a specific composition
+   * Call when a composition is deleted or significantly changed
+   */
+  clearPrecompCache(compositionId: string): void {
+    const precompLayers = this.precompLayerManagers.get(compositionId);
+    if (precompLayers) {
+      precompLayers.dispose();
+      this.precompLayerManagers.delete(compositionId);
+    }
+
+    const precompScene = this.precompScenes.get(compositionId);
+    if (precompScene) {
+      precompScene.dispose();
+      this.precompScenes.delete(compositionId);
+    }
+
+    this.precompLastFrame.delete(compositionId);
+    this.renderer.disposePrecompTarget(compositionId);
+  }
+
+  /**
+   * Clear all precomp caches
+   */
+  clearAllPrecompCaches(): void {
+    for (const [id] of this.precompLayerManagers) {
+      this.clearPrecompCache(id);
+    }
+    this.renderer.disposeAllPrecompTargets();
+  }
+
+  // ============================================================================
   // DISPOSAL
   // ============================================================================
 
@@ -1472,6 +1825,9 @@ export class WeylEngine {
     }
 
     this.stopRenderLoop();
+
+    // Clear precomp caches
+    this.clearAllPrecompCaches();
 
     // Dispose in reverse order of initialization
     this.layers.dispose();

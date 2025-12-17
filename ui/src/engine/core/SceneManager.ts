@@ -8,6 +8,19 @@
  */
 
 import * as THREE from 'three';
+import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
+import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader.js';
+
+/** Environment map configuration */
+export interface EnvironmentMapConfig {
+  enabled: boolean;
+  url?: string;
+  intensity: number;
+  rotation: number;          // Y-axis rotation in degrees
+  backgroundBlur: number;    // 0-1, blur for background
+  useAsBackground: boolean;  // Show HDRI as scene background
+  toneMapping: boolean;      // Apply tone mapping
+}
 
 export class SceneManager {
   /** The main Three.js scene */
@@ -22,8 +35,34 @@ export class SceneManager {
   /** Group for debug helpers */
   public readonly debugGroup: THREE.Group;
 
+  /** Environment map texture */
+  private environmentMap: THREE.Texture | null = null;
+
+  /** Environment map configuration */
+  private envConfig: EnvironmentMapConfig = {
+    enabled: false,
+    intensity: 1,
+    rotation: 0,
+    backgroundBlur: 0,
+    useAsBackground: true,
+    toneMapping: true,
+  };
+
+  /** PMREM Generator for environment maps */
+  private pmremGenerator: THREE.PMREMGenerator | null = null;
+
+  /** HDRI loaders */
+  private rgbeLoader: RGBELoader | null = null;
+  private exrLoader: EXRLoader | null = null;
+
   /** Composition bounds frame */
   private compositionBounds: THREE.LineLoop | null = null;
+
+  /** Composition grid helper */
+  private compositionGrid: THREE.Group | null = null;
+
+  /** Dark overlay outside composition */
+  private outsideOverlay: THREE.Mesh | null = null;
 
   /** Composition dimensions */
   private compositionWidth: number = 1920;
@@ -285,6 +324,210 @@ export class SceneManager {
   }
 
   // ============================================================================
+  // ENVIRONMENT MAP (HDRI)
+  // ============================================================================
+
+  /**
+   * Initialize PMREM generator (requires WebGL renderer)
+   * Must be called before loading environment maps
+   */
+  initializeEnvironmentSupport(renderer: THREE.WebGLRenderer): void {
+    if (this.pmremGenerator) {
+      this.pmremGenerator.dispose();
+    }
+    this.pmremGenerator = new THREE.PMREMGenerator(renderer);
+    this.pmremGenerator.compileEquirectangularShader();
+  }
+
+  /**
+   * Load and set an environment map from URL (HDR, EXR, or standard image)
+   * @param url - URL to the environment map file
+   * @param config - Optional environment configuration
+   */
+  async loadEnvironmentMap(
+    url: string,
+    config?: Partial<EnvironmentMapConfig>
+  ): Promise<THREE.Texture> {
+    if (!this.pmremGenerator) {
+      throw new Error('Environment support not initialized. Call initializeEnvironmentSupport() first.');
+    }
+
+    // Update config
+    if (config) {
+      Object.assign(this.envConfig, config);
+    }
+    this.envConfig.url = url;
+    this.envConfig.enabled = true;
+
+    // Determine loader based on extension
+    const isHDR = url.toLowerCase().endsWith('.hdr');
+    const isEXR = url.toLowerCase().endsWith('.exr');
+
+    return new Promise((resolve, reject) => {
+      if (isHDR) {
+        if (!this.rgbeLoader) {
+          this.rgbeLoader = new RGBELoader();
+        }
+        this.rgbeLoader.load(
+          url,
+          (texture) => this.processEnvironmentTexture(texture, resolve),
+          undefined,
+          reject
+        );
+      } else if (isEXR) {
+        if (!this.exrLoader) {
+          this.exrLoader = new EXRLoader();
+        }
+        this.exrLoader.load(
+          url,
+          (texture) => this.processEnvironmentTexture(texture, resolve),
+          undefined,
+          reject
+        );
+      } else {
+        // Standard image format (jpg, png)
+        const loader = new THREE.TextureLoader();
+        loader.load(
+          url,
+          (texture) => {
+            texture.mapping = THREE.EquirectangularReflectionMapping;
+            this.processEnvironmentTexture(texture, resolve);
+          },
+          undefined,
+          reject
+        );
+      }
+    });
+  }
+
+  /**
+   * Process loaded environment texture
+   */
+  private processEnvironmentTexture(
+    texture: THREE.Texture,
+    resolve: (tex: THREE.Texture) => void
+  ): void {
+    // Generate PMREM from equirectangular texture
+    const envMap = this.pmremGenerator!.fromEquirectangular(texture).texture;
+    texture.dispose();
+
+    // Store and apply
+    this.setEnvironmentMapTexture(envMap);
+    resolve(envMap);
+  }
+
+  /**
+   * Set environment map from pre-loaded texture
+   */
+  setEnvironmentMapTexture(texture: THREE.Texture | null): void {
+    // Dispose old environment map
+    if (this.environmentMap && this.environmentMap !== texture) {
+      this.environmentMap.dispose();
+    }
+
+    this.environmentMap = texture;
+
+    if (texture && this.envConfig.enabled) {
+      // Set as scene environment for reflections
+      this.scene.environment = texture;
+
+      // Set as background if configured
+      if (this.envConfig.useAsBackground) {
+        this.scene.background = texture;
+        this.scene.backgroundIntensity = this.envConfig.intensity;
+        this.scene.backgroundBlurriness = this.envConfig.backgroundBlur;
+        this.scene.backgroundRotation.y = this.envConfig.rotation * (Math.PI / 180);
+      }
+
+      // Set environment intensity and rotation
+      this.scene.environmentIntensity = this.envConfig.intensity;
+      this.scene.environmentRotation.y = this.envConfig.rotation * (Math.PI / 180);
+    } else {
+      this.scene.environment = null;
+      if (this.envConfig.useAsBackground) {
+        this.scene.background = null;
+      }
+    }
+  }
+
+  /**
+   * Update environment map configuration
+   */
+  setEnvironmentConfig(config: Partial<EnvironmentMapConfig>): void {
+    Object.assign(this.envConfig, config);
+
+    // Apply changes
+    if (this.environmentMap) {
+      if (this.envConfig.enabled) {
+        this.scene.environment = this.environmentMap;
+        this.scene.environmentIntensity = this.envConfig.intensity;
+        this.scene.environmentRotation.y = this.envConfig.rotation * (Math.PI / 180);
+
+        if (this.envConfig.useAsBackground) {
+          this.scene.background = this.environmentMap;
+          this.scene.backgroundIntensity = this.envConfig.intensity;
+          this.scene.backgroundBlurriness = this.envConfig.backgroundBlur;
+          this.scene.backgroundRotation.y = this.envConfig.rotation * (Math.PI / 180);
+        }
+      } else {
+        this.scene.environment = null;
+        if (this.envConfig.useAsBackground) {
+          this.scene.background = null;
+        }
+      }
+    }
+  }
+
+  /**
+   * Get current environment map configuration
+   */
+  getEnvironmentConfig(): EnvironmentMapConfig {
+    return { ...this.envConfig };
+  }
+
+  /**
+   * Get current environment map texture
+   */
+  getEnvironmentMap(): THREE.Texture | null {
+    return this.environmentMap;
+  }
+
+  /**
+   * Enable or disable environment map
+   */
+  setEnvironmentEnabled(enabled: boolean): void {
+    this.setEnvironmentConfig({ enabled });
+  }
+
+  /**
+   * Set environment intensity
+   */
+  setEnvironmentIntensity(intensity: number): void {
+    this.setEnvironmentConfig({ intensity });
+  }
+
+  /**
+   * Set environment rotation (degrees)
+   */
+  setEnvironmentRotation(rotation: number): void {
+    this.setEnvironmentConfig({ rotation });
+  }
+
+  /**
+   * Set background blur amount (0-1)
+   */
+  setBackgroundBlur(blur: number): void {
+    this.setEnvironmentConfig({ backgroundBlur: blur });
+  }
+
+  /**
+   * Toggle using HDRI as background
+   */
+  setUseAsBackground(use: boolean): void {
+    this.setEnvironmentConfig({ useAsBackground: use });
+  }
+
+  // ============================================================================
   // COMPOSITION BOUNDS
   // ============================================================================
 
@@ -295,6 +538,8 @@ export class SceneManager {
     this.compositionWidth = width;
     this.compositionHeight = height;
     this.updateCompositionBounds();
+    this.updateCompositionGrid();
+    this.updateOutsideOverlay();
   }
 
   /**
@@ -345,6 +590,159 @@ export class SceneManager {
   setCompositionBoundsVisible(visible: boolean): void {
     if (this.compositionBounds) {
       this.compositionBounds.visible = visible;
+    }
+  }
+
+  /**
+   * Create or update composition grid
+   * Shows a grid inside the composition area for spatial reference
+   */
+  updateCompositionGrid(divisions: number = 10): void {
+    // Remove existing grid
+    if (this.compositionGrid) {
+      this.overlayGroup.remove(this.compositionGrid);
+      this.compositionGrid.traverse((obj) => {
+        if (obj instanceof THREE.Line) {
+          obj.geometry.dispose();
+          (obj.material as THREE.Material).dispose();
+        }
+      });
+    }
+
+    const w = this.compositionWidth;
+    const h = this.compositionHeight;
+    const gridGroup = new THREE.Group();
+    gridGroup.name = 'compositionGrid';
+
+    const material = new THREE.LineBasicMaterial({
+      color: 0x333333,
+      transparent: true,
+      opacity: 0.5,
+      depthTest: false,
+    });
+
+    // Vertical lines
+    const stepX = w / divisions;
+    for (let i = 0; i <= divisions; i++) {
+      const x = i * stepX;
+      const points = [
+        new THREE.Vector3(x, 0, -1),
+        new THREE.Vector3(x, -h, -1),
+      ];
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+      const line = new THREE.Line(geometry, material.clone());
+      gridGroup.add(line);
+    }
+
+    // Horizontal lines
+    const stepY = h / divisions;
+    for (let i = 0; i <= divisions; i++) {
+      const y = -i * stepY;
+      const points = [
+        new THREE.Vector3(0, y, -1),
+        new THREE.Vector3(w, y, -1),
+      ];
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+      const line = new THREE.Line(geometry, material.clone());
+      gridGroup.add(line);
+    }
+
+    // Center crosshair (brighter)
+    const centerMaterial = new THREE.LineBasicMaterial({
+      color: 0x555555,
+      transparent: true,
+      opacity: 0.7,
+      depthTest: false,
+    });
+
+    // Vertical center line
+    const vCenterPoints = [
+      new THREE.Vector3(w / 2, 0, -1),
+      new THREE.Vector3(w / 2, -h, -1),
+    ];
+    const vCenterGeom = new THREE.BufferGeometry().setFromPoints(vCenterPoints);
+    gridGroup.add(new THREE.Line(vCenterGeom, centerMaterial));
+
+    // Horizontal center line
+    const hCenterPoints = [
+      new THREE.Vector3(0, -h / 2, -1),
+      new THREE.Vector3(w, -h / 2, -1),
+    ];
+    const hCenterGeom = new THREE.BufferGeometry().setFromPoints(hCenterPoints);
+    gridGroup.add(new THREE.Line(hCenterGeom, centerMaterial.clone()));
+
+    gridGroup.renderOrder = 997;
+    this.compositionGrid = gridGroup;
+    this.overlayGroup.add(gridGroup);
+  }
+
+  /**
+   * Show/hide composition grid
+   */
+  setCompositionGridVisible(visible: boolean): void {
+    if (this.compositionGrid) {
+      this.compositionGrid.visible = visible;
+    }
+  }
+
+  /**
+   * Create dark overlay outside composition bounds
+   * Creates a large plane with a rectangular hole for the composition area
+   */
+  updateOutsideOverlay(): void {
+    // Remove existing overlay
+    if (this.outsideOverlay) {
+      this.overlayGroup.remove(this.outsideOverlay);
+      this.outsideOverlay.geometry.dispose();
+      (this.outsideOverlay.material as THREE.Material).dispose();
+    }
+
+    const w = this.compositionWidth;
+    const h = this.compositionHeight;
+
+    // Create a large plane with a hole using ShapeGeometry
+    const size = Math.max(w, h) * 10; // Large enough to cover viewport
+
+    // Outer shape (large rectangle)
+    const outer = new THREE.Shape();
+    outer.moveTo(-size, size);
+    outer.lineTo(size + w, size);
+    outer.lineTo(size + w, -size - h);
+    outer.lineTo(-size, -size - h);
+    outer.lineTo(-size, size);
+
+    // Inner hole (composition bounds) - wind in opposite direction
+    const hole = new THREE.Path();
+    hole.moveTo(0, 0);
+    hole.lineTo(0, -h);
+    hole.lineTo(w, -h);
+    hole.lineTo(w, 0);
+    hole.lineTo(0, 0);
+
+    outer.holes.push(hole);
+
+    const geometry = new THREE.ShapeGeometry(outer);
+    const material = new THREE.MeshBasicMaterial({
+      color: 0x000000,
+      transparent: true,
+      opacity: 0.6,
+      side: THREE.DoubleSide,
+      depthTest: false,
+    });
+
+    this.outsideOverlay = new THREE.Mesh(geometry, material);
+    this.outsideOverlay.name = 'outsideOverlay';
+    this.outsideOverlay.position.z = -2; // Behind composition but in front of far background
+    this.outsideOverlay.renderOrder = 996;
+    this.overlayGroup.add(this.outsideOverlay);
+  }
+
+  /**
+   * Show/hide outside overlay
+   */
+  setOutsideOverlayVisible(visible: boolean): void {
+    if (this.outsideOverlay) {
+      this.outsideOverlay.visible = visible;
     }
   }
 
@@ -437,6 +835,16 @@ export class SceneManager {
       const child = this.debugGroup.children[0];
       this.debugGroup.remove(child);
       this.disposeObject(child);
+    }
+
+    // Dispose environment map resources
+    if (this.environmentMap) {
+      this.environmentMap.dispose();
+      this.environmentMap = null;
+    }
+    if (this.pmremGenerator) {
+      this.pmremGenerator.dispose();
+      this.pmremGenerator = null;
     }
 
     // Clear scene

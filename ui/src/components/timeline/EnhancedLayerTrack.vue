@@ -123,6 +123,27 @@
         <button @click="deleteLayer" class="danger">Delete Layer</button>
       </div>
     </Teleport>
+
+    <!-- Layer Color Picker -->
+    <Teleport to="body">
+      <div
+        v-if="showColorPicker"
+        class="layer-color-picker"
+        :style="{ left: colorPickerX + 'px', top: colorPickerY + 'px' }"
+        @click.stop
+      >
+        <div class="color-grid">
+          <button
+            v-for="color in labelColors"
+            :key="color"
+            class="color-swatch"
+            :style="{ backgroundColor: color }"
+            :class="{ active: layer.labelColor === color }"
+            @click="setLabelColor(color)"
+          />
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -147,6 +168,31 @@ const renameInput = ref<HTMLInputElement | null>(null);
 const contextMenuVisible = ref(false);
 const contextMenuX = ref(0);
 const contextMenuY = ref(0);
+
+// Color picker state
+const showColorPicker = ref(false);
+const colorPickerX = ref(0);
+const colorPickerY = ref(0);
+
+// After Effects label colors
+const labelColors = [
+  '#999999', // None (gray)
+  '#e24b4b', // Red
+  '#f5c343', // Yellow
+  '#c8e04d', // Lime
+  '#4be08e', // Sea Green
+  '#4bcde0', // Aqua
+  '#5b8ef0', // Blue
+  '#9d70e8', // Purple
+  '#e070d0', // Pink
+  '#e0a070', // Peach
+  '#e07070', // Light Red
+  '#70e0a0', // Mint
+  '#7090e0', // Sky Blue
+  '#a070e0', // Violet
+  '#e07090', // Rose
+  '#90c8e0', // Pale Blue
+];
 
 const availableParents = computed(() => props.allLayers?.filter((l: any) => l.id !== props.layer.id) || []);
 
@@ -226,7 +272,21 @@ function setBlendMode(e: Event) { emit('updateLayer', props.layer.id, { blendMod
 function startDrag() { /* Drag logic */ }
 function toggleVis() { emit('updateLayer', props.layer.id, { visible: !props.layer.visible }); }
 function toggleLock() { emit('updateLayer', props.layer.id, { locked: !props.layer.locked }); }
-function toggleColorPicker() { /* Color logic */ }
+function toggleColorPicker(e: MouseEvent) {
+  const rect = (e.target as HTMLElement).getBoundingClientRect();
+  colorPickerX.value = rect.left;
+  colorPickerY.value = rect.bottom + 4;
+  showColorPicker.value = !showColorPicker.value;
+}
+
+function setLabelColor(color: string) {
+  emit('updateLayer', props.layer.id, { labelColor: color });
+  showColorPicker.value = false;
+}
+
+function closeColorPicker() {
+  showColorPicker.value = false;
+}
 
 // Reset transform to default values
 function resetTransform() {
@@ -319,10 +379,13 @@ function deleteLayer() {
   hideContextMenu();
 }
 
-// Close context menu on outside click
+// Close context menu and color picker on outside click
 function handleOutsideClick(e: MouseEvent) {
   if (contextMenuVisible.value) {
     hideContextMenu();
+  }
+  if (showColorPicker.value) {
+    closeColorPicker();
   }
 }
 
@@ -415,5 +478,41 @@ onUnmounted(() => {
   border: none;
   border-top: 1px solid #444;
   margin: 4px 0;
+}
+
+/* Layer Color Picker */
+.layer-color-picker {
+  position: fixed;
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  z-index: 9999;
+  padding: 8px;
+}
+
+.layer-color-picker .color-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 4px;
+}
+
+.layer-color-picker .color-swatch {
+  width: 20px;
+  height: 20px;
+  border: 1px solid rgba(0, 0, 0, 0.3);
+  border-radius: 2px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.layer-color-picker .color-swatch:hover {
+  transform: scale(1.15);
+  border-color: #fff;
+}
+
+.layer-color-picker .color-swatch.active {
+  border: 2px solid #fff;
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.5);
 }
 </style>

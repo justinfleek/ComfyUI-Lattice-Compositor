@@ -40,6 +40,8 @@ import { LightLayer } from '../layers/LightLayer';
 import { DepthflowLayer } from '../layers/DepthflowLayer';
 import { ProceduralMatteLayer } from '../layers/ProceduralMatteLayer';
 import { ShapeLayer } from '../layers/ShapeLayer';
+import { ModelLayer } from '../layers/ModelLayer';
+import { PointCloudLayer } from '../layers/PointCloudLayer';
 import type { TargetParameter } from '@/services/audioReactiveMapping';
 import type { SplineQueryResult, SplinePathProvider } from '@/services/particleSystem';
 import { layerLogger } from '@/utils/logger';
@@ -333,6 +335,12 @@ export class LayerManager {
 
       case 'shape':
         return new ShapeLayer(layerData);
+
+      case 'model':
+        return new ModelLayer(layerData);
+
+      case 'pointcloud':
+        return new PointCloudLayer(layerData);
 
       default:
         layerLogger.warn(`LayerManager: Unknown layer type: ${layerData.type}, creating NullLayer`);

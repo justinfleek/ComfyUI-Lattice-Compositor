@@ -53,6 +53,22 @@ export class ParticleLayer extends BaseLayer {
     renderTimeMs: 0,
   };
 
+  // ============================================================================
+  // EMITTER GIZMO VISUALIZATION
+  // ============================================================================
+
+  /** Emitter visualization icons */
+  private emitterGizmos: Map<string, THREE.Group> = new Map();
+
+  /** Force field visualization icons */
+  private forceFieldGizmos: Map<string, THREE.Group> = new Map();
+
+  /** Whether emitter gizmos are visible */
+  private showEmitterGizmos: boolean = true;
+
+  /** Whether force field gizmos are visible */
+  private showForceFieldGizmos: boolean = true;
+
   constructor(layerData: Layer) {
     super(layerData);
 
@@ -644,6 +660,422 @@ export class ParticleLayer extends BaseLayer {
 
   protected onDispose(): void {
     this.particleSystem.dispose();
+    this.disposeGizmos();
+  }
+
+  // ============================================================================
+  // EMITTER GIZMO VISUALIZATION
+  // ============================================================================
+
+  /**
+   * Create visual gizmos for all emitters and force fields
+   */
+  createGizmos(): void {
+    this.disposeGizmos();
+
+    const config = this.particleSystem.getConfig();
+
+    // Create emitter gizmos
+    for (const emitter of config.emitters) {
+      this.createEmitterGizmo(emitter);
+    }
+
+    // Create force field gizmos
+    for (const field of config.forceFields) {
+      this.createForceFieldGizmo(field);
+    }
+  }
+
+  /**
+   * Create a visual gizmo for an emitter
+   */
+  private createEmitterGizmo(emitter: EmitterConfig): void {
+    const gizmo = new THREE.Group();
+    gizmo.name = `emitter_gizmo_${emitter.id}`;
+
+    const size = 30;
+
+    // Create emitter icon based on shape type
+    switch (emitter.shape.type) {
+      case 'point': {
+        // Point emitter: small cone shape
+        const coneGeom = new THREE.ConeGeometry(8, 20, 8);
+        const coneMat = new THREE.MeshBasicMaterial({
+          color: 0x00ff88,
+          transparent: true,
+          opacity: 0.7,
+          wireframe: true,
+          depthTest: false,
+        });
+        const cone = new THREE.Mesh(coneGeom, coneMat);
+        cone.rotation.x = Math.PI;
+        gizmo.add(cone);
+
+        // Add center sphere
+        const sphereGeom = new THREE.SphereGeometry(5, 8, 8);
+        const sphereMat = new THREE.MeshBasicMaterial({
+          color: 0x00ff88,
+          transparent: true,
+          opacity: 0.9,
+          depthTest: false,
+        });
+        const sphere = new THREE.Mesh(sphereGeom, sphereMat);
+        gizmo.add(sphere);
+        break;
+      }
+
+      case 'circle': {
+        // Circle emitter: ring shape
+        const ringGeom = new THREE.RingGeometry(
+          (emitter.shape.radius ?? 50) * 0.8,
+          emitter.shape.radius ?? 50,
+          32
+        );
+        const ringMat = new THREE.MeshBasicMaterial({
+          color: 0x00ff88,
+          transparent: true,
+          opacity: 0.5,
+          side: THREE.DoubleSide,
+          depthTest: false,
+        });
+        const ring = new THREE.Mesh(ringGeom, ringMat);
+        gizmo.add(ring);
+        break;
+      }
+
+      case 'sphere': {
+        // Sphere emitter: wireframe sphere
+        const sphereGeom = new THREE.SphereGeometry(emitter.shape.radius ?? 50, 16, 16);
+        const sphereMat = new THREE.MeshBasicMaterial({
+          color: 0x00ff88,
+          transparent: true,
+          opacity: 0.3,
+          wireframe: true,
+          depthTest: false,
+        });
+        const sphere = new THREE.Mesh(sphereGeom, sphereMat);
+        gizmo.add(sphere);
+        break;
+      }
+
+      case 'box': {
+        // Box emitter: wireframe box
+        const boxGeom = new THREE.BoxGeometry(
+          emitter.shape.boxSize?.x ?? 100,
+          emitter.shape.boxSize?.y ?? 100,
+          emitter.shape.boxSize?.z ?? 100
+        );
+        const boxMat = new THREE.MeshBasicMaterial({
+          color: 0x00ff88,
+          transparent: true,
+          opacity: 0.3,
+          wireframe: true,
+          depthTest: false,
+        });
+        const box = new THREE.Mesh(boxGeom, boxMat);
+        gizmo.add(box);
+        break;
+      }
+
+      case 'cone': {
+        // Cone emitter: wireframe cone
+        const coneGeom = new THREE.ConeGeometry(
+          emitter.shape.coneRadius ?? 30,
+          emitter.shape.coneLength ?? 100,
+          16,
+          1,
+          true
+        );
+        const coneMat = new THREE.MeshBasicMaterial({
+          color: 0x00ff88,
+          transparent: true,
+          opacity: 0.3,
+          wireframe: true,
+          depthTest: false,
+        });
+        const cone = new THREE.Mesh(coneGeom, coneMat);
+        gizmo.add(cone);
+        break;
+      }
+
+      default: {
+        // Default: cross icon
+        const lineMat = new THREE.LineBasicMaterial({
+          color: 0x00ff88,
+          depthTest: false,
+        });
+
+        const hPoints = [new THREE.Vector3(-size, 0, 0), new THREE.Vector3(size, 0, 0)];
+        const vPoints = [new THREE.Vector3(0, -size, 0), new THREE.Vector3(0, size, 0)];
+
+        const hLine = new THREE.Line(
+          new THREE.BufferGeometry().setFromPoints(hPoints),
+          lineMat
+        );
+        const vLine = new THREE.Line(
+          new THREE.BufferGeometry().setFromPoints(vPoints),
+          lineMat.clone()
+        );
+
+        gizmo.add(hLine, vLine);
+      }
+    }
+
+    // Add direction arrow
+    const dir = emitter.emissionDirection;
+    if (dir) {
+      const arrowLength = 40;
+      const arrowGeom = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(0, 0, 0),
+        new THREE.Vector3(dir.x * arrowLength, -dir.y * arrowLength, dir.z * arrowLength),
+      ]);
+      const arrowMat = new THREE.LineBasicMaterial({
+        color: 0xffff00,
+        depthTest: false,
+      });
+      const arrow = new THREE.Line(arrowGeom, arrowMat);
+      gizmo.add(arrow);
+    }
+
+    // Position gizmo
+    const pos = emitter.position;
+    gizmo.position.set(pos.x, -pos.y, pos.z);
+
+    gizmo.visible = this.showEmitterGizmos;
+    gizmo.renderOrder = 997;
+
+    this.emitterGizmos.set(emitter.id, gizmo);
+    this.group.add(gizmo);
+  }
+
+  /**
+   * Create a visual gizmo for a force field
+   */
+  private createForceFieldGizmo(field: ForceFieldConfig): void {
+    const gizmo = new THREE.Group();
+    gizmo.name = `forcefield_gizmo_${field.id}`;
+
+    const radius = field.falloffEnd || 100;
+
+    switch (field.type) {
+      case 'gravity':
+      case 'wind': {
+        // Arrow pointing in force direction
+        const dir = field.type === 'wind' && field.windDirection
+          ? field.windDirection
+          : (field.direction ?? { x: 0, y: 1, z: 0 });
+
+        const arrowLength = 60;
+        const arrowPoints = [
+          new THREE.Vector3(0, 0, 0),
+          new THREE.Vector3(dir.x * arrowLength, -dir.y * arrowLength, dir.z * arrowLength),
+        ];
+        const arrowGeom = new THREE.BufferGeometry().setFromPoints(arrowPoints);
+        const arrowMat = new THREE.LineBasicMaterial({
+          color: field.type === 'gravity' ? 0xff8800 : 0x00aaff,
+          linewidth: 2,
+          depthTest: false,
+        });
+        const arrow = new THREE.Line(arrowGeom, arrowMat);
+        gizmo.add(arrow);
+
+        // Add arrowhead
+        const headGeom = new THREE.ConeGeometry(5, 15, 6);
+        const headMat = new THREE.MeshBasicMaterial({
+          color: field.type === 'gravity' ? 0xff8800 : 0x00aaff,
+          depthTest: false,
+        });
+        const head = new THREE.Mesh(headGeom, headMat);
+        head.position.set(
+          dir.x * arrowLength,
+          -dir.y * arrowLength,
+          dir.z * arrowLength
+        );
+        // Point arrowhead in direction
+        head.lookAt(0, 0, 0);
+        gizmo.add(head);
+        break;
+      }
+
+      case 'vortex': {
+        // Spiral icon
+        const spiralPoints: THREE.Vector3[] = [];
+        for (let t = 0; t < Math.PI * 4; t += 0.2) {
+          const r = (t / (Math.PI * 4)) * radius * 0.5;
+          spiralPoints.push(new THREE.Vector3(
+            Math.cos(t) * r,
+            Math.sin(t) * r,
+            t * 2
+          ));
+        }
+        const spiralGeom = new THREE.BufferGeometry().setFromPoints(spiralPoints);
+        const spiralMat = new THREE.LineBasicMaterial({
+          color: 0xff00ff,
+          depthTest: false,
+        });
+        const spiral = new THREE.Line(spiralGeom, spiralMat);
+        gizmo.add(spiral);
+        break;
+      }
+
+      case 'turbulence': {
+        // Wavy lines
+        const waveMat = new THREE.LineBasicMaterial({
+          color: 0xffaa00,
+          depthTest: false,
+        });
+
+        for (let i = 0; i < 3; i++) {
+          const wavePoints: THREE.Vector3[] = [];
+          for (let t = 0; t < Math.PI * 2; t += 0.3) {
+            wavePoints.push(new THREE.Vector3(
+              t * 10,
+              Math.sin(t * 3 + i) * 10,
+              (i - 1) * 15
+            ));
+          }
+          const waveGeom = new THREE.BufferGeometry().setFromPoints(wavePoints);
+          const wave = new THREE.Line(waveGeom, waveMat.clone());
+          wave.position.x = -30;
+          gizmo.add(wave);
+        }
+        break;
+      }
+
+      case 'point': {
+        // Attractor/repeller sphere with arrows
+        const sphereGeom = new THREE.SphereGeometry(15, 12, 12);
+        const sphereMat = new THREE.MeshBasicMaterial({
+          color: field.strength > 0 ? 0xff0000 : 0x0000ff,
+          transparent: true,
+          opacity: 0.5,
+          wireframe: true,
+          depthTest: false,
+        });
+        const sphere = new THREE.Mesh(sphereGeom, sphereMat);
+        gizmo.add(sphere);
+
+        // Add range indicator
+        const rangeGeom = new THREE.RingGeometry(radius * 0.9, radius, 32);
+        const rangeMat = new THREE.MeshBasicMaterial({
+          color: field.strength > 0 ? 0xff0000 : 0x0000ff,
+          transparent: true,
+          opacity: 0.2,
+          side: THREE.DoubleSide,
+          depthTest: false,
+        });
+        const range = new THREE.Mesh(rangeGeom, rangeMat);
+        gizmo.add(range);
+        break;
+      }
+
+      case 'drag': {
+        // Resistance symbol (parallel lines)
+        const lineMat = new THREE.LineBasicMaterial({
+          color: 0x888888,
+          depthTest: false,
+        });
+
+        for (let i = -2; i <= 2; i++) {
+          const linePoints = [
+            new THREE.Vector3(-20, i * 8, 0),
+            new THREE.Vector3(20, i * 8, 0),
+          ];
+          const lineGeom = new THREE.BufferGeometry().setFromPoints(linePoints);
+          const line = new THREE.Line(lineGeom, lineMat.clone());
+          gizmo.add(line);
+        }
+        break;
+      }
+    }
+
+    // Position gizmo
+    const pos = field.position;
+    gizmo.position.set(pos.x, -pos.y, pos.z);
+
+    gizmo.visible = this.showForceFieldGizmos;
+    gizmo.renderOrder = 996;
+
+    this.forceFieldGizmos.set(field.id, gizmo);
+    this.group.add(gizmo);
+  }
+
+  /**
+   * Update gizmo positions from current config
+   */
+  updateGizmoPositions(): void {
+    const config = this.particleSystem.getConfig();
+
+    for (const emitter of config.emitters) {
+      const gizmo = this.emitterGizmos.get(emitter.id);
+      if (gizmo) {
+        gizmo.position.set(emitter.position.x, -emitter.position.y, emitter.position.z);
+      }
+    }
+
+    for (const field of config.forceFields) {
+      const gizmo = this.forceFieldGizmos.get(field.id);
+      if (gizmo) {
+        gizmo.position.set(field.position.x, -field.position.y, field.position.z);
+      }
+    }
+  }
+
+  /**
+   * Set emitter gizmo visibility
+   */
+  setEmitterGizmosVisible(visible: boolean): void {
+    this.showEmitterGizmos = visible;
+    for (const gizmo of this.emitterGizmos.values()) {
+      gizmo.visible = visible;
+    }
+  }
+
+  /**
+   * Set force field gizmo visibility
+   */
+  setForceFieldGizmosVisible(visible: boolean): void {
+    this.showForceFieldGizmos = visible;
+    for (const gizmo of this.forceFieldGizmos.values()) {
+      gizmo.visible = visible;
+    }
+  }
+
+  /**
+   * Dispose all gizmos
+   */
+  private disposeGizmos(): void {
+    // Dispose emitter gizmos
+    for (const gizmo of this.emitterGizmos.values()) {
+      this.group.remove(gizmo);
+      gizmo.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          child.geometry.dispose();
+          (child.material as THREE.Material).dispose();
+        }
+        if (child instanceof THREE.Line) {
+          child.geometry.dispose();
+          (child.material as THREE.Material).dispose();
+        }
+      });
+    }
+    this.emitterGizmos.clear();
+
+    // Dispose force field gizmos
+    for (const gizmo of this.forceFieldGizmos.values()) {
+      this.group.remove(gizmo);
+      gizmo.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          child.geometry.dispose();
+          (child.material as THREE.Material).dispose();
+        }
+        if (child instanceof THREE.Line) {
+          child.geometry.dispose();
+          (child.material as THREE.Material).dispose();
+        }
+      });
+    }
+    this.forceFieldGizmos.clear();
   }
 
   // ============================================================================

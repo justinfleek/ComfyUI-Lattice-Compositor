@@ -3,11 +3,13 @@
  *
  * Controls the Three.js camera for 2.5D/3D compositing:
  * - Perspective camera for 3D depth
+ * - OrbitControls for 3D navigation (right-click orbit, middle-click pan)
  * - Animation support via keyframe evaluation
  * - Screen-space coordinate conversion
  */
 
 import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type { AnimatableProperty } from '@/types/project';
 import type { CameraState, CameraAnimationProps } from '../types';
 import { KeyframeEvaluator } from '../animation/KeyframeEvaluator';
@@ -16,12 +18,20 @@ export class CameraController {
   /** The main camera */
   public readonly camera: THREE.PerspectiveCamera;
 
+  /** OrbitControls for 3D navigation */
+  public orbitControls: OrbitControls | null = null;
+
   /** Keyframe evaluator for animations */
   private readonly evaluator: KeyframeEvaluator;
 
   /** Composition dimensions */
   private width: number;
   private height: number;
+
+  /** Default camera state for reset */
+  private defaultPosition: THREE.Vector3;
+  private defaultTarget: THREE.Vector3;
+  private defaultFov: number = 50;
 
   /** Animation properties */
   private positionProp?: AnimatableProperty<{ x: number; y: number; z: number }>;
@@ -38,10 +48,10 @@ export class CameraController {
 
     // Create perspective camera
     this.camera = new THREE.PerspectiveCamera(
-      50,              // Field of view
-      width / height,  // Aspect ratio
-      0.1,             // Near plane
-      10000            // Far plane
+      this.defaultFov,  // Field of view
+      width / height,   // Aspect ratio
+      0.1,              // Near plane
+      10000             // Far plane
     );
 
     // Default camera position: centered on composition, looking at center
@@ -49,11 +59,114 @@ export class CameraController {
     const fovRad = THREE.MathUtils.degToRad(this.camera.fov);
     const distance = (height / 2) / Math.tan(fovRad / 2);
 
-    this.camera.position.set(width / 2, -height / 2, distance);
-    this.target = new THREE.Vector3(width / 2, -height / 2, 0);
+    // Store default position for reset
+    this.defaultPosition = new THREE.Vector3(width / 2, -height / 2, distance);
+    this.defaultTarget = new THREE.Vector3(width / 2, -height / 2, 0);
+
+    this.camera.position.copy(this.defaultPosition);
+    this.target = this.defaultTarget.clone();
     this.camera.lookAt(this.target);
 
     this.camera.updateProjectionMatrix();
+  }
+
+  // ============================================================================
+  // ORBIT CONTROLS (3D Navigation)
+  // ============================================================================
+
+  /**
+   * Enable orbit controls for 3D navigation
+   * @param domElement The canvas element to attach controls to
+   */
+  enableOrbitControls(domElement: HTMLCanvasElement): void {
+    if (this.orbitControls) {
+      this.orbitControls.dispose();
+    }
+
+    this.orbitControls = new OrbitControls(this.camera, domElement);
+
+    // Configure controls for Cinema 4D-like behavior
+    // Right mouse = orbit, Middle mouse = pan, Scroll = dolly
+    this.orbitControls.mouseButtons = {
+      LEFT: undefined as any,  // Don't use left mouse (reserved for selection/tools)
+      MIDDLE: THREE.MOUSE.PAN,
+      RIGHT: THREE.MOUSE.ROTATE,
+    };
+
+    // Set orbit target to composition center
+    this.orbitControls.target.copy(this.target);
+
+    // Enable damping for smooth movement
+    this.orbitControls.enableDamping = true;
+    this.orbitControls.dampingFactor = 0.1;
+
+    // Zoom settings
+    this.orbitControls.enableZoom = true;
+    this.orbitControls.zoomSpeed = 1.0;
+    this.orbitControls.minDistance = 10;
+    this.orbitControls.maxDistance = 50000;
+
+    // Pan settings
+    this.orbitControls.enablePan = true;
+    this.orbitControls.panSpeed = 1.0;
+    this.orbitControls.screenSpacePanning = true;
+
+    // Rotation settings
+    this.orbitControls.enableRotate = true;
+    this.orbitControls.rotateSpeed = 0.5;
+
+    // Don't auto-rotate
+    this.orbitControls.autoRotate = false;
+
+    console.log('[CameraController] Orbit controls enabled');
+  }
+
+  /**
+   * Disable orbit controls
+   */
+  disableOrbitControls(): void {
+    if (this.orbitControls) {
+      this.orbitControls.dispose();
+      this.orbitControls = null;
+    }
+  }
+
+  /**
+   * Update orbit controls (call in animation loop)
+   */
+  updateOrbitControls(): void {
+    if (this.orbitControls) {
+      this.orbitControls.update();
+      // Sync target from orbit controls
+      this.target.copy(this.orbitControls.target);
+    }
+  }
+
+  /**
+   * Reset camera to default viewing position
+   * Perfect focal length to see full composition
+   */
+  resetToDefault(): void {
+    this.camera.position.copy(this.defaultPosition);
+    this.target.copy(this.defaultTarget);
+    this.camera.fov = this.defaultFov;
+
+    if (this.orbitControls) {
+      this.orbitControls.target.copy(this.defaultTarget);
+      this.orbitControls.update();
+    }
+
+    this.camera.lookAt(this.target);
+    this.camera.updateProjectionMatrix();
+
+    console.log('[CameraController] Camera reset to default position');
+  }
+
+  /**
+   * Check if orbit controls are enabled
+   */
+  hasOrbitControls(): boolean {
+    return this.orbitControls !== null;
   }
 
   // ============================================================================

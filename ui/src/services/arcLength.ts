@@ -4,10 +4,7 @@
  * Bezier.js does NOT have a built-in arc-length to t conversion.
  * This class builds a lookup table for efficient distance -> parameter mapping.
  */
-import * as BezierModule from 'bezier-js';
-import type BezierType from 'bezier-js';
-const Bezier = (BezierModule as any).default || BezierModule;
-type Bezier = BezierType;
+import { Bezier } from 'bezier-js';
 
 interface ArcLengthEntry {
   t: number;

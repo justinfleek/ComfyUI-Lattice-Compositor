@@ -95,14 +95,42 @@ export interface WorkflowOutput {
 // ASSET REFERENCES
 // ============================================================
 
+/** Asset types supported by the compositor */
+export type AssetType =
+  | 'depth_map'     // Depth map image
+  | 'image'         // Standard image (PNG, JPG, WebP)
+  | 'video'         // Video file (MP4, WebM)
+  | 'audio'         // Audio file (MP3, WAV, OGG)
+  | 'model'         // 3D model (GLTF, OBJ, FBX, USD)
+  | 'pointcloud'    // Point cloud (PLY, PCD, LAS)
+  | 'texture'       // PBR texture map
+  | 'material'      // Material definition (with texture refs)
+  | 'hdri'          // Environment map (HDR, EXR)
+  | 'svg'           // Vector graphic (for extrusion)
+  | 'spritesheet'   // Sprite sheet for particles
+  | 'lut';          // Color lookup table
+
+/** PBR texture map types */
+export type TextureMapType =
+  | 'albedo'        // Base color / diffuse
+  | 'normal'        // Normal map
+  | 'roughness'     // Roughness map
+  | 'metalness'     // Metalness map
+  | 'ao'            // Ambient occlusion
+  | 'emissive'      // Emissive map
+  | 'height'        // Height/displacement map
+  | 'opacity'       // Alpha/opacity map
+  | 'specular';     // Specular map (for non-PBR workflows)
+
 export interface AssetReference {
   id: string;
-  type: 'depth_map' | 'image' | 'video' | 'audio';
+  type: AssetType;
   source: 'comfyui_node' | 'file' | 'generated' | 'url';
   nodeId?: string;
   width: number;
   height: number;
   data?: string;      // Base64 or URL
+  filename?: string;  // Original filename
 
   // Video/Audio specific metadata
   frameCount?: number;    // Total frames in video
@@ -111,6 +139,47 @@ export interface AssetReference {
   hasAudio?: boolean;     // Video has audio track
   audioChannels?: number; // 1=mono, 2=stereo
   sampleRate?: number;    // Audio sample rate
+
+  // 3D Model metadata
+  modelFormat?: ModelFormat;
+  modelBoundingBox?: ModelBoundingBox;
+  modelAnimations?: string[];   // Animation clip names
+  modelMeshCount?: number;
+  modelVertexCount?: number;
+
+  // Point cloud metadata
+  pointCloudFormat?: PointCloudFormat;
+  pointCount?: number;
+
+  // Texture metadata
+  textureMapType?: TextureMapType;
+  textureColorSpace?: 'srgb' | 'linear';
+
+  // Material definition (references other texture assets)
+  materialMaps?: {
+    albedo?: string;      // Asset ID for albedo texture
+    normal?: string;      // Asset ID for normal map
+    roughness?: string;   // Asset ID for roughness map
+    metalness?: string;   // Asset ID for metalness map
+    ao?: string;          // Asset ID for AO map
+    emissive?: string;    // Asset ID for emissive map
+    height?: string;      // Asset ID for height map
+    opacity?: string;     // Asset ID for opacity map
+  };
+
+  // HDRI metadata
+  hdriExposure?: number;
+  hdriRotation?: number;
+
+  // SVG metadata (for extrusion)
+  svgPaths?: number;      // Number of paths in SVG
+  svgViewBox?: { x: number; y: number; width: number; height: number };
+
+  // Sprite sheet metadata
+  spriteColumns?: number;
+  spriteRows?: number;
+  spriteCount?: number;
+  spriteFrameRate?: number;
 }
 
 // ============================================================
@@ -148,7 +217,7 @@ export interface Layer {
 
   properties: AnimatableProperty<any>[];
   effects: EffectInstance[];  // Effect stack - processed top to bottom
-  data: SplineData | TextData | ParticleData | ParticleLayerData | DepthflowLayerData | GeneratedMapData | CameraLayerData | ImageLayerData | VideoData | PrecompData | ProceduralMatteData | ShapeLayerData | null;
+  data: SplineData | TextData | ParticleData | ParticleLayerData | DepthflowLayerData | GeneratedMapData | CameraLayerData | ImageLayerData | VideoData | PrecompData | ProceduralMatteData | ShapeLayerData | ModelLayerData | PointCloudLayerData | null;
 }
 
 export type LayerType =
@@ -170,7 +239,9 @@ export type LayerType =
   | 'null'       // Null object
   | 'group'      // Layer group
   | 'precomp'    // Pre-composition (nested composition)
-  | 'matte';     // Procedural matte (animated patterns for track mattes)
+  | 'matte'      // Procedural matte (animated patterns for track mattes)
+  | 'model'      // 3D model (GLTF, OBJ, FBX, USD)
+  | 'pointcloud'; // Point cloud (PLY, PCD, LAS)
 
 // ============================================================
 // MOTION BLUR SETTINGS
@@ -223,6 +294,8 @@ export type LayerDataMap = {
   precomp: PrecompData;
   matte: ProceduralMatteData;
   shape: ShapeLayerData;
+  model: ModelLayerData;
+  pointcloud: PointCloudLayerData;
   // Layers with no special data
   depth: null;
   normal: null;
@@ -999,6 +1072,239 @@ export interface DepthflowConfig {
   swingFrequency: number;
   edgeDilation: number;
   inpaintEdges: boolean;
+}
+
+// ============================================================
+// 3D MODEL LAYER DATA - GLTF, OBJ, FBX, USD Support
+// ============================================================
+
+/** Supported 3D model formats */
+export type ModelFormat = 'gltf' | 'glb' | 'obj' | 'fbx' | 'usd' | 'usda' | 'usdc' | 'usdz' | 'dae';
+
+/** Model material override options */
+export interface ModelMaterialOverride {
+  /** Override all materials with a single color */
+  colorOverride?: string;
+  /** Override opacity (0-1) */
+  opacityOverride?: number;
+  /** Use wireframe rendering */
+  wireframe?: boolean;
+  /** Wireframe color */
+  wireframeColor?: string;
+  /** Use flat shading */
+  flatShading?: boolean;
+  /** Override metalness (0-1) */
+  metalness?: number;
+  /** Override roughness (0-1) */
+  roughness?: number;
+  /** Emissive color */
+  emissive?: string;
+  /** Emissive intensity */
+  emissiveIntensity?: number;
+  /** Use depth material (for depth maps) */
+  useDepthMaterial?: boolean;
+  /** Use normal material (for normal maps) */
+  useNormalMaterial?: boolean;
+}
+
+/** Model animation clip info */
+export interface ModelAnimationClip {
+  name: string;
+  duration: number;  // In seconds
+  frameCount: number;
+}
+
+/** Model bounding box info */
+export interface ModelBoundingBox {
+  min: { x: number; y: number; z: number };
+  max: { x: number; y: number; z: number };
+  center: { x: number; y: number; z: number };
+  size: { x: number; y: number; z: number };
+}
+
+/** 3D Model layer data */
+export interface ModelLayerData {
+  /** Asset ID reference to the model file */
+  assetId: string;
+
+  /** Original format of the model */
+  format: ModelFormat;
+
+  /** Model scale (uniform or per-axis) */
+  scale: AnimatableProperty<number> | { x: AnimatableProperty<number>; y: AnimatableProperty<number>; z: AnimatableProperty<number> };
+
+  /** Use uniform scale */
+  uniformScale: boolean;
+
+  /** Material overrides */
+  materialOverride?: ModelMaterialOverride;
+
+  /** Animation settings */
+  animation?: {
+    /** Available animation clips in the model */
+    clips: ModelAnimationClip[];
+    /** Currently active clip name */
+    activeClip?: string;
+    /** Animation time (can be keyframed for scrubbing) */
+    time: AnimatableProperty<number>;
+    /** Playback speed multiplier */
+    speed: number;
+    /** Loop animation */
+    loop: boolean;
+    /** Auto-play animation */
+    autoPlay: boolean;
+  };
+
+  /** Bounding box (calculated after load) */
+  boundingBox?: ModelBoundingBox;
+
+  /** Cast shadows */
+  castShadow: boolean;
+
+  /** Receive shadows */
+  receiveShadow: boolean;
+
+  /** Frustum culling */
+  frustumCulled: boolean;
+
+  /** Render order (for transparency sorting) */
+  renderOrder: number;
+
+  /** Show bounding box wireframe in editor */
+  showBoundingBox: boolean;
+
+  /** Show skeleton/bones for skinned meshes */
+  showSkeleton: boolean;
+
+  /** Environment map intensity (0-1) */
+  envMapIntensity: number;
+
+  /** LOD (Level of Detail) settings */
+  lod?: {
+    enabled: boolean;
+    /** Distance thresholds for LOD levels */
+    distances: number[];
+    /** Asset IDs for lower-detail versions */
+    lodAssetIds: string[];
+  };
+}
+
+// ============================================================
+// POINT CLOUD LAYER DATA - PLY, PCD, LAS Support
+// ============================================================
+
+/** Supported point cloud formats */
+export type PointCloudFormat = 'ply' | 'pcd' | 'las' | 'laz' | 'xyz' | 'pts';
+
+/** Point cloud coloring mode */
+export type PointCloudColorMode =
+  | 'rgb'           // Use embedded RGB colors
+  | 'intensity'     // Color by intensity value
+  | 'height'        // Color by Z position (height map)
+  | 'depth'         // Color by distance from camera
+  | 'normal'        // Color by surface normal
+  | 'classification' // Color by point classification (LAS)
+  | 'uniform';      // Single uniform color
+
+/** Point cloud rendering mode */
+export type PointCloudRenderMode =
+  | 'points'        // Standard GL_POINTS
+  | 'circles'       // Screen-space circles (anti-aliased)
+  | 'squares'       // Screen-space squares
+  | 'splats';       // Gaussian splats (3DGS-style)
+
+/** Point cloud layer data */
+export interface PointCloudLayerData {
+  /** Asset ID reference to the point cloud file */
+  assetId: string;
+
+  /** Original format */
+  format: PointCloudFormat;
+
+  /** Total point count (from file) */
+  pointCount: number;
+
+  /** Point size (in world units or pixels depending on sizeAttenuation) */
+  pointSize: AnimatableProperty<number>;
+
+  /** Size attenuation (points get smaller with distance) */
+  sizeAttenuation: boolean;
+
+  /** Minimum point size (pixels) */
+  minPointSize: number;
+
+  /** Maximum point size (pixels) */
+  maxPointSize: number;
+
+  /** Coloring mode */
+  colorMode: PointCloudColorMode;
+
+  /** Uniform color (when colorMode = 'uniform') */
+  uniformColor: string;
+
+  /** Color gradient for height/depth/intensity modes */
+  colorGradient?: {
+    stops: Array<{ position: number; color: string }>;
+  };
+
+  /** Render mode */
+  renderMode: PointCloudRenderMode;
+
+  /** Point opacity (0-1) */
+  opacity: AnimatableProperty<number>;
+
+  /** Enable depth testing */
+  depthTest: boolean;
+
+  /** Write to depth buffer */
+  depthWrite: boolean;
+
+  /** Bounding box */
+  boundingBox?: ModelBoundingBox;
+
+  /** Show bounding box wireframe */
+  showBoundingBox: boolean;
+
+  /** Level of detail settings */
+  lod?: {
+    enabled: boolean;
+    /** Max points to render at each LOD level */
+    maxPoints: number[];
+    /** Distance thresholds */
+    distances: number[];
+  };
+
+  /** Octree acceleration (for large point clouds) */
+  octree?: {
+    enabled: boolean;
+    /** Max depth of octree */
+    maxDepth: number;
+    /** Points per node before splitting */
+    pointsPerNode: number;
+  };
+
+  /** Point budget (max points to render per frame) */
+  pointBudget: number;
+
+  /** EDL (Eye-Dome Lighting) for better depth perception */
+  edl?: {
+    enabled: boolean;
+    strength: number;
+    radius: number;
+  };
+
+  /** Clipping planes */
+  clipPlanes?: Array<{
+    normal: { x: number; y: number; z: number };
+    constant: number;
+    enabled: boolean;
+  }>;
+
+  /** Classification filter (for LAS files) */
+  classificationFilter?: number[];
+
+  /** Intensity range filter */
+  intensityRange?: { min: number; max: number };
 }
 
 // ============================================================

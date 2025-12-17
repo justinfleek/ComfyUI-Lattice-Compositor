@@ -103,6 +103,28 @@ export abstract class BaseLayer implements LayerInstance {
   /** Preserve transparency - only paint on existing pixels */
   protected preserveTransparency: boolean = false;
 
+  // ============================================================================
+  // MOTION PATH VISUALIZATION
+  // ============================================================================
+
+  /** Motion path line visualization */
+  protected motionPath: THREE.Line | null = null;
+
+  /** Motion path points (frame positions) */
+  protected motionPathPoints: THREE.Vector3[] = [];
+
+  /** Whether motion path is visible */
+  protected showMotionPath: boolean = false;
+
+  /** Motion path keyframe markers */
+  protected motionPathMarkers: THREE.Group | null = null;
+
+  /** 3D axis gizmo at anchor point */
+  protected axisGizmo: THREE.Group | null = null;
+
+  /** Whether 3D axis gizmo is visible */
+  protected showAxisGizmo: boolean = false;
+
   constructor(layerData: Layer) {
     this.id = layerData.id;
     this.type = layerData.type;
@@ -1026,6 +1048,296 @@ export abstract class BaseLayer implements LayerInstance {
   }
 
   // ============================================================================
+  // MOTION PATH VISUALIZATION
+  // ============================================================================
+
+  /**
+   * Compute motion path from position keyframes
+   * Samples position at each frame from inPoint to outPoint
+   */
+  computeMotionPath(startFrame?: number, endFrame?: number): void {
+    const start = startFrame ?? this.inPoint;
+    const end = endFrame ?? this.outPoint;
+
+    this.motionPathPoints = [];
+
+    // Sample position at each frame
+    for (let frame = start; frame <= end; frame++) {
+      const pos = this.evaluator.evaluate(this.transform.position, frame);
+      // Convert to Three.js coordinates (Y is flipped)
+      this.motionPathPoints.push(new THREE.Vector3(pos.x, -pos.y, pos.z ?? 0));
+    }
+
+    // Rebuild the path visualization
+    this.rebuildMotionPath();
+  }
+
+  /**
+   * Rebuild the motion path line from computed points
+   */
+  private rebuildMotionPath(): void {
+    // Dispose existing path
+    if (this.motionPath) {
+      this.group.remove(this.motionPath);
+      this.motionPath.geometry.dispose();
+      (this.motionPath.material as THREE.Material).dispose();
+      this.motionPath = null;
+    }
+
+    // Dispose existing markers
+    if (this.motionPathMarkers) {
+      this.group.remove(this.motionPathMarkers);
+      this.motionPathMarkers.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          child.geometry.dispose();
+          (child.material as THREE.Material).dispose();
+        }
+      });
+      this.motionPathMarkers = null;
+    }
+
+    if (this.motionPathPoints.length < 2) return;
+
+    // Create smooth curve through points
+    const curve = new THREE.CatmullRomCurve3(this.motionPathPoints);
+    const curvePoints = curve.getPoints(this.motionPathPoints.length * 10);
+
+    // Create line geometry
+    const geometry = new THREE.BufferGeometry().setFromPoints(curvePoints);
+    const material = new THREE.LineBasicMaterial({
+      color: 0x4a90d9,  // Blue motion path
+      linewidth: 2,
+      transparent: true,
+      opacity: 0.8,
+      depthTest: false,
+    });
+
+    this.motionPath = new THREE.Line(geometry, material);
+    this.motionPath.name = `motion_path_${this.id}`;
+    this.motionPath.renderOrder = 998;
+    this.motionPath.visible = this.showMotionPath;
+
+    // Don't add to group - add to parent so it doesn't move with layer
+    // Instead, position at world origin
+    this.motionPath.matrixAutoUpdate = false;
+    this.motionPath.matrix.identity();
+
+    this.group.add(this.motionPath);
+
+    // Create keyframe markers
+    this.createMotionPathMarkers();
+  }
+
+  /**
+   * Create markers at keyframe positions on the motion path
+   */
+  private createMotionPathMarkers(): void {
+    this.motionPathMarkers = new THREE.Group();
+    this.motionPathMarkers.name = `motion_path_markers_${this.id}`;
+    this.motionPathMarkers.renderOrder = 999;
+
+    const positionKeyframes = this.transform.position.keyframes;
+    if (!positionKeyframes || positionKeyframes.length === 0) return;
+
+    // Create a small diamond shape for each keyframe
+    const markerGeometry = new THREE.OctahedronGeometry(5, 0);
+    const markerMaterial = new THREE.MeshBasicMaterial({
+      color: 0xffcc00,  // Yellow keyframe markers
+      transparent: true,
+      opacity: 0.9,
+      depthTest: false,
+    });
+
+    for (const kf of positionKeyframes) {
+      const pos = kf.value;
+      const marker = new THREE.Mesh(markerGeometry.clone(), markerMaterial.clone());
+      marker.position.set(pos.x, -pos.y, pos.z ?? 0);
+      marker.userData.frame = kf.frame;
+      this.motionPathMarkers.add(marker);
+    }
+
+    this.motionPathMarkers.visible = this.showMotionPath;
+    this.group.add(this.motionPathMarkers);
+  }
+
+  /**
+   * Set motion path visibility
+   */
+  setMotionPathVisible(visible: boolean): void {
+    this.showMotionPath = visible;
+
+    if (visible && this.motionPathPoints.length === 0) {
+      // Compute path on first show
+      this.computeMotionPath();
+    }
+
+    if (this.motionPath) {
+      this.motionPath.visible = visible;
+    }
+    if (this.motionPathMarkers) {
+      this.motionPathMarkers.visible = visible;
+    }
+  }
+
+  /**
+   * Check if motion path is visible
+   */
+  isMotionPathVisible(): boolean {
+    return this.showMotionPath;
+  }
+
+  /**
+   * Check if layer has position animation
+   */
+  hasPositionAnimation(): boolean {
+    return (this.transform.position.keyframes?.length ?? 0) > 0;
+  }
+
+  // ============================================================================
+  // 3D AXIS GIZMO
+  // ============================================================================
+
+  /**
+   * Create 3D axis gizmo at anchor point
+   */
+  createAxisGizmo(size: number = 50): void {
+    // Dispose existing gizmo
+    if (this.axisGizmo) {
+      this.group.remove(this.axisGizmo);
+      this.axisGizmo.traverse((child) => {
+        if (child instanceof THREE.Line) {
+          child.geometry.dispose();
+          (child.material as THREE.Material).dispose();
+        }
+      });
+      this.axisGizmo = null;
+    }
+
+    this.axisGizmo = new THREE.Group();
+    this.axisGizmo.name = `axis_gizmo_${this.id}`;
+    this.axisGizmo.renderOrder = 1000;
+
+    // X axis (Red)
+    const xGeom = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(size, 0, 0),
+    ]);
+    const xMat = new THREE.LineBasicMaterial({
+      color: 0xff0000,
+      linewidth: 2,
+      depthTest: false,
+    });
+    const xLine = new THREE.Line(xGeom, xMat);
+    this.axisGizmo.add(xLine);
+
+    // Y axis (Green)
+    const yGeom = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(0, size, 0),
+    ]);
+    const yMat = new THREE.LineBasicMaterial({
+      color: 0x00ff00,
+      linewidth: 2,
+      depthTest: false,
+    });
+    const yLine = new THREE.Line(yGeom, yMat);
+    this.axisGizmo.add(yLine);
+
+    // Z axis (Blue) - only for 3D layers
+    if (this.threeD) {
+      const zGeom = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(0, 0, 0),
+        new THREE.Vector3(0, 0, size),
+      ]);
+      const zMat = new THREE.LineBasicMaterial({
+        color: 0x0088ff,
+        linewidth: 2,
+        depthTest: false,
+      });
+      const zLine = new THREE.Line(zGeom, zMat);
+      this.axisGizmo.add(zLine);
+    }
+
+    // Add axis labels
+    this.addAxisLabels(size);
+
+    // Position at anchor point
+    const anchor = this.transform.anchorPoint.value;
+    this.axisGizmo.position.set(-anchor.x, anchor.y, -(anchor.z ?? 0));
+
+    this.axisGizmo.visible = this.showAxisGizmo;
+    this.group.add(this.axisGizmo);
+  }
+
+  /**
+   * Add axis labels (X, Y, Z)
+   */
+  private addAxisLabels(size: number): void {
+    if (!this.axisGizmo) return;
+
+    // Create small spheres at axis ends as labels
+    const sphereGeom = new THREE.SphereGeometry(3, 8, 8);
+
+    // X label (red sphere)
+    const xSphere = new THREE.Mesh(
+      sphereGeom.clone(),
+      new THREE.MeshBasicMaterial({ color: 0xff0000, depthTest: false })
+    );
+    xSphere.position.set(size + 5, 0, 0);
+    this.axisGizmo.add(xSphere);
+
+    // Y label (green sphere)
+    const ySphere = new THREE.Mesh(
+      sphereGeom.clone(),
+      new THREE.MeshBasicMaterial({ color: 0x00ff00, depthTest: false })
+    );
+    ySphere.position.set(0, size + 5, 0);
+    this.axisGizmo.add(ySphere);
+
+    // Z label (blue sphere) - only for 3D layers
+    if (this.threeD) {
+      const zSphere = new THREE.Mesh(
+        sphereGeom.clone(),
+        new THREE.MeshBasicMaterial({ color: 0x0088ff, depthTest: false })
+      );
+      zSphere.position.set(0, 0, size + 5);
+      this.axisGizmo.add(zSphere);
+    }
+  }
+
+  /**
+   * Set axis gizmo visibility
+   */
+  setAxisGizmoVisible(visible: boolean): void {
+    this.showAxisGizmo = visible;
+
+    if (visible && !this.axisGizmo) {
+      this.createAxisGizmo();
+    }
+
+    if (this.axisGizmo) {
+      this.axisGizmo.visible = visible;
+    }
+  }
+
+  /**
+   * Check if axis gizmo is visible
+   */
+  isAxisGizmoVisible(): boolean {
+    return this.showAxisGizmo;
+  }
+
+  /**
+   * Update axis gizmo position to match anchor point
+   */
+  updateAxisGizmoPosition(): void {
+    if (!this.axisGizmo) return;
+
+    const anchor = this.transform.anchorPoint.value;
+    this.axisGizmo.position.set(-anchor.x, anchor.y, -(anchor.z ?? 0));
+  }
+
+  // ============================================================================
   // BOUNDS
   // ============================================================================
 
@@ -1056,6 +1368,39 @@ export abstract class BaseLayer implements LayerInstance {
    * Dispose layer resources
    */
   dispose(): void {
+    // Dispose motion path
+    if (this.motionPath) {
+      this.motionPath.geometry.dispose();
+      (this.motionPath.material as THREE.Material).dispose();
+      this.motionPath = null;
+    }
+
+    // Dispose motion path markers
+    if (this.motionPathMarkers) {
+      this.motionPathMarkers.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          child.geometry.dispose();
+          (child.material as THREE.Material).dispose();
+        }
+      });
+      this.motionPathMarkers = null;
+    }
+
+    // Dispose axis gizmo
+    if (this.axisGizmo) {
+      this.axisGizmo.traverse((child) => {
+        if (child instanceof THREE.Line) {
+          child.geometry.dispose();
+          (child.material as THREE.Material).dispose();
+        }
+        if (child instanceof THREE.Mesh) {
+          child.geometry.dispose();
+          (child.material as THREE.Material).dispose();
+        }
+      });
+      this.axisGizmo = null;
+    }
+
     // Dispose all meshes in the group
     this.group.traverse((child) => {
       if (child instanceof THREE.Mesh) {

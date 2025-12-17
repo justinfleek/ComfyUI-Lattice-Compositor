@@ -26,3 +26,12 @@ export * from './projectActions';
 
 // Timeline actions (playback, navigation, snapping)
 export * from './timelineActions';
+
+// Audio actions (loading, analysis, reactive mappings)
+export * from './audioActions';
+
+// Property driver actions (expressions/links)
+export * from './propertyDriverActions';
+
+// Cache actions (frame caching)
+export * from './cacheActions';

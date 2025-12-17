@@ -585,3 +585,54 @@ export {
   disposeWorkerPool,
   type WorkerPoolConfig,
 } from './workerPool';
+
+// ============================================================================
+// 3D ASSETS & MATERIALS
+// ============================================================================
+
+// SVG Extrusion (logo workflow)
+export {
+  SVGExtrusionService,
+  svgExtrusionService,
+  createDefaultExtrusionConfig,
+  createDefaultMaterialConfig as createDefaultExtrusionMaterialConfig,
+  createDefaultSVGMeshParticleConfig,
+  type ParsedSVGDocument,
+  type ParsedSVGPath,
+  type ExtrusionConfig,
+  type SVGLayerConfig,
+  type ExtrusionMaterialConfig,
+  type SVGMeshParticleConfig,
+} from './svgExtrusion';
+
+// Mesh Particle Manager (custom mesh particles)
+export {
+  MeshParticleManager,
+  meshParticleManager,
+  createDefaultMeshParticleConfig,
+  type RegisteredMeshParticle,
+  type InstancedMeshParticles,
+  type MeshParticleConfig,
+  type MeshParticleSource,
+} from './meshParticleManager';
+
+// Sprite Sheet Service (animated particle textures)
+export {
+  SpriteSheetService,
+  spriteSheetService,
+  createDefaultParticleSpriteConfig,
+  type SpriteSheetConfig,
+  type SpriteFrame,
+  type SpriteAnimation,
+  type SpriteSheetMetadata,
+  type ParticleSpriteConfig,
+} from './spriteSheet';
+
+// Material System (PBR materials and textures)
+export {
+  MaterialSystem,
+  materialSystem,
+  type PBRMaterialConfig,
+  type EnvironmentConfig,
+  type MaterialPreset,
+} from './materialSystem';

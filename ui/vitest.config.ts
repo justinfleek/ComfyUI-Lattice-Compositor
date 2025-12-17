@@ -17,14 +17,18 @@ export default defineConfig({
         'src/main.ts',
       ],
     },
-    // Mock Three.js since it requires WebGL
-    alias: {
-      three: fileURLToPath(new URL('./src/__mocks__/three.ts', import.meta.url)),
+    // Server config for resolving three.js properly
+    server: {
+      deps: {
+        inline: ['three'],
+      },
     },
   },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
+      // Use real three.js instead of mock for tests that need it
+      'three': 'three',
     },
   },
 });

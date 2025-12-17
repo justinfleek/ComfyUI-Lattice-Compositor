@@ -4,8 +4,9 @@
  * Layer effect management including adding, removing, updating, and reordering.
  */
 
-import type { Layer, EffectInstance, InterpolationType } from '@/types/project';
+import type { Layer, EffectInstance, InterpolationType, Composition } from '@/types/project';
 import { createEffectInstance } from '@/types/effects';
+import { interpolateProperty } from '@/services/interpolation';
 
 export interface EffectStore {
   project: {
@@ -13,6 +14,7 @@ export interface EffectStore {
   };
   currentFrame: number;
   getActiveCompLayers(): Layer[];
+  getActiveComp(): Composition | null;
   pushHistory(): void;
 }
 
@@ -177,4 +179,31 @@ export function duplicateEffect(
 
   store.project.meta.modified = new Date().toISOString();
   store.pushHistory();
+}
+
+/**
+ * Get evaluated effect parameter value at a given frame
+ */
+export function getEffectParameterValue(
+  store: EffectStore,
+  layerId: string,
+  effectId: string,
+  paramKey: string,
+  frame?: number
+): any {
+  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  if (!layer || !layer.effects) return null;
+
+  const effect = layer.effects.find(e => e.id === effectId);
+  if (!effect || !effect.parameters[paramKey]) return null;
+
+  const param = effect.parameters[paramKey];
+  const targetFrame = frame ?? (store.getActiveComp()?.currentFrame ?? 0);
+
+  // Use interpolation if animated
+  if (param.animated && param.keyframes.length > 0) {
+    return interpolateProperty(param, targetFrame);
+  }
+
+  return param.value;
 }

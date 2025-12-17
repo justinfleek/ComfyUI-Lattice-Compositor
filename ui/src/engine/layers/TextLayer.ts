@@ -299,11 +299,15 @@ export class TextLayer extends BaseLayer {
     text.renderOrder = 0;
 
     // Improve text rendering quality - higher SDF glyph size for sharper edges
-    (text as any).sdfGlyphSize = 128; // Default is 64, higher = sharper text
+    // Max useful value is around 256 (higher = better quality but more memory)
+    (text as any).sdfGlyphSize = 256; // Default is 64, higher = sharper text
+
+    // GPU texture precision for better rendering
+    (text as any).gpuAccelerateSDF = true;
 
     // Enable smooth outline edges
     if (this.textData.strokeWidth > 0) {
-      (text as any).outlineBlur = 0.005; // Slight blur for smoother outline edges
+      (text as any).outlineBlur = 0.003; // Slight blur for smoother outline edges
     }
 
     // Trigger initial sync

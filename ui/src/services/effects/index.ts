@@ -6,6 +6,8 @@
  */
 import { registerBlurEffects } from './blurRenderer';
 import { registerColorEffects } from './colorRenderer';
+import { registerDistortEffects } from './distortRenderer';
+import { registerGenerateEffects } from './generateRenderer';
 
 /**
  * Initialize all effect renderers
@@ -14,9 +16,8 @@ import { registerColorEffects } from './colorRenderer';
 export function initializeEffects(): void {
   registerBlurEffects();
   registerColorEffects();
-  // Future effects will be registered here:
-  // registerDistortEffects();
-  // registerGenerateEffects();
+  registerDistortEffects();
+  registerGenerateEffects();
 }
 
 // Re-export blur effects
@@ -46,6 +47,20 @@ export {
   createSCurve,
   createLiftCurve
 } from './colorRenderer';
+
+// Re-export distort effects
+export {
+  transformRenderer,
+  warpRenderer,
+  displacementMapRenderer
+} from './distortRenderer';
+
+// Re-export generate effects
+export {
+  fillRenderer,
+  gradientRampRenderer,
+  fractalNoiseRenderer
+} from './generateRenderer';
 
 // Mask system
 export {
