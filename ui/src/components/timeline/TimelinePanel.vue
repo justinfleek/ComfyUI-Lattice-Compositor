@@ -139,18 +139,26 @@ const filteredLayers = computed(() => store.layers || []);
 // Playhead position as percentage of timeline
 const playheadPositionPct = computed(() => (store.currentFrame / store.frameCount) * 100);
 
-// Zoom calculation: 0% = fit viewport, 100% = max zoom (50 ppf)
-// minPpf = viewport fills with all frames, maxPpf = very zoomed in
-const MAX_PPF = 50;
+// Zoom calculation: 0% = fit viewport exactly, 100% = max zoom (~20 frames visible)
+// At 100% zoom with 1200px viewport: 1200/80 = 15 frames visible
+const MAX_PPF = 80;
 
 const effectivePpf = computed(() => {
+  // minPpf ensures full composition fits viewport at 0% zoom
   const minPpf = viewportWidth.value / store.frameCount;
-  // Linear interpolation from minPpf (0%) to maxPpf (100%)
+  // Linear interpolation from minPpf (0%) to MAX_PPF (100%)
   return minPpf + (zoomPercent.value / 100) * (MAX_PPF - minPpf);
 });
 
-// Width is frameCount * effectivePpf
-const timelineWidth = computed(() => store.frameCount * effectivePpf.value);
+// At 0% zoom: timelineWidth = frameCount * (viewportWidth/frameCount) = viewportWidth
+// This guarantees the timeline fills the viewport exactly at 0%
+const timelineWidth = computed(() => {
+  // Ensure at 0% zoom, width is exactly viewportWidth (not less due to rounding)
+  if (zoomPercent.value === 0) {
+    return viewportWidth.value;
+  }
+  return store.frameCount * effectivePpf.value;
+});
 
 const computedWidthStyle = computed(() => timelineWidth.value + 'px');
 

@@ -77190,7 +77190,7 @@ const _hoisted_9$7 = { class: "tool-group" };
 const _hoisted_10$7 = ["disabled"];
 const _hoisted_11$7 = { class: "header-right" };
 const _hoisted_12$7 = { class: "timeline-content" };
-const MAX_PPF = 50;
+const MAX_PPF = 80;
 const _sfc_main$8 = /* @__PURE__ */ defineComponent({
   __name: "TimelinePanel",
   emits: ["openCompositionSettings"],
@@ -77216,7 +77216,12 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
       const minPpf = viewportWidth.value / store.frameCount;
       return minPpf + zoomPercent.value / 100 * (MAX_PPF - minPpf);
     });
-    const timelineWidth = computed(() => store.frameCount * effectivePpf.value);
+    const timelineWidth = computed(() => {
+      if (zoomPercent.value === 0) {
+        return viewportWidth.value;
+      }
+      return store.frameCount * effectivePpf.value;
+    });
     const computedWidthStyle = computed(() => timelineWidth.value + "px");
     const sidebarGridStyle = computed(() => ({
       display: "grid",
@@ -77545,7 +77550,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
             class: "timeline-sidebar",
             style: normalizeStyle({ width: sidebarWidth.value + "px" })
           }, [
-            _cache[17] || (_cache[17] = createStaticVNode('<div class="sidebar-header-row" data-v-348a5df5><div class="col-header col-arrow" data-v-348a5df5></div><div class="col-header col-name" data-v-348a5df5>Layer Name</div><div class="col-header col-mode" data-v-348a5df5>Mode</div><div class="col-header col-parent" data-v-348a5df5>Parent</div></div>', 1)),
+            _cache[17] || (_cache[17] = createStaticVNode('<div class="sidebar-header-row" data-v-51baba2c><div class="col-header col-arrow" data-v-51baba2c></div><div class="col-header col-name" data-v-51baba2c>Layer Name</div><div class="col-header col-mode" data-v-51baba2c>Mode</div><div class="col-header col-parent" data-v-51baba2c>Parent</div></div>', 1)),
             createBaseVNode("div", {
               class: "sidebar-scroll-area",
               ref_key: "sidebarScrollRef",
@@ -77640,7 +77645,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
   }
 });
 
-const TimelinePanel = /* @__PURE__ */ _export_sfc(_sfc_main$8, [["__scopeId", "data-v-348a5df5"]]);
+const TimelinePanel = /* @__PURE__ */ _export_sfc(_sfc_main$8, [["__scopeId", "data-v-51baba2c"]]);
 
 const _hoisted_1$6 = { class: "graph-editor" };
 const _hoisted_2$6 = { class: "graph-header" };
