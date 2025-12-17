@@ -313,6 +313,134 @@
       </div>
     </div>
 
+    <!-- Camera Sync -->
+    <div class="property-section">
+      <div class="section-header" @click="toggleSection('cameraSync')">
+        <i class="pi" :class="expandedSections.has('cameraSync') ? 'pi-chevron-down' : 'pi-chevron-right'" />
+        <span>Camera Sync</span>
+        <span v-if="config.cameraSyncEnabled" class="sync-badge">Active</span>
+      </div>
+      <div v-if="expandedSections.has('cameraSync')" class="section-content">
+        <div class="property-row checkbox-row">
+          <label>
+            <input
+              type="checkbox"
+              :checked="config.cameraSyncEnabled ?? false"
+              @change="updateConfig('cameraSyncEnabled', ($event.target as HTMLInputElement).checked)"
+            />
+            Enable Camera Sync
+          </label>
+        </div>
+
+        <template v-if="config.cameraSyncEnabled">
+          <div class="property-row">
+            <label>Camera Layer</label>
+            <select
+              :value="config.cameraSyncLayerId ?? ''"
+              @change="updateConfig('cameraSyncLayerId', ($event.target as HTMLSelectElement).value)"
+            >
+              <option value="">Select camera...</option>
+              <option
+                v-for="layer in cameraLayers"
+                :key="layer.id"
+                :value="layer.id"
+              >
+                {{ layer.name }}
+              </option>
+            </select>
+          </div>
+
+          <div class="sync-hint">
+            Camera movement will drive parallax. Adjust sensitivity below.
+          </div>
+
+          <div class="property-row">
+            <label>X Sensitivity</label>
+            <input
+              type="range"
+              :value="cameraSyncConfig.sensitivityX"
+              min="0"
+              max="2"
+              step="0.05"
+              @input="updateCameraSyncConfig('sensitivityX', Number(($event.target as HTMLInputElement).value))"
+            />
+            <span class="value-display">{{ cameraSyncConfig.sensitivityX.toFixed(2) }}</span>
+          </div>
+
+          <div class="property-row">
+            <label>Y Sensitivity</label>
+            <input
+              type="range"
+              :value="cameraSyncConfig.sensitivityY"
+              min="0"
+              max="2"
+              step="0.05"
+              @input="updateCameraSyncConfig('sensitivityY', Number(($event.target as HTMLInputElement).value))"
+            />
+            <span class="value-display">{{ cameraSyncConfig.sensitivityY.toFixed(2) }}</span>
+          </div>
+
+          <div class="property-row">
+            <label>Z Sensitivity</label>
+            <input
+              type="range"
+              :value="cameraSyncConfig.sensitivityZ * 1000"
+              min="0"
+              max="10"
+              step="0.1"
+              @input="updateCameraSyncConfig('sensitivityZ', Number(($event.target as HTMLInputElement).value) / 1000)"
+            />
+            <span class="value-display">{{ (cameraSyncConfig.sensitivityZ * 1000).toFixed(1) }}</span>
+          </div>
+
+          <div class="property-row">
+            <label>Rotation Sens.</label>
+            <input
+              type="range"
+              :value="cameraSyncConfig.sensitivityRotation"
+              min="0"
+              max="2"
+              step="0.05"
+              @input="updateCameraSyncConfig('sensitivityRotation', Number(($event.target as HTMLInputElement).value))"
+            />
+            <span class="value-display">{{ cameraSyncConfig.sensitivityRotation.toFixed(2) }}</span>
+          </div>
+
+          <div class="property-row checkbox-row">
+            <label>
+              <input
+                type="checkbox"
+                :checked="cameraSyncConfig.invertX"
+                @change="updateCameraSyncConfig('invertX', ($event.target as HTMLInputElement).checked)"
+              />
+              Invert X
+            </label>
+            <label style="margin-left: 16px;">
+              <input
+                type="checkbox"
+                :checked="cameraSyncConfig.invertY"
+                @change="updateCameraSyncConfig('invertY', ($event.target as HTMLInputElement).checked)"
+              />
+              Invert Y
+            </label>
+          </div>
+
+          <div class="property-row">
+            <label>Base Zoom</label>
+            <input
+              type="range"
+              :value="cameraSyncConfig.baseZoom"
+              min="0.5"
+              max="2"
+              step="0.05"
+              @input="updateCameraSyncConfig('baseZoom', Number(($event.target as HTMLInputElement).value))"
+            />
+            <span class="value-display">{{ cameraSyncConfig.baseZoom.toFixed(2) }}</span>
+          </div>
+        </template>
+      </div>
+    </div>
+
     <!-- Preview -->
     <div class="property-section">
       <div class="section-header" @click="toggleSection('preview')">
@@ -348,9 +476,21 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
-import type { Layer, DepthflowLayerData, DepthflowConfig, DepthflowPreset } from '@/types/project';
+import type { Layer, DepthflowLayerData, DepthflowConfig, DepthflowPreset, CameraToDepthflowConfig } from '@/types/project';
 import { useCompositorStore } from '@/stores/compositorStore';
 import KeyframeToggle from './KeyframeToggle.vue';
+
+const DEFAULT_CAMERA_SYNC_CONFIG: CameraToDepthflowConfig = {
+  sensitivityX: 0.5,
+  sensitivityY: 0.5,
+  sensitivityZ: 0.001,
+  sensitivityRotation: 1,
+  baseZoom: 1,
+  invertX: false,
+  invertY: false,
+  zoomClamp: { min: 0.5, max: 3 },
+  offsetClamp: { min: -1, max: 1 }
+};
 
 interface Props {
   layer: Layer;
@@ -429,6 +569,14 @@ const depthLayers = computed(() =>
   store.layers.filter(l => l.type === 'depth' || l.type === 'generated')
 );
 
+const cameraLayers = computed(() =>
+  store.layers.filter(l => l.type === 'camera')
+);
+
+const cameraSyncConfig = computed((): CameraToDepthflowConfig => {
+  return config.value.cameraSyncConfig ?? DEFAULT_CAMERA_SYNC_CONFIG;
+});
+
 const isOrbitPreset = computed(() =>
   ['circle_cw', 'circle_ccw'].includes(depthflowConfig.value.preset)
 );
@@ -473,6 +621,12 @@ function updateDepthflowConfig(key: keyof DepthflowConfig, value: any): void {
 
 function selectPreset(preset: DepthflowPreset): void {
   updateDepthflowConfig('preset', preset);
+}
+
+function updateCameraSyncConfig(key: keyof CameraToDepthflowConfig, value: any): void {
+  emit('update', {
+    cameraSyncConfig: { ...cameraSyncConfig.value, [key]: value }
+  });
 }
 
 function updatePresetIntensity(intensity: number): void {
@@ -713,5 +867,27 @@ onUnmounted(() => {
   font-size: 10px;
   color: #666;
   font-variant-numeric: tabular-nums;
+}
+
+/* Camera Sync */
+.sync-badge {
+  margin-left: auto;
+  padding: 2px 6px;
+  background: rgba(46, 204, 113, 0.2);
+  color: #2ecc71;
+  border-radius: 3px;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.sync-hint {
+  padding: 8px;
+  background: #1e1e1e;
+  border-radius: 4px;
+  font-size: 10px;
+  color: #666;
+  line-height: 1.4;
+  margin-bottom: 8px;
 }
 </style>

@@ -524,6 +524,13 @@ export class ParticleLayer extends BaseLayer {
     this.stats.renderTimeMs = state.renderTimeMs;
   }
 
+  protected override onApplyEvaluatedState(state: import('../MotionEngine').EvaluatedLayer): void {
+    // ParticleLayer uses onEvaluateFrame for deterministic simulation
+    // Evaluated properties are applied via the audio reactivity system
+    // since particle config updates require resimulation for determinism
+    this.applyAudioReactivity();
+  }
+
   /**
    * Evaluate particles at a specific frame (scrub-safe)
    * DETERMINISM: Returns identical results regardless of evaluation order

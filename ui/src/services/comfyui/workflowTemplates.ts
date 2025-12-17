@@ -58,6 +58,18 @@ export interface WorkflowParams {
   motionPreset?: MotionCtrlSVDPreset;
   cameraPoses?: number[][];
 
+  // Time-to-Move (TTM) specific
+  ttmModel?: 'wan' | 'cogvideox' | 'svd';
+  ttmLayers?: Array<{
+    layerId: string;
+    layerName: string;
+    motionMask: string; // Base64 PNG or filename
+    trajectory: Array<{ frame: number; x: number; y: number }>;
+  }>;
+  ttmCombinedMask?: string; // Combined motion mask
+  ttmTweakIndex?: number;
+  ttmTstrongIndex?: number;
+
   // Output settings
   outputFormat?: 'mp4' | 'webm' | 'gif' | 'images';
   outputFilename?: string;
@@ -877,6 +889,265 @@ export function generateCogVideoXWorkflow(params: WorkflowParams): ComfyUIWorkfl
 }
 
 // ============================================================================
+// Time-to-Move (TTM) Workflow
+// ============================================================================
+
+/**
+ * Generate a Time-to-Move workflow for multi-layer motion-controlled video generation.
+ * TTM uses per-layer motion masks and trajectories to control object movement.
+ *
+ * Reference: https://time-to-move.github.io/
+ */
+export function generateTTMWorkflow(params: WorkflowParams): ComfyUIWorkflow {
+  resetNodeIds();
+  const workflow: ComfyUIWorkflow = {};
+
+  const ttmModel = params.ttmModel || 'wan';
+  const layers = params.ttmLayers || [];
+
+  // Load reference image
+  const imageLoaderId = addLoadImage(workflow, params.referenceImage || 'reference.png', 'Reference Image');
+  const resizeId = addImageResize(workflow, conn(imageLoaderId), params.width, params.height);
+
+  // Load combined motion mask
+  const combinedMaskId = nextNodeId();
+  workflow[combinedMaskId] = createNode('LoadImage', {
+    image: params.ttmCombinedMask || 'combined_motion_mask.png',
+  }, 'Combined Motion Mask');
+
+  // Load per-layer motion masks and create trajectory controls
+  const layerMaskIds: string[] = [];
+  const trajectoryIds: string[] = [];
+
+  for (let i = 0; i < layers.length; i++) {
+    const layer = layers[i];
+
+    // Load layer mask
+    const maskId = nextNodeId();
+    workflow[maskId] = createNode('LoadImage', {
+      image: layer.motionMask,
+    }, `Layer ${i + 1} Mask: ${layer.layerName}`);
+    layerMaskIds.push(maskId);
+
+    // Create trajectory from keyframe data
+    const trajId = nextNodeId();
+    workflow[trajId] = createNode('TTM_TrajectoryFromPoints', {
+      points: JSON.stringify(layer.trajectory.map(t => [t.x, t.y])),
+      frames: JSON.stringify(layer.trajectory.map(t => t.frame)),
+      total_frames: params.frameCount,
+      interpolation: 'linear',
+    }, `Trajectory: ${layer.layerName}`);
+    trajectoryIds.push(trajId);
+  }
+
+  // Combine all layer masks and trajectories
+  let combinedLayerDataId: string | null = null;
+
+  if (layers.length > 0) {
+    // Create TTM layer combination node
+    combinedLayerDataId = nextNodeId();
+    workflow[combinedLayerDataId] = createNode('TTM_CombineLayers', {
+      masks: layerMaskIds.map(id => conn(id)),
+      trajectories: trajectoryIds.map(id => conn(id)),
+      blend_mode: 'additive',
+    }, 'Combine Layer Data');
+  }
+
+  // Model-specific generation
+  if (ttmModel === 'wan') {
+    // Load Wan model
+    const wanLoaderId = nextNodeId();
+    workflow[wanLoaderId] = createNode('DownloadAndLoadWan2_1Model', {
+      model: 'wan2.1_i2v_480p_bf16.safetensors',
+      base_precision: 'bf16',
+      quantization: 'disabled',
+    }, 'Load Wan Model');
+
+    // Load VAE
+    const vaeLoaderId = nextNodeId();
+    workflow[vaeLoaderId] = createNode('DownloadAndLoadWanVAE', {
+      vae: 'wan_2.1_vae.safetensors',
+      precision: 'bf16',
+    }, 'Load Wan VAE');
+
+    // Load CLIP
+    const clipLoaderId = nextNodeId();
+    workflow[clipLoaderId] = createNode('DownloadAndLoadWanTextEncoder', {
+      text_encoder: 'umt5-xxl-enc-bf16.safetensors',
+      precision: 'bf16',
+    }, 'Load Text Encoder');
+
+    // Encode prompt
+    const positiveId = nextNodeId();
+    workflow[positiveId] = createNode('WanTextEncode', {
+      text_encoder: conn(clipLoaderId),
+      prompt: params.prompt,
+      force_offload: true,
+    }, 'Positive Prompt');
+
+    // Apply TTM motion control
+    const ttmControlId = nextNodeId();
+    workflow[ttmControlId] = createNode('TTM_ApplyMotionControl', {
+      wan_model: conn(wanLoaderId),
+      image: conn(resizeId),
+      motion_mask: conn(combinedMaskId),
+      layer_data: combinedLayerDataId ? conn(combinedLayerDataId) : null,
+      tweak_index: params.ttmTweakIndex ?? 0,
+      tstrong_index: params.ttmTstrongIndex ?? 0,
+    }, 'Apply TTM Motion');
+
+    // Generate
+    const latentId = nextNodeId();
+    workflow[latentId] = createNode('WanImageToVideo', {
+      wan_model: conn(ttmControlId),
+      positive: conn(positiveId),
+      image: conn(resizeId),
+      vae: conn(vaeLoaderId),
+      width: params.width,
+      height: params.height,
+      length: params.frameCount,
+      steps: params.steps || 30,
+      cfg: params.cfgScale || 5,
+      seed: params.seed ?? Math.floor(Math.random() * 2147483647),
+      scheduler: 'DPM++ 2M SDE',
+      denoise_strength: params.denoise || 1,
+    }, 'TTM I2V Generation');
+
+    // Decode
+    const decodeId = nextNodeId();
+    workflow[decodeId] = createNode('WanVAEDecode', {
+      vae: conn(vaeLoaderId),
+      samples: conn(latentId),
+      enable_vae_tiling: true,
+      tile_sample_min_height: 240,
+      tile_sample_min_width: 240,
+      tile_overlap_factor_height: 0.2,
+      tile_overlap_factor_width: 0.2,
+    }, 'VAE Decode');
+
+    // Output
+    addVideoOutput(workflow, conn(decodeId), {
+      fps: params.fps,
+      filename: params.outputFilename || 'ttm_output',
+    });
+
+  } else if (ttmModel === 'cogvideox') {
+    // CogVideoX-based TTM generation
+    const cogVideoId = nextNodeId();
+    workflow[cogVideoId] = createNode('DownloadAndLoadCogVideoModel', {
+      model: 'CogVideoX-5b-I2V',
+      precision: 'bf16',
+    }, 'Load CogVideoX');
+
+    const t5Id = nextNodeId();
+    workflow[t5Id] = createNode('DownloadAndLoadCogVideoTextEncoder', {
+      model: 't5-v1_1-xxl-encoder-bf16',
+      precision: 'bf16',
+    }, 'Load T5 Encoder');
+
+    const vaeId = nextNodeId();
+    workflow[vaeId] = createNode('DownloadAndLoadCogVideoVAE', {
+      model: 'cogvideox_vae',
+      precision: 'bf16',
+    }, 'Load CogVideo VAE');
+
+    const encodePromptId = nextNodeId();
+    workflow[encodePromptId] = createNode('CogVideoTextEncode', {
+      text_encoder: conn(t5Id),
+      prompt: params.prompt,
+      force_offload: true,
+    }, 'Encode Prompt');
+
+    // Apply TTM motion control
+    const ttmControlId = nextNodeId();
+    workflow[ttmControlId] = createNode('TTM_ApplyMotionControlCogVideo', {
+      model: conn(cogVideoId),
+      image: conn(resizeId),
+      motion_mask: conn(combinedMaskId),
+      layer_data: combinedLayerDataId ? conn(combinedLayerDataId) : null,
+      tweak_index: params.ttmTweakIndex ?? 0,
+      tstrong_index: params.ttmTstrongIndex ?? 0,
+    }, 'Apply TTM Motion');
+
+    const generateId = nextNodeId();
+    workflow[generateId] = createNode('CogVideoImageToVideo', {
+      model: conn(ttmControlId),
+      positive: conn(encodePromptId),
+      image: conn(resizeId),
+      vae: conn(vaeId),
+      width: params.width,
+      height: params.height,
+      num_frames: params.frameCount,
+      steps: params.steps || 50,
+      cfg: params.cfgScale || 6,
+      seed: params.seed ?? Math.floor(Math.random() * 2147483647),
+      scheduler: 'CogVideoX DDIM',
+    }, 'CogVideoX I2V');
+
+    const decodeId = nextNodeId();
+    workflow[decodeId] = createNode('CogVideoDecode', {
+      vae: conn(vaeId),
+      samples: conn(generateId),
+      enable_vae_tiling: true,
+    }, 'Decode Video');
+
+    addVideoOutput(workflow, conn(decodeId), {
+      fps: params.fps,
+      filename: params.outputFilename || 'ttm_cogvideo_output',
+    });
+
+  } else {
+    // SVD-based TTM generation
+    const baseModelId = nextNodeId();
+    workflow[baseModelId] = createNode('ImageOnlyCheckpointLoader', {
+      ckpt_name: params.checkpoint || 'svd_xt_1_1.safetensors',
+    }, 'Load SVD');
+
+    // Apply TTM motion control
+    const ttmControlId = nextNodeId();
+    workflow[ttmControlId] = createNode('TTM_ApplyMotionControlSVD', {
+      model: conn(baseModelId),
+      image: conn(resizeId),
+      motion_mask: conn(combinedMaskId),
+      layer_data: combinedLayerDataId ? conn(combinedLayerDataId) : null,
+      tweak_index: params.ttmTweakIndex ?? 0,
+      tstrong_index: params.ttmTstrongIndex ?? 0,
+    }, 'Apply TTM Motion');
+
+    const encodeId = nextNodeId();
+    workflow[encodeId] = createNode('SVDEncode', {
+      model: conn(ttmControlId),
+      image: conn(resizeId),
+      vae: conn(baseModelId, 2),
+      width: params.width,
+      height: params.height,
+      video_frames: params.frameCount,
+      motion_bucket_id: 127,
+      fps: params.fps,
+      augmentation_level: 0,
+    }, 'SVD Encode');
+
+    const sampleId = addKSampler(
+      workflow,
+      conn(ttmControlId),
+      conn(encodeId, 1),
+      conn(encodeId, 2),
+      conn(encodeId),
+      { seed: params.seed, steps: params.steps || 25, cfg: params.cfgScale || 2.5, denoise: 1 }
+    );
+
+    const decodeId = addVAEDecode(workflow, conn(sampleId), conn(baseModelId, 2));
+
+    addVideoOutput(workflow, conn(decodeId), {
+      fps: params.fps,
+      filename: params.outputFilename || 'ttm_svd_output',
+    });
+  }
+
+  return workflow;
+}
+
+// ============================================================================
 // Generic ControlNet Workflow (Canny, Lineart, etc.)
 // ============================================================================
 
@@ -1000,6 +1271,13 @@ export function generateWorkflowForTarget(
 
     case 'animatediff-cameractrl':
       return generateAnimateDiffCameraCtrlWorkflow(params);
+
+    case 'ttm':
+    case 'ttm-wan':
+    case 'ttm-cogvideox':
+    case 'ttm-svd':
+      // Time-to-Move workflow for multi-layer motion control
+      return generateTTMWorkflow(params);
 
     case 'custom-workflow':
       // Return empty workflow for custom - user provides their own

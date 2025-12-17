@@ -201,7 +201,31 @@ interface SpatialGrid {
 }
 
 // Emitter shape types for geometric emission
-export type EmitterShape = 'point' | 'line' | 'circle' | 'box' | 'sphere' | 'ring';
+export type EmitterShape = 'point' | 'line' | 'circle' | 'box' | 'sphere' | 'ring' | 'spline';
+
+// Spline path emission configuration
+export interface SplinePathEmission {
+  layerId: string;                // ID of the SplineLayer to emit along
+  emitMode: 'uniform' | 'random' | 'start' | 'end' | 'sequential';
+  parameter: number;              // For 'start'/'end': offset, for 'uniform': interval, for 'sequential': speed
+  alignToPath: boolean;           // Align emission direction with path tangent
+  offset: number;                 // Perpendicular offset from path (normalized)
+  bidirectional: boolean;         // Emit from both directions along tangent
+}
+
+// Spline point query result from provider
+export interface SplineQueryResult {
+  point: { x: number; y: number; z: number };
+  tangent: { x: number; y: number };
+  length: number;
+}
+
+// Spline provider callback type
+export type SplinePathProvider = (
+  layerId: string,
+  t: number,
+  frame: number
+) => SplineQueryResult | null;
 
 // Sprite/texture configuration for particles
 export interface SpriteConfig {
@@ -253,6 +277,8 @@ export interface EmitterConfig {
   shapeInnerRadius: number;       // For ring (donut)
   emitFromEdge: boolean;          // Emit from edge only (not filled)
   emitFromVolume: boolean;        // Emit from volume (3D shapes)
+  // Spline path emission (when shape = 'spline')
+  splinePath: SplinePathEmission | null;
   // Sprite/texture configuration
   sprite: SpriteConfig;
 }
@@ -347,6 +373,10 @@ export interface RenderOptions {
   // Sprite rendering settings
   spriteSmoothing: boolean;     // Enable image smoothing for sprites
   spriteOpacityByAge: boolean;  // Fade sprites based on particle age
+  // Emissive/bloom settings (for 3D rendering)
+  emissiveEnabled: boolean;     // Render particles as emissive (for bloom)
+  emissiveIntensity: number;    // Emissive intensity multiplier (0-10)
+  emissiveColor: [number, number, number] | null; // Override color for emissive (null = use particle color)
 }
 
 // ============================================================================
@@ -369,6 +399,17 @@ export function createDefaultSpriteConfig(): SpriteConfig {
     rotationSpeed: 0,
     rotationSpeedVariance: 0,
     alignToVelocity: false
+  };
+}
+
+export function createDefaultSplinePathEmission(layerId: string = ''): SplinePathEmission {
+  return {
+    layerId,
+    emitMode: 'random',
+    parameter: 0,
+    alignToPath: true,
+    offset: 0,
+    bidirectional: false
   };
 }
 
@@ -422,6 +463,8 @@ export function createDefaultEmitterConfig(id?: string): EmitterConfig {
     shapeInnerRadius: 0.05,
     emitFromEdge: false,
     emitFromVolume: false,
+    // Spline path emission (null = disabled)
+    splinePath: null,
     // Sprite configuration
     sprite: createDefaultSpriteConfig()
   };
@@ -523,7 +566,10 @@ export function createDefaultRenderOptions(): RenderOptions {
     motionBlurSamples: 8,
     connections: createDefaultConnectionConfig(),
     spriteSmoothing: true,
-    spriteOpacityByAge: true
+    spriteOpacityByAge: true,
+    emissiveEnabled: false,
+    emissiveIntensity: 2.0,
+    emissiveColor: null
   };
 }
 
@@ -565,6 +611,16 @@ export class ParticleSystem {
   // Same seed + same config + same frame = identical particle state
   private rng: SeededRandom;
 
+  // Spline path provider for emitters with shape='spline'
+  // Set by the engine integration (e.g., WeylEngine) to resolve spline paths
+  private splineProvider: SplinePathProvider | null = null;
+
+  // Current frame for spline queries
+  private currentFrame: number = 0;
+
+  // Sequential emit state per emitter (for 'sequential' emit mode)
+  private sequentialEmitT: Map<string, number> = new Map();
+
   constructor(config: Partial<ParticleSystemConfig> = {}, seed: number = 12345) {
     this.config = { ...createDefaultSystemConfig(), ...config };
     this.rng = new SeededRandom(seed);
@@ -589,6 +645,29 @@ export class ParticleSystem {
     this.rng.setSeed(seed);
     // Recreate noise with new seed
     this.noise2D = createNoise2D(() => this.rng.next());
+  }
+
+  /**
+   * Set the spline path provider callback
+   * This allows emitters with shape='spline' to query spline positions
+   */
+  setSplineProvider(provider: SplinePathProvider | null): void {
+    this.splineProvider = provider;
+  }
+
+  /**
+   * Get the current spline provider
+   */
+  getSplineProvider(): SplinePathProvider | null {
+    return this.splineProvider;
+  }
+
+  /**
+   * Set the current frame for spline queries
+   * Called by the engine before stepping the simulation
+   */
+  setCurrentFrame(frame: number): void {
+    this.currentFrame = frame;
   }
 
   // ============================================================================
@@ -1140,9 +1219,12 @@ export class ParticleSystem {
     // Calculate spawn position based on emitter shape
     const spawnPos = this.getEmitterSpawnPosition(emitter);
 
+    // Use spline-provided direction if available, otherwise use emitter direction
+    const baseDirection = spawnPos.direction !== undefined ? spawnPos.direction : emitter.direction;
+
     // Calculate emission direction with spread (using seeded RNG)
     const spreadRad = (emitter.spread * Math.PI) / 180;
-    const baseRad = (emitter.direction * Math.PI) / 180;
+    const baseRad = (baseDirection * Math.PI) / 180;
     const angle = baseRad + (this.rng.next() - 0.5) * spreadRad;
 
     // Calculate speed with variance (using seeded RNG)
@@ -1206,8 +1288,9 @@ export class ParticleSystem {
   /**
    * Calculate spawn position based on emitter shape
    * DETERMINISM: Uses seeded RNG (this.rng) for all randomness
+   * Returns position and optionally a direction override for spline emission
    */
-  private getEmitterSpawnPosition(emitter: EmitterConfig): { x: number; y: number } {
+  private getEmitterSpawnPosition(emitter: EmitterConfig): { x: number; y: number; direction?: number } {
     const shape = emitter.shape || 'point';
 
     switch (shape) {
@@ -1317,9 +1400,119 @@ export class ParticleSystem {
         }
       }
 
+      case 'spline': {
+        // Emit along a spline path
+        return this.getSplineEmitPosition(emitter);
+      }
+
       default:
         return { x: emitter.x, y: emitter.y };
     }
+  }
+
+  /**
+   * Get emission position along a spline path
+   * Returns position and optionally modifies emission direction
+   * DETERMINISM: Uses seeded RNG (this.rng) for random positions
+   */
+  private getSplineEmitPosition(emitter: EmitterConfig): { x: number; y: number; direction?: number } {
+    const splinePath = emitter.splinePath;
+
+    // Fall back to point emission if no spline path configured or no provider
+    if (!splinePath || !this.splineProvider) {
+      return { x: emitter.x, y: emitter.y };
+    }
+
+    // Calculate t parameter based on emit mode
+    let t: number;
+
+    switch (splinePath.emitMode) {
+      case 'start':
+        // Emit near the start of the path
+        t = splinePath.parameter * this.rng.next() * 0.1; // 0-10% of path
+        break;
+
+      case 'end':
+        // Emit near the end of the path
+        t = 1 - (splinePath.parameter * this.rng.next() * 0.1); // 90-100% of path
+        break;
+
+      case 'random':
+        // Emit at random position along path
+        t = this.rng.next();
+        break;
+
+      case 'uniform':
+        // Emit at evenly spaced intervals
+        // Uses parameter as spacing interval (0-1 range)
+        const interval = Math.max(0.01, splinePath.parameter);
+        const numSlots = Math.ceil(1 / interval);
+        const slot = this.rng.int(0, numSlots - 1);
+        t = slot * interval;
+        break;
+
+      case 'sequential':
+        // Emit sequentially along path, advancing each emission
+        // Uses parameter as speed (how much t advances per emission)
+        const currentT = this.sequentialEmitT.get(emitter.id) ?? 0;
+        t = currentT;
+        // Advance for next emission
+        const speed = Math.max(0.001, splinePath.parameter);
+        let nextT = currentT + speed;
+        // Wrap around
+        if (nextT > 1) nextT = nextT - 1;
+        this.sequentialEmitT.set(emitter.id, nextT);
+        break;
+
+      default:
+        t = this.rng.next();
+    }
+
+    // Clamp t to valid range
+    t = Math.max(0, Math.min(1, t));
+
+    // Query spline for position and tangent
+    const result = this.splineProvider(splinePath.layerId, t, this.currentFrame);
+
+    if (!result) {
+      // Spline not found, fall back to point emission
+      return { x: emitter.x, y: emitter.y };
+    }
+
+    // Base position from spline
+    let x = result.point.x;
+    let y = result.point.y;
+
+    // Apply perpendicular offset if specified
+    if (splinePath.offset !== 0) {
+      // Calculate perpendicular direction from tangent
+      const tangentLength = Math.sqrt(result.tangent.x ** 2 + result.tangent.y ** 2);
+      if (tangentLength > 0.0001) {
+        const perpX = -result.tangent.y / tangentLength;
+        const perpY = result.tangent.x / tangentLength;
+        x += perpX * splinePath.offset;
+        y += perpY * splinePath.offset;
+      }
+    }
+
+    // Calculate emission direction if aligned to path
+    let direction: number | undefined;
+    if (splinePath.alignToPath) {
+      // Calculate angle from tangent
+      const tangentAngle = Math.atan2(result.tangent.y, result.tangent.x) * (180 / Math.PI);
+
+      if (splinePath.bidirectional && this.rng.bool(0.5)) {
+        // Emit in opposite direction
+        direction = tangentAngle + 180;
+      } else {
+        direction = tangentAngle;
+      }
+
+      // Add perpendicular offset (emit outward from path)
+      direction += 90;
+    }
+
+    return { x, y, direction };
   }
 
   private handleBoundaryCollision(p: Particle): void {
@@ -1638,6 +1831,71 @@ export class ParticleSystem {
       this.emissionAccumulators.set(key, 0);
     });
     this.nextParticleId = 0;
+    this.sequentialEmitT.clear();
+    this.currentFrame = 0;
+  }
+
+  /**
+   * Restore particles from serialized state (for checkpoint restoration)
+   * DETERMINISM: Restores exact particle positions for scrub-safe simulation
+   *
+   * @param particleStates - Array of serialized particle states from a checkpoint
+   * @param frameCount - The frame number being restored to
+   */
+  restoreParticles(
+    particleStates: readonly {
+      readonly id: number;
+      readonly x: number;
+      readonly y: number;
+      readonly vx: number;
+      readonly vy: number;
+      readonly age: number;
+      readonly lifetime: number;
+      readonly size: number;
+      readonly color: readonly [number, number, number, number];
+      readonly rotation: number;
+      readonly emitterId: string;
+    }[],
+    frameCount: number
+  ): void {
+    // Clear existing particles
+    this.particles = [];
+    this.trailHistory.clear();
+
+    // Track highest ID for next particle generation
+    let maxId = 0;
+
+    // Restore each particle
+    for (const state of particleStates) {
+      const particle: Particle = {
+        id: state.id,
+        x: state.x,
+        y: state.y,
+        prevX: state.x, // Previous position set to current (no trail initially)
+        prevY: state.y,
+        vx: state.vx,
+        vy: state.vy,
+        age: state.age,
+        lifetime: state.lifetime,
+        size: state.size,
+        baseSize: state.size, // Base size set to current
+        color: [...state.color] as [number, number, number, number],
+        baseColor: [...state.color] as [number, number, number, number],
+        emitterId: state.emitterId,
+        isSubParticle: false,
+        rotation: state.rotation,
+        angularVelocity: 0, // Default angular velocity
+        spriteIndex: 0,
+        collisionCount: 0, // Reset collision count on restore
+      };
+
+      this.particles.push(particle);
+      maxId = Math.max(maxId, state.id);
+    }
+
+    // Set next particle ID to continue from highest restored ID
+    this.nextParticleId = maxId + 1;
+    this.frameCount = frameCount;
   }
 
   warmup(): void {

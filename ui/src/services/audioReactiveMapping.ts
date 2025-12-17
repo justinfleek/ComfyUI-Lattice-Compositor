@@ -39,7 +39,12 @@ export type TargetParameter =
   // Path animation
   | 'path.position'
   // Generic layer properties
-  | 'layer.opacity' | 'layer.scale' | 'layer.rotation' | 'layer.x' | 'layer.y';
+  | 'layer.opacity' | 'layer.scale' | 'layer.rotation' | 'layer.x' | 'layer.y'
+  // Spline control point properties (dynamic index)
+  // Format: spline.controlPoint.{index}.{x|y|depth}
+  | `spline.controlPoint.${number}.x`
+  | `spline.controlPoint.${number}.y`
+  | `spline.controlPoint.${number}.depth`;
 
 export interface AudioMapping {
   id: string;
@@ -584,7 +589,17 @@ export function getFeatureDisplayName(feature: AudioFeature): string {
  * Get human-readable name for a target parameter
  */
 export function getTargetDisplayName(target: TargetParameter): string {
-  const names: Record<TargetParameter, string> = {
+  // Check for spline control point targets first
+  const splineMatch = target.match(/^spline\.controlPoint\.(\d+)\.(x|y|depth)$/);
+  if (splineMatch) {
+    const index = splineMatch[1];
+    const prop = splineMatch[2] === 'x' ? 'X'
+      : splineMatch[2] === 'y' ? 'Y'
+      : 'Depth';
+    return `Spline: Control Point ${index} ${prop}`;
+  }
+
+  const names: Record<string, string> = {
     'particle.emissionRate': 'Particle: Emission Rate',
     'particle.speed': 'Particle: Speed',
     'particle.size': 'Particle: Size',
@@ -656,6 +671,7 @@ export function getAllTargets(): TargetParameter[] {
 
 /**
  * Get targets filtered by category
+ * Note: Spline control point targets are dynamic and generated based on the layer
  */
 export function getTargetsByCategory(): Record<string, TargetParameter[]> {
   return {
@@ -671,7 +687,24 @@ export function getTargetsByCategory(): Record<string, TargetParameter[]> {
     'Layer': [
       'layer.opacity', 'layer.scale', 'layer.rotation', 'layer.x', 'layer.y'
     ]
+    // Note: 'Spline' targets are generated dynamically based on control point count
+    // Use createSplineControlPointTargets() to get targets for a specific spline
   };
+}
+
+/**
+ * Create spline control point targets for a given number of control points
+ * @param controlPointCount Number of control points in the spline
+ * @returns Array of TargetParameter for each control point property
+ */
+export function createSplineControlPointTargets(controlPointCount: number): TargetParameter[] {
+  const targets: TargetParameter[] = [];
+  for (let i = 0; i < controlPointCount; i++) {
+    targets.push(`spline.controlPoint.${i}.x` as TargetParameter);
+    targets.push(`spline.controlPoint.${i}.y` as TargetParameter);
+    targets.push(`spline.controlPoint.${i}.depth` as TargetParameter);
+  }
+  return targets;
 }
 
 export default {

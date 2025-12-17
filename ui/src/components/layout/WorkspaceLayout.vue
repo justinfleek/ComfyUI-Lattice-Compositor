@@ -38,7 +38,45 @@
         >
           <span class="icon">🔍</span>
         </button>
+        <button
+          :class="{ active: currentTool === 'segment' }"
+          @click="currentTool = 'segment'"
+          title="Segment Tool (S) - Click to select objects"
+        >
+          <span class="icon">✂</span>
+        </button>
       </div>
+
+      <!-- Segment Tool Options (shown when segment tool is active) -->
+      <template v-if="currentTool === 'segment'">
+        <div class="divider"></div>
+        <div class="tool-group segment-options">
+          <button
+            :class="{ active: segmentMode === 'point' }"
+            @click="setSegmentMode('point')"
+            title="Point Mode - Click to segment"
+          >
+            <span class="icon">●</span> Point
+          </button>
+          <button
+            :class="{ active: segmentMode === 'box' }"
+            @click="setSegmentMode('box')"
+            title="Box Mode - Draw rectangle to segment"
+          >
+            <span class="icon">▢</span> Box
+          </button>
+          <template v-if="segmentPendingMask">
+            <div class="divider"></div>
+            <button @click="confirmSegmentMask" class="confirm-btn" title="Create Layer from Selection">
+              <span class="icon">✓</span> Create Layer
+            </button>
+            <button @click="clearSegmentMask" class="cancel-btn" title="Cancel Selection">
+              <span class="icon">✕</span>
+            </button>
+          </template>
+          <span v-if="segmentIsLoading" class="loading-indicator">Segmenting...</span>
+        </div>
+      </template>
 
       <div class="divider"></div>
 
@@ -84,6 +122,10 @@
         </button>
         <button @click="redo" :disabled="!canRedo" title="Redo (Ctrl+Shift+Z)">
           <span class="icon">↪</span>
+        </button>
+        <div class="divider"></div>
+        <button @click="showPathSuggestionDialog = true" title="AI Path Suggestion" class="ai-btn">
+          <span class="icon">&#10024;</span> AI
         </button>
         <button @click="showExportDialog = true" title="Export Matte">
           <span class="icon">📤</span> Matte
@@ -296,6 +338,25 @@
       @close="showCompositionSettingsDialog = false"
       @confirm="onCompositionSettingsConfirm"
     />
+
+    <!-- AI Path Suggestion Dialog -->
+    <PathSuggestionDialog
+      :visible="showPathSuggestionDialog"
+      @close="onPathSuggestionClose"
+      @accept="onPathSuggestionAccept"
+      @preview="onPathSuggestionPreview"
+    />
+
+    <!-- Path Preview Overlay (shown in viewport when suggestions exist) -->
+    <Teleport to=".viewport-content" v-if="pathSuggestions.length > 0">
+      <PathPreviewOverlay
+        :width="compWidth"
+        :height="compHeight"
+        :suggestions="pathSuggestions"
+        :selectedIndex="selectedPathIndex"
+        @select="selectedPathIndex = $event"
+      />
+    </Teleport>
   </div>
 </template>
 
@@ -329,6 +390,10 @@ import GraphEditor from '@/components/graph-editor/GraphEditor.vue';
 import ExportDialog from '@/components/dialogs/ExportDialog.vue';
 import ComfyUIExportDialog from '@/components/export/ComfyUIExportDialog.vue';
 import CompositionSettingsDialog from '@/components/dialogs/CompositionSettingsDialog.vue';
+import PathSuggestionDialog from '@/components/dialogs/PathSuggestionDialog.vue';
+
+// Canvas overlays
+import PathPreviewOverlay from '@/components/canvas/PathPreviewOverlay.vue';
 
 // Store
 const store = useCompositorStore();
@@ -336,8 +401,26 @@ const store = useCompositorStore();
 // Tool state - synced with store
 const currentTool = computed({
   get: () => store.currentTool,
-  set: (tool: 'select' | 'pen' | 'text' | 'hand' | 'zoom') => store.setTool(tool)
+  set: (tool: 'select' | 'pen' | 'text' | 'hand' | 'zoom' | 'segment') => store.setTool(tool)
 });
+
+// Segmentation state - synced with store
+const segmentMode = computed(() => store.segmentMode);
+const segmentPendingMask = computed(() => store.segmentPendingMask);
+const segmentIsLoading = computed(() => store.segmentIsLoading);
+
+function setSegmentMode(mode: 'point' | 'box') {
+  store.setSegmentMode(mode);
+}
+
+async function confirmSegmentMask() {
+  await store.confirmSegmentMask();
+}
+
+function clearSegmentMask() {
+  store.clearSegmentPendingMask();
+}
+
 const activeWorkspace = ref('standard');
 const leftTab = ref<'project' | 'effects'>('project');
 const rightTab = ref<'effects' | 'properties' | 'camera' | 'audio'>('properties');
@@ -350,6 +433,11 @@ const showGraphEditor = ref(false);
 const showExportDialog = ref(false);
 const showComfyUIExportDialog = ref(false);
 const showCompositionSettingsDialog = ref(false);
+const showPathSuggestionDialog = ref(false);
+
+// Vision authoring state
+const pathSuggestions = ref<any[]>([]);
+const selectedPathIndex = ref<number | null>(null);
 
 const isPlaying = ref(false);
 const gpuTier = ref<GPUTier['tier']>('cpu');
@@ -485,6 +573,117 @@ function onCompositionSettingsConfirm(settings: {
   showCompositionSettingsDialog.value = false;
 }
 
+// Helper: Generate SVG path data from control points (for audio reactivity integration)
+function generatePathDataFromPoints(
+  points: Array<{ x: number; y: number; handleIn?: { x: number; y: number } | null; handleOut?: { x: number; y: number } | null }>,
+  closed: boolean
+): string {
+  if (points.length === 0) return '';
+  if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
+
+  let d = `M ${points[0].x} ${points[0].y}`;
+
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[i];
+    const p1 = points[i + 1];
+
+    // If both points have handles, use cubic bezier
+    if (p0.handleOut && p1.handleIn) {
+      const cp1x = p0.x + p0.handleOut.x;
+      const cp1y = p0.y + p0.handleOut.y;
+      const cp2x = p1.x + p1.handleIn.x;
+      const cp2y = p1.y + p1.handleIn.y;
+      d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p1.x} ${p1.y}`;
+    } else if (p0.handleOut) {
+      // Quadratic with control point from handleOut
+      const cpx = p0.x + p0.handleOut.x;
+      const cpy = p0.y + p0.handleOut.y;
+      d += ` Q ${cpx} ${cpy}, ${p1.x} ${p1.y}`;
+    } else if (p1.handleIn) {
+      // Quadratic with control point from handleIn
+      const cpx = p1.x + p1.handleIn.x;
+      const cpy = p1.y + p1.handleIn.y;
+      d += ` Q ${cpx} ${cpy}, ${p1.x} ${p1.y}`;
+    } else {
+      // Simple line
+      d += ` L ${p1.x} ${p1.y}`;
+    }
+  }
+
+  if (closed && points.length > 2) {
+    d += ' Z';
+  }
+
+  return d;
+}
+
+// Path Suggestion handlers
+function onPathSuggestionClose() {
+  showPathSuggestionDialog.value = false;
+  // Clear preview when dialog closes
+  pathSuggestions.value = [];
+  selectedPathIndex.value = null;
+}
+
+function onPathSuggestionPreview(suggestions: any[]) {
+  pathSuggestions.value = suggestions;
+  selectedPathIndex.value = suggestions.length > 0 ? 0 : null;
+}
+
+function onPathSuggestionAccept(result: { keyframes: any[]; splines: any[] }) {
+  console.log('[Weyl] Path suggestion accepted:', result);
+
+  // Apply keyframes to the store
+  if (result.keyframes && result.keyframes.length > 0) {
+    for (const batch of result.keyframes) {
+      // batch contains layerId, propertyPath, and keyframes
+      // Add keyframes to the appropriate layer/property
+      for (const keyframe of batch.keyframes) {
+        store.addKeyframe(batch.layerId, batch.propertyPath, keyframe.frame, keyframe.value, keyframe.easing);
+      }
+    }
+  }
+
+  // Create new spline layers if suggested
+  if (result.splines && result.splines.length > 0) {
+    for (const spline of result.splines) {
+      // Create a new spline layer
+      const layer = store.createSplineLayer();
+
+      // Rename if name provided
+      if (spline.name) {
+        store.renameLayer(layer.id, spline.name);
+      }
+
+      // Convert points to control points format (preserve depth and handles from translator)
+      const controlPoints = (spline.points || []).map((p: any, i: number) => ({
+        id: p.id || `cp_${Date.now()}_${i}`,
+        x: p.x,
+        y: p.y,
+        depth: p.depth ?? 0,  // Preserve z-space depth
+        handleIn: p.handleIn || null,  // Preserve bezier handles from translator
+        handleOut: p.handleOut || null,
+        type: p.type || 'smooth' as const
+      }));
+
+      // Generate SVG path data from control points for audio reactivity
+      const pathData = generatePathDataFromPoints(controlPoints, spline.closed || false);
+
+      // Update the layer data with the points and pathData
+      store.updateLayerData(layer.id, {
+        controlPoints,
+        pathData,
+        closed: spline.closed || false
+      });
+    }
+  }
+
+  // Clear preview
+  pathSuggestions.value = [];
+  selectedPathIndex.value = null;
+  showPathSuggestionDialog.value = false;
+}
+
 // Get camera keyframes for the active camera
 const activeCameraKeyframes = computed(() => {
   const activeCam = store.getActiveCameraAtFrame();
@@ -494,8 +693,15 @@ const activeCameraKeyframes = computed(() => {
 
 // Handle zoom dropdown change
 function handleZoomChange() {
-  // TODO: Implement zoom change for ThreeCanvas
-  console.log('[WorkspaceLayout] Zoom changed to:', viewZoom.value);
+  if (!threeCanvasRef.value) return;
+
+  if (viewZoom.value === 'fit') {
+    threeCanvasRef.value.fitToView();
+  } else {
+    // Convert percentage string to decimal (e.g., '100' → 1.0, '200' → 2.0)
+    const zoomLevel = parseInt(viewZoom.value) / 100;
+    threeCanvasRef.value.zoom = zoomLevel;
+  }
 }
 
 // Keyboard shortcuts
@@ -698,6 +904,15 @@ onUnmounted(() => {
 .gpu-badge.webgl { background: #4a7c4a; }
 .gpu-badge.webgpu { background: #4a6a9c; }
 .gpu-badge.blackwell { background: #76b900; color: #000; }
+
+.ai-btn {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;
+  color: #fff !important;
+}
+
+.ai-btn:hover {
+  background: linear-gradient(135deg, #7c7ff1, #9d7af6) !important;
+}
 
 /* Main Workspace */
 .workspace-content {
@@ -902,5 +1117,42 @@ onUnmounted(() => {
 :deep(.splitpanes--horizontal > .splitpanes__splitter) {
   height: 4px;
   min-height: 4px;
+}
+
+/* Segmentation tool options */
+.segment-options {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.segment-options .confirm-btn {
+  background: #2d7a2d !important;
+  color: #fff !important;
+}
+
+.segment-options .confirm-btn:hover {
+  background: #3a9a3a !important;
+}
+
+.segment-options .cancel-btn {
+  background: #7a2d2d !important;
+  color: #fff !important;
+}
+
+.segment-options .cancel-btn:hover {
+  background: #9a3a3a !important;
+}
+
+.loading-indicator {
+  color: #00ff00;
+  font-size: 11px;
+  padding: 0 8px;
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
 }
 </style>

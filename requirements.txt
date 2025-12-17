@@ -2,3 +2,10 @@
 # Most deps are already in ComfyUI, this is just for any extras
 numpy
 Pillow
+scipy  # For algebraic depth-to-normal (Sobel gradients)
+
+# Optional: SAM2 segmentation (if not using ComfyUI's SAM nodes)
+# segment-anything
+
+# Optional: Depth Anything V3 (if not using ComfyUI-DepthAnythingV3)
+# depth-anything-3

@@ -27,6 +27,9 @@ export type ExportTarget =
   | 'wan-move'            // Wan-Move point trajectories
   | 'ati'                 // ATI Any Trajectory Instruction
   | 'ttm'                 // TTM Time-to-Move cut-and-drag
+  | 'ttm-wan'             // TTM with Wan 2.1 backend
+  | 'ttm-cogvideox'       // TTM with CogVideoX backend
+  | 'ttm-svd'             // TTM with SVD backend
   | 'camera-comfyui';     // camera-comfyUI 4x4 matrices
 
 // ============================================================================

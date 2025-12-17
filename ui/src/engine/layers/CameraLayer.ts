@@ -14,9 +14,18 @@
  */
 
 import * as THREE from 'three';
-import type { Layer, CameraLayerData } from '@/types/project';
+import type { Layer, CameraLayerData, CameraPathFollowing } from '@/types/project';
 import type { Camera3D } from '@/types/camera';
+import type { SplineQueryResult } from '@/services/particleSystem';
+import { interpolateProperty } from '@/services/interpolation';
 import { BaseLayer } from './BaseLayer';
+
+/** Spline path provider callback type for camera path following */
+export type CameraSplineProvider = (
+  layerId: string,
+  t: number,
+  frame: number
+) => SplineQueryResult | null;
 
 // ============================================================================
 // TYPES
@@ -58,6 +67,12 @@ export class CameraLayer extends BaseLayer {
   // Track last camera state for frustum updates
   private lastFrustumState: { fov: number; near: number; far: number } | null = null;
 
+  // Spline provider for path following
+  private splineProvider: CameraSplineProvider | null = null;
+
+  // Auto-advance parameter (for autoAdvance mode)
+  private autoAdvanceT: number = 0;
+
   constructor(layerData: Layer) {
     super(layerData);
 
@@ -84,6 +99,7 @@ export class CameraLayer extends BaseLayer {
     return {
       cameraId: data?.cameraId ?? '',
       isActiveCamera: data?.isActiveCamera ?? false,
+      pathFollowing: data?.pathFollowing,
     };
   }
 
@@ -98,6 +114,34 @@ export class CameraLayer extends BaseLayer {
     this.cameraGetter = getter;
     this.cameraUpdater = updater;
     this.cameraAtFrameGetter = atFrameGetter;
+  }
+
+  /**
+   * Set the spline provider for path following
+   */
+  setSplineProvider(provider: CameraSplineProvider | null): void {
+    this.splineProvider = provider;
+  }
+
+  /**
+   * Get path following configuration
+   */
+  getPathFollowing(): CameraPathFollowing | undefined {
+    return this.cameraData.pathFollowing;
+  }
+
+  /**
+   * Check if path following is active
+   */
+  isFollowingPath(): boolean {
+    return this.cameraData.pathFollowing?.enabled ?? false;
+  }
+
+  /**
+   * Reset auto-advance parameter (for deterministic scrubbing)
+   */
+  resetAutoAdvance(): void {
+    this.autoAdvanceT = 0;
   }
 
   // ============================================================================
@@ -357,35 +401,45 @@ export class CameraLayer extends BaseLayer {
     const camera = this.getCameraAtCurrentFrame();
     if (!camera) return;
 
-    // Position from camera data (camera looks down +Z)
-    this.group.position.set(
-      camera.position.x,
-      camera.position.y,
-      camera.position.z
-    );
-
-    // Orientation from camera (rotation in degrees)
     const degToRad = Math.PI / 180;
 
-    // For two-node camera, orient towards point of interest
-    if (camera.type === 'two-node' && camera.pointOfInterest) {
-      const poi = new THREE.Vector3(
-        camera.pointOfInterest.x,
-        camera.pointOfInterest.y,
-        camera.pointOfInterest.z
-      );
-      this.group.lookAt(poi);
+    // Check for path following
+    const pathFollowing = this.cameraData.pathFollowing;
+    const usePathFollowing = pathFollowing?.enabled &&
+                             pathFollowing.pathLayerId &&
+                             this.splineProvider;
 
-      // Apply additional rotations
-      this.group.rotation.z += camera.zRotation * degToRad;
+    if (usePathFollowing && pathFollowing) {
+      // Apply path following
+      this.applyPathFollowing(frame, pathFollowing, camera);
     } else {
-      // One-node camera: use direct rotation
-      this.group.rotation.set(
-        (camera.orientation.x + camera.xRotation) * degToRad,
-        (camera.orientation.y + camera.yRotation) * degToRad,
-        (camera.orientation.z + camera.zRotation) * degToRad,
-        'YXZ' // Standard After Effects rotation order
+      // Standard camera positioning
+      this.group.position.set(
+        camera.position.x,
+        camera.position.y,
+        camera.position.z
       );
+
+      // For two-node camera, orient towards point of interest
+      if (camera.type === 'two-node' && camera.pointOfInterest) {
+        const poi = new THREE.Vector3(
+          camera.pointOfInterest.x,
+          camera.pointOfInterest.y,
+          camera.pointOfInterest.z
+        );
+        this.group.lookAt(poi);
+
+        // Apply additional rotations
+        this.group.rotation.z += camera.zRotation * degToRad;
+      } else {
+        // One-node camera: use direct rotation
+        this.group.rotation.set(
+          (camera.orientation.x + camera.xRotation) * degToRad,
+          (camera.orientation.y + camera.yRotation) * degToRad,
+          (camera.orientation.z + camera.zRotation) * degToRad,
+          'YXZ' // Standard After Effects rotation order
+        );
+      }
     }
 
     // Update frustum only if camera properties changed (avoid recreating every frame)
@@ -410,6 +464,118 @@ export class CameraLayer extends BaseLayer {
     }
   }
 
+  protected override onApplyEvaluatedState(state: import('../MotionEngine').EvaluatedLayer): void {
+    const props = state.properties;
+
+    // Apply evaluated path parameter if using path following
+    if (props['pathParameter'] !== undefined && this.cameraData.pathFollowing?.enabled) {
+      // Update the parameter value directly for the next evaluation
+      this.cameraData.pathFollowing.parameter.value = props['pathParameter'] as number;
+    }
+  }
+
+  /**
+   * Apply path following to camera position and orientation
+   * DETERMINISM: Uses interpolateProperty for animated parameter
+   */
+  private applyPathFollowing(
+    frame: number,
+    pathFollowing: CameraPathFollowing,
+    camera: Camera3D
+  ): void {
+    if (!this.splineProvider) return;
+
+    // Get the path parameter (0-1)
+    let t: number;
+
+    if (pathFollowing.autoAdvance) {
+      // Auto-advance mode: calculate t from frame
+      // DETERMINISM: t is calculated from frame, not accumulated state
+      t = (frame * pathFollowing.autoAdvanceSpeed) % 1;
+    } else {
+      // Manual/keyframed mode: interpolate from animated property
+      t = interpolateProperty(pathFollowing.parameter, frame);
+    }
+
+    // Clamp t to valid range
+    t = Math.max(0, Math.min(1, t));
+
+    // Query spline for current position
+    const pathResult = this.splineProvider(pathFollowing.pathLayerId, t, frame);
+
+    if (!pathResult) {
+      // Fall back to camera position if spline not found
+      this.group.position.set(camera.position.x, camera.position.y, camera.position.z);
+      return;
+    }
+
+    // Calculate look-ahead position for orientation
+    let lookTarget: SplineQueryResult | null = null;
+    if (pathFollowing.alignToPath && pathFollowing.lookAhead > 0) {
+      const lookAheadT = Math.min(1, t + pathFollowing.lookAhead);
+      lookTarget = this.splineProvider(pathFollowing.pathLayerId, lookAheadT, frame);
+    }
+
+    // Set camera position
+    const position = new THREE.Vector3(
+      pathResult.point.x,
+      pathResult.point.y + pathFollowing.offsetY,
+      pathResult.point.z
+    );
+    this.group.position.copy(position);
+
+    // Set camera orientation
+    if (pathFollowing.alignToPath) {
+      if (lookTarget) {
+        // Look at the ahead point
+        const target = new THREE.Vector3(
+          lookTarget.point.x,
+          lookTarget.point.y + pathFollowing.offsetY,
+          lookTarget.point.z
+        );
+        this.group.lookAt(target);
+      } else {
+        // Use tangent direction
+        const tangent = new THREE.Vector3(
+          pathResult.tangent.x,
+          pathResult.tangent.y,
+          0
+        ).normalize();
+
+        // Calculate rotation from tangent
+        const forward = new THREE.Vector3(0, 0, 1);
+        const quaternion = new THREE.Quaternion();
+        quaternion.setFromUnitVectors(forward, tangent);
+        this.group.quaternion.copy(quaternion);
+      }
+
+      // Apply banking on turns
+      if (pathFollowing.bankingStrength > 0) {
+        // Calculate curvature from tangent change
+        // Get tangent at slightly different positions
+        const epsilon = 0.01;
+        const tBefore = Math.max(0, t - epsilon);
+        const tAfter = Math.min(1, t + epsilon);
+
+        const before = this.splineProvider(pathFollowing.pathLayerId, tBefore, frame);
+        const after = this.splineProvider(pathFollowing.pathLayerId, tAfter, frame);
+
+        if (before && after) {
+          // Calculate turn direction
+          const tangent1 = new THREE.Vector2(before.tangent.x, before.tangent.y).normalize();
+          const tangent2 = new THREE.Vector2(after.tangent.x, after.tangent.y).normalize();
+
+          // Cross product for turn direction (positive = right turn)
+          const cross = tangent1.x * tangent2.y - tangent1.y * tangent2.x;
+
+          // Apply banking rotation
+          const bankAngle = cross * pathFollowing.bankingStrength * Math.PI / 4;
+          this.group.rotateZ(bankAngle);
+        }
+      }
+    }
+  }
+
   // ============================================================================
   // LAYER UPDATE
   // ============================================================================
@@ -430,6 +596,14 @@ export class CameraLayer extends BaseLayer {
 
       if (data.isActiveCamera !== undefined) {
         this.setActiveCamera(data.isActiveCamera);
+      }
+
+      if (data.pathFollowing !== undefined) {
+        this.cameraData.pathFollowing = data.pathFollowing;
+        // Reset auto-advance when path changes
+        if (data.pathFollowing?.autoAdvance) {
+          this.autoAdvanceT = 0;
+        }
       }
     }
   }

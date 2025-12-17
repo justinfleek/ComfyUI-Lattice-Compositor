@@ -22,6 +22,8 @@
 import { defineStore } from 'pinia';
 import { motionEngine } from '@/engine/MotionEngine';
 import type { FrameState } from '@/engine/MotionEngine';
+import { particleSimulationRegistry } from '@/engine/ParticleSimulationController';
+import type { ParticleSnapshot } from '@/engine/ParticleSimulationController';
 import { storeLogger } from '@/utils/logger';
 import type {
   WeylProject,
@@ -39,6 +41,7 @@ import type {
   ParticleEmitterConfig,
   AudioParticleMapping,
   CameraLayerData,
+  ImageLayerData,
   VideoData,
   PrecompData,
   InterpolationType
@@ -73,6 +76,17 @@ import {
   getBeatFrames,
   getPeakFrames
 } from '@/services/timelineSnap';
+import {
+  segmentByPoint,
+  segmentByBox,
+  segmentByMultiplePoints,
+  autoSegment,
+  applyMaskToImage,
+  cropImage,
+  type SegmentationPoint,
+  type SegmentationMask,
+  type SegmentationResult
+} from '@/services/segmentation';
 
 interface CompositorState {
   // Project data
@@ -101,7 +115,18 @@ interface CompositorState {
   selectedPropertyPath: string | null;  // e.g. "transform.position" for graph editor focus
 
   // Tool state
-  currentTool: 'select' | 'pen' | 'text' | 'hand' | 'zoom';
+  currentTool: 'select' | 'pen' | 'text' | 'hand' | 'zoom' | 'segment';
+
+  // Segmentation state
+  segmentMode: 'point' | 'box';
+  segmentPendingMask: {
+    mask: string;
+    bounds: { x: number; y: number; width: number; height: number };
+    area: number;
+    score: number;
+  } | null;
+  segmentBoxStart: { x: number; y: number } | null;
+  segmentIsLoading: boolean;
 
   // UI state
   graphEditorVisible: boolean;
@@ -167,6 +192,10 @@ export const useCompositorStore = defineStore('compositor', {
     selectedKeyframeIds: [],
     selectedPropertyPath: null,
     currentTool: 'select',
+    segmentMode: 'point',
+    segmentPendingMask: null,
+    segmentBoxStart: null,
+    segmentIsLoading: false,
     graphEditorVisible: false,
     historyStack: [],
     historyIndex: -1,
@@ -1045,7 +1074,7 @@ export const useCompositorStore = defineStore('compositor', {
     /**
      * Add a control point to a spline layer
      */
-    addSplineControlPoint(layerId: string, point: { id: string; x: number; y: number; handleIn?: { x: number; y: number } | null; handleOut?: { x: number; y: number } | null; type: 'corner' | 'smooth' | 'symmetric' }): void {
+    addSplineControlPoint(layerId: string, point: { id: string; x: number; y: number; depth?: number; handleIn?: { x: number; y: number } | null; handleOut?: { x: number; y: number } | null; type: 'corner' | 'smooth' | 'symmetric' }): void {
       const layer = this.getActiveCompLayers().find(l => l.id === layerId);
       if (!layer || layer.type !== 'spline' || !layer.data) return;
 
@@ -1060,7 +1089,7 @@ export const useCompositorStore = defineStore('compositor', {
     /**
      * Update a spline control point
      */
-    updateSplineControlPoint(layerId: string, pointId: string, updates: Partial<{ x: number; y: number; handleIn: { x: number; y: number } | null; handleOut: { x: number; y: number } | null; type: 'corner' | 'smooth' | 'symmetric' }>): void {
+    updateSplineControlPoint(layerId: string, pointId: string, updates: Partial<{ x: number; y: number; depth: number; handleIn: { x: number; y: number } | null; handleOut: { x: number; y: number } | null; type: 'corner' | 'smooth' | 'symmetric' }>): void {
       const layer = this.getActiveCompLayers().find(l => l.id === layerId);
       if (!layer || layer.type !== 'spline' || !layer.data) return;
 
@@ -1379,6 +1408,68 @@ export const useCompositorStore = defineStore('compositor', {
      */
     setTool(tool: CompositorState['currentTool']): void {
       this.currentTool = tool;
+      // Clear segmentation state when switching away from segment tool
+      if (tool !== 'segment') {
+        this.clearSegmentPendingMask();
+      }
+    },
+
+    /**
+     * Set segmentation mode (point or box)
+     */
+    setSegmentMode(mode: 'point' | 'box'): void {
+      this.segmentMode = mode;
+      this.clearSegmentPendingMask();
+    },
+
+    /**
+     * Clear pending segmentation mask
+     */
+    clearSegmentPendingMask(): void {
+      this.segmentPendingMask = null;
+      this.segmentBoxStart = null;
+    },
+
+    /**
+     * Set pending segmentation mask (preview before creating layer)
+     */
+    setSegmentPendingMask(mask: CompositorState['segmentPendingMask']): void {
+      this.segmentPendingMask = mask;
+    },
+
+    /**
+     * Set box selection start point
+     */
+    setSegmentBoxStart(point: { x: number; y: number } | null): void {
+      this.segmentBoxStart = point;
+    },
+
+    /**
+     * Set segmentation loading state
+     */
+    setSegmentLoading(loading: boolean): void {
+      this.segmentIsLoading = loading;
+    },
+
+    /**
+     * Confirm pending mask and create layer from it
+     */
+    async confirmSegmentMask(layerName?: string): Promise<Layer | null> {
+      if (!this.segmentPendingMask || !this.sourceImage) {
+        return null;
+      }
+
+      const layer = await this._createLayerFromMask(
+        this.sourceImage,
+        this.segmentPendingMask,
+        layerName,
+        false
+      );
+
+      // Clear pending mask after creating layer
+      this.clearSegmentPendingMask();
+
+      return layer;
     },
 
     /**
@@ -1431,6 +1522,88 @@ export const useCompositorStore = defineStore('compositor', {
         this.pushHistory();
       } catch (err) {
         storeLogger.error('Failed to import project:', err);
+      }
+    },
+
+    /**
+     * Save project to server (ComfyUI backend)
+     * @param projectId - Optional existing project ID for overwriting
+     * @returns The project ID if successful, null otherwise
+     */
+    async saveProjectToServer(projectId?: string): Promise<string | null> {
+      try {
+        const { saveProject } = await import('@/services/projectStorage');
+        const result = await saveProject(this.project, projectId);
+
+        if (result.status === 'success' && result.project_id) {
+          storeLogger.info('Project saved to server:', result.project_id);
+          return result.project_id;
+        } else {
+          storeLogger.error('Failed to save project:', result.message);
+          return null;
+        }
+      } catch (err) {
+        storeLogger.error('Error saving project to server:', err);
+        return null;
+      }
+    },
+
+    /**
+     * Load project from server (ComfyUI backend)
+     * @param projectId - The project ID to load
+     * @returns True if successful
+     */
+    async loadProjectFromServer(projectId: string): Promise<boolean> {
+      try {
+        const { loadProject } = await import('@/services/projectStorage');
+        const result = await loadProject(projectId);
+
+        if (result.status === 'success' && result.project) {
+          this.project = result.project;
+          this.pushHistory();
+          storeLogger.info('Project loaded from server:', projectId);
+          return true;
+        } else {
+          storeLogger.error('Failed to load project:', result.message);
+          return false;
+        }
+      } catch (err) {
+        storeLogger.error('Error loading project from server:', err);
+        return false;
+      }
+    },
+
+    /**
+     * List all projects saved on server
+     */
+    async listServerProjects(): Promise<Array<{ id: string; name: string; modified?: string }>> {
+      try {
+        const { listProjects } = await import('@/services/projectStorage');
+        const result = await listProjects();
+
+        if (result.status === 'success' && result.projects) {
+          return result.projects;
+        }
+        return [];
+      } catch (err) {
+        storeLogger.error('Error listing projects:', err);
+        return [];
+      }
+    },
+
+    /**
+     * Delete a project from server
+     * @param projectId - The project ID to delete
+     * @returns True if successful
+     */
+    async deleteServerProject(projectId: string): Promise<boolean> {
+      try {
+        const { deleteProject } = await import('@/services/projectStorage');
+        const result = await deleteProject(projectId);
+        return result.status === 'success';
+      } catch (err) {
+        storeLogger.error('Error deleting project:', err);
+        return false;
       }
     },
 
@@ -1998,6 +2171,8 @@ export const useCompositorStore = defineStore('compositor', {
           shapeInnerRadius: 0.05,
           emitFromEdge: false,
           emitFromVolume: false,
+          // Spline path emission (null = disabled)
+          splinePath: null,
           // Sprite configuration
           sprite: {
             enabled: false,
@@ -2398,6 +2573,265 @@ export const useCompositorStore = defineStore('compositor', {
       const data = layer.data as PrecompData;
       Object.assign(data, updates);
       this.project.meta.modified = new Date().toISOString();
+    },
+
+    // ============================================================
+    // SEGMENTATION → LAYER PIPELINE (Vision Model Integration)
+    // ============================================================
+
+    /**
+     * Segment source image by clicking a point and create a layer from the result.
+     * This is the primary entry point for the Vision → Layer pipeline used by
+     * Time-to-Move and other diffusion model integrations.
+     *
+     * @param point - Click coordinates in image space
+     * @param options - Additional options
+     * @returns Promise resolving to the created layer, or null if failed
+     */
+    async segmentToLayerByPoint(
+      point: SegmentationPoint,
+      options: {
+        model?: 'sam2' | 'matseg';
+        layerName?: string;
+        positionAtCenter?: boolean;
+      } = {}
+    ): Promise<Layer | null> {
+      // Use source image or first available image asset
+      const sourceImage = this.sourceImage;
+      if (!sourceImage) {
+        storeLogger.error('No source image available for segmentation');
+        return null;
+      }
+
+      try {
+        // Call segmentation service
+        const result = await segmentByPoint(sourceImage, point, options.model || 'sam2');
+
+        if (result.status !== 'success' || !result.masks || result.masks.length === 0) {
+          storeLogger.error('Segmentation failed:', result.message);
+          return null;
+        }
+
+        // Use the first (best) mask
+        const mask = result.masks[0];
+
+        // Create the layer from the mask
+        return this._createLayerFromMask(sourceImage, mask, options.layerName, options.positionAtCenter);
+      } catch (err) {
+        storeLogger.error('Segmentation error:', err);
+        return null;
+      }
+    },
+
+    /**
+     * Segment source image by box selection and create a layer from the result.
+     *
+     * @param box - Selection box [x1, y1, x2, y2] in image space
+     * @param options - Additional options
+     * @returns Promise resolving to the created layer, or null if failed
+     */
+    async segmentToLayerByBox(
+      box: [number, number, number, number],
+      options: {
+        model?: 'sam2' | 'matseg';
+        layerName?: string;
+        positionAtCenter?: boolean;
+      } = {}
+    ): Promise<Layer | null> {
+      const sourceImage = this.sourceImage;
+      if (!sourceImage) {
+        storeLogger.error('No source image available for segmentation');
+        return null;
+      }
+
+      try {
+        const result = await segmentByBox(sourceImage, box, options.model || 'sam2');
+
+        if (result.status !== 'success' || !result.masks || result.masks.length === 0) {
+          storeLogger.error('Segmentation failed:', result.message);
+          return null;
+        }
+
+        const mask = result.masks[0];
+        return this._createLayerFromMask(sourceImage, mask, options.layerName, options.positionAtCenter);
+      } catch (err) {
+        storeLogger.error('Segmentation error:', err);
+        return null;
+      }
+    },
+
+    /**
+     * Segment source image with multiple positive/negative points.
+     *
+     * @param foregroundPoints - Points to include in selection
+     * @param backgroundPoints - Points to exclude from selection
+     * @param options - Additional options
+     */
+    async segmentToLayerByMultiplePoints(
+      foregroundPoints: SegmentationPoint[],
+      backgroundPoints: SegmentationPoint[] = [],
+      options: {
+        model?: 'sam2' | 'matseg';
+        layerName?: string;
+        positionAtCenter?: boolean;
+      } = {}
+    ): Promise<Layer | null> {
+      const sourceImage = this.sourceImage;
+      if (!sourceImage) {
+        storeLogger.error('No source image available for segmentation');
+        return null;
+      }
+
+      try {
+        const result = await segmentByMultiplePoints(
+          sourceImage,
+          foregroundPoints,
+          backgroundPoints,
+          options.model || 'sam2'
+        );
+
+        if (result.status !== 'success' || !result.masks || result.masks.length === 0) {
+          storeLogger.error('Segmentation failed:', result.message);
+          return null;
+        }
+
+        const mask = result.masks[0];
+        return this._createLayerFromMask(sourceImage, mask, options.layerName, options.positionAtCenter);
+      } catch (err) {
+        storeLogger.error('Segmentation error:', err);
+        return null;
+      }
+    },
+
+    /**
+     * Auto-segment all objects in the source image and create layers.
+     *
+     * @param options - Segmentation options
+     * @returns Promise resolving to array of created layers
+     */
+    async autoSegmentToLayers(
+      options: {
+        model?: 'sam2' | 'matseg';
+        minArea?: number;
+        maxMasks?: number;
+        namePrefix?: string;
+      } = {}
+    ): Promise<Layer[]> {
+      const sourceImage = this.sourceImage;
+      if (!sourceImage) {
+        storeLogger.error('No source image available for segmentation');
+        return [];
+      }
+
+      try {
+        const result = await autoSegment(sourceImage, {
+          model: options.model || 'sam2',
+          minArea: options.minArea || 1000,
+          maxMasks: options.maxMasks || 10
+        });
+
+        if (result.status !== 'success' || !result.masks || result.masks.length === 0) {
+          storeLogger.error('Auto-segmentation failed:', result.message);
+          return [];
+        }
+
+        const layers: Layer[] = [];
+        const prefix = options.namePrefix || 'Segment';
+
+        for (let i = 0; i < result.masks.length; i++) {
+          const mask = result.masks[i];
+          const layer = await this._createLayerFromMask(
+            sourceImage,
+            mask,
+            `${prefix} ${i + 1}`,
+            false // Don't center - preserve original position
+          );
+          if (layer) {
+            layers.push(layer);
+          }
+        }
+
+        return layers;
+      } catch (err) {
+        storeLogger.error('Auto-segmentation error:', err);
+        return [];
+      }
+    },
+
+    /**
+     * Internal: Create an image layer from a segmentation mask
+     */
+    async _createLayerFromMask(
+      sourceImageBase64: string,
+      mask: SegmentationMask,
+      name?: string,
+      positionAtCenter: boolean = false
+    ): Promise<Layer | null> {
+      try {
+        // Apply mask to source image to get transparent PNG
+        const maskedImageBase64 = await applyMaskToImage(
+          sourceImageBase64,
+          mask.mask,
+          mask.bounds
+        );
+
+        // Generate asset ID
+        const assetId = `seg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+        // Create asset reference
+        const asset: AssetReference = {
+          id: assetId,
+          type: 'image',
+          source: 'generated',
+          width: mask.bounds.width,
+          height: mask.bounds.height,
+          data: maskedImageBase64
+        };
+
+        // Add asset to project
+        this.project.assets[assetId] = asset;
+
+        // Create image layer
+        const layer = this.createLayer('image', name || 'Segmented');
+
+        // Set image data
+        const imageData: ImageLayerData = {
+          assetId,
+          fit: 'none', // Don't scale - use original size
+          sourceType: 'segmented'
+        };
+        layer.data = imageData;
+
+        // Position layer at the correct location
+        if (positionAtCenter) {
+          // Center of composition
+          layer.transform.position.value = {
+            x: this.project.composition.width / 2,
+            y: this.project.composition.height / 2
+          };
+        } else {
+          // Position at the mask's center in the original image
+          layer.transform.position.value = {
+            x: mask.bounds.x + mask.bounds.width / 2,
+            y: mask.bounds.y + mask.bounds.height / 2
+          };
+        }
+
+        // Set anchor point to center of layer
+        layer.transform.anchorPoint.value = {
+          x: mask.bounds.width / 2,
+          y: mask.bounds.height / 2
+        };
+
+        this.project.meta.modified = new Date().toISOString();
+        this.pushHistory();
+
+        storeLogger.info(`Created segmented layer: ${layer.name} (${mask.bounds.width}x${mask.bounds.height})`);
+        return layer;
+      } catch (err) {
+        storeLogger.error('Failed to create layer from mask:', err);
+        return null;
+      }
     },
 
     // ============================================================
@@ -3407,6 +3841,45 @@ export const useCompositorStore = defineStore('compositor', {
         }
         this.project.meta.modified = new Date().toISOString();
       }
+    },
+
+    // ============================================================
+    // PARTICLE SIMULATION ACTIONS
+    // ============================================================
+
+    /**
+     * Reset a particle layer's simulation
+     * Called when particle configuration changes
+     */
+    resetParticleSimulation(layerId: string): void {
+      particleSimulationRegistry.resetLayer(layerId);
+      storeLogger.debug('Reset particle simulation for layer:', layerId);
+    },
+
+    /**
+     * Clear all particle simulations
+     * Called on project load/new
+     */
+    clearAllParticleSimulations(): void {
+      particleSimulationRegistry.clear();
+      storeLogger.debug('Cleared all particle simulations');
+    },
+
+    /**
+     * Get particle snapshot for a layer at a specific frame
+     * Evaluates the frame state to get the deterministic snapshot
+     */
+    getParticleSnapshot(layerId: string, frame?: number): ParticleSnapshot | null {
+      const frameState = this.getFrameState(frame);
+      return frameState.particleSnapshots[layerId] ?? null;
+    },
+
+    /**
+     * Get all particle snapshots from current frame
+     */
+    getAllParticleSnapshots(frame?: number): Readonly<Record<string, ParticleSnapshot>> {
+      const frameState = this.getFrameState(frame);
+      return frameState.particleSnapshots;
     }
   }
 });

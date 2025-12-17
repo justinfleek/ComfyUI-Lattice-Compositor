@@ -276,6 +276,48 @@ export const EXPORT_PRESETS: Record<ExportTarget, Partial<ExportConfig>> = {
     cfgScale: 5.0,
   },
 
+  'ttm-wan': {
+    width: 832,
+    height: 480,
+    frameCount: 81,
+    fps: 24,
+    exportDepthMap: false,
+    exportControlImages: false,
+    exportCameraData: false,
+    exportReferenceFrame: true,
+    exportLastFrame: true,
+    steps: 30,
+    cfgScale: 5.0,
+  },
+
+  'ttm-cogvideox': {
+    width: 720,
+    height: 480,
+    frameCount: 49,
+    fps: 8,
+    exportDepthMap: false,
+    exportControlImages: false,
+    exportCameraData: false,
+    exportReferenceFrame: true,
+    exportLastFrame: true,
+    steps: 50,
+    cfgScale: 6.0,
+  },
+
+  'ttm-svd': {
+    width: 1024,
+    height: 576,
+    frameCount: 25,
+    fps: 8,
+    exportDepthMap: false,
+    exportControlImages: false,
+    exportCameraData: false,
+    exportReferenceFrame: true,
+    exportLastFrame: false,
+    steps: 25,
+    cfgScale: 5.0,
+  },
+
   'camera-comfyui': {
     width: 832,
     height: 480,
@@ -706,6 +748,33 @@ export const EXPORT_TARGET_INFO: Record<ExportTarget, {
     optionalInputs: ['prompt', 'mask'],
     outputTypes: ['video'],
     comfyNodes: ['TTMLoader', 'TTMDragEditor'],
+  },
+
+  'ttm-wan': {
+    name: 'TTM (Wan 2.1 Backend)',
+    description: 'Time-to-Move with Wan 2.1 model for high-quality generation',
+    requiredInputs: ['reference_image', 'motion_masks', 'trajectories'],
+    optionalInputs: ['prompt', 'last_frame', 'tweak_index', 'tstrong_index'],
+    outputTypes: ['video'],
+    comfyNodes: ['TTM_ApplyMotionControl', 'TTM_TrajectoryFromPoints', 'WanImageToVideo'],
+  },
+
+  'ttm-cogvideox': {
+    name: 'TTM (CogVideoX Backend)',
+    description: 'Time-to-Move with CogVideoX model for longer sequences',
+    requiredInputs: ['reference_image', 'motion_masks', 'trajectories'],
+    optionalInputs: ['prompt', 'last_frame', 'tweak_index', 'tstrong_index'],
+    outputTypes: ['video'],
+    comfyNodes: ['TTM_ApplyMotionControlCogVideo', 'TTM_TrajectoryFromPoints', 'CogVideoImageToVideo'],
+  },
+
+  'ttm-svd': {
+    name: 'TTM (SVD Backend)',
+    description: 'Time-to-Move with Stable Video Diffusion for fast generation',
+    requiredInputs: ['reference_image', 'motion_masks', 'trajectories'],
+    optionalInputs: ['tweak_index', 'tstrong_index'],
+    outputTypes: ['video'],
+    comfyNodes: ['TTM_ApplyMotionControlSVD', 'TTM_TrajectoryFromPoints', 'SVDEncode'],
   },
 
   'camera-comfyui': {

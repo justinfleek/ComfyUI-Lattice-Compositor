@@ -28,7 +28,61 @@ export type PropertyPath =
   | 'transform.anchorPoint.x' | 'transform.anchorPoint.y' | 'transform.anchorPoint.z'
   | 'transform.scale.x' | 'transform.scale.y' | 'transform.scale.z'
   | 'transform.rotation' | 'transform.rotationX' | 'transform.rotationY' | 'transform.rotationZ'
-  | 'opacity';
+  | 'opacity'
+  // Spline control point properties (dynamic index)
+  // Format: spline.controlPoint.{index}.{property}
+  | `spline.controlPoint.${number}.x`
+  | `spline.controlPoint.${number}.y`
+  | `spline.controlPoint.${number}.depth`
+  // Light properties
+  | 'light.intensity'
+  | 'light.color.r' | 'light.color.g' | 'light.color.b'
+  | 'light.colorTemperature'
+  | 'light.coneAngle' | 'light.penumbra' | 'light.falloff'
+  | 'light.shadow.intensity' | 'light.shadow.softness' | 'light.shadow.bias'
+  | 'light.poi.x' | 'light.poi.y' | 'light.poi.z'
+  | 'light.areaSize.width' | 'light.areaSize.height'
+  | 'light.physicalIntensity';
+
+/**
+ * Check if a property path is a spline control point property
+ */
+export function isSplineControlPointPath(path: string): path is PropertyPath {
+  return path.startsWith('spline.controlPoint.');
+}
+
+/**
+ * Check if a property path is a light property
+ */
+export function isLightPropertyPath(path: string): path is PropertyPath {
+  return path.startsWith('light.');
+}
+
+/**
+ * Parse a spline control point path into components
+ * Returns null if not a valid spline control point path
+ */
+export function parseSplineControlPointPath(path: string): {
+  index: number;
+  property: 'x' | 'y' | 'depth';
+} | null {
+  const match = path.match(/^spline\.controlPoint\.(\d+)\.(x|y|depth)$/);
+  if (!match) return null;
+  return {
+    index: parseInt(match[1], 10),
+    property: match[2] as 'x' | 'y' | 'depth',
+  };
+}
+
+/**
+ * Create a spline control point property path
+ */
+export function createSplineControlPointPath(
+  index: number,
+  property: 'x' | 'y' | 'depth'
+): PropertyPath {
+  return `spline.controlPoint.${index}.${property}` as PropertyPath;
+}
 
 export type AudioFeatureType =
   | 'amplitude' | 'rms' | 'spectralCentroid'
@@ -563,10 +617,126 @@ export function createGearDriver(
 }
 
 /**
+ * Create an audio-driven light intensity driver
+ * Makes a light pulse with the music
+ */
+export function createAudioLightDriver(
+  lightLayerId: string,
+  audioFeature: AudioFeatureType = 'amplitude',
+  options: {
+    minIntensity?: number;
+    maxIntensity?: number;
+    smoothing?: number;
+    threshold?: number;
+  } = {}
+): PropertyDriver {
+  const driver = createPropertyDriver(lightLayerId, 'light.intensity', 'audio');
+  driver.name = 'Audio Light Pulse';
+  driver.audioFeature = audioFeature;
+  driver.audioThreshold = options.threshold ?? 0;
+  driver.blendMode = 'replace';
+
+  // Remap 0-1 audio to intensity range
+  const minI = options.minIntensity ?? 0.2;
+  const maxI = options.maxIntensity ?? 2.0;
+  driver.transforms.push({ type: 'remap', inMin: 0, inMax: 1, outMin: minI, outMax: maxI });
+
+  if (options.smoothing !== undefined && options.smoothing > 0) {
+    driver.transforms.push({ type: 'smooth', smoothing: options.smoothing });
+  }
+
+  return driver;
+}
+
+/**
+ * Create an audio-driven color temperature driver
+ * Shifts color temperature with audio (warm on bass, cool on high frequencies)
+ */
+export function createAudioColorTempDriver(
+  lightLayerId: string,
+  audioFeature: AudioFeatureType = 'spectralCentroid',
+  options: {
+    warmTemp?: number;   // Kelvin at low values (default 2700K warm)
+    coolTemp?: number;   // Kelvin at high values (default 8000K cool)
+    smoothing?: number;
+  } = {}
+): PropertyDriver {
+  const driver = createPropertyDriver(lightLayerId, 'light.colorTemperature', 'audio');
+  driver.name = 'Audio Color Temperature';
+  driver.audioFeature = audioFeature;
+  driver.blendMode = 'replace';
+
+  // Map normalized spectral centroid to temperature range
+  const warm = options.warmTemp ?? 2700;
+  const cool = options.coolTemp ?? 8000;
+  driver.transforms.push({ type: 'remap', inMin: 0, inMax: 1, outMin: warm, outMax: cool });
+
+  if (options.smoothing !== undefined && options.smoothing > 0) {
+    driver.transforms.push({ type: 'smooth', smoothing: options.smoothing });
+  }
+
+  return driver;
+}
+
+/**
+ * Create a light that follows another layer's position
+ * Useful for spotlights tracking subjects
+ */
+export function createLightFollowDriver(
+  lightLayerId: string,
+  targetLayerId: string,
+  options: {
+    axis?: 'poi' | 'position';  // Drive POI or light position itself
+    smoothing?: number;
+    offset?: { x?: number; y?: number; z?: number };
+  } = {}
+): PropertyDriver[] {
+  const drivers: PropertyDriver[] = [];
+  const axis = options.axis ?? 'poi';
+  const prefix = axis === 'poi' ? 'light.poi' : 'transform.position';
+
+  // Create drivers for x, y, z
+  for (const coord of ['x', 'y', 'z'] as const) {
+    const driver = createPropertyDriver(
+      lightLayerId,
+      `${prefix}.${coord}` as PropertyPath,
+      'property'
+    );
+    driver.name = `Light Follow ${coord.toUpperCase()}`;
+    driver.sourceLayerId = targetLayerId;
+    driver.sourceProperty = `transform.position.${coord}` as PropertyPath;
+    driver.blendMode = 'replace';
+
+    // Apply offset if specified
+    const offsetValue = options.offset?.[coord];
+    if (offsetValue !== undefined && offsetValue !== 0) {
+      driver.transforms.push({ type: 'offset', amount: offsetValue });
+    }
+
+    if (options.smoothing !== undefined && options.smoothing > 0) {
+      driver.transforms.push({ type: 'smooth', smoothing: options.smoothing });
+    }
+
+    drivers.push(driver);
+  }
+
+  return drivers;
+}
+
+/**
  * Get human-readable name for a property path
  */
 export function getPropertyPathDisplayName(path: PropertyPath): string {
-  const names: Record<PropertyPath, string> = {
+  // Check for spline control point paths first
+  const splineParsed = parseSplineControlPointPath(path);
+  if (splineParsed) {
+    const propName = splineParsed.property === 'x' ? 'X'
+      : splineParsed.property === 'y' ? 'Y'
+      : 'Depth';
+    return `Control Point ${splineParsed.index} ${propName}`;
+  }
+
+  const names: Record<string, string> = {
     'transform.position.x': 'Position X',
     'transform.position.y': 'Position Y',
     'transform.position.z': 'Position Z',
@@ -580,13 +750,31 @@ export function getPropertyPathDisplayName(path: PropertyPath): string {
     'transform.rotationX': 'X Rotation',
     'transform.rotationY': 'Y Rotation',
     'transform.rotationZ': 'Z Rotation',
-    'opacity': 'Opacity'
+    'opacity': 'Opacity',
+    // Light properties
+    'light.intensity': 'Light Intensity',
+    'light.color.r': 'Light Color Red',
+    'light.color.g': 'Light Color Green',
+    'light.color.b': 'Light Color Blue',
+    'light.colorTemperature': 'Color Temperature (K)',
+    'light.coneAngle': 'Cone Angle',
+    'light.penumbra': 'Penumbra',
+    'light.falloff': 'Falloff',
+    'light.shadow.intensity': 'Shadow Intensity',
+    'light.shadow.softness': 'Shadow Softness',
+    'light.shadow.bias': 'Shadow Bias',
+    'light.poi.x': 'Point of Interest X',
+    'light.poi.y': 'Point of Interest Y',
+    'light.poi.z': 'Point of Interest Z',
+    'light.areaSize.width': 'Area Light Width',
+    'light.areaSize.height': 'Area Light Height',
+    'light.physicalIntensity': 'Physical Intensity (lm)'
   };
   return names[path] || path;
 }
 
 /**
- * Get all available property paths
+ * Get all available property paths (common properties available on all layers)
  */
 export function getAllPropertyPaths(): PropertyPath[] {
   return [
@@ -596,6 +784,40 @@ export function getAllPropertyPaths(): PropertyPath[] {
     'transform.rotation', 'transform.rotationX', 'transform.rotationY', 'transform.rotationZ',
     'opacity'
   ];
+}
+
+/**
+ * Get all light property paths (for light layers only)
+ */
+export function getLightPropertyPaths(): PropertyPath[] {
+  return [
+    'light.intensity',
+    'light.color.r', 'light.color.g', 'light.color.b',
+    'light.colorTemperature',
+    'light.coneAngle', 'light.penumbra', 'light.falloff',
+    'light.shadow.intensity', 'light.shadow.softness', 'light.shadow.bias',
+    'light.poi.x', 'light.poi.y', 'light.poi.z',
+    'light.areaSize.width', 'light.areaSize.height',
+    'light.physicalIntensity'
+  ];
+}
+
+/**
+ * Get all property paths for a specific layer type
+ */
+export function getPropertyPathsForLayerType(layerType: string): PropertyPath[] {
+  const commonPaths = getAllPropertyPaths();
+
+  switch (layerType) {
+    case 'light':
+      return [...commonPaths, ...getLightPropertyPaths()];
+    case 'spline':
+      // Spline control points are dynamic, so we just return common paths
+      // Individual control point paths are generated dynamically
+      return commonPaths;
+    default:
+      return commonPaths;
+  }
 }
 
 export default PropertyDriverSystem;

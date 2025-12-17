@@ -133,6 +133,14 @@ export class SolidLayer extends BaseLayer {
     }
   }
 
+  protected override onApplyEvaluatedState(state: import('../MotionEngine').EvaluatedLayer): void {
+    // Apply evaluated color if present in properties
+    if (state.properties['color'] !== undefined) {
+      this.material.color.set(state.properties['color'] as string);
+      this.material.needsUpdate = true;
+    }
+  }
+
   protected onUpdate(properties: Partial<Layer>): void {
     const data = properties.data as Partial<SolidData> | undefined;
 

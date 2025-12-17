@@ -689,12 +689,38 @@ function applyTrajectory() {
 
   const keyframes = generateTrajectoryKeyframes(config, store.currentFrame);
 
-  // TODO: Apply keyframes to camera
-  // This will need a store method to add camera keyframes
-  console.log('Generated trajectory keyframes:', keyframes);
+  // Apply position keyframes
+  for (const kf of keyframes.position) {
+    store.addCameraKeyframe(camera.value.id, {
+      frame: kf.frame,
+      position: kf.position,
+      spatialInterpolation: kf.spatialInterpolation,
+      temporalInterpolation: kf.temporalInterpolation,
+    });
+  }
 
-  // For now, show feedback
-  alert(`Generated ${keyframes.position.length} keyframes for camera trajectory.\nKeyframe application will be added in a future update.`);
+  // Apply point of interest keyframes
+  for (const kf of keyframes.pointOfInterest) {
+    store.addCameraKeyframe(camera.value.id, {
+      frame: kf.frame,
+      pointOfInterest: kf.pointOfInterest,
+      spatialInterpolation: kf.spatialInterpolation,
+      temporalInterpolation: kf.temporalInterpolation,
+    });
+  }
+
+  // Apply zoom keyframes if present
+  if (keyframes.zoom) {
+    for (const kf of keyframes.zoom) {
+      store.addCameraKeyframe(camera.value.id, {
+        frame: kf.frame,
+        zoom: kf.zoom,
+        temporalInterpolation: kf.temporalInterpolation,
+      });
+    }
+  }
+
+  console.log(`Applied ${keyframes.position.length} camera trajectory keyframes`);
 }
 
 function toggleSection(section: keyof typeof expandedSections) {

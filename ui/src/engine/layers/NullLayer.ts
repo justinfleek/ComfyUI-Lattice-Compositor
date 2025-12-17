@@ -155,6 +155,11 @@ export class NullLayer extends BaseLayer {
     // Transform is handled by BaseLayer
   }
 
+  protected override onApplyEvaluatedState(_state: import('../MotionEngine').EvaluatedLayer): void {
+    // Null layers have no type-specific properties
+    // All transforms are handled by BaseLayer
+  }
+
   protected onUpdate(properties: Partial<Layer>): void {
     // Update 3D state if changed
     if (properties.threeD !== undefined && properties.threeD !== this.threeD) {

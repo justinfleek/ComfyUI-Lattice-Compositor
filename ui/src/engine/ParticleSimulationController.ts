@@ -298,23 +298,16 @@ export class ParticleSimulationController {
       throw new Error(`No checkpoint at frame ${frame}`);
     }
 
-    // Reset the system
-    this.system.reset();
-
     // Restore RNG state from the checkpoint - this is the KEY to determinism
     // The ParticleSystem's RNG must be at the exact same state it was
     // when this checkpoint was created
     this.system.getRng().setState(checkpoint.rngState);
     this.rng.setState(checkpoint.rngState);
 
-    // If not frame 0, we need to restore particles
-    // For now, frame 0 checkpoint is empty (fresh start)
-    if (frame > 0) {
-      // TODO: Implement particle state restoration
-      // Would need ParticleSystem.restoreParticles() method
-      // For now, we simulate from 0 which is less efficient but still deterministic
-      // because the RNG state at frame 0 is always the same (seed)
-    }
+    // Restore particles from checkpoint
+    // For frame 0, this will be an empty array (fresh start)
+    // For other frames, this restores exact particle positions
+    this.system.restoreParticles(checkpoint.particles, checkpoint.frame);
   }
 
   /**

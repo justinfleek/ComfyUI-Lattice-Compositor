@@ -294,6 +294,18 @@ export class ImageLayer extends BaseLayer {
     this.evaluateEffects(frame);
   }
 
+  protected override onApplyEvaluatedState(state: import('../MotionEngine').EvaluatedLayer): void {
+    // Apply tint if present in evaluated properties
+    if (state.properties['tint'] !== undefined) {
+      this.setTint(state.properties['tint'] as string | number);
+    }
+
+    // Process effects using evaluated effect parameters
+    if (state.effects.length > 0) {
+      this.applyEvaluatedEffects(state.effects);
+    }
+  }
+
   protected onUpdate(properties: Partial<Layer>): void {
     const data = properties.data as any;
 

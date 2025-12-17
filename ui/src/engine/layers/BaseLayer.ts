@@ -9,12 +9,13 @@
  */
 
 import * as THREE from 'three';
-import type { Layer, AnimatableProperty, LayerTransform } from '@/types/project';
+import type { Layer, AnimatableProperty, LayerTransform, LayerMask, TrackMatteType } from '@/types/project';
 import type { EffectInstance } from '@/types/effects';
 import type { LayerInstance } from '../types';
 import type { TargetParameter } from '@/services/audioReactiveMapping';
 import { KeyframeEvaluator } from '../animation/KeyframeEvaluator';
 import { processEffectStack, hasEnabledEffects } from '@/services/effectProcessor';
+import { applyMasksToLayer, applyTrackMatte } from '@/services/effects/maskRenderer';
 import { layerLogger } from '@/utils/logger';
 
 export abstract class BaseLayer implements LayerInstance {
@@ -80,6 +81,28 @@ export abstract class BaseLayer implements LayerInstance {
   /** Flag to track if effects need processing */
   protected effectsDirty: boolean = false;
 
+  // ============================================================================
+  // MASK & MATTE SYSTEM
+  // ============================================================================
+
+  /** Masks applied to this layer (vector cutouts) */
+  protected masks: LayerMask[] = [];
+
+  /** Track matte type (uses another layer as alpha/luma source) */
+  protected trackMatteType: TrackMatteType = 'none';
+
+  /** ID of the layer used as track matte source */
+  protected trackMatteLayerId: string | null = null;
+
+  /** ID of composition containing matte layer (for cross-comp mattes) */
+  protected trackMatteCompositionId: string | null = null;
+
+  /** Canvas of track matte layer (set externally by LayerManager) */
+  protected trackMatteCanvas: HTMLCanvasElement | null = null;
+
+  /** Preserve transparency - only paint on existing pixels */
+  protected preserveTransparency: boolean = false;
+
   constructor(layerData: Layer) {
     this.id = layerData.id;
     this.type = layerData.type;
@@ -104,6 +127,13 @@ export abstract class BaseLayer implements LayerInstance {
     this.blendMode = layerData.blendMode ?? 'normal';
     this.parentId = layerData.parentId ?? null;
     this.effects = layerData.effects ?? [];
+
+    // Mask & matte properties
+    this.masks = layerData.masks ?? [];
+    this.trackMatteType = layerData.trackMatteType ?? 'none';
+    this.trackMatteLayerId = layerData.trackMatteLayerId ?? null;
+    this.trackMatteCompositionId = layerData.trackMatteCompositionId ?? null;
+    this.preserveTransparency = layerData.preserveTransparency ?? false;
   }
 
   /**
@@ -425,6 +455,31 @@ export abstract class BaseLayer implements LayerInstance {
       this.setEffects(properties.effects);
     }
 
+    // Mask and matte property updates
+    if (properties.masks !== undefined) {
+      this.masks = properties.masks;
+    }
+
+    if (properties.trackMatteType !== undefined) {
+      this.trackMatteType = properties.trackMatteType;
+    }
+
+    if (properties.trackMatteLayerId !== undefined) {
+      this.trackMatteLayerId = properties.trackMatteLayerId;
+      // Clear the cached canvas when matte source changes
+      this.trackMatteCanvas = null;
+    }
+
+    if (properties.trackMatteCompositionId !== undefined) {
+      this.trackMatteCompositionId = properties.trackMatteCompositionId;
+      // Clear the cached canvas when matte composition changes
+      this.trackMatteCanvas = null;
+    }
+
+    if (properties.preserveTransparency !== undefined) {
+      this.preserveTransparency = properties.preserveTransparency;
+    }
+
     // Call subclass-specific update
     this.onUpdate(properties);
   }
@@ -618,19 +673,190 @@ export abstract class BaseLayer implements LayerInstance {
     // Subclasses should override to update their material/texture
   }
 
+  // ============================================================================
+  // MASK PROCESSING
+  // ============================================================================
+
   /**
-   * Called after frame evaluation to apply effects
+   * Check if this layer has any enabled masks
+   */
+  protected hasMasks(): boolean {
+    return this.masks.length > 0 && this.masks.some(m => m.enabled);
+  }
+
+  /**
+   * Check if this layer has a track matte assigned
+   */
+  protected hasTrackMatte(): boolean {
+    return this.trackMatteType !== 'none' && this.trackMatteCanvas !== null;
+  }
+
+  /**
+   * Set the track matte canvas (called by LayerManager when compositing)
+   * @param canvas - The rendered canvas of the matte layer
+   */
+  setTrackMatteCanvas(canvas: HTMLCanvasElement | null): void {
+    this.trackMatteCanvas = canvas;
+  }
+
+  /**
+   * Get the track matte layer ID
+   */
+  getTrackMatteLayerId(): string | null {
+    return this.trackMatteLayerId;
+  }
+
+  /**
+   * Get the track matte composition ID (for cross-comp mattes)
+   * Returns null if matte is in the same composition
+   */
+  getTrackMatteCompositionId(): string | null {
+    return this.trackMatteCompositionId;
+  }
+
+  /**
+   * Check if this layer uses a cross-composition track matte
+   */
+  hasCrossCompMatte(): boolean {
+    return this.trackMatteCompositionId !== null && this.trackMatteLayerId !== null;
+  }
+
+  /**
+   * Get the track matte type
+   */
+  getTrackMatteType(): TrackMatteType {
+    return this.trackMatteType;
+  }
+
+  /**
+   * Update masks
+   */
+  setMasks(masks: LayerMask[]): void {
+    this.masks = masks;
+  }
+
+  /**
+   * Process masks and track matte on a canvas
+   * @param canvas - Source canvas to apply masks to
+   * @param frame - Current frame for animated masks
+   * @returns Processed canvas with masks applied
+   */
+  protected processMasksAndMattes(canvas: HTMLCanvasElement, frame: number): HTMLCanvasElement {
+    let result = canvas;
+
+    // Apply layer masks (vector paths)
+    if (this.hasMasks()) {
+      result = applyMasksToLayer(result, this.masks, frame);
+    }
+
+    // Apply track matte (uses another layer's canvas)
+    if (this.hasTrackMatte() && this.trackMatteCanvas) {
+      result = applyTrackMatte(result, this.trackMatteCanvas, this.trackMatteType);
+    }
+
+    return result;
+  }
+
+  /**
+   * Called after frame evaluation to apply effects AND masks
    * This should be called by subclasses after their content is rendered
    */
   protected evaluateEffects(frame: number): void {
-    if (!this.hasEnabledEffects()) {
+    const hasEffects = this.hasEnabledEffects();
+    const hasMasks = this.hasMasks();
+    const hasTrackMatte = this.hasTrackMatte();
+
+    // Early exit if nothing to process
+    if (!hasEffects && !hasMasks && !hasTrackMatte) {
       return;
     }
 
-    const processedCanvas = this.processEffects(frame);
+    // Get source canvas
+    const sourceCanvas = this.getSourceCanvas();
+    if (!sourceCanvas) {
+      return;
+    }
+
+    let processedCanvas = sourceCanvas;
+
+    // Step 1: Apply effects
+    if (hasEffects) {
+      const effectResult = this.processEffects(frame);
+      if (effectResult) {
+        processedCanvas = effectResult;
+      }
+    }
+
+    // Step 2: Apply masks and track mattes
+    if (hasMasks || hasTrackMatte) {
+      processedCanvas = this.processMasksAndMattes(processedCanvas, frame);
+    }
+
+    // Apply final result back to layer
+    if (processedCanvas !== sourceCanvas) {
+      this.applyProcessedEffects(processedCanvas);
+    }
+  }
+
+  /**
+   * Apply pre-evaluated effects from MotionEngine
+   * Uses the evaluated effect parameters rather than re-evaluating
+   */
+  protected applyEvaluatedEffects(evaluatedEffects: readonly import('../MotionEngine').EvaluatedEffect[]): void {
+    if (evaluatedEffects.length === 0 || !this.hasEnabledEffects()) {
+      return;
+    }
+
+    // Process effects using the pre-evaluated parameters
+    // The effects are already evaluated by MotionEngine, so we apply them directly
+    const processedCanvas = this.processEffectsWithEvaluated(evaluatedEffects);
     if (processedCanvas) {
       this.applyProcessedEffects(processedCanvas);
     }
+  }
+
+  /**
+   * Process effects using pre-evaluated parameters
+   */
+  protected processEffectsWithEvaluated(
+    evaluatedEffects: readonly import('../MotionEngine').EvaluatedEffect[]
+  ): HTMLCanvasElement | null {
+    const sourceCanvas = this.getSourceCanvas();
+    if (!sourceCanvas) {
+      return null;
+    }
+
+    // Process effects in order using evaluated parameters
+    let currentCanvas = sourceCanvas;
+    for (const evalEffect of evaluatedEffects) {
+      if (!evalEffect.enabled) continue;
+
+      // Find matching effect instance
+      const effect = this.effects.find(e => e.id === evalEffect.id);
+      if (!effect) continue;
+
+      // Apply effect with pre-evaluated parameters
+      const result = this.processEffectWithParams(effect, currentCanvas, evalEffect.parameters);
+      if (result) {
+        currentCanvas = result;
+      }
+    }
+
+    return currentCanvas !== sourceCanvas ? currentCanvas : null;
+  }
+
+  /**
+   * Process a single effect with pre-evaluated parameters
+   */
+  protected processEffectWithParams(
+    effect: EffectInstance,
+    sourceCanvas: HTMLCanvasElement,
+    params: Record<string, unknown>
+  ): HTMLCanvasElement | null {
+    // This would delegate to effect-specific processors
+    // For now, mark canvas for re-processing with new params
+    // The actual implementation would use the effect processor
+    return null; // Subclasses can override for custom effect handling
   }
 
   // ============================================================================

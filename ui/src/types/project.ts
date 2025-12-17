@@ -11,9 +11,11 @@
 // ============================================================
 
 import type { EffectInstance } from './effects';
+import type { ShapeLayerData } from './shapes';
 
 // Re-export EffectInstance for consumers who import from project.ts
 export type { EffectInstance } from './effects';
+export type { ShapeLayerData } from './shapes';
 
 export interface WeylProject {
   version: "1.0.0";
@@ -124,6 +126,7 @@ export interface Layer {
   solo: boolean;
   threeD: boolean;      // 3D Layer Switch
   motionBlur: boolean;  // Motion Blur Switch
+  motionBlurSettings?: LayerMotionBlurSettings;  // Detailed motion blur configuration
   inPoint: number;      // Start frame (0-80)
   outPoint: number;     // End frame (0-80)
   parentId: string | null;
@@ -140,11 +143,12 @@ export interface Layer {
   masks?: LayerMask[];           // Mask paths applied to this layer
   trackMatteType?: TrackMatteType;  // Track matte mode (uses layer above)
   trackMatteLayerId?: string;       // ID of layer used as track matte
+  trackMatteCompositionId?: string; // Optional: ID of composition containing matte layer (for cross-comp mattes)
   preserveTransparency?: boolean;   // Only paint on existing pixels
 
   properties: AnimatableProperty<any>[];
   effects: EffectInstance[];  // Effect stack - processed top to bottom
-  data: SplineData | TextData | ParticleData | ParticleLayerData | DepthflowLayerData | GeneratedMapData | CameraLayerData | VideoData | PrecompData | null;
+  data: SplineData | TextData | ParticleData | ParticleLayerData | DepthflowLayerData | GeneratedMapData | CameraLayerData | ImageLayerData | VideoData | PrecompData | ProceduralMatteData | ShapeLayerData | null;
 }
 
 export type LayerType =
@@ -165,7 +169,42 @@ export type LayerType =
   | 'solid'      // Solid color plane
   | 'null'       // Null object
   | 'group'      // Layer group
-  | 'precomp';   // Pre-composition (nested composition)
+  | 'precomp'    // Pre-composition (nested composition)
+  | 'matte';     // Procedural matte (animated patterns for track mattes)
+
+// ============================================================
+// MOTION BLUR SETTINGS
+// ============================================================
+
+export type MotionBlurType =
+  | 'standard'     // Standard shutter-based blur
+  | 'pixel'        // Pixel motion blur (analyzes frame differences)
+  | 'directional'  // Directional blur (fixed direction)
+  | 'radial'       // Radial blur (spin/zoom from center)
+  | 'vector'       // Vector-based (uses velocity data)
+  | 'adaptive';    // Auto-selects based on motion
+
+export interface LayerMotionBlurSettings {
+  /** Blur type */
+  type: MotionBlurType;
+  /** Shutter angle in degrees (0-720, 180 = standard film) */
+  shutterAngle: number;
+  /** Shutter phase offset (-180 to 180) */
+  shutterPhase: number;
+  /** Samples per frame (2-64, higher = smoother but slower) */
+  samplesPerFrame: number;
+  /** For directional blur: angle in degrees */
+  direction?: number;
+  /** For directional blur: blur length in pixels */
+  blurLength?: number;
+  /** For radial blur: 'spin' or 'zoom' */
+  radialMode?: 'spin' | 'zoom';
+  /** For radial blur: center point (0-1 normalized) */
+  radialCenterX?: number;
+  radialCenterY?: number;
+  /** For radial blur: amount (0-100) */
+  radialAmount?: number;
+}
 
 // ============================================================
 // LAYER DATA TYPE MAPPING
@@ -182,10 +221,11 @@ export type LayerDataMap = {
   camera: CameraLayerData;
   video: VideoData;
   precomp: PrecompData;
+  matte: ProceduralMatteData;
+  shape: ShapeLayerData;
   // Layers with no special data
   depth: null;
   normal: null;
-  shape: null;
   image: null;
   audio: null;
   light: null;
@@ -396,6 +436,30 @@ export function createEllipseMask(
 }
 
 // ============================================================
+// IMAGE LAYER DATA - Static image display
+// ============================================================
+
+export interface ImageLayerData {
+  assetId: string | null;
+
+  // Display options
+  fit: 'none' | 'contain' | 'cover' | 'fill';  // How to fit image in layer bounds
+
+  // Optional cropping (for segmented regions)
+  cropEnabled?: boolean;
+  cropRect?: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+
+  // Source info (for regeneration/editing)
+  sourceType?: 'file' | 'generated' | 'segmented';
+  segmentationMaskId?: string;  // If created via segmentation
+}
+
+// ============================================================
 // VIDEO DATA - Full video playback control
 // ============================================================
 
@@ -464,6 +528,148 @@ export type GeneratedMapType =
   | 'segment'       // SAM2/MatSeg
   | 'lineart'       // Lineart extraction
   | 'softedge';     // Soft edge detection
+
+// ============================================================
+// PROCEDURAL MATTE DATA (Animated patterns for track mattes)
+// ============================================================
+
+/**
+ * Procedural matte layer - generates animated patterns
+ * Useful for creating track mattes without additional assets
+ */
+export interface ProceduralMatteData {
+  /** Pattern type */
+  patternType: ProceduralMatteType;
+
+  /** Pattern-specific parameters */
+  parameters: ProceduralMatteParams;
+
+  /** Animation settings */
+  animation: {
+    /** Enable animation */
+    enabled: boolean;
+    /** Animation speed multiplier */
+    speed: AnimatableProperty<number>;
+    /** Animation phase offset (0-1) */
+    phase: AnimatableProperty<number>;
+    /** Animation direction (for gradients/wipes) */
+    direction: AnimatableProperty<number>;  // Degrees
+  };
+
+  /** Invert the output (swap black/white) */
+  inverted: boolean;
+
+  /** Output levels (min/max black/white) */
+  levels: {
+    inputBlack: AnimatableProperty<number>;   // 0-255
+    inputWhite: AnimatableProperty<number>;   // 0-255
+    gamma: AnimatableProperty<number>;        // 0.1-10
+    outputBlack: AnimatableProperty<number>;  // 0-255
+    outputWhite: AnimatableProperty<number>;  // 0-255
+  };
+}
+
+/**
+ * Available procedural pattern types
+ */
+export type ProceduralMatteType =
+  | 'linear_gradient'   // Linear gradient (supports animated direction)
+  | 'radial_gradient'   // Radial gradient (center point animatable)
+  | 'angular_gradient'  // Conical/angular gradient
+  | 'ramp'              // Animated wipe/reveal
+  | 'noise'             // Fractal noise (Perlin/Simplex)
+  | 'checkerboard'      // Animated checkerboard
+  | 'circle'            // Animated circle (grow/shrink)
+  | 'rectangle'         // Animated rectangle
+  | 'grid'              // Grid pattern
+  | 'wave'              // Wave pattern (sine/triangle)
+  | 'venetian_blinds'   // Venetian blinds transition
+  | 'iris'              // Iris wipe (circular reveal)
+  | 'radial_wipe'       // Clock wipe
+  | 'dissolve';         // Random dissolve
+
+/**
+ * Pattern-specific parameters (varies by pattern type)
+ */
+export interface ProceduralMatteParams {
+  // Linear/Angular gradient
+  angle?: AnimatableProperty<number>;        // Direction in degrees
+  blend?: AnimatableProperty<number>;        // Blend width (0-1)
+
+  // Radial gradient
+  centerX?: AnimatableProperty<number>;      // Center X (0-1)
+  centerY?: AnimatableProperty<number>;      // Center Y (0-1)
+  radius?: AnimatableProperty<number>;       // Radius (0-2)
+
+  // Ramp/Wipe
+  progress?: AnimatableProperty<number>;     // Wipe progress (0-1)
+  softness?: AnimatableProperty<number>;     // Edge softness
+
+  // Noise
+  scale?: AnimatableProperty<number>;        // Noise scale
+  octaves?: number;                          // Fractal octaves (1-8)
+  persistence?: number;                      // Fractal persistence
+  lacunarity?: number;                       // Fractal lacunarity
+  seed?: number;                             // Random seed
+
+  // Checkerboard/Grid
+  tilesX?: AnimatableProperty<number>;       // Horizontal tiles
+  tilesY?: AnimatableProperty<number>;       // Vertical tiles
+  rotation?: AnimatableProperty<number>;     // Pattern rotation
+
+  // Circle/Rectangle
+  width?: AnimatableProperty<number>;        // Shape width
+  height?: AnimatableProperty<number>;       // Shape height
+  cornerRadius?: AnimatableProperty<number>; // Corner radius
+
+  // Wave
+  frequency?: AnimatableProperty<number>;    // Wave frequency
+  amplitude?: AnimatableProperty<number>;    // Wave amplitude
+  waveType?: 'sine' | 'triangle' | 'square' | 'sawtooth';
+
+  // Venetian blinds
+  slats?: AnimatableProperty<number>;        // Number of slats
+
+  // Iris
+  feather?: AnimatableProperty<number>;      // Edge feather
+
+  // Dissolve
+  randomness?: AnimatableProperty<number>;   // Dissolve randomness
+  blockSize?: AnimatableProperty<number>;    // Dissolve block size
+}
+
+/**
+ * Create default procedural matte data
+ */
+export function createDefaultProceduralMatteData(
+  patternType: ProceduralMatteType = 'linear_gradient'
+): ProceduralMatteData {
+  return {
+    patternType,
+    parameters: {
+      angle: createAnimatableProperty('Angle', 0, 'number'),
+      blend: createAnimatableProperty('Blend', 0.5, 'number'),
+      progress: createAnimatableProperty('Progress', 0.5, 'number'),
+      centerX: createAnimatableProperty('Center X', 0.5, 'number'),
+      centerY: createAnimatableProperty('Center Y', 0.5, 'number'),
+      radius: createAnimatableProperty('Radius', 1, 'number'),
+    },
+    animation: {
+      enabled: false,
+      speed: createAnimatableProperty('Speed', 1, 'number'),
+      phase: createAnimatableProperty('Phase', 0, 'number'),
+      direction: createAnimatableProperty('Direction', 0, 'number'),
+    },
+    inverted: false,
+    levels: {
+      inputBlack: createAnimatableProperty('Input Black', 0, 'number'),
+      inputWhite: createAnimatableProperty('Input White', 255, 'number'),
+      gamma: createAnimatableProperty('Gamma', 1, 'number'),
+      outputBlack: createAnimatableProperty('Output Black', 0, 'number'),
+      outputWhite: createAnimatableProperty('Output White', 255, 'number'),
+    },
+  };
+}
 
 // ============================================================
 // PARTICLE SYSTEM DATA
@@ -617,7 +823,17 @@ export interface SubEmitterConfig {
   enabled: boolean;
 }
 
-export type EmitterShape = 'point' | 'line' | 'circle' | 'box' | 'sphere' | 'ring';
+export type EmitterShape = 'point' | 'line' | 'circle' | 'box' | 'sphere' | 'ring' | 'spline';
+
+// Spline path emission configuration
+export interface SplinePathEmission {
+  layerId: string;                // ID of the SplineLayer to emit along
+  emitMode: 'uniform' | 'random' | 'start' | 'end' | 'sequential';
+  parameter: number;              // For 'start'/'end': offset, for 'uniform': interval, for 'sequential': speed
+  alignToPath: boolean;           // Align emission direction with path tangent
+  offset: number;                 // Perpendicular offset from path (normalized)
+  bidirectional: boolean;         // Emit from both directions along tangent
+}
 
 export interface SpriteConfig {
   enabled: boolean;
@@ -664,6 +880,8 @@ export interface ParticleEmitterConfig {
   shapeInnerRadius: number;
   emitFromEdge: boolean;
   emitFromVolume: boolean;
+  // Spline path emission (when shape = 'spline')
+  splinePath: SplinePathEmission | null;
   // Sprite configuration
   sprite: SpriteConfig;
 }
@@ -746,6 +964,24 @@ export interface DepthflowLayerData {
   animatedOffsetY?: AnimatableProperty<number>;
   animatedRotation?: AnimatableProperty<number>;
   animatedDepthScale?: AnimatableProperty<number>;
+
+  // Camera sync - drives depthflow from 3D camera motion
+  cameraSyncEnabled?: boolean;
+  cameraSyncLayerId?: string;  // ID of the camera layer to sync from
+  cameraSyncConfig?: CameraToDepthflowConfig;
+}
+
+// Camera → Depthflow sync configuration
+export interface CameraToDepthflowConfig {
+  sensitivityX: number;
+  sensitivityY: number;
+  sensitivityZ: number;
+  sensitivityRotation: number;
+  baseZoom: number;
+  invertX: boolean;
+  invertY: boolean;
+  zoomClamp: { min: number; max: number };
+  offsetClamp: { min: number; max: number };
 }
 
 export interface DepthflowConfig {
@@ -782,6 +1018,19 @@ export interface Vec3 {
   z: number;
 }
 
+// Camera path following configuration
+export interface CameraPathFollowing {
+  enabled: boolean;
+  pathLayerId: string;              // ID of SplineLayer to follow
+  parameter: AnimatableProperty<number>;  // 0-1 position along path (can be keyframed)
+  lookAhead: number;                // Distance ahead to look (0-1 path units)
+  bankingStrength: number;          // How much to bank on turns (0-1)
+  offsetY: number;                  // Height offset from path
+  alignToPath: boolean;             // Auto-orient camera along path tangent
+  autoAdvance: boolean;             // Automatically advance along path each frame
+  autoAdvanceSpeed: number;         // Speed of auto-advance (path units per frame)
+}
+
 export interface CameraLayerData {
   cameraId: string;      // Reference to the Camera3D object
   isActiveCamera: boolean;  // Is this the composition's active camera?
@@ -791,6 +1040,9 @@ export interface CameraLayerData {
   animatedTarget?: AnimatableProperty<Vec3>;
   animatedFov?: AnimatableProperty<number>;
   animatedFocalLength?: AnimatableProperty<number>;
+
+  // Path following (camera moves along a spline)
+  pathFollowing?: CameraPathFollowing;
 
   // Depth of field settings
   depthOfField?: CameraDepthOfField;
@@ -870,6 +1122,24 @@ export interface AnimatableProperty<T> {
   animated: boolean;
   keyframes: Keyframe<T>[];
   group?: string;       // Property group for timeline organization (e.g., "Transform", "Text", "More Options")
+
+  // Expression system - applies post-interpolation modifications
+  expression?: PropertyExpression;
+}
+
+/**
+ * Expression attached to a property
+ * Evaluated after keyframe interpolation to add dynamic behavior
+ */
+export interface PropertyExpression {
+  /** Whether the expression is active */
+  enabled: boolean;
+  /** Expression type: 'preset' for named expressions, 'custom' for user scripts */
+  type: 'preset' | 'custom';
+  /** Expression name (for presets: 'wiggle', 'loopOut', 'inertia', etc.) */
+  name: string;
+  /** Expression parameters */
+  params: Record<string, number | string | boolean>;
 }
 
 export interface Keyframe<T> {

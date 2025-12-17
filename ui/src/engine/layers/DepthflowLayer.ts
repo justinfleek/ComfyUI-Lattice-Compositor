@@ -442,6 +442,31 @@ export class DepthflowLayer extends BaseLayer {
     this.material.needsUpdate = true;
   }
 
+  protected override onApplyEvaluatedState(state: import('../MotionEngine').EvaluatedLayer): void {
+    const props = state.properties;
+
+    // Apply evaluated depthflow properties
+    if (props['zoom'] !== undefined) {
+      this.material.uniforms.zoom.value = props['zoom'] as number;
+    }
+
+    if (props['offsetX'] !== undefined || props['offsetY'] !== undefined) {
+      const offsetX = (props['offsetX'] as number) ?? this.material.uniforms.offset.value.x;
+      const offsetY = (props['offsetY'] as number) ?? this.material.uniforms.offset.value.y;
+      this.material.uniforms.offset.value.set(offsetX, offsetY);
+    }
+
+    if (props['rotation'] !== undefined) {
+      this.material.uniforms.rotation.value = THREE.MathUtils.degToRad(props['rotation'] as number);
+    }
+
+    if (props['depthScale'] !== undefined) {
+      this.material.uniforms.depthScale.value = props['depthScale'] as number;
+    }
+
+    this.material.needsUpdate = true;
+  }
+
   protected onUpdate(properties: Partial<Layer>): void {
     const data = properties.data as Partial<DepthflowLayerData> | undefined;
 

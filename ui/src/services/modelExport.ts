@@ -108,12 +108,16 @@ export function exportCameraTrajectory(
 
 /**
  * Point trajectory format for Wan-Move
- * Each trajectory is a sequence of (x, y) positions over frames
+ * Each trajectory is a sequence of (x, y, z) positions over frames
+ * Extended with rotation and scale for 3D model compatibility
  */
 export interface PointTrajectory {
   id: string;
-  points: Array<{ frame: number; x: number; y: number }>;
+  points: Array<{ frame: number; x: number; y: number; z?: number }>;
   visibility: boolean[]; // Per-frame visibility
+  // Extended properties for 3D exports
+  rotation?: Array<{ frame: number; x: number; y: number; z: number }>; // Euler degrees
+  scale?: Array<{ frame: number; x: number; y: number }>;
 }
 
 /**
@@ -121,43 +125,146 @@ export interface PointTrajectory {
  * Format matches their expected NumPy array structure
  */
 export interface WanMoveTrajectoryExport {
-  // Shape: [num_points, num_frames, 2] for coordinates
+  // Shape: [num_points, num_frames, 2] for 2D coordinates
+  // Shape: [num_points, num_frames, 3] for 3D coordinates
   trajectories: number[][][];
   // Shape: [num_points, num_frames] for visibility
   visibility: number[][];
+  // Extended: rotation [num_points, num_frames, 3] (optional)
+  rotations?: number[][][];
+  // Extended: scale [num_points, num_frames, 2] (optional)
+  scales?: number[][][];
   metadata: {
     numPoints: number;
     numFrames: number;
     imageWidth: number;
     imageHeight: number;
+    is3D: boolean;
+    hasRotation: boolean;
+    hasScale: boolean;
   };
 }
 
 /**
+ * Particle trajectory export format
+ * Each particle's position over its lifetime
+ */
+export interface ParticleTrajectoryExport {
+  // Per-particle data
+  particles: Array<{
+    id: number;
+    birthFrame: number;
+    deathFrame: number;
+    // Position at each frame of its lifetime [frame, x, y, z]
+    positions: Array<{ frame: number; x: number; y: number; z: number }>;
+    // Optional velocity data
+    velocities?: Array<{ frame: number; vx: number; vy: number; vz: number }>;
+    // Particle properties
+    size?: number[];
+    opacity?: number[];
+    color?: Array<{ r: number; g: number; b: number }>;
+  }>;
+  // Emitter configuration
+  emitterConfig: {
+    type: string;
+    position: { x: number; y: number; z: number };
+    rate: number;
+    lifetime: number;
+  };
+  metadata: {
+    totalParticles: number;
+    frameCount: number;
+    maxActiveParticles: number;
+  };
+}
+
+/**
+ * Extended position getter that includes Z position
+ */
+export interface Position3D {
+  x: number;
+  y: number;
+  z?: number;
+}
+
+/**
+ * Extended transform getter for full 3D data
+ */
+export interface TransformAtFrame {
+  position: Position3D;
+  rotation?: { x: number; y: number; z: number };
+  scale?: { x: number; y: number };
+}
+
+/**
  * Extract point trajectories from layer position animation
+ * Now includes Z position, rotation, and scale for 3D model compatibility
  */
 export function extractLayerTrajectory(
   layer: Layer,
   startFrame: number,
   endFrame: number,
-  getPositionAtFrame: (layer: Layer, frame: number) => { x: number; y: number }
+  getPositionAtFrame: (layer: Layer, frame: number) => { x: number; y: number },
+  // Optional extended getter for full 3D transform data
+  getTransformAtFrame?: (layer: Layer, frame: number) => TransformAtFrame
 ): PointTrajectory {
-  const points: Array<{ frame: number; x: number; y: number }> = [];
+  const points: Array<{ frame: number; x: number; y: number; z?: number }> = [];
   const visibility: boolean[] = [];
+  const rotation: Array<{ frame: number; x: number; y: number; z: number }> = [];
+  const scale: Array<{ frame: number; x: number; y: number }> = [];
 
   for (let frame = startFrame; frame <= endFrame; frame++) {
     const inRange = frame >= layer.inPoint && frame <= layer.outPoint;
-    const pos = getPositionAtFrame(layer, frame);
-
-    points.push({ frame, x: pos.x, y: pos.y });
     visibility.push(inRange && layer.visible);
+
+    if (getTransformAtFrame) {
+      // Use extended transform getter for full 3D data
+      const transform = getTransformAtFrame(layer, frame);
+      points.push({
+        frame,
+        x: transform.position.x,
+        y: transform.position.y,
+        z: transform.position.z
+      });
+
+      if (transform.rotation) {
+        rotation.push({
+          frame,
+          x: transform.rotation.x,
+          y: transform.rotation.y,
+          z: transform.rotation.z
+        });
+      }
+
+      if (transform.scale) {
+        scale.push({
+          frame,
+          x: transform.scale.x,
+          y: transform.scale.y
+        });
+      }
+    } else {
+      // Fallback to basic 2D position
+      const pos = getPositionAtFrame(layer, frame);
+      points.push({ frame, x: pos.x, y: pos.y });
+    }
   }
 
-  return {
+  const result: PointTrajectory = {
     id: layer.id,
     points,
     visibility
   };
+
+  // Only include rotation/scale if we have data
+  if (rotation.length > 0) {
+    result.rotation = rotation;
+  }
+  if (scale.length > 0) {
+    result.scale = scale;
+  }
+
+  return result;
 }
 
 /**
@@ -183,25 +290,44 @@ export function extractSplineTrajectories(
 
 /**
  * Export trajectories in Wan-Move format
+ * Now supports 3D positions, rotation, and scale data
  */
 export function exportWanMoveTrajectories(
   trajectories: PointTrajectory[],
   imageWidth: number,
-  imageHeight: number
+  imageHeight: number,
+  options?: { include3D?: boolean; includeRotation?: boolean; includeScale?: boolean }
 ): WanMoveTrajectoryExport {
+  const opts = { include3D: true, includeRotation: true, includeScale: true, ...options };
+
   if (trajectories.length === 0) {
     return {
       trajectories: [],
       visibility: [],
-      metadata: { numPoints: 0, numFrames: 0, imageWidth, imageHeight }
+      metadata: {
+        numPoints: 0,
+        numFrames: 0,
+        imageWidth,
+        imageHeight,
+        is3D: false,
+        hasRotation: false,
+        hasScale: false
+      }
     };
   }
 
   const numFrames = trajectories[0].points.length;
 
-  // Convert to [num_points, num_frames, 2] format
+  // Check if any trajectory has 3D data
+  const has3D = trajectories.some(t => t.points.some(p => p.z !== undefined));
+  const hasRotation = trajectories.some(t => t.rotation && t.rotation.length > 0);
+  const hasScale = trajectories.some(t => t.scale && t.scale.length > 0);
+
+  // Convert to [num_points, num_frames, 2 or 3] format
   const trajArray = trajectories.map(traj =>
-    traj.points.map(pt => [pt.x, pt.y])
+    traj.points.map(pt =>
+      (opts.include3D && has3D) ? [pt.x, pt.y, pt.z ?? 0] : [pt.x, pt.y]
+    )
   );
 
   // Convert visibility to [num_points, num_frames] format (1 or 0)
@@ -209,16 +335,39 @@ export function exportWanMoveTrajectories(
     traj.visibility.map(v => v ? 1 : 0)
   );
 
-  return {
+  const result: WanMoveTrajectoryExport = {
     trajectories: trajArray,
     visibility: visArray,
     metadata: {
       numPoints: trajectories.length,
       numFrames,
       imageWidth,
-      imageHeight
+      imageHeight,
+      is3D: opts.include3D && has3D,
+      hasRotation: opts.includeRotation && hasRotation,
+      hasScale: opts.includeScale && hasScale
     }
   };
+
+  // Add rotation data if present
+  if (opts.includeRotation && hasRotation) {
+    result.rotations = trajectories.map(traj =>
+      traj.rotation
+        ? traj.rotation.map(r => [r.x, r.y, r.z])
+        : Array(numFrames).fill([0, 0, 0])
+    );
+  }
+
+  // Add scale data if present
+  if (opts.includeScale && hasScale) {
+    result.scales = trajectories.map(traj =>
+      traj.scale
+        ? traj.scale.map(s => [s.x, s.y])
+        : Array(numFrames).fill([1, 1])
+    );
+  }
+
+  return result;
 }
 
 // ============================================================================
@@ -316,21 +465,61 @@ export function exportATITrajectory(
 // ============================================================================
 
 /**
- * TTM export format
- * Requires: image, mask, and trajectory
+ * Per-layer TTM export data
+ * Each animated layer gets its own mask and trajectory
+ */
+export interface TTMLayerExport {
+  layerId: string;
+  layerName: string;
+  // Binary motion mask for this layer (white = this layer's region)
+  motionMask: string; // Base64 PNG
+  // Trajectory for this layer's movement
+  trajectory: Array<{ frame: number; x: number; y: number }>;
+  // Per-frame visibility
+  visibility: boolean[];
+}
+
+/**
+ * TTM export format - supports multiple animated layers
+ * Each layer becomes a separate mask + trajectory pair
  */
 export interface TTMExport {
   // Reference image (base64 or path)
   referenceImage: string;
 
-  // Motion mask - defines region to animate
-  // White = move, Black = static
-  motionMask: string; // Base64 PNG
+  // Last frame for temporal context
+  lastFrame?: string;
 
-  // Trajectory - where the masked region should move
-  trajectory: Array<{ x: number; y: number }>;
+  // Per-layer motion data (MULTI-LAYER SUPPORT)
+  layers: TTMLayerExport[];
+
+  // Combined motion mask (all layers combined, for single-mask workflows)
+  combinedMotionMask: string; // Base64 PNG
 
   // Model-specific params
+  modelConfig: {
+    model: 'wan' | 'cogvideox' | 'svd';
+    tweakIndex: number;
+    tstrongIndex: number;
+    inferenceSteps: number;
+  };
+
+  // Metadata
+  metadata: {
+    layerCount: number;
+    frameCount: number;
+    width: number;
+    height: number;
+  };
+}
+
+/**
+ * Legacy single-layer TTM export (backwards compatibility)
+ */
+export interface TTMSingleLayerExport {
+  referenceImage: string;
+  motionMask: string;
+  trajectory: Array<{ x: number; y: number }>;
   modelConfig: {
     model: 'wan' | 'cogvideox' | 'svd';
     tweakIndex: number;
@@ -341,6 +530,7 @@ export interface TTMExport {
 
 /**
  * Generate motion mask from layer bounds
+ * Returns ImageData with white = motion region, black = static
  */
 export function generateMotionMask(
   layer: Layer,
@@ -364,6 +554,75 @@ export function generateMotionMask(
   ctx.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
 
   return ctx.getImageData(0, 0, compWidth, compHeight);
+}
+
+/**
+ * Generate combined motion mask from multiple layers
+ * Each layer's region is drawn in white on black background
+ */
+export function generateCombinedMotionMask(
+  layers: Layer[],
+  compWidth: number,
+  compHeight: number,
+  getLayerBounds: (layer: Layer, frame: number) => { x: number; y: number; width: number; height: number }
+): ImageData {
+  const canvas = document.createElement('canvas');
+  canvas.width = compWidth;
+  canvas.height = compHeight;
+  const ctx = canvas.getContext('2d')!;
+
+  // Fill with black (static region)
+  ctx.fillStyle = 'black';
+  ctx.fillRect(0, 0, compWidth, compHeight);
+
+  // Draw each layer's bounds in white
+  ctx.fillStyle = 'white';
+  for (const layer of layers) {
+    const bounds = getLayerBounds(layer, layer.inPoint);
+    ctx.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+  }
+
+  return ctx.getImageData(0, 0, compWidth, compHeight);
+}
+
+/**
+ * Convert ImageData to base64 PNG
+ */
+export function imageDataToBase64(imageData: ImageData): string {
+  const canvas = document.createElement('canvas');
+  canvas.width = imageData.width;
+  canvas.height = imageData.height;
+  const ctx = canvas.getContext('2d')!;
+  ctx.putImageData(imageData, 0, 0);
+  return canvas.toDataURL('image/png');
+}
+
+/**
+ * Export TTM data for a single layer
+ */
+export function exportTTMLayer(
+  layer: Layer,
+  startFrame: number,
+  endFrame: number,
+  compWidth: number,
+  compHeight: number,
+  getPositionAtFrame: (layer: Layer, frame: number) => { x: number; y: number },
+  getLayerBounds: (layer: Layer, frame: number) => { x: number; y: number; width: number; height: number }
+): TTMLayerExport {
+  // Generate mask for this layer
+  const maskData = generateMotionMask(layer, compWidth, compHeight, getLayerBounds);
+  const maskBase64 = imageDataToBase64(maskData);
+
+  // Extract trajectory
+  const trajectory = extractLayerTrajectory(layer, startFrame, endFrame, getPositionAtFrame);
+
+  return {
+    layerId: layer.id,
+    layerName: layer.name,
+    motionMask: maskBase64,
+    trajectory: trajectory.points,
+    visibility: trajectory.visibility
+  };
 }
 
 // ============================================================================
@@ -451,9 +710,11 @@ export function detectMotionStyle(
 export type ModelTarget =
   | 'camera-comfyui'
   | 'wan-move'
+  | 'wan-move-3d'
   | 'ati'
   | 'ttm'
-  | 'light-x';
+  | 'light-x'
+  | 'particles';
 
 export interface UnifiedExportOptions {
   target: ModelTarget;
@@ -469,9 +730,20 @@ export interface UnifiedExportOptions {
   getPositionAtFrame: (layer: Layer, frame: number) => { x: number; y: number };
   getLayerBounds: (layer: Layer, frame: number) => { x: number; y: number; width: number; height: number };
 
-  // Model-specific options
+  // Extended callback for full 3D transform data (optional, for 3D exports)
+  getTransformAtFrame?: (layer: Layer, frame: number) => TransformAtFrame;
+
+  // TTM-specific options (Time-to-Move)
   ttmModel?: 'wan' | 'cogvideox' | 'svd';
+  ttmTweakIndex?: number;       // Dual-clock denoising tweak parameter
+  ttmTstrongIndex?: number;     // Dual-clock denoising tstrong parameter
+  ttmInferenceSteps?: number;   // Number of inference steps
+
+  // Light-X options
   lightXRelighting?: LightXExport['relighting'];
+
+  // Particle export options
+  particleData?: ParticleTrajectoryExport;
 }
 
 export interface UnifiedExportResult {
@@ -483,6 +755,7 @@ export interface UnifiedExportResult {
     content: string | Blob;
     type: 'json' | 'npy' | 'png' | 'tensor';
   }[];
+  error?: string;  // Error message if success is false
 }
 
 /**
@@ -582,62 +855,97 @@ export async function exportForModel(
     }
 
     case 'ttm': {
-      // Find the first animated layer for TTM
-      const animatedLayer = layers.find(l => l.transform.position.animated);
-      if (!animatedLayer) {
+      // MULTI-LAYER SUPPORT: Find ALL animated layers, not just the first
+      const animatedLayers = layers.filter(l => l.transform.position.animated);
+
+      if (animatedLayers.length === 0) {
         return {
           success: false,
           target,
           data: null,
-          files: []
+          files: [],
+          error: 'No animated layers found for TTM export'
         };
       }
 
-      const trajectory = extractLayerTrajectory(
-        animatedLayer, startFrame, endFrame, options.getPositionAtFrame
+      // Export each layer separately
+      const layerExports: TTMLayerExport[] = animatedLayers.map(layer =>
+        exportTTMLayer(
+          layer,
+          startFrame,
+          endFrame,
+          compWidth,
+          compHeight,
+          options.getPositionAtFrame,
+          options.getLayerBounds
+        )
       );
 
-      // Generate motion mask
-      const maskData = generateMotionMask(
-        animatedLayer, compWidth, compHeight, options.getLayerBounds
+      // Generate combined motion mask (all layers in one image)
+      const combinedMaskData = generateCombinedMotionMask(
+        animatedLayers, compWidth, compHeight, options.getLayerBounds
       );
+      const combinedMaskBase64 = imageDataToBase64(combinedMaskData);
 
-      // Convert ImageData to base64 PNG
-      const canvas = document.createElement('canvas');
-      canvas.width = compWidth;
-      canvas.height = compHeight;
-      const ctx = canvas.getContext('2d')!;
-      ctx.putImageData(maskData, 0, 0);
-      const maskBase64 = canvas.toDataURL('image/png');
+      const frameCount = endFrame - startFrame + 1;
 
       const ttmExport: TTMExport = {
-        referenceImage: '', // Would be filled by caller
-        motionMask: maskBase64,
-        trajectory: trajectory.points.map(p => ({ x: p.x, y: p.y })),
+        referenceImage: '', // Filled by caller/export pipeline
+        lastFrame: '', // Filled by caller/export pipeline
+        layers: layerExports,
+        combinedMotionMask: combinedMaskBase64,
         modelConfig: {
           model: options.ttmModel || 'wan',
-          tweakIndex: 10,
-          tstrongIndex: 20,
-          inferenceSteps: 50
+          tweakIndex: options.ttmTweakIndex ?? 10,
+          tstrongIndex: options.ttmTstrongIndex ?? 20,
+          inferenceSteps: options.ttmInferenceSteps ?? 50
+        },
+        metadata: {
+          layerCount: animatedLayers.length,
+          frameCount,
+          width: compWidth,
+          height: compHeight
         }
       };
+
+      // Generate file outputs
+      const files: UnifiedExportResult['files'] = [
+        {
+          name: 'ttm_config.json',
+          content: JSON.stringify(ttmExport, null, 2),
+          type: 'json' as const
+        },
+        {
+          name: 'combined_motion_mask.png',
+          content: combinedMaskBase64,
+          type: 'png' as const
+        }
+      ];
+
+      // Add per-layer mask files
+      layerExports.forEach((layerExport, index) => {
+        files.push({
+          name: `layer_${index}_${layerExport.layerId}_mask.png`,
+          content: layerExport.motionMask,
+          type: 'png' as const
+        });
+        files.push({
+          name: `layer_${index}_${layerExport.layerId}_trajectory.json`,
+          content: JSON.stringify({
+            layerId: layerExport.layerId,
+            layerName: layerExport.layerName,
+            trajectory: layerExport.trajectory,
+            visibility: layerExport.visibility
+          }, null, 2),
+          type: 'json' as const
+        });
+      });
 
       return {
         success: true,
         target,
         data: ttmExport,
-        files: [
-          {
-            name: 'ttm_config.json',
-            content: JSON.stringify(ttmExport, null, 2),
-            type: 'json'
-          },
-          {
-            name: 'motion_mask.png',
-            content: maskBase64,
-            type: 'png'
-          }
-        ]
+        files
       };
     }
 
@@ -670,6 +978,153 @@ export async function exportForModel(
             type: 'json'
           }
         ]
+      };
+    }
+
+    case 'wan-move-3d': {
+      // Extract trajectories with full 3D transform data
+      const trajectories: PointTrajectory[] = [];
+      for (const layer of layers) {
+        if (layer.transform.position.animated ||
+            layer.transform.rotation.animated ||
+            layer.transform.scale.animated) {
+          trajectories.push(
+            extractLayerTrajectory(
+              layer,
+              startFrame,
+              endFrame,
+              options.getPositionAtFrame,
+              options.getTransformAtFrame
+            )
+          );
+        }
+      }
+
+      const wanMove3DData = exportWanMoveTrajectories(
+        trajectories,
+        compWidth,
+        compHeight,
+        { include3D: true, includeRotation: true, includeScale: true }
+      );
+
+      // Build files including rotation/scale if present
+      const files: UnifiedExportResult['files'] = [
+        {
+          name: 'trajectories_3d.json',
+          content: JSON.stringify(wanMove3DData.trajectories, null, 2),
+          type: 'json'
+        },
+        {
+          name: 'visibility.json',
+          content: JSON.stringify(wanMove3DData.visibility, null, 2),
+          type: 'json'
+        },
+        {
+          name: 'metadata.json',
+          content: JSON.stringify(wanMove3DData.metadata, null, 2),
+          type: 'json'
+        }
+      ];
+
+      if (wanMove3DData.rotations) {
+        files.push({
+          name: 'rotations.json',
+          content: JSON.stringify(wanMove3DData.rotations, null, 2),
+          type: 'json'
+        });
+      }
+
+      if (wanMove3DData.scales) {
+        files.push({
+          name: 'scales.json',
+          content: JSON.stringify(wanMove3DData.scales, null, 2),
+          type: 'json'
+        });
+      }
+
+      // Also add NPY binary for trajectories
+      files.push({
+        name: 'trajectories.npy',
+        content: trajectoriesToNpy(wanMove3DData.trajectories),
+        type: 'npy'
+      });
+
+      return {
+        success: true,
+        target,
+        data: wanMove3DData,
+        files
+      };
+    }
+
+    case 'particles': {
+      // Export particle trajectory data
+      if (!options.particleData) {
+        return {
+          success: false,
+          target,
+          data: null,
+          files: [],
+          error: 'No particle data provided for export'
+        };
+      }
+
+      const particleData = options.particleData;
+
+      // Create JSON export
+      const files: UnifiedExportResult['files'] = [
+        {
+          name: 'particles.json',
+          content: JSON.stringify(particleData, null, 2),
+          type: 'json'
+        },
+        {
+          name: 'particle_metadata.json',
+          content: JSON.stringify(particleData.metadata, null, 2),
+          type: 'json'
+        },
+        {
+          name: 'emitter_config.json',
+          content: JSON.stringify(particleData.emitterConfig, null, 2),
+          type: 'json'
+        }
+      ];
+
+      // Create NPY for particle positions (flatten to [total_positions, 4] where 4 = frame, x, y, z)
+      const allPositions: number[][] = [];
+      for (const particle of particleData.particles) {
+        for (const pos of particle.positions) {
+          allPositions.push([pos.frame, pos.x, pos.y, pos.z]);
+        }
+      }
+
+      if (allPositions.length > 0) {
+        // Create NPY header for [N, 4] float32 array
+        const shape = [allPositions.length, 4];
+        const header = createNpyHeader(shape, '<f4');
+
+        // Flatten to Float32Array
+        const flat = allPositions.flat();
+        const data = new Float32Array(flat);
+        const dataBytes = new Uint8Array(data.buffer);
+
+        // Combine
+        const result = new Uint8Array(header.length + dataBytes.length);
+        result.set(header, 0);
+        result.set(dataBytes, header.length);
+
+        files.push({
+          name: 'particle_positions.npy',
+          content: new Blob([result], { type: 'application/octet-stream' }),
+          type: 'npy'
+        });
+      }
+
+      return {
+        success: true,
+        target,
+        data: particleData,
+        files
       };
     }
 

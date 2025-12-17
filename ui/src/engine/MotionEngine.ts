@@ -33,10 +33,13 @@ import type {
   CompositionSettings,
   CameraLayerData,
   EffectInstance,
+  ParticleLayerData,
 } from '@/types/project';
 import type { AudioAnalysis } from '@/services/audioFeatures';
 import { interpolateProperty } from '@/services/interpolation';
 import { getFeatureAtFrame } from '@/services/audioFeatures';
+import { particleSimulationRegistry, type ParticleSnapshot } from './ParticleSimulationController';
+import type { ParticleSystemConfig } from '@/services/particleSystem';
 
 // ============================================================================
 // EVALUATED STATE INTERFACES
@@ -66,6 +69,9 @@ export interface FrameState {
 
   /** Audio feature values at this frame (empty if no audio) */
   readonly audio: EvaluatedAudio;
+
+  /** Particle snapshots for deterministic particle evaluation (layerId → snapshot) */
+  readonly particleSnapshots: Readonly<Record<string, ParticleSnapshot>>;
 }
 
 /**
@@ -263,12 +269,16 @@ export class MotionEngine {
     // Evaluate audio
     const evaluatedAudio = this.evaluateAudio(frame, audioAnalysis ?? null);
 
+    // Evaluate particle layers through deterministic simulation
+    const particleSnapshots = this.evaluateParticleLayers(frame, composition.layers);
+
     return Object.freeze({
       frame,
       composition: composition.settings,
       layers: Object.freeze(evaluatedLayers),
       camera: evaluatedCamera,
       audio: evaluatedAudio,
+      particleSnapshots: Object.freeze(particleSnapshots),
     });
   }
 
@@ -568,6 +578,79 @@ export class MotionEngine {
   }
 
   /**
+   * Evaluate particle layers through deterministic simulation
+   * DETERMINISM: Uses ParticleSimulationRegistry which guarantees same frame = same result
+   */
+  private evaluateParticleLayers(
+    frame: number,
+    layers: Layer[]
+  ): Record<string, ParticleSnapshot> {
+    const snapshots: Record<string, ParticleSnapshot> = {};
+
+    for (const layer of layers) {
+      if (layer.type !== 'particles' || !layer.visible) continue;
+      if (frame < layer.inPoint || frame > layer.outPoint) continue;
+
+      const data = layer.data as ParticleLayerData | null;
+      if (!data?.systemConfig) continue;
+
+      // Convert ParticleLayerData to ParticleSystemConfig
+      const config = this.convertToParticleSystemConfig(data);
+
+      // Evaluate through the deterministic registry
+      // Calculate frame relative to layer's in-point for proper simulation
+      const relativeFrame = frame - layer.inPoint;
+      const snapshot = particleSimulationRegistry.evaluateLayer(
+        layer.id,
+        relativeFrame,
+        config
+      );
+
+      snapshots[layer.id] = snapshot;
+    }
+
+    return snapshots;
+  }
+
+  /**
+   * Convert ParticleLayerData to ParticleSystemConfig
+   * Maps the project-level configuration to the simulation config
+   */
+  private convertToParticleSystemConfig(data: ParticleLayerData): ParticleSystemConfig {
+    const sys = data.systemConfig;
+    return {
+      maxParticles: sys.maxParticles,
+      gravity: sys.gravity,
+      windStrength: sys.windStrength,
+      windDirection: sys.windDirection,
+      warmupPeriod: sys.warmupPeriod,
+      respectMaskBoundary: sys.respectMaskBoundary,
+      boundaryBehavior: sys.boundaryBehavior,
+      friction: sys.friction,
+      turbulenceFields: sys.turbulenceFields ?? [],
+      subEmitters: sys.subEmitters ?? [],
+      collision: {
+        enabled: false,
+        particleCollision: false,
+        particleCollisionRadius: 1,
+        particleCollisionResponse: 'bounce',
+        particleCollisionDamping: 0.5,
+        layerCollision: false,
+        layerCollisionLayerId: null,
+        layerCollisionThreshold: 0.5,
+        floorEnabled: false,
+        floorY: 1,
+        ceilingEnabled: false,
+        ceilingY: 0,
+        wallsEnabled: false,
+        bounciness: 0.8,
+        friction: 0.1,
+        spatialHashCellSize: 32,
+      },
+    };
+  }
+
+  /**
    * Create empty frame state for missing compositions
    * DETERMINISM: No timestamps or non-deterministic values
    */
@@ -592,6 +675,7 @@ export class MotionEngine {
         isOnset: false,
         bpm: 0,
       }),
+      particleSnapshots: Object.freeze({}),
     });
   }
 

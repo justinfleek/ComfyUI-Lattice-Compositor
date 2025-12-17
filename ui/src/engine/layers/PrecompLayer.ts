@@ -236,6 +236,16 @@ export class PrecompLayer extends BaseLayer {
     }
   }
 
+  protected override onApplyEvaluatedState(state: import('../MotionEngine').EvaluatedLayer): void {
+    const props = state.properties;
+
+    // Apply time remap if evaluated
+    if (props['timeRemap'] !== undefined && this.precompData.timeRemapEnabled && this.precompData.timeRemap) {
+      // Update the time remap value for the next evaluation cycle
+      this.precompData.timeRemap.value = props['timeRemap'] as number;
+    }
+  }
+
   // ============================================================================
   // PROPERTY UPDATES
   // ============================================================================

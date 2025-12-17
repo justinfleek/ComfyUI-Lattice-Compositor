@@ -21,7 +21,7 @@
  */
 
 import * as THREE from 'three';
-import type { Layer, LayerType } from '@/types/project';
+import type { Layer, LayerType, LayerMask } from '@/types/project';
 import type { SceneManager } from './SceneManager';
 import type { ResourceManager } from './ResourceManager';
 import type { LayerInstance } from '../types';
@@ -38,7 +38,10 @@ import { PrecompLayer, type PrecompRenderContext } from '../layers/PrecompLayer'
 import { CameraLayer, type CameraGetter, type CameraUpdater } from '../layers/CameraLayer';
 import { LightLayer } from '../layers/LightLayer';
 import { DepthflowLayer } from '../layers/DepthflowLayer';
+import { ProceduralMatteLayer } from '../layers/ProceduralMatteLayer';
+import { ShapeLayer } from '../layers/ShapeLayer';
 import type { TargetParameter } from '@/services/audioReactiveMapping';
+import type { SplineQueryResult, SplinePathProvider } from '@/services/particleSystem';
 import { layerLogger } from '@/utils/logger';
 
 /** Callback to get audio reactive values for a specific layer at a frame */
@@ -67,6 +70,15 @@ export class LayerManager {
 
   // Audio reactive callback
   private audioReactiveGetter: LayerAudioReactiveGetter | null = null;
+
+  // Track matte canvas cache - stores rendered canvases for layers used as track mattes
+  private trackMatteCanvases: Map<string, HTMLCanvasElement> = new Map();
+
+  // Ordered layer list for render order (respects track matte dependencies)
+  private renderOrder: string[] = [];
+
+  // Callback to get cross-composition matte canvas
+  private crossCompMatteGetter: ((compositionId: string, layerId: string, frame: number) => HTMLCanvasElement | null) | null = null;
 
   constructor(scene: SceneManager, resources: ResourceManager) {
     this.scene = scene;
@@ -229,10 +241,13 @@ export class LayerManager {
       precompLayer.setRenderContext(this.precompRenderContext);
     }
 
-    // Camera layer: provide camera data access
+    // Camera layer: provide camera data access and spline provider
     if (layer.type === 'camera' && this.cameraGetter && this.cameraUpdater) {
       const cameraLayer = layer as CameraLayer;
       cameraLayer.setCameraCallbacks(this.cameraGetter, this.cameraUpdater, this.cameraAtFrameGetter);
+
+      // Set up spline provider for path following
+      cameraLayer.setSplineProvider(this.createSplineProvider());
     }
 
     // Particle layer: provide renderer and FPS
@@ -254,6 +269,24 @@ export class LayerManager {
     if (layer.type === 'precomp') {
       const precompLayer = layer as PrecompLayer;
       precompLayer.setFPS(this.compositionFPS);
+    }
+
+    // Light layer: provide layer position getter for POI and spline provider for path
+    if (layer.type === 'light') {
+      const lightLayer = layer as LightLayer;
+
+      // Provide a way to get other layer positions (for POI targeting)
+      lightLayer.setLayerPositionGetter((layerId: string) => {
+        const targetLayer = this.layers.get(layerId);
+        if (targetLayer) {
+          const obj = targetLayer.getObject();
+          return new THREE.Vector3(obj.position.x, obj.position.y, obj.position.z);
+        }
+        return null;
+      });
+
+      // Set up spline provider for path following
+      lightLayer.setPathProvider(this.createSplineProvider());
     }
   }
 
@@ -294,6 +327,12 @@ export class LayerManager {
 
       case 'depthflow':
         return new DepthflowLayer(layerData, this.resources);
+
+      case 'matte':
+        return new ProceduralMatteLayer(layerData);
+
+      case 'shape':
+        return new ShapeLayer(layerData);
 
       default:
         layerLogger.warn(`LayerManager: Unknown layer type: ${layerData.type}, creating NullLayer`);
@@ -384,10 +423,18 @@ export class LayerManager {
    * Layers receive already-computed values and only APPLY them.
    * NO interpolation or time sampling happens here.
    *
+   * Rendering order:
+   * 1. Spline layers (for text-on-path dependencies)
+   * 2. Text-on-path connections
+   * 3. Track matte source layers (render to canvas)
+   * 4. All other layers (with track mattes applied)
+   *
    * @param evaluatedLayers - Pre-evaluated layer states from MotionEngine
-   * @param frame - Optional frame number for animated spline evaluation
+   * @param frame - Optional frame number for animated spline/mask evaluation
    */
   applyEvaluatedState(evaluatedLayers: readonly EvaluatedLayer[], frame?: number): void {
+    const currentFrame = frame ?? 0;
+
     // First, apply state to spline layers so they evaluate their control points
     // This ensures animated splines are ready before text layers query them
     for (const evalLayer of evaluatedLayers) {
@@ -399,6 +446,10 @@ export class LayerManager {
 
     // Update text-on-path connections (with frame for animated splines)
     this.updateTextPathConnections(frame);
+
+    // Process track mattes - collect matte canvases and distribute to target layers
+    // This must happen before applying state to layers that use track mattes
+    this.processTrackMattes(currentFrame);
 
     // Apply evaluated state to remaining layers
     for (const evalLayer of evaluatedLayers) {
@@ -424,7 +475,10 @@ export class LayerManager {
    */
   evaluateFrame(frame: number, audioReactiveGetter?: LayerAudioReactiveGetter | null): void {
     // First, update text-on-path connections
-    this.updateTextPathConnections();
+    this.updateTextPathConnections(frame);
+
+    // Process track mattes - collect matte canvases and distribute to target layers
+    this.processTrackMattes(frame);
 
     // Use provided getter or fall back to stored one
     const getter = audioReactiveGetter ?? this.audioReactiveGetter;
@@ -530,6 +584,91 @@ export class LayerManager {
         }
       }
     }
+  }
+
+  // ============================================================================
+  // SPLINE PATH PROVIDER (for Particle Systems)
+  // ============================================================================
+
+  /**
+   * Create a SplinePathProvider that can be used by particle systems
+   * to query spline positions for path-based emission
+   *
+   * USAGE:
+   * ```typescript
+   * const provider = layerManager.createSplineProvider();
+   * particleSystem.setSplineProvider(provider);
+   * ```
+   */
+  createSplineProvider(): SplinePathProvider {
+    return (layerId: string, t: number, frame: number): SplineQueryResult | null => {
+      return this.querySplinePath(layerId, t, frame);
+    };
+  }
+
+  /**
+   * Query a spline layer for position and tangent at parameter t
+   *
+   * @param layerId - ID of the spline layer
+   * @param t - Parameter along the path (0-1)
+   * @param frame - Current frame for animated splines
+   * @returns Position, tangent, and length or null if spline not found
+   */
+  querySplinePath(layerId: string, t: number, frame: number): SplineQueryResult | null {
+    const layer = this.layers.get(layerId);
+
+    if (!layer || layer.type !== 'spline') {
+      return null;
+    }
+
+    const splineLayer = layer as SplineLayer;
+
+    // For animated splines, ensure we have evaluated control points
+    // This triggers rebuild if points have changed
+    if (splineLayer.isAnimated()) {
+      splineLayer.getEvaluatedControlPoints(frame);
+    }
+
+    // Query the curve
+    const point = splineLayer.getPointAt(t);
+    const tangent = splineLayer.getTangentAt(t);
+    const length = splineLayer.getLength();
+
+    if (!point || !tangent) {
+      return null;
+    }
+
+    // Convert Three.js coordinates to normalized coordinates
+    // Spline coordinates are in canvas pixels, normalize to 0-1
+    // Note: The Y coordinate is negated in SplineLayer, so we negate it back
+    // For now, we assume the composition size is available or use raw coordinates
+    // In production, this should be normalized based on composition dimensions
+
+    return {
+      point: {
+        x: point.x,
+        y: -point.y, // Negate back from Three.js coordinate system
+        z: point.z,
+      },
+      tangent: {
+        x: tangent.x,
+        y: -tangent.y, // Negate back
+      },
+      length,
+    };
+  }
+
+  /**
+   * Get all spline layer IDs (useful for UI to list available paths)
+   */
+  getSplineLayerIds(): string[] {
+    const ids: string[] = [];
+    for (const [id, layer] of this.layers) {
+      if (layer.type === 'spline') {
+        ids.push(id);
+      }
+    }
+    return ids;
   }
 
   /**
@@ -742,6 +881,200 @@ export class LayerManager {
     for (const layer of this.layers.values()) {
       layer.setVisible(true);
     }
+  }
+
+  // ============================================================================
+  // TRACK MATTE PROCESSING
+  // ============================================================================
+
+  /**
+   * Set callback for retrieving cross-composition matte canvases
+   *
+   * This enables track mattes from other compositions (precomps)
+   * to be used as matte sources.
+   */
+  setCrossCompMatteGetter(
+    getter: ((compositionId: string, layerId: string, frame: number) => HTMLCanvasElement | null) | null
+  ): void {
+    this.crossCompMatteGetter = getter;
+  }
+
+  /**
+   * Process track mattes for all layers
+   *
+   * Track mattes use one layer's rendered output to control
+   * another layer's visibility (alpha or luma).
+   *
+   * This method:
+   * 1. Identifies layers that are used as track mattes
+   * 2. Collects their rendered canvases (from same comp or cross-comp)
+   * 3. Passes the canvas to layers that use them as mattes
+   *
+   * @param frame - Current frame number for animated evaluation
+   */
+  processTrackMattes(frame: number): void {
+    // Clear previous frame's matte canvases
+    this.trackMatteCanvases.clear();
+
+    // Process each layer that has a track matte
+    for (const layer of this.layers.values()) {
+      const matteLayerId = layer.getTrackMatteLayerId();
+      const matteType = layer.getTrackMatteType();
+
+      if (!matteLayerId || matteType === 'none') {
+        continue;
+      }
+
+      let matteCanvas: HTMLCanvasElement | null = null;
+
+      // Check if this is a cross-composition matte
+      if (layer.hasCrossCompMatte() && this.crossCompMatteGetter) {
+        const compositionId = layer.getTrackMatteCompositionId()!;
+        matteCanvas = this.crossCompMatteGetter(compositionId, matteLayerId, frame);
+
+        if (!matteCanvas) {
+          layerLogger.warn(
+            `Cross-comp track matte not found: composition=${compositionId}, layer=${matteLayerId}`
+          );
+        }
+      } else {
+        // Same composition matte
+        const matteLayer = this.layers.get(matteLayerId);
+
+        if (matteLayer) {
+          // Check cache first
+          if (this.trackMatteCanvases.has(matteLayerId)) {
+            matteCanvas = this.trackMatteCanvases.get(matteLayerId)!;
+          } else {
+            // Render and cache the matte
+            matteCanvas = this.getLayerRenderedCanvas(matteLayer, frame);
+            if (matteCanvas) {
+              this.trackMatteCanvases.set(matteLayerId, matteCanvas);
+            }
+          }
+        } else {
+          layerLogger.warn(`Track matte source layer ${matteLayerId} not found`);
+        }
+      }
+
+      // Set the matte canvas on the target layer
+      layer.setTrackMatteCanvas(matteCanvas);
+    }
+  }
+
+  /**
+   * Get the rendered canvas from a layer (for use as track matte)
+   *
+   * This gets the layer's visual output as a canvas that can be used
+   * for track matte operations.
+   *
+   * @param layer - The layer to get canvas from
+   * @param frame - Current frame for animated content
+   * @returns Canvas with layer's rendered content, or null if unavailable
+   */
+  private getLayerRenderedCanvas(layer: BaseLayer, frame: number): HTMLCanvasElement | null {
+    // For layers with getSourceCanvas, use that
+    // Note: This is a simplified implementation - in production,
+    // this would need to render the full layer to an offscreen canvas
+    // including transforms, effects, and nested content
+
+    // Try to get the layer's source canvas through a render-to-texture approach
+    // For now, we use the internal source canvas method
+    // Subclasses like ImageLayer, VideoLayer, TextLayer implement getSourceCanvas()
+
+    // Cast to access protected method via any type assertion
+    // In production, BaseLayer would expose a public getRenderedCanvas() method
+    const sourceCanvas = (layer as unknown as { getSourceCanvas(): HTMLCanvasElement | null }).getSourceCanvas?.();
+
+    if (sourceCanvas) {
+      // Clone the canvas to avoid mutation issues
+      const canvas = document.createElement('canvas');
+      canvas.width = sourceCanvas.width;
+      canvas.height = sourceCanvas.height;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(sourceCanvas, 0, 0);
+        return canvas;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Update masks for a specific layer
+   */
+  setLayerMasks(layerId: string, masks: LayerMask[]): void {
+    const layer = this.layers.get(layerId);
+    if (layer) {
+      layer.setMasks(masks);
+    }
+  }
+
+  /**
+   * Clear track matte assignment for a layer
+   */
+  clearTrackMatte(layerId: string): void {
+    const layer = this.layers.get(layerId);
+    if (layer) {
+      layer.setTrackMatteCanvas(null);
+    }
+  }
+
+  /**
+   * Compute render order respecting track matte dependencies
+   *
+   * Matte layers must be rendered before the layers that use them.
+   * This returns a topologically sorted list of layer IDs.
+   */
+  computeRenderOrder(): string[] {
+    const order: string[] = [];
+    const visited = new Set<string>();
+    const visiting = new Set<string>(); // For cycle detection
+
+    const visit = (layerId: string): void => {
+      if (visited.has(layerId)) return;
+      if (visiting.has(layerId)) {
+        layerLogger.warn(`Circular track matte dependency detected involving layer ${layerId}`);
+        return;
+      }
+
+      visiting.add(layerId);
+
+      const layer = this.layers.get(layerId);
+      if (layer) {
+        // Visit matte layer first (dependency)
+        const matteLayerId = layer.getTrackMatteLayerId();
+        if (matteLayerId && this.layers.has(matteLayerId)) {
+          visit(matteLayerId);
+        }
+
+        // Visit parent layer first
+        const parentId = layer.getParentId();
+        if (parentId && this.layers.has(parentId)) {
+          visit(parentId);
+        }
+      }
+
+      visiting.delete(layerId);
+      visited.add(layerId);
+      order.push(layerId);
+    };
+
+    // Visit all layers
+    for (const layerId of this.layers.keys()) {
+      visit(layerId);
+    }
+
+    this.renderOrder = order;
+    return order;
+  }
+
+  /**
+   * Get the computed render order
+   */
+  getRenderOrder(): string[] {
+    return this.renderOrder;
   }
 
   // ============================================================================

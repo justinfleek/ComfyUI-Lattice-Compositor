@@ -23,9 +23,14 @@
  * - Early exit in Newton-Raphson iteration
  * - Cached computations where possible
  */
-import type { Keyframe, AnimatableProperty, BezierHandle } from '@/types/project';
+import type { Keyframe, AnimatableProperty, BezierHandle, PropertyExpression } from '@/types/project';
 import { getEasing, easings, type EasingName } from './easing';
 import { renderLogger } from '@/utils/logger';
+import {
+  evaluateExpression,
+  type ExpressionContext,
+  type Expression,
+} from './expressions';
 
 /**
  * Binary search to find the keyframe index where frame falls between [i] and [i+1]
@@ -75,60 +80,199 @@ function getValueDelta<T>(v1: T, v2: T): number {
 
 /**
  * Interpolate a property value at a given frame
+ *
+ * @param property - The animatable property
+ * @param frame - Current frame number
+ * @param fps - Frames per second (needed for expressions, defaults to 30)
+ * @param layerId - Layer ID (for expression context)
  */
 export function interpolateProperty<T>(
   property: AnimatableProperty<T>,
+  frame: number,
+  fps: number = 30,
+  layerId: string = ''
+): T {
+  // Calculate base interpolated value
+  let value: T;
+
+  // If not animated, use static value
+  if (!property.animated || property.keyframes.length === 0) {
+    value = property.value;
+  } else {
+    const keyframes = property.keyframes;
+
+    // Before first keyframe - return first keyframe value
+    if (frame <= keyframes[0].frame) {
+      value = keyframes[0].value;
+    }
+    // After last keyframe - return last keyframe value
+    else if (frame >= keyframes[keyframes.length - 1].frame) {
+      value = keyframes[keyframes.length - 1].value;
+    }
+    else {
+      // Find surrounding keyframes using binary search (O(log n) instead of O(n))
+      const idx = findKeyframeIndex(keyframes, frame);
+      const k1 = keyframes[idx];
+      const k2 = keyframes[idx + 1];
+
+      // Calculate t (0-1) between keyframes
+      const duration = k2.frame - k1.frame;
+      const elapsed = frame - k1.frame;
+      let t = duration > 0 ? elapsed / duration : 0;
+
+      // Apply interpolation based on type
+      const interpolation = k1.interpolation || 'linear';
+
+      if (interpolation === 'hold') {
+        value = k1.value;
+      } else {
+        if (interpolation === 'bezier') {
+          // Use bezier handles for custom curves
+          const valueDelta = getValueDelta(k1.value, k2.value);
+          t = cubicBezierEasing(t, k1.outHandle, k2.inHandle, duration, valueDelta);
+        } else if (interpolation !== 'linear' && interpolation in easings) {
+          // Apply named easing function
+          const easingFn = getEasing(interpolation);
+          t = easingFn(t);
+        } else if (interpolation !== 'linear') {
+          renderLogger.warn(`Unknown interpolation type: ${interpolation}, using linear`);
+        }
+
+        // Interpolate the value based on type
+        value = interpolateValue(k1.value, k2.value, t);
+      }
+    }
+  }
+
+  // Apply expression if present
+  if (property.expression?.enabled) {
+    value = applyPropertyExpression(property, value, frame, fps, layerId);
+  }
+
+  return value;
+}
+
+/**
+ * Apply an expression to a property value
+ */
+function applyPropertyExpression<T>(
+  property: AnimatableProperty<T>,
+  value: T,
+  frame: number,
+  fps: number,
+  layerId: string
+): T {
+  const expr = property.expression;
+  if (!expr || !expr.enabled) return value;
+
+  // Build expression context
+  const time = frame / fps;
+  const velocity = calculateVelocity(property, frame, fps);
+
+  const ctx: ExpressionContext = {
+    time,
+    frame,
+    fps,
+    duration: 81 / fps, // Default composition duration
+    layerId,
+    layerIndex: 0,
+    layerName: '',
+    inPoint: 0,
+    outPoint: 81,
+    propertyName: property.name,
+    value: value as number | number[],
+    velocity,
+    numKeys: property.keyframes.length,
+    keyframes: property.keyframes,
+  };
+
+  // Convert PropertyExpression to Expression format
+  const expression: Expression = {
+    type: expr.type as 'preset' | 'function' | 'custom',
+    name: expr.name,
+    params: expr.params as Record<string, any>,
+    enabled: expr.enabled,
+  };
+
+  const result = evaluateExpression(expression, ctx);
+
+  // Return in the correct type
+  return result as T;
+}
+
+/**
+ * Calculate velocity of a property at a frame
+ */
+function calculateVelocity<T>(
+  property: AnimatableProperty<T>,
+  frame: number,
+  fps: number
+): number | number[] {
+  const delta = 0.5; // Sample half frame before and after
+
+  const valueBefore = interpolatePropertyBase(property, frame - delta);
+  const valueAfter = interpolatePropertyBase(property, frame + delta);
+
+  if (typeof valueBefore === 'number' && typeof valueAfter === 'number') {
+    return (valueAfter - valueBefore) * fps;
+  }
+
+  if (typeof valueBefore === 'object' && typeof valueAfter === 'object') {
+    const vb = valueBefore as any;
+    const va = valueAfter as any;
+    if ('x' in vb && 'y' in vb) {
+      const result = [(va.x - vb.x) * fps, (va.y - vb.y) * fps];
+      if ('z' in vb && 'z' in va) {
+        result.push((va.z - vb.z) * fps);
+      }
+      return result;
+    }
+  }
+
+  return 0;
+}
+
+/**
+ * Base interpolation without expression (to avoid recursion in velocity calc)
+ */
+function interpolatePropertyBase<T>(
+  property: AnimatableProperty<T>,
   frame: number
 ): T {
-  // If not animated, return static value
   if (!property.animated || property.keyframes.length === 0) {
     return property.value;
   }
 
   const keyframes = property.keyframes;
 
-  // Before first keyframe - return first keyframe value
   if (frame <= keyframes[0].frame) {
     return keyframes[0].value;
   }
 
-  // After last keyframe - return last keyframe value
   if (frame >= keyframes[keyframes.length - 1].frame) {
     return keyframes[keyframes.length - 1].value;
   }
 
-  // Find surrounding keyframes using binary search (O(log n) instead of O(n))
   const idx = findKeyframeIndex(keyframes, frame);
   const k1 = keyframes[idx];
   const k2 = keyframes[idx + 1];
 
-  // Calculate t (0-1) between keyframes
   const duration = k2.frame - k1.frame;
   const elapsed = frame - k1.frame;
   let t = duration > 0 ? elapsed / duration : 0;
 
-  // Apply interpolation based on type
   const interpolation = k1.interpolation || 'linear';
 
   if (interpolation === 'hold') {
     return k1.value;
   } else if (interpolation === 'bezier') {
-    // Use bezier handles for custom curves
-    // Calculate value delta for proper normalization
     const valueDelta = getValueDelta(k1.value, k2.value);
     t = cubicBezierEasing(t, k1.outHandle, k2.inHandle, duration, valueDelta);
-  } else if (interpolation === 'linear') {
-    // t stays linear
-  } else if (interpolation in easings) {
-    // Apply named easing function
+  } else if (interpolation !== 'linear' && interpolation in easings) {
     const easingFn = getEasing(interpolation);
     t = easingFn(t);
-  } else {
-    // Unknown interpolation type, default to linear
-    renderLogger.warn(`Unknown interpolation type: ${interpolation}, using linear`);
   }
 
-  // Interpolate the value based on type
   return interpolateValue(k1.value, k2.value, t);
 }
 

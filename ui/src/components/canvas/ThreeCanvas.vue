@@ -92,6 +92,32 @@
       <div class="loading-spinner"></div>
       <span>Loading...</span>
     </div>
+
+    <!-- Segmentation mask preview overlay -->
+    <div
+      v-if="store.segmentPendingMask"
+      class="segment-mask-overlay"
+      :style="maskOverlayStyle"
+    >
+      <img
+        :src="'data:image/png;base64,' + store.segmentPendingMask.mask"
+        class="mask-preview"
+        alt="Segmentation mask"
+      />
+    </div>
+
+    <!-- Segment box selection preview -->
+    <div
+      v-if="isDrawingSegmentBox && store.segmentBoxStart && segmentBoxEnd"
+      class="segment-box-preview"
+      :style="segmentBoxStyle"
+    ></div>
+
+    <!-- Segmentation loading indicator -->
+    <div v-if="store.segmentIsLoading" class="segment-loading">
+      <div class="segment-spinner"></div>
+      <span>Segmenting...</span>
+    </div>
   </div>
 </template>
 
@@ -103,6 +129,7 @@ import type { WeylEngineConfig, PerformanceStats, RenderState } from '@/engine';
 import type { LayerTransformUpdate } from '@/engine/WeylEngine';
 import type { Layer, SplineData, ControlPoint } from '@/types/project';
 import SplineEditor from './SplineEditor.vue';
+import { segmentByPoint, segmentByBox } from '@/services/segmentation';
 
 // Store
 const store = useCompositorStore();
@@ -140,6 +167,52 @@ const viewportTransform = ref<number[]>([1, 0, 0, 1, 0, 0]);
 
 // Transform mode for transform controls
 const transformMode = ref<'translate' | 'rotate' | 'scale'>('translate');
+
+// Segmentation state
+const isDrawingSegmentBox = ref(false);
+const segmentBoxEnd = ref<{ x: number; y: number } | null>(null);
+
+// Computed styles for segmentation overlays
+const maskOverlayStyle = computed(() => {
+  const mask = store.segmentPendingMask;
+  if (!mask) return {};
+
+  const vpt = viewportTransform.value;
+
+  // Convert scene coordinates to screen coordinates
+  const screenX = mask.bounds.x * vpt[0] + vpt[4];
+  const screenY = mask.bounds.y * vpt[3] + vpt[5];
+  const screenWidth = mask.bounds.width * vpt[0];
+  const screenHeight = mask.bounds.height * vpt[3];
+
+  return {
+    left: `${screenX}px`,
+    top: `${screenY}px`,
+    width: `${screenWidth}px`,
+    height: `${screenHeight}px`
+  };
+});
+
+const segmentBoxStyle = computed(() => {
+  const start = store.segmentBoxStart;
+  const end = segmentBoxEnd.value;
+  if (!start || !end) return {};
+
+  const vpt = viewportTransform.value;
+
+  // Convert to screen coordinates
+  const x1 = start.x * vpt[0] + vpt[4];
+  const y1 = start.y * vpt[3] + vpt[5];
+  const x2 = end.x * vpt[0] + vpt[4];
+  const y2 = end.y * vpt[3] + vpt[5];
+
+  return {
+    left: `${Math.min(x1, x2)}px`,
+    top: `${Math.min(y1, y2)}px`,
+    width: `${Math.abs(x2 - x1)}px`,
+    height: `${Math.abs(y2 - y1)}px`
+  };
+});
 
 // Computed
 const hasDepthMap = computed(() => store.depthMap !== null);
@@ -593,6 +666,23 @@ function setupInputHandlers() {
       return;
     }
 
+    // Segment tool - click to segment or start box selection
+    if (currentTool === 'segment' && e.button === 0) {
+      const rect = canvas.getBoundingClientRect();
+      const scenePos = screenToScene(e.clientX - rect.left, e.clientY - rect.top);
+
+      if (store.segmentMode === 'point') {
+        // Point mode - segment at click position
+        handleSegmentPoint(scenePos.x, scenePos.y);
+      } else {
+        // Box mode - start box selection
+        store.setSegmentBoxStart({ x: scenePos.x, y: scenePos.y });
+        segmentBoxEnd.value = { x: scenePos.x, y: scenePos.y };
+        isDrawingSegmentBox.value = true;
+      }
+      return;
+    }
+
     // Selection - raycast to find layer
     if (currentTool === 'select' && e.button === 0) {
       // Don't handle selection if transform controls are being dragged
@@ -650,17 +740,26 @@ function setupInputHandlers() {
       return;
     }
 
+    // Handle segment box drawing
+    if (isDrawingSegmentBox.value && store.segmentBoxStart) {
+      const rect = canvas.getBoundingClientRect();
+      const scenePos = screenToScene(e.clientX - rect.left, e.clientY - rect.top);
+      segmentBoxEnd.value = { x: scenePos.x, y: scenePos.y };
+      return;
+    }
+
     // Update cursor based on tool
     const currentTool = store.currentTool;
     if (currentTool === 'hand') canvas.style.cursor = 'grab';
     else if (currentTool === 'zoom') canvas.style.cursor = 'zoom-in';
     else if (currentTool === 'text') canvas.style.cursor = 'text';
     else if (currentTool === 'pen') canvas.style.cursor = 'crosshair';
+    else if (currentTool === 'segment') canvas.style.cursor = 'crosshair';
     else canvas.style.cursor = 'default';
   });
 
   // Mouse up
-  canvas.addEventListener('mouseup', () => {
+  canvas.addEventListener('mouseup', (e: MouseEvent) => {
     if (isPanning) {
       isPanning = false;
       canvas.style.cursor = store.currentTool === 'hand' ? 'grab' : 'default';
@@ -668,12 +767,31 @@ function setupInputHandlers() {
     if (isZooming) {
       isZooming = false;
     }
+
+    // Finish segment box selection
+    if (isDrawingSegmentBox.value && store.segmentBoxStart && segmentBoxEnd.value) {
+      isDrawingSegmentBox.value = false;
+      handleSegmentBox(
+        store.segmentBoxStart.x,
+        store.segmentBoxStart.y,
+        segmentBoxEnd.value.x,
+        segmentBoxEnd.value.y
+      );
+      store.setSegmentBoxStart(null);
+      segmentBoxEnd.value = null;
+    }
   });
 
   // Mouse leave
   canvas.addEventListener('mouseleave', () => {
     isPanning = false;
     isZooming = false;
+    // Cancel segment box selection
+    if (isDrawingSegmentBox.value) {
+      isDrawingSegmentBox.value = false;
+      store.setSegmentBoxStart(null);
+      segmentBoxEnd.value = null;
+    }
   });
 }
 
@@ -684,6 +802,85 @@ function screenToScene(screenX: number, screenY: number): { x: number; y: number
     x: (screenX - vpt[4]) / vpt[0],
     y: (screenY - vpt[5]) / vpt[3]
   };
+}
+
+// ============================================================
+// SEGMENTATION HANDLERS
+// ============================================================
+
+/**
+ * Handle point-based segmentation
+ */
+async function handleSegmentPoint(x: number, y: number) {
+  if (!store.sourceImage) {
+    console.warn('[ThreeCanvas] No source image for segmentation');
+    return;
+  }
+
+  store.setSegmentLoading(true);
+
+  try {
+    const result = await segmentByPoint(store.sourceImage, { x, y });
+
+    if (result.status === 'success' && result.masks && result.masks.length > 0) {
+      // Set the first (best) mask as pending
+      const mask = result.masks[0];
+      store.setSegmentPendingMask({
+        mask: mask.mask,
+        bounds: mask.bounds,
+        area: mask.area,
+        score: mask.score
+      });
+      console.log('[ThreeCanvas] Segmentation successful, mask area:', mask.area);
+    } else {
+      console.warn('[ThreeCanvas] Segmentation returned no masks:', result.message);
+    }
+  } catch (err) {
+    console.error('[ThreeCanvas] Segmentation failed:', err);
+  } finally {
+    store.setSegmentLoading(false);
+  }
+}
+
+/**
+ * Handle box-based segmentation
+ */
+async function handleSegmentBox(x1: number, y1: number, x2: number, y2: number) {
+  if (!store.sourceImage) {
+    console.warn('[ThreeCanvas] No source image for segmentation');
+    return;
+  }
+
+  // Normalize box coordinates (ensure x1 < x2, y1 < y2)
+  const box: [number, number, number, number] = [
+    Math.min(x1, x2),
+    Math.min(y1, y2),
+    Math.max(x1, x2),
+    Math.max(y1, y2)
+  ];
+
+  store.setSegmentLoading(true);
+
+  try {
+    const result = await segmentByBox(store.sourceImage, box);
+
+    if (result.status === 'success' && result.masks && result.masks.length > 0) {
+      const mask = result.masks[0];
+      store.setSegmentPendingMask({
+        mask: mask.mask,
+        bounds: mask.bounds,
+        area: mask.area,
+        score: mask.score
+      });
+      console.log('[ThreeCanvas] Box segmentation successful, mask area:', mask.area);
+    } else {
+      console.warn('[ThreeCanvas] Box segmentation returned no masks:', result.message);
+    }
+  } catch (err) {
+    console.error('[ThreeCanvas] Box segmentation failed:', err);
+  } finally {
+    store.setSegmentLoading(false);
+  }
 }
 
 /**
@@ -1092,5 +1289,56 @@ defineExpose({
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* Segmentation overlays */
+.segment-mask-overlay {
+  position: absolute;
+  pointer-events: none;
+  z-index: 15;
+}
+
+.segment-mask-overlay .mask-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  opacity: 0.6;
+  filter: drop-shadow(0 0 3px #00ff00);
+  /* Colorize the mask green for visibility */
+  mix-blend-mode: screen;
+}
+
+.segment-box-preview {
+  position: absolute;
+  border: 2px dashed #00ff00;
+  background: rgba(0, 255, 0, 0.1);
+  pointer-events: none;
+  z-index: 15;
+}
+
+.segment-loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.85);
+  padding: 16px 24px;
+  border-radius: 8px;
+  z-index: 20;
+  color: #e0e0e0;
+  font-size: 14px;
+}
+
+.segment-spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid #3a3a3a;
+  border-top-color: #00ff00;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
 }
 </style>

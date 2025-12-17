@@ -1422,4 +1422,229 @@ export function createAllDepthSlices(
   return masks;
 }
 
+// ============================================================================
+// CAMERA → DEPTHFLOW AUTO-SYNC
+// Converts 3D camera motion to 2.5D depth-based parallax
+// ============================================================================
+
+export interface CameraToDepthflowConfig {
+  /** How much camera X movement affects depthflow offsetX (default: 1) */
+  sensitivityX: number;
+  /** How much camera Y movement affects depthflow offsetY (default: 1) */
+  sensitivityY: number;
+  /** How much camera Z movement affects depthflow zoom (default: 0.01) */
+  sensitivityZ: number;
+  /** How much camera Z rotation affects depthflow rotation (default: 1) */
+  sensitivityRotation: number;
+  /** Base zoom value when camera is at origin */
+  baseZoom: number;
+  /** Invert X movement direction */
+  invertX: boolean;
+  /** Invert Y movement direction */
+  invertY: boolean;
+  /** Clamp zoom to this range */
+  zoomClamp: { min: number; max: number };
+  /** Clamp offset to this range */
+  offsetClamp: { min: number; max: number };
+}
+
+export const DEFAULT_CAMERA_SYNC_CONFIG: CameraToDepthflowConfig = {
+  sensitivityX: 0.5,
+  sensitivityY: 0.5,
+  sensitivityZ: 0.001,
+  sensitivityRotation: 1,
+  baseZoom: 1,
+  invertX: false,
+  invertY: false,
+  zoomClamp: { min: 0.5, max: 3 },
+  offsetClamp: { min: -1, max: 1 }
+};
+
+/**
+ * Camera state for sync calculations
+ */
+export interface CameraState {
+  position: { x: number; y: number; z: number };
+  rotation: { x: number; y: number; z: number };
+  zoom: number;
+  focalLength: number;
+}
+
+/**
+ * Convert camera state to depthflow parameters.
+ * This enables camera movement to drive depth-based parallax.
+ *
+ * @param camera - Current camera state
+ * @param compWidth - Composition width in pixels
+ * @param compHeight - Composition height in pixels
+ * @param config - Sensitivity and clamping configuration
+ */
+export function cameraToDepthflowParams(
+  camera: CameraState,
+  compWidth: number,
+  compHeight: number,
+  config: CameraToDepthflowConfig = DEFAULT_CAMERA_SYNC_CONFIG
+): Partial<DepthflowConfig> {
+  // Camera position affects parallax offset
+  // Normalize by composition size for consistent behavior
+  const normalizedX = camera.position.x / compWidth;
+  const normalizedY = camera.position.y / compHeight;
+
+  // Calculate offsets with sensitivity and inversion
+  let offsetX = normalizedX * config.sensitivityX * (config.invertX ? -1 : 1);
+  let offsetY = normalizedY * config.sensitivityY * (config.invertY ? -1 : 1);
+
+  // Clamp offsets
+  offsetX = Math.max(config.offsetClamp.min, Math.min(config.offsetClamp.max, offsetX));
+  offsetY = Math.max(config.offsetClamp.min, Math.min(config.offsetClamp.max, offsetY));
+
+  // Camera Z position affects zoom
+  // Moving camera closer (smaller Z) = zooming in
+  const zoomFromZ = config.baseZoom - (camera.position.z * config.sensitivityZ);
+  const zoom = Math.max(config.zoomClamp.min, Math.min(config.zoomClamp.max, zoomFromZ));
+
+  // Camera Z rotation affects depthflow rotation directly
+  const rotation = camera.rotation.z * config.sensitivityRotation;
+
+  return {
+    offsetX,
+    offsetY,
+    zoom,
+    rotation
+  };
+}
+
+/**
+ * Create depthflow motion components from camera keyframes.
+ * Converts animated camera to depthflow motion stack.
+ *
+ * @param cameraKeyframes - Array of camera keyframes with frame numbers
+ * @param compWidth - Composition width
+ * @param compHeight - Composition height
+ * @param config - Sync configuration
+ */
+export function cameraTrajToDepthflowMotions(
+  cameraKeyframes: Array<{
+    frame: number;
+    camera: CameraState;
+  }>,
+  compWidth: number,
+  compHeight: number,
+  config: CameraToDepthflowConfig = DEFAULT_CAMERA_SYNC_CONFIG
+): MotionComponent[] {
+  if (cameraKeyframes.length < 2) return [];
+
+  const motions: MotionComponent[] = [];
+
+  // Convert each camera keyframe to depthflow parameters
+  const depthflowKeyframes = cameraKeyframes.map(kf => ({
+    frame: kf.frame,
+    params: cameraToDepthflowParams(kf.camera, compWidth, compHeight, config)
+  }));
+
+  // Create motion components for each parameter transition
+  for (let i = 0; i < depthflowKeyframes.length - 1; i++) {
+    const current = depthflowKeyframes[i];
+    const next = depthflowKeyframes[i + 1];
+
+    // OffsetX motion
+    if (current.params.offsetX !== undefined && next.params.offsetX !== undefined) {
+      if (current.params.offsetX !== next.params.offsetX) {
+        motions.push({
+          id: `camera_sync_offsetX_${i}`,
+          type: 'linear',
+          parameter: 'offsetX',
+          startValue: current.params.offsetX,
+          endValue: next.params.offsetX,
+          startFrame: current.frame,
+          endFrame: next.frame,
+          easing: 'ease-in-out',
+          enabled: true
+        });
+      }
+    }
+
+    // OffsetY motion
+    if (current.params.offsetY !== undefined && next.params.offsetY !== undefined) {
+      if (current.params.offsetY !== next.params.offsetY) {
+        motions.push({
+          id: `camera_sync_offsetY_${i}`,
+          type: 'linear',
+          parameter: 'offsetY',
+          startValue: current.params.offsetY,
+          endValue: next.params.offsetY,
+          startFrame: current.frame,
+          endFrame: next.frame,
+          easing: 'ease-in-out',
+          enabled: true
+        });
+      }
+    }
+
+    // Zoom motion
+    if (current.params.zoom !== undefined && next.params.zoom !== undefined) {
+      if (current.params.zoom !== next.params.zoom) {
+        motions.push({
+          id: `camera_sync_zoom_${i}`,
+          type: 'linear',
+          parameter: 'zoom',
+          startValue: current.params.zoom,
+          endValue: next.params.zoom,
+          startFrame: current.frame,
+          endFrame: next.frame,
+          easing: 'ease-in-out',
+          enabled: true
+        });
+      }
+    }
+
+    // Rotation motion
+    if (current.params.rotation !== undefined && next.params.rotation !== undefined) {
+      if (current.params.rotation !== next.params.rotation) {
+        motions.push({
+          id: `camera_sync_rotation_${i}`,
+          type: 'linear',
+          parameter: 'rotation',
+          startValue: current.params.rotation,
+          endValue: next.params.rotation,
+          startFrame: current.frame,
+          endFrame: next.frame,
+          easing: 'ease-in-out',
+          enabled: true
+        });
+      }
+    }
+  }
+
+  return motions;
+}
+
+/**
+ * Evaluate camera-driven depthflow state at a specific frame.
+ * For real-time preview of camera → depthflow sync.
+ *
+ * @param camera - Current camera state at frame
+ * @param baseConfig - Base depthflow config (preset, etc)
+ * @param compWidth - Composition width
+ * @param compHeight - Composition height
+ * @param syncConfig - Camera sync sensitivity config
+ */
+export function evaluateCameraSyncedDepthflow(
+  camera: CameraState,
+  baseConfig: DepthflowConfig,
+  compWidth: number,
+  compHeight: number,
+  syncConfig: CameraToDepthflowConfig = DEFAULT_CAMERA_SYNC_CONFIG
+): DepthflowConfig {
+  const cameraParams = cameraToDepthflowParams(camera, compWidth, compHeight, syncConfig);
+
+  return {
+    ...baseConfig,
+    zoom: cameraParams.zoom ?? baseConfig.zoom,
+    offsetX: cameraParams.offsetX ?? baseConfig.offsetX,
+    offsetY: cameraParams.offsetY ?? baseConfig.offsetY,
+    rotation: cameraParams.rotation ?? baseConfig.rotation
+  };
+}
+
 export default DepthflowRenderer;

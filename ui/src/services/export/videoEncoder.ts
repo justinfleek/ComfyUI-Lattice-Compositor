@@ -2,10 +2,13 @@
  * Video Encoder Service
  *
  * Uses WebCodecs API to encode frame sequences into video.
+ * Uses webm-muxer/mp4-muxer for proper container generation.
  * Supports H.264/AVC and VP9 codecs with configurable quality.
  */
 
 import { exportLogger } from '@/utils/logger';
+import { Muxer as WebMMuxer, ArrayBufferTarget as WebMTarget } from 'webm-muxer';
+import { Muxer as MP4Muxer, ArrayBufferTarget as MP4Target } from 'mp4-muxer';
 
 // ============================================================================
 // Types
@@ -81,7 +84,8 @@ export async function getSupportedCodecs(): Promise<string[]> {
 export class WebCodecsVideoEncoder {
   private config: VideoEncoderConfig;
   private encoder: VideoEncoder | null = null;
-  private chunks: EncodedVideoChunk[] = [];
+  private webmMuxer: WebMMuxer<WebMTarget> | null = null;
+  private mp4Muxer: MP4Muxer<MP4Target> | null = null;
   private frameCount = 0;
   private totalBytesWritten = 0;
   private onProgress?: (progress: EncodingProgress) => void;
@@ -99,9 +103,10 @@ export class WebCodecsVideoEncoder {
     }
 
     this.onProgress = onProgress;
-    this.chunks = [];
     this.frameCount = 0;
     this.totalBytesWritten = 0;
+    this.webmMuxer = null;
+    this.mp4Muxer = null;
 
     const codecString = this.getCodecString();
     const bitrate = this.getBitrate();
@@ -116,6 +121,31 @@ export class WebCodecsVideoEncoder {
 
     if (!support.supported) {
       throw new Error(`Unsupported encoder configuration: ${codecString}`);
+    }
+
+    // Initialize the appropriate muxer based on codec
+    if (this.config.codec === 'avc') {
+      // H.264 → MP4 container
+      this.mp4Muxer = new MP4Muxer({
+        target: new MP4Target(),
+        video: {
+          codec: 'avc',
+          width: this.config.width,
+          height: this.config.height,
+        },
+        fastStart: 'in-memory', // Moves moov atom to beginning for streaming
+      });
+    } else {
+      // VP8/VP9 → WebM container
+      const webmCodec = this.config.codec === 'vp9' ? 'V_VP9' : 'V_VP8';
+      this.webmMuxer = new WebMMuxer({
+        target: new WebMTarget(),
+        video: {
+          codec: webmCodec,
+          width: this.config.width,
+          height: this.config.height,
+        },
+      });
     }
 
     this.encoder = new VideoEncoder({
@@ -205,15 +235,32 @@ export class WebCodecsVideoEncoder {
     this.encoder.close();
     this.encoder = null;
 
-    // Create the video container
-    const videoData = this.createVideoContainer();
+    // Finalize the muxer and get the video data
+    let blob: Blob;
+    let mimeType: string;
+
+    if (this.mp4Muxer) {
+      this.mp4Muxer.finalize();
+      const buffer = this.mp4Muxer.target.buffer;
+      blob = new Blob([buffer], { type: 'video/mp4' });
+      mimeType = 'video/mp4';
+      this.mp4Muxer = null;
+    } else if (this.webmMuxer) {
+      this.webmMuxer.finalize();
+      const buffer = this.webmMuxer.target.buffer;
+      blob = new Blob([buffer], { type: 'video/webm' });
+      mimeType = 'video/webm';
+      this.webmMuxer = null;
+    } else {
+      throw new Error('No muxer initialized');
+    }
 
     return {
-      blob: videoData.blob,
-      mimeType: videoData.mimeType,
+      blob,
+      mimeType,
       duration: this.frameCount / this.config.frameRate,
       frameCount: this.frameCount,
-      size: videoData.blob.size,
+      size: blob.size,
     };
   }
 
@@ -225,7 +272,8 @@ export class WebCodecsVideoEncoder {
       this.encoder.close();
       this.encoder = null;
     }
-    this.chunks = [];
+    this.webmMuxer = null;
+    this.mp4Muxer = null;
   }
 
   // ============================================================================
@@ -233,7 +281,12 @@ export class WebCodecsVideoEncoder {
   // ============================================================================
 
   private handleChunk(chunk: EncodedVideoChunk, metadata?: EncodedVideoChunkMetadata): void {
-    this.chunks.push(chunk);
+    // Pass chunk to the appropriate muxer
+    if (this.mp4Muxer) {
+      this.mp4Muxer.addVideoChunk(chunk, metadata);
+    } else if (this.webmMuxer) {
+      this.webmMuxer.addVideoChunk(chunk, metadata);
+    }
     this.totalBytesWritten += chunk.byteLength;
   }
 
@@ -272,73 +325,6 @@ export class WebCodecsVideoEncoder {
       default:
         return Math.round(baseRate * 0.1); // medium default
     }
-  }
-
-  private createVideoContainer(): { blob: Blob; mimeType: string } {
-    // For now, just return raw chunks as WebM
-    // In production, you'd use a proper muxer (mp4box.js, webm-muxer, etc.)
-
-    // Simple approach: concatenate chunk data for WebM/VP9
-    if (this.config.codec === 'vp9' || this.config.codec === 'vp8') {
-      return this.createWebMContainer();
-    }
-
-    // For H.264, return as MP4 using minimal container
-    return this.createMP4Container();
-  }
-
-  private createWebMContainer(): { blob: Blob; mimeType: string } {
-    // WebM container creation
-    // This is a simplified version - production would use webm-muxer
-    const buffers: ArrayBuffer[] = [];
-
-    for (const chunk of this.chunks) {
-      const buffer = new ArrayBuffer(chunk.byteLength);
-      chunk.copyTo(buffer);
-      buffers.push(buffer);
-    }
-
-    const totalLength = buffers.reduce((sum, buf) => sum + buf.byteLength, 0);
-    const combined = new Uint8Array(totalLength);
-    let offset = 0;
-
-    for (const buffer of buffers) {
-      combined.set(new Uint8Array(buffer), offset);
-      offset += buffer.byteLength;
-    }
-
-    return {
-      blob: new Blob([combined], { type: 'video/webm' }),
-      mimeType: 'video/webm',
-    };
-  }
-
-  private createMP4Container(): { blob: Blob; mimeType: string } {
-    // MP4 container creation
-    // This is a simplified version - production would use mp4box.js
-    const buffers: ArrayBuffer[] = [];
-
-    for (const chunk of this.chunks) {
-      const buffer = new ArrayBuffer(chunk.byteLength);
-      chunk.copyTo(buffer);
-      buffers.push(buffer);
-    }
-
-    const totalLength = buffers.reduce((sum, buf) => sum + buf.byteLength, 0);
-    const combined = new Uint8Array(totalLength);
-    let offset = 0;
-
-    for (const buffer of buffers) {
-      combined.set(new Uint8Array(buffer), offset);
-      offset += buffer.byteLength;
-    }
-
-    // Return as raw H.264 stream - not a proper MP4 container
-    // For proper MP4, use mp4box.js or similar
-    return {
-      blob: new Blob([combined], { type: 'video/mp4' }),
-      mimeType: 'video/mp4',
-    };
   }
 }
 

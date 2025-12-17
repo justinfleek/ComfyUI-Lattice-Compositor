@@ -28,6 +28,11 @@ import type {
 } from '@/types/project';
 import { BaseLayer } from './BaseLayer';
 import { interpolateProperty } from '@/services/interpolation';
+import {
+  isSplineControlPointPath,
+  parseSplineControlPointPath,
+  createSplineControlPointPath,
+} from '@/services/propertyDriver';
 
 export class SplineLayer extends BaseLayer {
   /** The line mesh for the spline */
@@ -411,17 +416,25 @@ export class SplineLayer extends BaseLayer {
 
   /**
    * Evaluate a single animated control point at a specific frame
-   * PURE FUNCTION - uses interpolateProperty from interpolation.ts
+   * Uses interpolateProperty from interpolation.ts
+   * Driven values override interpolated values
    */
   private evaluateControlPointAtFrame(
     acp: AnimatableControlPoint,
-    frame: number
+    frame: number,
+    index: number
   ): EvaluatedControlPoint {
+    // Get interpolated values first
+    const interpolatedX = interpolateProperty(acp.x, frame);
+    const interpolatedY = interpolateProperty(acp.y, frame);
+    const interpolatedDepth = acp.depth ? interpolateProperty(acp.depth, frame) : 0;
+
+    // Apply driven value overrides
     return {
       id: acp.id,
-      x: interpolateProperty(acp.x, frame),
-      y: interpolateProperty(acp.y, frame),
-      depth: acp.depth ? interpolateProperty(acp.depth, frame) : 0,
+      x: this.getDrivenControlPointValue(index, 'x', interpolatedX),
+      y: this.getDrivenControlPointValue(index, 'y', interpolatedY),
+      depth: this.getDrivenControlPointValue(index, 'depth', interpolatedDepth),
       handleIn: acp.handleIn ? {
         x: interpolateProperty(acp.handleIn.x, frame),
         y: interpolateProperty(acp.handleIn.y, frame),
@@ -440,12 +453,15 @@ export class SplineLayer extends BaseLayer {
    *
    * For static splines, returns the static control points converted to EvaluatedControlPoint
    * For animated splines, interpolates all control points at the given frame
+   * Driven values (from PropertyDriverSystem) override interpolated values
    *
-   * DETERMINISM: Same frame = same output (pure function)
+   * DETERMINISM: Same frame + same drivers = same output (pure function)
    */
   getEvaluatedControlPoints(frame: number): EvaluatedControlPoint[] {
-    // Use cached result if same frame
-    if (frame === this.lastEvaluatedFrame && this.cachedEvaluatedPoints) {
+    // Use cached result if same frame AND no driven values have changed
+    // Note: We don't cache when driven values are present to ensure reactivity
+    const hasDrivenValues = this.hasSplineDrivers();
+    if (frame === this.lastEvaluatedFrame && this.cachedEvaluatedPoints && !hasDrivenValues) {
       return this.cachedEvaluatedPoints;
     }
 
@@ -453,27 +469,54 @@ export class SplineLayer extends BaseLayer {
 
     if (this.animatedPoints && this.animatedPoints.length > 0) {
       // Animated spline - interpolate each control point
-      points = this.animatedPoints.map(acp =>
-        this.evaluateControlPointAtFrame(acp, frame)
+      points = this.animatedPoints.map((acp, index) =>
+        this.evaluateControlPointAtFrame(acp, frame, index)
       );
     } else {
       // Static spline - convert ControlPoint to EvaluatedControlPoint
-      points = this.splineData.controlPoints.map(cp => ({
+      points = this.splineData.controlPoints.map((cp, index) => ({
         id: cp.id,
-        x: cp.x,
-        y: cp.y,
-        depth: cp.depth ?? 0,
+        x: this.getDrivenControlPointValue(index, 'x', cp.x),
+        y: this.getDrivenControlPointValue(index, 'y', cp.y),
+        depth: this.getDrivenControlPointValue(index, 'depth', cp.depth ?? 0),
         handleIn: cp.handleIn,
         handleOut: cp.handleOut,
         type: cp.type,
       }));
     }
 
-    // Cache the result
+    // Cache the result (only if no driven values)
     this.lastEvaluatedFrame = frame;
-    this.cachedEvaluatedPoints = points;
+    if (!hasDrivenValues) {
+      this.cachedEvaluatedPoints = points;
+    }
 
     return points;
+  }
+
+  /**
+   * Check if any spline control point drivers are active
+   */
+  private hasSplineDrivers(): boolean {
+    // Check if any driven values match spline control point pattern
+    for (const key of this.drivenValues.keys()) {
+      if (isSplineControlPointPath(key)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Get a driven control point value, falling back to base value
+   */
+  private getDrivenControlPointValue(
+    index: number,
+    property: 'x' | 'y' | 'depth',
+    baseValue: number
+  ): number {
+    const path = createSplineControlPointPath(index, property);
+    return this.getDrivenOrBase(path, baseValue);
   }
 
   /**
@@ -593,6 +636,29 @@ export class SplineLayer extends BaseLayer {
     if (pointsHash !== this.lastPointsHash) {
       this.buildSplineFromEvaluatedPoints(evaluatedPoints);
       this.lastPointsHash = pointsHash;
+    }
+  }
+
+  protected override onApplyEvaluatedState(state: import('../MotionEngine').EvaluatedLayer): void {
+    const props = state.properties;
+
+    // Apply evaluated control points if present
+    if (props['controlPoints'] !== undefined) {
+      const points = props['controlPoints'] as EvaluatedControlPoint[];
+      const pointsHash = this.computePointsHash(points);
+      if (pointsHash !== this.lastPointsHash) {
+        this.buildSplineFromEvaluatedPoints(points);
+        this.lastPointsHash = pointsHash;
+      }
+    }
+
+    // Apply stroke properties
+    if (props['strokeWidth'] !== undefined) {
+      this.setStrokeWidth(props['strokeWidth'] as number);
+    }
+
+    if (props['strokeColor'] !== undefined) {
+      this.setStroke(props['strokeColor'] as string);
     }
   }
 

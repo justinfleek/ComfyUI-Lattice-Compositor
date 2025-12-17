@@ -9,7 +9,8 @@
  * - Mask expansion/contraction
  */
 
-import type { LayerMask, MaskPath, MaskVertex, MaskMode, TrackMatteType } from '@/types/project';
+import type { LayerMask, MaskPath, MaskVertex, MaskMode, TrackMatteType, AnimatableProperty } from '@/types/project';
+import { interpolateProperty } from '@/services/interpolation';
 
 // ============================================================================
 // MASK PATH RENDERING
@@ -58,28 +59,299 @@ function renderMaskPath(ctx: CanvasRenderingContext2D, path: MaskPath): void {
 }
 
 /**
+ * Calculate the normal at a vertex based on adjacent vertices
+ *
+ * The normal is the average of the perpendiculars to the incoming and outgoing edges.
+ * For smooth curves, we use the tangent handles to determine direction.
+ */
+function calculateVertexNormal(
+  prev: MaskVertex,
+  curr: MaskVertex,
+  next: MaskVertex
+): { nx: number; ny: number } {
+  // Get incoming direction (from prev to curr, or from handleIn if present)
+  let inDx: number, inDy: number;
+  if (curr.inTangentX || curr.inTangentY) {
+    // Use tangent handle direction
+    inDx = -curr.inTangentX;
+    inDy = -curr.inTangentY;
+  } else {
+    inDx = curr.x - prev.x;
+    inDy = curr.y - prev.y;
+  }
+
+  // Get outgoing direction (from curr to next, or from handleOut if present)
+  let outDx: number, outDy: number;
+  if (curr.outTangentX || curr.outTangentY) {
+    outDx = curr.outTangentX;
+    outDy = curr.outTangentY;
+  } else {
+    outDx = next.x - curr.x;
+    outDy = next.y - curr.y;
+  }
+
+  // Normalize incoming direction
+  const inLen = Math.sqrt(inDx * inDx + inDy * inDy);
+  if (inLen > 0) {
+    inDx /= inLen;
+    inDy /= inLen;
+  }
+
+  // Normalize outgoing direction
+  const outLen = Math.sqrt(outDx * outDx + outDy * outDy);
+  if (outLen > 0) {
+    outDx /= outLen;
+    outDy /= outLen;
+  }
+
+  // Calculate perpendicular (normal) for each direction
+  // Rotate 90 degrees counter-clockwise for outward normal
+  const inNx = -inDy;
+  const inNy = inDx;
+  const outNx = -outDy;
+  const outNy = outDx;
+
+  // Average the normals for smooth corner behavior
+  let nx = (inNx + outNx) / 2;
+  let ny = (inNy + outNy) / 2;
+
+  // Normalize the average normal
+  const nLen = Math.sqrt(nx * nx + ny * ny);
+  if (nLen > 0) {
+    nx /= nLen;
+    ny /= nLen;
+  } else {
+    // Fallback: use incoming normal
+    nx = inNx;
+    ny = inNy;
+  }
+
+  // Handle sharp corners: calculate miter factor
+  // This prevents the expansion from collapsing at sharp corners
+  const dot = inNx * outNx + inNy * outNy;
+  const miterFactor = 1 / Math.max(0.5, (1 + dot) / 2); // Limit miter to 2x
+
+  return {
+    nx: nx * Math.min(miterFactor, 2),
+    ny: ny * Math.min(miterFactor, 2)
+  };
+}
+
+/**
  * Apply expansion (positive) or contraction (negative) to a mask path
+ *
+ * Uses proper polygon offset algorithm:
+ * 1. Calculate normals at each vertex
+ * 2. Offset vertices along their normals
+ * 3. Scale bezier handles proportionally
  */
 function expandMaskPath(path: MaskPath, expansion: number): MaskPath {
   if (expansion === 0) return path;
 
-  // For simplicity, we'll use a uniform offset approach
-  // A more accurate implementation would use polygon offsetting algorithms
-  const vertices = path.vertices.map(v => {
-    // Calculate normal at this vertex (perpendicular to curve direction)
-    // For now, use a simple approximation
-    return {
-      ...v,
-      x: v.x, // Expansion would modify these
-      y: v.y,
-    };
+  const vertices = path.vertices;
+  if (vertices.length < 2) return path;
+
+  const expandedVertices: MaskVertex[] = [];
+
+  for (let i = 0; i < vertices.length; i++) {
+    const prev = vertices[(i - 1 + vertices.length) % vertices.length];
+    const curr = vertices[i];
+    const next = vertices[(i + 1) % vertices.length];
+
+    // Handle open paths: don't wrap around for first/last vertex
+    const effectivePrev = !path.closed && i === 0 ? curr : prev;
+    const effectiveNext = !path.closed && i === vertices.length - 1 ? curr : next;
+
+    // Calculate the outward normal at this vertex
+    const { nx, ny } = calculateVertexNormal(effectivePrev, curr, effectiveNext);
+
+    // Offset the vertex along the normal
+    const offsetX = nx * expansion;
+    const offsetY = ny * expansion;
+
+    // Calculate handle scale factor based on distance change
+    // This keeps curves proportional after expansion
+    const handleScale = 1 + (expansion / 100); // Approximate scale
+
+    expandedVertices.push({
+      x: curr.x + offsetX,
+      y: curr.y + offsetY,
+      // Scale handles to maintain curve shape
+      inTangentX: curr.inTangentX * handleScale,
+      inTangentY: curr.inTangentY * handleScale,
+      outTangentX: curr.outTangentX * handleScale,
+      outTangentY: curr.outTangentY * handleScale
+    });
+  }
+
+  return { ...path, vertices: expandedVertices };
+}
+
+// ============================================================================
+// MOTION-AWARE ADAPTIVE FEATHERING
+// ============================================================================
+
+/**
+ * Calculate motion vectors for each mask vertex between frames
+ *
+ * Used for motion blur-aware feathering in rotoscoping workflows.
+ * The feather amount is increased in the direction of motion to match
+ * the motion blur of the underlying footage.
+ */
+export interface VertexMotion {
+  dx: number;  // Motion in X
+  dy: number;  // Motion in Y
+  magnitude: number;  // Motion magnitude (speed)
+  angle: number;  // Motion angle in radians
+}
+
+/**
+ * Calculate motion vectors from current and previous frame paths
+ */
+function calculateMaskMotion(
+  currentPath: MaskPath,
+  previousPath: MaskPath | null
+): VertexMotion[] {
+  if (!previousPath || currentPath.vertices.length !== previousPath.vertices.length) {
+    // No motion data - return zero motion
+    return currentPath.vertices.map(() => ({
+      dx: 0,
+      dy: 0,
+      magnitude: 0,
+      angle: 0
+    }));
+  }
+
+  return currentPath.vertices.map((curr, i) => {
+    const prev = previousPath.vertices[i];
+    const dx = curr.x - prev.x;
+    const dy = curr.y - prev.y;
+    const magnitude = Math.sqrt(dx * dx + dy * dy);
+    const angle = Math.atan2(dy, dx);
+
+    return { dx, dy, magnitude, angle };
   });
+}
 
-  // TODO: Implement proper polygon offset for accurate expansion
-  // This requires calculating normals at each vertex and offsetting along them
-  // For now, we'll apply expansion as a post-process blur scale
+/**
+ * Apply motion-aware directional feathering
+ *
+ * This creates a motion blur effect on the mask edges that matches
+ * the direction and speed of motion at each vertex.
+ *
+ * @param canvas - The mask canvas to apply feathering to
+ * @param mask - The mask configuration
+ * @param frame - Current frame number
+ * @param previousPath - Optional previous frame's path for motion calculation
+ * @param motionScale - How much to scale motion blur (default: 1.0)
+ */
+function applyMotionAwareFeather(
+  canvas: HTMLCanvasElement,
+  baseFeather: number,
+  motionVectors: VertexMotion[],
+  motionScale: number = 1.0
+): HTMLCanvasElement {
+  const width = canvas.width;
+  const height = canvas.height;
 
-  return { ...path, vertices };
+  // Calculate average motion for directional blur
+  let avgDx = 0;
+  let avgDy = 0;
+  let avgMagnitude = 0;
+
+  for (const motion of motionVectors) {
+    avgDx += motion.dx;
+    avgDy += motion.dy;
+    avgMagnitude += motion.magnitude;
+  }
+
+  const count = motionVectors.length || 1;
+  avgDx /= count;
+  avgDy /= count;
+  avgMagnitude /= count;
+
+  // If no significant motion, use regular isotropic feather
+  if (avgMagnitude < 0.5) {
+    if (baseFeather > 0) {
+      const ctx = canvas.getContext('2d')!;
+      const blurCanvas = document.createElement('canvas');
+      blurCanvas.width = width;
+      blurCanvas.height = height;
+      const blurCtx = blurCanvas.getContext('2d')!;
+      blurCtx.filter = `blur(${baseFeather}px)`;
+      blurCtx.drawImage(canvas, 0, 0);
+      ctx.clearRect(0, 0, width, height);
+      ctx.drawImage(blurCanvas, 0, 0);
+    }
+    return canvas;
+  }
+
+  // Calculate motion-scaled feather
+  const motionFeather = avgMagnitude * motionScale;
+  const totalFeather = baseFeather + motionFeather;
+
+  // Normalize motion direction
+  const len = Math.sqrt(avgDx * avgDx + avgDy * avgDy);
+  const normDx = len > 0 ? avgDx / len : 0;
+  const normDy = len > 0 ? avgDy / len : 0;
+
+  // Create directional motion blur
+  // We'll use multiple offset blurs to simulate directional blur
+  const resultCanvas = document.createElement('canvas');
+  resultCanvas.width = width;
+  resultCanvas.height = height;
+  const resultCtx = resultCanvas.getContext('2d')!;
+
+  // Apply isotropic base feather
+  const baseCanvas = document.createElement('canvas');
+  baseCanvas.width = width;
+  baseCanvas.height = height;
+  const baseCtx = baseCanvas.getContext('2d')!;
+
+  if (baseFeather > 0) {
+    baseCtx.filter = `blur(${baseFeather}px)`;
+  }
+  baseCtx.drawImage(canvas, 0, 0);
+
+  // Apply directional blur by averaging multiple offset draws
+  const steps = Math.max(3, Math.min(15, Math.ceil(motionFeather / 2)));
+  resultCtx.globalAlpha = 1 / steps;
+
+  for (let i = 0; i < steps; i++) {
+    const t = (i / (steps - 1)) - 0.5; // -0.5 to 0.5
+    const offsetX = normDx * motionFeather * t;
+    const offsetY = normDy * motionFeather * t;
+    resultCtx.drawImage(baseCanvas, offsetX, offsetY);
+  }
+
+  // Copy result back to original canvas
+  const ctx = canvas.getContext('2d')!;
+  ctx.clearRect(0, 0, width, height);
+  ctx.globalAlpha = 1;
+  ctx.drawImage(resultCanvas, 0, 0);
+
+  return canvas;
+}
+
+// Cache for previous frame paths (for motion calculation)
+const previousPathCache = new Map<string, { frame: number; path: MaskPath }>();
+
+/**
+ * Get cached previous path for motion blur calculation
+ */
+function getPreviousPath(maskId: string, currentFrame: number): MaskPath | null {
+  const cached = previousPathCache.get(maskId);
+  if (cached && cached.frame === currentFrame - 1) {
+    return cached.path;
+  }
+  return null;
+}
+
+/**
+ * Cache current path for next frame's motion calculation
+ */
+function cachePath(maskId: string, frame: number, path: MaskPath): void {
+  previousPathCache.set(maskId, { frame, path });
 }
 
 // ============================================================================
@@ -107,11 +379,14 @@ export function renderMask(
 
   if (!mask.enabled) return canvas;
 
-  // Get animated path value
-  const path = mask.path.value; // TODO: Interpolate keyframes at frame
+  // Interpolate animated properties at the given frame
+  const path = interpolateProperty(mask.path, frame);
+  const expansion = interpolateProperty(mask.expansion, frame);
+  const opacity = interpolateProperty(mask.opacity, frame);
+  const feather = interpolateProperty(mask.feather, frame);
 
   // Apply expansion
-  const expandedPath = expandMaskPath(path, mask.expansion.value);
+  const expandedPath = expandMaskPath(path, expansion);
 
   // Render the mask shape in white
   ctx.fillStyle = 'white';
@@ -119,29 +394,29 @@ export function renderMask(
   ctx.fill();
 
   // Apply mask opacity
-  if (mask.opacity.value < 100) {
-    const opacity = mask.opacity.value / 100;
+  if (opacity < 100) {
+    const opacityFactor = opacity / 100;
     const imageData = ctx.getImageData(0, 0, width, height);
     for (let i = 0; i < imageData.data.length; i += 4) {
-      imageData.data[i] = Math.round(imageData.data[i] * opacity);
+      imageData.data[i] = Math.round(imageData.data[i] * opacityFactor);
     }
     ctx.putImageData(imageData, 0, 0);
   }
 
-  // Apply feather (blur)
-  if (mask.feather.value > 0) {
-    // Create a temporary canvas for blur
-    const blurCanvas = document.createElement('canvas');
-    blurCanvas.width = width;
-    blurCanvas.height = height;
-    const blurCtx = blurCanvas.getContext('2d')!;
+  // Apply feather (blur) with motion-aware adaptive feathering
+  // Get previous frame's path for motion calculation
+  const previousPath = getPreviousPath(mask.id, frame);
+  const motionVectors = calculateMaskMotion(path, previousPath);
 
-    blurCtx.filter = `blur(${mask.feather.value}px)`;
-    blurCtx.drawImage(canvas, 0, 0);
+  // Cache current path for next frame
+  cachePath(mask.id, frame, path);
 
-    // Copy back
-    ctx.clearRect(0, 0, width, height);
-    ctx.drawImage(blurCanvas, 0, 0);
+  // Check if there's significant motion
+  const avgMotion = motionVectors.reduce((sum, v) => sum + v.magnitude, 0) / motionVectors.length;
+
+  if (feather > 0 || avgMotion > 1) {
+    // Use motion-aware feathering if there's motion, otherwise regular blur
+    applyMotionAwareFeather(canvas, feather, motionVectors, 0.5);
   }
 
   // Apply inversion

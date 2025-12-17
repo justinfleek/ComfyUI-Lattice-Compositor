@@ -14,9 +14,18 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { BokehPass } from 'three/examples/jsm/postprocessing/BokehPass.js';
+import { SSAOPass } from 'three/examples/jsm/postprocessing/SSAOPass.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { Pass } from 'three/examples/jsm/postprocessing/Pass.js';
 import type { SceneManager } from './SceneManager';
 import type { CameraController } from './CameraController';
+import {
+  MotionBlurProcessor,
+  type MotionBlurSettings,
+  type MotionBlurType,
+  createDefaultMotionBlurSettings,
+  MOTION_BLUR_PRESETS,
+} from '@/services/motionBlur';
 
 // Local Pass type since PostPass doesn't exist in main namespace
 type PostPass = Pass;
@@ -30,6 +39,43 @@ export interface DOFConfig {
   focusDistance: number;  // Focus distance in world units
   aperture: number;       // Aperture size (affects bokeh intensity)
   maxBlur: number;        // Maximum blur amount (0-1)
+}
+
+/**
+ * SSAO (Screen Space Ambient Occlusion) Configuration
+ */
+export interface SSAOConfig {
+  enabled: boolean;
+  kernelRadius: number;     // Occlusion sampling radius (default: 8)
+  minDistance: number;      // Minimum distance threshold (default: 0.005)
+  maxDistance: number;      // Maximum distance threshold (default: 0.1)
+  intensity: number;        // Occlusion intensity multiplier (default: 1)
+  output: 'default' | 'ssao' | 'blur' | 'depth' | 'normal';
+}
+
+/**
+ * Bloom Configuration
+ * For emissive objects (lights, particles, bright areas)
+ */
+export interface BloomConfig {
+  enabled: boolean;
+  strength: number;         // Bloom intensity (default: 1.5)
+  radius: number;           // Bloom spread radius (default: 0.4)
+  threshold: number;        // Brightness threshold for bloom (default: 0.85)
+}
+
+/**
+ * Motion Blur Configuration
+ * Uses MotionBlurProcessor for various blur types
+ */
+export interface MotionBlurConfig {
+  enabled: boolean;
+  type: MotionBlurType;
+  shutterAngle: number;     // 0-720 (180 = standard film)
+  shutterPhase: number;     // -180 to 180
+  samplesPerFrame: number;  // Quality (2-64)
+  // For advanced use
+  preset?: string;          // Named preset from MOTION_BLUR_PRESETS
 }
 
 export interface RenderPipelineConfig {
@@ -76,6 +122,39 @@ export class RenderPipeline {
     focusDistance: 500,
     aperture: 0.025,
     maxBlur: 0.01,
+  };
+
+  // SSAO pass
+  private ssaoPass: SSAOPass | null = null;
+  private ssaoConfig: SSAOConfig = {
+    enabled: false,
+    kernelRadius: 8,
+    minDistance: 0.005,
+    maxDistance: 0.1,
+    intensity: 1,
+    output: 'default',
+  };
+
+  // Bloom pass (for emissive objects and lights)
+  private bloomPass: UnrealBloomPass | null = null;
+  private bloomConfig: BloomConfig = {
+    enabled: false,
+    strength: 1.5,
+    radius: 0.4,
+    threshold: 0.85,
+  };
+
+  // Motion blur processor (canvas-based, applied post-render)
+  private motionBlurProcessor: MotionBlurProcessor;
+  private motionBlurConfig: MotionBlurConfig = {
+    enabled: false,
+    type: 'standard',
+    shutterAngle: 180,
+    shutterPhase: -90,
+    samplesPerFrame: 16,
+  };
+  private previousFrameTransform: { x: number; y: number; rotation: number; scaleX: number; scaleY: number } = {
+    x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1
   };
 
   constructor(
@@ -131,6 +210,9 @@ export class RenderPipeline {
 
     // Create normal material
     this.normalMaterial = new THREE.MeshNormalMaterial();
+
+    // Initialize motion blur processor
+    this.motionBlurProcessor = new MotionBlurProcessor(scaledWidth, scaledHeight);
   }
 
   // ============================================================================
@@ -334,6 +416,275 @@ export class RenderPipeline {
   }
 
   // ============================================================================
+  // SSAO (Screen Space Ambient Occlusion)
+  // ============================================================================
+
+  /**
+   * Configure SSAO effect
+   */
+  setSSAO(config: Partial<SSAOConfig>): void {
+    this.ssaoConfig = { ...this.ssaoConfig, ...config };
+
+    if (this.ssaoConfig.enabled) {
+      if (!this.ssaoPass) {
+        this.createSSAOPass();
+      }
+      this.updateSSAOPass();
+    } else {
+      if (this.ssaoPass) {
+        this.composer.removePass(this.ssaoPass);
+        this.ssaoPass = null;
+      }
+    }
+  }
+
+  /**
+   * Get current SSAO configuration
+   */
+  getSSAO(): SSAOConfig {
+    return { ...this.ssaoConfig };
+  }
+
+  /**
+   * Create the SSAO pass
+   */
+  private createSSAOPass(): void {
+    const scaledWidth = Math.floor(this.width * this.pixelRatio);
+    const scaledHeight = Math.floor(this.height * this.pixelRatio);
+
+    this.ssaoPass = new SSAOPass(
+      this.scene.scene,
+      this.camera.camera,
+      scaledWidth,
+      scaledHeight
+    );
+
+    // SSAO should be applied early in the pipeline (after render, before DOF)
+    // Find the render pass and insert after it
+    const renderPassIndex = this.composer.passes.findIndex(
+      p => p.constructor.name === 'RenderPass'
+    );
+
+    if (renderPassIndex > -1) {
+      this.composer.insertPass(this.ssaoPass, renderPassIndex + 1);
+    } else {
+      this.addPass(this.ssaoPass);
+    }
+  }
+
+  /**
+   * Update SSAO pass parameters
+   */
+  private updateSSAOPass(): void {
+    if (!this.ssaoPass) return;
+
+    this.ssaoPass.kernelRadius = this.ssaoConfig.kernelRadius;
+    this.ssaoPass.minDistance = this.ssaoConfig.minDistance;
+    this.ssaoPass.maxDistance = this.ssaoConfig.maxDistance;
+
+    // Map output mode to SSAOPass output enum
+    const outputMap: Record<SSAOConfig['output'], number> = {
+      'default': SSAOPass.OUTPUT.Default,
+      'ssao': SSAOPass.OUTPUT.SSAO,
+      'blur': SSAOPass.OUTPUT.Blur,
+      'depth': SSAOPass.OUTPUT.Depth,
+      'normal': SSAOPass.OUTPUT.Normal,
+    };
+    this.ssaoPass.output = outputMap[this.ssaoConfig.output];
+  }
+
+  /**
+   * Enable/disable SSAO (convenience method)
+   */
+  setSSAOEnabled(enabled: boolean): void {
+    this.setSSAO({ enabled });
+  }
+
+  /**
+   * Set SSAO intensity (convenience method)
+   */
+  setSSAOIntensity(intensity: number): void {
+    this.setSSAO({ intensity });
+  }
+
+  /**
+   * Set SSAO kernel radius (convenience method)
+   */
+  setSSAORadius(radius: number): void {
+    this.setSSAO({ kernelRadius: radius });
+  }
+
+  // ============================================================================
+  // BLOOM (Emissive Glow)
+  // ============================================================================
+
+  /**
+   * Configure bloom effect
+   * Makes emissive objects (lights, particles) glow
+   */
+  setBloom(config: Partial<BloomConfig>): void {
+    this.bloomConfig = { ...this.bloomConfig, ...config };
+
+    if (this.bloomConfig.enabled) {
+      if (!this.bloomPass) {
+        this.createBloomPass();
+      }
+      this.updateBloomPass();
+    } else {
+      if (this.bloomPass) {
+        this.composer.removePass(this.bloomPass);
+        this.bloomPass = null;
+      }
+    }
+  }
+
+  /**
+   * Get current bloom configuration
+   */
+  getBloom(): BloomConfig {
+    return { ...this.bloomConfig };
+  }
+
+  /**
+   * Create the bloom pass
+   */
+  private createBloomPass(): void {
+    const scaledWidth = Math.floor(this.width * this.pixelRatio);
+    const scaledHeight = Math.floor(this.height * this.pixelRatio);
+
+    this.bloomPass = new UnrealBloomPass(
+      new THREE.Vector2(scaledWidth, scaledHeight),
+      this.bloomConfig.strength,
+      this.bloomConfig.radius,
+      this.bloomConfig.threshold
+    );
+
+    // Insert bloom after SSAO but before DOF
+    // Find SSAO pass first
+    const ssaoIndex = this.composer.passes.findIndex(
+      p => p.constructor.name === 'SSAOPass'
+    );
+
+    if (ssaoIndex > -1) {
+      this.composer.insertPass(this.bloomPass, ssaoIndex + 1);
+    } else {
+      // Insert after render pass
+      const renderIndex = this.composer.passes.findIndex(
+        p => p.constructor.name === 'RenderPass'
+      );
+      if (renderIndex > -1) {
+        this.composer.insertPass(this.bloomPass, renderIndex + 1);
+      } else {
+        this.addPass(this.bloomPass);
+      }
+    }
+  }
+
+  /**
+   * Update bloom pass parameters
+   */
+  private updateBloomPass(): void {
+    if (!this.bloomPass) return;
+
+    this.bloomPass.strength = this.bloomConfig.strength;
+    this.bloomPass.radius = this.bloomConfig.radius;
+    this.bloomPass.threshold = this.bloomConfig.threshold;
+  }
+
+  /**
+   * Enable/disable bloom (convenience method)
+   */
+  setBloomEnabled(enabled: boolean): void {
+    this.setBloom({ enabled });
+  }
+
+  /**
+   * Set bloom intensity (convenience method)
+   */
+  setBloomStrength(strength: number): void {
+    this.setBloom({ strength });
+  }
+
+  /**
+   * Set bloom threshold (convenience method)
+   */
+  setBloomThreshold(threshold: number): void {
+    this.setBloom({ threshold });
+  }
+
+  // ============================================================================
+  // MOTION BLUR CONFIGURATION
+  // ============================================================================
+
+  /**
+   * Configure motion blur
+   */
+  setMotionBlur(config: Partial<MotionBlurConfig>): void {
+    this.motionBlurConfig = { ...this.motionBlurConfig, ...config };
+
+    // Update processor settings
+    this.motionBlurProcessor.setSettings({
+      enabled: this.motionBlurConfig.enabled,
+      type: this.motionBlurConfig.type,
+      shutterAngle: this.motionBlurConfig.shutterAngle,
+      shutterPhase: this.motionBlurConfig.shutterPhase,
+      samplesPerFrame: this.motionBlurConfig.samplesPerFrame,
+    });
+  }
+
+  /**
+   * Enable/disable motion blur
+   */
+  setMotionBlurEnabled(enabled: boolean): void {
+    this.setMotionBlur({ enabled });
+  }
+
+  /**
+   * Set motion blur type
+   */
+  setMotionBlurType(type: MotionBlurType): void {
+    this.setMotionBlur({ type });
+  }
+
+  /**
+   * Set shutter angle (0-720, 180 = standard film)
+   */
+  setMotionBlurShutterAngle(shutterAngle: number): void {
+    this.setMotionBlur({ shutterAngle });
+  }
+
+  /**
+   * Apply a motion blur preset by name
+   */
+  setMotionBlurPreset(presetName: string): void {
+    const preset = MOTION_BLUR_PRESETS[presetName];
+    if (preset) {
+      this.setMotionBlur({
+        enabled: true,
+        type: preset.type || 'standard',
+        shutterAngle: preset.shutterAngle || 180,
+        shutterPhase: preset.shutterPhase || -90,
+        samplesPerFrame: preset.samplesPerFrame || 16,
+        preset: presetName,
+      });
+    }
+  }
+
+  /**
+   * Get current motion blur configuration
+   */
+  getMotionBlurConfig(): MotionBlurConfig {
+    return { ...this.motionBlurConfig };
+  }
+
+  /**
+   * Get the motion blur processor (for advanced use)
+   */
+  getMotionBlurProcessor(): MotionBlurProcessor {
+    return this.motionBlurProcessor;
+  }
+
+  // ============================================================================
   // RENDERING
   // ============================================================================
 
@@ -495,6 +846,23 @@ export class RenderPipeline {
       this.bokehPass = null;
       this.createBokehPass();
     }
+
+    // Recreate SSAO pass if enabled (needs new dimensions)
+    if (this.ssaoPass && this.ssaoConfig.enabled) {
+      this.composer.removePass(this.ssaoPass);
+      this.ssaoPass = null;
+      this.createSSAOPass();
+      this.updateSSAOPass();
+    }
+
+    // Recreate bloom pass if enabled (needs new dimensions)
+    if (this.bloomPass && this.bloomConfig.enabled) {
+      this.composer.removePass(this.bloomPass);
+      this.bloomPass.dispose();
+      this.bloomPass = null;
+      this.createBloomPass();
+      this.updateBloomPass();
+    }
   }
 
   // ============================================================================
@@ -618,6 +986,19 @@ export class RenderPipeline {
     if (this.bokehPass) {
       this.composer.removePass(this.bokehPass);
       this.bokehPass = null;
+    }
+
+    // Dispose SSAO pass if enabled
+    if (this.ssaoPass) {
+      this.composer.removePass(this.ssaoPass);
+      this.ssaoPass = null;
+    }
+
+    // Dispose bloom pass if enabled
+    if (this.bloomPass) {
+      this.composer.removePass(this.bloomPass);
+      this.bloomPass.dispose();
+      this.bloomPass = null;
     }
 
     // Dispose precomp targets

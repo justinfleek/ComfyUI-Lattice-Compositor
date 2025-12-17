@@ -748,6 +748,91 @@ export class WeylEngine {
   }
 
   // ============================================================================
+  // SSAO (Screen Space Ambient Occlusion)
+  // ============================================================================
+
+  /**
+   * Configure SSAO effect
+   * @param config - SSAO configuration options
+   */
+  setSSAO(config: Partial<import('./core/RenderPipeline').SSAOConfig>): void {
+    this.renderer.setSSAO(config);
+  }
+
+  /**
+   * Enable or disable SSAO
+   */
+  setSSAOEnabled(enabled: boolean): void {
+    this.renderer.setSSAOEnabled(enabled);
+  }
+
+  /**
+   * Set SSAO intensity
+   * @param intensity - Occlusion intensity multiplier
+   */
+  setSSAOIntensity(intensity: number): void {
+    this.renderer.setSSAOIntensity(intensity);
+  }
+
+  /**
+   * Set SSAO sampling radius
+   * @param radius - Kernel radius for occlusion sampling
+   */
+  setSSAORadius(radius: number): void {
+    this.renderer.setSSAORadius(radius);
+  }
+
+  /**
+   * Get current SSAO configuration
+   */
+  getSSAO(): import('./core/RenderPipeline').SSAOConfig {
+    return this.renderer.getSSAO();
+  }
+
+  // ============================================================================
+  // BLOOM (Emissive Glow)
+  // ============================================================================
+
+  /**
+   * Configure bloom effect
+   * Makes emissive objects (lights, bright particles) glow
+   * @param config - Bloom configuration options
+   */
+  setBloom(config: Partial<import('./core/RenderPipeline').BloomConfig>): void {
+    this.renderer.setBloom(config);
+  }
+
+  /**
+   * Enable or disable bloom
+   */
+  setBloomEnabled(enabled: boolean): void {
+    this.renderer.setBloomEnabled(enabled);
+  }
+
+  /**
+   * Set bloom intensity
+   * @param strength - Bloom strength multiplier
+   */
+  setBloomStrength(strength: number): void {
+    this.renderer.setBloomStrength(strength);
+  }
+
+  /**
+   * Set bloom threshold
+   * @param threshold - Brightness threshold for bloom (0-1)
+   */
+  setBloomThreshold(threshold: number): void {
+    this.renderer.setBloomThreshold(threshold);
+  }
+
+  /**
+   * Get current bloom configuration
+   */
+  getBloom(): import('./core/RenderPipeline').BloomConfig {
+    return this.renderer.getBloom();
+  }
+
+  // ============================================================================
   // VIEWPORT TRANSFORM (PAN/ZOOM)
   // ============================================================================
 

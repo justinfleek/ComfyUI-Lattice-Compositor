@@ -829,6 +829,48 @@ export class TextLayer extends BaseLayer {
     }
   }
 
+  protected override onApplyEvaluatedState(state: import('../MotionEngine').EvaluatedLayer): void {
+    const props = state.properties;
+
+    // Apply evaluated text properties
+    if (props['fontSize'] !== undefined) {
+      this.setFontSize(props['fontSize'] as number);
+    }
+
+    if (props['tracking'] !== undefined) {
+      this.setTracking(props['tracking'] as number);
+    }
+
+    if (props['fillColor'] !== undefined) {
+      this.setFillColor(props['fillColor'] as string);
+    }
+
+    if (props['strokeColor'] !== undefined || props['strokeWidth'] !== undefined) {
+      this.setStroke(
+        (props['strokeColor'] as string) ?? this.textData.stroke,
+        (props['strokeWidth'] as number) ?? this.textData.strokeWidth
+      );
+    }
+
+    // Path animation properties
+    if (props['pathOffset'] !== undefined) {
+      this.setPathOffset(props['pathOffset'] as number);
+    }
+
+    if (props['firstMargin'] !== undefined) {
+      this.setFirstMargin(props['firstMargin'] as number);
+    }
+
+    if (props['lastMargin'] !== undefined) {
+      this.setLastMargin(props['lastMargin'] as number);
+    }
+
+    // Effects
+    if (state.effects.length > 0) {
+      this.applyEvaluatedEffects(state.effects);
+    }
+  }
+
   /**
    * Apply per-character animated transforms (additional offsets)
    */

@@ -546,6 +546,32 @@ export class VideoLayer extends BaseLayer {
     }
   }
 
+  protected override onApplyEvaluatedState(state: import('../MotionEngine').EvaluatedLayer): void {
+    const props = state.properties;
+
+    // Apply time remap if evaluated (direct video time in seconds)
+    if (props['timeRemap'] !== undefined && this.videoElement) {
+      const targetTime = props['timeRemap'] as number;
+      const clampedTime = Math.max(0, Math.min(targetTime, this.videoElement.duration || targetTime));
+      this.videoElement.currentTime = clampedTime;
+    }
+
+    // Apply speed if evaluated
+    if (props['speed'] !== undefined) {
+      this.videoData.speed = props['speed'] as number;
+    }
+
+    // Apply audio level if evaluated
+    if (props['audioLevel'] !== undefined) {
+      this.setAudioLevel(props['audioLevel'] as number);
+    }
+
+    // Apply effects
+    if (state.effects.length > 0) {
+      this.applyEvaluatedEffects(state.effects);
+    }
+  }
+
   // ============================================================================
   // LAYER UPDATE
   // ============================================================================
