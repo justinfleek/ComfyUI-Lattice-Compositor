@@ -87,6 +87,13 @@ import {
   type SegmentationMask,
   type SegmentationResult
 } from '@/services/segmentation';
+import {
+  getFrameCache,
+  initializeFrameCache,
+  type FrameCache,
+  type CacheStats
+} from '@/services/frameCache';
+import { saveProject, loadProject, listProjects } from '@/services/projectStorage';
 
 interface CompositorState {
   // Project data
@@ -174,6 +181,18 @@ interface CompositorState {
     layers: Layer[];
     keyframes: { layerId: string; propertyPath: string; keyframes: Keyframe<any>[] }[];
   };
+
+  // Autosave state
+  autosaveEnabled: boolean;
+  autosaveIntervalMs: number;
+  autosaveTimerId: number | null;
+  lastSaveTime: number | null;
+  lastSaveProjectId: string | null;
+  hasUnsavedChanges: boolean;
+
+  // Frame cache state
+  frameCacheEnabled: boolean;
+  projectStateHash: string;
 }
 
 export const useCompositorStore = defineStore('compositor', {
@@ -230,7 +249,19 @@ export const useCompositorStore = defineStore('compositor', {
     clipboard: {
       layers: [],
       keyframes: []
-    }
+    },
+
+    // Autosave (enabled by default, every 60 seconds)
+    autosaveEnabled: true,
+    autosaveIntervalMs: 60000,
+    autosaveTimerId: null,
+    lastSaveTime: null,
+    lastSaveProjectId: null,
+    hasUnsavedChanges: false,
+
+    // Frame cache (enabled by default)
+    frameCacheEnabled: true,
+    projectStateHash: ''
   }),
 
   getters: {
@@ -3880,6 +3911,253 @@ export const useCompositorStore = defineStore('compositor', {
     getAllParticleSnapshots(frame?: number): Readonly<Record<string, ParticleSnapshot>> {
       const frameState = this.getFrameState(frame);
       return frameState.particleSnapshots;
+    },
+
+    // ============================================================
+    // AUTOSAVE ACTIONS
+    // ============================================================
+
+    /**
+     * Enable autosave with optional interval
+     * @param intervalMs - Autosave interval in milliseconds (default: 60000)
+     */
+    enableAutosave(intervalMs?: number): void {
+      if (intervalMs) {
+        this.autosaveIntervalMs = intervalMs;
+      }
+      this.autosaveEnabled = true;
+      this.startAutosaveTimer();
+      storeLogger.info('Autosave enabled, interval:', this.autosaveIntervalMs, 'ms');
+    },
+
+    /**
+     * Disable autosave
+     */
+    disableAutosave(): void {
+      this.autosaveEnabled = false;
+      this.stopAutosaveTimer();
+      storeLogger.info('Autosave disabled');
+    },
+
+    /**
+     * Start the autosave timer
+     */
+    startAutosaveTimer(): void {
+      this.stopAutosaveTimer();
+      if (!this.autosaveEnabled) return;
+
+      this.autosaveTimerId = window.setInterval(() => {
+        if (this.hasUnsavedChanges) {
+          this.performAutosave();
+        }
+      }, this.autosaveIntervalMs);
+    },
+
+    /**
+     * Stop the autosave timer
+     */
+    stopAutosaveTimer(): void {
+      if (this.autosaveTimerId !== null) {
+        clearInterval(this.autosaveTimerId);
+        this.autosaveTimerId = null;
+      }
+    },
+
+    /**
+     * Perform an autosave
+     */
+    async performAutosave(): Promise<void> {
+      if (!this.hasUnsavedChanges) return;
+
+      try {
+        const projectId = this.lastSaveProjectId || undefined;
+        const result = await saveProject(this.project, projectId);
+
+        this.lastSaveProjectId = result.projectId;
+        this.lastSaveTime = Date.now();
+        this.hasUnsavedChanges = false;
+
+        storeLogger.info('Autosaved project:', result.projectId);
+      } catch (error) {
+        storeLogger.error('Autosave failed:', error);
+      }
+    },
+
+    /**
+     * Mark the project as having unsaved changes
+     * Called automatically when project state changes
+     */
+    markUnsavedChanges(): void {
+      this.hasUnsavedChanges = true;
+      this.invalidateFrameCache();
+    },
+
+    /**
+     * Manual save to backend
+     */
+    async saveProjectToBackend(): Promise<string> {
+      try {
+        const result = await saveProject(this.project, this.lastSaveProjectId || undefined);
+        this.lastSaveProjectId = result.projectId;
+        this.lastSaveTime = Date.now();
+        this.hasUnsavedChanges = false;
+        storeLogger.info('Saved project:', result.projectId);
+        return result.projectId;
+      } catch (error) {
+        storeLogger.error('Save failed:', error);
+        throw error;
+      }
+    },
+
+    /**
+     * Load project from backend
+     */
+    async loadProjectFromBackend(projectId: string): Promise<void> {
+      try {
+        const project = await loadProject(projectId);
+        this.loadProject(project);
+        this.lastSaveProjectId = projectId;
+        this.lastSaveTime = Date.now();
+        this.hasUnsavedChanges = false;
+        storeLogger.info('Loaded project:', projectId);
+      } catch (error) {
+        storeLogger.error('Load failed:', error);
+        throw error;
+      }
+    },
+
+    /**
+     * List available projects from backend
+     */
+    async listSavedProjects(): Promise<Array<{ projectId: string; name: string; modified: string }>> {
+      try {
+        return await listProjects();
+      } catch (error) {
+        storeLogger.error('List projects failed:', error);
+        return [];
+      }
+    },
+
+    // ============================================================
+    // FRAME CACHE ACTIONS
+    // ============================================================
+
+    /**
+     * Initialize the frame cache
+     * Should be called on app startup
+     */
+    async initializeFrameCache(): Promise<void> {
+      if (this.frameCacheEnabled) {
+        await initializeFrameCache();
+        storeLogger.info('Frame cache initialized');
+      }
+    },
+
+    /**
+     * Enable or disable frame caching
+     */
+    setFrameCacheEnabled(enabled: boolean): void {
+      this.frameCacheEnabled = enabled;
+      if (!enabled) {
+        this.clearFrameCache();
+      }
+      storeLogger.info('Frame cache', enabled ? 'enabled' : 'disabled');
+    },
+
+    /**
+     * Get frame from cache or null if not cached
+     */
+    getCachedFrame(frame: number): ImageData | null {
+      if (!this.frameCacheEnabled) return null;
+
+      const cache = getFrameCache();
+      return cache.get(frame, this.activeCompositionId, this.projectStateHash);
+    },
+
+    /**
+     * Cache a rendered frame
+     */
+    async cacheFrame(frame: number, imageData: ImageData): Promise<void> {
+      if (!this.frameCacheEnabled) return;
+
+      const cache = getFrameCache();
+      await cache.set(frame, this.activeCompositionId, imageData, this.projectStateHash);
+    },
+
+    /**
+     * Check if a frame is cached
+     */
+    isFrameCached(frame: number): boolean {
+      if (!this.frameCacheEnabled) return false;
+
+      const cache = getFrameCache();
+      return cache.has(frame, this.activeCompositionId);
+    },
+
+    /**
+     * Start pre-caching frames around current position
+     */
+    async startPreCache(currentFrame: number, direction: 'forward' | 'backward' | 'both' = 'both'): Promise<void> {
+      if (!this.frameCacheEnabled) return;
+
+      const cache = getFrameCache();
+      await cache.startPreCache(currentFrame, this.activeCompositionId, this.projectStateHash, direction);
+    },
+
+    /**
+     * Invalidate frame cache (called when project changes)
+     */
+    invalidateFrameCache(): void {
+      // Update project state hash
+      this.projectStateHash = this.computeProjectHash();
+
+      // Clear cache for current composition
+      const cache = getFrameCache();
+      cache.invalidate(this.activeCompositionId, this.projectStateHash);
+    },
+
+    /**
+     * Clear all cached frames
+     */
+    clearFrameCache(): void {
+      const cache = getFrameCache();
+      cache.clear();
+      storeLogger.info('Frame cache cleared');
+    },
+
+    /**
+     * Get frame cache statistics
+     */
+    getFrameCacheStats(): CacheStats {
+      const cache = getFrameCache();
+      return cache.getStats();
+    },
+
+    /**
+     * Compute a hash of the project state for cache invalidation
+     * Uses a simplified hash of key state that affects rendering
+     */
+    computeProjectHash(): string {
+      const comp = this.project.compositions[this.activeCompositionId];
+      if (!comp) return '';
+
+      // Create a simplified fingerprint of the composition state
+      const fingerprint = {
+        layerCount: comp.layers.length,
+        layerIds: comp.layers.map(l => l.id).join(','),
+        modified: this.project.meta.modified,
+        settings: comp.settings,
+      };
+
+      // Simple hash function
+      const str = JSON.stringify(fingerprint);
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // Convert to 32-bit integer
+      }
+      return hash.toString(16);
     }
   }
 });

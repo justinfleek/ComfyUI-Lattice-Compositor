@@ -36213,7 +36213,7 @@ function getTargetsByCategory() {
   };
 }
 
-const DEFAULT_CONFIG = {
+const DEFAULT_CONFIG$1 = {
   movementMode: "amplitude",
   sensitivity: 1,
   smoothing: 0.3,
@@ -36232,7 +36232,7 @@ class AudioPathAnimator {
   releaseState = 0;
   // For amplitude mode release tracking
   constructor(config = {}) {
-    this.config = { ...DEFAULT_CONFIG, ...config };
+    this.config = { ...DEFAULT_CONFIG$1, ...config };
     this.state = {
       position: 0,
       direction: 1,
@@ -37599,6 +37599,517 @@ function applyMaskToImage(sourceImageBase64, maskBase64, bounds) {
   });
 }
 
+async function estimateVRAM(adapter) {
+  try {
+    const device = await adapter.requestDevice();
+    const maxBufferSize = device.limits.maxBufferSize;
+    device.destroy();
+    return Math.round(maxBufferSize * 4 / (1024 * 1024 * 1024));
+  } catch {
+    return 0;
+  }
+}
+async function detectGPUTier() {
+  if ("gpu" in navigator) {
+    try {
+      const gpu = navigator.gpu;
+      const adapter = await gpu.requestAdapter({
+        powerPreference: "high-performance"
+      });
+      if (adapter) {
+        let deviceName = "";
+        if ("info" in adapter) {
+          const info = adapter.info;
+          deviceName = info?.device || info?.description || "";
+        }
+        if (deviceName.includes("RTX 50") || deviceName.toLowerCase().includes("blackwell") || deviceName.includes("B100") || deviceName.includes("B200")) {
+          return {
+            tier: "blackwell",
+            vram: await estimateVRAM(adapter),
+            features: ["fp4_tensor", "webgpu", "cuda_12"]
+          };
+        }
+        return {
+          tier: "webgpu",
+          vram: await estimateVRAM(adapter),
+          features: ["webgpu"]
+        };
+      }
+    } catch (error) {
+      engineLogger.warn("WebGPU detection failed:", error);
+    }
+  }
+  const canvas = document.createElement("canvas");
+  const gl = canvas.getContext("webgl2");
+  if (gl) {
+    const debugInfo = gl.getExtension("WEBGL_debug_renderer_info");
+    const renderer = debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : "Unknown";
+    engineLogger.debug("WebGL renderer:", renderer);
+    return {
+      tier: "webgl",
+      vram: 0,
+      // Can't detect in WebGL
+      features: ["webgl2"]
+    };
+  }
+  return {
+    tier: "cpu",
+    vram: 0,
+    features: []
+  };
+}
+
+const TIER_CONFIGS = {
+  blackwell: {
+    maxFrames: 500,
+    maxMemoryBytes: 4 * 1024 * 1024 * 1024,
+    // 4GB
+    compression: false,
+    // Fast GPU, no need for compression
+    preCacheWindow: 30
+  },
+  webgpu: {
+    maxFrames: 200,
+    maxMemoryBytes: 1 * 1024 * 1024 * 1024,
+    // 1GB
+    compression: true,
+    preCacheWindow: 15
+  },
+  webgl: {
+    maxFrames: 100,
+    maxMemoryBytes: 512 * 1024 * 1024,
+    // 512MB
+    compression: true,
+    preCacheWindow: 10
+  },
+  cpu: {
+    maxFrames: 50,
+    maxMemoryBytes: 256 * 1024 * 1024,
+    // 256MB
+    compression: true,
+    preCacheWindow: 5
+  }
+};
+const DEFAULT_CONFIG = {
+  maxFrames: 100,
+  maxMemoryBytes: 512 * 1024 * 1024,
+  compression: true,
+  compressionQuality: 0.92,
+  preCacheWindow: 10,
+  predictivePreCache: true
+};
+class FrameCache {
+  cache = /* @__PURE__ */ new Map();
+  accessOrder = [];
+  // For LRU tracking
+  config;
+  currentMemory = 0;
+  stats = { hits: 0, misses: 0 };
+  // Pre-caching state
+  preCacheQueue = [];
+  isPreCaching = false;
+  preCacheAbort = null;
+  // Composition state tracking
+  stateHashCache = /* @__PURE__ */ new Map();
+  // Frame render callback (set by engine)
+  renderFrame = null;
+  constructor(config = {}) {
+    this.config = { ...DEFAULT_CONFIG, ...config };
+  }
+  /**
+   * Initialize cache with GPU-tier-appropriate settings
+   */
+  async initializeForGPU() {
+    const tier = await detectGPUTier();
+    const tierConfig = TIER_CONFIGS[tier.tier];
+    this.config = { ...this.config, ...tierConfig };
+  }
+  /**
+   * Set the frame render callback
+   * This is called to render frames for pre-caching
+   */
+  setRenderCallback(callback) {
+    this.renderFrame = callback;
+  }
+  /**
+   * Generate a cache key for a frame
+   */
+  getCacheKey(frame, compositionId) {
+    return `${compositionId}:${frame}`;
+  }
+  /**
+   * Get a cached frame
+   * @returns The cached frame or null if not found/invalid
+   */
+  get(frame, compositionId, currentStateHash) {
+    const key = this.getCacheKey(frame, compositionId);
+    const cached = this.cache.get(key);
+    if (!cached) {
+      this.stats.misses++;
+      return null;
+    }
+    if (currentStateHash && cached.stateHash !== currentStateHash) {
+      this.remove(frame, compositionId);
+      this.stats.misses++;
+      return null;
+    }
+    this.updateAccessOrder(key);
+    this.stats.hits++;
+    if (cached.compressed) {
+      return null;
+    }
+    return cached.data;
+  }
+  /**
+   * Get a cached frame (async, supports compression)
+   */
+  async getAsync(frame, compositionId, currentStateHash) {
+    const key = this.getCacheKey(frame, compositionId);
+    const cached = this.cache.get(key);
+    if (!cached) {
+      this.stats.misses++;
+      return null;
+    }
+    if (currentStateHash && cached.stateHash !== currentStateHash) {
+      this.remove(frame, compositionId);
+      this.stats.misses++;
+      return null;
+    }
+    this.updateAccessOrder(key);
+    this.stats.hits++;
+    if (cached.compressed) {
+      return this.decompressFrame(cached);
+    }
+    return cached.data;
+  }
+  /**
+   * Cache a frame
+   */
+  async set(frame, compositionId, imageData, stateHash) {
+    const key = this.getCacheKey(frame, compositionId);
+    if (this.cache.has(key)) {
+      this.remove(frame, compositionId);
+    }
+    let data = imageData;
+    let compressed = false;
+    let size = imageData.width * imageData.height * 4;
+    if (this.config.compression) {
+      const compressedData = await this.compressFrame(imageData);
+      if (compressedData.size < size * 0.7) {
+        data = compressedData;
+        compressed = true;
+        size = compressedData.size;
+      }
+    }
+    await this.ensureCapacity(size);
+    const cachedFrame = {
+      frame,
+      compositionId,
+      data,
+      compressed,
+      width: imageData.width,
+      height: imageData.height,
+      timestamp: Date.now(),
+      size,
+      stateHash
+    };
+    this.cache.set(key, cachedFrame);
+    this.accessOrder.push(key);
+    this.currentMemory += size;
+  }
+  /**
+   * Remove a cached frame
+   */
+  remove(frame, compositionId) {
+    const key = this.getCacheKey(frame, compositionId);
+    const cached = this.cache.get(key);
+    if (cached) {
+      this.currentMemory -= cached.size;
+      this.cache.delete(key);
+      this.accessOrder = this.accessOrder.filter((k) => k !== key);
+    }
+  }
+  /**
+   * Check if a frame is cached
+   */
+  has(frame, compositionId) {
+    return this.cache.has(this.getCacheKey(frame, compositionId));
+  }
+  /**
+   * Clear all cached frames for a composition
+   */
+  clearComposition(compositionId) {
+    const keysToRemove = [];
+    for (const key of this.cache.keys()) {
+      if (key.startsWith(`${compositionId}:`)) {
+        keysToRemove.push(key);
+      }
+    }
+    for (const key of keysToRemove) {
+      const cached = this.cache.get(key);
+      if (cached) {
+        this.currentMemory -= cached.size;
+      }
+      this.cache.delete(key);
+    }
+    this.accessOrder = this.accessOrder.filter((k) => !keysToRemove.includes(k));
+  }
+  /**
+   * Clear all cached frames
+   */
+  clear() {
+    this.cache.clear();
+    this.accessOrder = [];
+    this.currentMemory = 0;
+    this.stats = { hits: 0, misses: 0 };
+    this.abortPreCache();
+  }
+  /**
+   * Invalidate cache for a composition (when state changes)
+   */
+  invalidate(compositionId, newStateHash) {
+    const oldHash = this.stateHashCache.get(compositionId);
+    if (oldHash !== newStateHash) {
+      this.clearComposition(compositionId);
+      this.stateHashCache.set(compositionId, newStateHash);
+    }
+  }
+  /**
+   * Start predictive pre-caching around the current frame
+   */
+  async startPreCache(currentFrame, compositionId, stateHash, direction = "both") {
+    if (!this.config.predictivePreCache || !this.renderFrame) {
+      return;
+    }
+    this.abortPreCache();
+    this.preCacheAbort = new AbortController();
+    const signal = this.preCacheAbort.signal;
+    this.preCacheQueue = [];
+    const window = this.config.preCacheWindow;
+    for (let i = 1; i <= window; i++) {
+      if (direction !== "backward") {
+        this.preCacheQueue.push({
+          frame: currentFrame + i,
+          compositionId,
+          priority: window - i
+          // Closer frames have higher priority
+        });
+      }
+      if (direction !== "forward") {
+        this.preCacheQueue.push({
+          frame: currentFrame - i,
+          compositionId,
+          priority: window - i
+        });
+      }
+    }
+    this.preCacheQueue.sort((a, b) => b.priority - a.priority);
+    this.isPreCaching = true;
+    for (const item of this.preCacheQueue) {
+      if (signal.aborted) {
+        break;
+      }
+      if (!this.has(item.frame, item.compositionId)) {
+        try {
+          const imageData = await this.renderFrame(item.frame);
+          if (!signal.aborted) {
+            await this.set(item.frame, item.compositionId, imageData, stateHash);
+          }
+        } catch (error) {
+          console.warn(`Pre-cache failed for frame ${item.frame}:`, error);
+        }
+      }
+    }
+    this.isPreCaching = false;
+  }
+  /**
+   * Abort any ongoing pre-cache operation
+   */
+  abortPreCache() {
+    if (this.preCacheAbort) {
+      this.preCacheAbort.abort();
+      this.preCacheAbort = null;
+    }
+    this.preCacheQueue = [];
+    this.isPreCaching = false;
+  }
+  /**
+   * Get cache statistics
+   */
+  getStats() {
+    const total = this.stats.hits + this.stats.misses;
+    return {
+      cachedFrames: this.cache.size,
+      memoryUsed: this.currentMemory,
+      hitRatio: total > 0 ? this.stats.hits / total : 0,
+      hits: this.stats.hits,
+      misses: this.stats.misses
+    };
+  }
+  /**
+   * Get current configuration
+   */
+  getConfig() {
+    return { ...this.config };
+  }
+  /**
+   * Update configuration
+   */
+  setConfig(config) {
+    this.config = { ...this.config, ...config };
+  }
+  // ============================================================================
+  // PRIVATE METHODS
+  // ============================================================================
+  updateAccessOrder(key) {
+    const index = this.accessOrder.indexOf(key);
+    if (index > -1) {
+      this.accessOrder.splice(index, 1);
+    }
+    this.accessOrder.push(key);
+  }
+  async ensureCapacity(requiredSize) {
+    while ((this.cache.size >= this.config.maxFrames || this.currentMemory + requiredSize > this.config.maxMemoryBytes) && this.accessOrder.length > 0) {
+      const oldestKey = this.accessOrder.shift();
+      const cached = this.cache.get(oldestKey);
+      if (cached) {
+        this.currentMemory -= cached.size;
+        this.cache.delete(oldestKey);
+      }
+    }
+  }
+  async compressFrame(imageData) {
+    const canvas = new OffscreenCanvas(imageData.width, imageData.height);
+    const ctx = canvas.getContext("2d");
+    ctx.putImageData(imageData, 0, 0);
+    return canvas.convertToBlob({
+      type: "image/webp",
+      quality: this.config.compressionQuality
+    });
+  }
+  async decompressFrame(cached) {
+    if (!(cached.data instanceof Blob)) {
+      return cached.data;
+    }
+    const bitmap = await createImageBitmap(cached.data);
+    const canvas = new OffscreenCanvas(cached.width, cached.height);
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(bitmap, 0, 0);
+    bitmap.close();
+    return ctx.getImageData(0, 0, cached.width, cached.height);
+  }
+}
+let globalFrameCache = null;
+function getFrameCache() {
+  if (!globalFrameCache) {
+    globalFrameCache = new FrameCache();
+  }
+  return globalFrameCache;
+}
+async function initializeFrameCache() {
+  const cache = getFrameCache();
+  await cache.initializeForGPU();
+  return cache;
+}
+
+const logger$2 = createLogger("ProjectStorage");
+const API_BASE = "/weyl/compositor";
+async function saveProject(project, projectId) {
+  try {
+    logger$2.info(`Saving project${projectId ? ` (${projectId})` : ""}...`);
+    const response = await fetch(`${API_BASE}/save_project`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        project,
+        project_id: projectId
+      })
+    });
+    const result = await response.json();
+    if (result.status === "success") {
+      logger$2.info(`Project saved: ${result.project_id}`);
+    } else {
+      logger$2.error(`Failed to save project: ${result.message}`);
+    }
+    return result;
+  } catch (error) {
+    logger$2.error("Error saving project:", error);
+    return {
+      status: "error",
+      message: error instanceof Error ? error.message : "Unknown error"
+    };
+  }
+}
+async function loadProject(projectId) {
+  try {
+    logger$2.info(`Loading project: ${projectId}...`);
+    const response = await fetch(`${API_BASE}/load_project/${encodeURIComponent(projectId)}`);
+    const result = await response.json();
+    if (result.status === "success") {
+      logger$2.info(`Project loaded: ${projectId}`);
+    } else {
+      logger$2.error(`Failed to load project: ${result.message}`);
+    }
+    return result;
+  } catch (error) {
+    logger$2.error("Error loading project:", error);
+    return {
+      status: "error",
+      message: error instanceof Error ? error.message : "Unknown error"
+    };
+  }
+}
+async function listProjects() {
+  try {
+    logger$2.info("Listing projects...");
+    const response = await fetch(`${API_BASE}/list_projects`);
+    const result = await response.json();
+    if (result.status === "success") {
+      logger$2.info(`Found ${result.projects?.length || 0} projects`);
+    } else {
+      logger$2.error(`Failed to list projects: ${result.message}`);
+    }
+    return result;
+  } catch (error) {
+    logger$2.error("Error listing projects:", error);
+    return {
+      status: "error",
+      message: error instanceof Error ? error.message : "Unknown error"
+    };
+  }
+}
+async function deleteProject(projectId) {
+  try {
+    logger$2.info(`Deleting project: ${projectId}...`);
+    const response = await fetch(`${API_BASE}/delete_project/${encodeURIComponent(projectId)}`, {
+      method: "DELETE"
+    });
+    const result = await response.json();
+    if (result.status === "success") {
+      logger$2.info(`Project deleted: ${projectId}`);
+    } else {
+      logger$2.error(`Failed to delete project: ${result.message}`);
+    }
+    return result;
+  } catch (error) {
+    logger$2.error("Error deleting project:", error);
+    return {
+      status: "error",
+      message: error instanceof Error ? error.message : "Unknown error"
+    };
+  }
+}
+
+const projectStorage = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
+  __proto__: null,
+  deleteProject,
+  listProjects,
+  loadProject,
+  saveProject
+}, Symbol.toStringTag, { value: 'Module' }));
+
 const useCompositorStore = defineStore("compositor", {
   state: () => ({
     project: createEmptyProject(1024, 1024),
@@ -37649,7 +38160,17 @@ const useCompositorStore = defineStore("compositor", {
     clipboard: {
       layers: [],
       keyframes: []
-    }
+    },
+    // Autosave (enabled by default, every 60 seconds)
+    autosaveEnabled: true,
+    autosaveIntervalMs: 6e4,
+    autosaveTimerId: null,
+    lastSaveTime: null,
+    lastSaveProjectId: null,
+    hasUnsavedChanges: false,
+    // Frame cache (enabled by default)
+    frameCacheEnabled: true,
+    projectStateHash: ""
   }),
   getters: {
     // Active composition helper
@@ -38699,8 +39220,8 @@ const useCompositorStore = defineStore("compositor", {
      */
     async saveProjectToServer(projectId) {
       try {
-        const { saveProject } = await Promise.resolve().then(() => projectStorage);
-        const result = await saveProject(this.project, projectId);
+        const { saveProject: saveProject2 } = await Promise.resolve().then(() => projectStorage);
+        const result = await saveProject2(this.project, projectId);
         if (result.status === "success" && result.project_id) {
           storeLogger.info("Project saved to server:", result.project_id);
           return result.project_id;
@@ -38720,8 +39241,8 @@ const useCompositorStore = defineStore("compositor", {
      */
     async loadProjectFromServer(projectId) {
       try {
-        const { loadProject } = await Promise.resolve().then(() => projectStorage);
-        const result = await loadProject(projectId);
+        const { loadProject: loadProject2 } = await Promise.resolve().then(() => projectStorage);
+        const result = await loadProject2(projectId);
         if (result.status === "success" && result.project) {
           this.project = result.project;
           this.pushHistory();
@@ -38741,8 +39262,8 @@ const useCompositorStore = defineStore("compositor", {
      */
     async listServerProjects() {
       try {
-        const { listProjects } = await Promise.resolve().then(() => projectStorage);
-        const result = await listProjects();
+        const { listProjects: listProjects2 } = await Promise.resolve().then(() => projectStorage);
+        const result = await listProjects2();
         if (result.status === "success" && result.projects) {
           return result.projects;
         }
@@ -40558,69 +41079,220 @@ const useCompositorStore = defineStore("compositor", {
     getAllParticleSnapshots(frame) {
       const frameState = this.getFrameState(frame);
       return frameState.particleSnapshots;
+    },
+    // ============================================================
+    // AUTOSAVE ACTIONS
+    // ============================================================
+    /**
+     * Enable autosave with optional interval
+     * @param intervalMs - Autosave interval in milliseconds (default: 60000)
+     */
+    enableAutosave(intervalMs) {
+      if (intervalMs) {
+        this.autosaveIntervalMs = intervalMs;
+      }
+      this.autosaveEnabled = true;
+      this.startAutosaveTimer();
+      storeLogger.info("Autosave enabled, interval:", this.autosaveIntervalMs, "ms");
+    },
+    /**
+     * Disable autosave
+     */
+    disableAutosave() {
+      this.autosaveEnabled = false;
+      this.stopAutosaveTimer();
+      storeLogger.info("Autosave disabled");
+    },
+    /**
+     * Start the autosave timer
+     */
+    startAutosaveTimer() {
+      this.stopAutosaveTimer();
+      if (!this.autosaveEnabled) return;
+      this.autosaveTimerId = window.setInterval(() => {
+        if (this.hasUnsavedChanges) {
+          this.performAutosave();
+        }
+      }, this.autosaveIntervalMs);
+    },
+    /**
+     * Stop the autosave timer
+     */
+    stopAutosaveTimer() {
+      if (this.autosaveTimerId !== null) {
+        clearInterval(this.autosaveTimerId);
+        this.autosaveTimerId = null;
+      }
+    },
+    /**
+     * Perform an autosave
+     */
+    async performAutosave() {
+      if (!this.hasUnsavedChanges) return;
+      try {
+        const projectId = this.lastSaveProjectId || void 0;
+        const result = await saveProject(this.project, projectId);
+        this.lastSaveProjectId = result.projectId;
+        this.lastSaveTime = Date.now();
+        this.hasUnsavedChanges = false;
+        storeLogger.info("Autosaved project:", result.projectId);
+      } catch (error) {
+        storeLogger.error("Autosave failed:", error);
+      }
+    },
+    /**
+     * Mark the project as having unsaved changes
+     * Called automatically when project state changes
+     */
+    markUnsavedChanges() {
+      this.hasUnsavedChanges = true;
+      this.invalidateFrameCache();
+    },
+    /**
+     * Manual save to backend
+     */
+    async saveProjectToBackend() {
+      try {
+        const result = await saveProject(this.project, this.lastSaveProjectId || void 0);
+        this.lastSaveProjectId = result.projectId;
+        this.lastSaveTime = Date.now();
+        this.hasUnsavedChanges = false;
+        storeLogger.info("Saved project:", result.projectId);
+        return result.projectId;
+      } catch (error) {
+        storeLogger.error("Save failed:", error);
+        throw error;
+      }
+    },
+    /**
+     * Load project from backend
+     */
+    async loadProjectFromBackend(projectId) {
+      try {
+        const project = await loadProject(projectId);
+        this.loadProject(project);
+        this.lastSaveProjectId = projectId;
+        this.lastSaveTime = Date.now();
+        this.hasUnsavedChanges = false;
+        storeLogger.info("Loaded project:", projectId);
+      } catch (error) {
+        storeLogger.error("Load failed:", error);
+        throw error;
+      }
+    },
+    /**
+     * List available projects from backend
+     */
+    async listSavedProjects() {
+      try {
+        return await listProjects();
+      } catch (error) {
+        storeLogger.error("List projects failed:", error);
+        return [];
+      }
+    },
+    // ============================================================
+    // FRAME CACHE ACTIONS
+    // ============================================================
+    /**
+     * Initialize the frame cache
+     * Should be called on app startup
+     */
+    async initializeFrameCache() {
+      if (this.frameCacheEnabled) {
+        await initializeFrameCache();
+        storeLogger.info("Frame cache initialized");
+      }
+    },
+    /**
+     * Enable or disable frame caching
+     */
+    setFrameCacheEnabled(enabled) {
+      this.frameCacheEnabled = enabled;
+      if (!enabled) {
+        this.clearFrameCache();
+      }
+      storeLogger.info("Frame cache", enabled ? "enabled" : "disabled");
+    },
+    /**
+     * Get frame from cache or null if not cached
+     */
+    getCachedFrame(frame) {
+      if (!this.frameCacheEnabled) return null;
+      const cache = getFrameCache();
+      return cache.get(frame, this.activeCompositionId, this.projectStateHash);
+    },
+    /**
+     * Cache a rendered frame
+     */
+    async cacheFrame(frame, imageData) {
+      if (!this.frameCacheEnabled) return;
+      const cache = getFrameCache();
+      await cache.set(frame, this.activeCompositionId, imageData, this.projectStateHash);
+    },
+    /**
+     * Check if a frame is cached
+     */
+    isFrameCached(frame) {
+      if (!this.frameCacheEnabled) return false;
+      const cache = getFrameCache();
+      return cache.has(frame, this.activeCompositionId);
+    },
+    /**
+     * Start pre-caching frames around current position
+     */
+    async startPreCache(currentFrame, direction = "both") {
+      if (!this.frameCacheEnabled) return;
+      const cache = getFrameCache();
+      await cache.startPreCache(currentFrame, this.activeCompositionId, this.projectStateHash, direction);
+    },
+    /**
+     * Invalidate frame cache (called when project changes)
+     */
+    invalidateFrameCache() {
+      this.projectStateHash = this.computeProjectHash();
+      const cache = getFrameCache();
+      cache.invalidate(this.activeCompositionId, this.projectStateHash);
+    },
+    /**
+     * Clear all cached frames
+     */
+    clearFrameCache() {
+      const cache = getFrameCache();
+      cache.clear();
+      storeLogger.info("Frame cache cleared");
+    },
+    /**
+     * Get frame cache statistics
+     */
+    getFrameCacheStats() {
+      const cache = getFrameCache();
+      return cache.getStats();
+    },
+    /**
+     * Compute a hash of the project state for cache invalidation
+     * Uses a simplified hash of key state that affects rendering
+     */
+    computeProjectHash() {
+      const comp = this.project.compositions[this.activeCompositionId];
+      if (!comp) return "";
+      const fingerprint = {
+        layerCount: comp.layers.length,
+        layerIds: comp.layers.map((l) => l.id).join(","),
+        modified: this.project.meta.modified,
+        settings: comp.settings
+      };
+      const str = JSON.stringify(fingerprint);
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = (hash << 5) - hash + char;
+        hash = hash & hash;
+      }
+      return hash.toString(16);
     }
   }
 });
-
-async function estimateVRAM(adapter) {
-  try {
-    const device = await adapter.requestDevice();
-    const maxBufferSize = device.limits.maxBufferSize;
-    device.destroy();
-    return Math.round(maxBufferSize * 4 / (1024 * 1024 * 1024));
-  } catch {
-    return 0;
-  }
-}
-async function detectGPUTier() {
-  if ("gpu" in navigator) {
-    try {
-      const gpu = navigator.gpu;
-      const adapter = await gpu.requestAdapter({
-        powerPreference: "high-performance"
-      });
-      if (adapter) {
-        let deviceName = "";
-        if ("info" in adapter) {
-          const info = adapter.info;
-          deviceName = info?.device || info?.description || "";
-        }
-        if (deviceName.includes("RTX 50") || deviceName.toLowerCase().includes("blackwell") || deviceName.includes("B100") || deviceName.includes("B200")) {
-          return {
-            tier: "blackwell",
-            vram: await estimateVRAM(adapter),
-            features: ["fp4_tensor", "webgpu", "cuda_12"]
-          };
-        }
-        return {
-          tier: "webgpu",
-          vram: await estimateVRAM(adapter),
-          features: ["webgpu"]
-        };
-      }
-    } catch (error) {
-      engineLogger.warn("WebGPU detection failed:", error);
-    }
-  }
-  const canvas = document.createElement("canvas");
-  const gl = canvas.getContext("webgl2");
-  if (gl) {
-    const debugInfo = gl.getExtension("WEBGL_debug_renderer_info");
-    const renderer = debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : "Unknown";
-    engineLogger.debug("WebGL renderer:", renderer);
-    return {
-      tier: "webgl",
-      vram: 0,
-      // Can't detect in WebGL
-      features: ["webgl2"]
-    };
-  }
-  return {
-    tier: "cpu",
-    vram: 0,
-    features: []
-  };
-}
 
 const _hoisted_1$x = { class: "project-panel" };
 const _hoisted_2$w = { class: "panel-header" };
@@ -83985,7 +84657,7 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
 
 const CompositionSettingsDialog = /* @__PURE__ */ _export_sfc(_sfc_main$4, [["__scopeId", "data-v-76356b13"]]);
 
-const logger$2 = createLogger("MotionIntentResolver");
+const logger$1 = createLogger("MotionIntentResolver");
 const SYSTEM_PROMPT = `You are a motion graphics expert analyzing images for camera movements and animation paths.
 
 Given an image, suggest motion paths and camera trajectories that would create compelling visual effects.
@@ -84039,7 +84711,7 @@ class MotionIntentResolver {
    */
   async resolve(prompt, context, modelOverride) {
     const modelId = modelOverride ?? this.config.modelId;
-    logger$2.info(`Resolving motion intent with ${modelId}:`, prompt);
+    logger$1.info(`Resolving motion intent with ${modelId}:`, prompt);
     try {
       let result;
       switch (modelId) {
@@ -84065,7 +84737,7 @@ class MotionIntentResolver {
       this.lastResult = result;
       return result;
     } catch (error) {
-      logger$2.error("Motion intent resolution failed:", error);
+      logger$1.error("Motion intent resolution failed:", error);
       return this.resolveWithRules(prompt, context);
     }
   }
@@ -84222,7 +84894,7 @@ class MotionIntentResolver {
   // ============================================================================
   async resolveWithOpenAI(prompt, context, model) {
     if (!this.config.apiKey) {
-      logger$2.warn("OpenAI API key not configured, falling back to rule-based");
+      logger$1.warn("OpenAI API key not configured, falling back to rule-based");
       return this.resolveWithRules(prompt, context);
     }
     const imageBase64 = context.frameImage ? this.imageDataToBase64(context.frameImage) : null;
@@ -84257,7 +84929,7 @@ class MotionIntentResolver {
       const content = data.choices[0]?.message?.content;
       return this.parseAIResponse(content, prompt);
     } catch (error) {
-      logger$2.error("OpenAI API call failed:", error);
+      logger$1.error("OpenAI API call failed:", error);
       return this.resolveWithRules(prompt, context);
     }
   }
@@ -84266,7 +84938,7 @@ class MotionIntentResolver {
   // ============================================================================
   async resolveWithClaude(prompt, context) {
     if (!this.config.apiKey) {
-      logger$2.warn("Anthropic API key not configured, falling back to rule-based");
+      logger$1.warn("Anthropic API key not configured, falling back to rule-based");
       return this.resolveWithRules(prompt, context);
     }
     const imageBase64 = context.frameImage ? this.imageDataToBase64(context.frameImage) : null;
@@ -84296,7 +84968,7 @@ class MotionIntentResolver {
       const responseContent = data.content[0]?.text;
       return this.parseAIResponse(responseContent, prompt);
     } catch (error) {
-      logger$2.error("Anthropic API call failed:", error);
+      logger$1.error("Anthropic API call failed:", error);
       return this.resolveWithRules(prompt, context);
     }
   }
@@ -84325,7 +84997,7 @@ User request: ${prompt}`,
       const data = await response.json();
       return this.parseAIResponse(data.response ?? data.text ?? data.content, prompt);
     } catch (error) {
-      logger$2.error("Local VLM API call failed:", error);
+      logger$1.error("Local VLM API call failed:", error);
       return this.resolveWithRules(prompt, context);
     }
   }
@@ -84348,7 +85020,7 @@ User request: ${prompt}`,
         };
       }
     } catch (error) {
-      logger$2.warn("Failed to parse AI response as JSON:", error);
+      logger$1.warn("Failed to parse AI response as JSON:", error);
     }
     return {
       description: content.slice(0, 200),
@@ -84386,7 +85058,7 @@ User request: ${prompt}`,
 }
 const motionIntentResolver = new MotionIntentResolver();
 
-const logger$1 = createLogger("MotionIntentTranslator");
+const logger = createLogger("MotionIntentTranslator");
 const INTENSITY_TO_DISTANCE = {
   very_subtle: 10,
   subtle: 30,
@@ -84579,7 +85251,7 @@ class MotionIntentTranslator {
         break;
       case "follow_path":
         if (intent.suggestedPath) {
-          logger$1.info("Camera path following requires spline layer creation");
+          logger.info("Camera path following requires spline layer creation");
         }
         break;
     }
@@ -88194,104 +88866,6 @@ if (document.readyState === "loading") {
     if (!appInstance) mountApp();
   }, 0);
 }
-
-const logger = createLogger("ProjectStorage");
-const API_BASE = "/weyl/compositor";
-async function saveProject(project, projectId) {
-  try {
-    logger.info(`Saving project${projectId ? ` (${projectId})` : ""}...`);
-    const response = await fetch(`${API_BASE}/save_project`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        project,
-        project_id: projectId
-      })
-    });
-    const result = await response.json();
-    if (result.status === "success") {
-      logger.info(`Project saved: ${result.project_id}`);
-    } else {
-      logger.error(`Failed to save project: ${result.message}`);
-    }
-    return result;
-  } catch (error) {
-    logger.error("Error saving project:", error);
-    return {
-      status: "error",
-      message: error instanceof Error ? error.message : "Unknown error"
-    };
-  }
-}
-async function loadProject(projectId) {
-  try {
-    logger.info(`Loading project: ${projectId}...`);
-    const response = await fetch(`${API_BASE}/load_project/${encodeURIComponent(projectId)}`);
-    const result = await response.json();
-    if (result.status === "success") {
-      logger.info(`Project loaded: ${projectId}`);
-    } else {
-      logger.error(`Failed to load project: ${result.message}`);
-    }
-    return result;
-  } catch (error) {
-    logger.error("Error loading project:", error);
-    return {
-      status: "error",
-      message: error instanceof Error ? error.message : "Unknown error"
-    };
-  }
-}
-async function listProjects() {
-  try {
-    logger.info("Listing projects...");
-    const response = await fetch(`${API_BASE}/list_projects`);
-    const result = await response.json();
-    if (result.status === "success") {
-      logger.info(`Found ${result.projects?.length || 0} projects`);
-    } else {
-      logger.error(`Failed to list projects: ${result.message}`);
-    }
-    return result;
-  } catch (error) {
-    logger.error("Error listing projects:", error);
-    return {
-      status: "error",
-      message: error instanceof Error ? error.message : "Unknown error"
-    };
-  }
-}
-async function deleteProject(projectId) {
-  try {
-    logger.info(`Deleting project: ${projectId}...`);
-    const response = await fetch(`${API_BASE}/delete_project/${encodeURIComponent(projectId)}`, {
-      method: "DELETE"
-    });
-    const result = await response.json();
-    if (result.status === "success") {
-      logger.info(`Project deleted: ${projectId}`);
-    } else {
-      logger.error(`Failed to delete project: ${result.message}`);
-    }
-    return result;
-  } catch (error) {
-    logger.error("Error deleting project:", error);
-    return {
-      status: "error",
-      message: error instanceof Error ? error.message : "Unknown error"
-    };
-  }
-}
-
-const projectStorage = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
-  __proto__: null,
-  deleteProject,
-  listProjects,
-  loadProject,
-  saveProject
-}, Symbol.toStringTag, { value: 'Module' }));
 
 var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
