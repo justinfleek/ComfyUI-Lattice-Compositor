@@ -139,12 +139,15 @@ const filteredLayers = computed(() => store.layers || []);
 // Playhead position as percentage of timeline
 const playheadPositionPct = computed(() => (store.currentFrame / store.frameCount) * 100);
 
-// Width calculation - always fill at least the viewport
-// When zoomed out, composition fills viewport. When zoomed in, content is larger (scrollable)
-const timelineWidth = computed(() => {
-  const frameWidth = store.frameCount * pixelsPerFrame.value;
-  return Math.max(frameWidth, viewportWidth.value);
+// Effective pixels per frame - ensures timeline always fills viewport at minimum zoom
+// The minimum ppf is viewport width / frame count (so full comp fills viewport)
+const effectivePpf = computed(() => {
+  const minPpf = viewportWidth.value / store.frameCount;
+  return Math.max(pixelsPerFrame.value, minPpf);
 });
+
+// Width is simply frameCount * effectivePpf (always >= viewportWidth)
+const timelineWidth = computed(() => store.frameCount * effectivePpf.value);
 
 const computedWidthStyle = computed(() => timelineWidth.value + 'px');
 
@@ -205,7 +208,8 @@ function drawRuler() {
   ctx.fillStyle = '#aaa';
   ctx.font = '11px sans-serif';
 
-  const ppf = pixelsPerFrame.value;
+  // Use effective ppf (accounts for minimum zoom to fill viewport)
+  const ppf = effectivePpf.value;
 
   // Dynamic tick step based on zoom level - ensure labels don't overlap
   // At low ppf (zoomed out), we need larger steps
@@ -416,16 +420,25 @@ onMounted(() => {
   // Track viewport size for accurate width calculation
   const elementToObserve = trackScrollRef.value || trackViewportRef.value;
   if (elementToObserve) {
+    // Measure immediately on mount
+    viewportWidth.value = elementToObserve.clientWidth || 1000;
+
     resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
-        viewportWidth.value = entry.contentRect.width;
+        viewportWidth.value = entry.contentRect.width || elementToObserve.clientWidth || 1000;
         drawRuler(); // Redraw ruler on resize
       }
     });
     resizeObserver.observe(elementToObserve);
   }
 
-  setTimeout(drawRuler, 100);
+  // Draw ruler after a short delay to ensure layout is complete
+  setTimeout(() => {
+    if (trackScrollRef.value) {
+      viewportWidth.value = trackScrollRef.value.clientWidth || viewportWidth.value;
+    }
+    drawRuler();
+  }, 50);
 });
 
 onUnmounted(() => {

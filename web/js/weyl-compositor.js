@@ -77211,10 +77211,11 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
     const viewportWidth = ref(1e3);
     const filteredLayers = computed(() => store.layers || []);
     const playheadPositionPct = computed(() => store.currentFrame / store.frameCount * 100);
-    const timelineWidth = computed(() => {
-      const frameWidth = store.frameCount * pixelsPerFrame.value;
-      return Math.max(frameWidth, viewportWidth.value);
+    const effectivePpf = computed(() => {
+      const minPpf = viewportWidth.value / store.frameCount;
+      return Math.max(pixelsPerFrame.value, minPpf);
     });
+    const timelineWidth = computed(() => store.frameCount * effectivePpf.value);
     const computedWidthStyle = computed(() => timelineWidth.value + "px");
     const sidebarGridStyle = computed(() => ({
       display: "grid",
@@ -77275,7 +77276,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
       ctx.strokeStyle = "#666";
       ctx.fillStyle = "#aaa";
       ctx.font = "11px sans-serif";
-      const ppf = pixelsPerFrame.value;
+      const ppf = effectivePpf.value;
       let majorStep;
       let minorStep;
       if (ppf >= 20) {
@@ -77436,15 +77437,21 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
       });
       const elementToObserve = trackScrollRef.value || trackViewportRef.value;
       if (elementToObserve) {
+        viewportWidth.value = elementToObserve.clientWidth || 1e3;
         resizeObserver = new ResizeObserver((entries) => {
           for (const entry of entries) {
-            viewportWidth.value = entry.contentRect.width;
+            viewportWidth.value = entry.contentRect.width || elementToObserve.clientWidth || 1e3;
             drawRuler();
           }
         });
         resizeObserver.observe(elementToObserve);
       }
-      setTimeout(drawRuler, 100);
+      setTimeout(() => {
+        if (trackScrollRef.value) {
+          viewportWidth.value = trackScrollRef.value.clientWidth || viewportWidth.value;
+        }
+        drawRuler();
+      }, 50);
     });
     onUnmounted(() => {
       if (resizeObserver) resizeObserver.disconnect();
@@ -77562,7 +77569,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
             class: "timeline-sidebar",
             style: normalizeStyle({ width: sidebarWidth.value + "px" })
           }, [
-            _cache[17] || (_cache[17] = createStaticVNode('<div class="sidebar-header-row" data-v-a7c81696><div class="col-header col-arrow" data-v-a7c81696></div><div class="col-header col-name" data-v-a7c81696>Layer Name</div><div class="col-header col-mode" data-v-a7c81696>Mode</div><div class="col-header col-parent" data-v-a7c81696>Parent</div></div>', 1)),
+            _cache[17] || (_cache[17] = createStaticVNode('<div class="sidebar-header-row" data-v-b439edf2><div class="col-header col-arrow" data-v-b439edf2></div><div class="col-header col-name" data-v-b439edf2>Layer Name</div><div class="col-header col-mode" data-v-b439edf2>Mode</div><div class="col-header col-parent" data-v-b439edf2>Parent</div></div>', 1)),
             createBaseVNode("div", {
               class: "sidebar-scroll-area",
               ref_key: "sidebarScrollRef",
@@ -77657,7 +77664,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
   }
 });
 
-const TimelinePanel = /* @__PURE__ */ _export_sfc(_sfc_main$8, [["__scopeId", "data-v-a7c81696"]]);
+const TimelinePanel = /* @__PURE__ */ _export_sfc(_sfc_main$8, [["__scopeId", "data-v-b439edf2"]]);
 
 const _hoisted_1$6 = { class: "graph-editor" };
 const _hoisted_2$6 = { class: "graph-header" };
