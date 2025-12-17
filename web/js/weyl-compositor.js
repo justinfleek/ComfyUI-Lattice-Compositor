@@ -77207,8 +77207,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
     const filteredLayers = computed(() => store.layers || []);
     const playheadPosition = computed(() => store.currentFrame * pixelsPerFrame.value);
     const computedWidthStyle = computed(() => {
-      const frameWidth = store.frameCount * pixelsPerFrame.value;
-      return Math.max(frameWidth, viewportWidth.value) + "px";
+      return store.frameCount * pixelsPerFrame.value + "px";
     });
     const sidebarGridStyle = computed(() => ({
       display: "grid",
@@ -77261,8 +77260,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
       if (!cvs) return;
       const ctx = cvs.getContext("2d");
       if (!ctx) return;
-      const frameWidth = store.frameCount * pixelsPerFrame.value;
-      const width = Math.max(frameWidth, viewportWidth.value);
+      const width = store.frameCount * pixelsPerFrame.value;
       cvs.width = width;
       cvs.height = 30;
       ctx.fillStyle = "#222";
@@ -77556,7 +77554,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
             class: "timeline-sidebar",
             style: normalizeStyle({ width: sidebarWidth.value + "px" })
           }, [
-            _cache[17] || (_cache[17] = createStaticVNode('<div class="sidebar-header-row" data-v-0c0bcb17><div class="col-header col-arrow" data-v-0c0bcb17></div><div class="col-header col-name" data-v-0c0bcb17>Layer Name</div><div class="col-header col-mode" data-v-0c0bcb17>Mode</div><div class="col-header col-parent" data-v-0c0bcb17>Parent</div></div>', 1)),
+            _cache[17] || (_cache[17] = createStaticVNode('<div class="sidebar-header-row" data-v-9816a28b><div class="col-header col-arrow" data-v-9816a28b></div><div class="col-header col-name" data-v-9816a28b>Layer Name</div><div class="col-header col-mode" data-v-9816a28b>Mode</div><div class="col-header col-parent" data-v-9816a28b>Parent</div></div>', 1)),
             createBaseVNode("div", {
               class: "sidebar-scroll-area",
               ref_key: "sidebarScrollRef",
@@ -77651,7 +77649,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
   }
 });
 
-const TimelinePanel = /* @__PURE__ */ _export_sfc(_sfc_main$8, [["__scopeId", "data-v-0c0bcb17"]]);
+const TimelinePanel = /* @__PURE__ */ _export_sfc(_sfc_main$8, [["__scopeId", "data-v-9816a28b"]]);
 
 const _hoisted_1$6 = { class: "graph-editor" };
 const _hoisted_2$6 = { class: "graph-header" };

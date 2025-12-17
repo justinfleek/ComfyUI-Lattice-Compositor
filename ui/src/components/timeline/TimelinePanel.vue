@@ -138,11 +138,10 @@ const viewportWidth = ref(1000); // Default, updated by observer
 const filteredLayers = computed(() => store.layers || []);
 const playheadPosition = computed(() => store.currentFrame * pixelsPerFrame.value);
 
-// Width calculation - EXACT frame count, no buffer
+// Width calculation - EXACT frame count only
+// The layer content should match the composition duration exactly
 const computedWidthStyle = computed(() => {
-  const frameWidth = store.frameCount * pixelsPerFrame.value;
-  // Use max of frame width or viewport to fill screen when zoomed out
-  return Math.max(frameWidth, viewportWidth.value) + 'px';
+  return (store.frameCount * pixelsPerFrame.value) + 'px';
 });
 
 const sidebarGridStyle = computed(() => ({
@@ -191,9 +190,8 @@ function drawRuler() {
   const ctx = cvs.getContext('2d');
   if (!ctx) return;
 
-  // Width is EXACT: frameCount * pixelsPerFrame (or viewport, whichever is larger)
-  const frameWidth = store.frameCount * pixelsPerFrame.value;
-  const width = Math.max(frameWidth, viewportWidth.value);
+  // Width is EXACT: frameCount * pixelsPerFrame
+  const width = store.frameCount * pixelsPerFrame.value;
   cvs.width = width;
   cvs.height = 30;
 
