@@ -284,11 +284,11 @@ const previewChanges = ref(false);
 
 const settings = ref<CompositionDialogSettings>({
   name: 'Main Comp',
-  width: 1920,
-  height: 1080,
+  width: 832,
+  height: 480,
   pixelAspectRatio: 1,
-  fps: 30,
-  frameCount: 300,
+  fps: 16,
+  frameCount: 81,
   resolution: 'full',
   backgroundColor: '#000000',
   autoResizeToContent: true,
@@ -327,19 +327,19 @@ const resolutionInfo = computed(() => {
 
 // Presets
 const presets: Record<string, Partial<CompositionDialogSettings>> = {
-  '1080p30': { width: 1920, height: 1080, fps: 30 },
-  '1080p60': { width: 1920, height: 1080, fps: 60 },
-  '720p30': { width: 1280, height: 720, fps: 30 },
-  '4k30': { width: 3840, height: 2160, fps: 30 },
-  'instagram_square': { width: 1080, height: 1080, fps: 30 },
-  'instagram_story': { width: 1080, height: 1920, fps: 30 },
-  'tiktok': { width: 1080, height: 1920, fps: 30 },
-  'youtube_short': { width: 1080, height: 1920, fps: 60 },
-  'sd15_512': { width: 512, height: 512, fps: 8 },
-  'sd15_768': { width: 768, height: 512, fps: 8 },
-  'sdxl_1024': { width: 1024, height: 1024, fps: 8 },
-  'wan_480p': { width: 832, height: 480, fps: 16 },
-  'wan_720p': { width: 1280, height: 720, fps: 16 },
+  '1080p30': { width: 1920, height: 1080, fps: 30, frameCount: 300 },
+  '1080p60': { width: 1920, height: 1080, fps: 60, frameCount: 600 },
+  '720p30': { width: 1280, height: 720, fps: 30, frameCount: 300 },
+  '4k30': { width: 3840, height: 2160, fps: 30, frameCount: 300 },
+  'instagram_square': { width: 1080, height: 1080, fps: 30, frameCount: 300 },
+  'instagram_story': { width: 1080, height: 1920, fps: 30, frameCount: 300 },
+  'tiktok': { width: 1080, height: 1920, fps: 30, frameCount: 300 },
+  'youtube_short': { width: 1080, height: 1920, fps: 60, frameCount: 600 },
+  'sd15_512': { width: 512, height: 512, fps: 8, frameCount: 16 },
+  'sd15_768': { width: 768, height: 512, fps: 8, frameCount: 16 },
+  'sdxl_1024': { width: 1024, height: 1024, fps: 8, frameCount: 16 },
+  'wan_480p': { width: 832, height: 480, fps: 16, frameCount: 81 },
+  'wan_720p': { width: 1280, height: 720, fps: 16, frameCount: 81 },
 };
 
 // Methods
@@ -349,6 +349,7 @@ function applyPreset() {
     if (preset.width) settings.value.width = preset.width;
     if (preset.height) settings.value.height = preset.height;
     if (preset.fps) settings.value.fps = preset.fps;
+    if (preset.frameCount) settings.value.frameCount = preset.frameCount;
     aspectRatio.value = settings.value.width / settings.value.height;
     updateDurationTimecode();
   }

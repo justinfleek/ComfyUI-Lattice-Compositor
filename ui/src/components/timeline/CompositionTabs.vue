@@ -71,6 +71,7 @@
         :style="{ left: contextMenu.x + 'px', top: contextMenu.y + 'px' }"
         @click.stop
       >
+        <button @click="openCompSettings">Composition Settings...</button>
         <button @click="renameFromMenu">Rename</button>
         <button @click="duplicateComposition">Duplicate</button>
         <button @click="openInNewTab">Open in New Tab</button>
@@ -98,6 +99,7 @@ import type { Composition } from '@/types/project';
 
 const emit = defineEmits<{
   (e: 'newComposition'): void;
+  (e: 'openCompositionSettings'): void;
 }>();
 
 const store = useCompositorStore();
@@ -184,6 +186,15 @@ function showContextMenu(event: MouseEvent, comp: Composition) {
 function hideContextMenu() {
   contextMenu.value.visible = false;
   contextMenu.value.comp = null;
+}
+
+function openCompSettings() {
+  // Switch to the composition first if not active
+  if (contextMenu.value.comp && contextMenu.value.comp.id !== activeCompositionId.value) {
+    store.switchComposition(contextMenu.value.comp.id);
+  }
+  emit('openCompositionSettings');
+  hideContextMenu();
 }
 
 function renameFromMenu() {

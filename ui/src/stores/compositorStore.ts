@@ -195,7 +195,7 @@ interface CompositorState {
 
 export const useCompositorStore = defineStore('compositor', {
   state: (): CompositorState => ({
-    project: createEmptyProject(1024, 1024),
+    project: createEmptyProject(832, 480),  // Wan 2.1 480p default
     activeCompositionId: 'main',
     openCompositionIds: ['main'],
     compositionBreadcrumbs: ['main'],  // Start with main comp in breadcrumb path

@@ -1,7 +1,10 @@
 <template>
   <div class="timeline-panel" tabindex="0" @keydown="handleKeydown" role="region" aria-label="Timeline">
     <!-- Composition Tabs -->
-    <CompositionTabs @newComposition="emit('openCompositionSettings')" />
+    <CompositionTabs
+      @newComposition="emit('openCompositionSettings')"
+      @openCompositionSettings="emit('openCompositionSettings')"
+    />
 
     <div class="timeline-header">
       <div class="header-left">

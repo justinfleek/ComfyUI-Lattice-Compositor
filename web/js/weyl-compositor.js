@@ -11377,7 +11377,8 @@ const usePlaybackStore = defineStore("playback", {
 
 const useCompositorStore = defineStore("compositor", {
   state: () => ({
-    project: createEmptyProject(1024, 1024),
+    project: createEmptyProject(832, 480),
+    // Wan 2.1 480p default
     activeCompositionId: "main",
     openCompositionIds: ["main"],
     compositionBreadcrumbs: ["main"],
@@ -47382,7 +47383,7 @@ const _hoisted_12$8 = ["disabled"];
 const _hoisted_13$8 = ["disabled"];
 const _sfc_main$9 = /* @__PURE__ */ defineComponent({
   __name: "CompositionTabs",
-  emits: ["newComposition"],
+  emits: ["newComposition", "openCompositionSettings"],
   setup(__props, { emit: __emit }) {
     const emit = __emit;
     const store = useCompositorStore();
@@ -47445,6 +47446,13 @@ const _sfc_main$9 = /* @__PURE__ */ defineComponent({
     function hideContextMenu() {
       contextMenu.value.visible = false;
       contextMenu.value.comp = null;
+    }
+    function openCompSettings() {
+      if (contextMenu.value.comp && contextMenu.value.comp.id !== activeCompositionId.value) {
+        store.switchComposition(contextMenu.value.comp.id);
+      }
+      emit("openCompositionSettings");
+      hideContextMenu();
     }
     function renameFromMenu() {
       if (contextMenu.value.comp) {
@@ -47569,6 +47577,7 @@ const _sfc_main$9 = /* @__PURE__ */ defineComponent({
             onClick: _cache[3] || (_cache[3] = withModifiers(() => {
             }, ["stop"]))
           }, [
+            createBaseVNode("button", { onClick: openCompSettings }, "Composition Settings..."),
             createBaseVNode("button", { onClick: renameFromMenu }, "Rename"),
             createBaseVNode("button", { onClick: duplicateComposition }, "Duplicate"),
             createBaseVNode("button", { onClick: openInNewTab }, "Open in New Tab"),
@@ -47590,7 +47599,7 @@ const _sfc_main$9 = /* @__PURE__ */ defineComponent({
   }
 });
 
-const CompositionTabs = /* @__PURE__ */ _export_sfc(_sfc_main$9, [["__scopeId", "data-v-7ed5df69"]]);
+const CompositionTabs = /* @__PURE__ */ _export_sfc(_sfc_main$9, [["__scopeId", "data-v-ba051046"]]);
 
 const _hoisted_1$7 = { class: "timeline-header" };
 const _hoisted_2$7 = { class: "header-left" };
@@ -47870,7 +47879,8 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
         "aria-label": "Timeline"
       }, [
         createVNode(CompositionTabs, {
-          onNewComposition: _cache[0] || (_cache[0] = ($event) => emit("openCompositionSettings"))
+          onNewComposition: _cache[0] || (_cache[0] = ($event) => emit("openCompositionSettings")),
+          onOpenCompositionSettings: _cache[1] || (_cache[1] = ($event) => emit("openCompositionSettings"))
         }),
         createBaseVNode("div", _hoisted_1$7, [
           createBaseVNode("div", _hoisted_2$7, [
@@ -47897,7 +47907,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
                 "aria-label": "Add Layer",
                 "aria-haspopup": "menu",
                 "aria-expanded": showAddLayerMenu.value
-              }, [..._cache[11] || (_cache[11] = [
+              }, [..._cache[12] || (_cache[12] = [
                 createBaseVNode("span", {
                   class: "icon",
                   "aria-hidden": "true"
@@ -47906,9 +47916,9 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
               ])], 42, _hoisted_8$7),
               showAddLayerMenu.value ? (openBlock(), createElementBlock("div", _hoisted_9$7, [
                 createBaseVNode("button", {
-                  onMousedown: _cache[1] || (_cache[1] = ($event) => addLayer("solid")),
+                  onMousedown: _cache[2] || (_cache[2] = ($event) => addLayer("solid")),
                   role: "menuitem"
-                }, [..._cache[12] || (_cache[12] = [
+                }, [..._cache[13] || (_cache[13] = [
                   createBaseVNode("span", {
                     class: "icon",
                     "aria-hidden": "true"
@@ -47916,9 +47926,9 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
                   createTextVNode(" Solid", -1)
                 ])], 32),
                 createBaseVNode("button", {
-                  onMousedown: _cache[2] || (_cache[2] = ($event) => addLayer("text")),
+                  onMousedown: _cache[3] || (_cache[3] = ($event) => addLayer("text")),
                   role: "menuitem"
-                }, [..._cache[13] || (_cache[13] = [
+                }, [..._cache[14] || (_cache[14] = [
                   createBaseVNode("span", {
                     class: "icon",
                     "aria-hidden": "true"
@@ -47926,9 +47936,9 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
                   createTextVNode(" Text", -1)
                 ])], 32),
                 createBaseVNode("button", {
-                  onMousedown: _cache[3] || (_cache[3] = ($event) => addLayer("spline")),
+                  onMousedown: _cache[4] || (_cache[4] = ($event) => addLayer("spline")),
                   role: "menuitem"
-                }, [..._cache[14] || (_cache[14] = [
+                }, [..._cache[15] || (_cache[15] = [
                   createBaseVNode("span", {
                     class: "icon",
                     "aria-hidden": "true"
@@ -47936,9 +47946,9 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
                   createTextVNode(" Shape", -1)
                 ])], 32),
                 createBaseVNode("button", {
-                  onMousedown: _cache[4] || (_cache[4] = ($event) => addLayer("particles")),
+                  onMousedown: _cache[5] || (_cache[5] = ($event) => addLayer("particles")),
                   role: "menuitem"
-                }, [..._cache[15] || (_cache[15] = [
+                }, [..._cache[16] || (_cache[16] = [
                   createBaseVNode("span", {
                     class: "icon",
                     "aria-hidden": "true"
@@ -47946,9 +47956,9 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
                   createTextVNode(" Particles", -1)
                 ])], 32),
                 createBaseVNode("button", {
-                  onMousedown: _cache[5] || (_cache[5] = ($event) => addLayer("null")),
+                  onMousedown: _cache[6] || (_cache[6] = ($event) => addLayer("null")),
                   role: "menuitem"
-                }, [..._cache[16] || (_cache[16] = [
+                }, [..._cache[17] || (_cache[17] = [
                   createBaseVNode("span", {
                     class: "icon",
                     "aria-hidden": "true"
@@ -47956,9 +47966,9 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
                   createTextVNode(" Null", -1)
                 ])], 32),
                 createBaseVNode("button", {
-                  onMousedown: _cache[6] || (_cache[6] = ($event) => addLayer("camera")),
+                  onMousedown: _cache[7] || (_cache[7] = ($event) => addLayer("camera")),
                   role: "menuitem"
-                }, [..._cache[17] || (_cache[17] = [
+                }, [..._cache[18] || (_cache[18] = [
                   createBaseVNode("span", {
                     class: "icon",
                     "aria-hidden": "true"
@@ -47966,9 +47976,9 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
                   createTextVNode(" Camera", -1)
                 ])], 32),
                 createBaseVNode("button", {
-                  onMousedown: _cache[7] || (_cache[7] = ($event) => addLayer("light")),
+                  onMousedown: _cache[8] || (_cache[8] = ($event) => addLayer("light")),
                   role: "menuitem"
-                }, [..._cache[18] || (_cache[18] = [
+                }, [..._cache[19] || (_cache[19] = [
                   createBaseVNode("span", {
                     class: "icon",
                     "aria-hidden": "true"
@@ -47976,9 +47986,9 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
                   createTextVNode(" Light", -1)
                 ])], 32),
                 createBaseVNode("button", {
-                  onMousedown: _cache[8] || (_cache[8] = ($event) => addLayer("video")),
+                  onMousedown: _cache[9] || (_cache[9] = ($event) => addLayer("video")),
                   role: "menuitem"
-                }, [..._cache[19] || (_cache[19] = [
+                }, [..._cache[20] || (_cache[20] = [
                   createBaseVNode("span", {
                     class: "icon",
                     "aria-hidden": "true"
@@ -48002,7 +48012,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
               min: "0",
               max: "100",
               step: "1",
-              "onUpdate:modelValue": _cache[9] || (_cache[9] = ($event) => zoomPercent.value = $event),
+              "onUpdate:modelValue": _cache[10] || (_cache[10] = ($event) => zoomPercent.value = $event),
               class: "zoom-slider",
               title: "Zoom Timeline",
               "aria-label": "Timeline zoom level"
@@ -48022,16 +48032,16 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
             style: normalizeStyle({ width: sidebarWidth.value + "px" })
           }, [
             createBaseVNode("div", _hoisted_14$7, [
-              _cache[21] || (_cache[21] = createStaticVNode('<div class="col-header col-av-features" data-v-7aaf5303><span class="header-icon" title="Video" data-v-7aaf5303>👁</span><span class="header-icon" title="Audio" data-v-7aaf5303>🔊</span><span class="header-icon" title="Solo" data-v-7aaf5303>●</span><span class="header-icon" title="Lock" data-v-7aaf5303>🔒</span></div><div class="col-header col-number" data-v-7aaf5303>#</div><div class="col-header col-name" data-v-7aaf5303>Source Name</div>', 3)),
+              _cache[22] || (_cache[22] = createStaticVNode('<div class="col-header col-av-features" data-v-7dc9db64><span class="header-icon" title="Video" data-v-7dc9db64>👁</span><span class="header-icon" title="Audio" data-v-7dc9db64>🔊</span><span class="header-icon" title="Solo" data-v-7dc9db64>●</span><span class="header-icon" title="Lock" data-v-7dc9db64>🔒</span></div><div class="col-header col-number" data-v-7dc9db64>#</div><div class="col-header col-name" data-v-7dc9db64>Source Name</div>', 3)),
               createBaseVNode("div", _hoisted_15$7, [
                 createBaseVNode("span", {
                   class: normalizeClass(["header-icon clickable", { active: unref(store).hideShyLayers }]),
                   title: "Hide Shy Layers",
-                  onClick: _cache[10] || (_cache[10] = ($event) => unref(store).toggleHideShyLayers())
+                  onClick: _cache[11] || (_cache[11] = ($event) => unref(store).toggleHideShyLayers())
                 }, "🙈", 2),
-                _cache[20] || (_cache[20] = createStaticVNode('<span class="header-icon" title="Collapse/Continuously Rasterize" data-v-7aaf5303>☀</span><span class="header-icon" title="Quality" data-v-7aaf5303>◐</span><span class="header-icon" title="Effects" data-v-7aaf5303>fx</span><span class="header-icon" title="Frame Blending" data-v-7aaf5303>⊞</span><span class="header-icon" title="Motion Blur" data-v-7aaf5303>◔</span><span class="header-icon" title="Adjustment Layer" data-v-7aaf5303>◐</span><span class="header-icon" title="3D Layer" data-v-7aaf5303>⬡</span>', 7))
+                _cache[21] || (_cache[21] = createStaticVNode('<span class="header-icon" title="Collapse/Continuously Rasterize" data-v-7dc9db64>☀</span><span class="header-icon" title="Quality" data-v-7dc9db64>◐</span><span class="header-icon" title="Effects" data-v-7dc9db64>fx</span><span class="header-icon" title="Frame Blending" data-v-7dc9db64>⊞</span><span class="header-icon" title="Motion Blur" data-v-7dc9db64>◔</span><span class="header-icon" title="Adjustment Layer" data-v-7dc9db64>◐</span><span class="header-icon" title="3D Layer" data-v-7dc9db64>⬡</span>', 7))
               ]),
-              _cache[22] || (_cache[22] = createBaseVNode("div", { class: "col-header col-parent" }, "Parent & Link", -1))
+              _cache[23] || (_cache[23] = createBaseVNode("div", { class: "col-header col-parent" }, "Parent & Link", -1))
             ]),
             createBaseVNode("div", {
               class: "sidebar-scroll-area",
@@ -48101,7 +48111,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
                 class: "layer-bars-container",
                 style: normalizeStyle({ width: computedWidthStyle.value })
               }, [
-                _cache[23] || (_cache[23] = createBaseVNode("div", { class: "grid-background" }, null, -1)),
+                _cache[24] || (_cache[24] = createBaseVNode("div", { class: "grid-background" }, null, -1)),
                 (openBlock(true), createElementBlock(Fragment, null, renderList(filteredLayers.value, (layer) => {
                   return openBlock(), createBlock(EnhancedLayerTrack, {
                     key: layer.id,
@@ -48127,7 +48137,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
   }
 });
 
-const TimelinePanel = /* @__PURE__ */ _export_sfc(_sfc_main$8, [["__scopeId", "data-v-7aaf5303"]]);
+const TimelinePanel = /* @__PURE__ */ _export_sfc(_sfc_main$8, [["__scopeId", "data-v-7dc9db64"]]);
 
 const _hoisted_1$6 = { class: "graph-editor" };
 const _hoisted_2$6 = { class: "graph-header" };
@@ -55590,11 +55600,11 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
     const previewChanges = ref(false);
     const settings = ref({
       name: "Main Comp",
-      width: 1920,
-      height: 1080,
+      width: 832,
+      height: 480,
       pixelAspectRatio: 1,
-      fps: 30,
-      frameCount: 300,
+      fps: 16,
+      frameCount: 81,
       resolution: "full",
       backgroundColor: "#000000",
       autoResizeToContent: true,
@@ -55625,19 +55635,19 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
       return `${w} x ${h}, ${mb} MB per 8bpc frame`;
     });
     const presets = {
-      "1080p30": { width: 1920, height: 1080, fps: 30 },
-      "1080p60": { width: 1920, height: 1080, fps: 60 },
-      "720p30": { width: 1280, height: 720, fps: 30 },
-      "4k30": { width: 3840, height: 2160, fps: 30 },
-      "instagram_square": { width: 1080, height: 1080, fps: 30 },
-      "instagram_story": { width: 1080, height: 1920, fps: 30 },
-      "tiktok": { width: 1080, height: 1920, fps: 30 },
-      "youtube_short": { width: 1080, height: 1920, fps: 60 },
-      "sd15_512": { width: 512, height: 512, fps: 8 },
-      "sd15_768": { width: 768, height: 512, fps: 8 },
-      "sdxl_1024": { width: 1024, height: 1024, fps: 8 },
-      "wan_480p": { width: 832, height: 480, fps: 16 },
-      "wan_720p": { width: 1280, height: 720, fps: 16 }
+      "1080p30": { width: 1920, height: 1080, fps: 30, frameCount: 300 },
+      "1080p60": { width: 1920, height: 1080, fps: 60, frameCount: 600 },
+      "720p30": { width: 1280, height: 720, fps: 30, frameCount: 300 },
+      "4k30": { width: 3840, height: 2160, fps: 30, frameCount: 300 },
+      "instagram_square": { width: 1080, height: 1080, fps: 30, frameCount: 300 },
+      "instagram_story": { width: 1080, height: 1920, fps: 30, frameCount: 300 },
+      "tiktok": { width: 1080, height: 1920, fps: 30, frameCount: 300 },
+      "youtube_short": { width: 1080, height: 1920, fps: 60, frameCount: 600 },
+      "sd15_512": { width: 512, height: 512, fps: 8, frameCount: 16 },
+      "sd15_768": { width: 768, height: 512, fps: 8, frameCount: 16 },
+      "sdxl_1024": { width: 1024, height: 1024, fps: 8, frameCount: 16 },
+      "wan_480p": { width: 832, height: 480, fps: 16, frameCount: 81 },
+      "wan_720p": { width: 1280, height: 720, fps: 16, frameCount: 81 }
     };
     function applyPreset() {
       const preset = presets[selectedPreset.value];
@@ -55645,6 +55655,7 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
         if (preset.width) settings.value.width = preset.width;
         if (preset.height) settings.value.height = preset.height;
         if (preset.fps) settings.value.fps = preset.fps;
+        if (preset.frameCount) settings.value.frameCount = preset.frameCount;
         aspectRatio.value = settings.value.width / settings.value.height;
         updateDurationTimecode();
       }
@@ -56044,7 +56055,7 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
   }
 });
 
-const CompositionSettingsDialog = /* @__PURE__ */ _export_sfc(_sfc_main$4, [["__scopeId", "data-v-76356b13"]]);
+const CompositionSettingsDialog = /* @__PURE__ */ _export_sfc(_sfc_main$4, [["__scopeId", "data-v-a64b374e"]]);
 
 const logger$1 = createLogger("MotionIntentResolver");
 const SYSTEM_PROMPT = `You are a motion graphics expert analyzing images for camera movements and animation paths.
