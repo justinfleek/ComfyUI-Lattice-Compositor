@@ -31,7 +31,8 @@
           <div v-if="showAddLayerMenu" class="add-layer-menu" role="menu" aria-label="Layer types">
             <button @mousedown="addLayer('solid')" role="menuitem"><span class="icon" aria-hidden="true">■</span> Solid</button>
             <button @mousedown="addLayer('text')" role="menuitem"><span class="icon" aria-hidden="true">T</span> Text</button>
-            <button @mousedown="addLayer('spline')" role="menuitem"><span class="icon" aria-hidden="true">~</span> Shape</button>
+            <button @mousedown="addLayer('shape')" role="menuitem"><span class="icon" aria-hidden="true">◇</span> Shape</button>
+            <button @mousedown="addLayer('spline')" role="menuitem"><span class="icon" aria-hidden="true">〰</span> Spline/Path</button>
             <button @mousedown="addLayer('particles')" role="menuitem"><span class="icon" aria-hidden="true">✨</span> Particles</button>
             <button @mousedown="addLayer('null')" role="menuitem"><span class="icon" aria-hidden="true">□</span> Null</button>
             <button @mousedown="addLayer('camera')" role="menuitem"><span class="icon" aria-hidden="true">📷</span> Camera</button>

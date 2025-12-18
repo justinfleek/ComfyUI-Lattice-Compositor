@@ -878,10 +878,15 @@ export const useCompositorStore = defineStore('compositor', {
           };
           break;
 
-        case 'particles':
+        case 'particles': {
+          // Get active composition dimensions for emitter positioning
+          const activeComp = this.getActiveComp();
+          const compWidth = activeComp?.settings.width || this.project.composition.width;
+          const compHeight = activeComp?.settings.height || this.project.composition.height;
+
           layerData = {
             systemConfig: {
-              maxParticles: 1000,
+              maxParticles: 10000,
               gravity: 0,
               windStrength: 0,
               windDirection: 0,
@@ -893,38 +898,72 @@ export const useCompositorStore = defineStore('compositor', {
             emitters: [{
               id: 'emitter_1',
               name: 'Emitter 1',
-              x: this.project.composition.width / 2,
-              y: this.project.composition.height / 2,
-              direction: -90,
+              // Use pixel coordinates - center of composition
+              x: compWidth / 2,
+              y: compHeight / 2,
+              direction: 270, // Up direction (degrees, 270 = upward)
               spread: 30,
-              speed: 5,
-              speedVariance: 0.2,
-              size: 10,
-              sizeVariance: 0.3,
-              color: [255, 255, 255],
-              emissionRate: 10,
+              speed: 150, // Pixels per second
+              speedVariance: 30,
+              size: 8,
+              sizeVariance: 2,
+              color: [255, 200, 100] as [number, number, number], // Orange-ish for visibility
+              emissionRate: 30, // Particles per second
               initialBurst: 0,
-              particleLifetime: 60,
-              lifetimeVariance: 0.2,
+              particleLifetime: 90, // Frames
+              lifetimeVariance: 15,
               enabled: true,
               burstOnBeat: false,
-              burstCount: 20
+              burstCount: 20,
+              // Geometric emitter shape defaults
+              shape: 'point' as const,
+              shapeRadius: 50,
+              shapeWidth: 100,
+              shapeHeight: 100,
+              shapeDepth: 100,
+              shapeInnerRadius: 25,
+              emitFromEdge: false,
+              emitFromVolume: false,
+              splinePath: null,
+              sprite: {
+                enabled: false,
+                imageUrl: null,
+                imageData: null,
+                isSheet: false,
+                columns: 1,
+                rows: 1,
+                totalFrames: 1,
+                frameRate: 30,
+                playMode: 'loop' as const,
+                billboard: true,
+                rotationEnabled: false,
+                rotationSpeed: 0,
+                rotationSpeedVariance: 0,
+                alignToVelocity: false
+              }
             }],
             gravityWells: [],
             vortices: [],
-            modulations: [],
+            modulations: [{
+              id: 'mod_opacity_1',
+              emitterId: '*',
+              property: 'opacity',
+              startValue: 1,
+              endValue: 0,
+              easing: 'linear'
+            }],
             renderOptions: {
               blendMode: 'additive',
               renderTrails: false,
-              trailLength: 10,
-              trailOpacityFalloff: 0.9,
+              trailLength: 5,
+              trailOpacityFalloff: 0.7,
               particleShape: 'circle',
-              glowEnabled: false,
-              glowRadius: 5,
-              glowIntensity: 0.5,
+              glowEnabled: true,
+              glowRadius: 8,
+              glowIntensity: 0.6,
               motionBlur: false,
               motionBlurStrength: 0.5,
-              motionBlurSamples: 4,
+              motionBlurSamples: 8,
               connections: {
                 enabled: false,
                 maxDistance: 100,
@@ -933,9 +972,12 @@ export const useCompositorStore = defineStore('compositor', {
                 lineOpacity: 0.5,
                 fadeByDistance: true
               }
-            }
+            },
+            turbulenceFields: [],
+            subEmitters: []
           };
           break;
+        }
 
         case 'depthflow':
           layerData = {
@@ -1724,6 +1766,11 @@ export const useCompositorStore = defineStore('compositor', {
     createParticleLayer(): Layer {
       const layer = this.createLayer('particles', 'Particle System');
 
+      // Get active composition dimensions for emitter positioning
+      const activeComp = this.getActiveComp();
+      const compWidth = activeComp?.settings.width || this.project.composition.width;
+      const compHeight = activeComp?.settings.height || this.project.composition.height;
+
       // Set up particle layer data
       const particleData: ParticleLayerData = {
         systemConfig: {
@@ -1739,29 +1786,30 @@ export const useCompositorStore = defineStore('compositor', {
         emitters: [{
           id: `emitter_${Date.now()}`,
           name: 'Emitter 1',
-          x: 0.5,
-          y: 0.5,
-          direction: 270,
+          // Use pixel coordinates - center of composition
+          x: compWidth / 2,
+          y: compHeight / 2,
+          direction: 270, // Up direction (270 degrees)
           spread: 30,
-          speed: 330,
-          speedVariance: 50,
-          size: 17,
-          sizeVariance: 5,
-          color: [255, 255, 255] as [number, number, number],
-          emissionRate: 10,
+          speed: 150, // Pixels per second
+          speedVariance: 30,
+          size: 8,
+          sizeVariance: 2,
+          color: [255, 200, 100] as [number, number, number],
+          emissionRate: 30, // Particles per second
           initialBurst: 0,
-          particleLifetime: 60,
-          lifetimeVariance: 10,
+          particleLifetime: 90,
+          lifetimeVariance: 15,
           enabled: true,
           burstOnBeat: false,
           burstCount: 20,
-          // Geometric emitter shape defaults
+          // Geometric emitter shape defaults (in pixels)
           shape: 'point' as const,
-          shapeRadius: 0.1,
-          shapeWidth: 0.2,
-          shapeHeight: 0.2,
-          shapeDepth: 0.2,
-          shapeInnerRadius: 0.05,
+          shapeRadius: 50,
+          shapeWidth: 100,
+          shapeHeight: 100,
+          shapeDepth: 100,
+          shapeInnerRadius: 25,
           emitFromEdge: false,
           emitFromVolume: false,
           // Spline path emission (null = disabled)

@@ -92,7 +92,9 @@
     <template v-else>
       <div class="layer-row track-bg" @mousedown="selectLayer">
         <div class="duration-bar" :style="barStyle" @mousedown.stop="startDrag">
+           <div class="bar-handle bar-handle-left" @mousedown.stop="startResizeLeft"></div>
            <div class="bar-fill" :style="{ background: layer.labelColor || '#777' }"></div>
+           <div class="bar-handle bar-handle-right" @mousedown.stop="startResizeRight"></div>
         </div>
       </div>
       <div v-if="isExpanded" class="children-container">
@@ -323,7 +325,93 @@ function startRename() { isRenaming.value = true; renameVal.value = props.layer.
 function saveRename() { emit('updateLayer', props.layer.id, { name: renameVal.value }); isRenaming.value = false; }
 function setParent(e: Event) { emit('updateLayer', props.layer.id, { parentId: (e.target as HTMLSelectElement).value || null }); }
 function setBlendMode(e: Event) { emit('updateLayer', props.layer.id, { blendMode: (e.target as HTMLSelectElement).value }); }
-function startDrag() { /* Drag logic */ }
+// Layer bar drag/resize state
+const isDragging = ref(false);
+const isResizingLeft = ref(false);
+const isResizingRight = ref(false);
+const dragStartX = ref(0);
+const dragStartInPoint = ref(0);
+const dragStartOutPoint = ref(0);
+
+function startDrag(e: MouseEvent) {
+  isDragging.value = true;
+  dragStartX.value = e.clientX;
+  dragStartInPoint.value = props.layer.inPoint ?? 0;
+  dragStartOutPoint.value = props.layer.outPoint ?? (props.frameCount - 1);
+  document.addEventListener('mousemove', onDrag);
+  document.addEventListener('mouseup', stopDrag);
+}
+
+function startResizeLeft(e: MouseEvent) {
+  isResizingLeft.value = true;
+  dragStartX.value = e.clientX;
+  dragStartInPoint.value = props.layer.inPoint ?? 0;
+  document.addEventListener('mousemove', onResizeLeft);
+  document.addEventListener('mouseup', stopDrag);
+}
+
+function startResizeRight(e: MouseEvent) {
+  isResizingRight.value = true;
+  dragStartX.value = e.clientX;
+  dragStartOutPoint.value = props.layer.outPoint ?? (props.frameCount - 1);
+  document.addEventListener('mousemove', onResizeRight);
+  document.addEventListener('mouseup', stopDrag);
+}
+
+function onDrag(e: MouseEvent) {
+  const dx = e.clientX - dragStartX.value;
+  const framesDelta = Math.round(dx / props.pixelsPerFrame);
+  const duration = dragStartOutPoint.value - dragStartInPoint.value;
+
+  let newInPoint = dragStartInPoint.value + framesDelta;
+  let newOutPoint = newInPoint + duration;
+
+  // Clamp to valid range
+  if (newInPoint < 0) {
+    newInPoint = 0;
+    newOutPoint = duration;
+  }
+  if (newOutPoint >= props.frameCount) {
+    newOutPoint = props.frameCount - 1;
+    newInPoint = newOutPoint - duration;
+  }
+
+  emit('updateLayer', props.layer.id, { inPoint: newInPoint, outPoint: newOutPoint });
+}
+
+function onResizeLeft(e: MouseEvent) {
+  const dx = e.clientX - dragStartX.value;
+  const framesDelta = Math.round(dx / props.pixelsPerFrame);
+  let newInPoint = dragStartInPoint.value + framesDelta;
+
+  // Clamp: can't go below 0 or past outPoint
+  const outPoint = props.layer.outPoint ?? (props.frameCount - 1);
+  newInPoint = Math.max(0, Math.min(newInPoint, outPoint - 1));
+
+  emit('updateLayer', props.layer.id, { inPoint: newInPoint });
+}
+
+function onResizeRight(e: MouseEvent) {
+  const dx = e.clientX - dragStartX.value;
+  const framesDelta = Math.round(dx / props.pixelsPerFrame);
+  let newOutPoint = dragStartOutPoint.value + framesDelta;
+
+  // Clamp: can't go past frameCount or before inPoint
+  const inPoint = props.layer.inPoint ?? 0;
+  newOutPoint = Math.max(inPoint + 1, Math.min(newOutPoint, props.frameCount - 1));
+
+  emit('updateLayer', props.layer.id, { outPoint: newOutPoint });
+}
+
+function stopDrag() {
+  isDragging.value = false;
+  isResizingLeft.value = false;
+  isResizingRight.value = false;
+  document.removeEventListener('mousemove', onDrag);
+  document.removeEventListener('mousemove', onResizeLeft);
+  document.removeEventListener('mousemove', onResizeRight);
+  document.removeEventListener('mouseup', stopDrag);
+}
 function toggleVis() { emit('updateLayer', props.layer.id, { visible: !props.layer.visible }); }
 function toggleLock() { emit('updateLayer', props.layer.id, { locked: !props.layer.locked }); }
 function toggleAudio() { emit('updateLayer', props.layer.id, { audioEnabled: props.layer.audioEnabled === false ? true : false }); }
@@ -605,8 +693,45 @@ onUnmounted(() => {
 
 /* Track mode */
 .track-bg { height: 28px; background: #191919; border-bottom: 1px solid #333; position: relative; width: 100%; }
-.duration-bar { position: absolute; height: 20px; top: 4px; border: 1px solid rgba(0,0,0,0.5); border-radius: 2px; background: #888; opacity: 0.6; }
-.bar-fill { width: 100%; height: 100%; }
+.duration-bar {
+  position: absolute;
+  height: 22px;
+  top: 3px;
+  border: 1px solid rgba(0,0,0,0.6);
+  border-radius: 6px;
+  background: #555;
+  cursor: move;
+  display: flex;
+  align-items: center;
+}
+.duration-bar:hover { box-shadow: 0 0 6px rgba(255,255,255,0.3); }
+.bar-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  background: rgba(255,255,255,0.15);
+  cursor: ew-resize;
+  z-index: 2;
+  transition: background 0.15s;
+}
+.bar-handle:hover { background: rgba(255,255,255,0.4); }
+.bar-handle-left {
+  left: 0;
+  border-radius: 6px 0 0 6px;
+  border-right: 1px solid rgba(0,0,0,0.3);
+}
+.bar-handle-right {
+  right: 0;
+  border-radius: 0 6px 6px 0;
+  border-left: 1px solid rgba(0,0,0,0.3);
+}
+.bar-fill {
+  flex: 1;
+  height: 100%;
+  border-radius: 5px;
+  margin: 0 8px;
+}
 
 /* Context Menu - must NOT be scoped to work with Teleport */
 </style>

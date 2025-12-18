@@ -11915,10 +11915,13 @@ const useCompositorStore = defineStore("compositor", {
             fill: ""
           };
           break;
-        case "particles":
+        case "particles": {
+          const activeComp = this.getActiveComp();
+          const compWidth2 = activeComp?.settings.width || this.project.composition.width;
+          const compHeight2 = activeComp?.settings.height || this.project.composition.height;
           layerData = {
             systemConfig: {
-              maxParticles: 1e3,
+              maxParticles: 1e4,
               gravity: 0,
               windStrength: 0,
               windDirection: 0,
@@ -11930,38 +11933,77 @@ const useCompositorStore = defineStore("compositor", {
             emitters: [{
               id: "emitter_1",
               name: "Emitter 1",
-              x: this.project.composition.width / 2,
-              y: this.project.composition.height / 2,
-              direction: -90,
+              // Use pixel coordinates - center of composition
+              x: compWidth2 / 2,
+              y: compHeight2 / 2,
+              direction: 270,
+              // Up direction (degrees, 270 = upward)
               spread: 30,
-              speed: 5,
-              speedVariance: 0.2,
-              size: 10,
-              sizeVariance: 0.3,
-              color: [255, 255, 255],
-              emissionRate: 10,
+              speed: 150,
+              // Pixels per second
+              speedVariance: 30,
+              size: 8,
+              sizeVariance: 2,
+              color: [255, 200, 100],
+              // Orange-ish for visibility
+              emissionRate: 30,
+              // Particles per second
               initialBurst: 0,
-              particleLifetime: 60,
-              lifetimeVariance: 0.2,
+              particleLifetime: 90,
+              // Frames
+              lifetimeVariance: 15,
               enabled: true,
               burstOnBeat: false,
-              burstCount: 20
+              burstCount: 20,
+              // Geometric emitter shape defaults
+              shape: "point",
+              shapeRadius: 50,
+              shapeWidth: 100,
+              shapeHeight: 100,
+              shapeDepth: 100,
+              shapeInnerRadius: 25,
+              emitFromEdge: false,
+              emitFromVolume: false,
+              splinePath: null,
+              sprite: {
+                enabled: false,
+                imageUrl: null,
+                imageData: null,
+                isSheet: false,
+                columns: 1,
+                rows: 1,
+                totalFrames: 1,
+                frameRate: 30,
+                playMode: "loop",
+                billboard: true,
+                rotationEnabled: false,
+                rotationSpeed: 0,
+                rotationSpeedVariance: 0,
+                alignToVelocity: false
+              }
             }],
             gravityWells: [],
             vortices: [],
-            modulations: [],
+            modulations: [{
+              id: "mod_opacity_1",
+              emitterId: "*",
+              property: "opacity",
+              startValue: 1,
+              endValue: 0,
+              easing: "linear"
+            }],
             renderOptions: {
               blendMode: "additive",
               renderTrails: false,
-              trailLength: 10,
-              trailOpacityFalloff: 0.9,
+              trailLength: 5,
+              trailOpacityFalloff: 0.7,
               particleShape: "circle",
-              glowEnabled: false,
-              glowRadius: 5,
-              glowIntensity: 0.5,
+              glowEnabled: true,
+              glowRadius: 8,
+              glowIntensity: 0.6,
               motionBlur: false,
               motionBlurStrength: 0.5,
-              motionBlurSamples: 4,
+              motionBlurSamples: 8,
               connections: {
                 enabled: false,
                 maxDistance: 100,
@@ -11970,9 +12012,12 @@ const useCompositorStore = defineStore("compositor", {
                 lineOpacity: 0.5,
                 fadeByDistance: true
               }
-            }
+            },
+            turbulenceFields: [],
+            subEmitters: []
           };
           break;
+        }
         case "depthflow":
           layerData = {
             sourceLayerId: null,
@@ -12613,6 +12658,9 @@ const useCompositorStore = defineStore("compositor", {
      */
     createParticleLayer() {
       const layer = this.createLayer("particles", "Particle System");
+      const activeComp = this.getActiveComp();
+      const compWidth = activeComp?.settings.width || this.project.composition.width;
+      const compHeight = activeComp?.settings.height || this.project.composition.height;
       const particleData = {
         systemConfig: {
           maxParticles: 1e4,
@@ -12627,29 +12675,33 @@ const useCompositorStore = defineStore("compositor", {
         emitters: [{
           id: `emitter_${Date.now()}`,
           name: "Emitter 1",
-          x: 0.5,
-          y: 0.5,
+          // Use pixel coordinates - center of composition
+          x: compWidth / 2,
+          y: compHeight / 2,
           direction: 270,
+          // Up direction (270 degrees)
           spread: 30,
-          speed: 330,
-          speedVariance: 50,
-          size: 17,
-          sizeVariance: 5,
-          color: [255, 255, 255],
-          emissionRate: 10,
+          speed: 150,
+          // Pixels per second
+          speedVariance: 30,
+          size: 8,
+          sizeVariance: 2,
+          color: [255, 200, 100],
+          emissionRate: 30,
+          // Particles per second
           initialBurst: 0,
-          particleLifetime: 60,
-          lifetimeVariance: 10,
+          particleLifetime: 90,
+          lifetimeVariance: 15,
           enabled: true,
           burstOnBeat: false,
           burstCount: 20,
-          // Geometric emitter shape defaults
+          // Geometric emitter shape defaults (in pixels)
           shape: "point",
-          shapeRadius: 0.1,
-          shapeWidth: 0.2,
-          shapeHeight: 0.2,
-          shapeDepth: 0.2,
-          shapeInnerRadius: 0.05,
+          shapeRadius: 50,
+          shapeWidth: 100,
+          shapeHeight: 100,
+          shapeDepth: 100,
+          shapeInnerRadius: 25,
           emitFromEdge: false,
           emitFromVolume: false,
           // Spline path emission (null = disabled)
@@ -46938,7 +46990,74 @@ const _sfc_main$a = /* @__PURE__ */ defineComponent({
     function setParent(e) {
       emit("updateLayer", props.layer.id, { parentId: e.target.value || null });
     }
-    function startDrag() {
+    const isDragging = ref(false);
+    const isResizingLeft = ref(false);
+    const isResizingRight = ref(false);
+    const dragStartX = ref(0);
+    const dragStartInPoint = ref(0);
+    const dragStartOutPoint = ref(0);
+    function startDrag(e) {
+      isDragging.value = true;
+      dragStartX.value = e.clientX;
+      dragStartInPoint.value = props.layer.inPoint ?? 0;
+      dragStartOutPoint.value = props.layer.outPoint ?? props.frameCount - 1;
+      document.addEventListener("mousemove", onDrag);
+      document.addEventListener("mouseup", stopDrag);
+    }
+    function startResizeLeft(e) {
+      isResizingLeft.value = true;
+      dragStartX.value = e.clientX;
+      dragStartInPoint.value = props.layer.inPoint ?? 0;
+      document.addEventListener("mousemove", onResizeLeft);
+      document.addEventListener("mouseup", stopDrag);
+    }
+    function startResizeRight(e) {
+      isResizingRight.value = true;
+      dragStartX.value = e.clientX;
+      dragStartOutPoint.value = props.layer.outPoint ?? props.frameCount - 1;
+      document.addEventListener("mousemove", onResizeRight);
+      document.addEventListener("mouseup", stopDrag);
+    }
+    function onDrag(e) {
+      const dx = e.clientX - dragStartX.value;
+      const framesDelta = Math.round(dx / props.pixelsPerFrame);
+      const duration = dragStartOutPoint.value - dragStartInPoint.value;
+      let newInPoint = dragStartInPoint.value + framesDelta;
+      let newOutPoint = newInPoint + duration;
+      if (newInPoint < 0) {
+        newInPoint = 0;
+        newOutPoint = duration;
+      }
+      if (newOutPoint >= props.frameCount) {
+        newOutPoint = props.frameCount - 1;
+        newInPoint = newOutPoint - duration;
+      }
+      emit("updateLayer", props.layer.id, { inPoint: newInPoint, outPoint: newOutPoint });
+    }
+    function onResizeLeft(e) {
+      const dx = e.clientX - dragStartX.value;
+      const framesDelta = Math.round(dx / props.pixelsPerFrame);
+      let newInPoint = dragStartInPoint.value + framesDelta;
+      const outPoint = props.layer.outPoint ?? props.frameCount - 1;
+      newInPoint = Math.max(0, Math.min(newInPoint, outPoint - 1));
+      emit("updateLayer", props.layer.id, { inPoint: newInPoint });
+    }
+    function onResizeRight(e) {
+      const dx = e.clientX - dragStartX.value;
+      const framesDelta = Math.round(dx / props.pixelsPerFrame);
+      let newOutPoint = dragStartOutPoint.value + framesDelta;
+      const inPoint = props.layer.inPoint ?? 0;
+      newOutPoint = Math.max(inPoint + 1, Math.min(newOutPoint, props.frameCount - 1));
+      emit("updateLayer", props.layer.id, { outPoint: newOutPoint });
+    }
+    function stopDrag() {
+      isDragging.value = false;
+      isResizingLeft.value = false;
+      isResizingRight.value = false;
+      document.removeEventListener("mousemove", onDrag);
+      document.removeEventListener("mousemove", onResizeLeft);
+      document.removeEventListener("mousemove", onResizeRight);
+      document.removeEventListener("mouseup", stopDrag);
     }
     function toggleVis() {
       emit("updateLayer", props.layer.id, { visible: !props.layer.visible });
@@ -47292,9 +47411,17 @@ const _sfc_main$a = /* @__PURE__ */ defineComponent({
               onMousedown: withModifiers(startDrag, ["stop"])
             }, [
               createBaseVNode("div", {
+                class: "bar-handle bar-handle-left",
+                onMousedown: withModifiers(startResizeLeft, ["stop"])
+              }, null, 32),
+              createBaseVNode("div", {
                 class: "bar-fill",
                 style: normalizeStyle({ background: __props.layer.labelColor || "#777" })
-              }, null, 4)
+              }, null, 4),
+              createBaseVNode("div", {
+                class: "bar-handle bar-handle-right",
+                onMousedown: withModifiers(startResizeRight, ["stop"])
+              }, null, 32)
             ], 36)
           ], 32),
           isExpanded.value ? (openBlock(), createElementBlock("div", _hoisted_31$3, [
@@ -47369,7 +47496,7 @@ const _sfc_main$a = /* @__PURE__ */ defineComponent({
   }
 });
 
-const EnhancedLayerTrack = /* @__PURE__ */ _export_sfc(_sfc_main$a, [["__scopeId", "data-v-7c17bf2d"]]);
+const EnhancedLayerTrack = /* @__PURE__ */ _export_sfc(_sfc_main$a, [["__scopeId", "data-v-a64892fa"]]);
 
 const _hoisted_1$8 = { class: "composition-tabs" };
 const _hoisted_2$8 = {
@@ -47927,7 +48054,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
                 "aria-label": "Add Layer",
                 "aria-haspopup": "menu",
                 "aria-expanded": showAddLayerMenu.value
-              }, [..._cache[13] || (_cache[13] = [
+              }, [..._cache[14] || (_cache[14] = [
                 createBaseVNode("span", {
                   class: "icon",
                   "aria-hidden": "true"
@@ -47938,7 +48065,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
                 createBaseVNode("button", {
                   onMousedown: _cache[2] || (_cache[2] = ($event) => addLayer("solid")),
                   role: "menuitem"
-                }, [..._cache[14] || (_cache[14] = [
+                }, [..._cache[15] || (_cache[15] = [
                   createBaseVNode("span", {
                     class: "icon",
                     "aria-hidden": "true"
@@ -47948,7 +48075,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
                 createBaseVNode("button", {
                   onMousedown: _cache[3] || (_cache[3] = ($event) => addLayer("text")),
                   role: "menuitem"
-                }, [..._cache[15] || (_cache[15] = [
+                }, [..._cache[16] || (_cache[16] = [
                   createBaseVNode("span", {
                     class: "icon",
                     "aria-hidden": "true"
@@ -47956,19 +48083,29 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
                   createTextVNode(" Text", -1)
                 ])], 32),
                 createBaseVNode("button", {
-                  onMousedown: _cache[4] || (_cache[4] = ($event) => addLayer("spline")),
+                  onMousedown: _cache[4] || (_cache[4] = ($event) => addLayer("shape")),
                   role: "menuitem"
-                }, [..._cache[16] || (_cache[16] = [
+                }, [..._cache[17] || (_cache[17] = [
                   createBaseVNode("span", {
                     class: "icon",
                     "aria-hidden": "true"
-                  }, "~", -1),
+                  }, "◇", -1),
                   createTextVNode(" Shape", -1)
                 ])], 32),
                 createBaseVNode("button", {
-                  onMousedown: _cache[5] || (_cache[5] = ($event) => addLayer("particles")),
+                  onMousedown: _cache[5] || (_cache[5] = ($event) => addLayer("spline")),
                   role: "menuitem"
-                }, [..._cache[17] || (_cache[17] = [
+                }, [..._cache[18] || (_cache[18] = [
+                  createBaseVNode("span", {
+                    class: "icon",
+                    "aria-hidden": "true"
+                  }, "〰", -1),
+                  createTextVNode(" Spline/Path", -1)
+                ])], 32),
+                createBaseVNode("button", {
+                  onMousedown: _cache[6] || (_cache[6] = ($event) => addLayer("particles")),
+                  role: "menuitem"
+                }, [..._cache[19] || (_cache[19] = [
                   createBaseVNode("span", {
                     class: "icon",
                     "aria-hidden": "true"
@@ -47976,9 +48113,9 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
                   createTextVNode(" Particles", -1)
                 ])], 32),
                 createBaseVNode("button", {
-                  onMousedown: _cache[6] || (_cache[6] = ($event) => addLayer("null")),
+                  onMousedown: _cache[7] || (_cache[7] = ($event) => addLayer("null")),
                   role: "menuitem"
-                }, [..._cache[18] || (_cache[18] = [
+                }, [..._cache[20] || (_cache[20] = [
                   createBaseVNode("span", {
                     class: "icon",
                     "aria-hidden": "true"
@@ -47986,9 +48123,9 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
                   createTextVNode(" Null", -1)
                 ])], 32),
                 createBaseVNode("button", {
-                  onMousedown: _cache[7] || (_cache[7] = ($event) => addLayer("camera")),
+                  onMousedown: _cache[8] || (_cache[8] = ($event) => addLayer("camera")),
                   role: "menuitem"
-                }, [..._cache[19] || (_cache[19] = [
+                }, [..._cache[21] || (_cache[21] = [
                   createBaseVNode("span", {
                     class: "icon",
                     "aria-hidden": "true"
@@ -47996,9 +48133,9 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
                   createTextVNode(" Camera", -1)
                 ])], 32),
                 createBaseVNode("button", {
-                  onMousedown: _cache[8] || (_cache[8] = ($event) => addLayer("light")),
+                  onMousedown: _cache[9] || (_cache[9] = ($event) => addLayer("light")),
                   role: "menuitem"
-                }, [..._cache[20] || (_cache[20] = [
+                }, [..._cache[22] || (_cache[22] = [
                   createBaseVNode("span", {
                     class: "icon",
                     "aria-hidden": "true"
@@ -48006,9 +48143,9 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
                   createTextVNode(" Light", -1)
                 ])], 32),
                 createBaseVNode("button", {
-                  onMousedown: _cache[9] || (_cache[9] = ($event) => addLayer("video")),
+                  onMousedown: _cache[10] || (_cache[10] = ($event) => addLayer("video")),
                   role: "menuitem"
-                }, [..._cache[21] || (_cache[21] = [
+                }, [..._cache[23] || (_cache[23] = [
                   createBaseVNode("span", {
                     class: "icon",
                     "aria-hidden": "true"
@@ -48028,7 +48165,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
             createBaseVNode("div", _hoisted_12$7, [
               createBaseVNode("button", {
                 class: "comp-settings-btn",
-                onClick: _cache[10] || (_cache[10] = ($event) => emit("openCompositionSettings")),
+                onClick: _cache[11] || (_cache[11] = ($event) => emit("openCompositionSettings")),
                 title: "Composition Settings (Ctrl+K)"
               }, " ⚙️ Comp Settings ")
             ])
@@ -48039,7 +48176,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
               min: "0",
               max: "100",
               step: "1",
-              "onUpdate:modelValue": _cache[11] || (_cache[11] = ($event) => zoomPercent.value = $event),
+              "onUpdate:modelValue": _cache[12] || (_cache[12] = ($event) => zoomPercent.value = $event),
               class: "zoom-slider",
               title: "Zoom Timeline",
               "aria-label": "Timeline zoom level"
@@ -48059,16 +48196,16 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
             style: normalizeStyle({ width: sidebarWidth.value + "px" })
           }, [
             createBaseVNode("div", _hoisted_15$7, [
-              _cache[23] || (_cache[23] = createStaticVNode('<div class="col-header col-av-features" data-v-8984bc95><span class="header-icon" title="Video" data-v-8984bc95>👁</span><span class="header-icon" title="Audio" data-v-8984bc95>🔊</span><span class="header-icon" title="Solo" data-v-8984bc95>●</span><span class="header-icon" title="Lock" data-v-8984bc95>🔒</span></div><div class="col-header col-number" data-v-8984bc95>#</div><div class="col-header col-name" data-v-8984bc95>Source Name</div>', 3)),
+              _cache[25] || (_cache[25] = createStaticVNode('<div class="col-header col-av-features" data-v-24da19d3><span class="header-icon" title="Video" data-v-24da19d3>👁</span><span class="header-icon" title="Audio" data-v-24da19d3>🔊</span><span class="header-icon" title="Solo" data-v-24da19d3>●</span><span class="header-icon" title="Lock" data-v-24da19d3>🔒</span></div><div class="col-header col-number" data-v-24da19d3>#</div><div class="col-header col-name" data-v-24da19d3>Source Name</div>', 3)),
               createBaseVNode("div", _hoisted_16$7, [
                 createBaseVNode("span", {
                   class: normalizeClass(["header-icon clickable", { active: unref(store).hideShyLayers }]),
                   title: "Hide Shy Layers",
-                  onClick: _cache[12] || (_cache[12] = ($event) => unref(store).toggleHideShyLayers())
+                  onClick: _cache[13] || (_cache[13] = ($event) => unref(store).toggleHideShyLayers())
                 }, "🙈", 2),
-                _cache[22] || (_cache[22] = createStaticVNode('<span class="header-icon" title="Collapse/Continuously Rasterize" data-v-8984bc95>☀</span><span class="header-icon" title="Quality" data-v-8984bc95>◐</span><span class="header-icon" title="Effects" data-v-8984bc95>fx</span><span class="header-icon" title="Frame Blending" data-v-8984bc95>⊞</span><span class="header-icon" title="Motion Blur" data-v-8984bc95>◔</span><span class="header-icon" title="Adjustment Layer" data-v-8984bc95>◐</span><span class="header-icon" title="3D Layer" data-v-8984bc95>⬡</span>', 7))
+                _cache[24] || (_cache[24] = createStaticVNode('<span class="header-icon" title="Collapse/Continuously Rasterize" data-v-24da19d3>☀</span><span class="header-icon" title="Quality" data-v-24da19d3>◐</span><span class="header-icon" title="Effects" data-v-24da19d3>fx</span><span class="header-icon" title="Frame Blending" data-v-24da19d3>⊞</span><span class="header-icon" title="Motion Blur" data-v-24da19d3>◔</span><span class="header-icon" title="Adjustment Layer" data-v-24da19d3>◐</span><span class="header-icon" title="3D Layer" data-v-24da19d3>⬡</span>', 7))
               ]),
-              _cache[24] || (_cache[24] = createBaseVNode("div", { class: "col-header col-parent" }, "Parent & Link", -1))
+              _cache[26] || (_cache[26] = createBaseVNode("div", { class: "col-header col-parent" }, "Parent & Link", -1))
             ]),
             createBaseVNode("div", {
               class: "sidebar-scroll-area",
@@ -48138,7 +48275,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
                 class: "layer-bars-container",
                 style: normalizeStyle({ width: computedWidthStyle.value })
               }, [
-                _cache[25] || (_cache[25] = createBaseVNode("div", { class: "grid-background" }, null, -1)),
+                _cache[27] || (_cache[27] = createBaseVNode("div", { class: "grid-background" }, null, -1)),
                 (openBlock(true), createElementBlock(Fragment, null, renderList(filteredLayers.value, (layer) => {
                   return openBlock(), createBlock(EnhancedLayerTrack, {
                     key: layer.id,
@@ -48164,7 +48301,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
   }
 });
 
-const TimelinePanel = /* @__PURE__ */ _export_sfc(_sfc_main$8, [["__scopeId", "data-v-8984bc95"]]);
+const TimelinePanel = /* @__PURE__ */ _export_sfc(_sfc_main$8, [["__scopeId", "data-v-24da19d3"]]);
 
 const _hoisted_1$6 = { class: "graph-editor" };
 const _hoisted_2$6 = { class: "graph-header" };
