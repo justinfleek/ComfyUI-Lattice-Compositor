@@ -413,8 +413,12 @@ onMounted(async () => {
     // Initialize 3D services (material system, environment maps)
     engine.value.initialize3DServices();
 
-    // Enable 3D orbit controls (right-click = orbit, middle = pan, scroll = dolly)
-    engine.value.enableOrbitControls();
+    // DON'T enable orbit controls by default - causes camera rotation issues
+    // Orbit controls will only be enabled when user explicitly wants 3D navigation
+    // engine.value.enableOrbitControls();
+
+    // Reset camera to perfect 2D front view
+    engine.value.resetCameraToDefault();
 
     // Start render loop
     engine.value.start();

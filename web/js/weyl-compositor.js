@@ -40557,6 +40557,7 @@ class CameraController {
   }
   /**
    * Update camera position based on zoom and pan
+   * This maintains a PERFECT 2D front view - no rotation whatsoever
    */
   updateCameraForViewport() {
     const fovRad = MathUtils.degToRad(this.camera.fov);
@@ -40566,7 +40567,9 @@ class CameraController {
     const centerY = this.height / 2 - this.panOffset.y / this.zoomLevel;
     this.camera.position.set(centerX, -centerY, distance);
     this.target.set(centerX, -centerY, 0);
+    this.camera.up.set(0, 1, 0);
     this.camera.lookAt(this.target);
+    this.camera.rotation.z = 0;
     this.camera.updateProjectionMatrix();
   }
   // ============================================================================
@@ -41602,7 +41605,12 @@ class WeylEngine {
     this.eventHandlers = /* @__PURE__ */ new Map();
     this.resources = new ResourceManager();
     this.scene = new SceneManager(this.config.backgroundColor);
-    this.camera = new CameraController(this.config.width, this.config.height);
+    this.camera = new CameraController(
+      this.config.compositionWidth,
+      this.config.compositionHeight
+    );
+    this.camera.camera.aspect = this.config.width / this.config.height;
+    this.camera.camera.updateProjectionMatrix();
     this.renderer = new RenderPipeline({
       canvas: this.config.canvas,
       width: this.config.width,
@@ -43432,7 +43440,7 @@ const _sfc_main$c = /* @__PURE__ */ defineComponent({
         engine.value.initializeParticleSystems();
         engine.value.setCompositionFPS(store.fps || 60);
         engine.value.initialize3DServices();
-        engine.value.enableOrbitControls();
+        engine.value.resetCameraToDefault();
         engine.value.start();
         await nextTick();
         syncLayersToEngine();
@@ -44252,7 +44260,7 @@ const _sfc_main$c = /* @__PURE__ */ defineComponent({
   }
 });
 
-const ThreeCanvas = /* @__PURE__ */ _export_sfc(_sfc_main$c, [["__scopeId", "data-v-28e54f9e"]]);
+const ThreeCanvas = /* @__PURE__ */ _export_sfc(_sfc_main$c, [["__scopeId", "data-v-e8e27660"]]);
 
 const _hoisted_1$a = { class: "prop-wrapper" };
 const _hoisted_2$a = { class: "prop-content" };

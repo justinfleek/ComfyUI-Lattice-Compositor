@@ -149,7 +149,16 @@ export class WeylEngine {
     // Initialize subsystems in dependency order
     this.resources = new ResourceManager();
     this.scene = new SceneManager(this.config.backgroundColor);
-    this.camera = new CameraController(this.config.width, this.config.height);
+    // Camera is initialized with COMPOSITION dimensions for position/target calculation
+    // but we'll update the aspect ratio to match viewport
+    this.camera = new CameraController(
+      this.config.compositionWidth!,
+      this.config.compositionHeight!
+    );
+    // Update camera aspect ratio to match viewport (required for correct rendering)
+    this.camera.camera.aspect = this.config.width / this.config.height;
+    this.camera.camera.updateProjectionMatrix();
+
     this.renderer = new RenderPipeline({
       canvas: this.config.canvas,
       width: this.config.width,
