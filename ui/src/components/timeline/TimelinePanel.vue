@@ -158,7 +158,7 @@ const emit = defineEmits<{
 
 const store = useCompositorStore();
 const zoomPercent = ref(0); // 0 = fit to viewport, 100 = max zoom
-const sidebarWidth = ref(480); // Wide enough for all icon columns
+const sidebarWidth = ref(380); // Balanced width for icon columns
 const expandedLayers = ref<Record<string, boolean>>({});
 const showAddLayerMenu = ref(false);
 const addLayerContainer = ref<HTMLElement | null>(null);

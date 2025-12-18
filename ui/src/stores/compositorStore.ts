@@ -850,13 +850,16 @@ export const useCompositorStore = defineStore('compositor', {
           };
           break;
 
-        case 'solid':
+        case 'solid': {
+          // Use active composition dimensions, not main project composition
+          const activeComp = this.getActiveComp();
           layerData = {
             color: '#808080',
-            width: this.project.composition.width,
-            height: this.project.composition.height
+            width: activeComp?.settings.width || this.project.composition.width,
+            height: activeComp?.settings.height || this.project.composition.height
           };
           break;
+        }
 
         case 'null':
           layerData = {

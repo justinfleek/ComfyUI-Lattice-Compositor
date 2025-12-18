@@ -55,6 +55,10 @@
                   <option value="sdxl_1024">SDXL (1024x1024)</option>
                   <option value="wan_480p">Wan 2.1 480p (832x480)</option>
                   <option value="wan_720p">Wan 2.1 720p (1280x720)</option>
+                  <option value="wan22_480p">Wan 2.2 480p (832x480)</option>
+                  <option value="wan22_720p">Wan 2.2 720p (1280x720)</option>
+                  <option value="hunyuan_720p">Hunyuan 720p (1280x720)</option>
+                  <option value="hunyuan_540p">Hunyuan 540p (960x540)</option>
                 </optgroup>
               </select>
             </div>
@@ -97,15 +101,10 @@
               </div>
             </div>
 
-            <!-- Pixel Aspect Ratio -->
+            <!-- Pixel Aspect Ratio - Always 1:1 for digital video -->
             <div class="form-row">
               <label>Pixel Aspect Ratio:</label>
-              <select v-model="settings.pixelAspectRatio" class="select-input">
-                <option value="1">Square Pixels (1.0)</option>
-                <option value="1.067">D1/DV NTSC (0.9)</option>
-                <option value="1.422">D1/DV PAL (1.067)</option>
-                <option value="1.333">Anamorphic 2:1 (2.0)</option>
-              </select>
+              <span class="fixed-value">Square Pixels (1:1)</span>
               <span class="aspect-info">Frame Aspect Ratio: {{ frameAspectRatio }}</span>
             </div>
 
@@ -340,6 +339,10 @@ const presets: Record<string, Partial<CompositionDialogSettings>> = {
   'sdxl_1024': { width: 1024, height: 1024, fps: 8, frameCount: 16 },
   'wan_480p': { width: 832, height: 480, fps: 16, frameCount: 81 },
   'wan_720p': { width: 1280, height: 720, fps: 16, frameCount: 81 },
+  'wan22_480p': { width: 832, height: 480, fps: 16, frameCount: 81 },
+  'wan22_720p': { width: 1280, height: 720, fps: 16, frameCount: 81 },
+  'hunyuan_720p': { width: 1280, height: 720, fps: 24, frameCount: 96 },
+  'hunyuan_540p': { width: 960, height: 540, fps: 24, frameCount: 96 },
 };
 
 // Methods
@@ -655,6 +658,14 @@ onUnmounted(() => {
 .lock-btn.locked {
   background: #3a5070;
   border-color: #4a90d9;
+}
+
+.fixed-value {
+  color: #aaa;
+  font-size: 13px;
+  padding: 6px 12px;
+  background: #2a2a2a;
+  border-radius: 4px;
 }
 
 .aspect-info,

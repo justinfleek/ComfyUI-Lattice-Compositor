@@ -11891,13 +11891,15 @@ const useCompositorStore = defineStore("compositor", {
             pathAlign: "left"
           };
           break;
-        case "solid":
+        case "solid": {
+          const activeComp = this.getActiveComp();
           layerData = {
             color: "#808080",
-            width: this.project.composition.width,
-            height: this.project.composition.height
+            width: activeComp?.settings.width || this.project.composition.width,
+            height: activeComp?.settings.height || this.project.composition.height
           };
           break;
+        }
         case "null":
           layerData = {
             size: 40
@@ -47647,7 +47649,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
     const emit = __emit;
     const store = useCompositorStore();
     const zoomPercent = ref(0);
-    const sidebarWidth = ref(480);
+    const sidebarWidth = ref(380);
     const expandedLayers = ref({});
     const showAddLayerMenu = ref(false);
     const addLayerContainer = ref(null);
@@ -48057,14 +48059,14 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
             style: normalizeStyle({ width: sidebarWidth.value + "px" })
           }, [
             createBaseVNode("div", _hoisted_15$7, [
-              _cache[23] || (_cache[23] = createStaticVNode('<div class="col-header col-av-features" data-v-7e9891b7><span class="header-icon" title="Video" data-v-7e9891b7>👁</span><span class="header-icon" title="Audio" data-v-7e9891b7>🔊</span><span class="header-icon" title="Solo" data-v-7e9891b7>●</span><span class="header-icon" title="Lock" data-v-7e9891b7>🔒</span></div><div class="col-header col-number" data-v-7e9891b7>#</div><div class="col-header col-name" data-v-7e9891b7>Source Name</div>', 3)),
+              _cache[23] || (_cache[23] = createStaticVNode('<div class="col-header col-av-features" data-v-8984bc95><span class="header-icon" title="Video" data-v-8984bc95>👁</span><span class="header-icon" title="Audio" data-v-8984bc95>🔊</span><span class="header-icon" title="Solo" data-v-8984bc95>●</span><span class="header-icon" title="Lock" data-v-8984bc95>🔒</span></div><div class="col-header col-number" data-v-8984bc95>#</div><div class="col-header col-name" data-v-8984bc95>Source Name</div>', 3)),
               createBaseVNode("div", _hoisted_16$7, [
                 createBaseVNode("span", {
                   class: normalizeClass(["header-icon clickable", { active: unref(store).hideShyLayers }]),
                   title: "Hide Shy Layers",
                   onClick: _cache[12] || (_cache[12] = ($event) => unref(store).toggleHideShyLayers())
                 }, "🙈", 2),
-                _cache[22] || (_cache[22] = createStaticVNode('<span class="header-icon" title="Collapse/Continuously Rasterize" data-v-7e9891b7>☀</span><span class="header-icon" title="Quality" data-v-7e9891b7>◐</span><span class="header-icon" title="Effects" data-v-7e9891b7>fx</span><span class="header-icon" title="Frame Blending" data-v-7e9891b7>⊞</span><span class="header-icon" title="Motion Blur" data-v-7e9891b7>◔</span><span class="header-icon" title="Adjustment Layer" data-v-7e9891b7>◐</span><span class="header-icon" title="3D Layer" data-v-7e9891b7>⬡</span>', 7))
+                _cache[22] || (_cache[22] = createStaticVNode('<span class="header-icon" title="Collapse/Continuously Rasterize" data-v-8984bc95>☀</span><span class="header-icon" title="Quality" data-v-8984bc95>◐</span><span class="header-icon" title="Effects" data-v-8984bc95>fx</span><span class="header-icon" title="Frame Blending" data-v-8984bc95>⊞</span><span class="header-icon" title="Motion Blur" data-v-8984bc95>◔</span><span class="header-icon" title="Adjustment Layer" data-v-8984bc95>◐</span><span class="header-icon" title="3D Layer" data-v-8984bc95>⬡</span>', 7))
               ]),
               _cache[24] || (_cache[24] = createBaseVNode("div", { class: "col-header col-parent" }, "Parent & Link", -1))
             ]),
@@ -48162,7 +48164,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
   }
 });
 
-const TimelinePanel = /* @__PURE__ */ _export_sfc(_sfc_main$8, [["__scopeId", "data-v-7e9891b7"]]);
+const TimelinePanel = /* @__PURE__ */ _export_sfc(_sfc_main$8, [["__scopeId", "data-v-8984bc95"]]);
 
 const _hoisted_1$6 = { class: "graph-editor" };
 const _hoisted_2$6 = { class: "graph-header" };
@@ -55672,7 +55674,11 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
       "sd15_768": { width: 768, height: 512, fps: 8, frameCount: 16 },
       "sdxl_1024": { width: 1024, height: 1024, fps: 8, frameCount: 16 },
       "wan_480p": { width: 832, height: 480, fps: 16, frameCount: 81 },
-      "wan_720p": { width: 1280, height: 720, fps: 16, frameCount: 81 }
+      "wan_720p": { width: 1280, height: 720, fps: 16, frameCount: 81 },
+      "wan22_480p": { width: 832, height: 480, fps: 16, frameCount: 81 },
+      "wan22_720p": { width: 1280, height: 720, fps: 16, frameCount: 81 },
+      "hunyuan_720p": { width: 1280, height: 720, fps: 24, frameCount: 96 },
+      "hunyuan_540p": { width: 960, height: 540, fps: 24, frameCount: 96 }
     };
     function applyPreset() {
       const preset = presets[selectedPreset.value];
@@ -55781,7 +55787,7 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
         }, [
           createBaseVNode("div", _hoisted_1$3, [
             createBaseVNode("div", { class: "dialog-header" }, [
-              _cache[20] || (_cache[20] = createBaseVNode("span", { class: "dialog-title" }, "Composition Settings", -1)),
+              _cache[19] || (_cache[19] = createBaseVNode("span", { class: "dialog-title" }, "Composition Settings", -1)),
               createBaseVNode("button", {
                 class: "close-btn",
                 onClick: cancel
@@ -55789,7 +55795,7 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
             ]),
             createBaseVNode("div", _hoisted_2$3, [
               createBaseVNode("div", _hoisted_3$3, [
-                _cache[21] || (_cache[21] = createBaseVNode("label", null, "Composition Name:", -1)),
+                _cache[20] || (_cache[20] = createBaseVNode("label", null, "Composition Name:", -1)),
                 withDirectives(createBaseVNode("input", {
                   type: "text",
                   "onUpdate:modelValue": _cache[0] || (_cache[0] = ($event) => settings.value.name = $event),
@@ -55810,12 +55816,12 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
               ]),
               activeTab.value === "basic" ? (openBlock(), createElementBlock("div", _hoisted_5$3, [
                 createBaseVNode("div", _hoisted_6$3, [
-                  _cache[23] || (_cache[23] = createBaseVNode("label", null, "Preset:", -1)),
+                  _cache[22] || (_cache[22] = createBaseVNode("label", null, "Preset:", -1)),
                   withDirectives(createBaseVNode("select", {
                     "onUpdate:modelValue": _cache[3] || (_cache[3] = ($event) => selectedPreset.value = $event),
                     onChange: applyPreset,
                     class: "select-input"
-                  }, [..._cache[22] || (_cache[22] = [
+                  }, [..._cache[21] || (_cache[21] = [
                     createBaseVNode("option", { value: "custom" }, "Custom", -1),
                     createBaseVNode("optgroup", { label: "Video" }, [
                       createBaseVNode("option", { value: "1080p30" }, "HD 1080p 30fps (1920x1080)"),
@@ -55834,7 +55840,11 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
                       createBaseVNode("option", { value: "sd15_768" }, "SD 1.5 (768x512)"),
                       createBaseVNode("option", { value: "sdxl_1024" }, "SDXL (1024x1024)"),
                       createBaseVNode("option", { value: "wan_480p" }, "Wan 2.1 480p (832x480)"),
-                      createBaseVNode("option", { value: "wan_720p" }, "Wan 2.1 720p (1280x720)")
+                      createBaseVNode("option", { value: "wan_720p" }, "Wan 2.1 720p (1280x720)"),
+                      createBaseVNode("option", { value: "wan22_480p" }, "Wan 2.2 480p (832x480)"),
+                      createBaseVNode("option", { value: "wan22_720p" }, "Wan 2.2 720p (1280x720)"),
+                      createBaseVNode("option", { value: "hunyuan_720p" }, "Hunyuan 720p (1280x720)"),
+                      createBaseVNode("option", { value: "hunyuan_540p" }, "Hunyuan 540p (960x540)")
                     ], -1)
                   ])], 544), [
                     [vModelSelect, selectedPreset.value]
@@ -55842,7 +55852,7 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
                 ]),
                 createBaseVNode("div", _hoisted_7$3, [
                   createBaseVNode("div", _hoisted_8$3, [
-                    _cache[24] || (_cache[24] = createBaseVNode("label", null, "Width:", -1)),
+                    _cache[23] || (_cache[23] = createBaseVNode("label", null, "Width:", -1)),
                     withDirectives(createBaseVNode("input", {
                       type: "number",
                       "onUpdate:modelValue": _cache[4] || (_cache[4] = ($event) => settings.value.width = $event),
@@ -55859,7 +55869,7 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
                         { number: true }
                       ]
                     ]),
-                    _cache[25] || (_cache[25] = createBaseVNode("span", { class: "unit" }, "px", -1))
+                    _cache[24] || (_cache[24] = createBaseVNode("span", { class: "unit" }, "px", -1))
                   ]),
                   createBaseVNode("button", {
                     class: normalizeClass(["lock-btn", { locked: lockAspectRatio.value }]),
@@ -55867,7 +55877,7 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
                     title: "Lock Aspect Ratio"
                   }, toDisplayString(lockAspectRatio.value ? "🔒" : "🔓"), 3),
                   createBaseVNode("div", _hoisted_9$3, [
-                    _cache[26] || (_cache[26] = createBaseVNode("label", null, "Height:", -1)),
+                    _cache[25] || (_cache[25] = createBaseVNode("label", null, "Height:", -1)),
                     withDirectives(createBaseVNode("input", {
                       type: "number",
                       "onUpdate:modelValue": _cache[7] || (_cache[7] = ($event) => settings.value.height = $event),
@@ -55884,30 +55894,20 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
                         { number: true }
                       ]
                     ]),
-                    _cache[27] || (_cache[27] = createBaseVNode("span", { class: "unit" }, "px", -1))
+                    _cache[26] || (_cache[26] = createBaseVNode("span", { class: "unit" }, "px", -1))
                   ])
                 ]),
                 createBaseVNode("div", _hoisted_10$3, [
-                  _cache[29] || (_cache[29] = createBaseVNode("label", null, "Pixel Aspect Ratio:", -1)),
-                  withDirectives(createBaseVNode("select", {
-                    "onUpdate:modelValue": _cache[9] || (_cache[9] = ($event) => settings.value.pixelAspectRatio = $event),
-                    class: "select-input"
-                  }, [..._cache[28] || (_cache[28] = [
-                    createBaseVNode("option", { value: "1" }, "Square Pixels (1.0)", -1),
-                    createBaseVNode("option", { value: "1.067" }, "D1/DV NTSC (0.9)", -1),
-                    createBaseVNode("option", { value: "1.422" }, "D1/DV PAL (1.067)", -1),
-                    createBaseVNode("option", { value: "1.333" }, "Anamorphic 2:1 (2.0)", -1)
-                  ])], 512), [
-                    [vModelSelect, settings.value.pixelAspectRatio]
-                  ]),
+                  _cache[27] || (_cache[27] = createBaseVNode("label", null, "Pixel Aspect Ratio:", -1)),
+                  _cache[28] || (_cache[28] = createBaseVNode("span", { class: "fixed-value" }, "Square Pixels (1:1)", -1)),
                   createBaseVNode("span", _hoisted_11$3, "Frame Aspect Ratio: " + toDisplayString(frameAspectRatio.value), 1)
                 ]),
                 createBaseVNode("div", _hoisted_12$3, [
-                  _cache[31] || (_cache[31] = createBaseVNode("label", null, "Frame Rate:", -1)),
+                  _cache[30] || (_cache[30] = createBaseVNode("label", null, "Frame Rate:", -1)),
                   withDirectives(createBaseVNode("select", {
-                    "onUpdate:modelValue": _cache[10] || (_cache[10] = ($event) => settings.value.fps = $event),
+                    "onUpdate:modelValue": _cache[9] || (_cache[9] = ($event) => settings.value.fps = $event),
                     class: "select-input short"
-                  }, [..._cache[30] || (_cache[30] = [
+                  }, [..._cache[29] || (_cache[29] = [
                     createBaseVNode("option", { value: 8 }, "8", -1),
                     createBaseVNode("option", { value: 12 }, "12", -1),
                     createBaseVNode("option", { value: 15 }, "15", -1),
@@ -55928,14 +55928,14 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
                       { number: true }
                     ]
                   ]),
-                  _cache[32] || (_cache[32] = createBaseVNode("span", { class: "unit" }, "frames per second", -1))
+                  _cache[31] || (_cache[31] = createBaseVNode("span", { class: "unit" }, "frames per second", -1))
                 ]),
                 createBaseVNode("div", _hoisted_13$3, [
-                  _cache[34] || (_cache[34] = createBaseVNode("label", null, "Resolution:", -1)),
+                  _cache[33] || (_cache[33] = createBaseVNode("label", null, "Resolution:", -1)),
                   withDirectives(createBaseVNode("select", {
-                    "onUpdate:modelValue": _cache[11] || (_cache[11] = ($event) => settings.value.resolution = $event),
+                    "onUpdate:modelValue": _cache[10] || (_cache[10] = ($event) => settings.value.resolution = $event),
                     class: "select-input short"
-                  }, [..._cache[33] || (_cache[33] = [
+                  }, [..._cache[32] || (_cache[32] = [
                     createBaseVNode("option", { value: "full" }, "Full", -1),
                     createBaseVNode("option", { value: "half" }, "Half", -1),
                     createBaseVNode("option", { value: "third" }, "Third", -1),
@@ -55946,11 +55946,11 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
                   createBaseVNode("span", _hoisted_14$3, toDisplayString(resolutionInfo.value), 1)
                 ]),
                 createBaseVNode("div", _hoisted_15$3, [
-                  _cache[35] || (_cache[35] = createBaseVNode("label", null, "Duration:", -1)),
+                  _cache[34] || (_cache[34] = createBaseVNode("label", null, "Duration:", -1)),
                   createBaseVNode("div", _hoisted_16$3, [
                     withDirectives(createBaseVNode("input", {
                       type: "text",
-                      "onUpdate:modelValue": _cache[12] || (_cache[12] = ($event) => durationTimecode.value = $event),
+                      "onUpdate:modelValue": _cache[11] || (_cache[11] = ($event) => durationTimecode.value = $event),
                       class: "timecode-input",
                       placeholder: "00:00:00:00",
                       onBlur: parseDuration
@@ -55961,11 +55961,11 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
                   ])
                 ]),
                 createBaseVNode("div", _hoisted_18$3, [
-                  _cache[36] || (_cache[36] = createBaseVNode("label", null, "Background Color:", -1)),
+                  _cache[35] || (_cache[35] = createBaseVNode("label", null, "Background Color:", -1)),
                   createBaseVNode("div", _hoisted_19$3, [
                     withDirectives(createBaseVNode("input", {
                       type: "color",
-                      "onUpdate:modelValue": _cache[13] || (_cache[13] = ($event) => settings.value.backgroundColor = $event),
+                      "onUpdate:modelValue": _cache[12] || (_cache[12] = ($event) => settings.value.backgroundColor = $event),
                       class: "color-input"
                     }, null, 512), [
                       [vModelText, settings.value.backgroundColor]
@@ -55979,18 +55979,18 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
                   createBaseVNode("label", null, [
                     withDirectives(createBaseVNode("input", {
                       type: "checkbox",
-                      "onUpdate:modelValue": _cache[14] || (_cache[14] = ($event) => settings.value.autoResizeToContent = $event)
+                      "onUpdate:modelValue": _cache[13] || (_cache[13] = ($event) => settings.value.autoResizeToContent = $event)
                     }, null, 512), [
                       [vModelCheckbox, settings.value.autoResizeToContent]
                     ]),
-                    _cache[37] || (_cache[37] = createTextVNode(" Auto-resize composition when importing video ", -1))
+                    _cache[36] || (_cache[36] = createTextVNode(" Auto-resize composition when importing video ", -1))
                   ])
                 ]),
                 createBaseVNode("div", _hoisted_23$3, [
-                  _cache[38] || (_cache[38] = createBaseVNode("label", null, "Start Timecode:", -1)),
+                  _cache[37] || (_cache[37] = createBaseVNode("label", null, "Start Timecode:", -1)),
                   withDirectives(createBaseVNode("input", {
                     type: "text",
-                    "onUpdate:modelValue": _cache[15] || (_cache[15] = ($event) => settings.value.startTimecode = $event),
+                    "onUpdate:modelValue": _cache[14] || (_cache[14] = ($event) => settings.value.startTimecode = $event),
                     class: "timecode-input",
                     placeholder: "00:00:00:00"
                   }, null, 512), [
@@ -55998,23 +55998,23 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
                   ])
                 ]),
                 createBaseVNode("div", _hoisted_24$2, [
-                  _cache[44] || (_cache[44] = createBaseVNode("label", null, "Motion Blur:", -1)),
+                  _cache[43] || (_cache[43] = createBaseVNode("label", null, "Motion Blur:", -1)),
                   createBaseVNode("div", _hoisted_25$2, [
                     createBaseVNode("label", null, [
                       withDirectives(createBaseVNode("input", {
                         type: "checkbox",
-                        "onUpdate:modelValue": _cache[16] || (_cache[16] = ($event) => settings.value.motionBlurEnabled = $event)
+                        "onUpdate:modelValue": _cache[15] || (_cache[15] = ($event) => settings.value.motionBlurEnabled = $event)
                       }, null, 512), [
                         [vModelCheckbox, settings.value.motionBlurEnabled]
                       ]),
-                      _cache[39] || (_cache[39] = createTextVNode(" Enable Motion Blur ", -1))
+                      _cache[38] || (_cache[38] = createTextVNode(" Enable Motion Blur ", -1))
                     ]),
                     settings.value.motionBlurEnabled ? (openBlock(), createElementBlock("div", _hoisted_26$2, [
                       createBaseVNode("div", _hoisted_27$2, [
-                        _cache[40] || (_cache[40] = createBaseVNode("label", null, "Shutter Angle:", -1)),
+                        _cache[39] || (_cache[39] = createBaseVNode("label", null, "Shutter Angle:", -1)),
                         withDirectives(createBaseVNode("input", {
                           type: "number",
-                          "onUpdate:modelValue": _cache[17] || (_cache[17] = ($event) => settings.value.shutterAngle = $event),
+                          "onUpdate:modelValue": _cache[16] || (_cache[16] = ($event) => settings.value.shutterAngle = $event),
                           min: "0",
                           max: "720",
                           class: "number-input short"
@@ -56026,13 +56026,13 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
                             { number: true }
                           ]
                         ]),
-                        _cache[41] || (_cache[41] = createBaseVNode("span", { class: "unit" }, "°", -1))
+                        _cache[40] || (_cache[40] = createBaseVNode("span", { class: "unit" }, "°", -1))
                       ]),
                       createBaseVNode("div", _hoisted_28$2, [
-                        _cache[42] || (_cache[42] = createBaseVNode("label", null, "Shutter Phase:", -1)),
+                        _cache[41] || (_cache[41] = createBaseVNode("label", null, "Shutter Phase:", -1)),
                         withDirectives(createBaseVNode("input", {
                           type: "number",
-                          "onUpdate:modelValue": _cache[18] || (_cache[18] = ($event) => settings.value.shutterPhase = $event),
+                          "onUpdate:modelValue": _cache[17] || (_cache[17] = ($event) => settings.value.shutterPhase = $event),
                           min: "-360",
                           max: "360",
                           class: "number-input short"
@@ -56044,7 +56044,7 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
                             { number: true }
                           ]
                         ]),
-                        _cache[43] || (_cache[43] = createBaseVNode("span", { class: "unit" }, "°", -1))
+                        _cache[42] || (_cache[42] = createBaseVNode("span", { class: "unit" }, "°", -1))
                       ])
                     ])) : createCommentVNode("", true)
                   ])
@@ -56056,11 +56056,11 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
                 createBaseVNode("label", null, [
                   withDirectives(createBaseVNode("input", {
                     type: "checkbox",
-                    "onUpdate:modelValue": _cache[19] || (_cache[19] = ($event) => previewChanges.value = $event)
+                    "onUpdate:modelValue": _cache[18] || (_cache[18] = ($event) => previewChanges.value = $event)
                   }, null, 512), [
                     [vModelCheckbox, previewChanges.value]
                   ]),
-                  _cache[45] || (_cache[45] = createTextVNode(" Preview ", -1))
+                  _cache[44] || (_cache[44] = createTextVNode(" Preview ", -1))
                 ])
               ]),
               createBaseVNode("div", { class: "dialog-actions" }, [
@@ -56081,7 +56081,7 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
   }
 });
 
-const CompositionSettingsDialog = /* @__PURE__ */ _export_sfc(_sfc_main$4, [["__scopeId", "data-v-baf0e8b4"]]);
+const CompositionSettingsDialog = /* @__PURE__ */ _export_sfc(_sfc_main$4, [["__scopeId", "data-v-6dd35a7f"]]);
 
 const logger$1 = createLogger("MotionIntentResolver");
 const SYSTEM_PROMPT = `You are a motion graphics expert analyzing images for camera movements and animation paths.
@@ -58779,9 +58779,9 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
                 _: 1
               }),
               createVNode(unref(ge), {
-                size: 18,
-                "min-size": 12,
-                "max-size": 25
+                size: 22,
+                "min-size": 15,
+                "max-size": 30
               }, {
                 default: withCtx(() => [
                   createBaseVNode("div", _hoisted_29, [
@@ -58879,7 +58879,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
   }
 });
 
-const WorkspaceLayout = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-8fc6c74e"]]);
+const WorkspaceLayout = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-6cb2ba45"]]);
 
 const _sfc_main = /* @__PURE__ */ defineComponent({
   __name: "App",

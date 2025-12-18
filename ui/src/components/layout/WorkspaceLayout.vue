@@ -293,7 +293,7 @@
         </Pane>
 
         <!-- Right Panel: Effects/Properties/Camera -->
-        <Pane :size="18" :min-size="12" :max-size="25">
+        <Pane :size="22" :min-size="15" :max-size="30">
           <div class="panel right-panel">
             <div class="panel-tabs">
               <button
