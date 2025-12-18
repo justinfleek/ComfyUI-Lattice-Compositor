@@ -180,6 +180,63 @@
           @mousedown.stop="startDragPoint(point.id, $event)"
         />
 
+        <!-- Axis handles (shown when point is selected) -->
+        <g v-if="selectedPointId === point.id && !props.isPenMode" class="axis-handles">
+          <!-- X-axis handle (red, horizontal) -->
+          <line
+            :x1="point.x + 10"
+            :y1="point.y"
+            :x2="point.x + 40"
+            :y2="point.y"
+            class="axis-line axis-x"
+          />
+          <polygon
+            :points="`${point.x + 45},${point.y} ${point.x + 38},${point.y - 4} ${point.x + 38},${point.y + 4}`"
+            class="axis-arrow axis-x"
+          />
+          <rect
+            :x="point.x + 35"
+            :y="point.y - 6"
+            width="16"
+            height="12"
+            class="axis-handle-area axis-x"
+            :class="{ active: dragTarget?.type === 'axisX' && dragTarget.pointId === point.id }"
+            @mousedown.stop="startDragAxis(point.id, 'X', $event)"
+          />
+
+          <!-- Y-axis handle (green, vertical) -->
+          <line
+            :x1="point.x"
+            :y1="point.y + 10"
+            :x2="point.x"
+            :y2="point.y + 40"
+            class="axis-line axis-y"
+          />
+          <polygon
+            :points="`${point.x},${point.y + 45} ${point.x - 4},${point.y + 38} ${point.x + 4},${point.y + 38}`"
+            class="axis-arrow axis-y"
+          />
+          <rect
+            :x="point.x - 6"
+            :y="point.y + 35"
+            width="12"
+            height="16"
+            class="axis-handle-area axis-y"
+            :class="{ active: dragTarget?.type === 'axisY' && dragTarget.pointId === point.id }"
+            @mousedown.stop="startDragAxis(point.id, 'Y', $event)"
+          />
+
+          <!-- Free move indicator (center square) -->
+          <rect
+            :x="point.x - 4"
+            :y="point.y - 4"
+            width="8"
+            height="8"
+            class="free-move-handle"
+            @mousedown.stop="startDragPoint(point.id, $event)"
+          />
+        </g>
+
         <!-- Z-depth handle (shown when point is selected and layer is 3D) -->
         <g
           v-if="selectedPointId === point.id && is3DLayer"
@@ -297,13 +354,15 @@ const previewCurve = ref<string | null>(null);
 const insertPreviewPoint = ref<{ x: number; y: number; segmentIndex: number } | null>(null);
 const penSubMode = ref<'add' | 'insert' | 'delete' | 'convert'>('add');
 const dragTarget = ref<{
-  type: 'point' | 'handleIn' | 'handleOut' | 'depth' | 'newPoint';
+  type: 'point' | 'handleIn' | 'handleOut' | 'depth' | 'newPoint' | 'axisX' | 'axisY';
   pointId: string;
   startX: number;
   startY: number;
   startDepth?: number;
   newPointX?: number;
   newPointY?: number;
+  originalX?: number;
+  originalY?: number;
 } | null>(null);
 
 // Check if the layer is in 3D mode
@@ -817,6 +876,40 @@ function handleMouseMove(event: MouseEvent) {
       const newDepth = Math.max(0, (dragTarget.value.startDepth ?? 0) + dy * depthScale);
 
       store.updateSplineControlPoint(props.layerId, point.id, { depth: newDepth });
+    } else if (dragTarget.value.type === 'axisX') {
+      // Move only along X-axis
+      const dx = pos.x - dragTarget.value.startX;
+      const newX = (dragTarget.value.originalX ?? point.x) + dx;
+
+      // Move handles along with point
+      const handleDx = newX - point.x;
+      const updates: any = { x: newX };
+      if (point.handleIn) {
+        updates.handleIn = { x: point.handleIn.x + handleDx, y: point.handleIn.y };
+      }
+      if (point.handleOut) {
+        updates.handleOut = { x: point.handleOut.x + handleDx, y: point.handleOut.y };
+      }
+
+      store.updateSplineControlPoint(props.layerId, point.id, updates);
+      emit('pointMoved', point.id, newX, point.y);
+    } else if (dragTarget.value.type === 'axisY') {
+      // Move only along Y-axis
+      const dy = pos.y - dragTarget.value.startY;
+      const newY = (dragTarget.value.originalY ?? point.y) + dy;
+
+      // Move handles along with point
+      const handleDy = newY - point.y;
+      const updates: any = { y: newY };
+      if (point.handleIn) {
+        updates.handleIn = { x: point.handleIn.x, y: point.handleIn.y + handleDy };
+      }
+      if (point.handleOut) {
+        updates.handleOut = { x: point.handleOut.x, y: point.handleOut.y + handleDy };
+      }
+
+      store.updateSplineControlPoint(props.layerId, point.id, updates);
+      emit('pointMoved', point.id, point.x, newY);
     }
 
     emit('pathUpdated');
@@ -929,6 +1022,21 @@ function startDragHandle(pointId: string, handleType: 'in' | 'out', event: Mouse
     pointId,
     startX: pos.x,
     startY: pos.y
+  };
+}
+
+function startDragAxis(pointId: string, axis: 'X' | 'Y', event: MouseEvent) {
+  const pos = getMousePos(event);
+  const point = visibleControlPoints.value.find(p => p.id === pointId);
+  if (!point) return;
+
+  dragTarget.value = {
+    type: axis === 'X' ? 'axisX' : 'axisY',
+    pointId,
+    startX: pos.x,
+    startY: pos.y,
+    originalX: point.x,
+    originalY: point.y
   };
 }
 
@@ -1114,6 +1222,72 @@ defineExpose({
 @keyframes pulse {
   from { opacity: 0.5; }
   to { opacity: 1; }
+}
+
+/* Axis Handles */
+.axis-handles {
+  pointer-events: none;
+}
+
+.axis-line {
+  stroke-width: 2;
+  pointer-events: none;
+}
+
+.axis-line.axis-x {
+  stroke: #ff4444;
+}
+
+.axis-line.axis-y {
+  stroke: #44ff44;
+}
+
+.axis-arrow {
+  pointer-events: none;
+}
+
+.axis-arrow.axis-x {
+  fill: #ff4444;
+}
+
+.axis-arrow.axis-y {
+  fill: #44ff44;
+}
+
+.axis-handle-area {
+  fill: transparent;
+  cursor: pointer;
+  pointer-events: all;
+}
+
+.axis-handle-area.axis-x {
+  cursor: ew-resize;
+}
+
+.axis-handle-area.axis-x:hover,
+.axis-handle-area.axis-x.active {
+  fill: rgba(255, 68, 68, 0.3);
+}
+
+.axis-handle-area.axis-y {
+  cursor: ns-resize;
+}
+
+.axis-handle-area.axis-y:hover,
+.axis-handle-area.axis-y.active {
+  fill: rgba(68, 255, 68, 0.3);
+}
+
+.free-move-handle {
+  fill: rgba(255, 255, 255, 0.3);
+  stroke: #ffffff;
+  stroke-width: 1;
+  cursor: move;
+  pointer-events: all;
+}
+
+.free-move-handle:hover {
+  fill: rgba(255, 255, 255, 0.6);
 }
 
 /* Spline Toolbar Styles - bottom center popup for spline layers */
