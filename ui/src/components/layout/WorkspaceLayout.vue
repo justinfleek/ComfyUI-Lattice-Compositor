@@ -2,48 +2,54 @@
   <div class="workspace-layout">
     <!-- Top Toolbar -->
     <div class="toolbar">
-      <div class="tool-group">
+      <div class="tool-group labeled-tools">
         <button
           :class="{ active: currentTool === 'select' }"
           @click="currentTool = 'select'"
-          title="Select (V)"
+          title="Select Tool (V) - Select and move layers"
         >
           <span class="icon">↖</span>
+          <span class="tool-label">Select</span>
         </button>
         <button
           :class="{ active: currentTool === 'pen' }"
           @click="currentTool = 'pen'"
-          title="Pen Tool (P)"
+          title="Pen Tool (P) - Draw paths and shapes"
         >
           <span class="icon">✒</span>
+          <span class="tool-label">Pen</span>
         </button>
         <button
           :class="{ active: currentTool === 'text' }"
           @click="currentTool = 'text'"
-          title="Text Tool (T)"
+          title="Text Tool (T) - Add text layers"
         >
           <span class="icon">T</span>
+          <span class="tool-label">Text</span>
         </button>
         <button
           :class="{ active: currentTool === 'hand' }"
           @click="currentTool = 'hand'"
-          title="Hand Tool (H)"
+          title="Hand Tool (H) - Pan the viewport"
         >
           <span class="icon">✋</span>
+          <span class="tool-label">Pan</span>
         </button>
         <button
           :class="{ active: currentTool === 'zoom' }"
           @click="currentTool = 'zoom'"
-          title="Zoom Tool (Z)"
+          title="Zoom Tool (Z) - Zoom in/out the viewport"
         >
           <span class="icon">🔍</span>
+          <span class="tool-label">Zoom</span>
         </button>
         <button
           :class="{ active: currentTool === 'segment' }"
           @click="currentTool = 'segment'"
-          title="Segment Tool (S) - Click to select objects"
+          title="AI Segment (S) - Auto-select objects using AI"
         >
-          <span class="icon">✂</span>
+          <span class="icon">✨</span>
+          <span class="tool-label">AI Seg</span>
         </button>
       </div>
 
@@ -1104,6 +1110,28 @@ onUnmounted(() => {
   border-radius: 4px;
   cursor: pointer;
   font-size: 12px;
+}
+
+.labeled-tools button {
+  flex-direction: column;
+  gap: 1px;
+  min-width: 44px;
+  height: 36px;
+  padding: 2px 6px;
+}
+
+.tool-label {
+  font-size: 9px;
+  color: #888;
+  line-height: 1;
+}
+
+.labeled-tools button.active .tool-label {
+  color: #fff;
+}
+
+.labeled-tools button:hover .tool-label {
+  color: #ccc;
 }
 
 .tool-group button:hover {

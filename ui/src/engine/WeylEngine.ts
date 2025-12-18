@@ -732,7 +732,22 @@ export class WeylEngine {
     // Set camera aspect to VIEWPORT dimensions (how wide the view is)
     this.camera.setViewportAspect(width, height);
 
+    // Update SplineLayer resolutions for Line2 materials
+    this.updateSplineResolutions(width, height);
+
     this.emit('resize', { width, height, compositionWidth, compositionHeight });
+  }
+
+  /**
+   * Update all SplineLayer resolutions for Line2 materials
+   */
+  private updateSplineResolutions(width: number, height: number): void {
+    const layers = this.layers.getAllLayers();
+    for (const layer of layers) {
+      if ('setResolution' in layer && typeof (layer as any).setResolution === 'function') {
+        (layer as any).setResolution(width, height);
+      }
+    }
   }
 
   /**

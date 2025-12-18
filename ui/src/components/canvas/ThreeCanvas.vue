@@ -15,6 +15,7 @@
       :isPenMode="isPenMode"
       @pointAdded="onPointAdded"
       @pathUpdated="onPathUpdated"
+      @togglePenMode="togglePenMode"
       ref="splineEditorRef"
     />
 
@@ -1220,6 +1221,14 @@ function onPointAdded(_point: ControlPoint) {
 
 function onPathUpdated() {
   syncLayersToEngine();
+}
+
+function togglePenMode() {
+  if (store.currentTool === 'pen') {
+    store.setTool('select');
+  } else {
+    store.setTool('pen');
+  }
 }
 
 // Zoom controls

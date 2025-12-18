@@ -19,6 +19,9 @@
  */
 
 import * as THREE from 'three';
+import { Line2 } from 'three/examples/jsm/lines/Line2.js';
+import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry.js';
+import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
 import type {
   Layer,
   SplineData,
@@ -35,11 +38,14 @@ import {
 } from '@/services/propertyDriver';
 
 export class SplineLayer extends BaseLayer {
-  /** The line mesh for the spline */
-  private lineMesh: THREE.Line | null = null;
+  /** The line mesh for the spline (using Line2 for proper width support) */
+  private lineMesh: Line2 | null = null;
 
   /** The fill mesh (if closed path with fill) */
   private fillMesh: THREE.Mesh | null = null;
+
+  /** Canvas resolution for LineMaterial (needed for proper width rendering) */
+  private resolution: THREE.Vector2 = new THREE.Vector2(1920, 1080);
 
   /** Spline data */
   private splineData: SplineData;
@@ -161,17 +167,32 @@ export class SplineLayer extends BaseLayer {
       this.curve.add(closingBezier);
     }
 
-    // Create line geometry
+    // Create line geometry using Line2 for proper width support
     const curvePoints = this.curve.getPoints(points.length * 20);
-    const lineGeometry = new THREE.BufferGeometry().setFromPoints(curvePoints);
 
-    const lineMaterial = new THREE.LineBasicMaterial({
-      color: this.splineData.stroke,
+    // Convert THREE.Vector3[] to flat position array for LineGeometry
+    const positions: number[] = [];
+    for (const pt of curvePoints) {
+      positions.push(pt.x, pt.y, pt.z);
+    }
+
+    const lineGeometry = new LineGeometry();
+    lineGeometry.setPositions(positions);
+
+    // Parse stroke color
+    const color = new THREE.Color(this.splineData.stroke);
+
+    const lineMaterial = new LineMaterial({
+      color: color.getHex(),
       linewidth: this.splineData.strokeWidth,
       transparent: true,
+      resolution: this.resolution,
+      // Use world units so linewidth is in pixels
+      worldUnits: false,
     });
 
-    this.lineMesh = new THREE.Line(lineGeometry, lineMaterial);
+    this.lineMesh = new Line2(lineGeometry, lineMaterial);
+    this.lineMesh.computeLineDistances();
     this.lineMesh.name = `spline_line_${this.id}`;
     this.group.add(this.lineMesh);
 
@@ -292,7 +313,7 @@ export class SplineLayer extends BaseLayer {
   setStroke(color: string): void {
     this.splineData.stroke = color;
     if (this.lineMesh) {
-      (this.lineMesh.material as THREE.LineBasicMaterial).color.set(color);
+      (this.lineMesh.material as LineMaterial).color.set(color);
     }
   }
 
@@ -302,7 +323,8 @@ export class SplineLayer extends BaseLayer {
   setStrokeWidth(width: number): void {
     this.splineData.strokeWidth = width;
     if (this.lineMesh) {
-      (this.lineMesh.material as THREE.LineBasicMaterial).linewidth = width;
+      (this.lineMesh.material as LineMaterial).linewidth = width;
+      (this.lineMesh.material as LineMaterial).needsUpdate = true;
     }
   }
 
@@ -317,6 +339,16 @@ export class SplineLayer extends BaseLayer {
       // Create fill if it doesn't exist
       const curvePoints = this.curve.getPoints(this.splineData.controlPoints.length * 20);
       this.createFill(curvePoints);
+    }
+  }
+
+  /**
+   * Set resolution for line material (call when canvas resizes)
+   */
+  setResolution(width: number, height: number): void {
+    this.resolution.set(width, height);
+    if (this.lineMesh) {
+      (this.lineMesh.material as LineMaterial).resolution.set(width, height);
     }
   }
 
@@ -600,17 +632,31 @@ export class SplineLayer extends BaseLayer {
       this.curve.add(closingBezier);
     }
 
-    // Create line geometry
+    // Create line geometry using Line2 for proper width support
     const curvePoints = this.curve.getPoints(points.length * 20);
-    const lineGeometry = new THREE.BufferGeometry().setFromPoints(curvePoints);
 
-    const lineMaterial = new THREE.LineBasicMaterial({
-      color: this.splineData.stroke,
+    // Convert THREE.Vector3[] to flat position array for LineGeometry
+    const positions: number[] = [];
+    for (const pt of curvePoints) {
+      positions.push(pt.x, pt.y, pt.z);
+    }
+
+    const lineGeometry = new LineGeometry();
+    lineGeometry.setPositions(positions);
+
+    // Parse stroke color
+    const color = new THREE.Color(this.splineData.stroke);
+
+    const lineMaterial = new LineMaterial({
+      color: color.getHex(),
       linewidth: this.splineData.strokeWidth,
       transparent: true,
+      resolution: this.resolution,
+      worldUnits: false,
     });
 
-    this.lineMesh = new THREE.Line(lineGeometry, lineMaterial);
+    this.lineMesh = new Line2(lineGeometry, lineMaterial);
+    this.lineMesh.computeLineDistances();
     this.lineMesh.name = `spline_line_${this.id}`;
     this.group.add(this.lineMesh);
 

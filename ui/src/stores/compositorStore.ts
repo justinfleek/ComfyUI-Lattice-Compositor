@@ -1081,6 +1081,21 @@ export const useCompositorStore = defineStore('compositor', {
         layerTransform.anchorPoint.value = { x: compWidth / 2, y: compHeight / 2, z: 0 };
       }
 
+      // Initialize layer-specific properties
+      let layerProperties: AnimatableProperty<any>[] = [];
+
+      // Spline layer properties for timeline
+      if (type === 'spline') {
+        layerProperties = [
+          createAnimatableProperty('Stroke Width', layerData?.strokeWidth ?? 2, 'number', 'Stroke'),
+          createAnimatableProperty('Stroke Opacity', layerData?.strokeOpacity ?? 100, 'number', 'Stroke'),
+          createAnimatableProperty('Fill Opacity', layerData?.fillOpacity ?? 100, 'number', 'Fill'),
+          createAnimatableProperty('Trim Start', 0, 'number', 'Trim Paths'),
+          createAnimatableProperty('Trim End', 100, 'number', 'Trim Paths'),
+          createAnimatableProperty('Trim Offset', 0, 'number', 'Trim Paths'),
+        ];
+      }
+
       const layer: Layer = {
         id,
         name: name || `${type.charAt(0).toUpperCase() + type.slice(1)} ${layers.length + 1}`,
@@ -1097,7 +1112,7 @@ export const useCompositorStore = defineStore('compositor', {
         opacity: createAnimatableProperty('opacity', 100, 'number'),
         transform: layerTransform,
         audio: audioProps,
-        properties: [],
+        properties: layerProperties,
         effects: [],
         data: layerData
       };

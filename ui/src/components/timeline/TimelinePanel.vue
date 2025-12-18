@@ -216,12 +216,29 @@ const sidebarGridStyle = computed(() => ({
 function toggleAddLayerMenu() { showAddLayerMenu.value = !showAddLayerMenu.value; }
 
 function addLayer(type: string) {
-  if (type === 'text') store.createTextLayer();
-  else if (type === 'video') store.createLayer('video');
-  else if (type === 'camera') store.createCameraLayer();
-  else if (type === 'particles') store.createParticleLayer();
-  else store.createLayer(type as any);
+  let newLayer;
+
+  if (type === 'text') newLayer = store.createTextLayer();
+  else if (type === 'video') newLayer = store.createLayer('video');
+  else if (type === 'camera') newLayer = store.createCameraLayer();
+  else if (type === 'particles') newLayer = store.createParticleLayer();
+  else newLayer = store.createLayer(type as any);
+
   showAddLayerMenu.value = false;
+
+  // Auto-select the new layer
+  if (newLayer) {
+    store.selectLayer(newLayer.id);
+
+    // Activate appropriate tool based on layer type
+    if (type === 'spline' || type === 'shape') {
+      store.setTool('pen');
+    } else if (type === 'text') {
+      store.setTool('text');
+    } else {
+      store.setTool('select');
+    }
+  }
 }
 
 function selectLayer(id: string) { store.selectLayer(id); }
@@ -470,7 +487,8 @@ watch(() => [computedWidthStyle.value, zoomPercent.value, store.frameCount], () 
 <style scoped>
 .timeline-panel { display: flex; flex-direction: column; height: 100%; background: #111; color: #eee; font-family: 'Segoe UI', sans-serif; font-size: 13px; user-select: none; }
 .timeline-header { height: 40px; background: #2a2a2a; border-bottom: 1px solid #000; display: flex; justify-content: space-between; padding: 0 10px; align-items: center; z-index: 20; flex-shrink: 0; }
-.header-left, .header-center, .header-right { display: flex; gap: 10px; align-items: center; }
+.header-left, .header-center, .header-right { display: flex; gap: 12px; align-items: center; }
+.tool-group { display: flex; gap: 8px; align-items: center; }
 
 /* Timecode display like After Effects */
 .timecode { font-family: 'Consolas', 'Courier New', monospace; font-size: 16px; color: #4a90d9; font-weight: bold; letter-spacing: 1px; }

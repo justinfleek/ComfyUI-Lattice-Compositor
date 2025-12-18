@@ -19153,7 +19153,7 @@ class LineBasicMaterial extends Material {
 const _vStart = /* @__PURE__ */ new Vector3();
 const _vEnd = /* @__PURE__ */ new Vector3();
 const _inverseMatrix$1 = /* @__PURE__ */ new Matrix4();
-const _ray$1 = /* @__PURE__ */ new Ray();
+const _ray$1$1 = /* @__PURE__ */ new Ray();
 const _sphere$1 = /* @__PURE__ */ new Sphere();
 const _intersectPointOnRay = /* @__PURE__ */ new Vector3();
 const _intersectPointOnSegment = /* @__PURE__ */ new Vector3();
@@ -19200,7 +19200,7 @@ class Line extends Object3D {
     _sphere$1.radius += threshold;
     if (raycaster.ray.intersectsSphere(_sphere$1) === false) return;
     _inverseMatrix$1.copy(matrixWorld).invert();
-    _ray$1.copy(raycaster.ray).applyMatrix4(_inverseMatrix$1);
+    _ray$1$1.copy(raycaster.ray).applyMatrix4(_inverseMatrix$1);
     const localThreshold = threshold / ((this.scale.x + this.scale.y + this.scale.z) / 3);
     const localThresholdSq = localThreshold * localThreshold;
     const step = this.isLineSegments ? 2 : 1;
@@ -19213,7 +19213,7 @@ class Line extends Object3D {
       for (let i = start, l = end - 1; i < l; i += step) {
         const a = index.getX(i);
         const b = index.getX(i + 1);
-        const intersect2 = checkIntersection(this, raycaster, _ray$1, localThresholdSq, a, b);
+        const intersect2 = checkIntersection(this, raycaster, _ray$1$1, localThresholdSq, a, b);
         if (intersect2) {
           intersects2.push(intersect2);
         }
@@ -19221,7 +19221,7 @@ class Line extends Object3D {
       if (this.isLineLoop) {
         const a = index.getX(end - 1);
         const b = index.getX(start);
-        const intersect2 = checkIntersection(this, raycaster, _ray$1, localThresholdSq, a, b);
+        const intersect2 = checkIntersection(this, raycaster, _ray$1$1, localThresholdSq, a, b);
         if (intersect2) {
           intersects2.push(intersect2);
         }
@@ -19230,13 +19230,13 @@ class Line extends Object3D {
       const start = Math.max(0, drawRange.start);
       const end = Math.min(positionAttribute.count, drawRange.start + drawRange.count);
       for (let i = start, l = end - 1; i < l; i += step) {
-        const intersect2 = checkIntersection(this, raycaster, _ray$1, localThresholdSq, i, i + 1);
+        const intersect2 = checkIntersection(this, raycaster, _ray$1$1, localThresholdSq, i, i + 1);
         if (intersect2) {
           intersects2.push(intersect2);
         }
       }
       if (this.isLineLoop) {
-        const intersect2 = checkIntersection(this, raycaster, _ray$1, localThresholdSq, end - 1, start);
+        const intersect2 = checkIntersection(this, raycaster, _ray$1$1, localThresholdSq, end - 1, start);
         if (intersect2) {
           intersects2.push(intersect2);
         }
@@ -19282,8 +19282,8 @@ function checkIntersection(object, raycaster, ray, thresholdSq, a, b) {
     object
   };
 }
-const _start = /* @__PURE__ */ new Vector3();
-const _end = /* @__PURE__ */ new Vector3();
+const _start$1 = /* @__PURE__ */ new Vector3();
+const _end$1 = /* @__PURE__ */ new Vector3();
 class LineSegments extends Line {
   constructor(geometry, material) {
     super(geometry, material);
@@ -19296,10 +19296,10 @@ class LineSegments extends Line {
       const positionAttribute = geometry.attributes.position;
       const lineDistances = [];
       for (let i = 0, l = positionAttribute.count; i < l; i += 2) {
-        _start.fromBufferAttribute(positionAttribute, i);
-        _end.fromBufferAttribute(positionAttribute, i + 1);
+        _start$1.fromBufferAttribute(positionAttribute, i);
+        _end$1.fromBufferAttribute(positionAttribute, i + 1);
         lineDistances[i] = i === 0 ? 0 : lineDistances[i - 1];
-        lineDistances[i + 1] = lineDistances[i] + _start.distanceTo(_end);
+        lineDistances[i + 1] = lineDistances[i] + _start$1.distanceTo(_end$1);
       }
       geometry.setAttribute("lineDistance", new Float32BufferAttribute(lineDistances, 1));
     } else {
@@ -19343,7 +19343,7 @@ class PointsMaterial extends Material {
 }
 const _inverseMatrix = /* @__PURE__ */ new Matrix4();
 const _ray$4 = /* @__PURE__ */ new Ray();
-const _sphere = /* @__PURE__ */ new Sphere();
+const _sphere$2 = /* @__PURE__ */ new Sphere();
 const _position$2 = /* @__PURE__ */ new Vector3();
 class Points extends Object3D {
   constructor(geometry = new BufferGeometry(), material = new PointsMaterial()) {
@@ -19366,10 +19366,10 @@ class Points extends Object3D {
     const threshold = raycaster.params.Points.threshold;
     const drawRange = geometry.drawRange;
     if (geometry.boundingSphere === null) geometry.computeBoundingSphere();
-    _sphere.copy(geometry.boundingSphere);
-    _sphere.applyMatrix4(matrixWorld);
-    _sphere.radius += threshold;
-    if (raycaster.ray.intersectsSphere(_sphere) === false) return;
+    _sphere$2.copy(geometry.boundingSphere);
+    _sphere$2.applyMatrix4(matrixWorld);
+    _sphere$2.radius += threshold;
+    if (raycaster.ray.intersectsSphere(_sphere$2) === false) return;
     _inverseMatrix.copy(matrixWorld).invert();
     _ray$4.copy(raycaster.ray).applyMatrix4(_inverseMatrix);
     const localThreshold = threshold / ((this.scale.x + this.scale.y + this.scale.z) / 3);
@@ -22307,6 +22307,77 @@ class TubeGeometry extends BufferGeometry {
       data.radialSegments,
       data.closed
     );
+  }
+}
+class WireframeGeometry extends BufferGeometry {
+  constructor(geometry = null) {
+    super();
+    this.type = "WireframeGeometry";
+    this.parameters = {
+      geometry
+    };
+    if (geometry !== null) {
+      const vertices = [];
+      const edges = /* @__PURE__ */ new Set();
+      const start = new Vector3();
+      const end = new Vector3();
+      if (geometry.index !== null) {
+        const position = geometry.attributes.position;
+        const indices = geometry.index;
+        let groups = geometry.groups;
+        if (groups.length === 0) {
+          groups = [{ start: 0, count: indices.count, materialIndex: 0 }];
+        }
+        for (let o = 0, ol = groups.length; o < ol; ++o) {
+          const group = groups[o];
+          const groupStart = group.start;
+          const groupCount = group.count;
+          for (let i = groupStart, l = groupStart + groupCount; i < l; i += 3) {
+            for (let j = 0; j < 3; j++) {
+              const index1 = indices.getX(i + j);
+              const index2 = indices.getX(i + (j + 1) % 3);
+              start.fromBufferAttribute(position, index1);
+              end.fromBufferAttribute(position, index2);
+              if (isUniqueEdge(start, end, edges) === true) {
+                vertices.push(start.x, start.y, start.z);
+                vertices.push(end.x, end.y, end.z);
+              }
+            }
+          }
+        }
+      } else {
+        const position = geometry.attributes.position;
+        for (let i = 0, l = position.count / 3; i < l; i++) {
+          for (let j = 0; j < 3; j++) {
+            const index1 = 3 * i + j;
+            const index2 = 3 * i + (j + 1) % 3;
+            start.fromBufferAttribute(position, index1);
+            end.fromBufferAttribute(position, index2);
+            if (isUniqueEdge(start, end, edges) === true) {
+              vertices.push(start.x, start.y, start.z);
+              vertices.push(end.x, end.y, end.z);
+            }
+          }
+        }
+      }
+      this.setAttribute("position", new Float32BufferAttribute(vertices, 3));
+    }
+  }
+  copy(source) {
+    super.copy(source);
+    this.parameters = Object.assign({}, source.parameters);
+    return this;
+  }
+}
+function isUniqueEdge(start, end, edges) {
+  const hash1 = `${start.x},${start.y},${start.z}-${end.x},${end.y},${end.z}`;
+  const hash2 = `${end.x},${end.y},${end.z}-${start.x},${start.y},${start.z}`;
+  if (edges.has(hash1) === true || edges.has(hash2) === true) {
+    return false;
+  } else {
+    edges.add(hash1);
+    edges.add(hash2);
+    return true;
   }
 }
 class RawShaderMaterial extends ShaderMaterial {
@@ -25667,6 +25738,29 @@ class AnimationMixer extends EventDispatcher {
     }
   }
 }
+class InstancedInterleavedBuffer extends InterleavedBuffer {
+  constructor(array, stride, meshPerAttribute = 1) {
+    super(array, stride);
+    this.isInstancedInterleavedBuffer = true;
+    this.meshPerAttribute = meshPerAttribute;
+  }
+  copy(source) {
+    super.copy(source);
+    this.meshPerAttribute = source.meshPerAttribute;
+    return this;
+  }
+  clone(data) {
+    const ib = super.clone(data);
+    ib.meshPerAttribute = this.meshPerAttribute;
+    return ib;
+  }
+  toJSON(data) {
+    const json = super.toJSON(data);
+    json.isInstancedInterleavedBuffer = true;
+    json.meshPerAttribute = this.meshPerAttribute;
+    return json;
+  }
+}
 const _matrix = /* @__PURE__ */ new Matrix4();
 class Raycaster {
   constructor(origin, direction, near = 0, far = Infinity) {
@@ -25878,6 +25972,65 @@ class Box2 {
   }
   equals(box) {
     return box.min.equals(this.min) && box.max.equals(this.max);
+  }
+}
+const _startP = /* @__PURE__ */ new Vector3();
+const _startEnd = /* @__PURE__ */ new Vector3();
+class Line3 {
+  constructor(start = new Vector3(), end = new Vector3()) {
+    this.start = start;
+    this.end = end;
+  }
+  set(start, end) {
+    this.start.copy(start);
+    this.end.copy(end);
+    return this;
+  }
+  copy(line) {
+    this.start.copy(line.start);
+    this.end.copy(line.end);
+    return this;
+  }
+  getCenter(target) {
+    return target.addVectors(this.start, this.end).multiplyScalar(0.5);
+  }
+  delta(target) {
+    return target.subVectors(this.end, this.start);
+  }
+  distanceSq() {
+    return this.start.distanceToSquared(this.end);
+  }
+  distance() {
+    return this.start.distanceTo(this.end);
+  }
+  at(t, target) {
+    return this.delta(target).multiplyScalar(t).add(this.start);
+  }
+  closestPointToPointParameter(point, clampToLine) {
+    _startP.subVectors(point, this.start);
+    _startEnd.subVectors(this.end, this.start);
+    const startEnd2 = _startEnd.dot(_startEnd);
+    const startEnd_startP = _startEnd.dot(_startP);
+    let t = startEnd_startP / startEnd2;
+    if (clampToLine) {
+      t = clamp(t, 0, 1);
+    }
+    return t;
+  }
+  closestPointToPoint(point, clampToLine, target) {
+    const t = this.closestPointToPointParameter(point, clampToLine);
+    return this.delta(target).multiplyScalar(t).add(this.start);
+  }
+  applyMatrix4(matrix) {
+    this.start.applyMatrix4(matrix);
+    this.end.applyMatrix4(matrix);
+    return this;
+  }
+  equals(line) {
+    return line.start.equals(this.start) && line.end.equals(this.end);
+  }
+  clone() {
+    return new this.constructor().copy(this);
   }
 }
 const _vector$3 = /* @__PURE__ */ new Vector3();
@@ -26152,7 +26305,7 @@ class DirectionalLightHelper extends Object3D {
     this.targetLine.scale.z = _v3$3.length();
   }
 }
-const _box = /* @__PURE__ */ new Box3();
+const _box$5 = /* @__PURE__ */ new Box3();
 class BoxHelper extends LineSegments {
   constructor(object, color = 16776960) {
     const indices = new Uint16Array([0, 1, 1, 2, 2, 3, 3, 0, 4, 5, 5, 6, 6, 7, 7, 4, 0, 4, 1, 5, 2, 6, 3, 7]);
@@ -26171,11 +26324,11 @@ class BoxHelper extends LineSegments {
       console.warn("THREE.BoxHelper: .update() has no longer arguments.");
     }
     if (this.object !== void 0) {
-      _box.setFromObject(this.object);
+      _box$5.setFromObject(this.object);
     }
-    if (_box.isEmpty()) return;
-    const min = _box.min;
-    const max = _box.max;
+    if (_box$5.isEmpty()) return;
+    const min = _box$5.min;
+    const max = _box$5.max;
     const position = this.geometry.attributes.position;
     const array = position.array;
     array[0] = max.x;
@@ -43165,6 +43318,1286 @@ SYNCABLE_PROPS.forEach((prop) => {
 });
 new Box3();
 new Color();
+
+const _box$1 = new Box3();
+const _vector = new Vector3();
+
+class LineSegmentsGeometry extends InstancedBufferGeometry {
+
+	constructor() {
+
+		super();
+
+		this.isLineSegmentsGeometry = true;
+
+		this.type = 'LineSegmentsGeometry';
+
+		const positions = [ -1, 2, 0, 1, 2, 0, -1, 1, 0, 1, 1, 0, -1, 0, 0, 1, 0, 0, -1, -1, 0, 1, -1, 0 ];
+		const uvs = [ -1, 2, 1, 2, -1, 1, 1, 1, -1, -1, 1, -1, -1, -2, 1, -2 ];
+		const index = [ 0, 2, 1, 2, 3, 1, 2, 4, 3, 4, 5, 3, 4, 6, 5, 6, 7, 5 ];
+
+		this.setIndex( index );
+		this.setAttribute( 'position', new Float32BufferAttribute( positions, 3 ) );
+		this.setAttribute( 'uv', new Float32BufferAttribute( uvs, 2 ) );
+
+	}
+
+	applyMatrix4( matrix ) {
+
+		const start = this.attributes.instanceStart;
+		const end = this.attributes.instanceEnd;
+
+		if ( start !== undefined ) {
+
+			start.applyMatrix4( matrix );
+
+			end.applyMatrix4( matrix );
+
+			start.needsUpdate = true;
+
+		}
+
+		if ( this.boundingBox !== null ) {
+
+			this.computeBoundingBox();
+
+		}
+
+		if ( this.boundingSphere !== null ) {
+
+			this.computeBoundingSphere();
+
+		}
+
+		return this;
+
+	}
+
+	setPositions( array ) {
+
+		let lineSegments;
+
+		if ( array instanceof Float32Array ) {
+
+			lineSegments = array;
+
+		} else if ( Array.isArray( array ) ) {
+
+			lineSegments = new Float32Array( array );
+
+		}
+
+		const instanceBuffer = new InstancedInterleavedBuffer( lineSegments, 6, 1 ); // xyz, xyz
+
+		this.setAttribute( 'instanceStart', new InterleavedBufferAttribute( instanceBuffer, 3, 0 ) ); // xyz
+		this.setAttribute( 'instanceEnd', new InterleavedBufferAttribute( instanceBuffer, 3, 3 ) ); // xyz
+
+		this.instanceCount = this.attributes.instanceStart.count;
+
+		//
+
+		this.computeBoundingBox();
+		this.computeBoundingSphere();
+
+		return this;
+
+	}
+
+	setColors( array ) {
+
+		let colors;
+
+		if ( array instanceof Float32Array ) {
+
+			colors = array;
+
+		} else if ( Array.isArray( array ) ) {
+
+			colors = new Float32Array( array );
+
+		}
+
+		const instanceColorBuffer = new InstancedInterleavedBuffer( colors, 6, 1 ); // rgb, rgb
+
+		this.setAttribute( 'instanceColorStart', new InterleavedBufferAttribute( instanceColorBuffer, 3, 0 ) ); // rgb
+		this.setAttribute( 'instanceColorEnd', new InterleavedBufferAttribute( instanceColorBuffer, 3, 3 ) ); // rgb
+
+		return this;
+
+	}
+
+	fromWireframeGeometry( geometry ) {
+
+		this.setPositions( geometry.attributes.position.array );
+
+		return this;
+
+	}
+
+	fromEdgesGeometry( geometry ) {
+
+		this.setPositions( geometry.attributes.position.array );
+
+		return this;
+
+	}
+
+	fromMesh( mesh ) {
+
+		this.fromWireframeGeometry( new WireframeGeometry( mesh.geometry ) );
+
+		// set colors, maybe
+
+		return this;
+
+	}
+
+	fromLineSegments( lineSegments ) {
+
+		const geometry = lineSegments.geometry;
+
+		this.setPositions( geometry.attributes.position.array ); // assumes non-indexed
+
+		// set colors, maybe
+
+		return this;
+
+	}
+
+	computeBoundingBox() {
+
+		if ( this.boundingBox === null ) {
+
+			this.boundingBox = new Box3();
+
+		}
+
+		const start = this.attributes.instanceStart;
+		const end = this.attributes.instanceEnd;
+
+		if ( start !== undefined && end !== undefined ) {
+
+			this.boundingBox.setFromBufferAttribute( start );
+
+			_box$1.setFromBufferAttribute( end );
+
+			this.boundingBox.union( _box$1 );
+
+		}
+
+	}
+
+	computeBoundingSphere() {
+
+		if ( this.boundingSphere === null ) {
+
+			this.boundingSphere = new Sphere();
+
+		}
+
+		if ( this.boundingBox === null ) {
+
+			this.computeBoundingBox();
+
+		}
+
+		const start = this.attributes.instanceStart;
+		const end = this.attributes.instanceEnd;
+
+		if ( start !== undefined && end !== undefined ) {
+
+			const center = this.boundingSphere.center;
+
+			this.boundingBox.getCenter( center );
+
+			let maxRadiusSq = 0;
+
+			for ( let i = 0, il = start.count; i < il; i ++ ) {
+
+				_vector.fromBufferAttribute( start, i );
+				maxRadiusSq = Math.max( maxRadiusSq, center.distanceToSquared( _vector ) );
+
+				_vector.fromBufferAttribute( end, i );
+				maxRadiusSq = Math.max( maxRadiusSq, center.distanceToSquared( _vector ) );
+
+			}
+
+			this.boundingSphere.radius = Math.sqrt( maxRadiusSq );
+
+			if ( isNaN( this.boundingSphere.radius ) ) {
+
+				console.error( 'THREE.LineSegmentsGeometry.computeBoundingSphere(): Computed radius is NaN. The instanced position data is likely to have NaN values.', this );
+
+			}
+
+		}
+
+	}
+
+	toJSON() {
+
+		// todo
+
+	}
+
+	applyMatrix( matrix ) {
+
+		console.warn( 'THREE.LineSegmentsGeometry: applyMatrix() has been renamed to applyMatrix4().' );
+
+		return this.applyMatrix4( matrix );
+
+	}
+
+}
+
+UniformsLib.line = {
+
+	worldUnits: { value: 1 },
+	linewidth: { value: 1 },
+	resolution: { value: new Vector2( 1, 1 ) },
+	dashOffset: { value: 0 },
+	dashScale: { value: 1 },
+	dashSize: { value: 1 },
+	gapSize: { value: 1 } // todo FIX - maybe change to totalSize
+
+};
+
+ShaderLib[ 'line' ] = {
+
+	uniforms: UniformsUtils.merge( [
+		UniformsLib.common,
+		UniformsLib.fog,
+		UniformsLib.line
+	] ),
+
+	vertexShader:
+	/* glsl */`
+		#include <common>
+		#include <color_pars_vertex>
+		#include <fog_pars_vertex>
+		#include <logdepthbuf_pars_vertex>
+		#include <clipping_planes_pars_vertex>
+
+		uniform float linewidth;
+		uniform vec2 resolution;
+
+		attribute vec3 instanceStart;
+		attribute vec3 instanceEnd;
+
+		attribute vec3 instanceColorStart;
+		attribute vec3 instanceColorEnd;
+
+		#ifdef WORLD_UNITS
+
+			varying vec4 worldPos;
+			varying vec3 worldStart;
+			varying vec3 worldEnd;
+
+			#ifdef USE_DASH
+
+				varying vec2 vUv;
+
+			#endif
+
+		#else
+
+			varying vec2 vUv;
+
+		#endif
+
+		#ifdef USE_DASH
+
+			uniform float dashScale;
+			attribute float instanceDistanceStart;
+			attribute float instanceDistanceEnd;
+			varying float vLineDistance;
+
+		#endif
+
+		void trimSegment( const in vec4 start, inout vec4 end ) {
+
+			// trim end segment so it terminates between the camera plane and the near plane
+
+			// conservative estimate of the near plane
+			float a = projectionMatrix[ 2 ][ 2 ]; // 3nd entry in 3th column
+			float b = projectionMatrix[ 3 ][ 2 ]; // 3nd entry in 4th column
+			float nearEstimate = - 0.5 * b / a;
+
+			float alpha = ( nearEstimate - start.z ) / ( end.z - start.z );
+
+			end.xyz = mix( start.xyz, end.xyz, alpha );
+
+		}
+
+		void main() {
+
+			#ifdef USE_COLOR
+
+				vColor.xyz = ( position.y < 0.5 ) ? instanceColorStart : instanceColorEnd;
+
+			#endif
+
+			#ifdef USE_DASH
+
+				vLineDistance = ( position.y < 0.5 ) ? dashScale * instanceDistanceStart : dashScale * instanceDistanceEnd;
+				vUv = uv;
+
+			#endif
+
+			float aspect = resolution.x / resolution.y;
+
+			// camera space
+			vec4 start = modelViewMatrix * vec4( instanceStart, 1.0 );
+			vec4 end = modelViewMatrix * vec4( instanceEnd, 1.0 );
+
+			#ifdef WORLD_UNITS
+
+				worldStart = start.xyz;
+				worldEnd = end.xyz;
+
+			#else
+
+				vUv = uv;
+
+			#endif
+
+			// special case for perspective projection, and segments that terminate either in, or behind, the camera plane
+			// clearly the gpu firmware has a way of addressing this issue when projecting into ndc space
+			// but we need to perform ndc-space calculations in the shader, so we must address this issue directly
+			// perhaps there is a more elegant solution -- WestLangley
+
+			bool perspective = ( projectionMatrix[ 2 ][ 3 ] == - 1.0 ); // 4th entry in the 3rd column
+
+			if ( perspective ) {
+
+				if ( start.z < 0.0 && end.z >= 0.0 ) {
+
+					trimSegment( start, end );
+
+				} else if ( end.z < 0.0 && start.z >= 0.0 ) {
+
+					trimSegment( end, start );
+
+				}
+
+			}
+
+			// clip space
+			vec4 clipStart = projectionMatrix * start;
+			vec4 clipEnd = projectionMatrix * end;
+
+			// ndc space
+			vec3 ndcStart = clipStart.xyz / clipStart.w;
+			vec3 ndcEnd = clipEnd.xyz / clipEnd.w;
+
+			// direction
+			vec2 dir = ndcEnd.xy - ndcStart.xy;
+
+			// account for clip-space aspect ratio
+			dir.x *= aspect;
+			dir = normalize( dir );
+
+			#ifdef WORLD_UNITS
+
+				vec3 worldDir = normalize( end.xyz - start.xyz );
+				vec3 tmpFwd = normalize( mix( start.xyz, end.xyz, 0.5 ) );
+				vec3 worldUp = normalize( cross( worldDir, tmpFwd ) );
+				vec3 worldFwd = cross( worldDir, worldUp );
+				worldPos = position.y < 0.5 ? start: end;
+
+				// height offset
+				float hw = linewidth * 0.5;
+				worldPos.xyz += position.x < 0.0 ? hw * worldUp : - hw * worldUp;
+
+				// don't extend the line if we're rendering dashes because we
+				// won't be rendering the endcaps
+				#ifndef USE_DASH
+
+					// cap extension
+					worldPos.xyz += position.y < 0.5 ? - hw * worldDir : hw * worldDir;
+
+					// add width to the box
+					worldPos.xyz += worldFwd * hw;
+
+					// endcaps
+					if ( position.y > 1.0 || position.y < 0.0 ) {
+
+						worldPos.xyz -= worldFwd * 2.0 * hw;
+
+					}
+
+				#endif
+
+				// project the worldpos
+				vec4 clip = projectionMatrix * worldPos;
+
+				// shift the depth of the projected points so the line
+				// segments overlap neatly
+				vec3 clipPose = ( position.y < 0.5 ) ? ndcStart : ndcEnd;
+				clip.z = clipPose.z * clip.w;
+
+			#else
+
+				vec2 offset = vec2( dir.y, - dir.x );
+				// undo aspect ratio adjustment
+				dir.x /= aspect;
+				offset.x /= aspect;
+
+				// sign flip
+				if ( position.x < 0.0 ) offset *= - 1.0;
+
+				// endcaps
+				if ( position.y < 0.0 ) {
+
+					offset += - dir;
+
+				} else if ( position.y > 1.0 ) {
+
+					offset += dir;
+
+				}
+
+				// adjust for linewidth
+				offset *= linewidth;
+
+				// adjust for clip-space to screen-space conversion // maybe resolution should be based on viewport ...
+				offset /= resolution.y;
+
+				// select end
+				vec4 clip = ( position.y < 0.5 ) ? clipStart : clipEnd;
+
+				// back to clip space
+				offset *= clip.w;
+
+				clip.xy += offset;
+
+			#endif
+
+			gl_Position = clip;
+
+			vec4 mvPosition = ( position.y < 0.5 ) ? start : end; // this is an approximation
+
+			#include <logdepthbuf_vertex>
+			#include <clipping_planes_vertex>
+			#include <fog_vertex>
+
+		}
+		`,
+
+	fragmentShader:
+	/* glsl */`
+		uniform vec3 diffuse;
+		uniform float opacity;
+		uniform float linewidth;
+
+		#ifdef USE_DASH
+
+			uniform float dashOffset;
+			uniform float dashSize;
+			uniform float gapSize;
+
+		#endif
+
+		varying float vLineDistance;
+
+		#ifdef WORLD_UNITS
+
+			varying vec4 worldPos;
+			varying vec3 worldStart;
+			varying vec3 worldEnd;
+
+			#ifdef USE_DASH
+
+				varying vec2 vUv;
+
+			#endif
+
+		#else
+
+			varying vec2 vUv;
+
+		#endif
+
+		#include <common>
+		#include <color_pars_fragment>
+		#include <fog_pars_fragment>
+		#include <logdepthbuf_pars_fragment>
+		#include <clipping_planes_pars_fragment>
+
+		vec2 closestLineToLine(vec3 p1, vec3 p2, vec3 p3, vec3 p4) {
+
+			float mua;
+			float mub;
+
+			vec3 p13 = p1 - p3;
+			vec3 p43 = p4 - p3;
+
+			vec3 p21 = p2 - p1;
+
+			float d1343 = dot( p13, p43 );
+			float d4321 = dot( p43, p21 );
+			float d1321 = dot( p13, p21 );
+			float d4343 = dot( p43, p43 );
+			float d2121 = dot( p21, p21 );
+
+			float denom = d2121 * d4343 - d4321 * d4321;
+
+			float numer = d1343 * d4321 - d1321 * d4343;
+
+			mua = numer / denom;
+			mua = clamp( mua, 0.0, 1.0 );
+			mub = ( d1343 + d4321 * ( mua ) ) / d4343;
+			mub = clamp( mub, 0.0, 1.0 );
+
+			return vec2( mua, mub );
+
+		}
+
+		void main() {
+
+			#include <clipping_planes_fragment>
+
+			#ifdef USE_DASH
+
+				if ( vUv.y < - 1.0 || vUv.y > 1.0 ) discard; // discard endcaps
+
+				if ( mod( vLineDistance + dashOffset, dashSize + gapSize ) > dashSize ) discard; // todo - FIX
+
+			#endif
+
+			float alpha = opacity;
+
+			#ifdef WORLD_UNITS
+
+				// Find the closest points on the view ray and the line segment
+				vec3 rayEnd = normalize( worldPos.xyz ) * 1e5;
+				vec3 lineDir = worldEnd - worldStart;
+				vec2 params = closestLineToLine( worldStart, worldEnd, vec3( 0.0, 0.0, 0.0 ), rayEnd );
+
+				vec3 p1 = worldStart + lineDir * params.x;
+				vec3 p2 = rayEnd * params.y;
+				vec3 delta = p1 - p2;
+				float len = length( delta );
+				float norm = len / linewidth;
+
+				#ifndef USE_DASH
+
+					#ifdef USE_ALPHA_TO_COVERAGE
+
+						float dnorm = fwidth( norm );
+						alpha = 1.0 - smoothstep( 0.5 - dnorm, 0.5 + dnorm, norm );
+
+					#else
+
+						if ( norm > 0.5 ) {
+
+							discard;
+
+						}
+
+					#endif
+
+				#endif
+
+			#else
+
+				#ifdef USE_ALPHA_TO_COVERAGE
+
+					// artifacts appear on some hardware if a derivative is taken within a conditional
+					float a = vUv.x;
+					float b = ( vUv.y > 0.0 ) ? vUv.y - 1.0 : vUv.y + 1.0;
+					float len2 = a * a + b * b;
+					float dlen = fwidth( len2 );
+
+					if ( abs( vUv.y ) > 1.0 ) {
+
+						alpha = 1.0 - smoothstep( 1.0 - dlen, 1.0 + dlen, len2 );
+
+					}
+
+				#else
+
+					if ( abs( vUv.y ) > 1.0 ) {
+
+						float a = vUv.x;
+						float b = ( vUv.y > 0.0 ) ? vUv.y - 1.0 : vUv.y + 1.0;
+						float len2 = a * a + b * b;
+
+						if ( len2 > 1.0 ) discard;
+
+					}
+
+				#endif
+
+			#endif
+
+			vec4 diffuseColor = vec4( diffuse, alpha );
+
+			#include <logdepthbuf_fragment>
+			#include <color_fragment>
+
+			gl_FragColor = vec4( diffuseColor.rgb, alpha );
+
+			#include <tonemapping_fragment>
+			#include <colorspace_fragment>
+			#include <fog_fragment>
+			#include <premultiplied_alpha_fragment>
+
+		}
+		`
+};
+
+class LineMaterial extends ShaderMaterial {
+
+
+	static get type() {
+
+		return 'LineMaterial';
+
+	}
+
+	constructor( parameters ) {
+
+		super( {
+
+			uniforms: UniformsUtils.clone( ShaderLib[ 'line' ].uniforms ),
+
+			vertexShader: ShaderLib[ 'line' ].vertexShader,
+			fragmentShader: ShaderLib[ 'line' ].fragmentShader,
+
+			clipping: true // required for clipping support
+
+		} );
+
+		this.isLineMaterial = true;
+
+		this.setValues( parameters );
+
+	}
+
+	get color() {
+
+		return this.uniforms.diffuse.value;
+
+	}
+
+	set color( value ) {
+
+		this.uniforms.diffuse.value = value;
+
+	}
+
+	get worldUnits() {
+
+		return 'WORLD_UNITS' in this.defines;
+
+	}
+
+	set worldUnits( value ) {
+
+		if ( value === true ) {
+
+			this.defines.WORLD_UNITS = '';
+
+		} else {
+
+			delete this.defines.WORLD_UNITS;
+
+		}
+
+	}
+
+	get linewidth() {
+
+		return this.uniforms.linewidth.value;
+
+	}
+
+	set linewidth( value ) {
+
+		if ( ! this.uniforms.linewidth ) return;
+		this.uniforms.linewidth.value = value;
+
+	}
+
+	get dashed() {
+
+		return 'USE_DASH' in this.defines;
+
+	}
+
+	set dashed( value ) {
+
+		if ( ( value === true ) !== this.dashed ) {
+
+			this.needsUpdate = true;
+
+		}
+
+		if ( value === true ) {
+
+			this.defines.USE_DASH = '';
+
+		} else {
+
+			delete this.defines.USE_DASH;
+
+		}
+
+	}
+
+	get dashScale() {
+
+		return this.uniforms.dashScale.value;
+
+	}
+
+	set dashScale( value ) {
+
+		this.uniforms.dashScale.value = value;
+
+	}
+
+	get dashSize() {
+
+		return this.uniforms.dashSize.value;
+
+	}
+
+	set dashSize( value ) {
+
+		this.uniforms.dashSize.value = value;
+
+	}
+
+	get dashOffset() {
+
+		return this.uniforms.dashOffset.value;
+
+	}
+
+	set dashOffset( value ) {
+
+		this.uniforms.dashOffset.value = value;
+
+	}
+
+	get gapSize() {
+
+		return this.uniforms.gapSize.value;
+
+	}
+
+	set gapSize( value ) {
+
+		this.uniforms.gapSize.value = value;
+
+	}
+
+	get opacity() {
+
+		return this.uniforms.opacity.value;
+
+	}
+
+	set opacity( value ) {
+
+		if ( ! this.uniforms ) return;
+		this.uniforms.opacity.value = value;
+
+	}
+
+	get resolution() {
+
+		return this.uniforms.resolution.value;
+
+	}
+
+	set resolution( value ) {
+
+		this.uniforms.resolution.value.copy( value );
+
+	}
+
+	get alphaToCoverage() {
+
+		return 'USE_ALPHA_TO_COVERAGE' in this.defines;
+
+	}
+
+	set alphaToCoverage( value ) {
+
+		if ( ! this.defines ) return;
+
+		if ( ( value === true ) !== this.alphaToCoverage ) {
+
+			this.needsUpdate = true;
+
+		}
+
+		if ( value === true ) {
+
+			this.defines.USE_ALPHA_TO_COVERAGE = '';
+
+		} else {
+
+			delete this.defines.USE_ALPHA_TO_COVERAGE;
+
+		}
+
+	}
+
+}
+
+const _viewport = new Vector4();
+
+const _start = new Vector3();
+const _end = new Vector3();
+
+const _start4 = new Vector4();
+const _end4 = new Vector4();
+
+const _ssOrigin = new Vector4();
+const _ssOrigin3 = new Vector3();
+const _mvMatrix = new Matrix4();
+const _line = new Line3();
+const _closestPoint = new Vector3();
+
+const _box = new Box3();
+const _sphere = new Sphere();
+const _clipToWorldVector = new Vector4();
+
+let _ray$1, _lineWidth;
+
+// Returns the margin required to expand by in world space given the distance from the camera,
+// line width, resolution, and camera projection
+function getWorldSpaceHalfWidth( camera, distance, resolution ) {
+
+	// transform into clip space, adjust the x and y values by the pixel width offset, then
+	// transform back into world space to get world offset. Note clip space is [-1, 1] so full
+	// width does not need to be halved.
+	_clipToWorldVector.set( 0, 0, - distance, 1.0 ).applyMatrix4( camera.projectionMatrix );
+	_clipToWorldVector.multiplyScalar( 1.0 / _clipToWorldVector.w );
+	_clipToWorldVector.x = _lineWidth / resolution.width;
+	_clipToWorldVector.y = _lineWidth / resolution.height;
+	_clipToWorldVector.applyMatrix4( camera.projectionMatrixInverse );
+	_clipToWorldVector.multiplyScalar( 1.0 / _clipToWorldVector.w );
+
+	return Math.abs( Math.max( _clipToWorldVector.x, _clipToWorldVector.y ) );
+
+}
+
+function raycastWorldUnits( lineSegments, intersects ) {
+
+	const matrixWorld = lineSegments.matrixWorld;
+	const geometry = lineSegments.geometry;
+	const instanceStart = geometry.attributes.instanceStart;
+	const instanceEnd = geometry.attributes.instanceEnd;
+	const segmentCount = Math.min( geometry.instanceCount, instanceStart.count );
+
+	for ( let i = 0, l = segmentCount; i < l; i ++ ) {
+
+		_line.start.fromBufferAttribute( instanceStart, i );
+		_line.end.fromBufferAttribute( instanceEnd, i );
+
+		_line.applyMatrix4( matrixWorld );
+
+		const pointOnLine = new Vector3();
+		const point = new Vector3();
+
+		_ray$1.distanceSqToSegment( _line.start, _line.end, point, pointOnLine );
+		const isInside = point.distanceTo( pointOnLine ) < _lineWidth * 0.5;
+
+		if ( isInside ) {
+
+			intersects.push( {
+				point,
+				pointOnLine,
+				distance: _ray$1.origin.distanceTo( point ),
+				object: lineSegments,
+				face: null,
+				faceIndex: i,
+				uv: null,
+				uv1: null,
+			} );
+
+		}
+
+	}
+
+}
+
+function raycastScreenSpace( lineSegments, camera, intersects ) {
+
+	const projectionMatrix = camera.projectionMatrix;
+	const material = lineSegments.material;
+	const resolution = material.resolution;
+	const matrixWorld = lineSegments.matrixWorld;
+
+	const geometry = lineSegments.geometry;
+	const instanceStart = geometry.attributes.instanceStart;
+	const instanceEnd = geometry.attributes.instanceEnd;
+	const segmentCount = Math.min( geometry.instanceCount, instanceStart.count );
+
+	const near = - camera.near;
+
+	//
+
+	// pick a point 1 unit out along the ray to avoid the ray origin
+	// sitting at the camera origin which will cause "w" to be 0 when
+	// applying the projection matrix.
+	_ray$1.at( 1, _ssOrigin );
+
+	// ndc space [ - 1.0, 1.0 ]
+	_ssOrigin.w = 1;
+	_ssOrigin.applyMatrix4( camera.matrixWorldInverse );
+	_ssOrigin.applyMatrix4( projectionMatrix );
+	_ssOrigin.multiplyScalar( 1 / _ssOrigin.w );
+
+	// screen space
+	_ssOrigin.x *= resolution.x / 2;
+	_ssOrigin.y *= resolution.y / 2;
+	_ssOrigin.z = 0;
+
+	_ssOrigin3.copy( _ssOrigin );
+
+	_mvMatrix.multiplyMatrices( camera.matrixWorldInverse, matrixWorld );
+
+	for ( let i = 0, l = segmentCount; i < l; i ++ ) {
+
+		_start4.fromBufferAttribute( instanceStart, i );
+		_end4.fromBufferAttribute( instanceEnd, i );
+
+		_start4.w = 1;
+		_end4.w = 1;
+
+		// camera space
+		_start4.applyMatrix4( _mvMatrix );
+		_end4.applyMatrix4( _mvMatrix );
+
+		// skip the segment if it's entirely behind the camera
+		const isBehindCameraNear = _start4.z > near && _end4.z > near;
+		if ( isBehindCameraNear ) {
+
+			continue;
+
+		}
+
+		// trim the segment if it extends behind camera near
+		if ( _start4.z > near ) {
+
+			const deltaDist = _start4.z - _end4.z;
+			const t = ( _start4.z - near ) / deltaDist;
+			_start4.lerp( _end4, t );
+
+		} else if ( _end4.z > near ) {
+
+			const deltaDist = _end4.z - _start4.z;
+			const t = ( _end4.z - near ) / deltaDist;
+			_end4.lerp( _start4, t );
+
+		}
+
+		// clip space
+		_start4.applyMatrix4( projectionMatrix );
+		_end4.applyMatrix4( projectionMatrix );
+
+		// ndc space [ - 1.0, 1.0 ]
+		_start4.multiplyScalar( 1 / _start4.w );
+		_end4.multiplyScalar( 1 / _end4.w );
+
+		// screen space
+		_start4.x *= resolution.x / 2;
+		_start4.y *= resolution.y / 2;
+
+		_end4.x *= resolution.x / 2;
+		_end4.y *= resolution.y / 2;
+
+		// create 2d segment
+		_line.start.copy( _start4 );
+		_line.start.z = 0;
+
+		_line.end.copy( _end4 );
+		_line.end.z = 0;
+
+		// get closest point on ray to segment
+		const param = _line.closestPointToPointParameter( _ssOrigin3, true );
+		_line.at( param, _closestPoint );
+
+		// check if the intersection point is within clip space
+		const zPos = MathUtils.lerp( _start4.z, _end4.z, param );
+		const isInClipSpace = zPos >= -1 && zPos <= 1;
+
+		const isInside = _ssOrigin3.distanceTo( _closestPoint ) < _lineWidth * 0.5;
+
+		if ( isInClipSpace && isInside ) {
+
+			_line.start.fromBufferAttribute( instanceStart, i );
+			_line.end.fromBufferAttribute( instanceEnd, i );
+
+			_line.start.applyMatrix4( matrixWorld );
+			_line.end.applyMatrix4( matrixWorld );
+
+			const pointOnLine = new Vector3();
+			const point = new Vector3();
+
+			_ray$1.distanceSqToSegment( _line.start, _line.end, point, pointOnLine );
+
+			intersects.push( {
+				point: point,
+				pointOnLine: pointOnLine,
+				distance: _ray$1.origin.distanceTo( point ),
+				object: lineSegments,
+				face: null,
+				faceIndex: i,
+				uv: null,
+				uv1: null,
+			} );
+
+		}
+
+	}
+
+}
+
+class LineSegments2 extends Mesh {
+
+	constructor( geometry = new LineSegmentsGeometry(), material = new LineMaterial( { color: Math.random() * 0xffffff } ) ) {
+
+		super( geometry, material );
+
+		this.isLineSegments2 = true;
+
+		this.type = 'LineSegments2';
+
+	}
+
+	// for backwards-compatibility, but could be a method of LineSegmentsGeometry...
+
+	computeLineDistances() {
+
+		const geometry = this.geometry;
+
+		const instanceStart = geometry.attributes.instanceStart;
+		const instanceEnd = geometry.attributes.instanceEnd;
+		const lineDistances = new Float32Array( 2 * instanceStart.count );
+
+		for ( let i = 0, j = 0, l = instanceStart.count; i < l; i ++, j += 2 ) {
+
+			_start.fromBufferAttribute( instanceStart, i );
+			_end.fromBufferAttribute( instanceEnd, i );
+
+			lineDistances[ j ] = ( j === 0 ) ? 0 : lineDistances[ j - 1 ];
+			lineDistances[ j + 1 ] = lineDistances[ j ] + _start.distanceTo( _end );
+
+		}
+
+		const instanceDistanceBuffer = new InstancedInterleavedBuffer( lineDistances, 2, 1 ); // d0, d1
+
+		geometry.setAttribute( 'instanceDistanceStart', new InterleavedBufferAttribute( instanceDistanceBuffer, 1, 0 ) ); // d0
+		geometry.setAttribute( 'instanceDistanceEnd', new InterleavedBufferAttribute( instanceDistanceBuffer, 1, 1 ) ); // d1
+
+		return this;
+
+	}
+
+	raycast( raycaster, intersects ) {
+
+		const worldUnits = this.material.worldUnits;
+		const camera = raycaster.camera;
+
+		if ( camera === null && ! worldUnits ) {
+
+			console.error( 'LineSegments2: "Raycaster.camera" needs to be set in order to raycast against LineSegments2 while worldUnits is set to false.' );
+
+		}
+
+		const threshold = ( raycaster.params.Line2 !== undefined ) ? raycaster.params.Line2.threshold || 0 : 0;
+
+		_ray$1 = raycaster.ray;
+
+		const matrixWorld = this.matrixWorld;
+		const geometry = this.geometry;
+		const material = this.material;
+
+		_lineWidth = material.linewidth + threshold;
+
+		// check if we intersect the sphere bounds
+		if ( geometry.boundingSphere === null ) {
+
+			geometry.computeBoundingSphere();
+
+		}
+
+		_sphere.copy( geometry.boundingSphere ).applyMatrix4( matrixWorld );
+
+		// increase the sphere bounds by the worst case line screen space width
+		let sphereMargin;
+		if ( worldUnits ) {
+
+			sphereMargin = _lineWidth * 0.5;
+
+		} else {
+
+			const distanceToSphere = Math.max( camera.near, _sphere.distanceToPoint( _ray$1.origin ) );
+			sphereMargin = getWorldSpaceHalfWidth( camera, distanceToSphere, material.resolution );
+
+		}
+
+		_sphere.radius += sphereMargin;
+
+		if ( _ray$1.intersectsSphere( _sphere ) === false ) {
+
+			return;
+
+		}
+
+		// check if we intersect the box bounds
+		if ( geometry.boundingBox === null ) {
+
+			geometry.computeBoundingBox();
+
+		}
+
+		_box.copy( geometry.boundingBox ).applyMatrix4( matrixWorld );
+
+		// increase the box bounds by the worst case line width
+		let boxMargin;
+		if ( worldUnits ) {
+
+			boxMargin = _lineWidth * 0.5;
+
+		} else {
+
+			const distanceToBox = Math.max( camera.near, _box.distanceToPoint( _ray$1.origin ) );
+			boxMargin = getWorldSpaceHalfWidth( camera, distanceToBox, material.resolution );
+
+		}
+
+		_box.expandByScalar( boxMargin );
+
+		if ( _ray$1.intersectsBox( _box ) === false ) {
+
+			return;
+
+		}
+
+		if ( worldUnits ) {
+
+			raycastWorldUnits( this, intersects );
+
+		} else {
+
+			raycastScreenSpace( this, camera, intersects );
+
+		}
+
+	}
+
+	onBeforeRender( renderer ) {
+
+		const uniforms = this.material.uniforms;
+
+		if ( uniforms && uniforms.resolution ) {
+
+			renderer.getViewport( _viewport );
+			this.material.uniforms.resolution.value.set( _viewport.z, _viewport.w );
+
+		}
+
+	}
+
+}
+
+class LineGeometry extends LineSegmentsGeometry {
+
+	constructor() {
+
+		super();
+
+		this.isLineGeometry = true;
+
+		this.type = 'LineGeometry';
+
+	}
+
+	setPositions( array ) {
+
+		// converts [ x1, y1, z1,  x2, y2, z2, ... ] to pairs format
+
+		const length = array.length - 3;
+		const points = new Float32Array( 2 * length );
+
+		for ( let i = 0; i < length; i += 3 ) {
+
+			points[ 2 * i ] = array[ i ];
+			points[ 2 * i + 1 ] = array[ i + 1 ];
+			points[ 2 * i + 2 ] = array[ i + 2 ];
+
+			points[ 2 * i + 3 ] = array[ i + 3 ];
+			points[ 2 * i + 4 ] = array[ i + 4 ];
+			points[ 2 * i + 5 ] = array[ i + 5 ];
+
+		}
+
+		super.setPositions( points );
+
+		return this;
+
+	}
+
+	setColors( array ) {
+
+		// converts [ r1, g1, b1,  r2, g2, b2, ... ] to pairs format
+
+		const length = array.length - 3;
+		const colors = new Float32Array( 2 * length );
+
+		for ( let i = 0; i < length; i += 3 ) {
+
+			colors[ 2 * i ] = array[ i ];
+			colors[ 2 * i + 1 ] = array[ i + 1 ];
+			colors[ 2 * i + 2 ] = array[ i + 2 ];
+
+			colors[ 2 * i + 3 ] = array[ i + 3 ];
+			colors[ 2 * i + 4 ] = array[ i + 4 ];
+			colors[ 2 * i + 5 ] = array[ i + 5 ];
+
+		}
+
+		super.setColors( colors );
+
+		return this;
+
+	}
+
+	fromLine( line ) {
+
+		const geometry = line.geometry;
+
+		this.setPositions( geometry.attributes.position.array ); // assumes non-indexed
+
+		// set colors, maybe
+
+		return this;
+
+	}
+
+}
+
+class Line2 extends LineSegments2 {
+
+	constructor( geometry = new LineGeometry(), material = new LineMaterial( { color: Math.random() * 0xffffff } ) ) {
+
+		super( geometry, material );
+
+		this.isLine2 = true;
+
+		this.type = 'Line2';
+
+	}
+
+}
 
 /**
  *  This helper must be added as a child of the light
@@ -60978,4 +62411,4 @@ const USDZLoader$1 = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProper
 	USDZLoader
 }, Symbol.toStringTag, { value: 'Module' }));
 
-export { Euler as $, AddEquation as A, BufferGeometry as B, CustomBlending as C, DoubleSide as D, ExtrudeGeometry as E, BackSide as F, Group as G, FrontSide as H, Float32BufferAttribute as I, TextureLoader as J, BoxGeometry as K, LineBasicMaterial as L, MathUtils as M, NormalBlending as N, OneMinusSrcAlphaFactor as O, PlaneGeometry as P, IcosahedronGeometry as Q, RGBAFormat as R, SrcAlphaFactor as S, TubeGeometry as T, TetrahedronGeometry as U, Vector3 as V, TorusGeometry as W, CylinderGeometry as X, ConeGeometry as Y, InstancedMesh as Z, DynamicDrawUsage as _, Mesh as a, AnimationMixer as a$, Quaternion as a0, Scene as a1, PerspectiveCamera as a2, AmbientLight as a3, DirectionalLight as a4, WebGLRenderer as a5, NearestFilter as a6, SpriteMaterial as a7, RGBELoader as a8, EXRLoader as a9, UnrealBloomPass as aA, ShaderPass as aB, UnsignedByteType as aC, CircleGeometry as aD, CurvePath as aE, CubicBezierCurve3 as aF, Text as aG, DataTexture as aH, RedFormat as aI, InstancedBufferGeometry as aJ, InstancedBufferAttribute as aK, RingGeometry as aL, PointLight as aM, RectAreaLight as aN, SpotLight as aO, RectAreaLightHelper as aP, DirectionalLightHelper as aQ, SpotLightHelper as aR, PointLightHelper as aS, RectAreaLightUniformsLib as aT, CanvasTexture as aU, GLTFLoader as aV, DRACOLoader as aW, MeshoptDecoder as aX, OBJLoader as aY, FBXLoader as aZ, ColladaLoader as a_, PMREMGenerator as aa, RepeatWrapping as ab, LinearMipmapLinearFilter as ac, LinearSRGBColorSpace as ad, Vector2 as ae, AxesHelper as af, GridHelper as ag, EquirectangularReflectionMapping as ah, LineLoop as ai, Shape as aj, Path as ak, ACESFilmicToneMapping as al, PCFSoftShadowMap as am, EffectComposer as an, MeshNormalMaterial as ao, WebGLRenderTarget as ap, HalfFloatType as aq, DepthTexture as ar, DepthFormat as as, UnsignedIntType as at, FloatType as au, ShaderMaterial as av, RenderPass as aw, OutputPass as ax, BokehPass as ay, SSAOPass as az, OneFactor as b, LoopRepeat as b0, LoopOnce as b1, MeshDepthMaterial as b2, RGBADepthPacking as b3, BoxHelper as b4, SkeletonHelper as b5, SkinnedMesh as b6, PLYLoader as b7, PCDLoader as b8, Points as b9, Raycaster as ba, OrbitControls as bb, MOUSE as bc, OrthographicCamera as bd, Texture as be, TransformControls as bf, USDZLoader$1 as bg, MaxEquation as c, MinEquation as d, OneMinusDstColorFactor as e, OneMinusSrcColorFactor as f, SubtractEquation as g, SubtractiveBlending as h, AdditiveBlending as i, MultiplyBlending as j, CatmullRomCurve3 as k, Line as l, OctahedronGeometry as m, MeshBasicMaterial as n, SphereGeometry as o, Box3 as p, VideoTexture as q, LinearFilter as r, SRGBColorSpace as s, SVGLoader as t, Color as u, Matrix4 as v, ShapeGeometry as w, BufferAttribute as x, MeshStandardMaterial as y, MeshPhysicalMaterial as z };
+export { Euler as $, AddEquation as A, BufferGeometry as B, CustomBlending as C, DoubleSide as D, ExtrudeGeometry as E, BackSide as F, Group as G, FrontSide as H, Float32BufferAttribute as I, TextureLoader as J, BoxGeometry as K, LineBasicMaterial as L, MathUtils as M, NormalBlending as N, OneMinusSrcAlphaFactor as O, PlaneGeometry as P, IcosahedronGeometry as Q, RGBAFormat as R, SrcAlphaFactor as S, TubeGeometry as T, TetrahedronGeometry as U, Vector3 as V, TorusGeometry as W, CylinderGeometry as X, ConeGeometry as Y, InstancedMesh as Z, DynamicDrawUsage as _, Mesh as a, OBJLoader as a$, Quaternion as a0, Scene as a1, PerspectiveCamera as a2, AmbientLight as a3, DirectionalLight as a4, WebGLRenderer as a5, NearestFilter as a6, SpriteMaterial as a7, RGBELoader as a8, EXRLoader as a9, UnrealBloomPass as aA, ShaderPass as aB, UnsignedByteType as aC, CircleGeometry as aD, CurvePath as aE, CubicBezierCurve3 as aF, Text as aG, LineGeometry as aH, LineMaterial as aI, Line2 as aJ, DataTexture as aK, RedFormat as aL, InstancedBufferGeometry as aM, InstancedBufferAttribute as aN, RingGeometry as aO, PointLight as aP, RectAreaLight as aQ, SpotLight as aR, RectAreaLightHelper as aS, DirectionalLightHelper as aT, SpotLightHelper as aU, PointLightHelper as aV, RectAreaLightUniformsLib as aW, CanvasTexture as aX, GLTFLoader as aY, DRACOLoader as aZ, MeshoptDecoder as a_, PMREMGenerator as aa, RepeatWrapping as ab, LinearMipmapLinearFilter as ac, LinearSRGBColorSpace as ad, Vector2 as ae, AxesHelper as af, GridHelper as ag, EquirectangularReflectionMapping as ah, LineLoop as ai, Shape as aj, Path as ak, ACESFilmicToneMapping as al, PCFSoftShadowMap as am, EffectComposer as an, MeshNormalMaterial as ao, WebGLRenderTarget as ap, HalfFloatType as aq, DepthTexture as ar, DepthFormat as as, UnsignedIntType as at, FloatType as au, ShaderMaterial as av, RenderPass as aw, OutputPass as ax, BokehPass as ay, SSAOPass as az, OneFactor as b, FBXLoader as b0, ColladaLoader as b1, AnimationMixer as b2, LoopRepeat as b3, LoopOnce as b4, MeshDepthMaterial as b5, RGBADepthPacking as b6, BoxHelper as b7, SkeletonHelper as b8, SkinnedMesh as b9, PLYLoader as ba, PCDLoader as bb, Points as bc, Raycaster as bd, OrbitControls as be, MOUSE as bf, OrthographicCamera as bg, Texture as bh, TransformControls as bi, USDZLoader$1 as bj, MaxEquation as c, MinEquation as d, OneMinusDstColorFactor as e, OneMinusSrcColorFactor as f, SubtractEquation as g, SubtractiveBlending as h, AdditiveBlending as i, MultiplyBlending as j, CatmullRomCurve3 as k, Line as l, OctahedronGeometry as m, MeshBasicMaterial as n, SphereGeometry as o, Box3 as p, VideoTexture as q, LinearFilter as r, SRGBColorSpace as s, SVGLoader as t, Color as u, Matrix4 as v, ShapeGeometry as w, BufferAttribute as x, MeshStandardMaterial as y, MeshPhysicalMaterial as z };

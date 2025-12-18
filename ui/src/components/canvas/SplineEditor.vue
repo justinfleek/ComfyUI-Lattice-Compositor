@@ -2,6 +2,54 @@
   <div class="spline-editor">
     <!-- Spline toolbar (shown when a spline layer is selected) -->
     <div v-if="layerId && hasControlPoints" class="spline-toolbar">
+      <!-- Pen Tool Options -->
+      <div class="toolbar-group pen-tools">
+        <button
+          class="toolbar-btn icon-btn"
+          :class="{ active: isPenMode }"
+          @click="emit('togglePenMode')"
+          title="Add Points (P)"
+        >
+          <svg viewBox="0 0 24 24" width="14" height="14">
+            <path fill="currentColor" d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87L20.71,7.04Z M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z"/>
+          </svg>
+        </button>
+        <button
+          class="toolbar-btn icon-btn"
+          :disabled="!selectedPointId"
+          @click="deleteSelectedPoint"
+          title="Delete Point (Del)"
+        >
+          <svg viewBox="0 0 24 24" width="14" height="14">
+            <path fill="currentColor" d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"/>
+          </svg>
+        </button>
+        <div class="toolbar-separator"></div>
+        <button
+          class="toolbar-btn icon-btn"
+          :class="{ active: selectedPointType === 'smooth' }"
+          :disabled="!selectedPointId"
+          @click="setPointType('smooth')"
+          title="Smooth Point (bezier handles)"
+        >
+          <svg viewBox="0 0 24 24" width="14" height="14">
+            <circle cx="12" cy="12" r="6" fill="none" stroke="currentColor" stroke-width="2"/>
+          </svg>
+        </button>
+        <button
+          class="toolbar-btn icon-btn"
+          :class="{ active: selectedPointType === 'corner' }"
+          :disabled="!selectedPointId"
+          @click="setPointType('corner')"
+          title="Corner Point (linear)"
+        >
+          <svg viewBox="0 0 24 24" width="14" height="14">
+            <rect x="6" y="6" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"/>
+          </svg>
+        </button>
+      </div>
+      <div class="toolbar-separator"></div>
+      <!-- Path Operations -->
       <div class="toolbar-group">
         <button
           class="toolbar-btn"
@@ -202,6 +250,7 @@ const emit = defineEmits<{
   (e: 'pointDeleted', pointId: string): void;
   (e: 'pathUpdated'): void;
   (e: 'pathClosed'): void;
+  (e: 'togglePenMode'): void;
 }>();
 
 const store = useCompositorStore();
@@ -230,6 +279,56 @@ const smoothTolerance = ref(10);
 
 // Check if spline has control points
 const hasControlPoints = computed(() => visibleControlPoints.value.length > 0);
+
+// Get type of selected point
+const selectedPointType = computed<'smooth' | 'corner' | null>(() => {
+  if (!selectedPointId.value) return null;
+  const point = visibleControlPoints.value.find(p => p.id === selectedPointId.value);
+  return point?.type ?? null;
+});
+
+// Delete the selected point
+function deleteSelectedPoint() {
+  if (selectedPointId.value && props.layerId) {
+    const pointId = selectedPointId.value;
+    store.deleteSplineControlPoint(props.layerId, pointId);
+    emit('pointDeleted', pointId);
+    emit('pathUpdated');
+    selectedPointId.value = null;
+  }
+}
+
+// Set the point type (smooth = bezier with handles, corner = linear)
+function setPointType(type: 'smooth' | 'corner') {
+  if (!selectedPointId.value || !props.layerId) return;
+
+  const point = visibleControlPoints.value.find(p => p.id === selectedPointId.value);
+  if (!point) return;
+
+  if (type === 'corner') {
+    // Convert to corner: remove handles
+    store.updateSplineControlPoint(props.layerId, selectedPointId.value, {
+      type: 'corner',
+      handleIn: null,
+      handleOut: null
+    });
+  } else {
+    // Convert to smooth: create default handles if needed
+    const handleOffset = 30;
+    const updates: any = { type: 'smooth' };
+
+    if (!point.handleIn) {
+      updates.handleIn = { x: point.x - handleOffset, y: point.y };
+    }
+    if (!point.handleOut) {
+      updates.handleOut = { x: point.x + handleOffset, y: point.y };
+    }
+
+    store.updateSplineControlPoint(props.layerId, selectedPointId.value, updates);
+  }
+
+  emit('pathUpdated');
+}
 
 // Smooth spline handles
 function smoothSpline() {
@@ -325,26 +424,33 @@ const canClosePath = computed(() => {
 const CLOSE_THRESHOLD = 15; // pixels
 
 // Calculate overlay position and size to match Three.js render area
+// Must account for zoom level - at 25% zoom, the composition is 25% the size
 const overlayStyle = computed(() => {
   const containerAspect = props.containerWidth / props.containerHeight;
   const compAspect = props.canvasWidth / props.canvasHeight;
 
-  let width: number;
-  let height: number;
-  let left = 0;
-  let top = 0;
+  // First, calculate the "fit" size (100% zoom would fill the available space)
+  let fitWidth: number;
+  let fitHeight: number;
 
   if (containerAspect > compAspect) {
-    // Container is wider - composition is fit to height
-    height = props.containerHeight;
-    width = props.canvasWidth * (props.containerHeight / props.canvasHeight);
-    left = (props.containerWidth - width) / 2;
+    // Container is wider - composition fits to height at 100%
+    fitHeight = props.containerHeight;
+    fitWidth = props.canvasWidth * (props.containerHeight / props.canvasHeight);
   } else {
-    // Container is taller - composition is fit to width
-    width = props.containerWidth;
-    height = props.canvasHeight * (props.containerWidth / props.canvasWidth);
-    top = (props.containerHeight - height) / 2;
+    // Container is taller - composition fits to width at 100%
+    fitWidth = props.containerWidth;
+    fitHeight = props.canvasHeight * (props.containerWidth / props.canvasWidth);
   }
+
+  // Apply zoom factor - zoom of 1 = 100%, zoom of 0.25 = 25%
+  const zoomFactor = props.zoom || 1;
+  const width = fitWidth * zoomFactor;
+  const height = fitHeight * zoomFactor;
+
+  // Center the overlay in the container
+  const left = (props.containerWidth - width) / 2;
+  const top = (props.containerHeight - height) / 2;
 
   return {
     position: 'absolute' as const,
@@ -817,6 +923,40 @@ defineExpose({
 .toolbar-btn:active {
   background: #00ff66;
   color: #000;
+}
+
+.toolbar-btn.icon-btn {
+  padding: 4px 6px;
+  min-width: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toolbar-btn.icon-btn.active {
+  background: rgba(0, 255, 100, 0.4);
+  border-color: #00ff66;
+}
+
+.toolbar-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.toolbar-btn:disabled:hover {
+  background: rgba(0, 200, 100, 0.2);
+  border-color: rgba(0, 255, 100, 0.4);
+}
+
+.toolbar-separator {
+  width: 1px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.2);
+  margin: 0 4px;
+}
+
+.pen-tools {
+  gap: 4px;
 }
 
 .tolerance-label {
