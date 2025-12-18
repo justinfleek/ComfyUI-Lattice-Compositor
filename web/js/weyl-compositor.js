@@ -55706,16 +55706,17 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
       return n.toString().padStart(2, "0");
     }
     function loadCurrentSettings() {
+      const activeComp = store.activeComposition;
       settings.value = {
-        name: store.project?.meta?.name || "Main Comp",
+        name: activeComp?.name || "Main Comp",
         width: store.width,
         height: store.height,
         pixelAspectRatio: 1,
         fps: store.fps,
         frameCount: store.frameCount,
         resolution: "full",
-        backgroundColor: store.project?.composition?.backgroundColor || "#000000",
-        autoResizeToContent: store.project?.composition?.autoResizeToContent ?? true,
+        backgroundColor: activeComp?.backgroundColor || "#000000",
+        autoResizeToContent: activeComp?.autoResizeToContent ?? true,
         startTimecode: "00:00:00:00",
         motionBlurEnabled: false,
         shutterAngle: 180,
@@ -56063,7 +56064,7 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
   }
 });
 
-const CompositionSettingsDialog = /* @__PURE__ */ _export_sfc(_sfc_main$4, [["__scopeId", "data-v-a57ab0cc"]]);
+const CompositionSettingsDialog = /* @__PURE__ */ _export_sfc(_sfc_main$4, [["__scopeId", "data-v-baf0e8b4"]]);
 
 const logger$1 = createLogger("MotionIntentResolver");
 const SYSTEM_PROMPT = `You are a motion graphics expert analyzing images for camera movements and animation paths.

@@ -402,16 +402,18 @@ function pad(n: number): string {
 }
 
 function loadCurrentSettings() {
+  // Get active composition's name, not project meta name
+  const activeComp = store.activeComposition;
   settings.value = {
-    name: store.project?.meta?.name || 'Main Comp',
+    name: activeComp?.name || 'Main Comp',
     width: store.width,
     height: store.height,
     pixelAspectRatio: 1,
     fps: store.fps,
     frameCount: store.frameCount,
     resolution: 'full',
-    backgroundColor: store.project?.composition?.backgroundColor || '#000000',
-    autoResizeToContent: store.project?.composition?.autoResizeToContent ?? true,
+    backgroundColor: activeComp?.backgroundColor || '#000000',
+    autoResizeToContent: activeComp?.autoResizeToContent ?? true,
     startTimecode: '00:00:00:00',
     motionBlurEnabled: false,
     shutterAngle: 180,
