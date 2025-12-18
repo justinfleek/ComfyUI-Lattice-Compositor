@@ -760,7 +760,7 @@ watch([camera, viewportState, viewOptions, layers], () => {
   background: transparent;
   border: none;
   color: #888;
-  font-size: 11px;
+  font-size: 13px;
   cursor: pointer;
   outline: none;
 }
@@ -800,7 +800,7 @@ watch([camera, viewportState, viewOptions, layers], () => {
   left: 4px;
   display: flex;
   gap: 8px;
-  font-size: 10px;
+  font-size: 12px;
   color: #666;
   pointer-events: none;
 }

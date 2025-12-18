@@ -493,7 +493,7 @@ function emitUpdate() {
   color: #ccc;
   padding: 4px 8px;
   border-radius: 3px;
-  font-size: 11px;
+  font-size: 13px;
   min-width: 100px;
 }
 
@@ -509,7 +509,7 @@ function emitUpdate() {
   background: #222;
   cursor: pointer;
   user-select: none;
-  font-size: 11px;
+  font-size: 13px;
   color: #aaa;
 }
 
@@ -518,7 +518,7 @@ function emitUpdate() {
 }
 
 .section-header i {
-  font-size: 10px;
+  font-size: 12px;
   color: #666;
 }
 
@@ -537,7 +537,7 @@ function emitUpdate() {
 
 .property-group label {
   color: #888;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .property-row {
@@ -548,7 +548,7 @@ function emitUpdate() {
 
 .property-row label {
   color: #888;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .checkbox-row label {
@@ -556,7 +556,7 @@ function emitUpdate() {
   align-items: center;
   gap: 6px;
   color: #ccc;
-  font-size: 11px;
+  font-size: 13px;
   cursor: pointer;
 }
 
@@ -566,7 +566,7 @@ function emitUpdate() {
   color: #ccc;
   padding: 4px 8px;
   border-radius: 3px;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .texture-grid {
@@ -589,7 +589,7 @@ function emitUpdate() {
 
 .setting-row label {
   width: 70px;
-  font-size: 10px;
+  font-size: 12px;
   color: #888;
 }
 
@@ -602,7 +602,7 @@ function emitUpdate() {
 
 .separator {
   color: #555;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .editor-actions {
@@ -624,7 +624,7 @@ function emitUpdate() {
   border: 1px solid #444;
   color: #ccc;
   border-radius: 4px;
-  font-size: 11px;
+  font-size: 13px;
   cursor: pointer;
   transition: all 0.2s ease;
 }

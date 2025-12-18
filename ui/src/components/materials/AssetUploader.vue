@@ -426,12 +426,12 @@ function removeAsset() {
 }
 
 .upload-hint {
-  font-size: 11px;
+  font-size: 13px;
   color: #555;
 }
 
 .upload-formats {
-  font-size: 10px;
+  font-size: 12px;
   color: #444;
   margin-top: 4px;
 }
@@ -482,7 +482,7 @@ function removeAsset() {
 }
 
 .asset-meta {
-  font-size: 10px;
+  font-size: 12px;
   color: #666;
 }
 
@@ -526,7 +526,7 @@ function removeAsset() {
 }
 
 .progress-text {
-  font-size: 10px;
+  font-size: 12px;
   color: #888;
   min-width: 40px;
   text-align: right;
@@ -540,7 +540,7 @@ function removeAsset() {
   background: rgba(220, 68, 68, 0.1);
   border: 1px solid rgba(220, 68, 68, 0.3);
   border-radius: 4px;
-  font-size: 11px;
+  font-size: 13px;
   color: #d44;
 }
 </style>

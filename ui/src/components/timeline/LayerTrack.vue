@@ -270,7 +270,7 @@ function stopTrim() {
 
 .layer-name {
   flex: 1;
-  font-size: 11px;
+  font-size: 13px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -278,7 +278,7 @@ function stopTrim() {
 }
 
 .layer-type {
-  font-size: 9px;
+  font-size: 11px;
   color: #666;
   text-transform: uppercase;
   padding: 2px 4px;

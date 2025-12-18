@@ -257,7 +257,7 @@ function onSvgMouseDown(_e: MouseEvent): void {
   border-radius: 3px;
   background: #2a2a2a;
   color: #888;
-  font-size: 10px;
+  font-size: 12px;
   cursor: pointer;
   transition: all 0.1s;
 }
@@ -329,7 +329,7 @@ function onSvgMouseDown(_e: MouseEvent): void {
 .coords-display {
   display: flex;
   justify-content: space-between;
-  font-size: 10px;
+  font-size: 12px;
   color: #666;
   font-family: monospace;
 }

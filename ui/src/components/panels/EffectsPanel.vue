@@ -364,7 +364,7 @@ function onDragPreset(preset: AnimationPreset, event: DragEvent) {
   background: #1a1a1a;
   color: #e0e0e0;
   border-radius: 3px;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .search-input:focus {
@@ -391,7 +391,7 @@ function onDragPreset(preset: AnimationPreset, event: DragEvent) {
   border: none;
   background: transparent;
   color: #888;
-  font-size: 11px;
+  font-size: 13px;
   cursor: pointer;
   border-bottom: 2px solid transparent;
 }
@@ -432,7 +432,7 @@ function onDragPreset(preset: AnimationPreset, event: DragEvent) {
 }
 
 .expand-icon {
-  font-size: 8px;
+  font-size: 11px;
   color: #666;
   width: 10px;
 }
@@ -445,18 +445,18 @@ function onDragPreset(preset: AnimationPreset, event: DragEvent) {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 10px;
+  font-size: 12px;
   color: #7c9cff;
 }
 
 .category-name {
   flex: 1;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .effect-count,
 .preset-count {
-  font-size: 9px;
+  font-size: 11px;
   color: #666;
   background: #333;
   padding: 2px 6px;
@@ -493,13 +493,13 @@ function onDragPreset(preset: AnimationPreset, event: DragEvent) {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 9px;
+  font-size: 11px;
   color: #7c9cff;
 }
 
 .effect-name {
   flex: 1;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .favorite-btn {
@@ -560,11 +560,11 @@ function onDragPreset(preset: AnimationPreset, event: DragEvent) {
 }
 
 .preset-name {
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .preset-description {
-  font-size: 9px;
+  font-size: 11px;
   color: #666;
 }
 
@@ -575,7 +575,7 @@ function onDragPreset(preset: AnimationPreset, event: DragEvent) {
 }
 
 .empty-favorites .hint {
-  font-size: 11px;
+  font-size: 13px;
   margin-top: 8px;
 }
 
@@ -586,7 +586,7 @@ function onDragPreset(preset: AnimationPreset, event: DragEvent) {
 }
 
 .info-text {
-  font-size: 10px;
+  font-size: 12px;
   color: #666;
 }
 </style>

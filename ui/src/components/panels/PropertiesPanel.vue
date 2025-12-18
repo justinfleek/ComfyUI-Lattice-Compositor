@@ -608,7 +608,7 @@ function hasDriver(property: PropertyPath): boolean {
   height: 100%;
   background: #1e1e1e;
   color: #e0e0e0;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .panel-header {
@@ -647,7 +647,7 @@ function hasDriver(property: PropertyPath): boolean {
 
 .expand-icon {
   width: 10px;
-  font-size: 8px;
+  font-size: 11px;
   color: #666;
 }
 
@@ -657,7 +657,7 @@ function hasDriver(property: PropertyPath): boolean {
 }
 
 .reset-link {
-  font-size: 10px;
+  font-size: 12px;
   color: #4a90d9;
   cursor: pointer;
   padding: 2px 8px;
@@ -670,7 +670,7 @@ function hasDriver(property: PropertyPath): boolean {
 
 .stopwatch {
   width: 16px;
-  font-size: 10px;
+  font-size: 12px;
   color: #555;
   cursor: pointer;
   flex-shrink: 0;
@@ -692,7 +692,7 @@ function hasDriver(property: PropertyPath): boolean {
 }
 
 .value-group.scale-group .link-btn {
-  font-size: 10px;
+  font-size: 12px;
   background: transparent;
   border: none;
   cursor: pointer;
@@ -712,7 +712,7 @@ function hasDriver(property: PropertyPath): boolean {
 .rotation-display {
   color: #4a90d9;
   font-family: 'Consolas', monospace;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .threeD-toggle {
@@ -723,7 +723,7 @@ function hasDriver(property: PropertyPath): boolean {
   padding: 2px 6px;
   background: #333;
   border-radius: 3px;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .threeD-toggle:hover {
@@ -768,7 +768,7 @@ function hasDriver(property: PropertyPath): boolean {
 .property-row label {
   width: 80px;
   color: #888;
-  font-size: 10px;
+  font-size: 12px;
   flex-shrink: 0;
 }
 
@@ -797,7 +797,7 @@ function hasDriver(property: PropertyPath): boolean {
   color: #555;
   cursor: pointer;
   border-radius: 3px;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .link-btn:hover {
@@ -816,7 +816,7 @@ function hasDriver(property: PropertyPath): boolean {
   background: transparent;
   color: #444;
   cursor: pointer;
-  font-size: 10px;
+  font-size: 12px;
   border-radius: 2px;
 }
 
@@ -852,7 +852,7 @@ function hasDriver(property: PropertyPath): boolean {
   border: 1px solid #3a3a3a;
   color: #e0e0e0;
   border-radius: 3px;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .empty-state {
@@ -867,7 +867,7 @@ function hasDriver(property: PropertyPath): boolean {
 }
 
 .empty-state .hint {
-  font-size: 10px;
+  font-size: 12px;
   margin-top: 4px;
 }
 </style>

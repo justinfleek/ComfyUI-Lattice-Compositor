@@ -619,7 +619,7 @@ onUnmounted(() => {
 
 .unit {
   color: #666;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .dimensions-row {
@@ -658,7 +658,7 @@ onUnmounted(() => {
 .aspect-info,
 .resolution-info {
   color: #666;
-  font-size: 11px;
+  font-size: 13px;
   margin-left: auto;
 }
 
@@ -671,7 +671,7 @@ onUnmounted(() => {
 
 .duration-helper {
   color: #666;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .color-picker-row {
@@ -691,7 +691,7 @@ onUnmounted(() => {
 
 .color-label {
   color: #888;
-  font-size: 11px;
+  font-size: 13px;
   font-family: monospace;
 }
 
@@ -717,7 +717,7 @@ onUnmounted(() => {
 .param-row label {
   width: 100px;
   color: #888;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .dialog-footer {

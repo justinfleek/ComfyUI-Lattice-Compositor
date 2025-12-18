@@ -149,7 +149,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.audio-panel { display: flex; flex-direction: column; height: 100%; background: #1e1e1e; color: #ccc; font-size: 11px; }
+.audio-panel { display: flex; flex-direction: column; height: 100%; background: #1e1e1e; color: #ccc; font-size: 13px; }
 .panel-header { display: flex; justify-content: space-between; align-items: center; padding: 8px; background: #252525; border-bottom: 1px solid #111; font-weight: 600; }
 .header-actions button { background: none; border: none; cursor: pointer; color: #aaa; padding: 4px; border-radius: 3px; }
 .header-actions button:hover { background: #333; color: #fff; }
@@ -160,7 +160,7 @@ onMounted(() => {
 .file-icon { font-size: 20px; }
 .file-details { flex: 1; display: flex; flex-direction: column; }
 .file-name { font-weight: 500; color: #eee; }
-.file-meta { color: #888; font-size: 10px; }
+.file-meta { color: #888; font-size: 12px; }
 .remove-btn { background: none; border: none; color: #666; cursor: pointer; font-size: 16px; padding: 4px; }
 .remove-btn:hover { color: #f44; }
 
@@ -190,5 +190,5 @@ onMounted(() => {
 .empty-icon { font-size: 48px; margin-bottom: 12px; opacity: 0.5; }
 .load-btn { padding: 8px 16px; background: #4a90d9; border: none; color: white; border-radius: 4px; cursor: pointer; margin-top: 12px; font-size: 12px; }
 .load-btn:hover { background: #5aa0e9; }
-.hint { font-size: 10px; margin-top: 8px; color: #555; }
+.hint { font-size: 12px; margin-top: 8px; color: #555; }
 </style>

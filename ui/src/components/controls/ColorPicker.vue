@@ -603,7 +603,7 @@ onUnmounted(() => {
   border-radius: 3px;
   background: #2a2a2a;
   color: #e0e0e0;
-  font-size: 11px;
+  font-size: 13px;
   font-family: monospace;
 }
 
@@ -636,7 +636,7 @@ onUnmounted(() => {
   border-radius: 3px;
   background: #2a2a2a;
   color: #888;
-  font-size: 10px;
+  font-size: 12px;
   cursor: pointer;
 }
 
@@ -724,7 +724,7 @@ onUnmounted(() => {
 
 .color-slider label {
   width: 14px;
-  font-size: 10px;
+  font-size: 12px;
   color: #888;
   font-weight: 500;
 }
@@ -776,7 +776,7 @@ onUnmounted(() => {
 
 .alpha-slider label {
   width: 14px;
-  font-size: 10px;
+  font-size: 12px;
   color: #888;
   font-weight: 500;
 }
@@ -797,7 +797,7 @@ onUnmounted(() => {
   border-radius: 3px;
   background: #2a2a2a;
   color: #e0e0e0;
-  font-size: 10px;
+  font-size: 12px;
   text-align: right;
 }
 
@@ -821,7 +821,7 @@ onUnmounted(() => {
 }
 
 .swatches-label {
-  font-size: 10px;
+  font-size: 12px;
   color: #666;
   margin-bottom: 6px;
 }

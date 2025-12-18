@@ -914,7 +914,7 @@ onUnmounted(() => {
   color: #888;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 13px;
   transition: all 0.15s ease;
 }
 
@@ -940,7 +940,7 @@ onUnmounted(() => {
 }
 
 .value-label {
-  font-size: 11px;
+  font-size: 13px;
   color: #888;
 }
 
@@ -951,7 +951,7 @@ onUnmounted(() => {
   border-radius: 3px;
   background: #2a2a2a;
   color: #3498db;
-  font-size: 11px;
+  font-size: 13px;
   text-align: right;
 }
 
@@ -987,7 +987,7 @@ onUnmounted(() => {
 }
 
 .zoom-level {
-  font-size: 10px;
+  font-size: 12px;
   color: #666;
   min-width: 50px;
   text-align: center;
@@ -1007,7 +1007,7 @@ onUnmounted(() => {
   position: absolute;
   top: 4px;
   right: 8px;
-  font-size: 9px;
+  font-size: 11px;
   color: #888;
   text-transform: uppercase;
 }
@@ -1016,7 +1016,7 @@ onUnmounted(() => {
   position: absolute;
   right: 8px;
   transform: translateY(-50%);
-  font-size: 10px;
+  font-size: 12px;
   color: #666;
   font-family: monospace;
 }

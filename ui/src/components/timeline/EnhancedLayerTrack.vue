@@ -507,7 +507,7 @@ onUnmounted(() => {
   width: 22px;
   height: 100%;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 13px;
 }
 .icon-col span { color: #555; transition: color 0.15s; }
 .icon-col:hover span { color: #ccc; }
@@ -522,7 +522,7 @@ onUnmounted(() => {
   width: 16px;
   cursor: pointer;
 }
-.arrow { color: #666; font-size: 8px; }
+.arrow { color: #666; font-size: 11px; }
 .arrow-col:hover .arrow { color: #ccc; }
 
 /* Label color box */
@@ -538,7 +538,7 @@ onUnmounted(() => {
 
 /* Layer number */
 .layer-id {
-  font-size: 10px;
+  font-size: 12px;
   color: #666;
   min-width: 16px;
   text-align: center;
@@ -553,7 +553,7 @@ onUnmounted(() => {
   min-width: 0;
   overflow: hidden;
 }
-.type-icon { margin-right: 4px; font-size: 10px; opacity: 0.7; }
+.type-icon { margin-right: 4px; font-size: 12px; opacity: 0.7; }
 .name-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; }
 .rename-input { background: #111; border: 1px solid #4a90d9; color: #fff; padding: 2px 4px; font-size: 12px; width: 100%; }
 
@@ -570,7 +570,7 @@ onUnmounted(() => {
   background: transparent;
   border: none;
   color: #888;
-  font-size: 10px;
+  font-size: 12px;
   cursor: pointer;
 }
 .mini-select:hover { color: #ccc; }
@@ -587,7 +587,7 @@ onUnmounted(() => {
   gap: 12px;
 }
 .reset-link {
-  font-size: 10px;
+  font-size: 12px;
   color: #4a90d9;
   cursor: pointer;
   font-weight: normal;

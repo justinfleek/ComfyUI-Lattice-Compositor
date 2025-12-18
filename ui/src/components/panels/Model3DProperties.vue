@@ -444,7 +444,7 @@ function formatNumber(num: number): string {
   flex-direction: column;
   background: #1e1e1e;
   color: #e0e0e0;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .property-section {
@@ -459,7 +459,7 @@ function formatNumber(num: number): string {
   background: #222;
   cursor: pointer;
   user-select: none;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 500;
   color: #ccc;
 }
@@ -469,7 +469,7 @@ function formatNumber(num: number): string {
 }
 
 .icon {
-  font-size: 8px;
+  font-size: 11px;
   color: #666;
   transition: transform 0.2s;
 }
@@ -493,7 +493,7 @@ function formatNumber(num: number): string {
 
 .property-group > label {
   color: #888;
-  font-size: 10px;
+  font-size: 12px;
   text-transform: uppercase;
 }
 
@@ -530,7 +530,7 @@ function formatNumber(num: number): string {
 }
 
 .axis {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   width: 14px;
 }
@@ -554,7 +554,7 @@ function formatNumber(num: number): string {
   border: 1px solid #333;
   color: #e0e0e0;
   border-radius: 3px;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .action-btn {

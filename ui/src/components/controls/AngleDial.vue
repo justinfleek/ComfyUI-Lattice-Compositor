@@ -206,7 +206,7 @@ function onBlur(e: FocusEvent): void {
   border-radius: 3px;
   background: #2a2a2a;
   color: #e0e0e0;
-  font-size: 11px;
+  font-size: 13px;
   text-align: right;
 }
 
@@ -226,7 +226,7 @@ function onBlur(e: FocusEvent): void {
 }
 
 .angle-unit {
-  font-size: 11px;
+  font-size: 13px;
   color: #666;
 }
 </style>

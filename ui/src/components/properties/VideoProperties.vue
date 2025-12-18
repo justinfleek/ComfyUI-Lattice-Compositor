@@ -310,7 +310,7 @@ function updateLevel(val: number) {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .info-label {
@@ -333,7 +333,7 @@ function updateLevel(val: number) {
 .property-row > label {
   width: 80px;
   color: #888;
-  font-size: 11px;
+  font-size: 13px;
   flex-shrink: 0;
 }
 
@@ -356,7 +356,7 @@ function updateLevel(val: number) {
   gap: 6px;
   cursor: pointer;
   color: #ccc;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .checkbox-row input {
@@ -371,7 +371,7 @@ function updateLevel(val: number) {
   border: 1px solid #3a3a3a;
   border-radius: 3px;
   color: #ccc;
-  font-size: 11px;
+  font-size: 13px;
   cursor: pointer;
 }
 
@@ -382,7 +382,7 @@ function updateLevel(val: number) {
 
 /* Hint Text */
 .hint {
-  font-size: 10px;
+  font-size: 12px;
   color: #666;
   margin: 4px 0 0 0;
   font-style: italic;
@@ -402,6 +402,6 @@ function updateLevel(val: number) {
   align-items: center;
   justify-content: center;
   color: #444;
-  font-size: 10px;
+  font-size: 12px;
 }
 </style>

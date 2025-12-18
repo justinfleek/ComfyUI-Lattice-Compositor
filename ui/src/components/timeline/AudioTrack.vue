@@ -294,7 +294,7 @@ onMounted(() => {
   background: #4a90d9;
   color: #fff;
   border-radius: 3px;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 500;
 }
 
@@ -339,7 +339,7 @@ onMounted(() => {
   background: #333;
   border: 1px solid #444;
   border-radius: 4px;
-  font-size: 10px;
+  font-size: 12px;
   color: #fff;
   white-space: nowrap;
   pointer-events: none;

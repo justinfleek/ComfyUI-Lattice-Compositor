@@ -18,5 +18,18 @@ html, body, #app {
   width: 100%;
   height: 100%;
   overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+/* Global font size increase for readability */
+button, input, select, textarea, label {
+  font-size: 13px;
+}
+
+/* Ensure small text is still readable */
+.small-text, small {
+  font-size: 12px;
 }
 </style>

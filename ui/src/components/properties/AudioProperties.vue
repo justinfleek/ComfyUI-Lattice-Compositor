@@ -570,7 +570,7 @@ onMounted(() => {
 }
 
 .section-header i {
-  font-size: 10px;
+  font-size: 12px;
   color: #888;
 }
 
@@ -590,7 +590,7 @@ onMounted(() => {
 
 .property-row label {
   flex-shrink: 0;
-  font-size: 11px;
+  font-size: 13px;
   color: #888;
   min-width: 80px;
 }
@@ -620,7 +620,7 @@ onMounted(() => {
   border: 1px solid #3a3a3a;
   border-radius: 4px;
   color: #e0e0e0;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .small-input {
@@ -632,7 +632,7 @@ onMounted(() => {
 }
 
 .value-display {
-  font-size: 10px;
+  font-size: 12px;
   color: #666;
   min-width: 50px;
   text-align: right;
@@ -647,7 +647,7 @@ onMounted(() => {
   border: none;
   border-radius: 4px;
   color: #fff;
-  font-size: 11px;
+  font-size: 13px;
   cursor: pointer;
   transition: background 0.1s;
 }
@@ -663,14 +663,14 @@ onMounted(() => {
 }
 
 .peak-count {
-  font-size: 11px;
+  font-size: 13px;
   color: #4a90d9;
   margin-left: auto;
 }
 
 .mapping-count {
   margin-left: auto;
-  font-size: 10px;
+  font-size: 12px;
   padding: 2px 6px;
   background: #4a90d9;
   border-radius: 10px;
@@ -698,7 +698,7 @@ onMounted(() => {
 
 .mapping-name {
   flex: 1;
-  font-size: 11px;
+  font-size: 13px;
   color: #aaa;
   white-space: nowrap;
   overflow: hidden;
@@ -758,14 +758,14 @@ onMounted(() => {
 }
 
 .visualizer-value {
-  font-size: 10px;
+  font-size: 12px;
   color: #666;
   text-align: center;
 }
 
 /* Subsection headers for organizing mapping controls */
 .subsection-header {
-  font-size: 10px;
+  font-size: 12px;
   color: #4a90d9;
   text-transform: uppercase;
   letter-spacing: 0.5px;

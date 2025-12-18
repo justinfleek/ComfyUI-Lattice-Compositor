@@ -377,7 +377,7 @@ async function handleFontChange(family: string) {
 <style scoped>
 .text-properties { padding: 15px; color: #ddd; font-family: 'Segoe UI', sans-serif; font-size: 13px; overflow-y: auto; }
 .prop-section { margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; }
-.section-title { font-weight: bold; margin-bottom: 10px; color: #888; font-size: 11px; text-transform: uppercase; }
+.section-title { font-weight: bold; margin-bottom: 10px; color: #888; font-size: 13px; text-transform: uppercase; }
 
 .row { display: flex; align-items: center; margin-bottom: 8px; gap: 10px; }
 .row label { width: 80px; color: #aaa; flex-shrink: 0; }
@@ -400,7 +400,7 @@ async function handleFontChange(family: string) {
   padding: 8px 12px;
   border-radius: 3px;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 13px;
   transition: all 0.2s;
 }
 .font-access-btn:hover:not(:disabled) { background: #444; color: #aaa; border-color: #666; }
@@ -438,7 +438,7 @@ async function handleFontChange(family: string) {
   height: 24px;
   cursor: pointer;
   border-radius: 3px;
-  font-size: 10px;
+  font-size: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -455,7 +455,7 @@ async function handleFontChange(family: string) {
   color: #888;
   padding: 6px 10px;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 13px;
   border-right: 1px solid #444;
   min-width: 32px;
 }

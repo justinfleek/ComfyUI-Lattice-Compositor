@@ -1144,11 +1144,11 @@ onUnmounted(() => {
   border: 1px solid #3a3a3a;
   color: #e0e0e0;
   border-radius: 4px;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .gpu-badge {
-  font-size: 9px;
+  font-size: 11px;
   padding: 2px 6px;
   border-radius: 3px;
   font-weight: bold;
@@ -1211,7 +1211,7 @@ onUnmounted(() => {
   border: none;
   background: transparent;
   color: #888;
-  font-size: 11px;
+  font-size: 13px;
   cursor: pointer;
   border-bottom: 2px solid transparent;
 }
@@ -1254,7 +1254,7 @@ onUnmounted(() => {
   border: none;
   background: transparent;
   color: #888;
-  font-size: 11px;
+  font-size: 13px;
   border-radius: 4px;
   cursor: pointer;
 }
@@ -1280,7 +1280,7 @@ onUnmounted(() => {
   border: 1px solid #3a3a3a;
   color: #e0e0e0;
   border-radius: 3px;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .viewport-controls button {
@@ -1328,7 +1328,7 @@ onUnmounted(() => {
 .ruler {
   position: absolute;
   background: rgba(30, 30, 30, 0.9);
-  font-size: 9px;
+  font-size: 11px;
   color: #888;
 }
 
@@ -1350,7 +1350,7 @@ onUnmounted(() => {
 
 .ruler .tick {
   position: absolute;
-  font-size: 8px;
+  font-size: 11px;
   color: #666;
 }
 
@@ -1382,7 +1382,7 @@ onUnmounted(() => {
   padding: 4px 12px;
   background: #252525;
   border-top: 1px solid #2a2a2a;
-  font-size: 10px;
+  font-size: 12px;
   color: #888;
 }
 
@@ -1453,7 +1453,7 @@ onUnmounted(() => {
 
 .loading-indicator {
   color: #00ff00;
-  font-size: 11px;
+  font-size: 13px;
   padding: 0 8px;
   animation: pulse 1s ease-in-out infinite;
 }

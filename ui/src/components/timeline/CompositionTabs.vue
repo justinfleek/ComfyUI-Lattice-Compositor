@@ -285,7 +285,7 @@ onUnmounted(() => {
   border-bottom: none;
   border-radius: 4px 4px 0 0;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 13px;
   color: #888;
   max-width: 200px;
   white-space: nowrap;
@@ -310,7 +310,7 @@ onUnmounted(() => {
 }
 
 .precomp-icon {
-  font-size: 8px;
+  font-size: 11px;
   color: #6b8bb8;
 }
 
@@ -321,7 +321,7 @@ onUnmounted(() => {
 }
 
 .tab-info {
-  font-size: 9px;
+  font-size: 11px;
   color: #666;
 }
 
@@ -371,7 +371,7 @@ onUnmounted(() => {
   border: 1px solid #4a90d9;
   background: #1a1a1a;
   color: #e0e0e0;
-  font-size: 11px;
+  font-size: 13px;
   border-radius: 2px;
 }
 
@@ -398,7 +398,7 @@ onUnmounted(() => {
   border: none;
   background: transparent;
   color: #e0e0e0;
-  font-size: 11px;
+  font-size: 13px;
   text-align: left;
   cursor: pointer;
 }
@@ -434,7 +434,7 @@ onUnmounted(() => {
   padding: 0 8px;
   margin-right: 8px;
   border-right: 1px solid #444;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .breadcrumb-item {
@@ -465,7 +465,7 @@ onUnmounted(() => {
 
 .breadcrumb-sep {
   color: #555;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .back-btn {

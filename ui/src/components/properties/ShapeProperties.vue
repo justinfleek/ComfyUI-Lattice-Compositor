@@ -397,14 +397,14 @@ function ensureProperty(propName: string, dataKey: string) {
 
 .expand-icon {
   width: 10px;
-  font-size: 8px;
+  font-size: 11px;
   color: #666;
 }
 
 .section-title {
   flex: 1;
   font-weight: 600;
-  font-size: 11px;
+  font-size: 13px;
   color: #ccc;
 }
 
@@ -431,7 +431,7 @@ function ensureProperty(propName: string, dataKey: string) {
 .property-row label {
   width: 70px;
   color: #888;
-  font-size: 10px;
+  font-size: 12px;
   flex-shrink: 0;
 }
 
@@ -466,7 +466,7 @@ function ensureProperty(propName: string, dataKey: string) {
   color: #666;
   padding: 4px 8px;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 13px;
   border-right: 1px solid #333;
 }
 
@@ -490,7 +490,7 @@ function ensureProperty(propName: string, dataKey: string) {
   border: 1px solid #3a3a3a;
   border-radius: 3px;
   color: #e0e0e0;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .dash-input:focus {
@@ -506,7 +506,7 @@ function ensureProperty(propName: string, dataKey: string) {
   background: transparent;
   color: #444;
   cursor: pointer;
-  font-size: 10px;
+  font-size: 12px;
   border-radius: 2px;
   flex-shrink: 0;
 }
@@ -526,7 +526,7 @@ function ensureProperty(propName: string, dataKey: string) {
   cursor: pointer;
   width: auto;
   color: #ccc;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .checkbox-row input[type="checkbox"] {
@@ -535,7 +535,7 @@ function ensureProperty(propName: string, dataKey: string) {
 
 .info-row {
   color: #666;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .info-label {

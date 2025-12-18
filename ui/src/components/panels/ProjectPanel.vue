@@ -410,7 +410,7 @@ function onDragStart(item: ProjectItem, event: DragEvent) {
   height: 100%;
   background: #1e1e1e;
   color: #e0e0e0;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .panel-header {
@@ -473,7 +473,7 @@ function onDragStart(item: ProjectItem, event: DragEvent) {
   border: none;
   background: transparent;
   color: #e0e0e0;
-  font-size: 11px;
+  font-size: 13px;
   text-align: left;
   cursor: pointer;
 }
@@ -495,7 +495,7 @@ function onDragStart(item: ProjectItem, event: DragEvent) {
   background: #1a1a1a;
   color: #e0e0e0;
   border-radius: 3px;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .search-input:focus {
@@ -535,7 +535,7 @@ function onDragStart(item: ProjectItem, event: DragEvent) {
 
 .expand-icon {
   width: 12px;
-  font-size: 8px;
+  font-size: 11px;
   color: #666;
 }
 
@@ -548,7 +548,7 @@ function onDragStart(item: ProjectItem, event: DragEvent) {
 }
 
 .item-count {
-  font-size: 9px;
+  font-size: 11px;
   color: #666;
   background: #333;
   padding: 1px 5px;
@@ -590,7 +590,7 @@ function onDragStart(item: ProjectItem, event: DragEvent) {
 }
 
 .item-info {
-  font-size: 9px;
+  font-size: 11px;
   color: #666;
 }
 
@@ -601,7 +601,7 @@ function onDragStart(item: ProjectItem, event: DragEvent) {
 }
 
 .empty-state .hint {
-  font-size: 10px;
+  font-size: 12px;
   margin-top: 4px;
 }
 
@@ -622,7 +622,7 @@ function onDragStart(item: ProjectItem, event: DragEvent) {
 }
 
 .detail-info {
-  font-size: 10px;
+  font-size: 12px;
   color: #888;
 }
 </style>

@@ -242,13 +242,13 @@ function removeTexture() {
 }
 
 .map-label {
-  font-size: 11px;
+  font-size: 13px;
   color: #888;
   font-weight: 500;
 }
 
 .hint {
-  font-size: 10px;
+  font-size: 12px;
   color: #555;
 }
 
@@ -277,7 +277,7 @@ function removeTexture() {
 }
 
 .texture-name {
-  font-size: 11px;
+  font-size: 13px;
   color: #ccc;
   white-space: nowrap;
   overflow: hidden;
@@ -285,7 +285,7 @@ function removeTexture() {
 }
 
 .texture-size {
-  font-size: 10px;
+  font-size: 12px;
   color: #666;
 }
 
@@ -333,7 +333,7 @@ function removeTexture() {
 
 .setting-row label {
   width: 60px;
-  font-size: 10px;
+  font-size: 12px;
   color: #888;
 }
 
@@ -347,6 +347,6 @@ function removeTexture() {
 
 .separator {
   color: #555;
-  font-size: 10px;
+  font-size: 12px;
 }
 </style>

@@ -240,7 +240,7 @@ function emitUpdate() {
 }
 
 .toggle-label {
-  font-size: 11px;
+  font-size: 13px;
   color: #888;
 }
 
@@ -259,7 +259,7 @@ function emitUpdate() {
 
 .setting-group > label,
 .group-label {
-  font-size: 10px;
+  font-size: 12px;
   color: #888;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -301,7 +301,7 @@ function emitUpdate() {
 }
 
 .preset-btn span {
-  font-size: 9px;
+  font-size: 11px;
   color: #888;
 }
 
@@ -315,7 +315,7 @@ function emitUpdate() {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
+  font-size: 13px;
   color: #ccc;
   cursor: pointer;
 }

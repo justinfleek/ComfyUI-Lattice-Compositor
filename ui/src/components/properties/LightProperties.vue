@@ -198,10 +198,10 @@ function update(key: keyof LightData, value: any) {
 .section-content { padding: 10px; background: #1e1e1e; display: flex; flex-direction: column; gap: 10px; }
 
 .property-row { display: flex; align-items: center; justify-content: space-between; }
-.property-row label { color: #888; font-size: 11px; width: 80px; }
+.property-row label { color: #888; font-size: 13px; width: 80px; }
 
 .property-group { display: flex; flex-direction: column; gap: 4px; }
-.property-group label { color: #888; font-size: 10px; }
+.property-group label { color: #888; font-size: 12px; }
 
 .control-row { display: flex; align-items: center; gap: 8px; }
 
@@ -212,7 +212,7 @@ function update(key: keyof LightData, value: any) {
   color: #ccc;
   padding: 4px;
   border-radius: 3px;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .checkbox-row label {
@@ -220,12 +220,12 @@ function update(key: keyof LightData, value: any) {
   align-items: center;
   gap: 6px;
   color: #ccc;
-  font-size: 11px;
+  font-size: 13px;
   cursor: pointer;
 }
 
 .note {
-  font-size: 10px;
+  font-size: 12px;
   color: #888;
   padding: 8px;
   background: #1a1a1a;

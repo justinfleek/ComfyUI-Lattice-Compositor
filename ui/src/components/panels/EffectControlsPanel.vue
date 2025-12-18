@@ -310,7 +310,7 @@ onUnmounted(() => window.removeEventListener('mousedown', onClickOutside));
   flex-direction: column;
   background: #1e1e1e;
   color: #ccc;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .panel-header {
@@ -326,14 +326,14 @@ onUnmounted(() => window.removeEventListener('mousedown', onClickOutside));
   margin-bottom: 8px;
 }
 
-h3 { margin: 0; font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; }
+h3 { margin: 0; font-size: 13px; font-weight: 600; color: #888; text-transform: uppercase; }
 
 .layer-badge {
   background: #333;
   padding: 2px 6px;
   border-radius: 3px;
   color: #fff;
-  font-size: 10px;
+  font-size: 12px;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -420,8 +420,8 @@ h3 { margin: 0; font-size: 11px; font-weight: 600; color: #888; text-transform: 
 .effect-header:hover { background: #333; }
 
 .header-left { display: flex; align-items: center; gap: 4px; }
-.arrow { font-size: 8px; width: 12px; text-align: center; color: #888; }
-.fx-icon { font-family: serif; font-weight: bold; font-size: 10px; color: #4a90d9; }
+.arrow { font-size: 11px; width: 12px; text-align: center; color: #888; }
+.fx-icon { font-family: serif; font-weight: bold; font-size: 12px; color: #4a90d9; }
 .fx-icon.disabled { color: #555; }
 .effect-name { font-weight: 600; color: #eee; }
 
@@ -490,6 +490,6 @@ h3 { margin: 0; font-size: 11px; font-weight: 600; color: #888; text-transform: 
   color: #ccc;
   padding: 2px 4px;
   border-radius: 2px;
-  font-size: 10px;
+  font-size: 12px;
 }
 </style>

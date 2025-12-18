@@ -773,7 +773,7 @@ watch(selectedTarget, () => {
   border: 1px solid var(--border-color, #333);
   border-radius: 3px;
   color: var(--text-primary, #fff);
-  font-size: 11px;
+  font-size: 13px;
   cursor: pointer;
 }
 
@@ -901,7 +901,7 @@ watch(selectedTarget, () => {
 }
 
 .checkbox-large small {
-  font-size: 11px;
+  font-size: 13px;
   color: var(--text-secondary, #888);
 }
 
@@ -927,7 +927,7 @@ watch(selectedTarget, () => {
   border-radius: 3px;
   color: var(--text-secondary, #888);
   cursor: pointer;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .progress-bar {
@@ -944,7 +944,7 @@ watch(selectedTarget, () => {
 }
 
 .progress-details {
-  font-size: 11px;
+  font-size: 13px;
   color: var(--text-secondary, #888);
   margin-top: 4px;
 }

@@ -306,7 +306,7 @@ onUnmounted(() => {
   background: #e74c3c;
   color: white;
   border-radius: 50%;
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1;
   cursor: pointer;
   display: flex;
@@ -340,7 +340,7 @@ onUnmounted(() => {
   color: white;
   padding: 2px 8px;
   border-radius: 3px;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: bold;
 }
 

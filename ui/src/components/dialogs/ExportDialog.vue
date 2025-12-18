@@ -382,7 +382,7 @@ onUnmounted(() => {
   background: #1e1e1e;
   color: #aaa;
   border-radius: 4px;
-  font-size: 11px;
+  font-size: 13px;
   cursor: pointer;
   transition: all 0.1s;
 }
@@ -410,7 +410,7 @@ onUnmounted(() => {
 
 .dimension-input label {
   display: block;
-  font-size: 10px;
+  font-size: 12px;
   color: #666;
   margin-bottom: 4px;
 }
@@ -445,7 +445,7 @@ onUnmounted(() => {
   background: rgba(255, 193, 7, 0.1);
   border: 1px solid rgba(255, 193, 7, 0.3);
   border-radius: 4px;
-  font-size: 11px;
+  font-size: 13px;
   color: #ffc107;
 }
 
@@ -493,7 +493,7 @@ onUnmounted(() => {
 }
 
 .mode-btn small {
-  font-size: 10px;
+  font-size: 12px;
   color: #666;
   text-align: center;
 }
@@ -534,7 +534,7 @@ onUnmounted(() => {
 
 .preview-info {
   margin-top: 8px;
-  font-size: 10px;
+  font-size: 12px;
   color: #666;
   text-align: center;
 }
@@ -561,7 +561,7 @@ onUnmounted(() => {
 
 .progress-text {
   margin-top: 8px;
-  font-size: 11px;
+  font-size: 13px;
   color: #aaa;
   text-align: center;
 }
@@ -576,7 +576,7 @@ onUnmounted(() => {
 
 .export-info {
   flex: 1;
-  font-size: 11px;
+  font-size: 13px;
   color: #666;
 }
 

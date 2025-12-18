@@ -832,7 +832,7 @@ function createCamera() {
 
 .camera-name {
   color: #888;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .properties-content {
@@ -863,7 +863,7 @@ function createCamera() {
 }
 
 .toggle-icon {
-  font-size: 8px;
+  font-size: 11px;
   color: #666;
 }
 
@@ -882,7 +882,7 @@ function createCamera() {
 .property-group > label {
   display: block;
   color: #888;
-  font-size: 10px;
+  font-size: 12px;
   margin-bottom: 4px;
 }
 
@@ -950,7 +950,7 @@ select:focus {
   border-radius: 3px;
   background: #2a2a2a;
   color: #888;
-  font-size: 10px;
+  font-size: 12px;
   cursor: pointer;
   transition: all 0.1s;
 }
@@ -993,7 +993,7 @@ select:focus {
 
 /* Trajectory Section */
 .trajectory-select {
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .trajectory-description {
@@ -1001,7 +1001,7 @@ select:focus {
   background: #252525;
   border-radius: 4px;
   color: #888;
-  font-size: 10px;
+  font-size: 12px;
   font-style: italic;
   margin-bottom: 12px;
   line-height: 1.4;
@@ -1020,7 +1020,7 @@ select:focus {
   border-radius: 4px;
   background: #2a2a2a;
   color: #ddd;
-  font-size: 11px;
+  font-size: 13px;
   cursor: pointer;
   transition: all 0.15s;
 }

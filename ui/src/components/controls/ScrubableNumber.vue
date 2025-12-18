@@ -177,7 +177,7 @@ function reset(): void {
 
 .scrub-label {
   min-width: 70px;
-  font-size: 11px;
+  font-size: 13px;
   color: #888;
   cursor: ew-resize;
   user-select: none;
@@ -199,7 +199,7 @@ function reset(): void {
   border-radius: 3px;
   background: #2a2a2a;
   color: #3498db; /* Cyan color for values like After Effects */
-  font-size: 11px;
+  font-size: 13px;
   font-family: inherit;
   text-align: right;
 }
@@ -220,7 +220,7 @@ function reset(): void {
 }
 
 .scrub-unit {
-  font-size: 10px;
+  font-size: 12px;
   color: #666;
   min-width: 16px;
 }
@@ -251,6 +251,6 @@ function reset(): void {
 }
 
 .reset-btn i {
-  font-size: 10px;
+  font-size: 12px;
 }
 </style>

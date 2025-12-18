@@ -298,13 +298,13 @@ async function requestSystemFonts(): Promise<void> {
 }
 
 .category-header i {
-  font-size: 10px;
+  font-size: 12px;
   width: 16px;
 }
 
 .font-count {
   margin-left: auto;
-  font-size: 10px;
+  font-size: 12px;
   color: #666;
 }
 
@@ -335,7 +335,7 @@ async function requestSystemFonts(): Promise<void> {
 }
 
 .font-source {
-  font-size: 9px;
+  font-size: 11px;
   color: #666;
   text-transform: uppercase;
   padding: 2px 4px;
@@ -350,7 +350,7 @@ async function requestSystemFonts(): Promise<void> {
 
 .preview-section label {
   display: block;
-  font-size: 11px;
+  font-size: 13px;
   color: #888;
   margin-bottom: 8px;
 }

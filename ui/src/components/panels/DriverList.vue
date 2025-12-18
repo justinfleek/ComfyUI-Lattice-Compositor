@@ -208,19 +208,19 @@ function createAudioDriver() {
 }
 
 .expand-icon {
-  font-size: 8px;
+  font-size: 11px;
   color: #888;
   width: 10px;
 }
 
 .title {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 500;
   color: #2ecc71;
 }
 
 .count {
-  font-size: 10px;
+  font-size: 12px;
   color: #888;
 }
 
@@ -261,7 +261,7 @@ function createAudioDriver() {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .target {
@@ -306,7 +306,7 @@ function createAudioDriver() {
 }
 
 .transform-chip {
-  font-size: 9px;
+  font-size: 11px;
   padding: 1px 4px;
   background: #333;
   border-radius: 2px;
@@ -325,7 +325,7 @@ function createAudioDriver() {
   color: #aaa;
   cursor: pointer;
   border-radius: 3px;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .add-driver-btn:hover {
@@ -349,7 +349,7 @@ function createAudioDriver() {
 
 .menu-section label {
   width: 80px;
-  font-size: 10px;
+  font-size: 12px;
   color: #888;
 }
 
@@ -361,7 +361,7 @@ function createAudioDriver() {
   border: 1px solid #333;
   color: #ccc;
   border-radius: 2px;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .menu-actions {
@@ -375,7 +375,7 @@ function createAudioDriver() {
   padding: 4px 8px;
   border: none;
   border-radius: 3px;
-  font-size: 10px;
+  font-size: 12px;
   cursor: pointer;
 }
 

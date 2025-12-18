@@ -240,7 +240,7 @@ function updateCollapseTransform(e: Event) {
   justify-content: space-between;
   padding: 6px 8px;
   background: #252525;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 500;
   color: #aaa;
   cursor: pointer;
@@ -269,7 +269,7 @@ function updateCollapseTransform(e: Event) {
 .info-row {
   display: flex;
   justify-content: space-between;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .info-label {
@@ -289,7 +289,7 @@ function updateCollapseTransform(e: Event) {
 }
 
 .property-row label {
-  font-size: 10px;
+  font-size: 12px;
   color: #aaa;
   min-width: 60px;
 }
@@ -311,7 +311,7 @@ function updateCollapseTransform(e: Event) {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 10px;
+  font-size: 12px;
   color: #ccc;
   cursor: pointer;
 }
@@ -321,7 +321,7 @@ function updateCollapseTransform(e: Event) {
 }
 
 .hint {
-  font-size: 9px;
+  font-size: 11px;
   color: #666;
   margin: 4px 0 0 0;
   font-style: italic;
@@ -334,7 +334,7 @@ function updateCollapseTransform(e: Event) {
   border: none;
   border-radius: 4px;
   color: #e0e0e0;
-  font-size: 11px;
+  font-size: 13px;
   cursor: pointer;
 }
 
@@ -349,6 +349,6 @@ function updateCollapseTransform(e: Event) {
   border: 1px solid #444;
   border-radius: 4px;
   color: #e0e0e0;
-  font-size: 10px;
+  font-size: 12px;
 }
 </style>

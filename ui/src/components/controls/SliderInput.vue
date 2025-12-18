@@ -198,7 +198,7 @@ function onBlur(e: FocusEvent): void {
 
 .slider-label {
   min-width: 70px;
-  font-size: 11px;
+  font-size: 13px;
   color: #888;
   cursor: ew-resize;
   user-select: none;
@@ -255,7 +255,7 @@ function onBlur(e: FocusEvent): void {
   border-radius: 3px;
   background: #2a2a2a;
   color: #e0e0e0;
-  font-size: 11px;
+  font-size: 13px;
   text-align: right;
 }
 
@@ -275,7 +275,7 @@ function onBlur(e: FocusEvent): void {
 }
 
 .slider-unit {
-  font-size: 10px;
+  font-size: 12px;
   color: #666;
   min-width: 16px;
 }

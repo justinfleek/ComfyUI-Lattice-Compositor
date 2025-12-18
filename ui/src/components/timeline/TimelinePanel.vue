@@ -43,6 +43,12 @@
         <div class="tool-group">
            <button class="delete-btn" @click="deleteSelectedLayers" :disabled="store.selectedLayerIds.length === 0" aria-label="Delete selected layers">🗑️</button>
         </div>
+
+        <div class="tool-group">
+          <button class="comp-settings-btn" @click="emit('openCompositionSettings')" title="Composition Settings (Ctrl+K)">
+            ⚙️ Comp Settings
+          </button>
+        </div>
       </div>
 
       <div class="header-right">
@@ -478,10 +484,13 @@ watch(() => [computedWidthStyle.value, zoomPercent.value, store.frameCount], () 
 .add-layer-btn { padding: 6px 12px; background: #444; border: 1px solid #555; color: white; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold; }
 .add-layer-btn:hover, .add-layer-btn.active { background: #555; }
 
+.comp-settings-btn { padding: 6px 14px; background: #3a5a8a; border: 1px solid #4a7aba; color: white; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 500; }
+.comp-settings-btn:hover { background: #4a6a9a; border-color: #5a8aca; }
+
 .timeline-content { flex: 1; display: flex; overflow: hidden; position: relative; min-height: 0; }
 .timeline-sidebar { background: #1e1e1e; border-right: 1px solid #000; display: flex; flex-direction: column; flex-shrink: 0; z-index: 10; }
 .sidebar-header-row { height: 30px; background: #252525; display: flex; align-items: center; border-bottom: 1px solid #000; }
-.col-header { font-size: 10px; color: #888; display: flex; align-items: center; }
+.col-header { font-size: 12px; color: #888; display: flex; align-items: center; }
 .col-header.col-av-features {
   display: flex;
   gap: 0;
@@ -497,7 +506,7 @@ watch(() => [computedWidthStyle.value, zoomPercent.value, store.frameCount], () 
   padding: 0 2px;
 }
 .col-header.col-parent { min-width: 80px; border-left: 1px solid #333; padding: 0 8px; }
-.header-icon { display: inline-flex; justify-content: center; align-items: center; width: 22px; height: 28px; font-size: 10px; color: #666; cursor: default; }
+.header-icon { display: inline-flex; justify-content: center; align-items: center; width: 22px; height: 28px; font-size: 12px; color: #666; cursor: default; }
 .header-icon.clickable { cursor: pointer; transition: color 0.15s; }
 .header-icon.clickable:hover { color: #aaa; }
 .header-icon.clickable.active { color: #4a90d9; }

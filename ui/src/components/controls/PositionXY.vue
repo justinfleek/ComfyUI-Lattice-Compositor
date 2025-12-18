@@ -187,7 +187,7 @@ function onBlur(e: FocusEvent, axis: 'x' | 'y' | 'z'): void {
 }
 
 .axis-label {
-  font-size: 10px;
+  font-size: 12px;
   color: #666;
   font-weight: 500;
   min-width: 12px;
@@ -200,7 +200,7 @@ function onBlur(e: FocusEvent, axis: 'x' | 'y' | 'z'): void {
   border-radius: 3px;
   background: #2a2a2a;
   color: #e0e0e0;
-  font-size: 11px;
+  font-size: 13px;
   text-align: right;
 }
 
@@ -244,6 +244,6 @@ function onBlur(e: FocusEvent, axis: 'x' | 'y' | 'z'): void {
 }
 
 .link-btn i {
-  font-size: 10px;
+  font-size: 12px;
 }
 </style>

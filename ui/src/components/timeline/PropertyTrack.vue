@@ -378,11 +378,11 @@ onUnmounted(() => {
 .prop-inputs { display: flex; gap: 8px; flex: 1; align-items: center; }
 
 .vec-item { display: flex; align-items: center; gap: 4px; }
-.label { font-size: 10px; font-weight: bold; }
+.label { font-size: 12px; font-weight: bold; }
 .x-label { color: #e74c3c; } .y-label { color: #2ecc71; } .z-label { color: #3498db; }
 
 .color-input-wrapper { display: flex; align-items: center; gap: 8px; }
-.color-hex { font-family: monospace; font-size: 11px; color: #aaa; }
+.color-hex { font-family: monospace; font-size: 13px; color: #aaa; }
 
 /* Checkbox styling */
 .checkbox-wrapper {
@@ -403,7 +403,7 @@ onUnmounted(() => {
   border: 1px solid #3a3a3a;
   color: #e0e0e0;
   border-radius: 3px;
-  font-size: 11px;
+  font-size: 13px;
   cursor: pointer;
   min-width: 80px;
 }
@@ -463,7 +463,7 @@ onUnmounted(() => {
 .menu-header {
   padding: 4px 12px;
   color: #888;
-  font-size: 10px;
+  font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   border-bottom: 1px solid #333;

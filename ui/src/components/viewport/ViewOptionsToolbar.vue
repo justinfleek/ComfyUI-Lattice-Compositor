@@ -221,7 +221,7 @@ button {
   background: transparent;
   color: #888;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 13px;
   transition: all 0.15s ease;
 }
 
@@ -241,7 +241,7 @@ button .icon {
 }
 
 button .label {
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .view-presets button {
@@ -250,7 +250,7 @@ button .label {
   padding: 0;
   justify-content: center;
   font-weight: bold;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .wireframe-select {
@@ -258,7 +258,7 @@ button .label {
   border: 1px solid #444;
   border-radius: 3px;
   color: #888;
-  font-size: 10px;
+  font-size: 12px;
   padding: 2px 4px;
   cursor: pointer;
 }

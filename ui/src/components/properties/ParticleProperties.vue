@@ -1308,7 +1308,7 @@ function hexToRgb(hex: string): [number, number, number] {
 }
 
 .section-header i {
-  font-size: 10px;
+  font-size: 12px;
   width: 14px;
 }
 
@@ -1341,7 +1341,7 @@ function hexToRgb(hex: string): [number, number, number] {
   width: 90px;
   flex-shrink: 0;
   color: #888;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .property-row input[type="range"] {
@@ -1358,7 +1358,7 @@ function hexToRgb(hex: string): [number, number, number] {
   background: #1e1e1e;
   color: #e0e0e0;
   border-radius: 3px;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .property-row input[type="color"] {
@@ -1374,7 +1374,7 @@ function hexToRgb(hex: string): [number, number, number] {
   text-align: right;
   font-variant-numeric: tabular-nums;
   color: #aaa;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .checkbox-row label {
@@ -1406,7 +1406,7 @@ function hexToRgb(hex: string): [number, number, number] {
 }
 
 .emitter-header i {
-  font-size: 10px;
+  font-size: 12px;
   color: #666;
 }
 
@@ -1417,7 +1417,7 @@ function hexToRgb(hex: string): [number, number, number] {
   border: 1px solid transparent;
   background: transparent;
   color: #e0e0e0;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .emitter-name:focus,
@@ -1465,7 +1465,7 @@ function hexToRgb(hex: string): [number, number, number] {
   background: #1e1e1e;
   color: #888;
   border-radius: 3px;
-  font-size: 11px;
+  font-size: 13px;
   cursor: pointer;
 }
 
@@ -1514,11 +1514,11 @@ function hexToRgb(hex: string): [number, number, number] {
   padding: 8px 12px;
   background: #2d2d2d;
   color: #888;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .particle-count i {
-  font-size: 8px;
+  font-size: 11px;
   color: #4a90d9;
 }
 
@@ -1526,14 +1526,14 @@ function hexToRgb(hex: string): [number, number, number] {
   margin: 12px 0 8px;
   padding: 6px 0;
   border-top: 1px solid #3d3d3d;
-  font-size: 11px;
+  font-size: 13px;
   color: #888;
   font-weight: 500;
 }
 
 .force-label {
   flex: 1;
-  font-size: 11px;
+  font-size: 13px;
   color: #aaa;
 }
 
@@ -1544,6 +1544,6 @@ function hexToRgb(hex: string): [number, number, number] {
   background: #1e1e1e;
   color: #e0e0e0;
   border-radius: 3px;
-  font-size: 11px;
+  font-size: 13px;
 }
 </style>

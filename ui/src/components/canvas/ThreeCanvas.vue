@@ -1546,7 +1546,7 @@ defineExpose({
   background: rgba(0, 0, 0, 0.7);
   padding: 6px 10px;
   border-radius: 6px;
-  font-size: 11px;
+  font-size: 13px;
   font-family: monospace;
   color: #8f8;
   z-index: 10;
@@ -1676,7 +1676,7 @@ defineExpose({
   background: #2a2a2a;
   border: 1px solid #444;
   color: #e0e0e0;
-  font-size: 11px;
+  font-size: 13px;
   padding: 3px 8px;
   border-radius: 3px;
   cursor: pointer;
@@ -1698,7 +1698,7 @@ defineExpose({
 .zoom-display {
   color: #4a90d9;
   font-family: 'Consolas', monospace;
-  font-size: 11px;
+  font-size: 13px;
   min-width: 40px;
   text-align: right;
 }

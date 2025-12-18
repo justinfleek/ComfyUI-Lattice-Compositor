@@ -1689,7 +1689,7 @@ watch(animatableProperties, () => {
   border: none;
   background: transparent;
   color: #888;
-  font-size: 10px;
+  font-size: 12px;
   cursor: pointer;
 }
 
@@ -1711,7 +1711,7 @@ watch(animatableProperties, () => {
   background: transparent;
   color: #888;
   border-radius: 3px;
-  font-size: 9px;
+  font-size: 11px;
   cursor: pointer;
   white-space: nowrap;
 }
@@ -1740,7 +1740,7 @@ watch(animatableProperties, () => {
   color: #888;
   border-radius: 3px;
   cursor: pointer;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .toolbar button:hover {
@@ -1787,7 +1787,7 @@ watch(animatableProperties, () => {
   padding: 6px 8px;
   background: #2a2a2a;
   border-bottom: 1px solid #333;
-  font-size: 10px;
+  font-size: 12px;
   color: #888;
 }
 
@@ -1797,7 +1797,7 @@ watch(animatableProperties, () => {
   background: transparent;
   color: #888;
   border-radius: 2px;
-  font-size: 9px;
+  font-size: 11px;
   cursor: pointer;
 }
 
@@ -1846,14 +1846,14 @@ watch(animatableProperties, () => {
 
 .property-name {
   flex: 1;
-  font-size: 11px;
+  font-size: 13px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .keyframe-count {
-  font-size: 9px;
+  font-size: 11px;
   color: #666;
   background: #333;
   padding: 1px 4px;
@@ -1872,7 +1872,7 @@ watch(animatableProperties, () => {
   background: transparent;
   color: #666;
   border-radius: 2px;
-  font-size: 9px;
+  font-size: 11px;
   cursor: pointer;
 }
 
@@ -1889,7 +1889,7 @@ watch(animatableProperties, () => {
 .no-properties {
   padding: 12px 8px;
   color: #555;
-  font-size: 11px;
+  font-size: 13px;
   text-align: center;
 }
 
@@ -2029,7 +2029,7 @@ watch(animatableProperties, () => {
 
 .info-label {
   color: #888;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .info-input {
@@ -2039,7 +2039,7 @@ watch(animatableProperties, () => {
   border: 1px solid #444;
   border-radius: 3px;
   color: #e0e0e0;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .info-select {
@@ -2048,7 +2048,7 @@ watch(animatableProperties, () => {
   border: 1px solid #444;
   border-radius: 3px;
   color: #e0e0e0;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .context-menu {
@@ -2068,7 +2068,7 @@ watch(animatableProperties, () => {
   border: none;
   background: transparent;
   color: #e0e0e0;
-  font-size: 11px;
+  font-size: 13px;
   text-align: left;
   cursor: pointer;
 }

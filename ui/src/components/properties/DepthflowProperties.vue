@@ -723,7 +723,7 @@ onUnmounted(() => {
 }
 
 .section-header i {
-  font-size: 10px;
+  font-size: 12px;
   width: 14px;
 }
 
@@ -743,7 +743,7 @@ onUnmounted(() => {
   width: 80px;
   flex-shrink: 0;
   color: #888;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .property-row input[type="range"] {
@@ -758,7 +758,7 @@ onUnmounted(() => {
   background: #1e1e1e;
   color: #e0e0e0;
   border-radius: 3px;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .value-display {
@@ -766,7 +766,7 @@ onUnmounted(() => {
   text-align: right;
   font-variant-numeric: tabular-nums;
   color: #aaa;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .checkbox-row label {
@@ -795,7 +795,7 @@ onUnmounted(() => {
   color: #888;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .preset-btn i {
@@ -817,7 +817,7 @@ onUnmounted(() => {
   padding: 8px;
   background: #1e1e1e;
   border-radius: 4px;
-  font-size: 10px;
+  font-size: 12px;
   color: #666;
   line-height: 1.4;
 }
@@ -849,7 +849,7 @@ onUnmounted(() => {
   color: #aaa;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .preview-btn:hover {
@@ -864,7 +864,7 @@ onUnmounted(() => {
 }
 
 .frame-indicator {
-  font-size: 10px;
+  font-size: 12px;
   color: #666;
   font-variant-numeric: tabular-nums;
 }
@@ -876,7 +876,7 @@ onUnmounted(() => {
   background: rgba(46, 204, 113, 0.2);
   color: #2ecc71;
   border-radius: 3px;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
 }
@@ -885,7 +885,7 @@ onUnmounted(() => {
   padding: 8px;
   background: #1e1e1e;
   border-radius: 4px;
-  font-size: 10px;
+  font-size: 12px;
   color: #666;
   line-height: 1.4;
   margin-bottom: 8px;

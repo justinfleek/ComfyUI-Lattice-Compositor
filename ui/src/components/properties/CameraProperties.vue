@@ -599,14 +599,14 @@ function toggleVec3Keyframe(propName: string, dataKey: string) {
 
 .expand-icon {
   width: 10px;
-  font-size: 8px;
+  font-size: 11px;
   color: #666;
 }
 
 .section-title {
   flex: 1;
   font-weight: 600;
-  font-size: 11px;
+  font-size: 13px;
   color: #ccc;
 }
 
@@ -633,7 +633,7 @@ function toggleVec3Keyframe(propName: string, dataKey: string) {
 .property-row label {
   width: 80px;
   color: #888;
-  font-size: 10px;
+  font-size: 12px;
   flex-shrink: 0;
 }
 
@@ -659,7 +659,7 @@ function toggleVec3Keyframe(propName: string, dataKey: string) {
   background: transparent;
   color: #444;
   cursor: pointer;
-  font-size: 10px;
+  font-size: 12px;
   border-radius: 2px;
   flex-shrink: 0;
 }
@@ -679,7 +679,7 @@ function toggleVec3Keyframe(propName: string, dataKey: string) {
   cursor: pointer;
   width: auto;
   color: #ccc;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .checkbox-row input[type="checkbox"] {
@@ -693,7 +693,7 @@ function toggleVec3Keyframe(propName: string, dataKey: string) {
   border: 1px solid #3a3a3a;
   color: #e0e0e0;
   border-radius: 3px;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .path-select:focus {

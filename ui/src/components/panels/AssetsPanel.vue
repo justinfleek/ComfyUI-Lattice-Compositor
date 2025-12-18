@@ -511,7 +511,7 @@ const emit = defineEmits<{
   height: 100%;
   background: #1e1e1e;
   color: #e0e0e0;
-  font-size: 11px;
+  font-size: 13px;
   position: relative;
 }
 
@@ -536,7 +536,7 @@ const emit = defineEmits<{
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .asset-tabs button:hover {
@@ -554,7 +554,7 @@ const emit = defineEmits<{
 }
 
 .tab-label {
-  font-size: 9px;
+  font-size: 11px;
 }
 
 /* Content */
@@ -586,7 +586,7 @@ const emit = defineEmits<{
   color: #e0e0e0;
   border-radius: 3px;
   cursor: pointer;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .panel-toolbar button:hover {
@@ -601,7 +601,7 @@ const emit = defineEmits<{
   border: 1px solid #333;
   color: #e0e0e0;
   border-radius: 3px;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 /* Lists */
@@ -686,7 +686,7 @@ const emit = defineEmits<{
 }
 
 .path-count {
-  font-size: 9px;
+  font-size: 11px;
   color: #888;
 }
 
@@ -702,7 +702,7 @@ const emit = defineEmits<{
   color: #aaa;
   cursor: pointer;
   border-radius: 3px;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .svg-actions button:hover {
@@ -721,7 +721,7 @@ const emit = defineEmits<{
 .svg-details h4,
 .mesh-details h4 {
   margin: 0 0 8px;
-  font-size: 11px;
+  font-size: 13px;
   color: #aaa;
 }
 
@@ -742,7 +742,7 @@ const emit = defineEmits<{
 
 .path-name {
   flex: 1;
-  font-size: 10px;
+  font-size: 12px;
   color: #888;
 }
 
@@ -761,7 +761,7 @@ const emit = defineEmits<{
 .path-config label {
   display: flex;
   flex-direction: column;
-  font-size: 9px;
+  font-size: 11px;
   color: #666;
 }
 
@@ -772,7 +772,7 @@ const emit = defineEmits<{
   border: 1px solid #333;
   color: #e0e0e0;
   border-radius: 2px;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 /* Mesh specific */
@@ -795,7 +795,7 @@ const emit = defineEmits<{
 }
 
 .mesh-verts {
-  font-size: 9px;
+  font-size: 11px;
   color: #666;
 }
 
@@ -845,7 +845,7 @@ const emit = defineEmits<{
 }
 
 .sprite-frames {
-  font-size: 9px;
+  font-size: 11px;
   color: #666;
 }
 

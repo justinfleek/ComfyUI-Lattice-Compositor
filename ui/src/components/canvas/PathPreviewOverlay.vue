@@ -456,13 +456,13 @@ onUnmounted(() => {
 }
 
 .point-label {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 .depth-label {
-  font-size: 9px;
+  font-size: 11px;
   fill: #888;
   font-family: 'SF Mono', Monaco, monospace;
 }
@@ -472,7 +472,7 @@ onUnmounted(() => {
 }
 
 .motion-label {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -533,7 +533,7 @@ onUnmounted(() => {
 }
 
 .legend-text {
-  font-size: 11px;
+  font-size: 13px;
   color: #e0e0e0;
 }
 
@@ -545,7 +545,7 @@ onUnmounted(() => {
   transform: translateX(-50%);
   background: rgba(0, 0, 0, 0.8);
   color: #888;
-  font-size: 11px;
+  font-size: 13px;
   padding: 6px 12px;
   border-radius: 4px;
   pointer-events: none;

@@ -571,7 +571,7 @@ onUnmounted(() => {
 .section-label {
   display: block;
   color: #aaa;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   text-transform: uppercase;
   margin-bottom: 8px;
@@ -626,7 +626,7 @@ onUnmounted(() => {
   background: #333;
   color: #aaa;
   border-radius: 12px;
-  font-size: 11px;
+  font-size: 13px;
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -744,14 +744,14 @@ onUnmounted(() => {
 }
 
 .suggestion-type {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   text-transform: uppercase;
   color: #4a90d9;
 }
 
 .suggestion-confidence {
-  font-size: 10px;
+  font-size: 12px;
   color: #888;
   background: rgba(0, 0, 0, 0.3);
   padding: 2px 6px;
@@ -767,7 +767,7 @@ onUnmounted(() => {
 .suggestion-details {
   display: flex;
   gap: 12px;
-  font-size: 10px;
+  font-size: 12px;
   color: #666;
 }
 
@@ -818,7 +818,7 @@ onUnmounted(() => {
 
 .btn-small {
   padding: 4px 10px;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .btn-secondary {
