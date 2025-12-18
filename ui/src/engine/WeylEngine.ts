@@ -150,14 +150,12 @@ export class WeylEngine {
     this.resources = new ResourceManager();
     this.scene = new SceneManager(this.config.backgroundColor);
     // Camera is initialized with COMPOSITION dimensions for position/target calculation
-    // but we'll update the aspect ratio to match viewport
     this.camera = new CameraController(
       this.config.compositionWidth!,
       this.config.compositionHeight!
     );
-    // Update camera aspect ratio to match viewport (required for correct rendering)
-    this.camera.camera.aspect = this.config.width / this.config.height;
-    this.camera.camera.updateProjectionMatrix();
+    // Set camera aspect ratio to VIEWPORT dimensions (required for correct rendering)
+    this.camera.setViewportAspect(this.config.width, this.config.height);
 
     this.renderer = new RenderPipeline({
       canvas: this.config.canvas,
@@ -719,10 +717,13 @@ export class WeylEngine {
     this.state.viewport = { width, height };
     this.renderer.resize(width, height);
 
-    // Use composition dimensions for camera if provided
+    // Use composition dimensions for camera POSITION (where to look)
     const camWidth = compositionWidth ?? width;
     const camHeight = compositionHeight ?? height;
     this.camera.resize(camWidth, camHeight);
+
+    // Set camera aspect to VIEWPORT dimensions (how wide the view is)
+    this.camera.setViewportAspect(width, height);
 
     this.emit('resize', { width, height, compositionWidth, compositionHeight });
   }

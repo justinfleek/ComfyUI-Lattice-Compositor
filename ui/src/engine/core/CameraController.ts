@@ -415,25 +415,27 @@ export class CameraController {
   // ============================================================================
 
   /**
-   * Resize camera for new viewport dimensions
+   * Resize camera for new COMPOSITION dimensions
+   * Note: The aspect ratio should be set separately using setViewportAspect()
    */
   resize(width: number, height: number): void {
     this.width = width;
     this.height = height;
 
-    this.camera.aspect = width / height;
-    this.camera.updateProjectionMatrix();
+    // Don't change aspect here - it should be set to VIEWPORT aspect, not composition
+    // The caller (WeylEngine.resize) should call setViewportAspect() separately
 
     // Recenter camera on composition
-    const fovRad = THREE.MathUtils.degToRad(this.camera.fov);
-    const distance = (height / 2) / Math.tan(fovRad / 2);
+    this.resetToDefault();
+  }
 
-    this.camera.position.x = width / 2;
-    this.camera.position.y = -height / 2;
-    this.camera.position.z = distance;
-
-    this.target.set(width / 2, -height / 2, 0);
-    this.camera.lookAt(this.target);
+  /**
+   * Set camera aspect ratio to match viewport dimensions
+   * This should be called with VIEWPORT dimensions, not composition
+   */
+  setViewportAspect(viewportWidth: number, viewportHeight: number): void {
+    this.camera.aspect = viewportWidth / viewportHeight;
+    this.camera.updateProjectionMatrix();
   }
 
   // ============================================================================

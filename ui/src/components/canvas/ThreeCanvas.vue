@@ -1143,11 +1143,25 @@ function centerOnComposition() {
   // Reset viewport transform (no pan offset)
   viewportTransform.value = [scale, 0, 0, scale, 0, 0];
 
+  // Update camera aspect ratio to match current viewport
+  const camera = engine.value.getCameraController();
+  camera.camera.aspect = containerRect.width / containerRect.height;
+  camera.camera.updateProjectionMatrix();
+
   // Reset camera to default position (centered on composition)
-  // and apply zoom only (no pan)
   engine.value.resetCameraToDefault();
-  engine.value.getCameraController().setZoom(scale);
-  engine.value.getCameraController().setPan(0, 0);
+
+  // Apply zoom (adjusts distance only, no pan)
+  camera.setZoom(scale);
+  camera.setPan(0, 0);
+
+  console.log('[ThreeCanvas] centerOnComposition:', {
+    viewport: { width: containerRect.width, height: containerRect.height },
+    composition: { width: compWidth, height: compHeight },
+    scale,
+    cameraPos: camera.getPosition(),
+    cameraTarget: camera.getTarget(),
+  });
 }
 
 // Render mode switching

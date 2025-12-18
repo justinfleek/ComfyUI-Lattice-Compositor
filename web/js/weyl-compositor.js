@@ -40613,20 +40613,21 @@ class CameraController {
   // RESIZE
   // ============================================================================
   /**
-   * Resize camera for new viewport dimensions
+   * Resize camera for new COMPOSITION dimensions
+   * Note: The aspect ratio should be set separately using setViewportAspect()
    */
   resize(width, height) {
     this.width = width;
     this.height = height;
-    this.camera.aspect = width / height;
+    this.resetToDefault();
+  }
+  /**
+   * Set camera aspect ratio to match viewport dimensions
+   * This should be called with VIEWPORT dimensions, not composition
+   */
+  setViewportAspect(viewportWidth, viewportHeight) {
+    this.camera.aspect = viewportWidth / viewportHeight;
     this.camera.updateProjectionMatrix();
-    const fovRad = MathUtils.degToRad(this.camera.fov);
-    const distance = height / 2 / Math.tan(fovRad / 2);
-    this.camera.position.x = width / 2;
-    this.camera.position.y = -height / 2;
-    this.camera.position.z = distance;
-    this.target.set(width / 2, -height / 2, 0);
-    this.camera.lookAt(this.target);
   }
   // ============================================================================
   // COORDINATE CONVERSION
@@ -41610,8 +41611,7 @@ class WeylEngine {
       this.config.compositionWidth,
       this.config.compositionHeight
     );
-    this.camera.camera.aspect = this.config.width / this.config.height;
-    this.camera.camera.updateProjectionMatrix();
+    this.camera.setViewportAspect(this.config.width, this.config.height);
     this.renderer = new RenderPipeline({
       canvas: this.config.canvas,
       width: this.config.width,
@@ -42043,6 +42043,7 @@ class WeylEngine {
     const camWidth = compositionWidth ?? width;
     const camHeight = compositionHeight ?? height;
     this.camera.resize(camWidth, camHeight);
+    this.camera.setViewportAspect(width, height);
     this.emit("resize", { width, height, compositionWidth, compositionHeight });
   }
   /**
@@ -43972,9 +43973,19 @@ const _sfc_main$c = /* @__PURE__ */ defineComponent({
       const scale = Math.min(scaleX, scaleY, 1);
       zoom.value = scale;
       viewportTransform.value = [scale, 0, 0, scale, 0, 0];
+      const camera = engine.value.getCameraController();
+      camera.camera.aspect = containerRect.width / containerRect.height;
+      camera.camera.updateProjectionMatrix();
       engine.value.resetCameraToDefault();
-      engine.value.getCameraController().setZoom(scale);
-      engine.value.getCameraController().setPan(0, 0);
+      camera.setZoom(scale);
+      camera.setPan(0, 0);
+      console.log("[ThreeCanvas] centerOnComposition:", {
+        viewport: { width: containerRect.width, height: containerRect.height },
+        composition: { width: compWidth, height: compHeight },
+        scale,
+        cameraPos: camera.getPosition(),
+        cameraTarget: camera.getTarget()
+      });
     }
     function setRenderMode(mode) {
       renderMode.value = mode;
@@ -44279,7 +44290,7 @@ const _sfc_main$c = /* @__PURE__ */ defineComponent({
   }
 });
 
-const ThreeCanvas = /* @__PURE__ */ _export_sfc(_sfc_main$c, [["__scopeId", "data-v-a94bcef0"]]);
+const ThreeCanvas = /* @__PURE__ */ _export_sfc(_sfc_main$c, [["__scopeId", "data-v-3407885f"]]);
 
 const _hoisted_1$a = { class: "prop-wrapper" };
 const _hoisted_2$a = { class: "prop-content" };
