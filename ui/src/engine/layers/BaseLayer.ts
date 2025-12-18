@@ -9,13 +9,14 @@
  */
 
 import * as THREE from 'three';
-import type { Layer, AnimatableProperty, LayerTransform, LayerMask, TrackMatteType } from '@/types/project';
+import type { Layer, AnimatableProperty, LayerTransform, LayerMask, TrackMatteType, LayerMotionBlurSettings } from '@/types/project';
 import type { EffectInstance } from '@/types/effects';
 import type { LayerInstance } from '../types';
 import type { TargetParameter } from '@/services/audioReactiveMapping';
 import { KeyframeEvaluator } from '../animation/KeyframeEvaluator';
 import { processEffectStack, hasEnabledEffects } from '@/services/effectProcessor';
 import { applyMasksToLayer, applyTrackMatte } from '@/services/effects/maskRenderer';
+import { MotionBlurProcessor, createDefaultMotionBlurSettings, type VelocityData } from '@/services/motionBlur';
 import { layerLogger } from '@/utils/logger';
 
 export abstract class BaseLayer implements LayerInstance {
@@ -75,6 +76,12 @@ export abstract class BaseLayer implements LayerInstance {
   /** Effects stack for this layer */
   protected effects: EffectInstance[] = [];
 
+  /** Layer-level effects enable/disable (fx switch in AE) */
+  protected effectsEnabled: boolean = true;
+
+  /** Layer quality mode (draft = faster, best = full quality) */
+  protected quality: 'draft' | 'best' = 'best';
+
   /** Source canvas for effect processing (lazy initialized) */
   protected effectSourceCanvas: HTMLCanvasElement | null = null;
 
@@ -125,6 +132,32 @@ export abstract class BaseLayer implements LayerInstance {
   /** Whether 3D axis gizmo is visible */
   protected showAxisGizmo: boolean = false;
 
+  // ============================================================================
+  // MOTION BLUR
+  // ============================================================================
+
+  /** Motion blur enabled (layer switch) */
+  protected motionBlur: boolean = false;
+
+  /** Motion blur settings */
+  protected motionBlurSettings: LayerMotionBlurSettings | null = null;
+
+  /** Motion blur processor instance */
+  protected motionBlurProcessor: MotionBlurProcessor | null = null;
+
+  /** Previous frame transform values for velocity calculation */
+  protected prevTransform: {
+    position: { x: number; y: number; z: number };
+    rotation: number;
+    scale: { x: number; y: number };
+  } | null = null;
+
+  /** Last frame that motion blur was evaluated */
+  protected motionBlurLastFrame: number = -1;
+
+  /** Reference to layer data for property access */
+  protected layerData: Layer;
+
   constructor(layerData: Layer) {
     this.id = layerData.id;
     this.type = layerData.type;
@@ -149,6 +182,13 @@ export abstract class BaseLayer implements LayerInstance {
     this.blendMode = layerData.blendMode ?? 'normal';
     this.parentId = layerData.parentId ?? null;
     this.effects = layerData.effects ?? [];
+    this.effectsEnabled = layerData.effectsEnabled !== false; // Default true
+    this.quality = layerData.quality ?? 'best';
+
+    // Motion blur properties
+    this.motionBlur = layerData.motionBlur ?? false;
+    this.motionBlurSettings = layerData.motionBlurSettings ?? null;
+    this.layerData = layerData;
 
     // Mask & matte properties
     this.masks = layerData.masks ?? [];
@@ -530,6 +570,14 @@ export abstract class BaseLayer implements LayerInstance {
     return this.visible;
   }
 
+  /**
+   * Get the underlying layer data
+   * Used for accessing transform, anchor point, and other layer properties
+   */
+  getLayerData(): Layer {
+    return this.layerData;
+  }
+
   // ============================================================================
   // DRIVEN VALUES (Expressions/Links)
   // ============================================================================
@@ -644,9 +692,49 @@ export abstract class BaseLayer implements LayerInstance {
 
   /**
    * Check if this layer has any enabled effects
+   * Also respects the layer-level effectsEnabled flag (fx switch)
    */
   hasEnabledEffects(): boolean {
+    // Layer-level effects toggle (fx switch) disables ALL effects
+    if (!this.effectsEnabled) {
+      return false;
+    }
     return hasEnabledEffects(this.effects);
+  }
+
+  /**
+   * Set layer-level effects enabled state (fx switch)
+   */
+  setEffectsEnabled(enabled: boolean): void {
+    this.effectsEnabled = enabled;
+  }
+
+  /**
+   * Get layer-level effects enabled state
+   */
+  getEffectsEnabled(): boolean {
+    return this.effectsEnabled;
+  }
+
+  /**
+   * Set layer quality mode (draft = faster preview, best = full quality)
+   */
+  setQuality(quality: 'draft' | 'best'): void {
+    this.quality = quality;
+  }
+
+  /**
+   * Get layer quality mode
+   */
+  getQuality(): 'draft' | 'best' {
+    return this.quality;
+  }
+
+  /**
+   * Check if layer is in draft quality mode
+   */
+  isDraftQuality(): boolean {
+    return this.quality === 'draft';
   }
 
   /**
@@ -666,12 +754,47 @@ export abstract class BaseLayer implements LayerInstance {
     }
 
     try {
-      const result = processEffectStack(this.effects, sourceCanvas, frame);
-      return result.canvas;
+      // Pass quality mode to effect processor
+      // Draft mode uses faster, lower-quality effect rendering
+      const qualityHint = this.isDraftQuality() ? 'draft' : 'high';
+      const result = processEffectStack(this.effects, sourceCanvas, frame, qualityHint);
+      let processedCanvas = result.canvas;
+
+      // Apply motion blur as final step if enabled
+      if (this.motionBlur) {
+        const currentTransform = this.getCurrentTransformValues();
+        processedCanvas = this.applyMotionBlur(processedCanvas, frame, currentTransform);
+      }
+
+      return processedCanvas;
     } catch (error) {
       layerLogger.error(`Error processing effects for layer ${this.id}:`, error);
       return null;
     }
+  }
+
+  /**
+   * Get current transform values for motion blur calculation
+   * Uses evaluated values from the current frame
+   */
+  protected getCurrentTransformValues(): {
+    position: { x: number; y: number; z: number };
+    rotation: number;
+    scale: { x: number; y: number };
+  } {
+    // Extract current values from the Three.js group (already evaluated)
+    return {
+      position: {
+        x: this.group.position.x,
+        y: -this.group.position.y, // Negate to convert back to screen coords
+        z: this.group.position.z,
+      },
+      rotation: THREE.MathUtils.radToDeg(-this.group.rotation.z), // Convert back
+      scale: {
+        x: this.group.scale.x * 100,
+        y: this.group.scale.y * 100,
+      },
+    };
   }
 
   /**
@@ -693,6 +816,177 @@ export abstract class BaseLayer implements LayerInstance {
   protected applyProcessedEffects(_processedCanvas: HTMLCanvasElement): void {
     // Default: no-op
     // Subclasses should override to update their material/texture
+  }
+
+  // ============================================================================
+  // MOTION BLUR PROCESSING
+  // ============================================================================
+
+  /**
+   * Check if motion blur should be applied
+   */
+  protected shouldApplyMotionBlur(): boolean {
+    return this.motionBlur && this.getSourceCanvas() !== null;
+  }
+
+  /**
+   * Initialize motion blur processor with layer dimensions
+   */
+  protected initializeMotionBlurProcessor(width: number, height: number): void {
+    if (!this.motionBlurProcessor) {
+      const settings = this.motionBlurSettings
+        ? {
+            enabled: true,
+            type: this.motionBlurSettings.type,
+            shutterAngle: this.motionBlurSettings.shutterAngle,
+            shutterPhase: this.motionBlurSettings.shutterPhase,
+            samplesPerFrame: this.motionBlurSettings.samplesPerFrame,
+            direction: this.motionBlurSettings.direction,
+            blurLength: this.motionBlurSettings.blurLength,
+          }
+        : { ...createDefaultMotionBlurSettings(), enabled: true };
+
+      this.motionBlurProcessor = new MotionBlurProcessor(width, height, settings);
+    } else if (
+      this.motionBlurProcessor.getSettings().shutterAngle !==
+      (this.motionBlurSettings?.shutterAngle ?? 180)
+    ) {
+      // Update settings if changed
+      this.motionBlurProcessor.setSettings({
+        shutterAngle: this.motionBlurSettings?.shutterAngle ?? 180,
+        shutterPhase: this.motionBlurSettings?.shutterPhase ?? -90,
+        samplesPerFrame: this.motionBlurSettings?.samplesPerFrame ?? 16,
+      });
+    }
+  }
+
+  /**
+   * Calculate velocity from current and previous transforms
+   */
+  protected calculateTransformVelocity(currentTransform: {
+    position: { x: number; y: number; z: number };
+    rotation: number;
+    scale: { x: number; y: number };
+  }): VelocityData {
+    if (!this.prevTransform) {
+      return { x: 0, y: 0, rotation: 0, scale: 0 };
+    }
+
+    return {
+      x: currentTransform.position.x - this.prevTransform.position.x,
+      y: currentTransform.position.y - this.prevTransform.position.y,
+      rotation: currentTransform.rotation - this.prevTransform.rotation,
+      scale:
+        ((currentTransform.scale.x - this.prevTransform.scale.x) +
+         (currentTransform.scale.y - this.prevTransform.scale.y)) / 2,
+    };
+  }
+
+  /**
+   * Apply motion blur to a canvas based on transform velocity
+   * @param sourceCanvas - Canvas to apply motion blur to
+   * @param frame - Current frame number
+   * @param currentTransform - Current transform values
+   * @returns Canvas with motion blur applied, or source if no blur needed
+   */
+  protected applyMotionBlur(
+    sourceCanvas: HTMLCanvasElement,
+    frame: number,
+    currentTransform: {
+      position: { x: number; y: number; z: number };
+      rotation: number;
+      scale: { x: number; y: number };
+    }
+  ): HTMLCanvasElement {
+    if (!this.motionBlur) {
+      return sourceCanvas;
+    }
+
+    // Initialize processor if needed
+    this.initializeMotionBlurProcessor(sourceCanvas.width, sourceCanvas.height);
+
+    if (!this.motionBlurProcessor) {
+      return sourceCanvas;
+    }
+
+    // Calculate velocity
+    const velocity = this.calculateTransformVelocity(currentTransform);
+
+    // Store current transform for next frame
+    this.prevTransform = {
+      position: { ...currentTransform.position },
+      rotation: currentTransform.rotation,
+      scale: { ...currentTransform.scale },
+    };
+
+    // Skip blur if velocity is negligible
+    const velocityMagnitude = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
+    if (velocityMagnitude < 0.5 && Math.abs(velocity.rotation) < 0.5 && Math.abs(velocity.scale) < 0.01) {
+      return sourceCanvas;
+    }
+
+    // Apply motion blur
+    try {
+      // Convert HTMLCanvasElement to OffscreenCanvas for the processor
+      const offscreen = new OffscreenCanvas(sourceCanvas.width, sourceCanvas.height);
+      const ctx = offscreen.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(sourceCanvas, 0, 0);
+        const blurredOffscreen = this.motionBlurProcessor.applyMotionBlur(offscreen, velocity, frame);
+
+        // Convert back to HTMLCanvasElement
+        const resultCanvas = document.createElement('canvas');
+        resultCanvas.width = sourceCanvas.width;
+        resultCanvas.height = sourceCanvas.height;
+        const resultCtx = resultCanvas.getContext('2d');
+        if (resultCtx) {
+          resultCtx.drawImage(blurredOffscreen, 0, 0);
+          return resultCanvas;
+        }
+      }
+    } catch (error) {
+      layerLogger.error(`Error applying motion blur to layer ${this.id}:`, error);
+    }
+
+    return sourceCanvas;
+  }
+
+  /**
+   * Set motion blur enabled state
+   */
+  setMotionBlur(enabled: boolean): void {
+    this.motionBlur = enabled;
+    this.layerData.motionBlur = enabled;
+    if (!enabled) {
+      this.motionBlurProcessor?.clearBuffer();
+      this.prevTransform = null;
+    }
+  }
+
+  /**
+   * Update motion blur settings
+   */
+  setMotionBlurSettings(settings: Partial<LayerMotionBlurSettings>): void {
+    if (!this.motionBlurSettings) {
+      this.motionBlurSettings = {
+        type: 'standard',
+        shutterAngle: 180,
+        shutterPhase: -90,
+        samplesPerFrame: 16,
+        ...settings,
+      };
+    } else {
+      Object.assign(this.motionBlurSettings, settings);
+    }
+
+    if (this.motionBlurProcessor) {
+      this.motionBlurProcessor.setSettings({
+        type: this.motionBlurSettings.type,
+        shutterAngle: this.motionBlurSettings.shutterAngle,
+        shutterPhase: this.motionBlurSettings.shutterPhase,
+        samplesPerFrame: this.motionBlurSettings.samplesPerFrame,
+      });
+    }
   }
 
   // ============================================================================

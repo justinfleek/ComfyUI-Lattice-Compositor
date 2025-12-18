@@ -891,9 +891,6 @@ function handleKeydown(e: KeyboardEvent) {
       e.preventDefault();
       togglePlay();
       break;
-    case 'v':
-      currentTool.value = 'select';
-      break;
     case 'p':
       currentTool.value = 'pen';
       break;
@@ -949,9 +946,52 @@ function handleKeydown(e: KeyboardEvent) {
       }
       break;
     case 'a':
-      if (!e.ctrlKey && !e.metaKey) {
+      if (e.ctrlKey || e.metaKey) {
+        // Select all layers
+        e.preventDefault();
+        store.selectAllLayers();
+      } else {
         // Switch to Assets tab
         leftTab.value = 'assets';
+      }
+      break;
+    case 'delete':
+    case 'backspace':
+      // Delete selected layers
+      if (store.selectedLayerIds.length > 0) {
+        e.preventDefault();
+        store.deleteSelectedLayers();
+      }
+      break;
+    case 'c':
+      if (e.ctrlKey || e.metaKey) {
+        // Copy selected layers
+        e.preventDefault();
+        store.copySelectedLayers();
+      }
+      break;
+    case 'd':
+      if (e.ctrlKey || e.metaKey) {
+        // Duplicate selected layers
+        e.preventDefault();
+        store.duplicateSelectedLayers();
+      }
+      break;
+    case 'v':
+      if (e.ctrlKey || e.metaKey) {
+        // Paste layers from clipboard
+        e.preventDefault();
+        store.pasteLayers();
+      } else if (!e.shiftKey) {
+        // Select tool (existing behavior)
+        currentTool.value = 'select';
+      }
+      break;
+    case 'x':
+      if (e.ctrlKey || e.metaKey) {
+        // Cut selected layers
+        e.preventDefault();
+        store.cutSelectedLayers();
       }
       break;
   }

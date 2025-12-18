@@ -14,6 +14,19 @@ const logger = createLogger('ProjectStorage');
 const API_BASE = '/weyl/compositor';
 
 /**
+ * Validate project ID format for security
+ * Accepts UUIDs, timestamps, or alphanumeric IDs
+ */
+function isValidProjectId(projectId: string): boolean {
+  // Allow UUIDs (with or without hyphens)
+  const uuidPattern = /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i;
+  // Allow alphanumeric with underscores (typical generated IDs like "project_1702345678901")
+  const alphanumericPattern = /^[a-zA-Z0-9_-]{1,128}$/;
+
+  return uuidPattern.test(projectId) || alphanumericPattern.test(projectId);
+}
+
+/**
  * Project metadata returned from list endpoint
  */
 export interface ProjectInfo {
@@ -104,6 +117,15 @@ export async function saveProject(
  * @returns Load result with the project data
  */
 export async function loadProject(projectId: string): Promise<LoadResult> {
+  // Validate project ID format to prevent injection attacks
+  if (!isValidProjectId(projectId)) {
+    logger.error(`Invalid project ID format: ${projectId}`);
+    return {
+      status: 'error',
+      message: 'Invalid project ID format',
+    };
+  }
+
   try {
     logger.info(`Loading project: ${projectId}...`);
 

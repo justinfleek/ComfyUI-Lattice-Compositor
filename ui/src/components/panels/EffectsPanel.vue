@@ -1,42 +1,52 @@
 <template>
-  <div class="effects-panel">
+  <div class="effects-panel" role="region" aria-label="Effects and Presets">
     <div class="panel-header">
-      <span class="panel-title">Effects & Presets</span>
+      <span class="panel-title" id="effects-panel-title">Effects & Presets</span>
       <div class="header-actions">
         <input
           type="text"
           v-model="searchQuery"
           placeholder="Search..."
           class="search-input"
+          aria-label="Search effects and presets"
         />
       </div>
     </div>
 
     <div class="panel-content">
       <!-- Tabs -->
-      <div class="tabs">
+      <div class="tabs" role="tablist" aria-label="Effects panel tabs">
         <button
           :class="{ active: activeTab === 'effects' }"
           @click="activeTab = 'effects'"
+          role="tab"
+          :aria-selected="activeTab === 'effects'"
+          aria-controls="effects-tab-panel"
         >
           Effects
         </button>
         <button
           :class="{ active: activeTab === 'presets' }"
           @click="activeTab = 'presets'"
+          role="tab"
+          :aria-selected="activeTab === 'presets'"
+          aria-controls="presets-tab-panel"
         >
           Presets
         </button>
         <button
           :class="{ active: activeTab === 'favorites' }"
           @click="activeTab = 'favorites'"
+          role="tab"
+          :aria-selected="activeTab === 'favorites'"
+          aria-controls="favorites-tab-panel"
         >
           Favorites
         </button>
       </div>
 
       <!-- Effects List -->
-      <div v-if="activeTab === 'effects'" class="effects-list">
+      <div v-if="activeTab === 'effects'" class="effects-list" id="effects-tab-panel" role="tabpanel" aria-label="Effects list">
         <div
           v-for="category in filteredCategories"
           :key="category.key"
@@ -67,8 +77,10 @@
                 class="favorite-btn"
                 @click.stop="toggleFavorite(effect.key)"
                 :title="favorites.includes(effect.key) ? 'Remove from favorites' : 'Add to favorites'"
+                :aria-label="favorites.includes(effect.key) ? `Remove ${effect.name} from favorites` : `Add ${effect.name} to favorites`"
+                :aria-pressed="favorites.includes(effect.key)"
               >
-                {{ favorites.includes(effect.key) ? '★' : '☆' }}
+                <span aria-hidden="true">{{ favorites.includes(effect.key) ? '★' : '☆' }}</span>
               </button>
             </div>
           </div>
@@ -167,12 +179,22 @@ const expandedCategories = ref<EffectCategory[]>(['blur-sharpen', 'color-correct
 const expandedPresetCategories = ref<string[]>(['Fade', 'Scale']);
 const favorites = ref<string[]>([]);
 
+// localStorage versioning for forward compatibility
+const STORAGE_VERSION = 1;
+const STORAGE_KEY = 'effect-favorites-v' + STORAGE_VERSION;
+
 // Load favorites from localStorage
 onMounted(() => {
-  const saved = localStorage.getItem('effect-favorites');
+  const saved = localStorage.getItem(STORAGE_KEY);
   if (saved) {
     try {
-      favorites.value = JSON.parse(saved);
+      const parsed = JSON.parse(saved);
+      // Validate that it's an array of strings
+      if (Array.isArray(parsed) && parsed.every(item => typeof item === 'string')) {
+        favorites.value = parsed;
+      } else {
+        favorites.value = [];
+      }
     } catch {
       favorites.value = [];
     }
@@ -181,7 +203,7 @@ onMounted(() => {
 
 // Save favorites
 function saveFavorites() {
-  localStorage.setItem('effect-favorites', JSON.stringify(favorites.value));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(favorites.value));
 }
 
 // Computed

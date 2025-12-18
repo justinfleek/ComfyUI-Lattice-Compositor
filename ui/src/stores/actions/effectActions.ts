@@ -169,7 +169,7 @@ export function duplicateEffect(
   if (!effect) return;
 
   // Deep clone the effect
-  const duplicate: EffectInstance = JSON.parse(JSON.stringify(effect));
+  const duplicate: EffectInstance = structuredClone(effect);
   duplicate.id = `effect_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   duplicate.name = `${effect.name} Copy`;
 

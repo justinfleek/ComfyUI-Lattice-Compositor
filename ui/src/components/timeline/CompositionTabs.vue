@@ -1,5 +1,20 @@
 <template>
   <div class="composition-tabs">
+    <!-- Breadcrumb navigation for nested precomps -->
+    <div v-if="breadcrumbPath.length > 1" class="breadcrumb-nav">
+      <template v-for="(crumb, idx) in breadcrumbPath" :key="crumb.id">
+        <span
+          class="breadcrumb-item"
+          :class="{ current: idx === breadcrumbPath.length - 1 }"
+          @click="navigateToBreadcrumb(idx)"
+        >
+          {{ crumb.name }}
+        </span>
+        <span v-if="idx < breadcrumbPath.length - 1" class="breadcrumb-sep">›</span>
+      </template>
+      <button class="back-btn" @click="navigateBack" title="Go back (Backspace)">⬅</button>
+    </div>
+
     <div class="tabs-container">
       <div
         v-for="comp in openCompositions"
@@ -87,6 +102,9 @@ const emit = defineEmits<{
 
 const store = useCompositorStore();
 
+// Computed from store
+const breadcrumbPath = computed(() => store.breadcrumbPath);
+
 // State
 const editingId = ref<string | null>(null);
 const editingName = ref('');
@@ -116,6 +134,15 @@ function switchToComposition(compId: string) {
 
 function closeTab(compId: string) {
   store.closeCompositionTab(compId);
+}
+
+// Breadcrumb navigation
+function navigateToBreadcrumb(idx: number) {
+  store.navigateToBreadcrumb(idx);
+}
+
+function navigateBack() {
+  store.navigateBack();
 }
 
 function formatCompInfo(comp: Composition): string {
@@ -386,5 +413,68 @@ onUnmounted(() => {
   border: none;
   border-top: 1px solid #444;
   margin: 4px 0;
+}
+
+/* Breadcrumb Navigation */
+.breadcrumb-nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 8px;
+  margin-right: 8px;
+  border-right: 1px solid #444;
+  font-size: 11px;
+}
+
+.breadcrumb-item {
+  color: #888;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 2px;
+  white-space: nowrap;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.breadcrumb-item:hover {
+  background: #333;
+  color: #aaa;
+}
+
+.breadcrumb-item.current {
+  color: #e0e0e0;
+  cursor: default;
+  font-weight: 500;
+}
+
+.breadcrumb-item.current:hover {
+  background: transparent;
+}
+
+.breadcrumb-sep {
+  color: #555;
+  font-size: 10px;
+}
+
+.back-btn {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #888;
+  font-size: 12px;
+  cursor: pointer;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 4px;
+}
+
+.back-btn:hover {
+  background: #333;
+  color: #e0e0e0;
 }
 </style>

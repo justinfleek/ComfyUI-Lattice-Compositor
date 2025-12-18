@@ -40,8 +40,14 @@ export function pushHistory(store: ProjectStore): void {
     store.historyStack = store.historyStack.slice(0, store.historyIndex + 1);
   }
 
-  // Deep clone the project
-  const snapshot = JSON.parse(JSON.stringify(store.project));
+  // Deep clone the project (structuredClone is 10-50x faster than JSON.parse/stringify)
+  let snapshot: typeof store.project;
+  try {
+    snapshot = structuredClone(store.project);
+  } catch {
+    // Fall back to JSON for proxy objects (e.g., in tests)
+    snapshot = JSON.parse(JSON.stringify(store.project));
+  }
   store.historyStack.push(snapshot);
   store.historyIndex = store.historyStack.length - 1;
 
@@ -59,7 +65,11 @@ export function undo(store: ProjectStore): boolean {
   if (store.historyIndex <= 0) return false;
 
   store.historyIndex--;
-  store.project = JSON.parse(JSON.stringify(store.historyStack[store.historyIndex]));
+  try {
+    store.project = structuredClone(store.historyStack[store.historyIndex]);
+  } catch {
+    store.project = JSON.parse(JSON.stringify(store.historyStack[store.historyIndex]));
+  }
   return true;
 }
 
@@ -70,7 +80,11 @@ export function redo(store: ProjectStore): boolean {
   if (store.historyIndex >= store.historyStack.length - 1) return false;
 
   store.historyIndex++;
-  store.project = JSON.parse(JSON.stringify(store.historyStack[store.historyIndex]));
+  try {
+    store.project = structuredClone(store.historyStack[store.historyIndex]);
+  } catch {
+    store.project = JSON.parse(JSON.stringify(store.historyStack[store.historyIndex]));
+  }
   return true;
 }
 
@@ -92,7 +106,13 @@ export function canRedo(store: ProjectStore): boolean {
  * Clear history stack
  */
 export function clearHistory(store: ProjectStore): void {
-  store.historyStack = [JSON.parse(JSON.stringify(store.project))];
+  let snapshot: typeof store.project;
+  try {
+    snapshot = structuredClone(store.project);
+  } catch {
+    snapshot = JSON.parse(JSON.stringify(store.project));
+  }
+  store.historyStack = [snapshot];
   store.historyIndex = 0;
 }
 

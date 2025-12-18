@@ -1,10 +1,43 @@
 /**
  * Arc Length Parameterization for Bezier Curves
  *
- * Bezier.js does NOT have a built-in arc-length to t conversion.
- * This class builds a lookup table for efficient distance -> parameter mapping.
+ * @module arcLength
+ * @description
+ * Provides arc-length parameterization for Bezier curves, enabling uniform
+ * spacing of points along curves regardless of control point distribution.
+ *
+ * **Key Features:**
+ * - Convert distance along curve to parametric t value
+ * - Get evenly spaced points along any Bezier curve
+ * - Support for multi-segment paths (splines)
+ *
+ * **Why Arc-Length Parameterization?**
+ * Bezier curves are parameterized by t (0-1), but t does not correspond to
+ * distance along the curve. Moving t by 0.1 might move 5px or 50px depending
+ * on the curve's shape. Arc-length parameterization solves this by building
+ * a lookup table that maps distance to t.
+ *
+ * **Performance:**
+ * - LUT resolution is configurable (default 1000 samples)
+ * - Binary search for O(log n) distance->t conversion
+ * - Multi-segment paths accumulate lengths efficiently
+ *
+ * @example
+ * ```typescript
+ * import Bezier from 'bezier-js';
+ * import { ArcLengthParameterizer } from './arcLength';
+ *
+ * const curve = new Bezier(0, 0, 50, 100, 100, 100, 150, 0);
+ * const param = new ArcLengthParameterizer(curve);
+ *
+ * // Get point at 50% of the curve length
+ * const midPoint = param.getPointAtDistance(param.totalLength * 0.5);
+ *
+ * // Get 10 evenly spaced points
+ * const points = param.getEvenlySpacedPoints(10);
+ * ```
  */
-import { Bezier } from 'bezier-js';
+import Bezier from 'bezier-js';
 
 interface ArcLengthEntry {
   t: number;

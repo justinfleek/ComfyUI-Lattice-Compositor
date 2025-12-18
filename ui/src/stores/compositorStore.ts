@@ -103,6 +103,7 @@ interface CompositorState {
   // Active composition (for multi-composition support)
   activeCompositionId: string;
   openCompositionIds: string[];  // Tabs - which comps are open
+  compositionBreadcrumbs: string[];  // Navigation history for nested precomps
 
   // ComfyUI connection
   comfyuiNodeId: string | null;
@@ -131,6 +132,7 @@ interface CompositorState {
 
   // UI state
   graphEditorVisible: boolean;
+  hideShyLayers: boolean;  // Toggle to hide layers marked as shy
 
   // History for undo/redo
   historyStack: WeylProject[];
@@ -196,6 +198,7 @@ export const useCompositorStore = defineStore('compositor', {
     project: createEmptyProject(1024, 1024),
     activeCompositionId: 'main',
     openCompositionIds: ['main'],
+    compositionBreadcrumbs: ['main'],  // Start with main comp in breadcrumb path
     comfyuiNodeId: null,
     sourceImage: null,
     depthMap: null,
@@ -206,6 +209,7 @@ export const useCompositorStore = defineStore('compositor', {
     segmentBoxStart: null,
     segmentIsLoading: false,
     graphEditorVisible: false,
+    hideShyLayers: false,
     historyStack: [],
     historyIndex: -1,
     audioBuffer: null,
@@ -305,6 +309,15 @@ export const useCompositorStore = defineStore('compositor', {
       const comp = state.project.compositions[state.activeCompositionId];
       return (comp?.layers || []).filter((l: Layer) => l.visible);
     },
+    // Layers displayed in timeline (respects shy filter)
+    displayedLayers(state): Layer[] {
+      const comp = state.project.compositions[state.activeCompositionId];
+      const allLayers = comp?.layers || [];
+      if (state.hideShyLayers) {
+        return allLayers.filter((l: Layer) => !l.shy);
+      }
+      return allLayers;
+    },
 
     // Selection (delegated to selectionStore)
     selectedLayerIds(): string[] {
@@ -340,6 +353,16 @@ export const useCompositorStore = defineStore('compositor', {
       return state.openCompositionIds
         .map((id: string) => state.project.compositions[id])
         .filter(Boolean);
+    },
+
+    // Breadcrumb navigation path for nested precomps
+    breadcrumbPath(state): Array<{ id: string; name: string }> {
+      return state.compositionBreadcrumbs
+        .map((id: string) => {
+          const comp = state.project.compositions[id];
+          return comp ? { id, name: comp.name } : null;
+        })
+        .filter(Boolean) as Array<{ id: string; name: string }>;
     },
 
     // Assets
@@ -502,6 +525,78 @@ export const useCompositorStore = defineStore('compositor', {
       if (this.activeCompositionId === compId) {
         this.activeCompositionId = this.openCompositionIds[Math.max(0, idx - 1)];
       }
+    },
+
+    /**
+     * Enter a precomp (e.g., double-click on precomp layer)
+     * Pushes the composition to the breadcrumb trail
+     */
+    enterPrecomp(compId: string): void {
+      if (!this.project.compositions[compId]) {
+        storeLogger.warn('Precomp not found:', compId);
+        return;
+      }
+
+      // Add to breadcrumb trail
+      this.compositionBreadcrumbs.push(compId);
+
+      // Switch to the composition
+      this.switchComposition(compId);
+
+      storeLogger.debug('Entered precomp:', compId, 'breadcrumbs:', this.compositionBreadcrumbs);
+    },
+
+    /**
+     * Navigate back one level in the breadcrumb trail
+     */
+    navigateBack(): void {
+      if (this.compositionBreadcrumbs.length <= 1) {
+        storeLogger.warn('Already at root composition');
+        return;
+      }
+
+      // Pop current and switch to previous
+      this.compositionBreadcrumbs.pop();
+      const prevId = this.compositionBreadcrumbs[this.compositionBreadcrumbs.length - 1];
+
+      if (prevId) {
+        this.switchComposition(prevId);
+      }
+
+      storeLogger.debug('Navigated back, breadcrumbs:', this.compositionBreadcrumbs);
+    },
+
+    /**
+     * Navigate to a specific breadcrumb index
+     * Truncates the breadcrumb trail to that point
+     */
+    navigateToBreadcrumb(index: number): void {
+      if (index < 0 || index >= this.compositionBreadcrumbs.length) {
+        return;
+      }
+
+      // Already at this breadcrumb
+      if (index === this.compositionBreadcrumbs.length - 1) {
+        return;
+      }
+
+      // Truncate to the selected index
+      this.compositionBreadcrumbs = this.compositionBreadcrumbs.slice(0, index + 1);
+      const targetId = this.compositionBreadcrumbs[index];
+
+      if (targetId) {
+        this.switchComposition(targetId);
+      }
+
+      storeLogger.debug('Navigated to breadcrumb', index, 'breadcrumbs:', this.compositionBreadcrumbs);
+    },
+
+    /**
+     * Reset breadcrumbs to main composition (e.g., when loading a new project)
+     */
+    resetBreadcrumbs(): void {
+      this.compositionBreadcrumbs = [this.project.mainCompositionId];
+      this.switchComposition(this.project.mainCompositionId);
     },
 
     /**
@@ -899,6 +994,15 @@ export const useCompositorStore = defineStore('compositor', {
             speed: 1.0
           };
           break;
+
+        case 'shape':
+          layerData = {
+            contents: [],
+            blendMode: 'normal',
+            quality: 'normal',
+            gpuAccelerated: false
+          };
+          break;
       }
 
       // Initialize audio props for video/audio layers
@@ -978,6 +1082,43 @@ export const useCompositorStore = defineStore('compositor', {
      */
     cutSelectedLayers(): void {
       layerActions.cutSelectedLayers(this);
+    },
+
+    /**
+     * Select all layers in the active composition
+     */
+    selectAllLayers(): void {
+      const layers = this.getActiveCompLayers();
+      const selection = useSelectionStore();
+      selection.selectLayers(layers.map(l => l.id));
+    },
+
+    /**
+     * Delete all selected layers
+     */
+    deleteSelectedLayers(): void {
+      const selection = useSelectionStore();
+      const layerIds = [...selection.selectedLayerIds];
+      layerIds.forEach(id => this.deleteLayer(id));
+      selection.clearLayerSelection();
+    },
+
+    /**
+     * Duplicate all selected layers
+     */
+    duplicateSelectedLayers(): void {
+      const selection = useSelectionStore();
+      const newLayerIds: string[] = [];
+      selection.selectedLayerIds.forEach(id => {
+        const newLayer = layerActions.duplicateLayer(this, id);
+        if (newLayer) {
+          newLayerIds.push(newLayer.id);
+        }
+      });
+      // Select the duplicated layers
+      if (newLayerIds.length > 0) {
+        selection.selectLayers(newLayerIds);
+      }
     },
 
     /**
@@ -1318,6 +1459,20 @@ export const useCompositorStore = defineStore('compositor', {
     },
 
     /**
+     * Toggle hide shy layers in timeline
+     */
+    toggleHideShyLayers(): void {
+      this.hideShyLayers = !this.hideShyLayers;
+    },
+
+    /**
+     * Set hide shy layers state
+     */
+    setHideShyLayers(hide: boolean): void {
+      this.hideShyLayers = hide;
+    },
+
+    /**
      * Get interpolated value for any animatable property at current frame
      */
     getInterpolatedValue<T>(property: AnimatableProperty<T>): T {
@@ -1511,6 +1666,29 @@ export const useCompositorStore = defineStore('compositor', {
       layer.data = splineData;
 
       return layer;
+    },
+
+    /**
+     * Create a shape layer with proper data structure
+     */
+    createShapeLayer(name: string = 'Shape Layer'): Layer {
+      const layer = this.createLayer('shape', name);
+
+      // Shape layer data is already set by createLayer switch
+      // Add any additional default properties here if needed
+
+      return layer;
+    },
+
+    /**
+     * Rename a layer by ID
+     */
+    renameLayer(layerId: string, newName: string): void {
+      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
+      if (layer) {
+        layer.name = newName;
+        this.pushHistory();
+      }
     },
 
     // ============================================================

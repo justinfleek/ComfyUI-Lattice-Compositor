@@ -73,6 +73,14 @@ export class VideoLayer extends BaseLayer {
   private effectCanvas: HTMLCanvasElement | null = null;
   private effectCanvasCtx: CanvasRenderingContext2D | null = null;
 
+  // Frame blending support
+  private prevFrameCanvas: HTMLCanvasElement | null = null;
+  private prevFrameCtx: CanvasRenderingContext2D | null = null;
+  private blendCanvas: HTMLCanvasElement | null = null;
+  private blendCtx: CanvasRenderingContext2D | null = null;
+  private lastVideoTime: number = -1;
+  private prevFrameTime: number = -1;
+
   constructor(layerData: Layer, resources: ResourceManager) {
     super(layerData);
 
@@ -466,6 +474,7 @@ export class VideoLayer extends BaseLayer {
   /**
    * Get source canvas for effect processing
    * Renders the current video frame to a 2D canvas
+   * Supports frame blending for smooth slow-motion
    */
   protected override getSourceCanvas(): HTMLCanvasElement | null {
     if (!this.videoElement || !this.metadata) {
@@ -475,7 +484,34 @@ export class VideoLayer extends BaseLayer {
     const width = this.metadata.width;
     const height = this.metadata.height;
 
-    // Lazy create/resize canvas
+    // Lazy create/resize canvases
+    this.ensureCanvases(width, height);
+
+    if (!this.effectCanvasCtx) {
+      return null;
+    }
+
+    // Check if frame blending should be applied
+    // Layer switch (frameBlending) enables blending, videoData.frameBlending specifies mode
+    const shouldBlend = this.layerData.frameBlending === true &&
+                        this.videoData.frameBlending !== 'none';
+
+    if (shouldBlend && this.prevFrameCtx && this.blendCtx && this.blendCanvas) {
+      return this.getBlendedFrame(width, height);
+    }
+
+    // No blending - just draw current video frame
+    this.effectCanvasCtx.clearRect(0, 0, width, height);
+    this.effectCanvasCtx.drawImage(this.videoElement, 0, 0, width, height);
+
+    return this.effectCanvas;
+  }
+
+  /**
+   * Ensure all canvases are created and sized correctly
+   */
+  private ensureCanvases(width: number, height: number): void {
+    // Main effect canvas
     if (!this.effectCanvas ||
         this.effectCanvas.width !== width ||
         this.effectCanvas.height !== height) {
@@ -485,15 +521,91 @@ export class VideoLayer extends BaseLayer {
       this.effectCanvasCtx = this.effectCanvas.getContext('2d');
     }
 
-    if (!this.effectCanvasCtx) {
+    // Previous frame canvas (for blending)
+    if (!this.prevFrameCanvas ||
+        this.prevFrameCanvas.width !== width ||
+        this.prevFrameCanvas.height !== height) {
+      this.prevFrameCanvas = document.createElement('canvas');
+      this.prevFrameCanvas.width = width;
+      this.prevFrameCanvas.height = height;
+      this.prevFrameCtx = this.prevFrameCanvas.getContext('2d');
+    }
+
+    // Blend output canvas
+    if (!this.blendCanvas ||
+        this.blendCanvas.width !== width ||
+        this.blendCanvas.height !== height) {
+      this.blendCanvas = document.createElement('canvas');
+      this.blendCanvas.width = width;
+      this.blendCanvas.height = height;
+      this.blendCtx = this.blendCanvas.getContext('2d');
+    }
+  }
+
+  /**
+   * Get blended frame between previous and current video frame
+   * Used for smooth slow-motion playback
+   */
+  private getBlendedFrame(width: number, height: number): HTMLCanvasElement | null {
+    if (!this.videoElement || !this.metadata || !this.blendCtx || !this.blendCanvas ||
+        !this.prevFrameCtx || !this.prevFrameCanvas) {
       return null;
     }
 
-    // Draw current video frame to canvas
-    this.effectCanvasCtx.clearRect(0, 0, width, height);
-    this.effectCanvasCtx.drawImage(this.videoElement, 0, 0, width, height);
+    const currentVideoTime = this.videoElement.currentTime;
+    const videoFps = this.metadata.fps || 30;
+    const frameDuration = 1 / videoFps;
 
-    return this.effectCanvas;
+    // Calculate the fractional position between video frames
+    const currentVideoFrame = currentVideoTime * videoFps;
+    const blendFactor = currentVideoFrame - Math.floor(currentVideoFrame);
+
+    // Check if we need to capture a new previous frame
+    // We capture when we've moved to a new integer video frame
+    const currentIntFrame = Math.floor(currentVideoFrame);
+    const prevIntFrame = Math.floor(this.lastVideoTime * videoFps);
+
+    if (this.lastVideoTime < 0 || currentIntFrame !== prevIntFrame) {
+      // Save current frame as previous before seeking
+      if (this.effectCanvasCtx && this.effectCanvas) {
+        // Draw current video to effect canvas first
+        this.effectCanvasCtx.clearRect(0, 0, width, height);
+        this.effectCanvasCtx.drawImage(this.videoElement, 0, 0, width, height);
+
+        // Copy to previous frame canvas
+        this.prevFrameCtx.clearRect(0, 0, width, height);
+        this.prevFrameCtx.drawImage(this.effectCanvas, 0, 0);
+
+        this.prevFrameTime = this.lastVideoTime;
+      }
+    }
+
+    this.lastVideoTime = currentVideoTime;
+
+    // Draw current frame
+    this.effectCanvasCtx!.clearRect(0, 0, width, height);
+    this.effectCanvasCtx!.drawImage(this.videoElement, 0, 0, width, height);
+
+    // If blend factor is very close to 0 or 1, skip blending
+    if (blendFactor < 0.01 || blendFactor > 0.99) {
+      return this.effectCanvas;
+    }
+
+    // Blend: composite previous frame with current frame
+    this.blendCtx.clearRect(0, 0, width, height);
+
+    // Draw previous frame (base)
+    this.blendCtx.globalAlpha = 1;
+    this.blendCtx.drawImage(this.prevFrameCanvas, 0, 0);
+
+    // Draw current frame with blend factor opacity
+    this.blendCtx.globalAlpha = blendFactor;
+    this.blendCtx.drawImage(this.effectCanvas!, 0, 0);
+
+    // Reset alpha
+    this.blendCtx.globalAlpha = 1;
+
+    return this.blendCanvas;
   }
 
   /**
@@ -621,6 +733,10 @@ export class VideoLayer extends BaseLayer {
 
     this.metadata = null;
     this.videoData.assetId = null;
+
+    // Clear frame blending state
+    this.lastVideoTime = -1;
+    this.prevFrameTime = -1;
   }
 
   // ============================================================================
@@ -629,6 +745,14 @@ export class VideoLayer extends BaseLayer {
 
   protected onDispose(): void {
     this.clearVideo();
+
+    // Clean up frame blending canvases
+    this.prevFrameCanvas = null;
+    this.prevFrameCtx = null;
+    this.blendCanvas = null;
+    this.blendCtx = null;
+    this.effectCanvas = null;
+    this.effectCanvasCtx = null;
 
     if (this.material) {
       this.material.dispose();

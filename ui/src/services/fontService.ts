@@ -150,6 +150,12 @@ class FontService {
   async loadGoogleFont(family: string, weights: string[] = ['400', '700']): Promise<void> {
     if (this.loadedGoogleFonts.has(family)) return;
 
+    // Security: Only allow whitelisted Google Fonts to prevent arbitrary external resource loading
+    if (!GOOGLE_FONTS.includes(family)) {
+      fontLogger.warn(`Attempted to load non-whitelisted font: ${family}`);
+      return;
+    }
+
     const weightsStr = weights.join(';');
     const url = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family)}:wght@${weightsStr}&display=swap`;
 

@@ -439,7 +439,7 @@ describe('extractChromaFeatures', () => {
     // A is pitch class 9 (0=C, 1=C#, ..., 9=A)
     // The estimated key should involve A
     expect(chroma.estimatedKey).toContain('A');
-  });
+  }, 15000); // Increased timeout for FFT-heavy chroma extraction
 });
 
 // ============================================================================

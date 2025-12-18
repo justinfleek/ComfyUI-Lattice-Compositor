@@ -6,6 +6,16 @@
  *
  * PRINCIPLE: This service runs at AUTHORING time only.
  * It is NEVER called during frame evaluation.
+ *
+ * ⚠️ SECURITY WARNING:
+ * API keys passed to this service are transmitted to external APIs from the browser.
+ * For production deployments, implement a backend proxy to handle API communication.
+ * Never expose API keys in client-side code in production environments.
+ *
+ * Recommended architecture:
+ * 1. Create a backend endpoint (e.g., /api/vision/resolve)
+ * 2. Store API keys in environment variables on the server
+ * 3. Update this service to call the backend proxy instead
  */
 
 import type {

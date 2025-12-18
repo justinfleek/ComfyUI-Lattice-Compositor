@@ -25,7 +25,7 @@
           <div class="arrow-col" @mousedown.stop="toggleExpand">
             <span class="arrow">{{ isExpanded ? '▼' : '▶' }}</span>
           </div>
-          <div class="layer-name-col" @dblclick.stop="startRename">
+          <div class="layer-name-col" @dblclick.stop="handleDoubleClick">
             <span class="type-icon">{{ getLayerIcon(layer.type) }}</span>
             <span v-if="!isRenaming" class="name-text">{{ layer.name }}</span>
             <input v-else v-model="renameVal" @blur="saveRename" @keydown.enter="saveRename" class="rename-input" ref="renameInput" />
@@ -301,7 +301,19 @@ function toggleGroup(g: string) {
     if(expandedGroups.value.includes(g)) expandedGroups.value = expandedGroups.value.filter(x => x !== g);
     else expandedGroups.value.push(g);
 }
-function getLayerIcon(t: string) { return { text: 'T', solid: '■', camera: '📷' }[t] || '•'; }
+function getLayerIcon(t: string) { return { text: 'T', solid: '■', camera: '📷', precomp: '📦', image: '🖼', video: '🎬' }[t] || '•'; }
+
+// Double-click: enter precomp or start rename
+function handleDoubleClick() {
+  if (props.layer.type === 'precomp' && props.layer.data?.compositionId) {
+    // Enter the precomp composition
+    store.enterPrecomp(props.layer.data.compositionId);
+  } else {
+    // Start rename for other layer types
+    startRename();
+  }
+}
+
 function startRename() { isRenaming.value = true; renameVal.value = props.layer.name; nextTick(() => renameInput.value?.focus()); }
 function saveRename() { emit('updateLayer', props.layer.id, { name: renameVal.value }); isRenaming.value = false; }
 function setParent(e: Event) { emit('updateLayer', props.layer.id, { parentId: (e.target as HTMLSelectElement).value || null }); }

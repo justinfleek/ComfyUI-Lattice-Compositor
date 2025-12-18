@@ -29,6 +29,16 @@ export interface PrecompRenderContext {
   renderComposition: (compositionId: string, frame: number) => THREE.Texture | null;
   /** Function to get composition by ID */
   getComposition: (compositionId: string) => Composition | null;
+  /** Function to get nested layer instances when collapsed */
+  getCompositionLayers?: (compositionId: string) => import('./BaseLayer').BaseLayer[];
+}
+
+/** Transform values for combining collapsed precomp transforms */
+export interface CombinedTransform {
+  position: { x: number; y: number; z: number };
+  rotation: { x: number; y: number; z: number };
+  scale: { x: number; y: number; z: number };
+  opacity: number;
 }
 
 // ============================================================================
@@ -57,6 +67,10 @@ export class PrecompLayer extends BaseLayer {
 
   // Parent composition FPS for frame rate conversion
   private parentFPS: number = 30;
+
+  // Collapse transformations state
+  private isCollapsed: boolean = false;
+  private collapsedLayerIds: string[] = [];
 
   constructor(layerData: Layer) {
     super(layerData);
@@ -277,6 +291,119 @@ export class PrecompLayer extends BaseLayer {
    */
   setCollapseTransformations(collapse: boolean): void {
     this.precompData.collapseTransformations = collapse;
+    this.isCollapsed = collapse;
+
+    // When collapsed, hide this layer's mesh (nested layers render directly in parent scene)
+    if (this.mesh) {
+      this.mesh.visible = !collapse;
+    }
+  }
+
+  /**
+   * Check if collapse transformations is enabled
+   */
+  isCollapseEnabled(): boolean {
+    return this.precompData.collapseTransformations;
+  }
+
+  /**
+   * Get the current transform values of this precomp layer
+   * Used when combining transforms for collapsed nested layers
+   */
+  getParentTransform(): CombinedTransform {
+    return {
+      position: {
+        x: this.group.position.x,
+        y: -this.group.position.y, // Convert back to screen coords
+        z: this.group.position.z,
+      },
+      rotation: {
+        x: THREE.MathUtils.radToDeg(this.group.rotation.x),
+        y: THREE.MathUtils.radToDeg(this.group.rotation.y),
+        z: THREE.MathUtils.radToDeg(-this.group.rotation.z), // Convert back
+      },
+      scale: {
+        x: this.group.scale.x * 100,
+        y: this.group.scale.y * 100,
+        z: this.group.scale.z * 100,
+      },
+      opacity: this.getOpacity(),
+    };
+  }
+
+  /**
+   * Get opacity value (for collapsed layer opacity combination)
+   */
+  private getOpacity(): number {
+    // Get opacity from material
+    if (this.material) {
+      return this.material.opacity * 100;
+    }
+    return 100;
+  }
+
+  /**
+   * Combine parent (this precomp) and nested layer transforms
+   * Used when collapse transformations is enabled
+   *
+   * @param nestedTransform - The transform of a nested layer
+   * @returns Combined transform for rendering in parent scene
+   */
+  combineTransforms(nestedTransform: CombinedTransform): CombinedTransform {
+    const parent = this.getParentTransform();
+
+    // Position: nested position offset by parent position (accounting for scale)
+    const combinedPosition = {
+      x: parent.position.x + (nestedTransform.position.x * parent.scale.x / 100),
+      y: parent.position.y + (nestedTransform.position.y * parent.scale.y / 100),
+      z: parent.position.z + (nestedTransform.position.z * parent.scale.z / 100),
+    };
+
+    // Rotation: add rotations (simplified - true 3D would use quaternions)
+    const combinedRotation = {
+      x: parent.rotation.x + nestedTransform.rotation.x,
+      y: parent.rotation.y + nestedTransform.rotation.y,
+      z: parent.rotation.z + nestedTransform.rotation.z,
+    };
+
+    // Scale: multiply scales
+    const combinedScale = {
+      x: parent.scale.x * nestedTransform.scale.x / 100,
+      y: parent.scale.y * nestedTransform.scale.y / 100,
+      z: parent.scale.z * nestedTransform.scale.z / 100,
+    };
+
+    // Opacity: multiply (normalized to 0-100)
+    const combinedOpacity = (parent.opacity / 100) * (nestedTransform.opacity / 100) * 100;
+
+    return {
+      position: combinedPosition,
+      rotation: combinedRotation,
+      scale: combinedScale,
+      opacity: combinedOpacity,
+    };
+  }
+
+  /**
+   * Get the IDs of layers in the nested composition
+   * Used for managing collapsed layers in the parent scene
+   */
+  getNestedLayerIds(): string[] {
+    if (!this.cachedComposition) {
+      return [];
+    }
+    return this.cachedComposition.layers.map(l => l.id);
+  }
+
+  /**
+   * Check if this precomp contains 3D layers
+   * Collapse is most useful when nested comp has 3D layers
+   */
+  hasNested3DLayers(): boolean {
+    if (!this.cachedComposition) {
+      return false;
+    }
+    return this.cachedComposition.layers.some(l => l.threeD);
   }
 
   /**

@@ -40,7 +40,14 @@ export const useHistoryStore = defineStore('history', {
       }
 
       // Deep clone the project to avoid reference issues
-      const snapshot = JSON.parse(JSON.stringify(project));
+      // Try structuredClone first (10-50x faster), fall back to JSON for proxy objects
+      let snapshot: WeylProject;
+      try {
+        snapshot = structuredClone(project);
+      } catch {
+        // Fall back to JSON for proxy objects (e.g., in tests)
+        snapshot = JSON.parse(JSON.stringify(project));
+      }
       this.stack.push(snapshot);
 
       // Trim history if it exceeds max size
@@ -66,7 +73,11 @@ export const useHistoryStore = defineStore('history', {
       this.index--;
       const state = this.stack[this.index];
       storeLogger.debug('Undo to index:', this.index);
-      return JSON.parse(JSON.stringify(state));
+      try {
+        return structuredClone(state);
+      } catch {
+        return JSON.parse(JSON.stringify(state));
+      }
     },
 
     /**
@@ -82,7 +93,11 @@ export const useHistoryStore = defineStore('history', {
       this.index++;
       const state = this.stack[this.index];
       storeLogger.debug('Redo to index:', this.index);
-      return JSON.parse(JSON.stringify(state));
+      try {
+        return structuredClone(state);
+      } catch {
+        return JSON.parse(JSON.stringify(state));
+      }
     },
 
     /**

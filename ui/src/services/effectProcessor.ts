@@ -359,12 +359,14 @@ export function evaluateEffectParameters(
  * @param effects - Array of effect instances
  * @param inputCanvas - Source canvas to process
  * @param frame - Current frame for animation evaluation
+ * @param quality - Quality hint ('draft' for fast preview, 'high' for full quality)
  * @returns Processed canvas with all effects applied
  */
 export function processEffectStack(
   effects: EffectInstance[],
   inputCanvas: HTMLCanvasElement,
-  frame: number
+  frame: number,
+  quality: 'draft' | 'high' = 'high'
 ): EffectStackResult {
   // Create a working copy of the input
   const workCanvas = document.createElement('canvas');

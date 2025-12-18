@@ -5,7 +5,7 @@
  * and bezier curve calculations.
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
   interpolateProperty,
   applyEasing,
@@ -684,7 +684,8 @@ describe('Bezier Cache', () => {
         value: 0,
         interpolation: 'bezier',
         inHandle: { frame: -5, value: Math.random(), enabled: true },
-        outHandle: { frame: 5 + Math.random() * 10, value: Math.random(), enabled: true }
+        outHandle: { frame: 5 + Math.random() * 10, value: Math.random(), enabled: true },
+        controlMode: 'smooth'
       };
       const kf2: Keyframe<number> = {
         id: `kf_${i}_2`,
@@ -692,7 +693,8 @@ describe('Bezier Cache', () => {
         value: 100,
         interpolation: 'linear',
         inHandle: { frame: -5 - Math.random() * 10, value: Math.random(), enabled: true },
-        outHandle: { frame: 5, value: 0, enabled: true }
+        outHandle: { frame: 5, value: 0, enabled: true },
+        controlMode: 'smooth'
       };
       const prop = createNumberProperty(0, [kf1, kf2], true);
       interpolateProperty(prop, 50);
@@ -718,7 +720,8 @@ describe('Bezier Cache', () => {
         value: i,
         interpolation: 'bezier',
         inHandle: { frame: -5, value: i * 0.1, enabled: true },
-        outHandle: { frame: 5 + i, value: i * 0.2, enabled: true }
+        outHandle: { frame: 5 + i, value: i * 0.2, enabled: true },
+        controlMode: 'smooth'
       };
       const uniqueKf2 = createKeyframe(100, i + 100, 'linear');
       const uniqueProp = createNumberProperty(i, [uniqueKf1, uniqueKf2], true);

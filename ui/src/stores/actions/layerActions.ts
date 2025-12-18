@@ -325,7 +325,7 @@ export function duplicateLayer(store: LayerStore, layerId: string): Layer | null
   if (!original) return null;
 
   // Deep clone the layer
-  const duplicate: Layer = JSON.parse(JSON.stringify(original));
+  const duplicate: Layer = structuredClone(original);
 
   // Generate new IDs
   duplicate.id = crypto.randomUUID();
@@ -358,7 +358,7 @@ export function copySelectedLayers(store: LayerStore): void {
   if (selectedLayers.length === 0) return;
 
   // Deep clone layers to clipboard
-  store.clipboard.layers = selectedLayers.map(layer => JSON.parse(JSON.stringify(layer)));
+  store.clipboard.layers = selectedLayers.map(layer => structuredClone(layer));
   storeLogger.debug(`Copied ${store.clipboard.layers.length} layer(s) to clipboard`);
 }
 
@@ -373,7 +373,7 @@ export function pasteLayers(store: LayerStore): Layer[] {
 
   for (const clipboardLayer of store.clipboard.layers) {
     // Deep clone from clipboard
-    const newLayer: Layer = JSON.parse(JSON.stringify(clipboardLayer));
+    const newLayer: Layer = structuredClone(clipboardLayer);
 
     // Generate new IDs
     newLayer.id = crypto.randomUUID();

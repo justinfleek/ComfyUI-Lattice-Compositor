@@ -80,6 +80,7 @@ function createMockEffect(
     id,
     effectKey,
     name: `Test ${effectKey}`,
+    category: 'blur-sharpen',
     enabled,
     parameters,
     expanded: true
@@ -119,8 +120,8 @@ describe('Effect Parameter Evaluation', () => {
         value: 0,
         animated: true,
         keyframes: [
-          { id: 'kf1', frame: 0, value: 0, interpolation: 'linear', inHandle: { frame: -5, value: 0, enabled: true }, outHandle: { frame: 5, value: 0, enabled: true } },
-          { id: 'kf2', frame: 10, value: 100, interpolation: 'linear', inHandle: { frame: -5, value: 0, enabled: true }, outHandle: { frame: 5, value: 0, enabled: true } }
+          { id: 'kf1', frame: 0, value: 0, interpolation: 'linear', inHandle: { frame: -5, value: 0, enabled: true }, outHandle: { frame: 5, value: 0, enabled: true }, controlMode: 'smooth' },
+          { id: 'kf2', frame: 10, value: 100, interpolation: 'linear', inHandle: { frame: -5, value: 0, enabled: true }, outHandle: { frame: 5, value: 0, enabled: true }, controlMode: 'smooth' }
         ]
       }
     });

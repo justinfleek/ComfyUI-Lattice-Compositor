@@ -1,5 +1,5 @@
 <template>
-  <div class="timeline-panel" tabindex="0" @keydown="handleKeydown">
+  <div class="timeline-panel" tabindex="0" @keydown="handleKeydown" role="region" aria-label="Timeline">
     <!-- Composition Tabs -->
     <CompositionTabs @newComposition="emit('openCompositionSettings')" />
 
@@ -18,29 +18,32 @@
             class="add-layer-btn"
             :class="{ active: showAddLayerMenu }"
             @mousedown.stop.prevent="toggleAddLayerMenu"
+            aria-label="Add Layer"
+            aria-haspopup="menu"
+            :aria-expanded="showAddLayerMenu"
           >
-            <span class="icon">+</span> Layer
+            <span class="icon" aria-hidden="true">+</span> Layer
           </button>
 
-          <div v-if="showAddLayerMenu" class="add-layer-menu">
-            <button @mousedown="addLayer('solid')"><span class="icon">■</span> Solid</button>
-            <button @mousedown="addLayer('text')"><span class="icon">T</span> Text</button>
-            <button @mousedown="addLayer('spline')"><span class="icon">~</span> Shape</button>
-            <button @mousedown="addLayer('particles')"><span class="icon">✨</span> Particles</button>
-            <button @mousedown="addLayer('null')"><span class="icon">□</span> Null</button>
-            <button @mousedown="addLayer('camera')"><span class="icon">📷</span> Camera</button>
-            <button @mousedown="addLayer('light')"><span class="icon">💡</span> Light</button>
-            <button @mousedown="addLayer('video')"><span class="icon">🎞️</span> Video</button>
+          <div v-if="showAddLayerMenu" class="add-layer-menu" role="menu" aria-label="Layer types">
+            <button @mousedown="addLayer('solid')" role="menuitem"><span class="icon" aria-hidden="true">■</span> Solid</button>
+            <button @mousedown="addLayer('text')" role="menuitem"><span class="icon" aria-hidden="true">T</span> Text</button>
+            <button @mousedown="addLayer('spline')" role="menuitem"><span class="icon" aria-hidden="true">~</span> Shape</button>
+            <button @mousedown="addLayer('particles')" role="menuitem"><span class="icon" aria-hidden="true">✨</span> Particles</button>
+            <button @mousedown="addLayer('null')" role="menuitem"><span class="icon" aria-hidden="true">□</span> Null</button>
+            <button @mousedown="addLayer('camera')" role="menuitem"><span class="icon" aria-hidden="true">📷</span> Camera</button>
+            <button @mousedown="addLayer('light')" role="menuitem"><span class="icon" aria-hidden="true">💡</span> Light</button>
+            <button @mousedown="addLayer('video')" role="menuitem"><span class="icon" aria-hidden="true">🎞️</span> Video</button>
           </div>
         </div>
 
         <div class="tool-group">
-           <button class="delete-btn" @click="deleteSelectedLayers" :disabled="store.selectedLayerIds.length === 0">🗑️</button>
+           <button class="delete-btn" @click="deleteSelectedLayers" :disabled="store.selectedLayerIds.length === 0" aria-label="Delete selected layers">🗑️</button>
         </div>
       </div>
 
       <div class="header-right">
-        <input type="range" min="0" max="100" step="1" v-model.number="zoomPercent" class="zoom-slider" title="Zoom Timeline" />
+        <input type="range" min="0" max="100" step="1" v-model.number="zoomPercent" class="zoom-slider" title="Zoom Timeline" aria-label="Timeline zoom level" />
       </div>
     </div>
 
@@ -59,7 +62,12 @@
           <div class="col-header col-name">Source Name</div>
           <!-- Switches -->
           <div class="col-header col-switches">
-            <span class="header-icon" title="Shy">🙈</span>
+            <span
+              class="header-icon clickable"
+              :class="{ active: store.hideShyLayers }"
+              title="Hide Shy Layers"
+              @click="store.toggleHideShyLayers()"
+            >🙈</span>
             <span class="header-icon" title="Collapse/Continuously Rasterize">☀</span>
             <span class="header-icon" title="Quality">◐</span>
             <span class="header-icon" title="Effects">fx</span>
@@ -154,7 +162,7 @@ let isScrollingSidebar = false;
 let isScrollingTrack = false;
 const viewportWidth = ref(1000); // Default, updated by observer
 
-const filteredLayers = computed(() => store.layers || []);
+const filteredLayers = computed(() => store.displayedLayers || []);
 // Playhead position as percentage of timeline
 const playheadPositionPct = computed(() => (store.currentFrame / store.frameCount) * 100);
 
@@ -487,6 +495,9 @@ watch(() => [computedWidthStyle.value, zoomPercent.value, store.frameCount], () 
 }
 .col-header.col-parent { min-width: 80px; border-left: 1px solid #333; padding: 0 8px; }
 .header-icon { display: inline-flex; justify-content: center; align-items: center; width: 22px; height: 28px; font-size: 10px; color: #666; cursor: default; }
+.header-icon.clickable { cursor: pointer; transition: color 0.15s; }
+.header-icon.clickable:hover { color: #aaa; }
+.header-icon.clickable.active { color: #4a90d9; }
 .sidebar-scroll-area { flex: 1; overflow-y: auto; overflow-x: hidden; }
 
 .sidebar-resizer { width: 4px; background: #111; cursor: col-resize; flex-shrink: 0; z-index: 15; }

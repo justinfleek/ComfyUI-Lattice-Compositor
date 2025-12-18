@@ -263,6 +263,32 @@ async function handleFile(file: File) {
     return;
   }
 
+  // Security: Validate MIME type matches extension for common file types
+  const mimeTypeMap: Record<string, string[]> = {
+    '.png': ['image/png'],
+    '.jpg': ['image/jpeg'],
+    '.jpeg': ['image/jpeg'],
+    '.gif': ['image/gif'],
+    '.webp': ['image/webp'],
+    '.svg': ['image/svg+xml'],
+    '.mp4': ['video/mp4'],
+    '.webm': ['video/webm'],
+    '.mov': ['video/quicktime'],
+    '.mp3': ['audio/mpeg'],
+    '.wav': ['audio/wav', 'audio/wave', 'audio/x-wav'],
+    '.json': ['application/json'],
+    '.ttf': ['font/ttf', 'application/x-font-ttf'],
+    '.otf': ['font/otf', 'application/x-font-otf'],
+    '.woff': ['font/woff', 'application/font-woff'],
+    '.woff2': ['font/woff2', 'application/font-woff2'],
+  };
+  const expectedMimes = mimeTypeMap[ext];
+  if (expectedMimes && file.type && !expectedMimes.includes(file.type) && !file.type.includes('octet-stream')) {
+    errorMessage.value = `File type mismatch: expected ${expectedMimes.join(' or ')}, got ${file.type}`;
+    emit('error', errorMessage.value);
+    return;
+  }
+
   isLoading.value = true;
   progress.value = 0;
   progressText.value = 'Loading...';

@@ -1418,9 +1418,10 @@ export class WeylEngine {
 
       // Get the layer to access anchor point
       const layer = this.layers.getLayer(this.selectedLayerId);
-      const anchorX = layer?.getExportData?.()?.transform?.anchorPoint?.x ?? 0;
-      const anchorY = layer?.getExportData?.()?.transform?.anchorPoint?.y ?? 0;
-      const anchorZ = layer?.getExportData?.()?.transform?.anchorPoint?.z ?? 0;
+      const layerData = layer?.getLayerData?.();
+      const anchorX = layerData?.transform?.anchorPoint?.value?.x ?? 0;
+      const anchorY = layerData?.transform?.anchorPoint?.value?.y ?? 0;
+      const anchorZ = (layerData?.transform?.anchorPoint?.value as any)?.z ?? 0;
 
       // Convert 3D position back to layer position by adding anchor point back
       // The 3D object position is offset by anchor point in applyTransform()

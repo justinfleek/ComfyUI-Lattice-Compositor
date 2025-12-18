@@ -7,7 +7,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { matteExporter, type ExportOptions, type DimensionValidation } from '@/services/matteExporter';
-import type { WeylProject, Layer, TextData, SplineData, SplineControlPoint } from '@/types/project';
+import type { WeylProject, Layer, TextData, SplineData, ControlPoint } from '@/types/project';
 import { createDefaultTransform, createAnimatableProperty } from '@/types/project';
 
 // ============================================================================
@@ -26,40 +26,27 @@ const OFFSCREEN_CANVAS_SUPPORTED = isOffscreenCanvasSupported();
 
 function createMockProject(overrides: Partial<WeylProject> = {}): WeylProject {
   return {
-    id: 'test-project',
     version: '1.0.0',
+    mainCompositionId: 'main',
+    currentFrame: 0,
     layers: [],
-    compositions: [],
+    compositions: {},
     composition: {
       width: 1920,
       height: 1080,
       frameCount: 81,
       fps: 16,
+      duration: 81 / 16,
+      backgroundColor: '#000000',
+      autoResizeToContent: false,
     },
-    assets: [],
-    timeline: {
-      timelineMode: 'standard',
-      graphEditor: {
-        enabled: false,
-        selectedPropertyId: null,
-        viewMode: 'value',
-        zoom: { x: 1, y: 1 },
-        pan: { x: 0, y: 0 },
-      },
-      inPoint: 0,
-      outPoint: 80,
-      zoom: 1,
-      scrollY: 0,
-      trackHeight: 32,
-    },
+    assets: {},
     meta: {
       name: 'Test Project',
       created: new Date().toISOString(),
       modified: new Date().toISOString(),
       author: 'test',
     },
-    markers: [],
-    propertyDrivers: [],
     ...overrides,
   };
 }
@@ -70,12 +57,32 @@ function createMockTextLayer(id: string, overrides: Partial<Layer> = {}): Layer 
     fontFamily: 'Arial',
     fontSize: 24,
     fontWeight: 'normal',
-    color: '#ffffff',
-    alignment: 'left',
+    fontStyle: 'normal',
+    fill: '#ffffff',
+    stroke: '#000000',
+    strokeWidth: 0,
+    tracking: 0,
+    lineSpacing: 1.2,
+    lineAnchor: 50,
+    characterOffset: 0,
+    characterValue: 0,
+    blur: { x: 0, y: 0 },
     letterSpacing: 0,
     lineHeight: 1.2,
+    textAlign: 'left',
     pathLayerId: null,
+    pathReversed: false,
+    pathPerpendicularToPath: false,
+    pathForceAlignment: false,
+    pathFirstMargin: 0,
+    pathLastMargin: 0,
     pathOffset: 0,
+    pathAlign: 'left',
+    anchorPointGrouping: 'character',
+    groupingAlignment: { x: 0, y: 0 },
+    fillAndStroke: 'fill-over-stroke',
+    interCharacterBlending: 'normal',
+    perCharacter3D: false,
   };
 
   return {
@@ -84,6 +91,7 @@ function createMockTextLayer(id: string, overrides: Partial<Layer> = {}): Layer 
     type: 'text',
     visible: true,
     locked: false,
+    solo: false,
     inPoint: 0,
     outPoint: 80,
     transform: createDefaultTransform(),
@@ -91,6 +99,7 @@ function createMockTextLayer(id: string, overrides: Partial<Layer> = {}): Layer 
     blendMode: 'normal',
     parentId: null,
     threeD: false,
+    motionBlur: false,
     effects: [],
     properties: [],
     data: textData,
@@ -98,14 +107,14 @@ function createMockTextLayer(id: string, overrides: Partial<Layer> = {}): Layer 
   };
 }
 
-function createMockSplineLayer(id: string, controlPoints: SplineControlPoint[]): Layer {
+function createMockSplineLayer(id: string, controlPoints: ControlPoint[]): Layer {
   const splineData: SplineData = {
+    pathData: '',
     controlPoints,
     closed: false,
-    fillColor: null,
-    strokeColor: '#ffffff',
+    stroke: '#ffffff',
     strokeWidth: 2,
-    pathPoints: [],
+    fill: '',
   };
 
   return {
@@ -114,6 +123,7 @@ function createMockSplineLayer(id: string, controlPoints: SplineControlPoint[]):
     type: 'spline',
     visible: true,
     locked: false,
+    solo: false,
     inPoint: 0,
     outPoint: 80,
     transform: createDefaultTransform(),
@@ -121,6 +131,7 @@ function createMockSplineLayer(id: string, controlPoints: SplineControlPoint[]):
     blendMode: 'normal',
     parentId: null,
     threeD: false,
+    motionBlur: false,
     effects: [],
     properties: [],
     data: splineData,
@@ -260,7 +271,7 @@ describe('Frame Generation', () => {
 
   it.skipIf(!OFFSCREEN_CANVAS_SUPPORTED)('should generate sequence with progress', async () => {
     const project = createMockProject({
-      composition: { width: 1920, height: 1080, frameCount: 5, fps: 16 },
+      composition: { width: 1920, height: 1080, frameCount: 5, fps: 16, duration: 5/16, backgroundColor: '#000000', autoResizeToContent: false },
     });
     const options: ExportOptions = {
       width: 1920,
@@ -303,25 +314,12 @@ describe('Text on Path', () => {
   it.skipIf(!OFFSCREEN_CANVAS_SUPPORTED)('should render text following spline path', async () => {
     // Create spline layer
     const spline = createMockSplineLayer('spline-1', [
-      { id: 'cp1', x: 100, y: 500, handleIn: null, handleOut: { x: 200, y: 500 } },
-      { id: 'cp2', x: 500, y: 500, handleIn: { x: 400, y: 500 }, handleOut: null },
+      { id: 'cp1', x: 100, y: 500, handleIn: null, handleOut: { x: 200, y: 500 }, type: 'smooth' },
+      { id: 'cp2', x: 500, y: 500, handleIn: { x: 400, y: 500 }, handleOut: null, type: 'smooth' },
     ]);
 
     // Create text layer attached to spline
-    const textLayer = createMockTextLayer('text-1', {
-      data: {
-        text: 'Path Text',
-        fontFamily: 'Arial',
-        fontSize: 24,
-        fontWeight: 'normal',
-        color: '#ffffff',
-        alignment: 'left',
-        letterSpacing: 0,
-        lineHeight: 1.2,
-        pathLayerId: 'spline-1',
-        pathOffset: 0,
-      },
-    });
+    const textLayer = createMockTextLayer('text-1');
 
     const project = createMockProject({ layers: [spline, textLayer] });
     const options: ExportOptions = {
