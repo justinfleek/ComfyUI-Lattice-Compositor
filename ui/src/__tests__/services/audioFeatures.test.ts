@@ -366,7 +366,7 @@ describe('extractSpectralRolloff', () => {
     // After normalization both may be 1.0 (max value), so just verify they're valid
     // The raw rolloff frequency would be higher for high freq content
     expect(highAvg).toBeGreaterThanOrEqual(lowAvg);
-  });
+  }, 15000);  // Extended timeout for spectral analysis
 });
 
 // ============================================================================

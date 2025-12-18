@@ -178,8 +178,28 @@
           <ScrubableNumber :modelValue="getPropertyValue('Line Spacing') || textData.lineSpacing || 0" @update:modelValue="v => updateAnimatable('Line Spacing', v)" />
        </div>
        <div class="row">
+          <label>Baseline</label>
+          <ScrubableNumber :modelValue="getPropertyValue('Baseline Shift') || textData.baselineShift || 0" @update:modelValue="v => updateAnimatable('Baseline Shift', v)" />
+       </div>
+       <div class="row">
           <label>Char Offset</label>
           <ScrubableNumber :modelValue="getPropertyValue('Character Offset') || textData.characterOffset || 0" @update:modelValue="v => updateAnimatable('Character Offset', v)" :precision="0" />
+       </div>
+       <div class="row text-formatting-row">
+          <label>Case</label>
+          <div class="format-toggles">
+            <button :class="{ active: textData.textCase === 'uppercase' }" @click="toggleCase('uppercase')" title="All Caps">AA</button>
+            <button :class="{ active: textData.textCase === 'smallcaps' }" @click="toggleCase('smallcaps')" title="Small Caps">ᴀᴀ</button>
+            <button :class="{ active: textData.textCase === 'normal' || !textData.textCase }" @click="toggleCase('normal')" title="Normal">Aa</button>
+          </div>
+       </div>
+       <div class="row text-formatting-row">
+          <label>Script</label>
+          <div class="format-toggles">
+            <button :class="{ active: textData.verticalAlign === 'super' }" @click="toggleVerticalAlign('super')" title="Superscript">X²</button>
+            <button :class="{ active: textData.verticalAlign === 'sub' }" @click="toggleVerticalAlign('sub')" title="Subscript">X₂</button>
+            <button :class="{ active: textData.verticalAlign === 'baseline' || !textData.verticalAlign }" @click="toggleVerticalAlign('baseline')" title="Normal">X</button>
+          </div>
        </div>
     </div>
 
@@ -275,6 +295,7 @@ function updateAnimatable(name: string, val: number) {
         'Stroke Width': 'strokeWidth',
         'Tracking': 'tracking',
         'Line Spacing': 'lineSpacing',
+        'Baseline Shift': 'baselineShift',
         'Character Offset': 'characterOffset',
         'Path Offset': 'pathOffset',
         'First Margin': 'pathFirstMargin',
@@ -335,6 +356,14 @@ function toggleBold() {
 }
 function toggleItalic() {
     updateData('fontStyle', textData.value.fontStyle === 'italic' ? 'normal' : 'italic');
+}
+
+function toggleCase(caseType: 'uppercase' | 'smallcaps' | 'normal') {
+    updateData('textCase', caseType);
+}
+
+function toggleVerticalAlign(align: 'super' | 'sub' | 'baseline') {
+    updateData('verticalAlign', align);
 }
 
 // Handle font change - ensure Google fonts are loaded
@@ -417,4 +446,20 @@ async function handleFontChange(family: string) {
 }
 .keyframe-btn:hover { background: #444; color: #888; }
 .keyframe-btn.active { background: #b38600; color: #fff; border-color: #b38600; }
+
+.text-formatting-row { gap: 8px; }
+.format-toggles { display: flex; background: #222; border: 1px solid #444; border-radius: 3px; overflow: hidden; }
+.format-toggles button {
+  background: transparent;
+  border: none;
+  color: #888;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 11px;
+  border-right: 1px solid #444;
+  min-width: 32px;
+}
+.format-toggles button:last-child { border-right: none; }
+.format-toggles button.active { background: #4a90d9; color: #fff; }
+.format-toggles button:hover:not(.active) { background: #333; color: #fff; }
 </style>

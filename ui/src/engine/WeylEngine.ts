@@ -106,6 +106,10 @@ export class WeylEngine {
   // Event system
   private readonly eventHandlers: Map<EngineEventType, Set<EngineEventHandler>>;
 
+  // WebGL context event handlers (stored for cleanup)
+  private contextLostHandler: ((e: Event) => void) | null = null;
+  private contextRestoredHandler: (() => void) | null = null;
+
   // Configuration
   private readonly config: Required<WeylEngineConfig>;
 
@@ -1692,17 +1696,21 @@ export class WeylEngine {
   private setupContextLossHandling(): void {
     const canvas = this.config.canvas;
 
-    canvas.addEventListener('webglcontextlost', (event) => {
+    // Store handlers for cleanup in dispose()
+    this.contextLostHandler = (event: Event) => {
       event.preventDefault();
       this.stopRenderLoop();
       this.emit('contextLost', null);
       engineLogger.warn('WebGL context lost');
-    });
+    };
 
-    canvas.addEventListener('webglcontextrestored', () => {
+    this.contextRestoredHandler = () => {
       this.emit('contextRestored', null);
       engineLogger.info('WebGL context restored');
-    });
+    };
+
+    canvas.addEventListener('webglcontextlost', this.contextLostHandler);
+    canvas.addEventListener('webglcontextrestored', this.contextRestoredHandler);
   }
 
   // ============================================================================
@@ -1892,6 +1900,23 @@ export class WeylEngine {
 
     // Clear precomp caches
     this.clearAllPrecompCaches();
+
+    // Remove WebGL context event listeners
+    const canvas = this.config.canvas;
+    if (this.contextLostHandler) {
+      canvas.removeEventListener('webglcontextlost', this.contextLostHandler);
+      this.contextLostHandler = null;
+    }
+    if (this.contextRestoredHandler) {
+      canvas.removeEventListener('webglcontextrestored', this.contextRestoredHandler);
+      this.contextRestoredHandler = null;
+    }
+
+    // Dispose transform controls
+    if (this.transformControls) {
+      this.transformControls.dispose();
+      this.transformControls = null;
+    }
 
     // Dispose in reverse order of initialization
     this.layers.dispose();

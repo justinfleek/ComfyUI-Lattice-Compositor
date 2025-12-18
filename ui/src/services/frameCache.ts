@@ -108,12 +108,99 @@ const DEFAULT_CONFIG: FrameCacheConfig = {
 };
 
 // ============================================================================
+// LRU LINKED LIST NODE
+// ============================================================================
+
+interface LRUNode {
+  key: string;
+  prev: LRUNode | null;
+  next: LRUNode | null;
+}
+
+/**
+ * O(1) LRU tracker using doubly-linked list + Map
+ * - moveToEnd: O(1)
+ * - remove: O(1)
+ * - getOldest: O(1)
+ */
+class LRUTracker {
+  private nodeMap: Map<string, LRUNode> = new Map();
+  private head: LRUNode | null = null; // Oldest
+  private tail: LRUNode | null = null; // Most recent
+
+  add(key: string): void {
+    if (this.nodeMap.has(key)) {
+      this.moveToEnd(key);
+      return;
+    }
+
+    const node: LRUNode = { key, prev: null, next: null };
+
+    if (!this.tail) {
+      this.head = this.tail = node;
+    } else {
+      node.prev = this.tail;
+      this.tail.next = node;
+      this.tail = node;
+    }
+
+    this.nodeMap.set(key, node);
+  }
+
+  moveToEnd(key: string): void {
+    const node = this.nodeMap.get(key);
+    if (!node || node === this.tail) return;
+
+    // Remove from current position
+    if (node.prev) node.prev.next = node.next;
+    if (node.next) node.next.prev = node.prev;
+    if (node === this.head) this.head = node.next;
+
+    // Add to end
+    node.prev = this.tail;
+    node.next = null;
+    if (this.tail) this.tail.next = node;
+    this.tail = node;
+  }
+
+  remove(key: string): void {
+    const node = this.nodeMap.get(key);
+    if (!node) return;
+
+    if (node.prev) node.prev.next = node.next;
+    if (node.next) node.next.prev = node.prev;
+    if (node === this.head) this.head = node.next;
+    if (node === this.tail) this.tail = node.prev;
+
+    this.nodeMap.delete(key);
+  }
+
+  getOldest(): string | null {
+    return this.head?.key ?? null;
+  }
+
+  has(key: string): boolean {
+    return this.nodeMap.has(key);
+  }
+
+  clear(): void {
+    this.nodeMap.clear();
+    this.head = null;
+    this.tail = null;
+  }
+
+  get size(): number {
+    return this.nodeMap.size;
+  }
+}
+
+// ============================================================================
 // FRAME CACHE CLASS
 // ============================================================================
 
 export class FrameCache {
   private cache: Map<string, CachedFrame> = new Map();
-  private accessOrder: string[] = []; // For LRU tracking
+  private lru: LRUTracker = new LRUTracker(); // O(1) LRU tracking
   private config: FrameCacheConfig;
   private currentMemory: number = 0;
   private stats = { hits: 0, misses: 0 };
@@ -178,8 +265,8 @@ export class FrameCache {
       return null;
     }
 
-    // Update LRU order
-    this.updateAccessOrder(key);
+    // Update LRU order - O(1)
+    this.lru.moveToEnd(key);
     this.stats.hits++;
 
     // Return decompressed data if needed
@@ -211,8 +298,8 @@ export class FrameCache {
       return null;
     }
 
-    // Update LRU order
-    this.updateAccessOrder(key);
+    // Update LRU order - O(1)
+    this.lru.moveToEnd(key);
     this.stats.hits++;
 
     if (cached.compressed) {
@@ -270,12 +357,12 @@ export class FrameCache {
     };
 
     this.cache.set(key, cachedFrame);
-    this.accessOrder.push(key);
+    this.lru.add(key); // O(1) LRU tracking
     this.currentMemory += size;
   }
 
   /**
-   * Remove a cached frame
+   * Remove a cached frame - O(1)
    */
   remove(frame: number, compositionId: string): void {
     const key = this.getCacheKey(frame, compositionId);
@@ -284,7 +371,7 @@ export class FrameCache {
     if (cached) {
       this.currentMemory -= cached.size;
       this.cache.delete(key);
-      this.accessOrder = this.accessOrder.filter(k => k !== key);
+      this.lru.remove(key); // O(1)
     }
   }
 
@@ -313,9 +400,8 @@ export class FrameCache {
         this.currentMemory -= cached.size;
       }
       this.cache.delete(key);
+      this.lru.remove(key); // O(1) per removal
     }
-
-    this.accessOrder = this.accessOrder.filter(k => !keysToRemove.includes(k));
   }
 
   /**
@@ -323,7 +409,7 @@ export class FrameCache {
    */
   clear(): void {
     this.cache.clear();
-    this.accessOrder = [];
+    this.lru.clear();
     this.currentMemory = 0;
     this.stats = { hits: 0, misses: 0 };
     this.abortPreCache();
@@ -453,27 +539,22 @@ export class FrameCache {
   // PRIVATE METHODS
   // ============================================================================
 
-  private updateAccessOrder(key: string): void {
-    const index = this.accessOrder.indexOf(key);
-    if (index > -1) {
-      this.accessOrder.splice(index, 1);
-    }
-    this.accessOrder.push(key);
-  }
-
   private async ensureCapacity(requiredSize: number): Promise<void> {
-    // Evict LRU entries until we have enough space
+    // Evict LRU entries until we have enough space - O(1) per eviction
     while (
       (this.cache.size >= this.config.maxFrames ||
         this.currentMemory + requiredSize > this.config.maxMemoryBytes) &&
-      this.accessOrder.length > 0
+      this.lru.size > 0
     ) {
-      const oldestKey = this.accessOrder.shift()!;
+      const oldestKey = this.lru.getOldest();
+      if (!oldestKey) break;
+
       const cached = this.cache.get(oldestKey);
       if (cached) {
         this.currentMemory -= cached.size;
         this.cache.delete(oldestKey);
       }
+      this.lru.remove(oldestKey);
     }
   }
 

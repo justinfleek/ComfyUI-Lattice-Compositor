@@ -383,6 +383,15 @@ export class ComfyUIClient {
   }
 
   /**
+   * Clean up all resources (WebSocket, handlers)
+   * Call this when the client is no longer needed
+   */
+  destroy(): void {
+    this.disconnectWebSocket();
+    comfyLogger.debug('ComfyUI client destroyed');
+  }
+
+  /**
    * Check if WebSocket is connected
    */
   isWebSocketConnected(): boolean {
