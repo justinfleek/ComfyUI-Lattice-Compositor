@@ -449,7 +449,8 @@ export class MotionIntentResolver {
     context: SceneContext,
     model: VisionModelId
   ): Promise<MotionIntentResult> {
-    const endpoint = this.config.apiEndpoint ?? 'http://localhost:8188/api/vlm';
+    // Use ComfyUI's weyl endpoint (relative path works when running in ComfyUI)
+    const endpoint = this.config.apiEndpoint ?? '/weyl/vlm';
 
     const imageBase64 = context.frameImage
       ? this.imageDataToBase64(context.frameImage)

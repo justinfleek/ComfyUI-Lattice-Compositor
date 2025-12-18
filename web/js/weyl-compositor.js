@@ -56384,7 +56384,7 @@ class MotionIntentResolver {
   // LOCAL VLM (via ComfyUI or local endpoint)
   // ============================================================================
   async resolveWithLocalVLM(prompt, context, model) {
-    const endpoint = this.config.apiEndpoint ?? "http://localhost:8188/api/vlm";
+    const endpoint = this.config.apiEndpoint ?? "/weyl/vlm";
     const imageBase64 = context.frameImage ? this.imageDataToBase64(context.frameImage) : null;
     try {
       const response = await fetch(endpoint, {
