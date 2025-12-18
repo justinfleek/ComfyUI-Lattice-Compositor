@@ -28,6 +28,12 @@ import type {
   ModulationCurve,
   FlockingConfig,
 } from './types';
+import {
+  TRANSFORM_FEEDBACK_VERTEX_SHADER,
+  TRANSFORM_FEEDBACK_FRAGMENT_SHADER,
+  PARTICLE_VERTEX_SHADER,
+  PARTICLE_FRAGMENT_SHADER,
+} from './particleShaders';
 
 // ============================================================================
 // Constants
@@ -47,6 +53,21 @@ const TF_VARYINGS = [
   'tf_rotation',
   'tf_color',
 ];
+
+/**
+ * Cached particle state for a specific frame
+ * Used for fast scrubbing - restore state instead of replaying from frame 0
+ */
+interface ParticleFrameCache {
+  frame: number;
+  version: number; // Cache version when this was created
+  particleBuffer: Float32Array; // Copy of particle data
+  freeIndices: number[]; // Copy of free indices
+  particleCount: number;
+  simulationTime: number;
+  rngState: number; // RNG state at this frame for determinism
+  emitterAccumulators: Map<string, number>; // Emitter accumulator values
+}
 
 // Attribute layout for transform feedback
 const PARTICLE_ATTRIBUTES = {
@@ -271,6 +292,18 @@ export class GPUParticleSystem {
 
   // Random number generator with seed
   private rng: () => number;
+  private initialRngSeed: number;
+  private currentRngState: number; // Tracks RNG state for save/restore
+
+  // ============================================================================
+  // FRAME CACHING SYSTEM
+  // Caches particle state every N frames for fast scrubbing
+  // ============================================================================
+  private frameCache: Map<number, ParticleFrameCache> = new Map();
+  private cacheInterval: number = 5; // Cache every 5 frames
+  private maxCacheSize: number = 200; // Max cached frames (1000 frames / 5 = 200)
+  private cacheVersion: number = 0; // Incremented on parameter changes to invalidate cache
+  private currentSimulatedFrame: number = -1; // Track which frame we're at
 
   constructor(config: Partial<GPUParticleSystemConfig> = {}) {
     this.config = { ...createDefaultConfig(), ...config };
@@ -285,8 +318,10 @@ export class GPUParticleSystem {
       this.freeIndices.push(i);
     }
 
-    // Initialize RNG
-    this.rng = this.createSeededRandom(this.config.randomSeed ?? Date.now());
+    // Initialize RNG with saved seed for deterministic replay
+    this.initialRngSeed = this.config.randomSeed ?? Date.now();
+    this.currentRngState = this.initialRngSeed;
+    this.rng = this.createSeededRandom(this.initialRngSeed);
 
     // Add configured emitters and force fields
     this.config.emitters.forEach(e => this.addEmitter(e));
@@ -466,8 +501,8 @@ export class GPUParticleSystem {
    * Create the transform feedback shader program for GPU physics
    */
   private createTransformFeedbackProgram(gl: WebGL2RenderingContext): WebGLProgram | null {
-    const vsSource = this.getTransformFeedbackVertexShader();
-    const fsSource = this.getTransformFeedbackFragmentShader();
+    const vsSource = TRANSFORM_FEEDBACK_VERTEX_SHADER;
+    const fsSource = TRANSFORM_FEEDBACK_FRAGMENT_SHADER;
 
     const vs = gl.createShader(gl.VERTEX_SHADER);
     const fs = gl.createShader(gl.FRAGMENT_SHADER);
@@ -521,265 +556,6 @@ export class GPUParticleSystem {
     gl.deleteShader(fs);
 
     return program;
-  }
-
-  /**
-   * Get the vertex shader for transform feedback GPU physics
-   */
-  private getTransformFeedbackVertexShader(): string {
-    return `#version 300 es
-      precision highp float;
-
-      // Input particle attributes
-      layout(location = 0) in vec3 a_position;
-      layout(location = 1) in vec3 a_velocity;
-      layout(location = 2) in vec2 a_life;      // age, lifetime
-      layout(location = 3) in vec2 a_physical;  // mass, size
-      layout(location = 4) in vec2 a_rotation;  // rotation, angularVelocity
-      layout(location = 5) in vec4 a_color;
-
-      // Output (transform feedback)
-      out vec3 tf_position;
-      out vec3 tf_velocity;
-      out vec2 tf_life;
-      out vec2 tf_physical;
-      out vec2 tf_rotation;
-      out vec4 tf_color;
-
-      // Uniforms
-      uniform float u_deltaTime;
-      uniform float u_time;
-      uniform int u_forceFieldCount;
-      uniform sampler2D u_forceFields;
-
-      // Noise functions for turbulence
-      vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-      vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-      vec4 permute(vec4 x) { return mod289(((x*34.0)+1.0)*x); }
-      vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
-
-      float snoise(vec3 v) {
-        const vec2 C = vec2(1.0/6.0, 1.0/3.0);
-        const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);
-
-        vec3 i = floor(v + dot(v, C.yyy));
-        vec3 x0 = v - i + dot(i, C.xxx);
-
-        vec3 g = step(x0.yzx, x0.xyz);
-        vec3 l = 1.0 - g;
-        vec3 i1 = min(g.xyz, l.zxy);
-        vec3 i2 = max(g.xyz, l.zxy);
-
-        vec3 x1 = x0 - i1 + C.xxx;
-        vec3 x2 = x0 - i2 + C.yyy;
-        vec3 x3 = x0 - D.yyy;
-
-        i = mod289(i);
-        vec4 p = permute(permute(permute(
-          i.z + vec4(0.0, i1.z, i2.z, 1.0))
-          + i.y + vec4(0.0, i1.y, i2.y, 1.0))
-          + i.x + vec4(0.0, i1.x, i2.x, 1.0));
-
-        float n_ = 0.142857142857;
-        vec3 ns = n_ * D.wyz - D.xzx;
-
-        vec4 j = p - 49.0 * floor(p * ns.z * ns.z);
-
-        vec4 x_ = floor(j * ns.z);
-        vec4 y_ = floor(j - 7.0 * x_);
-
-        vec4 x = x_ * ns.x + ns.yyyy;
-        vec4 y = y_ * ns.x + ns.yyyy;
-        vec4 h = 1.0 - abs(x) - abs(y);
-
-        vec4 b0 = vec4(x.xy, y.xy);
-        vec4 b1 = vec4(x.zw, y.zw);
-
-        vec4 s0 = floor(b0) * 2.0 + 1.0;
-        vec4 s1 = floor(b1) * 2.0 + 1.0;
-        vec4 sh = -step(h, vec4(0.0));
-
-        vec4 a0 = b0.xzyw + s0.xzyw * sh.xxyy;
-        vec4 a1 = b1.xzyw + s1.xzyw * sh.zzww;
-
-        vec3 p0 = vec3(a0.xy, h.x);
-        vec3 p1 = vec3(a0.zw, h.y);
-        vec3 p2 = vec3(a1.xy, h.z);
-        vec3 p3 = vec3(a1.zw, h.w);
-
-        vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2,p2), dot(p3,p3)));
-        p0 *= norm.x;
-        p1 *= norm.y;
-        p2 *= norm.z;
-        p3 *= norm.w;
-
-        vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
-        m = m * m;
-        return 42.0 * dot(m*m, vec4(dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3)));
-      }
-
-      // Calculate force from a single force field
-      vec3 calculateForce(int fieldIndex, vec3 pos, vec3 vel, float mass) {
-        // Read force field data from texture
-        // Row 0: position.xyz, type
-        // Row 1: strength, falloffStart, falloffEnd, falloffType
-        // Row 2: direction/axis.xyz, extra param
-        // Row 3: extra params (noise scale, speed, etc)
-
-        vec4 row0 = texelFetch(u_forceFields, ivec2(fieldIndex, 0), 0);
-        vec4 row1 = texelFetch(u_forceFields, ivec2(fieldIndex, 1), 0);
-        vec4 row2 = texelFetch(u_forceFields, ivec2(fieldIndex, 2), 0);
-        vec4 row3 = texelFetch(u_forceFields, ivec2(fieldIndex, 3), 0);
-
-        vec3 fieldPos = row0.xyz;
-        int fieldType = int(row0.w);
-        float strength = row1.x;
-        float falloffStart = row1.y;
-        float falloffEnd = row1.z;
-        int falloffType = int(row1.w);
-
-        // Calculate distance and falloff
-        vec3 toField = fieldPos - pos;
-        float dist = length(toField);
-
-        float falloff = 1.0;
-        if (dist > falloffStart && falloffEnd > falloffStart) {
-          float t = clamp((dist - falloffStart) / (falloffEnd - falloffStart), 0.0, 1.0);
-          if (falloffType == 1) falloff = 1.0 - t; // Linear
-          else if (falloffType == 2) falloff = 1.0 - t * t; // Quadratic
-          else if (falloffType == 3) falloff = exp(-t * 3.0); // Exponential
-          else if (falloffType == 4) falloff = 1.0 - (3.0 * t * t - 2.0 * t * t * t); // Smoothstep
-        }
-
-        vec3 force = vec3(0.0);
-        float effectiveStrength = strength * falloff;
-
-        // Force field types
-        if (fieldType == 0) {
-          // Gravity - directional
-          force = row2.xyz * effectiveStrength;
-        }
-        else if (fieldType == 1) {
-          // Point attractor
-          if (dist > 0.001) {
-            vec3 dir = normalize(toField);
-            force = dir * effectiveStrength / max(mass, 0.1);
-          }
-        }
-        else if (fieldType == 2) {
-          // Vortex
-          if (dist > 0.001) {
-            vec3 axis = normalize(row2.xyz);
-            vec3 tangent = normalize(cross(axis, toField));
-            float inward = row2.w;
-            force = tangent * effectiveStrength + normalize(toField) * inward;
-          }
-        }
-        else if (fieldType == 3) {
-          // Turbulence
-          float noiseScale = row3.x;
-          float noiseSpeed = row3.y;
-          vec3 noisePos = pos * noiseScale + vec3(u_time * noiseSpeed);
-          force.x = snoise(noisePos) * effectiveStrength;
-          force.y = snoise(noisePos + vec3(100.0)) * effectiveStrength;
-          force.z = snoise(noisePos + vec3(200.0)) * effectiveStrength;
-        }
-        else if (fieldType == 4) {
-          // Drag
-          float linearDrag = row3.x;
-          float quadDrag = row3.y;
-          float speed = length(vel);
-          if (speed > 0.001) {
-            float dragMag = linearDrag * speed + quadDrag * speed * speed;
-            force = -normalize(vel) * dragMag * effectiveStrength;
-          }
-        }
-        else if (fieldType == 5) {
-          // Wind
-          vec3 windDir = normalize(row2.xyz);
-          float gustStrength = row3.x;
-          float gustFreq = row3.y;
-          float gust = sin(u_time * gustFreq) * gustStrength;
-          force = windDir * (effectiveStrength + gust);
-        }
-
-        return force;
-      }
-
-      void main() {
-        // Pass through dead particles unchanged
-        if (a_life.y <= 0.0 || a_life.x >= a_life.y) {
-          tf_position = a_position;
-          tf_velocity = a_velocity;
-          tf_life = a_life;
-          tf_physical = a_physical;
-          tf_rotation = a_rotation;
-          tf_color = a_color;
-          return;
-        }
-
-        // Read particle state
-        vec3 pos = a_position;
-        vec3 vel = a_velocity;
-        float age = a_life.x;
-        float lifetime = a_life.y;
-        float mass = a_physical.x;
-        float size = a_physical.y;
-        float rotation = a_rotation.x;
-        float angularVel = a_rotation.y;
-
-        // Accumulate forces
-        vec3 totalForce = vec3(0.0);
-        for (int i = 0; i < u_forceFieldCount; i++) {
-          totalForce += calculateForce(i, pos, vel, mass);
-        }
-
-        // Apply acceleration (F = ma)
-        vec3 acceleration = totalForce / max(mass, 0.1);
-        vel += acceleration * u_deltaTime;
-
-        // Integrate position
-        pos += vel * u_deltaTime;
-
-        // Update rotation
-        rotation += angularVel * u_deltaTime;
-
-        // Update age
-        age += u_deltaTime;
-
-        // Life ratio for modulation
-        float lifeRatio = age / lifetime;
-
-        // Apply size over lifetime (simple linear fade for now)
-        // More complex curves should be done via texture lookup
-        float sizeMod = 1.0 - lifeRatio * 0.5;
-        size = a_physical.y * sizeMod;
-
-        // Apply opacity over lifetime
-        float opacityMod = 1.0 - lifeRatio;
-
-        // Output
-        tf_position = pos;
-        tf_velocity = vel;
-        tf_life = vec2(age, lifetime);
-        tf_physical = vec2(mass, size);
-        tf_rotation = vec2(rotation, angularVel);
-        tf_color = vec4(a_color.rgb, a_color.a * opacityMod);
-      }
-    `;
-  }
-
-  /**
-   * Get the fragment shader for transform feedback (must exist but won't output)
-   */
-  private getTransformFeedbackFragmentShader(): string {
-    return `#version 300 es
-      precision highp float;
-      out vec4 fragColor;
-      void main() {
-        fragColor = vec4(0.0);
-      }
-    `;
   }
 
   /**
@@ -1045,8 +821,8 @@ export class GPUParticleSystem {
 
     // Create shader material
     this.material = new THREE.ShaderMaterial({
-      vertexShader: this.getVertexShader(),
-      fragmentShader: this.getFragmentShader(),
+      vertexShader: PARTICLE_VERTEX_SHADER,
+      fragmentShader: PARTICLE_FRAGMENT_SHADER,
       uniforms: this.createUniforms(),
       transparent: true,
       depthWrite: this.config.render.depthWrite,
@@ -1069,18 +845,21 @@ export class GPUParticleSystem {
       velocity: new THREE.Vector3(),
     });
     this.state.activeEmitters = this.emitters.size;
+    this.invalidateCache(); // Emitter changes require re-simulation
   }
 
   updateEmitter(id: string, updates: Partial<EmitterConfig>): void {
     const emitter = this.emitters.get(id);
     if (emitter) {
       Object.assign(emitter, updates);
+      this.invalidateCache(); // Emitter changes require re-simulation
     }
   }
 
   removeEmitter(id: string): void {
     this.emitters.delete(id);
     this.state.activeEmitters = this.emitters.size;
+    this.invalidateCache(); // Emitter changes require re-simulation
   }
 
   getEmitter(id: string): EmitterConfig | undefined {
@@ -1093,17 +872,20 @@ export class GPUParticleSystem {
 
   addForceField(config: ForceFieldConfig): void {
     this.forceFields.set(config.id, config);
+    this.invalidateCache(); // Force field changes require re-simulation
   }
 
   updateForceField(id: string, updates: Partial<ForceFieldConfig>): void {
     const field = this.forceFields.get(id);
     if (field) {
       Object.assign(field, updates);
+      this.invalidateCache(); // Force field changes require re-simulation
     }
   }
 
   removeForceField(id: string): void {
     this.forceFields.delete(id);
+    this.invalidateCache(); // Force field changes require re-simulation
   }
 
   // ============================================================================
@@ -1112,10 +894,12 @@ export class GPUParticleSystem {
 
   addSubEmitter(config: SubEmitterConfig): void {
     this.subEmitters.set(config.id, config);
+    this.invalidateCache(); // Sub-emitter changes require re-simulation
   }
 
   removeSubEmitter(id: string): void {
     this.subEmitters.delete(id);
+    this.invalidateCache(); // Sub-emitter changes require re-simulation
   }
 
   // ============================================================================
@@ -2110,114 +1894,6 @@ export class GPUParticleSystem {
   }
 
   /**
-   * Get vertex shader code
-   */
-  private getVertexShader(): string {
-    return `
-      precision highp float;
-
-      attribute vec2 position;
-      attribute vec2 uv;
-
-      attribute vec3 i_position;
-      attribute vec3 i_velocity;
-      attribute vec2 i_life;
-      attribute vec2 i_physical;
-      attribute vec2 i_rotation;
-      attribute vec4 i_color;
-
-      uniform mat4 modelViewMatrix;
-      uniform mat4 projectionMatrix;
-      uniform vec3 cameraPosition;
-
-      varying vec2 vUv;
-      varying vec4 vColor;
-      varying float vLifeRatio;
-
-      void main() {
-        // Skip dead particles
-        if (i_life.y <= 0.0 || i_life.x >= i_life.y) {
-          gl_Position = vec4(0.0, 0.0, -1000.0, 1.0);
-          return;
-        }
-
-        float size = i_physical.y;
-        float rotation = i_rotation.x;
-        float lifeRatio = i_life.x / i_life.y;
-
-        // Billboard facing camera
-        vec3 cameraRight = vec3(modelViewMatrix[0][0], modelViewMatrix[1][0], modelViewMatrix[2][0]);
-        vec3 cameraUp = vec3(modelViewMatrix[0][1], modelViewMatrix[1][1], modelViewMatrix[2][1]);
-
-        // Apply rotation
-        float cosR = cos(rotation);
-        float sinR = sin(rotation);
-        vec2 rotatedPos = vec2(
-          position.x * cosR - position.y * sinR,
-          position.x * sinR + position.y * cosR
-        );
-
-        vec3 vertexPos = i_position
-          + cameraRight * rotatedPos.x * size
-          + cameraUp * rotatedPos.y * size;
-
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(vertexPos, 1.0);
-
-        vUv = uv;
-        vColor = i_color;
-        vLifeRatio = lifeRatio;
-      }
-    `;
-  }
-
-  /**
-   * Get fragment shader code
-   */
-  private getFragmentShader(): string {
-    return `
-      precision highp float;
-
-      varying vec2 vUv;
-      varying vec4 vColor;
-      varying float vLifeRatio;
-
-      uniform sampler2D diffuseMap;
-      uniform int hasDiffuseMap;
-      uniform int proceduralShape;
-
-      float proceduralAlpha(vec2 uv, int shape) {
-        vec2 centered = uv * 2.0 - 1.0;
-        float dist = length(centered);
-
-        if (shape == 1) {
-          return 1.0 - smoothstep(0.8, 1.0, dist);
-        } else if (shape == 2) {
-          return smoothstep(0.5, 0.6, dist) * (1.0 - smoothstep(0.9, 1.0, dist));
-        }
-
-        return 1.0;
-      }
-
-      void main() {
-        vec4 texColor = vec4(1.0);
-
-        if (hasDiffuseMap == 1) {
-          texColor = texture2D(diffuseMap, vUv);
-        } else if (proceduralShape > 0) {
-          float alpha = proceduralAlpha(vUv, proceduralShape);
-          texColor = vec4(1.0, 1.0, 1.0, alpha);
-        }
-
-        vec4 finalColor = texColor * vColor;
-
-        if (finalColor.a < 0.01) discard;
-
-        gl_FragColor = finalColor;
-      }
-    `;
-  }
-
-  /**
    * Create shader uniforms
    */
   private createUniforms(): Record<string, THREE.IUniform> {
@@ -2270,12 +1946,13 @@ export class GPUParticleSystem {
 
   /**
    * Create seeded random number generator
+   * State is tracked externally via currentRngState for save/restore
    */
   private createSeededRandom(seed: number): () => number {
-    let s = seed;
+    this.currentRngState = seed;
     return () => {
-      s = (s * 1103515245 + 12345) & 0x7fffffff;
-      return s / 0x7fffffff;
+      this.currentRngState = (this.currentRngState * 1103515245 + 12345) & 0x7fffffff;
+      return this.currentRngState / 0x7fffffff;
     };
   }
 
@@ -2303,6 +1980,218 @@ export class GPUParticleSystem {
     };
   }
 
+  // ============================================================================
+  // FRAME CACHING METHODS
+  // ============================================================================
+
+  /**
+   * Cache the current particle state for a specific frame
+   * Called automatically every cacheInterval frames during step()
+   */
+  cacheCurrentState(frame: number): void {
+    // Don't cache if we've exceeded max size - remove oldest
+    if (this.frameCache.size >= this.maxCacheSize) {
+      const oldestFrame = Math.min(...this.frameCache.keys());
+      this.frameCache.delete(oldestFrame);
+    }
+
+    // Save emitter accumulators
+    const emitterAccumulators = new Map<string, number>();
+    for (const [id, emitter] of this.emitters) {
+      emitterAccumulators.set(id, emitter.accumulator);
+    }
+
+    const currentBuffer = this.currentBuffer === 'A' ? this.particleBufferA : this.particleBufferB;
+
+    this.frameCache.set(frame, {
+      frame,
+      version: this.cacheVersion,
+      particleBuffer: new Float32Array(currentBuffer), // Deep copy
+      freeIndices: [...this.freeIndices], // Copy array
+      particleCount: this.state.particleCount,
+      simulationTime: this.state.simulationTime,
+      rngState: this.currentRngState,
+      emitterAccumulators,
+    });
+  }
+
+  /**
+   * Restore particle state from a cached frame
+   * @returns true if restore succeeded, false if cache miss or version mismatch
+   */
+  restoreFromCache(frame: number): boolean {
+    const cached = this.frameCache.get(frame);
+    if (!cached || cached.version !== this.cacheVersion) {
+      return false;
+    }
+
+    // Restore particle buffers
+    const targetBuffer = this.currentBuffer === 'A' ? this.particleBufferA : this.particleBufferB;
+    targetBuffer.set(cached.particleBuffer);
+
+    // Restore state
+    this.freeIndices = [...cached.freeIndices];
+    this.state.particleCount = cached.particleCount;
+    this.state.simulationTime = cached.simulationTime;
+    this.state.frameCount = frame;
+    this.currentSimulatedFrame = frame;
+
+    // Restore RNG state - recreate with state
+    this.currentRngState = cached.rngState;
+    // The rng function will use currentRngState directly
+
+    // Restore emitter accumulators
+    for (const [id, accumulator] of cached.emitterAccumulators) {
+      const emitter = this.emitters.get(id);
+      if (emitter) {
+        emitter.accumulator = accumulator;
+      }
+    }
+
+    // Update instance buffers for rendering
+    this.updateInstanceBuffers();
+
+    return true;
+  }
+
+  /**
+   * Find the nearest cached frame at or before the target frame
+   * @returns The nearest cached frame number, or -1 if no cache exists
+   */
+  findNearestCache(targetFrame: number): number {
+    let nearestFrame = -1;
+    for (const frame of this.frameCache.keys()) {
+      const cached = this.frameCache.get(frame);
+      if (cached && cached.version === this.cacheVersion && frame <= targetFrame && frame > nearestFrame) {
+        nearestFrame = frame;
+      }
+    }
+    return nearestFrame;
+  }
+
+  /**
+   * Clear all cached frames
+   */
+  clearCache(): void {
+    this.frameCache.clear();
+    this.currentSimulatedFrame = -1;
+  }
+
+  /**
+   * Invalidate the cache by incrementing version
+   * Called when particle parameters change (emitter config, force fields, etc.)
+   */
+  invalidateCache(): void {
+    this.cacheVersion++;
+    // Don't clear the map - old entries will be ignored due to version mismatch
+    // This is more memory efficient for frequent invalidations
+    this.currentSimulatedFrame = -1;
+  }
+
+  /**
+   * Simulate particles to a specific frame, using cache when available
+   * This is the main entry point for timeline scrubbing
+   *
+   * @param targetFrame The frame number to simulate to
+   * @param fps Frames per second for deltaTime calculation
+   * @returns The number of simulation steps performed
+   */
+  simulateToFrame(targetFrame: number, fps: number = 30): number {
+    const deltaTime = 1 / fps;
+
+    // If we're already at this frame, nothing to do
+    if (this.currentSimulatedFrame === targetFrame) {
+      return 0;
+    }
+
+    // Check if we can continue from current position (forward scrubbing)
+    if (this.currentSimulatedFrame >= 0 &&
+        this.currentSimulatedFrame < targetFrame &&
+        targetFrame - this.currentSimulatedFrame <= this.cacheInterval * 2) {
+      // Just continue stepping forward
+      let steps = 0;
+      for (let f = this.currentSimulatedFrame + 1; f <= targetFrame; f++) {
+        this.step(deltaTime);
+        this.currentSimulatedFrame = f;
+
+        // Cache at intervals
+        if (f % this.cacheInterval === 0) {
+          this.cacheCurrentState(f);
+        }
+        steps++;
+      }
+      return steps;
+    }
+
+    // Find nearest cached frame before target
+    const nearestCache = this.findNearestCache(targetFrame);
+
+    let startFrame = 0;
+    if (nearestCache >= 0) {
+      // Restore from cache
+      if (this.restoreFromCache(nearestCache)) {
+        startFrame = nearestCache;
+      }
+    }
+
+    // If starting from 0, reset first
+    if (startFrame === 0) {
+      this.reset();
+      this.currentSimulatedFrame = 0;
+      // Cache frame 0
+      this.cacheCurrentState(0);
+    }
+
+    // Simulate forward to target frame
+    let steps = 0;
+    for (let f = startFrame + 1; f <= targetFrame; f++) {
+      this.step(deltaTime);
+      this.currentSimulatedFrame = f;
+
+      // Cache at intervals
+      if (f % this.cacheInterval === 0) {
+        this.cacheCurrentState(f);
+      }
+      steps++;
+    }
+
+    return steps;
+  }
+
+  /**
+   * Get cache statistics for debugging/UI
+   */
+  getCacheStats(): {
+    cachedFrames: number;
+    version: number;
+    currentFrame: number;
+    cacheInterval: number;
+    maxCacheSize: number;
+  } {
+    // Count valid cached frames
+    let validCount = 0;
+    for (const cached of this.frameCache.values()) {
+      if (cached.version === this.cacheVersion) {
+        validCount++;
+      }
+    }
+
+    return {
+      cachedFrames: validCount,
+      version: this.cacheVersion,
+      currentFrame: this.currentSimulatedFrame,
+      cacheInterval: this.cacheInterval,
+      maxCacheSize: this.maxCacheSize,
+    };
+  }
+
+  /**
+   * Set the cache interval (how often to cache frames)
+   */
+  setCacheInterval(interval: number): void {
+    this.cacheInterval = Math.max(1, interval);
+  }
+
   /**
    * Reset the particle system
    * DETERMINISM: Resets RNG to initial seed for reproducible simulation
@@ -2318,6 +2207,14 @@ export class GPUParticleSystem {
     this.state.simulationTime = 0;
     this.state.frameCount = 0;
     this.spatialHash.clear();
+
+    // Reset emitter accumulators
+    for (const emitter of this.emitters.values()) {
+      emitter.accumulator = 0;
+    }
+
+    // Reset frame tracking (but don't clear cache - that's done by invalidateCache)
+    this.currentSimulatedFrame = -1;
 
     // Reset RNG to initial seed for deterministic replay
     // This ensures reset() + step(N) always produces same result
@@ -2337,6 +2234,8 @@ export class GPUParticleSystem {
    */
   setSeed(seed: number): void {
     this.config.randomSeed = seed;
+    this.initialRngSeed = seed;
+    this.clearCache(); // Seed change invalidates all cached data
     this.reset();
   }
 

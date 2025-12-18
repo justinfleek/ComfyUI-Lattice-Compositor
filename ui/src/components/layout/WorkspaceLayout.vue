@@ -326,6 +326,12 @@
               >
                 Export
               </button>
+              <button
+                :class="{ active: rightTab === 'preview' }"
+                @click="rightTab = 'preview'"
+              >
+                Preview
+              </button>
             </div>
             <div class="panel-content">
               <EffectControlsPanel v-if="rightTab === 'effects'" />
@@ -337,6 +343,7 @@
               />
               <AudioPanel v-else-if="rightTab === 'audio'" />
               <ExportPanel v-else-if="rightTab === 'export'" />
+              <PreviewPanel v-else-if="rightTab === 'preview'" :engine="canvasEngine" />
             </div>
           </div>
         </Pane>
@@ -427,6 +434,7 @@ import CameraProperties from '@/components/panels/CameraProperties.vue';
 import AudioPanel from '@/components/panels/AudioPanel.vue';
 import AssetsPanel from '@/components/panels/AssetsPanel.vue';
 import ExportPanel from '@/components/panels/ExportPanel.vue';
+import PreviewPanel from '@/components/panels/PreviewPanel.vue';
 
 // Viewport
 import ViewportRenderer from '@/components/viewport/ViewportRenderer.vue';
@@ -475,7 +483,7 @@ function clearSegmentMask() {
 
 const activeWorkspace = ref('standard');
 const leftTab = ref<'project' | 'effects' | 'assets'>('project');
-const rightTab = ref<'effects' | 'properties' | 'camera' | 'audio'>('properties');
+const rightTab = ref<'effects' | 'properties' | 'camera' | 'audio' | 'export' | 'preview'>('properties');
 const viewportTab = ref<'composition' | 'layer' | 'footage'>('composition');
 
 const viewZoom = ref('fit');
@@ -493,6 +501,9 @@ const isPlaying = ref(false);
 const gpuTier = ref<GPUTier['tier']>('cpu');
 
 const threeCanvasRef = ref<InstanceType<typeof ThreeCanvas> | null>(null);
+
+// Engine accessor for panels
+const canvasEngine = computed(() => threeCanvasRef.value?.engine ?? null);
 
 // Camera state - use computed to get from store, fallback to default
 const activeCamera = computed<Camera3D>(() => {

@@ -5,6 +5,7 @@
     <SplineEditor
       v-if="activeSplineLayerId || isPenMode"
       :layerId="activeSplineLayerId"
+      :currentFrame="store.currentFrame"
       :canvasWidth="compositionWidth"
       :canvasHeight="compositionHeight"
       :containerWidth="canvasWidth"

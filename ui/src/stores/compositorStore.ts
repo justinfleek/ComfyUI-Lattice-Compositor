@@ -1222,6 +1222,83 @@ export const useCompositorStore = defineStore('compositor', {
     },
 
     /**
+     * Enable animation mode on a spline layer (converts to keyframeable control points)
+     */
+    enableSplineAnimation(layerId: string): void {
+      layerActions.enableSplineAnimation(this, layerId);
+    },
+
+    /**
+     * Add keyframe to a spline control point property
+     */
+    addSplinePointKeyframe(
+      layerId: string,
+      pointId: string,
+      property: 'x' | 'y' | 'depth' | 'handleIn.x' | 'handleIn.y' | 'handleOut.x' | 'handleOut.y',
+      frame: number
+    ): void {
+      layerActions.addSplinePointKeyframe(this, layerId, pointId, property, frame);
+    },
+
+    /**
+     * Add keyframes to all position properties of a control point
+     */
+    addSplinePointPositionKeyframe(layerId: string, pointId: string, frame: number): void {
+      layerActions.addSplinePointPositionKeyframe(this, layerId, pointId, frame);
+    },
+
+    /**
+     * Update spline control point with optional keyframe
+     */
+    updateSplinePointWithKeyframe(
+      layerId: string,
+      pointId: string,
+      x: number,
+      y: number,
+      frame: number,
+      addKeyframe: boolean = false
+    ): void {
+      layerActions.updateSplinePointWithKeyframe(this, layerId, pointId, x, y, frame, addKeyframe);
+    },
+
+    /**
+     * Get evaluated control points at a specific frame
+     */
+    getEvaluatedSplinePoints(layerId: string, frame: number): import('@/types/project').EvaluatedControlPoint[] {
+      return layerActions.getEvaluatedSplinePoints(this, layerId, frame);
+    },
+
+    /**
+     * Check if spline has animation enabled
+     */
+    isSplineAnimated(layerId: string): boolean {
+      return layerActions.isSplineAnimated(this, layerId);
+    },
+
+    /**
+     * Check if a control point has any keyframes
+     */
+    hasSplinePointKeyframes(layerId: string, pointId: string): boolean {
+      return layerActions.hasSplinePointKeyframes(this, layerId, pointId);
+    },
+
+    /**
+     * Simplify a spline by reducing control points (Douglas-Peucker)
+     * @param tolerance - Distance threshold in pixels (higher = more simplification)
+     */
+    simplifySpline(layerId: string, tolerance: number): void {
+      layerActions.simplifySpline(this, layerId, tolerance);
+    },
+
+    /**
+     * Smooth spline handles to create smoother curves
+     * @param amount - Smoothing amount 0-100 (100 = fully smooth)
+     */
+    smoothSplineHandles(layerId: string, amount: number): void {
+      layerActions.smoothSplineHandles(this, layerId, amount);
+    },
+
+    /**
      * Toggle 3D mode for a layer
      */
     toggleLayer3D(layerId: string): void {

@@ -503,33 +503,66 @@ export class ParticleLayer extends BaseLayer {
     this.lastEvaluatedFrame = -1;
   }
 
+  /**
+   * Clear the particle cache (used when user wants to free memory)
+   */
+  clearCache(): void {
+    this.particleSystem.clearCache();
+  }
+
+  /**
+   * Get cache statistics for UI display
+   */
+  getCacheStats(): ReturnType<typeof this.particleSystem.getCacheStats> {
+    return this.particleSystem.getCacheStats();
+  }
+
+  /**
+   * Pre-cache frames from startFrame to endFrame
+   * Used by Preview panel to build cache before playback
+   * @returns Progress callback will be called with (current, total)
+   */
+  async preCacheFrames(
+    startFrame: number,
+    endFrame: number,
+    onProgress?: (current: number, total: number) => void
+  ): Promise<void> {
+    const totalFrames = endFrame - startFrame + 1;
+
+    // Simulate from start to end, building cache along the way
+    for (let frame = startFrame; frame <= endFrame; frame++) {
+      this.particleSystem.simulateToFrame(frame, this.fps);
+
+      if (onProgress) {
+        onProgress(frame - startFrame + 1, totalFrames);
+      }
+
+      // Yield to prevent blocking UI (every 10 frames)
+      if ((frame - startFrame) % 10 === 0) {
+        await new Promise(resolve => setTimeout(resolve, 0));
+      }
+    }
+  }
+
+  /**
+   * Set the cache interval (frames between cached snapshots)
+   */
+  setCacheInterval(interval: number): void {
+    this.particleSystem.setCacheInterval(interval);
+  }
+
   // ============================================================================
   // ABSTRACT IMPLEMENTATIONS
   // ============================================================================
 
   protected onEvaluateFrame(frame: number): void {
-    // DETERMINISM: Scrub-safe particle evaluation
-    // When scrubbing backwards or to a non-sequential frame, we must
-    // reset and replay to ensure consistent results
-    const isSequential = frame === this.lastEvaluatedFrame + 1;
-    const needsReplay = !isSequential && frame !== this.lastEvaluatedFrame;
-
-    if (needsReplay) {
-      // Reset to initial state (restores RNG seed)
-      this.particleSystem.reset();
-
-      // Replay from frame 0 to target frame (inclusive)
-      // We step frame+1 times to simulate through the current frame
-      const deltaTime = 1 / this.fps;
-      for (let f = 0; f <= frame; f++) {
-        this.particleSystem.step(deltaTime);
-      }
-    } else if (isSequential) {
-      // Sequential playback - just step once
-      const deltaTime = 1 / this.fps;
-      this.particleSystem.step(deltaTime);
-    }
-    // If frame === lastEvaluatedFrame, no stepping needed (cached result)
+    // DETERMINISM: Use frame caching system for scrub-safe particle evaluation
+    // The simulateToFrame method handles:
+    // - Sequential playback (single step)
+    // - Forward scrubbing (continue from current)
+    // - Backward/random scrubbing (restore from nearest cache or reset)
+    // - Automatic caching every N frames
+    const stepsPerformed = this.particleSystem.simulateToFrame(frame, this.fps);
 
     this.lastEvaluatedFrame = frame;
 
@@ -541,6 +574,15 @@ export class ParticleLayer extends BaseLayer {
     this.stats.particleCount = state.particleCount;
     this.stats.updateTimeMs = state.updateTimeMs;
     this.stats.renderTimeMs = state.renderTimeMs;
+
+    // Log cache performance for debugging (only when significant work done)
+    if (stepsPerformed > 10) {
+      const cacheStats = this.particleSystem.getCacheStats();
+      console.debug(
+        `ParticleLayer: Simulated ${stepsPerformed} frames to reach frame ${frame}. ` +
+        `Cache: ${cacheStats.cachedFrames} frames cached`
+      );
+    }
   }
 
   protected override onApplyEvaluatedState(state: import('../MotionEngine').EvaluatedLayer): void {
@@ -555,17 +597,11 @@ export class ParticleLayer extends BaseLayer {
   /**
    * Evaluate particles at a specific frame (scrub-safe)
    * DETERMINISM: Returns identical results regardless of evaluation order
+   * Uses frame caching for performance
    */
   evaluateAtFrame(frame: number): void {
-    // Reset to initial state
-    this.particleSystem.reset();
-
-    // Step through target frame (inclusive)
-    const deltaTime = 1 / this.fps;
-    for (let f = 0; f <= frame; f++) {
-      this.particleSystem.step(deltaTime);
-    }
-
+    // Use the caching system for efficient frame evaluation
+    this.particleSystem.simulateToFrame(frame, this.fps);
     this.lastEvaluatedFrame = frame;
   }
 

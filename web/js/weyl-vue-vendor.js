@@ -1570,6 +1570,28 @@ class ObjectRefImpl {
     return getDepFromReactive(this._raw, this._key);
   }
 }
+class GetterRefImpl {
+  constructor(_getter) {
+    this._getter = _getter;
+    this["__v_isRef"] = true;
+    this["__v_isReadonly"] = true;
+    this._value = void 0;
+  }
+  get value() {
+    return this._value = this._getter();
+  }
+}
+function toRef(source, key, defaultValue) {
+  if (isRef(source)) {
+    return source;
+  } else if (isFunction(source)) {
+    return new GetterRefImpl(source);
+  } else if (isObject(source) && arguments.length > 1) {
+    return propertyToRef(source, key, defaultValue);
+  } else {
+    return ref(source);
+  }
+}
 function propertyToRef(source, key, defaultValue) {
   return new ObjectRefImpl(source, key, defaultValue);
 }
@@ -7200,5 +7222,27 @@ function defineStore(idOrOptions, setup, setupOptions) {
   useStore.$id = id;
   return useStore;
 }
+function storeToRefs(store) {
+  {
+    const rawStore = toRaw(store);
+    const refs = {};
+    for (const key in rawStore) {
+      const value = rawStore[key];
+      if (value.effect) {
+        refs[key] = // ...
+        computed({
+          get: () => store[key],
+          set(value2) {
+            store[key] = value2;
+          }
+        });
+      } else if (isRef(value) || isReactive(value)) {
+        refs[key] = // ---
+        toRef(store, key);
+      }
+    }
+    return refs;
+  }
+}
 
-export { normalizeClass as A, withModifiers as B, onUnmounted as C, withKeys as D, createTextVNode as E, Fragment as F, createVNode as G, createStaticVNode as H, vModelSelect as I, markRaw as J, reactive as K, vModelCheckbox as L, vShow as M, shallowRef as N, withCtx as O, createApp as P, createPinia as Q, Teleport as T, createElementBlock as a, onBeforeUnmount as b, computed as c, openBlock as d, renderSlot as e, useSlots as f, createBlock as g, resolveDynamicComponent as h, inject as i, getCurrentInstance as j, nextTick as k, h as l, defineStore as m, normalizeStyle as n, onMounted as o, provide as p, defineComponent as q, ref as r, createBaseVNode as s, createCommentVNode as t, unref as u, withDirectives as v, watch as w, renderList as x, toDisplayString as y, vModelText as z };
+export { normalizeClass as A, withModifiers as B, onUnmounted as C, withKeys as D, createTextVNode as E, Fragment as F, createVNode as G, createStaticVNode as H, vModelSelect as I, markRaw as J, reactive as K, vModelCheckbox as L, vShow as M, storeToRefs as N, shallowRef as O, withCtx as P, createApp as Q, createPinia as R, Teleport as T, createElementBlock as a, onBeforeUnmount as b, computed as c, openBlock as d, renderSlot as e, useSlots as f, createBlock as g, resolveDynamicComponent as h, inject as i, getCurrentInstance as j, nextTick as k, h as l, defineStore as m, normalizeStyle as n, onMounted as o, provide as p, defineComponent as q, ref as r, createBaseVNode as s, createCommentVNode as t, unref as u, withDirectives as v, watch as w, renderList as x, toDisplayString as y, vModelText as z };

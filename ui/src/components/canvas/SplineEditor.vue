@@ -1,5 +1,42 @@
 <template>
   <div class="spline-editor">
+    <!-- Spline toolbar (shown when a spline layer is selected) -->
+    <div v-if="layerId && hasControlPoints" class="spline-toolbar">
+      <div class="toolbar-group">
+        <button
+          class="toolbar-btn"
+          @click="smoothSpline"
+          title="Smooth path handles"
+        >
+          Smooth
+        </button>
+        <button
+          class="toolbar-btn"
+          @click="simplifySpline"
+          title="Simplify path (reduce control points)"
+        >
+          Simplify
+        </button>
+      </div>
+      <div class="toolbar-group">
+        <label class="tolerance-label">
+          Tolerance:
+          <input
+            type="range"
+            v-model.number="smoothTolerance"
+            min="1"
+            max="50"
+            step="1"
+            class="tolerance-slider"
+          />
+          <span class="tolerance-value">{{ smoothTolerance }}px</span>
+        </label>
+      </div>
+      <div class="toolbar-info">
+        {{ visibleControlPoints.length }} points
+      </div>
+    </div>
+
     <!-- Control point visuals are rendered via SVG overlay -->
     <svg
       class="control-overlay"
@@ -54,20 +91,69 @@
       </template>
 
       <!-- Control points -->
-      <circle
-        v-for="point in visibleControlPoints"
-        :key="`point-${point.id}`"
-        :cx="point.x"
-        :cy="point.y"
-        r="6"
-        class="control-point"
-        :class="{
-          selected: selectedPointId === point.id,
-          corner: point.type === 'corner',
-          smooth: point.type === 'smooth'
-        }"
-        @mousedown.stop="startDragPoint(point.id, $event)"
-      />
+      <g v-for="point in visibleControlPoints" :key="`point-${point.id}`">
+        <!-- Keyframe indicator ring (shown when point has keyframes) -->
+        <circle
+          v-if="pointHasKeyframes(point.id)"
+          :cx="point.x"
+          :cy="point.y"
+          r="9"
+          class="keyframe-indicator"
+        />
+        <!-- Main control point -->
+        <circle
+          :cx="point.x"
+          :cy="point.y"
+          r="6"
+          class="control-point"
+          :class="{
+            selected: selectedPointId === point.id,
+            corner: point.type === 'corner',
+            smooth: point.type === 'smooth',
+            keyframed: pointHasKeyframes(point.id)
+          }"
+          @mousedown.stop="startDragPoint(point.id, $event)"
+        />
+
+        <!-- Z-depth handle (shown when point is selected and layer is 3D) -->
+        <g
+          v-if="selectedPointId === point.id && is3DLayer"
+          class="z-handle-group"
+        >
+          <!-- Vertical Z-axis line -->
+          <line
+            :x1="point.x + 15"
+            :y1="point.y - 30"
+            :x2="point.x + 15"
+            :y2="point.y + 30"
+            class="z-axis-line"
+          />
+          <!-- Z-axis arrow markers -->
+          <polygon
+            :points="`${point.x + 15},${point.y - 35} ${point.x + 12},${point.y - 28} ${point.x + 18},${point.y - 28}`"
+            class="z-arrow"
+          />
+          <polygon
+            :points="`${point.x + 15},${point.y + 35} ${point.x + 12},${point.y + 28} ${point.x + 18},${point.y + 28}`"
+            class="z-arrow"
+          />
+          <!-- Z-depth handle (draggable diamond) -->
+          <polygon
+            :points="getZHandlePoints(point)"
+            class="z-handle"
+            :class="{ active: dragTarget?.type === 'depth' && dragTarget.pointId === point.id }"
+            @mousedown.stop="startDragDepth(point.id, $event)"
+          />
+          <!-- Depth value label -->
+          <text
+            :x="point.x + 25"
+            :y="point.y + getDepthOffset(point)"
+            class="z-label"
+          >
+            Z: {{ getPointDepth(point).toFixed(0) }}
+          </text>
+        </g>
+      </g>
 
       <!-- Preview point when in pen mode -->
       <circle
@@ -93,10 +179,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useCompositorStore } from '@/stores/compositorStore';
-import type { ControlPoint, SplineData } from '@/types/project';
+import type { ControlPoint, SplineData, EvaluatedControlPoint } from '@/types/project';
 
 interface Props {
   layerId: string | null;
+  currentFrame: number;     // Current timeline frame for animation evaluation
   canvasWidth: number;      // Composition width (e.g., 832)
   canvasHeight: number;     // Composition height (e.g., 480)
   containerWidth: number;   // DOM container width (CSS pixels)
@@ -124,22 +211,104 @@ const selectedPointId = ref<string | null>(null);
 const previewPoint = ref<{ x: number; y: number } | null>(null);
 const closePathPreview = ref(false);
 const dragTarget = ref<{
-  type: 'point' | 'handleIn' | 'handleOut';
+  type: 'point' | 'handleIn' | 'handleOut' | 'depth';
   pointId: string;
   startX: number;
   startY: number;
+  startDepth?: number;
 } | null>(null);
 
-// Get control points from active spline layer
-const visibleControlPoints = computed<ControlPoint[]>(() => {
+// Check if the layer is in 3D mode
+const is3DLayer = computed(() => {
+  if (!props.layerId) return false;
+  const layer = store.layers.find(l => l.id === props.layerId);
+  return layer?.threeD ?? false;
+});
+
+// Toolbar state
+const smoothTolerance = ref(10);
+
+// Check if spline has control points
+const hasControlPoints = computed(() => visibleControlPoints.value.length > 0);
+
+// Smooth spline handles
+function smoothSpline() {
+  if (!props.layerId) return;
+  store.smoothSplineHandles(props.layerId, smoothTolerance.value * 2); // Map 1-50 to 2-100%
+  emit('pathUpdated');
+}
+
+// Simplify spline (reduce control points)
+function simplifySpline() {
+  if (!props.layerId) return;
+  store.simplifySpline(props.layerId, smoothTolerance.value);
+  emit('pathUpdated');
+}
+
+// Get control points from active spline layer (evaluated at current frame if animated)
+const visibleControlPoints = computed<(ControlPoint | EvaluatedControlPoint)[]>(() => {
   if (!props.layerId) return [];
 
   const layer = store.layers.find(l => l.id === props.layerId);
   if (!layer || layer.type !== 'spline' || !layer.data) return [];
 
   const splineData = layer.data as SplineData;
+
+  // If animated, get evaluated control points at current frame
+  if (splineData.animated && splineData.animatedControlPoints) {
+    return store.getEvaluatedSplinePoints(props.layerId, props.currentFrame);
+  }
+
+  // Otherwise return static control points
   return splineData.controlPoints || [];
 });
+
+// Check if a control point has keyframes (for visual indicator)
+function pointHasKeyframes(pointId: string): boolean {
+  if (!props.layerId) return false;
+  return store.hasSplinePointKeyframes(props.layerId, pointId);
+}
+
+// ============================================================================
+// Z-DEPTH HANDLE HELPERS
+// ============================================================================
+
+// Get depth value from a control point
+function getPointDepth(point: ControlPoint | EvaluatedControlPoint): number {
+  return point.depth ?? 0;
+}
+
+// Get visual Y offset for Z-handle based on depth (maps depth to -30..30 range)
+function getDepthOffset(point: ControlPoint | EvaluatedControlPoint): number {
+  const depth = getPointDepth(point);
+  // Map depth 0-1000 to visual offset -30 to 30
+  return Math.max(-30, Math.min(30, -depth / 16.67));
+}
+
+// Get SVG points for Z-handle diamond shape
+function getZHandlePoints(point: ControlPoint | EvaluatedControlPoint): string {
+  const x = point.x + 15;
+  const y = point.y + getDepthOffset(point);
+  const size = 5;
+  return `${x},${y - size} ${x + size},${y} ${x},${y + size} ${x - size},${y}`;
+}
+
+// Start dragging the depth handle
+function startDragDepth(pointId: string, event: MouseEvent) {
+  const point = visibleControlPoints.value.find(p => p.id === pointId);
+  if (!point) return;
+
+  const pos = getMousePos(event);
+  dragTarget.value = {
+    type: 'depth',
+    pointId,
+    startX: pos.x,
+    startY: pos.y,
+    startDepth: getPointDepth(point)
+  };
+
+  selectedPointId.value = pointId;
+}
 
 // Check if path can be closed (at least 3 points, not already closed)
 const canClosePath = computed(() => {
@@ -321,6 +490,14 @@ function handleMouseMove(event: MouseEvent) {
 
       store.updateSplineControlPoint(props.layerId, point.id, updates);
       emit('handleMoved', point.id, 'out', pos.x, pos.y);
+    } else if (dragTarget.value.type === 'depth') {
+      // Update depth based on Y-axis drag
+      // Dragging up increases depth, dragging down decreases
+      const dy = dragTarget.value.startY - pos.y;
+      const depthScale = 10; // How much depth changes per pixel of drag
+      const newDepth = Math.max(0, (dragTarget.value.startDepth ?? 0) + dy * depthScale);
+
+      store.updateSplineControlPoint(props.layerId, point.id, { depth: newDepth });
     }
 
     emit('pathUpdated');
@@ -495,6 +672,66 @@ defineExpose({
   /* Circle for smooth points */
 }
 
+.control-point.keyframed {
+  fill: #ffcc00;
+  stroke: #ff8800;
+}
+
+.control-point.keyframed.selected {
+  fill: #ff8800;
+  stroke: #ffffff;
+}
+
+.keyframe-indicator {
+  fill: none;
+  stroke: #ff8800;
+  stroke-width: 2;
+  stroke-dasharray: 3 2;
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+/* Z-Depth Handle Styles */
+.z-handle-group {
+  pointer-events: all;
+}
+
+.z-axis-line {
+  stroke: #0088ff;
+  stroke-width: 1;
+  stroke-dasharray: 2 2;
+  opacity: 0.6;
+}
+
+.z-arrow {
+  fill: #0088ff;
+  opacity: 0.6;
+}
+
+.z-handle {
+  fill: #0088ff;
+  stroke: #ffffff;
+  stroke-width: 1;
+  cursor: ns-resize;
+  transition: fill 0.1s;
+}
+
+.z-handle:hover {
+  fill: #00bbff;
+}
+
+.z-handle.active {
+  fill: #ffffff;
+  stroke: #0088ff;
+}
+
+.z-label {
+  fill: #0088ff;
+  font-size: 10px;
+  font-family: monospace;
+  pointer-events: none;
+}
+
 .handle-line {
   stroke: #00ff00;
   stroke-width: 1;
@@ -534,5 +771,98 @@ defineExpose({
 @keyframes pulse {
   from { opacity: 0.5; }
   to { opacity: 1; }
+}
+
+/* Spline Toolbar Styles */
+.spline-toolbar {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 10px;
+  background: rgba(30, 30, 30, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.toolbar-btn {
+  padding: 4px 10px;
+  background: rgba(0, 200, 100, 0.2);
+  border: 1px solid rgba(0, 255, 100, 0.4);
+  border-radius: 4px;
+  color: #00ff66;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.toolbar-btn:hover {
+  background: rgba(0, 255, 100, 0.3);
+  border-color: #00ff66;
+}
+
+.toolbar-btn:active {
+  background: #00ff66;
+  color: #000;
+}
+
+.tolerance-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.tolerance-slider {
+  width: 80px;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.tolerance-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  background: #00ff66;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.tolerance-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  background: #00ff66;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+}
+
+.tolerance-value {
+  min-width: 32px;
+  font-family: monospace;
+  color: #00ff66;
+}
+
+.toolbar-info {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.5);
+  padding-left: 8px;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
 }
 </style>

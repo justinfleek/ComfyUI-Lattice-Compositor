@@ -332,6 +332,7 @@ export function evaluateLayerCached(layer: Layer, frame: number): EvaluatedLayer
     blendMode: layer.blendMode,
     threeD: layer.threeD,
     layerRef: layer,
+    frame, // Include frame for particle system deterministic simulation
   });
 
   // Store in cache
