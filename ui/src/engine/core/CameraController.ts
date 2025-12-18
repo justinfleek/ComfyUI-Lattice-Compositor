@@ -45,6 +45,7 @@ export class CameraController {
     this.width = width;
     this.height = height;
     this.evaluator = new KeyframeEvaluator();
+    console.log(`[CameraController] constructor: comp=${width}x${height}`);
 
     // Create perspective camera
     this.camera = new THREE.PerspectiveCamera(
@@ -185,14 +186,7 @@ export class CameraController {
     this.zoomLevel = 1;
     this.panOffset.set(0, 0);
 
-    console.log('[CameraController] resetToDefault:', {
-      composition: { width: this.width, height: this.height },
-      compositionCenter: { x: centerX, y: centerY },
-      cameraPosition: { x: this.camera.position.x, y: this.camera.position.y, z: distance },
-      cameraTarget: { x: this.target.x, y: this.target.y, z: 0 },
-      fov: this.defaultFov,
-      aspect: this.camera.aspect
-    });
+    console.log(`[CameraController] resetToDefault: comp=${this.width}x${this.height}, center=(${centerX}, ${centerY}), cam=(${this.camera.position.x.toFixed(1)}, ${this.camera.position.y.toFixed(1)}, ${distance.toFixed(1)}), fov=${this.defaultFov}, aspect=${this.camera.aspect.toFixed(3)}`);
   }
 
   /**
@@ -360,14 +354,20 @@ export class CameraController {
     // Adjust distance based on zoom (zoom in = closer)
     const distance = baseDistance / this.zoomLevel;
 
-    // Camera is centered on composition center, offset by pan
-    // Pan offset is in world units (same as composition dimensions)
-    const centerX = (this.width / 2) + this.panOffset.x;
-    const centerY = (this.height / 2) + this.panOffset.y;
+    // Composition center in world coordinates
+    // Composition spans (0, 0, 0) to (width, -height, 0)
+    // So center is at (width/2, -height/2, 0)
+    const compositionCenterX = this.width / 2;
+    const compositionCenterY = -this.height / 2;
+
+    // Apply pan offset (in world units)
+    // Pan offset moves the camera, so positive pan.x moves camera right (view shifts left)
+    const cameraPosX = compositionCenterX + this.panOffset.x;
+    const cameraPosY = compositionCenterY - this.panOffset.y; // Subtract because Y is inverted
 
     // Update camera position - straight-on view at composition plane
-    this.camera.position.set(centerX, -centerY, distance);
-    this.target.set(centerX, -centerY, 0);
+    this.camera.position.set(cameraPosX, cameraPosY, distance);
+    this.target.set(cameraPosX, cameraPosY, 0);
 
     // CRITICAL: Ensure camera is perfectly aligned with NO rotation
     this.camera.up.set(0, 1, 0);
@@ -375,6 +375,35 @@ export class CameraController {
     this.camera.rotation.z = 0;
 
     this.camera.updateProjectionMatrix();
+  }
+
+  /**
+   * Fit the composition to the viewport with optional padding
+   * This is the primary method for centering - calculates the right zoom to fit
+   * @param viewportWidth - The viewport width in pixels
+   * @param viewportHeight - The viewport height in pixels
+   * @param padding - Padding in pixels around the composition (default 40)
+   */
+  fitToViewport(viewportWidth: number, viewportHeight: number, padding: number = 40): void {
+    // Calculate available space
+    const availableWidth = viewportWidth - padding * 2;
+    const availableHeight = viewportHeight - padding * 2;
+
+    // Calculate scale to fit
+    const scaleX = availableWidth / this.width;
+    const scaleY = availableHeight / this.height;
+    const fitZoom = Math.min(scaleX, scaleY, 1); // Cap at 1 (100%)
+
+    // Update camera aspect to match viewport
+    this.camera.aspect = viewportWidth / viewportHeight;
+    this.camera.updateProjectionMatrix();
+
+    // Reset to centered with calculated zoom
+    this.zoomLevel = fitZoom;
+    this.panOffset.set(0, 0);
+    this.updateCameraForViewport();
+
+    console.log(`[CameraController] fitToViewport: viewport=${viewportWidth}x${viewportHeight}, comp=${this.width}x${this.height}, zoom=${fitZoom.toFixed(3)}, cam=(${this.camera.position.x.toFixed(1)}, ${this.camera.position.y.toFixed(1)}, ${this.camera.position.z.toFixed(1)})`);
   }
 
   // ============================================================================
@@ -428,6 +457,7 @@ export class CameraController {
    * Note: The aspect ratio should be set separately using setViewportAspect()
    */
   resize(width: number, height: number): void {
+    console.log(`[CameraController] resize: NEW comp=${width}x${height} (was ${this.width}x${this.height})`);
     this.width = width;
     this.height = height;
 

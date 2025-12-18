@@ -40328,6 +40328,7 @@ class CameraController {
     this.width = width;
     this.height = height;
     this.evaluator = new KeyframeEvaluator();
+    console.log(`[CameraController] constructor: comp=${width}x${height}`);
     this.camera = new PerspectiveCamera(
       this.defaultFov,
       // Field of view
@@ -40419,14 +40420,7 @@ class CameraController {
     }
     this.zoomLevel = 1;
     this.panOffset.set(0, 0);
-    console.log("[CameraController] resetToDefault:", {
-      composition: { width: this.width, height: this.height },
-      compositionCenter: { x: centerX, y: centerY },
-      cameraPosition: { x: this.camera.position.x, y: this.camera.position.y, z: distance },
-      cameraTarget: { x: this.target.x, y: this.target.y, z: 0 },
-      fov: this.defaultFov,
-      aspect: this.camera.aspect
-    });
+    console.log(`[CameraController] resetToDefault: comp=${this.width}x${this.height}, center=(${centerX}, ${centerY}), cam=(${this.camera.position.x.toFixed(1)}, ${this.camera.position.y.toFixed(1)}, ${distance.toFixed(1)}), fov=${this.defaultFov}, aspect=${this.camera.aspect.toFixed(3)}`);
   }
   /**
    * Check if orbit controls are enabled
@@ -40571,14 +40565,36 @@ class CameraController {
     const fovRad = MathUtils.degToRad(this.camera.fov);
     const baseDistance = this.height / 2 / Math.tan(fovRad / 2);
     const distance = baseDistance / this.zoomLevel;
-    const centerX = this.width / 2 + this.panOffset.x;
-    const centerY = this.height / 2 + this.panOffset.y;
-    this.camera.position.set(centerX, -centerY, distance);
-    this.target.set(centerX, -centerY, 0);
+    const compositionCenterX = this.width / 2;
+    const compositionCenterY = -this.height / 2;
+    const cameraPosX = compositionCenterX + this.panOffset.x;
+    const cameraPosY = compositionCenterY - this.panOffset.y;
+    this.camera.position.set(cameraPosX, cameraPosY, distance);
+    this.target.set(cameraPosX, cameraPosY, 0);
     this.camera.up.set(0, 1, 0);
     this.camera.lookAt(this.target);
     this.camera.rotation.z = 0;
     this.camera.updateProjectionMatrix();
+  }
+  /**
+   * Fit the composition to the viewport with optional padding
+   * This is the primary method for centering - calculates the right zoom to fit
+   * @param viewportWidth - The viewport width in pixels
+   * @param viewportHeight - The viewport height in pixels
+   * @param padding - Padding in pixels around the composition (default 40)
+   */
+  fitToViewport(viewportWidth, viewportHeight, padding = 40) {
+    const availableWidth = viewportWidth - padding * 2;
+    const availableHeight = viewportHeight - padding * 2;
+    const scaleX = availableWidth / this.width;
+    const scaleY = availableHeight / this.height;
+    const fitZoom = Math.min(scaleX, scaleY, 1);
+    this.camera.aspect = viewportWidth / viewportHeight;
+    this.camera.updateProjectionMatrix();
+    this.zoomLevel = fitZoom;
+    this.panOffset.set(0, 0);
+    this.updateCameraForViewport();
+    console.log(`[CameraController] fitToViewport: viewport=${viewportWidth}x${viewportHeight}, comp=${this.width}x${this.height}, zoom=${fitZoom.toFixed(3)}, cam=(${this.camera.position.x.toFixed(1)}, ${this.camera.position.y.toFixed(1)}, ${this.camera.position.z.toFixed(1)})`);
   }
   // ============================================================================
   // ANIMATION
@@ -40624,6 +40640,7 @@ class CameraController {
    * Note: The aspect ratio should be set separately using setViewportAspect()
    */
   resize(width, height) {
+    console.log(`[CameraController] resize: NEW comp=${width}x${height} (was ${this.width}x${this.height})`);
     this.width = width;
     this.height = height;
     this.resetToDefault();
@@ -42045,11 +42062,12 @@ class WeylEngine {
       engineLogger.warn("Invalid resize dimensions:", width, height);
       return;
     }
+    console.log(`[WeylEngine] resize: viewport=${width}x${height}, comp=${compositionWidth ?? "undefined"}x${compositionHeight ?? "undefined"}`);
     this.state.viewport = { width, height };
     this.renderer.resize(width, height);
-    const camWidth = compositionWidth ?? width;
-    const camHeight = compositionHeight ?? height;
-    this.camera.resize(camWidth, camHeight);
+    if (compositionWidth !== void 0 && compositionHeight !== void 0) {
+      this.camera.resize(compositionWidth, compositionHeight);
+    }
     this.camera.setViewportAspect(width, height);
     this.emit("resize", { width, height, compositionWidth, compositionHeight });
   }
@@ -42087,6 +42105,15 @@ class WeylEngine {
    */
   resetCameraToDefault() {
     this.camera.resetToDefault();
+  }
+  /**
+   * Fit the composition to the viewport with optional padding
+   * This is the canonical method for centering the view on initial load
+   * @param padding - Padding in pixels around the composition (default 40)
+   */
+  fitCompositionToViewport(padding = 40) {
+    const { width, height } = this.state.viewport;
+    this.camera.fitToViewport(width, height, padding);
   }
   /**
    * Check if orbit controls are enabled
@@ -43335,8 +43362,8 @@ const _sfc_main$c = /* @__PURE__ */ defineComponent({
       const compWidth = store.width || 1920;
       const compHeight = store.height || 1080;
       const camera = engine.value.getCameraController().camera;
-      const topLeft = new THREE.Vector3(0, 0, 0);
-      const bottomRight = new THREE.Vector3(compWidth, -compHeight, 0);
+      const topLeft = new Vector3(0, 0, 0);
+      const bottomRight = new Vector3(compWidth, -compHeight, 0);
       topLeft.project(camera);
       bottomRight.project(camera);
       const left = (topLeft.x + 1) / 2 * containerRect.width;
@@ -43746,19 +43773,20 @@ const _sfc_main$c = /* @__PURE__ */ defineComponent({
           const dy = e.clientY - lastPosY;
           lastPosX = e.clientX;
           lastPosY = e.clientY;
-          const compWidth = store.width || 1920;
+          const camera = engine.value.getCameraController();
+          const currentPan = camera.getPan();
           const compHeight = store.height || 1080;
+          const fovRad = Math.PI * camera.getFOV() / 180;
+          const distance = compHeight / 2 / Math.tan(fovRad / 2) / zoom.value;
+          const viewHeight = 2 * distance * Math.tan(fovRad / 2);
           const container2 = containerRef.value;
           if (container2) {
             const rect = container2.getBoundingClientRect();
-            const worldPerPixelX = compWidth / (rect.width * zoom.value);
-            const worldPerPixelY = compHeight / (rect.height * zoom.value);
-            const camera = engine.value.getCameraController();
-            const currentPan = camera.getPan();
+            const worldPerPixel = viewHeight / rect.height;
             camera.setPan(
-              currentPan.x - dx * worldPerPixelX,
-              currentPan.y + dy * worldPerPixelY
-              // Y is inverted in world space
+              currentPan.x - dx * worldPerPixel,
+              currentPan.y - dy * worldPerPixel
+              // Positive dy should move camera up (view shifts down)
             );
           }
           return;
@@ -43955,6 +43983,7 @@ const _sfc_main$c = /* @__PURE__ */ defineComponent({
           canvasHeight.value = height;
           if (engine.value) {
             engine.value.resize(width, height);
+            centerOnComposition();
           }
         }
       }
@@ -43962,28 +43991,13 @@ const _sfc_main$c = /* @__PURE__ */ defineComponent({
     function centerOnComposition() {
       const container = containerRef.value;
       if (!container || !engine.value) return;
-      const compWidth = store.width || 1920;
-      const compHeight = store.height || 1080;
-      const containerRect = container.getBoundingClientRect();
+      container.getBoundingClientRect();
       const padding = 40;
-      const scaleX = (containerRect.width - padding * 2) / compWidth;
-      const scaleY = (containerRect.height - padding * 2) / compHeight;
-      const scale = Math.min(scaleX, scaleY, 1);
-      zoom.value = scale;
-      viewportTransform.value = [scale, 0, 0, scale, 0, 0];
+      engine.value.fitCompositionToViewport(padding);
       const camera = engine.value.getCameraController();
-      camera.camera.aspect = containerRect.width / containerRect.height;
-      camera.camera.updateProjectionMatrix();
-      engine.value.resetCameraToDefault();
-      camera.setZoom(scale);
-      camera.setPan(0, 0);
-      console.log("[ThreeCanvas] centerOnComposition:", {
-        viewport: { width: containerRect.width, height: containerRect.height },
-        composition: { width: compWidth, height: compHeight },
-        scale,
-        cameraPos: camera.getPosition(),
-        cameraTarget: camera.getTarget()
-      });
+      const calculatedZoom = camera.getZoom();
+      zoom.value = calculatedZoom;
+      viewportTransform.value = [calculatedZoom, 0, 0, calculatedZoom, 0, 0];
     }
     function setRenderMode(mode) {
       renderMode.value = mode;
@@ -44288,7 +44302,7 @@ const _sfc_main$c = /* @__PURE__ */ defineComponent({
   }
 });
 
-const ThreeCanvas = /* @__PURE__ */ _export_sfc(_sfc_main$c, [["__scopeId", "data-v-b580cdd9"]]);
+const ThreeCanvas = /* @__PURE__ */ _export_sfc(_sfc_main$c, [["__scopeId", "data-v-6239a0ec"]]);
 
 const _hoisted_1$a = { class: "prop-wrapper" };
 const _hoisted_2$a = { class: "prop-content" };

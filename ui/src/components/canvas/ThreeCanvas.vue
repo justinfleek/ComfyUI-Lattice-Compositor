@@ -154,6 +154,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, computed, nextTick, shallowRef } from 'vue';
+import * as THREE from 'three';
 import { useCompositorStore } from '@/stores/compositorStore';
 import { WeylEngine } from '@/engine';
 import type { WeylEngineConfig, PerformanceStats, RenderState } from '@/engine';
@@ -517,7 +518,9 @@ function setupWatchers() {
     () => [store.width, store.height],
     ([width, height]) => {
       if (engine.value) {
-        engine.value.resize(canvasWidth.value, canvasHeight.value, width, height);
+        // Update engine with new composition dimensions
+        engine.value.resize(canvasWidth.value, canvasHeight.value, width as number, height as number);
+        // Re-fit to viewport with new composition size
         centerOnComposition();
       }
     }
@@ -719,13 +722,13 @@ function setupInputHandlers() {
     let newZoom = zoom.value * (delta > 0 ? 0.9 : 1.1);
     newZoom = Math.min(Math.max(newZoom, 0.1), 10);
 
-    // Update zoom (centered on composition)
+    // Update zoom state
     zoom.value = newZoom;
     viewportTransform.value[0] = newZoom;
     viewportTransform.value[3] = newZoom;
 
     if (engine.value) {
-      // Only update zoom, keep pan at 0 for centered view
+      // Update camera zoom - this maintains centered view unless panning
       engine.value.getCameraController().setZoom(newZoom);
     }
   }, { passive: false });
@@ -837,22 +840,27 @@ function setupInputHandlers() {
       lastPosX = e.clientX;
       lastPosY = e.clientY;
 
-      // Convert screen pixels to world units based on zoom
-      // Pan is inverse - moving mouse right should move view right (camera left)
-      const compWidth = store.width || 1920;
+      // Convert screen pixels to world units based on current camera setup
+      // The camera controller handles all coordinate transforms
+      const camera = engine.value.getCameraController();
+      const currentPan = camera.getPan();
+
+      // Calculate world units per screen pixel at current zoom
+      // When zoomed out (zoom < 1), each screen pixel represents more world units
       const compHeight = store.height || 1080;
+      const fovRad = Math.PI * camera.getFOV() / 180;
+      const distance = (compHeight / 2) / Math.tan(fovRad / 2) / zoom.value;
+      const viewHeight = 2 * distance * Math.tan(fovRad / 2);
       const container = containerRef.value;
+
       if (container) {
         const rect = container.getBoundingClientRect();
-        // Calculate how many world units per pixel
-        const worldPerPixelX = compWidth / (rect.width * zoom.value);
-        const worldPerPixelY = compHeight / (rect.height * zoom.value);
+        const worldPerPixel = viewHeight / rect.height;
 
-        const camera = engine.value.getCameraController();
-        const currentPan = camera.getPan();
+        // Update pan - negative dx moves camera left (view shifts right)
         camera.setPan(
-          currentPan.x - dx * worldPerPixelX,
-          currentPan.y + dy * worldPerPixelY  // Y is inverted in world space
+          currentPan.x - dx * worldPerPixel,
+          currentPan.y - dy * worldPerPixel  // Positive dy should move camera up (view shifts down)
         );
       }
       return;
@@ -1107,7 +1115,10 @@ function handleResize(entries: ResizeObserverEntry[]) {
       canvasHeight.value = height;
 
       if (engine.value) {
+        // Resize the renderer and camera aspect
         engine.value.resize(width, height);
+        // Re-fit composition to the new viewport size
+        centerOnComposition();
       }
     }
   }
@@ -1118,41 +1129,19 @@ function centerOnComposition() {
   const container = containerRef.value;
   if (!container || !engine.value) return;
 
-  const compWidth = store.width || 1920;
-  const compHeight = store.height || 1080;
   const containerRect = container.getBoundingClientRect();
   const padding = 40;
 
-  // Calculate scale to fit composition in viewport with padding
-  const scaleX = (containerRect.width - padding * 2) / compWidth;
-  const scaleY = (containerRect.height - padding * 2) / compHeight;
-  const scale = Math.min(scaleX, scaleY, 1);
+  // Use the engine's fit method - this handles all camera setup correctly
+  engine.value.fitCompositionToViewport(padding);
 
-  // Update zoom state
-  zoom.value = scale;
-
-  // Reset viewport transform (no pan offset)
-  viewportTransform.value = [scale, 0, 0, scale, 0, 0];
-
-  // Update camera aspect ratio to match current viewport
+  // Update local zoom state to match what the camera calculated
   const camera = engine.value.getCameraController();
-  camera.camera.aspect = containerRect.width / containerRect.height;
-  camera.camera.updateProjectionMatrix();
+  const calculatedZoom = camera.getZoom();
+  zoom.value = calculatedZoom;
 
-  // Reset camera to default position (centered on composition)
-  engine.value.resetCameraToDefault();
-
-  // Apply zoom (adjusts distance only, no pan)
-  camera.setZoom(scale);
-  camera.setPan(0, 0);
-
-  console.log('[ThreeCanvas] centerOnComposition:', {
-    viewport: { width: containerRect.width, height: containerRect.height },
-    composition: { width: compWidth, height: compHeight },
-    scale,
-    cameraPos: camera.getPosition(),
-    cameraTarget: camera.getTarget(),
-  });
+  // Update viewport transform for SplineEditor and other overlays
+  viewportTransform.value = [calculatedZoom, 0, 0, calculatedZoom, 0, 0];
 }
 
 // Render mode switching

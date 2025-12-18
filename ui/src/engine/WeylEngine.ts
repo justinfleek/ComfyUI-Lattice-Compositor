@@ -714,13 +714,16 @@ export class WeylEngine {
       return;
     }
 
+    console.log(`[WeylEngine] resize: viewport=${width}x${height}, comp=${compositionWidth ?? 'undefined'}x${compositionHeight ?? 'undefined'}`);
+
     this.state.viewport = { width, height };
     this.renderer.resize(width, height);
 
-    // Use composition dimensions for camera POSITION (where to look)
-    const camWidth = compositionWidth ?? width;
-    const camHeight = compositionHeight ?? height;
-    this.camera.resize(camWidth, camHeight);
+    // ONLY update camera composition dimensions if explicitly provided
+    // Otherwise, just update the viewport aspect
+    if (compositionWidth !== undefined && compositionHeight !== undefined) {
+      this.camera.resize(compositionWidth, compositionHeight);
+    }
 
     // Set camera aspect to VIEWPORT dimensions (how wide the view is)
     this.camera.setViewportAspect(width, height);
@@ -767,6 +770,16 @@ export class WeylEngine {
    */
   resetCameraToDefault(): void {
     this.camera.resetToDefault();
+  }
+
+  /**
+   * Fit the composition to the viewport with optional padding
+   * This is the canonical method for centering the view on initial load
+   * @param padding - Padding in pixels around the composition (default 40)
+   */
+  fitCompositionToViewport(padding: number = 40): void {
+    const { width, height } = this.state.viewport;
+    this.camera.fitToViewport(width, height, padding);
   }
 
   /**
