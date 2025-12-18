@@ -297,16 +297,16 @@
           <div class="panel right-panel">
             <div class="panel-tabs">
               <button
-                :class="{ active: rightTab === 'effects' }"
-                @click="rightTab = 'effects'"
-              >
-                Effects
-              </button>
-              <button
                 :class="{ active: rightTab === 'properties' }"
                 @click="rightTab = 'properties'"
               >
                 Properties
+              </button>
+              <button
+                :class="{ active: rightTab === 'effects' }"
+                @click="rightTab = 'effects'"
+              >
+                Effects
               </button>
               <button
                 :class="{ active: rightTab === 'camera' }"

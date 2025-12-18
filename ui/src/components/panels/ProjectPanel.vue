@@ -149,34 +149,45 @@ const searchQuery = ref('');
 const selectedItem = ref<string | null>(null);
 const expandedFolders = ref<string[]>(['compositions', 'footage']);
 
-// Folders computed from store
-const folders = computed<Folder[]>(() => [
-  {
-    id: 'compositions',
-    name: 'Compositions',
-    items: [
-      {
+// Folders computed from store - reactively updates when compositions change
+const folders = computed<Folder[]>(() => {
+  // Get all compositions from the store
+  const compositions = Object.values(store.project.compositions || {}).map(comp => ({
+    id: comp.id,
+    name: comp.name,
+    type: 'composition' as const,
+    width: comp.settings.width,
+    height: comp.settings.height,
+    fps: comp.settings.fps,
+    duration: comp.settings.frameCount
+  }));
+
+  return [
+    {
+      id: 'compositions',
+      name: 'Compositions',
+      items: compositions.length > 0 ? compositions : [{
         id: 'comp-main',
-        name: 'Main Comp',
-        type: 'composition',
+        name: store.activeComposition?.name || 'Main Comp',
+        type: 'composition' as const,
         width: store.width,
         height: store.height,
         fps: store.fps,
         duration: store.frameCount
-      }
-    ]
-  },
-  {
-    id: 'footage',
-    name: 'Footage',
-    items: []
-  },
-  {
-    id: 'solids',
-    name: 'Solids',
-    items: []
-  }
-]);
+      }]
+    },
+    {
+      id: 'footage',
+      name: 'Footage',
+      items: []
+    },
+    {
+      id: 'solids',
+      name: 'Solids',
+      items: []
+    }
+  ];
+});
 
 const items = ref<ProjectItem[]>([]);
 

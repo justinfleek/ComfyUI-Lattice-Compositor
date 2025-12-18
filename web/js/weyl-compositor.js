@@ -13405,33 +13405,42 @@ const _sfc_main$G = /* @__PURE__ */ defineComponent({
     const searchQuery = ref("");
     const selectedItem = ref(null);
     const expandedFolders = ref(["compositions", "footage"]);
-    const folders = computed(() => [
-      {
-        id: "compositions",
-        name: "Compositions",
-        items: [
-          {
+    const folders = computed(() => {
+      const compositions = Object.values(store.project.compositions || {}).map((comp) => ({
+        id: comp.id,
+        name: comp.name,
+        type: "composition",
+        width: comp.settings.width,
+        height: comp.settings.height,
+        fps: comp.settings.fps,
+        duration: comp.settings.frameCount
+      }));
+      return [
+        {
+          id: "compositions",
+          name: "Compositions",
+          items: compositions.length > 0 ? compositions : [{
             id: "comp-main",
-            name: "Main Comp",
+            name: store.activeComposition?.name || "Main Comp",
             type: "composition",
             width: store.width,
             height: store.height,
             fps: store.fps,
             duration: store.frameCount
-          }
-        ]
-      },
-      {
-        id: "footage",
-        name: "Footage",
-        items: []
-      },
-      {
-        id: "solids",
-        name: "Solids",
-        items: []
-      }
-    ]);
+          }]
+        },
+        {
+          id: "footage",
+          name: "Footage",
+          items: []
+        },
+        {
+          id: "solids",
+          name: "Solids",
+          items: []
+        }
+      ];
+    });
     const items = ref([]);
     const filteredFolders = computed(() => {
       if (!searchQuery.value) return folders.value;
@@ -13738,7 +13747,7 @@ const _export_sfc = (sfc, props) => {
   return target;
 };
 
-const ProjectPanel = /* @__PURE__ */ _export_sfc(_sfc_main$G, [["__scopeId", "data-v-f832be4a"]]);
+const ProjectPanel = /* @__PURE__ */ _export_sfc(_sfc_main$G, [["__scopeId", "data-v-7c6c8a18"]]);
 
 const _hoisted_1$E = {
   class: "effects-panel",
@@ -47638,7 +47647,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
     const emit = __emit;
     const store = useCompositorStore();
     const zoomPercent = ref(0);
-    const sidebarWidth = ref(350);
+    const sidebarWidth = ref(480);
     const expandedLayers = ref({});
     const showAddLayerMenu = ref(false);
     const addLayerContainer = ref(null);
@@ -47780,7 +47789,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
       const startX = e.clientX;
       const startW = sidebarWidth.value;
       const onMove = (ev) => {
-        sidebarWidth.value = Math.max(300, startW + (ev.clientX - startX));
+        sidebarWidth.value = Math.max(400, startW + (ev.clientX - startX));
       };
       window.addEventListener("mousemove", onMove);
       window.addEventListener("mouseup", () => window.removeEventListener("mousemove", onMove), { once: true });
@@ -48048,14 +48057,14 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
             style: normalizeStyle({ width: sidebarWidth.value + "px" })
           }, [
             createBaseVNode("div", _hoisted_15$7, [
-              _cache[23] || (_cache[23] = createStaticVNode('<div class="col-header col-av-features" data-v-61391002><span class="header-icon" title="Video" data-v-61391002>👁</span><span class="header-icon" title="Audio" data-v-61391002>🔊</span><span class="header-icon" title="Solo" data-v-61391002>●</span><span class="header-icon" title="Lock" data-v-61391002>🔒</span></div><div class="col-header col-number" data-v-61391002>#</div><div class="col-header col-name" data-v-61391002>Source Name</div>', 3)),
+              _cache[23] || (_cache[23] = createStaticVNode('<div class="col-header col-av-features" data-v-7e9891b7><span class="header-icon" title="Video" data-v-7e9891b7>👁</span><span class="header-icon" title="Audio" data-v-7e9891b7>🔊</span><span class="header-icon" title="Solo" data-v-7e9891b7>●</span><span class="header-icon" title="Lock" data-v-7e9891b7>🔒</span></div><div class="col-header col-number" data-v-7e9891b7>#</div><div class="col-header col-name" data-v-7e9891b7>Source Name</div>', 3)),
               createBaseVNode("div", _hoisted_16$7, [
                 createBaseVNode("span", {
                   class: normalizeClass(["header-icon clickable", { active: unref(store).hideShyLayers }]),
                   title: "Hide Shy Layers",
                   onClick: _cache[12] || (_cache[12] = ($event) => unref(store).toggleHideShyLayers())
                 }, "🙈", 2),
-                _cache[22] || (_cache[22] = createStaticVNode('<span class="header-icon" title="Collapse/Continuously Rasterize" data-v-61391002>☀</span><span class="header-icon" title="Quality" data-v-61391002>◐</span><span class="header-icon" title="Effects" data-v-61391002>fx</span><span class="header-icon" title="Frame Blending" data-v-61391002>⊞</span><span class="header-icon" title="Motion Blur" data-v-61391002>◔</span><span class="header-icon" title="Adjustment Layer" data-v-61391002>◐</span><span class="header-icon" title="3D Layer" data-v-61391002>⬡</span>', 7))
+                _cache[22] || (_cache[22] = createStaticVNode('<span class="header-icon" title="Collapse/Continuously Rasterize" data-v-7e9891b7>☀</span><span class="header-icon" title="Quality" data-v-7e9891b7>◐</span><span class="header-icon" title="Effects" data-v-7e9891b7>fx</span><span class="header-icon" title="Frame Blending" data-v-7e9891b7>⊞</span><span class="header-icon" title="Motion Blur" data-v-7e9891b7>◔</span><span class="header-icon" title="Adjustment Layer" data-v-7e9891b7>◐</span><span class="header-icon" title="3D Layer" data-v-7e9891b7>⬡</span>', 7))
               ]),
               _cache[24] || (_cache[24] = createBaseVNode("div", { class: "col-header col-parent" }, "Parent & Link", -1))
             ]),
@@ -48153,7 +48162,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
   }
 });
 
-const TimelinePanel = /* @__PURE__ */ _export_sfc(_sfc_main$8, [["__scopeId", "data-v-61391002"]]);
+const TimelinePanel = /* @__PURE__ */ _export_sfc(_sfc_main$8, [["__scopeId", "data-v-7e9891b7"]]);
 
 const _hoisted_1$6 = { class: "graph-editor" };
 const _hoisted_2$6 = { class: "graph-header" };
@@ -58778,13 +58787,13 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
                   createBaseVNode("div", _hoisted_29, [
                     createBaseVNode("div", _hoisted_30, [
                       createBaseVNode("button", {
-                        class: normalizeClass({ active: rightTab.value === "effects" }),
-                        onClick: _cache[25] || (_cache[25] = ($event) => rightTab.value = "effects")
-                      }, " Effects ", 2),
-                      createBaseVNode("button", {
                         class: normalizeClass({ active: rightTab.value === "properties" }),
-                        onClick: _cache[26] || (_cache[26] = ($event) => rightTab.value = "properties")
+                        onClick: _cache[25] || (_cache[25] = ($event) => rightTab.value = "properties")
                       }, " Properties ", 2),
+                      createBaseVNode("button", {
+                        class: normalizeClass({ active: rightTab.value === "effects" }),
+                        onClick: _cache[26] || (_cache[26] = ($event) => rightTab.value = "effects")
+                      }, " Effects ", 2),
                       createBaseVNode("button", {
                         class: normalizeClass({ active: rightTab.value === "camera" }),
                         onClick: _cache[27] || (_cache[27] = ($event) => rightTab.value = "camera")
@@ -58870,7 +58879,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
   }
 });
 
-const WorkspaceLayout = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-20f1bb4b"]]);
+const WorkspaceLayout = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-8fc6c74e"]]);
 
 const _sfc_main = /* @__PURE__ */ defineComponent({
   __name: "App",

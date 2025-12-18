@@ -158,7 +158,7 @@ const emit = defineEmits<{
 
 const store = useCompositorStore();
 const zoomPercent = ref(0); // 0 = fit to viewport, 100 = max zoom
-const sidebarWidth = ref(350); // Reduced from 450 for less cramped UI
+const sidebarWidth = ref(480); // Wide enough for all icon columns
 const expandedLayers = ref<Record<string, boolean>>({});
 const showAddLayerMenu = ref(false);
 const addLayerContainer = ref<HTMLElement | null>(null);
@@ -338,7 +338,7 @@ function startRulerScrub(e: MouseEvent) {
 function startResize(e: MouseEvent) {
   const startX = e.clientX;
   const startW = sidebarWidth.value;
-  const onMove = (ev: MouseEvent) => { sidebarWidth.value = Math.max(300, startW + (ev.clientX - startX)); };
+  const onMove = (ev: MouseEvent) => { sidebarWidth.value = Math.max(400, startW + (ev.clientX - startX)); };
   window.addEventListener('mousemove', onMove);
   window.addEventListener('mouseup', () => window.removeEventListener('mousemove', onMove), { once: true });
 }
