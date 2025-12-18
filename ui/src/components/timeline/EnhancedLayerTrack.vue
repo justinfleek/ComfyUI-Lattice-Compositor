@@ -1,66 +1,70 @@
 <template>
   <div class="track-wrapper" v-if="layer">
     <template v-if="layoutMode === 'sidebar'">
-      <div class="sidebar-row" :class="{ selected: isSelected }" :style="gridStyle" @mousedown="selectLayer" @contextmenu.prevent="showContextMenu">
-        <div class="arrow-col" @mousedown.stop="toggleExpand">
-          <span class="arrow">{{ isExpanded ? '▼' : '▶' }}</span>
+      <div class="sidebar-row" :class="{ selected: isSelected }" @mousedown="selectLayer" @contextmenu.prevent="showContextMenu">
+        <!-- AV Features (visibility, audio, solo, lock) -->
+        <div class="av-features">
+          <div class="icon-col" @mousedown.stop="toggleVis" :title="layer.visible ? 'Hide' : 'Show'">
+            <span :class="{ inactive: !layer.visible }">👁</span>
+          </div>
+          <div class="icon-col" @mousedown.stop="toggleAudio" :title="layer.audioEnabled !== false ? 'Mute Audio' : 'Enable Audio'">
+            <span :class="{ inactive: layer.audioEnabled === false }">🔊</span>
+          </div>
+          <div class="icon-col" @mousedown.stop="toggleSolo" :title="layer.solo ? 'Unsolo' : 'Solo'">
+            <span :class="{ active: layer.solo }">●</span>
+          </div>
+          <div class="icon-col" @mousedown.stop="toggleLock" :title="layer.locked ? 'Unlock' : 'Lock'">
+            <span :class="{ active: layer.locked }">🔒</span>
+          </div>
         </div>
-        <div class="label-box" @mousedown.stop="toggleColorPicker" :style="{ background: layer.labelColor || '#999' }"></div>
-        <div class="layer-id">{{ index }}</div>
-        <div class="icon-col" @mousedown.stop="toggleVis">{{ layer.visible ? '👁' : '•' }}</div>
-        <div class="icon-col" @mousedown.stop="toggleLock">{{ layer.locked ? '🔒' : '🔓' }}</div>
-        <div class="icon-col cube-icon" :class="{ active: layer.threeD }" @mousedown.stop="store.toggleLayer3D(layer.id)">⬡</div>
-        <div class="layer-name-col" @dblclick.stop="startRename">
-          <span class="type-icon">{{ getLayerIcon(layer.type) }}</span>
-          <span v-if="!isRenaming" class="name-text">{{ layer.name }}</span>
-          <input v-else v-model="renameVal" @blur="saveRename" @keydown.enter="saveRename" class="rename-input" ref="renameInput" />
+
+        <!-- Layer info: label color, number, expand arrow, name -->
+        <div class="layer-info">
+          <div class="label-box" @mousedown.stop="toggleColorPicker" :style="{ background: layer.labelColor || '#999' }"></div>
+          <div class="layer-id">{{ index }}</div>
+          <div class="arrow-col" @mousedown.stop="toggleExpand">
+            <span class="arrow">{{ isExpanded ? '▼' : '▶' }}</span>
+          </div>
+          <div class="layer-name-col" @dblclick.stop="startRename">
+            <span class="type-icon">{{ getLayerIcon(layer.type) }}</span>
+            <span v-if="!isRenaming" class="name-text">{{ layer.name }}</span>
+            <input v-else v-model="renameVal" @blur="saveRename" @keydown.enter="saveRename" class="rename-input" ref="renameInput" />
+          </div>
         </div>
-        <div class="col-mode">
-          <select :value="layer.blendMode" class="mini-select" @change="setBlendMode" @mousedown.stop>
-            <optgroup label="Normal">
-              <option value="normal">Normal</option>
-              <option value="dissolve">Dissolve</option>
-            </optgroup>
-            <optgroup label="Darken">
-              <option value="darken">Darken</option>
-              <option value="multiply">Multiply</option>
-              <option value="colorBurn">Color Burn</option>
-              <option value="linearBurn">Linear Burn</option>
-            </optgroup>
-            <optgroup label="Lighten">
-              <option value="add">Add</option>
-              <option value="lighten">Lighten</option>
-              <option value="screen">Screen</option>
-              <option value="colorDodge">Color Dodge</option>
-              <option value="linearDodge">Linear Dodge</option>
-            </optgroup>
-            <optgroup label="Contrast">
-              <option value="overlay">Overlay</option>
-              <option value="softLight">Soft Light</option>
-              <option value="hardLight">Hard Light</option>
-              <option value="vividLight">Vivid Light</option>
-              <option value="linearLight">Linear Light</option>
-              <option value="pinLight">Pin Light</option>
-              <option value="hardMix">Hard Mix</option>
-            </optgroup>
-            <optgroup label="Inversion">
-              <option value="difference">Difference</option>
-              <option value="exclusion">Exclusion</option>
-              <option value="subtract">Subtract</option>
-              <option value="divide">Divide</option>
-            </optgroup>
-            <optgroup label="Component">
-              <option value="hue">Hue</option>
-              <option value="saturation">Saturation</option>
-              <option value="color">Color</option>
-              <option value="luminosity">Luminosity</option>
-            </optgroup>
-          </select>
+
+        <!-- Switches (shy, collapse, quality, fx, frame blend, motion blur, adjustment, 3D) -->
+        <div class="layer-switches">
+          <div class="icon-col" @mousedown.stop="toggleShy" :title="layer.shy ? 'Unhide when shy enabled' : 'Hide when shy enabled'">
+            <span :class="{ active: layer.shy }">🙈</span>
+          </div>
+          <div class="icon-col" @mousedown.stop="toggleCollapse" :title="layer.collapseTransform ? 'Disable Collapse' : 'Collapse Transformations'">
+            <span :class="{ active: layer.collapseTransform }">☀</span>
+          </div>
+          <div class="icon-col" @mousedown.stop="toggleQuality" :title="layer.quality === 'best' ? 'Draft Quality' : 'Best Quality'">
+            <span :class="{ active: layer.quality === 'best' }">◐</span>
+          </div>
+          <div class="icon-col" @mousedown.stop="toggleEffects" :title="layer.effectsEnabled !== false ? 'Disable Effects' : 'Enable Effects'">
+            <span :class="{ active: layer.effectsEnabled !== false, inactive: layer.effectsEnabled === false }">fx</span>
+          </div>
+          <div class="icon-col" @mousedown.stop="toggleFrameBlend" :title="layer.frameBlending ? 'Disable Frame Blending' : 'Enable Frame Blending'">
+            <span :class="{ active: layer.frameBlending }">⊞</span>
+          </div>
+          <div class="icon-col" @mousedown.stop="toggleMotionBlur" :title="layer.motionBlur ? 'Disable Motion Blur' : 'Enable Motion Blur'">
+            <span :class="{ active: layer.motionBlur }">◔</span>
+          </div>
+          <div class="icon-col" @mousedown.stop="toggleAdjustment" :title="layer.adjustmentLayer ? 'Disable Adjustment Layer' : 'Make Adjustment Layer'">
+            <span :class="{ active: layer.adjustmentLayer }">◐</span>
+          </div>
+          <div class="icon-col" @mousedown.stop="store.toggleLayer3D(layer.id)" :title="layer.threeD ? 'Make 2D Layer' : 'Make 3D Layer'">
+            <span :class="{ active: layer.threeD }">⬡</span>
+          </div>
         </div>
+
+        <!-- Parent & Link -->
         <div class="col-parent">
           <select :value="layer.parentId || ''" class="mini-select" @change="setParent" @mousedown.stop>
             <option value="">None</option>
-            <option v-for="p in availableParents" :key="p.id" :value="p.id">{{ p.index }}</option>
+            <option v-for="p in availableParents" :key="p.id" :value="p.id">{{ p.index }}. {{ p.name }}</option>
           </select>
         </div>
       </div>
@@ -272,6 +276,15 @@ function setBlendMode(e: Event) { emit('updateLayer', props.layer.id, { blendMod
 function startDrag() { /* Drag logic */ }
 function toggleVis() { emit('updateLayer', props.layer.id, { visible: !props.layer.visible }); }
 function toggleLock() { emit('updateLayer', props.layer.id, { locked: !props.layer.locked }); }
+function toggleAudio() { emit('updateLayer', props.layer.id, { audioEnabled: props.layer.audioEnabled === false ? true : false }); }
+function toggleSolo() { emit('updateLayer', props.layer.id, { solo: !props.layer.solo }); }
+function toggleShy() { emit('updateLayer', props.layer.id, { shy: !props.layer.shy }); }
+function toggleCollapse() { emit('updateLayer', props.layer.id, { collapseTransform: !props.layer.collapseTransform }); }
+function toggleQuality() { emit('updateLayer', props.layer.id, { quality: props.layer.quality === 'best' ? 'draft' : 'best' }); }
+function toggleEffects() { emit('updateLayer', props.layer.id, { effectsEnabled: props.layer.effectsEnabled === false ? true : false }); }
+function toggleFrameBlend() { emit('updateLayer', props.layer.id, { frameBlending: !props.layer.frameBlending }); }
+function toggleMotionBlur() { emit('updateLayer', props.layer.id, { motionBlur: !props.layer.motionBlur }); }
+function toggleAdjustment() { emit('updateLayer', props.layer.id, { adjustmentLayer: !props.layer.adjustmentLayer }); }
 function toggleColorPicker(e: MouseEvent) {
   const rect = (e.target as HTMLElement).getBoundingClientRect();
   colorPickerX.value = rect.left;
@@ -400,17 +413,124 @@ onUnmounted(() => {
 
 <style scoped>
 .track-wrapper { display: flex; flex-direction: column; width: 100%; }
-.sidebar-row { border-bottom: 1px solid #2a2a2a; background: #1e1e1e; color: #ccc; font-size: 13px; user-select: none; cursor: pointer; }
+
+/* Sidebar row - flex layout */
+.sidebar-row {
+  display: flex;
+  align-items: stretch;
+  height: 28px;
+  border-bottom: 1px solid #2a2a2a;
+  background: #1e1e1e;
+  color: #ccc;
+  font-size: 12px;
+  user-select: none;
+  cursor: pointer;
+}
 .sidebar-row.selected { background: #333; color: #fff; border-left: 2px solid #4a90d9; }
-.arrow-col, .icon-col { display: flex; justify-content: center; align-items: center; cursor: pointer; color: #888; height: 100%; }
-.arrow-col:hover, .icon-col:hover { color: #fff; }
-.icon-col.active { color: #4a90d9; }
-.label-box { width: 14px; height: 14px; border: 1px solid #000; margin: 0 auto; border-radius: 2px; }
-.layer-id { text-align: center; font-size: 11px; color: #666; }
-.layer-name-col { display: flex; align-items: center; padding: 0 8px; overflow: hidden; }
-.type-icon { margin-right: 6px; font-size: 11px; }
-.name-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px; font-weight: 500; }
-.mini-select { width: 100%; background: transparent; border: none; color: #aaa; font-size: 11px; }
+
+/* AV Features section (visibility, audio, solo, lock) */
+.av-features {
+  display: flex;
+  align-items: center;
+  border-right: 1px solid #333;
+  flex-shrink: 0;
+}
+
+/* Layer info section (color, number, arrow, name) */
+.layer-info {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  gap: 4px;
+  padding: 0 4px;
+}
+
+/* Switches section */
+.layer-switches {
+  display: flex;
+  align-items: center;
+  border-left: 1px solid #333;
+  flex-shrink: 0;
+}
+
+/* Icon columns */
+.icon-col {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 22px;
+  height: 100%;
+  cursor: pointer;
+  font-size: 11px;
+}
+.icon-col span { color: #555; transition: color 0.15s; }
+.icon-col:hover span { color: #ccc; }
+.icon-col span.active { color: #4a90d9; }
+.icon-col span.inactive { opacity: 0.3; }
+
+/* Arrow column */
+.arrow-col {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 16px;
+  cursor: pointer;
+}
+.arrow { color: #666; font-size: 8px; }
+.arrow-col:hover .arrow { color: #ccc; }
+
+/* Label color box */
+.label-box {
+  width: 12px;
+  height: 12px;
+  border: 1px solid rgba(0,0,0,0.4);
+  border-radius: 2px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.label-box:hover { border-color: #fff; }
+
+/* Layer number */
+.layer-id {
+  font-size: 10px;
+  color: #666;
+  min-width: 16px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* Layer name */
+.layer-name-col {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+.type-icon { margin-right: 4px; font-size: 10px; opacity: 0.7; }
+.name-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; }
+.rename-input { background: #111; border: 1px solid #4a90d9; color: #fff; padding: 2px 4px; font-size: 12px; width: 100%; }
+
+/* Parent column */
+.col-parent {
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+  border-left: 1px solid #333;
+  min-width: 80px;
+}
+.mini-select {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: #888;
+  font-size: 10px;
+  cursor: pointer;
+}
+.mini-select:hover { color: #ccc; }
+
+/* Children/properties container */
 .children-container { background: #151515; }
 .group-header { background: #222; font-weight: 600; color: #999; cursor: pointer; }
 .group-label {
@@ -431,8 +551,10 @@ onUnmounted(() => {
   color: #6bb3ff;
   text-decoration: underline;
 }
-.track-bg { height: 32px; background: #191919; border-bottom: 1px solid #333; position: relative; width: 100%; }
-.duration-bar { position: absolute; height: 20px; top: 6px; border: 1px solid rgba(0,0,0,0.5); border-radius: 2px; background: #888; opacity: 0.6; }
+
+/* Track mode */
+.track-bg { height: 28px; background: #191919; border-bottom: 1px solid #333; position: relative; width: 100%; }
+.duration-bar { position: absolute; height: 20px; top: 4px; border: 1px solid rgba(0,0,0,0.5); border-radius: 2px; background: #888; opacity: 0.6; }
 .bar-fill { width: 100%; height: 100%; }
 
 /* Context Menu - must NOT be scoped to work with Teleport */

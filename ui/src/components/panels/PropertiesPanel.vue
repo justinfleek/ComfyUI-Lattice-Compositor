@@ -1,65 +1,46 @@
 <template>
   <div class="properties-panel">
     <div class="panel-header">
-      <span class="panel-title">Layer Properties</span>
+      <span class="panel-title">Properties: {{ selectedLayer?.name || 'No Selection' }}</span>
     </div>
 
     <div class="panel-content" v-if="selectedLayer">
-      <!-- Layer Name -->
+      <!-- Layer Transform Section (AE-style) -->
       <div class="property-section">
-        <div class="property-row">
-          <input
-            type="text"
-            v-model="layerName"
-            class="layer-name-input"
-            @blur="updateLayerName"
-            @keydown.enter="($event.target as HTMLInputElement).blur()"
-          />
-        </div>
-      </div>
-
-      <!-- Parent Layer -->
-      <div class="property-section">
-        <div class="property-row">
-          <label>Parent</label>
-          <select
-            class="parent-select"
-            :value="selectedLayer?.parentId || ''"
-            @change="updateParent"
-          >
-            <option value="">None</option>
-            <option
-              v-for="layer in availableParents"
-              :key="layer.id"
-              :value="layer.id"
-            >
-              {{ layer.name }}
-            </option>
-          </select>
-        </div>
-      </div>
-
-      <!-- Transform Section -->
-      <div class="property-section">
-        <div
-          class="section-header"
-          @click="toggleSection('transform')"
-        >
+        <div class="section-header" @click="toggleSection('transform')">
           <span class="expand-icon">{{ expandedSections.includes('transform') ? '▼' : '►' }}</span>
-          <span class="section-title">Transform</span>
-          <label class="threeD-toggle" @click.stop>
-            <input
-              type="checkbox"
-              :checked="selectedLayer?.threeD"
-              @change="toggle3D"
-            />
-            <span class="toggle-label">3D</span>
-          </label>
+          <span class="section-title">Layer Transform</span>
+          <span class="reset-link" @click.stop="resetTransform">Reset</span>
         </div>
 
         <div v-if="expandedSections.includes('transform')" class="section-content">
-          <!-- Position X -->
+          <!-- Anchor Point -->
+          <div class="property-row">
+            <span class="stopwatch" :class="{ active: hasKeyframe('anchorPoint') }" @click="toggleKeyframe('anchorPoint')">⏱</span>
+            <label>Anchor Point</label>
+            <div class="value-group">
+              <ScrubableNumber
+                v-model="transform.anchorPoint.x"
+                :precision="1"
+                @update:modelValue="updateTransform"
+              />
+              <ScrubableNumber
+                v-model="transform.anchorPoint.y"
+                :precision="1"
+                @update:modelValue="updateTransform"
+              />
+              <ScrubableNumber
+                v-if="selectedLayer?.threeD"
+                v-model="transform.anchorPoint.z"
+                :precision="1"
+                @update:modelValue="updateTransform"
+              />
+            </div>
+          </div>
+
+          <!-- Position -->
           <div class="property-row" :class="{ 'has-driver': hasDriver('transform.position.x') }">
+            <span class="stopwatch" :class="{ active: hasKeyframe('position') }" @click="toggleKeyframe('position')">⏱</span>
             <Pickwhip
               v-if="selectedLayer"
               :layerId="selectedLayer.id"
@@ -68,204 +49,123 @@
               @link="(target) => onPickwhipLink('transform.position.x', target)"
               @unlink="() => onPickwhipUnlink('transform.position.x')"
             />
-            <label
-              data-pickwhip-target="transform.position.x"
-              :data-pickwhip-layer-id="selectedLayer?.id"
-              data-pickwhip-label="Position X"
-            >Position</label>
-            <div class="multi-value">
+            <label>Position</label>
+            <div class="value-group">
               <ScrubableNumber
                 v-model="transform.position.x"
                 :precision="1"
-                unit="X"
                 @update:modelValue="updateTransform"
-                data-pickwhip-target="transform.position.x"
-                :data-pickwhip-layer-id="selectedLayer?.id"
-                data-pickwhip-label="Position X"
               />
               <ScrubableNumber
                 v-model="transform.position.y"
                 :precision="1"
-                unit="Y"
                 @update:modelValue="updateTransform"
-                data-pickwhip-target="transform.position.y"
-                :data-pickwhip-layer-id="selectedLayer?.id"
-                data-pickwhip-label="Position Y"
               />
               <ScrubableNumber
                 v-if="selectedLayer?.threeD"
                 v-model="transform.position.z"
                 :precision="1"
-                unit="Z"
                 @update:modelValue="updateTransform"
-                data-pickwhip-target="transform.position.z"
-                :data-pickwhip-layer-id="selectedLayer?.id"
-                data-pickwhip-label="Position Z"
               />
             </div>
-            <button class="keyframe-btn" :class="{ active: hasKeyframe('position') }" @click="toggleKeyframe('position')">◆</button>
           </div>
 
           <!-- Scale -->
           <div class="property-row" :class="{ 'has-driver': hasDriver('transform.scale.x') || hasDriver('transform.scale.y') }">
-            <Pickwhip
-              v-if="selectedLayer"
-              :layerId="selectedLayer.id"
-              property="transform.scale.x"
-              :linkedTo="getDriverForProperty('transform.scale.x')"
-              @link="(target) => onPickwhipLink('transform.scale.x', target)"
-              @unlink="() => onPickwhipUnlink('transform.scale.x')"
-            />
+            <span class="stopwatch" :class="{ active: hasKeyframe('scale') }" @click="toggleKeyframe('scale')">⏱</span>
             <label>Scale</label>
-            <div class="multi-value">
-              <ScrubableNumber
-                v-model="transform.scale.x"
-                :min="0"
-                :max="1000"
-                unit="%"
-                @update:modelValue="updateTransform"
-                data-pickwhip-target="transform.scale.x"
-                :data-pickwhip-layer-id="selectedLayer?.id"
-                data-pickwhip-label="Scale X"
-              />
+            <div class="value-group scale-group">
               <button
                 class="link-btn"
                 :class="{ active: scaleLocked }"
                 @click="scaleLocked = !scaleLocked"
-                title="Link scale values"
+                title="Constrain Proportions"
               >
-                🔗
+                {{ scaleLocked ? '🔗' : '⛓️‍💥' }}
               </button>
+              <ScrubableNumber
+                v-model="transform.scale.x"
+                :min="0"
+                :max="1000"
+                suffix="%"
+                @update:modelValue="updateTransform"
+              />
               <ScrubableNumber
                 v-model="transform.scale.y"
                 :min="0"
                 :max="1000"
-                unit="%"
+                suffix="%"
                 @update:modelValue="updateTransform"
-                data-pickwhip-target="transform.scale.y"
-                :data-pickwhip-layer-id="selectedLayer?.id"
-                data-pickwhip-label="Scale Y"
+              />
+              <ScrubableNumber
+                v-if="selectedLayer?.threeD"
+                v-model="transform.scale.z"
+                :min="0"
+                :max="1000"
+                suffix="%"
+                @update:modelValue="updateTransform"
               />
             </div>
-            <button class="keyframe-btn" :class="{ active: hasKeyframe('scale') }" @click="toggleKeyframe('scale')">◆</button>
           </div>
 
           <!-- 3D Rotations -->
           <template v-if="selectedLayer?.threeD">
             <div class="property-row">
+              <span class="stopwatch" :class="{ active: hasKeyframe('orientation') }" @click="toggleKeyframe('orientation')">⏱</span>
               <label>Orientation</label>
-              <div class="multi-value orientation-row">
-                <ScrubableNumber v-model="transform.orientationX" unit="X" @update:modelValue="updateTransform" />
-                <ScrubableNumber v-model="transform.orientationY" unit="Y" @update:modelValue="updateTransform" />
-                <ScrubableNumber v-model="transform.orientationZ" unit="Z" @update:modelValue="updateTransform" />
+              <div class="value-group">
+                <ScrubableNumber v-model="transform.orientationX" suffix="°" @update:modelValue="updateTransform" />
+                <ScrubableNumber v-model="transform.orientationY" suffix="°" @update:modelValue="updateTransform" />
+                <ScrubableNumber v-model="transform.orientationZ" suffix="°" @update:modelValue="updateTransform" />
               </div>
             </div>
             <div class="property-row">
+              <span class="stopwatch" :class="{ active: hasKeyframe('rotationX') }" @click="toggleKeyframe('rotationX')">⏱</span>
               <label>X Rotation</label>
-              <div class="single-value">
-                <ScrubableNumber v-model="transform.rotationX" unit="°" @update:modelValue="updateTransform" />
+              <div class="value-group rotation-value">
+                <span class="rotation-display">{{ formatRotation(transform.rotationX) }}</span>
               </div>
-              <button class="keyframe-btn" :class="{ active: hasKeyframe('rotationX') }" @click="toggleKeyframe('rotationX')">◆</button>
             </div>
             <div class="property-row">
+              <span class="stopwatch" :class="{ active: hasKeyframe('rotationY') }" @click="toggleKeyframe('rotationY')">⏱</span>
               <label>Y Rotation</label>
-              <div class="single-value">
-                <ScrubableNumber v-model="transform.rotationY" unit="°" @update:modelValue="updateTransform" />
+              <div class="value-group rotation-value">
+                <span class="rotation-display">{{ formatRotation(transform.rotationY) }}</span>
               </div>
-              <button class="keyframe-btn" :class="{ active: hasKeyframe('rotationY') }" @click="toggleKeyframe('rotationY')">◆</button>
             </div>
             <div class="property-row">
+              <span class="stopwatch" :class="{ active: hasKeyframe('rotationZ') }" @click="toggleKeyframe('rotationZ')">⏱</span>
               <label>Z Rotation</label>
-              <div class="single-value">
-                <ScrubableNumber v-model="transform.rotationZ" unit="°" @update:modelValue="updateTransform" />
+              <div class="value-group rotation-value">
+                <span class="rotation-display">{{ formatRotation(transform.rotationZ) }}</span>
               </div>
-              <button class="keyframe-btn" :class="{ active: hasKeyframe('rotationZ') }" @click="toggleKeyframe('rotationZ')">◆</button>
             </div>
           </template>
           <!-- 2D Rotation -->
           <template v-else>
             <div class="property-row" :class="{ 'has-driver': hasDriver('transform.rotation') }">
-              <Pickwhip
-                v-if="selectedLayer"
-                :layerId="selectedLayer.id"
-                property="transform.rotation"
-                :linkedTo="getDriverForProperty('transform.rotation')"
-                @link="(target) => onPickwhipLink('transform.rotation', target)"
-                @unlink="() => onPickwhipUnlink('transform.rotation')"
-              />
+              <span class="stopwatch" :class="{ active: hasKeyframe('rotation') }" @click="toggleKeyframe('rotation')">⏱</span>
               <label>Rotation</label>
-              <div class="single-value">
-                <ScrubableNumber
-                  v-model="transform.rotation"
-                  :min="-360"
-                  :max="360"
-                  unit="°"
-                  @update:modelValue="updateTransform"
-                  data-pickwhip-target="transform.rotation"
-                  :data-pickwhip-layer-id="selectedLayer?.id"
-                  data-pickwhip-label="Rotation"
-                />
+              <div class="value-group rotation-value">
+                <span class="rotation-display">{{ formatRotation(transform.rotation) }}</span>
               </div>
-              <button class="keyframe-btn" :class="{ active: hasKeyframe('rotation') }" @click="toggleKeyframe('rotation')">◆</button>
             </div>
           </template>
 
-          <div class="property-row">
-            <label>Anchor Point</label>
-            <div class="multi-value">
-              <ScrubableNumber
-                v-model="transform.anchorPoint.x"
-                :precision="1"
-                unit="X"
-                @update:modelValue="updateTransform"
-              />
-              <ScrubableNumber
-                v-model="transform.anchorPoint.y"
-                :precision="1"
-                unit="Y"
-                @update:modelValue="updateTransform"
-              />
-            </div>
-            <button class="keyframe-btn" :class="{ active: hasKeyframe('anchorPoint') }" @click="toggleKeyframe('anchorPoint')">◆</button>
-          </div>
-
           <!-- Opacity -->
           <div class="property-row" :class="{ 'has-driver': hasDriver('opacity') }">
-            <Pickwhip
-              v-if="selectedLayer"
-              :layerId="selectedLayer.id"
-              property="opacity"
-              :linkedTo="getDriverForProperty('opacity')"
-              @link="(target) => onPickwhipLink('opacity', target)"
-              @unlink="() => onPickwhipUnlink('opacity')"
-            />
+            <span class="stopwatch" :class="{ active: hasKeyframe('opacity') }" @click="toggleKeyframe('opacity')">⏱</span>
             <label>Opacity</label>
-            <div class="single-value">
-              <SliderInput
+            <div class="value-group opacity-value">
+              <ScrubableNumber
                 v-model="transform.opacity"
                 :min="0"
                 :max="100"
-                unit="%"
+                suffix="%"
                 @update:modelValue="updateTransform"
-                data-pickwhip-target="opacity"
-                :data-pickwhip-layer-id="selectedLayer?.id"
-                data-pickwhip-label="Opacity"
               />
             </div>
-            <button class="keyframe-btn" :class="{ active: hasKeyframe('opacity') }" @click="toggleKeyframe('opacity')">◆</button>
           </div>
-        </div>
-      </div>
-
-      <!-- Blend Mode Section -->
-      <div class="property-section">
-        <div class="property-row">
-          <label>Blend Mode</label>
-          <select v-model="blendMode" class="blend-select" @change="updateBlendMode">
-            <option v-for="mode in blendModes" :key="mode.value" :value="mode.value">
-              {{ mode.label }}
-            </option>
-          </select>
         </div>
       </div>
 
@@ -598,6 +498,50 @@ function onPickwhipUnlink(targetProperty: PropertyPath) {
 }
 
 /**
+ * Format rotation value in AE style: 0x+0°
+ * e.g., 450 degrees = 1x+90°
+ */
+function formatRotation(degrees: number): string {
+  const revolutions = Math.floor(Math.abs(degrees) / 360);
+  const remainder = Math.abs(degrees) % 360;
+  const sign = degrees < 0 ? '-' : '';
+  return `${sign}${revolutions}x+${remainder.toFixed(1)}°`;
+}
+
+/**
+ * Reset all transform values to defaults
+ */
+function resetTransform() {
+  if (!selectedLayer.value) return;
+
+  const comp = store.getActiveComp();
+  if (!comp) return;
+
+  const centerX = comp.settings.width / 2;
+  const centerY = comp.settings.height / 2;
+
+  transform.anchorPoint.x = centerX;
+  transform.anchorPoint.y = centerY;
+  transform.anchorPoint.z = 0;
+  transform.position.x = centerX;
+  transform.position.y = centerY;
+  transform.position.z = 0;
+  transform.scale.x = 100;
+  transform.scale.y = 100;
+  transform.scale.z = 100;
+  transform.rotation = 0;
+  transform.rotationX = 0;
+  transform.rotationY = 0;
+  transform.rotationZ = 0;
+  transform.orientationX = 0;
+  transform.orientationY = 0;
+  transform.orientationZ = 0;
+  transform.opacity = 100;
+
+  updateTransform();
+}
+
+/**
  * Check if a property has a driver
  */
 function hasDriver(property: PropertyPath): boolean {
@@ -660,6 +604,65 @@ function hasDriver(property: PropertyPath): boolean {
 .section-title {
   font-weight: 500;
   flex: 1;
+}
+
+.reset-link {
+  font-size: 10px;
+  color: #4a90d9;
+  cursor: pointer;
+  padding: 2px 8px;
+}
+
+.reset-link:hover {
+  color: #6bb3ff;
+  text-decoration: underline;
+}
+
+.stopwatch {
+  width: 16px;
+  font-size: 10px;
+  color: #555;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.stopwatch:hover {
+  color: #888;
+}
+
+.stopwatch.active {
+  color: #f0c040;
+}
+
+.value-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+}
+
+.value-group.scale-group .link-btn {
+  font-size: 10px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  opacity: 0.6;
+}
+
+.value-group.scale-group .link-btn:hover {
+  opacity: 1;
+}
+
+.value-group.scale-group .link-btn.active {
+  opacity: 1;
+  color: #4a90d9;
+}
+
+.rotation-display {
+  color: #4a90d9;
+  font-family: 'Consolas', monospace;
+  font-size: 11px;
 }
 
 .threeD-toggle {

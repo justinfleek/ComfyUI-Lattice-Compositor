@@ -193,9 +193,17 @@ export interface Layer {
   visible: boolean;
   locked: boolean;
   solo: boolean;
-  threeD: boolean;      // 3D Layer Switch
-  motionBlur: boolean;  // Motion Blur Switch
+  shy?: boolean;              // Shy layer (hide when shy mode enabled)
+  threeD: boolean;            // 3D Layer Switch
+  motionBlur: boolean;        // Motion Blur Switch
   motionBlurSettings?: LayerMotionBlurSettings;  // Detailed motion blur configuration
+  collapseTransform?: boolean;  // Collapse Transformations / Continuously Rasterize
+  quality?: 'draft' | 'best';   // Quality switch
+  effectsEnabled?: boolean;     // Enable/disable all effects
+  frameBlending?: boolean;      // Frame blending for time-remapped footage
+  adjustmentLayer?: boolean;    // Effects apply to layers below
+  audioEnabled?: boolean;       // Enable/disable audio for this layer
+  labelColor?: string;          // Layer label color (hex)
   inPoint: number;      // Start frame (0-80)
   outPoint: number;     // End frame (0-80)
   parentId: string | null;

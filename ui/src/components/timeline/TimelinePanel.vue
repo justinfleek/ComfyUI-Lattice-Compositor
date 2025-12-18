@@ -47,10 +47,28 @@
     <div class="timeline-content">
       <div class="timeline-sidebar" :style="{ width: sidebarWidth + 'px' }">
         <div class="sidebar-header-row">
-          <div class="col-header col-arrow"></div>
-          <div class="col-header col-name">Layer Name</div>
-          <div class="col-header col-mode">Mode</div>
-          <div class="col-header col-parent">Parent</div>
+          <!-- AV Features (visibility, audio, solo, lock) -->
+          <div class="col-header col-av-features">
+            <span class="header-icon" title="Video">👁</span>
+            <span class="header-icon" title="Audio">🔊</span>
+            <span class="header-icon" title="Solo">●</span>
+            <span class="header-icon" title="Lock">🔒</span>
+          </div>
+          <!-- Layer info -->
+          <div class="col-header col-number">#</div>
+          <div class="col-header col-name">Source Name</div>
+          <!-- Switches -->
+          <div class="col-header col-switches">
+            <span class="header-icon" title="Shy">🙈</span>
+            <span class="header-icon" title="Collapse/Continuously Rasterize">☀</span>
+            <span class="header-icon" title="Quality">◐</span>
+            <span class="header-icon" title="Effects">fx</span>
+            <span class="header-icon" title="Frame Blending">⊞</span>
+            <span class="header-icon" title="Motion Blur">◔</span>
+            <span class="header-icon" title="Adjustment Layer">◐</span>
+            <span class="header-icon" title="3D Layer">⬡</span>
+          </div>
+          <div class="col-header col-parent">Parent & Link</div>
         </div>
         <div class="sidebar-scroll-area" ref="sidebarScrollRef" @scroll="syncSidebarScroll">
           <EnhancedLayerTrack
@@ -451,8 +469,24 @@ watch(() => [computedWidthStyle.value, zoomPercent.value, store.frameCount], () 
 
 .timeline-content { flex: 1; display: flex; overflow: hidden; position: relative; min-height: 0; }
 .timeline-sidebar { background: #1e1e1e; border-right: 1px solid #000; display: flex; flex-direction: column; flex-shrink: 0; z-index: 10; }
-.sidebar-header-row { height: 30px; background: #252525; display: flex; align-items: center; border-bottom: 1px solid #000; font-weight: bold; }
-.col-header { padding: 0 4px; font-size: 12px; color: #aaa; }
+.sidebar-header-row { height: 30px; background: #252525; display: flex; align-items: center; border-bottom: 1px solid #000; }
+.col-header { font-size: 10px; color: #888; display: flex; align-items: center; }
+.col-header.col-av-features {
+  display: flex;
+  gap: 0;
+  border-right: 1px solid #333;
+  padding: 0 2px;
+}
+.col-header.col-number { width: 20px; justify-content: center; }
+.col-header.col-name { flex: 1; padding-left: 8px; font-weight: 500; }
+.col-header.col-switches {
+  display: flex;
+  gap: 0;
+  border-left: 1px solid #333;
+  padding: 0 2px;
+}
+.col-header.col-parent { min-width: 80px; border-left: 1px solid #333; padding: 0 8px; }
+.header-icon { display: inline-flex; justify-content: center; align-items: center; width: 22px; height: 28px; font-size: 10px; color: #666; cursor: default; }
 .sidebar-scroll-area { flex: 1; overflow-y: auto; overflow-x: hidden; }
 
 .sidebar-resizer { width: 4px; background: #111; cursor: col-resize; flex-shrink: 0; z-index: 15; }
