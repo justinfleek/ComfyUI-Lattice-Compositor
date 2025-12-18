@@ -1499,9 +1499,19 @@ export class WeylEngine {
     const layerObject = this.getLayerObject(layerId);
     if (layerObject) {
       this.transformControls.attach(layerObject);
+      // Note: We intentionally do NOT change the orbit target when selecting a layer
+      // The user can use "Focus Selected" to explicitly center on a layer
+      // Automatically changing the view on selection is disorienting
+    }
+  }
 
-      // Update orbit target to selected layer's world position
-      // Get world position (accounts for parent hierarchy)
+  /**
+   * Focus the camera on the selected layer's position
+   * This moves the orbit target to the layer without changing camera rotation
+   */
+  focusOnLayer(layerId: string): void {
+    const layerObject = this.getLayerObject(layerId);
+    if (layerObject) {
       const worldPos = new THREE.Vector3();
       layerObject.getWorldPosition(worldPos);
       // Convert back to screen coordinates (negate Y)

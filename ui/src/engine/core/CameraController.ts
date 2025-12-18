@@ -368,9 +368,20 @@ export class CameraController {
 
   /**
    * Update camera position based on zoom and pan
-   * Camera always looks straight at the composition plane (perfect 2D front view)
+   * When orbit controls are active and user has rotated, preserve the rotation.
+   * Otherwise, use straight-on 2D view.
    */
   private updateCameraForViewport(): void {
+    // If orbit controls are active and user has rotated the view, preserve it
+    if (this.orbitControls && this.orbitEnabled) {
+      // Just update the spherical radius for zoom
+      const fovRad = THREE.MathUtils.degToRad(this.camera.fov);
+      const baseDistance = (this.height / 2) / Math.tan(fovRad / 2);
+      this.spherical.radius = baseDistance / this.zoomLevel;
+      this.updateCameraFromSpherical();
+      return;
+    }
+
     // Calculate base camera distance for full composition view
     const fovRad = THREE.MathUtils.degToRad(this.camera.fov);
     const baseDistance = (this.height / 2) / Math.tan(fovRad / 2);

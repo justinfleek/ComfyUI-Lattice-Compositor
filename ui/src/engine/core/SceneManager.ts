@@ -597,7 +597,7 @@ export class SceneManager {
    * Create or update composition grid
    * Shows a grid inside the composition area for spatial reference
    */
-  updateCompositionGrid(divisions: number = 10): void {
+  updateCompositionGrid(divisions: number = 20): void {
     // Remove existing grid
     if (this.compositionGrid) {
       this.overlayGroup.remove(this.compositionGrid);

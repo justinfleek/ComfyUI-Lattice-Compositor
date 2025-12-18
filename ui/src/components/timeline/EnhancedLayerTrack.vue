@@ -214,10 +214,10 @@ const groupedProperties = computed(() => {
   add('transform.anchorPoint', 'Anchor Point', t.anchorPoint);
   add('transform.position', 'Position', t.position);
 
-  // Z Position: Trust the layer.threeD flag. Pass the position property for Z extraction.
-  if (props.layer.threeD) {
+  // Z Position: Use 'transform.position' path - PropertyTrack handles Z extraction based on name
+  if (props.layer.threeD && t.position) {
     transformProps.push({
-      path: 'transform.position.z',
+      path: 'transform.position',
       name: 'Z Position',
       property: t.position // Pass full position property, PropertyTrack handles .z
     });

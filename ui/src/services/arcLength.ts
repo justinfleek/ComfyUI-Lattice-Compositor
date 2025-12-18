@@ -24,7 +24,7 @@
  *
  * @example
  * ```typescript
- * import Bezier from 'bezier-js';
+ * import { Bezier } from 'bezier-js';
  * import { ArcLengthParameterizer } from './arcLength';
  *
  * const curve = new Bezier(0, 0, 50, 100, 100, 100, 150, 0);
@@ -37,7 +37,7 @@
  * const points = param.getEvenlySpacedPoints(10);
  * ```
  */
-import Bezier from 'bezier-js';
+import { Bezier } from 'bezier-js';
 
 interface ArcLengthEntry {
   t: number;

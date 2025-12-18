@@ -1016,6 +1016,26 @@ export const useCompositorStore = defineStore('compositor', {
       const comp = this.getActiveComp();
       const layers = this.getActiveCompLayers();
 
+      // Get composition dimensions for centering
+      const compWidth = comp?.settings.width || this.project.composition.width;
+      const compHeight = comp?.settings.height || this.project.composition.height;
+
+      // Create transform with layer centered in composition
+      const layerTransform = createDefaultTransform();
+
+      // For solid layers, anchor point should be at the layer's center
+      // and position should be at the composition center
+      if (type === 'solid' && layerData) {
+        const layerWidth = layerData.width || compWidth;
+        const layerHeight = layerData.height || compHeight;
+        layerTransform.anchorPoint.value = { x: layerWidth / 2, y: layerHeight / 2, z: 0 };
+        layerTransform.position.value = { x: compWidth / 2, y: compHeight / 2, z: 0 };
+      } else {
+        // For other layer types, center position in composition
+        layerTransform.position.value = { x: compWidth / 2, y: compHeight / 2, z: 0 };
+        layerTransform.anchorPoint.value = { x: compWidth / 2, y: compHeight / 2, z: 0 };
+      }
+
       const layer: Layer = {
         id,
         name: name || `${type.charAt(0).toUpperCase() + type.slice(1)} ${layers.length + 1}`,
@@ -1030,7 +1050,7 @@ export const useCompositorStore = defineStore('compositor', {
         parentId: null,
         blendMode: 'normal',
         opacity: createAnimatableProperty('opacity', 100, 'number'),
-        transform: createDefaultTransform(),
+        transform: layerTransform,
         audio: audioProps,
         properties: [],
         effects: [],

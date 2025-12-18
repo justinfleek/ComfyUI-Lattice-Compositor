@@ -146,8 +146,8 @@
             <div class="property-row" :class="{ 'has-driver': hasDriver('transform.rotation') }">
               <span class="stopwatch" :class="{ active: hasKeyframe('rotation') }" @click="toggleKeyframe('rotation')">⏱</span>
               <label>Rotation</label>
-              <div class="value-group rotation-value">
-                <span class="rotation-display">{{ formatRotation(transform.rotation) }}</span>
+              <div class="value-group">
+                <ScrubableNumber v-model="transform.rotation" suffix="°" @update:modelValue="updateTransform" />
               </div>
             </div>
           </template>
@@ -307,32 +307,55 @@ const layerPropertiesComponent = computed<Component | null>(() => {
   }
 });
 
-// Watch selected layer
+// Helper to sync transform from layer to local state
+function syncTransformFromLayer(layer: typeof selectedLayer.value) {
+  if (!layer) return;
+  layerName.value = layer.name;
+  const t = layer.transform;
+  transform.value = {
+    position: {
+      x: t?.position?.value?.x ?? 0,
+      y: t?.position?.value?.y ?? 0,
+      z: t?.position?.value?.z ?? 0
+    },
+    scale: { x: t?.scale?.value?.x ?? 100, y: t?.scale?.value?.y ?? 100, z: t?.scale?.value?.z ?? 100 },
+    rotation: t?.rotation?.value ?? 0,
+    anchorPoint: { x: t?.anchorPoint?.value?.x ?? 0, y: t?.anchorPoint?.value?.y ?? 0, z: t?.anchorPoint?.value?.z ?? 0 },
+    opacity: layer.opacity?.value ?? 100,
+    // 3D properties
+    orientationX: t?.orientation?.value?.x ?? 0,
+    orientationY: t?.orientation?.value?.y ?? 0,
+    orientationZ: t?.orientation?.value?.z ?? 0,
+    rotationX: t?.rotationX?.value ?? 0,
+    rotationY: t?.rotationY?.value ?? 0,
+    rotationZ: t?.rotationZ?.value ?? 0
+  };
+  blendMode.value = layer.blendMode || 'normal';
+}
+
+// Watch selected layer for selection changes
 watch(selectedLayer, (layer) => {
-  if (layer) {
-    layerName.value = layer.name;
-    const t = layer.transform;
-    transform.value = {
-      position: {
-        x: t?.position?.value?.x || 0,
-        y: t?.position?.value?.y || 0,
-        z: t?.position?.value?.z || 0
-      },
-      scale: { x: t?.scale?.value?.x || 100, y: t?.scale?.value?.y || 100, z: t?.scale?.value?.z || 100 },
-      rotation: t?.rotation?.value || 0,
-      anchorPoint: { x: t?.anchorPoint?.value?.x || 0, y: t?.anchorPoint?.value?.y || 0, z: t?.anchorPoint?.value?.z || 0 },
-      opacity: layer.opacity?.value || 100,
-      // 3D properties
-      orientationX: t?.orientation?.value?.x || 0,
-      orientationY: t?.orientation?.value?.y || 0,
-      orientationZ: t?.orientation?.value?.z || 0,
-      rotationX: t?.rotationX?.value || 0,
-      rotationY: t?.rotationY?.value || 0,
-      rotationZ: t?.rotationZ?.value || 0
-    };
-    blendMode.value = layer.blendMode || 'normal';
-  }
+  syncTransformFromLayer(layer);
 }, { immediate: true });
+
+// Deep watch the layer's transform to sync when it changes from other sources (e.g. timeline panel)
+watch(
+  () => selectedLayer.value?.transform,
+  () => {
+    syncTransformFromLayer(selectedLayer.value);
+  },
+  { deep: true }
+);
+
+// Also watch opacity separately since it's not in transform
+watch(
+  () => selectedLayer.value?.opacity?.value,
+  (newVal) => {
+    if (newVal !== undefined) {
+      transform.value.opacity = newVal;
+    }
+  }
+);
 
 // Watch scale lock
 watch(() => transform.value.scale.x, (newX, oldX) => {

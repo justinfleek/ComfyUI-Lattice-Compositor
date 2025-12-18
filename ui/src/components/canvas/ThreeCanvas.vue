@@ -623,6 +623,27 @@ function setupWatchers() {
     },
     { deep: true }
   );
+
+  // Watch view options and sync to engine
+  watch(
+    () => store.viewOptions.showGrid,
+    (showGridVisible) => {
+      if (!engine.value) return;
+      showGrid.value = showGridVisible;
+      engine.value.setCompositionGridVisible(showGridVisible);
+    },
+    { immediate: true }
+  );
+
+  // Watch composition bounds toggle
+  watch(
+    () => store.viewOptions.showCompositionBounds,
+    (showBounds) => {
+      if (!engine.value) return;
+      engine.value.setCompositionBoundsVisible(showBounds);
+    },
+    { immediate: true }
+  );
 }
 
 // Sync store layers to engine
@@ -1234,10 +1255,8 @@ function resetCamera() {
  * Toggle composition grid visibility
  */
 function toggleGrid() {
-  showGrid.value = !showGrid.value;
-  if (engine.value) {
-    engine.value.setCompositionGridVisible(showGrid.value);
-  }
+  // Update through store - the watch will sync to local ref and engine
+  store.updateViewOptions({ showGrid: !store.viewOptions.showGrid });
 }
 
 /**
