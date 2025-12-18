@@ -204,6 +204,10 @@ export interface Layer {
   adjustmentLayer?: boolean;    // Effects apply to layers below
   audioEnabled?: boolean;       // Enable/disable audio for this layer
   labelColor?: string;          // Layer label color (hex)
+
+  // 3D Material Options (for 3D layers)
+  materialOptions?: LayerMaterialOptions;
+
   inPoint: number;      // Start frame (0-80)
   outPoint: number;     // End frame (0-80)
   parentId: string | null;
@@ -283,6 +287,31 @@ export interface LayerMotionBlurSettings {
   radialCenterY?: number;
   /** For radial blur: amount (0-100) */
   radialAmount?: number;
+}
+
+// ============================================================
+// 3D MATERIAL OPTIONS (After Effects style)
+// ============================================================
+
+export interface LayerMaterialOptions {
+  /** Whether this layer casts shadows */
+  castsShadows: 'off' | 'on' | 'only';
+  /** Light transmission percentage (0-100) */
+  lightTransmission: number;
+  /** Whether this layer accepts shadows from other layers */
+  acceptsShadows: boolean;
+  /** Whether this layer is affected by lights */
+  acceptsLights: boolean;
+  /** Ambient light response (0-100%) */
+  ambient: number;
+  /** Diffuse light response (0-100%) */
+  diffuse: number;
+  /** Specular highlight intensity (0-100%) */
+  specularIntensity: number;
+  /** Specular highlight shininess (0-100%) */
+  specularShininess: number;
+  /** Metallic appearance (0-100%) */
+  metal: number;
 }
 
 // ============================================================

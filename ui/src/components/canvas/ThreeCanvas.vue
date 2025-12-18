@@ -110,6 +110,29 @@
       <span>Tris: {{ performanceStats.triangles }}</span>
     </div>
 
+    <!-- Viewer Controls (AE-style bottom bar) -->
+    <div class="viewer-controls">
+      <select v-model="zoomLevel" class="zoom-dropdown" @change="onZoomSelect">
+        <option value="fit">Fit</option>
+        <option value="0.25">25%</option>
+        <option value="0.33">33%</option>
+        <option value="0.5">50%</option>
+        <option value="0.75">75%</option>
+        <option value="1">100%</option>
+        <option value="2">200%</option>
+        <option value="4">400%</option>
+      </select>
+      <span class="zoom-display">{{ zoomDisplayPercent }}%</span>
+      <div class="viewer-divider"></div>
+      <select v-model="resolution" class="resolution-dropdown" @change="onResolutionChange">
+        <option value="full">Full</option>
+        <option value="half">Half</option>
+        <option value="third">Third</option>
+        <option value="quarter">Quarter</option>
+        <option value="custom">Custom</option>
+      </select>
+    </div>
+
     <div class="loading-overlay" v-if="loading">
       <div class="loading-spinner"></div>
       <span>Loading...</span>
@@ -196,6 +219,13 @@ const performanceStats = ref<PerformanceStats>({
 
 // Pan/zoom state
 const viewportTransform = ref<number[]>([1, 0, 0, 1, 0, 0]);
+
+// Viewer controls
+const zoomLevel = ref<string>('fit');
+const resolution = ref<'full' | 'half' | 'third' | 'quarter' | 'custom'>('full');
+
+// Computed zoom display percentage
+const zoomDisplayPercent = computed(() => Math.round(zoom.value * 100));
 
 // Transform mode for transform controls
 const transformMode = ref<'translate' | 'rotate' | 'scale'>('translate');
@@ -1234,6 +1264,51 @@ function setZoom(newZoom: number) {
   }
 }
 
+/**
+ * Handle zoom dropdown selection
+ */
+function onZoomSelect() {
+  if (zoomLevel.value === 'fit') {
+    fitToView();
+  } else {
+    const newZoom = parseFloat(zoomLevel.value);
+    if (!isNaN(newZoom)) {
+      setZoom(newZoom);
+      if (engine.value) {
+        engine.value.getCameraController().setZoom(newZoom);
+      }
+    }
+  }
+}
+
+/**
+ * Handle resolution dropdown change
+ */
+function onResolutionChange() {
+  if (!engine.value) return;
+
+  const comp = store.getActiveComp();
+  if (!comp) return;
+
+  const fullWidth = comp.settings.width;
+  const fullHeight = comp.settings.height;
+
+  let factor = 1;
+  switch (resolution.value) {
+    case 'half': factor = 0.5; break;
+    case 'third': factor = 1/3; break;
+    case 'quarter': factor = 0.25; break;
+    default: factor = 1;
+  }
+
+  const newWidth = Math.round(fullWidth * factor);
+  const newHeight = Math.round(fullHeight * factor);
+
+  // Update renderer resolution (affects render quality)
+  engine.value.setResolution(newWidth, newHeight);
+  console.log(`[ThreeCanvas] Resolution changed to ${resolution.value}: ${newWidth}x${newHeight}`);
+}
+
 // Capture frame for export
 async function captureFrame(): Promise<string | null> {
   if (!engine.value) return null;
@@ -1559,4 +1634,58 @@ defineExpose({
   border: 1px solid rgba(100, 100, 100, 0.3);
 }
 */
+
+/* Viewer Controls (AE-style bottom bar) */
+.viewer-controls {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(30, 30, 30, 0.9);
+  padding: 4px 12px;
+  border-radius: 4px;
+  border: 1px solid #444;
+  z-index: 15;
+}
+
+.zoom-dropdown,
+.resolution-dropdown {
+  background: #2a2a2a;
+  border: 1px solid #444;
+  color: #e0e0e0;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  min-width: 60px;
+}
+
+.zoom-dropdown:hover,
+.resolution-dropdown:hover {
+  background: #3a3a3a;
+  border-color: #555;
+}
+
+.zoom-dropdown:focus,
+.resolution-dropdown:focus {
+  outline: none;
+  border-color: #4a90d9;
+}
+
+.zoom-display {
+  color: #4a90d9;
+  font-family: 'Consolas', monospace;
+  font-size: 11px;
+  min-width: 40px;
+  text-align: right;
+}
+
+.viewer-divider {
+  width: 1px;
+  height: 16px;
+  background: #444;
+}
 </style>

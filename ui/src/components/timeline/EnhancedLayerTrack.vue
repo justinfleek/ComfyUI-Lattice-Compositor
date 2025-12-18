@@ -237,6 +237,39 @@ const groupedProperties = computed(() => {
 
   groups['Transform'] = transformProps;
 
+  // Geometry Options (for 3D layers)
+  if (props.layer.threeD) {
+    groups['Geometry Options'] = [
+      { path: 'geometry.renderer', name: 'Renderer', property: { value: 'Classic 3D', type: 'dropdown' } }
+    ];
+  }
+
+  // Material Options (for 3D layers)
+  if (props.layer.threeD) {
+    const mat = props.layer.materialOptions || {
+      castsShadows: 'off',
+      lightTransmission: 0,
+      acceptsShadows: true,
+      acceptsLights: true,
+      ambient: 100,
+      diffuse: 50,
+      specularIntensity: 50,
+      specularShininess: 5,
+      metal: 100
+    };
+    groups['Material Options'] = [
+      { path: 'materialOptions.castsShadows', name: 'Casts Shadows', property: { value: mat.castsShadows, type: 'dropdown' } },
+      { path: 'materialOptions.lightTransmission', name: 'Light Transmission', property: { value: mat.lightTransmission, type: 'percent' } },
+      { path: 'materialOptions.acceptsShadows', name: 'Accepts Shadows', property: { value: mat.acceptsShadows, type: 'boolean' } },
+      { path: 'materialOptions.acceptsLights', name: 'Accepts Lights', property: { value: mat.acceptsLights, type: 'boolean' } },
+      { path: 'materialOptions.ambient', name: 'Ambient', property: { value: mat.ambient, type: 'percent' } },
+      { path: 'materialOptions.diffuse', name: 'Diffuse', property: { value: mat.diffuse, type: 'percent' } },
+      { path: 'materialOptions.specularIntensity', name: 'Specular Intensity', property: { value: mat.specularIntensity, type: 'percent' } },
+      { path: 'materialOptions.specularShininess', name: 'Specular Shininess', property: { value: mat.specularShininess, type: 'percent' } },
+      { path: 'materialOptions.metal', name: 'Metal', property: { value: mat.metal, type: 'percent' } }
+    ];
+  }
+
   // Custom Properties (Text, etc.)
   if (props.layer.properties) {
     props.layer.properties.forEach((p: any) => {
