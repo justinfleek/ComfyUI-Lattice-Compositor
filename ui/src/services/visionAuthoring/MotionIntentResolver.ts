@@ -7,15 +7,13 @@
  * PRINCIPLE: This service runs at AUTHORING time only.
  * It is NEVER called during frame evaluation.
  *
- * ⚠️ SECURITY WARNING:
- * API keys passed to this service are transmitted to external APIs from the browser.
- * For production deployments, implement a backend proxy to handle API communication.
- * Never expose API keys in client-side code in production environments.
+ * SECURITY: API calls are routed through the backend proxy at:
+ * - /weyl/api/vision/openai - OpenAI GPT-4V/GPT-4o
+ * - /weyl/api/vision/anthropic - Claude Vision
+ * - /weyl/api/status - Check which API keys are configured
  *
- * Recommended architecture:
- * 1. Create a backend endpoint (e.g., /api/vision/resolve)
- * 2. Store API keys in environment variables on the server
- * 3. Update this service to call the backend proxy instead
+ * API keys are stored server-side in environment variables
+ * (OPENAI_API_KEY, ANTHROPIC_API_KEY) and never exposed to the browser.
  */
 
 import type {
