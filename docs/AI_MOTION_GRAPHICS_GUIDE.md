@@ -315,7 +315,7 @@ bounce(0.8, 0.3)
 
 - AI video generation
 - Motion graphics for Stable Diffusion
-- After Effects to AI workflow
+- Professional compositor to AI workflow
 - ComfyUI motion graphics
 - Generative video compositing
 - Text animation for AI

@@ -1,8 +1,8 @@
 # Weyl Compositor
 
-**AI Motion Graphics Engine** | **Open-Source After Effects Alternative** | **ComfyUI Extension**
+**AI Motion Graphics Engine** | **Open-Source Motion Compositor** | **ComfyUI Extension**
 
-Weyl is a professional-grade **AI motion graphics compositor** that brings After Effects-caliber animation tools to AI video workflows. Create stunning **generative motion graphics**, **animated text**, **particle systems**, and **3D camera animations** — then export directly to AI video models like Wan, AnimateDiff, and MotionCtrl.
+Weyl is a professional-grade **AI motion graphics compositor** that brings industry-standard animation tools to AI video workflows. Create stunning **generative motion graphics**, **animated text**, **particle systems**, and **3D camera animations** — then export directly to AI video models like Wan, AnimateDiff, and MotionCtrl.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![ComfyUI](https://img.shields.io/badge/ComfyUI-Extension-green.svg)](https://github.com/comfyanonymous/ComfyUI)
@@ -224,23 +224,37 @@ See [CLAUDE.md](CLAUDE.md) for detailed architecture documentation.
 
 ---
 
-## Acknowledgments
+## Acknowledgments & Inspirations
 
-Weyl incorporates techniques from these outstanding projects:
+Weyl Compositor incorporates techniques and exports to formats from these outstanding ComfyUI custom nodes and research projects:
 
-**Audio Reactive:** [ATI_AudioReactive](https://github.com/Alter-AI/ATI_AudioReactive), [Yvann-Nodes](https://github.com/yvann-ba/ComfyUI-YVANN), [RyanOnTheInside](https://github.com/ryanontheinside/ComfyUI_RyanOnTheInside)
+### Audio Reactive Systems
+- **[ATI_AudioReactive](https://github.com/Alter-AI/ATI_AudioReactive)** (Esther Alter) - Audio reactive system with amplitude curves, release envelopes, and beat detection. Our `audioFeatures.ts` implements their analysis approach.
+- **[Yvann-Nodes](https://github.com/yvann-ba/ComfyUI-YVANN)** (Yvann) - Audio analysis with stem separation modes, IPAdapter weight scheduling from peaks. Inspired our `audioReactiveMapping.ts` architecture.
+- **[RyanOnTheInside](https://github.com/ryanontheinside/ComfyUI_RyanOnTheInside)** - Flex Features system for mapping any audio feature to any parameter. Our audio mapping system follows this paradigm.
 
-**Depth & Parallax:** [ComfyUI-Depthflow-Nodes](https://github.com/akatz-ai/ComfyUI-Depthflow-Nodes), [DepthAnything](https://github.com/LiheYoung/Depth-Anything)
+### Depth & Parallax
+- **[ComfyUI-Depthflow-Nodes](https://github.com/akatz-ai/ComfyUI-Depthflow-Nodes)** (akatz-ai) - 2.5D parallax animation with stackable motion components. Our `depthflow.ts` matches their preset system and DOF configuration.
+- **[DepthAnything V3](https://github.com/LiheYoung/Depth-Anything)** - Depth map generation integrated into our backend for automatic depth estimation.
 
-**Mask Generation:** [Saber](https://github.com/franciszzj/Saber)
+### Mask Generation
+- **[Saber](https://github.com/franciszzj/Saber)** - Procedural mask generation with topology-preserving operations. Our `maskGenerator.ts` is ported from their Python implementation.
 
-**Video Generation Export:** [Wan-Move](https://github.com/WanMove/ComfyUI-WanMove), [Time-to-Move](https://time-to-move.github.io/), [camera-comfyUI](https://github.com/camera-comfyui/camera-comfyui), [AnimateDiff-Evolved](https://github.com/Kosinkadink/ComfyUI-AnimateDiff-Evolved), [MotionCtrl](https://github.com/TencentARC/MotionCtrl), [Uni3C](https://github.com/AiuniAI/Uni3C)
+### Video Generation Export Formats
+- **[Wan-Move](https://github.com/WanMove/ComfyUI-WanMove)** - Point trajectory format for object motion control. Full export support in `modelExport.ts`.
+- **[Time-to-Move (TTM)](https://time-to-move.github.io/)** - Cut-and-drag motion with dual-clock denoising. Multi-layer TTM workflow generation supported.
+- **[camera-comfyUI](https://github.com/camera-comfyui/camera-comfyui)** - 4x4 transformation matrices for camera animation export.
+- **[AnimateDiff CameraCtrl](https://github.com/Kosinkadink/ComfyUI-AnimateDiff-Evolved)** (Kosinkadink) - Camera control poses and motion type detection.
+- **[MotionCtrl](https://github.com/TencentARC/MotionCtrl)** - Camera trajectory export for both base and SVD variants.
+- **[Uni3C](https://github.com/AiuniAI/Uni3C)** - Universal 3D camera control trajectories.
+
+We're grateful to these developers for open-sourcing their work and advancing AI video generation.
 
 ---
 
 ## Related Search Terms
 
-*AI motion graphics, motion graphics software, After Effects alternative, ComfyUI motion graphics, AI video editor, generative video, motion design tool, animation software, keyframe animation, particle system, text animation, 3D camera animation, depth parallax, AI video generation, Stable Diffusion video, AnimateDiff compositor, matte generation, rotoscoping tool, audio reactive animation*
+*AI motion graphics, motion graphics software, open source compositor, ComfyUI motion graphics, AI video editor, generative video, motion design tool, animation software, keyframe animation, particle system, text animation, 3D camera animation, depth parallax, AI video generation, Stable Diffusion video, AnimateDiff compositor, matte generation, rotoscoping tool, audio reactive animation*
 
 ---
 

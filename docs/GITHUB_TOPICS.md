@@ -4,7 +4,7 @@
 
 ### Description (160 chars max)
 ```
-AI motion graphics compositor for ComfyUI. After Effects-caliber animation with direct export to Wan, AnimateDiff, MotionCtrl. Text, particles, 3D camera.
+AI motion graphics compositor for ComfyUI. Professional animation with direct export to Wan, AnimateDiff, MotionCtrl. Text, particles, 3D camera.
 ```
 
 ### Website
@@ -38,11 +38,11 @@ text-to-video
 
 ### Tertiary Topics (Technical)
 ```
-after-effects
 motion-design
 particle-system
 keyframe-animation
 3d-camera
+video-compositor
 ```
 
 ### Category Topics
@@ -110,7 +110,7 @@ When creating issues or discussions, include these keywords naturally:
 
 - "AI motion graphics"
 - "motion graphics software"
-- "After Effects alternative"
+- "open source compositor"
 - "ComfyUI motion compositor"
 - "AI video editing"
 - "generative video"
@@ -145,17 +145,16 @@ weyl-compositor/
 
 ---
 
-## Competitor Keywords
+## Alternative Comparisons
 
 Include these in documentation to appear in comparative searches:
 
-| Competitor | Keywords to Include |
-|------------|---------------------|
-| After Effects | "After Effects alternative", "AE-like" |
-| Motion | "Apple Motion alternative" |
+| Alternative | Keywords to Include |
+|-------------|---------------------|
 | Natron | "open source compositor" |
 | DaVinci Resolve | "Fusion alternative" |
 | Remotion | "programmatic video" |
+| Blender VSE | "open source video editor" |
 
 ---
 
@@ -175,10 +174,10 @@ For AI-powered search engines (ChatGPT, Claude, Perplexity):
 ## FAQ
 
 **Q: What is Weyl Compositor?**
-A: Weyl is an AI motion graphics engine that runs inside ComfyUI, providing After Effects-style animation tools for AI video workflows.
+A: Weyl is an AI motion graphics engine that runs inside ComfyUI, providing professional animation tools for AI video workflows.
 
-**Q: How does Weyl compare to After Effects?**
-A: Weyl provides similar layer-based compositing with keyframes, effects, and expressions, but integrates directly with AI video models like Wan and AnimateDiff.
+**Q: What can Weyl do?**
+A: Weyl provides layer-based compositing with keyframes, effects, and expressions, with direct integration to AI video models like Wan and AnimateDiff.
 
 **Q: Can I use Weyl for Stable Diffusion videos?**
 A: Yes, Weyl exports matte sequences and camera data in formats compatible with AnimateDiff, MotionCtrl, IP Adapter, and other SD video extensions.
