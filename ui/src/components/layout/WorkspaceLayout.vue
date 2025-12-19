@@ -23,54 +23,66 @@
 <template>
   <div class="workspace-layout">
     <!-- Top Toolbar -->
-    <div class="toolbar">
-      <div class="tool-group labeled-tools">
+    <div class="toolbar" role="toolbar" aria-label="Drawing tools">
+      <div class="tool-group labeled-tools" role="group" aria-label="Selection and drawing tools">
         <button
           :class="{ active: currentTool === 'select' }"
+          :aria-pressed="currentTool === 'select'"
           @click="currentTool = 'select'"
           title="Select Tool (V) - Select and move layers"
+          aria-label="Select tool"
         >
-          <span class="icon">↖</span>
+          <span class="icon" aria-hidden="true">↖</span>
           <span class="tool-label">Select</span>
         </button>
         <button
           :class="{ active: currentTool === 'pen' }"
+          :aria-pressed="currentTool === 'pen'"
           @click="currentTool = 'pen'"
           title="Pen Tool (P) - Draw paths and shapes"
+          aria-label="Pen tool"
         >
-          <span class="icon">✒</span>
+          <span class="icon" aria-hidden="true">✒</span>
           <span class="tool-label">Pen</span>
         </button>
         <button
           :class="{ active: currentTool === 'text' }"
+          :aria-pressed="currentTool === 'text'"
           @click="currentTool = 'text'"
           title="Text Tool (T) - Add text layers"
+          aria-label="Text tool"
         >
-          <span class="icon">T</span>
+          <span class="icon" aria-hidden="true">T</span>
           <span class="tool-label">Text</span>
         </button>
         <button
           :class="{ active: currentTool === 'hand' }"
+          :aria-pressed="currentTool === 'hand'"
           @click="currentTool = 'hand'"
           title="Hand Tool (H) - Pan the viewport"
+          aria-label="Pan tool"
         >
-          <span class="icon">✋</span>
+          <span class="icon" aria-hidden="true">✋</span>
           <span class="tool-label">Pan</span>
         </button>
         <button
           :class="{ active: currentTool === 'zoom' }"
+          :aria-pressed="currentTool === 'zoom'"
           @click="currentTool = 'zoom'"
           title="Zoom Tool (Z) - Zoom in/out the viewport"
+          aria-label="Zoom tool"
         >
-          <span class="icon">🔍</span>
+          <span class="icon" aria-hidden="true">🔍</span>
           <span class="tool-label">Zoom</span>
         </button>
         <button
           :class="{ active: currentTool === 'segment' }"
+          :aria-pressed="currentTool === 'segment'"
           @click="currentTool = 'segment'"
           title="AI Segment (S) - Auto-select objects using AI"
+          aria-label="AI Segment tool"
         >
-          <span class="icon">✨</span>
+          <span class="icon" aria-hidden="true">✨</span>
           <span class="tool-label">AI Seg</span>
         </button>
       </div>
@@ -210,27 +222,36 @@
         <!-- Left Panel: Project/Effects -->
         <Pane :size="12" :min-size="8" :max-size="20">
           <div class="panel left-panel">
-            <div class="panel-tabs">
+            <div class="panel-tabs" role="tablist" aria-label="Left panel tabs">
               <button
+                role="tab"
+                :aria-selected="leftTab === 'project'"
+                aria-controls="left-panel-project"
                 :class="{ active: leftTab === 'project' }"
                 @click="leftTab = 'project'"
               >
                 Project
               </button>
               <button
+                role="tab"
+                :aria-selected="leftTab === 'effects'"
+                aria-controls="left-panel-effects"
                 :class="{ active: leftTab === 'effects' }"
                 @click="leftTab = 'effects'"
               >
                 Effects
               </button>
               <button
+                role="tab"
+                :aria-selected="leftTab === 'assets'"
+                aria-controls="left-panel-assets"
                 :class="{ active: leftTab === 'assets' }"
                 @click="leftTab = 'assets'"
               >
                 Assets
               </button>
             </div>
-            <div class="panel-content">
+            <div class="panel-content" role="tabpanel" :id="`left-panel-${leftTab}`">
               <ProjectPanel v-if="leftTab === 'project'" @openCompositionSettings="showCompositionSettingsDialog = true" />
               <EffectsPanel v-else-if="leftTab === 'effects'" />
               <AssetsPanel
@@ -252,20 +273,26 @@
             <Pane :size="65" :min-size="20">
               <div class="panel viewport-panel">
                 <div class="viewport-header">
-                  <div class="viewport-tabs">
+                  <div class="viewport-tabs" role="tablist" aria-label="Viewport tabs">
                     <button
+                      role="tab"
+                      :aria-selected="viewportTab === 'composition'"
                       :class="{ active: viewportTab === 'composition' }"
                       @click="viewportTab = 'composition'"
                     >
                       Composition
                     </button>
                     <button
+                      role="tab"
+                      :aria-selected="viewportTab === 'layer'"
                       :class="{ active: viewportTab === 'layer' }"
                       @click="viewportTab = 'layer'"
                     >
                       Layer
                     </button>
                     <button
+                      role="tab"
+                      :aria-selected="viewportTab === 'footage'"
                       :class="{ active: viewportTab === 'footage' }"
                       @click="viewportTab = 'footage'"
                     >
@@ -273,7 +300,7 @@
                     </button>
                   </div>
                   <div class="viewport-controls">
-                    <select v-model="viewZoom" @change="handleZoomChange" class="zoom-select">
+                    <select v-model="viewZoom" @change="handleZoomChange" class="zoom-select" aria-label="Zoom level">
                       <option value="fit">Fit</option>
                       <option value="25">25%</option>
                       <option value="50">50%</option>
@@ -286,13 +313,17 @@
                       :class="{ active: viewOptions.showRulers }"
                       @click="viewOptions.showRulers = !viewOptions.showRulers"
                       title="Toggle Rulers/Guides"
+                      aria-label="Toggle rulers and guides"
+                      :aria-pressed="viewOptions.showRulers"
                     >
-                      <span class="icon">📏</span>
+                      <span class="icon" aria-hidden="true">📏</span>
                     </button>
                     <button
                       :class="{ active: viewOptions.showGrid }"
                       @click="viewOptions.showGrid = !viewOptions.showGrid"
                       title="Toggle Grid"
+                      aria-label="Toggle grid"
+                      :aria-pressed="viewOptions.showGrid"
                     >
                       <span class="icon">▦</span>
                     </button>
@@ -349,44 +380,65 @@
         <!-- Right Panel: Effects/Properties/Camera -->
         <Pane :size="22" :min-size="15" :max-size="30">
           <div class="panel right-panel">
-            <div class="panel-tabs">
+            <div class="panel-tabs" role="tablist" aria-label="Right panel tabs">
               <button
+                role="tab"
+                :aria-selected="rightTab === 'properties'"
+                aria-controls="right-panel-properties"
                 :class="{ active: rightTab === 'properties' }"
                 @click="rightTab = 'properties'"
               >
                 Properties
               </button>
               <button
+                role="tab"
+                :aria-selected="rightTab === 'effects'"
+                aria-controls="right-panel-effects"
                 :class="{ active: rightTab === 'effects' }"
                 @click="rightTab = 'effects'"
               >
                 Effects
               </button>
               <button
+                role="tab"
+                :aria-selected="rightTab === 'camera'"
+                aria-controls="right-panel-camera"
                 :class="{ active: rightTab === 'camera' }"
                 @click="rightTab = 'camera'"
               >
                 Cam
               </button>
               <button
+                role="tab"
+                :aria-selected="rightTab === 'audio'"
+                aria-controls="right-panel-audio"
                 :class="{ active: rightTab === 'audio' }"
                 @click="rightTab = 'audio'"
               >
                 Audio
               </button>
               <button
+                role="tab"
+                :aria-selected="rightTab === 'export'"
+                aria-controls="right-panel-export"
                 :class="{ active: rightTab === 'export' }"
                 @click="rightTab = 'export'"
               >
                 Export
               </button>
               <button
+                role="tab"
+                :aria-selected="rightTab === 'preview'"
+                aria-controls="right-panel-preview"
                 :class="{ active: rightTab === 'preview' }"
                 @click="rightTab = 'preview'"
               >
                 Preview
               </button>
               <button
+                role="tab"
+                :aria-selected="rightTab === 'ai'"
+                aria-controls="right-panel-ai"
                 :class="{ active: rightTab === 'ai' }"
                 @click="rightTab = 'ai'"
                 title="AI Compositor Agent"
@@ -394,7 +446,7 @@
                 AI
               </button>
             </div>
-            <div class="panel-content">
+            <div class="panel-content" role="tabpanel" :id="`right-panel-${rightTab}`">
               <EffectControlsPanel v-if="rightTab === 'effects'" />
               <PropertiesPanel v-else-if="rightTab === 'properties'" />
               <CameraProperties
@@ -1253,6 +1305,11 @@ onUnmounted(() => {
   cursor: not-allowed;
 }
 
+.tool-group button:focus-visible {
+  outline: 2px solid var(--weyl-accent, #8B5CF6);
+  outline-offset: 2px;
+}
+
 .icon {
   font-size: 14px;
 }
@@ -1443,6 +1500,11 @@ onUnmounted(() => {
 .panel-tabs button.active {
   color: white;
   background: var(--weyl-accent, #8B5CF6);
+}
+
+.panel-tabs button:focus-visible {
+  outline: 2px solid var(--weyl-accent, #8B5CF6);
+  outline-offset: 2px;
 }
 
 .panel-content {

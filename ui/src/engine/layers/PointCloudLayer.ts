@@ -268,13 +268,127 @@ export class PointCloudLayer extends BaseLayer {
 
   /**
    * Load LAS/LAZ point cloud
-   * Note: LAS support requires additional libraries. This is a placeholder.
+   * Implements basic LAS 1.2-1.4 format parsing
    */
   private async loadLAS(url: string): Promise<THREE.BufferGeometry> {
-    // LAS/LAZ support would require a library like las-js or copc.js
-    // For now, create a placeholder
-    console.warn('[PointCloudLayer] LAS/LAZ format requires additional libraries. Creating placeholder.');
-    return this.createPlaceholderGeometry();
+    const response = await fetch(url);
+    const buffer = await response.arrayBuffer();
+    const view = new DataView(buffer);
+
+    // Check signature "LASF"
+    const signature = String.fromCharCode(
+      view.getUint8(0), view.getUint8(1), view.getUint8(2), view.getUint8(3)
+    );
+    if (signature !== 'LASF') {
+      throw new Error('Invalid LAS file: missing LASF signature');
+    }
+
+    // Parse header
+    const versionMajor = view.getUint8(24);
+    const versionMinor = view.getUint8(25);
+    const headerSize = view.getUint16(94, true);
+    const offsetToPointData = view.getUint32(96, true);
+    const pointDataFormat = view.getUint8(104);
+    const pointDataLength = view.getUint16(105, true);
+
+    // Point count (depends on version)
+    let pointCount: number;
+    if (versionMajor === 1 && versionMinor >= 4) {
+      // LAS 1.4 uses 64-bit point count
+      pointCount = Number(view.getBigUint64(247, true));
+    } else {
+      pointCount = view.getUint32(107, true);
+    }
+
+    // Scale and offset for coordinates
+    const scaleX = view.getFloat64(131, true);
+    const scaleY = view.getFloat64(139, true);
+    const scaleZ = view.getFloat64(147, true);
+    const offsetX = view.getFloat64(155, true);
+    const offsetY = view.getFloat64(163, true);
+    const offsetZ = view.getFloat64(171, true);
+
+    // Limit point count for performance
+    const maxPoints = Math.min(pointCount, this.cloudData.pointBudget);
+    const skipRate = Math.max(1, Math.floor(pointCount / maxPoints));
+
+    const positions: number[] = [];
+    const colors: number[] = [];
+    const intensities: number[] = [];
+    const classifications: number[] = [];
+
+    // Point format determines data layout
+    // Format 0: X,Y,Z,Intensity,Return,Classification (20 bytes)
+    // Format 1: Format 0 + GPS Time (28 bytes)
+    // Format 2: Format 0 + RGB (26 bytes)
+    // Format 3: Format 1 + RGB (34 bytes)
+    const hasRGB = pointDataFormat === 2 || pointDataFormat === 3 ||
+                   pointDataFormat === 7 || pointDataFormat === 8;
+
+    let offset = offsetToPointData;
+    let loadedPoints = 0;
+
+    for (let i = 0; i < pointCount && loadedPoints < maxPoints; i++) {
+      if (i % skipRate !== 0) {
+        offset += pointDataLength;
+        continue;
+      }
+
+      // Read X, Y, Z (4 bytes each, signed int32)
+      const x = view.getInt32(offset, true) * scaleX + offsetX;
+      const y = view.getInt32(offset + 4, true) * scaleY + offsetY;
+      const z = view.getInt32(offset + 8, true) * scaleZ + offsetZ;
+
+      // Read intensity (2 bytes, unsigned)
+      const intensity = view.getUint16(offset + 12, true);
+
+      // Read classification (1 byte at offset 15 for most formats)
+      const classification = view.getUint8(offset + 15);
+
+      positions.push(x, z, -y); // Convert to Y-up coordinate system
+      intensities.push(intensity / 65535); // Normalize to 0-1
+      classifications.push(classification);
+
+      // Read RGB if available
+      if (hasRGB) {
+        const rgbOffset = pointDataFormat === 2 ? 20 :
+                         pointDataFormat === 3 ? 28 :
+                         pointDataFormat === 7 ? 30 :
+                         pointDataFormat === 8 ? 30 : 20;
+
+        if (offset + rgbOffset + 6 <= buffer.byteLength) {
+          const r = view.getUint16(offset + rgbOffset, true) / 65535;
+          const g = view.getUint16(offset + rgbOffset + 2, true) / 65535;
+          const b = view.getUint16(offset + rgbOffset + 4, true) / 65535;
+          colors.push(r, g, b);
+        } else {
+          colors.push(1, 1, 1);
+        }
+      } else {
+        // Use intensity as grayscale
+        const gray = intensity / 65535;
+        colors.push(gray, gray, gray);
+      }
+
+      offset += pointDataLength;
+      loadedPoints++;
+    }
+
+    console.log(`[PointCloudLayer] Loaded ${loadedPoints} points from LAS v${versionMajor}.${versionMinor} (format ${pointDataFormat})`);
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+    // Store intensity and classification for coloring modes
+    this.originalAttributes = {
+      positions: new Float32Array(positions),
+      colors: new Float32Array(colors),
+      intensities: new Float32Array(intensities),
+      classifications: new Uint8Array(classifications),
+    };
+
+    return geometry;
   }
 
   /**

@@ -78,6 +78,28 @@
             <option value="wrap">Wrap</option>
           </select>
         </div>
+        <div class="property-row">
+          <label>Warmup Period</label>
+          <input
+            type="range"
+            :value="systemConfig.warmupPeriod"
+            min="0"
+            max="120"
+            step="1"
+            @input="updateSystemConfig('warmupPeriod', Number(($event.target as HTMLInputElement).value))"
+          />
+          <span class="value-display">{{ systemConfig.warmupPeriod }}f</span>
+        </div>
+        <div class="property-row checkbox-row">
+          <label>
+            <input
+              type="checkbox"
+              :checked="systemConfig.respectMaskBoundary"
+              @change="updateSystemConfig('respectMaskBoundary', ($event.target as HTMLInputElement).checked)"
+            />
+            Respect Mask Boundary
+          </label>
+        </div>
       </div>
     </div>
 
@@ -280,6 +302,94 @@
                 @input="updateEmitter(emitter.id, 'burstCount', Number(($event.target as HTMLInputElement).value))"
               />
               <span class="value-display">{{ emitter.burstCount }}</span>
+            </div>
+
+            <!-- Emitter Shape -->
+            <div class="subsection-divider">Emitter Shape</div>
+            <div class="property-row">
+              <label>Shape</label>
+              <select
+                :value="emitter.shape || 'point'"
+                @change="updateEmitter(emitter.id, 'shape', ($event.target as HTMLSelectElement).value)"
+              >
+                <option value="point">Point</option>
+                <option value="line">Line</option>
+                <option value="circle">Circle</option>
+                <option value="box">Box</option>
+                <option value="sphere">Sphere</option>
+                <option value="ring">Ring</option>
+                <option value="spline">Spline Path</option>
+              </select>
+            </div>
+            <div v-if="emitter.shape === 'circle' || emitter.shape === 'sphere' || emitter.shape === 'ring'" class="property-row">
+              <label>Radius</label>
+              <input
+                type="range"
+                :value="emitter.shapeRadius || 0.1"
+                min="0.01"
+                max="0.5"
+                step="0.01"
+                @input="updateEmitter(emitter.id, 'shapeRadius', Number(($event.target as HTMLInputElement).value))"
+              />
+              <span class="value-display">{{ (emitter.shapeRadius || 0.1).toFixed(2) }}</span>
+            </div>
+            <div v-if="emitter.shape === 'ring'" class="property-row">
+              <label>Inner Radius</label>
+              <input
+                type="range"
+                :value="emitter.shapeInnerRadius || 0.05"
+                min="0"
+                max="0.4"
+                step="0.01"
+                @input="updateEmitter(emitter.id, 'shapeInnerRadius', Number(($event.target as HTMLInputElement).value))"
+              />
+              <span class="value-display">{{ (emitter.shapeInnerRadius || 0.05).toFixed(2) }}</span>
+            </div>
+            <div v-if="emitter.shape === 'box'" class="property-row">
+              <label>Width</label>
+              <input
+                type="range"
+                :value="emitter.shapeWidth || 0.2"
+                min="0.01"
+                max="1"
+                step="0.01"
+                @input="updateEmitter(emitter.id, 'shapeWidth', Number(($event.target as HTMLInputElement).value))"
+              />
+              <span class="value-display">{{ (emitter.shapeWidth || 0.2).toFixed(2) }}</span>
+            </div>
+            <div v-if="emitter.shape === 'box'" class="property-row">
+              <label>Height</label>
+              <input
+                type="range"
+                :value="emitter.shapeHeight || 0.2"
+                min="0.01"
+                max="1"
+                step="0.01"
+                @input="updateEmitter(emitter.id, 'shapeHeight', Number(($event.target as HTMLInputElement).value))"
+              />
+              <span class="value-display">{{ (emitter.shapeHeight || 0.2).toFixed(2) }}</span>
+            </div>
+            <div v-if="emitter.shape === 'line'" class="property-row">
+              <label>Length</label>
+              <input
+                type="range"
+                :value="emitter.shapeWidth || 0.2"
+                min="0.01"
+                max="1"
+                step="0.01"
+                @input="updateEmitter(emitter.id, 'shapeWidth', Number(($event.target as HTMLInputElement).value))"
+              />
+              <span class="value-display">{{ (emitter.shapeWidth || 0.2).toFixed(2) }}</span>
+            </div>
+            <div v-if="emitter.shape !== 'point' && emitter.shape !== 'spline'" class="property-row checkbox-row">
+              <label>
+                <input
+                  type="checkbox"
+                  :checked="emitter.emitFromEdge"
+                  @change="updateEmitter(emitter.id, 'emitFromEdge', ($event.target as HTMLInputElement).checked)"
+                />
+                Emit from Edge Only
+              </label>
             </div>
           </div>
         </div>
@@ -846,6 +956,18 @@
           />
           <span class="value-display">{{ renderOptions.trailLength }}</span>
         </div>
+        <div v-if="renderOptions.renderTrails" class="property-row">
+          <label>Trail Falloff</label>
+          <input
+            type="range"
+            :value="renderOptions.trailOpacityFalloff"
+            min="0"
+            max="1"
+            step="0.05"
+            @input="updateRenderOption('trailOpacityFalloff', Number(($event.target as HTMLInputElement).value))"
+          />
+          <span class="value-display">{{ renderOptions.trailOpacityFalloff.toFixed(2) }}</span>
+        </div>
         <div class="property-row checkbox-row">
           <label>
             <input
@@ -879,6 +1001,43 @@
             @input="updateRenderOption('glowIntensity', Number(($event.target as HTMLInputElement).value))"
           />
           <span class="value-display">{{ renderOptions.glowIntensity.toFixed(2) }}</span>
+        </div>
+
+        <!-- Motion Blur -->
+        <div class="subsection-divider">Motion Blur</div>
+        <div class="property-row checkbox-row">
+          <label>
+            <input
+              type="checkbox"
+              :checked="renderOptions.motionBlur"
+              @change="updateRenderOption('motionBlur', ($event.target as HTMLInputElement).checked)"
+            />
+            Enable Motion Blur
+          </label>
+        </div>
+        <div v-if="renderOptions.motionBlur" class="property-row">
+          <label>Blur Strength</label>
+          <input
+            type="range"
+            :value="renderOptions.motionBlurStrength"
+            min="0"
+            max="1"
+            step="0.05"
+            @input="updateRenderOption('motionBlurStrength', Number(($event.target as HTMLInputElement).value))"
+          />
+          <span class="value-display">{{ renderOptions.motionBlurStrength.toFixed(2) }}</span>
+        </div>
+        <div v-if="renderOptions.motionBlur" class="property-row">
+          <label>Blur Samples</label>
+          <input
+            type="range"
+            :value="renderOptions.motionBlurSamples"
+            min="1"
+            max="16"
+            step="1"
+            @input="updateRenderOption('motionBlurSamples', Number(($event.target as HTMLInputElement).value))"
+          />
+          <span class="value-display">{{ renderOptions.motionBlurSamples }}</span>
         </div>
 
         <!-- Particle Connections -->
