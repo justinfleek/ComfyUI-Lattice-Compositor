@@ -167,7 +167,7 @@ describe('Deterministic Simulation', () => {
 | `timelineSnap.ts` | Low | Simple math operations |
 | `imageTrace.ts` | Medium | Canvas-dependent |
 | `textOnPath.ts` | High | Critical for text animation |
-| `arcLength.ts` | High | Critical for text spacing |
+| `arcLength.ts` | High | **REWRITTEN** - Now uses Three.js curves (native 3D + arc-length) |
 
 ### Components NOT Tested
 
@@ -302,7 +302,7 @@ export function createTestKeyframe<T>(value: T, frame: number): Keyframe<T> {
 ## Recommendations for Next Session
 
 1. **Fix failing tests** - Add `controlMode` to all keyframe test data
-2. **Add arcLength tests** - Critical for text on path
+2. **Add arcLength tests** - Now uses Three.js curves (ArcLengthParameterizer, MultiSegmentParameterizer)
 3. **Add textOnPath tests** - Character placement accuracy
 4. **Add compositorStore tests** - Full action coverage
 5. **Add component tests** - TimelinePanel, SplineEditor

@@ -53,12 +53,14 @@ Weyl is an **After Effects-caliber motion graphics compositor** embedded as a Co
 
 ## PART 1: TYPESCRIPT ERRORS (26 Total)
 
-### Source File Errors (2)
+### Source File Errors (0) ✅ ALL FIXED
 
-| File | Line | Error | Fix |
-|------|------|-------|-----|
-| `WeylEngine.ts` | 745 | `getAllLayers` doesn't exist on LayerManager | Change to `getLayers()` or add method |
-| `arcLength.ts` | 7 | Bezier import syntax | Use `import Bezier from 'bezier-js'` |
+| File | Line | Error | Fix | Status |
+|------|------|-------|-----|--------|
+| `WeylEngine.ts` | 745 | `getAllLayers` doesn't exist | Added method to LayerManager | ✅ FIXED |
+| `arcLength.ts` | - | bezier-js import issues | **Rewrote to use Three.js curves** | ✅ FIXED |
+
+**Note:** bezier-js was completely removed from the project. arcLength.ts now uses Three.js CubicBezierCurve3 which has native 3D support and built-in arc-length parameterization.
 
 ### Test File Errors (24)
 
@@ -423,7 +425,7 @@ private loadUSD(url: string): Promise<THREE.Object3D> {
 | `historyStore.ts` | Replace JSON clone with structuredClone |
 | `frameCache.ts` | Implement O(1) LRU |
 | `BaseLayer.ts` | Add `getExportData` method |
-| `arcLength.ts` | Fix Bezier import |
+| ~~`arcLength.ts`~~ | ✅ Rewritten to use Three.js curves (bezier-js removed) |
 | `AssetUploader.vue` | Add MIME validation |
 | `WorkspaceLayout.vue` | Add keyboard shortcuts, cleanup intervals |
 | `TextProperties.vue` | Add missing text controls |
@@ -444,7 +446,7 @@ private loadUSD(url: string): Promise<THREE.Object3D> {
 
 1. **~~Fix TypeScript errors~~** ✅ COMPLETED
    - ~~Update test files with new type requirements~~
-   - ~~Fix Bezier import in arcLength.ts~~ → Fixed type declaration instead
+   - ~~Fix arcLength.ts~~ → **Rewrote to use Three.js curves, removed bezier-js entirely**
    - ~~Add getExportData to BaseLayer or type guard~~ → Added getAllLayers() to LayerManager
 
 2. **Fix failing test** (optional)
@@ -844,7 +846,6 @@ scipy  # For depth-to-normal (Sobel gradients)
 | `vue` | 3.5.0 | UI framework |
 | `pinia` | 2.2.0 | State management |
 | `primevue` | 4.2.0 | UI components |
-| `bezier-js` | 6.1.4 | Bezier curves |
 | `troika-three-text` | 0.52.4 | 3D text rendering |
 | `simplex-noise` | 4.0.3 | Procedural noise |
 | `jszip` | 3.10.0 | Export ZIP |

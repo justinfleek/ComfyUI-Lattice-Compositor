@@ -19,7 +19,6 @@
   "dependencies": {
     "@vueuse/core": "^14.1.0",
     "allotment": "^1.20.4",
-    "bezier-js": "^6.1.4",
     "jszip": "^3.10.0",
     "mp4-muxer": "^5.2.2",
     "pinia": "^2.2.0",

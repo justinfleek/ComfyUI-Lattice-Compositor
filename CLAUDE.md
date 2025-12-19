@@ -1117,8 +1117,39 @@ console.log('cache hits:', stats.hits, 'misses:', stats.misses);
 ### TypeScript Errors
 
 **All fixed!** Previous issues were:
-- `arcLength.ts`: Bezier import syntax (fixed: use default import)
+- `arcLength.ts`: Replaced bezier-js with Three.js curves (native 3D support)
 - `LayerManager.ts`: Missing `getAllLayers()` method (fixed: added method)
+
+### Arc-Length Parameterization (bezier-js → Three.js Migration)
+
+**bezier-js was removed** in favor of Three.js curves because:
+1. **Native 3D support** - CubicBezierCurve3 handles x, y, z natively
+2. **Built-in arc-length** - getPointAt(u), getTangentAt(u) use arc-length parameterization
+3. **Already used everywhere** - SplineLayer, textOnPath, svgExtrusion all use Three.js
+4. **Better TypeScript support** - @types/three is well-maintained
+
+```typescript
+// OLD (bezier-js) - REMOVED
+import { Bezier } from 'bezier-js';
+const bez = new Bezier(p0, p1, p2, p3);
+const point = bez.get(t); // Only 2D
+
+// NEW (Three.js) - CURRENT
+import * as THREE from 'three';
+const curve = new THREE.CubicBezierCurve3(
+  new THREE.Vector3(p0.x, p0.y, p0.z),
+  new THREE.Vector3(p1.x, p1.y, p1.z),
+  new THREE.Vector3(p2.x, p2.y, p2.z),
+  new THREE.Vector3(p3.x, p3.y, p3.z)
+);
+const point = curve.getPointAt(u); // Arc-length parameterized!
+const tangent = curve.getTangentAt(u);
+```
+
+Key classes in `arcLength.ts`:
+- **ArcLengthParameterizer** - Wraps any Three.js curve for arc-length access
+- **MultiSegmentParameterizer** - Uses THREE.CurvePath for multi-segment paths
+- **createBezierCurve()** - Helper to create CubicBezierCurve3 from points
 
 ### Security Issues (6 total)
 
@@ -1224,7 +1255,7 @@ ui/src/__tests__/engine/ParticleSimulationController.test.ts
 | **Build Tool** | Vite | 5.x | Build & dev server |
 | **Testing** | Vitest | 1.x | Test framework |
 | **Language** | TypeScript | 5.x | Type safety |
-| **Curves** | Bezier.js | 6.1.x | Bezier math |
+| **Curves** | Three.js | r170 | Built-in CubicBezierCurve3 + arc-length |
 | **3D Text** | troika-three-text | 0.52.x | Text rendering |
 | **Noise** | simplex-noise | 4.0.x | Procedural noise |
 | **Video Export** | mp4-muxer | 5.2.x | MP4 encoding |
