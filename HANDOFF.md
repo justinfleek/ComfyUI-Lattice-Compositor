@@ -770,12 +770,119 @@ Document:
 
 ---
 
+## PART 19: ADDITIONAL DOCUMENTATION
+
+### Root Directory Documents
+
+| Document | Size | Purpose |
+|----------|------|---------|
+| `WEYL_COMPOSITOR_MASTER_SPEC.md` | 130KB | Original master specification |
+| `AUDIT_REPORT.md` | 24KB | Previous audit results |
+| `FEATURE_AUDIT.md` | 36KB | Feature completion audit |
+| `PROJECT_STATUS.md` | 10KB | Project status summary |
+| `COMPETITIVE_ANALYSIS.md` | 17KB | Industry comparison |
+| `GRAPH_EDITOR_SPEC.md` | 22KB | Graph editor specification |
+| `README.md` | 12KB | Project readme |
+| `CLAUDE.md` | 8KB | Claude Code instructions |
+
+### Detailed Docs (18 files in `/docs/`)
+
+| Document | Content |
+|----------|---------|
+| `00_MASTER_GROUND_TRUTH.md` | Core requirements |
+| `01_TYPE_DEFINITIONS.md` | Type system |
+| `02_MOTION_ENGINE.md` | Motion engine design |
+| `03_LAYER_SYSTEM.md` | Layer architecture |
+| `05_PARTICLE_SYSTEM.md` | Particle system |
+| `06_CAMERA_SPLINE.md` | Camera & splines |
+| `07_TEXT_SHAPE.md` | Text & shapes |
+| `08_TIMELINE_GRAPH.md` | Timeline & graph editor |
+| `09_PICKWHIP_DEPENDENCIES.md` | Property linking |
+| `10_AUDIO_REACTIVITY.md` | Audio system |
+| `11_PRECOMPOSITION.md` | Precomp system |
+| `12_COMPOSITION_IMPORT.md` | Import/export |
+| `13_EXPORT_PIPELINE.md` | Export pipeline |
+| `14_VISION_AUTHORING.md` | VLM integration |
+| `15_DETERMINISM_TESTING.md` | Testing strategy |
+| `16_IMPLEMENTATION_CHECKLIST.md` | Implementation status |
+| `API.md` | API documentation |
+| `VLM_SETUP.md` | Vision LLM setup |
+
+### Reference Images (22 files in `/reference_images/`)
+
+AE screenshots for UI compliance:
+- `default-ground-truth-blank-layout.png` - Default AE layout
+- `text-layer-side-panel-full.png` - Text properties
+- `blend-modes.png` - Blend mode list
+- `shape-layer-options.png` - Shape options
+- `speed-graph-reference-1.jpg` - Speed graph
+- `new-light-options-*.png` (5 files) - Light properties
+- `timeline-with-text-options-*.png` (4 files) - Timeline
+- Various others for UI reference
+
+### Python Requirements
+
+```
+# requirements.txt
+numpy
+Pillow
+scipy  # For depth-to-normal (Sobel gradients)
+```
+
+### Python ComfyUI Nodes
+
+| File | Purpose |
+|------|---------|
+| `nodes/__init__.py` | Node registration |
+| `nodes/compositor_node.py` | Main compositor node |
+
+### Key Dependencies (package.json)
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `three` | 0.170.0 | 3D rendering |
+| `vue` | 3.5.0 | UI framework |
+| `pinia` | 2.2.0 | State management |
+| `primevue` | 4.2.0 | UI components |
+| `bezier-js` | 6.1.4 | Bezier curves |
+| `troika-three-text` | 0.52.4 | 3D text rendering |
+| `simplex-noise` | 4.0.3 | Procedural noise |
+| `jszip` | 3.10.0 | Export ZIP |
+| `mp4-muxer` | 5.2.2 | Video export |
+| `webm-muxer` | 5.1.4 | WebM export |
+
+### Nix Flake
+
+```
+flake.nix - Nix package configuration
+flake.lock - Dependency locks
+```
+
+---
+
+## PART 20: BLIND SPOTS TO WATCH
+
+Things that could cause issues but aren't fully tested:
+
+1. **Browser Compatibility** - Only tested in Chrome. Firefox/Safari may have WebGL2 differences
+2. **Mobile Support** - Not designed for touch interfaces
+3. **Large Projects** - Performance untested with 100+ layers
+4. **Memory Limits** - No hard limits on particle count or texture size
+5. **ComfyUI Version** - Assumes recent ComfyUI, may break on older versions
+6. **GPU Memory** - No fallback if GPU VRAM exhausted
+7. **Network Fonts** - Google Fonts requires internet connection
+8. **File Size Limits** - No validation on imported asset sizes
+
+---
+
 ## FINAL CHECKLIST
 
 Before starting work, verify:
 
-- [ ] Read this entire document
+- [ ] Read this entire document (Parts 1-20)
 - [ ] Read SPEC_08_PARTICLE_SYSTEM.md for ready-to-use Vue code
+- [ ] Skim docs/ directory for detailed specifications
+- [ ] Check reference_images/ for UI compliance targets
 - [ ] Check git status for uncommitted changes
 - [ ] Run `npm test` to verify test status
 - [ ] Run `npx tsc --noEmit` to see TypeScript errors
@@ -784,5 +891,6 @@ Before starting work, verify:
 
 ---
 
-**Document Version:** 2.0 (December 19, 2024)
-**Confidence:** 100% - All known issues from comprehensive audit documented
+**Document Version:** 2.1 (December 19, 2024)
+**Confidence:** 100% - All known issues documented, blind spots identified
+**Total Parts:** 20
