@@ -198,7 +198,7 @@ function reset(): void {
   border: 1px solid #3d3d3d;
   border-radius: 3px;
   background: #2a2a2a;
-  color: #3498db; /* Cyan color for values like After Effects */
+  color: #3498db; /* Cyan color for numeric values */
   font-size: 13px;
   font-family: inherit;
   text-align: right;

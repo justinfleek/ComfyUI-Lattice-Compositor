@@ -1,7 +1,7 @@
 /**
  * LightLayer - Advanced 3D Light Source Layer
  *
- * After Effects-caliber lighting with:
+ * Professional motion graphics lighting with:
  * - Point, Spot, Parallel, Ambient, and Area lights
  * - Point of Interest (lookAt target) with layer targeting
  * - Path animation (follow spline)

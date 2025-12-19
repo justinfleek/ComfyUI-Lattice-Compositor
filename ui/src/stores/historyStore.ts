@@ -5,6 +5,7 @@
  * This is a focused store extracted from compositorStore for better maintainability.
  */
 import { defineStore } from 'pinia';
+import { toRaw } from 'vue';
 import { storeLogger } from '@/utils/logger';
 import type { WeylProject } from '@/types/project';
 
@@ -40,14 +41,8 @@ export const useHistoryStore = defineStore('history', {
       }
 
       // Deep clone the project to avoid reference issues
-      // Try structuredClone first (10-50x faster), fall back to JSON for proxy objects
-      let snapshot: WeylProject;
-      try {
-        snapshot = structuredClone(project);
-      } catch {
-        // Fall back to JSON for proxy objects (e.g., in tests)
-        snapshot = JSON.parse(JSON.stringify(project));
-      }
+      // Use toRaw() to deproxy Vue reactive objects before cloning
+      const snapshot = structuredClone(toRaw(project)) as WeylProject;
       this.stack.push(snapshot);
 
       // Trim history if it exceeds max size
@@ -73,11 +68,8 @@ export const useHistoryStore = defineStore('history', {
       this.index--;
       const state = this.stack[this.index];
       storeLogger.debug('Undo to index:', this.index);
-      try {
-        return structuredClone(state);
-      } catch {
-        return JSON.parse(JSON.stringify(state));
-      }
+      // Use toRaw to deproxy Pinia's reactive wrapper before cloning
+      return structuredClone(toRaw(state)) as WeylProject;
     },
 
     /**
@@ -93,11 +85,8 @@ export const useHistoryStore = defineStore('history', {
       this.index++;
       const state = this.stack[this.index];
       storeLogger.debug('Redo to index:', this.index);
-      try {
-        return structuredClone(state);
-      } catch {
-        return JSON.parse(JSON.stringify(state));
-      }
+      // Use toRaw to deproxy Pinia's reactive wrapper before cloning
+      return structuredClone(toRaw(state)) as WeylProject;
     },
 
     /**

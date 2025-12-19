@@ -53,8 +53,8 @@
           <div class="icon-col" @mousedown.stop="toggleMotionBlur" :title="layer.motionBlur ? 'Disable Motion Blur' : 'Enable Motion Blur'">
             <span :class="{ active: layer.motionBlur }">◔</span>
           </div>
-          <div class="icon-col" @mousedown.stop="toggleAdjustment" :title="layer.adjustmentLayer ? 'Disable Adjustment Layer' : 'Make Adjustment Layer'">
-            <span :class="{ active: layer.adjustmentLayer }">◐</span>
+          <div class="icon-col" @mousedown.stop="toggleEffectLayer" :title="(layer.effectLayer || layer.adjustmentLayer) ? 'Disable Effect Layer' : 'Make Effect Layer'">
+            <span :class="{ active: layer.effectLayer || layer.adjustmentLayer }">◐</span>
           </div>
           <div class="icon-col" @mousedown.stop="store.toggleLayer3D(layer.id)" :title="layer.threeD ? 'Make 2D Layer' : 'Make 3D Layer'">
             <span :class="{ active: layer.threeD }">⬡</span>
@@ -183,7 +183,7 @@ const showColorPicker = ref(false);
 const colorPickerX = ref(0);
 const colorPickerY = ref(0);
 
-// After Effects label colors
+// Layer label colors
 const labelColors = [
   '#999999', // None (gray)
   '#e24b4b', // Red
@@ -438,7 +438,10 @@ function toggleQuality() { emit('updateLayer', props.layer.id, { quality: props.
 function toggleEffects() { emit('updateLayer', props.layer.id, { effectsEnabled: props.layer.effectsEnabled === false ? true : false }); }
 function toggleFrameBlend() { emit('updateLayer', props.layer.id, { frameBlending: !props.layer.frameBlending }); }
 function toggleMotionBlur() { emit('updateLayer', props.layer.id, { motionBlur: !props.layer.motionBlur }); }
-function toggleAdjustment() { emit('updateLayer', props.layer.id, { adjustmentLayer: !props.layer.adjustmentLayer }); }
+function toggleEffectLayer() {
+  const currentState = props.layer.effectLayer || props.layer.adjustmentLayer;
+  emit('updateLayer', props.layer.id, { effectLayer: !currentState, adjustmentLayer: !currentState });
+}
 function toggleColorPicker(e: MouseEvent) {
   const rect = (e.target as HTMLElement).getBoundingClientRect();
   colorPickerX.value = rect.left;

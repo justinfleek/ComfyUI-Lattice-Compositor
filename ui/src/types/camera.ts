@@ -1,6 +1,6 @@
 /**
  * 2.5D Camera System Types
- * Matching After Effects camera functionality
+ * Professional motion graphics camera functionality
  */
 
 export type CameraType = 'one-node' | 'two-node';

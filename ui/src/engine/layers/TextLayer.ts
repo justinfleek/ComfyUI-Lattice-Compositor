@@ -1,8 +1,8 @@
 /**
  * TextLayer - Text Rendering with Per-Character Animation & Path Following
  *
- * Implements text rendering using Troika-three-text with full feature parity
- * to After Effects text layers:
+ * Implements text rendering using Troika-three-text with full professional
+ * motion graphics text layer features:
  *
  * CHARACTER PROPERTIES:
  * - Font family, weight, style (Bold/Italic)
@@ -16,7 +16,7 @@
  * - Text alignment (left/center/right)
  * - Per-character 3D mode
  *
- * PATH OPTIONS (Full AE Parity):
+ * PATH OPTIONS (Full Feature Set):
  * - Path layer selection (spline reference)
  * - Path Offset (0-100%, animatable with keyframes)
  * - First Margin / Last Margin

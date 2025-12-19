@@ -4,6 +4,7 @@
  */
 
 import { createLogger } from '@/utils/logger';
+import { secureUUID } from '@/utils/security';
 import type {
   ComfyUIWorkflow,
   ComfyUIPromptResult,
@@ -67,12 +68,8 @@ export class ComfyUIClient {
   }
 
   private generateClientId(): string {
-    // Use crypto.randomUUID() for cryptographically secure client IDs
-    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-      return 'weyl_' + crypto.randomUUID();
-    }
-    // Fallback for environments without crypto.randomUUID
-    return 'weyl_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+    // Use cryptographically secure UUID generation
+    return 'weyl_' + secureUUID();
   }
 
   // ============================================================================

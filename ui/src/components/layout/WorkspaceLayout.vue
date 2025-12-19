@@ -1083,11 +1083,19 @@ onMounted(async () => {
   window.addEventListener('keydown', handleKeydown);
 
   perfInterval = window.setInterval(updatePerformanceStats, 1000);
+
+  // Start autosave timer
+  if (store.autosaveEnabled) {
+    store.startAutosaveTimer();
+  }
 });
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown);
   clearInterval(perfInterval);
+
+  // Stop autosave timer
+  store.stopAutosaveTimer();
 });
 </script>
 

@@ -144,6 +144,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { useCompositorStore } from '@/stores/compositorStore';
+import { isValidExternalURL } from '@/utils/security';
 import {
   motionIntentResolver,
   motionIntentTranslator,
@@ -286,6 +287,12 @@ async function testConnection() {
  */
 async function loadDepthMapAsFloat32Array(depthMapUrl: string | null): Promise<Float32Array | undefined> {
   if (!depthMapUrl) return undefined;
+
+  // Validate URL to prevent SSRF attacks
+  if (!isValidExternalURL(depthMapUrl, { allowData: true, allowBlob: true, allowHttp: true })) {
+    console.warn('[Security] Blocked depth map URL:', depthMapUrl.substring(0, 50));
+    return undefined;
+  }
 
   try {
     const img = new Image();

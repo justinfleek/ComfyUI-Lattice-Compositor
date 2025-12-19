@@ -1,14 +1,12 @@
 /**
  * ShapeLayer - Vector Shape Layer Implementation
  *
- * Full After Effects shape layer parity with:
+ * Professional vector shape layer features:
  * - Shape generators (rectangle, ellipse, polygon, star, path)
  * - Path operators (trim paths, merge paths, offset, pucker/bloat, wiggle, etc.)
  * - Fill and stroke with gradient support
  * - Repeater with transform
  * - Group hierarchy
- *
- * Plus Illustrator features:
  * - Path simplification
  * - Image trace (vectorization)
  * - Extrude (3D)

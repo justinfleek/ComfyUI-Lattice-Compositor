@@ -1,16 +1,12 @@
 /**
  * Motion Blur Service - Comprehensive Motion Blur System
  *
- * Implements multiple motion blur types matching After Effects:
+ * Implements multiple industry-standard motion blur types:
  * - Pixel Motion Blur (velocity-based)
  * - Directional Blur (linear direction)
  * - Radial Blur (circular/zoom)
- * - CC Force Motion Blur style (vector-based)
+ * - Vector Motion Blur (vector-based)
  * - Shutter Angle/Samples control
- *
- * References:
- * - https://helpx.adobe.com/after-effects/using/blur-sharpen-effects.html
- * - https://www.evercast.us/blog/after-effects-motion-blur
  */
 
 import type { AnimatableProperty } from '@/types/project';
@@ -239,7 +235,7 @@ export class MotionBlurProcessor {
   // ============================================================================
 
   /**
-   * Standard After Effects motion blur using shutter angle
+   * Standard shutter-angle motion blur
    * Simulates camera shutter open during frame exposure
    */
   private applyStandardBlur(

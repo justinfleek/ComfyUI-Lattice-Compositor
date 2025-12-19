@@ -1,7 +1,7 @@
 /**
  * Shape Layer Types & Interfaces
  *
- * Comprehensive shape layer system matching After Effects + Illustrator features.
+ * Comprehensive shape layer system with industry-standard vector features.
  * Supports path operations, shape generators, modifiers, and advanced operators.
  */
 

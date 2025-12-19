@@ -29,11 +29,17 @@ async function lazyLoad<T>(
   }
 
   // Start loading
-  const promise = loader().then((module) => {
-    moduleCache.set(key, module);
-    loadingPromises.delete(key);
-    return module;
-  });
+  const promise = loader()
+    .then((module) => {
+      moduleCache.set(key, module);
+      loadingPromises.delete(key);
+      return module;
+    })
+    .catch((error) => {
+      // Remove from loading promises so retry is possible
+      loadingPromises.delete(key);
+      throw error;
+    });
 
   loadingPromises.set(key, promise);
   return promise;

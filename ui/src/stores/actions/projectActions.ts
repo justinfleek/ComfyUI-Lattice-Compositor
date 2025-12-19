@@ -5,6 +5,7 @@
  * server persistence, and autosave functionality.
  */
 
+import { toRaw } from 'vue';
 import { storeLogger } from '@/utils/logger';
 import type { WeylProject } from '@/types/project';
 import { saveProject, loadProject, listProjects, deleteProject } from '@/services/projectStorage';
@@ -40,14 +41,8 @@ export function pushHistory(store: ProjectStore): void {
     store.historyStack = store.historyStack.slice(0, store.historyIndex + 1);
   }
 
-  // Deep clone the project (structuredClone is 10-50x faster than JSON.parse/stringify)
-  let snapshot: typeof store.project;
-  try {
-    snapshot = structuredClone(store.project);
-  } catch {
-    // Fall back to JSON for proxy objects (e.g., in tests)
-    snapshot = JSON.parse(JSON.stringify(store.project));
-  }
+  // Deep clone the project using toRaw to deproxy reactive objects
+  const snapshot = structuredClone(toRaw(store.project)) as typeof store.project;
   store.historyStack.push(snapshot);
   store.historyIndex = store.historyStack.length - 1;
 
@@ -65,11 +60,8 @@ export function undo(store: ProjectStore): boolean {
   if (store.historyIndex <= 0) return false;
 
   store.historyIndex--;
-  try {
-    store.project = structuredClone(store.historyStack[store.historyIndex]);
-  } catch {
-    store.project = JSON.parse(JSON.stringify(store.historyStack[store.historyIndex]));
-  }
+  // History stack contains raw objects, safe to clone directly
+  store.project = structuredClone(store.historyStack[store.historyIndex]) as WeylProject;
   return true;
 }
 
@@ -80,11 +72,8 @@ export function redo(store: ProjectStore): boolean {
   if (store.historyIndex >= store.historyStack.length - 1) return false;
 
   store.historyIndex++;
-  try {
-    store.project = structuredClone(store.historyStack[store.historyIndex]);
-  } catch {
-    store.project = JSON.parse(JSON.stringify(store.historyStack[store.historyIndex]));
-  }
+  // History stack contains raw objects, safe to clone directly
+  store.project = structuredClone(store.historyStack[store.historyIndex]) as WeylProject;
   return true;
 }
 
@@ -106,12 +95,8 @@ export function canRedo(store: ProjectStore): boolean {
  * Clear history stack
  */
 export function clearHistory(store: ProjectStore): void {
-  let snapshot: typeof store.project;
-  try {
-    snapshot = structuredClone(store.project);
-  } catch {
-    snapshot = JSON.parse(JSON.stringify(store.project));
-  }
+  // Use toRaw to deproxy reactive objects before cloning
+  const snapshot = structuredClone(toRaw(store.project)) as typeof store.project;
   store.historyStack = [snapshot];
   store.historyIndex = 0;
 }

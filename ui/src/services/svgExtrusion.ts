@@ -17,6 +17,7 @@
 
 import * as THREE from 'three';
 import { SVGLoader, SVGResult } from 'three/examples/jsm/loaders/SVGLoader.js';
+import { validateURL } from '@/utils/security';
 
 // ============================================================================
 // TYPES
@@ -135,11 +136,19 @@ export class SVGExtrusionService {
 
   /**
    * Load and parse an SVG file from URL
+   * @throws Error if URL is invalid or blocked for security reasons
    */
   async loadFromURL(url: string, name?: string): Promise<ParsedSVGDocument> {
+    // Validate URL to prevent SSRF attacks
+    const validatedUrl = validateURL(url, 'SVG loading', {
+      allowData: true,
+      allowBlob: true,
+      allowHttp: true, // Allow HTTP for local development
+    });
+
     return new Promise((resolve, reject) => {
       this.svgLoader.load(
-        url,
+        validatedUrl,
         (data) => {
           const doc = this.parseSVGResult(data, name || url);
           this.documentCache.set(doc.id, doc);

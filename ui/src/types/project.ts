@@ -207,7 +207,9 @@ export interface Layer {
   quality?: 'draft' | 'best';   // Quality switch
   effectsEnabled?: boolean;     // Enable/disable all effects
   frameBlending?: boolean;      // Frame blending for time-remapped footage
-  adjustmentLayer?: boolean;    // Effects apply to layers below
+  effectLayer?: boolean;        // Effects apply to layers below
+  /** @deprecated Use effectLayer instead */
+  adjustmentLayer?: boolean;    // Effects apply to layers below (legacy)
   audioEnabled?: boolean;       // Enable/disable audio for this layer
   labelColor?: string;          // Layer label color (hex)
 
@@ -297,7 +299,7 @@ export interface LayerMotionBlurSettings {
 }
 
 // ============================================================
-// 3D MATERIAL OPTIONS (After Effects style)
+// 3D MATERIAL OPTIONS (Industry Standard)
 // ============================================================
 
 export interface LayerMaterialOptions {
@@ -1507,7 +1509,7 @@ export interface Keyframe<T> {
   controlMode: ControlMode;  // How handles behave when dragged
 }
 
-// Control mode for bezier handles (matches After Effects / Friction)
+// Control mode for bezier handles (industry standard)
 export type ControlMode = 'symmetric' | 'smooth' | 'corner';
 
 // Base interpolation types
@@ -1558,7 +1560,7 @@ export interface SplineData {
   fill: string;                // Fill color hex (empty = no fill)
   fillOpacity?: number;        // Fill opacity 0-100 (default 100)
 
-  // Trim Paths (like After Effects)
+  // Trim Paths (path trimming)
   trimStart?: number;          // Trim start 0-100%
   trimEnd?: number;            // Trim end 0-100%
   trimOffset?: number;         // Trim offset in degrees

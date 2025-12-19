@@ -7,6 +7,7 @@
 
 import type { WeylProject } from '@/types/project';
 import { createLogger } from '@/utils/logger';
+import { validateProjectStructure, ValidationError } from '@/utils/security';
 
 const logger = createLogger('ProjectStorage');
 
@@ -261,11 +262,20 @@ export async function importProjectFromFile(file: File): Promise<WeylProject> {
 
     reader.onload = () => {
       try {
-        const project = JSON.parse(reader.result as string) as WeylProject;
+        const data = JSON.parse(reader.result as string);
+
+        // Validate project structure before accepting
+        validateProjectStructure(data, `Project file '${file.name}'`);
+
+        const project = data as WeylProject;
         logger.info(`Imported project: ${project.meta?.name || file.name}`);
         resolve(project);
       } catch (error) {
-        reject(new Error('Invalid project file'));
+        if (error instanceof ValidationError) {
+          reject(new Error(`Invalid project file: ${error.message}`));
+        } else {
+          reject(new Error('Invalid project file: Failed to parse JSON'));
+        }
       }
     };
 

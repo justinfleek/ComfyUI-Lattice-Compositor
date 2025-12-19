@@ -437,7 +437,7 @@ export class CameraLayer extends BaseLayer {
           (camera.orientation.x + camera.xRotation) * degToRad,
           (camera.orientation.y + camera.yRotation) * degToRad,
           (camera.orientation.z + camera.zRotation) * degToRad,
-          'YXZ' // Standard After Effects rotation order
+          'YXZ' // Standard 3D rotation order (heading-pitch-roll)
         );
       }
     }

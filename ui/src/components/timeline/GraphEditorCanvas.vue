@@ -144,13 +144,13 @@ import { useCompositorStore } from '@/stores/compositorStore';
 import type { Keyframe } from '@/types/project';
 
 // ═══════════════════════════════════════════════════════════════════
-// CONSTANTS - Exact AE Colors
+// CONSTANTS - Curve Colors
 // ═══════════════════════════════════════════════════════════════════
 
 const CURVE_COLORS: Record<string, string> = {
-  'Position X': '#ff4d4d',    // AE Red
-  'Position Y': '#4dff4d',    // AE Green
-  'Position Z': '#4d4dff',    // AE Blue
+  'Position X': '#ff4d4d',    // Red
+  'Position Y': '#4dff4d',    // Green
+  'Position Z': '#4d4dff',    // Blue
   'Scale X': '#ffb34d',       // Orange
   'Scale Y': '#ffff4d',       // Yellow
   'Rotation': '#d94dff',      // Purple

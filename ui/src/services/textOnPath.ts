@@ -1,7 +1,7 @@
 /**
  * TextOnPath Service - Arc-Length Parameterized Text Path Animation
  *
- * Provides After Effects-style text-on-path functionality with:
+ * Professional text-on-path functionality with:
  * - Arc-length parameterization for uniform character spacing
  * - First/Last margin support
  * - Path offset animation (0-100% with keyframe control)

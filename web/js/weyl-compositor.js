@@ -1,4 +1,4 @@
-import { m as defineStore, q as defineComponent, r as ref, c as computed, a as createElementBlock, d as openBlock, s as createBaseVNode, t as createCommentVNode, v as withDirectives, F as Fragment, x as renderList, y as toDisplayString, z as vModelText, A as normalizeClass, B as withModifiers, o as onMounted, n as normalizeStyle, w as watch, C as onUnmounted, g as createBlock, D as withKeys, T as Teleport, E as createTextVNode, u as unref, G as createVNode, H as createStaticVNode, I as vModelSelect, J as markRaw, h as resolveDynamicComponent, K as reactive, L as vModelCheckbox, M as vShow, N as storeToRefs, k as nextTick, O as shallowRef, P as withCtx, Q as createApp, R as createPinia } from './weyl-vue-vendor.js';
+import { m as defineStore, t as toRaw, q as defineComponent, r as ref, c as computed, a as createElementBlock, d as openBlock, s as createBaseVNode, v as createCommentVNode, x as withDirectives, F as Fragment, y as renderList, z as toDisplayString, A as vModelText, B as normalizeClass, C as withModifiers, o as onMounted, n as normalizeStyle, w as watch, D as onUnmounted, g as createBlock, E as withKeys, T as Teleport, G as createTextVNode, u as unref, H as createVNode, I as createStaticVNode, J as vModelSelect, K as markRaw, h as resolveDynamicComponent, L as reactive, M as vModelCheckbox, N as vShow, O as storeToRefs, k as nextTick, P as shallowRef, Q as withCtx, R as createApp, S as createPinia } from './weyl-vue-vendor.js';
 import { g as ge, P as Pe } from './weyl-ui-vendor.js';
 import { G as Group, M as MathUtils, a as Mesh, N as NormalBlending, A as AddEquation, S as SrcAlphaFactor, O as OneMinusSrcAlphaFactor, b as OneFactor, C as CustomBlending, c as MaxEquation, d as MinEquation, e as OneMinusDstColorFactor, f as OneMinusSrcColorFactor, g as SubtractEquation, h as SubtractiveBlending, i as AdditiveBlending, j as MultiplyBlending, V as Vector3, k as CatmullRomCurve3, B as BufferGeometry, L as LineBasicMaterial, l as Line, m as OctahedronGeometry, n as MeshBasicMaterial, o as SphereGeometry, p as Box3, P as PlaneGeometry, D as DoubleSide, q as VideoTexture, r as LinearFilter, R as RGBAFormat, s as SRGBColorSpace, t as SVGLoader, u as Color, v as Matrix4, E as ExtrudeGeometry, w as ShapeGeometry, x as BufferAttribute, y as MeshStandardMaterial, z as MeshPhysicalMaterial, F as BackSide, H as FrontSide, I as Float32BufferAttribute, T as TubeGeometry, J as TextureLoader, K as BoxGeometry, Q as IcosahedronGeometry, U as TetrahedronGeometry, W as TorusGeometry, X as CylinderGeometry, Y as ConeGeometry, Z as InstancedMesh, _ as DynamicDrawUsage, $ as Euler, a0 as Quaternion, a1 as Scene, a2 as PerspectiveCamera, a3 as AmbientLight, a4 as DirectionalLight, a5 as WebGLRenderer, a6 as NearestFilter, a7 as SpriteMaterial, a8 as RGBELoader, a9 as EXRLoader, aa as PMREMGenerator, ab as RepeatWrapping, ac as LinearMipmapLinearFilter, ad as LinearSRGBColorSpace, ae as Vector2, af as AxesHelper, ag as GridHelper, ah as EquirectangularReflectionMapping, ai as LineLoop, aj as Shape, ak as Path, al as ACESFilmicToneMapping, am as PCFSoftShadowMap, an as EffectComposer, ao as MeshNormalMaterial, ap as WebGLRenderTarget, aq as HalfFloatType, ar as DepthTexture, as as DepthFormat, at as UnsignedIntType, au as FloatType, av as ShaderMaterial, aw as RenderPass, ax as OutputPass, ay as BokehPass, az as SSAOPass, aA as UnrealBloomPass, aB as ShaderPass, aC as UnsignedByteType, aD as CircleGeometry, aE as CurvePath, aF as CubicBezierCurve3, aG as Text, aH as LineGeometry, aI as LineMaterial, aJ as Line2, aK as DataTexture, aL as RedFormat, aM as InstancedBufferGeometry, aN as InstancedBufferAttribute, aO as RingGeometry, aP as PointLight, aQ as RectAreaLight, aR as SpotLight, aS as RectAreaLightHelper, aT as DirectionalLightHelper, aU as SpotLightHelper, aV as PointLightHelper, aW as RectAreaLightUniformsLib, aX as CanvasTexture, aY as GLTFLoader, aZ as DRACOLoader, a_ as MeshoptDecoder, a$ as OBJLoader, b0 as FBXLoader, b1 as ColladaLoader, b2 as AnimationMixer, b3 as LoopRepeat, b4 as LoopOnce, b5 as MeshDepthMaterial, b6 as RGBADepthPacking, b7 as BoxHelper, b8 as SkeletonHelper, b9 as SkinnedMesh, ba as PLYLoader, bb as PCDLoader, bc as Points, bd as Raycaster, be as Clock, bf as OrthographicCamera, bg as THREE$1, bh as Texture, bi as TransformControls } from './weyl-three-vendor.js';
 import { M as Muxer, A as ArrayBufferTarget, a as Muxer$1, b as ArrayBufferTarget$1 } from './weyl-export-vendor.js';
@@ -4448,7 +4448,7 @@ class MotionBlurProcessor {
   // STANDARD MOTION BLUR (Shutter-based)
   // ============================================================================
   /**
-   * Standard After Effects motion blur using shutter angle
+   * Standard shutter-angle motion blur
    * Simulates camera shutter open during frame exposure
    */
   applyStandardBlur(sourceCanvas, velocity) {
@@ -8369,6 +8369,82 @@ function setPropertyAnimated(store, layerId, propertyPath, animated, addKeyframe
   store.project.meta.modified = (/* @__PURE__ */ new Date()).toISOString();
 }
 
+const BLOCKED_HOSTNAMES = [
+  "localhost",
+  "127.0.0.1",
+  "0.0.0.0",
+  "::1"
+  // Private IP ranges are checked separately
+];
+function isPrivateIP(hostname) {
+  const privateRanges = [
+    /^10\./,
+    // 10.0.0.0/8
+    /^172\.(1[6-9]|2[0-9]|3[0-1])\./,
+    // 172.16.0.0/12
+    /^192\.168\./,
+    // 192.168.0.0/16
+    /^169\.254\./,
+    // Link-local
+    /^127\./
+    // Loopback
+  ];
+  return privateRanges.some((range) => range.test(hostname));
+}
+function isValidExternalURL(url, options = {}) {
+  const {
+    allowData = true,
+    allowBlob = true,
+    allowHttp = false
+    // Default to HTTPS only for external URLs
+  } = options;
+  try {
+    const parsed = new URL(url);
+    const allowedProtocols = ["https:"];
+    if (allowHttp) allowedProtocols.push("http:");
+    if (allowData) allowedProtocols.push("data:");
+    if (allowBlob) allowedProtocols.push("blob:");
+    if (!allowedProtocols.includes(parsed.protocol)) {
+      console.warn(`[Security] Blocked URL with protocol: ${parsed.protocol}`);
+      return false;
+    }
+    if (parsed.protocol === "data:" || parsed.protocol === "blob:") {
+      return true;
+    }
+    if (BLOCKED_HOSTNAMES.includes(parsed.hostname.toLowerCase())) {
+      console.warn(`[Security] Blocked URL with hostname: ${parsed.hostname}`);
+      return false;
+    }
+    if (isPrivateIP(parsed.hostname)) {
+      console.warn(`[Security] Blocked URL with private IP: ${parsed.hostname}`);
+      return false;
+    }
+    return true;
+  } catch {
+    console.warn(`[Security] Invalid URL: ${url}`);
+    return false;
+  }
+}
+function validateURL(url, context = "resource loading", options = {}) {
+  if (!isValidExternalURL(url, options)) {
+    throw new Error(
+      `[Security] Invalid or blocked URL for ${context}: ${url.substring(0, 100)}...`
+    );
+  }
+  return url;
+}
+function secureUUID() {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  const array = new Uint8Array(16);
+  crypto.getRandomValues(array);
+  array[6] = array[6] & 15 | 64;
+  array[8] = array[8] & 63 | 128;
+  const hex = Array.from(array, (b) => b.toString(16).padStart(2, "0")).join("");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
 const logger$2 = createLogger("ProjectStorage");
 const API_BASE = "/weyl/compositor";
 function isValidProjectId(projectId) {
@@ -8476,12 +8552,7 @@ function pushHistory(store) {
   if (store.historyIndex < store.historyStack.length - 1) {
     store.historyStack = store.historyStack.slice(0, store.historyIndex + 1);
   }
-  let snapshot;
-  try {
-    snapshot = structuredClone(store.project);
-  } catch {
-    snapshot = JSON.parse(JSON.stringify(store.project));
-  }
+  const snapshot = structuredClone(toRaw(store.project));
   store.historyStack.push(snapshot);
   store.historyIndex = store.historyStack.length - 1;
   if (store.historyStack.length > MAX_HISTORY_SIZE) {
@@ -8492,21 +8563,13 @@ function pushHistory(store) {
 function undo(store) {
   if (store.historyIndex <= 0) return false;
   store.historyIndex--;
-  try {
-    store.project = structuredClone(store.historyStack[store.historyIndex]);
-  } catch {
-    store.project = JSON.parse(JSON.stringify(store.historyStack[store.historyIndex]));
-  }
+  store.project = structuredClone(store.historyStack[store.historyIndex]);
   return true;
 }
 function redo(store) {
   if (store.historyIndex >= store.historyStack.length - 1) return false;
   store.historyIndex++;
-  try {
-    store.project = structuredClone(store.historyStack[store.historyIndex]);
-  } catch {
-    store.project = JSON.parse(JSON.stringify(store.historyStack[store.historyIndex]));
-  }
+  store.project = structuredClone(store.historyStack[store.historyIndex]);
   return true;
 }
 function exportProject(store) {
@@ -14972,7 +15035,7 @@ const _sfc_main$H = /* @__PURE__ */ defineComponent({
   }
 });
 
-const ScrubableNumber = /* @__PURE__ */ _export_sfc(_sfc_main$H, [["__scopeId", "data-v-6f95dbac"]]);
+const ScrubableNumber = /* @__PURE__ */ _export_sfc(_sfc_main$H, [["__scopeId", "data-v-d5ac8d8c"]]);
 
 const _hoisted_1$F = ["value", "min", "max", "step", "disabled"];
 const _hoisted_2$E = {
@@ -24373,11 +24436,18 @@ class SVGExtrusionService {
   // ==========================================================================
   /**
    * Load and parse an SVG file from URL
+   * @throws Error if URL is invalid or blocked for security reasons
    */
   async loadFromURL(url, name) {
+    const validatedUrl = validateURL(url, "SVG loading", {
+      allowData: true,
+      allowBlob: true,
+      allowHttp: true
+      // Allow HTTP for local development
+    });
     return new Promise((resolve, reject) => {
       this.svgLoader.load(
-        url,
+        validatedUrl,
         (data) => {
           const doc = this.parseSVGResult(data, name || url);
           this.documentCache.set(doc.id, doc);
@@ -40129,7 +40199,7 @@ class CameraLayer extends BaseLayer {
           (camera.orientation.y + camera.yRotation) * degToRad,
           (camera.orientation.z + camera.zRotation) * degToRad,
           "YXZ"
-          // Standard After Effects rotation order
+          // Standard 3D rotation order (heading-pitch-roll)
         );
       }
     }
@@ -44959,7 +45029,7 @@ class LayerManager {
   // Callbacks
   onVideoMetadataLoaded;
   nestedCompRenderContext = null;
-  adjustmentRenderContext = null;
+  effectLayerRenderContext = null;
   cameraGetter;
   cameraAtFrameGetter;
   cameraUpdater;
@@ -45009,16 +45079,21 @@ class LayerManager {
     this.setNestedCompRenderContext(context);
   }
   /**
-   * Set the adjustment render context
-   * This allows adjustment layers to render layers below them
+   * Set the effect layer render context
+   * This allows effect layers to render layers below them
    */
-  setAdjustmentRenderContext(context) {
-    this.adjustmentRenderContext = context;
+  setEffectLayerRenderContext(context) {
+    this.effectLayerRenderContext = context;
     for (const layer of this.layers.values()) {
-      if (layer.type === "solid" && layer.layerData?.adjustmentLayer) {
+      const layerData = layer.layerData;
+      if (layer.type === "solid" && (layerData?.effectLayer || layerData?.adjustmentLayer)) {
         layer.setRenderContext(context);
       }
     }
+  }
+  /** @deprecated Use setEffectLayerRenderContext instead */
+  setAdjustmentRenderContext(context) {
+    this.setEffectLayerRenderContext(context);
   }
   /**
    * Set camera callbacks for CameraLayer access to store
@@ -45135,9 +45210,9 @@ class LayerManager {
       const nestedCompLayer = layer;
       nestedCompLayer.setFPS(this.compositionFPS);
     }
-    if (layerData.adjustmentLayer && this.adjustmentRenderContext) {
+    if ((layerData.effectLayer || layerData.adjustmentLayer) && this.effectLayerRenderContext) {
       if ("setRenderContext" in layer) {
-        layer.setRenderContext(this.adjustmentRenderContext);
+        layer.setRenderContext(this.effectLayerRenderContext);
       }
     }
     if (layer.type === "light") {
@@ -53941,8 +54016,9 @@ const _sfc_main$b = /* @__PURE__ */ defineComponent({
     function toggleMotionBlur() {
       emit("updateLayer", props.layer.id, { motionBlur: !props.layer.motionBlur });
     }
-    function toggleAdjustment() {
-      emit("updateLayer", props.layer.id, { adjustmentLayer: !props.layer.adjustmentLayer });
+    function toggleEffectLayer() {
+      const currentState = props.layer.effectLayer || props.layer.adjustmentLayer;
+      emit("updateLayer", props.layer.id, { effectLayer: !currentState, adjustmentLayer: !currentState });
     }
     function toggleColorPicker(e) {
       const rect = e.target.getBoundingClientRect();
@@ -54177,11 +54253,11 @@ const _sfc_main$b = /* @__PURE__ */ defineComponent({
               ], 40, _hoisted_19$7),
               createBaseVNode("div", {
                 class: "icon-col",
-                onMousedown: withModifiers(toggleAdjustment, ["stop"]),
-                title: __props.layer.adjustmentLayer ? "Disable Adjustment Layer" : "Make Adjustment Layer"
+                onMousedown: withModifiers(toggleEffectLayer, ["stop"]),
+                title: __props.layer.effectLayer || __props.layer.adjustmentLayer ? "Disable Effect Layer" : "Make Effect Layer"
               }, [
                 createBaseVNode("span", {
-                  class: normalizeClass({ active: __props.layer.adjustmentLayer })
+                  class: normalizeClass({ active: __props.layer.effectLayer || __props.layer.adjustmentLayer })
                 }, "◐", 2)
               ], 40, _hoisted_20$7),
               createBaseVNode("div", {
@@ -54348,7 +54424,7 @@ const _sfc_main$b = /* @__PURE__ */ defineComponent({
   }
 });
 
-const EnhancedLayerTrack = /* @__PURE__ */ _export_sfc(_sfc_main$b, [["__scopeId", "data-v-2e6ad934"]]);
+const EnhancedLayerTrack = /* @__PURE__ */ _export_sfc(_sfc_main$b, [["__scopeId", "data-v-95394625"]]);
 
 const _hoisted_1$9 = { class: "composition-tabs" };
 const _hoisted_2$9 = {
@@ -55064,14 +55140,14 @@ const _sfc_main$9 = /* @__PURE__ */ defineComponent({
             style: normalizeStyle({ width: sidebarWidth.value + "px" })
           }, [
             createBaseVNode("div", _hoisted_15$7, [
-              _cache[26] || (_cache[26] = createStaticVNode('<div class="col-header col-av-features" data-v-dbcecb18><span class="header-icon" title="Video" data-v-dbcecb18>👁</span><span class="header-icon" title="Audio" data-v-dbcecb18>🔊</span><span class="header-icon" title="Isolate" data-v-dbcecb18>●</span><span class="header-icon" title="Lock" data-v-dbcecb18>🔒</span></div><div class="col-header col-number" data-v-dbcecb18>#</div><div class="col-header col-name" data-v-dbcecb18>Source Name</div>', 3)),
+              _cache[26] || (_cache[26] = createStaticVNode('<div class="col-header col-av-features" data-v-9ce23ca9><span class="header-icon" title="Video" data-v-9ce23ca9>👁</span><span class="header-icon" title="Audio" data-v-9ce23ca9>🔊</span><span class="header-icon" title="Isolate" data-v-9ce23ca9>●</span><span class="header-icon" title="Lock" data-v-9ce23ca9>🔒</span></div><div class="col-header col-number" data-v-9ce23ca9>#</div><div class="col-header col-name" data-v-9ce23ca9>Source Name</div>', 3)),
               createBaseVNode("div", _hoisted_16$7, [
                 createBaseVNode("span", {
                   class: normalizeClass(["header-icon clickable", { active: unref(store).hideMinimizedLayers }]),
                   title: "Hide Minimized Layers",
                   onClick: _cache[14] || (_cache[14] = ($event) => unref(store).toggleHideMinimizedLayers())
                 }, "🙈", 2),
-                _cache[25] || (_cache[25] = createStaticVNode('<span class="header-icon" title="Flatten Transform" data-v-dbcecb18>☀</span><span class="header-icon" title="Quality" data-v-dbcecb18>◐</span><span class="header-icon" title="Effects" data-v-dbcecb18>fx</span><span class="header-icon" title="Frame Blending" data-v-dbcecb18>⊞</span><span class="header-icon" title="Motion Blur" data-v-dbcecb18>◔</span><span class="header-icon" title="Adjustment Layer" data-v-dbcecb18>◐</span><span class="header-icon" title="3D Layer" data-v-dbcecb18>⬡</span>', 7))
+                _cache[25] || (_cache[25] = createStaticVNode('<span class="header-icon" title="Flatten Transform" data-v-9ce23ca9>☀</span><span class="header-icon" title="Quality" data-v-9ce23ca9>◐</span><span class="header-icon" title="Effects" data-v-9ce23ca9>fx</span><span class="header-icon" title="Frame Blending" data-v-9ce23ca9>⊞</span><span class="header-icon" title="Motion Blur" data-v-9ce23ca9>◔</span><span class="header-icon" title="Adjustment Layer" data-v-9ce23ca9>◐</span><span class="header-icon" title="3D Layer" data-v-9ce23ca9>⬡</span>', 7))
               ]),
               _cache[27] || (_cache[27] = createBaseVNode("div", { class: "col-header col-parent" }, "Parent & Link", -1))
             ]),
@@ -55169,7 +55245,7 @@ const _sfc_main$9 = /* @__PURE__ */ defineComponent({
   }
 });
 
-const TimelinePanel = /* @__PURE__ */ _export_sfc(_sfc_main$9, [["__scopeId", "data-v-dbcecb18"]]);
+const TimelinePanel = /* @__PURE__ */ _export_sfc(_sfc_main$9, [["__scopeId", "data-v-9ce23ca9"]]);
 
 const _hoisted_1$7 = { class: "graph-editor" };
 const _hoisted_2$7 = { class: "graph-header" };
@@ -58082,10 +58158,7 @@ class ComfyUIClient {
     this.clientId = config.clientId || this.generateClientId();
   }
   generateClientId() {
-    if (typeof crypto !== "undefined" && crypto.randomUUID) {
-      return "weyl_" + crypto.randomUUID();
-    }
-    return "weyl_" + Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+    return "weyl_" + secureUUID();
   }
   // ============================================================================
   // HTTP Endpoints
@@ -62215,6 +62288,10 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
     }
     async function loadDepthMapAsFloat32Array(depthMapUrl) {
       if (!depthMapUrl) return void 0;
+      if (!isValidExternalURL(depthMapUrl, { allowData: true, allowBlob: true, allowHttp: true })) {
+        console.warn("[Security] Blocked depth map URL:", depthMapUrl.substring(0, 50));
+        return void 0;
+      }
       try {
         const img = new Image();
         img.crossOrigin = "anonymous";
@@ -62546,7 +62623,7 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
   }
 });
 
-const PathSuggestionDialog = /* @__PURE__ */ _export_sfc(_sfc_main$4, [["__scopeId", "data-v-b8ff30fc"]]);
+const PathSuggestionDialog = /* @__PURE__ */ _export_sfc(_sfc_main$4, [["__scopeId", "data-v-2082f292"]]);
 
 const _hoisted_1$2 = ["viewBox"];
 const _hoisted_2$2 = ["width", "height"];
@@ -63668,10 +63745,14 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
       gpuTier.value = tierInfo.tier;
       window.addEventListener("keydown", handleKeydown);
       perfInterval = window.setInterval(updatePerformanceStats, 1e3);
+      if (store.autosaveEnabled) {
+        store.startAutosaveTimer();
+      }
     });
     onUnmounted(() => {
       window.removeEventListener("keydown", handleKeydown);
       clearInterval(perfInterval);
+      store.stopAutosaveTimer();
     });
     return (_ctx, _cache) => {
       return openBlock(), createElementBlock("div", _hoisted_1, [
@@ -64183,7 +64264,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
   }
 });
 
-const WorkspaceLayout = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-162ea4df"]]);
+const WorkspaceLayout = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-00d63c27"]]);
 
 const _sfc_main = /* @__PURE__ */ defineComponent({
   __name: "App",

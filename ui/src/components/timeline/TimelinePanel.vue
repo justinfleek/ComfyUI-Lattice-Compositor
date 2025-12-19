@@ -248,7 +248,7 @@ function setFrame(e: Event) { store.setFrame(parseInt((e.target as HTMLInputElem
 function togglePlayback() { store.togglePlayback(); }
 function handleToggleExpand(id: string, val: boolean) { expandedLayers.value[id] = val; }
 
-// Format frame as timecode (HH;MM;SS;FF) like After Effects
+// Format frame as timecode (HH;MM;SS;FF) SMPTE format
 function formatTimecode(frame: number): string {
   const fps = store.fps;
   const totalSeconds = Math.floor(frame / fps);
@@ -490,7 +490,7 @@ watch(() => [computedWidthStyle.value, zoomPercent.value, store.frameCount], () 
 .header-left, .header-center, .header-right { display: flex; gap: 12px; align-items: center; }
 .tool-group { display: flex; gap: 8px; align-items: center; }
 
-/* Timecode display like After Effects */
+/* SMPTE Timecode display */
 .timecode { font-family: 'Consolas', 'Courier New', monospace; font-size: 16px; color: #4a90d9; font-weight: bold; letter-spacing: 1px; }
 
 /* Menus */

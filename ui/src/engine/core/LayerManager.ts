@@ -35,7 +35,7 @@ import { SplineLayer } from '../layers/SplineLayer';
 import { ParticleLayer } from '../layers/ParticleLayer';
 import { VideoLayer, type VideoMetadata } from '../layers/VideoLayer';
 import { NestedCompLayer, type NestedCompRenderContext } from '../layers/NestedCompLayer';
-import { AdjustmentLayer, type AdjustmentRenderContext } from '../layers/AdjustmentLayer';
+import { EffectLayer, type EffectLayerRenderContext, type AdjustmentRenderContext } from '../layers/EffectLayer';
 import { CameraLayer, type CameraGetter, type CameraUpdater } from '../layers/CameraLayer';
 import { LightLayer } from '../layers/LightLayer';
 import { DepthflowLayer } from '../layers/DepthflowLayer';
@@ -58,7 +58,7 @@ export class LayerManager {
   // Callbacks
   private onVideoMetadataLoaded?: (layerId: string, metadata: VideoMetadata) => void;
   private nestedCompRenderContext: NestedCompRenderContext | null = null;
-  private adjustmentRenderContext: AdjustmentRenderContext | null = null;
+  private effectLayerRenderContext: EffectLayerRenderContext | null = null;
   private cameraGetter?: CameraGetter;
   private cameraAtFrameGetter?: import('../layers/CameraLayer').CameraAtFrameGetter;
   private cameraUpdater?: CameraUpdater;
@@ -123,18 +123,24 @@ export class LayerManager {
   }
 
   /**
-   * Set the adjustment render context
-   * This allows adjustment layers to render layers below them
+   * Set the effect layer render context
+   * This allows effect layers to render layers below them
    */
-  setAdjustmentRenderContext(context: AdjustmentRenderContext): void {
-    this.adjustmentRenderContext = context;
+  setEffectLayerRenderContext(context: EffectLayerRenderContext): void {
+    this.effectLayerRenderContext = context;
 
-    // Update existing adjustment layers
+    // Update existing effect layers
     for (const layer of this.layers.values()) {
-      if (layer.type === 'solid' && (layer as any).layerData?.adjustmentLayer) {
-        (layer as unknown as AdjustmentLayer).setRenderContext(context);
+      const layerData = (layer as any).layerData;
+      if (layer.type === 'solid' && (layerData?.effectLayer || layerData?.adjustmentLayer)) {
+        (layer as unknown as EffectLayer).setRenderContext(context);
       }
     }
+  }
+
+  /** @deprecated Use setEffectLayerRenderContext instead */
+  setAdjustmentRenderContext(context: AdjustmentRenderContext): void {
+    this.setEffectLayerRenderContext(context);
   }
 
   /**
@@ -295,12 +301,12 @@ export class LayerManager {
       nestedCompLayer.setFPS(this.compositionFPS);
     }
 
-    // Any layer with adjustmentLayer flag: provide render context
-    if (layerData.adjustmentLayer && this.adjustmentRenderContext) {
-      // The layer might be a solid or any other type with adjustment flag
+    // Any layer with effectLayer/adjustmentLayer flag: provide render context
+    if ((layerData.effectLayer || layerData.adjustmentLayer) && this.effectLayerRenderContext) {
+      // The layer might be a solid or any other type with effect layer flag
       // Cast to access setRenderContext if available
       if ('setRenderContext' in layer) {
-        (layer as unknown as AdjustmentLayer).setRenderContext(this.adjustmentRenderContext);
+        (layer as unknown as EffectLayer).setRenderContext(this.effectLayerRenderContext);
       }
     }
 
