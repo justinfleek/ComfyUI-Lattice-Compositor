@@ -354,7 +354,7 @@ export type LayerDataMap = {
 /**
  * Type guard to check if a layer has specific data type
  */
-export function isLayerOfType<T extends LayerType>(
+export function isLayerOfType<T extends keyof LayerDataMap>(
   layer: Layer,
   type: T
 ): layer is Layer & { type: T; data: LayerDataMap[T] } {
@@ -365,7 +365,7 @@ export function isLayerOfType<T extends LayerType>(
  * Get typed data from a layer
  * Returns null if layer type doesn't match
  */
-export function getLayerData<T extends LayerType>(
+export function getLayerData<T extends keyof LayerDataMap>(
   layer: Layer,
   type: T
 ): LayerDataMap[T] | null {

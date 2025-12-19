@@ -33,6 +33,7 @@ function createMockLayer(id: string, overrides: Partial<Layer> = {}): Layer {
     visible: true,
     locked: false,
     solo: false,
+      isolate: false,
     inPoint: 0,
     outPoint: 80,
     transform: createDefaultTransform(),

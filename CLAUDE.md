@@ -1310,6 +1310,70 @@ Key classes in `arcLength.ts`:
 
 ---
 
+## RUNTIME STORAGE LOCATIONS
+
+All data is **session-only** (in-memory). No localStorage, IndexedDB, or file system persistence exists currently.
+
+### Pinia Stores (Primary State)
+
+| Store | File | Contents |
+|-------|------|----------|
+| **compositorStore** | `stores/compositorStore.ts` | Project, compositions, layers, keyframes, cameras, clipboard |
+| **historyStore** | `stores/historyStore.ts` | Undo/redo stack (50 max snapshots) |
+| **selectionStore** | `stores/selectionStore.ts` | Selected layers, keyframes, current tool |
+| **playbackStore** | `stores/playbackStore.ts` | isPlaying, RAF ID, loop mode |
+| **audioStore** | `stores/audioStore.ts` | AudioBuffer, analysis data, mappings |
+| **assetStore** | `stores/assetStore.ts` | Materials, SVGs, sprites, environment maps |
+
+### Caches (Services - LRU Eviction)
+
+| Cache | File | Max Size | Purpose |
+|-------|------|----------|---------|
+| **FrameCache** | `services/frameCache.ts` | GPU-tier dependent | Rendered frame cache |
+| **LayerEvaluationCache** | `services/layerEvaluationCache.ts` | 5000 entries | Property evaluation |
+| **EffectCache** | `services/effectProcessor.ts` | 50 entries | Effect results |
+| **InterpolationCache** | `services/interpolation.ts` | 100 entries | Bezier curves |
+
+### Particle System (Deterministic)
+
+| Storage | File | Purpose |
+|---------|------|---------|
+| **ParticleSimulationController** | `engine/ParticleSimulationController.ts` | Checkpoints, RNG state |
+| **SeededRandom** | `services/particleSystem.ts` | Mulberry32 PRNG for determinism |
+
+### Three.js / Engine
+
+| Storage | File | Contents |
+|---------|------|----------|
+| **SceneManager** | `engine/core/SceneManager.ts` | THREE.Scene, layer meshes |
+| **ResourceManager** | `engine/core/ResourceManager.ts` | Textures, geometries, materials |
+| **MaterialSystem** | `services/materialSystem.ts` | PBR materials, env maps |
+
+### AI Agent
+
+| Storage | File | Contents |
+|---------|------|----------|
+| **AICompositorAgent** | `services/ai/AICompositorAgent.ts` | Message history (per-instruction) |
+
+### Large Files (>20k tokens)
+
+These files exceed typical LLM context windows and should be read in sections:
+
+| File | Lines | Tokens | Purpose |
+|------|-------|--------|---------|
+| `stores/compositorStore.ts` | 2,749 | ~35k | Main store |
+| `services/particleSystem.ts` | 2,414 | ~30k | Particles |
+| `engine/particles/GPUParticleSystem.ts` | 2,264 | ~28k | GPU particles |
+| `components/canvas/SplineEditor.vue` | 2,095 | ~26k | Spline UI |
+| `components/graph-editor/GraphEditor.vue` | 2,090 | ~26k | Graph editor |
+| `engine/WeylEngine.ts` | 1,980 | ~25k | Main engine |
+| `types/project.ts` | 1,817 | ~23k | Types |
+| `components/canvas/ThreeCanvas.vue` | 1,725 | ~22k | 3D canvas |
+| `engine/layers/BaseLayer.ts` | 1,724 | ~22k | Base layer |
+| `services/depthflow.ts` | 1,650 | ~21k | 2.5D parallax |
+
+---
+
 ## DOCUMENTATION INDEX
 
 ### Primary Documents

@@ -83,6 +83,7 @@ function createTestProject(): WeylProject {
     visible: true,
     locked: false,
     solo: false,
+      isolate: false,
     threeD: false,
     motionBlur: false,
     inPoint: 0,
