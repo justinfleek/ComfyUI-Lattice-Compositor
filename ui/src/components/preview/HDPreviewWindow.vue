@@ -1,3 +1,23 @@
+<!--
+  @component HDPreviewWindow
+  @description Full-resolution preview window for Weyl Compositor.
+  Opens as a modal overlay for high-quality playback review:
+  - Full resolution rendering (up to 4K)
+  - Playback controls (play, pause, step, loop)
+  - Frame scrubbing via timeline
+  - Scalable preview (50%-200%)
+  - Fullscreen mode (F11)
+  - Frame timing display
+
+  @features
+  - Real-time frame rendering from composition
+  - Keyboard navigation (Escape to close)
+  - Resolution badge display
+  - Zoom controls for preview scaling
+
+  @props visible - Boolean to show/hide window
+  @emits close - Request to close the preview window
+-->
 <template>
   <Teleport to="body">
     <div

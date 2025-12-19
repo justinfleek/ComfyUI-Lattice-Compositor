@@ -31929,7 +31929,7 @@ const _sfc_main$g = /* @__PURE__ */ defineComponent({
   }
 });
 
-const AIChatPanel = /* @__PURE__ */ _export_sfc(_sfc_main$g, [["__scopeId", "data-v-b960fe8d"]]);
+const AIChatPanel = /* @__PURE__ */ _export_sfc(_sfc_main$g, [["__scopeId", "data-v-990822c4"]]);
 
 const CAMERA_BODY_SIZE = 40;
 const CAMERA_LENS_LENGTH = 30;
@@ -53189,7 +53189,7 @@ const _sfc_main$d = /* @__PURE__ */ defineComponent({
             class: "zoom-dropdown",
             onChange: onZoomSelect
           }, [..._cache[24] || (_cache[24] = [
-            createStaticVNode('<option value="fit" data-v-c0e11a8d>Fit</option><option value="0.25" data-v-c0e11a8d>25%</option><option value="0.33" data-v-c0e11a8d>33%</option><option value="0.5" data-v-c0e11a8d>50%</option><option value="0.75" data-v-c0e11a8d>75%</option><option value="1" data-v-c0e11a8d>100%</option><option value="2" data-v-c0e11a8d>200%</option><option value="4" data-v-c0e11a8d>400%</option>', 8)
+            createStaticVNode('<option value="fit" data-v-8c3c8373>Fit</option><option value="0.25" data-v-8c3c8373>25%</option><option value="0.33" data-v-8c3c8373>33%</option><option value="0.5" data-v-8c3c8373>50%</option><option value="0.75" data-v-8c3c8373>75%</option><option value="1" data-v-8c3c8373>100%</option><option value="2" data-v-8c3c8373>200%</option><option value="4" data-v-8c3c8373>400%</option>', 8)
           ])], 544), [
             [vModelSelect, zoomLevel.value]
           ]),
@@ -53200,7 +53200,7 @@ const _sfc_main$d = /* @__PURE__ */ defineComponent({
             class: "resolution-dropdown",
             onChange: onResolutionChange
           }, [..._cache[25] || (_cache[25] = [
-            createStaticVNode('<option value="full" data-v-c0e11a8d>Full</option><option value="half" data-v-c0e11a8d>Half</option><option value="third" data-v-c0e11a8d>Third</option><option value="quarter" data-v-c0e11a8d>Quarter</option><option value="custom" data-v-c0e11a8d>Custom</option>', 5)
+            createStaticVNode('<option value="full" data-v-8c3c8373>Full</option><option value="half" data-v-8c3c8373>Half</option><option value="third" data-v-8c3c8373>Third</option><option value="quarter" data-v-8c3c8373>Quarter</option><option value="custom" data-v-8c3c8373>Custom</option>', 5)
           ])], 544), [
             [vModelSelect, resolution.value]
           ])
@@ -53252,7 +53252,7 @@ const _sfc_main$d = /* @__PURE__ */ defineComponent({
   }
 });
 
-const ThreeCanvas = /* @__PURE__ */ _export_sfc(_sfc_main$d, [["__scopeId", "data-v-c0e11a8d"]]);
+const ThreeCanvas = /* @__PURE__ */ _export_sfc(_sfc_main$d, [["__scopeId", "data-v-8c3c8373"]]);
 
 const _hoisted_1$b = { class: "prop-wrapper" };
 const _hoisted_2$b = { class: "prop-content" };
@@ -55140,14 +55140,14 @@ const _sfc_main$9 = /* @__PURE__ */ defineComponent({
             style: normalizeStyle({ width: sidebarWidth.value + "px" })
           }, [
             createBaseVNode("div", _hoisted_15$7, [
-              _cache[26] || (_cache[26] = createStaticVNode('<div class="col-header col-av-features" data-v-9ce23ca9><span class="header-icon" title="Video" data-v-9ce23ca9>👁</span><span class="header-icon" title="Audio" data-v-9ce23ca9>🔊</span><span class="header-icon" title="Isolate" data-v-9ce23ca9>●</span><span class="header-icon" title="Lock" data-v-9ce23ca9>🔒</span></div><div class="col-header col-number" data-v-9ce23ca9>#</div><div class="col-header col-name" data-v-9ce23ca9>Source Name</div>', 3)),
+              _cache[26] || (_cache[26] = createStaticVNode('<div class="col-header col-av-features" data-v-eb75a0e2><span class="header-icon" title="Video" data-v-eb75a0e2>👁</span><span class="header-icon" title="Audio" data-v-eb75a0e2>🔊</span><span class="header-icon" title="Isolate" data-v-eb75a0e2>●</span><span class="header-icon" title="Lock" data-v-eb75a0e2>🔒</span></div><div class="col-header col-number" data-v-eb75a0e2>#</div><div class="col-header col-name" data-v-eb75a0e2>Source Name</div>', 3)),
               createBaseVNode("div", _hoisted_16$7, [
                 createBaseVNode("span", {
                   class: normalizeClass(["header-icon clickable", { active: unref(store).hideMinimizedLayers }]),
                   title: "Hide Minimized Layers",
                   onClick: _cache[14] || (_cache[14] = ($event) => unref(store).toggleHideMinimizedLayers())
                 }, "🙈", 2),
-                _cache[25] || (_cache[25] = createStaticVNode('<span class="header-icon" title="Flatten Transform" data-v-9ce23ca9>☀</span><span class="header-icon" title="Quality" data-v-9ce23ca9>◐</span><span class="header-icon" title="Effects" data-v-9ce23ca9>fx</span><span class="header-icon" title="Frame Blending" data-v-9ce23ca9>⊞</span><span class="header-icon" title="Motion Blur" data-v-9ce23ca9>◔</span><span class="header-icon" title="Adjustment Layer" data-v-9ce23ca9>◐</span><span class="header-icon" title="3D Layer" data-v-9ce23ca9>⬡</span>', 7))
+                _cache[25] || (_cache[25] = createStaticVNode('<span class="header-icon" title="Flatten Transform" data-v-eb75a0e2>☀</span><span class="header-icon" title="Quality" data-v-eb75a0e2>◐</span><span class="header-icon" title="Effects" data-v-eb75a0e2>fx</span><span class="header-icon" title="Frame Blending" data-v-eb75a0e2>⊞</span><span class="header-icon" title="Motion Blur" data-v-eb75a0e2>◔</span><span class="header-icon" title="Adjustment Layer" data-v-eb75a0e2>◐</span><span class="header-icon" title="3D Layer" data-v-eb75a0e2>⬡</span>', 7))
               ]),
               _cache[27] || (_cache[27] = createBaseVNode("div", { class: "col-header col-parent" }, "Parent & Link", -1))
             ]),
@@ -55245,7 +55245,7 @@ const _sfc_main$9 = /* @__PURE__ */ defineComponent({
   }
 });
 
-const TimelinePanel = /* @__PURE__ */ _export_sfc(_sfc_main$9, [["__scopeId", "data-v-9ce23ca9"]]);
+const TimelinePanel = /* @__PURE__ */ _export_sfc(_sfc_main$9, [["__scopeId", "data-v-eb75a0e2"]]);
 
 const _hoisted_1$7 = { class: "graph-editor" };
 const _hoisted_2$7 = { class: "graph-header" };
@@ -63249,7 +63249,7 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
   }
 });
 
-const HDPreviewWindow = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["__scopeId", "data-v-889372d2"]]);
+const HDPreviewWindow = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["__scopeId", "data-v-6ea007fd"]]);
 
 const _hoisted_1 = { class: "workspace-layout" };
 const _hoisted_2 = { class: "toolbar" };
@@ -64264,7 +64264,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
   }
 });
 
-const WorkspaceLayout = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-00d63c27"]]);
+const WorkspaceLayout = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-aedf2445"]]);
 
 const _sfc_main = /* @__PURE__ */ defineComponent({
   __name: "App",

@@ -1,3 +1,24 @@
+<!--
+  @component TimelinePanel
+  @description Timeline and layer management panel for Weyl Compositor.
+  Provides After Effects-style timeline with keyframe editing:
+  - Composition tabs for multi-comp workflows
+  - Playback controls (play, pause, loop, frame stepping)
+  - Layer track list with visibility/lock toggles
+  - Keyframe visualization on time ruler
+  - Scrubbing and frame navigation
+  - Layer creation menu (Solid, Text, Shape, Particles, etc.)
+
+  @features
+  - Playhead scrubbing and frame input
+  - Zoom controls for timeline scale
+  - Layer ordering (drag to reorder)
+  - Property twirlers for keyframe access
+  - Box/marquee selection for keyframes
+  - Keyboard shortcuts (Space=play, Home=start, End=end)
+
+  @emits openCompositionSettings - Open composition settings dialog
+-->
 <template>
   <div class="timeline-panel" tabindex="0" @keydown="handleKeydown" role="region" aria-label="Timeline">
     <!-- Composition Tabs -->

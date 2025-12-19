@@ -1,3 +1,25 @@
+<!--
+  @component WorkspaceLayout
+  @description Main application layout component for Weyl Compositor.
+  Orchestrates the complete motion graphics workspace including:
+  - Top toolbar with drawing/selection tools
+  - Left sidebar (Project/Effects panels)
+  - Center canvas (ThreeCanvas renderer)
+  - Right sidebar (Properties/AI Agent panels)
+  - Bottom timeline panel
+  - HD Preview window
+  - Modal dialogs (composition settings, AI chat, exports)
+
+  @features
+  - Responsive panel sizing with splitters
+  - Tool selection (select, pen, text, hand, segment)
+  - Keyboard shortcut handling
+  - AI agent integration for natural language animation
+  - HD preview window toggle
+
+  @emits None - root layout component
+  @slots None
+-->
 <template>
   <div class="workspace-layout">
     <!-- Top Toolbar -->

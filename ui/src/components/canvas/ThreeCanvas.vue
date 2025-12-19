@@ -1,3 +1,27 @@
+<!--
+  @component ThreeCanvas
+  @description Main rendering canvas using Three.js WebGL.
+  Renders all layer types with real-time preview:
+  - Image/Video layers with transforms
+  - Text layers with font rendering
+  - Shape/Spline layers with bezier paths
+  - Particle system visualization
+  - 3D camera with depth parallax
+  - Effect stack preview (blur, glow, color)
+
+  @features
+  - WebGL 2.0 / WebGPU rendering
+  - Depth map overlay visualization
+  - Spline editor integration (pen tool)
+  - Layer transform handles
+  - Viewport zoom/pan
+  - Frame-accurate playback
+
+  @props None - uses compositorStore directly
+  @emits requestPenMode - Request pen tool activation
+  @emits pointAdded - Spline control point added
+  @emits pathUpdated - Spline path modified
+-->
 <template>
   <div class="three-canvas" ref="containerRef">
     <canvas ref="canvasRef" />

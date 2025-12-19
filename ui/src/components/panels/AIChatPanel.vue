@@ -1,3 +1,27 @@
+<!--
+  @component AIChatPanel
+  @description AI-powered natural language interface for motion graphics.
+  Chat with GPT-4o or Claude Sonnet to create animations:
+  - Natural language animation commands
+  - Iterative refinement ("make it faster", "add glow")
+  - Full compositor schema understanding
+  - Real-time layer/keyframe creation
+
+  @features
+  - Model selection (GPT-4o, Claude Sonnet)
+  - Conversation history with clear function
+  - Streaming response display
+  - Error handling with retry
+  - Keyboard submit (Enter to send)
+
+  @examples
+  - "Fade in the title over 1 second"
+  - "Create floating particles that drift upward"
+  - "Make the selected layer bounce in from the left"
+  - "Add a glow effect to all text layers"
+
+  @requires OPENAI_API_KEY or ANTHROPIC_API_KEY environment variable
+-->
 <template>
   <div class="ai-chat-panel" role="region" aria-label="AI Compositor Agent">
     <div class="panel-header">
