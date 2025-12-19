@@ -14,11 +14,20 @@
             <button @click="createNewSpline">✏ New Spline</button>
             <button @click="createNewModel">🧊 New 3D Model</button>
             <button @click="createNewPointCloud">☁ New Point Cloud</button>
+            <hr class="menu-divider" />
+            <button @click="openDecomposeDialog">✨ AI Layer Decompose</button>
           </div>
         </div>
         <button @click="showSearch = !showSearch" title="Search">🔍</button>
       </div>
     </div>
+
+    <!-- Decompose Dialog -->
+    <DecomposeDialog
+      v-if="showDecomposeDialog"
+      @close="showDecomposeDialog = false"
+      @decomposed="onDecomposed"
+    />
 
     <!-- Hidden file input -->
     <input
@@ -116,6 +125,8 @@
 <script setup lang="ts">
 import { ref, computed, type Ref } from 'vue';
 import { useCompositorStore } from '@/stores/compositorStore';
+import DecomposeDialog from '@/components/dialogs/DecomposeDialog.vue';
+import type { DecomposedLayer } from '@/services/layerDecomposition';
 
 const emit = defineEmits<{
   (e: 'openCompositionSettings'): void;
@@ -145,6 +156,7 @@ const fileInputRef = ref<HTMLInputElement | null>(null);
 // State
 const showSearch = ref(false);
 const showNewMenu = ref(false);
+const showDecomposeDialog = ref(false);
 const searchQuery = ref('');
 const selectedItem = ref<string | null>(null);
 const expandedFolders = ref<string[]>(['compositions', 'footage']);
@@ -299,6 +311,15 @@ function createNewPointCloud() {
   showNewMenu.value = false;
   const layer = store.createLayer('pointcloud', 'Point Cloud');
   console.log('[ProjectPanel] Created point cloud layer:', layer.id);
+}
+
+function openDecomposeDialog() {
+  showNewMenu.value = false;
+  showDecomposeDialog.value = true;
+}
+
+function onDecomposed(layers: DecomposedLayer[]) {
+  console.log('[ProjectPanel] Image decomposed into', layers.length, 'layers');
 }
 
 function triggerFileImport() {
@@ -491,6 +512,12 @@ function onDragStart(item: ProjectItem, event: DragEvent) {
 
 .dropdown-menu button:hover {
   background: #3a5070;
+}
+
+.menu-divider {
+  border: none;
+  border-top: 1px solid #444;
+  margin: 4px 8px;
 }
 
 .search-bar {

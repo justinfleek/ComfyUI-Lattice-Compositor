@@ -11,6 +11,7 @@ import { useSelectionStore } from '@/stores/selectionStore';
 import * as layerActions from '@/stores/actions/layerActions';
 import * as keyframeActions from '@/stores/actions/keyframeActions';
 import * as effectActions from '@/stores/actions/effectActions';
+import { getLayerDecompositionService } from '@/services/layerDecomposition';
 import type { ToolCall } from './toolDefinitions';
 import type { Layer, LayerType, InterpolationType } from '@/types/project';
 
@@ -109,6 +110,10 @@ export async function executeToolCall(toolCall: ToolCall): Promise<any> {
       return executeSetCurrentFrame(context, args);
     case 'playPreview':
       return executePlayPreview(context, args);
+
+    // AI Image Processing
+    case 'decomposeImage':
+      return executeDecomposeImage(context, args);
 
     // Utility
     case 'getLayerInfo':
@@ -878,6 +883,85 @@ function executePlayPreview(
   return {
     playing: play,
     message: play ? `Started playback` : `Stopped playback`,
+  };
+}
+
+// ============================================================================
+// AI IMAGE PROCESSING HANDLERS
+// ============================================================================
+
+async function executeDecomposeImage(
+  context: ExecutionContext,
+  args: Record<string, any>
+): Promise<{ layerIds: string[]; message: string }> {
+  const { store } = context;
+  const { sourceLayerId, numLayers = 4 } = args;
+
+  // Find the source layer
+  const sourceLayer = store.getActiveCompLayers().find(l => l.id === sourceLayerId);
+  if (!sourceLayer) {
+    throw new Error(`Source layer ${sourceLayerId} not found`);
+  }
+
+  if (sourceLayer.type !== 'image') {
+    throw new Error(`Layer ${sourceLayerId} is not an image layer`);
+  }
+
+  // Get the source image URL
+  const layerData = sourceLayer.data as any;
+  const sourceUrl = layerData?.source || layerData?.url || layerData?.assetId;
+  if (!sourceUrl) {
+    throw new Error(`Source layer has no image source`);
+  }
+
+  // Convert to data URL if needed
+  let imageDataUrl: string;
+  if (sourceUrl.startsWith('data:')) {
+    imageDataUrl = sourceUrl;
+  } else {
+    // Load image and convert to data URL
+    imageDataUrl = await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext('2d')!;
+        ctx.drawImage(img, 0, 0);
+        resolve(canvas.toDataURL('image/png'));
+      };
+      img.onerror = () => reject(new Error('Failed to load source image'));
+      img.src = sourceUrl;
+    });
+  }
+
+  // Run decomposition
+  const service = getLayerDecompositionService();
+  const decomposedLayers = await service.decomposeWithAutoSetup(
+    imageDataUrl,
+    { numLayers },
+    (stage, message) => {
+      console.log(`[AI Decompose] ${stage}: ${message}`);
+    }
+  );
+
+  // Create layers from result (reverse order so Background is at bottom)
+  const createdLayerIds: string[] = [];
+  for (let i = decomposedLayers.length - 1; i >= 0; i--) {
+    const decomposed = decomposedLayers[i];
+    const layer = layerActions.createLayer(store, 'image', decomposed.label);
+    if (layer.data) {
+      (layer.data as any).source = decomposed.image;
+    }
+    createdLayerIds.push(layer.id);
+  }
+
+  store.pushHistory();
+
+  return {
+    layerIds: createdLayerIds,
+    message: `Decomposed image into ${decomposedLayers.length} layers: ${decomposedLayers.map(l => l.label).join(', ')}`,
   };
 }
 

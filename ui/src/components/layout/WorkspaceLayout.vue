@@ -197,6 +197,7 @@
 
       <div class="tool-group">
         <span class="gpu-badge" :class="gpuTier">{{ gpuTier.toUpperCase() }}</span>
+        <MemoryIndicator />
         <button @click="undo" :disabled="!canUndo" title="Undo (Ctrl+Z)">
           <span class="icon">↩</span>
         </button>
@@ -577,6 +578,9 @@ import PathPreviewOverlay from '@/components/canvas/PathPreviewOverlay.vue';
 
 // Preview
 import HDPreviewWindow from '@/components/preview/HDPreviewWindow.vue';
+
+// Common
+import MemoryIndicator from '@/components/common/MemoryIndicator.vue';
 
 // Stores
 const store = useCompositorStore();

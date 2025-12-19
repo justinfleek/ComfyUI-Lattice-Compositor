@@ -743,6 +743,33 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   },
 
   // ==========================================================================
+  // AI IMAGE PROCESSING
+  // ==========================================================================
+  {
+    type: 'function',
+    function: {
+      name: 'decomposeImage',
+      description: 'Use AI to decompose an image into multiple RGBA layers (requires Qwen-Image-Layered model). Creates separate image layers for background, foreground, and intermediate elements.',
+      parameters: {
+        type: 'object',
+        properties: {
+          sourceLayerId: {
+            type: 'string',
+            description: 'ID of the image layer to decompose',
+          },
+          numLayers: {
+            type: 'number',
+            description: 'Number of layers to generate (3-16, default 4)',
+            minimum: 3,
+            maximum: 16,
+          },
+        },
+        required: ['sourceLayerId'],
+      },
+    },
+  },
+
+  // ==========================================================================
   // UTILITY
   // ==========================================================================
   {

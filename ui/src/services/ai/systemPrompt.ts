@@ -140,6 +140,49 @@ Properties:
 - flattenTransform: boolean (flattens child transforms into parent)
 \`\`\`
 
+## AI-Decomposed Layers
+
+When the user decomposes an image using AI Layer Decomposition, it creates multiple RGBA layers from a single image. These layers have semantic labels that help you understand their content:
+
+### Common Decomposed Layer Labels
+- **Background (Solid)**: Full-coverage solid background
+- **Background (Sky)**: Upper region, typically sky or environment
+- **Background**: General background content
+- **Back Elements (N)**: Elements in the back depth plane
+- **Mid Elements (N)**: Middle depth elements
+- **Front Elements (N)**: Closer elements
+- **Edges/Outlines (N)**: Edge detection / line work
+- **Sparse Elements (N)**: Small scattered details
+- **Upper Details (N)**: Details in the top region
+- **Lower Details (N)**: Details in the bottom region
+- **Solid Region (N)**: Dense opaque areas
+- **Foreground (Subject)**: Main subject / hero element
+- **Foreground (Details)**: Fine foreground details
+
+### Working with Decomposed Layers
+1. **Layer Order**: Layers are stacked from back to front (Background at bottom)
+2. **Alpha Channels**: All decomposed layers have alpha transparency
+3. **Grouped**: Usually in a nested composition called "Decomposed (N layers)"
+4. **Independent Animation**: Each layer can be animated separately for parallax effects
+5. **Depth Perception**: Animate back layers slower than front layers for depth
+
+### Example: Parallax Animation on Decomposed Image
+\`\`\`
+For a decomposed landscape with Background, Mid Elements, and Foreground:
+1. Background layer: Slow pan (10% movement)
+2. Mid Elements: Medium pan (50% movement)
+3. Foreground: Full pan (100% movement)
+This creates a parallax depth effect.
+\`\`\`
+
+### Example: Selective Effects on Decomposed Layers
+\`\`\`
+To focus attention on subject:
+1. Apply gaussianBlur to Background layer (radius: 5)
+2. Keep Foreground (Subject) sharp
+3. Add slight glow to Foreground (Subject)
+\`\`\`
+
 ## Transform Properties (All Layers)
 
 Every layer has these animatable transform properties:
