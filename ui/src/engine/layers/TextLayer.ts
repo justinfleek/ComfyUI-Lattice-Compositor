@@ -55,10 +55,10 @@ import {
 // TYPES
 // ============================================================================
 
-/** Anchor point grouping mode - matches AE */
+/** Anchor point grouping mode for text animation */
 export type AnchorPointGrouping = 'character' | 'word' | 'line' | 'all';
 
-/** Fill and stroke rendering order - matches AE */
+/** Fill and stroke rendering order */
 export type FillStrokeOrder = 'perCharacter' | 'fillOverStroke' | 'strokeOverFill';
 
 /** Inter-character blending mode */

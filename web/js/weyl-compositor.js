@@ -4827,14 +4827,14 @@ class BaseLayer {
   // ============================================================================
   /** Masks applied to this layer (vector cutouts) */
   masks = [];
-  /** Track matte type (uses another layer as alpha/luma source) */
-  trackMatteType = "none";
-  /** ID of the layer used as track matte source */
-  trackMatteLayerId = null;
+  /** Matte source type (uses another layer as alpha/luma source) */
+  matteType = "none";
+  /** ID of the layer used as matte source */
+  matteLayerId = null;
   /** ID of composition containing matte layer (for cross-comp mattes) */
-  trackMatteCompositionId = null;
-  /** Canvas of track matte layer (set externally by LayerManager) */
-  trackMatteCanvas = null;
+  matteCompositionId = null;
+  /** Canvas of matte source layer (set externally by LayerManager) */
+  matteCanvas = null;
   /** Preserve transparency - only paint on existing pixels */
   preserveTransparency = false;
   // ============================================================================
@@ -4891,9 +4891,9 @@ class BaseLayer {
     this.motionBlurSettings = layerData.motionBlurSettings ?? null;
     this.layerData = layerData;
     this.masks = layerData.masks ?? [];
-    this.trackMatteType = layerData.trackMatteType ?? "none";
-    this.trackMatteLayerId = layerData.trackMatteLayerId ?? null;
-    this.trackMatteCompositionId = layerData.trackMatteCompositionId ?? null;
+    this.matteType = layerData.matteType ?? layerData.trackMatteType ?? "none";
+    this.matteLayerId = layerData.matteLayerId ?? layerData.trackMatteLayerId ?? null;
+    this.matteCompositionId = layerData.matteCompositionId ?? layerData.trackMatteCompositionId ?? null;
     this.preserveTransparency = layerData.preserveTransparency ?? false;
   }
   /**
@@ -5126,16 +5126,19 @@ class BaseLayer {
     if (properties.masks !== void 0) {
       this.masks = properties.masks;
     }
-    if (properties.trackMatteType !== void 0) {
-      this.trackMatteType = properties.trackMatteType;
+    const newMatteType = properties.matteType ?? properties.trackMatteType;
+    if (newMatteType !== void 0) {
+      this.matteType = newMatteType;
     }
-    if (properties.trackMatteLayerId !== void 0) {
-      this.trackMatteLayerId = properties.trackMatteLayerId;
-      this.trackMatteCanvas = null;
+    const newMatteLayerId = properties.matteLayerId ?? properties.trackMatteLayerId;
+    if (newMatteLayerId !== void 0) {
+      this.matteLayerId = newMatteLayerId;
+      this.matteCanvas = null;
     }
-    if (properties.trackMatteCompositionId !== void 0) {
-      this.trackMatteCompositionId = properties.trackMatteCompositionId;
-      this.trackMatteCanvas = null;
+    const newMatteCompId = properties.matteCompositionId ?? properties.trackMatteCompositionId;
+    if (newMatteCompId !== void 0) {
+      this.matteCompositionId = newMatteCompId;
+      this.matteCanvas = null;
     }
     if (properties.preserveTransparency !== void 0) {
       this.preserveTransparency = properties.preserveTransparency;
@@ -5492,42 +5495,62 @@ class BaseLayer {
     return this.masks.length > 0 && this.masks.some((m) => m.enabled);
   }
   /**
-   * Check if this layer has a track matte assigned
+   * Check if this layer has a matte source assigned
    */
+  hasMatte() {
+    return this.matteType !== "none" && this.matteCanvas !== null;
+  }
+  /** @deprecated Use hasMatte() instead */
   hasTrackMatte() {
-    return this.trackMatteType !== "none" && this.trackMatteCanvas !== null;
+    return this.hasMatte();
   }
   /**
-   * Set the track matte canvas (called by LayerManager when compositing)
+   * Set the matte canvas (called by LayerManager when compositing)
    * @param canvas - The rendered canvas of the matte layer
    */
+  setMatteCanvas(canvas) {
+    this.matteCanvas = canvas;
+  }
+  /** @deprecated Use setMatteCanvas() instead */
   setTrackMatteCanvas(canvas) {
-    this.trackMatteCanvas = canvas;
+    this.setMatteCanvas(canvas);
   }
   /**
-   * Get the track matte layer ID
+   * Get the matte layer ID
    */
+  getMatteLayerId() {
+    return this.matteLayerId;
+  }
+  /** @deprecated Use getMatteLayerId() instead */
   getTrackMatteLayerId() {
-    return this.trackMatteLayerId;
+    return this.getMatteLayerId();
   }
   /**
-   * Get the track matte composition ID (for cross-comp mattes)
+   * Get the matte composition ID (for cross-comp mattes)
    * Returns null if matte is in the same composition
    */
+  getMatteCompositionId() {
+    return this.matteCompositionId;
+  }
+  /** @deprecated Use getMatteCompositionId() instead */
   getTrackMatteCompositionId() {
-    return this.trackMatteCompositionId;
+    return this.getMatteCompositionId();
   }
   /**
-   * Check if this layer uses a cross-composition track matte
+   * Check if this layer uses a cross-composition matte
    */
   hasCrossCompMatte() {
-    return this.trackMatteCompositionId !== null && this.trackMatteLayerId !== null;
+    return this.matteCompositionId !== null && this.matteLayerId !== null;
   }
   /**
-   * Get the track matte type
+   * Get the matte type
    */
+  getMatteType() {
+    return this.matteType;
+  }
+  /** @deprecated Use getMatteType() instead */
   getTrackMatteType() {
-    return this.trackMatteType;
+    return this.getMatteType();
   }
   /**
    * Update masks
@@ -5536,7 +5559,7 @@ class BaseLayer {
     this.masks = masks;
   }
   /**
-   * Process masks and track matte on a canvas
+   * Process masks and matte source on a canvas
    * @param canvas - Source canvas to apply masks to
    * @param frame - Current frame for animated masks
    * @returns Processed canvas with masks applied
@@ -5546,8 +5569,8 @@ class BaseLayer {
     if (this.hasMasks()) {
       result = applyMasksToLayer(result, this.masks, frame);
     }
-    if (this.hasTrackMatte() && this.trackMatteCanvas) {
-      result = applyTrackMatte(result, this.trackMatteCanvas, this.trackMatteType);
+    if (this.hasMatte() && this.matteCanvas) {
+      result = applyTrackMatte(result, this.matteCanvas, this.matteType);
     }
     return result;
   }
@@ -45292,8 +45315,8 @@ class LayerManager {
   cameraRef = null;
   // Audio reactive callback
   audioReactiveGetter = null;
-  // Track matte canvas cache - stores rendered canvases for layers used as track mattes
-  trackMatteCanvases = /* @__PURE__ */ new Map();
+  // Matte canvas cache - stores rendered canvases for layers used as matte sources
+  matteCanvases = /* @__PURE__ */ new Map();
   // Ordered layer list for render order (respects track matte dependencies)
   renderOrder = [];
   // Callback to get cross-composition matte canvas
@@ -45994,7 +46017,7 @@ class LayerManager {
    * @param frame - Current frame number for animated evaluation
    */
   processTrackMattes(frame) {
-    this.trackMatteCanvases.clear();
+    this.matteCanvases.clear();
     for (const layer of this.layers.values()) {
       const matteLayerId = layer.getTrackMatteLayerId();
       const matteType = layer.getTrackMatteType();
@@ -46013,16 +46036,16 @@ class LayerManager {
       } else {
         const matteLayer = this.layers.get(matteLayerId);
         if (matteLayer) {
-          if (this.trackMatteCanvases.has(matteLayerId)) {
-            matteCanvas = this.trackMatteCanvases.get(matteLayerId);
+          if (this.matteCanvases.has(matteLayerId)) {
+            matteCanvas = this.matteCanvases.get(matteLayerId);
           } else {
             matteCanvas = this.getLayerRenderedCanvas(matteLayer, frame);
             if (matteCanvas) {
-              this.trackMatteCanvases.set(matteLayerId, matteCanvas);
+              this.matteCanvases.set(matteLayerId, matteCanvas);
             }
           }
         } else {
-          layerLogger.warn(`Track matte source layer ${matteLayerId} not found`);
+          layerLogger.warn(`Matte source layer ${matteLayerId} not found`);
         }
       }
       layer.setTrackMatteCanvas(matteCanvas);
@@ -55556,14 +55579,14 @@ const _sfc_main$9 = /* @__PURE__ */ defineComponent({
             style: normalizeStyle({ width: sidebarWidth.value + "px" })
           }, [
             createBaseVNode("div", _hoisted_15$7, [
-              _cache[26] || (_cache[26] = createStaticVNode('<div class="col-header col-av-features" data-v-eb75a0e2><span class="header-icon" title="Video" data-v-eb75a0e2>👁</span><span class="header-icon" title="Audio" data-v-eb75a0e2>🔊</span><span class="header-icon" title="Isolate" data-v-eb75a0e2>●</span><span class="header-icon" title="Lock" data-v-eb75a0e2>🔒</span></div><div class="col-header col-number" data-v-eb75a0e2>#</div><div class="col-header col-name" data-v-eb75a0e2>Source Name</div>', 3)),
+              _cache[26] || (_cache[26] = createStaticVNode('<div class="col-header col-av-features" data-v-ddebaa49><span class="header-icon" title="Video" data-v-ddebaa49>👁</span><span class="header-icon" title="Audio" data-v-ddebaa49>🔊</span><span class="header-icon" title="Isolate" data-v-ddebaa49>●</span><span class="header-icon" title="Lock" data-v-ddebaa49>🔒</span></div><div class="col-header col-number" data-v-ddebaa49>#</div><div class="col-header col-name" data-v-ddebaa49>Source Name</div>', 3)),
               createBaseVNode("div", _hoisted_16$7, [
                 createBaseVNode("span", {
                   class: normalizeClass(["header-icon clickable", { active: unref(store).hideMinimizedLayers }]),
                   title: "Hide Minimized Layers",
                   onClick: _cache[14] || (_cache[14] = ($event) => unref(store).toggleHideMinimizedLayers())
                 }, "🙈", 2),
-                _cache[25] || (_cache[25] = createStaticVNode('<span class="header-icon" title="Flatten Transform" data-v-eb75a0e2>☀</span><span class="header-icon" title="Quality" data-v-eb75a0e2>◐</span><span class="header-icon" title="Effects" data-v-eb75a0e2>fx</span><span class="header-icon" title="Frame Blending" data-v-eb75a0e2>⊞</span><span class="header-icon" title="Motion Blur" data-v-eb75a0e2>◔</span><span class="header-icon" title="Adjustment Layer" data-v-eb75a0e2>◐</span><span class="header-icon" title="3D Layer" data-v-eb75a0e2>⬡</span>', 7))
+                _cache[25] || (_cache[25] = createStaticVNode('<span class="header-icon" title="Flatten Transform" data-v-ddebaa49>☀</span><span class="header-icon" title="Quality" data-v-ddebaa49>◐</span><span class="header-icon" title="Effects" data-v-ddebaa49>fx</span><span class="header-icon" title="Frame Blending" data-v-ddebaa49>⊞</span><span class="header-icon" title="Motion Blur" data-v-ddebaa49>◔</span><span class="header-icon" title="Adjustment Layer" data-v-ddebaa49>◐</span><span class="header-icon" title="3D Layer" data-v-ddebaa49>⬡</span>', 7))
               ]),
               _cache[27] || (_cache[27] = createBaseVNode("div", { class: "col-header col-parent" }, "Parent & Link", -1))
             ]),
@@ -55661,7 +55684,7 @@ const _sfc_main$9 = /* @__PURE__ */ defineComponent({
   }
 });
 
-const TimelinePanel = /* @__PURE__ */ _export_sfc(_sfc_main$9, [["__scopeId", "data-v-eb75a0e2"]]);
+const TimelinePanel = /* @__PURE__ */ _export_sfc(_sfc_main$9, [["__scopeId", "data-v-ddebaa49"]]);
 
 const _hoisted_1$7 = { class: "graph-editor" };
 const _hoisted_2$7 = { class: "graph-header" };

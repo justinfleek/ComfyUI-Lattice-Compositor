@@ -72,7 +72,7 @@ export interface Camera3D {
   farClip: number;
 }
 
-// Camera presets matching AE focal lengths
+// Camera presets with standard focal lengths
 export const CAMERA_PRESETS = [
   { name: '15mm', focalLength: 15, angleOfView: 100.4, zoom: 533 },
   { name: '20mm', focalLength: 20, angleOfView: 84.0, zoom: 711 },

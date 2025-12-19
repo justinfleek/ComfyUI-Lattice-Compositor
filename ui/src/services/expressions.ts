@@ -254,7 +254,7 @@ export function getEasingFunction(name: string): EasingFunction {
 // ============================================================================
 
 export const EASING_PRESETS: Record<string, { fn: EasingFunction; description: string }> = {
-  // Standard ease presets (matching AE Easy Ease)
+  // Standard ease presets (industry standard curves)
   'easyEase': {
     fn: cubicBezier(0.42, 0, 0.58, 1),
     description: 'Standard easy ease - smooth start and end',

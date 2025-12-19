@@ -75,8 +75,8 @@ export class LayerManager {
   // Audio reactive callback
   private audioReactiveGetter: LayerAudioReactiveGetter | null = null;
 
-  // Track matte canvas cache - stores rendered canvases for layers used as track mattes
-  private trackMatteCanvases: Map<string, HTMLCanvasElement> = new Map();
+  // Matte canvas cache - stores rendered canvases for layers used as matte sources
+  private matteCanvases: Map<string, HTMLCanvasElement> = new Map();
 
   // Ordered layer list for render order (respects track matte dependencies)
   private renderOrder: string[] = [];
@@ -972,7 +972,7 @@ export class LayerManager {
    */
   processTrackMattes(frame: number): void {
     // Clear previous frame's matte canvases
-    this.trackMatteCanvases.clear();
+    this.matteCanvases.clear();
 
     // Process each layer that has a track matte
     for (const layer of this.layers.values()) {
@@ -1001,17 +1001,17 @@ export class LayerManager {
 
         if (matteLayer) {
           // Check cache first
-          if (this.trackMatteCanvases.has(matteLayerId)) {
-            matteCanvas = this.trackMatteCanvases.get(matteLayerId)!;
+          if (this.matteCanvases.has(matteLayerId)) {
+            matteCanvas = this.matteCanvases.get(matteLayerId)!;
           } else {
             // Render and cache the matte
             matteCanvas = this.getLayerRenderedCanvas(matteLayer, frame);
             if (matteCanvas) {
-              this.trackMatteCanvases.set(matteLayerId, matteCanvas);
+              this.matteCanvases.set(matteLayerId, matteCanvas);
             }
           }
         } else {
-          layerLogger.warn(`Track matte source layer ${matteLayerId} not found`);
+          layerLogger.warn(`Matte source layer ${matteLayerId} not found`);
         }
       }
 

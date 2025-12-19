@@ -21,7 +21,7 @@ export interface WeylProject {
   version: "1.0.0";
   meta: ProjectMeta;
 
-  // Multi-composition support (AE-style)
+  // Multi-composition support (professional workflow)
   compositions: Record<string, Composition>;
   mainCompositionId: string;  // Which comp to export
 
@@ -224,10 +224,18 @@ export interface Layer {
 
   // Masking system
   masks?: LayerMask[];           // Mask paths applied to this layer
-  trackMatteType?: TrackMatteType;  // Track matte mode (uses layer above)
-  trackMatteLayerId?: string;       // ID of layer used as track matte
-  trackMatteCompositionId?: string; // Optional: ID of composition containing matte layer (for cross-comp mattes)
+  matteType?: MatteType;         // Matte source mode (uses layer above)
+  matteLayerId?: string;         // ID of layer used as matte source
+  matteCompositionId?: string;   // Optional: ID of composition containing matte layer (for cross-comp mattes)
   preserveTransparency?: boolean;   // Only paint on existing pixels
+
+  // Deprecated aliases for backwards compatibility
+  /** @deprecated Use matteType instead */
+  trackMatteType?: MatteType;
+  /** @deprecated Use matteLayerId instead */
+  trackMatteLayerId?: string;
+  /** @deprecated Use matteCompositionId instead */
+  trackMatteCompositionId?: string;
 
   properties: AnimatableProperty<any>[];
   effects: EffectInstance[];  // Effect stack - processed top to bottom
@@ -378,14 +386,17 @@ export type BlendMode = 'normal' | 'multiply' | 'screen' | 'overlay' | 'add' | '
 // ============================================================
 
 /**
- * Track matte types (uses layer above as matte source)
+ * Matte source types (uses layer above as matte source)
  */
-export type TrackMatteType =
-  | 'none'           // No track matte
+export type MatteType =
+  | 'none'           // No matte source
   | 'alpha'          // Use alpha channel of matte layer
   | 'alpha_inverted' // Invert alpha of matte layer
   | 'luma'           // Use luminance of matte layer
   | 'luma_inverted'; // Invert luminance of matte layer
+
+/** @deprecated Use MatteType instead */
+export type TrackMatteType = MatteType;
 
 /**
  * Mask mode determines how multiple masks combine
@@ -586,7 +597,7 @@ export interface VideoData {
   endTime?: number;           // End time in source (undefined = full duration)
   speed: number;              // Playback speed (1 = normal, 2 = 2x, 0.5 = half)
 
-  // Time remapping (AE-style)
+  // Time remapping (professional feature)
   timeRemapEnabled: boolean;
   timeRemap?: AnimatableProperty<number>;  // Maps comp time to video time
 
@@ -1655,7 +1666,7 @@ export function animatableToControlPoint(acp: AnimatableControlPoint): ControlPo
 }
 
 // ============================================================
-// TEXT DATA (Complete AE Parity)
+// TEXT DATA (Professional Feature Set)
 // ============================================================
 
 export interface TextData {
@@ -1682,7 +1693,7 @@ export interface TextData {
   lineHeight: number;         // Alias for lineSpacing
   textAlign: 'left' | 'center' | 'right';
 
-  // Path Options (Full AE Parity)
+  // Path Options (Professional Feature Set)
   pathLayerId: string | null;
   pathReversed: boolean;          // Reverse Path direction
   pathPerpendicularToPath: boolean; // Characters perpendicular to path tangent
@@ -1692,7 +1703,7 @@ export interface TextData {
   pathOffset: number;             // 0-100%, animatable - shifts all characters along path
   pathAlign: 'left' | 'center' | 'right';  // Baseline alignment
 
-  // More Options (AE Advanced)
+  // More Options (Advanced)
   anchorPointGrouping: 'character' | 'word' | 'line' | 'all';
   groupingAlignment: { x: number; y: number }; // Percentages
   fillAndStroke: 'fill-over-stroke' | 'stroke-over-fill';

@@ -9,7 +9,7 @@
  */
 
 import * as THREE from 'three';
-import type { Layer, AnimatableProperty, LayerTransform, LayerMask, TrackMatteType, LayerMotionBlurSettings } from '@/types/project';
+import type { Layer, AnimatableProperty, LayerTransform, LayerMask, MatteType, LayerMotionBlurSettings } from '@/types/project';
 import type { EffectInstance } from '@/types/effects';
 import type { LayerInstance } from '../types';
 import type { TargetParameter } from '@/services/audioReactiveMapping';
@@ -95,17 +95,17 @@ export abstract class BaseLayer implements LayerInstance {
   /** Masks applied to this layer (vector cutouts) */
   protected masks: LayerMask[] = [];
 
-  /** Track matte type (uses another layer as alpha/luma source) */
-  protected trackMatteType: TrackMatteType = 'none';
+  /** Matte source type (uses another layer as alpha/luma source) */
+  protected matteType: MatteType = 'none';
 
-  /** ID of the layer used as track matte source */
-  protected trackMatteLayerId: string | null = null;
+  /** ID of the layer used as matte source */
+  protected matteLayerId: string | null = null;
 
   /** ID of composition containing matte layer (for cross-comp mattes) */
-  protected trackMatteCompositionId: string | null = null;
+  protected matteCompositionId: string | null = null;
 
-  /** Canvas of track matte layer (set externally by LayerManager) */
-  protected trackMatteCanvas: HTMLCanvasElement | null = null;
+  /** Canvas of matte source layer (set externally by LayerManager) */
+  protected matteCanvas: HTMLCanvasElement | null = null;
 
   /** Preserve transparency - only paint on existing pixels */
   protected preserveTransparency: boolean = false;
@@ -190,11 +190,11 @@ export abstract class BaseLayer implements LayerInstance {
     this.motionBlurSettings = layerData.motionBlurSettings ?? null;
     this.layerData = layerData;
 
-    // Mask & matte properties
+    // Mask & matte properties (with backwards compatibility for old property names)
     this.masks = layerData.masks ?? [];
-    this.trackMatteType = layerData.trackMatteType ?? 'none';
-    this.trackMatteLayerId = layerData.trackMatteLayerId ?? null;
-    this.trackMatteCompositionId = layerData.trackMatteCompositionId ?? null;
+    this.matteType = layerData.matteType ?? layerData.trackMatteType ?? 'none';
+    this.matteLayerId = layerData.matteLayerId ?? layerData.trackMatteLayerId ?? null;
+    this.matteCompositionId = layerData.matteCompositionId ?? layerData.trackMatteCompositionId ?? null;
     this.preserveTransparency = layerData.preserveTransparency ?? false;
   }
 
@@ -517,25 +517,28 @@ export abstract class BaseLayer implements LayerInstance {
       this.setEffects(properties.effects);
     }
 
-    // Mask and matte property updates
+    // Mask and matte property updates (supporting both new and deprecated names)
     if (properties.masks !== undefined) {
       this.masks = properties.masks;
     }
 
-    if (properties.trackMatteType !== undefined) {
-      this.trackMatteType = properties.trackMatteType;
+    const newMatteType = properties.matteType ?? properties.trackMatteType;
+    if (newMatteType !== undefined) {
+      this.matteType = newMatteType;
     }
 
-    if (properties.trackMatteLayerId !== undefined) {
-      this.trackMatteLayerId = properties.trackMatteLayerId;
+    const newMatteLayerId = properties.matteLayerId ?? properties.trackMatteLayerId;
+    if (newMatteLayerId !== undefined) {
+      this.matteLayerId = newMatteLayerId;
       // Clear the cached canvas when matte source changes
-      this.trackMatteCanvas = null;
+      this.matteCanvas = null;
     }
 
-    if (properties.trackMatteCompositionId !== undefined) {
-      this.trackMatteCompositionId = properties.trackMatteCompositionId;
+    const newMatteCompId = properties.matteCompositionId ?? properties.trackMatteCompositionId;
+    if (newMatteCompId !== undefined) {
+      this.matteCompositionId = newMatteCompId;
       // Clear the cached canvas when matte composition changes
-      this.trackMatteCanvas = null;
+      this.matteCanvas = null;
     }
 
     if (properties.preserveTransparency !== undefined) {
@@ -1001,47 +1004,72 @@ export abstract class BaseLayer implements LayerInstance {
   }
 
   /**
-   * Check if this layer has a track matte assigned
+   * Check if this layer has a matte source assigned
    */
+  protected hasMatte(): boolean {
+    return this.matteType !== 'none' && this.matteCanvas !== null;
+  }
+
+  /** @deprecated Use hasMatte() instead */
   protected hasTrackMatte(): boolean {
-    return this.trackMatteType !== 'none' && this.trackMatteCanvas !== null;
+    return this.hasMatte();
   }
 
   /**
-   * Set the track matte canvas (called by LayerManager when compositing)
+   * Set the matte canvas (called by LayerManager when compositing)
    * @param canvas - The rendered canvas of the matte layer
    */
+  setMatteCanvas(canvas: HTMLCanvasElement | null): void {
+    this.matteCanvas = canvas;
+  }
+
+  /** @deprecated Use setMatteCanvas() instead */
   setTrackMatteCanvas(canvas: HTMLCanvasElement | null): void {
-    this.trackMatteCanvas = canvas;
+    this.setMatteCanvas(canvas);
   }
 
   /**
-   * Get the track matte layer ID
+   * Get the matte layer ID
    */
+  getMatteLayerId(): string | null {
+    return this.matteLayerId;
+  }
+
+  /** @deprecated Use getMatteLayerId() instead */
   getTrackMatteLayerId(): string | null {
-    return this.trackMatteLayerId;
+    return this.getMatteLayerId();
   }
 
   /**
-   * Get the track matte composition ID (for cross-comp mattes)
+   * Get the matte composition ID (for cross-comp mattes)
    * Returns null if matte is in the same composition
    */
+  getMatteCompositionId(): string | null {
+    return this.matteCompositionId;
+  }
+
+  /** @deprecated Use getMatteCompositionId() instead */
   getTrackMatteCompositionId(): string | null {
-    return this.trackMatteCompositionId;
+    return this.getMatteCompositionId();
   }
 
   /**
-   * Check if this layer uses a cross-composition track matte
+   * Check if this layer uses a cross-composition matte
    */
   hasCrossCompMatte(): boolean {
-    return this.trackMatteCompositionId !== null && this.trackMatteLayerId !== null;
+    return this.matteCompositionId !== null && this.matteLayerId !== null;
   }
 
   /**
-   * Get the track matte type
+   * Get the matte type
    */
-  getTrackMatteType(): TrackMatteType {
-    return this.trackMatteType;
+  getMatteType(): MatteType {
+    return this.matteType;
+  }
+
+  /** @deprecated Use getMatteType() instead */
+  getTrackMatteType(): MatteType {
+    return this.getMatteType();
   }
 
   /**
@@ -1052,7 +1080,7 @@ export abstract class BaseLayer implements LayerInstance {
   }
 
   /**
-   * Process masks and track matte on a canvas
+   * Process masks and matte source on a canvas
    * @param canvas - Source canvas to apply masks to
    * @param frame - Current frame for animated masks
    * @returns Processed canvas with masks applied
@@ -1065,9 +1093,9 @@ export abstract class BaseLayer implements LayerInstance {
       result = applyMasksToLayer(result, this.masks, frame);
     }
 
-    // Apply track matte (uses another layer's canvas)
-    if (this.hasTrackMatte() && this.trackMatteCanvas) {
-      result = applyTrackMatte(result, this.trackMatteCanvas, this.trackMatteType);
+    // Apply matte source (uses another layer's canvas)
+    if (this.hasMatte() && this.matteCanvas) {
+      result = applyTrackMatte(result, this.matteCanvas, this.matteType);
     }
 
     return result;

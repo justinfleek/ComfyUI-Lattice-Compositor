@@ -173,7 +173,7 @@ export interface StrokeShape {
   dashPattern: AnimatableProperty<number[]>;  // [dash, gap, dash, gap, ...]
   dashOffset: AnimatableProperty<number>;
   blendMode: string;
-  // Taper (AE specific)
+  // Taper (stroke width variation)
   taperEnabled: boolean;
   taperStartLength: AnimatableProperty<number>;  // 0-100%
   taperEndLength: AnimatableProperty<number>;
