@@ -18,8 +18,20 @@
       --weyl-text-secondary: #9CA3AF;
       --weyl-text-muted: #6B7280;
       --weyl-gutter: 20px;
-      --weyl-radius-xl: 16px;
+      --weyl-radius-sm: 2px;
+      --weyl-radius-md: 4px;
+      --weyl-radius-lg: 6px;
+      --weyl-radius-xl: 8px;
+      --weyl-radius-2xl: 12px;
       --weyl-shadow-panel: 0 8px 32px rgba(0,0,0,0.4);
+
+      /* Theme Gradients */
+      --theme-violet: linear-gradient(135deg, #8B5CF6, #EC4899);
+      --theme-ocean: linear-gradient(135deg, #06B6D4, #3B82F6);
+      --theme-sunset: linear-gradient(135deg, #F59E0B, #EF4444);
+      --theme-forest: linear-gradient(135deg, #10B981, #06B6D4);
+      --theme-ember: linear-gradient(135deg, #EF4444, #F97316);
+      --theme-mono: linear-gradient(135deg, #4B5563, #6B7280);
     }
 
     * {
@@ -81,7 +93,7 @@
       border: none;
       background: transparent;
       color: var(--weyl-text-secondary);
-      border-radius: 8px;
+      border-radius: var(--weyl-radius-md);
       cursor: pointer;
       font-size: 16px;
       display: flex;
@@ -158,7 +170,7 @@
       padding: 10px 12px;
       background: var(--weyl-surface-2);
       border: none;
-      border-radius: 8px;
+      border-radius: var(--weyl-radius-md);
       color: var(--weyl-text-primary);
       font-size: 12px;
       margin-bottom: 12px;
@@ -177,7 +189,7 @@
     .media-item {
       aspect-ratio: 16/9;
       background: var(--weyl-surface-3);
-      border-radius: 8px;
+      border-radius: var(--weyl-radius-md);
       position: relative;
       overflow: hidden;
       cursor: pointer;
@@ -284,7 +296,7 @@
       background: transparent;
       border: none;
       color: var(--weyl-text-secondary);
-      border-radius: 6px;
+      border-radius: var(--weyl-radius-md);
       cursor: pointer;
       font-size: 11px;
     }
@@ -321,14 +333,14 @@
       flex: 1;
       height: 28px;
       background: var(--weyl-surface-2);
-      border-radius: 14px;
+      border-radius: var(--weyl-radius-lg);
       position: relative;
     }
 
     .clip {
       position: absolute;
       height: 100%;
-      border-radius: 14px;
+      border-radius: var(--weyl-radius-lg);
       display: flex;
       align-items: center;
       padding: 0 12px;
@@ -398,7 +410,7 @@
       border: none;
       background: transparent;
       color: var(--weyl-text-secondary);
-      border-radius: 8px;
+      border-radius: var(--weyl-radius-md);
       cursor: pointer;
       font-size: 11px;
       font-weight: 500;
@@ -446,7 +458,7 @@
       padding: 6px 8px;
       background: var(--weyl-surface-2);
       border: none;
-      border-radius: 6px;
+      border-radius: var(--weyl-radius-md);
       color: var(--weyl-text-primary);
       font-size: 12px;
       text-align: right;
@@ -530,7 +542,7 @@
       padding: 12px;
       background: var(--weyl-surface-2);
       border: none;
-      border-radius: 12px;
+      border-radius: var(--weyl-radius-lg);
       color: var(--weyl-text-primary);
       cursor: pointer;
       font-size: 13px;
@@ -546,7 +558,7 @@
       width: 32px;
       height: 32px;
       background: var(--weyl-accent-gradient);
-      border-radius: 8px;
+      border-radius: var(--weyl-radius-md);
       display: flex;
       align-items: center;
       justify-content: center;

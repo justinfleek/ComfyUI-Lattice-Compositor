@@ -24,6 +24,36 @@
 
 ---
 
+### Node-Based Timeline
+
+Weyl uses a **node graph paradigm** where layers, effects, and modifiers connect to timeline clips. This combines the familiar timeline metaphor with the flexibility of node-based compositing.
+
+#### Node Types
+
+| Node Type | Description | Inputs | Outputs |
+|-----------|-------------|--------|---------|
+| **Timeline Clip** | Media or generated content | Visual In | Visual Out |
+| **Parameter Node** | Modifies properties (Transform, Opacity) | Target Property | Modified Value |
+| **Effect Node** | Processes visual output (Blur, Glow) | Visual In | Visual Out |
+| **Modifier Node** | Controls animation (Jitter, Loop, Audio) | Target Param | Animated Value |
+
+#### Connection Types
+
+| Connection | Appearance | Data Flow |
+|------------|------------|-----------|
+| **Visual Flow** | Thick gradient lines | Video/image data through effect chain |
+| **Parameter Link** | Thin colored lines | Property modifications to clips |
+| **Modifier Link** | Dashed lines | Animation control to parameters |
+
+#### Timeline Views
+
+| View | Description | Use Case |
+|------|-------------|----------|
+| **Collapsed** | Standard timeline with subtle bezier connections | Quick editing |
+| **Expanded** | Full node graph per track | Complex effect chains |
+
+---
+
 ### Animation System
 
 #### Interpolation Types (20+)
@@ -164,6 +194,62 @@ Hold            - No interpolation
 | **Threshold** | Binary on/off at threshold |
 | **Smoothed** | Lowpass filtered |
 | **Attack/Release** | Envelope follower |
+
+---
+
+### UI Design System
+
+#### Design Philosophy: "Dense Islands, Empty Ocean"
+
+- **Floating Panels** — Panels float with 20px gutters on `#050505` void canvas
+- **No Borders** — Separation via surface brightness and shadows
+- **Moderate Rounding** — 8px radius on panels, 4px on buttons
+- **Progressive Disclosure** — Expand complex controls only when needed
+
+#### Theme Gradients
+
+| Theme | Primary | Secondary | Use Case |
+|-------|---------|-----------|----------|
+| **Violet** | `#8B5CF6` | `#EC4899` | Default, creative work |
+| **Ocean** | `#06B6D4` | `#3B82F6` | Technical, precision |
+| **Sunset** | `#F59E0B` | `#EF4444` | Warm, energetic |
+| **Forest** | `#10B981` | `#06B6D4` | Natural, calm |
+| **Ember** | `#EF4444` | `#F97316` | Intense, dramatic |
+| **Mono** | `#6B7280` | `#9CA3AF` | Minimal distraction |
+
+#### Semantic Keyframe Shapes
+
+16 distinct shapes encode easing type visually:
+
+| Shape | Easing | Description |
+|-------|--------|-------------|
+| Diamond | Linear | Constant speed |
+| Circle | Ease | Smooth start/end |
+| Square | Hold | No interpolation |
+| Triangle Right | Ease Out | Fast start, slow end |
+| Triangle Left | Ease In | Slow start, fast end |
+| Hourglass | Ease In-Out | Slow both ends |
+| Star | Spring | Bouncy overshoot |
+| Lightning | Elastic | Elastic oscillation |
+| Bounce | Bounce | Multiple bounces |
+| Wave | Sine | Smooth wave |
+| Arrow Right | Expo Out | Dramatic deceleration |
+| Arrow Left | Expo In | Dramatic acceleration |
+| Pentagon | Cubic | Standard cubic ease |
+| Hexagon | Quart | Stronger than cubic |
+| Octagon | Quint | Strongest polynomial |
+| Custom | Bezier | User-defined curve |
+
+#### Surface Colors
+
+| Surface | Hex | Use |
+|---------|-----|-----|
+| Void | `#050505` | App background |
+| Surface 0 | `#0a0a0a` | Deepest panels |
+| Surface 1 | `#121212` | Panel backgrounds |
+| Surface 2 | `#1a1a1a` | Headers, elevated |
+| Surface 3 | `#222222` | Hover states |
+| Surface 4 | `#2a2a2a` | Active/pressed |
 
 ---
 

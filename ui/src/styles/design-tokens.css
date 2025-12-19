@@ -18,12 +18,47 @@
   --weyl-surface-3: #222222;      /* Hover states */
   --weyl-surface-4: #2a2a2a;      /* Active/pressed states */
 
-  /* Accent Colors */
-  --weyl-accent: #8B5CF6;                                          /* Primary purple */
-  --weyl-accent-hover: #9D7AF6;                                    /* Purple hover */
-  --weyl-accent-secondary: #EC4899;                                /* Pink */
+  /* Accent Colors (Default: Violet theme) */
+  --weyl-accent: #8B5CF6;
+  --weyl-accent-hover: #9D7AF6;
+  --weyl-accent-secondary: #EC4899;
   --weyl-accent-gradient: linear-gradient(135deg, #8B5CF6, #EC4899);
   --weyl-accent-glow: rgba(139, 92, 246, 0.3);
+
+  /* ========================================
+     THEME GRADIENTS
+     Select theme by setting --weyl-theme-* vars
+     ======================================== */
+
+  /* Violet (Default) */
+  --weyl-theme-violet-primary: #8B5CF6;
+  --weyl-theme-violet-secondary: #EC4899;
+  --weyl-theme-violet-gradient: linear-gradient(135deg, #8B5CF6, #EC4899);
+
+  /* Ocean */
+  --weyl-theme-ocean-primary: #06B6D4;
+  --weyl-theme-ocean-secondary: #3B82F6;
+  --weyl-theme-ocean-gradient: linear-gradient(135deg, #06B6D4, #3B82F6);
+
+  /* Sunset */
+  --weyl-theme-sunset-primary: #F59E0B;
+  --weyl-theme-sunset-secondary: #EF4444;
+  --weyl-theme-sunset-gradient: linear-gradient(135deg, #F59E0B, #EF4444);
+
+  /* Forest */
+  --weyl-theme-forest-primary: #10B981;
+  --weyl-theme-forest-secondary: #06B6D4;
+  --weyl-theme-forest-gradient: linear-gradient(135deg, #10B981, #06B6D4);
+
+  /* Ember */
+  --weyl-theme-ember-primary: #EF4444;
+  --weyl-theme-ember-secondary: #F97316;
+  --weyl-theme-ember-gradient: linear-gradient(135deg, #EF4444, #F97316);
+
+  /* Mono (grayscale) */
+  --weyl-theme-mono-primary: #6B7280;
+  --weyl-theme-mono-secondary: #9CA3AF;
+  --weyl-theme-mono-gradient: linear-gradient(135deg, #4B5563, #6B7280);
 
   /* Text Colors */
   --weyl-text-primary: #E5E5E5;   /* Main text (not pure white) */
@@ -95,16 +130,16 @@
   --weyl-gutter: 20px;
 
   /* ========================================
-     BORDER RADIUS
+     BORDER RADIUS (Toned down from original)
      ======================================== */
 
   --weyl-radius-none: 0;
-  --weyl-radius-sm: 4px;
-  --weyl-radius-md: 8px;
-  --weyl-radius-lg: 12px;
-  --weyl-radius-xl: 16px;
-  --weyl-radius-2xl: 20px;
-  --weyl-radius-full: 999px;
+  --weyl-radius-sm: 2px;
+  --weyl-radius-md: 4px;
+  --weyl-radius-lg: 6px;
+  --weyl-radius-xl: 8px;      /* Panels - was 16px */
+  --weyl-radius-2xl: 12px;    /* Large cards - was 20px */
+  --weyl-radius-full: 999px;  /* Pills only */
 
   /* ========================================
      SHADOWS

@@ -40,6 +40,15 @@ Weyl is a professional-grade **AI motion graphics compositor** that brings indus
 - **20+ Easing Functions** — Linear, ease-in/out, spring, elastic, bounce, and custom bezier curves
 - **Expression System** — jitter(), repeatAfter(), bounce(), inertia() for procedural animation
 - **Graph Editor** — Fine-tune animation curves with bezier handles
+- **16 Semantic Keyframe Shapes** — Visual encoding of easing type (diamond=linear, circle=ease, arrow=direction)
+
+### Node-Based Timeline
+
+- **Visual Effect Chains** — Connect effects, transforms, and modifiers as nodes
+- **Parameter Nodes** — Link Transform, Color Correction, and Time Remap to any clip
+- **Modifier Nodes** — Add Jitter, Loop, Spring, and Audio Reactive as node connections
+- **Collapsed/Expanded Views** — Standard timeline or full node graph per track
+- **Bezier Connections** — Elegant curves show relationships between elements
 
 ### 3D Camera System
 
@@ -190,6 +199,18 @@ Press **`** (backtick) to open fullscreen preview:
 
 ---
 
+## UI Design
+
+Weyl uses a **"Dense Islands, Empty Ocean"** design philosophy:
+
+- **Floating Panels** — Panels float with 20px gutters on a dark void canvas
+- **6 Theme Gradients** — Violet, Ocean, Sunset, Forest, Ember, Mono
+- **No Borders** — Separation via surface brightness and shadows
+- **Semantic Keyframes** — 16 distinct shapes encode easing type at a glance
+- **Node Connections** — Bezier curves link effects and modifiers on the timeline
+
+---
+
 ## Architecture
 
 ```
@@ -197,7 +218,8 @@ Press **`** (backtick) to open fullscreen preview:
 │  FRONTEND (Vue 3 + TypeScript)                              │
 │  ├── Canvas: Fabric.js 6.x → WebGL fallback                │
 │  ├── UI: PrimeVue (matches ComfyUI theme)                  │
-│  └── State: Pinia stores                                    │
+│  ├── State: Pinia stores                                    │
+│  └── Design: CSS custom properties, floating panels        │
 ├─────────────────────────────────────────────────────────────┤
 │  ENGINE (Three.js + WebGL)                                  │
 │  ├── Layer rendering pipeline                               │
