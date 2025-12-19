@@ -4,8 +4,14 @@ frontend/node_modules/
 # Internal testing - never push
 reference_images/
 screenshots/
+
+# Markdown - ignore drafts, allow important docs
 *.md
 !README.md
+!HANDOFF.md
+!CLAUDE.md
+!specs/*.md
+!docs/*.md
 
 # Python
 __pycache__/
