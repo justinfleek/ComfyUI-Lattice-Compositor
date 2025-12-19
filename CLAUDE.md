@@ -138,12 +138,13 @@ web/js/
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                           PRESENTATION LAYER                                 │
 │                                                                              │
-│  Vue 3.5 Components (55 total)                                              │
+│  Vue 3.5 Components (57 total)                                              │
 │  ├── Canvas Area: ThreeCanvas, SplineEditor, MaskEditor, PathPreview        │
-│  ├── Timeline: TimelinePanel, LayerTrack, GraphEditor, Playhead             │
+│  ├── Timeline: TimelinePanel, LayerTrack, GraphEditor, NodeConnection       │
 │  ├── Panels: LayerPanel, EffectsPanel, AudioPanel, AssetsPanel              │
 │  ├── Properties: TransformProps, TextProps, ParticleProps, CameraProps      │
 │  ├── Controls: ColorPicker, AngleDial, Pickwhip, CurveEditor                │
+│  ├── UI: ThemeSelector (6 gradient themes)                                  │
 │  └── Dialogs: ExportDialog, FontPicker, CompositionSettings                 │
 │                                                                              │
 │  PrimeVue 4 provides: Buttons, Inputs, Dropdowns, Tabs, Splitters           │
@@ -165,7 +166,8 @@ web/js/
 │  ├── selectionStore  → selectLayer(), selectKeyframes(), clearSelection    │
 │  ├── historyStore    → push(), undo(), redo(), canUndo, canRedo            │
 │  ├── audioStore      → loadAudio(), playAudio(), audioContext              │
-│  └── assetStore      → importAsset(), getAsset(), thumbnails               │
+│  ├── assetStore      → importAsset(), getAsset(), thumbnails               │
+│  └── themeStore      → setTheme(), loadSavedTheme(), 6 gradient themes     │
 └──────────────────────────────────────────────────────────────────────────────┘
                                        │
                                        ▼
@@ -1128,6 +1130,14 @@ Access via the **AI** tab in the right panel.
 | `stores/playbackStore.ts` | 5KB | Playback state |
 | `stores/selectionStore.ts` | 4KB | Selection state |
 | `stores/historyStore.ts` | 6KB | Undo/redo |
+| `stores/themeStore.ts` | 3KB | Theme management (6 gradient themes) |
+
+### Style Files
+
+| File | Purpose |
+|------|---------|
+| `styles/design-tokens.css` | CSS custom properties for theming |
+| `styles/keyframe-shapes.ts` | 16 semantic keyframe shape SVG definitions |
 
 ---
 
@@ -1465,6 +1475,78 @@ ui/src/__tests__/engine/ParticleSimulationController.test.ts
 | **Noise** | simplex-noise | 4.0.x | Procedural noise |
 | **Video Export** | mp4-muxer | 5.2.x | MP4 encoding |
 | **Archive** | JSZip | 3.10.x | ZIP creation |
+
+---
+
+## UI DESIGN SYSTEM
+
+### Design Philosophy: "Dense Islands, Empty Ocean"
+
+The UI follows a **floating island architecture** where content-rich panels float on a dark void background with generous spacing. This creates clear visual hierarchy and reduces cognitive load.
+
+### Design Tokens (`styles/design-tokens.css`)
+
+```css
+/* Surface hierarchy (5 levels) */
+--weyl-void: #050505;        /* Background "ocean" */
+--weyl-surface-0: #0A0A0A;   /* Lowest panels */
+--weyl-surface-1: #121212;   /* Standard panels */
+--weyl-surface-2: #1A1A1A;   /* Raised elements */
+--weyl-surface-3: #242424;   /* Dropdowns, tooltips */
+--weyl-surface-4: #2E2E2E;   /* Highest elevation */
+
+/* Spacing */
+--weyl-gutter: 20px;         /* Panel separation */
+--weyl-radius-xl: 8px;       /* Panel corners */
+--weyl-shadow-panel: 0 8px 32px rgba(0,0,0,0.6);
+```
+
+### 6 Gradient Themes
+
+| Theme | Primary | Gradient |
+|-------|---------|----------|
+| **Violet** (default) | #8B5CF6 | Purple → Pink |
+| **Ocean** | #06B6D4 | Cyan → Blue |
+| **Sunset** | #F59E0B | Amber → Red |
+| **Forest** | #10B981 | Emerald → Cyan |
+| **Ember** | #EF4444 | Red → Orange |
+| **Mono** | #6B7280 | Gray → Gray |
+
+Themes are managed by `themeStore.ts` and persisted to localStorage.
+
+### Semantic Keyframe Shapes (16 Types)
+
+Each interpolation type has a unique SVG shape for instant visual recognition:
+
+| Shape | Easing Type |
+|-------|-------------|
+| Diamond (◆) | Linear |
+| Circle | Hold/Step |
+| Square | Ease (generic) |
+| Triangle | Ease In |
+| Inverted Triangle | Ease Out |
+| Hourglass | Ease In-Out |
+| Pentagon | Cubic |
+| Hexagon | Expo |
+| Octagon | Elastic |
+| Star | Bounce |
+| Sparkle | Back |
+| Pill | Bezier (custom) |
+| Double Diamond | Sine |
+| Slash Diamond | Circ |
+| Arrow Diamond | Quint |
+| Cross | Spring |
+
+Defined in `styles/keyframe-shapes.ts`, used in PropertyTrack.vue.
+
+### Node-Based Timeline (Future)
+
+Spec in `docs/NODE_TIMELINE_SPEC.md`:
+- Layers as nodes with input/output ports
+- Visual flow connections (gradient lines)
+- Parameter connections (thin colored lines)
+- Modifier connections (dashed lines)
+- Implemented foundation: `NodeConnection.vue`
 
 ---
 
