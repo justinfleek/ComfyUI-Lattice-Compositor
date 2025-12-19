@@ -323,11 +323,6 @@ export class WeylEngine {
     this.layers.setNestedCompRenderContext(context);
   }
 
-  /** @deprecated Use setNestedCompRenderContext instead */
-  setPrecompRenderContext(context: import('./layers/NestedCompLayer').NestedCompRenderContext): void {
-    this.setNestedCompRenderContext(context);
-  }
-
   /**
    * Set camera callbacks for LayerManager
    * Allows camera layers to access Camera3D data from store
@@ -1904,11 +1899,6 @@ export class WeylEngine {
     this.renderer.disposeNestedCompTarget(compositionId);
   }
 
-  /** @deprecated Use clearNestedCompCache instead */
-  clearPrecompCache(compositionId: string): void {
-    this.clearNestedCompCache(compositionId);
-  }
-
   /**
    * Clear all nested composition caches
    */
@@ -1917,11 +1907,6 @@ export class WeylEngine {
       this.clearNestedCompCache(id);
     }
     this.renderer.disposeAllNestedCompTargets();
-  }
-
-  /** @deprecated Use clearAllNestedCompCaches instead */
-  clearAllPrecompCaches(): void {
-    this.clearAllNestedCompCaches();
   }
 
   // ============================================================================

@@ -33,9 +33,6 @@ export interface NestedCompRenderContext {
   getCompositionLayers?: (compositionId: string) => import('./BaseLayer').BaseLayer[];
 }
 
-/** @deprecated Use NestedCompRenderContext instead */
-export type PrecompRenderContext = NestedCompRenderContext;
-
 /** Transform values for combining collapsed nested comp transforms */
 export interface CombinedTransform {
   position: { x: number; y: number; z: number };
@@ -104,8 +101,7 @@ export class NestedCompLayer extends BaseLayer {
       compositionId: data?.compositionId ?? '',
       timeRemapEnabled: data?.timeRemapEnabled ?? false,
       timeRemap: data?.timeRemap,
-      // Support both new flattenTransform and deprecated collapseTransformations
-      flattenTransform: data?.flattenTransform ?? data?.collapseTransformations ?? false,
+      flattenTransform: data?.flattenTransform ?? false,
       overrideFrameRate: data?.overrideFrameRate ?? false,
       frameRate: data?.frameRate,
     };
@@ -445,11 +441,8 @@ export class NestedCompLayer extends BaseLayer {
       if (data.timeRemap !== undefined) {
         this.setTimeRemap(data.timeRemap);
       }
-      // Support both new flattenTransform and deprecated collapseTransformations
       if (data.flattenTransform !== undefined) {
         this.setFlattenTransform(data.flattenTransform);
-      } else if (data.collapseTransformations !== undefined) {
-        this.setFlattenTransform(data.collapseTransformations);
       }
       if (data.overrideFrameRate !== undefined || data.frameRate !== undefined) {
         this.setFrameRateOverride(
@@ -469,13 +462,6 @@ export class NestedCompLayer extends BaseLayer {
    */
   getNestedCompData(): NestedCompData {
     return { ...this.nestedCompData };
-  }
-
-  /**
-   * @deprecated Use getNestedCompData() instead
-   */
-  getPrecompData(): NestedCompData {
-    return this.getNestedCompData();
   }
 
   /**
@@ -511,6 +497,3 @@ export class NestedCompLayer extends BaseLayer {
     this.cachedComposition = null;
   }
 }
-
-/** @deprecated Use NestedCompLayer instead */
-export const PrecompLayer = NestedCompLayer;

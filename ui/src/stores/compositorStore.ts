@@ -314,8 +314,7 @@ export const useCompositorStore = defineStore('compositor', {
       const comp = state.project.compositions[state.activeCompositionId];
       const allLayers = comp?.layers || [];
       if (state.hideMinimizedLayers) {
-        // Support both minimized and deprecated shy property
-        return allLayers.filter((l: Layer) => !l.minimized && !l.shy);
+        return allLayers.filter((l: Layer) => !l.minimized);
       }
       return allLayers;
     },
@@ -547,11 +546,6 @@ export const useCompositorStore = defineStore('compositor', {
       storeLogger.debug('Entered nested comp:', compId, 'breadcrumbs:', this.compositionBreadcrumbs);
     },
 
-    /** @deprecated Use enterNestedComp instead */
-    enterPrecomp(compId: string): void {
-      this.enterNestedComp(compId);
-    },
-
     /**
      * Navigate back one level in the breadcrumb trail
      */
@@ -735,11 +729,6 @@ export const useCompositorStore = defineStore('compositor', {
 
       storeLogger.debug('Nested layers into:', nestedComp.name);
       return nestedComp;
-    },
-
-    /** @deprecated Use nestSelectedLayers instead */
-    precomposeSelectedLayers(name?: string): Composition | null {
-      return this.nestSelectedLayers(name);
     },
 
     // ============================================================
@@ -2330,11 +2319,6 @@ export const useCompositorStore = defineStore('compositor', {
       return layer;
     },
 
-    /** @deprecated Use createNestedCompLayer instead */
-    createPrecompLayer(compositionId: string, name?: string): Layer {
-      return this.createNestedCompLayer(compositionId, name);
-    },
-
     /**
      * Update nested comp layer data
      */
@@ -2345,11 +2329,6 @@ export const useCompositorStore = defineStore('compositor', {
       const data = layer.data as NestedCompData;
       Object.assign(data, updates);
       this.project.meta.modified = new Date().toISOString();
-    },
-
-    /** @deprecated Use updateNestedCompLayerData instead */
-    updatePrecompLayerData(layerId: string, updates: Partial<NestedCompData>): void {
-      this.updateNestedCompLayerData(layerId, updates);
     },
 
     // ============================================================

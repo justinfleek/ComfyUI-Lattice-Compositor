@@ -178,6 +178,3 @@ export class ControlLayer extends BaseLayer {
     this.disposeIndicator();
   }
 }
-
-/** @deprecated Use ControlLayer instead */
-export const NullLayer = ControlLayer;

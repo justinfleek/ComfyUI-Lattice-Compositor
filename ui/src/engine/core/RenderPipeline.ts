@@ -1095,11 +1095,6 @@ export class RenderPipeline {
     return target;
   }
 
-  /** @deprecated Use getNestedCompRenderTarget instead */
-  getPrecompRenderTarget(compositionId: string, width: number, height: number): THREE.WebGLRenderTarget {
-    return this.getNestedCompRenderTarget(compositionId, width, height);
-  }
-
   /**
    * Render a scene to an offscreen target and return the texture
    * Used for nested composition rendering
@@ -1132,11 +1127,6 @@ export class RenderPipeline {
     }
   }
 
-  /** @deprecated Use disposeNestedCompTarget instead */
-  disposePrecompTarget(compositionId: string): void {
-    this.disposeNestedCompTarget(compositionId);
-  }
-
   /**
    * Dispose all nested composition render targets
    */
@@ -1147,10 +1137,6 @@ export class RenderPipeline {
     this.nestedCompTargets.clear();
   }
 
-  /** @deprecated Use disposeAllNestedCompTargets instead */
-  disposeAllPrecompTargets(): void {
-    this.disposeAllNestedCompTargets();
-  }
 
   // ============================================================================
   // DISPOSAL

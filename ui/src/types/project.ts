@@ -192,18 +192,12 @@ export interface Layer {
   type: LayerType;
   visible: boolean;
   locked: boolean;
-  isolate: boolean;         // Isolate layer (show only this layer)
-  /** @deprecated Use isolate instead */
-  solo?: boolean;
+  isolate: boolean;           // Isolate layer (show only this layer)
   minimized?: boolean;        // Minimized layer (hide when minimized mode enabled)
-  /** @deprecated Use minimized instead */
-  shy?: boolean;
   threeD: boolean;            // 3D Layer Switch
   motionBlur: boolean;        // Motion Blur Switch
   motionBlurSettings?: LayerMotionBlurSettings;  // Detailed motion blur configuration
-  flattenTransform?: boolean;   // Flatten Transform / Continuously Rasterize
-  /** @deprecated Use flattenTransform instead */
-  collapseTransform?: boolean;
+  flattenTransform?: boolean; // Flatten Transform / Continuously Rasterize
   quality?: 'draft' | 'best';   // Quality switch
   effectsEnabled?: boolean;     // Enable/disable all effects
   frameBlending?: boolean;      // Frame blending for time-remapped footage
@@ -620,16 +614,11 @@ export interface NestedCompData {
 
   // Flatten transform (render nested layers in parent's 3D space)
   flattenTransform: boolean;
-  /** @deprecated Use flattenTransform instead */
-  collapseTransformations?: boolean;
 
   // Override nested comp settings
   overrideFrameRate: boolean;
   frameRate?: number;
 }
-
-/** @deprecated Use NestedCompData instead */
-export type PrecompData = NestedCompData;
 
 // ============================================================
 // GENERATED MAP DATA (AI-powered layer generation)

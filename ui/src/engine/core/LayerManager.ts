@@ -117,11 +117,6 @@ export class LayerManager {
     }
   }
 
-  /** @deprecated Use setNestedCompRenderContext instead */
-  setPrecompRenderContext(context: NestedCompRenderContext): void {
-    this.setNestedCompRenderContext(context);
-  }
-
   /**
    * Set the effect layer render context
    * This allows effect layers to render layers below them

@@ -132,12 +132,12 @@ Properties:
 - (transform only - no visual properties)
 \`\`\`
 
-### 9. Nested Composition Layer (formerly Precomp)
+### 9. Nested Composition Layer
 Embeds another composition as a layer.
 \`\`\`
 Properties:
 - compositionId: reference to nested composition
-- flattenTransform: boolean (formerly "collapse transformations")
+- flattenTransform: boolean (flattens child transforms into parent)
 \`\`\`
 
 ## Transform Properties (All Layers)

@@ -19,16 +19,16 @@ export { ResourceManager } from './core/ResourceManager';
 export { BaseLayer } from './layers/BaseLayer';
 export { ImageLayer } from './layers/ImageLayer';
 export { SolidLayer } from './layers/SolidLayer';
-export { ControlLayer, NullLayer } from './layers/ControlLayer';
+export { ControlLayer } from './layers/ControlLayer';
 export { TextLayer } from './layers/TextLayer';
 export { SplineLayer } from './layers/SplineLayer';
 export { ParticleLayer } from './layers/ParticleLayer';
 export { VideoLayer, extractVideoMetadata, calculateCompositionFromVideo } from './layers/VideoLayer';
-export { NestedCompLayer, PrecompLayer } from './layers/NestedCompLayer';
+export { NestedCompLayer } from './layers/NestedCompLayer';
 export { CameraLayer } from './layers/CameraLayer';
 export type { AnchorPointGrouping, FillStrokeOrder, InterCharacterBlending } from './layers/TextLayer';
 export type { VideoMetadata, VideoLayerEvents } from './layers/VideoLayer';
-export type { NestedCompRenderContext, PrecompRenderContext } from './layers/NestedCompLayer';
+export type { NestedCompRenderContext } from './layers/NestedCompLayer';
 export type { CameraGetter, CameraUpdater } from './layers/CameraLayer';
 
 // GPU Particle System

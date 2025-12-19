@@ -129,8 +129,7 @@ const nestedCompData = computed<NestedCompData>(() => {
     compositionId: data?.compositionId ?? '',
     timeRemapEnabled: data?.timeRemapEnabled ?? false,
     timeRemap: data?.timeRemap,
-    // Support both new flattenTransform and deprecated collapseTransformations
-    flattenTransform: data?.flattenTransform ?? data?.collapseTransformations ?? false,
+    flattenTransform: data?.flattenTransform ?? false,
     overrideFrameRate: data?.overrideFrameRate ?? false,
     frameRate: data?.frameRate,
   };

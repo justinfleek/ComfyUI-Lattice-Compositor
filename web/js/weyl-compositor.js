@@ -12138,7 +12138,7 @@ const useCompositorStore = defineStore("compositor", {
       const comp = state.project.compositions[state.activeCompositionId];
       const allLayers = comp?.layers || [];
       if (state.hideMinimizedLayers) {
-        return allLayers.filter((l) => !l.minimized && !l.shy);
+        return allLayers.filter((l) => !l.minimized);
       }
       return allLayers;
     },
@@ -12316,10 +12316,6 @@ const useCompositorStore = defineStore("compositor", {
       this.switchComposition(compId);
       storeLogger.debug("Entered nested comp:", compId, "breadcrumbs:", this.compositionBreadcrumbs);
     },
-    /** @deprecated Use enterNestedComp instead */
-    enterPrecomp(compId) {
-      this.enterNestedComp(compId);
-    },
     /**
      * Navigate back one level in the breadcrumb trail
      */
@@ -12454,10 +12450,6 @@ const useCompositorStore = defineStore("compositor", {
       this.activeCompositionId = activeComp.id;
       storeLogger.debug("Nested layers into:", nestedComp.name);
       return nestedComp;
-    },
-    /** @deprecated Use nestSelectedLayers instead */
-    precomposeSelectedLayers(name) {
-      return this.nestSelectedLayers(name);
     },
     // ============================================================
     // COMFYUI INTEGRATION
@@ -13773,10 +13765,6 @@ const useCompositorStore = defineStore("compositor", {
       this.pushHistory();
       return layer;
     },
-    /** @deprecated Use createNestedCompLayer instead */
-    createPrecompLayer(compositionId, name) {
-      return this.createNestedCompLayer(compositionId, name);
-    },
     /**
      * Update nested comp layer data
      */
@@ -13786,10 +13774,6 @@ const useCompositorStore = defineStore("compositor", {
       const data = layer.data;
       Object.assign(data, updates);
       this.project.meta.modified = (/* @__PURE__ */ new Date()).toISOString();
-    },
-    /** @deprecated Use updateNestedCompLayerData instead */
-    updatePrecompLayerData(layerId, updates) {
-      this.updateNestedCompLayerData(layerId, updates);
     },
     // ============================================================
     // SEGMENTATION ACTIONS (delegated to segmentationActions)
@@ -21145,8 +21129,7 @@ const _sfc_main$u = /* @__PURE__ */ defineComponent({
         compositionId: data?.compositionId ?? "",
         timeRemapEnabled: data?.timeRemapEnabled ?? false,
         timeRemap: data?.timeRemap,
-        // Support both new flattenTransform and deprecated collapseTransformations
-        flattenTransform: data?.flattenTransform ?? data?.collapseTransformations ?? false,
+        flattenTransform: data?.flattenTransform ?? false,
         overrideFrameRate: data?.overrideFrameRate ?? false,
         frameRate: data?.frameRate
       };
@@ -21330,7 +21313,7 @@ const _sfc_main$u = /* @__PURE__ */ defineComponent({
   }
 });
 
-const NestedCompProperties = /* @__PURE__ */ _export_sfc(_sfc_main$u, [["__scopeId", "data-v-94046135"]]);
+const NestedCompProperties = /* @__PURE__ */ _export_sfc(_sfc_main$u, [["__scopeId", "data-v-de9568d8"]]);
 
 const _hoisted_1$s = ["title"];
 const _hoisted_2$s = {
@@ -29651,12 +29634,12 @@ Properties:
 - (transform only - no visual properties)
 \`\`\`
 
-### 9. Nested Composition Layer (formerly Precomp)
+### 9. Nested Composition Layer
 Embeds another composition as a layer.
 \`\`\`
 Properties:
 - compositionId: reference to nested composition
-- flattenTransform: boolean (formerly "collapse transformations")
+- flattenTransform: boolean (flattens child transforms into parent)
 \`\`\`
 
 ## Transform Properties (All Layers)
@@ -34434,10 +34417,6 @@ class RenderPipeline {
     }
     return target;
   }
-  /** @deprecated Use getNestedCompRenderTarget instead */
-  getPrecompRenderTarget(compositionId, width, height) {
-    return this.getNestedCompRenderTarget(compositionId, width, height);
-  }
   /**
    * Render a scene to an offscreen target and return the texture
    * Used for nested composition rendering
@@ -34461,10 +34440,6 @@ class RenderPipeline {
       }
     }
   }
-  /** @deprecated Use disposeNestedCompTarget instead */
-  disposePrecompTarget(compositionId) {
-    this.disposeNestedCompTarget(compositionId);
-  }
   /**
    * Dispose all nested composition render targets
    */
@@ -34473,10 +34448,6 @@ class RenderPipeline {
       target.dispose();
     }
     this.nestedCompTargets.clear();
-  }
-  /** @deprecated Use disposeAllNestedCompTargets instead */
-  disposeAllPrecompTargets() {
-    this.disposeAllNestedCompTargets();
   }
   // ============================================================================
   // DISPOSAL
@@ -39564,8 +39535,7 @@ class NestedCompLayer extends BaseLayer {
       compositionId: data?.compositionId ?? "",
       timeRemapEnabled: data?.timeRemapEnabled ?? false,
       timeRemap: data?.timeRemap,
-      // Support both new flattenTransform and deprecated collapseTransformations
-      flattenTransform: data?.flattenTransform ?? data?.collapseTransformations ?? false,
+      flattenTransform: data?.flattenTransform ?? false,
       overrideFrameRate: data?.overrideFrameRate ?? false,
       frameRate: data?.frameRate
     };
@@ -39837,8 +39807,6 @@ class NestedCompLayer extends BaseLayer {
       }
       if (data.flattenTransform !== void 0) {
         this.setFlattenTransform(data.flattenTransform);
-      } else if (data.collapseTransformations !== void 0) {
-        this.setFlattenTransform(data.collapseTransformations);
       }
       if (data.overrideFrameRate !== void 0 || data.frameRate !== void 0) {
         this.setFrameRateOverride(
@@ -39856,12 +39824,6 @@ class NestedCompLayer extends BaseLayer {
    */
   getNestedCompData() {
     return { ...this.nestedCompData };
-  }
-  /**
-   * @deprecated Use getNestedCompData() instead
-   */
-  getPrecompData() {
-    return this.getNestedCompData();
   }
   /**
    * Get referenced composition
@@ -45074,10 +45036,6 @@ class LayerManager {
       }
     }
   }
-  /** @deprecated Use setNestedCompRenderContext instead */
-  setPrecompRenderContext(context) {
-    this.setNestedCompRenderContext(context);
-  }
   /**
    * Set the effect layer render context
    * This allows effect layers to render layers below them
@@ -49590,10 +49548,6 @@ class WeylEngine {
   setNestedCompRenderContext(context) {
     this.layers.setNestedCompRenderContext(context);
   }
-  /** @deprecated Use setNestedCompRenderContext instead */
-  setPrecompRenderContext(context) {
-    this.setNestedCompRenderContext(context);
-  }
   /**
    * Set camera callbacks for LayerManager
    * Allows camera layers to access Camera3D data from store
@@ -50834,10 +50788,6 @@ class WeylEngine {
     this.nestedCompLastFrame.delete(compositionId);
     this.renderer.disposeNestedCompTarget(compositionId);
   }
-  /** @deprecated Use clearNestedCompCache instead */
-  clearPrecompCache(compositionId) {
-    this.clearNestedCompCache(compositionId);
-  }
   /**
    * Clear all nested composition caches
    */
@@ -50846,10 +50796,6 @@ class WeylEngine {
       this.clearNestedCompCache(id);
     }
     this.renderer.disposeAllNestedCompTargets();
-  }
-  /** @deprecated Use clearAllNestedCompCaches instead */
-  clearAllPrecompCaches() {
-    this.clearAllNestedCompCaches();
   }
   // ============================================================================
   // DISPOSAL
