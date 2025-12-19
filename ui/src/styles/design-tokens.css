@@ -1,0 +1,234 @@
+/**
+ * Weyl Compositor Design Tokens
+ *
+ * Based on ref-2.png and component-details.webp reference UI
+ * Design Philosophy: "Dense Islands, Empty Ocean"
+ */
+
+:root {
+  /* ========================================
+     COLOR SYSTEM
+     ======================================== */
+
+  /* Surface Colors (Dark to Light) */
+  --weyl-void: #050505;           /* App canvas between panels */
+  --weyl-surface-0: #0a0a0a;      /* Deepest surface */
+  --weyl-surface-1: #121212;      /* Panel backgrounds */
+  --weyl-surface-2: #1a1a1a;      /* Headers, elevated surfaces */
+  --weyl-surface-3: #222222;      /* Hover states */
+  --weyl-surface-4: #2a2a2a;      /* Active/pressed states */
+
+  /* Accent Colors */
+  --weyl-accent: #8B5CF6;                                          /* Primary purple */
+  --weyl-accent-hover: #9D7AF6;                                    /* Purple hover */
+  --weyl-accent-secondary: #EC4899;                                /* Pink */
+  --weyl-accent-gradient: linear-gradient(135deg, #8B5CF6, #EC4899);
+  --weyl-accent-glow: rgba(139, 92, 246, 0.3);
+
+  /* Text Colors */
+  --weyl-text-primary: #E5E5E5;   /* Main text (not pure white) */
+  --weyl-text-secondary: #9CA3AF; /* Labels, hints */
+  --weyl-text-muted: #6B7280;     /* Placeholders, disabled */
+  --weyl-text-inverse: #050505;   /* Text on light backgrounds */
+
+  /* Semantic Colors */
+  --weyl-success: #10B981;        /* Emerald */
+  --weyl-success-bg: rgba(16, 185, 129, 0.15);
+  --weyl-warning: #F59E0B;        /* Amber */
+  --weyl-warning-bg: rgba(245, 158, 11, 0.15);
+  --weyl-error: #F43F5E;          /* Rose */
+  --weyl-error-bg: rgba(244, 63, 94, 0.15);
+  --weyl-info: #3B82F6;           /* Blue */
+  --weyl-info-bg: rgba(59, 130, 246, 0.15);
+
+  /* Timeline Colors */
+  --weyl-timeline-video: #7C3AED;    /* Purple for video tracks */
+  --weyl-timeline-audio: #06B6D4;    /* Cyan for audio tracks */
+  --weyl-timeline-text: #F59E0B;     /* Amber for text layers */
+  --weyl-timeline-effect: #EC4899;   /* Pink for effects */
+  --weyl-timeline-shape: #10B981;    /* Green for shapes */
+
+  /* ========================================
+     TYPOGRAPHY
+     ======================================== */
+
+  --weyl-font-sans: 'Inter', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --weyl-font-mono: 'JetBrains Mono', 'SF Mono', Monaco, Consolas, monospace;
+
+  /* Font Sizes */
+  --weyl-text-xs: 10px;
+  --weyl-text-sm: 11px;
+  --weyl-text-base: 12px;
+  --weyl-text-md: 13px;
+  --weyl-text-lg: 14px;
+  --weyl-text-xl: 16px;
+  --weyl-text-2xl: 18px;
+  --weyl-text-3xl: 24px;
+
+  /* Font Weights */
+  --weyl-font-normal: 400;
+  --weyl-font-medium: 500;
+  --weyl-font-semibold: 600;
+  --weyl-font-bold: 700;
+
+  /* Line Heights */
+  --weyl-leading-tight: 1.25;
+  --weyl-leading-normal: 1.5;
+  --weyl-leading-relaxed: 1.75;
+
+  /* ========================================
+     SPACING
+     ======================================== */
+
+  --weyl-space-0: 0;
+  --weyl-space-1: 4px;
+  --weyl-space-2: 8px;
+  --weyl-space-3: 12px;
+  --weyl-space-4: 16px;
+  --weyl-space-5: 20px;
+  --weyl-space-6: 24px;
+  --weyl-space-8: 32px;
+  --weyl-space-10: 40px;
+  --weyl-space-12: 48px;
+
+  /* Panel Gutter (space between floating panels) */
+  --weyl-gutter: 20px;
+
+  /* ========================================
+     BORDER RADIUS
+     ======================================== */
+
+  --weyl-radius-none: 0;
+  --weyl-radius-sm: 4px;
+  --weyl-radius-md: 8px;
+  --weyl-radius-lg: 12px;
+  --weyl-radius-xl: 16px;
+  --weyl-radius-2xl: 20px;
+  --weyl-radius-full: 999px;
+
+  /* ========================================
+     SHADOWS
+     ======================================== */
+
+  --weyl-shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.2);
+  --weyl-shadow-md: 0 4px 8px rgba(0, 0, 0, 0.25);
+  --weyl-shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.3);
+  --weyl-shadow-xl: 0 12px 24px rgba(0, 0, 0, 0.35);
+  --weyl-shadow-panel: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --weyl-shadow-dropdown: 0 4px 16px rgba(0, 0, 0, 0.3);
+  --weyl-shadow-glow: 0 0 20px var(--weyl-accent-glow);
+
+  /* ========================================
+     TRANSITIONS
+     ======================================== */
+
+  --weyl-transition-fast: 100ms ease;
+  --weyl-transition-normal: 200ms ease;
+  --weyl-transition-slow: 300ms ease;
+  --weyl-transition-spring: 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* ========================================
+     Z-INDEX LAYERS
+     ======================================== */
+
+  --weyl-z-base: 0;
+  --weyl-z-dropdown: 100;
+  --weyl-z-sticky: 200;
+  --weyl-z-overlay: 300;
+  --weyl-z-modal: 400;
+  --weyl-z-popover: 500;
+  --weyl-z-tooltip: 600;
+  --weyl-z-notification: 700;
+
+  /* ========================================
+     COMPONENT SIZES
+     ======================================== */
+
+  /* Buttons */
+  --weyl-btn-height-sm: 24px;
+  --weyl-btn-height-md: 32px;
+  --weyl-btn-height-lg: 40px;
+
+  /* Inputs */
+  --weyl-input-height-sm: 24px;
+  --weyl-input-height-md: 32px;
+  --weyl-input-height-lg: 40px;
+
+  /* Icons */
+  --weyl-icon-sm: 14px;
+  --weyl-icon-md: 18px;
+  --weyl-icon-lg: 24px;
+
+  /* Timeline */
+  --weyl-track-height: 32px;
+  --weyl-keyframe-size: 12px;
+  --weyl-playhead-width: 2px;
+
+  /* Panels */
+  --weyl-panel-min-width: 200px;
+  --weyl-panel-max-width: 400px;
+  --weyl-sidebar-width: 280px;
+}
+
+/* ========================================
+   UTILITY CLASSES
+   ======================================== */
+
+/* Floating Panel */
+.floating-panel {
+  background: var(--weyl-surface-1);
+  border-radius: var(--weyl-radius-xl);
+  box-shadow: var(--weyl-shadow-panel);
+  border: none;
+  overflow: hidden;
+}
+
+/* Surface Levels */
+.surface-0 { background: var(--weyl-surface-0); }
+.surface-1 { background: var(--weyl-surface-1); }
+.surface-2 { background: var(--weyl-surface-2); }
+.surface-3 { background: var(--weyl-surface-3); }
+.surface-4 { background: var(--weyl-surface-4); }
+
+/* Text Colors */
+.text-primary { color: var(--weyl-text-primary); }
+.text-secondary { color: var(--weyl-text-secondary); }
+.text-muted { color: var(--weyl-text-muted); }
+.text-accent { color: var(--weyl-accent); }
+
+/* Accent Background */
+.bg-accent {
+  background: var(--weyl-accent);
+  color: white;
+}
+
+.bg-accent-gradient {
+  background: var(--weyl-accent-gradient);
+  color: white;
+}
+
+/* Focus Ring */
+.focus-ring:focus,
+.focus-ring:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--weyl-void), 0 0 0 4px var(--weyl-accent);
+}
+
+/* Pill Shape */
+.pill {
+  border-radius: var(--weyl-radius-full);
+}
+
+/* Glow Effect */
+.glow {
+  box-shadow: var(--weyl-shadow-glow);
+}
+
+/* ========================================
+   GRADIENT DEFINITIONS (for SVG)
+   ======================================== */
+
+/* Use in SVG: stroke="url(#weyl-gradient-purple-pink)" */
+.gradient-defs {
+  --gradient-purple-pink: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+}
