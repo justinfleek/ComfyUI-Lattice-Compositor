@@ -6,6 +6,8 @@
  * Professional formats (EXR, DPX, TIFF 16-bit) require backend processing.
  */
 
+import JSZip from 'jszip';
+
 export type FrameFormat =
   | 'png'       // Lossless, 8-bit RGBA
   | 'jpeg'      // Lossy, 8-bit RGB
@@ -145,16 +147,41 @@ export function downloadBlob(blob: Blob, filename: string): void {
 }
 
 /**
- * Create a ZIP file from multiple blobs (requires JSZip or similar)
- * This is a stub - actual implementation would use a ZIP library
+ * Create a ZIP file from multiple frame blobs
+ *
+ * @param frames - Array of exported frames with blobs
+ * @param folderName - Optional folder name inside the zip (default: 'frames')
+ * @param compressionLevel - 0-9, where 0 is no compression (default: 6)
+ * @returns ZIP file as Blob
  */
 export async function createZipFromFrames(
-  frames: ExportedFrame[]
+  frames: ExportedFrame[],
+  folderName: string = 'frames',
+  compressionLevel: number = 6
 ): Promise<Blob> {
-  // For now, we'll create a simple concatenated format
-  // In production, use JSZip library
-  console.warn('ZIP creation requires JSZip library - returning first frame');
-  return frames[0]?.blob || new Blob();
+  const zip = new JSZip();
+  const folder = zip.folder(folderName);
+
+  if (!folder) {
+    throw new Error('Failed to create ZIP folder');
+  }
+
+  // Add each frame to the ZIP
+  for (const frame of frames) {
+    if (frame.blob) {
+      folder.file(frame.filename, frame.blob, {
+        compression: 'DEFLATE',
+        compressionOptions: { level: compressionLevel },
+      });
+    }
+  }
+
+  // Generate the ZIP blob
+  return await zip.generateAsync({
+    type: 'blob',
+    compression: 'DEFLATE',
+    compressionOptions: { level: compressionLevel },
+  });
 }
 
 /**
@@ -368,6 +395,7 @@ export default {
   exportCanvasToBlob,
   exportCanvasToDataURL,
   downloadBlob,
+  createZipFromFrames,
   generateFilename,
   getFormatInfo,
   isBrowserFormat,

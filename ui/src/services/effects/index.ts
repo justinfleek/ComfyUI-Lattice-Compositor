@@ -23,6 +23,7 @@ export function initializeEffects(): void {
 // Re-export blur effects
 export {
   gaussianBlurRenderer,
+  gaussianBlurRendererAsync,
   directionalBlurRenderer,
   radialBlurRenderer,
   boxBlurRenderer,

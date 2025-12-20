@@ -36599,45 +36599,48 @@ const _hoisted_118 = ["value", "onInput"];
 const _hoisted_119 = { class: "value-display" };
 const _hoisted_120 = {
   key: 8,
+  class: "image-emission-controls"
+};
+const _hoisted_121 = { class: "property-row" };
+const _hoisted_122 = ["value", "onChange"];
+const _hoisted_123 = ["value"];
+const _hoisted_124 = { class: "property-row" };
+const _hoisted_125 = ["value", "onInput"];
+const _hoisted_126 = { class: "value-display" };
+const _hoisted_127 = { class: "property-row checkbox-row" };
+const _hoisted_128 = { title: "Emit only from the edges of the masked area instead of filling it." };
+const _hoisted_129 = ["checked", "onChange"];
+const _hoisted_130 = {
+  key: 9,
+  class: "depth-emission-controls"
+};
+const _hoisted_131 = { class: "property-row" };
+const _hoisted_132 = ["value", "onChange"];
+const _hoisted_133 = ["value"];
+const _hoisted_134 = { class: "property-row" };
+const _hoisted_135 = ["value", "onInput"];
+const _hoisted_136 = { class: "value-display" };
+const _hoisted_137 = { class: "property-row" };
+const _hoisted_138 = ["value", "onInput"];
+const _hoisted_139 = { class: "value-display" };
+const _hoisted_140 = {
+  key: 10,
   class: "property-row checkbox-row"
 };
-const _hoisted_121 = { title: "When enabled, particles only emit from the outline/edge of the shape instead of filling the entire area." };
-const _hoisted_122 = ["checked", "onChange"];
-const _hoisted_123 = {
+const _hoisted_141 = { title: "When enabled, particles only emit from the outline/edge of the shape instead of filling the entire area." };
+const _hoisted_142 = ["checked", "onChange"];
+const _hoisted_143 = {
   key: 0,
   class: "empty-message"
 };
-const _hoisted_124 = { class: "property-section" };
-const _hoisted_125 = {
+const _hoisted_144 = { class: "property-section" };
+const _hoisted_145 = {
   key: 0,
   class: "section-content"
 };
-const _hoisted_126 = { class: "force-tabs" };
-const _hoisted_127 = {
-  key: 0,
-  class: "force-list"
-};
-const _hoisted_128 = { class: "force-header" };
-const _hoisted_129 = ["value", "onInput"];
-const _hoisted_130 = { class: "enabled-toggle" };
-const _hoisted_131 = ["checked", "onChange"];
-const _hoisted_132 = ["onClick"];
-const _hoisted_133 = { class: "property-row" };
-const _hoisted_134 = ["value", "onInput"];
-const _hoisted_135 = { class: "value-display" };
-const _hoisted_136 = { class: "property-row" };
-const _hoisted_137 = ["value", "onInput"];
-const _hoisted_138 = { class: "value-display" };
-const _hoisted_139 = { class: "property-row" };
-const _hoisted_140 = ["value", "onInput"];
-const _hoisted_141 = { class: "value-display" };
-const _hoisted_142 = { class: "property-row" };
-const _hoisted_143 = ["value", "onInput"];
-const _hoisted_144 = { class: "value-display" };
-const _hoisted_145 = { class: "property-row" };
-const _hoisted_146 = ["value", "onChange"];
+const _hoisted_146 = { class: "force-tabs" };
 const _hoisted_147 = {
-  key: 1,
+  key: 0,
   class: "force-list"
 };
 const _hoisted_148 = { class: "force-header" };
@@ -36658,46 +36661,43 @@ const _hoisted_162 = { class: "property-row" };
 const _hoisted_163 = ["value", "onInput"];
 const _hoisted_164 = { class: "value-display" };
 const _hoisted_165 = { class: "property-row" };
-const _hoisted_166 = ["value", "onInput"];
-const _hoisted_167 = { class: "value-display" };
-const _hoisted_168 = { class: "property-row" };
+const _hoisted_166 = ["value", "onChange"];
+const _hoisted_167 = {
+  key: 1,
+  class: "force-list"
+};
+const _hoisted_168 = { class: "force-header" };
 const _hoisted_169 = ["value", "onInput"];
-const _hoisted_170 = { class: "value-display" };
-const _hoisted_171 = { class: "property-section" };
-const _hoisted_172 = {
+const _hoisted_170 = { class: "enabled-toggle" };
+const _hoisted_171 = ["checked", "onChange"];
+const _hoisted_172 = ["onClick"];
+const _hoisted_173 = { class: "property-row" };
+const _hoisted_174 = ["value", "onInput"];
+const _hoisted_175 = { class: "value-display" };
+const _hoisted_176 = { class: "property-row" };
+const _hoisted_177 = ["value", "onInput"];
+const _hoisted_178 = { class: "value-display" };
+const _hoisted_179 = { class: "property-row" };
+const _hoisted_180 = ["value", "onInput"];
+const _hoisted_181 = { class: "value-display" };
+const _hoisted_182 = { class: "property-row" };
+const _hoisted_183 = ["value", "onInput"];
+const _hoisted_184 = { class: "value-display" };
+const _hoisted_185 = { class: "property-row" };
+const _hoisted_186 = ["value", "onInput"];
+const _hoisted_187 = { class: "value-display" };
+const _hoisted_188 = { class: "property-row" };
+const _hoisted_189 = ["value", "onInput"];
+const _hoisted_190 = { class: "value-display" };
+const _hoisted_191 = { class: "property-section" };
+const _hoisted_192 = {
   key: 0,
   class: "section-content"
 };
-const _hoisted_173 = { class: "force-header" };
-const _hoisted_174 = { class: "enabled-toggle" };
-const _hoisted_175 = ["checked", "onChange"];
-const _hoisted_176 = ["onClick"];
-const _hoisted_177 = { class: "property-row" };
-const _hoisted_178 = ["value", "onInput"];
-const _hoisted_179 = { class: "value-display" };
-const _hoisted_180 = { class: "property-row" };
-const _hoisted_181 = ["value", "onInput"];
-const _hoisted_182 = { class: "value-display" };
-const _hoisted_183 = { class: "property-row" };
-const _hoisted_184 = ["value", "onInput"];
-const _hoisted_185 = { class: "value-display" };
-const _hoisted_186 = {
-  key: 0,
-  class: "empty-message"
-};
-const _hoisted_187 = { class: "property-section" };
-const _hoisted_188 = {
-  key: 0,
-  class: "section-content"
-};
-const _hoisted_189 = { class: "force-header" };
-const _hoisted_190 = ["value", "onChange"];
-const _hoisted_191 = ["value"];
-const _hoisted_192 = { class: "enabled-toggle" };
-const _hoisted_193 = ["checked", "onChange"];
-const _hoisted_194 = ["onClick"];
-const _hoisted_195 = { class: "property-row" };
-const _hoisted_196 = ["value", "onChange"];
+const _hoisted_193 = { class: "force-header" };
+const _hoisted_194 = { class: "enabled-toggle" };
+const _hoisted_195 = ["checked", "onChange"];
+const _hoisted_196 = ["onClick"];
 const _hoisted_197 = { class: "property-row" };
 const _hoisted_198 = ["value", "onInput"];
 const _hoisted_199 = { class: "value-display" };
@@ -36707,166 +36707,192 @@ const _hoisted_202 = { class: "value-display" };
 const _hoisted_203 = { class: "property-row" };
 const _hoisted_204 = ["value", "onInput"];
 const _hoisted_205 = { class: "value-display" };
-const _hoisted_206 = { class: "property-row" };
-const _hoisted_207 = ["value", "onInput"];
-const _hoisted_208 = { class: "value-display" };
-const _hoisted_209 = { class: "property-row" };
-const _hoisted_210 = ["value", "onInput"];
-const _hoisted_211 = { class: "value-display" };
-const _hoisted_212 = { class: "property-row" };
-const _hoisted_213 = ["value", "onInput"];
-const _hoisted_214 = { class: "value-display" };
-const _hoisted_215 = { class: "property-row" };
-const _hoisted_216 = ["value", "onInput"];
-const _hoisted_217 = {
+const _hoisted_206 = {
   key: 0,
   class: "empty-message"
 };
-const _hoisted_218 = { class: "property-section" };
-const _hoisted_219 = {
+const _hoisted_207 = { class: "property-section" };
+const _hoisted_208 = {
   key: 0,
   class: "section-content"
 };
-const _hoisted_220 = { class: "modulation-header" };
-const _hoisted_221 = ["value", "onChange"];
-const _hoisted_222 = ["value"];
-const _hoisted_223 = ["onClick"];
-const _hoisted_224 = { class: "property-row" };
-const _hoisted_225 = ["value", "onChange"];
+const _hoisted_209 = { class: "force-header" };
+const _hoisted_210 = ["value", "onChange"];
+const _hoisted_211 = ["value"];
+const _hoisted_212 = { class: "enabled-toggle" };
+const _hoisted_213 = ["checked", "onChange"];
+const _hoisted_214 = ["onClick"];
+const _hoisted_215 = { class: "property-row" };
+const _hoisted_216 = ["value", "onChange"];
+const _hoisted_217 = { class: "property-row" };
+const _hoisted_218 = ["value", "onInput"];
+const _hoisted_219 = { class: "value-display" };
+const _hoisted_220 = { class: "property-row" };
+const _hoisted_221 = ["value", "onInput"];
+const _hoisted_222 = { class: "value-display" };
+const _hoisted_223 = { class: "property-row" };
+const _hoisted_224 = ["value", "onInput"];
+const _hoisted_225 = { class: "value-display" };
 const _hoisted_226 = { class: "property-row" };
 const _hoisted_227 = ["value", "onInput"];
-const _hoisted_228 = { class: "property-row" };
-const _hoisted_229 = ["value", "onInput"];
-const _hoisted_230 = { class: "property-row" };
-const _hoisted_231 = ["value", "onChange"];
-const _hoisted_232 = {
+const _hoisted_228 = { class: "value-display" };
+const _hoisted_229 = { class: "property-row" };
+const _hoisted_230 = ["value", "onInput"];
+const _hoisted_231 = { class: "value-display" };
+const _hoisted_232 = { class: "property-row" };
+const _hoisted_233 = ["value", "onInput"];
+const _hoisted_234 = { class: "value-display" };
+const _hoisted_235 = { class: "property-row" };
+const _hoisted_236 = ["value", "onInput"];
+const _hoisted_237 = {
   key: 0,
   class: "empty-message"
 };
-const _hoisted_233 = { class: "property-section" };
-const _hoisted_234 = {
+const _hoisted_238 = { class: "property-section" };
+const _hoisted_239 = {
   key: 0,
   class: "section-content"
 };
-const _hoisted_235 = { class: "property-row" };
-const _hoisted_236 = ["value"];
-const _hoisted_237 = { class: "property-row" };
-const _hoisted_238 = ["value"];
-const _hoisted_239 = { class: "property-row checkbox-row" };
-const _hoisted_240 = { title: "Use a custom image or sprite sheet instead of procedural shapes." };
-const _hoisted_241 = ["checked"];
-const _hoisted_242 = {
+const _hoisted_240 = { class: "modulation-header" };
+const _hoisted_241 = ["value", "onChange"];
+const _hoisted_242 = ["value"];
+const _hoisted_243 = ["onClick"];
+const _hoisted_244 = { class: "property-row" };
+const _hoisted_245 = ["value", "onChange"];
+const _hoisted_246 = { class: "property-row" };
+const _hoisted_247 = ["value", "onInput"];
+const _hoisted_248 = { class: "property-row" };
+const _hoisted_249 = ["value", "onInput"];
+const _hoisted_250 = { class: "property-row" };
+const _hoisted_251 = ["value", "onChange"];
+const _hoisted_252 = {
+  key: 0,
+  class: "empty-message"
+};
+const _hoisted_253 = { class: "property-section" };
+const _hoisted_254 = {
+  key: 0,
+  class: "section-content"
+};
+const _hoisted_255 = { class: "property-row" };
+const _hoisted_256 = ["value"];
+const _hoisted_257 = { class: "property-row" };
+const _hoisted_258 = ["value"];
+const _hoisted_259 = { class: "property-row checkbox-row" };
+const _hoisted_260 = { title: "Use a custom image or sprite sheet instead of procedural shapes." };
+const _hoisted_261 = ["checked"];
+const _hoisted_262 = {
   key: 0,
   class: "property-row"
 };
-const _hoisted_243 = ["value"];
-const _hoisted_244 = {
+const _hoisted_263 = ["value"];
+const _hoisted_264 = {
   key: 1,
   class: "property-row"
 };
-const _hoisted_245 = ["value"];
-const _hoisted_246 = {
+const _hoisted_265 = ["value"];
+const _hoisted_266 = {
   key: 2,
   class: "property-row"
 };
-const _hoisted_247 = ["value"];
-const _hoisted_248 = {
+const _hoisted_267 = ["value"];
+const _hoisted_268 = {
   key: 3,
   class: "property-row checkbox-row"
 };
-const _hoisted_249 = { title: "Animate through sprite sheet frames over time." };
-const _hoisted_250 = ["checked"];
-const _hoisted_251 = {
+const _hoisted_269 = { title: "Animate through sprite sheet frames over time." };
+const _hoisted_270 = ["checked"];
+const _hoisted_271 = {
   key: 4,
   class: "property-row"
 };
-const _hoisted_252 = ["value"];
-const _hoisted_253 = { class: "value-display" };
-const _hoisted_254 = {
+const _hoisted_272 = ["value"];
+const _hoisted_273 = { class: "value-display" };
+const _hoisted_274 = {
   key: 5,
   class: "property-row checkbox-row"
 };
-const _hoisted_255 = { title: "Each particle starts at a random frame in the sprite sheet." };
-const _hoisted_256 = ["checked"];
-const _hoisted_257 = { class: "property-row checkbox-row" };
-const _hoisted_258 = { title: "Draw a trail behind moving particles showing their recent path." };
-const _hoisted_259 = ["checked"];
-const _hoisted_260 = {
+const _hoisted_275 = { title: "Each particle starts at a random frame in the sprite sheet." };
+const _hoisted_276 = ["checked"];
+const _hoisted_277 = { class: "property-row checkbox-row" };
+const _hoisted_278 = { title: "Draw a trail behind moving particles showing their recent path." };
+const _hoisted_279 = ["checked"];
+const _hoisted_280 = {
   key: 6,
   class: "property-row"
 };
-const _hoisted_261 = ["value"];
-const _hoisted_262 = { class: "value-display" };
-const _hoisted_263 = {
+const _hoisted_281 = ["value"];
+const _hoisted_282 = { class: "value-display" };
+const _hoisted_283 = {
   key: 7,
   class: "property-row"
 };
-const _hoisted_264 = ["value"];
-const _hoisted_265 = { class: "value-display" };
-const _hoisted_266 = { class: "property-row checkbox-row" };
-const _hoisted_267 = { title: "Add a soft glow effect around particles. Great for fire, magic, and light effects." };
-const _hoisted_268 = ["checked"];
-const _hoisted_269 = {
+const _hoisted_284 = ["value"];
+const _hoisted_285 = { class: "value-display" };
+const _hoisted_286 = { class: "property-row checkbox-row" };
+const _hoisted_287 = { title: "Add a soft glow effect around particles. Great for fire, magic, and light effects." };
+const _hoisted_288 = ["checked"];
+const _hoisted_289 = {
   key: 8,
   class: "property-row"
 };
-const _hoisted_270 = ["value"];
-const _hoisted_271 = { class: "value-display" };
-const _hoisted_272 = {
+const _hoisted_290 = ["value"];
+const _hoisted_291 = { class: "value-display" };
+const _hoisted_292 = {
   key: 9,
   class: "property-row"
 };
-const _hoisted_273 = ["value"];
-const _hoisted_274 = { class: "value-display" };
-const _hoisted_275 = { class: "property-row checkbox-row" };
-const _hoisted_276 = { title: "Blur fast-moving particles to simulate camera motion blur." };
-const _hoisted_277 = ["checked"];
-const _hoisted_278 = {
+const _hoisted_293 = ["value"];
+const _hoisted_294 = { class: "value-display" };
+const _hoisted_295 = { class: "property-row checkbox-row" };
+const _hoisted_296 = { title: "Blur fast-moving particles to simulate camera motion blur." };
+const _hoisted_297 = ["checked"];
+const _hoisted_298 = {
   key: 10,
   class: "property-row"
 };
-const _hoisted_279 = ["value"];
-const _hoisted_280 = { class: "value-display" };
-const _hoisted_281 = {
+const _hoisted_299 = ["value"];
+const _hoisted_300 = { class: "value-display" };
+const _hoisted_301 = {
   key: 11,
   class: "property-row"
 };
-const _hoisted_282 = ["value"];
-const _hoisted_283 = { class: "value-display" };
-const _hoisted_284 = { class: "property-row checkbox-row" };
-const _hoisted_285 = { title: "Draw lines between nearby particles. Creates web/network/constellation effects." };
-const _hoisted_286 = ["checked"];
-const _hoisted_287 = {
+const _hoisted_302 = ["value"];
+const _hoisted_303 = { class: "value-display" };
+const _hoisted_304 = { class: "property-row checkbox-row" };
+const _hoisted_305 = { title: "Draw lines between nearby particles. Creates web/network/constellation effects." };
+const _hoisted_306 = ["checked"];
+const _hoisted_307 = {
   key: 12,
   class: "property-row"
 };
-const _hoisted_288 = ["value"];
-const _hoisted_289 = { class: "value-display" };
-const _hoisted_290 = {
+const _hoisted_308 = ["value"];
+const _hoisted_309 = { class: "value-display" };
+const _hoisted_310 = {
   key: 13,
   class: "property-row"
 };
-const _hoisted_291 = ["value"];
-const _hoisted_292 = { class: "value-display" };
-const _hoisted_293 = {
+const _hoisted_311 = ["value"];
+const _hoisted_312 = { class: "value-display" };
+const _hoisted_313 = {
   key: 14,
   class: "property-row"
 };
-const _hoisted_294 = ["value"];
-const _hoisted_295 = { class: "value-display" };
-const _hoisted_296 = {
+const _hoisted_314 = ["value"];
+const _hoisted_315 = { class: "value-display" };
+const _hoisted_316 = {
   key: 15,
   class: "property-row"
 };
-const _hoisted_297 = ["value"];
-const _hoisted_298 = { class: "value-display" };
-const _hoisted_299 = {
+const _hoisted_317 = ["value"];
+const _hoisted_318 = { class: "value-display" };
+const _hoisted_319 = {
   key: 16,
   class: "property-row checkbox-row"
 };
-const _hoisted_300 = { title: "Make connection lines more transparent as particles get farther apart." };
-const _hoisted_301 = ["checked"];
-const _hoisted_302 = { class: "particle-count" };
+const _hoisted_320 = { title: "Make connection lines more transparent as particles get farther apart." };
+const _hoisted_321 = ["checked"];
+const _hoisted_322 = { class: "particle-count" };
 const _sfc_main$C = /* @__PURE__ */ defineComponent({
   __name: "ParticleProperties",
   props: {
@@ -36877,6 +36903,15 @@ const _sfc_main$C = /* @__PURE__ */ defineComponent({
   setup(__props, { emit: __emit }) {
     const presetStore = usePresetStore();
     presetStore.initialize();
+    const compositorStore = useCompositorStore();
+    const imageLayers = computed(
+      () => compositorStore.layers.filter((l) => l.type === "image" || l.type === "video" || l.type === "solid")
+    );
+    const depthLayers = computed(
+      () => compositorStore.layers.filter(
+        (l) => l.type === "image" && (l.name.toLowerCase().includes("depth") || l.data?.isDepthMap)
+      )
+    );
     const webgpuAvailable = ref(false);
     onMounted(async () => {
       webgpuAvailable.value = await ParticleGPUCompute.isAvailable();
@@ -37759,14 +37794,14 @@ const _sfc_main$C = /* @__PURE__ */ defineComponent({
                     }, null, 40, _hoisted_95),
                     createBaseVNode("span", _hoisted_96, toDisplayString(emitter.burstCount), 1)
                   ])) : createCommentVNode("", true),
-                  _cache[96] || (_cache[96] = createBaseVNode("div", { class: "subsection-divider" }, "Emitter Shape", -1)),
+                  _cache[104] || (_cache[104] = createBaseVNode("div", { class: "subsection-divider" }, "Emitter Shape", -1)),
                   createBaseVNode("div", _hoisted_97, [
                     _cache[87] || (_cache[87] = createBaseVNode("label", { title: "Geometry from which particles are emitted. Point = single location, others distribute particles across the shape." }, "Shape", -1)),
                     createBaseVNode("select", {
                       value: emitter.shape || "point",
                       onChange: ($event) => updateEmitter(emitter.id, "shape", $event.target.value)
                     }, [..._cache[86] || (_cache[86] = [
-                      createStaticVNode('<option value="point" data-v-9d16f53b>Point</option><option value="line" data-v-9d16f53b>Line</option><option value="circle" data-v-9d16f53b>Circle</option><option value="box" data-v-9d16f53b>Box</option><option value="sphere" data-v-9d16f53b>Sphere</option><option value="cone" data-v-9d16f53b>Cone</option><option value="ring" data-v-9d16f53b>Ring</option><option value="spline" data-v-9d16f53b>Spline Path</option>', 8)
+                      createStaticVNode('<option value="point" data-v-1e085e55>Point</option><option value="line" data-v-1e085e55>Line</option><option value="circle" data-v-1e085e55>Circle</option><option value="box" data-v-1e085e55>Box</option><option value="sphere" data-v-1e085e55>Sphere</option><option value="cone" data-v-1e085e55>Cone</option><option value="ring" data-v-1e085e55>Ring</option><option value="spline" data-v-1e085e55>Spline Path</option><option value="image" data-v-1e085e55>Image/Mask</option><option value="depthEdge" data-v-1e085e55>Depth Edges</option>', 10)
                     ])], 40, _hoisted_98)
                   ]),
                   emitter.shape === "circle" || emitter.shape === "sphere" || emitter.shape === "ring" ? (openBlock(), createElementBlock("div", _hoisted_99, [
@@ -37853,23 +37888,103 @@ const _sfc_main$C = /* @__PURE__ */ defineComponent({
                     }, null, 40, _hoisted_118),
                     createBaseVNode("span", _hoisted_119, toDisplayString((emitter.coneRadius || 0.1).toFixed(2)), 1)
                   ])) : createCommentVNode("", true),
-                  emitter.shape !== "point" && emitter.shape !== "spline" ? (openBlock(), createElementBlock("div", _hoisted_120, [
-                    createBaseVNode("label", _hoisted_121, [
+                  emitter.shape === "image" ? (openBlock(), createElementBlock("div", _hoisted_120, [
+                    createBaseVNode("div", _hoisted_121, [
+                      _cache[96] || (_cache[96] = createBaseVNode("label", { title: "Select a layer to use as the emission mask. Particles emit from non-transparent pixels." }, "Source Layer", -1)),
+                      createBaseVNode("select", {
+                        value: emitter.imageSourceLayerId || "",
+                        onChange: ($event) => updateEmitter(emitter.id, "imageSourceLayerId", $event.target.value || null)
+                      }, [
+                        _cache[95] || (_cache[95] = createBaseVNode("option", { value: "" }, "Select layer...", -1)),
+                        (openBlock(true), createElementBlock(Fragment, null, renderList(imageLayers.value, (layer) => {
+                          return openBlock(), createElementBlock("option", {
+                            key: layer.id,
+                            value: layer.id
+                          }, toDisplayString(layer.name), 9, _hoisted_123);
+                        }), 128))
+                      ], 40, _hoisted_122)
+                    ]),
+                    createBaseVNode("div", _hoisted_124, [
+                      _cache[97] || (_cache[97] = createBaseVNode("label", { title: "Minimum alpha value (0-1) for a pixel to be considered for emission." }, "Alpha Threshold", -1)),
+                      createBaseVNode("input", {
+                        type: "range",
+                        value: emitter.emissionThreshold || 0.1,
+                        min: "0.01",
+                        max: "1",
+                        step: "0.01",
+                        onInput: ($event) => updateEmitter(emitter.id, "emissionThreshold", Number($event.target.value))
+                      }, null, 40, _hoisted_125),
+                      createBaseVNode("span", _hoisted_126, toDisplayString((emitter.emissionThreshold || 0.1).toFixed(2)), 1)
+                    ]),
+                    createBaseVNode("div", _hoisted_127, [
+                      createBaseVNode("label", _hoisted_128, [
+                        createBaseVNode("input", {
+                          type: "checkbox",
+                          checked: emitter.emitFromMaskEdge,
+                          onChange: ($event) => updateEmitter(emitter.id, "emitFromMaskEdge", $event.target.checked)
+                        }, null, 40, _hoisted_129),
+                        _cache[98] || (_cache[98] = createTextVNode(" Edge Detection ", -1))
+                      ])
+                    ])
+                  ])) : createCommentVNode("", true),
+                  emitter.shape === "depthEdge" ? (openBlock(), createElementBlock("div", _hoisted_130, [
+                    createBaseVNode("div", _hoisted_131, [
+                      _cache[100] || (_cache[100] = createBaseVNode("label", { title: "Select a depth layer to use for edge detection. Particles emit from depth discontinuities (silhouette edges)." }, "Depth Layer", -1)),
+                      createBaseVNode("select", {
+                        value: emitter.depthSourceLayerId || "",
+                        onChange: ($event) => updateEmitter(emitter.id, "depthSourceLayerId", $event.target.value || null)
+                      }, [
+                        _cache[99] || (_cache[99] = createBaseVNode("option", { value: "" }, "Select depth layer...", -1)),
+                        (openBlock(true), createElementBlock(Fragment, null, renderList(depthLayers.value, (layer) => {
+                          return openBlock(), createElementBlock("option", {
+                            key: layer.id,
+                            value: layer.id
+                          }, toDisplayString(layer.name), 9, _hoisted_133);
+                        }), 128))
+                      ], 40, _hoisted_132)
+                    ]),
+                    createBaseVNode("div", _hoisted_134, [
+                      _cache[101] || (_cache[101] = createBaseVNode("label", { title: "Minimum depth gradient magnitude to be considered an edge. Lower = more edges detected." }, "Edge Threshold", -1)),
+                      createBaseVNode("input", {
+                        type: "range",
+                        value: emitter.emissionThreshold || 0.05,
+                        min: "0.01",
+                        max: "0.5",
+                        step: "0.01",
+                        onInput: ($event) => updateEmitter(emitter.id, "emissionThreshold", Number($event.target.value))
+                      }, null, 40, _hoisted_135),
+                      createBaseVNode("span", _hoisted_136, toDisplayString((emitter.emissionThreshold || 0.05).toFixed(2)), 1)
+                    ]),
+                    createBaseVNode("div", _hoisted_137, [
+                      _cache[102] || (_cache[102] = createBaseVNode("label", { title: "Scale factor for converting depth values to Z position. Higher = more 3D separation." }, "Depth Scale", -1)),
+                      createBaseVNode("input", {
+                        type: "range",
+                        value: emitter.depthScale || 500,
+                        min: "0",
+                        max: "2000",
+                        step: "50",
+                        onInput: ($event) => updateEmitter(emitter.id, "depthScale", Number($event.target.value))
+                      }, null, 40, _hoisted_138),
+                      createBaseVNode("span", _hoisted_139, toDisplayString(emitter.depthScale || 500), 1)
+                    ])
+                  ])) : createCommentVNode("", true),
+                  emitter.shape !== "point" && emitter.shape !== "spline" && emitter.shape !== "image" && emitter.shape !== "depthEdge" ? (openBlock(), createElementBlock("div", _hoisted_140, [
+                    createBaseVNode("label", _hoisted_141, [
                       createBaseVNode("input", {
                         type: "checkbox",
                         checked: emitter.emitFromEdge,
                         onChange: ($event) => updateEmitter(emitter.id, "emitFromEdge", $event.target.checked)
-                      }, null, 40, _hoisted_122),
-                      _cache[95] || (_cache[95] = createTextVNode(" Emit from Edge Only ", -1))
+                      }, null, 40, _hoisted_142),
+                      _cache[103] || (_cache[103] = createTextVNode(" Emit from Edge Only ", -1))
                     ])
                   ])) : createCommentVNode("", true)
                 ])) : createCommentVNode("", true)
               ]);
             }), 128)),
-            emitters.value.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_123, " No emitters. Click + to add one. ")) : createCommentVNode("", true)
+            emitters.value.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_143, " No emitters. Click + to add one. ")) : createCommentVNode("", true)
           ])) : createCommentVNode("", true)
         ]),
-        createBaseVNode("div", _hoisted_124, [
+        createBaseVNode("div", _hoisted_144, [
           createBaseVNode("div", {
             class: "section-header",
             onClick: _cache[21] || (_cache[21] = ($event) => toggleSection("forces"))
@@ -37877,10 +37992,10 @@ const _sfc_main$C = /* @__PURE__ */ defineComponent({
             createBaseVNode("i", {
               class: normalizeClass(["pi", expandedSections.value.has("forces") ? "pi-chevron-down" : "pi-chevron-right"])
             }, null, 2),
-            _cache[97] || (_cache[97] = createBaseVNode("span", null, "Force Fields", -1))
+            _cache[105] || (_cache[105] = createBaseVNode("span", null, "Force Fields", -1))
           ]),
-          expandedSections.value.has("forces") ? (openBlock(), createElementBlock("div", _hoisted_125, [
-            createBaseVNode("div", _hoisted_126, [
+          expandedSections.value.has("forces") ? (openBlock(), createElementBlock("div", _hoisted_145, [
+            createBaseVNode("div", _hoisted_146, [
               createBaseVNode("button", {
                 class: normalizeClass({ active: forceTab.value === "wells" }),
                 onClick: _cache[22] || (_cache[22] = ($event) => forceTab.value = "wells")
@@ -37890,11 +38005,11 @@ const _sfc_main$C = /* @__PURE__ */ defineComponent({
                 onClick: _cache[23] || (_cache[23] = ($event) => forceTab.value = "vortices")
               }, " Vortices ", 2)
             ]),
-            forceTab.value === "wells" ? (openBlock(), createElementBlock("div", _hoisted_127, [
+            forceTab.value === "wells" ? (openBlock(), createElementBlock("div", _hoisted_147, [
               createBaseVNode("button", {
                 class: "add-btn full-width",
                 onClick: addGravityWell
-              }, [..._cache[98] || (_cache[98] = [
+              }, [..._cache[106] || (_cache[106] = [
                 createBaseVNode("i", { class: "pi pi-plus" }, null, -1),
                 createTextVNode(" Add Gravity Well ", -1)
               ])]),
@@ -37903,29 +38018,29 @@ const _sfc_main$C = /* @__PURE__ */ defineComponent({
                   key: well.id,
                   class: "force-item"
                 }, [
-                  createBaseVNode("div", _hoisted_128, [
+                  createBaseVNode("div", _hoisted_148, [
                     createBaseVNode("input", {
                       type: "text",
                       value: well.name,
                       onInput: ($event) => updateGravityWell(well.id, "name", $event.target.value),
                       class: "force-name"
-                    }, null, 40, _hoisted_129),
-                    createBaseVNode("label", _hoisted_130, [
+                    }, null, 40, _hoisted_149),
+                    createBaseVNode("label", _hoisted_150, [
                       createBaseVNode("input", {
                         type: "checkbox",
                         checked: well.enabled,
                         onChange: ($event) => updateGravityWell(well.id, "enabled", $event.target.checked)
-                      }, null, 40, _hoisted_131)
+                      }, null, 40, _hoisted_151)
                     ]),
                     createBaseVNode("button", {
                       class: "remove-btn",
                       onClick: ($event) => removeGravityWell(well.id)
-                    }, [..._cache[99] || (_cache[99] = [
+                    }, [..._cache[107] || (_cache[107] = [
                       createBaseVNode("i", { class: "pi pi-trash" }, null, -1)
-                    ])], 8, _hoisted_132)
+                    ])], 8, _hoisted_152)
                   ]),
-                  createBaseVNode("div", _hoisted_133, [
-                    _cache[100] || (_cache[100] = createBaseVNode("label", { title: "Horizontal position of the gravity well. 0 = left edge, 0.5 = center, 1 = right edge." }, "Position X", -1)),
+                  createBaseVNode("div", _hoisted_153, [
+                    _cache[108] || (_cache[108] = createBaseVNode("label", { title: "Horizontal position of the gravity well. 0 = left edge, 0.5 = center, 1 = right edge." }, "Position X", -1)),
                     createBaseVNode("input", {
                       type: "range",
                       value: well.x,
@@ -37933,11 +38048,11 @@ const _sfc_main$C = /* @__PURE__ */ defineComponent({
                       max: "1",
                       step: "0.01",
                       onInput: ($event) => updateGravityWell(well.id, "x", Number($event.target.value))
-                    }, null, 40, _hoisted_134),
-                    createBaseVNode("span", _hoisted_135, toDisplayString(well.x.toFixed(2)), 1)
+                    }, null, 40, _hoisted_154),
+                    createBaseVNode("span", _hoisted_155, toDisplayString(well.x.toFixed(2)), 1)
                   ]),
-                  createBaseVNode("div", _hoisted_136, [
-                    _cache[101] || (_cache[101] = createBaseVNode("label", { title: "Vertical position of the gravity well. 0 = top edge, 0.5 = center, 1 = bottom edge." }, "Position Y", -1)),
+                  createBaseVNode("div", _hoisted_156, [
+                    _cache[109] || (_cache[109] = createBaseVNode("label", { title: "Vertical position of the gravity well. 0 = top edge, 0.5 = center, 1 = bottom edge." }, "Position Y", -1)),
                     createBaseVNode("input", {
                       type: "range",
                       value: well.y,
@@ -37945,11 +38060,11 @@ const _sfc_main$C = /* @__PURE__ */ defineComponent({
                       max: "1",
                       step: "0.01",
                       onInput: ($event) => updateGravityWell(well.id, "y", Number($event.target.value))
-                    }, null, 40, _hoisted_137),
-                    createBaseVNode("span", _hoisted_138, toDisplayString(well.y.toFixed(2)), 1)
+                    }, null, 40, _hoisted_157),
+                    createBaseVNode("span", _hoisted_158, toDisplayString(well.y.toFixed(2)), 1)
                   ]),
-                  createBaseVNode("div", _hoisted_139, [
-                    _cache[102] || (_cache[102] = createBaseVNode("label", { title: "Attraction force strength. Positive = attract particles toward center, negative = repel particles away." }, "Strength", -1)),
+                  createBaseVNode("div", _hoisted_159, [
+                    _cache[110] || (_cache[110] = createBaseVNode("label", { title: "Attraction force strength. Positive = attract particles toward center, negative = repel particles away." }, "Strength", -1)),
                     createBaseVNode("input", {
                       type: "range",
                       value: well.strength,
@@ -37957,11 +38072,11 @@ const _sfc_main$C = /* @__PURE__ */ defineComponent({
                       max: "1000",
                       step: "10",
                       onInput: ($event) => updateGravityWell(well.id, "strength", Number($event.target.value))
-                    }, null, 40, _hoisted_140),
-                    createBaseVNode("span", _hoisted_141, toDisplayString(well.strength), 1)
+                    }, null, 40, _hoisted_160),
+                    createBaseVNode("span", _hoisted_161, toDisplayString(well.strength), 1)
                   ]),
-                  createBaseVNode("div", _hoisted_142, [
-                    _cache[103] || (_cache[103] = createBaseVNode("label", { title: "Area of influence as a fraction of composition size. Particles outside this radius are unaffected." }, "Radius", -1)),
+                  createBaseVNode("div", _hoisted_162, [
+                    _cache[111] || (_cache[111] = createBaseVNode("label", { title: "Area of influence as a fraction of composition size. Particles outside this radius are unaffected." }, "Radius", -1)),
                     createBaseVNode("input", {
                       type: "range",
                       value: well.radius,
@@ -37969,28 +38084,28 @@ const _sfc_main$C = /* @__PURE__ */ defineComponent({
                       max: "1",
                       step: "0.01",
                       onInput: ($event) => updateGravityWell(well.id, "radius", Number($event.target.value))
-                    }, null, 40, _hoisted_143),
-                    createBaseVNode("span", _hoisted_144, toDisplayString(well.radius.toFixed(2)), 1)
+                    }, null, 40, _hoisted_163),
+                    createBaseVNode("span", _hoisted_164, toDisplayString(well.radius.toFixed(2)), 1)
                   ]),
-                  createBaseVNode("div", _hoisted_145, [
-                    _cache[105] || (_cache[105] = createBaseVNode("label", { title: "How force decreases with distance. Linear = gradual, Quadratic = realistic physics, Constant = uniform force." }, "Falloff", -1)),
+                  createBaseVNode("div", _hoisted_165, [
+                    _cache[113] || (_cache[113] = createBaseVNode("label", { title: "How force decreases with distance. Linear = gradual, Quadratic = realistic physics, Constant = uniform force." }, "Falloff", -1)),
                     createBaseVNode("select", {
                       value: well.falloff,
                       onChange: ($event) => updateGravityWell(well.id, "falloff", $event.target.value)
-                    }, [..._cache[104] || (_cache[104] = [
+                    }, [..._cache[112] || (_cache[112] = [
                       createBaseVNode("option", { value: "linear" }, "Linear", -1),
                       createBaseVNode("option", { value: "quadratic" }, "Quadratic", -1),
                       createBaseVNode("option", { value: "constant" }, "Constant", -1)
-                    ])], 40, _hoisted_146)
+                    ])], 40, _hoisted_166)
                   ])
                 ]);
               }), 128))
             ])) : createCommentVNode("", true),
-            forceTab.value === "vortices" ? (openBlock(), createElementBlock("div", _hoisted_147, [
+            forceTab.value === "vortices" ? (openBlock(), createElementBlock("div", _hoisted_167, [
               createBaseVNode("button", {
                 class: "add-btn full-width",
                 onClick: addVortex
-              }, [..._cache[106] || (_cache[106] = [
+              }, [..._cache[114] || (_cache[114] = [
                 createBaseVNode("i", { class: "pi pi-plus" }, null, -1),
                 createTextVNode(" Add Vortex ", -1)
               ])]),
@@ -37999,29 +38114,29 @@ const _sfc_main$C = /* @__PURE__ */ defineComponent({
                   key: vortex.id,
                   class: "force-item"
                 }, [
-                  createBaseVNode("div", _hoisted_148, [
+                  createBaseVNode("div", _hoisted_168, [
                     createBaseVNode("input", {
                       type: "text",
                       value: vortex.name,
                       onInput: ($event) => updateVortex(vortex.id, "name", $event.target.value),
                       class: "force-name"
-                    }, null, 40, _hoisted_149),
-                    createBaseVNode("label", _hoisted_150, [
+                    }, null, 40, _hoisted_169),
+                    createBaseVNode("label", _hoisted_170, [
                       createBaseVNode("input", {
                         type: "checkbox",
                         checked: vortex.enabled,
                         onChange: ($event) => updateVortex(vortex.id, "enabled", $event.target.checked)
-                      }, null, 40, _hoisted_151)
+                      }, null, 40, _hoisted_171)
                     ]),
                     createBaseVNode("button", {
                       class: "remove-btn",
                       onClick: ($event) => removeVortex(vortex.id)
-                    }, [..._cache[107] || (_cache[107] = [
+                    }, [..._cache[115] || (_cache[115] = [
                       createBaseVNode("i", { class: "pi pi-trash" }, null, -1)
-                    ])], 8, _hoisted_152)
+                    ])], 8, _hoisted_172)
                   ]),
-                  createBaseVNode("div", _hoisted_153, [
-                    _cache[108] || (_cache[108] = createBaseVNode("label", { title: "Horizontal position of the vortex center. 0 = left edge, 0.5 = center, 1 = right edge." }, "Position X", -1)),
+                  createBaseVNode("div", _hoisted_173, [
+                    _cache[116] || (_cache[116] = createBaseVNode("label", { title: "Horizontal position of the vortex center. 0 = left edge, 0.5 = center, 1 = right edge." }, "Position X", -1)),
                     createBaseVNode("input", {
                       type: "range",
                       value: vortex.x,
@@ -38029,11 +38144,11 @@ const _sfc_main$C = /* @__PURE__ */ defineComponent({
                       max: "1",
                       step: "0.01",
                       onInput: ($event) => updateVortex(vortex.id, "x", Number($event.target.value))
-                    }, null, 40, _hoisted_154),
-                    createBaseVNode("span", _hoisted_155, toDisplayString(vortex.x.toFixed(2)), 1)
+                    }, null, 40, _hoisted_174),
+                    createBaseVNode("span", _hoisted_175, toDisplayString(vortex.x.toFixed(2)), 1)
                   ]),
-                  createBaseVNode("div", _hoisted_156, [
-                    _cache[109] || (_cache[109] = createBaseVNode("label", { title: "Vertical position of the vortex center. 0 = top edge, 0.5 = center, 1 = bottom edge." }, "Position Y", -1)),
+                  createBaseVNode("div", _hoisted_176, [
+                    _cache[117] || (_cache[117] = createBaseVNode("label", { title: "Vertical position of the vortex center. 0 = top edge, 0.5 = center, 1 = bottom edge." }, "Position Y", -1)),
                     createBaseVNode("input", {
                       type: "range",
                       value: vortex.y,
@@ -38041,11 +38156,11 @@ const _sfc_main$C = /* @__PURE__ */ defineComponent({
                       max: "1",
                       step: "0.01",
                       onInput: ($event) => updateVortex(vortex.id, "y", Number($event.target.value))
-                    }, null, 40, _hoisted_157),
-                    createBaseVNode("span", _hoisted_158, toDisplayString(vortex.y.toFixed(2)), 1)
+                    }, null, 40, _hoisted_177),
+                    createBaseVNode("span", _hoisted_178, toDisplayString(vortex.y.toFixed(2)), 1)
                   ]),
-                  createBaseVNode("div", _hoisted_159, [
-                    _cache[110] || (_cache[110] = createBaseVNode("label", { title: "Overall strength of the vortex force applied to particles." }, "Strength", -1)),
+                  createBaseVNode("div", _hoisted_179, [
+                    _cache[118] || (_cache[118] = createBaseVNode("label", { title: "Overall strength of the vortex force applied to particles." }, "Strength", -1)),
                     createBaseVNode("input", {
                       type: "range",
                       value: vortex.strength,
@@ -38053,11 +38168,11 @@ const _sfc_main$C = /* @__PURE__ */ defineComponent({
                       max: "1000",
                       step: "10",
                       onInput: ($event) => updateVortex(vortex.id, "strength", Number($event.target.value))
-                    }, null, 40, _hoisted_160),
-                    createBaseVNode("span", _hoisted_161, toDisplayString(vortex.strength), 1)
+                    }, null, 40, _hoisted_180),
+                    createBaseVNode("span", _hoisted_181, toDisplayString(vortex.strength), 1)
                   ]),
-                  createBaseVNode("div", _hoisted_162, [
-                    _cache[111] || (_cache[111] = createBaseVNode("label", { title: "Area of influence as a fraction of composition size. Particles outside this radius are unaffected." }, "Radius", -1)),
+                  createBaseVNode("div", _hoisted_182, [
+                    _cache[119] || (_cache[119] = createBaseVNode("label", { title: "Area of influence as a fraction of composition size. Particles outside this radius are unaffected." }, "Radius", -1)),
                     createBaseVNode("input", {
                       type: "range",
                       value: vortex.radius,
@@ -38065,11 +38180,11 @@ const _sfc_main$C = /* @__PURE__ */ defineComponent({
                       max: "1",
                       step: "0.01",
                       onInput: ($event) => updateVortex(vortex.id, "radius", Number($event.target.value))
-                    }, null, 40, _hoisted_163),
-                    createBaseVNode("span", _hoisted_164, toDisplayString(vortex.radius.toFixed(2)), 1)
+                    }, null, 40, _hoisted_183),
+                    createBaseVNode("span", _hoisted_184, toDisplayString(vortex.radius.toFixed(2)), 1)
                   ]),
-                  createBaseVNode("div", _hoisted_165, [
-                    _cache[112] || (_cache[112] = createBaseVNode("label", { title: "Angular velocity of the swirl in degrees per frame. Higher values create faster spinning." }, "Rotation Speed", -1)),
+                  createBaseVNode("div", _hoisted_185, [
+                    _cache[120] || (_cache[120] = createBaseVNode("label", { title: "Angular velocity of the swirl in degrees per frame. Higher values create faster spinning." }, "Rotation Speed", -1)),
                     createBaseVNode("input", {
                       type: "range",
                       value: vortex.rotationSpeed,
@@ -38077,11 +38192,11 @@ const _sfc_main$C = /* @__PURE__ */ defineComponent({
                       max: "50",
                       step: "1",
                       onInput: ($event) => updateVortex(vortex.id, "rotationSpeed", Number($event.target.value))
-                    }, null, 40, _hoisted_166),
-                    createBaseVNode("span", _hoisted_167, toDisplayString(vortex.rotationSpeed) + "°/f", 1)
+                    }, null, 40, _hoisted_186),
+                    createBaseVNode("span", _hoisted_187, toDisplayString(vortex.rotationSpeed) + "°/f", 1)
                   ]),
-                  createBaseVNode("div", _hoisted_168, [
-                    _cache[113] || (_cache[113] = createBaseVNode("label", { title: "Force pulling particles toward the vortex center. Creates a spiral effect when combined with rotation." }, "Inward Pull", -1)),
+                  createBaseVNode("div", _hoisted_188, [
+                    _cache[121] || (_cache[121] = createBaseVNode("label", { title: "Force pulling particles toward the vortex center. Creates a spiral effect when combined with rotation." }, "Inward Pull", -1)),
                     createBaseVNode("input", {
                       type: "range",
                       value: vortex.inwardPull,
@@ -38089,15 +38204,15 @@ const _sfc_main$C = /* @__PURE__ */ defineComponent({
                       max: "100",
                       step: "1",
                       onInput: ($event) => updateVortex(vortex.id, "inwardPull", Number($event.target.value))
-                    }, null, 40, _hoisted_169),
-                    createBaseVNode("span", _hoisted_170, toDisplayString(vortex.inwardPull), 1)
+                    }, null, 40, _hoisted_189),
+                    createBaseVNode("span", _hoisted_190, toDisplayString(vortex.inwardPull), 1)
                   ])
                 ]);
               }), 128))
             ])) : createCommentVNode("", true)
           ])) : createCommentVNode("", true)
         ]),
-        createBaseVNode("div", _hoisted_171, [
+        createBaseVNode("div", _hoisted_191, [
           createBaseVNode("div", {
             class: "section-header",
             onClick: _cache[24] || (_cache[24] = ($event) => toggleSection("turbulence"))
@@ -38105,39 +38220,39 @@ const _sfc_main$C = /* @__PURE__ */ defineComponent({
             createBaseVNode("i", {
               class: normalizeClass(["pi", expandedSections.value.has("turbulence") ? "pi-chevron-down" : "pi-chevron-right"])
             }, null, 2),
-            _cache[115] || (_cache[115] = createBaseVNode("span", null, "Turbulence", -1)),
+            _cache[123] || (_cache[123] = createBaseVNode("span", null, "Turbulence", -1)),
             createBaseVNode("button", {
               class: "add-btn",
               onClick: withModifiers(addTurbulence, ["stop"]),
               title: "Add Turbulence Field"
-            }, [..._cache[114] || (_cache[114] = [
+            }, [..._cache[122] || (_cache[122] = [
               createBaseVNode("i", { class: "pi pi-plus" }, null, -1)
             ])])
           ]),
-          expandedSections.value.has("turbulence") ? (openBlock(), createElementBlock("div", _hoisted_172, [
+          expandedSections.value.has("turbulence") ? (openBlock(), createElementBlock("div", _hoisted_192, [
             (openBlock(true), createElementBlock(Fragment, null, renderList(turbulenceFields.value, (turb) => {
               return openBlock(), createElementBlock("div", {
                 key: turb.id,
                 class: "force-item"
               }, [
-                createBaseVNode("div", _hoisted_173, [
-                  _cache[117] || (_cache[117] = createBaseVNode("span", { class: "force-label" }, "Turbulence Field", -1)),
-                  createBaseVNode("label", _hoisted_174, [
+                createBaseVNode("div", _hoisted_193, [
+                  _cache[125] || (_cache[125] = createBaseVNode("span", { class: "force-label" }, "Turbulence Field", -1)),
+                  createBaseVNode("label", _hoisted_194, [
                     createBaseVNode("input", {
                       type: "checkbox",
                       checked: turb.enabled,
                       onChange: ($event) => updateTurbulence(turb.id, "enabled", $event.target.checked)
-                    }, null, 40, _hoisted_175)
+                    }, null, 40, _hoisted_195)
                   ]),
                   createBaseVNode("button", {
                     class: "remove-btn",
                     onClick: ($event) => removeTurbulence(turb.id)
-                  }, [..._cache[116] || (_cache[116] = [
+                  }, [..._cache[124] || (_cache[124] = [
                     createBaseVNode("i", { class: "pi pi-trash" }, null, -1)
-                  ])], 8, _hoisted_176)
+                  ])], 8, _hoisted_196)
                 ]),
-                createBaseVNode("div", _hoisted_177, [
-                  _cache[118] || (_cache[118] = createBaseVNode("label", { title: "Size of the noise pattern. Smaller values = fine, detailed turbulence. Larger values = broad, sweeping motion." }, "Scale", -1)),
+                createBaseVNode("div", _hoisted_197, [
+                  _cache[126] || (_cache[126] = createBaseVNode("label", { title: "Size of the noise pattern. Smaller values = fine, detailed turbulence. Larger values = broad, sweeping motion." }, "Scale", -1)),
                   createBaseVNode("input", {
                     type: "range",
                     value: turb.scale,
@@ -38145,11 +38260,11 @@ const _sfc_main$C = /* @__PURE__ */ defineComponent({
                     max: "0.02",
                     step: "0.001",
                     onInput: ($event) => updateTurbulence(turb.id, "scale", Number($event.target.value))
-                  }, null, 40, _hoisted_178),
-                  createBaseVNode("span", _hoisted_179, toDisplayString(turb.scale.toFixed(3)), 1)
+                  }, null, 40, _hoisted_198),
+                  createBaseVNode("span", _hoisted_199, toDisplayString(turb.scale.toFixed(3)), 1)
                 ]),
-                createBaseVNode("div", _hoisted_180, [
-                  _cache[119] || (_cache[119] = createBaseVNode("label", { title: "How strongly turbulence affects particle movement. Higher values create more chaotic motion." }, "Strength", -1)),
+                createBaseVNode("div", _hoisted_200, [
+                  _cache[127] || (_cache[127] = createBaseVNode("label", { title: "How strongly turbulence affects particle movement. Higher values create more chaotic motion." }, "Strength", -1)),
                   createBaseVNode("input", {
                     type: "range",
                     value: turb.strength,
@@ -38157,11 +38272,11 @@ const _sfc_main$C = /* @__PURE__ */ defineComponent({
                     max: "500",
                     step: "10",
                     onInput: ($event) => updateTurbulence(turb.id, "strength", Number($event.target.value))
-                  }, null, 40, _hoisted_181),
-                  createBaseVNode("span", _hoisted_182, toDisplayString(turb.strength), 1)
+                  }, null, 40, _hoisted_201),
+                  createBaseVNode("span", _hoisted_202, toDisplayString(turb.strength), 1)
                 ]),
-                createBaseVNode("div", _hoisted_183, [
-                  _cache[120] || (_cache[120] = createBaseVNode("label", { title: "How fast the turbulence pattern changes over time. 0 = static noise, higher = animated turbulence." }, "Evolution", -1)),
+                createBaseVNode("div", _hoisted_203, [
+                  _cache[128] || (_cache[128] = createBaseVNode("label", { title: "How fast the turbulence pattern changes over time. 0 = static noise, higher = animated turbulence." }, "Evolution", -1)),
                   createBaseVNode("input", {
                     type: "range",
                     value: turb.evolutionSpeed,
@@ -38169,15 +38284,15 @@ const _sfc_main$C = /* @__PURE__ */ defineComponent({
                     max: "1",
                     step: "0.01",
                     onInput: ($event) => updateTurbulence(turb.id, "evolutionSpeed", Number($event.target.value))
-                  }, null, 40, _hoisted_184),
-                  createBaseVNode("span", _hoisted_185, toDisplayString(turb.evolutionSpeed.toFixed(2)), 1)
+                  }, null, 40, _hoisted_204),
+                  createBaseVNode("span", _hoisted_205, toDisplayString(turb.evolutionSpeed.toFixed(2)), 1)
                 ])
               ]);
             }), 128)),
-            turbulenceFields.value.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_186, " No turbulence fields. Add one for organic particle motion. ")) : createCommentVNode("", true)
+            turbulenceFields.value.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_206, " No turbulence fields. Add one for organic particle motion. ")) : createCommentVNode("", true)
           ])) : createCommentVNode("", true)
         ]),
-        createBaseVNode("div", _hoisted_187, [
+        createBaseVNode("div", _hoisted_207, [
           createBaseVNode("div", {
             class: "section-header",
             onClick: _cache[25] || (_cache[25] = ($event) => toggleSection("subEmitters"))
@@ -38185,60 +38300,60 @@ const _sfc_main$C = /* @__PURE__ */ defineComponent({
             createBaseVNode("i", {
               class: normalizeClass(["pi", expandedSections.value.has("subEmitters") ? "pi-chevron-down" : "pi-chevron-right"])
             }, null, 2),
-            _cache[122] || (_cache[122] = createBaseVNode("span", null, "Sub-Emitters", -1)),
+            _cache[130] || (_cache[130] = createBaseVNode("span", null, "Sub-Emitters", -1)),
             createBaseVNode("button", {
               class: "add-btn",
               onClick: withModifiers(addSubEmitter, ["stop"]),
               title: "Add Sub-Emitter"
-            }, [..._cache[121] || (_cache[121] = [
+            }, [..._cache[129] || (_cache[129] = [
               createBaseVNode("i", { class: "pi pi-plus" }, null, -1)
             ])])
           ]),
-          expandedSections.value.has("subEmitters") ? (openBlock(), createElementBlock("div", _hoisted_188, [
+          expandedSections.value.has("subEmitters") ? (openBlock(), createElementBlock("div", _hoisted_208, [
             (openBlock(true), createElementBlock(Fragment, null, renderList(subEmitters.value, (sub) => {
               return openBlock(), createElementBlock("div", {
                 key: sub.id,
                 class: "force-item"
               }, [
-                createBaseVNode("div", _hoisted_189, [
+                createBaseVNode("div", _hoisted_209, [
                   createBaseVNode("select", {
                     value: sub.parentEmitterId,
                     onChange: ($event) => updateSubEmitter(sub.id, "parentEmitterId", $event.target.value),
                     class: "sub-emitter-parent"
                   }, [
-                    _cache[123] || (_cache[123] = createBaseVNode("option", { value: "*" }, "All Emitters", -1)),
+                    _cache[131] || (_cache[131] = createBaseVNode("option", { value: "*" }, "All Emitters", -1)),
                     (openBlock(true), createElementBlock(Fragment, null, renderList(emitters.value, (e) => {
                       return openBlock(), createElementBlock("option", {
                         key: e.id,
                         value: e.id
-                      }, toDisplayString(e.name), 9, _hoisted_191);
+                      }, toDisplayString(e.name), 9, _hoisted_211);
                     }), 128))
-                  ], 40, _hoisted_190),
-                  createBaseVNode("label", _hoisted_192, [
+                  ], 40, _hoisted_210),
+                  createBaseVNode("label", _hoisted_212, [
                     createBaseVNode("input", {
                       type: "checkbox",
                       checked: sub.enabled,
                       onChange: ($event) => updateSubEmitter(sub.id, "enabled", $event.target.checked)
-                    }, null, 40, _hoisted_193)
+                    }, null, 40, _hoisted_213)
                   ]),
                   createBaseVNode("button", {
                     class: "remove-btn",
                     onClick: ($event) => removeSubEmitter(sub.id)
-                  }, [..._cache[124] || (_cache[124] = [
+                  }, [..._cache[132] || (_cache[132] = [
                     createBaseVNode("i", { class: "pi pi-trash" }, null, -1)
-                  ])], 8, _hoisted_194)
+                  ])], 8, _hoisted_214)
                 ]),
-                createBaseVNode("div", _hoisted_195, [
-                  _cache[126] || (_cache[126] = createBaseVNode("label", { title: "Event that triggers sub-particle emission. 'On Death' spawns particles when parent particles expire." }, "Trigger", -1)),
+                createBaseVNode("div", _hoisted_215, [
+                  _cache[134] || (_cache[134] = createBaseVNode("label", { title: "Event that triggers sub-particle emission. 'On Death' spawns particles when parent particles expire." }, "Trigger", -1)),
                   createBaseVNode("select", {
                     value: sub.trigger,
                     onChange: ($event) => updateSubEmitter(sub.id, "trigger", $event.target.value)
-                  }, [..._cache[125] || (_cache[125] = [
+                  }, [..._cache[133] || (_cache[133] = [
                     createBaseVNode("option", { value: "death" }, "On Death", -1)
-                  ])], 40, _hoisted_196)
+                  ])], 40, _hoisted_216)
                 ]),
-                createBaseVNode("div", _hoisted_197, [
-                  _cache[127] || (_cache[127] = createBaseVNode("label", { title: "Number of sub-particles spawned when the trigger event occurs." }, "Spawn Count", -1)),
+                createBaseVNode("div", _hoisted_217, [
+                  _cache[135] || (_cache[135] = createBaseVNode("label", { title: "Number of sub-particles spawned when the trigger event occurs." }, "Spawn Count", -1)),
                   createBaseVNode("input", {
                     type: "range",
                     value: sub.spawnCount,
@@ -38246,11 +38361,11 @@ const _sfc_main$C = /* @__PURE__ */ defineComponent({
                     max: "10",
                     step: "1",
                     onInput: ($event) => updateSubEmitter(sub.id, "spawnCount", Number($event.target.value))
-                  }, null, 40, _hoisted_198),
-                  createBaseVNode("span", _hoisted_199, toDisplayString(sub.spawnCount), 1)
+                  }, null, 40, _hoisted_218),
+                  createBaseVNode("span", _hoisted_219, toDisplayString(sub.spawnCount), 1)
                 ]),
-                createBaseVNode("div", _hoisted_200, [
-                  _cache[128] || (_cache[128] = createBaseVNode("label", { title: "How much of the parent particle's velocity is passed to sub-particles. 0% = independent, 100% = same direction." }, "Inherit Velocity", -1)),
+                createBaseVNode("div", _hoisted_220, [
+                  _cache[136] || (_cache[136] = createBaseVNode("label", { title: "How much of the parent particle's velocity is passed to sub-particles. 0% = independent, 100% = same direction." }, "Inherit Velocity", -1)),
                   createBaseVNode("input", {
                     type: "range",
                     value: sub.inheritVelocity,
@@ -38258,11 +38373,11 @@ const _sfc_main$C = /* @__PURE__ */ defineComponent({
                     max: "1",
                     step: "0.1",
                     onInput: ($event) => updateSubEmitter(sub.id, "inheritVelocity", Number($event.target.value))
-                  }, null, 40, _hoisted_201),
-                  createBaseVNode("span", _hoisted_202, toDisplayString((sub.inheritVelocity * 100).toFixed(0)) + "%", 1)
+                  }, null, 40, _hoisted_221),
+                  createBaseVNode("span", _hoisted_222, toDisplayString((sub.inheritVelocity * 100).toFixed(0)) + "%", 1)
                 ]),
-                createBaseVNode("div", _hoisted_203, [
-                  _cache[129] || (_cache[129] = createBaseVNode("label", { title: "Diameter of sub-particles in pixels. Often smaller than parent particles for sparks/debris effects." }, "Size", -1)),
+                createBaseVNode("div", _hoisted_223, [
+                  _cache[137] || (_cache[137] = createBaseVNode("label", { title: "Diameter of sub-particles in pixels. Often smaller than parent particles for sparks/debris effects." }, "Size", -1)),
                   createBaseVNode("input", {
                     type: "range",
                     value: sub.size,
@@ -38270,11 +38385,11 @@ const _sfc_main$C = /* @__PURE__ */ defineComponent({
                     max: "100",
                     step: "1",
                     onInput: ($event) => updateSubEmitter(sub.id, "size", Number($event.target.value))
-                  }, null, 40, _hoisted_204),
-                  createBaseVNode("span", _hoisted_205, toDisplayString(sub.size) + "px", 1)
+                  }, null, 40, _hoisted_224),
+                  createBaseVNode("span", _hoisted_225, toDisplayString(sub.size) + "px", 1)
                 ]),
-                createBaseVNode("div", _hoisted_206, [
-                  _cache[130] || (_cache[130] = createBaseVNode("label", { title: "How long sub-particles live in frames. Usually shorter than parent particles." }, "Lifetime", -1)),
+                createBaseVNode("div", _hoisted_226, [
+                  _cache[138] || (_cache[138] = createBaseVNode("label", { title: "How long sub-particles live in frames. Usually shorter than parent particles." }, "Lifetime", -1)),
                   createBaseVNode("input", {
                     type: "range",
                     value: sub.lifetime,
@@ -38282,11 +38397,11 @@ const _sfc_main$C = /* @__PURE__ */ defineComponent({
                     max: "120",
                     step: "1",
                     onInput: ($event) => updateSubEmitter(sub.id, "lifetime", Number($event.target.value))
-                  }, null, 40, _hoisted_207),
-                  createBaseVNode("span", _hoisted_208, toDisplayString(sub.lifetime) + "f", 1)
+                  }, null, 40, _hoisted_227),
+                  createBaseVNode("span", _hoisted_228, toDisplayString(sub.lifetime) + "f", 1)
                 ]),
-                createBaseVNode("div", _hoisted_209, [
-                  _cache[131] || (_cache[131] = createBaseVNode("label", { title: "Initial velocity of sub-particles in pixels per second." }, "Speed", -1)),
+                createBaseVNode("div", _hoisted_229, [
+                  _cache[139] || (_cache[139] = createBaseVNode("label", { title: "Initial velocity of sub-particles in pixels per second." }, "Speed", -1)),
                   createBaseVNode("input", {
                     type: "range",
                     value: sub.speed,
@@ -38294,11 +38409,11 @@ const _sfc_main$C = /* @__PURE__ */ defineComponent({
                     max: "500",
                     step: "10",
                     onInput: ($event) => updateSubEmitter(sub.id, "speed", Number($event.target.value))
-                  }, null, 40, _hoisted_210),
-                  createBaseVNode("span", _hoisted_211, toDisplayString(sub.speed), 1)
+                  }, null, 40, _hoisted_230),
+                  createBaseVNode("span", _hoisted_231, toDisplayString(sub.speed), 1)
                 ]),
-                createBaseVNode("div", _hoisted_212, [
-                  _cache[132] || (_cache[132] = createBaseVNode("label", { title: "Angular spread of sub-particle emission. 360° = emit in all directions (explosion), 0° = emit in inherited direction." }, "Spread", -1)),
+                createBaseVNode("div", _hoisted_232, [
+                  _cache[140] || (_cache[140] = createBaseVNode("label", { title: "Angular spread of sub-particle emission. 360° = emit in all directions (explosion), 0° = emit in inherited direction." }, "Spread", -1)),
                   createBaseVNode("input", {
                     type: "range",
                     value: sub.spread,
@@ -38306,23 +38421,23 @@ const _sfc_main$C = /* @__PURE__ */ defineComponent({
                     max: "360",
                     step: "5",
                     onInput: ($event) => updateSubEmitter(sub.id, "spread", Number($event.target.value))
-                  }, null, 40, _hoisted_213),
-                  createBaseVNode("span", _hoisted_214, toDisplayString(sub.spread) + "°", 1)
+                  }, null, 40, _hoisted_233),
+                  createBaseVNode("span", _hoisted_234, toDisplayString(sub.spread) + "°", 1)
                 ]),
-                createBaseVNode("div", _hoisted_215, [
-                  _cache[133] || (_cache[133] = createBaseVNode("label", { title: "Color of sub-particles. Can differ from parent for visual variety." }, "Color", -1)),
+                createBaseVNode("div", _hoisted_235, [
+                  _cache[141] || (_cache[141] = createBaseVNode("label", { title: "Color of sub-particles. Can differ from parent for visual variety." }, "Color", -1)),
                   createBaseVNode("input", {
                     type: "color",
                     value: rgbToHex(sub.color),
                     onInput: ($event) => updateSubEmitterColor(sub.id, $event.target.value)
-                  }, null, 40, _hoisted_216)
+                  }, null, 40, _hoisted_236)
                 ])
               ]);
             }), 128)),
-            subEmitters.value.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_217, " No sub-emitters. Add one for particle death effects. ")) : createCommentVNode("", true)
+            subEmitters.value.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_237, " No sub-emitters. Add one for particle death effects. ")) : createCommentVNode("", true)
           ])) : createCommentVNode("", true)
         ]),
-        createBaseVNode("div", _hoisted_218, [
+        createBaseVNode("div", _hoisted_238, [
           createBaseVNode("div", {
             class: "section-header",
             onClick: _cache[26] || (_cache[26] = ($event) => toggleSection("modulations"))
@@ -38330,83 +38445,83 @@ const _sfc_main$C = /* @__PURE__ */ defineComponent({
             createBaseVNode("i", {
               class: normalizeClass(["pi", expandedSections.value.has("modulations") ? "pi-chevron-down" : "pi-chevron-right"])
             }, null, 2),
-            _cache[135] || (_cache[135] = createBaseVNode("span", null, "Modulations", -1)),
+            _cache[143] || (_cache[143] = createBaseVNode("span", null, "Modulations", -1)),
             createBaseVNode("button", {
               class: "add-btn",
               onClick: withModifiers(addModulation, ["stop"]),
               title: "Add Modulation"
-            }, [..._cache[134] || (_cache[134] = [
+            }, [..._cache[142] || (_cache[142] = [
               createBaseVNode("i", { class: "pi pi-plus" }, null, -1)
             ])])
           ]),
-          expandedSections.value.has("modulations") ? (openBlock(), createElementBlock("div", _hoisted_219, [
+          expandedSections.value.has("modulations") ? (openBlock(), createElementBlock("div", _hoisted_239, [
             (openBlock(true), createElementBlock(Fragment, null, renderList(modulations.value, (mod) => {
               return openBlock(), createElementBlock("div", {
                 key: mod.id,
                 class: "modulation-item"
               }, [
-                createBaseVNode("div", _hoisted_220, [
+                createBaseVNode("div", _hoisted_240, [
                   createBaseVNode("select", {
                     value: mod.emitterId,
                     onChange: ($event) => updateModulation(mod.id, "emitterId", $event.target.value)
                   }, [
-                    _cache[136] || (_cache[136] = createBaseVNode("option", { value: "*" }, "All Emitters", -1)),
+                    _cache[144] || (_cache[144] = createBaseVNode("option", { value: "*" }, "All Emitters", -1)),
                     (openBlock(true), createElementBlock(Fragment, null, renderList(emitters.value, (e) => {
                       return openBlock(), createElementBlock("option", {
                         key: e.id,
                         value: e.id
-                      }, toDisplayString(e.name), 9, _hoisted_222);
+                      }, toDisplayString(e.name), 9, _hoisted_242);
                     }), 128))
-                  ], 40, _hoisted_221),
+                  ], 40, _hoisted_241),
                   createBaseVNode("button", {
                     class: "remove-btn",
                     onClick: ($event) => removeModulation(mod.id)
-                  }, [..._cache[137] || (_cache[137] = [
+                  }, [..._cache[145] || (_cache[145] = [
                     createBaseVNode("i", { class: "pi pi-trash" }, null, -1)
-                  ])], 8, _hoisted_223)
+                  ])], 8, _hoisted_243)
                 ]),
-                createBaseVNode("div", _hoisted_224, [
-                  _cache[139] || (_cache[139] = createBaseVNode("label", { title: "Which particle property to animate over the particle's lifetime." }, "Property", -1)),
+                createBaseVNode("div", _hoisted_244, [
+                  _cache[147] || (_cache[147] = createBaseVNode("label", { title: "Which particle property to animate over the particle's lifetime." }, "Property", -1)),
                   createBaseVNode("select", {
                     value: mod.property,
                     onChange: ($event) => updateModulation(mod.id, "property", $event.target.value)
-                  }, [..._cache[138] || (_cache[138] = [
-                    createStaticVNode('<option value="size" data-v-9d16f53b>Size</option><option value="speed" data-v-9d16f53b>Speed</option><option value="opacity" data-v-9d16f53b>Opacity</option><option value="colorR" data-v-9d16f53b>Color R</option><option value="colorG" data-v-9d16f53b>Color G</option><option value="colorB" data-v-9d16f53b>Color B</option>', 6)
-                  ])], 40, _hoisted_225)
+                  }, [..._cache[146] || (_cache[146] = [
+                    createStaticVNode('<option value="size" data-v-1e085e55>Size</option><option value="speed" data-v-1e085e55>Speed</option><option value="opacity" data-v-1e085e55>Opacity</option><option value="colorR" data-v-1e085e55>Color R</option><option value="colorG" data-v-1e085e55>Color G</option><option value="colorB" data-v-1e085e55>Color B</option>', 6)
+                  ])], 40, _hoisted_245)
                 ]),
-                createBaseVNode("div", _hoisted_226, [
-                  _cache[140] || (_cache[140] = createBaseVNode("label", { title: "Value of the property when the particle is born." }, "Start Value", -1)),
+                createBaseVNode("div", _hoisted_246, [
+                  _cache[148] || (_cache[148] = createBaseVNode("label", { title: "Value of the property when the particle is born." }, "Start Value", -1)),
                   createBaseVNode("input", {
                     type: "number",
                     value: mod.startValue,
                     step: "0.1",
                     onInput: ($event) => updateModulation(mod.id, "startValue", Number($event.target.value))
-                  }, null, 40, _hoisted_227)
+                  }, null, 40, _hoisted_247)
                 ]),
-                createBaseVNode("div", _hoisted_228, [
-                  _cache[141] || (_cache[141] = createBaseVNode("label", { title: "Value of the property when the particle dies." }, "End Value", -1)),
+                createBaseVNode("div", _hoisted_248, [
+                  _cache[149] || (_cache[149] = createBaseVNode("label", { title: "Value of the property when the particle dies." }, "End Value", -1)),
                   createBaseVNode("input", {
                     type: "number",
                     value: mod.endValue,
                     step: "0.1",
                     onInput: ($event) => updateModulation(mod.id, "endValue", Number($event.target.value))
-                  }, null, 40, _hoisted_229)
+                  }, null, 40, _hoisted_249)
                 ]),
-                createBaseVNode("div", _hoisted_230, [
-                  _cache[143] || (_cache[143] = createBaseVNode("label", { title: "Interpolation curve between start and end values. Linear = constant rate, Ease Out = fast then slow." }, "Easing", -1)),
+                createBaseVNode("div", _hoisted_250, [
+                  _cache[151] || (_cache[151] = createBaseVNode("label", { title: "Interpolation curve between start and end values. Linear = constant rate, Ease Out = fast then slow." }, "Easing", -1)),
                   createBaseVNode("select", {
                     value: mod.easing,
                     onChange: ($event) => updateModulation(mod.id, "easing", $event.target.value)
-                  }, [..._cache[142] || (_cache[142] = [
-                    createStaticVNode('<option value="linear" data-v-9d16f53b>Linear</option><option value="easeIn" data-v-9d16f53b>Ease In</option><option value="easeOut" data-v-9d16f53b>Ease Out</option><option value="easeInOut" data-v-9d16f53b>Ease In Out</option><option value="bounce" data-v-9d16f53b>Bounce</option><option value="elastic" data-v-9d16f53b>Elastic</option>', 6)
-                  ])], 40, _hoisted_231)
+                  }, [..._cache[150] || (_cache[150] = [
+                    createStaticVNode('<option value="linear" data-v-1e085e55>Linear</option><option value="easeIn" data-v-1e085e55>Ease In</option><option value="easeOut" data-v-1e085e55>Ease Out</option><option value="easeInOut" data-v-1e085e55>Ease In Out</option><option value="bounce" data-v-1e085e55>Bounce</option><option value="elastic" data-v-1e085e55>Elastic</option>', 6)
+                  ])], 40, _hoisted_251)
                 ])
               ]);
             }), 128)),
-            modulations.value.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_232, " No modulations. Add one to animate particle properties over lifetime. ")) : createCommentVNode("", true)
+            modulations.value.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_252, " No modulations. Add one to animate particle properties over lifetime. ")) : createCommentVNode("", true)
           ])) : createCommentVNode("", true)
         ]),
-        createBaseVNode("div", _hoisted_233, [
+        createBaseVNode("div", _hoisted_253, [
           createBaseVNode("div", {
             class: "section-header",
             onClick: _cache[27] || (_cache[27] = ($event) => toggleSection("render"))
@@ -38414,84 +38529,84 @@ const _sfc_main$C = /* @__PURE__ */ defineComponent({
             createBaseVNode("i", {
               class: normalizeClass(["pi", expandedSections.value.has("render") ? "pi-chevron-down" : "pi-chevron-right"])
             }, null, 2),
-            _cache[144] || (_cache[144] = createBaseVNode("span", null, "Render Options", -1))
+            _cache[152] || (_cache[152] = createBaseVNode("span", null, "Render Options", -1))
           ]),
-          expandedSections.value.has("render") ? (openBlock(), createElementBlock("div", _hoisted_234, [
-            createBaseVNode("div", _hoisted_235, [
-              _cache[146] || (_cache[146] = createBaseVNode("label", { title: "How particles blend with the background. Additive = bright/glowing, Multiply = darken, Screen = lighten." }, "Blend Mode", -1)),
+          expandedSections.value.has("render") ? (openBlock(), createElementBlock("div", _hoisted_254, [
+            createBaseVNode("div", _hoisted_255, [
+              _cache[154] || (_cache[154] = createBaseVNode("label", { title: "How particles blend with the background. Additive = bright/glowing, Multiply = darken, Screen = lighten." }, "Blend Mode", -1)),
               createBaseVNode("select", {
                 value: renderOptions.value.blendMode,
                 onChange: _cache[28] || (_cache[28] = ($event) => updateRenderOption("blendMode", $event.target.value))
-              }, [..._cache[145] || (_cache[145] = [
+              }, [..._cache[153] || (_cache[153] = [
                 createBaseVNode("option", { value: "normal" }, "Normal", -1),
                 createBaseVNode("option", { value: "additive" }, "Additive", -1),
                 createBaseVNode("option", { value: "multiply" }, "Multiply", -1),
                 createBaseVNode("option", { value: "screen" }, "Screen", -1)
-              ])], 40, _hoisted_236)
+              ])], 40, _hoisted_256)
             ]),
-            createBaseVNode("div", _hoisted_237, [
-              _cache[148] || (_cache[148] = createBaseVNode("label", { title: "Visual shape used to render each particle." }, "Shape", -1)),
+            createBaseVNode("div", _hoisted_257, [
+              _cache[156] || (_cache[156] = createBaseVNode("label", { title: "Visual shape used to render each particle." }, "Shape", -1)),
               createBaseVNode("select", {
                 value: renderOptions.value.particleShape,
                 onChange: _cache[29] || (_cache[29] = ($event) => updateRenderOption("particleShape", $event.target.value))
-              }, [..._cache[147] || (_cache[147] = [
+              }, [..._cache[155] || (_cache[155] = [
                 createBaseVNode("option", { value: "circle" }, "Circle", -1),
                 createBaseVNode("option", { value: "square" }, "Square", -1),
                 createBaseVNode("option", { value: "triangle" }, "Triangle", -1),
                 createBaseVNode("option", { value: "star" }, "Star", -1)
-              ])], 40, _hoisted_238)
+              ])], 40, _hoisted_258)
             ]),
-            createBaseVNode("div", _hoisted_239, [
-              createBaseVNode("label", _hoisted_240, [
+            createBaseVNode("div", _hoisted_259, [
+              createBaseVNode("label", _hoisted_260, [
                 createBaseVNode("input", {
                   type: "checkbox",
                   checked: renderOptions.value.spriteEnabled,
                   onChange: _cache[30] || (_cache[30] = ($event) => updateRenderOption("spriteEnabled", $event.target.checked))
-                }, null, 40, _hoisted_241),
-                _cache[149] || (_cache[149] = createTextVNode(" Use Sprite ", -1))
+                }, null, 40, _hoisted_261),
+                _cache[157] || (_cache[157] = createTextVNode(" Use Sprite ", -1))
               ])
             ]),
-            renderOptions.value.spriteEnabled ? (openBlock(), createElementBlock("div", _hoisted_242, [
-              _cache[150] || (_cache[150] = createBaseVNode("label", { title: "URL or data URI of the sprite image." }, "Sprite URL", -1)),
+            renderOptions.value.spriteEnabled ? (openBlock(), createElementBlock("div", _hoisted_262, [
+              _cache[158] || (_cache[158] = createBaseVNode("label", { title: "URL or data URI of the sprite image." }, "Sprite URL", -1)),
               createBaseVNode("input", {
                 type: "text",
                 value: renderOptions.value.spriteImageUrl,
                 placeholder: "https://... or data:...",
                 onChange: _cache[31] || (_cache[31] = ($event) => updateRenderOption("spriteImageUrl", $event.target.value))
-              }, null, 40, _hoisted_243)
+              }, null, 40, _hoisted_263)
             ])) : createCommentVNode("", true),
-            renderOptions.value.spriteEnabled ? (openBlock(), createElementBlock("div", _hoisted_244, [
-              _cache[151] || (_cache[151] = createBaseVNode("label", { title: "Number of columns in the sprite sheet (1 for single image)." }, "Columns", -1)),
+            renderOptions.value.spriteEnabled ? (openBlock(), createElementBlock("div", _hoisted_264, [
+              _cache[159] || (_cache[159] = createBaseVNode("label", { title: "Number of columns in the sprite sheet (1 for single image)." }, "Columns", -1)),
               createBaseVNode("input", {
                 type: "number",
                 value: renderOptions.value.spriteColumns,
                 min: "1",
                 max: "16",
                 onChange: _cache[32] || (_cache[32] = ($event) => updateRenderOption("spriteColumns", Number($event.target.value)))
-              }, null, 40, _hoisted_245)
+              }, null, 40, _hoisted_265)
             ])) : createCommentVNode("", true),
-            renderOptions.value.spriteEnabled ? (openBlock(), createElementBlock("div", _hoisted_246, [
-              _cache[152] || (_cache[152] = createBaseVNode("label", { title: "Number of rows in the sprite sheet (1 for single image)." }, "Rows", -1)),
+            renderOptions.value.spriteEnabled ? (openBlock(), createElementBlock("div", _hoisted_266, [
+              _cache[160] || (_cache[160] = createBaseVNode("label", { title: "Number of rows in the sprite sheet (1 for single image)." }, "Rows", -1)),
               createBaseVNode("input", {
                 type: "number",
                 value: renderOptions.value.spriteRows,
                 min: "1",
                 max: "16",
                 onChange: _cache[33] || (_cache[33] = ($event) => updateRenderOption("spriteRows", Number($event.target.value)))
-              }, null, 40, _hoisted_247)
+              }, null, 40, _hoisted_267)
             ])) : createCommentVNode("", true),
-            renderOptions.value.spriteEnabled && (renderOptions.value.spriteColumns > 1 || renderOptions.value.spriteRows > 1) ? (openBlock(), createElementBlock("div", _hoisted_248, [
-              createBaseVNode("label", _hoisted_249, [
+            renderOptions.value.spriteEnabled && (renderOptions.value.spriteColumns > 1 || renderOptions.value.spriteRows > 1) ? (openBlock(), createElementBlock("div", _hoisted_268, [
+              createBaseVNode("label", _hoisted_269, [
                 createBaseVNode("input", {
                   type: "checkbox",
                   checked: renderOptions.value.spriteAnimate,
                   onChange: _cache[34] || (_cache[34] = ($event) => updateRenderOption("spriteAnimate", $event.target.checked))
-                }, null, 40, _hoisted_250),
-                _cache[153] || (_cache[153] = createTextVNode(" Animate Frames ", -1))
+                }, null, 40, _hoisted_270),
+                _cache[161] || (_cache[161] = createTextVNode(" Animate Frames ", -1))
               ])
             ])) : createCommentVNode("", true),
-            renderOptions.value.spriteEnabled && renderOptions.value.spriteAnimate ? (openBlock(), createElementBlock("div", _hoisted_251, [
-              _cache[154] || (_cache[154] = createBaseVNode("label", { title: "Frames per second for sprite animation." }, "Frame Rate", -1)),
+            renderOptions.value.spriteEnabled && renderOptions.value.spriteAnimate ? (openBlock(), createElementBlock("div", _hoisted_271, [
+              _cache[162] || (_cache[162] = createBaseVNode("label", { title: "Frames per second for sprite animation." }, "Frame Rate", -1)),
               createBaseVNode("input", {
                 type: "range",
                 value: renderOptions.value.spriteFrameRate,
@@ -38499,31 +38614,31 @@ const _sfc_main$C = /* @__PURE__ */ defineComponent({
                 max: "60",
                 step: "1",
                 onInput: _cache[35] || (_cache[35] = ($event) => updateRenderOption("spriteFrameRate", Number($event.target.value)))
-              }, null, 40, _hoisted_252),
-              createBaseVNode("span", _hoisted_253, toDisplayString(renderOptions.value.spriteFrameRate) + " fps", 1)
+              }, null, 40, _hoisted_272),
+              createBaseVNode("span", _hoisted_273, toDisplayString(renderOptions.value.spriteFrameRate) + " fps", 1)
             ])) : createCommentVNode("", true),
-            renderOptions.value.spriteEnabled && (renderOptions.value.spriteColumns > 1 || renderOptions.value.spriteRows > 1) ? (openBlock(), createElementBlock("div", _hoisted_254, [
-              createBaseVNode("label", _hoisted_255, [
+            renderOptions.value.spriteEnabled && (renderOptions.value.spriteColumns > 1 || renderOptions.value.spriteRows > 1) ? (openBlock(), createElementBlock("div", _hoisted_274, [
+              createBaseVNode("label", _hoisted_275, [
                 createBaseVNode("input", {
                   type: "checkbox",
                   checked: renderOptions.value.spriteRandomStart,
                   onChange: _cache[36] || (_cache[36] = ($event) => updateRenderOption("spriteRandomStart", $event.target.checked))
-                }, null, 40, _hoisted_256),
-                _cache[155] || (_cache[155] = createTextVNode(" Random Start Frame ", -1))
+                }, null, 40, _hoisted_276),
+                _cache[163] || (_cache[163] = createTextVNode(" Random Start Frame ", -1))
               ])
             ])) : createCommentVNode("", true),
-            createBaseVNode("div", _hoisted_257, [
-              createBaseVNode("label", _hoisted_258, [
+            createBaseVNode("div", _hoisted_277, [
+              createBaseVNode("label", _hoisted_278, [
                 createBaseVNode("input", {
                   type: "checkbox",
                   checked: renderOptions.value.renderTrails,
                   onChange: _cache[37] || (_cache[37] = ($event) => updateRenderOption("renderTrails", $event.target.checked))
-                }, null, 40, _hoisted_259),
-                _cache[156] || (_cache[156] = createTextVNode(" Render Trails ", -1))
+                }, null, 40, _hoisted_279),
+                _cache[164] || (_cache[164] = createTextVNode(" Render Trails ", -1))
               ])
             ]),
-            renderOptions.value.renderTrails ? (openBlock(), createElementBlock("div", _hoisted_260, [
-              _cache[157] || (_cache[157] = createBaseVNode("label", { title: "Number of historical positions to show in the trail." }, "Trail Length", -1)),
+            renderOptions.value.renderTrails ? (openBlock(), createElementBlock("div", _hoisted_280, [
+              _cache[165] || (_cache[165] = createBaseVNode("label", { title: "Number of historical positions to show in the trail." }, "Trail Length", -1)),
               createBaseVNode("input", {
                 type: "range",
                 value: renderOptions.value.trailLength,
@@ -38531,11 +38646,11 @@ const _sfc_main$C = /* @__PURE__ */ defineComponent({
                 max: "20",
                 step: "1",
                 onInput: _cache[38] || (_cache[38] = ($event) => updateRenderOption("trailLength", Number($event.target.value)))
-              }, null, 40, _hoisted_261),
-              createBaseVNode("span", _hoisted_262, toDisplayString(renderOptions.value.trailLength), 1)
+              }, null, 40, _hoisted_281),
+              createBaseVNode("span", _hoisted_282, toDisplayString(renderOptions.value.trailLength), 1)
             ])) : createCommentVNode("", true),
-            renderOptions.value.renderTrails ? (openBlock(), createElementBlock("div", _hoisted_263, [
-              _cache[158] || (_cache[158] = createBaseVNode("label", { title: "How quickly trail opacity decreases. Higher values = faster fade." }, "Trail Falloff", -1)),
+            renderOptions.value.renderTrails ? (openBlock(), createElementBlock("div", _hoisted_283, [
+              _cache[166] || (_cache[166] = createBaseVNode("label", { title: "How quickly trail opacity decreases. Higher values = faster fade." }, "Trail Falloff", -1)),
               createBaseVNode("input", {
                 type: "range",
                 value: renderOptions.value.trailOpacityFalloff,
@@ -38543,21 +38658,21 @@ const _sfc_main$C = /* @__PURE__ */ defineComponent({
                 max: "1",
                 step: "0.05",
                 onInput: _cache[39] || (_cache[39] = ($event) => updateRenderOption("trailOpacityFalloff", Number($event.target.value)))
-              }, null, 40, _hoisted_264),
-              createBaseVNode("span", _hoisted_265, toDisplayString(renderOptions.value.trailOpacityFalloff.toFixed(2)), 1)
+              }, null, 40, _hoisted_284),
+              createBaseVNode("span", _hoisted_285, toDisplayString(renderOptions.value.trailOpacityFalloff.toFixed(2)), 1)
             ])) : createCommentVNode("", true),
-            createBaseVNode("div", _hoisted_266, [
-              createBaseVNode("label", _hoisted_267, [
+            createBaseVNode("div", _hoisted_286, [
+              createBaseVNode("label", _hoisted_287, [
                 createBaseVNode("input", {
                   type: "checkbox",
                   checked: renderOptions.value.glowEnabled,
                   onChange: _cache[40] || (_cache[40] = ($event) => updateRenderOption("glowEnabled", $event.target.checked))
-                }, null, 40, _hoisted_268),
-                _cache[159] || (_cache[159] = createTextVNode(" Enable Glow ", -1))
+                }, null, 40, _hoisted_288),
+                _cache[167] || (_cache[167] = createTextVNode(" Enable Glow ", -1))
               ])
             ]),
-            renderOptions.value.glowEnabled ? (openBlock(), createElementBlock("div", _hoisted_269, [
-              _cache[160] || (_cache[160] = createBaseVNode("label", { title: "Size of the glow area around each particle." }, "Glow Radius", -1)),
+            renderOptions.value.glowEnabled ? (openBlock(), createElementBlock("div", _hoisted_289, [
+              _cache[168] || (_cache[168] = createBaseVNode("label", { title: "Size of the glow area around each particle." }, "Glow Radius", -1)),
               createBaseVNode("input", {
                 type: "range",
                 value: renderOptions.value.glowRadius,
@@ -38565,11 +38680,11 @@ const _sfc_main$C = /* @__PURE__ */ defineComponent({
                 max: "50",
                 step: "1",
                 onInput: _cache[41] || (_cache[41] = ($event) => updateRenderOption("glowRadius", Number($event.target.value)))
-              }, null, 40, _hoisted_270),
-              createBaseVNode("span", _hoisted_271, toDisplayString(renderOptions.value.glowRadius) + "px", 1)
+              }, null, 40, _hoisted_290),
+              createBaseVNode("span", _hoisted_291, toDisplayString(renderOptions.value.glowRadius) + "px", 1)
             ])) : createCommentVNode("", true),
-            renderOptions.value.glowEnabled ? (openBlock(), createElementBlock("div", _hoisted_272, [
-              _cache[161] || (_cache[161] = createBaseVNode("label", { title: "Brightness of the glow effect. 0 = no glow, 1 = maximum glow." }, "Glow Intensity", -1)),
+            renderOptions.value.glowEnabled ? (openBlock(), createElementBlock("div", _hoisted_292, [
+              _cache[169] || (_cache[169] = createBaseVNode("label", { title: "Brightness of the glow effect. 0 = no glow, 1 = maximum glow." }, "Glow Intensity", -1)),
               createBaseVNode("input", {
                 type: "range",
                 value: renderOptions.value.glowIntensity,
@@ -38577,22 +38692,22 @@ const _sfc_main$C = /* @__PURE__ */ defineComponent({
                 max: "1",
                 step: "0.05",
                 onInput: _cache[42] || (_cache[42] = ($event) => updateRenderOption("glowIntensity", Number($event.target.value)))
-              }, null, 40, _hoisted_273),
-              createBaseVNode("span", _hoisted_274, toDisplayString(renderOptions.value.glowIntensity.toFixed(2)), 1)
+              }, null, 40, _hoisted_293),
+              createBaseVNode("span", _hoisted_294, toDisplayString(renderOptions.value.glowIntensity.toFixed(2)), 1)
             ])) : createCommentVNode("", true),
-            _cache[171] || (_cache[171] = createBaseVNode("div", { class: "subsection-divider" }, "Motion Blur", -1)),
-            createBaseVNode("div", _hoisted_275, [
-              createBaseVNode("label", _hoisted_276, [
+            _cache[179] || (_cache[179] = createBaseVNode("div", { class: "subsection-divider" }, "Motion Blur", -1)),
+            createBaseVNode("div", _hoisted_295, [
+              createBaseVNode("label", _hoisted_296, [
                 createBaseVNode("input", {
                   type: "checkbox",
                   checked: renderOptions.value.motionBlur,
                   onChange: _cache[43] || (_cache[43] = ($event) => updateRenderOption("motionBlur", $event.target.checked))
-                }, null, 40, _hoisted_277),
-                _cache[162] || (_cache[162] = createTextVNode(" Enable Motion Blur ", -1))
+                }, null, 40, _hoisted_297),
+                _cache[170] || (_cache[170] = createTextVNode(" Enable Motion Blur ", -1))
               ])
             ]),
-            renderOptions.value.motionBlur ? (openBlock(), createElementBlock("div", _hoisted_278, [
-              _cache[163] || (_cache[163] = createBaseVNode("label", { title: "How much blur to apply based on particle velocity." }, "Blur Strength", -1)),
+            renderOptions.value.motionBlur ? (openBlock(), createElementBlock("div", _hoisted_298, [
+              _cache[171] || (_cache[171] = createBaseVNode("label", { title: "How much blur to apply based on particle velocity." }, "Blur Strength", -1)),
               createBaseVNode("input", {
                 type: "range",
                 value: renderOptions.value.motionBlurStrength,
@@ -38600,11 +38715,11 @@ const _sfc_main$C = /* @__PURE__ */ defineComponent({
                 max: "1",
                 step: "0.05",
                 onInput: _cache[44] || (_cache[44] = ($event) => updateRenderOption("motionBlurStrength", Number($event.target.value)))
-              }, null, 40, _hoisted_279),
-              createBaseVNode("span", _hoisted_280, toDisplayString(renderOptions.value.motionBlurStrength.toFixed(2)), 1)
+              }, null, 40, _hoisted_299),
+              createBaseVNode("span", _hoisted_300, toDisplayString(renderOptions.value.motionBlurStrength.toFixed(2)), 1)
             ])) : createCommentVNode("", true),
-            renderOptions.value.motionBlur ? (openBlock(), createElementBlock("div", _hoisted_281, [
-              _cache[164] || (_cache[164] = createBaseVNode("label", { title: "Number of samples for blur quality. Higher = smoother but slower." }, "Blur Samples", -1)),
+            renderOptions.value.motionBlur ? (openBlock(), createElementBlock("div", _hoisted_301, [
+              _cache[172] || (_cache[172] = createBaseVNode("label", { title: "Number of samples for blur quality. Higher = smoother but slower." }, "Blur Samples", -1)),
               createBaseVNode("input", {
                 type: "range",
                 value: renderOptions.value.motionBlurSamples,
@@ -38612,22 +38727,22 @@ const _sfc_main$C = /* @__PURE__ */ defineComponent({
                 max: "16",
                 step: "1",
                 onInput: _cache[45] || (_cache[45] = ($event) => updateRenderOption("motionBlurSamples", Number($event.target.value)))
-              }, null, 40, _hoisted_282),
-              createBaseVNode("span", _hoisted_283, toDisplayString(renderOptions.value.motionBlurSamples), 1)
+              }, null, 40, _hoisted_302),
+              createBaseVNode("span", _hoisted_303, toDisplayString(renderOptions.value.motionBlurSamples), 1)
             ])) : createCommentVNode("", true),
-            _cache[172] || (_cache[172] = createBaseVNode("div", { class: "subsection-divider" }, "Particle Connections", -1)),
-            createBaseVNode("div", _hoisted_284, [
-              createBaseVNode("label", _hoisted_285, [
+            _cache[180] || (_cache[180] = createBaseVNode("div", { class: "subsection-divider" }, "Particle Connections", -1)),
+            createBaseVNode("div", _hoisted_304, [
+              createBaseVNode("label", _hoisted_305, [
                 createBaseVNode("input", {
                   type: "checkbox",
                   checked: connections.value.enabled,
                   onChange: _cache[46] || (_cache[46] = ($event) => updateConnection("enabled", $event.target.checked))
-                }, null, 40, _hoisted_286),
-                _cache[165] || (_cache[165] = createTextVNode(" Enable Connections ", -1))
+                }, null, 40, _hoisted_306),
+                _cache[173] || (_cache[173] = createTextVNode(" Enable Connections ", -1))
               ])
             ]),
-            connections.value.enabled ? (openBlock(), createElementBlock("div", _hoisted_287, [
-              _cache[166] || (_cache[166] = createBaseVNode("label", { title: "Maximum distance in pixels between particles to draw a connection." }, "Max Distance", -1)),
+            connections.value.enabled ? (openBlock(), createElementBlock("div", _hoisted_307, [
+              _cache[174] || (_cache[174] = createBaseVNode("label", { title: "Maximum distance in pixels between particles to draw a connection." }, "Max Distance", -1)),
               createBaseVNode("input", {
                 type: "range",
                 value: connections.value.maxDistance,
@@ -38635,11 +38750,11 @@ const _sfc_main$C = /* @__PURE__ */ defineComponent({
                 max: "300",
                 step: "10",
                 onInput: _cache[47] || (_cache[47] = ($event) => updateConnection("maxDistance", Number($event.target.value)))
-              }, null, 40, _hoisted_288),
-              createBaseVNode("span", _hoisted_289, toDisplayString(connections.value.maxDistance) + "px", 1)
+              }, null, 40, _hoisted_308),
+              createBaseVNode("span", _hoisted_309, toDisplayString(connections.value.maxDistance) + "px", 1)
             ])) : createCommentVNode("", true),
-            connections.value.enabled ? (openBlock(), createElementBlock("div", _hoisted_290, [
-              _cache[167] || (_cache[167] = createBaseVNode("label", { title: "Maximum number of connections each particle can have." }, "Max Connections", -1)),
+            connections.value.enabled ? (openBlock(), createElementBlock("div", _hoisted_310, [
+              _cache[175] || (_cache[175] = createBaseVNode("label", { title: "Maximum number of connections each particle can have." }, "Max Connections", -1)),
               createBaseVNode("input", {
                 type: "range",
                 value: connections.value.maxConnections,
@@ -38647,11 +38762,11 @@ const _sfc_main$C = /* @__PURE__ */ defineComponent({
                 max: "5",
                 step: "1",
                 onInput: _cache[48] || (_cache[48] = ($event) => updateConnection("maxConnections", Number($event.target.value)))
-              }, null, 40, _hoisted_291),
-              createBaseVNode("span", _hoisted_292, toDisplayString(connections.value.maxConnections), 1)
+              }, null, 40, _hoisted_311),
+              createBaseVNode("span", _hoisted_312, toDisplayString(connections.value.maxConnections), 1)
             ])) : createCommentVNode("", true),
-            connections.value.enabled ? (openBlock(), createElementBlock("div", _hoisted_293, [
-              _cache[168] || (_cache[168] = createBaseVNode("label", { title: "Thickness of connection lines in pixels." }, "Line Width", -1)),
+            connections.value.enabled ? (openBlock(), createElementBlock("div", _hoisted_313, [
+              _cache[176] || (_cache[176] = createBaseVNode("label", { title: "Thickness of connection lines in pixels." }, "Line Width", -1)),
               createBaseVNode("input", {
                 type: "range",
                 value: connections.value.lineWidth,
@@ -38659,11 +38774,11 @@ const _sfc_main$C = /* @__PURE__ */ defineComponent({
                 max: "3",
                 step: "0.1",
                 onInput: _cache[49] || (_cache[49] = ($event) => updateConnection("lineWidth", Number($event.target.value)))
-              }, null, 40, _hoisted_294),
-              createBaseVNode("span", _hoisted_295, toDisplayString(connections.value.lineWidth.toFixed(1)), 1)
+              }, null, 40, _hoisted_314),
+              createBaseVNode("span", _hoisted_315, toDisplayString(connections.value.lineWidth.toFixed(1)), 1)
             ])) : createCommentVNode("", true),
-            connections.value.enabled ? (openBlock(), createElementBlock("div", _hoisted_296, [
-              _cache[169] || (_cache[169] = createBaseVNode("label", { title: "Transparency of connection lines. 0 = invisible, 1 = fully opaque." }, "Line Opacity", -1)),
+            connections.value.enabled ? (openBlock(), createElementBlock("div", _hoisted_316, [
+              _cache[177] || (_cache[177] = createBaseVNode("label", { title: "Transparency of connection lines. 0 = invisible, 1 = fully opaque." }, "Line Opacity", -1)),
               createBaseVNode("input", {
                 type: "range",
                 value: connections.value.lineOpacity,
@@ -38671,23 +38786,23 @@ const _sfc_main$C = /* @__PURE__ */ defineComponent({
                 max: "1",
                 step: "0.05",
                 onInput: _cache[50] || (_cache[50] = ($event) => updateConnection("lineOpacity", Number($event.target.value)))
-              }, null, 40, _hoisted_297),
-              createBaseVNode("span", _hoisted_298, toDisplayString(connections.value.lineOpacity.toFixed(2)), 1)
+              }, null, 40, _hoisted_317),
+              createBaseVNode("span", _hoisted_318, toDisplayString(connections.value.lineOpacity.toFixed(2)), 1)
             ])) : createCommentVNode("", true),
-            connections.value.enabled ? (openBlock(), createElementBlock("div", _hoisted_299, [
-              createBaseVNode("label", _hoisted_300, [
+            connections.value.enabled ? (openBlock(), createElementBlock("div", _hoisted_319, [
+              createBaseVNode("label", _hoisted_320, [
                 createBaseVNode("input", {
                   type: "checkbox",
                   checked: connections.value.fadeByDistance,
                   onChange: _cache[51] || (_cache[51] = ($event) => updateConnection("fadeByDistance", $event.target.checked))
-                }, null, 40, _hoisted_301),
-                _cache[170] || (_cache[170] = createTextVNode(" Fade by Distance ", -1))
+                }, null, 40, _hoisted_321),
+                _cache[178] || (_cache[178] = createTextVNode(" Fade by Distance ", -1))
               ])
             ])) : createCommentVNode("", true)
           ])) : createCommentVNode("", true)
         ]),
-        createBaseVNode("div", _hoisted_302, [
-          _cache[173] || (_cache[173] = createBaseVNode("i", { class: "pi pi-circle-fill" }, null, -1)),
+        createBaseVNode("div", _hoisted_322, [
+          _cache[181] || (_cache[181] = createBaseVNode("i", { class: "pi pi-circle-fill" }, null, -1)),
           createBaseVNode("span", null, toDisplayString(particleCount.value) + " particles", 1)
         ])
       ]);
@@ -38695,7 +38810,7 @@ const _sfc_main$C = /* @__PURE__ */ defineComponent({
   }
 });
 
-const ParticleProperties = /* @__PURE__ */ _export_sfc(_sfc_main$C, [["__scopeId", "data-v-9d16f53b"]]);
+const ParticleProperties = /* @__PURE__ */ _export_sfc(_sfc_main$C, [["__scopeId", "data-v-1e085e55"]]);
 
 const _hoisted_1$A = ["title"];
 const _sfc_main$B = /* @__PURE__ */ defineComponent({
@@ -92176,6 +92291,481 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
   }
 });
 
+const BLUR_COMPUTE_SHADER = (
+  /* wgsl */
+  `
+@group(0) @binding(0) var inputTexture: texture_2d<f32>;
+@group(0) @binding(1) var outputTexture: texture_storage_2d<rgba8unorm, write>;
+@group(0) @binding(2) var<uniform> params: BlurParams;
+
+struct BlurParams {
+  radius: f32,
+  direction: f32, // 0 = horizontal, 1 = vertical
+  width: f32,
+  height: f32,
+}
+
+fn gaussian(x: f32, sigma: f32) -> f32 {
+  return exp(-(x * x) / (2.0 * sigma * sigma)) / (sqrt(2.0 * 3.14159265) * sigma);
+}
+
+@compute @workgroup_size(16, 16)
+fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+  let coords = vec2<i32>(global_id.xy);
+  let dims = vec2<i32>(textureDimensions(inputTexture));
+
+  if (coords.x >= dims.x || coords.y >= dims.y) {
+    return;
+  }
+
+  let radius = i32(params.radius);
+  let sigma = params.radius / 3.0;
+  var color = vec4<f32>(0.0);
+  var totalWeight = 0.0;
+
+  // Separable blur: horizontal or vertical pass
+  let isHorizontal = params.direction < 0.5;
+
+  for (var i = -radius; i <= radius; i++) {
+    var sampleCoords: vec2<i32>;
+    if (isHorizontal) {
+      sampleCoords = vec2<i32>(clamp(coords.x + i, 0, dims.x - 1), coords.y);
+    } else {
+      sampleCoords = vec2<i32>(coords.x, clamp(coords.y + i, 0, dims.y - 1));
+    }
+
+    let weight = gaussian(f32(i), sigma);
+    color += textureLoad(inputTexture, sampleCoords, 0) * weight;
+    totalWeight += weight;
+  }
+
+  color /= totalWeight;
+  textureStore(outputTexture, coords, color);
+}
+`
+);
+const COLOR_CORRECTION_SHADER = (
+  /* wgsl */
+  `
+@group(0) @binding(0) var inputTexture: texture_2d<f32>;
+@group(0) @binding(1) var outputTexture: texture_storage_2d<rgba8unorm, write>;
+@group(0) @binding(2) var<uniform> params: ColorParams;
+
+struct ColorParams {
+  brightness: f32,
+  contrast: f32,
+  saturation: f32,
+  hue: f32,
+}
+
+fn rgb_to_hsv(c: vec3<f32>) -> vec3<f32> {
+  let K = vec4<f32>(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+  let p = mix(vec4<f32>(c.bg, K.wz), vec4<f32>(c.gb, K.xy), step(c.b, c.g));
+  let q = mix(vec4<f32>(p.xyw, c.r), vec4<f32>(c.r, p.yzx), step(p.x, c.r));
+  let d = q.x - min(q.w, q.y);
+  let e = 1.0e-10;
+  return vec3<f32>(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
+}
+
+fn hsv_to_rgb(c: vec3<f32>) -> vec3<f32> {
+  let K = vec4<f32>(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+  let p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+  return c.z * mix(K.xxx, clamp(p - K.xxx, vec3<f32>(0.0), vec3<f32>(1.0)), c.y);
+}
+
+@compute @workgroup_size(16, 16)
+fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+  let coords = vec2<i32>(global_id.xy);
+  let dims = vec2<i32>(textureDimensions(inputTexture));
+
+  if (coords.x >= dims.x || coords.y >= dims.y) {
+    return;
+  }
+
+  var color = textureLoad(inputTexture, coords, 0);
+
+  // Brightness
+  color.rgb += params.brightness;
+
+  // Contrast
+  color.rgb = (color.rgb - 0.5) * (1.0 + params.contrast) + 0.5;
+
+  // Saturation and Hue
+  var hsv = rgb_to_hsv(color.rgb);
+  hsv.x = fract(hsv.x + params.hue / 360.0);
+  hsv.y = clamp(hsv.y * (1.0 + params.saturation), 0.0, 1.0);
+  color.rgb = hsv_to_rgb(hsv);
+
+  // Clamp final color
+  color = clamp(color, vec4<f32>(0.0), vec4<f32>(1.0));
+
+  textureStore(outputTexture, coords, color);
+}
+`
+);
+class WebGPURenderer {
+  capabilities = {
+    available: false,
+    adapter: null,
+    device: null,
+    features: [],
+    limits: {}
+  };
+  initialized = false;
+  initPromise = null;
+  // Shader modules
+  blurModule = null;
+  colorModule = null;
+  // Pipelines
+  blurPipeline = null;
+  colorPipeline = null;
+  // Bind group layouts
+  blurBindGroupLayout = null;
+  colorBindGroupLayout = null;
+  /**
+   * Initialize WebGPU renderer
+   * Returns true if WebGPU is available and initialized
+   */
+  async initialize() {
+    if (this.initialized) return this.capabilities.available;
+    if (this.initPromise) return this.initPromise;
+    this.initPromise = this.doInitialize();
+    return this.initPromise;
+  }
+  async doInitialize() {
+    try {
+      if (!("gpu" in navigator)) {
+        engineLogger.info("WebGPU not available - using Canvas2D fallback");
+        this.initialized = true;
+        return false;
+      }
+      const adapter = await navigator.gpu.requestAdapter({
+        powerPreference: "high-performance"
+      });
+      if (!adapter) {
+        engineLogger.warn("WebGPU adapter not available");
+        this.initialized = true;
+        return false;
+      }
+      const device = await adapter.requestDevice({
+        requiredFeatures: [],
+        requiredLimits: {}
+      });
+      this.capabilities = {
+        available: true,
+        adapter,
+        device,
+        features: [...adapter.features],
+        limits: {
+          maxBufferSize: device.limits.maxBufferSize,
+          maxComputeWorkgroupSizeX: device.limits.maxComputeWorkgroupSizeX,
+          maxComputeWorkgroupSizeY: device.limits.maxComputeWorkgroupSizeY
+        }
+      };
+      await this.createShaderModules();
+      await this.createPipelines();
+      engineLogger.info("WebGPU initialized successfully", {
+        features: this.capabilities.features.slice(0, 5)
+      });
+      this.initialized = true;
+      return true;
+    } catch (error) {
+      engineLogger.error("WebGPU initialization failed:", error);
+      this.initialized = true;
+      return false;
+    }
+  }
+  async createShaderModules() {
+    if (!this.capabilities.device) return;
+    this.blurModule = this.capabilities.device.createShaderModule({
+      code: BLUR_COMPUTE_SHADER
+    });
+    this.colorModule = this.capabilities.device.createShaderModule({
+      code: COLOR_CORRECTION_SHADER
+    });
+  }
+  async createPipelines() {
+    if (!this.capabilities.device || !this.blurModule || !this.colorModule) return;
+    const device = this.capabilities.device;
+    this.blurBindGroupLayout = device.createBindGroupLayout({
+      entries: [
+        { binding: 0, visibility: GPUShaderStage.COMPUTE, texture: { sampleType: "float" } },
+        { binding: 1, visibility: GPUShaderStage.COMPUTE, storageTexture: { format: "rgba8unorm", access: "write-only" } },
+        { binding: 2, visibility: GPUShaderStage.COMPUTE, buffer: { type: "uniform" } }
+      ]
+    });
+    this.colorBindGroupLayout = device.createBindGroupLayout({
+      entries: [
+        { binding: 0, visibility: GPUShaderStage.COMPUTE, texture: { sampleType: "float" } },
+        { binding: 1, visibility: GPUShaderStage.COMPUTE, storageTexture: { format: "rgba8unorm", access: "write-only" } },
+        { binding: 2, visibility: GPUShaderStage.COMPUTE, buffer: { type: "uniform" } }
+      ]
+    });
+    this.blurPipeline = device.createComputePipeline({
+      layout: device.createPipelineLayout({
+        bindGroupLayouts: [this.blurBindGroupLayout]
+      }),
+      compute: {
+        module: this.blurModule,
+        entryPoint: "main"
+      }
+    });
+    this.colorPipeline = device.createComputePipeline({
+      layout: device.createPipelineLayout({
+        bindGroupLayouts: [this.colorBindGroupLayout]
+      }),
+      compute: {
+        module: this.colorModule,
+        entryPoint: "main"
+      }
+    });
+  }
+  /**
+   * Check if WebGPU is available
+   */
+  isAvailable() {
+    return this.capabilities.available;
+  }
+  /**
+   * Get WebGPU capabilities
+   */
+  getCapabilities() {
+    return { ...this.capabilities };
+  }
+  /**
+   * Apply Gaussian blur using GPU compute shader
+   * Falls back to Canvas2D if WebGPU unavailable
+   */
+  async blur(source, params) {
+    if (!this.capabilities.available || !this.capabilities.device) {
+      return this.blurCanvas2D(source, params);
+    }
+    try {
+      return await this.blurWebGPU(source, params);
+    } catch (error) {
+      engineLogger.warn("WebGPU blur failed, falling back to Canvas2D:", error);
+      return this.blurCanvas2D(source, params);
+    }
+  }
+  async blurWebGPU(source, params) {
+    const device = this.capabilities.device;
+    const imageData = this.toImageData(source);
+    const { width, height } = imageData;
+    const inputTexture = device.createTexture({
+      size: [width, height],
+      format: "rgba8unorm",
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
+    });
+    device.queue.writeTexture(
+      { texture: inputTexture },
+      imageData.data,
+      { bytesPerRow: width * 4, rowsPerImage: height },
+      { width, height }
+    );
+    const outputTexture = device.createTexture({
+      size: [width, height],
+      format: "rgba8unorm",
+      usage: GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.COPY_SRC
+    });
+    const paramsBuffer = device.createBuffer({
+      size: 16,
+      // 4 floats
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      mappedAtCreation: true
+    });
+    new Float32Array(paramsBuffer.getMappedRange()).set([
+      params.radius,
+      params.direction === "vertical" ? 1 : 0,
+      width,
+      height
+    ]);
+    paramsBuffer.unmap();
+    const bindGroup = device.createBindGroup({
+      layout: this.blurBindGroupLayout,
+      entries: [
+        { binding: 0, resource: inputTexture.createView() },
+        { binding: 1, resource: outputTexture.createView() },
+        { binding: 2, resource: { buffer: paramsBuffer } }
+      ]
+    });
+    const commandEncoder = device.createCommandEncoder();
+    const passEncoder = commandEncoder.beginComputePass();
+    passEncoder.setPipeline(this.blurPipeline);
+    passEncoder.setBindGroup(0, bindGroup);
+    passEncoder.dispatchWorkgroups(
+      Math.ceil(width / 16),
+      Math.ceil(height / 16)
+    );
+    passEncoder.end();
+    const outputBuffer = device.createBuffer({
+      size: width * height * 4,
+      usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
+    });
+    commandEncoder.copyTextureToBuffer(
+      { texture: outputTexture },
+      { buffer: outputBuffer, bytesPerRow: width * 4 },
+      { width, height }
+    );
+    device.queue.submit([commandEncoder.finish()]);
+    await outputBuffer.mapAsync(GPUMapMode.READ);
+    const resultData = new Uint8ClampedArray(outputBuffer.getMappedRange().slice(0));
+    outputBuffer.unmap();
+    inputTexture.destroy();
+    outputTexture.destroy();
+    paramsBuffer.destroy();
+    outputBuffer.destroy();
+    return new ImageData(resultData, width, height);
+  }
+  blurCanvas2D(source, params) {
+    const imageData = this.toImageData(source);
+    const canvas = new OffscreenCanvas(imageData.width, imageData.height);
+    const ctx = canvas.getContext("2d");
+    ctx.putImageData(imageData, 0, 0);
+    ctx.filter = `blur(${params.radius}px)`;
+    ctx.drawImage(canvas, 0, 0);
+    return ctx.getImageData(0, 0, imageData.width, imageData.height);
+  }
+  /**
+   * Apply color correction using GPU compute shader
+   */
+  async colorCorrect(source, params) {
+    if (!this.capabilities.available || !this.capabilities.device) {
+      return this.colorCorrectCanvas2D(source, params);
+    }
+    try {
+      return await this.colorCorrectWebGPU(source, params);
+    } catch (error) {
+      engineLogger.warn("WebGPU color correction failed, falling back:", error);
+      return this.colorCorrectCanvas2D(source, params);
+    }
+  }
+  async colorCorrectWebGPU(source, params) {
+    const device = this.capabilities.device;
+    const imageData = this.toImageData(source);
+    const { width, height } = imageData;
+    const inputTexture = device.createTexture({
+      size: [width, height],
+      format: "rgba8unorm",
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
+    });
+    device.queue.writeTexture(
+      { texture: inputTexture },
+      imageData.data,
+      { bytesPerRow: width * 4, rowsPerImage: height },
+      { width, height }
+    );
+    const outputTexture = device.createTexture({
+      size: [width, height],
+      format: "rgba8unorm",
+      usage: GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.COPY_SRC
+    });
+    const paramsBuffer = device.createBuffer({
+      size: 16,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      mappedAtCreation: true
+    });
+    new Float32Array(paramsBuffer.getMappedRange()).set([
+      params.brightness,
+      params.contrast,
+      params.saturation,
+      params.hue
+    ]);
+    paramsBuffer.unmap();
+    const bindGroup = device.createBindGroup({
+      layout: this.colorBindGroupLayout,
+      entries: [
+        { binding: 0, resource: inputTexture.createView() },
+        { binding: 1, resource: outputTexture.createView() },
+        { binding: 2, resource: { buffer: paramsBuffer } }
+      ]
+    });
+    const commandEncoder = device.createCommandEncoder();
+    const passEncoder = commandEncoder.beginComputePass();
+    passEncoder.setPipeline(this.colorPipeline);
+    passEncoder.setBindGroup(0, bindGroup);
+    passEncoder.dispatchWorkgroups(
+      Math.ceil(width / 16),
+      Math.ceil(height / 16)
+    );
+    passEncoder.end();
+    const outputBuffer = device.createBuffer({
+      size: width * height * 4,
+      usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
+    });
+    commandEncoder.copyTextureToBuffer(
+      { texture: outputTexture },
+      { buffer: outputBuffer, bytesPerRow: width * 4 },
+      { width, height }
+    );
+    device.queue.submit([commandEncoder.finish()]);
+    await outputBuffer.mapAsync(GPUMapMode.READ);
+    const resultData = new Uint8ClampedArray(outputBuffer.getMappedRange().slice(0));
+    outputBuffer.unmap();
+    inputTexture.destroy();
+    outputTexture.destroy();
+    paramsBuffer.destroy();
+    outputBuffer.destroy();
+    return new ImageData(resultData, width, height);
+  }
+  colorCorrectCanvas2D(source, params) {
+    const imageData = this.toImageData(source);
+    const data = imageData.data;
+    for (let i = 0; i < data.length; i += 4) {
+      let r = data[i] / 255;
+      let g = data[i + 1] / 255;
+      let b = data[i + 2] / 255;
+      r += params.brightness;
+      g += params.brightness;
+      b += params.brightness;
+      r = (r - 0.5) * (1 + params.contrast) + 0.5;
+      g = (g - 0.5) * (1 + params.contrast) + 0.5;
+      b = (b - 0.5) * (1 + params.contrast) + 0.5;
+      const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+      const satMult = 1 + params.saturation;
+      r = gray + (r - gray) * satMult;
+      g = gray + (g - gray) * satMult;
+      b = gray + (b - gray) * satMult;
+      data[i] = Math.max(0, Math.min(255, Math.round(r * 255)));
+      data[i + 1] = Math.max(0, Math.min(255, Math.round(g * 255)));
+      data[i + 2] = Math.max(0, Math.min(255, Math.round(b * 255)));
+    }
+    return imageData;
+  }
+  /**
+   * Convert source to ImageData
+   */
+  toImageData(source) {
+    if (source instanceof ImageData) {
+      return source;
+    }
+    const ctx = source.getContext("2d");
+    return ctx.getImageData(0, 0, source.width, source.height);
+  }
+  /**
+   * Dispose of WebGPU resources
+   */
+  dispose() {
+    if (this.capabilities.device) {
+      this.capabilities.device.destroy();
+    }
+    this.capabilities = {
+      available: false,
+      adapter: null,
+      device: null,
+      features: [],
+      limits: {}
+    };
+    this.initialized = false;
+    this.initPromise = null;
+    this.blurModule = null;
+    this.colorModule = null;
+    this.blurPipeline = null;
+    this.colorPipeline = null;
+    engineLogger.info("WebGPU renderer disposed");
+  }
+}
+const webgpuRenderer = new WebGPURenderer();
+
 class WebGLBlurContext {
   gl = null;
   canvas = null;
@@ -93202,6 +93792,24 @@ function stackBlurVertical(pixels, width, height, radius) {
     }
   }
 }
+let webgpuInitialized = false;
+let webgpuInitializing = false;
+async function ensureWebGPUInitialized() {
+  if (webgpuInitialized) return webgpuRenderer.isAvailable();
+  if (webgpuInitializing) return false;
+  webgpuInitializing = true;
+  try {
+    await webgpuRenderer.initialize();
+    webgpuInitialized = true;
+    return webgpuRenderer.isAvailable();
+  } catch {
+    webgpuInitialized = true;
+    return false;
+  } finally {
+    webgpuInitializing = false;
+  }
+}
+ensureWebGPUInitialized();
 function gaussianBlurRenderer(input, params) {
   const blurriness = params.blurriness ?? 10;
   const dimensions = params.blur_dimensions ?? "both";
@@ -93225,6 +93833,7 @@ function gaussianBlurRenderer(input, params) {
       break;
   }
   const maxRadius = Math.max(radiusX, radiusY);
+  if (useGpu && maxRadius > GPU_BLUR_THRESHOLD && webgpuInitialized && webgpuRenderer.isAvailable()) ;
   if (useGpu && maxRadius > GPU_BLUR_THRESHOLD && webglBlurContext.isAvailable()) {
     const gpuResult = webglBlurContext.blur(input.canvas, radiusX, radiusY);
     if (gpuResult) {

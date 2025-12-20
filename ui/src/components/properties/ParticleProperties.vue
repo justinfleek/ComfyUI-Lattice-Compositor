@@ -392,6 +392,8 @@
                 <option value="cone">Cone</option>
                 <option value="ring">Ring</option>
                 <option value="spline">Spline Path</option>
+                <option value="image">Image/Mask</option>
+                <option value="depthEdge">Depth Edges</option>
               </select>
             </div>
             <div v-if="emitter.shape === 'circle' || emitter.shape === 'sphere' || emitter.shape === 'ring'" class="property-row">
@@ -478,7 +480,83 @@
               />
               <span class="value-display">{{ (emitter.coneRadius || 0.1).toFixed(2) }}</span>
             </div>
-            <div v-if="emitter.shape !== 'point' && emitter.shape !== 'spline'" class="property-row checkbox-row">
+            <!-- Image/Mask emission controls -->
+            <div v-if="emitter.shape === 'image'" class="image-emission-controls">
+              <div class="property-row">
+                <label title="Select a layer to use as the emission mask. Particles emit from non-transparent pixels.">Source Layer</label>
+                <select
+                  :value="emitter.imageSourceLayerId || ''"
+                  @change="updateEmitter(emitter.id, 'imageSourceLayerId', ($event.target as HTMLSelectElement).value || null)"
+                >
+                  <option value="">Select layer...</option>
+                  <option v-for="layer in imageLayers" :key="layer.id" :value="layer.id">
+                    {{ layer.name }}
+                  </option>
+                </select>
+              </div>
+              <div class="property-row">
+                <label title="Minimum alpha value (0-1) for a pixel to be considered for emission.">Alpha Threshold</label>
+                <input
+                  type="range"
+                  :value="emitter.emissionThreshold || 0.1"
+                  min="0.01"
+                  max="1"
+                  step="0.01"
+                  @input="updateEmitter(emitter.id, 'emissionThreshold', Number(($event.target as HTMLInputElement).value))"
+                />
+                <span class="value-display">{{ (emitter.emissionThreshold || 0.1).toFixed(2) }}</span>
+              </div>
+              <div class="property-row checkbox-row">
+                <label title="Emit only from the edges of the masked area instead of filling it.">
+                  <input
+                    type="checkbox"
+                    :checked="emitter.emitFromMaskEdge"
+                    @change="updateEmitter(emitter.id, 'emitFromMaskEdge', ($event.target as HTMLInputElement).checked)"
+                  />
+                  Edge Detection
+                </label>
+              </div>
+            </div>
+            <!-- Depth Edge emission controls -->
+            <div v-if="emitter.shape === 'depthEdge'" class="depth-emission-controls">
+              <div class="property-row">
+                <label title="Select a depth layer to use for edge detection. Particles emit from depth discontinuities (silhouette edges).">Depth Layer</label>
+                <select
+                  :value="emitter.depthSourceLayerId || ''"
+                  @change="updateEmitter(emitter.id, 'depthSourceLayerId', ($event.target as HTMLSelectElement).value || null)"
+                >
+                  <option value="">Select depth layer...</option>
+                  <option v-for="layer in depthLayers" :key="layer.id" :value="layer.id">
+                    {{ layer.name }}
+                  </option>
+                </select>
+              </div>
+              <div class="property-row">
+                <label title="Minimum depth gradient magnitude to be considered an edge. Lower = more edges detected.">Edge Threshold</label>
+                <input
+                  type="range"
+                  :value="emitter.emissionThreshold || 0.05"
+                  min="0.01"
+                  max="0.5"
+                  step="0.01"
+                  @input="updateEmitter(emitter.id, 'emissionThreshold', Number(($event.target as HTMLInputElement).value))"
+                />
+                <span class="value-display">{{ (emitter.emissionThreshold || 0.05).toFixed(2) }}</span>
+              </div>
+              <div class="property-row">
+                <label title="Scale factor for converting depth values to Z position. Higher = more 3D separation.">Depth Scale</label>
+                <input
+                  type="range"
+                  :value="emitter.depthScale || 500"
+                  min="0"
+                  max="2000"
+                  step="50"
+                  @input="updateEmitter(emitter.id, 'depthScale', Number(($event.target as HTMLInputElement).value))"
+                />
+                <span class="value-display">{{ emitter.depthScale || 500 }}</span>
+              </div>
+            </div>
+            <div v-if="emitter.shape !== 'point' && emitter.shape !== 'spline' && emitter.shape !== 'image' && emitter.shape !== 'depthEdge'" class="property-row checkbox-row">
               <label title="When enabled, particles only emit from the outline/edge of the shape instead of filling the entire area.">
                 <input
                   type="checkbox"
@@ -1308,12 +1386,29 @@ import type {
   ConnectionRenderConfig
 } from '@/types/project';
 import { usePresetStore } from '@/stores/presetStore';
+import { useCompositorStore } from '@/stores/compositorStore';
 import type { ParticlePreset } from '@/types/presets';
 import { ParticleGPUCompute } from '@/services/particleGPU';
 
 // Preset Store
 const presetStore = usePresetStore();
 presetStore.initialize();
+
+// Compositor Store - for layer list
+const compositorStore = useCompositorStore();
+
+// Computed: Image layers for mask emission
+const imageLayers = computed(() =>
+  compositorStore.layers.filter(l => l.type === 'image' || l.type === 'video' || l.type === 'solid')
+);
+
+// Computed: Depth layers for depth edge emission
+const depthLayers = computed(() =>
+  compositorStore.layers.filter(l =>
+    l.type === 'image' &&
+    (l.name.toLowerCase().includes('depth') || l.data?.isDepthMap)
+  )
+);
 
 // WebGPU Detection
 const webgpuAvailable = ref(false);

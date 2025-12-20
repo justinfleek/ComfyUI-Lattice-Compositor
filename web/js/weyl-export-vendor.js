@@ -5524,11 +5524,11 @@ var jszip_min$1 = {exports: {}};
 } (jszip_min$1));
 
 var jszip_minExports = jszip_min$1.exports;
-const jszip_min_default = /*@__PURE__*/getDefaultExportFromCjs(jszip_minExports);
+const JSZip = /*@__PURE__*/getDefaultExportFromCjs(jszip_minExports);
 
 const jszip_min = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
   __proto__: null,
-  default: jszip_min_default
+  default: JSZip
 }, Symbol.toStringTag, { value: 'Module' }));
 
 export { ArrayBufferTarget as A, Muxer as M, Muxer$1 as a, ArrayBufferTarget$1 as b, jszip_min as j };
