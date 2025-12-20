@@ -92365,7 +92365,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
   }
 });
 
-const WorkspaceLayout = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-a4bb6643"]]);
+const WorkspaceLayout = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-b6d71403"]]);
 
 const _sfc_main = /* @__PURE__ */ defineComponent({
   __name: "App",

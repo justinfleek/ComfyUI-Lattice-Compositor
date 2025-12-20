@@ -1218,21 +1218,21 @@ onUnmounted(() => {
   color: var(--weyl-text-primary, #e5e5e5);
   font-family: var(--weyl-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
   font-size: var(--weyl-text-base, 12px);
-  /* Reduced horizontal padding, more vertical space efficiency */
-  padding: 8px 12px;
-  gap: 8px;
+  /* Minimal padding for maximum workspace */
+  padding: 4px;
+  gap: 4px;
 }
 
 /* Toolbar - floating panel */
 .toolbar {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
+  gap: 6px;
+  padding: 6px 12px;
   background: var(--weyl-surface-1, #121212);
-  border-radius: var(--weyl-radius-xl, 8px);
-  box-shadow: var(--weyl-shadow-panel, 0 8px 32px rgba(0,0,0,0.4));
-  min-height: 44px;
+  border-radius: var(--weyl-radius-md, 4px);
+  box-shadow: var(--weyl-shadow-panel, 0 4px 16px rgba(0,0,0,0.3));
+  min-height: 40px;
 }
 
 .tool-group {
@@ -1448,8 +1448,8 @@ onUnmounted(() => {
   flex-direction: column;
   height: 100%;
   background: var(--weyl-surface-1, #121212);
-  border-radius: var(--weyl-radius-xl, 8px);
-  box-shadow: var(--weyl-shadow-panel, 0 8px 32px rgba(0,0,0,0.4));
+  border-radius: var(--weyl-radius-sm, 2px);
+  box-shadow: var(--weyl-shadow-panel, 0 4px 16px rgba(0,0,0,0.3));
   overflow: hidden;
 }
 
@@ -1469,13 +1469,13 @@ onUnmounted(() => {
 .panel-tabs {
   display: flex;
   background: var(--weyl-surface-2, #1a1a1a);
-  padding: 8px;
-  gap: 4px;
+  padding: 4px;
+  gap: 2px;
 }
 
 .panel-tabs button {
   flex: 1;
-  padding: 8px 12px;
+  padding: 6px 8px;
   border: none;
   background: transparent;
   color: var(--weyl-text-secondary, #9CA3AF);
@@ -1534,18 +1534,18 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 16px;
+  padding: 6px 10px;
   background: var(--weyl-surface-2, #1a1a1a);
-  gap: 16px;
+  gap: 8px;
 }
 
 .viewport-tabs {
   display: flex;
-  gap: 4px;
+  gap: 2px;
 }
 
 .viewport-tabs button {
-  padding: 8px 16px;
+  padding: 5px 10px;
   border: none;
   background: transparent;
   color: var(--weyl-text-secondary, #9CA3AF);
@@ -1690,13 +1690,13 @@ onUnmounted(() => {
 }
 
 :deep(.splitpanes--vertical > .splitpanes__splitter) {
-  width: 4px;
-  min-width: 4px;
+  width: 2px;
+  min-width: 2px;
 }
 
 :deep(.splitpanes--horizontal > .splitpanes__splitter) {
-  height: 4px;
-  min-height: 4px;
+  height: 2px;
+  min-height: 2px;
 }
 
 /* Ensure timeline pane allows dropdown overflow */
