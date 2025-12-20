@@ -62,7 +62,28 @@
       />
     </div>
 
-    <!-- Viewport controls removed - use toolbar icons instead -->
+    <!-- Viewer Controls (AE-style bottom bar) -->
+    <div class="viewer-controls">
+      <select v-model="zoomLevel" class="zoom-dropdown" @change="onZoomSelect">
+        <option value="fit">Fit</option>
+        <option value="0.25">25%</option>
+        <option value="0.33">33%</option>
+        <option value="0.5">50%</option>
+        <option value="0.75">75%</option>
+        <option value="1">100%</option>
+        <option value="2">200%</option>
+        <option value="4">400%</option>
+      </select>
+      <span class="zoom-display">{{ zoomDisplayPercent }}%</span>
+      <div class="viewer-divider"></div>
+      <select v-model="resolution" class="resolution-dropdown" @change="onResolutionChange">
+        <option value="full">Full</option>
+        <option value="half">Half</option>
+        <option value="third">Third</option>
+        <option value="quarter">Quarter</option>
+        <option value="custom">Custom</option>
+      </select>
+    </div>
 
     <div class="loading-overlay" v-if="loading">
       <div class="loading-spinner"></div>
