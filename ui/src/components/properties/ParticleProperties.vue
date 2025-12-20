@@ -67,7 +67,7 @@
       </div>
       <div v-if="expandedSections.has('system')" class="section-content">
         <div class="property-row">
-          <label>Max Particles</label>
+          <label title="Maximum number of particles that can exist at once. Higher values create denser effects but use more memory.">Max Particles</label>
           <input
             type="range"
             :value="systemConfig.maxParticles"
@@ -79,7 +79,7 @@
           <span class="value-display">{{ systemConfig.maxParticles }}</span>
         </div>
         <div class="property-row">
-          <label>Gravity</label>
+          <label title="Global gravity force. Positive values pull particles down, negative values push them up.">Gravity</label>
           <input
             type="range"
             :value="systemConfig.gravity"
@@ -91,7 +91,7 @@
           <span class="value-display">{{ systemConfig.gravity }}</span>
         </div>
         <div class="property-row">
-          <label>Wind Strength</label>
+          <label title="Strength of the wind force applied to all particles. Creates directional drift.">Wind Strength</label>
           <input
             type="range"
             :value="systemConfig.windStrength"
@@ -103,7 +103,7 @@
           <span class="value-display">{{ systemConfig.windStrength }}</span>
         </div>
         <div class="property-row">
-          <label>Wind Direction</label>
+          <label title="Direction of the wind in degrees. 0° = right, 90° = down, 180° = left, 270° = up.">Wind Direction</label>
           <input
             type="range"
             :value="systemConfig.windDirection"
@@ -115,7 +115,7 @@
           <span class="value-display">{{ systemConfig.windDirection }}°</span>
         </div>
         <div class="property-row">
-          <label>Friction</label>
+          <label title="Air resistance that slows particles over time. 0 = no friction, 1 = maximum friction.">Friction</label>
           <input
             type="range"
             :value="systemConfig.friction"
@@ -127,7 +127,7 @@
           <span class="value-display">{{ systemConfig.friction.toFixed(2) }}</span>
         </div>
         <div class="property-row">
-          <label>Boundary</label>
+          <label title="What happens when particles hit the composition boundary. Kill = remove, Bounce = reflect, Wrap = appear on opposite side.">Boundary</label>
           <select
             :value="systemConfig.boundaryBehavior"
             @change="updateSystemConfig('boundaryBehavior', ($event.target as HTMLSelectElement).value)"
@@ -138,7 +138,7 @@
           </select>
         </div>
         <div class="property-row">
-          <label>Warmup Period</label>
+          <label title="Frames to pre-simulate before frame 0. Creates a 'steady state' effect where particles are already in motion at the start.">Warmup Period</label>
           <input
             type="range"
             :value="systemConfig.warmupPeriod"
@@ -150,7 +150,7 @@
           <span class="value-display">{{ systemConfig.warmupPeriod }}f</span>
         </div>
         <div class="property-row checkbox-row">
-          <label>
+          <label title="When enabled, particles will be confined within any mask applied to this layer.">
             <input
               type="checkbox"
               :checked="systemConfig.respectMaskBoundary"
@@ -160,7 +160,7 @@
           </label>
         </div>
         <div class="property-row checkbox-row gpu-row">
-          <label>
+          <label title="Use WebGPU for hardware-accelerated particle simulation. Dramatically improves performance with high particle counts.">
             <input
               type="checkbox"
               :checked="systemConfig.useGPU"
@@ -214,7 +214,7 @@
 
           <div v-if="expandedEmitters.has(emitter.id)" class="emitter-content">
             <div class="property-row">
-              <label>Position X</label>
+              <label title="Horizontal position of the emitter. 0 = left edge, 0.5 = center, 1 = right edge.">Position X</label>
               <input
                 type="range"
                 :value="emitter.x"
@@ -226,7 +226,7 @@
               <span class="value-display">{{ emitter.x.toFixed(2) }}</span>
             </div>
             <div class="property-row">
-              <label>Position Y</label>
+              <label title="Vertical position of the emitter. 0 = top edge, 0.5 = center, 1 = bottom edge.">Position Y</label>
               <input
                 type="range"
                 :value="emitter.y"
@@ -238,7 +238,7 @@
               <span class="value-display">{{ emitter.y.toFixed(2) }}</span>
             </div>
             <div class="property-row">
-              <label>Direction</label>
+              <label title="Primary emission direction in degrees. 0° = right, 90° = down, 180° = left, 270° = up.">Direction</label>
               <input
                 type="range"
                 :value="emitter.direction"
@@ -250,7 +250,7 @@
               <span class="value-display">{{ emitter.direction }}°</span>
             </div>
             <div class="property-row">
-              <label>Spread</label>
+              <label title="Cone angle for particle emission. 0° = tight beam, 180° = hemisphere, 360° = full sphere.">Spread</label>
               <input
                 type="range"
                 :value="emitter.spread"
@@ -262,7 +262,7 @@
               <span class="value-display">{{ emitter.spread }}°</span>
             </div>
             <div class="property-row">
-              <label>Speed</label>
+              <label title="Initial velocity of emitted particles in pixels per second.">Speed</label>
               <input
                 type="range"
                 :value="emitter.speed"
@@ -274,7 +274,7 @@
               <span class="value-display">{{ emitter.speed }}</span>
             </div>
             <div class="property-row">
-              <label>Speed Variance</label>
+              <label title="Random variation in particle speed. Adds natural randomness to the emission.">Speed Variance</label>
               <input
                 type="range"
                 :value="emitter.speedVariance"
@@ -286,7 +286,7 @@
               <span class="value-display">{{ emitter.speedVariance }}</span>
             </div>
             <div class="property-row">
-              <label>Size</label>
+              <label title="Diameter of each particle in pixels.">Size</label>
               <input
                 type="range"
                 :value="emitter.size"
@@ -298,7 +298,7 @@
               <span class="value-display">{{ emitter.size }}px</span>
             </div>
             <div class="property-row">
-              <label>Size Variance</label>
+              <label title="Random variation in particle size. Creates more natural-looking effects.">Size Variance</label>
               <input
                 type="range"
                 :value="emitter.sizeVariance"
@@ -310,7 +310,7 @@
               <span class="value-display">{{ emitter.sizeVariance }}</span>
             </div>
             <div class="property-row">
-              <label>Color</label>
+              <label title="Base color of particles when they spawn.">Color</label>
               <input
                 type="color"
                 :value="rgbToHex(emitter.color)"
@@ -318,7 +318,7 @@
               />
             </div>
             <div class="property-row">
-              <label>Emission Rate</label>
+              <label title="Number of particles spawned per second during continuous emission.">Emission Rate</label>
               <input
                 type="range"
                 :value="emitter.emissionRate"
@@ -330,7 +330,7 @@
               <span class="value-display">{{ emitter.emissionRate.toFixed(1) }}/s</span>
             </div>
             <div class="property-row">
-              <label>Lifetime</label>
+              <label title="How long each particle lives in frames (at 16fps: 16 frames = 1 second).">Lifetime</label>
               <input
                 type="range"
                 :value="emitter.particleLifetime"
@@ -342,7 +342,7 @@
               <span class="value-display">{{ emitter.particleLifetime }}f</span>
             </div>
             <div class="property-row">
-              <label>Initial Burst</label>
+              <label title="Percentage of max particles to spawn immediately at frame 0. Creates an instant 'explosion' of particles.">Initial Burst</label>
               <input
                 type="range"
                 :value="emitter.initialBurst"
@@ -354,7 +354,7 @@
               <span class="value-display">{{ (emitter.initialBurst * 100).toFixed(0) }}%</span>
             </div>
             <div class="property-row checkbox-row">
-              <label>
+              <label title="Emit a burst of particles when audio beats are detected. Requires audio analysis.">
                 <input
                   type="checkbox"
                   :checked="emitter.burstOnBeat"
@@ -364,7 +364,7 @@
               </label>
             </div>
             <div v-if="emitter.burstOnBeat" class="property-row">
-              <label>Burst Count</label>
+              <label title="Number of particles to emit on each detected audio beat.">Burst Count</label>
               <input
                 type="range"
                 :value="emitter.burstCount"
@@ -379,7 +379,7 @@
             <!-- Emitter Shape -->
             <div class="subsection-divider">Emitter Shape</div>
             <div class="property-row">
-              <label>Shape</label>
+              <label title="Geometry from which particles are emitted. Point = single location, others distribute particles across the shape.">Shape</label>
               <select
                 :value="emitter.shape || 'point'"
                 @change="updateEmitter(emitter.id, 'shape', ($event.target as HTMLSelectElement).value)"
@@ -394,7 +394,7 @@
               </select>
             </div>
             <div v-if="emitter.shape === 'circle' || emitter.shape === 'sphere' || emitter.shape === 'ring'" class="property-row">
-              <label>Radius</label>
+              <label title="Outer radius of the emission shape as a fraction of composition size.">Radius</label>
               <input
                 type="range"
                 :value="emitter.shapeRadius || 0.1"
@@ -406,7 +406,7 @@
               <span class="value-display">{{ (emitter.shapeRadius || 0.1).toFixed(2) }}</span>
             </div>
             <div v-if="emitter.shape === 'ring'" class="property-row">
-              <label>Inner Radius</label>
+              <label title="Inner radius of the ring. Particles emit in the area between inner and outer radius.">Inner Radius</label>
               <input
                 type="range"
                 :value="emitter.shapeInnerRadius || 0.05"
@@ -418,7 +418,7 @@
               <span class="value-display">{{ (emitter.shapeInnerRadius || 0.05).toFixed(2) }}</span>
             </div>
             <div v-if="emitter.shape === 'box'" class="property-row">
-              <label>Width</label>
+              <label title="Width of the box emission area as a fraction of composition width.">Width</label>
               <input
                 type="range"
                 :value="emitter.shapeWidth || 0.2"
@@ -430,7 +430,7 @@
               <span class="value-display">{{ (emitter.shapeWidth || 0.2).toFixed(2) }}</span>
             </div>
             <div v-if="emitter.shape === 'box'" class="property-row">
-              <label>Height</label>
+              <label title="Height of the box emission area as a fraction of composition height.">Height</label>
               <input
                 type="range"
                 :value="emitter.shapeHeight || 0.2"
@@ -442,7 +442,7 @@
               <span class="value-display">{{ (emitter.shapeHeight || 0.2).toFixed(2) }}</span>
             </div>
             <div v-if="emitter.shape === 'line'" class="property-row">
-              <label>Length</label>
+              <label title="Length of the line emission area as a fraction of composition size.">Length</label>
               <input
                 type="range"
                 :value="emitter.shapeWidth || 0.2"
@@ -454,7 +454,7 @@
               <span class="value-display">{{ (emitter.shapeWidth || 0.2).toFixed(2) }}</span>
             </div>
             <div v-if="emitter.shape !== 'point' && emitter.shape !== 'spline'" class="property-row checkbox-row">
-              <label>
+              <label title="When enabled, particles only emit from the outline/edge of the shape instead of filling the entire area.">
                 <input
                   type="checkbox"
                   :checked="emitter.emitFromEdge"
@@ -524,7 +524,7 @@
               </button>
             </div>
             <div class="property-row">
-              <label>Position X</label>
+              <label title="Horizontal position of the gravity well. 0 = left edge, 0.5 = center, 1 = right edge.">Position X</label>
               <input
                 type="range"
                 :value="well.x"
@@ -536,7 +536,7 @@
               <span class="value-display">{{ well.x.toFixed(2) }}</span>
             </div>
             <div class="property-row">
-              <label>Position Y</label>
+              <label title="Vertical position of the gravity well. 0 = top edge, 0.5 = center, 1 = bottom edge.">Position Y</label>
               <input
                 type="range"
                 :value="well.y"
@@ -548,7 +548,7 @@
               <span class="value-display">{{ well.y.toFixed(2) }}</span>
             </div>
             <div class="property-row">
-              <label>Strength</label>
+              <label title="Attraction force strength. Positive = attract particles toward center, negative = repel particles away.">Strength</label>
               <input
                 type="range"
                 :value="well.strength"
@@ -560,7 +560,7 @@
               <span class="value-display">{{ well.strength }}</span>
             </div>
             <div class="property-row">
-              <label>Radius</label>
+              <label title="Area of influence as a fraction of composition size. Particles outside this radius are unaffected.">Radius</label>
               <input
                 type="range"
                 :value="well.radius"
@@ -572,7 +572,7 @@
               <span class="value-display">{{ well.radius.toFixed(2) }}</span>
             </div>
             <div class="property-row">
-              <label>Falloff</label>
+              <label title="How force decreases with distance. Linear = gradual, Quadratic = realistic physics, Constant = uniform force.">Falloff</label>
               <select
                 :value="well.falloff"
                 @change="updateGravityWell(well.id, 'falloff', ($event.target as HTMLSelectElement).value)"
@@ -614,7 +614,7 @@
               </button>
             </div>
             <div class="property-row">
-              <label>Position X</label>
+              <label title="Horizontal position of the vortex center. 0 = left edge, 0.5 = center, 1 = right edge.">Position X</label>
               <input
                 type="range"
                 :value="vortex.x"
@@ -626,7 +626,7 @@
               <span class="value-display">{{ vortex.x.toFixed(2) }}</span>
             </div>
             <div class="property-row">
-              <label>Position Y</label>
+              <label title="Vertical position of the vortex center. 0 = top edge, 0.5 = center, 1 = bottom edge.">Position Y</label>
               <input
                 type="range"
                 :value="vortex.y"
@@ -638,7 +638,7 @@
               <span class="value-display">{{ vortex.y.toFixed(2) }}</span>
             </div>
             <div class="property-row">
-              <label>Strength</label>
+              <label title="Overall strength of the vortex force applied to particles.">Strength</label>
               <input
                 type="range"
                 :value="vortex.strength"
@@ -650,7 +650,7 @@
               <span class="value-display">{{ vortex.strength }}</span>
             </div>
             <div class="property-row">
-              <label>Radius</label>
+              <label title="Area of influence as a fraction of composition size. Particles outside this radius are unaffected.">Radius</label>
               <input
                 type="range"
                 :value="vortex.radius"
@@ -662,7 +662,7 @@
               <span class="value-display">{{ vortex.radius.toFixed(2) }}</span>
             </div>
             <div class="property-row">
-              <label>Rotation Speed</label>
+              <label title="Angular velocity of the swirl in degrees per frame. Higher values create faster spinning.">Rotation Speed</label>
               <input
                 type="range"
                 :value="vortex.rotationSpeed"
@@ -674,7 +674,7 @@
               <span class="value-display">{{ vortex.rotationSpeed }}°/f</span>
             </div>
             <div class="property-row">
-              <label>Inward Pull</label>
+              <label title="Force pulling particles toward the vortex center. Creates a spiral effect when combined with rotation.">Inward Pull</label>
               <input
                 type="range"
                 :value="vortex.inwardPull"
@@ -719,7 +719,7 @@
             </button>
           </div>
           <div class="property-row">
-            <label>Scale</label>
+            <label title="Size of the noise pattern. Smaller values = fine, detailed turbulence. Larger values = broad, sweeping motion.">Scale</label>
             <input
               type="range"
               :value="turb.scale"
@@ -731,7 +731,7 @@
             <span class="value-display">{{ turb.scale.toFixed(3) }}</span>
           </div>
           <div class="property-row">
-            <label>Strength</label>
+            <label title="How strongly turbulence affects particle movement. Higher values create more chaotic motion.">Strength</label>
             <input
               type="range"
               :value="turb.strength"
@@ -743,7 +743,7 @@
             <span class="value-display">{{ turb.strength }}</span>
           </div>
           <div class="property-row">
-            <label>Evolution</label>
+            <label title="How fast the turbulence pattern changes over time. 0 = static noise, higher = animated turbulence.">Evolution</label>
             <input
               type="range"
               :value="turb.evolutionSpeed"
@@ -798,7 +798,7 @@
             </button>
           </div>
           <div class="property-row">
-            <label>Trigger</label>
+            <label title="Event that triggers sub-particle emission. 'On Death' spawns particles when parent particles expire.">Trigger</label>
             <select
               :value="sub.trigger"
               @change="updateSubEmitter(sub.id, 'trigger', ($event.target as HTMLSelectElement).value)"
@@ -807,7 +807,7 @@
             </select>
           </div>
           <div class="property-row">
-            <label>Spawn Count</label>
+            <label title="Number of sub-particles spawned when the trigger event occurs.">Spawn Count</label>
             <input
               type="range"
               :value="sub.spawnCount"
@@ -819,7 +819,7 @@
             <span class="value-display">{{ sub.spawnCount }}</span>
           </div>
           <div class="property-row">
-            <label>Inherit Velocity</label>
+            <label title="How much of the parent particle's velocity is passed to sub-particles. 0% = independent, 100% = same direction.">Inherit Velocity</label>
             <input
               type="range"
               :value="sub.inheritVelocity"
@@ -831,7 +831,7 @@
             <span class="value-display">{{ (sub.inheritVelocity * 100).toFixed(0) }}%</span>
           </div>
           <div class="property-row">
-            <label>Size</label>
+            <label title="Diameter of sub-particles in pixels. Often smaller than parent particles for sparks/debris effects.">Size</label>
             <input
               type="range"
               :value="sub.size"
@@ -843,7 +843,7 @@
             <span class="value-display">{{ sub.size }}px</span>
           </div>
           <div class="property-row">
-            <label>Lifetime</label>
+            <label title="How long sub-particles live in frames. Usually shorter than parent particles.">Lifetime</label>
             <input
               type="range"
               :value="sub.lifetime"
@@ -855,7 +855,7 @@
             <span class="value-display">{{ sub.lifetime }}f</span>
           </div>
           <div class="property-row">
-            <label>Speed</label>
+            <label title="Initial velocity of sub-particles in pixels per second.">Speed</label>
             <input
               type="range"
               :value="sub.speed"
@@ -867,7 +867,7 @@
             <span class="value-display">{{ sub.speed }}</span>
           </div>
           <div class="property-row">
-            <label>Spread</label>
+            <label title="Angular spread of sub-particle emission. 360° = emit in all directions (explosion), 0° = emit in inherited direction.">Spread</label>
             <input
               type="range"
               :value="sub.spread"
@@ -879,7 +879,7 @@
             <span class="value-display">{{ sub.spread }}°</span>
           </div>
           <div class="property-row">
-            <label>Color</label>
+            <label title="Color of sub-particles. Can differ from parent for visual variety.">Color</label>
             <input
               type="color"
               :value="rgbToHex(sub.color)"
@@ -922,7 +922,7 @@
             </button>
           </div>
           <div class="property-row">
-            <label>Property</label>
+            <label title="Which particle property to animate over the particle's lifetime.">Property</label>
             <select
               :value="mod.property"
               @change="updateModulation(mod.id, 'property', ($event.target as HTMLSelectElement).value)"
@@ -936,7 +936,7 @@
             </select>
           </div>
           <div class="property-row">
-            <label>Start Value</label>
+            <label title="Value of the property when the particle is born.">Start Value</label>
             <input
               type="number"
               :value="mod.startValue"
@@ -945,7 +945,7 @@
             />
           </div>
           <div class="property-row">
-            <label>End Value</label>
+            <label title="Value of the property when the particle dies.">End Value</label>
             <input
               type="number"
               :value="mod.endValue"
@@ -954,7 +954,7 @@
             />
           </div>
           <div class="property-row">
-            <label>Easing</label>
+            <label title="Interpolation curve between start and end values. Linear = constant rate, Ease Out = fast then slow.">Easing</label>
             <select
               :value="mod.easing"
               @change="updateModulation(mod.id, 'easing', ($event.target as HTMLSelectElement).value)"
@@ -983,7 +983,7 @@
       </div>
       <div v-if="expandedSections.has('render')" class="section-content">
         <div class="property-row">
-          <label>Blend Mode</label>
+          <label title="How particles blend with the background. Additive = bright/glowing, Multiply = darken, Screen = lighten.">Blend Mode</label>
           <select
             :value="renderOptions.blendMode"
             @change="updateRenderOption('blendMode', ($event.target as HTMLSelectElement).value)"
@@ -995,7 +995,7 @@
           </select>
         </div>
         <div class="property-row">
-          <label>Shape</label>
+          <label title="Visual shape used to render each particle.">Shape</label>
           <select
             :value="renderOptions.particleShape"
             @change="updateRenderOption('particleShape', ($event.target as HTMLSelectElement).value)"
@@ -1007,7 +1007,7 @@
           </select>
         </div>
         <div class="property-row checkbox-row">
-          <label>
+          <label title="Draw a trail behind moving particles showing their recent path.">
             <input
               type="checkbox"
               :checked="renderOptions.renderTrails"
@@ -1017,7 +1017,7 @@
           </label>
         </div>
         <div v-if="renderOptions.renderTrails" class="property-row">
-          <label>Trail Length</label>
+          <label title="Number of historical positions to show in the trail.">Trail Length</label>
           <input
             type="range"
             :value="renderOptions.trailLength"
@@ -1029,7 +1029,7 @@
           <span class="value-display">{{ renderOptions.trailLength }}</span>
         </div>
         <div v-if="renderOptions.renderTrails" class="property-row">
-          <label>Trail Falloff</label>
+          <label title="How quickly trail opacity decreases. Higher values = faster fade.">Trail Falloff</label>
           <input
             type="range"
             :value="renderOptions.trailOpacityFalloff"
@@ -1041,7 +1041,7 @@
           <span class="value-display">{{ renderOptions.trailOpacityFalloff.toFixed(2) }}</span>
         </div>
         <div class="property-row checkbox-row">
-          <label>
+          <label title="Add a soft glow effect around particles. Great for fire, magic, and light effects.">
             <input
               type="checkbox"
               :checked="renderOptions.glowEnabled"
@@ -1051,7 +1051,7 @@
           </label>
         </div>
         <div v-if="renderOptions.glowEnabled" class="property-row">
-          <label>Glow Radius</label>
+          <label title="Size of the glow area around each particle.">Glow Radius</label>
           <input
             type="range"
             :value="renderOptions.glowRadius"
@@ -1063,7 +1063,7 @@
           <span class="value-display">{{ renderOptions.glowRadius }}px</span>
         </div>
         <div v-if="renderOptions.glowEnabled" class="property-row">
-          <label>Glow Intensity</label>
+          <label title="Brightness of the glow effect. 0 = no glow, 1 = maximum glow.">Glow Intensity</label>
           <input
             type="range"
             :value="renderOptions.glowIntensity"
@@ -1078,7 +1078,7 @@
         <!-- Motion Blur -->
         <div class="subsection-divider">Motion Blur</div>
         <div class="property-row checkbox-row">
-          <label>
+          <label title="Blur fast-moving particles to simulate camera motion blur.">
             <input
               type="checkbox"
               :checked="renderOptions.motionBlur"
@@ -1088,7 +1088,7 @@
           </label>
         </div>
         <div v-if="renderOptions.motionBlur" class="property-row">
-          <label>Blur Strength</label>
+          <label title="How much blur to apply based on particle velocity.">Blur Strength</label>
           <input
             type="range"
             :value="renderOptions.motionBlurStrength"
@@ -1100,7 +1100,7 @@
           <span class="value-display">{{ renderOptions.motionBlurStrength.toFixed(2) }}</span>
         </div>
         <div v-if="renderOptions.motionBlur" class="property-row">
-          <label>Blur Samples</label>
+          <label title="Number of samples for blur quality. Higher = smoother but slower.">Blur Samples</label>
           <input
             type="range"
             :value="renderOptions.motionBlurSamples"
@@ -1115,7 +1115,7 @@
         <!-- Particle Connections -->
         <div class="subsection-divider">Particle Connections</div>
         <div class="property-row checkbox-row">
-          <label>
+          <label title="Draw lines between nearby particles. Creates web/network/constellation effects.">
             <input
               type="checkbox"
               :checked="connections.enabled"
@@ -1125,7 +1125,7 @@
           </label>
         </div>
         <div v-if="connections.enabled" class="property-row">
-          <label>Max Distance</label>
+          <label title="Maximum distance in pixels between particles to draw a connection.">Max Distance</label>
           <input
             type="range"
             :value="connections.maxDistance"
@@ -1137,7 +1137,7 @@
           <span class="value-display">{{ connections.maxDistance }}px</span>
         </div>
         <div v-if="connections.enabled" class="property-row">
-          <label>Max Connections</label>
+          <label title="Maximum number of connections each particle can have.">Max Connections</label>
           <input
             type="range"
             :value="connections.maxConnections"
@@ -1149,7 +1149,7 @@
           <span class="value-display">{{ connections.maxConnections }}</span>
         </div>
         <div v-if="connections.enabled" class="property-row">
-          <label>Line Width</label>
+          <label title="Thickness of connection lines in pixels.">Line Width</label>
           <input
             type="range"
             :value="connections.lineWidth"
@@ -1161,7 +1161,7 @@
           <span class="value-display">{{ connections.lineWidth.toFixed(1) }}</span>
         </div>
         <div v-if="connections.enabled" class="property-row">
-          <label>Line Opacity</label>
+          <label title="Transparency of connection lines. 0 = invisible, 1 = fully opaque.">Line Opacity</label>
           <input
             type="range"
             :value="connections.lineOpacity"
@@ -1173,7 +1173,7 @@
           <span class="value-display">{{ connections.lineOpacity.toFixed(2) }}</span>
         </div>
         <div v-if="connections.enabled" class="property-row checkbox-row">
-          <label>
+          <label title="Make connection lines more transparent as particles get farther apart.">
             <input
               type="checkbox"
               :checked="connections.fadeByDistance"
