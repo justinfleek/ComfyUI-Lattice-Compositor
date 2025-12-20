@@ -19,7 +19,21 @@ import {
   filterSmallPaths,
 } from '@/services/vectorize';
 import type { ToolCall } from './toolDefinitions';
-import type { Layer, LayerType, InterpolationType, ControlPoint } from '@/types/project';
+import type { Layer, LayerType, InterpolationType, ControlPoint, CameraLayerData } from '@/types/project';
+import {
+  createTrajectoryFromPreset,
+  generateTrajectoryKeyframes,
+  type TrajectoryType,
+  type TrajectoryConfig,
+} from '@/services/cameraTrajectory';
+import {
+  CameraShake,
+  createRackFocus,
+  generateRackFocusKeyframes,
+  type CameraShakeConfig,
+  type RackFocusConfig,
+  type AutoFocusConfig,
+} from '@/services/cameraEnhancements';
 
 // ============================================================================
 // TYPES
@@ -96,6 +110,18 @@ export async function executeToolCall(toolCall: ToolCall): Promise<any> {
     // Particle System
     case 'configureParticles':
       return executeConfigureParticles(context, args);
+
+    // Camera System
+    case 'applyCameraTrajectory':
+      return executeApplyCameraTrajectory(context, args);
+    case 'addCameraShake':
+      return executeAddCameraShake(context, args);
+    case 'applyRackFocus':
+      return executeApplyRackFocus(context, args);
+    case 'setCameraPathFollowing':
+      return executeSetCameraPathFollowing(context, args);
+    case 'setCameraAutoFocus':
+      return executeSetCameraAutoFocus(context, args);
 
     // Text
     case 'setTextContent':
@@ -700,6 +726,328 @@ function executeConfigureParticles(
   return {
     success: true,
     message: `Configured particle system`,
+  };
+}
+
+// ============================================================================
+// CAMERA SYSTEM HANDLERS
+// ============================================================================
+
+function executeApplyCameraTrajectory(
+  context: ExecutionContext,
+  args: Record<string, any>
+): { success: boolean; keyframeCount: number; message: string } {
+  const { store } = context;
+  const {
+    cameraLayerId,
+    trajectoryType,
+    startFrame = 0,
+    duration,
+    amplitude,
+    loops,
+    easing,
+    center,
+  } = args;
+
+  const layer = store.getActiveCompLayers().find(l => l.id === cameraLayerId);
+  if (!layer || layer.type !== 'camera') {
+    return { success: false, keyframeCount: 0, message: `Camera layer ${cameraLayerId} not found` };
+  }
+
+  const comp = store.getActiveComp();
+  const compSettings = comp?.settings || { width: 1920, height: 1080, frameCount: 81 };
+
+  // Build trajectory configuration
+  const trajectoryConfig = createTrajectoryFromPreset(trajectoryType as TrajectoryType, {
+    duration: duration ?? compSettings.frameCount,
+    amplitude: amplitude ?? undefined,
+    loops: loops ?? undefined,
+    easing: easing ?? undefined,
+    center: center ?? {
+      x: compSettings.width / 2,
+      y: compSettings.height / 2,
+      z: 0,
+    },
+  });
+
+  // Generate keyframes
+  const keyframes = generateTrajectoryKeyframes(trajectoryConfig, startFrame, 5);
+
+  // Apply keyframes to layer's camera data
+  if (!layer.data) {
+    (layer as any).data = {};
+  }
+  const cameraData = layer.data as CameraLayerData;
+
+  // Initialize or update camera settings
+  if (!cameraData.camera) {
+    cameraData.camera = {
+      type: 'two-node',
+      position: { x: compSettings.width / 2, y: compSettings.height / 2, z: -1500 },
+      pointOfInterest: { x: compSettings.width / 2, y: compSettings.height / 2, z: 0 },
+      zoom: 1778,
+      depthOfField: false,
+      focusDistance: 1500,
+      aperture: 2.8,
+      blurLevel: 100,
+      xRotation: 0,
+      yRotation: 0,
+      zRotation: 0,
+    };
+  }
+
+  // Store trajectory keyframes in camera data (filter and map to required format)
+  cameraData.trajectoryKeyframes = {
+    position: keyframes.position
+      .filter(kf => kf.position !== undefined)
+      .map(kf => ({ frame: kf.frame, position: kf.position! })),
+    pointOfInterest: keyframes.pointOfInterest
+      .filter(kf => kf.pointOfInterest !== undefined)
+      .map(kf => ({ frame: kf.frame, pointOfInterest: kf.pointOfInterest! })),
+    zoom: keyframes.zoom
+      ?.filter(kf => kf.zoom !== undefined)
+      .map(kf => ({ frame: kf.frame, zoom: kf.zoom! })),
+  };
+
+  // Also create standard layer keyframes for position
+  for (const kf of keyframes.position) {
+    if (kf.position) {
+      keyframeActions.addKeyframe(store, cameraLayerId, 'cameraPosition', kf.position, kf.frame);
+    }
+  }
+
+  const totalKeyframes = keyframes.position.length + keyframes.pointOfInterest.length + (keyframes.zoom?.length || 0);
+
+  return {
+    success: true,
+    keyframeCount: totalKeyframes,
+    message: `Applied ${trajectoryType} trajectory with ${totalKeyframes} keyframes`,
+  };
+}
+
+function executeAddCameraShake(
+  context: ExecutionContext,
+  args: Record<string, any>
+): { success: boolean; message: string } {
+  const { store } = context;
+  const {
+    cameraLayerId,
+    shakeType,
+    intensity,
+    frequency,
+    startFrame = 0,
+    duration,
+    decay,
+    rotationEnabled,
+    seed,
+  } = args;
+
+  const layer = store.getActiveCompLayers().find(l => l.id === cameraLayerId);
+  if (!layer || layer.type !== 'camera') {
+    return { success: false, message: `Camera layer ${cameraLayerId} not found` };
+  }
+
+  const comp = store.getActiveComp();
+  const compDuration = comp?.settings.frameCount || 81;
+
+  // Build shake config
+  const shakeConfig: Partial<CameraShakeConfig> = {
+    type: shakeType,
+    intensity: intensity,
+    frequency: frequency,
+    decay: decay,
+    rotationEnabled: rotationEnabled,
+    seed: seed ?? Math.floor(Math.random() * 100000),
+  };
+
+  // Store shake configuration in layer data
+  if (!layer.data) {
+    (layer as any).data = {};
+  }
+  const cameraData = layer.data as CameraLayerData;
+
+  cameraData.shake = {
+    enabled: true,
+    type: shakeType,
+    intensity: shakeConfig.intensity ?? 0.3,
+    frequency: shakeConfig.frequency ?? 1.0,
+    rotationEnabled: shakeConfig.rotationEnabled ?? true,
+    rotationScale: 0.5,
+    seed: shakeConfig.seed!,
+    decay: shakeConfig.decay ?? 0,
+    startFrame,
+    duration: duration ?? compDuration,
+  };
+
+  return {
+    success: true,
+    message: `Added ${shakeType} camera shake (intensity: ${cameraData.shake.intensity}, duration: ${cameraData.shake.duration} frames)`,
+  };
+}
+
+function executeApplyRackFocus(
+  context: ExecutionContext,
+  args: Record<string, any>
+): { success: boolean; keyframeCount: number; message: string } {
+  const { store } = context;
+  const {
+    cameraLayerId,
+    startDistance,
+    endDistance,
+    startFrame = 0,
+    duration = 30,
+    easing = 'ease-in-out',
+    holdStart = 0,
+    holdEnd = 0,
+  } = args;
+
+  const layer = store.getActiveCompLayers().find(l => l.id === cameraLayerId);
+  if (!layer || layer.type !== 'camera') {
+    return { success: false, keyframeCount: 0, message: `Camera layer ${cameraLayerId} not found` };
+  }
+
+  // Create rack focus config
+  const rackFocusConfig = createRackFocus(startDistance, endDistance, duration, {
+    startFrame,
+    easing: easing as RackFocusConfig['easing'],
+    holdStart,
+    holdEnd,
+  });
+
+  // Generate focus keyframes
+  const focusKeyframes = generateRackFocusKeyframes(rackFocusConfig, 2);
+
+  // Store in layer data
+  if (!layer.data) {
+    (layer as any).data = {};
+  }
+  const cameraData = layer.data as CameraLayerData;
+
+  // Enable depth of field
+  if (cameraData.camera) {
+    cameraData.camera.depthOfField = true;
+  }
+
+  // Store rack focus config
+  cameraData.rackFocus = {
+    enabled: true,
+    ...rackFocusConfig,
+  };
+
+  // Apply focus keyframes to layer
+  for (const kf of focusKeyframes) {
+    if (kf.focusDistance !== undefined) {
+      keyframeActions.addKeyframe(store, cameraLayerId, 'focusDistance', kf.focusDistance, kf.frame);
+    }
+  }
+
+  return {
+    success: true,
+    keyframeCount: focusKeyframes.length,
+    message: `Applied rack focus from ${startDistance}px to ${endDistance}px over ${duration} frames`,
+  };
+}
+
+function executeSetCameraPathFollowing(
+  context: ExecutionContext,
+  args: Record<string, any>
+): { success: boolean; message: string } {
+  const { store } = context;
+  const {
+    cameraLayerId,
+    splineLayerId,
+    lookMode = 'tangent',
+    lookTarget,
+    startOffset = 0,
+    speed = 1.0,
+    bankAmount = 0,
+    smoothing = 0.5,
+  } = args;
+
+  const layer = store.getActiveCompLayers().find(l => l.id === cameraLayerId);
+  if (!layer || layer.type !== 'camera') {
+    return { success: false, message: `Camera layer ${cameraLayerId} not found` };
+  }
+
+  // Verify spline layer exists if specified
+  if (splineLayerId) {
+    const splineLayer = store.getActiveCompLayers().find(l => l.id === splineLayerId);
+    if (!splineLayer || splineLayer.type !== 'spline') {
+      return { success: false, message: `Spline layer ${splineLayerId} not found` };
+    }
+  }
+
+  // Store path following config in layer data
+  if (!layer.data) {
+    (layer as any).data = {};
+  }
+  const cameraData = layer.data as CameraLayerData;
+
+  cameraData.pathFollowingConfig = {
+    enabled: !!splineLayerId,
+    splineLayerId: splineLayerId || null,
+    lookMode: lookMode as 'tangent' | 'target' | 'fixed',
+    lookTarget: lookTarget || null,
+    startOffset,
+    speed,
+    bankAmount,
+    smoothing,
+  };
+
+  return {
+    success: true,
+    message: splineLayerId
+      ? `Camera now follows spline ${splineLayerId} (mode: ${lookMode})`
+      : `Camera path following disabled`,
+  };
+}
+
+function executeSetCameraAutoFocus(
+  context: ExecutionContext,
+  args: Record<string, any>
+): { success: boolean; message: string } {
+  const { store } = context;
+  const {
+    cameraLayerId,
+    enabled = true,
+    mode = 'center',
+    focusPoint,
+    smoothing = 0.8,
+  } = args;
+
+  const layer = store.getActiveCompLayers().find(l => l.id === cameraLayerId);
+  if (!layer || layer.type !== 'camera') {
+    return { success: false, message: `Camera layer ${cameraLayerId} not found` };
+  }
+
+  // Store autofocus config in layer data
+  if (!layer.data) {
+    (layer as any).data = {};
+  }
+  const cameraData = layer.data as CameraLayerData;
+
+  // Enable depth of field if enabling autofocus
+  if (enabled && cameraData.camera) {
+    cameraData.camera.depthOfField = true;
+  }
+
+  // Map mode - 'face' mode from cameraEnhancements falls back to 'center' for our type
+  const mappedMode = mode === 'face' ? 'center' : mode as CameraLayerData['autoFocus'] extends { mode: infer M } ? M : never;
+
+  cameraData.autoFocus = {
+    enabled,
+    mode: mappedMode as 'center' | 'point' | 'nearest' | 'farthest',
+    focusPoint: focusPoint || { x: 0.5, y: 0.5 },
+    smoothing,
+    threshold: 10,
+    sampleRadius: 0.1,
+  };
+
+  return {
+    success: true,
+    message: enabled
+      ? `Enabled ${mode} autofocus (smoothing: ${smoothing})`
+      : `Disabled autofocus`,
   };
 }
 

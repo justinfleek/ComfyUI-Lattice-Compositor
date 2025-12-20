@@ -341,10 +341,74 @@ export class ParticleLayer extends BaseLayer {
         data.renderOptions.particleShape === 'star' ? 'star' :
         data.renderOptions.particleShape === 'square' ? 'square' :
         'circle';
+
+      // Connections - wire UI settings to GPU config
+      if (data.renderOptions.connections?.enabled) {
+        // Store connection config for initialization after GPU setup
+        this.pendingConnectionConfig = {
+          enabled: true,
+          maxDistance: data.renderOptions.connections.maxDistance ?? 100,
+          maxConnections: data.renderOptions.connections.maxConnections ?? 5,
+          lineWidth: data.renderOptions.connections.lineWidth ?? 1,
+          lineOpacity: data.renderOptions.connections.lineOpacity ?? 0.5,
+          fadeByDistance: data.renderOptions.connections.fadeByDistance ?? true,
+          color: data.renderOptions.connections.color ?
+            [data.renderOptions.connections.color[0] / 255,
+             data.renderOptions.connections.color[1] / 255,
+             data.renderOptions.connections.color[2] / 255] : undefined,
+        };
+      }
+
+      // Glow settings - store for post-processing
+      if (data.renderOptions.glowEnabled) {
+        this.pendingGlowConfig = {
+          enabled: true,
+          radius: data.renderOptions.glowRadius ?? 10,
+          intensity: data.renderOptions.glowIntensity ?? 0.5,
+        };
+      }
+
+      // Sprite sheet settings
+      if (data.renderOptions.spriteEnabled && data.renderOptions.spriteImageUrl) {
+        this.pendingSpriteConfig = {
+          url: data.renderOptions.spriteImageUrl,
+          columns: data.renderOptions.spriteColumns ?? 1,
+          rows: data.renderOptions.spriteRows ?? 1,
+          animate: data.renderOptions.spriteAnimate ?? false,
+          frameRate: data.renderOptions.spriteFrameRate ?? 10,
+          randomStart: data.renderOptions.spriteRandomStart ?? false,
+        };
+      }
     }
 
     return config;
   }
+
+  // Pending configs to apply after initialization
+  private pendingConnectionConfig: {
+    enabled: boolean;
+    maxDistance: number;
+    maxConnections: number;
+    lineWidth: number;
+    lineOpacity: number;
+    fadeByDistance: boolean;
+    color?: [number, number, number];
+  } | null = null;
+
+  private pendingGlowConfig: {
+    enabled: boolean;
+    radius: number;
+    intensity: number;
+  } | null = null;
+
+  private pendingSpriteConfig: {
+    url: string;
+    columns: number;
+    rows: number;
+    animate: boolean;
+    frameRate: number;
+    randomStart: boolean;
+  } | null = null;
 
   /**
    * Initialize the particle system with a WebGL renderer
@@ -362,8 +426,69 @@ export class ParticleLayer extends BaseLayer {
       this.group.add(mesh);
     }
 
+    // Apply pending connection config and add connection mesh
+    if (this.pendingConnectionConfig) {
+      this.particleSystem.initializeConnections(this.pendingConnectionConfig);
+      const connectionMesh = this.particleSystem.getConnectionMesh();
+      if (connectionMesh) {
+        this.group.add(connectionMesh);
+      }
+      this.pendingConnectionConfig = null;
+    }
+
+    // Add trail mesh if trails are enabled
+    const trailMesh = this.particleSystem.getTrailMesh();
+    if (trailMesh) {
+      this.group.add(trailMesh);
+    }
+
+    // Apply pending sprite config
+    if (this.pendingSpriteConfig) {
+      this.particleSystem.loadTexture(this.pendingSpriteConfig.url, {
+        columns: this.pendingSpriteConfig.columns,
+        rows: this.pendingSpriteConfig.rows,
+        animate: this.pendingSpriteConfig.animate,
+        frameRate: this.pendingSpriteConfig.frameRate,
+        randomStart: this.pendingSpriteConfig.randomStart,
+      }).catch(err => {
+        console.warn('Failed to load particle sprite:', err);
+      });
+      this.pendingSpriteConfig = null;
+    }
+
+    // Initialize glow effect and add glow mesh
+    if (this.pendingGlowConfig && this.pendingGlowConfig.enabled) {
+      this.particleSystem.initializeGlow(this.pendingGlowConfig);
+      const glowMesh = this.particleSystem.getGlowMesh();
+      if (glowMesh) {
+        this.group.add(glowMesh);
+      }
+      this.glowConfig = this.pendingGlowConfig;
+      this.pendingGlowConfig = null;
+    }
+
     // Create emitter and force field gizmos for visualization
     this.createGizmos();
+  }
+
+  // Glow configuration
+  private glowConfig: { enabled: boolean; radius: number; intensity: number } | null = null;
+
+  /**
+   * Get glow configuration
+   */
+  getGlowConfig(): { enabled: boolean; radius: number; intensity: number } | null {
+    return this.glowConfig;
+  }
+
+  /**
+   * Update glow settings at runtime
+   */
+  setGlow(config: { enabled?: boolean; radius?: number; intensity?: number }): void {
+    this.particleSystem.setGlow(config);
+    if (this.glowConfig) {
+      Object.assign(this.glowConfig, config);
+    }
   }
 
   /**

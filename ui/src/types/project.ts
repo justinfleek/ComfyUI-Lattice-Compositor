@@ -931,6 +931,7 @@ export interface ConnectionRenderConfig {
   lineWidth: number;          // 0.5-3
   lineOpacity: number;        // 0-1
   fadeByDistance: boolean;    // Opacity decreases with distance
+  color?: [number, number, number];  // Optional RGB color override (0-255)
 }
 
 export interface SubEmitterConfig {
@@ -1095,6 +1096,14 @@ export interface ParticleRenderOptions {
   motionBlurSamples: number;    // Number of samples for blur (1-16)
   // Particle connection settings
   connections: ConnectionRenderConfig;
+  // Sprite sheet settings
+  spriteEnabled?: boolean;
+  spriteImageUrl?: string;
+  spriteColumns?: number;       // Number of columns in sprite sheet
+  spriteRows?: number;          // Number of rows in sprite sheet
+  spriteAnimate?: boolean;      // Animate through frames
+  spriteFrameRate?: number;     // Frames per second
+  spriteRandomStart?: boolean;  // Start at random frame
 }
 
 // ============================================================
@@ -1426,9 +1435,79 @@ export interface CameraPathFollowing {
   autoAdvanceSpeed: number;         // Speed of auto-advance (path units per frame)
 }
 
+// Camera shake configuration
+export interface CameraShakeData {
+  enabled: boolean;
+  type: 'handheld' | 'impact' | 'earthquake' | 'subtle' | 'custom';
+  intensity: number;
+  frequency: number;
+  rotationEnabled: boolean;
+  rotationScale: number;
+  seed: number;
+  decay: number;
+  startFrame: number;
+  duration: number;
+}
+
+// Rack focus configuration
+export interface CameraRackFocusData {
+  enabled: boolean;
+  startDistance: number;
+  endDistance: number;
+  duration: number;
+  startFrame: number;
+  easing: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'snap';
+  holdStart: number;
+  holdEnd: number;
+}
+
+// Autofocus configuration
+export interface CameraAutoFocusData {
+  enabled: boolean;
+  mode: 'center' | 'point' | 'nearest' | 'farthest';
+  focusPoint: { x: number; y: number };
+  smoothing: number;
+  threshold: number;
+  sampleRadius: number;
+}
+
+// Path following configuration (simplified for AI tools)
+export interface CameraPathFollowingData {
+  enabled: boolean;
+  splineLayerId: string | null;
+  lookMode: 'tangent' | 'target' | 'fixed';
+  lookTarget: { x: number; y: number; z: number } | null;
+  startOffset: number;
+  speed: number;
+  bankAmount: number;
+  smoothing: number;
+}
+
+// Trajectory keyframes storage
+export interface CameraTrajectoryKeyframes {
+  position: Array<{ frame: number; position: Vec3 }>;
+  pointOfInterest: Array<{ frame: number; pointOfInterest: Vec3 }>;
+  zoom?: Array<{ frame: number; zoom: number }>;
+}
+
 export interface CameraLayerData {
   cameraId: string;      // Reference to the Camera3D object
   isActiveCamera: boolean;  // Is this the composition's active camera?
+
+  // Camera3D object (inline storage)
+  camera?: {
+    type: 'one-node' | 'two-node';
+    position: Vec3;
+    pointOfInterest: Vec3;
+    zoom: number;
+    depthOfField: boolean;
+    focusDistance: number;
+    aperture: number;
+    blurLevel: number;
+    xRotation: number;
+    yRotation: number;
+    zRotation: number;
+  };
 
   // Optional animated camera properties (for MotionEngine evaluation)
   animatedPosition?: AnimatableProperty<Vec3>;
@@ -1436,14 +1515,29 @@ export interface CameraLayerData {
   animatedFov?: AnimatableProperty<number>;
   animatedFocalLength?: AnimatableProperty<number>;
 
-  // Path following (camera moves along a spline)
+  // Path following (camera moves along a spline) - legacy
   pathFollowing?: CameraPathFollowing;
+
+  // Simplified path following (for AI tools)
+  pathFollowingConfig?: CameraPathFollowingData;
 
   // Depth of field settings
   depthOfField?: CameraDepthOfField;
   animatedFocusDistance?: AnimatableProperty<number>;
   animatedAperture?: AnimatableProperty<number>;
   animatedBlurLevel?: AnimatableProperty<number>;
+
+  // Camera shake effect
+  shake?: CameraShakeData;
+
+  // Rack focus effect
+  rackFocus?: CameraRackFocusData;
+
+  // Autofocus settings
+  autoFocus?: CameraAutoFocusData;
+
+  // Trajectory keyframes (generated from presets)
+  trajectoryKeyframes?: CameraTrajectoryKeyframes;
 }
 
 // ============================================================

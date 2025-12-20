@@ -596,3 +596,17 @@ export interface ParticleEvent {
 }
 
 export type ParticleEventHandler = (event: ParticleEvent) => void;
+
+// ============================================================================
+// Connection System (lines between nearby particles)
+// ============================================================================
+
+export interface ConnectionConfig {
+  enabled: boolean;
+  maxDistance: number;      // Maximum distance for connection
+  maxConnections: number;   // Max connections per particle
+  lineWidth: number;
+  lineOpacity: number;
+  fadeByDistance: boolean;  // Fade opacity based on distance
+  color?: [number, number, number]; // Optional override color
+}

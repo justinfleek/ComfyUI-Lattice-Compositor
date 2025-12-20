@@ -559,6 +559,255 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   },
 
   // ==========================================================================
+  // CAMERA SYSTEM
+  // ==========================================================================
+  {
+    type: 'function',
+    function: {
+      name: 'applyCameraTrajectory',
+      description: 'Apply a predefined camera trajectory/motion preset to a camera layer. Creates smooth animated camera movements like orbit, dolly, crane, and more.',
+      parameters: {
+        type: 'object',
+        properties: {
+          cameraLayerId: {
+            type: 'string',
+            description: 'ID of the camera layer to apply trajectory to',
+          },
+          trajectoryType: {
+            type: 'string',
+            enum: [
+              'orbit', 'orbit_reverse', 'swing1', 'swing2',
+              'dolly_in', 'dolly_out', 'pan_left', 'pan_right',
+              'tilt_up', 'tilt_down', 'zoom_in', 'zoom_out',
+              'circle', 'figure8', 'spiral_in', 'spiral_out',
+              'crane_up', 'crane_down', 'truck_left', 'truck_right',
+              'arc_left', 'arc_right',
+            ],
+            description: 'Type of camera trajectory preset',
+          },
+          startFrame: {
+            type: 'number',
+            description: 'Frame to start the trajectory (default: 0)',
+          },
+          duration: {
+            type: 'number',
+            description: 'Duration in frames (default: composition length)',
+          },
+          amplitude: {
+            type: 'number',
+            description: 'Strength multiplier for the motion (default: 1.0)',
+          },
+          loops: {
+            type: 'number',
+            description: 'Number of complete cycles for orbits/circles (default: 1)',
+          },
+          easing: {
+            type: 'string',
+            enum: ['linear', 'ease-in', 'ease-out', 'ease-in-out', 'bounce'],
+            description: 'Easing type for the motion (default: ease-in-out)',
+          },
+          center: {
+            type: 'object',
+            properties: {
+              x: { type: 'number' },
+              y: { type: 'number' },
+              z: { type: 'number' },
+            },
+            description: 'Center point for orbit/swing trajectories (default: composition center)',
+          },
+        },
+        required: ['cameraLayerId', 'trajectoryType'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'addCameraShake',
+      description: 'Add camera shake effect for handheld, impact, or earthquake simulation',
+      parameters: {
+        type: 'object',
+        properties: {
+          cameraLayerId: {
+            type: 'string',
+            description: 'ID of the camera layer',
+          },
+          shakeType: {
+            type: 'string',
+            enum: ['handheld', 'impact', 'earthquake', 'subtle'],
+            description: 'Type of camera shake preset',
+          },
+          intensity: {
+            type: 'number',
+            description: 'Shake intensity 0-1 (default: varies by type)',
+          },
+          frequency: {
+            type: 'number',
+            description: 'Shake frequency multiplier (default: 1.0)',
+          },
+          startFrame: {
+            type: 'number',
+            description: 'Frame to start shake (default: 0)',
+          },
+          duration: {
+            type: 'number',
+            description: 'Duration in frames (default: entire composition)',
+          },
+          decay: {
+            type: 'number',
+            description: 'Shake decay 0-1, higher = more decay over time (default: 0)',
+          },
+          rotationEnabled: {
+            type: 'boolean',
+            description: 'Enable rotation shake (default: true for most types)',
+          },
+          seed: {
+            type: 'number',
+            description: 'Random seed for deterministic shake (default: random)',
+          },
+        },
+        required: ['cameraLayerId', 'shakeType'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'applyRackFocus',
+      description: 'Create a rack focus effect - smooth focus transition between two distances. Used for shifting audience attention between foreground and background.',
+      parameters: {
+        type: 'object',
+        properties: {
+          cameraLayerId: {
+            type: 'string',
+            description: 'ID of the camera layer',
+          },
+          startDistance: {
+            type: 'number',
+            description: 'Starting focus distance in pixels',
+          },
+          endDistance: {
+            type: 'number',
+            description: 'Ending focus distance in pixels',
+          },
+          startFrame: {
+            type: 'number',
+            description: 'Frame to start the rack focus (default: 0)',
+          },
+          duration: {
+            type: 'number',
+            description: 'Duration of the focus transition in frames (default: 30)',
+          },
+          easing: {
+            type: 'string',
+            enum: ['linear', 'ease-in', 'ease-out', 'ease-in-out', 'snap'],
+            description: 'Easing type for focus transition (default: ease-in-out)',
+          },
+          holdStart: {
+            type: 'number',
+            description: 'Frames to hold at start focus before transitioning (default: 0)',
+          },
+          holdEnd: {
+            type: 'number',
+            description: 'Frames to hold at end focus after transitioning (default: 0)',
+          },
+        },
+        required: ['cameraLayerId', 'startDistance', 'endDistance'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'setCameraPathFollowing',
+      description: 'Make a camera follow a spline path. The camera will move along the path and optionally look at a target or along the path tangent.',
+      parameters: {
+        type: 'object',
+        properties: {
+          cameraLayerId: {
+            type: 'string',
+            description: 'ID of the camera layer',
+          },
+          splineLayerId: {
+            type: 'string',
+            description: 'ID of the spline layer to follow (null to disable)',
+            nullable: true,
+          },
+          lookMode: {
+            type: 'string',
+            enum: ['tangent', 'target', 'fixed'],
+            description: 'How the camera should orient: tangent (look along path), target (look at specific point), fixed (maintain direction)',
+          },
+          lookTarget: {
+            type: 'object',
+            properties: {
+              x: { type: 'number' },
+              y: { type: 'number' },
+              z: { type: 'number' },
+            },
+            description: 'Point to look at when lookMode is "target"',
+          },
+          startOffset: {
+            type: 'number',
+            description: 'Starting position along path 0-1 (default: 0)',
+          },
+          speed: {
+            type: 'number',
+            description: 'Speed multiplier for path traversal (default: 1.0)',
+          },
+          bankAmount: {
+            type: 'number',
+            description: 'Amount of banking/roll on curves 0-1 (default: 0)',
+          },
+          smoothing: {
+            type: 'number',
+            description: 'Path smoothing amount 0-1 (default: 0.5)',
+          },
+        },
+        required: ['cameraLayerId'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'setCameraAutoFocus',
+      description: 'Enable depth-aware autofocus on a camera. The camera will automatically adjust focus based on depth map.',
+      parameters: {
+        type: 'object',
+        properties: {
+          cameraLayerId: {
+            type: 'string',
+            description: 'ID of the camera layer',
+          },
+          enabled: {
+            type: 'boolean',
+            description: 'Enable or disable autofocus',
+          },
+          mode: {
+            type: 'string',
+            enum: ['center', 'point', 'nearest', 'farthest'],
+            description: 'Autofocus mode: center (center of frame), point (specific point), nearest/farthest (extreme depth)',
+          },
+          focusPoint: {
+            type: 'object',
+            properties: {
+              x: { type: 'number', description: 'X position 0-1' },
+              y: { type: 'number', description: 'Y position 0-1' },
+            },
+            description: 'Focus point when mode is "point" (normalized 0-1)',
+          },
+          smoothing: {
+            type: 'number',
+            description: 'Focus smoothing 0-1, higher = smoother transitions (default: 0.8)',
+          },
+        },
+        required: ['cameraLayerId'],
+      },
+    },
+  },
+
+  // ==========================================================================
   // TEXT SPECIFIC
   // ==========================================================================
   {

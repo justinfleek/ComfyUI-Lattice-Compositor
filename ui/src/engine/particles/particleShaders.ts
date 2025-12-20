@@ -192,6 +192,10 @@ void main() { fragColor = vec4(0.0); }
 
 /**
  * Particle Render Vertex Shader
+ * Supports:
+ * - Standard billboard rendering
+ * - Velocity-based motion blur (stretched billboards)
+ * - Per-particle rotation
  */
 export const PARTICLE_VERTEX_SHADER = `
 precision highp float;
@@ -206,26 +210,76 @@ attribute vec4 i_color;
 uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
 uniform vec3 cameraPosition;
+// Motion blur uniforms
+uniform int motionBlurEnabled;
+uniform float motionBlurStrength;
+uniform float minStretch;
+uniform float maxStretch;
 varying vec2 vUv;
 varying vec4 vColor;
 varying float vLifeRatio;
+
 void main() {
   if (i_life.y <= 0.0 || i_life.x >= i_life.y) {
     gl_Position = vec4(0.0, 0.0, -1000.0, 1.0);
     return;
   }
+
   float size = i_physical.y;
   float rotation = i_rotation.x;
   float lifeRatio = i_life.x / i_life.y;
+
+  // Camera basis vectors
   vec3 cameraRight = vec3(modelViewMatrix[0][0], modelViewMatrix[1][0], modelViewMatrix[2][0]);
   vec3 cameraUp = vec3(modelViewMatrix[0][1], modelViewMatrix[1][1], modelViewMatrix[2][1]);
-  float cosR = cos(rotation);
-  float sinR = sin(rotation);
-  vec2 rotatedPos = vec2(
-    position.x * cosR - position.y * sinR,
-    position.x * sinR + position.y * cosR
-  );
-  vec3 vertexPos = i_position + cameraRight * rotatedPos.x * size + cameraUp * rotatedPos.y * size;
+  vec3 cameraForward = vec3(modelViewMatrix[0][2], modelViewMatrix[1][2], modelViewMatrix[2][2]);
+
+  vec2 offsetPos = position;
+
+  // Motion blur: stretch billboard along velocity direction
+  if (motionBlurEnabled == 1) {
+    float speed = length(i_velocity);
+    if (speed > 0.01) {
+      // Project velocity onto camera plane
+      vec3 velNorm = normalize(i_velocity);
+      float velRight = dot(velNorm, cameraRight);
+      float velUp = dot(velNorm, cameraUp);
+      vec2 velDir2D = normalize(vec2(velRight, velUp));
+
+      // Calculate stretch factor based on speed
+      float stretch = clamp(speed * motionBlurStrength, minStretch, maxStretch);
+
+      // Rotate and stretch the quad along velocity direction
+      float angle = atan(velDir2D.y, velDir2D.x);
+      float cosA = cos(angle);
+      float sinA = sin(angle);
+
+      // Apply rotation to align with velocity, then stretch in X
+      vec2 rotated = vec2(
+        position.x * cosA - position.y * sinA,
+        position.x * sinA + position.y * cosA
+      );
+      offsetPos = vec2(rotated.x * stretch, rotated.y);
+
+      // Rotate back to world space
+      offsetPos = vec2(
+        offsetPos.x * cosA + offsetPos.y * sinA,
+        -offsetPos.x * sinA + offsetPos.y * cosA
+      );
+    }
+  }
+
+  // Apply per-particle rotation (if no motion blur or in addition to)
+  if (motionBlurEnabled == 0) {
+    float cosR = cos(rotation);
+    float sinR = sin(rotation);
+    offsetPos = vec2(
+      offsetPos.x * cosR - offsetPos.y * sinR,
+      offsetPos.x * sinR + offsetPos.y * cosR
+    );
+  }
+
+  vec3 vertexPos = i_position + cameraRight * offsetPos.x * size + cameraUp * offsetPos.y * size;
   gl_Position = projectionMatrix * modelViewMatrix * vec4(vertexPos, 1.0);
   vUv = uv;
   vColor = i_color;
@@ -235,6 +289,10 @@ void main() {
 
 /**
  * Particle Render Fragment Shader
+ * Supports:
+ * - Diffuse texture mapping
+ * - Sprite sheet animation
+ * - Procedural shapes (circle, ring, square, star)
  */
 export const PARTICLE_FRAGMENT_SHADER = `
 precision highp float;
@@ -244,22 +302,151 @@ varying float vLifeRatio;
 uniform sampler2D diffuseMap;
 uniform int hasDiffuseMap;
 uniform int proceduralShape;
+// Sprite sheet uniforms
+uniform vec2 spriteSheetSize;  // columns, rows
+uniform int spriteFrameCount;
+uniform int animateSprite;
+uniform float spriteFrameRate;
+uniform float time;
+
+// Procedural shape generation
+// 0 = none, 1 = circle, 2 = ring, 3 = square, 4 = star
 float proceduralAlpha(vec2 uv, int shape) {
   vec2 centered = uv * 2.0 - 1.0;
   float dist = length(centered);
-  if (shape == 1) { return 1.0 - smoothstep(0.8, 1.0, dist); }
-  else if (shape == 2) { return smoothstep(0.5, 0.6, dist) * (1.0 - smoothstep(0.9, 1.0, dist)); }
+
+  // Circle - soft edge
+  if (shape == 1) {
+    return 1.0 - smoothstep(0.8, 1.0, dist);
+  }
+  // Ring - hollow circle
+  else if (shape == 2) {
+    return smoothstep(0.5, 0.6, dist) * (1.0 - smoothstep(0.9, 1.0, dist));
+  }
+  // Square - rounded corners
+  else if (shape == 3) {
+    float maxCoord = max(abs(centered.x), abs(centered.y));
+    return 1.0 - smoothstep(0.8, 0.95, maxCoord);
+  }
+  // Star - 5-pointed
+  else if (shape == 4) {
+    float angle = atan(centered.y, centered.x);
+    float star = 0.5 + 0.5 * cos(angle * 5.0);
+    float r = mix(0.4, 0.9, star);
+    return 1.0 - smoothstep(r - 0.1, r, dist);
+  }
   return 1.0;
 }
+
+// Get UV coordinates for sprite sheet frame
+vec2 getSpriteUV(vec2 uv, int frame, vec2 sheetSize) {
+  float col = mod(float(frame), sheetSize.x);
+  float row = floor(float(frame) / sheetSize.x);
+  vec2 frameSize = 1.0 / sheetSize;
+  vec2 offset = vec2(col, sheetSize.y - 1.0 - row) * frameSize;
+  return offset + uv * frameSize;
+}
+
 void main() {
   vec4 texColor = vec4(1.0);
-  if (hasDiffuseMap == 1) { texColor = texture2D(diffuseMap, vUv); }
+
+  if (hasDiffuseMap == 1) {
+    vec2 texUV = vUv;
+
+    // Sprite sheet animation
+    if (spriteFrameCount > 1) {
+      int frame;
+      if (animateSprite == 1) {
+        // Time-based animation
+        frame = int(mod(time * spriteFrameRate, float(spriteFrameCount)));
+      } else {
+        // Life-based animation (frame changes with particle age)
+        frame = int(vLifeRatio * float(spriteFrameCount - 1));
+      }
+      texUV = getSpriteUV(vUv, frame, spriteSheetSize);
+    }
+
+    texColor = texture2D(diffuseMap, texUV);
+  }
   else if (proceduralShape > 0) {
     float alpha = proceduralAlpha(vUv, proceduralShape);
     texColor = vec4(1.0, 1.0, 1.0, alpha);
   }
+
   vec4 finalColor = texColor * vColor;
   if (finalColor.a < 0.01) discard;
   gl_FragColor = finalColor;
+}
+`;
+
+/**
+ * Particle Glow Fragment Shader
+ * Renders an expanded soft glow behind particles
+ * Used as a second pass with additive blending
+ */
+export const PARTICLE_GLOW_FRAGMENT_SHADER = `
+precision highp float;
+varying vec2 vUv;
+varying vec4 vColor;
+varying float vLifeRatio;
+uniform float glowRadius;
+uniform float glowIntensity;
+
+void main() {
+  vec2 centered = vUv * 2.0 - 1.0;
+  float dist = length(centered);
+
+  // Soft falloff for glow
+  float glow = 1.0 - smoothstep(0.0, 1.0, dist);
+  glow = pow(glow, 2.0) * glowIntensity;
+
+  // Fade with particle life
+  glow *= (1.0 - vLifeRatio * 0.5);
+
+  vec4 glowColor = vec4(vColor.rgb, glow * vColor.a);
+  if (glowColor.a < 0.001) discard;
+  gl_FragColor = glowColor;
+}
+`;
+
+/**
+ * Particle Glow Vertex Shader
+ * Expands billboards by glow radius
+ */
+export const PARTICLE_GLOW_VERTEX_SHADER = `
+precision highp float;
+attribute vec2 position;
+attribute vec2 uv;
+attribute vec3 i_position;
+attribute vec3 i_velocity;
+attribute vec2 i_life;
+attribute vec2 i_physical;
+attribute vec2 i_rotation;
+attribute vec4 i_color;
+uniform mat4 modelViewMatrix;
+uniform mat4 projectionMatrix;
+uniform float glowRadius;
+varying vec2 vUv;
+varying vec4 vColor;
+varying float vLifeRatio;
+
+void main() {
+  if (i_life.y <= 0.0 || i_life.x >= i_life.y) {
+    gl_Position = vec4(0.0, 0.0, -1000.0, 1.0);
+    return;
+  }
+
+  // Expand size by glow radius
+  float size = i_physical.y * (1.0 + glowRadius);
+  float lifeRatio = i_life.x / i_life.y;
+
+  vec3 cameraRight = vec3(modelViewMatrix[0][0], modelViewMatrix[1][0], modelViewMatrix[2][0]);
+  vec3 cameraUp = vec3(modelViewMatrix[0][1], modelViewMatrix[1][1], modelViewMatrix[2][1]);
+
+  vec3 vertexPos = i_position + cameraRight * position.x * size + cameraUp * position.y * size;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(vertexPos, 1.0);
+  vUv = uv;
+  vColor = i_color;
+  vLifeRatio = lifeRatio;
 }
 `;

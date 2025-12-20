@@ -1006,6 +1006,80 @@
             <option value="star">Star</option>
           </select>
         </div>
+
+        <!-- Sprite Sheet Settings -->
+        <div class="property-row checkbox-row">
+          <label title="Use a custom image or sprite sheet instead of procedural shapes.">
+            <input
+              type="checkbox"
+              :checked="renderOptions.spriteEnabled"
+              @change="updateRenderOption('spriteEnabled', ($event.target as HTMLInputElement).checked)"
+            />
+            Use Sprite
+          </label>
+        </div>
+        <div v-if="renderOptions.spriteEnabled" class="property-row">
+          <label title="URL or data URI of the sprite image.">Sprite URL</label>
+          <input
+            type="text"
+            :value="renderOptions.spriteImageUrl"
+            placeholder="https://... or data:..."
+            @change="updateRenderOption('spriteImageUrl', ($event.target as HTMLInputElement).value)"
+          />
+        </div>
+        <div v-if="renderOptions.spriteEnabled" class="property-row">
+          <label title="Number of columns in the sprite sheet (1 for single image).">Columns</label>
+          <input
+            type="number"
+            :value="renderOptions.spriteColumns"
+            min="1"
+            max="16"
+            @change="updateRenderOption('spriteColumns', Number(($event.target as HTMLInputElement).value))"
+          />
+        </div>
+        <div v-if="renderOptions.spriteEnabled" class="property-row">
+          <label title="Number of rows in the sprite sheet (1 for single image).">Rows</label>
+          <input
+            type="number"
+            :value="renderOptions.spriteRows"
+            min="1"
+            max="16"
+            @change="updateRenderOption('spriteRows', Number(($event.target as HTMLInputElement).value))"
+          />
+        </div>
+        <div v-if="renderOptions.spriteEnabled && (renderOptions.spriteColumns > 1 || renderOptions.spriteRows > 1)" class="property-row checkbox-row">
+          <label title="Animate through sprite sheet frames over time.">
+            <input
+              type="checkbox"
+              :checked="renderOptions.spriteAnimate"
+              @change="updateRenderOption('spriteAnimate', ($event.target as HTMLInputElement).checked)"
+            />
+            Animate Frames
+          </label>
+        </div>
+        <div v-if="renderOptions.spriteEnabled && renderOptions.spriteAnimate" class="property-row">
+          <label title="Frames per second for sprite animation.">Frame Rate</label>
+          <input
+            type="range"
+            :value="renderOptions.spriteFrameRate"
+            min="1"
+            max="60"
+            step="1"
+            @input="updateRenderOption('spriteFrameRate', Number(($event.target as HTMLInputElement).value))"
+          />
+          <span class="value-display">{{ renderOptions.spriteFrameRate }} fps</span>
+        </div>
+        <div v-if="renderOptions.spriteEnabled && (renderOptions.spriteColumns > 1 || renderOptions.spriteRows > 1)" class="property-row checkbox-row">
+          <label title="Each particle starts at a random frame in the sprite sheet.">
+            <input
+              type="checkbox"
+              :checked="renderOptions.spriteRandomStart"
+              @change="updateRenderOption('spriteRandomStart', ($event.target as HTMLInputElement).checked)"
+            />
+            Random Start Frame
+          </label>
+        </div>
+
         <div class="property-row checkbox-row">
           <label title="Draw a trail behind moving particles showing their recent path.">
             <input
@@ -1351,7 +1425,15 @@ const layerData = computed((): ParticleLayerData => {
         lineWidth: 1,
         lineOpacity: 0.5,
         fadeByDistance: true
-      }
+      },
+      // Sprite defaults
+      spriteEnabled: false,
+      spriteImageUrl: '',
+      spriteColumns: 1,
+      spriteRows: 1,
+      spriteAnimate: false,
+      spriteFrameRate: 10,
+      spriteRandomStart: false
     },
     turbulenceFields: [],
     subEmitters: []

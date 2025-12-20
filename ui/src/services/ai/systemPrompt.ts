@@ -116,13 +116,141 @@ Properties:
 \`\`\`
 
 ### 7. Camera Layer
-3D camera for depth-based compositions.
+3D camera for depth-based compositions with professional motion control.
 \`\`\`
 Properties:
 - position: { x, y, z }
 - lookTarget: { x, y, z } (formerly "point of interest")
 - fov: field of view in degrees
 - zoom: multiplier
+- depthOfField: boolean (enable DOF blur)
+- focusDistance: pixels
+- aperture: f-stop value
+\`\`\`
+
+#### Camera Trajectory Presets
+Apply cinematic camera movements with a single tool call:
+
+**Orbital Movements:**
+- \`orbit\`: 360° horizontal orbit around target
+- \`orbit_reverse\`: 360° reverse orbit
+- \`swing1\`: Gentle pendulum swing (45°)
+- \`swing2\`: Wide pendulum swing (90°)
+- \`circle\`: Elliptical circling motion
+- \`figure8\`: Figure-8 weaving pattern
+- \`arc_left/arc_right\`: Curved arc movement
+
+**Dolly/Zoom:**
+- \`dolly_in\`: Move camera toward target
+- \`dolly_out\`: Move camera away from target
+- \`spiral_in\`: Spiral toward target
+- \`spiral_out\`: Spiral away from target
+- \`zoom_in\`: Narrow FOV (zoom lens in)
+- \`zoom_out\`: Widen FOV (zoom lens out)
+
+**Pan/Tilt:**
+- \`pan_left/pan_right\`: Rotate camera horizontally (stationary)
+- \`tilt_up/tilt_down\`: Rotate camera vertically (stationary)
+
+**Crane/Truck:**
+- \`crane_up/crane_down\`: Vertical lift/descent
+- \`truck_left/truck_right\`: Horizontal slide
+
+**Example: Dramatic reveal with orbit**
+\`\`\`
+applyCameraTrajectory(cameraId, "orbit", {
+  duration: 81,      // Full composition
+  amplitude: 0.5,    // Half orbit (180°)
+  easing: "ease-in-out"
+})
+\`\`\`
+
+#### Camera Shake
+Add realism with procedural camera shake:
+
+**Shake Types:**
+- \`handheld\`: Subtle documentary-style shake
+- \`impact\`: Sudden jolt with decay (explosions, hits)
+- \`earthquake\`: Sustained violent shake
+- \`subtle\`: Barely perceptible breathing room
+
+**Parameters:**
+- intensity: 0-1 (shake strength)
+- frequency: multiplier (higher = jitterier)
+- decay: 0-1 (0 = constant, 1 = full decay over duration)
+- rotationEnabled: boolean (shake rotation too)
+
+**Example: Impact shake**
+\`\`\`
+addCameraShake(cameraId, "impact", {
+  intensity: 0.8,
+  startFrame: 30,
+  duration: 20,
+  decay: 0.9
+})
+\`\`\`
+
+#### Rack Focus
+Shift audience attention with smooth focus transitions:
+
+**Parameters:**
+- startDistance: focus distance at start (pixels)
+- endDistance: focus distance at end (pixels)
+- duration: transition time (frames)
+- easing: linear, ease-in, ease-out, ease-in-out, snap
+- holdStart/holdEnd: pause at start/end focus
+
+**Example: Focus pull from foreground to background**
+\`\`\`
+applyRackFocus(cameraId, {
+  startDistance: 500,   // Close foreground
+  endDistance: 2000,    // Far background
+  startFrame: 20,
+  duration: 30,
+  easing: "ease-in-out"
+})
+\`\`\`
+
+#### Camera Path Following
+Make camera follow a spline path for complex movements:
+
+**Look Modes:**
+- \`tangent\`: Look along path direction
+- \`target\`: Look at specific point
+- \`fixed\`: Maintain fixed orientation
+
+**Parameters:**
+- splineLayerId: ID of spline to follow
+- speed: path traversal speed multiplier
+- bankAmount: roll on curves (0-1)
+- smoothing: path smoothing (0-1)
+
+**Example: Camera follows complex path**
+\`\`\`
+setCameraPathFollowing(cameraId, {
+  splineLayerId: pathId,
+  lookMode: "tangent",
+  speed: 1.0,
+  bankAmount: 0.3
+})
+\`\`\`
+
+#### Autofocus
+Enable depth-aware automatic focus:
+
+**Modes:**
+- \`center\`: Focus on center of frame
+- \`point\`: Focus on specific screen position
+- \`nearest\`: Focus on closest depth
+- \`farthest\`: Focus on furthest depth
+
+**Example: Center autofocus**
+\`\`\`
+setCameraAutoFocus(cameraId, {
+  enabled: true,
+  mode: "center",
+  smoothing: 0.8
+})
 \`\`\`
 
 ### 8. Control Layer (formerly Null)

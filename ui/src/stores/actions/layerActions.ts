@@ -158,7 +158,15 @@ export function createLayer(
             lineWidth: 1,
             lineOpacity: 0.5,
             fadeByDistance: true
-          }
+          },
+          // Sprite sheet defaults
+          spriteEnabled: false,
+          spriteImageUrl: '',
+          spriteColumns: 1,
+          spriteRows: 1,
+          spriteAnimate: false,
+          spriteFrameRate: 10,
+          spriteRandomStart: false
         }
       };
       break;

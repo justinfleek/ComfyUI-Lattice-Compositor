@@ -213,6 +213,247 @@
       </div>
     </div>
 
+    <!-- Camera Shake Section -->
+    <div class="prop-section">
+      <div class="section-header" @click="toggleSection('shake')">
+        <span class="expand-icon">{{ expandedSections.includes('shake') ? '▼' : '►' }}</span>
+        <span class="section-title">Camera Shake</span>
+        <input
+          type="checkbox"
+          :checked="cameraShake.enabled"
+          @click.stop
+          @change="toggleCameraShake"
+          class="section-toggle"
+        />
+      </div>
+
+      <div v-if="expandedSections.includes('shake') && cameraShake.enabled" class="section-content">
+        <div class="property-row">
+          <label>Type</label>
+          <select
+            class="path-select"
+            :value="cameraShake.type"
+            @change="updateShakeConfig('type', ($event.target as HTMLSelectElement).value)"
+          >
+            <option value="handheld">Handheld</option>
+            <option value="impact">Impact</option>
+            <option value="earthquake">Earthquake</option>
+            <option value="subtle">Subtle</option>
+          </select>
+        </div>
+
+        <div class="property-row">
+          <label>Intensity</label>
+          <ScrubableNumber
+            :modelValue="cameraShake.intensity"
+            @update:modelValue="v => updateShakeConfig('intensity', v)"
+            :min="0"
+            :max="1"
+            :step="0.05"
+            :precision="2"
+          />
+        </div>
+
+        <div class="property-row">
+          <label>Frequency</label>
+          <ScrubableNumber
+            :modelValue="cameraShake.frequency"
+            @update:modelValue="v => updateShakeConfig('frequency', v)"
+            :min="0.1"
+            :max="5"
+            :step="0.1"
+          />
+        </div>
+
+        <div class="property-row">
+          <label>Decay</label>
+          <ScrubableNumber
+            :modelValue="cameraShake.decay"
+            @update:modelValue="v => updateShakeConfig('decay', v)"
+            :min="0"
+            :max="1"
+            :step="0.05"
+            :precision="2"
+          />
+        </div>
+
+        <div class="property-row">
+          <label>Start Frame</label>
+          <ScrubableNumber
+            :modelValue="cameraShake.startFrame"
+            @update:modelValue="v => updateShakeConfig('startFrame', v)"
+            :min="0"
+            :step="1"
+          />
+        </div>
+
+        <div class="property-row">
+          <label>Duration</label>
+          <ScrubableNumber
+            :modelValue="cameraShake.duration"
+            @update:modelValue="v => updateShakeConfig('duration', v)"
+            :min="1"
+            :step="1"
+          />
+        </div>
+
+        <div class="property-row checkbox-row">
+          <label>
+            <input
+              type="checkbox"
+              :checked="cameraShake.rotationEnabled"
+              @change="updateShakeConfig('rotationEnabled', ($event.target as HTMLInputElement).checked)"
+            />
+            Include Rotation
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rack Focus Section -->
+    <div class="prop-section">
+      <div class="section-header" @click="toggleSection('rackFocus')">
+        <span class="expand-icon">{{ expandedSections.includes('rackFocus') ? '▼' : '►' }}</span>
+        <span class="section-title">Rack Focus</span>
+        <input
+          type="checkbox"
+          :checked="rackFocus.enabled"
+          @click.stop
+          @change="toggleRackFocus"
+          class="section-toggle"
+        />
+      </div>
+
+      <div v-if="expandedSections.includes('rackFocus') && rackFocus.enabled" class="section-content">
+        <div class="property-row">
+          <label>Start Distance</label>
+          <ScrubableNumber
+            :modelValue="rackFocus.startDistance"
+            @update:modelValue="v => updateRackFocusConfig('startDistance', v)"
+            :min="0"
+            :max="10000"
+            unit="px"
+          />
+        </div>
+
+        <div class="property-row">
+          <label>End Distance</label>
+          <ScrubableNumber
+            :modelValue="rackFocus.endDistance"
+            @update:modelValue="v => updateRackFocusConfig('endDistance', v)"
+            :min="0"
+            :max="10000"
+            unit="px"
+          />
+        </div>
+
+        <div class="property-row">
+          <label>Start Frame</label>
+          <ScrubableNumber
+            :modelValue="rackFocus.startFrame"
+            @update:modelValue="v => updateRackFocusConfig('startFrame', v)"
+            :min="0"
+            :step="1"
+          />
+        </div>
+
+        <div class="property-row">
+          <label>Duration</label>
+          <ScrubableNumber
+            :modelValue="rackFocus.duration"
+            @update:modelValue="v => updateRackFocusConfig('duration', v)"
+            :min="1"
+            :step="1"
+          />
+        </div>
+
+        <div class="property-row">
+          <label>Easing</label>
+          <select
+            class="path-select"
+            :value="rackFocus.easing"
+            @change="updateRackFocusConfig('easing', ($event.target as HTMLSelectElement).value)"
+          >
+            <option value="linear">Linear</option>
+            <option value="ease-in">Ease In</option>
+            <option value="ease-out">Ease Out</option>
+            <option value="ease-in-out">Ease In/Out</option>
+            <option value="snap">Snap</option>
+          </select>
+        </div>
+
+        <div class="property-row">
+          <label>Hold Start</label>
+          <ScrubableNumber
+            :modelValue="rackFocus.holdStart"
+            @update:modelValue="v => updateRackFocusConfig('holdStart', v)"
+            :min="0"
+            :step="1"
+          />
+        </div>
+
+        <div class="property-row">
+          <label>Hold End</label>
+          <ScrubableNumber
+            :modelValue="rackFocus.holdEnd"
+            @update:modelValue="v => updateRackFocusConfig('holdEnd', v)"
+            :min="0"
+            :step="1"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Trajectory Presets Section -->
+    <div class="prop-section">
+      <div class="section-header" @click="toggleSection('trajectory')">
+        <span class="expand-icon">{{ expandedSections.includes('trajectory') ? '▼' : '►' }}</span>
+        <span class="section-title">Trajectory Presets</span>
+      </div>
+
+      <div v-if="expandedSections.includes('trajectory')" class="section-content">
+        <div class="trajectory-grid">
+          <div class="trajectory-group">
+            <div class="trajectory-group-title">Orbital</div>
+            <button class="trajectory-btn" @click="applyTrajectory('orbit')">Orbit</button>
+            <button class="trajectory-btn" @click="applyTrajectory('orbit_reverse')">Orbit Rev</button>
+            <button class="trajectory-btn" @click="applyTrajectory('swing1')">Swing 1</button>
+            <button class="trajectory-btn" @click="applyTrajectory('swing2')">Swing 2</button>
+            <button class="trajectory-btn" @click="applyTrajectory('circle')">Circle</button>
+            <button class="trajectory-btn" @click="applyTrajectory('figure8')">Figure 8</button>
+          </div>
+
+          <div class="trajectory-group">
+            <div class="trajectory-group-title">Dolly/Zoom</div>
+            <button class="trajectory-btn" @click="applyTrajectory('dolly_in')">Dolly In</button>
+            <button class="trajectory-btn" @click="applyTrajectory('dolly_out')">Dolly Out</button>
+            <button class="trajectory-btn" @click="applyTrajectory('spiral_in')">Spiral In</button>
+            <button class="trajectory-btn" @click="applyTrajectory('spiral_out')">Spiral Out</button>
+            <button class="trajectory-btn" @click="applyTrajectory('zoom_in')">Zoom In</button>
+            <button class="trajectory-btn" @click="applyTrajectory('zoom_out')">Zoom Out</button>
+          </div>
+
+          <div class="trajectory-group">
+            <div class="trajectory-group-title">Pan/Tilt</div>
+            <button class="trajectory-btn" @click="applyTrajectory('pan_left')">Pan Left</button>
+            <button class="trajectory-btn" @click="applyTrajectory('pan_right')">Pan Right</button>
+            <button class="trajectory-btn" @click="applyTrajectory('tilt_up')">Tilt Up</button>
+            <button class="trajectory-btn" @click="applyTrajectory('tilt_down')">Tilt Down</button>
+          </div>
+
+          <div class="trajectory-group">
+            <div class="trajectory-group-title">Crane/Truck</div>
+            <button class="trajectory-btn" @click="applyTrajectory('crane_up')">Crane Up</button>
+            <button class="trajectory-btn" @click="applyTrajectory('crane_down')">Crane Down</button>
+            <button class="trajectory-btn" @click="applyTrajectory('truck_left')">Truck Left</button>
+            <button class="trajectory-btn" @click="applyTrajectory('truck_right')">Truck Right</button>
+            <button class="trajectory-btn" @click="applyTrajectory('arc_left')">Arc Left</button>
+            <button class="trajectory-btn" @click="applyTrajectory('arc_right')">Arc Right</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Camera Position/Target Section -->
     <div class="prop-section">
       <div class="section-header" @click="toggleSection('position')">
@@ -281,9 +522,14 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import type { Layer, CameraLayerData, AnimatableProperty, CameraDepthOfField, CameraPathFollowing, Vec3 } from '@/types/project';
+import type { Layer, CameraLayerData, AnimatableProperty, CameraDepthOfField, CameraPathFollowing, CameraShakeData, CameraRackFocusData, Vec3 } from '@/types/project';
 import { useCompositorStore } from '@/stores/compositorStore';
 import { ScrubableNumber } from '@/components/controls';
+import {
+  createTrajectoryFromPreset,
+  generateTrajectoryKeyframes,
+  type TrajectoryType,
+} from '@/services/cameraTrajectory';
 
 const props = defineProps<{ layer: Layer }>();
 const emit = defineEmits(['update']);
@@ -331,6 +577,36 @@ const splineLayers = computed(() => {
   return store.layers.filter(l => l.type === 'spline' && l.id !== props.layer.id);
 });
 
+// Camera shake with defaults
+const cameraShake = computed<CameraShakeData>(() => {
+  return cameraData.value.shake || {
+    enabled: false,
+    type: 'handheld',
+    intensity: 0.3,
+    frequency: 1.0,
+    rotationEnabled: true,
+    rotationScale: 0.5,
+    seed: Math.floor(Math.random() * 100000),
+    decay: 0,
+    startFrame: 0,
+    duration: 81,
+  };
+});
+
+// Rack focus with defaults
+const rackFocus = computed<CameraRackFocusData>(() => {
+  return cameraData.value.rackFocus || {
+    enabled: false,
+    startDistance: 500,
+    endDistance: 2000,
+    duration: 30,
+    startFrame: 0,
+    easing: 'ease-in-out',
+    holdStart: 0,
+    holdEnd: 0,
+  };
+});
+
 // Toggle section visibility
 function toggleSection(section: string) {
   const idx = expandedSections.value.indexOf(section);
@@ -374,6 +650,66 @@ function updatePathLayer(e: Event) {
 function updatePathConfig(key: keyof CameraPathFollowing, value: any) {
   const newPath = { ...pathFollowing.value, [key]: value };
   update('pathFollowing', newPath);
+}
+
+// Toggle camera shake
+function toggleCameraShake(e: Event) {
+  const checked = (e.target as HTMLInputElement).checked;
+  const newShake = { ...cameraShake.value, enabled: checked };
+  update('shake', newShake);
+}
+
+// Update shake config value
+function updateShakeConfig(key: keyof CameraShakeData, value: any) {
+  const newShake = { ...cameraShake.value, [key]: value };
+  update('shake', newShake);
+}
+
+// Toggle rack focus
+function toggleRackFocus(e: Event) {
+  const checked = (e.target as HTMLInputElement).checked;
+  const newRackFocus = { ...rackFocus.value, enabled: checked };
+  update('rackFocus', newRackFocus);
+
+  // Enable DOF if enabling rack focus
+  if (checked) {
+    const newDOF = { ...depthOfField.value, enabled: true };
+    update('depthOfField', newDOF);
+  }
+}
+
+// Update rack focus config value
+function updateRackFocusConfig(key: keyof CameraRackFocusData, value: any) {
+  const newRackFocus = { ...rackFocus.value, [key]: value };
+  update('rackFocus', newRackFocus);
+}
+
+// Apply trajectory preset
+function applyTrajectory(trajectoryType: TrajectoryType) {
+  const comp = store.getActiveComp();
+  const compSettings = comp?.settings || { width: 1920, height: 1080, frameCount: 81 };
+
+  // Create trajectory config
+  const trajectoryConfig = createTrajectoryFromPreset(trajectoryType, {
+    duration: compSettings.frameCount,
+    center: {
+      x: compSettings.width / 2,
+      y: compSettings.height / 2,
+      z: 0,
+    },
+  });
+
+  // Generate keyframes
+  const keyframes = generateTrajectoryKeyframes(trajectoryConfig, 0, 5);
+
+  // Store trajectory keyframes in camera data
+  update('trajectoryKeyframes', {
+    position: keyframes.position,
+    pointOfInterest: keyframes.pointOfInterest,
+    zoom: keyframes.zoom,
+  });
+
+  emit('update');
 }
 
 // Update path parameter (animatable)
@@ -699,5 +1035,47 @@ function toggleVec3Keyframe(propName: string, dataKey: string) {
 .path-select:focus {
   outline: none;
   border-color: #4a90d9;
+}
+
+.trajectory-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.trajectory-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.trajectory-group-title {
+  width: 100%;
+  font-size: 11px;
+  color: #888;
+  margin-bottom: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.trajectory-btn {
+  padding: 4px 8px;
+  background: #2a2a2a;
+  border: 1px solid #3a3a3a;
+  color: #ccc;
+  border-radius: 3px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.trajectory-btn:hover {
+  background: #3a3a3a;
+  border-color: #4a90d9;
+  color: #fff;
+}
+
+.trajectory-btn:active {
+  background: #4a90d9;
 }
 </style>

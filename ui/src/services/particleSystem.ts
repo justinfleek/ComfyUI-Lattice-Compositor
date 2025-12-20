@@ -1,9 +1,20 @@
 /**
- * Particle System Engine
+ * Particle System Engine (CPU-based)
  *
- * Comprehensive particle simulation matching RyanOnTheInside's implementation.
- * Supports emitters, gravity wells, vortices, modulations, and audio reactivity.
- * Extended with turbulence fields, particle connections, sub-emitters, and burst on beat.
+ * @deprecated ARCHITECTURE NOTE:
+ * ===============================
+ * This is the legacy CPU-based particle system. For new particle features,
+ * prefer using engine/particles/GPUParticleSystem.ts which provides:
+ * - GPU-accelerated physics via WebGL2 transform feedback
+ * - Instanced rendering for 100k+ particles
+ * - Sprite sheet animation and motion blur
+ * - Particle trails and connections
+ * - Better performance through parallel GPU execution
+ *
+ * This module is kept for:
+ * - ParticleSimulationController (deterministic timeline scrubbing)
+ * - SeededRandom utility (used by shapeOperations.ts)
+ * - Type definitions shared across the codebase
  *
  * DETERMINISM NOTICE:
  * ===================

@@ -40,6 +40,8 @@ import { interpolateProperty } from '@/services/interpolation';
 import { getFeatureAtFrame } from '@/services/audioFeatures';
 import { particleSimulationRegistry, type ParticleSnapshot } from './ParticleSimulationController';
 import type { ParticleSystemConfig } from '@/services/particleSystem';
+// Camera enhancement imports - deterministic (seeded noise)
+import { CameraShake, getRackFocusDistance } from '@/services/cameraEnhancements';
 
 // ============================================================================
 // EVALUATED STATE INTERFACES
@@ -721,6 +723,104 @@ export class MotionEngine {
     }
     if (cameraData.animatedBlurLevel) {
       blurLevel = interpolateProperty(cameraData.animatedBlurLevel, frame);
+    }
+
+    // Apply trajectory keyframes if present (override animated position/target)
+    if (cameraData.trajectoryKeyframes) {
+      const trajKfs = cameraData.trajectoryKeyframes;
+
+      // Find surrounding keyframes for position
+      if (trajKfs.position && trajKfs.position.length > 0) {
+        const posKfs = trajKfs.position;
+        let before = posKfs[0];
+        let after = posKfs[posKfs.length - 1];
+
+        for (const kf of posKfs) {
+          if (kf.frame <= frame && kf.frame >= before.frame) before = kf;
+          if (kf.frame >= frame && kf.frame <= after.frame) after = kf;
+        }
+
+        if (before.frame === after.frame || frame <= before.frame) {
+          position = { ...before.position };
+        } else if (frame >= after.frame) {
+          position = { ...after.position };
+        } else {
+          const t = (frame - before.frame) / (after.frame - before.frame);
+          position = {
+            x: before.position.x + (after.position.x - before.position.x) * t,
+            y: before.position.y + (after.position.y - before.position.y) * t,
+            z: before.position.z + (after.position.z - before.position.z) * t,
+          };
+        }
+      }
+
+      // Find surrounding keyframes for point of interest
+      if (trajKfs.pointOfInterest && trajKfs.pointOfInterest.length > 0) {
+        const poiKfs = trajKfs.pointOfInterest;
+        let before = poiKfs[0];
+        let after = poiKfs[poiKfs.length - 1];
+
+        for (const kf of poiKfs) {
+          if (kf.frame <= frame && kf.frame >= before.frame) before = kf;
+          if (kf.frame >= frame && kf.frame <= after.frame) after = kf;
+        }
+
+        if (before.frame === after.frame || frame <= before.frame) {
+          target = { ...before.pointOfInterest };
+        } else if (frame >= after.frame) {
+          target = { ...after.pointOfInterest };
+        } else {
+          const t = (frame - before.frame) / (after.frame - before.frame);
+          target = {
+            x: before.pointOfInterest.x + (after.pointOfInterest.x - before.pointOfInterest.x) * t,
+            y: before.pointOfInterest.y + (after.pointOfInterest.y - before.pointOfInterest.y) * t,
+            z: before.pointOfInterest.z + (after.pointOfInterest.z - before.pointOfInterest.z) * t,
+          };
+        }
+      }
+    }
+
+    // Apply camera shake if enabled (deterministic via seed)
+    if (cameraData.shake?.enabled) {
+      const shakeData = cameraData.shake;
+      const shake = new CameraShake(
+        {
+          type: shakeData.type,
+          intensity: shakeData.intensity,
+          frequency: shakeData.frequency,
+          rotationEnabled: shakeData.rotationEnabled,
+          rotationScale: shakeData.rotationScale,
+          seed: shakeData.seed,
+          decay: shakeData.decay,
+        },
+        shakeData.startFrame,
+        shakeData.duration
+      );
+
+      const offset = shake.getOffset(frame);
+      position = {
+        x: position.x + offset.position.x,
+        y: position.y + offset.position.y,
+        z: position.z + offset.position.z,
+      };
+      // Note: rotation shake would need to be added to evaluated camera rotation
+    }
+
+    // Apply rack focus if enabled (overrides focus distance)
+    if (cameraData.rackFocus?.enabled) {
+      const rf = cameraData.rackFocus;
+      focusDistance = getRackFocusDistance(
+        {
+          startDistance: rf.startDistance,
+          endDistance: rf.endDistance,
+          duration: rf.duration,
+          startFrame: rf.startFrame,
+          easing: rf.easing,
+          holdStart: rf.holdStart,
+          holdEnd: rf.holdEnd,
+        },
+        frame
+      );
     }
 
     return Object.freeze({
