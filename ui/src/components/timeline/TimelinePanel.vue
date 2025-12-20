@@ -49,7 +49,7 @@
             <span class="icon" aria-hidden="true">+</span> Layer
           </button>
 
-          <div v-if="showAddLayerMenu" class="add-layer-menu" role="menu" aria-label="Layer types">
+          <div v-if="showAddLayerMenu" class="add-layer-menu" role="menu" aria-label="Layer types" :style="addLayerMenuStyle">
             <button @mousedown="addLayer('solid')" role="menuitem"><span class="icon" aria-hidden="true">■</span> Solid</button>
             <button @mousedown="addLayer('text')" role="menuitem"><span class="icon" aria-hidden="true">T</span> Text</button>
             <button @mousedown="addLayer('shape')" role="menuitem"><span class="icon" aria-hidden="true">◇</span> Shape</button>
@@ -235,6 +235,19 @@ const sidebarGridStyle = computed(() => ({
 
 // Actions
 function toggleAddLayerMenu() { showAddLayerMenu.value = !showAddLayerMenu.value; }
+
+// Compute position for fixed dropdown menu
+const addLayerMenuStyle = computed(() => {
+  if (!showAddLayerMenu.value || !addLayerContainer.value) {
+    return {};
+  }
+  const rect = addLayerContainer.value.getBoundingClientRect();
+  return {
+    position: 'fixed',
+    left: `${rect.left}px`,
+    bottom: `${window.innerHeight - rect.top + 8}px`,
+  };
+});
 
 function addLayer(type: string) {
   let newLayer;
@@ -517,14 +530,35 @@ watch(() => [computedWidthStyle.value, zoomPercent.value, store.frameCount], () 
 /* Menus */
 .add-layer-wrapper { position: relative; }
 .add-layer-menu {
-  position: absolute; top: 100%; left: 0;
-  background: #333; border: 1px solid #000;
-  display: flex; flex-direction: column;
-  min-width: 140px; z-index: 9999;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+  /* Position set dynamically via style binding */
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  min-width: 160px;
+  max-height: 320px;
+  overflow-y: auto;
+  z-index: 100000; /* Very high to ensure visibility above viewport */
+  box-shadow: 0 -8px 24px rgba(0,0,0,0.6), 0 0 1px rgba(255,255,255,0.1);
 }
-.add-layer-menu button { text-align: left; padding: 10px; border: none; background: transparent; color: #eee; cursor: pointer; border-bottom: 1px solid #444; }
+.add-layer-menu button {
+  text-align: left;
+  padding: 10px 14px;
+  border: none;
+  background: transparent;
+  color: #ddd;
+  cursor: pointer;
+  border-bottom: 1px solid #3a3a3a;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.add-layer-menu button:last-child { border-bottom: none; }
 .add-layer-menu button:hover { background: #4a90d9; color: white; }
+.add-layer-menu button:first-child { border-radius: 5px 5px 0 0; }
+.add-layer-menu button:last-child { border-radius: 0 0 5px 5px; }
 .add-layer-btn { padding: 6px 12px; background: #444; border: 1px solid #555; color: white; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold; }
 .add-layer-btn:hover, .add-layer-btn.active { background: #555; }
 

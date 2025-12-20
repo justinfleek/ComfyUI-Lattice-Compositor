@@ -221,7 +221,7 @@
     <div class="workspace-content">
       <Splitpanes class="default-theme horizontal-split">
         <!-- Left Panel: Project/Effects -->
-        <Pane :size="12" :min-size="8" :max-size="20">
+        <Pane :size="14" :min-size="10" :max-size="25">
           <div class="panel left-panel">
             <div class="panel-tabs" role="tablist" aria-label="Left panel tabs">
               <button
@@ -268,7 +268,7 @@
         </Pane>
 
         <!-- Center: Viewport + Timeline -->
-        <Pane :size="70" :min-size="40">
+        <Pane :size="62" :min-size="35">
           <Splitpanes horizontal class="default-theme">
             <!-- Viewport -->
             <Pane :size="65" :min-size="20">
@@ -379,7 +379,7 @@
         </Pane>
 
         <!-- Right Panel: Effects/Properties/Camera -->
-        <Pane :size="22" :min-size="15" :max-size="30">
+        <Pane :size="24" :min-size="15" :max-size="35">
           <div class="panel right-panel">
             <div class="panel-tabs" role="tablist" aria-label="Right panel tabs">
               <button
@@ -465,24 +465,7 @@
       </Splitpanes>
     </div>
 
-    <!-- Status Bar -->
-    <div class="status-bar">
-      <div class="status-left">
-        <span class="status-item">{{ projectName }}</span>
-        <span class="status-divider">|</span>
-        <span class="status-item">{{ compositionInfo }}</span>
-      </div>
-      <div class="status-center">
-        <span v-if="renderProgress > 0" class="render-progress">
-          Rendering: {{ Math.round(renderProgress * 100) }}%
-        </span>
-      </div>
-      <div class="status-right">
-        <span class="status-item">{{ memoryUsage }}</span>
-        <span class="status-divider">|</span>
-        <span class="status-item">{{ fps }} fps</span>
-      </div>
-    </div>
+    <!-- Status Bar removed - info relocated to toolbar and timeline -->
 
     <!-- Export Dialog -->
     <ExportDialog
@@ -1233,8 +1216,9 @@ onUnmounted(() => {
   color: var(--weyl-text-primary, #e5e5e5);
   font-family: var(--weyl-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
   font-size: var(--weyl-text-base, 12px);
-  padding: var(--weyl-gutter, 20px);
-  gap: var(--weyl-gutter, 20px);
+  /* Reduced horizontal padding, more vertical space efficiency */
+  padding: 8px 12px;
+  gap: 8px;
 }
 
 /* Toolbar - floating panel */
@@ -1470,10 +1454,14 @@ onUnmounted(() => {
 .left-panel,
 .right-panel {
   /* No borders - use shadows for separation */
+  /* Minimum pixel widths ensure readability on all screens */
+  min-width: 180px;
 }
 
 .right-panel {
   /* No borders - use shadows for separation */
+  /* Properties panel needs more space for controls */
+  min-width: 220px;
 }
 
 .panel-tabs {
@@ -1513,7 +1501,26 @@ onUnmounted(() => {
 
 .panel-content {
   flex: 1;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Custom scrollbar styling for dark theme */
+.panel-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.panel-content::-webkit-scrollbar-track {
+  background: var(--weyl-surface-1, #121212);
+}
+
+.panel-content::-webkit-scrollbar-thumb {
+  background: var(--weyl-surface-3, #333);
+  border-radius: 4px;
+}
+
+.panel-content::-webkit-scrollbar-thumb:hover {
+  background: var(--weyl-surface-4, #444);
 }
 
 /* Viewport */
@@ -1525,17 +1532,18 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 12px;
+  padding: 10px 16px;
   background: var(--weyl-surface-2, #1a1a1a);
+  gap: 16px;
 }
 
 .viewport-tabs {
   display: flex;
-  gap: 2px;
+  gap: 4px;
 }
 
 .viewport-tabs button {
-  padding: 6px 12px;
+  padding: 8px 16px;
   border: none;
   background: transparent;
   color: var(--weyl-text-secondary, #9CA3AF);
@@ -1661,38 +1669,13 @@ onUnmounted(() => {
   /* No borders - floating panel */
 }
 
-/* Status Bar - floating panel */
-.status-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 16px;
-  background: var(--weyl-surface-1, #121212);
-  border-radius: var(--weyl-radius-xl, 8px);
-  box-shadow: var(--weyl-shadow-panel, 0 8px 32px rgba(0,0,0,0.4));
-  font-size: var(--weyl-text-sm, 11px);
-  color: var(--weyl-text-secondary, #9CA3AF);
-}
-
-.status-left,
-.status-center,
-.status-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.status-divider {
-  color: var(--weyl-text-muted, #6B7280);
-}
-
-.render-progress {
-  color: var(--weyl-accent, #8B5CF6);
-}
+/* Status bar removed - info now in toolbar */
 
 /* Splitpanes Theme Overrides */
 :deep(.splitpanes.default-theme .splitpanes__pane) {
   background: transparent;
+  /* Allow dropdowns to overflow outside pane boundaries */
+  overflow: visible !important;
 }
 
 :deep(.splitpanes.default-theme .splitpanes__splitter) {
@@ -1712,6 +1695,11 @@ onUnmounted(() => {
 :deep(.splitpanes--horizontal > .splitpanes__splitter) {
   height: 4px;
   min-height: 4px;
+}
+
+/* Ensure timeline pane allows dropdown overflow */
+:deep(.splitpanes--horizontal .splitpanes__pane:last-child) {
+  overflow: visible !important;
 }
 
 /* Segmentation tool options */

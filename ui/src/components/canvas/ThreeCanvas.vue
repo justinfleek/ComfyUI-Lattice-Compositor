@@ -192,6 +192,14 @@
       <span>Segmenting...</span>
     </div>
 
+    <!-- CSS-based Composition Boundary - crisp blue border around composition -->
+    <!-- Replaces the 3D LineLoop which can appear blurry due to WebGL line width limitations -->
+    <div
+      v-if="store.viewOptions.showCompositionBounds !== false"
+      class="composition-boundary"
+      :style="compositionBoundaryStyle"
+    ></div>
+
     <!-- Safe Frame Guides - CSS-based screen-space overlay -->
     <!-- These stay fixed regardless of camera movement -->
     <div v-if="showSafeFrameGuides" class="safe-frame-container">
@@ -250,6 +258,9 @@ const performanceStats = ref<PerformanceStats>({
 
 // Pan/zoom state
 const viewportTransform = ref<number[]>([1, 0, 0, 1, 0, 0]);
+
+// Camera update trigger - increment to force boundary recalculation
+const cameraUpdateTrigger = ref(0);
 
 // Viewer controls
 const zoomLevel = ref<string>('fit');
@@ -315,19 +326,23 @@ const segmentBoxStyle = computed(() => {
 // Safe frame guide positions - CSS-based overlays for out-of-frame areas
 // Project the 3D composition bounds to screen space for accurate overlay positioning
 const safeFrameBounds = computed(() => {
+  // Reactive dependencies: these trigger recompute when camera changes
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _ = [zoom.value, viewportTransform.value, canvasWidth.value, canvasHeight.value, cameraUpdateTrigger.value];
+
   if (!containerRef.value || !engine.value) {
     return { left: 0, top: 0, right: 0, bottom: 0 };
   }
 
-  const container = containerRef.value;
-  const containerRect = container.getBoundingClientRect();
+  const viewportWidth = canvasWidth.value;
+  const viewportHeight = canvasHeight.value;
   const compWidth = store.width || 1920;
   const compHeight = store.height || 1080;
 
   // Get the camera to project 3D points to screen
   const camera = engine.value.getCameraController().camera;
 
-  // Composition corners in world space (Y is negated)
+  // Composition corners in world space (Y is negated in Three.js coordinate system)
   const topLeft = new THREE.Vector3(0, 0, 0);
   const bottomRight = new THREE.Vector3(compWidth, -compHeight, 0);
 
@@ -336,10 +351,10 @@ const safeFrameBounds = computed(() => {
   bottomRight.project(camera);
 
   // Convert to screen pixels
-  const left = (topLeft.x + 1) / 2 * containerRect.width;
-  const top = (-topLeft.y + 1) / 2 * containerRect.height;
-  const right = (bottomRight.x + 1) / 2 * containerRect.width;
-  const bottom = (-bottomRight.y + 1) / 2 * containerRect.height;
+  const left = (topLeft.x + 1) / 2 * viewportWidth;
+  const top = (-topLeft.y + 1) / 2 * viewportHeight;
+  const right = (bottomRight.x + 1) / 2 * viewportWidth;
+  const bottom = (-bottomRight.y + 1) / 2 * viewportHeight;
 
   return { left, top, right, bottom };
 });
@@ -381,6 +396,26 @@ const safeFrameBottomStyle = computed(() => {
     top: `${bounds.bottom}px`,
     width: `${bounds.right - Math.max(0, bounds.left)}px`,
     height: `calc(100% - ${bounds.bottom}px)`
+  };
+});
+
+// CSS-based composition boundary - always crisp regardless of zoom
+// Uses the same projection as safeFrameBounds but renders as a border
+const compositionBoundaryStyle = computed(() => {
+  const bounds = safeFrameBounds.value;
+  const width = bounds.right - bounds.left;
+  const height = bounds.bottom - bounds.top;
+
+  // Only show if the bounds are valid
+  if (width <= 0 || height <= 0) {
+    return { display: 'none' };
+  }
+
+  return {
+    left: `${bounds.left}px`,
+    top: `${bounds.top}px`,
+    width: `${width}px`,
+    height: `${height}px`
   };
 });
 
@@ -667,11 +702,14 @@ function setupWatchers() {
   );
 
   // Watch composition bounds toggle
+  // Note: The 3D LineLoop bounds are disabled in favor of CSS-based boundary
+  // which is always crisp regardless of zoom/pan (WebGL linewidth limitation)
   watch(
     () => store.viewOptions.showCompositionBounds,
-    (showBounds) => {
+    (_showBounds) => {
       if (!engine.value) return;
-      engine.value.setCompositionBoundsVisible(showBounds);
+      // Always hide 3D bounds - CSS version is used instead (see .composition-boundary)
+      engine.value.setCompositionBoundsVisible(false);
     },
     { immediate: true }
   );
@@ -813,6 +851,8 @@ function setupInputHandlers() {
     if (engine.value) {
       // Update camera zoom - this maintains centered view unless panning
       engine.value.getCameraController().setZoom(newZoom);
+      // Force boundary update after camera change
+      cameraUpdateTrigger.value++;
     }
   }, { passive: false });
 
@@ -945,6 +985,8 @@ function setupInputHandlers() {
           currentPan.x - dx * worldPerPixel,
           currentPan.y - dy * worldPerPixel  // Positive dy should move camera up (view shifts down)
         );
+        // Force boundary update after camera pan
+        cameraUpdateTrigger.value++;
       }
       return;
     }
@@ -959,6 +1001,8 @@ function setupInputHandlers() {
       viewportTransform.value[3] = newZoom;
 
       engine.value.getCameraController().setZoom(newZoom);
+      // Force boundary update after camera zoom
+      cameraUpdateTrigger.value++;
       return;
     }
 
@@ -1212,7 +1256,6 @@ function centerOnComposition() {
   const container = containerRef.value;
   if (!container || !engine.value) return;
 
-  const containerRect = container.getBoundingClientRect();
   const padding = 40;
 
   // Use the engine's fit method - this handles all camera setup correctly
@@ -1225,6 +1268,12 @@ function centerOnComposition() {
 
   // Update viewport transform for SplineEditor and other overlays
   viewportTransform.value = [calculatedZoom, 0, 0, calculatedZoom, 0, 0];
+
+  // Force boundary recalculation after camera state update
+  // Use requestAnimationFrame to ensure the render has completed
+  requestAnimationFrame(() => {
+    cameraUpdateTrigger.value++;
+  });
 }
 
 // Render mode switching
@@ -1287,6 +1336,8 @@ function fitToView() {
 function resetCamera() {
   if (engine.value) {
     engine.value.resetCameraToDefault();
+    // Re-center on composition after reset
+    centerOnComposition();
   }
 }
 
@@ -1666,6 +1717,18 @@ defineExpose({
   border-top-color: #00ff00;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
+}
+
+/* CSS-based Composition Boundary - crisp blue border */
+/* Replaces the 3D LineLoop which has blurry rendering due to WebGL linewidth limitation */
+.composition-boundary {
+  position: absolute;
+  pointer-events: none;
+  z-index: 4;
+  border: 2px solid #4a90d9;
+  box-sizing: border-box;
+  /* GPU-accelerated rendering for smooth updates during zoom/pan */
+  will-change: transform, left, top, width, height;
 }
 
 /* Safe Frame Guides - CSS-based screen-space overlays */
