@@ -125,6 +125,7 @@
         <button @click="toggleLayerLock">{{ layer.locked ? 'Unlock' : 'Lock' }} Layer</button>
         <button @click="toggleLayer3D">{{ layer.threeD ? 'Make 2D' : 'Make 3D' }}</button>
         <hr />
+        <button v-if="isTextLayer" @click="convertToSplines">Convert to Splines</button>
         <button @click="nestLayer">Nest Layers...</button>
         <hr />
         <button @click="deleteLayer" class="danger">Delete Layer</button>
@@ -157,6 +158,7 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue';
 import { useCompositorStore } from '@/stores/compositorStore';
+import { convertTextLayerToSplines } from '@/stores/actions/layerActions';
 import PropertyTrack from './PropertyTrack.vue';
 
 const props = defineProps(['layer', 'index', 'layoutMode', 'isExpandedExternal', 'allLayers', 'frameCount', 'pixelsPerFrame', 'gridStyle']);
@@ -168,6 +170,8 @@ const isExpanded = computed(() => props.isExpandedExternal ?? localExpanded.valu
 const isSelected = computed(() => store.selectedLayerIds.includes(props.layer.id));
 // Only video and audio layers have audio capability
 const hasAudioCapability = computed(() => ['video', 'audio', 'nestedComp'].includes(props.layer.type));
+// Check if layer is a text layer (for Convert to Splines feature)
+const isTextLayer = computed(() => props.layer.type === 'text');
 const expandedGroups = ref<string[]>(['Transform', 'Text', 'More Options', 'Stroke', 'Fill', 'Trim Paths', 'Path Options']);
 const isRenaming = ref(false);
 const renameVal = ref('');
@@ -542,6 +546,25 @@ function nestLayer() {
   store.selectLayer(props.layer.id);
   store.nestSelectedLayers(props.layer.name + ' Nested');
   hideContextMenu();
+}
+
+async function convertToSplines() {
+  hideContextMenu();
+  if (props.layer.type !== 'text') return;
+
+  try {
+    const result = await convertTextLayerToSplines(store, props.layer.id, {
+      perCharacter: true,
+      groupCharacters: true,
+      deleteOriginal: false,
+    });
+
+    if (result) {
+      console.log('[EnhancedLayerTrack] Text converted to splines:', result);
+    }
+  } catch (error) {
+    console.error('[EnhancedLayerTrack] Failed to convert text to splines:', error);
+  }
 }
 
 function deleteLayer() {
