@@ -209,14 +209,325 @@
          Enable Per-Character 3D
        </label>
     </div>
+
+    <!-- Text Animators Section -->
+    <div class="prop-section animators-section">
+      <div class="section-header">
+        <div class="section-title">Animators</div>
+        <div class="animator-add-controls">
+          <select v-model="selectedPreset" class="preset-select">
+            <option value="">Add Preset...</option>
+            <option v-for="preset in animatorPresets" :key="preset.type" :value="preset.type">
+              {{ preset.name }}
+            </option>
+          </select>
+          <button class="add-btn" @click="addAnimator(selectedPreset || undefined); selectedPreset = ''" title="Add Animator">+</button>
+        </div>
+      </div>
+
+      <div v-if="animators.length === 0" class="no-animators">
+        No animators. Add one to animate text per-character.
+      </div>
+
+      <div v-for="animator in animators" :key="animator.id" class="animator-item">
+        <div class="animator-header" @click="toggleAnimatorExpanded(animator.id)">
+          <span class="expand-icon">{{ expandedAnimators.has(animator.id) ? '▼' : '▶' }}</span>
+          <input
+            type="checkbox"
+            :checked="animator.enabled"
+            @click.stop="toggleAnimatorEnabled(animator.id)"
+            class="animator-enabled"
+          />
+          <input
+            type="text"
+            :value="animator.name"
+            @input="e => updateAnimatorName(animator.id, (e.target as HTMLInputElement).value)"
+            @click.stop
+            class="animator-name"
+          />
+          <div class="animator-actions">
+            <button @click.stop="duplicateAnimator(animator.id)" title="Duplicate">⧉</button>
+            <button @click.stop="removeAnimator(animator.id)" title="Remove">×</button>
+          </div>
+        </div>
+
+        <div v-if="expandedAnimators.has(animator.id)" class="animator-content">
+          <!-- Range Selector -->
+          <div class="subsection">
+            <div class="subsection-title">Range Selector</div>
+
+            <div class="row">
+              <label>Based On</label>
+              <select
+                :value="animator.rangeSelector.basedOn"
+                @change="e => updateRangeSelector(animator.id, 'basedOn', (e.target as HTMLSelectElement).value)"
+                class="full-select"
+              >
+                <option value="characters">Characters</option>
+                <option value="words">Words</option>
+                <option value="lines">Lines</option>
+              </select>
+            </div>
+
+            <div class="row">
+              <label>Start %</label>
+              <ScrubableNumber
+                :modelValue="animator.rangeSelector.start.value"
+                @update:modelValue="v => updateRangeSelector(animator.id, 'start', v)"
+                :min="0"
+                :max="100"
+                :precision="1"
+              />
+            </div>
+
+            <div class="row">
+              <label>End %</label>
+              <ScrubableNumber
+                :modelValue="animator.rangeSelector.end.value"
+                @update:modelValue="v => updateRangeSelector(animator.id, 'end', v)"
+                :min="0"
+                :max="100"
+                :precision="1"
+              />
+            </div>
+
+            <div class="row">
+              <label>Offset %</label>
+              <ScrubableNumber
+                :modelValue="animator.rangeSelector.offset.value"
+                @update:modelValue="v => updateRangeSelector(animator.id, 'offset', v)"
+                :min="-100"
+                :max="100"
+                :precision="1"
+              />
+            </div>
+
+            <div class="row">
+              <label>Shape</label>
+              <select
+                :value="animator.rangeSelector.shape"
+                @change="e => updateRangeSelector(animator.id, 'shape', (e.target as HTMLSelectElement).value)"
+                class="full-select"
+              >
+                <option value="square">Square</option>
+                <option value="ramp_up">Ramp Up</option>
+                <option value="ramp_down">Ramp Down</option>
+                <option value="triangle">Triangle</option>
+                <option value="round">Round</option>
+                <option value="smooth">Smooth</option>
+              </select>
+            </div>
+
+            <div class="row checkbox-row">
+              <label>
+                <input
+                  type="checkbox"
+                  :checked="animator.rangeSelector.randomizeOrder"
+                  @change="updateRangeSelector(animator.id, 'randomizeOrder', !animator.rangeSelector.randomizeOrder)"
+                />
+                Randomize Order
+              </label>
+            </div>
+          </div>
+
+          <!-- Animator Properties -->
+          <div class="subsection">
+            <div class="subsection-title">Properties</div>
+
+            <!-- Position -->
+            <div class="property-row">
+              <label class="prop-label">
+                <input
+                  type="checkbox"
+                  :checked="hasAnimatorProperty(animator, 'position')"
+                  @change="updateAnimatorProperty(animator.id, 'position', hasAnimatorProperty(animator, 'position') ? null : { x: 0, y: 0 })"
+                />
+                Position
+              </label>
+              <template v-if="hasAnimatorProperty(animator, 'position')">
+                <div class="vec2">
+                  <ScrubableNumber
+                    :modelValue="getAnimatorPropertyValue(animator, 'position')?.x ?? 0"
+                    @update:modelValue="v => updateAnimatorProperty(animator.id, 'position', { ...getAnimatorPropertyValue(animator, 'position'), x: v })"
+                  />
+                  <ScrubableNumber
+                    :modelValue="getAnimatorPropertyValue(animator, 'position')?.y ?? 0"
+                    @update:modelValue="v => updateAnimatorProperty(animator.id, 'position', { ...getAnimatorPropertyValue(animator, 'position'), y: v })"
+                  />
+                </div>
+              </template>
+            </div>
+
+            <!-- Scale -->
+            <div class="property-row">
+              <label class="prop-label">
+                <input
+                  type="checkbox"
+                  :checked="hasAnimatorProperty(animator, 'scale')"
+                  @change="updateAnimatorProperty(animator.id, 'scale', hasAnimatorProperty(animator, 'scale') ? null : { x: 100, y: 100 })"
+                />
+                Scale %
+              </label>
+              <template v-if="hasAnimatorProperty(animator, 'scale')">
+                <div class="vec2">
+                  <ScrubableNumber
+                    :modelValue="getAnimatorPropertyValue(animator, 'scale')?.x ?? 100"
+                    @update:modelValue="v => updateAnimatorProperty(animator.id, 'scale', { ...getAnimatorPropertyValue(animator, 'scale'), x: v })"
+                  />
+                  <ScrubableNumber
+                    :modelValue="getAnimatorPropertyValue(animator, 'scale')?.y ?? 100"
+                    @update:modelValue="v => updateAnimatorProperty(animator.id, 'scale', { ...getAnimatorPropertyValue(animator, 'scale'), y: v })"
+                  />
+                </div>
+              </template>
+            </div>
+
+            <!-- Rotation -->
+            <div class="property-row">
+              <label class="prop-label">
+                <input
+                  type="checkbox"
+                  :checked="hasAnimatorProperty(animator, 'rotation')"
+                  @change="updateAnimatorProperty(animator.id, 'rotation', hasAnimatorProperty(animator, 'rotation') ? null : 0)"
+                />
+                Rotation
+              </label>
+              <template v-if="hasAnimatorProperty(animator, 'rotation')">
+                <ScrubableNumber
+                  :modelValue="getAnimatorPropertyValue(animator, 'rotation') ?? 0"
+                  @update:modelValue="v => updateAnimatorProperty(animator.id, 'rotation', v)"
+                  :min="-360"
+                  :max="360"
+                />
+              </template>
+            </div>
+
+            <!-- Opacity -->
+            <div class="property-row">
+              <label class="prop-label">
+                <input
+                  type="checkbox"
+                  :checked="hasAnimatorProperty(animator, 'opacity')"
+                  @change="updateAnimatorProperty(animator.id, 'opacity', hasAnimatorProperty(animator, 'opacity') ? null : 100)"
+                />
+                Opacity
+              </label>
+              <template v-if="hasAnimatorProperty(animator, 'opacity')">
+                <ScrubableNumber
+                  :modelValue="getAnimatorPropertyValue(animator, 'opacity') ?? 100"
+                  @update:modelValue="v => updateAnimatorProperty(animator.id, 'opacity', v)"
+                  :min="0"
+                  :max="100"
+                />
+              </template>
+            </div>
+
+            <!-- Blur -->
+            <div class="property-row">
+              <label class="prop-label">
+                <input
+                  type="checkbox"
+                  :checked="hasAnimatorProperty(animator, 'blur')"
+                  @change="updateAnimatorProperty(animator.id, 'blur', hasAnimatorProperty(animator, 'blur') ? null : { x: 0, y: 0 })"
+                />
+                Blur
+              </label>
+              <template v-if="hasAnimatorProperty(animator, 'blur')">
+                <div class="vec2">
+                  <ScrubableNumber
+                    :modelValue="getAnimatorPropertyValue(animator, 'blur')?.x ?? 0"
+                    @update:modelValue="v => updateAnimatorProperty(animator.id, 'blur', { ...getAnimatorPropertyValue(animator, 'blur'), x: v })"
+                    :min="0"
+                    :max="100"
+                  />
+                  <ScrubableNumber
+                    :modelValue="getAnimatorPropertyValue(animator, 'blur')?.y ?? 0"
+                    @update:modelValue="v => updateAnimatorProperty(animator.id, 'blur', { ...getAnimatorPropertyValue(animator, 'blur'), y: v })"
+                    :min="0"
+                    :max="100"
+                  />
+                </div>
+              </template>
+            </div>
+
+            <!-- Tracking -->
+            <div class="property-row">
+              <label class="prop-label">
+                <input
+                  type="checkbox"
+                  :checked="hasAnimatorProperty(animator, 'tracking')"
+                  @change="updateAnimatorProperty(animator.id, 'tracking', hasAnimatorProperty(animator, 'tracking') ? null : 0)"
+                />
+                Tracking
+              </label>
+              <template v-if="hasAnimatorProperty(animator, 'tracking')">
+                <ScrubableNumber
+                  :modelValue="getAnimatorPropertyValue(animator, 'tracking') ?? 0"
+                  @update:modelValue="v => updateAnimatorProperty(animator.id, 'tracking', v)"
+                  :min="-200"
+                  :max="200"
+                />
+              </template>
+            </div>
+
+            <!-- Fill Color -->
+            <div class="property-row">
+              <label class="prop-label">
+                <input
+                  type="checkbox"
+                  :checked="hasAnimatorProperty(animator, 'fillColor')"
+                  @change="updateAnimatorProperty(animator.id, 'fillColor', hasAnimatorProperty(animator, 'fillColor') ? null : '#ffffff')"
+                />
+                Fill Color
+              </label>
+              <template v-if="hasAnimatorProperty(animator, 'fillColor')">
+                <input
+                  type="color"
+                  :value="getAnimatorPropertyValue(animator, 'fillColor') || '#ffffff'"
+                  @input="e => updateAnimatorProperty(animator.id, 'fillColor', (e.target as HTMLInputElement).value)"
+                  class="color-input"
+                />
+              </template>
+            </div>
+
+            <!-- Stroke Color -->
+            <div class="property-row">
+              <label class="prop-label">
+                <input
+                  type="checkbox"
+                  :checked="hasAnimatorProperty(animator, 'strokeColor')"
+                  @change="updateAnimatorProperty(animator.id, 'strokeColor', hasAnimatorProperty(animator, 'strokeColor') ? null : '#000000')"
+                />
+                Stroke Color
+              </label>
+              <template v-if="hasAnimatorProperty(animator, 'strokeColor')">
+                <input
+                  type="color"
+                  :value="getAnimatorPropertyValue(animator, 'strokeColor') || '#000000'"
+                  @input="e => updateAnimatorProperty(animator.id, 'strokeColor', (e.target as HTMLInputElement).value)"
+                  class="color-input"
+                />
+              </template>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue';
+import { computed, ref, reactive, onMounted } from 'vue';
 import { useCompositorStore } from '@/stores/compositorStore';
 import { ScrubableNumber } from '@/components/controls';
 import { fontService, type FontCategory } from '@/services/fontService';
+import {
+  TEXT_ANIMATOR_PRESET_LIST,
+  applyTextAnimatorPreset,
+  createTextAnimator,
+  type TextAnimatorPreset,
+} from '@/services/textAnimator';
+import type { TextAnimator, TextAnimatorPresetType, TextRangeSelector } from '@/types/project';
 
 const props = defineProps<{ layer: any }>();
 const emit = defineEmits(['update']);
@@ -226,6 +537,11 @@ const store = useCompositorStore();
 const fontCategories = ref<FontCategory[]>([]);
 const hasSystemFonts = ref(false);
 const loadingFonts = ref(false);
+
+// Text Animator state
+const expandedAnimators = ref<Set<string>>(new Set());
+const selectedPreset = ref<TextAnimatorPresetType | ''>('');
+const animatorPresets = TEXT_ANIMATOR_PRESET_LIST;
 
 onMounted(async () => {
   await fontService.initialize();
@@ -250,6 +566,129 @@ async function requestFontAccess() {
 const textData = computed(() => props.layer.data);
 const transform = computed(() => props.layer.transform);
 const splineLayers = computed(() => store.layers.filter(l => l.type === 'spline'));
+const animators = computed<TextAnimator[]>(() => textData.value.animators || []);
+
+// Text Animator functions
+function toggleAnimatorExpanded(animatorId: string) {
+  if (expandedAnimators.value.has(animatorId)) {
+    expandedAnimators.value.delete(animatorId);
+  } else {
+    expandedAnimators.value.add(animatorId);
+  }
+}
+
+function addAnimator(presetType?: TextAnimatorPresetType) {
+  const newAnimator = presetType
+    ? applyTextAnimatorPreset(presetType, 45)
+    : createTextAnimator(`Animator ${animators.value.length + 1}`);
+
+  const currentAnimators = [...animators.value, newAnimator];
+  store.updateLayerData(props.layer.id, { animators: currentAnimators });
+  expandedAnimators.value.add(newAnimator.id);
+  emit('update');
+}
+
+function removeAnimator(animatorId: string) {
+  const currentAnimators = animators.value.filter(a => a.id !== animatorId);
+  store.updateLayerData(props.layer.id, { animators: currentAnimators });
+  expandedAnimators.value.delete(animatorId);
+  emit('update');
+}
+
+function duplicateAnimator(animatorId: string) {
+  const source = animators.value.find(a => a.id === animatorId);
+  if (!source) return;
+
+  const duplicated: TextAnimator = JSON.parse(JSON.stringify(source));
+  duplicated.id = `animator_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+  duplicated.name = `${source.name} (Copy)`;
+
+  const currentAnimators = [...animators.value, duplicated];
+  store.updateLayerData(props.layer.id, { animators: currentAnimators });
+  expandedAnimators.value.add(duplicated.id);
+  emit('update');
+}
+
+function toggleAnimatorEnabled(animatorId: string) {
+  const animator = animators.value.find(a => a.id === animatorId);
+  if (!animator) return;
+
+  const currentAnimators = animators.value.map(a =>
+    a.id === animatorId ? { ...a, enabled: !a.enabled } : a
+  );
+  store.updateLayerData(props.layer.id, { animators: currentAnimators });
+  emit('update');
+}
+
+function updateAnimatorName(animatorId: string, name: string) {
+  const currentAnimators = animators.value.map(a =>
+    a.id === animatorId ? { ...a, name } : a
+  );
+  store.updateLayerData(props.layer.id, { animators: currentAnimators });
+  emit('update');
+}
+
+function updateRangeSelector(animatorId: string, key: keyof TextRangeSelector, value: any) {
+  const currentAnimators = animators.value.map(a => {
+    if (a.id !== animatorId) return a;
+    const updated = { ...a };
+    if (key === 'start' || key === 'end' || key === 'offset') {
+      // Update animatable property value
+      updated.rangeSelector = {
+        ...updated.rangeSelector,
+        [key]: {
+          ...updated.rangeSelector[key],
+          value
+        }
+      };
+    } else {
+      updated.rangeSelector = {
+        ...updated.rangeSelector,
+        [key]: value
+      };
+    }
+    return updated;
+  });
+  store.updateLayerData(props.layer.id, { animators: currentAnimators });
+  emit('update');
+}
+
+function updateAnimatorProperty(animatorId: string, propKey: string, value: any) {
+  const currentAnimators = animators.value.map(a => {
+    if (a.id !== animatorId) return a;
+    const updated = { ...a };
+
+    if (value === null || value === undefined) {
+      // Remove property
+      const { [propKey]: removed, ...rest } = updated.properties;
+      updated.properties = rest;
+    } else {
+      // Add or update property
+      updated.properties = {
+        ...updated.properties,
+        [propKey]: {
+          id: `prop_${Date.now()}`,
+          name: propKey.charAt(0).toUpperCase() + propKey.slice(1),
+          type: typeof value === 'number' ? 'number' : 'object',
+          value,
+          animated: false,
+          keyframes: []
+        }
+      };
+    }
+    return updated;
+  });
+  store.updateLayerData(props.layer.id, { animators: currentAnimators });
+  emit('update');
+}
+
+function getAnimatorPropertyValue(animator: TextAnimator, propKey: string): any {
+  return animator.properties[propKey]?.value;
+}
+
+function hasAnimatorProperty(animator: TextAnimator, propKey: string): boolean {
+  return propKey in animator.properties;
+}
 
 function getProperty(name: string) {
     return props.layer.properties?.find((p: any) => p.name === name);
@@ -462,4 +901,171 @@ async function handleFontChange(family: string) {
 .format-toggles button:last-child { border-right: none; }
 .format-toggles button.active { background: #4a90d9; color: #fff; }
 .format-toggles button:hover:not(.active) { background: #333; color: #fff; }
+
+/* Text Animators Section */
+.animators-section { border-bottom: none; }
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.animator-add-controls {
+  display: flex;
+  gap: 4px;
+}
+
+.preset-select {
+  background: #222;
+  border: 1px solid #444;
+  color: #aaa;
+  padding: 4px 8px;
+  border-radius: 3px;
+  font-size: 11px;
+  max-width: 130px;
+}
+.preset-select:focus { border-color: #4a90d9; outline: none; }
+
+.add-btn {
+  background: #4a90d9;
+  border: none;
+  color: #fff;
+  width: 24px;
+  height: 24px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  line-height: 1;
+}
+.add-btn:hover { background: #5a9fe9; }
+
+.no-animators {
+  color: #666;
+  font-size: 12px;
+  font-style: italic;
+  padding: 12px;
+  text-align: center;
+  background: #1a1a1a;
+  border-radius: 4px;
+}
+
+.animator-item {
+  background: #1e1e1e;
+  border: 1px solid #333;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+
+.animator-header {
+  display: flex;
+  align-items: center;
+  padding: 8px 10px;
+  cursor: pointer;
+  gap: 8px;
+  background: #252525;
+}
+.animator-header:hover { background: #2a2a2a; }
+
+.expand-icon {
+  color: #666;
+  font-size: 10px;
+  width: 12px;
+}
+
+.animator-enabled {
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+}
+
+.animator-name {
+  flex: 1;
+  background: transparent;
+  border: 1px solid transparent;
+  color: #ddd;
+  padding: 2px 6px;
+  font-size: 12px;
+  border-radius: 2px;
+}
+.animator-name:focus {
+  background: #222;
+  border-color: #444;
+  outline: none;
+}
+
+.animator-actions {
+  display: flex;
+  gap: 2px;
+}
+.animator-actions button {
+  background: transparent;
+  border: 1px solid transparent;
+  color: #666;
+  width: 22px;
+  height: 22px;
+  cursor: pointer;
+  border-radius: 2px;
+  font-size: 14px;
+}
+.animator-actions button:hover {
+  background: #333;
+  color: #aaa;
+  border-color: #444;
+}
+
+.animator-content {
+  padding: 10px;
+  border-top: 1px solid #333;
+}
+
+.subsection {
+  margin-bottom: 12px;
+}
+.subsection:last-child { margin-bottom: 0; }
+
+.subsection-title {
+  color: #888;
+  font-size: 11px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #333;
+}
+
+.property-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
+  gap: 8px;
+  min-height: 28px;
+}
+
+.prop-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #aaa;
+  font-size: 12px;
+  min-width: 90px;
+  cursor: pointer;
+}
+.prop-label input[type="checkbox"] {
+  width: 12px;
+  height: 12px;
+  cursor: pointer;
+}
+
+.color-input {
+  width: 50px;
+  height: 24px;
+  border: 1px solid #444;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 3px;
+  background: #222;
+}
 </style>

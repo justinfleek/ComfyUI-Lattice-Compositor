@@ -913,6 +913,7 @@ export interface ParticleSystemLayerConfig {
   friction: number;
   turbulenceFields?: TurbulenceFieldConfig[];
   subEmitters?: SubEmitterConfig[];
+  useGPU?: boolean; // Enable WebGPU compute acceleration
 }
 
 export interface TurbulenceFieldConfig {
@@ -947,7 +948,40 @@ export interface SubEmitterConfig {
   enabled: boolean;
 }
 
-export type EmitterShape = 'point' | 'line' | 'circle' | 'box' | 'sphere' | 'ring' | 'spline';
+export type EmitterShape = 'point' | 'line' | 'circle' | 'box' | 'sphere' | 'ring' | 'spline' | 'depth-map' | 'mask';
+
+// Depth map emission configuration
+export interface DepthMapEmission {
+  /** Layer ID containing the depth map */
+  sourceLayerId: string;
+  /** Emit from depth values in this range (0-1) */
+  depthMin: number;
+  depthMax: number;
+  /** Emission density per pixel */
+  density: number;
+  /** Scale velocity by depth (far particles move slower) */
+  velocityByDepth: boolean;
+  /** Scale size by depth (far particles appear smaller) */
+  sizeByDepth: boolean;
+  /** Depth value interpretation */
+  depthMode: 'near-white' | 'near-black';
+}
+
+// Mask emission configuration
+export interface MaskEmission {
+  /** Layer ID containing the mask/matte */
+  sourceLayerId: string;
+  /** Emit from pixels above this threshold (0-1) */
+  threshold: number;
+  /** Emission density per pixel */
+  density: number;
+  /** Use luminance or alpha channel */
+  channel: 'luminance' | 'alpha' | 'red' | 'green' | 'blue';
+  /** Invert the mask */
+  invert: boolean;
+  /** Sample rate (1 = every pixel, 2 = every 2nd pixel, etc.) */
+  sampleRate: number;
+}
 
 // Spline path emission configuration
 export interface SplinePathEmission {
@@ -1006,6 +1040,10 @@ export interface ParticleEmitterConfig {
   emitFromVolume: boolean;
   // Spline path emission (when shape = 'spline')
   splinePath: SplinePathEmission | null;
+  // Depth map emission (when shape = 'depth-map')
+  depthMapEmission?: DepthMapEmission;
+  // Mask emission (when shape = 'mask')
+  maskEmission?: MaskEmission;
   // Sprite configuration
   sprite: SpriteConfig;
 }
@@ -1833,7 +1871,87 @@ export interface TextData {
 
   // 3D Text
   perCharacter3D: boolean;
+
+  // Text Animators (After Effects-style per-character animation)
+  animators?: TextAnimator[];
 }
+
+// ============================================================
+// TEXT ANIMATOR (Per-character animation like AE)
+// ============================================================
+
+export interface TextAnimator {
+  id: string;
+  name: string;
+  enabled: boolean;
+
+  // Range Selector
+  rangeSelector: TextRangeSelector;
+
+  // Animatable Properties
+  properties: TextAnimatorProperties;
+}
+
+export interface TextRangeSelector {
+  // Selection mode
+  mode: 'percent' | 'index';
+
+  // Selection range (0-100 for percent, integers for index)
+  start: AnimatableProperty<number>;
+  end: AnimatableProperty<number>;
+  offset: AnimatableProperty<number>;
+
+  // Selection unit
+  basedOn: 'characters' | 'characters_excluding_spaces' | 'words' | 'lines';
+
+  // Shape and randomness
+  shape: 'square' | 'ramp_up' | 'ramp_down' | 'triangle' | 'round' | 'smooth';
+  randomizeOrder: boolean;
+  randomSeed: number;
+
+  // Easing
+  ease: { high: number; low: number }; // 0-100
+}
+
+export interface TextAnimatorProperties {
+  // Transform properties
+  position?: AnimatableProperty<{ x: number; y: number }>;
+  anchorPoint?: AnimatableProperty<{ x: number; y: number }>;
+  scale?: AnimatableProperty<{ x: number; y: number }>;
+  rotation?: AnimatableProperty<number>;
+  skew?: AnimatableProperty<number>;
+  skewAxis?: AnimatableProperty<number>;
+
+  // Style properties
+  opacity?: AnimatableProperty<number>;
+  fillColor?: AnimatableProperty<string>;
+  fillBrightness?: AnimatableProperty<number>;
+  fillSaturation?: AnimatableProperty<number>;
+  fillHue?: AnimatableProperty<number>;
+  strokeColor?: AnimatableProperty<string>;
+  strokeWidth?: AnimatableProperty<number>;
+
+  // Character properties
+  tracking?: AnimatableProperty<number>;
+  lineAnchor?: AnimatableProperty<number>;
+  lineSpacing?: AnimatableProperty<number>;
+  characterOffset?: AnimatableProperty<number>;
+  blur?: AnimatableProperty<{ x: number; y: number }>;
+}
+
+// Text Animator Presets
+export type TextAnimatorPresetType =
+  | 'typewriter'
+  | 'fade_in_by_character'
+  | 'fade_in_by_word'
+  | 'bounce_in'
+  | 'wave'
+  | 'scale_in'
+  | 'rotate_in'
+  | 'slide_in_left'
+  | 'slide_in_right'
+  | 'blur_in'
+  | 'random_fade';
 
 // ============================================================
 // UTILITY TYPES

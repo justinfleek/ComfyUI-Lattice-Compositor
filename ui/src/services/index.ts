@@ -636,3 +636,14 @@ export {
   type EnvironmentConfig,
   type MaterialPreset,
 } from './materialSystem';
+
+// WebGPU Compute Particles
+export {
+  ParticleGPUCompute,
+  HybridParticleSystem,
+  type GPUParticleConfig,
+  type GPUGravityWell,
+  type GPUVortex,
+  type GPUParticleData,
+  type WebGPUCapabilities,
+} from './particleGPU';

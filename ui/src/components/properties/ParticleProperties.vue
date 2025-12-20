@@ -1,5 +1,64 @@
 <template>
   <div class="particle-properties">
+    <!-- Presets Section -->
+    <div class="property-section presets-section">
+      <div class="section-header" @click="toggleSection('presets')">
+        <i class="pi" :class="expandedSections.has('presets') ? 'pi-chevron-down' : 'pi-chevron-right'" />
+        <span>Presets</span>
+      </div>
+      <div v-if="expandedSections.has('presets')" class="section-content">
+        <div class="preset-controls">
+          <select v-model="selectedPresetId" class="preset-select">
+            <option value="">Select a preset...</option>
+            <optgroup label="Built-in">
+              <option v-for="p in builtInPresets" :key="p.id" :value="p.id">
+                {{ p.name }}
+              </option>
+            </optgroup>
+            <optgroup v-if="userPresets.length > 0" label="User Presets">
+              <option v-for="p in userPresets" :key="p.id" :value="p.id">
+                {{ p.name }}
+              </option>
+            </optgroup>
+          </select>
+          <button class="preset-btn apply" @click="applySelectedPreset" :disabled="!selectedPresetId" title="Apply Preset">
+            Apply
+          </button>
+        </div>
+        <div class="preset-actions">
+          <button class="preset-btn save" @click="showSaveDialog = true" title="Save Current Settings as Preset">
+            Save Preset
+          </button>
+          <button class="preset-btn delete" @click="deleteSelectedPreset" :disabled="!selectedPresetId || isBuiltInPreset" title="Delete Preset">
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Save Preset Dialog -->
+    <div v-if="showSaveDialog" class="preset-dialog-overlay" @click.self="showSaveDialog = false">
+      <div class="preset-dialog">
+        <h3>Save Particle Preset</h3>
+        <div class="dialog-field">
+          <label>Name</label>
+          <input v-model="newPresetName" type="text" placeholder="My Preset" />
+        </div>
+        <div class="dialog-field">
+          <label>Description</label>
+          <input v-model="newPresetDescription" type="text" placeholder="Optional description..." />
+        </div>
+        <div class="dialog-field">
+          <label>Tags (comma-separated)</label>
+          <input v-model="newPresetTags" type="text" placeholder="fire, glow, magic" />
+        </div>
+        <div class="dialog-actions">
+          <button class="dialog-btn cancel" @click="showSaveDialog = false">Cancel</button>
+          <button class="dialog-btn save" @click="saveCurrentAsPreset" :disabled="!newPresetName.trim()">Save</button>
+        </div>
+      </div>
+    </div>
+
     <!-- System Settings -->
     <div class="property-section">
       <div class="section-header" @click="toggleSection('system')">
@@ -98,6 +157,19 @@
               @change="updateSystemConfig('respectMaskBoundary', ($event.target as HTMLInputElement).checked)"
             />
             Respect Mask Boundary
+          </label>
+        </div>
+        <div class="property-row checkbox-row gpu-row">
+          <label>
+            <input
+              type="checkbox"
+              :checked="systemConfig.useGPU"
+              :disabled="!webgpuAvailable"
+              @change="updateSystemConfig('useGPU', ($event.target as HTMLInputElement).checked)"
+            />
+            GPU Acceleration
+            <span v-if="webgpuAvailable" class="gpu-status available">(WebGPU)</span>
+            <span v-else class="gpu-status unavailable">(Not Available)</span>
           </label>
         </div>
       </div>
@@ -1122,7 +1194,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import type {
   Layer,
   ParticleLayerData,
@@ -1136,6 +1208,40 @@ import type {
   SubEmitterConfig,
   ConnectionRenderConfig
 } from '@/types/project';
+import { usePresetStore } from '@/stores/presetStore';
+import type { ParticlePreset } from '@/types/presets';
+import { ParticleGPUCompute } from '@/services/particleGPU';
+
+// Preset Store
+const presetStore = usePresetStore();
+presetStore.initialize();
+
+// WebGPU Detection
+const webgpuAvailable = ref(false);
+
+onMounted(async () => {
+  webgpuAvailable.value = await ParticleGPUCompute.isAvailable();
+});
+
+// Preset UI State
+const selectedPresetId = ref('');
+const showSaveDialog = ref(false);
+const newPresetName = ref('');
+const newPresetDescription = ref('');
+const newPresetTags = ref('');
+
+// Computed preset lists
+const builtInPresets = computed(() =>
+  presetStore.particlePresets.filter(p => p.isBuiltIn)
+);
+const userPresets = computed(() =>
+  presetStore.particlePresets.filter(p => !p.isBuiltIn)
+);
+const isBuiltInPreset = computed(() => {
+  if (!selectedPresetId.value) return false;
+  const preset = presetStore.getPreset(selectedPresetId.value);
+  return preset?.isBuiltIn ?? false;
+});
 
 interface Props {
   layer: Layer;
@@ -1231,6 +1337,136 @@ function toggleEmitter(id: string): void {
     expandedEmitters.value.delete(id);
   } else {
     expandedEmitters.value.add(id);
+  }
+}
+
+// Preset functions
+function applySelectedPreset(): void {
+  if (!selectedPresetId.value) return;
+
+  const preset = presetStore.getPreset(selectedPresetId.value) as ParticlePreset | undefined;
+  if (!preset || preset.category !== 'particle') return;
+
+  // Merge preset config with current data
+  const config = preset.config;
+  const updates: Partial<ParticleLayerData> = {};
+
+  if (config.maxParticles !== undefined) {
+    updates.systemConfig = {
+      ...systemConfig.value,
+      maxParticles: config.maxParticles,
+    };
+  }
+
+  // Apply gravity if specified
+  if (config.gravity) {
+    updates.systemConfig = {
+      ...(updates.systemConfig || systemConfig.value),
+      gravity: config.gravity.y || 0,
+    };
+  }
+
+  // Apply emitter defaults if specified
+  if (config.emissionRate || config.lifespan || config.startSize || config.endSize) {
+    const defaultEmitter = emitters.value[0] || createDefaultEmitter();
+    updates.emitters = [{
+      ...defaultEmitter,
+      emissionRate: config.emissionRate ?? defaultEmitter.emissionRate,
+      lifespan: config.lifespan ?? defaultEmitter.lifespan,
+      startSize: config.startSize ?? defaultEmitter.startSize,
+      endSize: config.endSize ?? defaultEmitter.endSize,
+      startColor: config.startColor ?? defaultEmitter.startColor,
+      endColor: config.endColor ?? defaultEmitter.endColor,
+      velocitySpread: config.velocitySpread ?? defaultEmitter.velocitySpread,
+    }];
+  }
+
+  // Apply turbulence if specified
+  if (config.turbulenceStrength !== undefined) {
+    updates.turbulenceFields = [{
+      id: 'turbulence-from-preset',
+      enabled: true,
+      strength: config.turbulenceStrength,
+      scale: 0.01,
+      octaves: 3,
+      persistence: 0.5,
+      animationSpeed: 1,
+    }];
+  }
+
+  emit('update', updates);
+}
+
+function createDefaultEmitter(): ParticleEmitterConfig {
+  return {
+    id: `emitter_${Date.now()}`,
+    enabled: true,
+    emissionMode: 'point',
+    emissionRate: 50,
+    emissionBurstSize: 10,
+    emissionBurstInterval: 0,
+    position: { x: 0, y: 0, z: 0 },
+    direction: { x: 0, y: -1, z: 0 },
+    spread: 30,
+    velocity: { min: 50, max: 150 },
+    lifespan: 2,
+    startSize: 10,
+    endSize: 2,
+    startColor: '#ffffff',
+    endColor: '#ffffff',
+    startOpacity: 1,
+    endOpacity: 0,
+    rotation: { min: 0, max: 360 },
+    rotationSpeed: { min: 0, max: 0 },
+    velocitySpread: 30,
+  };
+}
+
+function saveCurrentAsPreset(): void {
+  if (!newPresetName.value.trim()) return;
+
+  const tags = newPresetTags.value
+    .split(',')
+    .map(t => t.trim())
+    .filter(t => t.length > 0);
+
+  // Extract current config
+  const emitter = emitters.value[0];
+  const turbulence = turbulenceFields.value[0];
+
+  presetStore.saveParticlePreset(
+    newPresetName.value.trim(),
+    {
+      maxParticles: systemConfig.value.maxParticles,
+      emissionRate: emitter?.emissionRate,
+      lifespan: emitter?.lifespan,
+      startSize: emitter?.startSize,
+      endSize: emitter?.endSize,
+      startColor: emitter?.startColor,
+      endColor: emitter?.endColor,
+      gravity: { x: 0, y: systemConfig.value.gravity, z: 0 },
+      turbulenceStrength: turbulence?.strength,
+      velocitySpread: emitter?.velocitySpread,
+    },
+    {
+      description: newPresetDescription.value.trim() || undefined,
+      tags: tags.length > 0 ? tags : undefined,
+    }
+  );
+
+  // Reset dialog
+  showSaveDialog.value = false;
+  newPresetName.value = '';
+  newPresetDescription.value = '';
+  newPresetTags.value = '';
+}
+
+function deleteSelectedPreset(): void {
+  if (!selectedPresetId.value || isBuiltInPreset.value) return;
+
+  if (confirm('Delete this preset?')) {
+    presetStore.deletePreset(selectedPresetId.value);
+    selectedPresetId.value = '';
   }
 }
 
@@ -1704,5 +1940,204 @@ function hexToRgb(hex: string): [number, number, number] {
   color: #e0e0e0;
   border-radius: 3px;
   font-size: 13px;
+}
+
+/* Preset Styles */
+.presets-section {
+  border-bottom: 2px solid #4a90d9;
+}
+
+.preset-controls {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.preset-select {
+  flex: 1;
+  padding: 6px 8px;
+  background: #1e1e1e;
+  border: 1px solid #3d3d3d;
+  border-radius: 4px;
+  color: #e0e0e0;
+  font-size: 13px;
+}
+
+.preset-select:focus {
+  outline: none;
+  border-color: #4a90d9;
+}
+
+.preset-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.preset-btn {
+  padding: 6px 12px;
+  border: 1px solid #3d3d3d;
+  border-radius: 4px;
+  background: #2d2d2d;
+  color: #e0e0e0;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.preset-btn:hover:not(:disabled) {
+  background: #3d3d3d;
+}
+
+.preset-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.preset-btn.apply {
+  background: #4a90d9;
+  border-color: #4a90d9;
+  color: #fff;
+}
+
+.preset-btn.apply:hover:not(:disabled) {
+  background: #5a9fea;
+}
+
+.preset-btn.save {
+  flex: 1;
+  border-color: #4caf50;
+  color: #4caf50;
+}
+
+.preset-btn.save:hover {
+  background: #4caf50;
+  color: #fff;
+}
+
+.preset-btn.delete {
+  border-color: #c44;
+  color: #c44;
+}
+
+.preset-btn.delete:hover:not(:disabled) {
+  background: #c44;
+  color: #fff;
+}
+
+/* Preset Dialog */
+.preset-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.preset-dialog {
+  background: #2d2d2d;
+  border-radius: 8px;
+  padding: 20px;
+  min-width: 320px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.preset-dialog h3 {
+  margin: 0 0 16px 0;
+  color: #e0e0e0;
+  font-size: 16px;
+}
+
+.dialog-field {
+  margin-bottom: 12px;
+}
+
+.dialog-field label {
+  display: block;
+  margin-bottom: 4px;
+  color: #888;
+  font-size: 12px;
+}
+
+.dialog-field input {
+  width: 100%;
+  padding: 8px 10px;
+  background: #1e1e1e;
+  border: 1px solid #3d3d3d;
+  border-radius: 4px;
+  color: #e0e0e0;
+  font-size: 13px;
+}
+
+.dialog-field input:focus {
+  outline: none;
+  border-color: #4a90d9;
+}
+
+.dialog-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 20px;
+  justify-content: flex-end;
+}
+
+.dialog-btn {
+  padding: 8px 16px;
+  border: 1px solid #3d3d3d;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.dialog-btn.cancel {
+  background: transparent;
+  color: #888;
+}
+
+.dialog-btn.cancel:hover {
+  background: #3d3d3d;
+  color: #e0e0e0;
+}
+
+.dialog-btn.save {
+  background: #4caf50;
+  border-color: #4caf50;
+  color: #fff;
+}
+
+.dialog-btn.save:hover:not(:disabled) {
+  background: #5cbf60;
+}
+
+.dialog-btn.save:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* GPU Acceleration Toggle */
+.gpu-row label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.gpu-status {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: 500;
+}
+
+.gpu-status.available {
+  background: rgba(76, 175, 80, 0.2);
+  color: #4caf50;
+}
+
+.gpu-status.unavailable {
+  background: rgba(136, 136, 136, 0.2);
+  color: #888;
 }
 </style>

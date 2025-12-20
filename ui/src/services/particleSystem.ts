@@ -1451,6 +1451,16 @@ export class ParticleSystem {
         return this.getSplineEmitPosition(emitter);
       }
 
+      case 'depth-map': {
+        // Emit from depth map values
+        return this.getDepthMapEmitPosition(emitter);
+      }
+
+      case 'mask': {
+        // Emit from mask/matte
+        return this.getMaskEmitPosition(emitter);
+      }
+
       default:
         return { x: emitter.x, y: emitter.y };
     }
@@ -1559,6 +1569,221 @@ export class ParticleSystem {
     }
 
     return { x, y, direction };
+  }
+
+  /**
+   * Get emission position from depth map
+   * Emits particles from positions where depth values fall within the configured range
+   * Uses cached emission points for performance
+   */
+  private getDepthMapEmitPosition(emitter: EmitterConfig): { x: number; y: number } {
+    const config = (emitter as any).depthMapEmission;
+
+    // Fall back to point emission if no depth map config
+    if (!config) {
+      return { x: emitter.x, y: emitter.y };
+    }
+
+    // Check for cached emission points
+    const cacheKey = `depth_${config.sourceLayerId}`;
+    let emissionPoints = this.imageEmissionCache.get(cacheKey);
+
+    // If no cache or cache is stale, regenerate points
+    if (!emissionPoints) {
+      emissionPoints = this.sampleDepthMapEmissionPoints(config);
+      this.imageEmissionCache.set(cacheKey, emissionPoints);
+    }
+
+    // If no valid emission points, fall back to emitter position
+    if (emissionPoints.length === 0) {
+      return { x: emitter.x, y: emitter.y };
+    }
+
+    // Select a random emission point
+    const idx = this.rng.int(0, emissionPoints.length - 1);
+    const point = emissionPoints[idx];
+
+    return { x: point.x + emitter.x, y: point.y + emitter.y };
+  }
+
+  /**
+   * Sample valid emission points from a depth map
+   */
+  private sampleDepthMapEmissionPoints(config: any): Array<{ x: number; y: number; depth: number }> {
+    const points: Array<{ x: number; y: number; depth: number }> = [];
+
+    // Try to get the depth map image data from the layer provider
+    if (!this.depthMapProvider) {
+      // No provider available - use a grid pattern as fallback
+      const gridSize = 20;
+      for (let y = 0; y < gridSize; y++) {
+        for (let x = 0; x < gridSize; x++) {
+          const depth = (x + y) / (gridSize * 2); // Gradient fallback
+          if (depth >= config.depthMin && depth <= config.depthMax) {
+            points.push({
+              x: (x / gridSize - 0.5) * 500,
+              y: (y / gridSize - 0.5) * 500,
+              depth
+            });
+          }
+        }
+      }
+      return points;
+    }
+
+    // Get actual depth map data
+    const depthData = this.depthMapProvider(config.sourceLayerId, this.currentFrame);
+    if (!depthData) {
+      return points;
+    }
+
+    // Sample the depth map
+    const sampleRate = Math.max(1, Math.floor(1 / config.density));
+    for (let y = 0; y < depthData.height; y += sampleRate) {
+      for (let x = 0; x < depthData.width; x += sampleRate) {
+        const idx = (y * depthData.width + x) * 4;
+        let depthValue = depthData.data[idx] / 255; // Normalize to 0-1
+
+        // Handle depth mode (white=near or black=near)
+        if (config.depthMode === 'near-black') {
+          depthValue = 1 - depthValue;
+        }
+
+        // Check if depth is within emission range
+        if (depthValue >= config.depthMin && depthValue <= config.depthMax) {
+          points.push({
+            x: x - depthData.width / 2,
+            y: y - depthData.height / 2,
+            depth: depthValue
+          });
+        }
+      }
+    }
+
+    return points;
+  }
+
+  /**
+   * Get emission position from mask/matte
+   * Emits particles from bright areas of the mask
+   */
+  private getMaskEmitPosition(emitter: EmitterConfig): { x: number; y: number } {
+    const config = (emitter as any).maskEmission;
+
+    // Fall back to point emission if no mask config
+    if (!config) {
+      return { x: emitter.x, y: emitter.y };
+    }
+
+    // Check for cached emission points
+    const cacheKey = `mask_${config.sourceLayerId}_${config.channel}_${config.threshold}`;
+    let emissionPoints = this.imageEmissionCache.get(cacheKey);
+
+    // If no cache, regenerate points
+    if (!emissionPoints) {
+      emissionPoints = this.sampleMaskEmissionPoints(config);
+      this.imageEmissionCache.set(cacheKey, emissionPoints);
+    }
+
+    // If no valid emission points, fall back to emitter position
+    if (emissionPoints.length === 0) {
+      return { x: emitter.x, y: emitter.y };
+    }
+
+    // Select a random emission point
+    const idx = this.rng.int(0, emissionPoints.length - 1);
+    const point = emissionPoints[idx];
+
+    return { x: point.x + emitter.x, y: point.y + emitter.y };
+  }
+
+  /**
+   * Sample valid emission points from a mask
+   */
+  private sampleMaskEmissionPoints(config: any): Array<{ x: number; y: number }> {
+    const points: Array<{ x: number; y: number }> = [];
+
+    // Try to get the mask image data from the layer provider
+    if (!this.maskProvider) {
+      // No provider available - use emitter area as fallback
+      return points;
+    }
+
+    // Get actual mask data
+    const maskData = this.maskProvider(config.sourceLayerId, this.currentFrame);
+    if (!maskData) {
+      return points;
+    }
+
+    // Determine which channel to sample
+    const channelIdx = config.channel === 'alpha' ? 3 :
+                       config.channel === 'red' ? 0 :
+                       config.channel === 'green' ? 1 :
+                       config.channel === 'blue' ? 2 : -1; // luminance
+
+    const sampleRate = Math.max(1, config.sampleRate || 1);
+
+    for (let y = 0; y < maskData.height; y += sampleRate) {
+      for (let x = 0; x < maskData.width; x += sampleRate) {
+        const idx = (y * maskData.width + x) * 4;
+
+        let value: number;
+        if (channelIdx === -1) {
+          // Luminance: weighted sum of RGB
+          value = (maskData.data[idx] * 0.299 +
+                   maskData.data[idx + 1] * 0.587 +
+                   maskData.data[idx + 2] * 0.114) / 255;
+        } else {
+          value = maskData.data[idx + channelIdx] / 255;
+        }
+
+        // Handle inversion
+        if (config.invert) {
+          value = 1 - value;
+        }
+
+        // Check threshold
+        if (value >= config.threshold) {
+          // Add some randomness based on density
+          if (this.rng.next() < config.density) {
+            points.push({
+              x: x - maskData.width / 2,
+              y: y - maskData.height / 2
+            });
+          }
+        }
+      }
+    }
+
+    return points;
+  }
+
+  // Cache for image-based emission points
+  private imageEmissionCache: Map<string, Array<{ x: number; y: number; depth?: number }>> = new Map();
+
+  // Provider functions for image data (set by the engine)
+  private depthMapProvider?: (layerId: string, frame: number) => ImageData | null;
+  private maskProvider?: (layerId: string, frame: number) => ImageData | null;
+
+  /**
+   * Set the depth map provider function
+   */
+  setDepthMapProvider(provider: (layerId: string, frame: number) => ImageData | null): void {
+    this.depthMapProvider = provider;
+  }
+
+  /**
+   * Set the mask provider function
+   */
+  setMaskProvider(provider: (layerId: string, frame: number) => ImageData | null): void {
+    this.maskProvider = provider;
+  }
+
+  /**
+   * Clear the image emission cache (call when source layers change)
+   */
+  clearEmissionCache(): void {
+    this.imageEmissionCache.clear();
   }
 
   private handleBoundaryCollision(p: Particle): void {

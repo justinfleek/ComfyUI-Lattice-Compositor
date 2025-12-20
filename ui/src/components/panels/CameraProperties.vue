@@ -543,6 +543,128 @@
           </div>
         </div>
       </div>
+
+      <!-- Camera Shake -->
+      <div class="property-section">
+        <div class="section-header" @click="toggleSection('shake')">
+          <span class="toggle-icon">{{ expandedSections.shake ? '▼' : '►' }}</span>
+          Camera Shake
+        </div>
+        <div v-show="expandedSections.shake" class="section-content">
+          <!-- Shake Preset Selector -->
+          <div class="property-group">
+            <label>Preset</label>
+            <select v-model="shakeConfig.type" @change="applyShakePreset(shakeConfig.type)">
+              <option value="handheld">Handheld</option>
+              <option value="subtle">Subtle</option>
+              <option value="impact">Impact</option>
+              <option value="earthquake">Earthquake</option>
+              <option value="custom">Custom</option>
+            </select>
+          </div>
+
+          <!-- Shake Description -->
+          <div class="shake-description">
+            <template v-if="shakeConfig.type === 'handheld'">Simulates natural handheld camera movement</template>
+            <template v-else-if="shakeConfig.type === 'subtle'">Gentle shake for atmospheric tension</template>
+            <template v-else-if="shakeConfig.type === 'impact'">Sharp, sudden shake for impacts or explosions</template>
+            <template v-else-if="shakeConfig.type === 'earthquake'">Violent, sustained shaking</template>
+            <template v-else>Custom shake parameters</template>
+          </div>
+
+          <!-- Intensity -->
+          <div class="property-group">
+            <label>Intensity</label>
+            <SliderInput
+              :modelValue="shakeConfig.intensity"
+              @update:modelValue="v => shakeConfig.intensity = v"
+              :min="0"
+              :max="1"
+              :step="0.05"
+            />
+          </div>
+
+          <!-- Frequency -->
+          <div class="property-group">
+            <label>Frequency</label>
+            <SliderInput
+              :modelValue="shakeConfig.frequency"
+              @update:modelValue="v => shakeConfig.frequency = v"
+              :min="0.1"
+              :max="5"
+              :step="0.1"
+            />
+          </div>
+
+          <!-- Duration -->
+          <div class="property-group">
+            <label>Duration (frames)</label>
+            <ScrubableNumber
+              :modelValue="shakeDuration"
+              @update:modelValue="v => shakeDuration = v"
+              :min="1"
+              :max="600"
+              :precision="0"
+            />
+          </div>
+
+          <!-- Rotation Shake -->
+          <div class="property-group checkbox-group">
+            <label>
+              <input
+                type="checkbox"
+                v-model="shakeConfig.rotationEnabled"
+              />
+              Rotation Shake
+            </label>
+          </div>
+
+          <div v-if="shakeConfig.rotationEnabled" class="property-group">
+            <label>Rotation Scale</label>
+            <SliderInput
+              :modelValue="shakeConfig.rotationScale"
+              @update:modelValue="v => shakeConfig.rotationScale = v"
+              :min="0"
+              :max="2"
+              :step="0.1"
+            />
+          </div>
+
+          <!-- Decay -->
+          <div class="property-group">
+            <label>Decay</label>
+            <SliderInput
+              :modelValue="shakeConfig.decay"
+              @update:modelValue="v => shakeConfig.decay = v"
+              :min="0"
+              :max="1"
+              :step="0.05"
+            />
+          </div>
+
+          <!-- Seed -->
+          <div class="property-group">
+            <label>Seed</label>
+            <ScrubableNumber
+              :modelValue="shakeConfig.seed"
+              @update:modelValue="v => shakeConfig.seed = v"
+              :min="0"
+              :max="99999"
+              :precision="0"
+            />
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="shake-actions">
+            <button class="action-btn preview" @click="previewShake">
+              Preview
+            </button>
+            <button class="action-btn apply" @click="applyShakeKeyframes">
+              Apply Keyframes
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div v-else class="no-camera">
@@ -570,6 +692,13 @@ import {
   generateTrajectoryKeyframes,
   createTrajectoryFromPreset
 } from '@/services/cameraTrajectory';
+import {
+  type CameraShakeConfig,
+  CameraShake,
+  SHAKE_PRESETS,
+  DEFAULT_SHAKE_CONFIG,
+  createCameraShake
+} from '@/services/cameraEnhancements';
 
 // Store connection
 const store = useCompositorStore();
@@ -594,13 +723,22 @@ const expandedSections = reactive({
   highlight: false,
   autoOrient: false,
   clipping: false,
-  trajectory: false
+  trajectory: false,
+  shake: false
 });
 
 // Trajectory configuration
 const trajectoryConfig = reactive<TrajectoryConfig>({
   ...DEFAULT_TRAJECTORY
 });
+
+// Camera Shake configuration
+const shakeConfig = reactive<CameraShakeConfig>({
+  ...DEFAULT_SHAKE_CONFIG
+});
+const shakeEnabled = ref(false);
+const shakeDuration = ref(81); // Default composition length
+let activeCameraShake: CameraShake | null = null;
 
 // Get trajectory types grouped by category
 const trajectoryTypesByCategory = computed(() => getTrajectoryTypesByCategory());
@@ -721,6 +859,93 @@ function applyTrajectory() {
   }
 
   console.log(`Applied ${keyframes.position.length} camera trajectory keyframes`);
+}
+
+// ============================================================================
+// CAMERA SHAKE
+// ============================================================================
+
+function applyShakePreset(preset: CameraShakeConfig['type']) {
+  const presetConfig = SHAKE_PRESETS[preset];
+  Object.assign(shakeConfig, presetConfig, { type: preset });
+}
+
+function previewShake() {
+  if (!camera.value) return;
+
+  // Create shake instance
+  activeCameraShake = createCameraShake(
+    shakeConfig.type,
+    shakeConfig,
+    store.currentFrame,
+    shakeDuration.value
+  );
+
+  // Store original camera position
+  const originalPosition = { ...camera.value.position };
+  const originalOrientation = { ...camera.value.orientation };
+
+  // Preview animation
+  const startTime = performance.now();
+  const duration = (shakeDuration.value / 30) * 1000;
+
+  function animate() {
+    const elapsed = performance.now() - startTime;
+    const frame = Math.floor((elapsed / 1000) * 30) + store.currentFrame;
+
+    if (elapsed < duration && activeCameraShake) {
+      const offset = activeCameraShake.getOffset(frame);
+
+      store.updateCamera(camera.value!.id, {
+        position: {
+          x: originalPosition.x + offset.position.x,
+          y: originalPosition.y + offset.position.y,
+          z: originalPosition.z + offset.position.z,
+        },
+        orientation: {
+          x: originalOrientation.x + offset.rotation.x,
+          y: originalOrientation.y + offset.rotation.y,
+          z: originalOrientation.z + offset.rotation.z,
+        }
+      });
+
+      requestAnimationFrame(animate);
+    } else {
+      // Restore original position
+      store.updateCamera(camera.value!.id, {
+        position: originalPosition,
+        orientation: originalOrientation
+      });
+      activeCameraShake = null;
+    }
+  }
+
+  requestAnimationFrame(animate);
+}
+
+function applyShakeKeyframes() {
+  if (!camera.value) return;
+
+  // Create shake instance
+  const shake = createCameraShake(
+    shakeConfig.type,
+    shakeConfig,
+    store.currentFrame,
+    shakeDuration.value
+  );
+
+  // Get existing keyframes for the camera
+  const existingKeyframes = camera.value.keyframes || [];
+
+  // Generate shaken keyframes
+  const shakenKeyframes = shake.generateKeyframes(existingKeyframes, 2); // Sample every 2 frames
+
+  // Apply the shaken keyframes
+  for (const kf of shakenKeyframes) {
+    store.addCameraKeyframe(camera.value.id, kf);
+  }
+
+  console.log(`Applied ${shakenKeyframes.length} camera shake keyframes`);
 }
 
 function toggleSection(section: keyof typeof expandedSections) {
@@ -1048,5 +1273,23 @@ select:focus {
 .action-btn.apply:hover {
   background: #4caf50;
   color: #fff;
+}
+
+/* Camera Shake Styles */
+.shake-description {
+  padding: 8px;
+  background: #252525;
+  border-radius: 4px;
+  color: #888;
+  font-size: 12px;
+  font-style: italic;
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+.shake-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
 }
 </style>
