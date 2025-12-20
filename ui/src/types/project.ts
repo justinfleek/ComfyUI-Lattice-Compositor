@@ -186,6 +186,16 @@ export interface AssetReference {
 // LAYER TYPES
 // ============================================================
 
+/**
+ * Auto-Orient Mode - How a layer orients itself in 3D space
+ *
+ * - 'off': No auto-orientation, use manual rotation
+ * - 'toCamera': Always face the camera (billboard), only X/Y position moves
+ * - 'alongPath': Orient along motion path tangent
+ * - 'toPointOfInterest': Orient toward a point of interest (for cameras/lights)
+ */
+export type AutoOrientMode = 'off' | 'toCamera' | 'alongPath' | 'toPointOfInterest';
+
 export interface Layer {
   id: string;
   name: string;
@@ -195,6 +205,7 @@ export interface Layer {
   isolate: boolean;           // Isolate layer (show only this layer)
   minimized?: boolean;        // Minimized layer (hide when minimized mode enabled)
   threeD: boolean;            // 3D Layer Switch
+  autoOrient?: AutoOrientMode; // Auto-orient behavior (billboard to camera, along path, etc.)
   motionBlur: boolean;        // Motion Blur Switch
   motionBlurSettings?: LayerMotionBlurSettings;  // Detailed motion blur configuration
   flattenTransform?: boolean; // Flatten Transform / Continuously Rasterize

@@ -9,7 +9,7 @@
  */
 
 import * as THREE from 'three';
-import type { Layer, AnimatableProperty, LayerTransform, LayerMask, MatteType, LayerMotionBlurSettings } from '@/types/project';
+import type { Layer, AnimatableProperty, LayerTransform, LayerMask, MatteType, LayerMotionBlurSettings, AutoOrientMode } from '@/types/project';
 import type { EffectInstance } from '@/types/effects';
 import type { LayerInstance } from '../types';
 import type { TargetParameter } from '@/services/audioReactiveMapping';
@@ -57,6 +57,9 @@ export abstract class BaseLayer implements LayerInstance {
 
   /** 3D layer flag */
   protected threeD: boolean;
+
+  /** Auto-orient mode (billboard to camera, along path, etc.) */
+  protected autoOrient: AutoOrientMode = 'off';
 
   /** Blend mode */
   protected blendMode: string;
@@ -179,6 +182,7 @@ export abstract class BaseLayer implements LayerInstance {
     this.opacity = layerData.opacity;
     this.transform = layerData.transform;
     this.threeD = layerData.threeD ?? false;
+    this.autoOrient = layerData.autoOrient ?? 'off';
     this.blendMode = layerData.blendMode ?? 'normal';
     this.parentId = layerData.parentId ?? null;
     this.effects = layerData.effects ?? [];
@@ -382,6 +386,81 @@ export abstract class BaseLayer implements LayerInstance {
   }
 
   /**
+   * Apply auto-orient behavior (billboarding, path orientation, etc.)
+   *
+   * Call this after applyTransform when the layer should face the camera.
+   * For 'toCamera' mode, the layer always faces the camera but only X/Y position moves.
+   *
+   * @param camera - The camera to orient toward (for 'toCamera' mode)
+   * @param pathTangent - Optional path tangent vector (for 'alongPath' mode)
+   */
+  applyAutoOrient(camera?: THREE.Camera, pathTangent?: THREE.Vector3): void {
+    if (this.autoOrient === 'off') {
+      return;
+    }
+
+    if (this.autoOrient === 'toCamera' && camera) {
+      // Billboard mode: Layer always faces the camera
+      // Keep position, just modify rotation to face camera
+      const cameraPosition = new THREE.Vector3();
+      camera.getWorldPosition(cameraPosition);
+
+      const layerPosition = new THREE.Vector3();
+      this.group.getWorldPosition(layerPosition);
+
+      // Calculate direction from layer to camera
+      const direction = new THREE.Vector3()
+        .subVectors(cameraPosition, layerPosition)
+        .normalize();
+
+      // Create a quaternion that rotates the layer to face the camera
+      // We only rotate around Y axis for vertical billboarding (sprite-style)
+      const targetQuaternion = new THREE.Quaternion();
+
+      // For 2D-style billboarding, we want the layer to face the camera
+      // but keep its "up" direction aligned with world up
+      const up = new THREE.Vector3(0, 1, 0);
+      const matrix = new THREE.Matrix4();
+      matrix.lookAt(layerPosition, cameraPosition, up);
+      targetQuaternion.setFromRotationMatrix(matrix);
+
+      // Apply the billboard rotation
+      this.group.quaternion.copy(targetQuaternion);
+      this.group.updateMatrix();
+    }
+
+    if (this.autoOrient === 'alongPath' && pathTangent) {
+      // Orient along motion path tangent
+      // The tangent vector points in the direction of movement
+      const angle = Math.atan2(pathTangent.y, pathTangent.x);
+
+      // Apply rotation (keeping any existing X/Y rotation from 3D layers)
+      if (this.threeD) {
+        // For 3D layers, only modify Z rotation
+        this.group.rotation.z = -angle;
+      } else {
+        // For 2D layers, set the Z rotation
+        this.group.rotation.set(0, 0, -angle);
+      }
+      this.group.updateMatrix();
+    }
+  }
+
+  /**
+   * Get the current auto-orient mode
+   */
+  getAutoOrient(): AutoOrientMode {
+    return this.autoOrient;
+  }
+
+  /**
+   * Set the auto-orient mode
+   */
+  setAutoOrient(mode: AutoOrientMode): void {
+    this.autoOrient = mode;
+  }
+
+  /**
    * Apply opacity to layer materials
    */
   protected applyOpacity(opacity: number): void {
@@ -506,6 +585,10 @@ export abstract class BaseLayer implements LayerInstance {
 
     if (properties.threeD !== undefined) {
       this.threeD = properties.threeD;
+    }
+
+    if (properties.autoOrient !== undefined) {
+      this.autoOrient = properties.autoOrient;
     }
 
     if (properties.blendMode !== undefined) {

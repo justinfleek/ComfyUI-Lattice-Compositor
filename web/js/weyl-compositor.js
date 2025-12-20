@@ -1,6 +1,6 @@
 import { H as defineStore, I as toRaw, c as computed, r as ref, J as reactive, K as defineComponent, w as watch, o as onMounted, a as createElementBlock, d as openBlock, L as withModifiers, t as createBaseVNode, C as createCommentVNode, D as normalizeClass, x as toDisplayString, A as withDirectives, F as Fragment, M as renderList, v as createTextVNode, N as vModelSelect, O as vModelText, P as vModelCheckbox, g as createBlock, u as unref, B as withCtx, n as normalizeStyle, Q as vModelRadio, E as createVNode, R as onUnmounted, S as withKeys, T as Teleport, U as createStaticVNode, V as markRaw, h as resolveDynamicComponent, W as vShow, X as storeToRefs, k as nextTick, Y as shallowRef, Z as createApp, _ as createPinia } from './weyl-vue-vendor.js';
 import { s as script, g as ge, P as Pe } from './weyl-ui-vendor.js';
-import { G as Group, M as MathUtils, a as Mesh, N as NormalBlending, A as AddEquation, S as SrcAlphaFactor, O as OneMinusSrcAlphaFactor, b as OneFactor, C as CustomBlending, c as MaxEquation, d as MinEquation, e as OneMinusDstColorFactor, f as OneMinusSrcColorFactor, g as SubtractEquation, h as SubtractiveBlending, i as AdditiveBlending, j as MultiplyBlending, V as Vector3, k as CatmullRomCurve3, B as BufferGeometry, L as LineBasicMaterial, l as Line, m as OctahedronGeometry, n as MeshBasicMaterial, o as SphereGeometry, p as Box3, P as PlaneGeometry, D as DoubleSide, q as VideoTexture, r as LinearFilter, R as RGBAFormat, s as SRGBColorSpace, t as SVGLoader, u as Color, v as Matrix4, E as ExtrudeGeometry, w as ShapeGeometry, x as BufferAttribute, y as MeshStandardMaterial, z as MeshPhysicalMaterial, F as BackSide, H as FrontSide, I as Float32BufferAttribute, T as TubeGeometry, J as TextureLoader, K as BoxGeometry, Q as IcosahedronGeometry, U as TetrahedronGeometry, W as TorusGeometry, X as CylinderGeometry, Y as ConeGeometry, Z as InstancedMesh, _ as DynamicDrawUsage, $ as Euler, a0 as Quaternion, a1 as Scene, a2 as PerspectiveCamera, a3 as AmbientLight, a4 as DirectionalLight, a5 as WebGLRenderer, a6 as NearestFilter, a7 as SpriteMaterial, a8 as RGBELoader, a9 as EXRLoader, aa as PMREMGenerator, ab as RepeatWrapping, ac as LinearMipmapLinearFilter, ad as LinearSRGBColorSpace, ae as Vector2, af as AxesHelper, ag as GridHelper, ah as EquirectangularReflectionMapping, ai as LineLoop, aj as Shape, ak as Path$1, al as ACESFilmicToneMapping, am as PCFSoftShadowMap, an as EffectComposer, ao as MeshNormalMaterial, ap as WebGLRenderTarget, aq as HalfFloatType, ar as DepthTexture, as as DepthFormat, at as UnsignedIntType, au as FloatType, av as ShaderMaterial, aw as RenderPass, ax as OutputPass, ay as BokehPass, az as SSAOPass, aA as UnrealBloomPass, aB as ShaderPass, aC as UnsignedByteType, aD as CircleGeometry, aE as CurvePath, aF as CubicBezierCurve3, aG as Text, aH as LineGeometry, aI as LineMaterial, aJ as Line2, aK as DataTexture, aL as RedFormat, aM as InstancedBufferGeometry, aN as InstancedBufferAttribute, aO as LineSegments, aP as LinearMipMapLinearFilter, aQ as ClampToEdgeWrapping, aR as RingGeometry, aS as PointLight, aT as RectAreaLight, aU as SpotLight, aV as RectAreaLightHelper, aW as DirectionalLightHelper, aX as SpotLightHelper, aY as PointLightHelper, aZ as RectAreaLightUniformsLib, a_ as CanvasTexture, a$ as GLTFLoader, b0 as DRACOLoader, b1 as MeshoptDecoder, b2 as OBJLoader, b3 as FBXLoader, b4 as ColladaLoader, b5 as AnimationMixer, b6 as LoopRepeat, b7 as LoopOnce, b8 as MeshDepthMaterial, b9 as RGBADepthPacking, ba as BoxHelper, bb as SkeletonHelper, bc as SkinnedMesh, bd as PLYLoader, be as PCDLoader, bf as Points, bg as Raycaster, bh as Clock, bi as OrthographicCamera, bj as THREE$1, bk as Texture, bl as TransformControls } from './weyl-three-vendor.js';
+import { G as Group, M as MathUtils, V as Vector3, a as Matrix4, Q as Quaternion, b as Mesh, N as NormalBlending, A as AddEquation, S as SrcAlphaFactor, O as OneMinusSrcAlphaFactor, c as OneFactor, C as CustomBlending, d as MaxEquation, e as MinEquation, f as OneMinusDstColorFactor, g as OneMinusSrcColorFactor, h as SubtractEquation, i as SubtractiveBlending, j as AdditiveBlending, k as MultiplyBlending, l as CatmullRomCurve3, B as BufferGeometry, L as LineBasicMaterial, m as Line, n as OctahedronGeometry, o as MeshBasicMaterial, p as SphereGeometry, q as Box3, P as PlaneGeometry, D as DoubleSide, r as VideoTexture, s as LinearFilter, R as RGBAFormat, t as SRGBColorSpace, u as SVGLoader, v as Color, E as ExtrudeGeometry, w as ShapeGeometry, x as BufferAttribute, y as MeshStandardMaterial, z as MeshPhysicalMaterial, F as BackSide, H as FrontSide, I as Float32BufferAttribute, T as TubeGeometry, J as TextureLoader, K as BoxGeometry, U as IcosahedronGeometry, W as TetrahedronGeometry, X as TorusGeometry, Y as CylinderGeometry, Z as ConeGeometry, _ as InstancedMesh, $ as DynamicDrawUsage, a0 as Euler, a1 as Scene, a2 as PerspectiveCamera, a3 as AmbientLight, a4 as DirectionalLight, a5 as WebGLRenderer, a6 as NearestFilter, a7 as SpriteMaterial, a8 as RGBELoader, a9 as EXRLoader, aa as PMREMGenerator, ab as RepeatWrapping, ac as LinearMipmapLinearFilter, ad as LinearSRGBColorSpace, ae as Vector2, af as AxesHelper, ag as GridHelper, ah as EquirectangularReflectionMapping, ai as LineLoop, aj as Shape, ak as Path$1, al as ACESFilmicToneMapping, am as PCFSoftShadowMap, an as EffectComposer, ao as MeshNormalMaterial, ap as WebGLRenderTarget, aq as HalfFloatType, ar as DepthTexture, as as DepthFormat, at as UnsignedIntType, au as FloatType, av as ShaderMaterial, aw as RenderPass, ax as OutputPass, ay as BokehPass, az as SSAOPass, aA as UnrealBloomPass, aB as ShaderPass, aC as UnsignedByteType, aD as CircleGeometry, aE as CurvePath, aF as CubicBezierCurve3, aG as Text, aH as LineGeometry, aI as LineMaterial, aJ as Line2, aK as DataTexture, aL as RedFormat, aM as InstancedBufferGeometry, aN as InstancedBufferAttribute, aO as LineSegments, aP as LinearMipMapLinearFilter, aQ as ClampToEdgeWrapping, aR as RingGeometry, aS as PointLight, aT as RectAreaLight, aU as SpotLight, aV as RectAreaLightHelper, aW as DirectionalLightHelper, aX as SpotLightHelper, aY as PointLightHelper, aZ as RectAreaLightUniformsLib, a_ as CanvasTexture, a$ as GLTFLoader, b0 as DRACOLoader, b1 as MeshoptDecoder, b2 as OBJLoader, b3 as FBXLoader, b4 as ColladaLoader, b5 as AnimationMixer, b6 as LoopRepeat, b7 as LoopOnce, b8 as MeshDepthMaterial, b9 as RGBADepthPacking, ba as BoxHelper, bb as SkeletonHelper, bc as SkinnedMesh, bd as PLYLoader, be as PCDLoader, bf as Points, bg as Raycaster, bh as Clock, bi as OrthographicCamera, bj as THREE$1, bk as Texture, bl as TransformControls } from './weyl-three-vendor.js';
 import { M as Muxer, A as ArrayBufferTarget, a as Muxer$1, b as ArrayBufferTarget$1 } from './weyl-export-vendor.js';
 
 const PI = Math.PI;
@@ -5836,6 +5836,8 @@ class BaseLayer {
   transform;
   /** 3D layer flag */
   threeD;
+  /** Auto-orient mode (billboard to camera, along path, etc.) */
+  autoOrient = "off";
   /** Blend mode */
   blendMode;
   /** Parent layer ID (for parenting hierarchy) */
@@ -5916,6 +5918,7 @@ class BaseLayer {
     this.opacity = layerData.opacity;
     this.transform = layerData.transform;
     this.threeD = layerData.threeD ?? false;
+    this.autoOrient = layerData.autoOrient ?? "off";
     this.blendMode = layerData.blendMode ?? "normal";
     this.parentId = layerData.parentId ?? null;
     this.effects = layerData.effects ?? [];
@@ -6056,6 +6059,55 @@ class BaseLayer {
     this.group.updateMatrix();
   }
   /**
+   * Apply auto-orient behavior (billboarding, path orientation, etc.)
+   *
+   * Call this after applyTransform when the layer should face the camera.
+   * For 'toCamera' mode, the layer always faces the camera but only X/Y position moves.
+   *
+   * @param camera - The camera to orient toward (for 'toCamera' mode)
+   * @param pathTangent - Optional path tangent vector (for 'alongPath' mode)
+   */
+  applyAutoOrient(camera, pathTangent) {
+    if (this.autoOrient === "off") {
+      return;
+    }
+    if (this.autoOrient === "toCamera" && camera) {
+      const cameraPosition = new Vector3();
+      camera.getWorldPosition(cameraPosition);
+      const layerPosition = new Vector3();
+      this.group.getWorldPosition(layerPosition);
+      new Vector3().subVectors(cameraPosition, layerPosition).normalize();
+      const targetQuaternion = new Quaternion();
+      const up = new Vector3(0, 1, 0);
+      const matrix = new Matrix4();
+      matrix.lookAt(layerPosition, cameraPosition, up);
+      targetQuaternion.setFromRotationMatrix(matrix);
+      this.group.quaternion.copy(targetQuaternion);
+      this.group.updateMatrix();
+    }
+    if (this.autoOrient === "alongPath" && pathTangent) {
+      const angle = Math.atan2(pathTangent.y, pathTangent.x);
+      if (this.threeD) {
+        this.group.rotation.z = -angle;
+      } else {
+        this.group.rotation.set(0, 0, -angle);
+      }
+      this.group.updateMatrix();
+    }
+  }
+  /**
+   * Get the current auto-orient mode
+   */
+  getAutoOrient() {
+    return this.autoOrient;
+  }
+  /**
+   * Set the auto-orient mode
+   */
+  setAutoOrient(mode) {
+    this.autoOrient = mode;
+  }
+  /**
    * Apply opacity to layer materials
    */
   applyOpacity(opacity) {
@@ -6149,6 +6201,9 @@ class BaseLayer {
     }
     if (properties.threeD !== void 0) {
       this.threeD = properties.threeD;
+    }
+    if (properties.autoOrient !== void 0) {
+      this.autoOrient = properties.autoOrient;
     }
     if (properties.blendMode !== void 0) {
       this.blendMode = properties.blendMode;
