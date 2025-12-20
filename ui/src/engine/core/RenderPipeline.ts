@@ -182,9 +182,20 @@ export class RenderPipeline {
     // Configure renderer
     this.renderer.setPixelRatio(this.pixelRatio);
     this.renderer.setSize(this.width, this.height);
-    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.0;
+
+    // Color space and tone mapping - wrapped in try-catch due to potential
+    // conflicts with multiple Three.js instances in ComfyUI environment
+    try {
+      this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+      this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      this.renderer.toneMappingExposure = 1.0;
+    } catch (e) {
+      console.warn('[RenderPipeline] Could not set color space/tone mapping:', e);
+      // Fallback: just set tone mapping exposure if possible
+      try {
+        this.renderer.toneMappingExposure = 1.0;
+      } catch { /* ignore */ }
+    }
 
     // Enable shadows
     this.renderer.shadowMap.enabled = true;

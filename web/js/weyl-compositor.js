@@ -56415,9 +56415,17 @@ class RenderPipeline {
     });
     this.renderer.setPixelRatio(this.pixelRatio);
     this.renderer.setSize(this.width, this.height);
-    this.renderer.outputColorSpace = SRGBColorSpace;
-    this.renderer.toneMapping = ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1;
+    try {
+      this.renderer.outputColorSpace = SRGBColorSpace;
+      this.renderer.toneMapping = ACESFilmicToneMapping;
+      this.renderer.toneMappingExposure = 1;
+    } catch (e) {
+      console.warn("[RenderPipeline] Could not set color space/tone mapping:", e);
+      try {
+        this.renderer.toneMappingExposure = 1;
+      } catch {
+      }
+    }
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = PCFSoftShadowMap;
     const scaledWidth = Math.floor(this.width * this.pixelRatio);
