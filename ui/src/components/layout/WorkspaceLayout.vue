@@ -1211,7 +1211,9 @@ onUnmounted(() => {
 .workspace-layout {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  /* Use 100% height for ComfyUI sidebar compatibility, fallback to 100vh for standalone */
+  height: 100%;
+  min-height: 100vh;
   background: var(--weyl-void, #050505);
   color: var(--weyl-text-primary, #e5e5e5);
   font-family: var(--weyl-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);

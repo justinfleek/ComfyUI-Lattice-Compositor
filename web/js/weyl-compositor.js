@@ -81147,7 +81147,7 @@ const _sfc_main$e = /* @__PURE__ */ defineComponent({
             class: "zoom-dropdown",
             onChange: onZoomSelect
           }, [..._cache[24] || (_cache[24] = [
-            createStaticVNode('<option value="fit" data-v-e7970bb6>Fit</option><option value="0.25" data-v-e7970bb6>25%</option><option value="0.33" data-v-e7970bb6>33%</option><option value="0.5" data-v-e7970bb6>50%</option><option value="0.75" data-v-e7970bb6>75%</option><option value="1" data-v-e7970bb6>100%</option><option value="2" data-v-e7970bb6>200%</option><option value="4" data-v-e7970bb6>400%</option>', 8)
+            createStaticVNode('<option value="fit" data-v-4afb400a>Fit</option><option value="0.25" data-v-4afb400a>25%</option><option value="0.33" data-v-4afb400a>33%</option><option value="0.5" data-v-4afb400a>50%</option><option value="0.75" data-v-4afb400a>75%</option><option value="1" data-v-4afb400a>100%</option><option value="2" data-v-4afb400a>200%</option><option value="4" data-v-4afb400a>400%</option>', 8)
           ])], 544), [
             [vModelSelect, zoomLevel.value]
           ]),
@@ -81158,7 +81158,7 @@ const _sfc_main$e = /* @__PURE__ */ defineComponent({
             class: "resolution-dropdown",
             onChange: onResolutionChange
           }, [..._cache[25] || (_cache[25] = [
-            createStaticVNode('<option value="full" data-v-e7970bb6>Full</option><option value="half" data-v-e7970bb6>Half</option><option value="third" data-v-e7970bb6>Third</option><option value="quarter" data-v-e7970bb6>Quarter</option><option value="custom" data-v-e7970bb6>Custom</option>', 5)
+            createStaticVNode('<option value="full" data-v-4afb400a>Full</option><option value="half" data-v-4afb400a>Half</option><option value="third" data-v-4afb400a>Third</option><option value="quarter" data-v-4afb400a>Quarter</option><option value="custom" data-v-4afb400a>Custom</option>', 5)
           ])], 544), [
             [vModelSelect, resolution.value]
           ])
@@ -81215,7 +81215,7 @@ const _sfc_main$e = /* @__PURE__ */ defineComponent({
   }
 });
 
-const ThreeCanvas = /* @__PURE__ */ _export_sfc(_sfc_main$e, [["__scopeId", "data-v-e7970bb6"]]);
+const ThreeCanvas = /* @__PURE__ */ _export_sfc(_sfc_main$e, [["__scopeId", "data-v-4afb400a"]]);
 
 const KEYFRAME_SHAPES = {
   // ========================================
@@ -92357,7 +92357,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
   }
 });
 
-const WorkspaceLayout = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-896bcd18"]]);
+const WorkspaceLayout = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-a4bb6643"]]);
 
 const _sfc_main = /* @__PURE__ */ defineComponent({
   __name: "App",
