@@ -212,8 +212,31 @@ function duplicateComposition() {
       original.settings,
       original.isNestedComp
     );
-    // TODO: Copy layers
-    console.log('[CompositionTabs] Duplicated:', newComp.name);
+
+    // Deep clone and copy layers with new IDs
+    for (const layer of original.layers) {
+      const clonedLayer = JSON.parse(JSON.stringify(layer));
+
+      // Generate new IDs for layer and its properties
+      clonedLayer.id = `layer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+      // Update keyframe IDs if present
+      if (clonedLayer.properties) {
+        for (const prop of clonedLayer.properties) {
+          prop.id = `prop_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+          if (prop.keyframes) {
+            for (const kf of prop.keyframes) {
+              kf.id = `kf_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+            }
+          }
+        }
+      }
+
+      // Add cloned layer to new composition
+      newComp.layers.push(clonedLayer);
+    }
+
+    console.log('[CompositionTabs] Duplicated:', newComp.name, 'with', newComp.layers.length, 'layers');
   }
   hideContextMenu();
 }

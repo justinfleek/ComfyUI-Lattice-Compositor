@@ -389,6 +389,7 @@
                 <option value="circle">Circle</option>
                 <option value="box">Box</option>
                 <option value="sphere">Sphere</option>
+                <option value="cone">Cone</option>
                 <option value="ring">Ring</option>
                 <option value="spline">Spline Path</option>
               </select>
@@ -452,6 +453,30 @@
                 @input="updateEmitter(emitter.id, 'shapeWidth', Number(($event.target as HTMLInputElement).value))"
               />
               <span class="value-display">{{ (emitter.shapeWidth || 0.2).toFixed(2) }}</span>
+            </div>
+            <div v-if="emitter.shape === 'cone'" class="property-row">
+              <label title="Opening angle of the cone in degrees. 90° = hemisphere, 180° = full sphere.">Cone Angle</label>
+              <input
+                type="range"
+                :value="emitter.coneAngle || 45"
+                min="1"
+                max="180"
+                step="1"
+                @input="updateEmitter(emitter.id, 'coneAngle', Number(($event.target as HTMLInputElement).value))"
+              />
+              <span class="value-display">{{ emitter.coneAngle || 45 }}°</span>
+            </div>
+            <div v-if="emitter.shape === 'cone'" class="property-row">
+              <label title="Base radius of the cone as a fraction of composition size.">Cone Radius</label>
+              <input
+                type="range"
+                :value="emitter.coneRadius || 0.1"
+                min="0.01"
+                max="0.5"
+                step="0.01"
+                @input="updateEmitter(emitter.id, 'coneRadius', Number(($event.target as HTMLInputElement).value))"
+              />
+              <span class="value-display">{{ (emitter.coneRadius || 0.1).toFixed(2) }}</span>
             </div>
             <div v-if="emitter.shape !== 'point' && emitter.shape !== 'spline'" class="property-row checkbox-row">
               <label title="When enabled, particles only emit from the outline/edge of the shape instead of filling the entire area.">
