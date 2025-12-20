@@ -214,13 +214,16 @@ function evaluateTransform(
   is3D: boolean
 ): EvaluatedTransform {
   const position = interpolateProperty(transform.position, frame);
-  const anchorPoint = interpolateProperty(transform.anchorPoint, frame);
+  // Use origin (new name) with fallback to anchorPoint for backwards compatibility
+  const originProp = transform.origin || transform.anchorPoint;
+  const origin = originProp ? interpolateProperty(originProp, frame) : { x: 0, y: 0, z: 0 };
   const scale = interpolateProperty(transform.scale, frame);
   const rotation = interpolateProperty(transform.rotation, frame);
 
   const result: EvaluatedTransform = {
     position: { ...position },
-    anchorPoint: { ...anchorPoint },
+    origin: { ...origin },
+    anchorPoint: { ...origin }, // @deprecated alias
     scale: { ...scale },
     rotation,
   };
@@ -310,7 +313,9 @@ export function evaluateLayerCached(layer: Layer, frame: number): EvaluatedLayer
   }
 
   // Evaluate layer
-  const inRange = frame >= layer.inPoint && frame <= layer.outPoint;
+  const start = layer.startFrame ?? layer.inPoint ?? 0;
+  const end = layer.endFrame ?? layer.outPoint ?? 80;
+  const inRange = frame >= start && frame <= end;
   const visible = layer.visible && inRange;
 
   const transform = evaluateTransform(frame, layer.transform, layer.threeD);

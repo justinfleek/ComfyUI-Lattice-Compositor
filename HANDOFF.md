@@ -1,6 +1,6 @@
 # WEYL COMPOSITOR - MASTER HANDOFF DOCUMENT
 
-**Date:** December 20, 2024 (v6.0)
+**Date:** December 20, 2024 (v6.1)
 **Purpose:** Complete knowledge transfer for continuing development
 **Target Audience:** Next Claude Code session / Developer
 **Confidence Level:** 100% - All known issues documented
@@ -11,12 +11,16 @@
 
 ### Known Broken Features (Priority Fix)
 
-| Feature | Status | Notes |
-|---------|--------|-------|
-| **ScrubableNumber Inputs** | BROKEN | Drag-to-adjust number inputs don't respond |
-| **Project Panel Drag** | BROKEN | Can't drag items from project panel to timeline |
-| **Upper-Left Viewport Controls** | BROKEN | Render mode/transform mode buttons non-functional |
-| **Three.js Multi-Instance** | WORKAROUND | Other ComfyUI extensions cause `Mesh is not a constructor` - try-catch in SceneManager |
+**None currently!** All previously reported issues have been resolved.
+
+### Recently Fixed Features
+
+| Feature | Status | Fix Details |
+|---------|--------|-------------|
+| **ScrubableNumber Inputs** | FIXED | Full drag-to-scrub implementation with startScrub, onInputMouseDown, onScrubMove |
+| **Project Panel Drag** | FIXED | Drop handlers added to TimelinePanel.vue |
+| **Upper-Left Viewport Controls** | FIXED | Render/transform mode handlers connected in ThreeCanvas.vue |
+| **Three.js Multi-Instance** | MITIGATED | WebGL context event listeners in WeylEngine.ts handle context loss/restore |
 
 ### What Works Well
 
@@ -58,13 +62,13 @@ Weyl is an **After Effects-caliber motion graphics compositor** embedded as a Co
 
 | Metric | Current | Target |
 |--------|---------|--------|
-| **Total Lines of Code** | 128,114 | - |
-| **Source Files** | 215 (TypeScript + Vue) | - |
-| **Test Files** | 28 | - |
-| **Tests Passing** | 1170/1213 (96.5%) | 100% |
+| **Total Lines of Code** | 159,054 | - |
+| **Source Files** | 252 (TypeScript + Vue) | - |
+| **Test Files** | 34 | - |
+| **Tests Passing** | 1185/1228 (96.5%) | 100% |
 | **TypeScript Errors** | 0 | 0 ✅ |
-| **Feature Completion** | 92% | 95% |
-| **Accessibility Score** | 75% | 80% |
+| **Feature Completion** | 90% | 95% |
+| **Particle Presets** | 24 | - |
 | **Security Issues** | 0 | 0 ✅ |
 | **Performance Issues** | 0 | 0 ✅ |
 
@@ -92,9 +96,14 @@ Weyl is an **After Effects-caliber motion graphics compositor** embedded as a Co
 
 ### Recently Completed (December 2024)
 
+- **Particle Sub-emitters** - Wired in ParticleLayer.ts to GPU system
+- **Particle Flocking/Boids** - Added FlockingConfig type and full UI (separation, alignment, cohesion)
+- **Particle Collision** - Added CollisionConfig type and UI (particle-particle, boundary)
+- **Particle Emitter Shapes** - All 7 shapes: point, circle, sphere, box, line, ring, spline
+- **19 New Particle Presets** - Rain, Dust, Sparkle, Bubbles, Leaves, Stars, Fireworks, Aurora, Embers, Fog, Explosion, Portal, Electricity, Hearts, Waterfall, Fireflies, Sandstorm, Glitter
 - **WebGPU Compute Particles** - Wired into GPUParticleSystem with fallback chain (WebGPU → Transform Feedback → CPU)
 - **Frame Sequence Export** - PNG/JPEG/WebP in browser, TIFF/EXR/DPX via backend
-- **Dead Code Cleanup** - Removed PuppetPinEditor.vue, timelineActions.ts, unused arrayUtils functions
+- **Trade Dress Compliance** - Renamed Pickwhip→PropertyLink, GraphEditor→CurveEditor, added backwards compat for all renamed properties
 
 ---
 

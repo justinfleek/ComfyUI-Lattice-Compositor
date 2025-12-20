@@ -127,7 +127,7 @@
               :key="layer.id"
               :value="layer.id"
             >
-              {{ layer.name }}
+              {{ layer.type === 'path' ? '⤳ ' : '〰 ' }}{{ layer.name }}
             </option>
           </select>
         </div>
@@ -572,9 +572,10 @@ const pathFollowing = computed<CameraPathFollowing>(() => {
   };
 });
 
-// Get available spline layers for path following
+// Get available spline and path layers for path following
+// Camera can follow both visible shape splines (e.g., logo outline) and invisible path guides
 const splineLayers = computed(() => {
-  return store.layers.filter(l => l.type === 'spline' && l.id !== props.layer.id);
+  return store.layers.filter(l => (l.type === 'spline' || l.type === 'path') && l.id !== props.layer.id);
 });
 
 // Camera shake with defaults

@@ -60,6 +60,7 @@ export function createCameraLayer(
 
   // Create the layer
   const layerId = `layer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const frameCount = (comp?.settings.frameCount || 81) - 1;
   const layer: Layer = {
     id: layerId,
     name: cameraName,
@@ -69,8 +70,12 @@ export function createCameraLayer(
     isolate: false,
     threeD: true,
     motionBlur: false,
+    // Timing (primary properties)
+    startFrame: 0,
+    endFrame: frameCount,
+    // Backwards compatibility aliases
     inPoint: 0,
-    outPoint: (comp?.settings.frameCount || 81) - 1,
+    outPoint: frameCount,
     parentId: null,
     blendMode: 'normal',
     opacity: createAnimatableProperty('opacity', 100, 'number'),

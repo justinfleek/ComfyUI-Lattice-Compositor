@@ -14,12 +14,15 @@
  */
 
 import * as THREE from 'three';
-import type { Layer, ParticleLayerData } from '@/types/project';
+import type { Layer, ParticleLayerData, ParticleEmitterConfig } from '@/types/project';
 import type {
   EmitterConfig,
   ForceFieldConfig,
   AudioFeature,
   GPUParticleSystemConfig,
+  SubEmitterConfig as GPUSubEmitterConfig,
+  FlockingConfig,
+  EmitterShapeConfig,
 } from '../particles/types';
 import { BaseLayer } from './BaseLayer';
 import { GPUParticleSystem, createDefaultConfig, createDefaultEmitter, createDefaultForceField } from '../particles/GPUParticleSystem';
@@ -99,6 +102,80 @@ export class ParticleLayer extends BaseLayer {
       hash = hash & hash; // Convert to 32bit integer
     }
     return Math.abs(hash) || 12345; // Fallback to 12345 if 0
+  }
+
+  /**
+   * Convert emitter shape from project format to GPU format
+   * Supports: point, circle, sphere, box, line, ring, cone, spline
+   */
+  private convertEmitterShape(emitter: ParticleEmitterConfig): EmitterShapeConfig {
+    const shape = emitter.shape ?? 'point';
+
+    switch (shape) {
+      case 'point':
+        return { type: 'point' };
+
+      case 'circle':
+        return {
+          type: 'circle',
+          radius: emitter.shapeRadius ?? 50,
+          emitFromEdge: emitter.emitFromEdge ?? false,
+        };
+
+      case 'sphere':
+        return {
+          type: 'sphere',
+          radius: emitter.shapeRadius ?? 50,
+          emitFromEdge: emitter.emitFromEdge ?? false,
+        };
+
+      case 'box':
+        return {
+          type: 'box',
+          boxSize: {
+            x: emitter.shapeWidth ?? 100,
+            y: emitter.shapeHeight ?? 100,
+            z: emitter.shapeDepth ?? 0,
+          },
+        };
+
+      case 'line':
+        // Line extends from emitter position in both directions
+        const halfWidth = (emitter.shapeWidth ?? 100) / 2;
+        return {
+          type: 'line',
+          lineStart: { x: -halfWidth, y: 0, z: 0 },
+          lineEnd: { x: halfWidth, y: 0, z: 0 },
+        };
+
+      case 'ring':
+        return {
+          type: 'circle',
+          radius: emitter.shapeRadius ?? 50,
+          radiusVariance: emitter.shapeInnerRadius ?? 0,
+          emitFromEdge: true, // Ring always emits from edge
+        };
+
+      case 'spline':
+        // Spline emission - use splinePath config if available
+        if (emitter.splinePath) {
+          return {
+            type: 'spline',
+            splineId: emitter.splinePath.layerId,
+            splineOffset: emitter.splinePath.parameter ?? 0,
+          };
+        }
+        return { type: 'point' }; // Fallback if no spline configured
+
+      case 'depth-map':
+      case 'mask':
+        // These require additional setup - fall back to point for now
+        // TODO: Wire depth-map and mask emission when image data is available
+        return { type: 'point' };
+
+      default:
+        return { type: 'point' };
+    }
   }
 
   /**
@@ -206,13 +283,17 @@ export class ParticleLayer extends BaseLayer {
         if (!emitter.enabled) continue;
 
         const dirRad = (emitter.direction ?? 0) * Math.PI / 180;
+
+        // Convert emitter shape from project format to GPU format
+        const shapeConfig = this.convertEmitterShape(emitter);
+
         const gpuEmitter: EmitterConfig = {
           id: emitter.id,
           name: emitter.name,
           enabled: true,
           position: { x: emitter.x, y: emitter.y, z: 0 },
           rotation: { x: 0, y: 0, z: 0 },
-          shape: { type: 'point' },
+          shape: shapeConfig,
           emissionRate: emitter.emissionRate,
           emissionRateVariance: 0,
           burstCount: emitter.burstCount,
@@ -322,6 +403,81 @@ export class ParticleLayer extends BaseLayer {
       }
     }
 
+    // Convert sub-emitters
+    if (data.subEmitters) {
+      for (const sub of data.subEmitters) {
+        if (!sub.enabled) continue;
+
+        const gpuSubEmitter: GPUSubEmitterConfig = {
+          id: sub.id,
+          parentEmitterId: sub.parentEmitterId,
+          trigger: sub.trigger,
+          triggerProbability: 1.0,
+          emitCount: sub.spawnCount,
+          emitCountVariance: 0,
+          inheritPosition: true,
+          inheritVelocity: sub.inheritVelocity,
+          inheritSize: 0,
+          inheritColor: 0,
+          inheritRotation: 0,
+          overrides: {
+            initialSpeed: sub.speed,
+            emissionSpread: sub.spread,
+            initialSize: sub.size,
+            initialMass: 1,
+            lifetime: sub.lifetime,
+            lifetimeVariance: sub.sizeVariance, // Use size variance for lifetime variance
+            colorStart: [
+              sub.color[0] / 255,
+              sub.color[1] / 255,
+              sub.color[2] / 255,
+              1,
+            ],
+            colorEnd: [
+              sub.color[0] / 255,
+              sub.color[1] / 255,
+              sub.color[2] / 255,
+              0,
+            ],
+          },
+        };
+
+        config.subEmitters.push(gpuSubEmitter);
+      }
+    }
+
+    // Convert flocking configuration
+    if (data.flocking?.enabled) {
+      config.flocking = {
+        enabled: true,
+        separationWeight: (data.flocking.separationWeight ?? 50) / 100,
+        separationRadius: data.flocking.separationRadius ?? 25,
+        alignmentWeight: (data.flocking.alignmentWeight ?? 50) / 100,
+        alignmentRadius: data.flocking.alignmentRadius ?? 50,
+        cohesionWeight: (data.flocking.cohesionWeight ?? 50) / 100,
+        cohesionRadius: data.flocking.cohesionRadius ?? 50,
+        maxSpeed: data.flocking.maxSpeed ?? 200,
+        maxForce: data.flocking.maxForce ?? 10,
+        perceptionAngle: data.flocking.perceptionAngle ?? 270,
+      };
+    }
+
+    // Store collision configuration for initialization after GPU setup
+    if (data.collision?.enabled) {
+      this.pendingCollisionConfig = {
+        enabled: true,
+        particleCollision: data.collision.particleCollision ?? false,
+        particleRadius: data.collision.particleRadius ?? 5,
+        bounciness: data.collision.bounciness ?? 0.5,
+        friction: data.collision.friction ?? 0.1,
+        bounds: data.collision.boundaryEnabled ? {
+          min: { x: data.collision.boundaryPadding, y: data.collision.boundaryPadding, z: -1000 },
+          max: { x: 1920 - data.collision.boundaryPadding, y: 1080 - data.collision.boundaryPadding, z: 1000 },
+        } : undefined,
+        boundsBehavior: data.collision.boundaryBehavior ?? 'none',
+      };
+    }
+
     // Render options
     if (data.renderOptions) {
       config.render.blendMode = data.renderOptions.blendMode ?? 'normal';
@@ -410,6 +566,16 @@ export class ParticleLayer extends BaseLayer {
     randomStart: boolean;
   } | null = null;
 
+  private pendingCollisionConfig: {
+    enabled: boolean;
+    particleCollision: boolean;
+    particleRadius: number;
+    bounciness: number;
+    friction: number;
+    bounds?: { min: { x: number; y: number; z: number }; max: { x: number; y: number; z: number } };
+    boundsBehavior: 'none' | 'kill' | 'bounce' | 'wrap';
+  } | null = null;
+
   /**
    * Initialize the particle system with a WebGL renderer
    */
@@ -465,6 +631,12 @@ export class ParticleLayer extends BaseLayer {
       }
       this.glowConfig = this.pendingGlowConfig;
       this.pendingGlowConfig = null;
+    }
+
+    // Initialize collision detection
+    if (this.pendingCollisionConfig && this.pendingCollisionConfig.enabled) {
+      this.particleSystem.initializeCollisions(this.pendingCollisionConfig);
+      this.pendingCollisionConfig = null;
     }
 
     // Create emitter and force field gizmos for visualization

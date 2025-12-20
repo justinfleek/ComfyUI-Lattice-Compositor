@@ -67,29 +67,29 @@
     <!-- Time Remapping -->
     <div class="property-section">
       <div class="section-header">
-        <span>Time Remap</span>
+        <span>Speed Map</span>
         <label class="header-toggle">
-          <input type="checkbox" :checked="videoData.timeRemapEnabled" @change="toggleTimeRemap" />
+          <input type="checkbox" :checked="speedMapEnabled" @change="toggleSpeedMap" />
         </label>
       </div>
-      <div class="section-content" v-if="videoData.timeRemapEnabled">
+      <div class="section-content" v-if="speedMapEnabled">
         <div class="property-row">
-          <label>Remap Time</label>
+          <label>Map Time</label>
           <div class="control-with-keyframe">
             <ScrubableNumber
-              :modelValue="timeRemapValue"
-              @update:modelValue="updateTimeRemap"
+              :modelValue="speedMapValue"
+              @update:modelValue="updateSpeedMap"
               :min="0" :step="0.01" :precision="3" unit="s"
             />
             <KeyframeToggle
-              v-if="videoData.timeRemap"
-              :property="videoData.timeRemap"
+              v-if="speedMapProperty"
+              :property="speedMapProperty"
               :layerId="layer.id"
-              propertyPath="data.timeRemap"
+              propertyPath="data.speedMap"
             />
           </div>
         </div>
-        <p class="hint">Animate time remap to control video playback independently of composition time.</p>
+        <p class="hint">Animate speed map to control video playback independently of composition time.</p>
       </div>
     </div>
 
@@ -172,6 +172,9 @@ const videoData = computed<VideoData>(() => {
     startTime: 0,
     endTime: undefined,
     speed: 1,
+    speedMapEnabled: false,
+    speedMap: undefined,
+    // Backwards compatibility
     timeRemapEnabled: false,
     timeRemap: undefined,
     frameBlending: 'none',
@@ -191,9 +194,19 @@ const audioLevel = computed<AnimatableProperty<number> | undefined>(() => {
   return props.layer.audio?.level;
 });
 
-const timeRemapValue = computed(() => {
-  if (!videoData.value.timeRemap) return 0;
-  return videoData.value.timeRemap.value;
+// Speed map computed properties (with backwards compatibility)
+const speedMapEnabled = computed(() => {
+  return videoData.value.speedMapEnabled ?? videoData.value.timeRemapEnabled ?? false;
+});
+
+const speedMapProperty = computed(() => {
+  return videoData.value.speedMap ?? videoData.value.timeRemap;
+});
+
+const speedMapValue = computed(() => {
+  const prop = speedMapProperty.value;
+  if (!prop) return 0;
+  return prop.value;
 });
 
 function formatDuration(seconds: number | undefined): string {
@@ -231,14 +244,21 @@ function updatePingPong(e: Event) {
   emit('update');
 }
 
-function toggleTimeRemap(e: Event) {
+function toggleSpeedMap(e: Event) {
   const target = e.target as HTMLInputElement;
-  store.updateVideoLayerData(props.layer.id, { timeRemapEnabled: target.checked });
+  store.updateVideoLayerData(props.layer.id, {
+    speedMapEnabled: target.checked,
+    timeRemapEnabled: target.checked // Backwards compatibility
+  });
   emit('update');
 }
 
-function updateTimeRemap(val: number) {
+function updateSpeedMap(val: number) {
   const data = props.layer.data as VideoData;
+  // Update both new and legacy properties
+  if (data.speedMap) {
+    data.speedMap.value = val;
+  }
   if (data.timeRemap) {
     data.timeRemap.value = val;
   }

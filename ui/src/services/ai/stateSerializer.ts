@@ -40,8 +40,12 @@ export interface SerializedLayer {
   type: string;
   visible: boolean;
   locked: boolean;
-  inPoint: number;
-  outPoint: number;
+  startFrame: number;
+  endFrame: number;
+  /** @deprecated Use 'startFrame' instead */
+  inPoint?: number;
+  /** @deprecated Use 'endFrame' instead */
+  outPoint?: number;
   parentId: string | null;
   transform: SerializedTransform;
   opacity: SerializedAnimatableProperty;
@@ -53,7 +57,9 @@ export interface SerializedTransform {
   position: SerializedAnimatableProperty;
   scale: SerializedAnimatableProperty;
   rotation: SerializedAnimatableProperty;
-  anchorPoint: SerializedAnimatableProperty;
+  origin: SerializedAnimatableProperty;
+  /** @deprecated Use 'origin' instead */
+  anchorPoint?: SerializedAnimatableProperty;
 }
 
 export interface SerializedAnimatableProperty {
@@ -116,8 +122,8 @@ export function serializeLayerList(): string {
     name: layer.name,
     type: layer.type,
     visible: layer.visible,
-    inPoint: layer.inPoint,
-    outPoint: layer.outPoint,
+    startFrame: layer.startFrame ?? layer.inPoint ?? 0,
+    endFrame: layer.endFrame ?? layer.outPoint ?? 80,
   }));
 
   return JSON.stringify({ layers }, null, 2);
@@ -160,14 +166,15 @@ function serializeLayer(layer: Layer, includeKeyframes: boolean): SerializedLaye
     type: layer.type,
     visible: layer.visible,
     locked: layer.locked,
-    inPoint: layer.inPoint,
-    outPoint: layer.outPoint,
+    startFrame: layer.startFrame ?? layer.inPoint ?? 0,
+    endFrame: layer.endFrame ?? layer.outPoint ?? 80,
     parentId: layer.parentId,
     transform: {
       position: serializeAnimatableProperty(layer.transform.position, includeKeyframes),
       scale: serializeAnimatableProperty(layer.transform.scale, includeKeyframes),
       rotation: serializeAnimatableProperty(layer.transform.rotation, includeKeyframes),
-      anchorPoint: serializeAnimatableProperty(layer.transform.anchorPoint, includeKeyframes),
+      // Use origin (new name) with fallback to anchorPoint for backwards compatibility
+      origin: serializeAnimatableProperty(layer.transform.origin || layer.transform.anchorPoint!, includeKeyframes),
     },
     opacity: serializeAnimatableProperty(layer.opacity, includeKeyframes),
   };
@@ -300,7 +307,7 @@ function serializeLayerData(type: string, data: any): Record<string, any> {
     case 'nestedComp':
       return {
         compositionId: data.compositionId,
-        hasTimeRemap: !!data.timeRemap,
+        hasSpeedMap: !!(data.speedMap ?? data.timeRemap),
       };
 
     case 'depthflow':

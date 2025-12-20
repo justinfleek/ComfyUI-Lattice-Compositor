@@ -1,14 +1,14 @@
 <template>
-  <div class="pickwhip-container" ref="containerRef">
-    <!-- The pickwhip icon/button -->
+  <div class="property-link-container" ref="containerRef">
+    <!-- The property link icon/button -->
     <div
-      class="pickwhip-handle"
+      class="link-handle"
       :class="{ dragging: isDragging, linked: hasLink }"
       @mousedown="startDrag"
       @touchstart.prevent="startDrag"
       :title="hasLink ? `Linked to: ${linkTargetName}` : 'Drag to link property'"
     >
-      <svg viewBox="0 0 16 16" class="pickwhip-icon">
+      <svg viewBox="0 0 16 16" class="link-icon">
         <circle cx="8" cy="8" r="3" fill="currentColor" />
         <path
           v-if="!hasLink"
@@ -41,7 +41,7 @@
     <Teleport to="body">
       <svg
         v-if="isDragging"
-        class="pickwhip-line"
+        class="property-link-line"
         :style="lineStyle"
       >
         <line
@@ -140,14 +140,14 @@ const dropTargetStyle = computed(() => {
 function findDropTargets(): DropTarget[] {
   const targets: DropTarget[] = [];
 
-  // Find all elements with data-pickwhip-target attribute
-  const elements = document.querySelectorAll('[data-pickwhip-target]');
+  // Find all elements with data-link-target attribute
+  const elements = document.querySelectorAll('[data-link-target]');
 
   elements.forEach(el => {
     const htmlEl = el as HTMLElement;
-    const layerId = htmlEl.dataset.pickwhipLayerId;
-    const property = htmlEl.dataset.pickwhipTarget as PropertyPath;
-    const label = htmlEl.dataset.pickwhipLabel || property;
+    const layerId = htmlEl.dataset.linkLayerId;
+    const property = htmlEl.dataset.linkTarget as PropertyPath;
+    const label = htmlEl.dataset.linkLabel || property;
 
     // Don't allow linking to self
     if (layerId === props.layerId && property === props.property) {
@@ -188,7 +188,7 @@ function startDrag(e: MouseEvent | TouchEvent) {
   const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
   const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
 
-  // Get start position from the pickwhip handle
+  // Get start position from the link handle
   const rect = containerRef.value?.getBoundingClientRect();
   if (rect) {
     dragStart.value = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
@@ -264,13 +264,13 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.pickwhip-container {
+.property-link-container {
   display: inline-flex;
   align-items: center;
   gap: 4px;
 }
 
-.pickwhip-handle {
+.link-handle {
   width: 16px;
   height: 16px;
   cursor: crosshair;
@@ -279,21 +279,21 @@ onUnmounted(() => {
   user-select: none;
 }
 
-.pickwhip-handle:hover {
+.link-handle:hover {
   color: #4a90d9;
   transform: scale(1.1);
 }
 
-.pickwhip-handle.dragging {
+.link-handle.dragging {
   color: #4a90d9;
   transform: scale(1.2);
 }
 
-.pickwhip-handle.linked {
+.link-handle.linked {
   color: #2ecc71;
 }
 
-.pickwhip-icon {
+.link-icon {
   width: 100%;
   height: 100%;
 }
@@ -320,8 +320,8 @@ onUnmounted(() => {
 </style>
 
 <style>
-/* Global styles for pickwhip visualization */
-.pickwhip-line {
+/* Global styles for property link visualization */
+.property-link-line {
   pointer-events: none;
 }
 
@@ -344,12 +344,12 @@ onUnmounted(() => {
   font-weight: bold;
 }
 
-/* Mark elements as pickwhip targets */
-[data-pickwhip-target] {
+/* Mark elements as property link targets */
+[data-link-target] {
   position: relative;
 }
 
-[data-pickwhip-target]::after {
+[data-link-target]::after {
   content: '';
   position: absolute;
   inset: -2px;
@@ -360,7 +360,7 @@ onUnmounted(() => {
 }
 
 /* This would be activated via JS when dragging */
-.pickwhip-target-active[data-pickwhip-target]::after {
+.link-target-active[data-link-target]::after {
   border-color: rgba(74, 144, 217, 0.5);
 }
 </style>

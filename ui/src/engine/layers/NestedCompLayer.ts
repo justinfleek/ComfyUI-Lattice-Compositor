@@ -99,8 +99,12 @@ export class NestedCompLayer extends BaseLayer {
 
     return {
       compositionId: data?.compositionId ?? '',
-      timeRemapEnabled: data?.timeRemapEnabled ?? false,
-      timeRemap: data?.timeRemap,
+      // Speed map (new naming)
+      speedMapEnabled: data?.speedMapEnabled ?? data?.timeRemapEnabled ?? false,
+      speedMap: data?.speedMap ?? data?.timeRemap,
+      // Backwards compatibility aliases
+      timeRemapEnabled: data?.timeRemapEnabled ?? data?.speedMapEnabled ?? false,
+      timeRemap: data?.timeRemap ?? data?.speedMap,
       flattenTransform: data?.flattenTransform ?? false,
       overrideFrameRate: data?.overrideFrameRate ?? false,
       frameRate: data?.frameRate,
@@ -183,16 +187,18 @@ export class NestedCompLayer extends BaseLayer {
 
   /**
    * Calculate the frame in the nested composition
-   * based on parent frame and time remapping
+   * based on parent frame and speed map (time remapping)
    */
   private calculateNestedFrame(parentFrame: number): number {
     if (!this.cachedComposition) return 0;
 
-    // If time remap is enabled, use that
-    if (this.nestedCompData.timeRemapEnabled && this.nestedCompData.timeRemap) {
-      const remappedTime = this.nestedCompData.timeRemap.animated
-        ? this.nestedCompEvaluator.evaluate(this.nestedCompData.timeRemap, parentFrame)
-        : this.nestedCompData.timeRemap.value;
+    // If speed map is enabled, use that
+    const speedMapEnabled = this.nestedCompData.speedMapEnabled ?? this.nestedCompData.timeRemapEnabled;
+    const speedMapProp = this.nestedCompData.speedMap ?? this.nestedCompData.timeRemap;
+    if (speedMapEnabled && speedMapProp) {
+      const remappedTime = speedMapProp.animated
+        ? this.nestedCompEvaluator.evaluate(speedMapProp, parentFrame)
+        : speedMapProp.value;
 
       // Convert time (seconds) to frame
       const fps = this.nestedCompData.overrideFrameRate && this.nestedCompData.frameRate
@@ -253,10 +259,14 @@ export class NestedCompLayer extends BaseLayer {
   protected override onApplyEvaluatedState(state: import('../MotionEngine').EvaluatedLayer): void {
     const props = state.properties;
 
-    // Apply time remap if evaluated
-    if (props['timeRemap'] !== undefined && this.nestedCompData.timeRemapEnabled && this.nestedCompData.timeRemap) {
-      // Update the time remap value for the next evaluation cycle
-      this.nestedCompData.timeRemap.value = props['timeRemap'] as number;
+    // Apply speed map if evaluated
+    // Check both new 'speedMap' and legacy 'timeRemap' for backwards compatibility
+    const speedMapValue = props['speedMap'] ?? props['timeRemap'];
+    const speedMapEnabled = this.nestedCompData.speedMapEnabled ?? this.nestedCompData.timeRemapEnabled;
+    const speedMapProp = this.nestedCompData.speedMap ?? this.nestedCompData.timeRemap;
+    if (speedMapValue !== undefined && speedMapEnabled && speedMapProp) {
+      // Update the speed map value for the next evaluation cycle
+      speedMapProp.value = speedMapValue as number;
     }
   }
 
@@ -273,17 +283,29 @@ export class NestedCompLayer extends BaseLayer {
   }
 
   /**
-   * Enable/disable time remapping
+   * Enable/disable speed map (time remapping)
    */
+  setSpeedMapEnabled(enabled: boolean): void {
+    this.nestedCompData.speedMapEnabled = enabled;
+    this.nestedCompData.timeRemapEnabled = enabled; // Backwards compatibility
+  }
+
+  /** @deprecated Use setSpeedMapEnabled instead */
   setTimeRemapEnabled(enabled: boolean): void {
-    this.nestedCompData.timeRemapEnabled = enabled;
+    this.setSpeedMapEnabled(enabled);
   }
 
   /**
-   * Set time remap property
+   * Set speed map property
    */
+  setSpeedMap(speedMap: AnimatableProperty<number>): void {
+    this.nestedCompData.speedMap = speedMap;
+    this.nestedCompData.timeRemap = speedMap; // Backwards compatibility
+  }
+
+  /** @deprecated Use setSpeedMap instead */
   setTimeRemap(timeRemap: AnimatableProperty<number>): void {
-    this.nestedCompData.timeRemap = timeRemap;
+    this.setSpeedMap(timeRemap);
   }
 
   /**
@@ -435,11 +457,12 @@ export class NestedCompLayer extends BaseLayer {
       if (data.compositionId !== undefined) {
         this.setComposition(data.compositionId);
       }
-      if (data.timeRemapEnabled !== undefined) {
-        this.setTimeRemapEnabled(data.timeRemapEnabled);
+      // Check speedMap first (new naming), then timeRemap (backwards compatibility)
+      if (data.speedMapEnabled !== undefined || data.timeRemapEnabled !== undefined) {
+        this.setSpeedMapEnabled(data.speedMapEnabled ?? data.timeRemapEnabled ?? false);
       }
-      if (data.timeRemap !== undefined) {
-        this.setTimeRemap(data.timeRemap);
+      if (data.speedMap !== undefined || data.timeRemap !== undefined) {
+        this.setSpeedMap((data.speedMap ?? data.timeRemap)!);
       }
       if (data.flattenTransform !== undefined) {
         this.setFlattenTransform(data.flattenTransform);

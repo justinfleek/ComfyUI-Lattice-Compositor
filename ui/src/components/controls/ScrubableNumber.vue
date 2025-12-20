@@ -1,5 +1,5 @@
 <template>
-  <div class="scrubable-number" :class="{ disabled }">
+  <div class="scrubable-number" :class="{ disabled, scrubbing: isScrubbing }">
     <label
       v-if="label"
       class="scrub-label"
@@ -8,9 +8,21 @@
     >
       {{ label }}
     </label>
+    <!-- Scrub handle for when there's no label - appears on hover -->
+    <div
+      v-if="!label"
+      class="scrub-handle"
+      :class="{ scrubbing: isScrubbing }"
+      @mousedown="startScrub"
+      title="Drag to scrub value"
+    >
+      ⋮⋮
+    </div>
     <input
+      ref="inputRef"
       type="number"
       class="scrub-input"
+      :class="{ scrubbing: isScrubbing }"
       :value="displayValue"
       :min="min"
       :max="max"
@@ -19,6 +31,7 @@
       @input="onInput"
       @keydown="onKeyDown"
       @blur="onBlur"
+      @mousedown="onInputMouseDown"
     />
     <span v-if="unit" class="scrub-unit">{{ unit }}</span>
     <button
@@ -61,9 +74,12 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: number): void;
 }>();
 
+const inputRef = ref<HTMLInputElement | null>(null);
 const isScrubbing = ref(false);
 const scrubStartX = ref(0);
 const scrubStartValue = ref(0);
+const isDragging = ref(false);
+const dragThreshold = 3; // pixels before considering it a drag vs click
 
 const defaultValue = computed(() => props.default ?? props.modelValue);
 const showReset = computed(() => props.default !== undefined);
@@ -86,6 +102,7 @@ function round(value: number): number {
 
 function startScrub(e: MouseEvent): void {
   if (props.disabled) return;
+  e.preventDefault();
 
   isScrubbing.value = true;
   scrubStartX.value = e.clientX;
@@ -95,6 +112,56 @@ function startScrub(e: MouseEvent): void {
   document.addEventListener('mouseup', stopScrub);
   document.body.style.cursor = 'ew-resize';
   document.body.style.userSelect = 'none';
+}
+
+// Handle mousedown on input - detect drag vs click
+function onInputMouseDown(e: MouseEvent): void {
+  if (props.disabled) return;
+
+  // Only trigger on left mouse button
+  if (e.button !== 0) return;
+
+  const startX = e.clientX;
+  const startY = e.clientY;
+  isDragging.value = false;
+
+  const onMouseMove = (moveEvent: MouseEvent) => {
+    const deltaX = Math.abs(moveEvent.clientX - startX);
+    const deltaY = Math.abs(moveEvent.clientY - startY);
+
+    // If moved beyond threshold, start scrubbing
+    if (!isDragging.value && (deltaX > dragThreshold || deltaY > dragThreshold)) {
+      isDragging.value = true;
+      isScrubbing.value = true;
+      scrubStartX.value = startX;
+      scrubStartValue.value = props.modelValue;
+      document.body.style.cursor = 'ew-resize';
+      document.body.style.userSelect = 'none';
+
+      // Blur the input to prevent text selection issues
+      inputRef.value?.blur();
+    }
+
+    if (isDragging.value) {
+      onScrubMove(moveEvent);
+    }
+  };
+
+  const onMouseUp = () => {
+    document.removeEventListener('mousemove', onMouseMove);
+    document.removeEventListener('mouseup', onMouseUp);
+
+    if (isDragging.value) {
+      isScrubbing.value = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    }
+    // If not dragging, the click will focus the input normally
+    isDragging.value = false;
+  };
+
+  document.addEventListener('mousemove', onMouseMove);
+  document.addEventListener('mouseup', onMouseUp);
 }
 
 function onScrubMove(e: MouseEvent): void {
@@ -167,12 +234,16 @@ function reset(): void {
 .scrubable-number {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 .scrubable-number.disabled {
   opacity: 0.5;
   pointer-events: none;
+}
+
+.scrubable-number.scrubbing {
+  /* Visual feedback when scrubbing */
 }
 
 .scrub-label {
@@ -192,6 +263,33 @@ function reset(): void {
   color: #7c9cff;
 }
 
+/* Scrub handle - visible drag target when no label */
+.scrub-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  height: 20px;
+  color: #555;
+  cursor: ew-resize;
+  user-select: none;
+  font-size: 10px;
+  letter-spacing: -2px;
+  transition: color 0.1s, background 0.1s;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.scrub-handle:hover {
+  color: #7c9cff;
+  background: rgba(124, 156, 255, 0.1);
+}
+
+.scrub-handle.scrubbing {
+  color: #7c9cff;
+  background: rgba(124, 156, 255, 0.2);
+}
+
 .scrub-input {
   width: 60px;
   padding: 4px 6px;
@@ -202,11 +300,24 @@ function reset(): void {
   font-size: 13px;
   font-family: inherit;
   text-align: right;
+  cursor: text;
+  transition: border-color 0.1s;
+}
+
+/* Change cursor to indicate scrubbing is possible */
+.scrub-input:not(:focus) {
+  cursor: ew-resize;
 }
 
 .scrub-input:focus {
   outline: none;
   border-color: #7c9cff;
+  cursor: text;
+}
+
+.scrub-input.scrubbing {
+  border-color: #7c9cff;
+  background: #252530;
 }
 
 .scrub-input::-webkit-inner-spin-button,

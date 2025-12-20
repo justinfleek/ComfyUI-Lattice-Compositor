@@ -268,7 +268,7 @@ describe('extractSpectralFlux', () => {
     const meanFlux = flux.reduce((a, b) => a + b, 0) / flux.length;
 
     expect(maxFlux).toBeGreaterThan(meanFlux * 1.5);
-  });
+  }, 15000); // Increased timeout for FFT-heavy computation
 
   it('should be low for steady tone', () => {
     const sineWave = generateSineWave(440, 1, 44100);

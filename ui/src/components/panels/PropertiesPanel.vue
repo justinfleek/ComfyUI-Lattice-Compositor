@@ -41,13 +41,13 @@
           <!-- Position -->
           <div class="property-row" :class="{ 'has-driver': hasDriver('transform.position.x') }">
             <span class="keyframe-toggle" :class="{ active: hasKeyframe('position') }" @click="toggleKeyframe('position')">◆</span>
-            <Pickwhip
+            <PropertyLink
               v-if="selectedLayer"
               :layerId="selectedLayer.id"
               property="transform.position.x"
               :linkedTo="getDriverForProperty('transform.position.x')"
-              @link="(target) => onPickwhipLink('transform.position.x', target)"
-              @unlink="() => onPickwhipUnlink('transform.position.x')"
+              @link="(target) => onPropertyLink('transform.position.x', target)"
+              @unlink="() => onPropertyUnlink('transform.position.x')"
             />
             <label>Position</label>
             <div class="value-group">
@@ -169,6 +169,64 @@
         </div>
       </div>
 
+      <!-- Layer Options Section -->
+      <div class="property-section">
+        <div class="section-header" @click="toggleSection('options')">
+          <span class="expand-icon">{{ expandedSections.includes('options') ? '▼' : '►' }}</span>
+          <span class="section-title">Layer Options</span>
+        </div>
+
+        <div v-if="expandedSections.includes('options')" class="section-content">
+          <!-- Parent Layer -->
+          <div class="property-row">
+            <label>Parent</label>
+            <select
+              class="parent-select"
+              :value="selectedLayer?.parentId || ''"
+              @change="updateParent"
+            >
+              <option value="">None</option>
+              <option
+                v-for="parent in availableParents"
+                :key="parent.id"
+                :value="parent.id"
+              >
+                {{ parent.name }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Blend Mode -->
+          <div class="property-row">
+            <label>Blend Mode</label>
+            <select
+              class="blend-select"
+              v-model="blendMode"
+              @change="updateBlendMode"
+            >
+              <option
+                v-for="mode in blendModes"
+                :key="mode.value"
+                :value="mode.value"
+              >
+                {{ mode.label }}
+              </option>
+            </select>
+          </div>
+
+          <!-- 3D Layer Toggle -->
+          <div class="property-row">
+            <label>3D Layer</label>
+            <input
+              type="checkbox"
+              :checked="selectedLayer?.threeD"
+              @change="toggle3D"
+              class="checkbox-input"
+            />
+          </div>
+        </div>
+      </div>
+
       <!-- Layer-specific properties -->
       <component
         v-if="layerPropertiesComponent"
@@ -202,10 +260,17 @@ import ParticleProperties from '@/components/properties/ParticleProperties.vue';
 import DepthflowProperties from '@/components/properties/DepthflowProperties.vue';
 import LightProperties from '@/components/properties/LightProperties.vue';
 import ShapeProperties from '@/components/properties/ShapeProperties.vue';
+import PathProperties from '@/components/properties/PathProperties.vue';
 import VideoProperties from '@/components/properties/VideoProperties.vue';
 import CameraProperties from '@/components/properties/CameraProperties.vue';
 import NestedCompProperties from '@/components/properties/NestedCompProperties.vue';
-import Pickwhip from '@/components/controls/Pickwhip.vue';
+import Model3DProperties from '@/components/panels/Model3DProperties.vue';
+import AudioProperties from '@/components/properties/AudioProperties.vue';
+import DepthProperties from '@/components/properties/DepthProperties.vue';
+import NormalProperties from '@/components/properties/NormalProperties.vue';
+import GeneratedProperties from '@/components/properties/GeneratedProperties.vue';
+import GroupProperties from '@/components/properties/GroupProperties.vue';
+import PropertyLink from '@/components/controls/PropertyLink.vue';
 import DriverList from '@/components/panels/DriverList.vue';
 import type { PropertyPath } from '@/services/propertyDriver';
 
@@ -289,6 +354,7 @@ const layerPropertiesComponent = computed<Component | null>(() => {
     case 'text':
       return markRaw(TextProperties);
     case 'particles':
+    case 'particle':
       return markRaw(ParticleProperties);
     case 'depthflow':
       return markRaw(DepthflowProperties);
@@ -296,12 +362,36 @@ const layerPropertiesComponent = computed<Component | null>(() => {
       return markRaw(LightProperties);
     case 'spline':
       return markRaw(ShapeProperties);
+    case 'path':
+      return markRaw(PathProperties);
     case 'video':
       return markRaw(VideoProperties);
     case 'camera':
       return markRaw(CameraProperties);
     case 'nestedComp':
       return markRaw(NestedCompProperties);
+    case 'model':
+    case 'pointcloud':
+      return markRaw(Model3DProperties);
+    case 'shape':
+      return markRaw(ShapeProperties);
+    case 'audio':
+      return markRaw(AudioProperties);
+    case 'depth':
+      return markRaw(DepthProperties);
+    case 'normal':
+      return markRaw(NormalProperties);
+    case 'generated':
+      return markRaw(GeneratedProperties);
+    case 'group':
+      return markRaw(GroupProperties);
+    case 'control':
+    case 'matte':
+    case 'solid':
+    case 'image':
+    case 'null':
+      // These use default transform controls only
+      return null;
     default:
       return null;
   }
@@ -511,9 +601,9 @@ function getDriverForProperty(property: PropertyPath): { layerId: string; proper
 }
 
 /**
- * Handle pickwhip link event
+ * Handle property link event
  */
-function onPickwhipLink(
+function onPropertyLink(
   targetProperty: PropertyPath,
   source: { layerId: string; property: PropertyPath }
 ) {
@@ -532,9 +622,9 @@ function onPickwhipLink(
 }
 
 /**
- * Handle pickwhip unlink event
+ * Handle property unlink event
  */
-function onPickwhipUnlink(targetProperty: PropertyPath) {
+function onPropertyUnlink(targetProperty: PropertyPath) {
   if (!selectedLayer.value) return;
 
   // Find and remove the driver
@@ -853,6 +943,19 @@ function hasDriver(property: PropertyPath): boolean {
   color: #e0e0e0;
   border-radius: 3px;
   font-size: 13px;
+}
+
+.blend-select:focus,
+.parent-select:focus {
+  outline: none;
+  border-color: #4a90d9;
+}
+
+.checkbox-input {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: #4a90d9;
 }
 
 .empty-state {

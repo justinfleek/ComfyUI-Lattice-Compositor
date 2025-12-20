@@ -354,7 +354,12 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useCompositorStore } from '@/stores/compositorStore';
 import { interpolateProperty } from '@/services/interpolation';
-import type { ControlPoint, SplineData, EvaluatedControlPoint } from '@/types/project';
+import type { ControlPoint, SplineData, PathLayerData, EvaluatedControlPoint } from '@/types/project';
+
+// Helper: Check if layer is a spline or path type (both use control points)
+function isSplineOrPathType(layerType: string | undefined): layerType is 'spline' | 'path' {
+  return layerType === 'spline' || layerType === 'path';
+}
 
 interface Props {
   layerId: string | null;
@@ -571,8 +576,8 @@ function inverseTransformPoint(p: { x: number; y: number }): { x: number; y: num
 const isClosed = computed(() => {
   if (!props.layerId) return false;
   const layer = store.layers.find(l => l.id === props.layerId);
-  if (!layer || layer.type !== 'spline') return false;
-  return (layer.data as SplineData)?.closed ?? false;
+  if (!layer || !isSplineOrPathType(layer.type)) return false;
+  return (layer.data as SplineData | PathLayerData)?.closed ?? false;
 });
 
 // Toolbar state
@@ -675,9 +680,9 @@ function smoothSpecificPoints(pointIds: string[]) {
   if (!props.layerId) return;
 
   const layer = store.layers.find(l => l.id === props.layerId);
-  if (!layer || layer.type !== 'spline' || !layer.data) return;
+  if (!layer || !isSplineOrPathType(layer.type) || !layer.data) return;
 
-  const splineData = layer.data as SplineData;
+  const splineData = layer.data as SplineData | PathLayerData;
   const controlPoints = splineData.controlPoints;
   if (!controlPoints || controlPoints.length < 2) return;
 
@@ -743,17 +748,17 @@ const rawControlPoints = computed<(ControlPoint | EvaluatedControlPoint)[]>(() =
   if (!props.layerId) return [];
 
   const layer = store.layers.find(l => l.id === props.layerId);
-  if (!layer || layer.type !== 'spline' || !layer.data) return [];
+  if (!layer || !isSplineOrPathType(layer.type) || !layer.data) return [];
 
-  const splineData = layer.data as SplineData;
+  const layerData = layer.data as SplineData | PathLayerData;
 
   // If animated, get evaluated control points at current frame
-  if (splineData.animated && splineData.animatedControlPoints) {
+  if (layerData.animated && layerData.animatedControlPoints) {
     return store.getEvaluatedSplinePoints(props.layerId, props.currentFrame);
   }
 
   // Otherwise return static control points
-  return splineData.controlPoints || [];
+  return layerData.controlPoints || [];
 });
 
 // Interface for transformed control point (includes both raw and transformed coords)
@@ -852,10 +857,10 @@ const canClosePath = computed(() => {
   if (!props.layerId || visibleControlPoints.value.length < 3) return false;
 
   const layer = store.layers.find(l => l.id === props.layerId);
-  if (!layer || layer.type !== 'spline' || !layer.data) return false;
+  if (!layer || !isSplineOrPathType(layer.type) || !layer.data) return false;
 
-  const splineData = layer.data as SplineData;
-  return !splineData.closed;
+  const layerData = layer.data as SplineData | PathLayerData;
+  return !layerData.closed;
 });
 
 // Get the stroke color from the layer data (for point colors)
@@ -863,7 +868,13 @@ const strokeColor = computed(() => {
   if (!props.layerId) return '#00ff66'; // default green
 
   const layer = store.layers.find(l => l.id === props.layerId);
-  if (!layer || layer.type !== 'spline' || !layer.data) return '#00ff66';
+  if (!layer || !isSplineOrPathType(layer.type) || !layer.data) return '#00ff66';
+
+  // Path layers use guideColor (cyan), spline layers use stroke
+  if (layer.type === 'path') {
+    const pathData = layer.data as PathLayerData;
+    return pathData.guideColor || '#00FFFF'; // cyan for paths
+  }
 
   const splineData = layer.data as SplineData;
   // Use 'stroke' (the actual property name) or 'strokeColor' for compatibility
@@ -1003,7 +1014,7 @@ function handleMouseDown(event: MouseEvent) {
 
   if (!props.layerId) return;
   const layer = store.layers.find(l => l.id === props.layerId);
-  if (!layer || layer.type !== 'spline') return;
+  if (!layer || !isSplineOrPathType(layer.type)) return;
 
   // Handle different pen sub-modes
   if (penSubMode.value === 'add') {
@@ -1265,10 +1276,10 @@ function handleMouseMove(event: MouseEvent) {
   // Handle dragging
   if (dragTarget.value && props.layerId) {
     const layer = store.layers.find(l => l.id === props.layerId);
-    if (!layer || layer.type !== 'spline') return;
+    if (!layer || !isSplineOrPathType(layer.type)) return;
 
-    const splineData = layer.data as SplineData;
-    const point = splineData.controlPoints?.find(p => p.id === dragTarget.value!.pointId);
+    const layerData = layer.data as SplineData | PathLayerData;
+    const point = layerData.controlPoints?.find(p => p.id === dragTarget.value!.pointId);
     if (!point) return;
 
     // Convert composition-space position to layer-space for storing
@@ -1383,9 +1394,9 @@ function handleMouseUp() {
 
     // If we were creating a new handle by dragging, convert to smooth point
     const layer = store.layers.find(l => l.id === props.layerId);
-    if (layer && layer.type === 'spline') {
-      const splineData = layer.data as SplineData;
-      const point = splineData.controlPoints?.find(p => p.id === dragTarget.value!.pointId);
+    if (layer && isSplineOrPathType(layer.type)) {
+      const layerData = layer.data as SplineData | PathLayerData;
+      const point = layerData.controlPoints?.find(p => p.id === dragTarget.value!.pointId);
       if (point && point.handleOut && dragTarget.value.type === 'handleOut') {
         // Check if handle was dragged far enough
         const dx = point.handleOut.x - point.x;
@@ -1440,7 +1451,7 @@ function closePath() {
   if (!props.layerId) return;
 
   const layer = store.layers.find(l => l.id === props.layerId);
-  if (!layer || layer.type !== 'spline' || !layer.data) return;
+  if (!layer || !isSplineOrPathType(layer.type) || !layer.data) return;
 
   // Update the spline data to closed
   store.updateLayerData(props.layerId, { closed: true });
@@ -1601,7 +1612,7 @@ function handleKeyDown(event: KeyboardEvent) {
   if (event.key === 'Delete' || event.key === 'Backspace') {
     if (selectedPointId.value && props.layerId) {
       const layer = store.layers.find(l => l.id === props.layerId);
-      if (layer && layer.type === 'spline') {
+      if (layer && isSplineOrPathType(layer.type)) {
         const pointId = selectedPointId.value;
         // Delete via store action
         store.deleteSplineControlPoint(props.layerId, pointId);

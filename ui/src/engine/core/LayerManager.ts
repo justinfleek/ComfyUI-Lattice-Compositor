@@ -32,6 +32,7 @@ import { SolidLayer } from '../layers/SolidLayer';
 import { ControlLayer } from '../layers/ControlLayer';
 import { TextLayer } from '../layers/TextLayer';
 import { SplineLayer } from '../layers/SplineLayer';
+import { PathLayer } from '../layers/PathLayer';
 import { ParticleLayer } from '../layers/ParticleLayer';
 import { VideoLayer, type VideoMetadata } from '../layers/VideoLayer';
 import { NestedCompLayer, type NestedCompRenderContext } from '../layers/NestedCompLayer';
@@ -43,6 +44,11 @@ import { ProceduralMatteLayer } from '../layers/ProceduralMatteLayer';
 import { ShapeLayer } from '../layers/ShapeLayer';
 import { ModelLayer } from '../layers/ModelLayer';
 import { PointCloudLayer } from '../layers/PointCloudLayer';
+import { DepthLayer } from '../layers/DepthLayer';
+import { NormalLayer } from '../layers/NormalLayer';
+import { AudioLayer } from '../layers/AudioLayer';
+import { GeneratedLayer } from '../layers/GeneratedLayer';
+import { GroupLayer } from '../layers/GroupLayer';
 import type { TargetParameter } from '@/services/audioReactiveMapping';
 import type { SplineQueryResult, SplinePathProvider } from '@/services/particleSystem';
 import { layerLogger } from '@/utils/logger';
@@ -345,6 +351,9 @@ export class LayerManager {
       case 'spline':
         return new SplineLayer(layerData);
 
+      case 'path':
+        return new PathLayer(layerData);
+
       case 'particles':
         return new ParticleLayer(layerData);
 
@@ -374,6 +383,26 @@ export class LayerManager {
 
       case 'pointcloud':
         return new PointCloudLayer(layerData);
+
+      case 'depth':
+        return new DepthLayer(layerData);
+
+      case 'normal':
+        return new NormalLayer(layerData);
+
+      case 'audio':
+        return new AudioLayer(layerData);
+
+      case 'generated':
+        return new GeneratedLayer(layerData);
+
+      case 'group':
+        return new GroupLayer(layerData);
+
+      case 'particle':
+        // Legacy particle type - use ParticleLayer with simplified config
+        layerLogger.info('LayerManager: Legacy particle type, using ParticleLayer');
+        return new ParticleLayer(layerData);
 
       default:
         layerLogger.warn(`LayerManager: Unknown layer type: ${layerData.type}, creating ControlLayer`);
@@ -476,16 +505,16 @@ export class LayerManager {
   applyEvaluatedState(evaluatedLayers: readonly EvaluatedLayer[], frame?: number): void {
     const currentFrame = frame ?? 0;
 
-    // First, apply state to spline layers so they evaluate their control points
-    // This ensures animated splines are ready before text layers query them
+    // First, apply state to spline and path layers so they evaluate their control points
+    // This ensures animated paths are ready before text layers query them
     for (const evalLayer of evaluatedLayers) {
       const layer = this.layers.get(evalLayer.id);
-      if (layer && layer.type === 'spline') {
+      if (layer && (layer.type === 'spline' || layer.type === 'path')) {
         layer.applyEvaluatedState(evalLayer);
       }
     }
 
-    // Update text-on-path connections (with frame for animated splines)
+    // Update text-on-path connections (with frame for animated splines/paths)
     this.updateTextPathConnections(frame);
 
     // Process track mattes - collect matte canvases and distribute to target layers
@@ -495,7 +524,7 @@ export class LayerManager {
     // Apply evaluated state to remaining layers
     for (const evalLayer of evaluatedLayers) {
       const layer = this.layers.get(evalLayer.id);
-      if (layer && layer.type !== 'spline') {
+      if (layer && layer.type !== 'spline' && layer.type !== 'path') {
         layer.applyEvaluatedState(evalLayer);
       }
     }
@@ -578,13 +607,15 @@ export class LayerManager {
   }
 
   /**
-   * Update text layer connections to spline paths
+   * Update text layer connections to spline/path layers
    * Called before frame evaluation to ensure paths are current
    *
-   * For animated splines, this must be called with the current frame
+   * For animated splines/paths, this must be called with the current frame
    * to get properly evaluated control points.
    *
-   * @param frame - Optional frame number for animated spline evaluation
+   * Supports both 'spline' and 'path' layer types.
+   *
+   * @param frame - Optional frame number for animated spline/path evaluation
    */
   private updateTextPathConnections(frame?: number): void {
     for (const layer of this.layers.values()) {
@@ -593,13 +624,17 @@ export class LayerManager {
         const textData = textLayer.getTextData();
 
         if (textData.pathLayerId) {
-          const splineLayer = this.layers.get(textData.pathLayerId) as SplineLayer | undefined;
+          const pathSourceLayer = this.layers.get(textData.pathLayerId);
 
-          if (splineLayer && splineLayer.type === 'spline') {
-            // Check if spline is animated and we have a frame
-            if (splineLayer.isAnimated() && frame !== undefined) {
+          // Support both spline and path layer types
+          if (pathSourceLayer && (pathSourceLayer.type === 'spline' || pathSourceLayer.type === 'path')) {
+            // Both SplineLayer and PathLayer have the same path interface
+            const pathLayer = pathSourceLayer as SplineLayer | PathLayer;
+
+            // Check if path is animated and we have a frame
+            if (pathLayer.isAnimated() && frame !== undefined) {
               // Get evaluated control points for this frame
-              const evaluatedPoints = splineLayer.getEvaluatedControlPoints(frame);
+              const evaluatedPoints = pathLayer.getEvaluatedControlPoints(frame);
 
               // Convert EvaluatedControlPoint to ControlPoint for TextLayer
               const controlPoints = evaluatedPoints.map(ep => ({
@@ -613,10 +648,10 @@ export class LayerManager {
               }));
 
               // Update text layer with animated path
-              textLayer.setPathFromControlPoints(controlPoints, splineLayer.isClosed());
+              textLayer.setPathFromControlPoints(controlPoints, pathLayer.isClosed());
             } else {
-              // Static spline - use cached curve
-              const curve = splineLayer.getCurve();
+              // Static path - use cached curve
+              const curve = pathLayer.getCurve();
               if (curve) {
                 textLayer.setPathFromCurve(curve);
               }
@@ -648,32 +683,35 @@ export class LayerManager {
   }
 
   /**
-   * Query a spline layer for position and tangent at parameter t
+   * Query a spline/path layer for position and tangent at parameter t
    *
-   * @param layerId - ID of the spline layer
+   * Supports both 'spline' and 'path' layer types.
+   *
+   * @param layerId - ID of the spline or path layer
    * @param t - Parameter along the path (0-1)
-   * @param frame - Current frame for animated splines
-   * @returns Position, tangent, and length or null if spline not found
+   * @param frame - Current frame for animated paths
+   * @returns Position, tangent, and length or null if layer not found
    */
   querySplinePath(layerId: string, t: number, frame: number): SplineQueryResult | null {
     const layer = this.layers.get(layerId);
 
-    if (!layer || layer.type !== 'spline') {
+    // Support both spline and path layer types
+    if (!layer || (layer.type !== 'spline' && layer.type !== 'path')) {
       return null;
     }
 
-    const splineLayer = layer as SplineLayer;
+    const pathLayer = layer as SplineLayer | PathLayer;
 
-    // For animated splines, ensure we have evaluated control points
+    // For animated paths, ensure we have evaluated control points
     // This triggers rebuild if points have changed
-    if (splineLayer.isAnimated()) {
-      splineLayer.getEvaluatedControlPoints(frame);
+    if (pathLayer.isAnimated()) {
+      pathLayer.getEvaluatedControlPoints(frame);
     }
 
     // Query the curve
-    const point = splineLayer.getPointAt(t);
-    const tangent = splineLayer.getTangentAt(t);
-    const length = splineLayer.getLength();
+    const point = pathLayer.getPointAt(t);
+    const tangent = pathLayer.getTangentAt(t);
+    const length = pathLayer.getLength();
 
     if (!point || !tangent) {
       return null;
@@ -681,7 +719,7 @@ export class LayerManager {
 
     // Convert Three.js coordinates to normalized coordinates
     // Spline coordinates are in canvas pixels, normalize to 0-1
-    // Note: The Y coordinate is negated in SplineLayer, so we negate it back
+    // Note: The Y coordinate is negated in SplineLayer/PathLayer, so we negate it back
     // For now, we assume the composition size is available or use raw coordinates
     // In production, this should be normalized based on composition dimensions
 
@@ -700,12 +738,13 @@ export class LayerManager {
   }
 
   /**
-   * Get all spline layer IDs (useful for UI to list available paths)
+   * Get all spline and path layer IDs (useful for UI to list available paths)
+   * Returns both 'spline' and 'path' layer types since both can be used as paths.
    */
   getSplineLayerIds(): string[] {
     const ids: string[] = [];
     for (const [id, layer] of this.layers) {
-      if (layer.type === 'spline') {
+      if (layer.type === 'spline' || layer.type === 'path') {
         ids.push(id);
       }
     }
@@ -713,9 +752,23 @@ export class LayerManager {
   }
 
   /**
-   * Connect a text layer to a spline path
+   * Get all path layer IDs only (invisible motion paths)
    */
-  connectTextToPath(textLayerId: string, splineLayerId: string | null): void {
+  getPathLayerIds(): string[] {
+    const ids: string[] = [];
+    for (const [id, layer] of this.layers) {
+      if (layer.type === 'path') {
+        ids.push(id);
+      }
+    }
+    return ids;
+  }
+
+  /**
+   * Connect a text layer to a spline or path layer
+   * Supports both 'spline' and 'path' layer types.
+   */
+  connectTextToPath(textLayerId: string, pathLayerId: string | null): void {
     const textLayer = this.layers.get(textLayerId) as TextLayer | undefined;
 
     if (!textLayer || textLayer.type !== 'text') {
@@ -723,19 +776,21 @@ export class LayerManager {
       return;
     }
 
-    if (!splineLayerId) {
+    if (!pathLayerId) {
       textLayer.clearPath();
       return;
     }
 
-    const splineLayer = this.layers.get(splineLayerId) as SplineLayer | undefined;
+    const pathSourceLayer = this.layers.get(pathLayerId);
 
-    if (!splineLayer || splineLayer.type !== 'spline') {
-      layerLogger.warn(`LayerManager: Spline layer ${splineLayerId} not found`);
+    // Support both spline and path layer types
+    if (!pathSourceLayer || (pathSourceLayer.type !== 'spline' && pathSourceLayer.type !== 'path')) {
+      layerLogger.warn(`LayerManager: Spline/path layer ${pathLayerId} not found`);
       return;
     }
 
-    const curve = splineLayer.getCurve();
+    const pathLayer = pathSourceLayer as SplineLayer | PathLayer;
+    const curve = pathLayer.getCurve();
     if (curve) {
       textLayer.setPathFromCurve(curve);
     }

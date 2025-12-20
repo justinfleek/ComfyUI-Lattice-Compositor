@@ -221,8 +221,14 @@ export interface Layer {
   // 3D Material Options (for 3D layers)
   materialOptions?: LayerMaterialOptions;
 
-  inPoint: number;      // Start frame (0-80)
-  outPoint: number;     // End frame (0-80)
+  // Timing (primary properties)
+  startFrame: number;   // First visible frame (0-based)
+  endFrame: number;     // Last visible frame (0-based)
+  /** @deprecated Use 'startFrame' instead. Kept for backwards compatibility. */
+  inPoint?: number;
+  /** @deprecated Use 'endFrame' instead. Kept for backwards compatibility. */
+  outPoint?: number;
+
   parentId: string | null;
   blendMode: BlendMode;
   opacity: AnimatableProperty<number>;
@@ -250,13 +256,14 @@ export interface Layer {
 
   properties: AnimatableProperty<any>[];
   effects: EffectInstance[];  // Effect stack - processed top to bottom
-  data: SplineData | TextData | ParticleData | ParticleLayerData | DepthflowLayerData | GeneratedMapData | CameraLayerData | ImageLayerData | VideoData | NestedCompData | ProceduralMatteData | ShapeLayerData | ModelLayerData | PointCloudLayerData | null;
+  data: SplineData | PathLayerData | TextData | ParticleData | ParticleLayerData | DepthflowLayerData | GeneratedMapData | CameraLayerData | ImageLayerData | VideoData | NestedCompData | ProceduralMatteData | ShapeLayerData | ModelLayerData | PointCloudLayerData | null;
 }
 
 export type LayerType =
   | 'depth'      // Depth map visualization
   | 'normal'     // Normal map visualization
-  | 'spline'     // Bezier path
+  | 'spline'     // Bezier path (visible shape with stroke/fill)
+  | 'path'       // Motion path (invisible guide for text/camera/particles)
   | 'text'       // Animated text
   | 'shape'      // Vector shapes
   | 'particle'   // Particle emitter (legacy)
@@ -343,6 +350,7 @@ export interface LayerMaterialOptions {
 
 export type LayerDataMap = {
   spline: SplineData;
+  path: PathLayerData;
   text: TextData;
   particle: ParticleData;
   particles: ParticleLayerData;
@@ -595,6 +603,167 @@ export interface ImageLayerData {
 }
 
 // ============================================================
+// DEPTH LAYER DATA - Depth map visualization for AI workflows
+// ============================================================
+
+export interface DepthLayerData {
+  /** Source asset ID (depth map image) */
+  assetId: string | null;
+
+  /** Visualization mode */
+  visualizationMode: 'grayscale' | 'colormap' | 'contour' | '3d-mesh';
+
+  /** Color map preset for visualization */
+  colorMap: 'turbo' | 'viridis' | 'plasma' | 'inferno' | 'magma' | 'grayscale';
+
+  /** Invert depth values (near <-> far) */
+  invert: boolean;
+
+  /** Depth range normalization */
+  minDepth: number;
+  maxDepth: number;
+  autoNormalize: boolean;
+
+  /** Contour settings (when visualizationMode = 'contour') */
+  contourLevels: number;
+  contourColor: string;
+  contourWidth: number;
+
+  /** 3D mesh settings (when visualizationMode = '3d-mesh') */
+  meshDisplacement: AnimatableProperty<number>;
+  meshResolution: number;
+  wireframe: boolean;
+}
+
+// ============================================================
+// NORMAL LAYER DATA - Normal map visualization for AI workflows
+// ============================================================
+
+export interface NormalLayerData {
+  /** Source asset ID (normal map image) */
+  assetId: string | null;
+
+  /** Visualization mode */
+  visualizationMode: 'rgb' | 'hemisphere' | 'arrows' | 'lit';
+
+  /** Normal map format */
+  format: 'opengl' | 'directx';
+
+  /** Flip channels */
+  flipX: boolean;
+  flipY: boolean;
+  flipZ: boolean;
+
+  /** Arrow visualization settings */
+  arrowDensity: number;
+  arrowScale: number;
+  arrowColor: string;
+
+  /** Lit visualization settings (fake lighting preview) */
+  lightDirection: { x: number; y: number; z: number };
+  lightIntensity: number;
+  ambientIntensity: number;
+}
+
+// ============================================================
+// AUDIO LAYER DATA - Audio-only layer (no visual)
+// ============================================================
+
+export interface AudioLayerData {
+  /** Source asset ID (audio file) */
+  assetId: string | null;
+
+  /** Audio level (dB, 0 = unity) */
+  level: AnimatableProperty<number>;
+
+  /** Mute toggle */
+  muted: boolean;
+
+  /** Solo this audio track */
+  solo: boolean;
+
+  /** Panning (-1 = left, 0 = center, 1 = right) */
+  pan: AnimatableProperty<number>;
+
+  /** Playback settings */
+  startTime: number;
+  loop: boolean;
+  speed: number;
+
+  /** Waveform visualization in timeline */
+  showWaveform: boolean;
+  waveformColor: string;
+
+  /** Audio reactivity - expose audio features for linking */
+  exposeFeatures: boolean;
+}
+
+// ============================================================
+// GENERATED LAYER DATA - AI-generated content
+// ============================================================
+
+export interface GeneratedLayerData {
+  /** Generated content type */
+  generationType: 'depth' | 'normal' | 'edge' | 'segment' | 'inpaint' | 'custom';
+
+  /** Source layer ID (input to generation) */
+  sourceLayerId: string | null;
+
+  /** Model used for generation */
+  model: string;
+
+  /** Generation parameters (model-specific) */
+  parameters: Record<string, unknown>;
+
+  /** Generated asset ID (output) */
+  generatedAssetId: string | null;
+
+  /** Generation status */
+  status: 'pending' | 'generating' | 'complete' | 'error';
+  errorMessage?: string;
+
+  /** Auto-regenerate when source changes */
+  autoRegenerate: boolean;
+
+  /** Last generation timestamp */
+  lastGenerated?: string;
+}
+
+// ============================================================
+// GROUP LAYER DATA - Layer folder/group
+// ============================================================
+
+export interface GroupLayerData {
+  /** Collapsed state in timeline */
+  collapsed: boolean;
+
+  /** Group color label */
+  color: string | null;
+
+  /** Pass-through mode (group doesn't create intermediate composite) */
+  passThrough: boolean;
+
+  /** Isolate group (only show group contents when selected) */
+  isolate: boolean;
+}
+
+// ============================================================
+// LEGACY PARTICLE LAYER DATA (for backwards compatibility)
+// ============================================================
+
+export interface LegacyParticleLayerData {
+  /** @deprecated Use ParticleLayerData with 'particles' type instead */
+  emitterType: 'point' | 'line' | 'circle' | 'box';
+  particleCount: number;
+  lifetime: number;
+  speed: number;
+  spread: number;
+  gravity: number;
+  color: string;
+  size: number;
+}
+
+// ============================================================
 // VIDEO DATA - Full video playback control
 // ============================================================
 
@@ -608,9 +777,13 @@ export interface VideoData {
   endTime?: number;           // End time in source (undefined = full duration)
   speed: number;              // Playback speed (1 = normal, 2 = 2x, 0.5 = half)
 
-  // Time remapping (professional feature)
-  timeRemapEnabled: boolean;
-  timeRemap?: AnimatableProperty<number>;  // Maps comp time to video time
+  // Speed mapping (professional feature for time manipulation)
+  speedMapEnabled: boolean;
+  speedMap?: AnimatableProperty<number>;  // Maps comp time to video time
+  /** @deprecated Use 'speedMapEnabled' instead */
+  timeRemapEnabled?: boolean;
+  /** @deprecated Use 'speedMap' instead */
+  timeRemap?: AnimatableProperty<number>;
 
   // Frame blending for speed changes
   frameBlending: 'none' | 'frame-mix' | 'pixel-motion';
@@ -630,9 +803,13 @@ export interface VideoData {
 export interface NestedCompData {
   compositionId: string;      // Reference to composition in project.compositions
 
-  // Time mapping
-  timeRemapEnabled: boolean;
-  timeRemap?: AnimatableProperty<number>;  // Maps parent time to nested comp time
+  // Speed mapping (time manipulation)
+  speedMapEnabled: boolean;
+  speedMap?: AnimatableProperty<number>;  // Maps parent time to nested comp time
+  /** @deprecated Use 'speedMapEnabled' instead */
+  timeRemapEnabled?: boolean;
+  /** @deprecated Use 'speedMap' instead */
+  timeRemap?: AnimatableProperty<number>;
 
   // Flatten transform (render nested layers in parent's 3D space)
   flattenTransform: boolean;
@@ -911,6 +1088,8 @@ export interface ParticleLayerData {
   renderOptions: ParticleRenderOptions;
   turbulenceFields?: TurbulenceFieldConfig[];
   subEmitters?: SubEmitterConfig[];
+  flocking?: FlockingConfig;
+  collision?: CollisionConfig;
 }
 
 export interface ParticleSystemLayerConfig {
@@ -933,6 +1112,39 @@ export interface TurbulenceFieldConfig {
   scale: number;              // Noise frequency, 0.001-0.01 (smaller = larger swirls)
   strength: number;           // Force magnitude, 0-500
   evolutionSpeed: number;     // How fast noise changes over time, 0-1
+}
+
+// Flocking (boids) behavior configuration
+export interface FlockingConfig {
+  enabled: boolean;
+  // Separation - avoid crowding neighbors
+  separationWeight: number;   // 0-100, strength of separation force
+  separationRadius: number;   // Pixels, distance to maintain from neighbors
+  // Alignment - steer towards average heading of neighbors
+  alignmentWeight: number;    // 0-100, strength of alignment force
+  alignmentRadius: number;    // Pixels, radius to find neighbors for alignment
+  // Cohesion - steer towards average position of neighbors
+  cohesionWeight: number;     // 0-100, strength of cohesion force
+  cohesionRadius: number;     // Pixels, radius to find neighbors for cohesion
+  // Limits
+  maxSpeed: number;           // Maximum particle speed
+  maxForce: number;           // Maximum steering force
+  perceptionAngle: number;    // Field of view in degrees (180 = hemisphere)
+}
+
+// Collision detection configuration
+export interface CollisionConfig {
+  enabled: boolean;
+  // Particle-particle collision
+  particleCollision: boolean;
+  particleRadius: number;     // Collision radius per particle
+  bounciness: number;         // 0-1, how much velocity is retained on bounce
+  friction: number;           // 0-1, velocity reduction on collision
+  // Boundary collision
+  boundaryEnabled: boolean;
+  boundaryBehavior: 'none' | 'kill' | 'bounce' | 'wrap';
+  // Boundary box (relative to composition)
+  boundaryPadding: number;    // Pixels from edge
 }
 
 export interface ConnectionRenderConfig {
@@ -1597,7 +1809,13 @@ export interface ExtractedTexture {
 export interface LayerTransform {
   // Position can be {x,y} or {x,y,z} depending on threeD flag
   position: AnimatableProperty<{ x: number; y: number; z?: number }>;
-  anchorPoint: AnimatableProperty<{ x: number; y: number; z?: number }>;
+
+  // Origin point for rotation/scale (new name, replaces anchorPoint)
+  origin: AnimatableProperty<{ x: number; y: number; z?: number }>;
+
+  /** @deprecated Use 'origin' instead. Kept for backwards compatibility. */
+  anchorPoint?: AnimatableProperty<{ x: number; y: number; z?: number }>;
+
   scale: AnimatableProperty<{ x: number; y: number; z?: number }>;
 
   // 2D Rotation
@@ -1725,6 +1943,38 @@ export interface SplineData {
 
   /** @deprecated Use warpPins instead */
   puppetPins?: import('./meshWarp').WarpPin[];
+}
+
+// ============================================================
+// PATH LAYER DATA
+// Motion path for text-on-path, camera paths, particle emitters
+// Unlike SplineData, has NO visual stroke/fill properties
+// ============================================================
+
+export interface PathLayerData {
+  /** SVG path commands (M, C, Q, L, Z) */
+  pathData: string;
+
+  /** Control points defining the path */
+  controlPoints: ControlPoint[];
+
+  /** Whether the path is closed */
+  closed: boolean;
+
+  /** Show dashed guide line in editor (default: true) */
+  showGuide: boolean;
+
+  /** Guide line color (default: '#00FFFF' cyan) */
+  guideColor: string;
+
+  /** Guide line dash pattern [dash, gap] */
+  guideDashPattern: [number, number];
+
+  /** Animated control points for path morphing */
+  animatedControlPoints?: AnimatableControlPoint[];
+
+  /** True if using animatedControlPoints */
+  animated?: boolean;
 }
 
 /**
@@ -2112,9 +2362,12 @@ export function createAnimatableProperty<T>(
  * Create default layer transform
  */
 export function createDefaultTransform(): LayerTransform {
+  const originProp = createAnimatableProperty('origin', { x: 0, y: 0, z: 0 }, 'vector3');
   return {
     position: createAnimatableProperty('position', { x: 0, y: 0, z: 0 }, 'vector3'),
-    anchorPoint: createAnimatableProperty('anchorPoint', { x: 0, y: 0, z: 0 }, 'vector3'),
+    origin: originProp,
+    // @deprecated alias for backwards compatibility
+    anchorPoint: originProp,
     scale: createAnimatableProperty('scale', { x: 100, y: 100, z: 100 }, 'vector3'),
     rotation: createAnimatableProperty('rotation', 0, 'number'),
     // 3D rotation properties (always present for consistent structure)
@@ -2123,6 +2376,45 @@ export function createDefaultTransform(): LayerTransform {
     rotationY: createAnimatableProperty('rotationY', 0, 'number'),
     rotationZ: createAnimatableProperty('rotationZ', 0, 'number')
   };
+}
+
+/**
+ * Normalize a layer transform to use the new 'origin' property.
+ * Handles migration from 'anchorPoint' to 'origin'.
+ */
+export function normalizeLayerTransform(transform: LayerTransform): LayerTransform {
+  // If origin is missing but anchorPoint exists, use anchorPoint as origin
+  if (!transform.origin && transform.anchorPoint) {
+    transform.origin = transform.anchorPoint;
+  }
+  // Ensure both exist for backwards compatibility
+  if (transform.origin && !transform.anchorPoint) {
+    transform.anchorPoint = transform.origin;
+  }
+  return transform;
+}
+
+/**
+ * Normalize a layer's timing to use the new 'startFrame'/'endFrame' properties.
+ * Handles migration from 'inPoint'/'outPoint' to 'startFrame'/'endFrame'.
+ */
+export function normalizeLayerTiming(layer: Layer): Layer {
+  // If startFrame is missing but inPoint exists, use inPoint as startFrame
+  if (layer.startFrame === undefined && layer.inPoint !== undefined) {
+    layer.startFrame = layer.inPoint;
+  }
+  // If endFrame is missing but outPoint exists, use outPoint as endFrame
+  if (layer.endFrame === undefined && layer.outPoint !== undefined) {
+    layer.endFrame = layer.outPoint;
+  }
+  // Ensure both naming conventions exist for backwards compatibility
+  if (layer.startFrame !== undefined && layer.inPoint === undefined) {
+    layer.inPoint = layer.startFrame;
+  }
+  if (layer.endFrame !== undefined && layer.outPoint === undefined) {
+    layer.outPoint = layer.endFrame;
+  }
+  return layer;
 }
 
 /**

@@ -214,7 +214,9 @@ export function extractLayerTrajectory(
   const scale: Array<{ frame: number; x: number; y: number }> = [];
 
   for (let frame = startFrame; frame <= endFrame; frame++) {
-    const inRange = frame >= layer.inPoint && frame <= layer.outPoint;
+    const layerStart = layer.startFrame ?? layer.inPoint ?? 0;
+    const layerEnd = layer.endFrame ?? layer.outPoint ?? 80;
+    const inRange = frame >= layerStart && frame <= layerEnd;
     visibility.push(inRange && layer.visible);
 
     if (getTransformAtFrame) {
@@ -549,7 +551,8 @@ export function generateMotionMask(
   ctx.fillRect(0, 0, compWidth, compHeight);
 
   // Draw white rectangle for layer bounds (motion region)
-  const bounds = getLayerBounds(layer, layer.inPoint);
+  const layerStart = layer.startFrame ?? layer.inPoint ?? 0;
+  const bounds = getLayerBounds(layer, layerStart);
   ctx.fillStyle = 'white';
   ctx.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
 
@@ -578,7 +581,8 @@ export function generateCombinedMotionMask(
   // Draw each layer's bounds in white
   ctx.fillStyle = 'white';
   for (const layer of layers) {
-    const bounds = getLayerBounds(layer, layer.inPoint);
+    const layerStartFrame = layer.startFrame ?? layer.inPoint ?? 0;
+    const bounds = getLayerBounds(layer, layerStartFrame);
     ctx.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
   }
 

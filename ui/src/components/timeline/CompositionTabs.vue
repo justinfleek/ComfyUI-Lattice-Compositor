@@ -215,7 +215,7 @@ function duplicateComposition() {
 
     // Deep clone and copy layers with new IDs
     for (const layer of original.layers) {
-      const clonedLayer = JSON.parse(JSON.stringify(layer));
+      const clonedLayer = structuredClone(layer);
 
       // Generate new IDs for layer and its properties
       clonedLayer.id = `layer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;

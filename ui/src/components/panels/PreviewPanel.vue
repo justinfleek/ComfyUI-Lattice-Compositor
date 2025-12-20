@@ -65,10 +65,10 @@
       <div class="range-section">
         <div class="range-row">
           <label>
-            Work Area:
+            Render Range:
             <input
               type="number"
-              v-model.number="workAreaStart"
+              v-model.number="renderRangeStart"
               :min="0"
               :max="frameCount - 1"
               class="frame-input"
@@ -76,8 +76,8 @@
             -
             <input
               type="number"
-              v-model.number="workAreaEnd"
-              :min="workAreaStart"
+              v-model.number="renderRangeEnd"
+              :min="renderRangeStart"
               :max="frameCount"
               class="frame-input"
             />
@@ -101,11 +101,11 @@
           <div class="cache-controls">
             <button
               class="cache-btn"
-              @click="cacheWorkArea"
+              @click="cacheRenderRange"
               :disabled="isCaching"
               title="Pre-cache particle frames for smooth playback"
             >
-              {{ isCaching ? 'Caching...' : 'Cache Work Area' }}
+              {{ isCaching ? 'Caching...' : 'Cache Render Range' }}
             </button>
             <button
               class="cache-btn secondary"
@@ -182,8 +182,8 @@ const {
 // Playback state
 const loopPlayback = ref(true);
 const playbackSpeed = ref(1);
-const workAreaStart = ref(0);
-const workAreaEnd = ref(81); // Default 81 frames
+const renderRangeStart = ref(0);
+const renderRangeEnd = ref(81); // Default 81 frames
 
 // Cache state
 const isCaching = ref(false);
@@ -221,11 +221,11 @@ function togglePlayback() {
 }
 
 function goToStart() {
-  store.setCurrentFrame(workAreaStart.value);
+  store.setCurrentFrame(renderRangeStart.value);
 }
 
 function goToEnd() {
-  store.setCurrentFrame(workAreaEnd.value - 1);
+  store.setCurrentFrame(renderRangeEnd.value - 1);
 }
 
 function stepForward() {
@@ -242,7 +242,7 @@ function getCacheCount(layerId: string): number {
   return cacheStats.value.get(layerId)?.cachedFrames ?? 0;
 }
 
-async function cacheWorkArea() {
+async function cacheRenderRange() {
   if (isCaching.value) return;
 
   const particleLayerObjects = getParticleLayerObjects();
@@ -250,15 +250,15 @@ async function cacheWorkArea() {
 
   isCaching.value = true;
   cacheProgress.value = 0;
-  totalFramesToCache.value = workAreaEnd.value - workAreaStart.value;
+  totalFramesToCache.value = renderRangeEnd.value - renderRangeStart.value;
   currentCachingFrame.value = 0;
 
   try {
     // Cache each particle layer
     for (const layer of particleLayerObjects) {
       await layer.preCacheFrames(
-        workAreaStart.value,
-        workAreaEnd.value - 1,
+        renderRangeStart.value,
+        renderRangeEnd.value - 1,
         (current, total) => {
           currentCachingFrame.value = current;
           cacheProgress.value = (current / total) * 100;
@@ -307,10 +307,10 @@ function updateCacheStats() {
   }
 }
 
-// Initialize work area from composition
+// Initialize render range from composition
 watch(frameCount, (newCount) => {
-  if (workAreaEnd.value > newCount) {
-    workAreaEnd.value = newCount;
+  if (renderRangeEnd.value > newCount) {
+    renderRangeEnd.value = newCount;
   }
 }, { immediate: true });
 

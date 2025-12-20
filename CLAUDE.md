@@ -1,6 +1,6 @@
 # CLAUDE.md - WEYL COMPOSITOR COMPLETE GUIDE
 
-**Version:** 6.0 | **Last Updated:** December 20, 2024
+**Version:** 6.1 | **Last Updated:** December 20, 2024
 
 ---
 
@@ -28,16 +28,46 @@
 
 ---
 
+## TRADE DRESS TERMINOLOGY (IMPORTANT)
+
+To avoid potential trade dress/trademark issues with Adobe After Effects, Weyl uses alternative terminology. When working on this codebase, **always use the Weyl terms** in new code:
+
+| AE Term (Avoid) | Weyl Term (Use) | Status |
+|-----------------|-----------------|--------|
+| Pickwhip | **PropertyLink** | ✅ COMPLETE - PropertyLink.vue |
+| Graph Editor | **CurveEditor** | ✅ COMPLETE - curve-editor/ |
+| Adjustment Layer | **EffectLayer** | ✅ COMPLETE |
+| loopOut/loopIn | **repeatAfter/repeatBefore** | ✅ COMPLETE |
+| Solo (layer) | **Isolate** | ✅ COMPLETE |
+| Null Object | **Control** (layer type) | ✅ COMPLETE |
+| Precomp | **NestedComp** | ✅ COMPLETE |
+| Anchor Point | **origin** | ✅ COMPLETE (w/ backwards compat) |
+| inPoint/outPoint | **startFrame/endFrame** | ✅ COMPLETE (w/ backwards compat) |
+| Time Remap | **SpeedMap** | ✅ COMPLETE (w/ backwards compat) |
+| Work Area | **RenderRange** | ✅ COMPLETE |
+
+**All trade dress violations have been resolved. See `docs/TRADE_DRESS_AUDIT.md` for full details.**
+
+### Backwards Compatibility
+
+For renamed properties (`origin`, `startFrame`/`endFrame`, `speedMap`), the codebase supports both old and new names via the fallback pattern:
+```typescript
+const start = layer.startFrame ?? layer.inPoint ?? 0;
+const speedMapEnabled = data.speedMapEnabled ?? data.timeRemapEnabled ?? false;
+```
+
+---
+
 ## EXECUTIVE SUMMARY
 
 ### What is Weyl Compositor?
 
-Weyl is an **After Effects-caliber motion graphics compositor** built for the **ComfyUI ecosystem**. Think of it as:
+Weyl is a **professional motion graphics compositor** built for the **ComfyUI ecosystem**. Think of it as:
 
-- **Adobe After Effects** (timeline, keyframes, graph editor, layers, precomps)
-- **+ Trapcode Particular** (deterministic particle systems)
-- **+ TouchDesigner** (audio reactivity, property linking)
-- **+ ComfyUI Integration** (matte export for AI video generation)
+- **Professional NLE features** (timeline, keyframes, curve editor, layers, nested compositions)
+- **Procedural effects** (deterministic particle systems)
+- **Audio reactivity** (property linking, beat detection)
+- **ComfyUI Integration** (matte export for AI video generation)
 
 ### Why Does It Exist?
 
@@ -51,9 +81,34 @@ ComfyUI users need to create **conditioning data** (depth maps, masks, motion ve
 
 ### Target Output
 
-- **81 frames** at **16fps** = 5.0625 seconds
+- **81 frames** at **16fps** = 5 seconds (default)
 - Dimensions **divisible by 8** (for AI model compatibility)
 - Deterministic output (same input = same output, always)
+
+### Frame Count Formula (4n+1 Pattern)
+
+AI video models like Wan require frame counts following the **4n+1 pattern**:
+
+```
+frames = (seconds × 16) + 1
+```
+
+| Duration | Frame Count | Formula |
+|----------|-------------|---------|
+| 1 second | 17 frames | 1×16+1 |
+| 2 seconds | 33 frames | 2×16+1 |
+| 3 seconds | 49 frames | 3×16+1 |
+| 4 seconds | 65 frames | 4×16+1 |
+| **5 seconds** | **81 frames** | **5×16+1 (DEFAULT)** |
+| 7 seconds | 113 frames | 7×16+1 |
+| 10 seconds | 161 frames | 10×16+1 |
+| 15 seconds | 241 frames | 15×16+1 |
+
+**Why 4n+1?** AI video diffusion models process frames in groups of 4. The +1 accounts for the reference/conditioning frame.
+
+Duration presets are available in:
+- `config/exportPresets.ts` - `WAN_DURATION_PRESETS`
+- Composition Settings Dialog - "Duration Preset" dropdown
 
 ---
 
@@ -61,18 +116,19 @@ ComfyUI users need to create **conditioning data** (depth maps, masks, motion ve
 
 | Metric | Current | Target | Notes |
 |--------|---------|--------|-------|
-| **Lines of Code** | 128,114 | - | TypeScript + Vue |
-| **Source Files** | 215 | - | .ts + .vue |
-| **Test Files** | 29 | - | Vitest framework |
-| **Tests Passing** | 1170/1213 | 1213/1213 | 96.5% pass rate |
+| **Lines of Code** | 159,054 | - | TypeScript + Vue |
+| **Source Files** | 252 | - | .ts + .vue |
+| **Test Files** | 34 | - | Vitest framework |
+| **Tests Passing** | 1185/1228 | 1228/1228 | 96.5% pass rate |
 | **TypeScript Errors** | 0 | 0 | Build passes! |
-| **Services** | 42 | - | Business logic modules |
-| **Vue Components** | 55 | - | UI components |
+| **Services** | 53 | - | Business logic modules |
+| **Vue Components** | 63 | - | UI components |
 | **Layer Types** | 17 | - | More than AE! |
 | **Effects** | 22 | - | 4 categories |
 | **Easing Functions** | 35 | - | All Penner + custom |
 | **Camera Presets** | 22 | - | Trajectory presets |
-| **Feature Completion** | 87% | 95% | See HANDOFF.md |
+| **Particle Presets** | 24 | - | Built-in presets |
+| **Feature Completion** | 90% | 95% | See HANDOFF.md |
 
 ---
 
@@ -1267,28 +1323,50 @@ console.log('cache hits:', stats.hits, 'misses:', stats.misses);
 
 ### Critical Issues (Blocking)
 
-| Issue | Description | Status |
-|-------|-------------|--------|
-| **Three.js Multi-Instance Conflict** | Other ComfyUI extensions load their own Three.js, causing `Mesh is not a constructor` errors | Workaround: try-catch in SceneManager |
-| **ScrubableNumber Broken** | Drag-to-adjust number inputs don't respond to mouse events | Needs investigation |
-| **Project Panel Drag** | Can't drag items from project panel to timeline | Needs investigation |
-| **Upper-Left Viewport Controls** | Render mode/transform mode buttons non-functional | UI present, handlers missing |
+**None currently!** All critical issues have been resolved.
+
+### Mitigated Issues
+
+| Issue | Description | Mitigation |
+|-------|-------------|------------|
+| **Three.js Multi-Instance Conflict** | Other ComfyUI extensions load their own Three.js | WebGL context event listeners in WeylEngine.ts handle context loss/restore |
+
+### Recently Fixed Critical Issues
+
+| Issue | Fix |
+|-------|-----|
+| **ScrubableNumber Broken** | FIXED - Added proper startScrub, onInputMouseDown, onScrubMove handlers |
+| **Project Panel Drag** | FIXED - Added drop handlers to TimelinePanel.vue |
+| **Upper-Left Viewport Controls** | FIXED - Added render/transform mode handlers to ThreeCanvas.vue |
 
 ### Medium Issues (UX Impact)
 
 | Issue | Description | Status |
 |-------|-------------|--------|
-| **Video Encoder** | Export to video throws "not implemented" | Planned for future |
+| **Video Encoder** | Requires WebCodecs API (Chrome 94+, Edge 94+) | Works in modern browsers |
 | **Depth/Normal Map UI** | Workflow unclear to users | Needs docs |
 
 ### Recently Fixed (December 2024)
 
 | Issue | Fix |
 |-------|-----|
+| **Particle Sub-emitters** | Wired in ParticleLayer.ts buildSystemConfig() |
+| **Particle Flocking** | Added FlockingConfig type and UI in ParticleProperties.vue |
+| **Particle Collision** | Added CollisionConfig type and UI in ParticleProperties.vue |
+| **Particle Emitter Shapes** | Added convertEmitterShape() for all 7 shape types |
+| **Particle Presets** | Added 19 new built-in presets (total: 24) |
 | **Layer Centering** | Anchor set to (0,0), position to comp center |
 | **PropertyTrack Alignment** | Fixed with flexbox |
 | **Dropdown Cutoff** | Right-aligned dropdowns |
 | **Background Colors** | Changed from `#1a1a2e` to `#050505` |
+| **Trade Dress: Pickwhip** | Renamed to PropertyLink.vue |
+| **Trade Dress: Graph Editor** | Renamed to CurveEditor.vue |
+| **Trade Dress: anchorPoint** | Renamed to `origin` with backwards compat |
+| **Project Panel Drag** | Added drop handlers to TimelinePanel.vue |
+| **Viewport Controls** | Added render/transform mode handlers to ThreeCanvas.vue |
+| **ScrubableNumber** | Added startScrub, onInputMouseDown, onScrubMove handlers |
+| **Test: layerEvaluationCache** | Fixed mock layer startFrame/endFrame in test |
+| **Test: audioFeatures timeout** | Added 15s timeout for FFT-heavy test |
 
 ### TypeScript Errors
 
@@ -1350,21 +1428,21 @@ Key classes in `arcLength.ts`:
 - **MultiSegmentParameterizer** - Uses THREE.CurvePath for multi-segment paths
 - **createBezierCurve()** - Helper to create CubicBezierCurve3 from points
 
-### Security Issues (6 total)
+### Security Issues
 
-| Issue | Location | Fix |
-|-------|----------|-----|
-| API keys in client | MotionIntentResolver.ts | Move to backend proxy |
-| Extension-only file validation | AssetUploader.vue | Add MIME type check |
-| Unsanitized font URLs | fontService.ts | Whitelist font families |
+| Issue | Location | Status |
+|-------|----------|--------|
+| API keys in client | MotionIntentResolver.ts | **FIXED** - Using backend proxy |
+| Extension-only file validation | AssetUploader.vue | **PARTIAL** - Basic MIME validation exists |
+| Unsanitized font URLs | fontService.ts | Needs review |
 
-### Performance Issues (5 critical)
+### Performance Issues
 
-| Issue | Location | Fix |
-|-------|----------|-----|
-| JSON.parse for history | historyStore.ts | Use structuredClone() |
-| O(n) LRU eviction | frameCache.ts | Use Set + LinkedList |
-| setInterval leak | WorkspaceLayout.vue | Add clearInterval |
+| Issue | Location | Status |
+|-------|----------|--------|
+| JSON.parse for history | historyStore.ts | **FIXED** - Uses structuredClone() |
+| O(n) LRU eviction | frameCache.ts | Map-based caching (acceptable) |
+| setInterval leak | WorkspaceLayout.vue | **FIXED** - clearInterval in onUnmounted |
 
 ---
 
@@ -1419,15 +1497,15 @@ These files exceed typical LLM context windows and should be read in sections:
 
 | File | Lines | Tokens | Purpose |
 |------|-------|--------|---------|
-| `stores/compositorStore.ts` | 2,749 | ~35k | Main store |
-| `services/particleSystem.ts` | 2,414 | ~30k | Particles |
+| `stores/compositorStore.ts` | 2,763 | ~35k | Main store |
+| `services/particleSystem.ts` | 2,650 | ~33k | Particles |
+| `components/properties/ParticleProperties.vue` | 2,404 | ~30k | Particle UI |
 | `engine/particles/GPUParticleSystem.ts` | 2,264 | ~28k | GPU particles |
 | `components/canvas/SplineEditor.vue` | 2,095 | ~26k | Spline UI |
-| `components/graph-editor/GraphEditor.vue` | 2,090 | ~26k | Graph editor |
-| `engine/WeylEngine.ts` | 1,980 | ~25k | Main engine |
+| `engine/WeylEngine.ts` | 1,981 | ~25k | Main engine |
+| `engine/layers/BaseLayer.ts` | 1,842 | ~23k | Base layer |
 | `types/project.ts` | 1,817 | ~23k | Types |
-| `components/canvas/ThreeCanvas.vue` | 1,725 | ~22k | 3D canvas |
-| `engine/layers/BaseLayer.ts` | 1,724 | ~22k | Base layer |
+| `components/canvas/ThreeCanvas.vue` | 1,799 | ~22k | 3D canvas |
 | `services/depthflow.ts` | 1,650 | ~21k | 2.5D parallax |
 
 ---
@@ -1683,13 +1761,13 @@ This project is for the **open source ComfyUI community**. The goal is professio
 
 These files exceed the 2000-line read limit. Use `offset` and `limit` parameters or targeted Grep searches.
 
-### compositorStore.ts (2733 lines)
+### compositorStore.ts (2763 lines)
 
 **Structure:**
 - Lines 1-195: Imports and CompositorState interface
 - Lines 196-261: `state()` - Initial state
 - Lines 262-389: `getters` - Computed properties
-- Lines 390-2733: `actions` - Delegated to action modules
+- Lines 390-2763: `actions` - Delegated to action modules
 
 **Action Modules (in `stores/actions/`):**
 | Module | Key Functions |
@@ -1747,12 +1825,12 @@ WebGPU/Transform Feedback particle renderer. Read only if working on GPU particl
 |------|-------|--------------|
 | `ParticleProperties.vue` | 2,404 | Particle UI work |
 | `SplineEditor.vue` | 2,095 | Spline editing |
-| `GraphEditor.vue` | 2,090 | Keyframe curves |
+| `curve-editor/CurveEditor.vue` | ~1,800 | Keyframe curves (replaced GraphEditor.vue) |
 | `shapeOperations.ts` | 1,997 | Boolean ops |
 
 ---
 
-**Document Version:** 6.0
+**Document Version:** 6.1
 **Last Updated:** December 20, 2024
-**Total Lines:** ~1700
+**Total Lines:** ~1750
 **Estimated Reading Time:** 35-50 minutes

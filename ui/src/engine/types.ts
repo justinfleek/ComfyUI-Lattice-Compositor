@@ -100,14 +100,18 @@ export interface Transform3D {
   position: { x: number; y: number; z: number };
   rotation: { x: number; y: number; z: number };
   scale: { x: number; y: number; z: number };
-  anchorPoint: { x: number; y: number; z: number };
+  origin: { x: number; y: number; z: number };
+  /** @deprecated Use 'origin' instead */
+  anchorPoint?: { x: number; y: number; z: number };
 }
 
 export interface EvaluatedTransform {
   position: THREE.Vector3;
   rotation: THREE.Euler;
   scale: THREE.Vector3;
-  anchorPoint: THREE.Vector3;
+  origin: THREE.Vector3;
+  /** @deprecated Use 'origin' instead */
+  anchorPoint?: THREE.Vector3;
 }
 
 // ============================================================================

@@ -1,7 +1,7 @@
 <template>
-  <div class="graph-editor">
-    <div class="graph-header">
-      <span class="graph-title">Graph Editor</span>
+  <div class="curve-editor">
+    <div class="curve-header">
+      <span class="curve-title">Curve Editor</span>
 
       <!-- Mode toggle -->
       <div class="mode-toggle">
@@ -53,7 +53,7 @@
       </button>
     </div>
 
-    <div class="graph-content">
+    <div class="curve-content">
       <!-- Property selector -->
       <div class="property-list">
         <div class="property-list-header">
@@ -117,14 +117,14 @@
       </div>
 
       <!-- Main graph area -->
-      <div class="graph-main">
+      <div class="curve-main">
         <!-- Timeline ruler -->
         <div class="time-ruler" ref="timeRulerRef">
           <canvas ref="timeRulerCanvas" @click="onTimeRulerClick" />
         </div>
 
         <!-- Graph canvas -->
-        <div class="graph-canvas-container" ref="canvasContainerRef">
+        <div class="curve-canvas-container" ref="canvasContainerRef">
           <canvas
             ref="canvasRef"
             @mousedown="handleMouseDown"
@@ -1655,7 +1655,7 @@ watch(animatableProperties, () => {
 </script>
 
 <style scoped>
-.graph-editor {
+.curve-editor {
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -1664,7 +1664,7 @@ watch(animatableProperties, () => {
   font-size: 12px;
 }
 
-.graph-header {
+.curve-header {
   display: flex;
   align-items: center;
   padding: 6px 12px;
@@ -1673,7 +1673,7 @@ watch(animatableProperties, () => {
   gap: 12px;
 }
 
-.graph-title {
+.curve-title {
   font-weight: 500;
 }
 
@@ -1766,7 +1766,7 @@ watch(animatableProperties, () => {
   color: #fff;
 }
 
-.graph-content {
+.curve-content {
   display: flex;
   flex: 1;
   min-height: 0;
@@ -1893,7 +1893,7 @@ watch(animatableProperties, () => {
   text-align: center;
 }
 
-.graph-main {
+.curve-main {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -1913,13 +1913,13 @@ watch(animatableProperties, () => {
   cursor: pointer;
 }
 
-.graph-canvas-container {
+.curve-canvas-container {
   flex: 1;
   position: relative;
   min-height: 0;
 }
 
-.graph-canvas-container canvas {
+.curve-canvas-container canvas {
   display: block;
   width: 100%;
   height: 100%;

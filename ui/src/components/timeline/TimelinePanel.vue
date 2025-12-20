@@ -53,12 +53,20 @@
             <button @mousedown="addLayer('solid')" role="menuitem"><span class="icon" aria-hidden="true">■</span> Solid</button>
             <button @mousedown="addLayer('text')" role="menuitem"><span class="icon" aria-hidden="true">T</span> Text</button>
             <button @mousedown="addLayer('shape')" role="menuitem"><span class="icon" aria-hidden="true">◇</span> Shape</button>
-            <button @mousedown="addLayer('spline')" role="menuitem"><span class="icon" aria-hidden="true">〰</span> Spline/Path</button>
+            <button @mousedown="addLayer('spline')" role="menuitem"><span class="icon" aria-hidden="true">〰</span> Spline</button>
+            <button @mousedown="addLayer('path')" role="menuitem"><span class="icon" aria-hidden="true">⤳</span> Path</button>
             <button @mousedown="addLayer('particles')" role="menuitem"><span class="icon" aria-hidden="true">✨</span> Particles</button>
             <button @mousedown="addLayer('control')" role="menuitem"><span class="icon" aria-hidden="true">□</span> Control</button>
             <button @mousedown="addLayer('camera')" role="menuitem"><span class="icon" aria-hidden="true">📷</span> Camera</button>
             <button @mousedown="addLayer('light')" role="menuitem"><span class="icon" aria-hidden="true">💡</span> Light</button>
             <button @mousedown="addLayer('video')" role="menuitem"><span class="icon" aria-hidden="true">🎞️</span> Video</button>
+            <button @mousedown="addLayer('model')" role="menuitem"><span class="icon" aria-hidden="true">🎲</span> 3D Model</button>
+            <button @mousedown="addLayer('pointcloud')" role="menuitem"><span class="icon" aria-hidden="true">☁️</span> Point Cloud</button>
+            <button @mousedown="addLayer('depth')" role="menuitem"><span class="icon" aria-hidden="true">🌊</span> Depth Map</button>
+            <button @mousedown="addLayer('normal')" role="menuitem"><span class="icon" aria-hidden="true">🧭</span> Normal Map</button>
+            <button @mousedown="addLayer('audio')" role="menuitem"><span class="icon" aria-hidden="true">🔊</span> Audio</button>
+            <button @mousedown="addLayer('generated')" role="menuitem"><span class="icon" aria-hidden="true">🤖</span> AI Generated</button>
+            <button @mousedown="addLayer('group')" role="menuitem"><span class="icon" aria-hidden="true">📁</span> Group</button>
           </div>
         </div>
 
@@ -146,7 +154,12 @@
         </div>
 
         <!-- Layer bars scroll both horizontally and vertically -->
-        <div class="track-scroll-area" ref="trackScrollRef" @scroll="handleTrackScroll">
+        <div class="track-scroll-area" ref="trackScrollRef" @scroll="handleTrackScroll"
+             @dragover.prevent="onDragOver"
+             @dragleave="onDragLeave"
+             @drop="onDrop"
+             :class="{ 'drag-over': isDragOver }"
+        >
           <div class="layer-bars-container" :style="{ width: computedWidthStyle }">
              <div class="grid-background"></div>
 
@@ -196,6 +209,7 @@ const rulerScrollRef = ref<HTMLElement | null>(null);
 let isScrollingSidebar = false;
 let isScrollingTrack = false;
 const viewportWidth = ref(1000); // Default, updated by observer
+const isDragOver = ref(false);
 
 const filteredLayers = computed(() => store.displayedLayers || []);
 // Playhead position as percentage of timeline
@@ -265,7 +279,7 @@ function addLayer(type: string) {
     store.selectLayer(newLayer.id);
 
     // Activate appropriate tool based on layer type
-    if (type === 'spline' || type === 'shape') {
+    if (type === 'spline' || type === 'shape' || type === 'path') {
       store.setTool('pen');
     } else if (type === 'text') {
       store.setTool('text');
@@ -277,6 +291,87 @@ function addLayer(type: string) {
 
 function selectLayer(id: string) { store.selectLayer(id); }
 function updateLayer(id: string, u: any) { store.updateLayer(id, u); }
+
+// ============================================================
+// DRAG & DROP FROM PROJECT PANEL
+// ============================================================
+function onDragOver(event: DragEvent) {
+  if (event.dataTransfer?.types.includes('application/project-item')) {
+    isDragOver.value = true;
+  }
+}
+
+function onDragLeave() {
+  isDragOver.value = false;
+}
+
+function onDrop(event: DragEvent) {
+  isDragOver.value = false;
+
+  const data = event.dataTransfer?.getData('application/project-item');
+  if (!data) return;
+
+  try {
+    const item = JSON.parse(data) as {
+      id: string;
+      name: string;
+      type: 'composition' | 'footage' | 'solid' | 'audio' | 'folder';
+      width?: number;
+      height?: number;
+    };
+
+    console.log('[TimelinePanel] Dropped item:', item);
+
+    // Handle different item types
+    if (item.type === 'composition') {
+      // Create a precomp layer
+      const layer = store.createLayer('precomp', item.name);
+      if (layer) {
+        (layer.data as any).compositionId = item.id;
+        store.selectLayer(layer.id);
+        console.log('[TimelinePanel] Created precomp layer for composition:', item.name);
+      }
+    } else if (item.type === 'footage') {
+      // For footage, check if it's an existing asset
+      const asset = store.project.assets[item.id];
+      if (asset) {
+        if (asset.type === 'video') {
+          const layer = store.createLayer('video', item.name);
+          if (layer) {
+            (layer.data as any).assetId = item.id;
+            store.selectLayer(layer.id);
+            console.log('[TimelinePanel] Created video layer from asset:', item.name);
+          }
+        } else if (asset.type === 'image') {
+          const layer = store.createLayer('image', item.name);
+          if (layer) {
+            (layer.data as any).assetId = item.id;
+            store.selectLayer(layer.id);
+            console.log('[TimelinePanel] Created image layer from asset:', item.name);
+          }
+        }
+      } else {
+        // Generic footage - create image layer
+        const layer = store.createLayer('image', item.name);
+        if (layer) {
+          store.selectLayer(layer.id);
+          console.log('[TimelinePanel] Created image layer:', item.name);
+        }
+      }
+    } else if (item.type === 'solid') {
+      const layer = store.createLayer('solid', item.name);
+      if (layer) {
+        store.selectLayer(layer.id);
+        console.log('[TimelinePanel] Created solid layer:', item.name);
+      }
+    } else if (item.type === 'audio') {
+      // Audio tracks don't create layers, they go to the audio panel
+      console.log('[TimelinePanel] Audio dropped - should be loaded via AudioPanel');
+    }
+  } catch (error) {
+    console.error('[TimelinePanel] Failed to parse dropped item:', error);
+  }
+}
 function deleteSelectedLayers() { store.selectedLayerIds.forEach(id => store.deleteLayer(id)); }
 function setFrame(e: Event) { store.setFrame(parseInt((e.target as HTMLInputElement).value) || 0); }
 function togglePlayback() { store.togglePlayback(); }
@@ -630,6 +725,13 @@ watch(() => [computedWidthStyle.value, zoomPercent.value, store.frameCount], () 
   flex: 1;
   overflow: auto;
   min-height: 0;
+  transition: background-color 0.15s ease;
+}
+
+.track-scroll-area.drag-over {
+  background-color: rgba(74, 144, 217, 0.15);
+  outline: 2px dashed #4a90d9;
+  outline-offset: -2px;
 }
 
 .layer-bars-container {

@@ -359,15 +359,15 @@
 
             <!-- Timeline + Graph Editor -->
             <Pane :size="35" :min-size="15">
-              <Splitpanes v-if="showGraphEditor" horizontal class="default-theme">
+              <Splitpanes v-if="showCurveEditor" horizontal class="default-theme">
                 <Pane :size="50" :min-size="20">
                   <div class="panel timeline-panel">
                     <TimelinePanel @openCompositionSettings="showCompositionSettingsDialog = true" @openPathSuggestion="showPathSuggestionDialog = true" />
                   </div>
                 </Pane>
                 <Pane :size="50" :min-size="20">
-                  <div class="panel graph-editor-panel">
-                    <GraphEditor @close="showGraphEditor = false" />
+                  <div class="panel curve-editor-panel">
+                    <CurveEditor @close="showCurveEditor = false" />
                   </div>
                 </Pane>
               </Splitpanes>
@@ -446,6 +446,16 @@
               >
                 AI
               </button>
+              <button
+                role="tab"
+                :aria-selected="rightTab === 'generate'"
+                aria-controls="right-panel-generate"
+                :class="{ active: rightTab === 'generate' }"
+                @click="rightTab = 'generate'"
+                title="AI Generation (Depth, Normal, Segment)"
+              >
+                Gen
+              </button>
             </div>
             <div class="panel-content" role="tabpanel" :id="`right-panel-${rightTab}`">
               <EffectControlsPanel v-if="rightTab === 'effects'" />
@@ -459,6 +469,7 @@
               <ExportPanel v-else-if="rightTab === 'export'" />
               <PreviewPanel v-else-if="rightTab === 'preview'" :engine="canvasEngine" />
               <AIChatPanel v-else-if="rightTab === 'ai'" />
+              <AIGeneratePanel v-else-if="rightTab === 'generate'" />
             </div>
           </div>
         </Pane>
@@ -541,6 +552,7 @@ import AssetsPanel from '@/components/panels/AssetsPanel.vue';
 import ExportPanel from '@/components/panels/ExportPanel.vue';
 import PreviewPanel from '@/components/panels/PreviewPanel.vue';
 import AIChatPanel from '@/components/panels/AIChatPanel.vue';
+import AIGeneratePanel from '@/components/panels/AIGeneratePanel.vue';
 
 // Viewport
 import ViewportRenderer from '@/components/viewport/ViewportRenderer.vue';
@@ -548,7 +560,7 @@ import ThreeCanvas from '@/components/canvas/ThreeCanvas.vue';
 
 // Timeline
 import TimelinePanel from '@/components/timeline/TimelinePanel.vue';
-import GraphEditor from '@/components/graph-editor/GraphEditor.vue';
+import CurveEditor from '@/components/curve-editor/CurveEditor.vue';
 
 // Dialogs
 import ExportDialog from '@/components/dialogs/ExportDialog.vue';
@@ -616,11 +628,11 @@ function clearSegmentMask() {
 
 const activeWorkspace = ref('standard');
 const leftTab = ref<'project' | 'effects' | 'assets'>('project');
-const rightTab = ref<'effects' | 'properties' | 'camera' | 'audio' | 'export' | 'preview' | 'ai'>('properties');
+const rightTab = ref<'effects' | 'properties' | 'camera' | 'audio' | 'export' | 'preview' | 'ai' | 'generate'>('properties');
 const viewportTab = ref<'composition' | 'layer' | 'footage'>('composition');
 
 const viewZoom = ref('fit');
-const showGraphEditor = ref(false);
+const showCurveEditor = ref(false);
 const showExportDialog = ref(false);
 const showComfyUIExportDialog = ref(false);
 const showCompositionSettingsDialog = ref(false);
@@ -1075,7 +1087,7 @@ function handleKeydown(e: KeyboardEvent) {
       break;
     case 'g':
       if (e.shiftKey) {
-        showGraphEditor.value = !showGraphEditor.value;
+        showCurveEditor.value = !showCurveEditor.value;
       }
       break;
     case 'k':
@@ -1667,7 +1679,7 @@ onUnmounted(() => {
   /* No borders - floating panel */
 }
 
-.graph-editor-panel {
+.curve-editor-panel {
   /* No borders - floating panel */
 }
 

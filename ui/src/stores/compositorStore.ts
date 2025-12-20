@@ -130,7 +130,7 @@ interface CompositorState {
   segmentIsLoading: boolean;
 
   // UI state
-  graphEditorVisible: boolean;
+  curveEditorVisible: boolean;
   hideMinimizedLayers: boolean;  // Toggle to hide layers marked as minimized
 
   // History for undo/redo
@@ -207,7 +207,7 @@ export const useCompositorStore = defineStore('compositor', {
     segmentPendingMask: null,
     segmentBoxStart: null,
     segmentIsLoading: false,
-    graphEditorVisible: false,
+    curveEditorVisible: false,
     hideMinimizedLayers: false,
     historyStack: [],
     historyIndex: -1,
@@ -673,14 +673,18 @@ export const useCompositorStore = defineStore('compositor', {
         this.selectedLayerIds.includes(l.id)
       );
 
-      // Find earliest inPoint to normalize timing
-      const earliestIn = Math.min(...selectedLayers.map(l => l.inPoint));
+      // Find earliest startFrame to normalize timing
+      const earliestIn = Math.min(...selectedLayers.map(l => l.startFrame ?? l.inPoint ?? 0));
 
       // Move layers to nested comp and adjust timing
       for (const layer of selectedLayers) {
-        // Adjust timing relative to nested comp start
-        layer.inPoint -= earliestIn;
-        layer.outPoint -= earliestIn;
+        // Adjust timing relative to nested comp start (update both new and legacy properties)
+        const layerStart = layer.startFrame ?? layer.inPoint ?? 0;
+        const layerEnd = layer.endFrame ?? layer.outPoint ?? 80;
+        layer.startFrame = layerStart - earliestIn;
+        layer.endFrame = layerEnd - earliestIn;
+        layer.inPoint = layer.startFrame;
+        layer.outPoint = layer.endFrame;
 
         // Remove from parent
         const idx = activeComp.layers.indexOf(layer);
@@ -693,11 +697,12 @@ export const useCompositorStore = defineStore('compositor', {
       }
 
       // Update nested comp duration to fit layers
-      const maxOut = Math.max(...nestedComp.layers.map(l => l.outPoint));
+      const maxOut = Math.max(...nestedComp.layers.map(l => l.endFrame ?? l.outPoint ?? 80));
       nestedComp.settings.frameCount = maxOut + 1;
       nestedComp.settings.duration = nestedComp.settings.frameCount / nestedComp.settings.fps;
 
       // Create nested comp layer in parent composition
+      const nestedEndFrame = earliestIn + nestedComp.settings.frameCount - 1;
       const nestedCompLayer: Layer = {
         id: `layer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         name: nestedComp.name,
@@ -706,8 +711,12 @@ export const useCompositorStore = defineStore('compositor', {
         locked: false,
         isolate: false,
         threeD: false,
+        // Timing (primary properties)
+        startFrame: earliestIn,
+        endFrame: nestedEndFrame,
+        // Backwards compatibility aliases
         inPoint: earliestIn,
-        outPoint: earliestIn + nestedComp.settings.frameCount - 1,
+        outPoint: nestedEndFrame,
         parentId: null,
         transform: createDefaultTransform(),
         opacity: createAnimatableProperty('opacity', 100, 'number'),
@@ -717,6 +726,9 @@ export const useCompositorStore = defineStore('compositor', {
         motionBlur: false,
         data: {
           compositionId: nestedComp.id,
+          // Speed map (new naming)
+          speedMapEnabled: false,
+          // Backwards compatibility
           timeRemapEnabled: false,
           flattenTransform: false
         } as NestedCompData
@@ -1079,15 +1091,17 @@ export const useCompositorStore = defineStore('compositor', {
       // Anchor point should be at layer's own origin (0,0 for text/shapes, layer center for solids)
       layerTransform.position.value = { x: compWidth / 2, y: compHeight / 2, z: 0 };
 
+      // Use origin (new name) for the transform pivot point
+      const originProp = layerTransform.origin || layerTransform.anchorPoint;
       if (type === 'solid' && layerData) {
-        // Solid layers: anchor at layer's own center
+        // Solid layers: origin at layer's own center
         const layerWidth = layerData.width || compWidth;
         const layerHeight = layerData.height || compHeight;
-        layerTransform.anchorPoint.value = { x: layerWidth / 2, y: layerHeight / 2, z: 0 };
+        if (originProp) originProp.value = { x: layerWidth / 2, y: layerHeight / 2, z: 0 };
       } else {
-        // Text, shape, spline, particles, image, video, etc.: anchor at origin (0,0)
+        // Text, shape, spline, particles, image, video, etc.: origin at (0,0)
         // Position directly controls where the layer's origin appears in composition
-        layerTransform.anchorPoint.value = { x: 0, y: 0, z: 0 };
+        if (originProp) originProp.value = { x: 0, y: 0, z: 0 };
       }
 
       // Initialize layer-specific properties
@@ -1108,6 +1122,7 @@ export const useCompositorStore = defineStore('compositor', {
         ];
       }
 
+      const endFrameValue = (comp?.settings.frameCount || 81) - 1;
       const layer: Layer = {
         id,
         name: name || `${type.charAt(0).toUpperCase() + type.slice(1)} ${layers.length + 1}`,
@@ -1117,8 +1132,12 @@ export const useCompositorStore = defineStore('compositor', {
         isolate: false,
         threeD: false,
         motionBlur: false,
+        // Timing (primary properties)
+        startFrame: 0,
+        endFrame: endFrameValue,
+        // Backwards compatibility aliases
         inPoint: 0,
-        outPoint: (comp?.settings.frameCount || 81) - 1, // Last frame index (0-indexed)
+        outPoint: endFrameValue,
         parentId: null,
         blendMode: 'normal',
         opacity: createAnimatableProperty('opacity', 100, 'number'),
@@ -1628,10 +1647,10 @@ export const useCompositorStore = defineStore('compositor', {
     },
 
     /**
-     * Toggle graph editor visibility
+     * Toggle curve editor visibility
      */
-    toggleGraphEditor(): void {
-      this.graphEditorVisible = !this.graphEditorVisible;
+    toggleCurveEditor(): void {
+      this.curveEditorVisible = !this.curveEditorVisible;
     },
 
     /**
@@ -2176,6 +2195,10 @@ export const useCompositorStore = defineStore('compositor', {
         startTime: 0,
         endTime: undefined,
         speed: 1,
+        // Speed map (new naming)
+        speedMapEnabled: false,
+        speedMap: undefined,
+        // Backwards compatibility
         timeRemapEnabled: false,
         timeRemap: undefined,
         frameBlending: 'none',
@@ -2309,6 +2332,10 @@ export const useCompositorStore = defineStore('compositor', {
 
       const nestedCompData: NestedCompData = {
         compositionId,
+        // Speed map (new naming)
+        speedMapEnabled: false,
+        speedMap: undefined,
+        // Backwards compatibility
         timeRemapEnabled: false,
         timeRemap: undefined,
         flattenTransform: false,
@@ -2571,8 +2598,11 @@ export const useCompositorStore = defineStore('compositor', {
           const p = interpolateProperty(t.position, frame);
           return parts[2] === 'x' ? p.x : parts[2] === 'y' ? p.y : (p.z ?? 0);
         }
-        if (parts[1] === 'anchorPoint') {
-          const a = interpolateProperty(t.anchorPoint, frame);
+        if (parts[1] === 'anchorPoint' || parts[1] === 'origin') {
+          // Use origin (new name) with fallback to anchorPoint
+          const originProp = t.origin || t.anchorPoint;
+          if (!originProp) return 0;
+          const a = interpolateProperty(originProp, frame);
           return parts[2] === 'x' ? a.x : parts[2] === 'y' ? a.y : (a.z ?? 0);
         }
         if (parts[1] === 'scale') {

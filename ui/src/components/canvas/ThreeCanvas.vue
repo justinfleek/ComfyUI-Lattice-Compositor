@@ -116,6 +116,44 @@
       <span>Segmenting...</span>
     </div>
 
+    <!-- Render Mode Controls (upper-left) -->
+    <div class="render-mode-controls">
+      <button
+        :class="{ active: renderMode === 'color' }"
+        @click="setRenderMode('color')"
+        title="Color Mode"
+      >🎨</button>
+      <button
+        :class="{ active: renderMode === 'depth' }"
+        @click="setRenderMode('depth')"
+        title="Depth Mode"
+      >⬛</button>
+      <button
+        :class="{ active: renderMode === 'normal' }"
+        @click="setRenderMode('normal')"
+        title="Normal Mode"
+      >🔮</button>
+    </div>
+
+    <!-- Transform Mode Controls (below render modes) -->
+    <div class="transform-mode-controls">
+      <button
+        :class="{ active: transformMode === 'translate' }"
+        @click="setTransformModeTo('translate')"
+        title="Move Tool (W)"
+      >↔</button>
+      <button
+        :class="{ active: transformMode === 'rotate' }"
+        @click="setTransformModeTo('rotate')"
+        title="Rotate Tool (E)"
+      >⟳</button>
+      <button
+        :class="{ active: transformMode === 'scale' }"
+        @click="setTransformModeTo('scale')"
+        title="Scale Tool (R)"
+      >⤢</button>
+    </div>
+
     <!-- CSS-based Composition Boundary - crisp blue border around composition -->
     <!-- Replaces the 3D LineLoop which can appear blurry due to WebGL line width limitations -->
     <div

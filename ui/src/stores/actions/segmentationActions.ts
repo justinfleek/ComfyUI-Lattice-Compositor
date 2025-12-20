@@ -100,11 +100,14 @@ export async function createLayerFromMask(
       };
     }
 
-    // Set anchor point to center of layer
-    layer.transform.anchorPoint.value = {
-      x: mask.bounds.width / 2,
-      y: mask.bounds.height / 2
-    };
+    // Set origin (formerly anchor point) to center of layer
+    const originProp = layer.transform.origin || layer.transform.anchorPoint;
+    if (originProp) {
+      originProp.value = {
+        x: mask.bounds.width / 2,
+        y: mask.bounds.height / 2
+      };
+    }
 
     store.project.meta.modified = new Date().toISOString();
     store.pushHistory();

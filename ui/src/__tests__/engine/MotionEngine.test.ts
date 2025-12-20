@@ -27,6 +27,8 @@ function createTestProject(): WeylProject {
     isolate: false,
     threeD: false,
     motionBlur: false,
+    startFrame: 0,
+    endFrame: 80,
     inPoint: 0,
     outPoint: 80,
     parentId: null,

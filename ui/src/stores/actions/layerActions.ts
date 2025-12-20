@@ -104,6 +104,18 @@ export function createLayer(
       };
       break;
 
+    case 'path':
+      // Path layer - invisible motion guide for text-on-path, camera paths, etc.
+      layerData = {
+        pathData: '',
+        controlPoints: [],
+        closed: false,
+        showGuide: true,           // Show dashed guide line in editor
+        guideColor: '#00FFFF',     // Cyan guide line
+        guideDashPattern: [10, 5]  // [dash, gap]
+      };
+      break;
+
     case 'particles':
       layerData = {
         systemConfig: {
@@ -244,7 +256,12 @@ export function createLayer(
     case 'nestedComp':
       layerData = {
         compositionId: null,
-        timeRemap: null
+        // Speed map (new naming)
+        speedMap: null,
+        speedMapEnabled: false,
+        // Backwards compatibility
+        timeRemap: null,
+        timeRemapEnabled: false
       };
       break;
 
@@ -253,6 +270,144 @@ export function createLayer(
         matteType: 'luminance',
         invert: false,
         threshold: 0.5
+      };
+      break;
+
+    case 'model':
+      // 3D Model layer - GLTF, OBJ, FBX, USD
+      layerData = {
+        assetId: '',
+        format: 'gltf' as const,
+        scale: createAnimatableProperty('Scale', 1, 'number'),
+        uniformScale: true,
+        castShadow: true,
+        receiveShadow: true,
+        frustumCulled: true,
+        renderOrder: 0,
+        showBoundingBox: false,
+        showSkeleton: false,
+        envMapIntensity: 1.0
+      };
+      break;
+
+    case 'pointcloud':
+      // Point Cloud layer - PLY, PCD, LAS
+      layerData = {
+        assetId: '',
+        format: 'ply' as const,
+        pointCount: 0,
+        pointSize: createAnimatableProperty('Point Size', 2, 'number'),
+        sizeAttenuation: true,
+        minPointSize: 1,
+        maxPointSize: 64,
+        colorMode: 'rgb' as const,
+        uniformColor: '#ffffff',
+        renderMode: 'points' as const,
+        opacity: createAnimatableProperty('Opacity', 1, 'number'),
+        depthTest: true,
+        depthWrite: true,
+        showBoundingBox: false,
+        pointBudget: 1000000
+      };
+      break;
+
+    case 'control':
+      // Control layer (null object replacement) - transform-only parent
+      layerData = {
+        size: 50,           // Visual size of control icon in editor
+        showAxes: true,     // Show axis indicators
+        showIcon: true      // Show control layer icon
+      };
+      break;
+
+    case 'depth':
+      // Depth map visualization layer
+      layerData = {
+        assetId: null,
+        visualizationMode: 'colormap' as const,
+        colorMap: 'turbo' as const,
+        invert: false,
+        minDepth: 0,
+        maxDepth: 1,
+        autoNormalize: true,
+        contourLevels: 10,
+        contourColor: '#ffffff',
+        contourWidth: 1,
+        meshDisplacement: createAnimatableProperty('Displacement', 50, 'number'),
+        meshResolution: 128,
+        wireframe: false
+      };
+      break;
+
+    case 'normal':
+      // Normal map visualization layer
+      layerData = {
+        assetId: null,
+        visualizationMode: 'rgb' as const,
+        format: 'opengl' as const,
+        flipX: false,
+        flipY: false,
+        flipZ: false,
+        arrowDensity: 20,
+        arrowScale: 10,
+        arrowColor: '#00ff00',
+        lightDirection: { x: 0.5, y: 0.5, z: 1.0 },
+        lightIntensity: 1.0,
+        ambientIntensity: 0.2
+      };
+      break;
+
+    case 'audio':
+      // Audio-only layer
+      layerData = {
+        assetId: null,
+        level: createAnimatableProperty('Level', 0, 'number'),
+        muted: false,
+        solo: false,
+        pan: createAnimatableProperty('Pan', 0, 'number'),
+        startTime: 0,
+        loop: false,
+        speed: 1.0,
+        showWaveform: true,
+        waveformColor: '#4a90d9',
+        exposeFeatures: true
+      };
+      break;
+
+    case 'generated':
+      // AI-generated content layer
+      layerData = {
+        generationType: 'depth' as const,
+        sourceLayerId: null,
+        model: 'depth-anything-v2',
+        parameters: {},
+        generatedAssetId: null,
+        status: 'pending' as const,
+        autoRegenerate: false
+      };
+      break;
+
+    case 'group':
+      // Layer group/folder
+      layerData = {
+        collapsed: false,
+        color: null,
+        passThrough: true,
+        isolate: false
+      };
+      break;
+
+    case 'particle':
+      // Legacy particle layer (backwards compatibility)
+      layerData = {
+        emitterType: 'point' as const,
+        particleCount: 100,
+        lifetime: 2.0,
+        speed: 50,
+        spread: 45,
+        gravity: -9.8,
+        color: '#ffffff',
+        size: 5
       };
       break;
   }
@@ -284,6 +439,10 @@ export function createLayer(
     isolate: false,
     threeD: false,
     motionBlur: false,
+    // Timing (primary properties)
+    startFrame: 0,
+    endFrame: (comp?.settings.frameCount || 81) - 1,
+    // Backwards compatibility aliases
     inPoint: 0,
     outPoint: (comp?.settings.frameCount || 81) - 1,
     parentId: null,
@@ -490,10 +649,13 @@ export function toggleLayer3D(store: LayerStore, layerId: string): void {
     t.position.value = { x: pos.x, y: pos.y, z: (pos as any).z ?? 0 };
     t.position.type = 'vector3';
 
-    // Anchor Point
-    const anch = t.anchorPoint.value;
-    t.anchorPoint.value = { x: anch.x, y: anch.y, z: (anch as any).z ?? 0 };
-    t.anchorPoint.type = 'vector3';
+    // Origin (formerly Anchor Point)
+    const originProp = t.origin || t.anchorPoint;
+    if (originProp) {
+      const orig = originProp.value;
+      originProp.value = { x: orig.x, y: orig.y, z: (orig as any).z ?? 0 };
+      originProp.type = 'vector3';
+    }
 
     // Scale
     const scl = t.scale.value;

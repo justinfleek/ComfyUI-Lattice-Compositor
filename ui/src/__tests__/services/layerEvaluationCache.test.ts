@@ -33,6 +33,8 @@ function createMockLayer(id: string, overrides: Partial<Layer> = {}): Layer {
     visible: true,
     locked: false,
     isolate: false,
+    startFrame: 0,
+    endFrame: 80,
     inPoint: 0,
     outPoint: 80,
     transform: createDefaultTransform(),
@@ -250,6 +252,8 @@ describe('Layer Evaluation', () => {
   it('should evaluate visibility based on in/out points', () => {
     const layer = createMockLayer('test-layer', {
       visible: true,
+      startFrame: 10,
+      endFrame: 50,
       inPoint: 10,
       outPoint: 50,
     });

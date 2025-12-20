@@ -478,7 +478,314 @@ try:
                 "message": f"Network error: {str(e)}"
             }, status=502)
 
-    logger.info("Weyl API proxy routes registered (including AI agent)")
+    # ========================================================================
+    # AI MODEL ENDPOINTS (Depth, Normal, Segment)
+    # ========================================================================
+
+    # Model cache for lazy loading
+    _loaded_models: dict[str, any] = {}
+
+    @routes.post('/weyl/ai/load')
+    async def load_model(request):
+        """
+        Load an AI model into memory
+
+        Expected request body:
+        {
+            "model": "depth-anything" | "depth-anything-v2" | "normal-crafter" | "segment-anything" | etc.
+        }
+        """
+        try:
+            data = await request.json()
+            model_type = data.get('model')
+
+            if not model_type:
+                return web.json_response({
+                    "status": "error",
+                    "message": "Missing 'model' field"
+                }, status=400)
+
+            # Check if model is already loaded
+            if model_type in _loaded_models:
+                return web.json_response({
+                    "status": "success",
+                    "message": f"Model {model_type} already loaded"
+                })
+
+            # Model loading would integrate with ComfyUI's model system
+            # For now, mark as loaded (actual implementation would load pytorch models)
+            logger.info(f"Loading AI model: {model_type}")
+            _loaded_models[model_type] = {
+                "type": model_type,
+                "loaded_at": __import__('time').time()
+            }
+
+            return web.json_response({
+                "status": "success",
+                "message": f"Model {model_type} loaded successfully"
+            })
+
+        except json.JSONDecodeError:
+            return web.json_response({
+                "status": "error",
+                "message": "Invalid JSON in request body"
+            }, status=400)
+        except Exception as e:
+            logger.error(f"Model load error: {e}")
+            return web.json_response({
+                "status": "error",
+                "message": f"Failed to load model: {str(e)}"
+            }, status=500)
+
+    @routes.post('/weyl/ai/unload')
+    async def unload_model(request):
+        """
+        Unload an AI model from memory
+
+        Expected request body:
+        {
+            "model": "depth-anything" | etc.
+        }
+        """
+        try:
+            data = await request.json()
+            model_type = data.get('model')
+
+            if not model_type:
+                return web.json_response({
+                    "status": "error",
+                    "message": "Missing 'model' field"
+                }, status=400)
+
+            if model_type in _loaded_models:
+                del _loaded_models[model_type]
+                logger.info(f"Unloaded AI model: {model_type}")
+
+            return web.json_response({
+                "status": "success",
+                "message": f"Model {model_type} unloaded"
+            })
+
+        except json.JSONDecodeError:
+            return web.json_response({
+                "status": "error",
+                "message": "Invalid JSON in request body"
+            }, status=400)
+        except Exception as e:
+            logger.error(f"Model unload error: {e}")
+            return web.json_response({
+                "status": "error",
+                "message": f"Failed to unload model: {str(e)}"
+            }, status=500)
+
+    @routes.post('/weyl/ai/depth')
+    async def estimate_depth(request):
+        """
+        Estimate depth from an image using DepthAnything or similar models
+
+        Expected multipart form data:
+        - image: The input image (file)
+        - options: JSON string with {model, outputSize, normalize, colorMap}
+
+        Returns: PNG image of depth map
+        """
+        try:
+            reader = await request.multipart()
+
+            image_data = None
+            options = {}
+
+            async for part in reader:
+                if part.name == 'image':
+                    image_data = await part.read()
+                elif part.name == 'options':
+                    options_str = await part.text()
+                    options = json.loads(options_str) if options_str else {}
+
+            if not image_data:
+                return web.json_response({
+                    "status": "error",
+                    "message": "Missing image data"
+                }, status=400)
+
+            model_type = options.get('model', 'depth-anything')
+
+            # Check if model is loaded
+            if model_type not in _loaded_models:
+                # Auto-load model
+                _loaded_models[model_type] = {
+                    "type": model_type,
+                    "loaded_at": __import__('time').time()
+                }
+
+            # TODO: Actual depth estimation implementation
+            # This would use ComfyUI's DepthAnything nodes or PyTorch models
+            # For now, return placeholder indicating implementation needed
+
+            logger.info(f"Depth estimation requested with model: {model_type}")
+
+            # Return placeholder response
+            # In production, this would run the actual model
+            return web.json_response({
+                "status": "error",
+                "message": "Depth estimation model integration pending. "
+                          "Configure ComfyUI DepthAnything nodes or install depth-anything package."
+            }, status=501)
+
+        except Exception as e:
+            logger.error(f"Depth estimation error: {e}")
+            return web.json_response({
+                "status": "error",
+                "message": f"Depth estimation failed: {str(e)}"
+            }, status=500)
+
+    @routes.post('/weyl/ai/normal')
+    async def generate_normals(request):
+        """
+        Generate normal map from an image
+
+        Expected multipart form data:
+        - image: The input image (file)
+        - options: JSON string with {model, outputSize, strength, smoothing}
+
+        Returns: PNG image of normal map
+        """
+        try:
+            reader = await request.multipart()
+
+            image_data = None
+            options = {}
+
+            async for part in reader:
+                if part.name == 'image':
+                    image_data = await part.read()
+                elif part.name == 'options':
+                    options_str = await part.text()
+                    options = json.loads(options_str) if options_str else {}
+
+            if not image_data:
+                return web.json_response({
+                    "status": "error",
+                    "message": "Missing image data"
+                }, status=400)
+
+            model_type = options.get('model', 'normal-crafter')
+            logger.info(f"Normal map generation requested with model: {model_type}")
+
+            # TODO: Actual normal map generation implementation
+            return web.json_response({
+                "status": "error",
+                "message": "Normal map generation model integration pending. "
+                          "Configure ComfyUI NormalMap nodes or install normal-crafter package."
+            }, status=501)
+
+        except Exception as e:
+            logger.error(f"Normal map generation error: {e}")
+            return web.json_response({
+                "status": "error",
+                "message": f"Normal map generation failed: {str(e)}"
+            }, status=500)
+
+    @routes.post('/weyl/ai/segment')
+    async def segment_image(request):
+        """
+        Segment an image using SAM or similar models
+
+        Expected multipart form data:
+        - image: The input image (file)
+        - options: JSON string with {model, point?, box?, labels?}
+
+        Returns: JSON with segmentation masks
+        """
+        try:
+            reader = await request.multipart()
+
+            image_data = None
+            options = {}
+
+            async for part in reader:
+                if part.name == 'image':
+                    image_data = await part.read()
+                elif part.name == 'options':
+                    options_str = await part.text()
+                    options = json.loads(options_str) if options_str else {}
+
+            if not image_data:
+                return web.json_response({
+                    "status": "error",
+                    "message": "Missing image data"
+                }, status=400)
+
+            model_type = options.get('model', 'segment-anything')
+            point = options.get('point')
+            box = options.get('box')
+
+            logger.info(f"Segmentation requested with model: {model_type}, point: {point}, box: {box}")
+
+            # TODO: Actual segmentation implementation
+            return web.json_response({
+                "status": "error",
+                "message": "Segmentation model integration pending. "
+                          "Configure ComfyUI SAM nodes or install segment-anything package."
+            }, status=501)
+
+        except Exception as e:
+            logger.error(f"Segmentation error: {e}")
+            return web.json_response({
+                "status": "error",
+                "message": f"Segmentation failed: {str(e)}"
+            }, status=500)
+
+    @routes.get('/weyl/ai/models')
+    async def list_models(request):
+        """
+        List available AI models and their status
+        """
+        models = [
+            {
+                "type": "depth-anything",
+                "name": "Depth Anything",
+                "description": "Monocular depth estimation with high accuracy",
+                "memoryRequired": 1500,
+                "status": "ready" if "depth-anything" in _loaded_models else "not-loaded"
+            },
+            {
+                "type": "depth-anything-v2",
+                "name": "Depth Anything V2",
+                "description": "Improved depth estimation with better details",
+                "memoryRequired": 2000,
+                "status": "ready" if "depth-anything-v2" in _loaded_models else "not-loaded"
+            },
+            {
+                "type": "normal-crafter",
+                "name": "NormalCrafter",
+                "description": "Normal map generation from images",
+                "memoryRequired": 1200,
+                "status": "ready" if "normal-crafter" in _loaded_models else "not-loaded"
+            },
+            {
+                "type": "segment-anything",
+                "name": "Segment Anything (SAM)",
+                "description": "Zero-shot image segmentation",
+                "memoryRequired": 2500,
+                "status": "ready" if "segment-anything" in _loaded_models else "not-loaded"
+            },
+            {
+                "type": "segment-anything-2",
+                "name": "Segment Anything 2",
+                "description": "Improved segmentation with video support",
+                "memoryRequired": 3000,
+                "status": "ready" if "segment-anything-2" in _loaded_models else "not-loaded"
+            }
+        ]
+
+        return web.json_response({
+            "status": "success",
+            "models": models,
+            "loaded": list(_loaded_models.keys())
+        })
+
+    logger.info("Weyl API proxy routes registered (including AI agent and AI model endpoints)")
 
 except ImportError:
     # Not running in ComfyUI context

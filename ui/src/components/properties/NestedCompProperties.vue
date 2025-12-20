@@ -36,25 +36,25 @@
     <!-- Time Remapping -->
     <div class="property-section">
       <div class="section-header">
-        <span>Time Remap</span>
+        <span>Speed Map</span>
         <label class="header-toggle">
-          <input type="checkbox" :checked="nestedCompData.timeRemapEnabled" @change="toggleTimeRemap" />
+          <input type="checkbox" :checked="speedMapEnabled" @change="toggleSpeedMap" />
         </label>
       </div>
-      <div class="section-content" v-if="nestedCompData.timeRemapEnabled">
+      <div class="section-content" v-if="speedMapEnabled">
         <div class="property-row">
-          <label>Remap Time</label>
+          <label>Map Time</label>
           <div class="control-with-keyframe">
             <ScrubableNumber
-              :modelValue="timeRemapValue"
-              @update:modelValue="updateTimeRemap"
+              :modelValue="speedMapValue"
+              @update:modelValue="updateSpeedMap"
               :min="0" :step="0.01" :precision="3" unit="s"
             />
             <KeyframeToggle
-              v-if="nestedCompData.timeRemap"
-              :property="nestedCompData.timeRemap"
+              v-if="speedMapProperty"
+              :property="speedMapProperty"
               :layerId="layer.id"
-              propertyPath="data.timeRemap"
+              propertyPath="data.speedMap"
             />
           </div>
         </div>
@@ -127,6 +127,10 @@ const nestedCompData = computed<NestedCompData>(() => {
   const data = props.layer.data as NestedCompData | null;
   return {
     compositionId: data?.compositionId ?? '',
+    // New naming with backwards compatibility
+    speedMapEnabled: data?.speedMapEnabled ?? data?.timeRemapEnabled ?? false,
+    speedMap: data?.speedMap ?? data?.timeRemap,
+    // Legacy (deprecated)
     timeRemapEnabled: data?.timeRemapEnabled ?? false,
     timeRemap: data?.timeRemap,
     flattenTransform: data?.flattenTransform ?? false,
@@ -150,10 +154,19 @@ const compInfo = computed(() => {
   };
 });
 
-// Time remap value
-const timeRemapValue = computed(() => {
-  if (!nestedCompData.value.timeRemap) return 0;
-  return nestedCompData.value.timeRemap.value;
+// Speed map computed properties (with backwards compatibility)
+const speedMapEnabled = computed(() => {
+  return nestedCompData.value.speedMapEnabled ?? nestedCompData.value.timeRemapEnabled ?? false;
+});
+
+const speedMapProperty = computed(() => {
+  return nestedCompData.value.speedMap ?? nestedCompData.value.timeRemap;
+});
+
+const speedMapValue = computed(() => {
+  const prop = speedMapProperty.value;
+  if (!prop) return 0;
+  return prop.value;
 });
 
 // Format duration as MM:SS.ms
@@ -171,28 +184,37 @@ function enterNestedComp() {
   }
 }
 
-// Time remap
-function toggleTimeRemap(e: Event) {
+// Speed map functions (with backwards compatibility)
+function toggleSpeedMap(e: Event) {
   const enabled = (e.target as HTMLInputElement).checked;
-  const updates: Partial<NestedCompData> = { timeRemapEnabled: enabled };
+  const updates: Partial<NestedCompData> = {
+    speedMapEnabled: enabled,
+    timeRemapEnabled: enabled  // Backwards compatibility
+  };
 
-  // Create time remap property if enabling
-  if (enabled && !nestedCompData.value.timeRemap) {
-    updates.timeRemap = createAnimatableProperty('Time Remap', 0, 'number');
+  // Create speed map property if enabling
+  if (enabled && !nestedCompData.value.speedMap) {
+    const newProp = createAnimatableProperty('Speed Map', 0, 'number');
+    updates.speedMap = newProp;
+    updates.timeRemap = newProp;  // Backwards compatibility
   }
 
   store.updateLayerData(props.layer.id, updates);
   emit('update', updates);
 }
 
-function updateTimeRemap(value: number) {
-  if (nestedCompData.value.timeRemap) {
-    const timeRemap: AnimatableProperty<number> = {
-      ...nestedCompData.value.timeRemap,
+function updateSpeedMap(value: number) {
+  const prop = speedMapProperty.value;
+  if (prop) {
+    const speedMap: AnimatableProperty<number> = {
+      ...prop,
       value,
     };
-    store.updateLayerData(props.layer.id, { timeRemap });
-    emit('update', { timeRemap });
+    store.updateLayerData(props.layer.id, {
+      speedMap,
+      timeRemap: speedMap  // Backwards compatibility
+    });
+    emit('update', { speedMap });
   }
 }
 

@@ -865,6 +865,242 @@
       </div>
     </div>
 
+    <!-- Flocking (Boids) Behavior -->
+    <div class="property-section">
+      <div class="section-header" @click="toggleSection('flocking')">
+        <i class="pi" :class="expandedSections.has('flocking') ? 'pi-chevron-down' : 'pi-chevron-right'" />
+        <span>Flocking</span>
+      </div>
+      <div v-if="expandedSections.has('flocking')" class="section-content">
+        <div class="property-row">
+          <label title="Enable flocking (boids) behavior. Particles will exhibit collective movement patterns.">Enabled</label>
+          <input
+            type="checkbox"
+            :checked="flocking.enabled"
+            @change="updateFlocking('enabled', ($event.target as HTMLInputElement).checked)"
+          />
+        </div>
+
+        <template v-if="flocking.enabled">
+          <div class="subsection-label">Separation</div>
+          <div class="property-row">
+            <label title="How strongly particles avoid crowding each other.">Weight</label>
+            <input
+              type="range"
+              :value="flocking.separationWeight"
+              min="0"
+              max="100"
+              step="1"
+              @input="updateFlocking('separationWeight', Number(($event.target as HTMLInputElement).value))"
+            />
+            <span class="value-display">{{ flocking.separationWeight }}</span>
+          </div>
+          <div class="property-row">
+            <label title="Distance at which particles start avoiding each other.">Radius</label>
+            <input
+              type="range"
+              :value="flocking.separationRadius"
+              min="1"
+              max="100"
+              step="1"
+              @input="updateFlocking('separationRadius', Number(($event.target as HTMLInputElement).value))"
+            />
+            <span class="value-display">{{ flocking.separationRadius }}px</span>
+          </div>
+
+          <div class="subsection-label">Alignment</div>
+          <div class="property-row">
+            <label title="How strongly particles try to match their neighbors' direction.">Weight</label>
+            <input
+              type="range"
+              :value="flocking.alignmentWeight"
+              min="0"
+              max="100"
+              step="1"
+              @input="updateFlocking('alignmentWeight', Number(($event.target as HTMLInputElement).value))"
+            />
+            <span class="value-display">{{ flocking.alignmentWeight }}</span>
+          </div>
+          <div class="property-row">
+            <label title="Distance to look for neighbors to align with.">Radius</label>
+            <input
+              type="range"
+              :value="flocking.alignmentRadius"
+              min="1"
+              max="200"
+              step="1"
+              @input="updateFlocking('alignmentRadius', Number(($event.target as HTMLInputElement).value))"
+            />
+            <span class="value-display">{{ flocking.alignmentRadius }}px</span>
+          </div>
+
+          <div class="subsection-label">Cohesion</div>
+          <div class="property-row">
+            <label title="How strongly particles are attracted to the center of nearby particles.">Weight</label>
+            <input
+              type="range"
+              :value="flocking.cohesionWeight"
+              min="0"
+              max="100"
+              step="1"
+              @input="updateFlocking('cohesionWeight', Number(($event.target as HTMLInputElement).value))"
+            />
+            <span class="value-display">{{ flocking.cohesionWeight }}</span>
+          </div>
+          <div class="property-row">
+            <label title="Distance to look for neighbors for cohesion.">Radius</label>
+            <input
+              type="range"
+              :value="flocking.cohesionRadius"
+              min="1"
+              max="200"
+              step="1"
+              @input="updateFlocking('cohesionRadius', Number(($event.target as HTMLInputElement).value))"
+            />
+            <span class="value-display">{{ flocking.cohesionRadius }}px</span>
+          </div>
+
+          <div class="subsection-label">Limits</div>
+          <div class="property-row">
+            <label title="Maximum speed particles can achieve.">Max Speed</label>
+            <input
+              type="range"
+              :value="flocking.maxSpeed"
+              min="10"
+              max="500"
+              step="10"
+              @input="updateFlocking('maxSpeed', Number(($event.target as HTMLInputElement).value))"
+            />
+            <span class="value-display">{{ flocking.maxSpeed }}</span>
+          </div>
+          <div class="property-row">
+            <label title="Maximum steering force applied to particles.">Max Force</label>
+            <input
+              type="range"
+              :value="flocking.maxForce"
+              min="1"
+              max="100"
+              step="1"
+              @input="updateFlocking('maxForce', Number(($event.target as HTMLInputElement).value))"
+            />
+            <span class="value-display">{{ flocking.maxForce }}</span>
+          </div>
+          <div class="property-row">
+            <label title="Field of view for detecting neighbors (degrees).">Perception</label>
+            <input
+              type="range"
+              :value="flocking.perceptionAngle"
+              min="30"
+              max="360"
+              step="10"
+              @input="updateFlocking('perceptionAngle', Number(($event.target as HTMLInputElement).value))"
+            />
+            <span class="value-display">{{ flocking.perceptionAngle }}°</span>
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <!-- Collision Detection -->
+    <div class="property-section">
+      <div class="section-header" @click="toggleSection('collision')">
+        <i class="pi" :class="expandedSections.has('collision') ? 'pi-chevron-down' : 'pi-chevron-right'" />
+        <span>Collision</span>
+      </div>
+      <div v-if="expandedSections.has('collision')" class="section-content">
+        <div class="property-row">
+          <label title="Enable collision detection for particles.">Enabled</label>
+          <input
+            type="checkbox"
+            :checked="collision.enabled"
+            @change="updateCollision('enabled', ($event.target as HTMLInputElement).checked)"
+          />
+        </div>
+
+        <template v-if="collision.enabled">
+          <div class="subsection-label">Particle Collisions</div>
+          <div class="property-row">
+            <label title="Enable particle-to-particle collision (performance intensive).">P2P Collision</label>
+            <input
+              type="checkbox"
+              :checked="collision.particleCollision"
+              @change="updateCollision('particleCollision', ($event.target as HTMLInputElement).checked)"
+            />
+          </div>
+          <div class="property-row">
+            <label title="Collision radius around each particle.">Radius</label>
+            <input
+              type="range"
+              :value="collision.particleRadius"
+              min="1"
+              max="50"
+              step="1"
+              @input="updateCollision('particleRadius', Number(($event.target as HTMLInputElement).value))"
+            />
+            <span class="value-display">{{ collision.particleRadius }}px</span>
+          </div>
+          <div class="property-row">
+            <label title="How much velocity is retained after collision (0 = none, 1 = full).">Bounciness</label>
+            <input
+              type="range"
+              :value="collision.bounciness"
+              min="0"
+              max="1"
+              step="0.05"
+              @input="updateCollision('bounciness', Number(($event.target as HTMLInputElement).value))"
+            />
+            <span class="value-display">{{ collision.bounciness.toFixed(2) }}</span>
+          </div>
+          <div class="property-row">
+            <label title="Velocity reduction on collision (0 = none, 1 = full stop).">Friction</label>
+            <input
+              type="range"
+              :value="collision.friction"
+              min="0"
+              max="1"
+              step="0.05"
+              @input="updateCollision('friction', Number(($event.target as HTMLInputElement).value))"
+            />
+            <span class="value-display">{{ collision.friction.toFixed(2) }}</span>
+          </div>
+
+          <div class="subsection-label">Boundary</div>
+          <div class="property-row">
+            <label title="Enable boundary collision at composition edges.">Boundary</label>
+            <input
+              type="checkbox"
+              :checked="collision.boundaryEnabled"
+              @change="updateCollision('boundaryEnabled', ($event.target as HTMLInputElement).checked)"
+            />
+          </div>
+          <div class="property-row">
+            <label title="What happens when particles hit the boundary.">Behavior</label>
+            <select
+              :value="collision.boundaryBehavior"
+              @change="updateCollision('boundaryBehavior', ($event.target as HTMLSelectElement).value)"
+            >
+              <option value="none">None</option>
+              <option value="bounce">Bounce</option>
+              <option value="wrap">Wrap Around</option>
+              <option value="kill">Kill</option>
+            </select>
+          </div>
+          <div class="property-row">
+            <label title="Distance from composition edge for boundary.">Padding</label>
+            <input
+              type="range"
+              :value="collision.boundaryPadding"
+              min="0"
+              max="100"
+              step="5"
+              @input="updateCollision('boundaryPadding', Number(($event.target as HTMLInputElement).value))"
+            />
+            <span class="value-display">{{ collision.boundaryPadding }}px</span>
+          </div>
+        </template>
+      </div>
+    </div>
+
     <!-- Sub-Emitters -->
     <div class="property-section">
       <div class="section-header" @click="toggleSection('subEmitters')">
@@ -1383,7 +1619,9 @@ import type {
   ParticleRenderOptions,
   TurbulenceFieldConfig,
   SubEmitterConfig,
-  ConnectionRenderConfig
+  ConnectionRenderConfig,
+  FlockingConfig,
+  CollisionConfig,
 } from '@/types/project';
 import { usePresetStore } from '@/stores/presetStore';
 import { useCompositorStore } from '@/stores/compositorStore';
@@ -1568,6 +1806,33 @@ const modulations = computed(() => layerData.value.modulations);
 const renderOptions = computed(() => layerData.value.renderOptions);
 const turbulenceFields = computed(() => layerData.value.turbulenceFields || []);
 const subEmitters = computed(() => layerData.value.subEmitters || []);
+
+// Flocking config with defaults
+const flocking = computed(() => layerData.value.flocking || {
+  enabled: false,
+  separationWeight: 50,
+  separationRadius: 25,
+  alignmentWeight: 50,
+  alignmentRadius: 50,
+  cohesionWeight: 50,
+  cohesionRadius: 50,
+  maxSpeed: 200,
+  maxForce: 10,
+  perceptionAngle: 270,
+});
+
+// Collision config with defaults
+const collision = computed(() => layerData.value.collision || {
+  enabled: false,
+  particleCollision: false,
+  particleRadius: 5,
+  bounciness: 0.5,
+  friction: 0.1,
+  boundaryEnabled: false,
+  boundaryBehavior: 'bounce' as const,
+  boundaryPadding: 0,
+});
+
 const connections = computed(() => renderOptions.value.connections || {
   enabled: false,
   maxDistance: 100,
@@ -1892,6 +2157,20 @@ function removeTurbulence(id: string): void {
   emit('update', { turbulenceFields: turbulenceFields.value.filter(t => t.id !== id) });
 }
 
+// Flocking functions
+function updateFlocking(key: keyof FlockingConfig, value: any): void {
+  emit('update', {
+    flocking: { ...flocking.value, [key]: value }
+  });
+}
+
+// Collision functions
+function updateCollision(key: keyof CollisionConfig, value: any): void {
+  emit('update', {
+    collision: { ...collision.value, [key]: value }
+  });
+}
+
 // Sub-emitter functions
 function updateSubEmitter(id: string, key: keyof SubEmitterConfig, value: any): void {
   const updated = subEmitters.value.map(s =>
@@ -1984,6 +2263,21 @@ function hexToRgb(hex: string): [number, number, number] {
 .section-content {
   padding: 8px;
   background: #252525;
+}
+
+.subsection-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6a6a6a;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 12px 0 6px 0;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #333;
+}
+
+.subsection-label:first-child {
+  margin-top: 4px;
 }
 
 .property-row {

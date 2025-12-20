@@ -264,19 +264,35 @@ async function handleFile(file: File) {
   }
 
   // Security: Validate MIME type matches extension for common file types
+  // This prevents malicious files from being uploaded with fake extensions
   const mimeTypeMap: Record<string, string[]> = {
+    // Images
     '.png': ['image/png'],
     '.jpg': ['image/jpeg'],
     '.jpeg': ['image/jpeg'],
     '.gif': ['image/gif'],
     '.webp': ['image/webp'],
     '.svg': ['image/svg+xml'],
+    '.exr': ['image/x-exr', 'application/octet-stream'], // EXR often has generic MIME
+    '.hdr': ['image/vnd.radiance', 'application/octet-stream'],
+    // Video
     '.mp4': ['video/mp4'],
     '.webm': ['video/webm'],
     '.mov': ['video/quicktime'],
+    // Audio
     '.mp3': ['audio/mpeg'],
     '.wav': ['audio/wav', 'audio/wave', 'audio/x-wav'],
-    '.json': ['application/json'],
+    '.ogg': ['audio/ogg', 'application/ogg'],
+    '.m4a': ['audio/mp4', 'audio/x-m4a'],
+    // 3D Models
+    '.gltf': ['model/gltf+json', 'application/json'],
+    '.glb': ['model/gltf-binary', 'application/octet-stream'],
+    '.obj': ['text/plain', 'application/octet-stream'],
+    '.fbx': ['application/octet-stream'],
+    // Data files
+    '.json': ['application/json', 'text/json'],
+    '.cube': ['text/plain', 'application/octet-stream'], // LUT files
+    // Fonts
     '.ttf': ['font/ttf', 'application/x-font-ttf'],
     '.otf': ['font/otf', 'application/x-font-otf'],
     '.woff': ['font/woff', 'application/font-woff'],

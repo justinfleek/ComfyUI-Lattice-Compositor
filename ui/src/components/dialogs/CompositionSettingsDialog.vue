@@ -140,6 +140,19 @@
               <span class="resolution-info">{{ resolutionInfo }}</span>
             </div>
 
+            <!-- Duration Preset (for AI models) -->
+            <div class="form-row">
+              <label>Duration Preset:</label>
+              <select v-model="selectedDurationPreset" @change="applyDurationPreset" class="select-input">
+                <option value="custom">Custom</option>
+                <optgroup label="Wan/AI Models (16fps, 4n+1)">
+                  <option v-for="preset in WAN_DURATION_PRESETS" :key="preset.frameCount" :value="preset.frameCount">
+                    {{ preset.label }} ({{ preset.frameCount }} frames){{ preset.isDefault ? ' ★' : '' }}
+                  </option>
+                </optgroup>
+              </select>
+            </div>
+
             <!-- Duration -->
             <div class="form-row">
               <label>Duration:</label>
@@ -155,6 +168,15 @@
                   {{ settings.frameCount }} frames = {{ durationSeconds.toFixed(2) }}s
                 </span>
               </div>
+            </div>
+
+            <!-- Frame count warning for AI models -->
+            <div v-if="settings.fps === 16 && !isValidFrameCount" class="form-row warning-row">
+              <span class="warning-icon">⚠️</span>
+              <span class="warning-text">
+                Frame count {{ settings.frameCount }} doesn't follow 4n+1 pattern.
+                Nearest valid: {{ nearestValidFrameCount }} frames.
+              </span>
             </div>
 
             <!-- Background Color -->
@@ -246,6 +268,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { useCompositorStore } from '@/stores/compositorStore';
+import { WAN_DURATION_PRESETS, calculateWanFrameCount, isValidWanFrameCount } from '@/config/exportPresets';
 
 interface CompositionDialogSettings {
   name: string;
@@ -277,6 +300,7 @@ const store = useCompositorStore();
 // State
 const activeTab = ref<'basic' | 'advanced'>('basic');
 const selectedPreset = ref('custom');
+const selectedDurationPreset = ref<string | number>('custom');
 const lockAspectRatio = ref(false);
 const aspectRatio = ref(16 / 9);
 const previewChanges = ref(false);
@@ -314,6 +338,16 @@ const durationSeconds = computed(() => {
 });
 
 const durationTimecode = ref('00:00:10:00');
+
+// Frame count validation for 4n+1 pattern (Wan/AI models)
+const isValidFrameCount = computed(() => {
+  return isValidWanFrameCount(settings.value.frameCount);
+});
+
+const nearestValidFrameCount = computed(() => {
+  const n = Math.round((settings.value.frameCount - 1) / 4);
+  return n * 4 + 1;
+});
 
 const resolutionInfo = computed(() => {
   const divisors = { full: 1, half: 2, third: 3, quarter: 4 };
@@ -355,6 +389,31 @@ function applyPreset() {
     if (preset.frameCount) settings.value.frameCount = preset.frameCount;
     aspectRatio.value = settings.value.width / settings.value.height;
     updateDurationTimecode();
+    // Update duration preset selection if it matches a Wan preset
+    updateDurationPresetSelection();
+  }
+}
+
+function applyDurationPreset() {
+  if (selectedDurationPreset.value === 'custom') return;
+
+  const frameCount = Number(selectedDurationPreset.value);
+  const preset = WAN_DURATION_PRESETS.find(p => p.frameCount === frameCount);
+
+  if (preset) {
+    settings.value.frameCount = preset.frameCount;
+    settings.value.fps = 16; // Wan models use 16fps
+    updateDurationTimecode();
+  }
+}
+
+function updateDurationPresetSelection() {
+  // Check if current frameCount matches a Wan preset
+  const matchingPreset = WAN_DURATION_PRESETS.find(p => p.frameCount === settings.value.frameCount);
+  if (matchingPreset && settings.value.fps === 16) {
+    selectedDurationPreset.value = matchingPreset.frameCount;
+  } else {
+    selectedDurationPreset.value = 'custom';
   }
 }
 
@@ -424,6 +483,7 @@ function loadCurrentSettings() {
   };
   aspectRatio.value = settings.value.width / settings.value.height;
   updateDurationTimecode();
+  updateDurationPresetSelection();
 }
 
 function cancel() {
@@ -784,5 +844,23 @@ onUnmounted(() => {
 
 .btn-primary:hover {
   background: #5a9fe9;
+}
+
+/* Warning row for invalid frame counts */
+.warning-row {
+  background: rgba(255, 152, 0, 0.1);
+  border: 1px solid rgba(255, 152, 0, 0.3);
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin-top: -4px;
+}
+
+.warning-icon {
+  font-size: 14px;
+}
+
+.warning-text {
+  color: #ffb74d;
+  font-size: 11px;
 }
 </style>

@@ -177,8 +177,8 @@ export abstract class BaseLayer implements LayerInstance {
     // Copy properties
     this.visible = layerData.visible;
     this.locked = layerData.locked;
-    this.inPoint = layerData.inPoint;
-    this.outPoint = layerData.outPoint;
+    this.inPoint = layerData.startFrame ?? layerData.inPoint ?? 0;
+    this.outPoint = layerData.endFrame ?? layerData.outPoint ?? 80;
     this.opacity = layerData.opacity;
     this.transform = layerData.transform;
     this.threeD = layerData.threeD ?? false;
@@ -285,13 +285,16 @@ export abstract class BaseLayer implements LayerInstance {
 
     const scale = { x: scaleX, y: scaleY, z: scaleZ };
 
-    // Anchor point
-    const baseAnchor = this.evaluator.evaluate(this.transform.anchorPoint, frame);
-    const anchorPoint = {
-      x: this.getDrivenOrBase('transform.anchorPoint.x', baseAnchor.x ?? 0),
-      y: this.getDrivenOrBase('transform.anchorPoint.y', baseAnchor.y ?? 0),
-      z: this.getDrivenOrBase('transform.anchorPoint.z', baseAnchor.z ?? 0)
+    // Origin (formerly anchorPoint)
+    const originProp = this.transform.origin || this.transform.anchorPoint;
+    const baseOrigin = originProp ? this.evaluator.evaluate(originProp, frame) : { x: 0, y: 0, z: 0 };
+    const origin = {
+      x: this.getDrivenOrBase('transform.origin.x', baseOrigin.x ?? 0),
+      y: this.getDrivenOrBase('transform.origin.y', baseOrigin.y ?? 0),
+      z: this.getDrivenOrBase('transform.origin.z', baseOrigin.z ?? 0)
     };
+    // Keep anchorPoint alias for backwards compatibility
+    const anchorPoint = origin;
 
     // Rotation (depends on 3D mode)
     let rotation = 0;
@@ -326,7 +329,7 @@ export abstract class BaseLayer implements LayerInstance {
       rotation += audioRotMod * 360; // Full rotation range
     }
 
-    // Apply transform
+    // Apply transform (using origin, formerly anchorPoint)
     this.applyTransform({
       position: {
         x: position.x,
@@ -343,10 +346,10 @@ export abstract class BaseLayer implements LayerInstance {
         y: scale.y / 100,
         z: scale.z / 100,
       },
-      anchorPoint: {
-        x: anchorPoint.x,
-        y: anchorPoint.y,
-        z: anchorPoint.z,
+      origin: {
+        x: origin.x,
+        y: origin.y,
+        z: origin.z,
       },
     });
   }
@@ -358,16 +361,16 @@ export abstract class BaseLayer implements LayerInstance {
     position: { x: number; y: number; z: number };
     rotation: { x: number; y: number; z: number };
     scale: { x: number; y: number; z: number };
-    anchorPoint: { x: number; y: number; z: number };
+    origin: { x: number; y: number; z: number };
   }): void {
-    const { position, rotation, scale, anchorPoint } = transform;
+    const { position, rotation, scale, origin } = transform;
 
-    // Position (with anchor point offset)
+    // Position (with origin offset, formerly anchorPoint)
     // In screen coordinates: Y is down, so negate Y
     this.group.position.set(
-      position.x - anchorPoint.x,
-      -(position.y - anchorPoint.y), // Negate for screen coords
-      position.z - anchorPoint.z
+      position.x - origin.x,
+      -(position.y - origin.y), // Negate for screen coords
+      position.z - origin.z
     );
 
     // Rotation (convert degrees to radians)
@@ -512,6 +515,8 @@ export abstract class BaseLayer implements LayerInstance {
     // Apply transform (with driven value overrides if present)
     // This maintains property driver support during the MotionEngine transition
     const transform = state.transform;
+    // Use origin (new name) with fallback to anchorPoint (deprecated)
+    const originVal = transform.origin || transform.anchorPoint || { x: 0, y: 0, z: 0 };
     this.applyTransform({
       position: {
         x: this.getDrivenOrBase('transform.position.x', transform.position.x),
@@ -528,10 +533,10 @@ export abstract class BaseLayer implements LayerInstance {
         y: this.getDrivenOrBase('transform.scale.y', transform.scale.y ?? 100) / 100,
         z: this.getDrivenOrBase('transform.scale.z', transform.scale.z ?? 100) / 100,
       },
-      anchorPoint: {
-        x: this.getDrivenOrBase('transform.anchorPoint.x', transform.anchorPoint.x),
-        y: this.getDrivenOrBase('transform.anchorPoint.y', transform.anchorPoint.y),
-        z: this.getDrivenOrBase('transform.anchorPoint.z', transform.anchorPoint.z ?? 0),
+      origin: {
+        x: this.getDrivenOrBase('transform.origin.x', originVal.x),
+        y: this.getDrivenOrBase('transform.origin.y', originVal.y),
+        z: this.getDrivenOrBase('transform.origin.z', originVal.z ?? 0),
       },
     });
 
@@ -1666,9 +1671,10 @@ export abstract class BaseLayer implements LayerInstance {
     // Add axis labels
     this.addAxisLabels(size);
 
-    // Position at anchor point
-    const anchor = this.transform.anchorPoint.value;
-    this.axisGizmo.position.set(-anchor.x, anchor.y, -(anchor.z ?? 0));
+    // Position at origin (formerly anchor point)
+    const originProp = this.transform.origin || this.transform.anchorPoint;
+    const originVal = originProp?.value || { x: 0, y: 0, z: 0 };
+    this.axisGizmo.position.set(-originVal.x, originVal.y, -(originVal.z ?? 0));
 
     this.axisGizmo.visible = this.showAxisGizmo;
     this.group.add(this.axisGizmo);
@@ -1733,13 +1739,14 @@ export abstract class BaseLayer implements LayerInstance {
   }
 
   /**
-   * Update axis gizmo position to match anchor point
+   * Update axis gizmo position to match origin
    */
   updateAxisGizmoPosition(): void {
     if (!this.axisGizmo) return;
 
-    const anchor = this.transform.anchorPoint.value;
-    this.axisGizmo.position.set(-anchor.x, anchor.y, -(anchor.z ?? 0));
+    const originProp = this.transform.origin || this.transform.anchorPoint;
+    const originVal = originProp?.value || { x: 0, y: 0, z: 0 };
+    this.axisGizmo.position.set(-originVal.x, originVal.y, -(originVal.z ?? 0));
   }
 
   // ============================================================================

@@ -119,8 +119,12 @@ export class VideoLayer extends BaseLayer {
       startTime: data?.startTime ?? 0,
       endTime: data?.endTime,
       speed: data?.speed ?? 1,
-      timeRemapEnabled: data?.timeRemapEnabled ?? false,
-      timeRemap: data?.timeRemap,
+      // Speed map (new naming)
+      speedMapEnabled: data?.speedMapEnabled ?? data?.timeRemapEnabled ?? false,
+      speedMap: data?.speedMap ?? data?.timeRemap,
+      // Backwards compatibility aliases
+      timeRemapEnabled: data?.timeRemapEnabled ?? data?.speedMapEnabled ?? false,
+      timeRemap: data?.timeRemap ?? data?.speedMap,
       frameBlending: data?.frameBlending ?? 'none',
       audioEnabled: data?.audioEnabled ?? true,
       audioLevel: data?.audioLevel ?? 100,
@@ -335,14 +339,16 @@ export class VideoLayer extends BaseLayer {
 
   /**
    * Calculate video time from composition frame
-   * Handles speed, time remapping, loop, and ping-pong
+   * Handles speed, speed map (time remapping), loop, and ping-pong
    */
   private calculateVideoTime(compositionFrame: number): number {
     if (!this.metadata) return 0;
 
-    // If time remap is enabled and animated, use that
-    if (this.videoData.timeRemapEnabled && this.videoData.timeRemap?.animated) {
-      return this.videoEvaluator.evaluate(this.videoData.timeRemap, compositionFrame);
+    // If speed map is enabled and animated, use that
+    const speedMapEnabled = this.videoData.speedMapEnabled ?? this.videoData.timeRemapEnabled;
+    const speedMapProp = this.videoData.speedMap ?? this.videoData.timeRemap;
+    if (speedMapEnabled && speedMapProp?.animated) {
+      return this.videoEvaluator.evaluate(speedMapProp, compositionFrame);
     }
 
     // Calculate based on speed and offsets
@@ -661,9 +667,11 @@ export class VideoLayer extends BaseLayer {
   protected override onApplyEvaluatedState(state: import('../MotionEngine').EvaluatedLayer): void {
     const props = state.properties;
 
-    // Apply time remap if evaluated (direct video time in seconds)
-    if (props['timeRemap'] !== undefined && this.videoElement) {
-      const targetTime = props['timeRemap'] as number;
+    // Apply speed map if evaluated (direct video time in seconds)
+    // Check both new 'speedMap' and legacy 'timeRemap' for backwards compatibility
+    const speedMapValue = props['speedMap'] ?? props['timeRemap'];
+    if (speedMapValue !== undefined && this.videoElement) {
+      const targetTime = speedMapValue as number;
       const clampedTime = Math.max(0, Math.min(targetTime, this.videoElement.duration || targetTime));
       this.videoElement.currentTime = clampedTime;
     }

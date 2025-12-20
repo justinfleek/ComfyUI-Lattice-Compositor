@@ -432,6 +432,34 @@
         </div>
       </div>
     </div>
+
+    <!-- Attached Elements Section - shows what's using this shape as a motion path -->
+    <div class="prop-section">
+      <div class="section-header" @click="toggleSection('attached')">
+        <span class="expand-icon">{{ expandedSections.includes('attached') ? '▼' : '►' }}</span>
+        <span class="section-title">Motion Path Usage</span>
+        <span class="attached-count" v-if="attachedLayers.length > 0">{{ attachedLayers.length }}</span>
+      </div>
+
+      <div v-if="expandedSections.includes('attached')" class="section-content">
+        <div v-if="attachedLayers.length === 0" class="no-attached">
+          No layers are using this shape as a motion path.
+          <p class="hint-text">Text, cameras, and particles can follow this shape's outline.</p>
+        </div>
+        <div v-else class="attached-list">
+          <div
+            v-for="attached in attachedLayers"
+            :key="attached.id"
+            class="attached-item"
+            @click="selectLayer(attached.id)"
+          >
+            <span class="attached-icon">{{ getLayerIcon(attached.type) }}</span>
+            <span class="attached-name">{{ attached.name }}</span>
+            <span class="attached-usage">{{ attached.usage }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -495,6 +523,70 @@ function toggleSection(section: string) {
   } else {
     expandedSections.value.push(section);
   }
+}
+
+// Find layers that reference this spline shape as a motion path
+const attachedLayers = computed(() => {
+  const layerId = props.layer.id;
+  const attached: Array<{ id: string; name: string; type: string; usage: string }> = [];
+
+  for (const layer of store.layers) {
+    // Check text layers for path reference
+    if (layer.type === 'text') {
+      const textData = layer.data as { pathLayerId?: string } | null;
+      if (textData?.pathLayerId === layerId) {
+        attached.push({
+          id: layer.id,
+          name: layer.name,
+          type: layer.type,
+          usage: 'Text on path',
+        });
+      }
+    }
+
+    // Check camera layers for spline path
+    if (layer.type === 'camera') {
+      const cameraData = layer.data as { pathFollowing?: { pathLayerId?: string } } | null;
+      if (cameraData?.pathFollowing?.pathLayerId === layerId) {
+        attached.push({
+          id: layer.id,
+          name: layer.name,
+          type: layer.type,
+          usage: 'Camera path',
+        });
+      }
+    }
+
+    // Check particle layers for spline emission
+    if (layer.type === 'particles') {
+      const particleData = layer.data as { emitters?: Array<{ shape?: string; splinePath?: { layerId?: string } }> } | null;
+      if (particleData?.emitters?.some(e => e.shape === 'spline' && e.splinePath?.layerId === layerId)) {
+        attached.push({
+          id: layer.id,
+          name: layer.name,
+          type: layer.type,
+          usage: 'Particle emitter',
+        });
+      }
+    }
+  }
+
+  return attached;
+});
+
+// Get layer icon for attached elements list
+function getLayerIcon(type: string): string {
+  const icons: Record<string, string> = {
+    text: 'T',
+    camera: '🎥',
+    particles: '✨',
+  };
+  return icons[type] || '◇';
+}
+
+// Select attached layer
+function selectLayer(layerId: string) {
+  store.selectLayer(layerId);
 }
 
 // Update layer data
@@ -1134,5 +1226,64 @@ function toggleEffectKeyframe(effectId: string, propName: string) {
 
 .icon-toggle-group.wide button {
   padding: 4px 12px;
+}
+
+/* Motion Path Usage / Attached Elements */
+.attached-count {
+  background: #4a90d9;
+  color: #fff;
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 8px;
+  margin-left: auto;
+}
+
+.no-attached {
+  color: #666;
+  font-size: 12px;
+  text-align: center;
+  padding: 12px;
+  font-style: italic;
+}
+
+.no-attached .hint-text {
+  margin-top: 6px;
+  font-size: 11px;
+  color: #555;
+}
+
+.attached-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.attached-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: #252525;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.attached-item:hover {
+  background: #333;
+}
+
+.attached-icon {
+  font-size: 12px;
+}
+
+.attached-name {
+  flex: 1;
+  font-size: 12px;
+  color: #ccc;
+}
+
+.attached-usage {
+  font-size: 11px;
+  color: #666;
 }
 </style>

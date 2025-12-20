@@ -1,8 +1,8 @@
 <template>
-  <div class="graph-editor-canvas" ref="containerRef">
-    <!-- Graph Toolbar -->
-    <div class="graph-toolbar">
-      <div class="graph-mode-toggle">
+  <div class="curve-editor-canvas" ref="containerRef">
+    <!-- Curve Editor Toolbar -->
+    <div class="curve-toolbar">
+      <div class="curve-mode-toggle">
         <button
           :class="{ active: graphMode === 'value' }"
           @click="setGraphMode('value')"
@@ -883,7 +883,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.graph-editor-canvas {
+.curve-editor-canvas {
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -892,7 +892,7 @@ onUnmounted(() => {
   background: #1a1a1a;
 }
 
-.graph-toolbar {
+.curve-toolbar {
   height: 32px;
   display: flex;
   align-items: center;
@@ -902,12 +902,12 @@ onUnmounted(() => {
   border-bottom: 1px solid #333;
 }
 
-.graph-mode-toggle {
+.curve-mode-toggle {
   display: flex;
   gap: 4px;
 }
 
-.graph-mode-toggle button {
+.curve-mode-toggle button {
   padding: 4px 10px;
   border: 1px solid #444;
   background: #2a2a2a;
@@ -918,12 +918,12 @@ onUnmounted(() => {
   transition: all 0.15s ease;
 }
 
-.graph-mode-toggle button:hover {
+.curve-mode-toggle button:hover {
   background: #333;
   color: #fff;
 }
 
-.graph-mode-toggle button.active {
+.curve-mode-toggle button.active {
   background: #7c9cff;
   border-color: #7c9cff;
   color: #fff;

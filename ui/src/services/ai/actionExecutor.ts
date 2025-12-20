@@ -133,9 +133,11 @@ export async function executeToolCall(toolCall: ToolCall): Promise<any> {
     case 'setSplinePoints':
       return executeSetSplinePoints(context, args);
 
-    // Time Remapping
-    case 'setTimeRemap':
-      return executeSetTimeRemap(context, args);
+    // Speed Map (formerly Time Remapping)
+    case 'setSpeedMap':
+      return executeSetSpeedMap(context, args);
+    case 'setTimeRemap': // Legacy - redirects to setSpeedMap
+      return executeSetSpeedMap(context, args);
 
     // Playback
     case 'setCurrentFrame':
@@ -387,8 +389,12 @@ function executeSetLayerTransform(
     changes.push('opacity');
   }
   if (anchorPoint !== undefined) {
-    layer.transform.anchorPoint.value = anchorPoint;
-    changes.push('anchorPoint');
+    // Use origin (new name) with fallback to anchorPoint
+    const originProp = layer.transform.origin || layer.transform.anchorPoint;
+    if (originProp) {
+      originProp.value = anchorPoint;
+    }
+    changes.push('origin');
   }
 
   return {
@@ -1161,10 +1167,10 @@ function executeSetSplinePoints(
 }
 
 // ============================================================================
-// TIME REMAPPING HANDLERS
+// SPEED MAP HANDLERS (formerly Time Remapping)
 // ============================================================================
 
-function executeSetTimeRemap(
+function executeSetSpeedMap(
   context: ExecutionContext,
   args: Record<string, any>
 ): { success: boolean; message: string } {
@@ -1176,20 +1182,30 @@ function executeSetTimeRemap(
     return { success: false, message: `Layer ${layerId} not found` };
   }
 
-  // Time remapping stored in layer data
+  // Speed map stored in layer data (with backwards compatibility)
   if (!layer.data) {
     (layer as any).data = {};
   }
 
-  (layer.data as any).timeRemap = {
+  // Set both new and legacy properties for backwards compatibility
+  (layer.data as any).speedMap = {
     enabled: enabled !== false,
     keyframes: keyframes || [],
   };
+  (layer.data as any).timeRemap = (layer.data as any).speedMap;
 
   return {
     success: true,
-    message: enabled ? `Enabled time remapping` : `Disabled time remapping`,
+    message: enabled ? `Enabled speed map` : `Disabled speed map`,
   };
+}
+
+/** @deprecated Use executeSetSpeedMap instead */
+function executeSetTimeRemap(
+  context: ExecutionContext,
+  args: Record<string, any>
+): { success: boolean; message: string } {
+  return executeSetSpeedMap(context, args);
 }
 
 // ============================================================================
@@ -1512,7 +1528,9 @@ function executeGetLayerInfo(
         position: layer.transform.position,
         scale: layer.transform.scale,
         rotation: layer.transform.rotation,
-        anchorPoint: layer.transform.anchorPoint,
+        origin: layer.transform.origin,
+        // @deprecated alias for backwards compatibility
+        anchorPoint: layer.transform.origin || layer.transform.anchorPoint,
       },
       opacity: layer.opacity,
       effects: layer.effects?.map(e => ({

@@ -155,24 +155,28 @@ class MatteExporter {
     const scaleY = height / project.composition.height;
 
     // Find text layers that are visible at this frame
-    const textLayers = project.layers.filter(layer =>
-      layer.type === 'text' &&
-      layer.visible &&
-      frame >= layer.inPoint &&
-      frame <= layer.outPoint
-    );
+    const textLayers = project.layers.filter(layer => {
+      const start = layer.startFrame ?? layer.inPoint ?? 0;
+      const end = layer.endFrame ?? layer.outPoint ?? 80;
+      return layer.type === 'text' &&
+        layer.visible &&
+        frame >= start &&
+        frame <= end;
+    });
 
     for (const layer of textLayers) {
       await this.renderTextLayerToMatte(ctx, layer, project, frame, scaleX, scaleY);
     }
 
     // Find particle layers that are visible at this frame
-    const particleLayers = project.layers.filter(layer =>
-      layer.type === 'particles' &&
-      layer.visible &&
-      frame >= layer.inPoint &&
-      frame <= layer.outPoint
-    );
+    const particleLayers = project.layers.filter(layer => {
+      const start = layer.startFrame ?? layer.inPoint ?? 0;
+      const end = layer.endFrame ?? layer.outPoint ?? 80;
+      return layer.type === 'particles' &&
+        layer.visible &&
+        frame >= start &&
+        frame <= end;
+    });
 
     for (const layer of particleLayers) {
       this.renderParticleLayerToMatte(ctx, layer, width, height);
@@ -498,7 +502,9 @@ class MatteExporter {
       if (!system) continue;
 
       // Only step if layer is visible at this frame
-      if (layer.visible && frame >= layer.inPoint && frame <= layer.outPoint) {
+      const start = layer.startFrame ?? layer.inPoint ?? 0;
+      const end = layer.endFrame ?? layer.outPoint ?? 80;
+      if (layer.visible && frame >= start && frame <= end) {
         system.step();
       }
     }

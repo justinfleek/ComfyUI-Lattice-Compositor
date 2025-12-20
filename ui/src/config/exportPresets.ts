@@ -19,8 +19,8 @@ export const EXPORT_PRESETS: Record<ExportTarget, Partial<ExportConfig>> = {
   'wan22-i2v': {
     width: 832,
     height: 480,
-    frameCount: 81,
-    fps: 24,
+    frameCount: 81,  // 5 seconds at 16fps (4n+1 pattern)
+    fps: 16,
     exportDepthMap: false,
     exportControlImages: false,
     exportCameraData: false,
@@ -33,8 +33,8 @@ export const EXPORT_PRESETS: Record<ExportTarget, Partial<ExportConfig>> = {
   'wan22-t2v': {
     width: 832,
     height: 480,
-    frameCount: 81,
-    fps: 24,
+    frameCount: 81,  // 5 seconds at 16fps (4n+1 pattern)
+    fps: 16,
     exportDepthMap: false,
     exportControlImages: false,
     exportCameraData: false,
@@ -47,8 +47,8 @@ export const EXPORT_PRESETS: Record<ExportTarget, Partial<ExportConfig>> = {
   'wan22-fun-camera': {
     width: 832,
     height: 480,
-    frameCount: 81,
-    fps: 24,
+    frameCount: 81,  // 5 seconds at 16fps (4n+1 pattern)
+    fps: 16,
     exportDepthMap: false,
     exportControlImages: false,
     exportCameraData: true,
@@ -61,8 +61,8 @@ export const EXPORT_PRESETS: Record<ExportTarget, Partial<ExportConfig>> = {
   'wan22-first-last': {
     width: 832,
     height: 480,
-    frameCount: 81,
-    fps: 24,
+    frameCount: 81,  // 5 seconds at 16fps (4n+1 pattern)
+    fps: 16,
     exportDepthMap: false,
     exportControlImages: false,
     exportCameraData: false,
@@ -75,8 +75,8 @@ export const EXPORT_PRESETS: Record<ExportTarget, Partial<ExportConfig>> = {
   'uni3c-camera': {
     width: 832,
     height: 480,
-    frameCount: 81,
-    fps: 24,
+    frameCount: 81,  // 5 seconds at 16fps (4n+1 pattern)
+    fps: 16,
     exportDepthMap: true,
     exportControlImages: false,
     exportCameraData: true,
@@ -90,8 +90,8 @@ export const EXPORT_PRESETS: Record<ExportTarget, Partial<ExportConfig>> = {
   'uni3c-motion': {
     width: 832,
     height: 480,
-    frameCount: 81,
-    fps: 24,
+    frameCount: 81,  // 5 seconds at 16fps (4n+1 pattern)
+    fps: 16,
     exportDepthMap: true,
     exportControlImages: false,
     exportCameraData: true,
@@ -218,12 +218,12 @@ export const EXPORT_PRESETS: Record<ExportTarget, Partial<ExportConfig>> = {
     cfgScale: 7.0,
   },
 
-  // New model targets (Dec 2025)
+  // New model targets (Dec 2025) - All use 16fps with 4n+1 frame pattern
   'light-x': {
     width: 832,
     height: 480,
-    frameCount: 81,
-    fps: 24,
+    frameCount: 81,  // 5 seconds at 16fps (4n+1 pattern)
+    fps: 16,
     exportDepthMap: true,
     exportControlImages: false,
     exportCameraData: true,
@@ -237,8 +237,8 @@ export const EXPORT_PRESETS: Record<ExportTarget, Partial<ExportConfig>> = {
   'wan-move': {
     width: 832,
     height: 480,
-    frameCount: 81,
-    fps: 24,
+    frameCount: 81,  // 5 seconds at 16fps (4n+1 pattern)
+    fps: 16,
     exportDepthMap: false,
     exportControlImages: false,
     exportCameraData: false,
@@ -251,8 +251,8 @@ export const EXPORT_PRESETS: Record<ExportTarget, Partial<ExportConfig>> = {
   'ati': {
     width: 832,
     height: 480,
-    frameCount: 81,
-    fps: 24,
+    frameCount: 81,  // 5 seconds at 16fps (4n+1 pattern)
+    fps: 16,
     exportDepthMap: false,
     exportControlImages: false,
     exportCameraData: true,
@@ -265,8 +265,8 @@ export const EXPORT_PRESETS: Record<ExportTarget, Partial<ExportConfig>> = {
   'ttm': {
     width: 832,
     height: 480,
-    frameCount: 81,
-    fps: 24,
+    frameCount: 81,  // 5 seconds at 16fps (4n+1 pattern)
+    fps: 16,
     exportDepthMap: false,
     exportControlImages: false,
     exportCameraData: false,
@@ -279,8 +279,8 @@ export const EXPORT_PRESETS: Record<ExportTarget, Partial<ExportConfig>> = {
   'ttm-wan': {
     width: 832,
     height: 480,
-    frameCount: 81,
-    fps: 24,
+    frameCount: 81,  // 5 seconds at 16fps (4n+1 pattern)
+    fps: 16,
     exportDepthMap: false,
     exportControlImages: false,
     exportCameraData: false,
@@ -321,8 +321,8 @@ export const EXPORT_PRESETS: Record<ExportTarget, Partial<ExportConfig>> = {
   'camera-comfyui': {
     width: 832,
     height: 480,
-    frameCount: 81,
-    fps: 24,
+    frameCount: 81,  // 5 seconds at 16fps (4n+1 pattern)
+    fps: 16,
     exportDepthMap: false,
     exportControlImages: false,
     exportCameraData: true,
@@ -544,6 +544,11 @@ export const RESOLUTION_PRESETS: Array<{
 // Frame Count Presets
 // ============================================================================
 
+/**
+ * Frame counts follow the 4n+1 pattern required by AI video models like Wan.
+ * Formula: frames = (seconds × fps) + 1
+ * At 16fps: 3s=49, 5s=81, 10s=161
+ */
 export const FRAME_COUNT_PRESETS: Array<{
   name: string;
   frameCount: number;
@@ -551,6 +556,7 @@ export const FRAME_COUNT_PRESETS: Array<{
   fps: number;
   recommended: ExportTarget[];
 }> = [
+  // Legacy model presets (non-Wan)
   {
     name: '16 frames (~0.7s)',
     frameCount: 16,
@@ -565,28 +571,121 @@ export const FRAME_COUNT_PRESETS: Array<{
     fps: 24,
     recommended: ['motionctrl-svd'],
   },
+
+  // Wan/AI model presets - 16fps with 4n+1 pattern
   {
-    name: '49 frames (~3s)',
-    frameCount: 49,
-    duration: '3.06s',
+    name: '17 frames (1s)',
+    frameCount: 17,   // 1×16+1 = 17
+    duration: '1.0s',
     fps: 16,
-    recommended: ['cogvideox'],
+    recommended: ['wan22-i2v', 'wan-move', 'ati'],
   },
   {
-    name: '81 frames (~3.4s)',
-    frameCount: 81,
-    duration: '3.38s',
-    fps: 24,
-    recommended: ['wan22-i2v', 'wan22-t2v', 'wan22-fun-camera', 'uni3c-camera'],
+    name: '33 frames (2s)',
+    frameCount: 33,   // 2×16+1 = 33
+    duration: '2.0s',
+    fps: 16,
+    recommended: ['wan22-i2v', 'wan-move', 'ati', 'ttm'],
   },
   {
-    name: '121 frames (~5s)',
-    frameCount: 121,
-    duration: '5.04s',
-    fps: 24,
+    name: '49 frames (3s)',
+    frameCount: 49,   // 3×16+1 = 49
+    duration: '3.0s',
+    fps: 16,
+    recommended: ['wan22-i2v', 'wan-move', 'ati', 'ttm', 'cogvideox'],
+  },
+  {
+    name: '65 frames (4s)',
+    frameCount: 65,   // 4×16+1 = 65
+    duration: '4.0s',
+    fps: 16,
+    recommended: ['wan22-i2v', 'wan-move', 'ati', 'ttm'],
+  },
+  {
+    name: '81 frames (5s) ★ Default',
+    frameCount: 81,   // 5×16+1 = 81
+    duration: '5.0s',
+    fps: 16,
+    recommended: ['wan22-i2v', 'wan22-t2v', 'wan22-fun-camera', 'wan22-first-last', 'uni3c-camera', 'uni3c-motion', 'wan-move', 'ati', 'ttm', 'ttm-wan', 'light-x', 'camera-comfyui'],
+  },
+  {
+    name: '113 frames (7s)',
+    frameCount: 113,  // 7×16+1 = 113
+    duration: '7.0s',
+    fps: 16,
+    recommended: ['wan22-i2v', 'wan-move', 'ati'],
+  },
+  {
+    name: '161 frames (10s)',
+    frameCount: 161,  // 10×16+1 = 161
+    duration: '10.0s',
+    fps: 16,
+    recommended: ['wan22-i2v', 'wan-move', 'ati'],
+  },
+  {
+    name: '241 frames (15s)',
+    frameCount: 241,  // 15×16+1 = 241
+    duration: '15.0s',
+    fps: 16,
     recommended: ['wan22-i2v'],
   },
 ];
+
+// ============================================================================
+// Wan Duration Presets (4n+1 pattern at 16fps)
+// ============================================================================
+
+/**
+ * Quick duration presets for Wan-based models.
+ * All follow the 4n+1 frame pattern: frames = (seconds × 16) + 1
+ */
+export const WAN_DURATION_PRESETS: Array<{
+  label: string;
+  seconds: number;
+  frameCount: number;
+  fps: 16;
+  isDefault?: boolean;
+}> = [
+  { label: '1 second',   seconds: 1,  frameCount: 17,  fps: 16 },
+  { label: '2 seconds',  seconds: 2,  frameCount: 33,  fps: 16 },
+  { label: '3 seconds',  seconds: 3,  frameCount: 49,  fps: 16 },
+  { label: '4 seconds',  seconds: 4,  frameCount: 65,  fps: 16 },
+  { label: '5 seconds',  seconds: 5,  frameCount: 81,  fps: 16, isDefault: true },
+  { label: '7 seconds',  seconds: 7,  frameCount: 113, fps: 16 },
+  { label: '10 seconds', seconds: 10, frameCount: 161, fps: 16 },
+  { label: '15 seconds', seconds: 15, frameCount: 241, fps: 16 },
+];
+
+/**
+ * Calculate frame count for Wan models given duration in seconds.
+ * Uses 4n+1 pattern: frames = (seconds × 16) + 1
+ */
+export function calculateWanFrameCount(seconds: number): number {
+  return Math.round(seconds * 16) + 1;
+}
+
+/**
+ * Calculate duration in seconds from frame count at 16fps.
+ */
+export function calculateWanDuration(frameCount: number): number {
+  return (frameCount - 1) / 16;
+}
+
+/**
+ * Validate frame count follows 4n+1 pattern.
+ * Returns true if (frameCount - 1) is divisible by 4.
+ */
+export function isValidWanFrameCount(frameCount: number): boolean {
+  return (frameCount - 1) % 4 === 0;
+}
+
+/**
+ * Get nearest valid Wan frame count (4n+1 pattern).
+ */
+export function getNearestValidWanFrameCount(frameCount: number): number {
+  const n = Math.round((frameCount - 1) / 4);
+  return n * 4 + 1;
+}
 
 // ============================================================================
 // Export Target Metadata

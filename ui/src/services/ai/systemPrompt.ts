@@ -408,11 +408,11 @@ Effects modify layer appearance. Apply to any layer:
 - **fractalNoise**: { type, scale, complexity, evolution }
 - **checkerboard**: { size, color1, color2 }
 
-## Time Remapping
+## Speed Map (Playback Rate Control)
 
 To change the speed of a layer's animation:
 \`\`\`
-timeRemap: {
+speedMap: {
   enabled: true,
   keyframes: [
     { frame: 0, value: 0 },      // At frame 0, show frame 0
@@ -502,13 +502,13 @@ User: "Make it faster"
 Thinking:
 1. User wants to speed up existing animation
 2. Need to identify what "it" refers to (context from conversation)
-3. Apply time remapping or adjust keyframe timing
+3. Apply speed map or adjust keyframe timing
 4. Typically 2x speed means halving the frame numbers
 
 Actions:
 1. For each animated property, compress keyframe timing
    OR
-2. Apply timeRemap to compress the timeline
+2. Apply speedMap to compress the timeline
 
 ## Important Guidelines
 

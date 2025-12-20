@@ -104,7 +104,7 @@
           <label>Path</label>
           <select :value="textData.pathLayerId || ''" @change="e => updateData('pathLayerId', (e.target as HTMLSelectElement).value || null)" class="full-select">
              <option value="">None</option>
-             <option v-for="l in splineLayers" :key="l.id" :value="l.id">{{ l.name }}</option>
+             <option v-for="l in splineLayers" :key="l.id" :value="l.id">{{ l.type === 'path' ? '⤳ ' : '〰 ' }}{{ l.name }}</option>
           </select>
        </div>
 
@@ -565,7 +565,9 @@ async function requestFontAccess() {
 
 const textData = computed(() => props.layer.data);
 const transform = computed(() => props.layer.transform);
-const splineLayers = computed(() => store.layers.filter(l => l.type === 'spline'));
+// Include both visible spline layers AND invisible path layers as potential text paths
+// Users can put text on a logo shape (spline) or an invisible motion guide (path)
+const splineLayers = computed(() => store.layers.filter(l => l.type === 'spline' || l.type === 'path'));
 const animators = computed<TextAnimator[]>(() => textData.value.animators || []);
 
 // Text Animator functions
@@ -599,7 +601,7 @@ function duplicateAnimator(animatorId: string) {
   const source = animators.value.find(a => a.id === animatorId);
   if (!source) return;
 
-  const duplicated: TextAnimator = JSON.parse(JSON.stringify(source));
+  const duplicated: TextAnimator = structuredClone(source);
   duplicated.id = `animator_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
   duplicated.name = `${source.name} (Copy)`;
 

@@ -126,12 +126,14 @@ export function findNearestSnap(
     for (const layer of context.layers) {
       if (layer.id === context.selectedLayerId) continue;
 
-      const inDistance = Math.abs(frame - layer.inPoint);
-      const outDistance = Math.abs(frame - layer.outPoint);
+      const layerStart = layer.startFrame ?? layer.inPoint ?? 0;
+      const layerEnd = layer.endFrame ?? layer.outPoint ?? 80;
+      const inDistance = Math.abs(frame - layerStart);
+      const outDistance = Math.abs(frame - layerEnd);
 
       if (inDistance <= thresholdFrames) {
         snapTargets.push({
-          frame: layer.inPoint,
+          frame: layerStart,
           type: 'layer-in',
           distance: inDistance * pixelsPerFrame,
         });
@@ -139,7 +141,7 @@ export function findNearestSnap(
 
       if (outDistance <= thresholdFrames) {
         snapTargets.push({
-          frame: layer.outPoint,
+          frame: layerEnd,
           type: 'layer-out',
           distance: outDistance * pixelsPerFrame,
         });

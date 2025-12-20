@@ -133,7 +133,9 @@ export interface EvaluatedLayer {
  */
 export interface EvaluatedTransform {
   readonly position: Readonly<{ x: number; y: number; z?: number }>;
-  readonly anchorPoint: Readonly<{ x: number; y: number; z?: number }>;
+  readonly origin: Readonly<{ x: number; y: number; z?: number }>;
+  /** @deprecated Use 'origin' instead */
+  readonly anchorPoint?: Readonly<{ x: number; y: number; z?: number }>;
   readonly scale: Readonly<{ x: number; y: number; z?: number }>;
   readonly rotation: number;
   readonly rotationX?: number;
@@ -266,8 +268,8 @@ class FrameStateCache {
       layerStates: comp.layers.map(l => ({
         id: l.id,
         visible: l.visible,
-        inPoint: l.inPoint,
-        outPoint: l.outPoint,
+        startFrame: l.startFrame ?? l.inPoint ?? 0,
+        endFrame: l.endFrame ?? l.outPoint ?? 80,
         kfCount: l.properties.reduce((sum, p) => sum + (p.keyframes?.length || 0), 0)
       }))
     });
@@ -484,7 +486,9 @@ export class MotionEngine {
    * Check if a layer is visible at a given frame
    */
   isLayerVisibleAtFrame(layer: Layer, frame: number): boolean {
-    return layer.visible && frame >= layer.inPoint && frame <= layer.outPoint;
+    const start = layer.startFrame ?? layer.inPoint ?? 0;
+    const end = layer.endFrame ?? layer.outPoint ?? 80;
+    return layer.visible && frame >= start && frame <= end;
   }
 
   // ============================================================================
@@ -495,7 +499,9 @@ export class MotionEngine {
     const evaluated: EvaluatedLayer[] = [];
 
     for (const layer of layers) {
-      const inRange = frame >= layer.inPoint && frame <= layer.outPoint;
+      const start = layer.startFrame ?? layer.inPoint ?? 0;
+      const end = layer.endFrame ?? layer.outPoint ?? 80;
+      const inRange = frame >= start && frame <= end;
       const visible = layer.visible && inRange;
 
       // Evaluate transform
@@ -537,13 +543,17 @@ export class MotionEngine {
     is3D: boolean
   ): EvaluatedTransform {
     const position = interpolateProperty(transform.position, frame);
-    const anchorPoint = interpolateProperty(transform.anchorPoint, frame);
+    // Use origin (new name) with fallback to anchorPoint (deprecated) for backwards compatibility
+    const originProp = transform.origin || transform.anchorPoint;
+    const origin = originProp ? interpolateProperty(originProp, frame) : { x: 0, y: 0, z: 0 };
     const scale = interpolateProperty(transform.scale, frame);
     const rotation = interpolateProperty(transform.rotation, frame);
 
     const result: EvaluatedTransform = {
       position: { ...position },
-      anchorPoint: { ...anchorPoint },
+      origin: { ...origin },
+      // Keep anchorPoint alias for backwards compatibility
+      anchorPoint: { ...origin },
       scale: { ...scale },
       rotation,
     };
@@ -666,8 +676,8 @@ export class MotionEngine {
         (l) =>
           l.type === 'camera' &&
           l.visible &&
-          frame >= l.inPoint &&
-          frame <= l.outPoint
+          frame >= (l.startFrame ?? l.inPoint ?? 0) &&
+          frame <= (l.endFrame ?? l.outPoint ?? 80)
       );
     }
 
@@ -884,7 +894,9 @@ export class MotionEngine {
 
     for (const layer of layers) {
       if (layer.type !== 'particles' || !layer.visible) continue;
-      if (frame < layer.inPoint || frame > layer.outPoint) continue;
+      const start = layer.startFrame ?? layer.inPoint ?? 0;
+      const end = layer.endFrame ?? layer.outPoint ?? 80;
+      if (frame < start || frame > end) continue;
 
       const data = layer.data as ParticleLayerData | null;
       if (!data?.systemConfig) continue;
@@ -893,8 +905,8 @@ export class MotionEngine {
       const config = this.convertToParticleSystemConfig(data);
 
       // Evaluate through the deterministic registry
-      // Calculate frame relative to layer's in-point for proper simulation
-      const relativeFrame = frame - layer.inPoint;
+      // Calculate frame relative to layer's start frame for proper simulation
+      const relativeFrame = frame - start;
       const snapshot = particleSimulationRegistry.evaluateLayer(
         layer.id,
         relativeFrame,
