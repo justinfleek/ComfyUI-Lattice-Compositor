@@ -289,7 +289,7 @@ export const useCompositorStore = defineStore('compositor', {
     },
     backgroundColor(state): string {
       const comp = state.project.compositions[state.activeCompositionId];
-      return comp?.settings.backgroundColor || '#1a1a2e';
+      return comp?.settings.backgroundColor || '#050505';
     },
 
     // Current frame - per composition
@@ -429,7 +429,7 @@ export const useCompositorStore = defineStore('compositor', {
         frameCount: settings?.frameCount ?? activeComp?.settings.frameCount ?? 81,
         fps: settings?.fps ?? activeComp?.settings.fps ?? 16,
         duration: 0,
-        backgroundColor: settings?.backgroundColor ?? '#1a1a2e',
+        backgroundColor: settings?.backgroundColor ?? '#050505',
         autoResizeToContent: settings?.autoResizeToContent ?? true
       };
       defaultSettings.duration = defaultSettings.frameCount / defaultSettings.fps;

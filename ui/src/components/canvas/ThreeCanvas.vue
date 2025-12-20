@@ -394,7 +394,7 @@ onMounted(async () => {
     pixelRatio: Math.min(window.devicePixelRatio, 2), // Cap at 2 for performance
     antialias: true,
     alpha: true,
-    backgroundColor: store.backgroundColor || '#1a1a2e',
+    backgroundColor: store.backgroundColor || '#050505',
     powerPreference: 'high-performance'
   };
 

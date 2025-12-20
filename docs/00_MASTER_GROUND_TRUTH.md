@@ -1,9 +1,12 @@
 # WEYL COMPOSITOR — MASTER GROUND TRUTH
 
-**Document ID**: 00_MASTER_GROUND_TRUTH  
-**Version**: 1.0.0  
-**Status**: CANONICAL  
+**Document ID**: 00_MASTER_GROUND_TRUTH
+**Version**: 1.1.0
+**Last Updated**: December 20, 2024
+**Status**: CANONICAL
 **Authority**: This document overrides all prior chat instructions, inline code comments, and legacy assumptions.
+
+> **Implementation Status (Dec 2024):** The core determinism rule is implemented via `MotionEngine.ts` which provides pure frame evaluation. Particle system uses checkpoint-based determinism with SeededRandom (Mulberry32). See `HANDOFF.md` for current implementation status.
 
 ---
 

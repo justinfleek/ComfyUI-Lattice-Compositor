@@ -307,7 +307,7 @@ async function startFrameSequenceExport() {
         canvas.height = outputHeight.value;
         const ctx = canvas.getContext('2d');
         if (ctx) {
-          ctx.fillStyle = '#1a1a2e';
+          ctx.fillStyle = '#050505';
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           ctx.fillStyle = '#fff';
           ctx.font = '24px sans-serif';
@@ -413,8 +413,8 @@ async function captureCurrentFrame(
   } else {
     // Fallback: render a gradient placeholder
     const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-    gradient.addColorStop(0, '#1a1a2e');
-    gradient.addColorStop(1, '#16213e');
+    gradient.addColorStop(0, '#050505');
+    gradient.addColorStop(1, '#0a0a0a');
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = '#fff';

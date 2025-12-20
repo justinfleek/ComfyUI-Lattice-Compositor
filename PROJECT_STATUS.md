@@ -1,7 +1,7 @@
 # Project Status Audit
 
-**Last Updated:** 2025-12-17
-**Test Status:** 851 tests passing, 0 TypeScript errors
+**Last Updated:** December 20, 2024
+**Test Status:** 1170 tests passing (43 skipped), 0 TypeScript errors
 **Build Status:** Compiles successfully
 
 ---
@@ -10,12 +10,28 @@
 
 | Metric | Count | Status |
 |--------|-------|--------|
-| TypeScript Files | 125 | All compiling |
-| Vue Components | 45 | All rendering |
-| Services | 32 | All exported |
+| Lines of Code | 128,114 | TypeScript + Vue |
+| TypeScript Files | 215 | All compiling |
+| Vue Components | 57 | All rendering |
+| Services | 42 | All exported |
 | Engine Files | 24 | Functional |
-| Test Suites | 19 | All passing |
-| Total Tests | 851 | 100% pass rate |
+| Test Suites | 29 | All passing |
+| Total Tests | 1170 | 96.5% pass rate |
+| Layer Types | 17 | All implemented |
+| Effects | 22 | 4 categories |
+| Easing Functions | 35 | All Penner + custom |
+| Camera Presets | 22 | Trajectory presets |
+
+## Known Issues (December 2024)
+
+| Issue | Status |
+|-------|--------|
+| ScrubableNumber drag inputs | BROKEN |
+| Project panel drag to timeline | BROKEN |
+| Upper-left viewport controls | BROKEN |
+| Three.js multi-instance conflict | WORKAROUND |
+
+See `HANDOFF.md` for detailed issue descriptions and workarounds.
 
 ---
 
@@ -44,23 +60,26 @@
 
 ## 2. Feature Completion Matrix
 
-### Layer Types
+### Layer Types (17 Total)
 
-| Type | Store | Render | Properties | Status |
-|------|-------|--------|------------|--------|
-| spline | YES | YES | PARTIAL | Working |
-| text | YES | YES | YES | Working |
-| particles | YES | YES | YES | Working |
-| depthflow | YES | PARTIAL | YES | Partial |
-| solid | YES | YES | YES | Working |
-| null | YES | YES | YES | Working |
-| camera | YES | YES | YES | **FIXED** |
-| light | YES | YES | YES | Working |
-| shape | YES | YES | YES | **NEW** |
-| image | YES | PARTIAL | YES | Partial |
-| video | YES | PARTIAL | YES | Partial |
-| precomp | YES | NO | NO | Stub only |
-| procedural_matte | YES | NO | NO | Stub only |
+| Type | Store | Render | Properties | Completion |
+|------|-------|--------|------------|------------|
+| image | YES | YES | YES | 100% |
+| solid | YES | YES | YES | 100% |
+| null | YES | YES | YES | 100% |
+| text | YES | YES | YES | 95% |
+| spline | YES | YES | YES | 95% |
+| camera | YES | YES | YES | 95% |
+| video | YES | YES | YES | 90% |
+| particle | YES | YES | YES | 90% |
+| precomp | YES | YES | YES | 90% |
+| light | YES | YES | YES | 90% |
+| model | YES | YES | YES | 90% |
+| adjustment | YES | YES | PARTIAL | 85% |
+| procedural_matte | YES | YES | PARTIAL | 85% |
+| point_cloud | YES | YES | YES | 85% |
+| shape | YES | YES | YES | 80% |
+| depthflow | YES | PARTIAL | YES | 70% |
 
 ### Engine Components
 

@@ -1019,7 +1019,7 @@ export class WeylEngine {
 
   /**
    * Set the scene background color
-   * @param color - Hex color string (e.g., '#1a1a2e') or null for transparent
+   * @param color - Hex color string (e.g., '#050505') or null for transparent
    */
   setBackground(color: string | null): void {
     this.assertNotDisposed();

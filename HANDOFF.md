@@ -1,9 +1,52 @@
 # WEYL COMPOSITOR - MASTER HANDOFF DOCUMENT
 
-**Date:** December 20, 2024
+**Date:** December 20, 2024 (v6.0)
 **Purpose:** Complete knowledge transfer for continuing development
 **Target Audience:** Next Claude Code session / Developer
 **Confidence Level:** 100% - All known issues documented
+
+---
+
+## CRITICAL: READ THIS SECTION FIRST
+
+### Known Broken Features (Priority Fix)
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| **ScrubableNumber Inputs** | BROKEN | Drag-to-adjust number inputs don't respond |
+| **Project Panel Drag** | BROKEN | Can't drag items from project panel to timeline |
+| **Upper-Left Viewport Controls** | BROKEN | Render mode/transform mode buttons non-functional |
+| **Three.js Multi-Instance** | WORKAROUND | Other ComfyUI extensions cause `Mesh is not a constructor` - try-catch in SceneManager |
+
+### What Works Well
+
+- Timeline playback and scrubbing
+- Keyframe animation with easing
+- All 17 layer types render correctly
+- Audio reactivity and beat detection
+- 3D camera with presets
+- Export to matte sequences
+- Deterministic particle simulation
+
+### Session Changes (December 20, 2024 - Final)
+
+1. **UI Color Migration**: Changed all `#1a1a2e` (blue) to `#050505` (void black)
+   - `types/project.ts` - Default backgroundColor
+   - `compositorStore.ts` - Two locations
+   - `ThreeCanvas.vue` - Engine config
+   - `ExportPanel.vue` - Preview canvas
+   - `extension.js` - Root container
+   - `WeylEngine.ts` - JSDoc comment
+
+2. **Files Deleted** (cleanup):
+   - `Changes-12-15.md` - Old changelog
+   - `repomix-output.xml` - 4.9MB generated file
+   - `_archive/` folder - Old code archive
+   - `specs/SPEC_04_FABRIC.md` - Fabric.js spec (now using Three.js)
+
+3. **Documentation Updates**:
+   - `CLAUDE.md` v6.0 - Complete design system tokens, known issues table
+   - `HANDOFF.md` v6.0 - This update
 
 ---
 
@@ -807,11 +850,12 @@ All specifications are in `/specs/`:
 | `SPEC_01_FOUNDATION.md` | Requirements, architecture | ✅ Updated with impl status |
 | `SPEC_02_TYPES.md` | TypeScript type definitions | ✅ Updated with impl status |
 | `SPEC_03_COMFYUI.md` | ComfyUI integration | ✅ Updated with impl status |
-| `SPEC_04_FABRIC.md` | Canvas classes (historical) | ✅ Updated - now Three.js |
 | `SPEC_05_SERVICES.md` | Core services | ✅ Updated with impl status |
 | `SPEC_06_UI.md` | Vue components | ✅ Updated with impl status |
 | `SPEC_07_BUILD_TEST.md` | Build configuration | ✅ Updated with impl status |
 | `SPEC_08_PARTICLE_SYSTEM.md` | Comprehensive particle spec | ✅ Complete with Vue code |
+
+**Note:** SPEC_04_FABRIC.md was deleted (Fabric.js replaced by Three.js).
 
 ---
 
@@ -1028,7 +1072,7 @@ Before starting work, verify:
 
 ---
 
-**Document Version:** 5.1 (December 20, 2024)
+**Document Version:** 6.0 (December 20, 2024)
 **Confidence:** 100% - All critical issues resolved
 **Total Parts:** 20
-**Session Fixes:** Test cleanup (svgExport, textToVector rewrites; meshWarpDeformation, particleSystem fixes; puppetDeformation/vectorLOD deleted), services/index.ts duplicate export aliases
+**Session Fixes:** UI color migration (#1a1a2e → #050505), file cleanup (deleted Changes-12-15.md, repomix-output.xml, _archive/, specs/SPEC_04_FABRIC.md), documentation updates (CLAUDE.md v6.0, HANDOFF.md v6.0)

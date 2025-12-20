@@ -57,7 +57,7 @@ app.registerExtension({
 async function renderCompositor(el, base) {
   const container = document.createElement('div');
   container.id = 'weyl-compositor-root';
-  container.style.cssText = 'width:100%;height:100%;min-height:100vh;overflow:hidden;background:#1a1a2e;position:relative;';
+  container.style.cssText = 'width:100%;height:100%;min-height:100vh;overflow:hidden;background:#050505;position:relative;';
   el.appendChild(container);
 
   // Ensure parent element has proper sizing for flex layout

@@ -7878,7 +7878,7 @@ function createEmptyProject(width, height) {
     frameCount: 81,
     fps: 16,
     duration: 81 / 16,
-    backgroundColor: "#1a1a2e",
+    backgroundColor: "#050505",
     autoResizeToContent: true
   };
   return {
@@ -25903,7 +25903,7 @@ const useCompositorStore = defineStore("compositor", {
     },
     backgroundColor(state) {
       const comp = state.project.compositions[state.activeCompositionId];
-      return comp?.settings.backgroundColor || "#1a1a2e";
+      return comp?.settings.backgroundColor || "#050505";
     },
     // Current frame - per composition
     currentFrame(state) {
@@ -26020,7 +26020,7 @@ const useCompositorStore = defineStore("compositor", {
         frameCount: settings?.frameCount ?? activeComp?.settings.frameCount ?? 81,
         fps: settings?.fps ?? activeComp?.settings.fps ?? 16,
         duration: 0,
-        backgroundColor: settings?.backgroundColor ?? "#1a1a2e",
+        backgroundColor: settings?.backgroundColor ?? "#050505",
         autoResizeToContent: settings?.autoResizeToContent ?? true
       };
       defaultSettings.duration = defaultSettings.frameCount / defaultSettings.fps;
@@ -50642,7 +50642,7 @@ const _sfc_main$j = /* @__PURE__ */ defineComponent({
             canvas.height = outputHeight.value;
             const ctx = canvas.getContext("2d");
             if (ctx) {
-              ctx.fillStyle = "#1a1a2e";
+              ctx.fillStyle = "#050505";
               ctx.fillRect(0, 0, canvas.width, canvas.height);
               ctx.fillStyle = "#fff";
               ctx.font = "24px sans-serif";
@@ -50722,8 +50722,8 @@ const _sfc_main$j = /* @__PURE__ */ defineComponent({
         ctx.drawImage(glCanvas, 0, 0, canvas.width, canvas.height);
       } else {
         const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-        gradient.addColorStop(0, "#1a1a2e");
-        gradient.addColorStop(1, "#16213e");
+        gradient.addColorStop(0, "#050505");
+        gradient.addColorStop(1, "#0a0a0a");
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = "#fff";
@@ -50960,7 +50960,7 @@ Total frames: ${sequenceResult.value.frames.length}`
   }
 });
 
-const ExportPanel = /* @__PURE__ */ _export_sfc(_sfc_main$j, [["__scopeId", "data-v-1526f7ef"]]);
+const ExportPanel = /* @__PURE__ */ _export_sfc(_sfc_main$j, [["__scopeId", "data-v-be14fc42"]]);
 
 const _hoisted_1$h = { class: "preview-panel" };
 const _hoisted_2$h = { class: "panel-content" };
@@ -78089,7 +78089,7 @@ class WeylEngine {
   // ============================================================================
   /**
    * Set the scene background color
-   * @param color - Hex color string (e.g., '#1a1a2e') or null for transparent
+   * @param color - Hex color string (e.g., '#050505') or null for transparent
    */
   setBackground(color) {
     this.assertNotDisposed();
@@ -80276,7 +80276,7 @@ const _sfc_main$e = /* @__PURE__ */ defineComponent({
         // Cap at 2 for performance
         antialias: true,
         alpha: true,
-        backgroundColor: store.backgroundColor || "#1a1a2e",
+        backgroundColor: store.backgroundColor || "#050505",
         powerPreference: "high-performance"
       };
       try {
@@ -81097,7 +81097,7 @@ const _sfc_main$e = /* @__PURE__ */ defineComponent({
             class: "zoom-dropdown",
             onChange: onZoomSelect
           }, [..._cache[7] || (_cache[7] = [
-            createStaticVNode('<option value="fit" data-v-86dd5ef2>Fit</option><option value="0.25" data-v-86dd5ef2>25%</option><option value="0.33" data-v-86dd5ef2>33%</option><option value="0.5" data-v-86dd5ef2>50%</option><option value="0.75" data-v-86dd5ef2>75%</option><option value="1" data-v-86dd5ef2>100%</option><option value="2" data-v-86dd5ef2>200%</option><option value="4" data-v-86dd5ef2>400%</option>', 8)
+            createStaticVNode('<option value="fit" data-v-2f3b4f20>Fit</option><option value="0.25" data-v-2f3b4f20>25%</option><option value="0.33" data-v-2f3b4f20>33%</option><option value="0.5" data-v-2f3b4f20>50%</option><option value="0.75" data-v-2f3b4f20>75%</option><option value="1" data-v-2f3b4f20>100%</option><option value="2" data-v-2f3b4f20>200%</option><option value="4" data-v-2f3b4f20>400%</option>', 8)
           ])], 544), [
             [vModelSelect, zoomLevel.value]
           ]),
@@ -81108,7 +81108,7 @@ const _sfc_main$e = /* @__PURE__ */ defineComponent({
             class: "resolution-dropdown",
             onChange: onResolutionChange
           }, [..._cache[8] || (_cache[8] = [
-            createStaticVNode('<option value="full" data-v-86dd5ef2>Full</option><option value="half" data-v-86dd5ef2>Half</option><option value="third" data-v-86dd5ef2>Third</option><option value="quarter" data-v-86dd5ef2>Quarter</option><option value="custom" data-v-86dd5ef2>Custom</option>', 5)
+            createStaticVNode('<option value="full" data-v-2f3b4f20>Full</option><option value="half" data-v-2f3b4f20>Half</option><option value="third" data-v-2f3b4f20>Third</option><option value="quarter" data-v-2f3b4f20>Quarter</option><option value="custom" data-v-2f3b4f20>Custom</option>', 5)
           ])], 544), [
             [vModelSelect, resolution.value]
           ])
@@ -81165,7 +81165,7 @@ const _sfc_main$e = /* @__PURE__ */ defineComponent({
   }
 });
 
-const ThreeCanvas = /* @__PURE__ */ _export_sfc(_sfc_main$e, [["__scopeId", "data-v-86dd5ef2"]]);
+const ThreeCanvas = /* @__PURE__ */ _export_sfc(_sfc_main$e, [["__scopeId", "data-v-2f3b4f20"]]);
 
 const KEYFRAME_SHAPES = {
   // ========================================

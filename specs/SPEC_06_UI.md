@@ -4,6 +4,10 @@
 
 # IMPLEMENTATION STATUS (Updated December 2024)
 
+> **Design System:** See `docs/DESIGN_SYSTEM.md` for complete CSS variable reference.
+> All components should use `--weyl-*` CSS variables, never hardcode colors.
+> App background is `#050505` (void), panel backgrounds are `#121212` (surface-1).
+
 ## Component Architecture Overview
 
 The UI has been **substantially expanded** beyond the original specification.

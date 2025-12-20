@@ -1,6 +1,6 @@
 # CLAUDE.md - WEYL COMPOSITOR COMPLETE GUIDE
 
-**Version:** 5.1 | **Last Updated:** December 20, 2024
+**Version:** 6.0 | **Last Updated:** December 20, 2024
 
 ---
 
@@ -1265,6 +1265,31 @@ console.log('cache hits:', stats.hits, 'misses:', stats.misses);
 
 ## KNOWN ISSUES & WORKAROUNDS
 
+### Critical Issues (Blocking)
+
+| Issue | Description | Status |
+|-------|-------------|--------|
+| **Three.js Multi-Instance Conflict** | Other ComfyUI extensions load their own Three.js, causing `Mesh is not a constructor` errors | Workaround: try-catch in SceneManager |
+| **ScrubableNumber Broken** | Drag-to-adjust number inputs don't respond to mouse events | Needs investigation |
+| **Project Panel Drag** | Can't drag items from project panel to timeline | Needs investigation |
+| **Upper-Left Viewport Controls** | Render mode/transform mode buttons non-functional | UI present, handlers missing |
+
+### Medium Issues (UX Impact)
+
+| Issue | Description | Status |
+|-------|-------------|--------|
+| **Video Encoder** | Export to video throws "not implemented" | Planned for future |
+| **Depth/Normal Map UI** | Workflow unclear to users | Needs docs |
+
+### Recently Fixed (December 2024)
+
+| Issue | Fix |
+|-------|-----|
+| **Layer Centering** | Anchor set to (0,0), position to comp center |
+| **PropertyTrack Alignment** | Fixed with flexbox |
+| **Dropdown Cutoff** | Right-aligned dropdowns |
+| **Background Colors** | Changed from `#1a1a2e` to `#050505` |
+
 ### TypeScript Errors
 
 **All fixed!** Previous issues were:
@@ -1512,20 +1537,78 @@ The UI follows a **floating island architecture** where content-rich panels floa
 
 ### Design Tokens (`styles/design-tokens.css`)
 
-```css
-/* Surface hierarchy (5 levels) */
---weyl-void: #050505;        /* Background "ocean" */
---weyl-surface-0: #0A0A0A;   /* Lowest panels */
---weyl-surface-1: #121212;   /* Standard panels */
---weyl-surface-2: #1A1A1A;   /* Raised elements */
---weyl-surface-3: #242424;   /* Dropdowns, tooltips */
---weyl-surface-4: #2E2E2E;   /* Highest elevation */
+**IMPORTANT:** All UI components MUST use these CSS variables. Never hardcode colors.
 
-/* Spacing */
---weyl-gutter: 20px;         /* Panel separation */
---weyl-radius-xl: 8px;       /* Panel corners */
---weyl-shadow-panel: 0 8px 32px rgba(0,0,0,0.6);
+```css
+/* =================================================================
+   SURFACES - Dark to light hierarchy
+   ================================================================= */
+--weyl-void: #050505;        /* App background - THE DARKEST */
+--weyl-surface-0: #0A0A0A;   /* Canvas background */
+--weyl-surface-1: #121212;   /* Panel backgrounds */
+--weyl-surface-2: #1A1A1A;   /* Cards, raised sections */
+--weyl-surface-3: #222222;   /* Dropdowns, tooltips */
+--weyl-surface-4: #2A2A2A;   /* Highest elevation */
+
+/* =================================================================
+   ACCENT COLORS - Purple/Pink gradient theme
+   ================================================================= */
+--weyl-accent: #8B5CF6;           /* Primary purple */
+--weyl-accent-secondary: #EC4899; /* Secondary pink */
+--weyl-accent-gradient: linear-gradient(135deg, #8B5CF6, #EC4899);
+--weyl-accent-hover: #A78BFA;     /* Lighter purple for hover */
+--weyl-accent-muted: rgba(139, 92, 246, 0.2);  /* For backgrounds */
+
+/* =================================================================
+   TEXT COLORS
+   ================================================================= */
+--weyl-text-primary: #E5E5E5;     /* Main text */
+--weyl-text-secondary: #9CA3AF;   /* Labels, descriptions */
+--weyl-text-muted: #6B7280;       /* Disabled, hints */
+--weyl-text-inverse: #050505;     /* Text on light backgrounds */
+
+/* =================================================================
+   BORDERS & LINES
+   ================================================================= */
+--weyl-border-subtle: #2A2A2A;    /* Subtle dividers */
+--weyl-border-default: #333333;   /* Normal borders */
+--weyl-border-hover: #444444;     /* Hover state */
+
+/* =================================================================
+   SPACING
+   ================================================================= */
+--weyl-gutter: 20px;              /* Panel separation */
+--weyl-gap-lg: 16px;              /* Large gaps */
+--weyl-gap-md: 8px;               /* Medium gaps */
+--weyl-gap-sm: 4px;               /* Small gaps */
+
+/* =================================================================
+   BORDER RADII
+   ================================================================= */
+--weyl-radius-sm: 2px;
+--weyl-radius-md: 4px;
+--weyl-radius-lg: 8px;
+--weyl-radius-xl: 12px;
+--weyl-radius-pill: 999px;
+
+/* =================================================================
+   SHADOWS
+   ================================================================= */
+--weyl-shadow-panel: 0 8px 32px rgba(0,0,0,0.4);
+--weyl-shadow-dropdown: 0 4px 12px rgba(0,0,0,0.3);
+--weyl-shadow-button: 0 2px 4px rgba(0,0,0,0.2);
 ```
+
+### Color Reference Quick Guide
+
+| Purpose | Variable | Hex Value |
+|---------|----------|-----------|
+| App background | `--weyl-void` | `#050505` |
+| Panel backgrounds | `--weyl-surface-1` | `#121212` |
+| Primary accent | `--weyl-accent` | `#8B5CF6` |
+| Secondary accent | `--weyl-accent-secondary` | `#EC4899` |
+| Main text | `--weyl-text-primary` | `#E5E5E5` |
+| Muted text | `--weyl-text-muted` | `#6B7280` |
 
 ### 6 Gradient Themes
 

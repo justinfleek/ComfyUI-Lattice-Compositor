@@ -36,8 +36,8 @@ Weyl is a professional-grade **AI motion graphics compositor** that brings indus
 
 ### Professional Motion Graphics
 
-- **10 Layer Types** — Solid, Text, Shape, Spline, Particles, Image, Video, Camera, Control, Nested Composition
-- **20+ Easing Functions** — Linear, ease-in/out, spring, elastic, bounce, and custom bezier curves
+- **17 Layer Types** — Image, Solid, Null, Text, Spline, Shape, Particle, Camera, Light, Video, Precomp, Adjustment, ProceduralMatte, Model, PointCloud, Depthflow
+- **35 Easing Functions** — Linear, ease-in/out, spring, elastic, bounce, and custom bezier curves
 - **Expression System** — jitter(), repeatAfter(), bounce(), inertia() for procedural animation
 - **Graph Editor** — Fine-tune animation curves with bezier handles
 - **16 Semantic Keyframe Shapes** — Visual encoding of easing type (diamond=linear, circle=ease, arrow=direction)
@@ -238,15 +238,16 @@ Weyl uses a **"Dense Islands, Empty Ocean"** design philosophy:
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  FRONTEND (Vue 3 + TypeScript)                              │
-│  ├── Canvas: Fabric.js 6.x → WebGL fallback                │
+│  ├── Canvas: Three.js r170 (WebGL2)                        │
 │  ├── UI: PrimeVue (matches ComfyUI theme)                  │
 │  ├── State: Pinia stores                                    │
 │  └── Design: CSS custom properties, floating panels        │
 ├─────────────────────────────────────────────────────────────┤
 │  ENGINE (Three.js + WebGL)                                  │
-│  ├── Layer rendering pipeline                               │
-│  ├── Effect processing (blur, glow, color)                 │
-│  └── Particle simulation                                    │
+│  ├── WeylEngine - Main rendering facade                    │
+│  ├── MotionEngine - Deterministic frame evaluation         │
+│  ├── LayerManager - 17 layer type implementations          │
+│  └── ParticleSystem - Scrub-safe particle simulation       │
 ├─────────────────────────────────────────────────────────────┤
 │  BACKEND (Python + ComfyUI)                                 │
 │  ├── Inference: DepthAnything, SAM, NormalCrafter          │
@@ -302,6 +303,27 @@ We're grateful to these developers for open-sourcing their work and advancing AI
 ## Related Search Terms
 
 *AI motion graphics, motion graphics software, open source compositor, ComfyUI motion graphics, AI video editor, generative video, motion design tool, animation software, keyframe animation, particle system, text animation, 3D camera animation, depth parallax, AI video generation, Stable Diffusion video, AnimateDiff compositor, matte generation, rotoscoping tool, audio reactive animation*
+
+---
+
+## Development Status
+
+| Metric | Status |
+|--------|--------|
+| **Feature Completion** | 92% |
+| **Tests Passing** | 1170/1213 (96.5%) |
+| **TypeScript Errors** | 0 |
+| **Layer Types** | 17 |
+| **Effects** | 22 |
+| **Services** | 42 |
+
+### Known Issues
+
+- ScrubableNumber inputs (drag-to-adjust) not working
+- Project panel drag-to-timeline broken
+- Upper-left viewport controls non-functional
+
+See [HANDOFF.md](HANDOFF.md) for detailed status and [CLAUDE.md](CLAUDE.md) for architecture documentation.
 
 ---
 
