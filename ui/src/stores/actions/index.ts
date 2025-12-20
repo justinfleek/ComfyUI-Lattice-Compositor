@@ -24,9 +24,6 @@ export * from './keyframeActions';
 // Project actions (history, save/load, autosave)
 export * from './projectActions';
 
-// Timeline actions (playback, navigation, snapping)
-export * from './timelineActions';
-
 // Audio actions (loading, analysis, reactive mappings)
 export * from './audioActions';
 

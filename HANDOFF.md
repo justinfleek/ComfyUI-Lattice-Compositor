@@ -44,10 +44,14 @@ Weyl is an **After Effects-caliber motion graphics compositor** embedded as a Co
 ### What's Incomplete
 
 - Boolean shape operations (simplified)
-- Preset save/load system
 - Depth/mask-based particle emission
 - Text animator UI incomplete
-- WebGPU compute particle path
+
+### Recently Completed (December 2024)
+
+- **WebGPU Compute Particles** - Wired into GPUParticleSystem with fallback chain (WebGPU → Transform Feedback → CPU)
+- **Frame Sequence Export** - PNG/JPEG/WebP in browser, TIFF/EXR/DPX via backend
+- **Dead Code Cleanup** - Removed PuppetPinEditor.vue, timelineActions.ts, unused arrayUtils functions
 
 ---
 

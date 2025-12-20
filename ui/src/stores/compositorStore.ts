@@ -89,7 +89,6 @@ import * as cacheActions from './actions/cacheActions';
 import * as cameraActions from './actions/cameraActions';
 import * as segmentationActions from './actions/segmentationActions';
 import * as effectActions from './actions/effectActions';
-// Note: timelineActions is available but currently not used - playback handled via playbackStore
 
 // Domain-specific stores (for delegation)
 import { usePlaybackStore } from './playbackStore';
