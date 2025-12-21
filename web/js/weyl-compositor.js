@@ -33063,10 +33063,11 @@ const _sfc_main$Y = /* @__PURE__ */ defineComponent({
         const asset = store.project.assets[item.id];
         if (asset) {
           const layerType = item.type === "solid" ? "solid" : "image";
-          const layer = store.addLayer(layerType, item.name);
+          const layer = store.createLayer(layerType, item.name);
           if (layer && asset.data) {
             store.updateLayerData(layer.id, { assetId: item.id });
           }
+          console.log("[ProjectPanel] Created layer from asset:", layer.id, item.name);
         }
       } else if (item.type === "audio") {
         const asset = store.project.assets[item.id];
@@ -33274,9 +33275,8 @@ const _sfc_main$Y = /* @__PURE__ */ defineComponent({
             height: 0,
             data: imageUrl
           };
-          const layer = store.createLayer("image", file.name.replace(/\.[^.]+$/, ""));
-          layer.data = { assetId };
-          newItem.id = layer.id;
+          newItem.id = assetId;
+          console.log("[ProjectPanel] Image added to project assets:", assetId, file.name);
         }
         const folder = folders.value.find((f) => f.id === "footage");
         if (folder) {
@@ -33477,7 +33477,7 @@ const _sfc_main$Y = /* @__PURE__ */ defineComponent({
   }
 });
 
-const ProjectPanel = /* @__PURE__ */ _export_sfc(_sfc_main$Y, [["__scopeId", "data-v-8d446059"]]);
+const ProjectPanel = /* @__PURE__ */ _export_sfc(_sfc_main$Y, [["__scopeId", "data-v-6df0f7ad"]]);
 
 const _hoisted_1$W = {
   class: "effects-panel",
@@ -87659,11 +87659,20 @@ const _sfc_main$j = /* @__PURE__ */ defineComponent({
       const sin = Math.sin(rad);
       const rx = x * cos - y * sin;
       const ry = x * sin + y * cos;
-      return {
+      const result = {
         x: rx + position.x,
         y: ry + position.y
       };
+      if (!transformPoint._logged) {
+        console.log("[SplineEditor] transformPoint:", { input: p, output: result, position, scale, anchorPoint });
+        transformPoint._logged = true;
+        setTimeout(() => {
+          transformPoint._logged = false;
+        }, 1e3);
+      }
+      return result;
     }
+    transformPoint._logged = false;
     function inverseTransformPoint(p) {
       const { position, rotation, scale, anchorPoint } = layerTransform.value;
       let x = p.x - position.x;
@@ -87927,6 +87936,12 @@ const _sfc_main$j = /* @__PURE__ */ defineComponent({
       if (!props.isPenMode) return;
       const pos = getMousePos(event);
       const layerPos = inverseTransformPoint(pos);
+      console.log("[SplineEditor] handleMouseDown:", {
+        svgPos: pos,
+        layerPos,
+        layerTransform: layerTransform.value,
+        canvasSize: { w: props.canvasWidth, h: props.canvasHeight }
+      });
       if (!props.layerId) return;
       const layer = store.layers.find((l) => l.id === props.layerId);
       if (!layer || !isSplineOrPathType(layer.type)) return;
@@ -87939,6 +87954,7 @@ const _sfc_main$j = /* @__PURE__ */ defineComponent({
           handleOut: null,
           type: "corner"
         };
+        console.log("[SplineEditor] Adding point:", newPoint);
         store.addSplineControlPoint(props.layerId, newPoint);
         selectedPointId.value = newPoint.id;
         dragTarget.value = {
@@ -88424,14 +88440,14 @@ const _sfc_main$j = /* @__PURE__ */ defineComponent({
               onClick: _cache[1] || (_cache[1] = ($event) => setPenSubMode("insert")),
               title: "Add Point (+) - Click on path to insert point"
             }, [..._cache[6] || (_cache[6] = [
-              createStaticVNode('<svg viewBox="0 0 24 24" width="14" height="14" data-v-eef11fe4><path fill="currentColor" d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87L20.71,7.04Z M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z" data-v-eef11fe4></path><circle cx="18" cy="18" r="5" fill="#1e1e1e" data-v-eef11fe4></circle><path fill="currentColor" d="M18,15v6M15,18h6" stroke="currentColor" stroke-width="1.5" data-v-eef11fe4></path></svg><span class="tool-label" data-v-eef11fe4>Pen+</span>', 2)
+              createStaticVNode('<svg viewBox="0 0 24 24" width="14" height="14" data-v-a26e3c4b><path fill="currentColor" d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87L20.71,7.04Z M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z" data-v-a26e3c4b></path><circle cx="18" cy="18" r="5" fill="#1e1e1e" data-v-a26e3c4b></circle><path fill="currentColor" d="M18,15v6M15,18h6" stroke="currentColor" stroke-width="1.5" data-v-a26e3c4b></path></svg><span class="tool-label" data-v-a26e3c4b>Pen+</span>', 2)
             ])], 2),
             createBaseVNode("button", {
               class: normalizeClass(["toolbar-btn icon-btn", { active: __props.isPenMode && penSubMode.value === "delete" }]),
               onClick: _cache[2] || (_cache[2] = ($event) => setPenSubMode("delete")),
               title: "Delete Point (-) - Click point to remove"
             }, [..._cache[7] || (_cache[7] = [
-              createStaticVNode('<svg viewBox="0 0 24 24" width="14" height="14" data-v-eef11fe4><path fill="currentColor" d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87L20.71,7.04Z M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z" data-v-eef11fe4></path><circle cx="18" cy="18" r="5" fill="#1e1e1e" data-v-eef11fe4></circle><path fill="currentColor" d="M15,18h6" stroke="currentColor" stroke-width="1.5" data-v-eef11fe4></path></svg><span class="tool-label" data-v-eef11fe4>Pen-</span>', 2)
+              createStaticVNode('<svg viewBox="0 0 24 24" width="14" height="14" data-v-a26e3c4b><path fill="currentColor" d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87L20.71,7.04Z M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z" data-v-a26e3c4b></path><circle cx="18" cy="18" r="5" fill="#1e1e1e" data-v-a26e3c4b></circle><path fill="currentColor" d="M15,18h6" stroke="currentColor" stroke-width="1.5" data-v-a26e3c4b></path></svg><span class="tool-label" data-v-a26e3c4b>Pen-</span>', 2)
             ])], 2),
             createBaseVNode("button", {
               class: normalizeClass(["toolbar-btn icon-btn", { active: __props.isPenMode && penSubMode.value === "convert" }]),
@@ -88706,7 +88722,7 @@ const _sfc_main$j = /* @__PURE__ */ defineComponent({
   }
 });
 
-const SplineEditor = /* @__PURE__ */ _export_sfc(_sfc_main$j, [["__scopeId", "data-v-eef11fe4"]]);
+const SplineEditor = /* @__PURE__ */ _export_sfc(_sfc_main$j, [["__scopeId", "data-v-a26e3c4b"]]);
 
 const _hoisted_1$h = {
   key: 1,
@@ -101535,12 +101551,12 @@ const _hoisted_36 = ["aria-selected"];
 const _hoisted_37 = { class: "viewport-controls" };
 const _hoisted_38 = ["aria-pressed"];
 const _hoisted_39 = ["aria-pressed"];
-const _hoisted_40 = { class: "viewport-content" };
-const _hoisted_41 = {
+const _hoisted_40 = {
   key: 1,
   class: "guides-overlay"
 };
-const _hoisted_42 = ["onMousedown"];
+const _hoisted_41 = ["onMousedown", "onContextmenu"];
+const _hoisted_42 = ["onClick"];
 const _hoisted_43 = {
   key: 2,
   class: "rulers-overlay"
@@ -101682,9 +101698,10 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
           position: "absolute",
           left: 0,
           right: 0,
-          top: `${guide.position}px`,
-          height: "1px",
-          backgroundColor: "#00BFFF",
+          top: `${guide.position - 5}px`,
+          // Center the 11px hit area on the guide position
+          height: "11px",
+          background: "linear-gradient(to bottom, transparent 5px, #00BFFF 5px, #00BFFF 6px, transparent 6px)",
           cursor: "ns-resize",
           zIndex: 10
         };
@@ -101693,9 +101710,10 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
           position: "absolute",
           top: 0,
           bottom: 0,
-          left: `${guide.position}px`,
-          width: "1px",
-          backgroundColor: "#00BFFF",
+          left: `${guide.position - 5}px`,
+          // Center the 11px hit area on the guide position
+          width: "11px",
+          background: "linear-gradient(to right, transparent 5px, #00BFFF 5px, #00BFFF 6px, transparent 6px)",
           cursor: "ew-resize",
           zIndex: 10
         };
@@ -101964,6 +101982,37 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
     function clearGuides() {
       guides.value = [];
       console.log("[Weyl] Cleared all guides");
+    }
+    const guideContextMenu = ref({
+      visible: false,
+      x: 0,
+      y: 0,
+      guideId: null
+    });
+    function showGuideContextMenu(guide, event) {
+      guideContextMenu.value = {
+        visible: true,
+        x: event.clientX,
+        y: event.clientY,
+        guideId: guide.id
+      };
+      setTimeout(() => {
+        document.addEventListener("click", hideGuideContextMenu, { once: true });
+      }, 0);
+    }
+    function hideGuideContextMenu() {
+      guideContextMenu.value.visible = false;
+      guideContextMenu.value.guideId = null;
+    }
+    function deleteGuideFromMenu() {
+      if (guideContextMenu.value.guideId) {
+        removeGuide(guideContextMenu.value.guideId);
+      }
+      hideGuideContextMenu();
+    }
+    function clearAllGuides() {
+      clearGuides();
+      hideGuideContextMenu();
     }
     function updateGuidePosition(id, position) {
       const guide = guides.value.find((g) => g.id === id);
@@ -103269,7 +103318,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
               onClick: _cache[0] || (_cache[0] = ($event) => currentTool.value = "select"),
               title: "Select Tool (V) - Select and move layers",
               "aria-label": "Select tool"
-            }, [..._cache[51] || (_cache[51] = [
+            }, [..._cache[53] || (_cache[53] = [
               createBaseVNode("span", {
                 class: "icon",
                 "aria-hidden": "true"
@@ -103282,7 +103331,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
               onClick: _cache[1] || (_cache[1] = ($event) => currentTool.value = "pen"),
               title: "Pen Tool (P) - Draw paths and shapes",
               "aria-label": "Pen tool"
-            }, [..._cache[52] || (_cache[52] = [
+            }, [..._cache[54] || (_cache[54] = [
               createBaseVNode("span", {
                 class: "icon",
                 "aria-hidden": "true"
@@ -103295,7 +103344,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
               onClick: _cache[2] || (_cache[2] = ($event) => currentTool.value = "text"),
               title: "Text Tool (T) - Add text layers",
               "aria-label": "Text tool"
-            }, [..._cache[53] || (_cache[53] = [
+            }, [..._cache[55] || (_cache[55] = [
               createBaseVNode("span", {
                 class: "icon",
                 "aria-hidden": "true"
@@ -103308,7 +103357,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
               onClick: _cache[3] || (_cache[3] = ($event) => currentTool.value = "hand"),
               title: "Hand Tool (H) - Pan the viewport",
               "aria-label": "Pan tool"
-            }, [..._cache[54] || (_cache[54] = [
+            }, [..._cache[56] || (_cache[56] = [
               createBaseVNode("span", {
                 class: "icon",
                 "aria-hidden": "true"
@@ -103321,7 +103370,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
               onClick: _cache[4] || (_cache[4] = ($event) => currentTool.value = "zoom"),
               title: "Zoom Tool (Z) - Zoom in/out the viewport",
               "aria-label": "Zoom tool"
-            }, [..._cache[55] || (_cache[55] = [
+            }, [..._cache[57] || (_cache[57] = [
               createBaseVNode("span", {
                 class: "icon",
                 "aria-hidden": "true"
@@ -103334,7 +103383,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
               onClick: _cache[5] || (_cache[5] = ($event) => currentTool.value = "segment"),
               title: "AI Segment (S) - Auto-select objects using AI",
               "aria-label": "AI Segment tool"
-            }, [..._cache[56] || (_cache[56] = [
+            }, [..._cache[58] || (_cache[58] = [
               createBaseVNode("span", {
                 class: "icon",
                 "aria-hidden": "true"
@@ -103342,25 +103391,25 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
               createBaseVNode("span", { class: "tool-label" }, "AI Seg", -1)
             ])], 10, _hoisted_9)
           ]),
-          _cache[76] || (_cache[76] = createBaseVNode("div", { class: "divider" }, null, -1)),
+          _cache[78] || (_cache[78] = createBaseVNode("div", { class: "divider" }, null, -1)),
           createBaseVNode("div", { class: "tool-group" }, [
             createBaseVNode("button", {
               onClick: triggerAssetImport,
               title: "Import Asset (Ctrl+I)",
               class: "import-btn"
-            }, [..._cache[57] || (_cache[57] = [
+            }, [..._cache[59] || (_cache[59] = [
               createBaseVNode("span", { class: "icon" }, "📥", -1),
               createBaseVNode("span", { class: "btn-label" }, "Import", -1)
             ])])
           ]),
           currentTool.value === "segment" ? (openBlock(), createElementBlock(Fragment, { key: 0 }, [
-            _cache[63] || (_cache[63] = createBaseVNode("div", { class: "divider" }, null, -1)),
+            _cache[65] || (_cache[65] = createBaseVNode("div", { class: "divider" }, null, -1)),
             createBaseVNode("div", _hoisted_10, [
               createBaseVNode("button", {
                 class: normalizeClass({ active: segmentMode.value === "point" }),
                 onClick: _cache[6] || (_cache[6] = ($event) => setSegmentMode("point")),
                 title: "Point Mode - Click to segment"
-              }, [..._cache[58] || (_cache[58] = [
+              }, [..._cache[60] || (_cache[60] = [
                 createBaseVNode("span", { class: "icon" }, "●", -1),
                 createTextVNode(" Point ", -1)
               ])], 2),
@@ -103368,17 +103417,17 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
                 class: normalizeClass({ active: segmentMode.value === "box" }),
                 onClick: _cache[7] || (_cache[7] = ($event) => setSegmentMode("box")),
                 title: "Box Mode - Draw rectangle to segment"
-              }, [..._cache[59] || (_cache[59] = [
+              }, [..._cache[61] || (_cache[61] = [
                 createBaseVNode("span", { class: "icon" }, "▢", -1),
                 createTextVNode(" Box ", -1)
               ])], 2),
               segmentPendingMask.value ? (openBlock(), createElementBlock(Fragment, { key: 0 }, [
-                _cache[62] || (_cache[62] = createBaseVNode("div", { class: "divider" }, null, -1)),
+                _cache[64] || (_cache[64] = createBaseVNode("div", { class: "divider" }, null, -1)),
                 createBaseVNode("button", {
                   onClick: confirmSegmentMask,
                   class: "confirm-btn",
                   title: "Create Layer from Selection"
-                }, [..._cache[60] || (_cache[60] = [
+                }, [..._cache[62] || (_cache[62] = [
                   createBaseVNode("span", { class: "icon" }, "✓", -1),
                   createTextVNode(" Create Layer ", -1)
                 ])]),
@@ -103386,25 +103435,25 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
                   onClick: clearSegmentMask,
                   class: "cancel-btn",
                   title: "Cancel Selection"
-                }, [..._cache[61] || (_cache[61] = [
+                }, [..._cache[63] || (_cache[63] = [
                   createBaseVNode("span", { class: "icon" }, "✕", -1)
                 ])])
               ], 64)) : createCommentVNode("", true),
               segmentIsLoading.value ? (openBlock(), createElementBlock("span", _hoisted_11, "Segmenting...")) : createCommentVNode("", true)
             ])
           ], 64)) : createCommentVNode("", true),
-          _cache[77] || (_cache[77] = createBaseVNode("div", { class: "divider" }, null, -1)),
+          _cache[79] || (_cache[79] = createBaseVNode("div", { class: "divider" }, null, -1)),
           createBaseVNode("div", _hoisted_12, [
             createBaseVNode("button", {
               onClick: goToStart,
               title: "Go to Start (Home)"
-            }, [..._cache[64] || (_cache[64] = [
+            }, [..._cache[66] || (_cache[66] = [
               createBaseVNode("span", { class: "icon" }, "⏮", -1)
             ])]),
             createBaseVNode("button", {
               onClick: stepBackward,
               title: "Step Backward"
-            }, [..._cache[65] || (_cache[65] = [
+            }, [..._cache[67] || (_cache[67] = [
               createBaseVNode("span", { class: "icon" }, "⏪", -1)
             ])]),
             createBaseVNode("button", {
@@ -103416,23 +103465,23 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
             createBaseVNode("button", {
               onClick: stepForward,
               title: "Step Forward"
-            }, [..._cache[66] || (_cache[66] = [
+            }, [..._cache[68] || (_cache[68] = [
               createBaseVNode("span", { class: "icon" }, "⏩", -1)
             ])]),
             createBaseVNode("button", {
               onClick: goToEnd,
               title: "Go to End (End)"
-            }, [..._cache[67] || (_cache[67] = [
+            }, [..._cache[69] || (_cache[69] = [
               createBaseVNode("span", { class: "icon" }, "⏭", -1)
             ])])
           ]),
           createBaseVNode("div", _hoisted_15, toDisplayString(formattedTimecode.value), 1),
-          _cache[78] || (_cache[78] = createBaseVNode("div", { class: "divider" }, null, -1)),
+          _cache[80] || (_cache[80] = createBaseVNode("div", { class: "divider" }, null, -1)),
           createBaseVNode("div", _hoisted_16, [
             withDirectives(createBaseVNode("select", {
               "onUpdate:modelValue": _cache[8] || (_cache[8] = ($event) => activeWorkspace.value = $event),
               class: "workspace-selector"
-            }, [..._cache[68] || (_cache[68] = [
+            }, [..._cache[70] || (_cache[70] = [
               createBaseVNode("option", { value: "standard" }, "Standard", -1),
               createBaseVNode("option", { value: "animation" }, "Animation", -1),
               createBaseVNode("option", { value: "effects" }, "Effects", -1),
@@ -103453,7 +103502,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
               }, null, 4)
             ], 2),
             showThemeSelector.value ? (openBlock(), createElementBlock("div", _hoisted_18, [
-              _cache[69] || (_cache[69] = createBaseVNode("div", { class: "theme-dropdown-header" }, "Theme", -1)),
+              _cache[71] || (_cache[71] = createBaseVNode("div", { class: "theme-dropdown-header" }, "Theme", -1)),
               createBaseVNode("div", _hoisted_19, [
                 (openBlock(), createElementBlock(Fragment, null, renderList(themes, (theme) => {
                   return createBaseVNode("button", {
@@ -103467,7 +103516,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
               ])
             ])) : createCommentVNode("", true)
           ]),
-          _cache[79] || (_cache[79] = createBaseVNode("div", { class: "spacer" }, null, -1)),
+          _cache[81] || (_cache[81] = createBaseVNode("div", { class: "spacer" }, null, -1)),
           createBaseVNode("div", _hoisted_21, [
             createBaseVNode("span", {
               class: normalizeClass(["gpu-badge", gpuTier.value])
@@ -103477,35 +103526,35 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
               onClick: undo,
               disabled: !canUndo.value,
               title: "Undo (Ctrl+Z)"
-            }, [..._cache[70] || (_cache[70] = [
+            }, [..._cache[72] || (_cache[72] = [
               createBaseVNode("span", { class: "icon" }, "↩", -1)
             ])], 8, _hoisted_22),
             createBaseVNode("button", {
               onClick: redo,
               disabled: !canRedo.value,
               title: "Redo (Ctrl+Shift+Z)"
-            }, [..._cache[71] || (_cache[71] = [
+            }, [..._cache[73] || (_cache[73] = [
               createBaseVNode("span", { class: "icon" }, "↪", -1)
             ])], 8, _hoisted_23),
-            _cache[75] || (_cache[75] = createBaseVNode("div", { class: "divider" }, null, -1)),
+            _cache[77] || (_cache[77] = createBaseVNode("div", { class: "divider" }, null, -1)),
             createBaseVNode("button", {
               onClick: _cache[10] || (_cache[10] = ($event) => showHDPreview.value = true),
               title: "HD Preview (`)"
-            }, [..._cache[72] || (_cache[72] = [
+            }, [..._cache[74] || (_cache[74] = [
               createBaseVNode("span", { class: "icon" }, "🖥", -1),
               createTextVNode(" HD ", -1)
             ])]),
             createBaseVNode("button", {
               onClick: _cache[11] || (_cache[11] = ($event) => showExportDialog.value = true),
               title: "Export Matte"
-            }, [..._cache[73] || (_cache[73] = [
+            }, [..._cache[75] || (_cache[75] = [
               createBaseVNode("span", { class: "icon" }, "📤", -1),
               createTextVNode(" Matte ", -1)
             ])]),
             createBaseVNode("button", {
               onClick: _cache[12] || (_cache[12] = ($event) => showComfyUIExportDialog.value = true),
               title: "Export to ComfyUI"
-            }, [..._cache[74] || (_cache[74] = [
+            }, [..._cache[76] || (_cache[76] = [
               createBaseVNode("span", { class: "icon" }, "🎬", -1),
               createTextVNode(" ComfyUI ", -1)
             ])])
@@ -103608,7 +103657,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
                                   onChange: handleZoomChange,
                                   class: "zoom-select",
                                   "aria-label": "Zoom level"
-                                }, [..._cache[80] || (_cache[80] = [
+                                }, [..._cache[82] || (_cache[82] = [
                                   createBaseVNode("option", { value: "fit" }, "Fit", -1),
                                   createBaseVNode("option", { value: "25" }, "25%", -1),
                                   createBaseVNode("option", { value: "50" }, "50%", -1),
@@ -103625,7 +103674,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
                                   title: "Toggle Rulers/Guides",
                                   "aria-label": "Toggle rulers and guides",
                                   "aria-pressed": viewOptions.value.showRulers
-                                }, [..._cache[81] || (_cache[81] = [
+                                }, [..._cache[83] || (_cache[83] = [
                                   createBaseVNode("span", {
                                     class: "icon",
                                     "aria-hidden": "true"
@@ -103637,31 +103686,54 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
                                   title: "Toggle Grid",
                                   "aria-label": "Toggle grid",
                                   "aria-pressed": viewOptions.value.showGrid
-                                }, [..._cache[82] || (_cache[82] = [
+                                }, [..._cache[84] || (_cache[84] = [
                                   createBaseVNode("span", { class: "icon" }, "▦", -1)
                                 ])], 10, _hoisted_39)
                               ])
                             ]),
-                            createBaseVNode("div", _hoisted_40, [
+                            createBaseVNode("div", {
+                              class: normalizeClass(["viewport-content", { "rulers-active": viewOptions.value.showRulers }])
+                            }, [
                               viewOptions.value.showGrid ? (openBlock(), createElementBlock("div", {
                                 key: 0,
                                 class: "grid-overlay",
                                 style: normalizeStyle(gridOverlayStyle.value)
                               }, null, 4)) : createCommentVNode("", true),
-                              guides.value.length > 0 ? (openBlock(), createElementBlock("div", _hoisted_41, [
+                              guides.value.length > 0 ? (openBlock(), createElementBlock("div", _hoisted_40, [
                                 (openBlock(true), createElementBlock(Fragment, null, renderList(guides.value, (guide) => {
                                   return openBlock(), createElementBlock("div", {
                                     key: guide.id,
                                     class: normalizeClass(["guide", guide.orientation]),
                                     style: normalizeStyle(getGuideStyle(guide)),
-                                    onMousedown: ($event) => startGuideDrag(guide, $event)
-                                  }, null, 46, _hoisted_42);
+                                    onMousedown: ($event) => startGuideDrag(guide, $event),
+                                    onContextmenu: withModifiers(($event) => showGuideContextMenu(guide, $event), ["prevent"])
+                                  }, [
+                                    createBaseVNode("button", {
+                                      class: "guide-delete-btn",
+                                      onClick: withModifiers(($event) => removeGuide(guide.id), ["stop"]),
+                                      onMousedown: _cache[23] || (_cache[23] = withModifiers(() => {
+                                      }, ["stop"])),
+                                      title: "Delete guide"
+                                    }, "×", 40, _hoisted_42)
+                                  ], 46, _hoisted_41);
                                 }), 128))
                               ])) : createCommentVNode("", true),
+                              (openBlock(), createBlock(Teleport, { to: "body" }, [
+                                guideContextMenu.value.visible ? (openBlock(), createElementBlock("div", {
+                                  key: 0,
+                                  class: "guide-context-menu",
+                                  style: normalizeStyle({ left: guideContextMenu.value.x + "px", top: guideContextMenu.value.y + "px" }),
+                                  onClick: _cache[24] || (_cache[24] = withModifiers(() => {
+                                  }, ["stop"]))
+                                }, [
+                                  createBaseVNode("button", { onClick: deleteGuideFromMenu }, "Delete Guide"),
+                                  createBaseVNode("button", { onClick: clearAllGuides }, "Clear All Guides")
+                                ], 4)) : createCommentVNode("", true)
+                              ])),
                               viewOptions.value.showRulers ? (openBlock(), createElementBlock("div", _hoisted_43, [
                                 createBaseVNode("div", {
                                   class: "ruler ruler-horizontal",
-                                  onMousedown: _cache[23] || (_cache[23] = ($event) => createGuideFromRuler("horizontal", $event))
+                                  onMousedown: _cache[25] || (_cache[25] = ($event) => createGuideFromRuler("horizontal", $event))
                                 }, [
                                   (openBlock(), createElementBlock(Fragment, null, renderList(20, (i) => {
                                     return createBaseVNode("span", {
@@ -103673,7 +103745,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
                                 ], 32),
                                 createBaseVNode("div", {
                                   class: "ruler ruler-vertical",
-                                  onMousedown: _cache[24] || (_cache[24] = ($event) => createGuideFromRuler("vertical", $event))
+                                  onMousedown: _cache[26] || (_cache[26] = ($event) => createGuideFromRuler("vertical", $event))
                                 }, [
                                   (openBlock(), createElementBlock(Fragment, null, renderList(20, (i) => {
                                     return createBaseVNode("span", {
@@ -103708,7 +103780,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
                                 compWidth: compWidth.value,
                                 compHeight: compHeight.value
                               }, null, 8, ["camera", "viewportState", "viewOptions", "compWidth", "compHeight"]))
-                            ])
+                            ], 2)
                           ])
                         ]),
                         _: 1
@@ -103731,8 +103803,8 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
                                 default: withCtx(() => [
                                   createBaseVNode("div", _hoisted_45, [
                                     createVNode(TimelinePanel, {
-                                      onOpenCompositionSettings: _cache[25] || (_cache[25] = ($event) => showCompositionSettingsDialog.value = true),
-                                      onOpenPathSuggestion: _cache[26] || (_cache[26] = ($event) => showPathSuggestionDialog.value = true)
+                                      onOpenCompositionSettings: _cache[27] || (_cache[27] = ($event) => showCompositionSettingsDialog.value = true),
+                                      onOpenPathSuggestion: _cache[28] || (_cache[28] = ($event) => showPathSuggestionDialog.value = true)
                                     })
                                   ])
                                 ]),
@@ -103745,7 +103817,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
                                 default: withCtx(() => [
                                   createBaseVNode("div", _hoisted_46, [
                                     createVNode(CurveEditor, {
-                                      onClose: _cache[27] || (_cache[27] = ($event) => showCurveEditor.value = false)
+                                      onClose: _cache[29] || (_cache[29] = ($event) => showCurveEditor.value = false)
                                     })
                                   ])
                                 ]),
@@ -103755,8 +103827,8 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
                             _: 1
                           })) : (openBlock(), createElementBlock("div", _hoisted_47, [
                             createVNode(TimelinePanel, {
-                              onOpenCompositionSettings: _cache[28] || (_cache[28] = ($event) => showCompositionSettingsDialog.value = true),
-                              onOpenPathSuggestion: _cache[29] || (_cache[29] = ($event) => showPathSuggestionDialog.value = true)
+                              onOpenCompositionSettings: _cache[30] || (_cache[30] = ($event) => showCompositionSettingsDialog.value = true),
+                              onOpenPathSuggestion: _cache[31] || (_cache[31] = ($event) => showPathSuggestionDialog.value = true)
                             })
                           ]))
                         ]),
@@ -103781,49 +103853,49 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
                         "aria-selected": rightTab.value === "properties",
                         "aria-controls": "right-panel-properties",
                         class: normalizeClass({ active: rightTab.value === "properties" }),
-                        onClick: _cache[30] || (_cache[30] = ($event) => rightTab.value = "properties")
+                        onClick: _cache[32] || (_cache[32] = ($event) => rightTab.value = "properties")
                       }, " Properties ", 10, _hoisted_50),
                       createBaseVNode("button", {
                         role: "tab",
                         "aria-selected": rightTab.value === "effects",
                         "aria-controls": "right-panel-effects",
                         class: normalizeClass({ active: rightTab.value === "effects" }),
-                        onClick: _cache[31] || (_cache[31] = ($event) => rightTab.value = "effects")
+                        onClick: _cache[33] || (_cache[33] = ($event) => rightTab.value = "effects")
                       }, " Effects ", 10, _hoisted_51),
                       createBaseVNode("button", {
                         role: "tab",
                         "aria-selected": rightTab.value === "camera",
                         "aria-controls": "right-panel-camera",
                         class: normalizeClass({ active: rightTab.value === "camera" }),
-                        onClick: _cache[32] || (_cache[32] = ($event) => rightTab.value = "camera")
+                        onClick: _cache[34] || (_cache[34] = ($event) => rightTab.value = "camera")
                       }, " Cam ", 10, _hoisted_52),
                       createBaseVNode("button", {
                         role: "tab",
                         "aria-selected": rightTab.value === "audio",
                         "aria-controls": "right-panel-audio",
                         class: normalizeClass({ active: rightTab.value === "audio" }),
-                        onClick: _cache[33] || (_cache[33] = ($event) => rightTab.value = "audio")
+                        onClick: _cache[35] || (_cache[35] = ($event) => rightTab.value = "audio")
                       }, " Audio ", 10, _hoisted_53),
                       createBaseVNode("button", {
                         role: "tab",
                         "aria-selected": rightTab.value === "export",
                         "aria-controls": "right-panel-export",
                         class: normalizeClass({ active: rightTab.value === "export" }),
-                        onClick: _cache[34] || (_cache[34] = ($event) => rightTab.value = "export")
+                        onClick: _cache[36] || (_cache[36] = ($event) => rightTab.value = "export")
                       }, " Export ", 10, _hoisted_54),
                       createBaseVNode("button", {
                         role: "tab",
                         "aria-selected": rightTab.value === "preview",
                         "aria-controls": "right-panel-preview",
                         class: normalizeClass({ active: rightTab.value === "preview" }),
-                        onClick: _cache[35] || (_cache[35] = ($event) => rightTab.value = "preview")
+                        onClick: _cache[37] || (_cache[37] = ($event) => rightTab.value = "preview")
                       }, " Preview ", 10, _hoisted_55),
                       createBaseVNode("button", {
                         role: "tab",
                         "aria-selected": rightTab.value === "ai",
                         "aria-controls": "right-panel-ai",
                         class: normalizeClass({ active: rightTab.value === "ai" }),
-                        onClick: _cache[36] || (_cache[36] = ($event) => rightTab.value = "ai"),
+                        onClick: _cache[38] || (_cache[38] = ($event) => rightTab.value = "ai"),
                         title: "AI Compositor Agent"
                       }, " AI ", 10, _hoisted_56),
                       createBaseVNode("button", {
@@ -103831,7 +103903,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
                         "aria-selected": rightTab.value === "generate",
                         "aria-controls": "right-panel-generate",
                         class: normalizeClass({ active: rightTab.value === "generate" }),
-                        onClick: _cache[37] || (_cache[37] = ($event) => rightTab.value = "generate"),
+                        onClick: _cache[39] || (_cache[39] = ($event) => rightTab.value = "generate"),
                         title: "AI Generation (Depth, Normal, Segment)"
                       }, " Gen ", 10, _hoisted_57),
                       createBaseVNode("button", {
@@ -103839,7 +103911,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
                         "aria-selected": rightTab.value === "align",
                         "aria-controls": "right-panel-align",
                         class: normalizeClass({ active: rightTab.value === "align" }),
-                        onClick: _cache[38] || (_cache[38] = ($event) => rightTab.value = "align"),
+                        onClick: _cache[40] || (_cache[40] = ($event) => rightTab.value = "align"),
                         title: "Align and Distribute Layers"
                       }, " Align ", 10, _hoisted_58)
                     ]),
@@ -103867,7 +103939,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
         ]),
         showExportDialog.value ? (openBlock(), createBlock(ExportDialog, {
           key: 0,
-          onClose: _cache[39] || (_cache[39] = ($event) => showExportDialog.value = false),
+          onClose: _cache[41] || (_cache[41] = ($event) => showExportDialog.value = false),
           onExported: onExportComplete
         })) : createCommentVNode("", true),
         showComfyUIExportDialog.value ? (openBlock(), createBlock(ComfyUIExportDialog, {
@@ -103876,31 +103948,31 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
           "camera-keyframes": activeCameraKeyframes.value,
           "current-frame": unref(store).currentFrame,
           "total-frames": unref(store).frameCount,
-          onClose: _cache[40] || (_cache[40] = ($event) => showComfyUIExportDialog.value = false),
+          onClose: _cache[42] || (_cache[42] = ($event) => showComfyUIExportDialog.value = false),
           onExported: onComfyUIExportComplete
         }, null, 8, ["layers", "camera-keyframes", "current-frame", "total-frames"])) : createCommentVNode("", true),
         createVNode(CompositionSettingsDialog, {
           visible: showCompositionSettingsDialog.value,
-          onClose: _cache[41] || (_cache[41] = ($event) => showCompositionSettingsDialog.value = false),
+          onClose: _cache[43] || (_cache[43] = ($event) => showCompositionSettingsDialog.value = false),
           onConfirm: onCompositionSettingsConfirm
         }, null, 8, ["visible"]),
         createVNode(PrecomposeDialog, {
           visible: showPrecomposeDialog.value,
           "layer-count": unref(store).selectedLayerIds.length,
-          onClose: _cache[42] || (_cache[42] = ($event) => showPrecomposeDialog.value = false),
+          onClose: _cache[44] || (_cache[44] = ($event) => showPrecomposeDialog.value = false),
           onConfirm: onPrecomposeConfirm
         }, null, 8, ["visible", "layer-count"]),
         createVNode(KeyframeInterpolationDialog, {
           visible: showKeyframeInterpolationDialog.value,
           "keyframe-count": unref(store).selectedKeyframeIds.length,
-          onClose: _cache[43] || (_cache[43] = ($event) => showKeyframeInterpolationDialog.value = false),
+          onClose: _cache[45] || (_cache[45] = ($event) => showKeyframeInterpolationDialog.value = false),
           onConfirm: onKeyframeInterpolationConfirm
         }, null, 8, ["visible", "keyframe-count"]),
         createVNode(TimeStretchDialog, {
           visible: showTimeStretchDialog.value,
           "layer-id": unref(store).selectedLayerIds[0] ?? "",
-          onClose: _cache[44] || (_cache[44] = ($event) => showTimeStretchDialog.value = false),
-          onApplied: _cache[45] || (_cache[45] = ($event) => showTimeStretchDialog.value = false)
+          onClose: _cache[46] || (_cache[46] = ($event) => showTimeStretchDialog.value = false),
+          onApplied: _cache[47] || (_cache[47] = ($event) => showTimeStretchDialog.value = false)
         }, null, 8, ["visible", "layer-id"]),
         createVNode(PathSuggestionDialog, {
           visible: showPathSuggestionDialog.value,
@@ -103911,14 +103983,14 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
         createVNode(HDPreviewWindow, {
           visible: showHDPreview.value,
           engine: canvasEngine.value,
-          onClose: _cache[46] || (_cache[46] = ($event) => showHDPreview.value = false)
+          onClose: _cache[48] || (_cache[48] = ($event) => showHDPreview.value = false)
         }, null, 8, ["visible", "engine"]),
         createVNode(ExpressionInput, {
           visible: unref(expressionEditor).isVisible.value,
           "current-expression": unref(expressionEditor).currentProperty.value?.expression,
-          onClose: _cache[47] || (_cache[47] = ($event) => unref(expressionEditor).closeExpressionEditor()),
-          onApply: _cache[48] || (_cache[48] = ($event) => unref(expressionEditor).applyExpression($event)),
-          onRemove: _cache[49] || (_cache[49] = ($event) => unref(expressionEditor).removeExpression())
+          onClose: _cache[49] || (_cache[49] = ($event) => unref(expressionEditor).closeExpressionEditor()),
+          onApply: _cache[50] || (_cache[50] = ($event) => unref(expressionEditor).applyExpression($event)),
+          onRemove: _cache[51] || (_cache[51] = ($event) => unref(expressionEditor).removeExpression())
         }, null, 8, ["visible", "current-expression"]),
         pathSuggestions.value.length > 0 ? (openBlock(), createBlock(Teleport, {
           key: 2,
@@ -103929,7 +104001,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
             height: compHeight.value,
             suggestions: pathSuggestions.value,
             selectedIndex: selectedPathIndex.value,
-            onSelect: _cache[50] || (_cache[50] = ($event) => selectedPathIndex.value = $event)
+            onSelect: _cache[52] || (_cache[52] = ($event) => selectedPathIndex.value = $event)
           }, null, 8, ["width", "height", "suggestions", "selectedIndex"])
         ])) : createCommentVNode("", true)
       ]);
@@ -103937,7 +104009,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
   }
 });
 
-const WorkspaceLayout = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-32cf3e9a"]]);
+const WorkspaceLayout = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-0a6b9172"]]);
 
 const _sfc_main = /* @__PURE__ */ defineComponent({
   __name: "App",

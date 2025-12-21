@@ -324,11 +324,12 @@ function openItem(item: ProjectItem) {
     const asset = store.project.assets[item.id];
     if (asset) {
       const layerType = item.type === 'solid' ? 'solid' : 'image';
-      const layer = store.addLayer(layerType, item.name);
+      const layer = store.createLayer(layerType, item.name);
       if (layer && asset.data) {
         // Link the asset to the layer
         store.updateLayerData(layer.id, { assetId: item.id });
       }
+      console.log('[ProjectPanel] Created layer from asset:', layer.id, item.name);
     }
   } else if (item.type === 'audio') {
     // Load audio into the audio panel
@@ -566,11 +567,12 @@ async function handleFileImport(event: Event) {
         continue;
       }
     } else if (file.type.startsWith('image/')) {
-      // Handle image import - create image layer
+      // Handle image import - add to project assets only (no layer creation)
+      // User double-clicks in project panel to add to timeline
       const imageUrl = URL.createObjectURL(file);
       const assetId = `image_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-      // Add to assets (use type assertion since width/height will be set asynchronously)
+      // Add to assets
       store.project.assets[assetId] = {
         id: assetId,
         type: 'image',
@@ -580,10 +582,9 @@ async function handleFileImport(event: Event) {
         data: imageUrl
       };
 
-      // Create image layer
-      const layer = store.createLayer('image', file.name.replace(/\.[^.]+$/, ''));
-      (layer.data as any) = { assetId };
-      newItem.id = layer.id;
+      // Use assetId as item ID so openItem() can find it
+      newItem.id = assetId;
+      console.log('[ProjectPanel] Image added to project assets:', assetId, file.name);
     }
 
     // Add to footage folder

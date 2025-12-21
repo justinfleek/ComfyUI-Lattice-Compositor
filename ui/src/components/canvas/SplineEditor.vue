@@ -540,11 +540,22 @@ function transformPoint(p: { x: number; y: number }): { x: number; y: number } {
   const ry = x * sin + y * cos;
 
   // Step 4: Add position (move to composition location)
-  return {
+  const result = {
     x: rx + position.x,
     y: ry + position.y
   };
+
+  // Debug first call only to avoid console spam
+  if (!transformPoint._logged) {
+    console.log('[SplineEditor] transformPoint:', { input: p, output: result, position, scale, anchorPoint });
+    transformPoint._logged = true;
+    setTimeout(() => { transformPoint._logged = false; }, 1000);
+  }
+
+  return result;
 }
+// @ts-ignore - debugging flag
+transformPoint._logged = false;
 
 // Inverse transform: from composition space to layer space
 function inverseTransformPoint(p: { x: number; y: number }): { x: number; y: number } {
@@ -1012,6 +1023,14 @@ function handleMouseDown(event: MouseEvent) {
   // Convert composition-space position to layer-space for storing
   const layerPos = inverseTransformPoint(pos);
 
+  // Debug: trace coordinate transformation
+  console.log('[SplineEditor] handleMouseDown:', {
+    svgPos: pos,
+    layerPos: layerPos,
+    layerTransform: layerTransform.value,
+    canvasSize: { w: props.canvasWidth, h: props.canvasHeight }
+  });
+
   if (!props.layerId) return;
   const layer = store.layers.find(l => l.id === props.layerId);
   if (!layer || !isSplineOrPathType(layer.type)) return;
@@ -1028,6 +1047,7 @@ function handleMouseDown(event: MouseEvent) {
       type: 'corner'
     };
 
+    console.log('[SplineEditor] Adding point:', newPoint);
     store.addSplineControlPoint(props.layerId, newPoint);
     selectedPointId.value = newPoint.id;
 

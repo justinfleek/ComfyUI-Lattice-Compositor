@@ -330,7 +330,7 @@
                     </button>
                   </div>
                 </div>
-                <div class="viewport-content">
+                <div class="viewport-content" :class="{ 'rulers-active': viewOptions.showRulers }">
                   <!-- Grid overlay -->
                   <div v-if="viewOptions.showGrid" class="grid-overlay" :style="gridOverlayStyle"></div>
 
@@ -342,8 +342,29 @@
                       :class="['guide', guide.orientation]"
                       :style="getGuideStyle(guide)"
                       @mousedown="startGuideDrag(guide, $event)"
-                    ></div>
+                      @contextmenu.prevent="showGuideContextMenu(guide, $event)"
+                    >
+                      <button
+                        class="guide-delete-btn"
+                        @click.stop="removeGuide(guide.id)"
+                        @mousedown.stop
+                        title="Delete guide"
+                      >×</button>
+                    </div>
                   </div>
+
+                  <!-- Guide context menu -->
+                  <Teleport to="body">
+                    <div
+                      v-if="guideContextMenu.visible"
+                      class="guide-context-menu"
+                      :style="{ left: guideContextMenu.x + 'px', top: guideContextMenu.y + 'px' }"
+                      @click.stop
+                    >
+                      <button @click="deleteGuideFromMenu">Delete Guide</button>
+                      <button @click="clearAllGuides">Clear All Guides</button>
+                    </div>
+                  </Teleport>
 
                   <!-- Rulers overlay -->
                   <div v-if="viewOptions.showRulers" class="rulers-overlay">
@@ -783,16 +804,16 @@ const gridOverlayStyle = computed(() => {
   };
 });
 
-// Guide styling
+// Guide styling - 11px hit area with 1px visible line centered
 function getGuideStyle(guide: { id: string; orientation: 'horizontal' | 'vertical'; position: number }) {
   if (guide.orientation === 'horizontal') {
     return {
       position: 'absolute',
       left: 0,
       right: 0,
-      top: `${guide.position}px`,
-      height: '1px',
-      backgroundColor: '#00BFFF',
+      top: `${guide.position - 5}px`,  // Center the 11px hit area on the guide position
+      height: '11px',
+      background: 'linear-gradient(to bottom, transparent 5px, #00BFFF 5px, #00BFFF 6px, transparent 6px)',
       cursor: 'ns-resize',
       zIndex: 10
     };
@@ -801,9 +822,9 @@ function getGuideStyle(guide: { id: string; orientation: 'horizontal' | 'vertica
       position: 'absolute',
       top: 0,
       bottom: 0,
-      left: `${guide.position}px`,
-      width: '1px',
-      backgroundColor: '#00BFFF',
+      left: `${guide.position - 5}px`,  // Center the 11px hit area on the guide position
+      width: '11px',
+      background: 'linear-gradient(to right, transparent 5px, #00BFFF 5px, #00BFFF 6px, transparent 6px)',
       cursor: 'ew-resize',
       zIndex: 10
     };
@@ -1219,6 +1240,44 @@ function removeGuide(id: string) {
 function clearGuides() {
   guides.value = [];
   console.log('[Weyl] Cleared all guides');
+}
+
+// Guide context menu state
+const guideContextMenu = ref<{ visible: boolean; x: number; y: number; guideId: string | null }>({
+  visible: false,
+  x: 0,
+  y: 0,
+  guideId: null
+});
+
+function showGuideContextMenu(guide: { id: string; orientation: 'horizontal' | 'vertical'; position: number }, event: MouseEvent) {
+  guideContextMenu.value = {
+    visible: true,
+    x: event.clientX,
+    y: event.clientY,
+    guideId: guide.id
+  };
+  // Close menu on next click anywhere
+  setTimeout(() => {
+    document.addEventListener('click', hideGuideContextMenu, { once: true });
+  }, 0);
+}
+
+function hideGuideContextMenu() {
+  guideContextMenu.value.visible = false;
+  guideContextMenu.value.guideId = null;
+}
+
+function deleteGuideFromMenu() {
+  if (guideContextMenu.value.guideId) {
+    removeGuide(guideContextMenu.value.guideId);
+  }
+  hideGuideContextMenu();
+}
+
+function clearAllGuides() {
+  clearGuides();
+  hideGuideContextMenu();
 }
 
 function updateGuidePosition(id: string, position: number) {
@@ -3406,6 +3465,11 @@ onUnmounted(() => {
   position: relative;
 }
 
+.viewport-content.rulers-active {
+  padding-top: 20px;
+  padding-left: 20px;
+}
+
 /* Rulers */
 .rulers-overlay {
   position: absolute;
@@ -3496,11 +3560,20 @@ onUnmounted(() => {
 
 .guides-overlay .guide {
   pointer-events: auto;
-  transition: background-color 0.1s;
+  transition: background 0.1s;
+  position: relative;
 }
 
 .guides-overlay .guide:hover {
-  background-color: #FF6B6B !important;
+  /* Change gradient color to red on hover */
+}
+
+.guides-overlay .guide.horizontal:hover {
+  background: linear-gradient(to bottom, transparent 5px, #FF6B6B 5px, #FF6B6B 6px, transparent 6px) !important;
+}
+
+.guides-overlay .guide.vertical:hover {
+  background: linear-gradient(to right, transparent 5px, #FF6B6B 5px, #FF6B6B 6px, transparent 6px) !important;
 }
 
 .guides-overlay .guide.horizontal {
@@ -3509,6 +3582,73 @@ onUnmounted(() => {
 
 .guides-overlay .guide.vertical {
   height: 100%;
+}
+
+/* Guide delete button - shown on hover */
+.guide-delete-btn {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #FF4444;
+  color: white;
+  border: none;
+  font-size: 12px;
+  line-height: 14px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.guide:hover .guide-delete-btn {
+  opacity: 1;
+}
+
+.guide.horizontal .guide-delete-btn {
+  right: 4px;
+  top: -2px;
+}
+
+.guide.vertical .guide-delete-btn {
+  top: 4px;
+  left: -2px;
+}
+
+.guide-delete-btn:hover {
+  background: #FF0000;
+  transform: scale(1.1);
+}
+
+/* Guide context menu */
+.guide-context-menu {
+  position: fixed;
+  background: var(--weyl-surface-3, #222);
+  border: 1px solid var(--weyl-border-default, #333);
+  border-radius: 4px;
+  padding: 4px 0;
+  min-width: 140px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  z-index: 10000;
+}
+
+.guide-context-menu button {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  color: var(--weyl-text-primary, #e5e5e5);
+  text-align: left;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.guide-context-menu button:hover {
+  background: var(--weyl-accent-muted, rgba(139, 92, 246, 0.2));
 }
 
 /* Snap Indicator */
