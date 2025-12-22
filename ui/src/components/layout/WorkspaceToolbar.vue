@@ -134,15 +134,6 @@
 
     <div class="divider"></div>
 
-    <div class="tool-group">
-      <select v-model="activeWorkspaceLocal" class="workspace-selector">
-        <option value="standard">Standard</option>
-        <option value="animation">Animation</option>
-        <option value="effects">Effects</option>
-        <option value="minimal">Minimal</option>
-      </select>
-    </div>
-
     <!-- Theme Selector -->
     <div class="tool-group theme-selector-group">
       <button
@@ -235,9 +226,6 @@ function confirmSegmentMask() {
 function clearSegmentMask() {
   store.clearSegmentMask();
 }
-
-// Workspace selector
-const activeWorkspaceLocal = ref('standard');
 
 // Theme selector
 const showThemeSelector = ref(false);
@@ -339,6 +327,7 @@ function redo() {
   border-radius: var(--weyl-radius-md, 4px);
   cursor: pointer;
   font-size: var(--weyl-text-md, 14px);
+  font-weight: 500;
   transition: var(--weyl-transition-fast, 100ms ease);
 }
 
@@ -352,7 +341,8 @@ function redo() {
 
 .tool-label {
   font-size: 10px;
-  color: #888;
+  font-weight: 600;
+  color: #999;
   line-height: 1;
 }
 
@@ -408,15 +398,6 @@ function redo() {
   min-width: 100px;
   text-align: center;
   color: var(--weyl-text-primary, #e5e5e5);
-}
-
-.workspace-selector {
-  padding: 6px 12px;
-  background: var(--weyl-surface-2, #1a1a1a);
-  border: none;
-  color: var(--weyl-text-primary, #e5e5e5);
-  border-radius: var(--weyl-radius-md, 4px);
-  font-size: var(--weyl-text-base, 13px);
 }
 
 .gpu-badge {

@@ -1297,20 +1297,20 @@ onUnmounted(() => {
 
 .panel-tabs {
   display: flex;
-  background: var(--weyl-surface-2, #161616);
-  padding: 8px 8px 0 8px;
-  gap: 2px;
+  background: var(--weyl-surface-0, #0a0a0a);
+  padding: 10px 10px 0 10px;
+  gap: 4px;
   border-bottom: 1px solid var(--weyl-border-default, #2a2a2a);
 }
 
 .panel-tabs button {
   flex: 1;
-  padding: 10px 12px;
+  padding: 12px 14px;
   border: none;
   background: var(--weyl-surface-1, #0f0f0f);
   color: var(--weyl-text-muted, #6B7280);
-  font-size: var(--weyl-text-sm, 12px);
-  font-weight: 500;
+  font-size: var(--weyl-text-base, 13px);
+  font-weight: 600;
   cursor: pointer;
   border-radius: var(--weyl-radius-md, 4px) var(--weyl-radius-md, 4px) 0 0;
   transition: var(--weyl-transition-fast, 100ms ease);
@@ -1388,7 +1388,7 @@ onUnmounted(() => {
 .ai-section-header {
   display: flex;
   align-items: center;
-  padding: 10px 12px;
+  padding: 12px 14px;
   background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(236, 72, 153, 0.15));
   border-bottom: 1px solid var(--weyl-border-subtle, #1a1a1a);
 }
@@ -1401,20 +1401,20 @@ onUnmounted(() => {
 
 .ai-section-tabs {
   display: flex;
-  padding: 6px;
+  padding: 8px;
   gap: 4px;
-  background: var(--weyl-surface-0, #080808);
+  background: var(--weyl-surface-0, #0a0a0a);
   border-bottom: 1px solid var(--weyl-border-subtle, #1a1a1a);
 }
 
 .ai-section-tabs button {
   flex: 1;
-  padding: 8px 12px;
+  padding: 10px 14px;
   border: none;
   background: transparent;
   color: var(--weyl-text-secondary, #9CA3AF);
-  font-size: var(--weyl-text-sm, 12px);
-  font-weight: 500;
+  font-size: var(--weyl-text-base, 13px);
+  font-weight: 600;
   cursor: pointer;
   border-radius: var(--weyl-radius-md, 4px);
   transition: var(--weyl-transition-fast, 100ms ease);
@@ -1455,18 +1455,18 @@ onUnmounted(() => {
 .viewport-tabs {
   display: flex;
   gap: 4px;
-  background: var(--weyl-surface-1, #0f0f0f);
-  padding: 3px;
+  background: var(--weyl-surface-0, #0a0a0a);
+  padding: 4px;
   border-radius: var(--weyl-radius-md, 4px);
 }
 
 .viewport-tabs button {
-  padding: 6px 14px;
+  padding: 8px 16px;
   border: none;
   background: transparent;
   color: var(--weyl-text-muted, #6B7280);
-  font-size: var(--weyl-text-sm, 12px);
-  font-weight: 500;
+  font-size: var(--weyl-text-base, 13px);
+  font-weight: 600;
   border-radius: var(--weyl-radius-sm, 2px);
   cursor: pointer;
   transition: var(--weyl-transition-fast, 100ms ease);

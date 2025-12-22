@@ -51,8 +51,8 @@ function toggle() {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 12px;
-  background: var(--weyl-surface-2, #1a1a1a);
+  padding: 12px 14px;
+  background: var(--weyl-surface-0, #0a0a0a);
   border-left: 3px solid transparent;
   cursor: pointer;
   user-select: none;
@@ -82,7 +82,7 @@ function toggle() {
 
 .panel-title {
   flex: 1;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--weyl-text-secondary, #9CA3AF);
 }
