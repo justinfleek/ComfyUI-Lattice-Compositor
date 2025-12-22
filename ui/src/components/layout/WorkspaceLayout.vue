@@ -1297,34 +1297,37 @@ onUnmounted(() => {
 
 .panel-tabs {
   display: flex;
-  background: var(--weyl-surface-0, #080808);
-  padding: 6px;
-  gap: 4px;
-  border-bottom: 1px solid var(--weyl-border-subtle, #1a1a1a);
+  background: var(--weyl-surface-2, #161616);
+  padding: 8px 8px 0 8px;
+  gap: 2px;
+  border-bottom: 1px solid var(--weyl-border-default, #2a2a2a);
 }
 
 .panel-tabs button {
   flex: 1;
-  padding: 8px 12px;
+  padding: 10px 12px;
   border: none;
-  background: transparent;
-  color: var(--weyl-text-secondary, #9CA3AF);
-  font-size: var(--weyl-text-sm, 11px);
+  background: var(--weyl-surface-1, #0f0f0f);
+  color: var(--weyl-text-muted, #6B7280);
+  font-size: var(--weyl-text-sm, 12px);
   font-weight: 500;
   cursor: pointer;
-  border-radius: var(--weyl-radius-md, 4px);
+  border-radius: var(--weyl-radius-md, 4px) var(--weyl-radius-md, 4px) 0 0;
   transition: var(--weyl-transition-fast, 100ms ease);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
 }
 
 .panel-tabs button:hover {
   color: var(--weyl-text-primary, #e5e5e5);
-  background: var(--weyl-surface-3, #1e1e1e);
+  background: var(--weyl-surface-2, #1a1a1a);
 }
 
 .panel-tabs button.active {
   color: white;
-  background: var(--weyl-accent, #8B5CF6);
+  background: var(--weyl-surface-1, #0f0f0f);
   font-weight: 600;
+  border-bottom: 2px solid var(--weyl-accent, #8B5CF6);
 }
 
 .panel-tabs button:focus-visible {
@@ -1443,35 +1446,41 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 12px;
+  padding: 6px 12px;
   background: var(--weyl-surface-2, #161616);
-  border-bottom: 1px solid var(--weyl-border-subtle, #1a1a1a);
+  border-bottom: 1px solid var(--weyl-border-default, #2a2a2a);
   gap: 8px;
 }
 
 .viewport-tabs {
   display: flex;
-  gap: 2px;
+  gap: 4px;
+  background: var(--weyl-surface-1, #0f0f0f);
+  padding: 3px;
+  border-radius: var(--weyl-radius-md, 4px);
 }
 
 .viewport-tabs button {
-  padding: 5px 10px;
+  padding: 6px 14px;
   border: none;
   background: transparent;
-  color: var(--weyl-text-secondary, #9CA3AF);
-  font-size: var(--weyl-text-sm, 11px);
-  border-radius: var(--weyl-radius-md, 4px);
+  color: var(--weyl-text-muted, #6B7280);
+  font-size: var(--weyl-text-sm, 12px);
+  font-weight: 500;
+  border-radius: var(--weyl-radius-sm, 2px);
   cursor: pointer;
   transition: var(--weyl-transition-fast, 100ms ease);
 }
 
 .viewport-tabs button:hover {
   color: var(--weyl-text-primary, #e5e5e5);
+  background: var(--weyl-surface-2, #1a1a1a);
 }
 
 .viewport-tabs button.active {
   background: var(--weyl-surface-3, #222222);
   color: var(--weyl-text-primary, #e5e5e5);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.3);
 }
 
 .viewport-controls {

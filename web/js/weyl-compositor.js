@@ -60760,7 +60760,7 @@ const _sfc_main$m = /* @__PURE__ */ defineComponent({
   }
 });
 
-const CollapsiblePanel = /* @__PURE__ */ _export_sfc(_sfc_main$m, [["__scopeId", "data-v-9b340d9c"]]);
+const CollapsiblePanel = /* @__PURE__ */ _export_sfc(_sfc_main$m, [["__scopeId", "data-v-83bf0ae3"]]);
 
 const useThemeStore = defineStore("theme", {
   state: () => ({
@@ -103479,7 +103479,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
   }
 });
 
-const WorkspaceLayout = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-59edb9b2"]]);
+const WorkspaceLayout = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-98b8d543"]]);
 
 const _sfc_main = /* @__PURE__ */ defineComponent({
   __name: "App",
