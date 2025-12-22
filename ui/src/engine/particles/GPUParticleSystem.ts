@@ -323,6 +323,8 @@ export class GPUParticleSystem {
 
   // Audio reactivity
   private audioFeatures: Map<AudioFeature, number> = new Map();
+  // Smoothed audio values per binding (key = binding index)
+  private smoothedAudioValues: Map<number, number> = new Map();
 
   // Spatial hash for neighbor queries (flocking)
   private spatialHash: Map<string, number[]> = new Map();
@@ -1174,58 +1176,91 @@ export class GPUParticleSystem {
       }
     }
 
-    // For each particle, find nearby particles and draw connections
+    // Build spatial hash grid for O(n) neighbor queries instead of O(n²)
+    const cellSize = config.maxDistance;
+    const grid = new Map<string, typeof activeParticles>();
+    for (const p of activeParticles) {
+      const cellX = Math.floor(p.x / cellSize);
+      const cellY = Math.floor(p.y / cellSize);
+      const cellZ = Math.floor(p.z / cellSize);
+      const key = `${cellX},${cellY},${cellZ}`;
+      if (!grid.has(key)) grid.set(key, []);
+      grid.get(key)!.push(p);
+    }
+
+    // For each particle, find nearby particles using spatial hash
     const connectionCount = new Map<number, number>();
+    const processedPairs = new Set<string>();
 
-    for (let i = 0; i < activeParticles.length; i++) {
-      const p1 = activeParticles[i];
+    for (const p1 of activeParticles) {
       const p1Connections = connectionCount.get(p1.index) ?? 0;
-
       if (p1Connections >= config.maxConnections) continue;
 
-      for (let j = i + 1; j < activeParticles.length; j++) {
-        const p2 = activeParticles[j];
-        const p2Connections = connectionCount.get(p2.index) ?? 0;
+      // Query 3x3x3 neighborhood of cells
+      const cellX = Math.floor(p1.x / cellSize);
+      const cellY = Math.floor(p1.y / cellSize);
+      const cellZ = Math.floor(p1.z / cellSize);
 
-        if (p2Connections >= config.maxConnections) continue;
+      for (let dx = -1; dx <= 1; dx++) {
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dz = -1; dz <= 1; dz++) {
+            const key = `${cellX + dx},${cellY + dy},${cellZ + dz}`;
+            const cellParticles = grid.get(key);
+            if (!cellParticles) continue;
 
-        // Calculate distance
-        const dx = p2.x - p1.x;
-        const dy = p2.y - p1.y;
-        const dz = p2.z - p1.z;
-        const distSq = dx * dx + dy * dy + dz * dz;
+            for (const p2 of cellParticles) {
+              // Skip self and already-processed pairs
+              if (p2.index <= p1.index) continue;
+              const pairKey = `${p1.index}-${p2.index}`;
+              if (processedPairs.has(pairKey)) continue;
+              processedPairs.add(pairKey);
 
-        if (distSq < maxDistSq) {
-          // Calculate opacity based on distance
-          let opacity = config.lineOpacity;
-          if (config.fadeByDistance) {
-            const dist = Math.sqrt(distSq);
-            opacity *= 1 - (dist / config.maxDistance);
+              const p2Connections = connectionCount.get(p2.index) ?? 0;
+              if (p2Connections >= config.maxConnections) continue;
+
+              // Calculate distance
+              const ddx = p2.x - p1.x;
+              const ddy = p2.y - p1.y;
+              const ddz = p2.z - p1.z;
+              const distSq = ddx * ddx + ddy * ddy + ddz * ddz;
+
+              if (distSq < maxDistSq) {
+                // Calculate opacity based on distance
+                let opacity = config.lineOpacity;
+                if (config.fadeByDistance) {
+                  const dist = Math.sqrt(distSq);
+                  opacity *= 1 - (dist / config.maxDistance);
+                }
+
+                // Blend colors from both particles
+                const color = config.color ?? [
+                  (p1.color[0] + p2.color[0]) / 2,
+                  (p1.color[1] + p2.color[1]) / 2,
+                  (p1.color[2] + p2.color[2]) / 2,
+                ];
+
+                // Add line vertices
+                posAttr.setXYZ(vertexIndex, p1.x, p1.y, p1.z);
+                colorAttr.setXYZW(vertexIndex, color[0], color[1], color[2], opacity);
+                vertexIndex++;
+
+                posAttr.setXYZ(vertexIndex, p2.x, p2.y, p2.z);
+                colorAttr.setXYZW(vertexIndex, color[0], color[1], color[2], opacity);
+                vertexIndex++;
+
+                // Update connection counts
+                connectionCount.set(p1.index, (connectionCount.get(p1.index) ?? 0) + 1);
+                connectionCount.set(p2.index, p2Connections + 1);
+
+                // Check if we've maxed out this particle's connections
+                if ((connectionCount.get(p1.index) ?? 0) >= config.maxConnections) break;
+              }
+            }
+            if ((connectionCount.get(p1.index) ?? 0) >= config.maxConnections) break;
           }
-
-          // Blend colors from both particles
-          const color = config.color ?? [
-            (p1.color[0] + p2.color[0]) / 2,
-            (p1.color[1] + p2.color[1]) / 2,
-            (p1.color[2] + p2.color[2]) / 2,
-          ];
-
-          // Add line vertices
-          posAttr.setXYZ(vertexIndex, p1.x, p1.y, p1.z);
-          colorAttr.setXYZW(vertexIndex, color[0], color[1], color[2], opacity);
-          vertexIndex++;
-
-          posAttr.setXYZ(vertexIndex, p2.x, p2.y, p2.z);
-          colorAttr.setXYZW(vertexIndex, color[0], color[1], color[2], opacity);
-          vertexIndex++;
-
-          // Update connection counts
-          connectionCount.set(p1.index, p1Connections + 1);
-          connectionCount.set(p2.index, p2Connections + 1);
-
-          // Check if we've maxed out this particle's connections
           if ((connectionCount.get(p1.index) ?? 0) >= config.maxConnections) break;
         }
+        if ((connectionCount.get(p1.index) ?? 0) >= config.maxConnections) break;
       }
     }
 
@@ -1262,7 +1297,7 @@ export class GPUParticleSystem {
     bounciness: number;
     friction: number;
     bounds?: { min: THREE.Vector3; max: THREE.Vector3 };
-    boundsBehavior: 'none' | 'kill' | 'bounce' | 'wrap';
+    boundsBehavior: 'none' | 'kill' | 'bounce' | 'wrap' | 'stick';
   } | null = null;
 
   /**
@@ -1275,7 +1310,7 @@ export class GPUParticleSystem {
     bounciness?: number;
     friction?: number;
     bounds?: { min: { x: number; y: number; z: number }; max: { x: number; y: number; z: number } };
-    boundsBehavior?: 'none' | 'kill' | 'bounce' | 'wrap';
+    boundsBehavior?: 'none' | 'kill' | 'bounce' | 'wrap' | 'stick';
   }): void {
     this.collisionConfig = {
       enabled: config.enabled ?? true,
@@ -1349,6 +1384,9 @@ export class GPUParticleSystem {
         } else if (config.boundsBehavior === 'kill') {
           buffer[offset + 6] = buffer[offset + 7]; // Set age = lifetime (kill)
           continue;
+        } else if (config.boundsBehavior === 'stick') {
+          px = min.x;
+          vx = 0; vy = 0; vz = 0; // Stop all motion when stuck
         }
         collided = true;
       } else if (px > max.x) {
@@ -1360,11 +1398,14 @@ export class GPUParticleSystem {
         } else if (config.boundsBehavior === 'kill') {
           buffer[offset + 6] = buffer[offset + 7];
           continue;
+        } else if (config.boundsBehavior === 'stick') {
+          px = max.x;
+          vx = 0; vy = 0; vz = 0;
         }
         collided = true;
       }
 
-      // Y boundaries
+      // Y boundaries (includes floor/ceiling)
       if (py < min.y) {
         if (config.boundsBehavior === 'bounce') {
           py = min.y + (min.y - py);
@@ -1374,6 +1415,9 @@ export class GPUParticleSystem {
         } else if (config.boundsBehavior === 'kill') {
           buffer[offset + 6] = buffer[offset + 7];
           continue;
+        } else if (config.boundsBehavior === 'stick') {
+          py = min.y;
+          vx = 0; vy = 0; vz = 0;
         }
         collided = true;
       } else if (py > max.y) {
@@ -1385,6 +1429,9 @@ export class GPUParticleSystem {
         } else if (config.boundsBehavior === 'kill') {
           buffer[offset + 6] = buffer[offset + 7];
           continue;
+        } else if (config.boundsBehavior === 'stick') {
+          py = max.y;
+          vx = 0; vy = 0; vz = 0;
         }
         collided = true;
       }
@@ -1399,6 +1446,9 @@ export class GPUParticleSystem {
         } else if (config.boundsBehavior === 'kill') {
           buffer[offset + 6] = buffer[offset + 7];
           continue;
+        } else if (config.boundsBehavior === 'stick') {
+          pz = min.z;
+          vx = 0; vy = 0; vz = 0;
         }
         collided = true;
       } else if (pz > max.z) {
@@ -1410,6 +1460,9 @@ export class GPUParticleSystem {
         } else if (config.boundsBehavior === 'kill') {
           buffer[offset + 6] = buffer[offset + 7];
           continue;
+        } else if (config.boundsBehavior === 'stick') {
+          pz = max.z;
+          vx = 0; vy = 0; vz = 0;
         }
         collided = true;
       }
@@ -2473,17 +2526,40 @@ export class GPUParticleSystem {
       this.forceFieldBuffer[baseOffset + 6] = field.falloffEnd;
       this.forceFieldBuffer[baseOffset + 7] = this.getFalloffTypeIndex(field.falloffType);
 
-      // Row 2: direction/axis.xyz, extra param (inward force for vortex)
-      this.forceFieldBuffer[baseOffset + 8] = field.direction?.x ?? field.vortexAxis?.x ?? field.windDirection?.x ?? 0;
-      this.forceFieldBuffer[baseOffset + 9] = field.direction?.y ?? field.vortexAxis?.y ?? field.windDirection?.y ?? 0;
-      this.forceFieldBuffer[baseOffset + 10] = field.direction?.z ?? field.vortexAxis?.z ?? field.windDirection?.z ?? 0;
-      this.forceFieldBuffer[baseOffset + 11] = field.inwardForce ?? 0;
+      // Row 2: direction/axis.xyz, extra param (varies by type)
+      // For lorenz: sigma, rho, beta
+      // For magnetic/orbit: axis.xyz, extra param (inward force, orbit radius)
+      // For others: direction.xyz, inward force
+      if (field.type === 'lorenz') {
+        this.forceFieldBuffer[baseOffset + 8] = field.lorenzSigma ?? 10.0;
+        this.forceFieldBuffer[baseOffset + 9] = field.lorenzRho ?? 28.0;
+        this.forceFieldBuffer[baseOffset + 10] = field.lorenzBeta ?? 2.666667;
+        this.forceFieldBuffer[baseOffset + 11] = 0;
+      } else if (field.type === 'orbit' || field.type === 'path') {
+        // Orbit: axis.xyz, orbit radius
+        this.forceFieldBuffer[baseOffset + 8] = field.vortexAxis?.x ?? 0;
+        this.forceFieldBuffer[baseOffset + 9] = field.vortexAxis?.y ?? 1;
+        this.forceFieldBuffer[baseOffset + 10] = field.vortexAxis?.z ?? 0;
+        this.forceFieldBuffer[baseOffset + 11] = field.pathRadius ?? 100;
+      } else {
+        this.forceFieldBuffer[baseOffset + 8] = field.direction?.x ?? field.vortexAxis?.x ?? field.windDirection?.x ?? 0;
+        this.forceFieldBuffer[baseOffset + 9] = field.direction?.y ?? field.vortexAxis?.y ?? field.windDirection?.y ?? 0;
+        this.forceFieldBuffer[baseOffset + 10] = field.direction?.z ?? field.vortexAxis?.z ?? field.windDirection?.z ?? 0;
+        this.forceFieldBuffer[baseOffset + 11] = field.inwardForce ?? 0;
+      }
 
-      // Row 3: extra params (noise scale, speed, linear drag, quad drag, gust strength, gust freq)
-      this.forceFieldBuffer[baseOffset + 12] = field.noiseScale ?? field.linearDrag ?? field.gustStrength ?? 0;
-      this.forceFieldBuffer[baseOffset + 13] = field.noiseSpeed ?? field.quadraticDrag ?? field.gustFrequency ?? 0;
-      this.forceFieldBuffer[baseOffset + 14] = 0;
-      this.forceFieldBuffer[baseOffset + 15] = 0;
+      // Row 3: extra params (noise scale, speed, linear drag, quad drag, gust strength, gust freq, charge)
+      if (field.type === 'magnetic') {
+        this.forceFieldBuffer[baseOffset + 12] = 1.0; // Default charge
+        this.forceFieldBuffer[baseOffset + 13] = 0;
+        this.forceFieldBuffer[baseOffset + 14] = 0;
+        this.forceFieldBuffer[baseOffset + 15] = 0;
+      } else {
+        this.forceFieldBuffer[baseOffset + 12] = field.noiseScale ?? field.linearDrag ?? field.gustStrength ?? 0;
+        this.forceFieldBuffer[baseOffset + 13] = field.noiseSpeed ?? field.quadraticDrag ?? field.gustFrequency ?? 0;
+        this.forceFieldBuffer[baseOffset + 14] = 0;
+        this.forceFieldBuffer[baseOffset + 15] = 0;
+      }
 
       fieldIndex++;
     }
@@ -2502,9 +2578,11 @@ export class GPUParticleSystem {
       case 'turbulence': return 3;
       case 'drag': return 4;
       case 'wind': return 5;
-      case 'curl': return 6;
-      case 'magnetic': return 7;
-      case 'lorenz': return 8;
+      case 'lorenz': return 6;      // Lorenz strange attractor (GPU-accelerated)
+      case 'curl': return 7;        // Curl noise (divergence-free)
+      case 'magnetic': return 8;    // Lorentz force (velocity × B)
+      case 'orbit': return 9;       // Orbital/centripetal force
+      case 'path': return 9;        // Alias for orbit
       default: return 0;
     }
   }
@@ -2931,14 +3009,20 @@ export class GPUParticleSystem {
    * Apply audio modulation to parameters
    */
   private applyAudioModulation(): void {
-    for (const binding of this.config.audioBindings) {
+    for (let i = 0; i < this.config.audioBindings.length; i++) {
+      const binding = this.config.audioBindings[i];
       const featureValue = this.audioFeatures.get(binding.feature) ?? 0;
 
-      // Apply smoothing
-      const smoothed = featureValue;  // Would use exponential smoothing
+      // Apply exponential moving average (EMA) smoothing
+      // smoothing = 0 means no smoothing (instant response)
+      // smoothing = 1 means maximum smoothing (very slow response)
+      const previousSmoothed = this.smoothedAudioValues.get(i) ?? featureValue;
+      const alpha = 1 - (binding.smoothing || 0);  // Convert smoothing to alpha
+      const smoothed = alpha * featureValue + (1 - alpha) * previousSmoothed;
+      this.smoothedAudioValues.set(i, smoothed);
 
       // Map to output range
-      const t = (smoothed - binding.min) / (binding.max - binding.min);
+      const t = Math.max(0, Math.min(1, (smoothed - binding.min) / (binding.max - binding.min)));
       let output = binding.outputMin + t * (binding.outputMax - binding.outputMin);
 
       // Apply curve
@@ -3324,8 +3408,21 @@ export class GPUParticleSystem {
     // If starting from 0, reset first
     if (startFrame === 0) {
       this.reset();
+
+      // Run warmup period - simulate particles before frame 0 to "pre-fill" the system
+      // This creates a more natural looking initial state
+      const warmupFrames = this.config.warmupFrames || 0;
+      if (warmupFrames > 0) {
+        for (let w = 0; w < warmupFrames; w++) {
+          this.step(deltaTime);
+        }
+        // Reset time tracking after warmup (warmup doesn't count as actual frames)
+        this.state.frameCount = 0;
+        this.state.simulationTime = 0;
+      }
+
       this.currentSimulatedFrame = 0;
-      // Cache frame 0
+      // Cache frame 0 (which now includes warmup state)
       this.cacheCurrentState(0);
     }
 

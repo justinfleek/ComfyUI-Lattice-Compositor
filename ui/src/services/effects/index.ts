@@ -9,6 +9,8 @@ import { registerColorEffects } from './colorRenderer';
 import { registerDistortEffects } from './distortRenderer';
 import { registerGenerateEffects } from './generateRenderer';
 import { registerTimeEffects } from './timeRenderer';
+import { registerStylizeEffects } from './stylizeRenderer';
+import { registerAudioVisualizerEffects } from './audioVisualizer';
 
 /**
  * Initialize all effect renderers
@@ -20,6 +22,8 @@ export function initializeEffects(): void {
   registerDistortEffects();
   registerGenerateEffects();
   registerTimeEffects();
+  registerStylizeEffects();
+  registerAudioVisualizerEffects();
 }
 
 // Re-export blur effects
@@ -85,6 +89,21 @@ export {
   applyMasksToLayer
 } from './maskRenderer';
 
+// Re-export stylize effects
+export {
+  pixelSortRenderer,
+  glitchRenderer,
+  vhsRenderer,
+  rgbSplitRenderer,
+  scanlinesRenderer,
+  halftoneRenderer,
+  ditherRenderer,
+  rippleRenderer,
+  embossRenderer,
+  findEdgesRenderer,
+  mosaicRenderer
+} from './stylizeRenderer';
+
 // Matte edge effects (choker, spill suppressor, feathering)
 export {
   applyChoker,
@@ -100,3 +119,14 @@ export {
   type SpillSuppressorParams,
   type EdgeFeatherParams,
 } from './matteEdge';
+
+// Re-export audio visualizer effects
+export {
+  renderAudioSpectrum,
+  renderAudioWaveform,
+  registerAudioVisualizerEffects,
+  AUDIO_SPECTRUM_DEFAULTS,
+  AUDIO_WAVEFORM_DEFAULTS,
+  type AudioSpectrumParams,
+  type AudioWaveformParams
+} from './audioVisualizer';

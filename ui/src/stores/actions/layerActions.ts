@@ -13,6 +13,7 @@ import { markLayerDirty, clearLayerCache } from '@/services/layerEvaluationCache
 import { interpolateProperty } from '@/services/interpolation';
 import { textToVectorFromUrl, type TextToVectorResult, type CharacterVectorGroup } from '@/services/textToVector';
 import type { BezierPath, BezierVertex } from '@/types/shapes';
+import { createDefaultShapeLayerData, createDefaultGroup, createDefaultRectangle, createDefaultFill, createDefaultStroke } from '@/types/shapes';
 
 // ============================================================================
 // STORE INTERFACE
@@ -150,6 +151,30 @@ export function createLayer(
         }],
         gravityWells: [],
         vortices: [],
+        turbulenceFields: [],
+        subEmitters: [],
+        collision: {
+          enabled: false,
+          particleCollision: false,
+          particleRadius: 5,
+          bounciness: 0.8,
+          friction: 0.1,
+          boundaryEnabled: true,
+          boundaryBehavior: 'bounce',
+          boundaryPadding: 0
+        },
+        flocking: {
+          enabled: false,
+          separationWeight: 50,
+          separationRadius: 30,
+          alignmentWeight: 50,
+          alignmentRadius: 50,
+          cohesionWeight: 50,
+          cohesionRadius: 50,
+          maxSpeed: 10,
+          maxForce: 0.5,
+          perceptionAngle: 270
+        },
         modulations: [],
         renderOptions: {
           blendMode: 'additive',
@@ -245,12 +270,18 @@ export function createLayer(
       break;
 
     case 'shape':
-      layerData = {
-        shapes: [],
-        fill: '#ffffff',
-        stroke: '#000000',
-        strokeWidth: 2
-      };
+      // Use proper ShapeLayerData structure with contents array
+      // Shape layers contain groups which contain generators (rect, ellipse) + modifiers (fill, stroke)
+      layerData = createDefaultShapeLayerData();
+      // Add a default group with rectangle + fill + stroke as starter content
+      const defaultGroup = createDefaultGroup();
+      defaultGroup.name = 'Group 1';
+      defaultGroup.contents = [
+        createDefaultRectangle(),
+        createDefaultFill(),
+        createDefaultStroke()
+      ];
+      layerData.contents = [defaultGroup];
       break;
 
     case 'nestedComp':

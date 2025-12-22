@@ -1,6 +1,6 @@
 # WEYL COMPOSITOR - MASTER HANDOFF DOCUMENT
 
-**Date:** December 20, 2025 (v6.1)
+**Date:** December 22, 2025 (v6.2)
 **Purpose:** Complete knowledge transfer for continuing development
 **Target Audience:** Next Claude Code session / Developer
 **Confidence Level:** 100% - All known issues documented
@@ -31,6 +31,41 @@
 - 3D camera with presets
 - Export to matte sequences
 - Deterministic particle simulation
+- **NEW:** Camera tracking import (COLMAP, Blender, Uni3C formats)
+- **NEW:** AI camera motion analysis (VLM-based)
+- **NEW:** Sapiens integration (human depth/pose)
+- **NEW:** Shadow catcher material
+
+### Session Changes (December 22, 2025)
+
+**Camera Tracking System (Tutorial 10)**
+- Created `types/cameraTracking.ts` - Complete camera tracking type definitions
+- Created `services/cameraTrackingImport.ts` - COLMAP, Blender, Weyl JSON import
+- Created `services/trackPointService.ts` - Track point management with selection
+- Created `components/dialogs/CameraTrackingImportDialog.vue` - Drag-drop import UI
+- Created `components/canvas/TrackPointOverlay.vue` - SVG track point visualization
+- Created `components/properties/SolidProperties.vue` - Solid layer properties + shadow catcher
+
+**AI Camera Tracking**
+- Created `services/ai/cameraTrackingAI.ts` - VLM motion analysis, Uni3C format conversion
+- Created `services/ai/sapiensIntegration.ts` - Meta Sapiens depth/pose/segmentation
+
+**Shadow Catcher Material**
+- Modified `engine/layers/SolidLayer.ts` - THREE.ShadowMaterial support
+- Modified `types/project.ts` - SolidLayerData shadow properties
+
+**UI Overhaul**
+- Darker backgrounds (surface-0 #0a0a0a)
+- 15% larger toolbar
+- Thicker text (font-weight 500-600)
+- Consistent Title Case headings
+- Removed redundant Export panel
+- Stacked CollapsiblePanels in right sidebar
+- File size reduction: WorkspaceLayout.vue 3840→1835 lines (52%)
+
+**Tutorial Compatibility**
+- Tutorial 10 (3D Camera Tracker): 15% → 55%
+- Tutorial 11 (CC Particle World): 100%
 
 ### Session Changes (December 20, 2025 - Final)
 

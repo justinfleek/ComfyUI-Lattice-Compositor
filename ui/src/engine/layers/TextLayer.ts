@@ -50,6 +50,11 @@ import {
   type TextOnPathConfig,
   type CharacterPlacement,
 } from '@/services/textOnPath';
+import {
+  calculateCompleteCharacterInfluence,
+  calculateWigglyOffset,
+} from '@/services/textAnimator';
+import type { TextAnimator } from '@/types/project';
 
 // ============================================================================
 // TYPES
@@ -111,6 +116,9 @@ export class TextLayer extends BaseLayer {
   // Character width cache (recalculated when text/font changes)
   private characterWidths: number[] = [];
   private characterWidthsDirty: boolean = true;
+
+  // Text animators (After Effects-style per-character animation)
+  private animators: TextAnimator[] = [];
 
   // Additional evaluator for text-specific properties
   private readonly textEvaluator: KeyframeEvaluator;
@@ -195,7 +203,13 @@ export class TextLayer extends BaseLayer {
 
       // 3D
       perCharacter3D: data?.perCharacter3D ?? false,
+
+      // Text animators
+      animators: data?.animators ?? [],
     };
+
+    // Also store animators separately for quick access
+    this.animators = data?.animators ?? [];
   }
 
   /**
@@ -884,9 +898,19 @@ export class TextLayer extends BaseLayer {
       this.setLastMargin(margin);
     }
 
-    // Per-character transforms
+    // Per-character transforms (from characterTransforms property)
     if (this.characterTransforms?.animated && this.perCharacterGroup) {
       this.applyCharacterTransforms(frame);
+    }
+
+    // Apply text animators (After Effects-style per-character animation)
+    // This must come after other evaluations so it can modify character positions
+    if (this.animators.length > 0) {
+      // Enable per-character mode if needed (animators require individual char meshes)
+      if (!this.perCharacterGroup) {
+        this.enablePerCharacter3D();
+      }
+      this.applyAnimatorsToCharacters(frame, 16); // TODO: get fps from composition
     }
   }
 
@@ -965,6 +989,152 @@ export class TextLayer extends BaseLayer {
     }
   }
 
+  /**
+   * Apply text animators to per-character meshes (After Effects-style animation)
+   *
+   * This is the key integration point for the textAnimator service.
+   * For each enabled animator, calculates per-character influence and applies
+   * the animator's property values blended by that influence.
+   *
+   * @param frame Current frame number
+   * @param fps Frames per second (default 16)
+   */
+  private applyAnimatorsToCharacters(frame: number, fps: number = 16): void {
+    if (!this.perCharacterGroup || this.characterMeshes.length === 0) {
+      return;
+    }
+
+    if (this.animators.length === 0) {
+      return;
+    }
+
+    const totalChars = this.characterMeshes.length;
+
+    // Store original states for blending (reset from base values each frame)
+    const originalStates = this.characterMeshes.map((mesh) => ({
+      posX: mesh.position.x,
+      posY: mesh.position.y,
+      posZ: mesh.position.z,
+      rotX: mesh.rotation.x,
+      rotY: mesh.rotation.y,
+      rotZ: mesh.rotation.z,
+      scaleX: mesh.scale.x,
+      scaleY: mesh.scale.y,
+      opacity: mesh.fillOpacity ?? 1,
+      color: mesh.color,
+      letterSpacing: mesh.letterSpacing ?? 0,
+    }));
+
+    // Apply each animator
+    for (const animator of this.animators) {
+      if (!animator.enabled) continue;
+
+      const props = animator.properties;
+
+      for (let i = 0; i < totalChars; i++) {
+        const charMesh = this.characterMeshes[i];
+        const original = originalStates[i];
+
+        // Calculate influence (0 = normal, 1 = fully affected by animator)
+        const influence = calculateCompleteCharacterInfluence(
+          i,
+          totalChars,
+          animator,
+          frame,
+          fps
+        );
+
+        // Skip if no influence
+        if (influence <= 0.001) continue;
+
+        // Apply Position offset
+        if (props.position) {
+          const posVal = this.getAnimatorPropertyValue(props.position, frame);
+          charMesh.position.x = original.posX + posVal.x * influence;
+          charMesh.position.y = original.posY + posVal.y * influence;
+        }
+
+        // Apply Scale
+        if (props.scale) {
+          const scaleVal = this.getAnimatorPropertyValue(props.scale, frame);
+          // Scale is percentage-based (100 = no change)
+          // Blend from original scale to animator scale value
+          const scaleX = original.scaleX + ((scaleVal.x / 100) - 1) * original.scaleX * influence;
+          const scaleY = original.scaleY + ((scaleVal.y / 100) - 1) * original.scaleY * influence;
+          charMesh.scale.set(Math.max(0.001, scaleX), Math.max(0.001, scaleY), 1);
+        }
+
+        // Apply Rotation
+        if (props.rotation) {
+          const rotVal = this.getAnimatorPropertyValue(props.rotation, frame);
+          const rotRad = THREE.MathUtils.degToRad(rotVal);
+          charMesh.rotation.z = original.rotZ + rotRad * influence;
+        }
+
+        // Apply Opacity
+        if (props.opacity !== undefined) {
+          const opacityVal = this.getAnimatorPropertyValue(props.opacity, frame);
+          // Opacity is 0-100, influence determines blend
+          // At influence=0: original opacity, at influence=1: animator opacity value
+          const targetOpacity = opacityVal / 100;
+          const blendedOpacity = original.opacity * (1 - influence) + targetOpacity * influence;
+          charMesh.fillOpacity = Math.max(0, Math.min(1, blendedOpacity));
+          charMesh.outlineOpacity = charMesh.fillOpacity;
+        }
+
+        // Apply Fill Color
+        if (props.fillColor) {
+          const colorVal = this.getAnimatorPropertyValue(props.fillColor, frame);
+          // Blend colors using influence
+          // For simplicity, we'll use the color when influence > 0.5
+          if (influence > 0.5) {
+            charMesh.color = colorVal;
+          }
+        }
+
+        // Apply Tracking offset
+        if (props.tracking) {
+          const trackingVal = this.getAnimatorPropertyValue(props.tracking, frame);
+          // Tracking is in thousandths of an em, convert to letter spacing
+          charMesh.letterSpacing = original.letterSpacing + (trackingVal / 1000) * influence;
+        }
+
+        // Apply Wiggly position offset (if wiggly selector is enabled)
+        if (animator.wigglySelector?.enabled) {
+          const wiggleOffset = calculateWigglyOffset(
+            i,
+            animator.wigglySelector,
+            frame,
+            fps
+          );
+          charMesh.position.x += wiggleOffset.x * this.textData.fontSize * influence;
+          charMesh.position.y += wiggleOffset.y * this.textData.fontSize * influence;
+        }
+
+        // Apply Blur (if supported via material)
+        if (props.blur) {
+          // Blur requires special handling - Troika doesn't support per-character blur
+          // Store blur value for potential post-processing
+          const blurVal = this.getAnimatorPropertyValue(props.blur, frame);
+          (charMesh as any).__blurX = blurVal.x * influence;
+          (charMesh as any).__blurY = blurVal.y * influence;
+        }
+      }
+    }
+  }
+
+  /**
+   * Get the current value of an animator property (animated or static)
+   */
+  private getAnimatorPropertyValue<T>(prop: AnimatableProperty<T>, frame: number): T {
+    if (!prop.animated || prop.keyframes.length === 0) {
+      return prop.value;
+    }
+
+    // Use the text evaluator to interpolate keyframes
+    return this.textEvaluator.evaluate(prop, frame);
+  }
+
   // ============================================================================
   // LAYER UPDATE
   // ============================================================================
@@ -1037,6 +1207,16 @@ export class TextLayer extends BaseLayer {
       }
       if (data.fillAndStroke !== undefined) {
         this.setFillAndStroke(data.fillAndStroke);
+      }
+
+      // Update animators array
+      if (data.animators !== undefined) {
+        this.animators = data.animators;
+        this.textData.animators = data.animators;
+        // Enable per-character mode if animators exist
+        if (this.animators.length > 0 && !this.perCharacterGroup) {
+          this.enablePerCharacter3D();
+        }
       }
     }
 

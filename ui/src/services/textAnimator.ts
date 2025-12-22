@@ -3,17 +3,24 @@
  *
  * Provides After Effects-style text animation with:
  * - Range selectors (character, word, line based)
+ * - Wiggly selectors (randomization)
+ * - Expression selectors (programmatic control)
  * - Per-character property animation
  * - Built-in animation presets
+ *
+ * Tutorial 7: Kinetic Typography - Complete Implementation
  */
 
 import type {
   TextAnimator,
   TextRangeSelector,
+  TextWigglySelector,
+  TextExpressionSelector,
   TextAnimatorProperties,
   TextAnimatorPresetType,
   AnimatableProperty,
 } from '@/types/project';
+import { SeededRandom } from './particleSystem';
 
 // ============================================================================
 // UTILITY FUNCTIONS
@@ -45,9 +52,33 @@ export const DEFAULT_RANGE_SELECTOR: TextRangeSelector = {
   offset: createAnimatableProp(0, 'Offset'),
   basedOn: 'characters',
   shape: 'square',
+  selectorMode: 'add',
+  amount: 100,
+  smoothness: 100,
   randomizeOrder: false,
   randomSeed: 12345,
   ease: { high: 100, low: 0 },
+};
+
+// Default Wiggly Selector (Tutorial 7)
+export const DEFAULT_WIGGLY_SELECTOR: TextWigglySelector = {
+  enabled: false,
+  mode: 'add',
+  maxAmount: 100,
+  minAmount: 0,
+  wigglesPerSecond: 2,
+  correlation: 50,
+  lockDimensions: false,
+  basedOn: 'characters',
+  randomSeed: 54321,
+};
+
+// Default Expression Selector (Tutorial 7)
+export const DEFAULT_EXPRESSION_SELECTOR: TextExpressionSelector = {
+  enabled: false,
+  mode: 'add',
+  amountExpression: 'selectorValue * textIndex / textTotal',
+  basedOn: 'characters',
 };
 
 export const DEFAULT_ANIMATOR_PROPERTIES: TextAnimatorProperties = {};
@@ -416,9 +447,13 @@ export function calculateCharacterInfluence(
   const endValue = getRangeSelectorValue(rangeSelector.end, frame);
   const offsetValue = getRangeSelectorValue(rangeSelector.offset, frame);
 
-  // Apply offset
-  const effectiveStart = (startValue + offsetValue) % 100;
-  const effectiveEnd = (endValue + offsetValue) % 100;
+  // Apply offset with proper wrapping (100 should stay as 100, not wrap to 0)
+  const wrapTo100 = (val: number): number => {
+    const mod = ((val % 100) + 100) % 100;
+    return mod === 0 && val !== 0 ? 100 : mod;
+  };
+  const effectiveStart = wrapTo100(startValue + offsetValue);
+  const effectiveEnd = wrapTo100(endValue + offsetValue);
 
   // Calculate character position (0-100)
   const charPosition = (charIndex / Math.max(1, totalChars - 1)) * 100;
@@ -505,6 +540,317 @@ function applyShape(
   const easeRange = (ease.high - ease.low) / 100;
   return ease.low / 100 + value * easeRange;
 }
+
+// ============================================================================
+// WIGGLY SELECTOR CALCULATION (Tutorial 7)
+// ============================================================================
+
+/**
+ * Calculate wiggly influence for a character
+ * Creates deterministic randomness that changes over time
+ */
+export function calculateWigglyInfluence(
+  charIndex: number,
+  totalChars: number,
+  wigglySelector: TextWigglySelector,
+  frame: number,
+  fps: number = 16
+): number {
+  if (!wigglySelector.enabled) return 0;
+
+  const time = frame / fps;
+  const rng = new SeededRandom(wigglySelector.randomSeed + charIndex);
+
+  // Calculate base random value for this character
+  const baseRandom = rng.next();
+
+  // Calculate temporal variation based on wiggles/second
+  const wigglePhase = time * wigglySelector.wigglesPerSecond * Math.PI * 2;
+
+  // Apply correlation - blend between individual and group movement
+  const correlationFactor = wigglySelector.correlation / 100;
+  const groupPhase = time * wigglySelector.wigglesPerSecond * Math.PI * 2;
+  const individualPhase = wigglePhase + baseRandom * Math.PI * 2;
+
+  // Interpolate between individual and group movement
+  const phase = individualPhase * (1 - correlationFactor) + groupPhase * correlationFactor;
+
+  // Calculate wiggle value (-1 to 1)
+  const wiggleValue = Math.sin(phase);
+
+  // Map to min/max amount range
+  const range = wigglySelector.maxAmount - wigglySelector.minAmount;
+  const amount = wigglySelector.minAmount + ((wiggleValue + 1) / 2) * range;
+
+  return amount / 100; // Normalize to 0-1
+}
+
+/**
+ * Calculate wiggly offset for position/scale properties
+ * Returns {x, y} offsets that can be applied to properties
+ */
+export function calculateWigglyOffset(
+  charIndex: number,
+  wigglySelector: TextWigglySelector,
+  frame: number,
+  fps: number = 16
+): { x: number; y: number } {
+  if (!wigglySelector.enabled) return { x: 0, y: 0 };
+
+  const time = frame / fps;
+  const rng = new SeededRandom(wigglySelector.randomSeed + charIndex * 1000);
+
+  const baseRandomX = rng.next();
+  const baseRandomY = wigglySelector.lockDimensions ? baseRandomX : rng.next();
+
+  const wigglePhase = time * wigglySelector.wigglesPerSecond * Math.PI * 2;
+
+  // Apply correlation
+  const correlationFactor = wigglySelector.correlation / 100;
+  const groupPhaseX = Math.sin(wigglePhase);
+  // When lockDimensions is true, use same group phase for both axes
+  const groupPhaseY = wigglySelector.lockDimensions ? groupPhaseX : Math.cos(wigglePhase);
+
+  const individualPhaseX = Math.sin(wigglePhase + baseRandomX * Math.PI * 2);
+  const individualPhaseY = Math.sin(wigglePhase + baseRandomY * Math.PI * 2);
+
+  const x = individualPhaseX * (1 - correlationFactor) + groupPhaseX * correlationFactor;
+  const y = individualPhaseY * (1 - correlationFactor) + groupPhaseY * correlationFactor;
+
+  const amount = (wigglySelector.maxAmount + wigglySelector.minAmount) / 2 / 100;
+
+  return { x: x * amount, y: y * amount };
+}
+
+// ============================================================================
+// EXPRESSION SELECTOR CALCULATION (Tutorial 7)
+// ============================================================================
+
+/**
+ * Evaluate expression selector for a character
+ * Provides textIndex, textTotal, selectorValue, time, frame variables
+ */
+export function calculateExpressionInfluence(
+  charIndex: number,
+  totalChars: number,
+  expressionSelector: TextExpressionSelector,
+  rangeValue: number,
+  frame: number,
+  fps: number = 16
+): number {
+  if (!expressionSelector.enabled) return rangeValue;
+
+  const time = frame / fps;
+
+  // Create expression context
+  const context = {
+    textIndex: charIndex,
+    textTotal: totalChars,
+    selectorValue: rangeValue * 100, // Convert to 0-100
+    time,
+    frame,
+    // Math functions
+    Math,
+    sin: Math.sin,
+    cos: Math.cos,
+    abs: Math.abs,
+    floor: Math.floor,
+    ceil: Math.ceil,
+    round: Math.round,
+    min: Math.min,
+    max: Math.max,
+    pow: Math.pow,
+    sqrt: Math.sqrt,
+    random: () => {
+      // Deterministic "random" based on char index and frame
+      const seed = charIndex * 1000 + frame;
+      return ((Math.sin(seed) * 10000) % 1 + 1) % 1;
+    },
+    // AE-style helper functions
+    linear: (t: number, tMin: number, tMax: number, vMin: number, vMax: number) => {
+      if (t <= tMin) return vMin;
+      if (t >= tMax) return vMax;
+      return vMin + (vMax - vMin) * ((t - tMin) / (tMax - tMin));
+    },
+    ease: (t: number, tMin: number, tMax: number, vMin: number, vMax: number) => {
+      if (t <= tMin) return vMin;
+      if (t >= tMax) return vMax;
+      const progress = (t - tMin) / (tMax - tMin);
+      const eased = progress * progress * (3 - 2 * progress);
+      return vMin + (vMax - vMin) * eased;
+    },
+  };
+
+  try {
+    // Create function from expression
+    const func = new Function(
+      ...Object.keys(context),
+      `return ${expressionSelector.amountExpression}`
+    );
+
+    const result = func(...Object.values(context));
+
+    // Clamp result to 0-100 and normalize to 0-1
+    return Math.max(0, Math.min(100, Number(result) || 0)) / 100;
+  } catch (e) {
+    console.warn('[TextAnimator] Expression evaluation error:', e);
+    return rangeValue;
+  }
+}
+
+// ============================================================================
+// SELECTOR MODE COMBINATION (Tutorial 7)
+// ============================================================================
+
+type SelectorMode = 'add' | 'subtract' | 'intersect' | 'min' | 'max' | 'difference';
+
+/**
+ * Combine two selector values based on mode
+ */
+export function combineSelectorValues(
+  baseValue: number,
+  newValue: number,
+  mode: SelectorMode
+): number {
+  switch (mode) {
+    case 'add':
+      return Math.min(1, baseValue + newValue);
+    case 'subtract':
+      return Math.max(0, baseValue - newValue);
+    case 'intersect':
+      return baseValue * newValue;
+    case 'min':
+      return Math.min(baseValue, newValue);
+    case 'max':
+      return Math.max(baseValue, newValue);
+    case 'difference':
+      return Math.abs(baseValue - newValue);
+    default:
+      return newValue;
+  }
+}
+
+// ============================================================================
+// COMPREHENSIVE CHARACTER INFLUENCE (Tutorial 7)
+// ============================================================================
+
+/**
+ * Calculate the complete influence for a character considering all selectors
+ * This is the main entry point for per-character animation
+ */
+export function calculateCompleteCharacterInfluence(
+  charIndex: number,
+  totalChars: number,
+  animator: TextAnimator,
+  frame: number,
+  fps: number = 16
+): number {
+  // Start with range selector
+  let influence = calculateCharacterInfluence(
+    charIndex,
+    totalChars,
+    animator.rangeSelector,
+    frame
+  );
+
+  // Apply amount modifier
+  const amount = animator.rangeSelector.amount ?? 100;
+  influence *= amount / 100;
+
+  // Apply smoothness (interpolate towards 0.5 for more smoothing)
+  const smoothness = animator.rangeSelector.smoothness ?? 100;
+  if (smoothness < 100) {
+    const smoothFactor = smoothness / 100;
+    influence = influence * smoothFactor + 0.5 * (1 - smoothFactor);
+  }
+
+  // Apply Wiggly Selector if enabled
+  if (animator.wigglySelector?.enabled) {
+    const wigglyInfluence = calculateWigglyInfluence(
+      charIndex,
+      totalChars,
+      animator.wigglySelector,
+      frame,
+      fps
+    );
+    influence = combineSelectorValues(
+      influence,
+      wigglyInfluence,
+      animator.wigglySelector.mode
+    );
+  }
+
+  // Apply Expression Selector if enabled
+  if (animator.expressionSelector?.enabled) {
+    influence = calculateExpressionInfluence(
+      charIndex,
+      totalChars,
+      animator.expressionSelector,
+      influence,
+      frame,
+      fps
+    );
+  }
+
+  return Math.max(0, Math.min(1, influence));
+}
+
+// ============================================================================
+// CREATE SELECTOR HELPERS (Tutorial 7)
+// ============================================================================
+
+export function createWigglySelector(overrides?: Partial<TextWigglySelector>): TextWigglySelector {
+  return {
+    ...DEFAULT_WIGGLY_SELECTOR,
+    ...overrides,
+    randomSeed: overrides?.randomSeed ?? Math.floor(Math.random() * 99999),
+  };
+}
+
+export function createExpressionSelector(
+  expression: string = DEFAULT_EXPRESSION_SELECTOR.amountExpression,
+  overrides?: Partial<TextExpressionSelector>
+): TextExpressionSelector {
+  return {
+    ...DEFAULT_EXPRESSION_SELECTOR,
+    amountExpression: expression,
+    ...overrides,
+    enabled: true,
+  };
+}
+
+// ============================================================================
+// EXPRESSION PRESETS (Tutorial 7)
+// ============================================================================
+
+export const EXPRESSION_PRESETS = {
+  // Wave animation - characters move in sine wave
+  wave: 'Math.sin(time * 3 + textIndex * 0.5) * 50 + 50',
+
+  // Staggered reveal - each character delays by index
+  staggeredReveal: 'linear(time, textIndex * 0.1, textIndex * 0.1 + 0.3, 0, 100)',
+
+  // Random reveal - characters appear randomly
+  randomReveal: 'random() * 100 < linear(time, 0, 2, 0, 100) ? 100 : 0',
+
+  // Cascade from center - center characters first
+  cascadeCenter: '100 - Math.abs(textIndex - textTotal/2) / (textTotal/2) * 100',
+
+  // Bounce effect - uses time for bounce animation
+  bounce: 'Math.abs(Math.sin(time * 5 + textIndex * 0.3)) * 100',
+
+  // Linear gradient across text
+  linearGradient: 'textIndex / textTotal * 100',
+
+  // Inverse gradient
+  inverseGradient: '(1 - textIndex / textTotal) * 100',
+
+  // Pulse - all characters pulse together
+  pulse: '(Math.sin(time * 4) + 1) / 2 * 100',
+
+  // Alternating - even/odd characters
+  alternating: 'textIndex % 2 === 0 ? 100 : 0',
+};
 
 // ============================================================================
 // EXPORT PRESETS LIST

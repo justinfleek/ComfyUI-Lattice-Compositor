@@ -169,7 +169,13 @@ export class ParticleSimulationController {
     // Create the underlying particle system with the SAME SEED for determinism
     this.system = new ParticleSystem(config, seed);
 
-    // Create initial checkpoint at frame 0
+    // Run warmup period - simulate particles before frame 0 to "pre-fill" the system
+    // This creates a more natural looking initial state (e.g., snow already falling)
+    if (config.warmupPeriod && config.warmupPeriod > 0) {
+      this.system.warmup();
+    }
+
+    // Create initial checkpoint at frame 0 (which now includes warmup state)
     this.createCheckpoint(0);
   }
 

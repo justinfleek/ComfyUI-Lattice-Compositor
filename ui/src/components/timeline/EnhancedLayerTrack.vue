@@ -290,7 +290,7 @@ const groupedProperties = computed(() => {
     if (prop) transformProps.push({ path, name, property: prop });
   };
 
-  add('transform.anchorPoint', 'Anchor Point', t.anchorPoint);
+  add('transform.anchorPoint', 'Origin', t.anchorPoint);
   add('transform.position', 'Position', t.position);
 
   // Z Position: Use 'transform.position' path - PropertyTrack handles Z extraction based on name

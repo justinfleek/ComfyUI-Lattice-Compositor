@@ -317,6 +317,20 @@ export interface VortexConfig {
   enabled: boolean;
 }
 
+// 2D Lorenz-like strange attractor for chaotic motion
+export interface LorenzAttractorConfig {
+  id: string;
+  name: string;
+  x: number;           // Center position X
+  y: number;           // Center position Y
+  sigma: number;       // Lorenz sigma parameter (default: 10)
+  rho: number;         // Lorenz rho parameter (default: 28)
+  beta: number;        // Lorenz beta parameter (default: 2.667)
+  strength: number;    // Force strength multiplier
+  radius: number;      // Influence radius
+  enabled: boolean;
+}
+
 export interface ParticleModulation {
   id: string;
   emitterId: string;
@@ -593,6 +607,7 @@ export class ParticleSystem {
   private emitters: Map<string, EmitterConfig> = new Map();
   private gravityWells: Map<string, GravityWellConfig> = new Map();
   private vortices: Map<string, VortexConfig> = new Map();
+  private lorenzAttractors: Map<string, LorenzAttractorConfig> = new Map();
   private modulations: ParticleModulation[] = [];
   private config: ParticleSystemConfig;
   private boundaryMask: ImageData | null = null;
@@ -814,6 +829,29 @@ export class ParticleSystem {
   }
 
   // ============================================================================
+  // Lorenz Attractor Management
+  // ============================================================================
+
+  addLorenzAttractor(config: LorenzAttractorConfig): void {
+    this.lorenzAttractors.set(config.id, { ...config });
+  }
+
+  updateLorenzAttractor(id: string, updates: Partial<LorenzAttractorConfig>): void {
+    const attractor = this.lorenzAttractors.get(id);
+    if (attractor) {
+      Object.assign(attractor, updates);
+    }
+  }
+
+  removeLorenzAttractor(id: string): void {
+    this.lorenzAttractors.delete(id);
+  }
+
+  getLorenzAttractors(): LorenzAttractorConfig[] {
+    return Array.from(this.lorenzAttractors.values());
+  }
+
+  // ============================================================================
   // Modulation Management
   // ============================================================================
 
@@ -968,6 +1006,38 @@ export class ParticleSystem {
           const inward = vortex.inwardPull * 0.0001 * influence;
           p.vx += nx * inward * deltaTime;
           p.vy += ny * inward * deltaTime;
+        }
+      });
+
+      // d2. Apply lorenz attractors (strange attractors for chaotic motion)
+      this.lorenzAttractors.forEach(attractor => {
+        if (!attractor.enabled) return;
+
+        const dx = p.x - attractor.x;
+        const dy = p.y - attractor.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < attractor.radius && dist > 0.001) {
+          const influence = 1 - (dist / attractor.radius);
+
+          // Lorenz attractor equations (adapted for 2D)
+          // We use particle's local position relative to attractor as x,y
+          // and simulate z as a function of distance from center
+          const sigma = attractor.sigma;
+          const rho = attractor.rho;
+          const beta = attractor.beta;
+
+          // Simulate z-coordinate based on distance (creates 3D-like behavior in 2D)
+          const pseudoZ = dist * 0.1;
+
+          // Lorenz equations
+          const ldx = sigma * (dy - dx);
+          const ldy = dx * (rho - pseudoZ) - dy;
+
+          // Apply force based on lorenz dynamics
+          const strength = attractor.strength * 0.001 * influence;
+          p.vx += ldx * strength * deltaTime;
+          p.vy += ldy * strength * deltaTime;
         }
       });
 

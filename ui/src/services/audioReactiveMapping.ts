@@ -40,6 +40,21 @@ export type TargetParameter =
   | 'path.position'
   // Generic layer properties
   | 'layer.opacity' | 'layer.scale' | 'layer.rotation' | 'layer.x' | 'layer.y'
+  // Extended layer properties (inspired by filliptm's ComfyUI_Fill-Nodes)
+  // Attribution: https://github.com/filliptm/ComfyUI_Fill-Nodes
+  | 'layer.scaleX' | 'layer.scaleY'        // Non-uniform scale (breathing effect)
+  | 'layer.brightness' | 'layer.saturation' // Color adjustments
+  | 'layer.contrast' | 'layer.hue'          // More color controls
+  | 'layer.blur'                            // Blur intensity
+  // Video layer properties
+  | 'video.playbackSpeed'                   // Time stretch/speed reactive
+  // Effect parameters (applied as effect modifiers)
+  | 'effect.glowIntensity' | 'effect.glowRadius'
+  | 'effect.edgeGlowIntensity'              // Edge glow reactive
+  | 'effect.glitchAmount'                   // Glitch reactive
+  | 'effect.rgbSplitAmount'                 // RGB split reactive
+  // Camera properties
+  | 'camera.fov' | 'camera.dollyZ' | 'camera.shake'
   // Spline control point properties (dynamic index)
   // Format: spline.controlPoint.{index}.{x|y|depth}
   | `spline.controlPoint.${number}.x`
@@ -613,10 +628,26 @@ export function getTargetDisplayName(target: TargetParameter): string {
     'depthflow.depthScale': 'Depthflow: Depth Scale',
     'path.position': 'Path: Position',
     'layer.opacity': 'Layer: Opacity',
-    'layer.scale': 'Layer: Scale',
+    'layer.scale': 'Layer: Scale (Uniform)',
+    'layer.scaleX': 'Layer: Scale X',
+    'layer.scaleY': 'Layer: Scale Y',
     'layer.rotation': 'Layer: Rotation',
     'layer.x': 'Layer: X Position',
-    'layer.y': 'Layer: Y Position'
+    'layer.y': 'Layer: Y Position',
+    'layer.brightness': 'Layer: Brightness',
+    'layer.saturation': 'Layer: Saturation',
+    'layer.contrast': 'Layer: Contrast',
+    'layer.hue': 'Layer: Hue Shift',
+    'layer.blur': 'Layer: Blur',
+    'video.playbackSpeed': 'Video: Playback Speed',
+    'effect.glowIntensity': 'Effect: Glow Intensity',
+    'effect.glowRadius': 'Effect: Glow Radius',
+    'effect.edgeGlowIntensity': 'Effect: Edge Glow',
+    'effect.glitchAmount': 'Effect: Glitch Amount',
+    'effect.rgbSplitAmount': 'Effect: RGB Split',
+    'camera.fov': 'Camera: Field of View',
+    'camera.dollyZ': 'Camera: Dolly Z',
+    'camera.shake': 'Camera: Shake Intensity'
   };
   return names[target] || target;
 }
@@ -665,7 +696,13 @@ export function getAllTargets(): TargetParameter[] {
     'depthflow.zoom', 'depthflow.offsetX', 'depthflow.offsetY',
     'depthflow.rotation', 'depthflow.depthScale',
     'path.position',
-    'layer.opacity', 'layer.scale', 'layer.rotation', 'layer.x', 'layer.y'
+    'layer.opacity', 'layer.scale', 'layer.scaleX', 'layer.scaleY',
+    'layer.rotation', 'layer.x', 'layer.y',
+    'layer.brightness', 'layer.saturation', 'layer.contrast', 'layer.hue', 'layer.blur',
+    'video.playbackSpeed',
+    'effect.glowIntensity', 'effect.glowRadius', 'effect.edgeGlowIntensity',
+    'effect.glitchAmount', 'effect.rgbSplitAmount',
+    'camera.fov', 'camera.dollyZ', 'camera.shake'
   ];
 }
 
@@ -684,8 +721,25 @@ export function getTargetsByCategory(): Record<string, TargetParameter[]> {
       'depthflow.rotation', 'depthflow.depthScale'
     ],
     'Path': ['path.position'],
-    'Layer': [
-      'layer.opacity', 'layer.scale', 'layer.rotation', 'layer.x', 'layer.y'
+    'Layer Transform': [
+      'layer.opacity', 'layer.scale', 'layer.scaleX', 'layer.scaleY',
+      'layer.rotation', 'layer.x', 'layer.y'
+    ],
+    // Extended targets inspired by filliptm's ComfyUI_Fill-Nodes
+    // Attribution: https://github.com/filliptm/ComfyUI_Fill-Nodes
+    'Layer Color': [
+      'layer.brightness', 'layer.saturation', 'layer.contrast', 'layer.hue'
+    ],
+    'Layer Effects': [
+      'layer.blur',
+      'effect.glowIntensity', 'effect.glowRadius', 'effect.edgeGlowIntensity',
+      'effect.glitchAmount', 'effect.rgbSplitAmount'
+    ],
+    'Video': [
+      'video.playbackSpeed'
+    ],
+    'Camera': [
+      'camera.fov', 'camera.dollyZ', 'camera.shake'
     ]
     // Note: 'Spline' targets are generated dynamically based on control point count
     // Use createSplineControlPointTargets() to get targets for a specific spline
@@ -707,6 +761,280 @@ export function createSplineControlPointTargets(controlPointCount: number): Targ
   return targets;
 }
 
+// ============================================================================
+// Audio Reactive Layer Application
+// (Inspired by filliptm's ComfyUI_Fill-Nodes)
+// Attribution: https://github.com/filliptm/ComfyUI_Fill-Nodes
+// ============================================================================
+
+/**
+ * Represents the audio-reactive modifiers for a layer
+ */
+export interface AudioReactiveModifiers {
+  // Transform
+  opacity?: number;         // 0-1 additive
+  scaleX?: number;          // Additive to base scale
+  scaleY?: number;          // Additive to base scale
+  scaleUniform?: number;    // Additive to both X and Y
+  rotation?: number;        // Additive degrees
+  x?: number;               // Additive position
+  y?: number;               // Additive position
+
+  // Color adjustments (all additive to base)
+  brightness?: number;      // -1 to 1
+  saturation?: number;      // -1 to 1
+  contrast?: number;        // -1 to 1
+  hue?: number;             // -180 to 180 degrees
+
+  // Effects
+  blur?: number;            // 0-100 radius
+  glowIntensity?: number;   // 0-10
+  glowRadius?: number;      // 0-100
+  edgeGlowIntensity?: number;
+  glitchAmount?: number;    // 0-10
+  rgbSplitAmount?: number;  // 0-50
+
+  // Video
+  playbackSpeed?: number;   // Multiplier (1.0 = normal)
+
+  // Camera
+  fov?: number;             // Additive FOV degrees
+  dollyZ?: number;          // Additive Z position
+  shake?: number;           // 0-1 shake intensity
+}
+
+/**
+ * Collect all audio-reactive modifiers for a layer at a specific frame
+ */
+export function collectAudioReactiveModifiers(
+  mapper: AudioReactiveMapper,
+  layerId: string,
+  frame: number
+): AudioReactiveModifiers {
+  const values = mapper.getValuesForLayerAtFrame(layerId, frame);
+  const modifiers: AudioReactiveModifiers = {};
+
+  // Map target parameters to modifier properties
+  const targetToModifier: Record<string, keyof AudioReactiveModifiers> = {
+    'layer.opacity': 'opacity',
+    'layer.scale': 'scaleUniform',
+    'layer.scaleX': 'scaleX',
+    'layer.scaleY': 'scaleY',
+    'layer.rotation': 'rotation',
+    'layer.x': 'x',
+    'layer.y': 'y',
+    'layer.brightness': 'brightness',
+    'layer.saturation': 'saturation',
+    'layer.contrast': 'contrast',
+    'layer.hue': 'hue',
+    'layer.blur': 'blur',
+    'video.playbackSpeed': 'playbackSpeed',
+    'effect.glowIntensity': 'glowIntensity',
+    'effect.glowRadius': 'glowRadius',
+    'effect.edgeGlowIntensity': 'edgeGlowIntensity',
+    'effect.glitchAmount': 'glitchAmount',
+    'effect.rgbSplitAmount': 'rgbSplitAmount',
+    'camera.fov': 'fov',
+    'camera.dollyZ': 'dollyZ',
+    'camera.shake': 'shake'
+  };
+
+  for (const [target, value] of values.entries()) {
+    const modifierKey = targetToModifier[target];
+    if (modifierKey) {
+      modifiers[modifierKey] = value;
+    }
+  }
+
+  return modifiers;
+}
+
+/**
+ * Preset configurations for common audio-reactive effects
+ * Based on filliptm's audio reactive nodes
+ */
+export const AUDIO_REACTIVE_PRESETS: Record<string, Partial<AudioMapping>[]> = {
+  // Bass-driven breathing/pulsing effect
+  'bass-pulse': [
+    {
+      feature: 'bass',
+      target: 'layer.scaleX',
+      sensitivity: 0.3,
+      min: 0,
+      max: 0.2,
+      smoothing: 0.3,
+      curve: 'smoothstep'
+    },
+    {
+      feature: 'bass',
+      target: 'layer.scaleY',
+      sensitivity: 0.3,
+      min: 0,
+      max: 0.2,
+      smoothing: 0.3,
+      curve: 'smoothstep'
+    }
+  ],
+
+  // Beat-synced brightness flash
+  'beat-flash': [
+    {
+      feature: 'onsets',
+      target: 'layer.brightness',
+      sensitivity: 1.5,
+      min: 0,
+      max: 0.5,
+      smoothing: 0.1,
+      release: 0.8,
+      curve: 'exponential'
+    }
+  ],
+
+  // High frequency saturation boost
+  'high-saturation': [
+    {
+      feature: 'high',
+      target: 'layer.saturation',
+      sensitivity: 1.0,
+      min: 0,
+      max: 0.3,
+      smoothing: 0.4,
+      curve: 'linear'
+    }
+  ],
+
+  // Drum-driven glitch effect
+  'drum-glitch': [
+    {
+      feature: 'spectralFlux',
+      target: 'effect.glitchAmount',
+      sensitivity: 2.0,
+      min: 0,
+      max: 5,
+      smoothing: 0.1,
+      release: 0.9,
+      threshold: 0.3,
+      curve: 'exponential'
+    },
+    {
+      feature: 'spectralFlux',
+      target: 'effect.rgbSplitAmount',
+      sensitivity: 15,
+      min: 0,
+      max: 20,
+      smoothing: 0.1,
+      release: 0.9,
+      threshold: 0.3,
+      curve: 'exponential'
+    }
+  ],
+
+  // Music-driven camera movement
+  'audio-camera': [
+    {
+      feature: 'bass',
+      target: 'camera.dollyZ',
+      sensitivity: 50,
+      min: 0,
+      max: 30,
+      smoothing: 0.5,
+      curve: 'smoothstep'
+    },
+    {
+      feature: 'spectralFlux',
+      target: 'camera.shake',
+      sensitivity: 0.5,
+      min: 0,
+      max: 0.3,
+      smoothing: 0.2,
+      threshold: 0.4,
+      curve: 'exponential'
+    }
+  ],
+
+  // Speed reactive video (slow-mo on bass drops)
+  'bass-slowmo': [
+    {
+      feature: 'bass',
+      target: 'video.playbackSpeed',
+      sensitivity: -0.5,
+      offset: 1.0,
+      min: 0.3,
+      max: 1.0,
+      smoothing: 0.4,
+      invert: false,
+      curve: 'smoothstep'
+    }
+  ],
+
+  // Amplitude-driven glow
+  'amplitude-glow': [
+    {
+      feature: 'amplitude',
+      target: 'effect.glowIntensity',
+      sensitivity: 3,
+      min: 0,
+      max: 3,
+      smoothing: 0.3,
+      curve: 'exponential'
+    },
+    {
+      feature: 'amplitude',
+      target: 'effect.glowRadius',
+      sensitivity: 30,
+      min: 5,
+      max: 40,
+      smoothing: 0.3,
+      curve: 'exponential'
+    }
+  ],
+
+  // Spectral blur effect
+  'spectral-blur': [
+    {
+      feature: 'spectralCentroid',
+      target: 'layer.blur',
+      sensitivity: 20,
+      min: 0,
+      max: 15,
+      smoothing: 0.4,
+      invert: true,  // More blur when less high frequency
+      curve: 'linear'
+    }
+  ]
+};
+
+/**
+ * Apply a preset to a mapper for a specific layer
+ */
+export function applyAudioReactivePreset(
+  mapper: AudioReactiveMapper,
+  presetName: keyof typeof AUDIO_REACTIVE_PRESETS,
+  layerId: string
+): string[] {
+  const preset = AUDIO_REACTIVE_PRESETS[presetName];
+  if (!preset) return [];
+
+  const mappingIds: string[] = [];
+
+  for (const config of preset) {
+    const mapping = createDefaultAudioMapping(
+      undefined,
+      config.feature as AudioFeature,
+      config.target as TargetParameter
+    );
+
+    // Apply preset config
+    Object.assign(mapping, config);
+    mapping.targetLayerId = layerId;
+
+    mapper.addMapping(mapping);
+    mappingIds.push(mapping.id);
+  }
+
+  return mappingIds;
+}
+
 export default {
   AudioReactiveMapper,
   createDefaultAudioMapping,
@@ -717,5 +1045,8 @@ export default {
   getAllFeatures,
   getFeaturesByCategory,
   getAllTargets,
-  getTargetsByCategory
+  getTargetsByCategory,
+  collectAudioReactiveModifiers,
+  applyAudioReactivePreset,
+  AUDIO_REACTIVE_PRESETS
 };

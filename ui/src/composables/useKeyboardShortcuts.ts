@@ -15,6 +15,7 @@ export interface KeyboardShortcutsOptions {
   showPrecomposeDialog: Ref<boolean>;
   showCurveEditor: Ref<boolean>;
   showTimeStretchDialog: Ref<boolean>;
+  showCameraTrackingImportDialog: Ref<boolean>;
 
   // UI state refs
   currentTool: Ref<string>;
@@ -45,6 +46,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     showPrecomposeDialog,
     showCurveEditor,
     showTimeStretchDialog,
+    showCameraTrackingImportDialog,
     currentTool,
     leftTab,
     viewOptions,
@@ -293,7 +295,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
   }
 
   // ========================================================================
-  // WORK AREA (B/N)
+  // RENDER RANGE (B/N)
   // ========================================================================
   const workAreaStart = ref<number | null>(null);
   const workAreaEnd = ref<number | null>(null);
@@ -301,20 +303,20 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
   function setWorkAreaStart() {
     workAreaStart.value = store.currentFrame;
     playbackStore.setWorkArea(workAreaStart.value, workAreaEnd.value);
-    console.log(`[Weyl] Work area start set to frame ${store.currentFrame}`);
+    console.log(`[Weyl] Render range start set to frame ${store.currentFrame}`);
   }
 
   function setWorkAreaEnd() {
     workAreaEnd.value = store.currentFrame;
     playbackStore.setWorkArea(workAreaStart.value, workAreaEnd.value);
-    console.log(`[Weyl] Work area end set to frame ${store.currentFrame}`);
+    console.log(`[Weyl] Render range end set to frame ${store.currentFrame}`);
   }
 
   function clearWorkArea() {
     workAreaStart.value = null;
     workAreaEnd.value = null;
     playbackStore.clearWorkArea();
-    console.log('[Weyl] Work area cleared');
+    console.log('[Weyl] Render range cleared');
   }
 
   // ========================================================================
@@ -554,6 +556,19 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     for (const id of selectedIds) {
       store.reverseLayer(id);
     }
+  }
+
+  // ========================================================================
+  // FREEZE FRAME (Alt+Shift+F)
+  // ========================================================================
+  function freezeSelectedLayers() {
+    const selectedIds = store.selectedLayerIds;
+    if (selectedIds.length === 0) return;
+
+    for (const id of selectedIds) {
+      store.freezeFrameAtPlayhead(id);
+    }
+    console.log('[Weyl] Freeze frame created at playhead for selected layers');
   }
 
   // ========================================================================
@@ -836,25 +851,25 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
   }
 
   // ========================================================================
-  // CREATE ADJUSTMENT LAYER (Ctrl+Alt+Y)
+  // CREATE EFFECT LAYER (Ctrl+Alt+Y)
   // ========================================================================
   function createAdjustmentLayer() {
     store.addLayer('adjustment', {
-      name: 'Adjustment Layer',
+      name: 'Effect Layer',
       width: compWidth.value,
       height: compHeight.value
     });
-    console.log('[Weyl] Created adjustment layer');
+    console.log('[Weyl] Created effect layer');
   }
 
   // ========================================================================
-  // CREATE NULL LAYER (Ctrl+Alt+Shift+Y)
+  // CREATE CONTROL LAYER (Ctrl+Alt+Shift+Y)
   // ========================================================================
   function createNullLayer() {
     store.addLayer('null', {
-      name: 'Null Object'
+      name: 'Control'
     });
-    console.log('[Weyl] Created null layer');
+    console.log('[Weyl] Created control layer');
   }
 
   // ========================================================================
@@ -1005,6 +1020,13 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
   function openTimeStretchDialog() {
     if (store.selectedLayerIds.length === 0) return;
     showTimeStretchDialog.value = true;
+  }
+
+  // ========================================================================
+  // OPEN CAMERA TRACKING IMPORT DIALOG (Ctrl+Shift+I)
+  // ========================================================================
+  function openCameraTrackingImportDialog() {
+    showCameraTrackingImportDialog.value = true;
   }
 
   // ========================================================================
@@ -1189,7 +1211,11 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
         }
         break;
       case 'i':
-        if (e.ctrlKey || e.metaKey) {
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
+          // Ctrl+Shift+I - Import Camera Tracking
+          e.preventDefault();
+          openCameraTrackingImportDialog();
+        } else if (e.ctrlKey || e.metaKey) {
           e.preventDefault();
           triggerAssetImport();
         } else if (hasSelectedLayer) {
@@ -1385,7 +1411,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
         togglePreviewPause();
         break;
 
-      // Fit layer to comp
+      // Fit layer to comp / Freeze frame
       case 'f':
         if ((e.ctrlKey || e.metaKey) && e.altKey) {
           e.preventDefault();
@@ -1397,6 +1423,10 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
         } else if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
           e.preventDefault();
           fitLayerToCompWidth();
+        } else if (e.altKey && e.shiftKey && hasSelectedLayer) {
+          // Freeze frame at playhead (Alt+Shift+F)
+          e.preventDefault();
+          freezeSelectedLayers();
         }
         break;
 
@@ -1519,6 +1549,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     selectNextLayer,
     splitLayerAtPlayhead,
     reverseSelectedLayers,
+    freezeSelectedLayers,
     zoomTimelineIn,
     zoomTimelineOut,
     zoomTimelineToFit,

@@ -509,30 +509,51 @@ export abstract class BaseLayer implements LayerInstance {
     }
 
     // Apply opacity (with driven value override if present)
+    // Audio modifiers for opacity are already applied in MotionEngine.evaluateLayers
     const opacity = this.getDrivenOrBase('opacity', state.opacity);
     this.applyOpacity(opacity);
 
-    // Apply transform (with driven value overrides if present)
-    // This maintains property driver support during the MotionEngine transition
+    // Get audio modifiers (additive values from audio mappings)
+    const audioMod = state.audioModifiers || {};
+
+    // Apply transform (with driven value overrides and audio modifiers if present)
+    // Audio modifiers are ADDITIVE to the base transform values
     const transform = state.transform;
     // Use origin (new name) with fallback to anchorPoint (deprecated)
     const originVal = transform.origin || transform.anchorPoint || { x: 0, y: 0, z: 0 };
+
+    // Calculate base values with driven overrides
+    let posX = this.getDrivenOrBase('transform.position.x', transform.position.x);
+    let posY = this.getDrivenOrBase('transform.position.y', transform.position.y);
+    let posZ = this.getDrivenOrBase('transform.position.z', transform.position.z ?? 0);
+    let scaleX = this.getDrivenOrBase('transform.scale.x', transform.scale.x ?? 100) / 100;
+    let scaleY = this.getDrivenOrBase('transform.scale.y', transform.scale.y ?? 100) / 100;
+    let scaleZ = this.getDrivenOrBase('transform.scale.z', transform.scale.z ?? 100) / 100;
+    let rotZ = this.getDrivenOrBase('transform.rotation', transform.rotation);
+
+    // Apply audio modifiers (additive)
+    if (audioMod.x !== undefined) posX += audioMod.x;
+    if (audioMod.y !== undefined) posY += audioMod.y;
+    if (audioMod.rotation !== undefined) rotZ += audioMod.rotation;
+
+    // Scale modifiers are multiplicative (1 + modifier)
+    if (audioMod.scaleUniform !== undefined) {
+      const scaleMult = 1 + audioMod.scaleUniform;
+      scaleX *= scaleMult;
+      scaleY *= scaleMult;
+      scaleZ *= scaleMult;
+    }
+    if (audioMod.scaleX !== undefined) scaleX *= (1 + audioMod.scaleX);
+    if (audioMod.scaleY !== undefined) scaleY *= (1 + audioMod.scaleY);
+
     this.applyTransform({
-      position: {
-        x: this.getDrivenOrBase('transform.position.x', transform.position.x),
-        y: this.getDrivenOrBase('transform.position.y', transform.position.y),
-        z: this.getDrivenOrBase('transform.position.z', transform.position.z ?? 0),
-      },
+      position: { x: posX, y: posY, z: posZ },
       rotation: {
         x: this.getDrivenOrBase('transform.rotationX', transform.rotationX ?? 0),
         y: this.getDrivenOrBase('transform.rotationY', transform.rotationY ?? 0),
-        z: this.getDrivenOrBase('transform.rotation', transform.rotation),
+        z: rotZ,
       },
-      scale: {
-        x: this.getDrivenOrBase('transform.scale.x', transform.scale.x ?? 100) / 100,
-        y: this.getDrivenOrBase('transform.scale.y', transform.scale.y ?? 100) / 100,
-        z: this.getDrivenOrBase('transform.scale.z', transform.scale.z ?? 100) / 100,
-      },
+      scale: { x: scaleX, y: scaleY, z: scaleZ },
       origin: {
         x: this.getDrivenOrBase('transform.origin.x', originVal.x),
         y: this.getDrivenOrBase('transform.origin.y', originVal.y),

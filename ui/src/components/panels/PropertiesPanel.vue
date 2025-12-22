@@ -20,10 +20,10 @@
             <span class="solo-hint">(Press same key to show all)</span>
           </div>
 
-          <!-- Anchor Point -->
+          <!-- Origin (transform pivot point) -->
           <div class="property-row" v-show="showAnchor">
             <span class="keyframe-toggle" :class="{ active: hasKeyframe('anchorPoint') }" @click="toggleKeyframe('anchorPoint')">◆</span>
-            <label>Anchor Point</label>
+            <label>Origin</label>
             <div class="value-group">
               <ScrubableNumber
                 v-model="transform.anchorPoint.x"
@@ -270,6 +270,7 @@ import ParticleProperties from '@/components/properties/ParticleProperties.vue';
 import DepthflowProperties from '@/components/properties/DepthflowProperties.vue';
 import LightProperties from '@/components/properties/LightProperties.vue';
 import ShapeProperties from '@/components/properties/ShapeProperties.vue';
+import ShapeLayerProperties from '@/components/properties/ShapeLayerProperties.vue';
 import PathProperties from '@/components/properties/PathProperties.vue';
 import VideoProperties from '@/components/properties/VideoProperties.vue';
 import CameraProperties from '@/components/properties/CameraProperties.vue';
@@ -282,6 +283,7 @@ import GeneratedProperties from '@/components/properties/GeneratedProperties.vue
 import GroupProperties from '@/components/properties/GroupProperties.vue';
 import ControlProperties from '@/components/properties/ControlProperties.vue';
 import MatteProperties from '@/components/properties/MatteProperties.vue';
+import SolidProperties from '@/components/properties/SolidProperties.vue';
 import PropertyLink from '@/components/controls/PropertyLink.vue';
 import DriverList from '@/components/panels/DriverList.vue';
 import type { PropertyPath } from '@/services/propertyDriver';
@@ -442,7 +444,7 @@ const layerPropertiesComponent = computed<Component | null>(() => {
     case 'pointcloud':
       return markRaw(Model3DProperties);
     case 'shape':
-      return markRaw(ShapeProperties);
+      return markRaw(ShapeLayerProperties);
     case 'audio':
       return markRaw(AudioProperties);
     case 'depth':
@@ -458,6 +460,7 @@ const layerPropertiesComponent = computed<Component | null>(() => {
     case 'matte':
       return markRaw(MatteProperties);
     case 'solid':
+      return markRaw(SolidProperties);
     case 'image':
     case 'null':
       // These use default transform controls only

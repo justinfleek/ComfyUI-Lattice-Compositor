@@ -770,6 +770,57 @@ export function createDefaultSmoothPath(): SmoothPathOperator {
   };
 }
 
+export function createDefaultGradientFill(): GradientFillShape {
+  return {
+    type: 'gradientFill',
+    name: 'Gradient Fill',
+    gradient: {
+      value: {
+        type: 'linear',
+        stops: [
+          { position: 0, color: { r: 0, g: 0, b: 0, a: 1 } },
+          { position: 1, color: { r: 255, g: 255, b: 255, a: 1 } },
+        ],
+        startPoint: { x: 0, y: 0.5 },
+        endPoint: { x: 1, y: 0.5 },
+      },
+      animated: false,
+      keyframes: [],
+    },
+    opacity: createDefaultAnimatableNumber(100, 'Opacity'),
+    fillRule: 'nonzero',
+    blendMode: 'normal',
+  };
+}
+
+export function createDefaultGradientStroke(): GradientStrokeShape {
+  return {
+    type: 'gradientStroke',
+    name: 'Gradient Stroke',
+    gradient: {
+      value: {
+        type: 'linear',
+        stops: [
+          { position: 0, color: { r: 255, g: 255, b: 255, a: 1 } },
+          { position: 1, color: { r: 0, g: 0, b: 0, a: 1 } },
+        ],
+        startPoint: { x: 0, y: 0.5 },
+        endPoint: { x: 1, y: 0.5 },
+      },
+      animated: false,
+      keyframes: [],
+    },
+    opacity: createDefaultAnimatableNumber(100, 'Opacity'),
+    width: createDefaultAnimatableNumber(2, 'Width'),
+    lineCap: 'round',
+    lineJoin: 'round',
+    miterLimit: 4,
+    dashPattern: createDefaultAnimatableNumberArray([], 'Dash Pattern'),
+    dashOffset: createDefaultAnimatableNumber(0, 'Dash Offset'),
+    blendMode: 'normal',
+  };
+}
+
 export function createDefaultShapeLayerData(): ShapeLayerData {
   return {
     contents: [],

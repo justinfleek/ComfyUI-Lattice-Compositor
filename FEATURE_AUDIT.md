@@ -1,6 +1,6 @@
 # WEYL COMPOSITOR - FEATURE & UI AUDIT
 
-**Last Updated:** December 21, 2025
+**Last Updated:** December 22, 2025
 
 This document maps all implemented features to their UI access points.
 Features marked with **NO UI** are implemented but inaccessible to users.
@@ -732,6 +732,67 @@ The pen tool has **4 sub-modes** accessed via the spline toolbar:
 
 ---
 
+## 26. CAMERA TRACKING (NEW - December 22, 2025)
+
+### Import Formats
+
+| Format | UI Access | Description |
+|--------|-----------|-------------|
+| Weyl JSON | ✅ 🎹 📋 | Native format - `Ctrl+Shift+I` |
+| COLMAP | ✅ 📋 | cameras.txt, images.txt, points3D.txt |
+| Blender | ✅ 📋 | Motion tracking JSON export |
+| Uni3C | ✅ 📋 | PCDController format (K matrix + poses) |
+
+### Track Point Management
+
+| Operation | UI Access | Description |
+|-----------|-----------|-------------|
+| Create Track | ✅ 🖱️ | Click on canvas |
+| Delete Track | ✅ 🎹 | Delete key |
+| Select Track | ✅ 🖱️ | Click / Shift+click |
+| Multi-select | ✅ 🖱️ | Marquee selection |
+| Move Track | ✅ 🖱️ | Drag (editable mode) |
+| Lock Track | ✅ 🖱️ | Lock icon |
+
+### Ground Plane / Origin
+
+| Operation | UI Access | Description |
+|-----------|-----------|-------------|
+| Define Ground Plane | ✅ 🖱️ | Select 3 track points |
+| Set Origin | ✅ 🖱️ | Right-click track point |
+| Visualize Axes | ✅ | RGB axis display |
+
+### AI Camera Motion (VLM)
+
+| Feature | UI Access | Description |
+|---------|-----------|-------------|
+| Motion Analysis | ✅ 📋 | VLM camera motion detection |
+| Motion Types | ✅ | 20 primitives (push, pull, pan, tilt, etc.) |
+| Trajectory Mapping | ✅ | Auto-map to Weyl presets |
+
+### Sapiens Integration (Human Vision)
+
+| Feature | UI Access | Description |
+|---------|-----------|-------------|
+| Depth Estimation | ⚠️ | Human subject depth maps |
+| Normal Estimation | ⚠️ | Surface normals |
+| Pose Estimation | ⚠️ | 308 keypoints |
+| Segmentation | ⚠️ | 28 body parts |
+| Point Cloud | ⚠️ | Depth to 3D points |
+
+---
+
+## 27. SHADOW CATCHER (NEW - December 22, 2025)
+
+| Property | UI Access | Location |
+|----------|-----------|----------|
+| Shadow Catcher | ✅ 🎚️ | Solid Properties |
+| Shadow Opacity | ✅ 🎚️ | Solid Properties |
+| Shadow Color | ✅ 🎚️ | Solid Properties |
+| Receive Shadow | ✅ 🎚️ | Solid Properties |
+
+---
+
 ## RECOMMENDATIONS
 
 ### Immediate Actions (Wire up existing UI)
@@ -759,12 +820,14 @@ The pen tool has **4 sub-modes** accessed via the spline toolbar:
 | Easing Functions | 35 |
 | Camera Presets | 22 |
 | Particle Presets | 24 |
-| Keyboard Shortcuts | 85+ |
+| Keyboard Shortcuts | 86+ |
 | Context Menu Items | 25+ |
 | Property Controls | 7 |
-| Panels | 12 |
-| Dialogs | 10 |
-| **Total Features** | **400+** |
+| Panels | 13 |
+| Dialogs | 11 |
+| AI Services | 4 |
+| Camera Tracking Formats | 4 |
+| **Total Features** | **450+** |
 
 ---
 
@@ -772,6 +835,7 @@ The pen tool has **4 sub-modes** accessed via the spline toolbar:
 
 | Date | Changes |
 |------|---------|
+| 2025-12-22 | Added camera tracking (sections 26-27), Sapiens integration, shadow catcher, Uni3C support |
 | 2025-12-21 | Added pen tool modes, mask editing, context menus, layer switches, property controls |
 | 2025-12-21 | Complete rewrite with comprehensive audit |
 | 2025-12-20 | Original version (now outdated) |

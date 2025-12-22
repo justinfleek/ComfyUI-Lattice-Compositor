@@ -1,6 +1,6 @@
 # CLAUDE.md - WEYL COMPOSITOR COMPLETE GUIDE
 
-**Version:** 7.3 | **Last Updated:** December 22, 2025
+**Version:** 7.4 | **Last Updated:** December 22, 2025
 
 ---
 
@@ -2365,20 +2365,83 @@ New `/scripts/` directory with Python test utilities:
 - ComfyUI integration tests
 - Minimal test variants
 
+### AI Camera Tracking System (December 22, 2025)
+
+Complete camera tracking import/export system with AI/VLM integration:
+
+**Core Types:** `types/cameraTracking.ts`
+- CameraTrackingSolve, CameraPose, CameraIntrinsics, GroundPlane
+- TrackPoint2D, TrackPoint3D for point cloud data
+- COLMAP and Blender format support
+
+**Import Service:** `services/cameraTrackingImport.ts`
+- parseWeylTrackingJSON(), parseCOLMAPOutput(), parseBlenderTrackingJSON()
+- importCameraTracking() - creates camera layer with keyframes
+- exportCameraToTrackingFormat() - export to JSON
+
+**Track Point Service:** `services/trackPointService.ts`
+- createTrack(), deleteTrack(), setTrackPosition()
+- selectTrack(), deselectTrack(), clearSelection()
+- defineGroundPlaneFromPoints() - 3-point plane fitting
+- useTrackPoints() composable for Vue components
+
+**UI Components:**
+- `components/dialogs/CameraTrackingImportDialog.vue` - drag-drop import
+- `components/canvas/TrackPointOverlay.vue` - SVG track point visualization
+
+**AI Services:** `services/ai/cameraTrackingAI.ts`
+- VLM camera motion analysis (20 primitives from CameraBench)
+- Maps motion types to Weyl trajectory presets
+- Uni3C format import/export (K matrix, 4x4 poses, point clouds)
+- Depth-based camera pose estimation
+
+**Keyboard Shortcut:** Ctrl+Shift+I (camera tracking import)
+
+### Sapiens Integration (December 22, 2025)
+
+Meta AI Sapiens foundation model integration for human-centric vision:
+
+**Service:** `services/ai/sapiensIntegration.ts`
+- Depth estimation for human subjects (0.3B to 2B models)
+- Surface normal estimation
+- 308-keypoint pose estimation
+- 28-part body segmentation
+- Point cloud generation from depth maps
+
+**Uni3C Workflow:**
+- createUni3CCameraData() - depth to point cloud for PCDController
+- depthToPointCloud() - backproject depth to 3D points
+- Compatible with Uni3C's K matrix and pose format
+
+### Shadow Catcher Material
+
+THREE.ShadowMaterial support for solid layers:
+- `engine/layers/SolidLayer.ts` - shadow catcher mode
+- `components/properties/SolidProperties.vue` - UI controls
+- Properties: shadowCatcher, shadowOpacity, shadowColor, receiveShadow
+
+### Tutorial Compatibility Update
+
+| Tutorial | Compatibility |
+|----------|---------------|
+| Tutorial 10 (3D Camera Tracker) | **55%** (up from 15%) |
+| Tutorial 11 (CC Particle World) | **100%** |
+
 ### Summary of Additions
 
 | Category | Count |
 |----------|-------|
 | New Python backend | 1 file (861 lines) |
-| New TypeScript services | 3 files (~1,500 lines) |
-| New Vue components | 5 files (~2,000 lines) |
-| New composables | 1 file |
+| New TypeScript services | 6 files (~3,000 lines) |
+| New Vue components | 7 files (~2,500 lines) |
+| New composables | 2 files |
 | New test scripts | 12+ files |
 | New HTTP endpoints | 7 endpoints |
+| New types | 1 file (300 lines) |
 
 ---
 
-**Document Version:** 7.0
+**Document Version:** 7.4
 **Last Updated:** December 22, 2025
-**Total Lines:** ~2100
-**Estimated Reading Time:** 40-55 minutes
+**Total Lines:** ~2200
+**Estimated Reading Time:** 45-60 minutes

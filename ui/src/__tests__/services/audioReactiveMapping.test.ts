@@ -1021,8 +1021,12 @@ describe('getTargetDisplayName', () => {
 
   it('should return display names for layer targets', () => {
     expect(getTargetDisplayName('layer.opacity')).toBe('Layer: Opacity');
-    expect(getTargetDisplayName('layer.scale')).toBe('Layer: Scale');
+    expect(getTargetDisplayName('layer.scale')).toBe('Layer: Scale (Uniform)');
+    expect(getTargetDisplayName('layer.scaleX')).toBe('Layer: Scale X');
+    expect(getTargetDisplayName('layer.scaleY')).toBe('Layer: Scale Y');
     expect(getTargetDisplayName('layer.rotation')).toBe('Layer: Rotation');
+    expect(getTargetDisplayName('layer.brightness')).toBe('Layer: Brightness');
+    expect(getTargetDisplayName('layer.saturation')).toBe('Layer: Saturation');
   });
 
   it('should return target name as fallback', () => {
@@ -1087,8 +1091,18 @@ describe('getTargetsByCategory', () => {
     expect(categories['Depthflow']).toContain('depthflow.zoom');
     expect(categories['Depthflow']).toContain('depthflow.rotation');
 
-    expect(categories['Layer']).toContain('layer.opacity');
-    expect(categories['Layer']).toContain('layer.scale');
+    // Updated category name: 'Layer' -> 'Layer Transform'
+    expect(categories['Layer Transform']).toContain('layer.opacity');
+    expect(categories['Layer Transform']).toContain('layer.scale');
+    expect(categories['Layer Transform']).toContain('layer.scaleX');
+    expect(categories['Layer Transform']).toContain('layer.scaleY');
+
+    // New categories for extended audio reactivity
+    expect(categories['Layer Color']).toContain('layer.brightness');
+    expect(categories['Layer Color']).toContain('layer.saturation');
+    expect(categories['Layer Effects']).toContain('layer.blur');
+    expect(categories['Video']).toContain('video.playbackSpeed');
+    expect(categories['Camera']).toContain('camera.fov');
 
     expect(categories['Path']).toContain('path.position');
   });

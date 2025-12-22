@@ -72,6 +72,24 @@ export class ParticleLayer extends BaseLayer {
   /** Whether force field gizmos are visible */
   private showForceFieldGizmos: boolean = true;
 
+  /** Horizon line mesh (CC Particle World style) */
+  private horizonLine: THREE.Line | null = null;
+
+  /** Whether horizon line is visible */
+  private showHorizonLine: boolean = false;
+
+  /** Particle space grid (CC Particle World style) */
+  private particleGrid: THREE.Group | null = null;
+
+  /** Whether particle grid is visible */
+  private showParticleGrid: boolean = false;
+
+  /** Axis visualization for particle space */
+  private particleAxis: THREE.Group | null = null;
+
+  /** Whether particle axis is visible */
+  private showParticleAxis: boolean = false;
+
   constructor(layerData: Layer) {
     super(layerData);
 
@@ -168,10 +186,22 @@ export class ParticleLayer extends BaseLayer {
         return { type: 'point' }; // Fallback if no spline configured
 
       case 'depth-map':
+        // Depth-based emission - uses both image data and depth data
+        // Image data must be set via setEmitterImageData() at runtime
+        return {
+          type: 'depthEdge',  // Use depth edge emission (emits from depth discontinuities)
+          emissionThreshold: emitter.depthMapEmission?.depthMin ?? 0.1,
+          // imageData and depthData will be provided at runtime
+        };
+
       case 'mask':
-        // These require additional setup - fall back to point for now
-        // TODO: Wire depth-map and mask emission when image data is available
-        return { type: 'point' };
+        // Mask-based emission - emits from non-transparent/bright pixels
+        // Image data must be set via setEmitterImageData() at runtime
+        return {
+          type: 'image',
+          emissionThreshold: emitter.maskEmission?.threshold ?? 0.5,
+          // imageData will be provided at runtime
+        };
 
       default:
         return { type: 'point' };
@@ -763,6 +793,25 @@ export class ParticleLayer extends BaseLayer {
    */
   triggerBurst(emitterId?: string): void {
     this.particleSystem.triggerBurst(emitterId);
+  }
+
+  /**
+   * Set image data for mask/depth-map emission
+   * Call this each frame with rendered layer data to enable image-based emission
+   *
+   * @param emitterId - The emitter ID to update
+   * @param imageData - The image data to emit from (for mask emission)
+   * @param depthData - Optional Float32Array of depth values (for depth-map emission)
+   */
+  setEmitterImageData(emitterId: string, imageData: ImageData, depthData?: Float32Array): void {
+    const emitter = this.particleSystem.getEmitter(emitterId);
+    if (emitter) {
+      // Update the shape config with the new image data
+      emitter.shape.imageData = imageData;
+      if (depthData) {
+        emitter.shape.depthData = depthData;
+      }
+    }
   }
 
   // ============================================================================
@@ -1414,6 +1463,269 @@ export class ParticleLayer extends BaseLayer {
       });
     }
     this.forceFieldGizmos.clear();
+
+    // Dispose horizon line
+    if (this.horizonLine) {
+      this.group.remove(this.horizonLine);
+      this.horizonLine.geometry.dispose();
+      (this.horizonLine.material as THREE.Material).dispose();
+      this.horizonLine = null;
+    }
+
+    // Dispose particle grid
+    if (this.particleGrid) {
+      this.group.remove(this.particleGrid);
+      this.particleGrid.traverse((child) => {
+        if (child instanceof THREE.Line) {
+          child.geometry.dispose();
+          (child.material as THREE.Material).dispose();
+        }
+      });
+      this.particleGrid = null;
+    }
+
+    // Dispose particle axis
+    if (this.particleAxis) {
+      this.group.remove(this.particleAxis);
+      this.particleAxis.traverse((child) => {
+        if (child instanceof THREE.Line) {
+          child.geometry.dispose();
+          (child.material as THREE.Material).dispose();
+        }
+      });
+      this.particleAxis = null;
+    }
+  }
+
+  // ============================================================================
+  // CC PARTICLE WORLD STYLE VISUALIZATION (Horizon, Grid, Axis)
+  // ============================================================================
+
+  /**
+   * Create or update horizon line at floor position (CC Particle World style)
+   */
+  createHorizonLine(floorY: number = 1.0, compWidth: number = 1920, compHeight: number = 1080): void {
+    // Dispose existing
+    if (this.horizonLine) {
+      this.group.remove(this.horizonLine);
+      this.horizonLine.geometry.dispose();
+      (this.horizonLine.material as THREE.Material).dispose();
+    }
+
+    // Calculate Y position from normalized floor value (0=top, 1=bottom)
+    const y = -(floorY * compHeight - compHeight / 2);
+
+    // Create horizon line spanning composition width
+    const points = [
+      new THREE.Vector3(-compWidth, y, 0),
+      new THREE.Vector3(compWidth * 2, y, 0),
+    ];
+
+    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+    const material = new THREE.LineDashedMaterial({
+      color: 0x00ffff,
+      dashSize: 10,
+      gapSize: 5,
+      transparent: true,
+      opacity: 0.7,
+      depthTest: false,
+    });
+
+    this.horizonLine = new THREE.Line(geometry, material);
+    this.horizonLine.computeLineDistances(); // Required for dashed lines
+    this.horizonLine.name = 'particle_horizon';
+    this.horizonLine.renderOrder = 996;
+    this.horizonLine.visible = this.showHorizonLine;
+
+    this.group.add(this.horizonLine);
+  }
+
+  /**
+   * Create particle space grid (CC Particle World style)
+   */
+  createParticleGrid(
+    compWidth: number = 1920,
+    compHeight: number = 1080,
+    gridSize: number = 100,
+    depth: number = 500
+  ): void {
+    // Dispose existing
+    if (this.particleGrid) {
+      this.group.remove(this.particleGrid);
+      this.particleGrid.traverse((child) => {
+        if (child instanceof THREE.Line) {
+          child.geometry.dispose();
+          (child.material as THREE.Material).dispose();
+        }
+      });
+    }
+
+    this.particleGrid = new THREE.Group();
+    this.particleGrid.name = 'particle_grid';
+
+    const material = new THREE.LineBasicMaterial({
+      color: 0x444488,
+      transparent: true,
+      opacity: 0.4,
+      depthTest: false,
+    });
+
+    const halfWidth = compWidth / 2;
+    const halfHeight = compHeight / 2;
+
+    // Horizontal grid lines (XZ plane at Y = halfHeight, i.e., bottom of comp)
+    for (let z = 0; z <= depth; z += gridSize) {
+      const points = [
+        new THREE.Vector3(-halfWidth, halfHeight, -z),
+        new THREE.Vector3(halfWidth, halfHeight, -z),
+      ];
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+      const line = new THREE.Line(geometry, material.clone());
+      this.particleGrid.add(line);
+    }
+
+    // Vertical grid lines (going into Z depth)
+    const xCount = Math.ceil(compWidth / gridSize);
+    for (let i = 0; i <= xCount; i++) {
+      const x = -halfWidth + i * gridSize;
+      const points = [
+        new THREE.Vector3(x, halfHeight, 0),
+        new THREE.Vector3(x, halfHeight, -depth),
+      ];
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+      const line = new THREE.Line(geometry, material.clone());
+      this.particleGrid.add(line);
+    }
+
+    // Side grid lines (YZ plane at X = -halfWidth)
+    for (let z = 0; z <= depth; z += gridSize) {
+      const points = [
+        new THREE.Vector3(-halfWidth, -halfHeight, -z),
+        new THREE.Vector3(-halfWidth, halfHeight, -z),
+      ];
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+      const line = new THREE.Line(geometry, material.clone());
+      this.particleGrid.add(line);
+    }
+
+    this.particleGrid.renderOrder = 995;
+    this.particleGrid.visible = this.showParticleGrid;
+
+    this.group.add(this.particleGrid);
+  }
+
+  /**
+   * Create particle space axis (CC Particle World style)
+   */
+  createParticleAxis(length: number = 200): void {
+    // Dispose existing
+    if (this.particleAxis) {
+      this.group.remove(this.particleAxis);
+      this.particleAxis.traverse((child) => {
+        if (child instanceof THREE.Line) {
+          child.geometry.dispose();
+          (child.material as THREE.Material).dispose();
+        }
+      });
+    }
+
+    this.particleAxis = new THREE.Group();
+    this.particleAxis.name = 'particle_axis';
+
+    // X axis (Red)
+    const xMaterial = new THREE.LineBasicMaterial({ color: 0xff0000, depthTest: false });
+    const xPoints = [new THREE.Vector3(0, 0, 0), new THREE.Vector3(length, 0, 0)];
+    const xLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints(xPoints), xMaterial);
+    this.particleAxis.add(xLine);
+
+    // Y axis (Green) - inverted for screen coordinates
+    const yMaterial = new THREE.LineBasicMaterial({ color: 0x00ff00, depthTest: false });
+    const yPoints = [new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, -length, 0)];
+    const yLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints(yPoints), yMaterial);
+    this.particleAxis.add(yLine);
+
+    // Z axis (Blue)
+    const zMaterial = new THREE.LineBasicMaterial({ color: 0x0088ff, depthTest: false });
+    const zPoints = [new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, -length)];
+    const zLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints(zPoints), zMaterial);
+    this.particleAxis.add(zLine);
+
+    // Add axis labels (as small spheres at ends)
+    const labelGeo = new THREE.SphereGeometry(5, 8, 8);
+    const xLabel = new THREE.Mesh(labelGeo, new THREE.MeshBasicMaterial({ color: 0xff0000 }));
+    xLabel.position.set(length, 0, 0);
+    this.particleAxis.add(xLabel);
+
+    const yLabel = new THREE.Mesh(labelGeo.clone(), new THREE.MeshBasicMaterial({ color: 0x00ff00 }));
+    yLabel.position.set(0, -length, 0);
+    this.particleAxis.add(yLabel);
+
+    const zLabel = new THREE.Mesh(labelGeo.clone(), new THREE.MeshBasicMaterial({ color: 0x0088ff }));
+    zLabel.position.set(0, 0, -length);
+    this.particleAxis.add(zLabel);
+
+    this.particleAxis.renderOrder = 998;
+    this.particleAxis.visible = this.showParticleAxis;
+
+    this.group.add(this.particleAxis);
+  }
+
+  /**
+   * Toggle horizon line visibility
+   */
+  setHorizonLineVisible(visible: boolean): void {
+    this.showHorizonLine = visible;
+    if (this.horizonLine) {
+      this.horizonLine.visible = visible;
+    }
+  }
+
+  /**
+   * Toggle particle grid visibility
+   */
+  setParticleGridVisible(visible: boolean): void {
+    this.showParticleGrid = visible;
+    if (this.particleGrid) {
+      this.particleGrid.visible = visible;
+    }
+  }
+
+  /**
+   * Toggle particle axis visibility
+   */
+  setParticleAxisVisible(visible: boolean): void {
+    this.showParticleAxis = visible;
+    if (this.particleAxis) {
+      this.particleAxis.visible = visible;
+    }
+  }
+
+  /**
+   * Update horizon line position when floor Y changes
+   */
+  updateHorizonLine(floorY: number, compHeight: number = 1080): void {
+    if (this.horizonLine) {
+      const y = -(floorY * compHeight - compHeight / 2);
+      const positions = this.horizonLine.geometry.attributes.position;
+      (positions.array as Float32Array)[1] = y;
+      (positions.array as Float32Array)[4] = y;
+      positions.needsUpdate = true;
+    }
+  }
+
+  /**
+   * Get visualization visibility states
+   */
+  getVisualizationState(): {
+    horizonLine: boolean;
+    particleGrid: boolean;
+    particleAxis: boolean;
+  } {
+    return {
+      horizonLine: this.showHorizonLine,
+      particleGrid: this.showParticleGrid,
+      particleAxis: this.showParticleAxis,
+    };
   }
 
   // ============================================================================

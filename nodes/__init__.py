@@ -17,4 +17,16 @@ from . import weyl_vectorize  # noqa: F401
 # - Kijai (ComfyUI-WanAnimatePreprocess)
 from . import controlnet_preprocessors  # noqa: F401
 
+# Import audio stem separation service
+# Inspired by filliptm's ComfyUI_Fill-Nodes
+# Uses Facebook Research's Demucs model
+# See weyl_stem_separation.py for full attribution
+from . import weyl_stem_separation  # noqa: F401
+
+# Import frame interpolation service
+# Inspired by filliptm's ComfyUI_Fill-Nodes
+# Uses RIFE (Real-time Intermediate Flow Estimation)
+# See weyl_frame_interpolation.py for full attribution
+from . import weyl_frame_interpolation  # noqa: F401
+
 __all__ = ['CompositorEditorNode']

@@ -1,0 +1,118 @@
+<template>
+  <div class="shape-editor">
+    <div class="property-row">
+      <label>Start</label>
+      <ScrubableNumber
+        :modelValue="operator.start.value"
+        @update:modelValue="v => updateNumber('start', v)"
+        :min="0"
+        :max="100"
+        unit="%"
+      />
+      <KeyframeToggle :property="operator.start" @toggle="toggleKeyframe('start')" />
+    </div>
+    <div class="property-row">
+      <label>End</label>
+      <ScrubableNumber
+        :modelValue="operator.end.value"
+        @update:modelValue="v => updateNumber('end', v)"
+        :min="0"
+        :max="100"
+        unit="%"
+      />
+      <KeyframeToggle :property="operator.end" @toggle="toggleKeyframe('end')" />
+    </div>
+    <div class="property-row">
+      <label>Offset</label>
+      <ScrubableNumber
+        :modelValue="operator.offset.value"
+        @update:modelValue="v => updateNumber('offset', v)"
+        :min="-360"
+        :max="360"
+        unit="°"
+      />
+      <KeyframeToggle :property="operator.offset" @toggle="toggleKeyframe('offset')" />
+    </div>
+    <div class="property-row">
+      <label>Trim Mode</label>
+      <select :value="operator.mode" @change="updateMode">
+        <option value="simultaneously">Simultaneously</option>
+        <option value="individually">Individually</option>
+      </select>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import type { TrimPathsOperator, TrimMode } from '@/types/shapes';
+import { ScrubableNumber } from '@/components/controls';
+import KeyframeToggle from '../KeyframeToggle.vue';
+import { useCompositorStore } from '@/stores/compositorStore';
+
+const props = defineProps<{ operator: TrimPathsOperator }>();
+const emit = defineEmits(['update']);
+const store = useCompositorStore();
+
+function updateNumber(prop: 'start' | 'end' | 'offset', value: number) {
+  const updated = { ...props.operator };
+  updated[prop] = { ...updated[prop], value };
+  emit('update', updated);
+}
+
+function updateMode(e: Event) {
+  const updated = { ...props.operator };
+  updated.mode = (e.target as HTMLSelectElement).value as TrimMode;
+  emit('update', updated);
+}
+
+function toggleKeyframe(prop: 'start' | 'end' | 'offset') {
+  const updated = { ...props.operator };
+  const animProp = updated[prop];
+  const frame = store.currentFrame;
+
+  const hasKf = animProp.keyframes.some(k => k.frame === frame);
+  if (hasKf) {
+    animProp.keyframes = animProp.keyframes.filter(k => k.frame !== frame);
+  } else {
+    animProp.keyframes.push({
+      id: `kf_${Date.now()}`,
+      frame,
+      value: animProp.value,
+      easing: 'linear'
+    });
+  }
+  animProp.animated = animProp.keyframes.length > 0;
+  emit('update', updated);
+}
+</script>
+
+<style scoped>
+.shape-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.property-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.property-row label {
+  width: 70px;
+  color: var(--weyl-text-muted, #888);
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.property-row select {
+  flex: 1;
+  padding: 3px 6px;
+  background: var(--weyl-surface-0, #0a0a0a);
+  border: 1px solid var(--weyl-border-default, #333);
+  border-radius: 3px;
+  color: var(--weyl-text-primary, #e0e0e0);
+  font-size: 11px;
+}
+</style>

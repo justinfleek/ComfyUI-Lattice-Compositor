@@ -652,6 +652,75 @@ export const EFFECT_DEFINITIONS: Record<string, EffectDefinition> = {
     ]
   },
 
+  // Stylize - VFX Effects (inspired by filliptm's ComfyUI_Fill-Nodes)
+  // Attribution: https://github.com/filliptm/ComfyUI_Fill-Nodes
+  'pixel-sort': {
+    name: 'Pixel Sort',
+    category: 'stylize',
+    description: 'Sort pixels by color properties within intervals',
+    parameters: [
+      { name: 'Direction', type: 'dropdown', defaultValue: 'horizontal', options: [
+        { label: 'Horizontal', value: 'horizontal' },
+        { label: 'Vertical', value: 'vertical' }
+      ], animatable: false },
+      { name: 'Threshold', type: 'number', defaultValue: 0.25, min: 0, max: 1, step: 0.01, animatable: true },
+      { name: 'Smoothing', type: 'number', defaultValue: 0.1, min: 0, max: 1, step: 0.01, animatable: true },
+      { name: 'Sort By', type: 'dropdown', defaultValue: 'saturation', options: [
+        { label: 'Saturation', value: 'saturation' },
+        { label: 'Brightness', value: 'brightness' },
+        { label: 'Hue', value: 'hue' }
+      ], animatable: false },
+      { name: 'Reverse', type: 'checkbox', defaultValue: false, animatable: false }
+    ]
+  },
+
+  'glitch': {
+    name: 'Glitch',
+    category: 'stylize',
+    description: 'Digital corruption/distortion effect',
+    parameters: [
+      { name: 'Glitch Amount', type: 'number', defaultValue: 5, min: 0, max: 10, step: 0.1, animatable: true },
+      { name: 'Color Offset', type: 'checkbox', defaultValue: true, animatable: false },
+      { name: 'Block Size', type: 'number', defaultValue: 8, min: 1, max: 50, animatable: true },
+      { name: 'Seed', type: 'number', defaultValue: 12345, min: 0, max: 99999, animatable: false },
+      { name: 'Scanlines', type: 'checkbox', defaultValue: true, animatable: false }
+    ]
+  },
+
+  'halftone': {
+    name: 'Halftone',
+    category: 'stylize',
+    description: 'Print-style dot pattern effect',
+    parameters: [
+      { name: 'Dot Size', type: 'number', defaultValue: 6, min: 2, max: 20, animatable: true },
+      { name: 'Angle', type: 'angle', defaultValue: 45, animatable: true },
+      { name: 'Color Mode', type: 'dropdown', defaultValue: 'grayscale', options: [
+        { label: 'Grayscale', value: 'grayscale' },
+        { label: 'RGB', value: 'rgb' },
+        { label: 'CMYK', value: 'cmyk' }
+      ], animatable: false }
+    ]
+  },
+
+  'dither': {
+    name: 'Dither',
+    category: 'stylize',
+    description: 'Reduce color depth with dithering patterns',
+    parameters: [
+      { name: 'Method', type: 'dropdown', defaultValue: 'ordered', options: [
+        { label: 'Ordered (Bayer)', value: 'ordered' },
+        { label: 'Floyd-Steinberg', value: 'floyd_steinberg' },
+        { label: 'Atkinson', value: 'atkinson' }
+      ], animatable: false },
+      { name: 'Levels', type: 'number', defaultValue: 4, min: 2, max: 256, animatable: true },
+      { name: 'Matrix Size', type: 'dropdown', defaultValue: '4', options: [
+        { label: '2x2', value: '2' },
+        { label: '4x4', value: '4' },
+        { label: '8x8', value: '8' }
+      ], animatable: false }
+    ]
+  },
+
   // Stylize - Additional
   'emboss': {
     name: 'Emboss',

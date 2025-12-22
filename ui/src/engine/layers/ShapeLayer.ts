@@ -71,6 +71,8 @@ import {
   clonePath,
 } from '@/services/shapeOperations';
 import { layerLogger } from '@/utils/logger';
+import { interpolateProperty } from '@/services/interpolation';
+import type { AnimatableProperty } from '@/types/project';
 
 // ============================================================================
 // EVALUATED SHAPE STATE
@@ -665,12 +667,12 @@ export class ShapeLayer extends BaseLayer {
   }
 
   /**
-   * Get animated value at current frame
+   * Get animated value at current frame using proper keyframe interpolation
    */
-  private getAnimatedValue<T>(prop: { value: T; keyframes: any[] }): T {
-    // For now, just return the base value
-    // Full implementation would interpolate keyframes
-    return prop.value;
+  private getAnimatedValue<T>(prop: AnimatableProperty<T>): T {
+    // Use the interpolation service for proper keyframe interpolation
+    // This handles all interpolation types (linear, bezier, hold) and expressions
+    return interpolateProperty(prop, this.currentFrame, 30, this.layer.id);
   }
 
   /**

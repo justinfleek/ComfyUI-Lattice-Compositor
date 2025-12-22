@@ -65,6 +65,83 @@
 
     <div class="divider"></div>
 
+    <!-- Shape Drawing Tools -->
+    <div class="tool-group labeled-tools shape-tools" role="group" aria-label="Shape drawing tools">
+      <button
+        :class="{ active: currentTool === 'rectangle' }"
+        :aria-pressed="currentTool === 'rectangle'"
+        @click="emit('update:currentTool', 'rectangle')"
+        title="Rectangle Tool (R) - Draw rectangles and squares"
+        aria-label="Rectangle tool"
+      >
+        <span class="icon" aria-hidden="true">▢</span>
+        <span class="tool-label">Rect</span>
+      </button>
+      <button
+        :class="{ active: currentTool === 'ellipse' }"
+        :aria-pressed="currentTool === 'ellipse'"
+        @click="emit('update:currentTool', 'ellipse')"
+        title="Ellipse Tool (E) - Draw ellipses and circles"
+        aria-label="Ellipse tool"
+      >
+        <span class="icon" aria-hidden="true">○</span>
+        <span class="tool-label">Ellipse</span>
+      </button>
+      <button
+        :class="{ active: currentTool === 'polygon' }"
+        :aria-pressed="currentTool === 'polygon'"
+        @click="emit('update:currentTool', 'polygon')"
+        title="Polygon Tool - Draw regular polygons"
+        aria-label="Polygon tool"
+      >
+        <span class="icon" aria-hidden="true">⬡</span>
+        <span class="tool-label">Polygon</span>
+      </button>
+      <button
+        :class="{ active: currentTool === 'star' }"
+        :aria-pressed="currentTool === 'star'"
+        @click="emit('update:currentTool', 'star')"
+        title="Star Tool - Draw stars"
+        aria-label="Star tool"
+      >
+        <span class="icon" aria-hidden="true">★</span>
+        <span class="tool-label">Star</span>
+      </button>
+    </div>
+
+    <!-- Shape Tool Options (shown when a shape tool is active) -->
+    <template v-if="isShapeTool">
+      <div class="tool-group shape-options">
+        <label class="shape-option-label">
+          <input type="checkbox" v-model="shapeFromCenter" />
+          <span>From Center</span>
+        </label>
+        <label class="shape-option-label">
+          <input type="checkbox" v-model="shapeConstrain" />
+          <span>Constrain</span>
+        </label>
+        <template v-if="currentTool === 'polygon'">
+          <label class="shape-option-label">
+            <span>Sides:</span>
+            <input type="number" v-model.number="polygonSides" min="3" max="20" class="sides-input" />
+          </label>
+        </template>
+        <template v-if="currentTool === 'star'">
+          <label class="shape-option-label">
+            <span>Points:</span>
+            <input type="number" v-model.number="starPoints" min="3" max="20" class="sides-input" />
+          </label>
+          <label class="shape-option-label">
+            <span>Inner:</span>
+            <input type="number" v-model.number="starInnerRadius" min="10" max="90" class="radius-input" />
+            <span>%</span>
+          </label>
+        </template>
+      </div>
+    </template>
+
+    <div class="divider"></div>
+
     <!-- Import Button -->
     <div class="tool-group">
       <button
@@ -172,6 +249,9 @@
         <span class="icon">↪</span>
       </button>
       <div class="divider"></div>
+      <!-- Memory Indicator -->
+      <MemoryIndicator />
+      <div class="divider"></div>
       <button @click="emit('showPreview')" title="Full Resolution Preview (`)">
         <span class="icon">🖥</span> Preview
       </button>
@@ -209,6 +289,30 @@ const emit = defineEmits<{
 const store = useCompositorStore();
 const playbackStore = usePlaybackStore();
 const themeStore = useThemeStore();
+
+// Shape tool state
+const isShapeTool = computed(() =>
+  ['rectangle', 'ellipse', 'polygon', 'star'].includes(props.currentTool)
+);
+const shapeFromCenter = ref(false);
+const shapeConstrain = ref(false);
+const polygonSides = ref(6);
+const starPoints = ref(5);
+const starInnerRadius = ref(50);
+
+// Expose shape options to parent for canvas drawing
+const shapeOptions = computed(() => ({
+  fromCenter: shapeFromCenter.value,
+  constrain: shapeConstrain.value,
+  polygonSides: polygonSides.value,
+  starPoints: starPoints.value,
+  starInnerRadius: starInnerRadius.value / 100,
+}));
+
+// Watch for shape option changes and update store
+watch(shapeOptions, (options) => {
+  store.setShapeToolOptions(options);
+}, { immediate: true, deep: true });
 
 // Segment state from store
 const segmentMode = computed(() => store.segmentMode);
@@ -500,6 +604,55 @@ function redo() {
 
 .cancel-btn {
   background: var(--weyl-surface-3, #333) !important;
+}
+
+/* Shape tool options */
+.shape-tools {
+  background: var(--weyl-surface-2, #1a1a1a);
+  border-radius: var(--weyl-radius-md, 4px);
+  padding: 4px;
+}
+
+.shape-options {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 8px;
+  background: var(--weyl-surface-2, #1a1a1a);
+  border-radius: var(--weyl-radius-md, 4px);
+}
+
+.shape-option-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--weyl-text-xs, 11px);
+  color: var(--weyl-text-secondary, #9CA3AF);
+  cursor: pointer;
+}
+
+.shape-option-label input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--weyl-accent, #8B5CF6);
+}
+
+.shape-option-label .sides-input,
+.shape-option-label .radius-input {
+  width: 40px;
+  padding: 2px 4px;
+  background: var(--weyl-surface-0, #0a0a0a);
+  border: 1px solid var(--weyl-border-default, #333);
+  border-radius: var(--weyl-radius-sm, 2px);
+  color: var(--weyl-text-primary, #e5e5e5);
+  font-size: var(--weyl-text-xs, 11px);
+  text-align: center;
+}
+
+.shape-option-label .sides-input:focus,
+.shape-option-label .radius-input:focus {
+  outline: none;
+  border-color: var(--weyl-accent, #8B5CF6);
 }
 
 /* Primary action button (Export) */

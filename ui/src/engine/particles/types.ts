@@ -159,18 +159,19 @@ export interface EmitterConfig {
 // ============================================================================
 
 export type ForceFieldType =
-  | 'gravity'       // Directional gravity
-  | 'point'         // Point attractor/repeller
-  | 'vortex'        // Rotational force
-  | 'turbulence'    // Noise-based displacement
-  | 'drag'          // Velocity damping
-  | 'wind'          // Directional with gusts
-  | 'curl'          // Curl noise for fluid-like motion
-  | 'magnetic'      // Lorentz force (velocity-dependent)
+  | 'gravity'       // Directional gravity (GPU type 0)
+  | 'point'         // Point attractor/repeller (GPU type 1)
+  | 'vortex'        // Rotational force (GPU type 2)
+  | 'turbulence'    // Noise-based displacement (GPU type 3)
+  | 'drag'          // Velocity damping (GPU type 4)
+  | 'wind'          // Directional with gusts (GPU type 5)
+  | 'lorenz'        // Strange attractor (GPU type 6)
+  | 'curl'          // Curl noise for fluid-like motion (GPU type 7)
+  | 'magnetic'      // Lorentz force (velocity-dependent) (GPU type 8)
+  | 'orbit'         // Orbital/centripetal force (GPU type 9)
   | 'bounds'        // Bounding box/sphere containment
   | 'collision'     // Surface collision
   | 'noise'         // General noise displacement
-  | 'lorenz'        // Strange attractor
   | 'path';         // Follow spline
 
 export interface ForceFieldConfig {
@@ -218,7 +219,7 @@ export interface ForceFieldConfig {
   // Bounds
   boundsMin?: { x: number; y: number; z: number };
   boundsMax?: { x: number; y: number; z: number };
-  boundsBehavior?: 'kill' | 'bounce' | 'wrap' | 'clamp';
+  boundsBehavior?: 'kill' | 'bounce' | 'wrap' | 'clamp' | 'stick';
   bounceDamping?: number;
 
   // Collision
@@ -365,7 +366,7 @@ export interface ParticleTextureConfig {
   randomStartFrame?: boolean;
 
   // Procedural
-  proceduralType?: 'circle' | 'square' | 'star' | 'ring' | 'noise';
+  proceduralType?: 'circle' | 'square' | 'star' | 'ring' | 'noise' | 'line' | 'triangle' | 'shadedSphere' | 'fadedSphere';
   proceduralParams?: Record<string, number>;
 }
 

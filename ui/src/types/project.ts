@@ -985,6 +985,18 @@ export interface SolidLayerData {
 
   /** Height (defaults to composition height) */
   height: number;
+
+  /** Shadow catcher mode - renders only shadows, not the solid color */
+  shadowCatcher?: boolean;
+
+  /** Shadow opacity (0-100) when in shadow catcher mode */
+  shadowOpacity?: number;
+
+  /** Shadow color (defaults to black) */
+  shadowColor?: string;
+
+  /** Receive shadows from lights */
+  receiveShadow?: boolean;
 }
 
 /**
@@ -1398,6 +1410,18 @@ export interface ParticleLayerData {
   subEmitters?: SubEmitterConfig[];
   flocking?: FlockingConfig;
   collision?: CollisionConfig;
+  audioBindings?: AudioBindingConfig[];
+  // CC Particle World style visualization
+  visualization?: ParticleVisualizationConfig;
+}
+
+// CC Particle World style visualization helpers
+export interface ParticleVisualizationConfig {
+  showHorizon: boolean;    // Show horizon line at floor position
+  showGrid: boolean;       // Show 3D perspective grid
+  showAxis: boolean;       // Show XYZ axis at origin
+  gridSize: number;        // Grid cell size in pixels
+  gridDepth: number;       // Grid depth into Z axis
 }
 
 export interface ParticleSystemLayerConfig {
@@ -1450,9 +1474,17 @@ export interface CollisionConfig {
   friction: number;           // 0-1, velocity reduction on collision
   // Boundary collision
   boundaryEnabled: boolean;
-  boundaryBehavior: 'none' | 'kill' | 'bounce' | 'wrap';
+  boundaryBehavior: 'none' | 'kill' | 'bounce' | 'wrap' | 'stick';
   // Boundary box (relative to composition)
   boundaryPadding: number;    // Pixels from edge
+  // Floor collision (CC Particle World style)
+  floorEnabled?: boolean;
+  floorY?: number;            // Normalized Y position (0=top, 1=bottom), default 1.0
+  floorBehavior?: 'none' | 'bounce' | 'stick' | 'kill';  // What happens at floor
+  floorFriction?: number;     // Surface friction when bouncing/sliding (0-1)
+  // Optional ceiling
+  ceilingEnabled?: boolean;
+  ceilingY?: number;          // Normalized Y position (0=top), default 0.0
 }
 
 export interface ConnectionRenderConfig {
@@ -1463,6 +1495,26 @@ export interface ConnectionRenderConfig {
   lineOpacity: number;        // 0-1
   fadeByDistance: boolean;    // Opacity decreases with distance
   color?: [number, number, number];  // Optional RGB color override (0-255)
+}
+
+// Audio-reactive particle binding
+export type AudioFeatureName = 'amplitude' | 'bass' | 'mid' | 'high' | 'beat' | 'spectralCentroid';
+export type AudioTargetType = 'emitter' | 'system' | 'forceField';
+export type AudioCurveType = 'linear' | 'exponential' | 'logarithmic' | 'step';
+
+export interface AudioBindingConfig {
+  id: string;
+  enabled: boolean;
+  feature: AudioFeatureName;      // Which audio feature to use
+  smoothing: number;              // 0-1, temporal smoothing
+  min: number;                    // Feature value mapping input min
+  max: number;                    // Feature value mapping input max
+  target: AudioTargetType;        // What to affect
+  targetId: string;               // Emitter/force field ID, or 'system'
+  parameter: string;              // Parameter name (e.g., 'emissionRate', 'size')
+  outputMin: number;              // Output range min
+  outputMax: number;              // Output range max
+  curve: AudioCurveType;          // Response curve
 }
 
 export interface SubEmitterConfig {
@@ -1547,6 +1599,7 @@ export interface ParticleEmitterConfig {
   name: string;
   x: number;
   y: number;
+  z?: number;           // Depth position (CC Particle World Producer Z)
   direction: number;
   spread: number;
   speed: number;
@@ -2539,6 +2592,16 @@ export interface TextData {
   // 3D Text
   perCharacter3D: boolean;
 
+  // Advanced Character Properties (Tutorial 7)
+  baselineShift?: number;        // Vertical shift in pixels
+  textCase?: 'normal' | 'uppercase' | 'lowercase' | 'smallCaps';
+  verticalAlign?: 'normal' | 'superscript' | 'subscript';
+
+  // Advanced Paragraph Properties (Tutorial 7)
+  firstLineIndent?: number;      // Pixels
+  spaceBefore?: number;          // Pixels before paragraph
+  spaceAfter?: number;           // Pixels after paragraph
+
   // Text Animators (After Effects-style per-character animation)
   animators?: TextAnimator[];
 }
@@ -2552,15 +2615,17 @@ export interface TextAnimator {
   name: string;
   enabled: boolean;
 
-  // Range Selector
+  // Selectors (can have multiple - Range, Wiggly, Expression)
   rangeSelector: TextRangeSelector;
+  wigglySelector?: TextWigglySelector;
+  expressionSelector?: TextExpressionSelector;
 
   // Animatable Properties
   properties: TextAnimatorProperties;
 }
 
 export interface TextRangeSelector {
-  // Selection mode
+  // Units mode
   mode: 'percent' | 'index';
 
   // Selection range (0-100 for percent, integers for index)
@@ -2571,13 +2636,65 @@ export interface TextRangeSelector {
   // Selection unit
   basedOn: 'characters' | 'characters_excluding_spaces' | 'words' | 'lines';
 
-  // Shape and randomness
+  // Shape for selection falloff
   shape: 'square' | 'ramp_up' | 'ramp_down' | 'triangle' | 'round' | 'smooth';
+
+  // Selector Mode (Tutorial 7 - how multiple selectors combine)
+  selectorMode?: 'add' | 'subtract' | 'intersect' | 'min' | 'max' | 'difference';
+
+  // Advanced parameters (Tutorial 7)
+  amount?: number;       // 0-100%, overall influence of this selector
+  smoothness?: number;   // 0-100%, smoothing of selection edges
+
+  // Randomness
   randomizeOrder: boolean;
   randomSeed: number;
 
   // Easing
   ease: { high: number; low: number }; // 0-100
+}
+
+// Wiggly Selector - adds randomization to property values (Tutorial 7)
+export interface TextWigglySelector {
+  enabled: boolean;
+
+  // Mode for combining with other selectors
+  mode: 'add' | 'subtract' | 'intersect' | 'min' | 'max' | 'difference';
+
+  // Amount of wiggle influence
+  maxAmount: number;     // 0-100%
+  minAmount: number;     // 0-100%
+
+  // Temporal settings
+  wigglesPerSecond: number;  // How fast values change
+
+  // Correlation - how much characters move together
+  // 0% = fully random per character, 100% = all move together (wave)
+  correlation: number;
+
+  // Lock dimensions - X and Y wiggle together
+  lockDimensions: boolean;
+
+  // Spatial settings
+  basedOn: 'characters' | 'characters_excluding_spaces' | 'words' | 'lines';
+
+  // Random seed for deterministic results
+  randomSeed: number;
+}
+
+// Expression Selector - programmatic control via expressions (Tutorial 7)
+export interface TextExpressionSelector {
+  enabled: boolean;
+
+  // Mode for combining with other selectors
+  mode: 'add' | 'subtract' | 'intersect' | 'min' | 'max' | 'difference';
+
+  // The expression that calculates amount per character
+  // Available variables: textIndex, textTotal, selectorValue, time, frame
+  amountExpression: string;
+
+  // Based on unit
+  basedOn: 'characters' | 'characters_excluding_spaces' | 'words' | 'lines';
 }
 
 export interface TextAnimatorProperties {

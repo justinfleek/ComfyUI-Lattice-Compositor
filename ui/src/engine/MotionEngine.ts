@@ -38,6 +38,8 @@ import type {
 import type { AudioAnalysis } from '@/services/audioFeatures';
 import { interpolateProperty } from '@/services/interpolation';
 import { getFeatureAtFrame } from '@/services/audioFeatures';
+import type { AudioMapping, TargetParameter } from '@/services/audioReactiveMapping';
+import { AudioReactiveMapper, collectAudioReactiveModifiers } from '@/services/audioReactiveMapping';
 import { particleSimulationRegistry, type ParticleSnapshot } from './ParticleSimulationController';
 import type { ParticleSystemConfig } from '@/services/particleSystem';
 // Camera enhancement imports - deterministic (seeded noise)
@@ -126,6 +128,9 @@ export interface EvaluatedLayer {
 
   /** Reference to original layer data (for static data only - NOT for evaluation) */
   readonly layerRef: Layer;
+
+  /** Audio reactive modifiers (additive values from audio mappings) */
+  readonly audioModifiers: AudioReactiveModifiers;
 }
 
 /**
@@ -205,6 +210,47 @@ export interface EvaluatedAudio {
 
   /** BPM if detected */
   readonly bpm: number;
+}
+
+/**
+ * Audio reactive modifiers applied to a layer
+ * These are ADDITIVE values computed from audio mappings
+ */
+export interface AudioReactiveModifiers {
+  /** Transform modifiers (additive) */
+  readonly opacity?: number;
+  readonly scaleX?: number;
+  readonly scaleY?: number;
+  readonly scaleUniform?: number;
+  readonly rotation?: number;
+  readonly x?: number;
+  readonly y?: number;
+
+  /** Color adjustments (additive) */
+  readonly brightness?: number;
+  readonly saturation?: number;
+  readonly contrast?: number;
+  readonly hue?: number;
+
+  /** Effects */
+  readonly blur?: number;
+  readonly glowIntensity?: number;
+  readonly glowRadius?: number;
+
+  /** Camera */
+  readonly fov?: number;
+  readonly dollyZ?: number;
+  readonly shake?: number;
+}
+
+/**
+ * Input for audio reactive evaluation
+ */
+export interface AudioReactiveInput {
+  /** Pre-computed audio analysis data */
+  readonly analysis: AudioAnalysis;
+  /** Audio mappings from the project */
+  readonly mappings: readonly AudioMapping[];
 }
 
 /**
@@ -412,6 +458,7 @@ export class MotionEngine {
    * @param audioAnalysis - Pre-computed audio analysis (optional)
    * @param activeCameraId - ID of active camera layer (optional)
    * @param useCache - Whether to use memoization cache (default: true)
+   * @param audioReactive - Audio reactive mappings for audio-driven animation (optional)
    * @returns Immutable FrameState snapshot
    */
   evaluate(
@@ -419,7 +466,8 @@ export class MotionEngine {
     project: WeylProject,
     audioAnalysis?: AudioAnalysis | null,
     activeCameraId?: string | null,
-    useCache: boolean = true
+    useCache: boolean = true,
+    audioReactive?: AudioReactiveInput | null
   ): FrameState {
     // DETERMINISM: No timestamps or non-deterministic values in output
 
@@ -440,8 +488,17 @@ export class MotionEngine {
       }
     }
 
+    // Create audio reactive mapper if we have audio data
+    let audioMapper: AudioReactiveMapper | null = null;
+    if (audioReactive && audioReactive.analysis && audioReactive.mappings.length > 0) {
+      audioMapper = new AudioReactiveMapper(audioReactive.analysis);
+      for (const mapping of audioReactive.mappings) {
+        audioMapper.addMapping(mapping);
+      }
+    }
+
     // Evaluate all layers
-    const evaluatedLayers = this.evaluateLayers(frame, composition.layers);
+    const evaluatedLayers = this.evaluateLayers(frame, composition.layers, audioMapper);
 
     // Evaluate camera
     const evaluatedCamera = this.evaluateCamera(
@@ -495,7 +552,11 @@ export class MotionEngine {
   // PRIVATE EVALUATION METHODS
   // ============================================================================
 
-  private evaluateLayers(frame: number, layers: Layer[]): EvaluatedLayer[] {
+  private evaluateLayers(
+    frame: number,
+    layers: Layer[],
+    audioMapper: AudioReactiveMapper | null
+  ): EvaluatedLayer[] {
     const evaluated: EvaluatedLayer[] = [];
 
     for (const layer of layers) {
@@ -508,13 +569,24 @@ export class MotionEngine {
       const transform = this.evaluateTransform(frame, layer.transform, layer.threeD);
 
       // Evaluate opacity
-      const opacity = interpolateProperty(layer.opacity, frame);
+      let opacity = interpolateProperty(layer.opacity, frame);
 
       // Evaluate effects
       const effects = this.evaluateEffects(frame, layer.effects);
 
       // Evaluate layer-specific properties
       const properties = this.evaluateLayerProperties(frame, layer);
+
+      // Evaluate audio reactive modifiers for this layer
+      let audioModifiers: AudioReactiveModifiers = {};
+      if (audioMapper) {
+        audioModifiers = collectAudioReactiveModifiers(audioMapper, layer.id, frame);
+
+        // Apply audio modifiers to opacity (additive)
+        if (audioModifiers.opacity !== undefined) {
+          opacity = Math.max(0, Math.min(100, opacity + audioModifiers.opacity * 100));
+        }
+      }
 
       evaluated.push(Object.freeze({
         id: layer.id,
@@ -531,6 +603,7 @@ export class MotionEngine {
         blendMode: layer.blendMode,
         threeD: layer.threeD,
         layerRef: layer, // Reference for static data only - NOT for evaluation
+        audioModifiers: Object.freeze(audioModifiers),
       }));
     }
 

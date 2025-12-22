@@ -129,6 +129,15 @@ interface CompositorState {
   segmentBoxStart: { x: number; y: number } | null;
   segmentIsLoading: boolean;
 
+  // Shape tool options
+  shapeToolOptions: {
+    fromCenter: boolean;
+    constrain: boolean;
+    polygonSides: number;
+    starPoints: number;
+    starInnerRadius: number;
+  };
+
   // UI state
   curveEditorVisible: boolean;
   hideMinimizedLayers: boolean;  // Toggle to hide layers marked as minimized
@@ -211,6 +220,13 @@ export const useCompositorStore = defineStore('compositor', {
       segmentPendingMask: null,
       segmentBoxStart: null,
       segmentIsLoading: false,
+      shapeToolOptions: {
+        fromCenter: false,
+        constrain: false,
+        polygonSides: 6,
+        starPoints: 5,
+        starInnerRadius: 0.5,
+      },
       curveEditorVisible: false,
       hideMinimizedLayers: false,
       // Initialize history with initial project state so first action can be undone
@@ -1520,11 +1536,23 @@ export const useCompositorStore = defineStore('compositor', {
     getFrameState(frame?: number): FrameState {
       const comp = this.getActiveComp();
       const targetFrame = frame ?? (comp?.currentFrame ?? 0);
+
+      // Get audio reactive data from audioStore
+      const audioStore = useAudioStore();
+      const audioReactive = audioStore.audioAnalysis && audioStore.reactiveMappings.length > 0
+        ? {
+            analysis: audioStore.audioAnalysis,
+            mappings: audioStore.reactiveMappings
+          }
+        : null;
+
       return motionEngine.evaluate(
         targetFrame,
         this.project,
         this.audioAnalysis,
-        this.activeCameraId
+        this.activeCameraId,
+        true, // useCache
+        audioReactive
       );
     },
 
@@ -1699,6 +1727,13 @@ export const useCompositorStore = defineStore('compositor', {
       this.clearSegmentPendingMask();
 
       return layer;
+    },
+
+    /**
+     * Set shape tool options (from toolbar)
+     */
+    setShapeToolOptions(options: CompositorState['shapeToolOptions']): void {
+      this.shapeToolOptions = { ...options };
     },
 
     /**
@@ -2657,6 +2692,30 @@ export const useCompositorStore = defineStore('compositor', {
     },
     isBeatAtCurrentFrame(): boolean {
       return audioActions.isBeatAtCurrentFrame(this);
+    },
+    convertAudioToKeyframes(options: { name?: string; amplitudeScale?: number; smoothing?: number } = {}) {
+      return audioActions.convertAudioToKeyframes(this, options);
+    },
+    getAudioAmplitudeAtFrame(channel: 'both' | 'left' | 'right', frame: number): number {
+      return audioActions.getAudioAmplitudeAtFrame(this, channel, frame);
+    },
+    convertFrequencyBandsToKeyframes(options: {
+      name?: string;
+      scale?: number;
+      smoothing?: number;
+      bands?: audioActions.FrequencyBandName[];
+    } = {}) {
+      return audioActions.convertFrequencyBandsToKeyframes(this, options);
+    },
+    convertAllAudioFeaturesToKeyframes(options: {
+      name?: string;
+      scale?: number;
+      smoothing?: number;
+    } = {}) {
+      return audioActions.convertAllAudioFeaturesToKeyframes(this, options);
+    },
+    getFrequencyBandAtFrame(band: audioActions.FrequencyBandName, frame: number): number {
+      return audioActions.getFrequencyBandAtFrame(this, band, frame);
     },
 
     // Timeline snapping (simple inline - no need for delegation)

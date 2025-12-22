@@ -363,6 +363,13 @@
       @applied="showTimeStretchDialog = false"
     />
 
+    <!-- Camera Tracking Import Dialog -->
+    <CameraTrackingImportDialog
+      :visible="showCameraTrackingImportDialog"
+      @close="showCameraTrackingImportDialog = false"
+      @imported="onCameraTrackingImported"
+    />
+
     <!-- AI Path Suggestion Dialog -->
     <PathSuggestionDialog
       :visible="showPathSuggestionDialog"
@@ -443,6 +450,7 @@ import PrecomposeDialog from '@/components/dialogs/PrecomposeDialog.vue';
 import PathSuggestionDialog from '@/components/dialogs/PathSuggestionDialog.vue';
 import KeyframeInterpolationDialog from '@/components/dialogs/KeyframeInterpolationDialog.vue';
 import TimeStretchDialog from '@/components/dialogs/TimeStretchDialog.vue';
+import CameraTrackingImportDialog from '@/components/dialogs/CameraTrackingImportDialog.vue';
 import ExpressionInput from '@/components/properties/ExpressionInput.vue';
 import { useExpressionEditor } from '@/composables/useExpressionEditor';
 import { useGuides } from '@/composables/useGuides';
@@ -516,6 +524,7 @@ const showPrecomposeDialog = ref(false);
 const showPathSuggestionDialog = ref(false);
 const showKeyframeInterpolationDialog = ref(false);
 const showTimeStretchDialog = ref(false);
+const showCameraTrackingImportDialog = ref(false);
 const showHDPreview = ref(false);
 
 // Vision authoring state
@@ -599,6 +608,7 @@ const keyboard = useKeyboardShortcuts({
   showPrecomposeDialog,
   showCurveEditor,
   showTimeStretchDialog,
+  showCameraTrackingImportDialog,
   currentTool: currentTool as unknown as Ref<string>,
   leftTab: leftTab as unknown as Ref<string>,
   viewOptions,
@@ -854,6 +864,21 @@ function onPrecomposeConfirm(name: string) {
   if (store.selectedLayerIds.length > 0) {
     store.nestSelectedLayers(name);
     showPrecomposeDialog.value = false;
+  }
+}
+
+// Camera tracking import handler
+function onCameraTrackingImported(result: { cameraLayerId?: string; warnings?: string[] }) {
+  showCameraTrackingImportDialog.value = false;
+
+  if (result.cameraLayerId) {
+    // Select the imported camera
+    store.selectLayer(result.cameraLayerId);
+    console.log('Camera tracking imported successfully:', result.cameraLayerId);
+  }
+
+  if (result.warnings && result.warnings.length > 0) {
+    console.warn('Camera tracking import warnings:', result.warnings);
   }
 }
 

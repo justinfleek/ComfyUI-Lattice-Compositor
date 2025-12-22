@@ -77,6 +77,35 @@
           </div>
         </div>
 
+        <!-- Additional Export Options -->
+        <div class="form-group">
+          <label>Additional Outputs</label>
+          <div class="export-options">
+            <label class="checkbox-option">
+              <input
+                type="checkbox"
+                v-model="exportDepthMaps"
+              />
+              <span class="checkbox-label">
+                <i class="pi pi-box" />
+                Export Depth Maps
+              </span>
+              <small>Include grayscale depth frames (for depth-aware AI models)</small>
+            </label>
+            <label class="checkbox-option">
+              <input
+                type="checkbox"
+                v-model="exportNormalMaps"
+              />
+              <span class="checkbox-label">
+                <i class="pi pi-compass" />
+                Export Normal Maps
+              </span>
+              <small>Include surface normal frames (RGB encoded)</small>
+            </label>
+          </div>
+        </div>
+
         <!-- Preview -->
         <div class="form-group">
           <label>Preview (Frame 0)</label>
@@ -158,6 +187,10 @@ const isExporting = ref(false);
 const exportProgress = ref(0);
 const progressMessage = ref('');
 
+// Additional export options
+const exportDepthMaps = ref(false);
+const exportNormalMaps = ref(false);
+
 // Computed export dimensions
 const exportWidth = computed(() => customWidth.value);
 const exportHeight = computed(() => customHeight.value);
@@ -218,7 +251,7 @@ async function startExport(): Promise<void> {
 
   isExporting.value = true;
   exportProgress.value = 0;
-  progressMessage.value = 'Generating frames...';
+  progressMessage.value = 'Generating matte frames...';
 
   const options: ExportOptions = {
     width: exportWidth.value,
@@ -227,25 +260,85 @@ async function startExport(): Promise<void> {
   };
 
   try {
-    // Generate all frames
-    const frames = await matteExporter.generateMatteSequence(
+    // Dynamic import JSZip
+    const JSZip = (await import('jszip')).default;
+    const zip = new JSZip();
+
+    // Generate matte frames
+    const matteFrames = await matteExporter.generateMatteSequence(
       store.project,
       options,
       (progress) => {
-        exportProgress.value = progress.percent;
-        progressMessage.value = `Generating frame ${progress.frame + 1} of ${progress.total}...`;
+        const baseProgress = 0;
+        const matteWeight = exportDepthMaps.value || exportNormalMaps.value ? 0.5 : 1;
+        exportProgress.value = baseProgress + progress.percent * matteWeight;
+        progressMessage.value = `Generating matte frame ${progress.frame + 1} of ${progress.total}...`;
       }
     );
 
-    // Package as ZIP
+    // Add matte frames to ZIP
+    matteFrames.forEach((blob, index) => {
+      const frameName = `matte_${String(index).padStart(4, '0')}.png`;
+      zip.file(frameName, blob);
+    });
+
+    // Generate depth maps if enabled
+    if (exportDepthMaps.value) {
+      progressMessage.value = 'Generating depth maps...';
+      const depthFrames = await generateDepthFrames(
+        store.frameCount,
+        exportWidth.value,
+        exportHeight.value,
+        (frame, total) => {
+          const baseProgress = exportNormalMaps.value ? 50 : 75;
+          const weight = exportNormalMaps.value ? 25 : 25;
+          exportProgress.value = baseProgress + (frame / total) * weight;
+          progressMessage.value = `Generating depth frame ${frame + 1} of ${total}...`;
+        }
+      );
+      depthFrames.forEach((blob, index) => {
+        const frameName = `depth_${String(index).padStart(4, '0')}.png`;
+        zip.file(frameName, blob);
+      });
+    }
+
+    // Generate normal maps if enabled
+    if (exportNormalMaps.value) {
+      progressMessage.value = 'Generating normal maps...';
+      const normalFrames = await generateNormalFrames(
+        store.frameCount,
+        exportWidth.value,
+        exportHeight.value,
+        (frame, total) => {
+          const baseProgress = exportDepthMaps.value ? 75 : 75;
+          exportProgress.value = baseProgress + (frame / total) * 25;
+          progressMessage.value = `Generating normal frame ${frame + 1} of ${total}...`;
+        }
+      );
+      normalFrames.forEach((blob, index) => {
+        const frameName = `normal_${String(index).padStart(4, '0')}.png`;
+        zip.file(frameName, blob);
+      });
+    }
+
+    // Package and download ZIP
     progressMessage.value = 'Creating ZIP archive...';
-    await matteExporter.downloadAsZip(
-      frames,
-      `matte_${Date.now()}`,
-      (percent) => {
-        progressMessage.value = `Compressing... ${percent}%`;
+    const content = await zip.generateAsync(
+      { type: 'blob' },
+      (metadata) => {
+        progressMessage.value = `Compressing... ${Math.round(metadata.percent)}%`;
       }
     );
+
+    // Download
+    const url = URL.createObjectURL(content);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `export_${Date.now()}.zip`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
 
     progressMessage.value = 'Export complete!';
     emit('exported');
@@ -261,6 +354,102 @@ async function startExport(): Promise<void> {
   } finally {
     isExporting.value = false;
   }
+}
+
+// Generate depth map frames from current composition
+async function generateDepthFrames(
+  frameCount: number,
+  width: number,
+  height: number,
+  onProgress?: (frame: number, total: number) => void
+): Promise<Blob[]> {
+  const frames: Blob[] = [];
+  const canvas = new OffscreenCanvas(width, height);
+  const ctx = canvas.getContext('2d')!;
+
+  for (let frame = 0; frame < frameCount; frame++) {
+    if (onProgress) onProgress(frame, frameCount);
+
+    // Render depth as grayscale gradient (simulated depth based on layer order)
+    // In a full implementation, this would use Three.js depth buffer
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, width, height);
+
+    // Get layers sorted by z-index/depth
+    const layers = store.activeComposition?.layers || [];
+    const visibleLayers = layers.filter(layer => {
+      const start = layer.startFrame ?? layer.inPoint ?? 0;
+      const end = layer.endFrame ?? layer.outPoint ?? 80;
+      return layer.visible && frame >= start && frame <= end;
+    });
+
+    // Render each layer as a depth value (farther = darker, closer = brighter)
+    for (let i = 0; i < visibleLayers.length; i++) {
+      const depth = Math.round((i / Math.max(visibleLayers.length - 1, 1)) * 255);
+      const gray = 255 - depth; // Invert: closer layers are brighter
+      ctx.fillStyle = `rgb(${gray}, ${gray}, ${gray})`;
+
+      // Simple rectangular representation (actual impl would render layer shapes)
+      const layer = visibleLayers[i];
+      const pos = layer.transform?.position?.defaultValue || { x: width / 2, y: height / 2 };
+      const scale = layer.transform?.scale?.defaultValue || { x: 1, y: 1 };
+      const w = 200 * scale.x;
+      const h = 150 * scale.y;
+      ctx.fillRect(pos.x - w / 2, pos.y - h / 2, w, h);
+    }
+
+    const blob = await canvas.convertToBlob({ type: 'image/png' });
+    frames.push(blob);
+  }
+
+  return frames;
+}
+
+// Generate normal map frames from current composition
+async function generateNormalFrames(
+  frameCount: number,
+  width: number,
+  height: number,
+  onProgress?: (frame: number, total: number) => void
+): Promise<Blob[]> {
+  const frames: Blob[] = [];
+  const canvas = new OffscreenCanvas(width, height);
+  const ctx = canvas.getContext('2d')!;
+
+  for (let frame = 0; frame < frameCount; frame++) {
+    if (onProgress) onProgress(frame, frameCount);
+
+    // Default normal map: flat surface pointing toward camera (RGB 128, 128, 255)
+    ctx.fillStyle = 'rgb(128, 128, 255)';
+    ctx.fillRect(0, 0, width, height);
+
+    // In a full implementation, this would calculate actual surface normals
+    // For now, generate a simple normal map with slight variation per layer
+    const layers = store.activeComposition?.layers || [];
+    const visibleLayers = layers.filter(layer => {
+      const start = layer.startFrame ?? layer.inPoint ?? 0;
+      const end = layer.endFrame ?? layer.outPoint ?? 80;
+      return layer.visible && frame >= start && frame <= end;
+    });
+
+    for (const layer of visibleLayers) {
+      const pos = layer.transform?.position?.defaultValue || { x: width / 2, y: height / 2 };
+      const scale = layer.transform?.scale?.defaultValue || { x: 1, y: 1 };
+      const w = 200 * scale.x;
+      const h = 150 * scale.y;
+
+      // Slight normal variation based on layer type
+      const r = 128 + Math.random() * 10 - 5;
+      const g = 128 + Math.random() * 10 - 5;
+      ctx.fillStyle = `rgb(${r}, ${g}, 255)`;
+      ctx.fillRect(pos.x - w / 2, pos.y - h / 2, w, h);
+    }
+
+    const blob = await canvas.convertToBlob({ type: 'image/png' });
+    frames.push(blob);
+  }
+
+  return frames;
 }
 
 // Watch for changes that affect preview
@@ -621,5 +810,62 @@ onUnmounted(() => {
   background: #333;
   color: #666;
   cursor: not-allowed;
+}
+
+.export-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.checkbox-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid #3d3d3d;
+  background: #1e1e1e;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.1s;
+}
+
+.checkbox-option:hover {
+  background: #2a2a2a;
+  border-color: #4a90d9;
+}
+
+.checkbox-option input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  accent-color: #4a90d9;
+  cursor: pointer;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #e0e0e0;
+}
+
+.checkbox-label i {
+  font-size: 14px;
+  color: #888;
+}
+
+.checkbox-option:has(input:checked) .checkbox-label i {
+  color: #4a90d9;
+}
+
+.checkbox-option small {
+  display: block;
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+  margin-left: 26px;
 }
 </style>

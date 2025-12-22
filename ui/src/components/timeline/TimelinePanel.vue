@@ -82,6 +82,10 @@
             ✨ AI
           </button>
         </div>
+
+        <div class="tool-group">
+          <OnionSkinControls />
+        </div>
       </div>
 
       <div class="header-right">
@@ -115,7 +119,7 @@
             <span class="header-icon" title="Effects">fx</span>
             <span class="header-icon" title="Frame Blending">⊞</span>
             <span class="header-icon" title="Motion Blur">◔</span>
-            <span class="header-icon" title="Adjustment Layer">◐</span>
+            <span class="header-icon" title="Effect Layer">◐</span>
             <span class="header-icon" title="3D Layer">⬡</span>
           </div>
           <div class="col-header col-parent">Parent & Link</div>
@@ -149,10 +153,10 @@
           <div class="time-ruler" :style="{ width: computedWidthStyle }" @mousedown="startRulerScrub">
              <canvas ref="rulerCanvas" height="30"></canvas>
 
-             <!-- Work Area Bar -->
+             <!-- Render Range Bar -->
              <div v-if="hasWorkArea" class="work-area-bar" :style="workAreaStyle"
                   @dblclick.stop="clearWorkArea"
-                  title="Work Area (B/N to set, double-click to clear)">
+                  title="Render Range (B/N to set, double-click to clear)">
                <div class="work-area-handle work-area-handle-left"
                     @mousedown.stop="startWorkAreaDrag('start', $event)"></div>
                <div class="work-area-handle work-area-handle-right"
@@ -191,6 +195,19 @@
                 @updateLayer="updateLayer"
               />
 
+             <!-- Audio Track with Waveform -->
+             <AudioTrack
+               v-if="audioStore.audioBuffer"
+               :audioBuffer="audioStore.audioBuffer"
+               :analysis="audioStore.audioAnalysis"
+               :peakData="audioStore.peakData"
+               :currentFrame="store.currentFrame"
+               :totalFrames="store.frameCount"
+               :fps="store.fps"
+               :height="60"
+               @seek="handleAudioSeek"
+             />
+
              <div class="playhead-line" :style="{ left: playheadPositionPct + '%' }"></div>
           </div>
         </div>
@@ -206,6 +223,8 @@ import { useAudioStore } from '@/stores/audioStore';
 import { usePlaybackStore } from '@/stores/playbackStore';
 import EnhancedLayerTrack from './EnhancedLayerTrack.vue';
 import CompositionTabs from './CompositionTabs.vue';
+import OnionSkinControls from './OnionSkinControls.vue';
+import AudioTrack from './AudioTrack.vue';
 import { findNearestSnap } from '@/services/timelineSnap';
 
 // Inject work area state from WorkspaceLayout
@@ -337,6 +356,13 @@ function addLayer(type: string) {
 
 function selectLayer(id: string) { store.selectLayer(id); }
 function updateLayer(id: string, u: any) { store.updateLayer(id, u); }
+
+// Handle audio track seek
+function handleAudioSeek(frame: number) {
+  store.setFrame(frame);
+  // Also trigger audio scrub for feedback
+  audioStore.scrubAudio(frame, store.fps);
+}
 
 // ============================================================
 // DRAG & DROP FROM PROJECT PANEL
@@ -532,6 +558,36 @@ function drawRuler() {
       ctx.moveTo(x, 22);
       ctx.lineTo(x, 30);
       ctx.stroke();
+    }
+  }
+
+  // Draw beat markers (onsets)
+  if (audioStore.audioAnalysis?.onsets) {
+    ctx.strokeStyle = 'rgba(255, 193, 7, 0.6)'; // Gold/amber for beats
+    ctx.lineWidth = 1;
+    for (const onset of audioStore.audioAnalysis.onsets) {
+      const x = (onset / frameCount) * width;
+      ctx.beginPath();
+      ctx.moveTo(x, 20);
+      ctx.lineTo(x, 30);
+      ctx.stroke();
+    }
+    ctx.lineWidth = 1;
+  }
+
+  // Draw peak markers (diamonds at top)
+  if (audioStore.peakData?.indices) {
+    ctx.fillStyle = 'rgba(255, 107, 107, 0.9)'; // Red for peaks
+    for (const peakFrame of audioStore.peakData.indices) {
+      const x = (peakFrame / frameCount) * width;
+      // Draw small diamond
+      ctx.beginPath();
+      ctx.moveTo(x, 3);
+      ctx.lineTo(x + 4, 7);
+      ctx.lineTo(x, 11);
+      ctx.lineTo(x - 4, 7);
+      ctx.closePath();
+      ctx.fill();
     }
   }
 
@@ -752,7 +808,13 @@ onUnmounted(() => {
   if (resizeObserver) resizeObserver.disconnect();
 });
 
-watch(() => [computedWidthStyle.value, zoomPercent.value, store.frameCount], () => nextTick(drawRuler));
+watch(() => [
+  computedWidthStyle.value,
+  zoomPercent.value,
+  store.frameCount,
+  audioStore.audioAnalysis,
+  audioStore.peakData
+], () => nextTick(drawRuler));
 </script>
 
 <style scoped>

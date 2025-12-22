@@ -26,6 +26,17 @@ interface AudioAnalysis {
   };
   onsets: number[];
   bpm: number;
+  // New spectral features
+  spectralFlux: number[];
+  zeroCrossingRate: number[];
+  spectralRolloff: number[];
+  spectralFlatness: number[];
+  chromaFeatures: {
+    chroma: number[][];       // [frameIndex][pitchClass] 12 values per frame
+    chromaEnergy: number[];   // Total chroma energy per frame
+    estimatedKey: string;     // Best guess at musical key
+    keyConfidence: number;    // 0-1 confidence in key estimation
+  };
 }
 
 interface FrequencyBandRanges {
@@ -359,6 +370,382 @@ function extractSpectralCentroid(
   return centroids.map(v => v / maxValue);
 }
 
+/**
+ * Extract Zero Crossing Rate per frame
+ * Measures how often the signal crosses zero - higher values indicate noisier/rougher sounds
+ */
+function extractZeroCrossingRate(
+  channelData: Float32Array,
+  sampleRate: number,
+  fps: number
+): number[] {
+  const samplesPerFrame = Math.floor(sampleRate / fps);
+  const frameCount = Math.ceil(channelData.length / samplesPerFrame);
+  const zcrValues: number[] = [];
+
+  for (let frame = 0; frame < frameCount; frame++) {
+    if (cancelled) return zcrValues;
+
+    const startSample = frame * samplesPerFrame;
+    const endSample = Math.min(startSample + samplesPerFrame, channelData.length);
+
+    let crossings = 0;
+    for (let i = startSample + 1; i < endSample; i++) {
+      if ((channelData[i] >= 0 && channelData[i - 1] < 0) ||
+          (channelData[i] < 0 && channelData[i - 1] >= 0)) {
+        crossings++;
+      }
+    }
+
+    // Normalize by window length
+    const windowLength = endSample - startSample;
+    zcrValues.push(windowLength > 1 ? crossings / (windowLength - 1) : 0);
+  }
+
+  // Normalize to 0-1
+  const maxValue = Math.max(...zcrValues, 0.0001);
+  return zcrValues.map(v => v / maxValue);
+}
+
+/**
+ * Extract Spectral Flux per frame
+ * Measures how much the spectrum changes from frame to frame - good for onset detection
+ */
+function extractSpectralFlux(
+  channelData: Float32Array,
+  sampleRate: number,
+  fps: number
+): number[] {
+  const samplesPerFrame = Math.floor(sampleRate / fps);
+  const frameCount = Math.ceil(channelData.length / samplesPerFrame);
+  const fluxValues: number[] = [];
+  let prevSpectrum: Float32Array | null = null;
+
+  for (let frame = 0; frame < frameCount; frame++) {
+    if (cancelled) return fluxValues;
+
+    if (frame % 20 === 0) {
+      reportProgress('spectralFlux', frame / frameCount, `Computing spectral flux: ${Math.round(frame / frameCount * 100)}%`);
+    }
+
+    const startSample = frame * samplesPerFrame;
+
+    if (startSample + DEFAULT_FFT_SIZE > channelData.length) {
+      fluxValues.push(fluxValues.length > 0 ? fluxValues[fluxValues.length - 1] : 0);
+      continue;
+    }
+
+    const spectrum = computeMagnitudeSpectrum(
+      channelData.slice(startSample, startSample + DEFAULT_FFT_SIZE),
+      DEFAULT_FFT_SIZE
+    );
+
+    if (prevSpectrum) {
+      let flux = 0;
+      for (let i = 0; i < spectrum.length; i++) {
+        const diff = spectrum[i] - prevSpectrum[i];
+        // Half-wave rectification - only positive changes
+        if (diff > 0) flux += diff;
+      }
+      fluxValues.push(flux);
+    } else {
+      fluxValues.push(0);
+    }
+
+    prevSpectrum = spectrum;
+  }
+
+  // Normalize
+  const maxValue = Math.max(...fluxValues, 0.0001);
+  return fluxValues.map(v => v / maxValue);
+}
+
+/**
+ * Extract Spectral Rolloff per frame
+ * Frequency below which 85% of the spectral energy is contained
+ * Lower rolloff = more energy in lower frequencies
+ */
+function extractSpectralRolloff(
+  channelData: Float32Array,
+  sampleRate: number,
+  fps: number,
+  rolloffPercent: number = 0.85
+): number[] {
+  const samplesPerFrame = Math.floor(sampleRate / fps);
+  const frameCount = Math.ceil(channelData.length / samplesPerFrame);
+  const binFrequency = sampleRate / DEFAULT_FFT_SIZE;
+  const rolloffValues: number[] = [];
+
+  for (let frame = 0; frame < frameCount; frame++) {
+    if (cancelled) return rolloffValues;
+
+    if (frame % 20 === 0) {
+      reportProgress('spectralRolloff', frame / frameCount, `Computing spectral rolloff: ${Math.round(frame / frameCount * 100)}%`);
+    }
+
+    const startSample = frame * samplesPerFrame;
+
+    if (startSample + DEFAULT_FFT_SIZE > channelData.length) {
+      rolloffValues.push(rolloffValues.length > 0 ? rolloffValues[rolloffValues.length - 1] : 0);
+      continue;
+    }
+
+    const spectrum = computeMagnitudeSpectrum(
+      channelData.slice(startSample, startSample + DEFAULT_FFT_SIZE),
+      DEFAULT_FFT_SIZE
+    );
+
+    // Total energy
+    let totalEnergy = 0;
+    for (let i = 0; i < spectrum.length; i++) {
+      totalEnergy += spectrum[i] * spectrum[i];
+    }
+
+    // Find rolloff frequency
+    const threshold = totalEnergy * rolloffPercent;
+    let cumulativeEnergy = 0;
+    let rolloffBin = 0;
+
+    for (let i = 0; i < spectrum.length; i++) {
+      cumulativeEnergy += spectrum[i] * spectrum[i];
+      if (cumulativeEnergy >= threshold) {
+        rolloffBin = i;
+        break;
+      }
+    }
+
+    rolloffValues.push(rolloffBin * binFrequency);
+  }
+
+  // Normalize by Nyquist frequency
+  const nyquist = sampleRate / 2;
+  return rolloffValues.map(v => v / nyquist);
+}
+
+/**
+ * Extract Spectral Flatness per frame
+ * Ratio of geometric mean to arithmetic mean of spectrum
+ * Values close to 1 = noise-like, close to 0 = tonal
+ */
+function extractSpectralFlatness(
+  channelData: Float32Array,
+  sampleRate: number,
+  fps: number
+): number[] {
+  const samplesPerFrame = Math.floor(sampleRate / fps);
+  const frameCount = Math.ceil(channelData.length / samplesPerFrame);
+  const flatnessValues: number[] = [];
+
+  for (let frame = 0; frame < frameCount; frame++) {
+    if (cancelled) return flatnessValues;
+
+    if (frame % 20 === 0) {
+      reportProgress('spectralFlatness', frame / frameCount, `Computing spectral flatness: ${Math.round(frame / frameCount * 100)}%`);
+    }
+
+    const startSample = frame * samplesPerFrame;
+
+    if (startSample + DEFAULT_FFT_SIZE > channelData.length) {
+      flatnessValues.push(flatnessValues.length > 0 ? flatnessValues[flatnessValues.length - 1] : 0);
+      continue;
+    }
+
+    const spectrum = computeMagnitudeSpectrum(
+      channelData.slice(startSample, startSample + DEFAULT_FFT_SIZE),
+      DEFAULT_FFT_SIZE
+    );
+
+    // Filter out zero or very small values for log computation
+    const nonZeroSpectrum = spectrum.filter(v => v > 1e-10);
+
+    if (nonZeroSpectrum.length === 0) {
+      flatnessValues.push(0);
+      continue;
+    }
+
+    // Geometric mean (use log for numerical stability)
+    let logSum = 0;
+    for (const v of nonZeroSpectrum) {
+      logSum += Math.log(v);
+    }
+    const geometricMean = Math.exp(logSum / nonZeroSpectrum.length);
+
+    // Arithmetic mean
+    let sum = 0;
+    for (const v of nonZeroSpectrum) {
+      sum += v;
+    }
+    const arithmeticMean = sum / nonZeroSpectrum.length;
+
+    // Flatness is ratio
+    const flatness = arithmeticMean > 0 ? geometricMean / arithmeticMean : 0;
+    flatnessValues.push(flatness);
+  }
+
+  // Already normalized between 0 and 1
+  return flatnessValues;
+}
+
+/**
+ * Extract Chroma Features per frame
+ * 12-bin pitch class representation (C, C#, D, D#, E, F, F#, G, G#, A, A#, B)
+ * Used for pitch/harmony detection
+ */
+function extractChromaFeatures(
+  channelData: Float32Array,
+  sampleRate: number,
+  fps: number
+): AudioAnalysis['chromaFeatures'] {
+  const samplesPerFrame = Math.floor(sampleRate / fps);
+  const frameCount = Math.ceil(channelData.length / samplesPerFrame);
+  const binFrequency = sampleRate / DEFAULT_FFT_SIZE;
+  const chromaFrames: number[][] = [];
+  const chromaEnergy: number[] = [];
+
+  // Reference frequency for A4
+  const A4 = 440;
+
+  // Key names for estimation
+  const KEY_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+
+  // Major and minor key profiles (Krumhansl-Schmuckler)
+  const MAJOR_PROFILE = [6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88];
+  const MINOR_PROFILE = [6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17];
+
+  // Accumulator for key estimation
+  const avgChroma = new Array(12).fill(0);
+  let totalFrames = 0;
+
+  for (let frame = 0; frame < frameCount; frame++) {
+    if (cancelled) return { chroma: chromaFrames, chromaEnergy, estimatedKey: 'C major', keyConfidence: 0 };
+
+    if (frame % 20 === 0) {
+      reportProgress('chroma', frame / frameCount, `Computing chroma features: ${Math.round(frame / frameCount * 100)}%`);
+    }
+
+    const startSample = frame * samplesPerFrame;
+
+    if (startSample + DEFAULT_FFT_SIZE > channelData.length) {
+      chromaFrames.push(chromaFrames.length > 0 ? [...chromaFrames[chromaFrames.length - 1]] : new Array(12).fill(0));
+      chromaEnergy.push(chromaEnergy.length > 0 ? chromaEnergy[chromaEnergy.length - 1] : 0);
+      continue;
+    }
+
+    const spectrum = computeMagnitudeSpectrum(
+      channelData.slice(startSample, startSample + DEFAULT_FFT_SIZE),
+      DEFAULT_FFT_SIZE
+    );
+
+    // Initialize 12 chroma bins
+    const chroma = new Array(12).fill(0);
+
+    // Map each FFT bin to a chroma bin
+    for (let i = 1; i < spectrum.length; i++) {
+      const frequency = i * binFrequency;
+
+      // Skip frequencies outside musical range (20Hz - 5kHz)
+      if (frequency < 20 || frequency > 5000) continue;
+
+      // Calculate pitch class (0-11, where 0 = C)
+      // MIDI note number = 69 + 12 * log2(f/440)
+      const midiNote = 69 + 12 * Math.log2(frequency / A4);
+      const pitchClass = Math.round(midiNote) % 12;
+      const normalizedPitchClass = pitchClass < 0 ? pitchClass + 12 : pitchClass;
+
+      // Accumulate energy into chroma bin
+      chroma[normalizedPitchClass] += spectrum[i] * spectrum[i];
+    }
+
+    // Calculate total energy for this frame
+    const frameEnergy = chroma.reduce((a, b) => a + b, 0);
+    chromaEnergy.push(frameEnergy);
+
+    // Normalize chroma vector
+    const chromaMax = Math.max(...chroma, 0.0001);
+    const normalizedChroma = chroma.map(v => v / chromaMax);
+
+    // Accumulate for key estimation
+    for (let i = 0; i < 12; i++) {
+      avgChroma[i] += normalizedChroma[i];
+    }
+    totalFrames++;
+
+    chromaFrames.push(normalizedChroma);
+  }
+
+  // Estimate key using Krumhansl-Schmuckler algorithm
+  // Normalize average chroma
+  if (totalFrames > 0) {
+    for (let i = 0; i < 12; i++) {
+      avgChroma[i] /= totalFrames;
+    }
+  }
+
+  // Correlate with all 24 key profiles (12 major + 12 minor)
+  let bestKey = 'C major';
+  let bestCorrelation = -Infinity;
+
+  for (let root = 0; root < 12; root++) {
+    // Rotate profile to start at this root
+    const rotatedMajor: number[] = [];
+    const rotatedMinor: number[] = [];
+    for (let i = 0; i < 12; i++) {
+      rotatedMajor.push(MAJOR_PROFILE[(i + 12 - root) % 12]);
+      rotatedMinor.push(MINOR_PROFILE[(i + 12 - root) % 12]);
+    }
+
+    // Calculate Pearson correlation
+    const majorCorr = pearsonCorrelation(avgChroma, rotatedMajor);
+    const minorCorr = pearsonCorrelation(avgChroma, rotatedMinor);
+
+    if (majorCorr > bestCorrelation) {
+      bestCorrelation = majorCorr;
+      bestKey = `${KEY_NAMES[root]} major`;
+    }
+    if (minorCorr > bestCorrelation) {
+      bestCorrelation = minorCorr;
+      bestKey = `${KEY_NAMES[root]} minor`;
+    }
+  }
+
+  // Normalize correlation to confidence (0-1)
+  const keyConfidence = Math.max(0, Math.min(1, (bestCorrelation + 1) / 2));
+
+  // Normalize chroma energy
+  const maxEnergy = Math.max(...chromaEnergy, 0.0001);
+  const normalizedEnergy = chromaEnergy.map(v => v / maxEnergy);
+
+  return {
+    chroma: chromaFrames,
+    chromaEnergy: normalizedEnergy,
+    estimatedKey: bestKey,
+    keyConfidence
+  };
+}
+
+/**
+ * Calculate Pearson correlation coefficient between two arrays
+ */
+function pearsonCorrelation(x: number[], y: number[]): number {
+  const n = x.length;
+  if (n !== y.length || n === 0) return 0;
+
+  let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0, sumY2 = 0;
+
+  for (let i = 0; i < n; i++) {
+    sumX += x[i];
+    sumY += y[i];
+    sumXY += x[i] * y[i];
+    sumX2 += x[i] * x[i];
+    sumY2 += y[i] * y[i];
+  }
+
+  const numerator = n * sumXY - sumX * sumY;
+  const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+
+  return denominator === 0 ? 0 : numerator / denominator;
+}
+
 function detectOnsets(
   channelData: Float32Array,
   sampleRate: number,
@@ -547,13 +934,43 @@ async function analyzeAudio(
   if (cancelled) throw new Error('Cancelled');
   reportProgress('spectral', 1, 'Spectral centroid complete');
 
-  // Phase 5: Onset detection
+  // Phase 5: Zero Crossing Rate
+  reportProgress('zcr', 0, 'Computing zero crossing rate...');
+  const zeroCrossingRate = extractZeroCrossingRate(channelData, sampleRate, fps);
+  if (cancelled) throw new Error('Cancelled');
+  reportProgress('zcr', 1, 'Zero crossing rate complete');
+
+  // Phase 6: Spectral Flux
+  reportProgress('spectralFlux', 0, 'Computing spectral flux...');
+  const spectralFlux = extractSpectralFlux(channelData, sampleRate, fps);
+  if (cancelled) throw new Error('Cancelled');
+  reportProgress('spectralFlux', 1, 'Spectral flux complete');
+
+  // Phase 7: Spectral Rolloff
+  reportProgress('spectralRolloff', 0, 'Computing spectral rolloff...');
+  const spectralRolloff = extractSpectralRolloff(channelData, sampleRate, fps);
+  if (cancelled) throw new Error('Cancelled');
+  reportProgress('spectralRolloff', 1, 'Spectral rolloff complete');
+
+  // Phase 8: Spectral Flatness
+  reportProgress('spectralFlatness', 0, 'Computing spectral flatness...');
+  const spectralFlatness = extractSpectralFlatness(channelData, sampleRate, fps);
+  if (cancelled) throw new Error('Cancelled');
+  reportProgress('spectralFlatness', 1, 'Spectral flatness complete');
+
+  // Phase 9: Chroma Features
+  reportProgress('chroma', 0, 'Computing chroma features...');
+  const chromaFeatures = extractChromaFeatures(channelData, sampleRate, fps);
+  if (cancelled) throw new Error('Cancelled');
+  reportProgress('chroma', 1, 'Chroma features complete');
+
+  // Phase 10: Onset detection
   reportProgress('onsets', 0, 'Detecting onsets...');
   const onsets = detectOnsets(channelData, sampleRate, fps);
   if (cancelled) throw new Error('Cancelled');
   reportProgress('onsets', 1, 'Onset detection complete');
 
-  // Phase 6: BPM
+  // Phase 11: BPM
   reportProgress('bpm', 0, 'Detecting BPM...');
   const bpm = detectBPM(channelData, sampleRate);
   if (cancelled) throw new Error('Cancelled');
@@ -568,7 +985,12 @@ async function analyzeAudio(
     spectralCentroid,
     frequencyBands,
     onsets,
-    bpm
+    bpm,
+    spectralFlux,
+    zeroCrossingRate,
+    spectralRolloff,
+    spectralFlatness,
+    chromaFeatures
   };
 }
 

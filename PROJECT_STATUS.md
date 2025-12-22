@@ -1,7 +1,7 @@
 # Project Status Audit
 
-**Last Updated:** December 20, 2025
-**Test Status:** 1170 tests passing (43 skipped), 0 TypeScript errors
+**Last Updated:** December 22, 2025
+**Test Status:** 1185 tests passing (43 skipped), 0 TypeScript errors
 **Build Status:** Compiles successfully
 
 ---
@@ -10,28 +10,49 @@
 
 | Metric | Count | Status |
 |--------|-------|--------|
-| Lines of Code | 128,114 | TypeScript + Vue |
-| TypeScript Files | 215 | All compiling |
-| Vue Components | 57 | All rendering |
-| Services | 42 | All exported |
+| Lines of Code | 159,054+ | TypeScript + Vue |
+| TypeScript Files | 252+ | All compiling |
+| Vue Components | 63+ | All rendering |
+| Services | 53+ | All exported |
 | Engine Files | 24 | Functional |
-| Test Suites | 29 | All passing |
-| Total Tests | 1170 | 96.5% pass rate |
+| Test Suites | 34 | All passing |
+| Total Tests | 1185+ | 96.5% pass rate |
 | Layer Types | 17 | All implemented |
 | Effects | 22 | 4 categories |
 | Easing Functions | 35 | All Penner + custom |
 | Camera Presets | 22 | Trajectory presets |
+| Particle Presets | 24 | Built-in |
+| AI Services | 4 | Camera tracking, Sapiens, Depth, Agent |
 
 ## Known Issues (December 2025)
 
 | Issue | Status |
 |-------|--------|
-| ScrubableNumber drag inputs | BROKEN |
-| Project panel drag to timeline | BROKEN |
-| Upper-left viewport controls | BROKEN |
-| Three.js multi-instance conflict | WORKAROUND |
+| ScrubableNumber drag inputs | **FIXED** |
+| Project panel drag to timeline | **FIXED** |
+| Upper-left viewport controls | **FIXED** |
+| Three.js multi-instance conflict | MITIGATED |
 
 See `HANDOFF.md` for detailed issue descriptions and workarounds.
+
+## New Features (December 22, 2025)
+
+| Feature | Status |
+|---------|--------|
+| Camera Tracking Import (COLMAP, Blender, Uni3C) | **COMPLETE** |
+| AI Camera Motion Analysis (VLM) | **COMPLETE** |
+| Sapiens Integration (human depth/pose) | **COMPLETE** |
+| Shadow Catcher Material | **COMPLETE** |
+| Track Point Visualization | **COMPLETE** |
+| UI Overhaul (dark purple theme) | **COMPLETE** |
+
+## Tutorial Compatibility
+
+| Tutorial | Compatibility |
+|----------|---------------|
+| Tutorial 1 (AE in 10 Minutes) | 89% |
+| Tutorial 10 (3D Camera Tracker) | **55%** (up from 15%) |
+| Tutorial 11 (CC Particle World) | **100%** |
 
 ---
 

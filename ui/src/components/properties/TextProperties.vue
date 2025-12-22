@@ -75,7 +75,7 @@
          </div>
       </div>
       <div class="row">
-         <label>Anchor Pt</label>
+         <label>Origin</label>
          <div class="vec2">
             <ScrubableNumber :modelValue="transform.anchorPoint.value.x" @update:modelValue="v => updateTransform('anchorPoint', 'x', v)" />
             <ScrubableNumber :modelValue="transform.anchorPoint.value.y" @update:modelValue="v => updateTransform('anchorPoint', 'y', v)" />
@@ -344,6 +344,256 @@
                 Randomize Order
               </label>
             </div>
+
+            <!-- Advanced Range Selector Options -->
+            <div class="row">
+              <label>Mode</label>
+              <select
+                :value="animator.rangeSelector.selectorMode || 'add'"
+                @change="e => updateRangeSelector(animator.id, 'selectorMode', (e.target as HTMLSelectElement).value)"
+                class="full-select"
+              >
+                <option value="add">Add</option>
+                <option value="subtract">Subtract</option>
+                <option value="intersect">Intersect</option>
+                <option value="min">Min</option>
+                <option value="max">Max</option>
+                <option value="difference">Difference</option>
+              </select>
+            </div>
+
+            <div class="row">
+              <label>Amount %</label>
+              <ScrubableNumber
+                :modelValue="animator.rangeSelector.amount ?? 100"
+                @update:modelValue="v => updateRangeSelector(animator.id, 'amount', v)"
+                :min="0"
+                :max="100"
+                :precision="0"
+              />
+            </div>
+
+            <div class="row">
+              <label>Smoothness %</label>
+              <ScrubableNumber
+                :modelValue="animator.rangeSelector.smoothness ?? 100"
+                @update:modelValue="v => updateRangeSelector(animator.id, 'smoothness', v)"
+                :min="0"
+                :max="100"
+                :precision="0"
+              />
+            </div>
+
+            <div class="row">
+              <label>Ease High %</label>
+              <ScrubableNumber
+                :modelValue="animator.rangeSelector.ease?.high ?? 100"
+                @update:modelValue="v => updateRangeSelector(animator.id, 'ease', { ...animator.rangeSelector.ease, high: v })"
+                :min="0"
+                :max="100"
+                :precision="0"
+              />
+            </div>
+
+            <div class="row">
+              <label>Ease Low %</label>
+              <ScrubableNumber
+                :modelValue="animator.rangeSelector.ease?.low ?? 0"
+                @update:modelValue="v => updateRangeSelector(animator.id, 'ease', { ...animator.rangeSelector.ease, low: v })"
+                :min="0"
+                :max="100"
+                :precision="0"
+              />
+            </div>
+          </div>
+
+          <!-- Wiggly Selector -->
+          <div class="subsection">
+            <div class="subsection-title">
+              <label class="section-toggle">
+                <input
+                  type="checkbox"
+                  :checked="animator.wigglySelector?.enabled"
+                  @change="toggleWigglySelector(animator.id)"
+                />
+                Wiggly Selector
+              </label>
+            </div>
+
+            <template v-if="animator.wigglySelector?.enabled">
+              <div class="row">
+                <label>Mode</label>
+                <select
+                  :value="animator.wigglySelector.mode || 'add'"
+                  @change="e => updateWigglySelector(animator.id, 'mode', (e.target as HTMLSelectElement).value)"
+                  class="full-select"
+                >
+                  <option value="add">Add</option>
+                  <option value="subtract">Subtract</option>
+                  <option value="intersect">Intersect</option>
+                  <option value="min">Min</option>
+                  <option value="max">Max</option>
+                  <option value="difference">Difference</option>
+                </select>
+              </div>
+
+              <div class="row">
+                <label>Max Amount %</label>
+                <ScrubableNumber
+                  :modelValue="animator.wigglySelector.maxAmount ?? 100"
+                  @update:modelValue="v => updateWigglySelector(animator.id, 'maxAmount', v)"
+                  :min="0"
+                  :max="200"
+                  :precision="0"
+                />
+              </div>
+
+              <div class="row">
+                <label>Min Amount %</label>
+                <ScrubableNumber
+                  :modelValue="animator.wigglySelector.minAmount ?? 0"
+                  @update:modelValue="v => updateWigglySelector(animator.id, 'minAmount', v)"
+                  :min="0"
+                  :max="200"
+                  :precision="0"
+                />
+              </div>
+
+              <div class="row">
+                <label>Wiggles/Sec</label>
+                <ScrubableNumber
+                  :modelValue="animator.wigglySelector.wigglesPerSecond ?? 2"
+                  @update:modelValue="v => updateWigglySelector(animator.id, 'wigglesPerSecond', v)"
+                  :min="0.1"
+                  :max="20"
+                  :precision="1"
+                />
+              </div>
+
+              <div class="row">
+                <label>Correlation %</label>
+                <ScrubableNumber
+                  :modelValue="animator.wigglySelector.correlation ?? 50"
+                  @update:modelValue="v => updateWigglySelector(animator.id, 'correlation', v)"
+                  :min="0"
+                  :max="100"
+                  :precision="0"
+                />
+              </div>
+
+              <div class="row checkbox-row">
+                <label>
+                  <input
+                    type="checkbox"
+                    :checked="animator.wigglySelector.lockDimensions"
+                    @change="updateWigglySelector(animator.id, 'lockDimensions', !animator.wigglySelector.lockDimensions)"
+                  />
+                  Lock Dimensions
+                </label>
+              </div>
+
+              <div class="row">
+                <label>Based On</label>
+                <select
+                  :value="animator.wigglySelector.basedOn || 'characters'"
+                  @change="e => updateWigglySelector(animator.id, 'basedOn', (e.target as HTMLSelectElement).value)"
+                  class="full-select"
+                >
+                  <option value="characters">Characters</option>
+                  <option value="words">Words</option>
+                  <option value="lines">Lines</option>
+                </select>
+              </div>
+
+              <div class="row">
+                <label>Random Seed</label>
+                <ScrubableNumber
+                  :modelValue="animator.wigglySelector.randomSeed ?? 12345"
+                  @update:modelValue="v => updateWigglySelector(animator.id, 'randomSeed', Math.floor(v))"
+                  :min="0"
+                  :max="99999"
+                  :precision="0"
+                />
+              </div>
+            </template>
+          </div>
+
+          <!-- Expression Selector -->
+          <div class="subsection">
+            <div class="subsection-title">
+              <label class="section-toggle">
+                <input
+                  type="checkbox"
+                  :checked="animator.expressionSelector?.enabled"
+                  @change="toggleExpressionSelector(animator.id)"
+                />
+                Expression Selector
+              </label>
+            </div>
+
+            <template v-if="animator.expressionSelector?.enabled">
+              <div class="row">
+                <label>Mode</label>
+                <select
+                  :value="animator.expressionSelector.mode || 'add'"
+                  @change="e => updateExpressionSelector(animator.id, 'mode', (e.target as HTMLSelectElement).value)"
+                  class="full-select"
+                >
+                  <option value="add">Add</option>
+                  <option value="subtract">Subtract</option>
+                  <option value="intersect">Intersect</option>
+                  <option value="min">Min</option>
+                  <option value="max">Max</option>
+                  <option value="difference">Difference</option>
+                </select>
+              </div>
+
+              <div class="row">
+                <label>Preset</label>
+                <select
+                  @change="e => { const val = (e.target as HTMLSelectElement).value; if (val) applyExpressionPreset(animator.id, val); (e.target as HTMLSelectElement).value = ''; }"
+                  class="full-select"
+                >
+                  <option value="">Apply Preset...</option>
+                  <option v-for="preset in expressionPresetList" :key="preset.key" :value="preset.key">
+                    {{ preset.label }}
+                  </option>
+                </select>
+              </div>
+
+              <div class="row">
+                <label>Based On</label>
+                <select
+                  :value="animator.expressionSelector.basedOn || 'characters'"
+                  @change="e => updateExpressionSelector(animator.id, 'basedOn', (e.target as HTMLSelectElement).value)"
+                  class="full-select"
+                >
+                  <option value="characters">Characters</option>
+                  <option value="words">Words</option>
+                  <option value="lines">Lines</option>
+                </select>
+              </div>
+
+              <div class="row expression-row">
+                <label>Expression</label>
+                <textarea
+                  :value="animator.expressionSelector.amountExpression || ''"
+                  @input="e => updateExpressionSelector(animator.id, 'amountExpression', (e.target as HTMLTextAreaElement).value)"
+                  class="expression-textarea"
+                  placeholder="e.g., textIndex / textTotal * 100"
+                  rows="3"
+                ></textarea>
+              </div>
+
+              <div class="expression-help">
+                <div class="help-title">Available Variables:</div>
+                <code>textIndex</code> - Current character index (0-based)<br>
+                <code>textTotal</code> - Total character count<br>
+                <code>selectorValue</code> - Range selector output (0-100)<br>
+                <code>time</code> - Current time in seconds<br>
+                <code>frame</code> - Current frame number
+              </div>
+            </template>
           </div>
 
           <!-- Animator Properties -->
@@ -543,7 +793,12 @@ import {
   createTextAnimator,
   type TextAnimatorPreset,
 } from '@/services/textAnimator';
-import type { TextAnimator, TextAnimatorPresetType, TextRangeSelector } from '@/types/project';
+import type { TextAnimator, TextAnimatorPresetType, TextRangeSelector, TextWigglySelector, TextExpressionSelector } from '@/types/project';
+import {
+  DEFAULT_WIGGLY_SELECTOR,
+  DEFAULT_EXPRESSION_SELECTOR,
+  EXPRESSION_PRESETS,
+} from '@/services/textAnimator';
 
 const props = defineProps<{ layer: any }>();
 const emit = defineEmits(['update']);
@@ -707,6 +962,88 @@ function getAnimatorPropertyValue(animator: TextAnimator, propKey: string): any 
 function hasAnimatorProperty(animator: TextAnimator, propKey: string): boolean {
   return propKey in animator.properties;
 }
+
+// Wiggly Selector functions
+function toggleWigglySelector(animatorId: string) {
+  const currentAnimators = animators.value.map(a => {
+    if (a.id !== animatorId) return a;
+    const updated = { ...a };
+    if (updated.wigglySelector?.enabled) {
+      // Disable
+      updated.wigglySelector = { ...updated.wigglySelector, enabled: false };
+    } else {
+      // Enable (create if doesn't exist)
+      updated.wigglySelector = updated.wigglySelector
+        ? { ...updated.wigglySelector, enabled: true }
+        : { ...DEFAULT_WIGGLY_SELECTOR, enabled: true };
+    }
+    return updated;
+  });
+  store.updateLayerData(props.layer.id, { animators: currentAnimators });
+  emit('update');
+}
+
+function updateWigglySelector(animatorId: string, key: keyof TextWigglySelector, value: any) {
+  const currentAnimators = animators.value.map(a => {
+    if (a.id !== animatorId) return a;
+    const updated = { ...a };
+    updated.wigglySelector = {
+      ...(updated.wigglySelector || DEFAULT_WIGGLY_SELECTOR),
+      [key]: value
+    };
+    return updated;
+  });
+  store.updateLayerData(props.layer.id, { animators: currentAnimators });
+  emit('update');
+}
+
+// Expression Selector functions
+function toggleExpressionSelector(animatorId: string) {
+  const currentAnimators = animators.value.map(a => {
+    if (a.id !== animatorId) return a;
+    const updated = { ...a };
+    if (updated.expressionSelector?.enabled) {
+      // Disable
+      updated.expressionSelector = { ...updated.expressionSelector, enabled: false };
+    } else {
+      // Enable (create if doesn't exist)
+      updated.expressionSelector = updated.expressionSelector
+        ? { ...updated.expressionSelector, enabled: true }
+        : { ...DEFAULT_EXPRESSION_SELECTOR, enabled: true };
+    }
+    return updated;
+  });
+  store.updateLayerData(props.layer.id, { animators: currentAnimators });
+  emit('update');
+}
+
+function updateExpressionSelector(animatorId: string, key: keyof TextExpressionSelector, value: any) {
+  const currentAnimators = animators.value.map(a => {
+    if (a.id !== animatorId) return a;
+    const updated = { ...a };
+    updated.expressionSelector = {
+      ...(updated.expressionSelector || DEFAULT_EXPRESSION_SELECTOR),
+      [key]: value
+    };
+    return updated;
+  });
+  store.updateLayerData(props.layer.id, { animators: currentAnimators });
+  emit('update');
+}
+
+function applyExpressionPreset(animatorId: string, presetKey: string) {
+  const expression = EXPRESSION_PRESETS[presetKey as keyof typeof EXPRESSION_PRESETS];
+  if (expression) {
+    updateExpressionSelector(animatorId, 'amountExpression', expression);
+  }
+}
+
+// Expression presets list for dropdown
+const expressionPresetList = Object.entries(EXPRESSION_PRESETS).map(([key, value]) => ({
+  key,
+  label: key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
+  expression: value
+}));
 
 function getProperty(name: string) {
     return props.layer.properties?.find((p: any) => p.name === name);
@@ -1085,5 +1422,73 @@ async function handleFontChange(family: string) {
   cursor: pointer;
   border-radius: 3px;
   background: #222;
+}
+
+/* Wiggly & Expression Selector Styles */
+.section-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  color: #aaa;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+.section-toggle input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+}
+
+.expression-row {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+.expression-row label {
+  width: auto;
+}
+
+.expression-textarea {
+  width: 100%;
+  min-height: 60px;
+  background: #1a1a1a;
+  border: 1px solid #444;
+  color: #ddd;
+  padding: 8px;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  resize: vertical;
+  border-radius: 3px;
+}
+.expression-textarea:focus {
+  border-color: #4a90d9;
+  outline: none;
+}
+.expression-textarea::placeholder {
+  color: #555;
+}
+
+.expression-help {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 3px;
+  padding: 8px 10px;
+  font-size: 10px;
+  color: #666;
+  margin-top: 4px;
+}
+.expression-help .help-title {
+  color: #888;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.expression-help code {
+  background: #252525;
+  padding: 1px 4px;
+  border-radius: 2px;
+  color: #8B5CF6;
+  font-family: 'Consolas', 'Monaco', monospace;
 }
 </style>

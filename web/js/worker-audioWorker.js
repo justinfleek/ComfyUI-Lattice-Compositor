@@ -197,6 +197,232 @@ function extractSpectralCentroid(channelData, sampleRate, fps) {
   const maxValue = Math.max(...centroids, 1e-4);
   return centroids.map((v) => v / maxValue);
 }
+function extractZeroCrossingRate(channelData, sampleRate, fps) {
+  const samplesPerFrame = Math.floor(sampleRate / fps);
+  const frameCount = Math.ceil(channelData.length / samplesPerFrame);
+  const zcrValues = [];
+  for (let frame = 0; frame < frameCount; frame++) {
+    if (cancelled) return zcrValues;
+    const startSample = frame * samplesPerFrame;
+    const endSample = Math.min(startSample + samplesPerFrame, channelData.length);
+    let crossings = 0;
+    for (let i = startSample + 1; i < endSample; i++) {
+      if (channelData[i] >= 0 && channelData[i - 1] < 0 || channelData[i] < 0 && channelData[i - 1] >= 0) {
+        crossings++;
+      }
+    }
+    const windowLength = endSample - startSample;
+    zcrValues.push(windowLength > 1 ? crossings / (windowLength - 1) : 0);
+  }
+  const maxValue = Math.max(...zcrValues, 1e-4);
+  return zcrValues.map((v) => v / maxValue);
+}
+function extractSpectralFlux(channelData, sampleRate, fps) {
+  const samplesPerFrame = Math.floor(sampleRate / fps);
+  const frameCount = Math.ceil(channelData.length / samplesPerFrame);
+  const fluxValues = [];
+  let prevSpectrum = null;
+  for (let frame = 0; frame < frameCount; frame++) {
+    if (cancelled) return fluxValues;
+    if (frame % 20 === 0) {
+      reportProgress("spectralFlux", frame / frameCount, `Computing spectral flux: ${Math.round(frame / frameCount * 100)}%`);
+    }
+    const startSample = frame * samplesPerFrame;
+    if (startSample + DEFAULT_FFT_SIZE > channelData.length) {
+      fluxValues.push(fluxValues.length > 0 ? fluxValues[fluxValues.length - 1] : 0);
+      continue;
+    }
+    const spectrum = computeMagnitudeSpectrum(
+      channelData.slice(startSample, startSample + DEFAULT_FFT_SIZE),
+      DEFAULT_FFT_SIZE
+    );
+    if (prevSpectrum) {
+      let flux = 0;
+      for (let i = 0; i < spectrum.length; i++) {
+        const diff = spectrum[i] - prevSpectrum[i];
+        if (diff > 0) flux += diff;
+      }
+      fluxValues.push(flux);
+    } else {
+      fluxValues.push(0);
+    }
+    prevSpectrum = spectrum;
+  }
+  const maxValue = Math.max(...fluxValues, 1e-4);
+  return fluxValues.map((v) => v / maxValue);
+}
+function extractSpectralRolloff(channelData, sampleRate, fps, rolloffPercent = 0.85) {
+  const samplesPerFrame = Math.floor(sampleRate / fps);
+  const frameCount = Math.ceil(channelData.length / samplesPerFrame);
+  const binFrequency = sampleRate / DEFAULT_FFT_SIZE;
+  const rolloffValues = [];
+  for (let frame = 0; frame < frameCount; frame++) {
+    if (cancelled) return rolloffValues;
+    if (frame % 20 === 0) {
+      reportProgress("spectralRolloff", frame / frameCount, `Computing spectral rolloff: ${Math.round(frame / frameCount * 100)}%`);
+    }
+    const startSample = frame * samplesPerFrame;
+    if (startSample + DEFAULT_FFT_SIZE > channelData.length) {
+      rolloffValues.push(rolloffValues.length > 0 ? rolloffValues[rolloffValues.length - 1] : 0);
+      continue;
+    }
+    const spectrum = computeMagnitudeSpectrum(
+      channelData.slice(startSample, startSample + DEFAULT_FFT_SIZE),
+      DEFAULT_FFT_SIZE
+    );
+    let totalEnergy = 0;
+    for (let i = 0; i < spectrum.length; i++) {
+      totalEnergy += spectrum[i] * spectrum[i];
+    }
+    const threshold = totalEnergy * rolloffPercent;
+    let cumulativeEnergy = 0;
+    let rolloffBin = 0;
+    for (let i = 0; i < spectrum.length; i++) {
+      cumulativeEnergy += spectrum[i] * spectrum[i];
+      if (cumulativeEnergy >= threshold) {
+        rolloffBin = i;
+        break;
+      }
+    }
+    rolloffValues.push(rolloffBin * binFrequency);
+  }
+  const nyquist = sampleRate / 2;
+  return rolloffValues.map((v) => v / nyquist);
+}
+function extractSpectralFlatness(channelData, sampleRate, fps) {
+  const samplesPerFrame = Math.floor(sampleRate / fps);
+  const frameCount = Math.ceil(channelData.length / samplesPerFrame);
+  const flatnessValues = [];
+  for (let frame = 0; frame < frameCount; frame++) {
+    if (cancelled) return flatnessValues;
+    if (frame % 20 === 0) {
+      reportProgress("spectralFlatness", frame / frameCount, `Computing spectral flatness: ${Math.round(frame / frameCount * 100)}%`);
+    }
+    const startSample = frame * samplesPerFrame;
+    if (startSample + DEFAULT_FFT_SIZE > channelData.length) {
+      flatnessValues.push(flatnessValues.length > 0 ? flatnessValues[flatnessValues.length - 1] : 0);
+      continue;
+    }
+    const spectrum = computeMagnitudeSpectrum(
+      channelData.slice(startSample, startSample + DEFAULT_FFT_SIZE),
+      DEFAULT_FFT_SIZE
+    );
+    const nonZeroSpectrum = spectrum.filter((v) => v > 1e-10);
+    if (nonZeroSpectrum.length === 0) {
+      flatnessValues.push(0);
+      continue;
+    }
+    let logSum = 0;
+    for (const v of nonZeroSpectrum) {
+      logSum += Math.log(v);
+    }
+    const geometricMean = Math.exp(logSum / nonZeroSpectrum.length);
+    let sum = 0;
+    for (const v of nonZeroSpectrum) {
+      sum += v;
+    }
+    const arithmeticMean = sum / nonZeroSpectrum.length;
+    const flatness = arithmeticMean > 0 ? geometricMean / arithmeticMean : 0;
+    flatnessValues.push(flatness);
+  }
+  return flatnessValues;
+}
+function extractChromaFeatures(channelData, sampleRate, fps) {
+  const samplesPerFrame = Math.floor(sampleRate / fps);
+  const frameCount = Math.ceil(channelData.length / samplesPerFrame);
+  const binFrequency = sampleRate / DEFAULT_FFT_SIZE;
+  const chromaFrames = [];
+  const chromaEnergy = [];
+  const A4 = 440;
+  const KEY_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+  const MAJOR_PROFILE = [6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88];
+  const MINOR_PROFILE = [6.33, 2.68, 3.52, 5.38, 2.6, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17];
+  const avgChroma = new Array(12).fill(0);
+  let totalFrames = 0;
+  for (let frame = 0; frame < frameCount; frame++) {
+    if (cancelled) return { chroma: chromaFrames, chromaEnergy, estimatedKey: "C major", keyConfidence: 0 };
+    if (frame % 20 === 0) {
+      reportProgress("chroma", frame / frameCount, `Computing chroma features: ${Math.round(frame / frameCount * 100)}%`);
+    }
+    const startSample = frame * samplesPerFrame;
+    if (startSample + DEFAULT_FFT_SIZE > channelData.length) {
+      chromaFrames.push(chromaFrames.length > 0 ? [...chromaFrames[chromaFrames.length - 1]] : new Array(12).fill(0));
+      chromaEnergy.push(chromaEnergy.length > 0 ? chromaEnergy[chromaEnergy.length - 1] : 0);
+      continue;
+    }
+    const spectrum = computeMagnitudeSpectrum(
+      channelData.slice(startSample, startSample + DEFAULT_FFT_SIZE),
+      DEFAULT_FFT_SIZE
+    );
+    const chroma = new Array(12).fill(0);
+    for (let i = 1; i < spectrum.length; i++) {
+      const frequency = i * binFrequency;
+      if (frequency < 20 || frequency > 5e3) continue;
+      const midiNote = 69 + 12 * Math.log2(frequency / A4);
+      const pitchClass = Math.round(midiNote) % 12;
+      const normalizedPitchClass = pitchClass < 0 ? pitchClass + 12 : pitchClass;
+      chroma[normalizedPitchClass] += spectrum[i] * spectrum[i];
+    }
+    const frameEnergy = chroma.reduce((a, b) => a + b, 0);
+    chromaEnergy.push(frameEnergy);
+    const chromaMax = Math.max(...chroma, 1e-4);
+    const normalizedChroma = chroma.map((v) => v / chromaMax);
+    for (let i = 0; i < 12; i++) {
+      avgChroma[i] += normalizedChroma[i];
+    }
+    totalFrames++;
+    chromaFrames.push(normalizedChroma);
+  }
+  if (totalFrames > 0) {
+    for (let i = 0; i < 12; i++) {
+      avgChroma[i] /= totalFrames;
+    }
+  }
+  let bestKey = "C major";
+  let bestCorrelation = -Infinity;
+  for (let root = 0; root < 12; root++) {
+    const rotatedMajor = [];
+    const rotatedMinor = [];
+    for (let i = 0; i < 12; i++) {
+      rotatedMajor.push(MAJOR_PROFILE[(i + 12 - root) % 12]);
+      rotatedMinor.push(MINOR_PROFILE[(i + 12 - root) % 12]);
+    }
+    const majorCorr = pearsonCorrelation(avgChroma, rotatedMajor);
+    const minorCorr = pearsonCorrelation(avgChroma, rotatedMinor);
+    if (majorCorr > bestCorrelation) {
+      bestCorrelation = majorCorr;
+      bestKey = `${KEY_NAMES[root]} major`;
+    }
+    if (minorCorr > bestCorrelation) {
+      bestCorrelation = minorCorr;
+      bestKey = `${KEY_NAMES[root]} minor`;
+    }
+  }
+  const keyConfidence = Math.max(0, Math.min(1, (bestCorrelation + 1) / 2));
+  const maxEnergy = Math.max(...chromaEnergy, 1e-4);
+  const normalizedEnergy = chromaEnergy.map((v) => v / maxEnergy);
+  return {
+    chroma: chromaFrames,
+    chromaEnergy: normalizedEnergy,
+    estimatedKey: bestKey,
+    keyConfidence
+  };
+}
+function pearsonCorrelation(x, y) {
+  const n = x.length;
+  if (n !== y.length || n === 0) return 0;
+  let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0, sumY2 = 0;
+  for (let i = 0; i < n; i++) {
+    sumX += x[i];
+    sumY += y[i];
+    sumXY += x[i] * y[i];
+    sumX2 += x[i] * x[i];
+    sumY2 += y[i] * y[i];
+  }
+  const numerator = n * sumXY - sumX * sumY;
+  const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+  return denominator === 0 ? 0 : numerator / denominator;
+}
 function detectOnsets(channelData, sampleRate, fps, sensitivity = 0.5) {
   const samplesPerFrame = Math.floor(sampleRate / fps);
   const frameCount = Math.ceil(channelData.length / samplesPerFrame);
@@ -322,6 +548,26 @@ async function analyzeAudio(channelData, sampleRate, fps) {
   const spectralCentroid = extractSpectralCentroid(channelData, sampleRate, fps);
   if (cancelled) throw new Error("Cancelled");
   reportProgress("spectral", 1, "Spectral centroid complete");
+  reportProgress("zcr", 0, "Computing zero crossing rate...");
+  const zeroCrossingRate = extractZeroCrossingRate(channelData, sampleRate, fps);
+  if (cancelled) throw new Error("Cancelled");
+  reportProgress("zcr", 1, "Zero crossing rate complete");
+  reportProgress("spectralFlux", 0, "Computing spectral flux...");
+  const spectralFlux = extractSpectralFlux(channelData, sampleRate, fps);
+  if (cancelled) throw new Error("Cancelled");
+  reportProgress("spectralFlux", 1, "Spectral flux complete");
+  reportProgress("spectralRolloff", 0, "Computing spectral rolloff...");
+  const spectralRolloff = extractSpectralRolloff(channelData, sampleRate, fps);
+  if (cancelled) throw new Error("Cancelled");
+  reportProgress("spectralRolloff", 1, "Spectral rolloff complete");
+  reportProgress("spectralFlatness", 0, "Computing spectral flatness...");
+  const spectralFlatness = extractSpectralFlatness(channelData, sampleRate, fps);
+  if (cancelled) throw new Error("Cancelled");
+  reportProgress("spectralFlatness", 1, "Spectral flatness complete");
+  reportProgress("chroma", 0, "Computing chroma features...");
+  const chromaFeatures = extractChromaFeatures(channelData, sampleRate, fps);
+  if (cancelled) throw new Error("Cancelled");
+  reportProgress("chroma", 1, "Chroma features complete");
   reportProgress("onsets", 0, "Detecting onsets...");
   const onsets = detectOnsets(channelData, sampleRate, fps);
   if (cancelled) throw new Error("Cancelled");
@@ -339,7 +585,12 @@ async function analyzeAudio(channelData, sampleRate, fps) {
     spectralCentroid,
     frequencyBands,
     onsets,
-    bpm
+    bpm,
+    spectralFlux,
+    zeroCrossingRate,
+    spectralRolloff,
+    spectralFlatness,
+    chromaFeatures
   };
 }
 self.onmessage = async (event) => {

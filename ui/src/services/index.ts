@@ -1033,3 +1033,159 @@ export {
   reorderBuffers,
   gaussianSplatting,
 } from './gaussianSplatting';
+
+// ============================================================================
+// VIDEO TRANSITIONS
+// (Inspired by filliptm's ComfyUI_Fill-Nodes)
+// Attribution: https://github.com/filliptm/ComfyUI_Fill-Nodes
+// ============================================================================
+
+export {
+  renderTransition,
+  getTransitionProgress,
+  createDefaultTransition,
+  getAllTransitionModes,
+  getTransitionModeName,
+  TRANSITION_PRESETS,
+  type TransitionBlendMode,
+  type TransitionEasing,
+  type TransitionConfig,
+  type TransitionState,
+} from './video';
+
+// ============================================================================
+// FRAME INTERPOLATION (RIFE)
+// (Inspired by filliptm's ComfyUI_Fill-Nodes, powered by RIFE)
+// Attribution: https://github.com/filliptm/ComfyUI_Fill-Nodes
+//              https://github.com/megvii-research/ECCV2022-RIFE
+// ============================================================================
+
+export {
+  // Types
+  type RIFEModel,
+  type InterpolationFactor,
+  type InterpolationModel,
+  type PairInterpolationResult,
+  type SequenceInterpolationResult,
+  type SlowMoResult,
+  type InterpolationProgressCallback,
+
+  // API functions
+  getInterpolationModels,
+  interpolateFramePair,
+  interpolateSequence,
+  createSlowMotion,
+
+  // Client-side fallback
+  blendFrames,
+  interpolateFramesClient,
+
+  // Utilities
+  base64ToImageData,
+  interpolationBase64ToBlob,
+
+  // Presets
+  INTERPOLATION_PRESETS,
+  isInterpolationAvailable,
+} from './video';
+
+// ============================================================================
+// AUDIO STEM SEPARATION
+// (Inspired by filliptm's ComfyUI_Fill-Nodes, powered by Facebook's Demucs)
+// Attribution: https://github.com/filliptm/ComfyUI_Fill-Nodes
+//              https://github.com/facebookresearch/demucs
+// ============================================================================
+
+export {
+  // Types
+  type StemType,
+  type DemucsModel,
+  type StemModel,
+  type StemSeparationResult,
+  type StemIsolationResult,
+  type StemProgressCallback,
+
+  // Main functions
+  getStemModels,
+  separateStems,
+  isolateStem,
+  separateStemsForReactivity,
+
+  // Utilities
+  base64ToBlob,
+  downloadStem,
+  createAudioElement,
+
+  // Presets & availability
+  STEM_PRESETS,
+  isStemSeparationAvailable,
+} from './audio';
+
+// ============================================================================
+// ENHANCED BEAT DETECTION
+// (Inspired by filliptm's ComfyUI_Fill-Nodes audio processing)
+// Attribution: https://github.com/filliptm/ComfyUI_Fill-Nodes
+// ============================================================================
+
+export {
+  // Types
+  type EnhancedBeat,
+  type BeatGrid,
+  type EnhancedBeatConfig,
+
+  // Main functions
+  createEnhancedBeatGrid,
+  generateSubBeats,
+  getNearestBeat,
+  isOnBeat,
+  isOnDownbeat,
+  getBeatIntensity,
+  getPulseIntensity,
+
+  // Config & Presets
+  DEFAULT_BEAT_CONFIG,
+  BEAT_DETECTION_PRESETS,
+  isEnhancedBeatDetectionAvailable,
+} from './audio';
+
+// ============================================================================
+// CAMERA TRACKING IMPORT
+// ============================================================================
+
+export {
+  parseWeylTrackingJSON,
+  parseBlenderTrackingJSON,
+  parseCOLMAPOutput,
+  detectTrackingFormat,
+  importCameraTracking,
+  exportCameraToTrackingFormat,
+} from './cameraTrackingImport';
+
+// ============================================================================
+// TRACK POINT SERVICE
+// ============================================================================
+
+export {
+  useTrackPoints,
+  createTrack,
+  deleteTrack,
+  deleteSelectedTracks,
+  setTrackPosition,
+  getTrackPosition,
+  removeTrackPosition,
+  getTrackPositions,
+  getPointsAtFrame,
+  selectTrack,
+  deselectTrack,
+  clearSelection,
+  setActiveTrack,
+  setGroundPlane,
+  defineGroundPlaneFromPoints,
+  setOrigin3D,
+  importTrackPoints2D,
+  importTrackPoints3D,
+  exportTrackPoints2D,
+  clearAllTracks,
+  getTrackStats,
+  trackPointState,
+} from './trackPointService';

@@ -49,6 +49,14 @@ export interface AudioAnalysis {
   spectralRolloff: number[];        // High-frequency energy cutoff
   spectralFlatness: number[];       // Tonal vs noise-like (0=tonal, 1=noise)
   chromaFeatures?: ChromaFeatures;  // Key/chord detection
+
+  // HPSS: Harmonic-Percussive Source Separation (librosa standard)
+  harmonicEnergy?: number[];        // Tonal/harmonic content per frame
+  percussiveEnergy?: number[];      // Transient/percussive content per frame
+  hpRatio?: number[];               // Harmonic-to-percussive ratio per frame
+
+  // MFCC: Mel-frequency cepstral coefficients (timbral features)
+  mfcc?: number[][];                // [frameIndex][coefficient] - 13 coefficients per frame
 }
 
 export interface FrequencyBandRanges {
@@ -179,6 +187,12 @@ export async function analyzeAudio(
   const spectralFlatness = extractSpectralFlatness(analyzeBuffer, fps);
   const chromaFeatures = extractChromaFeatures(analyzeBuffer, fps);
 
+  // HPSS: Harmonic-Percussive Source Separation (librosa standard)
+  const hpss = extractHPSS(analyzeBuffer, fps);
+
+  // MFCC: Mel-frequency cepstral coefficients (timbral analysis)
+  const mfcc = extractMFCC(analyzeBuffer, fps);
+
   return {
     sampleRate,
     duration,
@@ -194,7 +208,13 @@ export async function analyzeAudio(
     zeroCrossingRate,
     spectralRolloff,
     spectralFlatness,
-    chromaFeatures
+    chromaFeatures,
+    // HPSS
+    harmonicEnergy: hpss.harmonicEnergy,
+    percussiveEnergy: hpss.percussiveEnergy,
+    hpRatio: hpss.hpRatio,
+    // MFCC
+    mfcc
   };
 }
 
@@ -1190,6 +1210,263 @@ export function isPeakAtFrame(peaks: PeakData, frame: number): boolean {
   return peaks.indices.includes(frame);
 }
 
+// ============================================================================
+// HPSS: Harmonic-Percussive Source Separation
+// ============================================================================
+
+/**
+ * Perform Harmonic-Percussive Source Separation
+ *
+ * Uses median filtering on the spectrogram:
+ * - Harmonic content: stable across time (horizontal median filter)
+ * - Percussive content: stable across frequency (vertical median filter)
+ *
+ * Based on librosa's HPSS implementation
+ */
+export function extractHPSS(
+  buffer: AudioBuffer,
+  fps: number,
+  kernelSize: number = 31
+): { harmonicEnergy: number[]; percussiveEnergy: number[]; hpRatio: number[] } {
+  const channelData = buffer.getChannelData(0);
+  const sampleRate = buffer.sampleRate;
+  const frameCount = Math.ceil(buffer.duration * fps);
+  const samplesPerFrame = Math.floor(sampleRate / fps);
+
+  // FFT parameters
+  const fftSize = 2048;
+  const hopSize = samplesPerFrame;
+  const numBins = fftSize / 2 + 1;
+
+  // Compute spectrogram magnitude
+  const spectrogram: number[][] = [];
+
+  for (let frame = 0; frame < frameCount; frame++) {
+    const startSample = frame * hopSize;
+    const frameData = new Float32Array(fftSize);
+
+    // Copy and window
+    for (let i = 0; i < fftSize && startSample + i < channelData.length; i++) {
+      // Hann window
+      const window = 0.5 * (1 - Math.cos(2 * Math.PI * i / (fftSize - 1)));
+      frameData[i] = channelData[startSample + i] * window;
+    }
+
+    // Simple DFT (for small FFT sizes, good enough)
+    const magnitudes: number[] = [];
+    for (let k = 0; k < numBins; k++) {
+      let real = 0, imag = 0;
+      for (let n = 0; n < fftSize; n++) {
+        const angle = -2 * Math.PI * k * n / fftSize;
+        real += frameData[n] * Math.cos(angle);
+        imag += frameData[n] * Math.sin(angle);
+      }
+      magnitudes.push(Math.sqrt(real * real + imag * imag));
+    }
+    spectrogram.push(magnitudes);
+  }
+
+  if (spectrogram.length === 0) {
+    return { harmonicEnergy: [], percussiveEnergy: [], hpRatio: [] };
+  }
+
+  // Apply median filtering for H/P separation
+  const halfKernel = Math.floor(kernelSize / 2);
+  const harmonicSpec: number[][] = [];
+  const percussiveSpec: number[][] = [];
+
+  for (let t = 0; t < spectrogram.length; t++) {
+    const harmonicFrame: number[] = [];
+    const percussiveFrame: number[] = [];
+
+    for (let f = 0; f < numBins; f++) {
+      // Horizontal median (time direction) → Harmonic
+      const timeWindow: number[] = [];
+      for (let dt = -halfKernel; dt <= halfKernel; dt++) {
+        const ti = Math.max(0, Math.min(spectrogram.length - 1, t + dt));
+        timeWindow.push(spectrogram[ti][f]);
+      }
+      timeWindow.sort((a, b) => a - b);
+      const harmonicVal = timeWindow[Math.floor(timeWindow.length / 2)];
+
+      // Vertical median (frequency direction) → Percussive
+      const freqWindow: number[] = [];
+      for (let df = -halfKernel; df <= halfKernel; df++) {
+        const fi = Math.max(0, Math.min(numBins - 1, f + df));
+        freqWindow.push(spectrogram[t][fi]);
+      }
+      freqWindow.sort((a, b) => a - b);
+      const percussiveVal = freqWindow[Math.floor(freqWindow.length / 2)];
+
+      // Soft mask separation
+      const total = harmonicVal + percussiveVal + 1e-10;
+      const harmonicMask = harmonicVal / total;
+      const percussiveMask = percussiveVal / total;
+
+      harmonicFrame.push(spectrogram[t][f] * harmonicMask);
+      percussiveFrame.push(spectrogram[t][f] * percussiveMask);
+    }
+
+    harmonicSpec.push(harmonicFrame);
+    percussiveSpec.push(percussiveFrame);
+  }
+
+  // Sum energy across frequency bins for each frame
+  const harmonicEnergy: number[] = [];
+  const percussiveEnergy: number[] = [];
+  const hpRatio: number[] = [];
+
+  for (let t = 0; t < spectrogram.length; t++) {
+    const hEnergy = harmonicSpec[t].reduce((sum, v) => sum + v * v, 0);
+    const pEnergy = percussiveSpec[t].reduce((sum, v) => sum + v * v, 0);
+
+    harmonicEnergy.push(Math.sqrt(hEnergy));
+    percussiveEnergy.push(Math.sqrt(pEnergy));
+    hpRatio.push(hEnergy / (pEnergy + 1e-10));
+  }
+
+  // Normalize
+  const maxH = Math.max(...harmonicEnergy, 1e-10);
+  const maxP = Math.max(...percussiveEnergy, 1e-10);
+
+  return {
+    harmonicEnergy: harmonicEnergy.map(v => v / maxH),
+    percussiveEnergy: percussiveEnergy.map(v => v / maxP),
+    hpRatio: hpRatio.map(v => Math.min(v, 10) / 10) // Clamp and normalize
+  };
+}
+
+// ============================================================================
+// MFCC: Mel-Frequency Cepstral Coefficients
+// ============================================================================
+
+/**
+ * Extract MFCC features for timbral analysis
+ *
+ * Process:
+ * 1. Compute mel-scale filterbank
+ * 2. Apply filterbank to power spectrum
+ * 3. Take log of filterbank energies
+ * 4. Apply DCT to get cepstral coefficients
+ */
+export function extractMFCC(
+  buffer: AudioBuffer,
+  fps: number,
+  numCoeffs: number = 13,
+  numMelFilters: number = 40
+): number[][] {
+  const channelData = buffer.getChannelData(0);
+  const sampleRate = buffer.sampleRate;
+  const frameCount = Math.ceil(buffer.duration * fps);
+  const samplesPerFrame = Math.floor(sampleRate / fps);
+
+  const fftSize = 2048;
+  const numBins = fftSize / 2 + 1;
+
+  // Create mel filterbank
+  const melFilterbank = createMelFilterbank(numMelFilters, numBins, sampleRate);
+
+  const mfccFrames: number[][] = [];
+
+  for (let frame = 0; frame < frameCount; frame++) {
+    const startSample = frame * samplesPerFrame;
+    const frameData = new Float32Array(fftSize);
+
+    // Copy and window
+    for (let i = 0; i < fftSize && startSample + i < channelData.length; i++) {
+      const window = 0.5 * (1 - Math.cos(2 * Math.PI * i / (fftSize - 1)));
+      frameData[i] = channelData[startSample + i] * window;
+    }
+
+    // Compute power spectrum
+    const powerSpectrum: number[] = [];
+    for (let k = 0; k < numBins; k++) {
+      let real = 0, imag = 0;
+      for (let n = 0; n < fftSize; n++) {
+        const angle = -2 * Math.PI * k * n / fftSize;
+        real += frameData[n] * Math.cos(angle);
+        imag += frameData[n] * Math.sin(angle);
+      }
+      powerSpectrum.push(real * real + imag * imag);
+    }
+
+    // Apply mel filterbank
+    const melEnergies: number[] = [];
+    for (let m = 0; m < numMelFilters; m++) {
+      let energy = 0;
+      for (let k = 0; k < numBins; k++) {
+        energy += powerSpectrum[k] * melFilterbank[m][k];
+      }
+      melEnergies.push(Math.log(energy + 1e-10));
+    }
+
+    // DCT to get MFCCs
+    const mfcc: number[] = [];
+    for (let c = 0; c < numCoeffs; c++) {
+      let sum = 0;
+      for (let m = 0; m < numMelFilters; m++) {
+        sum += melEnergies[m] * Math.cos(Math.PI * c * (m + 0.5) / numMelFilters);
+      }
+      mfcc.push(sum);
+    }
+
+    mfccFrames.push(mfcc);
+  }
+
+  return mfccFrames;
+}
+
+/**
+ * Create mel-scale filterbank
+ */
+function createMelFilterbank(
+  numFilters: number,
+  numBins: number,
+  sampleRate: number
+): number[][] {
+  // Mel scale conversion functions
+  const hzToMel = (hz: number) => 2595 * Math.log10(1 + hz / 700);
+  const melToHz = (mel: number) => 700 * (Math.pow(10, mel / 2595) - 1);
+
+  const minMel = hzToMel(0);
+  const maxMel = hzToMel(sampleRate / 2);
+
+  // Create mel points
+  const melPoints: number[] = [];
+  for (let i = 0; i <= numFilters + 1; i++) {
+    melPoints.push(minMel + (maxMel - minMel) * i / (numFilters + 1));
+  }
+
+  // Convert to bin indices
+  const binPoints = melPoints.map(mel => {
+    const hz = melToHz(mel);
+    return Math.floor((numBins - 1) * 2 * hz / sampleRate);
+  });
+
+  // Create filterbank
+  const filterbank: number[][] = [];
+  for (let m = 0; m < numFilters; m++) {
+    const filter: number[] = new Array(numBins).fill(0);
+    const start = binPoints[m];
+    const center = binPoints[m + 1];
+    const end = binPoints[m + 2];
+
+    // Rising edge
+    for (let k = start; k < center && k < numBins; k++) {
+      filter[k] = (k - start) / (center - start + 1e-10);
+    }
+
+    // Falling edge
+    for (let k = center; k < end && k < numBins; k++) {
+      filter[k] = (end - k) / (end - center + 1e-10);
+    }
+
+    filterbank.push(filter);
+  }
+
+  return filterbank;
+}
+
 export default {
   loadAudioFile,
   loadAudioFromUrl,
@@ -1207,5 +1484,8 @@ export default {
   detectPeaks,
   generatePeakGraph,
   isBeatAtFrame,
-  isPeakAtFrame
+  isPeakAtFrame,
+  // HPSS & MFCC (librosa-style)
+  extractHPSS,
+  extractMFCC
 };

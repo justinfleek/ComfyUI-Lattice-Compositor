@@ -238,6 +238,18 @@
               <span class="value-display">{{ emitter.y.toFixed(2) }}</span>
             </div>
             <div class="property-row">
+              <label title="Depth position of the emitter (CC Particle World Producer Z). Negative = closer to camera.">Position Z</label>
+              <input
+                type="range"
+                :value="emitter.z ?? 0"
+                min="-500"
+                max="500"
+                step="10"
+                @input="updateEmitter(emitter.id, 'z', Number(($event.target as HTMLInputElement).value))"
+              />
+              <span class="value-display">{{ (emitter.z ?? 0).toFixed(0) }}</span>
+            </div>
+            <div class="property-row">
               <label title="Primary emission direction in degrees. 0° = right, 90° = down, 180° = left, 270° = up.">Direction</label>
               <input
                 type="range"
@@ -1081,6 +1093,7 @@
             >
               <option value="none">None</option>
               <option value="bounce">Bounce</option>
+              <option value="stick">Stick</option>
               <option value="wrap">Wrap Around</option>
               <option value="kill">Kill</option>
             </select>
@@ -1097,7 +1110,258 @@
             />
             <span class="value-display">{{ collision.boundaryPadding }}px</span>
           </div>
+
+          <div class="subsection-label">Floor (CC Particle World)</div>
+          <div class="property-row">
+            <label title="Enable floor collision plane for particles.">Floor Enabled</label>
+            <input
+              type="checkbox"
+              :checked="collision.floorEnabled"
+              @change="updateCollision('floorEnabled', ($event.target as HTMLInputElement).checked)"
+            />
+          </div>
+          <template v-if="collision.floorEnabled">
+            <div class="property-row">
+              <label title="Vertical position of floor (0=top, 1=bottom of composition).">Floor Y</label>
+              <input
+                type="range"
+                :value="collision.floorY ?? 1.0"
+                min="0"
+                max="1"
+                step="0.01"
+                @input="updateCollision('floorY', Number(($event.target as HTMLInputElement).value))"
+              />
+              <span class="value-display">{{ ((collision.floorY ?? 1.0) * 100).toFixed(0) }}%</span>
+            </div>
+            <div class="property-row">
+              <label title="What happens when particles hit the floor.">Floor Action</label>
+              <select
+                :value="collision.floorBehavior ?? 'bounce'"
+                @change="updateCollision('floorBehavior', ($event.target as HTMLSelectElement).value)"
+              >
+                <option value="none">None (Pass Through)</option>
+                <option value="bounce">Bounce</option>
+                <option value="stick">Stick</option>
+                <option value="kill">Kill</option>
+              </select>
+            </div>
+            <div v-if="collision.floorBehavior === 'bounce' || collision.floorBehavior === 'stick'" class="property-row">
+              <label title="Surface friction when particles hit the floor (0=slippery, 1=sticky).">Floor Friction</label>
+              <input
+                type="range"
+                :value="collision.floorFriction ?? 0.3"
+                min="0"
+                max="1"
+                step="0.05"
+                @input="updateCollision('floorFriction', Number(($event.target as HTMLInputElement).value))"
+              />
+              <span class="value-display">{{ ((collision.floorFriction ?? 0.3)).toFixed(2) }}</span>
+            </div>
+          </template>
+
+          <div class="subsection-label">Ceiling</div>
+          <div class="property-row">
+            <label title="Enable ceiling collision plane for particles.">Ceiling Enabled</label>
+            <input
+              type="checkbox"
+              :checked="collision.ceilingEnabled"
+              @change="updateCollision('ceilingEnabled', ($event.target as HTMLInputElement).checked)"
+            />
+          </div>
+          <div v-if="collision.ceilingEnabled" class="property-row">
+            <label title="Vertical position of ceiling (0=top, 1=bottom of composition).">Ceiling Y</label>
+            <input
+              type="range"
+              :value="collision.ceilingY ?? 0"
+              min="0"
+              max="1"
+              step="0.01"
+              @input="updateCollision('ceilingY', Number(($event.target as HTMLInputElement).value))"
+            />
+            <span class="value-display">{{ ((collision.ceilingY ?? 0) * 100).toFixed(0) }}%</span>
+          </div>
         </template>
+      </div>
+    </div>
+
+    <!-- Visualization (CC Particle World Style) -->
+    <div class="property-section">
+      <div class="section-header" @click="toggleSection('visualization')">
+        <i class="pi" :class="expandedSections.has('visualization') ? 'pi-chevron-down' : 'pi-chevron-right'" />
+        <span>Visualization</span>
+      </div>
+      <div v-if="expandedSections.has('visualization')" class="section-content">
+        <div class="property-row checkbox-row">
+          <label title="Show horizon line at floor position (CC Particle World style).">
+            <input
+              type="checkbox"
+              :checked="visualization.showHorizon"
+              @change="updateVisualization('showHorizon', ($event.target as HTMLInputElement).checked)"
+            />
+            Show Horizon
+          </label>
+        </div>
+        <div class="property-row checkbox-row">
+          <label title="Show 3D perspective grid for particle space visualization.">
+            <input
+              type="checkbox"
+              :checked="visualization.showGrid"
+              @change="updateVisualization('showGrid', ($event.target as HTMLInputElement).checked)"
+            />
+            Show Grid
+          </label>
+        </div>
+        <div v-if="visualization.showGrid" class="property-row">
+          <label title="Grid cell size in pixels.">Grid Size</label>
+          <input
+            type="range"
+            :value="visualization.gridSize ?? 100"
+            min="25"
+            max="200"
+            step="25"
+            @input="updateVisualization('gridSize', Number(($event.target as HTMLInputElement).value))"
+          />
+          <span class="value-display">{{ visualization.gridSize ?? 100 }}px</span>
+        </div>
+        <div v-if="visualization.showGrid" class="property-row">
+          <label title="Grid depth into Z axis.">Grid Depth</label>
+          <input
+            type="range"
+            :value="visualization.gridDepth ?? 500"
+            min="100"
+            max="2000"
+            step="100"
+            @input="updateVisualization('gridDepth', Number(($event.target as HTMLInputElement).value))"
+          />
+          <span class="value-display">{{ visualization.gridDepth ?? 500 }}px</span>
+        </div>
+        <div class="property-row checkbox-row">
+          <label title="Show XYZ axis at origin.">
+            <input
+              type="checkbox"
+              :checked="visualization.showAxis"
+              @change="updateVisualization('showAxis', ($event.target as HTMLInputElement).checked)"
+            />
+            Show Axis
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Audio Bindings -->
+    <div class="property-section">
+      <div class="section-header" @click="toggleSection('audioBindings')">
+        <i class="pi" :class="expandedSections.has('audioBindings') ? 'pi-chevron-down' : 'pi-chevron-right'" />
+        <span>Audio Bindings</span>
+        <button class="add-btn" @click.stop="addAudioBinding" title="Add Audio Binding">
+          <i class="pi pi-plus" />
+        </button>
+      </div>
+      <div v-if="expandedSections.has('audioBindings')" class="section-content">
+        <div v-if="audioBindings.length === 0" class="empty-message">
+          No audio bindings. Click + to add one.
+        </div>
+        <div
+          v-for="binding in audioBindings"
+          :key="binding.id"
+          class="force-item"
+        >
+          <div class="force-header">
+            <input
+              type="checkbox"
+              :checked="binding.enabled"
+              @change="updateAudioBinding(binding.id, 'enabled', ($event.target as HTMLInputElement).checked)"
+            />
+            <span>{{ binding.feature }} → {{ binding.parameter }}</span>
+            <button class="remove-btn" @click="removeAudioBinding(binding.id)" title="Remove">
+              <i class="pi pi-times" />
+            </button>
+          </div>
+          <div class="force-content">
+            <div class="property-row">
+              <label>Feature</label>
+              <select
+                :value="binding.feature"
+                @change="updateAudioBinding(binding.id, 'feature', ($event.target as HTMLSelectElement).value)"
+              >
+                <option value="amplitude">Amplitude</option>
+                <option value="bass">Bass</option>
+                <option value="mid">Mid</option>
+                <option value="high">High</option>
+                <option value="beat">Beat</option>
+                <option value="spectralCentroid">Spectral Centroid</option>
+              </select>
+            </div>
+            <div class="property-row">
+              <label>Target</label>
+              <select
+                :value="binding.target"
+                @change="updateAudioBinding(binding.id, 'target', ($event.target as HTMLSelectElement).value)"
+              >
+                <option value="emitter">Emitter</option>
+                <option value="system">System</option>
+                <option value="forceField">Force Field</option>
+              </select>
+            </div>
+            <div class="property-row">
+              <label>Parameter</label>
+              <select
+                :value="binding.parameter"
+                @change="updateAudioBinding(binding.id, 'parameter', ($event.target as HTMLSelectElement).value)"
+              >
+                <option value="emissionRate">Emission Rate</option>
+                <option value="speed">Speed</option>
+                <option value="size">Size</option>
+                <option value="lifetime">Lifetime</option>
+                <option value="spread">Spread</option>
+                <option value="gravity">Gravity</option>
+                <option value="strength">Force Strength</option>
+              </select>
+            </div>
+            <div class="property-row">
+              <label title="Temporal smoothing (0=instant, 1=very slow)">Smoothing</label>
+              <input
+                type="range"
+                :value="binding.smoothing"
+                min="0"
+                max="1"
+                step="0.05"
+                @input="updateAudioBinding(binding.id, 'smoothing', Number(($event.target as HTMLInputElement).value))"
+              />
+              <span class="value-display">{{ binding.smoothing.toFixed(2) }}</span>
+            </div>
+            <div class="property-row">
+              <label>Output Min</label>
+              <input
+                type="number"
+                :value="binding.outputMin"
+                step="1"
+                @input="updateAudioBinding(binding.id, 'outputMin', Number(($event.target as HTMLInputElement).value))"
+              />
+            </div>
+            <div class="property-row">
+              <label>Output Max</label>
+              <input
+                type="number"
+                :value="binding.outputMax"
+                step="1"
+                @input="updateAudioBinding(binding.id, 'outputMax', Number(($event.target as HTMLInputElement).value))"
+              />
+            </div>
+            <div class="property-row">
+              <label>Curve</label>
+              <select
+                :value="binding.curve"
+                @change="updateAudioBinding(binding.id, 'curve', ($event.target as HTMLSelectElement).value)"
+              >
+                <option value="linear">Linear</option>
+                <option value="exponential">Exponential</option>
+                <option value="logarithmic">Logarithmic</option>
+                <option value="step">Step</option>
+              </select>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1334,7 +1598,7 @@
           </select>
         </div>
         <div class="property-row">
-          <label title="Visual shape used to render each particle.">Shape</label>
+          <label title="Visual shape used to render each particle (CC Particle World compatible).">Shape</label>
           <select
             :value="renderOptions.particleShape"
             @change="updateRenderOption('particleShape', ($event.target as HTMLSelectElement).value)"
@@ -1343,6 +1607,10 @@
             <option value="square">Square</option>
             <option value="triangle">Triangle</option>
             <option value="star">Star</option>
+            <option value="line">Line</option>
+            <option value="shadedSphere">Shaded Sphere</option>
+            <option value="fadedSphere">Faded Sphere</option>
+            <option value="ring">Ring</option>
           </select>
         </div>
 
@@ -1622,6 +1890,7 @@ import type {
   ConnectionRenderConfig,
   FlockingConfig,
   CollisionConfig,
+  AudioBindingConfig,
 } from '@/types/project';
 import { usePresetStore } from '@/stores/presetStore';
 import { useCompositorStore } from '@/stores/compositorStore';
@@ -1841,7 +2110,17 @@ const connections = computed(() => renderOptions.value.connections || {
   lineOpacity: 0.5,
   fadeByDistance: true
 });
+const audioBindings = computed(() => layerData.value.audioBindings || []);
 const particleCount = computed(() => props.particleCount);
+
+// Visualization settings (CC Particle World style)
+const visualization = computed(() => layerData.value.visualization || {
+  showHorizon: false,
+  showGrid: false,
+  showAxis: false,
+  gridSize: 100,
+  gridDepth: 500,
+});
 
 // Section toggle - using new Set to trigger reactivity
 function toggleSection(section: string): void {
@@ -2169,6 +2448,51 @@ function updateCollision(key: keyof CollisionConfig, value: any): void {
   emit('update', {
     collision: { ...collision.value, [key]: value }
   });
+}
+
+// Visualization functions (CC Particle World style)
+interface VisualizationConfig {
+  showHorizon: boolean;
+  showGrid: boolean;
+  showAxis: boolean;
+  gridSize: number;
+  gridDepth: number;
+}
+
+function updateVisualization(key: keyof VisualizationConfig, value: any): void {
+  emit('update', {
+    visualization: { ...visualization.value, [key]: value }
+  });
+}
+
+// Audio binding functions
+function addAudioBinding(): void {
+  const newBinding: AudioBindingConfig = {
+    id: `audio_${Date.now()}`,
+    enabled: true,
+    feature: 'amplitude',
+    smoothing: 0.3,
+    min: 0,
+    max: 1,
+    target: 'emitter',
+    targetId: emitters.value[0]?.id || '',
+    parameter: 'emissionRate',
+    outputMin: 1,
+    outputMax: 50,
+    curve: 'linear'
+  };
+  emit('update', { audioBindings: [...audioBindings.value, newBinding] });
+}
+
+function updateAudioBinding(id: string, key: keyof AudioBindingConfig, value: any): void {
+  const updated = audioBindings.value.map(b =>
+    b.id === id ? { ...b, [key]: value } : b
+  );
+  emit('update', { audioBindings: updated });
+}
+
+function removeAudioBinding(id: string): void {
+  emit('update', { audioBindings: audioBindings.value.filter(b => b.id !== id) });
 }
 
 // Sub-emitter functions

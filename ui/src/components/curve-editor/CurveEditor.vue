@@ -308,6 +308,7 @@
 import { ref, computed, watch, onMounted, onUnmounted, reactive } from 'vue';
 import { useCompositorStore } from '@/stores/compositorStore';
 import { EASING_PRESETS, getBezierCurvePoint } from '@/services/interpolation';
+import { findNearestSnap } from '@/services/timelineSnap';
 import type { AnimatableProperty, Keyframe, BezierHandle } from '@/types/project';
 
 const emit = defineEmits<{
@@ -854,7 +855,7 @@ function selectKeyframesInBox(): void {
 }
 
 function moveSelectedKeyframes(screenX: number, screenY: number): void {
-  const newFrame = Math.round(screenXToFrame(screenX));
+  let newFrame = Math.round(screenXToFrame(screenX));
   const newValue = screenYToValue(screenY);
 
   const layer = store.selectedLayer;
@@ -866,7 +867,28 @@ function moveSelectedKeyframes(screenX: number, screenY: number): void {
     const prop = animatableProperties.value.find(p => p.id === sk.propId);
     if (!prop) return;
 
-    const frame = snapEnabled.value ? Math.round(newFrame / 5) * 5 : newFrame;
+    // Apply smart snapping with audio beat/peak support
+    if (snapEnabled.value && store.snapConfig.enabled) {
+      // Calculate approximate pixels per frame for snapping threshold
+      const pixelsPerFrame = svgWidth.value / (viewEnd.value - viewStart.value);
+
+      const snap = findNearestSnap(newFrame, store.snapConfig, pixelsPerFrame, {
+        layers: store.layers,
+        selectedLayerId: layer.id,
+        currentFrame: store.currentFrame,
+        audioAnalysis: store.audioAnalysis,
+        peakData: store.peakData
+      });
+
+      if (snap) {
+        newFrame = snap.frame;
+      } else {
+        // Fallback to basic grid snap
+        newFrame = Math.round(newFrame / store.snapConfig.gridInterval) * store.snapConfig.gridInterval;
+      }
+    }
+
+    const frame = Math.max(0, Math.min(store.frameCount - 1, newFrame));
     const value = typeof sk.keyframe.value === 'number' ? newValue : sk.keyframe.value;
 
     // Get property path from property name
@@ -895,7 +917,7 @@ function getPropertyPath(prop: AnimatableProperty<any>): string {
   if (name === 'scale') return 'transform.scale';
   if (name === 'rotation') return 'transform.rotation';
   if (name === 'opacity') return 'opacity';
-  if (name === 'anchor point') return 'transform.anchorPoint';
+  if (name === 'origin' || name === 'anchor point') return 'transform.anchorPoint';
   return prop.id; // Custom properties use ID
 }
 

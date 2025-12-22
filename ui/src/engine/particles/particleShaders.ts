@@ -114,6 +114,62 @@ vec3 calculateForce(int fieldIndex, vec3 pos, vec3 vel, float mass) {
     float gust = sin(u_time * gustFreq) * gustStrength;
     force = windDir * (effectiveStrength + gust);
   }
+  // Type 6: Lorenz Attractor (chaotic motion)
+  else if (fieldType == 6) {
+    float sigma = row2.x;   // Default: 10.0
+    float rho = row2.y;     // Default: 28.0
+    float beta = row2.z;    // Default: 8.0/3.0
+    // Get position relative to attractor center
+    vec3 rel = pos - fieldPos;
+    // Lorenz equations (scaled for visualization)
+    float scale = 0.01; // Scale factor for visual effect
+    float dx = sigma * (rel.y - rel.x);
+    float dy = rel.x * (rho - rel.z * scale) - rel.y;
+    float dz = rel.x * rel.y * scale - beta * rel.z;
+    force = vec3(dx, dy, dz) * effectiveStrength * 0.1;
+  }
+  // Type 7: Curl Noise (divergence-free turbulence)
+  else if (fieldType == 7) {
+    float noiseScale = row3.x;
+    float noiseSpeed = row3.y;
+    float eps = 0.01;
+    vec3 noisePos = pos * noiseScale + vec3(u_time * noiseSpeed);
+    // Compute curl of noise field for divergence-free flow
+    float n1 = snoise(noisePos + vec3(eps, 0.0, 0.0));
+    float n2 = snoise(noisePos - vec3(eps, 0.0, 0.0));
+    float n3 = snoise(noisePos + vec3(0.0, eps, 0.0));
+    float n4 = snoise(noisePos - vec3(0.0, eps, 0.0));
+    float n5 = snoise(noisePos + vec3(0.0, 0.0, eps));
+    float n6 = snoise(noisePos - vec3(0.0, 0.0, eps));
+    force.x = (n3 - n4 - n5 + n6) / (2.0 * eps);
+    force.y = (n5 - n6 - n1 + n2) / (2.0 * eps);
+    force.z = (n1 - n2 - n3 + n4) / (2.0 * eps);
+    force *= effectiveStrength;
+  }
+  // Type 8: Magnetic Field (cross product with velocity)
+  else if (fieldType == 8) {
+    vec3 fieldDir = normalize(row2.xyz);
+    float charge = row3.x; // Particle "charge"
+    // Lorentz force: F = q * (v × B)
+    force = cross(vel, fieldDir) * charge * effectiveStrength;
+  }
+  // Type 9: Orbit (centripetal force for circular motion)
+  else if (fieldType == 9) {
+    float orbitRadius = row2.w;
+    vec3 axis = normalize(row2.xyz);
+    // Project position onto plane perpendicular to axis
+    float distAlongAxis = dot(toField, axis);
+    vec3 radialVec = -toField + axis * distAlongAxis;
+    float radialDist = length(radialVec);
+    if (radialDist > 0.001) {
+      // Tangential force for orbit
+      vec3 tangent = normalize(cross(axis, radialVec));
+      // Radial correction to maintain orbit radius
+      vec3 radialDir = radialVec / radialDist;
+      float radiusError = radialDist - orbitRadius;
+      force = tangent * effectiveStrength - radialDir * radiusError * effectiveStrength * 0.5;
+    }
+  }
   return force;
 }
 `;
