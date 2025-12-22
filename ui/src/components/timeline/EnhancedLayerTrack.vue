@@ -15,17 +15,20 @@
         <!-- AV Features (visibility, audio, isolate, lock) -->
         <div class="av-features">
           <div class="icon-col" @mousedown.stop="toggleVis" :title="layer.visible ? 'Hide' : 'Show'">
-            <span :class="{ inactive: !layer.visible }">👁</span>
+            <PhEye v-if="layer.visible" :size="14" />
+            <PhEyeSlash v-else :size="14" class="inactive" />
           </div>
           <div class="icon-col" v-if="hasAudioCapability" @mousedown.stop="toggleAudio" :title="layer.audioEnabled !== false ? 'Mute Audio' : 'Enable Audio'">
-            <span :class="{ inactive: layer.audioEnabled === false }">🔊</span>
+            <PhSpeakerHigh v-if="layer.audioEnabled !== false" :size="14" />
+            <PhSpeakerSlash v-else :size="14" class="inactive" />
           </div>
           <div class="icon-col placeholder" v-else></div>
           <div class="icon-col" @mousedown.stop="toggleIsolate" :title="layer.isolate ? 'Unisolate' : 'Isolate'">
             <span :class="{ active: layer.isolate }">●</span>
           </div>
           <div class="icon-col" @mousedown.stop="toggleLock" :title="layer.locked ? 'Unlock' : 'Lock'">
-            <span :class="{ active: layer.locked }">🔒</span>
+            <PhLock v-if="layer.locked" :size="14" class="active" />
+            <PhLockOpen v-else :size="14" />
           </div>
         </div>
 
@@ -46,10 +49,10 @@
         <!-- Switches (minimized, collapse, quality, fx, frame blend, motion blur, adjustment, 3D) -->
         <div class="layer-switches">
           <div class="icon-col" @mousedown.stop="toggleMinimized" :title="layer.minimized ? 'Unminimize' : 'Minimize (hide when filter enabled)'">
-            <span :class="{ active: layer.minimized }">🙈</span>
+            <PhEyeSlash :size="14" :class="{ active: layer.minimized }" />
           </div>
           <div class="icon-col" @mousedown.stop="toggleFlattenTransform" :title="layer.flattenTransform ? 'Disable Flatten Transform' : 'Flatten Transform'">
-            <span :class="{ active: layer.flattenTransform }">☀</span>
+            <PhSun :size="14" :class="{ active: layer.flattenTransform }" />
           </div>
           <div class="icon-col" @mousedown.stop="toggleQuality" :title="layer.quality === 'best' ? 'Draft Quality' : 'Best Quality'">
             <span :class="{ active: layer.quality === 'best' }">◐</span>
@@ -103,7 +106,14 @@
       <div class="layer-row track-bg" @mousedown="selectLayer">
         <div class="duration-bar" :style="barStyle" @mousedown.stop="startDrag">
            <div class="bar-handle bar-handle-left" @mousedown.stop="startResizeLeft"></div>
-           <div class="bar-fill" :style="{ background: layer.labelColor || '#777' }"></div>
+           <div class="bar-fill" :style="{ background: layer.labelColor || '#777' }">
+             <!-- Audio Waveform Canvas -->
+             <canvas
+               v-if="isAudioLayer && waveformData"
+               ref="waveformCanvasRef"
+               class="waveform-canvas"
+             />
+           </div>
            <div class="bar-handle bar-handle-right" @mousedown.stop="startResizeRight"></div>
         </div>
       </div>
@@ -166,14 +176,39 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue';
+import { ref, computed, nextTick, onMounted, onUnmounted, watch } from 'vue';
 import { useCompositorStore } from '@/stores/compositorStore';
+import { useAudioStore } from '@/stores/audioStore';
 import { convertTextLayerToSplines } from '@/stores/actions/layerActions';
 import PropertyTrack from './PropertyTrack.vue';
+import { createWaveformData, renderTimelineWaveform, getWaveformData, type WaveformData } from '@/services/timelineWaveform';
+import {
+  PhEye, PhEyeSlash, PhSpeakerHigh, PhSpeakerSlash, PhLock, PhLockOpen,
+  PhSun, PhImage, PhFilmStrip, PhTextT, PhCamera, PhPackage
+} from '@phosphor-icons/vue';
 
 const props = defineProps(['layer', 'index', 'layoutMode', 'isExpandedExternal', 'allLayers', 'frameCount', 'pixelsPerFrame', 'gridStyle']);
 const emit = defineEmits(['toggleExpand', 'select', 'updateLayer']);
 const store = useCompositorStore();
+const audioStore = useAudioStore();
+
+// Waveform state
+const waveformCanvasRef = ref<HTMLCanvasElement | null>(null);
+const waveformData = ref<WaveformData | null>(null);
+
+// Check if layer is an audio layer type
+const isAudioLayer = computed(() => props.layer.type === 'audio' || props.layer.type === 'video');
+
+// Get audio asset ID for the layer
+const audioAssetId = computed(() => {
+  if (props.layer.type === 'audio') {
+    return props.layer.data?.assetId || props.layer.id;
+  }
+  if (props.layer.type === 'video') {
+    return props.layer.data?.audioAssetId;
+  }
+  return null;
+});
 
 const localExpanded = ref(false);
 const isExpanded = computed(() => props.isExpandedExternal ?? localExpanded.value);
@@ -398,7 +433,7 @@ function toggleGroup(g: string) {
     if(expandedGroups.value.includes(g)) expandedGroups.value = expandedGroups.value.filter(x => x !== g);
     else expandedGroups.value.push(g);
 }
-function getLayerIcon(t: string) { return { text: 'T', solid: '■', camera: '📷', nestedComp: '📦', image: '🖼', video: '🎬' }[t] || '•'; }
+function getLayerIcon(t: string) { return { text: 'T', solid: '■', camera: '◎', nestedComp: '▣', image: '▧', video: '▶' }[t] || '•'; }
 
 // Double-click: enter nested comp or start rename
 function handleDoubleClick() {
@@ -737,8 +772,99 @@ function handleOutsideClick(e: MouseEvent) {
   }
 }
 
+// ============================================================
+// WAVEFORM RENDERING
+// ============================================================
+
+/**
+ * Initialize waveform data from audio buffer
+ */
+async function initializeWaveform() {
+  if (!isAudioLayer.value || !audioAssetId.value) return;
+
+  // Check if waveform already cached
+  const cached = getWaveformData(audioAssetId.value);
+  if (cached) {
+    waveformData.value = cached;
+    renderWaveformToCanvas();
+    return;
+  }
+
+  // Get audio buffer from audio store
+  const audioBuffer = audioStore.getAudioBuffer(audioAssetId.value);
+  if (!audioBuffer) return;
+
+  // Get beat markers if available
+  const beats = audioStore.getBeats(audioAssetId.value);
+  const bpm = audioStore.getBPM(audioAssetId.value);
+
+  // Create waveform data
+  waveformData.value = await createWaveformData(
+    audioAssetId.value,
+    audioBuffer,
+    beats,
+    bpm
+  );
+
+  renderWaveformToCanvas();
+}
+
+/**
+ * Render waveform to the canvas element
+ */
+function renderWaveformToCanvas() {
+  if (!waveformCanvasRef.value || !waveformData.value) return;
+
+  const canvas = waveformCanvasRef.value;
+  const parentWidth = canvas.parentElement?.clientWidth || 200;
+  const parentHeight = canvas.parentElement?.clientHeight || 24;
+
+  const frameCount = props.frameCount || 81;
+  const fps = store.fps || 16;
+  const inPoint = props.layer.inPoint ?? props.layer.startFrame ?? 0;
+  const outPoint = props.layer.outPoint ?? props.layer.endFrame ?? (frameCount - 1);
+
+  renderTimelineWaveform(canvas, waveformData.value, {
+    layerId: props.layer.id,
+    audioId: audioAssetId.value!,
+    layerColor: props.layer.labelColor || '#D4A574',
+    startFrame: inPoint,
+    endFrame: outPoint,
+    visibleStart: 0,
+    visibleEnd: frameCount,
+    fps,
+    trackWidth: parentWidth,
+    trackHeight: parentHeight,
+  });
+}
+
+// Watch for changes that require waveform re-render
+watch(
+  () => [props.frameCount, props.pixelsPerFrame, props.layer.inPoint, props.layer.outPoint],
+  () => {
+    if (waveformData.value) {
+      nextTick(() => renderWaveformToCanvas());
+    }
+  }
+);
+
+// Watch for audio buffer availability
+watch(
+  () => audioAssetId.value && audioStore.hasAudioBuffer(audioAssetId.value),
+  (hasBuffer) => {
+    if (hasBuffer && !waveformData.value) {
+      initializeWaveform();
+    }
+  },
+  { immediate: true }
+);
+
 onMounted(() => {
   document.addEventListener('click', handleOutsideClick);
+  // Initialize waveform if audio layer
+  if (isAudioLayer.value && audioAssetId.value) {
+    initializeWaveform();
+  }
 });
 
 onUnmounted(() => {
@@ -934,6 +1060,18 @@ onUnmounted(() => {
   height: 100%;
   border-radius: 5px;
   margin: 0 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.waveform-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0.8;
 }
 
 /* Context Menu - must NOT be scoped to work with Teleport */

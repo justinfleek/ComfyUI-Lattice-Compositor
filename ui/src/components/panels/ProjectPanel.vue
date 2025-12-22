@@ -7,8 +7,8 @@
         <div class="dropdown-container">
           <button @click="showNewMenu = !showNewMenu" title="New Item">+</button>
           <div v-if="showNewMenu" class="dropdown-menu">
-            <button @click="createNewComposition"><span class="menu-icon">🎬</span> New Composition</button>
-            <button @click="createNewFolder"><span class="menu-icon">📁</span> New Folder</button>
+            <button @click="createNewComposition"><PhFilmSlate class="menu-icon" /> New Composition</button>
+            <button @click="createNewFolder"><PhFolder class="menu-icon" /> New Folder</button>
             <hr class="menu-divider" />
             <button @click="createNewSolid"><span class="menu-icon">⬜</span> New Solid</button>
             <button @click="createNewText"><span class="menu-icon">🔤</span> New Text</button>
@@ -17,7 +17,7 @@
             <button @click="createNewModel"><span class="menu-icon">🧊</span> New 3D Model</button>
             <button @click="createNewPointCloud"><span class="menu-icon">☁️</span> New Point Cloud</button>
             <hr class="menu-divider" />
-            <button @click="openDecomposeDialog"><span class="menu-icon">✨</span> AI Layer Decompose</button>
+            <button @click="openDecomposeDialog"><PhSparkle class="menu-icon" /> AI Layer Decompose</button>
             <button @click="openVectorizeDialog"><span class="menu-icon">✒️</span> Vectorize Image</button>
           </div>
         </div>
@@ -44,7 +44,7 @@
       ref="fileInputRef"
       type="file"
       multiple
-      accept="image/*,video/*,audio/*,.json"
+      accept="image/*,video/*,audio/*,.json,.csv,.tsv,.mgjson"
       style="display: none"
       @change="handleFileImport"
     />
@@ -100,7 +100,7 @@
             <span class="expand-icon" @click.stop="toggleFolder(folder.id)">
               {{ expandedFolders.includes(folder.id) ? '▼' : '►' }}
             </span>
-            <span class="folder-icon">📁</span>
+            <PhFolder class="folder-icon" />
             <span class="folder-name">{{ folder.name }}</span>
             <span class="item-count">{{ folder.items.length }}</span>
           </div>
@@ -163,8 +163,18 @@ import { useCompositorStore } from '@/stores/compositorStore';
 import { useSelectionStore } from '@/stores/selectionStore';
 import DecomposeDialog from '@/components/dialogs/DecomposeDialog.vue';
 import VectorizeDialog from '@/components/dialogs/VectorizeDialog.vue';
+import {
+  PhFilmSlate, PhFolder, PhImage, PhSpeakerHigh, PhChartBar, PhFile, PhSparkle
+} from '@phosphor-icons/vue';
 import type { DecomposedLayer } from '@/services/layerDecomposition';
 import { exportSplineLayer, exportLayers } from '@/services/svgExport';
+import {
+  importDataFromFile,
+  getDataAsset,
+  getAllDataAssets,
+  reloadDataAsset
+} from '@/services/dataImport';
+import { isCSVAsset, isJSONAsset, getDataFileType, isSupportedDataFile } from '@/types/dataAsset';
 
 const emit = defineEmits<{
   (e: 'openCompositionSettings'): void;
@@ -173,11 +183,13 @@ const emit = defineEmits<{
 interface ProjectItem {
   id: string;
   name: string;
-  type: 'composition' | 'footage' | 'solid' | 'audio' | 'folder';
+  type: 'composition' | 'footage' | 'solid' | 'audio' | 'folder' | 'data';
   width?: number;
   height?: number;
   duration?: number;
   fps?: number;
+  dataType?: 'json' | 'csv' | 'tsv' | 'mgjson';  // For data files
+  dataInfo?: string;  // Summary info like "5 rows, 3 columns"
 }
 
 interface Folder {
@@ -619,6 +631,57 @@ async function handleFileImport(event: Event) {
   if (!files || files.length === 0) return;
 
   for (const file of Array.from(files)) {
+    // Check if it's a data file first
+    if (isSupportedDataFile(file.name)) {
+      const result = await importDataFromFile(file);
+      if (result.success && result.asset) {
+        const dataType = getDataFileType(file.name);
+        let dataInfo = '';
+
+        if (isCSVAsset(result.asset)) {
+          dataInfo = `${result.asset.rows.length} rows, ${result.asset.numColumns} columns`;
+        } else if (isJSONAsset(result.asset)) {
+          const data = result.asset.sourceData;
+          if (Array.isArray(data)) {
+            dataInfo = `Array with ${data.length} items`;
+          } else if (typeof data === 'object' && data !== null) {
+            dataInfo = `Object with ${Object.keys(data).length} properties`;
+          }
+        }
+
+        // Store data asset in project for expression access via footage()
+        if (!store.project.dataAssets) {
+          store.project.dataAssets = {};
+        }
+        store.project.dataAssets[result.asset.name] = {
+          id: result.asset.id,
+          name: result.asset.name,
+          type: result.asset.type,
+          rawContent: result.asset.rawContent,
+          lastModified: result.asset.lastModified,
+          sourceData: isJSONAsset(result.asset) ? result.asset.sourceData : undefined,
+          headers: isCSVAsset(result.asset) ? result.asset.headers : undefined,
+          rows: isCSVAsset(result.asset) ? result.asset.rows : undefined,
+          numRows: isCSVAsset(result.asset) ? result.asset.numRows : undefined,
+          numColumns: isCSVAsset(result.asset) ? result.asset.numColumns : undefined
+        };
+
+        const newItem: ProjectItem = {
+          id: result.asset.id,
+          name: file.name,
+          type: 'data',
+          dataType: dataType || undefined,
+          dataInfo
+        };
+
+        footageItems.value.push(newItem);
+        console.log('[ProjectPanel] Data file imported and stored in project:', file.name, dataType, dataInfo);
+      } else {
+        console.error('[ProjectPanel] Failed to import data file:', result.error);
+      }
+      continue;
+    }
+
     const type = getFileType(file);
     const newItem: ProjectItem = {
       id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -703,13 +766,14 @@ function getFileType(file: File): ProjectItem['type'] {
 
 function getItemIcon(type: ProjectItem['type']): string {
   const icons: Record<ProjectItem['type'], string> = {
-    composition: '🎬',
-    footage: '🎞',
-    solid: '⬜',
-    audio: '🔊',
-    folder: '📁'
+    composition: '▶',
+    footage: '▧',
+    solid: '■',
+    audio: '♪',
+    folder: '▣',
+    data: '⊟'
   };
-  return icons[type] || '📄';
+  return icons[type] || '○';
 }
 
 function getItemInfo(item: ProjectItem): string {
@@ -724,6 +788,17 @@ function getItemInfo(item: ProjectItem): string {
     if (item.duration) {
       const seconds = item.duration / (item.fps || 30);
       parts.push(`${seconds.toFixed(1)}s`);
+    }
+    return parts.join(' • ');
+  }
+  if (item.type === 'data') {
+    // Show data type and info for data files
+    const parts: string[] = [];
+    if (item.dataType) {
+      parts.push(item.dataType.toUpperCase());
+    }
+    if (item.dataInfo) {
+      parts.push(item.dataInfo);
     }
     return parts.join(' • ');
   }

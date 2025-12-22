@@ -4,7 +4,7 @@
       <span class="panel-title">Audio Source</span>
       <div class="header-actions">
         <button @click="loadAudioFile" title="Load Audio">
-          <span class="icon">📁</span>
+          <PhFolder class="icon" />
         </button>
       </div>
     </div>
@@ -12,7 +12,7 @@
     <div class="panel-content" v-if="hasAudio">
       <div class="audio-info">
         <div class="file-info">
-          <span class="file-icon">🎵</span>
+          <PhMusicNote class="file-icon" />
           <div class="file-details">
             <span class="file-name">{{ audioFileName }}</span>
             <span class="file-meta">{{ audioDuration }} • {{ audioSampleRate }}</span>
@@ -26,7 +26,8 @@
           <label>Master Vol</label>
           <SliderInput v-model="masterVolume" :min="0" :max="100" unit="%" />
           <button class="mute-btn" :class="{ active: isMuted }" @click="toggleMute" title="Mute">
-            {{ isMuted ? '🔇' : '🔊' }}
+            <PhSpeakerSlash v-if="isMuted" />
+            <PhSpeakerHigh v-else />
           </button>
         </div>
       </div>
@@ -510,6 +511,10 @@ import { useCompositorStore } from '@/stores/compositorStore';
 import { SliderInput } from '@/components/controls';
 import AudioProperties from '@/components/properties/AudioProperties.vue';
 import AudioValuePreview from '@/components/panels/AudioValuePreview.vue';
+import {
+  PhFolder, PhMusicNote, PhSpeakerHigh, PhSpeakerSlash, PhMicrophone,
+  PhGuitar, PhPiano, PhSparkle, PhLink, PhArrowsClockwise, PhMapPin, PhTimer
+} from '@phosphor-icons/vue';
 import {
   separateStems as separateStemsService,
   isolateStem,

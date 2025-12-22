@@ -55,31 +55,31 @@
             <button @mousedown="addLayer('shape')" role="menuitem"><span class="icon" aria-hidden="true">◇</span> Shape</button>
             <button @mousedown="addLayer('spline')" role="menuitem"><span class="icon" aria-hidden="true">〰</span> Spline</button>
             <button @mousedown="addLayer('path')" role="menuitem"><span class="icon" aria-hidden="true">⤳</span> Path</button>
-            <button @mousedown="addLayer('particles')" role="menuitem"><span class="icon" aria-hidden="true">✨</span> Particles</button>
+            <button @mousedown="addLayer('particles')" role="menuitem"><PhSparkle class="icon" aria-hidden="true" /> Particles</button>
             <button @mousedown="addLayer('control')" role="menuitem"><span class="icon" aria-hidden="true">□</span> Control</button>
-            <button @mousedown="addLayer('camera')" role="menuitem"><span class="icon" aria-hidden="true">📷</span> Camera</button>
-            <button @mousedown="addLayer('light')" role="menuitem"><span class="icon" aria-hidden="true">💡</span> Light</button>
-            <button @mousedown="addLayer('video')" role="menuitem"><span class="icon" aria-hidden="true">🎞️</span> Video</button>
-            <button @mousedown="addLayer('model')" role="menuitem"><span class="icon" aria-hidden="true">🎲</span> 3D Model</button>
-            <button @mousedown="addLayer('pointcloud')" role="menuitem"><span class="icon" aria-hidden="true">☁️</span> Point Cloud</button>
-            <button @mousedown="addLayer('depth')" role="menuitem"><span class="icon" aria-hidden="true">🌊</span> Depth Map</button>
-            <button @mousedown="addLayer('normal')" role="menuitem"><span class="icon" aria-hidden="true">🧭</span> Normal Map</button>
-            <button @mousedown="addLayer('audio')" role="menuitem"><span class="icon" aria-hidden="true">🔊</span> Audio</button>
-            <button @mousedown="addLayer('generated')" role="menuitem"><span class="icon" aria-hidden="true">🤖</span> AI Generated</button>
-            <button @mousedown="addLayer('group')" role="menuitem"><span class="icon" aria-hidden="true">📁</span> Group</button>
+            <button @mousedown="addLayer('camera')" role="menuitem"><PhCamera class="icon" aria-hidden="true" /> Camera</button>
+            <button @mousedown="addLayer('light')" role="menuitem"><PhLightbulb class="icon" aria-hidden="true" /> Light</button>
+            <button @mousedown="addLayer('video')" role="menuitem"><PhFilmStrip class="icon" aria-hidden="true" /> Video</button>
+            <button @mousedown="addLayer('model')" role="menuitem"><PhCube class="icon" aria-hidden="true" /> 3D Model</button>
+            <button @mousedown="addLayer('pointcloud')" role="menuitem"><PhCloud class="icon" aria-hidden="true" /> Point Cloud</button>
+            <button @mousedown="addLayer('depth')" role="menuitem"><PhWaves class="icon" aria-hidden="true" /> Depth Map</button>
+            <button @mousedown="addLayer('normal')" role="menuitem"><PhCompass class="icon" aria-hidden="true" /> Normal Map</button>
+            <button @mousedown="addLayer('audio')" role="menuitem"><PhSpeakerHigh class="icon" aria-hidden="true" /> Audio</button>
+            <button @mousedown="addLayer('generated')" role="menuitem"><PhRobot class="icon" aria-hidden="true" /> AI Generated</button>
+            <button @mousedown="addLayer('group')" role="menuitem"><PhFolder class="icon" aria-hidden="true" /> Group</button>
           </div>
         </div>
 
         <div class="tool-group">
-           <button class="delete-btn" @click="deleteSelectedLayers" :disabled="store.selectedLayerIds.length === 0" aria-label="Delete selected layers">🗑️</button>
+           <button class="delete-btn" @click="deleteSelectedLayers" :disabled="store.selectedLayerIds.length === 0" aria-label="Delete selected layers"><PhTrash /></button>
         </div>
 
         <div class="tool-group">
           <button class="comp-settings-btn" @click="emit('openCompositionSettings')" title="Composition Settings (Ctrl+K)">
-            ⚙️ Comp Settings
+            <PhGearSix /> Comp Settings
           </button>
           <button class="ai-btn" @click="emit('openPathSuggestion')" title="AI Path Suggestion">
-            ✨ AI
+            <PhSparkle /> AI
           </button>
         </div>
 
@@ -98,10 +98,10 @@
         <div class="sidebar-header-row">
           <!-- AV Features (visibility, audio, isolate, lock) -->
           <div class="col-header col-av-features">
-            <span class="header-icon" title="Video">👁</span>
-            <span class="header-icon" title="Audio">🔊</span>
+            <span class="header-icon" title="Video"><PhEye :size="14" /></span>
+            <span class="header-icon" title="Audio"><PhSpeakerHigh :size="14" /></span>
             <span class="header-icon" title="Isolate">●</span>
-            <span class="header-icon" title="Lock">🔒</span>
+            <span class="header-icon" title="Lock"><PhLock :size="14" /></span>
           </div>
           <!-- Layer info -->
           <div class="col-header col-number">#</div>
@@ -113,8 +113,8 @@
               :class="{ active: store.hideMinimizedLayers }"
               title="Hide Minimized Layers"
               @click="store.toggleHideMinimizedLayers()"
-            >🙈</span>
-            <span class="header-icon" title="Flatten Transform">☀</span>
+            ><PhEyeSlash :size="14" /></span>
+            <span class="header-icon" title="Flatten Transform"><PhSun :size="14" /></span>
             <span class="header-icon" title="Quality">◐</span>
             <span class="header-icon" title="Effects">fx</span>
             <span class="header-icon" title="Frame Blending">⊞</span>
@@ -226,6 +226,11 @@ import CompositionTabs from './CompositionTabs.vue';
 import OnionSkinControls from './OnionSkinControls.vue';
 import AudioTrack from './AudioTrack.vue';
 import { findNearestSnap } from '@/services/timelineSnap';
+import {
+  PhSparkle, PhCamera, PhLightbulb, PhSpeakerHigh, PhFolder, PhGearSix,
+  PhTrash, PhEye, PhLock, PhSun, PhRobot, PhFilmStrip, PhCube,
+  PhCloud, PhWaves, PhCompass, PhEyeSlash
+} from '@phosphor-icons/vue';
 
 // Inject work area state from WorkspaceLayout
 const workAreaStart = inject<Ref<number | null>>('workAreaStart', ref(null));

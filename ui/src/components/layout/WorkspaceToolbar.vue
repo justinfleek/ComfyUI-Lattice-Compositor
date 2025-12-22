@@ -8,7 +8,7 @@
         title="Select Tool (V) - Select and move layers"
         aria-label="Select tool"
       >
-        <span class="icon" aria-hidden="true">↖</span>
+        <PhCursor class="icon" aria-hidden="true" />
         <span class="tool-label">Select</span>
       </button>
       <button
@@ -18,7 +18,7 @@
         title="Pen Tool (P) - Draw paths and shapes"
         aria-label="Pen tool"
       >
-        <span class="icon" aria-hidden="true">✒</span>
+        <PhPen class="icon" aria-hidden="true" />
         <span class="tool-label">Pen</span>
       </button>
       <button
@@ -28,7 +28,7 @@
         title="Text Tool (T) - Add text layers"
         aria-label="Text tool"
       >
-        <span class="icon" aria-hidden="true">T</span>
+        <PhTextT class="icon" aria-hidden="true" />
         <span class="tool-label">Text</span>
       </button>
       <button
@@ -38,7 +38,7 @@
         title="Hand Tool (H) - Pan the viewport"
         aria-label="Pan tool"
       >
-        <span class="icon" aria-hidden="true">✋</span>
+        <PhHand class="icon" aria-hidden="true" />
         <span class="tool-label">Pan</span>
       </button>
       <button
@@ -48,7 +48,7 @@
         title="Zoom Tool (Z) - Zoom in/out the viewport"
         aria-label="Zoom tool"
       >
-        <span class="icon" aria-hidden="true">🔍</span>
+        <PhMagnifyingGlass class="icon" aria-hidden="true" />
         <span class="tool-label">Zoom</span>
       </button>
       <button
@@ -58,7 +58,7 @@
         title="AI Segment (S) - Auto-select objects using AI"
         aria-label="AI Segment tool"
       >
-        <span class="icon" aria-hidden="true">✨</span>
+        <PhSparkle class="icon" aria-hidden="true" />
         <span class="tool-label">AI Seg</span>
       </button>
     </div>
@@ -74,7 +74,7 @@
         title="Rectangle Tool (R) - Draw rectangles and squares"
         aria-label="Rectangle tool"
       >
-        <span class="icon" aria-hidden="true">▢</span>
+        <PhSquare class="icon" aria-hidden="true" />
         <span class="tool-label">Rect</span>
       </button>
       <button
@@ -84,7 +84,7 @@
         title="Ellipse Tool (E) - Draw ellipses and circles"
         aria-label="Ellipse tool"
       >
-        <span class="icon" aria-hidden="true">○</span>
+        <PhCircle class="icon" aria-hidden="true" />
         <span class="tool-label">Ellipse</span>
       </button>
       <button
@@ -94,7 +94,7 @@
         title="Polygon Tool - Draw regular polygons"
         aria-label="Polygon tool"
       >
-        <span class="icon" aria-hidden="true">⬡</span>
+        <PhPolygon class="icon" aria-hidden="true" />
         <span class="tool-label">Polygon</span>
       </button>
       <button
@@ -104,7 +104,7 @@
         title="Star Tool - Draw stars"
         aria-label="Star tool"
       >
-        <span class="icon" aria-hidden="true">★</span>
+        <PhStar class="icon" aria-hidden="true" weight="fill" />
         <span class="tool-label">Star</span>
       </button>
     </div>
@@ -149,7 +149,7 @@
         title="Import Asset (Ctrl+I)"
         class="import-btn"
       >
-        <span class="icon">📥</span>
+        <PhDownload class="icon" />
         <span class="btn-label">Import</span>
       </button>
     </div>
@@ -175,10 +175,10 @@
         <template v-if="segmentPendingMask">
           <div class="divider"></div>
           <button @click="confirmSegmentMask" class="confirm-btn" title="Create Layer from Selection">
-            <span class="icon">✓</span> Create Layer
+            <PhCheck class="icon" /> Create Layer
           </button>
           <button @click="clearSegmentMask" class="cancel-btn" title="Cancel Selection">
-            <span class="icon">✕</span>
+            <PhX class="icon" />
           </button>
         </template>
         <span v-if="segmentIsLoading" class="loading-indicator">Segmenting...</span>
@@ -189,19 +189,20 @@
 
     <div class="tool-group">
       <button @click="goToStart" title="Go to Start (Home)">
-        <span class="icon">⏮</span>
+        <PhSkipBack class="icon" weight="fill" />
       </button>
       <button @click="stepBackward" title="Step Backward">
-        <span class="icon">⏪</span>
+        <PhRewind class="icon" weight="fill" />
       </button>
       <button @click="togglePlay" :title="isPlaying ? 'Pause (Space)' : 'Play (Space)'">
-        <span class="icon">{{ isPlaying ? '⏸' : '▶' }}</span>
+        <PhPause v-if="isPlaying" class="icon" weight="fill" />
+        <PhPlay v-else class="icon" weight="fill" />
       </button>
       <button @click="stepForward" title="Step Forward">
-        <span class="icon">⏩</span>
+        <PhFastForward class="icon" weight="fill" />
       </button>
       <button @click="goToEnd" title="Go to End (End)">
-        <span class="icon">⏭</span>
+        <PhSkipForward class="icon" weight="fill" />
       </button>
     </div>
 
@@ -243,23 +244,23 @@
       <span class="gpu-badge" :class="gpuTier">{{ gpuTier.toUpperCase() }}</span>
       <MemoryIndicator />
       <button @click="undo" :disabled="!canUndo" title="Undo (Ctrl+Z)">
-        <span class="icon">↩</span>
+        <PhArrowCounterClockwise class="icon" />
       </button>
       <button @click="redo" :disabled="!canRedo" title="Redo (Ctrl+Shift+Z)">
-        <span class="icon">↪</span>
+        <PhArrowClockwise class="icon" />
       </button>
       <div class="divider"></div>
       <!-- Memory Indicator -->
       <MemoryIndicator />
       <div class="divider"></div>
       <button @click="emit('showPreview')" title="Full Resolution Preview (`)">
-        <span class="icon">🖥</span> Preview
+        <PhMonitor class="icon" /> Preview
       </button>
       <button class="primary-btn" @click="emit('showExport')" title="Export frame sequence for AI processing">
-        <span class="icon">📤</span> Export
+        <PhExport class="icon" /> Export
       </button>
       <button @click="emit('showComfyUI')" title="Send to ComfyUI workflow">
-        <span class="icon">🔗</span> ComfyUI
+        <PhLink class="icon" /> ComfyUI
       </button>
     </div>
   </div>
@@ -271,6 +272,13 @@ import { useCompositorStore } from '@/stores/compositorStore';
 import { usePlaybackStore } from '@/stores/playbackStore';
 import { useThemeStore, type ThemeName } from '@/stores/themeStore';
 import MemoryIndicator from '@/components/common/MemoryIndicator.vue';
+import {
+  PhCursor, PhPen, PhTextT, PhHand, PhMagnifyingGlass, PhSparkle,
+  PhSquare, PhCircle, PhPolygon, PhStar, PhDownload,
+  PhSkipBack, PhRewind, PhPlay, PhPause, PhFastForward, PhSkipForward,
+  PhArrowCounterClockwise, PhArrowClockwise, PhMonitor, PhExport, PhLink,
+  PhCheck, PhX
+} from '@phosphor-icons/vue';
 
 const props = defineProps<{
   currentTool: string;
