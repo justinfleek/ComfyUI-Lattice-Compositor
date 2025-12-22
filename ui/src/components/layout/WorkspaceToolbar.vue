@@ -184,7 +184,7 @@
       <button @click="emit('showPreview')" title="Full Resolution Preview (`)">
         <span class="icon">🖥</span> Preview
       </button>
-      <button @click="emit('showExport')" title="Export frame sequence for AI processing">
+      <button class="primary-btn" @click="emit('showExport')" title="Export frame sequence for AI processing">
         <span class="icon">📤</span> Export
       </button>
       <button @click="emit('showComfyUI')" title="Send to ComfyUI workflow">
@@ -519,5 +519,18 @@ function redo() {
 
 .cancel-btn {
   background: var(--weyl-surface-3, #333) !important;
+}
+
+/* Primary action button (Export) */
+.tool-group button.primary-btn {
+  background: var(--weyl-accent, #8B5CF6);
+  color: white;
+  padding: 0 12px;
+  font-weight: 500;
+}
+
+.tool-group button.primary-btn:hover {
+  background: var(--weyl-accent-hover, #9D7AFA);
+  color: white;
 }
 </style>

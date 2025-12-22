@@ -62229,6 +62229,7 @@ const _sfc_main$k = /* @__PURE__ */ defineComponent({
             createTextVNode(" Preview ", -1)
           ])]),
           createBaseVNode("button", {
+            class: "primary-btn",
             onClick: _cache[12] || (_cache[12] = ($event) => emit("showExport")),
             title: "Export frame sequence for AI processing"
           }, [..._cache[36] || (_cache[36] = [
@@ -62248,7 +62249,7 @@ const _sfc_main$k = /* @__PURE__ */ defineComponent({
   }
 });
 
-const WorkspaceToolbar = /* @__PURE__ */ _export_sfc(_sfc_main$k, [["__scopeId", "data-v-bd8dc770"]]);
+const WorkspaceToolbar = /* @__PURE__ */ _export_sfc(_sfc_main$k, [["__scopeId", "data-v-de222ac4"]]);
 
 const CAMERA_BODY_SIZE = 40;
 const CAMERA_LENS_LENGTH = 30;
