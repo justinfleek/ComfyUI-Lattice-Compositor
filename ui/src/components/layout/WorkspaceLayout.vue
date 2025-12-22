@@ -22,6 +22,13 @@
 -->
 <template>
   <div class="workspace-layout">
+    <!-- Menu Bar -->
+    <MenuBar
+      @action="handleMenuAction"
+      @showPreferences="showPreferencesDialog = true"
+      @showProjectSettings="showCompositionSettingsDialog = true"
+    />
+
     <!-- Top Toolbar -->
     <WorkspaceToolbar
       v-model:currentTool="currentTool"
@@ -305,10 +312,18 @@
                   >
                     Generate
                   </button>
+                  <button
+                    :class="{ active: aiTab === 'flow' }"
+                    @click="aiTab = 'flow'"
+                    title="Generative Flow Trajectories for Wan-Move"
+                  >
+                    Flow
+                  </button>
                 </div>
                 <div class="ai-section-content">
                   <AIChatPanel v-if="aiTab === 'chat'" />
                   <AIGeneratePanel v-else-if="aiTab === 'generate'" />
+                  <GenerativeFlowPanel v-else-if="aiTab === 'flow'" />
                 </div>
               </div>
             </Pane>
@@ -373,6 +388,13 @@
       :visible="showCameraTrackingImportDialog"
       @close="showCameraTrackingImportDialog = false"
       @imported="onCameraTrackingImported"
+    />
+
+    <!-- Preferences Dialog -->
+    <PreferencesDialog
+      :visible="showPreferencesDialog"
+      @close="showPreferencesDialog = false"
+      @save="handlePreferencesSave"
     />
 
     <!-- AI Path Suggestion Dialog -->
@@ -445,12 +467,14 @@ import AssetsPanel from '@/components/panels/AssetsPanel.vue';
 import PreviewPanel from '@/components/panels/PreviewPanel.vue';
 import AIChatPanel from '@/components/panels/AIChatPanel.vue';
 import AIGeneratePanel from '@/components/panels/AIGeneratePanel.vue';
+import GenerativeFlowPanel from '@/components/panels/GenerativeFlowPanel.vue';
 import AlignPanel from '@/components/panels/AlignPanel.vue';
 import EssentialGraphicsPanel from '@/components/panels/EssentialGraphicsPanel.vue';
 import CollapsiblePanel from '@/components/panels/CollapsiblePanel.vue';
 
 // Layout
 import WorkspaceToolbar from '@/components/layout/WorkspaceToolbar.vue';
+import MenuBar from '@/components/layout/MenuBar.vue';
 
 // Viewport
 import ViewportRenderer from '@/components/viewport/ViewportRenderer.vue';
@@ -469,6 +493,7 @@ import PathSuggestionDialog from '@/components/dialogs/PathSuggestionDialog.vue'
 import KeyframeInterpolationDialog from '@/components/dialogs/KeyframeInterpolationDialog.vue';
 import TimeStretchDialog from '@/components/dialogs/TimeStretchDialog.vue';
 import CameraTrackingImportDialog from '@/components/dialogs/CameraTrackingImportDialog.vue';
+import PreferencesDialog from '@/components/dialogs/PreferencesDialog.vue';
 import ExpressionInput from '@/components/properties/ExpressionInput.vue';
 import { useExpressionEditor } from '@/composables/useExpressionEditor';
 import { useGuides } from '@/composables/useGuides';
@@ -491,8 +516,10 @@ import { useAssetStore } from '@/stores/assetStore';
 const assetStore = useAssetStore();
 import { useAudioStore } from '@/stores/audioStore';
 import { usePlaybackStore } from '@/stores/playbackStore';
+import { useHistoryStore } from '@/stores/historyStore';
 const audioStore = useAudioStore();
 const playbackStore = usePlaybackStore();
+const historyStore = useHistoryStore();
 
 // Expression editor composable
 const expressionEditor = useExpressionEditor();
@@ -538,7 +565,7 @@ const expandedPanels = ref({
 });
 
 // AI section tab
-const aiTab = ref<'chat' | 'generate'>('chat');
+const aiTab = ref<'chat' | 'generate' | 'flow'>('chat');
 const viewportTab = ref<'composition' | 'layer' | 'footage'>('composition');
 
 const viewZoom = ref('fit');
@@ -551,6 +578,7 @@ const showPathSuggestionDialog = ref(false);
 const showKeyframeInterpolationDialog = ref(false);
 const showTimeStretchDialog = ref(false);
 const showCameraTrackingImportDialog = ref(false);
+const showPreferencesDialog = ref(false);
 const showHDPreview = ref(false);
 
 // Vision authoring state
@@ -737,6 +765,11 @@ provide('addGuide', addGuide);
 provide('removeGuide', removeGuide);
 provide('clearGuides', clearGuides);
 provide('updateGuidePosition', updateGuidePosition);
+
+// Provide frame capture for MOGRT export and other features
+provide('captureFrame', async (): Promise<string | null> => {
+  return threeCanvasRef.value?.captureFrame() ?? null;
+});
 
 // ========================================================================
 // SNAP POINT CALCULATION (uses both guides and keyboard composable state)
@@ -1124,6 +1157,258 @@ function handleZoomChange() {
     // Convert percentage string to decimal (e.g., '100' → 1.0, '200' → 2.0)
     const zoomLevel = parseInt(viewZoom.value) / 100;
     threeCanvasRef.value.setZoom(zoomLevel);
+  }
+}
+
+// ========================================================================
+// MENU BAR ACTION HANDLER
+// ========================================================================
+
+/**
+ * Handle actions from the menu bar
+ */
+function handleMenuAction(action: string) {
+  switch (action) {
+    // File menu
+    case 'newProject':
+      if (confirm('Create a new project? Unsaved changes will be lost.')) {
+        store.newProject();
+      }
+      break;
+    case 'openProject':
+      triggerProjectOpen();
+      break;
+    case 'saveProject':
+      store.saveProject();
+      break;
+    case 'saveProjectAs':
+      store.saveProjectAs();
+      break;
+    case 'import':
+      triggerAssetImport();
+      break;
+    case 'export':
+      showExportDialog.value = true;
+      break;
+
+    // Edit menu
+    case 'undo':
+      historyStore.undo();
+      break;
+    case 'redo':
+      historyStore.redo();
+      break;
+    case 'cut':
+      store.cutSelected();
+      break;
+    case 'copy':
+      store.copySelected();
+      break;
+    case 'paste':
+      store.paste();
+      break;
+    case 'duplicate':
+      store.duplicateSelectedLayers();
+      break;
+    case 'delete':
+      store.deleteSelectedLayers();
+      break;
+    case 'selectAll':
+      store.selectAllLayers();
+      break;
+    case 'deselectAll':
+      store.clearSelection();
+      break;
+
+    // Create menu - layer types
+    case 'createSolid':
+      store.createLayer('solid');
+      break;
+    case 'createText':
+      store.createLayer('text');
+      break;
+    case 'createShape':
+      store.createLayer('spline');
+      break;
+    case 'createPath':
+      store.createLayer('path');
+      break;
+    case 'createCamera':
+      store.createLayer('camera');
+      break;
+    case 'createLight':
+      store.createLayer('light');
+      break;
+    case 'createControl':
+      store.createLayer('control');
+      break;
+    case 'createParticle':
+      store.createLayer('particle');
+      break;
+    case 'createDepth':
+      store.createLayer('depth');
+      break;
+    case 'createNormal':
+      store.createLayer('normal');
+      break;
+    case 'createGenerated':
+      store.createLayer('generated');
+      break;
+    case 'createGroup':
+      store.createLayer('group');
+      break;
+    case 'createEffectLayer':
+      store.createLayer('effectLayer');
+      break;
+    case 'createMatte':
+      store.createLayer('matte');
+      break;
+
+    // Layer menu
+    case 'precompose':
+      showPrecomposeDialog.value = true;
+      break;
+    case 'splitLayer':
+      store.splitLayerAtPlayhead();
+      break;
+    case 'timeStretch':
+      showTimeStretchDialog.value = true;
+      break;
+    case 'timeReverse':
+      store.reverseSelectedLayers();
+      break;
+    case 'freezeFrame':
+      store.freezeFrameAtPlayhead();
+      break;
+    case 'lockLayer':
+      store.toggleLayerLock();
+      break;
+    case 'toggleVisibility':
+      store.toggleLayerVisibility();
+      break;
+    case 'isolateLayer':
+      store.toggleLayerSolo();
+      break;
+    case 'bringToFront':
+      store.bringToFront();
+      break;
+    case 'sendToBack':
+      store.sendToBack();
+      break;
+    case 'bringForward':
+      store.bringForward();
+      break;
+    case 'sendBackward':
+      store.sendBackward();
+      break;
+
+    // View menu
+    case 'zoomIn':
+      handleZoomIn();
+      break;
+    case 'zoomOut':
+      handleZoomOut();
+      break;
+    case 'zoomFit':
+      viewZoom.value = 'fit';
+      handleZoomChange();
+      break;
+    case 'zoom100':
+      viewZoom.value = '100';
+      handleZoomChange();
+      break;
+    case 'toggleCurveEditor':
+      showCurveEditor.value = !showCurveEditor.value;
+      break;
+
+    // Window menu - panel visibility
+    case 'showProperties':
+      expandedPanels.value.properties = true;
+      break;
+    case 'showEffects':
+      leftTab.value = 'effects';
+      break;
+    case 'showCamera':
+      expandedPanels.value.camera = true;
+      break;
+    case 'showAudio':
+      expandedPanels.value.audio = true;
+      break;
+    case 'showAlign':
+      expandedPanels.value.align = true;
+      break;
+    case 'showAIChat':
+      aiTab.value = 'chat';
+      break;
+    case 'showAIGenerate':
+      aiTab.value = 'generate';
+      break;
+    case 'showExport':
+      showExportDialog.value = true;
+      break;
+    case 'showPreview':
+      showHDPreview.value = true;
+      break;
+
+    // Help menu
+    case 'showKeyboardShortcuts':
+      showPreferencesDialog.value = true;
+      // Switch to shortcuts tab after dialog opens
+      break;
+    case 'showDocumentation':
+      window.open('https://github.com/justinfleek/weyl-compositor', '_blank');
+      break;
+    case 'showAbout':
+      alert('Weyl Compositor v7.6\n\nProfessional motion graphics compositor for ComfyUI.\n\nBuilt with Vue 3, Three.js, and Pinia.');
+      break;
+
+    default:
+      console.warn('Unhandled menu action:', action);
+  }
+}
+
+function handleZoomIn() {
+  const levels = ['25', '50', '75', '100', '150', '200'];
+  const currentIndex = levels.indexOf(viewZoom.value);
+  if (currentIndex < levels.length - 1 && currentIndex >= 0) {
+    viewZoom.value = levels[currentIndex + 1];
+    handleZoomChange();
+  } else if (viewZoom.value === 'fit') {
+    viewZoom.value = '100';
+    handleZoomChange();
+  }
+}
+
+function handleZoomOut() {
+  const levels = ['25', '50', '75', '100', '150', '200'];
+  const currentIndex = levels.indexOf(viewZoom.value);
+  if (currentIndex > 0) {
+    viewZoom.value = levels[currentIndex - 1];
+    handleZoomChange();
+  }
+}
+
+function triggerProjectOpen() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.weyl,.json';
+  input.onchange = async (e) => {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (file) {
+      await store.loadProjectFromFile(file);
+    }
+  };
+  input.click();
+}
+
+/**
+ * Handle preferences save
+ */
+function handlePreferencesSave(preferences: any) {
+  console.log('Preferences saved:', preferences);
+  // Apply relevant preferences immediately
+  if (preferences.theme) {
+    // Theme would be applied via themeStore
   }
 }
 
