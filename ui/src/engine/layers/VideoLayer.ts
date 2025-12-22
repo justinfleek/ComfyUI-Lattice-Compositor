@@ -16,6 +16,7 @@ import type { ResourceManager } from '../core/ResourceManager';
 import { BaseLayer } from './BaseLayer';
 import { KeyframeEvaluator } from '../animation/KeyframeEvaluator';
 import { layerLogger } from '@/utils/logger';
+import { VideoDecoderService, isWebCodecsSupported } from '@/services/videoDecoder';
 
 // ============================================================================
 // TYPES
@@ -62,6 +63,13 @@ export class VideoLayer extends BaseLayer {
   // Playback state
   private lastEvaluatedFrame: number = -1;
   private isPlaying: boolean = false;
+
+  // Frame-accurate decoder (WebCodecs API)
+  private frameAccurateDecoder: VideoDecoderService | null = null;
+  private useFrameAccurateDecoding: boolean = false;
+  private decodedFrameTexture: THREE.CanvasTexture | null = null;
+  private decodedFrameCanvas: HTMLCanvasElement | null = null;
+  private decodedFrameCtx: CanvasRenderingContext2D | null = null;
 
   // Callbacks for composition auto-resize
   private onMetadataLoaded?: (metadata: VideoMetadata) => void;
@@ -188,8 +196,55 @@ export class VideoLayer extends BaseLayer {
     // Create texture from video
     this.createVideoTexture();
 
+    // Initialize frame-accurate decoder if WebCodecs is available
+    if (isWebCodecsSupported() && asset.data) {
+      await this.initializeFrameAccurateDecoder(asset.data);
+    }
+
     // Set initial time
     this.seekToFrame(this.videoData.posterFrame);
+  }
+
+  /**
+   * Initialize WebCodecs-based decoder for frame-accurate seeking
+   */
+  private async initializeFrameAccurateDecoder(videoUrl: string): Promise<void> {
+    try {
+      // Fetch the video file as blob for WebCodecs
+      const response = await fetch(videoUrl);
+      const videoBlob = await response.blob();
+      const videoFile = new File([videoBlob], 'video.mp4', { type: videoBlob.type });
+
+      // Create and initialize the decoder
+      this.frameAccurateDecoder = new VideoDecoderService(videoFile, {
+        maxCacheSize: 100,  // Cache up to 100 frames
+        enableAudio: this.videoData.audioEnabled,
+      });
+
+      const info = await this.frameAccurateDecoder.initialize();
+
+      // Update metadata with accurate frame info from decoder
+      if (this.metadata) {
+        this.metadata.fps = info.fps;
+        this.metadata.frameCount = info.totalFrames;
+        this.metadata.duration = info.duration;
+        this.metadata.width = info.width;
+        this.metadata.height = info.height;
+      }
+
+      // Create canvas for decoded frames
+      this.decodedFrameCanvas = document.createElement('canvas');
+      this.decodedFrameCanvas.width = info.width;
+      this.decodedFrameCanvas.height = info.height;
+      this.decodedFrameCtx = this.decodedFrameCanvas.getContext('2d');
+
+      this.useFrameAccurateDecoding = true;
+      layerLogger.debug(`VideoLayer: WebCodecs decoder initialized - ${info.totalFrames} frames @ ${info.fps}fps`);
+    } catch (error) {
+      layerLogger.warn('VideoLayer: WebCodecs decoder failed, falling back to HTMLVideoElement:', error);
+      this.useFrameAccurateDecoding = false;
+      this.frameAccurateDecoder = null;
+    }
   }
 
   /**
@@ -323,18 +378,82 @@ export class VideoLayer extends BaseLayer {
 
   /**
    * Seek to a specific composition frame
+   * Uses WebCodecs for frame-accurate seeking when available
    */
   seekToFrame(compositionFrame: number): void {
-    if (!this.videoElement || !this.metadata) return;
+    if (!this.metadata) return;
 
     // Calculate video time from composition frame
     const videoTime = this.calculateVideoTime(compositionFrame);
 
-    // Clamp to valid range
-    const clampedTime = Math.max(0, Math.min(videoTime, this.videoElement.duration));
+    // Use frame-accurate decoder if available
+    if (this.useFrameAccurateDecoding && this.frameAccurateDecoder) {
+      this.seekToFrameAccurate(videoTime);
+      return;
+    }
 
-    // Seek
-    this.videoElement.currentTime = clampedTime;
+    // Fallback to HTMLVideoElement (±0.5 frame drift)
+    if (this.videoElement) {
+      const clampedTime = Math.max(0, Math.min(videoTime, this.videoElement.duration));
+      this.videoElement.currentTime = clampedTime;
+    }
+  }
+
+  /**
+   * Frame-accurate seek using WebCodecs API
+   */
+  private async seekToFrameAccurate(videoTime: number): Promise<void> {
+    if (!this.frameAccurateDecoder || !this.metadata) return;
+
+    // Convert time to frame number
+    const targetFrame = Math.round(videoTime * this.metadata.fps);
+    const clampedFrame = Math.max(0, Math.min(targetFrame, this.metadata.frameCount - 1));
+
+    try {
+      // Get the exact frame from the decoder
+      const frameInfo = await this.frameAccurateDecoder.getFrame(clampedFrame);
+
+      if (frameInfo && this.decodedFrameCtx && this.decodedFrameCanvas) {
+        // Draw the decoded frame to canvas
+        this.decodedFrameCtx.clearRect(0, 0, this.decodedFrameCanvas.width, this.decodedFrameCanvas.height);
+
+        if (frameInfo.image instanceof ImageBitmap) {
+          this.decodedFrameCtx.drawImage(frameInfo.image, 0, 0);
+        }
+
+        // Update texture from decoded frame
+        this.updateTextureFromDecodedFrame();
+      }
+    } catch (error) {
+      layerLogger.warn('VideoLayer: Frame-accurate seek failed, falling back:', error);
+
+      // Fallback to HTMLVideoElement
+      if (this.videoElement) {
+        const clampedTime = Math.max(0, Math.min(videoTime, this.videoElement.duration));
+        this.videoElement.currentTime = clampedTime;
+      }
+    }
+  }
+
+  /**
+   * Update Three.js texture from decoded frame canvas
+   */
+  private updateTextureFromDecodedFrame(): void {
+    if (!this.decodedFrameCanvas || !this.material) return;
+
+    // Create or update texture from canvas
+    if (!this.decodedFrameTexture) {
+      this.decodedFrameTexture = new THREE.CanvasTexture(this.decodedFrameCanvas);
+      this.decodedFrameTexture.minFilter = THREE.LinearFilter;
+      this.decodedFrameTexture.magFilter = THREE.LinearFilter;
+      this.decodedFrameTexture.colorSpace = THREE.SRGBColorSpace;
+    } else {
+      this.decodedFrameTexture.needsUpdate = true;
+    }
+
+    // Apply decoded frame texture
+    this.material.map = this.decodedFrameTexture;
+    this.material.needsUpdate = true;
   }
 
   /**
@@ -733,6 +852,21 @@ export class VideoLayer extends BaseLayer {
       this.videoTexture.dispose();
       this.videoTexture = null;
     }
+
+    // Clean up frame-accurate decoder
+    if (this.frameAccurateDecoder) {
+      this.frameAccurateDecoder.dispose();
+      this.frameAccurateDecoder = null;
+    }
+
+    if (this.decodedFrameTexture) {
+      this.decodedFrameTexture.dispose();
+      this.decodedFrameTexture = null;
+    }
+
+    this.decodedFrameCanvas = null;
+    this.decodedFrameCtx = null;
+    this.useFrameAccurateDecoding = false;
 
     if (this.material) {
       this.material.map = null;

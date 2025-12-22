@@ -2597,6 +2597,13 @@ export interface TextData {
   textCase?: 'normal' | 'uppercase' | 'lowercase' | 'smallCaps';
   verticalAlign?: 'normal' | 'superscript' | 'subscript';
 
+  // OpenType Features (Phase 2: Text System)
+  kerning?: boolean;              // Enable/disable kerning (default: true)
+  ligatures?: boolean;            // Enable standard ligatures (default: true)
+  discretionaryLigatures?: boolean; // Enable discretionary ligatures (default: false)
+  smallCapsFeature?: boolean;     // Use OpenType small caps (default: false)
+  stylisticSet?: number;          // Stylistic set 1-20 (0 = none)
+
   // Advanced Paragraph Properties (Tutorial 7)
   firstLineIndent?: number;      // Pixels
   spaceBefore?: number;          // Pixels before paragraph

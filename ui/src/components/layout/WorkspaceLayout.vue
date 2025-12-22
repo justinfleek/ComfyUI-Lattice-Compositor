@@ -404,6 +404,18 @@
         @select="selectedPathIndex = $event"
       />
     </Teleport>
+
+    <!-- Track Point Overlay (shown in viewport when camera tracking points exist) -->
+    <Teleport to=".viewport-content" v-if="trackPointsState.tracks.value.length > 0">
+      <TrackPointOverlay
+        :width="compWidth"
+        :height="compHeight"
+        :currentFrame="currentFrame"
+        :showTrails="viewOptions.showGuides"
+        :showLabels="true"
+        :editable="true"
+      />
+    </Teleport>
   </div>
 </template>
 
@@ -459,6 +471,10 @@ import { useSelectionStore } from '@/stores/selectionStore';
 
 // Canvas overlays
 import PathPreviewOverlay from '@/components/canvas/PathPreviewOverlay.vue';
+import TrackPointOverlay from '@/components/canvas/TrackPointOverlay.vue';
+
+// Track point service
+import { useTrackPoints } from '@/services/trackPointService';
 
 // Preview
 import HDPreviewWindow from '@/components/preview/HDPreviewWindow.vue';
@@ -474,6 +490,9 @@ const playbackStore = usePlaybackStore();
 
 // Expression editor composable
 const expressionEditor = useExpressionEditor();
+
+// Track points state for camera tracking overlay
+const trackPointsState = useTrackPoints();
 
 // Tool state - synced with store
 const currentTool = computed({

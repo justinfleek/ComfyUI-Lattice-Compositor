@@ -1,8 +1,8 @@
 # Project Status Audit
 
 **Last Updated:** December 22, 2025
-**Test Status:** 1185 tests passing (43 skipped), 0 TypeScript errors
-**Build Status:** Compiles successfully
+**Test Status:** 1615 tests passing (9 skipped), 0 TypeScript errors
+**Build Status:** Compiles successfully (12.97s)
 
 ---
 
@@ -10,13 +10,13 @@
 
 | Metric | Count | Status |
 |--------|-------|--------|
-| Lines of Code | 159,054+ | TypeScript + Vue |
-| TypeScript Files | 252+ | All compiling |
+| Lines of Code | 165,000+ | TypeScript + Vue |
+| TypeScript Files | 270+ | All compiling |
 | Vue Components | 63+ | All rendering |
-| Services | 53+ | All exported |
+| Services | 65+ | All exported |
 | Engine Files | 24 | Functional |
-| Test Suites | 34 | All passing |
-| Total Tests | 1185+ | 96.5% pass rate |
+| Test Suites | 43 | All passing |
+| Total Tests | 1615+ | 99.4% pass rate |
 | Layer Types | 17 | All implemented |
 | Effects | 22 | 4 categories |
 | Easing Functions | 35 | All Penner + custom |
@@ -35,7 +35,24 @@
 
 See `HANDOFF.md` for detailed issue descriptions and workarounds.
 
-## New Features (December 22, 2025)
+## Acquisition-Ready Features (December 22, 2025)
+
+All 10 critical infrastructure gaps have been implemented:
+
+| Phase | Feature | File(s) | Status |
+|-------|---------|---------|--------|
+| 1 | GPU Effects Pipeline | `gpuEffectDispatcher.ts`, `gpuBenchmark.ts` | **COMPLETE** |
+| 2 | Text System (OpenType) | `textShaper.ts` | **COMPLETE** |
+| 3 | Shape Booleans (Bezier) | `bezierBoolean.ts` | **COMPLETE** |
+| 4 | Video Frame Accuracy | `videoDecoder.ts` + VideoLayer | **COMPLETE** |
+| 5 | Render Queue | `renderQueue/RenderQueueManager.ts` | **COMPLETE** |
+| 6 | Color Management | `colorManagement/ColorProfileService.ts` | **COMPLETE** |
+| 7 | Audio Waveform | `timelineWaveform.ts` | **COMPLETE** |
+| 8 | Canvas Selection | `composables/useCanvasSelection.ts` | **COMPLETE** |
+| 9 | Plugin API | `plugins/PluginManager.ts` | **COMPLETE** |
+| 10 | Project Versioning | `projectMigration.ts` | **COMPLETE** |
+
+## Earlier Features (December 22, 2025)
 
 | Feature | Status |
 |---------|--------|

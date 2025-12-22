@@ -6,14 +6,17 @@
  * becoming the input for the next effect.
  *
  * Performance optimizations:
+ * - GPU acceleration via GPUEffectDispatcher (WebGPU → WebGL2 → Canvas2D)
  * - Effect result caching (50-80% gain for static effects)
  * - Canvas buffer pooling (10-20% allocation overhead reduction)
  * - ImageData buffer reuse
+ * - Texture pooling for GPU operations
  */
 import type { EffectInstance } from '@/types/effects';
 import type { AnimatableProperty } from '@/types/project';
 import { interpolateProperty } from './interpolation';
 import { renderLogger } from '@/utils/logger';
+import { gpuEffectDispatcher, type GPURenderPath } from './gpuEffectDispatcher';
 
 // ============================================================================
 // CANVAS BUFFER POOL
@@ -361,11 +364,13 @@ export interface EffectContext {
 }
 
 /**
- * Process a stack of effects on an input canvas
+ * Process a stack of effects on an input canvas (synchronous, CPU-only)
  *
  * Effects are processed in order (top to bottom in the UI).
  * Each effect receives the output of the previous effect.
  * Disabled effects are skipped.
+ *
+ * NOTE: For GPU-accelerated processing, use processEffectStackAsync instead.
  *
  * @param effects - Array of effect instances
  * @param inputCanvas - Source canvas to process
@@ -437,6 +442,181 @@ export function processEffectStack(
 }
 
 /**
+ * GPU-accelerated effect processing options
+ */
+export interface GPUProcessingOptions {
+  /** Force CPU-only processing (bypass GPU) */
+  forceCPU?: boolean;
+  /** Use draft quality for faster preview */
+  draft?: boolean;
+  /** Enable GPU metrics logging */
+  logMetrics?: boolean;
+}
+
+/**
+ * Process a stack of effects with GPU acceleration (async)
+ *
+ * Uses the GPU Effect Dispatcher to route effects to the best available
+ * renderer: WebGPU → WebGL2 → Canvas2D
+ *
+ * @param effects - Array of effect instances
+ * @param inputCanvas - Source canvas to process
+ * @param frame - Current frame for animation evaluation
+ * @param context - Optional context for time-based effects
+ * @param options - GPU processing options
+ * @returns Promise resolving to processed canvas
+ */
+export async function processEffectStackAsync(
+  effects: EffectInstance[],
+  inputCanvas: HTMLCanvasElement,
+  frame: number,
+  context?: EffectContext,
+  options: GPUProcessingOptions = {}
+): Promise<EffectStackResult> {
+  const startTime = performance.now();
+
+  // If GPU disabled or no effects, use sync path
+  if (options.forceCPU || effects.length === 0) {
+    return processEffectStack(effects, inputCanvas, frame, options.draft ? 'draft' : 'high', context);
+  }
+
+  // Ensure GPU dispatcher is initialized
+  await gpuEffectDispatcher.initialize();
+  const capabilities = gpuEffectDispatcher.getCapabilities();
+
+  // If no GPU available, fall back to sync path
+  if (capabilities.preferredPath === 'canvas2d') {
+    return processEffectStack(effects, inputCanvas, frame, options.draft ? 'draft' : 'high', context);
+  }
+
+  // Create working canvas
+  const workCanvas = document.createElement('canvas');
+  workCanvas.width = inputCanvas.width;
+  workCanvas.height = inputCanvas.height;
+  const workCtx = workCanvas.getContext('2d')!;
+  workCtx.drawImage(inputCanvas, 0, 0);
+
+  let current: EffectStackResult = {
+    canvas: workCanvas,
+    ctx: workCtx
+  };
+
+  let gpuEffectsProcessed = 0;
+  let cpuEffectsProcessed = 0;
+
+  // Process each enabled effect
+  for (const effect of effects) {
+    if (!effect.enabled) {
+      continue;
+    }
+
+    // Evaluate parameters at current frame
+    const params = evaluateEffectParameters(effect, frame);
+
+    // Inject context for time-based effects
+    if (context) {
+      params._frame = context.frame;
+      params._fps = context.fps;
+      params._layerId = context.layerId;
+      if (context.compositionId) {
+        params._compositionId = context.compositionId;
+      }
+    } else {
+      params._frame = frame;
+      params._fps = 30;
+      params._layerId = 'default';
+    }
+
+    // Check if this effect should use GPU
+    const shouldUseGPU = gpuEffectDispatcher.shouldUseGPU(effect.effectKey);
+
+    if (shouldUseGPU) {
+      try {
+        // Process via GPU
+        const inputImageData = current.ctx.getImageData(
+          0, 0, current.canvas.width, current.canvas.height
+        );
+
+        const result = await gpuEffectDispatcher.processEffect(
+          effect.effectKey,
+          inputImageData,
+          params
+        );
+
+        // Put result back on canvas
+        current.ctx.putImageData(result, 0, 0);
+        gpuEffectsProcessed++;
+      } catch (error) {
+        renderLogger.warn(`GPU processing failed for ${effect.effectKey}, using CPU:`, error);
+        // Fall back to CPU renderer
+        const renderer = effectRenderers.get(effect.effectKey);
+        if (renderer) {
+          try {
+            current = renderer(current, params);
+            cpuEffectsProcessed++;
+          } catch (cpuError) {
+            renderLogger.error(`CPU fallback also failed for ${effect.name}:`, cpuError);
+          }
+        }
+      }
+    } else {
+      // Use CPU renderer
+      const renderer = effectRenderers.get(effect.effectKey);
+      if (renderer) {
+        try {
+          current = renderer(current, params);
+          cpuEffectsProcessed++;
+        } catch (error) {
+          renderLogger.error(`Error applying effect ${effect.name}:`, error);
+        }
+      } else {
+        renderLogger.warn(`No renderer registered for effect: ${effect.effectKey}`);
+      }
+    }
+  }
+
+  // Log metrics if requested
+  if (options.logMetrics) {
+    const elapsed = performance.now() - startTime;
+    renderLogger.debug('Effect stack processing complete', {
+      totalEffects: effects.filter(e => e.enabled).length,
+      gpuEffects: gpuEffectsProcessed,
+      cpuEffects: cpuEffectsProcessed,
+      timeMs: elapsed.toFixed(2),
+      renderPath: capabilities.preferredPath,
+    });
+  }
+
+  return current;
+}
+
+/**
+ * Check if GPU effect processing is available
+ */
+export function isGPUEffectProcessingAvailable(): boolean {
+  const caps = gpuEffectDispatcher.getCapabilities();
+  return caps.initialized && caps.preferredPath !== 'canvas2d';
+}
+
+/**
+ * Get GPU effect processing capabilities
+ */
+export function getGPUEffectCapabilities(): {
+  available: boolean;
+  preferredPath: GPURenderPath;
+  webgpuAvailable: boolean;
+  webgl2Available: boolean;
+} {
+  const caps = gpuEffectDispatcher.getCapabilities();
+  return {
+    available: caps.preferredPath !== 'canvas2d',
+    preferredPath: caps.preferredPath,
+    webgpuAvailable: caps.webgpuAvailable,
+    webgl2Available: caps.webgl2Available,
+  };
+}
+
+/**
  * Create a canvas from an ImageData object
  */
 export function imageDataToCanvas(imageData: ImageData): HTMLCanvasElement {
@@ -489,6 +669,7 @@ export function getRegisteredEffects(): string[] {
 export default {
   evaluateEffectParameters,
   processEffectStack,
+  processEffectStackAsync,
   registerEffectRenderer,
   imageDataToCanvas,
   canvasToImageData,
@@ -498,5 +679,7 @@ export default {
   getRegisteredEffects,
   clearEffectCaches,
   getEffectProcessorStats,
-  cleanupEffectResources
+  cleanupEffectResources,
+  isGPUEffectProcessingAvailable,
+  getGPUEffectCapabilities,
 };

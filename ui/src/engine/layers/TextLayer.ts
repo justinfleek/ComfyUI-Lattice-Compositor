@@ -54,6 +54,11 @@ import {
   calculateCompleteCharacterInfluence,
   calculateWigglyOffset,
 } from '@/services/textAnimator';
+import {
+  textShaper,
+  loadFontForShaping,
+  type FontMetrics,
+} from '@/services/textShaper';
 import type { TextAnimator } from '@/types/project';
 
 // ============================================================================
@@ -117,6 +122,11 @@ export class TextLayer extends BaseLayer {
   private characterWidths: number[] = [];
   private characterWidthsDirty: boolean = true;
 
+  // Font metrics for accurate character widths (loaded async)
+  private fontMetrics: FontMetrics | null = null;
+  private fontLoadingPromise: Promise<void> | null = null;
+  private useAccurateMetrics: boolean = false;
+
   // Text animators (After Effects-style per-character animation)
   private animators: TextAnimator[] = [];
 
@@ -150,6 +160,55 @@ export class TextLayer extends BaseLayer {
 
     // Apply initial blend mode
     this.initializeBlendMode();
+
+    // Load font for accurate character metrics (async, non-blocking)
+    this.loadFontMetrics();
+  }
+
+  // ============================================================================
+  // FONT METRICS LOADING
+  // ============================================================================
+
+  /**
+   * Load font metrics asynchronously for accurate character widths
+   * This is non-blocking - text will use heuristics until font loads
+   */
+  private async loadFontMetrics(): Promise<void> {
+    const fontFamily = this.textData.fontFamily;
+    const fontUrl = this.getFontUrl(fontFamily);
+
+    // Skip if no URL (system fonts can't be loaded via opentype.js)
+    if (!fontUrl) {
+      return;
+    }
+
+    // Avoid duplicate loading
+    if (this.fontLoadingPromise) {
+      return this.fontLoadingPromise;
+    }
+
+    this.fontLoadingPromise = (async () => {
+      try {
+        this.fontMetrics = await loadFontForShaping(fontFamily, fontUrl);
+        this.useAccurateMetrics = true;
+        this.characterWidthsDirty = true;
+
+        // Refresh character layout if path or per-character mode is active
+        if (this.perCharacterGroup) {
+          if (this.textOnPath.hasPath()) {
+            this.updatePathLayout();
+          } else {
+            this.createCharacterMeshes();
+          }
+        }
+      } catch (error) {
+        // Silently fall back to heuristics if font loading fails
+        console.debug(`TextLayer: Could not load font metrics for "${fontFamily}", using heuristics`);
+        this.useAccurateMetrics = false;
+      }
+    })();
+
+    return this.fontLoadingPromise;
   }
 
   // ============================================================================
@@ -471,16 +530,38 @@ export class TextLayer extends BaseLayer {
 
   /**
    * Calculate character widths for path spacing
+   *
+   * Uses textShaper for accurate glyph metrics when the font is loaded,
+   * with automatic kerning support. Falls back to heuristic widths if
+   * the font isn't loaded yet or loading failed.
    */
   private ensureCharacterWidths(): void {
     if (!this.characterWidthsDirty) return;
 
     this.characterWidths = [];
     const text = this.textData.text;
+    const fontSize = this.textData.fontSize;
+    const fontFamily = this.textData.fontFamily;
 
-    // Use approximate width based on font size
-    // A more accurate method would measure actual glyph widths from Troika
-    const avgCharWidth = this.textData.fontSize * 0.6;
+    // Try to use accurate metrics from textShaper
+    if (this.useAccurateMetrics && textShaper.isFontLoaded(fontFamily)) {
+      // Use textShaper for accurate glyph widths with kerning
+      this.characterWidths = textShaper.getCharacterWidths(
+        text,
+        fontFamily,
+        fontSize,
+        {
+          kern: this.textData.kerning ?? true,
+          letterSpacing: this.textData.tracking ?? 0,
+        }
+      );
+      this.characterWidthsDirty = false;
+      return;
+    }
+
+    // Fallback: Use heuristic widths based on font size
+    // This is used while font is loading or for system fonts
+    const avgCharWidth = fontSize * 0.6;
 
     for (let i = 0; i < text.length; i++) {
       const char = text[i];
@@ -649,6 +730,12 @@ export class TextLayer extends BaseLayer {
     this.textMesh.font = fontUrl;
     this.textMesh.sync();
     this.characterWidthsDirty = true;
+
+    // Reset font metrics and reload for new font
+    this.fontMetrics = null;
+    this.fontLoadingPromise = null;
+    this.useAccurateMetrics = false;
+    this.loadFontMetrics();
 
     for (const charMesh of this.characterMeshes) {
       charMesh.font = fontUrl;

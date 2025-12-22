@@ -1,5 +1,11 @@
 # UI Implementation Plan
 
+> **STATUS: ✅ COMPLETE** (December 2025)
+>
+> This plan has been fully implemented. The design system, floating panels,
+> theme system, and keyframe shapes are all in production. See `styles/design-tokens.css`
+> and `stores/themeStore.ts` for the implementation.
+
 Step-by-step plan to incorporate the new design system into the existing Weyl codebase.
 
 ---

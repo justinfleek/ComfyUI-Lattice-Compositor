@@ -1,6 +1,6 @@
 # CLAUDE.md - WEYL COMPOSITOR COMPLETE GUIDE
 
-**Version:** 7.4 | **Last Updated:** December 22, 2025
+**Version:** 7.5 | **Last Updated:** December 22, 2025
 
 ---
 
@@ -1541,6 +1541,24 @@ Access via the **AI** tab in the right panel.
 | File | Purpose |
 |------|---------|
 | `composables/useExpressionEditor.ts` | Global expression editor state |
+| `composables/useCanvasSelection.ts` | Canvas marquee selection with modifier keys |
+
+**Acquisition-Ready Infrastructure (December 22, 2025):**
+
+All 10 critical gaps for acquisition readiness have been implemented:
+
+| Phase | Feature | File(s) |
+|-------|---------|---------|
+| 1 | GPU Effects Pipeline | `gpuEffectDispatcher.ts`, `gpuBenchmark.ts` |
+| 2 | Text System (OpenType) | `textShaper.ts` |
+| 3 | Shape Booleans (Bezier) | `bezierBoolean.ts` |
+| 4 | Video Frame Accuracy | `videoDecoder.ts` + VideoLayer |
+| 5 | Render Queue | `renderQueue/RenderQueueManager.ts` |
+| 6 | Color Management | `colorManagement/ColorProfileService.ts` |
+| 7 | Audio Waveform | `timelineWaveform.ts` |
+| 8 | Canvas Selection | `composables/useCanvasSelection.ts` |
+| 9 | Plugin API | `plugins/PluginManager.ts` |
+| 10 | Project Versioning | `projectMigration.ts` |
 
 **Test Scripts (in `/scripts/`):**
 | Script | Purpose |

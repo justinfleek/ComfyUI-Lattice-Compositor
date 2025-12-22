@@ -168,6 +168,24 @@
                     </option>
                   </select>
                 </template>
+
+                <!-- Layer picker for displacement map sources -->
+                <template v-else-if="isLayerParam(effect.effectKey, String(key))">
+                  <select
+                    :value="param.value"
+                    @change="(e) => updateParam(effect.id, String(key), (e.target as HTMLSelectElement).value || null)"
+                    class="param-select layer-select"
+                  >
+                    <option value="">None</option>
+                    <option
+                      v-for="availableLayer in getAvailableLayers()"
+                      :key="availableLayer.id"
+                      :value="availableLayer.id"
+                    >
+                      {{ availableLayer.name }}
+                    </option>
+                  </select>
+                </template>
               </div>
             </div>
           </div>
@@ -229,6 +247,18 @@ function isCheckbox(effectKey: string, paramKey: string) {
 function isAngleParam(effectKey: string, paramKey: string) {
   const def = getParamDef(effectKey, paramKey);
   return def?.type === 'angle';
+}
+
+function isLayerParam(effectKey: string, paramKey: string) {
+  const def = getParamDef(effectKey, paramKey);
+  return def?.type === 'layer';
+}
+
+function getAvailableLayers() {
+  const comp = store.getActiveComp();
+  if (!comp) return [];
+  // Return all layers except the currently selected one (can't use self as displacement map)
+  return comp.layers.filter(l => l.id !== layer.value?.id);
 }
 
 function getParamOptions(effectKey: string, paramKey: string) {
@@ -543,5 +573,15 @@ h3 { margin: 0; font-size: 13px; font-weight: 600; color: #888; text-transform: 
   padding: 2px 4px;
   border-radius: 2px;
   font-size: 12px;
+}
+
+.layer-select {
+  background: #1a1a2a;
+  border-color: #4a4a6a;
+}
+
+.layer-select:focus {
+  border-color: #6a6aaa;
+  outline: none;
 }
 </style>

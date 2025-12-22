@@ -317,15 +317,31 @@ export const EFFECT_DEFINITIONS: Record<string, EffectDefinition> = {
   'displacement-map': {
     name: 'Displacement Map',
     category: 'distort',
-    description: 'Displace pixels using a map layer',
+    description: 'Displace pixels using a map layer or procedural pattern',
     parameters: [
       { name: 'Displacement Map Layer', type: 'layer', defaultValue: null, animatable: false },
+      { name: 'Map Type', type: 'dropdown', defaultValue: 'layer', options: [
+        { label: 'Use Layer', value: 'layer' },
+        { label: 'Noise', value: 'noise' },
+        { label: 'Gradient H', value: 'gradient-h' },
+        { label: 'Gradient V', value: 'gradient-v' },
+        { label: 'Radial', value: 'radial' },
+        { label: 'Sine H', value: 'sine-h' },
+        { label: 'Sine V', value: 'sine-v' },
+        { label: 'Checker', value: 'checker' }
+      ], animatable: false },
+      { name: 'Displacement Map Behavior', type: 'dropdown', defaultValue: 'stretch', options: [
+        { label: 'Center Map', value: 'center' },
+        { label: 'Stretch Map to Fit', value: 'stretch' },
+        { label: 'Tile Map', value: 'tile' }
+      ], animatable: false },
       { name: 'Use For Horizontal', type: 'dropdown', defaultValue: 'red', options: [
         { label: 'Red', value: 'red' },
         { label: 'Green', value: 'green' },
         { label: 'Blue', value: 'blue' },
         { label: 'Alpha', value: 'alpha' },
-        { label: 'Luminance', value: 'luminance' }
+        { label: 'Luminance', value: 'luminance' },
+        { label: 'Off', value: 'off' }
       ], animatable: false },
       { name: 'Max Horizontal', type: 'number', defaultValue: 0, min: -4000, max: 4000, animatable: true },
       { name: 'Use For Vertical', type: 'dropdown', defaultValue: 'green', options: [
@@ -333,9 +349,16 @@ export const EFFECT_DEFINITIONS: Record<string, EffectDefinition> = {
         { label: 'Green', value: 'green' },
         { label: 'Blue', value: 'blue' },
         { label: 'Alpha', value: 'alpha' },
-        { label: 'Luminance', value: 'luminance' }
+        { label: 'Luminance', value: 'luminance' },
+        { label: 'Off', value: 'off' }
       ], animatable: false },
-      { name: 'Max Vertical', type: 'number', defaultValue: 0, min: -4000, max: 4000, animatable: true }
+      { name: 'Max Vertical', type: 'number', defaultValue: 0, min: -4000, max: 4000, animatable: true },
+      { name: 'Edge Behavior', type: 'dropdown', defaultValue: 'off', options: [
+        { label: 'Clip', value: 'off' },
+        { label: 'Wrap Pixels', value: 'tiles' },
+        { label: 'Mirror Pixels', value: 'mirror' }
+      ], animatable: false },
+      { name: 'Map Scale', type: 'number', defaultValue: 1, min: 0.1, max: 10, step: 0.1, animatable: true, group: 'Procedural' }
     ]
   },
 
@@ -372,6 +395,39 @@ export const EFFECT_DEFINITIONS: Record<string, EffectDefinition> = {
       ], animatable: false },
       { name: 'Ramp Scatter', type: 'number', defaultValue: 0, min: 0, max: 100, animatable: true },
       { name: 'Blend With Original', type: 'number', defaultValue: 0, min: 0, max: 100, animatable: true }
+    ]
+  },
+
+  'radio-waves': {
+    name: 'Radio Waves',
+    category: 'generate',
+    description: 'Generate expanding concentric rings for shockwave effects',
+    parameters: [
+      { name: 'Center', type: 'point', defaultValue: { x: 0.5, y: 0.5 }, animatable: true },
+      { name: 'Frequency', type: 'number', defaultValue: 4, min: 1, max: 50, animatable: true },
+      { name: 'Expansion', type: 'number', defaultValue: 50, min: 0, max: 100, animatable: true },
+      { name: 'Wave Width', type: 'number', defaultValue: 20, min: 1, max: 100, animatable: true },
+      { name: 'Stroke Color', type: 'color', defaultValue: { r: 255, g: 255, b: 255, a: 1 }, animatable: true },
+      { name: 'Background Color', type: 'color', defaultValue: { r: 128, g: 128, b: 128, a: 1 }, animatable: true },
+      { name: 'Fade Start', type: 'number', defaultValue: 0, min: 0, max: 100, animatable: true },
+      { name: 'Fade End', type: 'number', defaultValue: 100, min: 0, max: 100, animatable: true },
+      { name: 'Invert', type: 'checkbox', defaultValue: false, animatable: false }
+    ]
+  },
+
+  'ellipse': {
+    name: 'Ellipse',
+    category: 'generate',
+    description: 'Generate ellipse/circle shapes for displacement maps',
+    parameters: [
+      { name: 'Center', type: 'point', defaultValue: { x: 0.5, y: 0.5 }, animatable: true },
+      { name: 'Ellipse Width', type: 'number', defaultValue: 200, min: 1, max: 4000, animatable: true },
+      { name: 'Ellipse Height', type: 'number', defaultValue: 200, min: 1, max: 4000, animatable: true },
+      { name: 'Softness', type: 'number', defaultValue: 0, min: 0, max: 100, animatable: true },
+      { name: 'Stroke Width', type: 'number', defaultValue: 0, min: 0, max: 500, animatable: true },
+      { name: 'Stroke Color', type: 'color', defaultValue: { r: 255, g: 255, b: 255, a: 1 }, animatable: true },
+      { name: 'Background Color', type: 'color', defaultValue: { r: 0, g: 0, b: 0, a: 1 }, animatable: true },
+      { name: 'Invert', type: 'checkbox', defaultValue: false, animatable: false }
     ]
   },
 
@@ -820,6 +876,51 @@ export const EFFECT_DEFINITIONS: Record<string, EffectDefinition> = {
       { name: 'Wave Width', type: 'number', defaultValue: 100, min: 1, max: 500, animatable: true },
       { name: 'Direction', type: 'angle', defaultValue: 0, animatable: true },
       { name: 'Phase', type: 'angle', defaultValue: 0, animatable: true }
+    ]
+  },
+
+  'turbulent-displace': {
+    name: 'Turbulent Displace',
+    category: 'distort',
+    description: 'Procedural organic distortion using turbulent noise',
+    parameters: [
+      { name: 'Displacement', type: 'dropdown', defaultValue: 'turbulent', options: [
+        { label: 'Turbulent', value: 'turbulent' },
+        { label: 'Bulge', value: 'bulge' },
+        { label: 'Twist', value: 'twist' },
+        { label: 'Turbulent Smoother', value: 'turbulent-smoother' },
+        { label: 'Horizontal Displacement', value: 'horizontal' },
+        { label: 'Vertical Displacement', value: 'vertical' },
+        { label: 'Cross Displacement', value: 'cross' }
+      ], animatable: false },
+      { name: 'Amount', type: 'number', defaultValue: 50, min: 0, max: 1000, animatable: true },
+      { name: 'Size', type: 'number', defaultValue: 100, min: 1, max: 1000, animatable: true },
+      { name: 'Complexity', type: 'number', defaultValue: 3, min: 1, max: 10, animatable: true },
+      { name: 'Evolution', type: 'angle', defaultValue: 0, animatable: true },
+      { name: 'Cycle Evolution', type: 'checkbox', defaultValue: false, animatable: false, group: 'Evolution Options' },
+      { name: 'Cycle Revolutions', type: 'number', defaultValue: 1, min: 1, max: 100, animatable: false, group: 'Evolution Options' },
+      { name: 'Random Seed', type: 'number', defaultValue: 0, min: 0, max: 99999, animatable: false },
+      { name: 'Offset', type: 'point', defaultValue: { x: 0, y: 0 }, animatable: true },
+      { name: 'Pinning', type: 'dropdown', defaultValue: 'none', options: [
+        { label: 'None', value: 'none' },
+        { label: 'Pin All', value: 'all' },
+        { label: 'Pin Horizontally', value: 'horizontal' },
+        { label: 'Pin Vertically', value: 'vertical' }
+      ], animatable: false }
+    ]
+  },
+
+  'ripple-distort': {
+    name: 'Ripple',
+    category: 'distort',
+    description: 'Concentric wave distortion from center point',
+    parameters: [
+      { name: 'Center', type: 'point', defaultValue: { x: 0.5, y: 0.5 }, animatable: true },
+      { name: 'Radius', type: 'number', defaultValue: 200, min: 1, max: 2000, animatable: true },
+      { name: 'Wave Length', type: 'number', defaultValue: 50, min: 1, max: 500, animatable: true },
+      { name: 'Amplitude', type: 'number', defaultValue: 20, min: -100, max: 100, animatable: true },
+      { name: 'Phase', type: 'angle', defaultValue: 0, animatable: true },
+      { name: 'Decay', type: 'number', defaultValue: 50, min: 0, max: 100, animatable: true }
     ]
   },
 

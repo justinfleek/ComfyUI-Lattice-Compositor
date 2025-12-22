@@ -61,7 +61,9 @@ export {
 export {
   transformRenderer,
   warpRenderer,
-  displacementMapRenderer
+  displacementMapRenderer,
+  turbulentDisplaceRenderer,
+  rippleDistortRenderer
 } from './distortRenderer';
 
 // Re-export generate effects
@@ -69,6 +71,8 @@ export {
   fillRenderer,
   gradientRampRenderer,
   fractalNoiseRenderer,
+  radioWavesRenderer,
+  ellipseRenderer,
   clearNoiseTileCache,
   getNoiseTileCacheStats
 } from './generateRenderer';

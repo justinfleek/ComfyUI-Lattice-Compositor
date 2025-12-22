@@ -552,6 +552,212 @@ export function addGrainRenderer(
 }
 
 // ============================================================================
+// RADIO WAVES EFFECT
+// Generates expanding concentric rings for shockwave/ripple displacement maps
+// ============================================================================
+
+/**
+ * Radio Waves effect renderer
+ * Generates expanding concentric rings - perfect for shockwave displacement maps
+ *
+ * Parameters:
+ * - center: { x, y } normalized (0-1)
+ * - frequency: number of waves
+ * - expansion: 0-100 (animation progress)
+ * - wave_width: thickness of each ring (1-100)
+ * - stroke_color: ring color
+ * - background_color: background color
+ * - fade_start: 0-100 (where fade begins)
+ * - fade_end: 0-100 (where fade ends)
+ * - invert: boolean (swap stroke/background)
+ */
+export function radioWavesRenderer(
+  input: EffectStackResult,
+  params: EvaluatedEffectParams
+): EffectStackResult {
+  const center = params.center ?? { x: 0.5, y: 0.5 };
+  const frequency = Math.max(1, params.frequency ?? 4);
+  const expansion = (params.expansion ?? 50) / 100;
+  const waveWidth = Math.max(1, params.wave_width ?? 20);
+  const strokeColor = params.stroke_color ?? { r: 255, g: 255, b: 255, a: 1 };
+  const backgroundColor = params.background_color ?? { r: 128, g: 128, b: 128, a: 1 };
+  const fadeStart = (params.fade_start ?? 0) / 100;
+  const fadeEnd = (params.fade_end ?? 100) / 100;
+  const invert = params.invert ?? false;
+
+  const { width, height } = input.canvas;
+  const output = createMatchingCanvas(input.canvas);
+  const outputData = output.ctx.createImageData(width, height);
+  const dst = outputData.data;
+
+  const centerX = center.x * width;
+  const centerY = center.y * height;
+  const maxRadius = Math.sqrt(width * width + height * height);
+
+  // Calculate current maximum expansion radius
+  const currentMaxRadius = maxRadius * expansion;
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const dx = x - centerX;
+      const dy = y - centerY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      // Calculate wave pattern
+      const waveSpacing = currentMaxRadius / frequency;
+      let waveValue = 0;
+
+      if (waveSpacing > 0 && dist <= currentMaxRadius) {
+        // Create ring pattern
+        const phase = (dist % waveSpacing) / waveSpacing;
+        const ringThickness = waveWidth / 100;
+
+        // Ring is visible when phase is within threshold
+        if (phase < ringThickness || phase > (1 - ringThickness / 2)) {
+          waveValue = 1;
+        }
+
+        // Apply fade based on distance
+        const normalizedDist = dist / currentMaxRadius;
+        let fadeMultiplier = 1;
+        if (normalizedDist < fadeStart) {
+          fadeMultiplier = normalizedDist / Math.max(0.001, fadeStart);
+        } else if (normalizedDist > fadeEnd) {
+          fadeMultiplier = 1 - (normalizedDist - fadeEnd) / Math.max(0.001, 1 - fadeEnd);
+        }
+        waveValue *= Math.max(0, Math.min(1, fadeMultiplier));
+      }
+
+      // Apply invert if needed
+      if (invert) {
+        waveValue = 1 - waveValue;
+      }
+
+      // Interpolate between background and stroke color
+      const i = (y * width + x) * 4;
+      dst[i] = Math.round(backgroundColor.r * (1 - waveValue) + strokeColor.r * waveValue);
+      dst[i + 1] = Math.round(backgroundColor.g * (1 - waveValue) + strokeColor.g * waveValue);
+      dst[i + 2] = Math.round(backgroundColor.b * (1 - waveValue) + strokeColor.b * waveValue);
+      dst[i + 3] = Math.round(((backgroundColor.a ?? 1) * (1 - waveValue) + (strokeColor.a ?? 1) * waveValue) * 255);
+    }
+  }
+
+  output.ctx.putImageData(outputData, 0, 0);
+  return output;
+}
+
+// ============================================================================
+// ELLIPSE EFFECT
+// Generates ellipse shapes for displacement maps and masks
+// ============================================================================
+
+/**
+ * Ellipse effect renderer
+ * Generates ellipse/circle shapes - useful for radial displacement maps
+ *
+ * Parameters:
+ * - center: { x, y } normalized (0-1)
+ * - width: ellipse width in pixels
+ * - height: ellipse height in pixels
+ * - softness: edge feather (0-100)
+ * - stroke_width: 0 for filled, >0 for stroke only
+ * - stroke_color: stroke/fill color
+ * - background_color: background color
+ * - invert: boolean (swap inside/outside)
+ */
+export function ellipseRenderer(
+  input: EffectStackResult,
+  params: EvaluatedEffectParams
+): EffectStackResult {
+  const center = params.center ?? { x: 0.5, y: 0.5 };
+  const ellipseWidth = params.ellipse_width ?? 200;
+  const ellipseHeight = params.ellipse_height ?? 200;
+  const softness = (params.softness ?? 0) / 100;
+  const strokeWidth = params.stroke_width ?? 0;
+  const strokeColor = params.stroke_color ?? { r: 255, g: 255, b: 255, a: 1 };
+  const backgroundColor = params.background_color ?? { r: 0, g: 0, b: 0, a: 1 };
+  const invertShape = params.invert ?? false;
+
+  const { width, height } = input.canvas;
+  const output = createMatchingCanvas(input.canvas);
+  const outputData = output.ctx.createImageData(width, height);
+  const dst = outputData.data;
+
+  const centerX = center.x * width;
+  const centerY = center.y * height;
+  const radiusX = ellipseWidth / 2;
+  const radiusY = ellipseHeight / 2;
+
+  const featherWidth = Math.max(radiusX, radiusY) * softness * 0.5;
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const dx = x - centerX;
+      const dy = y - centerY;
+
+      // Normalized distance from center (1.0 = on ellipse edge)
+      const normalizedDist = Math.sqrt(
+        (dx * dx) / (radiusX * radiusX) +
+        (dy * dy) / (radiusY * radiusY)
+      );
+
+      let shapeValue = 0;
+
+      if (strokeWidth > 0) {
+        // Stroke mode - ring shape
+        const innerRadius = 1 - (strokeWidth / Math.min(radiusX, radiusY));
+        const outerRadius = 1;
+
+        if (normalizedDist >= innerRadius && normalizedDist <= outerRadius) {
+          shapeValue = 1;
+        }
+
+        // Apply softness
+        if (softness > 0) {
+          const featherNorm = softness * 0.3;
+          if (normalizedDist < innerRadius && normalizedDist >= innerRadius - featherNorm) {
+            shapeValue = (normalizedDist - (innerRadius - featherNorm)) / featherNorm;
+          } else if (normalizedDist > outerRadius && normalizedDist <= outerRadius + featherNorm) {
+            shapeValue = 1 - (normalizedDist - outerRadius) / featherNorm;
+          }
+        }
+      } else {
+        // Filled mode
+        if (normalizedDist <= 1) {
+          shapeValue = 1;
+        }
+
+        // Apply softness at edge
+        if (softness > 0) {
+          const featherNorm = softness * 0.3;
+          if (normalizedDist > 1 - featherNorm && normalizedDist <= 1 + featherNorm) {
+            shapeValue = 1 - Math.max(0, (normalizedDist - (1 - featherNorm)) / (featherNorm * 2));
+          } else if (normalizedDist > 1) {
+            shapeValue = 0;
+          }
+        }
+      }
+
+      // Clamp and apply invert
+      shapeValue = Math.max(0, Math.min(1, shapeValue));
+      if (invertShape) {
+        shapeValue = 1 - shapeValue;
+      }
+
+      // Interpolate between background and stroke color
+      const i = (y * width + x) * 4;
+      dst[i] = Math.round(backgroundColor.r * (1 - shapeValue) + strokeColor.r * shapeValue);
+      dst[i + 1] = Math.round(backgroundColor.g * (1 - shapeValue) + strokeColor.g * shapeValue);
+      dst[i + 2] = Math.round(backgroundColor.b * (1 - shapeValue) + strokeColor.b * shapeValue);
+      dst[i + 3] = Math.round(((backgroundColor.a ?? 1) * (1 - shapeValue) + (strokeColor.a ?? 1) * shapeValue) * 255);
+    }
+  }
+
+  output.ctx.putImageData(outputData, 0, 0);
+  return output;
+}
+
+// ============================================================================
 // REGISTRATION
 // ============================================================================
 
@@ -563,12 +769,16 @@ export function registerGenerateEffects(): void {
   registerEffectRenderer('gradient-ramp', gradientRampRenderer);
   registerEffectRenderer('fractal-noise', fractalNoiseRenderer);
   registerEffectRenderer('add-grain', addGrainRenderer);
+  registerEffectRenderer('radio-waves', radioWavesRenderer);
+  registerEffectRenderer('ellipse', ellipseRenderer);
 }
 
 export default {
   fillRenderer,
   gradientRampRenderer,
   fractalNoiseRenderer,
+  radioWavesRenderer,
+  ellipseRenderer,
   registerGenerateEffects,
   clearNoiseTileCache,
   getNoiseTileCacheStats

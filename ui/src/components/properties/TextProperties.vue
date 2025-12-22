@@ -204,6 +204,42 @@
     </div>
 
     <div class="prop-section">
+      <div class="section-title">OpenType</div>
+      <div class="row checkbox-row">
+        <label>
+          <input type="checkbox" :checked="textData.kerning !== false" @change="updateData('kerning', !textData.kerning)" />
+          Kerning
+        </label>
+        <span class="feature-tag" :class="{ active: textData.kerning !== false }">kern</span>
+      </div>
+      <div class="row checkbox-row">
+        <label>
+          <input type="checkbox" :checked="textData.ligatures !== false" @change="updateData('ligatures', !textData.ligatures)" />
+          Ligatures
+        </label>
+        <span class="feature-tag" :class="{ active: textData.ligatures !== false }">liga</span>
+      </div>
+      <div class="row checkbox-row">
+        <label>
+          <input type="checkbox" :checked="textData.discretionaryLigatures" @change="updateData('discretionaryLigatures', !textData.discretionaryLigatures)" />
+          Discretionary Ligatures
+        </label>
+        <span class="feature-tag" :class="{ active: textData.discretionaryLigatures }">dlig</span>
+      </div>
+      <div class="row checkbox-row">
+        <label>
+          <input type="checkbox" :checked="textData.smallCapsFeature" @change="updateData('smallCapsFeature', !textData.smallCapsFeature)" />
+          Small Caps
+        </label>
+        <span class="feature-tag" :class="{ active: textData.smallCapsFeature }">smcp</span>
+      </div>
+      <div class="opentype-info">
+        <span class="info-icon">ℹ</span>
+        Kerning is active. Ligatures and advanced features require harfbuzz.js (planned).
+      </div>
+    </div>
+
+    <div class="prop-section">
       <div class="section-title">Paragraph</div>
       <div class="row">
          <label>First Line Indent</label>
@@ -1490,5 +1526,42 @@ async function handleFontChange(family: string) {
   border-radius: 2px;
   color: #8B5CF6;
   font-family: 'Consolas', 'Monaco', monospace;
+}
+
+/* OpenType Features Section */
+.feature-tag {
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 10px;
+  padding: 2px 6px;
+  background: #222;
+  border: 1px solid #444;
+  border-radius: 3px;
+  color: #666;
+  text-transform: lowercase;
+  margin-left: auto;
+}
+.feature-tag.active {
+  background: #2a3a2a;
+  border-color: #4a6a4a;
+  color: #8B5CF6;
+}
+
+.opentype-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  font-size: 11px;
+  color: #666;
+  line-height: 1.4;
+}
+.opentype-info .info-icon {
+  color: #4a90d9;
+  font-size: 12px;
+  flex-shrink: 0;
 }
 </style>

@@ -118,15 +118,31 @@ export {
   registerEffectRenderer,
   evaluateEffectParameters,
   processEffectStack,
+  processEffectStackAsync,
   imageDataToCanvas,
   canvasToImageData,
   createMatchingCanvas,
   hasEnabledEffects,
   getRegisteredEffects,
+  isGPUEffectProcessingAvailable,
+  getGPUEffectCapabilities,
+  clearEffectCaches,
+  getEffectProcessorStats,
+  cleanupEffectResources,
   type EvaluatedEffectParams,
   type EffectStackResult,
   type EffectRenderer,
+  type GPUProcessingOptions,
 } from './effectProcessor';
+
+// GPU Effect Dispatcher
+export {
+  gpuEffectDispatcher,
+  initializeGPUEffects,
+  getGPUEffectStats,
+  type GPURenderPath,
+  type GPUCapabilityInfo,
+} from './gpuEffectDispatcher';
 
 // ============================================================================
 // AUDIO
@@ -222,6 +238,21 @@ export {
   type FontCategory,
 } from './fontService';
 
+// Text Shaper (OpenType/Kerning support)
+export {
+  textShaper,
+  loadFontForShaping,
+  shapeText,
+  shapeTextSync,
+  getCharacterWidths,
+  isShapingAvailable,
+  type ShapedGlyph,
+  type ShapedText,
+  type TextShapingOptions,
+  type FontMetrics,
+  type VariableFontAxis,
+} from './textShaper';
+
 // ============================================================================
 // SHAPES & OPERATIONS
 // ============================================================================
@@ -272,6 +303,31 @@ export {
   // Bundled export
   ShapeOperations,
 } from './shapeOperations';
+
+// Bezier Boolean Operations (Paper.js based)
+export {
+  booleanOperation,
+  unite as bezierUnite,
+  subtract as bezierSubtract,
+  intersect as bezierIntersect,
+  exclude as bezierExclude,
+  divide as bezierDivide,
+  uniteAll as bezierUniteAll,
+  intersectAll as bezierIntersectAll,
+  simplifyPath as bezierSimplifyPath,
+  flattenPath as bezierFlattenPath,
+  smoothPath as bezierSmoothPath,
+  getPathArea,
+  getPathLength as bezierGetPathLength,
+  getPointOnPath,
+  getTangentOnPath,
+  getNormalOnPath,
+  pathsIntersect,
+  getPathIntersections,
+  type BooleanOperation,
+  type BooleanOptions,
+  type BooleanResult,
+} from './bezierBoolean';
 
 // Image trace
 export {
@@ -1035,6 +1091,21 @@ export {
 } from './gaussianSplatting';
 
 // ============================================================================
+// VIDEO DECODER (WebCodecs API - Phase 4)
+// Frame-accurate video decoding with LRU caching
+// ============================================================================
+
+export {
+  VideoDecoderService,
+  videoDecoderPool,
+  isWebCodecsSupported,
+  type VideoInfo,
+  type VideoFrameInfo,
+  type VideoDecoderConfig,
+  type VideoDecoderStats,
+} from './videoDecoder';
+
+// ============================================================================
 // VIDEO TRANSITIONS
 // (Inspired by filliptm's ComfyUI_Fill-Nodes)
 // Attribution: https://github.com/filliptm/ComfyUI_Fill-Nodes
@@ -1189,3 +1260,108 @@ export {
   getTrackStats,
   trackPointState,
 } from './trackPointService';
+
+// ============================================================================
+// RENDER QUEUE (Phase 5 - Background Rendering)
+// ============================================================================
+
+export {
+  RenderQueueManager,
+  getRenderQueueManager,
+  initializeRenderQueue,
+  type RenderJobStatus,
+  type RenderJobConfig,
+  type RenderJobProgress,
+  type RenderJob,
+  type RenderedFrame,
+  type RenderQueueStats,
+  type RenderQueueConfig,
+} from './renderQueue';
+
+// ============================================================================
+// COLOR MANAGEMENT (Phase 6 - ICC Profiles & Color Spaces)
+// ============================================================================
+
+export {
+  ColorProfileService,
+  getColorProfileService,
+  initializeColorManagement,
+  colorUtils,
+  COLOR_SPACES,
+  sRGBToLinear,
+  linearToSRGB,
+  linearizeRGB,
+  applyGammaRGB,
+  convertColorSpace,
+  parseICCProfile,
+  extractICCFromImage,
+  type ColorSpace,
+  type ViewTransform,
+  type ColorSpaceInfo,
+  type ColorSettings,
+  type ICCProfile,
+  type RGB as ColorRGB,
+  type XYZ as ColorXYZ,
+} from './colorManagement';
+
+// ============================================================================
+// TIMELINE WAVEFORM (Phase 7 - Audio Visualization)
+// ============================================================================
+
+export {
+  computePeaks,
+  generatePeakMipmap,
+  createWaveformData,
+  getWaveformData,
+  clearWaveformCache,
+  renderWaveform,
+  renderWaveformToImage,
+  renderTimelineWaveform,
+  type WaveformData,
+  type WaveformRenderOptions,
+  type WaveformPeakOptions,
+  type TimelineWaveformConfig,
+} from './timelineWaveform';
+
+// ============================================================================
+// PLUGIN SYSTEM (Phase 9 - Extensibility)
+// ============================================================================
+
+export {
+  PluginManager,
+  getPluginManager,
+  type PluginType,
+  type PluginManifest,
+  type PluginPermission,
+  type WeylPluginAPI,
+  type PluginEvent,
+  type PanelDefinition,
+  type MenuItemDefinition,
+  type ContextMenuDefinition,
+  type EffectDefinition,
+  type EffectParameter,
+  type ExporterDefinition,
+  type ToolDefinition,
+  type WeylPlugin,
+  type LoadedPlugin,
+} from './plugins';
+
+// ============================================================================
+// PROJECT MIGRATION (Phase 10 - Versioning)
+// ============================================================================
+
+export {
+  CURRENT_SCHEMA_VERSION,
+  MIN_SUPPORTED_VERSION,
+  getProjectVersion,
+  needsMigration,
+  migrateProject,
+  validateProject,
+  stampProjectVersion,
+  getAvailableMigrations,
+  getMigrationInfo,
+  type VersionedProject,
+  type MigrationResult,
+  type MigrationFunction,
+  type Migration,
+} from './projectMigration';
