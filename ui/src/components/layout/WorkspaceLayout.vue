@@ -220,8 +220,8 @@
     <!-- Main Workspace with Splitpanes -->
     <div class="workspace-content">
       <Splitpanes class="default-theme horizontal-split">
-        <!-- Left Panel: Project/Effects -->
-        <Pane :size="11" :min-size="8" :max-size="20">
+        <!-- Left Panel: Project/Effects (compact) -->
+        <Pane :size="8" :min-size="6" :max-size="15">
           <div class="panel left-panel">
             <div class="panel-tabs" role="tablist" aria-label="Left panel tabs">
               <button
@@ -267,8 +267,8 @@
           </div>
         </Pane>
 
-        <!-- Center: Viewport + Timeline -->
-        <Pane :size="65" :min-size="40">
+        <!-- Center: Viewport + Timeline (extended for more timeline room) -->
+        <Pane :size="68" :min-size="45">
           <Splitpanes horizontal class="default-theme">
             <!-- Viewport -->
             <Pane :size="65" :min-size="20">
@@ -420,111 +420,83 @@
           </Splitpanes>
         </Pane>
 
-        <!-- Right Panel: Effects/Properties/Camera -->
-        <Pane :size="24" :min-size="15" :max-size="35">
-          <div class="panel right-panel">
-            <div class="panel-tabs" role="tablist" aria-label="Right panel tabs">
-              <button
-                role="tab"
-                :aria-selected="rightTab === 'properties'"
-                aria-controls="right-panel-properties"
-                :class="{ active: rightTab === 'properties' }"
-                @click="rightTab = 'properties'"
-              >
-                Properties
-              </button>
-              <button
-                role="tab"
-                :aria-selected="rightTab === 'effects'"
-                aria-controls="right-panel-effects"
-                :class="{ active: rightTab === 'effects' }"
-                @click="rightTab = 'effects'"
-              >
-                Effects
-              </button>
-              <button
-                role="tab"
-                :aria-selected="rightTab === 'camera'"
-                aria-controls="right-panel-camera"
-                :class="{ active: rightTab === 'camera' }"
-                @click="rightTab = 'camera'"
-              >
-                Cam
-              </button>
-              <button
-                role="tab"
-                :aria-selected="rightTab === 'audio'"
-                aria-controls="right-panel-audio"
-                :class="{ active: rightTab === 'audio' }"
-                @click="rightTab = 'audio'"
-              >
-                Audio
-              </button>
-              <button
-                role="tab"
-                :aria-selected="rightTab === 'export'"
-                aria-controls="right-panel-export"
-                :class="{ active: rightTab === 'export' }"
-                @click="rightTab = 'export'"
-              >
-                Export
-              </button>
-              <button
-                role="tab"
-                :aria-selected="rightTab === 'preview'"
-                aria-controls="right-panel-preview"
-                :class="{ active: rightTab === 'preview' }"
-                @click="rightTab = 'preview'"
-              >
-                Preview
-              </button>
-              <button
-                role="tab"
-                :aria-selected="rightTab === 'ai'"
-                aria-controls="right-panel-ai"
-                :class="{ active: rightTab === 'ai' }"
-                @click="rightTab = 'ai'"
-                title="AI Compositor Agent"
-              >
-                AI
-              </button>
-              <button
-                role="tab"
-                :aria-selected="rightTab === 'generate'"
-                aria-controls="right-panel-generate"
-                :class="{ active: rightTab === 'generate' }"
-                @click="rightTab = 'generate'"
-                title="AI Generation (Depth, Normal, Segment)"
-              >
-                Gen
-              </button>
-              <button
-                role="tab"
-                :aria-selected="rightTab === 'align'"
-                aria-controls="right-panel-align"
-                :class="{ active: rightTab === 'align' }"
-                @click="rightTab = 'align'"
-                title="Align and Distribute Layers"
-              >
-                Align
-              </button>
-            </div>
-            <div class="panel-content" role="tabpanel" :id="`right-panel-${rightTab}`">
-              <EffectControlsPanel v-if="rightTab === 'effects'" />
-              <PropertiesPanel v-else-if="rightTab === 'properties'" />
-              <CameraProperties
-                v-else-if="rightTab === 'camera'"
-                :camera="activeCamera"
-                @update:camera="updateCamera"
-              />
-              <AudioPanel v-else-if="rightTab === 'audio'" />
-              <ExportPanel v-else-if="rightTab === 'export'" />
-              <PreviewPanel v-else-if="rightTab === 'preview'" :engine="canvasEngine" />
-              <AIChatPanel v-else-if="rightTab === 'ai'" />
-              <AIGeneratePanel v-else-if="rightTab === 'generate'" />
-              <AlignPanel v-else-if="rightTab === 'align'" />
-            </div>
-          </div>
+        <!-- Right Panel: Stacked Collapsible Panels -->
+        <Pane :size="24" :min-size="18" :max-size="35">
+          <Splitpanes horizontal class="default-theme right-splitpanes">
+            <!-- Main Properties Section -->
+            <Pane :size="70" :min-size="40">
+              <div class="panel right-panel stacked-panels">
+                <div class="panel-content">
+                  <!-- Properties Panel -->
+                  <CollapsiblePanel title="Properties" :expanded="expandedPanels.properties" @toggle="expandedPanels.properties = $event">
+                    <PropertiesPanel />
+                  </CollapsiblePanel>
+
+                  <!-- Effects Panel -->
+                  <CollapsiblePanel title="Effects" :expanded="expandedPanels.effects" @toggle="expandedPanels.effects = $event">
+                    <EffectControlsPanel />
+                  </CollapsiblePanel>
+
+                  <!-- Camera Panel -->
+                  <CollapsiblePanel title="Camera" :expanded="expandedPanels.camera" @toggle="expandedPanels.camera = $event">
+                    <CameraProperties
+                      :camera="activeCamera"
+                      @update:camera="updateCamera"
+                    />
+                  </CollapsiblePanel>
+
+                  <!-- Audio Panel -->
+                  <CollapsiblePanel title="Audio" :expanded="expandedPanels.audio" @toggle="expandedPanels.audio = $event">
+                    <AudioPanel />
+                  </CollapsiblePanel>
+
+                  <!-- Align Panel -->
+                  <CollapsiblePanel title="Align" :expanded="expandedPanels.align" @toggle="expandedPanels.align = $event">
+                    <AlignPanel />
+                  </CollapsiblePanel>
+
+                  <!-- Preview Panel -->
+                  <CollapsiblePanel title="Preview" :expanded="expandedPanels.preview" @toggle="expandedPanels.preview = $event">
+                    <PreviewPanel :engine="canvasEngine" />
+                  </CollapsiblePanel>
+
+                  <!-- Export Panel -->
+                  <CollapsiblePanel title="Export" :expanded="expandedPanels.export" @toggle="expandedPanels.export = $event">
+                    <ExportPanel />
+                  </CollapsiblePanel>
+                </div>
+              </div>
+            </Pane>
+
+            <!-- AI Section (Bottom) -->
+            <Pane :size="30" :min-size="20">
+              <div class="panel ai-section">
+                <div class="ai-section-header">
+                  <span class="ai-section-title">AI Tools</span>
+                </div>
+                <div class="ai-section-tabs">
+                  <button
+                    :class="{ active: aiTab === 'chat' }"
+                    @click="aiTab = 'chat'"
+                    title="AI Compositor Agent"
+                  >
+                    Chat
+                  </button>
+                  <button
+                    :class="{ active: aiTab === 'generate' }"
+                    @click="aiTab = 'generate'"
+                    title="AI Generation (Depth, Normal, Segment)"
+                  >
+                    Generate
+                  </button>
+                </div>
+                <div class="ai-section-content">
+                  <AIChatPanel v-if="aiTab === 'chat'" />
+                  <AIGeneratePanel v-else-if="aiTab === 'generate'" />
+                </div>
+              </div>
+            </Pane>
+          </Splitpanes>
         </Pane>
       </Splitpanes>
     </div>
@@ -640,6 +612,7 @@ import PreviewPanel from '@/components/panels/PreviewPanel.vue';
 import AIChatPanel from '@/components/panels/AIChatPanel.vue';
 import AIGeneratePanel from '@/components/panels/AIGeneratePanel.vue';
 import AlignPanel from '@/components/panels/AlignPanel.vue';
+import CollapsiblePanel from '@/components/panels/CollapsiblePanel.vue';
 
 // Viewport
 import ViewportRenderer from '@/components/viewport/ViewportRenderer.vue';
@@ -728,6 +701,20 @@ function clearSegmentMask() {
 const activeWorkspace = ref('standard');
 const leftTab = ref<'project' | 'effects' | 'assets'>('project');
 const rightTab = ref<'effects' | 'properties' | 'camera' | 'audio' | 'export' | 'preview' | 'ai' | 'generate'>('properties');
+
+// Collapsible panel states
+const expandedPanels = ref({
+  properties: true,
+  effects: false,
+  camera: false,
+  audio: false,
+  align: false,
+  preview: false,
+  export: false
+});
+
+// AI section tab
+const aiTab = ref<'chat' | 'generate'>('chat');
 const viewportTab = ref<'composition' | 'layer' | 'footage'>('composition');
 
 const viewZoom = ref('fit');
@@ -3379,6 +3366,84 @@ onUnmounted(() => {
 
 .panel-content::-webkit-scrollbar-thumb:hover {
   background: var(--weyl-surface-4, #444);
+}
+
+/* Stacked Collapsible Panels */
+.stacked-panels {
+  display: flex;
+  flex-direction: column;
+}
+
+.stacked-panels .panel-content {
+  padding: 0;
+}
+
+/* Right Splitpanes styling */
+.right-splitpanes {
+  height: 100%;
+}
+
+/* AI Section */
+.ai-section {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--weyl-surface-1, #0f0f0f);
+  border-radius: var(--weyl-radius-lg, 6px);
+  border: 1px solid var(--weyl-border-subtle, #1a1a1a);
+  overflow: hidden;
+}
+
+.ai-section-header {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(236, 72, 153, 0.15));
+  border-bottom: 1px solid var(--weyl-border-subtle, #1a1a1a);
+}
+
+.ai-section-title {
+  font-size: var(--weyl-text-md, 14px);
+  font-weight: 600;
+  color: var(--weyl-accent, #8B5CF6);
+}
+
+.ai-section-tabs {
+  display: flex;
+  padding: 6px;
+  gap: 4px;
+  background: var(--weyl-surface-0, #080808);
+  border-bottom: 1px solid var(--weyl-border-subtle, #1a1a1a);
+}
+
+.ai-section-tabs button {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  color: var(--weyl-text-secondary, #9CA3AF);
+  font-size: var(--weyl-text-sm, 12px);
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: var(--weyl-radius-md, 4px);
+  transition: var(--weyl-transition-fast, 100ms ease);
+}
+
+.ai-section-tabs button:hover {
+  color: var(--weyl-text-primary, #e5e5e5);
+  background: var(--weyl-surface-3, #1e1e1e);
+}
+
+.ai-section-tabs button.active {
+  color: white;
+  background: var(--weyl-accent, #8B5CF6);
+  font-weight: 600;
+}
+
+.ai-section-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 /* Viewport */
