@@ -1543,9 +1543,9 @@ Access via the **AI** tab in the right panel.
 | `composables/useExpressionEditor.ts` | Global expression editor state |
 | `composables/useCanvasSelection.ts` | Canvas marquee selection with modifier keys |
 
-**Acquisition-Ready Infrastructure (December 22, 2025):**
+**Core Infrastructure (December 22, 2025):**
 
-All 10 critical gaps for acquisition readiness have been implemented:
+Professional-grade infrastructure implemented:
 
 | Phase | Feature | File(s) |
 |-------|---------|---------|
