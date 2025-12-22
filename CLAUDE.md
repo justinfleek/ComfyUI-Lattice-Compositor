@@ -1,6 +1,6 @@
 # CLAUDE.md - WEYL COMPOSITOR COMPLETE GUIDE
 
-**Version:** 7.2 | **Last Updated:** December 21, 2025
+**Version:** 7.3 | **Last Updated:** December 22, 2025
 
 ---
 
@@ -2042,6 +2042,18 @@ ui/src/__tests__/engine/ParticleSimulationController.test.ts
 
 The UI follows a **floating island architecture** where content-rich panels float on a dark void background with generous spacing. This creates clear visual hierarchy and reduces cognitive load.
 
+### UI Overhaul (December 22, 2025)
+
+Major visual refresh with these improvements:
+- **Darker backgrounds** - surface-0 (#0a0a0a) for headers vs surface-1/2 for content
+- **Larger toolbar** - 15% increase (40px → 46px), bigger icons (14px → 16px)
+- **Thicker text** - font-weight 500-600 across all headers and buttons
+- **Larger header fonts** - 12px → 13px for all panel tabs
+- **Consistent Title Case** - removed UPPERCASE from CollapsiblePanel
+- **Purple accent button** - Export button in toolbar uses accent color
+- **Better panel proportions** - Properties 45%, AI Tools 55%
+- **Extracted components** - WorkspaceToolbar.vue, useKeyboardShortcuts.ts, useGuides.ts
+
 ### Design Tokens (`styles/design-tokens.css`)
 
 **IMPORTANT:** All UI components MUST use these CSS variables. Never hardcode colors.
@@ -2367,6 +2379,6 @@ New `/scripts/` directory with Python test utilities:
 ---
 
 **Document Version:** 7.0
-**Last Updated:** December 21, 2025
+**Last Updated:** December 22, 2025
 **Total Lines:** ~2100
 **Estimated Reading Time:** 40-55 minutes
