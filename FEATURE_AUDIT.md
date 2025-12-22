@@ -23,29 +23,33 @@ Features marked with **NO UI** are implemented but inaccessible to users.
 
 ## 1. LAYER MANAGEMENT
 
-### Create Layer Types (17 total)
+### Create Layer Types (26 total)
 
 | Layer Type | UI Access | Icon | Location |
 |------------|-----------|------|----------|
 | Image | ✅ 📋 | 🖼️ | Create menu → Image |
 | Video | ✅ 📋 | 🎬 | Create menu → Video |
+| Audio | ✅ 📋 | 🔊 | Create menu → Audio |
 | Solid | ✅ 📋 | ⬛ | Create menu → Solid |
 | Text | ✅ 📋 🎹 `T key` | T | Create menu → Text |
-| Spline/Shape | ✅ 📋 🎹 `P key` | ✒ | Create menu → Shape |
-| Null/Control | ✅ 📋 | ⊕ | Create menu → Control |
+| Spline | ✅ 📋 🎹 `P key` | ✒ | Create menu → Shape |
+| Shape | ✅ 📋 | ⬡ | Create menu → Shape |
+| Path | ✅ 📋 | 〰️ | Create menu → Path |
+| Control | ✅ 📋 | ⊕ | Create menu → Control |
+| Group | ✅ 📋 | 📁 | Create menu → Group |
+| NestedComp | ✅ 📋 🎹 `Ctrl+Shift+C` | 📦 | Create menu → Nested Comp |
 | Camera | ✅ 📋 | 📷 | Create menu → Camera |
 | Light | ✅ 📋 | 💡 | Create menu → Light |
 | Particle | ✅ 📋 | ✨ | Create menu → Particle |
-| Precomp/Nested | ✅ 📋 🎹 `Ctrl+Shift+C` | 📦 | Create menu → Nested Comp |
-| Adjustment/Effect | ✅ 📋 | 🔧 | Create menu → Effect Layer |
-| Audio | ✅ 📋 | 🔊 | Create menu → Audio |
-| Procedural Matte | ✅ 📋 | 🎭 | Create menu → Procedural Matte |
+| EffectLayer | ✅ 📋 | 🔧 | Create menu → Effect Layer |
+| Matte | ✅ 📋 | 🎭 | Create menu → Procedural Matte |
 | Depth | ✅ 📋 | 📊 | Create menu → Depth |
 | Normal | ✅ 📋 | 🧭 | Create menu → Normal |
 | Generated | ✅ 📋 | 🤖 | Create menu → Generated |
-| Group | ✅ 📋 | 📁 | Create menu → Group |
-| Path | ✅ 📋 | 〰️ | Create menu → Path |
-| Model (3D) | ✅ 📋 | 🎲 | Create menu → 3D Model |
+| Depthflow | ✅ 📋 | 🌊 | Create menu → Depthflow |
+| Model | ✅ 📋 | 🎲 | Create menu → 3D Model |
+| PointCloud | ✅ 📋 | ☁️ | Create menu → Point Cloud |
+| Pose | ✅ 📋 | 🦴 | Create menu → Pose |
 
 ### Layer Operations
 
@@ -182,49 +186,101 @@ Press with layer selected:
 
 ---
 
-## 8. EFFECTS (22 Total)
+## 8. EFFECTS (69 Total)
 
 All effects accessible via Effects panel → Add Effect dropdown.
+Full definitions in `types/effects.ts` (1,294 lines).
 
-### Blur Category
-| Effect | Icon | Parameters |
-|--------|------|------------|
-| Gaussian Blur | 🌫️ | radius, direction |
-| Box Blur | ⬜ | radius, iterations |
-| Directional Blur | → | angle, distance |
-| Radial Blur | ◎ | amount, center, type |
-| Sharpen | 🔺 | amount, radius, threshold |
+### Blur & Sharpen (6)
+| Effect | Parameters |
+|--------|------------|
+| Gaussian Blur | radius, direction |
+| Box Blur | radius, iterations |
+| Directional Blur | angle, distance |
+| Radial Blur | amount, center, type |
+| Lens Blur | radius, blade count, bokeh |
+| Sharpen | amount, radius, threshold |
 
-### Color Category
-| Effect | Icon | Parameters |
-|--------|------|------------|
-| Brightness/Contrast | ☀️ | brightness, contrast |
-| Hue/Saturation | 🎨 | hue, saturation, lightness |
-| Levels | 📊 | input black/white, gamma, output |
-| Curves | 📈 | per-channel curves |
-| Tint | 🎨 | black point, white point |
-| Glow | ✨ | radius, intensity, threshold |
-| Color Balance | ⚖️ | shadows/mids/highlights |
-| Exposure | 📷 | exposure stops |
-| Vibrance | 💎 | vibrance, saturation |
-| Invert | 🔄 | invert channels |
-| Posterize | 🎯 | levels |
-| Threshold | ◐ | threshold value |
-| Drop Shadow | 🌑 | offset, blur, color, opacity |
+### Color Correction (18)
+| Effect | Parameters |
+|--------|------------|
+| Brightness/Contrast | brightness, contrast |
+| Hue/Saturation | hue, saturation, lightness |
+| Levels | input black/white, gamma, output |
+| Curves | per-channel curves |
+| Color Balance | shadows/mids/highlights |
+| Exposure | exposure stops |
+| Vibrance | vibrance, saturation |
+| Photo Filter | filter type, density |
+| Channel Mixer | RGB matrix |
+| Black & White | color weights |
+| Gradient Map | gradient colors |
+| Tint | black point, white point |
+| Invert | channels |
+| Posterize | levels |
+| Threshold | value |
+| Dither | method, matrix size |
+| Add Grain | amount, size |
+| Cinematic Bloom | intensity, threshold, radius |
 
-### Distort Category
-| Effect | Icon | Parameters |
-|--------|------|------------|
-| Transform | ↔️ | position, scale, rotation |
-| Warp | 🌀 | mesh control |
-| Displacement Map | 🗺️ | source, scale |
+### Stylize (8)
+| Effect | Parameters |
+|--------|------------|
+| Glow | radius, intensity, threshold |
+| Drop Shadow | offset, blur, color, opacity |
+| Emboss | direction, height, amount |
+| Find Edges | invert |
+| Mosaic | block size |
+| Halftone | dot size, angle |
+| Pixel Sort | direction, threshold |
+| Glitch | amount, block size, RGB split |
 
-### Generate Category
-| Effect | Icon | Parameters |
-|--------|------|------------|
-| Fill | 🎨 | color |
-| Gradient Ramp | 🌈 | start/end color/position |
-| Fractal Noise | 🌊 | scale, octaves, evolution |
+### Distort (8)
+| Effect | Parameters |
+|--------|------------|
+| Transform | position, scale, rotation |
+| Warp | style, bend, distortion |
+| Bulge | center, radius, height |
+| Twirl | center, radius, angle |
+| Wave Warp | type, height, width, phase |
+| Displacement Map | source, scale |
+| Ripple | radius, amplitude, frequency |
+| Perspective | 4-corner pin |
+
+### Generate (5)
+| Effect | Parameters |
+|--------|------------|
+| Fill | color |
+| Gradient Ramp | start/end, shape, scatter |
+| Fractal Noise | type, scale, octaves, evolution |
+| Radio Waves | frequency, expansion, fade |
+| Ellipse | size, color, stroke |
+
+### Time (3)
+| Effect | Parameters |
+|--------|------------|
+| Echo | time, number, decay, operator |
+| Posterize Time | frame rate |
+| Time Displacement | layer, scale |
+
+### Keying & Matte (5)
+| Effect | Parameters |
+|--------|------------|
+| Depth Matte | near/far depth, fog |
+| 3D Glasses | left/right views, convergence |
+| Matte Edge | feather, choke, spill suppress |
+| Extract | channel, black/white |
+| Simple Choker | choke, softness |
+
+### Expression Controls (6)
+| Effect | Parameters |
+|--------|------------|
+| Slider Control | value |
+| Checkbox Control | state |
+| Color Control | color |
+| Point Control | position |
+| Angle Control | angle |
+| Layer Control | layer reference |
 
 ---
 
@@ -815,19 +871,24 @@ The pen tool has **4 sub-modes** accessed via the spline toolbar:
 
 | Category | Count |
 |----------|-------|
-| Layer Types | 17 |
-| Effects | 22 |
-| Easing Functions | 35 |
+| Layer Types | 26 |
+| Effects | 69 |
+| Easing Functions | 45 |
+| Blend Modes | 24 |
 | Camera Presets | 22 |
 | Particle Presets | 24 |
+| AI Agent Tools | 39 |
 | Keyboard Shortcuts | 86+ |
 | Context Menu Items | 25+ |
 | Property Controls | 7 |
 | Panels | 13 |
 | Dialogs | 11 |
-| AI Services | 4 |
-| Camera Tracking Formats | 4 |
-| **Total Features** | **450+** |
+| Vue Components | 112 |
+| Service Modules | 165 |
+| Engine Files | 42 |
+| Total Exports | 2,788 |
+| Lines of Code | 236,000 |
+| **Total Features** | **500+** |
 
 ---
 

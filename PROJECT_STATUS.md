@@ -10,19 +10,21 @@
 
 | Metric | Count |
 |--------|-------|
-| Lines of Code | 218,617 |
-| TypeScript Files | 253 |
-| Vue Components | 106 |
-| Services | 122 |
-| Engine Files | 41 |
+| Lines of Code | 236,000 |
+| TypeScript Files | 286 |
+| Vue Components | 112 |
+| Services | 165 |
+| Engine Files | 42 |
 | Store Files | 20 |
-| Test Files | 43 |
-| Layer Types | 25 |
-| Effect Renderers | 12 |
+| Test Files | 48 |
+| Layer Types | 26 |
+| Effects | 69 |
+| Easing Functions | 45 |
+| Total Exports | 2,788 |
 
 ---
 
-## Layer Types (25)
+## Layer Types (26)
 
 | Type | Description |
 |------|-------------|
@@ -34,8 +36,7 @@
 | spline | Bezier path with stroke/fill |
 | path | Motion path (invisible guide) |
 | shape | Vector shapes |
-| particle | Particle emitter (legacy) |
-| particles | New particle system |
+| particle | Particle emitter |
 | depth | Depth map visualization |
 | normal | Normal map visualization |
 | generated | AI-generated maps |
@@ -43,14 +44,13 @@
 | camera | 2.5D/3D camera |
 | light | 3D light |
 | control | Control layer (transform-only) |
-| null | @deprecated - use control |
 | group | Layer group |
 | nestedComp | Nested composition |
 | matte | Procedural matte |
 | model | 3D model (GLTF, OBJ, FBX) |
 | pointcloud | Point cloud (PLY, PCD, LAS) |
+| pose | OpenPose skeleton |
 | effectLayer | Effect layer |
-| adjustment | @deprecated - use effectLayer |
 
 ---
 

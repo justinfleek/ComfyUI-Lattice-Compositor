@@ -39,7 +39,7 @@ frames = (seconds × 16) + 1
 
 ---
 
-## Layer Types (25)
+## Layer Types (26)
 
 | Type | Description | Key Properties |
 |------|-------------|----------------|
@@ -51,7 +51,7 @@ frames = (seconds × 16) + 1
 | **spline** | Bezier curves | controlPoints, stroke, fill |
 | **path** | Motion path (invisible) | points, closed |
 | **shape** | Vector shapes | pathData, fill, stroke |
-| **particle/particles** | Particle emitters | emitter, physics, forces |
+| **particle** | Particle emitters | emitter, physics, forces |
 | **depth** | Depth map visualization | mode, colormap, range |
 | **normal** | Normal map visualization | flipX, flipY, showArrows |
 | **generated** | AI-generated maps | model, sourceLayer |
@@ -64,6 +64,7 @@ frames = (seconds × 16) + 1
 | **matte** | Procedural matte | type, threshold, feather |
 | **model** | 3D model (glTF, OBJ, FBX) | modelSource, material |
 | **pointcloud** | Point cloud (PLY, PCD, LAS) | source, pointSize |
+| **pose** | OpenPose skeleton | keypoints, connections |
 | **effectLayer** | Effect-only layer | effects |
 
 ### Layer Properties (All Types)
@@ -84,7 +85,7 @@ Every layer has standard animatable properties:
 | **Bezier** | Circle | Custom curve with handles |
 | **Hold** | Square | Step, no interpolation |
 
-### Easing Functions (35)
+### Easing Functions (45)
 
 **Categories:** Sine, Quad, Cubic, Quart, Quint, Expo, Circ, Back, Elastic, Bounce, Spring
 
@@ -115,47 +116,33 @@ easeInQuad, easeOutQuad, easeInOutQuad
 
 ---
 
-## Effects (22)
+## Effects (69)
 
-### Blur Effects
-| Effect | Parameters |
-|--------|------------|
-| Gaussian Blur | radius, direction |
-| Box Blur | radius, iterations |
-| Directional Blur | angle, distance |
-| Radial Blur | amount, center, type |
-| Sharpen | amount, radius, threshold |
+Full effect definitions in `types/effects.ts`. Categories:
 
-### Color Effects
-| Effect | Parameters |
-|--------|------------|
-| Brightness/Contrast | brightness, contrast |
-| Hue/Saturation | hue, saturation, lightness |
-| Levels | inputBlack, inputWhite, gamma, outputBlack, outputWhite |
-| Curves | per-channel curve points |
-| Tint | blackPoint, whitePoint |
-| Glow | radius, intensity, threshold |
-| Color Balance | shadows, midtones, highlights |
-| Exposure | stops |
-| Vibrance | vibrance, saturation |
-| Invert | channels |
-| Posterize | levels |
-| Threshold | value |
-| Drop Shadow | offset, blur, color, opacity |
+### Blur & Sharpen (6)
+Gaussian Blur, Box Blur, Directional Blur, Radial Blur, Lens Blur, Sharpen
 
-### Distort Effects
-| Effect | Parameters |
-|--------|------------|
-| Transform | position, scale, rotation |
-| Warp | mesh control points |
-| Displacement Map | source, scale |
+### Color Correction (18)
+Brightness/Contrast, Hue/Saturation, Levels, Curves, Color Balance, Exposure, Vibrance, Photo Filter, Channel Mixer, Black & White, Gradient Map, Tint, Invert, Posterize, Threshold, Dither, Add Grain, Cinematic Bloom
 
-### Generate Effects
-| Effect | Parameters |
-|--------|------------|
-| Fill | color |
-| Gradient Ramp | start, end, type |
-| Fractal Noise | scale, octaves, evolution |
+### Stylize (8)
+Glow, Drop Shadow, Emboss, Find Edges, Mosaic, Halftone, Pixel Sort, Glitch
+
+### Distort (8)
+Transform, Warp, Bulge, Twirl, Wave Warp, Displacement Map, Ripple, Perspective
+
+### Generate (5)
+Fill, Gradient Ramp, Fractal Noise, Radio Waves, Ellipse
+
+### Time (3)
+Echo, Posterize Time, Time Displacement
+
+### Keying & Matte (5)
+Depth Matte, 3D Glasses, Matte Edge, Extract, Simple Choker
+
+### Expression Controls (6)
+Slider, Checkbox, Color, Point, Angle, Layer controls
 
 ---
 
@@ -392,15 +379,15 @@ Understands motion graphics terminology and executes complex multi-step tasks:
 
 ```
 ui/src/
-├── components/     106 Vue components
-├── engine/          41 TypeScript files
-├── services/       122 service modules
+├── components/     112 Vue components
+├── engine/          42 TypeScript files
+├── services/       165 service modules
 ├── stores/          20 Pinia stores
-├── types/           21 type definitions
-└── __tests__/       43 test files
+├── types/           11 type definitions
+└── __tests__/       48 test files
 ```
 
-**Total:** 359 source files | 218,617 lines of code
+**Total:** 398 source files | 236,000 lines of code | 2,788 exports
 
 ---
 

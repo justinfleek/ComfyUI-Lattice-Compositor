@@ -534,16 +534,19 @@ Use `offset` and `limit` parameters when reading:
 
 | Metric | Value |
 |--------|-------|
-| Lines of Code | 218,617 |
-| TypeScript Files | 253 |
-| Vue Components | 106 |
-| Services | 122 |
-| Layer Types | 25 |
-| Effects | 22 |
-| Easing Functions | 35 |
+| Lines of Code | 236,000 |
+| TypeScript Files | 286 |
+| Vue Components | 112 |
+| Services | 165 |
+| Layer Types | 26 |
+| Effects | 69 |
+| Easing Functions | 45 |
+| Blend Modes | 24 |
 | Camera Presets | 22 |
 | Particle Presets | 24 |
-| Keyboard Shortcuts | 85+ |
+| AI Agent Tools | 39 |
+| Keyboard Shortcuts | 86+ |
+| Total Exports | 2,788 |
 
 ---
 
