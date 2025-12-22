@@ -3068,24 +3068,24 @@ onUnmounted(() => {
   /* Use 100% height for ComfyUI sidebar compatibility, fallback to 100vh for standalone */
   height: 100%;
   min-height: 100vh;
-  background: var(--weyl-void, #050505);
+  background: var(--weyl-void, #0a0a0a);
   color: var(--weyl-text-primary, #e5e5e5);
   font-family: var(--weyl-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
   font-size: var(--weyl-text-base, 12px);
-  /* Minimal padding for maximum workspace */
-  padding: 4px;
-  gap: 4px;
+  /* Increased padding for floating panel effect */
+  padding: 8px;
+  gap: 8px;
 }
 
-/* Toolbar - floating panel */
+/* Toolbar - floating panel with subtle border */
 .toolbar {
   display: flex;
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  background: var(--weyl-surface-1, #121212);
-  border-radius: var(--weyl-radius-md, 4px);
-  box-shadow: var(--weyl-shadow-panel, 0 4px 16px rgba(0,0,0,0.3));
+  background: var(--weyl-surface-1, #0f0f0f);
+  border-radius: var(--weyl-radius-lg, 6px);
+  border: 1px solid var(--weyl-border-subtle, #1a1a1a);
   min-height: 40px;
 }
 
@@ -3296,13 +3296,14 @@ onUnmounted(() => {
   height: 100%;
 }
 
-/* Panels - clean flat design */
+/* Panels - floating islands with subtle borders */
 .panel {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: var(--weyl-surface-1, #121212);
-  border-radius: var(--weyl-radius-sm, 2px);
+  background: var(--weyl-surface-1, #0f0f0f);
+  border-radius: var(--weyl-radius-lg, 6px);
+  border: 1px solid var(--weyl-border-subtle, #1a1a1a);
   overflow: hidden;
 }
 
@@ -3321,14 +3322,15 @@ onUnmounted(() => {
 
 .panel-tabs {
   display: flex;
-  background: var(--weyl-surface-2, #1a1a1a);
-  padding: 4px;
-  gap: 2px;
+  background: var(--weyl-surface-0, #080808);
+  padding: 6px;
+  gap: 4px;
+  border-bottom: 1px solid var(--weyl-border-subtle, #1a1a1a);
 }
 
 .panel-tabs button {
   flex: 1;
-  padding: 6px 8px;
+  padding: 8px 12px;
   border: none;
   background: transparent;
   color: var(--weyl-text-secondary, #9CA3AF);
@@ -3341,12 +3343,13 @@ onUnmounted(() => {
 
 .panel-tabs button:hover {
   color: var(--weyl-text-primary, #e5e5e5);
-  background: var(--weyl-surface-3, #222222);
+  background: var(--weyl-surface-3, #1e1e1e);
 }
 
 .panel-tabs button.active {
   color: white;
   background: var(--weyl-accent, #8B5CF6);
+  font-weight: 600;
 }
 
 .panel-tabs button:focus-visible {
@@ -3380,15 +3383,16 @@ onUnmounted(() => {
 
 /* Viewport */
 .viewport-panel {
-  background: var(--weyl-surface-0, #0a0a0a);
+  background: var(--weyl-surface-0, #080808);
 }
 
 .viewport-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 6px 10px;
-  background: var(--weyl-surface-2, #1a1a1a);
+  padding: 8px 12px;
+  background: var(--weyl-surface-2, #161616);
+  border-bottom: 1px solid var(--weyl-border-subtle, #1a1a1a);
   gap: 8px;
 }
 

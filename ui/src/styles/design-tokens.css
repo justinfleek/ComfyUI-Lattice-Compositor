@@ -10,20 +10,21 @@
      COLOR SYSTEM
      ======================================== */
 
-  /* Surface Colors (Dark to Light) */
-  --weyl-void: #050505;           /* App canvas between panels */
-  --weyl-surface-0: #0a0a0a;      /* Deepest surface */
-  --weyl-surface-1: #121212;      /* Panel backgrounds */
+  /* Surface Colors (Dark to Light) - Very dark grey base (not pure black) */
+  --weyl-void: #0a0a0a;           /* Very dark grey app background */
+  --weyl-surface-0: #0e0e0e;      /* Canvas background */
+  --weyl-surface-1: #141414;      /* Panel backgrounds */
   --weyl-surface-2: #1a1a1a;      /* Headers, elevated surfaces */
   --weyl-surface-3: #222222;      /* Hover states */
   --weyl-surface-4: #2a2a2a;      /* Active/pressed states */
 
-  /* Accent Colors (Default: Violet theme) */
+  /* Accent Colors (Default: Dark Purple / Violet theme) */
   --weyl-accent: #8B5CF6;
-  --weyl-accent-hover: #9D7AF6;
-  --weyl-accent-secondary: #EC4899;
-  --weyl-accent-gradient: linear-gradient(135deg, #8B5CF6, #EC4899);
+  --weyl-accent-hover: #9D7AFA;
+  --weyl-accent-secondary: #A78BFA;
+  --weyl-accent-gradient: linear-gradient(135deg, #8B5CF6, #A78BFA);
   --weyl-accent-glow: rgba(139, 92, 246, 0.3);
+  --weyl-accent-muted: rgba(139, 92, 246, 0.15);
 
   /* ========================================
      THEME GRADIENTS
@@ -76,12 +77,21 @@
   --weyl-info: #3B82F6;           /* Blue */
   --weyl-info-bg: rgba(59, 130, 246, 0.15);
 
-  /* Timeline Colors */
-  --weyl-timeline-video: #7C3AED;    /* Purple for video tracks */
-  --weyl-timeline-audio: #06B6D4;    /* Cyan for audio tracks */
-  --weyl-timeline-text: #F59E0B;     /* Amber for text layers */
-  --weyl-timeline-effect: #EC4899;   /* Pink for effects */
-  --weyl-timeline-shape: #10B981;    /* Green for shapes */
+  /* Timeline Colors (Layer type colors) */
+  --weyl-timeline-video: #FFD700;    /* Gold for video/image clips */
+  --weyl-timeline-audio: #9B59B6;    /* Purple for audio tracks */
+  --weyl-timeline-text: #8B5CF6;     /* Purple for text layers */
+  --weyl-timeline-effect: #FF6B9D;   /* Pink for effects */
+  --weyl-timeline-shape: #2ECC71;    /* Green for shapes */
+  --weyl-timeline-camera: #06B6D4;   /* Cyan for camera */
+  --weyl-timeline-null: #6B7280;     /* Gray for null/control */
+  --weyl-timeline-particle: #F59E0B; /* Amber for particles */
+
+  /* Border Colors */
+  --weyl-border-subtle: #1a1a1a;     /* Nearly invisible */
+  --weyl-border-default: #2a2a2a;    /* Subtle separation */
+  --weyl-border-hover: #3a3a3a;      /* Visible on hover */
+  --weyl-border-accent: var(--weyl-accent);
 
   /* ========================================
      TYPOGRAPHY
@@ -213,9 +223,9 @@
 .floating-panel {
   background: var(--weyl-surface-1);
   border-radius: var(--weyl-radius-xl);
-  box-shadow: var(--weyl-shadow-panel);
-  border: none;
+  border: 1px solid var(--weyl-border-subtle);
   overflow: hidden;
+  /* No box-shadow - cleaner floating look */
 }
 
 /* Surface Levels */

@@ -33330,7 +33330,7 @@ const _sfc_main$Y = /* @__PURE__ */ defineComponent({
   }
 });
 
-const ProjectPanel = /* @__PURE__ */ _export_sfc(_sfc_main$Y, [["__scopeId", "data-v-67bde8ef"]]);
+const ProjectPanel = /* @__PURE__ */ _export_sfc(_sfc_main$Y, [["__scopeId", "data-v-8e7e536a"]]);
 
 const _hoisted_1$W = {
   class: "effects-panel",
@@ -91657,7 +91657,7 @@ const _sfc_main$g = /* @__PURE__ */ defineComponent({
   }
 });
 
-const EnhancedLayerTrack = /* @__PURE__ */ _export_sfc(_sfc_main$g, [["__scopeId", "data-v-bd494535"]]);
+const EnhancedLayerTrack = /* @__PURE__ */ _export_sfc(_sfc_main$g, [["__scopeId", "data-v-6766bea6"]]);
 
 const _hoisted_1$e = { class: "composition-tabs" };
 const _hoisted_2$e = {
@@ -92634,14 +92634,14 @@ const _sfc_main$e = /* @__PURE__ */ defineComponent({
             style: normalizeStyle({ width: sidebarWidth.value + "px" })
           }, [
             createBaseVNode("div", _hoisted_14$9, [
-              _cache[44] || (_cache[44] = createStaticVNode('<div class="col-header col-av-features" data-v-d3381859><span class="header-icon" title="Video" data-v-d3381859>👁</span><span class="header-icon" title="Audio" data-v-d3381859>🔊</span><span class="header-icon" title="Isolate" data-v-d3381859>●</span><span class="header-icon" title="Lock" data-v-d3381859>🔒</span></div><div class="col-header col-number" data-v-d3381859>#</div><div class="col-header col-name" data-v-d3381859>Source Name</div>', 3)),
+              _cache[44] || (_cache[44] = createStaticVNode('<div class="col-header col-av-features" data-v-f9e1bbcb><span class="header-icon" title="Video" data-v-f9e1bbcb>👁</span><span class="header-icon" title="Audio" data-v-f9e1bbcb>🔊</span><span class="header-icon" title="Isolate" data-v-f9e1bbcb>●</span><span class="header-icon" title="Lock" data-v-f9e1bbcb>🔒</span></div><div class="col-header col-number" data-v-f9e1bbcb>#</div><div class="col-header col-name" data-v-f9e1bbcb>Source Name</div>', 3)),
               createBaseVNode("div", _hoisted_15$8, [
                 createBaseVNode("span", {
                   class: normalizeClass(["header-icon clickable", { active: unref(store).hideMinimizedLayers }]),
                   title: "Hide Minimized Layers",
                   onClick: _cache[22] || (_cache[22] = ($event) => unref(store).toggleHideMinimizedLayers())
                 }, "🙈", 2),
-                _cache[43] || (_cache[43] = createStaticVNode('<span class="header-icon" title="Flatten Transform" data-v-d3381859>☀</span><span class="header-icon" title="Quality" data-v-d3381859>◐</span><span class="header-icon" title="Effects" data-v-d3381859>fx</span><span class="header-icon" title="Frame Blending" data-v-d3381859>⊞</span><span class="header-icon" title="Motion Blur" data-v-d3381859>◔</span><span class="header-icon" title="Adjustment Layer" data-v-d3381859>◐</span><span class="header-icon" title="3D Layer" data-v-d3381859>⬡</span>', 7))
+                _cache[43] || (_cache[43] = createStaticVNode('<span class="header-icon" title="Flatten Transform" data-v-f9e1bbcb>☀</span><span class="header-icon" title="Quality" data-v-f9e1bbcb>◐</span><span class="header-icon" title="Effects" data-v-f9e1bbcb>fx</span><span class="header-icon" title="Frame Blending" data-v-f9e1bbcb>⊞</span><span class="header-icon" title="Motion Blur" data-v-f9e1bbcb>◔</span><span class="header-icon" title="Adjustment Layer" data-v-f9e1bbcb>◐</span><span class="header-icon" title="3D Layer" data-v-f9e1bbcb>⬡</span>', 7))
               ]),
               _cache[45] || (_cache[45] = createBaseVNode("div", { class: "col-header col-parent" }, "Parent & Link", -1))
             ]),
@@ -92763,7 +92763,7 @@ const _sfc_main$e = /* @__PURE__ */ defineComponent({
   }
 });
 
-const TimelinePanel = /* @__PURE__ */ _export_sfc(_sfc_main$e, [["__scopeId", "data-v-d3381859"]]);
+const TimelinePanel = /* @__PURE__ */ _export_sfc(_sfc_main$e, [["__scopeId", "data-v-f9e1bbcb"]]);
 
 const _hoisted_1$c = { class: "curve-editor" };
 const _hoisted_2$c = { class: "curve-header" };
@@ -103964,7 +103964,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
   }
 });
 
-const WorkspaceLayout = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-e08ef2c6"]]);
+const WorkspaceLayout = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-fa3b3700"]]);
 
 const _sfc_main = /* @__PURE__ */ defineComponent({
   __name: "App",
