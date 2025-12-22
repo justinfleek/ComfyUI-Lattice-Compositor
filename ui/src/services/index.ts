@@ -24,13 +24,53 @@ export {
 // Expressions
 export {
   evaluateExpression,
+  evaluateCustomExpression,
   easing,
   motion,
   loop,
   time,
   math,
+  audio,
+  layer,
+  effect,
+  vector,
+  coords,
+  textAnimator,
+  // Vector math functions
+  vectorAdd,
+  vectorSub,
+  vectorMul,
+  vectorDiv,
+  vectorNormalize,
+  vectorDot,
+  vectorCross,
+  vectorLength,
+  vectorClamp,
+  // Coordinate conversion
+  toComp,
+  fromComp,
+  toWorld,
+  fromWorld,
+  lookAt,
+  orientToPath,
+  // Text animator
+  createTextAnimatorContext,
+  evaluateTextAnimatorExpression,
+  // Audio/time expressions
+  valueAtTime,
+  posterizeTime,
+  linearInterp,
+  easeInterp,
+  // Layer dimension
+  sourceRectAtTime,
+  // Noise
+  noise,
+  degreeTrig,
   type ExpressionContext,
   type Expression,
+  type LayerTransform,
+  type TextAnimatorContext,
+  type SourceRect,
 } from './expressions';
 
 // Easing functions (object-based, not individual functions)
@@ -1408,3 +1448,98 @@ export {
   type TemplateValidationResult,
   type OrganizedProperties,
 } from './essentialGraphics';
+
+// ============================================================================
+// JSON VALIDATION & DATA HARDENING
+// ============================================================================
+
+export {
+  // Safe JSON operations
+  safeJSONParse,
+  safeJSONStringify,
+  // Schema validation
+  validateProject,
+  validateComposition,
+  validateLayer,
+  validateMOGRT,
+  validateTemplateConfig,
+  // Type guards
+  isObject,
+  isString,
+  isNumber,
+  isArray,
+  isBoolean,
+  // Sanitization
+  sanitizeString,
+  sanitizeFileName,
+  deepCloneSanitized,
+  // Data repair
+  repairProject,
+  type ValidationError,
+  type ValidationResult,
+} from './jsonValidation';
+
+// ============================================================================
+// TEXT MEASUREMENT (Canvas API)
+// ============================================================================
+
+export {
+  measureText,
+  measureMultilineText,
+  measureTextLayerRect,
+  measureTextWithFont,
+  isFontAvailable,
+  buildFontString,
+  getBaselineOffset,
+  getCharacterPositions,
+  cleanup as cleanupTextMeasurement,
+  type TextMetrics,
+  type TextRect,
+} from './textMeasurement';
+
+// ============================================================================
+// DATA IMPORT (Tutorial 14 - Data-Driven Animation)
+// ============================================================================
+
+export {
+  // Parsing functions
+  parseJSON,
+  parseCSV,
+  parseTSV,
+  parseDataFile,
+  // Asset management
+  importDataAsset,
+  importDataFromFile,
+  getDataAsset,
+  getAllDataAssets,
+  removeDataAsset,
+  clearDataAssets,
+  reloadDataAsset,
+  // Expression support
+  createFootageAccessor,
+  // Utilities
+  extractArrayFromJSON,
+  getJSONValue,
+  countCSVRows,
+  getUniqueColumnValues,
+  sumCSVColumn,
+  maxCSVColumn,
+  minCSVColumn,
+} from './dataImport';
+
+// Re-export data asset types
+export {
+  type DataFileType,
+  type DataAsset,
+  type JSONDataAsset,
+  type CSVDataAsset,
+  type FootageDataAccessor,
+  type DataParseResult,
+  type CSVParseOptions,
+  type JSONParseOptions,
+  // Type guards
+  isJSONAsset,
+  isCSVAsset,
+  isSupportedDataFile,
+  getDataFileType,
+} from '@/types/dataAsset';

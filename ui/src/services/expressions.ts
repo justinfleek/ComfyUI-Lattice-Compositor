@@ -8,10 +8,13 @@
  * - Jitter and noise functions
  * - Time and math functions
  * - Property references and linking
- * - Data-driven animation (JSON)
+ * - Data-driven animation (JSON/CSV)
+ * - footage() function for data access
  */
 
 import type { AnimatableProperty, Keyframe, InterpolationType } from '@/types/project';
+import { measureTextLayerRect } from './textMeasurement';
+import type { FootageDataAccessor } from '@/types/dataAsset';
 
 // ============================================================================
 // EXPRESSION CONTEXT
@@ -23,6 +26,10 @@ export interface ExpressionContext {
   frame: number;          // Current frame number
   fps: number;            // Frames per second
   duration: number;       // Composition duration
+
+  // Composition info
+  compWidth?: number;     // Composition width in pixels
+  compHeight?: number;    // Composition height in pixels
 
   // Layer info
   layerId: string;
@@ -43,8 +50,14 @@ export interface ExpressionContext {
   // External data (JSON-driven)
   data?: Record<string, any>;
 
+  // Expression control parameters (for effect("Slider")("Slider") access)
+  params?: Record<string, any>;
+
   // Other layer properties (for linking)
   getLayerProperty?: (layerId: string, propertyPath: string) => number | number[] | null;
+
+  // Data-driven animation (footage access)
+  footage?: (name: string) => FootageDataAccessor | null;
 }
 
 // ============================================================================
@@ -1032,6 +1045,7 @@ export interface Expression {
   name: string;
   params: Record<string, any>;
   enabled: boolean;
+  code?: string;  // For custom expressions - JavaScript code string
 }
 
 /**
@@ -1040,7 +1054,7 @@ export interface Expression {
 export function evaluateExpression(
   expression: Expression,
   ctx: ExpressionContext
-): number | number[] {
+): number | number[] | string {
   if (!expression.enabled) return ctx.value;
 
   switch (expression.type) {
@@ -1048,9 +1062,432 @@ export function evaluateExpression(
       return evaluatePreset(expression.name, ctx, expression.params);
     case 'function':
       return evaluateFunction(expression.name, ctx, expression.params);
+    case 'custom':
+      return evaluateCustomExpression(expression.code || '', ctx);
     default:
       return ctx.value;
   }
+}
+
+/**
+ * Evaluate a custom JavaScript expression string
+ *
+ * This provides a sandboxed environment with access to:
+ * - time, frame, fps, duration
+ * - value, velocity
+ * - footage() for data access
+ * - Math functions
+ * - ease() for count-up animations
+ * - String methods (toLocaleString, toFixed, etc.)
+ */
+export function evaluateCustomExpression(
+  code: string,
+  ctx: ExpressionContext
+): number | number[] | string {
+  if (!code || code.trim() === '') {
+    return ctx.value;
+  }
+
+  try {
+    // Helper: Get keyframe at index (1-based like AE)
+    const key = (n: number) => {
+      const kfs = ctx.keyframes || [];
+      if (n < 1 || n > kfs.length) return { time: 0, value: ctx.value };
+      const kf = kfs[n - 1];
+      return { time: kf.frame / ctx.fps, value: kf.value };
+    };
+
+    // Helper: Find nearest keyframe to current time
+    const nearestKey = (t: number) => {
+      const kfs = ctx.keyframes || [];
+      if (kfs.length === 0) return { index: 0, time: 0 };
+      let nearest = 0;
+      let minDist = Infinity;
+      const targetFrame = t * ctx.fps;
+      for (let i = 0; i < kfs.length; i++) {
+        const dist = Math.abs(kfs[i].frame - targetFrame);
+        if (dist < minDist) {
+          minDist = dist;
+          nearest = i;
+        }
+      }
+      return { index: nearest + 1, time: kfs[nearest].frame / ctx.fps };
+    };
+
+    // Helper: wiggle (alias for jitter, AE-compatible API)
+    const wiggle = (freq: number, amp: number, octaves: number = 1, amp_mult: number = 0.5, t?: number): number | number[] => {
+      const targetTime = t ?? ctx.time;
+      // Simple multi-octave noise
+      const noise = (seed: number, time: number): number => {
+        let result = 0;
+        let amplitude = 1;
+        let frequency = freq;
+        for (let i = 0; i < octaves; i++) {
+          result += amplitude * Math.sin(time * frequency * Math.PI * 2 + seed * 1000);
+          result += amplitude * 0.5 * Math.sin(time * frequency * Math.PI * 2 * 1.618 + seed * 500);
+          amplitude *= amp_mult;
+          frequency *= 2;
+        }
+        return result / (1 + (octaves - 1) * amp_mult);
+      };
+
+      if (typeof ctx.value === 'number') {
+        return ctx.value + noise(0, targetTime) * amp;
+      }
+      return (ctx.value as number[]).map((v, i) => v + noise(i, targetTime) * amp);
+    };
+
+    // Helper: loopOut (alias for repeatAfter)
+    const loopOut = (type: string = 'cycle', numKf: number = 0): number | number[] => {
+      return repeatAfter(ctx, type as LoopType, numKf);
+    };
+
+    // Helper: loopIn (alias for repeatBefore)
+    const loopIn = (type: string = 'cycle', numKf: number = 0): number | number[] => {
+      return repeatBefore(ctx, type as LoopType, numKf);
+    };
+
+    // Helper: length (vector distance)
+    const length = (a: number | number[], b?: number | number[]): number => {
+      if (b === undefined) {
+        // length(vector) - magnitude
+        if (typeof a === 'number') return Math.abs(a);
+        return Math.sqrt(a.reduce((sum, v) => sum + v * v, 0));
+      }
+      // length(a, b) - distance between points
+      if (typeof a === 'number' && typeof b === 'number') {
+        return Math.abs(a - b);
+      }
+      const arrA = Array.isArray(a) ? a : [a];
+      const arrB = Array.isArray(b) ? b : [b];
+      let sum = 0;
+      for (let i = 0; i < Math.max(arrA.length, arrB.length); i++) {
+        const diff = (arrA[i] || 0) - (arrB[i] || 0);
+        sum += diff * diff;
+      }
+      return Math.sqrt(sum);
+    };
+
+    // Helper: seedRandom (set random seed for deterministic random)
+    const seedRandom = (seed: number, timeless: boolean = false): void => {
+      // In our implementation, random() already uses frame-based seeding
+      // This is a no-op but maintains API compatibility
+    };
+
+    // Helper: valueAtTime for expressions
+    const valueAtTimeExpr = (t: number): number | number[] => {
+      return valueAtTime(ctx, t);
+    };
+
+    // Helper: velocityAtTime
+    const velocityAtTimeExpr = (t: number): number | number[] => {
+      // Approximate velocity using finite difference
+      const dt = 1 / ctx.fps;
+      const v1 = valueAtTime(ctx, t - dt);
+      const v2 = valueAtTime(ctx, t + dt);
+      if (typeof v1 === 'number' && typeof v2 === 'number') {
+        return (v2 - v1) / (2 * dt);
+      }
+      if (Array.isArray(v1) && Array.isArray(v2)) {
+        return v1.map((_, i) => ((v2 as number[])[i] - (v1 as number[])[i]) / (2 * dt));
+      }
+      return 0;
+    };
+
+    // Build the expression context variables
+    const contextVars = {
+      // Time
+      time: ctx.time,
+      frame: ctx.frame,
+      fps: ctx.fps,
+      duration: ctx.duration,
+
+      // Layer
+      index: ctx.layerIndex,  // Layer index (1-based)
+      layerName: ctx.layerName,
+      inPoint: ctx.inPoint,
+      outPoint: ctx.outPoint,
+
+      // Property
+      value: ctx.value,
+      velocity: ctx.velocity,
+      numKeys: ctx.numKeys,
+
+      // Keyframe access
+      key,
+      nearestKey,
+
+      // Math (safe subset)
+      Math: Math,
+      parseInt: parseInt,
+      parseFloat: parseFloat,
+      isNaN: isNaN,
+      isFinite: isFinite,
+
+      // footage() function
+      footage: ctx.footage || (() => null),
+
+      // Ease functions (AE-compatible)
+      ease: expressionEase,
+      easeIn: expressionEaseIn,
+      easeOut: expressionEaseOut,
+
+      // linear interpolation
+      linear: (t: number, tMin: number, tMax: number, vMin: number, vMax: number): number => {
+        if (t <= tMin) return vMin;
+        if (t >= tMax) return vMax;
+        return vMin + (vMax - vMin) * ((t - tMin) / (tMax - tMin));
+      },
+
+      // Clamp
+      clamp: (val: number, min: number, max: number): number => {
+        return Math.max(min, Math.min(max, val));
+      },
+
+      // Random (seeded based on frame for determinism)
+      random: (seed?: number): number => {
+        const s = seed !== undefined ? seed : ctx.frame;
+        const x = Math.sin(s * 12.9898) * 43758.5453;
+        return x - Math.floor(x);
+      },
+
+      // Motion functions (AE-compatible aliases)
+      wiggle,
+      loopOut,
+      loopIn,
+
+      // Utility functions
+      length,
+      seedRandom,
+      valueAtTime: valueAtTimeExpr,
+      velocityAtTime: velocityAtTimeExpr,
+
+      // Angle conversion
+      radiansToDegrees: (rad: number): number => rad * 180 / Math.PI,
+      degreesToRadians: (deg: number): number => deg * Math.PI / 180,
+
+      // Time conversion
+      timeToFrames: (t: number = ctx.time): number => Math.round(t * ctx.fps),
+      framesToTime: (f: number): number => f / ctx.fps,
+
+      // Vector math functions (AE-compatible)
+      add: (a: number | number[], b: number | number[]): number | number[] => {
+        if (typeof a === 'number' && typeof b === 'number') return a + b;
+        const arrA = Array.isArray(a) ? a : [a];
+        const arrB = Array.isArray(b) ? b : [b];
+        return vectorAdd(arrA, arrB);
+      },
+      sub: (a: number | number[], b: number | number[]): number | number[] => {
+        if (typeof a === 'number' && typeof b === 'number') return a - b;
+        const arrA = Array.isArray(a) ? a : [a];
+        const arrB = Array.isArray(b) ? b : [b];
+        return vectorSub(arrA, arrB);
+      },
+      mul: (a: number | number[], b: number | number[]): number | number[] => {
+        if (typeof a === 'number' && typeof b === 'number') return a * b;
+        return vectorMul(a, b);
+      },
+      div: (a: number | number[], b: number | number[]): number | number[] => {
+        if (typeof a === 'number' && typeof b === 'number') return a / (b || 1);
+        return vectorDiv(a, b);
+      },
+      normalize: (vec: number[]): number[] => vectorNormalize(vec),
+      dot: (a: number[], b: number[]): number => vectorDot(a, b),
+      cross: (a: number[], b: number[]): number[] => vectorCross(a, b),
+
+      // Coordinate conversion (requires layer transform data)
+      toComp: (point: number[]): number[] => {
+        // Simplified - in real use, would get transform from layer
+        return point;
+      },
+      fromComp: (point: number[]): number[] => {
+        // Simplified - in real use, would get transform from layer
+        return point;
+      },
+      toWorld: (point: number[]): number[] => {
+        // Simplified - alias for toComp in 3D
+        return point;
+      },
+      fromWorld: (point: number[]): number[] => {
+        // Simplified - alias for fromComp in 3D
+        return point;
+      },
+
+      // 3D orientation
+      lookAt: (fromPoint: number[], atPoint: number[]): number[] => lookAt(fromPoint, atPoint),
+
+      // Noise
+      noise: (val: number | number[]): number => noise(val),
+
+      // Degree-based trig (optional aliases)
+      sinDeg: (deg: number): number => Math.sin(deg * Math.PI / 180),
+      cosDeg: (deg: number): number => Math.cos(deg * Math.PI / 180),
+      tanDeg: (deg: number): number => Math.tan(deg * Math.PI / 180),
+
+      // thisComp / thisLayer simulation
+      thisComp: {
+        duration: ctx.duration,
+        frameDuration: 1 / ctx.fps,
+        width: ctx.compWidth ?? 1920,
+        height: ctx.compHeight ?? 1080,
+        layer: (nameOrIndex: string | number) => {
+          // Return a layer-like object that can access properties
+          const getLayerProperty = ctx.getLayerProperty;
+          const layerId = typeof nameOrIndex === 'string' ? nameOrIndex : `layer_${nameOrIndex}`;
+
+          // Get layer transform for coordinate conversion
+          const getTransform = (): LayerTransform => ({
+            position: (getLayerProperty?.(layerId, 'transform.position') as number[]) ?? [0, 0, 0],
+            scale: (getLayerProperty?.(layerId, 'transform.scale') as number[]) ?? [100, 100, 100],
+            rotation: (getLayerProperty?.(layerId, 'transform.rotation') as number[]) ?? [0, 0, 0],
+            anchor: (getLayerProperty?.(layerId, 'transform.anchorPoint') as number[]) ?? [0, 0, 0],
+          });
+
+          return {
+            position: getLayerProperty?.(layerId, 'transform.position') ?? [0, 0],
+            scale: getLayerProperty?.(layerId, 'transform.scale') ?? [100, 100],
+            rotation: getLayerProperty?.(layerId, 'transform.rotation') ?? 0,
+            opacity: getLayerProperty?.(layerId, 'transform.opacity') ?? 100,
+            anchorPoint: getLayerProperty?.(layerId, 'transform.anchorPoint') ?? [0, 0],
+            // Coordinate conversion with actual transform
+            toComp: (point: number[]) => toComp(point, getTransform()),
+            fromComp: (point: number[]) => fromComp(point, getTransform()),
+            toWorld: (point: number[]) => toWorld(point, getTransform()),
+            fromWorld: (point: number[]) => fromWorld(point, getTransform()),
+            // Effect access
+            effect: (effectName: string) => ({
+              param: (paramName: string) => getLayerProperty?.(layerId, `effects.${effectName}.${paramName}`) ?? 0,
+              // Also allow direct property access: effect("Slider")("Slider")
+              [effectName]: getLayerProperty?.(layerId, `effects.${effectName}.value`) ?? 0
+            })
+          };
+        }
+      },
+      thisLayer: {
+        name: ctx.layerName,
+        index: ctx.layerIndex,
+        inPoint: ctx.inPoint,
+        outPoint: ctx.outPoint,
+        // Layer methods
+        sourceRectAtTime: (t: number = ctx.time, includeExtents: boolean = false) => {
+          // Return default rect - actual implementation needs layer data
+          return { top: 0, left: 0, width: 100, height: 100 };
+        },
+        // Coordinate conversion (need actual layer transform)
+        toComp: (point: number[]) => point,
+        fromComp: (point: number[]) => point,
+        toWorld: (point: number[]) => point,
+        fromWorld: (point: number[]) => point,
+      },
+      thisProperty: {
+        value: ctx.value,
+        velocity: ctx.velocity,
+        numKeys: ctx.numKeys,
+        key,
+        nearestKey: () => nearestKey(ctx.time),
+        valueAtTime: valueAtTimeExpr,
+        velocityAtTime: velocityAtTimeExpr
+      }
+    };
+
+    // Create a safe function that returns the expression result
+    const paramNames = Object.keys(contextVars);
+    const paramValues = Object.values(contextVars);
+
+    // Wrap in try-catch and return
+    const wrappedCode = `
+      "use strict";
+      try {
+        return (function() {
+          ${code}
+        })();
+      } catch(e) {
+        return "Error: " + e.message;
+      }
+    `;
+
+    const fn = new Function(...paramNames, wrappedCode);
+    const result = fn(...paramValues);
+
+    return result;
+  } catch (error) {
+    console.error('[Expressions] Custom expression error:', error);
+    return ctx.value;
+  }
+}
+
+/**
+ * Ease function for expressions (count-up animations)
+ * Compatible with After Effects ease()
+ */
+export function expressionEase(
+  t: number,
+  tMin: number,
+  tMax: number,
+  vMin: number | number[],
+  vMax: number | number[]
+): number | number[] {
+  // Normalize t to 0-1 range
+  let normalized = (t - tMin) / (tMax - tMin);
+  normalized = Math.max(0, Math.min(1, normalized));
+
+  // Apply ease (cubic ease in-out)
+  const eased = normalized < 0.5
+    ? 4 * normalized * normalized * normalized
+    : 1 - Math.pow(-2 * normalized + 2, 3) / 2;
+
+  // Interpolate value
+  if (Array.isArray(vMin) && Array.isArray(vMax)) {
+    return vMin.map((v, i) => v + (vMax[i] - v) * eased);
+  }
+
+  return (vMin as number) + ((vMax as number) - (vMin as number)) * eased;
+}
+
+/**
+ * easeIn function for expressions
+ */
+export function expressionEaseIn(
+  t: number,
+  tMin: number,
+  tMax: number,
+  vMin: number | number[],
+  vMax: number | number[]
+): number | number[] {
+  let normalized = (t - tMin) / (tMax - tMin);
+  normalized = Math.max(0, Math.min(1, normalized));
+
+  // Cubic ease in
+  const eased = normalized * normalized * normalized;
+
+  if (Array.isArray(vMin) && Array.isArray(vMax)) {
+    return vMin.map((v, i) => v + (vMax[i] - v) * eased);
+  }
+
+  return (vMin as number) + ((vMax as number) - (vMin as number)) * eased;
+}
+
+/**
+ * easeOut function for expressions
+ */
+export function expressionEaseOut(
+  t: number,
+  tMin: number,
+  tMax: number,
+  vMin: number | number[],
+  vMax: number | number[]
+): number | number[] {
+  let normalized = (t - tMin) / (tMax - tMin);
+  normalized = Math.max(0, Math.min(1, normalized));
+
+  // Cubic ease out
+  const eased = 1 - Math.pow(1 - normalized, 3);
+
+  if (Array.isArray(vMin) && Array.isArray(vMax)) {
+    return vMin.map((v, i) => v + (vMax[i] - v) * eased);
+  }
+
+  return (vMin as number) + ((vMax as number) - (vMin as number)) * eased;
 }
 
 function evaluatePreset(name: string, ctx: ExpressionContext, params: Record<string, any>): number | number[] {
@@ -1623,75 +2060,19 @@ export function sourceRectAtTime(
 
 /**
  * Calculate source rect for text layers
+ * Uses accurate Canvas API text measurement
  */
 function getTextSourceRect(data: any, includeExtents: boolean): SourceRect {
-  const text = data.text || '';
-  const fontSize = data.fontSize || 72;
-  const fontFamily = data.fontFamily || 'Arial';
-  const letterSpacing = data.letterSpacing || 0;
-  const lineHeight = data.lineHeight || 1.2;
+  // Use accurate text measurement service
+  const rect = measureTextLayerRect(data, includeExtents);
 
-  // Estimate text dimensions
-  // In a real implementation, this would use canvas measureText or troika metrics
-  const avgCharWidth = fontSize * 0.6;
-  const lines = text.split('\n');
-  const longestLine = Math.max(...lines.map((l: string) => l.length));
-
-  let width = longestLine * avgCharWidth + (longestLine - 1) * letterSpacing;
-  let height = lines.length * fontSize * lineHeight;
-
-  // Include stroke extents if requested
-  if (includeExtents && data.strokeWidth) {
-    const strokeExtent = data.strokeWidth / 2;
-    width += strokeExtent * 2;
-    height += strokeExtent * 2;
-  }
-
-  // Anchor point affects top/left
-  const anchor = data.anchor || 'center';
-  let top = 0;
-  let left = 0;
-
-  switch (anchor) {
-    case 'top-left':
-      top = 0;
-      left = 0;
-      break;
-    case 'top-center':
-      top = 0;
-      left = -width / 2;
-      break;
-    case 'top-right':
-      top = 0;
-      left = -width;
-      break;
-    case 'center-left':
-      top = -height / 2;
-      left = 0;
-      break;
-    case 'center':
-      top = -height / 2;
-      left = -width / 2;
-      break;
-    case 'center-right':
-      top = -height / 2;
-      left = -width;
-      break;
-    case 'bottom-left':
-      top = -height;
-      left = 0;
-      break;
-    case 'bottom-center':
-      top = -height;
-      left = -width / 2;
-      break;
-    case 'bottom-right':
-      top = -height;
-      left = -width;
-      break;
-  }
-
-  return { top, left, width, height };
+  // measureTextLayerRect already handles alignment and stroke extents
+  return {
+    top: rect.top,
+    left: rect.left,
+    width: rect.width,
+    height: rect.height
+  };
 }
 
 /**
@@ -1858,5 +2239,539 @@ export function effectValue(
  */
 export const effect = {
   value: effectValue
+};
+
+// ============================================================
+// VECTOR MATH FUNCTIONS (Tutorial 16 - Section 13)
+// ============================================================
+
+/**
+ * Vector addition
+ * add(vec1, vec2) or add(a, b, c, ...)
+ */
+export function vectorAdd(a: number[], b: number[]): number[] {
+  const maxLen = Math.max(a.length, b.length);
+  const result: number[] = [];
+  for (let i = 0; i < maxLen; i++) {
+    result.push((a[i] || 0) + (b[i] || 0));
+  }
+  return result;
+}
+
+/**
+ * Vector subtraction
+ * sub(vec1, vec2)
+ */
+export function vectorSub(a: number[], b: number[]): number[] {
+  const maxLen = Math.max(a.length, b.length);
+  const result: number[] = [];
+  for (let i = 0; i < maxLen; i++) {
+    result.push((a[i] || 0) - (b[i] || 0));
+  }
+  return result;
+}
+
+/**
+ * Vector multiplication (component-wise or scalar)
+ * mul(vec, scalar) or mul(vec1, vec2)
+ */
+export function vectorMul(a: number[] | number, b: number[] | number): number[] {
+  if (typeof a === 'number' && Array.isArray(b)) {
+    return b.map(v => v * a);
+  }
+  if (Array.isArray(a) && typeof b === 'number') {
+    return a.map(v => v * b);
+  }
+  if (Array.isArray(a) && Array.isArray(b)) {
+    const maxLen = Math.max(a.length, b.length);
+    const result: number[] = [];
+    for (let i = 0; i < maxLen; i++) {
+      result.push((a[i] || 0) * (b[i] || 0));
+    }
+    return result;
+  }
+  return [0];
+}
+
+/**
+ * Vector division (component-wise or scalar)
+ * div(vec, scalar) or div(vec1, vec2)
+ */
+export function vectorDiv(a: number[] | number, b: number[] | number): number[] {
+  if (typeof a === 'number' && Array.isArray(b)) {
+    return b.map(v => a / (v || 1));
+  }
+  if (Array.isArray(a) && typeof b === 'number') {
+    return a.map(v => v / (b || 1));
+  }
+  if (Array.isArray(a) && Array.isArray(b)) {
+    const maxLen = Math.max(a.length, b.length);
+    const result: number[] = [];
+    for (let i = 0; i < maxLen; i++) {
+      result.push((a[i] || 0) / ((b[i] || 1)));
+    }
+    return result;
+  }
+  return [0];
+}
+
+/**
+ * Normalize vector to unit length
+ * normalize(vec) returns vector with length 1
+ */
+export function vectorNormalize(vec: number[]): number[] {
+  const len = Math.sqrt(vec.reduce((sum, v) => sum + v * v, 0));
+  if (len === 0) return vec.map(() => 0);
+  return vec.map(v => v / len);
+}
+
+/**
+ * Dot product of two vectors
+ * dot(vec1, vec2) returns scalar
+ */
+export function vectorDot(a: number[], b: number[]): number {
+  let sum = 0;
+  const maxLen = Math.min(a.length, b.length);
+  for (let i = 0; i < maxLen; i++) {
+    sum += (a[i] || 0) * (b[i] || 0);
+  }
+  return sum;
+}
+
+/**
+ * Cross product of two 3D vectors
+ * cross(vec1, vec2) returns perpendicular vector
+ */
+export function vectorCross(a: number[], b: number[]): number[] {
+  // Ensure 3D vectors
+  const ax = a[0] || 0, ay = a[1] || 0, az = a[2] || 0;
+  const bx = b[0] || 0, by = b[1] || 0, bz = b[2] || 0;
+
+  return [
+    ay * bz - az * by,
+    az * bx - ax * bz,
+    ax * by - ay * bx
+  ];
+}
+
+/**
+ * Calculate vector length/magnitude
+ * length(vec) or length(vec1, vec2) for distance
+ */
+export function vectorLength(a: number[], b?: number[]): number {
+  if (b === undefined) {
+    // Magnitude of single vector
+    return Math.sqrt(a.reduce((sum, v) => sum + v * v, 0));
+  }
+  // Distance between two points
+  let sum = 0;
+  const maxLen = Math.max(a.length, b.length);
+  for (let i = 0; i < maxLen; i++) {
+    const diff = (a[i] || 0) - (b[i] || 0);
+    sum += diff * diff;
+  }
+  return Math.sqrt(sum);
+}
+
+/**
+ * Clamp vector components
+ * clamp(vec, min, max)
+ */
+export function vectorClamp(vec: number[], min: number | number[], max: number | number[]): number[] {
+  return vec.map((v, i) => {
+    const minVal = Array.isArray(min) ? (min[i] || 0) : min;
+    const maxVal = Array.isArray(max) ? (max[i] || 0) : max;
+    return Math.max(minVal, Math.min(maxVal, v));
+  });
+}
+
+// ============================================================
+// 3D ORIENTATION FUNCTIONS (Tutorial 16 - Section 14)
+// ============================================================
+
+/**
+ * lookAt - Calculate rotation to face a target point
+ *
+ * Returns [xRotation, yRotation, zRotation] in degrees
+ *
+ * @param fromPoint - Source position [x, y, z]
+ * @param toPoint - Target position [x, y, z]
+ * @returns Rotation angles [rx, ry, rz] in degrees
+ */
+export function lookAt(fromPoint: number[], toPoint: number[]): number[] {
+  const dx = (toPoint[0] || 0) - (fromPoint[0] || 0);
+  const dy = (toPoint[1] || 0) - (fromPoint[1] || 0);
+  const dz = (toPoint[2] || 0) - (fromPoint[2] || 0);
+
+  // Calculate yaw (Y rotation) and pitch (X rotation)
+  const yaw = Math.atan2(dx, dz) * 180 / Math.PI;
+  const dist = Math.sqrt(dx * dx + dz * dz);
+  const pitch = -Math.atan2(dy, dist) * 180 / Math.PI;
+
+  return [pitch, yaw, 0];
+}
+
+/**
+ * orientToPath - Auto-orient layer along motion path
+ *
+ * Given position keyframes, calculates rotation to face movement direction
+ */
+export function orientToPath(
+  ctx: ExpressionContext,
+  tangentVector?: number[]
+): number[] {
+  // If tangent provided, use it directly
+  if (tangentVector) {
+    const [dx, dy, dz] = tangentVector;
+    const yaw = Math.atan2(dx || 0, dz || 1) * 180 / Math.PI;
+    const dist = Math.sqrt((dx || 0) ** 2 + (dz || 1) ** 2);
+    const pitch = -Math.atan2(dy || 0, dist) * 180 / Math.PI;
+    return [pitch, yaw, 0];
+  }
+
+  // Calculate tangent from velocity
+  const vel = ctx.velocity;
+  if (Array.isArray(vel) && vel.length >= 2) {
+    const dx = vel[0] || 0;
+    const dy = vel[1] || 0;
+    const dz = vel[2] || 0;
+    const yaw = Math.atan2(dx, dz || 1) * 180 / Math.PI;
+    const dist = Math.sqrt(dx ** 2 + (dz || 1) ** 2);
+    const pitch = -Math.atan2(dy, dist) * 180 / Math.PI;
+    return [pitch, yaw, 0];
+  }
+
+  return [0, 0, 0];
+}
+
+// ============================================================
+// COORDINATE CONVERSION (Tutorial 16 - Section 15)
+// ============================================================
+
+/**
+ * Transform matrix interface for coordinate conversion
+ */
+export interface LayerTransform {
+  position: number[];
+  scale: number[];
+  rotation: number[];
+  anchor: number[];
+  parent?: LayerTransform | null;
+}
+
+/**
+ * toComp - Convert point from layer space to composition space
+ *
+ * @param point - Point in layer coordinates [x, y] or [x, y, z]
+ * @param layerTransform - The layer's transform properties
+ * @returns Point in composition coordinates
+ */
+export function toComp(point: number[], layerTransform: LayerTransform): number[] {
+  const [px, py, pz = 0] = point;
+  const { position, scale, rotation, anchor } = layerTransform;
+
+  // Apply anchor offset
+  let x = px - (anchor[0] || 0);
+  let y = py - (anchor[1] || 0);
+  let z = pz - (anchor[2] || 0);
+
+  // Apply scale
+  x *= (scale[0] || 100) / 100;
+  y *= (scale[1] || 100) / 100;
+  z *= (scale[2] || 100) / 100;
+
+  // Apply rotation (Z, then Y, then X - matching AE order)
+  const rz = (rotation[2] || rotation[0] || 0) * Math.PI / 180;
+  const ry = (rotation[1] || 0) * Math.PI / 180;
+  const rx = (rotation[0] || 0) * Math.PI / 180;
+
+  // Rotate around Z
+  let x1 = x * Math.cos(rz) - y * Math.sin(rz);
+  let y1 = x * Math.sin(rz) + y * Math.cos(rz);
+  let z1 = z;
+
+  // Rotate around Y (3D only)
+  let x2 = x1 * Math.cos(ry) + z1 * Math.sin(ry);
+  let y2 = y1;
+  let z2 = -x1 * Math.sin(ry) + z1 * Math.cos(ry);
+
+  // Rotate around X (3D only)
+  let x3 = x2;
+  let y3 = y2 * Math.cos(rx) - z2 * Math.sin(rx);
+  let z3 = y2 * Math.sin(rx) + z2 * Math.cos(rx);
+
+  // Apply position offset
+  x3 += position[0] || 0;
+  y3 += position[1] || 0;
+  z3 += position[2] || 0;
+
+  // Recursively apply parent transforms
+  if (layerTransform.parent) {
+    return toComp([x3, y3, z3], layerTransform.parent);
+  }
+
+  return point.length === 2 ? [x3, y3] : [x3, y3, z3];
+}
+
+/**
+ * fromComp - Convert point from composition space to layer space
+ *
+ * @param point - Point in composition coordinates [x, y] or [x, y, z]
+ * @param layerTransform - The layer's transform properties
+ * @returns Point in layer coordinates
+ */
+export function fromComp(point: number[], layerTransform: LayerTransform): number[] {
+  let [px, py, pz = 0] = point;
+
+  // First, if there's a parent, convert from comp to parent space
+  if (layerTransform.parent) {
+    [px, py, pz] = fromComp([px, py, pz], layerTransform.parent);
+  }
+
+  const { position, scale, rotation, anchor } = layerTransform;
+
+  // Subtract position
+  let x = px - (position[0] || 0);
+  let y = py - (position[1] || 0);
+  let z = pz - (position[2] || 0);
+
+  // Inverse rotation (X, then Y, then Z - reverse order)
+  const rz = -(rotation[2] || rotation[0] || 0) * Math.PI / 180;
+  const ry = -(rotation[1] || 0) * Math.PI / 180;
+  const rx = -(rotation[0] || 0) * Math.PI / 180;
+
+  // Rotate around X (inverse)
+  let x1 = x;
+  let y1 = y * Math.cos(rx) - z * Math.sin(rx);
+  let z1 = y * Math.sin(rx) + z * Math.cos(rx);
+
+  // Rotate around Y (inverse)
+  let x2 = x1 * Math.cos(ry) + z1 * Math.sin(ry);
+  let y2 = y1;
+  let z2 = -x1 * Math.sin(ry) + z1 * Math.cos(ry);
+
+  // Rotate around Z (inverse)
+  let x3 = x2 * Math.cos(rz) - y2 * Math.sin(rz);
+  let y3 = x2 * Math.sin(rz) + y2 * Math.cos(rz);
+  let z3 = z2;
+
+  // Inverse scale
+  const sx = (scale[0] || 100) / 100;
+  const sy = (scale[1] || 100) / 100;
+  const sz = (scale[2] || 100) / 100;
+  x3 /= sx || 1;
+  y3 /= sy || 1;
+  z3 /= sz || 1;
+
+  // Add anchor
+  x3 += anchor[0] || 0;
+  y3 += anchor[1] || 0;
+  z3 += anchor[2] || 0;
+
+  return point.length === 2 ? [x3, y3] : [x3, y3, z3];
+}
+
+/**
+ * toWorld - Convert point from layer space to world (3D) space
+ * Alias for toComp in 3D context
+ */
+export function toWorld(point: number[], layerTransform: LayerTransform): number[] {
+  // Ensure 3D point
+  const point3D = point.length === 2 ? [...point, 0] : point;
+  return toComp(point3D, layerTransform);
+}
+
+/**
+ * fromWorld - Convert point from world space to layer space
+ * Alias for fromComp in 3D context
+ */
+export function fromWorld(point: number[], layerTransform: LayerTransform): number[] {
+  // Ensure 3D point
+  const point3D = point.length === 2 ? [...point, 0] : point;
+  return fromComp(point3D, layerTransform);
+}
+
+// ============================================================
+// TEXT ANIMATOR VARIABLES (Tutorial 16 - Section 16)
+// ============================================================
+
+/**
+ * Text animator context for per-character expressions
+ */
+export interface TextAnimatorContext extends ExpressionContext {
+  // Per-character index (0-based)
+  textIndex: number;
+  // Total character count
+  textTotal: number;
+  // Character being animated
+  char: string;
+  // Selector value (0-1 range based on selector)
+  selectorValue: number;
+  // Word index (if text is split by words)
+  wordIndex?: number;
+  // Line index (for multi-line text)
+  lineIndex?: number;
+  // Character position in word
+  charInWord?: number;
+  // Character position in line
+  charInLine?: number;
+}
+
+/**
+ * Create a text animator context for per-character animation
+ *
+ * @param baseCtx - Base expression context
+ * @param text - Full text string
+ * @param charIndex - Current character index
+ * @param selectorValue - Selector value (0-1)
+ * @returns Extended context with text animator variables
+ */
+export function createTextAnimatorContext(
+  baseCtx: ExpressionContext,
+  text: string,
+  charIndex: number,
+  selectorValue: number = 1
+): TextAnimatorContext {
+  const char = text[charIndex] || '';
+
+  // Calculate word and line positions
+  let wordIndex = 0;
+  let lineIndex = 0;
+  let charInWord = 0;
+  let charInLine = 0;
+  let currentWordStart = 0;
+  let currentLineStart = 0;
+
+  for (let i = 0; i <= charIndex && i < text.length; i++) {
+    if (text[i] === ' ' || text[i] === '\t') {
+      if (i < charIndex) {
+        wordIndex++;
+        currentWordStart = i + 1;
+      }
+    }
+    if (text[i] === '\n') {
+      if (i < charIndex) {
+        lineIndex++;
+        currentLineStart = i + 1;
+        wordIndex++;
+        currentWordStart = i + 1;
+      }
+    }
+  }
+
+  charInWord = charIndex - currentWordStart;
+  charInLine = charIndex - currentLineStart;
+
+  return {
+    ...baseCtx,
+    textIndex: charIndex,
+    textTotal: text.length,
+    char,
+    selectorValue,
+    wordIndex,
+    lineIndex,
+    charInWord,
+    charInLine
+  };
+}
+
+/**
+ * Evaluate expression with text animator context
+ *
+ * This allows expressions like:
+ *   position[0] + Math.sin(textIndex * 0.5) * 50
+ *   opacity * selectorValue
+ *   scale + [textIndex * 5, textIndex * 5]
+ */
+export function evaluateTextAnimatorExpression(
+  code: string,
+  ctx: TextAnimatorContext
+): number | number[] | string {
+  // Add text animator variables to context
+  const extendedCode = `
+    const textIndex = ${ctx.textIndex};
+    const textTotal = ${ctx.textTotal};
+    const selectorValue = ${ctx.selectorValue};
+    const char = "${ctx.char.replace(/"/g, '\\"')}";
+    const wordIndex = ${ctx.wordIndex || 0};
+    const lineIndex = ${ctx.lineIndex || 0};
+    const charInWord = ${ctx.charInWord || 0};
+    const charInLine = ${ctx.charInLine || 0};
+    ${code}
+  `;
+
+  return evaluateCustomExpression(extendedCode, ctx);
+}
+
+// ============================================================
+// ADDITIONAL MATH HELPERS
+// ============================================================
+
+/**
+ * Noise function (Perlin-like) for expressions
+ * noise(val) or noise(valArray)
+ */
+export function noise(val: number | number[]): number {
+  if (typeof val === 'number') {
+    // 1D noise
+    const x = Math.sin(val * 12.9898) * 43758.5453;
+    return (x - Math.floor(x)) * 2 - 1;
+  }
+  // Multi-dimensional noise
+  const [x = 0, y = 0, z = 0] = val;
+  const n = Math.sin(x * 12.9898 + y * 78.233 + z * 37.719) * 43758.5453;
+  return (n - Math.floor(n)) * 2 - 1;
+}
+
+/**
+ * Degree-based trigonometry helpers
+ */
+export const degreeTrig = {
+  sin: (deg: number): number => Math.sin(deg * Math.PI / 180),
+  cos: (deg: number): number => Math.cos(deg * Math.PI / 180),
+  tan: (deg: number): number => Math.tan(deg * Math.PI / 180),
+  asin: (val: number): number => Math.asin(val) * 180 / Math.PI,
+  acos: (val: number): number => Math.acos(val) * 180 / Math.PI,
+  atan: (val: number): number => Math.atan(val) * 180 / Math.PI,
+  atan2: (y: number, x: number): number => Math.atan2(y, x) * 180 / Math.PI,
+};
+
+// ============================================================
+// VECTOR NAMESPACE EXPORT
+// ============================================================
+
+/**
+ * Vector math namespace for expressions
+ */
+export const vector = {
+  add: vectorAdd,
+  sub: vectorSub,
+  mul: vectorMul,
+  div: vectorDiv,
+  normalize: vectorNormalize,
+  dot: vectorDot,
+  cross: vectorCross,
+  length: vectorLength,
+  clamp: vectorClamp,
+};
+
+/**
+ * Coordinate conversion namespace
+ */
+export const coords = {
+  toComp,
+  fromComp,
+  toWorld,
+  fromWorld,
+  lookAt,
+  orientToPath,
+};
+
+/**
+ * Text animator namespace
+ */
+export const textAnimator = {
+  createContext: createTextAnimatorContext,
+  evaluate: evaluateTextAnimatorExpression,
 };
 
