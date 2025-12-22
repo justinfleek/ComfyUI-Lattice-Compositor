@@ -726,6 +726,13 @@ function handleOutsideClick(e: MouseEvent) {
     hideContextMenu();
   }
   if (showColorPicker.value) {
+    // Check if click was inside color picker
+    const target = e.target as HTMLElement;
+    const colorPicker = document.querySelector('.layer-color-picker');
+    const labelBox = target.closest('.label-box');
+    if (colorPicker?.contains(target) || labelBox) {
+      return; // Don't close if clicked inside picker or on label box
+    }
     closeColorPicker();
   }
 }

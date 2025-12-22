@@ -786,6 +786,7 @@ function onDragStart(item: ProjectItem, event: DragEvent) {
 .dropdown-menu button {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 12px;
   width: 100%;
   padding: 10px 16px;

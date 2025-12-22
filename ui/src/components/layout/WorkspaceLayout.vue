@@ -3296,14 +3296,13 @@ onUnmounted(() => {
   height: 100%;
 }
 
-/* Panels - floating island design */
+/* Panels - clean flat design */
 .panel {
   display: flex;
   flex-direction: column;
   height: 100%;
   background: var(--weyl-surface-1, #121212);
   border-radius: var(--weyl-radius-sm, 2px);
-  box-shadow: var(--weyl-shadow-panel, 0 4px 16px rgba(0,0,0,0.3));
   overflow: hidden;
 }
 

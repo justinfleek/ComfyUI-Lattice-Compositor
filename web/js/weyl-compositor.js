@@ -33330,7 +33330,7 @@ const _sfc_main$Y = /* @__PURE__ */ defineComponent({
   }
 });
 
-const ProjectPanel = /* @__PURE__ */ _export_sfc(_sfc_main$Y, [["__scopeId", "data-v-8fb63dda"]]);
+const ProjectPanel = /* @__PURE__ */ _export_sfc(_sfc_main$Y, [["__scopeId", "data-v-67bde8ef"]]);
 
 const _hoisted_1$W = {
   class: "effects-panel",
@@ -91326,6 +91326,12 @@ const _sfc_main$g = /* @__PURE__ */ defineComponent({
         hideContextMenu();
       }
       if (showColorPicker.value) {
+        const target = e.target;
+        const colorPicker = document.querySelector(".layer-color-picker");
+        const labelBox = target.closest(".label-box");
+        if (colorPicker?.contains(target) || labelBox) {
+          return;
+        }
         closeColorPicker();
       }
     }
@@ -91651,7 +91657,7 @@ const _sfc_main$g = /* @__PURE__ */ defineComponent({
   }
 });
 
-const EnhancedLayerTrack = /* @__PURE__ */ _export_sfc(_sfc_main$g, [["__scopeId", "data-v-9e65ac0d"]]);
+const EnhancedLayerTrack = /* @__PURE__ */ _export_sfc(_sfc_main$g, [["__scopeId", "data-v-bd494535"]]);
 
 const _hoisted_1$e = { class: "composition-tabs" };
 const _hoisted_2$e = {
@@ -92078,19 +92084,31 @@ const _sfc_main$e = /* @__PURE__ */ defineComponent({
             } else if (asset.type === "image") {
               const img = new Image();
               img.onload = () => {
+                console.log("[TimelinePanel] Image loaded:", img.naturalWidth, "x", img.naturalHeight);
                 const compId = store.activeCompositionId;
                 if (compId) {
+                  console.log("[TimelinePanel] Resizing comp", compId, "to", img.naturalWidth, "x", img.naturalHeight);
                   store.updateCompositionSettings(compId, {
                     width: img.naturalWidth,
                     height: img.naturalHeight
                   });
+                  console.log("[TimelinePanel] Comp resized. New size:", store.width, "x", store.height);
                 }
                 const layer = store.createLayer("image", item.name);
                 if (layer) {
                   layer.data.assetId = item.id;
                   layer.data.source = asset.data;
                   store.selectLayer(layer.id);
-                  console.log("[TimelinePanel] Created image layer, resized comp to:", img.naturalWidth, "x", img.naturalHeight);
+                  console.log("[TimelinePanel] Created image layer:", layer.id);
+                }
+              };
+              img.onerror = (e) => {
+                console.error("[TimelinePanel] Failed to load image:", asset.data, e);
+                const layer = store.createLayer("image", item.name);
+                if (layer) {
+                  layer.data.assetId = item.id;
+                  layer.data.source = asset.data;
+                  store.selectLayer(layer.id);
                 }
               };
               img.src = asset.data;
@@ -92616,22 +92634,25 @@ const _sfc_main$e = /* @__PURE__ */ defineComponent({
             style: normalizeStyle({ width: sidebarWidth.value + "px" })
           }, [
             createBaseVNode("div", _hoisted_14$9, [
-              _cache[44] || (_cache[44] = createStaticVNode('<div class="col-header col-av-features" data-v-5ebd3cf4><span class="header-icon" title="Video" data-v-5ebd3cf4>👁</span><span class="header-icon" title="Audio" data-v-5ebd3cf4>🔊</span><span class="header-icon" title="Isolate" data-v-5ebd3cf4>●</span><span class="header-icon" title="Lock" data-v-5ebd3cf4>🔒</span></div><div class="col-header col-number" data-v-5ebd3cf4>#</div><div class="col-header col-name" data-v-5ebd3cf4>Source Name</div>', 3)),
+              _cache[44] || (_cache[44] = createStaticVNode('<div class="col-header col-av-features" data-v-d3381859><span class="header-icon" title="Video" data-v-d3381859>👁</span><span class="header-icon" title="Audio" data-v-d3381859>🔊</span><span class="header-icon" title="Isolate" data-v-d3381859>●</span><span class="header-icon" title="Lock" data-v-d3381859>🔒</span></div><div class="col-header col-number" data-v-d3381859>#</div><div class="col-header col-name" data-v-d3381859>Source Name</div>', 3)),
               createBaseVNode("div", _hoisted_15$8, [
                 createBaseVNode("span", {
                   class: normalizeClass(["header-icon clickable", { active: unref(store).hideMinimizedLayers }]),
                   title: "Hide Minimized Layers",
                   onClick: _cache[22] || (_cache[22] = ($event) => unref(store).toggleHideMinimizedLayers())
                 }, "🙈", 2),
-                _cache[43] || (_cache[43] = createStaticVNode('<span class="header-icon" title="Flatten Transform" data-v-5ebd3cf4>☀</span><span class="header-icon" title="Quality" data-v-5ebd3cf4>◐</span><span class="header-icon" title="Effects" data-v-5ebd3cf4>fx</span><span class="header-icon" title="Frame Blending" data-v-5ebd3cf4>⊞</span><span class="header-icon" title="Motion Blur" data-v-5ebd3cf4>◔</span><span class="header-icon" title="Adjustment Layer" data-v-5ebd3cf4>◐</span><span class="header-icon" title="3D Layer" data-v-5ebd3cf4>⬡</span>', 7))
+                _cache[43] || (_cache[43] = createStaticVNode('<span class="header-icon" title="Flatten Transform" data-v-d3381859>☀</span><span class="header-icon" title="Quality" data-v-d3381859>◐</span><span class="header-icon" title="Effects" data-v-d3381859>fx</span><span class="header-icon" title="Frame Blending" data-v-d3381859>⊞</span><span class="header-icon" title="Motion Blur" data-v-d3381859>◔</span><span class="header-icon" title="Adjustment Layer" data-v-d3381859>◐</span><span class="header-icon" title="3D Layer" data-v-d3381859>⬡</span>', 7))
               ]),
               _cache[45] || (_cache[45] = createBaseVNode("div", { class: "col-header col-parent" }, "Parent & Link", -1))
             ]),
             createBaseVNode("div", {
-              class: "sidebar-scroll-area",
+              class: normalizeClass(["sidebar-scroll-area", { "drag-over": isDragOver.value }]),
               ref_key: "sidebarScrollRef",
               ref: sidebarScrollRef,
-              onScroll: syncSidebarScroll
+              onScroll: syncSidebarScroll,
+              onDragover: withModifiers(onDragOver, ["prevent"]),
+              onDragleave: onDragLeave,
+              onDrop
             }, [
               (openBlock(true), createElementBlock(Fragment, null, renderList(filteredLayers.value, (layer, idx) => {
                 return openBlock(), createBlock(EnhancedLayerTrack, {
@@ -92647,7 +92668,7 @@ const _sfc_main$e = /* @__PURE__ */ defineComponent({
                   onUpdateLayer: updateLayer
                 }, null, 8, ["layer", "index", "isExpandedExternal", "allLayers", "gridStyle"]);
               }), 128))
-            ], 544)
+            ], 34)
           ], 4),
           createBaseVNode("div", {
             class: "sidebar-resizer",
@@ -92742,7 +92763,7 @@ const _sfc_main$e = /* @__PURE__ */ defineComponent({
   }
 });
 
-const TimelinePanel = /* @__PURE__ */ _export_sfc(_sfc_main$e, [["__scopeId", "data-v-5ebd3cf4"]]);
+const TimelinePanel = /* @__PURE__ */ _export_sfc(_sfc_main$e, [["__scopeId", "data-v-d3381859"]]);
 
 const _hoisted_1$c = { class: "curve-editor" };
 const _hoisted_2$c = { class: "curve-header" };
@@ -103943,7 +103964,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
   }
 });
 
-const WorkspaceLayout = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-39bb4d6e"]]);
+const WorkspaceLayout = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-e08ef2c6"]]);
 
 const _sfc_main = /* @__PURE__ */ defineComponent({
   __name: "App",

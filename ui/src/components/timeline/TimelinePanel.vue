@@ -120,7 +120,11 @@
           </div>
           <div class="col-header col-parent">Parent & Link</div>
         </div>
-        <div class="sidebar-scroll-area" ref="sidebarScrollRef" @scroll="syncSidebarScroll">
+        <div class="sidebar-scroll-area" ref="sidebarScrollRef" @scroll="syncSidebarScroll"
+             @dragover.prevent="onDragOver"
+             @dragleave="onDragLeave"
+             @drop="onDrop"
+             :class="{ 'drag-over': isDragOver }">
           <EnhancedLayerTrack
             v-for="(layer, idx) in filteredLayers"
             :key="layer.id"
@@ -394,13 +398,17 @@ function onDrop(event: DragEvent) {
           // Load image to get dimensions and resize composition
           const img = new Image();
           img.onload = () => {
+            console.log('[TimelinePanel] Image loaded:', img.naturalWidth, 'x', img.naturalHeight);
+
             // Resize composition to match image dimensions
             const compId = store.activeCompositionId;
             if (compId) {
+              console.log('[TimelinePanel] Resizing comp', compId, 'to', img.naturalWidth, 'x', img.naturalHeight);
               store.updateCompositionSettings(compId, {
                 width: img.naturalWidth,
                 height: img.naturalHeight
               });
+              console.log('[TimelinePanel] Comp resized. New size:', store.width, 'x', store.height);
             }
 
             // Create the layer after resizing
@@ -409,7 +417,17 @@ function onDrop(event: DragEvent) {
               (layer.data as any).assetId = item.id;
               (layer.data as any).source = asset.data;
               store.selectLayer(layer.id);
-              console.log('[TimelinePanel] Created image layer, resized comp to:', img.naturalWidth, 'x', img.naturalHeight);
+              console.log('[TimelinePanel] Created image layer:', layer.id);
+            }
+          };
+          img.onerror = (e) => {
+            console.error('[TimelinePanel] Failed to load image:', asset.data, e);
+            // Still create the layer even if image fails to load for dimensions
+            const layer = store.createLayer('image', item.name);
+            if (layer) {
+              (layer.data as any).assetId = item.id;
+              (layer.data as any).source = asset.data;
+              store.selectLayer(layer.id);
             }
           };
           img.src = asset.data;
@@ -805,6 +823,11 @@ watch(() => [computedWidthStyle.value, zoomPercent.value, store.frameCount], () 
 .header-icon.clickable:hover { color: #aaa; }
 .header-icon.clickable.active { color: #4a90d9; }
 .sidebar-scroll-area { flex: 1; overflow-y: auto; overflow-x: hidden; }
+.sidebar-scroll-area.drag-over {
+  background-color: rgba(74, 144, 217, 0.15);
+  outline: 2px dashed #4a90d9;
+  outline-offset: -2px;
+}
 
 .sidebar-resizer { width: 4px; background: #111; cursor: col-resize; flex-shrink: 0; z-index: 15; }
 .sidebar-resizer:hover { background: #4a90d9; }
