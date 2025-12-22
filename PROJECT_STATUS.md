@@ -209,7 +209,9 @@ Professional-grade infrastructure implemented:
 
 | Bug | Location | Status | Notes |
 |-----|----------|--------|-------|
-| Particle Math.random() | particleSystem.ts | **OPEN** | Breaks determinism |
+| Particle Math.random() | particleSystem.ts | **FIXED** | Uses SeededRandom |
+| Effect scatter determinism | generateRenderer.ts | **FIXED** | Uses Mulberry32 seeded RNG |
+| Expression gaussRandom | expressions.ts | **FIXED** | Uses seeded random |
 | Scroll sync incomplete | TimelinePanel.vue | **OPEN** | Sidebar independent |
 | Input bleed to track | PropertyTrack.vue | **INVESTIGATING** | layoutMode not respected |
 
@@ -217,9 +219,9 @@ Professional-grade infrastructure implemented:
 
 | Bug | Location | Status | Notes |
 |-----|----------|--------|-------|
-| Keyframe drag non-functional | PropertyTrack.vue | **OPEN** | Only selects |
-| No delete layer UI | TimelinePanel.vue | **OPEN** | Action exists, no button |
-| Graph handle drag broken | GraphEditorCanvas.vue | **OPEN** | Direct mutation |
+| Keyframe drag non-functional | PropertyTrack.vue | **FIXED** | Calls store.moveKeyframe() |
+| No delete layer UI | TimelinePanel.vue | **FIXED** | Button + context menu exist |
+| Graph handle drag broken | GraphEditorCanvas.vue | **FIXED** | Calls store.setKeyframeHandle() |
 | Playhead desync | TimelinePanel.vue | **INVESTIGATING** | Separate scroll containers |
 
 ### P2 - Minor

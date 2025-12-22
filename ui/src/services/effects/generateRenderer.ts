@@ -248,14 +248,25 @@ export function gradientRampRenderer(
   output.ctx.fillStyle = gradient;
   output.ctx.fillRect(0, 0, width, height);
 
-  // Apply scatter (noise dithering)
+  // Apply scatter (noise dithering) - DETERMINISTIC
   if (scatter > 0) {
     const outputData = output.ctx.getImageData(0, 0, width, height);
     const dst = outputData.data;
     const scatterAmount = scatter * 25;
+    const frame = (params._frame as number) ?? 0;
+
+    // Mulberry32 seeded random for deterministic scatter
+    const seededRandom = (seed: number) => {
+      let t = seed + 0x6D2B79F5;
+      t = Math.imul(t ^ t >>> 15, t | 1);
+      t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
 
     for (let i = 0; i < dst.length; i += 4) {
-      const noise = (Math.random() - 0.5) * scatterAmount;
+      // Seed based on pixel index and frame for consistent results
+      const pixelSeed = (frame * 1000003) + (i / 4);
+      const noise = (seededRandom(pixelSeed) - 0.5) * scatterAmount;
       dst[i] = Math.max(0, Math.min(255, dst[i] + noise));
       dst[i + 1] = Math.max(0, Math.min(255, dst[i + 1] + noise));
       dst[i + 2] = Math.max(0, Math.min(255, dst[i + 2] + noise));

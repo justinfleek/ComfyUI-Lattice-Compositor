@@ -932,12 +932,18 @@ export const mathExpressions = {
   },
 
   /**
-   * Gaussian random (normal distribution)
+   * Gaussian random (normal distribution) - DETERMINISTIC
+   * Uses seeded random for reproducible results
    */
-  gaussRandom(mean: number = 0, stdDev: number = 1): number {
-    // Box-Muller transform
-    const u1 = Math.random();
-    const u2 = Math.random();
+  gaussRandom(mean: number = 0, stdDev: number = 1, seed: number = 12345): number {
+    // Box-Muller transform with seeded random
+    // Use different seeds for u1 and u2 to avoid correlation
+    const seededRand = (s: number) => {
+      const x = Math.sin(s * 12.9898) * 43758.5453;
+      return x - Math.floor(x);
+    };
+    const u1 = Math.max(0.0001, seededRand(seed)); // Avoid log(0)
+    const u2 = seededRand(seed + 1);
     const z0 = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
     return mean + z0 * stdDev;
   },
