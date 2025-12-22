@@ -103001,9 +103001,9 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
           createVNode(unref(Pe), { class: "default-theme horizontal-split" }, {
             default: withCtx(() => [
               createVNode(unref(ge), {
-                size: 8,
-                "min-size": 6,
-                "max-size": 15
+                size: 14,
+                "min-size": 10,
+                "max-size": 20
               }, {
                 default: withCtx(() => [
                   createBaseVNode("div", _hoisted_3, [
@@ -103052,7 +103052,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
                 _: 1
               }),
               createVNode(unref(ge), {
-                size: 68,
+                size: 62,
                 "min-size": 45
               }, {
                 default: withCtx(() => [
@@ -103285,7 +103285,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
               }),
               createVNode(unref(ge), {
                 size: 24,
-                "min-size": 18,
+                "min-size": 16,
                 "max-size": 35
               }, {
                 default: withCtx(() => [
@@ -103295,8 +103295,8 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
                   }, {
                     default: withCtx(() => [
                       createVNode(unref(ge), {
-                        size: 70,
-                        "min-size": 40
+                        size: 45,
+                        "min-size": 25
                       }, {
                         default: withCtx(() => [
                           createBaseVNode("div", _hoisted_26, [
@@ -103370,8 +103370,8 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
                         _: 1
                       }),
                       createVNode(unref(ge), {
-                        size: 30,
-                        "min-size": 20
+                        size: 55,
+                        "min-size": 30
                       }, {
                         default: withCtx(() => [
                           createBaseVNode("div", _hoisted_28, [
@@ -103479,7 +103479,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
   }
 });
 
-const WorkspaceLayout = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-c235fe78"]]);
+const WorkspaceLayout = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-59edb9b2"]]);
 
 const _sfc_main = /* @__PURE__ */ defineComponent({
   __name: "App",

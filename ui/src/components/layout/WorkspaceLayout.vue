@@ -36,8 +36,8 @@
     <!-- Main Workspace with Splitpanes -->
     <div class="workspace-content">
       <Splitpanes class="default-theme horizontal-split">
-        <!-- Left Panel: Project/Effects (compact) -->
-        <Pane :size="8" :min-size="6" :max-size="15">
+        <!-- Left Panel: Project/Effects -->
+        <Pane :size="14" :min-size="10" :max-size="20">
           <div class="panel left-panel">
             <div class="panel-tabs" role="tablist" aria-label="Left panel tabs">
               <button
@@ -83,8 +83,8 @@
           </div>
         </Pane>
 
-        <!-- Center: Viewport + Timeline (extended for more timeline room) -->
-        <Pane :size="68" :min-size="45">
+        <!-- Center: Viewport + Timeline -->
+        <Pane :size="62" :min-size="45">
           <Splitpanes horizontal class="default-theme">
             <!-- Viewport -->
             <Pane :size="65" :min-size="20">
@@ -237,10 +237,10 @@
         </Pane>
 
         <!-- Right Panel: Stacked Collapsible Panels -->
-        <Pane :size="24" :min-size="18" :max-size="35">
+        <Pane :size="24" :min-size="16" :max-size="35">
           <Splitpanes horizontal class="default-theme right-splitpanes">
             <!-- Main Properties Section -->
-            <Pane :size="70" :min-size="40">
+            <Pane :size="45" :min-size="25">
               <div class="panel right-panel stacked-panels">
                 <div class="panel-content">
                   <!-- Properties Panel -->
@@ -280,7 +280,7 @@
             </Pane>
 
             <!-- AI Section (Bottom) -->
-            <Pane :size="30" :min-size="20">
+            <Pane :size="55" :min-size="30">
               <div class="panel ai-section">
                 <div class="ai-section-header">
                   <span class="ai-section-title">AI Tools</span>
