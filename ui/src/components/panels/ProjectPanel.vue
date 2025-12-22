@@ -7,18 +7,18 @@
         <div class="dropdown-container">
           <button @click="showNewMenu = !showNewMenu" title="New Item">+</button>
           <div v-if="showNewMenu" class="dropdown-menu">
-            <button @click="createNewComposition">🎬 New Composition</button>
-            <button @click="createNewFolder">📁 New Folder</button>
+            <button @click="createNewComposition"><span class="menu-icon">🎬</span> New Composition</button>
+            <button @click="createNewFolder"><span class="menu-icon">📁</span> New Folder</button>
             <hr class="menu-divider" />
-            <button @click="createNewSolid">⬜ New Solid</button>
-            <button @click="createNewText">T New Text</button>
-            <button @click="createNewControl">□ New Control</button>
-            <button @click="createNewSpline">✏ New Spline</button>
-            <button @click="createNewModel">🧊 New 3D Model</button>
-            <button @click="createNewPointCloud">☁ New Point Cloud</button>
+            <button @click="createNewSolid"><span class="menu-icon">⬜</span> New Solid</button>
+            <button @click="createNewText"><span class="menu-icon">🔤</span> New Text</button>
+            <button @click="createNewControl"><span class="menu-icon">⊕</span> New Control</button>
+            <button @click="createNewSpline"><span class="menu-icon">✏️</span> New Spline</button>
+            <button @click="createNewModel"><span class="menu-icon">🧊</span> New 3D Model</button>
+            <button @click="createNewPointCloud"><span class="menu-icon">☁️</span> New Point Cloud</button>
             <hr class="menu-divider" />
-            <button @click="openDecomposeDialog">✨ AI Layer Decompose</button>
-            <button @click="openVectorizeDialog">✒ Vectorize Image</button>
+            <button @click="openDecomposeDialog"><span class="menu-icon">✨</span> AI Layer Decompose</button>
+            <button @click="openVectorizeDialog"><span class="menu-icon">✒️</span> Vectorize Image</button>
           </div>
         </div>
         <button @click="showSearch = !showSearch" title="Search">🔍</button>
@@ -212,6 +212,10 @@ const hasSelectedSplineLayer = computed(() => {
   return selectedLayer?.type === 'spline';
 });
 
+// Reactive storage for footage and solids items (persists across re-renders)
+const footageItems = ref<ProjectItem[]>([]);
+const solidItems = ref<ProjectItem[]>([]);
+
 // Folders computed from store - reactively updates when compositions change
 const folders = computed<Folder[]>(() => {
   // Get all compositions from the store
@@ -242,12 +246,12 @@ const folders = computed<Folder[]>(() => {
     {
       id: 'footage',
       name: 'Footage',
-      items: []
+      items: footageItems.value
     },
     {
       id: 'solids',
       name: 'Solids',
-      items: []
+      items: solidItems.value
     }
   ];
 
@@ -661,15 +665,9 @@ async function handleFileImport(event: Event) {
       console.log('[ProjectPanel] Image added to project assets:', assetId, file.name);
     }
 
-    // Add to footage folder
-    const folder = folders.value.find(f => f.id === 'footage');
-    if (folder) {
-      folder.items.push(newItem);
-    } else {
-      items.value.push(newItem);
-    }
-
-    console.log('[ProjectPanel] Imported:', file.name, type);
+    // Add to footage items (reactive ref)
+    footageItems.value.push(newItem);
+    console.log('[ProjectPanel] Imported:', file.name, type, 'total footage:', footageItems.value.length);
   }
 
   // Reset input
@@ -784,25 +782,35 @@ function onDragStart(item: ProjectItem, event: DragEvent) {
 .dropdown-menu button {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   width: 100%;
-  padding: 8px 12px;
+  padding: 10px 16px;
   border: none;
   background: transparent;
   color: #e0e0e0;
   font-size: 13px;
   text-align: left;
   cursor: pointer;
+  line-height: 1.4;
 }
 
 .dropdown-menu button:hover {
   background: #3a5070;
 }
 
+.menu-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
 .menu-divider {
   border: none;
   border-top: 1px solid #444;
-  margin: 4px 8px;
+  margin: 8px 12px;
 }
 
 .search-bar {
@@ -830,15 +838,15 @@ function onDragStart(item: ProjectItem, event: DragEvent) {
 .preview-area {
   background: #1a1a1a;
   border-bottom: 1px solid #333;
-  padding: 8px;
+  padding: 12px;
   display: flex;
-  gap: 10px;
+  gap: 12px;
   align-items: center;
 }
 
 .preview-thumbnail {
-  width: 80px;
-  height: 60px;
+  width: 120px;
+  height: 90px;
   background: #0a0a0a;
   border-radius: 4px;
   overflow: hidden;

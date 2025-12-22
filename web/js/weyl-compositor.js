@@ -32817,6 +32817,8 @@ const _sfc_main$Y = /* @__PURE__ */ defineComponent({
       const selectedLayer = layers.find((l) => l.id === selectedLayerIds[0]);
       return selectedLayer?.type === "spline";
     });
+    const footageItems = ref([]);
+    const solidItems = ref([]);
     const folders = computed(() => {
       const compositions = Object.values(store.project.compositions || {}).map((comp) => ({
         id: comp.id,
@@ -32844,12 +32846,12 @@ const _sfc_main$Y = /* @__PURE__ */ defineComponent({
         {
           id: "footage",
           name: "Footage",
-          items: []
+          items: footageItems.value
         },
         {
           id: "solids",
           name: "Solids",
-          items: []
+          items: solidItems.value
         }
       ];
       return [...systemFolders, ...customFolders.value];
@@ -33102,13 +33104,8 @@ const _sfc_main$Y = /* @__PURE__ */ defineComponent({
           newItem.id = assetId;
           console.log("[ProjectPanel] Image added to project assets:", assetId, file.name);
         }
-        const folder = folders.value.find((f) => f.id === "footage");
-        if (folder) {
-          folder.items.push(newItem);
-        } else {
-          items.value.push(newItem);
-        }
-        console.log("[ProjectPanel] Imported:", file.name, type);
+        footageItems.value.push(newItem);
+        console.log("[ProjectPanel] Imported:", file.name, type, "total footage:", footageItems.value.length);
       }
       input.value = "";
     }
@@ -33152,7 +33149,7 @@ const _sfc_main$Y = /* @__PURE__ */ defineComponent({
     return (_ctx, _cache) => {
       return openBlock(), createElementBlock("div", _hoisted_1$X, [
         createBaseVNode("div", _hoisted_2$W, [
-          _cache[7] || (_cache[7] = createBaseVNode("span", { class: "panel-title" }, "Project", -1)),
+          _cache[17] || (_cache[17] = createBaseVNode("span", { class: "panel-title" }, "Project", -1)),
           createBaseVNode("div", _hoisted_3$U, [
             createBaseVNode("button", {
               onClick: triggerFileImport,
@@ -33164,18 +33161,48 @@ const _sfc_main$Y = /* @__PURE__ */ defineComponent({
                 title: "New Item"
               }, "+"),
               showNewMenu.value ? (openBlock(), createElementBlock("div", _hoisted_5$T, [
-                createBaseVNode("button", { onClick: createNewComposition }, "🎬 New Composition"),
-                createBaseVNode("button", { onClick: createNewFolder }, "📁 New Folder"),
-                _cache[5] || (_cache[5] = createBaseVNode("hr", { class: "menu-divider" }, null, -1)),
-                createBaseVNode("button", { onClick: createNewSolid }, "⬜ New Solid"),
-                createBaseVNode("button", { onClick: createNewText }, "T New Text"),
-                createBaseVNode("button", { onClick: createNewControl }, "□ New Control"),
-                createBaseVNode("button", { onClick: createNewSpline }, "✏ New Spline"),
-                createBaseVNode("button", { onClick: createNewModel }, "🧊 New 3D Model"),
-                createBaseVNode("button", { onClick: createNewPointCloud }, "☁ New Point Cloud"),
-                _cache[6] || (_cache[6] = createBaseVNode("hr", { class: "menu-divider" }, null, -1)),
-                createBaseVNode("button", { onClick: openDecomposeDialog }, "✨ AI Layer Decompose"),
-                createBaseVNode("button", { onClick: openVectorizeDialog }, "✒ Vectorize Image")
+                createBaseVNode("button", { onClick: createNewComposition }, [..._cache[5] || (_cache[5] = [
+                  createBaseVNode("span", { class: "menu-icon" }, "🎬", -1),
+                  createTextVNode(" New Composition", -1)
+                ])]),
+                createBaseVNode("button", { onClick: createNewFolder }, [..._cache[6] || (_cache[6] = [
+                  createBaseVNode("span", { class: "menu-icon" }, "📁", -1),
+                  createTextVNode(" New Folder", -1)
+                ])]),
+                _cache[15] || (_cache[15] = createBaseVNode("hr", { class: "menu-divider" }, null, -1)),
+                createBaseVNode("button", { onClick: createNewSolid }, [..._cache[7] || (_cache[7] = [
+                  createBaseVNode("span", { class: "menu-icon" }, "⬜", -1),
+                  createTextVNode(" New Solid", -1)
+                ])]),
+                createBaseVNode("button", { onClick: createNewText }, [..._cache[8] || (_cache[8] = [
+                  createBaseVNode("span", { class: "menu-icon" }, "🔤", -1),
+                  createTextVNode(" New Text", -1)
+                ])]),
+                createBaseVNode("button", { onClick: createNewControl }, [..._cache[9] || (_cache[9] = [
+                  createBaseVNode("span", { class: "menu-icon" }, "⊕", -1),
+                  createTextVNode(" New Control", -1)
+                ])]),
+                createBaseVNode("button", { onClick: createNewSpline }, [..._cache[10] || (_cache[10] = [
+                  createBaseVNode("span", { class: "menu-icon" }, "✏️", -1),
+                  createTextVNode(" New Spline", -1)
+                ])]),
+                createBaseVNode("button", { onClick: createNewModel }, [..._cache[11] || (_cache[11] = [
+                  createBaseVNode("span", { class: "menu-icon" }, "🧊", -1),
+                  createTextVNode(" New 3D Model", -1)
+                ])]),
+                createBaseVNode("button", { onClick: createNewPointCloud }, [..._cache[12] || (_cache[12] = [
+                  createBaseVNode("span", { class: "menu-icon" }, "☁️", -1),
+                  createTextVNode(" New Point Cloud", -1)
+                ])]),
+                _cache[16] || (_cache[16] = createBaseVNode("hr", { class: "menu-divider" }, null, -1)),
+                createBaseVNode("button", { onClick: openDecomposeDialog }, [..._cache[13] || (_cache[13] = [
+                  createBaseVNode("span", { class: "menu-icon" }, "✨", -1),
+                  createTextVNode(" AI Layer Decompose", -1)
+                ])]),
+                createBaseVNode("button", { onClick: openVectorizeDialog }, [..._cache[14] || (_cache[14] = [
+                  createBaseVNode("span", { class: "menu-icon" }, "✒️", -1),
+                  createTextVNode(" Vectorize Image", -1)
+                ])])
               ])) : createCommentVNode("", true)
             ]),
             createBaseVNode("button", {
@@ -33250,7 +33277,7 @@ const _sfc_main$Y = /* @__PURE__ */ defineComponent({
                     class: "expand-icon",
                     onClick: withModifiers(($event) => toggleFolder(folder.id), ["stop"])
                   }, toDisplayString(expandedFolders.value.includes(folder.id) ? "▼" : "►"), 9, _hoisted_19$D),
-                  _cache[8] || (_cache[8] = createBaseVNode("span", { class: "folder-icon" }, "📁", -1)),
+                  _cache[18] || (_cache[18] = createBaseVNode("span", { class: "folder-icon" }, "📁", -1)),
                   createBaseVNode("span", _hoisted_20$D, toDisplayString(folder.name), 1),
                   createBaseVNode("span", _hoisted_21$B, toDisplayString(folder.items.length), 1)
                 ], 42, _hoisted_18$E),
@@ -33287,7 +33314,7 @@ const _sfc_main$Y = /* @__PURE__ */ defineComponent({
               ], 42, _hoisted_27$q);
             }), 128))
           ]),
-          items.value.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_31$m, [..._cache[9] || (_cache[9] = [
+          items.value.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_31$m, [..._cache[19] || (_cache[19] = [
             createBaseVNode("p", null, "No items in project", -1),
             createBaseVNode("p", { class: "hint" }, "Import footage or create compositions", -1)
           ])])) : createCommentVNode("", true)
@@ -33303,7 +33330,7 @@ const _sfc_main$Y = /* @__PURE__ */ defineComponent({
   }
 });
 
-const ProjectPanel = /* @__PURE__ */ _export_sfc(_sfc_main$Y, [["__scopeId", "data-v-58908759"]]);
+const ProjectPanel = /* @__PURE__ */ _export_sfc(_sfc_main$Y, [["__scopeId", "data-v-3b82ada3"]]);
 
 const _hoisted_1$W = {
   class: "effects-panel",
@@ -88740,13 +88767,24 @@ const _sfc_main$i = /* @__PURE__ */ defineComponent({
           const asset = store.project.assets[item.id];
           if (asset) {
             if (asset.type === "image") {
-              const layer = store.createLayer("image", item.name);
-              if (layer) {
-                layer.data.assetId = item.id;
-                layer.data.source = asset.data;
-                store.selectLayer(layer.id);
-                console.log("[ThreeCanvas] Created image layer from drop:", item.name);
-              }
+              const img = new Image();
+              img.onload = () => {
+                const compId = store.activeCompositionId;
+                if (compId) {
+                  store.updateCompositionSettings(compId, {
+                    width: img.naturalWidth,
+                    height: img.naturalHeight
+                  });
+                }
+                const layer = store.createLayer("image", item.name);
+                if (layer) {
+                  layer.data.assetId = item.id;
+                  layer.data.source = asset.data;
+                  store.selectLayer(layer.id);
+                  console.log("[ThreeCanvas] Created image layer, resized comp to:", img.naturalWidth, "x", img.naturalHeight);
+                }
+              };
+              img.src = asset.data;
             } else if (asset.type === "video") {
               const layer = store.createLayer("video", item.name);
               if (layer) {
@@ -89619,7 +89657,7 @@ const _sfc_main$i = /* @__PURE__ */ defineComponent({
             class: "zoom-dropdown",
             onChange: onZoomSelect
           }, [..._cache[13] || (_cache[13] = [
-            createStaticVNode('<option value="fit" data-v-07f01afb>Fit</option><option value="0.25" data-v-07f01afb>25%</option><option value="0.33" data-v-07f01afb>33%</option><option value="0.5" data-v-07f01afb>50%</option><option value="0.75" data-v-07f01afb>75%</option><option value="1" data-v-07f01afb>100%</option><option value="2" data-v-07f01afb>200%</option><option value="4" data-v-07f01afb>400%</option>', 8)
+            createStaticVNode('<option value="fit" data-v-77d31d90>Fit</option><option value="0.25" data-v-77d31d90>25%</option><option value="0.33" data-v-77d31d90>33%</option><option value="0.5" data-v-77d31d90>50%</option><option value="0.75" data-v-77d31d90>75%</option><option value="1" data-v-77d31d90>100%</option><option value="2" data-v-77d31d90>200%</option><option value="4" data-v-77d31d90>400%</option>', 8)
           ])], 544), [
             [vModelSelect, zoomLevel.value]
           ]),
@@ -89630,7 +89668,7 @@ const _sfc_main$i = /* @__PURE__ */ defineComponent({
             class: "resolution-dropdown",
             onChange: onResolutionChange
           }, [..._cache[14] || (_cache[14] = [
-            createStaticVNode('<option value="full" data-v-07f01afb>Full</option><option value="half" data-v-07f01afb>Half</option><option value="third" data-v-07f01afb>Third</option><option value="quarter" data-v-07f01afb>Quarter</option><option value="custom" data-v-07f01afb>Custom</option>', 5)
+            createStaticVNode('<option value="full" data-v-77d31d90>Full</option><option value="half" data-v-77d31d90>Half</option><option value="third" data-v-77d31d90>Third</option><option value="quarter" data-v-77d31d90>Quarter</option><option value="custom" data-v-77d31d90>Custom</option>', 5)
           ])], 544), [
             [vModelSelect, resolution.value]
           ])
@@ -89721,7 +89759,7 @@ const _sfc_main$i = /* @__PURE__ */ defineComponent({
   }
 });
 
-const ThreeCanvas = /* @__PURE__ */ _export_sfc(_sfc_main$i, [["__scopeId", "data-v-07f01afb"]]);
+const ThreeCanvas = /* @__PURE__ */ _export_sfc(_sfc_main$i, [["__scopeId", "data-v-77d31d90"]]);
 
 const useAudioStore = defineStore("audio", {
   state: () => ({
@@ -92032,13 +92070,24 @@ const _sfc_main$e = /* @__PURE__ */ defineComponent({
                 console.log("[TimelinePanel] Created video layer from asset:", item.name);
               }
             } else if (asset.type === "image") {
-              const layer = store.createLayer("image", item.name);
-              if (layer) {
-                layer.data.assetId = item.id;
-                layer.data.source = asset.data;
-                store.selectLayer(layer.id);
-                console.log("[TimelinePanel] Created image layer from asset:", item.name, "source:", asset.data);
-              }
+              const img = new Image();
+              img.onload = () => {
+                const compId = store.activeCompositionId;
+                if (compId) {
+                  store.updateCompositionSettings(compId, {
+                    width: img.naturalWidth,
+                    height: img.naturalHeight
+                  });
+                }
+                const layer = store.createLayer("image", item.name);
+                if (layer) {
+                  layer.data.assetId = item.id;
+                  layer.data.source = asset.data;
+                  store.selectLayer(layer.id);
+                  console.log("[TimelinePanel] Created image layer, resized comp to:", img.naturalWidth, "x", img.naturalHeight);
+                }
+              };
+              img.src = asset.data;
             }
           } else {
             const layer = store.createLayer("image", item.name);
@@ -92561,14 +92610,14 @@ const _sfc_main$e = /* @__PURE__ */ defineComponent({
             style: normalizeStyle({ width: sidebarWidth.value + "px" })
           }, [
             createBaseVNode("div", _hoisted_14$9, [
-              _cache[44] || (_cache[44] = createStaticVNode('<div class="col-header col-av-features" data-v-926db205><span class="header-icon" title="Video" data-v-926db205>👁</span><span class="header-icon" title="Audio" data-v-926db205>🔊</span><span class="header-icon" title="Isolate" data-v-926db205>●</span><span class="header-icon" title="Lock" data-v-926db205>🔒</span></div><div class="col-header col-number" data-v-926db205>#</div><div class="col-header col-name" data-v-926db205>Source Name</div>', 3)),
+              _cache[44] || (_cache[44] = createStaticVNode('<div class="col-header col-av-features" data-v-c026d6ca><span class="header-icon" title="Video" data-v-c026d6ca>👁</span><span class="header-icon" title="Audio" data-v-c026d6ca>🔊</span><span class="header-icon" title="Isolate" data-v-c026d6ca>●</span><span class="header-icon" title="Lock" data-v-c026d6ca>🔒</span></div><div class="col-header col-number" data-v-c026d6ca>#</div><div class="col-header col-name" data-v-c026d6ca>Source Name</div>', 3)),
               createBaseVNode("div", _hoisted_15$8, [
                 createBaseVNode("span", {
                   class: normalizeClass(["header-icon clickable", { active: unref(store).hideMinimizedLayers }]),
                   title: "Hide Minimized Layers",
                   onClick: _cache[22] || (_cache[22] = ($event) => unref(store).toggleHideMinimizedLayers())
                 }, "🙈", 2),
-                _cache[43] || (_cache[43] = createStaticVNode('<span class="header-icon" title="Flatten Transform" data-v-926db205>☀</span><span class="header-icon" title="Quality" data-v-926db205>◐</span><span class="header-icon" title="Effects" data-v-926db205>fx</span><span class="header-icon" title="Frame Blending" data-v-926db205>⊞</span><span class="header-icon" title="Motion Blur" data-v-926db205>◔</span><span class="header-icon" title="Adjustment Layer" data-v-926db205>◐</span><span class="header-icon" title="3D Layer" data-v-926db205>⬡</span>', 7))
+                _cache[43] || (_cache[43] = createStaticVNode('<span class="header-icon" title="Flatten Transform" data-v-c026d6ca>☀</span><span class="header-icon" title="Quality" data-v-c026d6ca>◐</span><span class="header-icon" title="Effects" data-v-c026d6ca>fx</span><span class="header-icon" title="Frame Blending" data-v-c026d6ca>⊞</span><span class="header-icon" title="Motion Blur" data-v-c026d6ca>◔</span><span class="header-icon" title="Adjustment Layer" data-v-c026d6ca>◐</span><span class="header-icon" title="3D Layer" data-v-c026d6ca>⬡</span>', 7))
               ]),
               _cache[45] || (_cache[45] = createBaseVNode("div", { class: "col-header col-parent" }, "Parent & Link", -1))
             ]),
@@ -92685,7 +92734,7 @@ const _sfc_main$e = /* @__PURE__ */ defineComponent({
   }
 });
 
-const TimelinePanel = /* @__PURE__ */ _export_sfc(_sfc_main$e, [["__scopeId", "data-v-926db205"]]);
+const TimelinePanel = /* @__PURE__ */ _export_sfc(_sfc_main$e, [["__scopeId", "data-v-c026d6ca"]]);
 
 const _hoisted_1$c = { class: "curve-editor" };
 const _hoisted_2$c = { class: "curve-header" };

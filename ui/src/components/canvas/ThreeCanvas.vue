@@ -438,13 +438,28 @@ function onDrop(event: DragEvent) {
       const asset = store.project.assets[item.id];
       if (asset) {
         if (asset.type === 'image') {
-          const layer = store.createLayer('image', item.name);
-          if (layer) {
-            (layer.data as any).assetId = item.id;
-            (layer.data as any).source = asset.data;
-            store.selectLayer(layer.id);
-            console.log('[ThreeCanvas] Created image layer from drop:', item.name);
-          }
+          // Load image to get dimensions and resize composition
+          const img = new Image();
+          img.onload = () => {
+            // Resize composition to match image dimensions
+            const compId = store.activeCompositionId;
+            if (compId) {
+              store.updateCompositionSettings(compId, {
+                width: img.naturalWidth,
+                height: img.naturalHeight
+              });
+            }
+
+            // Create the layer after resizing
+            const layer = store.createLayer('image', item.name);
+            if (layer) {
+              (layer.data as any).assetId = item.id;
+              (layer.data as any).source = asset.data;
+              store.selectLayer(layer.id);
+              console.log('[ThreeCanvas] Created image layer, resized comp to:', img.naturalWidth, 'x', img.naturalHeight);
+            }
+          };
+          img.src = asset.data;
         } else if (asset.type === 'video') {
           const layer = store.createLayer('video', item.name);
           if (layer) {

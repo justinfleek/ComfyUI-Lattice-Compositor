@@ -383,14 +383,28 @@ function onDrop(event: DragEvent) {
             console.log('[TimelinePanel] Created video layer from asset:', item.name);
           }
         } else if (asset.type === 'image') {
-          const layer = store.createLayer('image', item.name);
-          if (layer) {
-            // Set both assetId and source URL for the image to render
-            (layer.data as any).assetId = item.id;
-            (layer.data as any).source = asset.data; // The actual image URL
-            store.selectLayer(layer.id);
-            console.log('[TimelinePanel] Created image layer from asset:', item.name, 'source:', asset.data);
-          }
+          // Load image to get dimensions and resize composition
+          const img = new Image();
+          img.onload = () => {
+            // Resize composition to match image dimensions
+            const compId = store.activeCompositionId;
+            if (compId) {
+              store.updateCompositionSettings(compId, {
+                width: img.naturalWidth,
+                height: img.naturalHeight
+              });
+            }
+
+            // Create the layer after resizing
+            const layer = store.createLayer('image', item.name);
+            if (layer) {
+              (layer.data as any).assetId = item.id;
+              (layer.data as any).source = asset.data;
+              store.selectLayer(layer.id);
+              console.log('[TimelinePanel] Created image layer, resized comp to:', img.naturalWidth, 'x', img.naturalHeight);
+            }
+          };
+          img.src = asset.data;
         }
       } else {
         // Generic footage - create image layer
