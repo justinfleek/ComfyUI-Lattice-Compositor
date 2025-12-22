@@ -58,6 +58,35 @@ export interface ExpressionContext {
 
   // Data-driven animation (footage access)
   footage?: (name: string) => FootageDataAccessor | null;
+
+  // === NEW: Enhanced layer/effect access for thisLayer/thisComp ===
+
+  // Current layer's transform values (for thisLayer.transform)
+  layerTransform?: {
+    position: number[];
+    rotation: number[];
+    scale: number[];
+    opacity: number;
+    origin: number[];  // anchor point
+  };
+
+  // Current layer's effects (for thisLayer.effect())
+  layerEffects?: Array<{
+    name: string;
+    effectKey: string;
+    enabled: boolean;
+    parameters: Record<string, number | number[] | string | boolean>;
+  }>;
+
+  // All layers in composition (for thisComp.layer(name))
+  allLayers?: Array<{
+    id: string;
+    name: string;
+    index: number;
+  }>;
+
+  // Get effect parameter value from any layer
+  getLayerEffectParam?: (layerId: string, effectName: string, paramName: string) => number | number[] | string | boolean | null;
 }
 
 // ============================================================================
@@ -1330,10 +1359,22 @@ export function evaluateCustomExpression(
         frameDuration: 1 / ctx.fps,
         width: ctx.compWidth ?? 1920,
         height: ctx.compHeight ?? 1080,
+        numLayers: ctx.allLayers?.length ?? 0,
         layer: (nameOrIndex: string | number) => {
-          // Return a layer-like object that can access properties
+          // Resolve layer ID from name or index
           const getLayerProperty = ctx.getLayerProperty;
-          const layerId = typeof nameOrIndex === 'string' ? nameOrIndex : `layer_${nameOrIndex}`;
+          const getLayerEffectParam = ctx.getLayerEffectParam;
+          let layerId: string;
+
+          if (typeof nameOrIndex === 'number') {
+            // Find layer by index (1-based like AE)
+            const layerInfo = ctx.allLayers?.find(l => l.index === nameOrIndex);
+            layerId = layerInfo?.id ?? `layer_${nameOrIndex}`;
+          } else {
+            // Find layer by name first, then fall back to using name as ID
+            const layerInfo = ctx.allLayers?.find(l => l.name === nameOrIndex);
+            layerId = layerInfo?.id ?? nameOrIndex;
+          }
 
           // Get layer transform for coordinate conversion
           const getTransform = (): LayerTransform => ({
@@ -1343,23 +1384,48 @@ export function evaluateCustomExpression(
             anchor: (getLayerProperty?.(layerId, 'transform.anchorPoint') as number[]) ?? [0, 0, 0],
           });
 
+          // Create effect accessor with callable syntax: effect("name")("param") or effect("name").param("param")
+          const createEffectAccessor = (effectName: string) => {
+            const accessor = (paramName: string) => {
+              return getLayerEffectParam?.(layerId, effectName, paramName) ?? 0;
+            };
+            // Also expose as .param() method
+            accessor.param = accessor;
+            // Add common expression control names as properties
+            accessor.value = getLayerEffectParam?.(layerId, effectName, 'value') ?? 0;
+            accessor.slider = getLayerEffectParam?.(layerId, effectName, 'slider') ?? 0;
+            accessor.angle = getLayerEffectParam?.(layerId, effectName, 'angle') ?? 0;
+            accessor.checkbox = getLayerEffectParam?.(layerId, effectName, 'checkbox') ?? false;
+            accessor.color = getLayerEffectParam?.(layerId, effectName, 'color') ?? [1, 1, 1, 1];
+            accessor.point = getLayerEffectParam?.(layerId, effectName, 'point') ?? [0, 0];
+            return accessor;
+          };
+
           return {
+            name: ctx.allLayers?.find(l => l.id === layerId)?.name ?? '',
+            index: ctx.allLayers?.find(l => l.id === layerId)?.index ?? 0,
             position: getLayerProperty?.(layerId, 'transform.position') ?? [0, 0],
             scale: getLayerProperty?.(layerId, 'transform.scale') ?? [100, 100],
             rotation: getLayerProperty?.(layerId, 'transform.rotation') ?? 0,
             opacity: getLayerProperty?.(layerId, 'transform.opacity') ?? 100,
             anchorPoint: getLayerProperty?.(layerId, 'transform.anchorPoint') ?? [0, 0],
+            origin: getLayerProperty?.(layerId, 'transform.origin') ?? [0, 0],
+            // Transform sub-object for thisComp.layer("x").transform.position syntax
+            transform: {
+              position: getLayerProperty?.(layerId, 'transform.position') ?? [0, 0, 0],
+              rotation: getLayerProperty?.(layerId, 'transform.rotation') ?? [0, 0, 0],
+              scale: getLayerProperty?.(layerId, 'transform.scale') ?? [100, 100, 100],
+              opacity: getLayerProperty?.(layerId, 'transform.opacity') ?? 100,
+              anchorPoint: getLayerProperty?.(layerId, 'transform.anchorPoint') ?? [0, 0, 0],
+              origin: getLayerProperty?.(layerId, 'transform.origin') ?? [0, 0, 0],
+            },
             // Coordinate conversion with actual transform
             toComp: (point: number[]) => toComp(point, getTransform()),
             fromComp: (point: number[]) => fromComp(point, getTransform()),
             toWorld: (point: number[]) => toWorld(point, getTransform()),
             fromWorld: (point: number[]) => fromWorld(point, getTransform()),
-            // Effect access
-            effect: (effectName: string) => ({
-              param: (paramName: string) => getLayerProperty?.(layerId, `effects.${effectName}.${paramName}`) ?? 0,
-              // Also allow direct property access: effect("Slider")("Slider")
-              [effectName]: getLayerProperty?.(layerId, `effects.${effectName}.value`) ?? 0
-            })
+            // Effect access: effect("Effect Name")("Parameter") or effect("Effect Name").param("Parameter")
+            effect: createEffectAccessor
           };
         }
       },
@@ -1368,16 +1434,81 @@ export function evaluateCustomExpression(
         index: ctx.layerIndex,
         inPoint: ctx.inPoint,
         outPoint: ctx.outPoint,
+        // Transform properties (direct access)
+        position: ctx.layerTransform?.position ?? [0, 0, 0],
+        rotation: ctx.layerTransform?.rotation ?? [0, 0, 0],
+        scale: ctx.layerTransform?.scale ?? [100, 100, 100],
+        opacity: ctx.layerTransform?.opacity ?? 100,
+        anchorPoint: ctx.layerTransform?.origin ?? [0, 0, 0],
+        origin: ctx.layerTransform?.origin ?? [0, 0, 0],
+        // Transform sub-object for thisLayer.transform.position syntax
+        transform: {
+          position: ctx.layerTransform?.position ?? [0, 0, 0],
+          rotation: ctx.layerTransform?.rotation ?? [0, 0, 0],
+          scale: ctx.layerTransform?.scale ?? [100, 100, 100],
+          opacity: ctx.layerTransform?.opacity ?? 100,
+          anchorPoint: ctx.layerTransform?.origin ?? [0, 0, 0],
+          origin: ctx.layerTransform?.origin ?? [0, 0, 0],
+        },
+        // Effect access on current layer
+        effect: (effectName: string) => {
+          const eff = ctx.layerEffects?.find(e => e.name === effectName || e.effectKey === effectName);
+          const accessor = (paramName: string) => {
+            if (!eff) return 0;
+            return eff.parameters[paramName] ?? 0;
+          };
+          accessor.param = accessor;
+          // Common expression control properties
+          accessor.value = eff?.parameters['value'] ?? 0;
+          accessor.slider = eff?.parameters['slider'] ?? 0;
+          accessor.angle = eff?.parameters['angle'] ?? 0;
+          accessor.checkbox = eff?.parameters['checkbox'] ?? false;
+          accessor.color = eff?.parameters['color'] ?? [1, 1, 1, 1];
+          accessor.point = eff?.parameters['point'] ?? [0, 0];
+          return accessor;
+        },
         // Layer methods
         sourceRectAtTime: (t: number = ctx.time, includeExtents: boolean = false) => {
           // Return default rect - actual implementation needs layer data
           return { top: 0, left: 0, width: 100, height: 100 };
         },
-        // Coordinate conversion (need actual layer transform)
-        toComp: (point: number[]) => point,
-        fromComp: (point: number[]) => point,
-        toWorld: (point: number[]) => point,
-        fromWorld: (point: number[]) => point,
+        // Coordinate conversion using actual layer transform
+        toComp: (point: number[]) => {
+          const transform: LayerTransform = {
+            position: ctx.layerTransform?.position ?? [0, 0, 0],
+            scale: ctx.layerTransform?.scale ?? [100, 100, 100],
+            rotation: ctx.layerTransform?.rotation ?? [0, 0, 0],
+            anchor: ctx.layerTransform?.origin ?? [0, 0, 0],
+          };
+          return toComp(point, transform);
+        },
+        fromComp: (point: number[]) => {
+          const transform: LayerTransform = {
+            position: ctx.layerTransform?.position ?? [0, 0, 0],
+            scale: ctx.layerTransform?.scale ?? [100, 100, 100],
+            rotation: ctx.layerTransform?.rotation ?? [0, 0, 0],
+            anchor: ctx.layerTransform?.origin ?? [0, 0, 0],
+          };
+          return fromComp(point, transform);
+        },
+        toWorld: (point: number[]) => {
+          const transform: LayerTransform = {
+            position: ctx.layerTransform?.position ?? [0, 0, 0],
+            scale: ctx.layerTransform?.scale ?? [100, 100, 100],
+            rotation: ctx.layerTransform?.rotation ?? [0, 0, 0],
+            anchor: ctx.layerTransform?.origin ?? [0, 0, 0],
+          };
+          return toWorld(point, transform);
+        },
+        fromWorld: (point: number[]) => {
+          const transform: LayerTransform = {
+            position: ctx.layerTransform?.position ?? [0, 0, 0],
+            scale: ctx.layerTransform?.scale ?? [100, 100, 100],
+            rotation: ctx.layerTransform?.rotation ?? [0, 0, 0],
+            anchor: ctx.layerTransform?.origin ?? [0, 0, 0],
+          };
+          return fromWorld(point, transform);
+        },
       },
       thisProperty: {
         value: ctx.value,
@@ -2774,4 +2905,163 @@ export const textAnimator = {
   createContext: createTextAnimatorContext,
   evaluate: evaluateTextAnimatorExpression,
 };
+
+// ============================================================
+// EXPRESSION VALIDATION
+// ============================================================
+
+export interface ExpressionValidationResult {
+  valid: boolean;
+  error?: string;
+  errorLine?: number;
+  errorColumn?: number;
+}
+
+/**
+ * Validate an expression without executing it
+ * Returns validation result with error details if invalid
+ */
+export function validateExpression(code: string): ExpressionValidationResult {
+  if (!code || code.trim() === '') {
+    return { valid: true };
+  }
+
+  try {
+    // Create mock context variables for validation
+    const mockContextVars = {
+      time: 0,
+      frame: 0,
+      fps: 30,
+      duration: 5,
+      value: 0,
+      velocity: 0,
+      index: 0,
+      numKeys: 0,
+      // Common functions
+      wiggle: () => 0,
+      loopOut: () => 0,
+      loopIn: () => 0,
+      repeatAfter: () => 0,
+      repeatBefore: () => 0,
+      ease: () => 0,
+      easeIn: () => 0,
+      easeOut: () => 0,
+      linear: () => 0,
+      random: () => 0,
+      clamp: () => 0,
+      Math: Math,
+      // Objects
+      thisComp: {
+        duration: 5,
+        frameDuration: 1/30,
+        width: 1920,
+        height: 1080,
+        numLayers: 0,
+        layer: () => ({
+          position: [0, 0],
+          scale: [100, 100],
+          rotation: 0,
+          opacity: 100,
+          transform: {},
+          effect: () => () => 0,
+        }),
+      },
+      thisLayer: {
+        name: '',
+        index: 0,
+        inPoint: 0,
+        outPoint: 5,
+        position: [0, 0, 0],
+        rotation: [0, 0, 0],
+        scale: [100, 100, 100],
+        opacity: 100,
+        transform: {},
+        effect: () => () => 0,
+        toComp: () => [0, 0, 0],
+        fromComp: () => [0, 0, 0],
+      },
+      thisProperty: {
+        value: 0,
+        velocity: 0,
+        numKeys: 0,
+        key: () => ({ time: 0, value: 0 }),
+        nearestKey: () => ({ time: 0, value: 0 }),
+        valueAtTime: () => 0,
+        velocityAtTime: () => 0,
+      },
+      footage: () => ({ sourceData: {}, dataValue: () => 0 }),
+    };
+
+    const paramNames = Object.keys(mockContextVars);
+    const wrappedCode = `
+      "use strict";
+      return (function() {
+        ${code}
+      })();
+    `;
+
+    // Try to create the function - this validates syntax
+    new Function(...paramNames, wrappedCode);
+
+    return { valid: true };
+  } catch (error) {
+    const err = error as Error;
+    let errorMessage = err.message;
+
+    // Try to extract line/column info from error
+    let errorLine: number | undefined;
+    let errorColumn: number | undefined;
+
+    // Common error message patterns
+    const lineMatch = errorMessage.match(/line (\d+)/i);
+    const colMatch = errorMessage.match(/column (\d+)/i);
+
+    if (lineMatch) {
+      errorLine = parseInt(lineMatch[1], 10) - 4; // Adjust for wrapper lines
+    }
+    if (colMatch) {
+      errorColumn = parseInt(colMatch[1], 10);
+    }
+
+    // Clean up error message
+    errorMessage = errorMessage
+      .replace(/^SyntaxError:\s*/i, '')
+      .replace(/\(anonymous\)/g, 'expression');
+
+    return {
+      valid: false,
+      error: errorMessage,
+      errorLine: errorLine && errorLine > 0 ? errorLine : undefined,
+      errorColumn,
+    };
+  }
+}
+
+/**
+ * Get list of available expression functions for autocomplete/documentation
+ */
+export function getExpressionFunctions(): Array<{ name: string; description: string; syntax: string }> {
+  return [
+    { name: 'wiggle', description: 'Random oscillation', syntax: 'wiggle(frequency, amplitude)' },
+    { name: 'loopOut', description: 'Loop after last keyframe', syntax: 'loopOut("cycle" | "pingpong" | "offset" | "continue")' },
+    { name: 'loopIn', description: 'Loop before first keyframe', syntax: 'loopIn("cycle" | "pingpong" | "offset" | "continue")' },
+    { name: 'repeatAfter', description: 'Repeat keyframes after last', syntax: 'repeatAfter("cycle" | "pingpong" | "offset")' },
+    { name: 'repeatBefore', description: 'Repeat keyframes before first', syntax: 'repeatBefore("cycle" | "pingpong" | "offset")' },
+    { name: 'ease', description: 'Smooth interpolation', syntax: 'ease(t, tMin, tMax, vMin, vMax)' },
+    { name: 'easeIn', description: 'Ease in interpolation', syntax: 'easeIn(t, tMin, tMax, vMin, vMax)' },
+    { name: 'easeOut', description: 'Ease out interpolation', syntax: 'easeOut(t, tMin, tMax, vMin, vMax)' },
+    { name: 'linear', description: 'Linear interpolation', syntax: 'linear(t, tMin, tMax, vMin, vMax)' },
+    { name: 'random', description: 'Seeded random number', syntax: 'random() or random(min, max)' },
+    { name: 'noise', description: 'Perlin-like noise', syntax: 'noise(value) or noise([x, y, z])' },
+    { name: 'clamp', description: 'Clamp value to range', syntax: 'clamp(value, min, max)' },
+    { name: 'inertia', description: 'Inertia/overshoot', syntax: 'inertia(amplitude, frequency, decay)' },
+    { name: 'bounce', description: 'Bounce at end', syntax: 'bounce(elasticity, gravity)' },
+    { name: 'elastic', description: 'Elastic spring', syntax: 'elastic(amplitude, frequency, decay)' },
+    { name: 'valueAtTime', description: 'Property value at time', syntax: 'valueAtTime(time)' },
+    { name: 'velocityAtTime', description: 'Velocity at time', syntax: 'velocityAtTime(time)' },
+    { name: 'key', description: 'Get keyframe by index', syntax: 'key(index)' },
+    { name: 'nearestKey', description: 'Get nearest keyframe', syntax: 'nearestKey(time)' },
+    { name: 'footage', description: 'Access data file', syntax: 'footage("filename.csv").dataValue([row, col])' },
+  ];
+}
 

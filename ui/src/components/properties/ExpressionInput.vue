@@ -16,6 +16,12 @@
           @click="mode = 'preset'"
         >Preset</button>
         <button
+          :class="{ active: mode === 'data' }"
+          @click="mode = 'data'"
+          :disabled="availableDataAssets.length === 0"
+          :title="availableDataAssets.length === 0 ? 'Import data files in Project panel first' : 'Drive property from data file'"
+        >Data</button>
+        <button
           :class="{ active: mode === 'custom' }"
           @click="mode = 'custom'"
         >Custom</button>
@@ -52,18 +58,81 @@
         </p>
       </div>
 
+      <!-- Data mode -->
+      <div v-if="mode === 'data'" class="data-section">
+        <label>Data File</label>
+        <select v-model="selectedDataAsset" class="data-select">
+          <option value="">Select data file...</option>
+          <option v-for="asset in availableDataAssets" :key="asset.name" :value="asset.name">
+            {{ asset.name }} ({{ asset.type.toUpperCase() }})
+          </option>
+        </select>
+
+        <!-- CSV/TSV specific options -->
+        <template v-if="isCSVType && selectedDataAsset">
+          <label>Column</label>
+          <select v-model="selectedColumn" class="data-select">
+            <option value="">Select column...</option>
+            <option v-for="(header, idx) in csvHeaders" :key="idx" :value="header">
+              {{ header }} (col {{ idx }})
+            </option>
+          </select>
+
+          <label>Row Mapping</label>
+          <select v-model="rowMappingMode" class="data-select">
+            <option value="frame">Frame number (row = frame)</option>
+            <option value="time">Time in seconds (row = round(time))</option>
+            <option value="manual">Manual offset</option>
+          </select>
+
+          <template v-if="rowMappingMode === 'manual'">
+            <label>Row Offset</label>
+            <input
+              type="number"
+              v-model.number="manualRowOffset"
+              class="offset-input"
+              placeholder="0"
+            />
+          </template>
+        </template>
+
+        <!-- JSON specific options -->
+        <template v-if="isJSONType && selectedDataAsset">
+          <label>Property Path</label>
+          <input
+            type="text"
+            v-model="jsonPropertyPath"
+            class="path-input"
+            placeholder="e.g., data[0].value or path.to.property"
+          />
+          <p class="hint">
+            Use dot notation to access nested properties. Use [n] for arrays.
+          </p>
+        </template>
+
+        <!-- Preview generated expression -->
+        <template v-if="generatedDataExpression">
+          <label>Generated Expression</label>
+          <code class="generated-expression">{{ generatedDataExpression }}</code>
+        </template>
+      </div>
+
       <!-- Custom mode -->
       <div v-if="mode === 'custom'" class="custom-section">
         <label>Expression Code</label>
         <textarea
           v-model="customExpression"
           class="expression-textarea"
+          :class="{ 'has-error': expressionError }"
           placeholder="wiggle(2, 10)"
           rows="3"
           @keydown.enter.ctrl="apply"
         />
-        <p class="hint">
-          Available: wiggle(freq, amp), loopOut('cycle'), time, value
+        <p v-if="expressionError" class="expression-error">
+          {{ expressionError }}
+        </p>
+        <p v-else class="hint">
+          Available: wiggle(freq, amp), loopOut('cycle'), time, value, thisLayer.effect("name")("param")
         </p>
       </div>
     </div>
@@ -87,7 +156,9 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
-import { EXPRESSION_PRESETS } from '@/services/expressions';
+import { EXPRESSION_PRESETS, validateExpression } from '@/services/expressions';
+import { useCompositorStore } from '@/stores/compositorStore';
+import { isCSVAsset, isJSONAsset } from '@/types/dataAsset';
 import type { PropertyExpression } from '@/types/project';
 
 interface Props {
@@ -96,6 +167,7 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+const store = useCompositorStore();
 
 const emit = defineEmits<{
   (e: 'close'): void;
@@ -103,9 +175,86 @@ const emit = defineEmits<{
   (e: 'remove'): void;
 }>();
 
-const mode = ref<'preset' | 'custom'>('preset');
+const mode = ref<'preset' | 'custom' | 'data'>('preset');
 const selectedPreset = ref<string>('');
 const customExpression = ref<string>('');
+const expressionError = ref<string | null>(null);
+
+// Data-driven mode state
+const selectedDataAsset = ref<string>('');
+const selectedColumn = ref<string>('');
+const jsonPropertyPath = ref<string>('');
+const rowMappingMode = ref<'frame' | 'time' | 'manual'>('frame');
+const manualRowOffset = ref(0);
+
+// Get available data assets from project
+const availableDataAssets = computed(() => {
+  const assets = store.project?.dataAssets ?? {};
+  return Object.entries(assets).map(([name, asset]) => ({
+    name,
+    type: asset.type,
+    headers: asset.headers,
+    numRows: asset.numRows,
+    numColumns: asset.numColumns
+  }));
+});
+
+// Get the selected data asset details
+const selectedAssetDetails = computed(() => {
+  const name = selectedDataAsset.value;
+  if (!name) return null;
+  const asset = store.project?.dataAssets?.[name];
+  return asset || null;
+});
+
+// Is selected asset CSV/TSV?
+const isCSVType = computed(() => {
+  const asset = selectedAssetDetails.value;
+  return asset && (asset.type === 'csv' || asset.type === 'tsv');
+});
+
+// Is selected asset JSON?
+const isJSONType = computed(() => {
+  const asset = selectedAssetDetails.value;
+  return asset && (asset.type === 'json' || asset.type === 'mgjson');
+});
+
+// CSV headers for column dropdown
+const csvHeaders = computed(() => {
+  const asset = selectedAssetDetails.value;
+  return asset?.headers ?? [];
+});
+
+// Generate expression code from data selection
+const generatedDataExpression = computed(() => {
+  if (!selectedDataAsset.value) return '';
+
+  const assetName = JSON.stringify(selectedDataAsset.value);
+
+  if (isCSVType.value) {
+    // CSV: footage("file.csv").dataValue([row, column])
+    const column = selectedColumn.value || '0';
+    const columnRef = /^\d+$/.test(column) ? column : JSON.stringify(column);
+
+    let rowExpr = 'frame';
+    if (rowMappingMode.value === 'time') {
+      rowExpr = 'Math.round(time)';
+    } else if (rowMappingMode.value === 'manual') {
+      rowExpr = `frame + ${manualRowOffset.value}`;
+    }
+
+    return `footage(${assetName}).dataValue([${rowExpr}, ${columnRef}])`;
+  } else if (isJSONType.value) {
+    // JSON: footage("file.json").sourceData.path
+    const path = jsonPropertyPath.value || '';
+    if (path) {
+      return `footage(${assetName}).sourceData.${path}`;
+    }
+    return `footage(${assetName}).sourceData`;
+  }
+
+  return '';
+});
 
 // Check if property already has an expression
 const hasExpression = computed(() => {
@@ -132,18 +281,43 @@ const presetDescription = computed(() => {
   return presetDescriptions[selectedPreset.value] || '';
 });
 
-// Can apply if preset selected or custom expression entered
+// Validate custom expression when it changes
+watch(customExpression, (code) => {
+  if (mode.value === 'custom' && code.trim()) {
+    const result = validateExpression(code);
+    expressionError.value = result.valid ? null : result.error || 'Invalid expression';
+  } else {
+    expressionError.value = null;
+  }
+});
+
+// Can apply if preset selected, custom expression entered without errors, or data configured
 const canApply = computed(() => {
   if (mode.value === 'preset') {
     return selectedPreset.value !== '';
+  } else if (mode.value === 'data') {
+    if (!selectedDataAsset.value) return false;
+    if (isCSVType.value && !selectedColumn.value) return false;
+    return true;
   }
-  return customExpression.value.trim() !== '';
+  // Custom mode: must have content and no errors
+  return customExpression.value.trim() !== '' && !expressionError.value;
 });
 
 // Initialize from current expression when dialog opens
 watch(() => props.visible, (visible) => {
   if (visible && props.currentExpression) {
-    if (props.currentExpression.type === 'preset') {
+    // Check if it's a data-driven expression by checking params
+    const params = props.currentExpression.params as any;
+    if (params?.dataAsset) {
+      // Restore data-driven state
+      mode.value = 'data';
+      selectedDataAsset.value = params.dataAsset || '';
+      selectedColumn.value = params.column || '';
+      jsonPropertyPath.value = params.jsonPath || '';
+      rowMappingMode.value = params.rowMapping || 'frame';
+      manualRowOffset.value = params.rowOffset || 0;
+    } else if (props.currentExpression.type === 'preset') {
       mode.value = 'preset';
       // Find matching preset
       const presetKey = Object.keys(EXPRESSION_PRESETS).find(key => {
@@ -156,10 +330,15 @@ watch(() => props.visible, (visible) => {
       customExpression.value = props.currentExpression.name || '';
     }
   } else if (visible) {
-    // Reset
+    // Reset all state
     mode.value = 'preset';
     selectedPreset.value = '';
     customExpression.value = '';
+    selectedDataAsset.value = '';
+    selectedColumn.value = '';
+    jsonPropertyPath.value = '';
+    rowMappingMode.value = 'frame';
+    manualRowOffset.value = 0;
   }
 });
 
@@ -180,6 +359,21 @@ function apply() {
     } else {
       return;
     }
+  } else if (mode.value === 'data') {
+    // Data-driven expression - generate the footage() code
+    expression = {
+      enabled: true,
+      type: 'custom',  // Treat as custom expression
+      name: generatedDataExpression.value,
+      params: {
+        // Store metadata for potential re-editing
+        dataAsset: selectedDataAsset.value,
+        column: selectedColumn.value,
+        jsonPath: jsonPropertyPath.value,
+        rowMapping: rowMappingMode.value,
+        rowOffset: manualRowOffset.value
+      }
+    };
   } else {
     expression = {
       enabled: true,
@@ -351,6 +545,86 @@ label {
   margin: 6px 0 0;
   font-size: 10px;
   color: #666;
+}
+
+.expression-textarea.has-error {
+  border-color: #EF4444;
+}
+
+.expression-error {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: #EF4444;
+  background: rgba(239, 68, 68, 0.1);
+  padding: 6px 8px;
+  border-radius: 4px;
+  border-left: 2px solid #EF4444;
+}
+
+/* Data section styles */
+.data-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.data-select {
+  width: 100%;
+  padding: 8px;
+  background: #111;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #e5e5e5;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.data-select:focus {
+  outline: none;
+  border-color: var(--weyl-accent, #8B5CF6);
+}
+
+.data-select option {
+  background: #1e1e1e;
+}
+
+.path-input,
+.offset-input {
+  width: 100%;
+  padding: 8px;
+  background: #111;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #e5e5e5;
+  font-size: 12px;
+  font-family: 'Fira Code', 'Consolas', monospace;
+}
+
+.path-input:focus,
+.offset-input:focus {
+  outline: none;
+  border-color: var(--weyl-accent, #8B5CF6);
+}
+
+.offset-input {
+  width: 80px;
+}
+
+.generated-expression {
+  display: block;
+  padding: 8px;
+  background: #111;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #10B981;
+  font-size: 11px;
+  font-family: 'Fira Code', 'Consolas', monospace;
+  word-break: break-all;
+}
+
+.mode-toggle button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .expression-footer {
