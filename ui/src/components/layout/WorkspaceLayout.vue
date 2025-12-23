@@ -2129,11 +2129,11 @@ onUnmounted(() => {
   background: var(--lattice-accent, #8B5CF6);
 }
 
-/* Vertical splitters (between columns) - add breathing room */
+/* Vertical splitters (between columns) */
 :deep(.splitpanes--vertical > .splitpanes__splitter) {
-  width: 8px;
-  min-width: 8px;
-  background: var(--lattice-void, #0a0a0a);
+  width: 4px;
+  min-width: 4px;
+  background: var(--lattice-void, #050505);
 }
 
 :deep(.splitpanes--vertical > .splitpanes__splitter:hover) {
@@ -2142,9 +2142,9 @@ onUnmounted(() => {
 
 /* Horizontal splitters (between rows) */
 :deep(.splitpanes--horizontal > .splitpanes__splitter) {
-  height: 6px;
-  min-height: 6px;
-  background: var(--lattice-void, #0a0a0a);
+  height: 3px;
+  min-height: 3px;
+  background: var(--lattice-void, #050505);
 }
 
 :deep(.splitpanes--horizontal > .splitpanes__splitter:hover) {
