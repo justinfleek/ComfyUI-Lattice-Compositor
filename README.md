@@ -310,18 +310,16 @@ We're grateful to these developers for open-sourcing their work and advancing AI
 
 | Metric | Status |
 |--------|--------|
-| **Feature Completion** | 92% |
-| **Tests Passing** | 1170/1213 (96.5%) |
+| **Feature Completion** | 95% |
+| **Tests Passing** | 1777/1786 (99%) |
 | **TypeScript Errors** | 0 |
-| **Layer Types** | 17 |
-| **Effects** | 22 |
-| **Services** | 42 |
+| **Layer Types** | 26 |
+| **Effects** | 69 |
+| **Services** | 160 |
 
 ### Known Issues
 
-- ScrubableNumber inputs (drag-to-adjust) not working
-- Project panel drag-to-timeline broken
-- Upper-left viewport controls non-functional
+All critical bugs have been resolved. See [CLAUDE.md](CLAUDE.md) for minor issues.
 
 See [HANDOFF.md](HANDOFF.md) for detailed status and [CLAUDE.md](CLAUDE.md) for architecture documentation.
 

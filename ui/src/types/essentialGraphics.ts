@@ -97,7 +97,8 @@ export type ExposedPropertyType =
   | 'dropdown'     // Predefined options
   | 'point'        // 2D position
   | 'media'        // Replaceable image/video
-  | 'font';        // Font selector
+  | 'font'         // Font selector
+  | 'layer';       // Layer reference picker (for Layer Control effect)
 
 /**
  * An exposed property in the Essential Graphics panel

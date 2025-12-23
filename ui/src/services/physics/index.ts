@@ -1,0 +1,269 @@
+/**
+ * @module services/physics
+ * @description Newton Physics Simulation module exports
+ *
+ * Complete physics engine for rigid bodies, soft bodies, cloth, and ragdolls.
+ * All simulations are deterministic with checkpoint-based scrubbing support.
+ */
+
+// Main physics engine
+export { PhysicsEngine, vec2, PhysicsRandom } from './PhysicsEngine';
+
+// Joint constraint system
+export { JointSystem } from './JointSystem';
+
+// Ragdoll builder
+export {
+  RagdollBuilder,
+  convertRagdollToPhysics,
+  extractRagdollState,
+  applyRagdollState,
+  HUMANOID_BONES,
+} from './RagdollBuilder';
+
+// Re-export types
+export type {
+  // Core types
+  PhysicsVec2,
+  PhysicsMaterial,
+  CollisionShape,
+  CollisionFilter,
+  BodyType,
+  ShapeType,
+  CollisionResponse,
+
+  // Rigid body
+  RigidBodyConfig,
+  RigidBodyState,
+  ContactInfo,
+
+  // Joints
+  JointType,
+  JointConfig,
+  PivotJointConfig,
+  SpringJointConfig,
+  DistanceJointConfig,
+  PistonJointConfig,
+  WheelJointConfig,
+  WeldJointConfig,
+  BlobJointConfig,
+  RopeJointConfig,
+
+  // Forces
+  ForceType,
+  ForceField,
+  GravityForce,
+  WindForce,
+  AttractionForce,
+  ExplosionForce,
+  BuoyancyForce,
+  VortexForce,
+  DragForce,
+
+  // Soft body
+  VerletParticle,
+  VerletConstraint,
+  SoftBodyConfig,
+  SoftBodyState,
+
+  // Cloth
+  ClothConfig,
+  ClothState,
+
+  // Ragdoll
+  RagdollBone,
+  RagdollConfig,
+  RagdollState,
+  HumanoidRagdollPreset,
+
+  // Space configuration
+  PhysicsSpaceConfig,
+  PhysicsSimulationState,
+
+  // Export
+  KeyframeExportOptions,
+  ExportedKeyframes,
+
+  // Layer integration
+  PhysicsLayerData,
+  PhysicsCompositionData,
+} from '@/types/physics';
+
+// Re-export presets
+export {
+  HUMANOID_PRESETS,
+  MATERIAL_PRESETS,
+  DEFAULT_SPACE_CONFIG,
+} from '@/types/physics';
+
+// =============================================================================
+// CONVENIENCE FACTORY FUNCTIONS
+// =============================================================================
+
+import { PhysicsEngine } from './PhysicsEngine';
+import { RagdollBuilder } from './RagdollBuilder';
+import type {
+  PhysicsSpaceConfig,
+  RigidBodyConfig,
+  PhysicsVec2,
+  PhysicsMaterial,
+  CollisionFilter,
+  ForceField,
+  ClothConfig,
+} from '@/types/physics';
+import { DEFAULT_SPACE_CONFIG, MATERIAL_PRESETS } from '@/types/physics';
+
+/**
+ * Create a new physics engine with default settings
+ */
+export function createPhysicsEngine(config?: Partial<PhysicsSpaceConfig>): PhysicsEngine {
+  return new PhysicsEngine(config);
+}
+
+/**
+ * Create a new ragdoll builder
+ */
+export function createRagdollBuilder(id: string, layerId: string): RagdollBuilder {
+  return new RagdollBuilder(id, layerId);
+}
+
+/**
+ * Create a simple circle rigid body config
+ */
+export function createCircleBody(
+  id: string,
+  layerId: string,
+  options: {
+    position: PhysicsVec2;
+    radius: number;
+    mass?: number;
+    material?: PhysicsMaterial;
+    isStatic?: boolean;
+  }
+): RigidBodyConfig {
+  const defaultFilter: CollisionFilter = { category: 1, mask: 0xffffffff, group: 0 };
+
+  return {
+    id,
+    layerId,
+    type: options.isStatic ? 'static' : 'dynamic',
+    mass: options.mass ?? 1,
+    position: { ...options.position },
+    velocity: { x: 0, y: 0 },
+    angle: 0,
+    angularVelocity: 0,
+    shape: { type: 'circle', radius: options.radius },
+    material: options.material ?? MATERIAL_PRESETS.default,
+    filter: defaultFilter,
+    response: 'collide',
+    linearDamping: 0.1,
+    angularDamping: 0.1,
+    canSleep: true,
+    sleepThreshold: 10,
+  };
+}
+
+/**
+ * Create a simple box rigid body config
+ */
+export function createBoxBody(
+  id: string,
+  layerId: string,
+  options: {
+    position: PhysicsVec2;
+    width: number;
+    height: number;
+    mass?: number;
+    material?: PhysicsMaterial;
+    isStatic?: boolean;
+  }
+): RigidBodyConfig {
+  const defaultFilter: CollisionFilter = { category: 1, mask: 0xffffffff, group: 0 };
+
+  return {
+    id,
+    layerId,
+    type: options.isStatic ? 'static' : 'dynamic',
+    mass: options.mass ?? 1,
+    position: { ...options.position },
+    velocity: { x: 0, y: 0 },
+    angle: 0,
+    angularVelocity: 0,
+    shape: { type: 'box', width: options.width, height: options.height },
+    material: options.material ?? MATERIAL_PRESETS.default,
+    filter: defaultFilter,
+    response: 'collide',
+    linearDamping: 0.1,
+    angularDamping: 0.1,
+    canSleep: true,
+    sleepThreshold: 10,
+  };
+}
+
+/**
+ * Create a simple gravity force field
+ */
+export function createGravityForce(
+  id: string,
+  gravity: PhysicsVec2 = { x: 0, y: 980 }
+): ForceField {
+  return {
+    id,
+    type: 'gravity',
+    enabled: true,
+    startFrame: 0,
+    endFrame: -1,
+    gravity: { defaultValue: gravity, animated: false, keyframes: [] },
+  } as ForceField;
+}
+
+/**
+ * Create a cloth configuration
+ */
+export function createClothConfig(
+  id: string,
+  layerId: string,
+  options: {
+    origin: PhysicsVec2;
+    width: number;
+    height: number;
+    spacing?: number;
+    pinnedTop?: boolean;
+    pinnedCorners?: boolean;
+  }
+): ClothConfig {
+  const spacing = options.spacing ?? 10;
+  const pinnedParticles: number[] = [];
+
+  if (options.pinnedTop) {
+    for (let x = 0; x < options.width; x++) {
+      pinnedParticles.push(x); // Top row
+    }
+  } else if (options.pinnedCorners) {
+    pinnedParticles.push(0); // Top-left
+    pinnedParticles.push(options.width - 1); // Top-right
+  }
+
+  const defaultFilter: CollisionFilter = { category: 1, mask: 0xffffffff, group: 0 };
+
+  return {
+    id,
+    layerId,
+    width: options.width,
+    height: options.height,
+    spacing,
+    origin: { ...options.origin },
+    pinnedParticles,
+    structuralStiffness: 0.8,
+    shearStiffness: 0.5,
+    bendStiffness: 0.3,
+    iterations: 5,
+    damping: 0.98,
+    particleMass: 0.1,
+    collisionRadius: spacing * 0.3,
+    selfCollision: false,
+    tearThreshold: 0,
+    material: MATERIAL_PRESETS.default,
+    filter: defaultFilter,
+  };
+}

@@ -349,8 +349,8 @@
     <div class="spacer"></div>
 
     <!-- Project name display -->
-    <div class="project-name">
-      {{ projectName || 'Untitled Project' }}
+    <div class="project-name" :title="hasUnsavedChanges ? 'Project has unsaved changes' : 'Project saved'">
+      <span v-if="hasUnsavedChanges" class="unsaved-indicator">*</span>{{ projectName || 'Untitled Project' }}
     </div>
   </div>
 </template>
@@ -377,6 +377,7 @@ const canUndo = computed(() => historyStore.canUndo);
 const canRedo = computed(() => historyStore.canRedo);
 const hasSelection = computed(() => compositorStore.selectedLayerIds.length > 0);
 const projectName = computed(() => compositorStore.project?.name || '');
+const hasUnsavedChanges = computed(() => historyStore.currentIndex > 0);
 
 // View state (these should come from a view store in a real implementation)
 const showGrid = ref(false);
@@ -560,5 +561,11 @@ if (typeof window !== 'undefined') {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.unsaved-indicator {
+  color: var(--weyl-accent);
+  font-weight: bold;
+  margin-right: 2px;
 }
 </style>

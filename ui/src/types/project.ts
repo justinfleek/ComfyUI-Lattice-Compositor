@@ -13,14 +13,87 @@
 import type { EffectInstance } from './effects';
 import type { ShapeLayerData } from './shapes';
 import type { TemplateConfig } from './essentialGraphics';
+import type { LayerStyles, GlobalLightSettings } from './layerStyles';
 
-// Re-export EffectInstance for consumers who import from project.ts
+// Re-export types from modular files for backwards compatibility
 export type { EffectInstance } from './effects';
 export type { ShapeLayerData } from './shapes';
 export type { TemplateConfig } from './essentialGraphics';
+export type { LayerStyles, GlobalLightSettings } from './layerStyles';
+
+// Animation types (extracted to animation.ts)
+export type {
+  AnimatableProperty,
+  PropertyExpression,
+  Keyframe,
+  BezierHandle,
+  ControlMode,
+  BaseInterpolationType,
+  EasingType,
+  InterpolationType
+} from './animation';
+export { createAnimatableProperty, createKeyframe } from './animation';
+
+// Transform types (extracted to transform.ts)
+export type {
+  Vec2,
+  Vec3,
+  LayerTransform,
+  MotionBlurType,
+  LayerMotionBlurSettings,
+  LayerMaterialOptions,
+  AutoOrientMode,
+  FollowPathConstraint
+} from './transform';
+export { createDefaultTransform, normalizeLayerTransform, createFollowPathConstraint } from './transform';
+
+// Mask types (extracted to masks.ts)
+export type {
+  MatteType,
+  TrackMatteType,
+  MaskMode,
+  MaskPath,
+  MaskVertex,
+  LayerMask
+} from './masks';
+export { createDefaultMask, createEllipseMask } from './masks';
+
+// Spline types (extracted to spline.ts)
+export type {
+  ControlPoint,
+  AnimatableControlPoint,
+  AnimatableHandle,
+  EvaluatedControlPoint,
+  SplineData,
+  PathLayerData,
+  SplinePathEffect,
+  SplinePathEffectType,
+  OffsetPathEffect,
+  RoughenEffect,
+  WigglePathEffect,
+  ZigZagEffect,
+  WaveEffect,
+  SplinePathEffectInstance,
+  SplineLODSettings,
+  LODLevel
+} from './spline';
+export { controlPointToAnimatable, animatableToControlPoint, createDefaultSplineData, createDefaultPathLayerData } from './spline';
+
+// Text types (extracted to text.ts)
+export type {
+  TextData,
+  TextAnimator,
+  TextRangeSelector,
+  TextWigglySelector,
+  TextExpressionSelector,
+  TextAnimatorProperties,
+  TextAnimatorPresetType
+} from './text';
+export { createDefaultTextData } from './text';
 
 export interface WeylProject {
   version: "1.0.0";
+  schemaVersion?: number;  // Schema version for migrations (default: 1)
   meta: ProjectMeta;
 
   // Multi-composition support (professional workflow)
@@ -31,8 +104,34 @@ export interface WeylProject {
   composition: CompositionSettings;
 
   assets: Record<string, AssetReference>;
+
+  // Data assets for data-driven animation (JSON, CSV, TSV)
+  // Access in expressions via: footage("filename.json").sourceData
+  dataAssets?: Record<string, DataAssetReference>;
+
   layers: Layer[];  // Layers for main composition (legacy)
   currentFrame: number;
+}
+
+/**
+ * Reference to a data asset (JSON, CSV, TSV) for expressions
+ * Used for data-driven animation - chart data, CSV tables, JSON configs
+ */
+export interface DataAssetReference {
+  id: string;
+  name: string;                    // Original filename
+  type: 'json' | 'csv' | 'tsv' | 'mgjson';
+  rawContent: string;              // Original file content
+  lastModified: number;            // Timestamp
+
+  // For JSON: the parsed data
+  sourceData?: any;
+
+  // For CSV/TSV: tabular structure
+  headers?: string[];
+  rows?: string[][];
+  numRows?: number;
+  numColumns?: number;
 }
 
 export interface ProjectMeta {
@@ -65,6 +164,33 @@ export interface Composition {
   // Essential Graphics / Template configuration
   // When set, this composition can be used as a Motion Graphics Template (MOGRT)
   templateConfig?: TemplateConfig;
+
+  // Global Light settings for Layer Styles
+  // Styles with useGlobalLight=true share this angle/altitude
+  globalLight?: GlobalLightSettings;
+}
+
+export type ColorSpace =
+  | 'sRGB'
+  | 'linear-sRGB'
+  | 'Adobe-RGB'
+  | 'Display-P3'
+  | 'ProPhoto-RGB'
+  | 'ACEScg'
+  | 'Rec709'
+  | 'Rec2020';
+
+export type ViewTransform = 'sRGB' | 'Display-P3' | 'Rec709' | 'ACES-sRGB' | 'Filmic';
+
+export interface ColorSettings {
+  /** Working color space for compositing */
+  workingColorSpace: ColorSpace;
+  /** View transform for preview */
+  viewTransform: ViewTransform;
+  /** Export color space */
+  exportColorSpace: ColorSpace | 'source';
+  /** Enable linear RGB compositing */
+  linearCompositing: boolean;
 }
 
 export interface CompositionSettings {
@@ -77,6 +203,9 @@ export interface CompositionSettings {
 
   // Auto-adjustment behavior
   autoResizeToContent: boolean;  // Resize when video imported
+
+  // Color management (Phase 6)
+  colorSettings?: ColorSettings;
 }
 
 // ============================================================
@@ -237,22 +366,7 @@ export interface FollowPathConstraint {
   loopMode: 'clamp' | 'loop' | 'pingpong';
 }
 
-/**
- * Create default Follow Path constraint
- */
-export function createFollowPathConstraint(pathLayerId: string): FollowPathConstraint {
-  return {
-    enabled: true,
-    pathLayerId,
-    progress: createAnimatableProperty('Progress', 0, 'number'),
-    offset: createAnimatableProperty('Offset', 0, 'number'),
-    tangentOffset: 0,
-    autoOrient: true,
-    rotationOffset: createAnimatableProperty('Rotation Offset', 0, 'number'),
-    banking: createAnimatableProperty('Banking', 0, 'number'),
-    loopMode: 'clamp',
-  };
-}
+// createFollowPathConstraint is now in transform.ts
 
 export interface Layer {
   id: string;
@@ -315,6 +429,11 @@ export interface Layer {
 
   properties: AnimatableProperty<any>[];
   effects: EffectInstance[];  // Effect stack - processed top to bottom
+
+  // Layer Styles (Photoshop-style effects: drop shadow, bevel, stroke, etc.)
+  // Renders BEFORE effects in fixed order: shadow → glow → bevel → overlay → stroke
+  layerStyles?: LayerStyles;
+
   data: SplineData | PathLayerData | TextData | ParticleData | ParticleLayerData | DepthflowLayerData | GeneratedMapData | CameraLayerData | ImageLayerData | VideoData | NestedCompData | ProceduralMatteData | ShapeLayerData | ModelLayerData | PointCloudLayerData | null;
 }
 
@@ -342,6 +461,7 @@ export type LayerType =
   | 'matte'      // Procedural matte (animated patterns for track mattes)
   | 'model'      // 3D model (GLTF, OBJ, FBX, USD)
   | 'pointcloud' // Point cloud (PLY, PCD, LAS)
+  | 'pose'       // OpenPose skeleton (ControlNet pose conditioning)
   | 'effectLayer'// Effect layer (effects apply to layers below)
   | 'adjustment';// @deprecated Use 'effectLayer' instead
 
@@ -430,6 +550,7 @@ export type LayerDataMap = {
   normal: NormalLayerData;
   audio: AudioLayerData;
   control: ControlLayerData;
+  pose: PoseLayerData;
   // Layers with specialized data (previously null)
   light: LightLayerData;
   solid: SolidLayerData;
@@ -522,184 +643,6 @@ export const BLEND_MODE_CATEGORIES = {
   component: ['hue', 'saturation', 'color', 'luminosity'],
   utility: ['stencil-alpha', 'stencil-luma', 'silhouette-alpha', 'silhouette-luma', 'alpha-add', 'luminescent-premul']
 } as const;
-
-// ============================================================
-// MASK SYSTEM - Professional mask paths and track mattes
-// ============================================================
-
-/**
- * Matte source types (uses layer above as matte source)
- */
-export type MatteType =
-  | 'none'           // No matte source
-  | 'alpha'          // Use alpha channel of matte layer
-  | 'alpha_inverted' // Invert alpha of matte layer
-  | 'luma'           // Use luminance of matte layer
-  | 'luma_inverted'; // Invert luminance of matte layer
-
-/** @deprecated Use MatteType instead */
-export type TrackMatteType = MatteType;
-
-/**
- * Mask mode determines how multiple masks combine
- */
-export type MaskMode =
-  | 'add'           // Union of masks (default)
-  | 'subtract'      // Subtract this mask from previous
-  | 'intersect'     // Intersection with previous
-  | 'lighten'       // Max of mask values
-  | 'darken'        // Min of mask values
-  | 'difference'    // Absolute difference
-  | 'none';         // Mask is disabled
-
-/**
- * Layer mask - bezier path that clips layer content
- */
-export interface LayerMask {
-  id: string;
-  name: string;
-  enabled: boolean;
-  locked: boolean;
-  mode: MaskMode;
-  inverted: boolean;
-
-  // Mask path (bezier curve)
-  path: AnimatableProperty<MaskPath>;
-
-  // Mask properties
-  opacity: AnimatableProperty<number>;     // 0-100
-  feather: AnimatableProperty<number>;     // Blur amount in pixels
-  featherX?: AnimatableProperty<number>;   // Horizontal feather (if different)
-  featherY?: AnimatableProperty<number>;   // Vertical feather (if different)
-  expansion: AnimatableProperty<number>;   // Expand/contract mask boundary
-
-  // Color tint for mask display in UI
-  color: string;  // Hex color for visualization
-}
-
-/**
- * Mask path - collection of bezier vertices forming a closed shape
- */
-export interface MaskPath {
-  closed: boolean;
-  vertices: MaskVertex[];
-}
-
-/**
- * Mask vertex - point with optional bezier handles
- */
-export interface MaskVertex {
-  // Position (relative to layer bounds, 0-1 or pixel coordinates)
-  x: number;
-  y: number;
-
-  // Incoming tangent (from previous vertex)
-  inTangentX: number;
-  inTangentY: number;
-
-  // Outgoing tangent (to next vertex)
-  outTangentX: number;
-  outTangentY: number;
-}
-
-/**
- * Helper to create a mask AnimatableProperty (uses late-bound createAnimatableProperty)
- */
-function createMaskAnimatableProperty<T>(
-  name: string,
-  value: T,
-  type: 'number' | 'position' | 'color' | 'enum' | 'vector3' = 'number'
-): AnimatableProperty<T> {
-  return {
-    id: `mask_prop_${name}_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-    name,
-    type,
-    value,
-    animated: false,
-    keyframes: [],
-  };
-}
-
-/**
- * Create a default rectangular mask covering the full layer
- */
-export function createDefaultMask(id: string, width: number, height: number): LayerMask {
-  return {
-    id,
-    name: 'Mask 1',
-    enabled: true,
-    locked: false,
-    mode: 'add',
-    inverted: false,
-    path: createMaskAnimatableProperty<MaskPath>('Mask Path', {
-      closed: true,
-      vertices: [
-        { x: 0, y: 0, inTangentX: 0, inTangentY: 0, outTangentX: 0, outTangentY: 0 },
-        { x: width, y: 0, inTangentX: 0, inTangentY: 0, outTangentX: 0, outTangentY: 0 },
-        { x: width, y: height, inTangentX: 0, inTangentY: 0, outTangentX: 0, outTangentY: 0 },
-        { x: 0, y: height, inTangentX: 0, inTangentY: 0, outTangentX: 0, outTangentY: 0 },
-      ],
-    }, 'position'),
-    opacity: createMaskAnimatableProperty<number>('Mask Opacity', 100, 'number'),
-    feather: createMaskAnimatableProperty<number>('Mask Feather', 0, 'number'),
-    expansion: createMaskAnimatableProperty<number>('Mask Expansion', 0, 'number'),
-    color: '#FFFF00',  // Yellow default
-  };
-}
-
-/**
- * Create an elliptical mask
- */
-export function createEllipseMask(
-  id: string,
-  centerX: number,
-  centerY: number,
-  radiusX: number,
-  radiusY: number
-): LayerMask {
-  // Bezier approximation of ellipse (kappa = 4 * (sqrt(2) - 1) / 3)
-  const kappa = 0.5522847498;
-  const ox = radiusX * kappa;  // Control point offset horizontal
-  const oy = radiusY * kappa;  // Control point offset vertical
-
-  return {
-    id,
-    name: 'Mask 1',
-    enabled: true,
-    locked: false,
-    mode: 'add',
-    inverted: false,
-    path: createMaskAnimatableProperty<MaskPath>('Mask Path', {
-      closed: true,
-      vertices: [
-        {
-          x: centerX, y: centerY - radiusY,
-          inTangentX: -ox, inTangentY: 0,
-          outTangentX: ox, outTangentY: 0,
-        },
-        {
-          x: centerX + radiusX, y: centerY,
-          inTangentX: 0, inTangentY: -oy,
-          outTangentX: 0, outTangentY: oy,
-        },
-        {
-          x: centerX, y: centerY + radiusY,
-          inTangentX: ox, inTangentY: 0,
-          outTangentX: -ox, outTangentY: 0,
-        },
-        {
-          x: centerX - radiusX, y: centerY,
-          inTangentX: 0, inTangentY: oy,
-          outTangentX: 0, outTangentY: -oy,
-        },
-      ],
-    }, 'position'),
-    opacity: createMaskAnimatableProperty<number>('Mask Opacity', 100, 'number'),
-    feather: createMaskAnimatableProperty<number>('Mask Feather', 0, 'number'),
-    expansion: createMaskAnimatableProperty<number>('Mask Expansion', 0, 'number'),
-    color: '#00FFFF',  // Cyan
-  };
-}
 
 // ============================================================
 // IMAGE LAYER DATA - Static image display
@@ -1032,6 +975,111 @@ export function createDefaultNullLayerData(): NullLayerData {
   return {
     size: 40,
   };
+}
+
+// ============================================================
+// POSE LAYER DATA
+// OpenPose skeleton for ControlNet conditioning
+// ============================================================
+
+export type PoseFormat = 'coco18' | 'body25' | 'custom';
+
+export interface PoseKeypoint {
+  /** X position (0-1 normalized) */
+  x: number;
+  /** Y position (0-1 normalized) */
+  y: number;
+  /** Confidence/visibility (0-1, 0 = invisible) */
+  confidence: number;
+}
+
+export interface Pose {
+  /** Unique ID for this pose */
+  id: string;
+  /** Array of keypoints (length depends on format) */
+  keypoints: PoseKeypoint[];
+  /** Pose format */
+  format: PoseFormat;
+}
+
+export interface PoseLayerData {
+  /** All poses in this layer */
+  poses: Pose[];
+  /** Pose format */
+  format: PoseFormat;
+  /** Whether keypoints are normalized (0-1) */
+  normalized: boolean;
+  /** Bone line width */
+  boneWidth: number;
+  /** Keypoint circle radius */
+  keypointRadius: number;
+  /** Show keypoint circles */
+  showKeypoints: boolean;
+  /** Show bone connections */
+  showBones: boolean;
+  /** Show keypoint labels */
+  showLabels: boolean;
+  /** Use OpenPose standard colors */
+  useDefaultColors: boolean;
+  /** Custom bone color (when not using defaults) */
+  customBoneColor: string;
+  /** Custom keypoint color (when not using defaults) */
+  customKeypointColor: string;
+  /** Selected keypoint index for editing (-1 = none) */
+  selectedKeypoint: number;
+  /** Selected pose index for editing (-1 = none) */
+  selectedPose: number;
+}
+
+/**
+ * Create default pose layer data with T-pose
+ */
+export function createDefaultPoseLayerData(): PoseLayerData {
+  return {
+    poses: [{
+      id: 'pose-1',
+      format: 'coco18',
+      keypoints: createDefaultTPose(),
+    }],
+    format: 'coco18',
+    normalized: true,
+    boneWidth: 4,
+    keypointRadius: 4,
+    showKeypoints: true,
+    showBones: true,
+    showLabels: false,
+    useDefaultColors: true,
+    customBoneColor: '#FFFFFF',
+    customKeypointColor: '#FF0000',
+    selectedKeypoint: -1,
+    selectedPose: 0,
+  };
+}
+
+/**
+ * Create default T-pose keypoints (COCO 18-point format, normalized 0-1)
+ */
+function createDefaultTPose(): PoseKeypoint[] {
+  return [
+    { x: 0.5, y: 0.1, confidence: 1 },    // 0: nose
+    { x: 0.5, y: 0.2, confidence: 1 },    // 1: neck
+    { x: 0.35, y: 0.2, confidence: 1 },   // 2: right_shoulder
+    { x: 0.2, y: 0.2, confidence: 1 },    // 3: right_elbow
+    { x: 0.1, y: 0.2, confidence: 1 },    // 4: right_wrist
+    { x: 0.65, y: 0.2, confidence: 1 },   // 5: left_shoulder
+    { x: 0.8, y: 0.2, confidence: 1 },    // 6: left_elbow
+    { x: 0.9, y: 0.2, confidence: 1 },    // 7: left_wrist
+    { x: 0.4, y: 0.45, confidence: 1 },   // 8: right_hip
+    { x: 0.4, y: 0.65, confidence: 1 },   // 9: right_knee
+    { x: 0.4, y: 0.85, confidence: 1 },   // 10: right_ankle
+    { x: 0.6, y: 0.45, confidence: 1 },   // 11: left_hip
+    { x: 0.6, y: 0.65, confidence: 1 },   // 12: left_knee
+    { x: 0.6, y: 0.85, confidence: 1 },   // 13: left_ankle
+    { x: 0.45, y: 0.08, confidence: 1 },  // 14: right_eye
+    { x: 0.55, y: 0.08, confidence: 1 },  // 15: left_eye
+    { x: 0.4, y: 0.1, confidence: 1 },    // 16: right_ear
+    { x: 0.6, y: 0.1, confidence: 1 },    // 17: left_ear
+  ];
 }
 
 // ============================================================
@@ -2170,587 +2218,6 @@ export interface ExtractedTexture {
 }
 
 // ============================================================
-// LAYER TRANSFORM (2D/3D Hybrid)
-// ============================================================
-
-export interface LayerTransform {
-  // Position can be {x,y} or {x,y,z} depending on threeD flag
-  position: AnimatableProperty<{ x: number; y: number; z?: number }>;
-
-  // Origin point for rotation/scale (new name, replaces anchorPoint)
-  origin: AnimatableProperty<{ x: number; y: number; z?: number }>;
-
-  /** @deprecated Use 'origin' instead. Kept for backwards compatibility. */
-  anchorPoint?: AnimatableProperty<{ x: number; y: number; z?: number }>;
-
-  scale: AnimatableProperty<{ x: number; y: number; z?: number }>;
-
-  // 2D Rotation
-  rotation: AnimatableProperty<number>;
-
-  // 3D Rotations (Only active if threeD is true)
-  orientation?: AnimatableProperty<{ x: number; y: number; z: number }>;
-  rotationX?: AnimatableProperty<number>;
-  rotationY?: AnimatableProperty<number>;
-  rotationZ?: AnimatableProperty<number>;
-}
-
-// ============================================================
-// ANIMATION TYPES
-// ============================================================
-
-export interface AnimatableProperty<T> {
-  id: string;
-  name: string;
-  type: 'number' | 'position' | 'color' | 'enum' | 'vector3';
-  value: T;             // Default/current value
-  animated: boolean;
-  keyframes: Keyframe<T>[];
-  group?: string;       // Property group for timeline organization (e.g., "Transform", "Text", "More Options")
-
-  // Expression system - applies post-interpolation modifications
-  expression?: PropertyExpression;
-}
-
-/**
- * Expression attached to a property
- * Evaluated after keyframe interpolation to add dynamic behavior
- */
-export interface PropertyExpression {
-  /** Whether the expression is active */
-  enabled: boolean;
-  /** Expression type: 'preset' for named expressions, 'custom' for user scripts */
-  type: 'preset' | 'custom';
-  /** Expression name (for presets: 'jitter', 'repeatAfter', 'inertia', etc.) */
-  name: string;
-  /** Expression parameters */
-  params: Record<string, number | string | boolean>;
-}
-
-export interface Keyframe<T> {
-  id: string;
-  frame: number;        // 0-80
-  value: T;
-  interpolation: InterpolationType;
-  inHandle: BezierHandle;
-  outHandle: BezierHandle;
-  controlMode: ControlMode;  // How handles behave when dragged
-}
-
-// Control mode for bezier handles (industry standard)
-export type ControlMode = 'symmetric' | 'smooth' | 'corner';
-
-// Base interpolation types
-export type BaseInterpolationType = 'linear' | 'bezier' | 'hold';
-
-// All easing function names
-export type EasingType =
-  | 'easeInSine' | 'easeOutSine' | 'easeInOutSine'
-  | 'easeInQuad' | 'easeOutQuad' | 'easeInOutQuad'
-  | 'easeInCubic' | 'easeOutCubic' | 'easeInOutCubic'
-  | 'easeInQuart' | 'easeOutQuart' | 'easeInOutQuart'
-  | 'easeInQuint' | 'easeOutQuint' | 'easeInOutQuint'
-  | 'easeInExpo' | 'easeOutExpo' | 'easeInOutExpo'
-  | 'easeInCirc' | 'easeOutCirc' | 'easeInOutCirc'
-  | 'easeInBack' | 'easeOutBack' | 'easeInOutBack'
-  | 'easeInElastic' | 'easeOutElastic' | 'easeInOutElastic'
-  | 'easeInBounce' | 'easeOutBounce' | 'easeInOutBounce';
-
-// Combined interpolation type (base types + easing functions)
-export type InterpolationType = BaseInterpolationType | EasingType;
-
-export interface BezierHandle {
-  frame: number;   // Frame offset from keyframe (negative for inHandle, positive for outHandle)
-  value: number;   // Value offset from keyframe (can be positive or negative)
-  enabled: boolean; // Whether this handle is active (for graph editor)
-}
-
-// ============================================================
-// SPLINE DATA
-// ============================================================
-
-export interface SplineData {
-  pathData: string;     // SVG path commands (M, C, Q, L, Z)
-  controlPoints: ControlPoint[];
-  closed: boolean;
-
-  // Stroke properties
-  stroke: string;              // Stroke color hex
-  strokeWidth: number;         // Stroke width in pixels
-  strokeOpacity?: number;      // Stroke opacity 0-100 (default 100)
-  strokeLineCap?: 'butt' | 'round' | 'square';  // Line cap style
-  strokeLineJoin?: 'miter' | 'round' | 'bevel'; // Line join style
-  strokeMiterLimit?: number;   // Miter limit (default 4)
-
-  // Animated Dash properties
-  strokeDashArray?: number[] | AnimatableProperty<number[]>;  // Dash pattern [dash, gap, ...]
-  strokeDashOffset?: number | AnimatableProperty<number>;     // Animated dash offset
-
-  // Fill properties
-  fill: string;                // Fill color hex (empty = no fill)
-  fillOpacity?: number;        // Fill opacity 0-100 (default 100)
-
-  // Animated Trim Paths (for draw-on effects)
-  trimStart?: number | AnimatableProperty<number>;    // Trim start 0-100%
-  trimEnd?: number | AnimatableProperty<number>;      // Trim end 0-100%
-  trimOffset?: number | AnimatableProperty<number>;   // Trim offset in degrees
-
-  // Path Effects (applied in order before trim)
-  pathEffects?: SplinePathEffect[];
-
-  // Animated spline support (Phase 1)
-  animatedControlPoints?: AnimatableControlPoint[];
-  animated?: boolean;   // True if using animatedControlPoints
-
-  // Level of Detail (for complex vectors)
-  lod?: SplineLODSettings;
-
-  // Mesh Warp deformation pins (primary property)
-  warpPins?: import('./meshWarp').WarpPin[];
-
-  /** @deprecated Use warpPins instead */
-  puppetPins?: import('./meshWarp').WarpPin[];
-}
-
-// ============================================================
-// PATH LAYER DATA
-// Motion path for text-on-path, camera paths, particle emitters
-// Unlike SplineData, has NO visual stroke/fill properties
-// ============================================================
-
-export interface PathLayerData {
-  /** SVG path commands (M, C, Q, L, Z) */
-  pathData: string;
-
-  /** Control points defining the path */
-  controlPoints: ControlPoint[];
-
-  /** Whether the path is closed */
-  closed: boolean;
-
-  /** Show dashed guide line in editor (default: true) */
-  showGuide: boolean;
-
-  /** Guide line color (default: '#00FFFF' cyan) */
-  guideColor: string;
-
-  /** Guide line dash pattern [dash, gap] */
-  guideDashPattern: [number, number];
-
-  /** Animated control points for path morphing */
-  animatedControlPoints?: AnimatableControlPoint[];
-
-  /** True if using animatedControlPoints */
-  animated?: boolean;
-}
-
-/**
- * Path effect base interface
- */
-export interface SplinePathEffect {
-  id: string;
-  type: SplinePathEffectType;
-  enabled: boolean;
-  order: number;  // Execution order (lower = first)
-}
-
-export type SplinePathEffectType =
-  | 'offsetPath'
-  | 'roughen'
-  | 'wiggle'
-  | 'zigzag'
-  | 'wave';
-
-/**
- * Offset Path Effect - grow/shrink paths
- */
-export interface OffsetPathEffect extends SplinePathEffect {
-  type: 'offsetPath';
-  amount: AnimatableProperty<number>;       // Positive = expand, negative = contract
-  lineJoin: 'miter' | 'round' | 'bevel';
-  miterLimit: AnimatableProperty<number>;
-}
-
-/**
- * Roughen Effect - organic hand-drawn look
- */
-export interface RoughenEffect extends SplinePathEffect {
-  type: 'roughen';
-  size: AnimatableProperty<number>;         // Roughness magnitude
-  detail: AnimatableProperty<number>;       // Points per segment
-  seed: number;                             // Deterministic randomness
-}
-
-/**
- * Wiggle Path Effect - animated jitter
- */
-export interface WigglePathEffect extends SplinePathEffect {
-  type: 'wiggle';
-  size: AnimatableProperty<number>;
-  detail: AnimatableProperty<number>;
-  temporalPhase: AnimatableProperty<number>;  // Animated offset for motion
-  spatialPhase: AnimatableProperty<number>;
-  correlation: AnimatableProperty<number>;    // 0-100%
-  seed: number;
-}
-
-/**
- * ZigZag Effect - decorative zigzag pattern
- */
-export interface ZigZagEffect extends SplinePathEffect {
-  type: 'zigzag';
-  size: AnimatableProperty<number>;
-  ridgesPerSegment: AnimatableProperty<number>;
-  pointType: 'corner' | 'smooth';
-}
-
-/**
- * Wave Effect - sine/triangle/square wave distortion
- */
-export interface WaveEffect extends SplinePathEffect {
-  type: 'wave';
-  amplitude: AnimatableProperty<number>;
-  frequency: AnimatableProperty<number>;
-  phase: AnimatableProperty<number>;        // Animated phase for wave motion
-  waveType: 'sine' | 'triangle' | 'square';
-}
-
-/**
- * Union type for all path effects
- */
-export type SplinePathEffectInstance =
-  | OffsetPathEffect
-  | RoughenEffect
-  | WigglePathEffect
-  | ZigZagEffect
-  | WaveEffect;
-
-/**
- * Level of Detail settings for complex vectors
- */
-export interface SplineLODSettings {
-  enabled: boolean;
-  mode: 'zoom' | 'playback' | 'both';
-  levels: LODLevel[];
-  maxPointsForPreview: number;
-  simplificationTolerance: number;
-  cullingEnabled: boolean;
-  cullMargin: number;
-}
-
-/**
- * Single LOD level with pre-simplified points
- */
-export interface LODLevel {
-  tolerance: number;
-  controlPoints: ControlPoint[];
-  pointCount: number;
-  /** Quality index (0 = highest, higher = more simplified) */
-  quality?: number;
-  /** Complexity metric for this level */
-  complexity?: number;
-}
-
-/**
- * Static control point - for non-animated splines (legacy/default)
- */
-export interface ControlPoint {
-  id: string;
-  x: number;
-  y: number;
-  depth?: number;       // Sampled from depth map
-  handleIn: { x: number; y: number } | null;
-  handleOut: { x: number; y: number } | null;
-  type: 'corner' | 'smooth' | 'symmetric';
-  group?: string;       // Group ID for grouped animations (e.g., "head", "arm_left")
-}
-
-/**
- * Animated control point - for keyframe-animated splines
- * x and y are AnimatableProperty<number> enabling per-frame interpolation
- */
-export interface AnimatableControlPoint {
-  id: string;
-  x: AnimatableProperty<number>;
-  y: AnimatableProperty<number>;
-  depth?: AnimatableProperty<number>;  // Can also be animated in Phase 2
-  handleIn: AnimatableHandle | null;   // Handles can be animated too
-  handleOut: AnimatableHandle | null;
-  type: 'corner' | 'smooth' | 'symmetric';
-  group?: string;       // Group ID for grouped animations
-}
-
-/**
- * Animated bezier handle - for advanced handle animation
- */
-export interface AnimatableHandle {
-  x: AnimatableProperty<number>;
-  y: AnimatableProperty<number>;
-}
-
-/**
- * Evaluated control point at a specific frame
- * Result of interpolating an AnimatableControlPoint
- */
-export interface EvaluatedControlPoint {
-  id: string;
-  x: number;
-  y: number;
-  depth: number;
-  handleIn: { x: number; y: number } | null;
-  handleOut: { x: number; y: number } | null;
-  type: 'corner' | 'smooth' | 'symmetric';
-  group?: string;       // Group ID for grouped animations
-}
-
-/**
- * Convert a static ControlPoint to an AnimatableControlPoint
- * Used for migration and enabling animation on existing splines
- */
-export function controlPointToAnimatable(cp: ControlPoint): AnimatableControlPoint {
-  return {
-    id: cp.id,
-    x: createAnimatableProperty('x', cp.x, 'number'),
-    y: createAnimatableProperty('y', cp.y, 'number'),
-    depth: cp.depth !== undefined
-      ? createAnimatableProperty('depth', cp.depth, 'number')
-      : undefined,
-    handleIn: cp.handleIn ? {
-      x: createAnimatableProperty('handleIn.x', cp.handleIn.x, 'number'),
-      y: createAnimatableProperty('handleIn.y', cp.handleIn.y, 'number'),
-    } : null,
-    handleOut: cp.handleOut ? {
-      x: createAnimatableProperty('handleOut.x', cp.handleOut.x, 'number'),
-      y: createAnimatableProperty('handleOut.y', cp.handleOut.y, 'number'),
-    } : null,
-    type: cp.type,
-    group: cp.group,
-  };
-}
-
-/**
- * Convert an AnimatableControlPoint back to a static ControlPoint
- * Uses current/default values (not frame-evaluated)
- */
-export function animatableToControlPoint(acp: AnimatableControlPoint): ControlPoint {
-  return {
-    id: acp.id,
-    x: acp.x.value,
-    y: acp.y.value,
-    depth: acp.depth?.value,
-    handleIn: acp.handleIn ? {
-      x: acp.handleIn.x.value,
-      y: acp.handleIn.y.value,
-    } : null,
-    handleOut: acp.handleOut ? {
-      x: acp.handleOut.x.value,
-      y: acp.handleOut.y.value,
-    } : null,
-    type: acp.type,
-    group: acp.group,
-  };
-}
-
-// ============================================================
-// TEXT DATA (Professional Feature Set)
-// ============================================================
-
-export interface TextData {
-  // Source Text
-  text: string;
-  fontFamily: string;
-  fontSize: number;
-  fontWeight: string;
-  fontStyle: 'normal' | 'italic';
-  fill: string;         // Color hex
-  stroke: string;       // Color hex
-  strokeWidth: number;
-
-  // Character Properties (from Context Menu / Animators)
-  tracking: number;           // Tracking (spacing)
-  lineSpacing: number;        // Leading
-  lineAnchor: number;         // 0% to 100%
-  characterOffset: number;    // Integer shift
-  characterValue: number;     // Unicode shift
-  blur: { x: number; y: number }; // Per-character blur
-
-  // Paragraph (legacy aliases)
-  letterSpacing: number;      // Alias for tracking
-  lineHeight: number;         // Alias for lineSpacing
-  textAlign: 'left' | 'center' | 'right';
-
-  // Path Options (Professional Feature Set)
-  pathLayerId: string | null;
-  pathReversed: boolean;          // Reverse Path direction
-  pathPerpendicularToPath: boolean; // Characters perpendicular to path tangent
-  pathForceAlignment: boolean;    // Force alignment to path
-  pathFirstMargin: number;        // First Margin (pixels from path start)
-  pathLastMargin: number;         // Last Margin (pixels from path end)
-  pathOffset: number;             // 0-100%, animatable - shifts all characters along path
-  pathAlign: 'left' | 'center' | 'right';  // Baseline alignment
-
-  // More Options (Advanced)
-  anchorPointGrouping: 'character' | 'word' | 'line' | 'all';
-  groupingAlignment: { x: number; y: number }; // Percentages
-  fillAndStroke: 'fill-over-stroke' | 'stroke-over-fill';
-  interCharacterBlending: 'normal' | 'multiply' | 'screen' | 'overlay';
-
-  // 3D Text
-  perCharacter3D: boolean;
-
-  // Advanced Character Properties (Tutorial 7)
-  baselineShift?: number;        // Vertical shift in pixels
-  textCase?: 'normal' | 'uppercase' | 'lowercase' | 'smallCaps';
-  verticalAlign?: 'normal' | 'superscript' | 'subscript';
-
-  // OpenType Features (Phase 2: Text System)
-  kerning?: boolean;              // Enable/disable kerning (default: true)
-  ligatures?: boolean;            // Enable standard ligatures (default: true)
-  discretionaryLigatures?: boolean; // Enable discretionary ligatures (default: false)
-  smallCapsFeature?: boolean;     // Use OpenType small caps (default: false)
-  stylisticSet?: number;          // Stylistic set 1-20 (0 = none)
-
-  // Advanced Paragraph Properties (Tutorial 7)
-  firstLineIndent?: number;      // Pixels
-  spaceBefore?: number;          // Pixels before paragraph
-  spaceAfter?: number;           // Pixels after paragraph
-
-  // Text Animators (After Effects-style per-character animation)
-  animators?: TextAnimator[];
-}
-
-// ============================================================
-// TEXT ANIMATOR (Per-character animation like AE)
-// ============================================================
-
-export interface TextAnimator {
-  id: string;
-  name: string;
-  enabled: boolean;
-
-  // Selectors (can have multiple - Range, Wiggly, Expression)
-  rangeSelector: TextRangeSelector;
-  wigglySelector?: TextWigglySelector;
-  expressionSelector?: TextExpressionSelector;
-
-  // Animatable Properties
-  properties: TextAnimatorProperties;
-}
-
-export interface TextRangeSelector {
-  // Units mode
-  mode: 'percent' | 'index';
-
-  // Selection range (0-100 for percent, integers for index)
-  start: AnimatableProperty<number>;
-  end: AnimatableProperty<number>;
-  offset: AnimatableProperty<number>;
-
-  // Selection unit
-  basedOn: 'characters' | 'characters_excluding_spaces' | 'words' | 'lines';
-
-  // Shape for selection falloff
-  shape: 'square' | 'ramp_up' | 'ramp_down' | 'triangle' | 'round' | 'smooth';
-
-  // Selector Mode (Tutorial 7 - how multiple selectors combine)
-  selectorMode?: 'add' | 'subtract' | 'intersect' | 'min' | 'max' | 'difference';
-
-  // Advanced parameters (Tutorial 7)
-  amount?: number;       // 0-100%, overall influence of this selector
-  smoothness?: number;   // 0-100%, smoothing of selection edges
-
-  // Randomness
-  randomizeOrder: boolean;
-  randomSeed: number;
-
-  // Easing
-  ease: { high: number; low: number }; // 0-100
-}
-
-// Wiggly Selector - adds randomization to property values (Tutorial 7)
-export interface TextWigglySelector {
-  enabled: boolean;
-
-  // Mode for combining with other selectors
-  mode: 'add' | 'subtract' | 'intersect' | 'min' | 'max' | 'difference';
-
-  // Amount of wiggle influence
-  maxAmount: number;     // 0-100%
-  minAmount: number;     // 0-100%
-
-  // Temporal settings
-  wigglesPerSecond: number;  // How fast values change
-
-  // Correlation - how much characters move together
-  // 0% = fully random per character, 100% = all move together (wave)
-  correlation: number;
-
-  // Lock dimensions - X and Y wiggle together
-  lockDimensions: boolean;
-
-  // Spatial settings
-  basedOn: 'characters' | 'characters_excluding_spaces' | 'words' | 'lines';
-
-  // Random seed for deterministic results
-  randomSeed: number;
-}
-
-// Expression Selector - programmatic control via expressions (Tutorial 7)
-export interface TextExpressionSelector {
-  enabled: boolean;
-
-  // Mode for combining with other selectors
-  mode: 'add' | 'subtract' | 'intersect' | 'min' | 'max' | 'difference';
-
-  // The expression that calculates amount per character
-  // Available variables: textIndex, textTotal, selectorValue, time, frame
-  amountExpression: string;
-
-  // Based on unit
-  basedOn: 'characters' | 'characters_excluding_spaces' | 'words' | 'lines';
-}
-
-export interface TextAnimatorProperties {
-  // Transform properties
-  position?: AnimatableProperty<{ x: number; y: number }>;
-  anchorPoint?: AnimatableProperty<{ x: number; y: number }>;
-  scale?: AnimatableProperty<{ x: number; y: number }>;
-  rotation?: AnimatableProperty<number>;
-  skew?: AnimatableProperty<number>;
-  skewAxis?: AnimatableProperty<number>;
-
-  // Style properties
-  opacity?: AnimatableProperty<number>;
-  fillColor?: AnimatableProperty<string>;
-  fillBrightness?: AnimatableProperty<number>;
-  fillSaturation?: AnimatableProperty<number>;
-  fillHue?: AnimatableProperty<number>;
-  strokeColor?: AnimatableProperty<string>;
-  strokeWidth?: AnimatableProperty<number>;
-
-  // Character properties
-  tracking?: AnimatableProperty<number>;
-  lineAnchor?: AnimatableProperty<number>;
-  lineSpacing?: AnimatableProperty<number>;
-  characterOffset?: AnimatableProperty<number>;
-  blur?: AnimatableProperty<{ x: number; y: number }>;
-}
-
-// Text Animator Presets
-export type TextAnimatorPresetType =
-  | 'typewriter'
-  | 'fade_in_by_character'
-  | 'fade_in_by_word'
-  | 'bounce_in'
-  | 'wave'
-  | 'scale_in'
-  | 'rotate_in'
-  | 'slide_in_left'
-  | 'slide_in_right'
-  | 'blur_in'
-  | 'random_fade';
-
-// ============================================================
 // UTILITY TYPES
 // ============================================================
 
@@ -2773,64 +2240,8 @@ export interface ExportOptions {
 }
 
 // ============================================================
-// HELPER FUNCTIONS
+// HELPER FUNCTIONS (unique to project.ts - others in modular files)
 // ============================================================
-
-/**
- * Create a new animatable property with default values
- */
-export function createAnimatableProperty<T>(
-  name: string,
-  value: T,
-  type: 'number' | 'position' | 'color' | 'enum' | 'vector3' = 'number',
-  group?: string
-): AnimatableProperty<T> {
-  return {
-    id: `prop_${name}_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-    name,
-    type,
-    value,
-    animated: false,
-    keyframes: [],
-    group
-  };
-}
-
-/**
- * Create default layer transform
- */
-export function createDefaultTransform(): LayerTransform {
-  const originProp = createAnimatableProperty('origin', { x: 0, y: 0, z: 0 }, 'vector3');
-  return {
-    position: createAnimatableProperty('position', { x: 0, y: 0, z: 0 }, 'vector3'),
-    origin: originProp,
-    // @deprecated alias for backwards compatibility
-    anchorPoint: originProp,
-    scale: createAnimatableProperty('scale', { x: 100, y: 100, z: 100 }, 'vector3'),
-    rotation: createAnimatableProperty('rotation', 0, 'number'),
-    // 3D rotation properties (always present for consistent structure)
-    orientation: createAnimatableProperty('orientation', { x: 0, y: 0, z: 0 }, 'vector3'),
-    rotationX: createAnimatableProperty('rotationX', 0, 'number'),
-    rotationY: createAnimatableProperty('rotationY', 0, 'number'),
-    rotationZ: createAnimatableProperty('rotationZ', 0, 'number')
-  };
-}
-
-/**
- * Normalize a layer transform to use the new 'origin' property.
- * Handles migration from 'anchorPoint' to 'origin'.
- */
-export function normalizeLayerTransform(transform: LayerTransform): LayerTransform {
-  // If origin is missing but anchorPoint exists, use anchorPoint as origin
-  if (!transform.origin && transform.anchorPoint) {
-    transform.origin = transform.anchorPoint;
-  }
-  // Ensure both exist for backwards compatibility
-  if (transform.origin && !transform.anchorPoint) {
-    transform.anchorPoint = transform.origin;
-  }
-  return transform;
-}
 
 /**
  * Normalize a layer's timing to use the new 'startFrame'/'endFrame' properties.

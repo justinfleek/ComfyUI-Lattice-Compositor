@@ -12,6 +12,7 @@ import { registerTimeEffects } from './timeRenderer';
 import { registerStylizeEffects } from './stylizeRenderer';
 import { registerAudioVisualizerEffects } from './audioVisualizer';
 import { registerExpressionControlRenderers } from './expressionControlRenderer';
+import { registerCinematicBloomEffects } from './cinematicBloom';
 
 /**
  * Initialize all effect renderers
@@ -26,6 +27,7 @@ export function initializeEffects(): void {
   registerStylizeEffects();
   registerAudioVisualizerEffects();
   registerExpressionControlRenderers();
+  registerCinematicBloomEffects();
 }
 
 // Re-export blur effects
@@ -143,3 +145,40 @@ export {
   isExpressionControl,
   getControlParameterName
 } from './expressionControlRenderer';
+
+// Re-export cinematic bloom effects
+export {
+  cinematicBloomRenderer,
+  glowRenderer as simpleGlowRenderer,
+  registerCinematicBloomEffects,
+  tonemapACES,
+  tonemapReinhard,
+  tonemapHable,
+  generateInverseSquareKernel,
+  generateGaussianKernel,
+  generateLensDirt,
+  applyChromaticAberration
+} from './cinematicBloom';
+
+// Re-export layer style renderers (Photoshop-style effects)
+export {
+  renderLayerStyles,
+  renderDropShadowStyle,
+  renderInnerShadowStyle,
+  renderOuterGlowStyle,
+  renderInnerGlowStyle,
+  renderBevelEmbossStyle,
+  renderSatinStyle,
+  renderColorOverlayStyle,
+  renderGradientOverlayStyle,
+  renderStrokeStyle,
+  // Utility functions
+  getValue as getStyleValue,
+  createMatchingCanvas as createStyleCanvas,
+  rgbaToString,
+  angleToOffset,
+  applyBlur as applyStyleBlur,
+  dilateAlpha,
+  erodeAlpha,
+  getCompositeOperation
+} from './layerStyleRenderer';

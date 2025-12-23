@@ -1,6 +1,6 @@
 # WEYL COMPOSITOR - COMPLETE DOCUMENTATION REVIEW
 
-**Date:** December 19, 2025
+**Date:** December 23, 2025
 **Purpose:** Map each specification document to implementation status
 **Priority:** HYPER-CRITICAL for next Claude Code session
 
@@ -186,7 +186,7 @@
 
 **CRITICAL FOR NEXT SESSION:**
 - Audit TimelinePanel.vue for interpolation
-- Audit GraphEditor.vue for evaluation calls
+- Audit CurveEditor.vue for evaluation calls
 
 ---
 
@@ -203,10 +203,10 @@
 | PropertyDriver evaluation | ✅ | - |
 | MappingFunction support | ✅ | - |
 | Audio as source | ✅ | audioReactiveMapping.ts |
-| Pickwhip UI | ⚠️ PARTIAL | Basic wiring only |
+| PropertyLink UI | ⚠️ PARTIAL | Basic wiring only |
 
 **GAPS:**
-- Pickwhip UI needs polish
+- PropertyLink UI needs polish
 - Multi-band audio not fully exposed
 
 ---
@@ -315,9 +315,9 @@
 | Frame-independence tests | ✅ | - |
 | Particle determinism | ✅ | - |
 | Audio determinism | ✅ | - |
-| Test infrastructure | ✅ | Vitest, 1055 tests |
+| Test infrastructure | ✅ | Vitest, 1786 tests |
 
-**TEST RESULTS:** 1012/1055 passing (96%) | **TypeScript:** 0 errors ✅
+**TEST RESULTS:** 1777/1786 passing (99%) | **TypeScript:** 0 errors ✅
 
 ---
 
@@ -371,7 +371,7 @@
 
 2. **UI may contain interpolation** (08_TIMELINE_GRAPH violation)
    - Need to audit TimelinePanel.vue
-   - Need to audit GraphEditor.vue
+   - Need to audit CurveEditor.vue
    - Remove any direct interpolation calls
 
 3. **Mutable store returns** (00_MASTER_GROUND_TRUTH violation)

@@ -273,7 +273,7 @@ In the reference, timeline clips show curved lines connecting related elements (
 └────────────────────────────────────────────────────────────────┘
 ```
 
-### 3.7 GraphEditor.vue / GraphEditorCanvas.vue
+### 3.7 CurveEditor.vue / CurveEditorCanvas.vue
 
 | Element | Current | Target | Notes |
 |---------|---------|--------|-------|
@@ -530,7 +530,7 @@ Match ref "Export" button style:
 |------|---------|----------|
 | `WorkspaceLayout.vue` | Grid layout, floating panels, void background | P0 |
 | `TimelinePanel.vue` | Pill clips, node connections, purple playhead | P0 |
-| `GraphEditorCanvas.vue` | Purple curves, semantic shapes | P0 |
+| `CurveEditorCanvas.vue` | Purple curves, semantic shapes | P0 |
 | `PropertiesPanel.vue` | Dense layout, scrub values | P1 |
 | `AIChatPanel.vue` | Conversational widget style | P1 |
 | `ProjectPanel.vue` | Thumbnail grid, search | P1 |

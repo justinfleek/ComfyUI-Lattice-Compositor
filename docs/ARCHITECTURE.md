@@ -1,7 +1,7 @@
 # WEYL COMPOSITOR - SYSTEM ARCHITECTURE
 
 **Version:** 1.0.0
-**Last Updated:** December 19, 2025
+**Last Updated:** December 23, 2025
 **Purpose:** Complete architectural documentation for developers
 
 ---
@@ -32,7 +32,7 @@
 │  │   Canvas    │  │   Timeline  │  │   Panels    │  │   Property Editor   │ │
 │  │ ThreeCanvas │  │ TimelinePanel│ │ LayerPanel  │  │ TransformProperties │ │
 │  │ SplineEditor│  │ LayerTrack  │  │ EffectsPanel│  │ TextProperties      │ │
-│  │ MaskEditor  │  │ GraphEditor │  │ AssetsPanel │  │ ParticleProperties  │ │
+│  │ MaskEditor  │  │ CurveEditor │  │ AssetsPanel │  │ ParticleProperties  │ │
 │  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘  └──────────┬──────────┘ │
 │         │                │                │                     │            │
 └─────────┼────────────────┼────────────────┼─────────────────────┼────────────┘
@@ -428,7 +428,7 @@ App.vue
 │   │   │       ├── KeyframeDiamond.vue (per keyframe)
 │   │   │       └── MarqueeSelect.vue
 │   │   │
-│   │   └── GraphEditor.vue (Curve editing)
+│   │   └── CurveEditor.vue (Curve editing)
 │   │       ├── CurveEditor.vue
 │   │       └── KeyframeHandles.vue
 │   │
@@ -1162,7 +1162,7 @@ ui/
 │   │   │   ├── AngleDial.vue             # Rotation input
 │   │   │   ├── ColorPicker.vue           # RGBA color picker
 │   │   │   ├── CurveEditor.vue           # Bezier curve handles
-│   │   │   ├── Pickwhip.vue              # Property linking UI
+│   │   │   ├── PropertyLink.vue              # Property linking UI
 │   │   │   ├── NumberInput.vue           # Numeric input with scrub
 │   │   │   ├── VectorInput.vue           # XYZ vector input
 │   │   │   ├── Stopwatch.vue             # Animation toggle
@@ -1207,7 +1207,7 @@ ui/
 │   │       ├── KeyframeDiamond.vue       # Keyframe marker
 │   │       ├── Playhead.vue              # Current frame indicator
 │   │       ├── TimeRuler.vue             # Frame numbers
-│   │       ├── GraphEditor.vue           # Speed/value curves
+│   │       ├── CurveEditor.vue           # Speed/value curves
 │   │       ├── MarqueeSelect.vue         # Box selection
 │   │       └── TimelineContextMenu.vue   # Right-click menu
 │   │

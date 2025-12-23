@@ -11,9 +11,9 @@
 | Metric | Value |
 |--------|-------|
 | **Test Framework** | Vitest |
-| **Total Test Files** | 29 |
-| **Test Categories** | Services (21), Engine (5), Stores (3), Integration (1) |
-| **Pass Rate** | 96% (1012/1055 tests passing) |
+| **Total Test Files** | 48 |
+| **Test Categories** | Services (21), Engine (8), Stores (3), Integration (1), Other (15) |
+| **Pass Rate** | 99% (1777/1786 tests passing) |
 
 ---
 

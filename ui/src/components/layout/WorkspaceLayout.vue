@@ -260,6 +260,11 @@
                     <EffectControlsPanel />
                   </CollapsiblePanel>
 
+                  <!-- Scopes Panel -->
+                  <CollapsiblePanel title="Scopes" :expanded="expandedPanels.scopes" @toggle="expandedPanels.scopes = $event">
+                    <ScopesPanel />
+                  </CollapsiblePanel>
+
                   <!-- Camera Panel -->
                   <CollapsiblePanel title="Camera" :expanded="expandedPanels.camera" @toggle="expandedPanels.camera = $event">
                     <CameraProperties
@@ -286,6 +291,11 @@
                   <!-- Essential Graphics Panel -->
                   <CollapsiblePanel title="Essential Graphics" :expanded="expandedPanels.essentialGraphics" @toggle="expandedPanels.essentialGraphics = $event">
                     <EssentialGraphicsPanel />
+                  </CollapsiblePanel>
+
+                  <!-- Render Queue Panel -->
+                  <CollapsiblePanel title="Render Queue" :expanded="expandedPanels.renderQueue" @toggle="expandedPanels.renderQueue = $event">
+                    <RenderQueuePanel />
                   </CollapsiblePanel>
                 </div>
               </div>
@@ -397,6 +407,12 @@
       @save="handlePreferencesSave"
     />
 
+    <!-- Keyboard Shortcuts Modal -->
+    <KeyboardShortcutsModal
+      :show="showKeyboardShortcutsModal"
+      @close="showKeyboardShortcutsModal = false"
+    />
+
     <!-- AI Path Suggestion Dialog -->
     <PathSuggestionDialog
       :visible="showPathSuggestionDialog"
@@ -443,6 +459,9 @@
         :editable="true"
       />
     </Teleport>
+
+    <!-- Global Toast Notifications -->
+    <ToastContainer />
   </div>
 </template>
 
@@ -470,6 +489,8 @@ import AIGeneratePanel from '@/components/panels/AIGeneratePanel.vue';
 import GenerativeFlowPanel from '@/components/panels/GenerativeFlowPanel.vue';
 import AlignPanel from '@/components/panels/AlignPanel.vue';
 import EssentialGraphicsPanel from '@/components/panels/EssentialGraphicsPanel.vue';
+import RenderQueuePanel from '@/components/panels/RenderQueuePanel.vue';
+import ScopesPanel from '@/components/panels/ScopesPanel.vue';
 import CollapsiblePanel from '@/components/panels/CollapsiblePanel.vue';
 
 // Layout
@@ -494,6 +515,7 @@ import KeyframeInterpolationDialog from '@/components/dialogs/KeyframeInterpolat
 import TimeStretchDialog from '@/components/dialogs/TimeStretchDialog.vue';
 import CameraTrackingImportDialog from '@/components/dialogs/CameraTrackingImportDialog.vue';
 import PreferencesDialog from '@/components/dialogs/PreferencesDialog.vue';
+import KeyboardShortcutsModal from '@/components/dialogs/KeyboardShortcutsModal.vue';
 import ExpressionInput from '@/components/properties/ExpressionInput.vue';
 import { useExpressionEditor } from '@/composables/useExpressionEditor';
 import { useGuides } from '@/composables/useGuides';
@@ -509,6 +531,7 @@ import { useTrackPoints } from '@/services/trackPointService';
 
 // Preview
 import HDPreviewWindow from '@/components/preview/HDPreviewWindow.vue';
+import ToastContainer from '@/components/ui/ToastContainer.vue';
 
 // Stores
 const store = useCompositorStore();
@@ -557,11 +580,13 @@ const rightTab = ref<'effects' | 'properties' | 'camera' | 'audio' | 'preview' |
 const expandedPanels = ref({
   properties: true,
   effects: false,
+  scopes: false,
   camera: false,
   audio: false,
   align: false,
   preview: false,
-  essentialGraphics: false
+  essentialGraphics: false,
+  renderQueue: false
 });
 
 // AI section tab
@@ -579,6 +604,7 @@ const showKeyframeInterpolationDialog = ref(false);
 const showTimeStretchDialog = ref(false);
 const showCameraTrackingImportDialog = ref(false);
 const showPreferencesDialog = ref(false);
+const showKeyboardShortcutsModal = ref(false);
 const showHDPreview = ref(false);
 
 // Vision authoring state
@@ -663,6 +689,7 @@ const keyboard = useKeyboardShortcuts({
   showCurveEditor,
   showTimeStretchDialog,
   showCameraTrackingImportDialog,
+  showKeyboardShortcutsModal,
   currentTool: currentTool as unknown as Ref<string>,
   leftTab: leftTab as unknown as Ref<string>,
   viewOptions,

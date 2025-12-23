@@ -50,6 +50,23 @@
       ref="splineEditorRef"
     />
 
+    <!-- Motion Path Overlay (shows position keyframe paths) -->
+    <MotionPathOverlay
+      v-if="showMotionPath && store.selectedLayerIds.length === 1"
+      :layerId="store.selectedLayerIds[0]"
+      :currentFrame="store.currentFrame"
+      :canvasWidth="compositionWidth"
+      :canvasHeight="compositionHeight"
+      :containerWidth="canvasWidth"
+      :containerHeight="canvasHeight"
+      :zoom="zoom"
+      :viewportTransform="viewportTransformArray"
+      :enabled="showMotionPath"
+      @keyframeSelected="onMotionPathKeyframeSelected"
+      @goToFrame="onMotionPathGoToFrame"
+      @tangentUpdated="onMotionPathTangentUpdated"
+    />
+
     <div class="overlay-controls" v-if="hasDepthMap">
       <label>
         <input type="checkbox" v-model="showDepthOverlay" />
@@ -199,6 +216,17 @@
         </div>
       </template>
     </div>
+
+    <!-- Marquee Selection Rectangle -->
+    <div
+      v-if="isMarqueeSelecting && marqueeRectStyle"
+      class="marquee-selection"
+      :style="marqueeRectStyle"
+    >
+      <span v-if="marqueeMode !== 'replace'" class="marquee-mode-indicator">
+        {{ marqueeMode === 'add' ? '+' : marqueeMode === 'subtract' ? '−' : '∩' }}
+      </span>
+    </div>
   </div>
 </template>
 
@@ -206,15 +234,25 @@
 import { ref, onMounted, onUnmounted, watch, computed, nextTick, shallowRef } from 'vue';
 import * as THREE from 'three';
 import { useCompositorStore } from '@/stores/compositorStore';
+import { useSelectionStore } from '@/stores/selectionStore';
 import { WeylEngine } from '@/engine';
-import type { WeylEngineConfig, PerformanceStats, RenderState } from '@/engine';
+import type { WeylEngineConfig, PerformanceStats } from '@/engine';
 import type { LayerTransformUpdate } from '@/engine/WeylEngine';
-import type { Layer, SplineData, ControlPoint } from '@/types/project';
+import type { Layer, ControlPoint } from '@/types/project';
 import SplineEditor from './SplineEditor.vue';
-import { segmentByPoint, segmentByBox } from '@/services/segmentation';
+import MotionPathOverlay from './MotionPathOverlay.vue';
+import {
+  useCanvasSelection,
+  useCanvasSegmentation,
+  useShapeDrawing,
+  useViewportGuides,
+  type SelectableItem,
+  type SelectionMode
+} from '@/composables';
 
 // Store
 const store = useCompositorStore();
+const selection = useSelectionStore();
 
 // Refs
 const containerRef = ref<HTMLDivElement | null>(null);
@@ -250,9 +288,6 @@ const performanceStats = ref<PerformanceStats>({
 // Pan/zoom state
 const viewportTransform = ref<number[]>([1, 0, 0, 1, 0, 0]);
 
-// Camera update trigger - increment to force boundary recalculation
-const cameraUpdateTrigger = ref(0);
-
 // Viewer controls
 const zoomLevel = ref<string>('fit');
 const resolution = ref<'full' | 'half' | 'third' | 'quarter' | 'custom'>('full');
@@ -263,98 +298,173 @@ const zoomDisplayPercent = computed(() => Math.round(zoom.value * 100));
 // Transform mode for transform controls
 const transformMode = ref<'translate' | 'rotate' | 'scale'>('translate');
 
-// Composition guide toggles
+// Composition guide toggles (showSafeFrameGuides, showResolutionGuides come from useViewportGuides)
 const showGrid = ref(false);
 const showOutsideOverlay = ref(false);  // Disabled by default until fixed
-const showSafeFrameGuides = ref(false); // Disabled by default until fixed
-const showResolutionGuides = ref(true); // Resolution crop guides enabled by default
+const showMotionPath = ref(true);  // Motion path visualization enabled by default
 
-// Segmentation state
-const isDrawingSegmentBox = ref(false);
-const segmentBoxEnd = ref<{ x: number; y: number } | null>(null);
+// Segmentation composable
+const {
+  isDrawingSegmentBox,
+  segmentBoxEnd,
+  startSegmentBox,
+  updateSegmentBox,
+  cancelSegmentBox,
+  finishSegmentBox,
+  handleSegmentPoint,
+  getSegmentBoxStyle,
+  getMaskOverlayStyle
+} = useCanvasSegmentation();
 
-// Shape drawing state
-const isDrawingShape = ref(false);
-const shapeDrawStart = ref<{ x: number; y: number } | null>(null);
-const shapeDrawEnd = ref<{ x: number; y: number } | null>(null);
-const currentShapeTool = ref<'rectangle' | 'ellipse' | 'polygon' | 'star' | null>(null);
+// Shape drawing composable
+const {
+  isDrawingShape,
+  shapeDrawStart,
+  shapeDrawEnd,
+  currentShapeTool,
+  isShapeTool,
+  shapePreviewBounds,
+  shapePreviewPath,
+  startDrawing: startShapeDrawing,
+  updateDrawing: updateShapeDrawing,
+  cancelDrawing: cancelShapeDrawing,
+  finishDrawing: finishShapeDrawing
+} = useShapeDrawing();
 
-// Check if current tool is a shape tool
-const isShapeTool = computed(() =>
-  ['rectangle', 'ellipse', 'polygon', 'star'].includes(store.currentTool)
-);
-
-// Computed styles for segmentation overlays
-const maskOverlayStyle = computed(() => {
-  const mask = store.segmentPendingMask;
-  if (!mask) return {};
-
-  const vpt = viewportTransform.value;
-
-  // Convert scene coordinates to screen coordinates
-  const screenX = mask.bounds.x * vpt[0] + vpt[4];
-  const screenY = mask.bounds.y * vpt[3] + vpt[5];
-  const screenWidth = mask.bounds.width * vpt[0];
-  const screenHeight = mask.bounds.height * vpt[3];
-
-  return {
-    left: `${screenX}px`,
-    top: `${screenY}px`,
-    width: `${screenWidth}px`,
-    height: `${screenHeight}px`
-  };
+// Viewport guides composable
+const {
+  showSafeFrameGuides,
+  showResolutionGuides,
+  cameraUpdateTrigger,
+  safeFrameBounds,
+  safeFrameLeftStyle,
+  safeFrameRightStyle,
+  safeFrameTopStyle,
+  safeFrameBottomStyle,
+  compositionBoundaryStyle,
+  resolutionCropGuides,
+  triggerGuideUpdate
+} = useViewportGuides({
+  containerRef,
+  engine,
+  canvasWidth,
+  canvasHeight,
+  zoom,
+  viewportTransform
 });
 
-const segmentBoxStyle = computed(() => {
-  const start = store.segmentBoxStart;
-  const end = segmentBoxEnd.value;
-  if (!start || !end) return {};
+// ============================================================
+// MARQUEE SELECTION (Phase 8 Integration)
+// ============================================================
 
-  const vpt = viewportTransform.value;
+// Enable marquee selection only when using select tool
+const marqueeEnabled = computed(() => store.currentTool === 'select');
 
-  // Convert to screen coordinates
-  const x1 = start.x * vpt[0] + vpt[4];
-  const y1 = start.y * vpt[3] + vpt[5];
-  const x2 = end.x * vpt[0] + vpt[4];
-  const y2 = end.y * vpt[3] + vpt[5];
+/**
+ * Get all layers as selectable items with their screen-space bounds
+ * This is called by the marquee selection composable during drag
+ */
+function getSelectableItems(): SelectableItem[] {
+  if (!engine.value || !containerRef.value) return [];
 
-  return {
-    left: `${Math.min(x1, x2)}px`,
-    top: `${Math.min(y1, y2)}px`,
-    width: `${Math.abs(x2 - x1)}px`,
-    height: `${Math.abs(y2 - y1)}px`
-  };
-});
+  const camera = engine.value.getCameraController().camera;
+  const items: SelectableItem[] = [];
 
-// Shape preview for drawing
-const shapePreviewBounds = computed(() => {
-  const start = shapeDrawStart.value;
-  const end = shapeDrawEnd.value;
-  if (!start || !end) return null;
+  for (const layer of store.layers) {
+    if (!layer.enabled) continue;
 
-  const options = store.shapeToolOptions;
-  let x1 = start.x, y1 = start.y, x2 = end.x, y2 = end.y;
+    // Get layer bounds in world space
+    const layerObj = engine.value.getLayerObject(layer.id);
+    if (!layerObj) continue;
 
-  // Handle constrain (shift) - make square/circle
-  if (options.constrain) {
-    const dx = x2 - x1;
-    const dy = y2 - y1;
-    const size = Math.max(Math.abs(dx), Math.abs(dy));
-    x2 = x1 + size * Math.sign(dx || 1);
-    y2 = y1 + size * Math.sign(dy || 1);
+    // Compute bounding box
+    const box = new THREE.Box3().setFromObject(layerObj);
+    if (box.isEmpty()) continue;
+
+    // Project corners to screen space
+    const corners = [
+      new THREE.Vector3(box.min.x, box.min.y, box.min.z),
+      new THREE.Vector3(box.max.x, box.min.y, box.min.z),
+      new THREE.Vector3(box.min.x, box.max.y, box.min.z),
+      new THREE.Vector3(box.max.x, box.max.y, box.min.z),
+      new THREE.Vector3(box.min.x, box.min.y, box.max.z),
+      new THREE.Vector3(box.max.x, box.min.y, box.max.z),
+      new THREE.Vector3(box.min.x, box.max.y, box.max.z),
+      new THREE.Vector3(box.max.x, box.max.y, box.max.z),
+    ];
+
+    const rect = containerRef.value.getBoundingClientRect();
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+    for (const corner of corners) {
+      corner.project(camera);
+      const screenX = (corner.x + 1) / 2 * rect.width;
+      const screenY = (-corner.y + 1) / 2 * rect.height;
+      minX = Math.min(minX, screenX);
+      minY = Math.min(minY, screenY);
+      maxX = Math.max(maxX, screenX);
+      maxY = Math.max(maxY, screenY);
+    }
+
+    items.push({
+      id: layer.id,
+      bounds: {
+        x: minX,
+        y: minY,
+        width: maxX - minX,
+        height: maxY - minY,
+      },
+    });
   }
 
-  // Handle from center (alt) - draw from center outwards
-  if (options.fromCenter) {
-    const dx = x2 - x1;
-    const dy = y2 - y1;
-    x1 = start.x - dx;
-    y1 = start.y - dy;
+  return items;
+}
+
+/**
+ * Handle marquee selection changes
+ */
+function handleMarqueeSelectionChange(selectedIds: string[], mode: SelectionMode) {
+  if (mode === 'replace') {
+    if (selectedIds.length === 0) {
+      selection.clearSelection();
+    } else {
+      selection.selectLayers(selectedIds);
+    }
+  } else if (mode === 'add') {
+    for (const id of selectedIds) {
+      selection.addToSelection(id);
+    }
+  } else if (mode === 'subtract') {
+    for (const id of selectedIds) {
+      selection.removeFromSelection(id);
+    }
   }
 
-  return { x1, y1, x2, y2 };
+  // Update engine selection
+  if (engine.value) {
+    engine.value.selectLayer(selectedIds.length > 0 ? selectedIds[0] : null);
+  }
+}
+
+// Initialize marquee selection composable
+const {
+  isSelecting: isMarqueeSelecting,
+  selectionRectStyle: marqueeRectStyle,
+  selectionMode: marqueeMode,
+} = useCanvasSelection({
+  canvasRef: containerRef,
+  getSelectableItems,
+  onSelectionChange: handleMarqueeSelectionChange,
+  currentSelection: computed(() => store.selectedLayerIds),
+  enabled: marqueeEnabled,
+  minDragDistance: 5,
 });
 
+// Computed styles for segmentation overlays (use composable methods)
+const maskOverlayStyle = computed(() => getMaskOverlayStyle(viewportTransform.value));
+const segmentBoxStyle = computed(() => getSegmentBoxStyle(viewportTransform.value));
+
+// Shape preview style (bounds and path come from composable)
 const shapePreviewStyle = computed(() => {
   const bounds = shapePreviewBounds.value;
   if (!bounds) return {};
@@ -375,261 +485,7 @@ const shapePreviewStyle = computed(() => {
   };
 });
 
-// Generate SVG path for shape preview
-const shapePreviewPath = computed(() => {
-  const bounds = shapePreviewBounds.value;
-  if (!bounds) return '';
-
-  const width = Math.abs(bounds.x2 - bounds.x1);
-  const height = Math.abs(bounds.y2 - bounds.y1);
-  if (width === 0 || height === 0) return '';
-
-  const tool = currentShapeTool.value;
-  const options = store.shapeToolOptions;
-
-  switch (tool) {
-    case 'rectangle':
-      return `M 0 0 L ${width} 0 L ${width} ${height} L 0 ${height} Z`;
-
-    case 'ellipse': {
-      const rx = width / 2;
-      const ry = height / 2;
-      const cx = rx;
-      const cy = ry;
-      return `M ${cx} ${cy - ry} A ${rx} ${ry} 0 1 1 ${cx} ${cy + ry} A ${rx} ${ry} 0 1 1 ${cx} ${cy - ry} Z`;
-    }
-
-    case 'polygon': {
-      const sides = options.polygonSides || 6;
-      const cx = width / 2;
-      const cy = height / 2;
-      const r = Math.min(width, height) / 2;
-      const points: string[] = [];
-      for (let i = 0; i < sides; i++) {
-        const angle = (i / sides) * Math.PI * 2 - Math.PI / 2;
-        const px = cx + Math.cos(angle) * r;
-        const py = cy + Math.sin(angle) * r;
-        points.push(`${i === 0 ? 'M' : 'L'} ${px} ${py}`);
-      }
-      return points.join(' ') + ' Z';
-    }
-
-    case 'star': {
-      const numPoints = options.starPoints || 5;
-      const innerRatio = options.starInnerRadius || 0.5;
-      const cx = width / 2;
-      const cy = height / 2;
-      const outerR = Math.min(width, height) / 2;
-      const innerR = outerR * innerRatio;
-      const points: string[] = [];
-      for (let i = 0; i < numPoints * 2; i++) {
-        const angle = (i / (numPoints * 2)) * Math.PI * 2 - Math.PI / 2;
-        const r = i % 2 === 0 ? outerR : innerR;
-        const px = cx + Math.cos(angle) * r;
-        const py = cy + Math.sin(angle) * r;
-        points.push(`${i === 0 ? 'M' : 'L'} ${px} ${py}`);
-      }
-      return points.join(' ') + ' Z';
-    }
-
-    default:
-      return '';
-  }
-});
-
-// Safe frame guide positions - CSS-based overlays for out-of-frame areas
-// Project the 3D composition bounds to screen space for accurate overlay positioning
-const safeFrameBounds = computed(() => {
-  // Reactive dependencies: these trigger recompute when camera changes
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _ = [zoom.value, viewportTransform.value, canvasWidth.value, canvasHeight.value, cameraUpdateTrigger.value];
-
-  if (!containerRef.value || !engine.value) {
-    console.log('[ThreeCanvas] safeFrameBounds: no container or engine');
-    return { left: 0, top: 0, right: 0, bottom: 0 };
-  }
-
-  const viewportWidth = canvasWidth.value;
-  const viewportHeight = canvasHeight.value;
-  const compWidth = store.width || 1920;
-  const compHeight = store.height || 1080;
-
-  // Check for valid viewport dimensions
-  if (viewportWidth <= 0 || viewportHeight <= 0) {
-    console.log('[ThreeCanvas] safeFrameBounds: invalid viewport dimensions', viewportWidth, viewportHeight);
-    return { left: 0, top: 0, right: 0, bottom: 0 };
-  }
-
-  // Get the camera to project 3D points to screen
-  const camera = engine.value.getCameraController().camera;
-
-  // Ensure camera matrices are up to date
-  camera.updateMatrixWorld(true);
-  camera.updateProjectionMatrix();
-
-  // Composition corners in world space (Y is negated in Three.js coordinate system)
-  const topLeft = new THREE.Vector3(0, 0, 0);
-  const bottomRight = new THREE.Vector3(compWidth, -compHeight, 0);
-
-  // Project to normalized device coordinates (-1 to 1)
-  topLeft.project(camera);
-  bottomRight.project(camera);
-
-  // Convert to screen pixels
-  const left = (topLeft.x + 1) / 2 * viewportWidth;
-  const top = (-topLeft.y + 1) / 2 * viewportHeight;
-  const right = (bottomRight.x + 1) / 2 * viewportWidth;
-  const bottom = (-bottomRight.y + 1) / 2 * viewportHeight;
-
-  console.log('[ThreeCanvas] safeFrameBounds:', { left, top, right, bottom, viewportWidth, viewportHeight, compWidth, compHeight });
-
-  return { left, top, right, bottom };
-});
-
-const safeFrameLeftStyle = computed(() => {
-  const bounds = safeFrameBounds.value;
-  return {
-    left: '0',
-    top: '0',
-    width: `${Math.max(0, bounds.left)}px`,
-    height: '100%'
-  };
-});
-
-const safeFrameRightStyle = computed(() => {
-  const bounds = safeFrameBounds.value;
-  return {
-    left: `${bounds.right}px`,
-    top: '0',
-    width: `calc(100% - ${bounds.right}px)`,
-    height: '100%'
-  };
-});
-
-const safeFrameTopStyle = computed(() => {
-  const bounds = safeFrameBounds.value;
-  return {
-    left: `${Math.max(0, bounds.left)}px`,
-    top: '0',
-    width: `${bounds.right - Math.max(0, bounds.left)}px`,
-    height: `${Math.max(0, bounds.top)}px`
-  };
-});
-
-const safeFrameBottomStyle = computed(() => {
-  const bounds = safeFrameBounds.value;
-  return {
-    left: `${Math.max(0, bounds.left)}px`,
-    top: `${bounds.bottom}px`,
-    width: `${bounds.right - Math.max(0, bounds.left)}px`,
-    height: `calc(100% - ${bounds.bottom}px)`
-  };
-});
-
-// CSS-based composition boundary - always crisp regardless of zoom
-// Uses the same projection as safeFrameBounds but renders as a border
-const compositionBoundaryStyle = computed(() => {
-  const bounds = safeFrameBounds.value;
-  const width = bounds.right - bounds.left;
-  const height = bounds.bottom - bounds.top;
-
-  // Only show if the bounds are valid
-  if (width <= 0 || height <= 0) {
-    return { display: 'none' };
-  }
-
-  return {
-    left: `${bounds.left}px`,
-    top: `${bounds.top}px`,
-    width: `${width}px`,
-    height: `${height}px`
-  };
-});
-
-// Resolution crop guides - center-based boxes for standard resolutions
-// These show where 480p/720p/1080p would crop from center of the composition
-const RESOLUTION_PRESETS = [
-  { name: '480p', width: 854, height: 480, color: '#F59E0B' },   // Amber
-  { name: '720p', width: 1280, height: 720, color: '#8B5CF6' },  // Purple
-  { name: '1080p', width: 1920, height: 1080, color: '#06B6D4' } // Cyan
-];
-
-const resolutionCropGuides = computed(() => {
-  // Reactive dependencies
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _ = [zoom.value, viewportTransform.value, canvasWidth.value, canvasHeight.value, cameraUpdateTrigger.value];
-
-  if (!containerRef.value || !engine.value) {
-    return [];
-  }
-
-  const viewportWidth = canvasWidth.value;
-  const viewportHeight = canvasHeight.value;
-  const compWidth = store.width || 1920;
-  const compHeight = store.height || 1080;
-
-  // Check for valid dimensions
-  if (viewportWidth <= 0 || viewportHeight <= 0 || compWidth <= 0 || compHeight <= 0) {
-    return [];
-  }
-
-  // Get the camera to project 3D points to screen
-  const camera = engine.value.getCameraController().camera;
-
-  const guides = [];
-
-  for (const preset of RESOLUTION_PRESETS) {
-    // Only show guides for resolutions smaller than or equal to the composition
-    if (preset.width > compWidth || preset.height > compHeight) {
-      continue;
-    }
-
-    // Calculate center-based crop offset in composition space
-    // Composition center is at (compWidth/2, compHeight/2) in comp coords
-    // which translates to (0, 0) in 3D space (already centered)
-    const cropOffsetX = (compWidth - preset.width) / 2;
-    const cropOffsetY = (compHeight - preset.height) / 2;
-
-    // Calculate the 3D bounds for this resolution crop (center-based)
-    const halfCropWidth = preset.width / 2;
-    const halfCropHeight = preset.height / 2;
-
-    // Project corner points to screen space
-    const topLeft3D = new THREE.Vector3(-halfCropWidth, halfCropHeight, 0);
-    const bottomRight3D = new THREE.Vector3(halfCropWidth, -halfCropHeight, 0);
-
-    topLeft3D.project(camera);
-    bottomRight3D.project(camera);
-
-    // Convert from NDC (-1 to 1) to screen pixels
-    const left = (topLeft3D.x + 1) / 2 * viewportWidth;
-    const top = (-topLeft3D.y + 1) / 2 * viewportHeight;
-    const right = (bottomRight3D.x + 1) / 2 * viewportWidth;
-    const bottom = (-bottomRight3D.y + 1) / 2 * viewportHeight;
-
-    const boxWidth = right - left;
-    const boxHeight = bottom - top;
-
-    // Only show if the box has valid dimensions and is visible
-    if (boxWidth > 0 && boxHeight > 0) {
-      guides.push({
-        name: preset.name,
-        color: preset.color,
-        resolution: `${preset.width}×${preset.height}`,
-        visible: true,
-        style: {
-          left: `${left}px`,
-          top: `${top}px`,
-          width: `${boxWidth}px`,
-          height: `${boxHeight}px`,
-          borderColor: preset.color
-        }
-      });
-    }
-  }
-
-  return guides;
-});
+// Safe frame and resolution guides are provided by useViewportGuides composable
 
 // Computed
 const hasDepthMap = computed(() => store.depthMap !== null);
@@ -1220,23 +1076,18 @@ function setupInputHandlers() {
         // Point mode - segment at click position
         handleSegmentPoint(scenePos.x, scenePos.y);
       } else {
-        // Box mode - start box selection
-        store.setSegmentBoxStart({ x: scenePos.x, y: scenePos.y });
-        segmentBoxEnd.value = { x: scenePos.x, y: scenePos.y };
-        isDrawingSegmentBox.value = true;
+        // Box mode - start box selection (use composable)
+        startSegmentBox(scenePos);
       }
       return;
     }
 
-    // Shape tools - start drawing shape
+    // Shape tools - start drawing shape (use composable)
     if (['rectangle', 'ellipse', 'polygon', 'star'].includes(currentTool) && e.button === 0) {
       const rect = canvas.getBoundingClientRect();
       const scenePos = screenToScene(e.clientX - rect.left, e.clientY - rect.top);
 
-      currentShapeTool.value = currentTool as 'rectangle' | 'ellipse' | 'polygon' | 'star';
-      shapeDrawStart.value = { x: scenePos.x, y: scenePos.y };
-      shapeDrawEnd.value = { x: scenePos.x, y: scenePos.y };
-      isDrawingShape.value = true;
+      startShapeDrawing(currentTool as 'rectangle' | 'ellipse' | 'polygon' | 'star', scenePos);
       canvas.style.cursor = 'crosshair';
       return;
     }
@@ -1297,7 +1148,7 @@ function setupInputHandlers() {
           currentPan.y - dy * worldPerPixel  // Positive dy should move camera up (view shifts down)
         );
         // Force boundary update after camera pan
-        cameraUpdateTrigger.value++;
+        triggerGuideUpdate();
       }
       return;
     }
@@ -1313,23 +1164,23 @@ function setupInputHandlers() {
 
       engine.value.getCameraController().setZoom(newZoom);
       // Force boundary update after camera zoom
-      cameraUpdateTrigger.value++;
+      triggerGuideUpdate();
       return;
     }
 
-    // Handle segment box drawing
+    // Handle segment box drawing (use composable)
     if (isDrawingSegmentBox.value && store.segmentBoxStart) {
       const rect = canvas.getBoundingClientRect();
       const scenePos = screenToScene(e.clientX - rect.left, e.clientY - rect.top);
-      segmentBoxEnd.value = { x: scenePos.x, y: scenePos.y };
+      updateSegmentBox(scenePos);
       return;
     }
 
-    // Handle shape drawing
+    // Handle shape drawing (use composable)
     if (isDrawingShape.value && shapeDrawStart.value) {
       const rect = canvas.getBoundingClientRect();
       const scenePos = screenToScene(e.clientX - rect.left, e.clientY - rect.top);
-      shapeDrawEnd.value = { x: scenePos.x, y: scenePos.y };
+      updateShapeDrawing(scenePos);
       return;
     }
 
@@ -1354,37 +1205,14 @@ function setupInputHandlers() {
       isZooming = false;
     }
 
-    // Finish segment box selection
+    // Finish segment box selection (use composable)
     if (isDrawingSegmentBox.value && store.segmentBoxStart && segmentBoxEnd.value) {
-      isDrawingSegmentBox.value = false;
-      handleSegmentBox(
-        store.segmentBoxStart.x,
-        store.segmentBoxStart.y,
-        segmentBoxEnd.value.x,
-        segmentBoxEnd.value.y
-      );
-      store.setSegmentBoxStart(null);
-      segmentBoxEnd.value = null;
+      finishSegmentBox();
     }
 
-    // Finish shape drawing
+    // Finish shape drawing (use composable)
     if (isDrawingShape.value && shapeDrawStart.value && shapeDrawEnd.value) {
-      const bounds = shapePreviewBounds.value;
-      if (bounds) {
-        const width = Math.abs(bounds.x2 - bounds.x1);
-        const height = Math.abs(bounds.y2 - bounds.y1);
-
-        // Only create shape if it has meaningful size
-        if (width > 5 || height > 5) {
-          createShapeFromDraw(currentShapeTool.value!, bounds);
-        }
-      }
-
-      // Reset shape drawing state
-      isDrawingShape.value = false;
-      shapeDrawStart.value = null;
-      shapeDrawEnd.value = null;
-      currentShapeTool.value = null;
+      finishShapeDrawing();
     }
   });
 
@@ -1392,18 +1220,13 @@ function setupInputHandlers() {
   canvas.addEventListener('mouseleave', () => {
     isPanning = false;
     isZooming = false;
-    // Cancel segment box selection
+    // Cancel segment box selection (use composable)
     if (isDrawingSegmentBox.value) {
-      isDrawingSegmentBox.value = false;
-      store.setSegmentBoxStart(null);
-      segmentBoxEnd.value = null;
+      cancelSegmentBox();
     }
-    // Cancel shape drawing
+    // Cancel shape drawing (use composable)
     if (isDrawingShape.value) {
-      isDrawingShape.value = false;
-      shapeDrawStart.value = null;
-      shapeDrawEnd.value = null;
-      currentShapeTool.value = null;
+      cancelShapeDrawing();
     }
   });
 }
@@ -1417,243 +1240,7 @@ function screenToScene(screenX: number, screenY: number): { x: number; y: number
   };
 }
 
-// ============================================================
-// SHAPE DRAWING HANDLERS
-// ============================================================
-
-/**
- * Create a shape layer from drawn bounds
- */
-function createShapeFromDraw(
-  shapeType: 'rectangle' | 'ellipse' | 'polygon' | 'star',
-  bounds: { x1: number; y1: number; x2: number; y2: number }
-) {
-  const width = Math.abs(bounds.x2 - bounds.x1);
-  const height = Math.abs(bounds.y2 - bounds.y1);
-  const centerX = (bounds.x1 + bounds.x2) / 2;
-  const centerY = (bounds.y1 + bounds.y2) / 2;
-
-  // Create a new shape layer
-  const newLayer = store.createLayer('shape');
-
-  // Get current shape tool options
-  const options = store.shapeToolOptions;
-
-  // Create the appropriate shape generator based on type
-  const shapeData = newLayer.data as any;
-  if (!shapeData.contents || !Array.isArray(shapeData.contents)) {
-    shapeData.contents = [];
-  }
-
-  // Find or create a default group
-  let group = shapeData.contents.find((c: any) => c.type === 'group');
-  if (!group) {
-    group = {
-      type: 'group',
-      name: 'Group 1',
-      contents: [],
-      transform: createDefaultShapeTransform(),
-      blendMode: 'normal'
-    };
-    shapeData.contents.push(group);
-  }
-
-  // Clear existing contents (remove default shapes)
-  group.contents = [];
-
-  // Create the shape generator
-  let generator: any;
-  switch (shapeType) {
-    case 'rectangle':
-      generator = {
-        type: 'rectangle',
-        name: 'Rectangle Path',
-        size: createAnimatableProp({ x: width, y: height }),
-        position: createAnimatableProp({ x: 0, y: 0 }),
-        roundness: createAnimatableProp(0)
-      };
-      break;
-
-    case 'ellipse':
-      generator = {
-        type: 'ellipse',
-        name: 'Ellipse Path',
-        size: createAnimatableProp({ x: width, y: height }),
-        position: createAnimatableProp({ x: 0, y: 0 })
-      };
-      break;
-
-    case 'polygon':
-      generator = {
-        type: 'polygon',
-        name: 'Polygon Path',
-        points: createAnimatableProp(options.polygonSides),
-        position: createAnimatableProp({ x: 0, y: 0 }),
-        outerRadius: createAnimatableProp(Math.min(width, height) / 2),
-        outerRoundness: createAnimatableProp(0)
-      };
-      break;
-
-    case 'star':
-      generator = {
-        type: 'star',
-        name: 'Star Path',
-        points: createAnimatableProp(options.starPoints),
-        position: createAnimatableProp({ x: 0, y: 0 }),
-        outerRadius: createAnimatableProp(Math.min(width, height) / 2),
-        innerRadius: createAnimatableProp(Math.min(width, height) / 2 * options.starInnerRadius),
-        outerRoundness: createAnimatableProp(0),
-        innerRoundness: createAnimatableProp(0)
-      };
-      break;
-  }
-
-  // Add fill and stroke
-  const fill = {
-    type: 'fill',
-    name: 'Fill',
-    color: createAnimatableProp({ r: 0.4, g: 0.5, b: 1, a: 1 }),
-    opacity: createAnimatableProp(100),
-    blendMode: 'normal'
-  };
-
-  const stroke = {
-    type: 'stroke',
-    name: 'Stroke',
-    color: createAnimatableProp({ r: 1, g: 1, b: 1, a: 1 }),
-    opacity: createAnimatableProp(100),
-    width: createAnimatableProp(2),
-    lineCap: 'round',
-    lineJoin: 'round',
-    miterLimit: 4,
-    blendMode: 'normal'
-  };
-
-  group.contents = [generator, fill, stroke];
-
-  // Update the layer position to center of drawn shape
-  store.updateLayer(newLayer.id, {
-    transform: {
-      ...newLayer.transform,
-      position: {
-        ...newLayer.transform!.position,
-        value: { x: centerX, y: centerY, z: 0 }
-      }
-    },
-    data: shapeData
-  });
-
-  // Select the new layer
-  store.selectLayer(newLayer.id);
-
-  // Switch back to select tool
-  store.setTool('select');
-}
-
-/**
- * Create a default shape transform structure
- */
-function createDefaultShapeTransform() {
-  return {
-    anchorPoint: createAnimatableProp({ x: 0, y: 0 }),
-    position: createAnimatableProp({ x: 0, y: 0 }),
-    scale: createAnimatableProp({ x: 100, y: 100 }),
-    rotation: createAnimatableProp(0),
-    skew: createAnimatableProp(0),
-    skewAxis: createAnimatableProp(0),
-    opacity: createAnimatableProp(100)
-  };
-}
-
-/**
- * Helper to create an animatable property
- */
-function createAnimatableProp<T>(value: T): { value: T; animated: boolean; keyframes: any[] } {
-  return {
-    value,
-    animated: false,
-    keyframes: []
-  };
-}
-
-// ============================================================
-// SEGMENTATION HANDLERS
-// ============================================================
-
-/**
- * Handle point-based segmentation
- */
-async function handleSegmentPoint(x: number, y: number) {
-  if (!store.sourceImage) {
-    console.warn('[ThreeCanvas] No source image for segmentation');
-    return;
-  }
-
-  store.setSegmentLoading(true);
-
-  try {
-    const result = await segmentByPoint(store.sourceImage, { x, y });
-
-    if (result.status === 'success' && result.masks && result.masks.length > 0) {
-      // Set the first (best) mask as pending
-      const mask = result.masks[0];
-      store.setSegmentPendingMask({
-        mask: mask.mask,
-        bounds: mask.bounds,
-        area: mask.area,
-        score: mask.score
-      });
-      console.log('[ThreeCanvas] Segmentation successful, mask area:', mask.area);
-    } else {
-      console.warn('[ThreeCanvas] Segmentation returned no masks:', result.message);
-    }
-  } catch (err) {
-    console.error('[ThreeCanvas] Segmentation failed:', err);
-  } finally {
-    store.setSegmentLoading(false);
-  }
-}
-
-/**
- * Handle box-based segmentation
- */
-async function handleSegmentBox(x1: number, y1: number, x2: number, y2: number) {
-  if (!store.sourceImage) {
-    console.warn('[ThreeCanvas] No source image for segmentation');
-    return;
-  }
-
-  // Normalize box coordinates (ensure x1 < x2, y1 < y2)
-  const box: [number, number, number, number] = [
-    Math.min(x1, x2),
-    Math.min(y1, y2),
-    Math.max(x1, x2),
-    Math.max(y1, y2)
-  ];
-
-  store.setSegmentLoading(true);
-
-  try {
-    const result = await segmentByBox(store.sourceImage, box);
-
-    if (result.status === 'success' && result.masks && result.masks.length > 0) {
-      const mask = result.masks[0];
-      store.setSegmentPendingMask({
-        mask: mask.mask,
-        bounds: mask.bounds,
-        area: mask.area,
-        score: mask.score
-      });
-      console.log('[ThreeCanvas] Box segmentation successful, mask area:', mask.area);
-    } else {
-      console.warn('[ThreeCanvas] Box segmentation returned no masks:', result.message);
-    }
-  } catch (err) {
-    console.error('[ThreeCanvas] Box segmentation failed:', err);
-  } finally {
-    store.setSegmentLoading(false);
-  }
-}
+// Shape drawing handlers and segmentation handlers are provided by composables
 
 /**
  * Handle transform changes from TransformControls
@@ -1808,6 +1395,31 @@ function togglePenMode() {
   } else {
     store.setTool('pen');
   }
+}
+
+// Motion path event handlers
+function onMotionPathKeyframeSelected(keyframeId: string, addToSelection: boolean) {
+  // Select the keyframe in the store
+  if (addToSelection) {
+    store.addKeyframeToSelection?.(keyframeId);
+  } else {
+    store.selectKeyframe?.(keyframeId);
+  }
+}
+
+function onMotionPathGoToFrame(frame: number) {
+  // Go to the keyframe's frame
+  store.setFrame(frame);
+}
+
+function onMotionPathTangentUpdated(
+  _keyframeId: string,
+  _tangentType: 'in' | 'out',
+  _value: { x: number; y: number }
+) {
+  // TODO: Update spatial tangent in keyframe data
+  // This requires adding spatialInTangent/spatialOutTangent to Keyframe type
+  console.log('[ThreeCanvas] Motion path tangent update - spatial tangents not yet implemented');
 }
 
 // Zoom controls
@@ -2375,5 +1987,27 @@ defineExpose({
   width: 1px;
   height: 16px;
   background: #444;
+}
+
+/* Marquee Selection Rectangle */
+.marquee-selection {
+  position: absolute;
+  border: 1px dashed var(--weyl-accent, #8B5CF6);
+  background: rgba(139, 92, 246, 0.1);
+  pointer-events: none;
+  z-index: 20;
+  box-sizing: border-box;
+}
+
+.marquee-mode-indicator {
+  position: absolute;
+  top: -20px;
+  left: 0;
+  background: var(--weyl-accent, #8B5CF6);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: bold;
 }
 </style>

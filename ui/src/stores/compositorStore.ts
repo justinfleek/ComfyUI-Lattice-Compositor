@@ -89,6 +89,10 @@ import * as cacheActions from './actions/cacheActions';
 import * as cameraActions from './actions/cameraActions';
 import * as segmentationActions from './actions/segmentationActions';
 import * as effectActions from './actions/effectActions';
+import * as compositionActions from './actions/compositionActions';
+import * as particleLayerActions from './actions/particleLayerActions';
+import * as depthflowActions from './actions/depthflowActions';
+import * as videoActions from './actions/videoActions';
 
 // Domain-specific stores (for delegation)
 import { usePlaybackStore } from './playbackStore';
@@ -428,344 +432,60 @@ export const useCompositorStore = defineStore('compositor', {
     getActiveComp(): Composition | null {
       return this.project.compositions[this.activeCompositionId] || null;
     },
-
     // ============================================================
-    // COMPOSITION MANAGEMENT
+    // COMPOSITION MANAGEMENT (delegated to compositionActions)
     // ============================================================
 
-    /**
-     * Create a new composition
-     */
     createComposition(
       name: string,
       settings?: Partial<CompositionSettings>,
       isNestedComp: boolean = false
     ): Composition {
-      const id = `comp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-      // Get settings from active comp or use defaults
-      const activeComp = this.project.compositions[this.activeCompositionId];
-      const defaultSettings: CompositionSettings = {
-        width: settings?.width ?? activeComp?.settings.width ?? 1024,
-        height: settings?.height ?? activeComp?.settings.height ?? 1024,
-        frameCount: settings?.frameCount ?? activeComp?.settings.frameCount ?? 81,
-        fps: settings?.fps ?? activeComp?.settings.fps ?? 16,
-        duration: 0,
-        backgroundColor: settings?.backgroundColor ?? '#050505',
-        autoResizeToContent: settings?.autoResizeToContent ?? true
-      };
-      defaultSettings.duration = defaultSettings.frameCount / defaultSettings.fps;
-
-      const composition: Composition = {
-        id,
-        name,
-        settings: defaultSettings,
-        layers: [],
-        currentFrame: 0,
-        isNestedComp
-      };
-
-      this.project.compositions[id] = composition;
-
-      // Open and switch to new composition
-      if (!this.openCompositionIds.includes(id)) {
-        this.openCompositionIds.push(id);
-      }
-      this.activeCompositionId = id;
-
-      storeLogger.debug('Created composition:', name, id);
-      return composition;
+      return compositionActions.createComposition(this, name, settings, isNestedComp);
     },
 
-    /**
-     * Delete a composition
-     */
     deleteComposition(compId: string): boolean {
-      // Can't delete main composition
-      if (compId === this.project.mainCompositionId) {
-        storeLogger.warn('Cannot delete main composition');
-        return false;
-      }
-
-      const comp = this.project.compositions[compId];
-      if (!comp) return false;
-
-      // Remove from compositions
-      delete this.project.compositions[compId];
-
-      // Remove from open tabs
-      const openIdx = this.openCompositionIds.indexOf(compId);
-      if (openIdx >= 0) {
-        this.openCompositionIds.splice(openIdx, 1);
-      }
-
-      // If this was active, switch to another
-      if (this.activeCompositionId === compId) {
-        this.activeCompositionId = this.openCompositionIds[0] || this.project.mainCompositionId;
-      }
-
-      storeLogger.debug('Deleted composition:', compId);
-      return true;
+      return compositionActions.deleteComposition(this, compId);
     },
 
-    /**
-     * Switch to a different composition (tab)
-     */
     switchComposition(compId: string): void {
-      if (!this.project.compositions[compId]) {
-        storeLogger.warn('Composition not found:', compId);
-        return;
-      }
-
-      // Add to open tabs if not already
-      if (!this.openCompositionIds.includes(compId)) {
-        this.openCompositionIds.push(compId);
-      }
-
-      // Clear selection when switching
-      const selection = useSelectionStore();
-      selection.clearLayerSelection();
-      selection.clearKeyframeSelection();
-
-      this.activeCompositionId = compId;
-      storeLogger.debug('Switched to composition:', compId);
+      compositionActions.switchComposition(this, compId);
     },
 
-    /**
-     * Close a composition tab
-     */
     closeCompositionTab(compId: string): void {
-      // Can't close if it's the only open tab
-      if (this.openCompositionIds.length <= 1) {
-        storeLogger.warn('Cannot close the last tab');
-        return;
-      }
-
-      const idx = this.openCompositionIds.indexOf(compId);
-      if (idx >= 0) {
-        this.openCompositionIds.splice(idx, 1);
-      }
-
-      // If closing active, switch to another
-      if (this.activeCompositionId === compId) {
-        this.activeCompositionId = this.openCompositionIds[Math.max(0, idx - 1)];
-      }
+      compositionActions.closeCompositionTab(this, compId);
     },
 
-    /**
-     * Enter a nested comp (e.g., double-click on nested comp layer)
-     * Pushes the composition to the breadcrumb trail
-     */
     enterNestedComp(compId: string): void {
-      if (!this.project.compositions[compId]) {
-        storeLogger.warn('Nested comp not found:', compId);
-        return;
-      }
-
-      // Add to breadcrumb trail
-      this.compositionBreadcrumbs.push(compId);
-
-      // Switch to the composition
-      this.switchComposition(compId);
-
-      storeLogger.debug('Entered nested comp:', compId, 'breadcrumbs:', this.compositionBreadcrumbs);
+      compositionActions.enterNestedComp(this, compId);
     },
 
-    /**
-     * Navigate back one level in the breadcrumb trail
-     */
     navigateBack(): void {
-      if (this.compositionBreadcrumbs.length <= 1) {
-        storeLogger.warn('Already at root composition');
-        return;
-      }
-
-      // Pop current and switch to previous
-      this.compositionBreadcrumbs.pop();
-      const prevId = this.compositionBreadcrumbs[this.compositionBreadcrumbs.length - 1];
-
-      if (prevId) {
-        this.switchComposition(prevId);
-      }
-
-      storeLogger.debug('Navigated back, breadcrumbs:', this.compositionBreadcrumbs);
+      compositionActions.navigateBack(this);
     },
 
-    /**
-     * Navigate to a specific breadcrumb index
-     * Truncates the breadcrumb trail to that point
-     */
     navigateToBreadcrumb(index: number): void {
-      if (index < 0 || index >= this.compositionBreadcrumbs.length) {
-        return;
-      }
-
-      // Already at this breadcrumb
-      if (index === this.compositionBreadcrumbs.length - 1) {
-        return;
-      }
-
-      // Truncate to the selected index
-      this.compositionBreadcrumbs = this.compositionBreadcrumbs.slice(0, index + 1);
-      const targetId = this.compositionBreadcrumbs[index];
-
-      if (targetId) {
-        this.switchComposition(targetId);
-      }
-
-      storeLogger.debug('Navigated to breadcrumb', index, 'breadcrumbs:', this.compositionBreadcrumbs);
+      compositionActions.navigateToBreadcrumb(this, index);
     },
 
-    /**
-     * Reset breadcrumbs to main composition (e.g., when loading a new project)
-     */
     resetBreadcrumbs(): void {
-      this.compositionBreadcrumbs = [this.project.mainCompositionId];
-      this.switchComposition(this.project.mainCompositionId);
+      compositionActions.resetBreadcrumbs(this);
     },
 
-    /**
-     * Rename a composition
-     */
     renameComposition(compId: string, newName: string): void {
-      const comp = this.project.compositions[compId];
-      if (comp) {
-        comp.name = newName;
-      }
+      compositionActions.renameComposition(this, compId, newName);
     },
 
-    /**
-     * Update composition settings
-     */
     updateCompositionSettings(compId: string, settings: Partial<CompositionSettings>): void {
-      const comp = this.project.compositions[compId];
-      if (!comp) return;
-
-      const oldFrameCount = comp.settings.frameCount;
-
-      // Update settings
-      Object.assign(comp.settings, settings);
-
-      // Recalculate duration
-      comp.settings.duration = comp.settings.frameCount / comp.settings.fps;
-
-      // Extend layer outPoints if frameCount increased
-      if (settings.frameCount && settings.frameCount > oldFrameCount) {
-        for (const layer of comp.layers) {
-          if (layer.outPoint === oldFrameCount - 1) {
-            layer.outPoint = settings.frameCount - 1;
-          }
-        }
-      }
-
-      // Keep legacy alias in sync for main comp
-      if (compId === this.project.mainCompositionId) {
-        Object.assign(this.project.composition, comp.settings);
-      }
+      compositionActions.updateCompositionSettings(this, compId, settings);
     },
 
-    /**
-     * Get a composition by ID
-     */
     getComposition(compId: string): Composition | null {
-      return this.project.compositions[compId] || null;
+      return compositionActions.getComposition(this, compId);
     },
 
-    /**
-     * Nest selected layers into a new composition
-     */
     nestSelectedLayers(name?: string): Composition | null {
-      if (this.selectedLayerIds.length === 0) {
-        storeLogger.warn('No layers selected for nesting');
-        return null;
-      }
-
-      const activeComp = this.project.compositions[this.activeCompositionId];
-      if (!activeComp) return null;
-
-      // Create new composition with same settings
-      const nestedComp = this.createComposition(
-        name || 'Nested Comp',
-        activeComp.settings,
-        true
-      );
-
-      // Move selected layers to nested comp
-      const selectedLayers = activeComp.layers.filter(l =>
-        this.selectedLayerIds.includes(l.id)
-      );
-
-      // Find earliest startFrame to normalize timing
-      const earliestIn = Math.min(...selectedLayers.map(l => l.startFrame ?? l.inPoint ?? 0));
-
-      // Move layers to nested comp and adjust timing
-      for (const layer of selectedLayers) {
-        // Adjust timing relative to nested comp start (update both new and legacy properties)
-        const layerStart = layer.startFrame ?? layer.inPoint ?? 0;
-        const layerEnd = layer.endFrame ?? layer.outPoint ?? 80;
-        layer.startFrame = layerStart - earliestIn;
-        layer.endFrame = layerEnd - earliestIn;
-        layer.inPoint = layer.startFrame;
-        layer.outPoint = layer.endFrame;
-
-        // Remove from parent
-        const idx = activeComp.layers.indexOf(layer);
-        if (idx >= 0) {
-          activeComp.layers.splice(idx, 1);
-        }
-
-        // Add to nested comp
-        nestedComp.layers.push(layer);
-      }
-
-      // Update nested comp duration to fit layers
-      const maxOut = Math.max(...nestedComp.layers.map(l => l.endFrame ?? l.outPoint ?? 80));
-      nestedComp.settings.frameCount = maxOut + 1;
-      nestedComp.settings.duration = nestedComp.settings.frameCount / nestedComp.settings.fps;
-
-      // Create nested comp layer in parent composition
-      const nestedEndFrame = earliestIn + nestedComp.settings.frameCount - 1;
-      const nestedCompLayer: Layer = {
-        id: `layer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        name: nestedComp.name,
-        type: 'nestedComp',
-        visible: true,
-        locked: false,
-        isolate: false,
-        threeD: false,
-        // Timing (primary properties)
-        startFrame: earliestIn,
-        endFrame: nestedEndFrame,
-        // Backwards compatibility aliases
-        inPoint: earliestIn,
-        outPoint: nestedEndFrame,
-        parentId: null,
-        transform: createDefaultTransform(),
-        opacity: createAnimatableProperty('opacity', 100, 'number'),
-        properties: [],
-        effects: [],
-        blendMode: 'normal',
-        motionBlur: false,
-        data: {
-          compositionId: nestedComp.id,
-          // Speed map (new naming)
-          speedMapEnabled: false,
-          // Backwards compatibility
-          timeRemapEnabled: false,
-          flattenTransform: false
-        } as NestedCompData
-      };
-
-      activeComp.layers.push(nestedCompLayer);
-
-      // Clear selection
-      useSelectionStore().clearLayerSelection();
-
-      // Switch back to parent composition
-      this.activeCompositionId = activeComp.id;
-
-      storeLogger.debug('Nested layers into:', nestedComp.name);
-      return nestedComp;
+      return compositionActions.nestSelectedLayers(this, name);
     },
 
     // ============================================================
@@ -856,349 +576,7 @@ export const useCompositorStore = defineStore('compositor', {
      * Create a new layer
      */
     createLayer(type: Layer['type'], name?: string): Layer {
-      const id = `layer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-      // Initialize type-specific data
-      let layerData: any = null;
-
-      switch (type) {
-        case 'text':
-          layerData = {
-            text: 'Text',
-            fontFamily: 'Arial',
-            fontSize: 72,
-            fontWeight: '400',
-            fontStyle: 'normal',
-            fill: '#ffffff',
-            stroke: '',
-            strokeWidth: 0,
-            tracking: 0,
-            letterSpacing: 0,
-            lineHeight: 1.2,
-            textAlign: 'left',
-            pathLayerId: null,
-            pathReversed: false,
-            pathPerpendicularToPath: true,
-            pathForceAlignment: false,
-            pathFirstMargin: 0,
-            pathLastMargin: 0,
-            pathOffset: 0,
-            pathAlign: 'left'
-          };
-          break;
-
-        case 'solid': {
-          // Use active composition dimensions, not main project composition
-          const activeComp = this.getActiveComp();
-          layerData = {
-            color: '#808080',
-            width: activeComp?.settings.width || this.project.composition.width,
-            height: activeComp?.settings.height || this.project.composition.height
-          };
-          break;
-        }
-
-        case 'null':
-          layerData = {
-            size: 40
-          };
-          break;
-
-        case 'spline':
-          layerData = {
-            pathData: '',
-            controlPoints: [],
-            closed: false,
-            stroke: '#00ff00',
-            strokeWidth: 2,
-            // Stroke options (shown in More Options group)
-            lineCap: 'round',    // butt, round, square
-            lineJoin: 'round',   // miter, round, bevel
-            dashArray: '',       // e.g., "10, 5" for dashed lines
-            dashOffset: 0
-          };
-          break;
-
-        case 'particles': {
-          // Get active composition dimensions for emitter positioning
-          const activeComp = this.getActiveComp();
-          const compWidth = activeComp?.settings.width || this.project.composition.width;
-          const compHeight = activeComp?.settings.height || this.project.composition.height;
-
-          layerData = {
-            systemConfig: {
-              maxParticles: 10000,
-              gravity: 0,
-              windStrength: 0,
-              windDirection: 0,
-              warmupPeriod: 0,
-              respectMaskBoundary: false,
-              boundaryBehavior: 'kill',
-              friction: 0.01
-            },
-            emitters: [{
-              id: 'emitter_1',
-              name: 'Emitter 1',
-              // Use pixel coordinates - center of composition
-              x: compWidth / 2,
-              y: compHeight / 2,
-              direction: 270, // Up direction (degrees, 270 = upward)
-              spread: 30,
-              speed: 150, // Pixels per second
-              speedVariance: 30,
-              size: 8,
-              sizeVariance: 2,
-              color: [255, 200, 100] as [number, number, number], // Orange-ish for visibility
-              emissionRate: 30, // Particles per second
-              initialBurst: 0,
-              particleLifetime: 90, // Frames
-              lifetimeVariance: 15,
-              enabled: true,
-              burstOnBeat: false,
-              burstCount: 20,
-              // Geometric emitter shape defaults
-              shape: 'point' as const,
-              shapeRadius: 50,
-              shapeWidth: 100,
-              shapeHeight: 100,
-              shapeDepth: 100,
-              shapeInnerRadius: 25,
-              emitFromEdge: false,
-              emitFromVolume: false,
-              splinePath: null,
-              sprite: {
-                enabled: false,
-                imageUrl: null,
-                imageData: null,
-                isSheet: false,
-                columns: 1,
-                rows: 1,
-                totalFrames: 1,
-                frameRate: 30,
-                playMode: 'loop' as const,
-                billboard: true,
-                rotationEnabled: false,
-                rotationSpeed: 0,
-                rotationSpeedVariance: 0,
-                alignToVelocity: false
-              }
-            }],
-            gravityWells: [],
-            vortices: [],
-            modulations: [{
-              id: 'mod_opacity_1',
-              emitterId: '*',
-              property: 'opacity',
-              startValue: 1,
-              endValue: 0,
-              easing: 'linear'
-            }],
-            renderOptions: {
-              blendMode: 'additive',
-              renderTrails: false,
-              trailLength: 5,
-              trailOpacityFalloff: 0.7,
-              particleShape: 'circle',
-              glowEnabled: true,
-              glowRadius: 8,
-              glowIntensity: 0.6,
-              motionBlur: false,
-              motionBlurStrength: 0.5,
-              motionBlurSamples: 8,
-              connections: {
-                enabled: false,
-                maxDistance: 100,
-                maxConnections: 3,
-                lineWidth: 1,
-                lineOpacity: 0.5,
-                fadeByDistance: true
-              }
-            },
-            turbulenceFields: [],
-            subEmitters: []
-          };
-          break;
-        }
-
-        case 'depthflow':
-          layerData = {
-            sourceLayerId: null,
-            depthLayerId: null,
-            config: {
-              preset: 'static',
-              zoom: 1,
-              offsetX: 0,
-              offsetY: 0,
-              rotation: 0,
-              depthScale: 1,
-              focusDepth: 0.5,
-              dollyZoom: 0,
-              orbitRadius: 0,
-              orbitSpeed: 1,
-              swingAmplitude: 0,
-              swingFrequency: 1,
-              edgeDilation: 0,
-              inpaintEdges: false
-            }
-          };
-          break;
-
-        case 'light':
-          layerData = {
-            lightType: 'point',
-            color: '#ffffff',
-            intensity: 100,
-            radius: 500,
-            falloff: 'none',
-            falloffDistance: 500,
-            castShadows: false,
-            shadowDarkness: 100,
-            shadowDiffusion: 0
-          };
-          break;
-
-        case 'camera':
-          // Camera layers are created via createCameraLayer(), but handle here too
-          layerData = {
-            cameraId: null,
-            isActiveCamera: false
-          };
-          break;
-
-        case 'image':
-          layerData = {
-            assetId: null,
-            fit: 'contain'
-          };
-          break;
-
-        case 'video':
-          layerData = {
-            assetId: null,
-            loop: false,
-            startTime: 0,
-            speed: 1.0
-          };
-          break;
-
-        case 'shape':
-          layerData = {
-            contents: [],
-            blendMode: 'normal',
-            quality: 'normal',
-            gpuAccelerated: false
-          };
-          break;
-
-        case 'adjustment':
-          // Adjustment/Effect layer - applies effects to layers below
-          layerData = {
-            color: '#808080',
-            effectLayer: true,
-            adjustmentLayer: true  // Backwards compatibility
-          };
-          break;
-
-        case 'group':
-          // Layer group/folder
-          layerData = {
-            collapsed: false,
-            color: null,
-            passThrough: true,
-            isolate: false
-          };
-          break;
-      }
-
-      // Initialize audio props for video/audio layers
-      let audioProps = undefined;
-      if (type === 'video' || type === 'audio') {
-        audioProps = {
-          level: createAnimatableProperty('Audio Levels', 0, 'number') // 0dB default
-        };
-      }
-
-      const comp = this.getActiveComp();
-      const layers = this.getActiveCompLayers();
-
-      // Get composition dimensions for centering
-      const compWidth = comp?.settings.width || this.project.composition.width;
-      const compHeight = comp?.settings.height || this.project.composition.height;
-
-      // Create transform with layer centered in composition
-      const layerTransform = createDefaultTransform();
-
-      // Set position to composition center
-      // Anchor point should be at layer's own origin (0,0 for text/shapes, layer center for solids)
-      layerTransform.position.value = { x: compWidth / 2, y: compHeight / 2, z: 0 };
-
-      // Use origin (new name) for the transform pivot point
-      const originProp = layerTransform.origin || layerTransform.anchorPoint;
-      if (type === 'solid' && layerData) {
-        // Solid layers: origin at layer's own center
-        const layerWidth = layerData.width || compWidth;
-        const layerHeight = layerData.height || compHeight;
-        if (originProp) originProp.value = { x: layerWidth / 2, y: layerHeight / 2, z: 0 };
-      } else {
-        // Text, shape, spline, particles, image, video, etc.: origin at (0,0)
-        // Position directly controls where the layer's origin appears in composition
-        if (originProp) originProp.value = { x: 0, y: 0, z: 0 };
-      }
-
-      // Initialize layer-specific properties
-      let layerProperties: AnimatableProperty<any>[] = [];
-
-      // Spline layer properties for timeline
-      // Note: Splines don't have Fill (only shapes/text do) - they only have stroke
-      if (type === 'spline') {
-        layerProperties = [
-          createAnimatableProperty('Stroke Width', layerData?.strokeWidth ?? 2, 'number', 'Stroke'),
-          createAnimatableProperty('Stroke Opacity', layerData?.strokeOpacity ?? 100, 'number', 'Stroke'),
-          // Line Cap, Line Join, Dashes are stored in layer.data and shown in More Options
-          createAnimatableProperty('Trim Start', 0, 'number', 'Trim Paths'),
-          createAnimatableProperty('Trim End', 100, 'number', 'Trim Paths'),
-          createAnimatableProperty('Trim Offset', 0, 'number', 'Trim Paths'),
-          // Note: "Closed" is stored in layer.data.closed as a boolean, not animatable
-          // It's displayed in the timeline via the Path Options group in EnhancedLayerTrack
-        ];
-      }
-
-      const endFrameValue = (comp?.settings.frameCount || 81) - 1;
-      const layer: Layer = {
-        id,
-        name: name || `${type.charAt(0).toUpperCase() + type.slice(1)} ${layers.length + 1}`,
-        type,
-        visible: true,
-        locked: false,
-        isolate: false,
-        threeD: false,
-        motionBlur: false,
-        // Timing (primary properties)
-        startFrame: 0,
-        endFrame: endFrameValue,
-        // Backwards compatibility aliases
-        inPoint: 0,
-        outPoint: endFrameValue,
-        parentId: null,
-        blendMode: 'normal',
-        opacity: createAnimatableProperty('opacity', 100, 'number'),
-        transform: layerTransform,
-        audio: audioProps,
-        properties: layerProperties,
-        effects: [],
-        data: layerData
-      };
-
-      // Camera layers should use createCameraLayer() instead
-      if (type === 'camera') {
-        storeLogger.warn('Use createCameraLayer() for camera layers');
-      }
-
-      layers.unshift(layer);
-      this.project.meta.modified = new Date().toISOString();
-      this.pushHistory();
-
-      return layer;
+      return layerActions.createLayer(this, type, name);
     },
 
     /**
@@ -2064,430 +1442,61 @@ export const useCompositorStore = defineStore('compositor', {
     },
 
     // ============================================================
-    // PARTICLE SYSTEM LAYER ACTIONS
+    // PARTICLE SYSTEM LAYER ACTIONS (delegated to particleLayerActions)
     // ============================================================
 
-    /**
-     * Create a particle system layer
-     */
     createParticleLayer(): Layer {
-      const layer = this.createLayer('particles', 'Particle System');
-
-      // Get active composition dimensions for emitter positioning
-      const activeComp = this.getActiveComp();
-      const compWidth = activeComp?.settings.width || this.project.composition.width;
-      const compHeight = activeComp?.settings.height || this.project.composition.height;
-
-      // Set up particle layer data
-      const particleData: ParticleLayerData = {
-        systemConfig: {
-          maxParticles: 10000,
-          gravity: 0,
-          windStrength: 0,
-          windDirection: 0,
-          warmupPeriod: 0,
-          respectMaskBoundary: false,
-          boundaryBehavior: 'kill',
-          friction: 0.01
-        },
-        emitters: [{
-          id: `emitter_${Date.now()}`,
-          name: 'Emitter 1',
-          // Use pixel coordinates - center of composition
-          x: compWidth / 2,
-          y: compHeight / 2,
-          direction: 270, // Up direction (270 degrees)
-          spread: 30,
-          speed: 150, // Pixels per second
-          speedVariance: 30,
-          size: 8,
-          sizeVariance: 2,
-          color: [255, 200, 100] as [number, number, number],
-          emissionRate: 30, // Particles per second
-          initialBurst: 0,
-          particleLifetime: 90,
-          lifetimeVariance: 15,
-          enabled: true,
-          burstOnBeat: false,
-          burstCount: 20,
-          // Geometric emitter shape defaults (in pixels)
-          shape: 'point' as const,
-          shapeRadius: 50,
-          shapeWidth: 100,
-          shapeHeight: 100,
-          shapeDepth: 100,
-          shapeInnerRadius: 25,
-          emitFromEdge: false,
-          emitFromVolume: false,
-          // Spline path emission (null = disabled)
-          splinePath: null,
-          // Sprite configuration
-          sprite: {
-            enabled: false,
-            imageUrl: null,
-            imageData: null,
-            isSheet: false,
-            columns: 1,
-            rows: 1,
-            totalFrames: 1,
-            frameRate: 30,
-            playMode: 'loop' as const,
-            billboard: true,
-            rotationEnabled: false,
-            rotationSpeed: 0,
-            rotationSpeedVariance: 0,
-            alignToVelocity: false
-          }
-        }],
-        gravityWells: [],
-        vortices: [],
-        modulations: [{
-          id: `mod_${Date.now()}`,
-          emitterId: '*',
-          property: 'opacity',
-          startValue: 1,
-          endValue: 0,
-          easing: 'linear'
-        }],
-        renderOptions: {
-          blendMode: 'additive',
-          renderTrails: false,
-          trailLength: 5,
-          trailOpacityFalloff: 0.7,
-          particleShape: 'circle',
-          glowEnabled: false,
-          glowRadius: 10,
-          glowIntensity: 0.5,
-          motionBlur: false,
-          motionBlurStrength: 0.5,
-          motionBlurSamples: 8,
-          connections: {
-            enabled: false,
-            maxDistance: 100,
-            maxConnections: 3,
-            lineWidth: 1,
-            lineOpacity: 0.5,
-            fadeByDistance: true
-          }
-        },
-        turbulenceFields: [],
-        subEmitters: []
-      };
-
-      layer.data = particleData;
-
-      return layer;
+      return particleLayerActions.createParticleLayer(this);
     },
 
-    /**
-     * Update particle layer data
-     */
     updateParticleLayerData(layerId: string, updates: Partial<ParticleLayerData>): void {
-      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
-      if (!layer || layer.type !== 'particles') return;
-
-      const data = layer.data as ParticleLayerData;
-      Object.assign(data, updates);
-      this.project.meta.modified = new Date().toISOString();
+      particleLayerActions.updateParticleLayerData(this, layerId, updates);
     },
 
-    /**
-     * Add emitter to particle layer
-     */
     addParticleEmitter(layerId: string, config: ParticleEmitterConfig): void {
-      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
-      if (!layer || layer.type !== 'particles') return;
-
-      const data = layer.data as ParticleLayerData;
-      data.emitters.push(config);
-      this.project.meta.modified = new Date().toISOString();
+      particleLayerActions.addParticleEmitter(this, layerId, config);
     },
 
-    /**
-     * Update particle emitter
-     */
     updateParticleEmitter(layerId: string, emitterId: string, updates: Partial<ParticleEmitterConfig>): void {
-      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
-      if (!layer || layer.type !== 'particles') return;
-
-      const data = layer.data as ParticleLayerData;
-      const emitter = data.emitters.find(e => e.id === emitterId);
-      if (emitter) {
-        Object.assign(emitter, updates);
-        this.project.meta.modified = new Date().toISOString();
-      }
+      particleLayerActions.updateParticleEmitter(this, layerId, emitterId, updates);
     },
 
-    /**
-     * Remove particle emitter
-     */
     removeParticleEmitter(layerId: string, emitterId: string): void {
-      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
-      if (!layer || layer.type !== 'particles') return;
-
-      const data = layer.data as ParticleLayerData;
-      data.emitters = data.emitters.filter(e => e.id !== emitterId);
-      this.project.meta.modified = new Date().toISOString();
+      particleLayerActions.removeParticleEmitter(this, layerId, emitterId);
     },
 
     // ============================================================
-    // DEPTHFLOW LAYER ACTIONS
+    // DEPTHFLOW LAYER ACTIONS (delegated to depthflowActions)
     // ============================================================
 
-    /**
-     * Create a depthflow parallax layer
-     */
     createDepthflowLayer(sourceLayerId: string = '', depthLayerId: string = ''): Layer {
-      const layer = this.createLayer('depthflow', 'Depthflow');
-
-      // Set up depthflow layer data
-      const depthflowData: DepthflowLayerData = {
-        sourceLayerId,
-        depthLayerId,
-        config: {
-          preset: 'zoom_in',
-          zoom: 1.0,
-          offsetX: 0,
-          offsetY: 0,
-          rotation: 0,
-          depthScale: 1.0,
-          focusDepth: 0.5,
-          dollyZoom: 0,
-          orbitRadius: 0.1,
-          orbitSpeed: 360,
-          swingAmplitude: 0.1,
-          swingFrequency: 1,
-          edgeDilation: 5,
-          inpaintEdges: true
-        },
-        animatedZoom: createAnimatableProperty('zoom', 1.0, 'number'),
-        animatedOffsetX: createAnimatableProperty('offsetX', 0, 'number'),
-        animatedOffsetY: createAnimatableProperty('offsetY', 0, 'number'),
-        animatedRotation: createAnimatableProperty('rotation', 0, 'number'),
-        animatedDepthScale: createAnimatableProperty('depthScale', 1.0, 'number')
-      };
-
-      layer.data = depthflowData;
-
-      return layer;
+      return depthflowActions.createDepthflowLayer(this, sourceLayerId, depthLayerId);
     },
 
-    /**
-     * Update depthflow config
-     */
     updateDepthflowConfig(layerId: string, updates: Partial<DepthflowLayerData['config']>): void {
-      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
-      if (!layer || layer.type !== 'depthflow') return;
-
-      const data = layer.data as DepthflowLayerData;
-      Object.assign(data.config, updates);
-      this.project.meta.modified = new Date().toISOString();
+      depthflowActions.updateDepthflowConfig(this, layerId, updates);
     },
 
     // ============================================================
-    // VIDEO LAYER ACTIONS
+    // VIDEO LAYER ACTIONS (delegated to videoActions)
     // ============================================================
 
-    /**
-     * Create a video layer from a file
-     * Automatically resizes composition to match video dimensions and duration
-     *
-     * @param file - Video file to import
-     * @param autoResizeComposition - If true, resize composition to match video (default: true for first video)
-     * @returns The created layer
-     */
     async createVideoLayer(file: File, autoResizeComposition: boolean = true): Promise<Layer> {
-      // First extract metadata to determine dimensions and duration
-      let videoUrl: string;
-      try {
-        videoUrl = URL.createObjectURL(file);
-      } catch {
-        throw new Error('Failed to create URL for video file');
-      }
-
-      let metadata: VideoMetadata;
-      try {
-        metadata = await extractVideoMetadata(videoUrl);
-      } catch (error) {
-        URL.revokeObjectURL(videoUrl);
-        throw new Error(`Failed to load video metadata: ${(error as Error).message}`);
-      }
-
-      // Create asset reference
-      const assetId = `video_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const asset: AssetReference = {
-        id: assetId,
-        type: 'video',
-        source: 'file',
-        width: metadata.width,
-        height: metadata.height,
-        data: videoUrl,
-        // Video-specific metadata
-        duration: metadata.duration,
-        frameCount: metadata.frameCount,
-        fps: metadata.fps,
-        hasAudio: metadata.hasAudio
-      };
-
-      this.project.assets[assetId] = asset;
-
-      // Auto-resize composition if requested
-      if (autoResizeComposition) {
-        const compSettings = calculateCompositionFromVideo(metadata, this.project.composition.fps);
-
-        storeLogger.debug('Auto-resizing composition for video:', {
-          originalWidth: this.project.composition.width,
-          originalHeight: this.project.composition.height,
-          originalFrameCount: this.project.composition.frameCount,
-          newWidth: compSettings.width,
-          newHeight: compSettings.height,
-          newFrameCount: compSettings.frameCount,
-          videoDuration: metadata.duration
-        });
-
-        this.project.composition.width = compSettings.width;
-        this.project.composition.height = compSettings.height;
-        this.project.composition.frameCount = compSettings.frameCount;
-        this.project.composition.duration = compSettings.frameCount / this.project.composition.fps;
-      }
-
-      // Create the layer
-      const layer = this.createLayer('video', file.name.replace(/\.[^.]+$/, ''));
-
-      // Set video data
-      const videoData: VideoData = {
-        assetId,
-        loop: false,
-        pingPong: false,
-        startTime: 0,
-        endTime: undefined,
-        speed: 1,
-        // Speed map (new naming)
-        speedMapEnabled: false,
-        speedMap: undefined,
-        // Backwards compatibility
-        timeRemapEnabled: false,
-        timeRemap: undefined,
-        frameBlending: 'none',
-        audioEnabled: metadata.hasAudio,
-        audioLevel: 100,
-        posterFrame: 0
-      };
-
-      layer.data = videoData;
-
-      // Set layer duration to match video (in frames)
-      if (!autoResizeComposition) {
-        // If not auto-resizing, set layer out point to video duration
-        const videoFrameCount = Math.ceil(metadata.duration * this.project.composition.fps);
-        layer.outPoint = Math.min(videoFrameCount - 1, this.project.composition.frameCount - 1);
-      }
-
-      this.project.meta.modified = new Date().toISOString();
-      this.pushHistory();
-
-      storeLogger.debug('Created video layer:', {
-        layerId: layer.id,
-        assetId,
-        dimensions: `${metadata.width}x${metadata.height}`,
-        duration: `${metadata.duration.toFixed(2)}s`,
-        frameCount: metadata.frameCount,
-        hasAudio: metadata.hasAudio
-      });
-
-      return layer;
+      return videoActions.createVideoLayer(this, file, autoResizeComposition);
     },
 
-    /**
-     * Update video layer data
-     */
     updateVideoLayerData(layerId: string, updates: Partial<VideoData>): void {
-      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
-      if (!layer || layer.type !== 'video') return;
-
-      const data = layer.data as VideoData;
-      Object.assign(data, updates);
-      this.project.meta.modified = new Date().toISOString();
+      videoActions.updateVideoLayerData(this, layerId, updates);
     },
 
-    /**
-     * Handle video metadata loaded callback from engine
-     * Called by LayerManager when a video finishes loading
-     */
     onVideoMetadataLoaded(layerId: string, metadata: VideoMetadata): void {
-      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
-      if (!layer || layer.type !== 'video') return;
-
-      const videoData = layer.data as VideoData;
-      if (!videoData.assetId) return;
-
-      // Update asset with accurate metadata
-      const asset = this.project.assets[videoData.assetId];
-      if (asset) {
-        asset.width = metadata.width;
-        asset.height = metadata.height;
-        asset.duration = metadata.duration;
-        asset.frameCount = metadata.frameCount;
-        asset.fps = metadata.fps;
-        asset.hasAudio = metadata.hasAudio;
-      }
-
-      storeLogger.debug('Video metadata loaded:', { layerId, metadata });
+      videoActions.onVideoMetadataLoaded(this, layerId, metadata);
     },
 
-    /**
-     * Resize composition settings
-     * Used for manual resize or when importing video
-     */
     resizeComposition(width: number, height: number, frameCount?: number): void {
-      const comp = this.getActiveComp();
-      if (!comp) return;
-
-      const oldFrameCount = comp.settings.frameCount;
-
-      comp.settings.width = width;
-      comp.settings.height = height;
-
-      // Keep legacy alias in sync
-      this.project.composition.width = width;
-      this.project.composition.height = height;
-
-      if (frameCount !== undefined) {
-        comp.settings.frameCount = frameCount;
-        comp.settings.duration = frameCount / comp.settings.fps;
-
-        // Keep legacy alias in sync
-        this.project.composition.frameCount = frameCount;
-        this.project.composition.duration = frameCount / this.project.composition.fps;
-
-        // Extend layer outPoints if frameCount increased
-        // Only extend layers that were at the old max frame
-        if (frameCount > oldFrameCount) {
-          for (const layer of comp.layers) {
-            // If layer ended at the old composition end, extend it to new end
-            if (layer.outPoint === oldFrameCount - 1) {
-              layer.outPoint = frameCount - 1;
-            }
-          }
-        }
-      }
-
-      // Update current frame if it's now out of bounds
-      if (comp.currentFrame >= comp.settings.frameCount) {
-        comp.currentFrame = comp.settings.frameCount - 1;
-      }
-
-      this.project.meta.modified = new Date().toISOString();
-      this.pushHistory();
-
-      storeLogger.debug('Composition resized:', {
-        width,
-        height,
-        frameCount: comp.settings.frameCount
-      });
+      videoActions.resizeComposition(this, width, height, frameCount);
     },
 
-    // ============================================================
     // NESTED COMP LAYER ACTIONS
     // ============================================================
 

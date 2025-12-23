@@ -33,7 +33,7 @@
       @blur="onBlur"
       @mousedown="onInputMouseDown"
     />
-    <span v-if="unit" class="scrub-unit">{{ unit }}</span>
+    <span v-if="displayUnit" class="scrub-unit">{{ displayUnit }}</span>
     <button
       v-if="showReset && modelValue !== defaultValue"
       class="reset-btn"
@@ -56,6 +56,7 @@ interface Props {
   step?: number;
   precision?: number;
   unit?: string;
+  suffix?: string;  // Alias for unit (backward compatibility)
   default?: number;
   sensitivity?: number;
   disabled?: boolean;
@@ -83,6 +84,7 @@ const dragThreshold = 3; // pixels before considering it a drag vs click
 
 const defaultValue = computed(() => props.default ?? props.modelValue);
 const showReset = computed(() => props.default !== undefined);
+const displayUnit = computed(() => props.unit || props.suffix);
 
 const displayValue = computed(() => {
   if (Number.isInteger(props.modelValue) && props.precision === 0) {

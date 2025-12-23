@@ -1,6 +1,6 @@
 # WEYL COMPOSITOR - FEATURE & UI AUDIT
 
-**Last Updated:** December 22, 2025
+**Last Updated:** December 23, 2025
 
 This document maps all implemented features to their UI access points.
 Features marked with **NO UI** are implemented but inaccessible to users.
@@ -846,6 +846,120 @@ The pen tool has **4 sub-modes** accessed via the spline toolbar:
 | Shadow Opacity | ✅ 🎚️ | Solid Properties |
 | Shadow Color | ✅ 🎚️ | Solid Properties |
 | Receive Shadow | ✅ 🎚️ | Solid Properties |
+
+---
+
+## 28. LAYER STYLES (NEW - December 22, 2025)
+
+Photoshop-style Layer Styles with 10 style types, 7 presets, and full animation support.
+
+### Style Types (10 Total)
+
+| Style Type | UI Access | Location |
+|------------|-----------|----------|
+| Drop Shadow | ✅ 🎚️ | Properties → Layer Styles |
+| Inner Shadow | ✅ 🎚️ | Properties → Layer Styles |
+| Outer Glow | ✅ 🎚️ | Properties → Layer Styles |
+| Inner Glow | ✅ 🎚️ | Properties → Layer Styles |
+| Bevel and Emboss | ✅ 🎚️ | Properties → Layer Styles |
+| Satin | ✅ 🎚️ | Properties → Layer Styles |
+| Color Overlay | ✅ 🎚️ | Properties → Layer Styles |
+| Gradient Overlay | ✅ 🎚️ | Properties → Layer Styles |
+| Stroke | ✅ 🎚️ | Properties → Layer Styles |
+| Blending Options | ✅ 🎚️ | Properties → Layer Styles |
+
+### Style Properties (per style type)
+
+| Property | Animatable | Description |
+|----------|------------|-------------|
+| Enabled | No | Toggle individual style |
+| Blend Mode | No | 16+ blend modes |
+| Opacity | ✅ Yes | 0-100% |
+| Color | ✅ Yes | RGBA color |
+| Angle | ✅ Yes | 0-360° |
+| Distance | ✅ Yes | Pixels |
+| Spread/Choke | ✅ Yes | 0-100% |
+| Size | ✅ Yes | Blur radius |
+| Depth | ✅ Yes | Bevel depth |
+| Altitude | ✅ Yes | Light altitude 0-90° |
+
+### Style Actions
+
+| Operation | UI Access | Location |
+|-----------|-----------|----------|
+| Enable All Styles | ✅ 🖱️ | Master checkbox |
+| Copy Layer Style | ✅ 🖱️ | Copy button |
+| Paste Layer Style | ✅ 🖱️ | Paste button |
+| Clear Layer Style | ✅ 🖱️ | Clear button |
+| Apply Preset | ✅ 🖱️ | Preset dropdown |
+
+### Style Presets (7 Built-in)
+
+| Preset | Effect |
+|--------|--------|
+| Soft Shadow | Subtle drop shadow |
+| Hard Shadow | Sharp drop shadow |
+| Neon Glow | Cyan outer + white inner glow |
+| Simple Stroke | 2px black outside stroke |
+| Embossed | Raised emboss effect |
+| Inner Bevel | Smooth inner bevel |
+| Pillow Emboss | Cushion/pillow effect |
+
+### Bevel and Emboss Styles (5)
+
+| Style | Description |
+|-------|-------------|
+| Outer Bevel | Bevel on outside edge |
+| Inner Bevel | Bevel on inside edge |
+| Emboss | Full raised emboss |
+| Pillow Emboss | Cushion/pillow effect |
+| Stroke Emboss | Bevel on stroke |
+
+### Bevel Techniques (3)
+
+| Technique | Description |
+|-----------|-------------|
+| Smooth | Soft edges |
+| Chisel Hard | Sharp edges |
+| Chisel Soft | Textured edges |
+
+### Global Light System
+
+| Feature | Status | Description |
+|---------|--------|-------------|
+| Global Light Angle | ✅ | Shared across styles |
+| Global Light Altitude | ✅ | Shared for bevel/emboss |
+| Use Global Light | ✅ | Per-style toggle |
+
+### Files Created
+
+| File | Purpose |
+|------|---------|
+| `types/layerStyles.ts` | Type definitions (600+ lines) |
+| `services/effects/layerStyleRenderer.ts` | All 9 renderers (900+ lines) |
+| `services/globalLight.ts` | Global light management |
+| `stores/actions/layerStyleActions.ts` | Store actions (700+ lines) |
+| `components/properties/styles/*.vue` | 12 UI components |
+
+### Render Pipeline Order
+
+Styles render BEFORE effects:
+```
+Layer Content → Layer Styles → Effects → Motion Blur → Final Output
+```
+
+Fixed render order within styles:
+```
+1. Drop Shadow (behind)
+2. Inner Shadow
+3. Outer Glow (behind)
+4. Inner Glow
+5. Bevel and Emboss
+6. Satin
+7. Color Overlay
+8. Gradient Overlay
+9. Stroke (on top)
+```
 
 ---
 

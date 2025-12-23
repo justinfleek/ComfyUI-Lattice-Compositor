@@ -116,11 +116,45 @@
       <!-- Media -->
       <template v-else-if="property.type === 'media'">
         <div class="media-control">
-          <div class="media-preview">
+          <div class="media-preview" @click="selectMedia" :title="'Click to replace media'">
             <img v-if="currentValue" :src="currentValue" alt="" />
-            <span v-else>No media</span>
+            <span v-else class="media-placeholder">📁</span>
           </div>
-          <button class="btn-small" @click="selectMedia">Replace...</button>
+          <div class="media-info">
+            <span v-if="currentValue" class="media-filename">{{ getMediaFilename(currentValue) }}</span>
+            <span v-else class="media-filename muted">No media selected</span>
+            <button class="btn-small" @click="selectMedia">Replace...</button>
+          </div>
+        </div>
+        <input
+          ref="mediaFileInput"
+          type="file"
+          accept="image/*,video/*"
+          style="display: none"
+          @change="handleMediaSelect"
+        />
+      </template>
+
+      <!-- Layer Picker -->
+      <template v-else-if="property.type === 'layer'">
+        <div class="layer-control">
+          <select
+            :value="currentValue"
+            @change="updateValue(($event.target as HTMLSelectElement).value)"
+            class="dropdown-input layer-picker"
+          >
+            <option value="">None</option>
+            <option
+              v-for="availableLayer in availableLayers"
+              :key="availableLayer.id"
+              :value="availableLayer.id"
+            >
+              {{ availableLayer.name }}
+            </option>
+          </select>
+          <div v-if="selectedLayerInfo" class="layer-info">
+            <span class="layer-type">{{ selectedLayerInfo.type }}</span>
+          </div>
         </div>
       </template>
 
@@ -131,14 +165,9 @@
           @change="updateValue(($event.target as HTMLSelectElement).value)"
           class="dropdown-input"
         >
-          <option value="Arial">Arial</option>
-          <option value="Helvetica">Helvetica</option>
-          <option value="Times New Roman">Times New Roman</option>
-          <option value="Georgia">Georgia</option>
-          <option value="Verdana">Verdana</option>
-          <option value="Courier New">Courier New</option>
-          <option value="Inter">Inter</option>
-          <option value="Roboto">Roboto</option>
+          <option v-for="font in availableFonts" :key="font" :value="font">
+            {{ font }}
+          </option>
         </select>
       </template>
 
@@ -156,10 +185,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, inject } from 'vue';
 import type { ExposedProperty } from '@/types/essentialGraphics';
 import type { Layer } from '@/types/project';
 import { getPropertyValue, setPropertyValue } from '@/services/essentialGraphics';
+import { useCompositorStore } from '@/stores/compositorStore';
 
 const props = defineProps<{
   property: ExposedProperty;
@@ -171,8 +201,11 @@ const emit = defineEmits<{
   (e: 'remove'): void;
 }>();
 
+const compositorStore = useCompositorStore();
+
 // Local state
 const localName = ref(props.property.name);
+const mediaFileInput = ref<HTMLInputElement | null>(null);
 
 // Watch for external changes
 watch(() => props.property.name, (newName) => {
@@ -184,6 +217,26 @@ const currentValue = computed(() => {
   if (!props.layer) return undefined;
   return getPropertyValue(props.layer, props.property.sourcePropertyPath);
 });
+
+// Available layers for layer picker (exclude current layer)
+const availableLayers = computed(() => {
+  const comp = compositorStore.activeComposition;
+  if (!comp) return [];
+  return comp.layers.filter(l => l.id !== props.layer?.id);
+});
+
+// Selected layer info for display
+const selectedLayerInfo = computed(() => {
+  if (!currentValue.value || props.property.type !== 'layer') return null;
+  return availableLayers.value.find(l => l.id === currentValue.value);
+});
+
+// Available fonts
+const availableFonts = [
+  'Arial', 'Helvetica', 'Times New Roman', 'Georgia', 'Verdana',
+  'Courier New', 'Inter', 'Roboto', 'Open Sans', 'Lato',
+  'Montserrat', 'Poppins', 'Source Sans Pro', 'Nunito', 'Raleway'
+];
 
 // Update property name
 function updateName() {
@@ -230,10 +283,53 @@ function hexToColor(hex: string): { r: number; g: number; b: number; a: number }
   };
 }
 
+// Media utilities
+function getMediaFilename(url: string): string {
+  if (!url) return '';
+  // Handle data URLs
+  if (url.startsWith('data:')) {
+    const match = url.match(/data:([^;]+)/);
+    return match ? `[${match[1]}]` : '[embedded]';
+  }
+  // Handle regular URLs
+  try {
+    const urlObj = new URL(url, window.location.origin);
+    const path = urlObj.pathname;
+    return path.split('/').pop() || 'media';
+  } catch {
+    return url.split('/').pop() || 'media';
+  }
+}
+
 // Media selection
 function selectMedia() {
-  // TODO: Open file picker
-  console.log('Select media');
+  mediaFileInput.value?.click();
+}
+
+async function handleMediaSelect(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
+
+  try {
+    // Read file as data URL
+    const dataUrl = await readFileAsDataURL(file);
+    updateValue(dataUrl);
+  } catch (error) {
+    console.error('[ExposedPropertyControl] Failed to read media file:', error);
+  }
+
+  // Reset input for re-selection of same file
+  input.value = '';
+}
+
+function readFileAsDataURL(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
 }
 </script>
 
@@ -400,13 +496,13 @@ function selectMedia() {
 
 .media-control {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  align-items: flex-start;
+  gap: 10px;
 }
 
 .media-preview {
-  width: 48px;
-  height: 36px;
+  width: 56px;
+  height: 42px;
   background: var(--weyl-surface-0, #0a0a0a);
   border: 1px solid var(--weyl-border-subtle, #2a2a2a);
   border-radius: 3px;
@@ -414,6 +510,13 @@ function selectMedia() {
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.media-preview:hover {
+  border-color: var(--weyl-accent, #8b5cf6);
 }
 
 .media-preview img {
@@ -422,9 +525,30 @@ function selectMedia() {
   object-fit: cover;
 }
 
-.media-preview span {
-  font-size: 9px;
+.media-placeholder {
+  font-size: 18px;
+  opacity: 0.5;
+}
+
+.media-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.media-filename {
+  font-size: 11px;
+  color: var(--weyl-text-secondary, #9ca3af);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.media-filename.muted {
   color: var(--weyl-text-muted, #6b7280);
+  font-style: italic;
 }
 
 .btn-small {
@@ -452,5 +576,33 @@ function selectMedia() {
   font-size: 11px;
   color: var(--weyl-text-muted, #6b7280);
   font-style: italic;
+}
+
+/* Layer picker styles */
+.layer-control {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.layer-picker {
+  width: 100%;
+}
+
+.layer-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+}
+
+.layer-type {
+  font-size: 10px;
+  color: var(--weyl-text-muted, #6b7280);
+  background: var(--weyl-surface-0, #0a0a0a);
+  padding: 2px 6px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 </style>

@@ -98,31 +98,31 @@
         <div class="sidebar-header-row">
           <!-- AV Features (visibility, audio, isolate, lock) -->
           <div class="col-header col-av-features">
-            <span class="header-icon" title="Video"><PhEye :size="14" /></span>
-            <span class="header-icon" title="Audio"><PhSpeakerHigh :size="14" /></span>
-            <span class="header-icon" title="Isolate">●</span>
-            <span class="header-icon" title="Lock"><PhLock :size="14" /></span>
+            <span class="header-icon" title="Toggle Layer Visibility (V)"><PhEye :size="14" /></span>
+            <span class="header-icon" title="Toggle Audio Mute"><PhSpeakerHigh :size="14" /></span>
+            <span class="header-icon" title="Isolate Layer - Show only this layer">●</span>
+            <span class="header-icon" title="Lock Layer - Prevent selection and editing (Ctrl+L)"><PhLock :size="14" /></span>
           </div>
           <!-- Layer info -->
-          <div class="col-header col-number">#</div>
-          <div class="col-header col-name">Source Name</div>
+          <div class="col-header col-number" title="Layer Number (stacking order, 1 = top)">#</div>
+          <div class="col-header col-name" title="Layer Name (Enter to rename)">Source Name</div>
           <!-- Switches -->
           <div class="col-header col-switches">
             <span
               class="header-icon clickable"
               :class="{ active: store.hideMinimizedLayers }"
-              title="Hide Minimized Layers"
+              title="Hide Minimized Layers - Filter view"
               @click="store.toggleHideMinimizedLayers()"
             ><PhEyeSlash :size="14" /></span>
-            <span class="header-icon" title="Flatten Transform"><PhSun :size="14" /></span>
-            <span class="header-icon" title="Quality">◐</span>
-            <span class="header-icon" title="Effects">fx</span>
-            <span class="header-icon" title="Frame Blending">⊞</span>
-            <span class="header-icon" title="Motion Blur">◔</span>
-            <span class="header-icon" title="Effect Layer">◐</span>
-            <span class="header-icon" title="3D Layer">⬡</span>
+            <span class="header-icon" title="Continuously Rasterize / Collapse Transformation"><PhSun :size="14" /></span>
+            <span class="header-icon" title="Layer Quality - Draft (fast) / Full (anti-aliased)">◐</span>
+            <span class="header-icon" title="Toggle Effects - Enable/disable effect stack">fx</span>
+            <span class="header-icon" title="Frame Blending - Smooth slow motion playback">⊞</span>
+            <span class="header-icon" title="Motion Blur - Requires composition motion blur enabled">◔</span>
+            <span class="header-icon" title="Effect Layer - Apply effects to layers below">◐</span>
+            <span class="header-icon" title="3D Layer - Enable depth and camera interaction">⬡</span>
           </div>
-          <div class="col-header col-parent">Parent & Link</div>
+          <div class="col-header col-parent" title="Parent & Link - Link transforms to another layer">Parent & Link</div>
         </div>
         <div class="sidebar-scroll-area" ref="sidebarScrollRef" @scroll="syncSidebarScroll"
              @dragover.prevent="onDragOver"

@@ -70,6 +70,27 @@ export const useAudioStore = defineStore('audio', {
     duration: (state) => state.audioBuffer?.duration ?? 0,
     bpm: (state) => state.audioAnalysis?.bpm ?? 0,
     frameCount: (state) => state.audioAnalysis?.frameCount ?? 0,
+
+    // Waveform integration helpers
+    /** Check if audio buffer is loaded (for waveform rendering) */
+    hasAudioBuffer: (state) => (_assetId?: string) => state.audioBuffer !== null,
+    /** Get audio buffer for waveform generation */
+    getAudioBuffer: (state) => (_assetId?: string) => state.audioBuffer,
+    /** Get beat timestamps in seconds */
+    getBeats: (state) => (_assetId?: string): number[] | undefined => {
+      if (!state.audioAnalysis) return undefined;
+      // Extract beat frames and convert to seconds
+      const fps = 16; // Default FPS
+      const beats: number[] = [];
+      for (let frame = 0; frame < state.audioAnalysis.frameCount; frame++) {
+        if (isBeatAtFrame(state.audioAnalysis, frame)) {
+          beats.push(frame / fps);
+        }
+      }
+      return beats.length > 0 ? beats : undefined;
+    },
+    /** Get BPM for audio */
+    getBPM: (state) => (_assetId?: string): number | undefined => state.audioAnalysis?.bpm,
   },
 
   actions: {

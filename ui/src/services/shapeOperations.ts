@@ -3,6 +3,9 @@
  *
  * Mathematical implementations for all shape path operations.
  * Handles trim paths, merge paths, offset, pucker/bloat, wiggle, zig-zag, etc.
+ *
+ * Path modifier effects are in shape/pathModifiers.ts:
+ * - Pucker/Bloat, Wiggle, Zig-Zag, Roughen, Wave, Twist
  */
 
 import type {
@@ -17,6 +20,41 @@ import type {
 } from '@/types/shapes';
 import { SeededRandom } from './particleSystem';
 import polygonClipping from 'polygon-clipping';
+import * as bezierBoolean from './bezierBoolean';
+import { createLogger } from '@/utils/logger';
+
+// Import path modifiers
+import {
+  puckerBloat as _puckerBloat,
+  wigglePath as _wigglePath,
+  zigZagPath as _zigZagPath,
+  roughenPath as _roughenPath,
+  wavePath as _wavePath,
+  twistPath as _twistPath,
+  type WaveType as _WaveType,
+} from './shape/pathModifiers';
+
+// Re-export for backwards compatibility
+export {
+  puckerBloat,
+  wigglePath,
+  zigZagPath,
+  roughenPath,
+  wavePath,
+  twistPath,
+  type WaveType,
+} from './shape/pathModifiers';
+
+// Local aliases for internal use
+const puckerBloat = _puckerBloat;
+const wigglePath = _wigglePath;
+const zigZagPath = _zigZagPath;
+const roughenPath = _roughenPath;
+const wavePath = _wavePath;
+const twistPath = _twistPath;
+type WaveType = _WaveType;
+
+const logger = createLogger('ShapeOperations');
 
 // Type alias for polygon-clipping library types
 type Ring = [number, number][];
@@ -517,9 +555,12 @@ export type BooleanOperationType = 'union' | 'subtract' | 'intersect' | 'exclude
  * Perform a boolean operation on multiple BezierPaths
  * Higher-level API that handles path conversion and curve refitting
  *
+ * Uses Paper.js bezier-aware booleans for best curve quality.
+ * Falls back to polygon-clipping if Paper.js fails.
+ *
  * @param paths - Array of BezierPaths to combine
  * @param operation - Type of boolean operation
- * @param segmentsPerCurve - Sampling resolution for path flattening (default 32)
+ * @param segmentsPerCurve - Sampling resolution for fallback path flattening (default 32)
  * @returns Array of resulting BezierPaths
  */
 export function booleanOperation(
@@ -530,6 +571,71 @@ export function booleanOperation(
   if (paths.length === 0) return [];
   if (paths.length === 1) return [clonePath(paths[0])];
 
+  // Try Paper.js bezier-aware boolean first for better curve preservation
+  const bezierResult = tryBezierBoolean(paths, operation);
+  if (bezierResult) {
+    logger.debug(`Bezier boolean ${operation} succeeded with ${bezierResult.length} output paths`);
+    return bezierResult;
+  }
+
+  // Fallback to polygon-clipping if bezier boolean fails
+  logger.debug(`Bezier boolean failed, falling back to polygon-clipping for ${operation}`);
+  return fallbackPolygonBoolean(paths, operation, segmentsPerCurve);
+}
+
+/**
+ * Try to perform boolean operation using Paper.js bezier-aware booleans
+ * Returns null if operation fails
+ */
+function tryBezierBoolean(
+  paths: BezierPath[],
+  operation: BooleanOperationType
+): BezierPath[] | null {
+  try {
+    // Map operation type to bezierBoolean operation
+    const opMap: Record<BooleanOperationType, bezierBoolean.BooleanOperation> = {
+      'union': 'unite',
+      'subtract': 'subtract',
+      'intersect': 'intersect',
+      'exclude': 'exclude',
+    };
+
+    const bezierOp = opMap[operation];
+    if (!bezierOp) return null;
+
+    // Perform operation pairwise
+    let resultPaths = [paths[0]];
+
+    for (let i = 1; i < paths.length; i++) {
+      const newResults: BezierPath[] = [];
+
+      for (const currentPath of resultPaths) {
+        const opResult = bezierBoolean.booleanOperation(currentPath, paths[i], bezierOp);
+        if (!opResult.success) {
+          return null; // Fallback to polygon-clipping
+        }
+        newResults.push(...opResult.paths);
+      }
+
+      resultPaths = newResults;
+    }
+
+    return resultPaths.length > 0 ? resultPaths : null;
+  } catch (error) {
+    logger.warn('Bezier boolean operation failed:', error);
+    return null;
+  }
+}
+
+/**
+ * Fallback polygon-clipping based boolean operation
+ * Used when Paper.js bezier booleans fail
+ */
+function fallbackPolygonBoolean(
+  paths: BezierPath[],
+  operation: BooleanOperationType,
+  segmentsPerCurve: number
+): BezierPath[] {
   // Convert all paths to polygon-clipping MultiPolygon format
   const multiPolygons: MultiPolygon[] = paths.map(path => {
     const polygon = pathToPolygon(path, segmentsPerCurve);
@@ -972,468 +1078,8 @@ export function offsetPathMultiple(
   return results;
 }
 
-// ============================================================================
-// PUCKER & BLOAT
-// ============================================================================
-
-/**
- * Pucker (negative) or bloat (positive) a path
- * Moves points toward/away from centroid
- */
-export function puckerBloat(path: BezierPath, amount: number): BezierPath {
-  if (path.vertices.length < 2 || Math.abs(amount) < 0.001) {
-    return clonePath(path);
-  }
-
-  // Find centroid
-  const centroid: Point2D = { x: 0, y: 0 };
-  for (const v of path.vertices) {
-    centroid.x += v.point.x;
-    centroid.y += v.point.y;
-  }
-  centroid.x /= path.vertices.length;
-  centroid.y /= path.vertices.length;
-
-  // Amount is -100 to 100, convert to factor
-  const factor = amount / 100;
-
-  const result: BezierVertex[] = path.vertices.map(v => {
-    // Direction from centroid to point
-    const dir = subtractPoints(v.point, centroid);
-    const dist = Math.sqrt(dir.x * dir.x + dir.y * dir.y);
-
-    if (dist < 0.001) return cloneVertex(v);
-
-    // Move point
-    const moveAmount = dist * factor;
-    const newPoint = addPoints(v.point, scalePoint(normalize(dir), moveAmount));
-
-    // Adjust handles - bloat makes them larger, pucker smaller
-    const handleFactor = 1 + factor * 0.5;
-
-    return {
-      point: newPoint,
-      inHandle: scalePoint(v.inHandle, handleFactor),
-      outHandle: scalePoint(v.outHandle, handleFactor),
-    };
-  });
-
-  return { vertices: result, closed: path.closed };
-}
-
-// ============================================================================
-// WIGGLE PATHS
-// ============================================================================
-
-/**
- * Add random wiggle to a path
- */
-export function wigglePath(
-  path: BezierPath,
-  size: number,
-  detail: number,
-  pointType: WigglePointType,
-  correlation: number,
-  temporalPhase: number,
-  spatialPhase: number,
-  seed: number
-): BezierPath {
-  if (path.vertices.length < 2 || size < 0.001) {
-    return clonePath(path);
-  }
-
-  const rng = new SeededRandom(seed);
-  // Advance RNG by temporal phase
-  for (let i = 0; i < Math.floor(temporalPhase * 100); i++) {
-    rng.next();
-  }
-
-  const correlationFactor = correlation / 100;
-  const result: BezierVertex[] = [];
-
-  // Subdivide path for more detail
-  const subdividedPath = subdividePath(path, Math.max(1, Math.floor(detail)));
-
-  let prevOffset = { x: 0, y: 0 };
-
-  for (let i = 0; i < subdividedPath.vertices.length; i++) {
-    const v = subdividedPath.vertices[i];
-
-    // Generate random offset
-    const angle = rng.next() * Math.PI * 2 + spatialPhase;
-    const magnitude = rng.next() * size;
-
-    // Apply correlation (blend with previous offset)
-    const newOffset = {
-      x: Math.cos(angle) * magnitude,
-      y: Math.sin(angle) * magnitude,
-    };
-
-    const offset = {
-      x: prevOffset.x * correlationFactor + newOffset.x * (1 - correlationFactor),
-      y: prevOffset.y * correlationFactor + newOffset.y * (1 - correlationFactor),
-    };
-
-    prevOffset = offset;
-
-    const newVertex: BezierVertex = {
-      point: addPoints(v.point, offset),
-      inHandle: pointType === 'smooth' ? clonePoint(v.inHandle) : { x: 0, y: 0 },
-      outHandle: pointType === 'smooth' ? clonePoint(v.outHandle) : { x: 0, y: 0 },
-    };
-
-    result.push(newVertex);
-  }
-
-  return { vertices: result, closed: path.closed };
-}
-
-/**
- * Subdivide a path to add more vertices
- */
-function subdividePath(path: BezierPath, levels: number = 1): BezierPath {
-  if (levels <= 0) return clonePath(path);
-
-  let current = clonePath(path);
-
-  for (let level = 0; level < levels; level++) {
-    const result: BezierVertex[] = [];
-    const numSegments = current.closed ? current.vertices.length : current.vertices.length - 1;
-
-    for (let i = 0; i < numSegments; i++) {
-      const v0 = current.vertices[i];
-      const v1 = current.vertices[(i + 1) % current.vertices.length];
-
-      const p0 = v0.point;
-      const p1 = addPoints(v0.point, v0.outHandle);
-      const p2 = addPoints(v1.point, v1.inHandle);
-      const p3 = v1.point;
-
-      // Split at midpoint
-      const [left, right] = splitCubicBezier(p0, p1, p2, p3, 0.5);
-
-      // Add start vertex with adjusted handles
-      result.push({
-        point: left[0],
-        inHandle: i === 0 ? v0.inHandle : subtractPoints(left[1], left[0]),
-        outHandle: subtractPoints(left[1], left[0]),
-      });
-
-      // Add midpoint vertex
-      result.push({
-        point: left[3],
-        inHandle: subtractPoints(left[2], left[3]),
-        outHandle: subtractPoints(right[1], right[0]),
-      });
-    }
-
-    // Add final vertex for open paths
-    if (!current.closed) {
-      const lastV = current.vertices[current.vertices.length - 1];
-      result.push(cloneVertex(lastV));
-    }
-
-    current = { vertices: result, closed: current.closed };
-  }
-
-  return current;
-}
-
-// ============================================================================
-// ZIG ZAG
-// ============================================================================
-
-/**
- * Add zig-zag pattern to a path
- */
-export function zigZagPath(
-  path: BezierPath,
-  size: number,
-  ridgesPerSegment: number,
-  pointType: ZigZagPointType
-): BezierPath {
-  if (path.vertices.length < 2 || size < 0.001 || ridgesPerSegment < 1) {
-    return clonePath(path);
-  }
-
-  const result: BezierVertex[] = [];
-  const totalLength = getPathLength(path);
-  const ridgeLength = totalLength / (ridgesPerSegment * (path.vertices.length - (path.closed ? 0 : 1)));
-
-  let currentDistance = 0;
-  let zigDirection = 1;
-
-  while (currentDistance < totalLength) {
-    const pointData = getPointAtDistance(path, currentDistance, totalLength);
-    if (!pointData) break;
-
-    // Calculate perpendicular offset
-    const perp = perpendicular(pointData.tangent);
-    const offset = scalePoint(perp, size * zigDirection);
-
-    const vertex: BezierVertex = {
-      point: addPoints(pointData.point, offset),
-      inHandle: pointType === 'smooth'
-        ? scalePoint(pointData.tangent, -ridgeLength * 0.3)
-        : { x: 0, y: 0 },
-      outHandle: pointType === 'smooth'
-        ? scalePoint(pointData.tangent, ridgeLength * 0.3)
-        : { x: 0, y: 0 },
-    };
-
-    result.push(vertex);
-
-    // Move to next point
-    currentDistance += ridgeLength;
-    zigDirection *= -1;
-  }
-
-  // Add final point
-  if (result.length > 0 && !path.closed) {
-    const lastVertex = path.vertices[path.vertices.length - 1];
-    result.push({
-      point: clonePoint(lastVertex.point),
-      inHandle: { x: 0, y: 0 },
-      outHandle: { x: 0, y: 0 },
-    });
-  }
-
-  return { vertices: result, closed: path.closed };
-}
-
-// ============================================================================
-// ROUGHEN PATH
-// ============================================================================
-
-/**
- * Add random roughness/distortion to a path
- * Similar to Illustrator's Roughen effect
- *
- * @param path - Input bezier path
- * @param size - Maximum displacement amount in pixels
- * @param detail - Number of points per segment (1-10)
- * @param seed - Random seed for deterministic results
- * @param relative - If true, size is relative to path bounds (percentage)
- */
-export function roughenPath(
-  path: BezierPath,
-  size: number,
-  detail: number,
-  seed: number,
-  relative: boolean = false
-): BezierPath {
-  if (path.vertices.length < 2 || size < 0.001 || detail < 1) {
-    return clonePath(path);
-  }
-
-  const rng = new SeededRandom(seed);
-  const result: BezierVertex[] = [];
-
-  // Calculate path bounds for relative mode
-  let actualSize = size;
-  if (relative) {
-    const bounds = getPathBounds(path);
-    const diagonal = Math.sqrt(bounds.width * bounds.width + bounds.height * bounds.height);
-    actualSize = (size / 100) * diagonal;
-  }
-
-  // Subdivide the path for more detail
-  const subdivided = subdividePath(path, Math.max(1, Math.floor(detail)));
-
-  for (const v of subdivided.vertices) {
-    // Generate random offset for this vertex
-    const angle = rng.next() * Math.PI * 2;
-    const magnitude = rng.next() * actualSize;
-
-    const offset: Point2D = {
-      x: Math.cos(angle) * magnitude,
-      y: Math.sin(angle) * magnitude,
-    };
-
-    // Apply offset to point
-    const newPoint = addPoints(v.point, offset);
-
-    // Optionally roughen handles too (50% of point roughness)
-    const handleRoughness = actualSize * 0.5;
-    const handleAngle1 = rng.next() * Math.PI * 2;
-    const handleMag1 = rng.next() * handleRoughness;
-    const handleAngle2 = rng.next() * Math.PI * 2;
-    const handleMag2 = rng.next() * handleRoughness;
-
-    result.push({
-      point: newPoint,
-      inHandle: addPoints(v.inHandle, {
-        x: Math.cos(handleAngle1) * handleMag1,
-        y: Math.sin(handleAngle1) * handleMag1,
-      }),
-      outHandle: addPoints(v.outHandle, {
-        x: Math.cos(handleAngle2) * handleMag2,
-        y: Math.sin(handleAngle2) * handleMag2,
-      }),
-    });
-  }
-
-  return { vertices: result, closed: path.closed };
-}
-
-// ============================================================================
-// WAVE PATH
-// ============================================================================
-
-export type WaveType = 'sine' | 'triangle' | 'square';
-
-/**
- * Apply a wave deformation along a path
- * Creates a sinusoidal/triangle/square wave pattern perpendicular to the path
- *
- * @param path - Input bezier path
- * @param amplitude - Wave height (perpendicular displacement)
- * @param frequency - Number of waves along the path length
- * @param phase - Phase offset in radians (for animation)
- * @param waveType - Type of wave: sine, triangle, or square
- */
-export function wavePath(
-  path: BezierPath,
-  amplitude: number,
-  frequency: number,
-  phase: number = 0,
-  waveType: WaveType = 'sine'
-): BezierPath {
-  if (path.vertices.length < 2 || amplitude < 0.001 || frequency < 0.1) {
-    return clonePath(path);
-  }
-
-  const totalLength = getPathLength(path);
-  if (totalLength < 0.001) return clonePath(path);
-
-  // Sample the path at regular intervals for wave application
-  const samplesPerWave = 16; // Points per wave cycle for smooth curves
-  const totalSamples = Math.max(4, Math.ceil(frequency * samplesPerWave));
-  const sampleDistance = totalLength / totalSamples;
-
-  const result: BezierVertex[] = [];
-
-  for (let i = 0; i <= totalSamples; i++) {
-    const distance = Math.min(i * sampleDistance, totalLength - 0.001);
-    const pointData = getPointAtDistance(path, distance, totalLength);
-    if (!pointData) continue;
-
-    // Calculate wave position (0 to 1 along path)
-    const t = distance / totalLength;
-    const waveInput = t * frequency * Math.PI * 2 + phase;
-
-    // Calculate wave value based on type
-    let waveValue: number;
-    switch (waveType) {
-      case 'triangle':
-        // Triangle wave: linear ramp up and down
-        waveValue = Math.abs(((waveInput / Math.PI) % 2) - 1) * 2 - 1;
-        break;
-      case 'square':
-        // Square wave: -1 or 1
-        waveValue = Math.sin(waveInput) >= 0 ? 1 : -1;
-        break;
-      case 'sine':
-      default:
-        // Sine wave
-        waveValue = Math.sin(waveInput);
-    }
-
-    // Calculate perpendicular offset
-    const perp = perpendicular(pointData.tangent);
-    const offset = scalePoint(perp, waveValue * amplitude);
-
-    // Apply offset
-    const newPoint = addPoints(pointData.point, offset);
-
-    // Calculate smooth handles along the wave
-    const handleLength = sampleDistance * 0.3;
-    const inHandle = scalePoint(pointData.tangent, -handleLength);
-    const outHandle = scalePoint(pointData.tangent, handleLength);
-
-    result.push({
-      point: newPoint,
-      inHandle,
-      outHandle,
-    });
-  }
-
-  return { vertices: result, closed: path.closed };
-}
-
-/**
- * Get bounding box of a path
- */
-function getPathBounds(path: BezierPath): { x: number; y: number; width: number; height: number } {
-  let minX = Infinity, minY = Infinity;
-  let maxX = -Infinity, maxY = -Infinity;
-
-  for (const v of path.vertices) {
-    minX = Math.min(minX, v.point.x);
-    minY = Math.min(minY, v.point.y);
-    maxX = Math.max(maxX, v.point.x);
-    maxY = Math.max(maxY, v.point.y);
-  }
-
-  return {
-    x: minX,
-    y: minY,
-    width: maxX - minX,
-    height: maxY - minY,
-  };
-}
-
-// ============================================================================
-// TWIST
-// ============================================================================
-
-/**
- * Twist a path around a center point
- */
-export function twistPath(
-  path: BezierPath,
-  angle: number,
-  center: Point2D
-): BezierPath {
-  if (path.vertices.length < 2 || Math.abs(angle) < 0.001) {
-    return clonePath(path);
-  }
-
-  // Find the bounding box to determine twist falloff
-  let minY = Infinity, maxY = -Infinity;
-  for (const v of path.vertices) {
-    minY = Math.min(minY, v.point.y);
-    maxY = Math.max(maxY, v.point.y);
-  }
-
-  const height = maxY - minY;
-  if (height < 0.001) return clonePath(path);
-
-  const angleRad = (angle * Math.PI) / 180;
-
-  const result: BezierVertex[] = path.vertices.map(v => {
-    // Twist amount based on vertical position
-    const yNorm = (v.point.y - minY) / height;
-    const localAngle = angleRad * yNorm;
-
-    // Rotate point around center
-    const rotatedPoint = rotateAround(v.point, center, localAngle);
-
-    // Rotate handles too
-    const absInHandle = addPoints(v.point, v.inHandle);
-    const absOutHandle = addPoints(v.point, v.outHandle);
-    const rotatedIn = rotateAround(absInHandle, center, localAngle);
-    const rotatedOut = rotateAround(absOutHandle, center, localAngle);
-
-    return {
-      point: rotatedPoint,
-      inHandle: subtractPoints(rotatedIn, rotatedPoint),
-      outHandle: subtractPoints(rotatedOut, rotatedPoint),
-    };
-  });
-
-  return { vertices: result, closed: path.closed };
-}
+// NOTE: puckerBloat, wigglePath, zigZagPath, roughenPath, wavePath, and twistPath
+// have been moved to shape/pathModifiers.ts
 
 // ============================================================================
 // ROUNDED CORNERS

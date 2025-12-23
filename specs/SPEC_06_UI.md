@@ -30,7 +30,7 @@ The UI has been **substantially expanded** beyond the original specification.
 | `TimelinePanel.vue` | `TimelinePanel.vue` | ✅ Complete |
 | `LayerTrack.vue` | `EnhancedLayerTrack.vue` | ✅ Expanded |
 | `PropertiesPanel.vue` | `ProjectPanel.vue` | ✅ Complete |
-| `GraphEditor.vue` | `GraphEditor.vue` | ✅ Complete |
+| `GraphEditor.vue` | `CurveEditor.vue` | ✅ Renamed (trade dress) |
 | `ExportDialog.vue` | `ExportDialog.vue` | ✅ Complete |
 | `FontPicker.vue` | `FontPicker.vue` | ✅ Complete |
 
@@ -46,7 +46,7 @@ The UI has been **substantially expanded** beyond the original specification.
 - `AngleDial.vue` - Rotation input
 - `ColorPicker.vue` - RGBA color selection
 - `CurveEditor.vue` - Bezier curve handles
-- `Pickwhip.vue` - Property linking UI
+- `PropertyLink.vue` - Property linking UI (renamed from Pickwhip)
 - `NumberInput.vue` - Numeric input with scrub
 - `VectorInput.vue` - XYZ vector input
 - `Stopwatch.vue` - Animation enable toggle
@@ -58,7 +58,7 @@ The UI has been **substantially expanded** beyond the original specification.
 - `KeyframeDiamond.vue` - Keyframe marker
 - `Playhead.vue` - Current frame indicator
 - `TimeRuler.vue` - Frame numbers
-- `GraphEditor.vue` - Speed/value curves
+- `CurveEditor.vue` - Speed/value curves (renamed from GraphEditor)
 - `MarqueeSelect.vue` - Box selection
 - `TimelineContextMenu.vue` - Right-click menu
 
@@ -352,10 +352,10 @@ console.log('[Weyl] Vue app mounted');
     <!-- Timeline -->
     <TimelinePanel class="timeline-area" />
 
-    <!-- Graph Editor (collapsible) -->
-    <GraphEditor
-      v-if="uiStore.graphEditorVisible"
-      class="graph-editor-area"
+    <!-- Curve Editor (collapsible) -->
+    <CurveEditor
+      v-if="uiStore.curveEditorVisible"
+      class="curve-editor-area"
     />
 
     <!-- Export Dialog -->
@@ -373,7 +373,7 @@ import { useUIStore } from './stores/uiStore';
 import CompositionCanvas from './components/canvas/CompositionCanvas.vue';
 import TimelinePanel from './components/timeline/TimelinePanel.vue';
 import PropertiesPanel from './components/properties/PropertiesPanel.vue';
-import GraphEditor from './components/graph-editor/GraphEditor.vue';
+import CurveEditor from './components/curve-editor/CurveEditor.vue';
 import ExportDialog from './components/dialogs/ExportDialog.vue';
 
 const compositorStore = useCompositorStore();

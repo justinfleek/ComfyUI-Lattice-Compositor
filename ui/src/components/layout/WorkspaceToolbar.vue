@@ -191,14 +191,14 @@
       <button @click="goToStart" title="Go to Start (Home)">
         <PhSkipBack class="icon" weight="fill" />
       </button>
-      <button @click="stepBackward" title="Step Backward">
+      <button @click="stepBackward" title="Step Backward (←)">
         <PhRewind class="icon" weight="fill" />
       </button>
       <button @click="togglePlay" :title="isPlaying ? 'Pause (Space)' : 'Play (Space)'">
         <PhPause v-if="isPlaying" class="icon" weight="fill" />
         <PhPlay v-else class="icon" weight="fill" />
       </button>
-      <button @click="stepForward" title="Step Forward">
+      <button @click="stepForward" title="Step Forward (→)">
         <PhFastForward class="icon" weight="fill" />
       </button>
       <button @click="goToEnd" title="Go to End (End)">

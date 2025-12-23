@@ -1,6 +1,6 @@
 # CLAUDE.md - Weyl Compositor Development Guide
 
-**Version:** 8.0 | **Last Updated:** December 22, 2025
+**Version:** 8.4 | **Last Updated:** December 23, 2025
 
 ---
 
@@ -13,6 +13,9 @@
 | API Reference | [docs/SERVICE_API_REFERENCE.md](docs/SERVICE_API_REFERENCE.md) |
 | Changelog | [CHANGELOG.md](CHANGELOG.md) |
 | Debug Guide | [docs/DEBUG_TROUBLESHOOTING.md](docs/DEBUG_TROUBLESHOOTING.md) |
+| **File Splitting Plan** | [FILE_SPLITTING_PLAN.md](FILE_SPLITTING_PLAN.md) |
+| Integration Audit | [COMPREHENSIVE_INTEGRATION_AUDIT.md](COMPREHENSIVE_INTEGRATION_AUDIT.md) |
+| Production Readiness | [PRODUCTION_READINESS_AUDIT.md](PRODUCTION_READINESS_AUDIT.md) |
 
 ---
 
@@ -64,7 +67,7 @@ web/js/
 
 ## Trade Dress Terminology
 
-Use Weyl terms (not Adobe After Effects terms) in new code:
+Use Weyl terms (not industry-trademarked terms) in new code:
 
 | Avoid | Use Instead |
 |-------|-------------|
@@ -196,7 +199,7 @@ WebGL Canvas Render
 
 ## Layer System
 
-25 layer types. See [PRODUCT_SPEC.md](docs/PRODUCT_SPEC.md#layer-types-25) for full list.
+26 layer types (24 active + 2 deprecated aliases). See [PRODUCT_SPEC.md](docs/PRODUCT_SPEC.md#layer-types-25) for full list.
 
 ### Standard Properties (All Layers)
 
@@ -398,6 +401,108 @@ See [PRODUCT_SPEC.md](docs/PRODUCT_SPEC.md#effects-22) for full list.
 
 ---
 
+## Layer Styles
+
+9 style types, rendered in fixed order BEFORE effects.
+
+### Render Order
+
+```
+Layer Content
+    ↓
+1. Drop Shadow (behind)
+2. Inner Shadow
+3. Outer Glow (behind)
+4. Inner Glow
+5. Bevel and Emboss
+6. Satin
+7. Color Overlay
+8. Gradient Overlay
+9. Stroke
+    ↓
+Effects Stack
+    ↓
+Final Output
+```
+
+### Layer Styles Interface
+
+```typescript
+interface LayerStyles {
+  enabled: boolean;
+  blendingOptions?: StyleBlendingOptions;
+  dropShadow?: DropShadowStyle;
+  innerShadow?: InnerShadowStyle;
+  outerGlow?: OuterGlowStyle;
+  innerGlow?: InnerGlowStyle;
+  bevelEmboss?: BevelEmbossStyle;
+  satin?: SatinStyle;
+  colorOverlay?: ColorOverlayStyle;
+  gradientOverlay?: GradientOverlayStyle;
+  stroke?: StrokeStyle;
+}
+```
+
+### Style Properties (All Animatable)
+
+| Style | Key Properties |
+|-------|---------------|
+| **Drop Shadow** | color, angle, distance, spread, size, noise |
+| **Inner Shadow** | color, angle, distance, choke, size, noise |
+| **Outer Glow** | color/gradient, technique, spread, size, range |
+| **Inner Glow** | color/gradient, source (center/edge), choke, size |
+| **Bevel & Emboss** | style, technique, depth, direction, soften, altitude |
+| **Satin** | color, angle, distance, size, invert |
+| **Color Overlay** | color, blend mode, opacity |
+| **Gradient Overlay** | gradient, style, angle, scale, offset |
+| **Stroke** | color/gradient, size, position (inside/outside/center) |
+
+### Global Light
+
+Styles using `useGlobalLight: true` share a composition-wide light angle:
+
+```typescript
+import { setGlobalLightAngle, getGlobalLightAngle } from '@/services/globalLight';
+
+setGlobalLightAngle(compositionId, 120);  // 120 degrees
+const angle = getGlobalLightAngle(compositionId, frame);
+```
+
+### Store Actions
+
+```typescript
+// Enable/disable
+compositorStore.setLayerStylesEnabled(layerId, true);
+compositorStore.setStyleEnabled(layerId, 'dropShadow', true);
+
+// Update properties
+compositorStore.updateStyleProperty(layerId, 'dropShadow', 'distance', 10);
+
+// Quick add
+compositorStore.addDropShadow(layerId);
+compositorStore.addStroke(layerId, { size: 3, color: [255, 0, 0, 255] });
+
+// Copy/paste
+const styles = compositorStore.copyLayerStyles(layerId);
+compositorStore.pasteLayerStyles(targetLayerId);
+
+// Presets
+compositorStore.applyStylePreset(layerId, 'neonGlow');
+const presets = compositorStore.getStylePresetNames();
+```
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `types/layerStyles.ts` | Type definitions |
+| `services/effects/layerStyleRenderer.ts` | Main renderer |
+| `services/effects/styles/*.ts` | Individual renderers (9) |
+| `stores/actions/layerStyleActions.ts` | Store actions |
+| `components/properties/styles/*.vue` | UI editors (11) |
+
+---
+
 ## 3D Camera System
 
 ### Properties
@@ -507,9 +612,9 @@ expect(layer).toHaveProperty('transform');
 
 | Metric | Value |
 |--------|-------|
-| Tests Passing | 1,615 |
+| Tests Passing | 1,777 |
 | Tests Skipped | 9 |
-| Test Files | 43 |
+| Test Files | 48 |
 
 ---
 
@@ -555,6 +660,59 @@ expect(layer).toHaveProperty('transform');
 ### Semantic Keyframe Shapes
 
 16 shapes encode easing type visually. Defined in `styles/keyframe-shapes.ts`.
+
+---
+
+## Critical Integration Fixes (December 22, 2025)
+
+The following critical integration gaps were identified and fixed:
+
+### 1. PoseLayer Integration
+- **Problem:** `PoseLayer.ts` existed but was not imported or used in `LayerManager.ts`
+- **Fix:** Added import and `case 'pose':` in `LayerManager.ts:408-409`
+- **Result:** Pose layers now create correctly instead of falling back to ControlLayer
+
+### 2. EffectLayer/Adjustment Layer Properties
+- **Problem:** `effectLayer` and `adjustment` layer types had no case in `PropertiesPanel.vue`
+- **Fix:** Added cases at `PropertiesPanel.vue:480-482` returning `EffectControlsPanel`
+- **Result:** Effect layers now show their properties panel correctly
+
+### 3. Physics System Integration
+- **Problem:** Complete physics system existed but was NOT wired to UI
+- **Fix:**
+  - Added Physics section to `PropertiesPanel.vue:255-264`
+  - Created `stores/actions/physicsActions.ts` (440+ lines)
+  - Exported from `stores/actions/index.ts`
+- **Result:** Physics can now be enabled/configured on any layer
+
+### New Store Module: physicsActions.ts
+
+Key functions:
+- `enableLayerPhysics(store, layerId, config)` - Enable physics for layer
+- `disableLayerPhysics(store, layerId)` - Disable physics
+- `stepPhysics(store, deltaTime)` - Step simulation
+- `evaluatePhysicsAtFrame(store, frame)` - Deterministic evaluation
+- `bakePhysicsToKeyframes(store, layerId, options)` - Bake to keyframes
+- `resetPhysicsSimulation(store)` - Reset simulation
+
+---
+
+## File Splitting Plan
+
+**26 files exceed 1500 lines (~20k tokens)** and need splitting for future Claude sessions.
+
+See **[FILE_SPLITTING_PLAN.md](FILE_SPLITTING_PLAN.md)** for complete details.
+
+### Priority Files (Must Split First)
+
+| File | Lines | Status |
+|------|-------|--------|
+| `GPUParticleSystem.ts` | 3,556 | PENDING |
+| `expressions.ts` | 3,136 | PENDING |
+| `types/project.ts` | 3,069 | PENDING |
+| `compositorStore.ts` | 3,037 | PARTIAL |
+| `ParticleProperties.vue` | 3,022 | PENDING |
+| `particleSystem.ts` | 2,720 | PENDING |
 
 ---
 
@@ -606,4 +764,72 @@ Use `offset` and `limit` parameters when reading:
 
 ---
 
+## Recent Changes (December 22, 2025 - Tutorial 20)
+
+### Tutorial 20: Advanced Trajectories & Export Pipeline
+
+**Expression Functions (expressions.ts):**
+- `smooth(width, samples)` - Temporal smoothing by averaging values over time window
+- `posterizeTime(fps)` - Quantize time for step-motion effects (like 12fps animation)
+- Both functions now available in expression context
+
+**Keyframe Actions (keyframeActions.ts):**
+- `scaleKeyframeTiming()` - Scale keyframe timing with anchor frame
+- `timeReverseKeyframes()` - Reverse keyframe values (keep frames, swap values)
+- `insertKeyframeOnPath()` - Insert interpolated keyframe on position motion path
+
+**UI Enhancements (PropertyTrack.vue):**
+- Ctrl+Alt+Drag keyframes to scale timing proportionally
+- Right-click track context menu: "Add Keyframe", "Insert on Path", "Go to Frame"
+
+**New Services:**
+- `exportTemplates.ts` - Save/load/manage export configuration templates
+- `projectCollection.ts` - Download project + assets as ZIP with manifest
+- `rovingKeyframes.ts` - Roving keyframes for constant velocity motion
+
+**Expression Functions Added:**
+- `speedAtTime(t)` - Velocity magnitude (scalar speed) at time
+
+**New UI Components:**
+- `MotionPathOverlay.vue` - Visualize position keyframe paths in viewport
+- `RenderSettingsPanel.vue` - Render quality, resolution, motion blur settings
+- `OutputModulePanel.vue` - Format, color profile, destination settings
+
+**Viewport Enhancements (ThreeCanvas.vue):**
+- Motion path visualization for selected layers with position keyframes
+- Diamond-shaped keyframe markers on motion paths
+- Frame ticks every 5 frames along path
+- Current position indicator
+
+**Render Queue (WorkspaceLayout.vue):**
+- RenderQueuePanel now wired to CollapsiblePanel in right sidebar
+
+**Export Dialog (ExportDialog.vue):**
+- "Collect Files" button downloads project + assets as ZIP
+
+**Store Integration:**
+- `store.scaleKeyframeTiming()` wrapper
+- `store.timeReverseKeyframes()` wrapper
+- `store.insertKeyframeOnPath()` wrapper
+- `applyRovingToPosition()` action for roving keyframes
+
+---
+
+## Planned Features (Not Yet Integrated)
+
+The following services are **complete implementations** but not yet wired into the UI:
+
+| Service | Purpose | Status |
+|---------|---------|--------|
+| `colorDepthReactivity.ts` | Pixel-based color/depth sampling for audio-style reactivity | Complete, needs UI |
+| `motionReactivity.ts` | Layer motion-based reactivity (velocity, acceleration) | Complete, needs UI |
+
+These were inspired by RyanOnTheInside's ComfyUI nodes and provide frame-based reactive values. Integration would require adding UI in the Properties panel similar to audio reactivity mappings.
+
+---
+
 **For detailed feature documentation, see [docs/PRODUCT_SPEC.md](docs/PRODUCT_SPEC.md)**
+
+---
+
+*🤖 Documentation generated with [Claude Code](https://claude.com/claude-code)*

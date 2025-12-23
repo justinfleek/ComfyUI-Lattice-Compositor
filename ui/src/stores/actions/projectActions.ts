@@ -9,6 +9,7 @@ import { toRaw } from 'vue';
 import { storeLogger } from '@/utils/logger';
 import type { WeylProject } from '@/types/project';
 import { saveProject, loadProject, listProjects, deleteProject } from '@/services/projectStorage';
+import { migrateProject, needsMigration, CURRENT_SCHEMA_VERSION } from '@/services/projectMigration';
 
 // ============================================================================
 // STORE INTERFACE
@@ -116,6 +117,7 @@ export function exportProject(store: ProjectStore): string {
 
 /**
  * Import project from JSON string
+ * Automatically migrates older project schemas to current version
  */
 export function importProject(
   store: ProjectStore,
@@ -123,7 +125,16 @@ export function importProject(
   pushHistoryFn: () => void
 ): boolean {
   try {
-    const project = JSON.parse(json) as WeylProject;
+    let project = JSON.parse(json) as WeylProject;
+
+    // Check if migration is needed and apply it
+    if (needsMigration(project)) {
+      const oldVersion = (project as any).schemaVersion ?? 1;
+      storeLogger.info(`Migrating project from schema v${oldVersion} to v${CURRENT_SCHEMA_VERSION}`);
+      project = migrateProject(project);
+      storeLogger.info('Project migration completed successfully');
+    }
+
     store.project = project;
     pushHistoryFn();
     return true;
@@ -166,6 +177,7 @@ export async function saveProjectToServer(
 
 /**
  * Load project from server (ComfyUI backend)
+ * Automatically migrates older project schemas to current version
  */
 export async function loadProjectFromServer(
   store: ProjectStore,
@@ -176,7 +188,17 @@ export async function loadProjectFromServer(
     const result = await loadProject(projectId);
 
     if (result.status === 'success' && result.project) {
-      store.project = result.project;
+      let project = result.project;
+
+      // Check if migration is needed and apply it
+      if (needsMigration(project)) {
+        const oldVersion = (project as any).schemaVersion ?? 1;
+        storeLogger.info(`Migrating project from schema v${oldVersion} to v${CURRENT_SCHEMA_VERSION}`);
+        project = migrateProject(project);
+        storeLogger.info('Project migration completed successfully');
+      }
+
+      store.project = project;
       pushHistoryFn();
       store.lastSaveProjectId = projectId;
       store.lastSaveTime = Date.now();
@@ -321,6 +343,7 @@ export function createDefaultProject(): WeylProject {
 
   return {
     version: '1.0.0',
+    schemaVersion: CURRENT_SCHEMA_VERSION,
     meta: {
       name: 'Untitled Project',
       created: new Date().toISOString(),

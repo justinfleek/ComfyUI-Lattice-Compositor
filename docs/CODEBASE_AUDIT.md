@@ -128,7 +128,7 @@ Files over 2000 lines should be split:
 | `GPUParticleSystem.ts` | 2264 | Extract shaders to separate files |
 | `ParticleProperties.vue` | 2143 | Extract sub-components |
 | `SplineEditor.vue` | 2095 | Extract tool handlers |
-| `GraphEditor.vue` | 2090 | Extract curve editors |
+| `CurveEditor.vue` | 2090 | Extract curve editors |
 | `project.ts` | 2059 | Split types into domain files |
 | `shapeOperations.ts` | 1997 | Extract boolean ops, path ops |
 

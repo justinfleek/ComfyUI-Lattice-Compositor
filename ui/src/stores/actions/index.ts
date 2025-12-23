@@ -35,3 +35,9 @@ export * from './cacheActions';
 
 // Layer decomposition actions (Qwen-Image-Layered integration)
 export * from './layerDecompositionActions';
+
+// Layer style actions (Photoshop-style layer effects)
+export * from './layerStyleActions';
+
+// Physics actions (Newton Physics Simulation)
+export * from './physicsActions';

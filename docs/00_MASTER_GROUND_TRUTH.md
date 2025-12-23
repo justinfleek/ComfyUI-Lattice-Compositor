@@ -59,8 +59,8 @@ The system must support:
 - Audio-reactive motion
 - Procedural particle systems
 - Camera animation with spline paths
-- Timeline and Graph Editor (AE-style)
-- Pickwhip-style property linking
+- Timeline and Curve Editor
+- PropertyLink-style property linking
 - Precompositions
 - Deterministic exports for diffusion models
 

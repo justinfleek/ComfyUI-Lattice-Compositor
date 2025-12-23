@@ -9,8 +9,9 @@
  */
 
 import * as THREE from 'three';
-import type { Layer, AnimatableProperty, LayerTransform, LayerMask, MatteType, LayerMotionBlurSettings, AutoOrientMode } from '@/types/project';
+import type { Layer, AnimatableProperty, LayerTransform, LayerMask, MatteType, LayerMotionBlurSettings, AutoOrientMode, LayerStyles } from '@/types/project';
 import type { EffectInstance } from '@/types/effects';
+import { renderLayerStyles } from '@/services/effects/layerStyleRenderer';
 import type { LayerInstance } from '../types';
 import type { TargetParameter } from '@/services/audioReactiveMapping';
 import { KeyframeEvaluator } from '../animation/KeyframeEvaluator';
@@ -81,6 +82,9 @@ export abstract class BaseLayer implements LayerInstance {
 
   /** Layer-level effects enable/disable (fx switch in AE) */
   protected effectsEnabled: boolean = true;
+
+  /** Layer styles (drop shadow, stroke, etc.) */
+  protected layerStyles: LayerStyles | undefined;
 
   /** Layer quality mode (draft = faster, best = full quality) */
   protected quality: 'draft' | 'best' = 'best';
@@ -187,6 +191,7 @@ export abstract class BaseLayer implements LayerInstance {
     this.parentId = layerData.parentId ?? null;
     this.effects = layerData.effects ?? [];
     this.effectsEnabled = layerData.effectsEnabled !== false; // Default true
+    this.layerStyles = layerData.layerStyles;
     this.quality = layerData.quality ?? 'best';
 
     // Motion blur properties
@@ -829,6 +834,43 @@ export abstract class BaseLayer implements LayerInstance {
   }
 
   /**
+   * Check if this layer has any enabled layer styles
+   * Returns true if the layer has layer styles with at least one style type enabled
+   */
+  hasEnabledLayerStyles(): boolean {
+    if (!this.layerStyles?.enabled) {
+      return false;
+    }
+    // Check if any individual style is enabled
+    return !!(
+      this.layerStyles.dropShadow?.enabled ||
+      this.layerStyles.innerShadow?.enabled ||
+      this.layerStyles.outerGlow?.enabled ||
+      this.layerStyles.innerGlow?.enabled ||
+      this.layerStyles.bevelEmboss?.enabled ||
+      this.layerStyles.satin?.enabled ||
+      this.layerStyles.colorOverlay?.enabled ||
+      this.layerStyles.gradientOverlay?.enabled ||
+      this.layerStyles.stroke?.enabled
+    );
+  }
+
+  /**
+   * Get layer styles
+   */
+  getLayerStyles(): LayerStyles | undefined {
+    return this.layerStyles;
+  }
+
+  /**
+   * Set layer styles
+   */
+  setLayerStyles(styles: LayerStyles | undefined): void {
+    this.layerStyles = styles;
+    this.effectsDirty = true;
+  }
+
+  /**
    * Set layer quality mode (draft = faster preview, best = full quality)
    */
   setQuality(quality: 'draft' | 'best'): void {
@@ -850,13 +892,17 @@ export abstract class BaseLayer implements LayerInstance {
   }
 
   /**
-   * Process effects on a source canvas
+   * Process layer styles and effects on a source canvas
+   * Layer styles are applied BEFORE effects (matching Photoshop/AE behavior)
    * Subclasses that support effects should override getSourceCanvas()
    * @param frame - Current frame for animated effect parameters
-   * @returns Processed canvas or null if no effects to apply
+   * @returns Processed canvas or null if no processing needed
    */
   protected processEffects(frame: number): HTMLCanvasElement | null {
-    if (!this.hasEnabledEffects()) {
+    const hasStyles = this.layerStyles?.enabled && this.hasEnabledLayerStyles();
+    const hasEffects = this.hasEnabledEffects();
+
+    if (!hasStyles && !hasEffects) {
       return null;
     }
 
@@ -878,8 +924,19 @@ export abstract class BaseLayer implements LayerInstance {
         layerId: this.id
       };
 
-      const result = processEffectStack(this.effects, sourceCanvas, frame, qualityHint, effectContext);
-      let processedCanvas = result.canvas;
+      // STEP 1: Apply layer styles FIRST (before effects)
+      // Layer styles include: drop shadow, stroke, glow, bevel/emboss, overlays
+      let styledCanvas = sourceCanvas;
+      if (hasStyles && this.layerStyles) {
+        styledCanvas = renderLayerStyles(sourceCanvas, this.layerStyles, frame);
+      }
+
+      // STEP 2: Apply effects on styled content
+      let processedCanvas = styledCanvas;
+      if (hasEffects) {
+        const result = processEffectStack(this.effects, styledCanvas, frame, qualityHint, effectContext);
+        processedCanvas = result.canvas;
+      }
 
       // Apply motion blur as final step if enabled
       if (this.motionBlur) {

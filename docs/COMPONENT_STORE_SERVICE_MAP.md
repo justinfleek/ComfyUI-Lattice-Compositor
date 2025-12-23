@@ -59,7 +59,7 @@
 | AngleDial | `controls/AngleDial.vue` | - | - |
 | ColorPicker | `controls/ColorPicker.vue` | - | colorUtils |
 | CurveEditor | `controls/CurveEditor.vue` | - | - |
-| Pickwhip | `controls/Pickwhip.vue` | - | propertyDriver |
+| PropertyLink | `controls/PropertyLink.vue` | - | propertyDriver |
 | PositionXY | `controls/PositionXY.vue` | - | - |
 | ScrubableNumber | `controls/ScrubableNumber.vue` | - | - |
 | SliderInput | `controls/SliderInput.vue` | - | - |
@@ -79,11 +79,11 @@
 |-----------|------|--------|----------|
 | ComfyUIExportDialog | `export/ComfyUIExportDialog.vue` | compositorStore | exportPipeline, comfyuiClient, exportPresets |
 
-### Graph Editor Components (1)
+### Curve Editor Components (1)
 
 | Component | File | Stores | Services |
 |-----------|------|--------|----------|
-| GraphEditor | `graph-editor/GraphEditor.vue` | - | - |
+| CurveEditor | `curve-editor/CurveEditor.vue` | compositorStore | interpolation, easing |
 
 ### Layout Components (1)
 
@@ -138,7 +138,7 @@
 | AudioTrack | `timeline/AudioTrack.vue` | compositorStore | audioFeatures |
 | CompositionTabs | `timeline/CompositionTabs.vue` | compositorStore | - |
 | EnhancedLayerTrack | `timeline/EnhancedLayerTrack.vue` | compositorStore | - |
-| GraphEditorCanvas | `timeline/GraphEditorCanvas.vue` | compositorStore | - |
+| CurveEditorCanvas | `curve-editor/CurveEditorCanvas.vue` | compositorStore | interpolation |
 | LayerTrack | `timeline/LayerTrack.vue` | compositorStore | - |
 | Playhead | `timeline/Playhead.vue` | compositorStore | - |
 | PropertyTrack | `timeline/PropertyTrack.vue` | compositorStore | - |
@@ -263,13 +263,13 @@ AudioTrack.vue renders waveform from analysis.amplitude
 TimelinePanel shows beat markers from analysis.beats
 ```
 
-### Example 3: Property Linking (Pickwhip)
+### Example 3: Property Linking (PropertyLink)
 
 ```
-User drags pickwhip from Pickwhip.vue to target property
+User drags property link from PropertyLink.vue to target property
     │
     ▼
-Pickwhip.vue calls propertyDriver.createPropertyLink(source, target)
+PropertyLink.vue calls propertyDriver.createPropertyLink(source, target)
     │
     ▼
 PropertyDriverSystem.addDriver(driver)
@@ -320,4 +320,4 @@ Target property receives source property value
 - [ARCHITECTURE.md](./ARCHITECTURE.md) - System architecture
 - [SERVICE_API_REFERENCE.md](./SERVICE_API_REFERENCE.md) - Service API index
 
-*Generated: December 19, 2025*
+*Generated: December 23, 2025*

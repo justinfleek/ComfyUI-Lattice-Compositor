@@ -774,6 +774,78 @@ export const EFFECT_DEFINITIONS: Record<string, EffectDefinition> = {
     ]
   },
 
+  'lift-gamma-gain': {
+    name: 'Lift/Gamma/Gain',
+    category: 'color-correction',
+    description: 'ASC CDL-style three-way color correction',
+    parameters: [
+      // Lift (Shadows)
+      { name: 'Lift Red', type: 'number', defaultValue: 0, min: -1, max: 1, step: 0.01, animatable: true },
+      { name: 'Lift Green', type: 'number', defaultValue: 0, min: -1, max: 1, step: 0.01, animatable: true },
+      { name: 'Lift Blue', type: 'number', defaultValue: 0, min: -1, max: 1, step: 0.01, animatable: true },
+      // Gamma (Midtones)
+      { name: 'Gamma Red', type: 'number', defaultValue: 1, min: 0.1, max: 4, step: 0.01, animatable: true },
+      { name: 'Gamma Green', type: 'number', defaultValue: 1, min: 0.1, max: 4, step: 0.01, animatable: true },
+      { name: 'Gamma Blue', type: 'number', defaultValue: 1, min: 0.1, max: 4, step: 0.01, animatable: true },
+      // Gain (Highlights)
+      { name: 'Gain Red', type: 'number', defaultValue: 1, min: 0, max: 4, step: 0.01, animatable: true },
+      { name: 'Gain Green', type: 'number', defaultValue: 1, min: 0, max: 4, step: 0.01, animatable: true },
+      { name: 'Gain Blue', type: 'number', defaultValue: 1, min: 0, max: 4, step: 0.01, animatable: true }
+    ]
+  },
+
+  'hsl-secondary': {
+    name: 'HSL Secondary',
+    category: 'color-correction',
+    description: 'Targeted color correction by hue/saturation/luminance range',
+    parameters: [
+      // Qualification
+      { name: 'Hue Center', type: 'number', defaultValue: 0, min: 0, max: 360, step: 1, animatable: true },
+      { name: 'Hue Width', type: 'number', defaultValue: 30, min: 0, max: 180, step: 1, animatable: true },
+      { name: 'Hue Falloff', type: 'number', defaultValue: 10, min: 0, max: 90, step: 1, animatable: true },
+      { name: 'Sat Min', type: 'number', defaultValue: 0, min: 0, max: 100, step: 1, animatable: true },
+      { name: 'Sat Max', type: 'number', defaultValue: 100, min: 0, max: 100, step: 1, animatable: true },
+      { name: 'Sat Falloff', type: 'number', defaultValue: 10, min: 0, max: 50, step: 1, animatable: true },
+      { name: 'Lum Min', type: 'number', defaultValue: 0, min: 0, max: 100, step: 1, animatable: true },
+      { name: 'Lum Max', type: 'number', defaultValue: 100, min: 0, max: 100, step: 1, animatable: true },
+      { name: 'Lum Falloff', type: 'number', defaultValue: 10, min: 0, max: 50, step: 1, animatable: true },
+      // Correction
+      { name: 'Hue Shift', type: 'number', defaultValue: 0, min: -180, max: 180, step: 1, animatable: true },
+      { name: 'Saturation', type: 'number', defaultValue: 0, min: -100, max: 100, step: 1, animatable: true },
+      { name: 'Luminance', type: 'number', defaultValue: 0, min: -100, max: 100, step: 1, animatable: true },
+      // Preview
+      { name: 'Show Mask', type: 'checkbox', defaultValue: false, animatable: false }
+    ]
+  },
+
+  'hue-vs-curves': {
+    name: 'Hue vs Curves',
+    category: 'color-correction',
+    description: 'HSL-space curve adjustments for precise color control',
+    parameters: [
+      { name: 'Hue vs Hue', type: 'curve', defaultValue: [], animatable: false },
+      { name: 'Hue vs Sat', type: 'curve', defaultValue: [], animatable: false },
+      { name: 'Hue vs Lum', type: 'curve', defaultValue: [], animatable: false },
+      { name: 'Lum vs Sat', type: 'curve', defaultValue: [], animatable: false },
+      { name: 'Sat vs Sat', type: 'curve', defaultValue: [], animatable: false }
+    ]
+  },
+
+  'color-match': {
+    name: 'Color Match',
+    category: 'color-correction',
+    description: 'Match color distribution to a reference image',
+    parameters: [
+      { name: 'Reference Histogram R', type: 'data', defaultValue: null, animatable: false },
+      { name: 'Reference Histogram G', type: 'data', defaultValue: null, animatable: false },
+      { name: 'Reference Histogram B', type: 'data', defaultValue: null, animatable: false },
+      { name: 'Reference Pixels', type: 'number', defaultValue: 0, animatable: false },
+      { name: 'Strength', type: 'number', defaultValue: 100, min: 0, max: 100, step: 1, animatable: true },
+      { name: 'Match Luminance', type: 'checkbox', defaultValue: true, animatable: false },
+      { name: 'Match Color', type: 'checkbox', defaultValue: true, animatable: false }
+    ]
+  },
+
   // Stylize - VFX Effects (inspired by filliptm's ComfyUI_Fill-Nodes)
   // Attribution: https://github.com/filliptm/ComfyUI_Fill-Nodes
   'pixel-sort': {

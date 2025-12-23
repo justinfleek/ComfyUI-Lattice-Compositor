@@ -1543,3 +1543,150 @@ export {
   isSupportedDataFile,
   getDataFileType,
 } from '@/types/dataAsset';
+
+// ============================================================================
+// GLOBAL LIGHT (Layer Styles)
+// ============================================================================
+
+export {
+  // Factory
+  createDefaultGlobalLight,
+  // Getters
+  getGlobalLight,
+  getGlobalLightAngle,
+  getGlobalLightAltitude,
+  getLightDirection,
+  getShadowOffset,
+  // Setters
+  setGlobalLightAngle,
+  setGlobalLightAltitude,
+  setGlobalLightDirection,
+  setGlobalLightSettings,
+  // Animation
+  enableGlobalLightAngleAnimation,
+  enableGlobalLightAltitudeAnimation,
+  // Cleanup
+  removeGlobalLight,
+  clearGlobalLightCache,
+  // Serialization
+  serializeGlobalLight,
+  deserializeGlobalLight,
+  // Constants
+  DEFAULT_ANGLE as DEFAULT_GLOBAL_LIGHT_ANGLE,
+  DEFAULT_ALTITUDE as DEFAULT_GLOBAL_LIGHT_ALTITUDE,
+} from './globalLight';
+
+// ============================================================================
+// Export Templates (Tutorial 20)
+// ============================================================================
+
+export {
+  exportTemplateService,
+  type ExportTemplate,
+  type ExportTemplateStore,
+} from './exportTemplates';
+
+// ============================================================================
+// Project Collection (Tutorial 20)
+// ============================================================================
+
+export {
+  projectCollectionService,
+  type CollectionProgress,
+  type CollectionOptions,
+  type CollectionManifest,
+} from './projectCollection';
+
+// ============================================================================
+// Roving Keyframes (Tutorial 20)
+// ============================================================================
+
+export {
+  applyRovingKeyframes,
+  wouldRovingChange,
+  getEvenlySpacedFrames,
+  calculateVelocities,
+  type RovingOptions,
+  type RovingResult,
+} from './rovingKeyframes';
+
+// ============================================================================
+// PHYSICS SIMULATION (Feature 05 - Newton Physics)
+// ============================================================================
+
+export {
+  // Main engine
+  PhysicsEngine,
+  vec2,
+  PhysicsRandom,
+
+  // Joint system
+  JointSystem,
+
+  // Ragdoll builder
+  RagdollBuilder,
+  convertRagdollToPhysics,
+  extractRagdollState,
+  applyRagdollState,
+  HUMANOID_BONES,
+
+  // Factory functions
+  createPhysicsEngine,
+  createRagdollBuilder,
+  createCircleBody,
+  createBoxBody,
+  createGravityForce,
+  createClothConfig,
+
+  // Presets
+  HUMANOID_PRESETS,
+  MATERIAL_PRESETS,
+  DEFAULT_SPACE_CONFIG,
+
+  // Types
+  type PhysicsVec2,
+  type PhysicsMaterial,
+  type CollisionShape,
+  type CollisionFilter,
+  type BodyType,
+  type ShapeType,
+  type CollisionResponse,
+  type RigidBodyConfig,
+  type RigidBodyState,
+  type ContactInfo,
+  type JointType,
+  type JointConfig,
+  type PivotJointConfig,
+  type SpringJointConfig,
+  type DistanceJointConfig,
+  type PistonJointConfig,
+  type WheelJointConfig,
+  type WeldJointConfig,
+  type BlobJointConfig,
+  type RopeJointConfig,
+  type ForceType,
+  type ForceField,
+  type GravityForce,
+  type WindForce,
+  type AttractionForce,
+  type ExplosionForce,
+  type BuoyancyForce,
+  type VortexForce,
+  type DragForce,
+  type VerletParticle,
+  type VerletConstraint,
+  type SoftBodyConfig,
+  type SoftBodyState,
+  type ClothConfig,
+  type ClothState,
+  type RagdollBone,
+  type RagdollConfig,
+  type RagdollState,
+  type HumanoidRagdollPreset,
+  type PhysicsSpaceConfig,
+  type PhysicsSimulationState,
+  type KeyframeExportOptions,
+  type ExportedKeyframes,
+  type PhysicsLayerData,
+  type PhysicsCompositionData,
+} from './physics';

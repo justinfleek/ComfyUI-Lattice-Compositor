@@ -3,6 +3,26 @@
  * Central export point for all export-related services
  */
 
+// Color Management (Phase 6)
+export {
+  ColorProfileService,
+  getColorProfileService,
+  initializeColorManagement,
+  convertColorSpace,
+  linearizeRGB,
+  applyGammaRGB,
+  parseICCProfile,
+  extractICCFromImage,
+  COLOR_SPACES,
+  colorUtils,
+  type ColorSpace,
+  type ViewTransform,
+  type ColorSettings,
+  type ICCProfile,
+  type RGB,
+  type XYZ,
+} from '../colorManagement/ColorProfileService';
+
 // Depth rendering
 export {
   renderDepthFrame,
@@ -104,3 +124,93 @@ export {
   type Uni3CTrack,
   type Uni3CFrame,
 } from '../cameraExport';
+
+// Wan-Move generative trajectory generation
+export {
+  // Basic flow generators
+  generateSpiralFlow,
+  generateWaveFlow,
+  generateExplosionFlow,
+  generateVortexFlow,
+  generateDataRiverFlow,
+  generateMorphFlow,
+  generateSwarmFlow,
+  generateDataDrivenFlow,
+  generateSplineFlow,
+  // Strange attractors
+  generateLorenzAttractor,
+  generateRosslerAttractor,
+  generateAizawaAttractor,
+  // Shape morphing
+  generateShapeMorph,
+  // Force fields
+  generateForceFieldFlow,
+  // Multi-layer composition
+  compositeFlowLayers,
+  compositeColoredLayers,
+  // Color mapping
+  addColorToTrajectory,
+  addTimeColorToTrajectory,
+  sampleGradient,
+  COLOR_GRADIENTS,
+  // Rendering/preview
+  renderTrajectoryFrame,
+  renderTrajectorySequence,
+  // Export functions
+  exportAsJSON as exportWanMoveJSON,
+  exportAsNPYData as exportWanMoveNPY,
+  exportWanMovePackage,
+  // Presets
+  FLOW_PRESETS,
+  ATTRACTOR_PRESETS,
+  SHAPE_PRESETS,
+  generateFromPreset as generateFlowPreset,
+  // Types
+  type WanMoveTrajectory,
+  type ColoredTrajectory,
+  type GenerativeFlowConfig,
+  type GenerativeFlowParams,
+  type DataDrivenFlowConfig,
+  type AttractorConfig,
+  type ShapeTargetConfig,
+  type ShapeDefinition,
+  type ForcePoint,
+  type ForceFieldConfig,
+  type FlowLayer,
+  type ColorGradient,
+  type RenderOptions,
+} from './wanMoveExport';
+
+// VACE Control Video Export (shapes following splines)
+export {
+  PathFollower,
+  VACEControlExporter,
+  createPathFollower,
+  createVACEExportConfig,
+  calculateDurationForSpeed,
+  calculateSpeed,
+  splineLayerToPathFollower,
+  type PathFollowerShape,
+  type PathFollowerEasing,
+  type PathFollowerConfig,
+  type PathFollowerState,
+  type VACEExportConfig,
+  type VACEFrame,
+} from './vaceControlExport';
+
+// ControlNet Pose Export
+export {
+  renderPoseFrame,
+  createPoseSequence,
+  exportToOpenPoseJSON,
+  exportPoseSequence,
+  exportPoseForControlNet,
+  importFromOpenPoseJSON,
+  importPoseSequence,
+  createDefaultPoseExportConfig,
+  type PoseExportConfig,
+  type PoseFrame,
+  type PoseSequence,
+  type OpenPoseJSON,
+  type PoseExportResult,
+} from './poseExport';

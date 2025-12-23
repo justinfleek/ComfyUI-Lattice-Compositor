@@ -119,7 +119,7 @@
       </div>
     </div>
 
-    <div v-else class="prop-track" @mousedown="handleTrackMouseDown" ref="trackRef">
+    <div v-else class="prop-track" @mousedown="handleTrackMouseDown" @contextmenu.prevent="showTrackContextMenu" ref="trackRef">
        <!-- Selection box for marquee select -->
        <div v-if="isBoxSelecting" class="selection-box" :style="selectionBoxStyle"></div>
 
@@ -145,7 +145,7 @@
          </svg>
        </div>
 
-       <!-- Context Menu -->
+       <!-- Keyframe Context Menu -->
        <div v-if="contextMenu.visible" class="keyframe-context-menu" :style="contextMenuStyle">
          <div class="menu-header">Interpolation</div>
          <div class="menu-item" :class="{ active: contextMenu.keyframe?.interpolation === 'linear' }" @click="setInterpolation('linear')">
@@ -163,6 +163,21 @@
          </div>
          <div class="menu-item delete" @click="deleteSelectedKeyframes">
            <span class="icon">🗑️</span> Delete
+         </div>
+       </div>
+
+       <!-- Track Context Menu (right-click on empty track area) -->
+       <div v-if="trackContextMenu.visible" class="keyframe-context-menu" :style="trackContextMenuStyle">
+         <div class="menu-header">Keyframe</div>
+         <div class="menu-item" @click="addKeyframeAtFrame">
+           <span class="icon">◆</span> Add Keyframe
+         </div>
+         <div v-if="isPositionProperty && hasMultipleKeyframes" class="menu-item" @click="insertKeyframeOnPath">
+           <span class="icon">➕</span> Insert on Path
+         </div>
+         <div class="menu-divider"></div>
+         <div class="menu-item" @click="goToClickedFrame">
+           <span class="icon">➡️</span> Go to Frame {{ trackContextMenu.frame }}
          </div>
        </div>
     </div>
@@ -223,6 +238,34 @@ const contextMenuStyle = computed(() => ({
   left: `${contextMenu.value.x}px`,
   top: `${contextMenu.value.y}px`
 }));
+
+// Track context menu (right-click on empty track area)
+const trackContextMenu = ref<{
+  visible: boolean;
+  x: number;
+  y: number;
+  frame: number;
+}>({
+  visible: false,
+  x: 0,
+  y: 0,
+  frame: 0
+});
+
+const trackContextMenuStyle = computed(() => ({
+  left: `${trackContextMenu.value.x}px`,
+  top: `${trackContextMenu.value.y}px`
+}));
+
+// Check if this is a position property (for "Insert on Path" option)
+const isPositionProperty = computed(() =>
+  props.propertyPath?.includes('position') || props.name?.toLowerCase().includes('position')
+);
+
+// Check if there are multiple keyframes (needed for path interpolation)
+const hasMultipleKeyframes = computed(() =>
+  (props.property?.keyframes?.length || 0) >= 2
+);
 
 const selectionBoxStyle = computed(() => {
   const left = Math.min(boxStartX.value, boxCurrentX.value);
@@ -371,12 +414,49 @@ function startKeyframeDrag(e: MouseEvent, kf: Keyframe<any>) {
     selectedKeyframeIds.value.add(kf.id);
   }
 
+  // Check for Ctrl+Alt (scale mode) at drag start
+  const isScaleMode = e.ctrlKey && e.altKey;
+
   // Set up drag
   const startX = e.clientX;
   const startFrame = kf.frame;
 
+  // For scale mode, capture original keyframe positions
+  const originalKeyframes = isScaleMode
+    ? (props.property?.keyframes?.map(k => ({ id: k.id, frame: k.frame })) || [])
+    : [];
+  const anchorFrame = isScaleMode ? Math.min(...originalKeyframes.map(k => k.frame)) : 0;
+
   const onMove = (ev: MouseEvent) => {
     const dx = ev.clientX - startX;
+
+    // Ctrl+Alt+Drag = Scale keyframes (maintain spacing proportions)
+    if (isScaleMode && originalKeyframes.length > 1) {
+      // Calculate scale factor: how much the drag represents relative to original span
+      const maxFrame = Math.max(...originalKeyframes.map(k => k.frame));
+      const originalSpan = maxFrame - anchorFrame;
+      if (originalSpan > 0) {
+        // Pixel drag converts to scale factor (100px = 0.5x scale adjustment)
+        const scaleDelta = dx / 100;
+        const scaleFactor = Math.max(0.1, 1 + scaleDelta);
+
+        // Apply new positions to all keyframes based on scale
+        for (const orig of originalKeyframes) {
+          const relativePos = orig.frame - anchorFrame;
+          const newFrame = Math.max(0, Math.round(anchorFrame + relativePos * scaleFactor));
+          if (newFrame !== orig.frame) {
+            // Find current keyframe position and update
+            const currentKf = props.property?.keyframes?.find(k => k.id === orig.id);
+            if (currentKf && currentKf.frame !== newFrame) {
+              store.moveKeyframe(props.layerId, props.propertyPath, orig.id, newFrame);
+            }
+          }
+        }
+      }
+      return;
+    }
+
+    // Normal drag mode - move keyframe
     const frameDelta = Math.round(dx / props.pixelsPerFrame);
     let newFrame = Math.max(0, Math.min(store.frameCount - 1, startFrame + frameDelta));
 
@@ -439,6 +519,58 @@ function hideContextMenu() {
   contextMenu.value.keyframe = null;
 }
 
+function hideTrackContextMenu() {
+  trackContextMenu.value.visible = false;
+}
+
+// Show context menu on empty track area (right-click)
+function showTrackContextMenu(e: MouseEvent) {
+  // Don't show if clicking on a keyframe (that has its own context menu)
+  const target = e.target as HTMLElement;
+  if (target.closest('.keyframe')) return;
+
+  const rect = trackRef.value?.getBoundingClientRect();
+  if (!rect) return;
+
+  // Calculate frame from click position
+  const x = e.clientX - rect.left;
+  const frame = Math.round(x / props.pixelsPerFrame);
+
+  // Hide any existing keyframe context menu
+  hideContextMenu();
+
+  trackContextMenu.value = {
+    visible: true,
+    x: x,
+    y: e.clientY - rect.top,
+    frame: Math.max(0, Math.min(store.frameCount - 1, frame))
+  };
+}
+
+// Add a keyframe at the clicked frame with interpolated value
+function addKeyframeAtFrame() {
+  const frame = trackContextMenu.value.frame;
+  const currentValue = props.property?.value ?? 0;
+  store.addKeyframe(props.layerId, props.propertyPath, currentValue, frame);
+  hideTrackContextMenu();
+}
+
+// Insert keyframe by interpolating the position motion path
+function insertKeyframeOnPath() {
+  const frame = trackContextMenu.value.frame;
+  const newKfId = store.insertKeyframeOnPath(props.layerId, frame);
+  if (newKfId) {
+    console.log(`[Weyl] Inserted keyframe on path at frame ${frame}`);
+  }
+  hideTrackContextMenu();
+}
+
+// Navigate to the clicked frame
+function goToClickedFrame() {
+  store.setFrame(trackContextMenu.value.frame);
+  hideTrackContextMenu();
+}
+
 function setInterpolation(type: 'linear' | 'bezier' | 'hold') {
   // Apply to all selected keyframes
   for (const kfId of selectedKeyframeIds.value) {
@@ -462,10 +594,13 @@ function deleteSelectedKeyframes() {
   hideContextMenu();
 }
 
-// Close context menu on click outside
+// Close context menus on click outside
 function handleGlobalClick(e: MouseEvent) {
   if (contextMenu.value.visible) {
     hideContextMenu();
+  }
+  if (trackContextMenu.value.visible) {
+    hideTrackContextMenu();
   }
 }
 

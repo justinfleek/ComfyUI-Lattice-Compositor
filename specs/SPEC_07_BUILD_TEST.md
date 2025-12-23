@@ -12,7 +12,7 @@
 | TypeScript | Yes | Yes | ✅ Complete (2 minor errors) |
 | Nix Flake | Yes | Yes | ✅ Complete |
 | Docker | Yes | Partial | ⚠️ Dockerfile exists |
-| Tests | Basic checklist | Vitest + 1055 tests | ✅ Comprehensive |
+| Tests | Basic checklist | Vitest + 1786 tests | ✅ Comprehensive |
 
 ## Current Build Commands
 
@@ -29,7 +29,7 @@ npm run build        # Outputs to dist/
 npx tsc --noEmit     # Currently shows 2 minor errors
 
 # Run Tests
-npm test             # Vitest - 1011/1055 pass (96%)
+npm test             # Vitest - 1777/1786 pass (99%)
 npm test -- --reporter=verbose
 ```
 

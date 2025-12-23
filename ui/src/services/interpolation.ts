@@ -34,6 +34,7 @@ import {
   type Expression,
 } from './expressions';
 import { morphPaths, prepareMorphPaths, isBezierPath } from './pathMorphing';
+import { createFootageAccessor } from './dataImport';
 
 // ============================================================================
 // BEZIER HANDLE CACHE
@@ -301,6 +302,8 @@ function applyPropertyExpression<T>(
     velocity,
     numKeys: property.keyframes.length,
     keyframes: property.keyframes,
+    // Data-driven animation support: footage() function for CSV/JSON access
+    footage: createFootageAccessor,
   };
 
   // Convert PropertyExpression to Expression format

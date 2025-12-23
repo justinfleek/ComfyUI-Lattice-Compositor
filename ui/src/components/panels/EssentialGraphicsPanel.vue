@@ -36,7 +36,9 @@
           v-for="template in filteredTemplates"
           :key="template.id"
           class="template-card"
+          :class="{ selected: selectedTemplateId === template.id }"
           @click="selectTemplate(template)"
+          @dblclick="applyTemplate(template)"
         >
           <div class="template-poster">
             <img v-if="template.posterImage" :src="template.posterImage" alt="" />
@@ -44,7 +46,7 @@
           </div>
           <div class="template-info">
             <span class="template-name">{{ template.name }}</span>
-            <span class="template-author">{{ template.author || 'Unknown' }}</span>
+            <span class="template-author">{{ template.author || 'Local' }}</span>
           </div>
         </div>
 
@@ -52,6 +54,13 @@
           <p>No templates installed</p>
           <button class="btn-primary" @click="importTemplate">Import Template</button>
         </div>
+      </div>
+
+      <!-- Apply button when template selected -->
+      <div v-if="selectedTemplateId" class="apply-section">
+        <button class="btn-primary" @click="applySelectedTemplate">
+          Apply to Composition
+        </button>
       </div>
     </div>
 
@@ -103,7 +112,7 @@
             </button>
             <div v-if="showAddMenu" class="dropdown-menu">
               <button @click="addGroup">New Group</button>
-              <button @click="addComment">New Comment</button>
+              <button @click="addCommentItem">New Comment</button>
               <div class="dropdown-divider"></div>
               <div class="dropdown-label">Add Property from Layer:</div>
               <div
@@ -122,18 +131,28 @@
           </div>
         </div>
 
-        <!-- Properties List -->
-        <div class="properties-list" @dragover.prevent @drop="handleDrop">
+        <!-- Properties List with Drag & Drop -->
+        <div
+          class="properties-list"
+          @dragover.prevent="handleDragOver"
+          @drop="handleDrop"
+        >
           <!-- Ungrouped Properties -->
           <div
-            v-for="item in organizedProperties.ungrouped"
+            v-for="(item, index) in organizedProperties.ungrouped"
             :key="item.id"
             class="property-item"
-            :class="{ selected: selectedPropertyId === item.id }"
+            :class="{
+              selected: selectedPropertyId === item.id,
+              'drag-over': dragOverIndex === index && !dragOverGroupId
+            }"
             draggable="true"
-            @dragstart="handleDragStart($event, item)"
+            @dragstart="handleDragStart($event, item, index)"
+            @dragend="handleDragEnd"
+            @dragover.prevent="setDragOver(index, null)"
             @click="selectProperty(item)"
           >
+            <div class="drag-handle">⋮⋮</div>
             <template v-if="isExposedProperty(item)">
               <ExposedPropertyControl
                 :property="item"
@@ -146,7 +165,7 @@
               <CommentControl
                 :comment="item"
                 @update="handleCommentUpdate"
-                @remove="removeComment(item.id)"
+                @remove="removeCommentItem(item.id)"
               />
             </template>
           </div>
@@ -163,7 +182,11 @@
               @click="toggleGroup(group.id)"
               draggable="true"
               @dragstart="handleGroupDragStart($event, group)"
+              @dragend="handleDragEnd"
+              @dragover.prevent="setDragOver(-1, group.id)"
+              :class="{ 'drag-over': dragOverGroupId === group.id }"
             >
+              <div class="drag-handle">⋮⋮</div>
               <span class="expand-icon">{{ group.expanded ? '▼' : '▶' }}</span>
               <input
                 type="text"
@@ -180,16 +203,23 @@
                 ×
               </button>
             </div>
-            <div v-if="group.expanded" class="group-content">
+            <div
+              v-if="group.expanded"
+              class="group-content"
+              @dragover.prevent="setDragOver(-1, group.id)"
+              @drop="handleDropToGroup($event, group.id)"
+            >
               <div
-                v-for="item in items"
+                v-for="(item, index) in items"
                 :key="item.id"
                 class="property-item"
                 :class="{ selected: selectedPropertyId === item.id }"
                 draggable="true"
-                @dragstart="handleDragStart($event, item)"
+                @dragstart="handleDragStart($event, item, index, group.id)"
+                @dragend="handleDragEnd"
                 @click="selectProperty(item)"
               >
+                <div class="drag-handle">⋮⋮</div>
                 <template v-if="isExposedProperty(item)">
                   <ExposedPropertyControl
                     :property="item"
@@ -202,9 +232,12 @@
                   <CommentControl
                     :comment="item"
                     @update="handleCommentUpdate"
-                    @remove="removeComment(item.id)"
+                    @remove="removeCommentItem(item.id)"
                   />
                 </template>
+              </div>
+              <div v-if="items.length === 0" class="group-empty">
+                Drop properties here
               </div>
             </div>
           </div>
@@ -231,26 +264,57 @@
           </div>
         </div>
 
-        <!-- Export Button -->
+        <!-- Export Section -->
         <div class="export-section">
-          <button class="btn-primary btn-export" @click="exportMOGRT">
-            Export Motion Graphics Template
+          <div class="poster-frame-control">
+            <label>Poster Frame:</label>
+            <input
+              type="number"
+              v-model.number="posterFrame"
+              :min="0"
+              :max="activeComposition?.frameCount || 0"
+              class="poster-frame-input"
+            />
+            <button class="btn-small" @click="capturePosterFrame" :disabled="isCapturing">
+              {{ isCapturing ? 'Capturing...' : 'Capture' }}
+            </button>
+          </div>
+          <div v-if="posterImagePreview" class="poster-preview">
+            <img :src="posterImagePreview" alt="Poster frame preview" />
+          </div>
+          <button
+            class="btn-primary btn-export"
+            @click="exportMOGRT"
+            :disabled="isExporting"
+          >
+            {{ isExporting ? 'Exporting...' : 'Export Motion Graphics Template' }}
           </button>
         </div>
       </div>
     </div>
+
+    <!-- Hidden file input for import -->
+    <input
+      ref="fileInput"
+      type="file"
+      accept=".mogrt,.json"
+      style="display: none"
+      @change="handleFileImport"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, inject, onMounted, onUnmounted } from 'vue';
 import { useCompositorStore } from '@/stores/compositorStore';
+import JSZip from 'jszip';
 import type {
   TemplateConfig,
   ExposedProperty,
   PropertyGroup,
   TemplateComment,
-  InstalledTemplate
+  InstalledTemplate,
+  MOGRTPackage
 } from '@/types/essentialGraphics';
 import {
   initializeTemplate,
@@ -259,18 +323,28 @@ import {
   removeExposedProperty,
   addPropertyGroup,
   removePropertyGroup,
+  movePropertyToGroup,
+  reorderExposedProperties,
   addComment,
   removeComment as removeCommentFn,
   updateComment as updateCommentFn,
   getExposableProperties,
   getOrganizedProperties,
   isExposedProperty as checkIsExposedProperty,
-  exportMOGRT as exportMOGRTFn,
-  validateTemplate
+  validateTemplate,
+  prepareMOGRTExport
 } from '@/services/essentialGraphics';
+import {
+  safeJSONParse,
+  safeJSONStringify,
+  validateMOGRT
+} from '@/services/jsonValidation';
 import type { Layer, Composition } from '@/types/project';
 import ExposedPropertyControl from './ExposedPropertyControl.vue';
 import CommentControl from './CommentControl.vue';
+
+// Inject frame capture from parent
+const captureFrame = inject<() => Promise<string | null>>('captureFrame');
 
 // Store
 const store = useCompositorStore();
@@ -284,6 +358,21 @@ const selectedPropertyId = ref<string | null>(null);
 const showPropertyPicker = ref(false);
 const selectedLayerForPicker = ref<Layer | null>(null);
 const installedTemplates = ref<InstalledTemplate[]>([]);
+const selectedTemplateId = ref<string | null>(null);
+const fileInput = ref<HTMLInputElement | null>(null);
+
+// Export state
+const isExporting = ref(false);
+const isCapturing = ref(false);
+const posterFrame = ref(0);
+const posterImagePreview = ref<string | null>(null);
+
+// Drag and drop state
+const draggedItem = ref<ExposedProperty | TemplateComment | null>(null);
+const draggedGroup = ref<PropertyGroup | null>(null);
+const draggedFromGroupId = ref<string | null>(null);
+const dragOverIndex = ref<number>(-1);
+const dragOverGroupId = ref<string | null>(null);
 
 // Computed
 const compositions = computed(() => Object.values(store.project.compositions));
@@ -410,7 +499,7 @@ function removeProperty(propertyId: string) {
   store.pushHistory();
 }
 
-function removeComment(commentId: string) {
+function removeCommentItem(commentId: string) {
   if (!templateConfig.value) return;
   removeCommentFn(templateConfig.value, commentId);
   store.pushHistory();
@@ -460,74 +549,362 @@ function isExposedProperty(item: ExposedProperty | TemplateComment): item is Exp
   return checkIsExposedProperty(item);
 }
 
-// Drag and Drop
-let draggedItem: ExposedProperty | TemplateComment | PropertyGroup | null = null;
+// ===========================================
+// DRAG AND DROP
+// ===========================================
 
-function handleDragStart(event: DragEvent, item: ExposedProperty | TemplateComment) {
-  draggedItem = item;
+function handleDragStart(
+  event: DragEvent,
+  item: ExposedProperty | TemplateComment,
+  index: number,
+  groupId?: string
+) {
+  draggedItem.value = item;
+  draggedGroup.value = null;
+  draggedFromGroupId.value = groupId || null;
   event.dataTransfer?.setData('text/plain', item.id);
+  event.dataTransfer!.effectAllowed = 'move';
 }
 
 function handleGroupDragStart(event: DragEvent, group: PropertyGroup) {
-  draggedItem = group;
+  draggedGroup.value = group;
+  draggedItem.value = null;
   event.dataTransfer?.setData('text/plain', group.id);
+  event.dataTransfer!.effectAllowed = 'move';
+}
+
+function handleDragEnd() {
+  draggedItem.value = null;
+  draggedGroup.value = null;
+  draggedFromGroupId.value = null;
+  dragOverIndex.value = -1;
+  dragOverGroupId.value = null;
+}
+
+function handleDragOver(event: DragEvent) {
+  event.preventDefault();
+}
+
+function setDragOver(index: number, groupId: string | null) {
+  dragOverIndex.value = index;
+  dragOverGroupId.value = groupId;
 }
 
 function handleDrop(event: DragEvent) {
-  // TODO: Implement reordering logic
-  draggedItem = null;
+  event.preventDefault();
+
+  if (!templateConfig.value) return;
+
+  // Handle dropping item to reorder
+  if (draggedItem.value) {
+    // If item was in a group, remove it from the group
+    if (draggedFromGroupId.value) {
+      movePropertyToGroup(templateConfig.value, draggedItem.value.id, null);
+    }
+
+    // Reorder based on drop position
+    if (dragOverIndex.value >= 0) {
+      const ids = organizedProperties.value.ungrouped.map(p => p.id);
+      const fromIndex = ids.indexOf(draggedItem.value.id);
+      if (fromIndex !== -1) {
+        ids.splice(fromIndex, 1);
+      }
+      ids.splice(dragOverIndex.value, 0, draggedItem.value.id);
+      reorderExposedProperties(templateConfig.value, ids);
+    }
+
+    store.pushHistory();
+  }
+
+  handleDragEnd();
 }
 
-// Template Operations
+function handleDropToGroup(event: DragEvent, groupId: string) {
+  event.preventDefault();
+  event.stopPropagation();
+
+  if (!templateConfig.value || !draggedItem.value) return;
+
+  // Move item to this group
+  movePropertyToGroup(templateConfig.value, draggedItem.value.id, groupId);
+  store.pushHistory();
+
+  handleDragEnd();
+}
+
+// ===========================================
+// TEMPLATE OPERATIONS
+// ===========================================
+
 function selectTemplate(template: InstalledTemplate) {
-  // TODO: Apply template to current composition
-  console.log('Selected template:', template.name);
+  selectedTemplateId.value = template.id;
+}
+
+function applySelectedTemplate() {
+  const template = installedTemplates.value.find(t => t.id === selectedTemplateId.value);
+  if (template) {
+    applyTemplate(template);
+  }
+}
+
+async function applyTemplate(template: InstalledTemplate) {
+  if (!activeComposition.value) {
+    alert('Please select a composition first');
+    return;
+  }
+
+  try {
+    // Load the template data
+    const templateData = template.data;
+    if (!templateData) {
+      alert('Template data not found');
+      return;
+    }
+
+    // Apply exposed property values to current composition
+    if (templateData.templateConfig && templateData.composition) {
+      // Copy template config
+      activeComposition.value.templateConfig = {
+        ...templateData.templateConfig,
+        masterCompositionId: activeComposition.value.id
+      };
+
+      // Apply exposed property default values
+      templateData.templateConfig.exposedProperties.forEach((prop: ExposedProperty) => {
+        const layer = activeComposition.value?.layers.find(l => l.name === prop.sourceLayerId);
+        if (layer && prop.defaultValue !== undefined) {
+          // Set the property value on the layer
+          setNestedProperty(layer, prop.sourcePropertyPath, prop.defaultValue);
+        }
+      });
+
+      store.pushHistory();
+      activeTab.value = 'edit';
+
+      console.log('[EssentialGraphics] Template applied:', template.name);
+    }
+  } catch (error) {
+    console.error('[EssentialGraphics] Failed to apply template:', error);
+    alert('Failed to apply template');
+  }
+}
+
+function setNestedProperty(obj: any, path: string, value: any) {
+  const parts = path.split('.');
+  let current = obj;
+
+  for (let i = 0; i < parts.length - 1; i++) {
+    if (current[parts[i]] === undefined) {
+      current[parts[i]] = {};
+    }
+    current = current[parts[i]];
+  }
+
+  const lastPart = parts[parts.length - 1];
+  if (current[lastPart] && typeof current[lastPart] === 'object' && 'value' in current[lastPart]) {
+    current[lastPart].value = value;
+  } else {
+    current[lastPart] = value;
+  }
 }
 
 function importTemplate() {
-  // TODO: Open file picker for MOGRT import
-  console.log('Import template');
+  fileInput.value?.click();
 }
+
+async function handleFileImport(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
+
+  try {
+    let templateData: MOGRTPackage | null = null;
+
+    if (file.name.endsWith('.mogrt')) {
+      // Load as ZIP
+      const zip = await JSZip.loadAsync(file);
+      const manifestFile = zip.file('manifest.json');
+      if (!manifestFile) {
+        throw new Error('Invalid MOGRT: missing manifest.json');
+      }
+
+      const manifestJson = await manifestFile.async('string');
+      const parsed = safeJSONParse<MOGRTPackage>(manifestJson);
+      if (!parsed.success) {
+        throw new Error(`Invalid manifest JSON: ${parsed.error}`);
+      }
+      templateData = parsed.data;
+    } else {
+      // Load as JSON
+      const text = await file.text();
+      const parsed = safeJSONParse<MOGRTPackage>(text);
+      if (!parsed.success) {
+        throw new Error(`Invalid JSON: ${parsed.error}`);
+      }
+      templateData = parsed.data;
+    }
+
+    // Validate
+    const validation = validateMOGRT(templateData);
+    if (!validation.valid) {
+      throw new Error(`Invalid template: ${validation.errors.map(e => e.message).join(', ')}`);
+    }
+
+    // Add to installed templates
+    const newTemplate: InstalledTemplate = {
+      id: `template_${Date.now()}`,
+      name: templateData.templateConfig.name,
+      author: 'Imported',
+      posterImage: templateData.posterImage,
+      tags: [],
+      data: templateData
+    };
+
+    installedTemplates.value.push(newTemplate);
+    console.log('[EssentialGraphics] Template imported:', newTemplate.name);
+
+    // Reset file input
+    input.value = '';
+
+  } catch (error) {
+    console.error('[EssentialGraphics] Import failed:', error);
+    alert(`Import failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    input.value = '';
+  }
+}
+
+// ===========================================
+// POSTER FRAME CAPTURE
+// ===========================================
+
+async function capturePosterFrame() {
+  if (!captureFrame) {
+    console.warn('[EssentialGraphics] Frame capture not available');
+    return;
+  }
+
+  isCapturing.value = true;
+
+  try {
+    // Set the frame to poster frame
+    const originalFrame = store.currentFrame;
+    store.setFrame(posterFrame.value);
+
+    // Wait for render
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Capture
+    const imageData = await captureFrame();
+    if (imageData) {
+      posterImagePreview.value = imageData;
+
+      // Update template config
+      if (templateConfig.value) {
+        templateConfig.value.posterFrame = posterFrame.value;
+      }
+
+      console.log('[EssentialGraphics] Poster frame captured');
+    }
+
+    // Restore frame
+    store.setFrame(originalFrame);
+
+  } catch (error) {
+    console.error('[EssentialGraphics] Failed to capture poster frame:', error);
+  } finally {
+    isCapturing.value = false;
+  }
+}
+
+// ===========================================
+// MOGRT EXPORT
+// ===========================================
 
 async function exportMOGRT() {
   if (!activeComposition.value || !templateConfig.value) return;
 
-  // Validate template
-  const validation = validateTemplate(templateConfig.value, activeComposition.value);
-  if (!validation.valid) {
-    console.error('Template validation failed:', validation.errors);
-    alert('Template validation failed:\n' + validation.errors.join('\n'));
-    return;
+  isExporting.value = true;
+
+  try {
+    // Validate template
+    const validation = validateTemplate(templateConfig.value, activeComposition.value);
+    if (!validation.valid) {
+      console.error('Template validation failed:', validation.errors);
+      alert('Template validation failed:\n' + validation.errors.join('\n'));
+      return;
+    }
+
+    if (validation.warnings.length > 0) {
+      console.warn('Template warnings:', validation.warnings);
+    }
+
+    // Capture poster frame if not already captured
+    let posterImage = posterImagePreview.value || '';
+    if (!posterImage && captureFrame) {
+      posterImage = await captureFrame() || '';
+    }
+
+    // Prepare MOGRT data
+    const mogrt = prepareMOGRTExport(
+      activeComposition.value,
+      store.project.assets,
+      posterImage
+    );
+
+    if (!mogrt) {
+      alert('Export failed: Could not prepare MOGRT package');
+      return;
+    }
+
+    // Create ZIP file
+    const zip = new JSZip();
+
+    // Add manifest
+    const manifestResult = safeJSONStringify(mogrt);
+    if (!manifestResult.success) {
+      throw new Error(`Failed to serialize: ${manifestResult.error}`);
+    }
+    zip.file('manifest.json', manifestResult.json);
+
+    // Add poster image as separate file
+    if (posterImage && posterImage.startsWith('data:')) {
+      const base64Data = posterImage.split(',')[1];
+      zip.file('poster.png', base64Data, { base64: true });
+    }
+
+    // Add embedded assets
+    if (mogrt.assets && mogrt.assets.length > 0) {
+      const assetsFolder = zip.folder('assets');
+      mogrt.assets.forEach((asset: any, index: number) => {
+        if (asset.data && asset.data.startsWith('data:')) {
+          const base64Data = asset.data.split(',')[1];
+          const ext = asset.mimeType?.split('/')[1] || 'bin';
+          assetsFolder?.file(`asset_${index}.${ext}`, base64Data, { base64: true });
+        }
+      });
+    }
+
+    // Generate ZIP blob
+    const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+
+    // Download
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${templateConfig.value.name.replace(/\s+/g, '_')}.mogrt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    console.log('[EssentialGraphics] MOGRT exported successfully');
+
+  } catch (error) {
+    console.error('[EssentialGraphics] Export failed:', error);
+    alert(`Export failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  } finally {
+    isExporting.value = false;
   }
-
-  if (validation.warnings.length > 0) {
-    console.warn('Template warnings:', validation.warnings);
-  }
-
-  // Generate poster image (placeholder)
-  const posterImage = ''; // TODO: Capture current frame
-
-  // Export
-  const blob = await exportMOGRTFn(
-    activeComposition.value,
-    store.project.assets,
-    posterImage
-  );
-
-  if (!blob) {
-    alert('Export failed');
-    return;
-  }
-
-  // Download
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${templateConfig.value.name.replace(/\s+/g, '_')}.mogrt`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
 }
 
 // Close menu when clicking outside
@@ -538,15 +915,43 @@ function handleClickOutside(event: MouseEvent) {
   }
 }
 
-// Lifecycle
-import { onMounted, onUnmounted } from 'vue';
+// Watch for composition changes
+watch(activeComposition, (comp) => {
+  if (comp?.templateConfig) {
+    posterFrame.value = comp.templateConfig.posterFrame || 0;
+  }
+});
 
+// Lifecycle
 onMounted(() => {
   document.addEventListener('click', handleClickOutside);
+
+  // Load installed templates from localStorage
+  try {
+    const saved = localStorage.getItem('weyl_installed_templates');
+    if (saved) {
+      const parsed = safeJSONParse<InstalledTemplate[]>(saved, []);
+      if (parsed.success && parsed.data) {
+        installedTemplates.value = parsed.data;
+      }
+    }
+  } catch (e) {
+    console.warn('[EssentialGraphics] Failed to load saved templates');
+  }
 });
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside);
+
+  // Save installed templates
+  try {
+    const result = safeJSONStringify(installedTemplates.value);
+    if (result.success) {
+      localStorage.setItem('weyl_installed_templates', result.json);
+    }
+  } catch (e) {
+    console.warn('[EssentialGraphics] Failed to save templates');
+  }
 });
 </script>
 
@@ -571,24 +976,24 @@ onUnmounted(() => {
 
 .tab {
   flex: 1;
-  padding: 8px 16px;
-  background: var(--weyl-surface-2, #1a1a1a);
+  padding: 6px 12px;
+  background: transparent;
   border: none;
-  border-radius: 4px;
   color: var(--weyl-text-secondary, #9ca3af);
+  font-size: 12px;
   cursor: pointer;
-  font-size: 13px;
-  font-weight: 500;
+  border-radius: 4px;
   transition: all 0.15s ease;
 }
 
 .tab:hover {
-  background: var(--weyl-surface-3, #222222);
+  background: var(--weyl-surface-2, #1a1a1a);
+  color: var(--weyl-text-primary, #e5e5e5);
 }
 
 .tab.active {
-  background: var(--weyl-accent, #8b5cf6);
-  color: white;
+  background: var(--weyl-accent-muted, rgba(139, 92, 246, 0.2));
+  color: var(--weyl-accent, #8b5cf6);
 }
 
 .tab-content {
@@ -605,11 +1010,11 @@ onUnmounted(() => {
 .search-input {
   width: 100%;
   padding: 8px 12px;
-  background: var(--weyl-surface-2, #1a1a1a);
+  background: var(--weyl-surface-0, #0a0a0a);
   border: 1px solid var(--weyl-border-subtle, #2a2a2a);
   border-radius: 4px;
   color: var(--weyl-text-primary, #e5e5e5);
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .search-input::placeholder {
@@ -624,15 +1029,20 @@ onUnmounted(() => {
 
 .template-card {
   background: var(--weyl-surface-2, #1a1a1a);
+  border: 1px solid var(--weyl-border-subtle, #2a2a2a);
   border-radius: 6px;
   overflow: hidden;
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: all 0.15s ease;
 }
 
 .template-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  border-color: var(--weyl-accent, #8b5cf6);
+}
+
+.template-card.selected {
+  border-color: var(--weyl-accent, #8b5cf6);
+  box-shadow: 0 0 0 1px var(--weyl-accent, #8b5cf6);
 }
 
 .template-poster {
@@ -651,18 +1061,16 @@ onUnmounted(() => {
 
 .poster-placeholder {
   color: var(--weyl-text-muted, #6b7280);
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .template-info {
   padding: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
 }
 
 .template-name {
-  font-size: 12px;
+  display: block;
+  font-size: 11px;
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
@@ -670,6 +1078,7 @@ onUnmounted(() => {
 }
 
 .template-author {
+  display: block;
   font-size: 10px;
   color: var(--weyl-text-muted, #6b7280);
 }
@@ -677,34 +1086,36 @@ onUnmounted(() => {
 .no-templates {
   grid-column: 1 / -1;
   text-align: center;
-  padding: 32px;
-  color: var(--weyl-text-secondary, #9ca3af);
+  padding: 24px;
+  color: var(--weyl-text-muted, #6b7280);
+}
+
+.apply-section {
+  padding: 12px 0;
+  border-top: 1px solid var(--weyl-border-subtle, #2a2a2a);
+  margin-top: 12px;
 }
 
 /* Edit Tab */
 .no-master {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  padding: 32px 16px;
   text-align: center;
+  padding: 24px 0;
 }
 
 .message {
   color: var(--weyl-text-secondary, #9ca3af);
-  margin: 0;
+  margin-bottom: 16px;
 }
 
 .comp-select {
   width: 100%;
-  max-width: 300px;
   padding: 8px 12px;
-  background: var(--weyl-surface-2, #1a1a1a);
+  background: var(--weyl-surface-0, #0a0a0a);
   border: 1px solid var(--weyl-border-subtle, #2a2a2a);
   border-radius: 4px;
   color: var(--weyl-text-primary, #e5e5e5);
-  font-size: 13px;
+  font-size: 12px;
+  margin-bottom: 12px;
 }
 
 .template-editor {
@@ -716,17 +1127,35 @@ onUnmounted(() => {
 .template-name-section {
   display: flex;
   gap: 8px;
+  align-items: center;
 }
 
 .template-name-input {
   flex: 1;
   padding: 8px 12px;
-  background: var(--weyl-surface-2, #1a1a1a);
+  background: var(--weyl-surface-0, #0a0a0a);
   border: 1px solid var(--weyl-border-subtle, #2a2a2a);
   border-radius: 4px;
   color: var(--weyl-text-primary, #e5e5e5);
   font-size: 14px;
   font-weight: 500;
+}
+
+.btn-icon {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: var(--weyl-surface-2, #1a1a1a);
+  border: 1px solid var(--weyl-border-subtle, #2a2a2a);
+  border-radius: 4px;
+  color: var(--weyl-text-secondary, #9ca3af);
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.btn-icon:hover {
+  background: var(--weyl-surface-3, #222222);
+  color: var(--weyl-text-primary, #e5e5e5);
 }
 
 .add-controls {
@@ -746,11 +1175,10 @@ onUnmounted(() => {
   top: 100%;
   left: 0;
   right: 0;
-  margin-top: 4px;
   background: var(--weyl-surface-3, #222222);
-  border: 1px solid var(--weyl-border-default, #333333);
+  border: 1px solid var(--weyl-border-subtle, #2a2a2a);
   border-radius: 4px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  padding: 4px 0;
   z-index: 100;
   max-height: 300px;
   overflow-y: auto;
@@ -760,12 +1188,12 @@ onUnmounted(() => {
   display: block;
   width: 100%;
   padding: 8px 12px;
-  background: none;
+  background: transparent;
   border: none;
   color: var(--weyl-text-primary, #e5e5e5);
+  font-size: 12px;
   text-align: left;
   cursor: pointer;
-  font-size: 12px;
 }
 
 .dropdown-menu button:hover {
@@ -783,58 +1211,72 @@ onUnmounted(() => {
   font-size: 10px;
   color: var(--weyl-text-muted, #6b7280);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
 
-.layer-item {
-  padding: 0;
-}
-
-.layer-button {
-  padding-left: 24px;
-}
-
-/* Properties List */
 .properties-list {
   flex: 1;
-  min-height: 200px;
-  border: 1px dashed var(--weyl-border-subtle, #2a2a2a);
+  min-height: 100px;
+  background: var(--weyl-surface-0, #0a0a0a);
+  border: 1px solid var(--weyl-border-subtle, #2a2a2a);
   border-radius: 4px;
-  padding: 8px;
+  padding: 4px;
 }
 
 .property-item {
-  background: var(--weyl-surface-2, #1a1a1a);
-  border-radius: 4px;
-  margin-bottom: 4px;
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 3px;
   cursor: grab;
+  transition: background 0.1s ease;
+}
+
+.property-item:hover {
+  background: var(--weyl-surface-2, #1a1a1a);
 }
 
 .property-item.selected {
-  outline: 2px solid var(--weyl-accent, #8b5cf6);
+  background: var(--weyl-accent-muted, rgba(139, 92, 246, 0.2));
 }
 
-.property-item:active {
-  cursor: grabbing;
+.property-item.drag-over {
+  border-top: 2px solid var(--weyl-accent, #8b5cf6);
 }
 
-/* Groups */
+.drag-handle {
+  color: var(--weyl-text-muted, #6b7280);
+  font-size: 10px;
+  cursor: grab;
+  padding: 4px 2px;
+  opacity: 0.5;
+}
+
+.property-item:hover .drag-handle {
+  opacity: 1;
+}
+
 .property-group {
-  margin-bottom: 8px;
+  margin: 4px 0;
+  background: var(--weyl-surface-1, #121212);
+  border-radius: 4px;
 }
 
 .group-header {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   padding: 8px;
-  background: var(--weyl-surface-2, #1a1a1a);
-  border-radius: 4px;
   cursor: pointer;
+  border-radius: 4px;
 }
 
 .group-header:hover {
-  background: var(--weyl-surface-3, #222222);
+  background: var(--weyl-surface-2, #1a1a1a);
+}
+
+.group-header.drag-over {
+  background: var(--weyl-accent-muted, rgba(139, 92, 246, 0.2));
 }
 
 .expand-icon {
@@ -849,30 +1291,56 @@ onUnmounted(() => {
   color: var(--weyl-text-primary, #e5e5e5);
   font-size: 12px;
   font-weight: 500;
+  padding: 2px 4px;
 }
 
 .group-name-input:focus {
   outline: none;
   background: var(--weyl-surface-0, #0a0a0a);
   border-radius: 2px;
-  padding: 2px 4px;
-  margin: -2px -4px;
+}
+
+.btn-icon-small {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--weyl-text-muted, #6b7280);
+  cursor: pointer;
+  font-size: 14px;
+  opacity: 0;
+}
+
+.group-header:hover .btn-icon-small {
+  opacity: 1;
+}
+
+.btn-icon-small:hover {
+  color: var(--weyl-text-primary, #e5e5e5);
 }
 
 .group-content {
-  padding: 8px;
-  padding-left: 24px;
+  padding: 4px 4px 4px 20px;
+  min-height: 30px;
 }
 
-.property-group.collapsed .group-content {
-  display: none;
+.group-empty {
+  padding: 12px;
+  text-align: center;
+  color: var(--weyl-text-muted, #6b7280);
+  font-size: 11px;
+  font-style: italic;
 }
 
 /* Property Picker Modal */
 .property-picker-modal {
   position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -881,10 +1349,11 @@ onUnmounted(() => {
 
 .picker-content {
   background: var(--weyl-surface-2, #1a1a1a);
+  border: 1px solid var(--weyl-border-subtle, #2a2a2a);
   border-radius: 8px;
-  width: 90%;
-  max-width: 400px;
-  max-height: 80vh;
+  width: 300px;
+  max-height: 400px;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
@@ -898,9 +1367,9 @@ onUnmounted(() => {
 }
 
 .picker-header h3 {
-  margin: 0;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
+  margin: 0;
 }
 
 .picker-list {
@@ -911,12 +1380,11 @@ onUnmounted(() => {
 
 .picker-item {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  padding: 10px 12px;
+  padding: 8px 12px;
   border-radius: 4px;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: background 0.1s ease;
 }
 
 .picker-item:hover {
@@ -924,7 +1392,7 @@ onUnmounted(() => {
 }
 
 .prop-name {
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .prop-type {
@@ -939,6 +1407,61 @@ onUnmounted(() => {
   border-top: 1px solid var(--weyl-border-subtle, #2a2a2a);
 }
 
+.poster-frame-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.poster-frame-control label {
+  font-size: 11px;
+  color: var(--weyl-text-secondary, #9ca3af);
+}
+
+.poster-frame-input {
+  width: 60px;
+  padding: 4px 6px;
+  background: var(--weyl-surface-0, #0a0a0a);
+  border: 1px solid var(--weyl-border-subtle, #2a2a2a);
+  border-radius: 3px;
+  color: var(--weyl-text-primary, #e5e5e5);
+  font-size: 11px;
+}
+
+.poster-preview {
+  margin-bottom: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--weyl-surface-0, #0a0a0a);
+}
+
+.poster-preview img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.btn-small {
+  padding: 4px 8px;
+  background: var(--weyl-surface-3, #222222);
+  border: 1px solid var(--weyl-border-subtle, #2a2a2a);
+  border-radius: 3px;
+  color: var(--weyl-text-secondary, #9ca3af);
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.btn-small:hover:not(:disabled) {
+  background: var(--weyl-surface-4, #2a2a2a);
+  color: var(--weyl-text-primary, #e5e5e5);
+}
+
+.btn-small:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .btn-export {
   width: 100%;
 }
@@ -950,7 +1473,7 @@ onUnmounted(() => {
   border: none;
   border-radius: 4px;
   color: white;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
   cursor: pointer;
   transition: background 0.15s ease;
@@ -968,56 +1491,14 @@ onUnmounted(() => {
 .btn-secondary {
   padding: 8px 12px;
   background: var(--weyl-surface-2, #1a1a1a);
-  border: 1px solid var(--weyl-border-default, #333333);
+  border: 1px solid var(--weyl-border-subtle, #2a2a2a);
   border-radius: 4px;
   color: var(--weyl-text-primary, #e5e5e5);
   font-size: 12px;
   cursor: pointer;
-  transition: background 0.15s ease;
 }
 
 .btn-secondary:hover {
   background: var(--weyl-surface-3, #222222);
-}
-
-.btn-icon {
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  background: var(--weyl-surface-2, #1a1a1a);
-  border: 1px solid var(--weyl-border-subtle, #2a2a2a);
-  border-radius: 4px;
-  color: var(--weyl-text-secondary, #9ca3af);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-}
-
-.btn-icon:hover {
-  background: var(--weyl-surface-3, #222222);
-  color: var(--weyl-text-primary, #e5e5e5);
-}
-
-.btn-icon-small {
-  width: 20px;
-  height: 20px;
-  padding: 0;
-  background: none;
-  border: none;
-  color: var(--weyl-text-muted, #6b7280);
-  cursor: pointer;
-  font-size: 14px;
-  opacity: 0;
-  transition: opacity 0.15s ease;
-}
-
-.group-header:hover .btn-icon-small {
-  opacity: 1;
-}
-
-.btn-icon-small:hover {
-  color: var(--weyl-text-primary, #e5e5e5);
 }
 </style>

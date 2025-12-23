@@ -90,728 +90,204 @@ export interface ExpressionContext {
 }
 
 // ============================================================================
-// EASING FUNCTIONS - Complete Set
+// EASING FUNCTIONS (Re-exported from expressions/easing.ts)
 // ============================================================================
 
-/**
- * Standard easing types (matches CSS/Penner)
- */
-export type EasingFunction = (t: number) => number;
+// Import for local use (used in easing namespace object below)
+import {
+  type EasingFunction as _EasingFunction,
+  easeInSine as _easeInSine, easeOutSine as _easeOutSine, easeInOutSine as _easeInOutSine,
+  easeInQuad as _easeInQuad, easeOutQuad as _easeOutQuad, easeInOutQuad as _easeInOutQuad,
+  easeInCubic as _easeInCubic, easeOutCubic as _easeOutCubic, easeInOutCubic as _easeInOutCubic,
+  easeInQuart as _easeInQuart, easeOutQuart as _easeOutQuart, easeInOutQuart as _easeInOutQuart,
+  easeInQuint as _easeInQuint, easeOutQuint as _easeOutQuint, easeInOutQuint as _easeInOutQuint,
+  easeInExpo as _easeInExpo, easeOutExpo as _easeOutExpo, easeInOutExpo as _easeInOutExpo,
+  easeInCirc as _easeInCirc, easeOutCirc as _easeOutCirc, easeInOutCirc as _easeInOutCirc,
+  easeInBack as _easeInBack, easeOutBack as _easeOutBack, easeInOutBack as _easeInOutBack,
+  easeInElastic as _easeInElastic, easeOutElastic as _easeOutElastic, easeInOutElastic as _easeInOutElastic,
+  easeInBounce as _easeInBounce, easeOutBounce as _easeOutBounce, easeInOutBounce as _easeInOutBounce,
+  linear as _linear,
+  stepStart as _stepStart, stepEnd as _stepEnd,
+  cubicBezier as _cubicBezier,
+  EASING_FUNCTIONS as _EASING_FUNCTIONS, getEasingFunction as _getEasingFunction,
+  EASING_PRESETS as _EASING_PRESETS,
+} from './expressions/easing';
 
-// Sine easing
-export const easeInSine: EasingFunction = (t) => 1 - Math.cos((t * Math.PI) / 2);
-export const easeOutSine: EasingFunction = (t) => Math.sin((t * Math.PI) / 2);
-export const easeInOutSine: EasingFunction = (t) => -(Math.cos(Math.PI * t) - 1) / 2;
-
-// Quad easing
-export const easeInQuad: EasingFunction = (t) => t * t;
-export const easeOutQuad: EasingFunction = (t) => 1 - (1 - t) * (1 - t);
-export const easeInOutQuad: EasingFunction = (t) =>
-  t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-
-// Cubic easing
-export const easeInCubic: EasingFunction = (t) => t * t * t;
-export const easeOutCubic: EasingFunction = (t) => 1 - Math.pow(1 - t, 3);
-export const easeInOutCubic: EasingFunction = (t) =>
-  t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-
-// Quart easing
-export const easeInQuart: EasingFunction = (t) => t * t * t * t;
-export const easeOutQuart: EasingFunction = (t) => 1 - Math.pow(1 - t, 4);
-export const easeInOutQuart: EasingFunction = (t) =>
-  t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2;
-
-// Quint easing
-export const easeInQuint: EasingFunction = (t) => t * t * t * t * t;
-export const easeOutQuint: EasingFunction = (t) => 1 - Math.pow(1 - t, 5);
-export const easeInOutQuint: EasingFunction = (t) =>
-  t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 * t + 2, 5) / 2;
-
-// Expo easing
-export const easeInExpo: EasingFunction = (t) =>
-  t === 0 ? 0 : Math.pow(2, 10 * t - 10);
-export const easeOutExpo: EasingFunction = (t) =>
-  t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
-export const easeInOutExpo: EasingFunction = (t) =>
-  t === 0 ? 0 : t === 1 ? 1 :
-  t < 0.5 ? Math.pow(2, 20 * t - 10) / 2 : (2 - Math.pow(2, -20 * t + 10)) / 2;
-
-// Circ easing
-export const easeInCirc: EasingFunction = (t) => 1 - Math.sqrt(1 - Math.pow(t, 2));
-export const easeOutCirc: EasingFunction = (t) => Math.sqrt(1 - Math.pow(t - 1, 2));
-export const easeInOutCirc: EasingFunction = (t) =>
-  t < 0.5
-    ? (1 - Math.sqrt(1 - Math.pow(2 * t, 2))) / 2
-    : (Math.sqrt(1 - Math.pow(-2 * t + 2, 2)) + 1) / 2;
-
-// Back easing (with overshoot)
-const c1 = 1.70158;
-const c2 = c1 * 1.525;
-const c3 = c1 + 1;
-
-export const easeInBack: EasingFunction = (t) => c3 * t * t * t - c1 * t * t;
-export const easeOutBack: EasingFunction = (t) =>
-  1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
-export const easeInOutBack: EasingFunction = (t) =>
-  t < 0.5
-    ? (Math.pow(2 * t, 2) * ((c2 + 1) * 2 * t - c2)) / 2
-    : (Math.pow(2 * t - 2, 2) * ((c2 + 1) * (t * 2 - 2) + c2) + 2) / 2;
-
-// Elastic easing
-const c4 = (2 * Math.PI) / 3;
-const c5 = (2 * Math.PI) / 4.5;
-
-export const easeInElastic: EasingFunction = (t) =>
-  t === 0 ? 0 : t === 1 ? 1 :
-  -Math.pow(2, 10 * t - 10) * Math.sin((t * 10 - 10.75) * c4);
-export const easeOutElastic: EasingFunction = (t) =>
-  t === 0 ? 0 : t === 1 ? 1 :
-  Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
-export const easeInOutElastic: EasingFunction = (t) =>
-  t === 0 ? 0 : t === 1 ? 1 :
-  t < 0.5
-    ? -(Math.pow(2, 20 * t - 10) * Math.sin((20 * t - 11.125) * c5)) / 2
-    : (Math.pow(2, -20 * t + 10) * Math.sin((20 * t - 11.125) * c5)) / 2 + 1;
-
-// Bounce easing
-export const easeOutBounce: EasingFunction = (t) => {
-  const n1 = 7.5625;
-  const d1 = 2.75;
-
-  if (t < 1 / d1) {
-    return n1 * t * t;
-  } else if (t < 2 / d1) {
-    return n1 * (t -= 1.5 / d1) * t + 0.75;
-  } else if (t < 2.5 / d1) {
-    return n1 * (t -= 2.25 / d1) * t + 0.9375;
-  } else {
-    return n1 * (t -= 2.625 / d1) * t + 0.984375;
-  }
-};
-export const easeInBounce: EasingFunction = (t) => 1 - easeOutBounce(1 - t);
-export const easeInOutBounce: EasingFunction = (t) =>
-  t < 0.5
-    ? (1 - easeOutBounce(1 - 2 * t)) / 2
-    : (1 + easeOutBounce(2 * t - 1)) / 2;
-
-// Linear (no easing)
-export const linear: EasingFunction = (t) => t;
-
-// Step functions
-export const stepStart: EasingFunction = (t) => t === 0 ? 0 : 1;
-export const stepEnd: EasingFunction = (t) => t === 1 ? 1 : 0;
-
-/**
- * Cubic bezier easing (CSS-style)
- */
-export function cubicBezier(x1: number, y1: number, x2: number, y2: number): EasingFunction {
-  // Newton-Raphson iteration for finding t given x
-  const epsilon = 1e-6;
-
-  return (x: number): number => {
-    if (x <= 0) return 0;
-    if (x >= 1) return 1;
-
-    // Binary search for t
-    let t = x;
-    for (let i = 0; i < 8; i++) {
-      const currentX = bezierPoint(t, x1, x2);
-      const diff = currentX - x;
-      if (Math.abs(diff) < epsilon) break;
-
-      const derivative = bezierDerivative(t, x1, x2);
-      if (Math.abs(derivative) < epsilon) break;
-
-      t -= diff / derivative;
-      t = Math.max(0, Math.min(1, t));
-    }
-
-    return bezierPoint(t, y1, y2);
-  };
-}
-
-function bezierPoint(t: number, p1: number, p2: number): number {
-  // B(t) = 3(1-t)²t*p1 + 3(1-t)t²*p2 + t³
-  const mt = 1 - t;
-  return 3 * mt * mt * t * p1 + 3 * mt * t * t * p2 + t * t * t;
-}
-
-function bezierDerivative(t: number, p1: number, p2: number): number {
-  // B'(t) = 3(1-t)²*p1 + 6(1-t)t*(p2-p1) + 3t²*(1-p2)
-  const mt = 1 - t;
-  return 3 * mt * mt * p1 + 6 * mt * t * (p2 - p1) + 3 * t * t * (1 - p2);
-}
-
-// ============================================================================
-// EASING MAP
-// ============================================================================
-
-export const EASING_FUNCTIONS: Record<string, EasingFunction> = {
+// Re-export for backwards compatibility
+export {
+  type EasingFunction,
+  // Sine easing
+  easeInSine, easeOutSine, easeInOutSine,
+  // Quad easing
+  easeInQuad, easeOutQuad, easeInOutQuad,
+  // Cubic easing
+  easeInCubic, easeOutCubic, easeInOutCubic,
+  // Quart easing
+  easeInQuart, easeOutQuart, easeInOutQuart,
+  // Quint easing
+  easeInQuint, easeOutQuint, easeInOutQuint,
+  // Expo easing
+  easeInExpo, easeOutExpo, easeInOutExpo,
+  // Circ easing
+  easeInCirc, easeOutCirc, easeInOutCirc,
+  // Back easing
+  easeInBack, easeOutBack, easeInOutBack,
+  // Elastic easing
+  easeInElastic, easeOutElastic, easeInOutElastic,
+  // Bounce easing
+  easeInBounce, easeOutBounce, easeInOutBounce,
   // Linear
   linear,
-
-  // Sine
-  easeInSine, easeOutSine, easeInOutSine,
-
-  // Quad
-  easeInQuad, easeOutQuad, easeInOutQuad,
-
-  // Cubic
-  easeInCubic, easeOutCubic, easeInOutCubic,
-
-  // Quart
-  easeInQuart, easeOutQuart, easeInOutQuart,
-
-  // Quint
-  easeInQuint, easeOutQuint, easeInOutQuint,
-
-  // Expo
-  easeInExpo, easeOutExpo, easeInOutExpo,
-
-  // Circ
-  easeInCirc, easeOutCirc, easeInOutCirc,
-
-  // Back
-  easeInBack, easeOutBack, easeInOutBack,
-
-  // Elastic
-  easeInElastic, easeOutElastic, easeInOutElastic,
-
-  // Bounce
-  easeInBounce, easeOutBounce, easeInOutBounce,
-
   // Step
   stepStart, stepEnd,
-};
+  // Cubic bezier
+  cubicBezier,
+  // Easing map and lookup
+  EASING_FUNCTIONS, getEasingFunction,
+  // Easing presets
+  EASING_PRESETS,
+} from './expressions/easing';
 
-/**
- * Get easing function by name
- */
-export function getEasingFunction(name: string): EasingFunction {
-  return EASING_FUNCTIONS[name] || linear;
-}
-
-// ============================================================================
-// EASING PRESETS (Named curves for motion design)
-// ============================================================================
-
-export const EASING_PRESETS: Record<string, { fn: EasingFunction; description: string }> = {
-  // Standard ease presets (industry standard curves)
-  'easyEase': {
-    fn: cubicBezier(0.42, 0, 0.58, 1),
-    description: 'Standard easy ease - smooth start and end',
-  },
-  'easyEaseIn': {
-    fn: cubicBezier(0.42, 0, 1, 1),
-    description: 'Easy ease in - gradual acceleration',
-  },
-  'easyEaseOut': {
-    fn: cubicBezier(0, 0, 0.58, 1),
-    description: 'Easy ease out - gradual deceleration',
-  },
-
-  // Flow-style presets (smooth motion design)
-  'smooth': {
-    fn: cubicBezier(0.4, 0, 0.2, 1),
-    description: 'Material Design smooth curve',
-  },
-  'smoothIn': {
-    fn: cubicBezier(0.4, 0, 1, 1),
-    description: 'Material Design ease in',
-  },
-  'smoothOut': {
-    fn: cubicBezier(0, 0, 0.2, 1),
-    description: 'Material Design ease out',
-  },
-
-  // Snappy motion
-  'snappy': {
-    fn: cubicBezier(0.5, 0, 0.1, 1),
-    description: 'Quick and snappy - fast start, smooth end',
-  },
-  'snappyIn': {
-    fn: cubicBezier(0.7, 0, 1, 1),
-    description: 'Snappy ease in',
-  },
-  'snappyOut': {
-    fn: cubicBezier(0, 0, 0.1, 1),
-    description: 'Snappy ease out',
-  },
-
-  // Anticipation
-  'anticipate': {
-    fn: cubicBezier(0.36, 0, 0.66, -0.56),
-    description: 'Slight pullback before motion',
-  },
-  'overshoot': {
-    fn: cubicBezier(0.34, 1.56, 0.64, 1),
-    description: 'Goes past target then settles',
-  },
-  'anticipateOvershoot': {
-    fn: (t) => {
-      // Combine anticipation and overshoot
-      const s = 1.70158 * 1.525;
-      if (t < 0.5) {
-        return (Math.pow(2 * t, 2) * ((s + 1) * 2 * t - s)) / 2;
-      }
-      return (Math.pow(2 * t - 2, 2) * ((s + 1) * (t * 2 - 2) + s) + 2) / 2;
-    },
-    description: 'Pull back then overshoot',
-  },
-
-  // Dramatic
-  'dramatic': {
-    fn: cubicBezier(0.6, 0.04, 0.98, 0.335),
-    description: 'Dramatic acceleration',
-  },
-  'dramaticIn': {
-    fn: cubicBezier(0.55, 0.085, 0.68, 0.53),
-    description: 'Dramatic ease in',
-  },
-  'dramaticOut': {
-    fn: cubicBezier(0.25, 0.46, 0.45, 0.94),
-    description: 'Dramatic ease out',
-  },
-
-  // Physical/Spring-like
-  'spring': {
-    fn: (t) => {
-      const freq = 4.5;
-      const decay = 4;
-      return 1 - Math.exp(-decay * t) * Math.cos(freq * Math.PI * t);
-    },
-    description: 'Spring physics - oscillating settle',
-  },
-  'springLight': {
-    fn: (t) => {
-      const freq = 3;
-      const decay = 3;
-      return 1 - Math.exp(-decay * t) * Math.cos(freq * Math.PI * t);
-    },
-    description: 'Light spring - gentle oscillation',
-  },
-  'springHeavy': {
-    fn: (t) => {
-      const freq = 6;
-      const decay = 5;
-      return 1 - Math.exp(-decay * t) * Math.cos(freq * Math.PI * t);
-    },
-    description: 'Heavy spring - quick damped oscillation',
-  },
-
-  // UI-specific
-  'uiEnter': {
-    fn: cubicBezier(0, 0, 0.2, 1),
-    description: 'UI element entering view',
-  },
-  'uiExit': {
-    fn: cubicBezier(0.4, 0, 1, 1),
-    description: 'UI element leaving view',
-  },
-  'uiStandard': {
-    fn: cubicBezier(0.4, 0, 0.2, 1),
-    description: 'Standard UI transition',
-  },
-
-  // Lottie-style
-  'lottieSmooth': {
-    fn: cubicBezier(0.33, 0, 0.67, 1),
-    description: 'Lottie smooth interpolation',
-  },
-  'lottieSnap': {
-    fn: cubicBezier(0.5, 0, 0, 1),
-    description: 'Lottie snap animation',
-  },
-};
+// Create local aliases for internal use
+const linear = _linear;
+const easeInQuad = _easeInQuad;
+const easeOutQuad = _easeOutQuad;
+const easeInOutQuad = _easeInOutQuad;
+const easeInCubic = _easeInCubic;
+const easeOutCubic = _easeOutCubic;
+const easeInOutCubic = _easeInOutCubic;
+const easeInQuart = _easeInQuart;
+const easeOutQuart = _easeOutQuart;
+const easeInOutQuart = _easeInOutQuart;
+const easeInQuint = _easeInQuint;
+const easeOutQuint = _easeOutQuint;
+const easeInOutQuint = _easeInOutQuint;
+const easeInSine = _easeInSine;
+const easeOutSine = _easeOutSine;
+const easeInOutSine = _easeInOutSine;
+const easeInExpo = _easeInExpo;
+const easeOutExpo = _easeOutExpo;
+const easeInOutExpo = _easeInOutExpo;
+const easeInCirc = _easeInCirc;
+const easeOutCirc = _easeOutCirc;
+const easeInOutCirc = _easeInOutCirc;
+const easeInBack = _easeInBack;
+const easeOutBack = _easeOutBack;
+const easeInOutBack = _easeInOutBack;
+const easeInElastic = _easeInElastic;
+const easeOutElastic = _easeOutElastic;
+const easeInOutElastic = _easeInOutElastic;
+const easeInBounce = _easeInBounce;
+const easeOutBounce = _easeOutBounce;
+const easeInOutBounce = _easeInOutBounce;
+const stepStart = _stepStart;
+const stepEnd = _stepEnd;
+const cubicBezier = _cubicBezier;
+const EASING_FUNCTIONS = _EASING_FUNCTIONS;
+const EASING_PRESETS = _EASING_PRESETS;
 
 // ============================================================================
-// MOTION EXPRESSIONS
+// MOTION EXPRESSIONS (Re-exported from expressions/motionExpressions.ts)
 // ============================================================================
 
-/**
- * Inertia/Overshoot expression
- * Creates momentum-based animation after keyframes
- */
-export function inertia(
-  ctx: ExpressionContext,
-  amplitude: number = 0.1,
-  frequency: number = 2.0,
-  decay: number = 2.0
-): number | number[] {
-  const { time, keyframes, value, velocity } = ctx;
+// Import for local use (used in motion namespace object below)
+import {
+  type MotionExpressionContext as _MotionExpressionContext,
+  inertia as _inertia,
+  bounce as _bounce,
+  elastic as _elastic,
+} from './expressions/motionExpressions';
 
-  if (keyframes.length === 0) return value;
+// Re-export for backwards compatibility
+export {
+  type MotionExpressionContext,
+  inertia,
+  bounce,
+  elastic,
+} from './expressions/motionExpressions';
 
-  // Find nearest keyframe before current time
-  const fps = ctx.fps || 30;
-  const currentFrame = time * fps;
-
-  let nearestKey: Keyframe<any> | null = null;
-  for (let i = keyframes.length - 1; i >= 0; i--) {
-    if (keyframes[i].frame <= currentFrame) {
-      nearestKey = keyframes[i];
-      break;
-    }
-  }
-
-  if (!nearestKey) return value;
-
-  const keyTime = nearestKey.frame / fps;
-  const t = time - keyTime;
-
-  if (t <= 0) return value;
-
-  // Calculate velocity at keyframe
-  const vel = typeof velocity === 'number' ? velocity : velocity[0];
-  const val = typeof value === 'number' ? value : value[0];
-
-  const oscillation = vel * amplitude * Math.sin(frequency * t * 2 * Math.PI) / Math.exp(decay * t);
-
-  if (typeof value === 'number') {
-    return val + oscillation;
-  }
-  // For arrays, apply to all components
-  return (value as number[]).map((v, i) => {
-    const componentVel = (velocity as number[])[i] || 0;
-    return v + componentVel * amplitude * Math.sin(frequency * t * 2 * Math.PI) / Math.exp(decay * t);
-  });
-}
-
-/**
- * Bounce expression
- * Creates bouncing settle after keyframes
- */
-export function bounce(
-  ctx: ExpressionContext,
-  elasticity: number = 0.7,
-  gravity: number = 4000
-): number | number[] {
-  const { time, keyframes, value } = ctx;
-
-  if (keyframes.length === 0) return value;
-
-  const fps = ctx.fps || 30;
-  const currentFrame = time * fps;
-
-  // Find last keyframe
-  let lastKey: Keyframe<any> | null = null;
-  for (let i = keyframes.length - 1; i >= 0; i--) {
-    if (keyframes[i].frame <= currentFrame) {
-      lastKey = keyframes[i];
-      break;
-    }
-  }
-
-  if (!lastKey) return value;
-
-  const keyTime = lastKey.frame / fps;
-  const t = time - keyTime;
-
-  if (t <= 0) return value;
-
-  // Bounce physics
-  let bounceTime = t;
-  let bounceHeight = 1;
-  let totalBounces = 0;
-  const maxBounces = 10;
-
-  // Calculate which bounce we're in
-  while (bounceTime > 0 && totalBounces < maxBounces) {
-    const bounceDuration = Math.sqrt(2 * bounceHeight / gravity);
-    if (bounceTime < bounceDuration * 2) {
-      break;
-    }
-    bounceTime -= bounceDuration * 2;
-    bounceHeight *= elasticity * elasticity;
-    totalBounces++;
-  }
-
-  // Position within current bounce
-  const bounceDuration = Math.sqrt(2 * bounceHeight / gravity);
-  const bounceT = bounceTime / (bounceDuration * 2);
-  const bounceOffset = bounceHeight * 4 * bounceT * (1 - bounceT);
-
-  if (typeof value === 'number') {
-    return value - bounceOffset * (1 - elasticity);
-  }
-
-  return (value as number[]).map((v) => v - bounceOffset * (1 - elasticity));
-}
-
-/**
- * Elastic expression
- * Creates elastic spring-like motion
- */
-export function elastic(
-  ctx: ExpressionContext,
-  amplitude: number = 1,
-  period: number = 0.3
-): number | number[] {
-  const { time, keyframes, value } = ctx;
-
-  if (keyframes.length === 0) return value;
-
-  const fps = ctx.fps || 30;
-  const currentFrame = time * fps;
-
-  let lastKey: Keyframe<any> | null = null;
-  for (let i = keyframes.length - 1; i >= 0; i--) {
-    if (keyframes[i].frame <= currentFrame) {
-      lastKey = keyframes[i];
-      break;
-    }
-  }
-
-  if (!lastKey) return value;
-
-  const keyTime = lastKey.frame / fps;
-  const t = time - keyTime;
-
-  if (t <= 0) return value;
-
-  const s = period / 4;
-  const decay = Math.pow(2, -10 * t);
-  const oscillation = decay * Math.sin((t - s) * (2 * Math.PI) / period);
-
-  if (typeof value === 'number') {
-    return value + amplitude * oscillation;
-  }
-
-  return (value as number[]).map((v) => v + amplitude * oscillation);
-}
+// Create local aliases for internal use
+const inertia = _inertia;
+const bounce = _bounce;
+const elastic = _elastic;
 
 // ============================================================================
-// LOOP EXPRESSIONS
+// LOOP EXPRESSIONS (Re-exported from expressions/loopExpressions.ts)
 // ============================================================================
 
-export type LoopType = 'cycle' | 'pingpong' | 'offset' | 'continue';
+// Import for local use
+import {
+  type LoopType as _LoopType,
+  type LoopExpressionContext as _LoopExpressionContext,
+  repeatAfter as _repeatAfter,
+  repeatBefore as _repeatBefore,
+} from './expressions/loopExpressions';
 
-/**
- * Repeat After expression
- * Repeats animation after last keyframe
- */
-export function repeatAfter(
-  ctx: ExpressionContext,
-  type: LoopType = 'cycle',
-  numKeyframes: number = 0
-): number | number[] {
-  const { time, keyframes, fps } = ctx;
+// Re-export for backwards compatibility
+export {
+  type LoopType,
+  type LoopExpressionContext,
+  repeatAfter,
+  repeatBefore,
+} from './expressions/loopExpressions';
 
-  if (keyframes.length < 2) return ctx.value;
-
-  const startIdx = numKeyframes > 0 ? Math.max(0, keyframes.length - numKeyframes) : 0;
-  const startKey = keyframes[startIdx];
-  const endKey = keyframes[keyframes.length - 1];
-
-  const startTime = startKey.frame / fps;
-  const endTime = endKey.frame / fps;
-  const duration = endTime - startTime;
-
-  if (duration <= 0 || time <= endTime) return ctx.value;
-
-  const elapsed = time - endTime;
-
-  switch (type) {
-    case 'cycle': {
-      // Repeat from start
-      const cycleTime = startTime + (elapsed % duration);
-      return interpolateAtTime(keyframes, cycleTime, fps);
-    }
-    case 'pingpong': {
-      // Alternate forward/backward
-      const cycles = Math.floor(elapsed / duration);
-      const cycleProgress = (elapsed % duration) / duration;
-      const isReverse = cycles % 2 === 1;
-      const t = isReverse ? 1 - cycleProgress : cycleProgress;
-      const cycleTime = startTime + t * duration;
-      return interpolateAtTime(keyframes, cycleTime, fps);
-    }
-    case 'offset': {
-      // Add cumulative offset each cycle
-      const cycles = Math.floor(elapsed / duration);
-      const cycleTime = startTime + (elapsed % duration);
-      const baseValue = interpolateAtTime(keyframes, cycleTime, fps);
-      const delta = subtractValues(endKey.value, startKey.value);
-      return addValues(baseValue, scaleValue(delta, cycles + 1));
-    }
-    case 'continue': {
-      // Continue at last velocity
-      const velocity = ctx.velocity;
-      if (typeof velocity === 'number') {
-        return (ctx.value as number) + velocity * elapsed;
-      }
-      return (ctx.value as number[]).map((v, i) => v + (velocity as number[])[i] * elapsed);
-    }
-  }
-}
-
-/**
- * Repeat Before expression
- * Repeats animation before first keyframe
- */
-export function repeatBefore(
-  ctx: ExpressionContext,
-  type: LoopType = 'cycle',
-  numKeyframes: number = 0
-): number | number[] {
-  const { time, keyframes, fps } = ctx;
-
-  if (keyframes.length < 2) return ctx.value;
-
-  const endIdx = numKeyframes > 0 ? Math.min(keyframes.length - 1, numKeyframes - 1) : keyframes.length - 1;
-  const startKey = keyframes[0];
-  const endKey = keyframes[endIdx];
-
-  const startTime = startKey.frame / fps;
-  const endTime = endKey.frame / fps;
-  const duration = endTime - startTime;
-
-  if (duration <= 0 || time >= startTime) return ctx.value;
-
-  const elapsed = startTime - time;
-
-  switch (type) {
-    case 'cycle': {
-      const cycleTime = endTime - (elapsed % duration);
-      return interpolateAtTime(keyframes, cycleTime, fps);
-    }
-    case 'pingpong': {
-      const cycles = Math.floor(elapsed / duration);
-      const cycleProgress = (elapsed % duration) / duration;
-      const isReverse = cycles % 2 === 1;
-      const t = isReverse ? cycleProgress : 1 - cycleProgress;
-      const cycleTime = startTime + t * duration;
-      return interpolateAtTime(keyframes, cycleTime, fps);
-    }
-    case 'offset': {
-      const cycles = Math.floor(elapsed / duration);
-      const cycleTime = endTime - (elapsed % duration);
-      const baseValue = interpolateAtTime(keyframes, cycleTime, fps);
-      const delta = subtractValues(startKey.value, endKey.value);
-      return addValues(baseValue, scaleValue(delta, cycles + 1));
-    }
-    case 'continue': {
-      const velocity = ctx.velocity;
-      if (typeof velocity === 'number') {
-        return (ctx.value as number) - velocity * elapsed;
-      }
-      return (ctx.value as number[]).map((v, i) => v - (velocity as number[])[i] * elapsed);
-    }
-  }
-}
+// Create local aliases
+const repeatAfter = _repeatAfter;
+const repeatBefore = _repeatBefore;
 
 // ============================================================================
-// JITTER EXPRESSION
+// JITTER EXPRESSIONS (Re-exported from expressions/jitterExpressions.ts)
 // ============================================================================
 
-/**
- * Jitter expression
- * Adds random noise to value
- */
-export function jitter(
-  ctx: ExpressionContext,
-  frequency: number = 5,
-  amplitude: number = 50,
-  octaves: number = 1,
-  amplitudeMultiplier: number = 0.5,
-  time?: number
-): number | number[] {
-  const t = time ?? ctx.time;
-  const { value } = ctx;
+// Import for local use
+import {
+  type JitterExpressionContext as _JitterExpressionContext,
+  jitter as _jitter,
+  temporalJitter as _temporalJitter,
+} from './expressions/jitterExpressions';
 
-  // Simple noise implementation
-  const noise = (seed: number, t: number): number => {
-    // Combine multiple sine waves for pseudo-noise
-    let result = 0;
-    let amp = 1;
-    let freq = 1;
+// Re-export for backwards compatibility
+export {
+  type JitterExpressionContext,
+  jitter,
+  temporalJitter,
+} from './expressions/jitterExpressions';
 
-    for (let i = 0; i < octaves; i++) {
-      result += amp * Math.sin(t * frequency * freq * Math.PI * 2 + seed * 1000);
-      result += amp * 0.5 * Math.sin(t * frequency * freq * Math.PI * 2 * 1.5 + seed * 500);
-      amp *= amplitudeMultiplier;
-      freq *= 2;
-    }
+// Create local aliases
+const jitter = _jitter;
+const temporalJitter = _temporalJitter;
 
-    return result / (1 + (octaves - 1) * amplitudeMultiplier);
-  };
+// ============================================================================
+// EXPRESSION HELPERS (Re-exported from expressions/expressionHelpers.ts)
+// ============================================================================
 
-  if (typeof value === 'number') {
-    return value + noise(0, t) * amplitude;
-  }
+// Import for local use
+import {
+  interpolateAtTime as _interpolateAtTime,
+  subtractValues as _subtractValues,
+  addValues as _addValues,
+  scaleValue as _scaleValue,
+  lerpValues as _lerpValues,
+  applyEasing as _applyEasing,
+} from './expressions/expressionHelpers';
 
-  // For arrays, use different seeds for each component
-  return (value as number[]).map((v, i) => v + noise(i, t) * amplitude);
-}
+// Re-export for backwards compatibility
+export {
+  interpolateAtTime,
+  subtractValues,
+  addValues,
+  scaleValue,
+  lerpValues,
+  applyEasing,
+} from './expressions/expressionHelpers';
 
-/**
- * Smooth jitter with temporal correlation
- */
-export function temporalJitter(
-  ctx: ExpressionContext,
-  frequency: number = 5,
-  amplitude: number = 50,
-  octaves: number = 1,
-  time?: number
-): number | number[] {
-  const t = time ?? ctx.time;
-
-  // Use interpolated noise for smoother results
-  const smoothNoise = (seed: number, t: number): number => {
-    const period = 1 / frequency;
-    const index = Math.floor(t / period);
-    const frac = (t / period) - index;
-
-    // Generate deterministic random values
-    const rand = (n: number) => {
-      const x = Math.sin(n * 12.9898 + seed * 78.233) * 43758.5453;
-      return x - Math.floor(x);
-    };
-
-    // Cubic interpolation between random values
-    const v0 = rand(index - 1) * 2 - 1;
-    const v1 = rand(index) * 2 - 1;
-    const v2 = rand(index + 1) * 2 - 1;
-    const v3 = rand(index + 2) * 2 - 1;
-
-    // Catmull-Rom interpolation
-    const t2 = frac * frac;
-    const t3 = t2 * frac;
-
-    return 0.5 * (
-      (2 * v1) +
-      (-v0 + v2) * frac +
-      (2 * v0 - 5 * v1 + 4 * v2 - v3) * t2 +
-      (-v0 + 3 * v1 - 3 * v2 + v3) * t3
-    );
-  };
-
-  const { value } = ctx;
-
-  if (typeof value === 'number') {
-    let result = 0;
-    let amp = amplitude;
-    let freq = frequency;
-    for (let i = 0; i < octaves; i++) {
-      result += smoothNoise(i * 100, t * freq / frequency) * amp;
-      amp *= 0.5;
-      freq *= 2;
-    }
-    return value + result;
-  }
-
-  return (value as number[]).map((v, idx) => {
-    let result = 0;
-    let amp = amplitude;
-    let freq = frequency;
-    for (let i = 0; i < octaves; i++) {
-      result += smoothNoise(idx * 100 + i * 1000, t * freq / frequency) * amp;
-      amp *= 0.5;
-      freq *= 2;
-    }
-    return v + result;
-  });
-}
+// Create local aliases
+const interpolateAtTime = _interpolateAtTime;
+const subtractValues = _subtractValues;
+const addValues = _addValues;
+const scaleValue = _scaleValue;
+const lerpValues = _lerpValues;
+const applyEasing = _applyEasing;
 
 // ============================================================================
 // TIME EXPRESSIONS
@@ -992,80 +468,6 @@ export const mathExpressions = {
 };
 
 // ============================================================================
-// UTILITY FUNCTIONS
-// ============================================================================
-
-function interpolateAtTime(keyframes: Keyframe<any>[], time: number, fps: number): number | number[] {
-  const frame = time * fps;
-
-  // Find surrounding keyframes
-  let before: Keyframe<any> | null = null;
-  let after: Keyframe<any> | null = null;
-
-  for (const kf of keyframes) {
-    if (kf.frame <= frame) {
-      before = kf;
-    } else if (!after) {
-      after = kf;
-      break;
-    }
-  }
-
-  if (!before) return keyframes[0].value;
-  if (!after) return before.value;
-
-  const t = (frame - before.frame) / (after.frame - before.frame);
-  const easedT = applyEasing(t, before.interpolation);
-
-  return lerpValues(before.value, after.value, easedT);
-}
-
-function applyEasing(t: number, interpolation: InterpolationType): number {
-  const fn = EASING_FUNCTIONS[interpolation];
-  return fn ? fn(t) : t;
-}
-
-function lerpValues(a: any, b: any, t: number): number | number[] {
-  if (typeof a === 'number' && typeof b === 'number') {
-    return a + (b - a) * t;
-  }
-  if (Array.isArray(a) && Array.isArray(b)) {
-    return a.map((v, i) => v + (b[i] - v) * t);
-  }
-  return a;
-}
-
-function subtractValues(a: any, b: any): number | number[] {
-  if (typeof a === 'number' && typeof b === 'number') {
-    return a - b;
-  }
-  if (Array.isArray(a) && Array.isArray(b)) {
-    return a.map((v, i) => v - b[i]);
-  }
-  return 0;
-}
-
-function addValues(a: any, b: any): number | number[] {
-  if (typeof a === 'number' && typeof b === 'number') {
-    return a + b;
-  }
-  if (Array.isArray(a) && Array.isArray(b)) {
-    return a.map((v, i) => v + b[i]);
-  }
-  return a;
-}
-
-function scaleValue(v: any, s: number): number | number[] {
-  if (typeof v === 'number') {
-    return v * s;
-  }
-  if (Array.isArray(v)) {
-    return v.map((x) => x * s);
-  }
-  return 0;
-}
-
-// ============================================================================
 // EXPRESSION EVALUATOR
 // ============================================================================
 
@@ -1223,6 +625,68 @@ export function evaluateCustomExpression(
       return 0;
     };
 
+    // Helper: speedAtTime - Returns the scalar magnitude of velocity
+    // Unlike velocityAtTime which returns a vector, this returns a single number
+    // representing how fast the property is changing regardless of direction
+    const speedAtTimeExpr = (t: number): number => {
+      const velocity = velocityAtTimeExpr(t);
+      if (typeof velocity === 'number') {
+        return Math.abs(velocity);
+      }
+      if (Array.isArray(velocity)) {
+        // Calculate magnitude: sqrt(vx^2 + vy^2 + vz^2 + ...)
+        return Math.sqrt(velocity.reduce((sum, v) => sum + v * v, 0));
+      }
+      return 0;
+    };
+
+    // Helper: smooth() - Temporal smoothing by averaging values over time window
+    // This reduces jitter/noise in animated values
+    // Usage: smooth(width, samples) or smooth(width) or smooth()
+    // width = time window in seconds (default 0.2)
+    // samples = number of samples (default 5)
+    const smoothExpr = (width: number = 0.2, samples: number = 5): number | number[] => {
+      if (samples < 1) samples = 1;
+      if (samples > 20) samples = 20; // Cap for performance
+
+      const halfWidth = width / 2;
+      const step = width / (samples - 1 || 1);
+
+      let sum: number | number[] = 0;
+      const isArray = Array.isArray(ctx.value);
+
+      if (isArray) {
+        sum = new Array((ctx.value as number[]).length).fill(0);
+      }
+
+      for (let i = 0; i < samples; i++) {
+        const sampleTime = ctx.time - halfWidth + (i * step);
+        const sampleValue = valueAtTime(ctx, sampleTime);
+
+        if (isArray && Array.isArray(sampleValue) && Array.isArray(sum)) {
+          for (let j = 0; j < sum.length; j++) {
+            sum[j] += (sampleValue[j] ?? 0);
+          }
+        } else if (typeof sampleValue === 'number' && typeof sum === 'number') {
+          sum += sampleValue;
+        }
+      }
+
+      // Average the samples
+      if (isArray && Array.isArray(sum)) {
+        return sum.map(v => v / samples);
+      }
+      return (sum as number) / samples;
+    };
+
+    // Helper: posterizeTime() - Quantize time to create stop-motion effect
+    // Usage: posterizeTime(fps); value
+    // fps = frames per second for the stepped animation
+    const posterizeTimeExpr = (framesPerSecond: number): number => {
+      const interval = 1 / framesPerSecond;
+      return Math.floor(ctx.time / interval) * interval;
+    };
+
     // Build the expression context variables
     const contextVars = {
       // Time
@@ -1285,11 +749,16 @@ export function evaluateCustomExpression(
       loopOut,
       loopIn,
 
+      // Temporal functions
+      smooth: smoothExpr,
+      posterizeTime: posterizeTimeExpr,
+
       // Utility functions
       length,
       seedRandom,
       valueAtTime: valueAtTimeExpr,
       velocityAtTime: velocityAtTimeExpr,
+      speedAtTime: speedAtTimeExpr,
 
       // Angle conversion
       radiansToDegrees: (rad: number): number => rad * 180 / Math.PI,
@@ -1517,7 +986,8 @@ export function evaluateCustomExpression(
         key,
         nearestKey: () => nearestKey(ctx.time),
         valueAtTime: valueAtTimeExpr,
-        velocityAtTime: velocityAtTimeExpr
+        velocityAtTime: velocityAtTimeExpr,
+        speedAtTime: speedAtTimeExpr
       }
     };
 
@@ -3059,6 +2529,7 @@ export function getExpressionFunctions(): Array<{ name: string; description: str
     { name: 'elastic', description: 'Elastic spring', syntax: 'elastic(amplitude, frequency, decay)' },
     { name: 'valueAtTime', description: 'Property value at time', syntax: 'valueAtTime(time)' },
     { name: 'velocityAtTime', description: 'Velocity at time', syntax: 'velocityAtTime(time)' },
+    { name: 'speedAtTime', description: 'Speed (velocity magnitude) at time', syntax: 'speedAtTime(time)' },
     { name: 'key', description: 'Get keyframe by index', syntax: 'key(index)' },
     { name: 'nearestKey', description: 'Get nearest keyframe', syntax: 'nearestKey(time)' },
     { name: 'footage', description: 'Access data file', syntax: 'footage("filename.csv").dataValue([row, col])' },

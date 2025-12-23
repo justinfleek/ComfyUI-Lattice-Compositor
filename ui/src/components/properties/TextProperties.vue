@@ -35,7 +35,7 @@
 
       <div class="row">
          <label>Size</label>
-         <ScrubableNumber :modelValue="getPropertyValue('Font Size') || textData.fontSize" @update:modelValue="v => updateAnimatable('Font Size', v)" />
+         <ScrubableNumber :modelValue="getPropertyValue('Font Size') || textData.fontSize" @update:modelValue="v => updateAnimatable('Font Size', v)" unit="pt" />
       </div>
 
       <div class="row color-row">
@@ -51,7 +51,7 @@
 
       <div class="row">
          <label>Stroke Width</label>
-         <ScrubableNumber :modelValue="getPropertyValue('Stroke Width') || textData.strokeWidth || 0" @update:modelValue="v => updateAnimatable('Stroke Width', v)" :min="0" :max="50" />
+         <ScrubableNumber :modelValue="getPropertyValue('Stroke Width') || textData.strokeWidth || 0" @update:modelValue="v => updateAnimatable('Stroke Width', v)" :min="0" :max="50" unit="px" />
       </div>
 
       <div class="row">
@@ -70,31 +70,31 @@
       <div class="row">
          <label>Position</label>
          <div class="vec2">
-            <ScrubableNumber :modelValue="transform.position.value.x" @update:modelValue="v => updateTransform('position', 'x', v)" />
-            <ScrubableNumber :modelValue="transform.position.value.y" @update:modelValue="v => updateTransform('position', 'y', v)" />
+            <ScrubableNumber :modelValue="transform.position.value.x" @update:modelValue="v => updateTransform('position', 'x', v)" unit="px" />
+            <ScrubableNumber :modelValue="transform.position.value.y" @update:modelValue="v => updateTransform('position', 'y', v)" unit="px" />
          </div>
       </div>
       <div class="row">
          <label>Origin</label>
          <div class="vec2">
-            <ScrubableNumber :modelValue="transform.anchorPoint.value.x" @update:modelValue="v => updateTransform('anchorPoint', 'x', v)" />
-            <ScrubableNumber :modelValue="transform.anchorPoint.value.y" @update:modelValue="v => updateTransform('anchorPoint', 'y', v)" />
+            <ScrubableNumber :modelValue="transform.anchorPoint.value.x" @update:modelValue="v => updateTransform('anchorPoint', 'x', v)" unit="px" />
+            <ScrubableNumber :modelValue="transform.anchorPoint.value.y" @update:modelValue="v => updateTransform('anchorPoint', 'y', v)" unit="px" />
          </div>
       </div>
       <div class="row">
-         <label>Scale %</label>
+         <label>Scale</label>
          <div class="vec2">
-            <ScrubableNumber :modelValue="transform.scale.value.x" @update:modelValue="v => updateTransform('scale', 'x', v)" />
-            <ScrubableNumber :modelValue="transform.scale.value.y" @update:modelValue="v => updateTransform('scale', 'y', v)" />
+            <ScrubableNumber :modelValue="transform.scale.value.x" @update:modelValue="v => updateTransform('scale', 'x', v)" unit="%" />
+            <ScrubableNumber :modelValue="transform.scale.value.y" @update:modelValue="v => updateTransform('scale', 'y', v)" unit="%" />
          </div>
       </div>
       <div class="row">
          <label>Rotation</label>
-         <ScrubableNumber :modelValue="transform.rotation.value" @update:modelValue="v => updateTransform('rotation', null, v)" />
+         <ScrubableNumber :modelValue="transform.rotation.value" @update:modelValue="v => updateTransform('rotation', null, v)" unit="°" />
       </div>
       <div class="row">
          <label>Opacity</label>
-         <ScrubableNumber :modelValue="layer.opacity?.value ?? 100" @update:modelValue="v => updateOpacity(v)" :min="0" :max="100" />
+         <ScrubableNumber :modelValue="layer.opacity?.value ?? 100" @update:modelValue="v => updateOpacity(v)" :min="0" :max="100" unit="%" />
       </div>
     </div>
 

@@ -159,11 +159,11 @@
 | Term | Definition |
 |------|------------|
 | **Timeline** | The horizontal panel showing time and layers |
-| **Graph Editor** | Visual editor for animation curves |
+| **Curve Editor** | Visual editor for animation curves (renamed from Graph Editor) |
 | **Properties Panel** | Editor for selected layer/effect properties |
 | **Canvas** | The main viewport showing the composition |
 | **Scrubbing** | Dragging the playhead to preview animation |
-| **Pickwhip** | A draggable connector for linking properties |
+| **PropertyLink** | A draggable connector for linking properties (renamed from Pickwhip) |
 
 ---
 
@@ -250,4 +250,4 @@
 - [SERVICE_API_REFERENCE.md](./SERVICE_API_REFERENCE.md) - Service APIs
 - [EFFECT_PARAMETERS.md](./EFFECT_PARAMETERS.md) - Effect documentation
 
-*Generated: December 19, 2025*
+*Generated: December 23, 2025*

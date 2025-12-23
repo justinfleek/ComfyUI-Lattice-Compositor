@@ -2458,7 +2458,7 @@ function prepareAnchor(target, vnode, createText, insert) {
   return targetAnchor;
 }
 const leaveCbKey = Symbol("_leaveCb");
-const enterCbKey = Symbol("_enterCb");
+const enterCbKey$1 = Symbol("_enterCb");
 function useTransitionState() {
   const state = {
     isMounted: false,
@@ -2677,7 +2677,7 @@ function resolveTransitionHooks(vnode, props, state, instance, postClone) {
         }
       }
       let called = false;
-      const done = el[enterCbKey] = (cancelled) => {
+      const done = el[enterCbKey$1] = (cancelled) => {
         if (called) return;
         called = true;
         if (cancelled) {
@@ -2688,7 +2688,7 @@ function resolveTransitionHooks(vnode, props, state, instance, postClone) {
         if (hooks.delayedLeave) {
           hooks.delayedLeave();
         }
-        el[enterCbKey] = void 0;
+        el[enterCbKey$1] = void 0;
       };
       if (hook) {
         callAsyncHook(hook, [el, done]);
@@ -2698,8 +2698,8 @@ function resolveTransitionHooks(vnode, props, state, instance, postClone) {
     },
     leave(el, remove2) {
       const key2 = String(vnode.key);
-      if (el[enterCbKey]) {
-        el[enterCbKey](
+      if (el[enterCbKey$1]) {
+        el[enterCbKey$1](
           true
           /* cancelled */
         );
@@ -7218,6 +7218,144 @@ function shouldSetAsProp(el, key, value, isSVG) {
   }
   return key in el;
 }
+const positionMap = /* @__PURE__ */ new WeakMap();
+const newPositionMap = /* @__PURE__ */ new WeakMap();
+const moveCbKey = Symbol("_moveCb");
+const enterCbKey = Symbol("_enterCb");
+const decorate = (t) => {
+  delete t.props.mode;
+  return t;
+};
+const TransitionGroupImpl = /* @__PURE__ */ decorate({
+  name: "TransitionGroup",
+  props: /* @__PURE__ */ extend({}, TransitionPropsValidators, {
+    tag: String,
+    moveClass: String
+  }),
+  setup(props, { slots }) {
+    const instance = getCurrentInstance();
+    const state = useTransitionState();
+    let prevChildren;
+    let children;
+    onUpdated(() => {
+      if (!prevChildren.length) {
+        return;
+      }
+      const moveClass = props.moveClass || `${props.name || "v"}-move`;
+      if (!hasCSSTransform(
+        prevChildren[0].el,
+        instance.vnode.el,
+        moveClass
+      )) {
+        prevChildren = [];
+        return;
+      }
+      prevChildren.forEach(callPendingCbs);
+      prevChildren.forEach(recordPosition);
+      const movedChildren = prevChildren.filter(applyTranslation);
+      movedChildren.forEach((c) => {
+        const el = c.el;
+        const style = el.style;
+        addTransitionClass(el, moveClass);
+        style.transform = style.webkitTransform = style.transitionDuration = "";
+        const cb = el[moveCbKey] = (e) => {
+          if (e && e.target !== el) {
+            return;
+          }
+          if (!e || e.propertyName.endsWith("transform")) {
+            el.removeEventListener("transitionend", cb);
+            el[moveCbKey] = null;
+            removeTransitionClass(el, moveClass);
+          }
+        };
+        el.addEventListener("transitionend", cb);
+      });
+      prevChildren = [];
+    });
+    return () => {
+      const rawProps = toRaw(props);
+      const cssTransitionProps = resolveTransitionProps(rawProps);
+      let tag = rawProps.tag || Fragment;
+      prevChildren = [];
+      if (children) {
+        for (let i = 0; i < children.length; i++) {
+          const child = children[i];
+          if (child.el && child.el instanceof Element) {
+            prevChildren.push(child);
+            setTransitionHooks(
+              child,
+              resolveTransitionHooks(
+                child,
+                cssTransitionProps,
+                state,
+                instance
+              )
+            );
+            positionMap.set(child, {
+              left: child.el.offsetLeft,
+              top: child.el.offsetTop
+            });
+          }
+        }
+      }
+      children = slots.default ? getTransitionRawChildren(slots.default()) : [];
+      for (let i = 0; i < children.length; i++) {
+        const child = children[i];
+        if (child.key != null) {
+          setTransitionHooks(
+            child,
+            resolveTransitionHooks(child, cssTransitionProps, state, instance)
+          );
+        }
+      }
+      return createVNode(tag, null, children);
+    };
+  }
+});
+const TransitionGroup = TransitionGroupImpl;
+function callPendingCbs(c) {
+  const el = c.el;
+  if (el[moveCbKey]) {
+    el[moveCbKey]();
+  }
+  if (el[enterCbKey]) {
+    el[enterCbKey]();
+  }
+}
+function recordPosition(c) {
+  newPositionMap.set(c, {
+    left: c.el.offsetLeft,
+    top: c.el.offsetTop
+  });
+}
+function applyTranslation(c) {
+  const oldPos = positionMap.get(c);
+  const newPos = newPositionMap.get(c);
+  const dx = oldPos.left - newPos.left;
+  const dy = oldPos.top - newPos.top;
+  if (dx || dy) {
+    const s = c.el.style;
+    s.transform = s.webkitTransform = `translate(${dx}px,${dy}px)`;
+    s.transitionDuration = "0s";
+    return c;
+  }
+}
+function hasCSSTransform(el, root, moveClass) {
+  const clone = el.cloneNode();
+  const _vtc = el[vtcKey];
+  if (_vtc) {
+    _vtc.forEach((cls) => {
+      cls.split(/\s+/).forEach((c) => c && clone.classList.remove(c));
+    });
+  }
+  moveClass.split(/\s+/).forEach((c) => c && clone.classList.add(c));
+  clone.style.display = "none";
+  const container = root.nodeType === 1 ? root : root.parentNode;
+  container.appendChild(clone);
+  const { hasTransform } = getTransitionInfo(clone);
+  container.removeChild(clone);
+  return hasTransform;
+}
 const getModelAssigner = (vnode) => {
   const fn = vnode.props["onUpdate:modelValue"] || false;
   return isArray(fn) ? (value) => invokeArrayFns(fn, value) : fn;
@@ -7884,4 +8022,4 @@ function storeToRefs(store) {
   }
 }
 
-export { withDirectives as A, withCtx as B, createCommentVNode as C, normalizeClass as D, createVNode as E, Fragment as F, Transition as G, defineStore as H, toRaw as I, reactive as J, defineComponent as K, withModifiers as L, renderList as M, vModelSelect as N, vModelText as O, vModelCheckbox as P, vModelRadio as Q, onUnmounted as R, withKeys as S, Teleport as T, createStaticVNode as U, shallowRef as V, vShow as W, markRaw as X, storeToRefs as Y, createApp as Z, createPinia as _, createElementBlock as a, onBeforeUnmount as b, computed as c, openBlock as d, renderSlot as e, useSlots as f, createBlock as g, resolveDynamicComponent as h, inject as i, getCurrentInstance as j, nextTick as k, h as l, readonly as m, normalizeStyle as n, onMounted as o, provide as p, useId as q, ref as r, mergeProps as s, createBaseVNode as t, unref as u, createTextVNode as v, watch as w, toDisplayString as x, resolveComponent as y, resolveDirective as z };
+export { createPinia as $, withDirectives as A, withCtx as B, createCommentVNode as C, normalizeClass as D, createVNode as E, Fragment as F, Transition as G, defineStore as H, toRaw as I, reactive as J, defineComponent as K, withModifiers as L, renderList as M, vModelSelect as N, vModelText as O, vModelCheckbox as P, vModelRadio as Q, onUnmounted as R, withKeys as S, Teleport as T, createStaticVNode as U, shallowRef as V, vShow as W, markRaw as X, storeToRefs as Y, TransitionGroup as Z, createApp as _, createElementBlock as a, onBeforeUnmount as b, computed as c, openBlock as d, renderSlot as e, useSlots as f, createBlock as g, resolveDynamicComponent as h, inject as i, getCurrentInstance as j, nextTick as k, h as l, readonly as m, normalizeStyle as n, onMounted as o, provide as p, useId as q, ref as r, mergeProps as s, createBaseVNode as t, unref as u, createTextVNode as v, watch as w, toDisplayString as x, resolveComponent as y, resolveDirective as z };

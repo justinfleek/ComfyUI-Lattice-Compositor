@@ -16,6 +16,7 @@ export interface KeyboardShortcutsOptions {
   showCurveEditor: Ref<boolean>;
   showTimeStretchDialog: Ref<boolean>;
   showCameraTrackingImportDialog: Ref<boolean>;
+  showKeyboardShortcutsModal?: Ref<boolean>;
 
   // UI state refs
   currentTool: Ref<string>;
@@ -47,6 +48,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     showCurveEditor,
     showTimeStretchDialog,
     showCameraTrackingImportDialog,
+    showKeyboardShortcutsModal,
     currentTool,
     leftTab,
     viewOptions,
@@ -667,28 +669,15 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     const selectedIds = store.selectedLayerIds;
     if (selectedIds.length === 0) return;
 
+    let totalReversed = 0;
     for (const layerId of selectedIds) {
-      const layer = store.getLayerById(layerId);
-      if (!layer?.transform) continue;
-
-      const transform = layer.transform as any;
-      for (const propKey of ['position', 'scale', 'rotation', 'anchor', 'opacity']) {
-        const prop = transform[propKey];
-        if (prop?.animated && prop?.keyframes && prop.keyframes.length >= 2) {
-          const keyframes = [...prop.keyframes];
-          const frames = keyframes.map((kf: any) => kf.frame);
-          const values = keyframes.map((kf: any) => kf.value);
-
-          values.reverse();
-
-          for (let i = 0; i < keyframes.length; i++) {
-            store.updateKeyframeValue?.(layerId, `transform.${propKey}`, keyframes[i].id, values[i]);
-          }
-        }
-      }
+      // Use store action to reverse all transform property keyframes
+      totalReversed += store.timeReverseKeyframes(layerId);
     }
 
-    console.log('[Weyl] Keyframes time-reversed');
+    if (totalReversed > 0) {
+      console.log(`[Weyl] ${totalReversed} keyframes time-reversed`);
+    }
   }
 
   // ========================================================================
@@ -1464,6 +1453,14 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
         if (e.ctrlKey || e.metaKey) {
           e.preventDefault();
           toggleGrid();
+        }
+        break;
+
+      // Keyboard shortcuts modal
+      case '?':
+        e.preventDefault();
+        if (showKeyboardShortcutsModal) {
+          showKeyboardShortcutsModal.value = !showKeyboardShortcutsModal.value;
         }
         break;
     }

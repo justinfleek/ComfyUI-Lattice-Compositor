@@ -450,3 +450,236 @@ describe('evaluateExpression', () => {
     expect(result).toBe(42);
   });
 });
+
+describe('Temporal Expression Functions', () => {
+  describe('smooth()', () => {
+    it('should smooth values over time window', () => {
+      // Create context with keyframes to test smoothing
+      const context: ExpressionContext = {
+        time: 1.0,
+        frame: 30,
+        fps: 30,
+        duration: 10,
+        layerId: 'layer1',
+        layerIndex: 0,
+        layerName: 'layer1',
+        inPoint: 0,
+        outPoint: 10,
+        propertyName: 'transform.position.x',
+        value: 100,
+        velocity: 0,
+        numKeys: 2,
+        keyframes: [
+          { frame: 0, value: 0 },
+          { frame: 60, value: 200 },
+        ],
+      };
+
+      const expression: Expression = {
+        type: 'custom',
+        code: 'return smooth(0.2, 5)',
+        enabled: true,
+      };
+
+      const result = evaluateExpression(expression, context);
+
+      // Result should be a number (smoothed value)
+      expect(typeof result).toBe('number');
+      // Smoothed value should be close to the current interpolated value
+      expect(result as number).toBeGreaterThan(50);
+      expect(result as number).toBeLessThan(150);
+    });
+
+    it('should work with default parameters', () => {
+      const context: ExpressionContext = {
+        time: 0.5,
+        frame: 15,
+        fps: 30,
+        duration: 10,
+        layerId: 'layer1',
+        layerIndex: 0,
+        layerName: 'layer1',
+        inPoint: 0,
+        outPoint: 10,
+        propertyName: 'test',
+        value: 50,
+        velocity: 0,
+        numKeys: 0,
+        keyframes: [],
+      };
+
+      const expression: Expression = {
+        type: 'custom',
+        code: 'return smooth()',
+        enabled: true,
+      };
+
+      const result = evaluateExpression(expression, context);
+
+      // Should return a value (averaging around current value when no keyframes)
+      expect(typeof result).toBe('number');
+    });
+  });
+
+  describe('posterizeTime()', () => {
+    it('should quantize time to specified frame rate', () => {
+      const context: ExpressionContext = {
+        time: 0.55, // 55% through a second
+        frame: 16,
+        fps: 30,
+        duration: 10,
+        layerId: 'layer1',
+        layerIndex: 0,
+        layerName: 'layer1',
+        inPoint: 0,
+        outPoint: 10,
+        propertyName: 'transform.position.x',
+        value: 100,
+        velocity: 0,
+        numKeys: 0,
+        keyframes: [],
+      };
+
+      const expression: Expression = {
+        type: 'custom',
+        code: 'return posterizeTime(12)', // 12 fps = steps every 1/12 second
+        enabled: true,
+      };
+
+      const result = evaluateExpression(expression, context);
+
+      // posterizeTime returns the quantized time
+      expect(typeof result).toBe('number');
+      // At 12fps, time should be quantized to multiples of 1/12 ≈ 0.0833
+      // 0.55 / 0.0833 = 6.6, floor = 6, so result should be 6 * 0.0833 ≈ 0.5
+      expect(result as number).toBeCloseTo(0.5, 1);
+    });
+
+    it('should create step-motion effect when used with value', () => {
+      const context: ExpressionContext = {
+        time: 0.75,
+        frame: 22,
+        fps: 30,
+        duration: 10,
+        layerId: 'layer1',
+        layerIndex: 0,
+        layerName: 'layer1',
+        inPoint: 0,
+        outPoint: 10,
+        propertyName: 'test',
+        value: 100,
+        velocity: 0,
+        numKeys: 2,
+        keyframes: [
+          { frame: 0, value: 0 },
+          { frame: 90, value: 300 },
+        ],
+      };
+
+      // Typical usage: posterizeTime(fps); return value
+      const expression: Expression = {
+        type: 'custom',
+        code: 'posterizeTime(8); return value',
+        enabled: true,
+      };
+
+      const result = evaluateExpression(expression, context);
+
+      // Should return the current value (posterizeTime modifies time context)
+      expect(typeof result).toBe('number');
+      expect(result).toBe(100);
+    });
+  });
+
+  describe('clamp()', () => {
+    it('should clamp value to min/max range', () => {
+      const context: ExpressionContext = {
+        time: 0.5,
+        frame: 15,
+        fps: 30,
+        duration: 10,
+        layerId: 'layer1',
+        layerIndex: 0,
+        layerName: 'layer1',
+        inPoint: 0,
+        outPoint: 10,
+        propertyName: 'test',
+        value: 150,
+        velocity: 0,
+        numKeys: 0,
+        keyframes: [],
+      };
+
+      const expression: Expression = {
+        type: 'custom',
+        code: 'return clamp(value, 0, 100)',
+        enabled: true,
+      };
+
+      const result = evaluateExpression(expression, context);
+
+      // 150 clamped to 0-100 should be 100
+      expect(result).toBe(100);
+    });
+
+    it('should clamp value at minimum', () => {
+      const context: ExpressionContext = {
+        time: 0.5,
+        frame: 15,
+        fps: 30,
+        duration: 10,
+        layerId: 'layer1',
+        layerIndex: 0,
+        layerName: 'layer1',
+        inPoint: 0,
+        outPoint: 10,
+        propertyName: 'test',
+        value: -50,
+        velocity: 0,
+        numKeys: 0,
+        keyframes: [],
+      };
+
+      const expression: Expression = {
+        type: 'custom',
+        code: 'return clamp(value, 0, 100)',
+        enabled: true,
+      };
+
+      const result = evaluateExpression(expression, context);
+
+      // -50 clamped to 0-100 should be 0
+      expect(result).toBe(0);
+    });
+
+    it('should not change value within range', () => {
+      const context: ExpressionContext = {
+        time: 0.5,
+        frame: 15,
+        fps: 30,
+        duration: 10,
+        layerId: 'layer1',
+        layerIndex: 0,
+        layerName: 'layer1',
+        inPoint: 0,
+        outPoint: 10,
+        propertyName: 'test',
+        value: 50,
+        velocity: 0,
+        numKeys: 0,
+        keyframes: [],
+      };
+
+      const expression: Expression = {
+        type: 'custom',
+        code: 'return clamp(value, 0, 100)',
+        enabled: true,
+      };
+
+      const result = evaluateExpression(expression, context);
+
+      // 50 is within 0-100, should remain 50
+      expect(result).toBe(50);
+    });
+  });
+});

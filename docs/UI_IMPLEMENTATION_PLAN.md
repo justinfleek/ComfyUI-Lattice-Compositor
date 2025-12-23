@@ -35,7 +35,7 @@ body {
 **Files to create:**
 - `ui/src/styles/keyframe-shapes.ts` (already exists)
 
-**Integration point:** Import into `PropertyTrack.vue`, `GraphEditorCanvas.vue`
+**Integration point:** Import into `PropertyTrack.vue`, `CurveEditorCanvas.vue`
 
 ### 1.3 Theme Selector Store
 
@@ -205,9 +205,9 @@ import { getShapeForEasing, KEYFRAME_SHAPES } from '@/styles/keyframe-shapes';
 const shape = getShapeForEasing(keyframe.easing);
 ```
 
-### 4.2 Graph Editor Updates
+### 4.2 Curve Editor Updates
 
-**File:** `GraphEditorCanvas.vue`
+**File:** `CurveEditorCanvas.vue`
 
 Add keyframe shape legend and render appropriate shapes.
 
@@ -338,7 +338,7 @@ Add consistent focus rings using `.focus-ring` class.
 ### Phase 4: Keyframes
 - [ ] Import keyframe-shapes.ts in PropertyTrack.vue
 - [ ] Replace keyframe icons with semantic shapes
-- [ ] Add shape legend to GraphEditorCanvas
+- [ ] Add shape legend to CurveEditorCanvas
 
 ### Phase 5: Components
 - [ ] Create WeylButton.vue
@@ -364,7 +364,7 @@ Add consistent focus rings using `.focus-ring` class.
 | Action | Files |
 |--------|-------|
 | **Create** | `themeStore.ts`, `NodeConnection.vue`, `NodeGraphView.vue`, `WeylButton.vue`, `WeylInput.vue` |
-| **Modify** | `main.ts`, `WorkspaceLayout.vue`, `TimelinePanel.vue`, `EnhancedLayerTrack.vue`, `PropertyTrack.vue`, `GraphEditorCanvas.vue`, `project.ts`, `compositorStore.ts`, 6 panel components |
+| **Modify** | `main.ts`, `WorkspaceLayout.vue`, `TimelinePanel.vue`, `EnhancedLayerTrack.vue`, `PropertyTrack.vue`, `CurveEditorCanvas.vue`, `project.ts`, `compositorStore.ts`, 6 panel components |
 | **Already Done** | `design-tokens.css`, `keyframe-shapes.ts`, `NODE_TIMELINE_SPEC.md`, `UI_MIGRATION_PLAN.md` |
 
 ---

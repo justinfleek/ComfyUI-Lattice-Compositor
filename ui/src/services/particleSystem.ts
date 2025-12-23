@@ -26,577 +26,135 @@ import { EASING_PRESETS, applyEasing } from './interpolation';
 import { createNoise2D } from 'simplex-noise';
 
 // ============================================================================
-// DETERMINISTIC ID GENERATOR
-// Counter-based ID generation for deterministic project creation
+// IMPORTS FROM SUBMODULES
 // ============================================================================
 
-let idCounter = 0;
+// Import types for local use (with underscore prefix for internal use)
+import type {
+  Particle as _Particle,
+  TurbulenceConfig as _TurbulenceConfig,
+  ConnectionConfig as _ConnectionConfig,
+  SubEmitterConfig as _SubEmitterConfig,
+  EmitterShape as _EmitterShape,
+  SplinePathEmission as _SplinePathEmission,
+  SplineQueryResult as _SplineQueryResult,
+  SplinePathProvider as _SplinePathProvider,
+  SpriteConfig as _SpriteConfig,
+  EmitterConfig as _EmitterConfig,
+  GravityWellConfig as _GravityWellConfig,
+  VortexConfig as _VortexConfig,
+  LorenzAttractorConfig as _LorenzAttractorConfig,
+  ParticleModulation as _ParticleModulation,
+  CollisionConfig as _CollisionConfig,
+  ParticleSystemConfig as _ParticleSystemConfig,
+  RenderOptions as _RenderOptions,
+  SpatialGrid as _SpatialGrid,
+} from './particles/particleTypes';
 
-/**
- * Generate a deterministic, unique ID
- * Uses a counter to ensure uniqueness without Date.now() or Math.random()
- */
-function generateDeterministicId(prefix: string): string {
-  return `${prefix}_${(++idCounter).toString(36).padStart(8, '0')}`;
-}
+// Import factory functions for local use
+import {
+  resetIdCounter as _resetIdCounter,
+  createDefaultSpriteConfig as _createDefaultSpriteConfig,
+  createDefaultSplinePathEmission as _createDefaultSplinePathEmission,
+  createDefaultCollisionConfig as _createDefaultCollisionConfig,
+  createDefaultEmitterConfig as _createDefaultEmitterConfig,
+  createDefaultTurbulenceConfig as _createDefaultTurbulenceConfig,
+  createDefaultConnectionConfig as _createDefaultConnectionConfig,
+  createDefaultSubEmitterConfig as _createDefaultSubEmitterConfig,
+  createDefaultGravityWellConfig as _createDefaultGravityWellConfig,
+  createDefaultVortexConfig as _createDefaultVortexConfig,
+  createDefaultSystemConfig as _createDefaultSystemConfig,
+  createDefaultRenderOptions as _createDefaultRenderOptions,
+} from './particles/particleDefaults';
 
-/**
- * Reset ID counter (for testing purposes)
- */
-export function resetIdCounter(value: number = 0): void {
-  idCounter = value;
-}
-
-// ============================================================================
-// SEEDED RANDOM NUMBER GENERATOR
-// Uses mulberry32 algorithm for deterministic, reproducible randomness
-// ============================================================================
-
-/**
- * Seeded pseudo-random number generator
- * Same seed always produces same sequence of numbers
- */
-export class SeededRandom {
-  private state: number;
-  private initialSeed: number;
-
-  constructor(seed: number = 12345) {
-    this.initialSeed = seed;
-    this.state = seed;
-  }
-
-  /** Reset to initial seed */
-  reset(): void {
-    this.state = this.initialSeed;
-  }
-
-  /** Reset to a new seed */
-  setSeed(seed: number): void {
-    this.initialSeed = seed;
-    this.state = seed;
-  }
-
-  /** Get current state for checkpointing */
-  getState(): number {
-    return this.state;
-  }
-
-  /** Restore state from checkpoint */
-  setState(state: number): void {
-    this.state = state;
-  }
-
-  /** Get initial seed */
-  getSeed(): number {
-    return this.initialSeed;
-  }
-
-  /**
-   * Get next random number in [0, 1)
-   * Uses mulberry32 algorithm
-   */
-  next(): number {
-    let t = (this.state += 0x6d2b79f5);
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  }
-
-  /** Get random in range [min, max] */
-  range(min: number, max: number): number {
-    return min + this.next() * (max - min);
-  }
-
-  /** Get random integer in range [min, max] inclusive */
-  int(min: number, max: number): number {
-    return Math.floor(this.range(min, max + 1));
-  }
-
-  /** Get random value with variance: base + random(-variance, +variance) */
-  variance(base: number, variance: number): number {
-    return base + (this.next() - 0.5) * 2 * variance;
-  }
-
-  /** Get random boolean with given probability of true */
-  bool(probability: number = 0.5): boolean {
-    return this.next() < probability;
-  }
-
-  /** Get random angle in radians [0, 2π) */
-  angle(): number {
-    return this.next() * Math.PI * 2;
-  }
-
-  /** Get random point in unit circle */
-  inCircle(): { x: number; y: number } {
-    const angle = this.angle();
-    const r = Math.sqrt(this.next());
-    return { x: r * Math.cos(angle), y: r * Math.sin(angle) };
-  }
-
-  /** Get random point on unit sphere */
-  onSphere(): { x: number; y: number; z: number } {
-    const theta = this.angle();
-    const phi = Math.acos(2 * this.next() - 1);
-    return {
-      x: Math.sin(phi) * Math.cos(theta),
-      y: Math.sin(phi) * Math.sin(theta),
-      z: Math.cos(phi),
-    };
-  }
-}
+// Import SeededRandom class
+import { SeededRandom as _SeededRandom } from './particles/SeededRandom';
 
 // ============================================================================
-// Types
+// RE-EXPORTS FOR BACKWARDS COMPATIBILITY
 // ============================================================================
 
-export interface Particle {
-  id: number;
-  x: number;
-  y: number;
-  prevX: number;
-  prevY: number;
-  vx: number;
-  vy: number;
-  age: number;
-  lifetime: number;
-  size: number;
-  baseSize: number;
-  color: [number, number, number, number];
-  baseColor: [number, number, number, number];
-  emitterId: string;
-  isSubParticle: boolean;
-  // Sprite/texture support
-  rotation: number;           // Current rotation in radians
-  angularVelocity: number;    // Rotation speed in radians/frame
-  spriteIndex: number;        // For sprite sheets (frame index)
-  // Collision tracking
-  collisionCount: number;     // Number of collisions this particle has had
-}
+// Re-export all types
+export type {
+  Particle,
+  TurbulenceConfig,
+  ConnectionConfig,
+  SubEmitterConfig,
+  EmitterShape,
+  SplinePathEmission,
+  SplineQueryResult,
+  SplinePathProvider,
+  SpriteConfig,
+  EmitterConfig,
+  GravityWellConfig,
+  VortexConfig,
+  LorenzAttractorConfig,
+  ParticleModulation,
+  CollisionConfig,
+  ParticleSystemConfig,
+  RenderOptions,
+  SpatialGrid,
+} from './particles/particleTypes';
 
-export interface TurbulenceConfig {
-  id: string;
-  enabled: boolean;
-  scale: number;              // Noise frequency, 0.001-0.01 (smaller = larger swirls)
-  strength: number;           // Force magnitude, 0-500
-  evolutionSpeed: number;     // How fast noise changes over time, 0-1
-}
+// Re-export factory functions
+export {
+  resetIdCounter,
+  createDefaultSpriteConfig,
+  createDefaultSplinePathEmission,
+  createDefaultCollisionConfig,
+  createDefaultEmitterConfig,
+  createDefaultTurbulenceConfig,
+  createDefaultConnectionConfig,
+  createDefaultSubEmitterConfig,
+  createDefaultGravityWellConfig,
+  createDefaultVortexConfig,
+  createDefaultSystemConfig,
+  createDefaultRenderOptions,
+} from './particles/particleDefaults';
 
-export interface ConnectionConfig {
-  enabled: boolean;
-  maxDistance: number;        // Pixels, connect if closer than this
-  maxConnections: number;     // Per particle, 1-5 (HARD LIMIT for performance)
-  lineWidth: number;          // 0.5-3
-  lineOpacity: number;        // 0-1
-  fadeByDistance: boolean;    // Opacity decreases with distance
-}
-
-export interface SubEmitterConfig {
-  id: string;
-  parentEmitterId: string;    // Which emitter's particles trigger this, or '*' for all
-  trigger: 'death';           // Only death trigger for now
-  spawnCount: number;         // 1-10 particles on trigger
-  inheritVelocity: number;    // 0-1, how much parent velocity inherited
-  size: number;
-  sizeVariance: number;
-  lifetime: number;           // Frames
-  speed: number;
-  spread: number;             // Degrees, emission cone
-  color: [number, number, number];
-  enabled: boolean;
-}
-
-interface SpatialGrid {
-  cellSize: number;
-  cells: Map<string, Particle[]>;
-}
-
-// Emitter shape types for geometric emission
-export type EmitterShape = 'point' | 'line' | 'circle' | 'box' | 'sphere' | 'ring' | 'spline' | 'depth-map' | 'mask';
-
-// Spline path emission configuration
-export interface SplinePathEmission {
-  layerId: string;                // ID of the SplineLayer to emit along
-  emitMode: 'uniform' | 'random' | 'start' | 'end' | 'sequential';
-  parameter: number;              // For 'start'/'end': offset, for 'uniform': interval, for 'sequential': speed
-  alignToPath: boolean;           // Align emission direction with path tangent
-  offset: number;                 // Perpendicular offset from path (normalized)
-  bidirectional: boolean;         // Emit from both directions along tangent
-}
-
-// Spline point query result from provider
-export interface SplineQueryResult {
-  point: { x: number; y: number; z: number };
-  tangent: { x: number; y: number };
-  length: number;
-}
-
-// Spline provider callback type
-export type SplinePathProvider = (
-  layerId: string,
-  t: number,
-  frame: number
-) => SplineQueryResult | null;
-
-// Sprite/texture configuration for particles
-export interface SpriteConfig {
-  enabled: boolean;
-  imageUrl: string | null;        // URL or data URL for sprite image
-  imageData: ImageBitmap | HTMLImageElement | null;  // Loaded image data
-  // Sprite sheet settings
-  isSheet: boolean;               // Is this a sprite sheet?
-  columns: number;                // Grid columns for sprite sheet
-  rows: number;                   // Grid rows for sprite sheet
-  totalFrames: number;            // Total frames in sheet
-  frameRate: number;              // Animation FPS
-  playMode: 'loop' | 'once' | 'pingpong' | 'random';
-  // Billboard behavior
-  billboard: boolean;             // Always face camera
-  // Rotation
-  rotationEnabled: boolean;
-  rotationSpeed: number;          // Degrees per frame
-  rotationSpeedVariance: number;
-  alignToVelocity: boolean;       // Rotate to face movement direction
-}
-
-export interface EmitterConfig {
-  id: string;
-  name: string;
-  x: number;
-  y: number;
-  direction: number;
-  spread: number;
-  speed: number;
-  speedVariance: number;
-  size: number;
-  sizeVariance: number;
-  color: [number, number, number];
-  emissionRate: number;
-  initialBurst: number;
-  particleLifetime: number;
-  lifetimeVariance: number;
-  enabled: boolean;
-  burstOnBeat: boolean;
-  burstCount: number;
-  // Geometric emitter shape
-  shape: EmitterShape;
-  // Shape parameters (normalized 0-1 coordinates)
-  shapeRadius: number;            // For circle, sphere, ring
-  shapeWidth: number;             // For box, line
-  shapeHeight: number;            // For box
-  shapeDepth: number;             // For box (3D), sphere
-  shapeInnerRadius: number;       // For ring (donut)
-  emitFromEdge: boolean;          // Emit from edge only (not filled)
-  emitFromVolume: boolean;        // Emit from volume (3D shapes)
-  // Spline path emission (when shape = 'spline')
-  splinePath: SplinePathEmission | null;
-  // Sprite/texture configuration
-  sprite: SpriteConfig;
-}
-
-export interface GravityWellConfig {
-  id: string;
-  name: string;
-  x: number;
-  y: number;
-  strength: number;
-  radius: number;
-  falloff: 'linear' | 'quadratic' | 'constant';
-  enabled: boolean;
-}
-
-export interface VortexConfig {
-  id: string;
-  name: string;
-  x: number;
-  y: number;
-  strength: number;
-  radius: number;
-  rotationSpeed: number;
-  inwardPull: number;
-  enabled: boolean;
-}
-
-// 2D Lorenz-like strange attractor for chaotic motion
-export interface LorenzAttractorConfig {
-  id: string;
-  name: string;
-  x: number;           // Center position X
-  y: number;           // Center position Y
-  sigma: number;       // Lorenz sigma parameter (default: 10)
-  rho: number;         // Lorenz rho parameter (default: 28)
-  beta: number;        // Lorenz beta parameter (default: 2.667)
-  strength: number;    // Force strength multiplier
-  radius: number;      // Influence radius
-  enabled: boolean;
-}
-
-export interface ParticleModulation {
-  id: string;
-  emitterId: string;
-  property: 'size' | 'speed' | 'opacity' | 'colorR' | 'colorG' | 'colorB';
-  startValue: number;
-  endValue: number;
-  easing: string;
-}
-
-// Collision detection configuration
-export interface CollisionConfig {
-  enabled: boolean;
-  // Particle-to-particle collision
-  particleCollision: boolean;
-  particleCollisionRadius: number;  // Multiplier on particle size for collision
-  particleCollisionResponse: 'bounce' | 'absorb' | 'explode';
-  particleCollisionDamping: number; // 0-1, velocity retained after collision
-  // Layer/boundary collision
-  layerCollision: boolean;
-  layerCollisionLayerId: string | null;  // Depth map layer for collision
-  layerCollisionThreshold: number;       // Depth threshold for collision
-  // Floor/ceiling collision
-  floorEnabled: boolean;
-  floorY: number;                   // Normalized Y position of floor (0-1)
-  ceilingEnabled: boolean;
-  ceilingY: number;                 // Normalized Y position of ceiling
-  wallsEnabled: boolean;
-  // Collision physics
-  bounciness: number;               // 0-1, how much velocity is preserved
-  friction: number;                 // Surface friction on collision
-  // Spatial hashing for performance
-  spatialHashCellSize: number;      // Cell size for spatial hash (pixels)
-}
-
-export interface ParticleSystemConfig {
-  maxParticles: number;
-  gravity: number;
-  windStrength: number;
-  windDirection: number;
-  warmupPeriod: number;
-  respectMaskBoundary: boolean;
-  boundaryBehavior: 'bounce' | 'kill' | 'wrap';
-  friction: number;
-  turbulenceFields: TurbulenceConfig[];
-  subEmitters: SubEmitterConfig[];
-  // Collision configuration
-  collision: CollisionConfig;
-}
-
-export interface RenderOptions {
-  blendMode: 'normal' | 'additive' | 'multiply' | 'screen';
-  renderTrails: boolean;
-  trailLength: number;
-  trailOpacityFalloff: number;
-  particleShape: 'circle' | 'square' | 'triangle' | 'star' | 'sprite';
-  glowEnabled: boolean;
-  glowRadius: number;
-  glowIntensity: number;
-  // Motion blur settings
-  motionBlur: boolean;
-  motionBlurStrength: number;   // 0-1, how much to stretch based on velocity
-  motionBlurSamples: number;    // Number of samples for blur (1-16)
-  // Particle connection settings
-  connections: ConnectionConfig;
-  // Sprite rendering settings
-  spriteSmoothing: boolean;     // Enable image smoothing for sprites
-  spriteOpacityByAge: boolean;  // Fade sprites based on particle age
-  // Emissive/bloom settings (for 3D rendering)
-  emissiveEnabled: boolean;     // Render particles as emissive (for bloom)
-  emissiveIntensity: number;    // Emissive intensity multiplier (0-10)
-  emissiveColor: [number, number, number] | null; // Override color for emissive (null = use particle color)
-}
+// Re-export SeededRandom
+export { SeededRandom } from './particles/SeededRandom';
 
 // ============================================================================
-// Default Configurations
+// LOCAL ALIASES FOR INTERNAL USE
 // ============================================================================
 
-export function createDefaultSpriteConfig(): SpriteConfig {
-  return {
-    enabled: false,
-    imageUrl: null,
-    imageData: null,
-    isSheet: false,
-    columns: 1,
-    rows: 1,
-    totalFrames: 1,
-    frameRate: 30,
-    playMode: 'loop',
-    billboard: true,
-    rotationEnabled: false,
-    rotationSpeed: 0,
-    rotationSpeedVariance: 0,
-    alignToVelocity: false
-  };
-}
+// Type aliases for internal use
+type Particle = _Particle;
+type TurbulenceConfig = _TurbulenceConfig;
+type ConnectionConfig = _ConnectionConfig;
+type SubEmitterConfig = _SubEmitterConfig;
+type EmitterShape = _EmitterShape;
+type SplinePathEmission = _SplinePathEmission;
+type SplineQueryResult = _SplineQueryResult;
+type SplinePathProvider = _SplinePathProvider;
+type SpriteConfig = _SpriteConfig;
+type EmitterConfig = _EmitterConfig;
+type GravityWellConfig = _GravityWellConfig;
+type VortexConfig = _VortexConfig;
+type LorenzAttractorConfig = _LorenzAttractorConfig;
+type ParticleModulation = _ParticleModulation;
+type CollisionConfig = _CollisionConfig;
+type ParticleSystemConfig = _ParticleSystemConfig;
+type RenderOptions = _RenderOptions;
+type SpatialGrid = _SpatialGrid;
 
-export function createDefaultSplinePathEmission(layerId: string = ''): SplinePathEmission {
-  return {
-    layerId,
-    emitMode: 'random',
-    parameter: 0,
-    alignToPath: true,
-    offset: 0,
-    bidirectional: false
-  };
-}
+// Function aliases for internal use
+const resetIdCounter = _resetIdCounter;
+const createDefaultSpriteConfig = _createDefaultSpriteConfig;
+const createDefaultSplinePathEmission = _createDefaultSplinePathEmission;
+const createDefaultCollisionConfig = _createDefaultCollisionConfig;
+const createDefaultEmitterConfig = _createDefaultEmitterConfig;
+const createDefaultTurbulenceConfig = _createDefaultTurbulenceConfig;
+const createDefaultConnectionConfig = _createDefaultConnectionConfig;
+const createDefaultSubEmitterConfig = _createDefaultSubEmitterConfig;
+const createDefaultGravityWellConfig = _createDefaultGravityWellConfig;
+const createDefaultVortexConfig = _createDefaultVortexConfig;
+const createDefaultSystemConfig = _createDefaultSystemConfig;
+const createDefaultRenderOptions = _createDefaultRenderOptions;
 
-export function createDefaultCollisionConfig(): CollisionConfig {
-  return {
-    enabled: false,
-    particleCollision: false,
-    particleCollisionRadius: 1.0,
-    particleCollisionResponse: 'bounce',
-    particleCollisionDamping: 0.8,
-    layerCollision: false,
-    layerCollisionLayerId: null,
-    layerCollisionThreshold: 0.5,
-    floorEnabled: false,
-    floorY: 1.0,
-    ceilingEnabled: false,
-    ceilingY: 0.0,
-    wallsEnabled: false,
-    bounciness: 0.7,
-    friction: 0.1,
-    spatialHashCellSize: 50
-  };
-}
-
-export function createDefaultEmitterConfig(id?: string): EmitterConfig {
-  return {
-    id: id || generateDeterministicId('emitter'),
-    name: 'Emitter',
-    x: 0.5,
-    y: 0.5,
-    direction: 270,
-    spread: 30,
-    speed: 330,
-    speedVariance: 50,
-    size: 17,
-    sizeVariance: 5,
-    color: [255, 255, 255],
-    emissionRate: 10,
-    initialBurst: 0,
-    particleLifetime: 60,
-    lifetimeVariance: 10,
-    enabled: true,
-    burstOnBeat: false,
-    burstCount: 20,
-    // Geometric emitter defaults
-    shape: 'point',
-    shapeRadius: 0.1,
-    shapeWidth: 0.2,
-    shapeHeight: 0.2,
-    shapeDepth: 0.2,
-    shapeInnerRadius: 0.05,
-    emitFromEdge: false,
-    emitFromVolume: false,
-    // Spline path emission (null = disabled)
-    splinePath: null,
-    // Sprite configuration
-    sprite: createDefaultSpriteConfig()
-  };
-}
-
-export function createDefaultTurbulenceConfig(id?: string): TurbulenceConfig {
-  return {
-    id: id || generateDeterministicId('turb'),
-    enabled: true,
-    scale: 0.005,
-    strength: 100,
-    evolutionSpeed: 0.3
-  };
-}
-
-export function createDefaultConnectionConfig(): ConnectionConfig {
-  return {
-    enabled: false,
-    maxDistance: 100,
-    maxConnections: 3,
-    lineWidth: 1,
-    lineOpacity: 0.5,
-    fadeByDistance: true
-  };
-}
-
-export function createDefaultSubEmitterConfig(id?: string): SubEmitterConfig {
-  return {
-    id: id || generateDeterministicId('sub'),
-    parentEmitterId: '*',
-    trigger: 'death',
-    spawnCount: 3,
-    inheritVelocity: 0.3,
-    size: 8,
-    sizeVariance: 2,
-    lifetime: 30,
-    speed: 0.1,
-    spread: 180,
-    color: [255, 200, 100],
-    enabled: true
-  };
-}
-
-export function createDefaultGravityWellConfig(id?: string): GravityWellConfig {
-  return {
-    id: id || generateDeterministicId('well'),
-    name: 'Gravity Well',
-    x: 0.5,
-    y: 0.5,
-    strength: 100,
-    radius: 0.3,
-    falloff: 'quadratic',
-    enabled: true
-  };
-}
-
-export function createDefaultVortexConfig(id?: string): VortexConfig {
-  return {
-    id: id || generateDeterministicId('vortex'),
-    name: 'Vortex',
-    x: 0.5,
-    y: 0.5,
-    strength: 200,
-    radius: 0.3,
-    rotationSpeed: 5,
-    inwardPull: 10,
-    enabled: true
-  };
-}
-
-export function createDefaultSystemConfig(): ParticleSystemConfig {
-  return {
-    maxParticles: 10000,
-    gravity: 0,
-    windStrength: 0,
-    windDirection: 0,
-    warmupPeriod: 0,
-    respectMaskBoundary: false,
-    boundaryBehavior: 'kill',
-    friction: 0.01,
-    turbulenceFields: [],
-    subEmitters: [],
-    collision: createDefaultCollisionConfig()
-  };
-}
-
-export function createDefaultRenderOptions(): RenderOptions {
-  return {
-    blendMode: 'additive',
-    renderTrails: false,
-    trailLength: 5,
-    trailOpacityFalloff: 0.7,
-    particleShape: 'circle',
-    glowEnabled: false,
-    glowRadius: 10,
-    glowIntensity: 0.5,
-    motionBlur: false,
-    motionBlurStrength: 0.5,
-    motionBlurSamples: 8,
-    connections: createDefaultConnectionConfig(),
-    spriteSmoothing: true,
-    spriteOpacityByAge: true,
-    emissiveEnabled: false,
-    emissiveIntensity: 2.0,
-    emissiveColor: null
-  };
-}
+// SeededRandom alias
+const SeededRandom = _SeededRandom;
 
 // ============================================================================
 // Particle System Class

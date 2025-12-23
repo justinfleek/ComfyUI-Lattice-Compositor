@@ -6,6 +6,12 @@
  * - Hue/Saturation
  * - Levels
  * - Tint
+ *
+ * Advanced color grading effects are in colorGrading.ts:
+ * - Lift/Gamma/Gain
+ * - HSL Secondary
+ * - Hue vs Curves
+ * - Color Match
  */
 import {
   registerEffectRenderer,
@@ -13,6 +19,29 @@ import {
   type EffectStackResult,
   type EvaluatedEffectParams
 } from '../effectProcessor';
+
+// Import advanced color grading effects
+import {
+  liftGammaGainRenderer as _liftGammaGainRenderer,
+  hslSecondaryRenderer as _hslSecondaryRenderer,
+  hueVsCurvesRenderer as _hueVsCurvesRenderer,
+  colorMatchRenderer as _colorMatchRenderer,
+  registerColorGradingEffects
+} from './colorGrading';
+
+// Re-export for backwards compatibility
+export {
+  liftGammaGainRenderer,
+  hslSecondaryRenderer,
+  hueVsCurvesRenderer,
+  colorMatchRenderer
+} from './colorGrading';
+
+// Local aliases for internal use
+const liftGammaGainRenderer = _liftGammaGainRenderer;
+const hslSecondaryRenderer = _hslSecondaryRenderer;
+const hueVsCurvesRenderer = _hueVsCurvesRenderer;
+const colorMatchRenderer = _colorMatchRenderer;
 
 // ============================================================================
 // BRIGHTNESS & CONTRAST
@@ -1491,6 +1520,9 @@ export function clearLUTCache(): void {
   lutCache.clear();
 }
 
+// NOTE: Advanced color grading effects (liftGammaGainRenderer, hslSecondaryRenderer,
+// hueVsCurvesRenderer, colorMatchRenderer) have been moved to colorGrading.ts
+
 // ============================================================================
 // REGISTRATION
 // ============================================================================
@@ -1499,6 +1531,7 @@ export function clearLUTCache(): void {
  * Register all color correction effect renderers
  */
 export function registerColorEffects(): void {
+  // Register basic color effects
   registerEffectRenderer('brightness-contrast', brightnessContrastRenderer);
   registerEffectRenderer('hue-saturation', hueSaturationRenderer);
   registerEffectRenderer('levels', levelsRenderer);
@@ -1514,6 +1547,9 @@ export function registerColorEffects(): void {
   registerEffectRenderer('threshold', thresholdRenderer);
   registerEffectRenderer('vignette', vignetteRenderer);
   registerEffectRenderer('lut', lutRenderer);
+
+  // Register advanced color grading effects from colorGrading.ts
+  registerColorGradingEffects();
 }
 
 export default {
@@ -1532,6 +1568,10 @@ export default {
   thresholdRenderer,
   vignetteRenderer,
   lutRenderer,
+  liftGammaGainRenderer,
+  hslSecondaryRenderer,
+  hueVsCurvesRenderer,
+  colorMatchRenderer,
   parseCubeLUT,
   registerLUT,
   getRegisteredLUTs,

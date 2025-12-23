@@ -145,6 +145,15 @@
         <div class="export-info">
           <span>{{ store.frameCount }} frames @ {{ exportWidth }}×{{ exportHeight }}</span>
         </div>
+        <button
+          class="collect-btn"
+          @click="collectProject"
+          :disabled="isExporting || isCollecting || !store.hasProject"
+          title="Download project with all assets as ZIP"
+        >
+          <i class="pi pi-folder" />
+          {{ isCollecting ? `Collecting ${collectProgress}%` : 'Collect Files' }}
+        </button>
         <button class="cancel-btn" @click="emit('close')" :disabled="isExporting">
           Cancel
         </button>
@@ -165,6 +174,7 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { useCompositorStore } from '@/stores/compositorStore';
 import { matteExporter, type ExportOptions } from '@/services/matteExporter';
+import { projectCollectionService } from '@/services/projectCollection';
 
 const emit = defineEmits<{
   (e: 'close'): void;
@@ -175,6 +185,46 @@ const store = useCompositorStore();
 
 // Resolution presets
 const resolutionPresets = matteExporter.getResolutionPresets();
+
+// Project collection state
+const isCollecting = ref(false);
+const collectProgress = ref(0);
+
+// Collect project as ZIP
+async function collectProject() {
+  if (isCollecting.value || !store.project) return;
+
+  isCollecting.value = true;
+  collectProgress.value = 0;
+
+  try {
+    const blob = await projectCollectionService.collectProject(
+      store.project,
+      store.assets || new Map(),
+      {
+        includeProject: true,
+        includeAssets: true,
+        includeRenderedFrames: false,
+        flatStructure: false,
+      },
+      (progress) => {
+        collectProgress.value = progress.percent;
+      }
+    );
+
+    // Download the ZIP
+    const projectName = store.project.name || 'weyl-project';
+    projectCollectionService.downloadZip(blob, `${projectName}-collection.zip`);
+
+    console.log('[ExportDialog] Project collected successfully');
+  } catch (error) {
+    console.error('[ExportDialog] Collection failed:', error);
+    alert(`Collection failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  } finally {
+    isCollecting.value = false;
+    collectProgress.value = 0;
+  }
+}
 
 // State
 const selectedPreset = ref('720p (1280x720)');
@@ -785,6 +835,30 @@ onUnmounted(() => {
 }
 
 .cancel-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.collect-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1px solid #6b5b95;
+  background: transparent;
+  color: #a89cc8;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.collect-btn:hover:not(:disabled) {
+  background: rgba(107, 91, 149, 0.2);
+  color: #c8b8e8;
+  border-color: #8b7bb5;
+}
+
+.collect-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }

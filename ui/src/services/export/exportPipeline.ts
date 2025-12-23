@@ -19,6 +19,7 @@ import { exportCameraForTarget } from './cameraExportFormats';
 import { getComfyUIClient } from '@/services/comfyui/comfyuiClient';
 import { generateWorkflowForTarget, validateWorkflow, type WorkflowParams } from '@/services/comfyui/workflowTemplates';
 import { EXPORT_PRESETS, DEPTH_FORMAT_SPECS } from '@/config/exportPresets';
+import { evaluateLayerCached, type EvaluatedLayer } from '@/services/layerEvaluationCache';
 
 // ============================================================================
 // Types
@@ -307,13 +308,24 @@ export class ExportPipeline {
   private async renderLayerToCanvas(
     ctx: OffscreenCanvasRenderingContext2D,
     layer: Layer,
-    _frameIndex: number
+    frameIndex: number
   ): Promise<void> {
-    // Get layer's current transform from the transform property
-    const pos = layer.transform?.position?.value ?? { x: 0, y: 0 };
-    const scaleVal = layer.transform?.scale?.value ?? { x: 100, y: 100 };
-    const rotation = layer.transform?.rotation?.value ?? 0;
-    const opacity = typeof layer.opacity?.value === 'number' ? layer.opacity.value : 100;
+    // CRITICAL FIX: Evaluate layer properties with keyframes, expressions, and data-driven values
+    // Previously this used static .value which ignored all animation
+    const evaluated = evaluateLayerCached(layer, frameIndex);
+
+    // Skip if layer is not visible at this frame
+    if (!evaluated.visible) {
+      return;
+    }
+
+    // Get evaluated transform (includes keyframe interpolation + expressions)
+    const pos = evaluated.transform.position;
+    const scaleVal = evaluated.transform.scale;
+    const rotation = typeof evaluated.transform.rotation === 'number'
+      ? evaluated.transform.rotation
+      : (evaluated.transform.rotation as any)?.z ?? 0;
+    const opacity = evaluated.opacity;
 
     ctx.save();
 
@@ -334,6 +346,18 @@ export class ExportPipeline {
       const width = layerData.width ?? 100;
       const height = layerData.height ?? 100;
       ctx.fillRect(-width / 2, -height / 2, width, height);
+    } else if (layer.type === 'text' && layerData?.text) {
+      // Render text with evaluated properties
+      const textContent = evaluated.properties.textContent ?? layerData.text;
+      const fontSize = evaluated.properties.fontSize ?? layerData.fontSize ?? 48;
+      const fontFamily = layerData.fontFamily ?? 'Arial';
+      const fillColor = layerData.fillColor ?? '#ffffff';
+
+      ctx.fillStyle = fillColor;
+      ctx.font = `${fontSize}px ${fontFamily}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(String(textContent), 0, 0);
     }
 
     ctx.restore();

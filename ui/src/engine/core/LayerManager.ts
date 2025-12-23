@@ -49,6 +49,7 @@ import { NormalLayer } from '../layers/NormalLayer';
 import { AudioLayer } from '../layers/AudioLayer';
 import { GeneratedLayer } from '../layers/GeneratedLayer';
 import { GroupLayer } from '../layers/GroupLayer';
+import { PoseLayer } from '../layers/PoseLayer';
 import type { TargetParameter } from '@/services/audioReactiveMapping';
 import type { SplineQueryResult, SplinePathProvider } from '@/services/particleSystem';
 import { layerLogger } from '@/utils/logger';
@@ -403,6 +404,13 @@ export class LayerManager {
         // Legacy particle type - use ParticleLayer with simplified config
         layerLogger.info('LayerManager: Legacy particle type, using ParticleLayer');
         return new ParticleLayer(layerData);
+
+      case 'pose':
+        return new PoseLayer(layerData);
+
+      case 'effectLayer':
+      case 'adjustment': // Deprecated, use 'effectLayer'
+        return new EffectLayer(layerData);
 
       default:
         layerLogger.warn(`LayerManager: Unknown layer type: ${layerData.type}, creating ControlLayer`);

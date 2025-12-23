@@ -28,17 +28,20 @@
               <ScrubableNumber
                 v-model="transform.anchorPoint.x"
                 :precision="1"
+                unit="px"
                 @update:modelValue="updateTransform"
               />
               <ScrubableNumber
                 v-model="transform.anchorPoint.y"
                 :precision="1"
+                unit="px"
                 @update:modelValue="updateTransform"
               />
               <ScrubableNumber
                 v-if="selectedLayer?.threeD"
                 v-model="transform.anchorPoint.z"
                 :precision="1"
+                unit="px"
                 @update:modelValue="updateTransform"
               />
             </div>
@@ -60,17 +63,20 @@
               <ScrubableNumber
                 v-model="transform.position.x"
                 :precision="1"
+                unit="px"
                 @update:modelValue="updateTransform"
               />
               <ScrubableNumber
                 v-model="transform.position.y"
                 :precision="1"
+                unit="px"
                 @update:modelValue="updateTransform"
               />
               <ScrubableNumber
                 v-if="selectedLayer?.threeD"
                 v-model="transform.position.z"
                 :precision="1"
+                unit="px"
                 @update:modelValue="updateTransform"
               />
             </div>
@@ -241,6 +247,28 @@
         @update="onLayerUpdate"
       />
 
+      <!-- Layer Styles Section -->
+      <div class="property-section" v-if="selectedLayer">
+        <div class="section-header" @click="toggleSection('layerStyles')">
+          <span class="expand-icon">{{ expandedSections.includes('layerStyles') ? '▼' : '►' }}</span>
+          <span class="section-title">Layer Styles</span>
+        </div>
+        <div v-if="expandedSections.includes('layerStyles')" class="section-content layer-styles-content">
+          <LayerStylesPanel />
+        </div>
+      </div>
+
+      <!-- Physics Section -->
+      <div class="property-section" v-if="selectedLayer">
+        <div class="section-header" @click="toggleSection('physics')">
+          <span class="expand-icon">{{ expandedSections.includes('physics') ? '▼' : '►' }}</span>
+          <span class="section-title">Physics</span>
+        </div>
+        <div v-if="expandedSections.includes('physics')" class="section-content physics-content">
+          <PhysicsProperties :layerId="selectedLayer.id" @update="onLayerUpdate" />
+        </div>
+      </div>
+
       <!-- Property Drivers -->
       <DriverList v-if="selectedLayer" :layerId="selectedLayer.id" />
     </div>
@@ -284,8 +312,12 @@ import GroupProperties from '@/components/properties/GroupProperties.vue';
 import ControlProperties from '@/components/properties/ControlProperties.vue';
 import MatteProperties from '@/components/properties/MatteProperties.vue';
 import SolidProperties from '@/components/properties/SolidProperties.vue';
+import PoseProperties from '@/components/properties/PoseProperties.vue';
+import EffectControlsPanel from '@/components/panels/EffectControlsPanel.vue';
 import PropertyLink from '@/components/controls/PropertyLink.vue';
 import DriverList from '@/components/panels/DriverList.vue';
+import LayerStylesPanel from '@/components/properties/styles/LayerStylesPanel.vue';
+import PhysicsProperties from '@/components/properties/PhysicsProperties.vue';
 import type { PropertyPath } from '@/services/propertyDriver';
 
 const store = useCompositorStore();
@@ -461,6 +493,11 @@ const layerPropertiesComponent = computed<Component | null>(() => {
       return markRaw(MatteProperties);
     case 'solid':
       return markRaw(SolidProperties);
+    case 'pose':
+      return markRaw(PoseProperties);
+    case 'effectLayer':
+    case 'adjustment': // Deprecated, use 'effectLayer'
+      return markRaw(EffectControlsPanel);
     case 'image':
     case 'null':
       // These use default transform controls only
@@ -1067,5 +1104,17 @@ function hasDriver(property: PropertyPath): boolean {
 .empty-state .hint {
   font-size: var(--weyl-text-sm, 11px);
   margin-top: 4px;
+}
+
+.layer-styles-content {
+  padding: 0 !important;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.physics-content {
+  padding: 0 !important;
+  max-height: 500px;
+  overflow-y: auto;
 }
 </style>

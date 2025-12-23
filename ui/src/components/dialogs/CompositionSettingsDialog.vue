@@ -61,6 +61,11 @@
                   <option value="hunyuan_540p">Hunyuan 540p (960x540)</option>
                 </optgroup>
               </select>
+              <div v-if="isAIPreset" class="help-text ai-help">
+                <span class="info-icon">ℹ</span>
+                AI video models require <strong>4n+1</strong> frames (17, 33, 49, 65, 81...) at 16fps.
+                Dimensions must be divisible by 8.
+              </div>
             </div>
 
             <!-- Width / Height -->
@@ -356,6 +361,11 @@ const resolutionInfo = computed(() => {
   const h = Math.floor(settings.value.height / d);
   const mb = ((w * h * 4) / (1024 * 1024)).toFixed(1);
   return `${w} x ${h}, ${mb} MB per 8bpc frame`;
+});
+
+const isAIPreset = computed(() => {
+  const aiPrefixes = ['sd15_', 'sdxl_', 'wan_', 'wan22_', 'hunyuan_'];
+  return aiPrefixes.some(prefix => selectedPreset.value.startsWith(prefix));
 });
 
 // Presets
@@ -862,5 +872,32 @@ onUnmounted(() => {
 .warning-text {
   color: #ffb74d;
   font-size: 11px;
+}
+
+/* AI preset help text */
+.help-text {
+  font-size: 11px;
+  color: var(--weyl-text-muted, #888);
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: rgba(139, 92, 246, 0.1);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  border-radius: 4px;
+}
+
+.ai-help {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.info-icon {
+  color: var(--weyl-accent, #8B5CF6);
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.help-text strong {
+  color: var(--weyl-accent, #8B5CF6);
 }
 </style>
