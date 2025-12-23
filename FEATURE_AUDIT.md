@@ -333,7 +333,7 @@ Full definitions in `types/effects.ts` (1,294 lines).
 |---------|----------|--------------|
 | **Add Property Driver** | `compositorStore.ts:2754` | Link properties together |
 | **Create Audio Property Driver** | `compositorStore.ts:2757` | Drive properties from audio |
-| **DriverList Panel** | `panels/DriverList.vue` | **UI exists but not mounted!** |
+| **DriverList Panel** | `panels/DriverList.vue` | ✅ Mounted in right sidebar → Drivers |
 
 ### MEDIUM PRIORITY - Audio Path Animation
 
@@ -356,22 +356,22 @@ Full definitions in `types/effects.ts` (1,294 lines).
 | Feature | Location | What It Does |
 |---------|----------|--------------|
 | **Layer Decomposition** | `layerDecompositionActions.ts` | AI layer separation |
-| **LayerDecompositionPanel** | `panels/LayerDecompositionPanel.vue` | **UI exists but not mounted!** |
+| **LayerDecompositionPanel** | `panels/LayerDecompositionPanel.vue` | ✅ Mounted in AI Tools → Decompose tab |
 | **Depth Estimation** | `services/ai/depthEstimation.ts` | AI depth map generation |
 | **Matte Edge Effects** | `services/effects/matteEdge.ts` | Advanced matte processing |
 
 ---
 
-## 12. UNMOUNTED PANELS (UI exists but hidden)
+## 12. ✅ PREVIOUSLY UNMOUNTED PANELS (NOW MOUNTED)
 
-These Vue components exist but are NOT added to WorkspaceLayout.vue:
+These panels have been added to the UI:
 
-| Panel | File | Purpose |
-|-------|------|---------|
-| **DriverList** | `panels/DriverList.vue` | Property driver management |
-| **LayerDecompositionPanel** | `panels/LayerDecompositionPanel.vue` | AI layer decomposition |
+| Panel | File | Location |
+|-------|------|----------|
+| **DriverList** | `panels/DriverList.vue` | Right sidebar → Drivers (CollapsiblePanel) |
+| **LayerDecompositionPanel** | `panels/LayerDecompositionPanel.vue` | AI Tools section → Decompose tab |
 
-**ACTION:** Add these to right sidebar tabs!
+**STATUS:** All panels now accessible!
 
 ---
 
@@ -967,8 +967,8 @@ Fixed render order within styles:
 
 ### Immediate Actions (Wire up existing UI)
 
-1. **Mount DriverList panel** to right sidebar
-2. **Mount LayerDecompositionPanel** to right sidebar
+1. ~~**Mount DriverList panel** to right sidebar~~ ✅ DONE
+2. ~~**Mount LayerDecompositionPanel** to right sidebar~~ ✅ DONE
 3. **Add spline animation controls** to SplineEditor toolbar
 4. **Add "Convert Text to Path"** to text layer context menu
 5. **Add "Use as Motion Path"** to spline layer context menu

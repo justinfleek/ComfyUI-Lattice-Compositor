@@ -291,12 +291,7 @@ See `docs/` folder for 37 additional technical documents.
 
 ## Known Limitations
 
-**Fully functional but with these gaps:**
-
-### Unmounted UI Panels
-Two panels exist but are not accessible in the UI:
-- `DriverList.vue` — Property driver management (linking properties together)
-- `LayerDecompositionPanel.vue` — AI layer separation
+**Fully functional with minor gaps:**
 
 ### Partial Features
 | Feature | Status | Notes |

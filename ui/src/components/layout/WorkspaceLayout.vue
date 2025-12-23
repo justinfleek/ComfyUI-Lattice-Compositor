@@ -260,6 +260,11 @@
                     <EffectControlsPanel />
                   </CollapsiblePanel>
 
+                  <!-- Drivers Panel -->
+                  <CollapsiblePanel title="Drivers" :expanded="expandedPanels.drivers" @toggle="expandedPanels.drivers = $event">
+                    <DriverList />
+                  </CollapsiblePanel>
+
                   <!-- Scopes Panel -->
                   <CollapsiblePanel title="Scopes" :expanded="expandedPanels.scopes" @toggle="expandedPanels.scopes = $event">
                     <ScopesPanel />
@@ -329,11 +334,19 @@
                   >
                     Flow
                   </button>
+                  <button
+                    :class="{ active: aiTab === 'decompose' }"
+                    @click="aiTab = 'decompose'"
+                    title="AI Layer Decomposition"
+                  >
+                    Decompose
+                  </button>
                 </div>
                 <div class="ai-section-content">
                   <AIChatPanel v-if="aiTab === 'chat'" />
                   <AIGeneratePanel v-else-if="aiTab === 'generate'" />
                   <GenerativeFlowPanel v-else-if="aiTab === 'flow'" />
+                  <LayerDecompositionPanel v-else-if="aiTab === 'decompose'" />
                 </div>
               </div>
             </Pane>
@@ -491,6 +504,8 @@ import AlignPanel from '@/components/panels/AlignPanel.vue';
 import EssentialGraphicsPanel from '@/components/panels/EssentialGraphicsPanel.vue';
 import RenderQueuePanel from '@/components/panels/RenderQueuePanel.vue';
 import ScopesPanel from '@/components/panels/ScopesPanel.vue';
+import DriverList from '@/components/panels/DriverList.vue';
+import LayerDecompositionPanel from '@/components/panels/LayerDecompositionPanel.vue';
 import CollapsiblePanel from '@/components/panels/CollapsiblePanel.vue';
 
 // Layout
@@ -580,6 +595,7 @@ const rightTab = ref<'effects' | 'properties' | 'camera' | 'audio' | 'preview' |
 const expandedPanels = ref({
   properties: true,
   effects: false,
+  drivers: false,
   scopes: false,
   camera: false,
   audio: false,
@@ -590,7 +606,7 @@ const expandedPanels = ref({
 });
 
 // AI section tab
-const aiTab = ref<'chat' | 'generate' | 'flow'>('chat');
+const aiTab = ref<'chat' | 'generate' | 'flow' | 'decompose'>('chat');
 const viewportTab = ref<'composition' | 'layer' | 'footage'>('composition');
 
 const viewZoom = ref('fit');
