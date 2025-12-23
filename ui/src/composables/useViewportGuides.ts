@@ -64,7 +64,7 @@ export function useViewportGuides(options: UseViewportGuidesOptions) {
 
   // Guide visibility toggles
   const showSafeFrameGuides = ref(false);
-  const showResolutionGuides = ref(true);
+  const showResolutionGuides = ref(false);  // Off by default
 
   /**
    * Force update of guide positions (call after camera changes)
@@ -211,19 +211,23 @@ export function useViewportGuides(options: UseViewportGuidesOptions) {
 
     const guides: ResolutionGuide[] = [];
 
+    // Composition center in world space (comp goes from 0,0 to compWidth,-compHeight)
+    const compCenterX = compWidth / 2;
+    const compCenterY = -compHeight / 2;
+
     for (const preset of RESOLUTION_PRESETS) {
       // Only show guides for resolutions smaller than or equal to the composition
       if (preset.width > compWidth || preset.height > compHeight) {
         continue;
       }
 
-      // Calculate the 3D bounds for this resolution crop (center-based)
+      // Calculate the 3D bounds for this resolution crop (centered on composition)
       const halfCropWidth = preset.width / 2;
       const halfCropHeight = preset.height / 2;
 
-      // Project corner points to screen space
-      const topLeft3D = new THREE.Vector3(-halfCropWidth, halfCropHeight, 0);
-      const bottomRight3D = new THREE.Vector3(halfCropWidth, -halfCropHeight, 0);
+      // Project corner points to screen space (centered on composition, not world origin)
+      const topLeft3D = new THREE.Vector3(compCenterX - halfCropWidth, compCenterY + halfCropHeight, 0);
+      const bottomRight3D = new THREE.Vector3(compCenterX + halfCropWidth, compCenterY - halfCropHeight, 0);
 
       topLeft3D.project(camera);
       bottomRight3D.project(camera);

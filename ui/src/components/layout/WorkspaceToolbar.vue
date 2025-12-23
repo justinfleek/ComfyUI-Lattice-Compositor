@@ -440,14 +440,13 @@ function redo() {
   padding: 8px 16px;
   background: var(--lattice-surface-1, #0f0f0f);
   border-radius: var(--lattice-radius-lg, 6px);
-  border: 1px solid var(--lattice-border-subtle, #1a1a1a);
   min-height: 46px;
 }
 
 .tool-group {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0;
 }
 
 .tool-group button {
@@ -459,13 +458,21 @@ function redo() {
   height: 32px;
   padding: 0 10px;
   border: none;
-  background: var(--lattice-surface-2, #1a1a1a);
+  background: transparent;
   color: var(--lattice-text-secondary, #9CA3AF);
-  border-radius: var(--lattice-radius-md, 4px);
+  border-radius: var(--lattice-radius-sm, 2px);
   cursor: pointer;
   font-size: var(--lattice-text-md, 14px);
   font-weight: 500;
   transition: var(--lattice-transition-fast, 100ms ease);
+}
+
+/* Labeled tools container - connected buttons */
+.labeled-tools {
+  background: var(--lattice-surface-2, #1a1a1a);
+  border-radius: var(--lattice-radius-md, 4px);
+  padding: 4px;
+  gap: 0;
 }
 
 .labeled-tools button {

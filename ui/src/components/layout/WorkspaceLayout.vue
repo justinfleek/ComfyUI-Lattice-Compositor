@@ -1666,37 +1666,34 @@ onUnmounted(() => {
 
 .panel-tabs {
   display: flex;
-  background: var(--lattice-surface-0, #0a0a0a);
-  padding: 10px 10px 0 10px;
-  gap: 4px;
-  border-bottom: 1px solid var(--lattice-border-default, #2a2a2a);
+  background: var(--lattice-surface-1, #0f0f0f);
+  padding: 4px;
+  gap: 0;
+  border-radius: var(--lattice-radius-md, 4px);
+  margin: 8px;
 }
 
 .panel-tabs button {
   flex: 1;
-  padding: 12px 14px;
+  padding: 10px 14px;
   border: none;
-  background: var(--lattice-surface-1, #0f0f0f);
+  background: transparent;
   color: var(--lattice-text-muted, #6B7280);
   font-size: var(--lattice-text-base, 13px);
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
-  border-radius: var(--lattice-radius-md, 4px) var(--lattice-radius-md, 4px) 0 0;
+  border-radius: var(--lattice-radius-sm, 2px);
   transition: var(--lattice-transition-fast, 100ms ease);
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
 }
 
 .panel-tabs button:hover {
   color: var(--lattice-text-primary, #e5e5e5);
-  background: var(--lattice-surface-2, #1a1a1a);
 }
 
 .panel-tabs button.active {
   color: white;
-  background: var(--lattice-surface-1, #0f0f0f);
+  background: var(--lattice-accent, #8B5CF6);
   font-weight: 600;
-  border-bottom: 2px solid var(--lattice-accent, #8B5CF6);
 }
 
 .panel-tabs button:focus-visible {
