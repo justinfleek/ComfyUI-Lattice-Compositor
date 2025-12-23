@@ -413,7 +413,12 @@ export function getMemorySummary(): {
 function estimateVRAMFromRenderer(renderer: string): number {
   const r = renderer.toLowerCase();
 
-  // NVIDIA GPUs
+  // NVIDIA GPUs - 50 series
+  if (r.includes('rtx 5090')) return 32000;
+  if (r.includes('rtx 5080')) return 16000;
+  if (r.includes('rtx 5070')) return 12000;
+  if (r.includes('rtx 5060')) return 8000;
+  // NVIDIA GPUs - 40 series
   if (r.includes('rtx 4090')) return 24000;
   if (r.includes('rtx 4080')) return 16000;
   if (r.includes('rtx 4070')) return 12000;

@@ -159,6 +159,55 @@
       </div>
     </div>
 
+    <!-- Effects Menu -->
+    <div class="menu-item" @mouseenter="openMenu('effects')" @mouseleave="scheduleClose">
+      <button
+        class="menu-trigger"
+        :class="{ active: activeMenu === 'effects' }"
+        @click="toggleMenu('effects')"
+      >
+        Effects
+      </button>
+      <div v-if="activeMenu === 'effects'" class="menu-dropdown" @mouseenter="cancelClose" @mouseleave="scheduleClose">
+        <button @click="handleAction('applyBlur')">
+          <span class="label">Blur</span>
+        </button>
+        <button @click="handleAction('applyGlow')">
+          <span class="label">Glow</span>
+        </button>
+        <button @click="handleAction('applyDropShadow')">
+          <span class="label">Drop Shadow</span>
+        </button>
+        <div class="separator"></div>
+        <button @click="handleAction('applyColorCorrection')">
+          <span class="label">Color Correction</span>
+        </button>
+        <button @click="handleAction('applyHueSaturation')">
+          <span class="label">Hue/Saturation</span>
+        </button>
+        <button @click="handleAction('applyLevels')">
+          <span class="label">Levels</span>
+        </button>
+        <button @click="handleAction('applyCurves')">
+          <span class="label">Curves</span>
+        </button>
+        <div class="separator"></div>
+        <button @click="handleAction('applyDistort')">
+          <span class="label">Distort</span>
+        </button>
+        <button @click="handleAction('applyNoise')">
+          <span class="label">Noise</span>
+        </button>
+        <button @click="handleAction('applySharpen')">
+          <span class="label">Sharpen</span>
+        </button>
+        <div class="separator"></div>
+        <button @click="handleAction('removeAllEffects')" :disabled="!hasSelection">
+          <span class="label">Remove All Effects</span>
+        </button>
+      </div>
+    </div>
+
     <!-- Layer Menu -->
     <div class="menu-item" @mouseenter="openMenu('layer')" @mouseleave="scheduleClose">
       <button

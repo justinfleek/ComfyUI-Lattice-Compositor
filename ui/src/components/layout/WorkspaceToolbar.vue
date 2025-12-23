@@ -212,47 +212,22 @@
 
     <div class="divider"></div>
 
-    <!-- Theme Selector -->
-    <div class="tool-group theme-selector-group">
-      <button
-        class="theme-btn"
-        :class="{ active: showThemeSelector }"
-        @click="showThemeSelector = !showThemeSelector"
-        title="Change Theme"
-      >
-        <span class="theme-indicator" :style="{ background: themeGradient }"></span>
+    <!-- Undo/Redo (left side, before spacer) -->
+    <div class="divider"></div>
+    <div class="tool-group undo-redo-group">
+      <button @click="undo" :disabled="!canUndo" title="Undo (Ctrl+Z)" class="undo-btn">
+        <PhArrowCounterClockwise class="icon" />
+        <span class="btn-label">Undo</span>
       </button>
-      <div v-if="showThemeSelector" class="theme-dropdown">
-        <div class="theme-dropdown-header">Theme</div>
-        <div class="theme-options">
-          <button
-            v-for="theme in themes"
-            :key="theme.name"
-            class="theme-option"
-            :class="{ active: currentTheme === theme.name }"
-            :style="{ background: theme.gradient }"
-            :title="theme.label"
-            @click="selectTheme(theme.name)"
-          ></button>
-        </div>
-      </div>
+      <button @click="redo" :disabled="!canRedo" title="Redo (Ctrl+Shift+Z)" class="redo-btn">
+        <PhArrowClockwise class="icon" />
+        <span class="btn-label">Redo</span>
+      </button>
     </div>
 
     <div class="spacer"></div>
 
     <div class="tool-group">
-      <span class="gpu-badge" :class="gpuTier">{{ gpuTier.toUpperCase() }}</span>
-      <MemoryIndicator />
-      <button @click="undo" :disabled="!canUndo" title="Undo (Ctrl+Z)">
-        <PhArrowCounterClockwise class="icon" />
-      </button>
-      <button @click="redo" :disabled="!canRedo" title="Redo (Ctrl+Shift+Z)">
-        <PhArrowClockwise class="icon" />
-      </button>
-      <div class="divider"></div>
-      <!-- Memory Indicator -->
-      <MemoryIndicator />
-      <div class="divider"></div>
       <button @click="emit('showPreview')" title="Full Resolution Preview (`)">
         <PhMonitor class="icon" /> Preview
       </button>
@@ -262,6 +237,42 @@
       <button @click="emit('showComfyUI')" title="Send to ComfyUI workflow">
         <PhLink class="icon" /> ComfyUI
       </button>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- GPU & Memory (right side) -->
+    <div class="tool-group">
+      <span class="gpu-badge" :class="gpuTier">{{ gpuTier.toUpperCase() }}</span>
+      <MemoryIndicator />
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Theme Selector (circular, far right) -->
+    <div class="tool-group theme-selector-group">
+      <button
+        class="theme-btn-circle"
+        :class="{ active: showThemeSelector }"
+        @click="showThemeSelector = !showThemeSelector"
+        title="Change Theme"
+      >
+        <span class="theme-indicator-circle" :style="{ background: themeGradient }"></span>
+      </button>
+      <div v-if="showThemeSelector" class="theme-dropdown">
+        <div class="theme-dropdown-header">Theme</div>
+        <div class="theme-options">
+          <button
+            v-for="theme in themes"
+            :key="theme.name"
+            class="theme-option-circle"
+            :class="{ active: currentTheme === theme.name }"
+            :style="{ background: theme.gradient }"
+            :title="theme.label"
+            @click="selectTheme(theme.name)"
+          ></button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -525,32 +536,64 @@ function redo() {
 .gpu-badge.webgpu { background: var(--lattice-info, #3B82F6); color: white; }
 .gpu-badge.blackwell { background: #76b900; color: #000; }
 
+/* Undo/Redo Buttons */
+.undo-redo-group {
+  gap: 4px;
+}
+
+.undo-btn,
+.redo-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px !important;
+  background: var(--lattice-surface-2, #1a1a1a) !important;
+  border-radius: var(--lattice-radius-md, 4px) !important;
+}
+
+.undo-btn:hover:not(:disabled),
+.redo-btn:hover:not(:disabled) {
+  background: var(--lattice-surface-3, #2a2a2a) !important;
+}
+
+.undo-btn:disabled,
+.redo-btn:disabled {
+  opacity: 0.3;
+}
+
+.undo-btn .btn-label,
+.redo-btn .btn-label {
+  font-size: 11px;
+  font-weight: 500;
+}
+
 /* Theme Selector */
 .theme-selector-group {
   position: relative;
 }
 
-.theme-btn {
-  width: 32px;
-  height: 32px;
-  padding: 5px;
+.theme-btn-circle {
+  width: 28px;
+  height: 28px;
+  padding: 3px;
   border: none;
   background: var(--lattice-surface-2, #1a1a1a);
-  border-radius: var(--lattice-radius-md, 4px);
+  border-radius: 50%;
   cursor: pointer;
   transition: var(--lattice-transition-fast, 100ms ease);
 }
 
-.theme-btn:hover,
-.theme-btn.active {
+.theme-btn-circle:hover,
+.theme-btn-circle.active {
   background: var(--lattice-surface-3, #222222);
+  transform: scale(1.05);
 }
 
-.theme-indicator {
+.theme-indicator-circle {
   display: block;
   width: 100%;
   height: 100%;
-  border-radius: 2px;
+  border-radius: 50%;
 }
 
 .theme-dropdown {
@@ -582,20 +625,20 @@ function redo() {
   gap: 6px;
 }
 
-.theme-option {
-  width: 32px;
-  height: 32px;
+.theme-option-circle {
+  width: 28px;
+  height: 28px;
   border: none;
-  border-radius: var(--lattice-radius-sm, 2px);
+  border-radius: 50%;
   cursor: pointer;
   transition: var(--lattice-transition-fast, 100ms ease);
 }
 
-.theme-option:hover {
-  transform: scale(1.1);
+.theme-option-circle:hover {
+  transform: scale(1.15);
 }
 
-.theme-option.active {
+.theme-option-circle.active {
   box-shadow: 0 0 0 2px var(--lattice-surface-1, #121212), 0 0 0 3px white;
 }
 
