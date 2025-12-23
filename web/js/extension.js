@@ -14,7 +14,7 @@ function getExtensionBase() {
     const match = script.src?.match(/\/extensions\/([^/]+)\/js\/extension\.js/);
     if (match) return `/extensions/${match[1]}`;
   }
-  return '/extensions/Compositor';
+  return '/extensions/weyl-compositor';
 }
 
 app.registerExtension({
