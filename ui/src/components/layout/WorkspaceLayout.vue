@@ -1625,9 +1625,8 @@ onUnmounted(() => {
   color: var(--lattice-text-primary, #e5e5e5);
   font-family: var(--lattice-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
   font-size: var(--lattice-text-base, 12px);
-  /* Increased padding for floating panel effect */
-  padding: 8px;
-  gap: 8px;
+  padding: 4px;
+  gap: 4px;
 }
 
 /* Main Workspace */

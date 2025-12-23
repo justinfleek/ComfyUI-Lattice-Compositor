@@ -210,10 +210,7 @@
       {{ formattedTimecode }}
     </div>
 
-    <div class="divider"></div>
-
     <!-- Undo/Redo (left side, before spacer) -->
-    <div class="divider"></div>
     <div class="tool-group undo-redo-group">
       <button @click="undo" :disabled="!canUndo" title="Undo (Ctrl+Z)" class="undo-btn">
         <PhArrowCounterClockwise class="icon" />
@@ -436,11 +433,11 @@ function redo() {
 .toolbar {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 16px;
+  gap: 12px;
+  padding: 10px 12px;
   background: var(--lattice-surface-1, #0f0f0f);
-  border-radius: var(--lattice-radius-lg, 6px);
-  min-height: 46px;
+  border-radius: 8px;
+  min-height: 54px;
 }
 
 .tool-group {
@@ -454,13 +451,13 @@ function redo() {
   align-items: center;
   justify-content: center;
   gap: 5px;
-  min-width: 32px;
-  height: 32px;
+  min-width: 34px;
+  height: 34px;
   padding: 0 10px;
   border: none;
   background: transparent;
   color: var(--lattice-text-secondary, #9CA3AF);
-  border-radius: var(--lattice-radius-sm, 2px);
+  border-radius: 6px;
   cursor: pointer;
   font-size: var(--lattice-text-md, 14px);
   font-weight: 500;
@@ -470,7 +467,7 @@ function redo() {
 /* Labeled tools container - connected buttons */
 .labeled-tools {
   background: var(--lattice-surface-2, #1a1a1a);
-  border-radius: var(--lattice-radius-md, 4px);
+  border-radius: 8px;
   padding: 4px;
   gap: 0;
 }
@@ -478,9 +475,10 @@ function redo() {
 .labeled-tools button {
   flex-direction: column;
   gap: 2px;
-  min-width: 50px;
-  height: 42px;
+  min-width: 52px;
+  height: 44px;
   padding: 4px 8px;
+  border-radius: 6px;
 }
 
 .tool-label {
@@ -536,10 +534,10 @@ function redo() {
 .timecode-display {
   font-family: var(--lattice-font-mono, 'SF Mono', Monaco, monospace);
   font-size: var(--lattice-text-lg, 15px);
-  padding: 6px 16px;
+  padding: 8px 18px;
   background: var(--lattice-surface-2, #1a1a1a);
-  border-radius: 999px;
-  min-width: 100px;
+  border-radius: 8px;
+  min-width: 110px;
   text-align: center;
   color: var(--lattice-text-primary, #e5e5e5);
 }
@@ -557,19 +555,23 @@ function redo() {
 .gpu-badge.webgpu { background: var(--lattice-info, #3B82F6); color: white; }
 .gpu-badge.blackwell { background: #76b900; color: #000; }
 
-/* Undo/Redo Buttons */
+/* Undo/Redo Buttons - more prominent */
 .undo-redo-group {
-  gap: 4px;
+  gap: 6px;
+  background: var(--lattice-surface-2, #1a1a1a);
+  border-radius: 8px;
+  padding: 4px;
 }
 
 .undo-btn,
 .redo-btn {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 10px !important;
-  background: var(--lattice-surface-2, #1a1a1a) !important;
-  border-radius: var(--lattice-radius-md, 4px) !important;
+  gap: 6px;
+  padding: 8px 14px !important;
+  height: 36px !important;
+  background: transparent !important;
+  border-radius: 6px !important;
 }
 
 .undo-btn:hover:not(:disabled),
@@ -582,9 +584,14 @@ function redo() {
   opacity: 0.3;
 }
 
+.undo-btn .icon,
+.redo-btn .icon {
+  font-size: 18px;
+}
+
 .undo-btn .btn-label,
 .redo-btn .btn-label {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 500;
 }
 
@@ -696,7 +703,7 @@ function redo() {
 /* Shape tool options */
 .shape-tools {
   background: var(--lattice-surface-2, #1a1a1a);
-  border-radius: var(--lattice-radius-md, 4px);
+  border-radius: 8px;
   padding: 4px;
 }
 
@@ -706,7 +713,7 @@ function redo() {
   gap: 12px;
   padding: 4px 8px;
   background: var(--lattice-surface-2, #1a1a1a);
-  border-radius: var(--lattice-radius-md, 4px);
+  border-radius: 8px;
 }
 
 .shape-option-label {
