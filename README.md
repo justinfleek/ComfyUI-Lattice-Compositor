@@ -13,13 +13,35 @@
 
 [Features](#features) | [Installation](#installation) | [Quick Start](#quick-start) | [Documentation](#documentation) | [Contributing](#contributing)
 
+<!-- TODO: Add hero screenshot or GIF here -->
+<!-- ![Weyl Compositor Interface](screenshots/hero-interface.png) -->
+
 </div>
+
+---
+
+## Vision
+
+**Weyl bridges the gap between professional motion graphics and AI video generation.**
+
+The AI video generation community has powerful models (Wan 2.1, AnimateDiff, MotionCtrl, VACE) but creating the *conditioning data* these models need — depth maps, motion trajectories, attention masks — requires jumping between multiple tools. Weyl solves this by bringing industry-standard animation tools directly into ComfyUI.
+
+### Core Philosophy
+
+1. **Deterministic by Design** — Every frame is reproducible. Scrub to frame 50, scrub back to frame 10, scrub to frame 50 again — identical output, guaranteed. This is critical for AI video workflows.
+
+2. **AI-Native Export** — One-click export to formats AI models actually consume: matte sequences for IP Adapter, camera trajectories for MotionCtrl, point paths for Wan Move.
+
+3. **Professional Tools, Zero Cost** — Keyframe animation, bezier curves, particle systems, expressions, 3D cameras — the full professional toolkit, open source.
 
 ---
 
 ## What is Weyl?
 
 Weyl is a **professional-grade motion graphics compositor** built for the **ComfyUI ecosystem**. It brings industry-standard animation tools to AI video workflows, enabling you to create stunning motion graphics, animated text, particle systems, and 3D camera animations — then export directly to AI video models like Wan 2.1, AnimateDiff, and MotionCtrl.
+
+<!-- TODO: Add comparison GIF showing workflow -->
+<!-- ![Before/After Workflow](screenshots/workflow-comparison.gif) -->
 
 ### Why Weyl?
 
@@ -32,6 +54,31 @@ Weyl is a **professional-grade motion graphics compositor** built for the **Comf
 | Complex export workflows | One-click matte/trajectory export |
 
 **Perfect for:** AI video creators, motion designers, VFX artists, and content creators using Stable Diffusion video workflows.
+
+---
+
+## Screenshots
+
+<!-- TODO: Add actual screenshots. Recommended captures:
+     1. Main interface overview (hero shot)
+     2. Timeline with keyframes and layers
+     3. Particle system in action
+     4. AI Agent chat panel
+     5. Export dialog with format options
+     6. Curve editor with bezier handles
+-->
+
+<div align="center">
+
+| Main Interface | Timeline & Keyframes |
+|:---:|:---:|
+| *Full compositor workspace* | *Multi-track animation timeline* |
+
+| Particle System | AI Agent |
+|:---:|:---:|
+| *24 built-in presets* | *Natural language animation* |
+
+</div>
 
 ---
 
@@ -108,6 +155,7 @@ Weyl is a **professional-grade motion graphics compositor** built for the **Comf
 - **Frequency Bands** — React to bass, mid, high frequencies
 - **Stem Separation** — React to drums, vocals, instruments
 - **Audio-to-Property Mapping** — Drive any parameter with audio
+- **Audio Path Animation** — Animate objects along paths driven by audio
 
 ### Effect Pipeline (22+ Effects)
 
@@ -141,32 +189,66 @@ Weyl is a **professional-grade motion graphics compositor** built for the **Comf
 
 ## Installation
 
-### Standard Installation (ComfyUI)
+### ComfyUI Extension (Recommended)
 
 ```bash
+# Navigate to your ComfyUI custom_nodes folder
 cd ComfyUI/custom_nodes
-git clone https://github.com/anthropics/weyl-compositor.git
+
+# Clone the repository
+git clone https://github.com/justinfleek/weyl-compositor.git
+
+# Install Python dependencies
 pip install -r weyl-compositor/requirements.txt
 ```
 
-### Portable/Embedded Python (Windows)
+**Restart ComfyUI.** The Weyl icon will appear in your sidebar. **No build step required** — pre-built JavaScript files are included.
+
+### Windows with Portable/Embedded Python
+
+If you're using ComfyUI's portable distribution with embedded Python:
 
 ```powershell
-cd "C:\ComfyUI\custom_nodes"
-git clone https://github.com/anthropics/weyl-compositor.git
-& "C:\ComfyUI\python_embeded\python.exe" -m pip install -r weyl-compositor/requirements.txt
+# Navigate to custom_nodes
+cd "C:\ComfyUI_windows_portable\ComfyUI\custom_nodes"
+
+# Clone
+git clone https://github.com/justinfleek/weyl-compositor.git
+
+# Install with embedded Python
+& "C:\ComfyUI_windows_portable\python_embeded\python.exe" -m pip install -r weyl-compositor/requirements.txt
 ```
 
-Restart ComfyUI. **No build step required** — pre-built files included.
+### Requirements
+
+The `requirements.txt` includes minimal dependencies since most are already in ComfyUI:
+
+```
+numpy
+Pillow
+scipy  # For depth-to-normal conversion
+```
 
 ### Development Setup
 
+For contributors or those wanting to modify the source:
+
 ```bash
-cd ui
+# Navigate to the UI source
+cd weyl-compositor/ui
+
+# Install Node.js dependencies
 npm install
-npm run dev      # Development server (http://localhost:5173)
-npm run build    # Production build to web/js/
-npm test         # Run 1777 tests
+
+# Start development server (hot reload)
+npm run dev
+# Opens at http://localhost:5173
+
+# Run test suite
+npm test
+
+# Build for production (outputs to web/js/)
+npm run build
 ```
 
 ---
@@ -175,11 +257,14 @@ npm test         # Run 1777 tests
 
 ### Basic Workflow
 
-1. **Open Compositor** — Click the Weyl icon in ComfyUI sidebar
+1. **Open Compositor** — Click the Weyl icon in the ComfyUI sidebar
 2. **Add a Layer** — Right-click canvas → Add Layer → Text/Shape/Particles
-3. **Animate** — Click the keyframe icon next to any property
-4. **Preview** — Press Space to play, scrub the timeline
-5. **Export** — File → Export Matte Sequence
+3. **Animate** — Click the keyframe icon (◆) next to any property
+4. **Preview** — Press Space to play, drag the playhead to scrub
+5. **Export** — Click Export button → Select format → Export
+
+<!-- TODO: Add quick start GIF -->
+<!-- ![Quick Start Demo](screenshots/quick-start.gif) -->
 
 ### Using the AI Agent
 
@@ -188,7 +273,7 @@ npm test         # Run 1777 tests
 3. The agent creates layers, keyframes, and effects automatically
 4. Refine: *"add a glow effect"*, *"make it bounce"*
 
-**Requires:** `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` environment variable
+**Requires:** Set `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` environment variable before starting ComfyUI.
 
 ### Frame Count Formula (4n+1 Pattern)
 
@@ -261,15 +346,21 @@ For AI video generation, every frame must be **reproducible**. Weyl guarantees:
 |-----|--------|
 | **Space** | Play/Pause |
 | **Home/End** | Go to start/end |
-| **Ctrl+Z / Ctrl+Shift+Z** | Undo/Redo |
+| **←/→** | Previous/Next frame |
+| **Shift+←/→** | Jump 10 frames |
+| **Ctrl+Z** | Undo |
+| **Ctrl+Shift+Z** | Redo |
 | **Delete** | Delete selected |
 | **V** | Selection tool |
 | **P** | Pen tool |
 | **T** | Text tool |
 | **H** | Hand (pan) tool |
+| **Z** | Zoom tool |
 | **\`** (backtick) | HD Preview window |
 | **Ctrl+S** | Save project |
 | **Ctrl+E** | Export |
+| **Ctrl+D** | Duplicate layer |
+| **Ctrl+Shift+D** | Split layer at playhead |
 
 ---
 
@@ -280,25 +371,25 @@ For AI video generation, every frame must be **reproducible**. Weyl guarantees:
 | [CLAUDE.md](CLAUDE.md) | Complete technical guide (1750+ lines) |
 | [FEATURE_AUDIT.md](FEATURE_AUDIT.md) | All features mapped to UI access |
 | [PROJECT_STATUS.md](PROJECT_STATUS.md) | Current status and roadmap |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System architecture (101KB) |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System architecture |
 | [docs/SERVICE_API_REFERENCE.md](docs/SERVICE_API_REFERENCE.md) | Service API documentation |
 | [docs/EFFECT_PARAMETERS.md](docs/EFFECT_PARAMETERS.md) | Effect documentation |
 | [docs/GLOSSARY.md](docs/GLOSSARY.md) | 150+ term definitions |
 
-See `docs/` folder for 37 additional technical documents.
+See `docs/` folder for additional technical documents.
 
 ---
 
 ## Known Limitations
 
-**Fully functional:**
-
 ### Requires External Setup
+
 | Feature | Requirement |
 |---------|-------------|
 | AI Agent | `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` env var |
 | Depth Estimation | Python backend with DepthAnything model |
 | Pose Estimation | Python backend with Sapiens model |
+| Stem Separation | Python backend with Demucs model |
 
 See [FEATURE_AUDIT.md](FEATURE_AUDIT.md) for complete feature-to-UI mapping.
 
@@ -306,7 +397,7 @@ See [FEATURE_AUDIT.md](FEATURE_AUDIT.md) for complete feature-to-UI mapping.
 
 ## Trade Dress Compliance
 
-Weyl uses alternative terminology to avoid trademark issues:
+Weyl uses alternative terminology to respect Adobe trademarks:
 
 | Industry Term | Weyl Term |
 |---------------|-----------|
@@ -321,7 +412,7 @@ Weyl uses alternative terminology to avoid trademark issues:
 
 ## Acknowledgments
 
-Weyl incorporates techniques from these outstanding projects:
+Weyl incorporates techniques and inspiration from these outstanding projects:
 
 ### Audio Reactive
 - **[ATI_AudioReactive](https://github.com/Alter-AI/ATI_AudioReactive)** — Beat detection, amplitude curves
@@ -338,24 +429,40 @@ Weyl incorporates techniques from these outstanding projects:
 - **[MotionCtrl](https://github.com/TencentARC/MotionCtrl)** — Camera trajectories
 - **[AnimateDiff CameraCtrl](https://github.com/Kosinkadink/ComfyUI-AnimateDiff-Evolved)** — Camera control
 
+### AI Models
+- **[SAM2](https://github.com/facebookresearch/segment-anything-2)** — Segmentation
+- **[Sapiens](https://github.com/facebookresearch/sapiens)** — Human pose estimation
+
 ---
 
 ## Contributing
 
-Contributions are welcome! Please read the [CLAUDE.md](CLAUDE.md) guide for architecture details.
+Contributions are welcome! Please read [CLAUDE.md](CLAUDE.md) for architecture details and coding conventions.
 
 ```bash
-# Development
-cd ui
+# Clone
+git clone https://github.com/justinfleek/weyl-compositor.git
+cd weyl-compositor/ui
+
+# Install dependencies
 npm install
+
+# Development server
 npm run dev
 
-# Testing
+# Run tests
 npm test
 
 # Build
 npm run build
 ```
+
+### Contribution Ideas
+- Additional particle presets
+- New effect implementations
+- Export format support (new AI video models)
+- UI/UX improvements
+- Documentation and tutorials
 
 ---
 
@@ -370,5 +477,7 @@ MIT License — see [LICENSE](LICENSE) for details.
 **Built for the open-source ComfyUI community**
 
 *Professional motion graphics accessible to everyone*
+
+[Report Bug](https://github.com/justinfleek/weyl-compositor/issues) · [Request Feature](https://github.com/justinfleek/weyl-compositor/issues) · [Discussions](https://github.com/justinfleek/weyl-compositor/discussions)
 
 </div>
