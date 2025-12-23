@@ -121,18 +121,94 @@
               <h3>Appearance</h3>
 
               <div class="setting-group">
-                <h4>Theme</h4>
+                <h4>Theme Preset</h4>
                 <div class="theme-selector">
                   <button
                     v-for="theme in themes"
                     :key="theme.id"
                     :class="['theme-btn', { active: preferences.theme === theme.id }]"
                     :style="{ '--theme-color': theme.color }"
-                    @click="preferences.theme = theme.id"
+                    @click="selectTheme(theme.id)"
                   >
                     <span class="theme-swatch"></span>
                     <span class="theme-name">{{ theme.name }}</span>
                   </button>
+                </div>
+              </div>
+
+              <div class="setting-group">
+                <h4>Custom Colors</h4>
+                <p class="setting-description">Customize panel backgrounds, accents, and text colors.</p>
+
+                <div class="color-grid">
+                  <div class="color-row">
+                    <label>Primary Accent</label>
+                    <div class="color-picker-wrapper">
+                      <input type="color" v-model="preferences.customColors.accent" class="color-input" />
+                      <span class="color-hex">{{ preferences.customColors.accent }}</span>
+                    </div>
+                  </div>
+
+                  <div class="color-row">
+                    <label>Secondary Accent</label>
+                    <div class="color-picker-wrapper">
+                      <input type="color" v-model="preferences.customColors.accentSecondary" class="color-input" />
+                      <span class="color-hex">{{ preferences.customColors.accentSecondary }}</span>
+                    </div>
+                  </div>
+
+                  <div class="color-row">
+                    <label>Background (Void)</label>
+                    <div class="color-picker-wrapper">
+                      <input type="color" v-model="preferences.customColors.void" class="color-input" />
+                      <span class="color-hex">{{ preferences.customColors.void }}</span>
+                    </div>
+                  </div>
+
+                  <div class="color-row">
+                    <label>Panel Background</label>
+                    <div class="color-picker-wrapper">
+                      <input type="color" v-model="preferences.customColors.surface1" class="color-input" />
+                      <span class="color-hex">{{ preferences.customColors.surface1 }}</span>
+                    </div>
+                  </div>
+
+                  <div class="color-row">
+                    <label>Card Background</label>
+                    <div class="color-picker-wrapper">
+                      <input type="color" v-model="preferences.customColors.surface2" class="color-input" />
+                      <span class="color-hex">{{ preferences.customColors.surface2 }}</span>
+                    </div>
+                  </div>
+
+                  <div class="color-row">
+                    <label>Border Color</label>
+                    <div class="color-picker-wrapper">
+                      <input type="color" v-model="preferences.customColors.border" class="color-input" />
+                      <span class="color-hex">{{ preferences.customColors.border }}</span>
+                    </div>
+                  </div>
+
+                  <div class="color-row">
+                    <label>Primary Text</label>
+                    <div class="color-picker-wrapper">
+                      <input type="color" v-model="preferences.customColors.textPrimary" class="color-input" />
+                      <span class="color-hex">{{ preferences.customColors.textPrimary }}</span>
+                    </div>
+                  </div>
+
+                  <div class="color-row">
+                    <label>Secondary Text</label>
+                    <div class="color-picker-wrapper">
+                      <input type="color" v-model="preferences.customColors.textSecondary" class="color-input" />
+                      <span class="color-hex">{{ preferences.customColors.textSecondary }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="color-actions">
+                  <button class="btn btn-text" @click="resetCustomColors">Reset to Theme Default</button>
+                  <button class="btn btn-secondary" @click="applyCustomColors">Apply Colors</button>
                 </div>
               </div>
 
@@ -506,6 +582,17 @@
 <script setup lang="ts">
 import { ref, reactive, watch, onMounted, onUnmounted } from 'vue';
 
+interface CustomColors {
+  accent: string;
+  accentSecondary: string;
+  void: string;
+  surface1: string;
+  surface2: string;
+  border: string;
+  textPrimary: string;
+  textSecondary: string;
+}
+
 interface Preferences {
   // General
   autoSave: {
@@ -523,6 +610,7 @@ interface Preferences {
 
   // Appearance
   theme: string;
+  customColors: CustomColors;
   uiScale: number;
   showTooltips: boolean;
   animatedUI: boolean;
@@ -588,6 +676,70 @@ const themes = [
   { id: 'mono', name: 'Mono', color: '#6B7280' },
 ];
 
+// Theme color presets
+const themeColorPresets: Record<string, CustomColors> = {
+  violet: {
+    accent: '#8B5CF6',
+    accentSecondary: '#EC4899',
+    void: '#050505',
+    surface1: '#121212',
+    surface2: '#1A1A1A',
+    border: '#333333',
+    textPrimary: '#E5E5E5',
+    textSecondary: '#9CA3AF',
+  },
+  ocean: {
+    accent: '#06B6D4',
+    accentSecondary: '#3B82F6',
+    void: '#050508',
+    surface1: '#0F1419',
+    surface2: '#1A2332',
+    border: '#2A3F5F',
+    textPrimary: '#E5E5E5',
+    textSecondary: '#9CA3AF',
+  },
+  sunset: {
+    accent: '#F59E0B',
+    accentSecondary: '#EF4444',
+    void: '#080505',
+    surface1: '#1A1410',
+    surface2: '#2A1F18',
+    border: '#4A3828',
+    textPrimary: '#E5E5E5',
+    textSecondary: '#9CA3AF',
+  },
+  forest: {
+    accent: '#10B981',
+    accentSecondary: '#06B6D4',
+    void: '#050805',
+    surface1: '#101914',
+    surface2: '#182A1F',
+    border: '#2A4A35',
+    textPrimary: '#E5E5E5',
+    textSecondary: '#9CA3AF',
+  },
+  ember: {
+    accent: '#EF4444',
+    accentSecondary: '#F59E0B',
+    void: '#080505',
+    surface1: '#1A1212',
+    surface2: '#2A1A1A',
+    border: '#4A2828',
+    textPrimary: '#E5E5E5',
+    textSecondary: '#9CA3AF',
+  },
+  mono: {
+    accent: '#6B7280',
+    accentSecondary: '#9CA3AF',
+    void: '#050505',
+    surface1: '#121212',
+    surface2: '#1A1A1A',
+    border: '#333333',
+    textPrimary: '#E5E5E5',
+    textSecondary: '#9CA3AF',
+  },
+};
+
 const activeTab = ref('general');
 
 const defaultPreferences: Preferences = {
@@ -604,6 +756,7 @@ const defaultPreferences: Preferences = {
     frameCount: 81,
   },
   theme: 'violet',
+  customColors: { ...themeColorPresets.violet },
   uiScale: 1.0,
   showTooltips: true,
   animatedUI: true,
@@ -643,8 +796,14 @@ function loadPreferences() {
     const saved = localStorage.getItem('lattice-preferences');
     if (saved) {
       const parsed = JSON.parse(saved);
+      // Ensure customColors exists (for older saved preferences)
+      if (!parsed.customColors) {
+        parsed.customColors = { ...themeColorPresets[parsed.theme || 'violet'] };
+      }
       Object.assign(preferences, parsed);
     }
+    // Apply the loaded custom colors
+    applyCustomColors();
   } catch (e) {
     console.warn('Failed to load preferences:', e);
   }
@@ -662,6 +821,63 @@ function resetToDefaults() {
   Object.assign(preferences, defaultPreferences);
 }
 
+function selectTheme(themeId: string) {
+  preferences.theme = themeId;
+  const preset = themeColorPresets[themeId];
+  if (preset) {
+    Object.assign(preferences.customColors, preset);
+    applyCustomColors();
+  }
+}
+
+function resetCustomColors() {
+  const preset = themeColorPresets[preferences.theme] || themeColorPresets.violet;
+  Object.assign(preferences.customColors, preset);
+  applyCustomColors();
+}
+
+function applyCustomColors() {
+  const root = document.documentElement;
+  const colors = preferences.customColors;
+
+  root.style.setProperty('--lattice-accent', colors.accent);
+  root.style.setProperty('--lattice-accent-secondary', colors.accentSecondary);
+  root.style.setProperty('--lattice-accent-gradient', `linear-gradient(135deg, ${colors.accent}, ${colors.accentSecondary})`);
+  root.style.setProperty('--lattice-accent-hover', lightenColor(colors.accent, 15));
+  root.style.setProperty('--lattice-accent-muted', `${colors.accent}33`);
+
+  root.style.setProperty('--lattice-void', colors.void);
+  root.style.setProperty('--lattice-surface-0', darkenColor(colors.surface1, 5));
+  root.style.setProperty('--lattice-surface-1', colors.surface1);
+  root.style.setProperty('--lattice-surface-2', colors.surface2);
+  root.style.setProperty('--lattice-surface-3', colors.border);
+  root.style.setProperty('--lattice-surface-4', lightenColor(colors.border, 15));
+
+  root.style.setProperty('--lattice-text-primary', colors.textPrimary);
+  root.style.setProperty('--lattice-text-secondary', colors.textSecondary);
+  root.style.setProperty('--lattice-text-muted', darkenColor(colors.textSecondary, 20));
+
+  root.style.setProperty('--lattice-border-subtle', darkenColor(colors.border, 10));
+  root.style.setProperty('--lattice-border-default', colors.border);
+  root.style.setProperty('--lattice-border-hover', lightenColor(colors.border, 15));
+}
+
+function lightenColor(hex: string, percent: number): string {
+  const num = parseInt(hex.replace('#', ''), 16);
+  const r = Math.min(255, (num >> 16) + Math.round(255 * percent / 100));
+  const g = Math.min(255, ((num >> 8) & 0x00FF) + Math.round(255 * percent / 100));
+  const b = Math.min(255, (num & 0x0000FF) + Math.round(255 * percent / 100));
+  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
+}
+
+function darkenColor(hex: string, percent: number): string {
+  const num = parseInt(hex.replace('#', ''), 16);
+  const r = Math.max(0, (num >> 16) - Math.round(255 * percent / 100));
+  const g = Math.max(0, ((num >> 8) & 0x00FF) - Math.round(255 * percent / 100));
+  const b = Math.max(0, (num & 0x0000FF) - Math.round(255 * percent / 100));
+  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
+}
+
 function clearCache() {
   // Clear caches (would call into cache services)
   console.log('Clearing caches...');
@@ -674,6 +890,7 @@ function cancel() {
 }
 
 function save() {
+  applyCustomColors(); // Ensure colors are applied
   savePreferences();
   emit('save', { ...preferences });
   emit('close');
@@ -1050,5 +1267,70 @@ onUnmounted(() => {
 
 .btn-primary:hover {
   background: var(--lattice-accent-hover, #9D6FFF);
+}
+
+/* Custom Colors Section */
+.setting-description {
+  font-size: 11px;
+  color: var(--lattice-text-muted, #666);
+  margin: 0 0 12px;
+}
+
+.color-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px 24px;
+  margin-bottom: 16px;
+}
+
+.color-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.color-row label {
+  font-size: 11px;
+  color: var(--lattice-text-secondary, #999);
+}
+
+.color-picker-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.color-input {
+  width: 40px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--lattice-surface-3, #333);
+  border-radius: 4px;
+  cursor: pointer;
+  background: transparent;
+}
+
+.color-input::-webkit-color-swatch-wrapper {
+  padding: 2px;
+}
+
+.color-input::-webkit-color-swatch {
+  border: none;
+  border-radius: 2px;
+}
+
+.color-hex {
+  font-size: 11px;
+  font-family: monospace;
+  color: var(--lattice-text-muted, #666);
+  text-transform: uppercase;
+}
+
+.color-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 12px;
+  border-top: 1px solid var(--lattice-surface-2, #222);
 }
 </style>

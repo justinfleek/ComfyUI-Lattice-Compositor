@@ -247,26 +247,28 @@
       <MemoryIndicator />
       <div class="divider"></div>
       <!-- Theme Selector (circular) -->
-      <button
-        class="theme-btn-circle"
-        :class="{ active: showThemeSelector }"
-        @click="showThemeSelector = !showThemeSelector"
-        title="Change Theme"
-      >
-        <span class="theme-indicator-circle" :style="{ background: themeGradient }"></span>
-      </button>
-      <div v-if="showThemeSelector" class="theme-dropdown">
-        <div class="theme-dropdown-header">Theme</div>
-        <div class="theme-options">
-          <button
-            v-for="theme in themes"
-            :key="theme.name"
-            class="theme-option-circle"
-            :class="{ active: currentTheme === theme.name }"
-            :style="{ background: theme.gradient }"
-            :title="theme.label"
-            @click="selectTheme(theme.name)"
-          ></button>
+      <div class="theme-selector-wrapper">
+        <button
+          class="theme-btn-circle"
+          :class="{ active: showThemeSelector }"
+          @click.stop="showThemeSelector = !showThemeSelector"
+          title="Change Theme"
+        >
+          <span class="theme-indicator-circle" :style="{ background: themeGradient }"></span>
+        </button>
+        <div v-if="showThemeSelector" class="theme-dropdown" @click.stop>
+          <div class="theme-dropdown-header">Theme</div>
+          <div class="theme-options">
+            <button
+              v-for="theme in themes"
+              :key="theme.name"
+              class="theme-option-circle"
+              :class="{ active: currentTheme === theme.name }"
+              :style="{ background: theme.gradient }"
+              :title="theme.label"
+              @click="selectTheme(theme.name)"
+            ></button>
+          </div>
         </div>
       </div>
     </div>
@@ -274,7 +276,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { useCompositorStore } from '@/stores/compositorStore';
 import { usePlaybackStore } from '@/stores/playbackStore';
 import { useThemeStore, type ThemeName } from '@/stores/themeStore';
@@ -365,6 +367,22 @@ function selectTheme(theme: ThemeName) {
   showThemeSelector.value = false;
 }
 
+// Click outside handler for theme dropdown
+function handleClickOutside(event: MouseEvent) {
+  const target = event.target as HTMLElement;
+  if (!target.closest('.theme-selector-wrapper')) {
+    showThemeSelector.value = false;
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside);
+});
+
 // Timecode
 const formattedTimecode = computed(() => {
   const frame = store.currentFrame;
@@ -429,7 +447,7 @@ function redo() {
 .tool-group {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
 }
 
 .tool-group button {
@@ -439,9 +457,9 @@ function redo() {
   gap: 5px;
   min-width: 32px;
   height: 32px;
-  padding: 0 8px;
+  padding: 0 10px;
   border: none;
-  background: transparent;
+  background: var(--lattice-surface-2, #1a1a1a);
   color: var(--lattice-text-secondary, #9CA3AF);
   border-radius: var(--lattice-radius-md, 4px);
   cursor: pointer;
@@ -474,7 +492,7 @@ function redo() {
 }
 
 .tool-group button:hover {
-  background: var(--lattice-surface-3, #222222);
+  background: var(--lattice-surface-3, #2d2d2d);
   color: var(--lattice-text-primary, #e5e5e5);
 }
 
@@ -573,12 +591,16 @@ function redo() {
 }
 
 /* Theme Selector */
+.theme-selector-wrapper {
+  position: relative;
+}
+
 .theme-btn-circle {
-  width: 24px;
-  height: 24px;
-  min-width: 24px;
-  min-height: 24px;
-  padding: 2px;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  padding: 3px;
   border: none;
   background: var(--lattice-surface-2, #1a1a1a);
   border-radius: 50%;
@@ -595,10 +617,10 @@ function redo() {
 
 .theme-indicator-circle {
   display: block;
-  width: 20px;
-  height: 20px;
-  min-width: 20px;
-  min-height: 20px;
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  min-height: 22px;
   border-radius: 50%;
   aspect-ratio: 1 / 1;
   flex-shrink: 0;
@@ -606,16 +628,15 @@ function redo() {
 
 .theme-dropdown {
   position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  margin-top: 8px;
-  background: var(--lattice-surface-1, #121212);
-  border-radius: var(--lattice-radius-lg, 6px);
-  box-shadow: var(--lattice-shadow-dropdown, 0 4px 16px rgba(0, 0, 0, 0.3));
+  top: calc(100% + 8px);
+  right: 0;
+  background: var(--lattice-surface-2, #1a1a1a);
+  border: 1px solid var(--lattice-surface-3, #222222);
+  border-radius: var(--lattice-radius-lg, 8px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
   padding: 12px;
-  z-index: var(--lattice-z-dropdown, 100);
-  min-width: 120px;
+  z-index: 1000;
+  min-width: 140px;
 }
 
 .theme-dropdown-header {

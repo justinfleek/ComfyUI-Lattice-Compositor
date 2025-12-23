@@ -1857,8 +1857,8 @@ onUnmounted(() => {
 }
 
 .viewport-tabs button.active {
-  background: var(--lattice-surface-3, #222222);
-  color: var(--lattice-text-primary, #e5e5e5);
+  background: var(--lattice-accent, #8B5CF6);
+  color: white;
   box-shadow: 0 1px 2px rgba(0,0,0,0.3);
 }
 
