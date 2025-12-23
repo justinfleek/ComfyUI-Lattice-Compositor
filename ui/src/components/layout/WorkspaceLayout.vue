@@ -1641,42 +1641,50 @@ onUnmounted(() => {
   height: 100%;
 }
 
-/* Panels - floating islands */
+/* Panels - floating islands with visible borders */
 .panel {
   display: flex;
   flex-direction: column;
   height: 100%;
   background: var(--lattice-surface-1, #0f0f0f);
   border-radius: var(--lattice-radius-lg, 6px);
+  border: 1px solid var(--lattice-border-default, #2a2a2a);
   overflow: hidden;
 }
 
 .left-panel,
 .right-panel {
+  /* Visible borders for panel separation */
+  border: 1px solid var(--lattice-border-default, #2a2a2a);
   min-width: 180px;
 }
 
 .right-panel {
+  /* Properties panel needs more space for controls */
   min-width: 200px;
 }
 
 .panel-tabs {
   display: flex;
-  background: var(--lattice-surface-0, #080808);
-  padding: 0;
-  gap: 0;
+  background: var(--lattice-surface-0, #0a0a0a);
+  padding: 10px 10px 0 10px;
+  gap: 4px;
+  border-bottom: 1px solid var(--lattice-border-default, #2a2a2a);
 }
 
 .panel-tabs button {
   flex: 1;
-  padding: 10px 14px;
+  padding: 12px 14px;
   border: none;
-  background: transparent;
+  background: var(--lattice-surface-1, #0f0f0f);
   color: var(--lattice-text-muted, #6B7280);
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--lattice-text-base, 13px);
+  font-weight: 600;
   cursor: pointer;
+  border-radius: var(--lattice-radius-md, 4px) var(--lattice-radius-md, 4px) 0 0;
   transition: var(--lattice-transition-fast, 100ms ease);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
 }
 
 .panel-tabs button:hover {
@@ -1686,8 +1694,9 @@ onUnmounted(() => {
 
 .panel-tabs button.active {
   color: white;
-  background: var(--lattice-surface-2, #1a1a1a);
+  background: var(--lattice-surface-1, #0f0f0f);
   font-weight: 600;
+  border-bottom: 2px solid var(--lattice-accent, #8B5CF6);
 }
 
 .panel-tabs button:focus-visible {
@@ -1741,27 +1750,30 @@ onUnmounted(() => {
   height: 100%;
   background: var(--lattice-surface-1, #0f0f0f);
   border-radius: var(--lattice-radius-lg, 6px);
+  border: 1px solid var(--lattice-border-subtle, #1a1a1a);
   overflow: hidden;
 }
 
 .ai-section-header {
   display: flex;
   align-items: center;
-  padding: 10px 14px;
-  background: var(--lattice-surface-0, #080808);
+  padding: 12px 14px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(236, 72, 153, 0.15));
+  border-bottom: 1px solid var(--lattice-border-subtle, #1a1a1a);
 }
 
 .ai-section-title {
-  font-size: 14px;
+  font-size: var(--lattice-text-md, 14px);
   font-weight: 600;
   color: var(--lattice-accent, #8B5CF6);
 }
 
 .ai-section-tabs {
   display: flex;
-  padding: 0;
-  gap: 0;
-  background: var(--lattice-surface-0, #080808);
+  padding: 8px;
+  gap: 4px;
+  background: var(--lattice-surface-0, #0a0a0a);
+  border-bottom: 1px solid var(--lattice-border-subtle, #1a1a1a);
 }
 
 .ai-section-tabs button {
@@ -1769,21 +1781,22 @@ onUnmounted(() => {
   padding: 10px 14px;
   border: none;
   background: transparent;
-  color: var(--lattice-text-muted, #6B7280);
-  font-size: 13px;
-  font-weight: 500;
+  color: var(--lattice-text-secondary, #9CA3AF);
+  font-size: var(--lattice-text-base, 13px);
+  font-weight: 600;
   cursor: pointer;
+  border-radius: var(--lattice-radius-md, 4px);
   transition: var(--lattice-transition-fast, 100ms ease);
 }
 
 .ai-section-tabs button:hover {
   color: var(--lattice-text-primary, #e5e5e5);
-  background: var(--lattice-surface-2, #1a1a1a);
+  background: var(--lattice-surface-3, #1e1e1e);
 }
 
 .ai-section-tabs button.active {
   color: white;
-  background: var(--lattice-surface-2, #1a1a1a);
+  background: var(--lattice-accent, #8B5CF6);
   font-weight: 600;
 }
 
@@ -1802,63 +1815,78 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 4px 8px;
-  background: var(--lattice-surface-0, #080808);
+  padding: 6px 12px;
+  background: var(--lattice-surface-2, #161616);
+  border-bottom: 1px solid var(--lattice-border-default, #2a2a2a);
   gap: 8px;
 }
 
 .viewport-tabs {
   display: flex;
-  gap: 0;
+  gap: 4px;
+  background: var(--lattice-surface-0, #0a0a0a);
+  padding: 4px;
+  border-radius: var(--lattice-radius-md, 4px);
 }
 
 .viewport-tabs button {
   padding: 8px 16px;
   border: none;
-  background: transparent;
-  color: var(--lattice-text-muted, #6B7280);
-  font-size: 13px;
-  font-weight: 500;
+  background: var(--lattice-surface-2, #1a1a1a);
+  color: var(--lattice-text-secondary, #9CA3AF);
+  font-size: var(--lattice-text-base, 13px);
+  font-weight: 600;
+  border-radius: var(--lattice-radius-sm, 2px);
   cursor: pointer;
   transition: var(--lattice-transition-fast, 100ms ease);
 }
 
 .viewport-tabs button:hover {
   color: var(--lattice-text-primary, #e5e5e5);
-  background: var(--lattice-surface-2, #1a1a1a);
+  background: var(--lattice-surface-3, #2a2a2a);
 }
 
 .viewport-tabs button.active {
-  background: var(--lattice-surface-2, #1a1a1a);
+  background: var(--lattice-accent, #8B5CF6);
   color: white;
-  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.3);
 }
 
 .viewport-controls {
   display: flex;
   align-items: center;
-  gap: 0;
+  gap: 4px;
+}
+
+.zoom-select {
+  padding: 4px 8px;
+  background: var(--lattice-surface-2, #1a1a1a);
+  border: none;
+  color: var(--lattice-text-primary, #e5e5e5);
+  border-radius: var(--lattice-radius-md, 4px);
+  font-size: var(--lattice-text-sm, 11px);
 }
 
 .viewport-controls button {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   padding: 0;
   border: none;
-  background: transparent;
-  color: var(--lattice-text-muted, #6B7280);
+  background: var(--lattice-surface-2, #1a1a1a);
+  color: var(--lattice-text-secondary, #9CA3AF);
+  border-radius: var(--lattice-radius-md, 4px);
   cursor: pointer;
-  font-size: 14px;
+  font-size: 16px;
   transition: var(--lattice-transition-fast, 100ms ease);
 }
 
 .viewport-controls button:hover {
-  background: var(--lattice-surface-2, #1a1a1a);
+  background: var(--lattice-surface-3, #2a2a2a);
   color: var(--lattice-text-primary, #e5e5e5);
 }
 
 .viewport-controls button.active {
-  background: var(--lattice-surface-2, #1a1a1a);
+  background: var(--lattice-accent-muted, rgba(139, 92, 246, 0.2));
   color: var(--lattice-accent, #8B5CF6);
 }
 

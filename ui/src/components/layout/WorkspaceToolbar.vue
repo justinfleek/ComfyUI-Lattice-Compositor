@@ -436,20 +436,18 @@ function redo() {
 .toolbar {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  background: var(--lattice-surface-0, #0a0a0a);
+  gap: 10px;
+  padding: 8px 16px;
+  background: var(--lattice-surface-1, #0f0f0f);
   border-radius: var(--lattice-radius-lg, 6px);
+  border: 1px solid var(--lattice-border-subtle, #1a1a1a);
   min-height: 46px;
 }
 
 .tool-group {
   display: flex;
   align-items: center;
-  gap: 0;
-  background: var(--lattice-surface-1, #121212);
-  border-radius: var(--lattice-radius-md, 4px);
-  padding: 2px;
+  gap: 8px;
 }
 
 .tool-group button {
@@ -461,9 +459,9 @@ function redo() {
   height: 32px;
   padding: 0 10px;
   border: none;
-  background: transparent;
+  background: var(--lattice-surface-2, #1a1a1a);
   color: var(--lattice-text-secondary, #9CA3AF);
-  border-radius: var(--lattice-radius-sm, 2px);
+  border-radius: var(--lattice-radius-md, 4px);
   cursor: pointer;
   font-size: var(--lattice-text-md, 14px);
   font-weight: 500;
@@ -474,7 +472,7 @@ function redo() {
   flex-direction: column;
   gap: 2px;
   min-width: 50px;
-  height: 40px;
+  height: 42px;
   padding: 4px 8px;
 }
 
@@ -494,12 +492,12 @@ function redo() {
 }
 
 .tool-group button:hover {
-  background: var(--lattice-surface-2, #1a1a1a);
+  background: var(--lattice-surface-3, #2d2d2d);
   color: var(--lattice-text-primary, #e5e5e5);
 }
 
 .tool-group button.active {
-  background: var(--lattice-surface-3, #2a2a2a);
+  background: var(--lattice-accent, #8B5CF6);
   color: white;
 }
 
@@ -519,9 +517,9 @@ function redo() {
 
 .divider {
   width: 1px;
-  height: 20px;
-  background: var(--lattice-surface-2, #1a1a1a);
-  margin: 0 4px;
+  height: 24px;
+  background: var(--lattice-surface-3, #222222);
+  margin: 0 6px;
 }
 
 .spacer {
@@ -552,9 +550,9 @@ function redo() {
 .gpu-badge.webgpu { background: var(--lattice-info, #3B82F6); color: white; }
 .gpu-badge.blackwell { background: #76b900; color: #000; }
 
-/* Undo/Redo Buttons - inherits from tool-group */
+/* Undo/Redo Buttons */
 .undo-redo-group {
-  gap: 0;
+  gap: 4px;
 }
 
 .undo-btn,
@@ -563,6 +561,13 @@ function redo() {
   align-items: center;
   gap: 4px;
   padding: 4px 10px !important;
+  background: var(--lattice-surface-2, #1a1a1a) !important;
+  border-radius: var(--lattice-radius-md, 4px) !important;
+}
+
+.undo-btn:hover:not(:disabled),
+.redo-btn:hover:not(:disabled) {
+  background: var(--lattice-surface-3, #2a2a2a) !important;
 }
 
 .undo-btn:disabled,
@@ -576,14 +581,13 @@ function redo() {
   font-weight: 500;
 }
 
-/* Right Status Group - no background wrapper */
+/* Right Status Group */
 .right-status-group {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 0 8px;
+  gap: 16px;
+  padding: 0 12px;
   margin-left: auto;
-  background: transparent;
 }
 
 /* Theme Selector */
@@ -682,9 +686,11 @@ function redo() {
   background: var(--lattice-surface-3, #333) !important;
 }
 
-/* Shape tool options - inherits from .tool-group */
+/* Shape tool options */
 .shape-tools {
-  /* Uses tool-group styles - no override needed */
+  background: var(--lattice-surface-2, #1a1a1a);
+  border-radius: var(--lattice-radius-md, 4px);
+  padding: 4px;
 }
 
 .shape-options {
@@ -729,25 +735,25 @@ function redo() {
   border-color: var(--lattice-accent, #8B5CF6);
 }
 
-/* Action buttons group (Preview/Export/ComfyUI) - inherits from tool-group */
+/* Action buttons group (Preview/Export/ComfyUI) */
 .action-buttons {
-  gap: 0;
+  gap: 12px !important;
 }
 
 .action-buttons button {
-  padding: 0 12px !important;
+  padding: 0 14px !important;
 }
 
 /* Primary action button (Export) */
 .tool-group button.primary-btn {
-  background: var(--lattice-accent, #8B5CF6) !important;
+  background: var(--lattice-accent, #8B5CF6);
   color: white;
   padding: 0 14px;
   font-weight: 500;
 }
 
 .tool-group button.primary-btn:hover {
-  background: var(--lattice-accent-hover, #9D7AFA) !important;
+  background: var(--lattice-accent-hover, #9D7AFA);
   color: white;
 }
 </style>
