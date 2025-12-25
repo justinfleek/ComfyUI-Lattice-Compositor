@@ -10,9 +10,9 @@
 |----------|-------|-------|------|
 | CRITICAL | 0 | 0 | 0 |
 | HIGH | 2 | 2 | 0 |
-| MEDIUM | 0 | 0 | 0 |
+| MEDIUM | 1 | 1 | 0 |
 | LOW | 1 | 1 | 0 |
-| **TOTAL** | **3** | **3** | **0** |
+| **TOTAL** | **4** | **4** | **0** |
 
 ---
 
@@ -53,5 +53,19 @@
 - **Actual:** Casts to `number[]` and calls `.map()` which crashes with "map is not a function".
 - **Status:** FIXED
 - **Fix:** Updated `insertKeyframeOnPath` to use object property access. Updated `rovingKeyframes.ts` to handle both `number[]` and `{x,y,z}` formats with `PositionValue` type union and `extractXYZ` helper function. Made `applyRovingKeyframes` generic to preserve input type.
+
+---
+
+## BUG-008: SolidLayer uses labelColor to set visual fill color
+- **Severity:** MEDIUM
+- **Feature:** 2.1 SolidLayer
+- **File:** ui/src/engine/layers/SolidLayer.ts
+- **Line:** 337-339
+- **Description:** `onUpdate()` incorrectly uses `labelColor` (timeline organization color) to set the solid's visual fill color. These are separate concepts - labelColor is for timeline organization, not visual rendering.
+- **Expected:** labelColor changes should only affect timeline UI, not the solid's rendered color.
+- **Actual:** When labelColor is changed via `updateLayer()`, the solid's visual color changes too.
+- **Status:** FIXED
+- **Fix:** Removed incorrect labelColor handling code. Added comment clarifying labelColor is for timeline only.
+- **Files Changed:** ui/src/engine/layers/SolidLayer.ts
 
 ---

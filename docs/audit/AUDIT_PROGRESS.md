@@ -9,7 +9,7 @@ Current Phase: TIER 1 COMPLETE - ALL BUGS FIXED, READY FOR TIER 2
 | Tier | Total | Complete | Bugs Found |
 |------|-------|----------|------------|
 | 1. Foundation | 7 | 7 | 3 |
-| 2. Layer Types | 23 | 0 | 0 |
+| 2. Layer Types | 23 | 1 | 1 |
 | 3. Animation | 10 | 0 | 0 |
 | 4. Effects | 12 | 0 | 0 |
 | 5. Particles | 12 | 0 | 0 |
@@ -20,7 +20,7 @@ Current Phase: TIER 1 COMPLETE - ALL BUGS FIXED, READY FOR TIER 2
 | 10. Export | 6 | 0 | 0 |
 | 11. AI | 5 | 0 | 0 |
 | 12. Data/Templates | 4 | 0 | 0 |
-| **TOTAL** | **127** | **7** | **3** |
+| **TOTAL** | **127** | **8** | **4** |
 
 ---
 
@@ -40,7 +40,7 @@ Current Phase: TIER 1 COMPLETE - ALL BUGS FIXED, READY FOR TIER 2
 
 | ID | Layer | Status | Bugs | Time | Session |
 |----|-------|--------|------|------|---------|
-| 2.1 | SolidLayer | [ ] | 0 | - | - |
+| 2.1 | SolidLayer | [x] | 1 | 15m | 2 |
 | 2.2 | ImageLayer | [ ] | 0 | - | - |
 | 2.3 | VideoLayer | [ ] | 0 | - | - |
 | 2.4 | TextLayer | [ ] | 0 | - | - |

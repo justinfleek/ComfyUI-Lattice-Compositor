@@ -332,11 +332,7 @@ export class SolidLayer extends BaseLayer {
     if (data?.animatedColor !== undefined) {
       this.animatedColor = data.animatedColor;
     }
-
-    // Color can also be set directly
-    if (data === undefined && (properties as any).labelColor !== undefined) {
-      this.setColor((properties as any).labelColor);
-    }
+    // Note: labelColor is for timeline organization only, not visual fill color
   }
 
   protected onDispose(): void {
