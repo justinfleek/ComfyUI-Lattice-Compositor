@@ -901,10 +901,14 @@ export class SplineLayer extends BaseLayer {
     frame: number,
     index: number
   ): EvaluatedControlPoint {
+    // Use composition fps for correct animation timing (not hardcoded 30fps)
+    const fps = this.compositionFps;
+    const layerId = this.id;
+
     // Get interpolated values first
-    const interpolatedX = interpolateProperty(acp.x, frame);
-    const interpolatedY = interpolateProperty(acp.y, frame);
-    const interpolatedDepth = acp.depth ? interpolateProperty(acp.depth, frame) : 0;
+    const interpolatedX = interpolateProperty(acp.x, frame, fps, layerId);
+    const interpolatedY = interpolateProperty(acp.y, frame, fps, layerId);
+    const interpolatedDepth = acp.depth ? interpolateProperty(acp.depth, frame, fps, layerId) : 0;
 
     // Apply driven value overrides
     return {
@@ -913,12 +917,12 @@ export class SplineLayer extends BaseLayer {
       y: this.getDrivenControlPointValue(index, 'y', interpolatedY),
       depth: this.getDrivenControlPointValue(index, 'depth', interpolatedDepth),
       handleIn: acp.handleIn ? {
-        x: interpolateProperty(acp.handleIn.x, frame),
-        y: interpolateProperty(acp.handleIn.y, frame),
+        x: interpolateProperty(acp.handleIn.x, frame, fps, layerId),
+        y: interpolateProperty(acp.handleIn.y, frame, fps, layerId),
       } : null,
       handleOut: acp.handleOut ? {
-        x: interpolateProperty(acp.handleOut.x, frame),
-        y: interpolateProperty(acp.handleOut.y, frame),
+        x: interpolateProperty(acp.handleOut.x, frame, fps, layerId),
+        y: interpolateProperty(acp.handleOut.y, frame, fps, layerId),
       } : null,
       type: acp.type,
       group: acp.group,
@@ -1030,8 +1034,8 @@ export class SplineLayer extends BaseLayer {
     if (typeof prop === 'number') {
       return prop;
     }
-    // It's an AnimatableProperty
-    return interpolateProperty(prop, frame);
+    // It's an AnimatableProperty - use composition fps for correct timing
+    return interpolateProperty(prop, frame, this.compositionFps, this.id);
   }
 
   /**
@@ -1120,6 +1124,10 @@ export class SplineLayer extends BaseLayer {
       return bezierPath;
     }
 
+    // Use composition fps for correct animation timing
+    const fps = this.compositionFps;
+    const layerId = this.id;
+
     // Sort effects by order
     const sortedEffects = [...this.pathEffects]
       .filter(e => e.enabled)
@@ -1131,18 +1139,18 @@ export class SplineLayer extends BaseLayer {
       switch (effect.type) {
         case 'offsetPath': {
           const offsetEffect = effect as import('@/types/project').OffsetPathEffect;
-          const amount = interpolateProperty(offsetEffect.amount, frame);
-          const miterLimit = interpolateProperty(offsetEffect.miterLimit, frame);
+          const amount = interpolateProperty(offsetEffect.amount, frame, fps, layerId);
+          const miterLimit = interpolateProperty(offsetEffect.miterLimit, frame, fps, layerId);
           result = offsetPath(result, amount, offsetEffect.lineJoin, miterLimit);
           break;
         }
         case 'wiggle': {
           const wiggleEffect = effect as import('@/types/project').WigglePathEffect;
-          const size = interpolateProperty(wiggleEffect.size, frame);
-          const detail = interpolateProperty(wiggleEffect.detail, frame);
-          const temporalPhase = interpolateProperty(wiggleEffect.temporalPhase, frame);
-          const spatialPhase = interpolateProperty(wiggleEffect.spatialPhase, frame);
-          const correlation = interpolateProperty(wiggleEffect.correlation, frame);
+          const size = interpolateProperty(wiggleEffect.size, frame, fps, layerId);
+          const detail = interpolateProperty(wiggleEffect.detail, frame, fps, layerId);
+          const temporalPhase = interpolateProperty(wiggleEffect.temporalPhase, frame, fps, layerId);
+          const spatialPhase = interpolateProperty(wiggleEffect.spatialPhase, frame, fps, layerId);
+          const correlation = interpolateProperty(wiggleEffect.correlation, frame, fps, layerId);
           result = wigglePath(
             result,
             size,
@@ -1157,23 +1165,23 @@ export class SplineLayer extends BaseLayer {
         }
         case 'zigzag': {
           const zigzagEffect = effect as import('@/types/project').ZigZagEffect;
-          const size = interpolateProperty(zigzagEffect.size, frame);
-          const ridges = interpolateProperty(zigzagEffect.ridgesPerSegment, frame);
+          const size = interpolateProperty(zigzagEffect.size, frame, fps, layerId);
+          const ridges = interpolateProperty(zigzagEffect.ridgesPerSegment, frame, fps, layerId);
           result = zigZagPath(result, size, ridges, zigzagEffect.pointType);
           break;
         }
         case 'roughen': {
           const roughenEffect = effect as import('@/types/project').RoughenEffect;
-          const size = interpolateProperty(roughenEffect.size, frame);
-          const detail = interpolateProperty(roughenEffect.detail, frame);
+          const size = interpolateProperty(roughenEffect.size, frame, fps, layerId);
+          const detail = interpolateProperty(roughenEffect.detail, frame, fps, layerId);
           result = roughenPath(result, size, detail, roughenEffect.seed);
           break;
         }
         case 'wave': {
           const waveEffect = effect as import('@/types/project').WaveEffect;
-          const amplitude = interpolateProperty(waveEffect.amplitude, frame);
-          const frequency = interpolateProperty(waveEffect.frequency, frame);
-          const phase = interpolateProperty(waveEffect.phase, frame);
+          const amplitude = interpolateProperty(waveEffect.amplitude, frame, fps, layerId);
+          const frequency = interpolateProperty(waveEffect.frequency, frame, fps, layerId);
+          const phase = interpolateProperty(waveEffect.phase, frame, fps, layerId);
           result = wavePath(result, amplitude, frequency, phase, waveEffect.waveType as WaveType);
           break;
         }

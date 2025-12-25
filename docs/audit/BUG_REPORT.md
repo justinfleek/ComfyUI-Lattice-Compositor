@@ -10,9 +10,9 @@
 |----------|-------|-------|------|
 | CRITICAL | 0 | 0 | 0 |
 | HIGH | 2 | 2 | 0 |
-| MEDIUM | 9 | 9 | 0 |
+| MEDIUM | 10 | 10 | 0 |
 | LOW | 3 | 3 | 0 |
-| **TOTAL** | **14** | **14** | **0** |
+| **TOTAL** | **15** | **15** | **0** |
 
 ---
 
@@ -207,5 +207,19 @@
 - **Status:** FIXED
 - **Fix:** Added fps and layerId variables, passed them to all interpolateProperty calls.
 - **Files Changed:** ui/src/engine/layers/PathLayer.ts
+
+---
+
+## BUG-019: SplineLayer missing fps in all interpolateProperty calls
+- **Severity:** MEDIUM
+- **Feature:** 2.15 SplineLayer
+- **File:** ui/src/engine/layers/SplineLayer.ts
+- **Line:** 905-921, 1034, 1134-1184
+- **Description:** All `interpolateProperty` calls in SplineLayer are missing fps and layerId parameters. This affects control point animation, trim path animation, and all path effect animations (offset, wiggle, zigzag, roughen, wave).
+- **Expected:** Should use `this.compositionFps` for correct timing at all framerates.
+- **Actual:** Always uses default 30fps regardless of composition settings.
+- **Status:** FIXED
+- **Fix:** Added fps and layerId parameters to all interpolateProperty calls in evaluateControlPointAtFrame, evaluateStaticOrAnimated, and applyPathEffects.
+- **Files Changed:** ui/src/engine/layers/SplineLayer.ts
 
 ---
