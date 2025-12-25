@@ -10,9 +10,9 @@
 |----------|-------|-------|------|
 | CRITICAL | 0 | 0 | 0 |
 | HIGH | 2 | 2 | 0 |
-| MEDIUM | 11 | 11 | 0 |
+| MEDIUM | 12 | 12 | 0 |
 | LOW | 3 | 3 | 0 |
-| **TOTAL** | **16** | **16** | **0** |
+| **TOTAL** | **17** | **17** | **0** |
 
 ---
 
@@ -235,5 +235,19 @@
 - **Status:** FIXED
 - **Fix:** Added fps and layerId variables using `this.compositionFps` and `this.id`, passed to interpolateProperty calls.
 - **Files Changed:** ui/src/engine/layers/ModelLayer.ts
+
+---
+
+## BUG-021: PointCloudLayer.onEvaluateFrame missing fps parameter
+- **Severity:** MEDIUM
+- **Feature:** 2.17 PointCloudLayer
+- **File:** ui/src/engine/layers/PointCloudLayer.ts
+- **Line:** 1015, 1019
+- **Description:** `interpolateProperty` calls for pointSize and opacity are missing fps and layerId parameters. Defaults to 30fps.
+- **Expected:** Should use `this.compositionFps` for correct timing at all framerates.
+- **Actual:** Always uses default 30fps regardless of composition settings.
+- **Status:** FIXED
+- **Fix:** Added fps and layerId variables using `this.compositionFps` and `this.id`, passed to interpolateProperty calls.
+- **Files Changed:** ui/src/engine/layers/PointCloudLayer.ts
 
 ---

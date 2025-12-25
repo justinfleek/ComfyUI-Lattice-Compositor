@@ -1011,12 +1011,16 @@ export class PointCloudLayer extends BaseLayer {
   // ============================================================================
 
   protected onEvaluateFrame(frame: number): void {
+    // Use composition fps for correct animation timing (not hardcoded 30fps)
+    const fps = this.compositionFps;
+    const layerId = this.id;
+
     // Evaluate animated point size
-    const size = interpolateProperty(this.cloudData.pointSize, frame);
+    const size = interpolateProperty(this.cloudData.pointSize, frame, fps, layerId);
     this.setPointSize(size);
 
     // Evaluate animated opacity
-    const opacity = interpolateProperty(this.cloudData.opacity, frame);
+    const opacity = interpolateProperty(this.cloudData.opacity, frame, fps, layerId);
     this.setOpacity(opacity);
 
     // Update bounding box helper
