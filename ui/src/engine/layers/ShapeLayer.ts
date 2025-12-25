@@ -101,6 +101,18 @@ interface EvaluatedPath {
     endPoint: Point2D;
     opacity: number;
   };
+  gradientStroke?: {
+    type: 'linear' | 'radial';
+    stops: Array<{ position: number; color: ShapeColor }>;
+    startPoint: Point2D;
+    endPoint: Point2D;
+    opacity: number;
+    width: number;
+    lineCap: string;
+    lineJoin: string;
+    dashPattern: number[];
+    dashOffset: number;
+  };
 }
 
 // ============================================================================
@@ -659,8 +671,20 @@ export class ShapeLayer extends BaseLayer {
       }
 
       case 'gradientStroke': {
-        // Similar to gradientFill but for stroke
-        // Would need additional stroke properties
+        const gradStroke = modifier as GradientStrokeShape;
+        const gradDef = this.getAnimatedValue(gradStroke.gradient);
+        evalPath.gradientStroke = {
+          type: gradDef.type,
+          stops: gradDef.stops,
+          startPoint: gradDef.startPoint,
+          endPoint: gradDef.endPoint,
+          opacity: this.getAnimatedValue(gradStroke.opacity),
+          width: this.getAnimatedValue(gradStroke.width),
+          lineCap: gradStroke.lineCap,
+          lineJoin: gradStroke.lineJoin,
+          dashPattern: this.getAnimatedValue(gradStroke.dashPattern),
+          dashOffset: this.getAnimatedValue(gradStroke.dashOffset),
+        };
         break;
       }
     }
@@ -672,14 +696,14 @@ export class ShapeLayer extends BaseLayer {
   private getAnimatedValue<T>(prop: AnimatableProperty<T>): T {
     // Use the interpolation service for proper keyframe interpolation
     // This handles all interpolation types (linear, bezier, hold) and expressions
-    return interpolateProperty(prop, this.currentFrame, 30, this.layerData.id);
+    return interpolateProperty(prop, this.currentFrame, this.compositionFps, this.layerData.id);
   }
 
   /**
    * Render a single evaluated path to canvas
    */
   private renderPath(evalPath: EvaluatedPath): void {
-    const { path, fill, stroke, gradientFill } = evalPath;
+    const { path, fill, stroke, gradientFill, gradientStroke } = evalPath;
 
     if (path.vertices.length < 2) return;
 
@@ -700,8 +724,24 @@ export class ShapeLayer extends BaseLayer {
       this.ctx.fill(path2d, fill.rule);
     }
 
-    // Stroke
-    if (stroke && stroke.width > 0) {
+    // Stroke - gradient stroke takes priority over solid stroke
+    if (gradientStroke && gradientStroke.width > 0) {
+      const gradient = this.createGradient(gradientStroke);
+      this.ctx.globalAlpha = gradientStroke.opacity / 100;
+      this.ctx.strokeStyle = gradient;
+      this.ctx.lineWidth = gradientStroke.width;
+      this.ctx.lineCap = gradientStroke.lineCap as CanvasLineCap;
+      this.ctx.lineJoin = gradientStroke.lineJoin as CanvasLineJoin;
+
+      if (gradientStroke.dashPattern.length > 0) {
+        this.ctx.setLineDash(gradientStroke.dashPattern);
+        this.ctx.lineDashOffset = gradientStroke.dashOffset;
+      } else {
+        this.ctx.setLineDash([]);  // Reset dash pattern for solid strokes
+      }
+
+      this.ctx.stroke(path2d);
+    } else if (stroke && stroke.width > 0) {
       this.ctx.globalAlpha = stroke.opacity / 100;
       this.ctx.strokeStyle = this.colorToCSS(stroke.color);
       this.ctx.lineWidth = stroke.width;
@@ -711,6 +751,8 @@ export class ShapeLayer extends BaseLayer {
       if (stroke.dashPattern.length > 0) {
         this.ctx.setLineDash(stroke.dashPattern);
         this.ctx.lineDashOffset = stroke.dashOffset;
+      } else {
+        this.ctx.setLineDash([]);  // Reset dash pattern for solid strokes
       }
 
       this.ctx.stroke(path2d);
@@ -762,7 +804,7 @@ export class ShapeLayer extends BaseLayer {
   /**
    * Create canvas gradient
    */
-  private createGradient(gradDef: EvaluatedPath['gradientFill']): CanvasGradient {
+  private createGradient(gradDef: EvaluatedPath['gradientFill'] | EvaluatedPath['gradientStroke']): CanvasGradient {
     if (!gradDef) {
       return this.ctx.createLinearGradient(0, 0, 0, 0);
     }

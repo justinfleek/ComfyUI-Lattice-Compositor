@@ -10,9 +10,9 @@
 |----------|-------|-------|------|
 | CRITICAL | 0 | 0 | 0 |
 | HIGH | 2 | 2 | 0 |
-| MEDIUM | 1 | 1 | 0 |
-| LOW | 1 | 1 | 0 |
-| **TOTAL** | **4** | **4** | **0** |
+| MEDIUM | 2 | 2 | 0 |
+| LOW | 2 | 1 | 1 |
+| **TOTAL** | **6** | **5** | **1** |
 
 ---
 
@@ -67,5 +67,31 @@
 - **Status:** FIXED
 - **Fix:** Removed incorrect labelColor handling code. Added comment clarifying labelColor is for timeline only.
 - **Files Changed:** ui/src/engine/layers/SolidLayer.ts
+
+---
+
+## BUG-009: AudioLayer hasAudio getter returns true when no audio
+- **Severity:** LOW
+- **Feature:** 2.6 AudioLayer
+- **File:** ui/src/engine/layers/AudioLayer.ts
+- **Line:** 418
+- **Description:** The `hasAudio` getter uses `this.playbackNodes?.buffer !== null` which returns `true` when `playbackNodes` is null, because optional chaining returns `undefined` and `undefined !== null` is `true`.
+- **Expected:** Should return `false` when there's no audio loaded.
+- **Actual:** Returns `true` when `playbackNodes` is null.
+- **Status:** OPEN
+
+---
+
+## BUG-010: ShapeLayer hardcoded 30fps in getAnimatedValue
+- **Severity:** MEDIUM
+- **Feature:** 2.5 ShapeLayer
+- **File:** ui/src/engine/layers/ShapeLayer.ts
+- **Line:** 699
+- **Description:** `getAnimatedValue()` calls `interpolateProperty(prop, this.currentFrame, 30, ...)` with hardcoded 30fps instead of using composition fps. This causes incorrect animation timing at non-30fps framerates.
+- **Expected:** Should use composition fps (e.g., 16fps common in AI workflows, 24fps for film, 60fps for games).
+- **Actual:** Always uses 30fps regardless of composition settings, causing animations to run at wrong speeds.
+- **Status:** FIXED
+- **Fix:** Changed hardcoded `30` to `this.compositionFps` (inherited from BaseLayer). BaseLayer already has this property and setCompositionFps() method.
+- **Files Changed:** ui/src/engine/layers/ShapeLayer.ts
 
 ---
