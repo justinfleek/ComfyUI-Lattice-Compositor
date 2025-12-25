@@ -225,6 +225,7 @@ export class LightLayer extends BaseLayer {
   // Point of Interest
   private poiTarget: THREE.Vector3 = new THREE.Vector3();
   private smoothedPOI: THREE.Vector3 = new THREE.Vector3();
+  private lastPOIFrame: number = -1; // Track last frame for deterministic smoothing
 
   // Path following callback (set by LayerManager)
   private pathProvider: ((layerId: string, t: number, frame: number) => { point: { x: number; y: number; z: number }; tangent: { x: number; y: number } } | null) | null = null;
@@ -548,8 +549,12 @@ export class LightLayer extends BaseLayer {
       this.poiTarget.set(pos.x, pos.y, pos.z);
     }
 
-    // Apply smoothing
-    if (poi.smoothing > 0) {
+    // Apply smoothing only on sequential frames for determinism
+    // Non-sequential frame access (scrubbing, seeking) resets to target directly
+    const isSequentialFrame = frame === this.lastPOIFrame + 1;
+    this.lastPOIFrame = frame;
+
+    if (poi.smoothing > 0 && isSequentialFrame) {
       this.smoothedPOI.lerp(this.poiTarget, 1 - poi.smoothing);
     } else {
       this.smoothedPOI.copy(this.poiTarget);

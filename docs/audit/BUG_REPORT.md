@@ -10,9 +10,9 @@
 |----------|-------|-------|------|
 | CRITICAL | 0 | 0 | 0 |
 | HIGH | 2 | 2 | 0 |
-| MEDIUM | 3 | 3 | 0 |
+| MEDIUM | 4 | 4 | 0 |
 | LOW | 3 | 3 | 0 |
-| **TOTAL** | **8** | **8** | **0** |
+| **TOTAL** | **9** | **9** | **0** |
 
 ---
 
@@ -123,5 +123,19 @@
 - **Status:** FIXED
 - **Fix:** Added `compositionAspect` property with `setCompositionAspect()` method. Changed hardcoded `16/9` to `this.compositionAspect`. Also tracks aspect in frustum state for re-creation when aspect changes.
 - **Files Changed:** ui/src/engine/layers/CameraLayer.ts
+
+---
+
+## BUG-013: LightLayer POI smoothing violates determinism
+- **Severity:** MEDIUM
+- **Feature:** 2.8 LightLayer
+- **File:** ui/src/engine/layers/LightLayer.ts
+- **Line:** 552-556
+- **Description:** POI smoothing uses `this.smoothedPOI.lerp()` which accumulates state frame-over-frame. Scrubbing Frame 50 → Frame 10 → Frame 50 produces different results because smoothedPOI depends on previous frame, not just current frame number.
+- **Expected:** Same frame number should always produce identical output regardless of playback history.
+- **Actual:** Output depends on which frames were previously evaluated, violating determinism.
+- **Status:** FIXED
+- **Fix:** Added `lastPOIFrame` tracker. Smoothing only applies on sequential frames (frame === lastPOIFrame + 1). Non-sequential access resets smoothedPOI to target directly, ensuring determinism.
+- **Files Changed:** ui/src/engine/layers/LightLayer.ts
 
 ---
