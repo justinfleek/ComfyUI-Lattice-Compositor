@@ -10,7 +10,7 @@ Current Phase: FULL RE-AUDIT - STARTING FROM TIER 1
 
 | Tier | Total | Complete | Bugs Found |
 |------|-------|----------|------------|
-| 1. Foundation | 7 | 1 | 1 |
+| 1. Foundation | 7 | 7 | 3 |
 | 2. Layer Types | 23 | 0 | 0 |
 | 3. Animation | 10 | 0 | 0 |
 | 4. Effects | 12 | 0 | 0 |
@@ -22,7 +22,7 @@ Current Phase: FULL RE-AUDIT - STARTING FROM TIER 1
 | 10. Export | 6 | 0 | 0 |
 | 11. AI | 5 | 0 | 0 |
 | 12. Data/Templates | 4 | 0 | 0 |
-| **TOTAL** | **127** | **1** | **1** |
+| **TOTAL** | **127** | **7** | **3** |
 
 ---
 
@@ -31,12 +31,12 @@ Current Phase: FULL RE-AUDIT - STARTING FROM TIER 1
 | ID | Feature | Status | Bugs | Time | Session |
 |----|---------|--------|------|------|---------|
 | 1.1 | Layer Creation/Deletion | [x] | 1 | 45m | 1 |
-| 1.2 | Composition Settings | [ ] | 0 | - | - |
-| 1.3 | Layer Base Class | [ ] | 0 | - | - |
-| 1.4 | Transform System | [ ] | 0 | - | - |
-| 1.5 | Keyframe System | [ ] | 0 | - | - |
-| 1.6 | Interpolation | [ ] | 0 | - | - |
-| 1.7 | Expression Evaluation | [ ] | 0 | - | - |
+| 1.2 | Layer Transform | [x] | 1 | 30m | 1 |
+| 1.3 | Layer Base Class | [x] | 0 | 15m | 1 |
+| 1.4 | Transform System | [x] | 1 | 45m | 1 |
+| 1.5 | Keyframe System | [x] | 0 | 20m | 1 |
+| 1.6 | Interpolation | [x] | 0 | 15m | 1 |
+| 1.7 | Expression Evaluation | [x] | 0 | 20m | 1 |
 
 ---
 
