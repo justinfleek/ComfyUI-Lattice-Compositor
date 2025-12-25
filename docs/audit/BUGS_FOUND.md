@@ -10,10 +10,10 @@ Master bug tracking document
 | Severity | Count | Fixed | Open |
 |----------|-------|-------|------|
 | CRITICAL | 0 | 0 | 0 |
-| HIGH | 2 | 2 | 0 |
+| HIGH | 3 | 3 | 0 |
 | MEDIUM | 0 | 0 | 0 |
 | LOW | 0 | 0 | 0 |
-| **TOTAL** | **2** | **2** | **0** |
+| **TOTAL** | **3** | **3** | **0** |
 
 ---
 
@@ -116,6 +116,49 @@ const inVelocity = keyframe.inHandle?.enabled && keyframe.inHandle.frame !== 0
 
 **Related:**
 - BUG-001 (same hardcoded fps pattern)
+
+---
+
+## BUG-003: MotionEngine doesn't pass composition fps to interpolateProperty
+
+**Feature:** Transform System / Expression Evaluation (1.4)
+**Severity:** HIGH
+**Found:** 2025-12-25
+**Status:** FIXED
+
+**Location:**
+- File: ui/src/engine/MotionEngine.ts
+- Lines: 539, 572, 622-627, 643, 646, 686, 709, 729-738, 802-831
+
+**Issue:**
+MotionEngine.evaluate() has access to `composition.settings.fps` but all calls to `interpolateProperty` use the default fps=30. This causes time-based expressions to evaluate incorrectly for non-30fps compositions.
+
+**Evidence:**
+```typescript
+// MotionEngine.ts line 572 - missing fps parameter
+let opacity: number = interpolateProperty(layer.opacity, frame);
+
+// interpolation.ts shows fps is used for expressions:
+const time = frame / fps;  // Line 287 - fps affects time calculation
+const velocity = calculateVelocity(property, frame, fps);  // Line 288
+```
+
+**Impact:**
+- Expressions using `time` variable evaluate incorrectly for non-30fps compositions
+- Expressions using `velocity` evaluate incorrectly
+- 60fps composition: `time` values are 2x too large
+- 16fps composition: `time` values are ~0.53x too small
+
+**Fix Applied:**
+1. Added fps parameter to evaluateLayers(), evaluateTransform(), evaluateEffects(), evaluateLayerProperties(), evaluateCamera()
+2. Get fps from composition.settings in evaluate()
+3. Pass fps to all interpolateProperty calls throughout the evaluation chain
+
+**Files Changed:**
+- ui/src/engine/MotionEngine.ts (multiple function signatures and calls updated)
+
+**Related:**
+- BUG-001, BUG-002 (same hardcoded fps pattern throughout codebase)
 
 ---
 

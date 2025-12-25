@@ -497,15 +497,19 @@ export class MotionEngine {
       }
     }
 
+    // Get composition fps
+    const fps = composition.settings?.fps ?? 30;
+
     // Evaluate all layers
-    const evaluatedLayers = this.evaluateLayers(frame, composition.layers, audioMapper);
+    const evaluatedLayers = this.evaluateLayers(frame, composition.layers, audioMapper, fps);
 
     // Evaluate camera
     const evaluatedCamera = this.evaluateCamera(
       frame,
       composition.layers,
       activeCameraId ?? null,
-      composition.settings
+      composition.settings,
+      fps
     );
 
     // Evaluate audio
@@ -555,7 +559,8 @@ export class MotionEngine {
   private evaluateLayers(
     frame: number,
     layers: Layer[],
-    audioMapper: AudioReactiveMapper | null
+    audioMapper: AudioReactiveMapper | null,
+    fps: number = 30
   ): EvaluatedLayer[] {
     const evaluated: EvaluatedLayer[] = [];
 
@@ -566,16 +571,16 @@ export class MotionEngine {
       const visible = layer.visible && inRange;
 
       // Evaluate transform
-      const transform = this.evaluateTransform(frame, layer.transform, layer.threeD);
+      const transform = this.evaluateTransform(frame, layer.transform, layer.threeD, fps);
 
       // Evaluate opacity (explicit type for TypeScript inference)
-      let opacity: number = interpolateProperty(layer.opacity, frame);
+      let opacity: number = interpolateProperty(layer.opacity, frame, fps, layer.id);
 
       // Evaluate effects
-      const effects = this.evaluateEffects(frame, layer.effects);
+      const effects = this.evaluateEffects(frame, layer.effects, fps);
 
       // Evaluate layer-specific properties
-      const properties = this.evaluateLayerProperties(frame, layer);
+      const properties = this.evaluateLayerProperties(frame, layer, fps);
 
       // Evaluate audio reactive modifiers for this layer
       let audioModifiers: AudioReactiveModifiers = {};
@@ -613,14 +618,38 @@ export class MotionEngine {
   private evaluateTransform(
     frame: number,
     transform: LayerTransform,
-    is3D: boolean
+    is3D: boolean,
+    fps: number = 30
   ): EvaluatedTransform {
-    const position = interpolateProperty(transform.position, frame);
+    // Evaluate position - check for separate dimensions first
+    let position: { x: number; y: number; z?: number };
+    if (transform.separateDimensions?.position && transform.positionX && transform.positionY) {
+      position = {
+        x: interpolateProperty(transform.positionX, frame, fps),
+        y: interpolateProperty(transform.positionY, frame, fps),
+        z: transform.positionZ ? interpolateProperty(transform.positionZ, frame, fps) : 0
+      };
+    } else {
+      position = interpolateProperty(transform.position, frame, fps);
+    }
+
     // Use origin (new name) with fallback to anchorPoint (deprecated) for backwards compatibility
     const originProp = transform.origin || transform.anchorPoint;
-    const origin = originProp ? interpolateProperty(originProp, frame) : { x: 0, y: 0, z: 0 };
-    const scale = interpolateProperty(transform.scale, frame);
-    const rotation = interpolateProperty(transform.rotation, frame);
+    const origin = originProp ? interpolateProperty(originProp, frame, fps) : { x: 0, y: 0, z: 0 };
+
+    // Evaluate scale - check for separate dimensions first
+    let scale: { x: number; y: number; z?: number };
+    if (transform.separateDimensions?.scale && transform.scaleX && transform.scaleY) {
+      scale = {
+        x: interpolateProperty(transform.scaleX, frame, fps),
+        y: interpolateProperty(transform.scaleY, frame, fps),
+        z: transform.scaleZ ? interpolateProperty(transform.scaleZ, frame, fps) : 100
+      };
+    } else {
+      scale = interpolateProperty(transform.scale, frame, fps);
+    }
+
+    const rotation = interpolateProperty(transform.rotation, frame, fps);
 
     const result: EvaluatedTransform = {
       position: { ...position },
@@ -636,13 +665,13 @@ export class MotionEngine {
       return {
         ...result,
         rotationX: transform.rotationX
-          ? interpolateProperty(transform.rotationX, frame)
+          ? interpolateProperty(transform.rotationX, frame, fps)
           : 0,
         rotationY: transform.rotationY
-          ? interpolateProperty(transform.rotationY, frame)
+          ? interpolateProperty(transform.rotationY, frame, fps)
           : 0,
         rotationZ: transform.rotationZ
-          ? interpolateProperty(transform.rotationZ, frame)
+          ? interpolateProperty(transform.rotationZ, frame, fps)
           : rotation,
       };
     }
@@ -652,7 +681,8 @@ export class MotionEngine {
 
   private evaluateEffects(
     frame: number,
-    effects: EffectInstance[]
+    effects: EffectInstance[],
+    fps: number = 30
   ): EvaluatedEffect[] {
     return effects.map((effect) => {
       const evaluatedParams: Record<string, unknown> = {};
@@ -660,7 +690,7 @@ export class MotionEngine {
       // Evaluate each parameter
       for (const [key, param] of Object.entries(effect.parameters)) {
         if (this.isAnimatableProperty(param)) {
-          evaluatedParams[key] = interpolateProperty(param, frame);
+          evaluatedParams[key] = interpolateProperty(param, frame, fps);
         } else {
           evaluatedParams[key] = param;
         }
@@ -677,13 +707,14 @@ export class MotionEngine {
 
   private evaluateLayerProperties(
     frame: number,
-    layer: Layer
+    layer: Layer,
+    fps: number = 30
   ): Record<string, unknown> {
     const evaluated: Record<string, unknown> = {};
 
     // Evaluate properties array
     for (const prop of layer.properties) {
-      evaluated[prop.name] = interpolateProperty(prop, frame);
+      evaluated[prop.name] = interpolateProperty(prop, frame, fps, layer.id);
     }
 
     // Type-specific evaluation
@@ -703,16 +734,16 @@ export class MotionEngine {
         if (layer.data && 'animatedZoom' in layer.data) {
           const data = layer.data;
           if (data.animatedZoom) {
-            evaluated['zoom'] = interpolateProperty(data.animatedZoom, frame);
+            evaluated['zoom'] = interpolateProperty(data.animatedZoom, frame, fps, layer.id);
           }
           if (data.animatedOffsetX) {
-            evaluated['offsetX'] = interpolateProperty(data.animatedOffsetX, frame);
+            evaluated['offsetX'] = interpolateProperty(data.animatedOffsetX, frame, fps, layer.id);
           }
           if (data.animatedOffsetY) {
-            evaluated['offsetY'] = interpolateProperty(data.animatedOffsetY, frame);
+            evaluated['offsetY'] = interpolateProperty(data.animatedOffsetY, frame, fps, layer.id);
           }
           if (data.animatedRotation) {
-            evaluated['rotation'] = interpolateProperty(data.animatedRotation, frame);
+            evaluated['rotation'] = interpolateProperty(data.animatedRotation, frame, fps, layer.id);
           }
         }
         break;
@@ -732,7 +763,8 @@ export class MotionEngine {
     frame: number,
     layers: Layer[],
     activeCameraId: string | null,
-    compositionSettings?: CompositionSettings
+    compositionSettings?: CompositionSettings,
+    fps: number = 30
   ): EvaluatedCamera | null {
     // Find active camera layer
     let cameraLayer: Layer | undefined;
@@ -761,7 +793,7 @@ export class MotionEngine {
     const cameraData = cameraLayer.data as CameraLayerData;
 
     // Evaluate camera transform
-    const transform = this.evaluateTransform(frame, cameraLayer.transform, true);
+    const transform = this.evaluateTransform(frame, cameraLayer.transform, true, fps);
 
     // Default camera values - use composition center as default target
     const compWidth = compositionSettings?.width ?? 1024;
@@ -776,21 +808,21 @@ export class MotionEngine {
 
     // Evaluate animated camera properties if they exist
     if (cameraData.animatedPosition) {
-      const pos: { x: number; y: number; z?: number } = interpolateProperty(cameraData.animatedPosition, frame);
+      const pos: { x: number; y: number; z?: number } = interpolateProperty(cameraData.animatedPosition, frame, fps, cameraLayer.id);
       position = { x: pos.x, y: pos.y, z: pos.z ?? 0 };
     }
 
     if (cameraData.animatedTarget) {
-      const tgt: { x: number; y: number; z?: number } = interpolateProperty(cameraData.animatedTarget, frame);
+      const tgt: { x: number; y: number; z?: number } = interpolateProperty(cameraData.animatedTarget, frame, fps, cameraLayer.id);
       target = { x: tgt.x, y: tgt.y, z: tgt.z ?? 0 };
     }
 
     if (cameraData.animatedFov) {
-      fov = interpolateProperty(cameraData.animatedFov, frame);
+      fov = interpolateProperty(cameraData.animatedFov, frame, fps, cameraLayer.id);
     }
 
     if (cameraData.animatedFocalLength) {
-      focalLength = interpolateProperty(cameraData.animatedFocalLength, frame);
+      focalLength = interpolateProperty(cameraData.animatedFocalLength, frame, fps, cameraLayer.id);
     }
 
     // Evaluate depth of field
@@ -799,13 +831,13 @@ export class MotionEngine {
     let blurLevel = cameraData.depthOfField?.blurLevel ?? 50;
 
     if (cameraData.animatedFocusDistance) {
-      focusDistance = interpolateProperty(cameraData.animatedFocusDistance, frame);
+      focusDistance = interpolateProperty(cameraData.animatedFocusDistance, frame, fps, cameraLayer.id);
     }
     if (cameraData.animatedAperture) {
-      aperture = interpolateProperty(cameraData.animatedAperture, frame);
+      aperture = interpolateProperty(cameraData.animatedAperture, frame, fps, cameraLayer.id);
     }
     if (cameraData.animatedBlurLevel) {
-      blurLevel = interpolateProperty(cameraData.animatedBlurLevel, frame);
+      blurLevel = interpolateProperty(cameraData.animatedBlurLevel, frame, fps, cameraLayer.id);
     }
 
     // Apply trajectory keyframes if present (override animated position/target)
