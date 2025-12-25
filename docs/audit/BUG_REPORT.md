@@ -10,9 +10,9 @@
 |----------|-------|-------|------|
 | CRITICAL | 0 | 0 | 0 |
 | HIGH | 2 | 2 | 0 |
-| MEDIUM | 13 | 13 | 0 |
+| MEDIUM | 14 | 14 | 0 |
 | LOW | 3 | 3 | 0 |
-| **TOTAL** | **18** | **18** | **0** |
+| **TOTAL** | **19** | **19** | **0** |
 
 ---
 
@@ -263,5 +263,19 @@
 - **Status:** FIXED
 - **Fix:** Added fps and layerId variables using `this.compositionFps` and `this.id`, passed to interpolateProperty call.
 - **Files Changed:** ui/src/engine/layers/DepthLayer.ts
+
+---
+
+## BUG-023: DepthflowLayer hardcoded 30fps in multiple places
+- **Severity:** MEDIUM
+- **Feature:** 2.19 DepthflowLayer
+- **File:** ui/src/engine/layers/DepthflowLayer.ts
+- **Line:** 402, 439
+- **Description:** `calculatePresetValues()` has fps parameter with default 30, but called without fps argument. Also, time uniform calculated as `frame / 30` instead of using composition fps.
+- **Expected:** Should use `this.compositionFps` for correct timing at all framerates.
+- **Actual:** Always uses 30fps for preset animations and time-based effects.
+- **Status:** FIXED
+- **Fix:** Pass `this.compositionFps` to `calculatePresetValues()` and use `fps` variable for time uniform calculation.
+- **Files Changed:** ui/src/engine/layers/DepthflowLayer.ts
 
 ---

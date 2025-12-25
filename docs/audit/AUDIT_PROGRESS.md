@@ -9,7 +9,7 @@ Current Phase: TIER 1 COMPLETE - ALL BUGS FIXED, READY FOR TIER 2
 | Tier | Total | Complete | Bugs Found |
 |------|-------|----------|------------|
 | 1. Foundation | 7 | 7 | 3 |
-| 2. Layer Types | 23 | 16 | 15 |
+| 2. Layer Types | 23 | 17 | 16 |
 | 3. Animation | 10 | 0 | 0 |
 | 4. Effects | 12 | 0 | 0 |
 | 5. Particles | 12 | 0 | 0 |
@@ -20,7 +20,7 @@ Current Phase: TIER 1 COMPLETE - ALL BUGS FIXED, READY FOR TIER 2
 | 10. Export | 6 | 0 | 0 |
 | 11. AI | 5 | 0 | 0 |
 | 12. Data/Templates | 4 | 0 | 0 |
-| **TOTAL** | **127** | **25** | **18** |
+| **TOTAL** | **127** | **26** | **19** |
 
 ---
 
@@ -58,7 +58,7 @@ Current Phase: TIER 1 COMPLETE - ALL BUGS FIXED, READY FOR TIER 2
 | 2.16 | ModelLayer | [x] | 1 | 10m | 4 |
 | 2.17 | PointCloudLayer | [x] | 1 | 10m | 4 |
 | 2.18 | DepthLayer | [x] | 1 | 5m | 5 |
-| 2.19 | DepthflowLayer | [ ] | 0 | - | - |
+| 2.19 | DepthflowLayer | [x] | 1 | 10m | 5 |
 | 2.20 | NormalLayer | [ ] | 0 | - | - |
 | 2.21 | PoseLayer | [ ] | 0 | - | - |
 | 2.22 | GeneratedLayer | [ ] | 0 | - | - |

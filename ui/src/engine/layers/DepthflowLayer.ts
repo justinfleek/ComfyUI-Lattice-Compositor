@@ -398,8 +398,11 @@ export class DepthflowLayer extends BaseLayer {
   protected onEvaluateFrame(frame: number): void {
     const config = this.depthflowData.config;
 
+    // Use composition fps for correct animation timing
+    const fps = this.compositionFps;
+
     // Calculate preset-based values
-    const presetValues = this.calculatePresetValues(frame);
+    const presetValues = this.calculatePresetValues(frame, fps);
 
     // Override with animated properties if present
     let zoom = presetValues.zoom;
@@ -436,7 +439,7 @@ export class DepthflowLayer extends BaseLayer {
     this.material.uniforms.zoom.value = zoom;
     this.material.uniforms.offset.value.set(offsetX, offsetY);
     this.material.uniforms.rotation.value = THREE.MathUtils.degToRad(rotation);
-    this.material.uniforms.time.value = frame / 30;
+    this.material.uniforms.time.value = frame / fps;
 
     // Mark material as needing update
     this.material.needsUpdate = true;
