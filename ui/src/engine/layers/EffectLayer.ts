@@ -182,7 +182,7 @@ export class EffectLayer extends BaseLayer {
       // Build context for time-based effects (Echo, Posterize Time)
       const effectContext = {
         frame,
-        fps: 16, // Default project fps (Wan 2.1 standard)
+        fps: this.compositionFps,
         layerId: this.id
       };
 
@@ -203,6 +203,12 @@ export class EffectLayer extends BaseLayer {
   }
 
   protected override onApplyEvaluatedState(state: import('../MotionEngine').EvaluatedLayer): void {
+    // Apply opacity to material
+    if (state.transform?.opacity !== undefined && this.material) {
+      this.material.opacity = state.transform.opacity / 100;
+      this.material.needsUpdate = true;
+    }
+
     // Apply any evaluated effects
     if (state.effects.length > 0) {
       this.applyEvaluatedEffects(state.effects);
@@ -244,8 +250,8 @@ export class EffectLayer extends BaseLayer {
       return null;
     }
 
-    // Get the source (layers below, already adjusted)
-    return this.renderContext.renderLayersBelow(this.id, 0);
+    // Get the source (layers below) - use current frame, not hardcoded 0
+    return this.renderContext.renderLayersBelow(this.id, this.currentFrame);
   }
 
   // ============================================================================

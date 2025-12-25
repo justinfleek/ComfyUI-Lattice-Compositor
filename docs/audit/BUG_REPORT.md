@@ -10,9 +10,9 @@
 |----------|-------|-------|------|
 | CRITICAL | 0 | 0 | 0 |
 | HIGH | 2 | 2 | 0 |
-| MEDIUM | 5 | 5 | 0 |
+| MEDIUM | 7 | 7 | 0 |
 | LOW | 3 | 3 | 0 |
-| **TOTAL** | **10** | **10** | **0** |
+| **TOTAL** | **12** | **12** | **0** |
 
 ---
 
@@ -151,5 +151,33 @@
 - **Status:** FIXED
 - **Fix:** Added opacity handling in `onApplyEvaluatedState`: reads `state.transform.opacity` and applies to `this.material.opacity`.
 - **Files Changed:** ui/src/engine/layers/NestedCompLayer.ts
+
+---
+
+## BUG-015: EffectLayer.getSourceCanvas hardcodes frame 0
+- **Severity:** MEDIUM
+- **Feature:** 2.12 EffectLayer
+- **File:** ui/src/engine/layers/EffectLayer.ts
+- **Line:** 248
+- **Description:** `getSourceCanvas()` calls `renderLayersBelow(this.id, 0)` with hardcoded frame 0 instead of current frame.
+- **Expected:** Should use `this.currentFrame` to render the correct frame.
+- **Actual:** Always renders frame 0 when additional effects need the source canvas.
+- **Status:** FIXED
+- **Fix:** Changed hardcoded `0` to `this.currentFrame`.
+- **Files Changed:** ui/src/engine/layers/EffectLayer.ts
+
+---
+
+## BUG-016: EffectLayer opacity never applied to material
+- **Severity:** MEDIUM
+- **Feature:** 2.12 EffectLayer
+- **File:** ui/src/engine/layers/EffectLayer.ts
+- **Line:** 205-210
+- **Description:** `onApplyEvaluatedState` only applies effects, not opacity. Docstring states "Respects the effect layer's opacity" but material.opacity is never set from evaluated transform.
+- **Expected:** Animated opacity should control effect layer visibility.
+- **Actual:** Effect layer always renders at 100% opacity regardless of animated opacity property.
+- **Status:** FIXED
+- **Fix:** Added opacity handling in `onApplyEvaluatedState`: reads `state.transform.opacity` and applies to `this.material.opacity`.
+- **Files Changed:** ui/src/engine/layers/EffectLayer.ts
 
 ---
