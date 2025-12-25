@@ -338,21 +338,25 @@ export class PathLayer extends BaseLayer {
     acp: AnimatableControlPoint,
     frame: number
   ): EvaluatedControlPoint {
+    // Use composition fps for correct animation timing (not hardcoded 30fps)
+    const fps = this.compositionFps;
+    const layerId = this.id;
+
     return {
       id: acp.id,
-      x: interpolateProperty(acp.x, frame),
-      y: interpolateProperty(acp.y, frame),
-      depth: acp.depth ? interpolateProperty(acp.depth, frame) : 0,
+      x: interpolateProperty(acp.x, frame, fps, layerId),
+      y: interpolateProperty(acp.y, frame, fps, layerId),
+      depth: acp.depth ? interpolateProperty(acp.depth, frame, fps, layerId) : 0,
       handleIn: acp.handleIn
         ? {
-            x: interpolateProperty(acp.handleIn.x, frame),
-            y: interpolateProperty(acp.handleIn.y, frame),
+            x: interpolateProperty(acp.handleIn.x, frame, fps, layerId),
+            y: interpolateProperty(acp.handleIn.y, frame, fps, layerId),
           }
         : null,
       handleOut: acp.handleOut
         ? {
-            x: interpolateProperty(acp.handleOut.x, frame),
-            y: interpolateProperty(acp.handleOut.y, frame),
+            x: interpolateProperty(acp.handleOut.x, frame, fps, layerId),
+            y: interpolateProperty(acp.handleOut.y, frame, fps, layerId),
           }
         : null,
       type: acp.type,

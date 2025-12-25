@@ -10,9 +10,9 @@
 |----------|-------|-------|------|
 | CRITICAL | 0 | 0 | 0 |
 | HIGH | 2 | 2 | 0 |
-| MEDIUM | 8 | 8 | 0 |
+| MEDIUM | 9 | 9 | 0 |
 | LOW | 3 | 3 | 0 |
-| **TOTAL** | **13** | **13** | **0** |
+| **TOTAL** | **14** | **14** | **0** |
 
 ---
 
@@ -193,5 +193,19 @@
 - **Status:** FIXED
 - **Fix:** Added `baseEmitterValues` and `baseForceFieldValues` Maps to store original values. Modified `applyAudioReactivity` to always multiply from base values. Added `storeBaseValues()` called during initialization.
 - **Files Changed:** ui/src/engine/layers/ParticleLayer.ts
+
+---
+
+## BUG-018: PathLayer.evaluateControlPointAtFrame missing fps parameter
+- **Severity:** MEDIUM
+- **Feature:** 2.14 PathLayer
+- **File:** ui/src/engine/layers/PathLayer.ts
+- **Line:** 343-355
+- **Description:** All `interpolateProperty` calls in `evaluateControlPointAtFrame` are missing fps and layerId parameters. Defaults to 30fps causing incorrect animation timing for animated path control points at non-30fps framerates.
+- **Expected:** Should use `this.compositionFps` for correct timing at all framerates.
+- **Actual:** Always uses default 30fps regardless of composition settings.
+- **Status:** FIXED
+- **Fix:** Added fps and layerId variables, passed them to all interpolateProperty calls.
+- **Files Changed:** ui/src/engine/layers/PathLayer.ts
 
 ---
