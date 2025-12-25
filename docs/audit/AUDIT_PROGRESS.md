@@ -24,17 +24,15 @@ Current Phase: TIER 1 COMPLETE - ALL BUGS FIXED, READY FOR TIER 2
 
 ---
 
-## TIER 1: FOUNDATION
+## TIER 1: FOUNDATION - COMPLETE
 
-| ID | Feature | Status | Bugs | Time | Session |
-|----|---------|--------|------|------|---------|
-| 1.1 | Layer Creation/Deletion | [x] | 1 | 30m | Session 1 |
-| 1.2 | Layer Transform | [x] | 1 | 25m | Session 1 |
-| 1.3 | Keyframe CRUD | [x] | 1 | 40m | Session 1 |
-| 1.4 | Interpolation Engine | [x] | 0 | 35m | Session 1 |
-| 1.5 | Expression Evaluation | [x] | 0 | 25m | Session 1 |
-| 1.6 | Render Loop | [x] | 0 | 15m | Session 1 |
-| 1.7 | Project Save/Load | [x] | 0 | 20m | Session 1 |
+**See:** [AUDIT_TIER1.md](./AUDIT_TIER1.md) for full details
+
+| Summary | Value |
+|---------|-------|
+| Features | 7/7 |
+| Bugs Found | 3 |
+| Bugs Fixed | 3 |
 
 ---
 
@@ -183,53 +181,10 @@ Current Phase: TIER 1 COMPLETE - ALL BUGS FIXED, READY FOR TIER 2
 
 ---
 
-## TIER 10: EXPORT SYSTEM
+## TIERS 10-12: EXPORT, AI, DATA (Not Started)
 
-| ID | Export Type | Status | Bugs | Time | Session |
-|----|-------------|--------|------|------|---------|
-| 10.1 | Frame Sequences | [ ] | 0 | - | - |
-| 10.2 | Video Encoding | [ ] | 0 | - | - |
-| 10.3 | Depth Maps | [ ] | 0 | - | - |
-| 10.4 | Camera Data | [ ] | 0 | - | - |
-| 10.5 | Pose Data | [ ] | 0 | - | - |
-| 10.6 | ComfyUI Workflows | [ ] | 0 | - | - |
-
----
-
-## TIER 11: AI INTEGRATIONS
-
-| ID | Feature | Status | Bugs | Time | Session |
-|----|---------|--------|------|------|---------|
-| 11.1 | Depth Estimation | [ ] | 0 | - | - |
-| 11.2 | Pose Estimation | [ ] | 0 | - | - |
-| 11.3 | Segmentation | [ ] | 0 | - | - |
-| 11.4 | Layer Decomposition | [ ] | 0 | - | - |
-| 11.5 | Mask Generator | [ ] | 0 | - | - |
-
----
-
-## TIER 12: DATA & TEMPLATES
-
-| ID | Feature | Status | Bugs | Time | Session |
-|----|---------|--------|------|------|---------|
-| 12.1 | JSON Data Import | [ ] | 0 | - | - |
-| 12.2 | CSV/TSV Import | [ ] | 0 | - | - |
-| 12.3 | Template Builder | [ ] | 0 | - | - |
-| 12.4 | Expression Controls | [ ] | 0 | - | - |
-
----
-
-## SESSION LOG
-
-| Session | Date | Features Audited | Bugs Found | Duration |
-|---------|------|------------------|------------|----------|
-| 1 | - | - | - | - |
-
----
-
-## NOTES
-
-### Bug Fix Status (Session 2)
-- **BUG-006 (HIGH):** FIXED - MotionEngine now checks separateDimensions flag for position/scale
-- **BUG-007 (HIGH):** FIXED - rovingKeyframes.ts and keyframeActions.ts now handle {x,y,z} objects
-- **BUG-005 (LOW):** FIXED - getDefaultLayerData now throws error for unknown types instead of returning null
+| Tier | Features |
+|------|----------|
+| 10. Export | Frame Sequences, Video, Depth, Camera, Pose, ComfyUI |
+| 11. AI | Depth Est, Pose Est, Segmentation, Decomposition, Mask Gen |
+| 12. Data | JSON Import, CSV Import, Template Builder, Expression Controls |
