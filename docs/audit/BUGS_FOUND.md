@@ -10,10 +10,10 @@ Master bug tracking document
 | Severity | Count | Fixed | Open |
 |----------|-------|-------|------|
 | CRITICAL | 0 | 0 | 0 |
-| HIGH | 1 | 1 | 0 |
+| HIGH | 2 | 2 | 0 |
 | MEDIUM | 0 | 0 | 0 |
 | LOW | 0 | 0 | 0 |
-| **TOTAL** | **1** | **1** | **0** |
+| **TOTAL** | **2** | **2** | **0** |
 
 ---
 
@@ -66,6 +66,56 @@ if (isLayerOfType(newLayer, 'video') && newLayer.data) {
 
 **Related:**
 - Lines 1448, 1590 already used correct pattern
+
+---
+
+## BUG-002: Hardcoded fps=30 in keyframe velocity functions
+
+**Feature:** Layer Transform / Keyframe System (1.2)
+**Severity:** HIGH
+**Found:** 2025-12-25
+**Status:** FIXED
+
+**Location:**
+- File: ui/src/stores/actions/keyframeActions.ts
+- Lines: 1325-1326, 1388-1389
+
+**Issue:**
+The `applyKeyframeVelocity` and `getKeyframeVelocity` functions use hardcoded `fps = 30` for converting between velocity units and frame units. The code even has a TODO comment acknowledging this should be from the composition. This causes incorrect velocity calculations for non-30fps compositions.
+
+**Evidence:**
+```typescript
+// Line 1325-1326 in applyKeyframeVelocity:
+// Convert velocity to value offset
+// Velocity is in units per second, convert to units per frame segment
+const fps = 30; // TODO: Get from composition
+const inVelocityPerFrame = settings.incomingVelocity / fps;
+const outVelocityPerFrame = settings.outgoingVelocity / fps;
+
+// Line 1388-1389 in getKeyframeVelocity:
+// Convert value offset back to velocity
+const fps = 30;
+const inVelocity = keyframe.inHandle?.enabled && keyframe.inHandle.frame !== 0
+  ? -keyframe.inHandle.value / Math.abs(keyframe.inHandle.frame) * fps
+  : 0;
+```
+
+**Impact:**
+- Keyframe velocity dialog shows incorrect velocity values for non-30fps compositions
+- Applied velocity settings create wrong bezier handles
+- 60fps compositions: velocities off by 2x
+- 24fps compositions: velocities off by ~0.8x
+
+**Fix Applied:**
+1. Added `VelocityStore` interface extending `KeyframeStore` with `fps: number`
+2. Updated function signatures to use `VelocityStore`
+3. Changed `const fps = 30` to `const fps = store.fps ?? 30`
+
+**Files Changed:**
+- ui/src/stores/actions/keyframeActions.ts (lines 1279-1281, 1301, 1329, 1360, 1392)
+
+**Related:**
+- BUG-001 (same hardcoded fps pattern)
 
 ---
 

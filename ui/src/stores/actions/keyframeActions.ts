@@ -5,8 +5,9 @@
  * handles, and property animation state management.
  */
 
+import { toRaw } from 'vue';
 import { storeLogger } from '@/utils/logger';
-import type { Layer, AnimatableProperty, Keyframe, InterpolationType, BezierHandle } from '@/types/project';
+import type { Layer, AnimatableProperty, Keyframe, InterpolationType, BezierHandle, PropertyExpression } from '@/types/project';
 import { markLayerDirty } from '@/services/layerEvaluationCache';
 
 // ============================================================================
@@ -20,6 +21,7 @@ export interface KeyframeStore {
   getActiveComp(): { currentFrame: number; layers: Layer[] } | null;
   getActiveCompLayers(): Layer[];
   getLayerById(id: string): Layer | null | undefined;
+  pushHistory(): void;
 }
 
 // ============================================================================
@@ -130,6 +132,7 @@ export function addKeyframe<T>(
 
   markLayerDirty(layerId); // Invalidate evaluation cache
   store.project.meta.modified = new Date().toISOString();
+  store.pushHistory();
   return keyframe;
 }
 
@@ -164,6 +167,7 @@ export function removeKeyframe(
 
   markLayerDirty(layerId); // Invalidate evaluation cache
   store.project.meta.modified = new Date().toISOString();
+  store.pushHistory();
 }
 
 /**
@@ -185,6 +189,7 @@ export function clearKeyframes(
 
   markLayerDirty(layerId); // Invalidate evaluation cache
   store.project.meta.modified = new Date().toISOString();
+  store.pushHistory();
 }
 
 // ============================================================================
@@ -224,7 +229,9 @@ export function moveKeyframe(
   // Re-sort keyframes by frame
   property.keyframes.sort((a, b) => a.frame - b.frame);
 
+  markLayerDirty(layerId); // Invalidate evaluation cache
   store.project.meta.modified = new Date().toISOString();
+  store.pushHistory();
 }
 
 /**
@@ -266,7 +273,12 @@ export function moveKeyframes(
     }
   }
 
+  // Mark all affected layers as dirty
+  for (const layerId of layerIds) {
+    markLayerDirty(layerId);
+  }
   store.project.meta.modified = new Date().toISOString();
+  store.pushHistory();
 }
 
 // ============================================================================
@@ -301,6 +313,7 @@ export function setKeyframeValue(
   keyframe.value = newValue;
   markLayerDirty(layerId); // Invalidate evaluation cache
   store.project.meta.modified = new Date().toISOString();
+  store.pushHistory();
 }
 
 /**
@@ -334,6 +347,7 @@ export function updateKeyframe(
 
   markLayerDirty(layerId); // Invalidate evaluation cache
   store.project.meta.modified = new Date().toISOString();
+  store.pushHistory();
 }
 
 // ============================================================================
@@ -362,6 +376,7 @@ export function setKeyframeInterpolation(
   keyframe.interpolation = interpolation;
   markLayerDirty(layerId); // Invalidate evaluation cache
   store.project.meta.modified = new Date().toISOString();
+  store.pushHistory();
 }
 
 /**
@@ -397,6 +412,7 @@ export function setKeyframeHandle(
 
   markLayerDirty(layerId); // Invalidate evaluation cache
   store.project.meta.modified = new Date().toISOString();
+  store.pushHistory();
 }
 
 /**
@@ -421,6 +437,7 @@ export function setKeyframeControlMode(
   keyframe.controlMode = controlMode;
   markLayerDirty(layerId); // Invalidate evaluation cache
   store.project.meta.modified = new Date().toISOString();
+  store.pushHistory();
 }
 
 // ============================================================================
@@ -455,6 +472,7 @@ export function setPropertyValue(
 
   markLayerDirty(layerId); // Invalidate evaluation cache
   store.project.meta.modified = new Date().toISOString();
+  store.pushHistory();
 }
 
 /**
@@ -500,6 +518,7 @@ export function setPropertyAnimated(
 
   markLayerDirty(layerId); // Invalidate evaluation cache
   store.project.meta.modified = new Date().toISOString();
+  store.pushHistory();
 }
 
 // ============================================================================
@@ -683,6 +702,12 @@ export function scaleKeyframeTiming(
     }
   }
 
+  if (scaledCount > 0) {
+    markLayerDirty(layerId);
+    store.project.meta.modified = new Date().toISOString();
+    store.pushHistory();
+  }
+
   return scaledCount;
 }
 
@@ -726,6 +751,12 @@ export function timeReverseKeyframes(
     }
   }
 
+  if (reversedCount > 0) {
+    markLayerDirty(layerId);
+    store.project.meta.modified = new Date().toISOString();
+    store.pushHistory();
+  }
+
   return reversedCount;
 }
 
@@ -761,12 +792,14 @@ export function insertKeyframeOnPath(
 
   // Interpolate the value at this frame
   const t = (frame - before.frame) / (after.frame - before.frame);
-  const beforeVal = before.value as number[];
-  const afterVal = after.value as number[];
+  const beforeVal = before.value as { x: number; y: number; z?: number };
+  const afterVal = after.value as { x: number; y: number; z?: number };
 
-  const interpolatedValue = beforeVal.map((v, i) =>
-    v + (afterVal[i] - v) * t
-  );
+  const interpolatedValue = {
+    x: beforeVal.x + (afterVal.x - beforeVal.x) * t,
+    y: beforeVal.y + (afterVal.y - beforeVal.y) * t,
+    z: (beforeVal.z ?? 0) + ((afterVal.z ?? 0) - (beforeVal.z ?? 0)) * t
+  };
 
   // Create the keyframe
   const newKf = addKeyframe(store, layerId, 'transform.position', interpolatedValue, frame);
@@ -829,6 +862,7 @@ export function applyRovingToPosition(
 
       // Update modified timestamp
       store.project.meta.modified = new Date().toISOString();
+      store.pushHistory();
 
       storeLogger.info('applyRovingToPosition: applied roving keyframes', {
         layerId,
@@ -865,4 +899,1008 @@ export function checkRovingImpact(
   // Import and check
   // Using synchronous check would be better, but for now this works
   return positionProp.keyframes.length >= 3;
+}
+
+// ============================================================================
+// KEYFRAME CLIPBOARD (COPY/PASTE)
+// ============================================================================
+
+import type { ClipboardKeyframe, PropertyValue } from '@/types/project';
+
+export interface ClipboardKeyframeStore extends KeyframeStore {
+  clipboard: {
+    keyframes: ClipboardKeyframe[];
+  };
+  currentFrame: number;
+}
+
+/**
+ * Copy keyframes to clipboard
+ *
+ * @param store - The compositor store with clipboard access
+ * @param keyframeSelections - Array of keyframe selections with layerId, propertyPath, and keyframeId
+ * @returns Number of keyframes copied
+ */
+export function copyKeyframes(
+  store: ClipboardKeyframeStore,
+  keyframeSelections: Array<{ layerId: string; propertyPath: string; keyframeId: string }>
+): number {
+  if (keyframeSelections.length === 0) {
+    storeLogger.debug('copyKeyframes: No keyframes selected');
+    return 0;
+  }
+
+  // Group keyframes by layer and property
+  const groupedByProperty = new Map<string, { layerId: string; propertyPath: string; keyframeIds: string[] }>();
+
+  for (const sel of keyframeSelections) {
+    const key = `${sel.layerId}:${sel.propertyPath}`;
+    if (!groupedByProperty.has(key)) {
+      groupedByProperty.set(key, { layerId: sel.layerId, propertyPath: sel.propertyPath, keyframeIds: [] });
+    }
+    groupedByProperty.get(key)!.keyframeIds.push(sel.keyframeId);
+  }
+
+  // Find the earliest frame among all selected keyframes (for relative timing)
+  let earliestFrame = Infinity;
+  const clipboardEntries: ClipboardKeyframe[] = [];
+
+  for (const [, group] of groupedByProperty) {
+    const layer = store.getActiveCompLayers().find(l => l.id === group.layerId);
+    if (!layer) continue;
+
+    const property = findPropertyByPath(layer, group.propertyPath);
+    if (!property?.keyframes) continue;
+
+    const selectedKeyframes = property.keyframes.filter(kf => group.keyframeIds.includes(kf.id));
+    for (const kf of selectedKeyframes) {
+      if (kf.frame < earliestFrame) {
+        earliestFrame = kf.frame;
+      }
+    }
+  }
+
+  if (earliestFrame === Infinity) {
+    storeLogger.debug('copyKeyframes: No valid keyframes found');
+    return 0;
+  }
+
+  // Build clipboard entries with relative frame offsets
+  for (const [, group] of groupedByProperty) {
+    const layer = store.getActiveCompLayers().find(l => l.id === group.layerId);
+    if (!layer) continue;
+
+    const property = findPropertyByPath(layer, group.propertyPath);
+    if (!property?.keyframes) continue;
+
+    const selectedKeyframes = property.keyframes.filter(kf => group.keyframeIds.includes(kf.id));
+    if (selectedKeyframes.length === 0) continue;
+
+    // Deep clone keyframes and store relative frame offsets
+    // Use toRaw to handle Vue reactive proxies before cloning
+    const clonedKeyframes: Keyframe<PropertyValue>[] = selectedKeyframes.map(kf => ({
+      ...structuredClone(toRaw(kf)),
+      // Store frame as offset from earliest keyframe
+      frame: kf.frame - earliestFrame
+    }));
+
+    clipboardEntries.push({
+      layerId: group.layerId,
+      propertyPath: group.propertyPath,
+      keyframes: clonedKeyframes
+    });
+  }
+
+  // Store in clipboard
+  store.clipboard.keyframes = clipboardEntries;
+
+  const totalCopied = clipboardEntries.reduce((sum, entry) => sum + entry.keyframes.length, 0);
+  storeLogger.debug(`Copied ${totalCopied} keyframe(s) to clipboard`);
+
+  return totalCopied;
+}
+
+/**
+ * Paste keyframes from clipboard to a target property
+ *
+ * @param store - The compositor store with clipboard access
+ * @param targetLayerId - Target layer ID to paste to
+ * @param targetPropertyPath - Target property path (optional - uses original if matching type)
+ * @returns Array of newly created keyframes
+ */
+export function pasteKeyframes(
+  store: ClipboardKeyframeStore,
+  targetLayerId: string,
+  targetPropertyPath?: string
+): Keyframe<PropertyValue>[] {
+  if (store.clipboard.keyframes.length === 0) {
+    storeLogger.debug('pasteKeyframes: No keyframes in clipboard');
+    return [];
+  }
+
+  const targetLayer = store.getActiveCompLayers().find(l => l.id === targetLayerId);
+  if (!targetLayer) {
+    storeLogger.debug('pasteKeyframes: Target layer not found');
+    return [];
+  }
+
+  const currentFrame = store.currentFrame;
+  const createdKeyframes: Keyframe<PropertyValue>[] = [];
+
+  for (const clipboardEntry of store.clipboard.keyframes) {
+    // Determine which property to paste to
+    const propPath = targetPropertyPath || clipboardEntry.propertyPath;
+    const property = findPropertyByPath(targetLayer, propPath) as AnimatableProperty<PropertyValue> | undefined;
+
+    if (!property) {
+      storeLogger.debug(`pasteKeyframes: Property ${propPath} not found on target layer`);
+      continue;
+    }
+
+    // Enable animation if not already
+    property.animated = true;
+
+    // Paste each keyframe with new IDs and adjusted frames
+    for (const clipKf of clipboardEntry.keyframes) {
+      const newFrame = currentFrame + clipKf.frame; // Apply offset from current frame
+
+      // Create new keyframe with fresh ID
+      // Use toRaw to handle Vue reactive proxies before cloning
+      const newKeyframe: Keyframe<PropertyValue> = {
+        ...structuredClone(toRaw(clipKf)),
+        id: `kf_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
+        frame: newFrame
+      };
+
+      // Check for existing keyframe at this frame
+      const existingIndex = property.keyframes.findIndex(k => k.frame === newFrame);
+      if (existingIndex >= 0) {
+        // Replace existing keyframe
+        property.keyframes[existingIndex] = newKeyframe;
+      } else {
+        // Add new keyframe
+        property.keyframes.push(newKeyframe);
+      }
+
+      createdKeyframes.push(newKeyframe);
+    }
+
+    // Re-sort keyframes by frame
+    property.keyframes.sort((a, b) => a.frame - b.frame);
+
+    // Mark layer dirty
+    markLayerDirty(targetLayerId);
+  }
+
+  if (createdKeyframes.length > 0) {
+    store.project.meta.modified = new Date().toISOString();
+    store.pushHistory();
+    storeLogger.debug(`Pasted ${createdKeyframes.length} keyframe(s)`);
+  }
+
+  return createdKeyframes;
+}
+
+/**
+ * Check if clipboard has keyframes
+ */
+export function hasKeyframesInClipboard(store: ClipboardKeyframeStore): boolean {
+  return store.clipboard.keyframes.length > 0;
+}
+
+// ============================================================================
+// EXPRESSION METHODS
+// ============================================================================
+
+/**
+ * Set an expression on a property
+ */
+export function setPropertyExpression(
+  store: KeyframeStore,
+  layerId: string,
+  propertyPath: string,
+  expression: PropertyExpression
+): boolean {
+  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  if (!layer) {
+    storeLogger.warn('setPropertyExpression: layer not found:', layerId);
+    return false;
+  }
+
+  const property = findPropertyByPath(layer, propertyPath);
+  if (!property) {
+    storeLogger.warn('setPropertyExpression: property not found:', propertyPath);
+    return false;
+  }
+
+  property.expression = expression;
+  store.project.meta.modified = new Date().toISOString();
+  markLayerDirty(layerId);
+  store.pushHistory();
+
+  storeLogger.debug('Set expression on', propertyPath, ':', expression.name);
+  return true;
+}
+
+/**
+ * Enable expression on a property (creates default if not exists)
+ */
+export function enablePropertyExpression(
+  store: KeyframeStore,
+  layerId: string,
+  propertyPath: string,
+  expressionName: string = 'custom',
+  params: Record<string, number | string | boolean> = {}
+): boolean {
+  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  if (!layer) return false;
+
+  const property = findPropertyByPath(layer, propertyPath);
+  if (!property) return false;
+
+  const expression: PropertyExpression = {
+    enabled: true,
+    type: expressionName === 'custom' ? 'custom' : 'preset',
+    name: expressionName,
+    params
+  };
+
+  property.expression = expression;
+  store.project.meta.modified = new Date().toISOString();
+  markLayerDirty(layerId);
+  store.pushHistory();
+
+  return true;
+}
+
+/**
+ * Disable expression on a property (keeps expression data for re-enabling)
+ */
+export function disablePropertyExpression(
+  store: KeyframeStore,
+  layerId: string,
+  propertyPath: string
+): boolean {
+  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  if (!layer) return false;
+
+  const property = findPropertyByPath(layer, propertyPath);
+  if (!property || !property.expression) return false;
+
+  property.expression.enabled = false;
+  store.project.meta.modified = new Date().toISOString();
+  markLayerDirty(layerId);
+  store.pushHistory();
+
+  return true;
+}
+
+/**
+ * Toggle expression enabled state
+ */
+export function togglePropertyExpression(
+  store: KeyframeStore,
+  layerId: string,
+  propertyPath: string
+): boolean {
+  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  if (!layer) return false;
+
+  const property = findPropertyByPath(layer, propertyPath);
+  if (!property || !property.expression) return false;
+
+  property.expression.enabled = !property.expression.enabled;
+  store.project.meta.modified = new Date().toISOString();
+  markLayerDirty(layerId);
+  store.pushHistory();
+
+  return property.expression.enabled;
+}
+
+/**
+ * Remove expression from a property
+ */
+export function removePropertyExpression(
+  store: KeyframeStore,
+  layerId: string,
+  propertyPath: string
+): boolean {
+  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  if (!layer) return false;
+
+  const property = findPropertyByPath(layer, propertyPath);
+  if (!property) return false;
+
+  delete property.expression;
+  store.project.meta.modified = new Date().toISOString();
+  markLayerDirty(layerId);
+  store.pushHistory();
+
+  return true;
+}
+
+/**
+ * Get expression on a property
+ */
+export function getPropertyExpression(
+  store: KeyframeStore,
+  layerId: string,
+  propertyPath: string
+): PropertyExpression | undefined {
+  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  if (!layer) return undefined;
+
+  const property = findPropertyByPath(layer, propertyPath);
+  return property?.expression;
+}
+
+/**
+ * Check if property has an expression
+ */
+export function hasPropertyExpression(
+  store: KeyframeStore,
+  layerId: string,
+  propertyPath: string
+): boolean {
+  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  if (!layer) return false;
+
+  const property = findPropertyByPath(layer, propertyPath);
+  return property?.expression !== undefined;
+}
+
+/**
+ * Update expression parameters
+ */
+export function updateExpressionParams(
+  store: KeyframeStore,
+  layerId: string,
+  propertyPath: string,
+  params: Record<string, number | string | boolean>
+): boolean {
+  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  if (!layer) return false;
+
+  const property = findPropertyByPath(layer, propertyPath);
+  if (!property || !property.expression) return false;
+
+  property.expression.params = { ...property.expression.params, ...params };
+  store.project.meta.modified = new Date().toISOString();
+  markLayerDirty(layerId);
+  store.pushHistory();
+
+  return true;
+}
+
+// ============================================================================
+// KEYFRAME VELOCITY
+// ============================================================================
+
+export interface VelocityStore extends KeyframeStore {
+  fps: number;
+}
+
+export interface VelocitySettings {
+  incomingVelocity: number;
+  outgoingVelocity: number;
+  incomingInfluence: number;  // 0-100 percentage
+  outgoingInfluence: number;  // 0-100 percentage
+}
+
+/**
+ * Apply velocity settings to a keyframe.
+ * Converts velocity and influence to bezier handle values.
+ *
+ * @param store - The compositor store
+ * @param layerId - Layer ID
+ * @param propertyPath - Property path
+ * @param keyframeId - Keyframe ID
+ * @param settings - Velocity settings
+ */
+export function applyKeyframeVelocity(
+  store: VelocityStore,
+  layerId: string,
+  propertyPath: string,
+  keyframeId: string,
+  settings: VelocitySettings
+): boolean {
+  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  if (!layer) return false;
+
+  const property = findPropertyByPath(layer, propertyPath);
+  if (!property?.keyframes) return false;
+
+  const kfIndex = property.keyframes.findIndex(kf => kf.id === keyframeId);
+  if (kfIndex < 0) return false;
+
+  const keyframe = property.keyframes[kfIndex];
+  const prevKf = kfIndex > 0 ? property.keyframes[kfIndex - 1] : null;
+  const nextKf = kfIndex < property.keyframes.length - 1 ? property.keyframes[kfIndex + 1] : null;
+
+  // Calculate handle frame offsets from influence percentages
+  const inDuration = prevKf ? keyframe.frame - prevKf.frame : 10;
+  const outDuration = nextKf ? nextKf.frame - keyframe.frame : 10;
+
+  const inInfluence = settings.incomingInfluence / 100;
+  const outInfluence = settings.outgoingInfluence / 100;
+
+  // Convert velocity to value offset
+  // Velocity is in units per second, convert to units per frame segment
+  const fps = store.fps ?? 30;
+  const inVelocityPerFrame = settings.incomingVelocity / fps;
+  const outVelocityPerFrame = settings.outgoingVelocity / fps;
+
+  // Set bezier handles
+  keyframe.inHandle = {
+    frame: -inDuration * inInfluence,
+    value: -inVelocityPerFrame * inDuration * inInfluence,
+    enabled: true
+  };
+
+  keyframe.outHandle = {
+    frame: outDuration * outInfluence,
+    value: outVelocityPerFrame * outDuration * outInfluence,
+    enabled: true
+  };
+
+  // Ensure interpolation is bezier
+  keyframe.interpolation = 'bezier';
+
+  markLayerDirty(layerId);
+  store.project.meta.modified = new Date().toISOString();
+  store.pushHistory();
+
+  return true;
+}
+
+/**
+ * Get the current velocity settings from a keyframe's handles
+ */
+export function getKeyframeVelocity(
+  store: VelocityStore,
+  layerId: string,
+  propertyPath: string,
+  keyframeId: string
+): VelocitySettings | null {
+  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  if (!layer) return null;
+
+  const property = findPropertyByPath(layer, propertyPath);
+  if (!property?.keyframes) return null;
+
+  const kfIndex = property.keyframes.findIndex(kf => kf.id === keyframeId);
+  if (kfIndex < 0) return null;
+
+  const keyframe = property.keyframes[kfIndex];
+  const prevKf = kfIndex > 0 ? property.keyframes[kfIndex - 1] : null;
+  const nextKf = kfIndex < property.keyframes.length - 1 ? property.keyframes[kfIndex + 1] : null;
+
+  // Calculate durations
+  const inDuration = prevKf ? keyframe.frame - prevKf.frame : 10;
+  const outDuration = nextKf ? nextKf.frame - keyframe.frame : 10;
+
+  // Extract influence from handle frame offset
+  const inInfluence = keyframe.inHandle?.enabled && inDuration > 0
+    ? Math.abs(keyframe.inHandle.frame) / inDuration * 100
+    : 33.33;
+
+  const outInfluence = keyframe.outHandle?.enabled && outDuration > 0
+    ? keyframe.outHandle.frame / outDuration * 100
+    : 33.33;
+
+  // Convert value offset back to velocity
+  const fps = store.fps ?? 30;
+  const inVelocity = keyframe.inHandle?.enabled && keyframe.inHandle.frame !== 0
+    ? -keyframe.inHandle.value / Math.abs(keyframe.inHandle.frame) * fps
+    : 0;
+
+  const outVelocity = keyframe.outHandle?.enabled && keyframe.outHandle.frame !== 0
+    ? keyframe.outHandle.value / keyframe.outHandle.frame * fps
+    : 0;
+
+  return {
+    incomingVelocity: inVelocity,
+    outgoingVelocity: outVelocity,
+    incomingInfluence: Math.min(100, Math.max(0, inInfluence)),
+    outgoingInfluence: Math.min(100, Math.max(0, outInfluence))
+  };
+}
+
+// ============================================================================
+// CONVERT EXPRESSION TO KEYFRAMES
+// ============================================================================
+
+export interface BakeExpressionStore extends KeyframeStore {
+  fps: number;
+  frameCount: number;
+  evaluatePropertyAtFrame(layerId: string, propertyPath: string, frame: number): any;
+}
+
+/**
+ * Convert an expression to keyframes by sampling at every frame.
+ * This "bakes" the expression result into keyframes.
+ *
+ * @param store - Store with expression evaluation capability
+ * @param layerId - Layer ID
+ * @param propertyPath - Property path with expression
+ * @param startFrame - Start frame (default: 0)
+ * @param endFrame - End frame (default: composition duration)
+ * @param sampleRate - Sample every N frames (default: 1 = every frame)
+ * @returns Number of keyframes created
+ */
+export function convertExpressionToKeyframes(
+  store: BakeExpressionStore,
+  layerId: string,
+  propertyPath: string,
+  startFrame?: number,
+  endFrame?: number,
+  sampleRate: number = 1
+): number {
+  const layer = store.getLayerById(layerId);
+  if (!layer) {
+    storeLogger.warn('convertExpressionToKeyframes: layer not found:', layerId);
+    return 0;
+  }
+
+  const property = findPropertyByPath(layer, propertyPath);
+  if (!property) {
+    storeLogger.warn('convertExpressionToKeyframes: property not found:', propertyPath);
+    return 0;
+  }
+
+  if (!property.expression?.enabled) {
+    storeLogger.warn('convertExpressionToKeyframes: no active expression on property');
+    return 0;
+  }
+
+  const start = startFrame ?? 0;
+  const end = endFrame ?? store.frameCount;
+  const rate = Math.max(1, Math.round(sampleRate));
+
+  // Clear existing keyframes
+  property.keyframes = [];
+  property.animated = true;
+
+  let keyframesCreated = 0;
+
+  // Sample expression at each frame
+  for (let frame = start; frame <= end; frame += rate) {
+    const value = store.evaluatePropertyAtFrame(layerId, propertyPath, frame);
+
+    if (value !== undefined && value !== null) {
+      const keyframe: Keyframe<any> = {
+        id: `kf_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
+        frame,
+        value,
+        interpolation: 'linear',
+        inHandle: { frame: 0, value: 0, enabled: false },
+        outHandle: { frame: 0, value: 0, enabled: false },
+        controlMode: 'smooth'
+      };
+
+      property.keyframes.push(keyframe);
+      keyframesCreated++;
+    }
+  }
+
+  // Disable the expression after baking
+  if (property.expression) {
+    property.expression.enabled = false;
+  }
+
+  markLayerDirty(layerId);
+  store.project.meta.modified = new Date().toISOString();
+  store.pushHistory();
+
+  storeLogger.info('convertExpressionToKeyframes: created', keyframesCreated, 'keyframes');
+  return keyframesCreated;
+}
+
+/**
+ * Check if a property has a bakeable expression
+ */
+export function canBakeExpression(
+  store: KeyframeStore,
+  layerId: string,
+  propertyPath: string
+): boolean {
+  const layer = store.getLayerById(layerId);
+  if (!layer) return false;
+
+  const property = findPropertyByPath(layer, propertyPath);
+  if (!property) return false;
+
+  return property.expression?.enabled === true;
+}
+
+// ============================================================================
+// AUTO BEZIER TANGENT CALCULATION
+// ============================================================================
+
+/**
+ * Auto-calculate bezier tangents for a keyframe based on surrounding keyframes.
+ * This creates smooth curves through keyframe values.
+ *
+ * Algorithm:
+ * - For keyframes with both neighbors: tangent angle points from prev to next
+ * - For first keyframe: tangent is horizontal
+ * - For last keyframe: tangent is horizontal
+ * - Tangent magnitude is proportional to segment length
+ */
+export function autoCalculateBezierTangents(
+  store: KeyframeStore,
+  layerId: string,
+  propertyPath: string,
+  keyframeId: string
+): boolean {
+  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  if (!layer) return false;
+
+  const property = findPropertyByPath(layer, propertyPath);
+  if (!property || property.keyframes.length < 2) return false;
+
+  // Sort keyframes by frame
+  const sorted = [...property.keyframes].sort((a, b) => a.frame - b.frame);
+  const kfIndex = sorted.findIndex(kf => kf.id === keyframeId);
+  if (kfIndex === -1) return false;
+
+  const keyframe = sorted[kfIndex];
+  const prevKf = kfIndex > 0 ? sorted[kfIndex - 1] : null;
+  const nextKf = kfIndex < sorted.length - 1 ? sorted[kfIndex + 1] : null;
+
+  const getValue = (kf: Keyframe<any>) => typeof kf.value === 'number' ? kf.value : 0;
+  const currentValue = getValue(keyframe);
+
+  // Calculate tangent direction (slope from prev to next)
+  let slopeFrame = 0;
+  let slopeValue = 0;
+
+  if (prevKf && nextKf) {
+    // Middle keyframe: slope from prev to next
+    const prevValue = getValue(prevKf);
+    const nextValue = getValue(nextKf);
+    const frameDelta = nextKf.frame - prevKf.frame;
+    const valueDelta = nextValue - prevValue;
+
+    slopeFrame = frameDelta / 2;
+    slopeValue = valueDelta / 2;
+  } else if (prevKf) {
+    // Last keyframe: use slope from previous segment
+    const prevValue = getValue(prevKf);
+    const frameDelta = keyframe.frame - prevKf.frame;
+    const valueDelta = currentValue - prevValue;
+
+    slopeFrame = frameDelta / 3;
+    slopeValue = valueDelta / 3;
+  } else if (nextKf) {
+    // First keyframe: use slope to next segment
+    const nextValue = getValue(nextKf);
+    const frameDelta = nextKf.frame - keyframe.frame;
+    const valueDelta = nextValue - currentValue;
+
+    slopeFrame = frameDelta / 3;
+    slopeValue = valueDelta / 3;
+  }
+
+  // Set handles with calculated tangents
+  keyframe.inHandle = {
+    frame: -slopeFrame,
+    value: -slopeValue,
+    enabled: true
+  };
+  keyframe.outHandle = {
+    frame: slopeFrame,
+    value: slopeValue,
+    enabled: true
+  };
+  keyframe.interpolation = 'bezier';
+  keyframe.controlMode = 'smooth';
+
+  markLayerDirty(layerId);
+  store.project.meta.modified = new Date().toISOString();
+  store.pushHistory();
+
+  return true;
+}
+
+/**
+ * Auto-calculate bezier tangents for ALL keyframes on a property.
+ * Useful when converting from linear to bezier interpolation.
+ */
+export function autoCalculateAllBezierTangents(
+  store: KeyframeStore,
+  layerId: string,
+  propertyPath: string
+): number {
+  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  if (!layer) return 0;
+
+  const property = findPropertyByPath(layer, propertyPath);
+  if (!property || property.keyframes.length < 2) return 0;
+
+  // Sort keyframes by frame
+  const sorted = [...property.keyframes].sort((a, b) => a.frame - b.frame);
+  let count = 0;
+
+  for (let i = 0; i < sorted.length; i++) {
+    const keyframe = sorted[i];
+    const prevKf = i > 0 ? sorted[i - 1] : null;
+    const nextKf = i < sorted.length - 1 ? sorted[i + 1] : null;
+
+    const getValue = (kf: Keyframe<any>) => typeof kf.value === 'number' ? kf.value : 0;
+    const currentValue = getValue(keyframe);
+
+    let slopeFrame = 0;
+    let slopeValue = 0;
+
+    if (prevKf && nextKf) {
+      const prevValue = getValue(prevKf);
+      const nextValue = getValue(nextKf);
+      const frameDelta = nextKf.frame - prevKf.frame;
+      const valueDelta = nextValue - prevValue;
+
+      slopeFrame = frameDelta / 4; // Less aggressive for all-at-once
+      slopeValue = valueDelta / 4;
+    } else if (prevKf) {
+      const prevValue = getValue(prevKf);
+      const frameDelta = keyframe.frame - prevKf.frame;
+      const valueDelta = currentValue - prevValue;
+
+      slopeFrame = frameDelta / 3;
+      slopeValue = valueDelta / 3;
+    } else if (nextKf) {
+      const nextValue = getValue(nextKf);
+      const frameDelta = nextKf.frame - keyframe.frame;
+      const valueDelta = nextValue - currentValue;
+
+      slopeFrame = frameDelta / 3;
+      slopeValue = valueDelta / 3;
+    }
+
+    keyframe.inHandle = {
+      frame: -slopeFrame,
+      value: -slopeValue,
+      enabled: true
+    };
+    keyframe.outHandle = {
+      frame: slopeFrame,
+      value: slopeValue,
+      enabled: true
+    };
+    keyframe.interpolation = 'bezier';
+    keyframe.controlMode = 'smooth';
+    count++;
+  }
+
+  markLayerDirty(layerId);
+  store.project.meta.modified = new Date().toISOString();
+  store.pushHistory();
+
+  return count;
+}
+
+// ============================================================================
+// HANDLE WITH CONTROL MODE (BREAK HANDLES)
+// ============================================================================
+
+/**
+ * Set keyframe bezier handle with control mode awareness.
+ *
+ * Control modes:
+ * - 'symmetric': Both handles have same length and opposite direction
+ * - 'smooth': Both handles maintain angle but can have different lengths
+ * - 'corner': Handles are independent (broken)
+ *
+ * @param breakHandle - If true, sets controlMode to 'corner' (Ctrl+drag behavior)
+ */
+export function setKeyframeHandleWithMode(
+  store: KeyframeStore,
+  layerId: string,
+  propertyPath: string,
+  keyframeId: string,
+  handleType: 'in' | 'out',
+  handle: BezierHandle,
+  breakHandle: boolean = false
+): void {
+  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  if (!layer) return;
+
+  const property = findPropertyByPath(layer, propertyPath);
+  if (!property) return;
+
+  const keyframe = property.keyframes.find(kf => kf.id === keyframeId);
+  if (!keyframe) return;
+
+  // If breaking handle (Ctrl+drag), set to corner mode
+  if (breakHandle) {
+    keyframe.controlMode = 'corner';
+    if (handleType === 'in') {
+      keyframe.inHandle = { ...handle };
+    } else {
+      keyframe.outHandle = { ...handle };
+    }
+  } else {
+    // Respect existing control mode
+    const mode = keyframe.controlMode || 'smooth';
+
+    if (handleType === 'in') {
+      keyframe.inHandle = { ...handle };
+
+      if (mode === 'symmetric') {
+        // Mirror both angle and length to outHandle
+        keyframe.outHandle = {
+          frame: -handle.frame,
+          value: -handle.value,
+          enabled: handle.enabled
+        };
+      } else if (mode === 'smooth') {
+        // Mirror angle, keep outHandle length
+        const inLength = Math.sqrt(handle.frame * handle.frame + handle.value * handle.value);
+        const outLength = Math.sqrt(
+          keyframe.outHandle.frame * keyframe.outHandle.frame +
+          keyframe.outHandle.value * keyframe.outHandle.value
+        );
+
+        if (inLength > 0) {
+          const scale = outLength / inLength;
+          keyframe.outHandle = {
+            frame: -handle.frame * scale,
+            value: -handle.value * scale,
+            enabled: keyframe.outHandle.enabled
+          };
+        }
+      }
+      // corner mode: no adjustment to other handle
+    } else {
+      keyframe.outHandle = { ...handle };
+
+      if (mode === 'symmetric') {
+        // Mirror both angle and length to inHandle
+        keyframe.inHandle = {
+          frame: -handle.frame,
+          value: -handle.value,
+          enabled: handle.enabled
+        };
+      } else if (mode === 'smooth') {
+        // Mirror angle, keep inHandle length
+        const outLength = Math.sqrt(handle.frame * handle.frame + handle.value * handle.value);
+        const inLength = Math.sqrt(
+          keyframe.inHandle.frame * keyframe.inHandle.frame +
+          keyframe.inHandle.value * keyframe.inHandle.value
+        );
+
+        if (outLength > 0) {
+          const scale = inLength / outLength;
+          keyframe.inHandle = {
+            frame: -handle.frame * scale,
+            value: -handle.value * scale,
+            enabled: keyframe.inHandle.enabled
+          };
+        }
+      }
+      // corner mode: no adjustment to other handle
+    }
+  }
+
+  // Enable bezier interpolation when handles are modified
+  if (handle.enabled && keyframe.interpolation === 'linear') {
+    keyframe.interpolation = 'bezier';
+  }
+
+  markLayerDirty(layerId);
+  store.project.meta.modified = new Date().toISOString();
+  store.pushHistory();
+}
+
+// ============================================================================
+// SEPARATE DIMENSIONS
+// ============================================================================
+
+import {
+  separatePositionDimensions,
+  linkPositionDimensions,
+  separateScaleDimensions,
+  linkScaleDimensions
+} from '@/types/transform';
+
+/**
+ * Separate position into individual X, Y, Z properties for independent keyframing.
+ * After separation, positionX, positionY, positionZ can have different keyframes.
+ */
+export function separatePositionDimensionsAction(
+  store: KeyframeStore,
+  layerId: string
+): boolean {
+  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  if (!layer) return false;
+
+  separatePositionDimensions(layer.transform);
+
+  markLayerDirty(layerId);
+  store.project.meta.modified = new Date().toISOString();
+  store.pushHistory();
+
+  return true;
+}
+
+/**
+ * Link position dimensions back into a combined property.
+ * Merges X, Y, Z keyframes at each unique frame.
+ */
+export function linkPositionDimensionsAction(
+  store: KeyframeStore,
+  layerId: string
+): boolean {
+  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  if (!layer) return false;
+
+  linkPositionDimensions(layer.transform);
+
+  markLayerDirty(layerId);
+  store.project.meta.modified = new Date().toISOString();
+  store.pushHistory();
+
+  return true;
+}
+
+/**
+ * Separate scale into individual X, Y, Z properties.
+ */
+export function separateScaleDimensionsAction(
+  store: KeyframeStore,
+  layerId: string
+): boolean {
+  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  if (!layer) return false;
+
+  separateScaleDimensions(layer.transform);
+
+  markLayerDirty(layerId);
+  store.project.meta.modified = new Date().toISOString();
+  store.pushHistory();
+
+  return true;
+}
+
+/**
+ * Link scale dimensions back into a combined property.
+ */
+export function linkScaleDimensionsAction(
+  store: KeyframeStore,
+  layerId: string
+): boolean {
+  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  if (!layer) return false;
+
+  linkScaleDimensions(layer.transform);
+
+  markLayerDirty(layerId);
+  store.project.meta.modified = new Date().toISOString();
+  store.pushHistory();
+
+  return true;
+}
+
+/**
+ * Check if a layer has separated position dimensions.
+ */
+export function hasPositionSeparated(
+  store: KeyframeStore,
+  layerId: string
+): boolean {
+  const layer = store.getLayerById(layerId);
+  if (!layer) return false;
+  return layer.transform.separateDimensions?.position === true;
+}
+
+/**
+ * Check if a layer has separated scale dimensions.
+ */
+export function hasScaleSeparated(
+  store: KeyframeStore,
+  layerId: string
+): boolean {
+  const layer = store.getLayerById(layerId);
+  if (!layer) return false;
+  return layer.transform.separateDimensions?.scale === true;
 }
