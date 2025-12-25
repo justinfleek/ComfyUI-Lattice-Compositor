@@ -24,8 +24,8 @@ import { VideoDecoderService, isWebCodecsSupported } from '@/services/videoDecod
 
 export interface VideoMetadata {
   duration: number;      // Total duration in seconds
-  frameCount: number;    // Total frame count
-  fps: number;           // Source FPS
+  frameCount: number;    // Total frame count (estimated if fps unknown)
+  fps: number | null;    // Source FPS (null if detection failed)
   width: number;
   height: number;
   hasAudio: boolean;
@@ -402,7 +402,7 @@ export class VideoLayer extends BaseLayer {
    * Frame-accurate seek using WebCodecs API
    */
   private async seekToFrameAccurate(videoTime: number): Promise<void> {
-    if (!this.frameAccurateDecoder || !this.metadata) return;
+    if (!this.frameAccurateDecoder || !this.metadata || this.metadata.fps === null) return;
 
     // Convert time to frame number
     const targetFrame = Math.round(videoTime * this.metadata.fps);
@@ -1009,29 +1009,33 @@ async function detectVideoFps(video: HTMLVideoElement, timeout: number = 2000): 
 }
 
 /**
- * Estimate fps from video duration and common patterns
- * Used as fallback when requestVideoFrameCallback is not available
+ * Attempt to estimate fps from video duration and common AI model patterns
+ * Returns null if no pattern matches - user must specify fps manually
  */
-function estimateFpsFromDuration(duration: number): number {
-  // AI video models typically use specific frame rates
-  // WAN models: 16fps (4n+1 pattern: 17, 33, 49, 65, 81 frames)
-  // AnimateDiff: 8fps
-  // Standard video: 24, 30, 60fps
+function estimateFpsFromDuration(duration: number): number | null {
+  // AI video models typically use specific frame rates with known patterns
 
-  // Check for WAN-style durations (81 frames at 16fps = 5.0625s)
+  // WAN models: 16fps (4n+1 pattern: 17, 33, 49, 65, 81 frames)
   const wan16Frames = Math.round(duration * 16);
   if ([17, 33, 49, 65, 81, 97, 113, 129].includes(wan16Frames)) {
     return 16;
   }
 
-  // Check for AnimateDiff durations
+  // AnimateDiff: 8fps with specific frame counts
   const anim8Frames = Math.round(duration * 8);
   if ([16, 24, 32].includes(anim8Frames)) {
     return 8;
   }
 
-  // Default to 30fps for standard video
-  return 30;
+  // Mochi: 30fps with 85 or 163 frames (2.83s or 5.43s)
+  const mochi30Frames = Math.round(duration * 30);
+  if ([85, 163].includes(mochi30Frames)) {
+    return 30;
+  }
+
+  // Cannot determine fps from duration alone - return null
+  // User will be prompted to select fps manually
+  return null;
 }
 
 /**
@@ -1065,21 +1069,24 @@ export async function extractVideoMetadata(
     };
 
     const onLoad = async () => {
-      // Try to detect actual fps
-      let fps = await detectVideoFps(video);
+      // Try to detect actual fps using requestVideoFrameCallback
+      let fps: number | null = await detectVideoFps(video);
 
-      // If detection failed, estimate from duration
+      // If API detection failed, try duration-based heuristics
       if (fps === null) {
         fps = estimateFpsFromDuration(video.duration);
       }
 
-      // Calculate frame count using detected/estimated fps
-      const frameCount = Math.ceil(video.duration * fps);
+      // Calculate frame count - use detected fps or estimate at 30fps for display
+      // (actual frame count will be recalculated once user specifies fps)
+      const frameCount = fps !== null
+        ? Math.ceil(video.duration * fps)
+        : Math.ceil(video.duration * 30); // Placeholder estimate
 
       const metadata: VideoMetadata = {
         duration: video.duration,
         frameCount,
-        fps,
+        fps, // May be null - caller must handle this
         width: video.videoWidth,
         height: video.videoHeight,
         hasAudio: true, // Assume true, will be updated on actual load
@@ -1103,6 +1110,7 @@ export async function extractVideoMetadata(
 /**
  * Calculate recommended composition settings from video metadata
  * Uses video's native fps for frame count to preserve all frames
+ * Note: This should only be called when fps is known (not null)
  */
 export function calculateCompositionFromVideo(
   metadata: VideoMetadata
@@ -1112,6 +1120,10 @@ export function calculateCompositionFromVideo(
   const height = Math.round(metadata.height / 8) * 8;
 
   // Use video's native fps to preserve all frames
+  // Assert fps is non-null (callers should ensure fps is known before calling)
+  if (metadata.fps === null) {
+    throw new Error('calculateCompositionFromVideo called with unknown fps');
+  }
   const fps = metadata.fps;
   const frameCount = metadata.frameCount;
 

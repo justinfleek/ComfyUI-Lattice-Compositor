@@ -78,12 +78,24 @@ export interface VideoImportFpsMismatch {
   };
 }
 
+export interface VideoImportFpsUnknown {
+  status: 'fps_unknown';
+  fileName: string;
+  videoDuration: number;
+  /** Stored metadata and URL for deferred layer creation */
+  pendingImport: {
+    videoUrl: string;
+    metadata: VideoMetadata;
+    assetId: string;
+  };
+}
+
 export interface VideoImportError {
   status: 'error';
   error: string;
 }
 
-export type VideoImportResult = VideoImportSuccess | VideoImportFpsMismatch | VideoImportError;
+export type VideoImportResult = VideoImportSuccess | VideoImportFpsMismatch | VideoImportFpsUnknown | VideoImportError;
 
 // ============================================================================
 // VIDEO LAYER CREATION
@@ -126,13 +138,32 @@ export async function createVideoLayer(
     // Video-specific metadata
     duration: metadata.duration,
     frameCount: metadata.frameCount,
-    fps: metadata.fps,
+    fps: metadata.fps ?? undefined,
     hasAudio: metadata.hasAudio
   };
 
   store.project.assets[assetId] = asset;
 
-  // Check for fps mismatch scenario
+  // Check if fps could not be detected - user must specify
+  if (metadata.fps === null) {
+    storeLogger.debug('FPS unknown - user must specify:', {
+      fileName: file.name,
+      duration: metadata.duration
+    });
+
+    return {
+      status: 'fps_unknown',
+      fileName: file.name,
+      videoDuration: metadata.duration,
+      pendingImport: {
+        videoUrl,
+        metadata,
+        assetId
+      }
+    };
+  }
+
+  // Check for fps mismatch scenario (only if fps is known)
   const compHasLayers = store.getActiveCompLayers().length > 0;
   const fpsMismatch = Math.abs(metadata.fps - store.project.composition.fps) > 0.5; // Allow small tolerance
 
@@ -351,12 +382,15 @@ export function completeVideoImportWithConform(
 ): Layer {
   const { metadata, assetId } = pendingImport;
 
+  // This function is only called from fps_mismatch path where fps is guaranteed non-null
+  const videoFps = metadata.fps!;
+
   // Calculate time stretch factor
   // If video is 30fps and comp is 16fps: video should play slower
   // stretchFactor = compFps / videoFps * 100 = 16/30 * 100 = 53.3%
   // But timeStretch is inverted: 100% = normal, 200% = half speed
   // So: timeStretch = videoFps / compFps * 100 = 30/16 * 100 = 187.5%
-  const timeStretch = (metadata.fps / compositionFps) * 100;
+  const timeStretch = (videoFps / compositionFps) * 100;
 
   storeLogger.debug('Conforming video to composition fps:', {
     videoFps: metadata.fps,
@@ -368,7 +402,7 @@ export function completeVideoImportWithConform(
   const layer = createVideoLayerFromAsset(store, assetId, metadata, fileName, timeStretch);
 
   // Adjust layer duration for stretched video
-  const stretchedDuration = metadata.duration * (metadata.fps / compositionFps);
+  const stretchedDuration = metadata.duration * (videoFps / compositionFps);
   const frameCount = Math.ceil(stretchedDuration * compositionFps);
   layer.outPoint = Math.min(frameCount - 1, store.project.composition.frameCount - 1);
   layer.endFrame = layer.outPoint;
@@ -384,7 +418,7 @@ export function completeVideoImportWithConform(
  */
 export function cancelVideoImport(
   store: VideoStore,
-  pendingImport: VideoImportFpsMismatch['pendingImport']
+  pendingImport: VideoImportFpsMismatch['pendingImport'] | VideoImportFpsUnknown['pendingImport']
 ): void {
   // Remove the asset that was pre-created
   delete store.project.assets[pendingImport.assetId];
@@ -393,6 +427,88 @@ export function cancelVideoImport(
   URL.revokeObjectURL(pendingImport.videoUrl);
 
   storeLogger.debug('Cancelled video import:', { assetId: pendingImport.assetId });
+}
+
+/**
+ * Complete video import after user specifies fps (for unknown fps scenario)
+ * Continues the normal import flow with user-provided fps
+ */
+export async function completeVideoImportWithUserFps(
+  store: VideoStore,
+  pendingImport: VideoImportFpsUnknown['pendingImport'],
+  fileName: string,
+  userFps: number,
+  autoResizeComposition: boolean = true
+): Promise<VideoImportResult> {
+  const { metadata, assetId } = pendingImport;
+
+  // Update metadata with user-specified fps
+  const updatedMetadata: VideoMetadata = {
+    ...metadata,
+    fps: userFps,
+    frameCount: Math.ceil(metadata.duration * userFps)
+  };
+
+  // Update the asset with correct fps
+  const asset = store.project.assets[assetId];
+  if (asset) {
+    asset.fps = userFps;
+    asset.frameCount = updatedMetadata.frameCount;
+  }
+
+  storeLogger.debug('User specified fps:', {
+    fileName,
+    fps: userFps,
+    frameCount: updatedMetadata.frameCount
+  });
+
+  // Now check for fps mismatch with composition
+  const compHasLayers = store.getActiveCompLayers().length > 0;
+  const fpsMismatch = Math.abs(userFps - store.project.composition.fps) > 0.5;
+
+  if (autoResizeComposition && compHasLayers && fpsMismatch) {
+    // Return fps_mismatch for dialog handling
+    return {
+      status: 'fps_mismatch',
+      importedFps: userFps,
+      compositionFps: store.project.composition.fps,
+      fileName,
+      videoDuration: metadata.duration,
+      pendingImport: {
+        ...pendingImport,
+        metadata: updatedMetadata
+      }
+    };
+  }
+
+  // Auto-resize composition if requested (empty comp or matching fps)
+  if (autoResizeComposition) {
+    const compSettings = calculateCompositionFromVideo(updatedMetadata);
+    const comp = store.getActiveComp();
+
+    // Update composition settings including fps
+    store.project.composition.width = compSettings.width;
+    store.project.composition.height = compSettings.height;
+    store.project.composition.frameCount = compSettings.frameCount;
+    store.project.composition.fps = compSettings.fps;
+    store.project.composition.duration = compSettings.frameCount / compSettings.fps;
+
+    if (comp) {
+      comp.settings.width = compSettings.width;
+      comp.settings.height = compSettings.height;
+      comp.settings.frameCount = compSettings.frameCount;
+      comp.settings.fps = compSettings.fps;
+      comp.settings.duration = compSettings.frameCount / compSettings.fps;
+    }
+  }
+
+  // Create the layer
+  const layer = createVideoLayerFromAsset(store, assetId, updatedMetadata, fileName);
+
+  store.project.meta.modified = new Date().toISOString();
+  store.pushHistory();
+
+  return { status: 'success', layer, metadata: updatedMetadata };
 }
 
 // ============================================================================
@@ -437,7 +553,7 @@ export function onVideoMetadataLoaded(
     asset.height = metadata.height;
     asset.duration = metadata.duration;
     asset.frameCount = metadata.frameCount;
-    asset.fps = metadata.fps;
+    asset.fps = metadata.fps ?? undefined;
     asset.hasAudio = metadata.hasAudio;
   }
 

@@ -53,6 +53,15 @@
       @cancel="handleFpsMismatchCancel"
     />
 
+    <!-- FPS Select Dialog (for unknown fps) -->
+    <FpsSelectDialog
+      :visible="showFpsSelectDialog"
+      :file-name="pendingFpsUnknown?.fileName ?? ''"
+      :video-duration="pendingFpsUnknown?.videoDuration ?? 0"
+      @confirm="handleFpsSelected"
+      @cancel="handleFpsSelectCancel"
+    />
+
     <!-- Hidden file input -->
     <input
       ref="fileInputRef"
@@ -179,6 +188,7 @@ import { useAudioStore } from '@/stores/audioStore';
 import DecomposeDialog from '@/components/dialogs/DecomposeDialog.vue';
 import VectorizeDialog from '@/components/dialogs/VectorizeDialog.vue';
 import FpsMismatchDialog from '@/components/dialogs/FpsMismatchDialog.vue';
+import FpsSelectDialog from '@/components/dialogs/FpsSelectDialog.vue';
 import {
   PhFilmSlate, PhFolder, PhImage, PhSpeakerHigh, PhChartBar, PhFile, PhSparkle
 } from '@phosphor-icons/vue';
@@ -191,10 +201,11 @@ import {
   reloadDataAsset
 } from '@/services/dataImport';
 import { isCSVAsset, isJSONAsset, getDataFileType, isSupportedDataFile } from '@/types/dataAsset';
-import type { VideoImportFpsMismatch } from '@/stores/actions/videoActions';
+import type { VideoImportFpsMismatch, VideoImportFpsUnknown } from '@/stores/actions/videoActions';
 import {
   completeVideoImportWithMatch,
   completeVideoImportWithConform,
+  completeVideoImportWithUserFps,
   cancelVideoImport
 } from '@/stores/actions/videoActions';
 
@@ -233,6 +244,8 @@ const showDecomposeDialog = ref(false);
 const showVectorizeDialog = ref(false);
 const showFpsMismatchDialog = ref(false);
 const pendingFpsMismatch = ref<VideoImportFpsMismatch | null>(null);
+const showFpsSelectDialog = ref(false);
+const pendingFpsUnknown = ref<VideoImportFpsUnknown | null>(null);
 const searchQuery = ref('');
 const selectedItem = ref<string | null>(null);
 const expandedFolders = ref<string[]>(['compositions', 'footage']);
@@ -634,6 +647,66 @@ function handleFpsMismatchCancel() {
   pendingFpsMismatch.value = null;
 }
 
+// ============================================================
+// FPS SELECT HANDLERS (for unknown fps)
+// ============================================================
+
+async function handleFpsSelected(fps: number) {
+  if (!pendingFpsUnknown.value) return;
+
+  const pending = pendingFpsUnknown.value;
+  console.log('[ProjectPanel] FPS selected by user:', fps, 'for', pending.fileName);
+
+  // Complete import with user-specified fps
+  const result = await completeVideoImportWithUserFps(
+    store,
+    pending.pendingImport,
+    pending.fileName,
+    fps,
+    true // autoResizeComposition
+  );
+
+  // Close fps select dialog
+  showFpsSelectDialog.value = false;
+  pendingFpsUnknown.value = null;
+
+  // Handle the result - may trigger fps_mismatch dialog
+  if (result.status === 'fps_mismatch') {
+    // Chain to fps mismatch dialog
+    pendingFpsMismatch.value = result;
+    showFpsMismatchDialog.value = true;
+    console.log('[ProjectPanel] FPS mismatch after selection:', result.importedFps, 'vs', result.compositionFps);
+    return;
+  }
+
+  if (result.status === 'success') {
+    // Add to footage items
+    footageItems.value.push({
+      id: result.layer.id,
+      name: pending.fileName,
+      type: 'footage',
+      width: store.width,
+      height: store.height,
+      duration: store.frameCount,
+      fps: store.fps
+    });
+    console.log('[ProjectPanel] Video layer created after fps selection:', result.layer.id);
+  }
+}
+
+function handleFpsSelectCancel() {
+  if (!pendingFpsUnknown.value) return;
+
+  console.log('[ProjectPanel] FPS select: User cancelled');
+
+  // Clean up the pending import
+  cancelVideoImport(store, pendingFpsUnknown.value.pendingImport);
+
+  // Close dialog and clear pending
+  showFpsSelectDialog.value = false;
+  pendingFpsUnknown.value = null;
+}
+
 function cleanupUnusedAssets() {
   showNewMenu.value = false;
   const result = store.removeUnusedAssets();
@@ -836,6 +909,15 @@ async function handleFileImport(event: Event) {
         showFpsMismatchDialog.value = true;
         console.log('[ProjectPanel] FPS mismatch detected:', result.importedFps, 'vs', result.compositionFps);
         // Don't add to footage items yet - wait for user decision
+        continue;
+      }
+
+      if (result.status === 'fps_unknown') {
+        // Show fps select dialog - user must specify video fps
+        pendingFpsUnknown.value = result;
+        showFpsSelectDialog.value = true;
+        console.log('[ProjectPanel] FPS unknown - user must specify:', result.fileName);
+        // Don't add to footage items yet - wait for user selection
         continue;
       }
 
