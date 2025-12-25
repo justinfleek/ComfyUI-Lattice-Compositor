@@ -201,13 +201,13 @@ function getValueDelta<T>(v1: T, v2: T): number {
  *
  * @param property - The animatable property
  * @param frame - Current frame number
- * @param fps - Frames per second (needed for expressions, defaults to 30)
+ * @param fps - Frames per second (needed for expressions, defaults to 16)
  * @param layerId - Layer ID (for expression context)
  */
 export function interpolateProperty<T>(
   property: AnimatableProperty<T>,
   frame: number,
-  fps: number = 30,
+  fps: number = 16,
   layerId: string = ''
 ): T {
   // Calculate base interpolated value

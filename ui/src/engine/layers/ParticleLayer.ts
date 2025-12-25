@@ -41,7 +41,7 @@ export class ParticleLayer extends BaseLayer {
   private rendererRef: THREE.WebGLRenderer | null = null;
 
   /** Composition FPS for time calculation */
-  private fps: number = 60;
+  private fps: number = 16;
 
   /** Deterministic seed derived from layer ID */
   private readonly layerSeed: number;

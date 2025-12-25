@@ -75,7 +75,7 @@ export class VideoLayer extends BaseLayer {
   private onMetadataLoaded?: (metadata: VideoMetadata) => void;
 
   // Composition FPS for time calculation
-  private compositionFPS: number = 30;
+  private compositionFPS: number = 16;
 
   // Canvas for effect processing
   private effectCanvas: HTMLCanvasElement | null = null;
@@ -457,24 +457,39 @@ export class VideoLayer extends BaseLayer {
 
   /**
    * Calculate video time from composition frame
-   * Handles speed, speed map (time remapping), loop, and ping-pong
+   * Handles timeStretch, speed, speed map (time remapping), loop, and ping-pong
+   *
+   * DETERMINISM: This is a pure function of (compositionFrame, layer state).
+   * Same inputs always produce same outputs.
    */
   private calculateVideoTime(compositionFrame: number): number {
     if (!this.metadata) return 0;
 
-    // If speed map is enabled and animated, use that
+    // If speed map is enabled and animated, use that (overrides other time controls)
     const speedMapEnabled = this.videoData.speedMapEnabled ?? this.videoData.timeRemapEnabled;
     const speedMapProp = this.videoData.speedMap ?? this.videoData.timeRemap;
     if (speedMapEnabled && speedMapProp?.animated) {
       return this.videoEvaluator.evaluate(speedMapProp, compositionFrame);
     }
 
-    // Calculate based on speed and offsets
-    const compFps = this.compositionFPS;
-    const compTime = compositionFrame / compFps;
+    // Get layer's timeStretch (100 = normal, 200 = half speed, -100 = reversed)
+    const timeStretch = this.layerData.timeStretch ?? 100;
+    const isReversed = timeStretch < 0;
 
-    // Apply speed
-    let videoTime = compTime * this.videoData.speed;
+    // Calculate effective speed:
+    // - timeStretch: 100% = 1x, 200% = 0.5x, 50% = 2x
+    // - speed: Direct multiplier from VideoData (1 = normal, 2 = 2x faster)
+    // Combined: effectiveSpeed = (100 / |timeStretch|) * speed
+    const stretchFactor = timeStretch !== 0 ? 100 / Math.abs(timeStretch) : 0;
+    const effectiveSpeed = stretchFactor * this.videoData.speed;
+
+    // Calculate time relative to layer start
+    const layerStartFrame = this.layerData.startFrame ?? 0;
+    const layerFrame = compositionFrame - layerStartFrame;
+    const compFps = this.compositionFPS;
+
+    // Convert to video time with effective speed
+    let videoTime = (layerFrame / compFps) * effectiveSpeed;
 
     // Add start offset
     videoTime += this.videoData.startTime;
@@ -484,19 +499,29 @@ export class VideoLayer extends BaseLayer {
       ? this.videoData.endTime - this.videoData.startTime
       : this.metadata.duration - this.videoData.startTime;
 
+    // Handle reversed playback
+    if (isReversed && effectiveDuration > 0) {
+      // Reverse: map videoTime to (effectiveDuration - videoTime)
+      videoTime = this.videoData.startTime + effectiveDuration - (videoTime - this.videoData.startTime);
+    }
+
     // Handle looping
     if (this.videoData.loop && effectiveDuration > 0) {
+      const relativeTime = videoTime - this.videoData.startTime;
       if (this.videoData.pingPong) {
         // Ping-pong: 0 -> duration -> 0 -> duration...
-        const cycles = Math.floor(videoTime / effectiveDuration);
-        const phase = videoTime % effectiveDuration;
-        videoTime = cycles % 2 === 0 ? phase : effectiveDuration - phase;
+        const cycles = Math.floor(relativeTime / effectiveDuration);
+        const phase = relativeTime % effectiveDuration;
+        const adjustedPhase = cycles % 2 === 0 ? phase : effectiveDuration - phase;
+        videoTime = this.videoData.startTime + adjustedPhase;
       } else {
         // Standard loop
-        videoTime = videoTime % effectiveDuration;
+        videoTime = this.videoData.startTime + (((relativeTime % effectiveDuration) + effectiveDuration) % effectiveDuration);
       }
-      videoTime += this.videoData.startTime;
     }
+
+    // Clamp to valid range
+    videoTime = Math.max(this.videoData.startTime, Math.min(videoTime, this.metadata.duration));
 
     return videoTime;
   }

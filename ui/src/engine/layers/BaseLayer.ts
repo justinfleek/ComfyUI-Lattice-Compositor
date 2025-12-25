@@ -90,6 +90,9 @@ export abstract class BaseLayer implements LayerInstance {
   /** Layer quality mode (draft = faster, best = full quality) */
   protected quality: 'draft' | 'best' = 'best';
 
+  /** Composition FPS for time-based effects (set by LayerManager) */
+  protected compositionFps: number = 16;
+
   /** Source canvas for effect processing (lazy initialized) */
   protected effectSourceCanvas: HTMLCanvasElement | null = null;
 
@@ -921,7 +924,7 @@ export abstract class BaseLayer implements LayerInstance {
       // These effects need frame, fps, and layerId to access frame buffers
       const effectContext = {
         frame,
-        fps: 16, // Default project fps (Wan 2.1 standard)
+        fps: this.compositionFps,
         layerId: this.id
       };
 
@@ -1269,7 +1272,7 @@ export abstract class BaseLayer implements LayerInstance {
 
     // Apply layer masks (vector paths)
     if (this.hasMasks()) {
-      result = applyMasksToLayer(result, this.masks, frame);
+      result = applyMasksToLayer(result, this.masks, frame, this.compositionFps);
     }
 
     // Apply matte source (uses another layer's canvas)
@@ -1422,6 +1425,14 @@ export abstract class BaseLayer implements LayerInstance {
    */
   hasParent(): boolean {
     return this.parentId !== null;
+  }
+
+  /**
+   * Set composition FPS for time-based effects (Echo, Posterize Time, etc.)
+   * Called by LayerManager when composition settings change.
+   */
+  setCompositionFps(fps: number): void {
+    this.compositionFps = fps;
   }
 
   // ============================================================================

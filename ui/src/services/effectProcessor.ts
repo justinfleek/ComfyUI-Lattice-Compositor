@@ -364,6 +364,17 @@ export interface EffectContext {
 }
 
 /**
+ * Effects that should process from the ORIGINAL source (not the chain output).
+ * These effects extract information (like bright pixels for glow) and should
+ * always extract from the original layer content, not from previously-glowed content.
+ * This enables proper additive stacking: Glow1(orig) + Glow2(orig) instead of Glow2(Glow1(orig))
+ */
+const ADDITIVE_EFFECTS = new Set([
+  'glow',
+  'cinematic-bloom',
+]);
+
+/**
  * Process a stack of effects on an input canvas (synchronous, CPU-only)
  *
  * Effects are processed in order (top to bottom in the UI).
@@ -372,11 +383,19 @@ export interface EffectContext {
  *
  * NOTE: For GPU-accelerated processing, use processEffectStackAsync instead.
  *
+ * Additive Effect Stacking:
+ * Glow-type effects (glow, cinematicBloom) process from the ORIGINAL source,
+ * not from the chain output. This ensures multiple glows stack additively:
+ * - Glow1 extracts bright pixels from original → composites onto current
+ * - Glow2 extracts bright pixels from original → composites onto current
+ * Rather than Glow2 re-glowing already-glowing pixels from Glow1's output.
+ *
  * @param effects - Array of effect instances
  * @param inputCanvas - Source canvas to process
  * @param frame - Current frame for animation evaluation
  * @param quality - Quality hint ('draft' for fast preview, 'high' for full quality)
  * @param context - Optional context for time-based effects (frame, fps, layerId)
+ * @param fps - Composition fps (used when context not provided, defaults to 16)
  * @returns Processed canvas with all effects applied
  */
 export function processEffectStack(
@@ -384,8 +403,17 @@ export function processEffectStack(
   inputCanvas: HTMLCanvasElement,
   frame: number,
   quality: 'draft' | 'high' = 'high',
-  context?: EffectContext
+  context?: EffectContext,
+  fps: number = 16
 ): EffectStackResult {
+  // Keep the original source for additive effects (glow, bloom)
+  // These effects should extract bright pixels from the original, not from chain output
+  const originalCanvas = document.createElement('canvas');
+  originalCanvas.width = inputCanvas.width;
+  originalCanvas.height = inputCanvas.height;
+  const originalCtx = originalCanvas.getContext('2d')!;
+  originalCtx.drawImage(inputCanvas, 0, 0);
+
   // Create a working copy of the input
   const workCanvas = document.createElement('canvas');
   workCanvas.width = inputCanvas.width;
@@ -423,10 +451,21 @@ export function processEffectStack(
         params._compositionId = context.compositionId;
       }
     } else {
-      // Fallback: use the frame parameter at minimum
+      // Fallback: use the frame parameter and provided fps
       params._frame = frame;
-      params._fps = 30; // Default fps
+      params._fps = fps;
       params._layerId = 'default';
+    }
+
+    // For additive effects (glow, bloom), provide the original source canvas
+    // This ensures they extract bright pixels from the original, not from previous glow output
+    if (ADDITIVE_EFFECTS.has(effect.effectKey)) {
+      params._sourceCanvas = originalCanvas;
+    }
+
+    // For mesh-deform effect, inject the effect instance (contains pins array)
+    if (effect.effectKey === 'mesh-deform') {
+      params._effectInstance = effect;
     }
 
     // Apply the effect
@@ -464,6 +503,7 @@ export interface GPUProcessingOptions {
  * @param frame - Current frame for animation evaluation
  * @param context - Optional context for time-based effects
  * @param options - GPU processing options
+ * @param fps - Composition fps (used when context not provided, defaults to 16)
  * @returns Promise resolving to processed canvas
  */
 export async function processEffectStackAsync(
@@ -471,13 +511,14 @@ export async function processEffectStackAsync(
   inputCanvas: HTMLCanvasElement,
   frame: number,
   context?: EffectContext,
-  options: GPUProcessingOptions = {}
+  options: GPUProcessingOptions = {},
+  fps: number = 16
 ): Promise<EffectStackResult> {
   const startTime = performance.now();
 
   // If GPU disabled or no effects, use sync path
   if (options.forceCPU || effects.length === 0) {
-    return processEffectStack(effects, inputCanvas, frame, options.draft ? 'draft' : 'high', context);
+    return processEffectStack(effects, inputCanvas, frame, options.draft ? 'draft' : 'high', context, fps);
   }
 
   // Ensure GPU dispatcher is initialized
@@ -486,8 +527,15 @@ export async function processEffectStackAsync(
 
   // If no GPU available, fall back to sync path
   if (capabilities.preferredPath === 'canvas2d') {
-    return processEffectStack(effects, inputCanvas, frame, options.draft ? 'draft' : 'high', context);
+    return processEffectStack(effects, inputCanvas, frame, options.draft ? 'draft' : 'high', context, fps);
   }
+
+  // Keep the original source for additive effects (glow, bloom)
+  const originalCanvas = document.createElement('canvas');
+  originalCanvas.width = inputCanvas.width;
+  originalCanvas.height = inputCanvas.height;
+  const originalCtx = originalCanvas.getContext('2d')!;
+  originalCtx.drawImage(inputCanvas, 0, 0);
 
   // Create working canvas
   const workCanvas = document.createElement('canvas');
@@ -523,8 +571,18 @@ export async function processEffectStackAsync(
       }
     } else {
       params._frame = frame;
-      params._fps = 30;
+      params._fps = fps;
       params._layerId = 'default';
+    }
+
+    // For additive effects (glow, bloom), provide the original source canvas
+    if (ADDITIVE_EFFECTS.has(effect.effectKey)) {
+      params._sourceCanvas = originalCanvas;
+    }
+
+    // For mesh-deform effect, inject the effect instance (contains pins array)
+    if (effect.effectKey === 'mesh-deform') {
+      params._effectInstance = effect;
     }
 
     // Check if this effect should use GPU
