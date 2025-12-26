@@ -93,6 +93,9 @@ export abstract class BaseLayer implements LayerInstance {
   /** Composition FPS for time-based effects (set by LayerManager) */
   protected compositionFps: number = 16;
 
+  /** BUG-090 fix: Current audio modifiers for color adjustments */
+  protected currentAudioModifiers: import('../MotionEngine').AudioReactiveModifiers = {};
+
   /** Source canvas for effect processing (lazy initialized) */
   protected effectSourceCanvas: HTMLCanvasElement | null = null;
 
@@ -525,6 +528,9 @@ export abstract class BaseLayer implements LayerInstance {
     // Get audio modifiers (additive values from audio mappings)
     const audioMod = state.audioModifiers || {};
 
+    // BUG-090 fix: Store audio modifiers for color adjustment processing
+    this.currentAudioModifiers = audioMod;
+
     // Apply transform (with driven value overrides and audio modifiers if present)
     // Audio modifiers are ADDITIVE to the base transform values
     const transform = state.transform;
@@ -866,6 +872,108 @@ export abstract class BaseLayer implements LayerInstance {
     return this.layerStyles;
   }
 
+  // ============================================================================
+  // BUG-090/091 FIX: VISUAL MODIFIERS (COLOR + BLUR)
+  // ============================================================================
+
+  /**
+   * Check if any visual audio modifiers are active (color or blur)
+   */
+  protected hasColorModifiers(): boolean {
+    const m = this.currentAudioModifiers;
+    return m.brightness !== undefined ||
+           m.saturation !== undefined ||
+           m.contrast !== undefined ||
+           m.hue !== undefined ||
+           m.blur !== undefined;  // BUG-091: Include blur
+  }
+
+  /**
+   * Apply visual audio modifiers to a canvas (color adjustments + blur)
+   * Uses CSS filter syntax for brightness, saturation, contrast, hue-rotate, blur
+   * @param canvas - Source canvas to apply adjustments to
+   * @returns New canvas with adjustments applied, or original if no adjustments needed
+   */
+  protected applyColorAdjustments(canvas: HTMLCanvasElement): HTMLCanvasElement {
+    const m = this.currentAudioModifiers;
+
+    // Build CSS filter string
+    const filters: string[] = [];
+
+    // BUG-090: Color adjustments
+    // Brightness: audio value 0 = normal, -0.5 = 50% darker, +0.5 = 50% brighter
+    if (m.brightness !== undefined && m.brightness !== 0) {
+      filters.push(`brightness(${1 + m.brightness})`);
+    }
+
+    // Saturation: audio value 0 = normal, -0.5 = 50% less, +0.5 = 50% more
+    if (m.saturation !== undefined && m.saturation !== 0) {
+      filters.push(`saturate(${1 + m.saturation})`);
+    }
+
+    // Contrast: audio value 0 = normal, -0.5 = 50% less, +0.5 = 50% more
+    if (m.contrast !== undefined && m.contrast !== 0) {
+      filters.push(`contrast(${1 + m.contrast})`);
+    }
+
+    // Hue: audio value 0 = no shift, 0.5 = 180° shift, 1 = 360° shift
+    if (m.hue !== undefined && m.hue !== 0) {
+      filters.push(`hue-rotate(${m.hue * 360}deg)`);
+    }
+
+    // BUG-091: Blur - audio value 0 = no blur, 1 = 20px blur
+    if (m.blur !== undefined && m.blur !== 0) {
+      const blurPx = Math.max(0, m.blur * 20);  // Scale 0-1 to 0-20px
+      filters.push(`blur(${blurPx}px)`);
+    }
+
+    // If no filters, return original
+    if (filters.length === 0) {
+      return canvas;
+    }
+
+    // Create new canvas with filters applied
+    // Note: blur filter extends beyond canvas bounds, so we need padding
+    const blurPadding = m.blur ? Math.ceil(m.blur * 20 * 2) : 0;
+    const resultCanvas = document.createElement('canvas');
+    resultCanvas.width = canvas.width + blurPadding * 2;
+    resultCanvas.height = canvas.height + blurPadding * 2;
+    const ctx = resultCanvas.getContext('2d');
+
+    if (!ctx) {
+      return canvas;
+    }
+
+    // Apply CSS filter and draw with padding offset
+    ctx.filter = filters.join(' ');
+    ctx.drawImage(canvas, blurPadding, blurPadding);
+
+    // If blur was applied, we need to crop back to original size
+    if (blurPadding > 0) {
+      const croppedCanvas = document.createElement('canvas');
+      croppedCanvas.width = canvas.width;
+      croppedCanvas.height = canvas.height;
+      const croppedCtx = croppedCanvas.getContext('2d');
+      if (croppedCtx) {
+        croppedCtx.drawImage(resultCanvas, -blurPadding, -blurPadding);
+        return croppedCanvas;
+      }
+    }
+
+    return resultCanvas;
+  }
+
+  /**
+   * Get audio modifier values for effect parameters
+   * Used by effect processing to apply audio-reactive glow intensity/radius
+   */
+  protected getEffectAudioModifiers(): { glowIntensity?: number; glowRadius?: number } {
+    return {
+      glowIntensity: this.currentAudioModifiers.glowIntensity,
+      glowRadius: this.currentAudioModifiers.glowRadius,
+    };
+  }
+
   /**
    * Set layer styles
    */
@@ -905,8 +1013,9 @@ export abstract class BaseLayer implements LayerInstance {
   protected processEffects(frame: number): HTMLCanvasElement | null {
     const hasStyles = this.layerStyles?.enabled && this.hasEnabledLayerStyles();
     const hasEffects = this.hasEnabledEffects();
+    const hasColorMods = this.hasColorModifiers(); // BUG-090 fix
 
-    if (!hasStyles && !hasEffects) {
+    if (!hasStyles && !hasEffects && !hasColorMods) {
       return null;
     }
 
@@ -939,10 +1048,24 @@ export abstract class BaseLayer implements LayerInstance {
       }
 
       // STEP 2: Apply effects on styled content
+      // BUG-091/093 fix: Pass audio modifiers to effect processor for glow/glitch/rgbSplit
       let processedCanvas = styledCanvas;
       if (hasEffects) {
-        const result = processEffectStack(this.effects, styledCanvas, frame, qualityHint, effectContext);
+        const result = processEffectStack(
+          this.effects,
+          styledCanvas,
+          frame,
+          qualityHint,
+          effectContext,
+          this.compositionFps,
+          this.currentAudioModifiers
+        );
         processedCanvas = result.canvas;
+      }
+
+      // STEP 3: BUG-090 fix - Apply audio-reactive color adjustments
+      if (hasColorMods) {
+        processedCanvas = this.applyColorAdjustments(processedCanvas);
       }
 
       // Apply motion blur as final step if enabled
@@ -1291,9 +1414,10 @@ export abstract class BaseLayer implements LayerInstance {
     const hasEffects = this.hasEnabledEffects();
     const hasMasks = this.hasMasks();
     const hasTrackMatte = this.hasTrackMatte();
+    const hasColorMods = this.hasColorModifiers(); // BUG-090 fix
 
     // Early exit if nothing to process
-    if (!hasEffects && !hasMasks && !hasTrackMatte) {
+    if (!hasEffects && !hasMasks && !hasTrackMatte && !hasColorMods) {
       return;
     }
 
@@ -1305,8 +1429,8 @@ export abstract class BaseLayer implements LayerInstance {
 
     let processedCanvas = sourceCanvas;
 
-    // Step 1: Apply effects
-    if (hasEffects) {
+    // Step 1: Apply effects (includes color adjustments via processEffects)
+    if (hasEffects || hasColorMods) {
       const effectResult = this.processEffects(frame);
       if (effectResult) {
         processedCanvas = effectResult;

@@ -17,6 +17,64 @@ import type { AnimatableProperty } from '@/types/project';
 import { interpolateProperty } from './interpolation';
 import { renderLogger } from '@/utils/logger';
 import { gpuEffectDispatcher, type GPURenderPath } from './gpuEffectDispatcher';
+import type { AudioReactiveModifiers } from './audioReactiveMapping';
+
+// ============================================================================
+// AUDIO MODIFIER APPLICATION
+// BUG-091/093 fix: Apply audio-reactive modifiers to effect parameters
+// ============================================================================
+
+/**
+ * Apply audio-reactive modifiers to effect parameters
+ * Maps audio modifiers to specific effect parameter names
+ */
+function applyAudioModifiersToEffect(
+  effectKey: string,
+  params: EvaluatedEffectParams,
+  audioModifiers: AudioReactiveModifiers
+): void {
+  // Glow effect (BUG-091)
+  if (effectKey === 'glow' || effectKey === 'cinematic-bloom') {
+    if (audioModifiers.glowIntensity !== undefined && audioModifiers.glowIntensity !== 0) {
+      // Add audio modifier to existing intensity (multiplicative)
+      const baseIntensity = params.intensity ?? 1;
+      params.intensity = baseIntensity * (1 + audioModifiers.glowIntensity);
+    }
+    if (audioModifiers.glowRadius !== undefined && audioModifiers.glowRadius !== 0) {
+      // Add audio modifier to existing radius (additive)
+      const baseRadius = params.radius ?? params.size ?? 20;
+      params.radius = baseRadius + audioModifiers.glowRadius * 50;  // Scale 0-1 to 0-50px
+      params.size = params.radius;  // Some effects use 'size' instead of 'radius'
+    }
+  }
+
+  // Edge glow / outline effect (BUG-093)
+  if (effectKey === 'edge-glow' || effectKey === 'outline') {
+    if (audioModifiers.edgeGlowIntensity !== undefined && audioModifiers.edgeGlowIntensity !== 0) {
+      const baseIntensity = params.intensity ?? params.strength ?? 1;
+      params.intensity = baseIntensity * (1 + audioModifiers.edgeGlowIntensity);
+      params.strength = params.intensity;
+    }
+  }
+
+  // Glitch effect (BUG-093)
+  if (effectKey === 'glitch' || effectKey === 'digital-glitch') {
+    if (audioModifiers.glitchAmount !== undefined && audioModifiers.glitchAmount !== 0) {
+      const baseAmount = params.amount ?? params.intensity ?? 0.5;
+      params.amount = baseAmount + audioModifiers.glitchAmount * 2;  // Scale 0-1 to 0-2
+      params.intensity = params.amount;
+    }
+  }
+
+  // RGB Split / Chromatic Aberration (BUG-093)
+  if (effectKey === 'rgb-split' || effectKey === 'chromatic-aberration') {
+    if (audioModifiers.rgbSplitAmount !== undefined && audioModifiers.rgbSplitAmount !== 0) {
+      const baseAmount = params.amount ?? params.offset ?? 5;
+      params.amount = baseAmount + audioModifiers.rgbSplitAmount * 30;  // Scale 0-1 to 0-30px
+      params.offset = params.amount;
+    }
+  }
+}
 
 // ============================================================================
 // CANVAS BUFFER POOL
@@ -396,6 +454,7 @@ const ADDITIVE_EFFECTS = new Set([
  * @param quality - Quality hint ('draft' for fast preview, 'high' for full quality)
  * @param context - Optional context for time-based effects (frame, fps, layerId)
  * @param fps - Composition fps (used when context not provided, defaults to 16)
+ * @param audioModifiers - Optional audio-reactive modifiers (BUG-091/093 fix)
  * @returns Processed canvas with all effects applied
  */
 export function processEffectStack(
@@ -404,7 +463,8 @@ export function processEffectStack(
   frame: number,
   quality: 'draft' | 'high' = 'high',
   context?: EffectContext,
-  fps: number = 16
+  fps: number = 16,
+  audioModifiers?: AudioReactiveModifiers
 ): EffectStackResult {
   // Keep the original source for additive effects (glow, bloom)
   // These effects should extract bright pixels from the original, not from chain output
@@ -440,6 +500,12 @@ export function processEffectStack(
 
     // Evaluate parameters at current frame
     const params = evaluateEffectParameters(effect, frame);
+
+    // BUG-091/093 fix: Apply audio-reactive modifiers to effect parameters
+    // This allows audio to modulate glow intensity, glitch amount, etc.
+    if (audioModifiers) {
+      applyAudioModifiersToEffect(effect.effectKey, params, audioModifiers);
+    }
 
     // Inject context for time-based effects (Echo, Posterize Time, etc.)
     // These effects need frame, fps, and layerId to access frame buffers
@@ -504,6 +570,7 @@ export interface GPUProcessingOptions {
  * @param context - Optional context for time-based effects
  * @param options - GPU processing options
  * @param fps - Composition fps (used when context not provided, defaults to 16)
+ * @param audioModifiers - Optional audio-reactive modifiers (BUG-091/093 fix)
  * @returns Promise resolving to processed canvas
  */
 export async function processEffectStackAsync(
@@ -512,13 +579,14 @@ export async function processEffectStackAsync(
   frame: number,
   context?: EffectContext,
   options: GPUProcessingOptions = {},
-  fps: number = 16
+  fps: number = 16,
+  audioModifiers?: AudioReactiveModifiers
 ): Promise<EffectStackResult> {
   const startTime = performance.now();
 
   // If GPU disabled or no effects, use sync path
   if (options.forceCPU || effects.length === 0) {
-    return processEffectStack(effects, inputCanvas, frame, options.draft ? 'draft' : 'high', context, fps);
+    return processEffectStack(effects, inputCanvas, frame, options.draft ? 'draft' : 'high', context, fps, audioModifiers);
   }
 
   // Ensure GPU dispatcher is initialized
@@ -527,7 +595,7 @@ export async function processEffectStackAsync(
 
   // If no GPU available, fall back to sync path
   if (capabilities.preferredPath === 'canvas2d') {
-    return processEffectStack(effects, inputCanvas, frame, options.draft ? 'draft' : 'high', context, fps);
+    return processEffectStack(effects, inputCanvas, frame, options.draft ? 'draft' : 'high', context, fps, audioModifiers);
   }
 
   // Keep the original source for additive effects (glow, bloom)
@@ -560,6 +628,11 @@ export async function processEffectStackAsync(
 
     // Evaluate parameters at current frame
     const params = evaluateEffectParameters(effect, frame);
+
+    // BUG-091/093 fix: Apply audio-reactive modifiers to effect parameters
+    if (audioModifiers) {
+      applyAudioModifiersToEffect(effect.effectKey, params, audioModifiers);
+    }
 
     // Inject context for time-based effects
     if (context) {

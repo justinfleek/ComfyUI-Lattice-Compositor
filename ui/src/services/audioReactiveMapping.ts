@@ -897,6 +897,20 @@ export interface AudioReactiveModifiers {
   fov?: number;             // Additive FOV degrees
   dollyZ?: number;          // Additive Z position
   shake?: number;           // 0-1 shake intensity
+
+  // BUG-094 fix: Depthflow layer modifiers
+  depthflowZoom?: number;       // Additive zoom
+  depthflowOffsetX?: number;    // Additive offset X
+  depthflowOffsetY?: number;    // Additive offset Y
+  depthflowRotation?: number;   // Additive rotation
+  depthflowDepthScale?: number; // Additive depth scale
+
+  // BUG-094 fix: Path animation modifier
+  pathPosition?: number;        // 0-1 position along path
+
+  // BUG-094 fix: Spline control point modifiers (dynamic)
+  // Key format: splineControlPoint_{index}_{x|y|depth}
+  [key: `splineControlPoint_${number}_${'x' | 'y' | 'depth'}`]: number | undefined;
 }
 
 /**
@@ -978,13 +992,31 @@ export function collectAudioReactiveModifiers(
     'effect.rgbSplitAmount': 'rgbSplitAmount',
     'camera.fov': 'fov',
     'camera.dollyZ': 'dollyZ',
-    'camera.shake': 'shake'
+    'camera.shake': 'shake',
+    // BUG-094 fix: Depthflow targets
+    'depthflow.zoom': 'depthflowZoom',
+    'depthflow.offsetX': 'depthflowOffsetX',
+    'depthflow.offsetY': 'depthflowOffsetY',
+    'depthflow.rotation': 'depthflowRotation',
+    'depthflow.depthScale': 'depthflowDepthScale',
+    // BUG-094 fix: Path target
+    'path.position': 'pathPosition'
   };
 
   for (const [target, value] of values.entries()) {
     const modifierKey = targetToModifier[target];
     if (modifierKey) {
       modifiers[modifierKey] = value;
+    }
+
+    // BUG-094 fix: Handle spline control point targets dynamically
+    // Format: spline.controlPoint.{index}.{x|y|depth}
+    const splineMatch = target.match(/^spline\.controlPoint\.(\d+)\.(x|y|depth)$/);
+    if (splineMatch) {
+      const index = splineMatch[1];
+      const prop = splineMatch[2] as 'x' | 'y' | 'depth';
+      const key = `splineControlPoint_${index}_${prop}` as keyof AudioReactiveModifiers;
+      (modifiers as any)[key] = value;
     }
   }
 

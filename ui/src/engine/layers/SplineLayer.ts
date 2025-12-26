@@ -1436,11 +1436,27 @@ export class SplineLayer extends BaseLayer {
 
     // Apply evaluated control points if present
     if (props['controlPoints'] !== undefined) {
-      const points = props['controlPoints'] as EvaluatedControlPoint[];
+      let points = props['controlPoints'] as EvaluatedControlPoint[];
+
+      // BUG-094 fix: Apply audio-reactive control point modifiers
+      points = this.applySplineAudioModifiers(points);
+
       const pointsHash = this.computePointsHash(points);
       if (pointsHash !== this.lastPointsHash) {
         this.buildSplineFromEvaluatedPoints(points);
         this.lastPointsHash = pointsHash;
+      }
+    } else {
+      // BUG-094 fix: Even without props['controlPoints'], check if we need to
+      // apply audio modifiers to the current spline control points
+      if (this.hasSplineAudioModifiers()) {
+        const currentPoints = this.getEvaluatedControlPoints(state.frame);
+        const modifiedPoints = this.applySplineAudioModifiers(currentPoints);
+        const pointsHash = this.computePointsHash(modifiedPoints) + '|audio';
+        if (pointsHash !== this.lastPointsHash) {
+          this.buildSplineFromEvaluatedPoints(modifiedPoints);
+          this.lastPointsHash = pointsHash;
+        }
       }
     }
 
@@ -1452,6 +1468,58 @@ export class SplineLayer extends BaseLayer {
     if (props['strokeColor'] !== undefined) {
       this.setStroke(props['strokeColor'] as string);
     }
+  }
+
+  /**
+   * BUG-094 fix: Check if any spline control point audio modifiers are active
+   */
+  private hasSplineAudioModifiers(): boolean {
+    const audioMod = this.currentAudioModifiers;
+    for (const key in audioMod) {
+      if (key.startsWith('splineControlPoint_')) {
+        const value = (audioMod as any)[key];
+        if (value !== undefined && value !== 0) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  /**
+   * BUG-094 fix: Apply audio-reactive modifiers to spline control points
+   * Modifiers are additive to base control point values
+   * @param points - Input control points
+   * @returns Modified control points with audio modifiers applied
+   */
+  private applySplineAudioModifiers(points: EvaluatedControlPoint[]): EvaluatedControlPoint[] {
+    const audioMod = this.currentAudioModifiers;
+
+    // Quick check if any spline modifiers exist
+    if (!this.hasSplineAudioModifiers()) {
+      return points;
+    }
+
+    // Apply modifiers to each control point
+    return points.map((point, index) => {
+      // Get audio modifiers for this control point index
+      const xMod = (audioMod as any)[`splineControlPoint_${index}_x`] as number | undefined;
+      const yMod = (audioMod as any)[`splineControlPoint_${index}_y`] as number | undefined;
+      const depthMod = (audioMod as any)[`splineControlPoint_${index}_depth`] as number | undefined;
+
+      // If no modifiers for this point, return unchanged
+      if (!xMod && !yMod && !depthMod) {
+        return point;
+      }
+
+      // Apply additive modifiers
+      return {
+        ...point,
+        x: point.x + (xMod ?? 0),
+        y: point.y + (yMod ?? 0),
+        depth: point.depth + (depthMod ?? 0),
+      };
+    });
   }
 
   protected onUpdate(properties: Partial<Layer>): void {

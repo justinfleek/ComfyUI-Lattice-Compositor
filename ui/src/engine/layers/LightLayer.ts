@@ -588,7 +588,15 @@ export class LightLayer extends BaseLayer {
     const path = this.lightData.pathFollowing;
     if (!path.enabled || !path.splineLayerId || !this.pathProvider) return;
 
-    const progress = this.evaluator.evaluate(path.progress, frame);
+    let progress = this.evaluator.evaluate(path.progress, frame);
+
+    // BUG-094 fix: Apply pathPosition audio modifier
+    // pathPosition is 0-1, additive to the path progress
+    const audioMod = this.currentAudioModifiers;
+    if (audioMod.pathPosition !== undefined && audioMod.pathPosition !== 0) {
+      progress = Math.max(0, Math.min(1, progress + audioMod.pathPosition));
+    }
+
     const result = this.pathProvider(path.splineLayerId, progress, frame);
 
     if (!result) return;

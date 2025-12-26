@@ -467,6 +467,30 @@ export class DepthflowLayer extends BaseLayer {
       this.material.uniforms.depthScale.value = props['depthScale'] as number;
     }
 
+    // BUG-094 fix: Apply audio-reactive modifiers (additive to base values)
+    const audioMod = this.currentAudioModifiers;
+
+    if (audioMod.depthflowZoom !== undefined && audioMod.depthflowZoom !== 0) {
+      this.material.uniforms.zoom.value += audioMod.depthflowZoom;
+    }
+
+    if (audioMod.depthflowOffsetX !== undefined && audioMod.depthflowOffsetX !== 0) {
+      this.material.uniforms.offset.value.x += audioMod.depthflowOffsetX;
+    }
+
+    if (audioMod.depthflowOffsetY !== undefined && audioMod.depthflowOffsetY !== 0) {
+      this.material.uniforms.offset.value.y += audioMod.depthflowOffsetY;
+    }
+
+    if (audioMod.depthflowRotation !== undefined && audioMod.depthflowRotation !== 0) {
+      // Add rotation in radians (convert from degrees)
+      this.material.uniforms.rotation.value += THREE.MathUtils.degToRad(audioMod.depthflowRotation);
+    }
+
+    if (audioMod.depthflowDepthScale !== undefined && audioMod.depthflowDepthScale !== 0) {
+      this.material.uniforms.depthScale.value += audioMod.depthflowDepthScale;
+    }
+
     this.material.needsUpdate = true;
   }
 

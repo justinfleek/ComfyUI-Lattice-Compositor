@@ -484,6 +484,8 @@ export class CameraLayer extends BaseLayer {
       // Update the parameter value directly for the next evaluation
       this.cameraData.pathFollowing.parameter.value = props['pathParameter'] as number;
     }
+    // Note: pathPosition audio modifier is applied in applyPathFollowing() where the actual
+    // path query happens, ensuring it's applied regardless of evaluation path (legacy or new)
   }
 
   /**
@@ -507,6 +509,13 @@ export class CameraLayer extends BaseLayer {
     } else {
       // Manual/keyframed mode: interpolate from animated property
       t = interpolateProperty(pathFollowing.parameter, frame, this.compositionFps, this.id);
+    }
+
+    // BUG-094 fix: Apply pathPosition audio modifier to t
+    // pathPosition is 0-1, additive to the path parameter
+    const audioMod = this.currentAudioModifiers;
+    if (audioMod.pathPosition !== undefined && audioMod.pathPosition !== 0) {
+      t += audioMod.pathPosition;
     }
 
     // Clamp t to valid range

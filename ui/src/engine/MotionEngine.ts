@@ -222,34 +222,12 @@ export interface EvaluatedAudio {
 
 /**
  * Audio reactive modifiers applied to a layer
- * These are ADDITIVE values computed from audio mappings
+ * Re-exported from audioReactiveMapping for convenience
  */
-export interface AudioReactiveModifiers {
-  /** Transform modifiers (additive) */
-  readonly opacity?: number;
-  readonly scaleX?: number;
-  readonly scaleY?: number;
-  readonly scaleUniform?: number;
-  readonly rotation?: number;
-  readonly x?: number;
-  readonly y?: number;
+export type { AudioReactiveModifiers } from '@/services/audioReactiveMapping';
 
-  /** Color adjustments (additive) */
-  readonly brightness?: number;
-  readonly saturation?: number;
-  readonly contrast?: number;
-  readonly hue?: number;
-
-  /** Effects */
-  readonly blur?: number;
-  readonly glowIntensity?: number;
-  readonly glowRadius?: number;
-
-  /** Camera */
-  readonly fov?: number;
-  readonly dollyZ?: number;
-  readonly shake?: number;
-}
+// Import the type for internal use
+import type { AudioReactiveModifiers } from '@/services/audioReactiveMapping';
 
 /**
  * Input for audio reactive evaluation
@@ -565,13 +543,14 @@ export class MotionEngine {
     // Evaluate all layers
     const evaluatedLayers = this.evaluateLayers(frame, composition.layers, audioMapper, fps);
 
-    // Evaluate camera
+    // Evaluate camera (BUG-092 fix: pass audioMapper for fov/dollyZ/shake modifiers)
     const evaluatedCamera = this.evaluateCamera(
       frame,
       composition.layers,
       activeCameraId ?? null,
       composition.settings,
-      fps
+      fps,
+      audioMapper
     );
 
     // Evaluate audio
@@ -852,7 +831,8 @@ export class MotionEngine {
     layers: Layer[],
     activeCameraId: string | null,
     compositionSettings?: CompositionSettings,
-    fps: number = 30
+    fps: number = 30,
+    audioMapper?: AudioReactiveMapper | null
   ): EvaluatedCamera | null {
     // Find active camera layer
     let cameraLayer: Layer | undefined;
@@ -983,13 +963,42 @@ export class MotionEngine {
       }
     }
 
+    // BUG-092 fix: Collect audio modifiers BEFORE applying camera effects
+    // This allows audio to modulate fov, dollyZ, and shake intensity
+    let cameraAudioModifiers: AudioReactiveModifiers = {};
+    if (audioMapper) {
+      cameraAudioModifiers = collectAudioReactiveModifiers(audioMapper, cameraLayer.id, frame);
+    }
+
+    // Apply FOV audio modifier (additive degrees, 0-1 maps to 0-30 degrees)
+    if (cameraAudioModifiers.fov !== undefined && cameraAudioModifiers.fov !== 0) {
+      fov += cameraAudioModifiers.fov * 30;
+    }
+
+    // Apply dollyZ audio modifier (additive Z position, 0-1 maps to 0-500 units)
+    if (cameraAudioModifiers.dollyZ !== undefined && cameraAudioModifiers.dollyZ !== 0) {
+      position = {
+        x: position.x,
+        y: position.y,
+        z: position.z + cameraAudioModifiers.dollyZ * 500,
+      };
+    }
+
     // Apply camera shake if enabled (deterministic via seed)
+    // Audio modifier modulates shake intensity (applied ONCE, not twice)
     if (cameraData.shake?.enabled) {
       const shakeData = cameraData.shake;
+
+      // Calculate effective intensity with audio modifier
+      let effectiveIntensity = shakeData.intensity;
+      if (cameraAudioModifiers.shake !== undefined && cameraAudioModifiers.shake !== 0) {
+        effectiveIntensity *= (1 + cameraAudioModifiers.shake * 2);  // 0-1 maps to 1x-3x intensity
+      }
+
       const shake = new CameraShake(
         {
           type: shakeData.type,
-          intensity: shakeData.intensity,
+          intensity: effectiveIntensity,
           frequency: shakeData.frequency,
           rotationEnabled: shakeData.rotationEnabled,
           rotationScale: shakeData.rotationScale,

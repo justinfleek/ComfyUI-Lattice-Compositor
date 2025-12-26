@@ -130,8 +130,7 @@ export class TextLayer extends BaseLayer {
   // Text animators (After Effects-style per-character animation)
   private animators: TextAnimator[] = [];
 
-  // Composition fps (set by LayerManager when composition changes)
-  private compositionFps: number = 16;
+  // Note: compositionFps is inherited from BaseLayer (protected)
 
   // Additional evaluator for text-specific properties
   private readonly textEvaluator: KeyframeEvaluator;
@@ -1008,8 +1007,8 @@ export class TextLayer extends BaseLayer {
    * Set composition fps for accurate time-based calculations
    * Called by LayerManager when layer is added or composition changes
    */
-  setCompositionFps(fps: number): void {
-    this.compositionFps = fps;
+  override setCompositionFps(fps: number): void {
+    super.setCompositionFps(fps);
   }
 
   protected override onApplyEvaluatedState(state: import('../MotionEngine').EvaluatedLayer): void {
@@ -1047,6 +1046,15 @@ export class TextLayer extends BaseLayer {
 
     if (props['lastMargin'] !== undefined) {
       this.setLastMargin(props['lastMargin'] as number);
+    }
+
+    // BUG-094 fix: Apply pathPosition audio modifier
+    // pathPosition is 0-1, pathOffset is 0-100%, so multiply by 100
+    const audioMod = this.currentAudioModifiers;
+    if (audioMod.pathPosition !== undefined && audioMod.pathPosition !== 0 && this.textOnPath.hasPath()) {
+      // Apply as additive to current pathOffset (convert 0-1 to percentage points)
+      const additionalOffset = audioMod.pathPosition * 100;
+      this.setPathOffset(this.textData.pathOffset + additionalOffset);
     }
 
     // Effects
