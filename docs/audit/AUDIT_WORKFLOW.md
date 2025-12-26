@@ -1,13 +1,12 @@
 # Lattice Compositor Audit Workflow
 
-**Version:** 3.0 | **Updated:** December 25, 2025
+**Version:** 4.0 | **Updated:** December 25, 2025
 
 ---
 
 ## How This Works
-```
+
 You work → Checkpoint → Output reviewed → "confirmed" or feedback → Continue
-```
 
 The user passes messages. Another Claude reviews your output.
 "Confirmed" means the review passed. Then you continue.
@@ -18,18 +17,9 @@ The user passes messages. Another Claude reviews your output.
 
 ### 1. DISCOVERY
 
-Search ALL file categories for the feature:
-```bash
-find ui/src/components -name "*.vue" | xargs grep -l "KEYWORD"
-find ui/src/stores -name "*.ts" | xargs grep -l "KEYWORD"
-find ui/src/engine -name "*.ts" | xargs grep -l "KEYWORD"
-find ui/src/services -name "*.ts" | xargs grep -l "KEYWORD"
-find ui/src/types -name "*.ts" | xargs grep -l "KEYWORD"
-```
+Search ALL file categories for the feature. Check FEATURE_INVENTORY.md for listed files.
 
-Check FEATURE_INVENTORY.md for listed files.
-
-**Document what you searched and found.** This is reviewed.
+Document what you searched and found. This is reviewed.
 
 ### 2. READ FILES
 
@@ -39,7 +29,7 @@ Read every line of every relevant file.
 - Large files: read in chunks, track progress
 - Note observations from each file/chunk
 
-**Prohibited:**
+Prohibited:
 - Grep instead of reading
 - Reading one chunk and assuming the rest
 - Estimates like "~400 lines"
@@ -47,67 +37,24 @@ Read every line of every relevant file.
 ### 3. TRACE USER FLOW
 
 Follow the complete path for at least 2 user actions:
-```
-User clicks [X]
-→ Component: [file.vue] handles event
-→ Store: [action()] called
-→ Engine: [method()] updates state
-→ Render: [result] displayed
-→ Export: [survives/breaks]
-```
+
+User clicks [X] → Component handles event → Store action called → Engine updates state → Render displays → Export survives/breaks
 
 ### 4. DOCUMENT FINDINGS
 
-Use required format from CLAUDE.md:
-```markdown
-## AUDIT COMPLETE: [Feature X.X] [Name]
-
-**Discovery:**
-- Searched: [keywords]
-- Directories: [list]
-- Files found: [count]
-
-**Files Read:**
-| File | Lines | Method |
-|------|-------|--------|
-| [file] | [exact] | [full/chunked] |
-
-**What This Code Does:**
-[your words]
-
-**Data Flow:**
-[UI] → [Store] → [Engine] → [Render] → [Export]
-
-**User Flow Verification:**
-1. [action]: [expected] → [actual]: PASS/FAIL
-2. [action]: [expected] → [actual]: PASS/FAIL
-
-**Bugs Found:** [count]
-[bug details with file:line:evidence:impact:fix]
-
-OR
-
-**Bugs Found:** 0
-**Justification:** [detailed reasoning]
-
----
-
-Waiting for confirmation before proceeding.
-```
+Use required format from CLAUDE.md.
 
 ### 5. CHECKPOINT
 
-After documenting, state:
-```
-Waiting for confirmation before proceeding.
-```
+After documenting, state: "Waiting for confirmation before proceeding."
 
-**STOP. Do not continue until you receive "confirmed" or feedback.**
+STOP. Do not continue until you receive "confirmed" or feedback.
 
 ### 6. AFTER CONFIRMATION
 
 - Update AUDIT_PROGRESS.md (mark complete, add line count, bug count)
 - Add bugs to BUGS_FOUND.md
+- Git commit fixes and docs
 - Begin discovery for next feature
 
 ### 7. AFTER FEEDBACK
@@ -120,7 +67,7 @@ Waiting for confirmation before proceeding.
 
 ## Automatic Pause Triggers
 
-**These are reviewed. You cannot skip them.**
+These are reviewed. You cannot skip them.
 
 | Trigger | Required Action |
 |---------|-----------------|
@@ -128,11 +75,38 @@ Waiting for confirmation before proceeding.
 | AI/ML layer with 0 bugs | Pause. State trigger. Provide detailed justification. |
 | Session has 0 bugs after 3+ features | Pause. State trigger. Something is wrong. |
 
-When triggered, output:
-```
-PAUSE TRIGGER: [which trigger]
-[explanation of what you're doing about it]
-```
+---
+
+## Context Analysis Methodology
+
+When a function is missing context it might need (fps, duration, composition settings, layer data, etc.):
+
+Default assumption: It is a problem that needs fixing.
+
+Step 1: Trace the Call Chain Upward
+
+- Does the immediate caller have the context?
+- If not, does THEIR caller have it?
+- Keep tracing until you find where context originates
+
+Step 2: Classify the Problem
+
+| Finding | Classification | Action |
+|---------|----------------|--------|
+| Caller has context, does not pass it | BUG | Fix the caller to pass it |
+| Context exists higher in chain, never passed down | ARCHITECTURE GAP | Refactor chain to pass context through |
+| Function uses wrong default value | BUG | Fix the default |
+| Feature is unfinished/stubbed | STUB | Document as TODO, file bug |
+
+Step 3: Document Your Analysis
+
+| Caller | Location | Has context? | Passes it? | Classification |
+|--------|----------|--------------|------------|----------------|
+| [name] | file:line | YES/NO | YES/NO | BUG / ARCH GAP / STUB |
+
+Step 4: No Dismissals
+
+There is no "by design" category for missing context. If code needs context and does not have it, something is wrong somewhere in the chain. Find it. Document it. Fix it or file it.
 
 ---
 
@@ -140,56 +114,33 @@ PAUSE TRIGGER: [which trigger]
 
 For DepthLayer, NormalLayer, PoseLayer, GeneratedLayer, ProceduralMatteLayer:
 
-**Must verify ALL:**
-- [ ] Process spawn mechanism
-- [ ] Input handling (resolution, format, frames)
-- [ ] Output capture mechanism
-- [ ] Output parsing
-- [ ] Value normalization
-- [ ] Hardcoded assumptions
-- [ ] Timeline rendering
-- [ ] Scrubbing determinism
-- [ ] Expression access
-- [ ] Export format
-- [ ] Error handling
+Must verify ALL:
+- Process spawn mechanism
+- Input handling (resolution, format, frames)
+- Output capture mechanism
+- Output parsing
+- Value normalization
+- Hardcoded assumptions
+- Timeline rendering
+- Scrubbing determinism
+- Expression access
+- Export format
+- Error handling
 
-**0 bugs requires addressing every checkbox with evidence.**
+0 bugs requires addressing every checkbox with evidence.
 
 ---
 
 ## File Reading Rules
 
-**Under ~800 lines:** Read entire file, report exact count
+Under ~800 lines: Read entire file, report exact count
 
-**Over ~800 lines:** Read in chunks
-```
-Lines 1-800: [observations]
-Lines 801-1600: [observations]
-Lines 1601-2400: [observations]
-Total: 2400 lines in 3 chunks
-```
+Over ~800 lines: Read in chunks, track progress, report total
 
-**Always:**
+Always:
 - Exact counts (no ~ estimates)
 - Note key findings from each section
 - Track chunk progress for large files
-
----
-
-## Bug Format
-```markdown
-### BUG-XXX: [Short Title]
-
-- **Severity:** CRITICAL / HIGH / MEDIUM / LOW
-- **Feature:** [X.X Name]
-- **File:** [exact path]
-- **Line:** [number or range]
-- **Problem:** [what's wrong]
-- **Evidence:**
-[the problematic code]
-- **Impact:** [what breaks for users]
-- **Suggested Fix:** [how to fix]
-```
 
 ---
 
@@ -197,39 +148,23 @@ Total: 2400 lines in 3 chunks
 
 Your output is checked for:
 
-1. **Discovery thoroughness** - Did you search all categories?
-2. **Line count accuracy** - Exact numbers, no estimates?
-3. **Flow completeness** - UI through Export traced?
-4. **Bug quality** - File:line:evidence:impact:fix present?
-5. **Justification quality** - If 0 bugs, is reasoning specific and credible?
-6. **Format compliance** - Required sections present?
-7. **Statistical sanity** - Too many clean features in a row?
+1. Discovery thoroughness - Did you search all categories?
+2. Line count accuracy - Exact numbers, no estimates?
+3. Flow completeness - UI through Export traced?
+4. Bug quality - File:line:evidence:impact:fix present?
+5. Justification quality - If 0 bugs, is reasoning specific and credible?
+6. Format compliance - Required sections present?
+7. Statistical sanity - Too many clean features in a row?
+8. Context analysis - Did you trace missing context to its source?
 
 Weak audits get sent back for rework.
 
 ---
 
-## Context Analysis Methodology
+## Git Workflow
 
-When a function is missing context it might need (fps, duration, composition settings, layer data, etc.):
+After each bug fix:
+git add -A && git commit -m "fix(BUG-XXX): [description]"
 
-**Default assumption: It's a problem until proven otherwise.**
-
-**Step 1: Trace the call chain**
-- Who calls this function?
-- What context do THEY have access to?
-- Could context be passed down?
-
-**Step 2: Determine the issue type**
-
-| Situation | Verdict | Action |
-|-----------|---------|--------|
-| Caller HAS context, doesn't pass it | BUG | Fix caller to pass context |
-| Caller DOESN'T have context, but COULD | ARCHITECTURE GAP | Note: refactor needed to pass context through chain |
-| Context unavailable, function uses wrong default | BUG | Fix the default |
-| Context unavailable, correct default used | KNOWN LIMITATION | Document why context unavailable |
-
-**Step 3: Never dismiss without evidence**
-- "BY DESIGN" requires proof that context CANNOT be obtained
-- Missing context often means the call chain needs refactoring
-- Document limitations, don't hide them
+After documentation updates:
+git add -A && git commit -m "docs: [description]"
