@@ -249,7 +249,6 @@ import {
   type SelectableItem,
   type SelectionMode
 } from '@/composables';
-import { markLayerDirty } from '@/services/layerEvaluationCache';
 
 // Store
 const store = useCompositorStore();
@@ -427,7 +426,7 @@ function getSelectableItems(): SelectableItem[] {
 function handleMarqueeSelectionChange(selectedIds: string[], mode: SelectionMode) {
   if (mode === 'replace') {
     if (selectedIds.length === 0) {
-      selection.clearAll();
+      selection.clearSelection();
     } else {
       selection.selectLayers(selectedIds);
     }
@@ -1408,11 +1407,11 @@ function togglePenMode() {
 
 // Motion path event handlers
 function onMotionPathKeyframeSelected(keyframeId: string, addToSelection: boolean) {
-  // Select the keyframe in the selection store
+  // Select the keyframe in the store
   if (addToSelection) {
-    selection.addKeyframeToSelection(keyframeId);
+    store.addKeyframeToSelection?.(keyframeId);
   } else {
-    selection.selectKeyframe(keyframeId);
+    store.selectKeyframe?.(keyframeId);
   }
 }
 
@@ -1452,7 +1451,7 @@ function onMotionPathTangentUpdated(
   keyframe[tangentKey]!.y += delta.y;
 
   // Mark layer as dirty for re-evaluation
-  markLayerDirty(layerId);
+  store.markLayerDirty?.(layerId);
 
   // Mark project as modified
   if (store.project?.meta) {

@@ -199,24 +199,24 @@ function togglePlayback() {
 }
 
 function goToStart() {
-  store.setFrame(0);
+  store.setCurrentFrame(0);
 }
 
 function goToEnd() {
-  store.setFrame(frameCount.value - 1);
+  store.setCurrentFrame(frameCount.value - 1);
 }
 
 function stepForward() {
-  store.setFrame(Math.min(currentFrame.value + 1, frameCount.value - 1));
+  store.setCurrentFrame(Math.min(currentFrame.value + 1, frameCount.value - 1));
 }
 
 function stepBackward() {
-  store.setFrame(Math.max(currentFrame.value - 1, 0));
+  store.setCurrentFrame(Math.max(currentFrame.value - 1, 0));
 }
 
 function onScrub(e: Event) {
   const target = e.target as HTMLInputElement;
-  store.setFrame(parseInt(target.value, 10));
+  store.setCurrentFrame(parseInt(target.value, 10));
 }
 
 function toggleFullscreen() {
