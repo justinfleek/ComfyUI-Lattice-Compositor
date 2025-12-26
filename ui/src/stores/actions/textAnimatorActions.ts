@@ -512,7 +512,7 @@ export function getCharacterTransforms(
 
   const animators = textData.animators || [];
   const comp = store.getActiveComp();
-  const fps = comp?.settings?.fps || 24;
+  const fps = comp?.settings?.fps || 16;
 
   // Initialize transforms with base values
   const transforms: CharacterTransform[] = [];
@@ -619,7 +619,7 @@ export function getSelectionValues(
   if (!animator) return [];
 
   const comp = store.getActiveComp();
-  const fps = comp?.settings?.fps || 24;
+  const fps = comp?.settings?.fps || 16;
 
   const values: number[] = [];
   for (let i = 0; i < totalChars; i++) {
