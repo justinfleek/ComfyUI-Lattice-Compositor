@@ -1,7 +1,7 @@
 # LATTICE COMPOSITOR - BUGS FOUND
 
 **Last Updated:** 2025-12-26
-**Next Bug ID:** BUG-047
+**Next Bug ID:** BUG-049
 
 ---
 
@@ -10,10 +10,10 @@
 | Severity | Total | Fixed | Open |
 |----------|-------|-------|------|
 | CRITICAL | 0 | 0 | 0 |
-| HIGH | 11 | 11 | 0 |
-| MEDIUM | 28 | 27 | 1 |
+| HIGH | 12 | 12 | 0 |
+| MEDIUM | 29 | 28 | 1 |
 | LOW | 4 | 4 | 0 |
-| **TOTAL** | **43** | **42** | **1** |
+| **TOTAL** | **45** | **44** | **1** |
 
 **Note:** These 36 bugs were found in previous audit sessions and are preserved here. All have been fixed. New bugs should start at BUG-037.
 
@@ -24,7 +24,7 @@
 | Tier | Bug Count |
 |------|-----------|
 | 1. Foundation | 11 |
-| 2. Layer Types | 30 |
+| 2. Layer Types | 32 |
 | 3-12 | 0 (not yet audited) |
 
 ---
@@ -1556,6 +1556,133 @@ if (this.targetWidth && this.targetHeight && this.fit !== 'none') {
 
 **Files Modified:**
 - `ui/src/engine/layers/ImageLayer.ts` - Added fit property extraction and fit logic
+
+**Related Bugs:** None
+
+---
+
+### BUG-047: VideoProperties direct mutation bypasses history tracking
+
+**Feature:** VideoLayer (2.3)
+**Tier:** 2
+**Severity:** HIGH
+**Found:** 2025-12-26
+**Status:** FIXED
+
+**Location:**
+- File: `ui/src/components/properties/VideoProperties.vue`
+- Lines: 312-322, 366-372, 412-417
+- Functions: `updateSpeedMap()`, `updateTimewarpSpeed()`, `updateLevel()`
+
+**Problem:**
+Three update functions directly mutate layer data properties without going through store methods, bypassing history tracking (undo/redo).
+
+**Evidence:**
+```typescript
+// updateSpeedMap - direct mutation
+function updateSpeedMap(val: number) {
+  const data = props.layer.data as VideoData;
+  if (data.speedMap) {
+    data.speedMap.value = val;  // Direct mutation - no store call!
+  }
+  emit('update');
+}
+
+// updateTimewarpSpeed - direct mutation
+function updateTimewarpSpeed(val: number) {
+  const data = props.layer.data as VideoData;
+  if (data.timewarpSpeed) {
+    data.timewarpSpeed.value = val;  // Direct mutation!
+  }
+  emit('update');
+}
+
+// updateLevel - direct mutation
+function updateLevel(val: number) {
+  if (props.layer.audio?.level) {
+    props.layer.audio.level.value = val;  // Direct mutation!
+    emit('update');
+  }
+}
+```
+
+**Expected Behavior:**
+Property changes should go through store methods to enable undo/redo.
+
+**Actual Behavior:**
+Changes to speedMap, timewarpSpeed, and audio level don't create undo history entries.
+
+**Impact:**
+User cannot undo changes to these video properties.
+
+**Fix Applied:**
+Changed all three functions to use store methods:
+```typescript
+// updateSpeedMap - uses store
+store.updateVideoLayerData(props.layer.id, {
+  speedMap: { ...data.speedMap, value: val }
+});
+
+// updateTimewarpSpeed - uses store
+store.updateVideoLayerData(props.layer.id, {
+  timewarpSpeed: { ...data.timewarpSpeed, value: val }
+});
+
+// updateLevel - uses store
+store.updateLayer(props.layer.id, {
+  audio: {
+    ...props.layer.audio,
+    level: { ...props.layer.audio.level, value: val }
+  }
+});
+```
+
+**Files Modified:**
+- `ui/src/components/properties/VideoProperties.vue`
+
+**Related Bugs:** BUG-042, BUG-043 (similar direct mutation pattern)
+
+---
+
+### BUG-048: LayerManager default compositionFPS is 60 instead of 16
+
+**Feature:** VideoLayer (2.3)
+**Tier:** 2
+**Severity:** MEDIUM
+**Found:** 2025-12-26
+**Status:** FIXED
+
+**Location:**
+- File: `ui/src/engine/core/LayerManager.ts`
+- Line: 77
+- Property: `compositionFPS`
+
+**Problem:**
+Default compositionFPS is 60fps instead of the WAN standard 16fps.
+
+**Evidence:**
+```typescript
+// Line 77
+private compositionFPS: number = 60;  // Should be 16
+```
+
+**Expected Behavior:**
+Default should be 16fps per FPS_ARCHITECTURE.md (WAN AI model standard).
+
+**Actual Behavior:**
+Default is 60fps.
+
+**Impact:**
+If layers are created before setCompositionFPS() is called, video time calculations and particle timing use wrong FPS value.
+
+**Fix Applied:**
+```typescript
+// Changed default to WAN standard
+private compositionFPS: number = 16;
+```
+
+**Files Modified:**
+- `ui/src/engine/core/LayerManager.ts`
 
 **Related Bugs:** None
 
