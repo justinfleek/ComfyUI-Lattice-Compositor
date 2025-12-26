@@ -24,7 +24,7 @@ All progress reset to zero. Valid bug findings preserved in BUGS_FOUND.md.
 |------|-------|----------|-----------|------------|
 | 1. Foundation | 7 | 7 | 7 | 9 |
 | 2. Layer Types | 23 | 23 | 23 | 6 |
-| 3. Animation | 10 | 5 | 5 | 1 |
+| 3. Animation | 10 | 6 | 6 | 1 |
 | 4. Effects | 12 | 0 | 0 | 0 |
 | 5. Particles | 12 | 0 | 0 | 0 |
 | 6. Audio | 7 | 0 | 0 | 0 |
@@ -99,7 +99,7 @@ All progress reset to zero. Valid bug findings preserved in BUGS_FOUND.md.
 | 3.3 | Shape Modifiers | [x] | 0 | 3259 | ✓ | 2025-12-26 | ✓ |
 | 3.4 | Shape Booleans | [x] | 0 | 3184 | ✓ | 2025-12-26 | ✓ |
 | 3.5 | Path Morphing | [x] | 0 | 790 | ✓ | 2025-12-26 | ✓ |
-| 3.6 | Roving Keyframes | [ ] | 0 | - | ⬜ | - | ⬜ |
+| 3.6 | Roving Keyframes | [x] | 0 | 428 | ✓ | 2025-12-26 | ✓ |
 | 3.7 | Time Warp | [ ] | 0 | - | ⬜ | - | ⬜ |
 | 3.8 | Motion Expressions | [ ] | 0 | - | ⬜ | - | ⬜ |
 | 3.9 | Loop Expressions | [ ] | 0 | - | ⬜ | - | ⬜ |
