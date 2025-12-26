@@ -171,6 +171,7 @@ export class ParticleTrailSystem {
         if (x2 === 0 && y2 === 0 && z2 === 0) break;
 
         // Calculate alpha falloff along trail
+        // Use trailWidthEnd as the final alpha multiplier (0 = full fade, 1 = no fade)
         const t1Ratio = t / (trailLength - 1);
         const t2Ratio = (t + 1) / (trailLength - 1);
 
@@ -178,8 +179,10 @@ export class ParticleTrailSystem {
         let alpha2 = currentColor[3];
 
         if (fadeMode === 'alpha' || fadeMode === 'both') {
-          alpha1 *= (1 - t1Ratio);
-          alpha2 *= (1 - t2Ratio);
+          // Interpolate from 1.0 (start) to trailWidthEnd (end)
+          const endAlpha = this.config.trailWidthEnd;
+          alpha1 *= 1 - t1Ratio * (1 - endAlpha);
+          alpha2 *= 1 - t2Ratio * (1 - endAlpha);
         }
 
         // Set vertex positions

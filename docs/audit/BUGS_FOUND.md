@@ -1,7 +1,7 @@
 # LATTICE COMPOSITOR - BUGS FOUND
 
 **Last Updated:** 2025-12-26
-**Next Bug ID:** BUG-058
+**Next Bug ID:** BUG-059
 
 ---
 
@@ -11,9 +11,9 @@
 |----------|-------|-------|------|
 | CRITICAL | 0 | 0 | 0 |
 | HIGH | 15 | 15 | 0 |
-| MEDIUM | 32 | 32 | 0 |
+| MEDIUM | 33 | 33 | 0 |
 | LOW | 7 | 7 | 0 |
-| **TOTAL** | **54** | **54** | **0** |
+| **TOTAL** | **55** | **55** | **0** |
 
 **Note:** These 36 bugs were found in previous audit sessions and are preserved here. All have been fixed. New bugs should start at BUG-037.
 
@@ -27,7 +27,7 @@
 | 2. Layer Types | 35 |
 | 3. Animation | 2 |
 | 4. Effects | 2 |
-| 5. Particles | 2 |
+| 5. Particles | 3 |
 | 6-12 | 0 (not yet audited) |
 
 ---
@@ -2210,6 +2210,59 @@ if (speed > 0.001 && perceptionCos > -1.0) {
 - `ui/src/engine/particles/ParticleFlockingSystem.ts` - Lines 92-130 (added perception angle check)
 
 **Related Bugs:** BUG-056 (same tier, particle determinism)
+
+---
+
+### BUG-058: trailOpacityFalloff UI Control Has No Effect
+
+**Feature:** Trail System (5.6)
+**Tier:** 5
+**Severity:** MEDIUM
+**Found:** 2025-12-26
+**Session:** 4
+**Status:** FIXED
+
+**Location:**
+- File: `ui/src/engine/particles/ParticleTrailSystem.ts`
+- Lines: 177-183 (alpha fading logic)
+- Function: `update()`
+
+**Problem:**
+The "Trail Falloff" slider (trailOpacityFalloff) maps to trailWidthEnd but this value was never used. Alpha fading used a hardcoded linear falloff `(1 - t/trailLength)` instead of the configured value.
+
+**Evidence (before fix):**
+```typescript
+// Alpha fading used hardcoded linear falloff
+if (fadeMode === 'alpha' || fadeMode === 'both') {
+  alpha1 *= (1 - t1Ratio);  // Always 0 at end
+  alpha2 *= (1 - t2Ratio);  // trailWidthEnd ignored
+}
+```
+
+**Expected Behavior:**
+Moving the "Trail Falloff" slider should control how much trails fade - 0 = full fade to transparent, 1 = no fade.
+
+**Actual Behavior:**
+Slider had no visual effect. Trails always faded linearly to 0.
+
+**Impact:**
+- Users cannot control trail persistence
+- UI control was non-functional
+
+**Fix Applied:**
+```typescript
+if (fadeMode === 'alpha' || fadeMode === 'both') {
+  // Interpolate from 1.0 (start) to trailWidthEnd (end)
+  const endAlpha = this.config.trailWidthEnd;
+  alpha1 *= 1 - t1Ratio * (1 - endAlpha);
+  alpha2 *= 1 - t2Ratio * (1 - endAlpha);
+}
+```
+
+**Files Modified:**
+- `ui/src/engine/particles/ParticleTrailSystem.ts` - Lines 181-185 (added endAlpha interpolation)
+
+**Related Bugs:** BUG-057 (same pattern - UI control not implemented)
 
 ---
 

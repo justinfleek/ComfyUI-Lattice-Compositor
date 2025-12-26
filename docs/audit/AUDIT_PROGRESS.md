@@ -26,7 +26,7 @@ All progress reset to zero. Valid bug findings preserved in BUGS_FOUND.md.
 | 2. Layer Types | 23 | 23 | 23 | 6 |
 | 3. Animation | 10 | 10 | 10 | 2 |
 | 4. Effects | 12 | 12 | 12 | 2 |
-| 5. Particles | 12 | 4 | 4 | 1 |
+| 5. Particles | 12 | 5 | 5 | 2 |
 | 6. Audio | 7 | 0 | 0 | 0 |
 | 7. 3D/Camera | 10 | 0 | 0 | 0 |
 | 8. Physics | 5 | 0 | 0 | 0 |
@@ -34,7 +34,7 @@ All progress reset to zero. Valid bug findings preserved in BUGS_FOUND.md.
 | 10. Export | 6 | 0 | 0 | 0 |
 | 11. AI Integration | 5 | 0 | 0 | 0 |
 | 12. Data/Templates | 4 | 0 | 0 | 0 |
-| **TOTAL** | **111** | **47** | **47** | **20** |
+| **TOTAL** | **111** | **48** | **48** | **21** |
 
 **Note:** 36 bugs from previous sessions preserved in BUGS_FOUND.md (all marked FIXED).
 
@@ -134,7 +134,7 @@ All progress reset to zero. Valid bug findings preserved in BUGS_FOUND.md.
 | 5.2 | Emitter Logic | [x] | 0 | 279 | ✓ | 2025-12-26 |
 | 5.3 | Force Calculator | [x] | 0 | 237 | ✓ | 2025-12-26 |
 | 5.4 | Collision System | [x] | 0 | 371 | ✓ | 2025-12-26 |
-| 5.5 | Flocking/Boids | [ ] | 0 | - | ⬜ | - |
+| 5.5 | Flocking/Boids | [x] | 1 | 614 | ✓ | 2025-12-26 |
 | 5.6 | Trail System | [ ] | 0 | - | ⬜ | - |
 | 5.7 | Sub-Emitters | [ ] | 0 | - | ⬜ | - |
 | 5.8 | Audio Reactive | [ ] | 0 | - | ⬜ | - |
