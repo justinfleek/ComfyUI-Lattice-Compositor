@@ -1,7 +1,7 @@
 # LATTICE COMPOSITOR - BUGS FOUND
 
 **Last Updated:** 2025-12-26
-**Next Bug ID:** BUG-056
+**Next Bug ID:** BUG-057
 
 ---
 
@@ -10,10 +10,10 @@
 | Severity | Total | Fixed | Open |
 |----------|-------|-------|------|
 | CRITICAL | 0 | 0 | 0 |
-| HIGH | 14 | 14 | 0 |
+| HIGH | 15 | 15 | 0 |
 | MEDIUM | 31 | 31 | 0 |
 | LOW | 7 | 7 | 0 |
-| **TOTAL** | **52** | **52** | **0** |
+| **TOTAL** | **53** | **53** | **0** |
 
 **Note:** These 36 bugs were found in previous audit sessions and are preserved here. All have been fixed. New bugs should start at BUG-037.
 
@@ -27,7 +27,8 @@
 | 2. Layer Types | 35 |
 | 3. Animation | 2 |
 | 4. Effects | 2 |
-| 5-12 | 0 (not yet audited) |
+| 5. Particles | 1 |
+| 6-12 | 0 (not yet audited) |
 
 ---
 
@@ -2082,6 +2083,63 @@ const fps = params._fps ?? 16;  // WAN standard
 - `ui/src/services/effects/colorRenderer.ts` - Line 624
 
 **Related Bugs:** BUG-052, BUG-053 (similar fps fallback issues)
+
+---
+
+### BUG-056: Non-deterministic Particle Seed with Inconsistent Reset Fallback
+
+**Feature:** GPU Particle Core (5.1)
+**Tier:** 5
+**Severity:** HIGH
+**Found:** 2025-12-26
+**Session:** 4
+**Status:** FIXED
+
+**Location:**
+- File: `ui/src/engine/particles/GPUParticleSystem.ts`
+- Lines: 373, 1497
+- Function: `constructor()`, `reset()`
+
+**Problem:**
+Constructor used `Date.now()` as fallback seed, but `reset()` used `12345`. This caused:
+1. Non-deterministic initial particle state when no seed provided
+2. Different behavior before vs after reset()
+
+**Evidence (before fix):**
+```typescript
+// Line 373 (constructor)
+this.initialRngSeed = this.config.randomSeed ?? Date.now();
+
+// Line 1497 (reset)
+this.rng = this.createSeededRandom(this.config.randomSeed ?? 12345);
+```
+
+**Expected Behavior:**
+Particle simulation should be deterministic and reproducible. The same config should produce identical particle positions every time.
+
+**Actual Behavior:**
+- First run: seed = Date.now() (different each session)
+- After reset(): seed = 12345 (deterministic but different from initial)
+- Export/render results could differ from preview
+
+**Impact:**
+- Particle simulations not reproducible between sessions
+- Reset produces different state than initial state
+- Export may not match preview
+
+**Fix Applied:**
+```typescript
+// Line 373 - consistent fallback
+this.initialRngSeed = this.config.randomSeed ?? 12345;
+
+// Line 1498 - use stored seed
+this.rng = this.createSeededRandom(this.initialRngSeed);
+```
+
+**Files Modified:**
+- `ui/src/engine/particles/GPUParticleSystem.ts` - Lines 373, 1498
+
+**Related Bugs:** None - first particle system determinism bug
 
 ---
 
