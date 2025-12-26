@@ -125,12 +125,17 @@
         </div>
 
         <div v-if="stemSectionExpanded" class="section-content">
+          <!-- BUG-089 fix: Dynamic model dropdown from getStemModels() -->
           <div class="control-row">
             <label>Model</label>
             <select v-model="selectedModel" class="model-select">
-              <option value="htdemucs">HT-Demucs (Recommended)</option>
-              <option value="htdemucs_ft">HT-Demucs Fine-tuned</option>
-              <option value="mdx_extra">MDX Extra (Fast)</option>
+              <option
+                v-for="model in availableModels"
+                :key="model.id"
+                :value="model.id"
+              >{{ model.name }}{{ model.recommended ? ' (Recommended)' : '' }}</option>
+              <!-- Fallback if models haven't loaded yet -->
+              <option v-if="availableModels.length === 0" value="htdemucs">HT-Demucs (Loading...)</option>
             </select>
           </div>
 
@@ -648,8 +653,10 @@ import {
   isolateStem,
   downloadStem,
   createAudioElement,
+  getStemModels,
   type StemType,
   type DemucsModel,
+  type StemModel,
 } from '@/services/audio/stemSeparation';
 import {
   createEnhancedBeatGrid,
@@ -678,6 +685,7 @@ const audioStore = useAudioStore();
 // Stem separation state
 const stemSectionExpanded = ref(false);
 const selectedModel = ref<DemucsModel>('htdemucs');
+const availableModels = ref<StemModel[]>([]); // BUG-089 fix: dynamic model list
 const isSeparating = ref(false);
 const separationProgress = ref(0);
 const separationMessage = ref('');
@@ -998,6 +1006,28 @@ onMounted(() => {
 // Stem Separation Functions
 // ============================================================================
 
+// BUG-089 fix: Load available models from backend (or defaults)
+async function loadStemModels() {
+  if (availableModels.value.length > 0) return; // Already loaded
+  try {
+    availableModels.value = await getStemModels();
+    // Set default to recommended model if available
+    const recommended = availableModels.value.find(m => m.recommended);
+    if (recommended) {
+      selectedModel.value = recommended.id;
+    }
+  } catch (error) {
+    console.warn('[Lattice] Failed to load stem models, using defaults');
+  }
+}
+
+// Load models when stem section is expanded
+watch(stemSectionExpanded, (expanded) => {
+  if (expanded && availableModels.value.length === 0) {
+    loadStemModels();
+  }
+});
+
 function getStemIcon(stemName: string): string {
   const icons: Record<string, string> = {
     vocals: '🎤',
@@ -1129,6 +1159,9 @@ async function useStemForReactivity(stemName: string) {
   const stemData = separatedStems.value[stemName];
   console.log(`[Lattice] Loading ${stemName} stem for audio reactivity`);
 
+  // BUG-087 fix: Clear previous error before attempting
+  separationError.value = null;
+
   try {
     // Get FPS from compositor store or use default
     const fps = store.project?.composition?.fps || 16;
@@ -1144,6 +1177,9 @@ async function useStemForReactivity(stemName: string) {
 
     console.log(`[Lattice] ${stemName} stem now active for audio reactivity`);
   } catch (error) {
+    // BUG-087 fix: Show error in UI, not just console
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    separationError.value = `Failed to load ${stemName} stem: ${errorMessage}`;
     console.error(`[Lattice] Failed to use ${stemName} stem for reactivity:`, error);
   }
 }
