@@ -490,18 +490,69 @@ export interface LifetimeModulation {
 // Audio Reactivity
 // ============================================================================
 
+// AudioFeature type - must match getFeatureAtFrame() switch cases in audioFeatures.ts
+// Note: 'bpm' excluded - use getBPM(analysis) for track-level BPM
 export type AudioFeature =
+  // Basic features
   | 'amplitude'
   | 'rms'
   | 'spectralCentroid'
+  | 'onsets'
+  // Frequency bands
+  | 'sub'
   | 'bass'
+  | 'lowMid'
   | 'mid'
+  | 'highMid'
   | 'high'
-  | 'onset'
-  | 'beat'
-  | 'bpm'
-  | 'pitch'
-  | 'loudness';
+  // Spectral features
+  | 'spectralFlux'
+  | 'zeroCrossingRate'
+  | 'zcr'
+  | 'spectralRolloff'
+  | 'rolloff'
+  | 'spectralFlatness'
+  | 'flatness'
+  // Chroma (pitch class)
+  | 'chromaEnergy'
+  | 'chromaC'
+  | 'chromaCs'
+  | 'chromaDb'
+  | 'chromaD'
+  | 'chromaDs'
+  | 'chromaEb'
+  | 'chromaE'
+  | 'chromaF'
+  | 'chromaFs'
+  | 'chromaGb'
+  | 'chromaG'
+  | 'chromaGs'
+  | 'chromaAb'
+  | 'chromaA'
+  | 'chromaAs'
+  | 'chromaBb'
+  | 'chromaB'
+  // HPSS (Harmonic-Percussive Source Separation)
+  | 'harmonicEnergy'
+  | 'harmonic'
+  | 'percussiveEnergy'
+  | 'percussive'
+  | 'hpRatio'
+  | 'harmonicPercussiveRatio'
+  // MFCC (timbral features)
+  | 'mfcc0'
+  | 'mfcc1'
+  | 'mfcc2'
+  | 'mfcc3'
+  | 'mfcc4'
+  | 'mfcc5'
+  | 'mfcc6'
+  | 'mfcc7'
+  | 'mfcc8'
+  | 'mfcc9'
+  | 'mfcc10'
+  | 'mfcc11'
+  | 'mfcc12';
 
 export interface AudioBinding {
   feature: AudioFeature;

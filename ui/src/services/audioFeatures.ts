@@ -57,6 +57,10 @@ export interface AudioAnalysis {
 
   // MFCC: Mel-frequency cepstral coefficients (timbral features)
   mfcc?: number[][];                // [frameIndex][coefficient] - 13 coefficients per frame
+  mfccStats?: {                     // Per-coefficient normalization stats (BUG-076 fix)
+    min: number[];                  // Min value per coefficient [13]
+    max: number[];                  // Max value per coefficient [13]
+  };
 }
 
 export interface FrequencyBandRanges {
@@ -77,12 +81,10 @@ export interface ChromaFeatures {
 }
 
 // Audio analysis configuration (matches Yvann-Nodes)
+// Note: hopSize intentionally omitted - analysis is locked to video frame
+// boundaries for deterministic playback (BUG-078)
 export interface AudioAnalysisConfig {
   fftSize: number;            // 512, 1024, 2048, 4096
-  // BUG-078: hopSize is reserved for future use. Currently, analysis is locked
-  // to video frame boundaries for deterministic playback. Sub-frame temporal
-  // resolution would require additional interpolation logic.
-  hopSize?: number;           // Reserved for future use (default: frame-aligned)
   minFrequency: number;       // Filter low frequencies (default 20)
   maxFrequency: number;       // Filter high frequencies (default 20000)
   // Analysis modes (like Yvann)
@@ -194,7 +196,7 @@ export async function analyzeAudio(
   const hpss = extractHPSS(analyzeBuffer, fps);
 
   // MFCC: Mel-frequency cepstral coefficients (timbral analysis)
-  const mfcc = extractMFCC(analyzeBuffer, fps);
+  const mfccResult = extractMFCC(analyzeBuffer, fps);
 
   return {
     sampleRate,
@@ -216,8 +218,9 @@ export async function analyzeAudio(
     harmonicEnergy: hpss.harmonicEnergy,
     percussiveEnergy: hpss.percussiveEnergy,
     hpRatio: hpss.hpRatio,
-    // MFCC
-    mfcc
+    // MFCC (BUG-076 fix: include per-coefficient normalization stats)
+    mfcc: mfccResult.mfcc,
+    mfccStats: mfccResult.stats
   };
 }
 
@@ -992,10 +995,6 @@ export function getFeatureAtFrame(
     case 'chromaB':
       return analysis.chromaFeatures?.chroma[clampedFrame]?.[11] ?? 0;
 
-    // BUG-074 fix: BPM access (returns normalized 0-1 based on typical range 60-200)
-    case 'bpm':
-      return Math.min(1, Math.max(0, (analysis.bpm - 60) / 140));
-
     // BUG-075 fix: HPSS features access
     case 'harmonicEnergy':
     case 'harmonic':
@@ -1009,33 +1008,34 @@ export function getFeatureAtFrame(
     case 'harmonicPercussiveRatio':
       return analysis.hpRatio?.[clampedFrame] ?? 0;
 
-    // BUG-076 fix: MFCC coefficients access (13 coefficients: mfcc0-mfcc12)
+    // BUG-076 fix: MFCC coefficients with per-coefficient min-max normalization
+    // MFCC0 (log energy) has different range than MFCC1-12 (spectral shape)
     case 'mfcc0':
-      return normalizeMFCC(analysis.mfcc?.[clampedFrame]?.[0]);
+      return normalizeMFCCCoeff(analysis, clampedFrame, 0);
     case 'mfcc1':
-      return normalizeMFCC(analysis.mfcc?.[clampedFrame]?.[1]);
+      return normalizeMFCCCoeff(analysis, clampedFrame, 1);
     case 'mfcc2':
-      return normalizeMFCC(analysis.mfcc?.[clampedFrame]?.[2]);
+      return normalizeMFCCCoeff(analysis, clampedFrame, 2);
     case 'mfcc3':
-      return normalizeMFCC(analysis.mfcc?.[clampedFrame]?.[3]);
+      return normalizeMFCCCoeff(analysis, clampedFrame, 3);
     case 'mfcc4':
-      return normalizeMFCC(analysis.mfcc?.[clampedFrame]?.[4]);
+      return normalizeMFCCCoeff(analysis, clampedFrame, 4);
     case 'mfcc5':
-      return normalizeMFCC(analysis.mfcc?.[clampedFrame]?.[5]);
+      return normalizeMFCCCoeff(analysis, clampedFrame, 5);
     case 'mfcc6':
-      return normalizeMFCC(analysis.mfcc?.[clampedFrame]?.[6]);
+      return normalizeMFCCCoeff(analysis, clampedFrame, 6);
     case 'mfcc7':
-      return normalizeMFCC(analysis.mfcc?.[clampedFrame]?.[7]);
+      return normalizeMFCCCoeff(analysis, clampedFrame, 7);
     case 'mfcc8':
-      return normalizeMFCC(analysis.mfcc?.[clampedFrame]?.[8]);
+      return normalizeMFCCCoeff(analysis, clampedFrame, 8);
     case 'mfcc9':
-      return normalizeMFCC(analysis.mfcc?.[clampedFrame]?.[9]);
+      return normalizeMFCCCoeff(analysis, clampedFrame, 9);
     case 'mfcc10':
-      return normalizeMFCC(analysis.mfcc?.[clampedFrame]?.[10]);
+      return normalizeMFCCCoeff(analysis, clampedFrame, 10);
     case 'mfcc11':
-      return normalizeMFCC(analysis.mfcc?.[clampedFrame]?.[11]);
+      return normalizeMFCCCoeff(analysis, clampedFrame, 11);
     case 'mfcc12':
-      return normalizeMFCC(analysis.mfcc?.[clampedFrame]?.[12]);
+      return normalizeMFCCCoeff(analysis, clampedFrame, 12);
 
     default:
       return 0;
@@ -1043,14 +1043,30 @@ export function getFeatureAtFrame(
 }
 
 /**
- * Normalize MFCC coefficient to 0-1 range
- * MFCCs typically range from -50 to +50, with most values in -20 to +20
+ * BUG-076 fix: Normalize MFCC coefficient using per-coefficient min-max from analyzed audio
+ * Returns 0-1 range suitable for driving visual parameters
  */
-function normalizeMFCC(value: number | undefined): number {
+function normalizeMFCCCoeff(analysis: AudioAnalysis, frame: number, coeff: number): number {
+  const value = analysis.mfcc?.[frame]?.[coeff];
   if (value === undefined) return 0;
-  // Clamp to typical range and normalize
-  const clamped = Math.max(-30, Math.min(30, value));
-  return (clamped + 30) / 60;
+
+  const stats = analysis.mfccStats;
+  if (!stats) return 0;  // No stats available, return 0
+
+  const min = stats.min[coeff];
+  const max = stats.max[coeff];
+  const range = max - min;
+
+  // Normalize to 0-1 using actual min/max from this audio
+  return (value - min) / range;
+}
+
+/**
+ * BUG-074 fix: Get track-level BPM (not per-frame)
+ * BPM is computed once per track, use this instead of getFeatureAtFrame
+ */
+export function getBPM(analysis: AudioAnalysis): number {
+  return analysis.bpm;
 }
 
 /**
@@ -1432,7 +1448,7 @@ export function extractMFCC(
   fps: number,
   numCoeffs: number = 13,
   numMelFilters: number = 40
-): number[][] {
+): { mfcc: number[][]; stats: { min: number[]; max: number[] } } {
   const channelData = buffer.getChannelData(0);
   const sampleRate = buffer.sampleRate;
   const frameCount = Math.ceil(buffer.duration * fps);
@@ -1491,7 +1507,35 @@ export function extractMFCC(
     mfccFrames.push(mfcc);
   }
 
-  return mfccFrames;
+  // BUG-076 fix: Compute per-coefficient min/max for proper normalization
+  // MFCC0 (log energy) has different range than MFCC1-12 (spectral shape)
+  const stats = {
+    min: new Array(numCoeffs).fill(Infinity),
+    max: new Array(numCoeffs).fill(-Infinity)
+  };
+
+  for (const frame of mfccFrames) {
+    for (let c = 0; c < numCoeffs; c++) {
+      if (frame[c] < stats.min[c]) stats.min[c] = frame[c];
+      if (frame[c] > stats.max[c]) stats.max[c] = frame[c];
+    }
+  }
+
+  // Handle edge cases for normalization
+  for (let c = 0; c < numCoeffs; c++) {
+    // Edge case: 0 frames - stats remain Infinity/-Infinity
+    if (!isFinite(stats.min[c]) || !isFinite(stats.max[c])) {
+      stats.min[c] = 0;
+      stats.max[c] = 1;
+    }
+    // Edge case: all values same - expand range to avoid division by zero
+    else if (stats.min[c] === stats.max[c]) {
+      stats.min[c] = stats.min[c] - 1;
+      stats.max[c] = stats.max[c] + 1;
+    }
+  }
+
+  return { mfcc: mfccFrames, stats };
 }
 
 /**
@@ -1556,6 +1600,7 @@ export default {
   detectOnsets,
   detectBPM,
   getFeatureAtFrame,
+  getBPM,  // BUG-074 fix: track-level BPM accessor
   getSmoothedFeature,
   normalizeFeature,
   applyFeatureCurve,
