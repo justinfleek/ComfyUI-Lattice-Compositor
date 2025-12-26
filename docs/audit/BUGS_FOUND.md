@@ -3150,6 +3150,348 @@ Particles became microscopic/invisible after a few frames when using any size mo
 
 ---
 
+## TIER 6 BUGS (Audio System)
+
+### BUG-074: bpm Not Accessible via getFeatureAtFrame()
+
+**Feature:** FFT Analysis (6.1)
+**Tier:** 6
+**Severity:** MEDIUM
+**Found:** 2025-12-26
+**Session:** 5
+**Status:** FIXED
+
+**Location:**
+- File: `ui/src/services/audioFeatures.ts`
+- Lines: 884-975 (getFeatureAtFrame switch statement)
+- Function: `getFeatureAtFrame()`
+
+**Problem:**
+BPM is computed and stored in AudioAnalysis but no case in getFeatureAtFrame() handles 'bpm' feature lookup. Requests for 'bpm' return 0.
+
+**Evidence (before fix):**
+```typescript
+// Switch statement had no 'bpm' case
+switch (feature) {
+  case 'amplitude': ...
+  case 'rms': ...
+  // NO 'bpm' case
+  default:
+    return 0;  // bpm returns 0
+}
+```
+
+**Expected Behavior:**
+Users should be able to query BPM as a normalized 0-1 feature value.
+
+**Actual Behavior:**
+`getFeatureAtFrame(analysis, 'bpm', frame)` always returned 0.
+
+**Impact:**
+Users cannot use BPM for audio-reactive expressions or parameter linking.
+
+**Fix Applied:**
+```typescript
+// BUG-074 fix: BPM access (returns normalized 0-1 based on typical range 60-200)
+case 'bpm':
+  return Math.min(1, Math.max(0, (analysis.bpm - 60) / 140));
+```
+
+**Files Modified:**
+- `ui/src/services/audioFeatures.ts` - Added 'bpm' case at line 973-975
+
+**Related Bugs:** BUG-075, BUG-076 (similar missing cases)
+
+---
+
+### BUG-075: HPSS Features Not Accessible via getFeatureAtFrame()
+
+**Feature:** FFT Analysis (6.1)
+**Tier:** 6
+**Severity:** HIGH
+**Found:** 2025-12-26
+**Session:** 5
+**Status:** FIXED
+
+**Location:**
+- File: `ui/src/services/audioFeatures.ts`
+- Lines: 884-975 (getFeatureAtFrame switch statement)
+- Function: `getFeatureAtFrame()`
+
+**Problem:**
+HPSS (Harmonic-Percussive Source Separation) features are computed in extractHPSS() and stored in AudioAnalysis, but no cases exist to retrieve them. The properties harmonicEnergy, percussiveEnergy, and hpRatio were inaccessible.
+
+**Evidence (before fix):**
+```typescript
+// HPSS computed and stored
+harmonicEnergy: hpss.harmonicEnergy,
+percussiveEnergy: hpss.percussiveEnergy,
+hpRatio: hpss.hpRatio,
+
+// But NO switch cases to retrieve them
+// All fell through to default: return 0
+```
+
+**Expected Behavior:**
+Users should be able to query harmonic/percussive energy for audio-reactive animations (e.g., drums-only or vocals-only reactivity).
+
+**Actual Behavior:**
+All HPSS feature queries returned 0.
+
+**Impact:**
+Users cannot create harmonic/percussive source separation effects despite the analysis being computed.
+
+**Fix Applied:**
+```typescript
+// BUG-075 fix: HPSS features access
+case 'harmonicEnergy':
+case 'harmonic':
+  return analysis.harmonicEnergy?.[clampedFrame] ?? 0;
+
+case 'percussiveEnergy':
+case 'percussive':
+  return analysis.percussiveEnergy?.[clampedFrame] ?? 0;
+
+case 'hpRatio':
+case 'harmonicPercussiveRatio':
+  return analysis.hpRatio?.[clampedFrame] ?? 0;
+```
+
+**Files Modified:**
+- `ui/src/services/audioFeatures.ts` - Added 3 HPSS cases at lines 977-988
+
+**Related Bugs:** BUG-074, BUG-076 (similar missing cases)
+
+---
+
+### BUG-076: MFCC Features Not Accessible via getFeatureAtFrame()
+
+**Feature:** FFT Analysis (6.1)
+**Tier:** 6
+**Severity:** HIGH
+**Found:** 2025-12-26
+**Session:** 5
+**Status:** FIXED
+
+**Location:**
+- File: `ui/src/services/audioFeatures.ts`
+- Lines: 884-975 (getFeatureAtFrame switch statement)
+- Function: `getFeatureAtFrame()`
+
+**Problem:**
+MFCC (Mel-frequency cepstral coefficients) are computed in extractMFCC() for timbral analysis, returning 13 coefficients per frame. However, no cases existed to retrieve any of the coefficients.
+
+**Evidence (before fix):**
+```typescript
+// MFCC computed and stored
+mfcc: extractMFCC(analyzeBuffer, fps)
+
+// But NO switch cases for mfcc0-mfcc12
+// All fell through to default: return 0
+```
+
+**Expected Behavior:**
+Users should be able to query individual MFCC coefficients (mfcc0-mfcc12) for timbre-based audio reactivity.
+
+**Actual Behavior:**
+All MFCC queries returned 0.
+
+**Impact:**
+Users cannot create timbre-aware audio-reactive effects despite the analysis being computed.
+
+**Fix Applied:**
+```typescript
+// BUG-076 fix: MFCC coefficients access (13 coefficients: mfcc0-mfcc12)
+case 'mfcc0':
+  return normalizeMFCC(analysis.mfcc?.[clampedFrame]?.[0]);
+// ... (all 13 cases)
+case 'mfcc12':
+  return normalizeMFCC(analysis.mfcc?.[clampedFrame]?.[12]);
+
+// Helper function
+function normalizeMFCC(value: number | undefined): number {
+  if (value === undefined) return 0;
+  const clamped = Math.max(-30, Math.min(30, value));
+  return (clamped + 30) / 60;
+}
+```
+
+**Files Modified:**
+- `ui/src/services/audioFeatures.ts` - Added 13 MFCC cases and helper function at lines 990-1032
+
+**Related Bugs:** BUG-074, BUG-075 (similar missing cases)
+
+---
+
+### BUG-077: fftSize Config Property Ignored
+
+**Feature:** FFT Analysis (6.1)
+**Tier:** 6
+**Severity:** MEDIUM
+**Found:** 2025-12-26
+**Session:** 5
+**Status:** FIXED
+
+**Location:**
+- File: `ui/src/services/audioFeatures.ts`
+- Lines: 292-383 (extractFrequencyBands)
+- Function: `extractFrequencyBands()`
+
+**Problem:**
+The AudioAnalysisConfig interface defines `fftSize` (512, 1024, 2048, 4096) for user control over FFT resolution, but the extraction function always used `DEFAULT_FFT_SIZE` (2048) instead of the config value.
+
+**Evidence (before fix):**
+```typescript
+// Config defined fftSize
+export interface AudioAnalysisConfig {
+  fftSize: number;  // 512, 1024, 2048, 4096
+  ...
+}
+
+// But extractFrequencyBands ignored it
+const binFrequency = sampleRate / DEFAULT_FFT_SIZE;  // Always 2048
+analyser.fftSize = DEFAULT_FFT_SIZE;  // Ignored config
+```
+
+**Expected Behavior:**
+Users should be able to customize FFT resolution for different analysis needs.
+
+**Actual Behavior:**
+fftSize config had no effect - always used 2048.
+
+**Impact:**
+Users cannot adjust FFT resolution for frequency/time tradeoff.
+
+**Fix Applied:**
+```typescript
+// BUG-077 fix: Use config fftSize if provided
+const fftSize = config?.fftSize ?? DEFAULT_FFT_SIZE;
+analyser.fftSize = fftSize;
+const binFrequency = sampleRate / fftSize;
+```
+
+**Files Modified:**
+- `ui/src/services/audioFeatures.ts` - Lines 303, 316, 332, 352, 366
+
+**Related Bugs:** BUG-078, BUG-079 (other unused config properties)
+
+---
+
+### BUG-078: hopSize Config Property Never Used
+
+**Feature:** FFT Analysis (6.1)
+**Tier:** 6
+**Severity:** LOW
+**Found:** 2025-12-26
+**Session:** 5
+**Status:** DOCUMENTED
+
+**Location:**
+- File: `ui/src/services/audioFeatures.ts`
+- Line: 82
+- Interface: `AudioAnalysisConfig`
+
+**Problem:**
+The `hopSize` property is defined in AudioAnalysisConfig with comment "Overlap (default fftSize/4)" but is never used. Analysis is locked to video frame boundaries for deterministic playback.
+
+**Evidence:**
+```typescript
+// Defined but never referenced anywhere
+hopSize?: number;  // Overlap (default fftSize/4)
+```
+
+**Expected Behavior:**
+Either hopSize should control STFT overlap, or it should be documented as reserved.
+
+**Actual Behavior:**
+Property existed but had no effect. Comment was misleading.
+
+**Impact:**
+Misleading API - users might expect this to work.
+
+**Fix Applied:**
+Updated interface comment to clarify reserved status:
+```typescript
+// BUG-078: hopSize is reserved for future use. Currently, analysis is locked
+// to video frame boundaries for deterministic playback. Sub-frame temporal
+// resolution would require additional interpolation logic.
+hopSize?: number;  // Reserved for future use (default: frame-aligned)
+```
+
+**Files Modified:**
+- `ui/src/services/audioFeatures.ts` - Lines 82-85 (updated comment)
+
+**Related Bugs:** BUG-077, BUG-079 (other config issues)
+
+---
+
+### BUG-079: minFrequency/maxFrequency Config Properties Never Used
+
+**Feature:** FFT Analysis (6.1)
+**Tier:** 6
+**Severity:** MEDIUM
+**Found:** 2025-12-26
+**Session:** 5
+**Status:** FIXED
+
+**Location:**
+- File: `ui/src/services/audioFeatures.ts`
+- Lines: 83-84 (config definition), 334-359 (extractFrequencyBands)
+- Function: `extractFrequencyBands()`
+
+**Problem:**
+The AudioAnalysisConfig interface defines `minFrequency` and `maxFrequency` for frequency range filtering, but these were never applied to the frequency band extraction.
+
+**Evidence (before fix):**
+```typescript
+// Config defined frequency limits
+minFrequency: number;  // Filter low frequencies (default 20)
+maxFrequency: number;  // Filter high frequencies (default 20000)
+
+// But extractFrequencyBands never used them
+// All bins were analyzed regardless of config
+```
+
+**Expected Behavior:**
+Users should be able to filter out unwanted frequencies before analysis.
+
+**Actual Behavior:**
+minFrequency and maxFrequency config had no effect.
+
+**Impact:**
+Users cannot filter out rumble (low) or hiss (high) frequencies from analysis.
+
+**Fix Applied:**
+```typescript
+// BUG-079 fix: Apply minFrequency/maxFrequency filtering
+const minFreq = config?.minFrequency ?? 20;
+const maxFreq = config?.maxFrequency ?? 20000;
+const minBin = Math.floor(minFreq / binFrequency);
+const maxBin = Math.ceil(maxFreq / binFrequency);
+
+// Calculate bin ranges for each band, clamped to min/max frequency
+const bandBins = Object.entries(FREQUENCY_BANDS).reduce((acc, [band, [low, high]]) => {
+  const clampedLow = Math.max(low, minFreq);
+  const clampedHigh = Math.min(high, maxFreq);
+  if (clampedLow >= clampedHigh) {
+    acc[band] = { start: 0, end: 0 };  // Skip band
+  } else {
+    acc[band] = {
+      start: Math.max(minBin, Math.floor(clampedLow / binFrequency)),
+      end: Math.min(maxBin, Math.ceil(clampedHigh / binFrequency))
+    };
+  }
+  return acc;
+}, {});
+```
+
+**Files Modified:**
+- `ui/src/services/audioFeatures.ts` - Lines 337-359
+
+**Related Bugs:** BUG-077, BUG-078 (other config issues)
+
+---
+
 ## BUG TEMPLATE
 
 Copy this when adding new bugs:

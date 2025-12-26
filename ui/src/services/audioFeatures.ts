@@ -79,7 +79,10 @@ export interface ChromaFeatures {
 // Audio analysis configuration (matches Yvann-Nodes)
 export interface AudioAnalysisConfig {
   fftSize: number;            // 512, 1024, 2048, 4096
-  hopSize?: number;           // Overlap (default fftSize/4)
+  // BUG-078: hopSize is reserved for future use. Currently, analysis is locked
+  // to video frame boundaries for deterministic playback. Sub-frame temporal
+  // resolution would require additional interpolation logic.
+  hopSize?: number;           // Reserved for future use (default: frame-aligned)
   minFrequency: number;       // Filter low frequencies (default 20)
   maxFrequency: number;       // Filter high frequencies (default 20000)
   // Analysis modes (like Yvann)
@@ -288,6 +291,7 @@ export function extractRMSEnergy(buffer: AudioBuffer, fps: number): number[] {
 
 /**
  * Extract energy in different frequency bands per frame
+ * BUG-077 fix: Now uses config.fftSize when provided
  */
 export async function extractFrequencyBands(
   buffer: AudioBuffer,
@@ -297,6 +301,9 @@ export async function extractFrequencyBands(
   const duration = buffer.duration;
   const frameCount = Math.ceil(duration * fps);
   const sampleRate = buffer.sampleRate;
+
+  // BUG-077 fix: Use config fftSize if provided
+  const fftSize = config?.fftSize ?? DEFAULT_FFT_SIZE;
 
   // Create offline context for analysis
   const offlineCtx = new OfflineAudioContext(
@@ -309,7 +316,7 @@ export async function extractFrequencyBands(
   source.buffer = buffer;
 
   const analyser = offlineCtx.createAnalyser();
-  analyser.fftSize = DEFAULT_FFT_SIZE;
+  analyser.fftSize = fftSize;
   analyser.smoothingTimeConstant = 0;
 
   source.connect(analyser);
@@ -325,14 +332,29 @@ export async function extractFrequencyBands(
     high: []
   };
 
-  const binFrequency = sampleRate / DEFAULT_FFT_SIZE;
+  const binFrequency = sampleRate / fftSize;
 
-  // Calculate bin ranges for each band
+  // BUG-079 fix: Apply minFrequency/maxFrequency filtering
+  const minFreq = config?.minFrequency ?? 20;
+  const maxFreq = config?.maxFrequency ?? 20000;
+  const minBin = Math.floor(minFreq / binFrequency);
+  const maxBin = Math.ceil(maxFreq / binFrequency);
+
+  // Calculate bin ranges for each band, clamped to min/max frequency
   const bandBins = Object.entries(FREQUENCY_BANDS).reduce((acc, [band, [low, high]]) => {
-    acc[band as keyof FrequencyBandRanges] = {
-      start: Math.floor(low / binFrequency),
-      end: Math.ceil(high / binFrequency)
-    };
+    // Clamp band ranges to config frequency limits
+    const clampedLow = Math.max(low, minFreq);
+    const clampedHigh = Math.min(high, maxFreq);
+
+    // Skip band entirely if outside frequency range
+    if (clampedLow >= clampedHigh) {
+      acc[band as keyof FrequencyBandRanges] = { start: 0, end: 0 };
+    } else {
+      acc[band as keyof FrequencyBandRanges] = {
+        start: Math.max(minBin, Math.floor(clampedLow / binFrequency)),
+        end: Math.min(maxBin, Math.ceil(clampedHigh / binFrequency))
+      };
+    }
     return acc;
   }, {} as Record<keyof FrequencyBandRanges, { start: number; end: number }>);
 
@@ -345,7 +367,7 @@ export async function extractFrequencyBands(
 
   for (let frame = 0; frame < frameCount; frame++) {
     const startSample = frame * samplesPerFrame;
-    const endSample = Math.min(startSample + DEFAULT_FFT_SIZE, channelData.length);
+    const endSample = Math.min(startSample + fftSize, channelData.length);
 
     // Get window of samples
     const windowSize = endSample - startSample;
@@ -359,7 +381,7 @@ export async function extractFrequencyBands(
     }
 
     // Perform simple FFT using the channel data
-    const fftResult = simpleFFT(channelData.slice(startSample, startSample + DEFAULT_FFT_SIZE));
+    const fftResult = simpleFFT(channelData.slice(startSample, startSample + fftSize));
 
     // Extract band energies
     for (const [band, { start, end }] of Object.entries(bandBins)) {
@@ -970,9 +992,65 @@ export function getFeatureAtFrame(
     case 'chromaB':
       return analysis.chromaFeatures?.chroma[clampedFrame]?.[11] ?? 0;
 
+    // BUG-074 fix: BPM access (returns normalized 0-1 based on typical range 60-200)
+    case 'bpm':
+      return Math.min(1, Math.max(0, (analysis.bpm - 60) / 140));
+
+    // BUG-075 fix: HPSS features access
+    case 'harmonicEnergy':
+    case 'harmonic':
+      return analysis.harmonicEnergy?.[clampedFrame] ?? 0;
+
+    case 'percussiveEnergy':
+    case 'percussive':
+      return analysis.percussiveEnergy?.[clampedFrame] ?? 0;
+
+    case 'hpRatio':
+    case 'harmonicPercussiveRatio':
+      return analysis.hpRatio?.[clampedFrame] ?? 0;
+
+    // BUG-076 fix: MFCC coefficients access (13 coefficients: mfcc0-mfcc12)
+    case 'mfcc0':
+      return normalizeMFCC(analysis.mfcc?.[clampedFrame]?.[0]);
+    case 'mfcc1':
+      return normalizeMFCC(analysis.mfcc?.[clampedFrame]?.[1]);
+    case 'mfcc2':
+      return normalizeMFCC(analysis.mfcc?.[clampedFrame]?.[2]);
+    case 'mfcc3':
+      return normalizeMFCC(analysis.mfcc?.[clampedFrame]?.[3]);
+    case 'mfcc4':
+      return normalizeMFCC(analysis.mfcc?.[clampedFrame]?.[4]);
+    case 'mfcc5':
+      return normalizeMFCC(analysis.mfcc?.[clampedFrame]?.[5]);
+    case 'mfcc6':
+      return normalizeMFCC(analysis.mfcc?.[clampedFrame]?.[6]);
+    case 'mfcc7':
+      return normalizeMFCC(analysis.mfcc?.[clampedFrame]?.[7]);
+    case 'mfcc8':
+      return normalizeMFCC(analysis.mfcc?.[clampedFrame]?.[8]);
+    case 'mfcc9':
+      return normalizeMFCC(analysis.mfcc?.[clampedFrame]?.[9]);
+    case 'mfcc10':
+      return normalizeMFCC(analysis.mfcc?.[clampedFrame]?.[10]);
+    case 'mfcc11':
+      return normalizeMFCC(analysis.mfcc?.[clampedFrame]?.[11]);
+    case 'mfcc12':
+      return normalizeMFCC(analysis.mfcc?.[clampedFrame]?.[12]);
+
     default:
       return 0;
   }
+}
+
+/**
+ * Normalize MFCC coefficient to 0-1 range
+ * MFCCs typically range from -50 to +50, with most values in -20 to +20
+ */
+function normalizeMFCC(value: number | undefined): number {
+  if (value === undefined) return 0;
+  // Clamp to typical range and normalize
+  const clamped = Math.max(-30, Math.min(30, value));
+  return (clamped + 30) / 60;
 }
 
 /**
