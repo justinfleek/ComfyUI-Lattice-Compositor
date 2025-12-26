@@ -238,23 +238,6 @@ export class EffectLayer extends BaseLayer {
   }
 
   // ============================================================================
-  // SOURCE CANVAS (for additional effects processing)
-  // ============================================================================
-
-  /**
-   * Get source canvas for this layer
-   * For effect layers, this is the adjusted result
-   */
-  protected override getSourceCanvas(): HTMLCanvasElement | null {
-    if (!this.renderContext) {
-      return null;
-    }
-
-    // Get the source (layers below) - use current frame, not hardcoded 0
-    return this.renderContext.renderLayersBelow(this.id, this.currentFrame);
-  }
-
-  // ============================================================================
   // EFFECT LAYER STATE
   // ============================================================================
 
