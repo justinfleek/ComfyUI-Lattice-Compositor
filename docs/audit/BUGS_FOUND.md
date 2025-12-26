@@ -1,7 +1,7 @@
 # LATTICE COMPOSITOR - BUGS FOUND
 
 **Last Updated:** 2025-12-26
-**Next Bug ID:** BUG-055
+**Next Bug ID:** BUG-056
 
 ---
 
@@ -12,8 +12,8 @@
 | CRITICAL | 0 | 0 | 0 |
 | HIGH | 14 | 14 | 0 |
 | MEDIUM | 31 | 31 | 0 |
-| LOW | 6 | 6 | 0 |
-| **TOTAL** | **51** | **51** | **0** |
+| LOW | 7 | 7 | 0 |
+| **TOTAL** | **52** | **52** | **0** |
 
 **Note:** These 36 bugs were found in previous audit sessions and are preserved here. All have been fixed. New bugs should start at BUG-037.
 
@@ -26,7 +26,7 @@
 | 1. Foundation | 11 |
 | 2. Layer Types | 35 |
 | 3. Animation | 2 |
-| 4. Effects | 1 |
+| 4. Effects | 2 |
 | 5-12 | 0 (not yet audited) |
 
 ---
@@ -2036,6 +2036,52 @@ Removed the broken `getSourceCanvas()` override entirely since `onEvaluateFrame(
 - `ui/src/engine/layers/EffectLayer.ts` - Removed getSourceCanvas override (17 lines)
 
 **Related Bugs:** BUG-027 (previous fix to this same method that introduced the undefined reference)
+
+---
+
+### BUG-055: glowRenderer Uses 30fps Fallback Instead of 16fps (WAN Standard)
+
+**Feature:** Color Correction (4.2) - Note: glow effect categorically belongs to Stylize (4.5)
+**Tier:** 4
+**Severity:** LOW
+**Found:** 2025-12-26
+**Session:** 4
+**Status:** FIXED
+
+**Location:**
+- File: `ui/src/services/effects/colorRenderer.ts`
+- Line: 624
+- Function: `glowRenderer()`
+
+**Problem:**
+The glow effect used 30fps as fallback for color looping timing calculations instead of 16fps (WAN standard).
+
+**Evidence (before fix):**
+```typescript
+// colorRenderer.ts line 624
+const fps = params._fps ?? 30;  // Should be 16
+```
+
+**Expected Behavior:**
+Should use 16fps (WAN standard) as the fallback when fps is not injected via params.
+
+**Actual Behavior:**
+Used 30fps, causing glow color looping animation timing to be calculated incorrectly if effectProcessor failed to inject _fps.
+
+**Impact:**
+- Color looping in glow effect would cycle at wrong speed in edge cases
+- Inconsistent with WAN AI model standard (16fps)
+
+**Fix Applied:**
+Changed fallback from 30 to 16:
+```typescript
+const fps = params._fps ?? 16;  // WAN standard
+```
+
+**Files Modified:**
+- `ui/src/services/effects/colorRenderer.ts` - Line 624
+
+**Related Bugs:** BUG-052, BUG-053 (similar fps fallback issues)
 
 ---
 

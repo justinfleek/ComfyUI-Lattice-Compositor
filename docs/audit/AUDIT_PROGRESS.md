@@ -25,7 +25,7 @@ All progress reset to zero. Valid bug findings preserved in BUGS_FOUND.md.
 | 1. Foundation | 7 | 7 | 7 | 9 |
 | 2. Layer Types | 23 | 23 | 23 | 6 |
 | 3. Animation | 10 | 10 | 10 | 2 |
-| 4. Effects | 12 | 3 | 3 | 1 |
+| 4. Effects | 12 | 3 | 3 | 2 |
 | 5. Particles | 12 | 0 | 0 | 0 |
 | 6. Audio | 7 | 0 | 0 | 0 |
 | 7. 3D/Camera | 10 | 0 | 0 | 0 |
@@ -34,7 +34,7 @@ All progress reset to zero. Valid bug findings preserved in BUGS_FOUND.md.
 | 10. Export | 6 | 0 | 0 | 0 |
 | 11. AI Integration | 5 | 0 | 0 | 0 |
 | 12. Data/Templates | 4 | 0 | 0 | 0 |
-| **TOTAL** | **111** | **34** | **34** | **17** |
+| **TOTAL** | **111** | **34** | **34** | **18** |
 
 **Note:** 36 bugs from previous sessions preserved in BUGS_FOUND.md (all marked FIXED).
 
