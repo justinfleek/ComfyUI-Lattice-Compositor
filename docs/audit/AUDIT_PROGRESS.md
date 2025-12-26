@@ -24,7 +24,7 @@ All progress reset to zero. Valid bug findings preserved in BUGS_FOUND.md.
 |------|-------|----------|-----------|------------|
 | 1. Foundation | 7 | 7 | 7 | 9 |
 | 2. Layer Types | 23 | 23 | 23 | 6 |
-| 3. Animation | 10 | 1 | 1 | 1 |
+| 3. Animation | 10 | 2 | 2 | 1 |
 | 4. Effects | 12 | 0 | 0 | 0 |
 | 5. Particles | 12 | 0 | 0 | 0 |
 | 6. Audio | 7 | 0 | 0 | 0 |
@@ -95,7 +95,7 @@ All progress reset to zero. Valid bug findings preserved in BUGS_FOUND.md.
 | ID | Feature | Status | Bugs | Lines | Confirmed | Session | Phase B |
 |----|---------|--------|------|-------|-----------|---------|---------|
 | 3.1 | Text Animators | [x] | 1 | 6468 | ✓ | 2025-12-26 | Phase B ✓ |
-| 3.2 | Text on Path | [ ] | 0 | - | ⬜ | - | ⬜ |
+| 3.2 | Text on Path | [x] | 0 | 5193 | ✓ | 2025-12-26 | ✓ |
 | 3.3 | Shape Modifiers | [ ] | 0 | - | ⬜ | - | ⬜ |
 | 3.4 | Shape Booleans | [ ] | 0 | - | ⬜ | - | ⬜ |
 | 3.5 | Path Morphing | [ ] | 0 | - | ⬜ | - | ⬜ |
