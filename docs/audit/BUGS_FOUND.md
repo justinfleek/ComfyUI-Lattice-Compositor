@@ -1,7 +1,7 @@
 # LATTICE COMPOSITOR - BUGS FOUND
 
 **Last Updated:** 2025-12-26
-**Next Bug ID:** BUG-061
+**Next Bug ID:** BUG-062
 
 ---
 
@@ -11,9 +11,9 @@
 |----------|-------|-------|------|
 | CRITICAL | 0 | 0 | 0 |
 | HIGH | 15 | 15 | 0 |
-| MEDIUM | 35 | 35 | 0 |
+| MEDIUM | 36 | 36 | 0 |
 | LOW | 7 | 7 | 0 |
-| **TOTAL** | **57** | **57** | **0** |
+| **TOTAL** | **58** | **58** | **0** |
 
 **Note:** These 36 bugs were found in previous audit sessions and are preserved here. All have been fixed. New bugs should start at BUG-037.
 
@@ -27,7 +27,7 @@
 | 2. Layer Types | 35 |
 | 3. Animation | 2 |
 | 4. Effects | 2 |
-| 5. Particles | 5 |
+| 5. Particles | 6 |
 | 6-12 | 0 (not yet audited) |
 
 ---
@@ -2396,6 +2396,82 @@ Complete implementation with configurable step count:
 - `ui/src/engine/particles/ParticleAudioReactive.ts` - Lines 113-118 (step curve with configurable count)
 
 **Related Bugs:** BUG-057, BUG-058, BUG-059 (same pattern - UI option not implemented in engine)
+
+---
+
+### BUG-061: triggerMode and threshold Not Implemented in Audio Bindings
+
+**Feature:** Audio Reactive (5.8)
+**Tier:** 5
+**Severity:** MEDIUM
+**Found:** 2025-12-26
+**Session:** 4
+**Status:** FIXED
+
+**Location:**
+- File: `ui/src/engine/particles/types.ts`
+- Lines: 523-525 (properties defined but never used)
+- File: `ui/src/engine/particles/ParticleAudioReactive.ts`
+- Function: `applyModulation()`
+
+**Problem:**
+The AudioBinding interface defined `triggerMode` and `threshold` properties for discrete event triggering, but:
+1. These were NOT exposed in the UI
+2. These were NOT implemented in the engine
+3. The project type (AudioBindingConfig) didn't even have these properties
+
+**Evidence (before fix):**
+```typescript
+// types.ts - defined but unused
+triggerMode?: 'continuous' | 'onThreshold' | 'onBeat';
+threshold?: number;
+
+// ParticleAudioReactive.ts - no logic for trigger modes
+// All bindings always apply continuously
+```
+
+**Expected Behavior:**
+- triggerMode='continuous' → always apply (default)
+- triggerMode='onThreshold' → only apply when audio value >= threshold
+- triggerMode='onBeat' → only apply when beat is detected
+
+**Actual Behavior:**
+- All bindings always applied continuously regardless of audio level
+
+**Impact:**
+- Users cannot create beat-triggered effects
+- Users cannot create threshold-based audio reactions
+- Limits creative possibilities for audio-reactive particles
+
+**Fix Applied:**
+Complete implementation:
+
+1. Added `AudioTriggerMode` type and properties to `particles.ts` (project types)
+2. Added UI controls in `ParticleAudioBindingsSection.vue`:
+   - Dropdown for triggerMode (continuous/onThreshold/onBeat)
+   - Conditional threshold slider when triggerMode='onThreshold'
+3. Added defaults in `ParticleProperties.vue` addAudioBinding()
+4. Implemented trigger mode logic in `ParticleAudioReactive.ts`:
+
+```typescript
+// Check trigger mode
+const triggerMode = binding.triggerMode ?? 'continuous';
+if (triggerMode === 'onThreshold') {
+  const threshold = binding.threshold ?? 0.5;
+  if (t < threshold) continue;
+} else if (triggerMode === 'onBeat') {
+  const beatValue = this.audioFeatures.get('beat') ?? 0;
+  if (beatValue < 0.5) continue;
+}
+```
+
+**Files Modified:**
+- `ui/src/types/particles.ts` - Lines 209, 225-226 (added AudioTriggerMode type and properties)
+- `ui/src/components/properties/particle/ParticleAudioBindingsSection.vue` - Lines 124-146 (added UI controls)
+- `ui/src/components/properties/ParticleProperties.vue` - Lines 1309-1310 (added defaults)
+- `ui/src/engine/particles/ParticleAudioReactive.ts` - Lines 120-131 (implemented trigger logic)
+
+**Related Bugs:** BUG-060 (same feature, same pattern - defined but not implemented)
 
 ---
 

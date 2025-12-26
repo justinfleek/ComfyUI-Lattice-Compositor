@@ -206,6 +206,8 @@ export type AudioFeatureName = 'amplitude' | 'bass' | 'mid' | 'high' | 'beat' | 
 export type AudioTargetType = 'emitter' | 'system' | 'forceField';
 export type AudioCurveType = 'linear' | 'exponential' | 'logarithmic' | 'step';
 
+export type AudioTriggerMode = 'continuous' | 'onThreshold' | 'onBeat';
+
 export interface AudioBindingConfig {
   id: string;
   enabled: boolean;
@@ -220,6 +222,8 @@ export interface AudioBindingConfig {
   outputMax: number;              // Output range max
   curve: AudioCurveType;          // Response curve
   stepCount?: number;             // Number of discrete steps for 'step' curve (default: 5)
+  triggerMode?: AudioTriggerMode; // When to apply: continuous, on threshold, or on beat
+  threshold?: number;             // Threshold value for 'onThreshold' mode (0-1)
 }
 
 export interface SubEmitterConfig {

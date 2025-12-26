@@ -1305,7 +1305,9 @@ function addAudioBinding(): void {
     outputMin: 1,
     outputMax: 50,
     curve: 'linear',
-    stepCount: 5
+    stepCount: 5,
+    triggerMode: 'continuous',
+    threshold: 0.5
   };
   emit('update', { audioBindings: [...audioBindings.value, newBinding] });
 }

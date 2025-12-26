@@ -117,6 +117,19 @@ export class ParticleAudioReactive {
         output = binding.outputMin + steppedT * (binding.outputMax - binding.outputMin);
       }
 
+      // Check trigger mode
+      const triggerMode = binding.triggerMode ?? 'continuous';
+      if (triggerMode === 'onThreshold') {
+        // Only apply when smoothed value exceeds threshold
+        const threshold = binding.threshold ?? 0.5;
+        if (t < threshold) continue;
+      } else if (triggerMode === 'onBeat') {
+        // Only apply when beat is detected
+        const beatValue = this.audioFeatures.get('beat') ?? 0;
+        if (beatValue < 0.5) continue;
+      }
+      // triggerMode === 'continuous' - always apply (default behavior)
+
       // Apply to target
       if (binding.target === 'emitter') {
         const emitter = emitters.get(binding.targetId);

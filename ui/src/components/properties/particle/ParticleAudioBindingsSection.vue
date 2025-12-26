@@ -121,6 +121,29 @@
               @input="$emit('update', binding.id, 'stepCount', Number(($event.target as HTMLInputElement).value))"
             />
           </div>
+          <div class="property-row">
+            <label title="When to apply this binding">Trigger Mode</label>
+            <select
+              :value="binding.triggerMode ?? 'continuous'"
+              @change="$emit('update', binding.id, 'triggerMode', ($event.target as HTMLSelectElement).value)"
+            >
+              <option value="continuous">Continuous</option>
+              <option value="onThreshold">On Threshold</option>
+              <option value="onBeat">On Beat</option>
+            </select>
+          </div>
+          <div v-if="binding.triggerMode === 'onThreshold'" class="property-row">
+            <label title="Audio value must exceed this to apply (0-1)">Threshold</label>
+            <input
+              type="range"
+              :value="binding.threshold ?? 0.5"
+              min="0"
+              max="1"
+              step="0.05"
+              @input="$emit('update', binding.id, 'threshold', Number(($event.target as HTMLInputElement).value))"
+            />
+            <span class="value-display">{{ (binding.threshold ?? 0.5).toFixed(2) }}</span>
+          </div>
         </div>
       </div>
     </div>
