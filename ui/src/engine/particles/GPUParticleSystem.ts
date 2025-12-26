@@ -370,7 +370,8 @@ export class GPUParticleSystem {
     }
 
     // Initialize RNG with saved seed for deterministic replay
-    this.initialRngSeed = this.config.randomSeed ?? Date.now();
+    // Use consistent fallback (12345) - never Date.now() which breaks determinism
+    this.initialRngSeed = this.config.randomSeed ?? 12345;
     this.currentRngState = this.initialRngSeed;
     this.rng = this.createSeededRandom(this.initialRngSeed);
 
@@ -1494,7 +1495,8 @@ export class GPUParticleSystem {
     this.frameCacheSystem?.setCurrentFrame(-1);
 
     // Reset RNG to initial seed for deterministic replay
-    this.rng = this.createSeededRandom(this.config.randomSeed ?? 12345);
+    // Use stored initialRngSeed to ensure reset() produces same results as initial state
+    this.rng = this.createSeededRandom(this.initialRngSeed);
 
     // Reset trail system
     this.trailSystem?.reset();
