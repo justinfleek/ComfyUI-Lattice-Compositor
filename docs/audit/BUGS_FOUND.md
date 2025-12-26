@@ -1,7 +1,7 @@
 # LATTICE COMPOSITOR - BUGS FOUND
 
 **Last Updated:** 2025-12-26
-**Next Bug ID:** BUG-051
+**Next Bug ID:** BUG-052
 
 ---
 
@@ -11,9 +11,9 @@
 |----------|-------|-------|------|
 | CRITICAL | 0 | 0 | 0 |
 | HIGH | 14 | 14 | 0 |
-| MEDIUM | 29 | 28 | 1 |
+| MEDIUM | 30 | 30 | 0 |
 | LOW | 4 | 4 | 0 |
-| **TOTAL** | **47** | **46** | **1** |
+| **TOTAL** | **48** | **48** | **0** |
 
 **Note:** These 36 bugs were found in previous audit sessions and are preserved here. All have been fixed. New bugs should start at BUG-037.
 
@@ -24,7 +24,7 @@
 | Tier | Bug Count |
 |------|-----------|
 | 1. Foundation | 11 |
-| 2. Layer Types | 34 |
+| 2. Layer Types | 35 |
 | 3-12 | 0 (not yet audited) |
 
 ---
@@ -1818,6 +1818,71 @@ store.updateLayer(props.layer.id, { properties: updatedProperties });
 - `ui/src/components/properties/CameraProperties.vue`
 
 **Related Bugs:** BUG-042, BUG-043, BUG-047, BUG-049 (same direct mutation pattern)
+
+---
+
+### BUG-051: NormalLayer Arrow Visualization Mode Not Implemented
+
+**Feature:** NormalLayer (2.20)
+**Tier:** 2
+**Severity:** MEDIUM
+**Found:** 2025-12-26
+**Session:** 3
+**Status:** FIXED
+
+**Location:**
+- File: `ui/src/engine/layers/NormalLayer.ts`
+- Lines: 78-130, 139-146
+- Function: `createMesh()` (GLSL shader), `getVisualizationModeIndex()`
+- File: `ui/src/components/properties/NormalProperties.vue`
+- Lines: 12, 46-80
+
+**Problem:**
+The "Normal Arrows" visualization mode (index 2) was defined in the UI dropdown and had configuration options (arrowDensity, arrowScale, arrowColor), but was never implemented in the GLSL shader. The shader handled modes 0 (RGB), 1 (hemisphere), and 3 (lit), but skipped mode 2, causing it to fall through to the default RGB case.
+
+**Evidence:**
+```typescript
+// NormalLayer.ts getVisualizationModeIndex - maps arrows to mode 2
+case 'arrows': return 2;
+
+// Shader fragment - NO handler for mode 2
+if (visualizationMode == 0) {
+  // RGB
+  color = normal * 0.5 + 0.5;
+} else if (visualizationMode == 1) {
+  // Hemisphere
+  ...
+} else if (visualizationMode == 3) {  // <-- SKIPS MODE 2
+  // Lit
+  ...
+} else {
+  // Default to RGB <-- arrows falls here
+  color = normal * 0.5 + 0.5;
+}
+```
+
+**Expected Behavior:**
+Arrow visualization mode should either display normal direction arrows or not be available in the UI.
+
+**Actual Behavior:**
+Users could select "Normal Arrows" mode and configure arrow parameters (density, scale, color) in the UI, but the actual visualization just showed RGB mode with no indication of the problem.
+
+**Impact:**
+- Users selecting "Normal Arrows" mode get unexpected RGB output
+- Arrow configuration controls in UI have no effect
+- Feature advertised but not implemented
+
+**Fix Applied:**
+Removed the unimplemented arrows option from the UI rather than implementing the complex arrow geometry visualization:
+1. Removed `<option value="arrows">Normal Arrows</option>` from NormalProperties.vue
+2. Removed the entire "Arrow Settings" section (v-if="visualizationMode === 'arrows'")
+3. Removed `case 'arrows': return 2;` from NormalLayer.ts getVisualizationModeIndex()
+
+**Files Modified:**
+- `ui/src/components/properties/NormalProperties.vue` - Removed arrows option and settings UI
+- `ui/src/engine/layers/NormalLayer.ts` - Removed arrows case from mode index
+
+**Related Bugs:** BUG-010, BUG-011, BUG-012 (similar unimplemented features in DepthLayer)
 
 ---
 
