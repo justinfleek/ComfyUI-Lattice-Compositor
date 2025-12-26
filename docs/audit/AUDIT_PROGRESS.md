@@ -23,7 +23,7 @@ All progress reset to zero. Valid bug findings preserved in BUGS_FOUND.md.
 | Tier | Total | Complete | Confirmed | Bugs Found |
 |------|-------|----------|-----------|------------|
 | 1. Foundation | 7 | 7 | 7 | 9 |
-| 2. Layer Types | 23 | 12 | 12 | 5 |
+| 2. Layer Types | 23 | 13 | 13 | 5 |
 | 3. Animation | 10 | 0 | 0 | 0 |
 | 4. Effects | 12 | 0 | 0 | 0 |
 | 5. Particles | 12 | 0 | 0 | 0 |
@@ -34,7 +34,7 @@ All progress reset to zero. Valid bug findings preserved in BUGS_FOUND.md.
 | 10. Export | 6 | 0 | 0 | 0 |
 | 11. AI Integration | 5 | 0 | 0 | 0 |
 | 12. Data/Templates | 4 | 0 | 0 | 0 |
-| **TOTAL** | **111** | **19** | **19** | **14** |
+| **TOTAL** | **111** | **20** | **20** | **14** |
 
 **Note:** 36 bugs from previous sessions preserved in BUGS_FOUND.md (all marked FIXED).
 
@@ -72,7 +72,7 @@ All progress reset to zero. Valid bug findings preserved in BUGS_FOUND.md.
 | 2.10 | GroupLayer | [x] | 0 | 528 | ✓ | 2025-12-26 |
 | 2.11 | NestedCompLayer | [x] | 0 | 1309 | ✓ | 2025-12-26 |
 | 2.12 | EffectLayer | [x] | 0 | 342 | ✓ | 2025-12-26 |
-| 2.13 | ParticleLayer | [ ] | 0 | - | ⬜ | - |
+| 2.13 | ParticleLayer | [x] | 0 | 4274 | ✓ | 2025-12-26 |
 | 2.14 | PathLayer | [ ] | 0 | - | ⬜ | - |
 | 2.15 | SplineLayer | [ ] | 0 | - | ⬜ | - |
 | 2.16 | ModelLayer | [ ] | 0 | - | ⬜ | - |
