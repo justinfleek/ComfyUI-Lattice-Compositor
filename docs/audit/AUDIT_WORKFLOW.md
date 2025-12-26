@@ -209,26 +209,27 @@ Weak audits get sent back for rework.
 
 ---
 
-## Context Analysis for Bug Determination
+## Context Analysis Methodology
 
-Not all missing parameters are bugs. Before reporting a bug:
+When a function is missing context it might need (fps, duration, composition settings, layer data, etc.):
 
-**Ask: "Does the caller have access to this context?"**
+**Default assumption: It's a problem until proven otherwise.**
 
-1. Trace the function's call chain
-2. Check what the caller/store has access to
-3. If context is available but not passed → BUG
-4. If context is genuinely unavailable → BY DESIGN (default is correct)
+**Step 1: Trace the call chain**
+- Who calls this function?
+- What context do THEY have access to?
+- Could context be passed down?
 
-| Caller | Has context? | Passes it? | Verdict |
-|--------|--------------|------------|---------|
-| compositorStore.method() | YES (this.fps) | NO | BUG |
-| utilityFunction() | NO | N/A | BY DESIGN |
+**Step 2: Determine the issue type**
 
-**Example analysis format:**
-```
-| Caller | Location | Has comp fps? | Has comp duration? | Verdict |
-|--------|----------|---------------|-------------------|---------|
-| getInterpolatedValue | store.ts:1292 | YES (this.fps) | YES (this.frameCount) | BUG |
-| evaluateProperty | engine.ts:542 | NO (simple utility) | NO | BY DESIGN |
-```
+| Situation | Verdict | Action |
+|-----------|---------|--------|
+| Caller HAS context, doesn't pass it | BUG | Fix caller to pass context |
+| Caller DOESN'T have context, but COULD | ARCHITECTURE GAP | Note: refactor needed to pass context through chain |
+| Context unavailable, function uses wrong default | BUG | Fix the default |
+| Context unavailable, correct default used | KNOWN LIMITATION | Document why context unavailable |
+
+**Step 3: Never dismiss without evidence**
+- "BY DESIGN" requires proof that context CANNOT be obtained
+- Missing context often means the call chain needs refactoring
+- Document limitations, don't hide them
