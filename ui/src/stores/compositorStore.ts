@@ -1287,9 +1287,14 @@ export const useCompositorStore = defineStore('compositor', {
 
     /**
      * Get interpolated value for any animatable property at current frame
+     * BUG-040/041 FIX: Pass fps and duration from composition settings
      */
     getInterpolatedValue<T>(property: AnimatableProperty<T>): T {
-      return interpolateProperty(property, (this.getActiveComp()?.currentFrame ?? 0));
+      const comp = this.getActiveComp();
+      const frame = comp?.currentFrame ?? 0;
+      const fps = this.fps;
+      const duration = comp ? comp.settings.frameCount / comp.settings.fps : undefined;
+      return interpolateProperty(property, frame, fps, '', duration);
     },
 
     /**
@@ -2080,33 +2085,40 @@ export const useCompositorStore = defineStore('compositor', {
       if (this.audioAnalysis) this.propertyDriverSystem.setAudioAnalysis(this.audioAnalysis);
       for (const driver of this.propertyDrivers) this.propertyDriverSystem.addDriver(driver);
     },
+    // BUG-040/041 FIX: Pass fps and duration from composition settings
     getPropertyValueAtFrame(layerId: string, propertyPath: PropertyPath, frame: number): number | null {
       const layer = this.getActiveCompLayers().find(l => l.id === layerId);
       if (!layer) return null;
+
+      // Get composition context for expressions
+      const comp = this.getActiveComp();
+      const fps = this.fps;
+      const duration = comp ? comp.settings.frameCount / comp.settings.fps : undefined;
+
       const parts = propertyPath.split('.');
       if (parts[0] === 'transform') {
         const t = layer.transform;
         if (parts[1] === 'position') {
-          const p = interpolateProperty(t.position, frame);
+          const p = interpolateProperty(t.position, frame, fps, layerId, duration);
           return parts[2] === 'x' ? p.x : parts[2] === 'y' ? p.y : (p.z ?? 0);
         }
         if (parts[1] === 'anchorPoint' || parts[1] === 'origin') {
           // Use origin (new name) with fallback to anchorPoint
           const originProp = t.origin || t.anchorPoint;
           if (!originProp) return 0;
-          const a = interpolateProperty(originProp, frame);
+          const a = interpolateProperty(originProp, frame, fps, layerId, duration);
           return parts[2] === 'x' ? a.x : parts[2] === 'y' ? a.y : (a.z ?? 0);
         }
         if (parts[1] === 'scale') {
-          const s = interpolateProperty(t.scale, frame);
+          const s = interpolateProperty(t.scale, frame, fps, layerId, duration);
           return parts[2] === 'x' ? s.x : parts[2] === 'y' ? s.y : (s.z ?? 100);
         }
-        if (parts[1] === 'rotation') return interpolateProperty(t.rotation, frame);
-        if (parts[1] === 'rotationX' && t.rotationX) return interpolateProperty(t.rotationX, frame);
-        if (parts[1] === 'rotationY' && t.rotationY) return interpolateProperty(t.rotationY, frame);
-        if (parts[1] === 'rotationZ' && t.rotationZ) return interpolateProperty(t.rotationZ, frame);
+        if (parts[1] === 'rotation') return interpolateProperty(t.rotation, frame, fps, layerId, duration);
+        if (parts[1] === 'rotationX' && t.rotationX) return interpolateProperty(t.rotationX, frame, fps, layerId, duration);
+        if (parts[1] === 'rotationY' && t.rotationY) return interpolateProperty(t.rotationY, frame, fps, layerId, duration);
+        if (parts[1] === 'rotationZ' && t.rotationZ) return interpolateProperty(t.rotationZ, frame, fps, layerId, duration);
       }
-      return parts[0] === 'opacity' ? interpolateProperty(layer.opacity, frame) : null;
+      return parts[0] === 'opacity' ? interpolateProperty(layer.opacity, frame, fps, layerId, duration) : null;
     },
     getDrivenValuesForLayer(layerId: string): Map<PropertyPath, number> {
       return propertyDriverActions.getEvaluatedLayerProperties(this, layerId, this.getActiveComp()?.currentFrame ?? 0);

@@ -207,18 +207,20 @@ function isAnimatableProperty(value: unknown): value is AnimatableProperty<unkno
 
 /**
  * Evaluate transform properties at a frame
+ * @param fps - Frames per second (required for expression evaluation)
  */
 function evaluateTransform(
   frame: number,
   transform: LayerTransform,
-  is3D: boolean
+  is3D: boolean,
+  fps: number
 ): EvaluatedTransform {
-  const position = interpolateProperty(transform.position, frame);
+  const position = interpolateProperty(transform.position, frame, fps);
   // Use origin (new name) with fallback to anchorPoint for backwards compatibility
   const originProp = transform.origin || transform.anchorPoint;
-  const origin = originProp ? interpolateProperty(originProp, frame) : { x: 0, y: 0, z: 0 };
-  const scale = interpolateProperty(transform.scale, frame);
-  const rotation = interpolateProperty(transform.rotation, frame);
+  const origin = originProp ? interpolateProperty(originProp, frame, fps) : { x: 0, y: 0, z: 0 };
+  const scale = interpolateProperty(transform.scale, frame, fps);
+  const rotation = interpolateProperty(transform.rotation, frame, fps);
 
   const result: EvaluatedTransform = {
     position: { ...position },
@@ -232,13 +234,13 @@ function evaluateTransform(
     return {
       ...result,
       rotationX: transform.rotationX
-        ? interpolateProperty(transform.rotationX, frame)
+        ? interpolateProperty(transform.rotationX, frame, fps)
         : 0,
       rotationY: transform.rotationY
-        ? interpolateProperty(transform.rotationY, frame)
+        ? interpolateProperty(transform.rotationY, frame, fps)
         : 0,
       rotationZ: transform.rotationZ
-        ? interpolateProperty(transform.rotationZ, frame)
+        ? interpolateProperty(transform.rotationZ, frame, fps)
         : rotation,
     };
   }
@@ -248,17 +250,19 @@ function evaluateTransform(
 
 /**
  * Evaluate effects at a frame
+ * @param fps - Frames per second (required for expression evaluation)
  */
 function evaluateEffects(
   frame: number,
-  effects: EffectInstance[]
+  effects: EffectInstance[],
+  fps: number
 ): EvaluatedEffect[] {
   return effects.map((effect) => {
     const evaluatedParams: Record<string, unknown> = {};
 
     for (const [key, param] of Object.entries(effect.parameters)) {
       if (isAnimatableProperty(param)) {
-        evaluatedParams[key] = interpolateProperty(param, frame);
+        evaluatedParams[key] = interpolateProperty(param, frame, fps);
       } else {
         evaluatedParams[key] = param;
       }
@@ -275,17 +279,19 @@ function evaluateEffects(
 
 /**
  * Evaluate layer-specific properties at a frame
+ * @param fps - Frames per second (required for expression evaluation)
  */
 function evaluateLayerProperties(
   frame: number,
-  layer: Layer
+  layer: Layer,
+  fps: number
 ): Record<string, unknown> {
   const evaluated: Record<string, unknown> = {};
 
   // Guard against missing properties array (e.g., from old/corrupted project data)
   if (layer.properties && Array.isArray(layer.properties)) {
     for (const prop of layer.properties) {
-      evaluated[prop.name] = interpolateProperty(prop, frame);
+      evaluated[prop.name] = interpolateProperty(prop, frame, fps);
     }
   }
 
@@ -293,7 +299,7 @@ function evaluateLayerProperties(
   if (layer.data) {
     for (const [key, value] of Object.entries(layer.data)) {
       if (isAnimatableProperty(value)) {
-        evaluated[key] = interpolateProperty(value, frame);
+        evaluated[key] = interpolateProperty(value, frame, fps);
       }
     }
   }
@@ -306,9 +312,10 @@ function evaluateLayerProperties(
  *
  * @param layer - The layer to evaluate
  * @param frame - The frame number
+ * @param fps - Frames per second (REQUIRED for correct expression evaluation)
  * @returns The evaluated layer state
  */
-export function evaluateLayerCached(layer: Layer, frame: number): EvaluatedLayer {
+export function evaluateLayerCached(layer: Layer, frame: number, fps: number): EvaluatedLayer {
   // Check cache first
   const cached = getCachedEvaluation(layer.id, frame);
   if (cached) {
@@ -321,10 +328,10 @@ export function evaluateLayerCached(layer: Layer, frame: number): EvaluatedLayer
   const inRange = frame >= start && frame <= end;
   const visible = layer.visible && inRange;
 
-  const transform = evaluateTransform(frame, layer.transform, layer.threeD);
-  const opacity = interpolateProperty(layer.opacity, frame);
-  const effects = evaluateEffects(frame, layer.effects);
-  const properties = evaluateLayerProperties(frame, layer);
+  const transform = evaluateTransform(frame, layer.transform, layer.threeD, fps);
+  const opacity = interpolateProperty(layer.opacity, frame, fps);
+  const effects = evaluateEffects(frame, layer.effects, fps);
+  const properties = evaluateLayerProperties(frame, layer, fps);
 
   const evaluated: EvaluatedLayer = Object.freeze({
     id: layer.id,
@@ -355,10 +362,11 @@ export function evaluateLayerCached(layer: Layer, frame: number): EvaluatedLayer
  *
  * @param layers - Layers to evaluate
  * @param frame - Frame number
+ * @param fps - Frames per second (REQUIRED for correct expression evaluation)
  * @returns Array of evaluated layers
  */
-export function evaluateLayersCached(layers: Layer[], frame: number): EvaluatedLayer[] {
-  return layers.map(layer => evaluateLayerCached(layer, frame));
+export function evaluateLayersCached(layers: Layer[], frame: number, fps: number): EvaluatedLayer[] {
+  return layers.map(layer => evaluateLayerCached(layer, frame, fps));
 }
 
 // ============================================================================

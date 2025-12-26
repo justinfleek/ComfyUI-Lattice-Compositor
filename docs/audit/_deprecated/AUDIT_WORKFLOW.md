@@ -5,9 +5,9 @@
 ---
 
 ## How This Works
-```
+````
 You work → Checkpoint → Output reviewed → "confirmed" or feedback → Continue
-```
+````
 
 The user passes messages. Another Claude reviews your output.
 "Confirmed" means the review passed. Then you continue.
@@ -19,13 +19,13 @@ The user passes messages. Another Claude reviews your output.
 ### 1. DISCOVERY
 
 Search ALL file categories for the feature:
-```bash
+````bash
 find ui/src/components -name "*.vue" | xargs grep -l "KEYWORD"
 find ui/src/stores -name "*.ts" | xargs grep -l "KEYWORD"
 find ui/src/engine -name "*.ts" | xargs grep -l "KEYWORD"
 find ui/src/services -name "*.ts" | xargs grep -l "KEYWORD"
 find ui/src/types -name "*.ts" | xargs grep -l "KEYWORD"
-```
+````
 
 Check FEATURE_INVENTORY.md for listed files.
 
@@ -47,19 +47,19 @@ Read every line of every relevant file.
 ### 3. TRACE USER FLOW
 
 Follow the complete path for at least 2 user actions:
-```
+````
 User clicks [X]
 → Component: [file.vue] handles event
 → Store: [action()] called
 → Engine: [method()] updates state
 → Render: [result] displayed
 → Export: [survives/breaks]
-```
+````
 
 ### 4. DOCUMENT FINDINGS
 
 Use required format from CLAUDE.md:
-```markdown
+````markdown
 ## AUDIT COMPLETE: [Feature X.X] [Name]
 
 **Discovery:**
@@ -93,14 +93,14 @@ OR
 ---
 
 Waiting for confirmation before proceeding.
-```
+````
 
 ### 5. CHECKPOINT
 
 After documenting, state:
-```
+````
 Waiting for confirmation before proceeding.
-```
+````
 
 **STOP. Do not continue until you receive "confirmed" or feedback.**
 
@@ -129,10 +129,10 @@ Waiting for confirmation before proceeding.
 | Session has 0 bugs after 3+ features | Pause. State trigger. Something is wrong. |
 
 When triggered, output:
-```
+````
 PAUSE TRIGGER: [which trigger]
 [explanation of what you're doing about it]
-```
+````
 
 ---
 
@@ -162,12 +162,12 @@ For DepthLayer, NormalLayer, PoseLayer, GeneratedLayer, ProceduralMatteLayer:
 **Under ~800 lines:** Read entire file, report exact count
 
 **Over ~800 lines:** Read in chunks
-```
+````
 Lines 1-800: [observations]
 Lines 801-1600: [observations]
 Lines 1601-2400: [observations]
 Total: 2400 lines in 3 chunks
-```
+````
 
 **Always:**
 - Exact counts (no ~ estimates)
@@ -177,7 +177,7 @@ Total: 2400 lines in 3 chunks
 ---
 
 ## Bug Format
-```markdown
+````markdown
 ### BUG-XXX: [Short Title]
 
 - **Severity:** CRITICAL / HIGH / MEDIUM / LOW
@@ -186,10 +186,12 @@ Total: 2400 lines in 3 chunks
 - **Line:** [number or range]
 - **Problem:** [what's wrong]
 - **Evidence:**
+```typescript
 [the problematic code]
+```
 - **Impact:** [what breaks for users]
 - **Suggested Fix:** [how to fix]
-```
+````
 
 ---
 
@@ -206,3 +208,41 @@ Your output is checked for:
 7. **Statistical sanity** - Too many clean features in a row?
 
 Weak audits get sent back for rework.
+````
+
+---
+
+## 4. Startup Message for Claude Code
+````
+You are auditing the Lattice Compositor codebase.
+
+HOW THIS WORKS:
+- You do the work and pause at checkpoints
+- Your output gets reviewed by another Claude instance
+- The user just passes messages between us
+- "Confirmed" means your output passed review
+- Feedback means address the issues and resubmit
+
+START BY:
+1. Reading docs/audit/SESSION_STARTUP_CHECKLIST.md
+2. Typing back ALL 5 acknowledgments
+3. Reading docs/audit/CLAUDE.md completely
+4. Reading docs/audit/AUDIT_WORKFLOW.md completely
+5. Reading docs/audit/AUDIT_PROGRESS.md to find your position
+
+THEN:
+- Begin discovery for the next incomplete feature
+- Follow the audit process in CLAUDE.md
+- Use the required output format exactly
+- Stop at "Waiting for confirmation before proceeding"
+
+Your output is reviewed for:
+- Discovery thoroughness (did you search all file categories?)
+- Exact line counts (no estimates)
+- Complete user flow traces (UI → Export)
+- Bug quality (file:line:evidence:impact)
+- Justification quality (if 0 bugs)
+
+Weak audits get sent back. Quality matters more than speed.
+
+Begin by reading the checklist and typing back the acknowledgments.

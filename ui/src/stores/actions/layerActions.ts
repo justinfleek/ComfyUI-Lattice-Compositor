@@ -202,6 +202,31 @@ export function deleteLayer(
 
   layers.splice(index, 1);
 
+  // BUG-037 FIX: Clean up all stale references to deleted layer
+  for (const layer of layers) {
+    // Clear parent reference
+    if (layer.parentId === layerId) {
+      layer.parentId = null;
+    }
+
+    // Clear matte reference
+    if (layer.matteLayerId === layerId) {
+      layer.matteLayerId = undefined;
+      layer.matteType = undefined;
+    }
+
+    // Clear followPath reference
+    if (layer.followPath?.pathLayerId === layerId) {
+      layer.followPath.enabled = false;
+      layer.followPath.pathLayerId = undefined;
+    }
+
+    // Clear text layer path reference
+    if (layer.type === 'text' && layer.data && (layer.data as any).pathLayerId === layerId) {
+      (layer.data as any).pathLayerId = null;
+    }
+  }
+
   // Use injected callback if provided, otherwise fall back to Pinia store
   if (options?.onRemoveFromSelection) {
     options.onRemoveFromSelection(layerId);

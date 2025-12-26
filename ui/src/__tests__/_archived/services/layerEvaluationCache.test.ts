@@ -25,6 +25,9 @@ import { createDefaultTransform, createAnimatableProperty } from '@/types/projec
 // TEST HELPERS
 // ============================================================================
 
+// Test fps constant - use 30 as default for tests
+const TEST_FPS = 30;
+
 function createMockLayer(id: string, overrides: Partial<Layer> = {}): Layer {
   return {
     id,
@@ -125,7 +128,7 @@ describe('Evaluation Cache', () => {
 
   it('should cache and retrieve evaluations', () => {
     const layer = createMockLayer('test-layer');
-    const evaluated = evaluateLayerCached(layer, 10);
+    const evaluated = evaluateLayerCached(layer, 10, TEST_FPS);
 
     // Should be cached now
     const cached = getCachedEvaluation('test-layer', 10);
@@ -137,9 +140,9 @@ describe('Evaluation Cache', () => {
   it('should return different cached values for different frames', () => {
     const layer = createMockLayer('test-layer');
 
-    evaluateLayerCached(layer, 0);
-    evaluateLayerCached(layer, 10);
-    evaluateLayerCached(layer, 20);
+    evaluateLayerCached(layer, 0, TEST_FPS);
+    evaluateLayerCached(layer, 10, TEST_FPS);
+    evaluateLayerCached(layer, 20, TEST_FPS);
 
     expect(getCachedEvaluation('test-layer', 0)).not.toBeNull();
     expect(getCachedEvaluation('test-layer', 10)).not.toBeNull();
@@ -151,7 +154,7 @@ describe('Evaluation Cache', () => {
     const layer = createMockLayer('test-layer');
 
     // Cache at frame 10
-    evaluateLayerCached(layer, 10);
+    evaluateLayerCached(layer, 10, TEST_FPS);
     expect(getCachedEvaluation('test-layer', 10)).not.toBeNull();
 
     // Mark dirty - should invalidate
@@ -163,9 +166,9 @@ describe('Evaluation Cache', () => {
     const layerA = createMockLayer('layer-a');
     const layerB = createMockLayer('layer-b');
 
-    evaluateLayerCached(layerA, 0);
-    evaluateLayerCached(layerA, 10);
-    evaluateLayerCached(layerB, 0);
+    evaluateLayerCached(layerA, 0, TEST_FPS);
+    evaluateLayerCached(layerA, 10, TEST_FPS);
+    evaluateLayerCached(layerB, 0, TEST_FPS);
 
     clearLayerCache('layer-a');
 
@@ -178,8 +181,8 @@ describe('Evaluation Cache', () => {
     const layerA = createMockLayer('layer-a');
     const layerB = createMockLayer('layer-b');
 
-    evaluateLayerCached(layerA, 0);
-    evaluateLayerCached(layerB, 0);
+    evaluateLayerCached(layerA, 0, TEST_FPS);
+    evaluateLayerCached(layerB, 0, TEST_FPS);
 
     clearEvaluationCache();
 
@@ -193,8 +196,8 @@ describe('Evaluation Cache', () => {
     const statsBefore = getEvaluationCacheStats();
     expect(statsBefore.size).toBe(0);
 
-    evaluateLayerCached(layer, 0);
-    evaluateLayerCached(layer, 10);
+    evaluateLayerCached(layer, 0, TEST_FPS);
+    evaluateLayerCached(layer, 10, TEST_FPS);
 
     const statsAfter = getEvaluationCacheStats();
     expect(statsAfter.size).toBe(2);
@@ -227,7 +230,7 @@ describe('Layer Evaluation', () => {
       },
     });
 
-    const evaluated = evaluateLayerCached(layer, 0);
+    const evaluated = evaluateLayerCached(layer, 0, TEST_FPS);
 
     expect(evaluated.transform.position.x).toBe(100);
     expect(evaluated.transform.position.y).toBe(200);
@@ -245,7 +248,7 @@ describe('Layer Evaluation', () => {
       },
     });
 
-    const evaluated = evaluateLayerCached(layer, 0);
+    const evaluated = evaluateLayerCached(layer, 0, TEST_FPS);
     expect(evaluated.opacity).toBe(75);
   });
 
@@ -258,17 +261,17 @@ describe('Layer Evaluation', () => {
       outPoint: 50,
     });
 
-    const beforeIn = evaluateLayerCached(layer, 5);
+    const beforeIn = evaluateLayerCached(layer, 5, TEST_FPS);
     expect(beforeIn.visible).toBe(false);
     expect(beforeIn.inRange).toBe(false);
 
     clearEvaluationCache();
-    const atIn = evaluateLayerCached(layer, 10);
+    const atIn = evaluateLayerCached(layer, 10, TEST_FPS);
     expect(atIn.visible).toBe(true);
     expect(atIn.inRange).toBe(true);
 
     clearEvaluationCache();
-    const afterOut = evaluateLayerCached(layer, 55);
+    const afterOut = evaluateLayerCached(layer, 55, TEST_FPS);
     expect(afterOut.visible).toBe(false);
     expect(afterOut.inRange).toBe(false);
   });
@@ -304,15 +307,15 @@ describe('Layer Evaluation', () => {
       },
     });
 
-    const at0 = evaluateLayerCached(layer, 0);
+    const at0 = evaluateLayerCached(layer, 0, TEST_FPS);
     expect(at0.opacity).toBe(0);
 
     clearEvaluationCache();
-    const at5 = evaluateLayerCached(layer, 5);
+    const at5 = evaluateLayerCached(layer, 5, TEST_FPS);
     expect(at5.opacity).toBeCloseTo(50, 1);
 
     clearEvaluationCache();
-    const at10 = evaluateLayerCached(layer, 10);
+    const at10 = evaluateLayerCached(layer, 10, TEST_FPS);
     expect(at10.opacity).toBe(100);
   });
 
@@ -327,7 +330,7 @@ describe('Layer Evaluation', () => {
       },
     });
 
-    const evaluated = evaluateLayerCached(layer, 0);
+    const evaluated = evaluateLayerCached(layer, 0, TEST_FPS);
 
     expect(evaluated.threeD).toBe(true);
     expect(evaluated.transform.rotationX).toBe(45);
@@ -337,7 +340,7 @@ describe('Layer Evaluation', () => {
 
   it('should freeze evaluated objects', () => {
     const layer = createMockLayer('test-layer');
-    const evaluated = evaluateLayerCached(layer, 0);
+    const evaluated = evaluateLayerCached(layer, 0, TEST_FPS);
 
     expect(Object.isFrozen(evaluated)).toBe(true);
     expect(Object.isFrozen(evaluated.transform)).toBe(true);
@@ -363,7 +366,7 @@ describe('Batch Layer Evaluation', () => {
       createMockLayer('layer-3'),
     ];
 
-    const evaluated = evaluateLayersCached(layers, 10);
+    const evaluated = evaluateLayersCached(layers, 10, TEST_FPS);
 
     expect(evaluated).toHaveLength(3);
     expect(evaluated[0].id).toBe('layer-1');
@@ -377,7 +380,7 @@ describe('Batch Layer Evaluation', () => {
       createMockLayer('layer-2'),
     ];
 
-    evaluateLayersCached(layers, 10);
+    evaluateLayersCached(layers, 10, TEST_FPS);
 
     expect(getCachedEvaluation('layer-1', 10)).not.toBeNull();
     expect(getCachedEvaluation('layer-2', 10)).not.toBeNull();
@@ -387,17 +390,17 @@ describe('Batch Layer Evaluation', () => {
     const layer = createMockLayer('layer-1');
 
     // Pre-cache one layer
-    const preCached = evaluateLayerCached(layer, 10);
+    const preCached = evaluateLayerCached(layer, 10, TEST_FPS);
 
     // Batch evaluate - should reuse cached
     const layers = [layer, createMockLayer('layer-2')];
-    const evaluated = evaluateLayersCached(layers, 10);
+    const evaluated = evaluateLayersCached(layers, 10, TEST_FPS);
 
     expect(evaluated[0]).toBe(preCached); // Same reference
   });
 
   it('should handle empty layer array', () => {
-    const evaluated = evaluateLayersCached([], 10);
+    const evaluated = evaluateLayersCached([], 10, TEST_FPS);
     expect(evaluated).toHaveLength(0);
   });
 });
@@ -419,12 +422,12 @@ describe('Cache Performance', () => {
     const start1 = performance.now();
     for (let i = 0; i < 100; i++) {
       clearEvaluationCache();
-      evaluateLayerCached(layer, 0);
+      evaluateLayerCached(layer, 0, TEST_FPS);
     }
     const timeWithoutCache = performance.now() - start1;
 
     // Second evaluation (cache hits)
-    evaluateLayerCached(layer, 0);
+    evaluateLayerCached(layer, 0, TEST_FPS);
     const start2 = performance.now();
     for (let i = 0; i < 100; i++) {
       getCachedEvaluation('test-layer', 0);
@@ -444,7 +447,7 @@ describe('Cache Performance', () => {
     // Cache 100 layers × 50 frames = 5000 entries
     for (const layer of layers) {
       for (let frame = 0; frame < 50; frame++) {
-        evaluateLayerCached(layer, frame);
+        evaluateLayerCached(layer, frame, TEST_FPS);
       }
     }
 

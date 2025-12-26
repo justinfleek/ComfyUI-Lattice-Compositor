@@ -49,6 +49,7 @@ export function initializePropertyDriverSystem(store: PropertyDriverStore): void
 
 /**
  * Get evaluated property values for a layer with drivers applied
+ * BUG-040/041 FIX: Pass fps and duration from composition settings
  */
 export function getEvaluatedLayerProperties(
   store: PropertyDriverStore,
@@ -62,36 +63,41 @@ export function getEvaluatedLayerProperties(
   const layer = store.getLayer(layerId);
   if (!layer) return new Map();
 
+  // Get composition context for expressions
+  const comp = store.getActiveComp?.();
+  const fps = store.fps ?? 16;
+  const duration = comp ? comp.settings.frameCount / comp.settings.fps : undefined;
+
   // Build base values from layer properties
   // Use PropertyPath type for type safety
   const baseValues = new Map<PropertyPath, number>();
 
   // Position
-  const pos = interpolateProperty(layer.transform.position, frame) as { x: number; y: number };
+  const pos = interpolateProperty(layer.transform.position, frame, fps, layerId, duration) as { x: number; y: number };
   baseValues.set('transform.position.x', pos.x);
   baseValues.set('transform.position.y', pos.y);
 
   // Scale
-  const scale = interpolateProperty(layer.transform.scale, frame) as { x: number; y: number };
+  const scale = interpolateProperty(layer.transform.scale, frame, fps, layerId, duration) as { x: number; y: number };
   baseValues.set('transform.scale.x', scale.x);
   baseValues.set('transform.scale.y', scale.y);
 
   // Rotation
-  baseValues.set('transform.rotation', interpolateProperty(layer.transform.rotation, frame));
+  baseValues.set('transform.rotation', interpolateProperty(layer.transform.rotation, frame, fps, layerId, duration));
 
   // 3D rotations if present
   if (layer.transform.rotationX) {
-    baseValues.set('transform.rotationX', interpolateProperty(layer.transform.rotationX, frame));
+    baseValues.set('transform.rotationX', interpolateProperty(layer.transform.rotationX, frame, fps, layerId, duration));
   }
   if (layer.transform.rotationY) {
-    baseValues.set('transform.rotationY', interpolateProperty(layer.transform.rotationY, frame));
+    baseValues.set('transform.rotationY', interpolateProperty(layer.transform.rotationY, frame, fps, layerId, duration));
   }
   if (layer.transform.rotationZ) {
-    baseValues.set('transform.rotationZ', interpolateProperty(layer.transform.rotationZ, frame));
+    baseValues.set('transform.rotationZ', interpolateProperty(layer.transform.rotationZ, frame, fps, layerId, duration));
   }
 
   // Opacity
-  baseValues.set('opacity', interpolateProperty(layer.opacity, frame));
+  baseValues.set('opacity', interpolateProperty(layer.opacity, frame, fps, layerId, duration));
 
   return store.propertyDriverSystem.evaluateLayerDrivers(layerId, frame, baseValues);
 }

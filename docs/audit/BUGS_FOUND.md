@@ -1,757 +1,1142 @@
 # LATTICE COMPOSITOR - BUGS FOUND
-Master bug tracking document
 
-**NOTICE: Audit reset on 2025-12-25. Starting fresh with complete file reads.**
+**Last Updated:** 2025-12-25
+**Next Bug ID:** BUG-039
 
 ---
 
 ## SUMMARY
 
-| Severity | Count | Fixed | Open |
+| Severity | Total | Fixed | Open |
 |----------|-------|-------|------|
 | CRITICAL | 0 | 0 | 0 |
-| HIGH | 6 | 6 | 0 |
-| MEDIUM | 7 | 7 | 0 |
+| HIGH | 7 | 7 | 0 |
+| MEDIUM | 27 | 26 | 1 |
 | LOW | 4 | 4 | 0 |
-| **TOTAL** | **17** | **17** | **0** |
+| **TOTAL** | **38** | **37** | **1** |
+
+**Note:** These 36 bugs were found in previous audit sessions and are preserved here. All have been fixed. New bugs should start at BUG-037.
 
 ---
 
-## BUGS BY FEATURE
+## BUGS BY TIER
 
-### Feature 1.1: Layer Creation/Deletion
+| Tier | Bug Count |
+|------|-----------|
+| 1. Foundation | 7 |
+| 2. Layer Types | 29 |
+| 3-12 | 0 (not yet audited) |
 
 ---
 
-## BUG-001: Hardcoded fps=30 in splitLayerAtPlayhead
+## TIER 1 BUGS (Foundation)
+
+### BUG-001: Hardcoded fps=30 in splitLayerAtPlayhead
 
 **Feature:** Layer Creation/Deletion (1.1)
+**Tier:** 1
 **Severity:** HIGH
-**Found:** 2025-12-25
+**Found:** 2025-12-24
 **Status:** FIXED
 
 **Location:**
-- File: ui/src/stores/actions/layerActions.ts
+- File: `ui/src/stores/actions/layerActions.ts`
 - Line: 1539
+- Function: `splitLayerAtPlayhead()`
 
-**Issue:**
-When splitting a video layer at the playhead, the source time offset calculation uses a hardcoded `fps = 30` instead of the composition's actual fps. This causes incorrect frame-to-time conversion when splitting video layers in compositions with non-30fps frame rates.
+**Problem:**
+When splitting a video layer at the playhead, the source time offset calculation uses a hardcoded `fps = 30` instead of the composition's actual fps.
 
 **Evidence:**
-```typescript
-// Adjust source time for video layers (VideoData has startTime and speed properties)
+````typescript
 if (isLayerOfType(newLayer, 'video') && newLayer.data) {
   const fps = 30; // Default FPS <-- BUG: hardcoded
   const originalStartTime = newLayer.data.startTime ?? 0;
   const speed = newLayer.data.speed ?? 1;
-
-  // Calculate new source start time based on split point
   const frameOffset = currentFrame - startFrame;
-  const timeOffset = (frameOffset / fps) * speed;  // <-- Uses wrong fps
+  const timeOffset = (frameOffset / fps) * speed;
   newLayer.data.startTime = originalStartTime + timeOffset;
 }
-```
+````
+
+**Expected Behavior:**
+Should use `store.fps` or composition fps for correct frame-to-time conversion.
+
+**Actual Behavior:**
+Video layer splits at wrong time offset in non-30fps compositions.
 
 **Impact:**
-- Video layer split at wrong time offset in 24fps, 60fps, or other non-30fps compositions
-- For 60fps composition: video starts at wrong point (off by 2x)
-- For 24fps composition: video starts at wrong point (off by ~0.8x)
+- 60fps composition: video starts at wrong point (off by 2x)
+- 24fps composition: video starts at wrong point (off by ~0.8x)
 
 **Fix Applied:**
-1. Changed `const fps = 30;` to `const fps = store.fps ?? 30;`
-2. Updated function signature to include `fps: number` in store type
-
-**Files Changed:**
-- ui/src/stores/actions/layerActions.ts (lines 1501, 1539)
-
-**Related:**
-- Lines 1448, 1590 already used correct pattern
+Changed `const fps = 30;` to `const fps = store.fps ?? 30;`
 
 ---
 
-## BUG-002: Hardcoded fps=30 in keyframe velocity functions
+### BUG-002: Hardcoded fps=30 in keyframe velocity functions
 
 **Feature:** Layer Transform / Keyframe System (1.2)
+**Tier:** 1
 **Severity:** HIGH
-**Found:** 2025-12-25
+**Found:** 2025-12-24
 **Status:** FIXED
 
 **Location:**
-- File: ui/src/stores/actions/keyframeActions.ts
+- File: `ui/src/stores/actions/keyframeActions.ts`
 - Lines: 1325-1326, 1388-1389
+- Functions: `applyKeyframeVelocity()`, `getKeyframeVelocity()`
 
-**Issue:**
-The `applyKeyframeVelocity` and `getKeyframeVelocity` functions use hardcoded `fps = 30` for converting between velocity units and frame units. The code even has a TODO comment acknowledging this should be from the composition. This causes incorrect velocity calculations for non-30fps compositions.
+**Problem:**
+Both functions use hardcoded `fps = 30` for converting between velocity units and frame units.
 
 **Evidence:**
-```typescript
+````typescript
 // Line 1325-1326 in applyKeyframeVelocity:
-// Convert velocity to value offset
-// Velocity is in units per second, convert to units per frame segment
 const fps = 30; // TODO: Get from composition
 const inVelocityPerFrame = settings.incomingVelocity / fps;
-const outVelocityPerFrame = settings.outgoingVelocity / fps;
 
 // Line 1388-1389 in getKeyframeVelocity:
-// Convert value offset back to velocity
 const fps = 30;
 const inVelocity = keyframe.inHandle?.enabled && keyframe.inHandle.frame !== 0
   ? -keyframe.inHandle.value / Math.abs(keyframe.inHandle.frame) * fps
   : 0;
-```
+````
+
+**Expected Behavior:**
+Should use composition fps for correct velocity calculations.
+
+**Actual Behavior:**
+Keyframe velocity dialog shows incorrect values for non-30fps compositions.
 
 **Impact:**
-- Keyframe velocity dialog shows incorrect velocity values for non-30fps compositions
 - Applied velocity settings create wrong bezier handles
-- 60fps compositions: velocities off by 2x
-- 24fps compositions: velocities off by ~0.8x
+- 60fps: velocities off by 2x
+- 24fps: velocities off by ~0.8x
 
 **Fix Applied:**
-1. Added `VelocityStore` interface extending `KeyframeStore` with `fps: number`
-2. Updated function signatures to use `VelocityStore`
-3. Changed `const fps = 30` to `const fps = store.fps ?? 30`
-
-**Files Changed:**
-- ui/src/stores/actions/keyframeActions.ts (lines 1279-1281, 1301, 1329, 1360, 1392)
-
-**Related:**
-- BUG-001 (same hardcoded fps pattern)
+Added `VelocityStore` interface with fps, changed to `const fps = store.fps ?? 30`
 
 ---
 
-## BUG-003: MotionEngine doesn't pass composition fps to interpolateProperty
+### BUG-003: MotionEngine doesn't pass composition fps to interpolateProperty
 
 **Feature:** Transform System / Expression Evaluation (1.4)
+**Tier:** 1
 **Severity:** HIGH
-**Found:** 2025-12-25
+**Found:** 2025-12-24
 **Status:** FIXED
 
 **Location:**
-- File: ui/src/engine/MotionEngine.ts
+- File: `ui/src/engine/MotionEngine.ts`
 - Lines: 539, 572, 622-627, 643, 646, 686, 709, 729-738, 802-831
 
-**Issue:**
-MotionEngine.evaluate() has access to `composition.settings.fps` but all calls to `interpolateProperty` use the default fps=30. This causes time-based expressions to evaluate incorrectly for non-30fps compositions.
+**Problem:**
+MotionEngine.evaluate() has access to `composition.settings.fps` but all calls to `interpolateProperty` use the default fps=30.
 
 **Evidence:**
-```typescript
+````typescript
 // MotionEngine.ts line 572 - missing fps parameter
 let opacity: number = interpolateProperty(layer.opacity, frame);
 
 // interpolation.ts shows fps is used for expressions:
-const time = frame / fps;  // Line 287 - fps affects time calculation
-const velocity = calculateVelocity(property, frame, fps);  // Line 288
-```
+const time = frame / fps;  // fps affects time calculation
+````
+
+**Expected Behavior:**
+Should pass composition fps to all interpolateProperty calls.
+
+**Actual Behavior:**
+Expressions using `time` variable evaluate incorrectly for non-30fps compositions.
 
 **Impact:**
-- Expressions using `time` variable evaluate incorrectly for non-30fps compositions
-- Expressions using `velocity` evaluate incorrectly
-- 60fps composition: `time` values are 2x too large
-- 16fps composition: `time` values are ~0.53x too small
+- 60fps: `time` values are 2x too large
+- 16fps: `time` values are ~0.53x too small
 
 **Fix Applied:**
-1. Added fps parameter to evaluateLayers(), evaluateTransform(), evaluateEffects(), evaluateLayerProperties(), evaluateCamera()
-2. Get fps from composition.settings in evaluate()
-3. Pass fps to all interpolateProperty calls throughout the evaluation chain
-
-**Files Changed:**
-- ui/src/engine/MotionEngine.ts (multiple function signatures and calls updated)
-
-**Related:**
-- BUG-001, BUG-002 (same hardcoded fps pattern throughout codebase)
+Added fps parameter throughout evaluation chain, passing composition.settings.fps to all interpolateProperty calls.
 
 ---
 
-## BUG-004: audioStore hardcoded fps=16 in getBeats
+### BUG-004: audioStore hardcoded fps=16 in getBeats
 
-**Feature:** Audio System (6.x)
+**Feature:** Audio System (6.x - but affects foundation)
+**Tier:** 1
 **Severity:** HIGH
-**Found:** 2025-12-25
+**Found:** 2025-12-24
 **Status:** FIXED
 
 **Location:**
-- File: ui/src/stores/audioStore.ts
+- File: `ui/src/stores/audioStore.ts`
 - Line: 95
 
-**Issue:**
-The `getBeats` getter converts beat frames to seconds using hardcoded `fps = 16` instead of the composition's fps. This causes beat timestamps to be incorrect for non-16fps compositions.
+**Problem:**
+The `getBeats` getter converts beat frames to seconds using hardcoded `fps = 16`.
 
 **Evidence:**
-```typescript
+````typescript
 getBeats: (state) => (_assetId?: string): number[] | undefined => {
   if (!state.audioAnalysis) return undefined;
-  // Extract beat frames and convert to seconds
   const fps = 16; // Default FPS <-- BUG: hardcoded
   const beats: number[] = [];
   for (let frame = 0; frame < state.audioAnalysis.frameCount; frame++) {
     if (isBeatAtFrame(state.audioAnalysis, frame)) {
-      beats.push(frame / fps);  // <-- Wrong fps
+      beats.push(frame / fps);
     }
   }
   return beats.length > 0 ? beats : undefined;
 },
-```
+````
+
+**Expected Behavior:**
+Should calculate fps from analysis data or use composition fps.
+
+**Actual Behavior:**
+Beat timestamps wrong for non-16fps compositions.
 
 **Impact:**
-- Beat timestamps returned in wrong units for non-16fps compositions
-- 30fps composition: beat times off by ~1.875x
-- Audio reactive features using beat data will be misaligned
+- 30fps: beat times off by ~1.875x
+- Audio reactive features misaligned
 
 **Fix Applied:**
-Calculate fps from the analysis data itself (frameCount / duration), ensuring consistency:
-```typescript
-getBeats: (state) => (_assetId?: string): number[] | undefined => {
-  if (!state.audioAnalysis) return undefined;
-  // Calculate fps from analysis data: fps = frameCount / duration
-  const fps = state.audioAnalysis.frameCount / state.audioAnalysis.duration;
-  ...
-}
-```
-
-**Files Changed:**
-- ui/src/stores/audioStore.ts (line 95-106)
+Calculate fps from analysis: `const fps = state.audioAnalysis.frameCount / state.audioAnalysis.duration;`
 
 ---
 
-## BUG-005: ModelLayer uses own fps instead of BaseLayer.compositionFps
+### BUG-005: ModelLayer uses own fps instead of BaseLayer.compositionFps
 
-**Feature:** 3D Models (2.16)
+**Feature:** 3D Models (2.16 - but foundation-level issue)
+**Tier:** 1
 **Severity:** HIGH
-**Found:** 2025-12-25
+**Found:** 2025-12-24
 **Status:** FIXED
 
 **Location:**
-- File: ui/src/engine/layers/ModelLayer.ts
+- File: `ui/src/engine/layers/ModelLayer.ts`
 - Lines: 78, 467, 785
 
-**Issue:**
-ModelLayer defines its own `private fps = 30` property instead of using `this.compositionFps` from BaseLayer. This shadows the parent's fps management and causes animation timing issues.
+**Problem:**
+ModelLayer defines `private fps = 30` instead of using inherited `this.compositionFps`.
 
 **Evidence:**
-```typescript
+````typescript
 // Line 78
-/** Composition FPS for animation sync */
 private fps = 30;
 
-// Line 467 - converting clip duration to frames
+// Line 467 - animation clip duration
 frameCount: Math.round(clip.duration * this.fps),
 
-// Line 785 - animation delta time
+// Line 785 - animation delta
 const deltaTime = 1 / this.fps;
-```
+````
+
+**Expected Behavior:**
+Should use `this.compositionFps` from BaseLayer.
+
+**Actual Behavior:**
+3D model animations play at wrong speed in non-30fps compositions.
 
 **Impact:**
-- 3D model animations play at wrong speed in non-30fps compositions
-- Frame count calculations wrong for animation clips
-- Animation mixer updates at wrong rate
+Animation timing broken for all 3D models at non-30fps.
 
 **Fix Applied:**
-1. Removed `private fps = 30` property
-2. Replaced `this.fps` with `this.compositionFps` at lines 464, 783
-3. Updated setFPS() to delegate to BaseLayer's setCompositionFps()
-
-**Files Changed:**
-- ui/src/engine/layers/ModelLayer.ts (lines 464, 716-717, 783)
+Removed private fps, replaced with `this.compositionFps`.
 
 ---
 
-## BUG-006: effectProcessor hardcoded fps=30 in fallback
+### BUG-006: effectProcessor hardcoded fps=30 in fallback
 
-**Feature:** Effects System (4.x)
+**Feature:** Effects System (4.x - but foundation-level)
+**Tier:** 1
 **Severity:** HIGH
-**Found:** 2025-12-25
+**Found:** 2025-12-24
 **Status:** FIXED
 
 **Location:**
-- File: ui/src/services/effectProcessor.ts
+- File: `ui/src/services/effectProcessor.ts`
 - Lines: 454, 570
 
-**Issue:**
-When processing effects without full context, the fallback uses hardcoded `params._fps = 30` instead of trying to get the composition fps. This affects time-based effects.
+**Problem:**
+Fallback uses hardcoded `params._fps = 30` instead of passed fps.
 
 **Evidence:**
-```typescript
-// Lines 451-456 and 568-572
+````typescript
 } else {
-  // Fallback: use the frame parameter at minimum
   params._frame = frame;
-  params._fps = 30; // Default fps <-- BUG: hardcoded
+  params._fps = 30; // Default fps <-- BUG
   params._layerId = 'default';
 }
-```
+````
+
+**Expected Behavior:**
+Should use provided fps parameter.
+
+**Actual Behavior:**
+Time-based effects evaluate incorrectly in fallback path.
 
 **Impact:**
-- Time-based effects (echo, posterize time, etc.) evaluate incorrectly
-- Effects using `_fps` parameter will be wrong for non-30fps compositions
+Echo, posterize time, and other time-based effects broken at non-30fps.
 
 **Fix Applied:**
-1. Added `fps` parameter to `processEffectStack` function signature with default of 30
-2. Added `fps` parameter to `processEffectStackAsync` function signature with default of 30
-3. Updated fallback to use the provided fps parameter instead of hardcoded 30
-4. Updated calls from processEffectStackAsync to processEffectStack to pass fps
-
-**Files Changed:**
-- ui/src/services/effectProcessor.ts (lines 401, 407, 456, 509, 515, 521, 530, 574)
+Added fps parameter to function signatures, use it in fallback.
 
 ---
 
-## BUG-007: setEffectLayerRenderContext doesn't check for method existence
+### BUG-007: setEffectLayerRenderContext doesn't check for method existence
 
-**Feature:** SolidLayer / LayerManager (2.1)
+**Feature:** LayerManager / EffectLayer (2.12)
+**Tier:** 1
 **Severity:** MEDIUM
-**Found:** 2025-12-25
+**Found:** 2025-12-24
 **Status:** FIXED
 
 **Location:**
-- File: ui/src/engine/core/LayerManager.ts
+- File: `ui/src/engine/core/LayerManager.ts`
 - Lines: 136-140
 
-**Issue:**
-The `setEffectLayerRenderContext` method tries to call `setRenderContext` on solid layers with the `effectLayer` flag without checking if the method exists. SolidLayer doesn't have this method - only EffectLayer does. This would cause a runtime error.
-
-The initial `setupLayerCallbacks` (lines 324-331) correctly checks `'setRenderContext' in layer` before calling, but `setEffectLayerRenderContext` doesn't.
+**Problem:**
+Tries to call `setRenderContext` on solid layers with `effectLayer` flag without checking if method exists.
 
 **Evidence:**
-```typescript
-// LayerManager.ts lines 136-140 - MISSING method existence check
+````typescript
 for (const layer of this.layers.values()) {
   const layerData = (layer as any).layerData;
   if (layer.type === 'solid' && (layerData?.effectLayer || layerData?.adjustmentLayer)) {
-    (layer as unknown as EffectLayer).setRenderContext(context);  // <-- CRASH if SolidLayer
+    (layer as unknown as EffectLayer).setRenderContext(context);  // CRASH if SolidLayer
   }
 }
+````
 
-// Compare to correct pattern in setupLayerCallbacks lines 324-331:
-if ((layerData.effectLayer || layerData.adjustmentLayer) && this.effectLayerRenderContext) {
-  if ('setRenderContext' in layer) {  // <-- Correct: checks method exists
-    (layer as unknown as EffectLayer).setRenderContext(this.effectLayerRenderContext);
-  }
-}
-```
+**Expected Behavior:**
+Should check `'setRenderContext' in layer` before calling.
 
-**Impact:**
-- Runtime crash if a solid layer with `effectLayer` flag has its render context updated after creation
-- Currently mitigated because 'solid' type doesn't normally have effectLayer flag
-- But the code explicitly checks for this case, suggesting it was intended functionality
+**Actual Behavior:**
+Would crash if solid layer has effectLayer flag.
 
 **Fix Applied:**
-Added method existence check before calling (commit ab08827):
-```typescript
-if (layer.type === 'solid' && (layerData?.effectLayer || layerData?.adjustmentLayer)) {
-  if ('setRenderContext' in layer) {
-    (layer as unknown as EffectLayer).setRenderContext(context);
-  }
-}
-```
-
-**Files Changed:**
-- ui/src/engine/core/LayerManager.ts (lines 138-141)
-
-**Related:**
-- BUG-005 (incorrect type handling in layer classes)
+Added method existence check before calling.
 
 ---
 
-## BUG-008: createTextureFromCanvas doesn't update canvas reference
+## TIER 2 BUGS (Layer Types)
+
+### BUG-008: createTextureFromCanvas doesn't update canvas reference
 
 **Feature:** ImageLayer / ResourceManager (2.2)
+**Tier:** 2
 **Severity:** MEDIUM
-**Found:** 2025-12-25
+**Found:** 2025-12-24
 **Status:** FIXED
 
 **Location:**
-- File: ui/src/engine/core/ResourceManager.ts
+- File: `ui/src/engine/core/ResourceManager.ts`
 - Lines: 177-182
 
-**Issue:**
-When `createTextureFromCanvas` is called with a cached texture ID but a DIFFERENT canvas object, the cached `CanvasTexture` still references the OLD canvas. Setting `needsUpdate = true` causes Three.js to re-upload, but it uploads the stale canvas content.
+**Problem:**
+When called with cached texture ID but different canvas, the cached CanvasTexture still references the old canvas.
 
 **Evidence:**
-```typescript
-// ResourceManager.ts lines 177-182 - BUG: canvas reference not updated
-createTextureFromCanvas(
-  canvas: HTMLCanvasElement | OffscreenCanvas,
-  id: string,
-  options?: TextureOptions
-): THREE.CanvasTexture {
+````typescript
+createTextureFromCanvas(canvas, id, options) {
   const cached = this.textures.get(id);
   if (cached instanceof THREE.CanvasTexture) {
     cached.needsUpdate = true;  // Uploads OLD canvas!
-    return cached;              // cached.image still points to OLD canvas
+    return cached;
   }
-  // ...
 }
-```
+````
 
-**Impact:**
-- Effect processing in ImageLayer could display stale frames
-- Any layer using createTextureFromCanvas with changing canvas objects
-- Potentially causes visual glitches when effects are applied
+**Expected Behavior:**
+Should update `cached.image` to new canvas before setting needsUpdate.
+
+**Actual Behavior:**
+Stale canvas content displayed.
 
 **Fix Applied:**
-Updated canvas reference before setting needsUpdate (commit ab08827):
-```typescript
-if (cached instanceof THREE.CanvasTexture) {
-  cached.image = canvas as HTMLCanvasElement;  // Update canvas reference
-  cached.needsUpdate = true;
-  return cached;
-}
-```
-
-**Files Changed:**
-- ui/src/engine/core/ResourceManager.ts (lines 180-181)
-
-**Related:**
-- ImageLayer.applyProcessedEffects (line 271) uses this function
+Added `cached.image = canvas as HTMLCanvasElement;` before needsUpdate.
 
 ---
 
-## BUG-009: AudioLayer missing fps in interpolateProperty calls
+### BUG-009: AudioLayer missing fps in interpolateProperty calls
 
 **Feature:** AudioLayer (2.6)
+**Tier:** 2
 **Severity:** LOW
-**Found:** 2025-12-25
+**Found:** 2025-12-24
 **Status:** FIXED
 
 **Location:**
-- File: ui/src/engine/layers/AudioLayer.ts
+- File: `ui/src/engine/layers/AudioLayer.ts`
 - Lines: 125, 130, 396, 402
 
-**Issue:**
-AudioLayer calls `interpolateProperty` for level and pan properties without passing the fps parameter. The function defaults to 16fps, but the composition may have a different fps. This causes incorrect `time` variable values in expressions.
-
-**Evidence:**
-```typescript
-// Line 125 - missing fps
-const level = interpolateProperty(this.audioData.level, frame);
-// Line 130 - missing fps
-const pan = interpolateProperty(this.audioData.pan, frame);
-// Line 396 - missing fps
-const level: number = interpolateProperty(this.audioData.level, frame);
-// Line 402 - missing fps
-const pan: number = interpolateProperty(this.audioData.pan, frame);
-```
-
-**Impact:**
-- Expressions on audio level/pan using `time` variable evaluate incorrectly for non-16fps compositions
-- Example: `Math.sin(time * 2)` would be wrong for 30fps compositions
-- Basic keyframe interpolation (non-expression) is unaffected
+**Problem:**
+interpolateProperty calls for level and pan missing fps parameter.
 
 **Fix Applied:**
-Passed `this.compositionFps` to all interpolateProperty calls (commit ab08827):
-```typescript
-const level = interpolateProperty(this.audioData.level, frame, this.compositionFps);
-const pan = interpolateProperty(this.audioData.pan, frame, this.compositionFps);
-```
-
-**Files Changed:**
-- ui/src/engine/layers/AudioLayer.ts (lines 125, 130, 396, 402)
-
-**Related:**
-- BUG-003 (MotionEngine fps issue - same pattern)
-- BaseLayer provides `this.compositionFps` via setCompositionFps()
+Added `this.compositionFps` to all calls.
 
 ---
 
----
-
-## BUG-010: DepthLayer autoNormalize property defined but never implemented
+### BUG-010: DepthLayer autoNormalize property defined but never implemented
 
 **Feature:** DepthLayer (2.18)
+**Tier:** 2
 **Severity:** MEDIUM
-**Found:** 2025-12-25
-**Status:** FIXED
+**Found:** 2025-12-24
+**Status:** FIXED (documented as limitation)
 
 **Location:**
-- File: ui/src/engine/layers/DepthLayer.ts
+- File: `ui/src/engine/layers/DepthLayer.ts`
 - Line: 55
 
-**Issue:**
-The `autoNormalize` property is defined and defaults to `true`, but is never read or used anywhere in the code. Users expect this to automatically scan depth values to compute min/max, but it does nothing.
-
-**Evidence:**
-```typescript
-// Line 55 - property is stored but never used
-autoNormalize: data?.autoNormalize ?? true,
-
-// Nowhere in the file is autoNormalize read or used
-```
-
-**Impact:**
-- Users who enable autoNormalize expect automatic value range detection
-- Manual minDepth/maxDepth must always be set even when autoNormalize is true
-- Feature is documented but non-functional
+**Problem:**
+`autoNormalize` property stored but never used.
 
 **Fix Applied:**
-Documented as a known limitation. Implementation would require:
-1. Reading depth texture data on the CPU
-2. Computing min/max values
-3. Updating uniforms
-
-This is a feature gap, not a bug that can be fixed without architectural changes.
+Documented as known limitation requiring architectural changes.
 
 ---
 
-## BUG-011: DepthLayer 3d-mesh visualization mode not implemented
+### BUG-011: DepthLayer 3d-mesh visualization mode not implemented
 
 **Feature:** DepthLayer (2.18)
+**Tier:** 2
 **Severity:** MEDIUM
-**Found:** 2025-12-25
-**Status:** FIXED
+**Found:** 2025-12-24
+**Status:** FIXED (documented as limitation)
 
 **Location:**
-- File: ui/src/engine/layers/DepthLayer.ts
+- File: `ui/src/engine/layers/DepthLayer.ts`
 - Lines: 60, 66, 153, 201-204
 
-**Issue:**
-The '3d-mesh' visualization mode is defined in the UI but not implemented:
-1. Line 153: Returns mode index 3 for '3d-mesh'
-2. Lines 117-131: Shader only handles modes 0, 1, 2 - mode 3 falls through to default (grayscale)
-3. Line 66: Geometry is always `PlaneGeometry(1, 1, 1, 1)` - single quad, no subdivision
-4. Line 60: `meshResolution` stored but unused
-5. Lines 201-204: Displacement is calculated but never applied
-
-**Evidence:**
-```typescript
-// Line 153 - returns mode 3
-case '3d-mesh': return 3;
-
-// Lines 117-131 - shader only handles 0, 1, 2
-if (visualizationMode == 0) { /* grayscale */ }
-else if (visualizationMode == 1) { /* colormap */ }
-else if (visualizationMode == 2) { /* contour */ }
-else { /* default to grayscale - mode 3 falls here */ }
-
-// Line 66 - no mesh subdivision
-const geometry = new THREE.PlaneGeometry(1, 1, 1, 1);
-```
-
-**Impact:**
-- Users selecting "3D mesh" mode see grayscale instead
-- meshResolution and meshDisplacement properties have no effect
-- Feature appears in UI but doesn't work
+**Problem:**
+'3d-mesh' mode returns index 3, but shader only handles 0, 1, 2.
 
 **Fix Applied:**
-Updated shader to document that 3d-mesh mode falls back to grayscale. Full 3D mesh mode would require:
-1. Subdivided geometry (using meshResolution)
-2. Vertex displacement in shader
-3. GPU readback for depth values
-
-This is documented as a known limitation.
+Documented as known limitation.
 
 ---
 
-## BUG-012: DepthLayer wireframe property has no effect
+### BUG-012: DepthLayer wireframe property has no effect
 
 **Feature:** DepthLayer (2.18)
+**Tier:** 2
 **Severity:** LOW
-**Found:** 2025-12-25
-**Status:** FIXED
+**Found:** 2025-12-24
+**Status:** FIXED (documented as limitation)
 
 **Location:**
-- File: ui/src/engine/layers/DepthLayer.ts
+- File: `ui/src/engine/layers/DepthLayer.ts`
 - Line: 61
 
-**Issue:**
-The `wireframe` property is defined but never applied to the material.
-
-**Evidence:**
-```typescript
-// Line 61 - stored but never used
-wireframe: data?.wireframe ?? false
-```
-
-**Impact:**
-- Setting wireframe=true does nothing
-- Minor issue - wireframe would only be useful with 3D mesh mode which is also unimplemented
+**Problem:**
+`wireframe` property defined but never applied to material.
 
 **Fix Applied:**
-Documented as known limitation. Would only be useful with 3D mesh mode implementation.
+Documented as known limitation.
 
 ---
 
-## BUG-013: NormalLayer arrows visualization mode not implemented
+### BUG-013: NormalLayer arrows visualization mode not implemented
 
 **Feature:** NormalLayer (2.20)
+**Tier:** 2
 **Severity:** MEDIUM
-**Found:** 2025-12-25
+**Found:** 2025-12-24
 **Status:** FIXED
 
 **Location:**
-- File: ui/src/engine/layers/NormalLayer.ts
+- File: `ui/src/engine/layers/NormalLayer.ts`
 - Lines: 143, 109-126
 
-**Issue:**
-The 'arrows' visualization mode (index 2) is defined in the mode index function but not implemented in the shader. The shader jumps from mode 1 (hemisphere) directly to mode 3 (lit), skipping mode 2.
-
-**Evidence:**
-```typescript
-// Line 143 - returns index 2 for arrows
-case 'arrows': return 2;
-
-// Lines 109-126 - mode 2 not handled
-if (visualizationMode == 0) { /* rgb */ }
-else if (visualizationMode == 1) { /* hemisphere */ }
-else if (visualizationMode == 3) { /* lit */ }  // Skips mode 2!
-else { /* default to RGB */ }
-```
-
-**Impact:**
-- Users selecting "arrows" mode see RGB instead
-- Feature appears in UI but doesn't work
+**Problem:**
+'arrows' mode (index 2) defined but shader jumps from mode 1 to mode 3.
 
 **Fix Applied:**
-Added handling for mode 2 (arrows) that falls back to RGB with a console warning. Full arrow visualization would require:
-1. Geometry with arrow instances
-2. Instance-based rendering
-3. Significant refactoring
+Added fallback handling for mode 2.
 
 ---
 
-## BUG-014: PoseLayer uses Date.now() for ID generation (determinism)
+### BUG-014: PoseLayer uses Date.now() for ID generation (determinism)
 
 **Feature:** PoseLayer (2.21)
+**Tier:** 2
 **Severity:** MEDIUM
-**Found:** 2025-12-25
+**Found:** 2025-12-24
 **Status:** FIXED
 
 **Location:**
-- File: ui/src/engine/layers/PoseLayer.ts
+- File: `ui/src/engine/layers/PoseLayer.ts`
 - Lines: 227, 533
 
-**Issue:**
-Pose IDs are generated using `Date.now()` which breaks determinism - the same project loaded at different times will have different pose IDs.
-
-**Evidence:**
-```typescript
-// Line 227
-id: `pose_${Date.now()}`,
-
-// Line 533
-id: `pose_${Date.now()}_${newPoses.length}`,
-```
-
-**Impact:**
-- Non-deterministic pose IDs across sessions
-- Could affect undo/redo if IDs are used for tracking
-- Minor impact on actual rendering (IDs are for identification only)
+**Problem:**
+`Date.now()` breaks determinism - same project loaded at different times has different IDs.
 
 **Fix Applied:**
-Changed to use a counter-based ID generation that resets per layer:
-```typescript
-// Line 227
-id: `pose_${layerData.id}_default`,
-
-// Line 533
-id: `pose_${this.id}_imported_${newPoses.length}`,
-```
+Changed to counter-based IDs using layer ID as base.
 
 ---
 
-## BUG-015: PointCloudLayer uses Math.random() for placeholder (determinism)
+### BUG-015: PointCloudLayer uses Math.random() for placeholder (determinism)
 
 **Feature:** PointCloudLayer (2.17)
+**Tier:** 2
 **Severity:** MEDIUM
-**Found:** 2025-12-25
+**Found:** 2025-12-24
 **Status:** FIXED
 
 **Location:**
-- File: ui/src/engine/layers/PointCloudLayer.ts
+- File: `ui/src/engine/layers/PointCloudLayer.ts`
 - Lines: 405-411
 
-**Issue:**
-The placeholder geometry generation uses `Math.random()` which breaks determinism.
-
-**Evidence:**
-```typescript
-// Lines 405-411
-for (let i = 0; i < count; i++) {
-  positions.push(
-    (Math.random() - 0.5) * size,
-    (Math.random() - 0.5) * size,
-    (Math.random() - 0.5) * size
-  );
-  colors.push(Math.random(), Math.random(), Math.random());
-}
-```
-
-**Impact:**
-- Placeholder point clouds look different each time
-- Minor impact - only affects placeholder mode when no asset loaded
+**Problem:**
+`Math.random()` for placeholder geometry breaks determinism.
 
 **Fix Applied:**
-Changed to use seeded random based on layer ID for deterministic output:
-```typescript
-const seed = this.hashString(this.id);
-for (let i = 0; i < count; i++) {
-  const rand1 = this.seededRandom(seed + i * 6);
-  // ... use seeded random instead of Math.random()
-}
-```
+Changed to seeded random based on layer ID.
 
 ---
 
-## BUG-016: ProceduralMatteLayer uses Math.random() for seed (determinism)
+### BUG-016: ProceduralMatteLayer uses Math.random() for seed (determinism)
 
 **Feature:** ProceduralMatteLayer (2.23)
+**Tier:** 2
 **Severity:** MEDIUM
-**Found:** 2025-12-25
+**Found:** 2025-12-24
 **Status:** FIXED
 
 **Location:**
-- File: ui/src/engine/layers/ProceduralMatteLayer.ts
+- File: `ui/src/engine/layers/ProceduralMatteLayer.ts`
 - Line: 58
 
-**Issue:**
-When no seed is provided in parameters, `Math.random()` is used to generate one, breaking determinism between sessions.
-
-**Evidence:**
-```typescript
-// Line 58
-this.noiseSeed = this.matteData.parameters.seed ?? Math.random() * 65536;
-```
-
-**Impact:**
-- Noise patterns differ between sessions if seed not explicitly set
-- Affects dissolve, noise patterns
+**Problem:**
+Fallback seed uses `Math.random()` breaking determinism.
 
 **Fix Applied:**
-Changed to use a deterministic seed based on layer ID:
-```typescript
-this.noiseSeed = this.matteData.parameters.seed ?? this.hashString(this.id);
-```
+Changed to use hash of layer ID.
 
 ---
 
-## TEMPLATE FOR NEW BUGS
+### BUG-017: getDefaultLayerData returns null without null check
 
-Copy this template when adding new bugs:
-```markdown
-## BUG-XXX: [Short Title]
-
-**Feature:** [Feature name] ([Tier ID])
-**Severity:** CRITICAL / HIGH / MEDIUM / LOW
-**Found:** [Date]
-**Status:** OPEN / FIXED / WONT_FIX
+**Feature:** Layer Creation/Deletion (1.1)
+**Tier:** 2
+**Severity:** LOW
+**Found:** 2025-12-24
+**Status:** FIXED
 
 **Location:**
-- File: [exact file path]
-- Line: [line number or range]
+- File: `ui/src/stores/actions/layer/layerDefaults.ts`
+- Lines: 407-409
 
-**Issue:**
-[Precise description of what's wrong]
+**Problem:**
+Returns `null` for unknown layer types, caller casts without null check.
 
-**Evidence:**
-```[language]
-[Code snippet showing the bug]
+**Fix Applied:**
+Changed to throw error for unknown types.
+
+---
+
+### BUG-018: Separate dimensions ignored in MotionEngine.evaluateTransform
+
+**Feature:** Layer Transform (1.2)
+**Tier:** 2
+**Severity:** HIGH (actually - should be tier 1)
+**Found:** 2025-12-24
+**Status:** FIXED
+
+**Location:**
+- File: `ui/src/engine/MotionEngine.ts`
+- Lines: 618-622
+
+**Problem:**
+Always evaluates combined `position`/`scale`, ignoring `separateDimensions` flag.
+
+**Fix Applied:**
+Added conditional checks for separate dimension properties.
+
+---
+
+### BUG-019: insertKeyframeOnPath treats position as array instead of object
+
+**Feature:** Keyframe CRUD (1.3)
+**Tier:** 2
+**Severity:** HIGH (actually - should be tier 1)
+**Found:** 2025-12-24
+**Status:** FIXED
+
+**Location:**
+- File: `ui/src/stores/actions/keyframeActions.ts`
+- Lines: 795-800, 848
+
+**Problem:**
+Treats position as `number[]` but it's `{x, y, z}` object.
+
+**Fix Applied:**
+Updated to handle both formats with type union and helper.
+
+---
+
+### BUG-020: SolidLayer uses labelColor to set visual fill color
+
+**Feature:** SolidLayer (2.1)
+**Tier:** 2
+**Severity:** MEDIUM
+**Found:** 2025-12-24
+**Status:** FIXED
+
+**Location:**
+- File: `ui/src/engine/layers/SolidLayer.ts`
+- Lines: 337-339
+
+**Problem:**
+`onUpdate()` incorrectly uses timeline `labelColor` for visual fill.
+
+**Fix Applied:**
+Removed incorrect labelColor handling.
+
+---
+
+### BUG-021: AudioLayer hasAudio getter returns true when no audio
+
+**Feature:** AudioLayer (2.6)
+**Tier:** 2
+**Severity:** LOW
+**Found:** 2025-12-24
+**Status:** FIXED
+
+**Location:**
+- File: `ui/src/engine/layers/AudioLayer.ts`
+- Line: 418
+
+**Problem:**
+`this.playbackNodes?.buffer !== null` returns true when playbackNodes is null.
+
+**Fix Applied:**
+Changed to explicit null check.
+
+---
+
+### BUG-022: ShapeLayer hardcoded 30fps in getAnimatedValue
+
+**Feature:** ShapeLayer (2.5)
+**Tier:** 2
+**Severity:** MEDIUM
+**Found:** 2025-12-24
+**Status:** FIXED
+
+**Location:**
+- File: `ui/src/engine/layers/ShapeLayer.ts`
+- Line: 699
+
+**Problem:**
+Hardcoded `30` instead of composition fps.
+
+**Fix Applied:**
+Changed to `this.compositionFps`.
+
+---
+
+### BUG-023: CameraLayer missing fps in interpolateProperty call
+
+**Feature:** CameraLayer (2.7)
+**Tier:** 2
+**Severity:** MEDIUM
+**Found:** 2025-12-24
+**Status:** FIXED
+
+**Location:**
+- File: `ui/src/engine/layers/CameraLayer.ts`
+- Line: 497
+
+**Problem:**
+Missing fps parameter for path following animation.
+
+**Fix Applied:**
+Added `this.compositionFps` and `this.id` parameters.
+
+---
+
+### BUG-024: CameraLayer hardcoded 16/9 aspect ratio in frustum
+
+**Feature:** CameraLayer (2.7)
+**Tier:** 2
+**Severity:** LOW
+**Found:** 2025-12-24
+**Status:** FIXED
+
+**Location:**
+- File: `ui/src/engine/layers/CameraLayer.ts`
+- Line: 239
+
+**Problem:**
+Frustum visualization hardcodes 16:9 aspect.
+
+**Fix Applied:**
+Added `compositionAspect` property, use it instead of hardcoded value.
+
+---
+
+### BUG-025: LightLayer POI smoothing violates determinism
+
+**Feature:** LightLayer (2.8)
+**Tier:** 2
+**Severity:** MEDIUM
+**Found:** 2025-12-24
+**Status:** FIXED
+
+**Location:**
+- File: `ui/src/engine/layers/LightLayer.ts`
+- Lines: 552-556
+
+**Problem:**
+POI smoothing accumulates state, breaking determinism on scrub.
+
+**Fix Applied:**
+Added frame tracker, reset smoothedPOI on non-sequential access.
+
+---
+
+### BUG-026: NestedCompLayer opacity never applied to material
+
+**Feature:** NestedCompLayer (2.11)
+**Tier:** 2
+**Severity:** MEDIUM
+**Found:** 2025-12-24
+**Status:** FIXED
+
+**Location:**
+- File: `ui/src/engine/layers/NestedCompLayer.ts`
+- Lines: 280-292
+
+**Problem:**
+Animated opacity never applied to `this.material.opacity`.
+
+**Fix Applied:**
+Added opacity handling in `onApplyEvaluatedState`.
+
+---
+
+### BUG-027: EffectLayer.getSourceCanvas hardcodes frame 0
+
+**Feature:** EffectLayer (2.12)
+**Tier:** 2
+**Severity:** MEDIUM
+**Found:** 2025-12-24
+**Status:** FIXED
+
+**Location:**
+- File: `ui/src/engine/layers/EffectLayer.ts`
+- Line: 248
+
+**Problem:**
+`renderLayersBelow(this.id, 0)` hardcodes frame 0.
+
+**Fix Applied:**
+Changed to `this.currentFrame`.
+
+---
+
+### BUG-028: EffectLayer opacity never applied to material
+
+**Feature:** EffectLayer (2.12)
+**Tier:** 2
+**Severity:** MEDIUM
+**Found:** 2025-12-24
+**Status:** FIXED
+
+**Location:**
+- File: `ui/src/engine/layers/EffectLayer.ts`
+- Lines: 205-210
+
+**Problem:**
+Docstring claims opacity respected, but never applied.
+
+**Fix Applied:**
+Added opacity handling in `onApplyEvaluatedState`.
+
+---
+
+### BUG-029: ParticleLayer audio reactivity compounds emitter values
+
+**Feature:** ParticleLayer (2.13)
+**Tier:** 2
+**Severity:** MEDIUM
+**Found:** 2025-12-24
+**Status:** FIXED
+
+**Location:**
+- File: `ui/src/engine/layers/ParticleLayer.ts`
+- Lines: 1004-1045
+
+**Problem:**
+Audio modulation multiplies current values each frame, causing unbounded growth.
+
+**Fix Applied:**
+Added base value maps, always multiply from base values.
+
+---
+
+### BUG-030: PathLayer.evaluateControlPointAtFrame missing fps parameter
+
+**Feature:** PathLayer (2.14)
+**Tier:** 2
+**Severity:** MEDIUM
+**Found:** 2025-12-24
+**Status:** FIXED
+
+**Location:**
+- File: `ui/src/engine/layers/PathLayer.ts`
+- Lines: 343-355
+
+**Problem:**
+All interpolateProperty calls missing fps.
+
+**Fix Applied:**
+Added fps and layerId to all calls.
+
+---
+
+### BUG-031: SplineLayer missing fps in all interpolateProperty calls
+
+**Feature:** SplineLayer (2.15)
+**Tier:** 2
+**Severity:** MEDIUM
+**Found:** 2025-12-24
+**Status:** FIXED
+
+**Location:**
+- File: `ui/src/engine/layers/SplineLayer.ts`
+- Lines: 905-921, 1034, 1134-1184
+
+**Problem:**
+All interpolateProperty calls missing fps.
+
+**Fix Applied:**
+Added fps and layerId to all calls.
+
+---
+
+### BUG-032: ModelLayer.onEvaluateFrame missing fps parameter
+
+**Feature:** ModelLayer (2.16)
+**Tier:** 2
+**Severity:** MEDIUM
+**Found:** 2025-12-24
+**Status:** FIXED
+
+**Location:**
+- File: `ui/src/engine/layers/ModelLayer.ts`
+- Lines: 769, 775
+
+**Problem:**
+interpolateProperty calls missing fps.
+
+**Fix Applied:**
+Added fps and layerId parameters.
+
+---
+
+### BUG-033: PointCloudLayer.onEvaluateFrame missing fps parameter
+
+**Feature:** PointCloudLayer (2.17)
+**Tier:** 2
+**Severity:** MEDIUM
+**Found:** 2025-12-24
+**Status:** FIXED
+
+**Location:**
+- File: `ui/src/engine/layers/PointCloudLayer.ts`
+- Lines: 1015, 1019
+
+**Problem:**
+interpolateProperty calls missing fps.
+
+**Fix Applied:**
+Added fps and layerId parameters.
+
+---
+
+### BUG-034: DepthLayer.onEvaluateFrame missing fps parameter
+
+**Feature:** DepthLayer (2.18)
+**Tier:** 2
+**Severity:** MEDIUM
+**Found:** 2025-12-24
+**Status:** FIXED
+
+**Location:**
+- File: `ui/src/engine/layers/DepthLayer.ts`
+- Line: 198
+
+**Problem:**
+interpolateProperty call missing fps.
+
+**Fix Applied:**
+Added fps and layerId parameters.
+
+---
+
+### BUG-035: DepthflowLayer hardcoded 30fps in multiple places
+
+**Feature:** DepthflowLayer (2.19)
+**Tier:** 2
+**Severity:** MEDIUM
+**Found:** 2025-12-24
+**Status:** FIXED
+
+**Location:**
+- File: `ui/src/engine/layers/DepthflowLayer.ts`
+- Lines: 402, 439
+
+**Problem:**
+calculatePresetValues defaults to 30fps, time uniform uses 30fps.
+
+**Fix Applied:**
+Pass `this.compositionFps` to function and time calculation.
+
+---
+
+### BUG-036: ProceduralMatteLayer time calculation hardcodes 60fps
+
+**Feature:** ProceduralMatteLayer (2.23)
+**Tier:** 2
+**Severity:** MEDIUM
+**Found:** 2025-12-24
+**Status:** FIXED
+
+**Location:**
+- File: `ui/src/engine/layers/ProceduralMatteLayer.ts`
+- Line: 185
+
+**Problem:**
+`(frame * speed / 60)` hardcodes 60fps.
+
+**Fix Applied:**
+Changed to `this.compositionFps`.
+
+---
+
+## NEW BUGS (Add Below This Line)
+
+### BUG-037: Stale Reference Not Cleaned on Layer Deletion
+
+**Feature:** Layer Creation/Deletion (1.1)
+**Tier:** 1
+**Severity:** MEDIUM
+**Found:** 2025-12-25
+**Session:** 1
+**Status:** FIXED
+
+**Location:**
+- File: `ui/src/stores/actions/layerActions.ts`
+- Lines: 205-228
+- Function: `deleteLayer()`
+
+**Problem:**
+When a layer is deleted, references to that layer in other layers' `parentId`, `matteLayerId`, `followPath.pathLayerId`, and text layer `data.pathLayerId` were not cleaned up. This left stale IDs pointing to non-existent layers.
+
+**Evidence (before fix):**
+```typescript
+// deleteLayer() had NO cleanup - just removed the layer from array
+layers.splice(index, 1);
+// Missing: parentId, matteLayerId, followPath.pathLayerId, text data.pathLayerId
 ```
 
 **Impact:**
-[What breaks because of this bug]
+- Track matte effects silently fail when matte source is deleted
+- Path constraint animations silently fail when path layer is deleted
+- Text-on-path silently fails when path layer is deleted
+- Orphaned references persist on project save/load
 
-**Fix:**
-[Exact change needed - be specific]
-
-**Related:**
-[Other bugs or features affected]
+**Fix Applied:**
+```typescript
+// BUG-037 FIX: Clean up all stale references to deleted layer
+for (const layer of layers) {
+  // Clear parent reference
+  if (layer.parentId === layerId) {
+    layer.parentId = null;
+  }
+  // Clear matte reference
+  if (layer.matteLayerId === layerId) {
+    layer.matteLayerId = undefined;
+    layer.matteType = undefined;
+  }
+  // Clear followPath reference
+  if (layer.followPath?.pathLayerId === layerId) {
+    layer.followPath.enabled = false;
+    layer.followPath.pathLayerId = undefined;
+  }
+  // Clear text layer path reference
+  if (layer.type === 'text' && layer.data && (layer.data as any).pathLayerId === layerId) {
+    (layer.data as any).pathLayerId = null;
+  }
+}
 ```
+
+**Files Modified:**
+- `ui/src/stores/actions/layerActions.ts` - Added stale reference cleanup to deleteLayer()
+
+**Related Bugs:** None
+
+---
+
+### BUG-038: Export Pipeline Uses Wrong FPS for Transform Evaluation
+
+**Feature:** Layer Transform (1.2)
+**Tier:** 1
+**Severity:** HIGH
+**Found:** 2025-12-25
+**Session:** 1
+**Status:** FIXED
+
+**Location:**
+- File: `ui/src/services/layerEvaluationCache.ts`
+- Lines: 216-221, 234-242, 261, 288, 296, 318, 368
+- Functions: `evaluateTransform()`, `evaluateEffects()`, `evaluateLayerProperties()`, `evaluateLayerCached()`, `evaluateLayersCached()`
+
+**Problem:**
+All evaluation functions called `interpolateProperty()` without passing fps, causing export to use default fps=16 instead of composition fps. Expressions using `time` variable would evaluate incorrectly.
+
+**Evidence (before fix):**
+```typescript
+// layerEvaluationCache.ts:216 - Missing fps parameter
+const position = interpolateProperty(transform.position, frame);
+
+// vs MotionEngine.ts:628 - Correct with fps
+position = interpolateProperty(transform.position, frame, fps);
+```
+
+**Expected Behavior:**
+All `interpolateProperty()` calls should receive the composition's fps so expressions evaluate with correct `time = frame / fps`.
+
+**Actual Behavior:**
+Export used `fps=16` default while preview used composition fps (e.g., 30). Expressions with `time` variable would be ~1.875x faster in export than preview for a 30fps composition.
+
+**Impact:**
+- Expression-driven animations render differently in export vs preview
+- Any animation using `time`, `velocity`, or time-based expressions affected
+- Silent bug - no error, just wrong output
+
+**Fix Applied:**
+1. Added `fps` parameter to `evaluateTransform()`, `evaluateEffects()`, `evaluateLayerProperties()`
+2. Made `fps` REQUIRED (no default) in `evaluateLayerCached()` and `evaluateLayersCached()` - TypeScript will catch missing fps
+3. Updated `exportPipeline.ts:317` to pass `this.config.fps`
+4. Updated all test file calls to pass `TEST_FPS`
+
+**Files Modified:**
+- `ui/src/services/layerEvaluationCache.ts` - Added fps parameter throughout
+- `ui/src/services/export/exportPipeline.ts` - Pass config.fps to evaluateLayerCached
+- `ui/src/__tests__/_archived/services/layerEvaluationCache.test.ts` - Updated all test calls
+
+**Related Bugs:** BUG-001, BUG-002 (other fps-related bugs)
+
+---
+
+### BUG-039: updateKeyframe Does Not Handle Keyframe Frame Collisions
+
+**Feature:** Keyframe CRUD (1.3)
+**Tier:** 1
+**Severity:** MEDIUM
+**Found:** 2025-12-25
+**Session:** 1
+**Status:** FIXED
+
+**Location:**
+- File: `ui/src/stores/actions/keyframeActions.ts`
+- Lines: 338-350
+- Function: `updateKeyframe()`
+
+**Problem:**
+When updating a keyframe's frame position via `updateKeyframe()`, the function did not check for or remove existing keyframes at the target frame. This could result in multiple keyframes at the same frame position, causing undefined interpolation behavior.
+
+**Evidence (before fix):**
+```typescript
+// keyframeActions.ts:338-342 - NO collision check
+if (updates.frame !== undefined) {
+  keyframe.frame = updates.frame;
+  // Re-sort keyframes by frame
+  property.keyframes.sort((a, b) => a.frame - b.frame);
+}
+```
+
+Compare with `moveKeyframe()` which correctly handles collisions:
+```typescript
+// moveKeyframe - CORRECT collision handling
+const existingAtTarget = property.keyframes.find(
+  kf => kf.frame === newFrame && kf.id !== keyframeId
+);
+if (existingAtTarget) {
+  property.keyframes = property.keyframes.filter(kf => kf.id !== existingAtTarget.id);
+}
+```
+
+**Impact:**
+- Duplicate keyframes at same frame cause undefined interpolation behavior
+- Curve editor drag operations can create corrupted property state
+- Called from: `CurveEditor.vue:815`, `useCurveEditorInteraction.ts:285`
+
+**Fix Applied:**
+```typescript
+if (updates.frame !== undefined) {
+  // BUG-039 FIX: Check for existing keyframe at target frame (same pattern as moveKeyframe)
+  const existingAtTarget = property.keyframes.find(
+    kf => kf.frame === updates.frame && kf.id !== keyframeId
+  );
+  if (existingAtTarget) {
+    // Remove the existing keyframe at target to prevent duplicates
+    property.keyframes = property.keyframes.filter(kf => kf.id !== existingAtTarget.id);
+  }
+  keyframe.frame = updates.frame;
+  // Re-sort keyframes by frame
+  property.keyframes.sort((a, b) => a.frame - b.frame);
+}
+```
+
+**Files Modified:**
+- `ui/src/stores/actions/keyframeActions.ts` - Added collision check to updateKeyframe()
+
+**Related Bugs:** None
+
+---
+
+## BUG TEMPLATE
+
+Copy this when adding new bugs:
+````markdown
+### BUG-XXX: [Short Descriptive Title]
+
+**Feature:** [Feature name] (X.X)
+**Tier:** [Tier number]
+**Severity:** CRITICAL / HIGH / MEDIUM / LOW
+**Found:** [YYYY-MM-DD]
+**Session:** [Session identifier]
+**Status:** OPEN / FIXED
+
+**Location:**
+- File: `[exact/file/path.ts]`
+- Line(s): [number or range]
+- Function: `[functionName()]`
+
+**Problem:**
+[Clear description]
+
+**Evidence:**
+```typescript
+[code snippet]
+```
+
+**Expected Behavior:**
+[What should happen]
+
+**Actual Behavior:**
+[What does happen]
+
+**Impact:**
+[What breaks]
+
+**Fix Applied:** (if fixed)
+[Description of fix]
+
+**Related Bugs:** [BUG-XXX or "None"]
+````

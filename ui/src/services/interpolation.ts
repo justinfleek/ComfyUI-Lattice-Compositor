@@ -201,14 +201,16 @@ function getValueDelta<T>(v1: T, v2: T): number {
  *
  * @param property - The animatable property
  * @param frame - Current frame number
- * @param fps - Frames per second (needed for expressions, defaults to 16)
+ * @param fps - Frames per second (needed for expressions, defaults to 16 per WAN standard)
  * @param layerId - Layer ID (for expression context)
+ * @param compDuration - Composition duration in seconds (for expressions, defaults to 81/fps per 4n+1 pattern)
  */
 export function interpolateProperty<T>(
   property: AnimatableProperty<T>,
   frame: number,
   fps: number = 16,
-  layerId: string = ''
+  layerId: string = '',
+  compDuration?: number
 ): T {
   // Calculate base interpolated value
   let value: T;
@@ -264,7 +266,7 @@ export function interpolateProperty<T>(
 
   // Apply expression if present
   if (property.expression?.enabled) {
-    value = applyPropertyExpression(property, value, frame, fps, layerId);
+    value = applyPropertyExpression(property, value, frame, fps, layerId, compDuration);
   }
 
   return value;
@@ -278,7 +280,8 @@ function applyPropertyExpression<T>(
   value: T,
   frame: number,
   fps: number,
-  layerId: string
+  layerId: string,
+  compDuration?: number
 ): T {
   const expr = property.expression;
   if (!expr || !expr.enabled) return value;
@@ -287,16 +290,20 @@ function applyPropertyExpression<T>(
   const time = frame / fps;
   const velocity = calculateVelocity(property, frame, fps);
 
+  // BUG-041 FIX: Use actual composition duration if provided, otherwise default to 81/fps (4n+1 pattern)
+  const duration = compDuration ?? (81 / fps);
+  const frameCount = Math.round(duration * fps);
+
   const ctx: ExpressionContext = {
     time,
     frame,
     fps,
-    duration: 81 / fps, // Default composition duration
+    duration,
     layerId,
     layerIndex: 0,
     layerName: '',
     inPoint: 0,
-    outPoint: 81,
+    outPoint: frameCount,
     propertyName: property.name,
     value: value as number | number[],
     velocity,

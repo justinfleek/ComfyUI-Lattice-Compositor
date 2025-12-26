@@ -1,221 +1,280 @@
 # CLAUDE.md - Lattice Compositor Development Guide
 
-**Version:** 12.0 | **Last Updated:** December 25, 2025
+**Version:** 15.0 | **Last Updated:** December 25, 2025
 
 ---
 
-## ⚠️ STOP AND READ THIS FIRST
+## 🔄 HOW THIS AUDIT WORKS
 
-Previous sessions have failed in two distinct ways:
+**You (Claude Code) do the work. Your output gets reviewed by another Claude instance.**
+````
+You work → You pause → Output gets reviewed → You receive "confirmed" or feedback → You continue
+````
 
-**Failure Mode 1: Busywork Tests**
-- Created 1,450+ tests that found ZERO bugs
-- Tests just asserted what the code returned
-- Wasted 7+ hours on pointless pixel tests
+The user is a dumb terminal passing messages. They don't evaluate your work.
+Another Claude reviews your output and decides what to send back.
 
-**Failure Mode 2: Surface-Level Auditing**
-- Read files but didn't understand them
-- Used grep/search patterns instead of reading
-- Marked 19/23 layers "clean" (statistically impossible)
-- Skipped AI model integration analysis entirely
-- Used "~400" estimates instead of exact line counts
-
-**What Actually Works:**
-- Session 1: Reading code carefully found 4 critical bugs in 2 hours
-- FPS audit: Reading every file found 9 bugs, all fixed
-
-**THE RULE: Read. Understand. Confirm. Then mark complete.**
+**"Confirmed" means your output passed review. It's not a human judgment.**
 
 ---
 
-## 🔍 THE AUDIT SYSTEM
+## ⛔ MANDATORY SESSION START
 
-### Methodology That Works
-```
-1. READ entire file (exact line count, no estimates)
-2. UNDERSTAND what it does (summarize in your own words)
-3. TRACE data flow (input → processing → output)
-4. IDENTIFY bugs (or explain WHY there are none)
-5. CONFIRM with user before marking complete
-6. FIX bugs immediately when found
-```
+**Complete these steps BEFORE any audit work:**
 
-### Methodology That Fails
-```
-❌ Grep for patterns → "no matches, must be clean"
-❌ Read first 200 lines → "rest is probably similar"
-❌ See no Math.random() → "determinism verified"
-❌ "Pure function" → skip detailed analysis
-❌ Mark complete without user confirmation
-❌ Use "~" estimates instead of exact counts
-```
+1. Read `docs/audit/SESSION_STARTUP_CHECKLIST.md`
+2. Type back all acknowledgments
+3. Read this entire CLAUDE.md file
+4. Read `docs/audit/AUDIT_WORKFLOW.md`
+5. Read `docs/audit/AUDIT_PROGRESS.md` to find current position
+6. Begin work on next incomplete feature
+
+**If you skip these steps, the session is INVALID.**
 
 ---
 
-## CONFIRMATION CHECKPOINTS
+## 🚨 AUTOMATIC PAUSE TRIGGERS
 
-**Before marking ANY feature complete, you MUST:**
+**These are HARD RULES. If triggered, you MUST pause and state the trigger.**
 
-1. State exactly how many lines you read (no estimates)
-2. Summarize what the code does in your own words
-3. Explain the data flow from input to output
-4. List any bugs found OR explain why you found none
-5. **WAIT FOR USER CONFIRMATION** before proceeding
+| Trigger | Action |
+|---------|--------|
+| 3+ consecutive features with 0 bugs | STOP. State: "PAUSE TRIGGER: 3 consecutive clean features. Reviewing methodology." |
+| Any AI/ML layer with 0 bugs | STOP. State: "PAUSE TRIGGER: AI layer marked clean. Providing detailed justification." |
+| Line count uses "~" or "approximately" | INVALID. You must have exact counts. |
+| No bugs found in entire session (3+ features) | STOP. State: "PAUSE TRIGGER: No bugs in session. Something is wrong." |
+| Grep/search used instead of full file read | INVALID. Read entire files. |
 
-**Example of proper completion:**
-```
-AUDIT COMPLETE: DepthLayer.ts
-
-Lines read: 331 (entire file)
-
-What it does:
-- Receives depth map data from DepthAnything v2 or MiDaS
-- Normalizes depth values to 0-1 range using min/max
-- Applies colormap for visualization
-- Provides depth values for parallax effects
-
-Data flow:
-- Input: Raw depth tensor from AI model (float32, shape [H,W,1])
-- Processing: Normalization, optional inversion, colormap application
-- Output: RGBA texture for rendering, raw depth for effects
-
-Bugs found: 1
-- BUG-010: Line 156 - depth normalization assumes values are already 0-255
-  but DepthAnything v2 outputs relative depth in arbitrary range
-
-Waiting for confirmation before marking complete.
-```
-
-**If you skip the confirmation step, the audit is INVALID.**
+**These triggers are reviewed. Ignoring them will be caught.**
 
 ---
 
-## AI/ML LAYER REQUIREMENTS
+## 📋 THE AUDIT PROCESS
 
-These layers integrate with AI models and REQUIRE deep analysis:
+### For Every Feature:
 
-| Layer | Model Integration | What to Check |
-|-------|-------------------|---------------|
-| DepthLayer | DepthAnything v2, MiDaS, ZoeDepth | Tensor format, value range normalization |
-| NormalLayer | NormalCrafter, DSINE | Normal vector encoding (-1 to 1 vs 0-1) |
-| PoseLayer | DWPose, OpenPose | Keypoint format, confidence thresholds |
-| GeneratedLayer | Stable Diffusion, Flux | Latent decoding, color space |
-| ProceduralMatteLayer | SAM, GroundingDINO | Mask format, edge handling |
+**PHASE 1: DISCOVERY (Document, Don't Wait)**
 
-**For each AI layer, you MUST answer:**
+Search ALL categories and document what you found:
+````bash
+# Search all relevant directories
+find ui/src/components -name "*.vue" | xargs grep -l "KEYWORD"
+find ui/src/stores -name "*.ts" | xargs grep -l "KEYWORD"
+find ui/src/engine -name "*.ts" | xargs grep -l "KEYWORD"
+find ui/src/services -name "*.ts" | xargs grep -l "KEYWORD"
+find ui/src/types -name "*.ts" | xargs grep -l "KEYWORD"
+````
 
-1. What model(s) does this layer support?
-2. What tensor format does each model output?
-3. How does the layer normalize/convert the data?
-4. Are there hardcoded assumptions about value ranges?
-5. Does it handle different model outputs correctly?
+Cross-reference with FEATURE_INVENTORY.md.
 
-**"Clean" is NOT acceptable for AI layers without this analysis.**
+**Document your discovery in the output:**
+````markdown
+**Discovery:**
+- Searched: [keywords]
+- Directories: [list]
+- Files found: [count]
+````
 
----
+**PHASE 2: READ ALL FILES**
 
-## STATISTICAL SANITY CHECK
+- Read every line of every file
+- Large files: read in chunks, track progress
+- Document exact line counts (no estimates)
+- Note observations from each file
 
-If your audit finds:
-- More than 5 consecutive features "clean" → STOP and re-examine
-- More than 80% of a tier "clean" → Something is wrong
-- Any AI/ML layer "clean" → Requires explicit justification
+**PHASE 3: TRACE USER FLOW**
 
-**Reality check:** The codebase has 650,000+ lines. Bugs exist. If you're not finding them, you're not looking hard enough.
+Follow the complete path:
+````
+UI interaction → Store action → Engine update → Render → Export
+````
 
----
+Verify each step actually works, not just exists.
 
-## ABSOLUTE RULES
+**PHASE 4: DOCUMENT FINDINGS**
 
-### 1. NO GREP/SEARCH PATTERNS FOR AUDITING
-```bash
-# ❌ FORBIDDEN
-grep -n "Math.random" file.ts  # Then claiming determinism verified
-grep -n "fps" file.ts          # Then claiming fps handling verified
+Use the required format (see below).
 
-# ✅ REQUIRED
-Read the entire file. Every line. Document exact line count.
-```
+**PHASE 5: CHECKPOINT**
 
-### 2. NO ESTIMATES
-```
-❌ "~400 lines"
-❌ "approximately 1000 lines"
-❌ "about 500 lines"
+After documenting findings, state:
+````
+Waiting for confirmation before proceeding.
+````
 
-✅ "421 lines" (exact count from wc -l or file read)
-```
-
-### 3. NO MARKING COMPLETE WITHOUT CONFIRMATION
-```
-❌ "ShapeLayer audit complete. Moving to next layer."
-
-✅ "ShapeLayer audit complete. Summary: [detailed summary]. 
-    Bugs found: [list or 'none - here's why']. 
-    Waiting for confirmation before proceeding."
-```
-
-### 4. FIX BUGS IMMEDIATELY
-When you find a bug:
-1. Log it in BUGS_FOUND.md
-2. Fix the code
-3. Verify with TypeScript
-4. Commit
-5. Update bug status to FIXED
-6. THEN continue auditing
-
-### 5. UNDERSTAND, DON'T JUST READ
-```
-❌ "Read 1076 lines. No bugs found."
-
-✅ "Read 1076 lines. This layer:
-    - Creates Three.js PointLight/SpotLight/DirectionalLight
-    - Handles shadow mapping via shadow.mapSize
-    - Animates intensity, color, position via keyframes
-    - Potential issue: Line 552 uses smoothing that could break determinism
-    - Verified: Uses frame-based reset on non-sequential playback (line 556)
-    No bugs found because [specific reasoning]."
-```
+Then STOP. Wait for response.
 
 ---
 
-## PROJECT OVERVIEW
+## 📄 REQUIRED OUTPUT FORMAT
 
-**Lattice Compositor** - Professional motion graphics for ComfyUI AI video generation.
+**Every feature audit MUST use this exact format:**
+````markdown
+## AUDIT COMPLETE: [Feature X.X] [Name]
+
+**Discovery:**
+- Searched: [keywords used]
+- Directories: [ui/src/components, ui/src/stores, ui/src/engine, ui/src/services, ui/src/types]
+- Files found: [count]
+
+**Files Read:**
+| File | Lines | Method |
+|------|-------|--------|
+| [path/file.ts] | [exact] | [full read / chunked] |
+| [path/file.vue] | [exact] | [full read / chunked] |
+| **Total** | **[sum]** | |
+
+**What This Code Does:**
+[2-4 sentences in your own words]
+
+**Data Flow:**
+[UI] → [Store] → [Engine] → [Render] → [Export]
+
+**User Flow Verification:**
+1. [Action]: [Expected] → [Actual]: PASS/FAIL
+2. [Action]: [Expected] → [Actual]: PASS/FAIL
+
+**Bugs Found:** [count]
+
+[For each bug:]
+### BUG-XXX: [Title]
+- **Severity:** [CRITICAL/HIGH/MEDIUM/LOW]
+- **File:** [path]
+- **Line:** [number]
+- **Problem:** [description]
+- **Evidence:** [code snippet]
+- **Impact:** [what breaks]
+- **Suggested Fix:** [code or description]
+
+OR
+
+**Bugs Found:** 0
+**Justification:** [Detailed explanation of why no bugs exist - must be specific, not just "code looks correct"]
+
+---
+
+Waiting for confirmation before proceeding.
+````
+
+---
+
+## 📄 LARGE FILE HANDLING
+
+**Files over ~800 lines must be read in chunks:**
+````
+1. Read lines 1-800
+2. Read lines 801-1600
+3. Continue until EOF
+4. Report: "[file]: [total] lines in [X] chunks"
+````
+
+**Track your progress:**
+````markdown
+[filename] chunk reading:
+- Lines 1-800: [key observations]
+- Lines 801-1600: [key observations]
+- Lines 1601-2400: [key observations]
+- Total: [N] lines in [X] chunks ✓
+````
+
+**PROHIBITED:**
+- Reading one chunk and assuming the rest is similar
+- Skipping to "interesting" sections
+- Claiming file read after partial read
+
+---
+
+## 🔬 AI/ML LAYER REQUIREMENTS
+
+**Architecture:** These layers spawn Python processes to run AI models. Model output becomes layer content on the timeline.
+````
+Source Content → Python AI Process → Model Output → Layer Content → Timeline → Export
+````
+
+| Layer | Process | Output |
+|-------|---------|--------|
+| DepthLayer | DepthAnything v2, MiDaS, ZoeDepth, Marigold | Depth map |
+| NormalLayer | NormalCrafter, DSINE | Normal map (RGB) |
+| PoseLayer | DWPose, OpenPose, MediaPipe | Keypoint JSON |
+| GeneratedLayer | Stable Diffusion, Flux | RGB frames |
+| ProceduralMatteLayer | SAM, GroundingDINO | Mask |
+
+**AI layers require verification of:**
+
+1. Process invocation (spawn, parameters, error handling)
+2. Output capture (format, parsing, frame sync)
+3. Data normalization (value ranges, assumptions)
+4. Timeline integration (render, scrub, properties, expressions)
+5. Export (ControlNet format, ComfyUI compatibility)
+
+**AI layer audit checklist:**
+- [ ] Process spawn mechanism documented
+- [ ] Input handling verified
+- [ ] Output parsing verified
+- [ ] Value normalization traced
+- [ ] Hardcoded assumptions identified
+- [ ] Timeline rendering verified
+- [ ] Scrubbing determinism verified
+- [ ] Export format verified
+- [ ] Error handling verified
+
+**0 bugs on AI layer triggers automatic pause.**
+
+---
+
+## 🚫 ABSOLUTE PROHIBITIONS
+
+| Prohibited | Required Instead |
+|------------|------------------|
+| grep to verify correctness | Read entire file |
+| "~400 lines" estimates | Exact count: "421 lines" |
+| "Similar to X" assumptions | Read this specific file |
+| "Looks correct" conclusions | Trace actual execution |
+| Continuing without checkpoint | Wait for confirmation |
+| Skipping file categories | Search UI, Store, Engine, Services, Types |
+
+---
+
+## 📈 SEVERITY DEFINITIONS
+
+| Severity | Definition |
+|----------|------------|
+| **CRITICAL** | Crashes, data loss, nothing renders |
+| **HIGH** | Wrong values, broken animation, undo fails |
+| **MEDIUM** | Edge cases broken, wrong fps, hardcoded values |
+| **LOW** | Visual glitches, console warnings |
+
+**Every issue gets logged. No "too minor" category.**
+
+---
+
+## 🎯 PROJECT CONTEXT
+
+**Lattice Compositor** - Motion graphics for ComfyUI AI video generation.
 
 | Metric | Value |
 |--------|-------|
-| Lines of Code | 650,000+ |
+| Lines of Code | 750,000+ |
 | Layer Types | 24 |
-| Effects | 102 (77 TS + 25 GLSL) |
-| Store Actions | 251+ |
-| Services | 160+ |
+| Effects | 102 |
+| Total Audit Items | 127 features |
 
-### Architecture
-```
-UI (Vue) → Store (Pinia) → Engine (Three.js) → Render
-```
+**Architecture:**
+````
+UI (Vue) → Store (Pinia) → Engine (Three.js) → Render → Export
+````
 
----
+**Determinism Rule:** Every frame must be reproducible.
+````
+Frame 50 → Frame 10 → Frame 50 = IDENTICAL output
+````
 
-## THE DETERMINISM RULE
-
-**Every frame MUST be reproducible.** Frame 50 → Frame 10 → Frame 50 = IDENTICAL.
-```typescript
-// ❌ FORBIDDEN
-Date.now()
-Math.random()           // Use seededRandom
-this.state += delta     // Accumulation
-previousFrame           // Order dependency
-
-// ✅ REQUIRED
-evaluate(frame, project)  // Pure function
-seededRNG(seed, frame)    // Deterministic random
-```
+Forbidden: `Date.now()`, `Math.random()`, accumulated state
+Required: Pure functions of frame number, seeded RNG, reset on seek
 
 ---
 
-## TERMINOLOGY (Legal Requirement)
+## 📝 TERMINOLOGY
 
 | ❌ Avoid | ✅ Use |
 |----------|--------|
@@ -229,17 +288,29 @@ seededRNG(seed, frame)    // Deterministic random
 
 ---
 
-## SESSION WORKFLOW
+## 🔄 SESSION WORKFLOW
 
-1. Read `docs/audit/AUDIT_PROGRESS.md` for current state
-2. Read `docs/audit/AUDIT_WORKFLOW.md` to refresh rules
-3. Pick next feature from `FEATURE_INVENTORY.md`
-4. Audit with FULL FILE READS
-5. Summarize findings and WAIT FOR CONFIRMATION
-6. Fix any bugs found
-7. Update progress AFTER confirmation
-8. Repeat
+1. Complete startup checklist acknowledgments
+2. Find next incomplete feature in AUDIT_PROGRESS.md
+3. Discovery: Search all file categories, document findings
+4. Read: All files completely (chunk if needed)
+5. Trace: UI → Store → Engine → Render → Export
+6. Document: Use required format
+7. Checkpoint: "Waiting for confirmation before proceeding"
+8. Wait: For response
+9. After "confirmed": Update AUDIT_PROGRESS.md, proceed to next feature
+10. After feedback: Address issues, re-submit
 
 ---
 
-**The goal is FINDING AND FIXING BUGS with USER CONFIRMATION at each step.**
+## 📁 FILE LOCATIONS
+````
+docs/audit/
+├── CLAUDE.md                    # This file
+├── SESSION_STARTUP_CHECKLIST.md # Acknowledgments
+├── AUDIT_PROGRESS.md            # Track completion
+├── BUGS_FOUND.md                # Log all bugs
+├── FEATURE_INVENTORY.md         # What to audit
+├── AUDIT_WORKFLOW.md            # Detailed process
+└── sessions/                    # Session reports
+````

@@ -336,6 +336,14 @@ export function updateKeyframe(
   if (!keyframe) return;
 
   if (updates.frame !== undefined) {
+    // BUG-039 FIX: Check for existing keyframe at target frame (same pattern as moveKeyframe)
+    const existingAtTarget = property.keyframes.find(
+      kf => kf.frame === updates.frame && kf.id !== keyframeId
+    );
+    if (existingAtTarget) {
+      // Remove the existing keyframe at target to prevent duplicates
+      property.keyframes = property.keyframes.filter(kf => kf.id !== existingAtTarget.id);
+    }
     keyframe.frame = updates.frame;
     // Re-sort keyframes by frame
     property.keyframes.sort((a, b) => a.frame - b.frame);
