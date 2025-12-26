@@ -43,6 +43,30 @@
             </select>
           </div>
           <div class="property-row">
+            <label title="Minimum audio value to respond to (filters quiet audio)">Input Min</label>
+            <input
+              type="range"
+              :value="binding.min"
+              min="0"
+              max="1"
+              step="0.05"
+              @input="$emit('update', binding.id, 'min', Number(($event.target as HTMLInputElement).value))"
+            />
+            <span class="value-display">{{ binding.min.toFixed(2) }}</span>
+          </div>
+          <div class="property-row">
+            <label title="Maximum audio value (values above this are capped)">Input Max</label>
+            <input
+              type="range"
+              :value="binding.max"
+              min="0"
+              max="1"
+              step="0.05"
+              @input="$emit('update', binding.id, 'max', Number(($event.target as HTMLInputElement).value))"
+            />
+            <span class="value-display">{{ binding.max.toFixed(2) }}</span>
+          </div>
+          <div class="property-row">
             <label>Target</label>
             <select
               :value="binding.target"
