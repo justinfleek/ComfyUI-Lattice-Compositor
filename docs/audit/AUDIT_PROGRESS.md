@@ -23,7 +23,7 @@ All progress reset to zero. Valid bug findings preserved in BUGS_FOUND.md.
 | Tier | Total | Complete | Confirmed | Bugs Found |
 |------|-------|----------|-----------|------------|
 | 1. Foundation | 7 | 7 | 7 | 9 |
-| 2. Layer Types | 23 | 5 | 5 | 4 |
+| 2. Layer Types | 23 | 6 | 6 | 4 |
 | 3. Animation | 10 | 0 | 0 | 0 |
 | 4. Effects | 12 | 0 | 0 | 0 |
 | 5. Particles | 12 | 0 | 0 | 0 |
@@ -34,7 +34,7 @@ All progress reset to zero. Valid bug findings preserved in BUGS_FOUND.md.
 | 10. Export | 6 | 0 | 0 | 0 |
 | 11. AI Integration | 5 | 0 | 0 | 0 |
 | 12. Data/Templates | 4 | 0 | 0 | 0 |
-| **TOTAL** | **111** | **12** | **12** | **13** |
+| **TOTAL** | **111** | **13** | **13** | **13** |
 
 **Note:** 36 bugs from previous sessions preserved in BUGS_FOUND.md (all marked FIXED).
 
@@ -65,7 +65,7 @@ All progress reset to zero. Valid bug findings preserved in BUGS_FOUND.md.
 | 2.3 | VideoLayer | [x] | 2 | 4031 | ✓ | 2025-12-26 |
 | 2.4 | TextLayer | [x] | 0 | 4677 | ✓ | 2025-12-26 |
 | 2.5 | ShapeLayer | [x] | 1 | 2530 | ✓ | 2025-12-26 |
-| 2.6 | AudioLayer | [ ] | 0 | - | ⬜ | - |
+| 2.6 | AudioLayer | [x] | 0 | 2958 | ✓ | 2025-12-26 |
 | 2.7 | CameraLayer | [ ] | 0 | - | ⬜ | - |
 | 2.8 | LightLayer | [ ] | 0 | - | ⬜ | - |
 | 2.9 | ControlLayer | [ ] | 0 | - | ⬜ | - |
@@ -247,7 +247,7 @@ All progress reset to zero. Valid bug findings preserved in BUGS_FOUND.md.
 |---------|------|------------------|------------|-----------|----------|
 | 1 | 2025-12-25 | 1.1 Layer Creation/Deletion, 1.2 Layer Transform, 1.3 Keyframe CRUD, 1.4 Interpolation Engine | 5 | ✓ | - |
 | 2 | 2025-12-26 | 1.5 Expression Evaluation, 1.6 Render Loop | 3 | ✓ | - |
-| 3 | 2025-12-26 | 1.7 History/Undo, 2.1 SolidLayer, 2.2 ImageLayer, 2.3 VideoLayer, 2.4 TextLayer, 2.5 ShapeLayer | 5 | ✓ | - |
+| 3 | 2025-12-26 | 1.7 History/Undo, 2.1 SolidLayer, 2.2 ImageLayer, 2.3 VideoLayer, 2.4 TextLayer, 2.5 ShapeLayer, 2.6 AudioLayer | 5 | ✓ | - |
 
 ---
 
