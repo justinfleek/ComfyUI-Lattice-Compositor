@@ -1,7 +1,7 @@
 # LATTICE COMPOSITOR - BUGS FOUND
 
 **Last Updated:** 2025-12-26
-**Next Bug ID:** BUG-046
+**Next Bug ID:** BUG-047
 
 ---
 
@@ -11,9 +11,9 @@
 |----------|-------|-------|------|
 | CRITICAL | 0 | 0 | 0 |
 | HIGH | 11 | 11 | 0 |
-| MEDIUM | 27 | 26 | 1 |
+| MEDIUM | 28 | 27 | 1 |
 | LOW | 4 | 4 | 0 |
-| **TOTAL** | **42** | **41** | **1** |
+| **TOTAL** | **43** | **42** | **1** |
 
 **Note:** These 36 bugs were found in previous audit sessions and are preserved here. All have been fixed. New bugs should start at BUG-037.
 
@@ -24,7 +24,7 @@
 | Tier | Bug Count |
 |------|-----------|
 | 1. Foundation | 11 |
-| 2. Layer Types | 29 |
+| 2. Layer Types | 30 |
 | 3-12 | 0 (not yet audited) |
 
 ---
@@ -1478,6 +1478,84 @@ case 'redo':
 
 **Files Modified:**
 - `ui/src/composables/useMenuActions.ts` - Changed historyStore calls to store calls
+
+**Related Bugs:** None
+
+---
+
+### BUG-046: ImageLayerData.fit Property Not Implemented
+
+**Feature:** ImageLayer (2.2)
+**Tier:** 2
+**Severity:** MEDIUM
+**Found:** 2025-12-26
+**Session:** 2
+**Status:** FIXED
+
+**Location:**
+- File: `ui/src/engine/layers/ImageLayer.ts`
+- Lines: 75-87 (extractImageData), 175-182 (updateMeshSize)
+- Function: `extractImageData()`, `updateMeshSize()`
+
+**Problem:**
+The `fit` property defined in ImageLayerData ('none' | 'contain' | 'cover' | 'fill') was never extracted or applied. ImageLayer always displayed images at their native dimensions regardless of the fit setting.
+
+**Evidence (before fix):**
+```typescript
+// layerData.ts defines fit property
+export interface ImageLayerData {
+  fit: 'none' | 'contain' | 'cover' | 'fill';  // How to fit image in layer bounds
+}
+
+// layerDefaults.ts sets default
+case 'image':
+  return { assetId: null, fit: 'contain' };  // set but never used
+
+// ImageLayer.ts extractImageData - fit NOT extracted
+private extractImageData(layerData: Layer): {
+  source: string | null;
+  width: number;
+  height: number;  // no fit!
+} { ... }
+
+// updateMeshSize - no fit logic, just uses native dimensions
+this.geometry = new THREE.PlaneGeometry(this.imageWidth, this.imageHeight);
+```
+
+**Expected Behavior:**
+Images should respect the fit property to scale within target bounds using contain/cover/fill modes.
+
+**Actual Behavior:**
+Images always displayed at native pixel dimensions, ignoring fit setting.
+
+**Impact:**
+- Users could not control how images fit within layer bounds
+- The `fit` property in UI/types had no effect
+- Images always displayed at native dimensions
+
+**Fix Applied:**
+```typescript
+// Added fit property extraction
+private extractImageData(layerData: Layer): {
+  source: string | null;
+  targetWidth: number | null;
+  targetHeight: number | null;
+  fit: 'none' | 'contain' | 'cover' | 'fill';
+} { ... }
+
+// Added fit logic in updateMeshSize()
+if (this.targetWidth && this.targetHeight && this.fit !== 'none') {
+  // Calculate dimensions based on fit mode
+  switch (this.fit) {
+    case 'contain': // Scale to fit within bounds
+    case 'cover':   // Scale to cover bounds
+    case 'fill':    // Stretch to fill bounds
+  }
+}
+```
+
+**Files Modified:**
+- `ui/src/engine/layers/ImageLayer.ts` - Added fit property extraction and fit logic
 
 **Related Bugs:** None
 

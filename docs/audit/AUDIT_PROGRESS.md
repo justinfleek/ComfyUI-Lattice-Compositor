@@ -2,7 +2,7 @@
 
 **Last Updated:** 2025-12-26
 **Current Phase:** COMPLETE RESET - Starting Fresh
-**Next Bug ID:** BUG-046
+**Next Bug ID:** BUG-047
 
 ---
 
@@ -23,7 +23,7 @@ All progress reset to zero. Valid bug findings preserved in BUGS_FOUND.md.
 | Tier | Total | Complete | Confirmed | Bugs Found |
 |------|-------|----------|-----------|------------|
 | 1. Foundation | 7 | 7 | 7 | 9 |
-| 2. Layer Types | 23 | 1 | 1 | 0 |
+| 2. Layer Types | 23 | 2 | 2 | 1 |
 | 3. Animation | 10 | 0 | 0 | 0 |
 | 4. Effects | 12 | 0 | 0 | 0 |
 | 5. Particles | 12 | 0 | 0 | 0 |
@@ -34,7 +34,7 @@ All progress reset to zero. Valid bug findings preserved in BUGS_FOUND.md.
 | 10. Export | 6 | 0 | 0 | 0 |
 | 11. AI Integration | 5 | 0 | 0 | 0 |
 | 12. Data/Templates | 4 | 0 | 0 | 0 |
-| **TOTAL** | **111** | **8** | **8** | **9** |
+| **TOTAL** | **111** | **9** | **9** | **10** |
 
 **Note:** 36 bugs from previous sessions preserved in BUGS_FOUND.md (all marked FIXED).
 
@@ -61,7 +61,7 @@ All progress reset to zero. Valid bug findings preserved in BUGS_FOUND.md.
 | ID | Layer | Status | Bugs | Lines | Confirmed | Session |
 |----|-------|--------|------|-------|-----------|---------|
 | 2.1 | SolidLayer | [x] | 0 | 2815 | ✓ | 2025-12-26 |
-| 2.2 | ImageLayer | [ ] | 0 | - | ⬜ | - |
+| 2.2 | ImageLayer | [x] | 1 | 3922 | ✓ | 2025-12-26 |
 | 2.3 | VideoLayer | [ ] | 0 | - | ⬜ | - |
 | 2.4 | TextLayer | [ ] | 0 | - | ⬜ | - |
 | 2.5 | ShapeLayer | [ ] | 0 | - | ⬜ | - |
