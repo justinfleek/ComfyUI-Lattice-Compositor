@@ -23,7 +23,7 @@ All progress reset to zero. Valid bug findings preserved in BUGS_FOUND.md.
 | Tier | Total | Complete | Confirmed | Bugs Found |
 |------|-------|----------|-----------|------------|
 | 1. Foundation | 7 | 7 | 7 | 9 |
-| 2. Layer Types | 23 | 16 | 16 | 5 |
+| 2. Layer Types | 23 | 17 | 17 | 5 |
 | 3. Animation | 10 | 0 | 0 | 0 |
 | 4. Effects | 12 | 0 | 0 | 0 |
 | 5. Particles | 12 | 0 | 0 | 0 |
@@ -34,7 +34,7 @@ All progress reset to zero. Valid bug findings preserved in BUGS_FOUND.md.
 | 10. Export | 6 | 0 | 0 | 0 |
 | 11. AI Integration | 5 | 0 | 0 | 0 |
 | 12. Data/Templates | 4 | 0 | 0 | 0 |
-| **TOTAL** | **111** | **23** | **23** | **14** |
+| **TOTAL** | **111** | **24** | **24** | **14** |
 
 **Note:** 36 bugs from previous sessions preserved in BUGS_FOUND.md (all marked FIXED).
 
@@ -76,7 +76,7 @@ All progress reset to zero. Valid bug findings preserved in BUGS_FOUND.md.
 | 2.14 | PathLayer | [x] | 0 | 1135 | ✓ | 2025-12-26 |
 | 2.15 | SplineLayer | [x] | 0 | 1546 | ✓ | 2025-12-26 |
 | 2.16 | ModelLayer | [x] | 0 | 1476 | ✓ | 2025-12-26 |
-| 2.17 | PointCloudLayer | [ ] | 0 | - | ⬜ | - |
+| 2.17 | PointCloudLayer | [x] | 0 | 1148 | ✓ | 2025-12-26 |
 | 2.18 | DepthLayer ⚠️ AI | [ ] | 0 | - | ⬜ | - |
 | 2.19 | DepthflowLayer | [ ] | 0 | - | ⬜ | - |
 | 2.20 | NormalLayer ⚠️ AI | [ ] | 0 | - | ⬜ | - |
