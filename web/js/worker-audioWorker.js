@@ -76,8 +76,15 @@ function computeMagnitudeSpectrum(samples, fftSize) {
   }
   return magnitudes;
 }
+const DEFAULT_FPS = 16;
+function validateFps(fps) {
+  if (!Number.isFinite(fps) || fps <= 0) {
+    return DEFAULT_FPS;
+  }
+  return Math.max(1, Math.min(120, fps));
+}
 function extractAmplitudeEnvelope(channelData, sampleRate, fps) {
-  const samplesPerFrame = Math.floor(sampleRate / fps);
+  const samplesPerFrame = Math.floor(sampleRate / validateFps(fps));
   const frameCount = Math.ceil(channelData.length / samplesPerFrame);
   const envelope = [];
   for (let frame = 0; frame < frameCount; frame++) {
@@ -95,7 +102,7 @@ function extractAmplitudeEnvelope(channelData, sampleRate, fps) {
   return envelope.map((v) => v / maxValue);
 }
 function extractRMSEnergy(channelData, sampleRate, fps) {
-  const samplesPerFrame = Math.floor(sampleRate / fps);
+  const samplesPerFrame = Math.floor(sampleRate / validateFps(fps));
   const frameCount = Math.ceil(channelData.length / samplesPerFrame);
   const rmsValues = [];
   for (let frame = 0; frame < frameCount; frame++) {
@@ -115,7 +122,7 @@ function extractRMSEnergy(channelData, sampleRate, fps) {
   return rmsValues.map((v) => v / maxValue);
 }
 function extractFrequencyBands(channelData, sampleRate, fps) {
-  const samplesPerFrame = Math.floor(sampleRate / fps);
+  const samplesPerFrame = Math.floor(sampleRate / validateFps(fps));
   const frameCount = Math.ceil(channelData.length / samplesPerFrame);
   const binFrequency = sampleRate / DEFAULT_FFT_SIZE;
   const bands = {
@@ -166,7 +173,7 @@ function extractFrequencyBands(channelData, sampleRate, fps) {
   return bands;
 }
 function extractSpectralCentroid(channelData, sampleRate, fps) {
-  const samplesPerFrame = Math.floor(sampleRate / fps);
+  const samplesPerFrame = Math.floor(sampleRate / validateFps(fps));
   const frameCount = Math.ceil(channelData.length / samplesPerFrame);
   const binFrequency = sampleRate / DEFAULT_FFT_SIZE;
   const centroids = [];
@@ -198,7 +205,7 @@ function extractSpectralCentroid(channelData, sampleRate, fps) {
   return centroids.map((v) => v / maxValue);
 }
 function extractZeroCrossingRate(channelData, sampleRate, fps) {
-  const samplesPerFrame = Math.floor(sampleRate / fps);
+  const samplesPerFrame = Math.floor(sampleRate / validateFps(fps));
   const frameCount = Math.ceil(channelData.length / samplesPerFrame);
   const zcrValues = [];
   for (let frame = 0; frame < frameCount; frame++) {
@@ -218,7 +225,7 @@ function extractZeroCrossingRate(channelData, sampleRate, fps) {
   return zcrValues.map((v) => v / maxValue);
 }
 function extractSpectralFlux(channelData, sampleRate, fps) {
-  const samplesPerFrame = Math.floor(sampleRate / fps);
+  const samplesPerFrame = Math.floor(sampleRate / validateFps(fps));
   const frameCount = Math.ceil(channelData.length / samplesPerFrame);
   const fluxValues = [];
   let prevSpectrum = null;
@@ -252,7 +259,7 @@ function extractSpectralFlux(channelData, sampleRate, fps) {
   return fluxValues.map((v) => v / maxValue);
 }
 function extractSpectralRolloff(channelData, sampleRate, fps, rolloffPercent = 0.85) {
-  const samplesPerFrame = Math.floor(sampleRate / fps);
+  const samplesPerFrame = Math.floor(sampleRate / validateFps(fps));
   const frameCount = Math.ceil(channelData.length / samplesPerFrame);
   const binFrequency = sampleRate / DEFAULT_FFT_SIZE;
   const rolloffValues = [];
@@ -290,7 +297,7 @@ function extractSpectralRolloff(channelData, sampleRate, fps, rolloffPercent = 0
   return rolloffValues.map((v) => v / nyquist);
 }
 function extractSpectralFlatness(channelData, sampleRate, fps) {
-  const samplesPerFrame = Math.floor(sampleRate / fps);
+  const samplesPerFrame = Math.floor(sampleRate / validateFps(fps));
   const frameCount = Math.ceil(channelData.length / samplesPerFrame);
   const flatnessValues = [];
   for (let frame = 0; frame < frameCount; frame++) {
@@ -328,7 +335,7 @@ function extractSpectralFlatness(channelData, sampleRate, fps) {
   return flatnessValues;
 }
 function extractChromaFeatures(channelData, sampleRate, fps) {
-  const samplesPerFrame = Math.floor(sampleRate / fps);
+  const samplesPerFrame = Math.floor(sampleRate / validateFps(fps));
   const frameCount = Math.ceil(channelData.length / samplesPerFrame);
   const binFrequency = sampleRate / DEFAULT_FFT_SIZE;
   const chromaFrames = [];
@@ -424,7 +431,7 @@ function pearsonCorrelation(x, y) {
   return denominator === 0 ? 0 : numerator / denominator;
 }
 function detectOnsets(channelData, sampleRate, fps, sensitivity = 0.5) {
-  const samplesPerFrame = Math.floor(sampleRate / fps);
+  const samplesPerFrame = Math.floor(sampleRate / validateFps(fps));
   const frameCount = Math.ceil(channelData.length / samplesPerFrame);
   const spectralFlux = [];
   let prevSpectrum = null;

@@ -1,4 +1,4 @@
-function createSpeedRampPreset(preset, layerStartFrame, layerDuration, fps = 30) {
+function createSpeedRampPreset(preset, layerStartFrame, layerDuration, fps = 16) {
   const midFrame = layerStartFrame + layerDuration / 2;
   const endFrame = layerStartFrame + layerDuration;
   const impactFrame = layerStartFrame + layerDuration * 0.3;

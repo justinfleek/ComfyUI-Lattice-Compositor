@@ -176,13 +176,13 @@ export class ParticleFlockingSystem {
       particleBuffer[offset + 5] += steering.z * dt;
 
       // Limit speed
-      const speed = Math.sqrt(
+      const newSpeed = Math.sqrt(
         particleBuffer[offset + 3] ** 2 +
         particleBuffer[offset + 4] ** 2 +
         particleBuffer[offset + 5] ** 2
       );
-      if (speed > this.config.maxSpeed) {
-        const scale = this.config.maxSpeed / speed;
+      if (newSpeed > this.config.maxSpeed) {
+        const scale = this.config.maxSpeed / newSpeed;
         particleBuffer[offset + 3] *= scale;
         particleBuffer[offset + 4] *= scale;
         particleBuffer[offset + 5] *= scale;
