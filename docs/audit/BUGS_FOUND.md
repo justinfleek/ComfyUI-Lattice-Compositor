@@ -1,7 +1,7 @@
 # LATTICE COMPOSITOR - BUGS FOUND
 
 **Last Updated:** 2025-12-26
-**Next Bug ID:** BUG-054
+**Next Bug ID:** BUG-055
 
 ---
 
@@ -11,9 +11,9 @@
 |----------|-------|-------|------|
 | CRITICAL | 0 | 0 | 0 |
 | HIGH | 14 | 14 | 0 |
-| MEDIUM | 30 | 30 | 0 |
+| MEDIUM | 31 | 31 | 0 |
 | LOW | 6 | 6 | 0 |
-| **TOTAL** | **50** | **50** | **0** |
+| **TOTAL** | **51** | **51** | **0** |
 
 **Note:** These 36 bugs were found in previous audit sessions and are preserved here. All have been fixed. New bugs should start at BUG-037.
 
@@ -26,7 +26,8 @@
 | 1. Foundation | 11 |
 | 2. Layer Types | 35 |
 | 3. Animation | 2 |
-| 4-12 | 0 (not yet audited) |
+| 4. Effects | 1 |
+| 5-12 | 0 (not yet audited) |
 
 ---
 
@@ -1982,6 +1983,59 @@ const fps = params._fps ?? 16;  // WAN standard default
 - `ui/src/services/effects/timeRenderer.ts` - Line 347
 
 **Related Bugs:** BUG-052 (similar fps fallback inconsistency in textAnimatorActions.ts)
+
+---
+
+## TIER 4 BUGS (Effects System)
+
+### BUG-054: EffectLayer.getSourceCanvas References Undefined this.currentFrame
+
+**Feature:** Effect Stack (4.1)
+**Tier:** 4
+**Severity:** MEDIUM
+**Found:** 2025-12-26
+**Session:** 4
+**Status:** FIXED
+
+**Location:**
+- File: `ui/src/engine/layers/EffectLayer.ts`
+- Lines: 240-255 (removed)
+- Function: `getSourceCanvas()`
+
+**Problem:**
+The `getSourceCanvas()` override in EffectLayer referenced `this.currentFrame` which was never defined on the class. This would pass `undefined` to `renderLayersBelow()`, potentially causing incorrect frame rendering.
+
+**Evidence (before fix):**
+```typescript
+// EffectLayer.ts lines 240-255
+protected override getSourceCanvas(): HTMLCanvasElement | null {
+  if (!this.renderContext) {
+    return null;
+  }
+  // Get the source (layers below) - use current frame, not hardcoded 0
+  return this.renderContext.renderLayersBelow(this.id, this.currentFrame);
+  // ^^^^^ this.currentFrame is NEVER DEFINED on EffectLayer!
+}
+```
+
+**Expected Behavior:**
+The method should either use a properly tracked frame property or not exist at all since `onEvaluateFrame` handles rendering directly with the frame parameter.
+
+**Actual Behavior:**
+`this.currentFrame` was `undefined`, causing `renderLayersBelow()` to receive `undefined` as the frame parameter. This was a latent bug - the method wasn't called in normal operation since `onEvaluateFrame` handles rendering.
+
+**Impact:**
+- If `getSourceCanvas()` was called externally, it would pass `undefined` to `renderLayersBelow()`
+- Could cause incorrect frame rendering or runtime errors
+- Latent bug that could manifest if the method were used for additional effect processing
+
+**Fix Applied:**
+Removed the broken `getSourceCanvas()` override entirely since `onEvaluateFrame()` handles rendering directly with the frame parameter passed as an argument.
+
+**Files Modified:**
+- `ui/src/engine/layers/EffectLayer.ts` - Removed getSourceCanvas override (17 lines)
+
+**Related Bugs:** BUG-027 (previous fix to this same method that introduced the undefined reference)
 
 ---
 
