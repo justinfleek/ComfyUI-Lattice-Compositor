@@ -1100,6 +1100,117 @@ if (updates.frame !== undefined) {
 
 ---
 
+### BUG-040: interpolateProperty Callers With Context Missing fps Parameter
+
+**Feature:** Interpolation Engine (1.4)
+**Tier:** 1
+**Severity:** MEDIUM
+**Found:** 2025-12-25
+**Session:** 1
+**Status:** FIXED
+
+**Location:**
+- File: `ui/src/stores/compositorStore.ts`
+- Lines: 1292, 2088
+- Functions: `getInterpolatedValue()`, `getPropertyValueAtFrame()`
+- File: `ui/src/stores/actions/propertyDriverActions.ts`
+- Lines: 70-94
+- Function: `getEvaluatedLayerProperties()`
+
+**Problem:**
+Three callers of `interpolateProperty` had access to composition fps via `this.fps` or `store.fps` but were not passing it, causing expressions to evaluate with the default fps=16 instead of the actual composition fps.
+
+**Evidence (before fix):**
+```typescript
+// compositorStore.ts:1292 - had this.fps available but didn't pass it
+getInterpolatedValue<T>(property: AnimatableProperty<T>): T {
+  return interpolateProperty(property, (this.getActiveComp()?.currentFrame ?? 0));
+}
+```
+
+**Impact:**
+- Expressions using `time` variable get wrong value when composition fps != 16
+- Wiggle, loop, and time-based expressions evaluate incorrectly
+
+**Fix Applied:**
+```typescript
+getInterpolatedValue<T>(property: AnimatableProperty<T>): T {
+  const comp = this.getActiveComp();
+  const frame = comp?.currentFrame ?? 0;
+  const fps = this.fps;
+  const duration = comp ? comp.settings.frameCount / comp.settings.fps : undefined;
+  return interpolateProperty(property, frame, fps, '', duration);
+}
+```
+
+**Files Modified:**
+- `ui/src/stores/compositorStore.ts` - getInterpolatedValue, getPropertyValueAtFrame
+- `ui/src/stores/actions/propertyDriverActions.ts` - getEvaluatedLayerProperties
+
+**Related Bugs:** BUG-041
+
+---
+
+### BUG-041: Expression Context Uses Hardcoded Composition Duration
+
+**Feature:** Interpolation Engine (1.4)
+**Tier:** 1
+**Severity:** LOW
+**Found:** 2025-12-25
+**Session:** 1
+**Status:** FIXED
+
+**Location:**
+- File: `ui/src/services/interpolation.ts`
+- Line: 294 (before fix)
+- Function: `applyPropertyExpression()`
+
+**Problem:**
+Expression context set `duration: 81 / fps` regardless of actual composition length. This caused expressions using the `duration` variable to get wrong values for compositions != 81 frames.
+
+**Evidence (before fix):**
+```typescript
+const ctx: ExpressionContext = {
+  // ...
+  duration: 81 / fps, // Default composition duration <-- HARDCODED!
+  // ...
+  outPoint: 81,
+};
+```
+
+**Impact:**
+- Expressions using `duration` variable get wrong value for non-standard compositions
+- Loop expressions based on duration behave incorrectly
+
+**Fix Applied:**
+```typescript
+// Added compDuration parameter to interpolateProperty
+export function interpolateProperty<T>(
+  property: AnimatableProperty<T>,
+  frame: number,
+  fps: number = 16,
+  layerId: string = '',
+  compDuration?: number  // NEW: optional composition duration
+): T {
+
+// In applyPropertyExpression:
+const duration = compDuration ?? (81 / fps);  // Use actual or default
+const frameCount = Math.round(duration * fps);
+const ctx: ExpressionContext = {
+  duration,
+  outPoint: frameCount,
+  // ...
+};
+```
+
+**Files Modified:**
+- `ui/src/services/interpolation.ts` - Added compDuration parameter
+- Same callers as BUG-040 now pass duration
+
+**Related Bugs:** BUG-040
+
+---
+
 ## BUG TEMPLATE
 
 Copy this when adding new bugs:

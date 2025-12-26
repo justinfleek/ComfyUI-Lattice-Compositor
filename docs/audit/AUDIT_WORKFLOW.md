@@ -206,3 +206,29 @@ Your output is checked for:
 7. **Statistical sanity** - Too many clean features in a row?
 
 Weak audits get sent back for rework.
+
+---
+
+## Context Analysis for Bug Determination
+
+Not all missing parameters are bugs. Before reporting a bug:
+
+**Ask: "Does the caller have access to this context?"**
+
+1. Trace the function's call chain
+2. Check what the caller/store has access to
+3. If context is available but not passed → BUG
+4. If context is genuinely unavailable → BY DESIGN (default is correct)
+
+| Caller | Has context? | Passes it? | Verdict |
+|--------|--------------|------------|---------|
+| compositorStore.method() | YES (this.fps) | NO | BUG |
+| utilityFunction() | NO | N/A | BY DESIGN |
+
+**Example analysis format:**
+```
+| Caller | Location | Has comp fps? | Has comp duration? | Verdict |
+|--------|----------|---------------|-------------------|---------|
+| getInterpolatedValue | store.ts:1292 | YES (this.fps) | YES (this.frameCount) | BUG |
+| evaluateProperty | engine.ts:542 | NO (simple utility) | NO | BY DESIGN |
+```

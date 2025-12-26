@@ -222,6 +222,36 @@ Source Content → Python AI Process → Model Output → Layer Content → Time
 
 ---
 
+## 🎬 FPS ARCHITECTURE RULES
+
+**Reference:** docs/audit/FPS_ARCHITECTURE.md
+
+**Single Source of Truth:** `composition.settings.fps`
+
+**Default Values (WAN standard):**
+- fps: 16 (WAN AI model standard)
+- duration: 5 seconds
+- frameCount: 81 (4n+1 pattern)
+
+**When analyzing fps-related code, determine:**
+
+| Scenario | Verdict |
+|----------|---------|
+| Function has composition context, doesn't pass fps | BUG |
+| Function has composition context, doesn't pass duration | BUG |
+| Function uses wrong default (30 instead of 16) | BUG |
+| Function has NO path to composition, uses 16fps default | BY DESIGN |
+| Function has NO path to duration, uses 81 frames default | BY DESIGN |
+| Utility called from mixed contexts, uses defaults | BY DESIGN |
+
+**Analysis methodology for fps bugs:**
+1. Identify the caller
+2. Trace call chain: does caller have access to composition settings?
+3. If YES → must pass fps/duration → bug if missing
+4. If NO → default is appropriate → by design
+
+---
+
 ## 🚫 ABSOLUTE PROHIBITIONS
 
 | Prohibited | Required Instead |
@@ -300,6 +330,20 @@ Required: Pure functions of frame number, seeded RNG, reset on seek
 8. Wait: For response
 9. After "confirmed": Update AUDIT_PROGRESS.md, proceed to next feature
 10. After feedback: Address issues, re-submit
+
+---
+
+## 🔧 GIT WORKFLOW
+
+After each bug fix or set of related fixes:
+````bash
+git add -A && git commit -m "fix(BUG-XXX): [description]"
+````
+
+After documentation updates:
+````bash
+git add -A && git commit -m "docs: [description]"
+````
 
 ---
 
