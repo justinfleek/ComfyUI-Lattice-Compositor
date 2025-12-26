@@ -138,7 +138,7 @@ All progress reset to zero. Valid bug findings preserved in BUGS_FOUND.md.
 | 5.6 | Trail System | [x] | 1 | 598 | ✓ | 2025-12-26 |
 | 5.7 | Sub-Emitters | [x] | 1 | 512 | ✓ | 2025-12-26 |
 | 5.8 | Audio Reactive | [x] | 2 | 306 | ✓ | 2025-12-26 |
-| 5.9 | Connection System | [ ] | 0 | - | ⬜ | - |
+| 5.9 | Connection System | [x] | 1 | 590 | ✓ | 2025-12-26 |
 | 5.10 | Frame Cache | [ ] | 0 | - | ⬜ | - |
 | 5.11 | Texture/Sprites | [ ] | 0 | - | ⬜ | - |
 | 5.12 | Modulation Curves | [ ] | 0 | - | ⬜ | - |
