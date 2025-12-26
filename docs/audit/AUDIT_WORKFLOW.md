@@ -79,9 +79,7 @@ These are reviewed. You cannot skip them.
 
 ## Context Analysis Methodology
 
-When a function is missing context it might need (fps, duration, composition settings, layer data, etc.):
-
-Default assumption: It is a problem that needs fixing.
+When a function is missing context (fps, duration, composition settings, layer data, etc.):
 
 Step 1: Trace the Call Chain Upward
 
@@ -89,7 +87,7 @@ Step 1: Trace the Call Chain Upward
 - If not, does THEIR caller have it?
 - Keep tracing until you find where context originates
 
-Step 2: Classify the Problem
+Step 2: Classify and Act
 
 | Finding | Classification | Action |
 |---------|----------------|--------|
@@ -103,10 +101,6 @@ Step 3: Document Your Analysis
 | Caller | Location | Has context? | Passes it? | Classification |
 |--------|----------|--------------|------------|----------------|
 | [name] | file:line | YES/NO | YES/NO | BUG / ARCH GAP / STUB |
-
-Step 4: No Dismissals
-
-There is no "by design" category for missing context. If code needs context and does not have it, something is wrong somewhere in the chain. Find it. Document it. Fix it or file it.
 
 ---
 
