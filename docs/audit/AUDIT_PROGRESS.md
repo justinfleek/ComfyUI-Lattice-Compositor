@@ -2,7 +2,7 @@
 
 **Last Updated:** 2025-12-26
 **Current Phase:** Tier 4 Effects System (Phase A + Phase B required)
-**Next Bug ID:** BUG-055
+**Next Bug ID:** BUG-056
 
 ---
 
@@ -25,7 +25,7 @@ All progress reset to zero. Valid bug findings preserved in BUGS_FOUND.md.
 | 1. Foundation | 7 | 7 | 7 | 9 |
 | 2. Layer Types | 23 | 23 | 23 | 6 |
 | 3. Animation | 10 | 10 | 10 | 2 |
-| 4. Effects | 12 | 3 | 3 | 2 |
+| 4. Effects | 12 | 12 | 12 | 2 |
 | 5. Particles | 12 | 0 | 0 | 0 |
 | 6. Audio | 7 | 0 | 0 | 0 |
 | 7. 3D/Camera | 10 | 0 | 0 | 0 |
@@ -34,7 +34,7 @@ All progress reset to zero. Valid bug findings preserved in BUGS_FOUND.md.
 | 10. Export | 6 | 0 | 0 | 0 |
 | 11. AI Integration | 5 | 0 | 0 | 0 |
 | 12. Data/Templates | 4 | 0 | 0 | 0 |
-| **TOTAL** | **111** | **34** | **34** | **18** |
+| **TOTAL** | **111** | **43** | **43** | **19** |
 
 **Note:** 36 bugs from previous sessions preserved in BUGS_FOUND.md (all marked FIXED).
 
@@ -112,15 +112,15 @@ All progress reset to zero. Valid bug findings preserved in BUGS_FOUND.md.
 | ID | Category | Status | Bugs | Lines | Confirmed | Session |
 |----|----------|--------|------|-------|-----------|---------|
 | 4.1 | Blur/Sharpen (5) | [x] | 0 | 1281 | ✓ | 2025-12-26 |
-| 4.2 | Color Correction (23) | [ ] | 0 | - | ⬜ | - |
-| 4.3 | Distort (12) | [ ] | 0 | - | ⬜ | - |
-| 4.4 | Generate (5) | [ ] | 0 | - | ⬜ | - |
-| 4.5 | Stylize (10) | [ ] | 0 | - | ⬜ | - |
-| 4.6 | Time (4) | [ ] | 0 | - | ⬜ | - |
-| 4.7 | Noise/Grain (4) | [ ] | 0 | - | ⬜ | - |
-| 4.8 | Matte (2) | [ ] | 0 | - | ⬜ | - |
-| 4.9 | Utility (7) | [ ] | 0 | - | ⬜ | - |
-| 4.10 | GLSL Shaders (25) | [ ] | 0 | - | ⬜ | - |
+| 4.2 | Color Correction (23) | [x] | 1 | 2222 | ✓ | 2025-12-26 |
+| 4.3 | Distort (5) | [x] | 0 | 1139 | ✓ | 2025-12-26 |
+| 4.4 | Generate (6) | [x] | 0 | 797 | ✓ | 2025-12-26 |
+| 4.5 | Stylize (13) | [x] | 0 | 1908 | ✓ | 2025-12-26 |
+| 4.6 | Time (4) | [x] | 0 | 935 | ✓ | 2025-12-26 |
+| 4.7 | Noise/Grain (4) | [x] | 0 | 104* | ✓ | 2025-12-26 |
+| 4.8 | Matte (2) | [x] | 0 | 973 | ✓ | 2025-12-26 |
+| 4.9 | Utility (8) | [x] | 0 | 153 | ✓ | 2025-12-26 |
+| 4.10 | GLSL Shaders (21) | [x] | 0 | 1884 | ✓ | 2025-12-26 |
 | 4.11 | Effect Application | [x] | 1* | 3802 | ✓ | 2025-12-26 |
 | 4.12 | Effect Ordering | [x] | 0 | (4.11) | ✓ | 2025-12-26 |
 
