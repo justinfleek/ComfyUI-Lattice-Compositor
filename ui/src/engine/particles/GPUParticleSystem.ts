@@ -681,9 +681,10 @@ export class GPUParticleSystem {
 
   /**
    * Set procedural shape (no texture)
+   * BUG-067 fix: All 9 shapes now supported
    * Delegates to ParticleTextureSystem
    */
-  setProceduralShape(shape: 'none' | 'circle' | 'ring' | 'square' | 'star'): void {
+  setProceduralShape(shape: 'none' | 'circle' | 'ring' | 'square' | 'star' | 'noise' | 'line' | 'triangle' | 'shadedSphere' | 'fadedSphere'): void {
     if (this.textureSystem) {
       this.textureSystem.setRenderTargets(this.material, this.instancedGeometry);
       this.textureSystem.setProceduralShape(shape);
@@ -1220,6 +1221,7 @@ export class GPUParticleSystem {
       animateSprite: { value: 0 },
       spriteFrameRate: { value: 10 },
       time: { value: 0 },
+      randomStartFrame: { value: 0 },  // BUG-068 fix: Per-particle random start frame
       // Motion blur uniforms
       motionBlurEnabled: { value: this.config.render.motionBlur ? 1 : 0 },
       motionBlurStrength: { value: this.config.render.motionBlurStrength ?? 0.1 },

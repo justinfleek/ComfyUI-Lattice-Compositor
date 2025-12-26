@@ -113,6 +113,8 @@ export class ParticleTextureSystem {
               this.material.uniforms.spriteFrameCount.value = cols * rows;
               this.material.uniforms.animateSprite.value = spriteSheet.animate ? 1 : 0;
               this.material.uniforms.spriteFrameRate.value = spriteSheet.frameRate ?? 10;
+              // BUG-068 fix: Enable randomStartFrame uniform when configured
+              this.material.uniforms.randomStartFrame.value = spriteSheet.randomStart ? 1 : 0;
             }
 
             this.material.needsUpdate = true;
@@ -149,10 +151,22 @@ export class ParticleTextureSystem {
 
   /**
    * Set procedural shape (no texture)
-   * @param shape 0 = none, 1 = circle, 2 = ring, 3 = square, 4 = star
+   * BUG-067 fix: All 9 shapes now supported
+   * @param shape 0=none, 1=circle, 2=ring, 3=square, 4=star, 5=noise, 6=line, 7=triangle, 8=shadedSphere, 9=fadedSphere
    */
-  setProceduralShape(shape: 'none' | 'circle' | 'ring' | 'square' | 'star'): void {
-    const shapeMap = { none: 0, circle: 1, ring: 2, square: 3, star: 4 };
+  setProceduralShape(shape: 'none' | 'circle' | 'ring' | 'square' | 'star' | 'noise' | 'line' | 'triangle' | 'shadedSphere' | 'fadedSphere'): void {
+    const shapeMap: Record<string, number> = {
+      none: 0,
+      circle: 1,
+      ring: 2,
+      square: 3,
+      star: 4,
+      noise: 5,
+      line: 6,
+      triangle: 7,
+      shadedSphere: 8,
+      fadedSphere: 9
+    };
     if (this.material) {
       this.material.uniforms.hasDiffuseMap.value = 0;
       this.material.uniforms.proceduralShape.value = shapeMap[shape] ?? 1;

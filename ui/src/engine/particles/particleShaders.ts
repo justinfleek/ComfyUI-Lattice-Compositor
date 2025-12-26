@@ -364,9 +364,11 @@ uniform int spriteFrameCount;
 uniform int animateSprite;
 uniform float spriteFrameRate;
 uniform float time;
+uniform int randomStartFrame;  // BUG-068 fix: Per-particle random start frame
 
 // Procedural shape generation
-// 0 = none, 1 = circle, 2 = ring, 3 = square, 4 = star
+// BUG-067 fix: All 9 shapes now implemented
+// 0 = none, 1 = circle, 2 = ring, 3 = square, 4 = star, 5 = noise, 6 = line, 7 = triangle, 8 = shadedSphere, 9 = fadedSphere
 float proceduralAlpha(vec2 uv, int shape) {
   vec2 centered = uv * 2.0 - 1.0;
   float dist = length(centered);
@@ -391,6 +393,61 @@ float proceduralAlpha(vec2 uv, int shape) {
     float r = mix(0.4, 0.9, star);
     return 1.0 - smoothstep(r - 0.1, r, dist);
   }
+  // Noise - procedural noise texture
+  else if (shape == 5) {
+    // Simple value noise using sin for determinism
+    float n = sin(centered.x * 10.0) * sin(centered.y * 10.0);
+    n += 0.5 * sin(centered.x * 20.0 + 1.0) * sin(centered.y * 20.0 + 1.0);
+    n += 0.25 * sin(centered.x * 40.0 + 2.0) * sin(centered.y * 40.0 + 2.0);
+    n = n * 0.5 + 0.5;  // Normalize to 0-1
+    float edge = 1.0 - smoothstep(0.8, 1.0, dist);
+    return n * edge;
+  }
+  // Line - horizontal line with soft edges
+  else if (shape == 6) {
+    float lineWidth = 0.15;
+    float alpha = 1.0 - smoothstep(lineWidth, lineWidth + 0.1, abs(centered.y));
+    alpha *= 1.0 - smoothstep(0.8, 1.0, abs(centered.x));
+    return alpha;
+  }
+  // Triangle - equilateral pointing up
+  else if (shape == 7) {
+    // Triangle SDF
+    vec2 p = centered;
+    p.y -= 0.1;  // Center vertically
+    float k = sqrt(3.0);
+    p.x = abs(p.x) - 0.8;
+    p.y = p.y + 0.8 / k;
+    if (p.x + k * p.y > 0.0) {
+      p = vec2(p.x - k * p.y, -k * p.x - p.y) / 2.0;
+    }
+    p.x -= clamp(p.x, -1.6, 0.0);
+    float d = -length(p) * sign(p.y);
+    return 1.0 - smoothstep(-0.05, 0.05, d);
+  }
+  // Shaded Sphere - 3D appearance with lighting
+  else if (shape == 8) {
+    if (dist > 1.0) return 0.0;
+    // Calculate sphere normal
+    float z = sqrt(1.0 - dist * dist);
+    vec3 normal = vec3(centered.x, centered.y, z);
+    // Light from upper-left
+    vec3 lightDir = normalize(vec3(-0.5, -0.5, 1.0));
+    float diffuse = max(dot(normal, lightDir), 0.0);
+    // Add specular highlight
+    vec3 viewDir = vec3(0.0, 0.0, 1.0);
+    vec3 halfVec = normalize(lightDir + viewDir);
+    float specular = pow(max(dot(normal, halfVec), 0.0), 32.0);
+    float shade = 0.3 + 0.5 * diffuse + 0.4 * specular;
+    float edge = 1.0 - smoothstep(0.95, 1.0, dist);
+    return shade * edge;
+  }
+  // Faded Sphere - radial gradient falloff
+  else if (shape == 9) {
+    // Exponential falloff from center
+    float fade = exp(-dist * dist * 2.0);
+    return fade;
+  }
   return 1.0;
 }
 
@@ -412,12 +469,22 @@ void main() {
     // Sprite sheet animation
     if (spriteFrameCount > 1) {
       int frame;
+
+      // BUG-068 fix: Calculate per-particle random offset when randomStartFrame enabled
+      int frameOffset = 0;
+      if (randomStartFrame == 1) {
+        // Use particle color as seed for deterministic per-particle offset
+        // This creates a pseudo-random but deterministic offset based on particle instance
+        float seed = vColor.r * 31.0 + vColor.g * 37.0 + vColor.b * 41.0 + vColor.a * 43.0;
+        frameOffset = int(mod(seed * 127.0, float(spriteFrameCount)));
+      }
+
       if (animateSprite == 1) {
-        // Time-based animation
-        frame = int(mod(time * spriteFrameRate, float(spriteFrameCount)));
+        // Time-based animation with random start offset
+        frame = int(mod(time * spriteFrameRate + float(frameOffset), float(spriteFrameCount)));
       } else {
-        // Life-based animation (frame changes with particle age)
-        frame = int(vLifeRatio * float(spriteFrameCount - 1));
+        // Life-based animation (frame changes with particle age) with random start offset
+        frame = int(mod(vLifeRatio * float(spriteFrameCount - 1) + float(frameOffset), float(spriteFrameCount)));
       }
       texUV = getSpriteUV(vUv, frame, spriteSheetSize);
     }

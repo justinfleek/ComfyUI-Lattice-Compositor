@@ -1,7 +1,7 @@
 # LATTICE COMPOSITOR - BUGS FOUND
 
 **Last Updated:** 2025-12-26
-**Next Bug ID:** BUG-067
+**Next Bug ID:** BUG-069
 
 ---
 
@@ -11,9 +11,9 @@
 |----------|-------|-------|------|
 | CRITICAL | 0 | 0 | 0 |
 | HIGH | 19 | 19 | 0 |
-| MEDIUM | 38 | 38 | 0 |
+| MEDIUM | 40 | 40 | 0 |
 | LOW | 7 | 7 | 0 |
-| **TOTAL** | **64** | **64** | **0** |
+| **TOTAL** | **66** | **66** | **0** |
 
 **Note:** These 36 bugs were found in previous audit sessions and are preserved here. All have been fixed. New bugs should start at BUG-037.
 
@@ -27,7 +27,7 @@
 | 2. Layer Types | 35 |
 | 3. Animation | 2 |
 | 4. Effects | 2 |
-| 5. Particles | 9 |
+| 5. Particles | 13 |
 | 6-12 | 0 (not yet audited) |
 
 ---
@@ -2763,6 +2763,117 @@ After scrubbing, the cache might contain paths from unrelated frames, causing in
 - `ui/src/stores/compositorStore.ts` - Lines 85-87, 1050-1051, 1088-1089, 1104-1105, 1122-1123
 
 **Related Bugs:** BUG-065 (same pattern - temporal state not cleared on seek)
+
+---
+
+### BUG-067: Procedural Shape Type Mismatch
+
+**Feature:** Texture/Sprites (5.11)
+**Tier:** 5
+**Severity:** MEDIUM
+**Found:** 2025-12-26
+**Session:** 4
+**Status:** FIXED
+
+**Location:**
+- File: `ui/src/engine/particles/types.ts`
+- Line: 379
+- File: `ui/src/engine/particles/particleShaders.ts`
+- Lines: 369-451
+- File: `ui/src/engine/particles/ParticleTextureSystem.ts`
+- Lines: 155-175
+
+**Problem:**
+`ParticleTextureConfig.proceduralType` accepted 9 shape types but only 5 were implemented in the shader (none, circle, ring, square, star). The missing shapes (noise, line, triangle, shadedSphere, fadedSphere) silently fell back to circle.
+
+**Evidence:**
+```typescript
+// types.ts line 379 - promised 9 shapes
+proceduralType?: 'circle' | 'square' | 'star' | 'ring' | 'noise' | 'line' | 'triangle' | 'shadedSphere' | 'fadedSphere';
+
+// particleShaders.ts - only implemented 5
+const shapeMap = { none: 0, circle: 1, ring: 2, square: 3, star: 4 };
+```
+
+**Expected Behavior:**
+All 9 shape types should render their respective shapes.
+
+**Actual Behavior:**
+5 shapes worked, 4 silently fell back to circle.
+
+**Impact:**
+Users selecting unimplemented shapes got unexpected circle rendering instead of the requested shape.
+
+**Fix Applied:**
+1. Added GLSL implementations for all 5 missing shapes in `proceduralAlpha()`:
+   - noise (5): Layered sine-based procedural noise
+   - line (6): Horizontal line with soft edges
+   - triangle (7): Equilateral triangle using SDF
+   - shadedSphere (8): 3D lit sphere appearance
+   - fadedSphere (9): Exponential radial falloff
+2. Updated shapeMap in ParticleTextureSystem.ts to include all 9 types
+3. Updated type signature in setProceduralShape() to accept all shapes
+
+**Files Modified:**
+- `ui/src/engine/particles/particleShaders.ts` - Lines 369-451
+- `ui/src/engine/particles/ParticleTextureSystem.ts` - Lines 155-175
+- `ui/src/engine/particles/GPUParticleSystem.ts` - Line 687
+
+**Related Bugs:** None
+
+---
+
+### BUG-068: randomStartFrame Not Implemented
+
+**Feature:** Texture/Sprites (5.11)
+**Tier:** 5
+**Severity:** MEDIUM
+**Found:** 2025-12-26
+**Session:** 4
+**Status:** FIXED
+
+**Location:**
+- File: `ui/src/engine/particles/types.ts`
+- Line: 376
+- File: `ui/src/engine/particles/ParticleTextureSystem.ts`
+- Lines: 25, 109
+- File: `ui/src/engine/particles/particleShaders.ts`
+- Lines: 367, 473-480, 484, 487
+
+**Problem:**
+The `randomStartFrame` (or `randomStart`) config option was stored in SpriteSheetConfig but never used in rendering. All particles always started at frame 0 of sprite sheet animation regardless of this setting.
+
+**Evidence:**
+```typescript
+// Line 109 - value was stored but never passed to shader
+randomStart: spriteSheet.randomStart ?? false,
+
+// Shader had no uniform for random start frame
+// All particles started at frame 0
+```
+
+**Expected Behavior:**
+When `randomStartFrame` is enabled, each particle should start at a different frame in the sprite sheet animation for visual variety.
+
+**Actual Behavior:**
+All particles started at frame 0 regardless of config setting.
+
+**Impact:**
+Feature didn't work as documented. Sprite animations looked uniform instead of varied.
+
+**Fix Applied:**
+1. Added `randomStartFrame` uniform to fragment shader
+2. In shader, when enabled, compute deterministic per-particle frame offset using particle color as seed
+3. Add offset to sprite frame calculation for both time-based and life-based animation
+4. Added uniform initialization in GPUParticleSystem.ts
+5. Updated ParticleTextureSystem.ts to set uniform from config
+
+**Files Modified:**
+- `ui/src/engine/particles/particleShaders.ts` - Lines 367, 473-480, 484, 487
+- `ui/src/engine/particles/ParticleTextureSystem.ts` - Line 117
+- `ui/src/engine/particles/GPUParticleSystem.ts` - Line 1224
+
+**Related Bugs:** None
 
 ---
 
