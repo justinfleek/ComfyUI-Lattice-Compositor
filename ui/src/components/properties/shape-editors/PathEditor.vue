@@ -24,7 +24,7 @@
 <script setup lang="ts">
 import type { PathShape } from '@/types/shapes';
 
-const props = defineProps<{ shape: PathShape }>();
+const props = defineProps<{ shape: PathShape; layerId: string }>();
 const emit = defineEmits(['update']);
 
 function updateDirection(e: Event) {

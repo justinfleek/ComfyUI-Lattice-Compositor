@@ -932,8 +932,8 @@ export class GPUParticleSystem {
         emissionRate *= audioMod;
       }
 
-      // Check for beat-triggered burst
-      if (emitter.burstOnBeat && this.state.currentAudioFeatures.get('beat') === 1) {
+      // Check for beat-triggered burst (uses 'onsets' from audio analysis)
+      if (emitter.burstOnBeat && this.state.currentAudioFeatures.get('onsets') === 1) {
         const burstCount = Math.floor(emitter.burstCount * emitter.beatEmissionMultiplier);
         for (let i = 0; i < burstCount; i++) {
           this.spawnParticle(emitter);

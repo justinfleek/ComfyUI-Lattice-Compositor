@@ -346,7 +346,7 @@ function confirmSegmentMask() {
 }
 
 function clearSegmentMask() {
-  store.clearSegmentMask();
+  store.clearSegmentPendingMask();
 }
 
 // Theme selector
@@ -387,7 +387,7 @@ onUnmounted(() => {
 // Timecode
 const formattedTimecode = computed(() => {
   const frame = store.currentFrame;
-  const fps = store.activeComposition?.frameRate || 16;
+  const fps = store.activeComposition?.settings.fps || 16;
   const seconds = Math.floor(frame / fps);
   const frames = frame % fps;
   const minutes = Math.floor(seconds / 60);
@@ -397,27 +397,27 @@ const formattedTimecode = computed(() => {
 
 // Playback controls
 function goToStart() {
-  playbackStore.setFrame(0);
+  store.setFrame(0);
 }
 
 function goToEnd() {
-  const frameCount = store.activeComposition?.frameCount || 81;
-  playbackStore.setFrame(frameCount - 1);
+  const frameCount = store.activeComposition?.settings.frameCount || 81;
+  store.setFrame(frameCount - 1);
 }
 
 function stepBackward() {
   const newFrame = Math.max(0, store.currentFrame - 1);
-  playbackStore.setFrame(newFrame);
+  store.setFrame(newFrame);
 }
 
 function stepForward() {
-  const frameCount = store.activeComposition?.frameCount || 81;
+  const frameCount = store.activeComposition?.settings.frameCount || 81;
   const newFrame = Math.min(frameCount - 1, store.currentFrame + 1);
-  playbackStore.setFrame(newFrame);
+  store.setFrame(newFrame);
 }
 
 function togglePlay() {
-  playbackStore.togglePlayback();
+  store.togglePlayback();
 }
 
 // Undo/Redo

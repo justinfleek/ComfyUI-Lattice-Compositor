@@ -75,6 +75,7 @@
               :item="item"
               :index="index"
               :depth="0"
+              :layerId="layer.id"
               @update="updateContentItem(index, $event)"
               @delete="deleteContentItem(index)"
               @move-up="moveContentItem(index, -1)"

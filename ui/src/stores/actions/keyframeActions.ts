@@ -193,6 +193,104 @@ export function clearKeyframes(
 }
 
 // ============================================================================
+// PROPERTY UPDATE
+// ============================================================================
+
+/**
+ * Update an entire AnimatableProperty by path, including keyframes
+ * Used for batch operations like audio-reactive keyframe generation
+ *
+ * @param store - The compositor store
+ * @param layerId - Layer ID
+ * @param propertyPath - Path to property (e.g., 'transform.position', 'opacity')
+ * @param propertyData - Full AnimatableProperty object to replace with
+ * @returns true if successful
+ */
+export function updateLayerProperty(
+  store: KeyframeStore,
+  layerId: string,
+  propertyPath: string,
+  propertyData: Partial<AnimatableProperty<any>>
+): boolean {
+  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  if (!layer) {
+    storeLogger.warn('updateLayerProperty: layer not found', layerId);
+    return false;
+  }
+
+  // Normalize path - strip 'transform.' prefix if present
+  const normalizedPath = propertyPath.replace(/^transform\./, '');
+
+  // Get reference to the actual property object
+  let property: AnimatableProperty<any> | undefined;
+
+  // Check transform properties
+  if (normalizedPath === 'position') {
+    property = layer.transform.position;
+  } else if (normalizedPath === 'scale') {
+    property = layer.transform.scale;
+  } else if (normalizedPath === 'rotation') {
+    property = layer.transform.rotation;
+  } else if (normalizedPath === 'anchorPoint') {
+    property = layer.transform.anchorPoint;
+  } else if (normalizedPath === 'origin') {
+    property = layer.transform.origin;
+  } else if (propertyPath === 'opacity') {
+    property = layer.opacity as AnimatableProperty<any>;
+  } else if (normalizedPath === 'rotationX' && layer.transform.rotationX) {
+    property = layer.transform.rotationX;
+  } else if (normalizedPath === 'rotationY' && layer.transform.rotationY) {
+    property = layer.transform.rotationY;
+  } else if (normalizedPath === 'rotationZ' && layer.transform.rotationZ) {
+    property = layer.transform.rotationZ;
+  } else if (normalizedPath === 'orientation' && layer.transform.orientation) {
+    property = layer.transform.orientation;
+  } else {
+    // Check custom properties by name or id
+    property = layer.properties.find(p => p.name === propertyPath || p.id === propertyPath);
+  }
+
+  if (!property) {
+    storeLogger.warn('updateLayerProperty: property not found', propertyPath);
+    return false;
+  }
+
+  // Update the property with new data
+  if (propertyData.value !== undefined) {
+    property.value = propertyData.value;
+  }
+  if (propertyData.animated !== undefined) {
+    property.animated = propertyData.animated;
+  }
+  if (propertyData.keyframes !== undefined) {
+    // Ensure keyframes have valid structure
+    property.keyframes = propertyData.keyframes.map(kf => ({
+      id: kf.id || `kf_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
+      frame: kf.frame,
+      value: kf.value,
+      interpolation: kf.interpolation || 'linear',
+      inHandle: kf.inHandle || { frame: 0, value: 0, enabled: false },
+      outHandle: kf.outHandle || { frame: 0, value: 0, enabled: false },
+      controlMode: kf.controlMode || 'smooth',
+      spatialInTangent: kf.spatialInTangent,
+      spatialOutTangent: kf.spatialOutTangent
+    }));
+    // Sort keyframes by frame
+    property.keyframes.sort((a, b) => a.frame - b.frame);
+  }
+  if (propertyData.expression !== undefined) {
+    property.expression = propertyData.expression;
+  }
+
+  markLayerDirty(layerId);
+  store.project.meta.modified = new Date().toISOString();
+  store.pushHistory();
+
+  storeLogger.debug('updateLayerProperty: Updated', propertyPath, 'on layer', layerId);
+  return true;
+}
+
+// ============================================================================
 // KEYFRAME MOVEMENT
 // ============================================================================
 

@@ -3,12 +3,12 @@
     <div class="property-row">
       <label>Size</label>
       <ScrubableNumber :modelValue="operator.size.value" @update:modelValue="v => updateNumber('size', v)" :min="0" :max="200" unit="px" />
-      <KeyframeToggle :property="operator.size" @toggle="toggleKeyframe('size')" />
+      <KeyframeToggle :property="operator.size" :layerId="layerId" @toggle="toggleKeyframe('size')" />
     </div>
     <div class="property-row">
       <label>Detail</label>
       <ScrubableNumber :modelValue="operator.detail.value" @update:modelValue="v => updateNumber('detail', v)" :min="1" :max="10" :step="1" />
-      <KeyframeToggle :property="operator.detail" @toggle="toggleKeyframe('detail')" />
+      <KeyframeToggle :property="operator.detail" :layerId="layerId" @toggle="toggleKeyframe('detail')" />
     </div>
     <div class="property-row">
       <label>Points</label>
@@ -20,17 +20,17 @@
     <div class="property-row">
       <label>Correlation</label>
       <ScrubableNumber :modelValue="operator.correlation.value" @update:modelValue="v => updateNumber('correlation', v)" :min="0" :max="100" unit="%" />
-      <KeyframeToggle :property="operator.correlation" @toggle="toggleKeyframe('correlation')" />
+      <KeyframeToggle :property="operator.correlation" :layerId="layerId" @toggle="toggleKeyframe('correlation')" />
     </div>
     <div class="property-row">
       <label>Temp Phase</label>
       <ScrubableNumber :modelValue="operator.temporalPhase.value" @update:modelValue="v => updateNumber('temporalPhase', v)" :min="0" :max="360" unit="°" />
-      <KeyframeToggle :property="operator.temporalPhase" @toggle="toggleKeyframe('temporalPhase')" />
+      <KeyframeToggle :property="operator.temporalPhase" :layerId="layerId" @toggle="toggleKeyframe('temporalPhase')" />
     </div>
     <div class="property-row">
       <label>Spatial Phase</label>
       <ScrubableNumber :modelValue="operator.spatialPhase.value" @update:modelValue="v => updateNumber('spatialPhase', v)" :min="0" :max="360" unit="°" />
-      <KeyframeToggle :property="operator.spatialPhase" @toggle="toggleKeyframe('spatialPhase')" />
+      <KeyframeToggle :property="operator.spatialPhase" :layerId="layerId" @toggle="toggleKeyframe('spatialPhase')" />
     </div>
     <div class="property-row">
       <label>Random Seed</label>
@@ -44,8 +44,9 @@ import type { WigglePathsOperator, WigglePointType } from '@/types/shapes';
 import { ScrubableNumber } from '@/components/controls';
 import KeyframeToggle from '../KeyframeToggle.vue';
 import { useCompositorStore } from '@/stores/compositorStore';
+import { createKeyframe } from '@/types/animation';
 
-const props = defineProps<{ operator: WigglePathsOperator }>();
+const props = defineProps<{ operator: WigglePathsOperator; layerId: string }>();
 const emit = defineEmits(['update']);
 const store = useCompositorStore();
 
@@ -66,7 +67,7 @@ function toggleKeyframe(prop: 'size' | 'detail' | 'correlation' | 'temporalPhase
   const frame = store.currentFrame;
   const hasKf = animProp.keyframes.some(k => k.frame === frame);
   if (hasKf) { animProp.keyframes = animProp.keyframes.filter(k => k.frame !== frame); }
-  else { animProp.keyframes.push({ id: `kf_${Date.now()}`, frame, value: animProp.value, easing: 'linear' }); }
+  else { animProp.keyframes.push(createKeyframe(frame, animProp.value, 'linear')); }
   animProp.animated = animProp.keyframes.length > 0;
   emit('update', updated);
 }

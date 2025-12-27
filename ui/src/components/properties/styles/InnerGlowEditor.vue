@@ -67,14 +67,14 @@
 </template>
 
 <script setup lang="ts">
-import type { InnerGlowStyle, RGBA } from '@/types/layerStyles';
+import type { InnerGlowStyle, InnerGlowUpdate, RGBA } from '@/types/layerStyles';
 
 defineProps<{
   style: InnerGlowStyle;
 }>();
 
 const emit = defineEmits<{
-  (e: 'update', updates: Partial<InnerGlowStyle>): void;
+  (e: 'update', updates: InnerGlowUpdate): void;
 }>();
 
 const blendModes = ['normal', 'screen', 'lighten', 'color-dodge', 'linear-dodge', 'overlay'];

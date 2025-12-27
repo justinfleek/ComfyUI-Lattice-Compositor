@@ -61,14 +61,14 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { GradientOverlayStyle } from '@/types/layerStyles';
+import type { GradientOverlayStyle, GradientOverlayUpdate } from '@/types/layerStyles';
 
 const props = defineProps<{
   style: GradientOverlayStyle;
 }>();
 
 const emit = defineEmits<{
-  (e: 'update', updates: Partial<GradientOverlayStyle>): void;
+  (e: 'update', updates: GradientOverlayUpdate): void;
 }>();
 
 const blendModes = [

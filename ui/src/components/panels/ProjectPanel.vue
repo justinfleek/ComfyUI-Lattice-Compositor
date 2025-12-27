@@ -390,7 +390,7 @@ const selectedPreview = computed(() => {
       type: 'composition',
       url: null,
       name: item.name,
-      details: comp ? `${comp.settings.width} × ${comp.settings.height} • ${comp.settings.frameRate}fps` : 'Composition',
+      details: comp ? `${comp.settings.width} × ${comp.settings.height} • ${comp.settings.fps}fps` : 'Composition',
       icon: '🎬'
     };
   } else if (item.type === 'solid') {
@@ -486,7 +486,7 @@ function openItem(item: ProjectItem) {
         .then(blob => {
           const file = new File([blob], item.name, { type: blob.type || 'audio/mpeg' });
           const audioStore = useAudioStore();
-          const fps = store.activeComposition?.settings.frameRate || 16;
+          const fps = store.activeComposition?.settings.fps || 16;
           audioStore.loadAudio(file, fps);
         })
         .catch(err => console.error('[ProjectPanel] Failed to load audio:', err));

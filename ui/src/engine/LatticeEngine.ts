@@ -24,6 +24,7 @@ import { RenderPipeline } from './core/RenderPipeline';
 import { LayerManager } from './core/LayerManager';
 import { CameraController } from './core/CameraController';
 import { ResourceManager } from './core/ResourceManager';
+import type { BaseLayer } from './layers/BaseLayer';
 import { PerformanceMonitor } from './utils/PerformanceMonitor';
 import type {
   LatticeEngineConfig,
@@ -244,6 +245,14 @@ export class LatticeEngine {
    */
   getLayerIds(): string[] {
     return this.layers.getLayerIds();
+  }
+
+  /**
+   * Get a layer instance by ID
+   * @param layerId - The layer ID
+   */
+  getLayer(layerId: string): BaseLayer | null {
+    return this.layers.getLayer(layerId);
   }
 
   /**

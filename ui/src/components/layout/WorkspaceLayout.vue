@@ -216,7 +216,7 @@
       <TrackPointOverlay
         :width="compWidth"
         :height="compHeight"
-        :currentFrame="currentFrame"
+        :currentFrame="store.currentFrame"
         :showTrails="viewOptions.showGuides"
         :showLabels="true"
         :editable="true"
@@ -237,6 +237,7 @@ import { useCompositorStore } from '@/stores/compositorStore';
 import { detectGPUTier, type GPUTier } from '@/services/gpuDetection';
 import { createDefaultCamera, createDefaultViewportState } from '@/types/camera';
 import type { Camera3D, ViewportState } from '@/types/camera';
+import type { BaseInterpolationType, ControlMode } from '@/types/project';
 
 // Layout
 import WorkspaceToolbar from '@/components/layout/WorkspaceToolbar.vue';
@@ -331,7 +332,10 @@ const expandedPanels = ref({
   camera: false,
   audio: false,
   align: false,
-  preview: false
+  preview: false,
+  renderQueue: false,
+  physics: false,
+  styles: false
 });
 
 // AI section tab
@@ -394,6 +398,7 @@ const viewOptions = ref({
   showFocalPlane: false,
   showLayerOutlines: true,
   showSafeZones: false,
+  showGuides: true,
   gridSize: 100,
   gridDivisions: 10
 });
@@ -552,7 +557,7 @@ provide('removeGuide', removeGuide);
 provide('clearGuides', clearGuides);
 provide('updateGuidePosition', updateGuidePosition);
 
-// Provide frame capture for MOGRT export and other features
+// Provide frame capture for template export and other features
 provide('captureFrame', async (): Promise<string | null> => {
   return centerViewportRef.value?.threeCanvasRef?.captureFrame() ?? null;
 });
@@ -729,9 +734,9 @@ function onCameraTrackingImported(result: { cameraLayerId?: string; warnings?: s
 
 // Keyframe interpolation dialog handler
 function onKeyframeInterpolationConfirm(settings: {
-  interpolation: 'linear' | 'bezier' | 'hold';
+  interpolation: BaseInterpolationType;
   easingPreset: string;
-  controlMode: 'symmetric' | 'smooth' | 'corner';
+  controlMode: ControlMode;
 }) {
   const selectedKeyframeIds = store.selectedKeyframeIds;
   if (selectedKeyframeIds.length === 0) return;
@@ -748,7 +753,11 @@ function onKeyframeInterpolationConfirm(settings: {
       const prop = transform[propName];
       if (!prop?.keyframes) continue;
 
-      for (const kf of prop.keyframes) {
+      // Sort keyframes by frame for proper next-keyframe lookup
+      const sortedKeyframes = [...prop.keyframes].sort((a: any, b: any) => a.frame - b.frame);
+
+      for (let i = 0; i < sortedKeyframes.length; i++) {
+        const kf = sortedKeyframes[i];
         if (selectedKeyframeIds.includes(kf.id)) {
           // Update interpolation
           kf.interpolation = settings.interpolation;
@@ -756,11 +765,35 @@ function onKeyframeInterpolationConfirm(settings: {
 
           // For bezier, set easing preset handles
           if (settings.interpolation === 'bezier' && settings.easingPreset) {
-            // Apply preset handle positions based on easing type
             const presetHandles = getEasingPresetHandles(settings.easingPreset);
             if (presetHandles) {
-              kf.outHandle = { x: presetHandles.outX, y: presetHandles.outY };
-              kf.inHandle = { x: presetHandles.inX, y: presetHandles.inY };
+              // Find next keyframe to calculate frame duration and value delta
+              const nextKf = sortedKeyframes[i + 1];
+              if (nextKf) {
+                const frameDuration = nextKf.frame - kf.frame;
+                // Get scalar value delta (for vectors, use magnitude)
+                const kfValue = typeof kf.value === 'number' ? kf.value :
+                  (kf.value?.x !== undefined ? Math.sqrt(kf.value.x ** 2 + kf.value.y ** 2) : 0);
+                const nextValue = typeof nextKf.value === 'number' ? nextKf.value :
+                  (nextKf.value?.x !== undefined ? Math.sqrt(nextKf.value.x ** 2 + nextKf.value.y ** 2) : 0);
+                const valueDelta = nextValue - kfValue;
+
+                // Convert normalized preset values to absolute frame/value offsets
+                // outHandle: relative to current keyframe, points toward next
+                kf.outHandle = {
+                  frame: presetHandles.outX * frameDuration,
+                  value: presetHandles.outY * valueDelta,
+                  enabled: true
+                };
+                // inHandle: relative to next keyframe, points back toward current
+                // Formula: frame = -(1 - inX) * duration, value = (1 - inY) * delta
+                nextKf.inHandle = {
+                  frame: -(1 - presetHandles.inX) * frameDuration,
+                  value: (1 - presetHandles.inY) * valueDelta,
+                  enabled: true
+                };
+              }
+              // Note: Last keyframe's outHandle has no effect (no next segment)
             }
           }
         }
@@ -880,8 +913,9 @@ function onPathSuggestionAccept(result: { keyframes: any[]; splines: any[] }) {
     for (const batch of result.keyframes) {
       // batch contains layerId, propertyPath, and keyframes
       // Add keyframes to the appropriate layer/property
+      // addKeyframe signature: (layerId, propertyPath, value, atFrame?)
       for (const keyframe of batch.keyframes) {
-        store.addKeyframe(batch.layerId, batch.propertyPath, keyframe.frame, keyframe.value, keyframe.easing);
+        store.addKeyframe(batch.layerId, batch.propertyPath, keyframe.value, keyframe.frame);
       }
     }
   }

@@ -373,8 +373,17 @@ export function updateLayer(store: LayerStore, layerId: string, updates: Partial
 /**
  * Update layer-specific data (e.g., text content, image path, etc.)
  * Note: Cannot update data on locked layers.
+ *
+ * The dataUpdates parameter accepts both common AnyLayerData properties AND
+ * layer-type-specific properties (via Record<string, unknown>). This is necessary
+ * because Partial<UnionType> in TypeScript only allows properties common to ALL
+ * types in the union, but each layer type has unique properties.
  */
-export function updateLayerData(store: LayerStore, layerId: string, dataUpdates: Partial<AnyLayerData>): void {
+export function updateLayerData(
+  store: LayerStore,
+  layerId: string,
+  dataUpdates: Partial<AnyLayerData> & Record<string, unknown>
+): void {
   const layer = store.getActiveCompLayers().find(l => l.id === layerId);
   if (!layer || !layer.data) return;
 

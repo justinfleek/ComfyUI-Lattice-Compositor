@@ -1406,7 +1406,7 @@ export {
 } from './projectMigration';
 
 // ============================================================================
-// ESSENTIAL GRAPHICS (Tutorial 13 - MOGRTs)
+// TEMPLATE BUILDER
 // ============================================================================
 
 export {
@@ -1435,9 +1435,9 @@ export {
   setPropertyValue,
   getEffectControlValue,
   getExpressionControls,
-  // MOGRT export
-  prepareMOGRTExport,
-  exportMOGRT,
+  // Template export
+  prepareTemplateExport,
+  exportTemplate,
   // Validation
   validateTemplate,
   // Utilities
@@ -1446,7 +1446,7 @@ export {
   isTemplateComment,
   type TemplateValidationResult,
   type OrganizedProperties,
-} from './essentialGraphics';
+} from './templateBuilder';
 
 // ============================================================================
 // JSON VALIDATION & DATA HARDENING
@@ -1460,7 +1460,7 @@ export {
   validateProject as validateProjectSchema,
   validateComposition,
   validateLayer,
-  validateMOGRT,
+  validateLatticeTemplate,
   validateTemplateConfig,
   // Type guards
   isObject,

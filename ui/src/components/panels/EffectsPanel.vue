@@ -310,8 +310,8 @@ function applyPreset(preset: AnimationPreset) {
   if (!comp) return;
 
   // Calculate frame range for preset (use layer duration)
-  const startFrame = selectedLayer.inPoint;
-  const endFrame = selectedLayer.outPoint;
+  const startFrame = selectedLayer.startFrame;
+  const endFrame = selectedLayer.endFrame;
   const duration = endFrame - startFrame;
 
   // Apply keyframes from preset to layer properties

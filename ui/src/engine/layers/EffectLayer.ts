@@ -203,9 +203,9 @@ export class EffectLayer extends BaseLayer {
   }
 
   protected override onApplyEvaluatedState(state: import('../MotionEngine').EvaluatedLayer): void {
-    // Apply opacity to material
-    if (state.transform?.opacity !== undefined && this.material) {
-      this.material.opacity = state.transform.opacity / 100;
+    // Apply opacity to material (opacity is on EvaluatedLayer, not transform)
+    if (state.opacity !== undefined && this.material) {
+      this.material.opacity = state.opacity / 100;
       this.material.needsUpdate = true;
     }
 

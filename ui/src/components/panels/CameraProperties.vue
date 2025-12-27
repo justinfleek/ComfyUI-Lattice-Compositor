@@ -934,8 +934,8 @@ function applyShakeKeyframes() {
     shakeDuration.value
   );
 
-  // Get existing keyframes for the camera
-  const existingKeyframes = camera.value.keyframes || [];
+  // Get existing keyframes for the camera (stored separately in store, not on Camera3D)
+  const existingKeyframes = store.getCameraKeyframes(camera.value.id);
 
   // Generate shaken keyframes
   const shakenKeyframes = shake.generateKeyframes(existingKeyframes, 2); // Sample every 2 frames

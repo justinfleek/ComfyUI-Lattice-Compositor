@@ -3,7 +3,7 @@
     <div class="property-row">
       <label>Radius</label>
       <ScrubableNumber :modelValue="operator.radius.value" @update:modelValue="v => updateNumber('radius', v)" :min="0" :max="500" unit="px" />
-      <KeyframeToggle :property="operator.radius" @toggle="toggleKeyframe" />
+      <KeyframeToggle :property="operator.radius" :layerId="layerId" @toggle="toggleKeyframe" />
     </div>
   </div>
 </template>
@@ -13,8 +13,9 @@ import type { RoundedCornersOperator } from '@/types/shapes';
 import { ScrubableNumber } from '@/components/controls';
 import KeyframeToggle from '../KeyframeToggle.vue';
 import { useCompositorStore } from '@/stores/compositorStore';
+import { createKeyframe } from '@/types/animation';
 
-const props = defineProps<{ operator: RoundedCornersOperator }>();
+const props = defineProps<{ operator: RoundedCornersOperator; layerId: string }>();
 const emit = defineEmits(['update']);
 const store = useCompositorStore();
 
@@ -30,7 +31,7 @@ function toggleKeyframe() {
   const frame = store.currentFrame;
   const hasKf = animProp.keyframes.some(k => k.frame === frame);
   if (hasKf) { animProp.keyframes = animProp.keyframes.filter(k => k.frame !== frame); }
-  else { animProp.keyframes.push({ id: `kf_${Date.now()}`, frame, value: animProp.value, easing: 'linear' }); }
+  else { animProp.keyframes.push(createKeyframe(frame, animProp.value, 'linear')); }
   animProp.animated = animProp.keyframes.length > 0;
   emit('update', updated);
 }

@@ -328,6 +328,7 @@ export type EngineEventType =
   | 'layerRemoved'
   | 'layerUpdated'
   | 'resize'
+  | 'resolutionChange'
   | 'dispose'
   | 'contextLost'
   | 'contextRestored'

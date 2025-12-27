@@ -787,7 +787,7 @@ function moveSelectedKeyframes(screenX: number, screenY: number): void {
     // Apply smart snapping with audio beat/peak support
     if (snapEnabled.value && store.snapConfig.enabled) {
       // Calculate approximate pixels per frame for snapping threshold
-      const pixelsPerFrame = svgWidth.value / (viewEnd.value - viewStart.value);
+      const pixelsPerFrame = canvasWidth.value / (viewState.frameEnd - viewState.frameStart);
 
       const snap = findNearestSnap(newFrame, store.snapConfig, pixelsPerFrame, {
         layers: store.layers,

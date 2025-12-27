@@ -523,6 +523,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import type { Layer, CameraLayerData, AnimatableProperty, CameraDepthOfField, CameraPathFollowing, CameraShakeData, CameraRackFocusData, Vec3 } from '@/types/project';
+import { createKeyframe } from '@/types/animation';
 import { useCompositorStore } from '@/stores/compositorStore';
 import { ScrubableNumber } from '@/components/controls';
 import {
@@ -824,12 +825,7 @@ function toggleKeyframe(propName: string, dataKey: string, defaultValue: number)
     } else {
       updatedKeyframes = [
         ...prop.keyframes,
-        {
-          id: `kf_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-          frame,
-          value: prop.value,
-          easing: 'linear' as const,
-        },
+        createKeyframe(frame, prop.value, 'linear'),
       ];
       updatedAnimated = true;
     }
@@ -863,12 +859,7 @@ function togglePathKeyframe(propName: string) {
     } else {
       updatedKeyframes = [
         ...prop.keyframes,
-        {
-          id: `kf_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-          frame,
-          value: prop.value,
-          easing: 'linear' as const,
-        },
+        createKeyframe(frame, prop.value, 'linear'),
       ];
       updatedAnimated = true;
     }
@@ -938,12 +929,7 @@ function toggleVec3Keyframe(propName: string, dataKey: string) {
     animProp.keyframes = animProp.keyframes.filter(k => k.frame !== frame);
     animProp.animated = animProp.keyframes.length > 0;
   } else {
-    animProp.keyframes.push({
-      id: `kf_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-      frame,
-      value: { ...animProp.value },
-      easing: 'linear',
-    });
+    animProp.keyframes.push(createKeyframe(frame, { ...animProp.value }, 'linear'));
     animProp.animated = true;
   }
 

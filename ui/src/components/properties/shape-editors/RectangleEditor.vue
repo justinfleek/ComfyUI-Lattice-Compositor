@@ -14,7 +14,7 @@
           unit="px"
         />
       </div>
-      <KeyframeToggle :property="shape.position" @toggle="toggleKeyframe('position')" />
+      <KeyframeToggle :property="shape.position" :layerId="layerId" @toggle="toggleKeyframe('position')" />
     </div>
     <div class="property-row">
       <label>Size</label>
@@ -32,7 +32,7 @@
           unit="px"
         />
       </div>
-      <KeyframeToggle :property="shape.size" @toggle="toggleKeyframe('size')" />
+      <KeyframeToggle :property="shape.size" :layerId="layerId" @toggle="toggleKeyframe('size')" />
     </div>
     <div class="property-row">
       <label>Roundness</label>
@@ -43,7 +43,7 @@
         :max="500"
         unit="px"
       />
-      <KeyframeToggle :property="shape.roundness" @toggle="toggleKeyframe('roundness')" />
+      <KeyframeToggle :property="shape.roundness" :layerId="layerId" @toggle="toggleKeyframe('roundness')" />
     </div>
     <div class="property-row">
       <label>Direction</label>
@@ -60,8 +60,9 @@ import type { RectangleShape, Point2D } from '@/types/shapes';
 import { ScrubableNumber } from '@/components/controls';
 import KeyframeToggle from '../KeyframeToggle.vue';
 import { useCompositorStore } from '@/stores/compositorStore';
+import { createKeyframe } from '@/types/animation';
 
-const props = defineProps<{ shape: RectangleShape }>();
+const props = defineProps<{ shape: RectangleShape; layerId: string }>();
 const emit = defineEmits(['update']);
 const store = useCompositorStore();
 
@@ -93,14 +94,9 @@ function toggleKeyframe(prop: 'position' | 'size' | 'roundness') {
 
   const hasKf = animProp.keyframes.some(k => k.frame === frame);
   if (hasKf) {
-    animProp.keyframes = animProp.keyframes.filter(k => k.frame !== frame);
+    animProp.keyframes = animProp.keyframes.filter(k => k.frame !== frame) as typeof animProp.keyframes;
   } else {
-    animProp.keyframes.push({
-      id: `kf_${Date.now()}`,
-      frame,
-      value: animProp.value,
-      easing: 'linear'
-    });
+    (animProp.keyframes as unknown[]).push(createKeyframe(frame, animProp.value, 'linear'));
   }
   animProp.animated = animProp.keyframes.length > 0;
   emit('update', updated);

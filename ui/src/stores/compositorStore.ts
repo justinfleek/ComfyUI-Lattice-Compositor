@@ -103,6 +103,7 @@ import * as depthflowActions from './actions/depthflowActions';
 import * as videoActions from './actions/videoActions';
 import type { VideoImportResult } from './actions/videoActions';
 import * as textAnimatorActions from './actions/textAnimatorActions';
+import * as markerActions from './actions/markerActions';
 
 // Domain-specific stores (for delegation)
 import { usePlaybackStore } from './playbackStore';
@@ -704,8 +705,9 @@ export const useCompositorStore = defineStore('compositor', {
 
     /**
      * Update layer-specific data (e.g., text content, image path, etc.)
+     * Accepts both common AnyLayerData properties and layer-type-specific properties.
      */
-    updateLayerData(layerId: string, dataUpdates: Partial<AnyLayerData>): void {
+    updateLayerData(layerId: string, dataUpdates: Partial<AnyLayerData> & Record<string, unknown>): void {
       layerActions.updateLayerData(this, layerId, dataUpdates);
     },
 
@@ -1233,6 +1235,13 @@ export const useCompositorStore = defineStore('compositor', {
     },
 
     /**
+     * Load project from a File object (e.g., from file input or drag-drop)
+     */
+    async loadProjectFromFile(file: File): Promise<boolean> {
+      return projectActions.loadProjectFromFile(this, file, () => this.pushHistory());
+    },
+
+    /**
      * Save project to server (ComfyUI backend)
      */
     async saveProjectToServer(projectId?: string): Promise<string | null> {
@@ -1360,6 +1369,13 @@ export const useCompositorStore = defineStore('compositor', {
     },
 
     /**
+     * Update an entire property including keyframes (for batch operations)
+     */
+    updateLayerProperty(layerId: string, propertyPath: string, propertyData: Partial<AnimatableProperty<any>>): boolean {
+      return keyframeActions.updateLayerProperty(this, layerId, propertyPath, propertyData);
+    },
+
+    /**
      * Set a property's animated state
      */
     setPropertyAnimated(layerId: string, propertyPath: string, animated: boolean): void {
@@ -1475,6 +1491,15 @@ export const useCompositorStore = defineStore('compositor', {
       controlMode: 'smooth' | 'corner' | 'symmetric'
     ): void {
       keyframeActions.setKeyframeControlMode(this, layerId, propertyPath, keyframeId, controlMode);
+    },
+
+    /**
+     * Insert a keyframe on the motion path at the current frame
+     * Uses interpolated values from existing keyframes
+     * @returns The created keyframe ID or null if failed
+     */
+    insertKeyframeOnPath(layerId: string, frame: number): string | null {
+      return keyframeActions.insertKeyframeOnPath(this, layerId, frame);
     },
 
     /**
@@ -2110,6 +2135,58 @@ export const useCompositorStore = defineStore('compositor', {
     },
 
     // ============================================================
+    // TIMELINE MARKERS (delegated to markerActions)
+    // ============================================================
+
+    addMarker(marker: Omit<import('@/types/project').Marker, 'id'> & { id?: string }): import('@/types/project').Marker | null {
+      return markerActions.addMarker(this, marker);
+    },
+    removeMarker(markerId: string): boolean {
+      return markerActions.removeMarker(this, markerId);
+    },
+    removeMarkerAtFrame(frame: number): boolean {
+      return markerActions.removeMarkerAtFrame(this, frame);
+    },
+    updateMarker(markerId: string, updates: Partial<Omit<import('@/types/project').Marker, 'id'>>): boolean {
+      return markerActions.updateMarker(this, markerId, updates);
+    },
+    clearMarkers(): void {
+      markerActions.clearMarkers(this);
+    },
+    getMarkers(): import('@/types/project').Marker[] {
+      return markerActions.getMarkers(this);
+    },
+    getMarker(markerId: string): import('@/types/project').Marker | null {
+      return markerActions.getMarker(this, markerId);
+    },
+    getMarkerAtFrame(frame: number): import('@/types/project').Marker | null {
+      return markerActions.getMarkerAtFrame(this, frame);
+    },
+    getMarkersInRange(startFrame: number, endFrame: number): import('@/types/project').Marker[] {
+      return markerActions.getMarkersInRange(this, startFrame, endFrame);
+    },
+    getNextMarker(frame: number): import('@/types/project').Marker | null {
+      return markerActions.getNextMarker(this, frame);
+    },
+    getPreviousMarker(frame: number): import('@/types/project').Marker | null {
+      return markerActions.getPreviousMarker(this, frame);
+    },
+    jumpToNextMarker(): void {
+      const nextFrame = markerActions.jumpToNextMarker(this, this.currentFrame);
+      if (nextFrame !== null) this.setFrame(nextFrame);
+    },
+    jumpToPreviousMarker(): void {
+      const prevFrame = markerActions.jumpToPreviousMarker(this, this.currentFrame);
+      if (prevFrame !== null) this.setFrame(prevFrame);
+    },
+    addMarkers(markers: Array<Omit<import('@/types/project').Marker, 'id'>>): import('@/types/project').Marker[] {
+      return markerActions.addMarkers(this, markers);
+    },
+    removeMarkersByColor(color: string): number {
+      return markerActions.removeMarkersByColor(this, color);
+    },
+
+    // ============================================================
     // PROPERTY DRIVER SYSTEM (delegated to propertyDriverActions)
     // ============================================================
 
@@ -2156,6 +2233,85 @@ export const useCompositorStore = defineStore('compositor', {
       }
       return parts[0] === 'opacity' ? interpolateProperty(layer.opacity, frame, fps, layerId, duration) : null;
     },
+
+    /**
+     * Evaluate a property at a specific frame and return the full value
+     * Returns the interpolated value as an array for position/scale/origin types,
+     * or a single value for scalar types (rotation, opacity)
+     *
+     * Used by MotionPathOverlay to get full position values for path rendering
+     */
+    evaluatePropertyAtFrame(layerId: string, propertyPath: string, frame: number): number[] | number | null {
+      const layer = this.getActiveCompLayers().find(l => l.id === layerId);
+      if (!layer) return null;
+
+      // Get composition context for expressions
+      const comp = this.getActiveComp();
+      const fps = this.fps;
+      const duration = comp ? comp.settings.frameCount / comp.settings.fps : undefined;
+
+      // Normalize path
+      const normalizedPath = propertyPath.replace(/^transform\./, '');
+
+      // Handle transform properties
+      const t = layer.transform;
+
+      if (normalizedPath === 'position' && t.position) {
+        const p = interpolateProperty(t.position, frame, fps, layerId, duration);
+        return [p.x, p.y, p.z ?? 0];
+      }
+
+      if ((normalizedPath === 'anchorPoint' || normalizedPath === 'origin') && (t.origin || t.anchorPoint)) {
+        const originProp = t.origin || t.anchorPoint;
+        if (!originProp) return null;
+        const a = interpolateProperty(originProp, frame, fps, layerId, duration);
+        return [a.x, a.y, a.z ?? 0];
+      }
+
+      if (normalizedPath === 'scale' && t.scale) {
+        const s = interpolateProperty(t.scale, frame, fps, layerId, duration);
+        return [s.x, s.y, s.z ?? 100];
+      }
+
+      if (normalizedPath === 'rotation' && t.rotation) {
+        return interpolateProperty(t.rotation, frame, fps, layerId, duration);
+      }
+
+      if (normalizedPath === 'rotationX' && t.rotationX) {
+        return interpolateProperty(t.rotationX, frame, fps, layerId, duration);
+      }
+
+      if (normalizedPath === 'rotationY' && t.rotationY) {
+        return interpolateProperty(t.rotationY, frame, fps, layerId, duration);
+      }
+
+      if (normalizedPath === 'rotationZ' && t.rotationZ) {
+        return interpolateProperty(t.rotationZ, frame, fps, layerId, duration);
+      }
+
+      if (normalizedPath === 'orientation' && t.orientation) {
+        const o = interpolateProperty(t.orientation, frame, fps, layerId, duration);
+        return [o.x, o.y, o.z ?? 0];
+      }
+
+      if (propertyPath === 'opacity' && layer.opacity) {
+        return interpolateProperty(layer.opacity, frame, fps, layerId, duration);
+      }
+
+      // Check custom properties
+      const customProp = layer.properties.find(p => p.name === propertyPath || p.id === propertyPath);
+      if (customProp) {
+        const value = interpolateProperty(customProp, frame, fps, layerId, duration);
+        // If it's a position-like value with x/y, return as array
+        if (value && typeof value === 'object' && 'x' in value && 'y' in value) {
+          return [(value as any).x, (value as any).y, (value as any).z ?? 0];
+        }
+        return value;
+      }
+
+      return null;
+    },
+
     getDrivenValuesForLayer(layerId: string): Map<PropertyPath, number> {
       return propertyDriverActions.getEvaluatedLayerProperties(this, layerId, this.getActiveComp()?.currentFrame ?? 0);
     },

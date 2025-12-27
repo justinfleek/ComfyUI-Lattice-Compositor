@@ -48,14 +48,14 @@
 </template>
 
 <script setup lang="ts">
-import type { StrokeStyle, RGBA } from '@/types/layerStyles';
+import type { StrokeStyle, StrokeStyleUpdate, RGBA } from '@/types/layerStyles';
 
 defineProps<{
   style: StrokeStyle;
 }>();
 
 const emit = defineEmits<{
-  (e: 'update', updates: Partial<StrokeStyle>): void;
+  (e: 'update', updates: StrokeStyleUpdate): void;
 }>();
 
 const blendModes = ['normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten'];

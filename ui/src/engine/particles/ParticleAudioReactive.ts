@@ -60,22 +60,23 @@ export class ParticleAudioReactive {
   }
 
   /**
-   * Trigger beat event (sets beat to 1, auto-resets next frame)
+   * Trigger beat event (sets onsets to 1, auto-resets next frame)
+   * Note: 'onsets' is the actual audio feature for transient/beat detection
    */
   triggerBeat(): void {
-    this.audioFeatures.set('beat', 1);
+    this.audioFeatures.set('onsets', 1);
 
-    // Reset beat flag after frame
+    // Reset onset flag after frame
     requestAnimationFrame(() => {
-      this.audioFeatures.set('beat', 0);
+      this.audioFeatures.set('onsets', 0);
     });
   }
 
   /**
-   * Check if beat is currently triggered
+   * Check if beat/onset is currently triggered
    */
   isBeatTriggered(): boolean {
-    return this.audioFeatures.get('beat') === 1;
+    return this.audioFeatures.get('onsets') === 1;
   }
 
   // ============================================================================
@@ -124,9 +125,9 @@ export class ParticleAudioReactive {
         const threshold = binding.threshold ?? 0.5;
         if (t < threshold) continue;
       } else if (triggerMode === 'onBeat') {
-        // Only apply when beat is detected
-        const beatValue = this.audioFeatures.get('beat') ?? 0;
-        if (beatValue < 0.5) continue;
+        // Only apply when beat/onset is detected
+        const onsetValue = this.audioFeatures.get('onsets') ?? 0;
+        if (onsetValue < 0.5) continue;
       }
       // triggerMode === 'continuous' - always apply (default behavior)
 

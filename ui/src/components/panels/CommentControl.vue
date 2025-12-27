@@ -47,7 +47,7 @@
 
 <script setup lang="ts">
 import { ref, watch, onMounted, nextTick } from 'vue';
-import type { TemplateComment } from '@/types/essentialGraphics';
+import type { TemplateComment } from '@/types/templateBuilder';
 
 const props = defineProps<{
   comment: TemplateComment;

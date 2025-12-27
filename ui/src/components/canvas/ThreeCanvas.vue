@@ -235,6 +235,7 @@ import { ref, onMounted, onUnmounted, watch, computed, nextTick, shallowRef } fr
 import * as THREE from 'three';
 import { useCompositorStore } from '@/stores/compositorStore';
 import { useSelectionStore } from '@/stores/selectionStore';
+import { markLayerDirty } from '@/services/layerEvaluationCache';
 import { LatticeEngine } from '@/engine';
 import type { LatticeEngineConfig, PerformanceStats } from '@/engine';
 import type { LayerTransformUpdate } from '@/engine/LatticeEngine';
@@ -371,7 +372,7 @@ function getSelectableItems(): SelectableItem[] {
   const items: SelectableItem[] = [];
 
   for (const layer of store.layers) {
-    if (!layer.enabled) continue;
+    if (!layer.visible) continue;
 
     // Get layer bounds in world space
     const layerObj = engine.value.getLayerObject(layer.id);
@@ -426,7 +427,7 @@ function getSelectableItems(): SelectableItem[] {
 function handleMarqueeSelectionChange(selectedIds: string[], mode: SelectionMode) {
   if (mode === 'replace') {
     if (selectedIds.length === 0) {
-      selection.clearSelection();
+      selection.clearLayerSelection();
     } else {
       selection.selectLayers(selectedIds);
     }
@@ -523,7 +524,7 @@ function onDrop(event: DragEvent) {
     if (item.type === 'footage') {
       const asset = store.project.assets[item.id];
       if (asset) {
-        if (asset.type === 'image') {
+        if (asset.type === 'image' && asset.data) {
           // Load image to get dimensions and resize composition
           const img = new Image();
           img.onload = () => {
@@ -978,6 +979,7 @@ function setupInputHandlers() {
   let lastPosY = 0;
   let zoomStartY = 0;
   let zoomStartLevel = 1;
+  let selectClickStart: { x: number; y: number } | null = null;
 
   // Prevent default middle mouse behavior
   container.addEventListener('mousedown', (e: MouseEvent) => {
@@ -1117,8 +1119,8 @@ function setupInputHandlers() {
           store.selectLayer(hitLayer);
           engine.value.selectLayer(hitLayer); // Attach transform controls
         } else {
-          store.clearSelection();
-          engine.value.selectLayer(null); // Detach transform controls
+          // Store click start - will clear selection on mouseup if no drag occurred
+          selectClickStart = { x: e.clientX, y: e.clientY };
         }
       }
     }
@@ -1222,12 +1224,28 @@ function setupInputHandlers() {
     if (isDrawingShape.value && shapeDrawStart.value && shapeDrawEnd.value) {
       finishShapeDrawing();
     }
+
+    // Clear selection only on true click (no drag) on empty canvas
+    if (selectClickStart) {
+      const dx = e.clientX - selectClickStart.x;
+      const dy = e.clientY - selectClickStart.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      // Only clear if mouse didn't move more than 5px (true click, not drag)
+      if (distance < 5) {
+        selection.clearLayerSelection();
+        selection.clearControlPointSelection();
+        engine.value?.selectLayer(null);
+      }
+      selectClickStart = null;
+    }
   });
 
   // Mouse leave
   canvas.addEventListener('mouseleave', () => {
     isPanning = false;
     isZooming = false;
+    selectClickStart = null; // Cancel pending selection clear
     // Cancel segment box selection (use composable)
     if (isDrawingSegmentBox.value) {
       cancelSegmentBox();
@@ -1407,11 +1425,11 @@ function togglePenMode() {
 
 // Motion path event handlers
 function onMotionPathKeyframeSelected(keyframeId: string, addToSelection: boolean) {
-  // Select the keyframe in the store
+  // Select the keyframe in the selection store
   if (addToSelection) {
-    store.addKeyframeToSelection?.(keyframeId);
+    selection.addKeyframeToSelection(keyframeId);
   } else {
-    store.selectKeyframe?.(keyframeId);
+    selection.selectKeyframe(keyframeId);
   }
 }
 
@@ -1451,7 +1469,7 @@ function onMotionPathTangentUpdated(
   keyframe[tangentKey]!.y += delta.y;
 
   // Mark layer as dirty for re-evaluation
-  store.markLayerDirty?.(layerId);
+  markLayerDirty(layerId);
 
   // Mark project as modified
   if (store.project?.meta) {

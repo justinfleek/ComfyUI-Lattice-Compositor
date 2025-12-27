@@ -472,13 +472,19 @@ function acceptSuggestion() {
 
   // Translate the intent to keyframes
   if (suggestion.type === 'camera') {
-    const translation = motionIntentTranslator.translateCameraIntent(
+    const activeCamera = store.activeCamera;
+    if (!activeCamera) {
+      statusMessage.value = 'No active camera to animate';
+      return;
+    }
+    // translateCameraIntent returns KeyframeBatch[] directly
+    const batches = motionIntentTranslator.translateCameraIntent(
       suggestion.intent as CameraMotionIntent,
-      store.width,
-      store.height,
+      activeCamera.id,
+      activeCamera.position,
       store.frameCount
     );
-    result.keyframes = translation.keyframeBatches;
+    result.keyframes = batches;
   } else if (suggestion.type === 'spline') {
     const translation = motionIntentTranslator.translateSplineIntent(
       suggestion.intent as SplineMotionIntent,

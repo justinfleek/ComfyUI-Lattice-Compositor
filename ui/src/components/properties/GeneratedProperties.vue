@@ -140,7 +140,7 @@ const generationResolution = computed(() => {
   const comp = store.activeComposition;
   if (!comp) return 512;
   // Use the smaller dimension, clamped to common AI model resolutions
-  const minDim = Math.min(comp.width, comp.height);
+  const minDim = Math.min(comp.settings.width, comp.settings.height);
   // Round to nearest standard resolution (256, 384, 512, 768, 1024)
   const standardResolutions = [256, 384, 512, 768, 1024];
   return standardResolutions.reduce((prev, curr) =>

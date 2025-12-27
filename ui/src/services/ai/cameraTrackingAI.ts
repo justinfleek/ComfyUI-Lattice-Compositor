@@ -243,7 +243,7 @@ export interface DepthBasedTrackingRequest {
 }
 
 /**
- * Estimate camera poses from depth maps
+ * Estimate camera path from depth maps
  *
  * This is a simplified implementation. For production use:
  * - COLMAP for full SfM
@@ -253,11 +253,11 @@ export interface DepthBasedTrackingRequest {
 export function estimateCameraPosesFromDepth(
   request: DepthBasedTrackingRequest
 ): CameraTrackingSolve {
-  const poses: CameraPose[] = [];
+  const cameraPath: CameraPose[] = [];
   const frameCount = request.depthMaps.length;
 
   // First frame is reference (identity pose)
-  poses.push({
+  cameraPath.push({
     frame: 0,
     position: { x: 0, y: 0, z: 0 },
     rotation: { w: 1, x: 0, y: 0, z: 0 },
@@ -272,15 +272,15 @@ export function estimateCameraPosesFromDepth(
     // 4. Estimate rigid transformation (ICP or similar)
 
     // Placeholder: accumulate small forward motion
-    const prevPose = poses[i - 1];
-    poses.push({
+    const prevPoint = cameraPath[i - 1];
+    cameraPath.push({
       frame: i,
       position: {
-        x: prevPose.position.x,
-        y: prevPose.position.y,
-        z: prevPose.position.z + 0.01, // Small forward motion
+        x: prevPoint.position.x,
+        y: prevPoint.position.y,
+        z: prevPoint.position.z + 0.01, // Small forward motion
       },
-      rotation: prevPose.rotation,
+      rotation: prevPoint.rotation,
     });
   }
 
@@ -295,7 +295,7 @@ export function estimateCameraPosesFromDepth(
       solveMethod: 'depth-based',
     },
     intrinsics: request.intrinsics,
-    poses,
+    cameraPath,
     trackPoints2D: [],
     trackPoints3D: [],
   };
@@ -321,7 +321,7 @@ export interface Uni3CCameraData {
 }
 
 export function parseUni3CFormat(data: Uni3CCameraData, fps: number = 16): CameraTrackingSolve {
-  const poses: CameraPose[] = [];
+  const cameraPath: CameraPose[] = [];
 
   for (let i = 0; i < data.poses.length; i++) {
     const mat = data.poses[i];
@@ -336,7 +336,7 @@ export function parseUni3CFormat(data: Uni3CCameraData, fps: number = 16): Camer
     // Extract rotation (convert 3x3 rotation matrix to quaternion)
     const rotation = matrixToQuaternion(mat);
 
-    poses.push({
+    cameraPath.push({
       frame: i,
       position,
       rotation,
@@ -368,7 +368,7 @@ export function parseUni3CFormat(data: Uni3CCameraData, fps: number = 16): Camer
       solveMethod: 'uni3c-import',
     },
     intrinsics,
-    poses,
+    cameraPath,
     trackPoints2D: [],
     trackPoints3D: data.point_cloud ?
       data.point_cloud.points.map((p, i) => ({
@@ -447,8 +447,8 @@ export function exportToUni3CFormat(
     [0, 0, 1],
   ];
 
-  // Convert poses to 4x4 matrices
-  const poses = solve.poses.map(pose => {
+  // Convert camera path to 4x4 matrices (Uni3C expects 'poses')
+  const poses = solve.cameraPath.map(pose => {
     const rotMat = quaternionToMatrix(pose.rotation);
     return [
       [rotMat[0][0], rotMat[0][1], rotMat[0][2], pose.position.x],

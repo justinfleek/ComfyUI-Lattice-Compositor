@@ -159,7 +159,7 @@ export class ConditioningRenderer {
       this.canvas.height = this.config.height;
     }
 
-    this.ctx = this.canvas.getContext('2d')!;
+    this.ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
   }
 
   // ==========================================================================
@@ -612,7 +612,7 @@ export class ConditioningRenderer {
       this.canvas.width = width;
       this.canvas.height = height;
     }
-    this.ctx = this.canvas.getContext('2d')!;
+    this.ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
   }
 
   /**

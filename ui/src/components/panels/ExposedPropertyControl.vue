@@ -186,9 +186,9 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, inject } from 'vue';
-import type { ExposedProperty } from '@/types/essentialGraphics';
+import type { ExposedProperty } from '@/types/templateBuilder';
 import type { Layer } from '@/types/project';
-import { getPropertyValue, setPropertyValue } from '@/services/essentialGraphics';
+import { getPropertyValue, setPropertyValue } from '@/services/templateBuilder';
 import { useCompositorStore } from '@/stores/compositorStore';
 
 const props = defineProps<{

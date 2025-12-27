@@ -474,6 +474,7 @@ export interface LifetimeModulation {
 
   // Rotation
   rotationOverLifetime?: ModulationCurve;
+  rotationSpeedOverLifetime?: ModulationCurve;
   angularVelocityOverLifetime?: ModulationCurve;
 
   // Color
@@ -482,8 +483,13 @@ export interface LifetimeModulation {
   // Opacity
   opacityOverLifetime?: ModulationCurve;
 
-  // Noise offset
+  // Physics modifiers
+  gravityModifier?: ModulationCurve;
+  dragOverLifetime?: ModulationCurve;
+
+  // Noise
   noiseOverLifetime?: ModulationCurve;
+  noiseAmplitudeOverLifetime?: ModulationCurve;
 }
 
 // ============================================================================

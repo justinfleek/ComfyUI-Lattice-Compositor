@@ -306,11 +306,15 @@ const position = computed(() => {
 });
 
 const rotation = computed(() => {
-  const val = layer.value?.transform.rotation.value;
-  if (typeof val === 'number') {
-    return { x: 0, y: 0, z: val };
-  }
-  return val ? { x: val.x || 0, y: val.y || 0, z: val.z || 0 } : { x: 0, y: 0, z: 0 };
+  // 3D models use rotationX/Y/Z properties
+  const transform = layer.value?.transform;
+  if (!transform) return { x: 0, y: 0, z: 0 };
+
+  return {
+    x: transform.rotationX?.value || 0,
+    y: transform.rotationY?.value || 0,
+    z: transform.rotationZ?.value || transform.rotation?.value || 0
+  };
 });
 
 const scale = computed(() => {
@@ -361,22 +365,33 @@ function toggleSection(section: keyof typeof sections) {
 function updatePosition(axis: 'x' | 'y' | 'z', value: number) {
   const current = { ...position.value };
   current[axis] = value;
-  store.updateLayerTransform(props.layerId, 'position', current);
+  store.updateLayerTransform(props.layerId, { position: current });
 }
 
 function updateRotation(axis: 'x' | 'y' | 'z', value: number) {
-  const current = { ...rotation.value };
-  current[axis] = value;
-  store.updateLayerTransform(props.layerId, 'rotation', current);
+  // 3D models use rotationX/Y/Z properties, not the single 'rotation' property
+  const targetLayer = layer.value;
+  if (!targetLayer?.transform) return;
+
+  const propMap = {
+    x: targetLayer.transform.rotationX,
+    y: targetLayer.transform.rotationY,
+    z: targetLayer.transform.rotationZ
+  };
+
+  const prop = propMap[axis];
+  if (prop) {
+    prop.value = value;
+  }
 }
 
 function updateScale(axis: 'x' | 'y' | 'z', value: number) {
   if (uniformScale.value) {
-    store.updateLayerTransform(props.layerId, 'scale', { x: value, y: value, z: value });
+    store.updateLayerTransform(props.layerId, { scale: { x: value, y: value, z: value } });
   } else {
     const current = { ...scale.value };
     current[axis] = value;
-    store.updateLayerTransform(props.layerId, 'scale', current);
+    store.updateLayerTransform(props.layerId, { scale: current });
   }
 }
 

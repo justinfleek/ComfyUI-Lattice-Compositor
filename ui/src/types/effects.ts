@@ -23,7 +23,7 @@ export type EffectCategory =
 export interface EffectParameter {
   id: string;
   name: string;
-  type: 'number' | 'color' | 'point' | 'angle' | 'checkbox' | 'dropdown' | 'layer' | 'string' | 'curve' | 'data';
+  type: 'number' | 'color' | 'point' | 'point3D' | 'angle' | 'checkbox' | 'dropdown' | 'layer' | 'string' | 'curve' | 'data';
   value: any;
   defaultValue: any;
   min?: number;

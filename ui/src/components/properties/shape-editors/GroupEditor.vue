@@ -17,7 +17,7 @@
     </div>
 
     <div class="subsection-header">Transform</div>
-    <TransformEditor :transform="group.transform" @update="updateTransform" />
+    <TransformEditor :transform="group.transform" :layerId="layerId" @update="updateTransform" />
 
     <div class="subsection-header">Contents ({{ group.contents?.length || 0 }})</div>
     <div class="contents-info">
@@ -31,7 +31,7 @@
 import type { ShapeGroup, ShapeTransform } from '@/types/shapes';
 import TransformEditor from './TransformEditor.vue';
 
-const props = defineProps<{ group: ShapeGroup }>();
+const props = defineProps<{ group: ShapeGroup; layerId: string }>();
 const emit = defineEmits(['update']);
 
 function updateName(e: Event) {

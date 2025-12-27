@@ -10,7 +10,7 @@
         />
         <span class="color-value">{{ colorHex }}</span>
       </div>
-      <KeyframeToggle :property="shape.color" @toggle="toggleKeyframe('color')" />
+      <KeyframeToggle :property="shape.color" :layerId="layerId" @toggle="toggleKeyframe('color')" />
     </div>
     <div class="property-row">
       <label>Opacity</label>
@@ -21,7 +21,7 @@
         :max="100"
         unit="%"
       />
-      <KeyframeToggle :property="shape.opacity" @toggle="toggleKeyframe('opacity')" />
+      <KeyframeToggle :property="shape.opacity" :layerId="layerId" @toggle="toggleKeyframe('opacity')" />
     </div>
     <div class="property-row">
       <label>Width</label>
@@ -32,7 +32,7 @@
         :max="500"
         unit="px"
       />
-      <KeyframeToggle :property="shape.width" @toggle="toggleKeyframe('width')" />
+      <KeyframeToggle :property="shape.width" :layerId="layerId" @toggle="toggleKeyframe('width')" />
     </div>
     <div class="property-row">
       <label>Line Cap</label>
@@ -66,7 +66,7 @@
         :modelValue="shape.dashOffset.value"
         @update:modelValue="v => updateNumber('dashOffset', v)"
       />
-      <KeyframeToggle :property="shape.dashOffset" @toggle="toggleKeyframe('dashOffset')" />
+      <KeyframeToggle :property="shape.dashOffset" :layerId="layerId" @toggle="toggleKeyframe('dashOffset')" />
     </div>
     <div class="property-row">
       <label>Blend Mode</label>
@@ -100,7 +100,7 @@
           :max="100"
           unit="%"
         />
-        <KeyframeToggle :property="shape.taperStartLength" @toggle="toggleKeyframe('taperStartLength')" />
+        <KeyframeToggle :property="shape.taperStartLength" :layerId="layerId" @toggle="toggleKeyframe('taperStartLength')" />
       </div>
       <div class="property-row">
         <label>Start Width</label>
@@ -111,7 +111,7 @@
           :max="100"
           unit="%"
         />
-        <KeyframeToggle :property="shape.taperStartWidth" @toggle="toggleKeyframe('taperStartWidth')" />
+        <KeyframeToggle :property="shape.taperStartWidth" :layerId="layerId" @toggle="toggleKeyframe('taperStartWidth')" />
       </div>
       <div class="property-row">
         <label>Start Ease</label>
@@ -122,7 +122,7 @@
           :max="100"
           unit="%"
         />
-        <KeyframeToggle :property="shape.taperStartEase" @toggle="toggleKeyframe('taperStartEase')" />
+        <KeyframeToggle :property="shape.taperStartEase" :layerId="layerId" @toggle="toggleKeyframe('taperStartEase')" />
       </div>
       <div class="property-row">
         <label>End Length</label>
@@ -133,7 +133,7 @@
           :max="100"
           unit="%"
         />
-        <KeyframeToggle :property="shape.taperEndLength" @toggle="toggleKeyframe('taperEndLength')" />
+        <KeyframeToggle :property="shape.taperEndLength" :layerId="layerId" @toggle="toggleKeyframe('taperEndLength')" />
       </div>
       <div class="property-row">
         <label>End Width</label>
@@ -144,7 +144,7 @@
           :max="100"
           unit="%"
         />
-        <KeyframeToggle :property="shape.taperEndWidth" @toggle="toggleKeyframe('taperEndWidth')" />
+        <KeyframeToggle :property="shape.taperEndWidth" :layerId="layerId" @toggle="toggleKeyframe('taperEndWidth')" />
       </div>
       <div class="property-row">
         <label>End Ease</label>
@@ -155,7 +155,7 @@
           :max="100"
           unit="%"
         />
-        <KeyframeToggle :property="shape.taperEndEase" @toggle="toggleKeyframe('taperEndEase')" />
+        <KeyframeToggle :property="shape.taperEndEase" :layerId="layerId" @toggle="toggleKeyframe('taperEndEase')" />
       </div>
     </template>
   </div>
@@ -167,8 +167,9 @@ import type { StrokeShape, LineCap, LineJoin } from '@/types/shapes';
 import { ScrubableNumber } from '@/components/controls';
 import KeyframeToggle from '../KeyframeToggle.vue';
 import { useCompositorStore } from '@/stores/compositorStore';
+import { createKeyframe } from '@/types/animation';
 
-const props = defineProps<{ shape: StrokeShape }>();
+const props = defineProps<{ shape: StrokeShape; layerId: string }>();
 const emit = defineEmits(['update']);
 const store = useCompositorStore();
 
@@ -243,12 +244,7 @@ function toggleKeyframe(prop: 'color' | 'opacity' | 'width' | 'dashOffset' | 'ta
   if (hasKf) {
     animProp.keyframes = animProp.keyframes.filter((k: any) => k.frame !== frame);
   } else {
-    animProp.keyframes.push({
-      id: `kf_${Date.now()}`,
-      frame,
-      value: animProp.value,
-      easing: 'linear'
-    });
+    animProp.keyframes.push(createKeyframe(frame, animProp.value, 'linear'));
   }
   animProp.animated = animProp.keyframes.length > 0;
   emit('update', updated);

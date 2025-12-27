@@ -659,3 +659,30 @@ export function createDefaultGlobalLight(): GlobalLightSettings {
     altitude: createStyleProperty('altitude', 30)
   };
 }
+
+// ============================================================
+// UTILITY TYPES FOR STYLE UPDATES
+// ============================================================
+
+/**
+ * Utility type for style update payloads.
+ * Converts AnimatableProperty<T> fields to just T, allowing editors
+ * to emit raw values that the parent component will merge.
+ */
+export type StyleUpdate<T> = {
+  [K in keyof T]?: T[K] extends AnimatableProperty<infer V>
+    ? V | AnimatableProperty<V>
+    : T[K];
+};
+
+// Export specific update types for each style
+export type DropShadowUpdate = StyleUpdate<DropShadowStyle>;
+export type InnerShadowUpdate = StyleUpdate<InnerShadowStyle>;
+export type OuterGlowUpdate = StyleUpdate<OuterGlowStyle>;
+export type InnerGlowUpdate = StyleUpdate<InnerGlowStyle>;
+export type BevelEmbossUpdate = StyleUpdate<BevelEmbossStyle>;
+export type SatinUpdate = StyleUpdate<SatinStyle>;
+export type ColorOverlayUpdate = StyleUpdate<ColorOverlayStyle>;
+export type GradientOverlayUpdate = StyleUpdate<GradientOverlayStyle>;
+export type PatternOverlayUpdate = StyleUpdate<PatternOverlayStyle>;
+export type StrokeStyleUpdate = StyleUpdate<StrokeStyle>;

@@ -28,7 +28,7 @@
 import { computed } from 'vue';
 import type { MergePathsOperator, MergeMode } from '@/types/shapes';
 
-const props = defineProps<{ operator: MergePathsOperator }>();
+const props = defineProps<{ operator: MergePathsOperator; layerId: string }>();
 const emit = defineEmits(['update']);
 
 const modeDescription = computed(() => {

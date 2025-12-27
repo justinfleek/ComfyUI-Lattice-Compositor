@@ -198,9 +198,11 @@ async function collectProject() {
   collectProgress.value = 0;
 
   try {
+    // Convert Record<string, AssetReference> to Map for collection service
+    const assetsMap = new Map(Object.entries(store.project.assets || {}));
     const blob = await projectCollectionService.collectProject(
       store.project,
-      store.assets || new Map(),
+      assetsMap,
       {
         includeProject: true,
         includeAssets: true,
@@ -213,7 +215,7 @@ async function collectProject() {
     );
 
     // Download the ZIP
-    const projectName = store.project.name || 'lattice-project';
+    const projectName = store.project.meta?.name || 'lattice-project';
     projectCollectionService.downloadZip(blob, `${projectName}-collection.zip`);
 
     console.log('[ExportDialog] Project collected successfully');
@@ -441,8 +443,8 @@ async function generateDepthFrames(
 
       // Simple rectangular representation (actual impl would render layer shapes)
       const layer = visibleLayers[i];
-      const pos = layer.transform?.position?.defaultValue || { x: width / 2, y: height / 2 };
-      const scale = layer.transform?.scale?.defaultValue || { x: 1, y: 1 };
+      const pos = layer.transform?.position?.value || { x: width / 2, y: height / 2 };
+      const scale = layer.transform?.scale?.value || { x: 1, y: 1 };
       const w = 200 * scale.x;
       const h = 150 * scale.y;
       ctx.fillRect(pos.x - w / 2, pos.y - h / 2, w, h);
@@ -483,8 +485,8 @@ async function generateNormalFrames(
     });
 
     for (const layer of visibleLayers) {
-      const pos = layer.transform?.position?.defaultValue || { x: width / 2, y: height / 2 };
-      const scale = layer.transform?.scale?.defaultValue || { x: 1, y: 1 };
+      const pos = layer.transform?.position?.value || { x: width / 2, y: height / 2 };
+      const scale = layer.transform?.scale?.value || { x: 1, y: 1 };
       const w = 200 * scale.x;
       const h = 150 * scale.y;
 

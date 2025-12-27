@@ -10,7 +10,7 @@
         />
         <span class="color-value">{{ colorHex }}</span>
       </div>
-      <KeyframeToggle :property="shape.color" @toggle="toggleKeyframe('color')" />
+      <KeyframeToggle :property="shape.color" :layerId="layerId" @toggle="toggleKeyframe('color')" />
     </div>
     <div class="property-row">
       <label>Opacity</label>
@@ -21,7 +21,7 @@
         :max="100"
         unit="%"
       />
-      <KeyframeToggle :property="shape.opacity" @toggle="toggleKeyframe('opacity')" />
+      <KeyframeToggle :property="shape.opacity" :layerId="layerId" @toggle="toggleKeyframe('opacity')" />
     </div>
     <div class="property-row">
       <label>Fill Rule</label>
@@ -56,8 +56,9 @@ import type { FillShape, ShapeColor } from '@/types/shapes';
 import { ScrubableNumber } from '@/components/controls';
 import KeyframeToggle from '../KeyframeToggle.vue';
 import { useCompositorStore } from '@/stores/compositorStore';
+import { createKeyframe } from '@/types/animation';
 
-const props = defineProps<{ shape: FillShape }>();
+const props = defineProps<{ shape: FillShape; layerId: string }>();
 const emit = defineEmits(['update']);
 const store = useCompositorStore();
 
@@ -108,14 +109,9 @@ function toggleKeyframe(prop: 'color' | 'opacity') {
 
   const hasKf = animProp.keyframes.some(k => k.frame === frame);
   if (hasKf) {
-    animProp.keyframes = animProp.keyframes.filter(k => k.frame !== frame);
+    animProp.keyframes = animProp.keyframes.filter(k => k.frame !== frame) as typeof animProp.keyframes;
   } else {
-    animProp.keyframes.push({
-      id: `kf_${Date.now()}`,
-      frame,
-      value: animProp.value,
-      easing: 'linear'
-    });
+    (animProp.keyframes as unknown[]).push(createKeyframe(frame, animProp.value, 'linear'));
   }
   animProp.animated = animProp.keyframes.length > 0;
   emit('update', updated);

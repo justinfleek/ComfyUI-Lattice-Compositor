@@ -9,7 +9,7 @@
         :max="100"
         unit="px"
       />
-      <KeyframeToggle :property="operator.amount" @toggle="toggleKeyframe('amount')" />
+      <KeyframeToggle :property="operator.amount" :layerId="layerId" @toggle="toggleKeyframe('amount')" />
     </div>
     <div class="property-row">
       <label>Line Join</label>
@@ -27,7 +27,7 @@
         :min="1"
         :max="100"
       />
-      <KeyframeToggle :property="operator.miterLimit" @toggle="toggleKeyframe('miterLimit')" />
+      <KeyframeToggle :property="operator.miterLimit" :layerId="layerId" @toggle="toggleKeyframe('miterLimit')" />
     </div>
     <div class="property-row">
       <label>Copies</label>
@@ -38,7 +38,7 @@
         :max="20"
         :step="1"
       />
-      <KeyframeToggle :property="operator.copies" @toggle="toggleKeyframe('copies')" />
+      <KeyframeToggle :property="operator.copies" :layerId="layerId" @toggle="toggleKeyframe('copies')" />
     </div>
     <div class="property-row">
       <label>Copy Offset</label>
@@ -47,7 +47,7 @@
         @update:modelValue="v => updateNumber('copyOffset', v)"
         unit="px"
       />
-      <KeyframeToggle :property="operator.copyOffset" @toggle="toggleKeyframe('copyOffset')" />
+      <KeyframeToggle :property="operator.copyOffset" :layerId="layerId" @toggle="toggleKeyframe('copyOffset')" />
     </div>
   </div>
 </template>
@@ -57,8 +57,9 @@ import type { OffsetPathsOperator, OffsetJoin } from '@/types/shapes';
 import { ScrubableNumber } from '@/components/controls';
 import KeyframeToggle from '../KeyframeToggle.vue';
 import { useCompositorStore } from '@/stores/compositorStore';
+import { createKeyframe } from '@/types/animation';
 
-const props = defineProps<{ operator: OffsetPathsOperator }>();
+const props = defineProps<{ operator: OffsetPathsOperator; layerId: string }>();
 const emit = defineEmits(['update']);
 const store = useCompositorStore();
 
@@ -81,7 +82,7 @@ function toggleKeyframe(prop: 'amount' | 'miterLimit' | 'copies' | 'copyOffset')
   if (hasKf) {
     animProp.keyframes = animProp.keyframes.filter(k => k.frame !== frame);
   } else {
-    animProp.keyframes.push({ id: `kf_${Date.now()}`, frame, value: animProp.value, easing: 'linear' });
+    animProp.keyframes.push(createKeyframe(frame, animProp.value, 'linear'));
   }
   animProp.animated = animProp.keyframes.length > 0;
   emit('update', updated);

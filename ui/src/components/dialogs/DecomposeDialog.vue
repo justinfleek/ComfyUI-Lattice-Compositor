@@ -325,26 +325,32 @@ async function getSourceImage(): Promise<string | null> {
   const layer = imageLayers.value.find(l => l.id === selectedLayerId.value);
   if (!layer) return null;
 
-  // For image layers, get the source URL (may be data URL or external URL)
+  // For image layers, get the source URL via asset lookup
   if (layer.type === 'image' && layer.data) {
-    const source = layer.data.source || layer.data.url || layer.data.assetId;
-    if (source) {
-      // If it's already a data URL, return it directly
-      if (source.startsWith('data:')) {
-        return source;
+    const imageData = layer.data as import('@/types/project').ImageLayerData;
+    if (imageData.assetId) {
+      // Look up asset to get actual URL/data
+      const asset = store.project?.assets?.[imageData.assetId];
+      const source = asset?.data || imageData.assetId;
+      if (source) {
+        // If it's already a data URL, return it directly
+        if (source.startsWith('data:')) {
+          return source;
+        }
+        // Otherwise, load and convert to data URL
+        return await loadImageAsDataUrl(source);
       }
-      // Otherwise, load and convert to data URL
-      return await loadImageAsDataUrl(source);
     }
   }
 
   // For solid layers, create a canvas with the color
   if (layer.type === 'solid' && layer.data) {
+    const solidData = layer.data as unknown as import('@/types/project').SolidLayerData;
     const canvas = document.createElement('canvas');
-    canvas.width = layer.data.width || store.width;
-    canvas.height = layer.data.height || store.height;
+    canvas.width = solidData.width || store.width;
+    canvas.height = solidData.height || store.height;
     const ctx = canvas.getContext('2d')!;
-    ctx.fillStyle = layer.data.color || '#808080';
+    ctx.fillStyle = solidData.color || '#808080';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     return canvas.toDataURL('image/png');
   }
@@ -388,7 +394,7 @@ async function createLayersFromDecomposition(decomposedLayers: DecomposedLayer[]
 
     // Switch to nested comp to add layers
     const originalCompId = comp.id;
-    store.setActiveComposition(nestedComp.id);
+    store.switchComposition(nestedComp.id);
 
     // Create image layers for each decomposed layer (reverse order so Background is at bottom)
     for (let i = decomposedLayers.length - 1; i >= 0; i--) {
@@ -400,7 +406,7 @@ async function createLayersFromDecomposition(decomposedLayers: DecomposedLayer[]
     }
 
     // Switch back to original comp
-    store.setActiveComposition(originalCompId);
+    store.switchComposition(originalCompId);
 
     // Add the nested comp as a layer in the original
     const nestedLayer = store.createLayer('nestedComp', nestedCompName);
@@ -492,6 +498,8 @@ async function checkModelStatus() {
       error: 'Failed to connect to backend',
       model_path: '',
       model_size_gb: 28.8,
+      verification: null,
+      download_progress: null,
     };
   }
 }

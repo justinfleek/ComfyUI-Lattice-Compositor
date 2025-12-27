@@ -60,7 +60,7 @@ export function getEvaluatedLayerProperties(
     return new Map();
   }
 
-  const layer = store.getLayer(layerId);
+  const layer = store.getLayerById(layerId);
   if (!layer) return new Map();
 
   // Get composition context for expressions

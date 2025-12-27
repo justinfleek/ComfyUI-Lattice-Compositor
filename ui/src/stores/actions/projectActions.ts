@@ -150,6 +150,35 @@ export function importProject(
   }
 }
 
+/**
+ * Load project from a File object
+ * Reads the file as text and calls importProject
+ *
+ * @param store - The project store
+ * @param file - File object (from file input or drag-drop)
+ * @param pushHistoryFn - Function to push history after load
+ * @returns Promise resolving to true if successful
+ */
+export async function loadProjectFromFile(
+  store: ProjectStore,
+  file: File,
+  pushHistoryFn: () => void
+): Promise<boolean> {
+  try {
+    const json = await file.text();
+    const success = importProject(store, json, pushHistoryFn);
+
+    if (success) {
+      storeLogger.info('Loaded project from file:', file.name);
+    }
+
+    return success;
+  } catch (err) {
+    storeLogger.error('Failed to load project from file:', err);
+    return false;
+  }
+}
+
 // ============================================================================
 // SERVER OPERATIONS
 // ============================================================================
@@ -370,7 +399,8 @@ export function createDefaultProject(): LatticeProject {
       fps: 16,
       duration: 5.0625, // 81 frames at 16fps
       backgroundColor: '#1a1a1a',
-      autoResizeToContent: false
+      autoResizeToContent: false,
+      frameBlendingEnabled: false
     },
     // Multi-composition support
     compositions: {
@@ -384,7 +414,8 @@ export function createDefaultProject(): LatticeProject {
           fps: 16,
           duration: 5.0625,
           backgroundColor: '#1a1a1a',
-          autoResizeToContent: false
+          autoResizeToContent: false,
+          frameBlendingEnabled: false
         },
         layers: [],
         currentFrame: 0,

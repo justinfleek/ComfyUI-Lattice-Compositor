@@ -147,8 +147,8 @@ export interface CameraTrackingSolve {
   /** Camera intrinsics (may vary per frame for zoom shots) */
   intrinsics: CameraIntrinsics | CameraIntrinsics[];
 
-  /** Camera poses per frame */
-  poses: CameraPose[];
+  /** Camera path - position and rotation per frame */
+  cameraPath: CameraPose[];
 
   /** 3D track points (point cloud) */
   trackPoints3D?: TrackPoint3D[];
@@ -179,8 +179,8 @@ export interface CameraTrackingImportOptions {
   /** Flip Z axis */
   flipZ?: boolean;
 
-  /** Import only poses (skip point cloud) */
-  posesOnly?: boolean;
+  /** Import only camera path (skip point cloud) */
+  cameraPathOnly?: boolean;
 
   /** Create camera layer automatically */
   createCamera?: boolean;

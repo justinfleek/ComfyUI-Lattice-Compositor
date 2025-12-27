@@ -174,6 +174,7 @@ export interface ViewOptions {
   showFocalPlane: boolean;
   showLayerOutlines: boolean;
   showSafeZones: boolean;
+  showGuides: boolean;
   gridSize: number;
   gridDivisions: number;
 }
@@ -228,7 +229,7 @@ const threeCanvasRef = ref<InstanceType<typeof ThreeCanvas> | null>(null);
 // Expose threeCanvasRef to parent
 defineExpose({
   threeCanvasRef,
-  getEngine: () => threeCanvasRef.value?.getEngine?.(),
+  getEngine: () => threeCanvasRef.value?.engine ?? null,
   engine: computed(() => threeCanvasRef.value?.engine ?? null),
 });
 

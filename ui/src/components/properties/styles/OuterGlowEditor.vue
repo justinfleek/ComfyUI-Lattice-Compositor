@@ -66,14 +66,14 @@
 </template>
 
 <script setup lang="ts">
-import type { OuterGlowStyle, RGBA } from '@/types/layerStyles';
+import type { OuterGlowStyle, OuterGlowUpdate, RGBA } from '@/types/layerStyles';
 
 defineProps<{
   style: OuterGlowStyle;
 }>();
 
 const emit = defineEmits<{
-  (e: 'update', updates: Partial<OuterGlowStyle>): void;
+  (e: 'update', updates: OuterGlowUpdate): void;
 }>();
 
 const blendModes = ['normal', 'screen', 'lighten', 'color-dodge', 'linear-dodge', 'overlay'];

@@ -9,7 +9,7 @@
         :max="100"
         :step="1"
       />
-      <KeyframeToggle :property="operator.copies" @toggle="toggleKeyframe('copies')" />
+      <KeyframeToggle :property="operator.copies" :layerId="layerId" @toggle="toggleKeyframe('copies')" />
     </div>
     <div class="property-row">
       <label>Offset</label>
@@ -20,7 +20,7 @@
         :max="10"
         :step="0.1"
       />
-      <KeyframeToggle :property="operator.offset" @toggle="toggleKeyframe('offset')" />
+      <KeyframeToggle :property="operator.offset" :layerId="layerId" @toggle="toggleKeyframe('offset')" />
     </div>
     <div class="property-row">
       <label>Composite</label>
@@ -46,7 +46,7 @@
           unit="px"
         />
       </div>
-      <KeyframeToggle :property="operator.transform.position" @toggle="toggleTransformKeyframe('position')" />
+      <KeyframeToggle :property="operator.transform.position" :layerId="layerId" @toggle="toggleTransformKeyframe('position')" />
     </div>
     <div class="property-row">
       <label>Scale</label>
@@ -66,7 +66,7 @@
           unit="%"
         />
       </div>
-      <KeyframeToggle :property="operator.transform.scale" @toggle="toggleTransformKeyframe('scale')" />
+      <KeyframeToggle :property="operator.transform.scale" :layerId="layerId" @toggle="toggleTransformKeyframe('scale')" />
     </div>
     <div class="property-row">
       <label>Rotation</label>
@@ -75,7 +75,7 @@
         @update:modelValue="v => updateTransformNumber('rotation', v)"
         unit="°"
       />
-      <KeyframeToggle :property="operator.transform.rotation" @toggle="toggleTransformKeyframe('rotation')" />
+      <KeyframeToggle :property="operator.transform.rotation" :layerId="layerId" @toggle="toggleTransformKeyframe('rotation')" />
     </div>
     <div class="property-row">
       <label>Start Opacity</label>
@@ -86,7 +86,7 @@
         :max="100"
         unit="%"
       />
-      <KeyframeToggle :property="operator.transform.startOpacity" @toggle="toggleTransformKeyframe('startOpacity')" />
+      <KeyframeToggle :property="operator.transform.startOpacity" :layerId="layerId" @toggle="toggleTransformKeyframe('startOpacity')" />
     </div>
     <div class="property-row">
       <label>End Opacity</label>
@@ -97,7 +97,7 @@
         :max="100"
         unit="%"
       />
-      <KeyframeToggle :property="operator.transform.endOpacity" @toggle="toggleTransformKeyframe('endOpacity')" />
+      <KeyframeToggle :property="operator.transform.endOpacity" :layerId="layerId" @toggle="toggleTransformKeyframe('endOpacity')" />
     </div>
   </div>
 </template>
@@ -107,8 +107,9 @@ import type { RepeaterOperator, RepeaterComposite, Point2D } from '@/types/shape
 import { ScrubableNumber } from '@/components/controls';
 import KeyframeToggle from '../KeyframeToggle.vue';
 import { useCompositorStore } from '@/stores/compositorStore';
+import { createKeyframe } from '@/types/animation';
 
-const props = defineProps<{ operator: RepeaterOperator }>();
+const props = defineProps<{ operator: RepeaterOperator; layerId: string }>();
 const emit = defineEmits(['update']);
 const store = useCompositorStore();
 
@@ -148,14 +149,9 @@ function toggleKeyframe(prop: 'copies' | 'offset') {
 
   const hasKf = animProp.keyframes.some(k => k.frame === frame);
   if (hasKf) {
-    animProp.keyframes = animProp.keyframes.filter(k => k.frame !== frame);
+    animProp.keyframes = animProp.keyframes.filter(k => k.frame !== frame) as typeof animProp.keyframes;
   } else {
-    animProp.keyframes.push({
-      id: `kf_${Date.now()}`,
-      frame,
-      value: animProp.value,
-      easing: 'linear'
-    });
+    (animProp.keyframes as unknown[]).push(createKeyframe(frame, animProp.value, 'linear'));
   }
   animProp.animated = animProp.keyframes.length > 0;
   emit('update', updated);
@@ -169,14 +165,9 @@ function toggleTransformKeyframe(prop: 'position' | 'scale' | 'anchorPoint' | 'r
 
   const hasKf = animProp.keyframes.some(k => k.frame === frame);
   if (hasKf) {
-    animProp.keyframes = animProp.keyframes.filter(k => k.frame !== frame);
+    animProp.keyframes = animProp.keyframes.filter(k => k.frame !== frame) as typeof animProp.keyframes;
   } else {
-    animProp.keyframes.push({
-      id: `kf_${Date.now()}`,
-      frame,
-      value: animProp.value,
-      easing: 'linear'
-    });
+    (animProp.keyframes as unknown[]).push(createKeyframe(frame, animProp.value, 'linear'));
   }
   animProp.animated = animProp.keyframes.length > 0;
   emit('update', updated);

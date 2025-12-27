@@ -101,7 +101,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { easings } from '@/services/easing';
-import type { InterpolationType, ControlMode } from '@/types/project';
+import type { InterpolationType, BaseInterpolationType, ControlMode } from '@/types/project';
 
 const props = defineProps<{
   visible: boolean;
@@ -113,20 +113,23 @@ const props = defineProps<{
 const emit = defineEmits<{
   close: [];
   confirm: [settings: {
-    interpolation: InterpolationType;
+    interpolation: BaseInterpolationType;
     easingPreset: string;
     controlMode: ControlMode;
   }];
 }>();
 
-const interpolationType = ref<InterpolationType>('bezier');
+const interpolationType = ref<BaseInterpolationType>('bezier');
 const easingPreset = ref<string>('easeInOutCubic');
 const controlMode = ref<ControlMode>('smooth');
 
 // Reset to initial values when dialog opens
 watch(() => props.visible, (visible) => {
   if (visible) {
-    interpolationType.value = props.initialInterpolation || 'bezier';
+    // Convert easing names to 'bezier' (easing is handled via easingPreset field)
+    const initial = props.initialInterpolation;
+    const isBaseType = initial === 'linear' || initial === 'bezier' || initial === 'hold';
+    interpolationType.value = isBaseType ? initial : 'bezier';
     controlMode.value = props.initialControlMode || 'smooth';
     easingPreset.value = 'easeInOutCubic';
   }

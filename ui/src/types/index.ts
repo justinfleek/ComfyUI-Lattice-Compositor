@@ -39,8 +39,8 @@ export { getAnimatableType, EFFECT_DEFINITIONS } from './effects';
 // Shapes - primary source for GradientDef, GradientStop, createDefaultStroke
 export * from './shapes';
 
-// EssentialGraphics - some conflicts handled
-export * from './essentialGraphics';
+// TemplateBuilder - some conflicts handled
+export * from './templateBuilder';
 
 // LayerStyles - has its own RGBA, GradientDef, GradientStop (different from shapes.ts)
 // Import directly from '@/types/layerStyles' if needed

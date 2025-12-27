@@ -8,7 +8,7 @@
  * - Lattice JSON (native format)
  * - COLMAP (popular open-source SfM)
  * - Blender Motion Tracking export
- * - Generic JSON with poses
+ * - Generic JSON with camera path
  */
 
 import type {
@@ -31,8 +31,8 @@ import { createKeyframe, createAnimatableProperty } from '@/types/animation';
 export function parseLatticeTrackingJSON(json: string): CameraTrackingSolve {
   const data = JSON.parse(json);
 
-  if (!data.version || !data.poses) {
-    throw new Error('Invalid Lattice tracking format: missing version or poses');
+  if (!data.version || !data.cameraPath) {
+    throw new Error('Invalid Lattice tracking format: missing version or cameraPath');
   }
 
   return data as CameraTrackingSolve;
@@ -74,8 +74,8 @@ export function parseCOLMAPOutput(files: {
     model: 'pinhole',
   };
 
-  // Convert images to poses
-  const poses: CameraPose[] = images.map((img, index) => {
+  // Convert images to camera path
+  const cameraPath: CameraPose[] = images.map((img, index) => {
     // COLMAP stores camera-to-world inverse, need to invert
     // Quaternion is already world-to-camera, position needs adjustment
     const qw = img.qw, qx = img.qx, qy = img.qy, qz = img.qz;
@@ -114,7 +114,7 @@ export function parseCOLMAPOutput(files: {
       frameCount: images.length,
     },
     intrinsics,
-    poses,
+    cameraPath,
     trackPoints3D,
   };
 }
@@ -248,8 +248,8 @@ export function parseBlenderTrackingJSON(json: string): CameraTrackingSolve {
     model: 'pinhole',
   };
 
-  // Convert poses if reconstruction exists
-  const poses: CameraPose[] = data.reconstruction?.camera_poses?.map(pose => ({
+  // Convert camera path if reconstruction exists
+  const cameraPath: CameraPose[] = data.reconstruction?.camera_poses?.map(pose => ({
     frame: pose.frame,
     position: {
       x: pose.location[0],
@@ -290,7 +290,7 @@ export function parseBlenderTrackingJSON(json: string): CameraTrackingSolve {
       frameCount: maxFrame + 1,
     },
     intrinsics,
-    poses,
+    cameraPath,
     trackPoints3D,
   };
 }
@@ -302,7 +302,7 @@ export function detectTrackingFormat(content: string): 'lattice' | 'blender' | '
   try {
     const json = JSON.parse(content);
 
-    if (json.version && json.source && json.poses) {
+    if (json.version && json.source && json.cameraPath) {
       return 'lattice';
     }
 
@@ -337,8 +337,8 @@ export async function importCameraTracking(
     const offset = options.offset ?? { x: 0, y: 0, z: 0 };
     const frameOffset = options.frameOffset ?? 0;
 
-    // Apply coordinate transformations to poses
-    const transformedPoses = solve.poses.map(pose => ({
+    // Apply coordinate transformations to camera path
+    const transformedPath = solve.cameraPath.map(pose => ({
       ...pose,
       frame: pose.frame + frameOffset,
       position: {
@@ -359,12 +359,12 @@ export async function importCameraTracking(
       const fov = 2 * Math.atan(intrinsics.height / (2 * intrinsics.focalLength)) * (180 / Math.PI);
 
       // Create position keyframes
-      const positionKeyframes = transformedPoses.map(pose =>
+      const positionKeyframes = transformedPath.map(pose =>
         createKeyframe(pose.frame, pose.position, 'linear')
       );
 
       // Create rotation keyframes (convert quaternion to euler)
-      const rotationKeyframes = transformedPoses.map(pose => {
+      const rotationKeyframes = transformedPath.map(pose => {
         const euler = quaternionToEuler(
           pose.rotation.w,
           pose.rotation.x,
@@ -382,7 +382,7 @@ export async function importCameraTracking(
         // Position uses { x, y, z? } - z is optional but we include it for 3D
         const positionProp = createAnimatableProperty(
           'position',
-          transformedPoses[0]?.position ?? { x: 0, y: 0, z: 0 },
+          transformedPath[0]?.position ?? { x: 0, y: 0, z: 0 },
           'position',
           'Transform'
         );
@@ -566,14 +566,14 @@ export function exportCameraToTrackingFormat(
   const comp = store.activeComposition;
   if (!comp) return null;
 
-  const poses: CameraPose[] = [];
+  const cameraPath: CameraPose[] = [];
 
   // Get position and orientation (3D rotation) properties
   const positionProp = layer.transform?.position;
   // Use orientation for 3D rotation, fall back to individual rotationX/Y/Z
   const orientationProp = layer.transform?.orientation;
 
-  // Generate poses for each frame with keyframes
+  // Generate camera path for each frame with keyframes
   const allFrames = new Set<number>();
 
   if (positionProp?.keyframes) {
@@ -596,7 +596,7 @@ export function exportCameraToTrackingFormat(
     const pos = ensureZ(posValue);
     const rot = orientationProp?.value ?? { x: 0, y: 0, z: 0 };
 
-    poses.push({
+    cameraPath.push({
       frame: 0,
       position: pos,
       rotation: eulerToQuaternion(rot.x, rot.y, rot.z),
@@ -612,7 +612,7 @@ export function exportCameraToTrackingFormat(
       const pos = ensureZ(posValue);
       const rot = interpolateOrientationProperty(orientationProp, frame);
 
-      poses.push({
+      cameraPath.push({
         frame,
         position: pos,
         rotation: eulerToQuaternion(rot.x, rot.y, rot.z),
@@ -645,7 +645,7 @@ export function exportCameraToTrackingFormat(
       height: comp.settings.height,
       model: 'pinhole',
     },
-    poses,
+    cameraPath,
   };
 }
 

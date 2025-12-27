@@ -154,12 +154,15 @@ const selectedKeyframeIds = computed(() => {
   return store.selectedKeyframeIds || [];
 });
 
+// Position value type
+type PositionValue = { x: number; y: number; z?: number };
+
 // Get position property from layer
-const positionProperty = computed((): AnimatableProperty<number[]> | null => {
+const positionProperty = computed((): AnimatableProperty<PositionValue> | null => {
   if (!props.layerId) return null;
   const layer = store.getLayerById?.(props.layerId);
   if (!layer?.transform?.position) return null;
-  return layer.transform.position as AnimatableProperty<number[]>;
+  return layer.transform.position;
 });
 
 // Check if layer has position keyframes
@@ -174,13 +177,13 @@ const keyframeMarkers = computed(() => {
   const prop = positionProperty.value;
   if (!prop?.keyframes) return [];
 
-  return prop.keyframes.map((kf: Keyframe<number[]>) => ({
+  return prop.keyframes.map((kf: Keyframe<PositionValue>) => ({
     id: kf.id,
     frame: kf.frame,
     position: {
-      x: kf.value[0] || 0,
-      y: kf.value[1] || 0,
-      z: kf.value[2] || 0
+      x: kf.value.x || 0,
+      y: kf.value.y || 0,
+      z: kf.value.z || 0
     }
   }));
 });
@@ -190,8 +193,8 @@ const keyframesWithTangents = computed(() => {
   const prop = positionProperty.value;
   if (!prop?.keyframes) return [];
 
-  return prop.keyframes.map((kf: Keyframe<number[]>, index: number) => {
-    const pos = { x: kf.value[0] || 0, y: kf.value[1] || 0 };
+  return prop.keyframes.map((kf: Keyframe<PositionValue>, index: number) => {
+    const pos = { x: kf.value.x || 0, y: kf.value.y || 0 };
     const isSelected = selectedKeyframeIds.value.includes(kf.id);
 
     // Calculate tangent vectors based on neighboring keyframes
@@ -204,7 +207,7 @@ const keyframesWithTangents = computed(() => {
     // In tangent (from previous keyframe)
     if (index > 0) {
       const prevKf = keyframes[index - 1];
-      const prevPos = { x: prevKf.value[0] || 0, y: prevKf.value[1] || 0 };
+      const prevPos = { x: prevKf.value.x || 0, y: prevKf.value.y || 0 };
       const dx = pos.x - prevPos.x;
       const dy = pos.y - prevPos.y;
       // Tangent is 1/3 of the distance back towards previous keyframe
@@ -214,7 +217,7 @@ const keyframesWithTangents = computed(() => {
     // Out tangent (to next keyframe)
     if (index < keyframes.length - 1) {
       const nextKf = keyframes[index + 1];
-      const nextPos = { x: nextKf.value[0] || 0, y: nextKf.value[1] || 0 };
+      const nextPos = { x: nextKf.value.x || 0, y: nextKf.value.y || 0 };
       const dx = nextPos.x - pos.x;
       const dy = nextPos.y - pos.y;
       // Tangent is 1/3 of the distance forward towards next keyframe
@@ -284,7 +287,7 @@ const frameTicks = computed(() => {
   // Add tick every 5 frames
   for (let frame = firstFrame; frame <= lastFrame; frame += 5) {
     // Skip if this is a keyframe (will be shown as diamond)
-    if (prop.keyframes.some((kf: Keyframe<number[]>) => kf.frame === frame)) continue;
+    if (prop.keyframes.some((kf: Keyframe<PositionValue>) => kf.frame === frame)) continue;
 
     // Interpolate position at this frame
     const value = store.evaluatePropertyAtFrame?.(props.layerId!, 'transform.position', frame);
@@ -302,13 +305,13 @@ const overlayStyle = computed(() => {
   const ty = props.viewportTransform[1] || 0;
 
   return {
-    position: 'absolute',
+    position: 'absolute' as const,
     top: '0',
     left: '0',
     width: `${props.containerWidth}px`,
     height: `${props.containerHeight}px`,
     transform: `translate(${tx}px, ${ty}px) scale(${props.zoom})`,
-    transformOrigin: 'top left',
+    transformOrigin: 'top left' as const,
     pointerEvents: 'none' as const,
     zIndex: 100
   };

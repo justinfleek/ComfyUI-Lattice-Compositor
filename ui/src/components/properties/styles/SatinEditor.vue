@@ -52,14 +52,14 @@
 </template>
 
 <script setup lang="ts">
-import type { SatinStyle, RGBA } from '@/types/layerStyles';
+import type { SatinStyle, SatinUpdate, RGBA } from '@/types/layerStyles';
 
 defineProps<{
   style: SatinStyle;
 }>();
 
 const emit = defineEmits<{
-  (e: 'update', updates: Partial<SatinStyle>): void;
+  (e: 'update', updates: SatinUpdate): void;
 }>();
 
 const blendModes = ['normal', 'multiply', 'screen', 'overlay', 'soft-light', 'hard-light', 'linear-burn'];

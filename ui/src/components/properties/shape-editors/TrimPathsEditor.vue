@@ -9,7 +9,7 @@
         :max="100"
         unit="%"
       />
-      <KeyframeToggle :property="operator.start" @toggle="toggleKeyframe('start')" />
+      <KeyframeToggle :property="operator.start" :layerId="layerId" @toggle="toggleKeyframe('start')" />
     </div>
     <div class="property-row">
       <label>End</label>
@@ -20,7 +20,7 @@
         :max="100"
         unit="%"
       />
-      <KeyframeToggle :property="operator.end" @toggle="toggleKeyframe('end')" />
+      <KeyframeToggle :property="operator.end" :layerId="layerId" @toggle="toggleKeyframe('end')" />
     </div>
     <div class="property-row">
       <label>Offset</label>
@@ -31,7 +31,7 @@
         :max="360"
         unit="°"
       />
-      <KeyframeToggle :property="operator.offset" @toggle="toggleKeyframe('offset')" />
+      <KeyframeToggle :property="operator.offset" :layerId="layerId" @toggle="toggleKeyframe('offset')" />
     </div>
     <div class="property-row">
       <label>Trim Mode</label>
@@ -48,8 +48,9 @@ import type { TrimPathsOperator, TrimMode } from '@/types/shapes';
 import { ScrubableNumber } from '@/components/controls';
 import KeyframeToggle from '../KeyframeToggle.vue';
 import { useCompositorStore } from '@/stores/compositorStore';
+import { createKeyframe } from '@/types/animation';
 
-const props = defineProps<{ operator: TrimPathsOperator }>();
+const props = defineProps<{ operator: TrimPathsOperator; layerId: string }>();
 const emit = defineEmits(['update']);
 const store = useCompositorStore();
 
@@ -74,12 +75,7 @@ function toggleKeyframe(prop: 'start' | 'end' | 'offset') {
   if (hasKf) {
     animProp.keyframes = animProp.keyframes.filter(k => k.frame !== frame);
   } else {
-    animProp.keyframes.push({
-      id: `kf_${Date.now()}`,
-      frame,
-      value: animProp.value,
-      easing: 'linear'
-    });
+    animProp.keyframes.push(createKeyframe(frame, animProp.value, 'linear'));
   }
   animProp.animated = animProp.keyframes.length > 0;
   emit('update', updated);

@@ -29,102 +29,102 @@
     <div v-if="isExpanded" class="item-content">
       <!-- Rectangle -->
       <template v-if="item.type === 'rectangle'">
-        <RectangleEditor :shape="item as RectangleShape" @update="emitUpdate" />
+        <RectangleEditor :shape="item as RectangleShape" :layerId="layerId" @update="emitUpdate" />
       </template>
 
       <!-- Ellipse -->
       <template v-else-if="item.type === 'ellipse'">
-        <EllipseEditor :shape="item as EllipseShape" @update="emitUpdate" />
+        <EllipseEditor :shape="item as EllipseShape" :layerId="layerId" @update="emitUpdate" />
       </template>
 
       <!-- Polygon -->
       <template v-else-if="item.type === 'polygon'">
-        <PolygonEditor :shape="item as PolygonShape" @update="emitUpdate" />
+        <PolygonEditor :shape="item as PolygonShape" :layerId="layerId" @update="emitUpdate" />
       </template>
 
       <!-- Star -->
       <template v-else-if="item.type === 'star'">
-        <StarEditor :shape="item as StarShape" @update="emitUpdate" />
+        <StarEditor :shape="item as StarShape" :layerId="layerId" @update="emitUpdate" />
       </template>
 
       <!-- Path -->
       <template v-else-if="item.type === 'path'">
-        <PathEditor :shape="item as PathShape" @update="emitUpdate" />
+        <PathEditor :shape="item as PathShape" :layerId="layerId" @update="emitUpdate" />
       </template>
 
       <!-- Fill -->
       <template v-else-if="item.type === 'fill'">
-        <FillEditor :shape="item as FillShape" @update="emitUpdate" />
+        <FillEditor :shape="item as FillShape" :layerId="layerId" @update="emitUpdate" />
       </template>
 
       <!-- Stroke -->
       <template v-else-if="item.type === 'stroke'">
-        <StrokeEditor :shape="item as StrokeShape" @update="emitUpdate" />
+        <StrokeEditor :shape="item as StrokeShape" :layerId="layerId" @update="emitUpdate" />
       </template>
 
       <!-- Gradient Fill -->
       <template v-else-if="item.type === 'gradientFill'">
-        <GradientFillEditor :shape="item as GradientFillShape" @update="emitUpdate" />
+        <GradientFillEditor :shape="item as GradientFillShape" :layerId="layerId" @update="emitUpdate" />
       </template>
 
       <!-- Gradient Stroke -->
       <template v-else-if="item.type === 'gradientStroke'">
-        <GradientStrokeEditor :shape="item as GradientStrokeShape" @update="emitUpdate" />
+        <GradientStrokeEditor :shape="item as GradientStrokeShape" :layerId="layerId" @update="emitUpdate" />
       </template>
 
       <!-- Trim Paths -->
       <template v-else-if="item.type === 'trimPaths'">
-        <TrimPathsEditor :operator="item as TrimPathsOperator" @update="emitUpdate" />
+        <TrimPathsEditor :operator="item as TrimPathsOperator" :layerId="layerId" @update="emitUpdate" />
       </template>
 
       <!-- Repeater -->
       <template v-else-if="item.type === 'repeater'">
-        <RepeaterEditor :operator="item as RepeaterOperator" @update="emitUpdate" />
+        <RepeaterEditor :operator="item as RepeaterOperator" :layerId="layerId" @update="emitUpdate" />
       </template>
 
       <!-- Offset Paths -->
       <template v-else-if="item.type === 'offsetPaths'">
-        <OffsetPathsEditor :operator="item as OffsetPathsOperator" @update="emitUpdate" />
+        <OffsetPathsEditor :operator="item as OffsetPathsOperator" :layerId="layerId" @update="emitUpdate" />
       </template>
 
       <!-- Pucker & Bloat -->
       <template v-else-if="item.type === 'puckerBloat'">
-        <PuckerBloatEditor :operator="item as PuckerBloatOperator" @update="emitUpdate" />
+        <PuckerBloatEditor :operator="item as PuckerBloatOperator" :layerId="layerId" @update="emitUpdate" />
       </template>
 
       <!-- Wiggle Paths -->
       <template v-else-if="item.type === 'wigglePaths'">
-        <WigglePathsEditor :operator="item as WigglePathsOperator" @update="emitUpdate" />
+        <WigglePathsEditor :operator="item as WigglePathsOperator" :layerId="layerId" @update="emitUpdate" />
       </template>
 
       <!-- Zig Zag -->
       <template v-else-if="item.type === 'zigZag'">
-        <ZigZagEditor :operator="item as ZigZagOperator" @update="emitUpdate" />
+        <ZigZagEditor :operator="item as ZigZagOperator" :layerId="layerId" @update="emitUpdate" />
       </template>
 
       <!-- Twist -->
       <template v-else-if="item.type === 'twist'">
-        <TwistEditor :operator="item as TwistOperator" @update="emitUpdate" />
+        <TwistEditor :operator="item as TwistOperator" :layerId="layerId" @update="emitUpdate" />
       </template>
 
       <!-- Rounded Corners -->
       <template v-else-if="item.type === 'roundedCorners'">
-        <RoundedCornersEditor :operator="item as RoundedCornersOperator" @update="emitUpdate" />
+        <RoundedCornersEditor :operator="item as RoundedCornersOperator" :layerId="layerId" @update="emitUpdate" />
       </template>
 
       <!-- Merge Paths -->
       <template v-else-if="item.type === 'mergePaths'">
-        <MergePathsEditor :operator="item as MergePathsOperator" @update="emitUpdate" />
+        <MergePathsEditor :operator="item as MergePathsOperator" :layerId="layerId" @update="emitUpdate" />
       </template>
 
       <!-- Transform -->
       <template v-else-if="item.type === 'transform'">
-        <TransformEditor :transform="item as ShapeTransform" @update="emitUpdate" />
+        <TransformEditor :transform="item as ShapeTransform" :layerId="layerId" @update="emitUpdate" />
       </template>
 
       <!-- Group (recursive) -->
       <template v-else-if="item.type === 'group'">
-        <GroupEditor :group="item as ShapeGroup" @update="emitUpdate" />
+        <GroupEditor :group="item as ShapeGroup" :layerId="layerId" @update="emitUpdate" />
       </template>
 
       <!-- Fallback -->
@@ -189,6 +189,7 @@ const props = defineProps<{
   item: ShapeContent;
   index: number;
   depth: number;
+  layerId: string;
 }>();
 
 const emit = defineEmits(['update', 'delete', 'move-up', 'move-down']);

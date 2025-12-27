@@ -120,14 +120,14 @@
 </template>
 
 <script setup lang="ts">
-import type { BevelEmbossStyle, RGBA } from '@/types/layerStyles';
+import type { BevelEmbossStyle, BevelEmbossUpdate, RGBA } from '@/types/layerStyles';
 
 defineProps<{
   style: BevelEmbossStyle;
 }>();
 
 const emit = defineEmits<{
-  (e: 'update', updates: Partial<BevelEmbossStyle>): void;
+  (e: 'update', updates: BevelEmbossUpdate): void;
 }>();
 
 const blendModes = ['normal', 'multiply', 'screen', 'overlay', 'soft-light', 'hard-light'];

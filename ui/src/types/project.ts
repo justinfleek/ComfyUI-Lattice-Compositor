@@ -12,7 +12,7 @@
 
 import type { EffectInstance } from './effects';
 import type { ShapeLayerData } from './shapes';
-import type { TemplateConfig } from './essentialGraphics';
+import type { TemplateConfig } from './templateBuilder';
 import type { LayerStyles, GlobalLightSettings } from './layerStyles';
 // BlendMode re-exported from blendModes.ts (not imported here to avoid conflict with local BlendMode type)
 import type {
@@ -58,7 +58,7 @@ import type { TextData } from './text';
 // (Files importing from '@/types/project' directly need these)
 export type { EffectInstance } from './effects';
 export type { ShapeLayerData } from './shapes';
-export type { TemplateConfig } from './essentialGraphics';
+export type { TemplateConfig } from './templateBuilder';
 export type { LayerStyles, GlobalLightSettings } from './layerStyles';
 
 // Animation types (extracted to animation.ts)
@@ -233,8 +233,8 @@ export interface Composition {
   workflowInputs?: WorkflowInput[];
   workflowOutputs?: WorkflowOutput[];
 
-  // Essential Graphics / Template configuration
-  // When set, this composition can be used as a Motion Graphics Template (MOGRT)
+  // Template Builder configuration
+  // When set, this composition can be exported as a Lattice Template (.lattice.json)
   templateConfig?: TemplateConfig;
 
   // Global Light settings for Layer Styles

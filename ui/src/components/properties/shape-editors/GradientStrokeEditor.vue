@@ -17,7 +17,7 @@
         :max="100"
         unit="px"
       />
-      <KeyframeToggle :property="shape.width" @toggle="toggleKeyframe('width')" />
+      <KeyframeToggle :property="shape.width" :layerId="layerId" @toggle="toggleKeyframe('width')" />
     </div>
 
     <div class="property-row">
@@ -29,7 +29,7 @@
         :max="100"
         unit="%"
       />
-      <KeyframeToggle :property="shape.opacity" @toggle="toggleKeyframe('opacity')" />
+      <KeyframeToggle :property="shape.opacity" :layerId="layerId" @toggle="toggleKeyframe('opacity')" />
     </div>
 
     <div class="property-row">
@@ -106,7 +106,7 @@
         :max="100"
         unit="px"
       />
-      <KeyframeToggle :property="shape.dashOffset" @toggle="toggleKeyframe('dashOffset')" />
+      <KeyframeToggle :property="shape.dashOffset" :layerId="layerId" @toggle="toggleKeyframe('dashOffset')" />
     </div>
     <div class="dash-info">
       <span>{{ dashPatternDisplay }}</span>
@@ -120,8 +120,9 @@ import type { GradientStrokeShape, ShapeColor, LineCap, LineJoin } from '@/types
 import { ScrubableNumber } from '@/components/controls';
 import KeyframeToggle from '../KeyframeToggle.vue';
 import { useCompositorStore } from '@/stores/compositorStore';
+import { createKeyframe } from '@/types/animation';
 
-const props = defineProps<{ shape: GradientStrokeShape }>();
+const props = defineProps<{ shape: GradientStrokeShape; layerId: string }>();
 const emit = defineEmits(['update']);
 const store = useCompositorStore();
 
@@ -179,7 +180,7 @@ function toggleKeyframe(prop: 'width' | 'opacity' | 'dashOffset') {
   if (hasKf) {
     animProp.keyframes = animProp.keyframes.filter(k => k.frame !== frame);
   } else {
-    animProp.keyframes.push({ id: `kf_${Date.now()}`, frame, value: animProp.value, easing: 'linear' });
+    animProp.keyframes.push(createKeyframe(frame, animProp.value, 'linear'));
   }
   animProp.animated = animProp.keyframes.length > 0;
   emit('update', updated);

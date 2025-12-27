@@ -245,12 +245,12 @@ const activeToolTip = computed(() => {
 });
 
 const overlayStyle = computed(() => ({
-  position: 'absolute',
+  position: 'absolute' as const,
   top: '0',
   left: '0',
   width: '100%',
   height: '100%',
-  pointerEvents: props.isActive ? 'auto' : 'none',
+  pointerEvents: props.isActive ? 'auto' as const : 'none' as const,
 }));
 
 // Methods

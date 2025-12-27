@@ -280,7 +280,7 @@
               type="number"
               v-model.number="posterFrame"
               :min="0"
-              :max="activeComposition?.frameCount || 0"
+              :max="activeComposition?.settings.frameCount || 0"
               class="poster-frame-input"
             />
             <button class="btn-small" @click="capturePosterFrame" :disabled="isCapturing">
@@ -292,10 +292,10 @@
           </div>
           <button
             class="btn-primary btn-export"
-            @click="exportMOGRT"
+            @click="exportTemplate"
             :disabled="isExporting"
           >
-            {{ isExporting ? 'Exporting...' : 'Export Motion Graphics Template' }}
+            {{ isExporting ? 'Exporting...' : 'Export Template' }}
           </button>
         </div>
       </div>
@@ -305,7 +305,7 @@
     <input
       ref="fileInput"
       type="file"
-      accept=".mogrt,.json"
+      accept=".lattice.json,.json"
       style="display: none"
       @change="handleFileImport"
     />
@@ -322,9 +322,9 @@ import type {
   ExposedProperty,
   PropertyGroup,
   TemplateComment,
-  InstalledTemplate,
-  MOGRTPackage
-} from '@/types/essentialGraphics';
+  SavedTemplate,
+  LatticeTemplate
+} from '@/types/templateBuilder';
 import {
   initializeTemplate,
   clearTemplate,
@@ -341,12 +341,12 @@ import {
   getOrganizedProperties,
   isExposedProperty as checkIsExposedProperty,
   validateTemplate,
-  prepareMOGRTExport
-} from '@/services/essentialGraphics';
+  prepareTemplateExport
+} from '@/services/templateBuilder';
 import {
   safeJSONParse,
   safeJSONStringify,
-  validateMOGRT
+  validateLatticeTemplate
 } from '@/services/jsonValidation';
 import type { Layer, Composition } from '@/types/project';
 import ExposedPropertyControl from '../panels/ExposedPropertyControl.vue';
@@ -379,7 +379,7 @@ const showAddMenu = ref(false);
 const selectedPropertyId = ref<string | null>(null);
 const showPropertyPicker = ref(false);
 const selectedLayerForPicker = ref<Layer | null>(null);
-const installedTemplates = ref<InstalledTemplate[]>([]);
+const savedTemplates = ref<SavedTemplate[]>([]);
 const selectedTemplateId = ref<string | null>(null);
 const fileInput = ref<HTMLInputElement | null>(null);
 
@@ -433,9 +433,9 @@ const exposableProperties = computed(() => {
 });
 
 const filteredTemplates = computed(() => {
-  if (!searchQuery.value) return installedTemplates.value;
+  if (!searchQuery.value) return savedTemplates.value;
   const query = searchQuery.value.toLowerCase();
-  return installedTemplates.value.filter(t =>
+  return savedTemplates.value.filter(t =>
     t.name.toLowerCase().includes(query) ||
     t.author?.toLowerCase().includes(query) ||
     t.tags?.some(tag => tag.toLowerCase().includes(query))
@@ -621,7 +621,7 @@ function handleDrop(event: DragEvent) {
   if (draggedItem.value) {
     // If item was in a group, remove it from the group
     if (draggedFromGroupId.value) {
-      movePropertyToGroup(templateConfig.value, draggedItem.value.id, null);
+      movePropertyToGroup(templateConfig.value, draggedItem.value.id, undefined);
     }
 
     // Reorder based on drop position
@@ -658,18 +658,18 @@ function handleDropToGroup(event: DragEvent, groupId: string) {
 // TEMPLATE OPERATIONS
 // ===========================================
 
-function selectTemplate(template: InstalledTemplate) {
+function selectTemplate(template: SavedTemplate) {
   selectedTemplateId.value = template.id;
 }
 
 function applySelectedTemplate() {
-  const template = installedTemplates.value.find(t => t.id === selectedTemplateId.value);
+  const template = savedTemplates.value.find(t => t.id === selectedTemplateId.value);
   if (template) {
     applyTemplate(template);
   }
 }
 
-async function applyTemplate(template: InstalledTemplate) {
+async function applyTemplate(template: SavedTemplate) {
   if (!activeComposition.value) {
     alert('Please select a composition first');
     return;
@@ -677,22 +677,22 @@ async function applyTemplate(template: InstalledTemplate) {
 
   try {
     // Load the template data
-    const templateData = template.data;
-    if (!templateData) {
+    const tplData = template.templateData;
+    if (!tplData) {
       alert('Template data not found');
       return;
     }
 
     // Apply exposed property values to current composition
-    if (templateData.templateConfig && templateData.composition) {
+    if (tplData.templateConfig && tplData.composition) {
       // Copy template config
       activeComposition.value.templateConfig = {
-        ...templateData.templateConfig,
+        ...tplData.templateConfig,
         masterCompositionId: activeComposition.value.id
       };
 
       // Apply exposed property default values
-      templateData.templateConfig.exposedProperties.forEach((prop: ExposedProperty) => {
+      tplData.templateConfig.exposedProperties.forEach((prop: ExposedProperty) => {
         const layer = activeComposition.value?.layers.find(l => l.name === prop.sourceLayerId);
         if (layer && prop.defaultValue !== undefined) {
           // Set the property value on the layer
@@ -703,10 +703,10 @@ async function applyTemplate(template: InstalledTemplate) {
       store.pushHistory();
       activeTab.value = 'edit';
 
-      console.log('[EssentialGraphics] Template applied:', template.name);
+      console.log('[TemplateBuilder] Template applied:', template.name);
     }
   } catch (error) {
-    console.error('[EssentialGraphics] Failed to apply template:', error);
+    console.error('[TemplateBuilder] Failed to apply template:', error);
     alert('Failed to apply template');
   }
 }
@@ -740,26 +740,26 @@ async function handleFileImport(event: Event) {
   if (!file) return;
 
   try {
-    let templateData: MOGRTPackage | null = null;
+    let templateData: LatticeTemplate | null = null;
 
-    if (file.name.endsWith('.mogrt')) {
-      // Load as ZIP
+    if (file.name.endsWith('.zip')) {
+      // Load as ZIP (bundled template with assets)
       const zip = await JSZip.loadAsync(file);
       const manifestFile = zip.file('manifest.json');
       if (!manifestFile) {
-        throw new Error('Invalid MOGRT: missing manifest.json');
+        throw new Error('Invalid template bundle: missing manifest.json');
       }
 
       const manifestJson = await manifestFile.async('string');
-      const parsed = safeJSONParse<MOGRTPackage>(manifestJson);
+      const parsed = safeJSONParse<LatticeTemplate>(manifestJson);
       if (!parsed.success) {
         throw new Error(`Invalid manifest JSON: ${parsed.error}`);
       }
       templateData = parsed.data;
     } else {
-      // Load as JSON
+      // Load as JSON (.lattice.json or .json)
       const text = await file.text();
-      const parsed = safeJSONParse<MOGRTPackage>(text);
+      const parsed = safeJSONParse<LatticeTemplate>(text);
       if (!parsed.success) {
         throw new Error(`Invalid JSON: ${parsed.error}`);
       }
@@ -767,29 +767,30 @@ async function handleFileImport(event: Event) {
     }
 
     // Validate
-    const validation = validateMOGRT(templateData);
+    const validation = validateLatticeTemplate(templateData);
     if (!validation.valid) {
       throw new Error(`Invalid template: ${validation.errors.map(e => e.message).join(', ')}`);
     }
 
-    // Add to installed templates
-    const newTemplate: InstalledTemplate = {
+    // Add to saved templates
+    const newTemplate: SavedTemplate = {
       id: `template_${Date.now()}`,
       name: templateData.templateConfig.name,
       author: 'Imported',
       posterImage: templateData.posterImage,
       tags: [],
-      data: templateData
+      importDate: new Date().toISOString(),
+      templateData: templateData
     };
 
-    installedTemplates.value.push(newTemplate);
-    console.log('[EssentialGraphics] Template imported:', newTemplate.name);
+    savedTemplates.value.push(newTemplate);
+    console.log('[TemplateBuilder] Template imported:', newTemplate.name);
 
     // Reset file input
     input.value = '';
 
   } catch (error) {
-    console.error('[EssentialGraphics] Import failed:', error);
+    console.error('[TemplateBuilder] Import failed:', error);
     alert(`Import failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     input.value = '';
   }
@@ -801,7 +802,7 @@ async function handleFileImport(event: Event) {
 
 async function capturePosterFrame() {
   if (!captureFrame) {
-    console.warn('[EssentialGraphics] Frame capture not available');
+    console.warn('[TemplateBuilder] Frame capture not available');
     return;
   }
 
@@ -825,24 +826,24 @@ async function capturePosterFrame() {
         templateConfig.value.posterFrame = posterFrame.value;
       }
 
-      console.log('[EssentialGraphics] Poster frame captured');
+      console.log('[TemplateBuilder] Poster frame captured');
     }
 
     // Restore frame
     store.setFrame(originalFrame);
 
   } catch (error) {
-    console.error('[EssentialGraphics] Failed to capture poster frame:', error);
+    console.error('[TemplateBuilder] Failed to capture poster frame:', error);
   } finally {
     isCapturing.value = false;
   }
 }
 
 // ===========================================
-// MOGRT EXPORT
+// TEMPLATE EXPORT
 // ===========================================
 
-async function exportMOGRT() {
+async function exportTemplate() {
   if (!activeComposition.value || !templateConfig.value) return;
 
   isExporting.value = true;
@@ -866,63 +867,39 @@ async function exportMOGRT() {
       posterImage = await captureFrame() || '';
     }
 
-    // Prepare MOGRT data
-    const mogrt = prepareMOGRTExport(
+    // Prepare template data
+    const template = prepareTemplateExport(
       activeComposition.value,
       store.project.assets,
       posterImage
     );
 
-    if (!mogrt) {
-      alert('Export failed: Could not prepare MOGRT package');
+    if (!template) {
+      alert('Export failed: Could not prepare template');
       return;
     }
 
-    // Create ZIP file
-    const zip = new JSZip();
-
-    // Add manifest
-    const manifestResult = safeJSONStringify(mogrt);
-    if (!manifestResult.success) {
-      throw new Error(`Failed to serialize: ${manifestResult.error}`);
-    }
-    zip.file('manifest.json', manifestResult.json);
-
-    // Add poster image as separate file
-    if (posterImage && posterImage.startsWith('data:')) {
-      const base64Data = posterImage.split(',')[1];
-      zip.file('poster.png', base64Data, { base64: true });
+    // Serialize to JSON
+    const jsonResult = safeJSONStringify(template);
+    if (!jsonResult.success) {
+      throw new Error(`Failed to serialize: ${jsonResult.error}`);
     }
 
-    // Add embedded assets
-    if (mogrt.assets && mogrt.assets.length > 0) {
-      const assetsFolder = zip.folder('assets');
-      mogrt.assets.forEach((asset: any, index: number) => {
-        if (asset.data && asset.data.startsWith('data:')) {
-          const base64Data = asset.data.split(',')[1];
-          const ext = asset.mimeType?.split('/')[1] || 'bin';
-          assetsFolder?.file(`asset_${index}.${ext}`, base64Data, { base64: true });
-        }
-      });
-    }
-
-    // Generate ZIP blob
-    const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
-
-    // Download
+    // Create blob and download as .lattice.json
+    const blob = new Blob([jsonResult.json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${templateConfig.value.name.replace(/\s+/g, '_')}.mogrt`;
+    a.download = `${templateConfig.value.name.replace(/\s+/g, '_')}.lattice.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    console.log('[EssentialGraphics] MOGRT exported successfully');
+    console.log('[TemplateBuilder] Template exported successfully');
 
   } catch (error) {
-    console.error('[EssentialGraphics] Export failed:', error);
+    console.error('[TemplateBuilder] Export failed:', error);
     alert(`Export failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   } finally {
     isExporting.value = false;
@@ -950,15 +927,15 @@ onMounted(() => {
 
   // Load installed templates from localStorage
   try {
-    const saved = localStorage.getItem('lattice_installed_templates');
+    const saved = localStorage.getItem('lattice_saved_templates');
     if (saved) {
-      const parsed = safeJSONParse<InstalledTemplate[]>(saved, []);
+      const parsed = safeJSONParse<SavedTemplate[]>(saved, []);
       if (parsed.success && parsed.data) {
-        installedTemplates.value = parsed.data;
+        savedTemplates.value = parsed.data;
       }
     }
   } catch (e) {
-    console.warn('[EssentialGraphics] Failed to load saved templates');
+    console.warn('[TemplateBuilder] Failed to load saved templates');
   }
 });
 
@@ -967,12 +944,12 @@ onUnmounted(() => {
 
   // Save installed templates
   try {
-    const result = safeJSONStringify(installedTemplates.value);
+    const result = safeJSONStringify(savedTemplates.value);
     if (result.success) {
-      localStorage.setItem('lattice_installed_templates', result.json);
+      localStorage.setItem('lattice_saved_templates', result.json);
     }
   } catch (e) {
-    console.warn('[EssentialGraphics] Failed to save templates');
+    console.warn('[TemplateBuilder] Failed to save templates');
   }
 });
 </script>

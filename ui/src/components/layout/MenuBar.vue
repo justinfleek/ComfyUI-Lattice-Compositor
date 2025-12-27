@@ -499,7 +499,7 @@ let closeTimeout: ReturnType<typeof setTimeout> | null = null;
 const canUndo = computed(() => historyStore.canUndo);
 const canRedo = computed(() => historyStore.canRedo);
 const hasSelection = computed(() => compositorStore.selectedLayerIds.length > 0);
-const projectName = computed(() => compositorStore.project?.name || '');
+const projectName = computed(() => compositorStore.project?.meta?.name || '');
 const hasUnsavedChanges = computed(() => historyStore.currentIndex > 0);
 
 // View state (these should come from a view store in a real implementation)

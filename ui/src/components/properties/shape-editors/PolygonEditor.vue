@@ -14,7 +14,7 @@
           unit="px"
         />
       </div>
-      <KeyframeToggle :property="shape.position" @toggle="toggleKeyframe('position')" />
+      <KeyframeToggle :property="shape.position" :layerId="layerId" @toggle="toggleKeyframe('position')" />
     </div>
     <div class="property-row">
       <label>Points</label>
@@ -25,7 +25,7 @@
         :max="100"
         :step="1"
       />
-      <KeyframeToggle :property="shape.points" @toggle="toggleKeyframe('points')" />
+      <KeyframeToggle :property="shape.points" :layerId="layerId" @toggle="toggleKeyframe('points')" />
     </div>
     <div class="property-row">
       <label>Outer Radius</label>
@@ -35,7 +35,7 @@
         :min="0"
         unit="px"
       />
-      <KeyframeToggle :property="shape.outerRadius" @toggle="toggleKeyframe('outerRadius')" />
+      <KeyframeToggle :property="shape.outerRadius" :layerId="layerId" @toggle="toggleKeyframe('outerRadius')" />
     </div>
     <div class="property-row">
       <label>Outer Round</label>
@@ -46,7 +46,7 @@
         :max="100"
         unit="%"
       />
-      <KeyframeToggle :property="shape.outerRoundness" @toggle="toggleKeyframe('outerRoundness')" />
+      <KeyframeToggle :property="shape.outerRoundness" :layerId="layerId" @toggle="toggleKeyframe('outerRoundness')" />
     </div>
     <div class="property-row">
       <label>Rotation</label>
@@ -55,7 +55,7 @@
         @update:modelValue="v => updateNumber('rotation', v)"
         unit="°"
       />
-      <KeyframeToggle :property="shape.rotation" @toggle="toggleKeyframe('rotation')" />
+      <KeyframeToggle :property="shape.rotation" :layerId="layerId" @toggle="toggleKeyframe('rotation')" />
     </div>
     <div class="property-row">
       <label>Direction</label>
@@ -72,8 +72,9 @@ import type { PolygonShape } from '@/types/shapes';
 import { ScrubableNumber } from '@/components/controls';
 import KeyframeToggle from '../KeyframeToggle.vue';
 import { useCompositorStore } from '@/stores/compositorStore';
+import { createKeyframe } from '@/types/animation';
 
-const props = defineProps<{ shape: PolygonShape }>();
+const props = defineProps<{ shape: PolygonShape; layerId: string }>();
 const emit = defineEmits(['update']);
 const store = useCompositorStore();
 
@@ -105,14 +106,9 @@ function toggleKeyframe(prop: 'position' | 'points' | 'outerRadius' | 'outerRoun
 
   const hasKf = animProp.keyframes.some(k => k.frame === frame);
   if (hasKf) {
-    animProp.keyframes = animProp.keyframes.filter(k => k.frame !== frame);
+    animProp.keyframes = animProp.keyframes.filter(k => k.frame !== frame) as typeof animProp.keyframes;
   } else {
-    animProp.keyframes.push({
-      id: `kf_${Date.now()}`,
-      frame,
-      value: animProp.value,
-      easing: 'linear'
-    });
+    (animProp.keyframes as unknown[]).push(createKeyframe(frame, animProp.value, 'linear'));
   }
   animProp.animated = animProp.keyframes.length > 0;
   emit('update', updated);

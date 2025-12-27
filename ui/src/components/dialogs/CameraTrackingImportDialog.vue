@@ -55,7 +55,7 @@
             </div>
             <div class="stat">
               <span class="label">Frames</span>
-              <span class="value">{{ parseResult.poses.length }}</span>
+              <span class="value">{{ parseResult.cameraPath.length }}</span>
             </div>
             <div class="stat">
               <span class="label">Resolution</span>
@@ -172,6 +172,16 @@ import type {
   CameraTrackingImportOptions,
 } from '@/types/cameraTracking';
 
+// Local type with required properties (always initialized in this dialog)
+interface DialogImportOptions extends CameraTrackingImportOptions {
+  offset: { x: number; y: number; z: number };
+  pointCloud: {
+    create: boolean;
+    maxPoints?: number;
+    pointSize?: number;
+  };
+}
+
 const props = defineProps<{
   visible: boolean;
 }>();
@@ -188,7 +198,7 @@ const parseResult = ref<CameraTrackingSolve | null>(null);
 const error = ref<string | null>(null);
 const importing = ref(false);
 
-const options = reactive<CameraTrackingImportOptions>({
+const options = reactive<DialogImportOptions>({
   scale: 1,
   offset: { x: 0, y: 0, z: 0 },
   frameOffset: 0,

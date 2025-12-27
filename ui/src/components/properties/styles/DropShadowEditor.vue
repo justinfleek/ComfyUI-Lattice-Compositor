@@ -66,14 +66,14 @@
 </template>
 
 <script setup lang="ts">
-import type { DropShadowStyle, RGBA } from '@/types/layerStyles';
+import type { DropShadowStyle, DropShadowUpdate, RGBA } from '@/types/layerStyles';
 
 defineProps<{
   style: DropShadowStyle;
 }>();
 
 const emit = defineEmits<{
-  (e: 'update', updates: Partial<DropShadowStyle>): void;
+  (e: 'update', updates: DropShadowUpdate): void;
 }>();
 
 const blendModes = ['normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten', 'color-dodge', 'color-burn'];

@@ -2,11 +2,11 @@
  * JSON Validation and Data Hardening Service
  *
  * Provides safe JSON parsing, validation, and schema checking
- * for project files, MOGRTs, and external data imports.
+ * for project files, templates, and external data imports.
  */
 
 import type { LatticeProject, Composition, Layer } from '@/types/project';
-import type { TemplateConfig, MOGRTPackage } from '@/types/essentialGraphics';
+import type { TemplateConfig, LatticeTemplate } from '@/types/templateBuilder';
 
 // ============================================================
 // SAFE JSON PARSING
@@ -275,41 +275,41 @@ export function validateLayer(data: unknown, basePath: string = '$'): Validation
 }
 
 /**
- * Validate MOGRT package structure
+ * Validate Lattice Template structure (.lattice.json)
  */
-export function validateMOGRT(data: unknown): ValidationResult {
+export function validateLatticeTemplate(data: unknown): ValidationResult {
   const errors: ValidationError[] = [];
   const warnings: string[] = [];
 
   if (!isObject(data)) {
-    errors.push({ path: '$', message: 'MOGRT must be an object' });
+    errors.push({ path: '$', message: 'LatticeTemplate must be an object' });
     return { valid: false, errors, warnings };
   }
 
-  const mogrt = data as Record<string, unknown>;
+  const template = data as Record<string, unknown>;
 
   // Required fields
-  if (!isString(mogrt.formatVersion)) {
+  if (!isString(template.formatVersion)) {
     errors.push({ path: '$.formatVersion', message: 'formatVersion must be a string' });
   }
 
-  if (!isObject(mogrt.templateConfig)) {
+  if (!isObject(template.templateConfig)) {
     errors.push({ path: '$.templateConfig', message: 'templateConfig must be an object' });
   } else {
-    const configResult = validateTemplateConfig(mogrt.templateConfig);
+    const configResult = validateTemplateConfig(template.templateConfig);
     errors.push(...configResult.errors);
     warnings.push(...configResult.warnings);
   }
 
-  if (!isObject(mogrt.composition)) {
+  if (!isObject(template.composition)) {
     errors.push({ path: '$.composition', message: 'composition must be an object' });
   }
 
-  if (!isArray(mogrt.assets)) {
+  if (!isArray(template.assets)) {
     errors.push({ path: '$.assets', message: 'assets must be an array' });
   }
 
-  if (!isArray(mogrt.fonts)) {
+  if (!isArray(template.fonts)) {
     errors.push({ path: '$.fonts', message: 'fonts must be an array' });
   }
 
@@ -499,7 +499,7 @@ export default {
   validateProject,
   validateComposition,
   validateLayer,
-  validateMOGRT,
+  validateLatticeTemplate,
   validateTemplateConfig,
   sanitizeString,
   sanitizeFileName,

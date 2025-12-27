@@ -33,7 +33,7 @@
             :expanded="expandedPanels.drivers"
             @toggle="updatePanel('drivers', $event)"
           >
-            <DriverList />
+            <DriverList :layerId="selectedLayerId" />
           </CollapsiblePanel>
 
           <!-- Scopes Panel -->
@@ -135,8 +135,13 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import { Splitpanes, Pane } from 'splitpanes';
 import type { Camera3D } from '@/types/camera';
+import { useCompositorStore } from '@/stores/compositorStore';
+
+const store = useCompositorStore();
+const selectedLayerId = computed(() => store.selectedLayerIds[0] || '');
 
 // Panels
 import PropertiesPanel from '@/components/panels/PropertiesPanel.vue';

@@ -3,12 +3,12 @@
     <div class="property-row">
       <label>Size</label>
       <ScrubableNumber :modelValue="operator.size.value" @update:modelValue="v => updateNumber('size', v)" :min="0" :max="200" unit="px" />
-      <KeyframeToggle :property="operator.size" @toggle="toggleKeyframe('size')" />
+      <KeyframeToggle :property="operator.size" :layerId="layerId" @toggle="toggleKeyframe('size')" />
     </div>
     <div class="property-row">
       <label>Ridges/Segment</label>
       <ScrubableNumber :modelValue="operator.ridgesPerSegment.value" @update:modelValue="v => updateNumber('ridgesPerSegment', v)" :min="1" :max="20" :step="1" />
-      <KeyframeToggle :property="operator.ridgesPerSegment" @toggle="toggleKeyframe('ridgesPerSegment')" />
+      <KeyframeToggle :property="operator.ridgesPerSegment" :layerId="layerId" @toggle="toggleKeyframe('ridgesPerSegment')" />
     </div>
     <div class="property-row">
       <label>Points</label>
@@ -25,8 +25,9 @@ import type { ZigZagOperator, ZigZagPointType } from '@/types/shapes';
 import { ScrubableNumber } from '@/components/controls';
 import KeyframeToggle from '../KeyframeToggle.vue';
 import { useCompositorStore } from '@/stores/compositorStore';
+import { createKeyframe } from '@/types/animation';
 
-const props = defineProps<{ operator: ZigZagOperator }>();
+const props = defineProps<{ operator: ZigZagOperator; layerId: string }>();
 const emit = defineEmits(['update']);
 const store = useCompositorStore();
 
@@ -47,7 +48,7 @@ function toggleKeyframe(prop: 'size' | 'ridgesPerSegment') {
   const frame = store.currentFrame;
   const hasKf = animProp.keyframes.some(k => k.frame === frame);
   if (hasKf) { animProp.keyframes = animProp.keyframes.filter(k => k.frame !== frame); }
-  else { animProp.keyframes.push({ id: `kf_${Date.now()}`, frame, value: animProp.value, easing: 'linear' }); }
+  else { animProp.keyframes.push(createKeyframe(frame, animProp.value, 'linear')); }
   animProp.animated = animProp.keyframes.length > 0;
   emit('update', updated);
 }

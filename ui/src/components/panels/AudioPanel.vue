@@ -646,8 +646,10 @@ import AudioProperties from '@/components/properties/AudioProperties.vue';
 import AudioValuePreview from '@/components/panels/AudioValuePreview.vue';
 import {
   PhFolder, PhMusicNote, PhSpeakerHigh, PhSpeakerSlash, PhMicrophone,
-  PhGuitar, PhPiano, PhSparkle, PhLink, PhArrowsClockwise, PhMapPin, PhTimer
+  PhGuitar, PhSparkle, PhLink, PhArrowsClockwise, PhMapPin, PhTimer, PhKeyboard
 } from '@phosphor-icons/vue';
+// PhPiano doesn't exist in phosphor-icons, using PhKeyboard as substitute
+const PhPiano = PhKeyboard;
 import {
   separateStems as separateStemsService,
   isolateStem,
@@ -842,13 +844,13 @@ async function createPathAnimator() {
       // Get audio value for this frame based on selected feature
       let audioValue = 0;
       if (pathAnimFeature.value === 'amplitude') {
-        audioValue = audioData.amplitude?.[frame] || 0;
+        audioValue = audioData.amplitudeEnvelope?.[frame] || 0;
       } else if (pathAnimFeature.value === 'bass') {
-        audioValue = audioData.frequencyBands?.[frame]?.bass || 0;
+        audioValue = audioData.frequencyBands?.bass?.[frame] || 0;
       } else if (pathAnimFeature.value === 'mid') {
-        audioValue = audioData.frequencyBands?.[frame]?.mid || 0;
+        audioValue = audioData.frequencyBands?.mid?.[frame] || 0;
       } else if (pathAnimFeature.value === 'high') {
-        audioValue = audioData.frequencyBands?.[frame]?.high || 0;
+        audioValue = audioData.frequencyBands?.high?.[frame] || 0;
       }
 
       // Apply sensitivity
@@ -890,7 +892,9 @@ async function createPathAnimator() {
           frame: kf.frame,
           value: kf.value,
           interpolation: 'bezier' as const,
-          handles: { in: { x: -0.25, y: 0 }, out: { x: 0.25, y: 0 } }
+          inHandle: { frame: -4, value: 0, enabled: true },
+          outHandle: { frame: 4, value: 0, enabled: true },
+          controlMode: 'smooth' as const
         }))
       });
 
@@ -940,11 +944,15 @@ async function convertAudioToKeyframes() {
     });
 
     if (result) {
+      // AudioAmplitudeResult returns property IDs, not keyframe count
+      // Get keyframe count from the created layer
+      const layer = store.getLayerById(result.layerId);
+      const kfCount = layer?.properties?.[0]?.keyframes?.length || 0;
       convertResult.value = {
         layerName: result.layerName,
-        keyframeCount: result.keyframeCount
+        keyframeCount: kfCount
       };
-      console.log(`[Lattice] Created Audio Amplitude layer "${result.layerName}" with ${result.keyframeCount} keyframes per channel`);
+      console.log(`[Lattice] Created Audio Amplitude layer "${result.layerName}" with ${kfCount} keyframes per channel`);
     } else {
       convertError.value = 'Failed to create audio amplitude layer';
     }
@@ -1246,7 +1254,7 @@ function snapToBeats() {
   let snappedCount = 0;
 
   for (const layerId of selectedLayers) {
-    const layer = store.getLayer(layerId);
+    const layer = store.getLayerById(layerId);
     if (!layer) continue;
 
     // Check each animated property for keyframes
@@ -1255,7 +1263,7 @@ function snapToBeats() {
       transform.position,
       transform.rotation,
       transform.scale,
-      transform.opacity
+      layer.opacity  // opacity is on layer, not transform
     ];
 
     for (const prop of animProps) {
@@ -1457,22 +1465,25 @@ async function convertMIDIToKeyframes() {
     }
 
     // Create a null layer with the keyframes
-    const layer = store.addLayer('null', {
-      name: midiLayerName.value || 'MIDI Animation'
-    });
+    const layer = store.addLayer('null', midiLayerName.value || 'MIDI Animation');
 
     if (layer) {
       // Apply keyframes to scale.x as a driver property
       layer.transform.scale = {
         id: `midi_scale_${Date.now()}`,
         name: 'Scale',
-        defaultValue: { x: midiValueMin.value, y: midiValueMin.value, z: 1 },
+        value: { x: midiValueMin.value, y: midiValueMin.value, z: 1 },
         animated: true,
         keyframes: keyframes.map(kf => ({
-          ...kf,
-          value: { x: kf.value, y: kf.value, z: 1 }
+          id: `kf_${Date.now()}_${kf.frame}`,
+          frame: kf.frame,
+          value: { x: kf.value, y: kf.value, z: 1 },
+          interpolation: 'linear' as const,
+          inHandle: { frame: 0, value: 0, enabled: false },
+          outHandle: { frame: 0, value: 0, enabled: false },
+          controlMode: 'smooth' as const
         }))
-      };
+      } as any;
 
       midiConvertResult.value = {
         layerName: layer.name,

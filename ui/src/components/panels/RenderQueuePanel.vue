@@ -189,6 +189,7 @@ import {
   RenderQueueManager,
   type RenderJob,
   type RenderQueueStats,
+  type RenderedFrame,
 } from '@/services/renderQueue';
 
 const store = useCompositorStore();
@@ -232,7 +233,7 @@ function initFromComposition() {
     newJob.endFrame = comp.settings.frameCount - 1;
     newJob.width = comp.settings.width;
     newJob.height = comp.settings.height;
-    newJob.fps = comp.settings.frameRate;
+    newJob.fps = comp.settings.fps;
   }
 }
 
@@ -374,14 +375,14 @@ async function downloadJob(jobId: string) {
     }
 
     // Sort frames by frame number
-    frames.sort((a, b) => a.frameNumber - b.frameNumber);
+    frames.sort((a: RenderedFrame, b: RenderedFrame) => a.frameNumber - b.frameNumber);
 
     // Dynamically import JSZip
     const JSZip = (await import('jszip')).default;
     const zip = new JSZip();
 
-    // Add frames to ZIP
-    const format = job.config.format || 'png';
+    // Add frames to ZIP (RenderJob extends RenderJobConfig, so properties are directly on job)
+    const format = job.format || 'png-sequence';
     const extension = format.includes('png') ? 'png' : format.includes('jpg') ? 'jpg' : 'webp';
 
     for (const frame of frames) {
@@ -397,7 +398,7 @@ async function downloadJob(jobId: string) {
     const url = URL.createObjectURL(zipBlob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${job.config.name || 'render'}_frames.zip`;
+    link.download = `${job.name || 'render'}_frames.zip`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
