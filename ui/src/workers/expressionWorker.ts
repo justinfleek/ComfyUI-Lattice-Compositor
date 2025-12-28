@@ -139,3 +139,6 @@ self.onmessage = async (e: MessageEvent<EvalRequest>) => {
 
 // Signal ready
 self.postMessage({ type: 'ready' });
+
+// Export empty object to make this a module (fixes TypeScript scope issues)
+export {};

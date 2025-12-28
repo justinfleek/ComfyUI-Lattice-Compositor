@@ -23,6 +23,7 @@ import {
   getAnimatableValue,
   DEFAULT_RANGE_SELECTOR,
 } from '@/services/textAnimator';
+import { isExpressionSafe } from '@/services/expressions/expressionValidator';
 import {
   TextOnPathService,
   createDefaultPathConfig,
@@ -359,13 +360,14 @@ export function configureRangeSelector(
 
 /**
  * Add or configure an expression selector for a text animator
+ * SECURITY: Validates expressions before applying (DoS protection)
  */
-export function configureExpressionSelector(
+export async function configureExpressionSelector(
   store: TextAnimatorStore,
   layerId: string,
   animatorId: string,
   config: ExpressionSelectorConfig
-): boolean {
+): Promise<boolean> {
   const layer = getTextLayer(store, layerId);
   if (!layer) return false;
 
@@ -374,6 +376,15 @@ export function configureExpressionSelector(
 
   const animator = textData.animators.find(a => a.id === animatorId);
   if (!animator) return false;
+
+  // SECURITY: Validate expression before applying
+  if (config.expression !== undefined && typeof config.expression === 'string' && config.expression.trim()) {
+    const safe = await isExpressionSafe(config.expression);
+    if (!safe) {
+      console.error('[SECURITY] Expression blocked - timeout detected (possible infinite loop)');
+      return false;
+    }
+  }
 
   store.pushHistory();
 

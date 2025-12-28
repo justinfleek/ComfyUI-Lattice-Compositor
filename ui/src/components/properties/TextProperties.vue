@@ -835,6 +835,7 @@ import {
   DEFAULT_EXPRESSION_SELECTOR,
   EXPRESSION_PRESETS,
 } from '@/services/textAnimator';
+import { isExpressionSafe } from '@/services/expressions/expressionValidator';
 
 const props = defineProps<{ layer: any }>();
 const emit = defineEmits(['update']);
@@ -1056,7 +1057,17 @@ function toggleExpressionSelector(animatorId: string) {
   emit('update');
 }
 
-function updateExpressionSelector(animatorId: string, key: keyof TextExpressionSelector, value: any) {
+async function updateExpressionSelector(animatorId: string, key: keyof TextExpressionSelector, value: any) {
+  // SECURITY: Validate amountExpression before applying (DoS protection)
+  if (key === 'amountExpression' && typeof value === 'string' && value.trim()) {
+    const safe = await isExpressionSafe(value);
+    if (!safe) {
+      console.error('[SECURITY] Expression blocked - timeout detected (possible infinite loop)');
+      alert('Expression blocked: This expression appears to contain an infinite loop and could hang your browser.');
+      return;
+    }
+  }
+
   const currentAnimators = animators.value.map(a => {
     if (a.id !== animatorId) return a;
     const updated = { ...a };

@@ -62,7 +62,10 @@ function extractExpressions(project: LatticeProject): Array<{ location: string; 
       checkAnimatableProperty(t.scale as AnimatableProperty<unknown>, `${layerLoc}.transform.scale`);
       checkAnimatableProperty(t.rotation as AnimatableProperty<unknown>, `${layerLoc}.transform.rotation`);
       checkAnimatableProperty(t.anchorPoint as AnimatableProperty<unknown>, `${layerLoc}.transform.anchorPoint`);
-      checkAnimatableProperty(t.opacity as AnimatableProperty<unknown>, `${layerLoc}.transform.opacity`);
+    }
+    // Opacity is on the layer, not transform
+    if (layer.opacity) {
+      checkAnimatableProperty(layer.opacity as AnimatableProperty<unknown>, `${layerLoc}.opacity`);
     }
 
     // Text layer - check text animators' expression selectors
@@ -94,8 +97,8 @@ function extractExpressions(project: LatticeProject): Array<{ location: string; 
     // Effect parameters
     if (layer.effects) {
       layer.effects.forEach((effect, ei) => {
-        if (effect.params) {
-          for (const [key, param] of Object.entries(effect.params)) {
+        if (effect.parameters) {
+          for (const [key, param] of Object.entries(effect.parameters)) {
             const p = param as AnimatableProperty<unknown>;
             if (p?.expression) {
               checkPropertyExpression(p.expression as PropertyExpression, `${layerLoc}.effect[${effect.name || ei}].${key}`);

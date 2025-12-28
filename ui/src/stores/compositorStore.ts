@@ -1698,7 +1698,7 @@ export const useCompositorStore = defineStore('compositor', {
     configureRangeSelector(layerId: string, animatorId: string, config: textAnimatorActions.RangeSelectorConfig): boolean {
       return textAnimatorActions.configureRangeSelector(this, layerId, animatorId, config);
     },
-    configureExpressionSelector(layerId: string, animatorId: string, config: textAnimatorActions.ExpressionSelectorConfig): boolean {
+    configureExpressionSelector(layerId: string, animatorId: string, config: textAnimatorActions.ExpressionSelectorConfig): Promise<boolean> {
       return textAnimatorActions.configureExpressionSelector(this, layerId, animatorId, config);
     },
     removeExpressionSelector(layerId: string, animatorId: string): boolean {

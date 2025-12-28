@@ -292,6 +292,16 @@ export function updateLayerProperty(
     property.keyframes.sort((a, b) => a.frame - b.frame);
   }
   if (propertyData.expression !== undefined) {
+    // SECURITY: Block custom expressions from this API path
+    // Custom expressions contain user code that must be validated asynchronously.
+    // They can only enter through:
+    // 1. Project load (pre-validates all expressions)
+    // 2. Expression editor UI (validates before applying)
+    const expr = propertyData.expression;
+    if (expr?.type === 'custom' && expr?.params?.code) {
+      storeLogger.error('updateLayerProperty: Custom expressions must be applied through expression editor (requires async validation)');
+      return false;
+    }
     property.expression = propertyData.expression;
   }
 
