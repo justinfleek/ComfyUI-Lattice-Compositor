@@ -175,11 +175,16 @@ export async function validateProjectExpressions(
 }
 
 /**
- * Quick check if an expression is safe (doesn't timeout)
+ * Quick check if an expression is safe (doesn't timeout or error)
+ *
+ * SECURITY: Also rejects expressions that throw errors because:
+ * - Stack overflow (recursive bombs) throws before timeout
+ * - Syntax errors could be malformed attack attempts
+ * - Runtime errors indicate problematic code
  */
 export async function isExpressionSafe(code: string): Promise<boolean> {
   if (!isWorkerAvailable()) return true; // Can't validate without worker
 
   const result = await evaluateWithTimeout(code, { value: 0, frame: 0 });
-  return !result.timedOut;
+  return !result.timedOut && !result.error;
 }
