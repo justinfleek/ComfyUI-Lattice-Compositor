@@ -86,11 +86,12 @@ export function evaluateTextAnimatorExpression(
   evaluateCustomExpression: (code: string, ctx: ExpressionContext) => number | number[] | string
 ): number | number[] | string {
   // Add text animator variables to context
+  // BUG-017: Use JSON.stringify to properly escape ALL special characters
   const extendedCode = `
     const textIndex = ${ctx.textIndex};
     const textTotal = ${ctx.textTotal};
     const selectorValue = ${ctx.selectorValue};
-    const char = "${ctx.char.replace(/"/g, '\\"')}";
+    const char = ${JSON.stringify(ctx.char)};
     const wordIndex = ${ctx.wordIndex || 0};
     const lineIndex = ${ctx.lineIndex || 0};
     const charInWord = ${ctx.charInWord || 0};

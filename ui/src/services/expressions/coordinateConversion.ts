@@ -85,14 +85,24 @@ export function orientToPath(
 // COORDINATE CONVERSION FUNCTIONS
 // ============================================================
 
+// Maximum recursion depth for parent traversal (BUG-010: prevent stack overflow)
+const MAX_PARENT_DEPTH = 50;
+
 /**
  * toComp - Convert point from layer space to composition space
  *
  * @param point - Point in layer coordinates [x, y] or [x, y, z]
  * @param layerTransform - The layer's transform properties
+ * @param depth - Current recursion depth (for cycle protection)
  * @returns Point in composition coordinates
  */
-export function toComp(point: number[], layerTransform: LayerTransform): number[] {
+export function toComp(point: number[], layerTransform: LayerTransform, depth: number = 0): number[] {
+  // Guard against circular parent chains (BUG-010)
+  if (depth > MAX_PARENT_DEPTH) {
+    console.warn('[Expressions] Max parent depth exceeded in toComp - possible circular reference');
+    return point;
+  }
+
   const [px, py, pz = 0] = point;
   const { position, scale, rotation, anchor } = layerTransform;
 
@@ -101,10 +111,10 @@ export function toComp(point: number[], layerTransform: LayerTransform): number[
   let y = py - (anchor[1] || 0);
   let z = pz - (anchor[2] || 0);
 
-  // Apply scale
-  x *= (scale[0] || 100) / 100;
-  y *= (scale[1] || 100) / 100;
-  z *= (scale[2] || 100) / 100;
+  // Apply scale (BUG-011: use ?? to preserve intentional 0)
+  x *= (scale[0] ?? 100) / 100;
+  y *= (scale[1] ?? 100) / 100;
+  z *= (scale[2] ?? 100) / 100;
 
   // Apply rotation (Z, then Y, then X - matching AE order)
   const rz = (rotation[2] || rotation[0] || 0) * Math.PI / 180;
@@ -133,7 +143,7 @@ export function toComp(point: number[], layerTransform: LayerTransform): number[
 
   // Recursively apply parent transforms
   if (layerTransform.parent) {
-    return toComp([x3, y3, z3], layerTransform.parent);
+    return toComp([x3, y3, z3], layerTransform.parent, depth + 1);
   }
 
   return point.length === 2 ? [x3, y3] : [x3, y3, z3];
@@ -144,14 +154,21 @@ export function toComp(point: number[], layerTransform: LayerTransform): number[
  *
  * @param point - Point in composition coordinates [x, y] or [x, y, z]
  * @param layerTransform - The layer's transform properties
+ * @param depth - Current recursion depth (for cycle protection)
  * @returns Point in layer coordinates
  */
-export function fromComp(point: number[], layerTransform: LayerTransform): number[] {
+export function fromComp(point: number[], layerTransform: LayerTransform, depth: number = 0): number[] {
+  // Guard against circular parent chains (BUG-010)
+  if (depth > MAX_PARENT_DEPTH) {
+    console.warn('[Expressions] Max parent depth exceeded in fromComp - possible circular reference');
+    return point;
+  }
+
   let [px, py, pz = 0] = point;
 
   // First, if there's a parent, convert from comp to parent space
   if (layerTransform.parent) {
-    [px, py, pz] = fromComp([px, py, pz], layerTransform.parent);
+    [px, py, pz] = fromComp([px, py, pz], layerTransform.parent, depth + 1);
   }
 
   const { position, scale, rotation, anchor } = layerTransform;
@@ -181,10 +198,13 @@ export function fromComp(point: number[], layerTransform: LayerTransform): numbe
   let y3 = x2 * Math.sin(rz) + y2 * Math.cos(rz);
   let z3 = z2;
 
-  // Inverse scale
-  const sx = (scale[0] || 100) / 100;
-  const sy = (scale[1] || 100) / 100;
-  const sz = (scale[2] || 100) / 100;
+  // Inverse scale (BUG-011: use ?? to preserve intentional 0, || 1 guards div/0)
+  const sx = (scale[0] ?? 100) / 100;
+  const sy = (scale[1] ?? 100) / 100;
+  const sz = (scale[2] ?? 100) / 100;
+  if (sx === 0 || sy === 0 || sz === 0) {
+    console.warn('[Expressions] Scale of 0 in fromComp produces undefined inverse');
+  }
   x3 /= sx || 1;
   y3 /= sy || 1;
   z3 /= sz || 1;

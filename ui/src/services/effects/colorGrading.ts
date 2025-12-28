@@ -34,20 +34,29 @@ export function liftGammaGainRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams
 ): EffectStackResult {
-  // Lift (shadow adjustment)
-  const liftR = params.lift_red ?? 0;
-  const liftG = params.lift_green ?? 0;
-  const liftB = params.lift_blue ?? 0;
+  // Lift (shadow adjustment) - validate for NaN
+  const liftRRaw = params.lift_red ?? 0;
+  const liftGRaw = params.lift_green ?? 0;
+  const liftBRaw = params.lift_blue ?? 0;
+  const liftR = Number.isFinite(liftRRaw) ? Math.max(-1, Math.min(1, liftRRaw)) : 0;
+  const liftG = Number.isFinite(liftGRaw) ? Math.max(-1, Math.min(1, liftGRaw)) : 0;
+  const liftB = Number.isFinite(liftBRaw) ? Math.max(-1, Math.min(1, liftBRaw)) : 0;
 
-  // Gamma (midtone adjustment)
-  const gammaR = params.gamma_red ?? 1;
-  const gammaG = params.gamma_green ?? 1;
-  const gammaB = params.gamma_blue ?? 1;
+  // Gamma (midtone adjustment) - validate for NaN
+  const gammaRRaw = params.gamma_red ?? 1;
+  const gammaGRaw = params.gamma_green ?? 1;
+  const gammaBRaw = params.gamma_blue ?? 1;
+  const gammaR = Number.isFinite(gammaRRaw) ? Math.max(0.1, Math.min(4, gammaRRaw)) : 1;
+  const gammaG = Number.isFinite(gammaGRaw) ? Math.max(0.1, Math.min(4, gammaGRaw)) : 1;
+  const gammaB = Number.isFinite(gammaBRaw) ? Math.max(0.1, Math.min(4, gammaBRaw)) : 1;
 
-  // Gain (highlight adjustment)
-  const gainR = params.gain_red ?? 1;
-  const gainG = params.gain_green ?? 1;
-  const gainB = params.gain_blue ?? 1;
+  // Gain (highlight adjustment) - validate for NaN
+  const gainRRaw = params.gain_red ?? 1;
+  const gainGRaw = params.gain_green ?? 1;
+  const gainBRaw = params.gain_blue ?? 1;
+  const gainR = Number.isFinite(gainRRaw) ? Math.max(0, Math.min(4, gainRRaw)) : 1;
+  const gainG = Number.isFinite(gainGRaw) ? Math.max(0, Math.min(4, gainGRaw)) : 1;
+  const gainB = Number.isFinite(gainBRaw) ? Math.max(0, Math.min(4, gainBRaw)) : 1;
 
   // No change if all values are default
   if (liftR === 0 && liftG === 0 && liftB === 0 &&
@@ -139,21 +148,28 @@ export function hslSecondaryRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams
 ): EffectStackResult {
-  // Qualification parameters
-  const hueCenter = params.hue_center ?? 0;
-  const hueWidth = params.hue_width ?? 30;
-  const hueFalloff = params.hue_falloff ?? 10;
-  const satMin = (params.sat_min ?? 0) / 100;
-  const satMax = (params.sat_max ?? 100) / 100;
-  const satFalloff = (params.sat_falloff ?? 10) / 100;
-  const lumMin = (params.lum_min ?? 0) / 100;
-  const lumMax = (params.lum_max ?? 100) / 100;
-  const lumFalloff = (params.lum_falloff ?? 10) / 100;
+  // Helper to safely get numeric params
+  const safeNum = (val: unknown, def: number, min?: number, max?: number): number => {
+    const num = typeof val === 'number' && Number.isFinite(val) ? val : def;
+    if (min !== undefined && max !== undefined) return Math.max(min, Math.min(max, num));
+    return num;
+  };
 
-  // Correction parameters
-  const hueShift = params.hue_shift ?? 0;
-  const satAdjust = (params.sat_adjust ?? 0) / 100;
-  const lumAdjust = (params.lum_adjust ?? 0) / 100;
+  // Qualification parameters - validate for NaN
+  const hueCenter = safeNum(params.hue_center, 0, 0, 360);
+  const hueWidth = safeNum(params.hue_width, 30, 0, 180);
+  const hueFalloff = safeNum(params.hue_falloff, 10, 0, 90);
+  const satMin = safeNum(params.sat_min, 0, 0, 100) / 100;
+  const satMax = safeNum(params.sat_max, 100, 0, 100) / 100;
+  const satFalloff = safeNum(params.sat_falloff, 10, 0, 50) / 100;
+  const lumMin = safeNum(params.lum_min, 0, 0, 100) / 100;
+  const lumMax = safeNum(params.lum_max, 100, 0, 100) / 100;
+  const lumFalloff = safeNum(params.lum_falloff, 10, 0, 50) / 100;
+
+  // Correction parameters - validate for NaN
+  const hueShift = safeNum(params.hue_shift, 0, -180, 180);
+  const satAdjust = safeNum(params.sat_adjust, 0, -100, 100) / 100;
+  const lumAdjust = safeNum(params.lum_adjust, 0, -100, 100) / 100;
 
   // Preview
   const showMask = params.show_mask ?? false;
@@ -486,13 +502,16 @@ export function colorMatchRenderer(
   const refHistR = params.reference_histogram_r as Uint32Array | undefined;
   const refHistG = params.reference_histogram_g as Uint32Array | undefined;
   const refHistB = params.reference_histogram_b as Uint32Array | undefined;
-  const refPixels = params.reference_pixels as number | undefined;
-  const strength = (params.strength ?? 100) / 100;
+  const refPixelsRaw = params.reference_pixels as number | undefined;
+  const refPixels = typeof refPixelsRaw === 'number' && Number.isFinite(refPixelsRaw) && refPixelsRaw > 0
+    ? refPixelsRaw : 0;
+  const strengthRaw = (params.strength ?? 100) / 100;
+  const strength = Number.isFinite(strengthRaw) ? Math.max(0, Math.min(1, strengthRaw)) : 0;
   const matchLuminance = params.match_luminance ?? true;
   const matchColor = params.match_color ?? true;
 
-  // No reference = no change
-  if (!refHistR || !refHistG || !refHistB || !refPixels || strength === 0) {
+  // No reference = no change (also check refPixels > 0 to prevent div/0)
+  if (!refHistR || !refHistG || !refHistB || refPixels <= 0 || strength === 0) {
     return input;
   }
 
@@ -500,6 +519,11 @@ export function colorMatchRenderer(
   const imageData = input.ctx.getImageData(0, 0, input.canvas.width, input.canvas.height);
   const data = imageData.data;
   const pixelCount = input.canvas.width * input.canvas.height;
+
+  // Early return if source image is empty (prevents div/0)
+  if (pixelCount <= 0) {
+    return input;
+  }
 
   // Compute source histograms
   const srcHistR = new Uint32Array(256);

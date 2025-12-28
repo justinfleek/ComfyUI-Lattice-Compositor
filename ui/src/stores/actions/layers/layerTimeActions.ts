@@ -138,7 +138,8 @@ export function freezeFrameAtPlayhead(
   store.pushHistory();
 
   const currentFrame = store.currentFrame ?? 0;
-  const fps = store.fps ?? 16;
+  // Validate fps (nullish coalescing doesn't catch NaN)
+  const fps = (Number.isFinite(store.fps) && store.fps > 0) ? store.fps : 16;
   const sourceTime = currentFrame / fps;
 
   type SpeedMappableData = { speedMapEnabled: boolean; speedMap?: AnimatableProperty<number> };
@@ -221,7 +222,8 @@ export function splitLayerAtPlayhead(
   newLayer.endFrame = endFrame;
 
   if (isLayerOfType(newLayer, 'video') && newLayer.data) {
-    const fps = store.fps ?? 16;
+    // Validate fps (nullish coalescing doesn't catch NaN)
+    const fps = (Number.isFinite(store.fps) && store.fps > 0) ? store.fps : 16;
     const originalStartTime = newLayer.data.startTime ?? 0;
     const speed = newLayer.data.speed ?? 1;
     const frameOffset = currentFrame - startFrame;

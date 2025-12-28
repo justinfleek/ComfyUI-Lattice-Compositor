@@ -72,6 +72,10 @@ export default defineConfig({
               id.includes('node_modules/primeicons')) {
             return 'ui-vendor';
           }
+          // Security: SES sandbox (must be included, has side effects)
+          if (id.includes('node_modules/ses')) {
+            return 'security-vendor';
+          }
         },
       },
       // Tree shaking configuration
@@ -130,6 +134,7 @@ export default defineConfig({
       'three',
       'pinia',
       'vue',
+      'ses', // Security sandbox - must be pre-bundled
     ],
     // Exclude workers from pre-bundling
     exclude: [],

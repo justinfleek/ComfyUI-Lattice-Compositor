@@ -145,7 +145,9 @@ export function fillRenderer(
   params: EvaluatedEffectParams
 ): EffectStackResult {
   const color = params.color ?? { r: 255, g: 0, b: 0, a: 1 };
-  const opacity = (params.opacity ?? 100) / 100;
+  // Validate opacity (NaN causes visual corruption)
+  const rawOpacity = params.opacity ?? 100;
+  const opacity = Number.isFinite(rawOpacity) ? rawOpacity / 100 : 1;
   const invert = params.invert ?? false;
 
   const { width, height } = input.canvas;

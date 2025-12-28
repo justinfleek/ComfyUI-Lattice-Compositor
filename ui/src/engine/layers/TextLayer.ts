@@ -716,8 +716,11 @@ export class TextLayer extends BaseLayer {
   // ============================================================================
 
   setText(text: string): void {
-    this.textData.text = text;
-    this.textMesh.text = text;
+    // Cap text length to prevent performance issues (10,000 chars max)
+    const MAX_TEXT_LENGTH = 10000;
+    const validText = (text ?? '').slice(0, MAX_TEXT_LENGTH);
+    this.textData.text = validText;
+    this.textMesh.text = validText;
     this.textMesh.sync();
     this.characterWidthsDirty = true;
 
@@ -750,13 +753,15 @@ export class TextLayer extends BaseLayer {
   }
 
   setFontSize(size: number): void {
-    this.textData.fontSize = size;
-    this.textMesh.fontSize = size;
+    // Validate size (NaN/0 would cause division errors in stroke width calculations)
+    const validSize = (Number.isFinite(size) && size > 0) ? size : 72;
+    this.textData.fontSize = validSize;
+    this.textMesh.fontSize = validSize;
     this.textMesh.sync();
     this.characterWidthsDirty = true;
 
     for (const charMesh of this.characterMeshes) {
-      charMesh.fontSize = size;
+      charMesh.fontSize = validSize;
       charMesh.sync();
     }
 
@@ -829,8 +834,10 @@ export class TextLayer extends BaseLayer {
   }
 
   setTracking(tracking: number): void {
-    this.textData.tracking = tracking;
-    this.textMesh.letterSpacing = tracking / 1000;
+    // Validate tracking (NaN would corrupt letter spacing)
+    const validTracking = Number.isFinite(tracking) ? tracking : 0;
+    this.textData.tracking = validTracking;
+    this.textMesh.letterSpacing = validTracking / 1000;
     this.textMesh.sync();
 
     if (this.perCharacterGroup) {
@@ -1372,7 +1379,9 @@ export class TextLayer extends BaseLayer {
    * Override base class opacity to use Troika's fillOpacity
    */
   protected override applyOpacity(opacity: number): void {
-    const normalizedOpacity = Math.max(0, Math.min(100, opacity)) / 100;
+    // Validate opacity (NaN bypasses Math.max/min clamps)
+    const validOpacity = Number.isFinite(opacity) ? opacity : 100;
+    const normalizedOpacity = Math.max(0, Math.min(100, validOpacity)) / 100;
 
     // Apply to main text mesh using Troika's fillOpacity
     this.textMesh.fillOpacity = normalizedOpacity;

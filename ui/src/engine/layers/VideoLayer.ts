@@ -469,11 +469,14 @@ export class VideoLayer extends BaseLayer {
     const speedMapEnabled = this.videoData.speedMapEnabled ?? this.videoData.timeRemapEnabled;
     const speedMapProp = this.videoData.speedMap ?? this.videoData.timeRemap;
     if (speedMapEnabled && speedMapProp?.animated) {
-      return this.videoEvaluator.evaluate(speedMapProp, compositionFrame);
+      const remappedTime = this.videoEvaluator.evaluate(speedMapProp, compositionFrame);
+      // Validate speed map result (NaN would break video playback)
+      return Number.isFinite(remappedTime) ? remappedTime : 0;
     }
 
     // Get layer's timeStretch (100 = normal, 200 = half speed, -100 = reversed)
-    const timeStretch = this.layerData.timeStretch ?? 100;
+    const rawTimeStretch = this.layerData.timeStretch ?? 100;
+    const timeStretch = Number.isFinite(rawTimeStretch) ? rawTimeStretch : 100;
     const isReversed = timeStretch < 0;
 
     // Calculate effective speed:
@@ -481,12 +484,16 @@ export class VideoLayer extends BaseLayer {
     // - speed: Direct multiplier from VideoData (1 = normal, 2 = 2x faster)
     // Combined: effectiveSpeed = (100 / |timeStretch|) * speed
     const stretchFactor = timeStretch !== 0 ? 100 / Math.abs(timeStretch) : 0;
-    const effectiveSpeed = stretchFactor * this.videoData.speed;
+    // Validate speed (NaN would cause video time calculation to fail)
+    const speed = Number.isFinite(this.videoData.speed) ? this.videoData.speed : 1;
+    const effectiveSpeed = stretchFactor * speed;
 
     // Calculate time relative to layer start
     const layerStartFrame = this.layerData.startFrame ?? 0;
     const layerFrame = compositionFrame - layerStartFrame;
-    const compFps = this.compositionFPS;
+    // Validate FPS (NaN would cause division issues)
+    const compFps = (Number.isFinite(this.compositionFPS) && this.compositionFPS > 0)
+      ? this.compositionFPS : 16;
 
     // Convert to video time with effective speed
     let videoTime = (layerFrame / compFps) * effectiveSpeed;
@@ -554,7 +561,8 @@ export class VideoLayer extends BaseLayer {
    * Set composition FPS for accurate time calculation
    */
   setFPS(fps: number): void {
-    this.compositionFPS = fps;
+    // Validate fps (NaN would break time calculations)
+    this.compositionFPS = (Number.isFinite(fps) && fps > 0) ? fps : 16;
   }
 
   /**
@@ -597,9 +605,11 @@ export class VideoLayer extends BaseLayer {
   }
 
   setSpeed(speed: number): void {
-    this.videoData.speed = speed;
+    // Validate speed (NaN would break playback)
+    const validSpeed = Number.isFinite(speed) ? speed : 1;
+    this.videoData.speed = validSpeed;
     if (this.videoElement) {
-      this.videoElement.playbackRate = speed;
+      this.videoElement.playbackRate = validSpeed;
     }
   }
 

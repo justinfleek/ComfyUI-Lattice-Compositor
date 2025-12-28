@@ -587,12 +587,21 @@ export function replaceLayerSource(
  * Reorder layers
  */
 export function moveLayer(store: LayerStore, layerId: string, newIndex: number): void {
+  // Validate newIndex (NaN coerces to 0 in splice, causing wrong position)
+  if (!Number.isInteger(newIndex) || newIndex < 0) {
+    storeLogger.warn('moveLayer: Invalid index:', newIndex);
+    return;
+  }
+
   const layers = store.getActiveCompLayers();
   const currentIndex = layers.findIndex(l => l.id === layerId);
   if (currentIndex === -1) return;
 
+  // Clamp index to valid range
+  const clampedIndex = Math.min(newIndex, layers.length - 1);
+
   const [layer] = layers.splice(currentIndex, 1);
-  layers.splice(newIndex, 0, layer);
+  layers.splice(clampedIndex, 0, layer);
   store.project.meta.modified = new Date().toISOString();
   store.pushHistory();
 }
@@ -1336,6 +1345,13 @@ function samplePathPoints(
 
   // Sample along path
   const result: Array<{ x: number; y: number; depth?: number; handleIn?: { x: number; y: number }; handleOut?: { x: number; y: number } }> = [];
+
+  // Guard against division by zero (count must be at least 2)
+  if (count < 2) {
+    const cp = controlPoints[0];
+    return [{ x: cp.x, y: cp.y, depth: cp.depth }];
+  }
+
   const step = totalLength / (count - 1);
 
   let currentDist = 0;
@@ -1583,6 +1599,16 @@ export function applyExponentialScale(
   const layer = store.getActiveCompLayers().find(l => l.id === layerId);
   if (!layer) {
     storeLogger.warn('applyExponentialScale: layer not found');
+    return 0;
+  }
+
+  // Validate scale values (prevent division by zero)
+  if (!Number.isFinite(startScale) || startScale === 0) {
+    storeLogger.warn('applyExponentialScale: startScale must be a non-zero finite number');
+    return 0;
+  }
+  if (!Number.isFinite(endScale)) {
+    storeLogger.warn('applyExponentialScale: endScale must be a finite number');
     return 0;
   }
 

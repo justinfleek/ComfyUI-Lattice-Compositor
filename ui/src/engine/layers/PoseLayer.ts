@@ -444,8 +444,9 @@ export class PoseLayer extends BaseLayer {
    * Called by LayerManager when layer is added or composition changes
    */
   setCompositionSize(width: number, height: number): void {
-    this.compWidth = width;
-    this.compHeight = height;
+    // Validate dimensions (NaN/0 would create invalid canvas)
+    this.compWidth = (Number.isFinite(width) && width > 0) ? width : 512;
+    this.compHeight = (Number.isFinite(height) && height > 0) ? height : 512;
   }
 
   /**

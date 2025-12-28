@@ -189,13 +189,16 @@ export class ImageLayer extends BaseLayer {
     this.geometry.dispose();
 
     // Calculate final dimensions based on fit mode
-    let finalWidth = this.imageWidth;
-    let finalHeight = this.imageHeight;
+    // Validate dimensions (guard against 0/NaN from upstream)
+    let finalWidth = (Number.isFinite(this.imageWidth) && this.imageWidth > 0) ? this.imageWidth : 100;
+    let finalHeight = (Number.isFinite(this.imageHeight) && this.imageHeight > 0) ? this.imageHeight : 100;
 
-    // Only apply fit if we have target dimensions and fit is not 'none'
-    if (this.targetWidth && this.targetHeight && this.fit !== 'none') {
-      const targetAspect = this.targetWidth / this.targetHeight;
-      const imageAspect = this.imageWidth / this.imageHeight;
+    // Only apply fit if we have valid target dimensions and fit is not 'none'
+    const validTargetWidth = this.targetWidth && Number.isFinite(this.targetWidth) && this.targetWidth > 0;
+    const validTargetHeight = this.targetHeight && Number.isFinite(this.targetHeight) && this.targetHeight > 0;
+    if (validTargetWidth && validTargetHeight && this.fit !== 'none') {
+      const targetAspect = this.targetWidth! / this.targetHeight!;
+      const imageAspect = finalWidth / finalHeight;
 
       switch (this.fit) {
         case 'contain':
@@ -255,8 +258,9 @@ export class ImageLayer extends BaseLayer {
    * Set dimensions (stretches the image)
    */
   setDimensions(width: number, height: number): void {
-    this.imageWidth = width;
-    this.imageHeight = height;
+    // Validate dimensions (NaN/0 would corrupt geometry and cause division by zero)
+    this.imageWidth = (Number.isFinite(width) && width > 0) ? width : 100;
+    this.imageHeight = (Number.isFinite(height) && height > 0) ? height : 100;
     this.updateMeshSize();
   }
 

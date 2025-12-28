@@ -59,8 +59,11 @@ export function brightnessContrastRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams
 ): EffectStackResult {
-  const brightness = (params.brightness ?? 0) / 100; // Normalize to -1.5 to 1.5
-  const contrast = (params.contrast ?? 0) / 100;     // Normalize to -1 to 1
+  // Validate numeric params (NaN causes black pixel corruption)
+  const rawBrightness = params.brightness ?? 0;
+  const brightness = Number.isFinite(rawBrightness) ? rawBrightness / 100 : 0;
+  const rawContrast = params.contrast ?? 0;
+  const contrast = Number.isFinite(rawContrast) ? rawContrast / 100 : 0;
   const useLegacy = params.use_legacy ?? false;
 
   // No change needed
@@ -182,9 +185,13 @@ export function hueSaturationRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams
 ): EffectStackResult {
-  const hueShift = (params.master_hue ?? 0) / 360; // Normalize to 0-1
-  const saturationShift = (params.master_saturation ?? 0) / 100;
-  const lightnessShift = (params.master_lightness ?? 0) / 100;
+  // Validate numeric params (NaN causes black pixel corruption)
+  const rawHue = params.master_hue ?? 0;
+  const hueShift = Number.isFinite(rawHue) ? rawHue / 360 : 0;
+  const rawSat = params.master_saturation ?? 0;
+  const saturationShift = Number.isFinite(rawSat) ? rawSat / 100 : 0;
+  const rawLight = params.master_lightness ?? 0;
+  const lightnessShift = Number.isFinite(rawLight) ? rawLight / 100 : 0;
   const colorize = params.colorize ?? false;
 
   // No change needed
@@ -252,11 +259,17 @@ export function levelsRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams
 ): EffectStackResult {
-  const inputBlack = params.input_black ?? 0;
-  const inputWhite = params.input_white ?? 255;
-  const gamma = params.gamma ?? 1;
-  const outputBlack = params.output_black ?? 0;
-  const outputWhite = params.output_white ?? 255;
+  // Validate numeric params (NaN causes black pixel corruption)
+  const rawInputBlack = params.input_black ?? 0;
+  const inputBlack = Number.isFinite(rawInputBlack) ? rawInputBlack : 0;
+  const rawInputWhite = params.input_white ?? 255;
+  const inputWhite = Number.isFinite(rawInputWhite) ? rawInputWhite : 255;
+  const rawGamma = params.gamma ?? 1;
+  const gamma = (Number.isFinite(rawGamma) && rawGamma > 0) ? rawGamma : 1;
+  const rawOutputBlack = params.output_black ?? 0;
+  const outputBlack = Number.isFinite(rawOutputBlack) ? rawOutputBlack : 0;
+  const rawOutputWhite = params.output_white ?? 255;
+  const outputWhite = Number.isFinite(rawOutputWhite) ? rawOutputWhite : 255;
 
   // No change needed
   if (inputBlack === 0 && inputWhite === 255 && gamma === 1 &&
@@ -317,7 +330,9 @@ export function tintRenderer(
 ): EffectStackResult {
   const blackColor = params.map_black_to ?? { r: 0, g: 0, b: 0 };
   const whiteColor = params.map_white_to ?? { r: 255, g: 255, b: 255 };
-  const amount = (params.amount_to_tint ?? 100) / 100;
+  // Validate amount (NaN causes black pixel corruption)
+  const rawAmount = params.amount_to_tint ?? 100;
+  const amount = Number.isFinite(rawAmount) ? rawAmount / 100 : 1;
 
   // No change at 0 amount
   if (amount === 0) {
@@ -478,7 +493,9 @@ export function curvesRenderer(
   const greenCurve = params.green_curve as CurvePoint[] | undefined;
   const blueCurve = params.blue_curve as CurvePoint[] | undefined;
   const alphaCurve = params.alpha_curve as CurvePoint[] | undefined;
-  const blend = (params.blend_with_original ?? 100) / 100;
+  // Validate blend param (NaN causes black pixel corruption)
+  const rawBlend = params.blend_with_original ?? 100;
+  const blend = Number.isFinite(rawBlend) ? rawBlend / 100 : 1;
 
   // Check if any curves are defined
   const hasCurves = masterCurve || redCurve || greenCurve || blueCurve || alphaCurve;
@@ -585,11 +602,15 @@ export function glowRenderer(
   params: EvaluatedEffectParams,
   frame?: number
 ): EffectStackResult {
-  const threshold = params.glow_threshold ?? 128;
-  const radius = params.glow_radius ?? 20;
+  // Validate numeric params (NaN causes black pixel corruption)
+  const rawThreshold = params.glow_threshold ?? 128;
+  const threshold = Number.isFinite(rawThreshold) ? rawThreshold : 128;
+  const rawRadius = params.glow_radius ?? 20;
+  const radius = Number.isFinite(rawRadius) ? Math.max(0, rawRadius) : 20;
   // Support both new 'glow_intensity' (0-10 range) and legacy (0-400 percentage)
   const rawIntensity = params.glow_intensity ?? 100;
-  const intensity = rawIntensity <= 10 ? rawIntensity : rawIntensity / 100;
+  const validIntensity = Number.isFinite(rawIntensity) ? rawIntensity : 100;
+  const intensity = validIntensity <= 10 ? validIntensity : validIntensity / 100;
 
   // Support both 'composite_original' (from definition) and legacy 'glow_operation'
   // composite_original: 'on-top' | 'behind' | 'none'
@@ -604,7 +625,8 @@ export function glowRenderer(
 
   // Color Looping (animated color cycling)
   const colorLooping = params.color_looping ?? 'none';
-  const colorLoopingSpeed = params.color_looping_speed ?? 1;
+  const rawLoopSpeed = params.color_looping_speed ?? 1;
+  const colorLoopingSpeed = Number.isFinite(rawLoopSpeed) ? rawLoopSpeed : 1;
 
   // Glow Dimensions (horizontal, vertical, or both)
   const glowDimensions = params.glow_dimensions ?? 'both';
@@ -621,7 +643,8 @@ export function glowRenderer(
   let colorBlend = 0; // 0 = Color A, 1 = Color B
   if (colorLooping !== 'none' && frame !== undefined) {
     // Use injected FPS from context, fallback to 16 (WAN standard)
-    const fps = params._fps ?? 16;
+    // Validate fps (nullish coalescing doesn't catch NaN)
+    const fps = (Number.isFinite(params._fps) && params._fps > 0) ? params._fps : 16;
     const time = frame / fps;
     const cycle = (time * colorLoopingSpeed) % 1;
 
@@ -825,10 +848,15 @@ export function dropShadowRenderer(
   params: EvaluatedEffectParams
 ): EffectStackResult {
   const shadowColor = params.shadow_color ?? { r: 0, g: 0, b: 0, a: 0.5 };
-  const opacity = (params.opacity ?? 50) / 100;
-  const direction = (params.direction ?? 135) * Math.PI / 180;
-  const distance = params.distance ?? 5;
-  const softness = params.softness ?? 5;
+  // Validate numeric params (NaN causes visual corruption)
+  const rawOpacity = params.opacity ?? 50;
+  const opacity = Number.isFinite(rawOpacity) ? rawOpacity / 100 : 0.5;
+  const rawDirection = params.direction ?? 135;
+  const direction = Number.isFinite(rawDirection) ? rawDirection * Math.PI / 180 : 135 * Math.PI / 180;
+  const rawDistance = params.distance ?? 5;
+  const distance = Number.isFinite(rawDistance) ? rawDistance : 5;
+  const rawSoftness = params.softness ?? 5;
+  const softness = Number.isFinite(rawSoftness) ? rawSoftness : 5;
   const shadowOnly = params.shadow_only ?? false;
 
   const output = createMatchingCanvas(input.canvas);
@@ -884,15 +912,20 @@ export function colorBalanceRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams
 ): EffectStackResult {
-  const shadowR = (params.shadow_red ?? 0) / 100;
-  const shadowG = (params.shadow_green ?? 0) / 100;
-  const shadowB = (params.shadow_blue ?? 0) / 100;
-  const midtoneR = (params.midtone_red ?? 0) / 100;
-  const midtoneG = (params.midtone_green ?? 0) / 100;
-  const midtoneB = (params.midtone_blue ?? 0) / 100;
-  const highlightR = (params.highlight_red ?? 0) / 100;
-  const highlightG = (params.highlight_green ?? 0) / 100;
-  const highlightB = (params.highlight_blue ?? 0) / 100;
+  // Validate numeric params (NaN causes black pixel corruption)
+  const safeDiv100 = (val: unknown, def: number) => {
+    const raw = (val ?? def) as number;
+    return Number.isFinite(raw) ? raw / 100 : def / 100;
+  };
+  const shadowR = safeDiv100(params.shadow_red, 0);
+  const shadowG = safeDiv100(params.shadow_green, 0);
+  const shadowB = safeDiv100(params.shadow_blue, 0);
+  const midtoneR = safeDiv100(params.midtone_red, 0);
+  const midtoneG = safeDiv100(params.midtone_green, 0);
+  const midtoneB = safeDiv100(params.midtone_blue, 0);
+  const highlightR = safeDiv100(params.highlight_red, 0);
+  const highlightG = safeDiv100(params.highlight_green, 0);
+  const highlightB = safeDiv100(params.highlight_blue, 0);
   const preserveLuminosity = params.preserve_luminosity ?? true;
 
   // No change if all values are 0
@@ -968,9 +1001,13 @@ export function exposureRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams
 ): EffectStackResult {
-  const exposure = params.exposure ?? 0;
-  const offset = params.offset ?? 0;
-  const gamma = params.gamma ?? 1;
+  // Validate numeric params (NaN causes black pixel corruption)
+  const rawExposure = params.exposure ?? 0;
+  const exposure = Number.isFinite(rawExposure) ? rawExposure : 0;
+  const rawOffset = params.offset ?? 0;
+  const offset = Number.isFinite(rawOffset) ? rawOffset : 0;
+  const rawGamma = params.gamma ?? 1;
+  const gamma = (Number.isFinite(rawGamma) && rawGamma > 0) ? rawGamma : 1;
 
   // No change if all values are default
   if (exposure === 0 && offset === 0 && gamma === 1) {
@@ -1030,8 +1067,11 @@ export function vibranceRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams
 ): EffectStackResult {
-  const vibrance = (params.vibrance ?? 0) / 100;
-  const saturation = (params.saturation ?? 0) / 100;
+  // Validate numeric params (NaN causes black pixel corruption)
+  const rawVibrance = params.vibrance ?? 0;
+  const vibrance = Number.isFinite(rawVibrance) ? rawVibrance / 100 : 0;
+  const rawSaturation = params.saturation ?? 0;
+  const saturation = Number.isFinite(rawSaturation) ? rawSaturation / 100 : 0;
 
   // No change if all values are 0
   if (vibrance === 0 && saturation === 0) {
@@ -1097,7 +1137,9 @@ export function invertRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams
 ): EffectStackResult {
-  const blend = (params.blend ?? 100) / 100;
+  // Validate blend param (NaN causes black pixel corruption)
+  const rawBlend = params.blend ?? 100;
+  const blend = Number.isFinite(rawBlend) ? rawBlend / 100 : 1;
   const channel = params.channel ?? 'rgb';
 
   if (blend === 0) {
@@ -1175,7 +1217,9 @@ export function posterizeRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams
 ): EffectStackResult {
-  const levels = Math.max(2, Math.min(256, params.levels ?? 6));
+  // Validate levels (NaN bypasses Math.max/min clamps, corrupting LUT)
+  const rawLevels = params.levels ?? 6;
+  const levels = Number.isFinite(rawLevels) ? Math.max(2, Math.min(256, rawLevels)) : 6;
 
   if (levels === 256) {
     return input;
@@ -1219,7 +1263,9 @@ export function thresholdRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams
 ): EffectStackResult {
-  const threshold = params.threshold ?? 128;
+  // Validate threshold param (NaN causes incorrect threshold comparison)
+  const rawThreshold = params.threshold ?? 128;
+  const threshold = Number.isFinite(rawThreshold) ? rawThreshold : 128;
 
   const output = createMatchingCanvas(input.canvas);
   const imageData = input.ctx.getImageData(0, 0, input.canvas.width, input.canvas.height);
@@ -1265,10 +1311,15 @@ export function vignetteRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams
 ): EffectStackResult {
-  const amount = (params.amount ?? 0) / 100;  // Normalize to -1 to 1
-  const midpoint = (params.midpoint ?? 50) / 100;  // 0 to 1
-  const roundness = (params.roundness ?? 0) / 100;  // -1 to 1
-  const feather = (params.feather ?? 50) / 100;  // 0 to 1
+  // Validate numeric params (NaN causes black pixel corruption)
+  const rawAmount = params.amount ?? 0;
+  const amount = Number.isFinite(rawAmount) ? rawAmount / 100 : 0;
+  const rawMidpoint = params.midpoint ?? 50;
+  const midpoint = Number.isFinite(rawMidpoint) ? rawMidpoint / 100 : 0.5;
+  const rawRoundness = params.roundness ?? 0;
+  const roundness = Number.isFinite(rawRoundness) ? rawRoundness / 100 : 0;
+  const rawFeather = params.feather ?? 50;
+  const feather = Number.isFinite(rawFeather) ? rawFeather / 100 : 0.5;
 
   // No change needed
   if (amount === 0) {
@@ -1461,7 +1512,9 @@ export function lutRenderer(
   params: EvaluatedEffectParams
 ): EffectStackResult {
   const lutData = params.lutData as string;
-  const intensity = (params.intensity ?? 100) / 100;
+  // Validate intensity param (NaN causes black pixel corruption)
+  const rawIntensity = params.intensity ?? 100;
+  const intensity = Number.isFinite(rawIntensity) ? rawIntensity / 100 : 1;
 
   if (!lutData || intensity === 0) {
     return input;

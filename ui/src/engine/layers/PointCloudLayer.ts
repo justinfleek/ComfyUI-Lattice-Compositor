@@ -961,7 +961,9 @@ export class PointCloudLayer extends BaseLayer {
    */
   setPointSize(size: number): void {
     if (this.material) {
-      this.material.uniforms.pointSize.value = size;
+      // Validate size (NaN would corrupt shader uniform)
+      const validSize = (Number.isFinite(size) && size > 0) ? size : 2;
+      this.material.uniforms.pointSize.value = validSize;
     }
   }
 
@@ -970,7 +972,9 @@ export class PointCloudLayer extends BaseLayer {
    */
   setOpacity(opacity: number): void {
     if (this.material) {
-      this.material.uniforms.opacity.value = opacity;
+      // Validate opacity (NaN would corrupt shader uniform)
+      const validOpacity = Number.isFinite(opacity) ? Math.max(0, Math.min(1, opacity)) : 1;
+      this.material.uniforms.opacity.value = validOpacity;
     }
   }
 

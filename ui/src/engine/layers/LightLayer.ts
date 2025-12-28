@@ -177,7 +177,9 @@ export interface LightData {
  * Based on Tanner Helland's algorithm
  */
 function kelvinToRGB(kelvin: number): { r: number; g: number; b: number } {
-  const temp = kelvin / 100;
+  // Validate kelvin (NaN would produce NaN RGB values)
+  const validKelvin = Number.isFinite(kelvin) ? kelvin : 6500;
+  const temp = validKelvin / 100;
   let r: number, g: number, b: number;
 
   // Red
@@ -648,22 +650,28 @@ export class LightLayer extends BaseLayer {
   }
 
   setIntensity(intensity: number): void {
-    this.lightData.intensity = intensity;
+    // Validate intensity (NaN would corrupt light rendering)
+    const validIntensity = Number.isFinite(intensity) ? intensity : 100;
+    this.lightData.intensity = validIntensity;
     this.lightData.usePhysicalIntensity = false;
-    this.light.intensity = intensity / 100;
+    this.light.intensity = validIntensity / 100;
   }
 
   setFalloffDistance(distance: number): void {
-    this.lightData.falloffDistance = distance;
+    // Validate distance (NaN would corrupt light falloff)
+    const validDistance = Number.isFinite(distance) ? distance : 500;
+    this.lightData.falloffDistance = validDistance;
     if (this.light instanceof THREE.PointLight || this.light instanceof THREE.SpotLight) {
-      this.light.distance = this.lightData.falloff === 'none' ? 0 : distance;
+      this.light.distance = this.lightData.falloff === 'none' ? 0 : validDistance;
     }
   }
 
   setConeAngle(angle: number): void {
     if (this.light instanceof THREE.SpotLight) {
-      this.lightData.coneAngle = angle;
-      this.light.angle = THREE.MathUtils.degToRad(angle / 2);
+      // Validate angle (NaN would corrupt light cone)
+      const validAngle = Number.isFinite(angle) ? angle : 90;
+      this.lightData.coneAngle = validAngle;
+      this.light.angle = THREE.MathUtils.degToRad(validAngle / 2);
       if (this.helper instanceof THREE.SpotLightHelper) {
         this.helper.update();
       }
@@ -672,17 +680,22 @@ export class LightLayer extends BaseLayer {
 
   setConeFeather(feather: number): void {
     if (this.light instanceof THREE.SpotLight) {
-      this.lightData.coneFeather = feather;
-      this.light.penumbra = feather / 100;
+      // Validate feather (NaN would corrupt penumbra)
+      const validFeather = Number.isFinite(feather) ? feather : 50;
+      this.lightData.coneFeather = validFeather;
+      this.light.penumbra = validFeather / 100;
     }
   }
 
   setAreaSize(width: number, height: number): void {
     if (this.light instanceof THREE.RectAreaLight) {
-      this.lightData.areaWidth = width;
-      this.lightData.areaHeight = height;
-      this.light.width = width;
-      this.light.height = height;
+      // Validate dimensions (NaN/0 would corrupt area light)
+      const validWidth = (Number.isFinite(width) && width > 0) ? width : 100;
+      const validHeight = (Number.isFinite(height) && height > 0) ? height : 100;
+      this.lightData.areaWidth = validWidth;
+      this.lightData.areaHeight = validHeight;
+      this.light.width = validWidth;
+      this.light.height = validHeight;
     }
   }
 

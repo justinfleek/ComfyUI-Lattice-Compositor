@@ -331,7 +331,8 @@ export function configureAutosave(
   if (options.enabled !== undefined) {
     store.autosaveEnabled = options.enabled;
   }
-  if (options.intervalMs !== undefined) {
+  // Validate intervalMs (NaN in setInterval causes unpredictable behavior)
+  if (options.intervalMs !== undefined && Number.isFinite(options.intervalMs) && options.intervalMs > 0) {
     store.autosaveIntervalMs = options.intervalMs;
   }
 

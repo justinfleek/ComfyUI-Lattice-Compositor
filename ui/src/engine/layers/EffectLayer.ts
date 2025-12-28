@@ -106,16 +106,20 @@ export class EffectLayer extends BaseLayer {
   private resizeMesh(width: number, height: number): void {
     if (!this.mesh) return;
 
-    this.compWidth = width;
-    this.compHeight = height;
+    // Validate dimensions (NaN/0 would create invalid geometry and canvas)
+    const validWidth = (Number.isFinite(width) && width > 0) ? width : 1920;
+    const validHeight = (Number.isFinite(height) && height > 0) ? height : 1080;
+
+    this.compWidth = validWidth;
+    this.compHeight = validHeight;
 
     this.mesh.geometry.dispose();
-    this.mesh.geometry = new THREE.PlaneGeometry(width, height);
+    this.mesh.geometry = new THREE.PlaneGeometry(validWidth, validHeight);
 
     // Create/resize effect canvas
     this.effectCanvas = document.createElement('canvas');
-    this.effectCanvas.width = width;
-    this.effectCanvas.height = height;
+    this.effectCanvas.width = validWidth;
+    this.effectCanvas.height = validHeight;
     this.effectCtx = this.effectCanvas.getContext('2d');
   }
 
@@ -205,7 +209,9 @@ export class EffectLayer extends BaseLayer {
   protected override onApplyEvaluatedState(state: import('../MotionEngine').EvaluatedLayer): void {
     // Apply opacity to material (opacity is on EvaluatedLayer, not transform)
     if (state.opacity !== undefined && this.material) {
-      this.material.opacity = state.opacity / 100;
+      // Validate opacity (NaN would corrupt material rendering)
+      const validOpacity = Number.isFinite(state.opacity) ? state.opacity : 100;
+      this.material.opacity = Math.max(0, Math.min(100, validOpacity)) / 100;
       this.material.needsUpdate = true;
     }
 

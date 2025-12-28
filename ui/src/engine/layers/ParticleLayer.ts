@@ -232,7 +232,12 @@ export class ParticleLayer extends BaseLayer {
 
     // System settings
     if (data.systemConfig) {
-      config.maxParticles = data.systemConfig.maxParticles ?? 100000;
+      // Cap maxParticles to prevent GPU memory exhaustion (1M max)
+      const MAX_PARTICLES = 1000000;
+      const rawMaxParticles = data.systemConfig.maxParticles ?? 100000;
+      config.maxParticles = Number.isFinite(rawMaxParticles)
+        ? Math.max(1, Math.min(MAX_PARTICLES, rawMaxParticles))
+        : 100000;
       config.timeScale = 1;
 
       // Add global gravity as a force field
@@ -487,17 +492,21 @@ export class ParticleLayer extends BaseLayer {
 
     // Convert flocking configuration
     if (data.flocking?.enabled) {
+      // Helper to validate numeric params (NaN would corrupt flocking behavior)
+      const safeNum = (val: number | undefined, def: number) =>
+        Number.isFinite(val) ? val! : def;
+
       config.flocking = {
         enabled: true,
-        separationWeight: (data.flocking.separationWeight ?? 50) / 100,
-        separationRadius: data.flocking.separationRadius ?? 25,
-        alignmentWeight: (data.flocking.alignmentWeight ?? 50) / 100,
-        alignmentRadius: data.flocking.alignmentRadius ?? 50,
-        cohesionWeight: (data.flocking.cohesionWeight ?? 50) / 100,
-        cohesionRadius: data.flocking.cohesionRadius ?? 50,
-        maxSpeed: data.flocking.maxSpeed ?? 200,
-        maxForce: data.flocking.maxForce ?? 10,
-        perceptionAngle: data.flocking.perceptionAngle ?? 270,
+        separationWeight: safeNum(data.flocking.separationWeight, 50) / 100,
+        separationRadius: safeNum(data.flocking.separationRadius, 25),
+        alignmentWeight: safeNum(data.flocking.alignmentWeight, 50) / 100,
+        alignmentRadius: safeNum(data.flocking.alignmentRadius, 50),
+        cohesionWeight: safeNum(data.flocking.cohesionWeight, 50) / 100,
+        cohesionRadius: safeNum(data.flocking.cohesionRadius, 50),
+        maxSpeed: safeNum(data.flocking.maxSpeed, 200),
+        maxForce: safeNum(data.flocking.maxForce, 10),
+        perceptionAngle: safeNum(data.flocking.perceptionAngle, 270),
       };
     }
 
@@ -745,7 +754,8 @@ export class ParticleLayer extends BaseLayer {
    * Set composition FPS for accurate time calculation
    */
   setFPS(fps: number): void {
-    this.fps = fps;
+    // Validate fps (NaN would break time calculations and cache simulation)
+    this.fps = (Number.isFinite(fps) && fps > 0) ? fps : 16;
   }
 
   // ============================================================================
@@ -911,18 +921,28 @@ export class ParticleLayer extends BaseLayer {
     endFrame: number,
     onProgress?: (current: number, total: number) => void
   ): Promise<void> {
-    const totalFrames = endFrame - startFrame + 1;
+    // Validate frame bounds (NaN/Infinity would cause infinite loop or no-op)
+    const validStart = Number.isFinite(startFrame) ? Math.max(0, Math.floor(startFrame)) : 0;
+    const validEnd = Number.isFinite(endFrame) ? Math.floor(endFrame) : validStart;
+
+    // Sanity check: cap at 10,000 frames to prevent resource exhaustion
+    const MAX_CACHE_FRAMES = 10000;
+    const cappedEnd = Math.min(validEnd, validStart + MAX_CACHE_FRAMES);
+
+    if (cappedEnd < validStart) return;
+
+    const totalFrames = cappedEnd - validStart + 1;
 
     // Simulate from start to end, building cache along the way
-    for (let frame = startFrame; frame <= endFrame; frame++) {
+    for (let frame = validStart; frame <= cappedEnd; frame++) {
       this.particleSystem.simulateToFrame(frame, this.fps);
 
       if (onProgress) {
-        onProgress(frame - startFrame + 1, totalFrames);
+        onProgress(frame - validStart + 1, totalFrames);
       }
 
       // Yield to prevent blocking UI (every 10 frames)
-      if ((frame - startFrame) % 10 === 0) {
+      if ((frame - validStart) % 10 === 0) {
         await new Promise(resolve => setTimeout(resolve, 0));
       }
     }

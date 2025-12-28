@@ -147,7 +147,8 @@ export class NestedCompLayer extends BaseLayer {
    * Set parent composition FPS for frame rate conversion
    */
   setFPS(fps: number): void {
-    this.parentFPS = fps;
+    // Validate FPS (NaN or <= 0 would break frame calculations)
+    this.parentFPS = (Number.isFinite(fps) && fps > 0) ? fps : 16;
   }
 
   /**
@@ -195,9 +196,11 @@ export class NestedCompLayer extends BaseLayer {
   private calculateNestedFrame(parentFrame: number): number {
     if (!this.cachedComposition) return 0;
 
-    const nestedFps = this.nestedCompData.overrideFrameRate && this.nestedCompData.frameRate
+    // Validate FPS values (NaN would corrupt frame calculations)
+    const rawNestedFps = this.nestedCompData.overrideFrameRate && this.nestedCompData.frameRate
       ? this.nestedCompData.frameRate
       : this.cachedComposition.settings.fps;
+    const nestedFps = (Number.isFinite(rawNestedFps) && rawNestedFps > 0) ? rawNestedFps : 16;
 
     // If speed map is enabled, use that (overrides timeStretch)
     const speedMapEnabled = this.nestedCompData.speedMapEnabled ?? this.nestedCompData.timeRemapEnabled;
@@ -207,11 +210,14 @@ export class NestedCompLayer extends BaseLayer {
         ? this.nestedCompEvaluator.evaluate(speedMapProp, parentFrame)
         : speedMapProp.value;
 
-      return Math.floor(remappedTime * nestedFps);
+      // Validate remapped time (NaN would break rendering)
+      const validTime = Number.isFinite(remappedTime) ? remappedTime : 0;
+      return Math.floor(validTime * nestedFps);
     }
 
     // Get layer's timeStretch (100 = normal, 200 = half speed, -100 = reversed)
-    const timeStretch = this.layerData.timeStretch ?? 100;
+    const rawTimeStretch = this.layerData.timeStretch ?? 100;
+    const timeStretch = Number.isFinite(rawTimeStretch) ? rawTimeStretch : 100;
     const isReversed = timeStretch < 0;
 
     // Calculate effective speed: 100% stretch = 1x, 200% = 0.5x, 50% = 2x
@@ -224,8 +230,10 @@ export class NestedCompLayer extends BaseLayer {
     // Apply time stretch and frame rate conversion
     let nestedFrame: number;
     if (this.nestedCompData.overrideFrameRate && this.nestedCompData.frameRate) {
-      const parentFps = this.parentFPS;
-      const childFps = this.nestedCompData.frameRate;
+      // Validate parent FPS to prevent division by zero
+      const parentFps = (Number.isFinite(this.parentFPS) && this.parentFPS > 0) ? this.parentFPS : 16;
+      const childFps = (Number.isFinite(this.nestedCompData.frameRate) && this.nestedCompData.frameRate > 0)
+        ? this.nestedCompData.frameRate : 16;
       nestedFrame = layerFrame * stretchFactor * (childFps / parentFps);
     } else {
       nestedFrame = layerFrame * stretchFactor;
@@ -237,7 +245,8 @@ export class NestedCompLayer extends BaseLayer {
       nestedFrame = nestedDuration - 1 - nestedFrame;
     }
 
-    return Math.floor(nestedFrame);
+    // Final validation - NaN frame would break rendering
+    return Number.isFinite(nestedFrame) ? Math.floor(nestedFrame) : 0;
   }
 
   // ============================================================================
@@ -281,8 +290,10 @@ export class NestedCompLayer extends BaseLayer {
     const props = state.properties;
 
     // Apply opacity to material (opacity is on EvaluatedLayer, not transform)
+    // Validate opacity (NaN would corrupt material)
     if (state.opacity !== undefined && this.material) {
-      this.material.opacity = state.opacity / 100;
+      const validOpacity = Number.isFinite(state.opacity) ? state.opacity : 100;
+      this.material.opacity = Math.max(0, Math.min(100, validOpacity)) / 100;
       this.material.needsUpdate = true;
     }
 

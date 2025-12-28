@@ -113,9 +113,11 @@ export class ControlLayer extends BaseLayer {
    * Set indicator size
    */
   setIndicatorSize(size: number): void {
-    if (size === this.indicatorSize) return;
+    // Validate size (NaN/0/negative/Infinity would corrupt indicator geometry)
+    const validSize = (Number.isFinite(size) && size > 0) ? size : 50;
+    if (validSize === this.indicatorSize) return;
 
-    this.indicatorSize = size;
+    this.indicatorSize = validSize;
 
     // Recreate indicator with new size
     if (this.indicator) {

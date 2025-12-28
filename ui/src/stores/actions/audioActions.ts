@@ -17,6 +17,13 @@ import type { AudioParticleMapping } from '@/types/project';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AudioReactiveMapperType = AudioReactiveMapper | any;
 
+/**
+ * Safely get a frame number, defaulting to 0 for NaN/undefined/null
+ */
+function safeFrame(frame: number | undefined | null, fallback = 0): number {
+  return Number.isFinite(frame) ? frame! : fallback;
+}
+
 export interface AudioStore {
   // State
   audioBuffer: AudioBuffer | null;
@@ -113,7 +120,7 @@ export function cancelAudioLoad(store: AudioStore): void {
 }
 
 /**
- * Clear loaded audio
+ * Clear loaded audio and release resources
  */
 export function clearAudio(store: AudioStore): void {
   cancelAudioLoad(store);
@@ -121,6 +128,20 @@ export function clearAudio(store: AudioStore): void {
   store.audioBuffer = null;
   store.audioAnalysis = null;
   store.audioMappings.clear();
+
+  // Dispose audio reactive mapper if it has a dispose method
+  if (store.audioReactiveMapper?.dispose) {
+    store.audioReactiveMapper.dispose();
+  }
+  store.audioReactiveMapper = null;
+
+  // Dispose all path animators
+  for (const animator of store.pathAnimators.values()) {
+    if (animator?.dispose) {
+      animator.dispose();
+    }
+  }
+  store.pathAnimators.clear();
 }
 
 /**
@@ -132,7 +153,8 @@ export function getAudioFeatureAtFrame(
   frame?: number
 ): number {
   if (!store.audioAnalysis) return 0;
-  return getFeatureAtFrame(store.audioAnalysis, feature, frame ?? (store.getActiveComp()?.currentFrame ?? 0));
+  const targetFrame = safeFrame(frame ?? store.getActiveComp()?.currentFrame);
+  return getFeatureAtFrame(store.audioAnalysis, feature, targetFrame);
 }
 
 /**
@@ -228,7 +250,8 @@ export function getAllMappedValuesAtFrame(
   frame?: number
 ): Map<TargetParameter, number> {
   if (!store.audioReactiveMapper) return new Map();
-  return store.audioReactiveMapper.getAllValuesAtFrame(frame ?? (store.getActiveComp()?.currentFrame ?? 0));
+  const targetFrame = safeFrame(frame ?? store.getActiveComp()?.currentFrame);
+  return store.audioReactiveMapper.getAllValuesAtFrame(targetFrame);
 }
 
 /**
@@ -260,7 +283,7 @@ export function getAudioReactiveValuesForLayer(
  */
 export function isBeatAtCurrentFrame(store: AudioStore): boolean {
   if (!store.audioAnalysis) return false;
-  return isBeatAtFrame(store.audioAnalysis, store.getActiveComp()?.currentFrame ?? 0);
+  return isBeatAtFrame(store.audioAnalysis, safeFrame(store.getActiveComp()?.currentFrame));
 }
 
 /**
@@ -268,6 +291,11 @@ export function isBeatAtCurrentFrame(store: AudioStore): boolean {
  */
 export function initializeAudioReactiveMapper(store: AudioStore): void {
   if (!store.audioAnalysis) return;
+
+  // Dispose existing mapper before creating new one
+  if (store.audioReactiveMapper?.dispose) {
+    store.audioReactiveMapper.dispose();
+  }
 
   store.audioReactiveMapper = new AudioReactiveMapper(store.audioAnalysis);
 
@@ -294,6 +322,12 @@ export function createPathAnimator(
   layerId: string,
   config: Partial<PathAnimatorConfig> = {}
 ): void {
+  // Dispose existing animator before creating new one
+  const existing = store.pathAnimators.get(layerId);
+  if (existing?.dispose) {
+    existing.dispose();
+  }
+
   const animator = new AudioPathAnimator(config);
   store.pathAnimators.set(layerId, animator);
 }
@@ -327,9 +361,13 @@ export function updatePathAnimatorConfig(
 }
 
 /**
- * Remove path animator
+ * Remove path animator and release its resources
  */
 export function removePathAnimator(store: AudioStore, layerId: string): void {
+  const animator = store.pathAnimators.get(layerId);
+  if (animator?.dispose) {
+    animator.dispose();
+  }
   store.pathAnimators.delete(layerId);
 }
 
@@ -349,7 +387,7 @@ export function getPathAnimator(
 export function updatePathAnimators(store: AudioStore): void {
   if (!store.audioAnalysis) return;
 
-  const frame = store.getActiveComp()?.currentFrame ?? 0;
+  const frame = safeFrame(store.getActiveComp()?.currentFrame);
   const amplitude = getFeatureAtFrame(store.audioAnalysis, 'amplitude', frame);
   const isBeat = isBeatAtFrame(store.audioAnalysis, frame);
 
@@ -393,11 +431,17 @@ export function removeLegacyAudioMapping(
   index: number
 ): void {
   const mappings = store.audioMappings.get(layerId);
-  if (mappings) {
-    mappings.splice(index, 1);
-    if (mappings.length === 0) {
-      store.audioMappings.delete(layerId);
-    }
+  if (!mappings) return;
+
+  // Validate index is a valid integer within bounds
+  if (!Number.isInteger(index) || index < 0 || index >= mappings.length) {
+    storeLogger.warn('[Audio] Invalid mapping index:', index);
+    return;
+  }
+
+  mappings.splice(index, 1);
+  if (mappings.length === 0) {
+    store.audioMappings.delete(layerId);
   }
 }
 
@@ -463,9 +507,13 @@ export function convertAudioToKeyframes(
 
   const {
     name = 'Audio Amplitude',
-    amplitudeScale = 100,
-    smoothing = 0
+    amplitudeScale: rawScale = 100,
+    smoothing: rawSmoothing = 0
   } = options;
+
+  // Validate numeric options (destructuring defaults don't catch NaN)
+  const amplitudeScale = Number.isFinite(rawScale) ? rawScale : 100;
+  const smoothing = Number.isFinite(rawSmoothing) ? Math.max(0, Math.min(1, rawSmoothing)) : 0;
 
   store.pushHistory();
 
@@ -525,6 +573,16 @@ function extractChannelAmplitudes(
   fps: number,
   smoothing: number
 ): { both: number[]; left: number[]; right: number[] } {
+  // Validate numeric parameters
+  if (!Number.isFinite(fps) || fps <= 0) {
+    storeLogger.warn('[Audio] Invalid fps:', fps, '- using default 30');
+    fps = 30;
+  }
+
+  if (!Number.isFinite(frameCount) || frameCount <= 0) {
+    return { both: [], left: [], right: [] };
+  }
+
   const sampleRate = buffer.sampleRate;
   const samplesPerFrame = Math.floor(sampleRate / fps);
   const numChannels = buffer.numberOfChannels;
@@ -598,10 +656,13 @@ function createAmplitudeProperty(
 ): AnimatableProperty<number> {
   const id = `prop_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
 
+  // Ensure scale is valid
+  const safeScale = Number.isFinite(scale) ? scale : 100;
+
   const keyframes: Keyframe<number>[] = amplitudes.map((amp, frame) => ({
     id: `kf_${id}_${frame}`,
     frame,
-    value: amp * scale,
+    value: Number.isFinite(amp) ? amp * safeScale : 0,
     interpolation: 'linear' as const,
     inHandle: { frame: 0, value: 0, enabled: false },
     outHandle: { frame: 0, value: 0, enabled: false },
@@ -669,8 +730,14 @@ export function getAudioAmplitudeAtFrame(
   if (!prevKf) return nextKf.value as number;
   if (!nextKf) return prevKf.value as number;
 
+  // Guard against division by zero (duplicate keyframes)
+  const frameDiff = nextKf.frame - prevKf.frame;
+  if (frameDiff === 0) {
+    return prevKf.value as number;
+  }
+
   // Linear interpolation
-  const t = (frame - prevKf.frame) / (nextKf.frame - prevKf.frame);
+  const t = (frame - prevKf.frame) / frameDiff;
   return (prevKf.value as number) + t * ((nextKf.value as number) - (prevKf.value as number));
 }
 

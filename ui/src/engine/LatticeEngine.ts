@@ -185,8 +185,10 @@ export class LatticeEngine {
       throw new Error('LatticeEngine requires a valid HTMLCanvasElement');
     }
 
-    if (config.width <= 0 || config.height <= 0) {
-      throw new Error('LatticeEngine requires positive width and height');
+    // NaN bypasses <= 0 check, so validate with Number.isFinite first
+    if (!Number.isFinite(config.width) || !Number.isFinite(config.height) ||
+        config.width <= 0 || config.height <= 0) {
+      throw new Error('LatticeEngine requires positive finite width and height');
     }
 
     if (config.width > 8192 || config.height > 8192) {
@@ -397,7 +399,9 @@ export class LatticeEngine {
    * @param fps - Frames per second
    */
   setCompositionFPS(fps: number): void {
-    this.layers.setCompositionFPS(fps);
+    // Validate fps (NaN/0/negative would corrupt time-based calculations)
+    const validFps = (Number.isFinite(fps) && fps > 0) ? fps : 30;
+    this.layers.setCompositionFPS(validFps);
   }
 
   /**
@@ -712,7 +716,8 @@ export class LatticeEngine {
   ): void {
     this.assertNotDisposed();
 
-    if (width <= 0 || height <= 0) {
+    // NaN bypasses <= 0 check, so validate with Number.isFinite first
+    if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
       engineLogger.warn('Invalid resize dimensions:', width, height);
       return;
     }
@@ -722,9 +727,11 @@ export class LatticeEngine {
     this.state.viewport = { width, height };
     this.renderer.resize(width, height);
 
-    // ONLY update camera composition dimensions if explicitly provided
+    // ONLY update camera composition dimensions if explicitly provided and valid
     // Otherwise, just update the viewport aspect
-    if (compositionWidth !== undefined && compositionHeight !== undefined) {
+    if (compositionWidth !== undefined && compositionHeight !== undefined &&
+        Number.isFinite(compositionWidth) && Number.isFinite(compositionHeight) &&
+        compositionWidth > 0 && compositionHeight > 0) {
       this.camera.resize(compositionWidth, compositionHeight);
     }
 
@@ -769,7 +776,8 @@ export class LatticeEngine {
   setResolution(width: number, height: number): void {
     this.assertNotDisposed();
 
-    if (width <= 0 || height <= 0) {
+    // NaN bypasses <= 0 check, so validate with Number.isFinite first
+    if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
       engineLogger.warn('Invalid resolution dimensions:', width, height);
       return;
     }
@@ -825,8 +833,10 @@ export class LatticeEngine {
    * @param padding - Padding in pixels around the composition (default 40)
    */
   fitCompositionToViewport(padding: number = 40): void {
+    // Validate padding (NaN/negative would corrupt viewport calculations)
+    const validPadding = (Number.isFinite(padding) && padding >= 0) ? padding : 40;
     const { width, height } = this.state.viewport;
-    this.camera.fitToViewport(width, height, padding);
+    this.camera.fitToViewport(width, height, validPadding);
   }
 
   /**
@@ -1021,12 +1031,21 @@ export class LatticeEngine {
    * @param transform - [scaleX, skewX, skewY, scaleY, translateX, translateY]
    */
   setViewportTransform(transform: number[]): void {
-    this.viewportTransform = [...transform];
+    // Validate transform array (must be 6 numbers, all finite)
+    if (!Array.isArray(transform) || transform.length < 6) {
+      engineLogger.warn('Invalid viewport transform: expected 6-element array');
+      return;
+    }
 
-    // Apply to camera for 2D-style panning
-    const scale = transform[0];
-    const tx = transform[4];
-    const ty = transform[5];
+    // Validate all values are finite numbers, use defaults if not
+    const scale = Number.isFinite(transform[0]) ? transform[0] : 1;
+    const skewX = Number.isFinite(transform[1]) ? transform[1] : 0;
+    const skewY = Number.isFinite(transform[2]) ? transform[2] : 0;
+    const scaleY = Number.isFinite(transform[3]) ? transform[3] : 1;
+    const tx = Number.isFinite(transform[4]) ? transform[4] : 0;
+    const ty = Number.isFinite(transform[5]) ? transform[5] : 0;
+
+    this.viewportTransform = [scale, skewX, skewY, scaleY, tx, ty];
 
     // Update camera position based on viewport transform
     this.camera.setZoom(scale);
@@ -1442,6 +1461,9 @@ export class LatticeEngine {
   ): Promise<Blob> {
     this.assertNotDisposed();
 
+    // Validate quality (NaN or out of range would cause issues)
+    const validQuality = (Number.isFinite(quality) && quality >= 0 && quality <= 1) ? quality : 0.95;
+
     const { imageData, width, height } = this.captureFrame();
 
     const canvas = new OffscreenCanvas(width, height);
@@ -1450,7 +1472,7 @@ export class LatticeEngine {
 
     return canvas.convertToBlob({
       type: `image/${format}`,
-      quality,
+      quality: validQuality,
     });
   }
 

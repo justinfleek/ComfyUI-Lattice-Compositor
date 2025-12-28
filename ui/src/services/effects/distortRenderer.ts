@@ -142,6 +142,26 @@ class SimplexNoise {
 }
 
 // ============================================================================
+// HELPER: NaN-safe number extraction
+// ============================================================================
+
+/**
+ * Safely extract a numeric value, returning default if NaN/undefined/null
+ * Optionally clamps to min/max bounds
+ *
+ * BUG-025/026/027/028 FIX: NaN values bypass Math.max/min clamps
+ */
+function safeNum(val: unknown, def: number, min?: number, max?: number): number {
+  const num = typeof val === 'number' && Number.isFinite(val) ? val : def;
+  if (min !== undefined && max !== undefined) {
+    return Math.max(min, Math.min(max, num));
+  }
+  if (min !== undefined) return Math.max(min, num);
+  if (max !== undefined) return Math.min(max, num);
+  return num;
+}
+
+// ============================================================================
 // TRANSFORM EFFECT
 // ============================================================================
 
@@ -163,23 +183,31 @@ export function transformRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams
 ): EffectStackResult {
+  // BUG-025 FIX: Validate all numeric params to prevent NaN propagation
   const anchorPoint = params.anchor_point ?? { x: 0.5, y: 0.5 };
   const position = params.position ?? { x: 0.5, y: 0.5 };
-  const scaleWidth = (params.scale_width ?? 100) / 100;
-  const scaleHeight = (params.scale_height ?? 100) / 100;
-  const skew = (params.skew ?? 0) * Math.PI / 180;
-  const skewAxis = (params.skew_axis ?? 0) * Math.PI / 180;
-  const rotation = (params.rotation ?? 0) * Math.PI / 180;
-  const opacity = (params.opacity ?? 100) / 100;
+
+  // Validate anchor and position coordinates
+  const anchorX_norm = safeNum(anchorPoint.x, 0.5, 0, 1);
+  const anchorY_norm = safeNum(anchorPoint.y, 0.5, 0, 1);
+  const posX_norm = safeNum(position.x, 0.5, 0, 1);
+  const posY_norm = safeNum(position.y, 0.5, 0, 1);
+
+  const scaleWidth = safeNum(params.scale_width, 100, 0.01, 10000) / 100;
+  const scaleHeight = safeNum(params.scale_height, 100, 0.01, 10000) / 100;
+  const skew = safeNum(params.skew, 0, -85, 85) * Math.PI / 180;
+  const skewAxis = safeNum(params.skew_axis, 0, -360, 360) * Math.PI / 180;
+  const rotation = safeNum(params.rotation, 0) * Math.PI / 180;
+  const opacity = safeNum(params.opacity, 100, 0, 100) / 100;
 
   const { width, height } = input.canvas;
   const output = createMatchingCanvas(input.canvas);
 
-  // Calculate pixel positions
-  const anchorX = anchorPoint.x * width;
-  const anchorY = anchorPoint.y * height;
-  const posX = position.x * width;
-  const posY = position.y * height;
+  // Calculate pixel positions (using validated coordinates)
+  const anchorX = anchorX_norm * width;
+  const anchorY = anchorY_norm * height;
+  const posX = posX_norm * width;
+  const posY = posY_norm * height;
 
   // Apply transform
   output.ctx.globalAlpha = opacity;
@@ -222,11 +250,12 @@ export function warpRenderer(
   params: EvaluatedEffectParams
 ): EffectStackResult {
   const warpStyle = params.warp_style ?? 'arc';
-  const bend = (params.bend ?? 0) / 100;
-  const hDistort = (params.horizontal_distortion ?? 0) / 100;
-  const vDistort = (params.vertical_distortion ?? 0) / 100;
+  // BUG-026 FIX: Validate numeric params to prevent NaN bypass of === 0 check
+  const bend = safeNum(params.bend, 0, -100, 100) / 100;
+  const hDistort = safeNum(params.horizontal_distortion, 0, -100, 100) / 100;
+  const vDistort = safeNum(params.vertical_distortion, 0, -100, 100) / 100;
 
-  // No warp needed
+  // No warp needed (NaN params now safely default to 0)
   if (bend === 0 && hDistort === 0 && vDistort === 0) {
     return input;
   }
@@ -532,10 +561,11 @@ export function displacementMapRenderer(
   const mapBehavior = (params.displacement_map_behavior ?? 'stretch') as MapBehavior;
   const useHorizontal = params.use_for_horizontal ?? 'red';
   const useVertical = params.use_for_vertical ?? 'green';
-  const maxHorizontal = params.max_horizontal ?? 0;
-  const maxVertical = params.max_vertical ?? 0;
+  // BUG-027 FIX: Validate numeric params to prevent NaN propagation
+  const maxHorizontal = safeNum(params.max_horizontal, 0, -4000, 4000);
+  const maxVertical = safeNum(params.max_vertical, 0, -4000, 4000);
   const wrapMode = params.edge_behavior ?? 'off';
-  const mapScale = params.map_scale ?? 1;
+  const mapScale = safeNum(params.map_scale, 1, 0.1, 10);
 
   // Check for pre-rendered layer canvas (injected by render pipeline)
   const mapLayerCanvas = params._mapLayerCanvas as HTMLCanvasElement | undefined;
@@ -750,17 +780,24 @@ export function turbulentDisplaceRenderer(
   params: EvaluatedEffectParams
 ): EffectStackResult {
   const displacementType = (params.displacement ?? 'turbulent') as TurbulentDisplaceType;
-  const amount = params.amount ?? 50;
-  const size = Math.max(1, params.size ?? 100);
-  const complexity = Math.max(1, Math.min(10, Math.floor(params.complexity ?? 3)));
-  const evolutionDeg = params.evolution ?? 0;
+  // BUG-027 FIX: Validate all numeric params to prevent NaN propagation
+  const amount = safeNum(params.amount, 50, 0, 1000);
+  const size = safeNum(params.size, 100, 1, 1000);
+  // Complexity must be integer 1-10, NaN would bypass Math.max/min
+  const complexityRaw = safeNum(params.complexity, 3, 1, 10);
+  const complexity = Math.floor(complexityRaw);
+  const evolutionDeg = safeNum(params.evolution, 0);
   const cycleEvolution = params.cycle_evolution ?? false;
-  const cycleRevolutions = params.cycle_revolutions ?? 1;
-  const randomSeed = params.random_seed ?? 0;
-  const offset = params.offset ?? { x: 0, y: 0 };
+  const cycleRevolutions = safeNum(params.cycle_revolutions, 1, 1, 100);
+  const randomSeed = safeNum(params.random_seed, 0, 0, 99999);
+  const offsetRaw = params.offset ?? { x: 0, y: 0 };
+  const offset = {
+    x: safeNum(offsetRaw.x, 0),
+    y: safeNum(offsetRaw.y, 0)
+  };
   const pinning = (params.pinning ?? 'none') as PinningType;
 
-  // No displacement if amount is 0
+  // No displacement if amount is 0 (NaN params now safely default)
   if (amount === 0) {
     return input;
   }
@@ -1027,14 +1064,19 @@ export function rippleDistortRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams
 ): EffectStackResult {
-  const center = params.center ?? { x: 0.5, y: 0.5 };
-  const radius = params.radius ?? 200;
-  const wavelength = Math.max(1, params.wavelength ?? 50);
-  const amplitude = params.amplitude ?? 20;
-  const phaseDeg = params.phase ?? 0;
-  const decay = (params.decay ?? 50) / 100;
+  // BUG-028 FIX: Validate all numeric params to prevent NaN propagation
+  const centerRaw = params.center ?? { x: 0.5, y: 0.5 };
+  const center = {
+    x: safeNum(centerRaw.x, 0.5, 0, 1),
+    y: safeNum(centerRaw.y, 0.5, 0, 1)
+  };
+  const radius = safeNum(params.radius, 200, 0, 10000);
+  const wavelength = safeNum(params.wavelength, 50, 1, 1000);
+  const amplitude = safeNum(params.amplitude, 20, 0, 1000);
+  const phaseDeg = safeNum(params.phase, 0);
+  const decay = safeNum(params.decay, 50, 0, 100) / 100;
 
-  // No effect if amplitude is 0
+  // No effect if amplitude is 0 (NaN params now safely default)
   if (amplitude === 0) {
     return input;
   }

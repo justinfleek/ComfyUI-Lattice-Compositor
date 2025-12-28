@@ -377,24 +377,39 @@ export abstract class BaseLayer implements LayerInstance {
   }): void {
     const { position, rotation, scale, origin } = transform;
 
+    // Validate all transform values (NaN causes Three.js rendering issues)
+    const posX = Number.isFinite(position.x) ? position.x : 0;
+    const posY = Number.isFinite(position.y) ? position.y : 0;
+    const posZ = Number.isFinite(position.z) ? position.z : 0;
+    const originX = Number.isFinite(origin.x) ? origin.x : 0;
+    const originY = Number.isFinite(origin.y) ? origin.y : 0;
+    const originZ = Number.isFinite(origin.z) ? origin.z : 0;
+    const rotX = Number.isFinite(rotation.x) ? rotation.x : 0;
+    const rotY = Number.isFinite(rotation.y) ? rotation.y : 0;
+    const rotZ = Number.isFinite(rotation.z) ? rotation.z : 0;
+    // Scale defaults to 1 (not 0) to prevent invisible layers
+    const scaleX = Number.isFinite(scale.x) ? scale.x : 1;
+    const scaleY = Number.isFinite(scale.y) ? scale.y : 1;
+    const scaleZ = Number.isFinite(scale.z) ? scale.z : 1;
+
     // Position (with origin offset, formerly anchorPoint)
     // In screen coordinates: Y is down, so negate Y
     this.group.position.set(
-      position.x - origin.x,
-      -(position.y - origin.y), // Negate for screen coords
-      position.z - origin.z
+      posX - originX,
+      -(posY - originY), // Negate for screen coords
+      posZ - originZ
     );
 
     // Rotation (convert degrees to radians)
     // Negate Z for screen coords
     this.group.rotation.set(
-      THREE.MathUtils.degToRad(rotation.x),
-      THREE.MathUtils.degToRad(rotation.y),
-      THREE.MathUtils.degToRad(-rotation.z)
+      THREE.MathUtils.degToRad(rotX),
+      THREE.MathUtils.degToRad(rotY),
+      THREE.MathUtils.degToRad(-rotZ)
     );
 
     // Scale
-    this.group.scale.set(scale.x, scale.y, scale.z);
+    this.group.scale.set(scaleX, scaleY, scaleZ);
 
     // Update matrix
     this.group.updateMatrix();
@@ -479,7 +494,9 @@ export abstract class BaseLayer implements LayerInstance {
    * Apply opacity to layer materials
    */
   protected applyOpacity(opacity: number): void {
-    const normalizedOpacity = Math.max(0, Math.min(100, opacity)) / 100;
+    // Validate opacity (NaN bypasses Math.max/min clamp)
+    const validOpacity = Number.isFinite(opacity) ? opacity : 100;
+    const normalizedOpacity = Math.max(0, Math.min(100, validOpacity)) / 100;
 
     this.group.traverse((child) => {
       if (child instanceof THREE.Mesh && child.material) {
@@ -729,7 +746,13 @@ export abstract class BaseLayer implements LayerInstance {
    * Get a driven value if it exists, otherwise return the base value
    */
   protected getDrivenOrBase(propertyPath: string, baseValue: number): number {
-    return this.drivenValues.get(propertyPath) ?? baseValue;
+    const drivenValue = this.drivenValues.get(propertyPath);
+    // Validate driven value (NaN from expressions would corrupt transform pipeline)
+    if (drivenValue !== undefined && Number.isFinite(drivenValue)) {
+      return drivenValue;
+    }
+    // Validate base value as final fallback
+    return Number.isFinite(baseValue) ? baseValue : 0;
   }
 
   // ============================================================================
@@ -770,29 +793,39 @@ export abstract class BaseLayer implements LayerInstance {
     mode: 'add' | 'multiply' | 'replace' = 'add',
     range: { min?: number; max?: number } = {}
   ): number {
+    // Validate baseValue (NaN propagates through all calculations)
+    const validBase = Number.isFinite(baseValue) ? baseValue : 0;
+
     const audioValue = this.getAudioReactiveValue(target);
-    if (audioValue === 0) return baseValue;
+    // Validate audioValue (could be NaN from audio analysis)
+    const validAudio = Number.isFinite(audioValue) ? audioValue : 0;
+    if (validAudio === 0) return validBase;
 
     let result: number;
     switch (mode) {
       case 'multiply':
         // Audio value of 0.5 = no change, 0 = halved, 1 = doubled
-        result = baseValue * (0.5 + audioValue);
+        result = validBase * (0.5 + validAudio);
         break;
       case 'replace':
         // Audio value directly replaces base value
-        result = audioValue;
+        result = validAudio;
         break;
       case 'add':
       default:
         // Audio value added to base (scaled to reasonable range)
-        result = baseValue + audioValue * 100; // Scale for typical property ranges
+        result = validBase + validAudio * 100; // Scale for typical property ranges
         break;
     }
 
-    // Clamp to range if specified
-    if (range.min !== undefined) result = Math.max(range.min, result);
-    if (range.max !== undefined) result = Math.min(range.max, result);
+    // Final NaN check (defensive, shouldn't happen after validation)
+    if (!Number.isFinite(result)) result = validBase;
+
+    // Clamp to range if specified (using validated range values)
+    const validMin = Number.isFinite(range.min) ? range.min : undefined;
+    const validMax = Number.isFinite(range.max) ? range.max : undefined;
+    if (validMin !== undefined) result = Math.max(validMin, result);
+    if (validMax !== undefined) result = Math.min(validMax, result);
 
     return result;
   }
@@ -1556,7 +1589,8 @@ export abstract class BaseLayer implements LayerInstance {
    * Called by LayerManager when composition settings change.
    */
   setCompositionFps(fps: number): void {
-    this.compositionFps = fps;
+    // Validate fps (NaN/0 causes division errors in time-based effects)
+    this.compositionFps = (Number.isFinite(fps) && fps > 0) ? fps : 16;
   }
 
   // ============================================================================
@@ -1580,16 +1614,27 @@ export abstract class BaseLayer implements LayerInstance {
    * Samples position at each frame from inPoint to outPoint
    */
   computeMotionPath(startFrame?: number, endFrame?: number): void {
-    const start = startFrame ?? this.inPoint;
-    const end = endFrame ?? this.outPoint;
+    // Validate frame bounds (NaN/Infinity would cause infinite loop or no iterations)
+    const rawStart = startFrame ?? this.inPoint;
+    const rawEnd = endFrame ?? this.outPoint;
+    const start = Number.isFinite(rawStart) ? Math.max(0, Math.floor(rawStart)) : 0;
+    const end = Number.isFinite(rawEnd) ? Math.floor(rawEnd) : start;
+
+    // Cap motion path length to prevent memory exhaustion (max 10,000 points)
+    const MAX_PATH_POINTS = 10000;
+    const cappedEnd = Math.min(end, start + MAX_PATH_POINTS);
 
     this.motionPathPoints = [];
 
     // Sample position at each frame
-    for (let frame = start; frame <= end; frame++) {
+    for (let frame = start; frame <= cappedEnd; frame++) {
       const pos = this.evaluator.evaluate(this.transform.position, frame);
       // Convert to Three.js coordinates (Y is flipped)
-      this.motionPathPoints.push(new THREE.Vector3(pos.x, -pos.y, pos.z ?? 0));
+      // Validate position values to prevent NaN in Three.js
+      const validX = Number.isFinite(pos.x) ? pos.x : 0;
+      const validY = Number.isFinite(pos.y) ? pos.y : 0;
+      const validZ = Number.isFinite(pos.z) ? pos.z : 0;
+      this.motionPathPoints.push(new THREE.Vector3(validX, -validY, validZ));
     }
 
     // Rebuild the path visualization

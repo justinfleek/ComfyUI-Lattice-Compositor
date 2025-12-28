@@ -515,7 +515,9 @@ export class ModelLayer extends BaseLayer {
    */
   setAnimationTime(time: number): void {
     if (!this.mixer || !this.currentAction) return;
-    this.currentAction.time = time;
+    // Validate time (NaN would corrupt animation state)
+    const validTime = Number.isFinite(time) ? Math.max(0, time) : 0;
+    this.currentAction.time = validTime;
     this.mixer.update(0);
   }
 
@@ -682,9 +684,15 @@ export class ModelLayer extends BaseLayer {
     if (!this.model) return;
 
     if (typeof scale === 'number') {
-      this.model.scale.setScalar(scale);
+      // Validate scale (NaN would corrupt model transform)
+      const validScale = Number.isFinite(scale) ? scale : 1;
+      this.model.scale.setScalar(validScale);
     } else {
-      this.model.scale.set(scale.x, scale.y, scale.z);
+      // Validate all components (NaN would corrupt model transform)
+      const validX = Number.isFinite(scale.x) ? scale.x : 1;
+      const validY = Number.isFinite(scale.y) ? scale.y : 1;
+      const validZ = Number.isFinite(scale.z) ? scale.z : 1;
+      this.model.scale.set(validX, validY, validZ);
     }
 
     // Update bounding box helper

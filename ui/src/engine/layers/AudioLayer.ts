@@ -180,8 +180,14 @@ export class AudioLayer extends BaseLayer {
    * Used for deterministic audio sync
    */
   getAudioTimeForFrame(frame: number, fps: number): number {
-    const layerTime = frame / fps;
-    const audioTime = (layerTime - this.audioData.startTime) * this.audioData.speed;
+    // Validate fps (0/NaN would cause division by zero or NaN propagation)
+    const validFps = (Number.isFinite(fps) && fps > 0) ? fps : 30;
+    const validFrame = Number.isFinite(frame) ? frame : 0;
+    const layerTime = validFrame / validFps;
+    // Validate speed (NaN would corrupt audio time calculation)
+    const validSpeed = Number.isFinite(this.audioData.speed) ? this.audioData.speed : 1;
+    const validStartTime = Number.isFinite(this.audioData.startTime) ? this.audioData.startTime : 0;
+    const audioTime = (layerTime - validStartTime) * validSpeed;
     return Math.max(0, audioTime);
   }
 
@@ -323,9 +329,12 @@ export class AudioLayer extends BaseLayer {
   updateGain(levelDb: number): void {
     if (!this.playbackNodes) return;
 
+    // Validate levelDb (NaN bypasses Math.max/min and corrupts Web Audio)
+    const validDb = Number.isFinite(levelDb) ? levelDb : 0;
+
     // Convert dB to linear: linear = 10^(dB/20)
     // Clamp to reasonable range: -60dB to +12dB
-    const clampedDb = Math.max(-60, Math.min(12, levelDb));
+    const clampedDb = Math.max(-60, Math.min(12, validDb));
     const linearGain = clampedDb <= -60 ? 0 : Math.pow(10, clampedDb / 20);
 
     // Use setValueAtTime for immediate update without clicks
@@ -341,8 +350,11 @@ export class AudioLayer extends BaseLayer {
   updatePan(pan: number): void {
     if (!this.playbackNodes) return;
 
+    // Validate pan (NaN bypasses Math.max/min and corrupts Web Audio)
+    const validPan = Number.isFinite(pan) ? pan : 0;
+
     // Clamp pan to valid range
-    const clampedPan = Math.max(-1, Math.min(1, pan));
+    const clampedPan = Math.max(-1, Math.min(1, validPan));
 
     this.playbackNodes.panNode.pan.setValueAtTime(
       clampedPan,

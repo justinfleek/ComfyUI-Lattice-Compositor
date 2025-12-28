@@ -12,6 +12,13 @@ import { storeLogger } from '@/utils/logger';
 import type { Layer, AnimatableProperty, Keyframe, InterpolationType, BezierHandle, PropertyExpression } from '@/types/project';
 import { markLayerDirty } from '@/services/layerEvaluationCache';
 
+/**
+ * Validate and sanitize frame number, returning fallback if invalid
+ */
+function safeFrame(frame: number | undefined | null, fallback = 0): number {
+  return Number.isFinite(frame) ? frame! : fallback;
+}
+
 // Re-export from sub-modules for backwards compatibility
 export * from './keyframes/keyframeExpressions';
 
@@ -94,7 +101,8 @@ export function addKeyframe<T>(
   atFrame?: number
 ): Keyframe<T> | null {
   const comp = store.getActiveComp();
-  const frame = atFrame ?? (comp?.currentFrame ?? 0);
+  // Validate frame (nullish coalescing doesn't catch NaN)
+  const frame = safeFrame(atFrame ?? comp?.currentFrame, 0);
 
   storeLogger.debug('addKeyframe called:', { layerId, propertyPath, value, frame });
 
@@ -309,6 +317,12 @@ export function moveKeyframe(
   keyframeId: string,
   newFrame: number
 ): void {
+  // Validate frame before processing
+  if (!Number.isFinite(newFrame)) {
+    storeLogger.warn('moveKeyframe: Invalid frame value:', newFrame);
+    return;
+  }
+
   const layer = store.getActiveCompLayers().find(l => l.id === layerId);
   if (!layer) return;
 
@@ -345,6 +359,12 @@ export function moveKeyframes(
   keyframes: Array<{ layerId: string; propertyPath: string; keyframeId: string }>,
   frameDelta: number
 ): void {
+  // Validate frameDelta
+  if (!Number.isFinite(frameDelta)) {
+    storeLogger.warn('moveKeyframes: Invalid frameDelta:', frameDelta);
+    return;
+  }
+
   for (const kf of keyframes) {
     const layer = store.getActiveCompLayers().find(l => l.id === kf.layerId);
     if (!layer) continue;
@@ -438,8 +458,8 @@ export function updateKeyframe(
   const keyframe = property.keyframes.find(kf => kf.id === keyframeId);
   if (!keyframe) return;
 
-  if (updates.frame !== undefined) {
-    // BUG-039 FIX: Check for existing keyframe at target frame (same pattern as moveKeyframe)
+  if (updates.frame !== undefined && Number.isFinite(updates.frame)) {
+    // Check for existing keyframe at target frame (same pattern as moveKeyframe)
     const existingAtTarget = property.keyframes.find(
       kf => kf.frame === updates.frame && kf.id !== keyframeId
     );
@@ -840,6 +860,12 @@ export function scaleKeyframeTiming(
   scaleFactor: number,
   anchorFrame: number = 0
 ): number {
+  // Validate numeric parameters
+  if (!Number.isFinite(scaleFactor) || !Number.isFinite(anchorFrame)) {
+    storeLogger.warn('scaleKeyframeTiming: Invalid parameters:', { scaleFactor, anchorFrame });
+    return 0;
+  }
+
   const layer = store.getLayerById(layerId);
   if (!layer) return 0;
 
@@ -954,8 +980,12 @@ export function insertKeyframeOnPath(
   const { before, after } = findSurroundingKeyframes(positionProp, frame);
   if (!before || !after) return null;
 
+  // Guard against division by zero (identical frames)
+  const frameDiff = after.frame - before.frame;
+  if (frameDiff === 0) return null;
+
   // Interpolate the value at this frame
-  const t = (frame - before.frame) / (after.frame - before.frame);
+  const t = (frame - before.frame) / frameDiff;
   const beforeVal = before.value as { x: number; y: number; z?: number };
   const afterVal = after.value as { x: number; y: number; z?: number };
 
@@ -1309,7 +1339,7 @@ export function applyKeyframeVelocity(
 
   // Convert velocity to value offset
   // Velocity is in units per second, convert to units per frame segment
-  const fps = store.fps ?? 16;
+  const fps = Number.isFinite(store.fps) && store.fps > 0 ? store.fps : 16;
   const inVelocityPerFrame = settings.incomingVelocity / fps;
   const outVelocityPerFrame = settings.outgoingVelocity / fps;
 
@@ -1362,7 +1392,7 @@ export function getKeyframeVelocity(
   const inDuration = prevKf ? keyframe.frame - prevKf.frame : 10;
   const outDuration = nextKf ? nextKf.frame - keyframe.frame : 10;
 
-  // Extract influence from handle frame offset
+  // Extract influence from handle frame offset (guard against div/0)
   const inInfluence = keyframe.inHandle?.enabled && inDuration > 0
     ? Math.abs(keyframe.inHandle.frame) / inDuration * 100
     : 33.33;
@@ -1371,14 +1401,16 @@ export function getKeyframeVelocity(
     ? keyframe.outHandle.frame / outDuration * 100
     : 33.33;
 
-  // Convert value offset back to velocity
-  const fps = store.fps ?? 16;
-  const inVelocity = keyframe.inHandle?.enabled && keyframe.inHandle.frame !== 0
-    ? -keyframe.inHandle.value / Math.abs(keyframe.inHandle.frame) * fps
+  // Convert value offset back to velocity (validate fps)
+  const fps = Number.isFinite(store.fps) && store.fps > 0 ? store.fps : 16;
+  const inHandleFrame = Math.abs(keyframe.inHandle?.frame ?? 0);
+  const inVelocity = keyframe.inHandle?.enabled && inHandleFrame > 0
+    ? -keyframe.inHandle.value / inHandleFrame * fps
     : 0;
 
-  const outVelocity = keyframe.outHandle?.enabled && keyframe.outHandle.frame !== 0
-    ? keyframe.outHandle.value / keyframe.outHandle.frame * fps
+  const outHandleFrame = keyframe.outHandle?.frame ?? 0;
+  const outVelocity = keyframe.outHandle?.enabled && outHandleFrame !== 0
+    ? keyframe.outHandle.value / outHandleFrame * fps
     : 0;
 
   return {

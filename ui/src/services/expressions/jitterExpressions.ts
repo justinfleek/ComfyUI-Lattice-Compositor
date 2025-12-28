@@ -37,6 +37,14 @@ export function jitter(
   const t = time ?? ctx.time;
   const { value } = ctx;
 
+  // Guard against invalid octaves (BUG-012: infinite loop prevention)
+  if (!Number.isFinite(octaves) || octaves < 1) {
+    octaves = 1;
+  } else if (octaves > 10) {
+    octaves = 10; // Cap at 10 - more octaves add negligible detail
+  }
+  octaves = Math.floor(octaves);
+
   // Simple noise implementation
   const noise = (seed: number, t: number): number => {
     // Combine multiple sine waves for pseudo-noise
@@ -51,7 +59,12 @@ export function jitter(
       freq *= 2;
     }
 
-    return result / (1 + (octaves - 1) * amplitudeMultiplier);
+    // Guard against division by zero (BUG-013)
+    const denominator = 1 + (octaves - 1) * amplitudeMultiplier;
+    if (!Number.isFinite(denominator) || denominator === 0) {
+      return result; // Return unnormalized if normalization factor is invalid
+    }
+    return result / denominator;
   };
 
   if (typeof value === 'number') {
@@ -73,6 +86,19 @@ export function temporalJitter(
   time?: number
 ): number | number[] {
   const t = time ?? ctx.time;
+
+  // Guard against invalid frequency (BUG-008: division by zero)
+  if (!Number.isFinite(frequency) || frequency <= 0) {
+    frequency = 5; // Use default frequency
+  }
+
+  // Guard against invalid octaves (BUG-012: infinite loop prevention)
+  if (!Number.isFinite(octaves) || octaves < 1) {
+    octaves = 1;
+  } else if (octaves > 10) {
+    octaves = 10; // Cap at 10 - more octaves add negligible detail
+  }
+  octaves = Math.floor(octaves);
 
   // Use interpolated noise for smoother results
   const smoothNoise = (seed: number, t: number): number => {

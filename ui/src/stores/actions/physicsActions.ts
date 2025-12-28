@@ -284,6 +284,10 @@ export function setGravity(
   gravityX: number,
   gravityY: number
 ): void {
+  // Validate gravity values
+  const safeGravityX = Number.isFinite(gravityX) ? gravityX : 0;
+  const safeGravityY = Number.isFinite(gravityY) ? gravityY : 0;
+
   const engine = getPhysicsEngine(store);
   const compId = store.activeCompositionId;
 
@@ -294,7 +298,7 @@ export function setGravity(
   const newFields = fields.filter(f => f.id !== 'global-gravity');
 
   // Add new gravity force
-  const gravityForce = createGravityForce('global-gravity', { x: gravityX, y: gravityY });
+  const gravityForce = createGravityForce('global-gravity', { x: safeGravityX, y: safeGravityY });
   newFields.push(gravityForce);
 
   compositionForceFields.set(compId, newFields);
@@ -450,7 +454,10 @@ export async function bakePhysicsToKeyframes(
 
   const startFrame = options.startFrame ?? 0;
   const endFrame = options.endFrame ?? comp.settings.frameCount - 1;
-  const sampleInterval = options.sampleInterval ?? 1;
+  // Validate sampleInterval to prevent infinite loop (NaN causes frame += NaN = NaN)
+  const sampleInterval = (Number.isFinite(options.sampleInterval) && options.sampleInterval > 0)
+    ? options.sampleInterval
+    : 1;
 
   const engine = getPhysicsEngine(store);
 

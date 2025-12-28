@@ -103,8 +103,9 @@ export class DepthLayer extends BaseLayer {
         void main() {
           float depth = texture2D(depthMap, vUv).r;
 
-          // Normalize depth to 0-1 range
-          float normalizedDepth = (depth - minDepth) / (maxDepth - minDepth);
+          // Normalize depth to 0-1 range (guard against division by zero when maxDepth == minDepth)
+          float depthRange = maxDepth - minDepth;
+          float normalizedDepth = depthRange > 0.0001 ? (depth - minDepth) / depthRange : 0.5;
           normalizedDepth = clamp(normalizedDepth, 0.0, 1.0);
 
           // Invert if needed
@@ -203,10 +204,12 @@ export class DepthLayer extends BaseLayer {
       // Would be used for mesh displacement if implementing 3D mesh mode
     }
 
-    // Update uniforms
+    // Update uniforms (validate depth values to prevent NaN propagation to shader)
     this.material.uniforms.invert.value = this.depthData.invert ? 1.0 : 0.0;
-    this.material.uniforms.minDepth.value = this.depthData.minDepth;
-    this.material.uniforms.maxDepth.value = this.depthData.maxDepth;
+    const minDepth = Number.isFinite(this.depthData.minDepth) ? this.depthData.minDepth : 0;
+    const maxDepth = Number.isFinite(this.depthData.maxDepth) ? this.depthData.maxDepth : 1;
+    this.material.uniforms.minDepth.value = minDepth;
+    this.material.uniforms.maxDepth.value = maxDepth;
     this.material.uniforms.visualizationMode.value = this.getVisualizationModeIndex();
   }
 
@@ -225,10 +228,14 @@ export class DepthLayer extends BaseLayer {
           this.material.uniforms.contourColor.value = new THREE.Color(data.contourColor);
         }
         if (data.contourLevels !== undefined) {
-          this.material.uniforms.contourLevels.value = data.contourLevels;
+          // Validate contourLevels (NaN/0/negative would corrupt contour rendering)
+          const validLevels = (Number.isFinite(data.contourLevels) && data.contourLevels > 0) ? data.contourLevels : 10;
+          this.material.uniforms.contourLevels.value = validLevels;
         }
         if (data.contourWidth !== undefined) {
-          this.material.uniforms.contourWidth.value = data.contourWidth;
+          // Validate contourWidth (NaN would corrupt contour line rendering)
+          const validWidth = Number.isFinite(data.contourWidth) ? Math.max(0, data.contourWidth) : 1.0;
+          this.material.uniforms.contourWidth.value = validWidth;
         }
       }
     }

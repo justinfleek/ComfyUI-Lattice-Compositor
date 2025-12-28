@@ -232,7 +232,9 @@ export class PathLayer extends BaseLayer {
    */
   getPointAt(t: number): THREE.Vector3 | null {
     if (!this.curve) return null;
-    return this.curve.getPointAt(Math.max(0, Math.min(1, t)));
+    // Validate t (NaN bypasses Math.max/min clamp)
+    const validT = Number.isFinite(t) ? Math.max(0, Math.min(1, t)) : 0;
+    return this.curve.getPointAt(validT);
   }
 
   /**
@@ -240,7 +242,9 @@ export class PathLayer extends BaseLayer {
    */
   getTangentAt(t: number): THREE.Vector3 | null {
     if (!this.curve) return null;
-    return this.curve.getTangentAt(Math.max(0, Math.min(1, t)));
+    // Validate t (NaN bypasses Math.max/min clamp)
+    const validT = Number.isFinite(t) ? Math.max(0, Math.min(1, t)) : 0;
+    return this.curve.getTangentAt(validT);
   }
 
   /**
@@ -423,9 +427,12 @@ export class PathLayer extends BaseLayer {
    * Set resolution for line material (call when canvas resizes)
    */
   setResolution(width: number, height: number): void {
-    this.resolution.set(width, height);
+    // Validate dimensions (NaN would corrupt LineMaterial resolution)
+    const validWidth = (Number.isFinite(width) && width > 0) ? width : 1920;
+    const validHeight = (Number.isFinite(height) && height > 0) ? height : 1080;
+    this.resolution.set(validWidth, validHeight);
     if (this.guideLine) {
-      (this.guideLine.material as LineMaterial).resolution.set(width, height);
+      (this.guideLine.material as LineMaterial).resolution.set(validWidth, validHeight);
     }
   }
 

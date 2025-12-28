@@ -63,6 +63,10 @@ export function togglePlayback(store: PlaybackStore): void {
 export function setFrame(store: PlaybackStore, frame: number): void {
   const comp = store.getActiveComp();
   if (!comp) return;
+
+  // Validate frame (NaN bypasses Math.max/min)
+  if (!Number.isFinite(frame)) return;
+
   const newFrame = Math.max(0, Math.min(frame, comp.settings.frameCount - 1));
 
   // Clear temporal state if frame changes by more than 1 (non-sequential)
@@ -130,6 +134,10 @@ export function goToEnd(store: PlaybackStore): void {
 export function jumpFrames(store: PlaybackStore, n: number): void {
   const comp = store.getActiveComp();
   if (!comp) return;
+
+  // Validate n (NaN bypasses Math.max/min)
+  if (!Number.isFinite(n)) return;
+
   const newFrame = Math.max(0, Math.min(comp.currentFrame + n, comp.settings.frameCount - 1));
   if (Math.abs(n) > 1) {
     clearTimeEffectStateOnSeek();

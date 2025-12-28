@@ -85,6 +85,12 @@ export function bounce(
 ): number | number[] {
   const { time, keyframes, value } = ctx;
 
+  // Guard against invalid gravity (BUG-016: sqrt of negative)
+  if (!Number.isFinite(gravity) || gravity <= 0) {
+    console.warn('[Expressions] bounce() requires positive gravity');
+    return value;
+  }
+
   if (keyframes.length === 0) return value;
 
   const fps = ctx.fps || 16;
@@ -145,6 +151,11 @@ export function elastic(
   period: number = 0.3
 ): number | number[] {
   const { time, keyframes, value } = ctx;
+
+  // Guard against invalid period (BUG-009: division by zero)
+  if (!Number.isFinite(period) || period <= 0) {
+    period = 0.3; // Use default period
+  }
 
   if (keyframes.length === 0) return value;
 

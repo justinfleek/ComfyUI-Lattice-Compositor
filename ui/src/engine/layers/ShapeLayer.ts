@@ -191,13 +191,17 @@ export class ShapeLayer extends BaseLayer {
    * Set canvas size (should match composition)
    */
   setSize(width: number, height: number): void {
-    if (width === this.canvasWidth && height === this.canvasHeight) return;
+    // Validate dimensions (NaN/0 would create invalid canvas)
+    const validWidth = (Number.isFinite(width) && width > 0) ? width : 1920;
+    const validHeight = (Number.isFinite(height) && height > 0) ? height : 1080;
 
-    this.canvasWidth = width;
-    this.canvasHeight = height;
+    if (validWidth === this.canvasWidth && validHeight === this.canvasHeight) return;
 
-    // Recreate canvas
-    this.canvas = new OffscreenCanvas(width, height);
+    this.canvasWidth = validWidth;
+    this.canvasHeight = validHeight;
+
+    // Recreate canvas with validated dimensions
+    this.canvas = new OffscreenCanvas(validWidth, validHeight);
     this.ctx = this.canvas.getContext('2d')!;
 
     // Update texture
@@ -206,8 +210,8 @@ export class ShapeLayer extends BaseLayer {
 
     // Update mesh geometry
     this.mesh.geometry.dispose();
-    this.mesh.geometry = new THREE.PlaneGeometry(width, height);
-    this.mesh.position.set(width / 2, height / 2, 0);
+    this.mesh.geometry = new THREE.PlaneGeometry(validWidth, validHeight);
+    this.mesh.position.set(validWidth / 2, validHeight / 2, 0);
 
     this.renderShape();
   }
@@ -468,14 +472,21 @@ export class ShapeLayer extends BaseLayer {
         const end = this.getAnimatedValue(trim.end);
         const offset = this.getAnimatedValue(trim.offset);
 
+        // Validate animated values (NaN would corrupt trim calculations)
+        const validStart = Number.isFinite(start) ? start : 0;
+        const validEnd = Number.isFinite(end) ? end : 100;
+        const validOffset = Number.isFinite(offset) ? offset : 0;
+
         if (trim.mode === 'simultaneously') {
-          return paths.map(p => trimPath(p, start, end, offset));
+          return paths.map(p => trimPath(p, validStart, validEnd, validOffset));
         } else {
           // Individually - trim each path based on its index
+          // Guard against division by zero when paths.length is 0
+          if (paths.length === 0) return paths;
           return paths.map((p, i) => {
-            const pathStart = (start + (100 / paths.length) * i) % 100;
-            const pathEnd = (end + (100 / paths.length) * i) % 100;
-            return trimPath(p, pathStart, pathEnd, offset);
+            const pathStart = (validStart + (100 / paths.length) * i) % 100;
+            const pathEnd = (validEnd + (100 / paths.length) * i) % 100;
+            return trimPath(p, pathStart, pathEnd, validOffset);
           });
         }
       }
@@ -594,7 +605,9 @@ export class ShapeLayer extends BaseLayer {
    * Apply repeater operator
    */
   private applyRepeater(paths: BezierPath[], repeater: RepeaterOperator): BezierPath[] {
-    const copies = Math.floor(this.getAnimatedValue(repeater.copies));
+    const rawCopies = this.getAnimatedValue(repeater.copies);
+    // Validate copies (NaN would bypass the <= 1 check and cause issues downstream)
+    const copies = Number.isFinite(rawCopies) ? Math.floor(rawCopies) : 1;
     if (copies <= 1) return paths;
 
     const offset = this.getAnimatedValue(repeater.offset);

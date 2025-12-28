@@ -175,16 +175,20 @@ export class SolidLayer extends BaseLayer {
    * Set solid dimensions
    */
   setDimensions(width: number, height: number): void {
-    if (width === this.width && height === this.height) {
+    // Validate dimensions (NaN/0 would create invalid geometry)
+    const validWidth = (Number.isFinite(width) && width > 0) ? width : 1920;
+    const validHeight = (Number.isFinite(height) && height > 0) ? height : 1080;
+
+    if (validWidth === this.width && validHeight === this.height) {
       return;
     }
 
-    this.width = width;
-    this.height = height;
+    this.width = validWidth;
+    this.height = validHeight;
 
     // Recreate geometry
     this.geometry.dispose();
-    this.geometry = new THREE.PlaneGeometry(width, height);
+    this.geometry = new THREE.PlaneGeometry(validWidth, validHeight);
     this.mesh.geometry = this.geometry;
   }
 
@@ -209,7 +213,9 @@ export class SolidLayer extends BaseLayer {
    * Set shadow opacity (0-100)
    */
   setShadowOpacity(opacity: number): void {
-    this.shadowOpacity = Math.max(0, Math.min(100, opacity));
+    // Validate opacity (NaN bypasses Math.max/min clamp)
+    const validOpacity = Number.isFinite(opacity) ? opacity : 50;
+    this.shadowOpacity = Math.max(0, Math.min(100, validOpacity));
     if (this.shadowCatcher && this.material instanceof THREE.ShadowMaterial) {
       this.material.opacity = this.shadowOpacity / 100;
       this.material.needsUpdate = true;

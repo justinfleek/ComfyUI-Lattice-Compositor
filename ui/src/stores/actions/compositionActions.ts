@@ -57,11 +57,16 @@ export function createComposition(
 
   // Get settings from active comp or use defaults
   const activeComp = store.project.compositions[store.activeCompositionId];
+
+  // Validate fps to prevent NaN (nullish coalescing doesn't catch NaN)
+  const rawFps = settings?.fps ?? activeComp?.settings.fps ?? DEFAULT_FPS;
+  const validFps = validateFps(rawFps);
+
   const defaultSettings: CompositionSettings = {
     width: settings?.width ?? activeComp?.settings.width ?? 1024,
     height: settings?.height ?? activeComp?.settings.height ?? 1024,
     frameCount: settings?.frameCount ?? activeComp?.settings.frameCount ?? 81,
-    fps: settings?.fps ?? activeComp?.settings.fps ?? 16,
+    fps: validFps,
     duration: 0,
     backgroundColor: settings?.backgroundColor ?? '#050505',
     autoResizeToContent: settings?.autoResizeToContent ?? true,
@@ -309,7 +314,8 @@ export function navigateBack(store: CompositionStore): void {
  * Truncates the breadcrumb trail to that point
  */
 export function navigateToBreadcrumb(store: CompositionStore, index: number): void {
-  if (index < 0 || index >= store.compositionBreadcrumbs.length) {
+  // Validate index (NaN comparisons are always false, so check explicitly)
+  if (!Number.isInteger(index) || index < 0 || index >= store.compositionBreadcrumbs.length) {
     return;
   }
 
@@ -365,6 +371,12 @@ export function nestSelectedLayers(store: CompositionStore, name?: string): Comp
   const selectedLayers = activeComp.layers.filter(l =>
     store.selectedLayerIds.includes(l.id)
   );
+
+  // Guard against empty array (selected IDs may not exist in current comp)
+  if (selectedLayers.length === 0) {
+    storeLogger.warn('Selected layers not found in active composition');
+    return null;
+  }
 
   // Find earliest startFrame to normalize timing
   const earliestIn = Math.min(...selectedLayers.map(l => l.startFrame ?? l.inPoint ?? 0));

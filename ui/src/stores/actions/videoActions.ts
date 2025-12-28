@@ -385,12 +385,16 @@ export function completeVideoImportWithConform(
   // This function is only called from fps_mismatch path where fps is guaranteed non-null
   const videoFps = metadata.fps!;
 
+  // Validate fps values to prevent division by zero
+  const safeCompFps = (Number.isFinite(compositionFps) && compositionFps > 0) ? compositionFps : 16;
+  const safeVideoFps = (Number.isFinite(videoFps) && videoFps > 0) ? videoFps : safeCompFps;
+
   // Calculate time stretch factor
   // If video is 30fps and comp is 16fps: video should play slower
   // stretchFactor = compFps / videoFps * 100 = 16/30 * 100 = 53.3%
   // But timeStretch is inverted: 100% = normal, 200% = half speed
   // So: timeStretch = videoFps / compFps * 100 = 30/16 * 100 = 187.5%
-  const timeStretch = (videoFps / compositionFps) * 100;
+  const timeStretch = (safeVideoFps / safeCompFps) * 100;
 
   storeLogger.debug('Conforming video to composition fps:', {
     videoFps: metadata.fps,
@@ -401,9 +405,9 @@ export function completeVideoImportWithConform(
   // Create video layer with time stretch
   const layer = createVideoLayerFromAsset(store, assetId, metadata, fileName, timeStretch);
 
-  // Adjust layer duration for stretched video
-  const stretchedDuration = metadata.duration * (videoFps / compositionFps);
-  const frameCount = Math.ceil(stretchedDuration * compositionFps);
+  // Adjust layer duration for stretched video (use safe fps values)
+  const stretchedDuration = metadata.duration * (safeVideoFps / safeCompFps);
+  const frameCount = Math.ceil(stretchedDuration * safeCompFps);
   layer.outPoint = Math.min(frameCount - 1, store.project.composition.frameCount - 1);
   layer.endFrame = layer.outPoint;
 

@@ -65,8 +65,11 @@ export function getEvaluatedLayerProperties(
 
   // Get composition context for expressions
   const comp = store.getActiveComp?.();
-  const fps = store.fps ?? 16;
-  const duration = comp ? comp.settings.frameCount / comp.settings.fps : undefined;
+  // Validate fps (nullish coalescing doesn't catch NaN)
+  const fps = (Number.isFinite(store.fps) && store.fps > 0) ? store.fps : 16;
+  // Validate duration calculation to prevent NaN propagation
+  const rawDuration = comp ? comp.settings.frameCount / comp.settings.fps : undefined;
+  const duration = (rawDuration !== undefined && Number.isFinite(rawDuration)) ? rawDuration : undefined;
 
   // Build base values from layer properties
   // Use PropertyPath type for type safety

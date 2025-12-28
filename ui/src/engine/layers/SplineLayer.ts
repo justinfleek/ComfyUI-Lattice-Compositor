@@ -411,8 +411,12 @@ export class SplineLayer extends BaseLayer {
     const pin = this.warpPins.find(p => p.id === pinId);
     if (!pin) return;
 
-    pin.position.value = { x, y };
-    meshWarpDeformation.updatePinPosition(this.layerData.id, pinId, x, y);
+    // Validate coordinates (NaN would corrupt warp mesh calculations)
+    const validX = Number.isFinite(x) ? x : 0;
+    const validY = Number.isFinite(y) ? y : 0;
+
+    pin.position.value = { x: validX, y: validY };
+    meshWarpDeformation.updatePinPosition(this.layerData.id, pinId, validX, validY);
 
     this.lastPointsHash = ''; // Force rebuild
   }
@@ -609,7 +613,9 @@ export class SplineLayer extends BaseLayer {
    */
   getPointAt(t: number): THREE.Vector3 | null {
     if (!this.curve) return null;
-    return this.curve.getPointAt(Math.max(0, Math.min(1, t)));
+    // Validate t (NaN bypasses Math.max/min clamp)
+    const validT = Number.isFinite(t) ? Math.max(0, Math.min(1, t)) : 0;
+    return this.curve.getPointAt(validT);
   }
 
   /**
@@ -617,7 +623,9 @@ export class SplineLayer extends BaseLayer {
    */
   getTangentAt(t: number): THREE.Vector3 | null {
     if (!this.curve) return null;
-    return this.curve.getTangentAt(Math.max(0, Math.min(1, t)));
+    // Validate t (NaN bypasses Math.max/min clamp)
+    const validT = Number.isFinite(t) ? Math.max(0, Math.min(1, t)) : 0;
+    return this.curve.getTangentAt(validT);
   }
 
   /**
@@ -668,9 +676,11 @@ export class SplineLayer extends BaseLayer {
    * Set stroke width
    */
   setStrokeWidth(width: number): void {
-    this.splineData.strokeWidth = width;
+    // Validate width (NaN/0 would corrupt LineMaterial rendering)
+    const validWidth = (Number.isFinite(width) && width > 0) ? width : 2;
+    this.splineData.strokeWidth = validWidth;
     if (this.lineMesh) {
-      (this.lineMesh.material as LineMaterial).linewidth = width;
+      (this.lineMesh.material as LineMaterial).linewidth = validWidth;
       (this.lineMesh.material as LineMaterial).needsUpdate = true;
     }
   }
@@ -693,9 +703,12 @@ export class SplineLayer extends BaseLayer {
    * Set resolution for line material (call when canvas resizes)
    */
   setResolution(width: number, height: number): void {
-    this.resolution.set(width, height);
+    // Validate dimensions (NaN would corrupt LineMaterial resolution)
+    const validWidth = (Number.isFinite(width) && width > 0) ? width : 1920;
+    const validHeight = (Number.isFinite(height) && height > 0) ? height : 1080;
+    this.resolution.set(validWidth, validHeight);
     if (this.lineMesh) {
-      (this.lineMesh.material as LineMaterial).resolution.set(width, height);
+      (this.lineMesh.material as LineMaterial).resolution.set(validWidth, validHeight);
     }
   }
 

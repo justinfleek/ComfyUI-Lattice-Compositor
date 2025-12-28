@@ -44,8 +44,11 @@ export function pixelSortRenderer(
   params: EvaluatedEffectParams
 ): EffectStackResult {
   const direction = params.direction ?? 'horizontal';
-  const threshold = params.threshold ?? 0.25;
-  const smoothing = params.smoothing ?? 0.1;
+  // Validate numeric params (NaN causes visual corruption)
+  const rawThreshold = params.threshold ?? 0.25;
+  const threshold = Number.isFinite(rawThreshold) ? rawThreshold : 0.25;
+  const rawSmoothing = params.smoothing ?? 0.1;
+  const smoothing = Number.isFinite(rawSmoothing) ? rawSmoothing : 0.1;
   const sortBy = params.sort_by ?? 'saturation';
   const reverse = params.reverse ?? false;
 
@@ -169,10 +172,14 @@ export function glitchRenderer(
   params: EvaluatedEffectParams,
   frame?: number
 ): EffectStackResult {
-  const glitchAmount = params.glitch_amount ?? 5;
+  // Validate numeric params (NaN causes visual corruption and bypasses === 0 check)
+  const rawGlitchAmount = params.glitch_amount ?? 5;
+  const glitchAmount = Number.isFinite(rawGlitchAmount) ? rawGlitchAmount : 5;
   const colorOffset = params.color_offset ?? true;
-  const blockSize = params.block_size ?? 8;
-  const seed = params.seed ?? 12345;
+  const rawBlockSize = params.block_size ?? 8;
+  const blockSize = Number.isFinite(rawBlockSize) ? Math.max(1, rawBlockSize) : 8;
+  const rawSeed = params.seed ?? 12345;
+  const seed = Number.isFinite(rawSeed) ? rawSeed : 12345;
   const scanlines = params.scanlines ?? true;
 
   if (glitchAmount === 0) return input;

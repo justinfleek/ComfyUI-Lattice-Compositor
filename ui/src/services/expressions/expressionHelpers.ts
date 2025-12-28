@@ -101,10 +101,12 @@ export function interpolateAtTime(keyframes: Keyframe<any>[], time: number, fps:
     }
   }
 
-  if (!before) return keyframes[0].value;
+  if (!before) return keyframes.length > 0 ? keyframes[0].value : 0;
   if (!after) return before.value;
 
-  const t = (frame - before.frame) / (after.frame - before.frame);
+  const frameDelta = after.frame - before.frame;
+  if (!Number.isFinite(frameDelta) || frameDelta === 0) return before.value;
+  const t = (frame - before.frame) / frameDelta;
   const easedT = applyEasing(t, before.interpolation);
 
   return lerpValues(before.value, after.value, easedT);

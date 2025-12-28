@@ -142,9 +142,11 @@ export function vectorLength(a: number[], b?: number[]): number {
  * clamp(vec, min, max)
  */
 export function vectorClamp(vec: number[], min: number | number[], max: number | number[]): number[] {
+  // BUG-018: Use ?? with Infinity defaults for missing array elements
+  // || 0 was wrong - caused values to be clamped to 0 instead of passing through
   return vec.map((v, i) => {
-    const minVal = Array.isArray(min) ? (min[i] || 0) : min;
-    const maxVal = Array.isArray(max) ? (max[i] || 0) : max;
+    const minVal = Array.isArray(min) ? (min[i] ?? -Infinity) : min;
+    const maxVal = Array.isArray(max) ? (max[i] ?? Infinity) : max;
     return Math.max(minVal, Math.min(maxVal, v));
   });
 }

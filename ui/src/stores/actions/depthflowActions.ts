@@ -12,6 +12,16 @@ import type {
 } from '@/types/project';
 import { createAnimatableProperty } from '@/types/project';
 
+/**
+ * Sanitize numeric config value, returning default if invalid
+ */
+function sanitizeNumber(value: unknown, defaultValue: number): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return defaultValue;
+  }
+  return value;
+}
+
 // ============================================================================
 // STORE INTERFACE
 // ============================================================================
@@ -88,6 +98,22 @@ export function updateDepthflowConfig(
   if (!layer || layer.type !== 'depthflow') return;
 
   const data = layer.data as DepthflowLayerData;
-  Object.assign(data.config, updates);
+
+  // Sanitize numeric values to prevent NaN/Infinity corruption
+  const sanitized: Partial<DepthflowLayerData['config']> = { ...updates };
+  if (sanitized.zoom !== undefined) sanitized.zoom = sanitizeNumber(sanitized.zoom, data.config.zoom);
+  if (sanitized.offsetX !== undefined) sanitized.offsetX = sanitizeNumber(sanitized.offsetX, data.config.offsetX);
+  if (sanitized.offsetY !== undefined) sanitized.offsetY = sanitizeNumber(sanitized.offsetY, data.config.offsetY);
+  if (sanitized.rotation !== undefined) sanitized.rotation = sanitizeNumber(sanitized.rotation, data.config.rotation);
+  if (sanitized.depthScale !== undefined) sanitized.depthScale = sanitizeNumber(sanitized.depthScale, data.config.depthScale);
+  if (sanitized.focusDepth !== undefined) sanitized.focusDepth = sanitizeNumber(sanitized.focusDepth, data.config.focusDepth);
+  if (sanitized.dollyZoom !== undefined) sanitized.dollyZoom = sanitizeNumber(sanitized.dollyZoom, data.config.dollyZoom);
+  if (sanitized.orbitRadius !== undefined) sanitized.orbitRadius = sanitizeNumber(sanitized.orbitRadius, data.config.orbitRadius);
+  if (sanitized.orbitSpeed !== undefined) sanitized.orbitSpeed = sanitizeNumber(sanitized.orbitSpeed, data.config.orbitSpeed);
+  if (sanitized.swingAmplitude !== undefined) sanitized.swingAmplitude = sanitizeNumber(sanitized.swingAmplitude, data.config.swingAmplitude);
+  if (sanitized.swingFrequency !== undefined) sanitized.swingFrequency = sanitizeNumber(sanitized.swingFrequency, data.config.swingFrequency);
+  if (sanitized.edgeDilation !== undefined) sanitized.edgeDilation = sanitizeNumber(sanitized.edgeDilation, data.config.edgeDilation);
+
+  Object.assign(data.config, sanitized);
   store.project.meta.modified = new Date().toISOString();
 }

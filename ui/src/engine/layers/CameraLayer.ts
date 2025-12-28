@@ -130,7 +130,8 @@ export class CameraLayer extends BaseLayer {
    * Set composition aspect ratio for frustum visualization
    */
   setCompositionAspect(aspect: number): void {
-    this.compositionAspect = aspect;
+    // Validate aspect ratio (NaN/0 would corrupt frustum calculations)
+    this.compositionAspect = (Number.isFinite(aspect) && aspect > 0) ? aspect : 16 / 9;
   }
 
   /**
@@ -243,9 +244,12 @@ export class CameraLayer extends BaseLayer {
     const color = this.cameraData.isActiveCamera ? 0x00aaff : 0xffaa00;
 
     // Calculate frustum dimensions based on camera properties
-    const near = camera.nearClip;
-    const far = Math.min(camera.farClip, 2000); // Cap for visualization
-    const fov = camera.angleOfView * (Math.PI / 180);
+    // Validate all camera values (NaN would corrupt geometry calculations)
+    const near = (Number.isFinite(camera.nearClip) && camera.nearClip > 0) ? camera.nearClip : 0.1;
+    const rawFar = Number.isFinite(camera.farClip) ? camera.farClip : 1000;
+    const far = Math.min(rawFar, 2000); // Cap for visualization
+    const rawAngle = Number.isFinite(camera.angleOfView) ? camera.angleOfView : 50;
+    const fov = rawAngle * (Math.PI / 180);
     const aspect = this.compositionAspect;
 
     const nearHeight = 2 * Math.tan(fov / 2) * near;
@@ -505,20 +509,26 @@ export class CameraLayer extends BaseLayer {
     if (pathFollowing.autoAdvance) {
       // Auto-advance mode: calculate t from frame
       // DETERMINISM: t is calculated from frame, not accumulated state
-      t = (frame * pathFollowing.autoAdvanceSpeed) % 1;
+      // Validate autoAdvanceSpeed (NaN would propagate through modulo)
+      const validSpeed = Number.isFinite(pathFollowing.autoAdvanceSpeed) ? pathFollowing.autoAdvanceSpeed : 0.01;
+      const validFrame = Number.isFinite(frame) ? frame : 0;
+      t = (validFrame * validSpeed) % 1;
     } else {
       // Manual/keyframed mode: interpolate from animated property
       t = interpolateProperty(pathFollowing.parameter, frame, this.compositionFps, this.id);
     }
 
-    // BUG-094 fix: Apply pathPosition audio modifier to t
+    // Validate t after interpolation (could return NaN from expression)
+    if (!Number.isFinite(t)) t = 0;
+
+    // Apply pathPosition audio modifier to t
     // pathPosition is 0-1, additive to the path parameter
     const audioMod = this.currentAudioModifiers;
-    if (audioMod.pathPosition !== undefined && audioMod.pathPosition !== 0) {
+    if (audioMod.pathPosition !== undefined && Number.isFinite(audioMod.pathPosition) && audioMod.pathPosition !== 0) {
       t += audioMod.pathPosition;
     }
 
-    // Clamp t to valid range
+    // Clamp t to valid range (after NaN validation)
     t = Math.max(0, Math.min(1, t));
 
     // Query spline for current position
@@ -532,15 +542,19 @@ export class CameraLayer extends BaseLayer {
 
     // Calculate look-ahead position for orientation
     let lookTarget: SplineQueryResult | null = null;
-    if (pathFollowing.alignToPath && pathFollowing.lookAhead > 0) {
-      const lookAheadT = Math.min(1, t + pathFollowing.lookAhead);
+    // Validate lookAhead (NaN would produce NaN lookAheadT)
+    const validLookAhead = Number.isFinite(pathFollowing.lookAhead) ? pathFollowing.lookAhead : 0;
+    if (pathFollowing.alignToPath && validLookAhead > 0) {
+      const lookAheadT = Math.min(1, t + validLookAhead);
       lookTarget = this.splineProvider(pathFollowing.pathLayerId, lookAheadT, frame);
     }
 
     // Set camera position
+    // Validate offsetY (NaN would corrupt position)
+    const validOffsetY = Number.isFinite(pathFollowing.offsetY) ? pathFollowing.offsetY : 0;
     const position = new THREE.Vector3(
       pathResult.point.x,
-      pathResult.point.y + pathFollowing.offsetY,
+      pathResult.point.y + validOffsetY,
       pathResult.point.z
     );
     this.group.position.copy(position);
@@ -551,7 +565,7 @@ export class CameraLayer extends BaseLayer {
         // Look at the ahead point
         const target = new THREE.Vector3(
           lookTarget.point.x,
-          lookTarget.point.y + pathFollowing.offsetY,
+          lookTarget.point.y + validOffsetY,
           lookTarget.point.z
         );
         this.group.lookAt(target);
@@ -571,7 +585,9 @@ export class CameraLayer extends BaseLayer {
       }
 
       // Apply banking on turns
-      if (pathFollowing.bankingStrength > 0) {
+      // Validate bankingStrength (NaN would corrupt rotation)
+      const validBankingStrength = Number.isFinite(pathFollowing.bankingStrength) ? pathFollowing.bankingStrength : 0;
+      if (validBankingStrength > 0) {
         // Calculate curvature from tangent change
         // Get tangent at slightly different positions
         const epsilon = 0.01;
@@ -589,9 +605,11 @@ export class CameraLayer extends BaseLayer {
           // Cross product for turn direction (positive = right turn)
           const cross = tangent1.x * tangent2.y - tangent1.y * tangent2.x;
 
-          // Apply banking rotation
-          const bankAngle = cross * pathFollowing.bankingStrength * Math.PI / 4;
-          this.group.rotateZ(bankAngle);
+          // Apply banking rotation (validate cross in case of zero-length tangents)
+          if (Number.isFinite(cross)) {
+            const bankAngle = cross * validBankingStrength * Math.PI / 4;
+            this.group.rotateZ(bankAngle);
+          }
         }
       }
     }

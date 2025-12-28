@@ -58,12 +58,13 @@ export class NormalLayer extends BaseLayer {
         flipY: { value: this.normalData.flipY ? -1.0 : 1.0 },
         flipZ: { value: this.normalData.flipZ ? -1.0 : 1.0 },
         lightDirection: { value: new THREE.Vector3(
-          this.normalData.lightDirection?.x || 0.5,
-          this.normalData.lightDirection?.y || 0.5,
-          this.normalData.lightDirection?.z || 1.0
+          // Validate light direction (NaN would corrupt lighting calculations after normalize())
+          Number.isFinite(this.normalData.lightDirection?.x) ? this.normalData.lightDirection.x : 0.5,
+          Number.isFinite(this.normalData.lightDirection?.y) ? this.normalData.lightDirection.y : 0.5,
+          Number.isFinite(this.normalData.lightDirection?.z) ? this.normalData.lightDirection.z : 1.0
         ).normalize() },
-        lightIntensity: { value: this.normalData.lightIntensity || 1.0 },
-        ambientIntensity: { value: this.normalData.ambientIntensity || 0.2 },
+        lightIntensity: { value: Number.isFinite(this.normalData.lightIntensity) ? this.normalData.lightIntensity : 1.0 },
+        ambientIntensity: { value: Number.isFinite(this.normalData.ambientIntensity) ? this.normalData.ambientIntensity : 0.2 },
         opacity: { value: 1.0 },
         visualizationMode: { value: this.getVisualizationModeIndex() },
         isDirectX: { value: this.normalData.format === 'directx' ? 1.0 : 0.0 }
@@ -167,11 +168,11 @@ export class NormalLayer extends BaseLayer {
     this.material.uniforms.isDirectX.value = this.normalData.format === 'directx' ? 1.0 : 0.0;
 
     if (this.normalData.lightDirection) {
-      this.material.uniforms.lightDirection.value.set(
-        this.normalData.lightDirection.x,
-        this.normalData.lightDirection.y,
-        this.normalData.lightDirection.z
-      ).normalize();
+      // Validate light direction values (NaN would corrupt normalize() result)
+      const lx = Number.isFinite(this.normalData.lightDirection.x) ? this.normalData.lightDirection.x : 0.5;
+      const ly = Number.isFinite(this.normalData.lightDirection.y) ? this.normalData.lightDirection.y : 0.5;
+      const lz = Number.isFinite(this.normalData.lightDirection.z) ? this.normalData.lightDirection.z : 1.0;
+      this.material.uniforms.lightDirection.value.set(lx, ly, lz).normalize();
     }
   }
 

@@ -79,12 +79,23 @@ export function repeatAfter(
       return addValues(baseValue, scaleValue(delta, cycles + 1));
     }
     case 'continue': {
-      // Continue at last velocity
+      // Continue at last velocity (BUG-015: ensure type matching)
       const velocity = ctx.velocity;
-      if (typeof velocity === 'number') {
-        return (ctx.value as number) + velocity * elapsed;
+      const value = ctx.value;
+      if (typeof velocity === 'number' && typeof value === 'number') {
+        return value + velocity * elapsed;
       }
-      return (ctx.value as number[]).map((v, i) => v + (velocity as number[])[i] * elapsed);
+      if (Array.isArray(velocity) && Array.isArray(value)) {
+        return value.map((v, i) => v + (velocity[i] ?? 0) * elapsed);
+      }
+      // Type mismatch - return unchanged
+      console.warn('[Expressions] Type mismatch between value and velocity in repeatAfter');
+      return value;
+    }
+    default: {
+      // BUG-014: Handle unknown loop type
+      console.warn(`[Expressions] Unknown loop type in repeatAfter: ${type}`);
+      return ctx.value;
     }
   }
 }
@@ -135,11 +146,23 @@ export function repeatBefore(
       return addValues(baseValue, scaleValue(delta, cycles + 1));
     }
     case 'continue': {
+      // Continue at last velocity (BUG-015: ensure type matching)
       const velocity = ctx.velocity;
-      if (typeof velocity === 'number') {
-        return (ctx.value as number) - velocity * elapsed;
+      const value = ctx.value;
+      if (typeof velocity === 'number' && typeof value === 'number') {
+        return value - velocity * elapsed;
       }
-      return (ctx.value as number[]).map((v, i) => v - (velocity as number[])[i] * elapsed);
+      if (Array.isArray(velocity) && Array.isArray(value)) {
+        return value.map((v, i) => v - (velocity[i] ?? 0) * elapsed);
+      }
+      // Type mismatch - return unchanged
+      console.warn('[Expressions] Type mismatch between value and velocity in repeatBefore');
+      return value;
+    }
+    default: {
+      // BUG-014: Handle unknown loop type
+      console.warn(`[Expressions] Unknown loop type in repeatBefore: ${type}`);
+      return ctx.value;
     }
   }
 }

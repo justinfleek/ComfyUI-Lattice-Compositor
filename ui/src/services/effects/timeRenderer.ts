@@ -212,14 +212,19 @@ export function echoRenderer(
 ): EffectStackResult {
   // Get frame info from extended params (needed for echoTime default calculation)
   const frame = params._frame ?? 0;
-  const fps = params._fps ?? 16;
+  // Validate fps (nullish coalescing doesn't catch NaN)
+  const fps = (Number.isFinite(params._fps) && params._fps > 0) ? params._fps : 16;
 
   // Extract parameters with defaults
-  // Default echo time is -1 frame (negative = previous frames)
-  const echoTime = params.echo_time ?? (-1 / fps);
-  const numEchoes = Math.max(1, Math.min(50, params.number_of_echoes ?? 8));
-  const startingIntensity = Math.max(0, Math.min(1, params.starting_intensity ?? 1.0));
-  const decay = Math.max(0, Math.min(1, params.decay ?? 0.5));
+  // Validate numeric params (NaN bypasses Math.max/min clamps)
+  const rawEchoTime = params.echo_time ?? (-1 / fps);
+  const echoTime = Number.isFinite(rawEchoTime) ? rawEchoTime : (-1 / fps);
+  const rawNumEchoes = params.number_of_echoes ?? 8;
+  const numEchoes = Number.isFinite(rawNumEchoes) ? Math.max(1, Math.min(50, rawNumEchoes)) : 8;
+  const rawIntensity = params.starting_intensity ?? 1.0;
+  const startingIntensity = Number.isFinite(rawIntensity) ? Math.max(0, Math.min(1, rawIntensity)) : 1.0;
+  const rawDecay = params.decay ?? 0.5;
+  const decay = Number.isFinite(rawDecay) ? Math.max(0, Math.min(1, rawDecay)) : 0.5;
   const operator: EchoOperator = params.echo_operator ?? 'add';
   const layerId = params._layerId ?? 'default';
 
@@ -345,9 +350,12 @@ export function posterizeTimeRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams
 ): EffectStackResult {
-  const targetFps = Math.max(1, Math.min(60, params.frame_rate ?? 12));
+  // Validate numeric params (NaN bypasses Math.max/min clamps)
+  const rawTargetFps = params.frame_rate ?? 12;
+  const targetFps = Number.isFinite(rawTargetFps) ? Math.max(1, Math.min(60, rawTargetFps)) : 12;
   const frame = params._frame ?? 0;
-  const fps = params._fps ?? 16;  // WAN standard default
+  // Validate fps to prevent division by NaN
+  const fps = (Number.isFinite(params._fps) && params._fps > 0) ? params._fps : 16;
   const layerId = params._layerId ?? 'default';
 
   // Calculate which "posterized" frame this belongs to
@@ -457,10 +465,14 @@ export function timeDisplacementRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams
 ): EffectStackResult {
-  const maxDisplacement = params.max_displacement ?? 10;
+  // Validate numeric params (NaN bypasses === 0 check)
+  const rawMaxDisplacement = params.max_displacement ?? 10;
+  const maxDisplacement = Number.isFinite(rawMaxDisplacement) ? rawMaxDisplacement : 10;
   const mapType = params.map_type ?? 'gradient-h';
-  const mapScale = params.map_scale ?? 1;
-  const bias = params.time_offset_bias ?? 0;
+  const rawMapScale = params.map_scale ?? 1;
+  const mapScale = Number.isFinite(rawMapScale) ? rawMapScale : 1;
+  const rawBias = params.time_offset_bias ?? 0;
+  const bias = Number.isFinite(rawBias) ? rawBias : 0;
   const frame = params._frame ?? 0;
   const layerId = params._layerId ?? 'default';
 

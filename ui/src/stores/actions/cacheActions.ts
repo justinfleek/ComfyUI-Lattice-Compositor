@@ -140,14 +140,20 @@ export function computeProjectHash(store: CacheStore): string {
 
   // Create a simplified fingerprint of the composition state
   const fingerprint = {
-    layerCount: comp.layers.length,
-    layerIds: comp.layers.map(l => l.id).join(','),
+    layerCount: comp.layers?.length ?? 0,
+    layerIds: comp.layers?.map(l => l.id).join(',') ?? '',
     modified: store.project.meta.modified,
     settings: comp.settings,
   };
 
-  // Simple hash function
-  const str = JSON.stringify(fingerprint);
+  // Simple hash function (with fallback for circular refs)
+  let str: string;
+  try {
+    str = JSON.stringify(fingerprint);
+  } catch {
+    // Fallback if settings contains circular references
+    str = `${fingerprint.layerCount}:${fingerprint.layerIds}:${fingerprint.modified}`;
+  }
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i);

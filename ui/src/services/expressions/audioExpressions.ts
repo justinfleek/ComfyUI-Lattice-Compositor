@@ -103,6 +103,11 @@ export function posterizeTime(
 ): number {
   const { time } = ctx;
 
+  // Guard against invalid framesPerSecond (BUG-007: division by zero)
+  if (!Number.isFinite(framesPerSecond) || framesPerSecond <= 0) {
+    return time; // Passthrough: return original time unchanged
+  }
+
   // Calculate the interval between samples
   const interval = 1 / framesPerSecond;
 

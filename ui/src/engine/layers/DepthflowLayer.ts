@@ -244,14 +244,18 @@ export class DepthflowLayer extends BaseLayer {
    * Set mesh dimensions
    */
   setDimensions(width: number, height: number): void {
-    if (width === this.width && height === this.height) return;
+    // Validate dimensions (NaN/0 would create invalid geometry)
+    const validWidth = (Number.isFinite(width) && width > 0) ? width : 1920;
+    const validHeight = (Number.isFinite(height) && height > 0) ? height : 1080;
 
-    this.width = width;
-    this.height = height;
+    if (validWidth === this.width && validHeight === this.height) return;
+
+    this.width = validWidth;
+    this.height = validHeight;
 
     // Recreate geometry
     this.geometry.dispose();
-    this.geometry = new THREE.PlaneGeometry(width, height);
+    this.geometry = new THREE.PlaneGeometry(validWidth, validHeight);
     this.mesh.geometry = this.geometry;
   }
 
@@ -467,27 +471,28 @@ export class DepthflowLayer extends BaseLayer {
       this.material.uniforms.depthScale.value = props['depthScale'] as number;
     }
 
-    // BUG-094 fix: Apply audio-reactive modifiers (additive to base values)
+    // Apply audio-reactive modifiers (additive to base values)
+    // Validate all audio modifier values to prevent NaN from corrupting uniforms
     const audioMod = this.currentAudioModifiers;
 
-    if (audioMod.depthflowZoom !== undefined && audioMod.depthflowZoom !== 0) {
+    if (audioMod.depthflowZoom !== undefined && Number.isFinite(audioMod.depthflowZoom) && audioMod.depthflowZoom !== 0) {
       this.material.uniforms.zoom.value += audioMod.depthflowZoom;
     }
 
-    if (audioMod.depthflowOffsetX !== undefined && audioMod.depthflowOffsetX !== 0) {
+    if (audioMod.depthflowOffsetX !== undefined && Number.isFinite(audioMod.depthflowOffsetX) && audioMod.depthflowOffsetX !== 0) {
       this.material.uniforms.offset.value.x += audioMod.depthflowOffsetX;
     }
 
-    if (audioMod.depthflowOffsetY !== undefined && audioMod.depthflowOffsetY !== 0) {
+    if (audioMod.depthflowOffsetY !== undefined && Number.isFinite(audioMod.depthflowOffsetY) && audioMod.depthflowOffsetY !== 0) {
       this.material.uniforms.offset.value.y += audioMod.depthflowOffsetY;
     }
 
-    if (audioMod.depthflowRotation !== undefined && audioMod.depthflowRotation !== 0) {
+    if (audioMod.depthflowRotation !== undefined && Number.isFinite(audioMod.depthflowRotation) && audioMod.depthflowRotation !== 0) {
       // Add rotation in radians (convert from degrees)
       this.material.uniforms.rotation.value += THREE.MathUtils.degToRad(audioMod.depthflowRotation);
     }
 
-    if (audioMod.depthflowDepthScale !== undefined && audioMod.depthflowDepthScale !== 0) {
+    if (audioMod.depthflowDepthScale !== undefined && Number.isFinite(audioMod.depthflowDepthScale) && audioMod.depthflowDepthScale !== 0) {
       this.material.uniforms.depthScale.value += audioMod.depthflowDepthScale;
     }
 

@@ -9,6 +9,14 @@
 import { storeLogger } from '@/utils/logger';
 import type { Marker, Composition } from '@/types/project';
 
+/**
+ * Compare two frame values safely, handling NaN
+ */
+function framesEqual(a: number, b: number): boolean {
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return false;
+  return a === b;
+}
+
 // ============================================================================
 // STORE INTERFACE
 // ============================================================================
@@ -58,8 +66,8 @@ export function addMarker(
     comment: marker.comment
   };
 
-  // Check for existing marker at same frame
-  const existingIndex = comp.markers.findIndex(m => m.frame === marker.frame);
+  // Check for existing marker at same frame (use framesEqual to handle NaN)
+  const existingIndex = comp.markers.findIndex(m => framesEqual(m.frame, marker.frame));
   if (existingIndex >= 0) {
     // Replace existing marker at same frame
     comp.markers[existingIndex] = newMarker;
@@ -102,7 +110,7 @@ export function removeMarkerAtFrame(store: MarkerStore, frame: number): boolean 
   const comp = store.getActiveComp();
   if (!comp?.markers) return false;
 
-  const index = comp.markers.findIndex(m => m.frame === frame);
+  const index = comp.markers.findIndex(m => framesEqual(m.frame, frame));
   if (index < 0) return false;
 
   comp.markers.splice(index, 1);
@@ -127,8 +135,10 @@ export function updateMarker(
   const marker = comp.markers.find(m => m.id === markerId);
   if (!marker) return false;
 
-  // Apply updates
-  if (updates.frame !== undefined) marker.frame = updates.frame;
+  // Apply updates (validate frame to prevent NaN)
+  if (updates.frame !== undefined && Number.isFinite(updates.frame)) {
+    marker.frame = updates.frame;
+  }
   if (updates.label !== undefined) marker.label = updates.label;
   if (updates.color !== undefined) marker.color = updates.color;
   if (updates.duration !== undefined) marker.duration = updates.duration;
@@ -276,8 +286,8 @@ export function addMarkers(
       comment: markerData.comment
     };
 
-    // Check for existing marker at same frame
-    const existingIndex = comp.markers.findIndex(m => m.frame === markerData.frame);
+    // Check for existing marker at same frame (use framesEqual to handle NaN)
+    const existingIndex = comp.markers.findIndex(m => framesEqual(m.frame, markerData.frame));
     if (existingIndex >= 0) {
       comp.markers[existingIndex] = newMarker;
     } else {

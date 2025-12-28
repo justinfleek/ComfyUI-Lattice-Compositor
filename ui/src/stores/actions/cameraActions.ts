@@ -12,6 +12,21 @@ import { interpolateCameraAtFrame } from '@/services/export/cameraExportFormats'
 import { createDefaultTransform, createAnimatableProperty } from '@/types/project';
 import { useSelectionStore } from '../selectionStore';
 
+/**
+ * Safely compare frame numbers, handling NaN values
+ */
+function framesEqual(a: number, b: number): boolean {
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return false;
+  return a === b;
+}
+
+/**
+ * Validate and sanitize frame number input
+ */
+function safeFrame(frame: number | undefined | null, fallback = 0): number {
+  return Number.isFinite(frame) ? frame! : fallback;
+}
+
 export interface CameraStore {
   cameras: Map<string, Camera3D>;
   cameraKeyframes: Map<string, CameraKeyframe[]>;
@@ -203,8 +218,8 @@ export function addCameraKeyframe(
     store.cameraKeyframes.set(cameraId, keyframes);
   }
 
-  // Remove existing keyframe at same frame
-  const existingIndex = keyframes.findIndex(k => k.frame === keyframe.frame);
+  // Remove existing keyframe at same frame (use framesEqual to handle NaN)
+  const existingIndex = keyframes.findIndex(k => framesEqual(k.frame, keyframe.frame));
   if (existingIndex >= 0) {
     keyframes[existingIndex] = keyframe;
   } else {
@@ -227,7 +242,7 @@ export function removeCameraKeyframe(
   const keyframes = store.cameraKeyframes.get(cameraId);
   if (!keyframes) return;
 
-  const index = keyframes.findIndex(k => k.frame === frame);
+  const index = keyframes.findIndex(k => framesEqual(k.frame, frame));
   if (index >= 0) {
     keyframes.splice(index, 1);
     store.project.meta.modified = new Date().toISOString();
@@ -250,8 +265,9 @@ export function getCameraAtFrame(
     return camera; // No animation, return base camera
   }
 
-  // Use the interpolation function from camera export service
-  const interpolated = interpolateCameraAtFrame(camera, keyframes, frame);
+  // Validate frame before passing to interpolation
+  const validFrame = safeFrame(frame, 0);
+  const interpolated = interpolateCameraAtFrame(camera, keyframes, validFrame);
 
   // Merge interpolated values back onto camera (return modified copy, not original)
   return {
@@ -275,7 +291,9 @@ export function getActiveCameraAtFrame(
   frame?: number
 ): Camera3D | null {
   if (!store.activeCameraId) return null;
-  return getCameraAtFrame(store, store.activeCameraId, frame ?? store.currentFrame);
+  // Use safeFrame to handle NaN (nullish coalescing doesn't catch NaN)
+  const targetFrame = safeFrame(frame, store.currentFrame);
+  return getCameraAtFrame(store, store.activeCameraId, targetFrame);
 }
 
 /**

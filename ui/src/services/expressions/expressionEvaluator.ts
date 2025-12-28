@@ -19,9 +19,30 @@ import {
   toComp, fromComp, toWorld, fromWorld, lookAt,
   type LayerTransform
 } from './coordinateConversion';
+import { evaluateInSES, isSESAvailable } from './sesEvaluator';
 
-// Import time and math expressions (will be created)
-// For now, inline the implementations
+/**
+ * SECURITY NOTE (BUG-006 - UPGRADED 2025-12-28):
+ *
+ * This expression evaluator now uses SES (Secure ECMAScript) for sandboxing
+ * when available. SES provides stronger security guarantees than the previous
+ * Proxy+with approach:
+ *
+ * - All JavaScript intrinsics are frozen (Object, Array, Function prototypes)
+ * - Constructor chain escapes are blocked
+ * - Prototype pollution is prevented
+ * - No access to global objects (window, document, process, etc.)
+ *
+ * The old Proxy+with sandbox is kept as a fallback if SES initialization fails.
+ *
+ * To enable SES protection, call initializeSES() at application startup:
+ *
+ *   import { initializeSES } from '@/services/expressions/sesEvaluator';
+ *   await initializeSES();
+ *
+ * @see AUDIT/SECURITY_ARCHITECTURE.md for full security analysis
+ * @see AUDIT/EVIDENCE/BUG-006.md for vulnerability details
+ */
 
 // ============================================================
 // TIME EXPRESSIONS
@@ -31,7 +52,9 @@ export const timeExpressions = {
   timeRamp(startTime: number, endTime: number, startValue: number, endValue: number, time: number): number {
     if (time <= startTime) return startValue;
     if (time >= endTime) return endValue;
-    const t = (time - startTime) / (endTime - startTime);
+    const duration = endTime - startTime;
+    if (!Number.isFinite(duration) || duration === 0) return startValue;
+    const t = (time - startTime) / duration;
     return startValue + (endValue - startValue) * t;
   },
 
@@ -78,11 +101,15 @@ export const mathExpressions = {
   },
 
   map(value: number, inMin: number, inMax: number, outMin: number, outMax: number): number {
-    return outMin + (outMax - outMin) * ((value - inMin) / (inMax - inMin));
+    const range = inMax - inMin;
+    if (!Number.isFinite(range) || range === 0) return outMin;
+    return outMin + (outMax - outMin) * ((value - inMin) / range);
   },
 
   normalize(value: number, min: number, max: number): number {
-    return (value - min) / (max - min);
+    const range = max - min;
+    if (!Number.isFinite(range) || range === 0) return 0;
+    return (value - min) / range;
   },
 
   smoothstep(edge0: number, edge1: number, x: number): number {
@@ -271,341 +298,42 @@ function evaluateFunction(name: string, ctx: ExpressionContext, params: Record<s
 
 /**
  * Evaluate a custom JavaScript expression string
+ *
+ * SECURITY: This function uses SES (Secure ECMAScript) sandbox ONLY.
+ * If SES is not available, expressions are DISABLED and return ctx.value unchanged.
+ * There is NO fallback to a weaker sandbox - we fail CLOSED, not open.
+ *
+ * To enable expressions, call initializeSES() at app startup.
  */
 export function evaluateCustomExpression(
   code: string,
   ctx: ExpressionContext
 ): number | number[] | string {
+  // Empty code returns value unchanged
   if (!code || code.trim() === '') {
     return ctx.value;
   }
 
-  try {
-    // Helper: Get keyframe at index (1-based like AE)
-    const key = (n: number) => {
-      const kfs = ctx.keyframes || [];
-      if (n < 1 || n > kfs.length) return { time: 0, value: ctx.value };
-      const kf = kfs[n - 1];
-      return { time: kf.frame / ctx.fps, value: kf.value };
-    };
-
-    // Helper: Find nearest keyframe to current time
-    const nearestKey = (t: number) => {
-      const kfs = ctx.keyframes || [];
-      if (kfs.length === 0) return { index: 0, time: 0 };
-      let nearest = 0;
-      let minDist = Infinity;
-      const targetFrame = t * ctx.fps;
-      for (let i = 0; i < kfs.length; i++) {
-        const dist = Math.abs(kfs[i].frame - targetFrame);
-        if (dist < minDist) {
-          minDist = dist;
-          nearest = i;
-        }
-      }
-      return { index: nearest + 1, time: kfs[nearest].frame / ctx.fps };
-    };
-
-    // Helper: wiggle (alias for jitter, AE-compatible API)
-    const wiggle = (freq: number, amp: number, octaves: number = 1, amp_mult: number = 0.5, t?: number): number | number[] => {
-      const targetTime = t ?? ctx.time;
-      const noiseFunc = (seed: number, time: number): number => {
-        let result = 0;
-        let amplitude = 1;
-        let frequency = freq;
-        for (let i = 0; i < octaves; i++) {
-          result += amplitude * Math.sin(time * frequency * Math.PI * 2 + seed * 1000);
-          result += amplitude * 0.5 * Math.sin(time * frequency * Math.PI * 2 * 1.618 + seed * 500);
-          amplitude *= amp_mult;
-          frequency *= 2;
-        }
-        return result / (1 + (octaves - 1) * amp_mult);
-      };
-
-      if (typeof ctx.value === 'number') {
-        return ctx.value + noiseFunc(0, targetTime) * amp;
-      }
-      return (ctx.value as number[]).map((v, i) => v + noiseFunc(i, targetTime) * amp);
-    };
-
-    // Helper: loopOut (alias for repeatAfter)
-    const loopOut = (type: string = 'cycle', numKf: number = 0): number | number[] => {
-      return repeatAfter(ctx, type as LoopType, numKf);
-    };
-
-    // Helper: loopIn (alias for repeatBefore)
-    const loopIn = (type: string = 'cycle', numKf: number = 0): number | number[] => {
-      return repeatBefore(ctx, type as LoopType, numKf);
-    };
-
-    // Helper: length (vector distance)
-    const length = (a: number | number[], b?: number | number[]): number => {
-      if (b === undefined) {
-        if (typeof a === 'number') return Math.abs(a);
-        return Math.sqrt(a.reduce((sum, v) => sum + v * v, 0));
-      }
-      if (typeof a === 'number' && typeof b === 'number') {
-        return Math.abs(a - b);
-      }
-      const arrA = Array.isArray(a) ? a : [a];
-      const arrB = Array.isArray(b) ? b : [b];
-      let sum = 0;
-      for (let i = 0; i < Math.max(arrA.length, arrB.length); i++) {
-        const diff = (arrA[i] || 0) - (arrB[i] || 0);
-        sum += diff * diff;
-      }
-      return Math.sqrt(sum);
-    };
-
-    // Helper: seedRandom (set random seed for deterministic random)
-    const seedRandom = (_seed: number, _timeless: boolean = false): void => {
-      // No-op for API compatibility
-    };
-
-    // Helper: valueAtTime for expressions
-    const valueAtTimeExpr = (t: number): number | number[] => {
-      return valueAtTime(ctx, t);
-    };
-
-    // Helper: velocityAtTime
-    const velocityAtTimeExpr = (t: number): number | number[] => {
-      const dt = 1 / ctx.fps;
-      const v1 = valueAtTime(ctx, t - dt);
-      const v2 = valueAtTime(ctx, t + dt);
-      if (typeof v1 === 'number' && typeof v2 === 'number') {
-        return (v2 - v1) / (2 * dt);
-      }
-      if (Array.isArray(v1) && Array.isArray(v2)) {
-        return v1.map((_, i) => ((v2 as number[])[i] - (v1 as number[])[i]) / (2 * dt));
-      }
-      return 0;
-    };
-
-    // Helper: speedAtTime
-    const speedAtTimeExpr = (t: number): number => {
-      const velocity = velocityAtTimeExpr(t);
-      if (typeof velocity === 'number') {
-        return Math.abs(velocity);
-      }
-      if (Array.isArray(velocity)) {
-        return Math.sqrt(velocity.reduce((sum, v) => sum + v * v, 0));
-      }
-      return 0;
-    };
-
-    // Helper: smooth()
-    const smoothExpr = (width: number = 0.2, samples: number = 5): number | number[] => {
-      if (samples < 1) samples = 1;
-      if (samples > 20) samples = 20;
-
-      const halfWidth = width / 2;
-      const step = width / (samples - 1 || 1);
-
-      let sum: number | number[] = 0;
-      const isArray = Array.isArray(ctx.value);
-
-      if (isArray) {
-        sum = new Array((ctx.value as number[]).length).fill(0);
-      }
-
-      for (let i = 0; i < samples; i++) {
-        const sampleTime = ctx.time - halfWidth + (i * step);
-        const sampleValue = valueAtTime(ctx, sampleTime);
-
-        if (isArray && Array.isArray(sampleValue) && Array.isArray(sum)) {
-          for (let j = 0; j < sum.length; j++) {
-            sum[j] += (sampleValue[j] ?? 0);
-          }
-        } else if (typeof sampleValue === 'number' && typeof sum === 'number') {
-          sum += sampleValue;
-        }
-      }
-
-      if (isArray && Array.isArray(sum)) {
-        return sum.map(v => v / samples);
-      }
-      return (sum as number) / samples;
-    };
-
-    // Helper: posterizeTime()
-    const posterizeTimeExpr = (framesPerSecond: number): number => {
-      const interval = 1 / framesPerSecond;
-      return Math.floor(ctx.time / interval) * interval;
-    };
-
-    // Build the expression context variables
-    const contextVars = {
-      // Time
-      time: ctx.time,
-      frame: ctx.frame,
-      fps: ctx.fps,
-      duration: ctx.duration,
-
-      // Layer
-      index: ctx.layerIndex,
-      layerName: ctx.layerName,
-      inPoint: ctx.inPoint,
-      outPoint: ctx.outPoint,
-
-      // Property
-      value: ctx.value,
-      velocity: ctx.velocity,
-      numKeys: ctx.numKeys,
-
-      // Keyframe access
-      key,
-      nearestKey,
-
-      // Math
-      Math: Math,
-      parseInt: parseInt,
-      parseFloat: parseFloat,
-      isNaN: isNaN,
-      isFinite: isFinite,
-
-      // footage() function
-      footage: ctx.footage || (() => null),
-
-      // Ease functions (AE-compatible)
-      ease: expressionEase,
-      easeIn: expressionEaseIn,
-      easeOut: expressionEaseOut,
-
-      // linear interpolation
-      linear: (t: number, tMin: number, tMax: number, vMin: number, vMax: number): number => {
-        if (t <= tMin) return vMin;
-        if (t >= tMax) return vMax;
-        return vMin + (vMax - vMin) * ((t - tMin) / (tMax - tMin));
-      },
-
-      // Clamp
-      clamp: (val: number, min: number, max: number): number => {
-        return Math.max(min, Math.min(max, val));
-      },
-
-      // Random (seeded based on frame for determinism)
-      random: (seed?: number): number => {
-        const s = seed !== undefined ? seed : ctx.frame;
-        const x = Math.sin(s * 12.9898) * 43758.5453;
-        return x - Math.floor(x);
-      },
-
-      // Motion functions (AE-compatible aliases)
-      wiggle,
-      loopOut,
-      loopIn,
-
-      // Temporal functions
-      smooth: smoothExpr,
-      posterizeTime: posterizeTimeExpr,
-
-      // Utility functions
-      length,
-      seedRandom,
-      valueAtTime: valueAtTimeExpr,
-      velocityAtTime: velocityAtTimeExpr,
-      speedAtTime: speedAtTimeExpr,
-
-      // Angle conversion
-      radiansToDegrees: (rad: number): number => rad * 180 / Math.PI,
-      degreesToRadians: (deg: number): number => deg * Math.PI / 180,
-
-      // Time conversion
-      timeToFrames: (t: number = ctx.time): number => Math.round(t * ctx.fps),
-      framesToTime: (f: number): number => f / ctx.fps,
-
-      // Vector math functions
-      add: (a: number | number[], b: number | number[]): number | number[] => {
-        if (typeof a === 'number' && typeof b === 'number') return a + b;
-        const arrA = Array.isArray(a) ? a : [a];
-        const arrB = Array.isArray(b) ? b : [b];
-        return vectorAdd(arrA, arrB);
-      },
-      sub: (a: number | number[], b: number | number[]): number | number[] => {
-        if (typeof a === 'number' && typeof b === 'number') return a - b;
-        const arrA = Array.isArray(a) ? a : [a];
-        const arrB = Array.isArray(b) ? b : [b];
-        return vectorSub(arrA, arrB);
-      },
-      mul: (a: number | number[], b: number | number[]): number | number[] => {
-        if (typeof a === 'number' && typeof b === 'number') return a * b;
-        return vectorMul(a, b);
-      },
-      div: (a: number | number[], b: number | number[]): number | number[] => {
-        if (typeof a === 'number' && typeof b === 'number') return a / (b || 1);
-        return vectorDiv(a, b);
-      },
-      normalize: (vec: number[]): number[] => vectorNormalize(vec),
-      dot: (a: number[], b: number[]): number => vectorDot(a, b),
-      cross: (a: number[], b: number[]): number[] => vectorCross(a, b),
-
-      // Coordinate conversion
-      toComp: (point: number[]): number[] => point,
-      fromComp: (point: number[]): number[] => point,
-      toWorld: (point: number[]): number[] => point,
-      fromWorld: (point: number[]): number[] => point,
-
-      // 3D orientation
-      lookAt: (fromPoint: number[], atPoint: number[]): number[] => lookAt(fromPoint, atPoint),
-
-      // Noise
-      noise: (val: number | number[]): number => noise(val),
-
-      // Degree-based trig
-      sinDeg: (deg: number): number => Math.sin(deg * Math.PI / 180),
-      cosDeg: (deg: number): number => Math.cos(deg * Math.PI / 180),
-      tanDeg: (deg: number): number => Math.tan(deg * Math.PI / 180),
-
-      // thisComp / thisLayer simulation
-      thisComp: createThisCompObject(ctx),
-      thisLayer: createThisLayerObject(ctx),
-      thisProperty: {
-        value: ctx.value,
-        velocity: ctx.velocity,
-        numKeys: ctx.numKeys,
-        key,
-        nearestKey: () => nearestKey(ctx.time),
-        valueAtTime: valueAtTimeExpr,
-        velocityAtTime: velocityAtTimeExpr,
-        speedAtTime: speedAtTimeExpr
-      }
-    };
-
-    // Create a safe function that returns the expression result
-    const paramNames = Object.keys(contextVars);
-    const paramValues = Object.values(contextVars);
-
-    // Auto-return the last expression if code doesn't contain explicit return
-    // This makes expressions like "linear(time, 0, 5, 0, 100)" work without "return"
-    const needsReturn = !code.includes('return ') && !code.includes('return;');
-    const processedCode = needsReturn
-      ? code.trim().split('\n').map((line, i, arr) =>
-          i === arr.length - 1 && !line.trim().startsWith('//') && line.trim().length > 0
-            ? `return ${line}`
-            : line
-        ).join('\n')
-      : code;
-
-    const wrappedCode = `
-      "use strict";
-      try {
-        return (function() {
-          ${processedCode}
-        })();
-      } catch(e) {
-        return "Error: " + e.message;
-      }
-    `;
-
-    const fn = new Function(...paramNames, wrappedCode);
-    const result = fn(...paramValues);
-
-    return result;
-  } catch (error) {
-    console.error('[Expressions] Custom expression error:', error);
-    return ctx.value;
-  }
+  // SECURITY: All expression evaluation goes through SES
+  // evaluateInSES() returns ctx.value if SES is not available
+  return evaluateInSES(code, ctx);
 }
+
+// =============================================================================
+// LEGACY PROXY+WITH SANDBOX - REMOVED FOR SECURITY
+// =============================================================================
+//
+// The previous Proxy+with sandbox was REMOVED because it was bypassable.
+// See AUDIT/EVIDENCE/BUG-006.md for details on the vulnerabilities.
+//
+// Known bypasses of Proxy+with sandbox:
+//   [].constructor.constructor('return this')()
+//   ({}).constructor.constructor('alert(1)')()
+//   try { null.f() } catch(e) { e.constructor.constructor('return window')() }
+//
+// The ONLY secure way to evaluate untrusted expressions is SES.
+// If SES fails to load, expressions are DISABLED, not degraded.
+// =============================================================================
 
 // Helper to create thisComp object
 function createThisCompObject(ctx: ExpressionContext) {

@@ -242,8 +242,13 @@ export class FrameCache {
 
   /**
    * Generate a cache key for a frame
+   * BUG-035 FIX: Validate frame to prevent NaN cache key collisions
    */
   private getCacheKey(frame: number, compositionId: string): string {
+    // NaN frames would create key "comp:NaN" causing all NaN frames to collide
+    if (!Number.isFinite(frame)) {
+      throw new Error(`Invalid frame number: ${frame}`);
+    }
     return `${compositionId}:${frame}`;
   }
 
@@ -328,10 +333,18 @@ export class FrameCache {
       this.remove(frame, compositionId);
     }
 
+    // BUG-038 FIX: Validate imageData dimensions to prevent NaN corrupting memory counter
+    const width = imageData.width;
+    const height = imageData.height;
+    if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+      console.warn('frameCache.set(): Invalid imageData dimensions, skipping cache');
+      return;
+    }
+
     // Compress if enabled
     let data: ImageData | Blob = imageData;
     let compressed = false;
-    let size = imageData.width * imageData.height * 4;
+    let size = width * height * 4;
 
     if (this.config.compression) {
       const compressedData = await this.compressFrame(imageData);
@@ -470,7 +483,9 @@ export class FrameCache {
 
     // Build priority queue
     this.preCacheQueue = [];
-    const window = this.config.preCacheWindow;
+    // BUG-037 FIX: Validate preCacheWindow to prevent infinite loop
+    const rawWindow = this.config.preCacheWindow;
+    const window = (Number.isFinite(rawWindow) && rawWindow > 0) ? Math.min(rawWindow, 1000) : 10;
 
     for (let i = 1; i <= window; i++) {
       if (direction !== 'backward') {

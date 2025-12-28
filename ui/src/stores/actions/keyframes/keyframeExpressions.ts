@@ -245,7 +245,8 @@ export function convertExpressionToKeyframes(
 
   const start = startFrame ?? 0;
   const end = endFrame ?? store.frameCount;
-  const rate = Math.max(1, Math.round(sampleRate));
+  // Validate sampleRate (Math.round(NaN) = NaN, Math.max(1, NaN) = NaN)
+  const rate = Number.isFinite(sampleRate) ? Math.max(1, Math.round(sampleRate)) : 1;
 
   // Clear existing keyframes
   property.keyframes = [];

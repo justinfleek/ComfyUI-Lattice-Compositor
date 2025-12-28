@@ -447,9 +447,13 @@ function stackBlur(imageData: ImageData, radiusX: number, radiusY: number): void
   const width = imageData.width;
   const height = imageData.height;
 
-  // Clamp radii
-  radiusX = Math.max(0, Math.min(255, Math.round(radiusX)));
-  radiusY = Math.max(0, Math.min(255, Math.round(radiusY)));
+  // Clamp radii (handle NaN - Math.round(NaN) stays NaN, bypassing clamp)
+  radiusX = Math.round(radiusX);
+  radiusY = Math.round(radiusY);
+  if (!Number.isFinite(radiusX)) radiusX = 0;
+  if (!Number.isFinite(radiusY)) radiusY = 0;
+  radiusX = Math.max(0, Math.min(255, radiusX));
+  radiusY = Math.max(0, Math.min(255, radiusY));
 
   if (radiusX === 0 && radiusY === 0) return;
 
@@ -799,7 +803,8 @@ export function gaussianBlurRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams
 ): EffectStackResult {
-  const blurriness = params.blurriness ?? 10;
+  const blurrinessRaw = params.blurriness ?? 10;
+  const blurriness = Number.isFinite(blurrinessRaw) ? Math.max(0, blurrinessRaw) : 0;
   const dimensions = params.blur_dimensions ?? 'both';
   const useGpu = params.use_gpu !== false; // Default true
 
@@ -915,8 +920,10 @@ export function directionalBlurRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams
 ): EffectStackResult {
-  const direction = (params.direction ?? 0) * Math.PI / 180;
-  const blurLength = Math.max(0, Math.min(500, params.blur_length ?? 10));
+  const directionRaw = params.direction ?? 0;
+  const direction = Number.isFinite(directionRaw) ? directionRaw * Math.PI / 180 : 0;
+  const blurLengthRaw = params.blur_length ?? 10;
+  const blurLength = Number.isFinite(blurLengthRaw) ? Math.max(0, Math.min(500, blurLengthRaw)) : 0;
 
   if (blurLength <= 0) {
     return input;
@@ -992,12 +999,15 @@ export function radialBlurRenderer(
   params: EvaluatedEffectParams
 ): EffectStackResult {
   const type = params.type ?? 'spin';
-  const amount = Math.max(0, Math.min(100, params.amount ?? 10));
+  const amountRaw = params.amount ?? 10;
+  const amount = Number.isFinite(amountRaw) ? Math.max(0, Math.min(100, amountRaw)) : 0;
 
   // Support both point format (from definition: { x: 0.5, y: 0.5 }) and legacy center_x/center_y
   const center = params.center as { x: number; y: number } | undefined;
-  const centerX = center?.x ?? (params.center_x ?? 50) / 100;
-  const centerY = center?.y ?? (params.center_y ?? 50) / 100;
+  const centerXRaw = center?.x ?? (params.center_x ?? 50) / 100;
+  const centerYRaw = center?.y ?? (params.center_y ?? 50) / 100;
+  const centerX = Number.isFinite(centerXRaw) ? centerXRaw : 0.5;
+  const centerY = Number.isFinite(centerYRaw) ? centerYRaw : 0.5;
 
   // Support both 'antialiasing' (from definition) and legacy 'quality'
   const antialiasing = params.antialiasing ?? params.quality ?? 'high';
@@ -1123,8 +1133,10 @@ export function boxBlurRenderer(
   params: EvaluatedEffectParams
 ): EffectStackResult {
   // Support both 'blur_radius' (from definition) and legacy 'radius'
-  const radius = Math.max(0, Math.min(100, Math.round(params.blur_radius ?? params.radius ?? 5)));
-  const iterations = Math.max(1, Math.min(5, params.iterations ?? 1));
+  const radiusRaw = Math.round(params.blur_radius ?? params.radius ?? 5);
+  const radius = Number.isFinite(radiusRaw) ? Math.max(0, Math.min(100, radiusRaw)) : 0;
+  const iterationsRaw = params.iterations ?? 1;
+  const iterations = Number.isFinite(iterationsRaw) ? Math.max(1, Math.min(5, iterationsRaw)) : 1;
 
   if (radius <= 0) {
     return input;
@@ -1214,9 +1226,12 @@ export function sharpenRenderer(
   params: EvaluatedEffectParams
 ): EffectStackResult {
   // Support both 'sharpen_amount' (from definition) and legacy 'amount'
-  const amount = (params.sharpen_amount ?? params.amount ?? 50) / 100;
-  const radius = Math.max(1, Math.min(100, params.radius ?? 1));
-  const threshold = params.threshold ?? 0;
+  const amountRaw = (params.sharpen_amount ?? params.amount ?? 50) / 100;
+  const amount = Number.isFinite(amountRaw) ? amountRaw : 0;
+  const radiusRaw = params.radius ?? 1;
+  const radius = Number.isFinite(radiusRaw) ? Math.max(1, Math.min(100, radiusRaw)) : 1;
+  const thresholdRaw = params.threshold ?? 0;
+  const threshold = Number.isFinite(thresholdRaw) ? Math.max(0, Math.min(255, thresholdRaw)) : 0;
 
   if (amount <= 0) {
     return input;

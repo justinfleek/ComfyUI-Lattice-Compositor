@@ -367,6 +367,15 @@ export class GPUParticleSystem {
   constructor(config: Partial<GPUParticleSystemConfig> = {}) {
     this.config = { ...createDefaultConfig(), ...config };
 
+    // Validate and cap maxParticles to prevent memory exhaustion (max 1M particles = ~64MB per buffer)
+    const MAX_SAFE_PARTICLES = 1000000;
+    if (!Number.isFinite(this.config.maxParticles) || this.config.maxParticles <= 0) {
+      this.config.maxParticles = 100000; // Default
+    } else if (this.config.maxParticles > MAX_SAFE_PARTICLES) {
+      console.warn(`GPUParticleSystem: maxParticles capped from ${this.config.maxParticles} to ${MAX_SAFE_PARTICLES}`);
+      this.config.maxParticles = MAX_SAFE_PARTICLES;
+    }
+
     // Initialize buffers
     const bufferSize = this.config.maxParticles * PARTICLE_STRIDE;
     this.particleBufferA = new Float32Array(bufferSize);
@@ -925,12 +934,14 @@ export class GPUParticleSystem {
     for (const emitter of this.emitters.values()) {
       if (!emitter.enabled) continue;
 
-      // Get audio-modulated emission rate
-      let emissionRate = emitter.emissionRate;
+      // Get audio-modulated emission rate (validate to prevent NaN accumulator)
+      let emissionRate = Number.isFinite(emitter.emissionRate) ? emitter.emissionRate : 100;
       const audioMod = this.getAudioModulation('emitter', emitter.id, 'emissionRate');
-      if (audioMod !== undefined) {
+      if (audioMod !== undefined && Number.isFinite(audioMod)) {
         emissionRate *= audioMod;
       }
+      // Cap emission rate to prevent runaway particle spawning
+      emissionRate = Math.max(0, Math.min(emissionRate, 100000));
 
       // Check for beat-triggered burst (uses 'onsets' from audio analysis)
       if (emitter.burstOnBeat && this.state.currentAudioFeatures.get('onsets') === 1) {
@@ -982,7 +993,9 @@ export class GPUParticleSystem {
 
     // Calculate initial velocity (using extracted module)
     const dir = getEmissionDirection(emitter, this.rng);
-    const speed = emitter.initialSpeed + (this.rng() - 0.5) * 2 * emitter.speedVariance;
+    // Validate speed (NaN would corrupt velocity calculations)
+    const rawSpeed = emitter.initialSpeed + (this.rng() - 0.5) * 2 * emitter.speedVariance;
+    const speed = Number.isFinite(rawSpeed) ? rawSpeed : 200;
 
     // Inherit emitter velocity
     const inheritVel = emitter.velocity.clone().multiplyScalar(emitter.inheritEmitterVelocity);
@@ -997,7 +1010,9 @@ export class GPUParticleSystem {
     buffer[offset + 5] = dir.z * speed + inheritVel.z;
 
     buffer[offset + 6] = 0;  // age
-    buffer[offset + 7] = emitter.lifetime + (this.rng() - 0.5) * 2 * emitter.lifetimeVariance;
+    // Validate lifetime (NaN/0 would cause division by zero in age/lifetime calculations)
+    const rawLifetime = emitter.lifetime + (this.rng() - 0.5) * 2 * emitter.lifetimeVariance;
+    buffer[offset + 7] = (Number.isFinite(rawLifetime) && rawLifetime > 0) ? rawLifetime : 120;
 
     buffer[offset + 8] = emitter.initialMass + (this.rng() - 0.5) * 2 * emitter.massVariance;
     buffer[offset + 9] = emitter.initialSize + (this.rng() - 0.5) * 2 * emitter.sizeVariance;

@@ -147,8 +147,9 @@ export function reorderEffects(
   const layer = store.getActiveCompLayers().find(l => l.id === layerId);
   if (!layer || !layer.effects) return;
 
-  if (fromIndex < 0 || fromIndex >= layer.effects.length) return;
-  if (toIndex < 0 || toIndex >= layer.effects.length) return;
+  // Validate indices (NaN comparisons are always false, so check explicitly)
+  if (!Number.isInteger(fromIndex) || fromIndex < 0 || fromIndex >= layer.effects.length) return;
+  if (!Number.isInteger(toIndex) || toIndex < 0 || toIndex >= layer.effects.length) return;
 
   const [effect] = layer.effects.splice(fromIndex, 1);
   layer.effects.splice(toIndex, 0, effect);
@@ -200,7 +201,9 @@ export function getEffectParameterValue(
   if (!effect || !effect.parameters[paramKey]) return null;
 
   const param = effect.parameters[paramKey];
-  const targetFrame = frame ?? (store.getActiveComp()?.currentFrame ?? 0);
+  // Validate frame (nullish coalescing doesn't catch NaN)
+  const rawFrame = frame ?? (store.getActiveComp()?.currentFrame ?? 0);
+  const targetFrame = Number.isFinite(rawFrame) ? rawFrame : 0;
 
   // Use interpolation if animated
   if (param.animated && param.keyframes.length > 0) {

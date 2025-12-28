@@ -130,16 +130,20 @@ export class ProceduralMatteLayer extends BaseLayer {
    * Set dimensions
    */
   setDimensions(width: number, height: number): void {
-    this.width = width;
-    this.height = height;
+    // Validate dimensions (NaN/0 would create invalid canvas and geometry)
+    const validWidth = (Number.isFinite(width) && width > 0) ? width : 512;
+    const validHeight = (Number.isFinite(height) && height > 0) ? height : 512;
 
-    this.renderCanvas.width = width;
-    this.renderCanvas.height = height;
+    this.width = validWidth;
+    this.height = validHeight;
+
+    this.renderCanvas.width = validWidth;
+    this.renderCanvas.height = validHeight;
 
     // Update geometry
     if (this.mesh) {
       this.mesh.geometry.dispose();
-      this.mesh.geometry = new THREE.PlaneGeometry(width, height);
+      this.mesh.geometry = new THREE.PlaneGeometry(validWidth, validHeight);
     }
   }
 
@@ -633,28 +637,36 @@ export class ProceduralMatteLayer extends BaseLayer {
     const outputBlack = this.matteEvaluator.evaluate(levels.outputBlack, frame);
     const outputWhite = this.matteEvaluator.evaluate(levels.outputWhite, frame);
 
+    // Validate values (NaN would corrupt image processing)
+    const validInputBlack = Number.isFinite(inputBlack) ? inputBlack : 0;
+    const validInputWhite = Number.isFinite(inputWhite) ? inputWhite : 255;
+    const validGamma = (Number.isFinite(gamma) && gamma > 0) ? gamma : 1;
+    const validOutputBlack = Number.isFinite(outputBlack) ? outputBlack : 0;
+    const validOutputWhite = Number.isFinite(outputWhite) ? outputWhite : 255;
+
     // Skip if default values
-    if (inputBlack === 0 && inputWhite === 255 && gamma === 1 &&
-        outputBlack === 0 && outputWhite === 255) {
+    if (validInputBlack === 0 && validInputWhite === 255 && validGamma === 1 &&
+        validOutputBlack === 0 && validOutputWhite === 255) {
       return;
     }
 
     const imageData = this.renderCtx.getImageData(0, 0, this.width, this.height);
     const data = imageData.data;
-    const inputRange = inputWhite - inputBlack;
-    const outputRange = outputWhite - outputBlack;
+    // Guard against division by zero (when inputWhite === inputBlack)
+    const inputRange = Math.max(1, validInputWhite - validInputBlack);
+    const outputRange = validOutputWhite - validOutputBlack;
 
     for (let i = 0; i < data.length; i += 4) {
       let value = data[i];
 
       // Input levels
-      value = Math.max(0, Math.min(255, (value - inputBlack) / inputRange * 255));
+      value = Math.max(0, Math.min(255, (value - validInputBlack) / inputRange * 255));
 
       // Gamma correction
-      value = Math.pow(value / 255, 1 / gamma) * 255;
+      value = Math.pow(value / 255, 1 / validGamma) * 255;
 
       // Output levels
-      value = outputBlack + (value / 255) * outputRange;
+      value = validOutputBlack + (value / 255) * outputRange;
 
       data[i] = data[i + 1] = data[i + 2] = Math.round(value);
     }
