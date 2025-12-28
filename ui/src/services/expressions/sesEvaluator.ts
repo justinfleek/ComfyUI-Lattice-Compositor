@@ -351,6 +351,26 @@ export function createExpressionCompartment(ctx: ExpressionContext): any {
       log: (...args: any[]) => console.log('[Expression]', ...args),
       warn: (...args: any[]) => console.warn('[Expression]', ...args),
     }),
+
+    // SECURITY: Explicitly block dangerous intrinsics
+    // Even though SES sandboxes these, we block them for defense-in-depth
+    Function: undefined,
+    eval: undefined,
+    globalThis: undefined,
+    window: undefined,
+    document: undefined,
+    setTimeout: undefined,
+    setInterval: undefined,
+    setImmediate: undefined,
+    fetch: undefined,
+    XMLHttpRequest: undefined,
+    WebSocket: undefined,
+    Worker: undefined,
+    importScripts: undefined,
+    require: undefined,
+    process: undefined,
+    Deno: undefined,
+    Bun: undefined,
   });
 
   return compartment;
@@ -528,6 +548,25 @@ export function evaluateSimpleExpression(
       random: seededRandom,
       // Spread safe context values
       ...safeContext,
+
+      // SECURITY: Explicitly block dangerous intrinsics
+      Function: undefined,
+      eval: undefined,
+      globalThis: undefined,
+      window: undefined,
+      document: undefined,
+      setTimeout: undefined,
+      setInterval: undefined,
+      setImmediate: undefined,
+      fetch: undefined,
+      XMLHttpRequest: undefined,
+      WebSocket: undefined,
+      Worker: undefined,
+      importScripts: undefined,
+      require: undefined,
+      process: undefined,
+      Deno: undefined,
+      Bun: undefined,
     }));
 
     // Evaluate expression (auto-return single expression)

@@ -104,6 +104,26 @@ async function evaluate(req: EvalRequest): Promise<EvalResponse> {
     const globals: Record<string, unknown> = {
       ...safeMath,
       random: seededRandom,
+
+      // SECURITY: Explicitly block dangerous intrinsics
+      // Even though SES sandboxes these, we block them for defense-in-depth
+      Function: undefined,
+      eval: undefined,
+      globalThis: undefined,
+      window: undefined,
+      document: undefined,
+      setTimeout: undefined,
+      setInterval: undefined,
+      setImmediate: undefined,
+      fetch: undefined,
+      XMLHttpRequest: undefined,
+      WebSocket: undefined,
+      Worker: undefined,
+      importScripts: undefined,
+      require: undefined,
+      process: undefined,
+      Deno: undefined,
+      Bun: undefined,
     };
 
     // Add context values (only primitives)
