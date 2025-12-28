@@ -21,6 +21,7 @@ import type {
   AnimatableProperty,
 } from '@/types/project';
 import { SeededRandom } from './particleSystem';
+import { evaluateSimpleExpression } from './expressions/sesEvaluator';
 
 // ============================================================================
 // UTILITY FUNCTIONS
@@ -758,60 +759,40 @@ export function calculateExpressionInfluence(
 
   const time = frame / fps;
 
-  // Create expression context
-  const context = {
-    textIndex: charIndex,
-    textTotal: totalChars,
-    selectorValue: rangeValue * 100, // Convert to 0-100
-    time,
-    frame,
-    // Math functions
-    Math,
-    sin: Math.sin,
-    cos: Math.cos,
-    abs: Math.abs,
-    floor: Math.floor,
-    ceil: Math.ceil,
-    round: Math.round,
-    min: Math.min,
-    max: Math.max,
-    pow: Math.pow,
-    sqrt: Math.sqrt,
-    random: () => {
-      // Deterministic "random" based on char index and frame
-      const seed = charIndex * 1000 + frame;
-      return ((Math.sin(seed) * 10000) % 1 + 1) % 1;
-    },
-    // AE-style helper functions
-    linear: (t: number, tMin: number, tMax: number, vMin: number, vMax: number) => {
-      if (t <= tMin) return vMin;
-      if (t >= tMax) return vMax;
-      return vMin + (vMax - vMin) * ((t - tMin) / (tMax - tMin));
-    },
-    ease: (t: number, tMin: number, tMax: number, vMin: number, vMax: number) => {
-      if (t <= tMin) return vMin;
-      if (t >= tMax) return vMax;
-      const progress = (t - tMin) / (tMax - tMin);
-      const eased = progress * progress * (3 - 2 * progress);
-      return vMin + (vMax - vMin) * eased;
-    },
-  };
-
-  try {
-    // Create function from expression
-    const func = new Function(
-      ...Object.keys(context),
-      `return ${expressionSelector.amountExpression}`
-    );
-
-    const result = func(...Object.values(context));
-
-    // Clamp result to 0-100 and normalize to 0-1
-    return Math.max(0, Math.min(100, Number(result) || 0)) / 100;
-  } catch (e) {
-    console.warn('[TextAnimator] Expression evaluation error:', e);
+  // SECURITY: Validate expression is a string
+  if (typeof expressionSelector.amountExpression !== 'string') {
     return rangeValue;
   }
+
+  const expr = expressionSelector.amountExpression.trim();
+
+  // SECURITY: Empty expression = passthrough
+  if (!expr) {
+    return rangeValue;
+  }
+
+  // SECURITY: Length limit to prevent payload attacks (10KB max)
+  if (expr.length > 10240) {
+    console.warn('[TextAnimator] Expression too long (max 10KB)');
+    return rangeValue;
+  }
+
+  // Evaluate through central sesEvaluator (handles SES, DoS protection, etc.)
+  const result = evaluateSimpleExpression(expr, {
+    textIndex: charIndex,
+    textTotal: totalChars,
+    selectorValue: rangeValue * 100,  // 0-100 scale for expressions
+    time,
+    frame,
+  });
+
+  // Fail closed: null means evaluation failed
+  if (result === null) {
+    return rangeValue;
+  }
+
+  // Clamp result to 0-100 and normalize to 0-1
+  return Math.max(0, Math.min(100, result)) / 100;
 }
 
 // ============================================================================

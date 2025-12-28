@@ -130,6 +130,11 @@ export class VectorizeService {
   async getStatus(): Promise<VectorizeStatus> {
     try {
       const response = await fetch(`${this.baseUrl}/lattice/vectorize/status`);
+
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+      }
+
       const result = await response.json();
 
       if (result.status === 'success') {

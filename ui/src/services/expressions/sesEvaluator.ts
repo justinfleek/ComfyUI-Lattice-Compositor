@@ -23,6 +23,43 @@ let sesInitialized = false;
 let sesError: Error | null = null;
 
 /**
+ * SECURITY: DoS pattern detection
+ *
+ * This is an interim measure. Full protection requires Worker-based evaluation
+ * with timeout, which would require async refactoring of all expression APIs.
+ *
+ * These patterns catch obvious infinite loops. Sophisticated attackers could
+ * bypass this with obfuscation, but it raises the bar significantly.
+ */
+const DOS_PATTERNS = [
+  /while\s*\(\s*(?:true|1|!0)\s*\)/i,        // while(true), while(1), while(!0)
+  /for\s*\(\s*;\s*;\s*\)/,                    // for(;;)
+  /for\s*\([^)]*;\s*(?:true|1|!0)\s*;/i,     // for(;true;), for(;1;)
+  /do\s*\{[\s\S]*\}\s*while\s*\(\s*(?:true|1|!0)\s*\)/i,  // do{}while(true)
+  /\bfunction\s+(\w+)[^}]*\b\1\s*\(/,         // function f(){ f(); }  - basic recursion
+];
+
+/**
+ * Check expression for obvious DoS patterns
+ * Returns error message if dangerous, null if OK
+ */
+function checkForDosPatterns(code: string): string | null {
+  for (const pattern of DOS_PATTERNS) {
+    if (pattern.test(code)) {
+      return `Expression contains potentially infinite loop pattern`;
+    }
+  }
+
+  // Check for deeply nested loops (rough heuristic)
+  const loopKeywords = (code.match(/\b(while|for|do)\b/g) || []).length;
+  if (loopKeywords > 5) {
+    return `Expression contains too many loop constructs (${loopKeywords}, max 5)`;
+  }
+
+  return null;
+}
+
+/**
  * Initialize SES lockdown
  *
  * CRITICAL: This must be called ONCE at application startup, before any other code.
@@ -43,7 +80,10 @@ export async function initializeSES(): Promise<boolean> {
     const { lockdown } = globalThis as any;
 
     if (!lockdown) {
-      throw new Error('SES lockdown function not found on globalThis');
+      // SES not available - fail silently, expressions will be disabled
+      sesError = new Error('SES lockdown function not found on globalThis');
+      console.warn('[SES] Lockdown not available - expressions disabled (this is normal if @endo/ses is not installed)');
+      return false;
     }
 
     // Lockdown configuration
@@ -76,7 +116,8 @@ export async function initializeSES(): Promise<boolean> {
     return true;
   } catch (error) {
     sesError = error instanceof Error ? error : new Error(String(error));
-    console.error('[SES] Failed to initialize:', sesError);
+    // Fail silently - SES not being available is expected in some environments
+    console.warn('[SES] Initialization skipped - expressions disabled');
     return false;
   }
 }
@@ -359,6 +400,13 @@ export function evaluateInSES(code: string, ctx: ExpressionContext): number | nu
     return ctx.value;
   }
 
+  // SECURITY: Check for obvious DoS patterns
+  const dosError = checkForDosPatterns(code);
+  if (dosError) {
+    console.warn('[SECURITY] DoS pattern blocked:', dosError);
+    return ctx.value;
+  }
+
   try {
     const compartment = createExpressionCompartment(ctx);
 
@@ -383,6 +431,123 @@ export function evaluateInSES(code: string, ctx: ExpressionContext): number | nu
     const message = error instanceof Error ? error.message : String(error);
     console.warn('[SES] Expression error:', message);
     return ctx.value;
+  }
+}
+
+/**
+ * Evaluate a simple expression with custom context
+ *
+ * SECURITY: This is for textAnimator-style expressions that need custom context
+ * variables (textIndex, selectorValue, etc.) instead of the full ExpressionContext.
+ *
+ * Returns number or null on failure (fail closed - never throws, never returns unsafe values).
+ *
+ * @param expr - The expression code to evaluate
+ * @param context - Custom context variables to expose (will be hardened)
+ * @returns The evaluated number, or null if evaluation fails or SES unavailable
+ */
+export function evaluateSimpleExpression(
+  expr: string,
+  context: Record<string, unknown>
+): number | null {
+  // SECURITY: Empty expression = fail closed
+  if (!expr || expr.trim() === '') {
+    return null;
+  }
+
+  // SECURITY: If SES is not initialized, DO NOT evaluate
+  if (!sesInitialized) {
+    console.error('[SECURITY] SES not initialized - expression evaluation DISABLED');
+    return null;
+  }
+
+  // SECURITY: Check for obvious DoS patterns
+  const dosError = checkForDosPatterns(expr);
+  if (dosError) {
+    console.warn('[SECURITY] DoS pattern blocked:', dosError);
+    return null;
+  }
+
+  // Get SES globals
+  const { Compartment, harden } = globalThis as any;
+
+  // SECURITY: Both Compartment AND harden must exist
+  if (!Compartment || !harden) {
+    console.error('[SECURITY] SES Compartment or harden not available');
+    return null;
+  }
+
+  try {
+    // Create safe Math subset (hardened)
+    const safeMath = harden({
+      PI: Math.PI,
+      E: Math.E,
+      abs: Math.abs,
+      ceil: Math.ceil,
+      floor: Math.floor,
+      round: Math.round,
+      max: Math.max,
+      min: Math.min,
+      pow: Math.pow,
+      sqrt: Math.sqrt,
+      sin: Math.sin,
+      cos: Math.cos,
+      tan: Math.tan,
+      random: Math.random,
+      sign: Math.sign,
+      trunc: Math.trunc,
+    });
+
+    // Harden the provided context values
+    const safeContext: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(context)) {
+      // Only allow primitive values in context (numbers, strings, booleans)
+      if (typeof value === 'number' || typeof value === 'string' || typeof value === 'boolean') {
+        safeContext[key] = value;
+      } else if (value === null || value === undefined) {
+        safeContext[key] = value;
+      }
+      // Skip objects/arrays/functions - they could have malicious valueOf/toString
+    }
+
+    // Create compartment with minimal globals
+    const compartment = new Compartment(harden({
+      Math: safeMath,
+      isNaN: Number.isNaN,
+      isFinite: Number.isFinite,
+      Infinity,
+      NaN,
+      undefined,
+      // Spread safe context values
+      ...safeContext,
+    }));
+
+    // Evaluate expression (auto-return single expression)
+    const trimmedExpr = expr.trim();
+    const wrappedCode = trimmedExpr.includes('return ')
+      ? `(function() { ${trimmedExpr} })()`
+      : trimmedExpr;
+
+    const result = compartment.evaluate(wrappedCode);
+
+    // SECURITY: Validate result is a primitive number
+    // Using typeof check - NOT Number(result) which could trigger valueOf
+    if (typeof result !== 'number') {
+      console.warn('[SES] Expression did not return a number:', typeof result);
+      return null;
+    }
+
+    // SECURITY: Check for NaN/Infinity
+    if (!Number.isFinite(result)) {
+      console.warn('[SES] Expression returned non-finite number:', result);
+      return null;
+    }
+
+    return result;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn('[SES] Simple expression error:', message);
+    return null;
   }
 }
 

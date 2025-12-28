@@ -205,12 +205,12 @@ export class ImageLayer extends BaseLayer {
           // Scale to fit within target bounds, preserving aspect ratio
           if (imageAspect > targetAspect) {
             // Image is wider than target - fit to width
-            finalWidth = this.targetWidth;
-            finalHeight = this.targetWidth / imageAspect;
+            finalWidth = this.targetWidth!;
+            finalHeight = this.targetWidth! / imageAspect;
           } else {
             // Image is taller than target - fit to height
-            finalHeight = this.targetHeight;
-            finalWidth = this.targetHeight * imageAspect;
+            finalHeight = this.targetHeight!;
+            finalWidth = this.targetHeight! * imageAspect;
           }
           break;
 
@@ -218,19 +218,19 @@ export class ImageLayer extends BaseLayer {
           // Scale to cover target bounds, preserving aspect ratio (may crop)
           if (imageAspect > targetAspect) {
             // Image is wider than target - fit to height, crop width
-            finalHeight = this.targetHeight;
-            finalWidth = this.targetHeight * imageAspect;
+            finalHeight = this.targetHeight!;
+            finalWidth = this.targetHeight! * imageAspect;
           } else {
             // Image is taller than target - fit to width, crop height
-            finalWidth = this.targetWidth;
-            finalHeight = this.targetWidth / imageAspect;
+            finalWidth = this.targetWidth!;
+            finalHeight = this.targetWidth! / imageAspect;
           }
           break;
 
         case 'fill':
           // Stretch to fill target bounds exactly (ignores aspect ratio)
-          finalWidth = this.targetWidth;
-          finalHeight = this.targetHeight;
+          finalWidth = this.targetWidth!;
+          finalHeight = this.targetHeight!;
           break;
       }
     }

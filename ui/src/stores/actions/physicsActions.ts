@@ -455,8 +455,8 @@ export async function bakePhysicsToKeyframes(
   const startFrame = options.startFrame ?? 0;
   const endFrame = options.endFrame ?? comp.settings.frameCount - 1;
   // Validate sampleInterval to prevent infinite loop (NaN causes frame += NaN = NaN)
-  const sampleInterval = (Number.isFinite(options.sampleInterval) && options.sampleInterval > 0)
-    ? options.sampleInterval
+  const sampleInterval: number = (Number.isFinite(options.sampleInterval) && options.sampleInterval! > 0)
+    ? options.sampleInterval!
     : 1;
 
   const engine = getPhysicsEngine(store);
