@@ -179,13 +179,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color = vec4<f32>(color.rgb + params.brightness, color.a);
 
   // Contrast
-  color.rgb = (color.rgb - 0.5) * (1.0 + params.contrast) + 0.5;
+  color = vec4<f32>((color.rgb - 0.5) * (1.0 + params.contrast) + 0.5, color.a);
 
   // Saturation and Hue
   var hsv = rgb_to_hsv(color.rgb);
-  hsv.x = fract(hsv.x + params.hue / 360.0);
-  hsv.y = clamp(hsv.y * (1.0 + params.saturation), 0.0, 1.0);
-  color.rgb = hsv_to_rgb(hsv);
+  hsv = vec3<f32>(fract(hsv.x + params.hue / 360.0), clamp(hsv.y * (1.0 + params.saturation), 0.0, 1.0), hsv.z);
+  color = vec4<f32>(hsv_to_rgb(hsv), color.a);
 
   // Clamp final color
   color = clamp(color, vec4<f32>(0.0), vec4<f32>(1.0));
@@ -494,7 +493,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Composite: original + glow * intensity
   var finalColor = originalColor + glowColor * params.intensity;
   finalColor = clamp(finalColor, vec4<f32>(0.0), vec4<f32>(1.0));
-  finalColor.a = originalColor.a;
+  finalColor = vec4<f32>(finalColor.rgb, originalColor.a);
 
   textureStore(outputTexture, coords, finalColor);
 }
@@ -533,20 +532,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Input levels
   let inputRange = max(params.inputWhite - params.inputBlack, 0.001);
-  color.r = clamp((color.r - params.inputBlack) / inputRange, 0.0, 1.0);
-  color.g = clamp((color.g - params.inputBlack) / inputRange, 0.0, 1.0);
-  color.b = clamp((color.b - params.inputBlack) / inputRange, 0.0, 1.0);
+  color = vec4<f32>(clamp((color.rgb - params.inputBlack) / inputRange, vec3<f32>(0.0), vec3<f32>(1.0)), color.a);
 
   // Gamma
-  color.r = pow(color.r, 1.0 / params.gamma);
-  color.g = pow(color.g, 1.0 / params.gamma);
-  color.b = pow(color.b, 1.0 / params.gamma);
+  let invGamma = 1.0 / params.gamma;
+  color = vec4<f32>(pow(color.rgb, vec3<f32>(invGamma)), color.a);
 
   // Output levels
   let outputRange = params.outputWhite - params.outputBlack;
-  color.r = params.outputBlack + color.r * outputRange;
-  color.g = params.outputBlack + color.g * outputRange;
-  color.b = params.outputBlack + color.b * outputRange;
+  color = vec4<f32>(params.outputBlack + color.rgb * outputRange, color.a);
 
   textureStore(outputTexture, coords, color);
 }
