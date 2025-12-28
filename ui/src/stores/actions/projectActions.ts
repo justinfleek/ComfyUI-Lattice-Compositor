@@ -10,6 +10,7 @@ import { storeLogger } from '@/utils/logger';
 import type { LatticeProject } from '@/types/project';
 import { saveProject, loadProject, listProjects, deleteProject } from '@/services/projectStorage';
 import { migrateProject, needsMigration, CURRENT_SCHEMA_VERSION } from '@/services/projectMigration';
+import { validateProjectExpressions } from '@/services/expressions/expressionValidator';
 
 // ============================================================================
 // STORE INTERFACE
@@ -166,6 +167,34 @@ export async function loadProjectFromFile(
 ): Promise<boolean> {
   try {
     const json = await file.text();
+
+    // SECURITY: Pre-validate expressions before loading
+    // This catches infinite loops BEFORE they can hang the render loop
+    try {
+      const project = JSON.parse(json) as LatticeProject;
+      const validation = await validateProjectExpressions(project);
+
+      if (!validation.valid) {
+        const dangerList = validation.dangerous
+          .map(d => `  - ${d.location}: ${d.reason}`)
+          .join('\n');
+        storeLogger.error(
+          `[SECURITY] Project contains ${validation.dangerous.length} dangerous expression(s):\n${dangerList}`
+        );
+        console.warn(
+          `[SECURITY] Dangerous expressions detected in "${file.name}":\n${dangerList}\n` +
+          'These expressions may contain infinite loops. Project load blocked for safety.'
+        );
+        return false;
+      }
+
+      if (validation.total > 0) {
+        storeLogger.info(`[SECURITY] Validated ${validation.validated}/${validation.total} expressions (all safe)`);
+      }
+    } catch (parseErr) {
+      // JSON parse error will be caught by importProject, let it handle
+    }
+
     const success = importProject(store, json, pushHistoryFn);
 
     if (success) {
@@ -237,6 +266,26 @@ export async function loadProjectFromServer(
           storeLogger.error('Project migration failed:', migrationResult.error);
           return false;
         }
+      }
+
+      // SECURITY: Pre-validate expressions before loading
+      const validation = await validateProjectExpressions(project);
+      if (!validation.valid) {
+        const dangerList = validation.dangerous
+          .map(d => `  - ${d.location}: ${d.reason}`)
+          .join('\n');
+        storeLogger.error(
+          `[SECURITY] Project contains ${validation.dangerous.length} dangerous expression(s):\n${dangerList}`
+        );
+        console.warn(
+          `[SECURITY] Dangerous expressions detected in project "${projectId}":\n${dangerList}\n` +
+          'These expressions may contain infinite loops. Project load blocked for safety.'
+        );
+        return false;
+      }
+
+      if (validation.total > 0) {
+        storeLogger.info(`[SECURITY] Validated ${validation.validated}/${validation.total} expressions (all safe)`);
       }
 
       store.project = project;
