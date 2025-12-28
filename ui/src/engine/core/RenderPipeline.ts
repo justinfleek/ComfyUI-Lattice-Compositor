@@ -720,6 +720,11 @@ export class RenderPipeline {
       // load their own Three.js instance
       this.scene.prepareForRender();
 
+      // Ensure camera has layers (cross-Three.js compatibility)
+      if (this.camera?.camera && !this.camera.camera.layers) {
+        this.camera.camera.layers = new THREE.Layers();
+      }
+
       // Render through effect composer
       this.composer.render();
     } catch (e) {
