@@ -23,3 +23,7 @@ screenshots/
 # Python
 __pycache__/
 *.pyc
+
+# Security vulnerability documentation - DO NOT COMMIT
+SECURITY_ARCHITECTURE.md
+AUDIT/SECURITY_ARCHITECTURE.md
