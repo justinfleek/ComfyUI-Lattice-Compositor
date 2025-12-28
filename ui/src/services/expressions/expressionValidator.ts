@@ -9,7 +9,10 @@
  */
 
 import { evaluateWithTimeout, isWorkerAvailable } from './workerEvaluator';
+import type { EvalResult } from './workerEvaluator';
 import type { LatticeProject, Layer, AnimatableProperty } from '@/types/project';
+import type { PropertyExpression } from '@/types/animation';
+import type { TextAnimator, TextExpressionSelector } from '@/types/text';
 
 export interface ValidationResult {
   valid: boolean;
@@ -26,15 +29,26 @@ export interface DangerousExpression {
 }
 
 /**
- * Extract all expression strings from a project
+ * Extract all expression code strings from a project
  */
 function extractExpressions(project: LatticeProject): Array<{ location: string; code: string }> {
   const expressions: Array<{ location: string; code: string }> = [];
 
-  // Helper to check animatable properties
-  function checkProperty(prop: AnimatableProperty<unknown> | undefined, location: string) {
-    if (!prop?.expression?.enabled || !prop.expression.code) return;
-    expressions.push({ location, code: prop.expression.code });
+  // Helper to check property expressions
+  // Custom expressions store code in params.code
+  function checkPropertyExpression(expr: PropertyExpression | undefined, location: string) {
+    if (!expr?.enabled) return;
+
+    // Only custom type has user code - presets/functions are safe (hardcoded)
+    if (expr.type === 'custom' && expr.params?.code && typeof expr.params.code === 'string') {
+      expressions.push({ location, code: expr.params.code });
+    }
+  }
+
+  // Helper to check animatable property
+  function checkAnimatableProperty(prop: AnimatableProperty<unknown> | undefined, location: string) {
+    if (!prop?.expression) return;
+    checkPropertyExpression(prop.expression as PropertyExpression, location);
   }
 
   // Check all layers
@@ -43,43 +57,50 @@ function extractExpressions(project: LatticeProject): Array<{ location: string; 
 
     // Transform properties
     if (layer.transform) {
-      checkProperty(layer.transform.position as any, `${layerLoc}.transform.position`);
-      checkProperty(layer.transform.scale as any, `${layerLoc}.transform.scale`);
-      checkProperty(layer.transform.rotation as any, `${layerLoc}.transform.rotation`);
-      checkProperty(layer.transform.anchorPoint as any, `${layerLoc}.transform.anchorPoint`);
-      checkProperty(layer.transform.opacity as any, `${layerLoc}.transform.opacity`);
+      const t = layer.transform;
+      checkAnimatableProperty(t.position as AnimatableProperty<unknown>, `${layerLoc}.transform.position`);
+      checkAnimatableProperty(t.scale as AnimatableProperty<unknown>, `${layerLoc}.transform.scale`);
+      checkAnimatableProperty(t.rotation as AnimatableProperty<unknown>, `${layerLoc}.transform.rotation`);
+      checkAnimatableProperty(t.anchorPoint as AnimatableProperty<unknown>, `${layerLoc}.transform.anchorPoint`);
+      checkAnimatableProperty(t.opacity as AnimatableProperty<unknown>, `${layerLoc}.transform.opacity`);
     }
 
-    // Layer-specific data with expressions
-    const data = layer.data as Record<string, unknown>;
-    if (data) {
-      // Text layer expressions
-      if (layer.type === 'text' && data.textAnimators) {
-        const animators = data.textAnimators as Array<{ expression?: string; name?: string }>;
-        animators.forEach((anim, i) => {
-          if (anim.expression) {
+    // Text layer - check text animators' expression selectors
+    if (layer.type === 'text') {
+      const data = layer.data as { animators?: TextAnimator[] };
+      if (data?.animators) {
+        data.animators.forEach((anim, i) => {
+          // Check expression selector
+          const exprSel = anim.expressionSelector as TextExpressionSelector | undefined;
+          if (exprSel?.enabled && exprSel.amountExpression) {
             expressions.push({
-              location: `${layerLoc}.textAnimator[${anim.name || i}]`,
-              code: anim.expression
+              location: `${layerLoc}.textAnimator[${anim.name || i}].expressionSelector`,
+              code: exprSel.amountExpression
             });
+          }
+
+          // Check animator properties for expressions
+          if (anim.properties) {
+            for (const [key, prop] of Object.entries(anim.properties)) {
+              if (prop) {
+                checkAnimatableProperty(prop as AnimatableProperty<unknown>, `${layerLoc}.textAnimator[${anim.name || i}].${key}`);
+              }
+            }
           }
         });
       }
     }
 
-    // Effect expressions
+    // Effect parameters
     if (layer.effects) {
       layer.effects.forEach((effect, ei) => {
         if (effect.params) {
-          Object.entries(effect.params).forEach(([key, param]) => {
+          for (const [key, param] of Object.entries(effect.params)) {
             const p = param as AnimatableProperty<unknown>;
-            if (p?.expression?.enabled && p.expression.code) {
-              expressions.push({
-                location: `${layerLoc}.effect[${effect.name || ei}].${key}`,
-                code: p.expression.code
-              });
+            if (p?.expression) {
+              checkPropertyExpression(p.expression as PropertyExpression, `${layerLoc}.effect[${effect.name || ei}].${key}`);
             }
-          });
+          }
         }
       });
     }
@@ -116,30 +137,28 @@ export async function validateProjectExpressions(
     duration: 10,
     width: 1920,
     height: 1080,
+    // Text animator context
+    textIndex: 0,
+    textTotal: 10,
+    selectorValue: 1,
   };
 
   for (const { location, code } of expressions) {
-    try {
-      // evaluateWithTimeout returns fallback on timeout (doesn't throw)
-      // We need to detect if it actually timed out
-      const startTime = performance.now();
-      await evaluateWithTimeout(code, testContext, NaN);
-      const elapsed = performance.now() - startTime;
+    const result: EvalResult = await evaluateWithTimeout(code, testContext);
 
-      // If it took close to 100ms, it probably timed out
-      if (elapsed >= 95) {
-        dangerous.push({
-          location,
-          expression: code.slice(0, 100) + (code.length > 100 ? '...' : ''),
-          reason: 'timeout'
-        });
-      }
-    } catch (err) {
+    if (result.timedOut) {
+      dangerous.push({
+        location,
+        expression: code.slice(0, 100) + (code.length > 100 ? '...' : ''),
+        reason: 'timeout'
+      });
+    } else if (result.error) {
+      // Syntax errors are also dangerous - could be malformed infinite loops
       dangerous.push({
         location,
         expression: code.slice(0, 100) + (code.length > 100 ? '...' : ''),
         reason: 'error',
-        error: err instanceof Error ? err.message : String(err)
+        error: result.error
       });
     }
   }
@@ -158,9 +177,6 @@ export async function validateProjectExpressions(
 export async function isExpressionSafe(code: string): Promise<boolean> {
   if (!isWorkerAvailable()) return true; // Can't validate without worker
 
-  const startTime = performance.now();
-  await evaluateWithTimeout(code, { value: 0, frame: 0 }, NaN);
-  const elapsed = performance.now() - startTime;
-
-  return elapsed < 95; // Didn't timeout
+  const result = await evaluateWithTimeout(code, { value: 0, frame: 0 });
+  return !result.timedOut;
 }

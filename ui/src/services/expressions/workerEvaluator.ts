@@ -16,9 +16,14 @@ const EVAL_TIMEOUT_MS = 100;
 const MAX_PENDING = 100; // Prevent memory leak from abandoned requests
 
 interface PendingRequest {
-  resolve: (result: number) => void;
-  reject: (error: Error) => void;
+  resolve: (result: EvalResult) => void;
   timer: ReturnType<typeof setTimeout>;
+}
+
+export interface EvalResult {
+  value: number;
+  timedOut: boolean;
+  error?: string;
 }
 
 let worker: Worker | null = null;
@@ -38,9 +43,9 @@ function createWorker(): Worker {
   }
 
   // Clear any pending requests (they'll timeout anyway)
-  for (const [id, req] of pending) {
+  for (const [, req] of pending) {
     clearTimeout(req.timer);
-    req.reject(new Error('Worker recreated'));
+    req.resolve({ value: 0, timedOut: true, error: 'Worker recreated' });
   }
   pending.clear();
 
@@ -66,9 +71,9 @@ function createWorker(): Worker {
       pending.delete(data.id);
 
       if (data.success) {
-        req.resolve(data.result ?? 0);
+        req.resolve({ value: data.result ?? 0, timedOut: false });
       } else {
-        req.reject(new Error(data.error || 'Evaluation failed'));
+        req.resolve({ value: 0, timedOut: false, error: data.error });
       }
     }
   };
@@ -88,22 +93,19 @@ function createWorker(): Worker {
  *
  * @param code - The expression code to evaluate
  * @param context - Variables available to the expression
- * @param fallback - Value to return on timeout/error (default: 0)
- * @returns The evaluation result, or fallback on timeout/error
+ * @returns EvalResult with value, timedOut flag, and optional error
  */
 export async function evaluateWithTimeout(
   code: string,
-  context: Record<string, unknown>,
-  fallback: number = 0
-): Promise<number> {
+  context: Record<string, unknown>
+): Promise<EvalResult> {
   // Input validation
   if (typeof code !== 'string' || code.length === 0) {
-    return fallback;
+    return { value: 0, timedOut: false, error: 'Empty code' };
   }
 
   if (code.length > 10240) {
-    console.warn('[WorkerEvaluator] Expression too long, returning fallback');
-    return fallback;
+    return { value: 0, timedOut: false, error: 'Expression too long' };
   }
 
   // Ensure worker exists
@@ -119,7 +121,7 @@ export async function evaluateWithTimeout(
       const req = pending.get(oldest);
       if (req) {
         clearTimeout(req.timer);
-        req.reject(new Error('Evicted'));
+        req.resolve({ value: 0, timedOut: true, error: 'Evicted' });
         pending.delete(oldest);
       }
     }
@@ -136,15 +138,11 @@ export async function evaluateWithTimeout(
       // Terminate and recreate worker
       worker = createWorker();
 
-      // Return fallback value
-      resolve(fallback);
+      // Return with timedOut flag
+      resolve({ value: 0, timedOut: true });
     }, EVAL_TIMEOUT_MS);
 
-    pending.set(id, {
-      resolve: (result) => resolve(result),
-      reject: () => resolve(fallback), // On error, return fallback
-      timer
-    });
+    pending.set(id, { resolve, timer });
 
     // Send to worker
     worker!.postMessage({ id, code, context });

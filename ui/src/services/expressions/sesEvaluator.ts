@@ -28,7 +28,7 @@
 import type { ExpressionContext } from './types';
 
 // Re-export worker-based evaluator for DoS-protected async evaluation
-export { evaluateWithTimeout, isWorkerAvailable, terminateWorker } from './workerEvaluator';
+export { evaluateWithTimeout, isWorkerAvailable, terminateWorker, type EvalResult } from './workerEvaluator';
 
 // SES lockdown status
 let sesInitialized = false;

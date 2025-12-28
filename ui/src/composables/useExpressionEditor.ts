@@ -2,6 +2,7 @@ import { ref, shallowRef } from 'vue';
 import type { AnimatableProperty, PropertyExpression } from '@/types/project';
 import { useCompositorStore } from '@/stores/compositorStore';
 import { setPropertyExpression, removePropertyExpression } from '@/stores/actions/keyframeActions';
+import { isExpressionSafe } from '@/services/expressions/expressionValidator';
 
 // Global state for expression editor
 const isVisible = ref(false);
@@ -38,13 +39,29 @@ export function useExpressionEditor() {
   /**
    * Apply expression to the current property
    * BUG-042 FIX: Use store action instead of direct mutation for undo/redo support
+   * SECURITY: Validates custom expressions before applying to prevent DoS
    */
-  function applyExpression(expression: PropertyExpression) {
-    if (currentLayerId.value && currentPropertyPath.value) {
-      const store = useCompositorStore();
-      setPropertyExpression(store, currentLayerId.value, currentPropertyPath.value, expression);
+  async function applyExpression(expression: PropertyExpression): Promise<boolean> {
+    if (!currentLayerId.value || !currentPropertyPath.value) {
+      closeExpressionEditor();
+      return false;
     }
+
+    // SECURITY: Validate custom expressions before applying
+    if (expression.type === 'custom' && expression.params?.code) {
+      const code = expression.params.code as string;
+      const safe = await isExpressionSafe(code);
+      if (!safe) {
+        console.error('[SECURITY] Expression blocked - timeout detected (possible infinite loop)');
+        alert('Expression blocked: This expression appears to contain an infinite loop and could hang your browser.');
+        return false;
+      }
+    }
+
+    const store = useCompositorStore();
+    setPropertyExpression(store, currentLayerId.value, currentPropertyPath.value, expression);
     closeExpressionEditor();
+    return true;
   }
 
   /**
