@@ -362,6 +362,13 @@ export class SceneManager {
         obj.matrixWorld = new THREE.Matrix4();
       }
 
+      // CRITICAL: Ensure layers property exists
+      // This fixes "Cannot read properties of undefined (reading 'test')"
+      // when Three.js calls camera.layers.test(object.layers) during render
+      if (!obj.layers) {
+        obj.layers = new THREE.Layers();
+      }
+
       // Only patch updateMatrixWorld if it's missing
       // (TransformControls from our bundle should have it)
       if (typeof obj.updateMatrixWorld !== 'function') {
