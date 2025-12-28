@@ -253,15 +253,10 @@ export function exportProjectAsFile(project: LatticeProject, filename?: string):
 /**
  * Import project from uploaded JSON file (client-side)
  *
- * @deprecated Use compositorStore.loadProjectFromFile() instead, which includes
- * security confirmation dialog for untrusted files. This function is unused
- * and will be removed in a future version.
- *
  * @param file - The file to import
  * @returns The imported project
  */
 export async function importProjectFromFile(file: File): Promise<LatticeProject> {
-  console.warn('[DEPRECATED] importProjectFromFile is deprecated. Use compositorStore.loadProjectFromFile() instead.');
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
 

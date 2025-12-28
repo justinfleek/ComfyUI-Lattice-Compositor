@@ -348,7 +348,6 @@ import {
   safeJSONStringify,
   validateLatticeTemplate
 } from '@/services/jsonValidation';
-import { confirmProjectLoad } from '@/services/securityConfirmation';
 import type { Layer, Composition } from '@/types/project';
 import ExposedPropertyControl from '../panels/ExposedPropertyControl.vue';
 import CommentControl from '../panels/CommentControl.vue';
@@ -739,15 +738,6 @@ async function handleFileImport(event: Event) {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
   if (!file) return;
-
-  // SECURITY: Show warning before loading external template files
-  // Templates can contain expressions that execute code
-  const proceed = await confirmProjectLoad(file.name);
-  if (!proceed) {
-    console.log('[TemplateBuilder] Template import cancelled by user:', file.name);
-    input.value = '';
-    return;
-  }
 
   try {
     let templateData: LatticeTemplate | null = null;

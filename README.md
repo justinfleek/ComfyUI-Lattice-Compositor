@@ -20,10 +20,6 @@
 
 ---
 
-> **Security Notice:** Expression evaluation does not yet have DoS protection. Only load project files from trusted sources. See [SECURITY.md](SECURITY.md) for details.
-
----
-
 ## Vision
 
 **Lattice bridges the gap between professional motion graphics and AI video generation.**

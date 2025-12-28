@@ -1124,9 +1124,12 @@ export const useCompositorStore = defineStore('compositor', {
       return projectActions.exportProject(this);
     },
 
+    importProject(json: string): boolean {
+      return projectActions.importProject(this, json, () => this.pushHistory());
+    },
+
     /**
      * Load project from a File object (e.g., from file input or drag-drop)
-     * Includes security confirmation dialog for untrusted files.
      */
     async loadProjectFromFile(file: File): Promise<boolean> {
       return projectActions.loadProjectFromFile(this, file, () => this.pushHistory());

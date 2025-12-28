@@ -10,7 +10,6 @@ import { storeLogger } from '@/utils/logger';
 import type { LatticeProject } from '@/types/project';
 import { saveProject, loadProject, listProjects, deleteProject } from '@/services/projectStorage';
 import { migrateProject, needsMigration, CURRENT_SCHEMA_VERSION } from '@/services/projectMigration';
-import { confirmProjectLoad } from '@/services/securityConfirmation';
 
 // ============================================================================
 // STORE INTERFACE
@@ -117,9 +116,8 @@ export function exportProject(store: ProjectStore): string {
 }
 
 /**
- * Import project from JSON string (internal use only)
- * Called by loadProjectFromFile/loadProjectFromServer after security confirmation.
- * Not exposed on public store API - tests should import this directly.
+ * Import project from JSON string
+ * Automatically migrates older project schemas to current version
  */
 export function importProject(
   store: ProjectStore,
@@ -167,14 +165,6 @@ export async function loadProjectFromFile(
   pushHistoryFn: () => void
 ): Promise<boolean> {
   try {
-    // SECURITY: Show warning before loading external files
-    // This warns users about expression execution risks
-    const proceed = await confirmProjectLoad(file.name);
-    if (!proceed) {
-      storeLogger.info('Project load cancelled by user:', file.name);
-      return false;
-    }
-
     const json = await file.text();
     const success = importProject(store, json, pushHistoryFn);
 
@@ -230,14 +220,6 @@ export async function loadProjectFromServer(
   pushHistoryFn: () => void
 ): Promise<boolean> {
   try {
-    // SECURITY: Show warning before loading server projects
-    // These could also contain malicious expressions
-    const proceed = await confirmProjectLoad(`Server project: ${projectId}`);
-    if (!proceed) {
-      storeLogger.info('Project load cancelled by user:', projectId);
-      return false;
-    }
-
     const result = await loadProject(projectId);
 
     if (result.status === 'success' && result.project) {
