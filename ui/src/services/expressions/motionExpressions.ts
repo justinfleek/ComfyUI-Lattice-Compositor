@@ -37,6 +37,11 @@ export function inertia(
 ): number | number[] {
   const { time, keyframes, value, velocity } = ctx;
 
+  // Validate parameters
+  const safeAmplitude = Number.isFinite(amplitude) ? amplitude : 0.1;
+  const safeFrequency = Number.isFinite(frequency) ? frequency : 2.0;
+  const safeDecay = Number.isFinite(decay) ? Math.max(0.001, decay) : 2.0;
+
   if (keyframes.length === 0) return value;
 
   // Find nearest keyframe before current time
@@ -62,7 +67,7 @@ export function inertia(
   const vel = typeof velocity === 'number' ? velocity : velocity[0];
   const val = typeof value === 'number' ? value : value[0];
 
-  const oscillation = vel * amplitude * Math.sin(frequency * t * 2 * Math.PI) / Math.exp(decay * t);
+  const oscillation = vel * safeAmplitude * Math.sin(safeFrequency * t * 2 * Math.PI) / Math.exp(safeDecay * t);
 
   if (typeof value === 'number') {
     return val + oscillation;
@@ -70,7 +75,7 @@ export function inertia(
   // For arrays, apply to all components
   return (value as number[]).map((v, i) => {
     const componentVel = (velocity as number[])[i] || 0;
-    return v + componentVel * amplitude * Math.sin(frequency * t * 2 * Math.PI) / Math.exp(decay * t);
+    return v + componentVel * safeAmplitude * Math.sin(safeFrequency * t * 2 * Math.PI) / Math.exp(safeDecay * t);
   });
 }
 
@@ -85,11 +90,9 @@ export function bounce(
 ): number | number[] {
   const { time, keyframes, value } = ctx;
 
-  // Guard against invalid gravity (BUG-016: sqrt of negative)
-  if (!Number.isFinite(gravity) || gravity <= 0) {
-    console.warn('[Expressions] bounce() requires positive gravity');
-    return value;
-  }
+  // Validate parameters
+  const safeElasticity = Number.isFinite(elasticity) ? Math.max(0, Math.min(1, elasticity)) : 0.7;
+  const safeGravity = (Number.isFinite(gravity) && gravity > 0) ? gravity : 4000;
 
   if (keyframes.length === 0) return value;
 
@@ -120,25 +123,25 @@ export function bounce(
 
   // Calculate which bounce we're in
   while (bounceTime > 0 && totalBounces < maxBounces) {
-    const bounceDuration = Math.sqrt(2 * bounceHeight / gravity);
+    const bounceDuration = Math.sqrt(2 * bounceHeight / safeGravity);
     if (bounceTime < bounceDuration * 2) {
       break;
     }
     bounceTime -= bounceDuration * 2;
-    bounceHeight *= elasticity * elasticity;
+    bounceHeight *= safeElasticity * safeElasticity;
     totalBounces++;
   }
 
   // Position within current bounce
-  const bounceDuration = Math.sqrt(2 * bounceHeight / gravity);
+  const bounceDuration = Math.sqrt(2 * bounceHeight / safeGravity);
   const bounceT = bounceTime / (bounceDuration * 2);
   const bounceOffset = bounceHeight * 4 * bounceT * (1 - bounceT);
 
   if (typeof value === 'number') {
-    return value - bounceOffset * (1 - elasticity);
+    return value - bounceOffset * (1 - safeElasticity);
   }
 
-  return (value as number[]).map((v) => v - bounceOffset * (1 - elasticity));
+  return (value as number[]).map((v) => v - bounceOffset * (1 - safeElasticity));
 }
 
 /**
@@ -152,10 +155,9 @@ export function elastic(
 ): number | number[] {
   const { time, keyframes, value } = ctx;
 
-  // Guard against invalid period (BUG-009: division by zero)
-  if (!Number.isFinite(period) || period <= 0) {
-    period = 0.3; // Use default period
-  }
+  // Validate parameters
+  const safeAmplitude = Number.isFinite(amplitude) ? amplitude : 1;
+  const safePeriod = (Number.isFinite(period) && period > 0) ? period : 0.3;
 
   if (keyframes.length === 0) return value;
 
@@ -177,13 +179,13 @@ export function elastic(
 
   if (t <= 0) return value;
 
-  const s = period / 4;
+  const s = safePeriod / 4;
   const decay = Math.pow(2, -10 * t);
-  const oscillation = decay * Math.sin((t - s) * (2 * Math.PI) / period);
+  const oscillation = decay * Math.sin((t - s) * (2 * Math.PI) / safePeriod);
 
   if (typeof value === 'number') {
-    return value + amplitude * oscillation;
+    return value + safeAmplitude * oscillation;
   }
 
-  return (value as number[]).map((v) => v + amplitude * oscillation);
+  return (value as number[]).map((v) => v + safeAmplitude * oscillation);
 }

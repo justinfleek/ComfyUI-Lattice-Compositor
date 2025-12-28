@@ -3,6 +3,8 @@
  *
  * Complete set of easing functions for animation interpolation.
  * Includes Penner easing functions, CSS cubic-bezier, and named presets.
+ *
+ * All functions validate input and return safe values for NaN/Infinity.
  */
 
 // ============================================================================
@@ -14,108 +16,206 @@
  */
 export type EasingFunction = (t: number) => number;
 
+/**
+ * Normalize easing input: clamp to [0,1] range, return 0 for invalid
+ */
+function normalizeT(t: number): number {
+  if (!Number.isFinite(t)) return 0;
+  return Math.max(0, Math.min(1, t));
+}
+
 // Sine easing
-export const easeInSine: EasingFunction = (t) => 1 - Math.cos((t * Math.PI) / 2);
-export const easeOutSine: EasingFunction = (t) => Math.sin((t * Math.PI) / 2);
-export const easeInOutSine: EasingFunction = (t) => -(Math.cos(Math.PI * t) - 1) / 2;
+export const easeInSine: EasingFunction = (rawT) => {
+  const t = normalizeT(rawT);
+  return 1 - Math.cos((t * Math.PI) / 2);
+};
+export const easeOutSine: EasingFunction = (rawT) => {
+  const t = normalizeT(rawT);
+  return Math.sin((t * Math.PI) / 2);
+};
+export const easeInOutSine: EasingFunction = (rawT) => {
+  const t = normalizeT(rawT);
+  return -(Math.cos(Math.PI * t) - 1) / 2;
+};
 
 // Quad easing
-export const easeInQuad: EasingFunction = (t) => t * t;
-export const easeOutQuad: EasingFunction = (t) => 1 - (1 - t) * (1 - t);
-export const easeInOutQuad: EasingFunction = (t) =>
-  t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+export const easeInQuad: EasingFunction = (rawT) => {
+  const t = normalizeT(rawT);
+  return t * t;
+};
+export const easeOutQuad: EasingFunction = (rawT) => {
+  const t = normalizeT(rawT);
+  return 1 - (1 - t) * (1 - t);
+};
+export const easeInOutQuad: EasingFunction = (rawT) => {
+  const t = normalizeT(rawT);
+  return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+};
 
 // Cubic easing
-export const easeInCubic: EasingFunction = (t) => t * t * t;
-export const easeOutCubic: EasingFunction = (t) => 1 - Math.pow(1 - t, 3);
-export const easeInOutCubic: EasingFunction = (t) =>
-  t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+export const easeInCubic: EasingFunction = (rawT) => {
+  const t = normalizeT(rawT);
+  return t * t * t;
+};
+export const easeOutCubic: EasingFunction = (rawT) => {
+  const t = normalizeT(rawT);
+  return 1 - Math.pow(1 - t, 3);
+};
+export const easeInOutCubic: EasingFunction = (rawT) => {
+  const t = normalizeT(rawT);
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+};
 
 // Quart easing
-export const easeInQuart: EasingFunction = (t) => t * t * t * t;
-export const easeOutQuart: EasingFunction = (t) => 1 - Math.pow(1 - t, 4);
-export const easeInOutQuart: EasingFunction = (t) =>
-  t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2;
+export const easeInQuart: EasingFunction = (rawT) => {
+  const t = normalizeT(rawT);
+  return t * t * t * t;
+};
+export const easeOutQuart: EasingFunction = (rawT) => {
+  const t = normalizeT(rawT);
+  return 1 - Math.pow(1 - t, 4);
+};
+export const easeInOutQuart: EasingFunction = (rawT) => {
+  const t = normalizeT(rawT);
+  return t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2;
+};
 
 // Quint easing
-export const easeInQuint: EasingFunction = (t) => t * t * t * t * t;
-export const easeOutQuint: EasingFunction = (t) => 1 - Math.pow(1 - t, 5);
-export const easeInOutQuint: EasingFunction = (t) =>
-  t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 * t + 2, 5) / 2;
+export const easeInQuint: EasingFunction = (rawT) => {
+  const t = normalizeT(rawT);
+  return t * t * t * t * t;
+};
+export const easeOutQuint: EasingFunction = (rawT) => {
+  const t = normalizeT(rawT);
+  return 1 - Math.pow(1 - t, 5);
+};
+export const easeInOutQuint: EasingFunction = (rawT) => {
+  const t = normalizeT(rawT);
+  return t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 * t + 2, 5) / 2;
+};
 
 // Expo easing
-export const easeInExpo: EasingFunction = (t) =>
-  t === 0 ? 0 : Math.pow(2, 10 * t - 10);
-export const easeOutExpo: EasingFunction = (t) =>
-  t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
-export const easeInOutExpo: EasingFunction = (t) =>
-  t === 0 ? 0 : t === 1 ? 1 :
-  t < 0.5 ? Math.pow(2, 20 * t - 10) / 2 : (2 - Math.pow(2, -20 * t + 10)) / 2;
+export const easeInExpo: EasingFunction = (rawT) => {
+  const t = normalizeT(rawT);
+  return t === 0 ? 0 : Math.pow(2, 10 * t - 10);
+};
+export const easeOutExpo: EasingFunction = (rawT) => {
+  const t = normalizeT(rawT);
+  return t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
+};
+export const easeInOutExpo: EasingFunction = (rawT) => {
+  const t = normalizeT(rawT);
+  return t === 0 ? 0 : t === 1 ? 1 :
+    t < 0.5 ? Math.pow(2, 20 * t - 10) / 2 : (2 - Math.pow(2, -20 * t + 10)) / 2;
+};
 
 // Circ easing
-export const easeInCirc: EasingFunction = (t) => 1 - Math.sqrt(1 - Math.pow(t, 2));
-export const easeOutCirc: EasingFunction = (t) => Math.sqrt(1 - Math.pow(t - 1, 2));
-export const easeInOutCirc: EasingFunction = (t) =>
-  t < 0.5
+export const easeInCirc: EasingFunction = (rawT) => {
+  const t = normalizeT(rawT);
+  return 1 - Math.sqrt(1 - t * t);
+};
+export const easeOutCirc: EasingFunction = (rawT) => {
+  const t = normalizeT(rawT);
+  return Math.sqrt(1 - (t - 1) * (t - 1));
+};
+export const easeInOutCirc: EasingFunction = (rawT) => {
+  const t = normalizeT(rawT);
+  return t < 0.5
     ? (1 - Math.sqrt(1 - Math.pow(2 * t, 2))) / 2
     : (Math.sqrt(1 - Math.pow(-2 * t + 2, 2)) + 1) / 2;
+};
 
 // Back easing (with overshoot)
 const c1 = 1.70158;
 const c2 = c1 * 1.525;
 const c3 = c1 + 1;
 
-export const easeInBack: EasingFunction = (t) => c3 * t * t * t - c1 * t * t;
-export const easeOutBack: EasingFunction = (t) =>
-  1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
-export const easeInOutBack: EasingFunction = (t) =>
-  t < 0.5
+export const easeInBack: EasingFunction = (rawT) => {
+  const t = normalizeT(rawT);
+  return c3 * t * t * t - c1 * t * t;
+};
+export const easeOutBack: EasingFunction = (rawT) => {
+  const t = normalizeT(rawT);
+  return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+};
+export const easeInOutBack: EasingFunction = (rawT) => {
+  const t = normalizeT(rawT);
+  return t < 0.5
     ? (Math.pow(2 * t, 2) * ((c2 + 1) * 2 * t - c2)) / 2
     : (Math.pow(2 * t - 2, 2) * ((c2 + 1) * (t * 2 - 2) + c2) + 2) / 2;
+};
 
 // Elastic easing
 const c4 = (2 * Math.PI) / 3;
 const c5 = (2 * Math.PI) / 4.5;
 
-export const easeInElastic: EasingFunction = (t) =>
-  t === 0 ? 0 : t === 1 ? 1 :
-  -Math.pow(2, 10 * t - 10) * Math.sin((t * 10 - 10.75) * c4);
-export const easeOutElastic: EasingFunction = (t) =>
-  t === 0 ? 0 : t === 1 ? 1 :
-  Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
-export const easeInOutElastic: EasingFunction = (t) =>
-  t === 0 ? 0 : t === 1 ? 1 :
-  t < 0.5
-    ? -(Math.pow(2, 20 * t - 10) * Math.sin((20 * t - 11.125) * c5)) / 2
-    : (Math.pow(2, -20 * t + 10) * Math.sin((20 * t - 11.125) * c5)) / 2 + 1;
+export const easeInElastic: EasingFunction = (rawT) => {
+  const t = normalizeT(rawT);
+  return t === 0 ? 0 : t === 1 ? 1 :
+    -Math.pow(2, 10 * t - 10) * Math.sin((t * 10 - 10.75) * c4);
+};
+export const easeOutElastic: EasingFunction = (rawT) => {
+  const t = normalizeT(rawT);
+  return t === 0 ? 0 : t === 1 ? 1 :
+    Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
+};
+export const easeInOutElastic: EasingFunction = (rawT) => {
+  const t = normalizeT(rawT);
+  return t === 0 ? 0 : t === 1 ? 1 :
+    t < 0.5
+      ? -(Math.pow(2, 20 * t - 10) * Math.sin((20 * t - 11.125) * c5)) / 2
+      : (Math.pow(2, -20 * t + 10) * Math.sin((20 * t - 11.125) * c5)) / 2 + 1;
+};
 
-// Bounce easing
-export const easeOutBounce: EasingFunction = (t) => {
+// Bounce easing (internal helper without normalization - called by normalized wrappers)
+function bounceOut(t: number): number {
   const n1 = 7.5625;
   const d1 = 2.75;
 
   if (t < 1 / d1) {
     return n1 * t * t;
   } else if (t < 2 / d1) {
-    return n1 * (t -= 1.5 / d1) * t + 0.75;
+    const adjusted = t - 1.5 / d1;
+    return n1 * adjusted * adjusted + 0.75;
   } else if (t < 2.5 / d1) {
-    return n1 * (t -= 2.25 / d1) * t + 0.9375;
+    const adjusted = t - 2.25 / d1;
+    return n1 * adjusted * adjusted + 0.9375;
   } else {
-    return n1 * (t -= 2.625 / d1) * t + 0.984375;
+    const adjusted = t - 2.625 / d1;
+    return n1 * adjusted * adjusted + 0.984375;
   }
+}
+
+export const easeOutBounce: EasingFunction = (rawT) => {
+  const t = normalizeT(rawT);
+  return bounceOut(t);
 };
-export const easeInBounce: EasingFunction = (t) => 1 - easeOutBounce(1 - t);
-export const easeInOutBounce: EasingFunction = (t) =>
-  t < 0.5
-    ? (1 - easeOutBounce(1 - 2 * t)) / 2
-    : (1 + easeOutBounce(2 * t - 1)) / 2;
+export const easeInBounce: EasingFunction = (rawT) => {
+  const t = normalizeT(rawT);
+  return 1 - bounceOut(1 - t);
+};
+export const easeInOutBounce: EasingFunction = (rawT) => {
+  const t = normalizeT(rawT);
+  return t < 0.5
+    ? (1 - bounceOut(1 - 2 * t)) / 2
+    : (1 + bounceOut(2 * t - 1)) / 2;
+};
 
 // Linear (no easing)
-export const linear: EasingFunction = (t) => t;
+export const linear: EasingFunction = (rawT) => {
+  const t = normalizeT(rawT);
+  return t;
+};
 
 // Step functions
-export const stepStart: EasingFunction = (t) => t === 0 ? 0 : 1;
-export const stepEnd: EasingFunction = (t) => t === 1 ? 1 : 0;
+export const stepStart: EasingFunction = (rawT) => {
+  if (!Number.isFinite(rawT)) return 0;
+  return rawT <= 0 ? 0 : 1;
+};
+export const stepEnd: EasingFunction = (rawT) => {
+  if (!Number.isFinite(rawT)) return 0;
+  return rawT >= 1 ? 1 : 0;
+};
 
 // ============================================================================
 // CUBIC BEZIER
@@ -123,30 +223,37 @@ export const stepEnd: EasingFunction = (t) => t === 1 ? 1 : 0;
 
 /**
  * Cubic bezier easing (CSS-style)
+ * Control points are clamped to valid ranges to prevent NaN propagation.
  */
 export function cubicBezier(x1: number, y1: number, x2: number, y2: number): EasingFunction {
-  // Newton-Raphson iteration for finding t given x
+  // Validate and clamp control points (CSS spec: x values must be in [0,1])
+  const safeX1 = Number.isFinite(x1) ? Math.max(0, Math.min(1, x1)) : 0;
+  const safeY1 = Number.isFinite(y1) ? y1 : 0;
+  const safeX2 = Number.isFinite(x2) ? Math.max(0, Math.min(1, x2)) : 1;
+  const safeY2 = Number.isFinite(y2) ? y2 : 1;
+
   const epsilon = 1e-6;
 
-  return (x: number): number => {
+  return (rawX: number): number => {
+    const x = normalizeT(rawX);
     if (x <= 0) return 0;
     if (x >= 1) return 1;
 
-    // Binary search for t
+    // Newton-Raphson iteration for finding t given x
     let t = x;
     for (let i = 0; i < 8; i++) {
-      const currentX = bezierPoint(t, x1, x2);
+      const currentX = bezierPoint(t, safeX1, safeX2);
       const diff = currentX - x;
       if (Math.abs(diff) < epsilon) break;
 
-      const derivative = bezierDerivative(t, x1, x2);
+      const derivative = bezierDerivative(t, safeX1, safeX2);
       if (Math.abs(derivative) < epsilon) break;
 
       t -= diff / derivative;
       t = Math.max(0, Math.min(1, t));
     }
 
-    return bezierPoint(t, y1, y2);
+    return bezierPoint(t, safeY1, safeY2);
   };
 }
 
@@ -268,8 +375,8 @@ export const EASING_PRESETS: Record<string, { fn: EasingFunction; description: s
     description: 'Goes past target then settles',
   },
   'anticipateOvershoot': {
-    fn: (t) => {
-      // Combine anticipation and overshoot
+    fn: (rawT) => {
+      const t = normalizeT(rawT);
       const s = 1.70158 * 1.525;
       if (t < 0.5) {
         return (Math.pow(2 * t, 2) * ((s + 1) * 2 * t - s)) / 2;
@@ -295,7 +402,8 @@ export const EASING_PRESETS: Record<string, { fn: EasingFunction; description: s
 
   // Physical/Spring-like
   'spring': {
-    fn: (t) => {
+    fn: (rawT) => {
+      const t = normalizeT(rawT);
       const freq = 4.5;
       const decay = 4;
       return 1 - Math.exp(-decay * t) * Math.cos(freq * Math.PI * t);
@@ -303,7 +411,8 @@ export const EASING_PRESETS: Record<string, { fn: EasingFunction; description: s
     description: 'Spring physics - oscillating settle',
   },
   'springLight': {
-    fn: (t) => {
+    fn: (rawT) => {
+      const t = normalizeT(rawT);
       const freq = 3;
       const decay = 3;
       return 1 - Math.exp(-decay * t) * Math.cos(freq * Math.PI * t);
@@ -311,7 +420,8 @@ export const EASING_PRESETS: Record<string, { fn: EasingFunction; description: s
     description: 'Light spring - gentle oscillation',
   },
   'springHeavy': {
-    fn: (t) => {
+    fn: (rawT) => {
+      const t = normalizeT(rawT);
       const freq = 6;
       const decay = 5;
       return 1 - Math.exp(-decay * t) * Math.cos(freq * Math.PI * t);

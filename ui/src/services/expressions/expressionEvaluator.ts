@@ -59,20 +59,24 @@ export const timeExpressions = {
   },
 
   periodic(time: number, period: number): number {
+    if (!Number.isFinite(period) || period === 0) return 0;
     return (time % period) / period;
   },
 
   sawtooth(time: number, frequency: number, amplitude: number = 1): number {
+    if (!Number.isFinite(time) || !Number.isFinite(frequency) || !Number.isFinite(amplitude)) return 0;
     const t = time * frequency;
     return amplitude * 2 * (t - Math.floor(t + 0.5));
   },
 
   triangle(time: number, frequency: number, amplitude: number = 1): number {
+    if (!Number.isFinite(time) || !Number.isFinite(frequency) || !Number.isFinite(amplitude)) return 0;
     const t = time * frequency;
     return amplitude * (2 * Math.abs(2 * (t - Math.floor(t + 0.5))) - 1);
   },
 
   square(time: number, frequency: number, amplitude: number = 1): number {
+    if (!Number.isFinite(time) || !Number.isFinite(frequency) || !Number.isFinite(amplitude)) return 0;
     const t = time * frequency;
     return amplitude * (t - Math.floor(t) < 0.5 ? 1 : -1);
   },
@@ -113,16 +117,26 @@ export const mathExpressions = {
   },
 
   smoothstep(edge0: number, edge1: number, x: number): number {
-    const t = mathExpressions.clamp((x - edge0) / (edge1 - edge0), 0, 1);
+    const range = edge1 - edge0;
+    if (!Number.isFinite(range) || range === 0) {
+      return x < edge0 ? 0 : 1;
+    }
+    const t = mathExpressions.clamp((x - edge0) / range, 0, 1);
     return t * t * (3 - 2 * t);
   },
 
   smootherstep(edge0: number, edge1: number, x: number): number {
-    const t = mathExpressions.clamp((x - edge0) / (edge1 - edge0), 0, 1);
+    const range = edge1 - edge0;
+    if (!Number.isFinite(range) || range === 0) {
+      return x < edge0 ? 0 : 1;
+    }
+    const t = mathExpressions.clamp((x - edge0) / range, 0, 1);
     return t * t * t * (t * (t * 6 - 15) + 10);
   },
 
   mod(a: number, b: number): number {
+    if (!Number.isFinite(b) || b === 0) return 0;
+    if (!Number.isFinite(a)) return 0;
     return ((a % b) + b) % b;
   },
 
@@ -151,12 +165,17 @@ export const mathExpressions = {
   },
 
   gaussRandom(mean: number = 0, stdDev: number = 1, seed: number = 12345): number {
+    if (!Number.isFinite(mean) || !Number.isFinite(stdDev) || !Number.isFinite(seed)) {
+      return 0;
+    }
     const seededRand = (s: number) => {
       const x = Math.sin(s * 12.9898) * 43758.5453;
       return x - Math.floor(x);
     };
-    const u1 = Math.max(0.0001, seededRand(seed));
-    const u2 = seededRand(seed + 1);
+    const u1Raw = seededRand(seed);
+    const u1 = Number.isFinite(u1Raw) ? Math.max(0.0001, u1Raw) : 0.0001;
+    const u2Raw = seededRand(seed + 1);
+    const u2 = Number.isFinite(u2Raw) ? u2Raw : 0;
     const z0 = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
     return mean + z0 * stdDev;
   },
@@ -177,8 +196,14 @@ export function expressionEase(
   vMin: number | number[],
   vMax: number | number[]
 ): number | number[] {
-  let normalized = (t - tMin) / (tMax - tMin);
-  normalized = Math.max(0, Math.min(1, normalized));
+  const range = tMax - tMin;
+  let normalized: number;
+  if (!Number.isFinite(range) || range === 0) {
+    normalized = t < tMin ? 0 : 1;
+  } else {
+    normalized = (t - tMin) / range;
+    normalized = Math.max(0, Math.min(1, normalized));
+  }
 
   const eased = normalized < 0.5
     ? 4 * normalized * normalized * normalized
@@ -201,8 +226,14 @@ export function expressionEaseIn(
   vMin: number | number[],
   vMax: number | number[]
 ): number | number[] {
-  let normalized = (t - tMin) / (tMax - tMin);
-  normalized = Math.max(0, Math.min(1, normalized));
+  const range = tMax - tMin;
+  let normalized: number;
+  if (!Number.isFinite(range) || range === 0) {
+    normalized = t < tMin ? 0 : 1;
+  } else {
+    normalized = (t - tMin) / range;
+    normalized = Math.max(0, Math.min(1, normalized));
+  }
 
   const eased = normalized * normalized * normalized;
 
@@ -223,8 +254,14 @@ export function expressionEaseOut(
   vMin: number | number[],
   vMax: number | number[]
 ): number | number[] {
-  let normalized = (t - tMin) / (tMax - tMin);
-  normalized = Math.max(0, Math.min(1, normalized));
+  const range = tMax - tMin;
+  let normalized: number;
+  if (!Number.isFinite(range) || range === 0) {
+    normalized = t < tMin ? 0 : 1;
+  } else {
+    normalized = (t - tMin) / range;
+    normalized = Math.max(0, Math.min(1, normalized));
+  }
 
   const eased = 1 - Math.pow(1 - normalized, 3);
 
@@ -337,9 +374,12 @@ export function evaluateCustomExpression(
 
 // Helper to create thisComp object
 function createThisCompObject(ctx: ExpressionContext) {
+  const fps = (Number.isFinite(ctx.fps) && ctx.fps > 0) ? ctx.fps : 30;
+  const duration = Number.isFinite(ctx.duration) ? ctx.duration : 0;
+
   return {
-    duration: ctx.duration,
-    frameDuration: 1 / ctx.fps,
+    duration: duration,
+    frameDuration: 1 / fps,
     width: ctx.compWidth ?? 1920,
     height: ctx.compHeight ?? 1080,
     numLayers: ctx.allLayers?.length ?? 0,

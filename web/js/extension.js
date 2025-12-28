@@ -1,12 +1,21 @@
 /**
  * Lattice Compositor - ComfyUI Extension
+ * Lifecycle-stabilized: idempotent render, guarded listeners, explicit cleanup
  */
 import { app } from "../../../scripts/app.js";
 import { api } from "../../../scripts/api.js";
 
-let vueAppLoaded = false;
-let pendingMessages = [];
-let currentNodeId = null;
+// Centralized mutable state for lifecycle tracking
+const state = {
+  vueAppLoaded: false,
+  pendingMessages: [],
+  currentNodeId: null,
+  eventListenerAttached: false,
+  preloadLinksInjected: false,
+  cssLinkInjected: false,
+  loadedModule: null,
+  patchedNodeType: null
+};
 
 function getExtensionBase() {
   const scripts = document.querySelectorAll('script[type="module"]');
@@ -15,6 +24,15 @@ function getExtensionBase() {
     if (match) return `/extensions/${match[1]}`;
   }
   return '/extensions/weyl-compositor';
+}
+
+function handleInputsReady(event) {
+  state.currentNodeId = event.detail.node_id;
+  if (state.vueAppLoaded) {
+    window.dispatchEvent(new CustomEvent('lattice:inputs-ready', { detail: event.detail }));
+  } else {
+    state.pendingMessages.push(event.detail);
+  }
 }
 
 app.registerExtension({
@@ -32,18 +50,19 @@ app.registerExtension({
       render: (el) => renderCompositor(el, base)
     });
 
-    api.addEventListener("lattice.compositor.inputs_ready", (event) => {
-      currentNodeId = event.detail.node_id;
-      if (vueAppLoaded) {
-        window.dispatchEvent(new CustomEvent('lattice:inputs-ready', { detail: event.detail }));
-      } else {
-        pendingMessages.push(event.detail);
-      }
-    });
+    // Guard: only attach listener once
+    if (!state.eventListenerAttached) {
+      api.addEventListener("lattice.compositor.inputs_ready", handleInputsReady);
+      state.eventListenerAttached = true;
+    }
   },
 
   async beforeRegisterNodeDef(nodeType, nodeData) {
     if (nodeData.name === "LatticeCompositorEditor") {
+      // Guard: only patch once per nodeType
+      if (state.patchedNodeType === nodeType) return;
+      state.patchedNodeType = nodeType;
+
       const orig = nodeType.prototype.onNodeCreated;
       nodeType.prototype.onNodeCreated = function() {
         orig?.apply(this, arguments);
@@ -55,6 +74,19 @@ app.registerExtension({
 });
 
 async function renderCompositor(el, base) {
+  // If already rendered, unmount first (idempotence)
+  if (state.loadedModule?.unmountApp) {
+    try {
+      state.loadedModule.unmountApp();
+    } catch (e) {
+      console.warn('[Lattice] unmount during re-render failed:', e);
+    }
+    state.vueAppLoaded = false;
+  }
+
+  // Clear container
+  el.innerHTML = '';
+
   const container = document.createElement('div');
   container.id = 'lattice-compositor-root';
   container.style.cssText = 'width:100%;height:100%;min-height:100vh;overflow:hidden;background:#050505;position:relative;';
@@ -63,36 +95,52 @@ async function renderCompositor(el, base) {
   // Ensure parent element has proper sizing for flex layout
   el.style.cssText = 'width:100%;height:100%;display:flex;flex-direction:column;';
 
+  // Guard: inject CSS only once
   const cssUrl = `${base}/js/lattice-compositor.css`;
-  if (!document.querySelector(`link[href="${cssUrl}"]`)) {
+  if (!state.cssLinkInjected && !document.querySelector(`link[href="${cssUrl}"]`)) {
     const link = document.createElement('link');
     link.rel = 'stylesheet';
     link.href = cssUrl;
     document.head.appendChild(link);
+    state.cssLinkInjected = true;
   }
 
-  // Preload vendor chunks for faster loading
-  const vendorChunks = [
-    'lattice-vue-vendor.js',
-    'lattice-three-vendor.js',
-    'lattice-ui-vendor.js'
-  ];
-  vendorChunks.forEach(chunk => {
-    const preload = document.createElement('link');
-    preload.rel = 'modulepreload';
-    preload.href = `${base}/js/${chunk}`;
-    document.head.appendChild(preload);
-  });
+  // Guard: inject preload links only once
+  if (!state.preloadLinksInjected) {
+    const vendorChunks = [
+      'lattice-vue-vendor.js',
+      'lattice-three-vendor.js',
+      'lattice-ui-vendor.js'
+    ];
+    vendorChunks.forEach(chunk => {
+      const href = `${base}/js/${chunk}`;
+      if (!document.querySelector(`link[href="${href}"]`)) {
+        const preload = document.createElement('link');
+        preload.rel = 'modulepreload';
+        preload.href = href;
+        document.head.appendChild(preload);
+      }
+    });
+    state.preloadLinksInjected = true;
+  }
 
   try {
     const module = await import(`${base}/js/lattice-compositor.js`);
-    if (module.mountApp) module.mountApp(container);
-    vueAppLoaded = true;
-    pendingMessages.forEach(data => {
+    state.loadedModule = module;
+
+    if (module.mountApp) {
+      await module.mountApp(container);
+    }
+
+    state.vueAppLoaded = true;
+
+    // Flush pending messages
+    state.pendingMessages.forEach(data => {
       window.dispatchEvent(new CustomEvent('lattice:inputs-ready', { detail: data }));
     });
-    pendingMessages = [];
+    state.pendingMessages = [];
   } catch (error) {
+    console.error('[Lattice] Failed to load compositor:', error);
     container.innerHTML = `<div style="padding:24px;color:#ccc;font-family:system-ui;">
       <h3 style="color:#ff6b6b;">Failed to load compositor</h3>
       <p style="color:#888;">${error.message}</p>
@@ -101,14 +149,14 @@ async function renderCompositor(el, base) {
 }
 
 window.LatticeCompositor = {
-  getNodeId: () => currentNodeId,
+  getNodeId: () => state.currentNodeId,
   async sendOutput(matte, preview) {
-    if (!currentNodeId) return false;
+    if (!state.currentNodeId) return false;
     try {
       const res = await fetch('/lattice/compositor/set_output', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ node_id: currentNodeId, matte, preview })
+        body: JSON.stringify({ node_id: state.currentNodeId, matte, preview })
       });
       return res.ok;
     } catch { return false; }
