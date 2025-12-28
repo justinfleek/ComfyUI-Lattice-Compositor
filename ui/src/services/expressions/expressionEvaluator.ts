@@ -346,13 +346,20 @@ export function evaluateCustomExpression(
   code: string,
   ctx: ExpressionContext
 ): number | number[] | string {
+  // SECURITY: Type check - code must be a string
+  // Prevents objects with malicious .trim() or valueOf() from being passed
+  if (typeof code !== 'string') {
+    console.warn('[SECURITY] Expression code is not a string:', typeof code);
+    return ctx.value;
+  }
+
   // Empty code returns value unchanged
   if (!code || code.trim() === '') {
     return ctx.value;
   }
 
   // SECURITY: All expression evaluation goes through SES
-  // evaluateInSES() returns ctx.value if SES is not available
+  // evaluateInSES() handles: length limit, SES check, sandbox evaluation
   return evaluateInSES(code, ctx);
 }
 

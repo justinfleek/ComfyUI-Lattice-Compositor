@@ -777,7 +777,8 @@ export function calculateExpressionInfluence(
     return rangeValue;
   }
 
-  // Evaluate through central sesEvaluator (handles SES, DoS protection, etc.)
+  // Evaluate through central sesEvaluator (handles SES sandbox, length limit)
+  // NOTE: No DoS protection - expressions CAN hang with infinite loops
   const result = evaluateSimpleExpression(expr, {
     textIndex: charIndex,
     textTotal: totalChars,

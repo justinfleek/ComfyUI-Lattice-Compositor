@@ -10,6 +10,13 @@
  * - No eval, Function constructor, or import() access
  * - Prototype pollution attacks are blocked
  * - Constructor chain escapes are blocked
+ * - Length limit (10KB) prevents payload attacks
+ * - Deterministic evaluation (no Math.random, uses seeded PRNG)
+ *
+ * SECURITY LIMITATIONS (KNOWN VULNERABILITIES):
+ * - NO DoS PROTECTION: Expressions can contain infinite loops that hang the browser
+ * - Proper DoS protection requires Worker-based evaluation with timeout
+ * - Until Worker isolation is implemented, DO NOT load untrusted project files
  *
  * This replaces the previous Proxy+with sandbox (BUG-006) which was bypassable.
  *
@@ -22,42 +29,8 @@ import type { ExpressionContext } from './types';
 let sesInitialized = false;
 let sesError: Error | null = null;
 
-/**
- * SECURITY: DoS pattern detection
- *
- * This is an interim measure. Full protection requires Worker-based evaluation
- * with timeout, which would require async refactoring of all expression APIs.
- *
- * These patterns catch obvious infinite loops. Sophisticated attackers could
- * bypass this with obfuscation, but it raises the bar significantly.
- */
-const DOS_PATTERNS = [
-  /while\s*\(\s*(?:true|1|!0)\s*\)/i,        // while(true), while(1), while(!0)
-  /for\s*\(\s*;\s*;\s*\)/,                    // for(;;)
-  /for\s*\([^)]*;\s*(?:true|1|!0)\s*;/i,     // for(;true;), for(;1;)
-  /do\s*\{[\s\S]*\}\s*while\s*\(\s*(?:true|1|!0)\s*\)/i,  // do{}while(true)
-  /\bfunction\s+(\w+)[^}]*\b\1\s*\(/,         // function f(){ f(); }  - basic recursion
-];
-
-/**
- * Check expression for obvious DoS patterns
- * Returns error message if dangerous, null if OK
- */
-function checkForDosPatterns(code: string): string | null {
-  for (const pattern of DOS_PATTERNS) {
-    if (pattern.test(code)) {
-      return `Expression contains potentially infinite loop pattern`;
-    }
-  }
-
-  // Check for deeply nested loops (rough heuristic)
-  const loopKeywords = (code.match(/\b(while|for|do)\b/g) || []).length;
-  if (loopKeywords > 5) {
-    return `Expression contains too many loop constructs (${loopKeywords}, max 5)`;
-  }
-
-  return null;
-}
+// Maximum expression length (10KB) to prevent payload attacks
+const MAX_EXPRESSION_LENGTH = 10240;
 
 /**
  * Initialize SES lockdown
@@ -155,6 +128,8 @@ export function createExpressionCompartment(ctx: ExpressionContext): any {
   }
 
   // Create safe Math object (harden to prevent modification)
+  // NOTE: Math.random is intentionally EXCLUDED for determinism
+  // Use the seeded random() utility function instead
   const safeMath = harden({
     PI: Math.PI,
     E: Math.E,
@@ -173,7 +148,7 @@ export function createExpressionCompartment(ctx: ExpressionContext): any {
     max: Math.max,
     min: Math.min,
     pow: Math.pow,
-    random: Math.random,
+    // random: EXCLUDED - use seeded random() for determinism
     round: Math.round,
     sign: Math.sign,
     sin: Math.sin,
@@ -388,6 +363,12 @@ export function createExpressionCompartment(ctx: ExpressionContext): any {
  * @returns The evaluated result, or ctx.value if SES unavailable
  */
 export function evaluateInSES(code: string, ctx: ExpressionContext): number | number[] | string {
+  // SECURITY: Type check - defense in depth for JS callers
+  if (typeof code !== 'string') {
+    console.warn('[SECURITY] evaluateInSES: code is not a string');
+    return ctx.value;
+  }
+
   if (!code || code.trim() === '') {
     return ctx.value;
   }
@@ -400,12 +381,14 @@ export function evaluateInSES(code: string, ctx: ExpressionContext): number | nu
     return ctx.value;
   }
 
-  // SECURITY: Check for obvious DoS patterns
-  const dosError = checkForDosPatterns(code);
-  if (dosError) {
-    console.warn('[SECURITY] DoS pattern blocked:', dosError);
+  // SECURITY: Length limit to prevent payload attacks
+  if (code.length > MAX_EXPRESSION_LENGTH) {
+    console.warn(`[SECURITY] Expression too long (${code.length} bytes, max ${MAX_EXPRESSION_LENGTH})`);
     return ctx.value;
   }
+
+  // NOTE: No DoS protection - expressions CAN hang the browser with infinite loops
+  // Proper protection requires Worker-based evaluation which needs async refactoring
 
   try {
     const compartment = createExpressionCompartment(ctx);
@@ -450,6 +433,12 @@ export function evaluateSimpleExpression(
   expr: string,
   context: Record<string, unknown>
 ): number | null {
+  // SECURITY: Type check - defense in depth for JS callers
+  if (typeof expr !== 'string') {
+    console.warn('[SECURITY] evaluateSimpleExpression: expr is not a string');
+    return null;
+  }
+
   // SECURITY: Empty expression = fail closed
   if (!expr || expr.trim() === '') {
     return null;
@@ -461,12 +450,14 @@ export function evaluateSimpleExpression(
     return null;
   }
 
-  // SECURITY: Check for obvious DoS patterns
-  const dosError = checkForDosPatterns(expr);
-  if (dosError) {
-    console.warn('[SECURITY] DoS pattern blocked:', dosError);
+  // SECURITY: Length limit to prevent payload attacks
+  if (expr.length > MAX_EXPRESSION_LENGTH) {
+    console.warn(`[SECURITY] Expression too long (${expr.length} bytes, max ${MAX_EXPRESSION_LENGTH})`);
     return null;
   }
+
+  // NOTE: No DoS protection - expressions CAN hang the browser with infinite loops
+  // Proper protection requires Worker-based evaluation which needs async refactoring
 
   // Get SES globals
   const { Compartment, harden } = globalThis as any;
@@ -479,6 +470,7 @@ export function evaluateSimpleExpression(
 
   try {
     // Create safe Math subset (hardened)
+    // NOTE: Math.random is intentionally EXCLUDED for determinism
     const safeMath = harden({
       PI: Math.PI,
       E: Math.E,
@@ -493,9 +485,18 @@ export function evaluateSimpleExpression(
       sin: Math.sin,
       cos: Math.cos,
       tan: Math.tan,
-      random: Math.random,
+      // random: EXCLUDED - non-deterministic breaks consistent renders
       sign: Math.sign,
       trunc: Math.trunc,
+    });
+
+    // Seeded random for deterministic results
+    // Uses frame from context if available, otherwise 0
+    const frame = typeof context.frame === 'number' ? context.frame : 0;
+    const seededRandom = harden((seed?: number): number => {
+      const s = seed !== undefined ? seed : frame;
+      const x = Math.sin(s * 12.9898) * 43758.5453;
+      return x - Math.floor(x);
     });
 
     // Harden the provided context values
@@ -518,6 +519,8 @@ export function evaluateSimpleExpression(
       Infinity,
       NaN,
       undefined,
+      // Deterministic seeded random function
+      random: seededRandom,
       // Spread safe context values
       ...safeContext,
     }));
