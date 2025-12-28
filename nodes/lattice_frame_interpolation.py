@@ -235,7 +235,9 @@ class FrameInterpolator:
                 pass
 
             # Fallback: try loading state dict directly
-            state_dict = torch.load(model_path, map_location=self.device)
+            # SECURITY: weights_only=True prevents arbitrary code execution from
+            # malicious pickle payloads. See AUDIT/PYTHON_FINDINGS.md for details.
+            state_dict = torch.load(model_path, map_location=self.device, weights_only=True)
             logger.info(f"Loaded RIFE state dict from {model_path}")
 
             # Return a wrapper that can use the state dict
