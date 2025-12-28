@@ -176,7 +176,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var color = textureLoad(inputTexture, coords, 0);
 
   // Brightness
-  color.rgb += params.brightness;
+  color = vec4<f32>(color.rgb + params.brightness, color.a);
 
   // Contrast
   color.rgb = (color.rgb - 0.5) * (1.0 + params.contrast) + 0.5;
@@ -487,7 +487,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     glowColor = glowAccum / totalWeight;
     // Tint with glow color if not white
     if (params.glowColor.r < 1.0 || params.glowColor.g < 1.0 || params.glowColor.b < 1.0) {
-      glowColor.rgb *= params.glowColor.rgb;
+      glowColor = vec4<f32>(glowColor.rgb * params.glowColor.rgb, glowColor.a);
     }
   }
 
