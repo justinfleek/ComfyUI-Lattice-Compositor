@@ -21,3 +21,4 @@ screenshots/
 # Python
 __pycache__/
 *.pyc
+SECURITY_ARCHITECTURE.md
