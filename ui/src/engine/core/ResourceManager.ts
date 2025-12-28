@@ -10,6 +10,7 @@
 import * as THREE from 'three';
 import type { AssetReference } from '@/types/project';
 import { renderLogger } from '@/utils/logger';
+import { validateURL } from '@/services/security/urlValidator';
 
 export interface TextureOptions {
   wrapS?: THREE.Wrapping;
@@ -101,10 +102,27 @@ export class ResourceManager {
 
   /**
    * Load a texture from URL
+   * SECURITY: Validates URL protocol before loading to prevent XSS and code injection
    */
   async loadTexture(url: string, options?: TextureOptions): Promise<THREE.Texture> {
+    // SECURITY: Validate URL before loading
+    const urlValidation = validateURL(url, 'asset');
+    if (!urlValidation.valid) {
+      const error = new Error(`[SECURITY] Blocked texture load: ${urlValidation.error}`);
+      renderLogger.error('ResourceManager:', error.message, 'URL:', url);
+      return Promise.reject(error);
+    }
+
+    // Log security warnings (e.g., HTTP without TLS)
+    if (urlValidation.warning) {
+      renderLogger.warn('ResourceManager: Security warning for URL:', url, '-', urlValidation.warning);
+    }
+
+    // Use sanitized URL (or original if sanitized is null for valid URLs)
+    const safeUrl = urlValidation.sanitized || url;
+
     // Check cache first
-    const cacheKey = this.getTextureCacheKey(url, options);
+    const cacheKey = this.getTextureCacheKey(safeUrl, options);
     const cached = this.textures.get(cacheKey);
 
     if (cached) {
@@ -115,7 +133,7 @@ export class ResourceManager {
     // Load new texture
     return new Promise((resolve, reject) => {
       this.textureLoader.load(
-        url,
+        safeUrl,
         (texture) => {
           this.applyTextureOptions(texture, options);
           this.textures.set(cacheKey, texture);
@@ -124,7 +142,7 @@ export class ResourceManager {
         },
         undefined, // Progress callback
         (error) => {
-          renderLogger.error('ResourceManager: Failed to load texture:', url, error);
+          renderLogger.error('ResourceManager: Failed to load texture:', safeUrl, error);
           reject(error);
         }
       );

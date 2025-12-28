@@ -23,7 +23,7 @@ import {
   getDataFileType,
   isSupportedDataFile
 } from '@/types/dataAsset';
-import { safeJSONParse } from './jsonValidation';
+import { parseAndSanitize } from './security/jsonSanitizer';
 
 // ============================================================================
 // DATA STORE (In-memory storage for data assets)
@@ -53,13 +53,25 @@ export function parseJSON(
     processedContent = processedContent.replace(/\/\*[\s\S]*?\*\//g, '');
   }
 
-  const result = safeJSONParse(processedContent);
+  // Use security-hardened JSON parser with depth/size limits
+  const result = parseAndSanitize(processedContent, {
+    maxDepth: 50,           // Prevent deeply nested JSON bombs
+    maxArrayLength: 100_000, // Prevent large array allocation
+    maxStringLength: 10 * 1024 * 1024, // 10MB max string
+    maxTotalKeys: 1_000_000, // Prevent many small objects
+    removePrototypeKeys: true, // Block prototype pollution
+  });
 
-  if (!result.success) {
+  if (!result.valid) {
     return {
       success: false,
       error: `Failed to parse JSON: ${result.error}`
     };
+  }
+
+  // Log any security warnings
+  if (result.warnings.length > 0) {
+    console.warn(`[DataImport] Security warnings for ${name}:`, result.warnings);
   }
 
   const asset: JSONDataAsset = {

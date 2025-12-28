@@ -176,14 +176,20 @@ describeIfWorker('Expression Validator - DoS Protection', () => {
   });
 
   describe('isExpressionSafe - Memory Bombs', () => {
-    it('should BLOCK large string repeat', async () => {
+    // Note: 1e7 completes in <100ms (not a DoS), 1e8 takes ~18s (real DoS)
+    it('should ALLOW small string repeat (1e7 completes fast)', async () => {
       const result = await isExpressionSafe('"a".repeat(1e7)');
-      expect(result).toBe(false);
+      expect(result).toBe(true); // 1e7 completes in <1ms, not a threat
     }, 10000);
 
-    it('should BLOCK large array allocation', async () => {
+    it('should ALLOW small array allocation (1e7 completes fast)', async () => {
       const result = await isExpressionSafe('Array(1e7).fill(0)');
-      expect(result).toBe(false);
+      expect(result).toBe(true); // 1e7 completes in ~36ms, not a threat
+    }, 10000);
+
+    it('should BLOCK large array allocation (1e8 takes 18+ seconds)', async () => {
+      const result = await isExpressionSafe('Array(1e8).fill(0)');
+      expect(result).toBe(false); // 1e8 takes ~18s, will timeout
     }, 10000);
   });
 

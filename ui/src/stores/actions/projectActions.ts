@@ -11,6 +11,7 @@ import type { LatticeProject } from '@/types/project';
 import { saveProject, loadProject, listProjects, deleteProject } from '@/services/projectStorage';
 import { migrateProject, needsMigration, CURRENT_SCHEMA_VERSION } from '@/services/projectMigration';
 import { validateProjectExpressions } from '@/services/expressions/expressionValidator';
+import { validateURL } from '@/services/security/urlValidator';
 
 // ============================================================================
 // STORE INTERFACE
@@ -645,9 +646,14 @@ export async function collectFiles(
           assetsFolder?.file(filename, base64Data, { base64: true });
         }
       } else if (asset.data.startsWith('blob:') || asset.data.startsWith('http')) {
-        // URL - fetch the data
+        // URL - fetch the data with security validation
+        const urlValidation = validateURL(asset.data, 'fetch');
+        if (!urlValidation.valid) {
+          storeLogger.warn(`[SECURITY] Skipped asset ${assetId}: ${urlValidation.error}`);
+          continue;
+        }
         try {
-          const response = await fetch(asset.data);
+          const response = await fetch(urlValidation.sanitized || asset.data);
           const blob = await response.blob();
           assetsFolder?.file(filename, blob);
         } catch (e) {
