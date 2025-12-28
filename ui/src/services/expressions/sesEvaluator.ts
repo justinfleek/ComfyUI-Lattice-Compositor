@@ -12,18 +12,23 @@
  * - Constructor chain escapes are blocked
  * - Length limit (10KB) prevents payload attacks
  * - Deterministic evaluation (no Math.random, uses seeded PRNG)
+ * - DoS PROTECTION via Worker timeout (100ms) - use evaluateWithTimeout()
  *
- * SECURITY LIMITATIONS (KNOWN VULNERABILITIES):
- * - NO DoS PROTECTION: Expressions can contain infinite loops that hang the browser
- * - Proper DoS protection requires Worker-based evaluation with timeout
- * - Until Worker isolation is implemented, DO NOT load untrusted project files
+ * TWO EVALUATION MODES:
+ * 1. evaluateWithTimeout() - ASYNC, Worker-based, 100ms timeout, DoS PROTECTED
+ *    Use this for untrusted input or when async is acceptable.
+ *
+ * 2. evaluateInSES() / evaluateSimpleExpression() - SYNC, main thread, NO timeout
+ *    Use only for render-loop where async is not possible.
+ *    WARNING: Can hang on infinite loops.
  *
  * This replaces the previous Proxy+with sandbox (BUG-006) which was bypassable.
- *
- * @see AUDIT/SECURITY_ARCHITECTURE.md for full security analysis
  */
 
 import type { ExpressionContext } from './types';
+
+// Re-export worker-based evaluator for DoS-protected async evaluation
+export { evaluateWithTimeout, isWorkerAvailable, terminateWorker } from './workerEvaluator';
 
 // SES lockdown status
 let sesInitialized = false;
@@ -387,8 +392,8 @@ export function evaluateInSES(code: string, ctx: ExpressionContext): number | nu
     return ctx.value;
   }
 
-  // NOTE: No DoS protection - expressions CAN hang the browser with infinite loops
-  // Proper protection requires Worker-based evaluation which needs async refactoring
+  // WARNING: This is SYNC evaluation - no timeout protection.
+  // For DoS protection, use evaluateWithTimeout() which runs in a Worker with 100ms timeout.
 
   try {
     const compartment = createExpressionCompartment(ctx);
@@ -456,8 +461,8 @@ export function evaluateSimpleExpression(
     return null;
   }
 
-  // NOTE: No DoS protection - expressions CAN hang the browser with infinite loops
-  // Proper protection requires Worker-based evaluation which needs async refactoring
+  // WARNING: This is SYNC evaluation - no timeout protection.
+  // For DoS protection, use evaluateWithTimeout() which runs in a Worker with 100ms timeout.
 
   // Get SES globals
   const { Compartment, harden } = globalThis as any;
