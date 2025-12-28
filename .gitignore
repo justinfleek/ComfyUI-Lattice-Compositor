@@ -12,6 +12,8 @@ screenshots/
 !CLAUDE.md
 !PROJECT_STATUS.md
 !FEATURE_AUDIT.md
+!INVENTORY.md
+!SECURITY_ARCHITECTURE.md
 !specs/*.md
 !docs/*.md
 !docs/**/*.md
@@ -21,4 +23,3 @@ screenshots/
 # Python
 __pycache__/
 *.pyc
-SECURITY_ARCHITECTURE.md
