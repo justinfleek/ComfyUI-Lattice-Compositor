@@ -1,16 +1,54 @@
 <template>
   <WorkspaceLayout />
+  <!-- Security warning dialog for loading external files -->
+  <SecurityWarningDialog
+    :visible="securityDialogState.visible"
+    :file-name="securityDialogState.fileName"
+    @cancel="handleSecurityCancel"
+    @proceed="handleSecurityProceed"
+  />
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import { onMounted, onUnmounted, reactive } from 'vue';
 import WorkspaceLayout from './components/layout/WorkspaceLayout.vue';
+import SecurityWarningDialog from './components/dialogs/SecurityWarningDialog.vue';
 import { useThemeStore } from './stores/themeStore';
+import {
+  registerSecurityDialog,
+  unregisterSecurityDialog,
+  handleSecurityDialogResult,
+  type SecurityConfirmationState
+} from './services/securityConfirmation';
 
 const themeStore = useThemeStore();
 
+// Security dialog state
+const securityDialogState = reactive<SecurityConfirmationState>({
+  visible: false,
+  fileName: '',
+  resolve: null
+});
+
+function handleSecurityCancel() {
+  handleSecurityDialogResult(false, false);
+}
+
+function handleSecurityProceed(dontShowAgain: boolean) {
+  handleSecurityDialogResult(true, dontShowAgain);
+}
+
 onMounted(() => {
   themeStore.loadSavedTheme();
+
+  // Register security dialog with the service
+  registerSecurityDialog(securityDialogState, (update) => {
+    Object.assign(securityDialogState, update);
+  });
+});
+
+onUnmounted(() => {
+  unregisterSecurityDialog();
 });
 </script>
 

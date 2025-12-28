@@ -11,6 +11,7 @@
 import { describe, test, expect, beforeEach } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
 import { useCompositorStore } from '../../stores/compositorStore';
+import { importProject } from '../../stores/actions/projectActions';
 import type { CompositionSettings } from '../../types/project';
 
 describe('Frame Blending', () => {
@@ -185,8 +186,8 @@ describe('Frame Blending', () => {
       setActivePinia(pinia);
       const freshStore = useCompositorStore();
 
-      // Deserialize
-      freshStore.importProject(projectData);
+      // Deserialize (use internal import directly - not exposed on public store API)
+      importProject(freshStore, projectData, () => freshStore.pushHistory());
 
       // Find the composition
       const loadedComp = Object.values(freshStore.project.compositions).find(
@@ -222,7 +223,7 @@ describe('Frame Blending', () => {
       const freshStore = useCompositorStore();
 
       // This should handle missing field gracefully
-      freshStore.importProject(JSON.stringify(legacyProjectData));
+      importProject(freshStore, JSON.stringify(legacyProjectData), () => freshStore.pushHistory());
 
       // Default should be false
       const settings = freshStore.activeComposition?.settings;
