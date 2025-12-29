@@ -66,7 +66,26 @@ async function evaluate(req) {
     const seededRandom = harden(createSeededRandom(frame));
     const globals = {
       ...safeMath,
-      random: seededRandom
+      random: seededRandom,
+      // SECURITY: Explicitly block dangerous intrinsics
+      // Even though SES sandboxes these, we block them for defense-in-depth
+      Function: void 0,
+      eval: void 0,
+      globalThis: void 0,
+      window: void 0,
+      document: void 0,
+      setTimeout: void 0,
+      setInterval: void 0,
+      setImmediate: void 0,
+      fetch: void 0,
+      XMLHttpRequest: void 0,
+      WebSocket: void 0,
+      Worker: void 0,
+      importScripts: void 0,
+      require: void 0,
+      process: void 0,
+      Deno: void 0,
+      Bun: void 0
     };
     for (const [key, value] of Object.entries(req.context)) {
       if (typeof value === "number" || typeof value === "string" || typeof value === "boolean") {
