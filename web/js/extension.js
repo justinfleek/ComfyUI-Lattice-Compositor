@@ -41,14 +41,19 @@ app.registerExtension({
   async setup() {
     const base = getExtensionBase();
 
-    app.extensionManager.registerSidebarTab({
-      id: "lattice-compositor",
-      icon: "pi pi-video",
-      title: "Motion Compositor",
-      tooltip: "Lattice Motion Compositor",
-      type: "custom",
-      render: (el) => renderCompositor(el, base)
-    });
+    // Guard: extensionManager may not exist in older ComfyUI versions
+    if (app.extensionManager?.registerSidebarTab) {
+      app.extensionManager.registerSidebarTab({
+        id: "lattice-compositor",
+        icon: "pi pi-video",
+        title: "Motion Compositor",
+        tooltip: "Lattice Motion Compositor",
+        type: "custom",
+        render: (el) => renderCompositor(el, base)
+      });
+    } else {
+      console.warn('[Lattice] extensionManager.registerSidebarTab not available - ComfyUI version may be too old');
+    }
 
     // Guard: only attach listener once
     if (!state.eventListenerAttached) {
