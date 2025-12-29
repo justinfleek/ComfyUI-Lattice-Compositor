@@ -13,183 +13,9 @@ const state = {
   eventListenerAttached: false,
   preloadLinksInjected: false,
   cssLinkInjected: false,
-  fullscreenCssInjected: false,
   loadedModule: null,
-  patchedNodeType: null,
-  sidebarPanel: null,
-  originalPanelWidth: null
+  patchedNodeType: null
 };
-
-/**
- * Inject CSS for fullscreen sidebar mode.
- * This overrides ComfyUI's sidebar panel width when Lattice is active.
- */
-function injectFullscreenCSS() {
-  if (state.fullscreenCssInjected) return;
-
-  const style = document.createElement('style');
-  style.id = 'lattice-fullscreen-css';
-  style.textContent = `
-    /* Lattice Fullscreen Mode - Expands sidebar panel to near-full width */
-    .lattice-fullscreen-mode {
-      width: calc(100vw - 48px) !important;
-      max-width: none !important;
-      min-width: calc(100vw - 48px) !important;
-      transition: width 0.2s ease-out;
-    }
-
-    /* Hide the resize handle when in fullscreen */
-    .lattice-fullscreen-mode .resize-handle,
-    .lattice-fullscreen-mode [class*="resize"] {
-      display: none !important;
-    }
-
-    /* Ensure content fills the expanded panel */
-    .lattice-fullscreen-mode > * {
-      width: 100% !important;
-    }
-
-    /* Close button styling */
-    .lattice-close-btn {
-      position: fixed;
-      top: 8px;
-      right: 12px;
-      z-index: 10001;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 8px 14px;
-      background: rgba(30, 30, 30, 0.95);
-      border: 1px solid #444;
-      border-radius: 6px;
-      color: #e0e0e0;
-      font-size: 13px;
-      font-family: system-ui, -apple-system, sans-serif;
-      cursor: pointer;
-      backdrop-filter: blur(8px);
-      transition: all 0.15s ease;
-    }
-
-    .lattice-close-btn:hover {
-      background: rgba(60, 60, 60, 0.95);
-      border-color: #666;
-      color: #fff;
-    }
-
-    .lattice-close-btn svg {
-      width: 14px;
-      height: 14px;
-    }
-  `;
-  document.head.appendChild(style);
-  state.fullscreenCssInjected = true;
-}
-
-/**
- * Find the sidebar panel element that controls width.
- * Walks up the DOM tree from the render element to find the resizable panel.
- */
-function findSidebarPanel(el) {
-  let current = el;
-  let maxIterations = 10;
-
-  while (current && maxIterations-- > 0) {
-    // Look for elements with explicit width styling or sidebar-related classes
-    const style = window.getComputedStyle(current);
-    const classes = current.className || '';
-
-    // Check if this is a sidebar panel (typically has width constraints)
-    if (
-      (style.width && style.width !== '100%' && style.width !== 'auto') ||
-      classes.includes('sidebar') ||
-      classes.includes('panel') ||
-      current.hasAttribute('data-sidebar')
-    ) {
-      // Verify it's a meaningful container, not just a wrapper
-      if (current.offsetWidth > 200 && current.offsetWidth < window.innerWidth * 0.9) {
-        return current;
-      }
-    }
-
-    current = current.parentElement;
-  }
-
-  // Fallback: return the first parent with constrained width
-  current = el.parentElement;
-  while (current && current !== document.body) {
-    if (current.offsetWidth < window.innerWidth * 0.5) {
-      return current;
-    }
-    current = current.parentElement;
-  }
-
-  return el.parentElement;
-}
-
-/**
- * Expand sidebar to fullscreen mode.
- */
-function enterFullscreen(el) {
-  injectFullscreenCSS();
-
-  const panel = findSidebarPanel(el);
-  if (panel) {
-    state.sidebarPanel = panel;
-    state.originalPanelWidth = panel.style.width || '';
-    panel.classList.add('lattice-fullscreen-mode');
-    console.log('[Lattice] Entered fullscreen mode');
-  }
-
-  // Add close button
-  addCloseButton();
-}
-
-/**
- * Exit fullscreen mode and restore sidebar.
- */
-function exitFullscreen() {
-  if (state.sidebarPanel) {
-    state.sidebarPanel.classList.remove('lattice-fullscreen-mode');
-    if (state.originalPanelWidth) {
-      state.sidebarPanel.style.width = state.originalPanelWidth;
-    }
-    state.sidebarPanel = null;
-    state.originalPanelWidth = null;
-  }
-
-  // Remove close button
-  const closeBtn = document.getElementById('lattice-close-btn');
-  if (closeBtn) closeBtn.remove();
-
-  console.log('[Lattice] Exited fullscreen mode');
-}
-
-/**
- * Add close button to return to ComfyUI view.
- */
-function addCloseButton() {
-  // Remove existing button if any
-  const existing = document.getElementById('lattice-close-btn');
-  if (existing) existing.remove();
-
-  const btn = document.createElement('button');
-  btn.id = 'lattice-close-btn';
-  btn.className = 'lattice-close-btn';
-  btn.innerHTML = `
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M18 6L6 18M6 6l12 12"/>
-    </svg>
-    Back to ComfyUI
-  `;
-  btn.onclick = () => {
-    exitFullscreen();
-    // Trigger ComfyUI to close the sidebar or switch tabs
-    // This dispatches a custom event that can be caught if needed
-    window.dispatchEvent(new CustomEvent('lattice:close-compositor'));
-  };
-
-  document.body.appendChild(btn);
-}
 
 function getExtensionBase() {
   const scripts = document.querySelectorAll('script[type="module"]');
@@ -261,9 +87,6 @@ async function renderCompositor(el, base) {
   // Clear container
   el.innerHTML = '';
 
-  // Enter fullscreen mode - expand sidebar panel to full width
-  enterFullscreen(el);
-
   const container = document.createElement('div');
   container.id = 'lattice-compositor-root';
   container.style.cssText = 'width:100%;height:100%;min-height:100vh;overflow:hidden;background:#050505;position:relative;';
@@ -327,8 +150,6 @@ async function renderCompositor(el, base) {
 
 window.LatticeCompositor = {
   getNodeId: () => state.currentNodeId,
-  exitFullscreen,
-  isFullscreen: () => !!state.sidebarPanel,
   async sendOutput(matte, preview) {
     if (!state.currentNodeId) return false;
     try {
