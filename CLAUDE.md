@@ -14,6 +14,34 @@
 
 ---
 
+## CURRENT WORKING STATE (2025-12-29)
+
+**Commit:** `ae6e6904` - fix(camera): sync camera-controls state and viewportTransform pan offsets
+
+### What Works
+- ✅ Compositor loads in ComfyUI sidebar
+- ✅ Sidebar button appears and opens compositor
+- ✅ Layers render in viewport
+- ✅ SES expression sandbox (worker-only, main thread disabled for Vue/Three.js compatibility)
+- ✅ Camera zoom (setLookAt syncs camera-controls internal state)
+- ✅ Pan updates viewportTransform[4,5] for 2D overlays
+
+### Known Issues (DO NOT fix without careful testing)
+| Issue | Component | Description |
+|-------|-----------|-------------|
+| MotionPathOverlay indices | MotionPathOverlay.vue:304-305 | Uses [0,1] instead of [4,5] for translate - won't track panning |
+| UI layout cramped | WorkspaceLayout | Splitpane sizing issues |
+| Solid layer anchor | SolidLayer | Wrong anchor point positioning |
+
+### Architecture Notes
+- **Two coordinate systems**: 2D `viewportTransform` array for overlays, 3D camera for rendering
+- **viewportTransform format**: `[scaleX, skewX, skewY, scaleY, translateX, translateY]` = `[zoom, 0, 0, zoom, panX, panY]`
+- **camera-controls library**: Must sync via `setLookAt()` after direct camera.position changes or it reverts
+- **screenToScene()**: Uses viewportTransform for 2D layer placement (text, shapes, segments)
+- **screenToWorld()**: Defined in CameraController but currently unused
+
+---
+
 ## PROJECT OVERVIEW
 Motion graphics compositor as ComfyUI custom node pack.
 - **Open Source**: Node pack for creating AI video control signals

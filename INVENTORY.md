@@ -1,6 +1,7 @@
 # Complete Codebase Inventory
 
 **Generated:** 2024-12-28
+**Last Updated:** 2025-12-29
 **Purpose:** Security audit baseline - map ALL code before building security plan
 
 ---
@@ -9,11 +10,19 @@
 
 | Category | Count |
 |----------|-------|
-| Python Files | 21 |
-| TypeScript Files | 290 |
-| Vue Components | 144 |
-| JavaScript Files (built/dist) | 22 |
-| Total Source Files | ~477 |
+| Python Files | 20 |
+| TypeScript Files | 361 |
+| Vue Components | 157 |
+| JavaScript Files (built/web) | 13 |
+| Total Source Files | ~551 |
+
+### Test Summary
+| Metric | Count |
+|--------|-------|
+| Test Files | 17 |
+| Tests Passing | 384 |
+| Tests Skipped | 34 |
+| Total Tests | 418 |
 
 ---
 
@@ -54,44 +63,53 @@
 
 ---
 
-## 2. TypeScript Files (290 total)
+## 2. TypeScript Files (361 total)
 
 ### By Directory
 
-#### `/ui/src/services/` (84 files) - **HIGH PRIORITY**
+#### `/ui/src/services/` (181 files) - **HIGH PRIORITY**
 Core business logic, data processing, external integrations.
 
 | Subdirectory | Files | Priority |
 |--------------|-------|----------|
-| `expressions/` | 19 | **CRITICAL** - Code execution |
+| `expressions/` | 20 | **CRITICAL** - Code execution |
 | `effects/` | 17 | HIGH - Canvas/GPU operations |
 | `ai/` | 10 | **CRITICAL** - External AI calls |
 | `export/` | 10 | HIGH - File generation |
 | `audio/` | 4 | MEDIUM |
-| `security/` | 2 | **CRITICAL** - Security controls |
+| `security/` | 5 | **CRITICAL** - Security controls |
 | `comfyui/` | 3 | **CRITICAL** - Server communication |
 | Root services | 19+ | HIGH |
 
-**Critical Service Files:**
-- `services/expressions/expressionValidator.ts` - DoS protection
-- `services/expressions/sesEvaluator.ts` - SES sandbox
-- `services/expressions/workerEvaluator.ts` - Worker timeout
-- `services/security/jsonSanitizer.ts` - JSON bomb protection
-- `services/security/urlValidator.ts` - URL protocol blocking
+**Security Service Files (5):**
+- `services/security/auditLog.ts` - Audit logging
+- `services/security/jsonSanitizer.ts` - JSON bomb protection (37 tests)
+- `services/security/rateLimits.ts` - Rate limiting
+- `services/security/templateVerifier.ts` - Template signature verification (16 tests)
+- `services/security/urlValidator.ts` - URL protocol blocking (37 tests)
+
+**Critical Expression Files (20):**
+- `services/expressions/sesEvaluator.ts` - SES sandbox (main thread DISABLED, worker only)
+- `services/expressions/workerEvaluator.ts` - Worker timeout (100ms)
+- `services/expressions/expressionValidator.ts` - DoS protection (35 tests)
+- `services/expressions/expressionEvaluator.ts` - Main evaluator
+- Plus 16 supporting files (easing, motion, audio expressions, etc.)
+
+**Other Critical Services:**
 - `services/comfyui/comfyuiClient.ts` - WebSocket + fetch
 - `services/ai/AICompositorAgent.ts` - AI integration
 - `services/layerDecomposition.ts` - Decomposition API
 
-#### `/ui/src/engine/` (41 files) - **HIGH PRIORITY**
+#### `/ui/src/engine/` (60 files) - **HIGH PRIORITY**
 Rendering engine, WebGL, Three.js integration.
 
 | Subdirectory | Files | Priority |
 |--------------|-------|----------|
 | `layers/` | 25 | HIGH - All layer types |
 | `particles/` | 18 | MEDIUM - Particle system |
-| `core/` | 5 | HIGH - Core engine |
+| `core/` | 5 | HIGH - Core engine (includes CameraController.ts) |
 | `animation/` | 2 | MEDIUM |
-| Root engine | 6 | HIGH |
+| Root engine | 10 | HIGH |
 
 **Critical Engine Files:**
 - `engine/LatticeEngine.ts` - Main engine entry point
@@ -139,7 +157,7 @@ Test files.
 
 ---
 
-## 3. Vue Components (144 total)
+## 3. Vue Components (157 total)
 
 ### By Directory
 

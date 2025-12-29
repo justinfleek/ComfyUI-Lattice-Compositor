@@ -146,11 +146,16 @@ Each layer type needs these tests verified:
 | UI-001 | Viewport not centered in composition panel | Minor | CenterViewport.vue | Open | CSS flexbox added, may need camera centering fix |
 | UI-002 | Responsive layout issues on small screens | Minor | WorkspaceLayout.vue | Open | Splitpane minimum sizes |
 | UI-003 | Sidebar tab not appearing in some ComfyUI versions | Major | extension.js | Fixed | Added extensionManager guard |
+| CAM-001 | MotionPathOverlay wrong transform indices | Minor | MotionPathOverlay.vue:304-305 | Open | Uses [0,1] not [4,5] for translate |
+| CAM-002 | Solid layer wrong anchor point | Minor | SolidLayer | Open | Positioning incorrect |
 
 ### Fixed Bugs (Recent)
 
 | ID | Description | Severity | Fixed Date | Notes |
 |----|-------------|----------|------------|-------|
+| CAM-003 | Zoom not working (camera-controls reverts) | Major | 2025-12-29 | Added setLookAt() sync in CameraController.ts:431 |
+| CAM-004 | Pan not updating screenToScene coordinates | Major | 2025-12-29 | Added viewportTransform[4,5] update in ThreeCanvas.vue:1163 |
+| SEC-001 | SES lockdown breaks Vue/Three.js | Critical | 2025-12-29 | Disabled main thread lockdown, worker-only sandbox |
 | BUG-176 | Division by zero in periodic() | Medium | 2025-12-28 | expressionEvaluator.ts |
 | BUG-177 | NaN propagation in wave functions | Medium | 2025-12-28 | sawtooth, triangle, square |
 | BUG-178 | NaN bypasses clamp in smoothstep() | Medium | 2025-12-28 | |
@@ -275,7 +280,41 @@ Based on code analysis, these areas need review:
 
 ## Session Notes
 
-### 2025-12-29
+### 2025-12-29 (Late Session) - Current: ae6e6904
+
+**SES Lockdown Investigation & Resolution:**
+- SES lockdown with `overrideTaming: 'severe'` broke Vue/Three.js
+- Error: "Cannot assign to read only property 'next' of object '[object Array Iterator]'"
+- Tried `overrideTaming: 'moderate'` - still broke
+- **FINAL FIX:** Disabled main thread lockdown entirely, expressions run in isolated worker only
+- Worker has its own SES sandbox with 100ms timeout
+- Main thread never executes expressions, so this is secure
+
+**Camera System Deep Dive:**
+- Diagnosed why zoom/pan weren't working
+- **Root cause 1:** `camera-controls` library maintains internal state
+- When we set `camera.position` directly, `cameraControls.update()` in render loop reverts it
+- **Fix:** Added `setLookAt()` sync after direct camera updates (CameraController.ts:431)
+
+- **Root cause 2:** `viewportTransform[4,5]` (pan offsets) never updated during pan
+- `screenToScene()` uses viewportTransform for 2D coordinate conversion
+- **Fix:** Added `viewportTransform.value[4] += dx` during pan (ThreeCanvas.vue:1163)
+
+**Coordinate System Architecture Documented:**
+- Two systems: 2D affine `viewportTransform` for overlays, 3D camera for WebGL
+- viewportTransform format: `[scaleX, skewX, skewY, scaleY, translateX, translateY]`
+- `screenToScene()` - 2D affine inverse (for layer placement)
+- `screenToWorld()` - 3D ray unprojection (currently unused)
+
+**Bug Found (not yet fixed):**
+- MotionPathOverlay.vue:304-305 uses wrong indices `[0,1]` instead of `[4,5]`
+- This means motion path overlay won't track panning correctly
+
+**Many Reverts:**
+- Multiple commit/revert cycles during SES debugging
+- Final stable state: ae6e6904
+
+### 2025-12-29 (Earlier)
 - Created PROJECT_PROGRESS.md
 - Security hardening complete (Phase 1)
 - CI pipeline operational
