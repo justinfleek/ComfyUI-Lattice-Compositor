@@ -2360,4 +2360,4 @@ const jszip_min = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty(
 	default: JSZip
 }, Symbol.toStringTag, { value: 'Module' }));
 
-export { JSZip as J, getDefaultExportFromCjs as a, commonjsRequire as b, commonjsGlobal as c, getAugmentedNamespace as g, jszip_min as j };
+export { JSZip as J, getDefaultExportFromCjs as a, commonjsGlobal as b, commonjsRequire as c, getAugmentedNamespace as g, jszip_min as j };

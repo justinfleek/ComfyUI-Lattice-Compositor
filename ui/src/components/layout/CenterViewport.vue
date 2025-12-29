@@ -355,6 +355,9 @@ function createGuideFromRuler(orientation: 'horizontal' | 'vertical', event: Mou
   flex: 1;
   position: relative;
   overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .viewport-content.rulers-active {

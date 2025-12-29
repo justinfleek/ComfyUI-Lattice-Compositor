@@ -1,98 +1,162 @@
-# CLAUDE CODE — SESSION RESET & OPERATING CHARTER (v5)
+# CLAUDE.md — SECURITY AUDIT PROTOCOL v4.0
 
-You are operating **inside an active repo** for a **ComfyUI v2 toolbar extension with a pop-out Vue UI**.
+## PROJECT OVERVIEW
+Motion graphics compositor as ComfyUI custom node pack.
+- **Open Source**: Node pack for creating AI video control signals
+- **Pro**: Standalone product with LLM, locked nodes, Weyl API integration
 
----
+## PHASE 1 STATUS: ✅ COMPLETE (TypeScript/Frontend)
 
-## YOU ARE NOT HERE TO:
-- Perform full codebase audits
-- Speculate about architecture
-- Guess file locations
-- Reframe goals
-- Suggest alternative approaches
-- Optimize prematurely
-- Rewrite large systems
+| Control | File | Tests |
+|---------|------|-------|
+| Expression Sandbox | services/expressions/sesEvaluator.ts | 86/86 |
+| URL Validation | services/security/urlValidator.ts | 37 |
+| JSON Sanitization | services/security/jsonSanitizer.ts | 37 |
 
-## YOU ARE HERE TO:
-- Stabilize lifecycle boundaries
-- Eliminate cascading failures
-- Enforce idempotence, teardown safety, and runtime correctness
-- Make the extension safe to install, load, open, close, reload, and coexist with other ComfyUI extensions
+## PHASE 2 STATUS: 🔴 IN PROGRESS (Python Backend)
 
----
+### Python Files to Audit (21 total)
 
-## ABSOLUTE RULES (DO NOT VIOLATE)
+#### /nodes/ (Priority - these are the ComfyUI nodes)
+| File | Status | Risk |
+|------|--------|------|
+| controlnet_preprocessors.py | ⬜ PENDING | HIGH |
+| lattice_layer_decomposition.py | ⬜ PENDING | HIGH |
+| compositor_node.py | ⬜ PENDING | MEDIUM |
+| lattice_api_proxy.py | ⬜ PENDING | MEDIUM |
+| lattice_frame_interpolation.py | ⬜ PENDING | MEDIUM |
+| lattice_stem_separation.py | ⬜ PENDING | MEDIUM |
+| lattice_vectorize.py | ⬜ PENDING | MEDIUM |
+| __init__.py | ⬜ PENDING | LOW |
 
-1. **Do NOT guess file names or paths**
-   - Only operate on files explicitly opened or referenced
-   - If you need a file, ASK for it
-
-2. **Do NOT do file-by-file audits**
-   - Audits are scoped by *runtime surface*, not directories
-
-3. **Do NOT output long explanations**
-   - Prefer diffs, full corrected files, or bulletproof reasoning tied to concrete code
-
-4. **Do NOT refactor architecture**
-   - Guards > rewrites
-   - Idempotence > redesign
-   - Explicit teardown > abstraction
-
-5. **Do NOT touch internal systems unless lifecycle-stable**
-   - Particles, expressions, math, effects are downstream
-   - Lifecycle stability comes first
-
-6. **If you suggest a fix, you MUST output the full corrected file**
-   - Granular suggestions without a reviewed full-file output are forbidden
-
-7. **No auto-mounting, no implicit globals, no hidden side effects**
-   - All lifecycle must be explicit and reversible
+#### /scripts/ (Lower priority - test utilities)
+| File | Status |
+|------|--------|
+| decomp_local.py | ⬜ PENDING |
+| decomp_run.py | ⬜ PENDING |
+| run_decomposition_gpu.py | ⬜ PENDING |
+| run_decomp_comfyui.py | ⬜ PENDING |
+| run_decomp_now.py | ⬜ PENDING |
+| test_*.py (6 files) | ⬜ PENDING |
 
 ---
 
-## CURRENT STRATEGY (NON-NEGOTIABLE)
+## DANGEROUS PATTERNS TO FIND
 
-We are performing a **Lifecycle Stability Pass**, NOT a full audit.
+### CRITICAL (must fix immediately)
+```python
+trust_remote_code=True      # Executes arbitrary Python from model repo
+exec(user_input)            # Direct code execution
+eval(user_input)            # Direct code execution
+```
 
-### The ONLY questions that matter:
-- Can this extension be mounted twice safely?
-- Can it be unmounted cleanly?
-- Can it survive ComfyUI reloads?
-- Can it coexist with other extensions?
-- Can it fail without corrupting global state?
+### HIGH (fix or justify)
+```python
+pickle.load(f)              # Can execute arbitrary code
+torch.load(path)            # Uses pickle internally
+subprocess.call(user_input) # Command injection
+os.system(user_input)       # Command injection
+```
 
-If a change does not directly improve one of these, do not propose it.
+### SAFE ALTERNATIVES
+```python
+# Instead of trust_remote_code=True
+trust_remote_code=False
 
----
+# Instead of torch.load
+from safetensors.torch import load_file
+weights = load_file(path)
 
-## DEFINITION OF DONE (FOR THIS PHASE)
-
-A file is considered "done" ONLY if:
-- All side effects are paired with teardown
-- All entrypoints are idempotent
-- All global state is owned and guarded
-- No DOM, listener, worker, WebGL, or timer leaks are possible
-- The file can be safely locked and not revisited
-
----
-
-## PROCESS
-
-1. Read this charter
-2. Wait for explicit instruction or file reference
-3. Do NOT start scanning the repo on your own
-4. Operate ONLY on what is explicitly provided
+# Instead of pickle
+import json
+data = json.load(f)
+```
 
 ---
 
-## CURRENT STATUS
+## AUDIT PROCESS
 
-- This is a ComfyUI toolbar extension with a pop-out Vue UI
-- Must install cleanly via pip and run inside ComfyUI
-- Lifecycle bugs are more dangerous than logic bugs
-- `compositor/ui/src/main.ts` was previously stabilized
-- Further work proceeds file-by-file ONLY when explicitly requested
+### For each Python file:
+1. Read entire file
+2. Search for dangerous patterns
+3. Document in AUDIT/PYTHON_FINDINGS.md:
+   - File path
+   - Line numbers with issues
+   - What the code does
+   - Risk level
+   - Recommended fix
+4. Fix critical issues immediately
+5. Mark file as AUDITED in this doc
+
+### Findings format:
+```markdown
+## [filename] - [RISK LEVEL]
+
+**Lines with issues:** X, Y, Z
+
+**Issue 1:** Line X - trust_remote_code=True
+- Context: Loading HuggingFace model
+- Risk: Arbitrary code execution
+- Fix: Set to False, verify model works
+
+**Issue 2:** ...
+```
 
 ---
 
-**WAIT FOR INSTRUCTIONS. DO NOT ACT AUTONOMOUSLY.**
+## MODEL REGISTRY SYSTEM (After Python Audit)
+
+### Goal
+Secure model downloading with hash verification.
+
+### Components
+1. `modelRegistry.json` - Approved models with SHA256
+2. `modelDownloader.py` - Download + verify from HuggingFace
+3. ComfyUI integration - Proper folder placement
+
+### Registry format:
+```json
+{
+  "models": {
+    "depth-anything-v3": {
+      "repo": "depth-anything/Depth-Anything-V2-Large",
+      "files": ["model.safetensors"],
+      "sha256": "abc123...",
+      "comfyui_path": "models/depth"
+    }
+  }
+}
+```
+
+---
+
+## FILES (COMMIT STATUS)
+
+| File | Git Status | Notes |
+|------|------------|-------|
+| CLAUDE.md | ✅ Commit | Public audit protocol |
+| INVENTORY.md | ✅ Commit | No secrets |
+| SECURITY_ARCHITECTURE.md | ❌ LOCAL ONLY | Contains vulnerability map |
+| AUDIT/*.md | ✅ Commit | Findings only, not exploitation details |
+
+---
+
+## ABSOLUTE RULES
+
+1. **NEVER commit SECURITY_ARCHITECTURE.md** - scrub if accidentally pushed
+2. **Document before fixing** - create audit trail
+3. **One file at a time** - thorough analysis
+4. **Prefer safetensors** - no pickle execution risk
+5. **No trust_remote_code=True** - ever
+6. **Validate all node inputs** - ComfyUI nodes receive user data
+
+---
+
+## AFTER PYTHON AUDIT: Remaining Work
+
+| Priority | Task | Phase |
+|----------|------|-------|
+| 1 | Nested composition depth limits | TypeScript |
+| 2 | Model registry + secure downloader | Python |
+| 3 | Template signing (official templates) | Both |
+| 4 | LLM boundaries (Pro only) | Future |
