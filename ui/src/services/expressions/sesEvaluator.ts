@@ -38,28 +38,74 @@ let sesError: Error | null = null;
 const MAX_EXPRESSION_LENGTH = 10240;
 
 /**
- * Initialize SES security sandbox
+ * Initialize SES lockdown for prototype pollution protection
  *
- * NOTE: Main thread lockdown has been DISABLED because it breaks Vue/Three.js.
- * SES freezes Array Iterator and other intrinsics, causing:
- * "TypeError: Cannot assign to read only property 'next' of object '[object Array Iterator]'"
+ * CRITICAL: This must be called ONCE at application startup, before any other code.
+ * It freezes all JavaScript intrinsics to prevent prototype pollution attacks.
  *
- * Expression evaluation is STILL SECURE because:
- * 1. All expressions are evaluated in an isolated Web Worker (expressionWorker.ts)
- * 2. The worker has its own SES lockdown that doesn't affect the main thread
- * 3. Worker provides timeout protection against infinite loops (100ms max)
+ * Security protections provided:
+ * - Prototype pollution prevention (Object.prototype, Array.prototype, etc.)
+ * - Template injection defense
+ * - XSS mitigation via frozen intrinsics
  *
- * This function now just marks SES as "initialized" without calling lockdown.
+ * NOTE: Using 'moderate' overrideTaming for Vue/Three.js compatibility.
+ * The 'severe' setting caused: "TypeError: Cannot assign to read only property 'next'"
  */
 export async function initializeSES(): Promise<boolean> {
   if (sesInitialized) {
     return true;
   }
 
-  // Mark as initialized - actual SES lockdown happens in the worker only
-  sesInitialized = true;
-  console.log('[SES] Expression security via worker sandbox - main thread lockdown disabled for Vue/Three.js compatibility');
-  return true;
+  try {
+    // Dynamically import SES (side effects add lockdown to globalThis)
+    await import('ses');
+
+    // Get lockdown from globalThis (SES adds it via side effects)
+    const { lockdown } = globalThis as any;
+
+    if (!lockdown) {
+      // SES not available - fail silently, expressions will be disabled
+      sesError = new Error('SES lockdown function not found on globalThis');
+      console.warn('[SES] Lockdown not available - expressions disabled (this is normal if @endo/ses is not installed)');
+      return false;
+    }
+
+    // Lockdown configuration optimized for Vue/Three.js compatibility
+    // See: https://github.com/endojs/endo/blob/master/packages/ses/docs/lockdown.md
+    lockdown({
+      // Allow console for debugging (required for dev experience)
+      consoleTaming: 'unsafe',
+
+      // Preserve error stacks for debugging
+      errorTaming: 'unsafe',
+
+      // Show full stack traces
+      stackFiltering: 'verbose',
+
+      // IMPORTANT: Use 'moderate' instead of 'severe' for Vue/Three.js compatibility
+      // 'severe' freezes Array Iterator in a way that breaks Vue's reactivity
+      // 'moderate' provides good security while maintaining compatibility
+      overrideTaming: 'moderate',
+
+      // Don't tame locale methods (needed for number/date formatting)
+      localeTaming: 'unsafe',
+
+      // Don't tame domains (not used in browser)
+      domainTaming: 'unsafe',
+    });
+
+    sesInitialized = true;
+    console.log('[SES] Lockdown complete - JavaScript intrinsics frozen (moderate mode for Vue compatibility)');
+    return true;
+  } catch (error) {
+    sesError = error instanceof Error ? error : new Error(String(error));
+    // Log the specific error for debugging
+    console.warn('[SES] Lockdown failed:', sesError.message);
+    console.warn('[SES] Expressions will use worker-only sandbox as fallback');
+    // Mark as initialized anyway - worker sandbox provides backup security
+    sesInitialized = true;
+    return false;
+  }
 }
 
 /**
