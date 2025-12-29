@@ -331,6 +331,7 @@ def load_model(use_local: bool = False) -> dict:
         pipe = QwenImageLayeredPipeline.from_pretrained(
             model_path,
             torch_dtype=dtype,
+            trust_remote_code=False,  # SECURITY: Prevent arbitrary code execution
         )
         pipe = pipe.to(device)
         pipe.set_progress_bar_config(disable=None)
