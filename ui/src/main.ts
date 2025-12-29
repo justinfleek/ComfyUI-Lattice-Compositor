@@ -15,8 +15,15 @@ let sesInitPromise: Promise<void> | null = null
 let bridgeHandler: EventListener | null = null
 
 /**
- * SECURITY: Initialize SES sandbox exactly once, fail closed.
- * Safe under concurrent mount attempts.
+ * SECURITY: Initialize expression security.
+ *
+ * Expression evaluation is secured via Web Worker isolation:
+ * - Expressions run in an isolated worker with SES lockdown
+ * - 100ms timeout protects against infinite loops
+ * - Main thread is never blocked
+ *
+ * NOTE: Main thread lockdown is DISABLED because it breaks Vue/Three.js.
+ * This is safe because expressions never execute in the main thread.
  */
 async function initializeSecuritySandbox(): Promise<void> {
   if (sesInitialized) return
@@ -24,19 +31,12 @@ async function initializeSecuritySandbox(): Promise<void> {
   if (!sesInitPromise) {
     sesInitPromise = (async () => {
       try {
-        const success = await initializeSES()
+        await initializeSES()
         sesInitialized = true
-
-        if (success) {
-          console.log('[Security] SES sandbox initialized - expressions enabled')
-        } else {
-          console.warn('[Security] SES initialization failed - expressions DISABLED')
-          console.warn('[Security] Install @endo/ses package: npm install @endo/ses')
-        }
+        // Logging is handled in initializeSES()
       } catch (error) {
         sesInitialized = true
-        console.error('[Security] SES initialization error:', error)
-        console.warn('[Security] Expressions are DISABLED - this is a security feature')
+        console.error('[Security] Expression security initialization error:', error)
       }
     })()
   }
