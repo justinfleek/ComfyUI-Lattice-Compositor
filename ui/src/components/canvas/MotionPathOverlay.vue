@@ -301,8 +301,8 @@ const frameTicks = computed(() => {
 
 // SVG overlay style (matches viewport transform)
 const overlayStyle = computed(() => {
-  const tx = props.viewportTransform[0] || 0;
-  const ty = props.viewportTransform[1] || 0;
+  const tx = props.viewportTransform[4] || 0;  // translateX
+  const ty = props.viewportTransform[5] || 0;  // translateY
 
   return {
     position: 'absolute' as const,
