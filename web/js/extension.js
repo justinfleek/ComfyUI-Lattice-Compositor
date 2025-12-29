@@ -41,8 +41,13 @@ app.registerExtension({
   async setup() {
     const base = getExtensionBase();
 
+    console.log('[Lattice] Extension setup starting...');
+    console.log('[Lattice] app.extensionManager:', app.extensionManager);
+    console.log('[Lattice] registerSidebarTab:', app.extensionManager?.registerSidebarTab);
+
     // Guard: extensionManager may not exist in older ComfyUI versions
     if (app.extensionManager?.registerSidebarTab) {
+      console.log('[Lattice] Registering sidebar tab...');
       app.extensionManager.registerSidebarTab({
         id: "lattice-compositor",
         icon: "pi pi-video",
@@ -51,8 +56,10 @@ app.registerExtension({
         type: "custom",
         render: (el) => renderCompositor(el, base)
       });
+      console.log('[Lattice] Sidebar tab registered successfully');
     } else {
       console.warn('[Lattice] extensionManager.registerSidebarTab not available - ComfyUI version may be too old');
+      console.warn('[Lattice] Try updating ComfyUI to the latest version with the new frontend');
     }
 
     // Guard: only attach listener once
