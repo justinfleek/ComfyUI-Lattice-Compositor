@@ -426,6 +426,9 @@ export class CameraController {
     this.camera.rotation.z = 0;
 
     this.camera.updateProjectionMatrix();
+
+    // Sync camera-controls internal state to prevent it from reverting our changes
+    this.cameraControls?.setLookAt(cameraPosX, cameraPosY, distance, cameraPosX, cameraPosY, 0, false);
   }
 
   /**

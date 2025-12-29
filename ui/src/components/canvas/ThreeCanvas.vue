@@ -1157,6 +1157,12 @@ function setupInputHandlers() {
           currentPan.x - dx * worldPerPixel,
           currentPan.y - dy * worldPerPixel  // Positive dy should move camera up (view shifts down)
         );
+
+        // Update viewportTransform for 2D overlays (screenToScene uses this)
+        // dx/dy are screen pixels - accumulate them in the transform
+        viewportTransform.value[4] += dx;
+        viewportTransform.value[5] += dy;
+
         // Force boundary update after camera pan
         triggerGuideUpdate();
       }
