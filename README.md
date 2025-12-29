@@ -4,12 +4,12 @@
 
 **Professional Motion Graphics Engine for AI Video Workflows**
 
+[![CI](https://github.com/justinfleek/weyl-compositor/actions/workflows/ci.yml/badge.svg)](https://github.com/justinfleek/weyl-compositor/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![ComfyUI](https://img.shields.io/badge/ComfyUI-Extension-green.svg)](https://github.com/comfyanonymous/ComfyUI)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
 [![Vue 3](https://img.shields.io/badge/Vue-3.5-brightgreen.svg)](https://vuejs.org/)
 [![Three.js](https://img.shields.io/badge/Three.js-r170-black.svg)](https://threejs.org/)
-[![Tests](https://img.shields.io/badge/Tests-1777%20passing-success.svg)]()
 
 [Features](#features) | [Installation](#installation) | [Quick Start](#quick-start) | [Documentation](#documentation) | [Contributing](#contributing)
 
