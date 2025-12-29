@@ -777,4 +777,410 @@ export class CompositorHelper {
   async expectMeshError(layerIndex: number) {
     await expect(this.page.locator(`[data-testid="layer-${layerIndex}-mesh-status-error"]`)).toBeVisible();
   }
+
+  // ============== TIME PROPERTIES (Tutorial 04) ==============
+
+  /** Get layer timing info */
+  async getLayerStartFrame(layerIndex: number): Promise<number> {
+    const value = await this.page.locator(`[data-testid="layer-${layerIndex}-startframe"]`).inputValue();
+    return parseInt(value);
+  }
+
+  async getLayerEndFrame(layerIndex: number): Promise<number> {
+    const value = await this.page.locator(`[data-testid="layer-${layerIndex}-endframe"]`).inputValue();
+    return parseInt(value);
+  }
+
+  /** Set layer timing */
+  async setLayerStartFrame(layerIndex: number, frame: number) {
+    await this.page.fill(`[data-testid="layer-${layerIndex}-startframe"]`, String(frame));
+    await this.page.keyboard.press('Enter');
+  }
+
+  async setLayerEndFrame(layerIndex: number, frame: number) {
+    await this.page.fill(`[data-testid="layer-${layerIndex}-endframe"]`, String(frame));
+    await this.page.keyboard.press('Enter');
+  }
+
+  // ============== TIME STRETCH (Tutorial 04) ==============
+
+  /** Get/Set time stretch */
+  async getTimeStretch(layerIndex: number): Promise<number> {
+    const value = await this.page.locator(`[data-testid="layer-${layerIndex}-timestretch"]`).inputValue();
+    return parseFloat(value);
+  }
+
+  async setTimeStretch(layerIndex: number, percentage: number) {
+    await this.page.fill(`[data-testid="layer-${layerIndex}-timestretch"]`, String(percentage));
+    await this.page.keyboard.press('Enter');
+  }
+
+  /** Set stretch anchor */
+  async setStretchAnchor(layerIndex: number, anchor: 'startFrame' | 'endFrame' | 'currentFrame') {
+    await this.page.click(`[data-testid="layer-${layerIndex}-stretch-anchor"]`);
+    await this.page.click(`text=${anchor}`);
+  }
+
+  /** Toggle time reverse */
+  async setTimeReverse(layerIndex: number, reversed: boolean) {
+    const checkbox = this.page.locator(`[data-testid="layer-${layerIndex}-time-reverse"]`);
+    const isChecked = await checkbox.isChecked();
+    if (isChecked !== reversed) {
+      await checkbox.click();
+    }
+  }
+
+  // ============== SPEEDMAP / TIME REMAPPING (Tutorial 04) ==============
+
+  /** Enable speedMap */
+  async enableSpeedMap(layerIndex: number) {
+    await this.page.click(`[data-testid="layer-${layerIndex}-speedmap-enable"]`);
+  }
+
+  /** Check if speedMap enabled */
+  async isSpeedMapEnabled(layerIndex: number): Promise<boolean> {
+    return await this.page.locator(`[data-testid="layer-${layerIndex}-speedmap-enabled"]`).isVisible();
+  }
+
+  /** Get speedMap value at current frame */
+  async getSpeedMapValue(layerIndex: number): Promise<number> {
+    const value = await this.page.locator(`[data-testid="layer-${layerIndex}-speedmap-value"]`).inputValue();
+    return parseFloat(value);
+  }
+
+  /** Set speedMap value (creates keyframe if stopwatch enabled) */
+  async setSpeedMapValue(layerIndex: number, sourceFrame: number) {
+    await this.page.fill(`[data-testid="layer-${layerIndex}-speedmap-value"]`, String(sourceFrame));
+    await this.page.keyboard.press('Enter');
+  }
+
+  /** Add speedMap keyframe at current time */
+  async addSpeedMapKeyframe(layerIndex: number, sourceFrame: number) {
+    await this.setSpeedMapValue(layerIndex, sourceFrame);
+  }
+
+  /** Set keyframe interpolation to hold */
+  async setKeyframeInterpolation(property: string, type: 'linear' | 'bezier' | 'hold') {
+    await this.page.click(`[data-testid="keyframe-${property}-selected"]`, { button: 'right' });
+    await this.page.click(`text=${type}`);
+  }
+
+  // ============== FRAME BLENDING (Tutorial 04) ==============
+
+  /** Set frame blending mode */
+  async setFrameBlending(layerIndex: number, mode: 'none' | 'mix' | 'motion') {
+    await this.page.click(`[data-testid="layer-${layerIndex}-frame-blending"]`);
+    await this.page.click(`text=${mode}`);
+  }
+
+  /** Enable composition frame blending */
+  async enableCompFrameBlending() {
+    await this.page.click('[data-testid="comp-frame-blending-enable"]');
+  }
+
+  // ============== POSTERIZE TIME (Tutorial 04) ==============
+
+  /** Add and configure PosterizeTime effect */
+  async addPosterizeTimeEffect(layerIndex: number) {
+    await this.selectLayer(layerIndex);
+    await this.searchEffects('Posterize Time');
+    await this.applyEffect('posterize-time');
+  }
+
+  async setPosterizeTimeFrameRate(effectIndex: number, frameRate: number) {
+    await this.page.fill(`[data-testid="effect-${effectIndex}-posterize-framerate"]`, String(frameRate));
+    await this.page.keyboard.press('Enter');
+  }
+
+  // ============== FREEZE FRAME (Tutorial 04) ==============
+
+  /** Add FreezeFrame effect */
+  async addFreezeFrameEffect(layerIndex: number) {
+    await this.selectLayer(layerIndex);
+    await this.searchEffects('Freeze Frame');
+    await this.applyEffect('freeze-frame');
+  }
+
+  async setFreezeAtFrame(effectIndex: number, frame: number) {
+    await this.page.fill(`[data-testid="effect-${effectIndex}-freeze-at-frame"]`, String(frame));
+    await this.page.keyboard.press('Enter');
+  }
+
+  // ============== EXPRESSIONS (Tutorial 04) ==============
+
+  /** Enable expression on property */
+  async enablePropertyExpression(layerIndex: number, property: string) {
+    await this.page.click(`[data-testid="layer-${layerIndex}-${property}-expression-enable"]`, { modifiers: ['Alt'] });
+  }
+
+  /** Get expression text */
+  async getExpressionText(layerIndex: number, property: string): Promise<string> {
+    return await this.page.locator(`[data-testid="layer-${layerIndex}-${property}-expression"]`).inputValue();
+  }
+
+  /** Set expression text */
+  async setExpressionText(layerIndex: number, property: string, expression: string) {
+    await this.page.fill(`[data-testid="layer-${layerIndex}-${property}-expression"]`, expression);
+    await this.page.keyboard.press('Enter');
+  }
+
+  /** Check for expression error */
+  async hasExpressionError(layerIndex: number, property: string): Promise<boolean> {
+    return await this.page.locator(`[data-testid="layer-${layerIndex}-${property}-expression-error"]`).isVisible();
+  }
+
+  /** Get expression error message */
+  async getExpressionError(layerIndex: number, property: string): Promise<string> {
+    return await this.page.locator(`[data-testid="layer-${layerIndex}-${property}-expression-error"]`).textContent() || '';
+  }
+
+  /** Evaluate expression and get result */
+  async getExpressionResult(layerIndex: number, property: string): Promise<string> {
+    return await this.page.locator(`[data-testid="layer-${layerIndex}-${property}-value"]`).inputValue();
+  }
+
+  // ============== EXPRESSION CONTROLS (Tutorial 04) ==============
+
+  /** Add SliderControl effect */
+  async addSliderControl(layerIndex: number, name: string = 'Slider Control') {
+    await this.selectLayer(layerIndex);
+    await this.searchEffects('Slider Control');
+    await this.applyEffect('slider-control');
+    if (name !== 'Slider Control') {
+      await this.page.dblclick('[data-testid="effect-0-name"]');
+      await this.page.keyboard.type(name);
+      await this.page.keyboard.press('Enter');
+    }
+  }
+
+  async setSliderValue(effectIndex: number, value: number) {
+    await this.page.fill(`[data-testid="effect-${effectIndex}-slider-value"]`, String(value));
+    await this.page.keyboard.press('Enter');
+  }
+
+  async getSliderValue(effectIndex: number): Promise<number> {
+    const value = await this.page.locator(`[data-testid="effect-${effectIndex}-slider-value"]`).inputValue();
+    return parseFloat(value);
+  }
+
+  /** Add CheckboxControl effect */
+  async addCheckboxControl(layerIndex: number, name: string = 'Checkbox Control') {
+    await this.selectLayer(layerIndex);
+    await this.searchEffects('Checkbox Control');
+    await this.applyEffect('checkbox-control');
+  }
+
+  async setCheckboxValue(effectIndex: number, checked: boolean) {
+    const checkbox = this.page.locator(`[data-testid="effect-${effectIndex}-checkbox-value"]`);
+    const isChecked = await checkbox.isChecked();
+    if (isChecked !== checked) {
+      await checkbox.click();
+    }
+  }
+
+  /** Add ColorControl effect */
+  async addColorControl(layerIndex: number, name: string = 'Color Control') {
+    await this.selectLayer(layerIndex);
+    await this.searchEffects('Color Control');
+    await this.applyEffect('color-control');
+  }
+
+  async setColorControlValue(effectIndex: number, color: string) {
+    await this.page.fill(`[data-testid="effect-${effectIndex}-color-value"]`, color);
+  }
+
+  /** Add PointControl effect */
+  async addPointControl(layerIndex: number, name: string = 'Point Control') {
+    await this.selectLayer(layerIndex);
+    await this.searchEffects('Point Control');
+    await this.applyEffect('point-control');
+  }
+
+  async setPointControlValue(effectIndex: number, x: number, y: number) {
+    await this.page.fill(`[data-testid="effect-${effectIndex}-point-x"]`, String(x));
+    await this.page.fill(`[data-testid="effect-${effectIndex}-point-y"]`, String(y));
+  }
+
+  /** Add DropdownControl effect */
+  async addDropdownControl(layerIndex: number, name: string = 'Dropdown Control') {
+    await this.selectLayer(layerIndex);
+    await this.searchEffects('Dropdown Control');
+    await this.applyEffect('dropdown-control');
+  }
+
+  async setDropdownValue(effectIndex: number, optionIndex: number) {
+    await this.page.click(`[data-testid="effect-${effectIndex}-dropdown-value"]`);
+    await this.page.click(`[data-testid="effect-${effectIndex}-dropdown-option-${optionIndex}"]`);
+  }
+
+  /** Add LayerControl effect */
+  async addLayerControl(layerIndex: number, name: string = 'Layer Control') {
+    await this.selectLayer(layerIndex);
+    await this.searchEffects('Layer Control');
+    await this.applyEffect('layer-control');
+  }
+
+  async setLayerControlTarget(effectIndex: number, targetLayerIndex: number) {
+    await this.page.click(`[data-testid="effect-${effectIndex}-layer-value"]`);
+    await this.page.click(`[data-testid="effect-${effectIndex}-layer-option-${targetLayerIndex}"]`);
+  }
+
+  // ============== GRAPH EDITOR (Tutorial 04) ==============
+
+  /** Open graph editor for property */
+  async openGraphEditor(layerIndex: number, property: string) {
+    await this.page.click(`[data-testid="layer-${layerIndex}-${property}-graph-editor"]`);
+  }
+
+  /** Set graph type */
+  async setGraphType(type: 'value' | 'speed') {
+    await this.page.click('[data-testid="graph-type-selector"]');
+    await this.page.click(`text=${type === 'value' ? 'Value Graph' : 'Speed Graph'}`);
+  }
+
+  // ============== DETERMINISM VERIFICATION (Tutorial 04) ==============
+
+  /** Capture rendered frame for comparison */
+  async captureFramePixels(): Promise<string> {
+    const canvas = this.page.locator('[data-testid="composition-canvas"]');
+    const screenshot = await canvas.screenshot();
+    return screenshot.toString('base64');
+  }
+
+  /** Full determinism test */
+  async verifyFrameDeterminism(targetFrame: number) {
+    await this.goToFrame(targetFrame);
+    const expected = await this.captureFramePixels();
+
+    await this.goToFrame(0);
+    await this.goToFrame(200);
+    await this.goToFrame(50);
+
+    await this.goToFrame(targetFrame);
+    const actual = await this.captureFramePixels();
+
+    expect(actual).toBe(expected);
+  }
+
+  /** Verify expression value determinism */
+  async verifyExpressionDeterminism(layerIndex: number, property: string, targetFrame: number) {
+    await this.goToFrame(targetFrame);
+    const expected = await this.getExpressionResult(layerIndex, property);
+
+    await this.goToFrame(0);
+    await this.goToFrame(targetFrame * 2);
+    await this.goToFrame(targetFrame);
+
+    const actual = await this.getExpressionResult(layerIndex, property);
+    expect(actual).toBe(expected);
+  }
+
+  /** Verify speedMap determinism */
+  async verifySpeedMapDeterminism(layerIndex: number, targetFrame: number) {
+    await this.goToFrame(targetFrame);
+    const expected = await this.getSpeedMapValue(layerIndex);
+
+    await this.goToFrame(0);
+    await this.goToFrame(200);
+    await this.goToFrame(50);
+    await this.goToFrame(targetFrame);
+
+    const actual = await this.getSpeedMapValue(layerIndex);
+    expect(actual).toBe(expected);
+  }
+
+  // ============== ADDITIONAL HELPERS (Tutorial 04) ==============
+
+  /** Reload the current project */
+  async reloadProject() {
+    await this.page.reload();
+  }
+
+  /** Enable pin keyframes */
+  async enablePinKeyframes(layerIndex: number, pinIndex: number, property: string) {
+    await this.page.click(`[data-testid="layer-${layerIndex}-pin-${pinIndex}-${property}-stopwatch"]`);
+  }
+
+  /** Get keyframe count for a property */
+  async expectKeyframeCount(layerIndex: number, pinIndex: number, property: string, count: number) {
+    const keyframes = this.page.locator(`[data-testid^="layer-${layerIndex}-pin-${pinIndex}-${property}-keyframe-"]`);
+    const actual = await keyframes.count();
+    expect(actual).toBe(count);
+  }
+
+  /** Select all keyframes for a property */
+  async selectAllKeyframes(layerIndex: number, pinIndex: number, property: string) {
+    await this.page.click(`[data-testid="layer-${layerIndex}-pin-${pinIndex}-${property}"]`);
+    await this.page.keyboard.press('Control+a');
+  }
+
+  /** Enable motion recording */
+  async enableMotionRecording(layerIndex: number) {
+    await this.page.click(`[data-testid="layer-${layerIndex}-motion-record-enable"]`);
+  }
+
+  /** Start recording */
+  async startRecording() {
+    await this.page.click('[data-testid="record-start"]');
+  }
+
+  /** Stop recording */
+  async stopRecording() {
+    await this.page.click('[data-testid="record-stop"]');
+  }
+
+  /** Record pin movement */
+  async recordPinMovement(layerIndex: number, pinIndex: number, frames: { frame: number; x: number; y: number }[]) {
+    for (const f of frames) {
+      await this.goToFrame(f.frame);
+      await this.movePinTo(layerIndex, pinIndex, f.x, f.y);
+    }
+  }
+
+  /** Reset pin position */
+  async resetPinPosition(layerIndex: number, pinIndex: number) {
+    await this.page.click(`[data-testid="layer-${layerIndex}-pin-${pinIndex}-reset"]`);
+  }
+
+  /** Open pin expressions */
+  async openPinExpressions(layerIndex: number, pinIndex: number, property: string) {
+    await this.page.click(`[data-testid="layer-${layerIndex}-pin-${pinIndex}-${property}-expression-toggle"]`);
+  }
+
+  /** Close expression editor */
+  async closeExpressionEditor() {
+    await this.page.keyboard.press('Escape');
+  }
+
+  /** Link pins together */
+  async linkPins(layerIndex: number, childPinIndex: number, parentPinIndex: number) {
+    await this.page.click(`[data-testid="layer-${layerIndex}-pin-${childPinIndex}-parent"]`);
+    await this.page.click(`[data-testid="layer-${layerIndex}-pin-parent-option-${parentPinIndex}"]`);
+  }
+
+  /** Set bend angle */
+  async setBendAngle(layerIndex: number, pinIndex: number, angle: number) {
+    await this.page.fill(`[data-testid="layer-${layerIndex}-pin-${pinIndex}-bend-angle"]`, String(angle));
+    await this.page.keyboard.press('Enter');
+  }
+
+  /** Set bend length */
+  async setBendLength(layerIndex: number, pinIndex: number, length: number) {
+    await this.page.fill(`[data-testid="layer-${layerIndex}-pin-${pinIndex}-bend-length"]`, String(length));
+    await this.page.keyboard.press('Enter');
+  }
+
+  /** Enable bend keyframes */
+  async enableBendKeyframes(layerIndex: number, pinIndex: number, property: string) {
+    await this.page.click(`[data-testid="layer-${layerIndex}-pin-${pinIndex}-bend-${property}-stopwatch"]`);
+  }
+
+  /** Set overlap in front (boolean version) */
+  async setOverlapInFront(layerIndex: number, pinIndex: number, inFront: boolean) {
+    const checkbox = this.page.locator(`[data-testid="layer-${layerIndex}-pin-${pinIndex}-overlap-infront"]`);
+    const isChecked = await checkbox.isChecked();
+    if (isChecked !== inFront) {
+      await checkbox.click();
+    }
+  }
 }
