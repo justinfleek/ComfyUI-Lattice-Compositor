@@ -43,6 +43,7 @@
     "webm-muxer": "^5.1.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.57.0",
     "@types/dompurify": "^3.0.5",
     "@types/node": "^20.0.0",
     "@types/three": "^0.170.0",

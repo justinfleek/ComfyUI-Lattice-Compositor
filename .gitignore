@@ -28,3 +28,16 @@ __pycache__/
 SECURITY_ARCHITECTURE.md
 AUDIT/SECURITY_ARCHITECTURE.md
 ui/src/engine.zip
+
+# Playwright test artifacts
+ui/playwright-report/
+ui/test-results/
+ui/e2e/screenshots/
+
+# Zip archives (internal)
+*.zip
+!templates/*.zip
+
+# Test artifacts
+ui/test-inventory.txt
+ui/test-malicious.lattice.json
