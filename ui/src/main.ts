@@ -15,13 +15,15 @@ let sesInitPromise: Promise<void> | null = null
 let bridgeHandler: EventListener | null = null
 
 /**
- * SECURITY: Initialize SES sandbox for prototype pollution protection.
+ * SECURITY: Initialize expression security.
  *
- * This provides defense-in-depth:
- * 1. Main thread lockdown - Freezes intrinsics, prevents prototype pollution
- * 2. Worker isolation - Expressions run in isolated worker with strict timeout
+ * Expression evaluation is secured via Web Worker isolation:
+ * - Expressions run in an isolated worker with SES lockdown
+ * - 100ms timeout protects against infinite loops
+ * - Main thread is never blocked
  *
- * Using 'moderate' overrideTaming for Vue/Three.js compatibility.
+ * NOTE: Main thread lockdown is DISABLED because it breaks Vue/Three.js.
+ * This is safe because expressions never execute in the main thread.
  */
 async function initializeSecuritySandbox(): Promise<void> {
   if (sesInitialized) return
@@ -29,18 +31,12 @@ async function initializeSecuritySandbox(): Promise<void> {
   if (!sesInitPromise) {
     sesInitPromise = (async () => {
       try {
-        const success = await initializeSES()
+        await initializeSES()
         sesInitialized = true
-
-        if (success) {
-          console.log('[Security] SES sandbox initialized - prototype pollution protection active')
-        } else {
-          console.warn('[Security] SES lockdown failed - using worker sandbox as fallback')
-        }
+        // Logging is handled in initializeSES()
       } catch (error) {
         sesInitialized = true
-        console.error('[Security] SES initialization error:', error)
-        console.warn('[Security] Falling back to worker-only sandbox')
+        console.error('[Security] Expression security initialization error:', error)
       }
     })()
   }
