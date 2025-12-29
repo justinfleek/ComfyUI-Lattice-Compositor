@@ -302,4 +302,297 @@ export class CompositorHelper {
   async revealAnimatedProperties() {
     await this.page.keyboard.press('u');
   }
+
+  // ============== SHAPE LAYERS (Tutorial 02) ==============
+
+  async newShapeLayer(name: string) {
+    await this.page.click('[data-testid="layer-menu"]');
+    await this.page.click('text=New');
+    await this.page.click('text=Shape Layer');
+    await this.selectLayer(0);
+    await this.renameLayer(name);
+  }
+
+  async renameLayer(name: string) {
+    await this.page.keyboard.press('Enter');
+    await this.page.keyboard.type(name);
+    await this.page.keyboard.press('Enter');
+  }
+
+  async expandShapeContents(layerIndex: number) {
+    await this.page.click(`[data-testid="layer-${layerIndex}-expand"]`);
+    await this.page.click(`[data-testid="layer-${layerIndex}-contents-expand"]`);
+  }
+
+  async removeShapeFill(layerIndex: number) {
+    await this.page.click(`[data-testid="layer-${layerIndex}-shape-fill"]`, { button: 'right' });
+    await this.page.click('text=Delete');
+  }
+
+  async setStrokeColor(layerIndex: number, color: string) {
+    await this.page.fill(`[data-testid="layer-${layerIndex}-stroke-color"]`, color);
+  }
+
+  async setStrokeWidth(layerIndex: number, width: number) {
+    await this.page.fill(`[data-testid="layer-${layerIndex}-stroke-width"]`, String(width));
+  }
+
+  async setStrokeLineCap(layerIndex: number, cap: 'butt' | 'round' | 'square') {
+    await this.page.click(`[data-testid="layer-${layerIndex}-stroke-linecap"]`);
+    await this.page.click(`text=${cap}`);
+  }
+
+  async setStrokeLineJoin(layerIndex: number, join: 'miter' | 'round' | 'bevel') {
+    await this.page.click(`[data-testid="layer-${layerIndex}-stroke-linejoin"]`);
+    await this.page.click(`text=${join}`);
+  }
+
+  // ============== TRIM PATHS (Tutorial 02) ==============
+
+  async addTrimPaths(layerIndex: number) {
+    await this.page.click(`[data-testid="layer-${layerIndex}-shape-add"]`);
+    await this.page.click('text=Trim Paths');
+  }
+
+  async setTrimPathsStart(layerIndex: number, value: number) {
+    await this.page.fill(`[data-testid="layer-${layerIndex}-trimpath-start"]`, String(value));
+  }
+
+  async setTrimPathsEnd(layerIndex: number, value: number) {
+    await this.page.fill(`[data-testid="layer-${layerIndex}-trimpath-end"]`, String(value));
+  }
+
+  async setTrimPathsOffset(layerIndex: number, value: number) {
+    await this.page.fill(`[data-testid="layer-${layerIndex}-trimpath-offset"]`, String(value));
+  }
+
+  async enableTrimPathsKeyframes(layerIndex: number, property: 'start' | 'end' | 'offset') {
+    await this.page.click(`[data-testid="layer-${layerIndex}-trimpath-${property}-stopwatch"]`);
+  }
+
+  // ============== EFFECTS - EXTENDED (Tutorial 02) ==============
+
+  async addGradientRamp(layerIndex: number) {
+    await this.selectLayer(layerIndex);
+    await this.searchEffects('Gradient Ramp');
+    await this.applyEffect('gradient-ramp');
+  }
+
+  async configureGradientRamp(options: {
+    startX?: number;
+    startY?: number;
+    endX?: number;
+    endY?: number;
+    startColor?: string;
+    endColor?: string;
+    shape?: 'linear' | 'radial';
+  }) {
+    if (options.startX !== undefined) {
+      await this.page.fill('[data-testid="effect-gradient-ramp-start-x"]', String(options.startX));
+    }
+    if (options.startY !== undefined) {
+      await this.page.fill('[data-testid="effect-gradient-ramp-start-y"]', String(options.startY));
+    }
+    if (options.endX !== undefined) {
+      await this.page.fill('[data-testid="effect-gradient-ramp-end-x"]', String(options.endX));
+    }
+    if (options.endY !== undefined) {
+      await this.page.fill('[data-testid="effect-gradient-ramp-end-y"]', String(options.endY));
+    }
+    if (options.startColor) {
+      await this.page.fill('[data-testid="effect-gradient-ramp-start-color"]', options.startColor);
+    }
+    if (options.endColor) {
+      await this.page.fill('[data-testid="effect-gradient-ramp-end-color"]', options.endColor);
+    }
+    if (options.shape) {
+      await this.page.click('[data-testid="effect-gradient-ramp-shape"]');
+      await this.page.click(`text=${options.shape}`);
+    }
+  }
+
+  async addFillEffect(layerIndex: number, color: string) {
+    await this.selectLayer(layerIndex);
+    await this.searchEffects('Fill');
+    await this.applyEffect('fill');
+    await this.page.fill('[data-testid="effect-fill-color"]', color);
+  }
+
+  async addTintEffect(layerIndex: number, mapBlack: string, mapWhite: string, amount: number) {
+    await this.selectLayer(layerIndex);
+    await this.searchEffects('Tint');
+    await this.applyEffect('tint');
+    await this.page.fill('[data-testid="effect-tint-map-black"]', mapBlack);
+    await this.page.fill('[data-testid="effect-tint-map-white"]', mapWhite);
+    await this.page.fill('[data-testid="effect-tint-amount"]', String(amount));
+  }
+
+  async configureGlow(effectIndex: number, options: {
+    threshold?: number;
+    radius?: number;
+    intensity?: number;
+    colorA?: string;
+    colorB?: string;
+  }) {
+    if (options.threshold !== undefined) {
+      await this.page.fill(`[data-testid="effect-${effectIndex}-glow-threshold"]`, String(options.threshold));
+    }
+    if (options.radius !== undefined) {
+      await this.page.fill(`[data-testid="effect-${effectIndex}-glow-radius"]`, String(options.radius));
+    }
+    if (options.intensity !== undefined) {
+      await this.page.fill(`[data-testid="effect-${effectIndex}-glow-intensity"]`, String(options.intensity));
+    }
+    if (options.colorA) {
+      await this.page.fill(`[data-testid="effect-${effectIndex}-glow-color-a"]`, options.colorA);
+    }
+    if (options.colorB) {
+      await this.page.fill(`[data-testid="effect-${effectIndex}-glow-color-b"]`, options.colorB);
+    }
+  }
+
+  async addEchoEffect(layerIndex: number) {
+    await this.selectLayer(layerIndex);
+    await this.searchEffects('Echo');
+    await this.applyEffect('echo');
+  }
+
+  async configureEcho(options: {
+    echoTime?: number;
+    numberOfEchoes?: number;
+    startingIntensity?: number;
+    decay?: number;
+    operator?: 'add' | 'maximum' | 'screen' | 'composite_back' | 'composite_front';
+  }) {
+    if (options.echoTime !== undefined) {
+      await this.page.fill('[data-testid="effect-echo-time"]', String(options.echoTime));
+    }
+    if (options.numberOfEchoes !== undefined) {
+      await this.page.fill('[data-testid="effect-echo-number"]', String(options.numberOfEchoes));
+    }
+    if (options.startingIntensity !== undefined) {
+      await this.page.fill('[data-testid="effect-echo-intensity"]', String(options.startingIntensity));
+    }
+    if (options.decay !== undefined) {
+      await this.page.fill('[data-testid="effect-echo-decay"]', String(options.decay));
+    }
+    if (options.operator) {
+      await this.page.click('[data-testid="effect-echo-operator"]');
+      await this.page.click(`text=${options.operator}`);
+    }
+  }
+
+  // ============== MOTION BLUR (Tutorial 02) ==============
+
+  async enableLayerMotionBlur(layerIndex: number) {
+    await this.page.click(`[data-testid="layer-${layerIndex}-motion-blur"]`);
+  }
+
+  async enableCompMotionBlur() {
+    await this.page.click('[data-testid="comp-motion-blur-toggle"]');
+  }
+
+  async openCompositionSettings() {
+    await this.page.keyboard.press('Control+k');
+    await this.page.waitForSelector('[data-testid="comp-settings-dialog"]');
+  }
+
+  async configureMotionBlur(shutterAngle: number, shutterPhase: number, samples: number) {
+    await this.openCompositionSettings();
+    await this.page.fill('[data-testid="comp-shutter-angle"]', String(shutterAngle));
+    await this.page.fill('[data-testid="comp-shutter-phase"]', String(shutterPhase));
+    await this.page.fill('[data-testid="comp-motion-blur-samples"]', String(samples));
+    await this.page.click('[data-testid="comp-settings-ok"]');
+  }
+
+  // ============== GRADIENT STROKE (Tutorial 02) ==============
+
+  async addGradientStroke(layerIndex: number) {
+    await this.page.click(`[data-testid="layer-${layerIndex}-shape-add"]`);
+    await this.page.click('text=Gradient Stroke');
+  }
+
+  async configureGradientStroke(layerIndex: number, options: {
+    type?: 'linear' | 'radial';
+    startX?: number;
+    startY?: number;
+    endX?: number;
+    endY?: number;
+  }) {
+    if (options.type) {
+      await this.page.click(`[data-testid="layer-${layerIndex}-gradient-stroke-type"]`);
+      await this.page.click(`text=${options.type}`);
+    }
+  }
+
+  // ============== MASKS (Tutorial 02) ==============
+
+  async addOvalMask(layerIndex: number) {
+    await this.selectLayer(layerIndex);
+    await this.page.click('[data-testid="mask-tool-ellipse"]');
+    await this.page.click('[data-testid="composition-panel"]');
+  }
+
+  async setMaskMode(layerIndex: number, maskIndex: number, mode: 'add' | 'subtract' | 'intersect' | 'difference') {
+    await this.page.click(`[data-testid="layer-${layerIndex}-mask-${maskIndex}-mode"]`);
+    await this.page.click(`text=${mode}`);
+  }
+
+  async setMaskFeather(layerIndex: number, maskIndex: number, feather: number) {
+    await this.page.fill(`[data-testid="layer-${layerIndex}-mask-${maskIndex}-feather"]`, String(feather));
+  }
+
+  // ============== BLEND MODES (Tutorial 02) ==============
+
+  async setBlendMode(layerIndex: number, mode: string) {
+    await this.page.click(`[data-testid="layer-${layerIndex}-blend-mode"]`);
+    await this.page.click(`text=${mode}`);
+  }
+
+  // ============== ADJUSTMENT LAYERS (Tutorial 02) ==============
+
+  async newAdjustmentLayer(name: string) {
+    await this.page.click('[data-testid="layer-menu"]');
+    await this.page.click('text=New');
+    await this.page.click('text=Adjustment Layer');
+    await this.selectLayer(0);
+    await this.renameLayer(name);
+  }
+
+  // ============== AUTO-ORIENT (Tutorial 02) ==============
+
+  async enableAutoOrient(layerIndex: number, mode: 'off' | 'alongPath' | 'towardsCamera') {
+    await this.page.click(`[data-testid="layer-${layerIndex}"]`, { button: 'right' });
+    await this.page.click('text=Transform');
+    await this.page.click('text=Auto-Orient');
+    await this.page.click(`text=${mode}`);
+  }
+
+  // ============== COPY/PASTE (Tutorial 02) ==============
+
+  async copy() {
+    await this.page.keyboard.press('Control+c');
+  }
+
+  async paste() {
+    await this.page.keyboard.press('Control+v');
+  }
+
+  async copyPathToPosition(sourceLayerIndex: number, targetLayerIndex: number) {
+    await this.page.click(`[data-testid="layer-${sourceLayerIndex}-shape-path"]`);
+    await this.copy();
+    await this.selectLayer(targetLayerIndex);
+    await this.isolatePosition();
+    await this.paste();
+  }
+
+  // ============== LAYER VISIBILITY/LOCK (Tutorial 02) ==============
+
+  async toggleLayerVisibility(layerIndex: number) {
+    await this.page.click(`[data-testid="layer-${layerIndex}-visibility"]`);
+  }
+
+  async toggleLayerLock() {
+    await this.page.keyboard.press('Control+l');
+  }
 }
