@@ -27,3 +27,4 @@ __pycache__/
 # Security vulnerability documentation - DO NOT COMMIT
 SECURITY_ARCHITECTURE.md
 AUDIT/SECURITY_ARCHITECTURE.md
+ui/src/engine.zip
