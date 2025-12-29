@@ -595,4 +595,186 @@ export class CompositorHelper {
   async toggleLayerLock() {
     await this.page.keyboard.press('Control+l');
   }
+
+  // ============== MESH DEFORMATION (Tutorial 03) ==============
+
+  async selectDeformPinTool() {
+    await this.page.click('[data-testid="tool-deform-pin"]');
+  }
+
+  async selectStiffnessPinTool() {
+    await this.page.click('[data-testid="tool-stiffness-pin"]');
+  }
+
+  async selectOverlapPinTool() {
+    await this.page.click('[data-testid="tool-overlap-pin"]');
+  }
+
+  async selectBendPinTool() {
+    await this.page.click('[data-testid="tool-bend-pin"]');
+  }
+
+  async selectAdvancedPinTool() {
+    await this.page.click('[data-testid="tool-advanced-pin"]');
+  }
+
+  async placePinAtPosition(x: number, y: number) {
+    const canvas = this.page.locator('[data-testid="composition-panel"]');
+    await canvas.click({ position: { x, y } });
+  }
+
+  async renamePin(layerIndex: number, pinIndex: number, name: string) {
+    await this.page.dblclick(`[data-testid="layer-${layerIndex}-pin-${pinIndex}-name"]`);
+    await this.page.keyboard.type(name);
+    await this.page.keyboard.press('Enter');
+  }
+
+  async getPinCount(layerIndex: number): Promise<number> {
+    const pins = this.page.locator(`[data-testid^="layer-${layerIndex}-pin-"]`);
+    return await pins.count();
+  }
+
+  async expectPinCount(layerIndex: number, count: number) {
+    const actual = await this.getPinCount(layerIndex);
+    expect(actual).toBe(count);
+  }
+
+  // ============== MESH CONFIGURATION (Tutorial 03) ==============
+
+  async setMeshTriangleCount(layerIndex: number, count: number) {
+    await this.page.fill(`[data-testid="layer-${layerIndex}-mesh-triangles"]`, String(count));
+    await this.page.keyboard.press('Enter');
+  }
+
+  async setMeshExpansion(layerIndex: number, pixels: number) {
+    await this.page.fill(`[data-testid="layer-${layerIndex}-mesh-expansion"]`, String(pixels));
+    await this.page.keyboard.press('Enter');
+  }
+
+  async toggleMeshVisibility(layerIndex: number) {
+    await this.page.click(`[data-testid="layer-${layerIndex}-mesh-show"]`);
+  }
+
+  async regenerateMesh(layerIndex: number) {
+    await this.page.click(`[data-testid="layer-${layerIndex}-mesh-regenerate"]`);
+  }
+
+  // ============== PIN PROPERTIES (Tutorial 03) ==============
+
+  async selectPin(layerIndex: number, pinIndex: number) {
+    await this.page.click(`[data-testid="layer-${layerIndex}-pin-${pinIndex}"]`);
+  }
+
+  async movePinTo(layerIndex: number, pinIndex: number, x: number, y: number) {
+    await this.page.fill(`[data-testid="layer-${layerIndex}-pin-${pinIndex}-x"]`, String(x));
+    await this.page.fill(`[data-testid="layer-${layerIndex}-pin-${pinIndex}-y"]`, String(y));
+  }
+
+  async setStiffnessAmount(layerIndex: number, pinIndex: number, amount: number) {
+    await this.page.fill(`[data-testid="layer-${layerIndex}-pin-${pinIndex}-stiffness-amount"]`, String(amount));
+  }
+
+  async setStiffnessExtent(layerIndex: number, pinIndex: number, extent: number) {
+    await this.page.fill(`[data-testid="layer-${layerIndex}-pin-${pinIndex}-stiffness-extent"]`, String(extent));
+  }
+
+  async setOverlapInFront(layerIndex: number, pinIndex: number, value: number) {
+    await this.page.fill(`[data-testid="layer-${layerIndex}-pin-${pinIndex}-overlap-infront"]`, String(value));
+  }
+
+  async setOverlapExtent(layerIndex: number, pinIndex: number, extent: number) {
+    await this.page.fill(`[data-testid="layer-${layerIndex}-pin-${pinIndex}-overlap-extent"]`, String(extent));
+  }
+
+  async setBendRotation(layerIndex: number, pinIndex: number, degrees: number) {
+    await this.page.fill(`[data-testid="layer-${layerIndex}-pin-${pinIndex}-bend-rotation"]`, String(degrees));
+  }
+
+  async setBendScale(layerIndex: number, pinIndex: number, scale: number) {
+    await this.page.fill(`[data-testid="layer-${layerIndex}-pin-${pinIndex}-bend-scale"]`, String(scale));
+  }
+
+  async setAdvancedPinPosition(layerIndex: number, pinIndex: number, x: number, y: number) {
+    await this.page.fill(`[data-testid="layer-${layerIndex}-pin-${pinIndex}-advanced-x"]`, String(x));
+    await this.page.fill(`[data-testid="layer-${layerIndex}-pin-${pinIndex}-advanced-y"]`, String(y));
+  }
+
+  async setAdvancedPinRotation(layerIndex: number, pinIndex: number, degrees: number) {
+    await this.page.fill(`[data-testid="layer-${layerIndex}-pin-${pinIndex}-advanced-rotation"]`, String(degrees));
+  }
+
+  async setAdvancedPinScale(layerIndex: number, pinIndex: number, scale: number) {
+    await this.page.fill(`[data-testid="layer-${layerIndex}-pin-${pinIndex}-advanced-scale"]`, String(scale));
+  }
+
+  // ============== MOTION RECORDING (Tutorial 03) ==============
+
+  async openRecordOptions() {
+    await this.page.click('[data-testid="record-options-panel"]');
+  }
+
+  async setRecordSpeed(speed: number) {
+    await this.page.fill('[data-testid="record-speed"]', String(speed));
+  }
+
+  async setRecordSmoothing(smoothing: number) {
+    await this.page.fill('[data-testid="record-smoothing"]', String(smoothing));
+  }
+
+  async toggleDraftDeformation(enable: boolean) {
+    const checkbox = this.page.locator('[data-testid="record-draft-deformation"]');
+    const isChecked = await checkbox.isChecked();
+    if (isChecked !== enable) {
+      await checkbox.click();
+    }
+  }
+
+  async startPinRecording(layerIndex: number, pinIndex: number) {
+    await this.selectPin(layerIndex, pinIndex);
+    await this.page.keyboard.down('Control');
+  }
+
+  async stopPinRecording() {
+    await this.page.keyboard.up('Control');
+  }
+
+  async recordPinMotion(layerIndex: number, pinIndex: number, path: { x: number; y: number }[]) {
+    await this.startPinRecording(layerIndex, pinIndex);
+    const canvas = this.page.locator('[data-testid="composition-panel"]');
+
+    for (const point of path) {
+      await canvas.hover({ position: { x: point.x, y: point.y } });
+      await this.page.waitForTimeout(50);
+    }
+
+    await this.stopPinRecording();
+  }
+
+  async smoothKeyframes() {
+    await this.page.click('[data-testid="keyframe-menu"]');
+    await this.page.click('text=Smooth Keyframes');
+  }
+
+  // ============== LOOP EXPRESSIONS (Tutorial 03) ==============
+
+  async addPinLoopExpression(layerIndex: number, pinIndex: number, loopType: 'cycle' | 'pingpong' | 'offset' | 'continue') {
+    await this.selectPin(layerIndex, pinIndex);
+    await this.page.click(`[data-testid="layer-${layerIndex}-pin-${pinIndex}-expression-toggle"]`);
+    await this.page.fill(`[data-testid="layer-${layerIndex}-pin-${pinIndex}-expression"]`, `loopOut("${loopType}")`);
+    await this.page.keyboard.press('Enter');
+  }
+
+  // ============== MESH VERIFICATION (Tutorial 03) ==============
+
+  async expectMeshDeformationEffect(layerIndex: number) {
+    await expect(this.page.locator(`[data-testid="layer-${layerIndex}-effect-mesh-deformation"]`)).toBeVisible();
+  }
+
+  async expectMeshGenerated(layerIndex: number) {
+    await expect(this.page.locator(`[data-testid="layer-${layerIndex}-mesh-status-ok"]`)).toBeVisible();
+  }
+
+  async expectMeshError(layerIndex: number) {
+    await expect(this.page.locator(`[data-testid="layer-${layerIndex}-mesh-status-error"]`)).toBeVisible();
+  }
 }
