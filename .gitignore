@@ -4,21 +4,21 @@ frontend/node_modules/
 # Internal testing - never push
 reference_images/
 screenshots/
+mockups/
+
+# Archived documentation (historical only)
+_archived/
 
 # Markdown - ignore drafts, allow important docs
 *.md
 !README.md
 !CHANGELOG.md
 !CLAUDE.md
-!PROJECT_STATUS.md
-!FEATURE_AUDIT.md
 !INVENTORY.md
-!SECURITY_ARCHITECTURE.md
 !specs/*.md
 !docs/*.md
 !docs/**/*.md
 !AUDIT/*.md
-!AUDIT/**/*.md
 
 # Python
 __pycache__/
@@ -27,16 +27,16 @@ __pycache__/
 # Security vulnerability documentation - DO NOT COMMIT
 SECURITY_ARCHITECTURE.md
 AUDIT/SECURITY_ARCHITECTURE.md
+
+# Build artifacts
 ui/src/engine.zip
+*.zip
+!templates/*.zip
 
 # Playwright test artifacts
 ui/playwright-report/
 ui/test-results/
 ui/e2e/screenshots/
-
-# Zip archives (internal)
-*.zip
-!templates/*.zip
 
 # Test artifacts
 ui/test-inventory.txt

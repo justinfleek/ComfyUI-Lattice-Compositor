@@ -1,11 +1,29 @@
-# CLAUDE.md — SECURITY AUDIT PROTOCOL v4.0
+# CLAUDE.md — Project Instructions
+
+## AUTHORITATIVE DOCUMENTATION
+
+| Document | Purpose |
+|----------|---------|
+| **docs/PROJECT_PROGRESS.md** | Project status, testing checklists, known bugs |
+| **AUDIT/BUGS.md** | Active bug registry |
+| **AUDIT/PROGRESS.md** | Detailed code audit progress |
+| **INVENTORY.md** | Codebase file inventory |
+| **README.md** | Public project documentation |
+
+> **Note:** Old docs (AUDIT_PROGRESS.md, PROJECT_STATUS.md, etc.) have been archived to `_archived/`
+
+---
 
 ## PROJECT OVERVIEW
 Motion graphics compositor as ComfyUI custom node pack.
 - **Open Source**: Node pack for creating AI video control signals
 - **Pro**: Standalone product with LLM, locked nodes, Weyl API integration
 
-## PHASE 1 STATUS: ✅ COMPLETE (TypeScript/Frontend)
+---
+
+## SECURITY AUDIT PROTOCOL v4.0
+
+### PHASE 1 STATUS: ✅ COMPLETE (TypeScript/Frontend)
 
 | Control | File | Tests |
 |---------|------|-------|
@@ -134,10 +152,12 @@ Secure model downloading with hash verification.
 
 | File | Git Status | Notes |
 |------|------------|-------|
-| CLAUDE.md | ✅ Commit | Public audit protocol |
-| INVENTORY.md | ✅ Commit | No secrets |
-| SECURITY_ARCHITECTURE.md | ❌ LOCAL ONLY | Contains vulnerability map |
-| AUDIT/*.md | ✅ Commit | Findings only, not exploitation details |
+| CLAUDE.md | ✅ Commit | Project instructions |
+| docs/PROJECT_PROGRESS.md | ✅ Commit | Authoritative project status |
+| INVENTORY.md | ✅ Commit | Codebase inventory |
+| AUDIT/*.md | ✅ Commit | Audit findings |
+| SECURITY_ARCHITECTURE.md | ❌ NEVER COMMIT | Contains vulnerability map |
+| _archived/* | ❌ Gitignored | Historical only |
 
 ---
 
