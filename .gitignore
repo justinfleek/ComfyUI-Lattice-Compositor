@@ -9,15 +9,27 @@ mockups/
 # Archived documentation (historical only)
 _archived/
 
-# Markdown - ignore drafts, allow important docs
+# Markdown - only public docs in repo
 *.md
 !README.md
 !CHANGELOG.md
-!CLAUDE.md
-!INVENTORY.md
-!specs/*.md
+!FEATURE_AUDIT.md
+!PROJECT_STATUS.md
+!.github/**/*.md
 !docs/*.md
-!docs/**/*.md
+
+# Internal development files - NOT for public repo
+CLAUDE.md
+INVENTORY.md
+docs/PROJECT_PROGRESS.md
+specs/
+
+# Nix development environment (local only)
+flake.nix
+flake.lock
+
+# Claude Code settings (local only)
+.claude/
 
 # Python
 __pycache__/

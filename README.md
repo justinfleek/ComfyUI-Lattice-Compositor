@@ -368,13 +368,12 @@ For AI video generation, every frame must be **reproducible**. Lattice guarantee
 
 | Document | Description |
 |----------|-------------|
-| [CLAUDE.md](CLAUDE.md) | Complete technical guide (1750+ lines) |
 | [FEATURE_AUDIT.md](FEATURE_AUDIT.md) | All features mapped to UI access |
 | [PROJECT_STATUS.md](PROJECT_STATUS.md) | Current status and roadmap |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System architecture |
-| [docs/SERVICE_API_REFERENCE.md](docs/SERVICE_API_REFERENCE.md) | Service API documentation |
-| [docs/EFFECT_PARAMETERS.md](docs/EFFECT_PARAMETERS.md) | Effect documentation |
-| [docs/GLOSSARY.md](docs/GLOSSARY.md) | 150+ term definitions |
+| [docs/SERVICE_API_REFERENCE.md](docs/SERVICE_API_REFERENCE.md) | Service API reference (181 services) |
+| [docs/EFFECT_PARAMETERS.md](docs/EFFECT_PARAMETERS.md) | Effect parameters reference |
+| [docs/GLOSSARY.md](docs/GLOSSARY.md) | 100+ term definitions |
 
 See `docs/` folder for additional technical documents.
 
