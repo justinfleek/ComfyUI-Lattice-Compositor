@@ -77,7 +77,7 @@ const migrations: Migration[] = [
       const migrated = JSON.parse(JSON.stringify(project));
 
       // Migrate compositions
-      if (migrated.compositions) {
+      if (Array.isArray(migrated.compositions)) {
         for (const comp of migrated.compositions) {
           if (comp.layers) {
             for (const layer of comp.layers) {

@@ -547,3 +547,29 @@ export function flushAnimationFrames(): void {
   const now = performance.now();
   callbacks.forEach(cb => cb(now));
 }
+
+// ============================================================================
+// IndexedDB Mock (Added for auditLog tests)
+// ============================================================================
+
+const indexedDBMock = {
+  open: vi.fn().mockReturnValue({
+    result: {
+      createObjectStore: vi.fn(),
+      transaction: vi.fn(),
+      objectStoreNames: { contains: vi.fn() },
+    },
+    addEventListener: vi.fn((event, callback) => {
+      if (event === 'success') {
+        setTimeout(() => callback({ target: { result: {} } }), 0);
+      }
+    }),
+    onupgradeneeded: null,
+    onsuccess: null,
+    onerror: null,
+  }),
+};
+
+if (typeof globalThis.indexedDB === 'undefined') {
+  vi.stubGlobal('indexedDB', indexedDBMock);
+}
