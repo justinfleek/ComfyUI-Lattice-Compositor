@@ -1395,7 +1395,6 @@ export {
   getProjectVersion,
   needsMigration,
   migrateProject,
-  validateProject,
   stampProjectVersion,
   getAvailableMigrations,
   getMigrationInfo,
@@ -1456,12 +1455,6 @@ export {
   // Safe JSON operations
   safeJSONParse,
   safeJSONStringify,
-  // Schema validation
-  validateProject as validateProjectSchema,
-  validateComposition,
-  validateLayer,
-  validateLatticeTemplate,
-  validateTemplateConfig,
   // Type guards
   isObject,
   isString,
@@ -1472,10 +1465,6 @@ export {
   sanitizeString,
   sanitizeFileName,
   deepCloneSanitized,
-  // Data repair
-  repairProject,
-  type ValidationError,
-  type ValidationResult,
 } from './jsonValidation';
 
 // ============================================================================

@@ -259,65 +259,6 @@ export function migrateProject(project: any): MigrationResult {
 }
 
 /**
- * Validate project structure
- */
-export function validateProject(project: any): { valid: boolean; errors: string[] } {
-  const errors: string[] = [];
-
-  if (!project) {
-    errors.push('Project is null or undefined');
-    return { valid: false, errors };
-  }
-
-  if (typeof project !== 'object') {
-    errors.push('Project must be an object');
-    return { valid: false, errors };
-  }
-
-  // Check required fields
-  if (!project.id) {
-    errors.push('Project missing required field: id');
-  }
-
-  if (!project.name) {
-    errors.push('Project missing required field: name');
-  }
-
-  if (!Array.isArray(project.compositions)) {
-    errors.push('Project must have compositions array');
-  }
-
-  // Validate compositions
-  if (project.compositions) {
-    for (let i = 0; i < project.compositions.length; i++) {
-      const comp = project.compositions[i];
-
-      if (!comp.id) {
-        errors.push(`Composition ${i} missing required field: id`);
-      }
-
-      if (!comp.name) {
-        errors.push(`Composition ${i} missing required field: name`);
-      }
-
-      if (typeof comp.width !== 'number' || comp.width <= 0) {
-        errors.push(`Composition ${i} has invalid width`);
-      }
-
-      if (typeof comp.height !== 'number' || comp.height <= 0) {
-        errors.push(`Composition ${i} has invalid height`);
-      }
-
-      if (typeof comp.frameCount !== 'number' || comp.frameCount <= 0) {
-        errors.push(`Composition ${i} has invalid frameCount`);
-      }
-    }
-  }
-
-  return { valid: errors.length === 0, errors };
-}
-
-/**
  * Stamp project with current version
  */
 export function stampProjectVersion(project: any): any {
@@ -353,7 +294,6 @@ export default {
   getProjectVersion,
   needsMigration,
   migrateProject,
-  validateProject,
   stampProjectVersion,
   getAvailableMigrations,
   getMigrationInfo,

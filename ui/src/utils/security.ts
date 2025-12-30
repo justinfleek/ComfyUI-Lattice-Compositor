@@ -343,6 +343,21 @@ export function validateProjectStructure(data: unknown, context: string = 'Proje
       if (!('layers' in comp) || !isArray(comp.layers)) {
         throw new ValidationError(`${context}: compositions.${compId}.layers must be an array`);
       }
+
+      // Validate numeric fields in settings
+      const settings = comp.settings as Record<string, unknown>;
+      if (settings.width !== undefined && (!Number.isFinite(settings.width) || (settings.width as number) <= 0)) {
+        throw new ValidationError(`${context}: compositions.${compId}.settings.width must be a positive finite number`);
+      }
+      if (settings.height !== undefined && (!Number.isFinite(settings.height) || (settings.height as number) <= 0)) {
+        throw new ValidationError(`${context}: compositions.${compId}.settings.height must be a positive finite number`);
+      }
+      if (settings.frameCount !== undefined && (!Number.isFinite(settings.frameCount) || (settings.frameCount as number) <= 0)) {
+        throw new ValidationError(`${context}: compositions.${compId}.settings.frameCount must be a positive finite number`);
+      }
+      if (settings.fps !== undefined && (!Number.isFinite(settings.fps) || (settings.fps as number) <= 0)) {
+        throw new ValidationError(`${context}: compositions.${compId}.settings.fps must be a positive finite number`);
+      }
     }
   }
 

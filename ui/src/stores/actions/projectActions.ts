@@ -12,6 +12,7 @@ import { saveProject, loadProject, listProjects, deleteProject } from '@/service
 import { migrateProject, needsMigration, CURRENT_SCHEMA_VERSION } from '@/services/projectMigration';
 import { validateProjectExpressions } from '@/services/expressions/expressionValidator';
 import { validateURL } from '@/services/security/urlValidator';
+import { validateProjectStructure } from '@/utils/security';
 
 // ============================================================================
 // STORE INTERFACE
@@ -129,7 +130,8 @@ export function importProject(
   try {
     let project = JSON.parse(json) as LatticeProject;
 
-    // Check if migration is needed and apply it
+    // Check if migration is needed and apply it FIRST
+    // Migration transforms v1 format to v2 format
     if (needsMigration(project)) {
       const oldVersion = (project as any).schemaVersion ?? 1;
       storeLogger.info(`Migrating project from schema v${oldVersion} to v${CURRENT_SCHEMA_VERSION}`);
@@ -141,6 +143,15 @@ export function importProject(
         storeLogger.error('Project migration failed:', migrationResult.error);
         return false;
       }
+    }
+
+    // SECURITY: Validate structure AFTER migration (ensures v2 format)
+    // This catches NaN/Infinity values and malformed data
+    try {
+      validateProjectStructure(project, 'Imported project');
+    } catch (validationError) {
+      storeLogger.error('Project structure validation failed:', validationError);
+      return false;
     }
 
     store.project = project;
@@ -255,7 +266,8 @@ export async function loadProjectFromServer(
     if (result.status === 'success' && result.project) {
       let project = result.project;
 
-      // Check if migration is needed and apply it
+      // Check if migration is needed and apply it FIRST
+      // Migration transforms v1 format to v2 format
       if (needsMigration(project)) {
         const oldVersion = (project as any).schemaVersion ?? 1;
         storeLogger.info(`Migrating project from schema v${oldVersion} to v${CURRENT_SCHEMA_VERSION}`);
@@ -267,6 +279,15 @@ export async function loadProjectFromServer(
           storeLogger.error('Project migration failed:', migrationResult.error);
           return false;
         }
+      }
+
+      // SECURITY: Validate structure AFTER migration (ensures v2 format)
+      // This catches NaN/Infinity values and malformed data
+      try {
+        validateProjectStructure(project, `Server project '${projectId}'`);
+      } catch (validationError) {
+        storeLogger.error('Project structure validation failed:', validationError);
+        return false;
       }
 
       // SECURITY: Pre-validate expressions before loading

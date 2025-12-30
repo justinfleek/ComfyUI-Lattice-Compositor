@@ -1,12 +1,9 @@
 /**
  * JSON Validation and Data Hardening Service
  *
- * Provides safe JSON parsing, validation, and schema checking
+ * Provides safe JSON parsing and type guards
  * for project files, templates, and external data imports.
  */
-
-import type { LatticeProject, Composition, Layer } from '@/types/project';
-import type { TemplateConfig, LatticeTemplate } from '@/types/templateBuilder';
 
 // ============================================================
 // SAFE JSON PARSING
@@ -95,7 +92,7 @@ export function isBoolean(value: unknown): value is boolean {
 }
 
 // ============================================================
-// SCHEMA VALIDATION
+// TEMPLATE VALIDATION
 // ============================================================
 
 export interface ValidationError {
@@ -109,169 +106,6 @@ export interface ValidationResult {
   valid: boolean;
   errors: ValidationError[];
   warnings: string[];
-}
-
-/**
- * Validate a Lattice project structure
- */
-export function validateProject(data: unknown): ValidationResult {
-  const errors: ValidationError[] = [];
-  const warnings: string[] = [];
-
-  if (!isObject(data)) {
-    errors.push({ path: '$', message: 'Project must be an object' });
-    return { valid: false, errors, warnings };
-  }
-
-  const project = data as Record<string, unknown>;
-
-  // Required fields
-  if (!isString(project.id)) {
-    errors.push({ path: '$.id', message: 'Project ID must be a string' });
-  }
-
-  if (!isString(project.name)) {
-    errors.push({ path: '$.name', message: 'Project name must be a string' });
-  }
-
-  if (!isObject(project.compositions)) {
-    errors.push({ path: '$.compositions', message: 'Compositions must be an object' });
-  } else {
-    // Validate each composition
-    const compositions = project.compositions as Record<string, unknown>;
-    for (const [compId, comp] of Object.entries(compositions)) {
-      const compResult = validateComposition(comp, `$.compositions.${compId}`);
-      errors.push(...compResult.errors);
-      warnings.push(...compResult.warnings);
-    }
-  }
-
-  // Optional fields with type checking
-  if (project.assets !== undefined && !isObject(project.assets)) {
-    warnings.push('Project assets should be an object');
-  }
-
-  if (project.version !== undefined && !isString(project.version)) {
-    warnings.push('Project version should be a string');
-  }
-
-  return { valid: errors.length === 0, errors, warnings };
-}
-
-/**
- * Validate a composition structure
- */
-export function validateComposition(data: unknown, basePath: string = '$'): ValidationResult {
-  const errors: ValidationError[] = [];
-  const warnings: string[] = [];
-
-  if (!isObject(data)) {
-    errors.push({ path: basePath, message: 'Composition must be an object' });
-    return { valid: false, errors, warnings };
-  }
-
-  const comp = data as Record<string, unknown>;
-
-  // Required fields
-  const requiredStrings = ['id', 'name'];
-  for (const field of requiredStrings) {
-    if (!isString(comp[field])) {
-      errors.push({
-        path: `${basePath}.${field}`,
-        message: `${field} must be a string`,
-        expected: 'string',
-        received: typeof comp[field]
-      });
-    }
-  }
-
-  const requiredNumbers = ['width', 'height', 'frameRate', 'duration', 'frameCount'];
-  for (const field of requiredNumbers) {
-    if (!isNumber(comp[field])) {
-      errors.push({
-        path: `${basePath}.${field}`,
-        message: `${field} must be a number`,
-        expected: 'number',
-        received: typeof comp[field]
-      });
-    } else {
-      const value = comp[field] as number;
-      if (value <= 0) {
-        errors.push({
-          path: `${basePath}.${field}`,
-          message: `${field} must be positive`,
-          expected: '> 0',
-          received: String(value)
-        });
-      }
-    }
-  }
-
-  // Layers array
-  if (!isArray(comp.layers)) {
-    errors.push({ path: `${basePath}.layers`, message: 'layers must be an array' });
-  } else {
-    const layers = comp.layers as unknown[];
-    for (let i = 0; i < layers.length; i++) {
-      const layerResult = validateLayer(layers[i], `${basePath}.layers[${i}]`);
-      errors.push(...layerResult.errors);
-      warnings.push(...layerResult.warnings);
-    }
-  }
-
-  return { valid: errors.length === 0, errors, warnings };
-}
-
-/**
- * Validate a layer structure
- */
-export function validateLayer(data: unknown, basePath: string = '$'): ValidationResult {
-  const errors: ValidationError[] = [];
-  const warnings: string[] = [];
-
-  if (!isObject(data)) {
-    errors.push({ path: basePath, message: 'Layer must be an object' });
-    return { valid: false, errors, warnings };
-  }
-
-  const layer = data as Record<string, unknown>;
-
-  // Required fields
-  if (!isString(layer.id)) {
-    errors.push({ path: `${basePath}.id`, message: 'Layer ID must be a string' });
-  }
-
-  if (!isString(layer.name)) {
-    errors.push({ path: `${basePath}.name`, message: 'Layer name must be a string' });
-  }
-
-  if (!isString(layer.type)) {
-    errors.push({ path: `${basePath}.type`, message: 'Layer type must be a string' });
-  } else {
-    const validTypes = [
-      'image', 'video', 'solid', 'null', 'text', 'spline', 'shape',
-      'particle', 'camera', 'light', 'precomp', 'adjustment', 'audio',
-      'procedural_matte', 'model', 'point_cloud', 'depthflow',
-      'depth', 'normal', 'generated', 'group', 'path', 'control', 'matte'
-    ];
-    if (!validTypes.includes(layer.type as string)) {
-      warnings.push(`Unknown layer type "${layer.type}" at ${basePath}.type`);
-    }
-  }
-
-  // Boolean fields
-  if (layer.enabled !== undefined && !isBoolean(layer.enabled)) {
-    errors.push({ path: `${basePath}.enabled`, message: 'enabled must be a boolean' });
-  }
-
-  // Transform validation
-  if (layer.transform !== undefined) {
-    if (!isObject(layer.transform)) {
-      errors.push({ path: `${basePath}.transform`, message: 'transform must be an object' });
-    }
-  }
-
-  return { valid: errors.length === 0, errors, warnings };
 }
 
 /**
@@ -394,120 +228,20 @@ export function deepCloneSanitized<T>(obj: T): T {
 }
 
 // ============================================================
-// DATA REPAIR
-// ============================================================
-
-/**
- * Attempt to repair common issues in project data
- */
-export function repairProject(data: unknown): { repaired: boolean; data: unknown; fixes: string[] } {
-  const fixes: string[] = [];
-  let repaired = false;
-
-  if (!isObject(data)) {
-    return { repaired: false, data, fixes: ['Cannot repair: not an object'] };
-  }
-
-  const project = { ...data } as Record<string, unknown>;
-
-  // Add missing ID
-  if (!project.id) {
-    project.id = `project_${Date.now()}`;
-    fixes.push('Added missing project ID');
-    repaired = true;
-  }
-
-  // Add missing name
-  if (!project.name) {
-    project.name = 'Untitled Project';
-    fixes.push('Added missing project name');
-    repaired = true;
-  }
-
-  // Initialize missing compositions
-  if (!project.compositions) {
-    project.compositions = {};
-    fixes.push('Initialized missing compositions object');
-    repaired = true;
-  }
-
-  // Initialize missing assets
-  if (!project.assets) {
-    project.assets = {};
-    fixes.push('Initialized missing assets object');
-    repaired = true;
-  }
-
-  // Repair compositions
-  if (isObject(project.compositions)) {
-    const compositions = project.compositions as Record<string, unknown>;
-    for (const [compId, comp] of Object.entries(compositions)) {
-      if (isObject(comp)) {
-        const compObj = comp as Record<string, unknown>;
-
-        // Fix missing composition ID
-        if (!compObj.id) {
-          compObj.id = compId;
-          fixes.push(`Fixed missing ID for composition "${compObj.name || compId}"`);
-          repaired = true;
-        }
-
-        // Initialize missing layers array
-        if (!compObj.layers) {
-          compObj.layers = [];
-          fixes.push(`Initialized missing layers for composition "${compObj.name || compId}"`);
-          repaired = true;
-        }
-
-        // Repair layers
-        if (isArray(compObj.layers)) {
-          const layers = compObj.layers as unknown[];
-          for (let i = 0; i < layers.length; i++) {
-            if (isObject(layers[i])) {
-              const layer = layers[i] as Record<string, unknown>;
-
-              // Fix missing layer ID
-              if (!layer.id) {
-                layer.id = `layer_${Date.now()}_${i}`;
-                fixes.push(`Fixed missing ID for layer "${layer.name || i}"`);
-                repaired = true;
-              }
-
-              // Fix missing enabled flag
-              if (layer.enabled === undefined) {
-                layer.enabled = true;
-                fixes.push(`Fixed missing enabled flag for layer "${layer.name || layer.id}"`);
-                repaired = true;
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  return { repaired, data: project, fixes };
-}
-
-// ============================================================
 // EXPORTS
 // ============================================================
 
 export default {
   safeJSONParse,
   safeJSONStringify,
-  validateProject,
-  validateComposition,
-  validateLayer,
-  validateLatticeTemplate,
-  validateTemplateConfig,
   sanitizeString,
   sanitizeFileName,
   deepCloneSanitized,
-  repairProject,
   isObject,
   isString,
   isNumber,
   isArray,
-  isBoolean
+  isBoolean,
+  validateLatticeTemplate,
+  validateTemplateConfig
 };
