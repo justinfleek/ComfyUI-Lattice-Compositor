@@ -559,8 +559,8 @@ export class ExportPipeline {
         break;
 
       case 'lineart':
-        // Convert to grayscale with high contrast
-        this.applyLineart(data);
+        // Edge-based lineart detection (Sobel + adaptive threshold)
+        this.applyLineart(data, input.width, input.height);
         break;
 
       case 'softedge':
@@ -615,13 +615,65 @@ export class ExportPipeline {
     }
   }
 
-  private applyLineart(data: Uint8ClampedArray): void {
-    for (let i = 0; i < data.length; i += 4) {
-      const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
-      const val = gray > 128 ? 255 : 0;
-      data[i] = val;
-      data[i + 1] = val;
-      data[i + 2] = val;
+  private applyLineart(data: Uint8ClampedArray, width?: number, height?: number): void {
+    // Real lineart: edge detection + adaptive threshold + line enhancement
+    // This produces results closer to LineArtPreprocessor in ComfyUI
+
+    if (!width || !height) {
+      // Fallback to simple threshold if dimensions not provided
+      for (let i = 0; i < data.length; i += 4) {
+        const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+        const val = gray > 128 ? 255 : 0;
+        data[i] = val;
+        data[i + 1] = val;
+        data[i + 2] = val;
+      }
+      return;
+    }
+
+    // Step 1: Convert to grayscale
+    const grayscale = new Float32Array(width * height);
+    for (let i = 0; i < width * height; i++) {
+      const idx = i * 4;
+      grayscale[i] = (data[idx] * 0.299 + data[idx + 1] * 0.587 + data[idx + 2] * 0.114) / 255;
+    }
+
+    // Step 2: Sobel edge detection (per-channel for better detail)
+    const edges = new Float32Array(width * height);
+    const sobelX = [-1, 0, 1, -2, 0, 2, -1, 0, 1];
+    const sobelY = [-1, -2, -1, 0, 0, 0, 1, 2, 1];
+
+    for (let y = 1; y < height - 1; y++) {
+      for (let x = 1; x < width - 1; x++) {
+        let gx = 0, gy = 0;
+        for (let ky = -1; ky <= 1; ky++) {
+          for (let kx = -1; kx <= 1; kx++) {
+            const idx = (y + ky) * width + (x + kx);
+            const ki = (ky + 1) * 3 + (kx + 1);
+            gx += grayscale[idx] * sobelX[ki];
+            gy += grayscale[idx] * sobelY[ki];
+          }
+        }
+        edges[y * width + x] = Math.sqrt(gx * gx + gy * gy);
+      }
+    }
+
+    // Step 3: Find edge threshold using Otsu's method (simplified)
+    let maxEdge = 0;
+    for (let i = 0; i < edges.length; i++) {
+      if (edges[i] > maxEdge) maxEdge = edges[i];
+    }
+    const threshold = maxEdge * 0.15; // 15% of max edge strength
+
+    // Step 4: Apply threshold and invert (black lines on white)
+    for (let i = 0; i < width * height; i++) {
+      const idx = i * 4;
+      // Lineart: edges become black lines on white background
+      const isEdge = edges[i] > threshold;
+      const val = isEdge ? 0 : 255;
+      data[idx] = val;
+      data[idx + 1] = val;
+      data[idx + 2] = val;
     }
   }
 

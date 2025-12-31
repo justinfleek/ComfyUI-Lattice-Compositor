@@ -1175,16 +1175,10 @@ export async function exportForModel(
  * NPY format: https://numpy.org/doc/stable/reference/generated/numpy.lib.format.html
  */
 export function createNpyHeader(shape: number[], dtype: string = '<f4'): Uint8Array {
-  const header = {
-    descr: dtype,
-    fortran_order: false,
-    shape: shape
-  };
-
-  const headerStr = JSON.stringify(header)
-    .replace(/"/g, "'")
-    .replace(/: /g, ': ')
-    .replace(/, /g, ', ');
+  // NPY header must be valid Python dict literal format
+  // See: https://numpy.org/doc/stable/reference/generated/numpy.lib.format.html
+  const shapeStr = `(${shape.join(', ')}${shape.length === 1 ? ',' : ''})`;  // Python tuple
+  const headerStr = `{'descr': '${dtype}', 'fortran_order': False, 'shape': ${shapeStr}, }`;
 
   // Pad to 64-byte alignment
   const headerBytes = new TextEncoder().encode(headerStr);
