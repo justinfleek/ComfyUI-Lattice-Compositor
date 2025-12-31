@@ -179,17 +179,6 @@ export const EFFECT_DEFINITIONS: Record<string, EffectDefinition> = {
     ]
   },
 
-  'unsharp-mask': {
-    name: 'Unsharp Mask',
-    category: 'blur-sharpen',
-    description: 'Professional sharpening with radius control',
-    parameters: [
-      { name: 'Amount', type: 'number', defaultValue: 100, min: 1, max: 500, animatable: true },
-      { name: 'Radius', type: 'number', defaultValue: 1, min: 0.1, max: 250, step: 0.1, animatable: true },
-      { name: 'Threshold', type: 'number', defaultValue: 0, min: 0, max: 255, animatable: true }
-    ]
-  },
-
   // Color Correction
   'brightness-contrast': {
     name: 'Brightness & Contrast',
@@ -640,6 +629,47 @@ export const EFFECT_DEFINITIONS: Record<string, EffectDefinition> = {
     ]
   },
 
+  // Audio Visualization Effects
+  'audio-spectrum': {
+    name: 'Audio Spectrum',
+    category: 'generate',
+    description: 'Visualize audio frequency spectrum',
+    parameters: [
+      { name: 'Start Point X', type: 'number', defaultValue: 0, min: -1000, max: 4000, animatable: true },
+      { name: 'Start Point Y', type: 'number', defaultValue: 360, min: -1000, max: 2000, animatable: true },
+      { name: 'End Point X', type: 'number', defaultValue: 1920, min: -1000, max: 4000, animatable: true },
+      { name: 'End Point Y', type: 'number', defaultValue: 360, min: -1000, max: 2000, animatable: true },
+      { name: 'Start Frequency', type: 'number', defaultValue: 20, min: 20, max: 20000, animatable: true },
+      { name: 'End Frequency', type: 'number', defaultValue: 10000, min: 20, max: 20000, animatable: true },
+      { name: 'Frequency Bands', type: 'number', defaultValue: 64, min: 8, max: 256, animatable: false },
+      { name: 'Max Height', type: 'number', defaultValue: 100, min: 10, max: 500, animatable: true },
+      { name: 'Thickness', type: 'number', defaultValue: 3, min: 1, max: 20, animatable: true },
+      { name: 'Inside Color', type: 'color', defaultValue: { r: 255, g: 255, b: 255, a: 1 }, animatable: true },
+      { name: 'Outside Color', type: 'color', defaultValue: { r: 74, g: 144, b: 217, a: 1 }, animatable: true },
+      { name: 'Audio Duration', type: 'number', defaultValue: 50, min: 0, max: 1000, animatable: false },
+      { name: 'Audio Offset', type: 'number', defaultValue: 0, min: -1000, max: 1000, animatable: true }
+    ]
+  },
+
+  'audio-waveform': {
+    name: 'Audio Waveform',
+    category: 'generate',
+    description: 'Visualize audio waveform',
+    parameters: [
+      { name: 'Start Point X', type: 'number', defaultValue: 0, min: -1000, max: 4000, animatable: true },
+      { name: 'Start Point Y', type: 'number', defaultValue: 360, min: -1000, max: 2000, animatable: true },
+      { name: 'End Point X', type: 'number', defaultValue: 1920, min: -1000, max: 4000, animatable: true },
+      { name: 'End Point Y', type: 'number', defaultValue: 360, min: -1000, max: 2000, animatable: true },
+      { name: 'Displayed Samples', type: 'number', defaultValue: 200, min: 50, max: 1000, animatable: false },
+      { name: 'Max Height', type: 'number', defaultValue: 100, min: 10, max: 500, animatable: true },
+      { name: 'Thickness', type: 'number', defaultValue: 2, min: 1, max: 20, animatable: true },
+      { name: 'Inside Color', type: 'color', defaultValue: { r: 255, g: 255, b: 255, a: 1 }, animatable: true },
+      { name: 'Outside Color', type: 'color', defaultValue: { r: 255, g: 255, b: 255, a: 1 }, animatable: true },
+      { name: 'Audio Duration', type: 'number', defaultValue: 50, min: 0, max: 1000, animatable: false },
+      { name: 'Audio Offset', type: 'number', defaultValue: 0, min: -1000, max: 1000, animatable: true }
+    ]
+  },
+
   // Stylize - Glitch Effects
   'rgb-split': {
     name: 'RGB Split',
@@ -689,96 +719,6 @@ export const EFFECT_DEFINITIONS: Record<string, EffectDefinition> = {
     ]
   },
 
-  // Color Correction - Additional
-  'selective-color': {
-    name: 'Selective Color',
-    category: 'color-correction',
-    description: 'Adjust colors in specific color ranges',
-    parameters: [
-      { name: 'Colors', type: 'dropdown', defaultValue: 'reds', options: [
-        { label: 'Reds', value: 'reds' },
-        { label: 'Yellows', value: 'yellows' },
-        { label: 'Greens', value: 'greens' },
-        { label: 'Cyans', value: 'cyans' },
-        { label: 'Blues', value: 'blues' },
-        { label: 'Magentas', value: 'magentas' },
-        { label: 'Whites', value: 'whites' },
-        { label: 'Neutrals', value: 'neutrals' },
-        { label: 'Blacks', value: 'blacks' }
-      ], animatable: false },
-      { name: 'Cyan', type: 'number', defaultValue: 0, min: -100, max: 100, animatable: true },
-      { name: 'Magenta', type: 'number', defaultValue: 0, min: -100, max: 100, animatable: true },
-      { name: 'Yellow', type: 'number', defaultValue: 0, min: -100, max: 100, animatable: true },
-      { name: 'Black', type: 'number', defaultValue: 0, min: -100, max: 100, animatable: true }
-    ]
-  },
-
-  'photo-filter': {
-    name: 'Photo Filter',
-    category: 'color-correction',
-    description: 'Apply warming/cooling filter',
-    parameters: [
-      { name: 'Filter', type: 'dropdown', defaultValue: 'warming_85', options: [
-        { label: 'Warming Filter (85)', value: 'warming_85' },
-        { label: 'Warming Filter (81)', value: 'warming_81' },
-        { label: 'Cooling Filter (80)', value: 'cooling_80' },
-        { label: 'Cooling Filter (82)', value: 'cooling_82' },
-        { label: 'Sepia', value: 'sepia' },
-        { label: 'Deep Blue', value: 'deep_blue' },
-        { label: 'Underwater', value: 'underwater' }
-      ], animatable: false },
-      { name: 'Color', type: 'color', defaultValue: { r: 236, g: 138, b: 0, a: 1 }, animatable: true },
-      { name: 'Density', type: 'number', defaultValue: 25, min: 0, max: 100, animatable: true },
-      { name: 'Preserve Luminosity', type: 'checkbox', defaultValue: true, animatable: false }
-    ]
-  },
-
-  'channel-mixer': {
-    name: 'Channel Mixer',
-    category: 'color-correction',
-    description: 'Mix RGB channels',
-    parameters: [
-      { name: 'Output Channel', type: 'dropdown', defaultValue: 'red', options: [
-        { label: 'Red', value: 'red' },
-        { label: 'Green', value: 'green' },
-        { label: 'Blue', value: 'blue' }
-      ], animatable: false },
-      { name: 'Red', type: 'number', defaultValue: 100, min: -200, max: 200, animatable: true },
-      { name: 'Green', type: 'number', defaultValue: 0, min: -200, max: 200, animatable: true },
-      { name: 'Blue', type: 'number', defaultValue: 0, min: -200, max: 200, animatable: true },
-      { name: 'Constant', type: 'number', defaultValue: 0, min: -100, max: 100, animatable: true },
-      { name: 'Monochrome', type: 'checkbox', defaultValue: false, animatable: false }
-    ]
-  },
-
-  'gradient-map': {
-    name: 'Gradient Map',
-    category: 'color-correction',
-    description: 'Map luminance to gradient colors',
-    parameters: [
-      { name: 'Color 1', type: 'color', defaultValue: { r: 0, g: 0, b: 0, a: 1 }, animatable: true },
-      { name: 'Color 2', type: 'color', defaultValue: { r: 255, g: 255, b: 255, a: 1 }, animatable: true },
-      { name: 'Dither', type: 'number', defaultValue: 0, min: 0, max: 100, animatable: false },
-      { name: 'Reverse', type: 'checkbox', defaultValue: false, animatable: false }
-    ]
-  },
-
-  'black-white': {
-    name: 'Black & White',
-    category: 'color-correction',
-    description: 'Convert to monochrome with color channel control',
-    parameters: [
-      { name: 'Reds', type: 'number', defaultValue: 40, min: -200, max: 300, animatable: true },
-      { name: 'Yellows', type: 'number', defaultValue: 60, min: -200, max: 300, animatable: true },
-      { name: 'Greens', type: 'number', defaultValue: 40, min: -200, max: 300, animatable: true },
-      { name: 'Cyans', type: 'number', defaultValue: 60, min: -200, max: 300, animatable: true },
-      { name: 'Blues', type: 'number', defaultValue: 20, min: -200, max: 300, animatable: true },
-      { name: 'Magentas', type: 'number', defaultValue: 80, min: -200, max: 300, animatable: true },
-      { name: 'Tint', type: 'checkbox', defaultValue: false, animatable: false },
-      { name: 'Tint Color', type: 'color', defaultValue: { r: 225, g: 210, b: 180, a: 1 }, animatable: true }
-    ]
-  },
-
   'vignette': {
     name: 'Vignette',
     category: 'color-correction',
@@ -788,6 +728,60 @@ export const EFFECT_DEFINITIONS: Record<string, EffectDefinition> = {
       { name: 'Midpoint', type: 'number', defaultValue: 50, min: 0, max: 100, animatable: true },
       { name: 'Roundness', type: 'number', defaultValue: 0, min: -100, max: 100, animatable: true },
       { name: 'Feather', type: 'number', defaultValue: 50, min: 0, max: 100, animatable: true }
+    ]
+  },
+
+  'exposure': {
+    name: 'Exposure',
+    category: 'color-correction',
+    description: 'Adjust exposure like a camera',
+    parameters: [
+      { name: 'Exposure', type: 'number', defaultValue: 0, min: -5, max: 5, step: 0.1, animatable: true },
+      { name: 'Offset', type: 'number', defaultValue: 0, min: -1, max: 1, step: 0.01, animatable: true },
+      { name: 'Gamma', type: 'number', defaultValue: 1, min: 0.1, max: 3, step: 0.01, animatable: true }
+    ]
+  },
+
+  'vibrance': {
+    name: 'Vibrance',
+    category: 'color-correction',
+    description: 'Intelligent saturation that protects skin tones',
+    parameters: [
+      { name: 'Vibrance', type: 'number', defaultValue: 0, min: -100, max: 100, animatable: true },
+      { name: 'Saturation', type: 'number', defaultValue: 0, min: -100, max: 100, animatable: true }
+    ]
+  },
+
+  'invert': {
+    name: 'Invert',
+    category: 'color-correction',
+    description: 'Invert colors',
+    parameters: [
+      { name: 'Blend', type: 'number', defaultValue: 100, min: 0, max: 100, animatable: true },
+      { name: 'Channel', type: 'dropdown', defaultValue: 'rgb', options: [
+        { label: 'RGB', value: 'rgb' },
+        { label: 'Red', value: 'red' },
+        { label: 'Green', value: 'green' },
+        { label: 'Blue', value: 'blue' }
+      ], animatable: false }
+    ]
+  },
+
+  'posterize': {
+    name: 'Posterize',
+    category: 'color-correction',
+    description: 'Reduce color levels for poster effect',
+    parameters: [
+      { name: 'Levels', type: 'number', defaultValue: 6, min: 2, max: 256, animatable: true }
+    ]
+  },
+
+  'threshold': {
+    name: 'Threshold',
+    category: 'color-correction',
+    description: 'Convert to black and white based on threshold',
+    parameters: [
+      { name: 'Threshold', type: 'number', defaultValue: 128, min: 0, max: 255, animatable: true }
     ]
   },
 
@@ -975,45 +969,6 @@ export const EFFECT_DEFINITIONS: Record<string, EffectDefinition> = {
     ]
   },
 
-  // Blur - Additional
-  'lens-blur': {
-    name: 'Lens Blur',
-    category: 'blur-sharpen',
-    description: 'Simulate camera lens blur with bokeh',
-    parameters: [
-      { name: 'Radius', type: 'number', defaultValue: 15, min: 0, max: 100, animatable: true },
-      { name: 'Blade Curvature', type: 'number', defaultValue: 0, min: 0, max: 100, animatable: true },
-      { name: 'Rotation', type: 'angle', defaultValue: 0, animatable: true },
-      { name: 'Brightness', type: 'number', defaultValue: 0, min: -100, max: 100, animatable: true },
-      { name: 'Threshold', type: 'number', defaultValue: 255, min: 0, max: 255, animatable: true }
-    ]
-  },
-
-  // Distort - Additional
-  'bulge': {
-    name: 'Bulge',
-    category: 'distort',
-    description: 'Spherical bulge distortion',
-    parameters: [
-      { name: 'Horizontal Radius', type: 'number', defaultValue: 100, min: 0, max: 1000, animatable: true },
-      { name: 'Vertical Radius', type: 'number', defaultValue: 100, min: 0, max: 1000, animatable: true },
-      { name: 'Bulge Center', type: 'point', defaultValue: { x: 0.5, y: 0.5 }, animatable: true },
-      { name: 'Bulge Height', type: 'number', defaultValue: 1, min: -4, max: 4, step: 0.1, animatable: true },
-      { name: 'Taper Radius', type: 'number', defaultValue: 0, min: 0, max: 100, animatable: true }
-    ]
-  },
-
-  'twirl': {
-    name: 'Twirl',
-    category: 'distort',
-    description: 'Spiral twist distortion',
-    parameters: [
-      { name: 'Angle', type: 'angle', defaultValue: 50, animatable: true },
-      { name: 'Twirl Radius', type: 'number', defaultValue: 200, min: 0, max: 2000, animatable: true },
-      { name: 'Twirl Center', type: 'point', defaultValue: { x: 0.5, y: 0.5 }, animatable: true }
-    ]
-  },
-
   'ripple': {
     name: 'Ripple',
     category: 'distort',
@@ -1023,23 +978,6 @@ export const EFFECT_DEFINITIONS: Record<string, EffectDefinition> = {
       { name: 'Wave Length', type: 'number', defaultValue: 30, min: 1, max: 999, animatable: true },
       { name: 'Amplitude', type: 'number', defaultValue: 10, min: -100, max: 100, animatable: true },
       { name: 'Center', type: 'point', defaultValue: { x: 0.5, y: 0.5 }, animatable: true },
-      { name: 'Phase', type: 'angle', defaultValue: 0, animatable: true }
-    ]
-  },
-
-  'wave': {
-    name: 'Wave',
-    category: 'distort',
-    description: 'Wave distortion',
-    parameters: [
-      { name: 'Wave Type', type: 'dropdown', defaultValue: 'sine', options: [
-        { label: 'Sine', value: 'sine' },
-        { label: 'Triangle', value: 'triangle' },
-        { label: 'Square', value: 'square' }
-      ], animatable: false },
-      { name: 'Wave Height', type: 'number', defaultValue: 10, min: 0, max: 100, animatable: true },
-      { name: 'Wave Width', type: 'number', defaultValue: 100, min: 1, max: 500, animatable: true },
-      { name: 'Direction', type: 'angle', defaultValue: 0, animatable: true },
       { name: 'Phase', type: 'angle', defaultValue: 0, animatable: true }
     ]
   },
@@ -1109,67 +1047,6 @@ export const EFFECT_DEFINITIONS: Record<string, EffectDefinition> = {
       { name: 'Falloff Power', type: 'number', defaultValue: 2, min: 1, max: 5, step: 0.1, animatable: false, group: 'Pins' },
       // Overlap rendering
       { name: 'Enable Overlap', type: 'checkbox', defaultValue: false, animatable: false, group: 'Overlap' }
-    ]
-  },
-
-  // ============================================================================
-  // PERSPECTIVE / 3D EFFECTS
-  // ============================================================================
-
-  'fog-3d': {
-    name: 'Fog 3D',
-    category: 'perspective',
-    description: 'Depth-based atmospheric fog effect for 3D compositions',
-    parameters: [
-      { name: 'Fog Start Depth', type: 'number', defaultValue: 0, min: -10000, max: 10000, step: 10, animatable: true },
-      { name: 'Fog End Depth', type: 'number', defaultValue: 2000, min: -10000, max: 10000, step: 10, animatable: true },
-      { name: 'Fog Color', type: 'color', defaultValue: { r: 200, g: 200, b: 220 }, animatable: true },
-      { name: 'Fog Opacity', type: 'number', defaultValue: 100, min: 0, max: 100, step: 1, animatable: true },
-      { name: 'Scattering', type: 'number', defaultValue: 0, min: 0, max: 100, step: 1, animatable: true },
-      { name: 'Gradient Mode', type: 'dropdown', defaultValue: 'linear', options: [
-        { label: 'Linear', value: 'linear' },
-        { label: 'Exponential', value: 'exponential' },
-        { label: 'Exponential Squared', value: 'exponential2' }
-      ], animatable: false },
-      { name: 'Use Comp Camera', type: 'checkbox', defaultValue: true, animatable: false },
-      { name: 'Layer Depth', type: 'number', defaultValue: 0, min: -10000, max: 10000, step: 10, animatable: true }
-    ]
-  },
-
-  'depth-matte': {
-    name: 'Depth Matte',
-    category: 'perspective',
-    description: 'Create matte based on layer Z-depth',
-    parameters: [
-      { name: 'Near Depth', type: 'number', defaultValue: 0, min: -10000, max: 10000, step: 10, animatable: true },
-      { name: 'Far Depth', type: 'number', defaultValue: 1000, min: -10000, max: 10000, step: 10, animatable: true },
-      { name: 'Invert', type: 'checkbox', defaultValue: false, animatable: false },
-      { name: 'Softness', type: 'number', defaultValue: 0, min: 0, max: 100, step: 1, animatable: true }
-    ]
-  },
-
-  '3d-glasses': {
-    name: '3D Glasses',
-    category: 'perspective',
-    description: 'Anaglyph 3D effect for stereoscopic viewing',
-    parameters: [
-      { name: '3D View', type: 'dropdown', defaultValue: 'red-cyan', options: [
-        { label: 'Red-Cyan', value: 'red-cyan' },
-        { label: 'Green-Magenta', value: 'green-magenta' },
-        { label: 'Amber-Blue', value: 'amber-blue' }
-      ], animatable: false },
-      { name: 'Left View', type: 'dropdown', defaultValue: 'red', options: [
-        { label: 'Red', value: 'red' },
-        { label: 'Green', value: 'green' },
-        { label: 'Blue', value: 'blue' }
-      ], animatable: false },
-      { name: 'Right View', type: 'dropdown', defaultValue: 'cyan', options: [
-        { label: 'Cyan', value: 'cyan' },
-        { label: 'Magenta', value: 'magenta' },
-        { label: 'Yellow', value: 'yellow' }
-      ], animatable: false },
-      { name: 'Convergence', type: 'number', defaultValue: 0, min: -100, max: 100, step: 1, animatable: true },
-      { name: 'Balance', type: 'number', defaultValue: 0, min: -100, max: 100, step: 1, animatable: true }
     ]
   },
 
