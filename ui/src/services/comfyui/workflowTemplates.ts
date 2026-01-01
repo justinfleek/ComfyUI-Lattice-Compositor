@@ -1883,10 +1883,64 @@ export function generateSCAILWorkflow(params: WorkflowParams): ComfyUIWorkflow {
 // Workflow Generator Router
 // ============================================================================
 
+/**
+ * Validate required workflow parameters
+ */
+function validateWorkflowParams(target: ExportTarget, params: WorkflowParams): void {
+  const errors: string[] = [];
+
+  // Common validation
+  if (!Number.isFinite(params.width) || params.width < 64 || params.width > 8192) {
+    errors.push(`Invalid width: ${params.width}. Expected 64-8192.`);
+  }
+  if (!Number.isFinite(params.height) || params.height < 64 || params.height > 8192) {
+    errors.push(`Invalid height: ${params.height}. Expected 64-8192.`);
+  }
+  if (!Number.isFinite(params.frameCount) || params.frameCount < 1 || params.frameCount > 10000) {
+    errors.push(`Invalid frameCount: ${params.frameCount}. Expected 1-10000.`);
+  }
+  if (!Number.isFinite(params.fps) || params.fps < 1 || params.fps > 120) {
+    errors.push(`Invalid fps: ${params.fps}. Expected 1-120.`);
+  }
+
+  // Target-specific validation
+  const requiresReferenceImage = [
+    'wan22-i2v', 'wan22-first-last', 'uni3c-camera', 'uni3c-motion',
+    'ttm', 'ttm-wan', 'scail'
+  ];
+
+  if (requiresReferenceImage.includes(target) && !params.referenceImage) {
+    errors.push(`${target} requires referenceImage but none provided.`);
+  }
+
+  if ((target === 'ttm' || target === 'ttm-wan') && !params.ttmMotionVideo && !params.ttmMaskDirectory) {
+    errors.push(`TTM requires either ttmMotionVideo or ttmMaskDirectory.`);
+  }
+
+  if (target === 'wan-move' && !params.trackCoords) {
+    errors.push(`Wan-Move requires trackCoords (trajectory data).`);
+  }
+
+  if (target === 'scail' && !params.scailPoseVideo && !params.scailPoseDirectory) {
+    errors.push(`SCAIL requires either scailPoseVideo or scailPoseDirectory.`);
+  }
+
+  if (errors.length > 0) {
+    throw new Error(
+      `Invalid workflow parameters for ${target}:\n` +
+      errors.map(e => `  - ${e}`).join('\n') +
+      `\nCheck your export settings and ensure all required inputs are provided.`
+    );
+  }
+}
+
 export function generateWorkflowForTarget(
   target: ExportTarget,
   params: WorkflowParams
 ): ComfyUIWorkflow {
+  // Validate parameters before generating workflow
+  validateWorkflowParams(target, params);
+
   switch (target) {
     case 'wan22-i2v':
       return generateWan22I2VWorkflow(params);

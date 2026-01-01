@@ -22,6 +22,32 @@ import type {
 import { focalLengthToFOV } from '@/services/math3d';
 
 // ============================================================================
+// Validation Utilities
+// ============================================================================
+
+/**
+ * Validate a number is finite (not NaN or Infinity)
+ */
+function safeNumber(value: unknown, fallback: number, context: string): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    console.warn(`[cameraExportFormats] Invalid ${context}: ${value}, using ${fallback}`);
+    return fallback;
+  }
+  return value;
+}
+
+/**
+ * Validate frame number is valid
+ */
+function validateFrame(frame: number, context: string): number {
+  if (!Number.isFinite(frame) || frame < 0) {
+    console.warn(`[cameraExportFormats] Invalid frame in ${context}: ${frame}, using 0`);
+    return 0;
+  }
+  return Math.floor(frame);
+}
+
+// ============================================================================
 // Camera Interpolation
 // ============================================================================
 
@@ -122,10 +148,21 @@ export function interpolateCameraAtFrame(
 }
 
 function lerp(a: number, b: number, t: number): number {
+  // Handle NaN values
+  if (!Number.isFinite(a)) a = 0;
+  if (!Number.isFinite(b)) b = 0;
+  if (!Number.isFinite(t)) t = 0;
+  t = Math.max(0, Math.min(1, t)); // Clamp t to [0, 1]
   return a + (b - a) * t;
 }
 
 function lerpAngle(a: number, b: number, t: number): number {
+  // Handle NaN values
+  if (!Number.isFinite(a)) a = 0;
+  if (!Number.isFinite(b)) b = 0;
+  if (!Number.isFinite(t)) t = 0;
+  t = Math.max(0, Math.min(1, t)); // Clamp t to [0, 1]
+
   // Handle angle wrapping
   let diff = b - a;
   if (diff > 180) diff -= 360;
@@ -198,6 +235,8 @@ export function computeViewMatrix(cam: InterpolatedCamera): number[][] {
 
 /**
  * Compute projection matrix
+ *
+ * @throws Error if aspect ratio or clip planes are invalid
  */
 export function computeProjectionMatrix(
   cam: InterpolatedCamera,
@@ -205,11 +244,31 @@ export function computeProjectionMatrix(
   nearClip: number = 0.1,
   farClip: number = 1000
 ): number[][] {
-  const fov = focalLengthToFOV(cam.focalLength, 36); // 36mm film
+  // Validate inputs
+  if (!Number.isFinite(aspectRatio) || aspectRatio <= 0) {
+    throw new Error(
+      `Invalid aspect ratio: ${aspectRatio}. Expected positive number. ` +
+      `Check composition width/height are valid.`
+    );
+  }
+
+  if (!Number.isFinite(nearClip) || nearClip <= 0) {
+    console.warn(`[cameraExportFormats] Invalid nearClip: ${nearClip}, using 0.1`);
+    nearClip = 0.1;
+  }
+
+  if (!Number.isFinite(farClip) || farClip <= nearClip) {
+    console.warn(`[cameraExportFormats] Invalid farClip: ${farClip}, using ${nearClip + 1000}`);
+    farClip = nearClip + 1000;
+  }
+
+  const focalLength = safeNumber(cam.focalLength, 50, 'cam.focalLength');
+  const fov = focalLengthToFOV(focalLength, 36); // 36mm film
   const fovRad = fov * Math.PI / 180;
   const tanHalfFov = Math.tan(fovRad / 2);
 
-  const f = 1 / tanHalfFov;
+  // Avoid division by zero
+  const f = tanHalfFov > 0.001 ? (1 / tanHalfFov) : 1000;
   const nf = 1 / (nearClip - farClip);
 
   return [
@@ -609,6 +668,8 @@ export function exportToCameraCtrl(
 
 /**
  * Export camera with full 4x4 matrices for generic/custom use
+ *
+ * @throws Error if dimensions or fps are invalid
  */
 export function exportCameraMatrices(
   camera: Camera3D,
@@ -620,37 +681,68 @@ export function exportCameraMatrices(
     fps: number;
   }
 ): FullCameraExport {
-  const frames: FullCameraFrame[] = [];
-  const aspectRatio = options.width / options.height;
+  // Validate options
+  const width = safeNumber(options.width, 1920, 'width');
+  const height = safeNumber(options.height, 1080, 'height');
+  const fps = safeNumber(options.fps, 24, 'fps');
+  const frameCount = Math.max(1, Math.floor(safeNumber(options.frameCount, 1, 'frameCount')));
 
-  for (let frame = 0; frame < options.frameCount; frame++) {
+  if (width <= 0 || height <= 0) {
+    throw new Error(
+      `Invalid dimensions: ${width}x${height}. ` +
+      `Width and height must be positive numbers.`
+    );
+  }
+
+  if (fps <= 0) {
+    throw new Error(
+      `Invalid fps: ${fps}. FPS must be a positive number.`
+    );
+  }
+
+  const frames: FullCameraFrame[] = [];
+  const aspectRatio = width / height;
+
+  for (let frame = 0; frame < frameCount; frame++) {
     const cam = interpolateCameraAtFrame(camera, keyframes, frame);
 
     const viewMatrix = computeViewMatrix(cam);
     const projMatrix = computeProjectionMatrix(cam, aspectRatio);
 
+    // Validate camera values before adding
+    const safeFocalLength = safeNumber(cam.focalLength, 50, `frame ${frame} focalLength`);
+    const filmSize = safeNumber(camera.filmSize, 36, 'filmSize');
+
     frames.push({
       frame,
-      timestamp: frame / options.fps,
+      timestamp: frame / fps,
       view_matrix: viewMatrix,
       projection_matrix: projMatrix,
-      position: [cam.position.x, cam.position.y, cam.position.z],
-      rotation: [cam.rotation.x, cam.rotation.y, cam.rotation.z],
-      fov: focalLengthToFOV(cam.focalLength, camera.filmSize),
-      focal_length: cam.focalLength,
-      focus_distance: cam.focusDistance,
+      position: [
+        safeNumber(cam.position.x, 0, `frame ${frame} position.x`),
+        safeNumber(cam.position.y, 0, `frame ${frame} position.y`),
+        safeNumber(cam.position.z, 0, `frame ${frame} position.z`),
+      ],
+      rotation: [
+        safeNumber(cam.rotation.x, 0, `frame ${frame} rotation.x`),
+        safeNumber(cam.rotation.y, 0, `frame ${frame} rotation.y`),
+        safeNumber(cam.rotation.z, 0, `frame ${frame} rotation.z`),
+      ],
+      fov: focalLengthToFOV(safeFocalLength, filmSize),
+      focal_length: safeFocalLength,
+      focus_distance: safeNumber(cam.focusDistance, 100, `frame ${frame} focusDistance`),
     });
   }
 
   return {
     frames,
     metadata: {
-      width: options.width,
-      height: options.height,
-      fps: options.fps,
-      total_frames: options.frameCount,
+      width,
+      height,
+      fps,
+      total_frames: frameCount,
       camera_type: camera.type,
-      film_size: camera.filmSize,
+      film_size: safeNumber(camera.filmSize, 36, 'filmSize'),
     },
   };
 }

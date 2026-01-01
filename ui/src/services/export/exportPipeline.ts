@@ -91,6 +91,40 @@ export class ExportPipeline {
   }
 
   // ============================================================================
+  // Error Handling Utilities
+  // ============================================================================
+
+  /**
+   * Safely get 2D rendering context from canvas
+   * @throws Error if context cannot be obtained
+   */
+  private get2DContext(canvas: OffscreenCanvas, operation: string): OffscreenCanvasRenderingContext2D {
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      throw new Error(`Failed to get 2D context for ${operation}. Browser may not support OffscreenCanvas.`);
+    }
+    return ctx;
+  }
+
+  /**
+   * Validate a numeric value is finite and not NaN
+   */
+  private validateNumber(value: unknown, name: string, defaultValue: number): number {
+    if (typeof value !== 'number' || !Number.isFinite(value)) {
+      console.warn(`[ExportPipeline] Invalid ${name}: ${value}, using default ${defaultValue}`);
+      return defaultValue;
+    }
+    return value;
+  }
+
+  /**
+   * Clamp a value to a safe range
+   */
+  private clamp(value: number, min: number, max: number): number {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  // ============================================================================
   // Main Export Method
   // ============================================================================
 
@@ -192,32 +226,73 @@ export class ExportPipeline {
   private validateConfig(): string[] {
     const errors: string[] = [];
 
-    if (this.config.width < 64 || this.config.width > 4096) {
-      errors.push('Width must be between 64 and 4096');
+    // Validate dimensions
+    if (!Number.isFinite(this.config.width) || this.config.width < 64 || this.config.width > 4096) {
+      errors.push(`Width must be between 64 and 4096 (got: ${this.config.width})`);
     }
 
-    if (this.config.height < 64 || this.config.height > 4096) {
-      errors.push('Height must be between 64 and 4096');
+    if (!Number.isFinite(this.config.height) || this.config.height < 64 || this.config.height > 4096) {
+      errors.push(`Height must be between 64 and 4096 (got: ${this.config.height})`);
     }
 
-    if (this.config.frameCount < 1 || this.config.frameCount > 1000) {
-      errors.push('Frame count must be between 1 and 1000');
+    // Validate dimensions are integers
+    if (this.config.width !== Math.floor(this.config.width)) {
+      errors.push('Width must be an integer');
+    }
+    if (this.config.height !== Math.floor(this.config.height)) {
+      errors.push('Height must be an integer');
     }
 
-    if (this.config.fps < 1 || this.config.fps > 120) {
-      errors.push('FPS must be between 1 and 120');
+    // Validate frame settings
+    if (!Number.isFinite(this.config.frameCount) || this.config.frameCount < 1 || this.config.frameCount > 1000) {
+      errors.push(`Frame count must be between 1 and 1000 (got: ${this.config.frameCount})`);
     }
 
-    if (this.config.startFrame < 0 || this.config.startFrame >= this.config.frameCount) {
-      errors.push('Invalid start frame');
+    if (!Number.isFinite(this.config.fps) || this.config.fps < 1 || this.config.fps > 120) {
+      errors.push(`FPS must be between 1 and 120 (got: ${this.config.fps})`);
     }
 
-    if (this.config.endFrame <= this.config.startFrame || this.config.endFrame > this.config.frameCount) {
-      errors.push('Invalid end frame');
+    // Validate frame range
+    if (!Number.isFinite(this.config.startFrame) || this.config.startFrame < 0) {
+      errors.push(`Start frame must be >= 0 (got: ${this.config.startFrame})`);
     }
 
-    if (!this.config.prompt && this.needsPrompt()) {
-      errors.push('Prompt is required for this export target');
+    if (!Number.isFinite(this.config.endFrame)) {
+      errors.push(`End frame must be a valid number (got: ${this.config.endFrame})`);
+    }
+
+    if (this.config.startFrame >= this.config.endFrame) {
+      errors.push(`Start frame (${this.config.startFrame}) must be less than end frame (${this.config.endFrame})`);
+    }
+
+    if (this.config.endFrame > this.config.frameCount) {
+      errors.push(`End frame (${this.config.endFrame}) exceeds frame count (${this.config.frameCount})`);
+    }
+
+    // Validate mask layer ID if mask export requested
+    if (this.config.exportMaskVideo && !this.config.maskLayerId) {
+      errors.push('Mask video export requires maskLayerId in config');
+    }
+
+    // Validate prompt
+    if (this.needsPrompt()) {
+      const trimmedPrompt = (this.config.prompt || '').trim();
+      if (!trimmedPrompt) {
+        errors.push('Prompt is required for this export target (cannot be empty or whitespace-only)');
+      }
+    }
+
+    // Validate optional numeric fields
+    if (this.config.seed !== undefined && (!Number.isFinite(this.config.seed) || this.config.seed < 0)) {
+      errors.push(`Seed must be a non-negative number (got: ${this.config.seed})`);
+    }
+
+    if (this.config.steps !== undefined && (!Number.isFinite(this.config.steps) || this.config.steps < 1 || this.config.steps > 150)) {
+      errors.push(`Steps must be between 1 and 150 (got: ${this.config.steps})`);
+    }
+
+    if (this.config.cfgScale !== undefined && (!Number.isFinite(this.config.cfgScale) || this.config.cfgScale < 0 || this.config.cfgScale > 30)) {
+      errors.push(`CFG scale must be between 0 and 30 (got: ${this.config.cfgScale})`);
     }
 
     return errors;
@@ -241,20 +316,27 @@ export class ExportPipeline {
     });
 
     const canvas = new OffscreenCanvas(this.config.width, this.config.height);
-    const ctx = canvas.getContext('2d')!;
+    const ctx = this.get2DContext(canvas, 'reference frame rendering');
 
     // Render the first frame
     await this.renderFrameToCanvas(ctx, this.config.startFrame);
 
     // Convert to blob and save
     const blob = await canvas.convertToBlob({ type: 'image/png' });
-    const filename = `${this.config.filenamePrefix}_reference.png`;
+    const filename = `${this.config.filenamePrefix || 'export'}_reference.png`;
 
     // If ComfyUI server is configured, upload
     if (this.config.comfyuiServer) {
-      const client = getComfyUIClient(this.config.comfyuiServer);
-      const uploadResult = await client.uploadImage(blob, filename);
-      result.outputFiles.referenceImage = uploadResult.name;
+      try {
+        const client = getComfyUIClient(this.config.comfyuiServer);
+        const uploadResult = await client.uploadImage(blob, filename);
+        result.outputFiles.referenceImage = uploadResult.name;
+      } catch (error) {
+        result.errors.push(`Failed to upload reference frame: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        // Fall back to local save
+        result.outputFiles.referenceImage = await this.saveBlobLocally(blob, filename);
+        result.warnings.push('Reference frame saved locally due to upload failure');
+      }
     } else {
       // Save locally (browser download)
       result.outputFiles.referenceImage = await this.saveBlobLocally(blob, filename);
@@ -277,19 +359,26 @@ export class ExportPipeline {
     });
 
     const canvas = new OffscreenCanvas(this.config.width, this.config.height);
-    const ctx = canvas.getContext('2d')!;
+    const ctx = this.get2DContext(canvas, 'last frame rendering');
 
-    // Render the last frame
-    await this.renderFrameToCanvas(ctx, this.config.endFrame - 1);
+    // Render the last frame (endFrame is exclusive, so use endFrame - 1)
+    const lastFrameIndex = Math.max(this.config.startFrame, this.config.endFrame - 1);
+    await this.renderFrameToCanvas(ctx, lastFrameIndex);
 
     // Convert to blob and save
     const blob = await canvas.convertToBlob({ type: 'image/png' });
-    const filename = `${this.config.filenamePrefix}_last.png`;
+    const filename = `${this.config.filenamePrefix || 'export'}_last.png`;
 
     if (this.config.comfyuiServer) {
-      const client = getComfyUIClient(this.config.comfyuiServer);
-      const uploadResult = await client.uploadImage(blob, filename);
-      result.outputFiles.lastImage = uploadResult.name;
+      try {
+        const client = getComfyUIClient(this.config.comfyuiServer);
+        const uploadResult = await client.uploadImage(blob, filename);
+        result.outputFiles.lastImage = uploadResult.name;
+      } catch (error) {
+        result.errors.push(`Failed to upload last frame: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        result.outputFiles.lastImage = await this.saveBlobLocally(blob, filename);
+        result.warnings.push('Last frame saved locally due to upload failure');
+      }
     } else {
       result.outputFiles.lastImage = await this.saveBlobLocally(blob, filename);
     }
@@ -347,13 +436,21 @@ export class ExportPipeline {
       : (evaluated.transform.rotation as any)?.z ?? 0;
     const opacity = evaluated.opacity;
 
+    // Validate transform values - protect against NaN/Infinity from bad expressions
+    const safeOpacity = this.clamp(this.validateNumber(opacity, `layer ${layer.id} opacity`, 100), 0, 100);
+    const safePosX = this.validateNumber(pos.x, `layer ${layer.id} position.x`, 0);
+    const safePosY = this.validateNumber(pos.y, `layer ${layer.id} position.y`, 0);
+    const safeRotation = this.validateNumber(rotation, `layer ${layer.id} rotation`, 0);
+    const safeScaleX = this.validateNumber(scaleVal.x, `layer ${layer.id} scale.x`, 100);
+    const safeScaleY = this.validateNumber(scaleVal.y, `layer ${layer.id} scale.y`, 100);
+
     ctx.save();
 
-    // Apply transforms
-    ctx.globalAlpha = opacity / 100;
-    ctx.translate(pos.x, pos.y);
-    ctx.rotate((rotation * Math.PI) / 180);
-    ctx.scale(scaleVal.x / 100, scaleVal.y / 100);
+    // Apply transforms with validated values
+    ctx.globalAlpha = safeOpacity / 100;
+    ctx.translate(safePosX, safePosY);
+    ctx.rotate((safeRotation * Math.PI) / 180);
+    ctx.scale(safeScaleX / 100, safeScaleY / 100);
 
     // Draw layer content
     const layerData = layer.data as any;
@@ -383,12 +480,46 @@ export class ExportPipeline {
     ctx.restore();
   }
 
-  private loadImage(src: string): Promise<HTMLImageElement> {
+  private loadImage(src: string, timeoutMs: number = 30000): Promise<HTMLImageElement> {
     return new Promise((resolve, reject) => {
       const img = new Image();
-      img.onload = () => resolve(img);
-      img.onerror = reject;
-      img.src = src;
+      let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+      const cleanup = () => {
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+          timeoutId = null;
+        }
+        img.onload = null;
+        img.onerror = null;
+      };
+
+      img.onload = () => {
+        cleanup();
+        resolve(img);
+      };
+
+      img.onerror = (event) => {
+        cleanup();
+        reject(new Error(`Failed to load image: ${src.substring(0, 100)}${src.length > 100 ? '...' : ''}`));
+      };
+
+      // Set timeout to prevent hanging on slow/broken URLs
+      timeoutId = setTimeout(() => {
+        cleanup();
+        // Abort image loading by clearing src
+        img.src = '';
+        reject(new Error(`Image load timeout after ${timeoutMs}ms: ${src.substring(0, 50)}...`));
+      }, timeoutMs);
+
+      // Handle data URLs and blob URLs specially
+      if (src.startsWith('data:') || src.startsWith('blob:')) {
+        img.src = src;
+      } else {
+        // For regular URLs, set crossOrigin to handle CORS
+        img.crossOrigin = 'anonymous';
+        img.src = src;
+      }
     });
   }
 
@@ -450,16 +581,22 @@ export class ExportPipeline {
 
         // Convert to canvas and blob
         const canvas = new OffscreenCanvas(depthCapture.width, depthCapture.height);
-        const ctx = canvas.getContext('2d')!;
+        const ctx = this.get2DContext(canvas, `depth frame ${i} rendering`);
         ctx.putImageData(imageData, 0, 0);
 
         const blob = await canvas.convertToBlob({ type: 'image/png' });
         const filename = `${this.config.filenamePrefix}_depth_${String(i).padStart(5, '0')}.png`;
 
         if (this.config.comfyuiServer) {
-          const client = getComfyUIClient(this.config.comfyuiServer);
-          const uploadResult = await client.uploadImage(blob, filename, 'input', 'depth_sequence');
-          depthFiles.push(uploadResult.name);
+          try {
+            const client = getComfyUIClient(this.config.comfyuiServer);
+            const uploadResult = await client.uploadImage(blob, filename, 'input', 'depth_sequence');
+            depthFiles.push(uploadResult.name);
+          } catch (error) {
+            // Fall back to local save on upload failure
+            console.warn(`[ExportPipeline] Depth frame ${i} upload failed, saving locally:`, error);
+            depthFiles.push(await this.saveBlobLocally(blob, filename));
+          }
         } else {
           depthFiles.push(await this.saveBlobLocally(blob, filename));
         }
@@ -550,16 +687,21 @@ export class ExportPipeline {
 
         // Convert to canvas and blob
         const canvas = new OffscreenCanvas(this.config.width, this.config.height);
-        const ctx = canvas.getContext('2d')!;
+        const ctx = this.get2DContext(canvas, `depth frame ${i} rendering (fallback)`);
         ctx.putImageData(imageData, 0, 0);
 
         const blob = await canvas.convertToBlob({ type: 'image/png' });
         const filename = `${this.config.filenamePrefix}_depth_${String(i).padStart(5, '0')}.png`;
 
         if (this.config.comfyuiServer) {
-          const client = getComfyUIClient(this.config.comfyuiServer);
-          const uploadResult = await client.uploadImage(blob, filename, 'input', 'depth_sequence');
-          depthFiles.push(uploadResult.name);
+          try {
+            const client = getComfyUIClient(this.config.comfyuiServer);
+            const uploadResult = await client.uploadImage(blob, filename, 'input', 'depth_sequence');
+            depthFiles.push(uploadResult.name);
+          } catch (error) {
+            console.warn(`[ExportPipeline] Depth frame ${i} upload failed, saving locally:`, error);
+            depthFiles.push(await this.saveBlobLocally(blob, filename));
+          }
         } else {
           depthFiles.push(await this.saveBlobLocally(blob, filename));
         }
@@ -601,7 +743,7 @@ export class ExportPipeline {
 
       // Render the frame
       const canvas = new OffscreenCanvas(this.config.width, this.config.height);
-      const ctx = canvas.getContext('2d')!;
+      const ctx = this.get2DContext(canvas, `control frame ${i} rendering`);
       await this.renderFrameToCanvas(ctx, frameIndex);
 
       // Apply control preprocessing based on type
@@ -611,9 +753,14 @@ export class ExportPipeline {
       const filename = `${this.config.filenamePrefix}_control_${String(i).padStart(5, '0')}.png`;
 
       if (this.config.comfyuiServer) {
-        const client = getComfyUIClient(this.config.comfyuiServer);
-        const uploadResult = await client.uploadImage(blob, filename, 'input', 'control_sequence');
-        controlFiles.push(uploadResult.name);
+        try {
+          const client = getComfyUIClient(this.config.comfyuiServer);
+          const uploadResult = await client.uploadImage(blob, filename, 'input', 'control_sequence');
+          controlFiles.push(uploadResult.name);
+        } catch (error) {
+          console.warn(`[ExportPipeline] Control frame ${i} upload failed, saving locally:`, error);
+          controlFiles.push(await this.saveBlobLocally(blob, filename));
+        }
       } else {
         controlFiles.push(await this.saveBlobLocally(blob, filename));
       }
@@ -675,11 +822,17 @@ export class ExportPipeline {
       // Save video
       const filename = `${this.config.filenamePrefix}_scene.mp4`;
       if (this.config.comfyuiServer) {
-        const client = getComfyUIClient(this.config.comfyuiServer);
-        // Upload video as file (ComfyUI stores in input folder)
-        const file = new File([video.blob], filename, { type: video.mimeType });
-        const uploadResult = await client.uploadImage(file, filename);
-        result.outputFiles.sceneVideo = uploadResult.name;
+        try {
+          const client = getComfyUIClient(this.config.comfyuiServer);
+          // Upload video as file (ComfyUI stores in input folder)
+          const file = new File([video.blob], filename, { type: video.mimeType });
+          const uploadResult = await client.uploadImage(file, filename);
+          result.outputFiles.sceneVideo = uploadResult.name;
+        } catch (uploadError) {
+          console.warn('[ExportPipeline] Scene video upload failed, saving locally:', uploadError);
+          result.outputFiles.sceneVideo = await this.saveBlobLocally(video.blob, filename);
+          result.warnings.push('Scene video saved locally due to upload failure');
+        }
       } else {
         result.outputFiles.sceneVideo = await this.saveBlobLocally(video.blob, filename);
       }
@@ -691,7 +844,7 @@ export class ExportPipeline {
         message: 'Scene video complete',
       });
     } catch (error) {
-      result.errors.push(`Scene video export failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      result.errors.push(`Scene video render failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -743,10 +896,16 @@ export class ExportPipeline {
       // Save video
       const filename = `${this.config.filenamePrefix}_mask.mp4`;
       if (this.config.comfyuiServer) {
-        const client = getComfyUIClient(this.config.comfyuiServer);
-        const file = new File([video.blob], filename, { type: video.mimeType });
-        const uploadResult = await client.uploadImage(file, filename);
-        result.outputFiles.maskVideo = uploadResult.name;
+        try {
+          const client = getComfyUIClient(this.config.comfyuiServer);
+          const file = new File([video.blob], filename, { type: video.mimeType });
+          const uploadResult = await client.uploadImage(file, filename);
+          result.outputFiles.maskVideo = uploadResult.name;
+        } catch (uploadError) {
+          console.warn('[ExportPipeline] Mask video upload failed, saving locally:', uploadError);
+          result.outputFiles.maskVideo = await this.saveBlobLocally(video.blob, filename);
+          result.warnings.push('Mask video saved locally due to upload failure');
+        }
       } else {
         result.outputFiles.maskVideo = await this.saveBlobLocally(video.blob, filename);
       }
@@ -758,7 +917,7 @@ export class ExportPipeline {
         message: 'Mask video complete',
       });
     } catch (error) {
-      result.errors.push(`Mask video export failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      result.errors.push(`Mask video render failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -767,8 +926,8 @@ export class ExportPipeline {
     controlType: string
   ): Promise<OffscreenCanvas> {
     const output = new OffscreenCanvas(input.width, input.height);
-    const ctx = output.getContext('2d')!;
-    const inputCtx = input.getContext('2d')!;
+    const ctx = this.get2DContext(output, 'control preprocessing output');
+    const inputCtx = this.get2DContext(input, 'control preprocessing input');
     const imageData = inputCtx.getImageData(0, 0, input.width, input.height);
     const data = imageData.data;
 

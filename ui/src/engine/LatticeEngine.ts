@@ -1536,9 +1536,24 @@ export class LatticeEngine {
       onProgress,
     } = options;
 
-    // Validate inputs
+    // Validate numeric inputs - protect against NaN/Infinity
+    if (!Number.isFinite(startFrame) || startFrame < 0) {
+      throw new Error(`Invalid startFrame: ${startFrame} (must be >= 0)`);
+    }
+    if (!Number.isFinite(endFrame) || endFrame < 0) {
+      throw new Error(`Invalid endFrame: ${endFrame} (must be >= 0)`);
+    }
     if (endFrame < startFrame) {
       throw new Error(`Invalid frame range: ${startFrame} to ${endFrame}`);
+    }
+    if (!Number.isFinite(fps) || fps < 1 || fps > 120) {
+      throw new Error(`Invalid fps: ${fps} (must be 1-120)`);
+    }
+    if (!Number.isFinite(width) || width < 1 || width > 8192) {
+      throw new Error(`Invalid width: ${width} (must be 1-8192)`);
+    }
+    if (!Number.isFinite(height) || height < 1 || height > 8192) {
+      throw new Error(`Invalid height: ${height} (must be 1-8192)`);
     }
 
     const totalFrames = endFrame - startFrame + 1;
@@ -1662,6 +1677,32 @@ export class LatticeEngine {
       onProgress,
     } = options;
 
+    // Validate layer exists
+    const targetLayer = this.layers.getLayer(layerId);
+    if (!targetLayer) {
+      throw new Error(`Layer not found: ${layerId}`);
+    }
+
+    // Validate numeric inputs - protect against NaN/Infinity
+    if (!Number.isFinite(startFrame) || startFrame < 0) {
+      throw new Error(`Invalid startFrame: ${startFrame} (must be >= 0)`);
+    }
+    if (!Number.isFinite(endFrame) || endFrame < 0) {
+      throw new Error(`Invalid endFrame: ${endFrame} (must be >= 0)`);
+    }
+    if (endFrame < startFrame) {
+      throw new Error(`Invalid frame range: ${startFrame} to ${endFrame}`);
+    }
+    if (!Number.isFinite(fps) || fps < 1 || fps > 120) {
+      throw new Error(`Invalid fps: ${fps} (must be 1-120)`);
+    }
+    if (!Number.isFinite(width) || width < 1 || width > 8192) {
+      throw new Error(`Invalid width: ${width} (must be 1-8192)`);
+    }
+    if (!Number.isFinite(height) || height < 1 || height > 8192) {
+      throw new Error(`Invalid height: ${height} (must be 1-8192)`);
+    }
+
     const totalFrames = endFrame - startFrame + 1;
     const frames: ImageData[] = [];
 
@@ -1679,6 +1720,9 @@ export class LatticeEngine {
       }
     }
 
+    // Store original background OUTSIDE try so we can restore in finally
+    const originalBackground = this.scene.getBackground();
+
     try {
       // Resize if needed
       if (width !== this.state.viewport.width || height !== this.state.viewport.height) {
@@ -1694,7 +1738,6 @@ export class LatticeEngine {
       }
 
       // Set black background for mask rendering
-      const originalBackground = this.scene.getBackground();
       this.scene.setBackground('#000000');
 
       // Render each frame
@@ -1720,9 +1763,6 @@ export class LatticeEngine {
         }
       }
 
-      // Restore background
-      this.scene.setBackground(originalBackground);
-
       // Encode
       const encodedVideo = await encodeFrameSequence(
         frames,
@@ -1731,6 +1771,9 @@ export class LatticeEngine {
 
       return encodedVideo;
     } finally {
+      // Restore background
+      this.scene.setBackground(originalBackground);
+
       // Restore layer visibility
       for (const [id, visible] of layerVisibility) {
         const layer = this.layers.getLayer(id);
