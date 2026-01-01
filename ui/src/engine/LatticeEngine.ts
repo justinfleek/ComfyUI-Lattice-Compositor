@@ -1675,7 +1675,7 @@ export class LatticeEngine {
     for (const id of allLayerIds) {
       const layer = this.layers.getLayer(id);
       if (layer) {
-        layerVisibility.set(id, layer.visible);
+        layerVisibility.set(id, layer.isVisible());
       }
     }
 

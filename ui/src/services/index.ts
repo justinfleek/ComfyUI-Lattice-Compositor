@@ -428,14 +428,12 @@ export {
   type Quat,
 } from './math3d';
 
-// Camera export
+// Camera export (generic/AE formats - for AI model formats see export/cameraExportFormats)
 export {
   exportCameraJSON,
   importCameraJSON,
   exportToAEScript,
   downloadFile,
-  type Uni3CTrack,
-  type Uni3CFrame,
 } from './cameraExport';
 
 // Camera trajectory

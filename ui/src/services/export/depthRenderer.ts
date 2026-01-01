@@ -382,26 +382,61 @@ export function convertDepthToFormat(
 
 /**
  * Create PNG image data from depth buffer
+ *
+ * For 16-bit depth data, this function encodes the full precision into RG channels:
+ * - R = high byte (value >> 8)
+ * - G = low byte (value & 0xFF)
+ * - B = 0
+ *
+ * To decode in Python/ComfyUI: depth = (R * 256 + G) / 65535.0
+ *
+ * For 8-bit depth data, standard grayscale (R=G=B=value) is used.
+ *
+ * @param packChannels - If true (default for 16-bit), pack 16-bit into RG channels.
+ *                       If false, downscale to 8-bit grayscale (lossy).
  */
 export function depthToImageData(
   depthData: Uint8Array | Uint16Array,
   width: number,
-  height: number
+  height: number,
+  packChannels: boolean = true
 ): ImageData {
   const imageData = new ImageData(width, height);
   const is16bit = depthData instanceof Uint16Array;
 
   for (let i = 0; i < width * height; i++) {
-    const value = is16bit ? Math.floor(depthData[i] / 256) : depthData[i];
-
     const pixelIdx = i * 4;
-    imageData.data[pixelIdx] = value;     // R
-    imageData.data[pixelIdx + 1] = value; // G
-    imageData.data[pixelIdx + 2] = value; // B
-    imageData.data[pixelIdx + 3] = 255;   // A
+
+    if (is16bit && packChannels) {
+      // Pack 16-bit into RG channels (lossless)
+      // R = high byte, G = low byte
+      const value = depthData[i];
+      imageData.data[pixelIdx] = (value >> 8) & 0xFF;     // R = high byte
+      imageData.data[pixelIdx + 1] = value & 0xFF;        // G = low byte
+      imageData.data[pixelIdx + 2] = 0;                   // B = 0
+      imageData.data[pixelIdx + 3] = 255;                 // A
+    } else {
+      // Standard grayscale (8-bit, or downscaled 16-bit)
+      const value = is16bit ? Math.floor(depthData[i] / 256) : depthData[i];
+      imageData.data[pixelIdx] = value;     // R
+      imageData.data[pixelIdx + 1] = value; // G
+      imageData.data[pixelIdx + 2] = value; // B
+      imageData.data[pixelIdx + 3] = 255;   // A
+    }
   }
 
   return imageData;
+}
+
+/**
+ * Create grayscale visualization from 16-bit depth (lossy but human-viewable)
+ */
+export function depthToGrayscaleImageData(
+  depthData: Uint8Array | Uint16Array,
+  width: number,
+  height: number
+): ImageData {
+  return depthToImageData(depthData, width, height, false);
 }
 
 /**

@@ -28,6 +28,7 @@ export {
   renderDepthFrame,
   convertDepthToFormat,
   depthToImageData,
+  depthToGrayscaleImageData,
   applyColormap,
   exportDepthSequence,
   generateDepthMetadata,
@@ -115,14 +116,12 @@ export {
   trajectoriesToNpy,
 } from '../modelExport';
 
-// Camera export (Uni3C, JSON, AE Script)
+// Camera export (generic JSON and AE Script - for AI models use cameraExportFormats)
 export {
   exportCameraJSON,
   importCameraJSON,
   exportToAEScript,
   downloadFile,
-  type Uni3CTrack,
-  type Uni3CFrame,
 } from '../cameraExport';
 
 // Wan-Move generative trajectory generation
