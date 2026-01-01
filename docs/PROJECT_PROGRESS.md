@@ -1,6 +1,6 @@
 # Lattice Compositor - Project Progress & Testing Checklist
 
-> Last updated: 2025-12-29
+> Last updated: 2026-01-01
 
 ## Overview
 
@@ -37,6 +37,51 @@ This document tracks the overall project status, feature testing checklists, and
 - [x] Basic smoke tests written
 - [ ] ComfyUI integration tests
 - [ ] Full user workflow tests
+
+---
+
+## P0 SHIP-STOPPER FIXES (CTO Review Remediation)
+
+> See `GroundTruthMasterAudit.md` for full details
+
+### P0.1 - Backend Routes Not Registered ✅ COMPLETE (2026-01-01)
+
+**Problem:** Package root only imported `compositor_node.py`, so route modules never loaded.
+
+**Fix:**
+- `__init__.py` now imports from `.nodes` and calls `register_all_routes()`
+- `nodes/__init__.py` contains explicit `register_all_routes()` function
+- All 7 route modules imported and 47 routes registered
+
+**Verification:**
+- 10 integration tests in `tests/test_route_registration.py`
+- All tests verify routes appear in MockRouteTable
+- UI test baseline maintained (252 failed | 803 passed)
+
+### P0.2 - Vectorize Routes Never Called ✅ COMPLETE (2026-01-01)
+
+**Problem:** `lattice_vectorize.py` used `setup_routes(app)` pattern but nothing called it.
+
+**Fix:**
+- Converted to `@routes.get/post` decorator pattern
+- Deleted `setup_routes()` function
+- Routes now register at import time like other modules
+
+**Verification:**
+- 5 vectorize routes verified in integration tests
+- No `setup_routes()` function remains
+
+### P0.3 - Opacity Range Mismatch ☐ NOT STARTED
+
+**Problem:** Backend validates opacity as 0-1, frontend uses 0-100.
+
+### P0.4 - Node Output Shape Wrong ☐ NOT STARTED
+
+**Problem:** CompositorEditorNode likely returns wrong IMAGE tensor shape.
+
+### P0.5 - Duplicate AI APIs ☐ NOT STARTED
+
+**Problem:** Two separate AI service implementations need unification.
 
 ---
 
@@ -279,6 +324,32 @@ Based on code analysis, these areas need review:
 ---
 
 ## Session Notes
+
+### 2026-01-01 - P0.1 & P0.2 Complete
+
+**CTO Review Remediation - Route Registration System**
+
+Completed fixes for P0.1 (Backend Routes Not Registered) and P0.2 (Vectorize Routes Never Called).
+
+**Files Modified:**
+| File | Change |
+|------|--------|
+| `__init__.py` | Import from `.nodes`, call `register_all_routes()` |
+| `nodes/__init__.py` | Created `register_all_routes()` function |
+| `nodes/lattice_vectorize.py` | Converted `setup_routes()` to decorator pattern |
+| `tests/test_route_registration.py` | Created 10 integration tests |
+
+**Test Results:**
+- Route registration tests: 10/10 pass
+- UI test baseline: 252 failed | 803 passed (no regression)
+- 47 routes verified across 7 modules
+
+**Documentation Updated:**
+- `GroundTruthMasterAudit.md` - Added completion evidence (sections 4.1.11, 4.2.8)
+- `CLAUDE.md` - Added CURRENT STATUS section
+- `docs/PROJECT_PROGRESS.md` - Added P0 fixes section
+
+---
 
 ### 2025-12-29 (Late Session) - Current: ae6e6904
 

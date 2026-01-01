@@ -17,11 +17,11 @@ _archived/
 !PROJECT_STATUS.md
 !.github/**/*.md
 !docs/*.md
-!CLAUDE.md
-!AUDIT/*.md
 
 # Internal development files - NOT for public repo
+CLAUDE.md
 INVENTORY.md
+docs/PROJECT_PROGRESS.md
 specs/
 
 # Nix development environment (local only)
@@ -35,9 +35,9 @@ flake.lock
 __pycache__/
 *.pyc
 
-# Security vulnerability documentation - DO NOT COMMIT (only this specific file)
+# Security vulnerability documentation - DO NOT COMMIT
 SECURITY_ARCHITECTURE.md
-AUDIT/SECURITY_ARCHITECTURE.md
+AUDIT/
 
 # Build artifacts
 ui/src/engine.zip

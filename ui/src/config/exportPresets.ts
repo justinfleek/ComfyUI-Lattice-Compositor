@@ -82,7 +82,6 @@ export const EXPORT_PRESETS: Record<ExportTarget, Partial<ExportConfig>> = {
     exportCameraData: true,
     exportReferenceFrame: true,
     exportLastFrame: false,
-    exportSceneVideo: true,        // Camera motion video for Uni3C render_latent
     depthFormat: 'normalized',
     steps: 30,
     cfgScale: 5.0,
@@ -273,8 +272,6 @@ export const EXPORT_PRESETS: Record<ExportTarget, Partial<ExportConfig>> = {
     exportCameraData: false,
     exportReferenceFrame: true,
     exportLastFrame: true,
-    exportSceneVideo: true,       // Reference video for TTM (scene with motion)
-    exportMaskVideo: true,        // Motion mask video for TTM
     steps: 30,
     cfgScale: 5.0,
   },
@@ -289,8 +286,6 @@ export const EXPORT_PRESETS: Record<ExportTarget, Partial<ExportConfig>> = {
     exportCameraData: false,
     exportReferenceFrame: true,
     exportLastFrame: true,
-    exportSceneVideo: true,
-    exportMaskVideo: true,
     steps: 30,
     cfgScale: 5.0,
   },
@@ -305,8 +300,6 @@ export const EXPORT_PRESETS: Record<ExportTarget, Partial<ExportConfig>> = {
     exportCameraData: false,
     exportReferenceFrame: true,
     exportLastFrame: true,
-    exportSceneVideo: true,
-    exportMaskVideo: true,
     steps: 50,
     cfgScale: 6.0,
   },
@@ -321,24 +314,7 @@ export const EXPORT_PRESETS: Record<ExportTarget, Partial<ExportConfig>> = {
     exportCameraData: false,
     exportReferenceFrame: true,
     exportLastFrame: false,
-    exportSceneVideo: true,
-    exportMaskVideo: true,
     steps: 25,
-    cfgScale: 5.0,
-  },
-
-  'scail': {
-    width: 832,
-    height: 480,
-    frameCount: 81,  // 5 seconds at 16fps (4n+1 pattern)
-    fps: 16,
-    exportDepthMap: false,
-    exportControlImages: false,
-    exportCameraData: false,
-    exportReferenceFrame: true,  // Reference image for SCAIL
-    exportLastFrame: false,
-    exportSceneVideo: true,      // Pose video for SCAIL (raw scene, not edge-detected)
-    steps: 30,
     cfgScale: 5.0,
   },
 
@@ -839,82 +815,65 @@ export const EXPORT_TARGET_INFO: Record<ExportTarget, {
   // New model targets (Dec 2025)
   'light-x': {
     name: 'Light-X Relighting',
-    description: 'Video generation with relighting and camera control. Light-X is a LoRA, not separate nodes.',
+    description: 'Video generation with relighting and camera control',
     requiredInputs: ['reference_image', 'prompt', 'camera_trajectory', 'lighting_data'],
     optionalInputs: ['depth_map', 'negative_prompt'],
     outputTypes: ['video'],
-    // Light-X is a LoRA loaded via WanVideoLoraSelect, NOT separate nodes
-    comfyNodes: ['WanVideoLoraSelect'],
+    comfyNodes: ['LightXLoader', 'LightXSampler'],
   },
 
   'wan-move': {
     name: 'Wan-Move Point Trajectories',
-    description: 'Video generation with user-defined point trajectories. Uses FL_PathAnimator for track coords.',
+    description: 'Video generation with user-defined point trajectories',
     requiredInputs: ['reference_image', 'prompt', 'point_trajectories'],
     optionalInputs: ['negative_prompt', 'seed'],
     outputTypes: ['video'],
-    // Real Kijai node - WanVideoAddWanMoveTracks takes track_coords JSON string
-    comfyNodes: ['WanVideoAddWanMoveTracks'],
+    comfyNodes: ['WanMoveLoader', 'WanMovePointTrajectory'],
   },
 
   'ati': {
     name: 'ATI Any Trajectory',
-    description: 'Any Trajectory Instruction - flexible camera/object motion. Two approaches: WanTrackToVideo (simpler) or WanVideoATITracks (Kijai wrapper).',
+    description: 'Any Trajectory Instruction - flexible camera/object motion',
     requiredInputs: ['reference_image', 'prompt', 'trajectory_instruction'],
     optionalInputs: ['negative_prompt', 'camera_poses'],
     outputTypes: ['video'],
-    // Real Kijai nodes - either approach works
-    comfyNodes: ['WanVideoATITracks', 'WanTrackToVideo'],
+    comfyNodes: ['ATILoader', 'ATISampler'],
   },
 
   'ttm': {
     name: 'TTM Time-to-Move',
-    description: 'Frame-based motion transfer. Model infers motion from start/end frames + masks. NOT trajectory-based.',
-    requiredInputs: ['start_frame', 'mask_sequence', 'reference_latents'],
-    optionalInputs: ['prompt', 'start_step', 'end_step'],
+    description: 'Cut-and-drag video editing with temporal control',
+    requiredInputs: ['reference_image', 'last_frame', 'drag_points'],
+    optionalInputs: ['prompt', 'mask'],
     outputTypes: ['video'],
-    // Real Kijai nodes - WanVideoAddTTMLatents is the actual TTM implementation
-    comfyNodes: ['WanVideoAddTTMLatents', 'WanVideoImageToVideoEncode', 'WanVideoSampler'],
+    comfyNodes: ['TTMLoader', 'TTMDragEditor'],
   },
 
   'ttm-wan': {
-    name: 'TTM (Wan 2.1)',
-    description: 'Time-to-Move frame-based motion transfer. Requires start frame, mask sequence, and reference latents. Model infers motion path automatically.',
-    requiredInputs: ['start_frame', 'mask_sequence', 'reference_latents'],
-    optionalInputs: ['prompt', 'start_step', 'end_step'],
+    name: 'TTM (Wan 2.1 Backend)',
+    description: 'Time-to-Move with Wan 2.1 model for high-quality generation',
+    requiredInputs: ['reference_image', 'motion_masks', 'trajectories'],
+    optionalInputs: ['prompt', 'last_frame', 'tweak_index', 'tstrong_index'],
     outputTypes: ['video'],
-    // Real Kijai nodes - NOT fictional TTM_TrajectoryFromPoints etc.
-    comfyNodes: ['WanVideoAddTTMLatents', 'WanVideoImageToVideoEncode', 'WanVideoSampler'],
+    comfyNodes: ['TTM_ApplyMotionControl', 'TTM_TrajectoryFromPoints', 'WanImageToVideo'],
   },
 
-  // NOTE: CogVideoX and SVD do not have native TTM support in Kijai's wrapper
-  // These presets are deprecated - use ttm-wan instead
   'ttm-cogvideox': {
-    name: 'TTM (CogVideoX) - DEPRECATED',
-    description: 'DEPRECATED: CogVideoX does not have native TTM support. Use ttm-wan instead.',
-    requiredInputs: ['start_frame', 'mask_sequence'],
-    optionalInputs: ['prompt'],
+    name: 'TTM (CogVideoX Backend)',
+    description: 'Time-to-Move with CogVideoX model for longer sequences',
+    requiredInputs: ['reference_image', 'motion_masks', 'trajectories'],
+    optionalInputs: ['prompt', 'last_frame', 'tweak_index', 'tstrong_index'],
     outputTypes: ['video'],
-    comfyNodes: ['WanVideoAddTTMLatents'], // Fallback to Wan TTM
+    comfyNodes: ['TTM_ApplyMotionControlCogVideo', 'TTM_TrajectoryFromPoints', 'CogVideoImageToVideo'],
   },
 
   'ttm-svd': {
-    name: 'TTM (SVD) - DEPRECATED',
-    description: 'DEPRECATED: SVD does not have native TTM support. Use ttm-wan instead.',
-    requiredInputs: ['start_frame', 'mask_sequence'],
-    optionalInputs: [],
+    name: 'TTM (SVD Backend)',
+    description: 'Time-to-Move with Stable Video Diffusion for fast generation',
+    requiredInputs: ['reference_image', 'motion_masks', 'trajectories'],
+    optionalInputs: ['tweak_index', 'tstrong_index'],
     outputTypes: ['video'],
-    comfyNodes: ['WanVideoAddTTMLatents'], // Fallback to Wan TTM
-  },
-
-  'scail': {
-    name: 'SCAIL Pose + Reference',
-    description: 'Video generation with pose video and reference image control. Two-part system: reference embeds + pose embeds.',
-    requiredInputs: ['reference_image', 'pose_video', 'prompt'],
-    optionalInputs: ['negative_prompt', 'seed', 'clip_embeds'],
-    outputTypes: ['video'],
-    // Real Kijai nodes - dual structure adds to scail_embeds dict
-    comfyNodes: ['WanVideoAddSCAILReferenceEmbeds', 'WanVideoAddSCAILPoseEmbeds'],
+    comfyNodes: ['TTM_ApplyMotionControlSVD', 'TTM_TrajectoryFromPoints', 'SVDEncode'],
   },
 
   'camera-comfyui': {

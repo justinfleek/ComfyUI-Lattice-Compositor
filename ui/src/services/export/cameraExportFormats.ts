@@ -22,32 +22,6 @@ import type {
 import { focalLengthToFOV } from '@/services/math3d';
 
 // ============================================================================
-// Validation Utilities
-// ============================================================================
-
-/**
- * Validate a number is finite (not NaN or Infinity)
- */
-function safeNumber(value: unknown, fallback: number, context: string): number {
-  if (typeof value !== 'number' || !Number.isFinite(value)) {
-    console.warn(`[cameraExportFormats] Invalid ${context}: ${value}, using ${fallback}`);
-    return fallback;
-  }
-  return value;
-}
-
-/**
- * Validate frame number is valid
- */
-function validateFrame(frame: number, context: string): number {
-  if (!Number.isFinite(frame) || frame < 0) {
-    console.warn(`[cameraExportFormats] Invalid frame in ${context}: ${frame}, using 0`);
-    return 0;
-  }
-  return Math.floor(frame);
-}
-
-// ============================================================================
 // Camera Interpolation
 // ============================================================================
 
@@ -148,21 +122,10 @@ export function interpolateCameraAtFrame(
 }
 
 function lerp(a: number, b: number, t: number): number {
-  // Handle NaN values
-  if (!Number.isFinite(a)) a = 0;
-  if (!Number.isFinite(b)) b = 0;
-  if (!Number.isFinite(t)) t = 0;
-  t = Math.max(0, Math.min(1, t)); // Clamp t to [0, 1]
   return a + (b - a) * t;
 }
 
 function lerpAngle(a: number, b: number, t: number): number {
-  // Handle NaN values
-  if (!Number.isFinite(a)) a = 0;
-  if (!Number.isFinite(b)) b = 0;
-  if (!Number.isFinite(t)) t = 0;
-  t = Math.max(0, Math.min(1, t)); // Clamp t to [0, 1]
-
   // Handle angle wrapping
   let diff = b - a;
   if (diff > 180) diff -= 360;
@@ -176,18 +139,6 @@ function lerpAngle(a: number, b: number, t: number): number {
 
 /**
  * Compute 4x4 view matrix from camera state
- *
- * Uses XYZ rotation order (X/pitch first, then Y/yaw, then Z/roll).
- * The view matrix transforms from world space to camera space:
- *   V = [R^T | -R^T * t]
- *
- * Where R is the camera's rotation matrix and t is its position.
- * For orthonormal rotation matrices, R^T = R^-1.
- *
- * XYZ order is standard for camera extrinsics in computer vision and
- * matches the convention used by MotionCtrl, Uni3C, and camera-comfyui.
- *
- * Reference: https://github.com/TencentARC/MotionCtrl
  */
 export function computeViewMatrix(cam: InterpolatedCamera): number[][] {
   const { position, rotation } = cam;
@@ -197,46 +148,41 @@ export function computeViewMatrix(cam: InterpolatedCamera): number[][] {
   const ry = rotation.y * Math.PI / 180;
   const rz = rotation.z * Math.PI / 180;
 
-  // Rotation matrices components
-  const cx = Math.cos(rx), sx = Math.sin(rx);
-  const cy = Math.cos(ry), sy = Math.sin(ry);
-  const cz = Math.cos(rz), sz = Math.sin(rz);
+  // Rotation matrices
+  const cosX = Math.cos(rx), sinX = Math.sin(rx);
+  const cosY = Math.cos(ry), sinY = Math.sin(ry);
+  const cosZ = Math.cos(rz), sinZ = Math.sin(rz);
 
-  // Combined rotation R = Rz * Ry * Rx (XYZ extrinsic = ZYX intrinsic)
-  // This is the camera-to-world rotation matrix
-  const r00 = cy * cz;
-  const r01 = sx * sy * cz - cx * sz;
-  const r02 = cx * sy * cz + sx * sz;
+  // Combined rotation (Y * X * Z order)
+  const r00 = cosY * cosZ + sinY * sinX * sinZ;
+  const r01 = -cosY * sinZ + sinY * sinX * cosZ;
+  const r02 = sinY * cosX;
 
-  const r10 = cy * sz;
-  const r11 = sx * sy * sz + cx * cz;
-  const r12 = cx * sy * sz - sx * cz;
+  const r10 = cosX * sinZ;
+  const r11 = cosX * cosZ;
+  const r12 = -sinX;
 
-  const r20 = -sy;
-  const r21 = sx * cy;
-  const r22 = cx * cy;
+  const r20 = -sinY * cosZ + cosY * sinX * sinZ;
+  const r21 = sinY * sinZ + cosY * sinX * cosZ;
+  const r22 = cosY * cosX;
 
   // View matrix = inverse of camera transform
-  // For orthonormal rotation, inverse is transpose (R^T)
-  // Rotation part: R^T (columns become rows)
-  // Translation part: -R^T * position
+  // For orthonormal rotation, inverse is transpose
+  // Translation is -R^T * position
   const tx = -(r00 * position.x + r10 * position.y + r20 * position.z);
   const ty = -(r01 * position.x + r11 * position.y + r21 * position.z);
   const tz = -(r02 * position.x + r12 * position.y + r22 * position.z);
 
-  // Return R^T with translation (view matrix)
   return [
-    [r00, r10, r20, tx],
-    [r01, r11, r21, ty],
-    [r02, r12, r22, tz],
+    [r00, r01, r02, tx],
+    [r10, r11, r12, ty],
+    [r20, r21, r22, tz],
     [0, 0, 0, 1],
   ];
 }
 
 /**
  * Compute projection matrix
- *
- * @throws Error if aspect ratio or clip planes are invalid
  */
 export function computeProjectionMatrix(
   cam: InterpolatedCamera,
@@ -244,31 +190,11 @@ export function computeProjectionMatrix(
   nearClip: number = 0.1,
   farClip: number = 1000
 ): number[][] {
-  // Validate inputs
-  if (!Number.isFinite(aspectRatio) || aspectRatio <= 0) {
-    throw new Error(
-      `Invalid aspect ratio: ${aspectRatio}. Expected positive number. ` +
-      `Check composition width/height are valid.`
-    );
-  }
-
-  if (!Number.isFinite(nearClip) || nearClip <= 0) {
-    console.warn(`[cameraExportFormats] Invalid nearClip: ${nearClip}, using 0.1`);
-    nearClip = 0.1;
-  }
-
-  if (!Number.isFinite(farClip) || farClip <= nearClip) {
-    console.warn(`[cameraExportFormats] Invalid farClip: ${farClip}, using ${nearClip + 1000}`);
-    farClip = nearClip + 1000;
-  }
-
-  const focalLength = safeNumber(cam.focalLength, 50, 'cam.focalLength');
-  const fov = focalLengthToFOV(focalLength, 36); // 36mm film
+  const fov = focalLengthToFOV(cam.focalLength, 36); // 36mm film
   const fovRad = fov * Math.PI / 180;
   const tanHalfFov = Math.tan(fovRad / 2);
 
-  // Avoid division by zero
-  const f = tanHalfFov > 0.001 ? (1 / tanHalfFov) : 1000;
+  const f = 1 / tanHalfFov;
   const nf = 1 / (nearClip - farClip);
 
   return [
@@ -526,13 +452,6 @@ export function detectUni3CTrajectoryType(keyframes: CameraKeyframe[]): Uni3CTra
 
 /**
  * Export camera animation to Uni3C format
- *
- * @deprecated Camera trajectory export for Uni3C is currently non-functional.
- * Kijai's ComfyUI-WanVideoWrapper has camera_embedding hardcoded to None.
- * This export is preserved for future compatibility when camera embedding is enabled.
- *
- * Current workaround: Export depth/render sequences instead, which DO work with Uni3C.
- * Use the render_latent input of WanVideoUni3C_embeds node.
  */
 export function exportToUni3C(
   camera: Camera3D,
@@ -541,20 +460,13 @@ export function exportToUni3C(
   compWidth: number,
   compHeight: number
 ): Uni3CCameraData {
-  // Warn users that this export is currently non-functional
-  console.warn(
-    '[Uni3C Export] Camera trajectory export is currently non-functional. ' +
-    'Camera embedding is disabled in Kijai\'s ComfyUI-WanVideoWrapper (camera_embedding=None). ' +
-    'Export depth/render sequences instead for Uni3C control.'
-  );
-
   const detectedType = detectUni3CTrajectoryType(keyframes);
 
   if (detectedType !== 'custom') {
     return { traj_type: detectedType };
   }
 
-  // Generate custom trajectory with correct Uni3C parameter names
+  // Generate custom trajectory
   const trajectory: Uni3CCameraTrajectory[] = [];
   const baseCamera = interpolateCameraAtFrame(camera, keyframes, 0);
 
@@ -562,16 +474,13 @@ export function exportToUni3C(
     const cam = interpolateCameraAtFrame(camera, keyframes, frame);
 
     trajectory.push({
-      // d_r: radius multiplier (zoom equivalent), range 0.75-1.7
-      d_r: cam.zoom / baseCamera.zoom,
-      // d_theta: X-axis rotation in degrees (pitch equivalent)
-      d_theta: cam.rotation.x,
-      // d_phi: Y-axis rotation in degrees (yaw equivalent)
-      d_phi: cam.rotation.y,
-      // NOTE: roll is NOT supported in Uni3C - omitted
+      zoom: cam.zoom / baseCamera.zoom,
       x_offset: (cam.position.x - baseCamera.position.x) / compWidth,
       y_offset: (cam.position.y - baseCamera.position.y) / compHeight,
       z_offset: (cam.position.z - baseCamera.position.z) / 1000,
+      pitch: cam.rotation.x,
+      yaw: cam.rotation.y,
+      roll: cam.rotation.z,
     });
   }
 
@@ -668,8 +577,6 @@ export function exportToCameraCtrl(
 
 /**
  * Export camera with full 4x4 matrices for generic/custom use
- *
- * @throws Error if dimensions or fps are invalid
  */
 export function exportCameraMatrices(
   camera: Camera3D,
@@ -681,68 +588,37 @@ export function exportCameraMatrices(
     fps: number;
   }
 ): FullCameraExport {
-  // Validate options
-  const width = safeNumber(options.width, 1920, 'width');
-  const height = safeNumber(options.height, 1080, 'height');
-  const fps = safeNumber(options.fps, 24, 'fps');
-  const frameCount = Math.max(1, Math.floor(safeNumber(options.frameCount, 1, 'frameCount')));
-
-  if (width <= 0 || height <= 0) {
-    throw new Error(
-      `Invalid dimensions: ${width}x${height}. ` +
-      `Width and height must be positive numbers.`
-    );
-  }
-
-  if (fps <= 0) {
-    throw new Error(
-      `Invalid fps: ${fps}. FPS must be a positive number.`
-    );
-  }
-
   const frames: FullCameraFrame[] = [];
-  const aspectRatio = width / height;
+  const aspectRatio = options.width / options.height;
 
-  for (let frame = 0; frame < frameCount; frame++) {
+  for (let frame = 0; frame < options.frameCount; frame++) {
     const cam = interpolateCameraAtFrame(camera, keyframes, frame);
 
     const viewMatrix = computeViewMatrix(cam);
     const projMatrix = computeProjectionMatrix(cam, aspectRatio);
 
-    // Validate camera values before adding
-    const safeFocalLength = safeNumber(cam.focalLength, 50, `frame ${frame} focalLength`);
-    const filmSize = safeNumber(camera.filmSize, 36, 'filmSize');
-
     frames.push({
       frame,
-      timestamp: frame / fps,
+      timestamp: frame / options.fps,
       view_matrix: viewMatrix,
       projection_matrix: projMatrix,
-      position: [
-        safeNumber(cam.position.x, 0, `frame ${frame} position.x`),
-        safeNumber(cam.position.y, 0, `frame ${frame} position.y`),
-        safeNumber(cam.position.z, 0, `frame ${frame} position.z`),
-      ],
-      rotation: [
-        safeNumber(cam.rotation.x, 0, `frame ${frame} rotation.x`),
-        safeNumber(cam.rotation.y, 0, `frame ${frame} rotation.y`),
-        safeNumber(cam.rotation.z, 0, `frame ${frame} rotation.z`),
-      ],
-      fov: focalLengthToFOV(safeFocalLength, filmSize),
-      focal_length: safeFocalLength,
-      focus_distance: safeNumber(cam.focusDistance, 100, `frame ${frame} focusDistance`),
+      position: [cam.position.x, cam.position.y, cam.position.z],
+      rotation: [cam.rotation.x, cam.rotation.y, cam.rotation.z],
+      fov: focalLengthToFOV(cam.focalLength, camera.filmSize),
+      focal_length: cam.focalLength,
+      focus_distance: cam.focusDistance,
     });
   }
 
   return {
     frames,
     metadata: {
-      width,
-      height,
-      fps,
-      total_frames: frameCount,
+      width: options.width,
+      height: options.height,
+      fps: options.fps,
+      total_frames: options.frameCount,
       camera_type: camera.type,
-      film_size: safeNumber(camera.filmSize, 36, 'filmSize'),
+      film_size: camera.filmSize,
     },
   };
 }

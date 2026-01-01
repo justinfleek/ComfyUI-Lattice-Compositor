@@ -27,84 +27,23 @@ export interface CameraMatrix4x4 {
   matrix: number[][]; // 4x4 row-major
 }
 
-// ============================================================================
-// VALIDATION UTILITIES
-// ============================================================================
-
-/**
- * Validate a number is finite (not NaN or Infinity)
- * @throws Error with context if validation fails
- */
-function validateFinite(value: number, context: string): number {
-  if (!Number.isFinite(value)) {
-    throw new Error(
-      `Invalid numeric value in ${context}: got ${value}. ` +
-      `This usually indicates corrupted animation data, a broken expression, ` +
-      `or missing keyframe values. Check the source data for NaN or Infinity.`
-    );
-  }
-  return value;
-}
-
-/**
- * Safely get a number with a fallback for invalid values
- * Logs warning instead of throwing
- */
-function safeNumber(value: unknown, fallback: number, context: string): number {
-  if (typeof value !== 'number' || !Number.isFinite(value)) {
-    console.warn(
-      `[modelExport] Invalid ${context}: ${value}, using fallback ${fallback}`
-    );
-    return fallback;
-  }
-  return value;
-}
-
-/**
- * Get 2D canvas context safely
- * @throws Error with detailed message if context unavailable
- */
-function get2DContext(canvas: HTMLCanvasElement, operation: string): CanvasRenderingContext2D {
-  const ctx = canvas.getContext('2d');
-  if (!ctx) {
-    throw new Error(
-      `Failed to get 2D canvas context for ${operation}. ` +
-      `This can happen if: (1) Too many canvases are active, ` +
-      `(2) Browser is low on memory, or (3) WebGL context is exhausted. ` +
-      `Try closing other tabs or reloading the page.`
-    );
-  }
-  return ctx;
-}
-
 /**
  * Convert Camera3D to 4x4 transformation matrix
  * Uses Three.js for proper matrix computation
- *
- * @throws Error if camera contains NaN/Infinity values
  */
 export function camera3DToMatrix4x4(camera: Camera3D): number[][] {
-  // Validate all camera position/rotation values
-  const posX = validateFinite(camera.position.x, 'camera.position.x');
-  const posY = validateFinite(camera.position.y, 'camera.position.y');
-  const posZ = validateFinite(camera.position.z, 'camera.position.z');
-
-  const oriX = safeNumber(camera.orientation.x, 0, 'camera.orientation.x');
-  const oriY = safeNumber(camera.orientation.y, 0, 'camera.orientation.y');
-  const oriZ = safeNumber(camera.orientation.z, 0, 'camera.orientation.z');
-
-  const rotX = safeNumber(camera.xRotation, 0, 'camera.xRotation');
-  const rotY = safeNumber(camera.yRotation, 0, 'camera.yRotation');
-  const rotZ = safeNumber(camera.zRotation, 0, 'camera.zRotation');
-
   // Create Three.js objects for proper matrix computation
-  const position = new THREE.Vector3(posX, posY, posZ);
+  const position = new THREE.Vector3(
+    camera.position.x,
+    camera.position.y,
+    camera.position.z
+  );
 
   // Combine all rotations (orientation + individual axes)
   const euler = new THREE.Euler(
-    THREE.MathUtils.degToRad(oriX + rotX),
-    THREE.MathUtils.degToRad(oriY + rotY),
-    THREE.MathUtils.degToRad(oriZ + rotZ),
+    THREE.MathUtils.degToRad(camera.orientation.x + camera.xRotation),
+    THREE.MathUtils.degToRad(camera.orientation.y + camera.yRotation),
+    THREE.MathUtils.degToRad(camera.orientation.z + camera.zRotation),
     'XYZ'
   );
 
@@ -148,51 +87,18 @@ export function exportCameraTrajectory(
   width: number,
   height: number
 ): CameraTrajectoryExport {
-  // Validate inputs
-  if (!cameras || cameras.length === 0) {
-    console.warn('[modelExport] exportCameraTrajectory called with empty cameras array');
-    return {
-      matrices: [],
-      metadata: {
-        frameCount: 0,
-        fps: safeNumber(fps, 24, 'fps'),
-        fov: 39.6,
-        nearClip: 1,
-        farClip: 10000,
-        width: safeNumber(width, 512, 'width'),
-        height: safeNumber(height, 512, 'height')
-      }
-    };
-  }
-
-  if (!Number.isFinite(fps) || fps < 1) {
-    throw new Error(
-      `Invalid fps value: ${fps}. Expected positive number (1-120). ` +
-      `Check your composition settings.`
-    );
-  }
-
-  const matrices = cameras.map((cam, index) => {
-    try {
-      return camera3DToMatrix4x4(cam);
-    } catch (error) {
-      throw new Error(
-        `Failed to convert camera at frame ${index} to matrix: ${error instanceof Error ? error.message : error}. ` +
-        `Camera ID: ${cam.id}, Name: ${cam.name}`
-      );
-    }
-  });
+  const matrices = cameras.map(cam => camera3DToMatrix4x4(cam));
 
   return {
     matrices,
     metadata: {
       frameCount: cameras.length,
       fps,
-      fov: safeNumber(cameras[0].angleOfView, 39.6, 'angleOfView'),
-      nearClip: safeNumber(cameras[0].nearClip, 1, 'nearClip'),
-      farClip: safeNumber(cameras[0].farClip, 10000, 'farClip'),
-      width: safeNumber(width, 512, 'width'),
-      height: safeNumber(height, 512, 'height')
+      fov: cameras[0]?.angleOfView ?? 39.6,
+      nearClip: cameras[0]?.nearClip ?? 1,
+      farClip: cameras[0]?.farClip ?? 10000,
+      width,
+      height
     }
   };
 }
@@ -490,47 +396,6 @@ export function exportWanMoveTrajectories(
   return result;
 }
 
-/**
- * Export trajectories in Kijai WanMove node format
- *
- * Kijai's WanVideoAddWanMoveTracks expects track_coords as JSON string:
- * [[{x: number, y: number}, ...], [{x: number, y: number}, ...]]
- *
- * Shape: [num_tracks][num_frames] where each element is {x, y} object
- *
- * @see ComfyUI-WanVideoWrapper/WanMove/nodes.py lines 82-88
- */
-export type KijaiWanMoveTrack = Array<{ x: number; y: number }>;
-export type KijaiWanMoveTracks = KijaiWanMoveTrack[];
-
-export function exportWanMoveTracksForKijai(
-  trajectories: PointTrajectory[]
-): KijaiWanMoveTracks {
-  if (trajectories.length === 0) {
-    return [];
-  }
-
-  // Convert from PointTrajectory[] to [[{x,y}, {x,y}], [{x,y}, {x,y}]]
-  // Each trajectory becomes an array of {x, y} objects (one per frame)
-  return trajectories.map(traj =>
-    traj.points.map(pt => ({
-      x: pt.x,
-      y: pt.y
-    }))
-  );
-}
-
-/**
- * Export trajectories as JSON string for Kijai's track_coords input
- * This is what gets passed to the ComfyUI workflow as a STRING input
- */
-export function exportWanMoveTracksAsString(
-  trajectories: PointTrajectory[]
-): string {
-  const tracks = exportWanMoveTracksForKijai(trajectories);
-  return JSON.stringify(tracks);
-}
-
 // ============================================================================
 // ATI TRAJECTORY EXPORT
 // ============================================================================
@@ -550,8 +415,6 @@ export interface ATITrajectoryInstruction {
 
 /**
  * Calculate pan speed from position animation
- *
- * @returns Pan speed in pixels per frame, or {x: 0, y: 0} if invalid frame range
  */
 export function calculatePanSpeed(
   layer: Layer,
@@ -559,29 +422,15 @@ export function calculatePanSpeed(
   endFrame: number,
   getPositionAtFrame: (layer: Layer, frame: number) => { x: number; y: number }
 ): { x: number; y: number } {
-  // Validate frame range
-  if (!Number.isFinite(startFrame) || !Number.isFinite(endFrame)) {
-    console.warn(
-      `[modelExport] calculatePanSpeed received invalid frames: start=${startFrame}, end=${endFrame}`
-    );
-    return { x: 0, y: 0 };
-  }
-
-  if (endFrame <= startFrame) {
-    return { x: 0, y: 0 };
-  }
+  if (endFrame <= startFrame) return { x: 0, y: 0 };
 
   const startPos = getPositionAtFrame(layer, startFrame);
   const endPos = getPositionAtFrame(layer, endFrame);
   const frameCount = endFrame - startFrame;
 
-  // Validate positions
-  const dx = safeNumber(endPos.x, 0, 'endPos.x') - safeNumber(startPos.x, 0, 'startPos.x');
-  const dy = safeNumber(endPos.y, 0, 'endPos.y') - safeNumber(startPos.y, 0, 'startPos.y');
-
   return {
-    x: dx / frameCount,
-    y: dy / frameCount
+    x: (endPos.x - startPos.x) / frameCount,
+    y: (endPos.y - startPos.y) / frameCount
   };
 }
 
@@ -708,8 +557,6 @@ export interface TTMSingleLayerExport {
 /**
  * Generate motion mask from layer bounds
  * Returns ImageData with white = motion region, black = static
- *
- * @throws Error if canvas context unavailable or dimensions invalid
  */
 export function generateMotionMask(
   layer: Layer,
@@ -717,25 +564,11 @@ export function generateMotionMask(
   compHeight: number,
   getLayerBounds: (layer: Layer, frame: number) => { x: number; y: number; width: number; height: number }
 ): ImageData {
-  // Validate dimensions
-  if (!Number.isFinite(compWidth) || compWidth < 1 || compWidth > 8192) {
-    throw new Error(
-      `Invalid compWidth: ${compWidth}. Expected 1-8192. ` +
-      `Check composition settings.`
-    );
-  }
-  if (!Number.isFinite(compHeight) || compHeight < 1 || compHeight > 8192) {
-    throw new Error(
-      `Invalid compHeight: ${compHeight}. Expected 1-8192. ` +
-      `Check composition settings.`
-    );
-  }
-
   // Create canvas for mask
   const canvas = document.createElement('canvas');
-  canvas.width = Math.floor(compWidth);
-  canvas.height = Math.floor(compHeight);
-  const ctx = get2DContext(canvas, `motion mask for layer ${layer.id}`);
+  canvas.width = compWidth;
+  canvas.height = compHeight;
+  const ctx = canvas.getContext('2d')!;
 
   // Fill with black (static region)
   ctx.fillStyle = 'black';
@@ -744,15 +577,8 @@ export function generateMotionMask(
   // Draw white rectangle for layer bounds (motion region)
   const layerStart = layer.startFrame ?? layer.inPoint ?? 0;
   const bounds = getLayerBounds(layer, layerStart);
-
-  // Validate bounds
-  const safeX = safeNumber(bounds.x, 0, 'bounds.x');
-  const safeY = safeNumber(bounds.y, 0, 'bounds.y');
-  const safeW = safeNumber(bounds.width, 100, 'bounds.width');
-  const safeH = safeNumber(bounds.height, 100, 'bounds.height');
-
   ctx.fillStyle = 'white';
-  ctx.fillRect(safeX, safeY, safeW, safeH);
+  ctx.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
 
   return ctx.getImageData(0, 0, compWidth, compHeight);
 }
@@ -760,8 +586,6 @@ export function generateMotionMask(
 /**
  * Generate combined motion mask from multiple layers
  * Each layer's region is drawn in white on black background
- *
- * @throws Error if canvas context unavailable or dimensions invalid
  */
 export function generateCombinedMotionMask(
   layers: Layer[],
@@ -769,22 +593,10 @@ export function generateCombinedMotionMask(
   compHeight: number,
   getLayerBounds: (layer: Layer, frame: number) => { x: number; y: number; width: number; height: number }
 ): ImageData {
-  // Validate dimensions
-  if (!Number.isFinite(compWidth) || compWidth < 1 || compWidth > 8192) {
-    throw new Error(
-      `Invalid compWidth for combined mask: ${compWidth}. Expected 1-8192.`
-    );
-  }
-  if (!Number.isFinite(compHeight) || compHeight < 1 || compHeight > 8192) {
-    throw new Error(
-      `Invalid compHeight for combined mask: ${compHeight}. Expected 1-8192.`
-    );
-  }
-
   const canvas = document.createElement('canvas');
-  canvas.width = Math.floor(compWidth);
-  canvas.height = Math.floor(compHeight);
-  const ctx = get2DContext(canvas, `combined motion mask (${layers.length} layers)`);
+  canvas.width = compWidth;
+  canvas.height = compHeight;
+  const ctx = canvas.getContext('2d')!;
 
   // Fill with black (static region)
   ctx.fillStyle = 'black';
@@ -794,19 +606,8 @@ export function generateCombinedMotionMask(
   ctx.fillStyle = 'white';
   for (const layer of layers) {
     const layerStartFrame = layer.startFrame ?? layer.inPoint ?? 0;
-    try {
-      const bounds = getLayerBounds(layer, layerStartFrame);
-      const safeX = safeNumber(bounds.x, 0, `layer ${layer.id} bounds.x`);
-      const safeY = safeNumber(bounds.y, 0, `layer ${layer.id} bounds.y`);
-      const safeW = safeNumber(bounds.width, 100, `layer ${layer.id} bounds.width`);
-      const safeH = safeNumber(bounds.height, 100, `layer ${layer.id} bounds.height`);
-      ctx.fillRect(safeX, safeY, safeW, safeH);
-    } catch (error) {
-      console.warn(
-        `[modelExport] Failed to get bounds for layer ${layer.id} (${layer.name}), skipping:`,
-        error
-      );
-    }
+    const bounds = getLayerBounds(layer, layerStartFrame);
+    ctx.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
   }
 
   return ctx.getImageData(0, 0, compWidth, compHeight);
@@ -814,21 +615,12 @@ export function generateCombinedMotionMask(
 
 /**
  * Convert ImageData to base64 PNG
- *
- * @throws Error if canvas context unavailable or ImageData is invalid
  */
 export function imageDataToBase64(imageData: ImageData): string {
-  if (!imageData || !imageData.data || imageData.width < 1 || imageData.height < 1) {
-    throw new Error(
-      `Invalid ImageData: width=${imageData?.width}, height=${imageData?.height}, ` +
-      `dataLength=${imageData?.data?.length}. Cannot convert to base64.`
-    );
-  }
-
   const canvas = document.createElement('canvas');
   canvas.width = imageData.width;
   canvas.height = imageData.height;
-  const ctx = get2DContext(canvas, 'imageDataToBase64 conversion');
+  const ctx = canvas.getContext('2d')!;
   ctx.putImageData(imageData, 0, 0);
   return canvas.toDataURL('image/png');
 }
@@ -1028,45 +820,28 @@ export async function exportForModel(
         }
       }
 
-      // Export in Kijai WanMove format: [[{x,y}, {x,y}], [{x,y}, {x,y}]]
-      // This is the format WanVideoAddWanMoveTracks expects for track_coords
-      const kijaiTracks = exportWanMoveTracksForKijai(trajectories);
-      const trackCoordsString = exportWanMoveTracksAsString(trajectories);
+      const wanMoveData = exportWanMoveTrajectories(trajectories, compWidth, compHeight);
 
-      // Also export legacy format for backwards compatibility
-      const legacyData = exportWanMoveTrajectories(trajectories, compWidth, compHeight);
-
+      // Convert to pseudo-NPY format (JSON representation)
+      // Real NPY export would require a proper binary encoder
       return {
         success: true,
         target,
-        data: {
-          // Primary output: Kijai-compatible format
-          tracks: kijaiTracks,
-          trackCoordsString,
-          // Legacy data for other consumers
-          legacy: legacyData
-        },
+        data: wanMoveData,
         files: [
           {
-            // PRIMARY: track_coords for Kijai's WanVideoAddWanMoveTracks node
-            name: 'track_coords.json',
-            content: trackCoordsString,
-            type: 'json'
-          },
-          {
-            // LEGACY: array-based format for other tools
-            name: 'trajectories_legacy.json',
-            content: JSON.stringify(legacyData.trajectories, null, 2),
+            name: 'trajectories.json',
+            content: JSON.stringify(wanMoveData.trajectories, null, 2),
             type: 'json'
           },
           {
             name: 'visibility.json',
-            content: JSON.stringify(legacyData.visibility, null, 2),
+            content: JSON.stringify(wanMoveData.visibility, null, 2),
             type: 'json'
           },
           {
             name: 'metadata.json',
-            content: JSON.stringify(legacyData.metadata, null, 2),
+            content: JSON.stringify(wanMoveData.metadata, null, 2),
             type: 'json'
           }
         ]
@@ -1386,10 +1161,7 @@ export async function exportForModel(
         success: false,
         target,
         data: null,
-        files: [],
-        error: `Unknown export target: "${target}". ` +
-          `Valid targets are: camera-comfyui, wan-move, wan-move-3d, ati, ttm, light-x, particles. ` +
-          `This may indicate a version mismatch or unsupported export format.`
+        files: []
       };
   }
 }
@@ -1401,31 +1173,18 @@ export async function exportForModel(
 /**
  * Create NPY file header for float32 array
  * NPY format: https://numpy.org/doc/stable/reference/generated/numpy.lib.format.html
- *
- * @throws Error if shape contains invalid dimensions
  */
 export function createNpyHeader(shape: number[], dtype: string = '<f4'): Uint8Array {
-  // Validate shape
-  if (!shape || shape.length === 0) {
-    throw new Error(
-      `Invalid NPY shape: empty or undefined. ` +
-      `Shape must be an array of positive integers, e.g., [10, 5, 2].`
-    );
-  }
+  const header = {
+    descr: dtype,
+    fortran_order: false,
+    shape: shape
+  };
 
-  for (let i = 0; i < shape.length; i++) {
-    if (!Number.isInteger(shape[i]) || shape[i] < 0) {
-      throw new Error(
-        `Invalid NPY shape dimension at index ${i}: ${shape[i]}. ` +
-        `All dimensions must be non-negative integers. Full shape: [${shape.join(', ')}]`
-      );
-    }
-  }
-
-  // NPY header must be valid Python dict literal format
-  // See: https://numpy.org/doc/stable/reference/generated/numpy.lib.format.html
-  const shapeStr = `(${shape.join(', ')}${shape.length === 1 ? ',' : ''})`;  // Python tuple
-  const headerStr = `{'descr': '${dtype}', 'fortran_order': False, 'shape': ${shapeStr}, }`;
+  const headerStr = JSON.stringify(header)
+    .replace(/"/g, "'")
+    .replace(/: /g, ': ')
+    .replace(/, /g, ', ');
 
   // Pad to 64-byte alignment
   const headerBytes = new TextEncoder().encode(headerStr);
@@ -1447,53 +1206,17 @@ export function createNpyHeader(shape: number[], dtype: string = '<f4'): Uint8Ar
 
 /**
  * Export trajectory data as NPY binary
- *
- * @throws Error if trajectories array is empty or malformed
  */
 export function trajectoriesToNpy(trajectories: number[][][]): Blob {
-  // Validate input
-  if (!trajectories || trajectories.length === 0) {
-    throw new Error(
-      `Cannot create NPY from empty trajectories array. ` +
-      `Ensure at least one trajectory with points is provided.`
-    );
-  }
-
-  // Validate all trajectories have consistent frame counts
-  const firstLength = trajectories[0]?.length || 0;
-  if (firstLength === 0) {
-    throw new Error(
-      `First trajectory has no points. Cannot create NPY. ` +
-      `Each trajectory must have at least one point.`
-    );
-  }
-
-  for (let i = 1; i < trajectories.length; i++) {
-    if (trajectories[i].length !== firstLength) {
-      console.warn(
-        `[modelExport] Trajectory ${i} has ${trajectories[i].length} frames, ` +
-        `but first trajectory has ${firstLength}. Padding/truncating to match.`
-      );
-    }
-  }
-
-  // Determine point dimension from first point
-  const pointDim = trajectories[0][0]?.length || 2;
-
   // Flatten the 3D array
   const flat: number[] = [];
   for (const traj of trajectories) {
-    for (let f = 0; f < firstLength; f++) {
-      const point = traj[f] || Array(pointDim).fill(0);
-      // Ensure each point has correct dimension, pad if needed
-      for (let d = 0; d < pointDim; d++) {
-        const val = point[d];
-        flat.push(Number.isFinite(val) ? val : 0);
-      }
+    for (const point of traj) {
+      flat.push(...point);
     }
   }
 
-  const shape = [trajectories.length, firstLength, pointDim];
+  const shape = [trajectories.length, trajectories[0]?.length || 0, 2];
   const header = createNpyHeader(shape, '<f4');
 
   // Create float32 data
@@ -1513,8 +1236,6 @@ export default {
   exportCameraTrajectory,
   extractLayerTrajectory,
   exportWanMoveTrajectories,
-  exportWanMoveTracksForKijai,
-  exportWanMoveTracksAsString,
   exportATITrajectory,
   exportForModel,
   trajectoriesToNpy

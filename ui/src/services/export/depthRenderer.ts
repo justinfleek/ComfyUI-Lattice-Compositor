@@ -9,34 +9,6 @@ import type { DepthMapFormat, DepthExportOptions } from '@/types/export';
 import { DEPTH_FORMAT_SPECS } from '@/config/exportPresets';
 
 // ============================================================================
-// Validation Utilities
-// ============================================================================
-
-/**
- * Validate and clamp a number to a safe range
- */
-function safeNumber(value: unknown, fallback: number, context: string): number {
-  if (typeof value !== 'number' || !Number.isFinite(value)) {
-    console.warn(`[depthRenderer] Invalid ${context}: ${value}, using ${fallback}`);
-    return fallback;
-  }
-  return value;
-}
-
-/**
- * Validate dimension (width or height)
- */
-function validateDimension(value: number, name: string): number {
-  if (!Number.isFinite(value) || value < 1) {
-    throw new Error(
-      `Invalid ${name}: ${value}. Must be a positive integer. ` +
-      `Check composition settings.`
-    );
-  }
-  return Math.floor(value);
-}
-
-// ============================================================================
 // Types
 // ============================================================================
 
@@ -345,23 +317,12 @@ function interpolateValue(keyframes: any[], frame: number, index?: number): numb
     return index !== undefined && Array.isArray(value) ? value[index] : value;
   }
 
-  // Avoid division by zero
-  const frameDiff = next.frame - prev.frame;
-  if (frameDiff === 0) {
-    const value = prev.value;
-    return index !== undefined && Array.isArray(value) ? value[index] : value;
-  }
-
   // Linear interpolation
-  const t = (frame - prev.frame) / frameDiff;
+  const t = (frame - prev.frame) / (next.frame - prev.frame);
   const prevValue = index !== undefined && Array.isArray(prev.value) ? prev.value[index] : prev.value;
   const nextValue = index !== undefined && Array.isArray(next.value) ? next.value[index] : next.value;
 
-  // Validate values before interpolating
-  const safePrev = safeNumber(prevValue, 0, 'keyframe prev value');
-  const safeNext = safeNumber(nextValue, 0, 'keyframe next value');
-
-  return safePrev + (safeNext - safePrev) * t;
+  return prevValue + (nextValue - prevValue) * t;
 }
 
 // ============================================================================
@@ -370,37 +331,15 @@ function interpolateValue(keyframes: any[], frame: number, index?: number): numb
 
 /**
  * Convert depth buffer to export format
- *
- * @throws Error if format is invalid or dimensions are zero
  */
 export function convertDepthToFormat(
   result: DepthRenderResult,
   format: DepthMapFormat
 ): Uint8Array | Uint16Array {
   const spec = DEPTH_FORMAT_SPECS[format];
-
-  if (!spec) {
-    throw new Error(
-      `Unknown depth format: "${format}". ` +
-      `Valid formats: ${Object.keys(DEPTH_FORMAT_SPECS).join(', ')}`
-    );
-  }
-
   const { depthBuffer, width, height, minDepth, maxDepth } = result;
 
-  // Validate dimensions
-  if (width < 1 || height < 1) {
-    throw new Error(
-      `Invalid depth buffer dimensions: ${width}x${height}. ` +
-      `Both must be positive integers.`
-    );
-  }
-
   const pixelCount = width * height;
-
-  // Handle division by zero: if all depths are equal, output uniform value
-  const depthRange = maxDepth - minDepth;
-  const hasValidRange = Number.isFinite(depthRange) && depthRange > 0.0001;
 
   if (spec.bitDepth === 16) {
     const output = new Uint16Array(pixelCount);
@@ -409,19 +348,11 @@ export function convertDepthToFormat(
       let normalized: number;
 
       if (spec.normalize) {
-        // Normalize to 0-1 range (avoid division by zero)
-        normalized = hasValidRange
-          ? (depthBuffer[i] - minDepth) / depthRange
-          : 0.5; // Uniform mid-gray if no depth variation
+        // Normalize to 0-1 range
+        normalized = (depthBuffer[i] - minDepth) / (maxDepth - minDepth);
       } else {
         // Keep metric value, scale to 16-bit
-        const safeFarClip = spec.farClip > 0 ? spec.farClip : 1000;
-        normalized = depthBuffer[i] / safeFarClip;
-      }
-
-      // Ensure normalized is valid
-      if (!Number.isFinite(normalized)) {
-        normalized = 0.5;
+        normalized = depthBuffer[i] / spec.farClip;
       }
 
       if (spec.invert) {
@@ -436,15 +367,7 @@ export function convertDepthToFormat(
     const output = new Uint8Array(pixelCount);
 
     for (let i = 0; i < pixelCount; i++) {
-      // Avoid division by zero
-      let normalized = hasValidRange
-        ? (depthBuffer[i] - minDepth) / depthRange
-        : 0.5;
-
-      // Ensure normalized is valid
-      if (!Number.isFinite(normalized)) {
-        normalized = 0.5;
-      }
+      let normalized = (depthBuffer[i] - minDepth) / (maxDepth - minDepth);
 
       if (spec.invert) {
         normalized = 1 - normalized;
@@ -459,61 +382,26 @@ export function convertDepthToFormat(
 
 /**
  * Create PNG image data from depth buffer
- *
- * For 16-bit depth data, this function encodes the full precision into RG channels:
- * - R = high byte (value >> 8)
- * - G = low byte (value & 0xFF)
- * - B = 0
- *
- * To decode in Python/ComfyUI: depth = (R * 256 + G) / 65535.0
- *
- * For 8-bit depth data, standard grayscale (R=G=B=value) is used.
- *
- * @param packChannels - If true (default for 16-bit), pack 16-bit into RG channels.
- *                       If false, downscale to 8-bit grayscale (lossy).
  */
 export function depthToImageData(
   depthData: Uint8Array | Uint16Array,
   width: number,
-  height: number,
-  packChannels: boolean = true
+  height: number
 ): ImageData {
   const imageData = new ImageData(width, height);
   const is16bit = depthData instanceof Uint16Array;
 
   for (let i = 0; i < width * height; i++) {
-    const pixelIdx = i * 4;
+    const value = is16bit ? Math.floor(depthData[i] / 256) : depthData[i];
 
-    if (is16bit && packChannels) {
-      // Pack 16-bit into RG channels (lossless)
-      // R = high byte, G = low byte
-      const value = depthData[i];
-      imageData.data[pixelIdx] = (value >> 8) & 0xFF;     // R = high byte
-      imageData.data[pixelIdx + 1] = value & 0xFF;        // G = low byte
-      imageData.data[pixelIdx + 2] = 0;                   // B = 0
-      imageData.data[pixelIdx + 3] = 255;                 // A
-    } else {
-      // Standard grayscale (8-bit, or downscaled 16-bit)
-      const value = is16bit ? Math.floor(depthData[i] / 256) : depthData[i];
-      imageData.data[pixelIdx] = value;     // R
-      imageData.data[pixelIdx + 1] = value; // G
-      imageData.data[pixelIdx + 2] = value; // B
-      imageData.data[pixelIdx + 3] = 255;   // A
-    }
+    const pixelIdx = i * 4;
+    imageData.data[pixelIdx] = value;     // R
+    imageData.data[pixelIdx + 1] = value; // G
+    imageData.data[pixelIdx + 2] = value; // B
+    imageData.data[pixelIdx + 3] = 255;   // A
   }
 
   return imageData;
-}
-
-/**
- * Create grayscale visualization from 16-bit depth (lossy but human-viewable)
- */
-export function depthToGrayscaleImageData(
-  depthData: Uint8Array | Uint16Array,
-  width: number,
-  height: number
-): ImageData {
-  return depthToImageData(depthData, width, height, false);
 }
 
 /**

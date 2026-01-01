@@ -21,8 +21,6 @@ import { generateWorkflowForTarget, validateWorkflow, type WorkflowParams } from
 import { EXPORT_PRESETS, DEPTH_FORMAT_SPECS } from '@/config/exportPresets';
 import { evaluateLayerCached } from '@/services/layerEvaluationCache';
 import type { EvaluatedLayer } from '@/engine/MotionEngine';
-import type { LatticeEngine } from '@/engine/LatticeEngine';
-import type { EncodedVideo } from './videoEncoder';
 
 // ============================================================================
 // Types
@@ -34,8 +32,6 @@ export interface ExportPipelineOptions {
   config: ExportConfig;
   onProgress?: (progress: ExportProgress) => void;
   abortSignal?: AbortSignal;
-  /** LatticeEngine instance for video export (TTM, Uni3C) */
-  engine?: LatticeEngine;
 }
 
 export interface RenderedFrame {
@@ -57,7 +53,6 @@ export class ExportPipeline {
   private onProgress: (progress: ExportProgress) => void;
   private abortSignal?: AbortSignal;
   private aborted = false;
-  private engine?: LatticeEngine;
 
   constructor(options: ExportPipelineOptions) {
     this.layers = options.layers;
@@ -65,7 +60,6 @@ export class ExportPipeline {
     this.config = options.config;
     this.onProgress = options.onProgress || (() => {});
     this.abortSignal = options.abortSignal;
-    this.engine = options.engine;
 
     if (this.abortSignal) {
       this.abortSignal.addEventListener('abort', () => {
@@ -88,40 +82,6 @@ export class ExportPipeline {
       message: '',
       ...progress,
     });
-  }
-
-  // ============================================================================
-  // Error Handling Utilities
-  // ============================================================================
-
-  /**
-   * Safely get 2D rendering context from canvas
-   * @throws Error if context cannot be obtained
-   */
-  private get2DContext(canvas: OffscreenCanvas, operation: string): OffscreenCanvasRenderingContext2D {
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
-      throw new Error(`Failed to get 2D context for ${operation}. Browser may not support OffscreenCanvas.`);
-    }
-    return ctx;
-  }
-
-  /**
-   * Validate a numeric value is finite and not NaN
-   */
-  private validateNumber(value: unknown, name: string, defaultValue: number): number {
-    if (typeof value !== 'number' || !Number.isFinite(value)) {
-      console.warn(`[ExportPipeline] Invalid ${name}: ${value}, using default ${defaultValue}`);
-      return defaultValue;
-    }
-    return value;
-  }
-
-  /**
-   * Clamp a value to a safe range
-   */
-  private clamp(value: number, min: number, max: number): number {
-    return Math.max(min, Math.min(max, value));
   }
 
   // ============================================================================
@@ -177,25 +137,13 @@ export class ExportPipeline {
         await this.renderControlSequence(result);
       }
 
-      // Step 5: Export scene video (SCAIL pose, Uni3C camera)
-      if (this.config.exportSceneVideo) {
-        this.checkAborted();
-        await this.renderSceneVideo(result);
-      }
-
-      // Step 6: Export mask video (TTM)
-      if (this.config.exportMaskVideo && this.config.maskLayerId) {
-        this.checkAborted();
-        await this.renderMaskVideo(result);
-      }
-
-      // Step 7: Export camera data
+      // Step 5: Export camera data
       if (this.config.exportCameraData) {
         this.checkAborted();
         await this.exportCameraData(result);
       }
 
-      // Step 8: Generate workflow
+      // Step 6: Generate workflow
       this.checkAborted();
       await this.generateWorkflow(result);
 
@@ -226,73 +174,32 @@ export class ExportPipeline {
   private validateConfig(): string[] {
     const errors: string[] = [];
 
-    // Validate dimensions
-    if (!Number.isFinite(this.config.width) || this.config.width < 64 || this.config.width > 4096) {
-      errors.push(`Width must be between 64 and 4096 (got: ${this.config.width})`);
+    if (this.config.width < 64 || this.config.width > 4096) {
+      errors.push('Width must be between 64 and 4096');
     }
 
-    if (!Number.isFinite(this.config.height) || this.config.height < 64 || this.config.height > 4096) {
-      errors.push(`Height must be between 64 and 4096 (got: ${this.config.height})`);
+    if (this.config.height < 64 || this.config.height > 4096) {
+      errors.push('Height must be between 64 and 4096');
     }
 
-    // Validate dimensions are integers
-    if (this.config.width !== Math.floor(this.config.width)) {
-      errors.push('Width must be an integer');
-    }
-    if (this.config.height !== Math.floor(this.config.height)) {
-      errors.push('Height must be an integer');
+    if (this.config.frameCount < 1 || this.config.frameCount > 1000) {
+      errors.push('Frame count must be between 1 and 1000');
     }
 
-    // Validate frame settings
-    if (!Number.isFinite(this.config.frameCount) || this.config.frameCount < 1 || this.config.frameCount > 1000) {
-      errors.push(`Frame count must be between 1 and 1000 (got: ${this.config.frameCount})`);
+    if (this.config.fps < 1 || this.config.fps > 120) {
+      errors.push('FPS must be between 1 and 120');
     }
 
-    if (!Number.isFinite(this.config.fps) || this.config.fps < 1 || this.config.fps > 120) {
-      errors.push(`FPS must be between 1 and 120 (got: ${this.config.fps})`);
+    if (this.config.startFrame < 0 || this.config.startFrame >= this.config.frameCount) {
+      errors.push('Invalid start frame');
     }
 
-    // Validate frame range
-    if (!Number.isFinite(this.config.startFrame) || this.config.startFrame < 0) {
-      errors.push(`Start frame must be >= 0 (got: ${this.config.startFrame})`);
+    if (this.config.endFrame <= this.config.startFrame || this.config.endFrame > this.config.frameCount) {
+      errors.push('Invalid end frame');
     }
 
-    if (!Number.isFinite(this.config.endFrame)) {
-      errors.push(`End frame must be a valid number (got: ${this.config.endFrame})`);
-    }
-
-    if (this.config.startFrame >= this.config.endFrame) {
-      errors.push(`Start frame (${this.config.startFrame}) must be less than end frame (${this.config.endFrame})`);
-    }
-
-    if (this.config.endFrame > this.config.frameCount) {
-      errors.push(`End frame (${this.config.endFrame}) exceeds frame count (${this.config.frameCount})`);
-    }
-
-    // Validate mask layer ID if mask export requested
-    if (this.config.exportMaskVideo && !this.config.maskLayerId) {
-      errors.push('Mask video export requires maskLayerId in config');
-    }
-
-    // Validate prompt
-    if (this.needsPrompt()) {
-      const trimmedPrompt = (this.config.prompt || '').trim();
-      if (!trimmedPrompt) {
-        errors.push('Prompt is required for this export target (cannot be empty or whitespace-only)');
-      }
-    }
-
-    // Validate optional numeric fields
-    if (this.config.seed !== undefined && (!Number.isFinite(this.config.seed) || this.config.seed < 0)) {
-      errors.push(`Seed must be a non-negative number (got: ${this.config.seed})`);
-    }
-
-    if (this.config.steps !== undefined && (!Number.isFinite(this.config.steps) || this.config.steps < 1 || this.config.steps > 150)) {
-      errors.push(`Steps must be between 1 and 150 (got: ${this.config.steps})`);
-    }
-
-    if (this.config.cfgScale !== undefined && (!Number.isFinite(this.config.cfgScale) || this.config.cfgScale < 0 || this.config.cfgScale > 30)) {
-      errors.push(`CFG scale must be between 0 and 30 (got: ${this.config.cfgScale})`);
+    if (!this.config.prompt && this.needsPrompt()) {
+      errors.push('Prompt is required for this export target');
     }
 
     return errors;
@@ -316,27 +223,20 @@ export class ExportPipeline {
     });
 
     const canvas = new OffscreenCanvas(this.config.width, this.config.height);
-    const ctx = this.get2DContext(canvas, 'reference frame rendering');
+    const ctx = canvas.getContext('2d')!;
 
     // Render the first frame
     await this.renderFrameToCanvas(ctx, this.config.startFrame);
 
     // Convert to blob and save
     const blob = await canvas.convertToBlob({ type: 'image/png' });
-    const filename = `${this.config.filenamePrefix || 'export'}_reference.png`;
+    const filename = `${this.config.filenamePrefix}_reference.png`;
 
     // If ComfyUI server is configured, upload
     if (this.config.comfyuiServer) {
-      try {
-        const client = getComfyUIClient(this.config.comfyuiServer);
-        const uploadResult = await client.uploadImage(blob, filename);
-        result.outputFiles.referenceImage = uploadResult.name;
-      } catch (error) {
-        result.errors.push(`Failed to upload reference frame: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        // Fall back to local save
-        result.outputFiles.referenceImage = await this.saveBlobLocally(blob, filename);
-        result.warnings.push('Reference frame saved locally due to upload failure');
-      }
+      const client = getComfyUIClient(this.config.comfyuiServer);
+      const uploadResult = await client.uploadImage(blob, filename);
+      result.outputFiles.referenceImage = uploadResult.name;
     } else {
       // Save locally (browser download)
       result.outputFiles.referenceImage = await this.saveBlobLocally(blob, filename);
@@ -359,26 +259,19 @@ export class ExportPipeline {
     });
 
     const canvas = new OffscreenCanvas(this.config.width, this.config.height);
-    const ctx = this.get2DContext(canvas, 'last frame rendering');
+    const ctx = canvas.getContext('2d')!;
 
-    // Render the last frame (endFrame is exclusive, so use endFrame - 1)
-    const lastFrameIndex = Math.max(this.config.startFrame, this.config.endFrame - 1);
-    await this.renderFrameToCanvas(ctx, lastFrameIndex);
+    // Render the last frame
+    await this.renderFrameToCanvas(ctx, this.config.endFrame - 1);
 
     // Convert to blob and save
     const blob = await canvas.convertToBlob({ type: 'image/png' });
-    const filename = `${this.config.filenamePrefix || 'export'}_last.png`;
+    const filename = `${this.config.filenamePrefix}_last.png`;
 
     if (this.config.comfyuiServer) {
-      try {
-        const client = getComfyUIClient(this.config.comfyuiServer);
-        const uploadResult = await client.uploadImage(blob, filename);
-        result.outputFiles.lastImage = uploadResult.name;
-      } catch (error) {
-        result.errors.push(`Failed to upload last frame: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        result.outputFiles.lastImage = await this.saveBlobLocally(blob, filename);
-        result.warnings.push('Last frame saved locally due to upload failure');
-      }
+      const client = getComfyUIClient(this.config.comfyuiServer);
+      const uploadResult = await client.uploadImage(blob, filename);
+      result.outputFiles.lastImage = uploadResult.name;
     } else {
       result.outputFiles.lastImage = await this.saveBlobLocally(blob, filename);
     }
@@ -436,21 +329,13 @@ export class ExportPipeline {
       : (evaluated.transform.rotation as any)?.z ?? 0;
     const opacity = evaluated.opacity;
 
-    // Validate transform values - protect against NaN/Infinity from bad expressions
-    const safeOpacity = this.clamp(this.validateNumber(opacity, `layer ${layer.id} opacity`, 100), 0, 100);
-    const safePosX = this.validateNumber(pos.x, `layer ${layer.id} position.x`, 0);
-    const safePosY = this.validateNumber(pos.y, `layer ${layer.id} position.y`, 0);
-    const safeRotation = this.validateNumber(rotation, `layer ${layer.id} rotation`, 0);
-    const safeScaleX = this.validateNumber(scaleVal.x, `layer ${layer.id} scale.x`, 100);
-    const safeScaleY = this.validateNumber(scaleVal.y, `layer ${layer.id} scale.y`, 100);
-
     ctx.save();
 
-    // Apply transforms with validated values
-    ctx.globalAlpha = safeOpacity / 100;
-    ctx.translate(safePosX, safePosY);
-    ctx.rotate((safeRotation * Math.PI) / 180);
-    ctx.scale(safeScaleX / 100, safeScaleY / 100);
+    // Apply transforms
+    ctx.globalAlpha = opacity / 100;
+    ctx.translate(pos.x, pos.y);
+    ctx.rotate((rotation * Math.PI) / 180);
+    ctx.scale(scaleVal.x / 100, scaleVal.y / 100);
 
     // Draw layer content
     const layerData = layer.data as any;
@@ -480,46 +365,12 @@ export class ExportPipeline {
     ctx.restore();
   }
 
-  private loadImage(src: string, timeoutMs: number = 30000): Promise<HTMLImageElement> {
+  private loadImage(src: string): Promise<HTMLImageElement> {
     return new Promise((resolve, reject) => {
       const img = new Image();
-      let timeoutId: ReturnType<typeof setTimeout> | null = null;
-
-      const cleanup = () => {
-        if (timeoutId) {
-          clearTimeout(timeoutId);
-          timeoutId = null;
-        }
-        img.onload = null;
-        img.onerror = null;
-      };
-
-      img.onload = () => {
-        cleanup();
-        resolve(img);
-      };
-
-      img.onerror = (event) => {
-        cleanup();
-        reject(new Error(`Failed to load image: ${src.substring(0, 100)}${src.length > 100 ? '...' : ''}`));
-      };
-
-      // Set timeout to prevent hanging on slow/broken URLs
-      timeoutId = setTimeout(() => {
-        cleanup();
-        // Abort image loading by clearing src
-        img.src = '';
-        reject(new Error(`Image load timeout after ${timeoutMs}ms: ${src.substring(0, 50)}...`));
-      }, timeoutMs);
-
-      // Handle data URLs and blob URLs specially
-      if (src.startsWith('data:') || src.startsWith('blob:')) {
-        img.src = src;
-      } else {
-        // For regular URLs, set crossOrigin to handle CORS
-        img.crossOrigin = 'anonymous';
-        img.src = src;
-      }
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = src;
     });
   }
 
@@ -531,180 +382,100 @@ export class ExportPipeline {
     const frameCount = this.config.endFrame - this.config.startFrame;
     const depthFiles: string[] = [];
 
-    // Use engine depth capture if available (proper Three.js depth buffer)
-    // Otherwise fall back to manual layer-based depth calculation
-    const useEngineDepth = this.engine !== undefined;
+    for (let i = 0; i < frameCount; i++) {
+      this.checkAborted();
 
-    if (useEngineDepth && this.engine) {
-      // Store original state
-      const originalFrame = this.engine.getState().currentFrame;
+      const frameIndex = this.config.startFrame + i;
+      const progress = (i / frameCount) * 100;
 
-      for (let i = 0; i < frameCount; i++) {
-        this.checkAborted();
+      this.updateProgress({
+        stage: 'rendering_depth',
+        stageProgress: progress,
+        overallProgress: 15 + (progress * 0.25),
+        currentFrame: i + 1,
+        totalFrames: frameCount,
+        message: `Rendering depth frame ${i + 1}/${frameCount}`,
+      });
 
-        const frameIndex = this.config.startFrame + i;
-        const progress = (i / frameCount) * 100;
+      // Render depth for this frame - need camera for proper depth calculation
+      // For now use a default camera if not available
+      const defaultCamera: Camera3D = {
+        id: 'default',
+        name: 'Default Camera',
+        type: 'one-node',
+        position: { x: 0, y: 0, z: 1000 },
+        pointOfInterest: { x: 0, y: 0, z: 0 },
+        orientation: { x: 0, y: 0, z: 0 },
+        xRotation: 0,
+        yRotation: 0,
+        zRotation: 0,
+        zoom: 1,
+        focalLength: 50,
+        angleOfView: 60,
+        filmSize: 36,
+        measureFilmSize: 'horizontal',
+        nearClip: 0.1,
+        farClip: 100,
+        depthOfField: {
+          enabled: false,
+          focusDistance: 100,
+          aperture: 1.2,
+          fStop: 2.8,
+          blurLevel: 1,
+          lockToZoom: false,
+        },
+        iris: {
+          shape: 7,
+          rotation: 0,
+          roundness: 0,
+          aspectRatio: 1,
+          diffractionFringe: 0,
+        },
+        highlight: {
+          gain: 0,
+          threshold: 1,
+          saturation: 1,
+        },
+        autoOrient: 'off',
+      };
 
-        this.updateProgress({
-          stage: 'rendering_depth',
-          stageProgress: progress,
-          overallProgress: 15 + (progress * 0.25),
-          currentFrame: i + 1,
-          totalFrames: frameCount,
-          message: `Rendering depth frame ${i + 1}/${frameCount} (Three.js)`,
-        });
+      const depthResult = renderDepthFrame({
+        width: this.config.width,
+        height: this.config.height,
+        nearClip: 0.1,
+        farClip: 100,
+        camera: defaultCamera,
+        layers: this.layers,
+        frame: frameIndex,
+      });
 
-        // Set frame and render
-        this.engine.setFrame(frameIndex);
+      // Convert to target format
+      const convertedDepth = convertDepthToFormat(
+        depthResult,
+        this.config.depthFormat
+      );
 
-        // Capture depth from Three.js depth buffer
-        const depthCapture = this.engine.captureDepth();
+      // Create image data
+      const imageData = depthToImageData(
+        convertedDepth,
+        this.config.width,
+        this.config.height
+      );
 
-        // Convert to format-specific depth
-        const convertedDepth = convertDepthToFormat(
-          {
-            depthBuffer: depthCapture.depthBuffer,
-            width: depthCapture.width,
-            height: depthCapture.height,
-            minDepth: depthCapture.near,
-            maxDepth: depthCapture.far,
-          },
-          this.config.depthFormat
-        );
+      // Convert to canvas and blob
+      const canvas = new OffscreenCanvas(this.config.width, this.config.height);
+      const ctx = canvas.getContext('2d')!;
+      ctx.putImageData(imageData, 0, 0);
 
-        // Create image data
-        const imageData = depthToImageData(
-          convertedDepth,
-          depthCapture.width,
-          depthCapture.height
-        );
+      const blob = await canvas.convertToBlob({ type: 'image/png' });
+      const filename = `${this.config.filenamePrefix}_depth_${String(i).padStart(5, '0')}.png`;
 
-        // Convert to canvas and blob
-        const canvas = new OffscreenCanvas(depthCapture.width, depthCapture.height);
-        const ctx = this.get2DContext(canvas, `depth frame ${i} rendering`);
-        ctx.putImageData(imageData, 0, 0);
-
-        const blob = await canvas.convertToBlob({ type: 'image/png' });
-        const filename = `${this.config.filenamePrefix}_depth_${String(i).padStart(5, '0')}.png`;
-
-        if (this.config.comfyuiServer) {
-          try {
-            const client = getComfyUIClient(this.config.comfyuiServer);
-            const uploadResult = await client.uploadImage(blob, filename, 'input', 'depth_sequence');
-            depthFiles.push(uploadResult.name);
-          } catch (error) {
-            // Fall back to local save on upload failure
-            console.warn(`[ExportPipeline] Depth frame ${i} upload failed, saving locally:`, error);
-            depthFiles.push(await this.saveBlobLocally(blob, filename));
-          }
-        } else {
-          depthFiles.push(await this.saveBlobLocally(blob, filename));
-        }
-      }
-
-      // Restore original frame
-      this.engine.setFrame(originalFrame);
-    } else {
-      // Fallback: manual layer-based depth calculation
-      for (let i = 0; i < frameCount; i++) {
-        this.checkAborted();
-
-        const frameIndex = this.config.startFrame + i;
-        const progress = (i / frameCount) * 100;
-
-        this.updateProgress({
-          stage: 'rendering_depth',
-          stageProgress: progress,
-          overallProgress: 15 + (progress * 0.25),
-          currentFrame: i + 1,
-          totalFrames: frameCount,
-          message: `Rendering depth frame ${i + 1}/${frameCount} (layer-based)`,
-        });
-
-        // Use default camera for manual depth calculation
-        const defaultCamera: Camera3D = {
-          id: 'default',
-          name: 'Default Camera',
-          type: 'one-node',
-          position: { x: 0, y: 0, z: 1000 },
-          pointOfInterest: { x: 0, y: 0, z: 0 },
-          orientation: { x: 0, y: 0, z: 0 },
-          xRotation: 0,
-          yRotation: 0,
-          zRotation: 0,
-          zoom: 1,
-          focalLength: 50,
-          angleOfView: 60,
-          filmSize: 36,
-          measureFilmSize: 'horizontal',
-          nearClip: 0.1,
-          farClip: 100,
-          depthOfField: {
-            enabled: false,
-            focusDistance: 100,
-            aperture: 1.2,
-            fStop: 2.8,
-            blurLevel: 1,
-            lockToZoom: false,
-          },
-          iris: {
-            shape: 7,
-            rotation: 0,
-            roundness: 0,
-            aspectRatio: 1,
-            diffractionFringe: 0,
-          },
-          highlight: {
-            gain: 0,
-            threshold: 1,
-            saturation: 1,
-          },
-          autoOrient: 'off',
-        };
-
-        const depthResult = renderDepthFrame({
-          width: this.config.width,
-          height: this.config.height,
-          nearClip: 0.1,
-          farClip: 100,
-          camera: defaultCamera,
-          layers: this.layers,
-          frame: frameIndex,
-        });
-
-        // Convert to target format
-        const convertedDepth = convertDepthToFormat(
-          depthResult,
-          this.config.depthFormat
-        );
-
-        // Create image data
-        const imageData = depthToImageData(
-          convertedDepth,
-          this.config.width,
-          this.config.height
-        );
-
-        // Convert to canvas and blob
-        const canvas = new OffscreenCanvas(this.config.width, this.config.height);
-        const ctx = this.get2DContext(canvas, `depth frame ${i} rendering (fallback)`);
-        ctx.putImageData(imageData, 0, 0);
-
-        const blob = await canvas.convertToBlob({ type: 'image/png' });
-        const filename = `${this.config.filenamePrefix}_depth_${String(i).padStart(5, '0')}.png`;
-
-        if (this.config.comfyuiServer) {
-          try {
-            const client = getComfyUIClient(this.config.comfyuiServer);
-            const uploadResult = await client.uploadImage(blob, filename, 'input', 'depth_sequence');
-            depthFiles.push(uploadResult.name);
-          } catch (error) {
-            console.warn(`[ExportPipeline] Depth frame ${i} upload failed, saving locally:`, error);
-            depthFiles.push(await this.saveBlobLocally(blob, filename));
-          }
-        } else {
-          depthFiles.push(await this.saveBlobLocally(blob, filename));
-        }
+      if (this.config.comfyuiServer) {
+        const client = getComfyUIClient(this.config.comfyuiServer);
+        const uploadResult = await client.uploadImage(blob, filename, 'input', 'depth_sequence');
+        depthFiles.push(uploadResult.name);
+      } else {
+        depthFiles.push(await this.saveBlobLocally(blob, filename));
       }
     }
 
@@ -743,7 +514,7 @@ export class ExportPipeline {
 
       // Render the frame
       const canvas = new OffscreenCanvas(this.config.width, this.config.height);
-      const ctx = this.get2DContext(canvas, `control frame ${i} rendering`);
+      const ctx = canvas.getContext('2d')!;
       await this.renderFrameToCanvas(ctx, frameIndex);
 
       // Apply control preprocessing based on type
@@ -753,14 +524,9 @@ export class ExportPipeline {
       const filename = `${this.config.filenamePrefix}_control_${String(i).padStart(5, '0')}.png`;
 
       if (this.config.comfyuiServer) {
-        try {
-          const client = getComfyUIClient(this.config.comfyuiServer);
-          const uploadResult = await client.uploadImage(blob, filename, 'input', 'control_sequence');
-          controlFiles.push(uploadResult.name);
-        } catch (error) {
-          console.warn(`[ExportPipeline] Control frame ${i} upload failed, saving locally:`, error);
-          controlFiles.push(await this.saveBlobLocally(blob, filename));
-        }
+        const client = getComfyUIClient(this.config.comfyuiServer);
+        const uploadResult = await client.uploadImage(blob, filename, 'input', 'control_sequence');
+        controlFiles.push(uploadResult.name);
       } else {
         controlFiles.push(await this.saveBlobLocally(blob, filename));
       }
@@ -776,158 +542,13 @@ export class ExportPipeline {
     });
   }
 
-  /**
-   * Render scene as video for SCAIL pose or Uni3C camera motion
-   * Requires LatticeEngine to be passed in options
-   */
-  private async renderSceneVideo(result: ExportResult): Promise<void> {
-    if (!this.engine) {
-      result.warnings.push('Scene video export requires LatticeEngine - skipped');
-      return;
-    }
-
-    this.updateProgress({
-      stage: 'rendering_frames',
-      stageProgress: 0,
-      overallProgress: 45,
-      message: 'Rendering scene video...',
-    });
-
-    try {
-      // Determine if we should apply camera animation
-      // For Uni3C, we want camera motion; for SCAIL, we want static camera
-      const applyCamera = this.config.target.startsWith('uni3c');
-
-      const video = await this.engine.exportSceneAsVideo({
-        startFrame: this.config.startFrame,
-        endFrame: this.config.endFrame,
-        fps: this.config.fps,
-        width: this.config.width,
-        height: this.config.height,
-        codec: 'avc',
-        applyCamera,
-        onProgress: (frame, total) => {
-          const percent = (frame / total) * 100;
-          this.updateProgress({
-            stage: 'rendering_frames',
-            stageProgress: percent,
-            overallProgress: 45 + (percent * 0.1),
-            currentFrame: frame,
-            totalFrames: total,
-            message: `Rendering scene frame ${frame}/${total}...`,
-          });
-        },
-      });
-
-      // Save video
-      const filename = `${this.config.filenamePrefix}_scene.mp4`;
-      if (this.config.comfyuiServer) {
-        try {
-          const client = getComfyUIClient(this.config.comfyuiServer);
-          // Upload video as file (ComfyUI stores in input folder)
-          const file = new File([video.blob], filename, { type: video.mimeType });
-          const uploadResult = await client.uploadImage(file, filename);
-          result.outputFiles.sceneVideo = uploadResult.name;
-        } catch (uploadError) {
-          console.warn('[ExportPipeline] Scene video upload failed, saving locally:', uploadError);
-          result.outputFiles.sceneVideo = await this.saveBlobLocally(video.blob, filename);
-          result.warnings.push('Scene video saved locally due to upload failure');
-        }
-      } else {
-        result.outputFiles.sceneVideo = await this.saveBlobLocally(video.blob, filename);
-      }
-
-      this.updateProgress({
-        stage: 'rendering_frames',
-        stageProgress: 100,
-        overallProgress: 55,
-        message: 'Scene video complete',
-      });
-    } catch (error) {
-      result.errors.push(`Scene video render failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  }
-
-  /**
-   * Render layer mask as video for TTM
-   * Requires LatticeEngine to be passed in options
-   */
-  private async renderMaskVideo(result: ExportResult): Promise<void> {
-    if (!this.engine) {
-      result.warnings.push('Mask video export requires LatticeEngine - skipped');
-      return;
-    }
-
-    if (!this.config.maskLayerId) {
-      result.warnings.push('Mask video export requires maskLayerId in config - skipped');
-      return;
-    }
-
-    this.updateProgress({
-      stage: 'rendering_frames',
-      stageProgress: 0,
-      overallProgress: 55,
-      message: 'Rendering mask video...',
-    });
-
-    try {
-      const video = await this.engine.exportLayerAsMaskVideo({
-        layerId: this.config.maskLayerId,
-        startFrame: this.config.startFrame,
-        endFrame: this.config.endFrame,
-        fps: this.config.fps,
-        width: this.config.width,
-        height: this.config.height,
-        codec: 'avc',
-        binaryMask: true,
-        onProgress: (frame, total) => {
-          const percent = (frame / total) * 100;
-          this.updateProgress({
-            stage: 'rendering_frames',
-            stageProgress: percent,
-            overallProgress: 55 + (percent * 0.1),
-            currentFrame: frame,
-            totalFrames: total,
-            message: `Rendering mask frame ${frame}/${total}...`,
-          });
-        },
-      });
-
-      // Save video
-      const filename = `${this.config.filenamePrefix}_mask.mp4`;
-      if (this.config.comfyuiServer) {
-        try {
-          const client = getComfyUIClient(this.config.comfyuiServer);
-          const file = new File([video.blob], filename, { type: video.mimeType });
-          const uploadResult = await client.uploadImage(file, filename);
-          result.outputFiles.maskVideo = uploadResult.name;
-        } catch (uploadError) {
-          console.warn('[ExportPipeline] Mask video upload failed, saving locally:', uploadError);
-          result.outputFiles.maskVideo = await this.saveBlobLocally(video.blob, filename);
-          result.warnings.push('Mask video saved locally due to upload failure');
-        }
-      } else {
-        result.outputFiles.maskVideo = await this.saveBlobLocally(video.blob, filename);
-      }
-
-      this.updateProgress({
-        stage: 'rendering_frames',
-        stageProgress: 100,
-        overallProgress: 65,
-        message: 'Mask video complete',
-      });
-    } catch (error) {
-      result.errors.push(`Mask video render failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  }
-
   private async applyControlPreprocessing(
     input: OffscreenCanvas,
     controlType: string
   ): Promise<OffscreenCanvas> {
     const output = new OffscreenCanvas(input.width, input.height);
-    const ctx = this.get2DContext(output, 'control preprocessing output');
-    const inputCtx = this.get2DContext(input, 'control preprocessing input');
+    const ctx = output.getContext('2d')!;
+    const inputCtx = input.getContext('2d')!;
     const imageData = inputCtx.getImageData(0, 0, input.width, input.height);
     const data = imageData.data;
 
@@ -938,8 +559,8 @@ export class ExportPipeline {
         break;
 
       case 'lineart':
-        // Edge-based lineart detection (Sobel + adaptive threshold)
-        this.applyLineart(data, input.width, input.height);
+        // Convert to grayscale with high contrast
+        this.applyLineart(data);
         break;
 
       case 'softedge':
@@ -994,65 +615,13 @@ export class ExportPipeline {
     }
   }
 
-  private applyLineart(data: Uint8ClampedArray, width?: number, height?: number): void {
-    // Real lineart: edge detection + adaptive threshold + line enhancement
-    // This produces results closer to LineArtPreprocessor in ComfyUI
-
-    if (!width || !height) {
-      // Fallback to simple threshold if dimensions not provided
-      for (let i = 0; i < data.length; i += 4) {
-        const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
-        const val = gray > 128 ? 255 : 0;
-        data[i] = val;
-        data[i + 1] = val;
-        data[i + 2] = val;
-      }
-      return;
-    }
-
-    // Step 1: Convert to grayscale
-    const grayscale = new Float32Array(width * height);
-    for (let i = 0; i < width * height; i++) {
-      const idx = i * 4;
-      grayscale[i] = (data[idx] * 0.299 + data[idx + 1] * 0.587 + data[idx + 2] * 0.114) / 255;
-    }
-
-    // Step 2: Sobel edge detection (per-channel for better detail)
-    const edges = new Float32Array(width * height);
-    const sobelX = [-1, 0, 1, -2, 0, 2, -1, 0, 1];
-    const sobelY = [-1, -2, -1, 0, 0, 0, 1, 2, 1];
-
-    for (let y = 1; y < height - 1; y++) {
-      for (let x = 1; x < width - 1; x++) {
-        let gx = 0, gy = 0;
-        for (let ky = -1; ky <= 1; ky++) {
-          for (let kx = -1; kx <= 1; kx++) {
-            const idx = (y + ky) * width + (x + kx);
-            const ki = (ky + 1) * 3 + (kx + 1);
-            gx += grayscale[idx] * sobelX[ki];
-            gy += grayscale[idx] * sobelY[ki];
-          }
-        }
-        edges[y * width + x] = Math.sqrt(gx * gx + gy * gy);
-      }
-    }
-
-    // Step 3: Find edge threshold using Otsu's method (simplified)
-    let maxEdge = 0;
-    for (let i = 0; i < edges.length; i++) {
-      if (edges[i] > maxEdge) maxEdge = edges[i];
-    }
-    const threshold = maxEdge * 0.15; // 15% of max edge strength
-
-    // Step 4: Apply threshold and invert (black lines on white)
-    for (let i = 0; i < width * height; i++) {
-      const idx = i * 4;
-      // Lineart: edges become black lines on white background
-      const isEdge = edges[i] > threshold;
-      const val = isEdge ? 0 : 255;
-      data[idx] = val;
-      data[idx + 1] = val;
-      data[idx + 2] = val;
+  private applyLineart(data: Uint8ClampedArray): void {
+    for (let i = 0; i < data.length; i += 4) {
+      const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+      const val = gray > 128 ? 255 : 0;
+      data[i] = val;
+      data[i + 1] = val;
+      data[i + 2] = val;
     }
   }
 
@@ -1310,189 +879,6 @@ export class ExportPipeline {
 
     // Keep URL for reference (cleanup handled elsewhere)
     return url;
-  }
-
-  // ============================================================================
-  // Video Export (TTM, Uni3C)
-  // Requires LatticeEngine to be passed in options
-  // ============================================================================
-
-  /**
-   * Export scene as video for Uni3C camera motion
-   * Uses LatticeEngine.exportSceneAsVideo() for proper Three.js rendering
-   *
-   * @param applyCamera - Whether to animate camera during export
-   * @returns Encoded video blob, or null if engine not available
-   */
-  async exportSceneVideo(applyCamera: boolean = true): Promise<EncodedVideo | null> {
-    if (!this.engine) {
-      console.warn('ExportPipeline: Engine required for video export');
-      return null;
-    }
-
-    this.updateProgress({
-      stage: 'rendering_frames',
-      stageProgress: 0,
-      overallProgress: 20,
-      message: 'Rendering scene video...',
-    });
-
-    try {
-      const video = await this.engine.exportSceneAsVideo({
-        startFrame: this.config.startFrame,
-        endFrame: this.config.endFrame,
-        fps: this.config.fps,
-        width: this.config.width,
-        height: this.config.height,
-        codec: 'avc', // H.264 for compatibility
-        applyCamera,
-        onProgress: (frame, total) => {
-          const percent = (frame / total) * 100;
-          this.updateProgress({
-            stage: 'rendering_frames',
-            stageProgress: percent,
-            overallProgress: 20 + (percent * 0.3),
-            currentFrame: frame,
-            totalFrames: total,
-            message: `Rendering frame ${frame}/${total}...`,
-          });
-        },
-      });
-
-      return video;
-    } catch (error) {
-      console.error('Scene video export failed:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Export a single layer as binary mask video for TTM
-   * Uses LatticeEngine.exportLayerAsMaskVideo() for proper Three.js rendering
-   *
-   * @param layerId - The layer to render as mask
-   * @returns Encoded mask video blob, or null if engine not available
-   */
-  async exportLayerMaskVideo(layerId: string): Promise<EncodedVideo | null> {
-    if (!this.engine) {
-      console.warn('ExportPipeline: Engine required for mask video export');
-      return null;
-    }
-
-    this.updateProgress({
-      stage: 'rendering_frames',
-      stageProgress: 0,
-      overallProgress: 35,
-      message: 'Rendering mask video...',
-    });
-
-    try {
-      const video = await this.engine.exportLayerAsMaskVideo({
-        layerId,
-        startFrame: this.config.startFrame,
-        endFrame: this.config.endFrame,
-        fps: this.config.fps,
-        width: this.config.width,
-        height: this.config.height,
-        codec: 'avc',
-        binaryMask: true,
-        onProgress: (frame, total) => {
-          const percent = (frame / total) * 100;
-          this.updateProgress({
-            stage: 'rendering_frames',
-            stageProgress: percent,
-            overallProgress: 35 + (percent * 0.2),
-            currentFrame: frame,
-            totalFrames: total,
-            message: `Rendering mask frame ${frame}/${total}...`,
-          });
-        },
-      });
-
-      return video;
-    } catch (error) {
-      console.error('Mask video export failed:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Export TTM data package (reference video + mask video)
-   * For use with WanVideoAddTTMLatents node
-   *
-   * @param animatedLayerId - The layer that will be animated (defines mask)
-   * @returns Object with video blobs and filenames
-   */
-  async exportTTMPackage(animatedLayerId: string): Promise<{
-    referenceVideo: EncodedVideo | null;
-    maskVideo: EncodedVideo | null;
-    error?: string;
-  }> {
-    if (!this.engine) {
-      return {
-        referenceVideo: null,
-        maskVideo: null,
-        error: 'LatticeEngine required for TTM export. Pass engine in ExportPipelineOptions.',
-      };
-    }
-
-    // Export reference video (full scene with motion)
-    const referenceVideo = await this.exportSceneVideo(false);
-    if (!referenceVideo) {
-      return {
-        referenceVideo: null,
-        maskVideo: null,
-        error: 'Failed to render reference video',
-      };
-    }
-
-    // Export mask video (just the animated layer as white on black)
-    const maskVideo = await this.exportLayerMaskVideo(animatedLayerId);
-    if (!maskVideo) {
-      return {
-        referenceVideo,
-        maskVideo: null,
-        error: 'Failed to render mask video',
-      };
-    }
-
-    return { referenceVideo, maskVideo };
-  }
-
-  /**
-   * Export Uni3C camera video package
-   * For use with WanVideoUni3C_embeds render_latent input
-   *
-   * @returns Scene video with camera animation applied
-   */
-  async exportUni3CCameraVideo(): Promise<{
-    cameraVideo: EncodedVideo | null;
-    error?: string;
-  }> {
-    if (!this.engine) {
-      return {
-        cameraVideo: null,
-        error: 'LatticeEngine required for Uni3C export. Pass engine in ExportPipelineOptions.',
-      };
-    }
-
-    // Export scene with camera animation
-    const cameraVideo = await this.exportSceneVideo(true);
-    if (!cameraVideo) {
-      return {
-        cameraVideo: null,
-        error: 'Failed to render camera motion video',
-      };
-    }
-
-    return { cameraVideo };
-  }
-
-  /**
-   * Check if video export is available (engine was provided)
-   */
-  hasVideoExportCapability(): boolean {
-    return this.engine !== undefined;
   }
 }
 
