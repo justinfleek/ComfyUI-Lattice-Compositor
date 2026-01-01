@@ -139,6 +139,18 @@ function lerpAngle(a: number, b: number, t: number): number {
 
 /**
  * Compute 4x4 view matrix from camera state
+ *
+ * Uses XYZ rotation order (X/pitch first, then Y/yaw, then Z/roll).
+ * The view matrix transforms from world space to camera space:
+ *   V = [R^T | -R^T * t]
+ *
+ * Where R is the camera's rotation matrix and t is its position.
+ * For orthonormal rotation matrices, R^T = R^-1.
+ *
+ * XYZ order is standard for camera extrinsics in computer vision and
+ * matches the convention used by MotionCtrl, Uni3C, and camera-comfyui.
+ *
+ * Reference: https://github.com/TencentARC/MotionCtrl
  */
 export function computeViewMatrix(cam: InterpolatedCamera): number[][] {
   const { position, rotation } = cam;
@@ -148,35 +160,38 @@ export function computeViewMatrix(cam: InterpolatedCamera): number[][] {
   const ry = rotation.y * Math.PI / 180;
   const rz = rotation.z * Math.PI / 180;
 
-  // Rotation matrices
-  const cosX = Math.cos(rx), sinX = Math.sin(rx);
-  const cosY = Math.cos(ry), sinY = Math.sin(ry);
-  const cosZ = Math.cos(rz), sinZ = Math.sin(rz);
+  // Rotation matrices components
+  const cx = Math.cos(rx), sx = Math.sin(rx);
+  const cy = Math.cos(ry), sy = Math.sin(ry);
+  const cz = Math.cos(rz), sz = Math.sin(rz);
 
-  // Combined rotation (Y * X * Z order)
-  const r00 = cosY * cosZ + sinY * sinX * sinZ;
-  const r01 = -cosY * sinZ + sinY * sinX * cosZ;
-  const r02 = sinY * cosX;
+  // Combined rotation R = Rz * Ry * Rx (XYZ extrinsic = ZYX intrinsic)
+  // This is the camera-to-world rotation matrix
+  const r00 = cy * cz;
+  const r01 = sx * sy * cz - cx * sz;
+  const r02 = cx * sy * cz + sx * sz;
 
-  const r10 = cosX * sinZ;
-  const r11 = cosX * cosZ;
-  const r12 = -sinX;
+  const r10 = cy * sz;
+  const r11 = sx * sy * sz + cx * cz;
+  const r12 = cx * sy * sz - sx * cz;
 
-  const r20 = -sinY * cosZ + cosY * sinX * sinZ;
-  const r21 = sinY * sinZ + cosY * sinX * cosZ;
-  const r22 = cosY * cosX;
+  const r20 = -sy;
+  const r21 = sx * cy;
+  const r22 = cx * cy;
 
   // View matrix = inverse of camera transform
-  // For orthonormal rotation, inverse is transpose
-  // Translation is -R^T * position
+  // For orthonormal rotation, inverse is transpose (R^T)
+  // Rotation part: R^T (columns become rows)
+  // Translation part: -R^T * position
   const tx = -(r00 * position.x + r10 * position.y + r20 * position.z);
   const ty = -(r01 * position.x + r11 * position.y + r21 * position.z);
   const tz = -(r02 * position.x + r12 * position.y + r22 * position.z);
 
+  // Return R^T with translation (view matrix)
   return [
-    [r00, r01, r02, tx],
-    [r10, r11, r12, ty],
-    [r20, r21, r22, tz],
+    [r00, r10, r20, tx],
+    [r01, r11, r21, ty],
+    [r02, r12, r22, tz],
     [0, 0, 0, 1],
   ];
 }
@@ -452,6 +467,13 @@ export function detectUni3CTrajectoryType(keyframes: CameraKeyframe[]): Uni3CTra
 
 /**
  * Export camera animation to Uni3C format
+ *
+ * @deprecated Camera trajectory export for Uni3C is currently non-functional.
+ * Kijai's ComfyUI-WanVideoWrapper has camera_embedding hardcoded to None.
+ * This export is preserved for future compatibility when camera embedding is enabled.
+ *
+ * Current workaround: Export depth/render sequences instead, which DO work with Uni3C.
+ * Use the render_latent input of WanVideoUni3C_embeds node.
  */
 export function exportToUni3C(
   camera: Camera3D,
@@ -460,13 +482,20 @@ export function exportToUni3C(
   compWidth: number,
   compHeight: number
 ): Uni3CCameraData {
+  // Warn users that this export is currently non-functional
+  console.warn(
+    '[Uni3C Export] Camera trajectory export is currently non-functional. ' +
+    'Camera embedding is disabled in Kijai\'s ComfyUI-WanVideoWrapper (camera_embedding=None). ' +
+    'Export depth/render sequences instead for Uni3C control.'
+  );
+
   const detectedType = detectUni3CTrajectoryType(keyframes);
 
   if (detectedType !== 'custom') {
     return { traj_type: detectedType };
   }
 
-  // Generate custom trajectory
+  // Generate custom trajectory with correct Uni3C parameter names
   const trajectory: Uni3CCameraTrajectory[] = [];
   const baseCamera = interpolateCameraAtFrame(camera, keyframes, 0);
 
@@ -474,13 +503,16 @@ export function exportToUni3C(
     const cam = interpolateCameraAtFrame(camera, keyframes, frame);
 
     trajectory.push({
-      zoom: cam.zoom / baseCamera.zoom,
+      // d_r: radius multiplier (zoom equivalent), range 0.75-1.7
+      d_r: cam.zoom / baseCamera.zoom,
+      // d_theta: X-axis rotation in degrees (pitch equivalent)
+      d_theta: cam.rotation.x,
+      // d_phi: Y-axis rotation in degrees (yaw equivalent)
+      d_phi: cam.rotation.y,
+      // NOTE: roll is NOT supported in Uni3C - omitted
       x_offset: (cam.position.x - baseCamera.position.x) / compWidth,
       y_offset: (cam.position.y - baseCamera.position.y) / compHeight,
       z_offset: (cam.position.z - baseCamera.position.z) / 1000,
-      pitch: cam.rotation.x,
-      yaw: cam.rotation.y,
-      roll: cam.rotation.z,
     });
   }
 

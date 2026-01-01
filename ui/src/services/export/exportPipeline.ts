@@ -21,6 +21,8 @@ import { generateWorkflowForTarget, validateWorkflow, type WorkflowParams } from
 import { EXPORT_PRESETS, DEPTH_FORMAT_SPECS } from '@/config/exportPresets';
 import { evaluateLayerCached } from '@/services/layerEvaluationCache';
 import type { EvaluatedLayer } from '@/engine/MotionEngine';
+import type { LatticeEngine } from '@/engine/LatticeEngine';
+import type { EncodedVideo } from './videoEncoder';
 
 // ============================================================================
 // Types
@@ -32,6 +34,8 @@ export interface ExportPipelineOptions {
   config: ExportConfig;
   onProgress?: (progress: ExportProgress) => void;
   abortSignal?: AbortSignal;
+  /** LatticeEngine instance for video export (TTM, Uni3C) */
+  engine?: LatticeEngine;
 }
 
 export interface RenderedFrame {
@@ -53,6 +57,7 @@ export class ExportPipeline {
   private onProgress: (progress: ExportProgress) => void;
   private abortSignal?: AbortSignal;
   private aborted = false;
+  private engine?: LatticeEngine;
 
   constructor(options: ExportPipelineOptions) {
     this.layers = options.layers;
@@ -60,6 +65,7 @@ export class ExportPipeline {
     this.config = options.config;
     this.onProgress = options.onProgress || (() => {});
     this.abortSignal = options.abortSignal;
+    this.engine = options.engine;
 
     if (this.abortSignal) {
       this.abortSignal.addEventListener('abort', () => {
@@ -137,13 +143,25 @@ export class ExportPipeline {
         await this.renderControlSequence(result);
       }
 
-      // Step 5: Export camera data
+      // Step 5: Export scene video (SCAIL pose, Uni3C camera)
+      if (this.config.exportSceneVideo) {
+        this.checkAborted();
+        await this.renderSceneVideo(result);
+      }
+
+      // Step 6: Export mask video (TTM)
+      if (this.config.exportMaskVideo && this.config.maskLayerId) {
+        this.checkAborted();
+        await this.renderMaskVideo(result);
+      }
+
+      // Step 7: Export camera data
       if (this.config.exportCameraData) {
         this.checkAborted();
         await this.exportCameraData(result);
       }
 
-      // Step 6: Generate workflow
+      // Step 8: Generate workflow
       this.checkAborted();
       await this.generateWorkflow(result);
 
@@ -382,100 +400,169 @@ export class ExportPipeline {
     const frameCount = this.config.endFrame - this.config.startFrame;
     const depthFiles: string[] = [];
 
-    for (let i = 0; i < frameCount; i++) {
-      this.checkAborted();
+    // Use engine depth capture if available (proper Three.js depth buffer)
+    // Otherwise fall back to manual layer-based depth calculation
+    const useEngineDepth = this.engine !== undefined;
 
-      const frameIndex = this.config.startFrame + i;
-      const progress = (i / frameCount) * 100;
+    if (useEngineDepth && this.engine) {
+      // Store original state
+      const originalFrame = this.engine.getState().currentFrame;
 
-      this.updateProgress({
-        stage: 'rendering_depth',
-        stageProgress: progress,
-        overallProgress: 15 + (progress * 0.25),
-        currentFrame: i + 1,
-        totalFrames: frameCount,
-        message: `Rendering depth frame ${i + 1}/${frameCount}`,
-      });
+      for (let i = 0; i < frameCount; i++) {
+        this.checkAborted();
 
-      // Render depth for this frame - need camera for proper depth calculation
-      // For now use a default camera if not available
-      const defaultCamera: Camera3D = {
-        id: 'default',
-        name: 'Default Camera',
-        type: 'one-node',
-        position: { x: 0, y: 0, z: 1000 },
-        pointOfInterest: { x: 0, y: 0, z: 0 },
-        orientation: { x: 0, y: 0, z: 0 },
-        xRotation: 0,
-        yRotation: 0,
-        zRotation: 0,
-        zoom: 1,
-        focalLength: 50,
-        angleOfView: 60,
-        filmSize: 36,
-        measureFilmSize: 'horizontal',
-        nearClip: 0.1,
-        farClip: 100,
-        depthOfField: {
-          enabled: false,
-          focusDistance: 100,
-          aperture: 1.2,
-          fStop: 2.8,
-          blurLevel: 1,
-          lockToZoom: false,
-        },
-        iris: {
-          shape: 7,
-          rotation: 0,
-          roundness: 0,
-          aspectRatio: 1,
-          diffractionFringe: 0,
-        },
-        highlight: {
-          gain: 0,
-          threshold: 1,
-          saturation: 1,
-        },
-        autoOrient: 'off',
-      };
+        const frameIndex = this.config.startFrame + i;
+        const progress = (i / frameCount) * 100;
 
-      const depthResult = renderDepthFrame({
-        width: this.config.width,
-        height: this.config.height,
-        nearClip: 0.1,
-        farClip: 100,
-        camera: defaultCamera,
-        layers: this.layers,
-        frame: frameIndex,
-      });
+        this.updateProgress({
+          stage: 'rendering_depth',
+          stageProgress: progress,
+          overallProgress: 15 + (progress * 0.25),
+          currentFrame: i + 1,
+          totalFrames: frameCount,
+          message: `Rendering depth frame ${i + 1}/${frameCount} (Three.js)`,
+        });
 
-      // Convert to target format
-      const convertedDepth = convertDepthToFormat(
-        depthResult,
-        this.config.depthFormat
-      );
+        // Set frame and render
+        this.engine.setFrame(frameIndex);
 
-      // Create image data
-      const imageData = depthToImageData(
-        convertedDepth,
-        this.config.width,
-        this.config.height
-      );
+        // Capture depth from Three.js depth buffer
+        const depthCapture = this.engine.captureDepth();
 
-      // Convert to canvas and blob
-      const canvas = new OffscreenCanvas(this.config.width, this.config.height);
-      const ctx = canvas.getContext('2d')!;
-      ctx.putImageData(imageData, 0, 0);
+        // Convert to format-specific depth
+        const convertedDepth = convertDepthToFormat(
+          {
+            depthBuffer: depthCapture.depthBuffer,
+            width: depthCapture.width,
+            height: depthCapture.height,
+            minDepth: depthCapture.near,
+            maxDepth: depthCapture.far,
+          },
+          this.config.depthFormat
+        );
 
-      const blob = await canvas.convertToBlob({ type: 'image/png' });
-      const filename = `${this.config.filenamePrefix}_depth_${String(i).padStart(5, '0')}.png`;
+        // Create image data
+        const imageData = depthToImageData(
+          convertedDepth,
+          depthCapture.width,
+          depthCapture.height
+        );
 
-      if (this.config.comfyuiServer) {
-        const client = getComfyUIClient(this.config.comfyuiServer);
-        const uploadResult = await client.uploadImage(blob, filename, 'input', 'depth_sequence');
-        depthFiles.push(uploadResult.name);
-      } else {
-        depthFiles.push(await this.saveBlobLocally(blob, filename));
+        // Convert to canvas and blob
+        const canvas = new OffscreenCanvas(depthCapture.width, depthCapture.height);
+        const ctx = canvas.getContext('2d')!;
+        ctx.putImageData(imageData, 0, 0);
+
+        const blob = await canvas.convertToBlob({ type: 'image/png' });
+        const filename = `${this.config.filenamePrefix}_depth_${String(i).padStart(5, '0')}.png`;
+
+        if (this.config.comfyuiServer) {
+          const client = getComfyUIClient(this.config.comfyuiServer);
+          const uploadResult = await client.uploadImage(blob, filename, 'input', 'depth_sequence');
+          depthFiles.push(uploadResult.name);
+        } else {
+          depthFiles.push(await this.saveBlobLocally(blob, filename));
+        }
+      }
+
+      // Restore original frame
+      this.engine.setFrame(originalFrame);
+    } else {
+      // Fallback: manual layer-based depth calculation
+      for (let i = 0; i < frameCount; i++) {
+        this.checkAborted();
+
+        const frameIndex = this.config.startFrame + i;
+        const progress = (i / frameCount) * 100;
+
+        this.updateProgress({
+          stage: 'rendering_depth',
+          stageProgress: progress,
+          overallProgress: 15 + (progress * 0.25),
+          currentFrame: i + 1,
+          totalFrames: frameCount,
+          message: `Rendering depth frame ${i + 1}/${frameCount} (layer-based)`,
+        });
+
+        // Use default camera for manual depth calculation
+        const defaultCamera: Camera3D = {
+          id: 'default',
+          name: 'Default Camera',
+          type: 'one-node',
+          position: { x: 0, y: 0, z: 1000 },
+          pointOfInterest: { x: 0, y: 0, z: 0 },
+          orientation: { x: 0, y: 0, z: 0 },
+          xRotation: 0,
+          yRotation: 0,
+          zRotation: 0,
+          zoom: 1,
+          focalLength: 50,
+          angleOfView: 60,
+          filmSize: 36,
+          measureFilmSize: 'horizontal',
+          nearClip: 0.1,
+          farClip: 100,
+          depthOfField: {
+            enabled: false,
+            focusDistance: 100,
+            aperture: 1.2,
+            fStop: 2.8,
+            blurLevel: 1,
+            lockToZoom: false,
+          },
+          iris: {
+            shape: 7,
+            rotation: 0,
+            roundness: 0,
+            aspectRatio: 1,
+            diffractionFringe: 0,
+          },
+          highlight: {
+            gain: 0,
+            threshold: 1,
+            saturation: 1,
+          },
+          autoOrient: 'off',
+        };
+
+        const depthResult = renderDepthFrame({
+          width: this.config.width,
+          height: this.config.height,
+          nearClip: 0.1,
+          farClip: 100,
+          camera: defaultCamera,
+          layers: this.layers,
+          frame: frameIndex,
+        });
+
+        // Convert to target format
+        const convertedDepth = convertDepthToFormat(
+          depthResult,
+          this.config.depthFormat
+        );
+
+        // Create image data
+        const imageData = depthToImageData(
+          convertedDepth,
+          this.config.width,
+          this.config.height
+        );
+
+        // Convert to canvas and blob
+        const canvas = new OffscreenCanvas(this.config.width, this.config.height);
+        const ctx = canvas.getContext('2d')!;
+        ctx.putImageData(imageData, 0, 0);
+
+        const blob = await canvas.convertToBlob({ type: 'image/png' });
+        const filename = `${this.config.filenamePrefix}_depth_${String(i).padStart(5, '0')}.png`;
+
+        if (this.config.comfyuiServer) {
+          const client = getComfyUIClient(this.config.comfyuiServer);
+          const uploadResult = await client.uploadImage(blob, filename, 'input', 'depth_sequence');
+          depthFiles.push(uploadResult.name);
+        } else {
+          depthFiles.push(await this.saveBlobLocally(blob, filename));
+        }
       }
     }
 
@@ -540,6 +627,139 @@ export class ExportPipeline {
       overallProgress: 60,
       message: 'Control sequence complete',
     });
+  }
+
+  /**
+   * Render scene as video for SCAIL pose or Uni3C camera motion
+   * Requires LatticeEngine to be passed in options
+   */
+  private async renderSceneVideo(result: ExportResult): Promise<void> {
+    if (!this.engine) {
+      result.warnings.push('Scene video export requires LatticeEngine - skipped');
+      return;
+    }
+
+    this.updateProgress({
+      stage: 'rendering_frames',
+      stageProgress: 0,
+      overallProgress: 45,
+      message: 'Rendering scene video...',
+    });
+
+    try {
+      // Determine if we should apply camera animation
+      // For Uni3C, we want camera motion; for SCAIL, we want static camera
+      const applyCamera = this.config.target.startsWith('uni3c');
+
+      const video = await this.engine.exportSceneAsVideo({
+        startFrame: this.config.startFrame,
+        endFrame: this.config.endFrame,
+        fps: this.config.fps,
+        width: this.config.width,
+        height: this.config.height,
+        codec: 'avc',
+        applyCamera,
+        onProgress: (frame, total) => {
+          const percent = (frame / total) * 100;
+          this.updateProgress({
+            stage: 'rendering_frames',
+            stageProgress: percent,
+            overallProgress: 45 + (percent * 0.1),
+            currentFrame: frame,
+            totalFrames: total,
+            message: `Rendering scene frame ${frame}/${total}...`,
+          });
+        },
+      });
+
+      // Save video
+      const filename = `${this.config.filenamePrefix}_scene.mp4`;
+      if (this.config.comfyuiServer) {
+        const client = getComfyUIClient(this.config.comfyuiServer);
+        // Upload video as file (ComfyUI stores in input folder)
+        const file = new File([video.blob], filename, { type: video.mimeType });
+        const uploadResult = await client.uploadImage(file, filename);
+        result.outputFiles.sceneVideo = uploadResult.name;
+      } else {
+        result.outputFiles.sceneVideo = await this.saveBlobLocally(video.blob, filename);
+      }
+
+      this.updateProgress({
+        stage: 'rendering_frames',
+        stageProgress: 100,
+        overallProgress: 55,
+        message: 'Scene video complete',
+      });
+    } catch (error) {
+      result.errors.push(`Scene video export failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Render layer mask as video for TTM
+   * Requires LatticeEngine to be passed in options
+   */
+  private async renderMaskVideo(result: ExportResult): Promise<void> {
+    if (!this.engine) {
+      result.warnings.push('Mask video export requires LatticeEngine - skipped');
+      return;
+    }
+
+    if (!this.config.maskLayerId) {
+      result.warnings.push('Mask video export requires maskLayerId in config - skipped');
+      return;
+    }
+
+    this.updateProgress({
+      stage: 'rendering_frames',
+      stageProgress: 0,
+      overallProgress: 55,
+      message: 'Rendering mask video...',
+    });
+
+    try {
+      const video = await this.engine.exportLayerAsMaskVideo({
+        layerId: this.config.maskLayerId,
+        startFrame: this.config.startFrame,
+        endFrame: this.config.endFrame,
+        fps: this.config.fps,
+        width: this.config.width,
+        height: this.config.height,
+        codec: 'avc',
+        binaryMask: true,
+        onProgress: (frame, total) => {
+          const percent = (frame / total) * 100;
+          this.updateProgress({
+            stage: 'rendering_frames',
+            stageProgress: percent,
+            overallProgress: 55 + (percent * 0.1),
+            currentFrame: frame,
+            totalFrames: total,
+            message: `Rendering mask frame ${frame}/${total}...`,
+          });
+        },
+      });
+
+      // Save video
+      const filename = `${this.config.filenamePrefix}_mask.mp4`;
+      if (this.config.comfyuiServer) {
+        const client = getComfyUIClient(this.config.comfyuiServer);
+        const file = new File([video.blob], filename, { type: video.mimeType });
+        const uploadResult = await client.uploadImage(file, filename);
+        result.outputFiles.maskVideo = uploadResult.name;
+      } else {
+        result.outputFiles.maskVideo = await this.saveBlobLocally(video.blob, filename);
+      }
+
+      this.updateProgress({
+        stage: 'rendering_frames',
+        stageProgress: 100,
+        overallProgress: 65,
+        message: 'Mask video complete',
+      });
+    } catch (error) {
+      result.errors.push(`Mask video export failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   private async applyControlPreprocessing(
@@ -931,6 +1151,189 @@ export class ExportPipeline {
 
     // Keep URL for reference (cleanup handled elsewhere)
     return url;
+  }
+
+  // ============================================================================
+  // Video Export (TTM, Uni3C)
+  // Requires LatticeEngine to be passed in options
+  // ============================================================================
+
+  /**
+   * Export scene as video for Uni3C camera motion
+   * Uses LatticeEngine.exportSceneAsVideo() for proper Three.js rendering
+   *
+   * @param applyCamera - Whether to animate camera during export
+   * @returns Encoded video blob, or null if engine not available
+   */
+  async exportSceneVideo(applyCamera: boolean = true): Promise<EncodedVideo | null> {
+    if (!this.engine) {
+      console.warn('ExportPipeline: Engine required for video export');
+      return null;
+    }
+
+    this.updateProgress({
+      stage: 'rendering_frames',
+      stageProgress: 0,
+      overallProgress: 20,
+      message: 'Rendering scene video...',
+    });
+
+    try {
+      const video = await this.engine.exportSceneAsVideo({
+        startFrame: this.config.startFrame,
+        endFrame: this.config.endFrame,
+        fps: this.config.fps,
+        width: this.config.width,
+        height: this.config.height,
+        codec: 'avc', // H.264 for compatibility
+        applyCamera,
+        onProgress: (frame, total) => {
+          const percent = (frame / total) * 100;
+          this.updateProgress({
+            stage: 'rendering_frames',
+            stageProgress: percent,
+            overallProgress: 20 + (percent * 0.3),
+            currentFrame: frame,
+            totalFrames: total,
+            message: `Rendering frame ${frame}/${total}...`,
+          });
+        },
+      });
+
+      return video;
+    } catch (error) {
+      console.error('Scene video export failed:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Export a single layer as binary mask video for TTM
+   * Uses LatticeEngine.exportLayerAsMaskVideo() for proper Three.js rendering
+   *
+   * @param layerId - The layer to render as mask
+   * @returns Encoded mask video blob, or null if engine not available
+   */
+  async exportLayerMaskVideo(layerId: string): Promise<EncodedVideo | null> {
+    if (!this.engine) {
+      console.warn('ExportPipeline: Engine required for mask video export');
+      return null;
+    }
+
+    this.updateProgress({
+      stage: 'rendering_frames',
+      stageProgress: 0,
+      overallProgress: 35,
+      message: 'Rendering mask video...',
+    });
+
+    try {
+      const video = await this.engine.exportLayerAsMaskVideo({
+        layerId,
+        startFrame: this.config.startFrame,
+        endFrame: this.config.endFrame,
+        fps: this.config.fps,
+        width: this.config.width,
+        height: this.config.height,
+        codec: 'avc',
+        binaryMask: true,
+        onProgress: (frame, total) => {
+          const percent = (frame / total) * 100;
+          this.updateProgress({
+            stage: 'rendering_frames',
+            stageProgress: percent,
+            overallProgress: 35 + (percent * 0.2),
+            currentFrame: frame,
+            totalFrames: total,
+            message: `Rendering mask frame ${frame}/${total}...`,
+          });
+        },
+      });
+
+      return video;
+    } catch (error) {
+      console.error('Mask video export failed:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Export TTM data package (reference video + mask video)
+   * For use with WanVideoAddTTMLatents node
+   *
+   * @param animatedLayerId - The layer that will be animated (defines mask)
+   * @returns Object with video blobs and filenames
+   */
+  async exportTTMPackage(animatedLayerId: string): Promise<{
+    referenceVideo: EncodedVideo | null;
+    maskVideo: EncodedVideo | null;
+    error?: string;
+  }> {
+    if (!this.engine) {
+      return {
+        referenceVideo: null,
+        maskVideo: null,
+        error: 'LatticeEngine required for TTM export. Pass engine in ExportPipelineOptions.',
+      };
+    }
+
+    // Export reference video (full scene with motion)
+    const referenceVideo = await this.exportSceneVideo(false);
+    if (!referenceVideo) {
+      return {
+        referenceVideo: null,
+        maskVideo: null,
+        error: 'Failed to render reference video',
+      };
+    }
+
+    // Export mask video (just the animated layer as white on black)
+    const maskVideo = await this.exportLayerMaskVideo(animatedLayerId);
+    if (!maskVideo) {
+      return {
+        referenceVideo,
+        maskVideo: null,
+        error: 'Failed to render mask video',
+      };
+    }
+
+    return { referenceVideo, maskVideo };
+  }
+
+  /**
+   * Export Uni3C camera video package
+   * For use with WanVideoUni3C_embeds render_latent input
+   *
+   * @returns Scene video with camera animation applied
+   */
+  async exportUni3CCameraVideo(): Promise<{
+    cameraVideo: EncodedVideo | null;
+    error?: string;
+  }> {
+    if (!this.engine) {
+      return {
+        cameraVideo: null,
+        error: 'LatticeEngine required for Uni3C export. Pass engine in ExportPipelineOptions.',
+      };
+    }
+
+    // Export scene with camera animation
+    const cameraVideo = await this.exportSceneVideo(true);
+    if (!cameraVideo) {
+      return {
+        cameraVideo: null,
+        error: 'Failed to render camera motion video',
+      };
+    }
+
+    return { cameraVideo };
+  }
+
+  /**
+   * Check if video export is available (engine was provided)
+   */
+  hasVideoExportCapability(): boolean {
+    return this.engine !== undefined;
   }
 }
 

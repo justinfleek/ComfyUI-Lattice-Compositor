@@ -30,6 +30,7 @@ export type ExportTarget =
   | 'ttm-wan'             // TTM with Wan 2.1 backend
   | 'ttm-cogvideox'       // TTM with CogVideoX backend
   | 'ttm-svd'             // TTM with SVD backend
+  | 'scail'               // SCAIL pose + reference control
   | 'camera-comfyui';     // camera-comfyUI 4x4 matrices
 
 // ============================================================================
@@ -61,6 +62,11 @@ export interface ExportConfig {
   exportCameraData: boolean;
   exportReferenceFrame: boolean;
   exportLastFrame: boolean;
+
+  // Video export (requires LatticeEngine)
+  exportSceneVideo?: boolean;      // Full scene rendered as video (for SCAIL pose, Uni3C)
+  exportMaskVideo?: boolean;       // Layer mask as video (for TTM)
+  maskLayerId?: string;            // Layer ID for mask video export
 
   // Depth map settings
   depthFormat: DepthMapFormat;
@@ -95,6 +101,9 @@ export interface ExportResult {
     cameraData?: string;
     workflowJson?: string;
     promptId?: string;
+    // Video exports
+    sceneVideo?: string;           // Full scene video (SCAIL pose, Uni3C camera)
+    maskVideo?: string;            // Layer mask video (TTM)
   };
   errors: string[];
   warnings: string[];
@@ -198,14 +207,32 @@ export interface Wan22FunCameraData {
 }
 
 // Uni3C Camera Trajectory
+// WARNING: Camera embedding is currently DISABLED in Kijai's ComfyUI-WanVideoWrapper.
+// The camera_embedding field is hardcoded to None in WanVideoUni3C_embeds.
+// This interface is preserved for future compatibility when camera embedding is enabled.
+// For now, use depth/render sequence export instead (render_latent works).
 export interface Uni3CCameraTrajectory {
-  zoom: number;
+  /** Radius multiplier (zoom equivalent). Range: 0.75-1.7, default 1.0 */
+  d_r: number;
+  /** X-axis rotation in degrees (pitch equivalent). Range: -90° to +30° */
+  d_theta: number;
+  /** Y-axis rotation in degrees (yaw equivalent). Range: -360° to +360° */
+  d_phi: number;
+  // NOTE: roll is NOT supported in Uni3C - removed from interface
+  /** Horizontal position offset. Range: -0.5 to 0.5 */
   x_offset: number;
+  /** Vertical position offset. Range: -0.5 to 0.5 */
   y_offset: number;
+  /** Depth position offset. Range: -0.5 to 0.5 */
   z_offset: number;
-  pitch: number;
-  yaw: number;
-  roll: number;
+  /** Camera trajectory preset type */
+  cam_traj?: 'free' | 'swing1' | 'swing2' | 'orbit';
+  /** Initial camera elevation angle */
+  start_elevation?: number;
+  /** Distance from origin */
+  radius?: number;
+  /** Lens focal length multiplier */
+  focal_length?: number;
 }
 
 export type Uni3CTrajType =

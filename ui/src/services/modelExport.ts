@@ -396,6 +396,47 @@ export function exportWanMoveTrajectories(
   return result;
 }
 
+/**
+ * Export trajectories in Kijai WanMove node format
+ *
+ * Kijai's WanVideoAddWanMoveTracks expects track_coords as JSON string:
+ * [[{x: number, y: number}, ...], [{x: number, y: number}, ...]]
+ *
+ * Shape: [num_tracks][num_frames] where each element is {x, y} object
+ *
+ * @see ComfyUI-WanVideoWrapper/WanMove/nodes.py lines 82-88
+ */
+export type KijaiWanMoveTrack = Array<{ x: number; y: number }>;
+export type KijaiWanMoveTracks = KijaiWanMoveTrack[];
+
+export function exportWanMoveTracksForKijai(
+  trajectories: PointTrajectory[]
+): KijaiWanMoveTracks {
+  if (trajectories.length === 0) {
+    return [];
+  }
+
+  // Convert from PointTrajectory[] to [[{x,y}, {x,y}], [{x,y}, {x,y}]]
+  // Each trajectory becomes an array of {x, y} objects (one per frame)
+  return trajectories.map(traj =>
+    traj.points.map(pt => ({
+      x: pt.x,
+      y: pt.y
+    }))
+  );
+}
+
+/**
+ * Export trajectories as JSON string for Kijai's track_coords input
+ * This is what gets passed to the ComfyUI workflow as a STRING input
+ */
+export function exportWanMoveTracksAsString(
+  trajectories: PointTrajectory[]
+): string {
+  const tracks = exportWanMoveTracksForKijai(trajectories);
+  return JSON.stringify(tracks);
+}
+
 // ============================================================================
 // ATI TRAJECTORY EXPORT
 // ============================================================================
@@ -820,28 +861,45 @@ export async function exportForModel(
         }
       }
 
-      const wanMoveData = exportWanMoveTrajectories(trajectories, compWidth, compHeight);
+      // Export in Kijai WanMove format: [[{x,y}, {x,y}], [{x,y}, {x,y}]]
+      // This is the format WanVideoAddWanMoveTracks expects for track_coords
+      const kijaiTracks = exportWanMoveTracksForKijai(trajectories);
+      const trackCoordsString = exportWanMoveTracksAsString(trajectories);
 
-      // Convert to pseudo-NPY format (JSON representation)
-      // Real NPY export would require a proper binary encoder
+      // Also export legacy format for backwards compatibility
+      const legacyData = exportWanMoveTrajectories(trajectories, compWidth, compHeight);
+
       return {
         success: true,
         target,
-        data: wanMoveData,
+        data: {
+          // Primary output: Kijai-compatible format
+          tracks: kijaiTracks,
+          trackCoordsString,
+          // Legacy data for other consumers
+          legacy: legacyData
+        },
         files: [
           {
-            name: 'trajectories.json',
-            content: JSON.stringify(wanMoveData.trajectories, null, 2),
+            // PRIMARY: track_coords for Kijai's WanVideoAddWanMoveTracks node
+            name: 'track_coords.json',
+            content: trackCoordsString,
+            type: 'json'
+          },
+          {
+            // LEGACY: array-based format for other tools
+            name: 'trajectories_legacy.json',
+            content: JSON.stringify(legacyData.trajectories, null, 2),
             type: 'json'
           },
           {
             name: 'visibility.json',
-            content: JSON.stringify(wanMoveData.visibility, null, 2),
+            content: JSON.stringify(legacyData.visibility, null, 2),
             type: 'json'
           },
           {
             name: 'metadata.json',
-            content: JSON.stringify(wanMoveData.metadata, null, 2),
+            content: JSON.stringify(legacyData.metadata, null, 2),
             type: 'json'
           }
         ]
@@ -1230,6 +1288,8 @@ export default {
   exportCameraTrajectory,
   extractLayerTrajectory,
   exportWanMoveTrajectories,
+  exportWanMoveTracksForKijai,
+  exportWanMoveTracksAsString,
   exportATITrajectory,
   exportForModel,
   trajectoriesToNpy
