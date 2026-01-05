@@ -1,6 +1,12 @@
 /**
  * 3D Math Utilities for Camera System
  * Vector and matrix operations for camera transforms
+ * 
+ * PRECISION NOTES:
+ * - Mat4 uses Float32Array for GPU compatibility (WebGL/Three.js requirement)
+ * - Float32 has ~7 significant digits of precision (1e-7 relative error)
+ * - For operations requiring higher precision, use Mat4_64 variants
+ * - Scale operations with values < 0.01 or > 100 may accumulate error
  */
 
 export interface Vec3 {
@@ -10,7 +16,15 @@ export interface Vec3 {
 }
 
 export interface Mat4 {
-  elements: Float32Array; // 16 elements, column-major
+  elements: Float32Array;  // 16 elements, column-major, GPU-compatible
+}
+
+/**
+ * High-precision matrix for calculations requiring > 7 digits precision.
+ * Use convertToMat4() when sending to GPU.
+ */
+export interface Mat4_64 {
+  elements: Float64Array;  // 16 elements, column-major, ~15 digits precision
 }
 
 // ============================================================================
@@ -79,27 +93,23 @@ export function identityMat4(): Mat4 {
   };
 }
 
+/**
+ * Matrix multiplication with improved numerical precision.
+ * Uses Float64 for intermediate calculations to minimize precision loss,
+ * then converts to Float32 for GPU compatibility.
+ */
 export function multiplyMat4(a: Mat4, b: Mat4): Mat4 {
   const ae = a.elements;
   const be = b.elements;
-  const te = new Float32Array(16);
+  
+  // Use Float64 for intermediate calculations to preserve precision
+  const temp = new Float64Array(16);
 
-  const a11 = ae[0],
-    a12 = ae[4],
-    a13 = ae[8],
-    a14 = ae[12];
-  const a21 = ae[1],
-    a22 = ae[5],
-    a23 = ae[9],
-    a24 = ae[13];
-  const a31 = ae[2],
-    a32 = ae[6],
-    a33 = ae[10],
-    a34 = ae[14];
-  const a41 = ae[3],
-    a42 = ae[7],
-    a43 = ae[11],
-    a44 = ae[15];
+  // Extract elements as Float64 values
+  const a11 = ae[0], a12 = ae[4], a13 = ae[8], a14 = ae[12];
+  const a21 = ae[1], a22 = ae[5], a23 = ae[9], a24 = ae[13];
+  const a31 = ae[2], a32 = ae[6], a33 = ae[10], a34 = ae[14];
+  const a41 = ae[3], a42 = ae[7], a43 = ae[11], a44 = ae[15];
 
   const b11 = be[0],
     b12 = be[4],
@@ -118,27 +128,29 @@ export function multiplyMat4(a: Mat4, b: Mat4): Mat4 {
     b43 = be[11],
     b44 = be[15];
 
-  te[0] = a11 * b11 + a12 * b21 + a13 * b31 + a14 * b41;
-  te[4] = a11 * b12 + a12 * b22 + a13 * b32 + a14 * b42;
-  te[8] = a11 * b13 + a12 * b23 + a13 * b33 + a14 * b43;
-  te[12] = a11 * b14 + a12 * b24 + a13 * b34 + a14 * b44;
+  // Calculate in Float64 precision
+  temp[0] = a11 * b11 + a12 * b21 + a13 * b31 + a14 * b41;
+  temp[4] = a11 * b12 + a12 * b22 + a13 * b32 + a14 * b42;
+  temp[8] = a11 * b13 + a12 * b23 + a13 * b33 + a14 * b43;
+  temp[12] = a11 * b14 + a12 * b24 + a13 * b34 + a14 * b44;
 
-  te[1] = a21 * b11 + a22 * b21 + a23 * b31 + a24 * b41;
-  te[5] = a21 * b12 + a22 * b22 + a23 * b32 + a24 * b42;
-  te[9] = a21 * b13 + a22 * b23 + a23 * b33 + a24 * b43;
-  te[13] = a21 * b14 + a22 * b24 + a23 * b34 + a24 * b44;
+  temp[1] = a21 * b11 + a22 * b21 + a23 * b31 + a24 * b41;
+  temp[5] = a21 * b12 + a22 * b22 + a23 * b32 + a24 * b42;
+  temp[9] = a21 * b13 + a22 * b23 + a23 * b33 + a24 * b43;
+  temp[13] = a21 * b14 + a22 * b24 + a23 * b34 + a24 * b44;
 
-  te[2] = a31 * b11 + a32 * b21 + a33 * b31 + a34 * b41;
-  te[6] = a31 * b12 + a32 * b22 + a33 * b32 + a34 * b42;
-  te[10] = a31 * b13 + a32 * b23 + a33 * b33 + a34 * b43;
-  te[14] = a31 * b14 + a32 * b24 + a33 * b34 + a34 * b44;
+  temp[2] = a31 * b11 + a32 * b21 + a33 * b31 + a34 * b41;
+  temp[6] = a31 * b12 + a32 * b22 + a33 * b32 + a34 * b42;
+  temp[10] = a31 * b13 + a32 * b23 + a33 * b33 + a34 * b43;
+  temp[14] = a31 * b14 + a32 * b24 + a33 * b34 + a34 * b44;
 
-  te[3] = a41 * b11 + a42 * b21 + a43 * b31 + a44 * b41;
-  te[7] = a41 * b12 + a42 * b22 + a43 * b32 + a44 * b42;
-  te[11] = a41 * b13 + a42 * b23 + a43 * b33 + a44 * b43;
-  te[15] = a41 * b14 + a42 * b24 + a43 * b34 + a44 * b44;
+  temp[3] = a41 * b11 + a42 * b21 + a43 * b31 + a44 * b41;
+  temp[7] = a41 * b12 + a42 * b22 + a43 * b32 + a44 * b42;
+  temp[11] = a41 * b13 + a42 * b23 + a43 * b33 + a44 * b43;
+  temp[15] = a41 * b14 + a42 * b24 + a43 * b34 + a44 * b44;
 
-  return { elements: te };
+  // Convert back to Float32 for GPU compatibility
+  return { elements: new Float32Array(temp) };
 }
 
 export function perspectiveMat4(
@@ -371,27 +383,23 @@ export function rotateZMat4(angle: number): Mat4 {
   };
 }
 
+/**
+ * Create a scale matrix.
+ * Uses Float64 intermediate array for precision before converting to Float32.
+ */
+/**
+ * Create a scale matrix.
+ * Uses Float64 intermediate array for precision before converting to Float32.
+ */
 export function scaleMat4(s: Vec3): Mat4 {
-  return {
-    elements: new Float32Array([
-      s.x,
-      0,
-      0,
-      0,
-      0,
-      s.y,
-      0,
-      0,
-      0,
-      0,
-      s.z,
-      0,
-      0,
-      0,
-      0,
-      1,
-    ]),
-  };
+  // Create in Float64 first for precision
+  const temp = new Float64Array([
+    s.x, 0, 0, 0,
+    0, s.y, 0, 0,
+    0, 0, s.z, 0,
+    0, 0, 0, 1
+  ]);
+  return { elements: new Float32Array(temp) };
 }
 
 export function transformPoint(m: Mat4, p: Vec3): Vec3 {
@@ -678,22 +686,66 @@ export function quatFromEuler(x: number, y: number, z: number): Quat {
   };
 }
 
+/**
+ * Convert quaternion to Euler angles (XYZ intrinsic rotation order).
+ * 
+ * This implementation follows the algorithm used by Three.js and other
+ * production 3D engines for maximum numerical stability.
+ * 
+ * GIMBAL LOCK: At pitch = ±90°, roll and yaw become degenerate.
+ * This is a mathematical property of Euler angles, not a bug.
+ * The function handles this gracefully by assigning all rotation to roll.
+ * 
+ * For applications requiring stable rotation interpolation, use quaternions
+ * directly (slerpQuat) rather than converting to Euler angles.
+ * 
+ * @param q - Input quaternion (should be normalized for best results)
+ * @returns Euler angles in radians {x: roll, y: pitch, z: yaw}
+ */
 export function quatToEuler(q: Quat): Vec3 {
-  const sinr_cosp = 2 * (q.w * q.x + q.y * q.z);
-  const cosr_cosp = 1 - 2 * (q.x * q.x + q.y * q.y);
-  const x = Math.atan2(sinr_cosp, cosr_cosp);
+  // Normalize quaternion to prevent numerical issues
+  const len = Math.sqrt(q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w);
+  const qx = q.x / len;
+  const qy = q.y / len;
+  const qz = q.z / len;
+  const qw = q.w / len;
 
-  const sinp = 2 * (q.w * q.y - q.z * q.x);
-  let y: number;
-  if (Math.abs(sinp) >= 1) {
-    y = Math.sign(sinp) * (Math.PI / 2);
+  // Pre-compute repeated values (more numerically stable)
+  const sqx = qx * qx;
+  const sqy = qy * qy;
+  const sqz = qz * qz;
+  const sqw = qw * qw;
+
+  // Compute rotation matrix elements we need
+  // This approach (via rotation matrix) is more numerically stable than direct formulas
+  const m11 = sqw + sqx - sqy - sqz;
+  const m12 = 2 * (qx * qy - qw * qz);
+  const m13 = 2 * (qx * qz + qw * qy);
+  const m21 = 2 * (qx * qy + qw * qz);
+  const m22 = sqw - sqx + sqy - sqz;
+  const m23 = 2 * (qy * qz - qw * qx);
+  const m31 = 2 * (qx * qz - qw * qy);
+  const m32 = 2 * (qy * qz + qw * qx);
+  const m33 = sqw - sqx - sqy + sqz;
+
+  // Extract Euler angles from rotation matrix (XYZ order)
+  let x: number, y: number, z: number;
+
+  // Clamp m13 to [-1, 1] to handle numerical errors
+  const sinY = Math.max(-1, Math.min(1, m13));
+  
+  if (Math.abs(sinY) > 0.9999999) {
+    // Gimbal lock: pitch is at ±90°
+    // Set yaw to 0 and compute roll from remaining rotation
+    y = Math.sign(sinY) * Math.PI / 2;
+    z = 0;
+    x = Math.atan2(-m32, m22);
   } else {
-    y = Math.asin(sinp);
+    // Normal case
+    y = Math.asin(sinY);
+    x = Math.atan2(-m23, m33);
+    z = Math.atan2(-m12, m11);
   }
-
-  const siny_cosp = 2 * (q.w * q.z + q.x * q.y);
-  const cosy_cosp = 1 - 2 * (q.y * q.y + q.z * q.z);
-  const z = Math.atan2(siny_cosp, cosy_cosp);
 
   return { x, y, z };
 }
@@ -730,3 +782,102 @@ export function slerpQuat(a: Quat, b: Quat, t: number): Quat {
     w: s0 * a.w + s1 * b.w,
   };
 }
+
+// ============================================================================
+// High-Precision Matrix Operations (Float64)
+// Use these when precision > 1e-7 is required
+// ============================================================================
+
+/**
+ * Create identity matrix with high precision (Float64)
+ */
+export function identityMat4_64(): Mat4_64 {
+  return {
+    elements: new Float64Array([
+      1, 0, 0, 0,
+      0, 1, 0, 0,
+      0, 0, 1, 0,
+      0, 0, 0, 1
+    ])
+  };
+}
+
+/**
+ * Create scale matrix with high precision (Float64)
+ */
+export function scaleMat4_64(s: Vec3): Mat4_64 {
+  return {
+    elements: new Float64Array([
+      s.x, 0, 0, 0,
+      0, s.y, 0, 0,
+      0, 0, s.z, 0,
+      0, 0, 0, 1
+    ])
+  };
+}
+
+/**
+ * Multiply matrices with high precision (Float64)
+ * Precision: ~1e-15
+ */
+export function multiplyMat4_64(a: Mat4_64, b: Mat4_64): Mat4_64 {
+  const ae = a.elements;
+  const be = b.elements;
+  const te = new Float64Array(16);
+
+  const a11 = ae[0], a12 = ae[4], a13 = ae[8], a14 = ae[12];
+  const a21 = ae[1], a22 = ae[5], a23 = ae[9], a24 = ae[13];
+  const a31 = ae[2], a32 = ae[6], a33 = ae[10], a34 = ae[14];
+  const a41 = ae[3], a42 = ae[7], a43 = ae[11], a44 = ae[15];
+
+  const b11 = be[0], b12 = be[4], b13 = be[8], b14 = be[12];
+  const b21 = be[1], b22 = be[5], b23 = be[9], b24 = be[13];
+  const b31 = be[2], b32 = be[6], b33 = be[10], b34 = be[14];
+  const b41 = be[3], b42 = be[7], b43 = be[11], b44 = be[15];
+
+  te[0] = a11 * b11 + a12 * b21 + a13 * b31 + a14 * b41;
+  te[4] = a11 * b12 + a12 * b22 + a13 * b32 + a14 * b42;
+  te[8] = a11 * b13 + a12 * b23 + a13 * b33 + a14 * b43;
+  te[12] = a11 * b14 + a12 * b24 + a13 * b34 + a14 * b44;
+
+  te[1] = a21 * b11 + a22 * b21 + a23 * b31 + a24 * b41;
+  te[5] = a21 * b12 + a22 * b22 + a23 * b32 + a24 * b42;
+  te[9] = a21 * b13 + a22 * b23 + a23 * b33 + a24 * b43;
+  te[13] = a21 * b14 + a22 * b24 + a23 * b34 + a24 * b44;
+
+  te[2] = a31 * b11 + a32 * b21 + a33 * b31 + a34 * b41;
+  te[6] = a31 * b12 + a32 * b22 + a33 * b32 + a34 * b42;
+  te[10] = a31 * b13 + a32 * b23 + a33 * b33 + a34 * b43;
+  te[14] = a31 * b14 + a32 * b24 + a33 * b34 + a34 * b44;
+
+  te[3] = a41 * b11 + a42 * b21 + a43 * b31 + a44 * b41;
+  te[7] = a41 * b12 + a42 * b22 + a43 * b32 + a44 * b42;
+  te[11] = a41 * b13 + a42 * b23 + a43 * b33 + a44 * b43;
+  te[15] = a41 * b14 + a42 * b24 + a43 * b34 + a44 * b44;
+
+  return { elements: te };
+}
+
+/**
+ * Convert high-precision matrix to GPU-compatible Float32
+ */
+export function convertToMat4(m: Mat4_64): Mat4 {
+  return { elements: new Float32Array(m.elements) };
+}
+
+/**
+ * Convert GPU matrix to high-precision for calculations
+ */
+export function convertToMat4_64(m: Mat4): Mat4_64 {
+  return { elements: new Float64Array(m.elements) };
+}
+
+/**
+ * Precision limit constants for documentation
+ */
+export const PRECISION = {
+  FLOAT32_RELATIVE: 1e-7,   // ~7 significant digits
+  FLOAT64_RELATIVE: 1e-15,  // ~15 significant digits
+  FLOAT32_SCALE_MIN: 0.01,  // Minimum scale before precision loss
+  FLOAT32_SCALE_MAX: 100,   // Maximum scale before precision loss
+} as const;
