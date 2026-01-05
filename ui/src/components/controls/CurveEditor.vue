@@ -110,7 +110,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { computed, ref } from "vue";
 
 interface Props {
   cp1x: number;
@@ -121,14 +121,14 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  size: 100
+  size: 100,
 });
 
 const emit = defineEmits<{
-  (e: 'update:cp1x', value: number): void;
-  (e: 'update:cp1y', value: number): void;
-  (e: 'update:cp2x', value: number): void;
-  (e: 'update:cp2y', value: number): void;
+  (e: "update:cp1x", value: number): void;
+  (e: "update:cp1y", value: number): void;
+  (e: "update:cp2x", value: number): void;
+  (e: "update:cp2y", value: number): void;
 }>();
 
 const svgRef = ref<SVGSVGElement | null>(null);
@@ -146,40 +146,53 @@ interface Preset {
   cp2y: number;
 }
 
-const presets: Preset[] = [
-  { name: 'Linear', label: 'Lin', cp1x: 0, cp1y: 0, cp2x: 1, cp2y: 1 },
-  { name: 'Ease In', label: 'In', cp1x: 0.42, cp1y: 0, cp2x: 1, cp2y: 1 },
-  { name: 'Ease Out', label: 'Out', cp1x: 0, cp1y: 0, cp2x: 0.58, cp2y: 1 },
-  { name: 'Ease In-Out', label: 'IO', cp1x: 0.42, cp1y: 0, cp2x: 0.58, cp2y: 1 },
+const _presets: Preset[] = [
+  { name: "Linear", label: "Lin", cp1x: 0, cp1y: 0, cp2x: 1, cp2y: 1 },
+  { name: "Ease In", label: "In", cp1x: 0.42, cp1y: 0, cp2x: 1, cp2y: 1 },
+  { name: "Ease Out", label: "Out", cp1x: 0, cp1y: 0, cp2x: 0.58, cp2y: 1 },
+  {
+    name: "Ease In-Out",
+    label: "IO",
+    cp1x: 0.42,
+    cp1y: 0,
+    cp2x: 0.58,
+    cp2y: 1,
+  },
 ];
 
 // Convert normalized coordinates (0-1) to screen coordinates
 function toScreen(x: number, y: number): { x: number; y: number } {
   return {
     x: padding + x * innerSize.value,
-    y: props.size - padding - y * innerSize.value
+    y: props.size - padding - y * innerSize.value,
   };
 }
 
 // Convert screen coordinates to normalized coordinates
-function toNormalized(screenX: number, screenY: number): { x: number; y: number } {
+function toNormalized(
+  screenX: number,
+  screenY: number,
+): { x: number; y: number } {
   return {
     x: Math.max(0, Math.min(1, (screenX - padding) / innerSize.value)),
-    y: Math.max(0, Math.min(1, (props.size - padding - screenY) / innerSize.value))
+    y: Math.max(
+      0,
+      Math.min(1, (props.size - padding - screenY) / innerSize.value),
+    ),
   };
 }
 
 const cp1Screen = computed(() => toScreen(props.cp1x, props.cp1y));
 const cp2Screen = computed(() => toScreen(props.cp2x, props.cp2y));
 
-const curvePath = computed(() => {
+const _curvePath = computed(() => {
   const start = toScreen(0, 0);
   const end = toScreen(1, 1);
 
   return `M ${start.x} ${start.y} C ${cp1Screen.value.x} ${cp1Screen.value.y}, ${cp2Screen.value.x} ${cp2Screen.value.y}, ${end.x} ${end.y}`;
 });
 
-function isActivePreset(preset: Preset): boolean {
+function _isActivePreset(preset: Preset): boolean {
   const tolerance = 0.01;
   return (
     Math.abs(props.cp1x - preset.cp1x) < tolerance &&
@@ -189,17 +202,17 @@ function isActivePreset(preset: Preset): boolean {
   );
 }
 
-function applyPreset(preset: Preset): void {
-  emit('update:cp1x', preset.cp1x);
-  emit('update:cp1y', preset.cp1y);
-  emit('update:cp2x', preset.cp2x);
-  emit('update:cp2y', preset.cp2y);
+function _applyPreset(preset: Preset): void {
+  emit("update:cp1x", preset.cp1x);
+  emit("update:cp1y", preset.cp1y);
+  emit("update:cp2x", preset.cp2x);
+  emit("update:cp2y", preset.cp2y);
 }
 
-function startDrag(point: 1 | 2, e: MouseEvent): void {
+function _startDrag(point: 1 | 2, e: MouseEvent): void {
   draggingPoint.value = point;
-  document.addEventListener('mousemove', onDrag);
-  document.addEventListener('mouseup', stopDrag);
+  document.addEventListener("mousemove", onDrag);
+  document.addEventListener("mouseup", stopDrag);
   e.preventDefault();
 }
 
@@ -219,21 +232,21 @@ function onDrag(e: MouseEvent): void {
   const clampedY = Math.max(-0.5, Math.min(1.5, normalized.y));
 
   if (draggingPoint.value === 1) {
-    emit('update:cp1x', normalized.x);
-    emit('update:cp1y', clampedY);
+    emit("update:cp1x", normalized.x);
+    emit("update:cp1y", clampedY);
   } else {
-    emit('update:cp2x', normalized.x);
-    emit('update:cp2y', clampedY);
+    emit("update:cp2x", normalized.x);
+    emit("update:cp2y", clampedY);
   }
 }
 
 function stopDrag(): void {
   draggingPoint.value = null;
-  document.removeEventListener('mousemove', onDrag);
-  document.removeEventListener('mouseup', stopDrag);
+  document.removeEventListener("mousemove", onDrag);
+  document.removeEventListener("mouseup", stopDrag);
 }
 
-function onSvgMouseDown(_e: MouseEvent): void {
+function _onSvgMouseDown(_e: MouseEvent): void {
   // Click on empty area - do nothing for now
 }
 </script>

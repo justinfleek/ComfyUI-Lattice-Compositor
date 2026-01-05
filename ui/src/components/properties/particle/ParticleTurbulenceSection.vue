@@ -72,7 +72,7 @@
 </template>
 
 <script setup lang="ts">
-import type { TurbulenceFieldConfig } from '@/types/project';
+import type { TurbulenceFieldConfig } from "@/types/project";
 
 interface Props {
   turbulenceFields: TurbulenceFieldConfig[];
@@ -82,9 +82,9 @@ interface Props {
 defineProps<Props>();
 
 defineEmits<{
-  (e: 'toggle'): void;
-  (e: 'add'): void;
-  (e: 'remove', id: string): void;
-  (e: 'update', id: string, key: keyof TurbulenceFieldConfig, value: any): void;
+  (e: "toggle"): void;
+  (e: "add"): void;
+  (e: "remove", id: string): void;
+  (e: "update", id: string, key: keyof TurbulenceFieldConfig, value: any): void;
 }>();
 </script>

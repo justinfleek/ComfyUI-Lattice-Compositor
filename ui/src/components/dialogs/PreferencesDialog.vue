@@ -580,7 +580,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch, onMounted, onUnmounted } from 'vue';
+import { onMounted, onUnmounted, reactive, ref, watch } from "vue";
 
 interface CustomColors {
   accent: string;
@@ -617,14 +617,14 @@ interface Preferences {
   timeline: {
     showWaveforms: boolean;
     showThumbnails: boolean;
-    trackHeight: 'compact' | 'normal' | 'expanded';
+    trackHeight: "compact" | "normal" | "expanded";
   };
 
   // Performance
   performance: {
     gpuAcceleration: boolean;
     webgl2: boolean;
-    previewQuality: 'full' | 'half' | 'quarter' | 'auto';
+    previewQuality: "full" | "half" | "quarter" | "auto";
     skipFrames: boolean;
     frameCacheSize: number;
     textureCacheSize: number;
@@ -654,93 +654,93 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: 'close'): void;
-  (e: 'save', preferences: Preferences): void;
+  (e: "close"): void;
+  (e: "save", preferences: Preferences): void;
 }>();
 
-const tabs = [
-  { id: 'general', label: 'General', icon: '⚙️' },
-  { id: 'appearance', label: 'Appearance', icon: '🎨' },
-  { id: 'performance', label: 'Performance', icon: '⚡' },
-  { id: 'export', label: 'Export', icon: '📤' },
-  { id: 'shortcuts', label: 'Shortcuts', icon: '⌨️' },
-  { id: 'ai', label: 'AI', icon: '🤖' },
+const _tabs = [
+  { id: "general", label: "General", icon: "⚙️" },
+  { id: "appearance", label: "Appearance", icon: "🎨" },
+  { id: "performance", label: "Performance", icon: "⚡" },
+  { id: "export", label: "Export", icon: "📤" },
+  { id: "shortcuts", label: "Shortcuts", icon: "⌨️" },
+  { id: "ai", label: "AI", icon: "🤖" },
 ];
 
-const themes = [
-  { id: 'violet', name: 'Violet', color: '#8B5CF6' },
-  { id: 'ocean', name: 'Ocean', color: '#06B6D4' },
-  { id: 'sunset', name: 'Rose', color: '#FB7185' },
-  { id: 'forest', name: 'Forest', color: '#10B981' },
-  { id: 'ember', name: 'Ember', color: '#EF4444' },
-  { id: 'mono', name: 'Mono', color: '#6B7280' },
+const _themes = [
+  { id: "violet", name: "Violet", color: "#8B5CF6" },
+  { id: "ocean", name: "Ocean", color: "#06B6D4" },
+  { id: "sunset", name: "Rose", color: "#FB7185" },
+  { id: "forest", name: "Forest", color: "#10B981" },
+  { id: "ember", name: "Ember", color: "#EF4444" },
+  { id: "mono", name: "Mono", color: "#6B7280" },
 ];
 
 // Theme color presets
 const themeColorPresets: Record<string, CustomColors> = {
   violet: {
-    accent: '#8B5CF6',
-    accentSecondary: '#EC4899',
-    void: '#050505',
-    surface1: '#121212',
-    surface2: '#1A1A1A',
-    border: '#333333',
-    textPrimary: '#E5E5E5',
-    textSecondary: '#9CA3AF',
+    accent: "#8B5CF6",
+    accentSecondary: "#EC4899",
+    void: "#050505",
+    surface1: "#121212",
+    surface2: "#1A1A1A",
+    border: "#333333",
+    textPrimary: "#E5E5E5",
+    textSecondary: "#9CA3AF",
   },
   ocean: {
-    accent: '#06B6D4',
-    accentSecondary: '#3B82F6',
-    void: '#050508',
-    surface1: '#0F1419',
-    surface2: '#1A2332',
-    border: '#2A3F5F',
-    textPrimary: '#E5E5E5',
-    textSecondary: '#9CA3AF',
+    accent: "#06B6D4",
+    accentSecondary: "#3B82F6",
+    void: "#050508",
+    surface1: "#0F1419",
+    surface2: "#1A2332",
+    border: "#2A3F5F",
+    textPrimary: "#E5E5E5",
+    textSecondary: "#9CA3AF",
   },
   sunset: {
-    accent: '#FB7185',
-    accentSecondary: '#F43F5E',
-    void: '#080506',
-    surface1: '#1A1216',
-    surface2: '#2A1A20',
-    border: '#4A2838',
-    textPrimary: '#E5E5E5',
-    textSecondary: '#9CA3AF',
+    accent: "#FB7185",
+    accentSecondary: "#F43F5E",
+    void: "#080506",
+    surface1: "#1A1216",
+    surface2: "#2A1A20",
+    border: "#4A2838",
+    textPrimary: "#E5E5E5",
+    textSecondary: "#9CA3AF",
   },
   forest: {
-    accent: '#10B981',
-    accentSecondary: '#06B6D4',
-    void: '#050805',
-    surface1: '#101914',
-    surface2: '#182A1F',
-    border: '#2A4A35',
-    textPrimary: '#E5E5E5',
-    textSecondary: '#9CA3AF',
+    accent: "#10B981",
+    accentSecondary: "#06B6D4",
+    void: "#050805",
+    surface1: "#101914",
+    surface2: "#182A1F",
+    border: "#2A4A35",
+    textPrimary: "#E5E5E5",
+    textSecondary: "#9CA3AF",
   },
   ember: {
-    accent: '#EF4444',
-    accentSecondary: '#F59E0B',
-    void: '#080505',
-    surface1: '#1A1212',
-    surface2: '#2A1A1A',
-    border: '#4A2828',
-    textPrimary: '#E5E5E5',
-    textSecondary: '#9CA3AF',
+    accent: "#EF4444",
+    accentSecondary: "#F59E0B",
+    void: "#080505",
+    surface1: "#1A1212",
+    surface2: "#2A1A1A",
+    border: "#4A2828",
+    textPrimary: "#E5E5E5",
+    textSecondary: "#9CA3AF",
   },
   mono: {
-    accent: '#6B7280',
-    accentSecondary: '#9CA3AF',
-    void: '#050505',
-    surface1: '#121212',
-    surface2: '#1A1A1A',
-    border: '#333333',
-    textPrimary: '#E5E5E5',
-    textSecondary: '#9CA3AF',
+    accent: "#6B7280",
+    accentSecondary: "#9CA3AF",
+    void: "#050505",
+    surface1: "#121212",
+    surface2: "#1A1A1A",
+    border: "#333333",
+    textPrimary: "#E5E5E5",
+    textSecondary: "#9CA3AF",
   },
 };
 
-const activeTab = ref('general');
+const activeTab = ref("general");
 
 const defaultPreferences: Preferences = {
   autoSave: {
@@ -755,7 +755,7 @@ const defaultPreferences: Preferences = {
     fps: 16,
     frameCount: 81,
   },
-  theme: 'violet',
+  theme: "violet",
   customColors: { ...themeColorPresets.violet },
   uiScale: 1.0,
   showTooltips: true,
@@ -763,28 +763,28 @@ const defaultPreferences: Preferences = {
   timeline: {
     showWaveforms: true,
     showThumbnails: true,
-    trackHeight: 'normal',
+    trackHeight: "normal",
   },
   performance: {
     gpuAcceleration: true,
     webgl2: true,
-    previewQuality: 'auto',
+    previewQuality: "auto",
     skipFrames: true,
     frameCacheSize: 200,
     textureCacheSize: 256,
   },
   export: {
-    format: 'png',
+    format: "png",
     jpegQuality: 90,
     batchSize: 8,
     parallelExport: true,
-    filenamePattern: 'frame_{####}',
+    filenamePattern: "frame_{####}",
     includeAlpha: true,
   },
   ai: {
-    model: 'gpt-4o',
+    model: "gpt-4o",
     showToolCalls: true,
-    depthModel: 'depth-anything',
+    depthModel: "depth-anything",
     autoRegenerate: false,
   },
 };
@@ -793,35 +793,37 @@ const preferences = reactive<Preferences>({ ...defaultPreferences });
 
 function loadPreferences() {
   try {
-    const saved = localStorage.getItem('lattice-preferences');
+    const saved = localStorage.getItem("lattice-preferences");
     if (saved) {
       const parsed = JSON.parse(saved);
       // Ensure customColors exists (for older saved preferences)
       if (!parsed.customColors) {
-        parsed.customColors = { ...themeColorPresets[parsed.theme || 'violet'] };
+        parsed.customColors = {
+          ...themeColorPresets[parsed.theme || "violet"],
+        };
       }
       Object.assign(preferences, parsed);
     }
     // Apply the loaded custom colors
     applyCustomColors();
   } catch (e) {
-    console.warn('Failed to load preferences:', e);
+    console.warn("Failed to load preferences:", e);
   }
 }
 
 function savePreferences() {
   try {
-    localStorage.setItem('lattice-preferences', JSON.stringify(preferences));
+    localStorage.setItem("lattice-preferences", JSON.stringify(preferences));
   } catch (e) {
-    console.warn('Failed to save preferences:', e);
+    console.warn("Failed to save preferences:", e);
   }
 }
 
-function resetToDefaults() {
+function _resetToDefaults() {
   Object.assign(preferences, defaultPreferences);
 }
 
-function selectTheme(themeId: string) {
+function _selectTheme(themeId: string) {
   preferences.theme = themeId;
   const preset = themeColorPresets[themeId];
   if (preset) {
@@ -830,8 +832,9 @@ function selectTheme(themeId: string) {
   }
 }
 
-function resetCustomColors() {
-  const preset = themeColorPresets[preferences.theme] || themeColorPresets.violet;
+function _resetCustomColors() {
+  const preset =
+    themeColorPresets[preferences.theme] || themeColorPresets.violet;
   Object.assign(preferences.customColors, preset);
   applyCustomColors();
 }
@@ -840,85 +843,115 @@ function applyCustomColors() {
   const root = document.documentElement;
   const colors = preferences.customColors;
 
-  root.style.setProperty('--lattice-accent', colors.accent);
-  root.style.setProperty('--lattice-accent-secondary', colors.accentSecondary);
-  root.style.setProperty('--lattice-accent-gradient', `linear-gradient(135deg, ${colors.accent}, ${colors.accentSecondary})`);
-  root.style.setProperty('--lattice-accent-hover', lightenColor(colors.accent, 15));
-  root.style.setProperty('--lattice-accent-muted', `${colors.accent}33`);
+  root.style.setProperty("--lattice-accent", colors.accent);
+  root.style.setProperty("--lattice-accent-secondary", colors.accentSecondary);
+  root.style.setProperty(
+    "--lattice-accent-gradient",
+    `linear-gradient(135deg, ${colors.accent}, ${colors.accentSecondary})`,
+  );
+  root.style.setProperty(
+    "--lattice-accent-hover",
+    lightenColor(colors.accent, 15),
+  );
+  root.style.setProperty("--lattice-accent-muted", `${colors.accent}33`);
 
-  root.style.setProperty('--lattice-void', colors.void);
-  root.style.setProperty('--lattice-surface-0', darkenColor(colors.surface1, 5));
-  root.style.setProperty('--lattice-surface-1', colors.surface1);
-  root.style.setProperty('--lattice-surface-2', colors.surface2);
-  root.style.setProperty('--lattice-surface-3', colors.border);
-  root.style.setProperty('--lattice-surface-4', lightenColor(colors.border, 15));
+  root.style.setProperty("--lattice-void", colors.void);
+  root.style.setProperty(
+    "--lattice-surface-0",
+    darkenColor(colors.surface1, 5),
+  );
+  root.style.setProperty("--lattice-surface-1", colors.surface1);
+  root.style.setProperty("--lattice-surface-2", colors.surface2);
+  root.style.setProperty("--lattice-surface-3", colors.border);
+  root.style.setProperty(
+    "--lattice-surface-4",
+    lightenColor(colors.border, 15),
+  );
 
-  root.style.setProperty('--lattice-text-primary', colors.textPrimary);
-  root.style.setProperty('--lattice-text-secondary', colors.textSecondary);
-  root.style.setProperty('--lattice-text-muted', darkenColor(colors.textSecondary, 20));
+  root.style.setProperty("--lattice-text-primary", colors.textPrimary);
+  root.style.setProperty("--lattice-text-secondary", colors.textSecondary);
+  root.style.setProperty(
+    "--lattice-text-muted",
+    darkenColor(colors.textSecondary, 20),
+  );
 
-  root.style.setProperty('--lattice-border-subtle', darkenColor(colors.border, 10));
-  root.style.setProperty('--lattice-border-default', colors.border);
-  root.style.setProperty('--lattice-border-hover', lightenColor(colors.border, 15));
+  root.style.setProperty(
+    "--lattice-border-subtle",
+    darkenColor(colors.border, 10),
+  );
+  root.style.setProperty("--lattice-border-default", colors.border);
+  root.style.setProperty(
+    "--lattice-border-hover",
+    lightenColor(colors.border, 15),
+  );
 }
 
 function lightenColor(hex: string, percent: number): string {
-  const num = parseInt(hex.replace('#', ''), 16);
-  const r = Math.min(255, (num >> 16) + Math.round(255 * percent / 100));
-  const g = Math.min(255, ((num >> 8) & 0x00FF) + Math.round(255 * percent / 100));
-  const b = Math.min(255, (num & 0x0000FF) + Math.round(255 * percent / 100));
-  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
+  const num = parseInt(hex.replace("#", ""), 16);
+  const r = Math.min(255, (num >> 16) + Math.round((255 * percent) / 100));
+  const g = Math.min(
+    255,
+    ((num >> 8) & 0x00ff) + Math.round((255 * percent) / 100),
+  );
+  const b = Math.min(255, (num & 0x0000ff) + Math.round((255 * percent) / 100));
+  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, "0")}`;
 }
 
 function darkenColor(hex: string, percent: number): string {
-  const num = parseInt(hex.replace('#', ''), 16);
-  const r = Math.max(0, (num >> 16) - Math.round(255 * percent / 100));
-  const g = Math.max(0, ((num >> 8) & 0x00FF) - Math.round(255 * percent / 100));
-  const b = Math.max(0, (num & 0x0000FF) - Math.round(255 * percent / 100));
-  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
+  const num = parseInt(hex.replace("#", ""), 16);
+  const r = Math.max(0, (num >> 16) - Math.round((255 * percent) / 100));
+  const g = Math.max(
+    0,
+    ((num >> 8) & 0x00ff) - Math.round((255 * percent) / 100),
+  );
+  const b = Math.max(0, (num & 0x0000ff) - Math.round((255 * percent) / 100));
+  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, "0")}`;
 }
 
-function clearCache() {
+function _clearCache() {
   // Clear caches (would call into cache services)
-  console.log('Clearing caches...');
-  alert('All caches have been cleared.');
+  console.log("Clearing caches...");
+  alert("All caches have been cleared.");
 }
 
 function cancel() {
   loadPreferences(); // Revert changes
-  emit('close');
+  emit("close");
 }
 
 function save() {
   applyCustomColors(); // Ensure colors are applied
   savePreferences();
-  emit('save', { ...preferences });
-  emit('close');
+  emit("save", { ...preferences });
+  emit("close");
 }
 
 // Keyboard handler
 function handleKeydown(e: KeyboardEvent) {
-  if (e.key === 'Escape') {
+  if (e.key === "Escape") {
     cancel();
-  } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+  } else if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
     save();
   }
 }
 
-watch(() => props.visible, (visible) => {
-  if (visible) {
-    loadPreferences();
-    activeTab.value = 'general';
-  }
-});
+watch(
+  () => props.visible,
+  (visible) => {
+    if (visible) {
+      loadPreferences();
+      activeTab.value = "general";
+    }
+  },
+);
 
 onMounted(() => {
-  window.addEventListener('keydown', handleKeydown);
+  window.addEventListener("keydown", handleKeydown);
   loadPreferences();
 });
 
 onUnmounted(() => {
-  window.removeEventListener('keydown', handleKeydown);
+  window.removeEventListener("keydown", handleKeydown);
 });
 </script>
 

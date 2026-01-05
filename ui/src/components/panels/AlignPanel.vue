@@ -162,21 +162,27 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
+import { computed, ref } from "vue";
+import { useCompositorStore } from "@/stores/compositorStore";
 
 const store = useCompositorStore();
 
-const alignTarget = ref<'composition' | 'selection'>('composition');
+const alignTarget = ref<"composition" | "selection">("composition");
 
 const selectedCount = computed(() => store.selectedLayerIds.length);
-const canAlign = computed(() => selectedCount.value >= 1);
-const canDistribute = computed(() => selectedCount.value >= 3);
+const _canAlign = computed(() => selectedCount.value >= 1);
+const _canDistribute = computed(() => selectedCount.value >= 3);
 
-type AlignDirection = 'left' | 'centerH' | 'right' | 'top' | 'centerV' | 'bottom';
-type DistributeDirection = 'horizontal' | 'vertical';
+type AlignDirection =
+  | "left"
+  | "centerH"
+  | "right"
+  | "top"
+  | "centerV"
+  | "bottom";
+type DistributeDirection = "horizontal" | "vertical";
 
-function alignLayers(direction: AlignDirection) {
+function _alignLayers(direction: AlignDirection) {
   const layerIds = store.selectedLayerIds;
   if (layerIds.length === 0) return;
 
@@ -184,23 +190,33 @@ function alignLayers(direction: AlignDirection) {
   if (!comp) return;
 
   // Get layer bounds
-  const layers = layerIds.map(id => store.getLayerById(id)).filter(Boolean);
+  const layers = layerIds.map((id) => store.getLayerById(id)).filter(Boolean);
   if (layers.length === 0) return;
 
-  let targetBounds: { left: number; right: number; top: number; bottom: number; centerX: number; centerY: number };
+  let targetBounds: {
+    left: number;
+    right: number;
+    top: number;
+    bottom: number;
+    centerX: number;
+    centerY: number;
+  };
 
-  if (alignTarget.value === 'composition') {
+  if (alignTarget.value === "composition") {
     targetBounds = {
       left: 0,
       right: comp.settings.width,
       top: 0,
       bottom: comp.settings.height,
       centerX: comp.settings.width / 2,
-      centerY: comp.settings.height / 2
+      centerY: comp.settings.height / 2,
     };
   } else {
     // Calculate selection bounds
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    let minX = Infinity,
+      maxX = -Infinity,
+      minY = Infinity,
+      maxY = -Infinity;
     for (const layer of layers) {
       if (!layer) continue;
       const pos = layer.transform?.position?.value || { x: 0, y: 0 };
@@ -215,7 +231,7 @@ function alignLayers(direction: AlignDirection) {
       top: minY,
       bottom: maxY,
       centerX: (minX + maxX) / 2,
-      centerY: (minY + maxY) / 2
+      centerY: (minY + maxY) / 2,
     };
   }
 
@@ -226,22 +242,22 @@ function alignLayers(direction: AlignDirection) {
     const pos = { ...layer.transform.position.value };
 
     switch (direction) {
-      case 'left':
+      case "left":
         pos.x = targetBounds.left;
         break;
-      case 'centerH':
+      case "centerH":
         pos.x = targetBounds.centerX;
         break;
-      case 'right':
+      case "right":
         pos.x = targetBounds.right;
         break;
-      case 'top':
+      case "top":
         pos.y = targetBounds.top;
         break;
-      case 'centerV':
+      case "centerV":
         pos.y = targetBounds.centerY;
         break;
-      case 'bottom':
+      case "bottom":
         pos.y = targetBounds.bottom;
         break;
     }
@@ -252,44 +268,45 @@ function alignLayers(direction: AlignDirection) {
   store.project.meta.modified = new Date().toISOString();
 }
 
-function distributeLayers(direction: DistributeDirection) {
+function _distributeLayers(direction: DistributeDirection) {
   const layerIds = store.selectedLayerIds;
   if (layerIds.length < 3) return;
 
   const layers = layerIds
-    .map(id => store.getLayerById(id))
+    .map((id) => store.getLayerById(id))
     .filter(Boolean)
-    .filter(l => l?.transform?.position);
+    .filter((l) => l?.transform?.position);
 
   if (layers.length < 3) return;
 
   // Sort layers by position
   const sorted = [...layers].sort((a, b) => {
-    const posA = a!.transform!.position!.value;
-    const posB = b!.transform!.position!.value;
-    return direction === 'horizontal' ? posA.x - posB.x : posA.y - posB.y;
+    const posA = a.transform.position?.value;
+    const posB = b.transform.position?.value;
+    return direction === "horizontal" ? posA.x - posB.x : posA.y - posB.y;
   });
 
   // Get first and last positions
-  const first = sorted[0]!.transform!.position!.value;
-  const last = sorted[sorted.length - 1]!.transform!.position!.value;
+  const first = sorted[0].transform.position?.value;
+  const last = sorted[sorted.length - 1].transform.position?.value;
 
   // Calculate spacing
-  const totalDistance = direction === 'horizontal' ? last.x - first.x : last.y - first.y;
+  const totalDistance =
+    direction === "horizontal" ? last.x - first.x : last.y - first.y;
   const spacing = totalDistance / (sorted.length - 1);
 
   // Apply distribution
   for (let i = 1; i < sorted.length - 1; i++) {
     const layer = sorted[i]!;
-    const pos = { ...layer.transform!.position!.value };
+    const pos = { ...layer.transform.position?.value };
 
-    if (direction === 'horizontal') {
+    if (direction === "horizontal") {
       pos.x = first.x + spacing * i;
     } else {
       pos.y = first.y + spacing * i;
     }
 
-    layer.transform!.position!.value = pos;
+    layer.transform.position!.value = pos;
   }
 
   store.project.meta.modified = new Date().toISOString();

@@ -8,7 +8,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue';
+import { onMounted, ref, watch } from "vue";
 
 interface VectorscopeResult {
   data: Uint32Array;
@@ -24,27 +24,30 @@ interface VectorscopeResult {
   };
 }
 
-const props = withDefaults(defineProps<{
-  data: VectorscopeResult | null;
-  brightness: number;
-  showTargets: boolean;
-  showSkinLine: boolean;
-}>(), {
-  showTargets: true,
-  showSkinLine: true
-});
+const props = withDefaults(
+  defineProps<{
+    data: VectorscopeResult | null;
+    brightness: number;
+    showTargets: boolean;
+    showSkinLine: boolean;
+  }>(),
+  {
+    showTargets: true,
+    showSkinLine: true,
+  },
+);
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 const canvasSize = 256;
 
 // Target colors
 const TARGET_COLORS: Record<string, string> = {
-  r: '#FF4040',
-  y: '#FFFF40',
-  g: '#40FF40',
-  c: '#40FFFF',
-  b: '#4040FF',
-  m: '#FF40FF'
+  r: "#FF4040",
+  y: "#FFFF40",
+  g: "#40FF40",
+  c: "#40FFFF",
+  b: "#4040FF",
+  m: "#FF40FF",
 };
 
 onMounted(() => {
@@ -59,13 +62,13 @@ function drawVectorscope() {
   const canvas = canvasRef.value;
   if (!canvas) return;
 
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext("2d");
   if (!ctx) return;
 
   const center = canvasSize / 2;
 
   // Clear
-  ctx.fillStyle = '#000';
+  ctx.fillStyle = "#000";
   ctx.fillRect(0, 0, canvasSize, canvasSize);
 
   // Draw graticule
@@ -85,10 +88,10 @@ function drawVectorscope() {
       const pixelIndex = i * 4;
 
       // Green tint for standard vectorscope look
-      imageData.data[pixelIndex] = intensity * 0.3;     // R
-      imageData.data[pixelIndex + 1] = intensity;       // G
+      imageData.data[pixelIndex] = intensity * 0.3; // R
+      imageData.data[pixelIndex + 1] = intensity; // G
       imageData.data[pixelIndex + 2] = intensity * 0.3; // B
-      imageData.data[pixelIndex + 3] = 255;             // A
+      imageData.data[pixelIndex + 3] = 255; // A
     }
   }
 
@@ -106,7 +109,7 @@ function drawVectorscope() {
 }
 
 function drawGraticule(ctx: CanvasRenderingContext2D, center: number) {
-  ctx.strokeStyle = 'rgba(60, 60, 60, 0.5)';
+  ctx.strokeStyle = "rgba(60, 60, 60, 0.5)";
   ctx.lineWidth = 1;
 
   // Outer circle
@@ -141,23 +144,26 @@ function drawGraticule(ctx: CanvasRenderingContext2D, center: number) {
   const diagonalLength = center - 4;
   const angles = [45, 135, 225, 315];
 
-  angles.forEach(angle => {
-    const rad = angle * Math.PI / 180;
+  angles.forEach((angle) => {
+    const rad = (angle * Math.PI) / 180;
     ctx.beginPath();
     ctx.moveTo(center, center);
     ctx.lineTo(
       center + Math.cos(rad) * diagonalLength,
-      center + Math.sin(rad) * diagonalLength
+      center + Math.sin(rad) * diagonalLength,
     );
     ctx.stroke();
   });
 }
 
-function drawTargets(ctx: CanvasRenderingContext2D, targets: VectorscopeResult['targets']) {
+function drawTargets(
+  ctx: CanvasRenderingContext2D,
+  targets: VectorscopeResult["targets"],
+) {
   const targetSize = 6;
 
   Object.entries(targets).forEach(([key, pos]) => {
-    if (key === 'skinLine') return;
+    if (key === "skinLine") return;
 
     const color = TARGET_COLORS[key];
     if (!color) return;
@@ -171,21 +177,24 @@ function drawTargets(ctx: CanvasRenderingContext2D, targets: VectorscopeResult['
       x - targetSize / 2,
       y - targetSize / 2,
       targetSize,
-      targetSize
+      targetSize,
     );
 
     // Draw label
     ctx.fillStyle = color;
-    ctx.font = '10px monospace';
-    ctx.textAlign = 'center';
+    ctx.font = "10px monospace";
+    ctx.textAlign = "center";
     ctx.fillText(key.toUpperCase(), x, y - targetSize);
   });
 }
 
-function drawSkinLine(ctx: CanvasRenderingContext2D, skinLine: [[number, number], [number, number]]) {
+function drawSkinLine(
+  ctx: CanvasRenderingContext2D,
+  skinLine: [[number, number], [number, number]],
+) {
   const [[x1, y1], [x2, y2]] = skinLine;
 
-  ctx.strokeStyle = 'rgba(255, 180, 100, 0.6)';
+  ctx.strokeStyle = "rgba(255, 180, 100, 0.6)";
   ctx.lineWidth = 2;
   ctx.setLineDash([4, 4]);
 
@@ -197,10 +206,10 @@ function drawSkinLine(ctx: CanvasRenderingContext2D, skinLine: [[number, number]
   ctx.setLineDash([]);
 
   // Label
-  ctx.fillStyle = 'rgba(255, 180, 100, 0.8)';
-  ctx.font = '9px monospace';
-  ctx.textAlign = 'left';
-  ctx.fillText('I', x2 + 4, y2);
+  ctx.fillStyle = "rgba(255, 180, 100, 0.8)";
+  ctx.font = "9px monospace";
+  ctx.textAlign = "left";
+  ctx.fillText("I", x2 + 4, y2);
 }
 </script>
 

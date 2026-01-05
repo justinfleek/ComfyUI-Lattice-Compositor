@@ -261,16 +261,22 @@
  * SplineEditor - Control point editor for spline and path layers
  * Refactored to use useSplineInteraction composable for interaction logic.
  */
-import { ref, computed, toRef, onMounted, onUnmounted } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import { interpolateProperty } from '@/services/interpolation';
-import { useSplineInteraction } from '@/composables/useSplineInteraction';
-import type { ControlPoint, SplineData, PathLayerData, EvaluatedControlPoint } from '@/types/project';
-import SplineToolbar from './SplineToolbar.vue';
+import { computed, onMounted, onUnmounted, ref, toRef } from "vue";
+import { useSplineInteraction } from "@/composables/useSplineInteraction";
+import { interpolateProperty } from "@/services/interpolation";
+import { useCompositorStore } from "@/stores/compositorStore";
+import type {
+  ControlPoint,
+  EvaluatedControlPoint,
+  PathLayerData,
+  SplineData,
+} from "@/types/project";
 
 // Helper: Check if layer is a spline or path type
-function isSplineOrPathType(layerType: string | undefined): layerType is 'spline' | 'path' {
-  return layerType === 'spline' || layerType === 'path';
+function isSplineOrPathType(
+  layerType: string | undefined,
+): layerType is "spline" | "path" {
+  return layerType === "spline" || layerType === "path";
 }
 
 interface Props {
@@ -288,20 +294,26 @@ interface Props {
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-  (e: 'pointAdded', point: ControlPoint): void;
-  (e: 'pointMoved', pointId: string, x: number, y: number): void;
-  (e: 'handleMoved', pointId: string, handleType: 'in' | 'out', x: number, y: number): void;
-  (e: 'pointDeleted', pointId: string): void;
-  (e: 'pathUpdated'): void;
-  (e: 'pathClosed'): void;
-  (e: 'togglePenMode'): void;
+  (e: "pointAdded", point: ControlPoint): void;
+  (e: "pointMoved", pointId: string, x: number, y: number): void;
+  (
+    e: "handleMoved",
+    pointId: string,
+    handleType: "in" | "out",
+    x: number,
+    y: number,
+  ): void;
+  (e: "pointDeleted", pointId: string): void;
+  (e: "pathUpdated"): void;
+  (e: "pathClosed"): void;
+  (e: "togglePenMode"): void;
 }>();
 
 const store = useCompositorStore();
 
 // Toolbar state
 const smoothTolerance = ref(10);
-const strokeColor = '#00ff00';
+const _strokeColor = "#00ff00";
 
 // ============================================================================
 // LAYER TRANSFORM
@@ -309,12 +321,22 @@ const strokeColor = '#00ff00';
 
 const layerTransform = computed(() => {
   if (!props.layerId) {
-    return { position: { x: 0, y: 0 }, rotation: 0, scale: { x: 100, y: 100 }, anchorPoint: { x: 0, y: 0 } };
+    return {
+      position: { x: 0, y: 0 },
+      rotation: 0,
+      scale: { x: 100, y: 100 },
+      anchorPoint: { x: 0, y: 0 },
+    };
   }
 
-  const layer = store.layers.find(l => l.id === props.layerId);
+  const layer = store.layers.find((l) => l.id === props.layerId);
   if (!layer) {
-    return { position: { x: 0, y: 0 }, rotation: 0, scale: { x: 100, y: 100 }, anchorPoint: { x: 0, y: 0 } };
+    return {
+      position: { x: 0, y: 0 },
+      rotation: 0,
+      scale: { x: 100, y: 100 },
+      anchorPoint: { x: 0, y: 0 },
+    };
   }
 
   const t = layer.transform;
@@ -327,7 +349,10 @@ const layerTransform = computed(() => {
     return prop.value ?? defaultVal;
   };
 
-  const position = getVal(t.position, { x: props.canvasWidth / 2, y: props.canvasHeight / 2 });
+  const position = getVal(t.position, {
+    x: props.canvasWidth / 2,
+    y: props.canvasHeight / 2,
+  });
   const anchorPoint = getVal(t.anchorPoint, { x: 0, y: 0 });
   const scale = getVal(t.scale, { x: 100, y: 100 });
 
@@ -359,7 +384,10 @@ function transformPoint(p: { x: number; y: number }): { x: number; y: number } {
   return { x: rx + position.x, y: ry + position.y };
 }
 
-function inverseTransformPoint(p: { x: number; y: number }): { x: number; y: number } {
+function inverseTransformPoint(p: { x: number; y: number }): {
+  x: number;
+  y: number;
+} {
   const { position, rotation, scale, anchorPoint } = layerTransform.value;
 
   let x = p.x - position.x;
@@ -383,39 +411,41 @@ function inverseTransformPoint(p: { x: number; y: number }): { x: number; y: num
 
 const isClosed = computed(() => {
   if (!props.layerId) return false;
-  const layer = store.layers.find(l => l.id === props.layerId);
+  const layer = store.layers.find((l) => l.id === props.layerId);
   if (!layer || !isSplineOrPathType(layer.type)) return false;
   return (layer.data as SplineData | PathLayerData)?.closed ?? false;
 });
 
-const is3DLayer = computed(() => {
+const _is3DLayer = computed(() => {
   if (!props.layerId) return false;
-  const layer = store.layers.find(l => l.id === props.layerId);
+  const layer = store.layers.find((l) => l.id === props.layerId);
   return layer?.threeD ?? false;
 });
 
-const isSplineAnimated = computed(() => {
+const _isSplineAnimated = computed(() => {
   if (!props.layerId) return false;
-  const layer = store.layers.find(l => l.id === props.layerId);
-  if (!layer || layer.type !== 'spline') return false;
+  const layer = store.layers.find((l) => l.id === props.layerId);
+  if (!layer || layer.type !== "spline") return false;
   const splineData = layer.data as SplineData;
   return splineData?.animated === true;
 });
 
-const rawControlPoints = computed<(ControlPoint | EvaluatedControlPoint)[]>(() => {
-  if (!props.layerId) return [];
+const rawControlPoints = computed<(ControlPoint | EvaluatedControlPoint)[]>(
+  () => {
+    if (!props.layerId) return [];
 
-  const layer = store.layers.find(l => l.id === props.layerId);
-  if (!layer || !isSplineOrPathType(layer.type) || !layer.data) return [];
+    const layer = store.layers.find((l) => l.id === props.layerId);
+    if (!layer || !isSplineOrPathType(layer.type) || !layer.data) return [];
 
-  const layerData = layer.data as SplineData | PathLayerData;
+    const layerData = layer.data as SplineData | PathLayerData;
 
-  if (layerData.animated && layerData.animatedControlPoints) {
-    return store.getEvaluatedSplinePoints(props.layerId, props.currentFrame);
-  }
+    if (layerData.animated && layerData.animatedControlPoints) {
+      return store.getEvaluatedSplinePoints(props.layerId, props.currentFrame);
+    }
 
-  return layerData.controlPoints || [];
-});
+    return layerData.controlPoints || [];
+  },
+);
 
 interface TransformedControlPoint {
   id: string;
@@ -428,14 +458,18 @@ interface TransformedControlPoint {
   handleOut: { x: number; y: number } | null;
   rawHandleIn: { x: number; y: number } | null;
   rawHandleOut: { x: number; y: number } | null;
-  type: 'corner' | 'smooth' | 'symmetric';
+  type: "corner" | "smooth" | "symmetric";
 }
 
 const visibleControlPoints = computed<TransformedControlPoint[]>(() => {
-  return rawControlPoints.value.map(cp => {
+  return rawControlPoints.value.map((cp) => {
     const transformed = transformPoint({ x: cp.x, y: cp.y });
-    const transformedHandleIn = cp.handleIn ? transformPoint(cp.handleIn) : null;
-    const transformedHandleOut = cp.handleOut ? transformPoint(cp.handleOut) : null;
+    const transformedHandleIn = cp.handleIn
+      ? transformPoint(cp.handleIn)
+      : null;
+    const transformedHandleOut = cp.handleOut
+      ? transformPoint(cp.handleOut)
+      : null;
 
     return {
       id: cp.id,
@@ -448,14 +482,14 @@ const visibleControlPoints = computed<TransformedControlPoint[]>(() => {
       handleOut: transformedHandleOut,
       rawHandleIn: cp.handleIn ? { ...cp.handleIn } : null,
       rawHandleOut: cp.handleOut ? { ...cp.handleOut } : null,
-      type: cp.type
+      type: cp.type,
     };
   });
 });
 
-const hasControlPoints = computed(() => visibleControlPoints.value.length > 0);
+const _hasControlPoints = computed(() => visibleControlPoints.value.length > 0);
 
-const canClosePath = computed(() => {
+const _canClosePath = computed(() => {
   return visibleControlPoints.value.length >= 3 && !isClosed.value;
 });
 
@@ -480,12 +514,12 @@ const overlayStyle = computed(() => {
   const top = (props.containerHeight - height) / 2;
 
   return {
-    position: 'absolute' as const,
+    position: "absolute" as const,
     left: `${left}px`,
     top: `${top}px`,
     width: `${width}px`,
     height: `${height}px`,
-    pointerEvents: 'all' as const
+    pointerEvents: "all" as const,
   };
 });
 
@@ -494,14 +528,14 @@ const overlayStyle = computed(() => {
 // ============================================================================
 
 const interaction = useSplineInteraction({
-  layerId: toRef(props, 'layerId'),
-  currentFrame: toRef(props, 'currentFrame'),
-  canvasWidth: toRef(props, 'canvasWidth'),
-  canvasHeight: toRef(props, 'canvasHeight'),
-  containerWidth: toRef(props, 'containerWidth'),
-  containerHeight: toRef(props, 'containerHeight'),
-  zoom: toRef(props, 'zoom'),
-  isPenMode: toRef(props, 'isPenMode'),
+  layerId: toRef(props, "layerId"),
+  currentFrame: toRef(props, "currentFrame"),
+  canvasWidth: toRef(props, "canvasWidth"),
+  canvasHeight: toRef(props, "canvasHeight"),
+  containerWidth: toRef(props, "containerWidth"),
+  containerHeight: toRef(props, "containerHeight"),
+  zoom: toRef(props, "zoom"),
+  isPenMode: toRef(props, "isPenMode"),
   visibleControlPoints: visibleControlPoints as any,
   isClosed,
   overlayStyle: overlayStyle as any,
@@ -509,13 +543,14 @@ const interaction = useSplineInteraction({
   inverseTransformPoint,
   store,
   emit: {
-    pointAdded: (point) => emit('pointAdded', point),
-    pointMoved: (pointId, x, y) => emit('pointMoved', pointId, x, y),
-    handleMoved: (pointId, handleType, x, y) => emit('handleMoved', pointId, handleType, x, y),
-    pointDeleted: (pointId) => emit('pointDeleted', pointId),
-    pathUpdated: () => emit('pathUpdated'),
-    pathClosed: () => emit('pathClosed'),
-    togglePenMode: () => emit('togglePenMode'),
+    pointAdded: (point) => emit("pointAdded", point),
+    pointMoved: (pointId, x, y) => emit("pointMoved", pointId, x, y),
+    handleMoved: (pointId, handleType, x, y) =>
+      emit("handleMoved", pointId, handleType, x, y),
+    pointDeleted: (pointId) => emit("pointDeleted", pointId),
+    pathUpdated: () => emit("pathUpdated"),
+    pathClosed: () => emit("pathClosed"),
+    togglePenMode: () => emit("togglePenMode"),
   },
 });
 
@@ -551,36 +586,44 @@ const {
 // COMPONENT-SPECIFIC FUNCTIONS
 // ============================================================================
 
-const selectedPointDepth = computed(() => {
+const _selectedPointDepth = computed(() => {
   if (!selectedPointId.value) return 0;
-  const point = visibleControlPoints.value.find(p => p.id === selectedPointId.value);
+  const point = visibleControlPoints.value.find(
+    (p) => p.id === selectedPointId.value,
+  );
   return point?.depth ?? 0;
 });
 
-function updateSelectedPointDepth(event: Event) {
+function _updateSelectedPointDepth(event: Event) {
   if (!selectedPointId.value || !props.layerId) return;
   const input = event.target as HTMLInputElement;
   const newDepth = Math.max(0, parseFloat(input.value) || 0);
-  store.updateSplineControlPoint(props.layerId, selectedPointId.value, { depth: newDepth });
-  emit('pathUpdated');
+  store.updateSplineControlPoint(props.layerId, selectedPointId.value, {
+    depth: newDepth,
+  });
+  emit("pathUpdated");
 }
 
 function adjustSelectedPointDepth(delta: number) {
   if (!selectedPointId.value || !props.layerId) return;
-  const point = visibleControlPoints.value.find(p => p.id === selectedPointId.value);
+  const point = visibleControlPoints.value.find(
+    (p) => p.id === selectedPointId.value,
+  );
   const currentDepth = point?.depth ?? 0;
   const newDepth = Math.max(0, currentDepth + delta);
-  store.updateSplineControlPoint(props.layerId, selectedPointId.value, { depth: newDepth });
-  emit('pathUpdated');
+  store.updateSplineControlPoint(props.layerId, selectedPointId.value, {
+    depth: newDepth,
+  });
+  emit("pathUpdated");
 }
 
-function toggleClosePath() {
+function _toggleClosePath() {
   if (!props.layerId) return;
   store.updateLayerData(props.layerId, { closed: !isClosed.value });
-  emit('pathUpdated');
+  emit("pathUpdated");
 }
 
-function smoothSelectedPoints() {
+function _smoothSelectedPoints() {
   if (!props.layerId) return;
 
   if (selectedPointIds.value.length > 0) {
@@ -590,13 +633,13 @@ function smoothSelectedPoints() {
   } else {
     store.smoothSplineHandles(props.layerId, smoothTolerance.value * 2);
   }
-  emit('pathUpdated');
+  emit("pathUpdated");
 }
 
 function smoothSpecificPoints(pointIds: string[]) {
   if (!props.layerId) return;
 
-  const layer = store.layers.find(l => l.id === props.layerId);
+  const layer = store.layers.find((l) => l.id === props.layerId);
   if (!layer || !isSplineOrPathType(layer.type) || !layer.data) return;
 
   const splineData = layer.data as SplineData | PathLayerData;
@@ -606,14 +649,16 @@ function smoothSpecificPoints(pointIds: string[]) {
   const factor = Math.max(0, Math.min(100, smoothTolerance.value * 2)) / 100;
 
   for (const pointId of pointIds) {
-    const i = controlPoints.findIndex(cp => cp.id === pointId);
+    const i = controlPoints.findIndex((cp) => cp.id === pointId);
     if (i < 0) continue;
 
     const cp = controlPoints[i];
-    const prev = controlPoints[(i - 1 + controlPoints.length) % controlPoints.length];
+    const prev =
+      controlPoints[(i - 1 + controlPoints.length) % controlPoints.length];
     const next = controlPoints[(i + 1) % controlPoints.length];
 
-    if (!splineData.closed && (i === 0 || i === controlPoints.length - 1)) continue;
+    if (!splineData.closed && (i === 0 || i === controlPoints.length - 1))
+      continue;
 
     const toPrev = { x: prev.x - cp.x, y: prev.y - cp.y };
     const toNext = { x: next.x - cp.x, y: next.y - cp.y };
@@ -629,45 +674,59 @@ function smoothSpecificPoints(pointIds: string[]) {
     const distNext = Math.sqrt(toNext.x * toNext.x + toNext.y * toNext.y);
     const handleLength = (distPrev + distNext) / 6;
 
-    const idealIn = { x: cp.x - normalized.x * handleLength, y: cp.y - normalized.y * handleLength };
-    const idealOut = { x: cp.x + normalized.x * handleLength, y: cp.y + normalized.y * handleLength };
+    const idealIn = {
+      x: cp.x - normalized.x * handleLength,
+      y: cp.y - normalized.y * handleLength,
+    };
+    const idealOut = {
+      x: cp.x + normalized.x * handleLength,
+      y: cp.y + normalized.y * handleLength,
+    };
 
     store.updateSplineControlPoint(props.layerId!, pointId, {
-      type: 'smooth',
+      type: "smooth",
       handleIn: {
-        x: cp.handleIn ? cp.handleIn.x + (idealIn.x - cp.handleIn.x) * factor : idealIn.x * factor + cp.x * (1 - factor),
-        y: cp.handleIn ? cp.handleIn.y + (idealIn.y - cp.handleIn.y) * factor : idealIn.y * factor + cp.y * (1 - factor)
+        x: cp.handleIn
+          ? cp.handleIn.x + (idealIn.x - cp.handleIn.x) * factor
+          : idealIn.x * factor + cp.x * (1 - factor),
+        y: cp.handleIn
+          ? cp.handleIn.y + (idealIn.y - cp.handleIn.y) * factor
+          : idealIn.y * factor + cp.y * (1 - factor),
       },
       handleOut: {
-        x: cp.handleOut ? cp.handleOut.x + (idealOut.x - cp.handleOut.x) * factor : idealOut.x * factor + cp.x * (1 - factor),
-        y: cp.handleOut ? cp.handleOut.y + (idealOut.y - cp.handleOut.y) * factor : idealOut.y * factor + cp.y * (1 - factor)
-      }
+        x: cp.handleOut
+          ? cp.handleOut.x + (idealOut.x - cp.handleOut.x) * factor
+          : idealOut.x * factor + cp.x * (1 - factor),
+        y: cp.handleOut
+          ? cp.handleOut.y + (idealOut.y - cp.handleOut.y) * factor
+          : idealOut.y * factor + cp.y * (1 - factor),
+      },
     });
   }
 }
 
-function simplifySpline() {
+function _simplifySpline() {
   if (!props.layerId) return;
   store.simplifySpline(props.layerId, smoothTolerance.value);
-  emit('pathUpdated');
+  emit("pathUpdated");
 }
 
-function toggleSplineAnimation() {
+function _toggleSplineAnimation() {
   if (!props.layerId) return;
   store.enableSplineAnimation(props.layerId);
-  emit('pathUpdated');
+  emit("pathUpdated");
 }
 
-function keyframeSelectedPoints() {
+function _keyframeSelectedPoints() {
   if (!props.layerId || selectedPointIds.value.length === 0) return;
   const frame = props.currentFrame;
   for (const pointId of selectedPointIds.value) {
     store.addSplinePointPositionKeyframe(props.layerId, pointId, frame);
   }
-  emit('pathUpdated');
+  emit("pathUpdated");
 }
 
-function pointHasKeyframes(pointId: string): boolean {
+function _pointHasKeyframes(pointId: string): boolean {
   if (!props.layerId) return false;
   return store.hasSplinePointKeyframes(props.layerId, pointId);
 }
@@ -681,7 +740,9 @@ function getDepthOffset(point: ControlPoint | EvaluatedControlPoint): number {
   return Math.max(-30, Math.min(30, -depth / 16.67));
 }
 
-function getZHandlePoints(point: ControlPoint | EvaluatedControlPoint): string {
+function _getZHandlePoints(
+  point: ControlPoint | EvaluatedControlPoint,
+): string {
   const x = point.x + 15;
   const y = point.y + getDepthOffset(point);
   const size = 5;
@@ -689,13 +750,13 @@ function getZHandlePoints(point: ControlPoint | EvaluatedControlPoint): string {
 }
 
 function handleKeyDownWithDepth(event: KeyboardEvent) {
-  if (event.key === 'ArrowUp' && selectedPointId.value) {
+  if (event.key === "ArrowUp" && selectedPointId.value) {
     event.preventDefault();
     const delta = event.shiftKey ? 100 : 10;
     adjustSelectedPointDepth(delta);
     return;
   }
-  if (event.key === 'ArrowDown' && selectedPointId.value) {
+  if (event.key === "ArrowDown" && selectedPointId.value) {
     event.preventDefault();
     const delta = event.shiftKey ? -100 : -10;
     adjustSelectedPointDepth(delta);
@@ -706,17 +767,17 @@ function handleKeyDownWithDepth(event: KeyboardEvent) {
 }
 
 onMounted(() => {
-  window.addEventListener('keydown', handleKeyDownWithDepth);
+  window.addEventListener("keydown", handleKeyDownWithDepth);
 });
 
 onUnmounted(() => {
-  window.removeEventListener('keydown', handleKeyDownWithDepth);
+  window.removeEventListener("keydown", handleKeyDownWithDepth);
 });
 
 defineExpose({
   selectedPointId,
   selectedPointIds,
-  clearSelection
+  clearSelection,
 });
 </script>
 

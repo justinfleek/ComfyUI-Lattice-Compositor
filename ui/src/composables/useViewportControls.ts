@@ -5,8 +5,8 @@
  * for the Three.js viewport.
  */
 
-import { ref, computed, type Ref, type ShallowRef } from 'vue';
-import type { LatticeEngine } from '@/engine/LatticeEngine';
+import { computed, type Ref, ref, type ShallowRef } from "vue";
+import type { LatticeEngine } from "@/engine/LatticeEngine";
 
 export interface ViewportControlsOptions {
   engine: ShallowRef<LatticeEngine | null>;
@@ -21,7 +21,7 @@ export interface ViewportControlsReturn {
   zoom: Ref<number>;
   viewportTransform: Ref<number[]>;
   zoomLevel: Ref<string>;
-  resolution: Ref<'full' | 'half' | 'third' | 'quarter' | 'custom'>;
+  resolution: Ref<"full" | "half" | "third" | "quarter" | "custom">;
   zoomDisplayPercent: Ref<number>;
 
   // Actions
@@ -38,14 +38,24 @@ export interface ViewportControlsReturn {
   screenToScene: (screenX: number, screenY: number) => { x: number; y: number };
 }
 
-export function useViewportControls(options: ViewportControlsOptions): ViewportControlsReturn {
-  const { engine, compositionWidth, compositionHeight, canvasWidth, canvasHeight } = options;
+export function useViewportControls(
+  options: ViewportControlsOptions,
+): ViewportControlsReturn {
+  const {
+    engine,
+    compositionWidth,
+    compositionHeight,
+    canvasWidth,
+    canvasHeight,
+  } = options;
 
   // State
   const zoom = ref(1);
   const viewportTransform = ref<number[]>([1, 0, 0, 1, 0, 0]);
-  const zoomLevel = ref<string>('fit');
-  const resolution = ref<'full' | 'half' | 'third' | 'quarter' | 'custom'>('full');
+  const zoomLevel = ref<string>("fit");
+  const resolution = ref<"full" | "half" | "third" | "quarter" | "custom">(
+    "full",
+  );
 
   // Computed
   const zoomDisplayPercent = computed(() => Math.round(zoom.value * 100));
@@ -106,7 +116,7 @@ export function useViewportControls(options: ViewportControlsOptions): ViewportC
     const padding = 0.85;
     const fitZoom = Math.min(
       (viewW * padding) / compW,
-      (viewH * padding) / compH
+      (viewH * padding) / compH,
     );
 
     zoom.value = fitZoom;
@@ -145,11 +155,11 @@ export function useViewportControls(options: ViewportControlsOptions): ViewportC
    * Handle zoom dropdown selection
    */
   function onZoomSelect() {
-    if (zoomLevel.value === 'fit') {
+    if (zoomLevel.value === "fit") {
       fitToView();
     } else {
       const newZoom = parseFloat(zoomLevel.value);
-      if (!isNaN(newZoom)) {
+      if (!Number.isNaN(newZoom)) {
         setZoom(newZoom);
         if (engine.value) {
           engine.value.getCameraController().setZoom(newZoom);
@@ -171,11 +181,14 @@ export function useViewportControls(options: ViewportControlsOptions): ViewportC
   /**
    * Convert screen coordinates to scene coordinates
    */
-  function screenToScene(screenX: number, screenY: number): { x: number; y: number } {
+  function screenToScene(
+    screenX: number,
+    screenY: number,
+  ): { x: number; y: number } {
     const vpt = viewportTransform.value;
     return {
       x: (screenX - vpt[4]) / vpt[0],
-      y: (screenY - vpt[5]) / vpt[3]
+      y: (screenY - vpt[5]) / vpt[3],
     };
   }
 

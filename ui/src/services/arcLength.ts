@@ -39,7 +39,7 @@
  * const points = param.getEvenlySpacedPoints(10);
  * ```
  */
-import * as THREE from 'three';
+import * as THREE from "three";
 
 interface Point2D {
   x: number;
@@ -78,7 +78,7 @@ export class ArcLengthParameterizer {
    */
   constructor(
     curve: THREE.Curve<THREE.Vector2 | THREE.Vector3>,
-    arcLengthDivisions: number = 200
+    _arcLengthDivisions: number = 200,
   ) {
     this.curve = curve;
     // Update arc lengths with specified divisions
@@ -114,7 +114,7 @@ export class ArcLengthParameterizer {
     return {
       point: { x: point.x, y: point.y },
       tangent: { x: tangent.x, y: tangent.y },
-      t: this.distanceToT(distance)
+      t: this.distanceToT(distance),
     };
   }
 
@@ -130,7 +130,7 @@ export class ArcLengthParameterizer {
     return {
       point: { x: point.x, y: point.y, z: point.z || 0 },
       tangent: { x: tangent.x, y: tangent.y, z: tangent.z || 0 },
-      t: this.distanceToT(distance)
+      t: this.distanceToT(distance),
     };
   }
 
@@ -185,31 +185,33 @@ export function createBezierCurve(
   p1: Point2D | Point3D,
   cp1: Point2D | Point3D,
   cp2: Point2D | Point3D,
-  p2: Point2D | Point3D
+  p2: Point2D | Point3D,
 ): THREE.CubicBezierCurve3 {
-  const z1 = 'z' in p1 ? p1.z : 0;
-  const zc1 = 'z' in cp1 ? cp1.z : 0;
-  const zc2 = 'z' in cp2 ? cp2.z : 0;
-  const z2 = 'z' in p2 ? p2.z : 0;
+  const z1 = "z" in p1 ? p1.z : 0;
+  const zc1 = "z" in cp1 ? cp1.z : 0;
+  const zc2 = "z" in cp2 ? cp2.z : 0;
+  const z2 = "z" in p2 ? p2.z : 0;
 
   return new THREE.CubicBezierCurve3(
     new THREE.Vector3(p1.x, p1.y, z1),
     new THREE.Vector3(cp1.x, cp1.y, zc1),
     new THREE.Vector3(cp2.x, cp2.y, zc2),
-    new THREE.Vector3(p2.x, p2.y, z2)
+    new THREE.Vector3(p2.x, p2.y, z2),
   );
 }
 
 /**
  * Convert an array of control points to Three.js Bezier curves
  */
-export function controlPointsToBeziers(controlPoints: Array<{
-  x: number;
-  y: number;
-  z?: number;
-  handleIn: { x: number; y: number; z?: number } | null;
-  handleOut: { x: number; y: number; z?: number } | null;
-}>): THREE.CubicBezierCurve3[] {
+export function controlPointsToBeziers(
+  controlPoints: Array<{
+    x: number;
+    y: number;
+    z?: number;
+    handleIn: { x: number; y: number; z?: number } | null;
+    handleOut: { x: number; y: number; z?: number } | null;
+  }>,
+): THREE.CubicBezierCurve3[] {
   const beziers: THREE.CubicBezierCurve3[] = [];
 
   for (let i = 0; i < controlPoints.length - 1; i++) {
@@ -219,12 +221,14 @@ export function controlPointsToBeziers(controlPoints: Array<{
     const h1 = p1.handleOut || { x: p1.x, y: p1.y, z: p1.z || 0 };
     const h2 = p2.handleIn || { x: p2.x, y: p2.y, z: p2.z || 0 };
 
-    beziers.push(createBezierCurve(
-      { x: p1.x, y: p1.y, z: p1.z || 0 },
-      { x: h1.x, y: h1.y, z: h1.z || 0 },
-      { x: h2.x, y: h2.y, z: h2.z || 0 },
-      { x: p2.x, y: p2.y, z: p2.z || 0 }
-    ));
+    beziers.push(
+      createBezierCurve(
+        { x: p1.x, y: p1.y, z: p1.z || 0 },
+        { x: h1.x, y: h1.y, z: h1.z || 0 },
+        { x: h2.x, y: h2.y, z: h2.z || 0 },
+        { x: p2.x, y: p2.y, z: p2.z || 0 },
+      ),
+    );
   }
 
   return beziers;
@@ -260,7 +264,7 @@ export class MultiSegmentParameterizer {
     return {
       point: { x: point.x, y: point.y },
       tangent: { x: tangent.x, y: tangent.y },
-      t: u
+      t: u,
     };
   }
 
@@ -276,7 +280,7 @@ export class MultiSegmentParameterizer {
     return {
       point: { x: point.x, y: point.y, z: point.z },
       tangent: { x: tangent.x, y: tangent.y, z: tangent.z },
-      t: u
+      t: u,
     };
   }
 
@@ -322,7 +326,9 @@ export class MultiSegmentParameterizer {
  * Legacy function for backward compatibility
  * Converts SVG-style path commands to a Three.js curve
  */
-export function pathCommandsToBezier(pathCommands: any[]): THREE.CubicBezierCurve3 | null {
+export function pathCommandsToBezier(
+  pathCommands: any[],
+): THREE.CubicBezierCurve3 | null {
   if (!pathCommands || pathCommands.length < 2) {
     return null;
   }
@@ -332,38 +338,50 @@ export function pathCommandsToBezier(pathCommands: any[]): THREE.CubicBezierCurv
   for (const cmd of pathCommands) {
     const [command, ...coords] = cmd;
 
-    if (command === 'M') {
+    if (command === "M") {
       startPoint = { x: coords[0], y: coords[1], z: coords[2] || 0 };
-    } else if (command === 'C' && startPoint) {
+    } else if (command === "C" && startPoint) {
       // Cubic bezier: startPoint, control1, control2, endPoint
       return new THREE.CubicBezierCurve3(
         new THREE.Vector3(startPoint.x, startPoint.y, startPoint.z),
         new THREE.Vector3(coords[0], coords[1], coords[2] || 0),
-        new THREE.Vector3(coords[3] || coords[2], coords[4] || coords[3], coords[5] || 0),
-        new THREE.Vector3(coords[6] || coords[4], coords[7] || coords[5], coords[8] || 0)
+        new THREE.Vector3(
+          coords[3] || coords[2],
+          coords[4] || coords[3],
+          coords[5] || 0,
+        ),
+        new THREE.Vector3(
+          coords[6] || coords[4],
+          coords[7] || coords[5],
+          coords[8] || 0,
+        ),
       );
-    } else if (command === 'Q' && startPoint) {
+    } else if (command === "Q" && startPoint) {
       // Quadratic bezier - convert to cubic for consistency
       // Q: start, control, end -> C: start, (start+2*control)/3, (2*control+end)/3, end
       const qcp = { x: coords[0], y: coords[1], z: coords[2] || 0 };
-      const end = { x: coords[3] || coords[2], y: coords[4] || coords[3], z: coords[5] || 0 };
+      const end = {
+        x: coords[3] || coords[2],
+        y: coords[4] || coords[3],
+        z: coords[5] || 0,
+      };
 
       const cp1 = {
         x: (startPoint.x + 2 * qcp.x) / 3,
         y: (startPoint.y + 2 * qcp.y) / 3,
-        z: (startPoint.z + 2 * qcp.z) / 3
+        z: (startPoint.z + 2 * qcp.z) / 3,
       };
       const cp2 = {
         x: (2 * qcp.x + end.x) / 3,
         y: (2 * qcp.y + end.y) / 3,
-        z: (2 * qcp.z + end.z) / 3
+        z: (2 * qcp.z + end.z) / 3,
       };
 
       return new THREE.CubicBezierCurve3(
         new THREE.Vector3(startPoint.x, startPoint.y, startPoint.z),
         new THREE.Vector3(cp1.x, cp1.y, cp1.z),
         new THREE.Vector3(cp2.x, cp2.y, cp2.z),
-        new THREE.Vector3(end.x, end.y, end.z)
+        new THREE.Vector3(end.x, end.y, end.z),
       );
     }
   }

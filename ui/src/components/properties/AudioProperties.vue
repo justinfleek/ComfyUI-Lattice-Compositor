@@ -300,36 +300,34 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
+import { computed, onMounted, ref, watch } from "vue";
 import {
   detectPeaks as detectAudioPeaks,
+  getFeatureAtFrame,
   type PeakData,
   type PeakDetectionConfig,
-  getFeatureAtFrame
-} from '@/services/audioFeatures';
+} from "@/services/audioFeatures";
 import {
-  type AudioMapping,
   type AudioFeature,
+  type AudioMapping,
   createDefaultAudioMapping,
-  getFeatureDisplayName,
-  getTargetDisplayName,
   getAllFeatures,
   getFeaturesByCategory,
-  getTargetsByCategory
-} from '@/services/audioReactiveMapping';
+  getTargetsByCategory,
+} from "@/services/audioReactiveMapping";
+import { useCompositorStore } from "@/stores/compositorStore";
 
 const store = useCompositorStore();
 
 // UI State
-const expandedSections = ref(new Set(['peaks', 'mappings']));
+const expandedSections = ref(new Set(["peaks", "mappings"]));
 const expandedMappings = ref(new Set<string>());
 
 // Peak detection config
 const peakConfig = ref<PeakDetectionConfig>({
   threshold: 0.3,
   minPeaksDistance: 10,
-  multiply: 1.0
+  multiply: 1.0,
 });
 
 // Peak data
@@ -339,48 +337,54 @@ const peakData = ref<PeakData | null>(null);
 const mappings = ref<AudioMapping[]>([]);
 
 // Visualizer state
-const visualizerFeature = ref<AudioFeature>('amplitude');
+const visualizerFeature = ref<AudioFeature>("amplitude");
 const visualizerCanvas = ref<HTMLCanvasElement | null>(null);
 
 // Computed
-const allFeatures = computed(() => getAllFeatures());
-const featuresByCategory = computed(() => getFeaturesByCategory());
-const targetsByCategory = computed(() => getTargetsByCategory());
+const _allFeatures = computed(() => getAllFeatures());
+const _featuresByCategory = computed(() => getFeaturesByCategory());
+const _targetsByCategory = computed(() => getTargetsByCategory());
 
-const playheadPosition = computed(() =>
-  (store.currentFrame / store.frameCount) * 100
+const _playheadPosition = computed(
+  () => (store.currentFrame / store.frameCount) * 100,
 );
 
-const currentFeatureValue = computed(() => {
+const _currentFeatureValue = computed(() => {
   if (!store.audioAnalysis) return 0;
-  return getFeatureAtFrame(store.audioAnalysis, visualizerFeature.value, store.currentFrame);
+  return getFeatureAtFrame(
+    store.audioAnalysis,
+    visualizerFeature.value,
+    store.currentFrame,
+  );
 });
 
 // BUG-081 fix: Layer and emitter selection helpers for targetEmitterId UI
-const allLayers = computed(() => store.layers);
+const _allLayers = computed(() => store.layers);
 
-function isParticleLayer(layerId: string | undefined): boolean {
+function _isParticleLayer(layerId: string | undefined): boolean {
   if (!layerId) return false;
-  const layer = store.layers.find(l => l.id === layerId);
-  return layer?.type === 'particles';
+  const layer = store.layers.find((l) => l.id === layerId);
+  return layer?.type === "particles";
 }
 
-function getEmittersForLayer(layerId: string | undefined): Array<{ id: string; name: string }> {
+function _getEmittersForLayer(
+  layerId: string | undefined,
+): Array<{ id: string; name: string }> {
   if (!layerId) return [];
-  const layer = store.layers.find(l => l.id === layerId);
-  if (!layer || layer.type !== 'particles') return [];
+  const layer = store.layers.find((l) => l.id === layerId);
+  if (!layer || layer.type !== "particles") return [];
   // ParticleLayerData has emitters array with id and name
   const data = layer.data as { emitters?: Array<{ id: string; name: string }> };
   return data?.emitters || [];
 }
 
-function onTargetLayerChange(mapping: AudioMapping): void {
+function _onTargetLayerChange(mapping: AudioMapping): void {
   // Clear targetEmitterId when layer changes (emitter may not exist in new layer)
   mapping.targetEmitterId = undefined;
 }
 
 // Methods
-function toggleSection(section: string): void {
+function _toggleSection(section: string): void {
   if (expandedSections.value.has(section)) {
     expandedSections.value.delete(section);
   } else {
@@ -388,7 +392,7 @@ function toggleSection(section: string): void {
   }
 }
 
-function toggleMappingExpanded(id: string): void {
+function _toggleMappingExpanded(id: string): void {
   if (expandedMappings.value.has(id)) {
     expandedMappings.value.delete(id);
   } else {
@@ -396,7 +400,7 @@ function toggleMappingExpanded(id: string): void {
   }
 }
 
-function detectPeaks(): void {
+function _detectPeaks(): void {
   if (!store.audioAnalysis) return;
 
   const weights = store.audioAnalysis.amplitudeEnvelope;
@@ -406,7 +410,7 @@ function detectPeaks(): void {
   store.setPeakData(peakData.value);
 }
 
-function addMapping(): void {
+function _addMapping(): void {
   const mapping = createDefaultAudioMapping();
   mappings.value.push(mapping);
   expandedMappings.value.add(mapping.id);
@@ -415,8 +419,8 @@ function addMapping(): void {
   store.addAudioMapping(mapping);
 }
 
-function removeMapping(id: string): void {
-  const index = mappings.value.findIndex(m => m.id === id);
+function _removeMapping(id: string): void {
+  const index = mappings.value.findIndex((m) => m.id === id);
   if (index >= 0) {
     mappings.value.splice(index, 1);
     expandedMappings.value.delete(id);
@@ -430,14 +434,14 @@ function drawVisualizer(): void {
   const canvas = visualizerCanvas.value;
   if (!canvas || !store.audioAnalysis) return;
 
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext("2d");
   if (!ctx) return;
 
   const width = canvas.width;
   const height = canvas.height;
 
   // Clear
-  ctx.fillStyle = '#1e1e1e';
+  ctx.fillStyle = "#1e1e1e";
   ctx.fillRect(0, 0, width, height);
 
   // Get feature data
@@ -445,77 +449,90 @@ function drawVisualizer(): void {
   const analysis = store.audioAnalysis;
 
   switch (visualizerFeature.value) {
-    case 'amplitude':
+    case "amplitude":
       featureData = analysis.amplitudeEnvelope;
       break;
-    case 'rms':
+    case "rms":
       featureData = analysis.rmsEnergy;
       break;
-    case 'spectralCentroid':
+    case "spectralCentroid":
       featureData = analysis.spectralCentroid;
       break;
-    case 'bass':
+    case "bass":
       featureData = analysis.frequencyBands.bass;
       break;
-    case 'mid':
+    case "mid":
       featureData = analysis.frequencyBands.mid;
       break;
-    case 'high':
+    case "high":
       featureData = analysis.frequencyBands.high;
       break;
-    case 'sub':
+    case "sub":
       featureData = analysis.frequencyBands.sub;
       break;
-    case 'lowMid':
+    case "lowMid":
       featureData = analysis.frequencyBands.lowMid;
       break;
-    case 'highMid':
+    case "highMid":
       featureData = analysis.frequencyBands.highMid;
       break;
     // New enhanced features
-    case 'spectralFlux':
+    case "spectralFlux":
       featureData = analysis.spectralFlux || [];
       break;
-    case 'zeroCrossingRate':
+    case "zeroCrossingRate":
       featureData = analysis.zeroCrossingRate || [];
       break;
-    case 'spectralRolloff':
+    case "spectralRolloff":
       featureData = analysis.spectralRolloff || [];
       break;
-    case 'spectralFlatness':
+    case "spectralFlatness":
       featureData = analysis.spectralFlatness || [];
       break;
-    case 'chromaEnergy':
+    case "chromaEnergy":
       featureData = analysis.chromaFeatures?.chromaEnergy || [];
       break;
     // Chroma pitch classes
-    case 'chromaC':
-    case 'chromaCs':
-    case 'chromaD':
-    case 'chromaDs':
-    case 'chromaE':
-    case 'chromaF':
-    case 'chromaFs':
-    case 'chromaG':
-    case 'chromaGs':
-    case 'chromaA':
-    case 'chromaAs':
-    case 'chromaB':
+    case "chromaC":
+    case "chromaCs":
+    case "chromaD":
+    case "chromaDs":
+    case "chromaE":
+    case "chromaF":
+    case "chromaFs":
+    case "chromaG":
+    case "chromaGs":
+    case "chromaA":
+    case "chromaAs":
+    case "chromaB":
       if (analysis.chromaFeatures?.chroma) {
-        const pitchIndex = ['chromaC', 'chromaCs', 'chromaD', 'chromaDs', 'chromaE', 'chromaF',
-                           'chromaFs', 'chromaG', 'chromaGs', 'chromaA', 'chromaAs', 'chromaB']
-                          .indexOf(visualizerFeature.value);
-        featureData = analysis.chromaFeatures.chroma.map(frame => frame[pitchIndex] || 0);
+        const pitchIndex = [
+          "chromaC",
+          "chromaCs",
+          "chromaD",
+          "chromaDs",
+          "chromaE",
+          "chromaF",
+          "chromaFs",
+          "chromaG",
+          "chromaGs",
+          "chromaA",
+          "chromaAs",
+          "chromaB",
+        ].indexOf(visualizerFeature.value);
+        featureData = analysis.chromaFeatures.chroma.map(
+          (frame) => frame[pitchIndex] || 0,
+        );
       }
       break;
-    case 'onsets':
+    case "onsets":
       // Create binary array for onsets
       featureData = new Array(analysis.frameCount).fill(0);
       for (const onset of analysis.onsets) {
         if (onset < featureData.length) featureData[onset] = 1;
       }
       break;
-    case 'peaks':
+    case "peaks":
       if (peakData.value) {
         featureData = new Array(analysis.frameCount).fill(0);
         for (const peakIndex of peakData.value.indices) {
@@ -528,7 +545,7 @@ function drawVisualizer(): void {
   if (featureData.length === 0) return;
 
   // Draw feature curve
-  ctx.strokeStyle = '#4a90d9';
+  ctx.strokeStyle = "#4a90d9";
   ctx.lineWidth = 1.5;
   ctx.beginPath();
 
@@ -545,14 +562,14 @@ function drawVisualizer(): void {
   ctx.stroke();
 
   // Draw peak markers if showing peaks
-  if (peakData.value && visualizerFeature.value !== 'peaks') {
-    ctx.fillStyle = '#ff6b6b';
+  if (peakData.value && visualizerFeature.value !== "peaks") {
+    ctx.fillStyle = "#ff6b6b";
     for (const peakIndex of peakData.value.indices) {
       const x = (peakIndex / featureData.length) * width;
       ctx.beginPath();
       ctx.moveTo(x, 0);
       ctx.lineTo(x, height);
-      ctx.strokeStyle = 'rgba(255, 107, 107, 0.3)';
+      ctx.strokeStyle = "rgba(255, 107, 107, 0.3)";
       ctx.stroke();
     }
   }
@@ -563,7 +580,7 @@ watch(
   () => [store.audioAnalysis, visualizerFeature.value, peakData.value],
   () => {
     drawVisualizer();
-  }
+  },
 );
 
 // Watch mappings for store sync
@@ -574,7 +591,7 @@ watch(
       store.updateAudioMapping(mapping.id, mapping);
     }
   },
-  { deep: true }
+  { deep: true },
 );
 
 // Lifecycle

@@ -18,7 +18,7 @@ async function initSES(): Promise<boolean> {
   if (sesReady) return true;
 
   try {
-    await import('ses');
+    await import("ses");
     const g = globalThis as any;
 
     if (!g.lockdown) {
@@ -26,12 +26,12 @@ async function initSES(): Promise<boolean> {
     }
 
     g.lockdown({
-      consoleTaming: 'unsafe',
-      errorTaming: 'unsafe',
-      stackFiltering: 'verbose',
-      overrideTaming: 'severe',
-      localeTaming: 'unsafe',
-      domainTaming: 'unsafe',
+      consoleTaming: "unsafe",
+      errorTaming: "unsafe",
+      stackFiltering: "verbose",
+      overrideTaming: "severe",
+      localeTaming: "unsafe",
+      domainTaming: "unsafe",
     });
 
     Compartment = g.Compartment;
@@ -39,7 +39,7 @@ async function initSES(): Promise<boolean> {
     sesReady = true;
     return true;
   } catch (e) {
-    console.error('[ExpressionWorker] SES init failed:', e);
+    console.error("[ExpressionWorker] SES init failed:", e);
     return false;
   }
 }
@@ -92,12 +92,12 @@ async function evaluate(req: EvalRequest): Promise<EvalResponse> {
   if (!sesReady) {
     const ok = await initSES();
     if (!ok) {
-      return { id: req.id, success: false, error: 'SES not available' };
+      return { id: req.id, success: false, error: "SES not available" };
     }
   }
 
   try {
-    const frame = typeof req.context.frame === 'number' ? req.context.frame : 0;
+    const frame = typeof req.context.frame === "number" ? req.context.frame : 0;
     const seededRandom = harden(createSeededRandom(frame));
 
     // Build compartment globals from context
@@ -128,7 +128,11 @@ async function evaluate(req: EvalRequest): Promise<EvalResponse> {
 
     // Add context values (only primitives)
     for (const [key, value] of Object.entries(req.context)) {
-      if (typeof value === 'number' || typeof value === 'string' || typeof value === 'boolean') {
+      if (
+        typeof value === "number" ||
+        typeof value === "string" ||
+        typeof value === "boolean"
+      ) {
         globals[key] = value;
       }
     }
@@ -137,7 +141,7 @@ async function evaluate(req: EvalRequest): Promise<EvalResponse> {
     const result = compartment.evaluate(req.code);
 
     // Validate result is a number
-    if (typeof result !== 'number' || !Number.isFinite(result)) {
+    if (typeof result !== "number" || !Number.isFinite(result)) {
       return { id: req.id, success: true, result: 0 };
     }
 
@@ -146,7 +150,7 @@ async function evaluate(req: EvalRequest): Promise<EvalResponse> {
     return {
       id: req.id,
       success: false,
-      error: e instanceof Error ? e.message : String(e)
+      error: e instanceof Error ? e.message : String(e),
     };
   }
 }
@@ -158,7 +162,7 @@ self.onmessage = async (e: MessageEvent<EvalRequest>) => {
 };
 
 // Signal ready
-self.postMessage({ type: 'ready' });
+self.postMessage({ type: "ready" });
 
 // Export empty object to make this a module (fixes TypeScript scope issues)
 export {};

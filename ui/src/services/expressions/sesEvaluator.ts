@@ -25,14 +25,19 @@
  * This replaces the previous Proxy+with sandbox (BUG-006) which was bypassable.
  */
 
-import type { ExpressionContext } from './types';
+import type { ExpressionContext } from "./types";
 
 // Re-export worker-based evaluator for DoS-protected async evaluation
-export { evaluateWithTimeout, isWorkerAvailable, terminateWorker, type EvalResult } from './workerEvaluator';
+export {
+  type EvalResult,
+  evaluateWithTimeout,
+  isWorkerAvailable,
+  terminateWorker,
+} from "./workerEvaluator";
 
 // SES lockdown status
 let sesInitialized = false;
-let sesError: Error | null = null;
+const sesError: Error | null = null;
 
 // Maximum expression length (10KB) to prevent payload attacks
 const MAX_EXPRESSION_LENGTH = 10240;
@@ -58,7 +63,9 @@ export async function initializeSES(): Promise<boolean> {
 
   // Mark as initialized - actual SES lockdown happens in the worker only
   sesInitialized = true;
-  console.log('[SES] Expression security via worker sandbox - main thread lockdown disabled for Vue/Three.js compatibility');
+  console.log(
+    "[SES] Expression security via worker sandbox - main thread lockdown disabled for Vue/Three.js compatibility",
+  );
   return true;
 }
 
@@ -84,14 +91,18 @@ export function getSESError(): Error | null {
  */
 export function createExpressionCompartment(ctx: ExpressionContext): any {
   if (!sesInitialized) {
-    throw new Error('[SES] Not initialized. Call initializeSES() at app startup.');
+    throw new Error(
+      "[SES] Not initialized. Call initializeSES() at app startup.",
+    );
   }
 
   // Import Compartment from SES (available after lockdown)
-  const { Compartment, harden } = (globalThis as any);
+  const { Compartment, harden } = globalThis as any;
 
   if (!Compartment) {
-    throw new Error('[SES] Compartment not available. Ensure lockdown() was called.');
+    throw new Error(
+      "[SES] Compartment not available. Ensure lockdown() was called.",
+    );
   }
 
   // Create safe Math object (harden to prevent modification)
@@ -154,7 +165,13 @@ export function createExpressionCompartment(ctx: ExpressionContext): any {
   // Utility functions for expressions
   const utilities = harden({
     // Linear interpolation
-    linear: (t: number, tMin: number, tMax: number, vMin: number, vMax: number): number => {
+    linear: (
+      t: number,
+      tMin: number,
+      tMax: number,
+      vMin: number,
+      vMax: number,
+    ): number => {
       if (t <= tMin) return vMin;
       if (t >= tMax) return vMax;
       return vMin + (vMax - vMin) * ((t - tMin) / (tMax - tMin));
@@ -173,25 +190,25 @@ export function createExpressionCompartment(ctx: ExpressionContext): any {
     },
 
     // Angle conversion
-    radiansToDegrees: (rad: number): number => rad * 180 / Math.PI,
-    degreesToRadians: (deg: number): number => deg * Math.PI / 180,
+    radiansToDegrees: (rad: number): number => (rad * 180) / Math.PI,
+    degreesToRadians: (deg: number): number => (deg * Math.PI) / 180,
 
     // Time conversion
     timeToFrames: (t: number = ctx.time): number => Math.round(t * ctx.fps),
     framesToTime: (f: number): number => f / ctx.fps,
 
     // Degree-based trig
-    sinDeg: (deg: number): number => Math.sin(deg * Math.PI / 180),
-    cosDeg: (deg: number): number => Math.cos(deg * Math.PI / 180),
-    tanDeg: (deg: number): number => Math.tan(deg * Math.PI / 180),
+    sinDeg: (deg: number): number => Math.sin((deg * Math.PI) / 180),
+    cosDeg: (deg: number): number => Math.cos((deg * Math.PI) / 180),
+    tanDeg: (deg: number): number => Math.tan((deg * Math.PI) / 180),
 
     // Vector operations (basic)
     length: (a: number | number[], b?: number | number[]): number => {
       if (b === undefined) {
-        if (typeof a === 'number') return Math.abs(a);
+        if (typeof a === "number") return Math.abs(a);
         return Math.sqrt(a.reduce((sum: number, v: number) => sum + v * v, 0));
       }
-      if (typeof a === 'number' && typeof b === 'number') {
+      if (typeof a === "number" && typeof b === "number") {
         return Math.abs(a - b);
       }
       const arrA = Array.isArray(a) ? a : [a];
@@ -206,7 +223,7 @@ export function createExpressionCompartment(ctx: ExpressionContext): any {
 
     // Vector add
     add: (a: number | number[], b: number | number[]): number | number[] => {
-      if (typeof a === 'number' && typeof b === 'number') return a + b;
+      if (typeof a === "number" && typeof b === "number") return a + b;
       const arrA = Array.isArray(a) ? a : [a];
       const arrB = Array.isArray(b) ? b : [b];
       const len = Math.max(arrA.length, arrB.length);
@@ -219,7 +236,7 @@ export function createExpressionCompartment(ctx: ExpressionContext): any {
 
     // Vector subtract
     sub: (a: number | number[], b: number | number[]): number | number[] => {
-      if (typeof a === 'number' && typeof b === 'number') return a - b;
+      if (typeof a === "number" && typeof b === "number") return a - b;
       const arrA = Array.isArray(a) ? a : [a];
       const arrB = Array.isArray(b) ? b : [b];
       const len = Math.max(arrA.length, arrB.length);
@@ -232,12 +249,12 @@ export function createExpressionCompartment(ctx: ExpressionContext): any {
 
     // Vector multiply
     mul: (a: number | number[], b: number | number[]): number | number[] => {
-      if (typeof a === 'number' && typeof b === 'number') return a * b;
-      if (typeof b === 'number' && Array.isArray(a)) {
-        return a.map(v => v * b);
+      if (typeof a === "number" && typeof b === "number") return a * b;
+      if (typeof b === "number" && Array.isArray(a)) {
+        return a.map((v) => v * b);
       }
-      if (typeof a === 'number' && Array.isArray(b)) {
-        return b.map(v => v * a);
+      if (typeof a === "number" && Array.isArray(b)) {
+        return b.map((v) => v * a);
       }
       const arrA = a as number[];
       const arrB = b as number[];
@@ -251,12 +268,12 @@ export function createExpressionCompartment(ctx: ExpressionContext): any {
 
     // Vector divide
     div: (a: number | number[], b: number | number[]): number | number[] => {
-      if (typeof a === 'number' && typeof b === 'number') return a / (b || 1);
-      if (typeof b === 'number' && Array.isArray(a)) {
-        return a.map(v => v / (b || 1));
+      if (typeof a === "number" && typeof b === "number") return a / (b || 1);
+      if (typeof b === "number" && Array.isArray(a)) {
+        return a.map((v) => v / (b || 1));
       }
-      if (typeof a === 'number' && Array.isArray(b)) {
-        return b.map(v => a / (v || 1));
+      if (typeof a === "number" && Array.isArray(b)) {
+        return b.map((v) => a / (v || 1));
       }
       const arrA = a as number[];
       const arrB = b as number[];
@@ -302,7 +319,9 @@ export function createExpressionCompartment(ctx: ExpressionContext): any {
 
     // Property value (frozen if array)
     value: Array.isArray(ctx.value) ? harden([...ctx.value]) : ctx.value,
-    velocity: Array.isArray(ctx.velocity) ? harden([...ctx.velocity]) : ctx.velocity,
+    velocity: Array.isArray(ctx.velocity)
+      ? harden([...ctx.velocity])
+      : ctx.velocity,
     numKeys: ctx.numKeys,
 
     // Utility functions
@@ -310,8 +329,8 @@ export function createExpressionCompartment(ctx: ExpressionContext): any {
 
     // Console for debugging (limited)
     console: harden({
-      log: (...args: any[]) => console.log('[Expression]', ...args),
-      warn: (...args: any[]) => console.warn('[Expression]', ...args),
+      log: (...args: any[]) => console.log("[Expression]", ...args),
+      warn: (...args: any[]) => console.warn("[Expression]", ...args),
     }),
 
     // SECURITY: Explicitly block dangerous intrinsics
@@ -349,28 +368,37 @@ export function createExpressionCompartment(ctx: ExpressionContext): any {
  * @param ctx - The expression context
  * @returns The evaluated result, or ctx.value if SES unavailable
  */
-export function evaluateInSES(code: string, ctx: ExpressionContext): number | number[] | string {
+export function evaluateInSES(
+  code: string,
+  ctx: ExpressionContext,
+): number | number[] | string {
   // SECURITY: Type check - defense in depth for JS callers
-  if (typeof code !== 'string') {
-    console.warn('[SECURITY] evaluateInSES: code is not a string');
+  if (typeof code !== "string") {
+    console.warn("[SECURITY] evaluateInSES: code is not a string");
     return ctx.value;
   }
 
-  if (!code || code.trim() === '') {
+  if (!code || code.trim() === "") {
     return ctx.value;
   }
 
   // SECURITY: If SES is not initialized, DO NOT evaluate - return passthrough
   // This is intentional. We fail CLOSED, not open.
   if (!sesInitialized) {
-    console.error('[SECURITY] SES not initialized - expression evaluation DISABLED for security');
-    console.error('[SECURITY] Call initializeSES() at app startup to enable expressions');
+    console.error(
+      "[SECURITY] SES not initialized - expression evaluation DISABLED for security",
+    );
+    console.error(
+      "[SECURITY] Call initializeSES() at app startup to enable expressions",
+    );
     return ctx.value;
   }
 
   // SECURITY: Length limit to prevent payload attacks
   if (code.length > MAX_EXPRESSION_LENGTH) {
-    console.warn(`[SECURITY] Expression too long (${code.length} bytes, max ${MAX_EXPRESSION_LENGTH})`);
+    console.warn(
+      `[SECURITY] Expression too long (${code.length} bytes, max ${MAX_EXPRESSION_LENGTH})`,
+    );
     return ctx.value;
   }
 
@@ -381,13 +409,19 @@ export function evaluateInSES(code: string, ctx: ExpressionContext): number | nu
     const compartment = createExpressionCompartment(ctx);
 
     // Auto-return the last expression if code doesn't contain explicit return
-    const needsReturn = !code.includes('return ') && !code.includes('return;');
+    const needsReturn = !code.includes("return ") && !code.includes("return;");
     const processedCode = needsReturn
-      ? code.trim().split('\n').map((line, i, arr) =>
-          i === arr.length - 1 && !line.trim().startsWith('//') && line.trim().length > 0
-            ? `return ${line}`
-            : line
-        ).join('\n')
+      ? code
+          .trim()
+          .split("\n")
+          .map((line, i, arr) =>
+            i === arr.length - 1 &&
+            !line.trim().startsWith("//") &&
+            line.trim().length > 0
+              ? `return ${line}`
+              : line,
+          )
+          .join("\n")
       : code;
 
     // Wrap in IIFE for proper return handling
@@ -399,7 +433,7 @@ export function evaluateInSES(code: string, ctx: ExpressionContext): number | nu
     return result;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    console.warn('[SES] Expression error:', message);
+    console.warn("[SES] Expression error:", message);
     return ctx.value;
   }
 }
@@ -418,28 +452,32 @@ export function evaluateInSES(code: string, ctx: ExpressionContext): number | nu
  */
 export function evaluateSimpleExpression(
   expr: string,
-  context: Record<string, unknown>
+  context: Record<string, unknown>,
 ): number | null {
   // SECURITY: Type check - defense in depth for JS callers
-  if (typeof expr !== 'string') {
-    console.warn('[SECURITY] evaluateSimpleExpression: expr is not a string');
+  if (typeof expr !== "string") {
+    console.warn("[SECURITY] evaluateSimpleExpression: expr is not a string");
     return null;
   }
 
   // SECURITY: Empty expression = fail closed
-  if (!expr || expr.trim() === '') {
+  if (!expr || expr.trim() === "") {
     return null;
   }
 
   // SECURITY: If SES is not initialized, DO NOT evaluate
   if (!sesInitialized) {
-    console.error('[SECURITY] SES not initialized - expression evaluation DISABLED');
+    console.error(
+      "[SECURITY] SES not initialized - expression evaluation DISABLED",
+    );
     return null;
   }
 
   // SECURITY: Length limit to prevent payload attacks
   if (expr.length > MAX_EXPRESSION_LENGTH) {
-    console.warn(`[SECURITY] Expression too long (${expr.length} bytes, max ${MAX_EXPRESSION_LENGTH})`);
+    console.warn(
+      `[SECURITY] Expression too long (${expr.length} bytes, max ${MAX_EXPRESSION_LENGTH})`,
+    );
     return null;
   }
 
@@ -451,7 +489,7 @@ export function evaluateSimpleExpression(
 
   // SECURITY: Both Compartment AND harden must exist
   if (!Compartment || !harden) {
-    console.error('[SECURITY] SES Compartment or harden not available');
+    console.error("[SECURITY] SES Compartment or harden not available");
     return null;
   }
 
@@ -479,7 +517,7 @@ export function evaluateSimpleExpression(
 
     // Seeded random for deterministic results
     // Uses frame from context if available, otherwise 0
-    const frame = typeof context.frame === 'number' ? context.frame : 0;
+    const frame = typeof context.frame === "number" ? context.frame : 0;
     const seededRandom = harden((seed?: number): number => {
       const s = seed !== undefined ? seed : frame;
       const x = Math.sin(s * 12.9898) * 43758.5453;
@@ -490,7 +528,11 @@ export function evaluateSimpleExpression(
     const safeContext: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(context)) {
       // Only allow primitive values in context (numbers, strings, booleans)
-      if (typeof value === 'number' || typeof value === 'string' || typeof value === 'boolean') {
+      if (
+        typeof value === "number" ||
+        typeof value === "string" ||
+        typeof value === "boolean"
+      ) {
         safeContext[key] = value;
       } else if (value === null || value === undefined) {
         safeContext[key] = value;
@@ -499,41 +541,43 @@ export function evaluateSimpleExpression(
     }
 
     // Create compartment with minimal globals
-    const compartment = new Compartment(harden({
-      Math: safeMath,
-      isNaN: Number.isNaN,
-      isFinite: Number.isFinite,
-      Infinity,
-      NaN,
-      undefined,
-      // Deterministic seeded random function
-      random: seededRandom,
-      // Spread safe context values
-      ...safeContext,
+    const compartment = new Compartment(
+      harden({
+        Math: safeMath,
+        isNaN: Number.isNaN,
+        isFinite: Number.isFinite,
+        Infinity,
+        NaN,
+        undefined,
+        // Deterministic seeded random function
+        random: seededRandom,
+        // Spread safe context values
+        ...safeContext,
 
-      // SECURITY: Explicitly block dangerous intrinsics
-      Function: undefined,
-      eval: undefined,
-      globalThis: undefined,
-      window: undefined,
-      document: undefined,
-      setTimeout: undefined,
-      setInterval: undefined,
-      setImmediate: undefined,
-      fetch: undefined,
-      XMLHttpRequest: undefined,
-      WebSocket: undefined,
-      Worker: undefined,
-      importScripts: undefined,
-      require: undefined,
-      process: undefined,
-      Deno: undefined,
-      Bun: undefined,
-    }));
+        // SECURITY: Explicitly block dangerous intrinsics
+        Function: undefined,
+        eval: undefined,
+        globalThis: undefined,
+        window: undefined,
+        document: undefined,
+        setTimeout: undefined,
+        setInterval: undefined,
+        setImmediate: undefined,
+        fetch: undefined,
+        XMLHttpRequest: undefined,
+        WebSocket: undefined,
+        Worker: undefined,
+        importScripts: undefined,
+        require: undefined,
+        process: undefined,
+        Deno: undefined,
+        Bun: undefined,
+      }),
+    );
 
     // Evaluate expression (auto-return single expression)
     const trimmedExpr = expr.trim();
-    const wrappedCode = trimmedExpr.includes('return ')
+    const wrappedCode = trimmedExpr.includes("return ")
       ? `(function() { ${trimmedExpr} })()`
       : trimmedExpr;
 
@@ -541,21 +585,21 @@ export function evaluateSimpleExpression(
 
     // SECURITY: Validate result is a primitive number
     // Using typeof check - NOT Number(result) which could trigger valueOf
-    if (typeof result !== 'number') {
-      console.warn('[SES] Expression did not return a number:', typeof result);
+    if (typeof result !== "number") {
+      console.warn("[SES] Expression did not return a number:", typeof result);
       return null;
     }
 
     // SECURITY: Check for NaN/Infinity
     if (!Number.isFinite(result)) {
-      console.warn('[SES] Expression returned non-finite number:', result);
+      console.warn("[SES] Expression returned non-finite number:", result);
       return null;
     }
 
     return result;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    console.warn('[SES] Simple expression error:', message);
+    console.warn("[SES] Simple expression error:", message);
     return null;
   }
 }

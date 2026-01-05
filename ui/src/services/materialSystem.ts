@@ -19,10 +19,10 @@
  * - Opacity/Alpha
  */
 
-import * as THREE from 'three';
-import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
-import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader.js';
-import type { TextureMapType, AssetReference } from '@/types/project';
+import * as THREE from "three";
+import { EXRLoader } from "three/examples/jsm/loaders/EXRLoader.js";
+import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
+import type { AssetReference, TextureMapType } from "@/types/project";
 
 // ============================================================================
 // TYPES
@@ -75,7 +75,7 @@ export interface PBRMaterialConfig {
   textureRotation: number;
 
   // Rendering options
-  side: 'front' | 'back' | 'double';
+  side: "front" | "back" | "double";
   flatShading: boolean;
   wireframe: boolean;
   depthWrite: boolean;
@@ -85,11 +85,11 @@ export interface PBRMaterialConfig {
 /** Environment map configuration */
 export interface EnvironmentConfig {
   enabled: boolean;
-  assetId?: string;          // HDRI asset ID
-  intensity: number;         // Environment intensity
-  rotation: number;          // Y-axis rotation (degrees)
-  backgroundBlur: number;    // Background blur amount (0-1)
-  useAsBackground: boolean;  // Show HDRI as scene background
+  assetId?: string; // HDRI asset ID
+  intensity: number; // Environment intensity
+  rotation: number; // Y-axis rotation (degrees)
+  backgroundBlur: number; // Background blur amount (0-1)
+  useAsBackground: boolean; // Show HDRI as scene background
 }
 
 /** Material preset definition */
@@ -154,7 +154,9 @@ export class MaterialSystem {
   /**
    * Set asset getter callback
    */
-  setAssetGetter(getter: (assetId: string) => AssetReference | undefined): void {
+  setAssetGetter(
+    getter: (assetId: string) => AssetReference | undefined,
+  ): void {
     this.assetGetter = getter;
   }
 
@@ -172,7 +174,7 @@ export class MaterialSystem {
       repeat?: { x: number; y: number };
       offset?: { x: number; y: number };
       rotation?: number;
-    }
+    },
   ): Promise<THREE.Texture> {
     // Check cache
     const cacheKey = `${urlOrAssetId}:${mapType}`;
@@ -212,7 +214,7 @@ export class MaterialSystem {
           resolve(texture);
         },
         undefined,
-        reject
+        reject,
       );
     });
   }
@@ -220,26 +222,29 @@ export class MaterialSystem {
   /**
    * Configure texture settings based on map type
    */
-  private configureTextureForMapType(texture: THREE.Texture, mapType: TextureMapType): void {
+  private configureTextureForMapType(
+    texture: THREE.Texture,
+    mapType: TextureMapType,
+  ): void {
     // Default settings
     texture.generateMipmaps = true;
     texture.minFilter = THREE.LinearMipmapLinearFilter;
     texture.magFilter = THREE.LinearFilter;
 
     switch (mapType) {
-      case 'albedo':
-      case 'emissive':
+      case "albedo":
+      case "emissive":
         // sRGB color space for color maps
         texture.colorSpace = THREE.SRGBColorSpace;
         break;
 
-      case 'normal':
-      case 'roughness':
-      case 'metalness':
-      case 'ao':
-      case 'height':
-      case 'opacity':
-      case 'specular':
+      case "normal":
+      case "roughness":
+      case "metalness":
+      case "ao":
+      case "height":
+      case "opacity":
+      case "specular":
         // Linear color space for data maps
         texture.colorSpace = THREE.LinearSRGBColorSpace;
         break;
@@ -253,7 +258,9 @@ export class MaterialSystem {
   /**
    * Create a PBR material from configuration
    */
-  async createPBRMaterial(config: PBRMaterialConfig): Promise<THREE.MeshStandardMaterial> {
+  async createPBRMaterial(
+    config: PBRMaterialConfig,
+  ): Promise<THREE.MeshStandardMaterial> {
     // Check cache
     const cached = this.materialCache.get(config.id);
     if (cached) return cached;
@@ -283,98 +290,98 @@ export class MaterialSystem {
 
     if (config.maps.albedo) {
       texturePromises.push(
-        this.loadTexture(config.maps.albedo, 'albedo', {
+        this.loadTexture(config.maps.albedo, "albedo", {
           repeat: config.textureRepeat,
           offset: config.textureOffset,
           rotation: config.textureRotation,
         }).then((tex) => {
           material.map = tex;
-        })
+        }),
       );
     }
 
     if (config.maps.normal) {
       texturePromises.push(
-        this.loadTexture(config.maps.normal, 'normal', {
+        this.loadTexture(config.maps.normal, "normal", {
           repeat: config.textureRepeat,
           offset: config.textureOffset,
           rotation: config.textureRotation,
         }).then((tex) => {
           material.normalMap = tex;
-        })
+        }),
       );
     }
 
     if (config.maps.roughness) {
       texturePromises.push(
-        this.loadTexture(config.maps.roughness, 'roughness', {
+        this.loadTexture(config.maps.roughness, "roughness", {
           repeat: config.textureRepeat,
           offset: config.textureOffset,
           rotation: config.textureRotation,
         }).then((tex) => {
           material.roughnessMap = tex;
-        })
+        }),
       );
     }
 
     if (config.maps.metalness) {
       texturePromises.push(
-        this.loadTexture(config.maps.metalness, 'metalness', {
+        this.loadTexture(config.maps.metalness, "metalness", {
           repeat: config.textureRepeat,
           offset: config.textureOffset,
           rotation: config.textureRotation,
         }).then((tex) => {
           material.metalnessMap = tex;
-        })
+        }),
       );
     }
 
     if (config.maps.ao) {
       texturePromises.push(
-        this.loadTexture(config.maps.ao, 'ao', {
+        this.loadTexture(config.maps.ao, "ao", {
           repeat: config.textureRepeat,
           offset: config.textureOffset,
           rotation: config.textureRotation,
         }).then((tex) => {
           material.aoMap = tex;
-        })
+        }),
       );
     }
 
     if (config.maps.emissive) {
       texturePromises.push(
-        this.loadTexture(config.maps.emissive, 'emissive', {
+        this.loadTexture(config.maps.emissive, "emissive", {
           repeat: config.textureRepeat,
           offset: config.textureOffset,
           rotation: config.textureRotation,
         }).then((tex) => {
           material.emissiveMap = tex;
-        })
+        }),
       );
     }
 
     if (config.maps.height) {
       texturePromises.push(
-        this.loadTexture(config.maps.height, 'height', {
+        this.loadTexture(config.maps.height, "height", {
           repeat: config.textureRepeat,
           offset: config.textureOffset,
           rotation: config.textureRotation,
         }).then((tex) => {
           material.displacementMap = tex;
-        })
+        }),
       );
     }
 
     if (config.maps.opacity) {
       texturePromises.push(
-        this.loadTexture(config.maps.opacity, 'opacity', {
+        this.loadTexture(config.maps.opacity, "opacity", {
           repeat: config.textureRepeat,
           offset: config.textureOffset,
           rotation: config.textureRotation,
         }).then((tex) => {
           material.alphaMap = tex;
           material.transparent = true;
-        })
+        }),
       );
     }
 
@@ -394,13 +401,13 @@ export class MaterialSystem {
   /**
    * Get THREE.Side from string
    */
-  private getSide(side: 'front' | 'back' | 'double'): THREE.Side {
+  private getSide(side: "front" | "back" | "double"): THREE.Side {
     switch (side) {
-      case 'front':
+      case "front":
         return THREE.FrontSide;
-      case 'back':
+      case "back":
         return THREE.BackSide;
-      case 'double':
+      case "double":
         return THREE.DoubleSide;
     }
   }
@@ -412,13 +419,13 @@ export class MaterialSystem {
     return {
       id,
       name,
-      color: '#ffffff',
+      color: "#ffffff",
       opacity: 1,
       transparent: false,
       metalness: 0,
       roughness: 0.5,
       envMapIntensity: 1,
-      emissive: '#000000',
+      emissive: "#000000",
       emissiveIntensity: 1,
       normalScale: 1,
       displacementScale: 0,
@@ -428,7 +435,7 @@ export class MaterialSystem {
       textureRepeat: { x: 1, y: 1 },
       textureOffset: { x: 0, y: 0 },
       textureRotation: 0,
-      side: 'double',
+      side: "double",
       flatShading: false,
       wireframe: false,
       depthWrite: true,
@@ -445,7 +452,9 @@ export class MaterialSystem {
    */
   async loadEnvironmentMap(urlOrAssetId: string): Promise<THREE.Texture> {
     if (!this.pmremGenerator) {
-      throw new Error('MaterialSystem not initialized. Call initialize() with renderer first.');
+      throw new Error(
+        "MaterialSystem not initialized. Call initialize() with renderer first.",
+      );
     }
 
     // Resolve URL from asset ID if needed
@@ -458,7 +467,7 @@ export class MaterialSystem {
     }
 
     // Determine loader based on file extension
-    const isEXR = url.toLowerCase().endsWith('.exr');
+    const isEXR = url.toLowerCase().endsWith(".exr");
     const loader = isEXR ? this.exrLoader : this.rgbeLoader;
 
     return new Promise((resolve, reject) => {
@@ -466,7 +475,8 @@ export class MaterialSystem {
         url,
         (texture) => {
           // Generate PMREM from equirectangular HDR
-          const envMap = this.pmremGenerator!.fromEquirectangular(texture).texture;
+          const envMap =
+            this.pmremGenerator?.fromEquirectangular(texture).texture;
           texture.dispose();
 
           this.envMap = envMap;
@@ -478,7 +488,7 @@ export class MaterialSystem {
           resolve(envMap);
         },
         undefined,
-        reject
+        reject,
       );
     });
   }
@@ -533,42 +543,42 @@ export class MaterialSystem {
     return [
       // Metals
       {
-        id: 'chrome',
-        name: 'Chrome',
-        category: 'Metal',
+        id: "chrome",
+        name: "Chrome",
+        category: "Metal",
         config: {
-          color: '#ffffff',
+          color: "#ffffff",
           metalness: 1,
           roughness: 0.05,
           envMapIntensity: 1.5,
         },
       },
       {
-        id: 'brushed_steel',
-        name: 'Brushed Steel',
-        category: 'Metal',
+        id: "brushed_steel",
+        name: "Brushed Steel",
+        category: "Metal",
         config: {
-          color: '#c0c0c0',
+          color: "#c0c0c0",
           metalness: 1,
           roughness: 0.4,
         },
       },
       {
-        id: 'gold',
-        name: 'Gold',
-        category: 'Metal',
+        id: "gold",
+        name: "Gold",
+        category: "Metal",
         config: {
-          color: '#ffd700',
+          color: "#ffd700",
           metalness: 1,
           roughness: 0.2,
         },
       },
       {
-        id: 'copper',
-        name: 'Copper',
-        category: 'Metal',
+        id: "copper",
+        name: "Copper",
+        category: "Metal",
         config: {
-          color: '#b87333',
+          color: "#b87333",
           metalness: 1,
           roughness: 0.3,
         },
@@ -576,21 +586,21 @@ export class MaterialSystem {
 
       // Plastics
       {
-        id: 'glossy_plastic',
-        name: 'Glossy Plastic',
-        category: 'Plastic',
+        id: "glossy_plastic",
+        name: "Glossy Plastic",
+        category: "Plastic",
         config: {
-          color: '#ff0000',
+          color: "#ff0000",
           metalness: 0,
           roughness: 0.1,
         },
       },
       {
-        id: 'matte_plastic',
-        name: 'Matte Plastic',
-        category: 'Plastic',
+        id: "matte_plastic",
+        name: "Matte Plastic",
+        category: "Plastic",
         config: {
-          color: '#ffffff',
+          color: "#ffffff",
           metalness: 0,
           roughness: 0.8,
         },
@@ -598,11 +608,11 @@ export class MaterialSystem {
 
       // Glass
       {
-        id: 'clear_glass',
-        name: 'Clear Glass',
-        category: 'Glass',
+        id: "clear_glass",
+        name: "Clear Glass",
+        category: "Glass",
         config: {
-          color: '#ffffff',
+          color: "#ffffff",
           metalness: 0,
           roughness: 0,
           opacity: 0.2,
@@ -611,11 +621,11 @@ export class MaterialSystem {
         },
       },
       {
-        id: 'frosted_glass',
-        name: 'Frosted Glass',
-        category: 'Glass',
+        id: "frosted_glass",
+        name: "Frosted Glass",
+        category: "Glass",
         config: {
-          color: '#ffffff',
+          color: "#ffffff",
           metalness: 0,
           roughness: 0.5,
           opacity: 0.5,
@@ -625,21 +635,21 @@ export class MaterialSystem {
 
       // Natural
       {
-        id: 'clay',
-        name: 'Clay',
-        category: 'Natural',
+        id: "clay",
+        name: "Clay",
+        category: "Natural",
         config: {
-          color: '#d4a574',
+          color: "#d4a574",
           metalness: 0,
           roughness: 0.9,
         },
       },
       {
-        id: 'stone',
-        name: 'Stone',
-        category: 'Natural',
+        id: "stone",
+        name: "Stone",
+        category: "Natural",
         config: {
-          color: '#808080',
+          color: "#808080",
           metalness: 0,
           roughness: 0.7,
         },
@@ -647,24 +657,24 @@ export class MaterialSystem {
 
       // Emissive
       {
-        id: 'neon_glow',
-        name: 'Neon Glow',
-        category: 'Emissive',
+        id: "neon_glow",
+        name: "Neon Glow",
+        category: "Emissive",
         config: {
-          color: '#000000',
-          emissive: '#00ffff',
+          color: "#000000",
+          emissive: "#00ffff",
           emissiveIntensity: 2,
           metalness: 0,
           roughness: 0.5,
         },
       },
       {
-        id: 'hot_metal',
-        name: 'Hot Metal',
-        category: 'Emissive',
+        id: "hot_metal",
+        name: "Hot Metal",
+        category: "Emissive",
         config: {
-          color: '#ff4400',
-          emissive: '#ff2200',
+          color: "#ff4400",
+          emissive: "#ff2200",
           emissiveIntensity: 1,
           metalness: 0.8,
           roughness: 0.4,
@@ -679,7 +689,7 @@ export class MaterialSystem {
   async createFromPreset(
     presetId: string,
     materialId: string,
-    overrides?: Partial<PBRMaterialConfig>
+    overrides?: Partial<PBRMaterialConfig>,
   ): Promise<THREE.MeshStandardMaterial> {
     const preset = MaterialSystem.getPresets().find((p) => p.id === presetId);
     if (!preset) {
@@ -703,7 +713,10 @@ export class MaterialSystem {
   /**
    * Update an existing material's properties
    */
-  updateMaterial(materialId: string, updates: Partial<PBRMaterialConfig>): void {
+  updateMaterial(
+    materialId: string,
+    updates: Partial<PBRMaterialConfig>,
+  ): void {
     const material = this.materialCache.get(materialId);
     if (!material) return;
 

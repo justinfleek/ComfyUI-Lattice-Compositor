@@ -196,14 +196,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import { EFFECT_DEFINITIONS, EFFECT_CATEGORIES, type EffectCategory } from '@/types/effects';
-import ScrubableNumber from '@/components/controls/ScrubableNumber.vue';
-import SliderInput from '@/components/controls/SliderInput.vue';
-import AngleDial from '@/components/controls/AngleDial.vue';
-import ColorPicker from '@/components/controls/ColorPicker.vue';
-import { rgbaToHex, hexToRgba } from '@/utils/colorUtils';
+import { computed, onMounted, onUnmounted, ref } from "vue";
+import { useCompositorStore } from "@/stores/compositorStore";
+import { EFFECT_CATEGORIES, EFFECT_DEFINITIONS } from "@/types/effects";
+import { hexToRgba, rgbaToHex } from "@/utils/colorUtils";
 
 const store = useCompositorStore();
 const showAddMenu = ref(false);
@@ -214,11 +210,11 @@ const dragOverEffectId = ref<string | null>(null);
 const draggedIndex = ref<number | null>(null);
 
 const layer = computed(() => store.selectedLayer);
-const categories = EFFECT_CATEGORIES;
+const _categories = EFFECT_CATEGORIES;
 
 // --- Helpers ---
 
-function getEffectsByCategory(cat: string) {
+function _getEffectsByCategory(cat: string) {
   return Object.entries(EFFECT_DEFINITIONS)
     .filter(([_, def]) => def.category === cat)
     .map(([key, def]) => ({ key, ...def }));
@@ -226,83 +222,98 @@ function getEffectsByCategory(cat: string) {
 
 function getParamDef(effectKey: string, paramKey: string) {
   const def = EFFECT_DEFINITIONS[effectKey];
-  return def?.parameters.find(p => formatParamKey(p.name) === paramKey);
+  return def?.parameters.find((p) => formatParamKey(p.name) === paramKey);
 }
 
 // Utility to match the key generation in createEffectInstance
 function formatParamKey(name: string) {
-  return name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_|_$/g, "");
 }
 
-function hasRange(effectKey: string, paramKey: string) {
+function _hasRange(effectKey: string, paramKey: string) {
   const def = getParamDef(effectKey, paramKey);
   return def && (def.min !== undefined || def.max !== undefined);
 }
 
-function isCheckbox(effectKey: string, paramKey: string) {
+function _isCheckbox(effectKey: string, paramKey: string) {
   const def = getParamDef(effectKey, paramKey);
-  return def?.type === 'checkbox';
+  return def?.type === "checkbox";
 }
 
-function isAngleParam(effectKey: string, paramKey: string) {
+function _isAngleParam(effectKey: string, paramKey: string) {
   const def = getParamDef(effectKey, paramKey);
-  return def?.type === 'angle';
+  return def?.type === "angle";
 }
 
-function isLayerParam(effectKey: string, paramKey: string) {
+function _isLayerParam(effectKey: string, paramKey: string) {
   const def = getParamDef(effectKey, paramKey);
-  return def?.type === 'layer';
+  return def?.type === "layer";
 }
 
-function getAvailableLayers() {
+function _getAvailableLayers() {
   const comp = store.getActiveComp();
   if (!comp) return [];
   // Return all layers except the currently selected one (can't use self as displacement map)
-  return comp.layers.filter(l => l.id !== layer.value?.id);
+  return comp.layers.filter((l) => l.id !== layer.value?.id);
 }
 
-function getParamOptions(effectKey: string, paramKey: string) {
+function _getParamOptions(effectKey: string, paramKey: string) {
   const def = getParamDef(effectKey, paramKey);
   return def?.options || [];
 }
 
-function getLayerIcon(type: string) {
+function _getLayerIcon(type: string) {
   const icons: Record<string, string> = {
-    solid: '■', text: 'T', spline: '~', null: '□',
-    camera: '📷', light: '💡', particles: '✦', image: '🖼'
+    solid: "■",
+    text: "T",
+    spline: "~",
+    null: "□",
+    camera: "📷",
+    light: "💡",
+    particles: "✦",
+    image: "🖼",
   };
-  return icons[type] || '•';
+  return icons[type] || "•";
 }
 
 // --- Actions ---
 
-function addEffect(key: string) {
-  if(layer.value) {
+function _addEffect(key: string) {
+  if (layer.value) {
     store.addEffectToLayer(layer.value.id, key);
     showAddMenu.value = false;
   }
 }
 
-function removeEffect(effect: any) {
-  if(layer.value) store.removeEffectFromLayer(layer.value.id, effect.id);
+function _removeEffect(effect: any) {
+  if (layer.value) store.removeEffectFromLayer(layer.value.id, effect.id);
 }
 
-function toggleEffect(effect: any) {
-  if(layer.value) store.toggleEffect(layer.value.id, effect.id);
+function _toggleEffect(effect: any) {
+  if (layer.value) store.toggleEffect(layer.value.id, effect.id);
 }
 
-function toggleExpand(effect: any) {
+function _toggleExpand(effect: any) {
   effect.expanded = !effect.expanded;
 }
 
-function updateParam(effectId: string, paramKey: string, value: any) {
-  if(layer.value) store.updateEffectParameter(layer.value.id, effectId, paramKey, value);
+function _updateParam(effectId: string, paramKey: string, value: any) {
+  if (layer.value)
+    store.updateEffectParameter(layer.value.id, effectId, paramKey, value);
 }
 
-function updatePoint(effectId: string, paramKey: string, axis: 'x'|'y', val: number) {
-  if(!layer.value) return;
+function _updatePoint(
+  effectId: string,
+  paramKey: string,
+  axis: "x" | "y",
+  val: number,
+) {
+  if (!layer.value) return;
   const effect = layer.value.effects.find((e: any) => e.id === effectId);
-  if(!effect) return;
+  if (!effect) return;
 
   const current = effect.parameters[paramKey].value;
   const newValue = { ...current, [axis]: val };
@@ -310,59 +321,66 @@ function updatePoint(effectId: string, paramKey: string, axis: 'x'|'y', val: num
 }
 
 // Color handling: Store uses RGBA object {r,g,b,a}, Picker uses Hex string
-function formatColor(val: any) {
-  if(typeof val === 'string') return val;
+function _formatColor(val: any) {
+  if (typeof val === "string") return val;
   return rgbaToHex(val.r, val.g, val.b, val.a ?? 1);
 }
 
-function updateColor(effectId: string, paramKey: string, hex: string) {
+function _updateColor(effectId: string, paramKey: string, hex: string) {
   const rgba = hexToRgba(hex);
-  if(rgba && layer.value) {
+  if (rgba && layer.value) {
     const val = { r: rgba[0], g: rgba[1], b: rgba[2], a: rgba[3] };
     store.updateEffectParameter(layer.value.id, effectId, paramKey, val);
   }
 }
 
-function toggleParamAnim(effectId: string, paramKey: string) {
-  if(!layer.value) return;
+function _toggleParamAnim(effectId: string, paramKey: string) {
+  if (!layer.value) return;
   const effect = layer.value.effects.find((e: any) => e.id === effectId);
   const param = effect?.parameters[paramKey];
-  if(param) {
-    store.setEffectParamAnimated(layer.value.id, effectId, paramKey, !param.animated);
+  if (param) {
+    store.setEffectParamAnimated(
+      layer.value.id,
+      effectId,
+      paramKey,
+      !param.animated,
+    );
   }
 }
 
 // --- Drag & Drop ---
 
-function onDragStart(event: DragEvent, index: number) {
+function _onDragStart(event: DragEvent, index: number) {
   draggedIndex.value = index;
-  event.dataTransfer?.setData('application/effect-reorder', String(index));
-  event.dataTransfer!.effectAllowed = 'move';
+  event.dataTransfer?.setData("application/effect-reorder", String(index));
+  event.dataTransfer!.effectAllowed = "move";
 }
 
-function onDragEnd() {
+function _onDragEnd() {
   draggedIndex.value = null;
   dragOverEffectId.value = null;
 }
 
-function onDragOver(event: DragEvent, effectId: string) {
-  const data = event.dataTransfer?.types.includes('application/effect-reorder');
+function _onDragOver(event: DragEvent, effectId: string) {
+  const data = event.dataTransfer?.types.includes("application/effect-reorder");
   if (data) {
     dragOverEffectId.value = effectId;
   }
 }
 
-function onDragLeave() {
+function _onDragLeave() {
   dragOverEffectId.value = null;
 }
 
-function onDrop(event: DragEvent, targetIndex: number) {
+function _onDrop(event: DragEvent, targetIndex: number) {
   dragOverEffectId.value = null;
-  const fromIndexStr = event.dataTransfer?.getData('application/effect-reorder');
+  const fromIndexStr = event.dataTransfer?.getData(
+    "application/effect-reorder",
+  );
   if (!fromIndexStr || !layer.value) return;
 
   const fromIndex = parseInt(fromIndexStr, 10);
-  if (fromIndex !== targetIndex && !isNaN(fromIndex)) {
+  if (fromIndex !== targetIndex && !Number.isNaN(fromIndex)) {
     store.reorderEffects(layer.value.id, fromIndex, targetIndex);
   }
 }
@@ -374,8 +392,8 @@ function onClickOutside(e: MouseEvent) {
   }
 }
 
-onMounted(() => window.addEventListener('mousedown', onClickOutside));
-onUnmounted(() => window.removeEventListener('mousedown', onClickOutside));
+onMounted(() => window.addEventListener("mousedown", onClickOutside));
+onUnmounted(() => window.removeEventListener("mousedown", onClickOutside));
 </script>
 
 <style scoped>

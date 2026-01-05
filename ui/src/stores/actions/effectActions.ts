@@ -4,9 +4,14 @@
  * Layer effect management including adding, removing, updating, and reordering.
  */
 
-import type { Layer, EffectInstance, InterpolationType, Composition } from '@/types/project';
-import { createEffectInstance } from '@/types/effects';
-import { interpolateProperty } from '@/services/interpolation';
+import { interpolateProperty } from "@/services/interpolation";
+import { createEffectInstance } from "@/types/effects";
+import type {
+  Composition,
+  EffectInstance,
+  InterpolationType,
+  Layer,
+} from "@/types/project";
 
 export interface EffectStore {
   project: {
@@ -24,9 +29,9 @@ export interface EffectStore {
 export function addEffectToLayer(
   store: EffectStore,
   layerId: string,
-  effectKey: string
+  effectKey: string,
 ): void {
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) return;
 
   const effect = createEffectInstance(effectKey);
@@ -46,12 +51,12 @@ export function addEffectToLayer(
 export function removeEffectFromLayer(
   store: EffectStore,
   layerId: string,
-  effectId: string
+  effectId: string,
 ): void {
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer || !layer.effects) return;
 
-  const index = layer.effects.findIndex(e => e.id === effectId);
+  const index = layer.effects.findIndex((e) => e.id === effectId);
   if (index >= 0) {
     layer.effects.splice(index, 1);
     store.project.meta.modified = new Date().toISOString();
@@ -67,12 +72,12 @@ export function updateEffectParameter(
   layerId: string,
   effectId: string,
   paramKey: string,
-  value: any
+  value: any,
 ): void {
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer || !layer.effects) return;
 
-  const effect = layer.effects.find(e => e.id === effectId);
+  const effect = layer.effects.find((e) => e.id === effectId);
   if (!effect || !effect.parameters[paramKey]) return;
 
   effect.parameters[paramKey].value = value;
@@ -88,12 +93,12 @@ export function setEffectParamAnimated(
   layerId: string,
   effectId: string,
   paramKey: string,
-  animated: boolean
+  animated: boolean,
 ): void {
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer || !layer.effects) return;
 
-  const effect = layer.effects.find(e => e.id === effectId);
+  const effect = layer.effects.find((e) => e.id === effectId);
   if (!effect || !effect.parameters[paramKey]) return;
 
   const param = effect.parameters[paramKey];
@@ -101,15 +106,17 @@ export function setEffectParamAnimated(
 
   // If enabling animation and no keyframes exist, add one at current frame
   if (animated && (!param.keyframes || param.keyframes.length === 0)) {
-    param.keyframes = [{
-      id: `kf_${Date.now()}`,
-      frame: store.currentFrame,
-      value: param.value,
-      interpolation: 'linear' as InterpolationType,
-      inHandle: { frame: -5, value: 0, enabled: false },
-      outHandle: { frame: 5, value: 0, enabled: false },
-      controlMode: 'smooth' as const,
-    }];
+    param.keyframes = [
+      {
+        id: `kf_${Date.now()}`,
+        frame: store.currentFrame,
+        value: param.value,
+        interpolation: "linear" as InterpolationType,
+        inHandle: { frame: -5, value: 0, enabled: false },
+        outHandle: { frame: 5, value: 0, enabled: false },
+        controlMode: "smooth" as const,
+      },
+    ];
   }
 
   store.project.meta.modified = new Date().toISOString();
@@ -122,12 +129,12 @@ export function setEffectParamAnimated(
 export function toggleEffect(
   store: EffectStore,
   layerId: string,
-  effectId: string
+  effectId: string,
 ): void {
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer || !layer.effects) return;
 
-  const effect = layer.effects.find(e => e.id === effectId);
+  const effect = layer.effects.find((e) => e.id === effectId);
   if (!effect) return;
 
   effect.enabled = !effect.enabled;
@@ -142,14 +149,24 @@ export function reorderEffects(
   store: EffectStore,
   layerId: string,
   fromIndex: number,
-  toIndex: number
+  toIndex: number,
 ): void {
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer || !layer.effects) return;
 
   // Validate indices (NaN comparisons are always false, so check explicitly)
-  if (!Number.isInteger(fromIndex) || fromIndex < 0 || fromIndex >= layer.effects.length) return;
-  if (!Number.isInteger(toIndex) || toIndex < 0 || toIndex >= layer.effects.length) return;
+  if (
+    !Number.isInteger(fromIndex) ||
+    fromIndex < 0 ||
+    fromIndex >= layer.effects.length
+  )
+    return;
+  if (
+    !Number.isInteger(toIndex) ||
+    toIndex < 0 ||
+    toIndex >= layer.effects.length
+  )
+    return;
 
   const [effect] = layer.effects.splice(fromIndex, 1);
   layer.effects.splice(toIndex, 0, effect);
@@ -163,12 +180,12 @@ export function reorderEffects(
 export function duplicateEffect(
   store: EffectStore,
   layerId: string,
-  effectId: string
+  effectId: string,
 ): void {
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer || !layer.effects) return;
 
-  const effect = layer.effects.find(e => e.id === effectId);
+  const effect = layer.effects.find((e) => e.id === effectId);
   if (!effect) return;
 
   // Deep clone the effect
@@ -177,7 +194,7 @@ export function duplicateEffect(
   duplicate.name = `${effect.name} Copy`;
 
   // Insert after original
-  const index = layer.effects.findIndex(e => e.id === effectId);
+  const index = layer.effects.findIndex((e) => e.id === effectId);
   layer.effects.splice(index + 1, 0, duplicate);
 
   store.project.meta.modified = new Date().toISOString();
@@ -192,17 +209,17 @@ export function getEffectParameterValue(
   layerId: string,
   effectId: string,
   paramKey: string,
-  frame?: number
+  frame?: number,
 ): any {
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer || !layer.effects) return null;
 
-  const effect = layer.effects.find(e => e.id === effectId);
+  const effect = layer.effects.find((e) => e.id === effectId);
   if (!effect || !effect.parameters[paramKey]) return null;
 
   const param = effect.parameters[paramKey];
   // Validate frame (nullish coalescing doesn't catch NaN)
-  const rawFrame = frame ?? (store.getActiveComp()?.currentFrame ?? 0);
+  const rawFrame = frame ?? store.getActiveComp()?.currentFrame ?? 0;
   const targetFrame = Number.isFinite(rawFrame) ? rawFrame : 0;
 
   // Use interpolation if animated

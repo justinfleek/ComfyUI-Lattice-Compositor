@@ -5,9 +5,9 @@
  * Extracted from WorkspaceLayout.vue to reduce file size and improve maintainability.
  */
 
-import type { Ref } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import { useHistoryStore } from '@/stores/historyStore';
+import type { Ref } from "vue";
+import { useCompositorStore } from "@/stores/compositorStore";
+import { useHistoryStore } from "@/stores/historyStore";
 
 export interface MenuActionsOptions {
   // Dialog refs
@@ -18,8 +18,8 @@ export interface MenuActionsOptions {
   showHDPreview: Ref<boolean>;
 
   // Tab refs
-  leftTab: Ref<'project' | 'effects' | 'assets'>;
-  aiTab: Ref<'chat' | 'generate' | 'flow' | 'decompose'>;
+  leftTab: Ref<"project" | "effects" | "assets">;
+  aiTab: Ref<"chat" | "generate" | "flow" | "decompose">;
   viewZoom: Ref<string>;
   showCurveEditor: Ref<boolean>;
 
@@ -44,7 +44,7 @@ export function useMenuActions(options: MenuActionsOptions) {
   // Cast to any because Pinia store actions are spread from external modules
   // and TypeScript can't infer their types correctly
   const store = useCompositorStore() as any;
-  const historyStore = useHistoryStore();
+  const _historyStore = useHistoryStore();
 
   const {
     showExportDialog,
@@ -63,19 +63,19 @@ export function useMenuActions(options: MenuActionsOptions) {
   } = options;
 
   function handleZoomIn() {
-    const levels = ['25', '50', '75', '100', '150', '200'];
+    const levels = ["25", "50", "75", "100", "150", "200"];
     const currentIndex = levels.indexOf(viewZoom.value);
     if (currentIndex < levels.length - 1 && currentIndex >= 0) {
       viewZoom.value = levels[currentIndex + 1];
       handleZoomChange();
-    } else if (viewZoom.value === 'fit') {
-      viewZoom.value = '100';
+    } else if (viewZoom.value === "fit") {
+      viewZoom.value = "100";
       handleZoomChange();
     }
   }
 
   function handleZoomOut() {
-    const levels = ['25', '50', '75', '100', '150', '200'];
+    const levels = ["25", "50", "75", "100", "150", "200"];
     const currentIndex = levels.indexOf(viewZoom.value);
     if (currentIndex > 0) {
       viewZoom.value = levels[currentIndex - 1];
@@ -89,199 +89,204 @@ export function useMenuActions(options: MenuActionsOptions) {
   function handleMenuAction(action: string) {
     switch (action) {
       // File menu
-      case 'newProject':
-        if (confirm('Create a new project? Unsaved changes will be lost.')) {
+      case "newProject":
+        if (confirm("Create a new project? Unsaved changes will be lost.")) {
           store.newProject();
         }
         break;
-      case 'openProject':
+      case "openProject":
         triggerProjectOpen();
         break;
-      case 'saveProject':
+      case "saveProject":
         store.saveProject();
         break;
-      case 'saveProjectAs':
+      case "saveProjectAs":
         store.saveProjectAs();
         break;
-      case 'import':
+      case "import":
         triggerAssetImport();
         break;
-      case 'export':
+      case "export":
         showExportDialog.value = true;
         break;
 
       // Edit menu
-      case 'undo':
+      case "undo":
         store.undo();
         break;
-      case 'redo':
+      case "redo":
         store.redo();
         break;
-      case 'cut':
+      case "cut":
         store.cutSelected();
         break;
-      case 'copy':
+      case "copy":
         store.copySelected();
         break;
-      case 'paste':
+      case "paste":
         store.paste();
         break;
-      case 'duplicate':
+      case "duplicate":
         store.duplicateSelectedLayers();
         break;
-      case 'delete':
+      case "delete":
         store.deleteSelectedLayers();
         break;
-      case 'selectAll':
+      case "selectAll":
         store.selectAllLayers();
         break;
-      case 'deselectAll':
+      case "deselectAll":
         store.clearSelection();
         break;
 
       // Create menu - layer types
-      case 'createSolid':
-        store.createLayer('solid');
+      case "createSolid":
+        store.createLayer("solid");
         break;
-      case 'createText':
-        store.createLayer('text');
+      case "createText":
+        store.createLayer("text");
         break;
-      case 'createShape':
-        store.createLayer('spline');
+      case "createShape":
+        store.createLayer("spline");
         break;
-      case 'createPath':
-        store.createLayer('path');
+      case "createPath":
+        store.createLayer("path");
         break;
-      case 'createCamera':
-        store.createLayer('camera');
+      case "createCamera":
+        store.createLayer("camera");
         break;
-      case 'createLight':
-        store.createLayer('light');
+      case "createLight":
+        store.createLayer("light");
         break;
-      case 'createControl':
-        store.createLayer('control');
+      case "createControl":
+        store.createLayer("control");
         break;
-      case 'createParticle':
-        store.createLayer('particle');
+      case "createParticle":
+        store.createLayer("particle");
         break;
-      case 'createDepth':
-        store.createLayer('depth');
+      case "createDepth":
+        store.createLayer("depth");
         break;
-      case 'createNormal':
-        store.createLayer('normal');
+      case "createNormal":
+        store.createLayer("normal");
         break;
-      case 'createGenerated':
-        store.createLayer('generated');
+      case "createGenerated":
+        store.createLayer("generated");
         break;
-      case 'createGroup':
-        store.createLayer('group');
+      case "createGroup":
+        store.createLayer("group");
         break;
-      case 'createEffectLayer':
-        store.createLayer('effectLayer');
+      case "createEffectLayer":
+        store.createLayer("effectLayer");
         break;
-      case 'createMatte':
-        store.createLayer('matte');
+      case "createMatte":
+        store.createLayer("matte");
         break;
 
       // Layer menu
-      case 'precompose':
+      case "precompose":
         showPrecomposeDialog.value = true;
         break;
-      case 'splitLayer':
+      case "splitLayer":
         store.splitLayerAtPlayhead();
         break;
-      case 'timeStretch':
+      case "timeStretch":
         showTimeStretchDialog.value = true;
         break;
-      case 'timeReverse':
+      case "timeReverse":
         store.reverseSelectedLayers();
         break;
-      case 'freezeFrame':
+      case "freezeFrame":
         store.freezeFrameAtPlayhead();
         break;
-      case 'lockLayer':
+      case "lockLayer":
         store.toggleLayerLock();
         break;
-      case 'toggleVisibility':
+      case "toggleVisibility":
         store.toggleLayerVisibility();
         break;
-      case 'isolateLayer':
+      case "isolateLayer":
         store.toggleLayerSolo();
         break;
-      case 'bringToFront':
+      case "bringToFront":
         store.bringToFront();
         break;
-      case 'sendToBack':
+      case "sendToBack":
         store.sendToBack();
         break;
-      case 'bringForward':
+      case "bringForward":
         store.bringForward();
         break;
-      case 'sendBackward':
+      case "sendBackward":
         store.sendBackward();
         break;
 
       // View menu
-      case 'zoomIn':
+      case "zoomIn":
         handleZoomIn();
         break;
-      case 'zoomOut':
+      case "zoomOut":
         handleZoomOut();
         break;
-      case 'zoomFit':
-        viewZoom.value = 'fit';
+      case "zoomFit":
+        viewZoom.value = "fit";
         handleZoomChange();
         break;
-      case 'zoom100':
-        viewZoom.value = '100';
+      case "zoom100":
+        viewZoom.value = "100";
         handleZoomChange();
         break;
-      case 'toggleCurveEditor':
+      case "toggleCurveEditor":
         showCurveEditor.value = !showCurveEditor.value;
         break;
 
       // Window menu - panel visibility
-      case 'showProperties':
+      case "showProperties":
         expandedPanels.value.properties = true;
         break;
-      case 'showEffects':
-        leftTab.value = 'effects';
+      case "showEffects":
+        leftTab.value = "effects";
         break;
-      case 'showCamera':
+      case "showCamera":
         expandedPanels.value.camera = true;
         break;
-      case 'showAudio':
+      case "showAudio":
         expandedPanels.value.audio = true;
         break;
-      case 'showAlign':
+      case "showAlign":
         expandedPanels.value.align = true;
         break;
-      case 'showAIChat':
-        aiTab.value = 'chat';
+      case "showAIChat":
+        aiTab.value = "chat";
         break;
-      case 'showAIGenerate':
-        aiTab.value = 'generate';
+      case "showAIGenerate":
+        aiTab.value = "generate";
         break;
-      case 'showExport':
+      case "showExport":
         showExportDialog.value = true;
         break;
-      case 'showPreview':
+      case "showPreview":
         showHDPreview.value = true;
         break;
 
       // Help menu
-      case 'showKeyboardShortcuts':
+      case "showKeyboardShortcuts":
         showPreferencesDialog.value = true;
         break;
-      case 'showDocumentation':
-        window.open('https://github.com/justinfleek/lattice-compositor', '_blank');
+      case "showDocumentation":
+        window.open(
+          "https://github.com/justinfleek/lattice-compositor",
+          "_blank",
+        );
         break;
-      case 'showAbout':
-        alert('Lattice Compositor v7.6\n\nProfessional motion graphics compositor for ComfyUI.\n\nBuilt with Vue 3, Three.js, and Pinia.');
+      case "showAbout":
+        alert(
+          "Lattice Compositor v7.6\n\nProfessional motion graphics compositor for ComfyUI.\n\nBuilt with Vue 3, Three.js, and Pinia.",
+        );
         break;
 
       default:
-        console.warn('Unhandled menu action:', action);
+        console.warn("Unhandled menu action:", action);
     }
   }
 

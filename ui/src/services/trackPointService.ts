@@ -8,8 +8,12 @@
  * should be used and the results imported via cameraTrackingImport.ts
  */
 
-import { ref, reactive, computed } from 'vue';
-import type { TrackPoint2D, TrackPoint3D, GroundPlane } from '@/types/cameraTracking';
+import { computed, reactive } from "vue";
+import type {
+  GroundPlane,
+  TrackPoint2D,
+  TrackPoint3D,
+} from "@/types/cameraTracking";
 
 /**
  * A track that follows a point across multiple frames
@@ -37,7 +41,7 @@ export interface Track {
   locked: boolean;
 
   /** Track type */
-  type: 'feature' | 'manual' | 'imported';
+  type: "feature" | "manual" | "imported";
 }
 
 /**
@@ -63,10 +67,10 @@ const state = reactive<TrackPointState>({
 // Computed properties
 const tracks = computed(() => Array.from(state.tracks.values()));
 const selectedTracks = computed(() =>
-  tracks.value.filter(t => state.selectedTrackIds.has(t.id))
+  tracks.value.filter((t) => state.selectedTrackIds.has(t.id)),
 );
 const activeTrack = computed(() =>
-  state.activeTrackId ? state.tracks.get(state.activeTrackId) : null
+  state.activeTrackId ? state.tracks.get(state.activeTrackId) : null,
 );
 
 /**
@@ -81,8 +85,16 @@ function generateTrackId(): string {
  */
 function generateTrackColor(): string {
   const colors = [
-    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
-    '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9',
+    "#FF6B6B",
+    "#4ECDC4",
+    "#45B7D1",
+    "#96CEB4",
+    "#FFEAA7",
+    "#DDA0DD",
+    "#98D8C8",
+    "#F7DC6F",
+    "#BB8FCE",
+    "#85C1E9",
   ];
   return colors[Math.floor(Math.random() * colors.length)];
 }
@@ -90,11 +102,13 @@ function generateTrackColor(): string {
 /**
  * Create a new track
  */
-export function createTrack(options: {
-  name?: string;
-  color?: string;
-  type?: 'feature' | 'manual' | 'imported';
-} = {}): Track {
+export function createTrack(
+  options: {
+    name?: string;
+    color?: string;
+    type?: "feature" | "manual" | "imported";
+  } = {},
+): Track {
   const track: Track = {
     id: generateTrackId(),
     name: options.name ?? `Track ${state.tracks.size + 1}`,
@@ -103,7 +117,7 @@ export function createTrack(options: {
     position3D: null,
     selected: false,
     locked: false,
-    type: options.type ?? 'manual',
+    type: options.type ?? "manual",
   };
 
   state.tracks.set(track.id, track);
@@ -140,7 +154,7 @@ export function setTrackPosition(
   frame: number,
   x: number,
   y: number,
-  confidence: number = 1.0
+  confidence: number = 1.0,
 ): void {
   const track = state.tracks.get(trackId);
   if (track && !track.locked) {
@@ -153,7 +167,7 @@ export function setTrackPosition(
  */
 export function getTrackPosition(
   trackId: string,
-  frame: number
+  frame: number,
 ): { x: number; y: number; confidence: number } | null {
   const track = state.tracks.get(trackId);
   return track?.positions.get(frame) ?? null;
@@ -323,14 +337,14 @@ export function setGroundPlane(plane: GroundPlane | null): void {
 export function defineGroundPlaneFromPoints(
   trackId1: string,
   trackId2: string,
-  trackId3: string
+  trackId3: string,
 ): GroundPlane | null {
   const track1 = state.tracks.get(trackId1);
   const track2 = state.tracks.get(trackId2);
   const track3 = state.tracks.get(trackId3);
 
   if (!track1?.position3D || !track2?.position3D || !track3?.position3D) {
-    console.warn('Cannot define ground plane: tracks must have 3D positions');
+    console.warn("Cannot define ground plane: tracks must have 3D positions");
     return null;
   }
 
@@ -352,7 +366,7 @@ export function defineGroundPlaneFromPoints(
   // Normalize
   const len = Math.sqrt(normal.x ** 2 + normal.y ** 2 + normal.z ** 2);
   if (len < 0.0001) {
-    console.warn('Cannot define ground plane: points are collinear');
+    console.warn("Cannot define ground plane: points are collinear");
     return null;
   }
 
@@ -377,7 +391,7 @@ export function defineGroundPlaneFromPoints(
 export function setOrigin3D(trackId: string): boolean {
   const track = state.tracks.get(trackId);
   if (!track?.position3D) {
-    console.warn('Cannot set origin: track must have 3D position');
+    console.warn("Cannot set origin: track must have 3D position");
     return false;
   }
 
@@ -394,19 +408,19 @@ export function importTrackPoints2D(points: TrackPoint2D[]): void {
 
   for (const point of points) {
     // Extract base track ID (without frame suffix)
-    const trackId = point.id.split('_').slice(0, -1).join('_') || point.id;
+    const trackId = point.id.split("_").slice(0, -1).join("_") || point.id;
 
     if (!trackGroups.has(trackId)) {
       trackGroups.set(trackId, []);
     }
-    trackGroups.get(trackId)!.push(point);
+    trackGroups.get(trackId)?.push(point);
   }
 
   // Create tracks from groups
   for (const [baseId, trackPoints] of trackGroups) {
     const track = createTrack({
       name: `Imported ${baseId}`,
-      type: 'imported',
+      type: "imported",
       color: trackPoints[0]?.color ?? generateTrackColor(),
     });
 
@@ -427,7 +441,7 @@ export function importTrackPoints3D(points: TrackPoint3D[]): void {
   for (const point of points) {
     const track = createTrack({
       name: point.id,
-      type: 'imported',
+      type: "imported",
     });
 
     track.position3D = { ...point.position };

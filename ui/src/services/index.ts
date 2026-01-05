@@ -9,180 +9,177 @@
 // CORE SERVICES
 // ============================================================================
 
-// Interpolation & Animation
+// Easing functions (object-based, not individual functions)
 export {
-  interpolateProperty,
-  EASING_PRESETS,
-  EASING_PRESETS_NORMALIZED,
-  createHandlesForPreset,
-  applyEasingPreset,
-  getBezierCurvePoint,
-  getBezierCurvePointNormalized,
-  applyEasing,
-} from './interpolation';
+  applyEasing as applyEasingByName,
+  type EasingFunction,
+  type EasingName,
+  easingGroups,
+  easingNames,
+  easings,
+  getEasing,
+  interpolateWithEasing,
+} from "./easing";
 
 // Expressions
 export {
-  evaluateExpression,
-  evaluateCustomExpression,
-  easing,
-  motion,
-  loop,
-  time,
-  math,
   audio,
-  layer,
-  effect,
-  vector,
   coords,
-  textAnimator,
-  // Vector math functions
-  vectorAdd,
-  vectorSub,
-  vectorMul,
-  vectorDiv,
-  vectorNormalize,
-  vectorDot,
-  vectorCross,
-  vectorLength,
-  vectorClamp,
-  // Coordinate conversion
-  toComp,
-  fromComp,
-  toWorld,
-  fromWorld,
-  lookAt,
-  orientToPath,
   // Text animator
   createTextAnimatorContext,
-  evaluateTextAnimatorExpression,
-  // Audio/time expressions
-  valueAtTime,
-  posterizeTime,
-  linearInterp,
+  degreeTrig,
+  type Expression,
+  type ExpressionContext,
   easeInterp,
-  // Layer dimension
-  sourceRectAtTime,
+  easing,
+  effect,
+  evaluateCustomExpression,
+  evaluateExpression,
+  evaluateTextAnimatorExpression,
+  fromComp,
+  fromWorld,
+  type LayerTransform,
+  layer,
+  linearInterp,
+  lookAt,
+  loop,
+  math,
+  motion,
   // Noise
   noise,
-  degreeTrig,
-  type ExpressionContext,
-  type Expression,
-  type LayerTransform,
-  type TextAnimatorContext,
+  orientToPath,
+  posterizeTime,
   type SourceRect,
-} from './expressions';
-
-// Easing functions (object-based, not individual functions)
+  // Layer dimension
+  sourceRectAtTime,
+  type TextAnimatorContext,
+  textAnimator,
+  time,
+  // Coordinate conversion
+  toComp,
+  toWorld,
+  // Audio/time expressions
+  valueAtTime,
+  vector,
+  // Vector math functions
+  vectorAdd,
+  vectorClamp,
+  vectorCross,
+  vectorDiv,
+  vectorDot,
+  vectorLength,
+  vectorMul,
+  vectorNormalize,
+  vectorSub,
+} from "./expressions";
+// Interpolation & Animation
 export {
-  easings,
-  easingNames,
-  easingGroups,
-  getEasing,
-  applyEasing as applyEasingByName,
-  interpolateWithEasing,
-  type EasingFunction,
-  type EasingName,
-} from './easing';
+  applyEasing,
+  applyEasingPreset,
+  createHandlesForPreset,
+  EASING_PRESETS,
+  EASING_PRESETS_NORMALIZED,
+  getBezierCurvePoint,
+  getBezierCurvePointNormalized,
+  interpolateProperty,
+} from "./interpolation";
 
 // ============================================================================
 // PARTICLE SYSTEM
 // ============================================================================
 
-export {
-  ParticleSystem,
-  SeededRandom,
-  createDefaultEmitterConfig,
-  createDefaultSystemConfig,
-  createDefaultRenderOptions,
-  createDefaultGravityWellConfig,
-  createDefaultVortexConfig,
-  createDefaultTurbulenceConfig,
-  createDefaultSubEmitterConfig,
-  createDefaultConnectionConfig,
-  createDefaultCollisionConfig,
-  createDefaultSpriteConfig,
-  createDefaultSplinePathEmission,
-  resetIdCounter,
-  type Particle,
-  type EmitterConfig,
-  type GravityWellConfig,
-  type VortexConfig,
-  type ParticleModulation,
-  type ParticleSystemConfig,
-  type RenderOptions,
-  type TurbulenceConfig,
-  type ConnectionConfig,
-  type SubEmitterConfig,
-  type CollisionConfig,
-  type SpriteConfig,
-  type SplinePathEmission,
-  type EmitterShape,
-} from './particleSystem';
-
 // GPU Particle Renderer
 export {
-  GPUParticleRenderer,
-  InstancedParticleRenderer,
   createGPUParticleRenderer,
   createInstancedParticleRenderer,
-  type GPUParticleRendererConfig,
   type GPUParticleData,
-} from './gpuParticleRenderer';
+  GPUParticleRenderer,
+  type GPUParticleRendererConfig,
+  InstancedParticleRenderer,
+} from "./gpuParticleRenderer";
+export {
+  type CollisionConfig,
+  type ConnectionConfig,
+  createDefaultCollisionConfig,
+  createDefaultConnectionConfig,
+  createDefaultEmitterConfig,
+  createDefaultGravityWellConfig,
+  createDefaultRenderOptions,
+  createDefaultSplinePathEmission,
+  createDefaultSpriteConfig,
+  createDefaultSubEmitterConfig,
+  createDefaultSystemConfig,
+  createDefaultTurbulenceConfig,
+  createDefaultVortexConfig,
+  type EmitterConfig,
+  type EmitterShape,
+  type GravityWellConfig,
+  type Particle,
+  type ParticleModulation,
+  ParticleSystem,
+  type ParticleSystemConfig,
+  type RenderOptions,
+  resetIdCounter,
+  SeededRandom,
+  type SplinePathEmission,
+  type SpriteConfig,
+  type SubEmitterConfig,
+  type TurbulenceConfig,
+  type VortexConfig,
+} from "./particleSystem";
 
 // ============================================================================
 // MOTION BLUR
 // ============================================================================
 
 export {
-  MotionBlurProcessor,
   createDefaultMotionBlurSettings,
   getMotionBlurPreset,
   listMotionBlurPresets,
   MOTION_BLUR_PRESETS,
+  type MotionBlurFrame,
+  MotionBlurProcessor,
   type MotionBlurSettings,
   type MotionBlurType,
   type RadialBlurMode,
   type VelocityData,
-  type MotionBlurFrame,
-} from './motionBlur';
+} from "./motionBlur";
 
 // ============================================================================
 // EFFECTS
 // ============================================================================
 
-export * from './effects';
-
 // Effect processor (functions, not a class)
 export {
-  registerEffectRenderer,
+  canvasToImageData,
+  cleanupEffectResources,
+  clearEffectCaches,
+  createMatchingCanvas,
+  type EffectRenderer,
+  type EffectStackResult,
+  type EvaluatedEffectParams,
   evaluateEffectParameters,
+  type GPUProcessingOptions,
+  getEffectProcessorStats,
+  getGPUEffectCapabilities,
+  getRegisteredEffects,
+  hasEnabledEffects,
+  imageDataToCanvas,
+  isGPUEffectProcessingAvailable,
   processEffectStack,
   processEffectStackAsync,
-  imageDataToCanvas,
-  canvasToImageData,
-  createMatchingCanvas,
-  hasEnabledEffects,
-  getRegisteredEffects,
-  isGPUEffectProcessingAvailable,
-  getGPUEffectCapabilities,
-  clearEffectCaches,
-  getEffectProcessorStats,
-  cleanupEffectResources,
-  type EvaluatedEffectParams,
-  type EffectStackResult,
-  type EffectRenderer,
-  type GPUProcessingOptions,
-} from './effectProcessor';
+  registerEffectRenderer,
+} from "./effectProcessor";
+export * from "./effects";
 
 // GPU Effect Dispatcher
 export {
+  type GPUCapabilityInfo,
+  type GPURenderPath,
+  getGPUEffectStats,
   gpuEffectDispatcher,
   initializeGPUEffects,
-  getGPUEffectStats,
-  type GPURenderPath,
-  type GPUCapabilityInfo,
-} from './gpuEffectDispatcher';
+} from "./gpuEffectDispatcher";
 
 // ============================================================================
 // AUDIO
@@ -190,64 +187,62 @@ export {
 
 // Audio features (functions, not classes)
 export {
-  loadAudioFile,
-  loadAudioFromUrl,
+  type AudioAnalysis,
+  type AudioAnalysisConfig,
   analyzeAudio,
-  extractAmplitudeEnvelope,
-  extractRMSEnergy,
-  extractFrequencyBands,
-  extractSpectralCentroid,
-  detectOnsets,
-  extractSpectralFlux,
-  extractZeroCrossingRate,
-  extractSpectralRolloff,
-  extractSpectralFlatness,
-  extractChromaFeatures,
+  applyFeatureCurve,
+  type ChromaFeatures,
   detectBPM,
+  detectOnsets,
+  detectPeaks,
+  extractAmplitudeEnvelope,
+  extractChromaFeatures,
+  extractFrequencyBands,
+  extractRMSEnergy,
+  extractSpectralCentroid,
+  extractSpectralFlatness,
+  extractSpectralFlux,
+  extractSpectralRolloff,
+  extractZeroCrossingRate,
+  type FrequencyBandRanges,
+  generatePeakGraph,
   getFeatureAtFrame,
   getSmoothedFeature,
-  normalizeFeature,
-  applyFeatureCurve,
-  detectPeaks,
-  generatePeakGraph,
   isBeatAtFrame,
   isPeakAtFrame,
-  type AudioAnalysis,
-  type FrequencyBandRanges,
-  type ChromaFeatures,
-  type AudioAnalysisConfig,
-  type PeakDetectionConfig,
+  loadAudioFile,
+  loadAudioFromUrl,
+  normalizeFeature,
   type PeakData,
-} from './audioFeatures';
-
-// Audio reactive mapping
-export {
-  AudioReactiveMapper,
-  createDefaultAudioMapping,
-  createIPAdapterSchedule,
-  getIPAdapterWeightsAtFrame,
-  getFeatureDisplayName,
-  getTargetDisplayName,
-  getAllFeatures,
-  getFeaturesByCategory,
-  getAllTargets,
-  getTargetsByCategory,
-  createSplineControlPointTargets,
-  type AudioFeature,
-  type TargetParameter,
-  type AudioMapping,
-  type IPAdapterTransition,
-  type WeightSchedule,
-} from './audioReactiveMapping';
-
+  type PeakDetectionConfig,
+} from "./audioFeatures";
 // Audio path animator
 export {
   AudioPathAnimator,
   createDefaultPathAnimatorConfig,
+  type MovementMode,
   type PathAnimatorConfig,
   type PathAnimatorState,
-  type MovementMode,
-} from './audioPathAnimator';
+} from "./audioPathAnimator";
+// Audio reactive mapping
+export {
+  type AudioFeature,
+  type AudioMapping,
+  AudioReactiveMapper,
+  createDefaultAudioMapping,
+  createIPAdapterSchedule,
+  createSplineControlPointTargets,
+  getAllFeatures,
+  getAllTargets,
+  getFeatureDisplayName,
+  getFeaturesByCategory,
+  getIPAdapterWeightsAtFrame,
+  getTargetDisplayName,
+  getTargetsByCategory,
+  type IPAdapterTransition,
+  type TargetParameter,
+  type WeightSchedule,
+} from "./audioReactiveMapping";
 
 // ============================================================================
 // TEXT & PATHS
@@ -256,225 +251,220 @@ export {
 // Arc length (class-based)
 export {
   ArcLengthParameterizer,
+  controlPointsToBeziers,
   MultiSegmentParameterizer,
   pathCommandsToBezier,
-  controlPointsToBeziers,
-} from './arcLength';
-
-// Text on path
-export {
-  TextOnPathService,
-  createTextOnPathService,
-  createDefaultPathConfig,
-  type TextOnPathConfig,
-  type PathPoint,
-  type CharacterPlacement,
-} from './textOnPath';
-
+} from "./arcLength";
 // Font service (singleton instance)
 export {
-  fontService,
-  type FontInfo,
   type FontCategory,
-} from './fontService';
+  type FontInfo,
+  fontService,
+} from "./fontService";
+// Text on path
+export {
+  type CharacterPlacement,
+  createDefaultPathConfig,
+  createTextOnPathService,
+  type PathPoint,
+  type TextOnPathConfig,
+  TextOnPathService,
+} from "./textOnPath";
 
 // Text Shaper (OpenType/Kerning support)
 export {
-  textShaper,
-  loadFontForShaping,
-  shapeText,
-  shapeTextSync,
+  type FontMetrics,
   getCharacterWidths,
   isShapingAvailable,
+  loadFontForShaping,
   type ShapedGlyph,
   type ShapedText,
+  shapeText,
+  shapeTextSync,
   type TextShapingOptions,
-  type FontMetrics,
+  textShaper,
   type VariableFontAxis,
-} from './textShaper';
+} from "./textShaper";
 
 // ============================================================================
 // SHAPES & OPERATIONS
 // ============================================================================
 
-// Shape operations (many individual functions)
-export {
-  // Point operations
-  distance,
-  lerpPoint,
-  addPoints,
-  subtractPoints,
-  scalePoint,
-  normalize as normalizePoint,
-  perpendicular,
-  dot,
-  cross,
-  rotatePoint,
-  rotateAround,
-  clonePoint,
-  cloneVertex,
-  clonePath,
-  // Bezier operations
-  cubicBezierPoint,
-  cubicBezierDerivative,
-  splitCubicBezier,
-  cubicBezierLength,
-  getPathLength,
-  getPointAtDistance,
-  trimPath,
-  mergePaths,
-  // Path modifications
-  offsetPath,
-  offsetPathMultiple,
-  puckerBloat,
-  wigglePath,
-  zigZagPath,
-  twistPath,
-  roundCorners,
-  simplifyPath,
-  smoothPath,
-  applyRepeater,
-  transformPath,
-  // Shape generators
-  generateRectangle,
-  generateEllipse,
-  generatePolygon,
-  generateStar,
-  // Bundled export
-  ShapeOperations,
-} from './shapeOperations';
-
 // Bezier Boolean Operations (Paper.js based)
 export {
-  booleanOperation,
-  unite as bezierUnite,
-  subtract as bezierSubtract,
-  intersect as bezierIntersect,
-  exclude as bezierExclude,
-  divide as bezierDivide,
-  uniteAll as bezierUniteAll,
-  intersectAll as bezierIntersectAll,
-  simplifyPath as bezierSimplifyPath,
-  flattenPath as bezierFlattenPath,
-  smoothPath as bezierSmoothPath,
-  getPathArea,
-  getPathLength as bezierGetPathLength,
-  getPointOnPath,
-  getTangentOnPath,
-  getNormalOnPath,
-  pathsIntersect,
-  getPathIntersections,
   type BooleanOperation,
   type BooleanOptions,
   type BooleanResult,
-} from './bezierBoolean';
-
+  booleanOperation,
+  divide as bezierDivide,
+  exclude as bezierExclude,
+  flattenPath as bezierFlattenPath,
+  getNormalOnPath,
+  getPathArea,
+  getPathIntersections,
+  getPathLength as bezierGetPathLength,
+  getPointOnPath,
+  getTangentOnPath,
+  intersect as bezierIntersect,
+  intersectAll as bezierIntersectAll,
+  pathsIntersect,
+  simplifyPath as bezierSimplifyPath,
+  smoothPath as bezierSmoothPath,
+  subtract as bezierSubtract,
+  unite as bezierUnite,
+  uniteAll as bezierUniteAll,
+} from "./bezierBoolean";
 // Image trace
 export {
-  traceImage,
-  ImageTrace,
   DEFAULT_TRACE_OPTIONS,
+  ImageTrace,
   type TraceMode,
   type TraceOptions,
   type TraceResult,
-} from './imageTrace';
+  traceImage,
+} from "./imageTrace";
+// Shape operations (many individual functions)
+export {
+  addPoints,
+  applyRepeater,
+  clonePath,
+  clonePoint,
+  cloneVertex,
+  cross,
+  cubicBezierDerivative,
+  cubicBezierLength,
+  // Bezier operations
+  cubicBezierPoint,
+  // Point operations
+  distance,
+  dot,
+  generateEllipse,
+  generatePolygon,
+  // Shape generators
+  generateRectangle,
+  generateStar,
+  getPathLength,
+  getPointAtDistance,
+  lerpPoint,
+  mergePaths,
+  normalize as normalizePoint,
+  // Path modifications
+  offsetPath,
+  offsetPathMultiple,
+  perpendicular,
+  puckerBloat,
+  rotateAround,
+  rotatePoint,
+  roundCorners,
+  // Bundled export
+  ShapeOperations,
+  scalePoint,
+  simplifyPath,
+  smoothPath,
+  splitCubicBezier,
+  subtractPoints,
+  transformPath,
+  trimPath,
+  twistPath,
+  wigglePath,
+  zigZagPath,
+} from "./shapeOperations";
 
 // ============================================================================
 // CAMERA & 3D
 // ============================================================================
 
+// Camera 3D visualization
+export {
+  type CameraVisualization,
+  generate3DAxes,
+  generateCameraBody,
+  generateCameraVisualization,
+  generateCompositionBounds,
+  generateFocalPlane,
+  generateFrustum,
+  generateGrid,
+  generatePOILine,
+  getCameraViewMatrices,
+  getOrthoViewMatrices,
+  type LineSegment,
+  projectToScreen,
+  type ViewMatrices,
+} from "./camera3DVisualization";
+
+// Camera export
+export {
+  downloadFile,
+  exportCameraJSON,
+  exportToAEScript,
+  importCameraJSON,
+  type Uni3CFrame,
+  type Uni3CTrack,
+} from "./cameraExport";
+
+// Camera trajectory
+export {
+  applyCameraTrajectory,
+  cartesianToSpherical,
+  createTrajectoryFromPreset,
+  DEFAULT_SPHERICAL,
+  DEFAULT_TRAJECTORY,
+  generateTrajectoryKeyframes,
+  getTrajectoryCategory,
+  getTrajectoryDescription,
+  getTrajectoryPosition,
+  getTrajectoryTypesByCategory,
+  type SphericalCoords,
+  sphericalToCartesian,
+  TRAJECTORY_PRESETS,
+  type TrajectoryConfig,
+  type TrajectoryKeyframes,
+  type TrajectoryType,
+} from "./cameraTrajectory";
 // Math 3D (corrected names)
 export {
-  // Vector operations
-  vec3,
   addVec3,
-  subVec3,
-  scaleVec3,
-  lengthVec3,
-  normalizeVec3,
   crossVec3,
-  dotVec3,
-  lerpVec3,
+  degToRad,
   distanceVec3,
+  dotVec3,
+  // Utility
+  focalLengthToFOV,
+  focalLengthToZoom,
+  fovToFocalLength,
   // Matrix operations
   identityMat4,
-  multiplyMat4,
-  perspectiveMat4,
-  orthographicMat4,
+  invertMat4,
+  lengthVec3,
+  lerpVec3,
   lookAtMat4,
-  translateMat4,
+  type Mat4,
+  multiplyMat4,
+  normalizeVec3,
+  orthographicMat4,
+  perspectiveMat4,
+  type Quat,
+  quatFromEuler,
+  // Quaternion operations
+  quatIdentity,
+  quatToEuler,
+  radToDeg,
   rotateXMat4,
   rotateYMat4,
   rotateZMat4,
   scaleMat4,
-  transformPoint,
-  transformDirection,
-  invertMat4,
-  // Quaternion operations
-  quatIdentity,
-  quatFromEuler,
-  quatToEuler,
+  scaleVec3,
   slerpQuat,
-  // Utility
-  focalLengthToFOV,
-  fovToFocalLength,
-  zoomToFocalLength,
-  focalLengthToZoom,
-  degToRad,
-  radToDeg,
+  subVec3,
+  transformDirection,
+  transformPoint,
+  translateMat4,
   // Types
   type Vec3,
-  type Mat4,
-  type Quat,
-} from './math3d';
-
-// Camera export
-export {
-  exportCameraJSON,
-  importCameraJSON,
-  exportToAEScript,
-  downloadFile,
-  type Uni3CTrack,
-  type Uni3CFrame,
-} from './cameraExport';
-
-// Camera trajectory
-export {
-  sphericalToCartesian,
-  cartesianToSpherical,
-  getTrajectoryPosition,
-  generateTrajectoryKeyframes,
-  applyCameraTrajectory,
-  createTrajectoryFromPreset,
-  getTrajectoryDescription,
-  getTrajectoryCategory,
-  getTrajectoryTypesByCategory,
-  DEFAULT_SPHERICAL,
-  DEFAULT_TRAJECTORY,
-  TRAJECTORY_PRESETS,
-  type SphericalCoords,
-  type TrajectoryType,
-  type TrajectoryConfig,
-  type TrajectoryKeyframes,
-} from './cameraTrajectory';
-
-// Camera 3D visualization
-export {
-  generateCameraBody,
-  generateFrustum,
-  generateCompositionBounds,
-  generatePOILine,
-  generateFocalPlane,
-  generateCameraVisualization,
-  getCameraViewMatrices,
-  getOrthoViewMatrices,
-  projectToScreen,
-  generate3DAxes,
-  generateGrid,
-  type LineSegment,
-  type CameraVisualization,
-  type ViewMatrices,
-} from './camera3DVisualization';
+  // Vector operations
+  vec3,
+  zoomToFocalLength,
+} from "./math3d";
 
 // ============================================================================
 // DEPTH & SEGMENTATION
@@ -482,113 +472,111 @@ export {
 
 // Depthflow (corrected names - lowercase 'f')
 export {
-  DepthflowRenderer,
+  applyEasing as applyDepthflowEasing,
+  applyMotionPreset,
+  type CameraState,
+  type CameraToDepthflowConfig,
+  cameraToDepthflowParams,
+  cameraTrajToDepthflowMotions,
+  createAllDepthSlices,
+  createAnimatedDepthSlice,
   createDefaultDepthflowConfig,
   createDefaultDOFConfig,
   createDefaultEnhancedConfig,
-  createMotionComponent,
-  applyEasing as applyDepthflowEasing,
-  evaluateMotionComponent,
-  evaluateMotionsForParameter,
-  evaluateAllMotions,
-  applyMotionPreset,
-  getMotionPresetNames,
-  getMotionPresetDescription,
   createDepthSliceMask,
-  createAnimatedDepthSlice,
-  createAllDepthSlices,
-  cameraToDepthflowParams,
-  cameraTrajToDepthflowMotions,
-  evaluateCameraSyncedDepthflow,
-  MOTION_PRESETS,
+  createMotionComponent,
   DEFAULT_CAMERA_SYNC_CONFIG,
-  type MotionType,
-  type MotionParameter,
-  type EasingType as DepthflowEasingType,
-  type MotionComponent,
-  type DOFConfig,
+  type DepthflowConfig,
   type DepthflowEnhanced,
   type DepthflowPreset,
-  type DepthflowConfig,
+  DepthflowRenderer,
   type DepthflowState,
   type DepthSliceConfig,
-  type CameraToDepthflowConfig,
-  type CameraState,
-} from './depthflow';
+  type DOFConfig,
+  type EasingType as DepthflowEasingType,
+  evaluateAllMotions,
+  evaluateCameraSyncedDepthflow,
+  evaluateMotionComponent,
+  evaluateMotionsForParameter,
+  getMotionPresetDescription,
+  getMotionPresetNames,
+  MOTION_PRESETS,
+  type MotionComponent,
+  type MotionParameter,
+  type MotionType,
+} from "./depthflow";
 
 // Segmentation
 export {
-  segmentImage,
-  segmentByPoint,
-  segmentByBox,
-  segmentByMultiplePoints,
-  autoSegment,
   applyMaskToImage,
+  autoSegment,
+  type BezierFitOptions,
+  batchSegmentationToMasks,
+  type ContourOptions,
   cropImage,
   extractContour,
-  simplifyContour,
   fitBezierToContour,
-  segmentationToMask,
-  batchSegmentationToMasks,
   refineMask,
+  type SegmentationMask,
   type SegmentationPoint,
   type SegmentationRequest,
-  type SegmentationMask,
   type SegmentationResult,
-  type ContourOptions,
-  type SimplifyOptions,
-  type BezierFitOptions,
   type SegmentToMaskOptions,
-} from './segmentation';
+  type SimplifyOptions,
+  segmentationToMask,
+  segmentByBox,
+  segmentByMultiplePoints,
+  segmentByPoint,
+  segmentImage,
+  simplifyContour,
+} from "./segmentation";
 
 // ============================================================================
 // EXPORT
 // ============================================================================
 
-export * from './export';
-
+export * from "./export";
+// Matte exporter (singleton instance)
+export {
+  type DimensionValidation,
+  type ExportOptions,
+  type ExportProgress,
+  matteExporter,
+  type ProgressCallback,
+} from "./matteExporter";
 // Model export
 export {
-  camera3DToMatrix4x4,
-  exportCameraTrajectory,
-  extractLayerTrajectory,
-  extractSplineTrajectories,
-  exportWanMoveTrajectories,
-  exportATITrajectory,
-  calculatePanSpeed,
-  exportTTMLayer,
-  generateMotionMask,
-  generateCombinedMotionMask,
-  imageDataToBase64,
-  detectMotionStyle,
-  createNpyHeader,
-  trajectoriesToNpy,
-  type CameraMatrix4x4,
-  type CameraTrajectoryExport,
-  type WanMoveTrajectoryExport,
-  type PointTrajectory,
-  type ParticleTrajectoryExport,
   type ATITrajectoryInstruction,
   type ATITrajectoryType,
-  type TTMExport,
-  type TTMLayerExport,
-  type TTMSingleLayerExport,
+  type CameraMatrix4x4,
+  type CameraTrajectoryExport,
+  calculatePanSpeed,
+  camera3DToMatrix4x4,
+  createNpyHeader,
+  detectMotionStyle,
+  exportATITrajectory,
+  exportCameraTrajectory,
+  exportTTMLayer,
+  exportWanMoveTrajectories,
+  extractLayerTrajectory,
+  extractSplineTrajectories,
+  generateCombinedMotionMask,
+  generateMotionMask,
+  imageDataToBase64,
   type LightXExport,
   type LightXMotionStyle,
   type LightXRelightSource,
   type ModelTarget,
+  type ParticleTrajectoryExport,
+  type PointTrajectory,
+  type TTMExport,
+  type TTMLayerExport,
+  type TTMSingleLayerExport,
+  trajectoriesToNpy,
   type UnifiedExportOptions,
   type UnifiedExportResult,
-} from './modelExport';
-
-// Matte exporter (singleton instance)
-export {
-  matteExporter,
-  type ExportProgress,
-  type ProgressCallback,
-  type ExportOptions,
-  type DimensionValidation,
-} from './matteExporter';
+  type WanMoveTrajectoryExport,
+} from "./modelExport";
 
 // ============================================================================
 // PROJECT & STORAGE
@@ -596,260 +584,256 @@ export {
 
 // Project storage (functions, not a class)
 export {
-  saveProject,
-  loadProject,
-  listProjects,
   deleteProject,
-  isApiAvailable,
   exportProjectAsFile,
   importProjectFromFile,
+  isApiAvailable,
+  type ListResult,
+  type LoadResult,
+  listProjects,
+  loadProject,
   type ProjectInfo,
   type SaveResult,
-  type LoadResult,
-  type ListResult,
-} from './projectStorage';
+  saveProject,
+} from "./projectStorage";
 
 // ============================================================================
 // PROPERTY DRIVERS
 // ============================================================================
 
 export {
-  PropertyDriverSystem,
-  createPropertyDriver,
-  createAudioDriver,
-  createPropertyLink,
-  createGearDriver,
-  createAudioLightDriver,
+  type AudioFeatureType,
   createAudioColorTempDriver,
+  createAudioDriver,
+  createAudioLightDriver,
+  createGearDriver,
   createLightFollowDriver,
-  getPropertyPathDisplayName,
+  createPropertyDriver,
+  createPropertyLink,
+  createSplineControlPointPath,
+  type DriverSourceType,
+  type DriverTransform,
   getAllPropertyPaths,
   getLightPropertyPaths,
+  getPropertyPathDisplayName,
   getPropertyPathsForLayerType,
-  isSplineControlPointPath,
   isLightPropertyPath,
-  parseSplineControlPointPath,
-  createSplineControlPointPath,
+  isSplineControlPointPath,
   type PropertyDriver,
-  type DriverSourceType,
-  type PropertyPath,
-  type AudioFeatureType,
-  type DriverTransform,
+  PropertyDriverSystem,
   type PropertyGetter,
+  type PropertyPath,
   type PropertySetter,
-} from './propertyDriver';
+  parseSplineControlPointPath,
+} from "./propertyDriver";
 
 // ============================================================================
 // TIMELINE
 // ============================================================================
 
 export {
+  DEFAULT_SNAP_CONFIG,
   findNearestSnap,
   getBeatFrames,
-  getPeakFrames,
-  isNearBeat,
   getNearestBeatFrame,
+  getPeakFrames,
   getSnapColor,
-  DEFAULT_SNAP_CONFIG,
-  type SnapType,
-  type SnapResult,
+  isNearBeat,
   type SnapConfig,
   type SnapIndicator,
-} from './timelineSnap';
+  type SnapResult,
+  type SnapType,
+} from "./timelineSnap";
 
 // ============================================================================
 // GPU & PERFORMANCE
 // ============================================================================
 
 export {
-  detectGPUTier,
-  type GPUTier,
-} from './gpuDetection';
-
-export {
+  type CachedFrame,
+  type CacheStats,
   FrameCache,
+  type FrameCacheConfig,
   getFrameCache,
   initializeFrameCache,
-  type CachedFrame,
-  type FrameCacheConfig,
-  type CacheStats,
-} from './frameCache';
+} from "./frameCache";
+export {
+  detectGPUTier,
+  type GPUTier,
+} from "./gpuDetection";
 
 export {
-  WorkerPool,
-  getWorkerPool,
   disposeWorkerPool,
+  getWorkerPool,
+  WorkerPool,
   type WorkerPoolConfig,
-} from './workerPool';
+} from "./workerPool";
 
 // ============================================================================
 // 3D ASSETS & MATERIALS
 // ============================================================================
 
-// SVG Extrusion (logo workflow)
-export {
-  SVGExtrusionService,
-  svgExtrusionService,
-  createDefaultExtrusionConfig,
-  createDefaultMaterialConfig as createDefaultExtrusionMaterialConfig,
-  createDefaultSVGMeshParticleConfig,
-  type ParsedSVGDocument,
-  type ParsedSVGPath,
-  type ExtrusionConfig,
-  type SVGLayerConfig,
-  type ExtrusionMaterialConfig,
-  type SVGMeshParticleConfig,
-} from './svgExtrusion';
-
-// Mesh Particle Manager (custom mesh particles)
-export {
-  MeshParticleManager,
-  meshParticleManager,
-  createDefaultMeshParticleConfig,
-  type RegisteredMeshParticle,
-  type InstancedMeshParticles,
-  type MeshParticleConfig,
-  type MeshParticleSource,
-} from './meshParticleManager';
-
-// Sprite Sheet Service (animated particle textures)
-export {
-  SpriteSheetService,
-  spriteSheetService,
-  createDefaultParticleSpriteConfig,
-  type SpriteSheetConfig,
-  type SpriteFrame,
-  type SpriteAnimation,
-  type SpriteSheetMetadata,
-  type ParticleSpriteConfig,
-} from './spriteSheet';
-
 // Material System (PBR materials and textures)
 export {
+  type EnvironmentConfig,
+  type MaterialPreset,
   MaterialSystem,
   materialSystem,
   type PBRMaterialConfig,
-  type EnvironmentConfig,
-  type MaterialPreset,
-} from './materialSystem';
+} from "./materialSystem";
 
+// Mesh Particle Manager (custom mesh particles)
+export {
+  createDefaultMeshParticleConfig,
+  type InstancedMeshParticles,
+  type MeshParticleConfig,
+  MeshParticleManager,
+  type MeshParticleSource,
+  meshParticleManager,
+  type RegisteredMeshParticle,
+} from "./meshParticleManager";
 // WebGPU Compute Particles
 export {
-  ParticleGPUCompute,
-  HybridParticleSystem,
-  type GPUParticleConfig,
   type GPUGravityWell,
+  type GPUParticleConfig,
   type GPUVortex,
+  HybridParticleSystem,
+  ParticleGPUCompute,
   // GPUParticleData already exported from gpuParticleRenderer (line 90)
   // WebGPUCapabilities exported from webgpuRenderer (line 982)
-} from './particleGPU';
+} from "./particleGPU";
+// Sprite Sheet Service (animated particle textures)
+export {
+  createDefaultParticleSpriteConfig,
+  type ParticleSpriteConfig,
+  type SpriteAnimation,
+  type SpriteFrame,
+  type SpriteSheetConfig,
+  type SpriteSheetMetadata,
+  SpriteSheetService,
+  spriteSheetService,
+} from "./spriteSheet";
+// SVG Extrusion (logo workflow)
+export {
+  createDefaultExtrusionConfig,
+  createDefaultMaterialConfig as createDefaultExtrusionMaterialConfig,
+  createDefaultSVGMeshParticleConfig,
+  type ExtrusionConfig,
+  type ExtrusionMaterialConfig,
+  type ParsedSVGDocument,
+  type ParsedSVGPath,
+  SVGExtrusionService,
+  type SVGLayerConfig,
+  type SVGMeshParticleConfig,
+  svgExtrusionService,
+} from "./svgExtrusion";
 
 // ============================================================================
 // TEXT TO VECTOR
 // ============================================================================
 
 export {
-  textToVector,
-  textLayerToSplines,
+  type CharacterVectorGroup,
+  clearFontCache,
   loadFont,
   loadFontFromBuffer,
   registerFontUrl,
-  clearFontCache,
-  type TextToVectorResult,
-  type CharacterVectorGroup,
   type TextToVectorOptions,
-} from './textToVector';
+  type TextToVectorResult,
+  textLayerToSplines,
+  textToVector,
+} from "./textToVector";
 
 // ============================================================================
 // SVG EXPORT
 // ============================================================================
 
 export {
-  SVGExportService,
-  svgExportService,
-  exportSplineLayerToSVG,
-  exportCompositionToSVG,
   controlPointsToPathData,
+  exportCompositionToSVG,
+  exportSplineLayerToSVG,
   type SVGExportOptions,
   type SVGExportResult,
-} from './svgExport';
+  SVGExportService,
+  svgExportService,
+} from "./svgExport";
 
 // ============================================================================
 // VECTOR LOD
 // ============================================================================
 
 export {
-  VectorLODService,
-  vectorLODService,
-  generateLODLevels,
-  selectLODLevel,
-  simplifyPath as simplifyPathLOD, // Alias to avoid conflict with shapeOperations.simplifyPath
   cullOffScreenPoints,
   DEFAULT_LOD_CONFIG,
-  type LODLevel,
+  generateLODLevels,
   type LODConfig,
   type LODContext,
-} from './vectorLOD';
+  type LODLevel,
+  selectLODLevel,
+  simplifyPath as simplifyPathLOD, // Alias to avoid conflict with shapeOperations.simplifyPath
+  VectorLODService,
+  vectorLODService,
+} from "./vectorLOD";
 
 // ============================================================================
 // MESH WARP DEFORMATION
 // ============================================================================
 
 export {
-  MeshWarpDeformationService,
-  meshWarpDeformation,
-  delaunayTriangulate,
   calculateWeights,
   deformMesh,
+  delaunayTriangulate,
+  MeshWarpDeformationService,
+  meshWarpDeformation,
   // Backwards compatibility aliases (deprecated)
   PuppetDeformationService,
   puppetDeformation,
-} from './meshWarpDeformation';
+} from "./meshWarpDeformation";
 
 // ============================================================================
 // 3D MESH DEFORMATION (Squash/Stretch, Bounce, 3D Pins)
 // ============================================================================
 
 export {
-  MeshDeformation3DService,
-  meshDeformation3D,
-  calculateSquashStretch,
-  calculateVelocityAtFrame,
+  applySquashStretchToObject,
+  type BounceConfig,
+  calculate3DPinWeight,
   calculateBounceOffset,
   calculateImpactSquash,
-  calculate3DPinWeight,
-  deform3DPosition,
+  calculateSquashStretch,
+  calculateVelocityAtFrame,
   createDefault3DPin,
-  applySquashStretchToObject,
-  deformGeometryWithPins,
-  DEFAULT_SQUASH_STRETCH,
   DEFAULT_BOUNCE,
-  type SquashStretchConfig,
-  type BounceConfig,
+  DEFAULT_SQUASH_STRETCH,
   type Deformation3DPin,
   type Deformation3DResult,
-} from './meshDeformation3D';
+  deform3DPosition,
+  deformGeometryWithPins,
+  MeshDeformation3DService,
+  meshDeformation3D,
+  type SquashStretchConfig,
+} from "./meshDeformation3D";
 
 // ============================================================================
 // IMAGE VECTORIZATION
 // ============================================================================
 
 export {
-  DEFAULT_VTRACE_OPTIONS,
-  DEFAULT_STARVECTOR_OPTIONS,
-  VectorizeService,
-  getVectorizeService,
-  normalizeControlPoints,
-  mergePaths as mergeVectorPaths, // Alias to avoid conflict with shapeOperations.mergePaths
-  filterSmallPaths,
-  simplifyPath as simplifyPathVectorize, // Alias to avoid conflict with shapeOperations.simplifyPath
   autoGroupPoints,
+  DEFAULT_STARVECTOR_OPTIONS,
+  DEFAULT_VTRACE_OPTIONS,
+  filterSmallPaths,
+  getVectorizeService,
+  mergePaths as mergeVectorPaths, // Alias to avoid conflict with shapeOperations.mergePaths
+  normalizeControlPoints,
+  type StarVectorOptions,
+  simplifyPath as simplifyPathVectorize, // Alias to avoid conflict with shapeOperations.simplifyPath
+  type VectorizeResult,
+  VectorizeService,
   type VectorizeStatus,
   type VectorPath,
-  type VectorizeResult,
   type VTraceOptions,
-  type StarVectorOptions,
-} from './vectorize';
+} from "./vectorize";
 
 // ============================================================================
 // AI GENERATION (Lazy-loaded models)
@@ -857,213 +841,213 @@ export {
 
 export {
   type AIModelType,
-  type ModelStatus,
-  type ModelInfo,
+  aiGeneration,
   type DepthEstimationOptions,
+  estimateDepth,
+  type GenerationOptions,
+  generateNormalMap,
+  getAvailableModels,
+  type InferenceResult,
+  isAIBackendConnected,
+  type ModelInfo,
+  type ModelStatus,
   type NormalMapOptions,
   type SegmentationOptions,
-  type GenerationOptions,
-  type InferenceResult,
   type SegmentationResult as AISegmentationResult, // Alias to avoid conflict with segmentation
-  aiGeneration,
-  estimateDepth,
-  generateNormalMap,
   segmentAtPoint,
-  getAvailableModels,
-  isAIBackendConnected,
-} from './aiGeneration';
+} from "./aiGeneration";
 
 // ============================================================================
 // AUDIO WORKER CLIENT
 // ============================================================================
 
 export {
-  type AudioAnalysisProgress,
   type AnalyzeOptions,
+  type AudioAnalysisProgress,
   analyzeAudioInWorker,
-  loadAndAnalyzeAudio,
   cancelAnalysis,
+  loadAndAnalyzeAudio,
   terminateWorker,
-} from './audioWorkerClient';
+} from "./audioWorkerClient";
 
 // ============================================================================
 // CAMERA ENHANCEMENTS
 // ============================================================================
 
 export {
-  type CameraShakeConfig,
-  type RackFocusConfig,
   type AutoFocusConfig,
-  type MotionBlurEstimate,
-  SHAKE_PRESETS,
-  DEFAULT_SHAKE_CONFIG,
-  DEFAULT_RACK_FOCUS,
-  DEFAULT_AUTOFOCUS,
   CameraShake,
-  getRackFocusDistance,
-  generateRackFocusKeyframes,
+  type CameraShakeConfig,
   calculateAutoFocusDistance,
-  estimateMotionBlur,
-  generateMotionBlurKeyframes,
+  createAutoFocus,
   createCameraShake,
   createRackFocus,
-  createAutoFocus,
-} from './cameraEnhancements';
+  DEFAULT_AUTOFOCUS,
+  DEFAULT_RACK_FOCUS,
+  DEFAULT_SHAKE_CONFIG,
+  estimateMotionBlur,
+  generateMotionBlurKeyframes,
+  generateRackFocusKeyframes,
+  getRackFocusDistance,
+  type MotionBlurEstimate,
+  type RackFocusConfig,
+  SHAKE_PRESETS,
+} from "./cameraEnhancements";
 
 // ============================================================================
 // LAYER DECOMPOSITION (AI-powered)
 // ============================================================================
 
 export {
-  type DecompositionModelStatus,
+  canvasToDataUrl,
   type DecomposedLayer,
+  type DecompositionModelStatus,
   type DecompositionOptions,
   type DecompositionResult,
-  LayerDecompositionService,
-  getLayerDecompositionService,
-  canvasToDataUrl,
-  imageToDataUrl,
   dataUrlToImage,
-} from './layerDecomposition';
+  getLayerDecompositionService,
+  imageToDataUrl,
+  LayerDecompositionService,
+} from "./layerDecomposition";
 
 // ============================================================================
 // LAYER EVALUATION CACHE
 // ============================================================================
 
 export {
-  markLayerDirty,
-  markAllLayersDirty,
-  getLayerVersion,
-  getGlobalVersion,
-  getCachedEvaluation,
-  setCachedEvaluation,
-  clearLayerCache,
   clearEvaluationCache,
-  getEvaluationCacheStats,
+  clearLayerCache,
   evaluateLayerCached,
   evaluateLayersCached,
-} from './layerEvaluationCache';
+  getCachedEvaluation,
+  getEvaluationCacheStats,
+  getGlobalVersion,
+  getLayerVersion,
+  markAllLayersDirty,
+  markLayerDirty,
+  setCachedEvaluation,
+} from "./layerEvaluationCache";
 
 // ============================================================================
 // LAZY LOADER (Dynamic module loading)
 // ============================================================================
 
 export {
-  loadWebGPURenderer,
-  loadMatteExporter,
-  loadJSZip,
-  loadMP4Muxer,
-  loadWebMMuxer,
-  loadParticleSystem,
-  loadMath3D,
+  clearAllModuleCache,
+  clearModuleCache,
+  getModuleCacheStats,
   loadCameraTrajectory,
   loadDepthflow,
+  loadJSZip,
+  loadMath3D,
+  loadMatteExporter,
+  loadMP4Muxer,
+  loadParticleSystem,
+  loadWebGPURenderer,
+  loadWebMMuxer,
   preloadCommonModules,
   preloadExportModules,
-  clearModuleCache,
-  clearAllModuleCache,
-  getModuleCacheStats,
-} from './lazyLoader';
+} from "./lazyLoader";
 
 // ============================================================================
 // MASK GENERATOR
 // ============================================================================
 
 export {
-  type MaskShapeType,
-  type MaskGeneratorOptions,
   type AffineTransformParams,
   generateMask,
-  maskToImageData,
+  generateMaskSequence,
+  type MaskGeneratorOptions,
+  type MaskShapeType,
   maskToCanvas,
   maskToDataURL,
-  generateMaskSequence,
-} from './maskGenerator';
+  maskToImageData,
+} from "./maskGenerator";
 
 // ============================================================================
 // MEMORY BUDGET (GPU/VRAM tracking)
 // ============================================================================
 
 export {
+  allocationList,
+  availableVRAM,
+  canAllocate,
+  freeMemory,
+  type GPUInfo,
+  getMemorySummary,
+  getWarning,
+  initializeGPUDetection,
   type MemoryAllocation,
   type MemoryCategory,
   type MemoryWarning,
-  type GPUInfo,
-  VRAM_ESTIMATES,
-  totalUsageMB,
-  usageByCategory,
-  availableVRAM,
-  usagePercent,
-  warningLevel,
-  allocationList,
-  unloadableItems,
-  initializeGPUDetection,
+  memoryState,
   registerAllocation,
+  totalUsageMB,
+  unloadableItems,
   unregisterAllocation,
   updateAllocation,
-  getWarning,
-  canAllocate,
-  freeMemory,
-  getMemorySummary,
-  memoryState,
-} from './memoryBudget';
+  usageByCategory,
+  usagePercent,
+  VRAM_ESTIMATES,
+  warningLevel,
+} from "./memoryBudget";
 
 // ============================================================================
 // PATH MORPHING
 // ============================================================================
 
 export {
-  type MorphConfig,
-  type PreparedMorphPaths,
   DEFAULT_MORPH_CONFIG,
-  prepareMorphPaths,
-  morphPaths,
-  morphPathsAuto,
   getCorrespondence,
   isBezierPath,
+  type MorphConfig,
+  morphPaths,
+  morphPathsAuto,
   PathMorphing,
-} from './pathMorphing';
+  type PreparedMorphPaths,
+  prepareMorphPaths,
+} from "./pathMorphing";
 
 // ============================================================================
 // PERSISTENCE SERVICE (IndexedDB storage)
 // ============================================================================
 
 export {
-  type StoredProject,
-  type RecentProject,
-  type UserSettings,
-  type StoredAsset,
   type AIConversation,
-  // Alias to avoid conflict with projectStorage exports
-  saveProject as saveProjectIndexedDB,
-  getProject as getProjectIndexedDB,
-  deleteProject as deleteProjectIndexedDB,
-  listProjects as listProjectsIndexedDB,
-  saveAsset,
-  getAsset,
-  getProjectAssets,
-  deleteAsset,
-  deleteProjectAssets,
-  saveAIConversation,
-  getAIConversation,
-  getProjectAIConversations,
-  deleteAIConversation,
-  getSettings,
-  saveSettings,
-  getSetting,
-  setSetting,
-  getRecentProjects,
   addToRecentProjects,
-  removeFromRecentProjects,
-  clearRecentProjects,
-  getLastProjectId,
-  setLastProjectId,
-  getStorageEstimate,
   clearAllData,
+  clearRecentProjects,
+  deleteAIConversation,
+  deleteAsset,
+  deleteProject as deleteProjectIndexedDB,
+  deleteProjectAssets,
   exportAllData,
+  getAIConversation,
+  getAsset,
+  getLastProjectId,
+  getProject as getProjectIndexedDB,
+  getProjectAIConversations,
+  getProjectAssets,
+  getRecentProjects,
+  getSetting,
+  getSettings,
+  getStorageEstimate,
   importData,
   initPersistence,
-} from './persistenceService';
+  listProjects as listProjectsIndexedDB,
+  type RecentProject,
+  removeFromRecentProjects,
+  type StoredAsset,
+  type StoredProject,
+  saveAIConversation,
+  saveAsset,
+  // Alias to avoid conflict with projectStorage exports
+  saveProject as saveProjectIndexedDB,
+  saveSettings,
+  setLastProjectId,
+  setSetting,
+  type UserSettings,
+} from "./persistenceService";
 
 // SEGMENT TO MASK exports are already included via ./segmentation re-export (lines 423-446)
 
@@ -1072,63 +1056,63 @@ export {
 // ============================================================================
 
 export {
-  type TextAnimatorPreset,
-  DEFAULT_RANGE_SELECTOR,
-  DEFAULT_ANIMATOR_PROPERTIES,
-  TEXT_ANIMATOR_PRESETS,
-  TEXT_ANIMATOR_PRESET_LIST,
-  createTextAnimator,
   applyTextAnimatorPreset,
   calculateCharacterInfluence,
-} from './textAnimator';
+  createTextAnimator,
+  DEFAULT_ANIMATOR_PROPERTIES,
+  DEFAULT_RANGE_SELECTOR,
+  TEXT_ANIMATOR_PRESET_LIST,
+  TEXT_ANIMATOR_PRESETS,
+  type TextAnimatorPreset,
+} from "./textAnimator";
 
 // ============================================================================
 // WEBGPU RENDERER
 // ============================================================================
 
 export {
-  type WebGPUCapabilities,
   type BlurParams,
   type ColorCorrectionParams,
-  webgpuRenderer,
   getWebGPUStats,
-} from './webgpuRenderer';
+  type WebGPUCapabilities,
+  webgpuRenderer,
+} from "./webgpuRenderer";
 
 // ============================================================================
 // ONION SKINNING
 // ============================================================================
 
 export {
-  type OpacityFalloff,
-  type OnionSkinConfig,
-  type OnionSkinFrame,
-  type OnionSkinRenderData,
+  calculateOnionSkinFrames,
+  calculateOpacity,
+  compositeOnionSkinFrame,
   DEFAULT_ONION_SKIN_CONFIG,
   ONION_SKIN_PRESETS,
-  calculateOpacity,
-  parseColor,
-  calculateOnionSkinFrames,
+  type OnionSkinConfig,
+  type OnionSkinFrame,
   OnionSkinningService,
-  compositeOnionSkinFrame,
+  type OnionSkinRenderData,
+  type OpacityFalloff,
   onionSkinning,
-} from './onionSkinning';
+  parseColor,
+} from "./onionSkinning";
 
 // ============================================================================
 // GAUSSIAN SPLATTING (3DGS)
 // ============================================================================
 
 export {
-  type GaussianPrimitive,
-  type GaussianSplatScene,
-  type GaussianRenderQuality,
-  DEFAULT_QUALITY as DEFAULT_3DGS_QUALITY,
   createGaussianBuffers,
   createGaussianPoints,
+  DEFAULT_QUALITY as DEFAULT_3DGS_QUALITY,
+  type GaussianPrimitive,
+  type GaussianRenderQuality,
+  type GaussianSplatScene,
   GaussianSplattingService,
-  sortGaussiansByDepth,
-  reorderBuffers,
   gaussianSplatting,
-} from './gaussianSplatting';
+  reorderBuffers,
+  sortGaussiansByDepth,
+} from "./gaussianSplatting";
 
 // ============================================================================
 // VIDEO DECODER (WebCodecs API - Phase 4)
@@ -1136,13 +1120,13 @@ export {
 // ============================================================================
 
 export {
-  VideoDecoderService,
-  videoDecoderPool,
-  isWebCodecsSupported,
-  type VideoInfo,
-  type VideoFrameInfo,
   type DecoderOptions,
-} from './videoDecoder';
+  isWebCodecsSupported,
+  VideoDecoderService,
+  type VideoFrameInfo,
+  type VideoInfo,
+  videoDecoderPool,
+} from "./videoDecoder";
 
 // ============================================================================
 // VIDEO TRANSITIONS
@@ -1151,17 +1135,17 @@ export {
 // ============================================================================
 
 export {
-  renderTransition,
-  getTransitionProgress,
   createDefaultTransition,
   getAllTransitionModes,
   getTransitionModeName,
+  getTransitionProgress,
+  renderTransition,
   TRANSITION_PRESETS,
   type TransitionBlendMode,
-  type TransitionEasing,
   type TransitionConfig,
+  type TransitionEasing,
   type TransitionState,
-} from './video';
+} from "./video";
 
 // ============================================================================
 // FRAME INTERPOLATION (RIFE)
@@ -1171,33 +1155,29 @@ export {
 // ============================================================================
 
 export {
-  // Types
-  type RIFEModel,
-  type InterpolationFactor,
-  type InterpolationModel,
-  type PairInterpolationResult,
-  type SequenceInterpolationResult,
-  type SlowMoResult,
-  type InterpolationProgressCallback,
-
-  // API functions
-  getInterpolationModels,
-  interpolateFramePair,
-  interpolateSequence,
-  createSlowMotion,
-
-  // Client-side fallback
-  blendFrames,
-  interpolateFramesClient,
-
   // Utilities
   base64ToImageData,
-  interpolationBase64ToBlob,
-
+  // Client-side fallback
+  blendFrames,
+  createSlowMotion,
+  // API functions
+  getInterpolationModels,
   // Presets
   INTERPOLATION_PRESETS,
+  type InterpolationFactor,
+  type InterpolationModel,
+  type InterpolationProgressCallback,
+  interpolateFramePair,
+  interpolateFramesClient,
+  interpolateSequence,
+  interpolationBase64ToBlob,
   isInterpolationAvailable,
-} from './video';
+  type PairInterpolationResult,
+  // Types
+  type RIFEModel,
+  type SequenceInterpolationResult,
+  type SlowMoResult,
+} from "./video";
 
 // ============================================================================
 // AUDIO STEM SEPARATION
@@ -1207,29 +1187,26 @@ export {
 // ============================================================================
 
 export {
-  // Types
-  type StemType,
-  type DemucsModel,
-  type StemModel,
-  type StemSeparationResult,
-  type StemIsolationResult,
-  type StemProgressCallback,
-
-  // Main functions
-  getStemModels,
-  separateStems,
-  isolateStem,
-  separateStemsForReactivity,
-
   // Utilities
   base64ToBlob,
-  downloadStem,
   createAudioElement,
-
+  type DemucsModel,
+  downloadStem,
+  // Main functions
+  getStemModels,
+  isolateStem,
+  isStemSeparationAvailable,
   // Presets & availability
   STEM_PRESETS,
-  isStemSeparationAvailable,
-} from './audio';
+  type StemIsolationResult,
+  type StemModel,
+  type StemProgressCallback,
+  type StemSeparationResult,
+  // Types
+  type StemType,
+  separateStems,
+  separateStemsForReactivity,
+} from "./audio";
 
 // ============================================================================
 // ENHANCED BEAT DETECTION
@@ -1238,152 +1215,150 @@ export {
 // ============================================================================
 
 export {
-  // Types
-  type EnhancedBeat,
+  BEAT_DETECTION_PRESETS,
   type BeatGrid,
-  type EnhancedBeatConfig,
-
   // Main functions
   createEnhancedBeatGrid,
-  generateSubBeats,
-  getNearestBeat,
-  isOnBeat,
-  isOnDownbeat,
-  getBeatIntensity,
-  getPulseIntensity,
-
   // Config & Presets
   DEFAULT_BEAT_CONFIG,
-  BEAT_DETECTION_PRESETS,
+  // Types
+  type EnhancedBeat,
+  type EnhancedBeatConfig,
+  generateSubBeats,
+  getBeatIntensity,
+  getNearestBeat,
+  getPulseIntensity,
   isEnhancedBeatDetectionAvailable,
-} from './audio';
+  isOnBeat,
+  isOnDownbeat,
+} from "./audio";
 
 // ============================================================================
 // CAMERA TRACKING IMPORT
 // ============================================================================
 
 export {
-  parseLatticeTrackingJSON,
+  detectTrackingFormat,
+  exportCameraToTrackingFormat,
+  importCameraTracking,
   parseBlenderTrackingJSON,
   parseCOLMAPOutput,
-  detectTrackingFormat,
-  importCameraTracking,
-  exportCameraToTrackingFormat,
-} from './cameraTrackingImport';
+  parseLatticeTrackingJSON,
+} from "./cameraTrackingImport";
 
 // ============================================================================
 // TRACK POINT SERVICE
 // ============================================================================
 
 export {
-  useTrackPoints,
-  createTrack,
-  deleteTrack,
-  deleteSelectedTracks,
-  setTrackPosition,
-  getTrackPosition,
-  removeTrackPosition,
-  getTrackPositions,
-  getPointsAtFrame,
-  selectTrack,
-  deselectTrack,
+  clearAllTracks,
   clearSelection,
-  setActiveTrack,
-  setGroundPlane,
+  createTrack,
   defineGroundPlaneFromPoints,
-  setOrigin3D,
+  deleteSelectedTracks,
+  deleteTrack,
+  deselectTrack,
+  exportTrackPoints2D,
+  getPointsAtFrame,
+  getTrackPosition,
+  getTrackPositions,
+  getTrackStats,
   importTrackPoints2D,
   importTrackPoints3D,
-  exportTrackPoints2D,
-  clearAllTracks,
-  getTrackStats,
+  removeTrackPosition,
+  selectTrack,
+  setActiveTrack,
+  setGroundPlane,
+  setOrigin3D,
+  setTrackPosition,
   trackPointState,
-} from './trackPointService';
+  useTrackPoints,
+} from "./trackPointService";
 
 // ============================================================================
 // RENDER QUEUE (Phase 5 - Background Rendering)
 // ============================================================================
 
 export {
-  RenderQueueManager,
   getRenderQueueManager,
   initializeRenderQueue,
-  type RenderJobStatus,
+  type RenderedFrame,
+  type RenderJob,
   type RenderJobConfig,
   type RenderJobProgress,
-  type RenderJob,
-  type RenderedFrame,
-  type RenderQueueStats,
+  type RenderJobStatus,
   type RenderQueueConfig,
-} from './renderQueue';
+  RenderQueueManager,
+  type RenderQueueStats,
+} from "./renderQueue";
 
 // ============================================================================
 // COLOR MANAGEMENT (Phase 6 - ICC Profiles & Color Spaces)
 // ============================================================================
 
 export {
-  ColorProfileService,
-  getColorProfileService,
-  initializeColorManagement,
-  colorUtils,
-  COLOR_SPACES,
-  sRGBToLinear,
-  linearToSRGB,
-  linearizeRGB,
   applyGammaRGB,
-  convertColorSpace,
-  parseICCProfile,
-  extractICCFromImage,
-  type ColorSpace,
-  type ViewTransform,
-  type ColorSpaceInfo,
+  COLOR_SPACES,
+  ColorProfileService,
   type ColorSettings,
+  type ColorSpace,
+  type ColorSpaceInfo,
+  colorUtils,
+  convertColorSpace,
+  extractICCFromImage,
+  getColorProfileService,
   type ICCProfile,
+  initializeColorManagement,
+  linearizeRGB,
+  linearToSRGB,
+  parseICCProfile,
   type RGB as ColorRGB,
+  sRGBToLinear,
+  type ViewTransform,
   type XYZ as ColorXYZ,
-} from './colorManagement';
+} from "./colorManagement";
 
 // ============================================================================
 // TIMELINE WAVEFORM (Phase 7 - Audio Visualization)
 // ============================================================================
 
 export {
-  computePeaks,
-  generatePeakMipmap,
-  createWaveformData,
-  getWaveformData,
   clearWaveformCache,
+  computePeaks,
+  createWaveformData,
+  generatePeakMipmap,
+  getWaveformData,
+  renderTimelineWaveform,
   renderWaveform,
   renderWaveformToImage,
-  renderTimelineWaveform,
-  type WaveformData,
-  type WaveformRenderOptions,
-  type WaveformPeakOptions,
   type TimelineWaveformConfig,
-} from './timelineWaveform';
+  type WaveformData,
+  type WaveformPeakOptions,
+  type WaveformRenderOptions,
+} from "./timelineWaveform";
 
 // ============================================================================
 // PLUGIN SYSTEM (Phase 9 - Extensibility)
 // ============================================================================
 
 export {
-  PluginManager,
-  getPluginManager,
-  type PluginType,
-  type PluginManifest,
-  type PluginPermission,
-  type LatticePluginAPI,
-  type PluginEvent,
-  type PanelDefinition,
-  type MenuItemDefinition,
   type ContextMenuDefinition,
   type EffectDefinition,
   type EffectParameter,
   type ExporterDefinition,
-  type ToolDefinition,
+  getPluginManager,
   type LatticePlugin,
+  type LatticePluginAPI,
   type LoadedPlugin,
-} from './plugins';
+  type MenuItemDefinition,
+  type PanelDefinition,
+  type PluginEvent,
+  PluginManager,
+  type PluginManifest,
+  type PluginPermission,
+  type PluginType,
+  type ToolDefinition,
+} from "./plugins";
 
 // ============================================================================
 // PROJECT MIGRATION (Phase 10 - Versioning)
@@ -1391,199 +1366,198 @@ export {
 
 export {
   CURRENT_SCHEMA_VERSION,
-  MIN_SUPPORTED_VERSION,
-  getProjectVersion,
-  needsMigration,
-  migrateProject,
-  stampProjectVersion,
   getAvailableMigrations,
   getMigrationInfo,
-  type VersionedProject,
-  type MigrationResult,
-  type MigrationFunction,
+  getProjectVersion,
+  MIN_SUPPORTED_VERSION,
   type Migration,
-} from './projectMigration';
+  type MigrationFunction,
+  type MigrationResult,
+  migrateProject,
+  needsMigration,
+  stampProjectVersion,
+  type VersionedProject,
+} from "./projectMigration";
 
 // ============================================================================
 // TEMPLATE BUILDER
 // ============================================================================
 
 export {
-  // Template management
-  initializeTemplate,
-  clearTemplate,
-  updateTemplateMetadata,
-  // Property exposure
-  EXPOSABLE_PROPERTIES,
-  getExposableProperties,
-  addExposedProperty,
-  removeExposedProperty,
-  updateExposedProperty,
-  reorderExposedProperties,
-  // Groups
-  addPropertyGroup,
-  removePropertyGroup,
-  movePropertyToGroup,
-  reorderGroups,
   // Comments
   addComment,
-  removeComment,
-  updateComment,
-  // Property access
-  getPropertyValue,
-  setPropertyValue,
-  getEffectControlValue,
-  getExpressionControls,
-  // Template export
-  prepareTemplateExport,
+  addExposedProperty,
+  // Groups
+  addPropertyGroup,
+  clearTemplate,
+  // Property exposure
+  EXPOSABLE_PROPERTIES,
   exportTemplate,
-  // Validation
-  validateTemplate,
+  getEffectControlValue,
+  getExposableProperties,
+  getExpressionControls,
   // Utilities
   getOrganizedProperties,
+  // Property access
+  getPropertyValue,
+  // Template management
+  initializeTemplate,
   isExposedProperty,
   isTemplateComment,
-  type TemplateValidationResult,
+  movePropertyToGroup,
   type OrganizedProperties,
-} from './templateBuilder';
+  // Template export
+  prepareTemplateExport,
+  removeComment,
+  removeExposedProperty,
+  removePropertyGroup,
+  reorderExposedProperties,
+  reorderGroups,
+  setPropertyValue,
+  type TemplateValidationResult,
+  updateComment,
+  updateExposedProperty,
+  updateTemplateMetadata,
+  // Validation
+  validateTemplate,
+} from "./templateBuilder";
 
 // ============================================================================
 // JSON VALIDATION & DATA HARDENING
 // ============================================================================
 
 export {
-  // Safe JSON operations
-  safeJSONParse,
-  safeJSONStringify,
+  deepCloneSanitized,
+  isArray,
+  isBoolean,
+  isNumber,
   // Type guards
   isObject,
   isString,
-  isNumber,
-  isArray,
-  isBoolean,
+  // Safe JSON operations
+  safeJSONParse,
+  safeJSONStringify,
+  sanitizeFileName,
   // Sanitization
   sanitizeString,
-  sanitizeFileName,
-  deepCloneSanitized,
-} from './jsonValidation';
+} from "./jsonValidation";
 
 // ============================================================================
 // TEXT MEASUREMENT (Canvas API)
 // ============================================================================
 
 export {
-  measureText,
-  measureMultilineText,
-  measureTextLayerRect,
-  measureTextWithFont,
-  isFontAvailable,
   buildFontString,
+  cleanup as cleanupTextMeasurement,
   getBaselineOffset,
   getCharacterPositions,
-  cleanup as cleanupTextMeasurement,
+  isFontAvailable,
+  measureMultilineText,
+  measureText,
+  measureTextLayerRect,
+  measureTextWithFont,
   type TextMetrics,
   type TextRect,
-} from './textMeasurement';
+} from "./textMeasurement";
 
 // ============================================================================
 // DATA IMPORT (Tutorial 14 - Data-Driven Animation)
 // ============================================================================
 
+// Re-export data asset types
 export {
-  // Parsing functions
-  parseJSON,
-  parseCSV,
-  parseTSV,
-  parseDataFile,
-  // Asset management
-  importDataAsset,
-  importDataFromFile,
-  getDataAsset,
-  getAllDataAssets,
-  removeDataAsset,
+  type CSVDataAsset,
+  type CSVParseOptions,
+  type DataAsset,
+  type DataFileType,
+  type DataParseResult,
+  type FootageDataAccessor,
+  getDataFileType,
+  isCSVAsset,
+  // Type guards
+  isJSONAsset,
+  isSupportedDataFile,
+  type JSONDataAsset,
+  type JSONParseOptions,
+} from "@/types/dataAsset";
+export {
   clearDataAssets,
-  reloadDataAsset,
+  countCSVRows,
   // Expression support
   createFootageAccessor,
   // Utilities
   extractArrayFromJSON,
+  getAllDataAssets,
+  getDataAsset,
   getJSONValue,
-  countCSVRows,
   getUniqueColumnValues,
-  sumCSVColumn,
+  // Asset management
+  importDataAsset,
+  importDataFromFile,
   maxCSVColumn,
   minCSVColumn,
-} from './dataImport';
-
-// Re-export data asset types
-export {
-  type DataFileType,
-  type DataAsset,
-  type JSONDataAsset,
-  type CSVDataAsset,
-  type FootageDataAccessor,
-  type DataParseResult,
-  type CSVParseOptions,
-  type JSONParseOptions,
-  // Type guards
-  isJSONAsset,
-  isCSVAsset,
-  isSupportedDataFile,
-  getDataFileType,
-} from '@/types/dataAsset';
+  parseCSV,
+  parseDataFile,
+  // Parsing functions
+  parseJSON,
+  parseTSV,
+  reloadDataAsset,
+  removeDataAsset,
+  sumCSVColumn,
+} from "./dataImport";
 
 // ============================================================================
 // GLOBAL LIGHT (Layer Styles)
 // ============================================================================
 
 export {
+  clearGlobalLightCache,
   // Factory
   createDefaultGlobalLight,
-  // Getters
-  getGlobalLight,
-  getGlobalLightAngle,
-  getGlobalLightAltitude,
-  getLightDirection,
-  getShadowOffset,
-  // Setters
-  setGlobalLightAngle,
-  setGlobalLightAltitude,
-  setGlobalLightDirection,
-  setGlobalLightSettings,
-  // Animation
-  enableGlobalLightAngleAnimation,
-  enableGlobalLightAltitudeAnimation,
-  // Cleanup
-  removeGlobalLight,
-  clearGlobalLightCache,
-  // Serialization
-  serializeGlobalLight,
-  deserializeGlobalLight,
+  DEFAULT_ALTITUDE as DEFAULT_GLOBAL_LIGHT_ALTITUDE,
   // Constants
   DEFAULT_ANGLE as DEFAULT_GLOBAL_LIGHT_ANGLE,
-  DEFAULT_ALTITUDE as DEFAULT_GLOBAL_LIGHT_ALTITUDE,
-} from './globalLight';
+  deserializeGlobalLight,
+  enableGlobalLightAltitudeAnimation,
+  // Animation
+  enableGlobalLightAngleAnimation,
+  // Getters
+  getGlobalLight,
+  getGlobalLightAltitude,
+  getGlobalLightAngle,
+  getLightDirection,
+  getShadowOffset,
+  // Cleanup
+  removeGlobalLight,
+  // Serialization
+  serializeGlobalLight,
+  setGlobalLightAltitude,
+  // Setters
+  setGlobalLightAngle,
+  setGlobalLightDirection,
+  setGlobalLightSettings,
+} from "./globalLight";
 
 // ============================================================================
 // Export Templates (Tutorial 20)
 // ============================================================================
 
 export {
-  exportTemplateService,
   type ExportTemplate,
   type ExportTemplateStore,
-} from './exportTemplates';
+  exportTemplateService,
+} from "./exportTemplates";
 
 // ============================================================================
 // Project Collection (Tutorial 20)
 // ============================================================================
 
 export {
-  projectCollectionService,
-  type CollectionProgress,
-  type CollectionOptions,
   type CollectionManifest,
-} from './projectCollection';
+  type CollectionOptions,
+  type CollectionProgress,
+  projectCollectionService,
+} from "./projectCollection";
 
 // ============================================================================
 // Roving Keyframes (Tutorial 20)
@@ -1591,93 +1565,88 @@ export {
 
 export {
   applyRovingKeyframes,
-  wouldRovingChange,
-  getEvenlySpacedFrames,
   calculateVelocities,
+  getEvenlySpacedFrames,
   type RovingOptions,
   type RovingResult,
-} from './rovingKeyframes';
+  wouldRovingChange,
+} from "./rovingKeyframes";
 
 // ============================================================================
 // PHYSICS SIMULATION (Feature 05 - Newton Physics)
 // ============================================================================
 
 export {
-  // Main engine
-  PhysicsEngine,
-  vec2,
-  PhysicsRandom,
-
-  // Joint system
-  JointSystem,
-
-  // Ragdoll builder
-  RagdollBuilder,
-  convertRagdollToPhysics,
-  extractRagdollState,
+  type AttractionForce,
   applyRagdollState,
-  HUMANOID_BONES,
-
+  type BlobJointConfig,
+  type BodyType,
+  type BuoyancyForce,
+  type ClothConfig,
+  type ClothState,
+  type CollisionFilter,
+  type CollisionResponse,
+  type CollisionShape,
+  type ContactInfo,
+  convertRagdollToPhysics,
+  createBoxBody,
+  createCircleBody,
+  createClothConfig,
+  createGravityForce,
   // Factory functions
   createPhysicsEngine,
   createRagdollBuilder,
-  createCircleBody,
-  createBoxBody,
-  createGravityForce,
-  createClothConfig,
-
+  DEFAULT_SPACE_CONFIG,
+  type DistanceJointConfig,
+  type DragForce,
+  type ExplosionForce,
+  type ExportedKeyframes,
+  extractRagdollState,
+  type ForceField,
+  type ForceType,
+  type GravityForce,
+  HUMANOID_BONES,
   // Presets
   HUMANOID_PRESETS,
+  type HumanoidRagdollPreset,
+  type JointConfig,
+  // Joint system
+  JointSystem,
+  type JointType,
+  type KeyframeExportOptions,
   MATERIAL_PRESETS,
-  DEFAULT_SPACE_CONFIG,
-
+  type PhysicsCompositionData,
+  // Main engine
+  PhysicsEngine,
+  type PhysicsLayerData,
+  type PhysicsMaterial,
+  PhysicsRandom,
+  type PhysicsSimulationState,
+  type PhysicsSpaceConfig,
   // Types
   type PhysicsVec2,
-  type PhysicsMaterial,
-  type CollisionShape,
-  type CollisionFilter,
-  type BodyType,
-  type ShapeType,
-  type CollisionResponse,
-  type RigidBodyConfig,
-  type RigidBodyState,
-  type ContactInfo,
-  type JointType,
-  type JointConfig,
-  type PivotJointConfig,
-  type SpringJointConfig,
-  type DistanceJointConfig,
   type PistonJointConfig,
-  type WheelJointConfig,
-  type WeldJointConfig,
-  type BlobJointConfig,
-  type RopeJointConfig,
-  type ForceType,
-  type ForceField,
-  type GravityForce,
-  type WindForce,
-  type AttractionForce,
-  type ExplosionForce,
-  type BuoyancyForce,
-  type VortexForce,
-  type DragForce,
-  type VerletParticle,
-  type VerletConstraint,
-  type SoftBodyConfig,
-  type SoftBodyState,
-  type ClothConfig,
-  type ClothState,
+  type PivotJointConfig,
   type RagdollBone,
+  // Ragdoll builder
+  RagdollBuilder,
   type RagdollConfig,
   type RagdollState,
-  type HumanoidRagdollPreset,
-  type PhysicsSpaceConfig,
-  type PhysicsSimulationState,
-  type KeyframeExportOptions,
-  type ExportedKeyframes,
-  type PhysicsLayerData,
-  type PhysicsCompositionData,
-} from './physics';
+  type RigidBodyConfig,
+  type RigidBodyState,
+  type RopeJointConfig,
+  type ShapeType,
+  type SoftBodyConfig,
+  type SoftBodyState,
+  type SpringJointConfig,
+  type VerletConstraint,
+  type VerletParticle,
+  type VortexForce,
+  vec2,
+  type WeldJointConfig,
+  type WheelJointConfig,
+  type WindForce,
+} from "./physics";
 
 // ============================================================================
 // COLOR & DEPTH REACTIVITY
@@ -1685,43 +1654,37 @@ export {
 // ============================================================================
 
 export {
+  // Region analysis
+  analyzeRegion,
+  type ColorFeature,
+  type ColorReactivityConfig,
+  // Types
+  type ColorSample,
+  calculateBrightness,
+  // Motion detection (frame differencing)
+  calculateMotion,
+  createColorSample,
+  type DepthReactivityConfig,
+  type DepthSample,
+  getFeatureValue,
+  // Color reactivity
+  getMappedColorValue,
+  getMappedDepthValue,
+  getMappedMotionValue as getMappedColorMotionValue,
+  type MotionDetectionConfig,
   // Color utilities
   rgbToHsv,
-  calculateBrightness,
-  createColorSample,
-
-  // Pixel sampling
-  samplePixel,
+  type SampleMode,
   sampleAreaAverage,
   sampleAreaMax,
   sampleAreaMin,
-  getFeatureValue,
   sampleColorFromImageData,
-
-  // Color reactivity
-  getMappedColorValue,
-
   // Depth reactivity
   sampleDepth,
   sampleDepthWithGradient,
-  getMappedDepthValue,
-
-  // Motion detection (frame differencing)
-  calculateMotion,
-  getMappedMotionValue as getMappedColorMotionValue,
-
-  // Region analysis
-  analyzeRegion,
-
-  // Types
-  type ColorSample,
-  type DepthSample,
-  type SampleMode,
-  type ColorFeature,
-  type ColorReactivityConfig,
-  type DepthReactivityConfig,
-  type MotionDetectionConfig,
-} from './colorDepthReactivity';
+  // Pixel sampling
+  samplePixel,
+} from "./colorDepthReactivity";
 
 // ============================================================================
 // MOTION-BASED REACTIVITY
@@ -1729,24 +1692,20 @@ export {
 // ============================================================================
 
 export {
-  // Motion state computation
-  computeMotionState,
-  getMotionFeatureValue,
-
-  // Proximity
-  calculateProximity,
-  getProximityValue,
-
   // Mapping
   applyMotionCurve,
-  getMappedMotionValue as getMappedLayerMotionValue,
-
+  // Proximity
+  calculateProximity,
   // Cache management
   clearMotionCache,
+  // Motion state computation
+  computeMotionState,
+  getMappedMotionValue as getMappedLayerMotionValue,
   getMotionCacheStats,
-
+  getMotionFeatureValue,
+  getProximityValue,
+  type MotionFeature,
+  type MotionReactivityConfig,
   // Types
   type MotionState,
-  type MotionReactivityConfig,
-  type MotionFeature,
-} from './motionReactivity';
+} from "./motionReactivity";

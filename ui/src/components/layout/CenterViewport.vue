@@ -153,17 +153,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import { Splitpanes, Pane } from 'splitpanes';
-import type { Camera3D, ViewportState } from '@/types/camera';
-
+import { computed, ref } from "vue";
 // Components
-import ThreeCanvas from '@/components/canvas/ThreeCanvas.vue';
-import ViewportRenderer from '@/components/viewport/ViewportRenderer.vue';
-import TimelinePanel from '@/components/timeline/TimelinePanel.vue';
-import CurveEditor from '@/components/curve-editor/CurveEditor.vue';
+import type ThreeCanvas from "@/components/canvas/ThreeCanvas.vue";
+import type { Camera3D, ViewportState } from "@/types/camera";
 
-export type ViewportTab = 'composition' | 'layer' | 'footage';
+export type ViewportTab = "composition" | "layer" | "footage";
 
 export interface ViewOptions {
   showGrid: boolean;
@@ -181,7 +176,7 @@ export interface ViewOptions {
 
 export interface Guide {
   id: string;
-  orientation: 'horizontal' | 'vertical';
+  orientation: "horizontal" | "vertical";
   position: number;
 }
 
@@ -209,18 +204,21 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  'update:viewportTab': [tab: ViewportTab];
-  'update:viewOptions': [options: ViewOptions];
-  'update:showCurveEditor': [show: boolean];
-  'openCompositionSettings': [];
-  'openPathSuggestion': [];
+  "update:viewportTab": [tab: ViewportTab];
+  "update:viewOptions": [options: ViewOptions];
+  "update:showCurveEditor": [show: boolean];
+  openCompositionSettings: [];
+  openPathSuggestion: [];
   // Guide events
-  'startGuideDrag': [guide: Guide, event: MouseEvent];
-  'showGuideContextMenu': [guide: Guide, event: MouseEvent];
-  'removeGuide': [id: string];
-  'deleteGuideFromMenu': [];
-  'clearAllGuides': [];
-  'createGuideFromRuler': [orientation: 'horizontal' | 'vertical', event: MouseEvent];
+  startGuideDrag: [guide: Guide, event: MouseEvent];
+  showGuideContextMenu: [guide: Guide, event: MouseEvent];
+  removeGuide: [id: string];
+  deleteGuideFromMenu: [];
+  clearAllGuides: [];
+  createGuideFromRuler: [
+    orientation: "horizontal" | "vertical",
+    event: MouseEvent,
+  ];
 }>();
 
 // Template ref for ThreeCanvas - expose to parent
@@ -234,51 +232,54 @@ defineExpose({
 });
 
 // View option toggles
-function toggleRulers() {
-  emit('update:viewOptions', {
+function _toggleRulers() {
+  emit("update:viewOptions", {
     ...props.viewOptions,
     showRulers: !props.viewOptions.showRulers,
   });
 }
 
-function toggleGrid() {
-  emit('update:viewOptions', {
+function _toggleGrid() {
+  emit("update:viewOptions", {
     ...props.viewOptions,
     showGrid: !props.viewOptions.showGrid,
   });
 }
 
 // Guide style helper
-function getGuideStyle(guide: Guide) {
-  if (guide.orientation === 'horizontal') {
-    return { top: guide.position + 'px', left: 0, right: 0 };
+function _getGuideStyle(guide: Guide) {
+  if (guide.orientation === "horizontal") {
+    return { top: `${guide.position}px`, left: 0, right: 0 };
   }
-  return { left: guide.position + 'px', top: 0, bottom: 0 };
+  return { left: `${guide.position}px`, top: 0, bottom: 0 };
 }
 
 // Delegate guide events to parent
-function startGuideDrag(guide: Guide, event: MouseEvent) {
-  emit('startGuideDrag', guide, event);
+function _startGuideDrag(guide: Guide, event: MouseEvent) {
+  emit("startGuideDrag", guide, event);
 }
 
-function showGuideContextMenu(guide: Guide, event: MouseEvent) {
-  emit('showGuideContextMenu', guide, event);
+function _showGuideContextMenu(guide: Guide, event: MouseEvent) {
+  emit("showGuideContextMenu", guide, event);
 }
 
-function removeGuide(id: string) {
-  emit('removeGuide', id);
+function _removeGuide(id: string) {
+  emit("removeGuide", id);
 }
 
-function deleteGuideFromMenu() {
-  emit('deleteGuideFromMenu');
+function _deleteGuideFromMenu() {
+  emit("deleteGuideFromMenu");
 }
 
-function clearAllGuides() {
-  emit('clearAllGuides');
+function _clearAllGuides() {
+  emit("clearAllGuides");
 }
 
-function createGuideFromRuler(orientation: 'horizontal' | 'vertical', event: MouseEvent) {
-  emit('createGuideFromRuler', orientation, event);
+function _createGuideFromRuler(
+  orientation: "horizontal" | "vertical",
+  event: MouseEvent,
+) {
+  emit("createGuideFromRuler", orientation, event);
 }
 </script>
 

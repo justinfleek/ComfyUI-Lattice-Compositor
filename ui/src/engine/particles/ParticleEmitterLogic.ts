@@ -7,14 +7,17 @@
  * Extracted from GPUParticleSystem.ts for modularity.
  */
 
-import * as THREE from 'three';
-import type { EmitterConfig, EmitterShapeConfig } from './types';
+import * as THREE from "three";
+import type { EmitterConfig } from "./types";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-export type SplineProvider = (splineId: string, t: number) => { x: number; y: number; z?: number } | null;
+export type SplineProvider = (
+  splineId: string,
+  t: number,
+) => { x: number; y: number; z?: number } | null;
 export type RNGFunction = () => number;
 
 // ============================================================================
@@ -30,76 +33,90 @@ export type RNGFunction = () => number;
 export function getEmitterPosition(
   emitter: EmitterConfig,
   rng: RNGFunction,
-  splineProvider?: SplineProvider | null
+  splineProvider?: SplineProvider | null,
 ): THREE.Vector3 {
   const shape = emitter.shape;
   // Negate Y to match THREE.js coordinate system (Y-up) and gizmo positioning
-  const base = new THREE.Vector3(emitter.position.x, -emitter.position.y, emitter.position.z);
+  const base = new THREE.Vector3(
+    emitter.position.x,
+    -emitter.position.y,
+    emitter.position.z,
+  );
 
   switch (shape.type) {
-    case 'point':
+    case "point":
       return base;
 
-    case 'circle': {
+    case "circle": {
       const angle = rng() * Math.PI * 2;
       let radius = shape.radius ?? 50;
       if (!shape.emitFromEdge) {
-        radius *= Math.sqrt(rng());  // Uniform distribution in circle
+        radius *= Math.sqrt(rng()); // Uniform distribution in circle
       }
-      return base.add(new THREE.Vector3(
-        Math.cos(angle) * radius,
-        Math.sin(angle) * radius,
-        0
-      ));
+      return base.add(
+        new THREE.Vector3(
+          Math.cos(angle) * radius,
+          Math.sin(angle) * radius,
+          0,
+        ),
+      );
     }
 
-    case 'sphere': {
+    case "sphere": {
       const theta = rng() * Math.PI * 2;
       const phi = Math.acos(2 * rng() - 1);
       let radius = shape.radius ?? 50;
       if (!shape.emitFromEdge) {
-        radius *= Math.cbrt(rng());  // Uniform distribution in sphere
+        radius *= Math.cbrt(rng()); // Uniform distribution in sphere
       }
-      return base.add(new THREE.Vector3(
-        Math.sin(phi) * Math.cos(theta) * radius,
-        Math.sin(phi) * Math.sin(theta) * radius,
-        Math.cos(phi) * radius
-      ));
+      return base.add(
+        new THREE.Vector3(
+          Math.sin(phi) * Math.cos(theta) * radius,
+          Math.sin(phi) * Math.sin(theta) * radius,
+          Math.cos(phi) * radius,
+        ),
+      );
     }
 
-    case 'box': {
+    case "box": {
       const size = shape.boxSize ?? { x: 100, y: 100, z: 100 };
-      return base.add(new THREE.Vector3(
-        (rng() - 0.5) * size.x,
-        (rng() - 0.5) * size.y,
-        (rng() - 0.5) * size.z
-      ));
+      return base.add(
+        new THREE.Vector3(
+          (rng() - 0.5) * size.x,
+          (rng() - 0.5) * size.y,
+          (rng() - 0.5) * size.z,
+        ),
+      );
     }
 
-    case 'line': {
+    case "line": {
       const start = shape.lineStart ?? { x: -50, y: 0, z: 0 };
       const end = shape.lineEnd ?? { x: 50, y: 0, z: 0 };
       const t = rng();
-      return base.add(new THREE.Vector3(
-        start.x + (end.x - start.x) * t,
-        start.y + (end.y - start.y) * t,
-        start.z + (end.z - start.z) * t
-      ));
+      return base.add(
+        new THREE.Vector3(
+          start.x + (end.x - start.x) * t,
+          start.y + (end.y - start.y) * t,
+          start.z + (end.z - start.z) * t,
+        ),
+      );
     }
 
-    case 'cone': {
+    case "cone": {
       const angle = rng() * Math.PI * 2;
       const t = rng();
       const radius = t * (shape.coneRadius ?? 50);
       const height = t * (shape.coneLength ?? 100);
-      return base.add(new THREE.Vector3(
-        Math.cos(angle) * radius,
-        height,
-        Math.sin(angle) * radius
-      ));
+      return base.add(
+        new THREE.Vector3(
+          Math.cos(angle) * radius,
+          height,
+          Math.sin(angle) * radius,
+        ),
+      );
     }
 
-    case 'image': {
+    case "image": {
       // Emit from non-transparent pixels of an image
       if (!shape.imageData) return base;
 
@@ -116,17 +133,19 @@ export function getEmitterPosition(
         if (alpha > threshold) {
           // Found a valid pixel - return position in image space
           // Center the emission on the emitter position
-          return base.add(new THREE.Vector3(
-            px - width / 2,
-            -(py - height / 2), // Flip Y for screen coords
-            0
-          ));
+          return base.add(
+            new THREE.Vector3(
+              px - width / 2,
+              -(py - height / 2), // Flip Y for screen coords
+              0,
+            ),
+          );
         }
       }
       return base; // Fallback to center
     }
 
-    case 'depthEdge': {
+    case "depthEdge": {
       // Emit from depth discontinuities (silhouette edges)
       if (!shape.depthData || !shape.imageData) return base;
 
@@ -157,17 +176,19 @@ export function getEmitterPosition(
           // Use depth value for Z position (normalized 0-1, scale to reasonable range)
           const z = d * 500; // Scale depth to world units
 
-          return base.add(new THREE.Vector3(
-            px - width / 2,
-            -(py - height / 2), // Flip Y for screen coords
-            z
-          ));
+          return base.add(
+            new THREE.Vector3(
+              px - width / 2,
+              -(py - height / 2), // Flip Y for screen coords
+              z,
+            ),
+          );
         }
       }
       return base; // Fallback to center
     }
 
-    case 'spline': {
+    case "spline": {
       // Emit along a spline path
       if (!shape.splineId || !splineProvider) return base;
 
@@ -184,7 +205,7 @@ export function getEmitterPosition(
       return base;
     }
 
-    case 'mesh': {
+    case "mesh": {
       // Emit from mesh vertices
       if (!shape.meshVertices) return base;
 
@@ -217,12 +238,12 @@ export function getEmitterPosition(
  */
 export function getEmissionDirection(
   emitter: EmitterConfig,
-  rng: RNGFunction
+  rng: RNGFunction,
 ): THREE.Vector3 {
   const baseDir = new THREE.Vector3(
     emitter.emissionDirection.x,
     emitter.emissionDirection.y,
-    emitter.emissionDirection.z
+    emitter.emissionDirection.z,
   ).normalize();
 
   if (emitter.emissionSpread <= 0) {
@@ -235,9 +256,10 @@ export function getEmissionDirection(
   const phi = Math.acos(1 - rng() * (1 - Math.cos(spreadRad)));
 
   // Create rotation from base direction
-  const up = Math.abs(baseDir.y) < 0.99
-    ? new THREE.Vector3(0, 1, 0)
-    : new THREE.Vector3(1, 0, 0);
+  const up =
+    Math.abs(baseDir.y) < 0.99
+      ? new THREE.Vector3(0, 1, 0)
+      : new THREE.Vector3(1, 0, 0);
   const right = new THREE.Vector3().crossVectors(up, baseDir).normalize();
   const realUp = new THREE.Vector3().crossVectors(baseDir, right);
 
@@ -260,18 +282,21 @@ export function getEmissionDirection(
  */
 export function calculateInitialVelocity(
   emitter: EmitterConfig & { velocity: THREE.Vector3 },
-  rng: RNGFunction
+  rng: RNGFunction,
 ): { velocity: THREE.Vector3; direction: THREE.Vector3; speed: number } {
   const direction = getEmissionDirection(emitter, rng);
-  const speed = emitter.initialSpeed + (rng() - 0.5) * 2 * emitter.speedVariance;
+  const speed =
+    emitter.initialSpeed + (rng() - 0.5) * 2 * emitter.speedVariance;
 
   // Inherit emitter velocity
-  const inheritVel = emitter.velocity.clone().multiplyScalar(emitter.inheritEmitterVelocity);
+  const inheritVel = emitter.velocity
+    .clone()
+    .multiplyScalar(emitter.inheritEmitterVelocity);
 
   const velocity = new THREE.Vector3(
     direction.x * speed + inheritVel.x,
     direction.y * speed + inheritVel.y,
-    direction.z * speed + inheritVel.z
+    direction.z * speed + inheritVel.z,
   );
 
   return { velocity, direction, speed };

@@ -11,15 +11,21 @@
  * - Pause/resume/cancel controls
  */
 
-import { createLogger } from '@/utils/logger';
+import { createLogger } from "@/utils/logger";
 
-const logger = createLogger('RenderQueue');
+const logger = createLogger("RenderQueue");
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-export type RenderJobStatus = 'pending' | 'rendering' | 'paused' | 'completed' | 'failed' | 'cancelled';
+export type RenderJobStatus =
+  | "pending"
+  | "rendering"
+  | "paused"
+  | "completed"
+  | "failed"
+  | "cancelled";
 
 export interface RenderJobConfig {
   /** Unique job identifier */
@@ -39,7 +45,7 @@ export interface RenderJobConfig {
   /** Frames per second */
   fps: number;
   /** Output format */
-  format: 'png-sequence' | 'webm' | 'mp4';
+  format: "png-sequence" | "webm" | "mp4";
   /** Quality (0-100) */
   quality: number;
   /** Priority (lower = higher priority) */
@@ -122,8 +128,8 @@ export interface RenderQueueConfig {
 // ============================================================================
 
 const DB_VERSION = 1;
-const JOBS_STORE = 'renderJobs';
-const FRAMES_STORE = 'renderedFrames';
+const JOBS_STORE = "renderJobs";
+const FRAMES_STORE = "renderedFrames";
 
 class RenderQueueDB {
   private db: IDBDatabase | null = null;
@@ -151,26 +157,28 @@ class RenderQueueDB {
 
         // Jobs store
         if (!db.objectStoreNames.contains(JOBS_STORE)) {
-          const jobsStore = db.createObjectStore(JOBS_STORE, { keyPath: 'id' });
-          jobsStore.createIndex('status', 'status', { unique: false });
-          jobsStore.createIndex('priority', 'priority', { unique: false });
-          jobsStore.createIndex('createdAt', 'createdAt', { unique: false });
+          const jobsStore = db.createObjectStore(JOBS_STORE, { keyPath: "id" });
+          jobsStore.createIndex("status", "status", { unique: false });
+          jobsStore.createIndex("priority", "priority", { unique: false });
+          jobsStore.createIndex("createdAt", "createdAt", { unique: false });
         }
 
         // Frames store (for incomplete renders)
         if (!db.objectStoreNames.contains(FRAMES_STORE)) {
-          const framesStore = db.createObjectStore(FRAMES_STORE, { keyPath: ['jobId', 'frameNumber'] });
-          framesStore.createIndex('jobId', 'jobId', { unique: false });
+          const framesStore = db.createObjectStore(FRAMES_STORE, {
+            keyPath: ["jobId", "frameNumber"],
+          });
+          framesStore.createIndex("jobId", "jobId", { unique: false });
         }
       };
     });
   }
 
   async saveJob(job: RenderJob): Promise<void> {
-    if (!this.db) throw new Error('Database not open');
+    if (!this.db) throw new Error("Database not open");
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([JOBS_STORE], 'readwrite');
+      const transaction = this.db?.transaction([JOBS_STORE], "readwrite");
       const store = transaction.objectStore(JOBS_STORE);
       const request = store.put(job);
 
@@ -180,10 +188,10 @@ class RenderQueueDB {
   }
 
   async getJob(jobId: string): Promise<RenderJob | undefined> {
-    if (!this.db) throw new Error('Database not open');
+    if (!this.db) throw new Error("Database not open");
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([JOBS_STORE], 'readonly');
+      const transaction = this.db?.transaction([JOBS_STORE], "readonly");
       const store = transaction.objectStore(JOBS_STORE);
       const request = store.get(jobId);
 
@@ -193,10 +201,10 @@ class RenderQueueDB {
   }
 
   async getAllJobs(): Promise<RenderJob[]> {
-    if (!this.db) throw new Error('Database not open');
+    if (!this.db) throw new Error("Database not open");
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([JOBS_STORE], 'readonly');
+      const transaction = this.db?.transaction([JOBS_STORE], "readonly");
       const store = transaction.objectStore(JOBS_STORE);
       const request = store.getAll();
 
@@ -206,10 +214,13 @@ class RenderQueueDB {
   }
 
   async deleteJob(jobId: string): Promise<void> {
-    if (!this.db) throw new Error('Database not open');
+    if (!this.db) throw new Error("Database not open");
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([JOBS_STORE, FRAMES_STORE], 'readwrite');
+      const transaction = this.db?.transaction(
+        [JOBS_STORE, FRAMES_STORE],
+        "readwrite",
+      );
 
       // Delete job
       const jobsStore = transaction.objectStore(JOBS_STORE);
@@ -217,7 +228,7 @@ class RenderQueueDB {
 
       // Delete associated frames
       const framesStore = transaction.objectStore(FRAMES_STORE);
-      const index = framesStore.index('jobId');
+      const index = framesStore.index("jobId");
       const cursorRequest = index.openCursor(IDBKeyRange.only(jobId));
 
       cursorRequest.onsuccess = () => {
@@ -234,10 +245,10 @@ class RenderQueueDB {
   }
 
   async saveFrame(jobId: string, frame: RenderedFrame): Promise<void> {
-    if (!this.db) throw new Error('Database not open');
+    if (!this.db) throw new Error("Database not open");
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([FRAMES_STORE], 'readwrite');
+      const transaction = this.db?.transaction([FRAMES_STORE], "readwrite");
       const store = transaction.objectStore(FRAMES_STORE);
       const request = store.put({ jobId, ...frame });
 
@@ -247,12 +258,12 @@ class RenderQueueDB {
   }
 
   async getFrames(jobId: string): Promise<RenderedFrame[]> {
-    if (!this.db) throw new Error('Database not open');
+    if (!this.db) throw new Error("Database not open");
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([FRAMES_STORE], 'readonly');
+      const transaction = this.db?.transaction([FRAMES_STORE], "readonly");
       const store = transaction.objectStore(FRAMES_STORE);
-      const index = store.index('jobId');
+      const index = store.index("jobId");
       const request = index.getAll(IDBKeyRange.only(jobId));
 
       request.onsuccess = () => resolve(request.result || []);
@@ -261,12 +272,12 @@ class RenderQueueDB {
   }
 
   async clearCompletedFrames(jobId: string): Promise<void> {
-    if (!this.db) throw new Error('Database not open');
+    if (!this.db) throw new Error("Database not open");
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([FRAMES_STORE], 'readwrite');
+      const transaction = this.db?.transaction([FRAMES_STORE], "readwrite");
       const store = transaction.objectStore(FRAMES_STORE);
-      const index = store.index('jobId');
+      const index = store.index("jobId");
       const cursorRequest = index.openCursor(IDBKeyRange.only(jobId));
 
       cursorRequest.onsuccess = () => {
@@ -306,13 +317,24 @@ export class RenderQueueManager {
   private framesRenderedThisSession: number = 0;
 
   // Callbacks
-  private onProgressCallback?: (jobId: string, progress: RenderJobProgress) => void;
-  private onJobCompleteCallback?: (jobId: string, frames: RenderedFrame[]) => void;
+  private onProgressCallback?: (
+    jobId: string,
+    progress: RenderJobProgress,
+  ) => void;
+  private onJobCompleteCallback?: (
+    jobId: string,
+    frames: RenderedFrame[],
+  ) => void;
   private onJobErrorCallback?: (jobId: string, error: string) => void;
   private onQueueEmptyCallback?: () => void;
 
   // Frame renderer callback (provided by compositor)
-  private frameRenderer?: (compositionId: string, frame: number, width: number, height: number) => Promise<Blob>;
+  private frameRenderer?: (
+    compositionId: string,
+    frame: number,
+    width: number,
+    height: number,
+  ) => Promise<Blob>;
 
   constructor(config: Partial<RenderQueueConfig> = {}) {
     this.config = {
@@ -320,7 +342,7 @@ export class RenderQueueManager {
       workerPoolSize: config.workerPoolSize ?? 4,
       batchSize: config.batchSize ?? 10,
       autoSaveInterval: config.autoSaveInterval ?? 5000,
-      dbName: config.dbName ?? 'lattice-render-queue',
+      dbName: config.dbName ?? "lattice-render-queue",
     };
 
     this.db = new RenderQueueDB(this.config.dbName);
@@ -339,8 +361,8 @@ export class RenderQueueManager {
       this.jobs.set(job.id, job);
 
       // Reset in-progress jobs to pending (they were interrupted)
-      if (job.progress.status === 'rendering') {
-        job.progress.status = 'pending';
+      if (job.progress.status === "rendering") {
+        job.progress.status = "pending";
         await this.db.saveJob(job);
       }
     }
@@ -352,7 +374,14 @@ export class RenderQueueManager {
    * Set the frame renderer callback
    * This function is called to render each frame
    */
-  setFrameRenderer(renderer: (compositionId: string, frame: number, width: number, height: number) => Promise<Blob>): void {
+  setFrameRenderer(
+    renderer: (
+      compositionId: string,
+      frame: number,
+      width: number,
+      height: number,
+    ) => Promise<Blob>,
+  ): void {
     this.frameRenderer = renderer;
   }
 
@@ -363,7 +392,7 @@ export class RenderQueueManager {
   /**
    * Add a new render job to the queue
    */
-  async addJob(config: Omit<RenderJobConfig, 'id'>): Promise<string> {
+  async addJob(config: Omit<RenderJobConfig, "id">): Promise<string> {
     const jobId = `render-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 
     const job: RenderJob = {
@@ -371,7 +400,7 @@ export class RenderQueueManager {
       id: jobId,
       priority: config.priority ?? this.jobs.size,
       progress: {
-        status: 'pending',
+        status: "pending",
         currentFrame: config.startFrame,
         totalFrames: config.endFrame - config.startFrame + 1,
         percentage: 0,
@@ -385,7 +414,9 @@ export class RenderQueueManager {
     this.jobs.set(jobId, job);
     await this.db.saveJob(job);
 
-    logger.debug(`Added render job: ${jobId} (${job.progress.totalFrames} frames)`);
+    logger.debug(
+      `Added render job: ${jobId} (${job.progress.totalFrames} frames)`,
+    );
 
     // Auto-start if not running
     if (!this.isRunning && !this.isPaused) {
@@ -424,7 +455,9 @@ export class RenderQueueManager {
    * Get all jobs
    */
   getAllJobs(): RenderJob[] {
-    return Array.from(this.jobs.values()).sort((a, b) => a.priority - b.priority);
+    return Array.from(this.jobs.values()).sort(
+      (a, b) => a.priority - b.priority,
+    );
   }
 
   /**
@@ -453,7 +486,7 @@ export class RenderQueueManager {
     this.startAutoSave();
     this.processNextJob();
 
-    logger.debug('Render queue started');
+    logger.debug("Render queue started");
   }
 
   /**
@@ -465,12 +498,12 @@ export class RenderQueueManager {
     if (this.activeJobId) {
       const job = this.jobs.get(this.activeJobId);
       if (job) {
-        job.progress.status = 'paused';
+        job.progress.status = "paused";
         this.notifyProgress(this.activeJobId, job.progress);
       }
     }
 
-    logger.debug('Render queue paused');
+    logger.debug("Render queue paused");
   }
 
   /**
@@ -484,13 +517,13 @@ export class RenderQueueManager {
     if (this.activeJobId) {
       const job = this.jobs.get(this.activeJobId);
       if (job) {
-        job.progress.status = 'rendering';
+        job.progress.status = "rendering";
         this.notifyProgress(this.activeJobId, job.progress);
       }
     }
 
     this.processNextJob();
-    logger.debug('Render queue resumed');
+    logger.debug("Render queue resumed");
   }
 
   /**
@@ -503,13 +536,13 @@ export class RenderQueueManager {
 
     if (this.activeJobId) {
       const job = this.jobs.get(this.activeJobId);
-      if (job && job.progress.status === 'rendering') {
-        job.progress.status = 'pending';
+      if (job && job.progress.status === "rendering") {
+        job.progress.status = "pending";
       }
       this.activeJobId = null;
     }
 
-    logger.debug('Render queue stopped');
+    logger.debug("Render queue stopped");
   }
 
   /**
@@ -520,7 +553,7 @@ export class RenderQueueManager {
 
     const job = this.jobs.get(this.activeJobId);
     if (job) {
-      job.progress.status = 'cancelled';
+      job.progress.status = "cancelled";
       job.completedAt = Date.now();
       this.notifyProgress(this.activeJobId, job.progress);
     }
@@ -539,14 +572,15 @@ export class RenderQueueManager {
     if (!this.isRunning || this.isPaused || this.activeJobId) return;
 
     // Find next pending job by priority
-    const pendingJobs = this.getAllJobs()
-      .filter(j => j.progress.status === 'pending' || j.progress.status === 'paused');
+    const pendingJobs = this.getAllJobs().filter(
+      (j) => j.progress.status === "pending" || j.progress.status === "paused",
+    );
 
     if (pendingJobs.length === 0) {
       this.isRunning = false;
       this.stopAutoSave();
       this.onQueueEmptyCallback?.();
-      logger.debug('Render queue empty');
+      logger.debug("Render queue empty");
       return;
     }
 
@@ -559,12 +593,12 @@ export class RenderQueueManager {
    */
   private async startJob(job: RenderJob): Promise<void> {
     if (!this.frameRenderer) {
-      logger.warn('No frame renderer configured');
+      logger.warn("No frame renderer configured");
       return;
     }
 
     this.activeJobId = job.id;
-    job.progress.status = 'rendering';
+    job.progress.status = "rendering";
     job.startedAt = job.startedAt ?? Date.now();
     this.startTime = Date.now();
     this.framesRenderedThisSession = 0;
@@ -574,7 +608,9 @@ export class RenderQueueManager {
     try {
       // Load any previously rendered frames
       const existingFrames = await this.db.getFrames(job.id);
-      const renderedFrameNumbers = new Set(existingFrames.map(f => f.frameNumber));
+      const renderedFrameNumbers = new Set(
+        existingFrames.map((f) => f.frameNumber),
+      );
 
       // Find resume point
       let startFrame = job.startFrame;
@@ -604,7 +640,7 @@ export class RenderQueueManager {
           job.compositionId,
           frame,
           job.width,
-          job.height
+          job.height,
         );
 
         const renderedFrame: RenderedFrame = {
@@ -624,7 +660,7 @@ export class RenderQueueManager {
       }
 
       // Job complete
-      job.progress.status = 'completed';
+      job.progress.status = "completed";
       job.progress.percentage = 100;
       job.completedAt = Date.now();
       await this.db.saveJob(job);
@@ -636,10 +672,10 @@ export class RenderQueueManager {
       await this.db.clearCompletedFrames(job.id);
 
       logger.debug(`Render job completed: ${job.id}`);
-
     } catch (error) {
-      job.progress.status = 'failed';
-      job.progress.error = error instanceof Error ? error.message : 'Unknown error';
+      job.progress.status = "failed";
+      job.progress.error =
+        error instanceof Error ? error.message : "Unknown error";
       job.completedAt = Date.now();
       await this.db.saveJob(job);
 
@@ -667,10 +703,12 @@ export class RenderQueueManager {
     job.progress.currentFrame = currentFrame;
     job.progress.percentage = Math.round((framesRendered / totalFrames) * 100);
     job.progress.elapsedTime = elapsedSec;
-    job.progress.framesPerSecond = this.framesRenderedThisSession / Math.max(elapsedSec, 0.1);
+    job.progress.framesPerSecond =
+      this.framesRenderedThisSession / Math.max(elapsedSec, 0.1);
 
     const framesRemaining = totalFrames - framesRendered;
-    job.progress.estimatedTimeRemaining = framesRemaining / Math.max(job.progress.framesPerSecond, 0.1);
+    job.progress.estimatedTimeRemaining =
+      framesRemaining / Math.max(job.progress.framesPerSecond, 0.1);
 
     this.notifyProgress(job.id, job.progress);
   }
@@ -704,11 +742,15 @@ export class RenderQueueManager {
   // CALLBACKS
   // ============================================================================
 
-  onProgress(callback: (jobId: string, progress: RenderJobProgress) => void): void {
+  onProgress(
+    callback: (jobId: string, progress: RenderJobProgress) => void,
+  ): void {
     this.onProgressCallback = callback;
   }
 
-  onJobComplete(callback: (jobId: string, frames: RenderedFrame[]) => void): void {
+  onJobComplete(
+    callback: (jobId: string, frames: RenderedFrame[]) => void,
+  ): void {
     this.onJobCompleteCallback = callback;
   }
 
@@ -744,18 +786,19 @@ export class RenderQueueManager {
 
     return {
       totalJobs: jobs.length,
-      activeJobs: jobs.filter(j => j.progress.status === 'rendering').length,
-      pendingJobs: jobs.filter(j => j.progress.status === 'pending').length,
-      completedJobs: jobs.filter(j => j.progress.status === 'completed').length,
-      failedJobs: jobs.filter(j => j.progress.status === 'failed').length,
+      activeJobs: jobs.filter((j) => j.progress.status === "rendering").length,
+      pendingJobs: jobs.filter((j) => j.progress.status === "pending").length,
+      completedJobs: jobs.filter((j) => j.progress.status === "completed")
+        .length,
+      failedJobs: jobs.filter((j) => j.progress.status === "failed").length,
       totalFramesRendered: jobs.reduce((sum, j) => {
-        if (j.progress.status === 'completed') {
+        if (j.progress.status === "completed") {
           return sum + j.progress.totalFrames;
         }
         return sum + (j.progress.currentFrame - j.startFrame);
       }, 0),
       averageFps: this.activeJobId
-        ? this.jobs.get(this.activeJobId)?.progress.framesPerSecond ?? 0
+        ? (this.jobs.get(this.activeJobId)?.progress.framesPerSecond ?? 0)
         : 0,
     };
   }

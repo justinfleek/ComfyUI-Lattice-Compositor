@@ -229,99 +229,75 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, provide, type Ref } from 'vue';
-import { Splitpanes, Pane } from 'splitpanes';
-import 'splitpanes/dist/splitpanes.css';
+import { computed, onMounted, onUnmounted, provide, type Ref, ref } from "vue";
+import "splitpanes/dist/splitpanes.css";
 
-import { useCompositorStore } from '@/stores/compositorStore';
-import { detectGPUTier, type GPUTier } from '@/services/gpuDetection';
-import { createDefaultCamera, createDefaultViewportState } from '@/types/camera';
-import type { Camera3D, ViewportState } from '@/types/camera';
-import type { BaseInterpolationType, ControlMode } from '@/types/project';
-
-// Layout
-import WorkspaceToolbar from '@/components/layout/WorkspaceToolbar.vue';
-import MenuBar from '@/components/layout/MenuBar.vue';
-import LeftSidebar from '@/components/layout/LeftSidebar.vue';
-import RightSidebar from '@/components/layout/RightSidebar.vue';
-import CenterViewport from '@/components/layout/CenterViewport.vue';
-
-// ThreeCanvas still needed for ref type
-import ThreeCanvas from '@/components/canvas/ThreeCanvas.vue';
-
-// Dialogs
-import ExportDialog from '@/components/dialogs/ExportDialog.vue';
-import ComfyUIExportDialog from '@/components/export/ComfyUIExportDialog.vue';
-import CompositionSettingsDialog from '@/components/dialogs/CompositionSettingsDialog.vue';
-import PrecomposeDialog from '@/components/dialogs/PrecomposeDialog.vue';
-import PathSuggestionDialog from '@/components/dialogs/PathSuggestionDialog.vue';
-import KeyframeInterpolationDialog from '@/components/dialogs/KeyframeInterpolationDialog.vue';
-import TimeStretchDialog from '@/components/dialogs/TimeStretchDialog.vue';
-import CameraTrackingImportDialog from '@/components/dialogs/CameraTrackingImportDialog.vue';
-import PreferencesDialog from '@/components/dialogs/PreferencesDialog.vue';
-import KeyboardShortcutsModal from '@/components/dialogs/KeyboardShortcutsModal.vue';
-import TemplateBuilderDialog from '@/components/dialogs/TemplateBuilderDialog.vue';
-import ExpressionInput from '@/components/properties/ExpressionInput.vue';
-import { useExpressionEditor } from '@/composables/useExpressionEditor';
-import { useGuides } from '@/composables/useGuides';
-import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts';
-import { useMenuActions } from '@/composables/useMenuActions';
-import { useAssetHandlers } from '@/composables/useAssetHandlers';
-import { useSelectionStore } from '@/stores/selectionStore';
-
-// Canvas overlays
-import PathPreviewOverlay from '@/components/canvas/PathPreviewOverlay.vue';
-import TrackPointOverlay from '@/components/canvas/TrackPointOverlay.vue';
-
+import type CenterViewport from "@/components/layout/CenterViewport.vue";
+import { useAssetHandlers } from "@/composables/useAssetHandlers";
+import { useExpressionEditor } from "@/composables/useExpressionEditor";
+import { useGuides } from "@/composables/useGuides";
+import { useKeyboardShortcuts } from "@/composables/useKeyboardShortcuts";
+import { useMenuActions } from "@/composables/useMenuActions";
+import { detectGPUTier, type GPUTier } from "@/services/gpuDetection";
 // Track point service
-import { useTrackPoints } from '@/services/trackPointService';
-
-// Preview
-import HDPreviewWindow from '@/components/preview/HDPreviewWindow.vue';
-import ToastContainer from '@/components/ui/ToastContainer.vue';
+import { useTrackPoints } from "@/services/trackPointService";
+import { useCompositorStore } from "@/stores/compositorStore";
+import type { Camera3D, ViewportState } from "@/types/camera";
+import {
+  createDefaultCamera,
+  createDefaultViewportState,
+} from "@/types/camera";
+import type { BaseInterpolationType, ControlMode } from "@/types/project";
 
 // Stores
 const store = useCompositorStore();
-import { useAssetStore } from '@/stores/assetStore';
+
+import { useAssetStore } from "@/stores/assetStore";
+
 const assetStore = useAssetStore();
-import { useAudioStore } from '@/stores/audioStore';
-import { usePlaybackStore } from '@/stores/playbackStore';
-import { useHistoryStore } from '@/stores/historyStore';
-const audioStore = useAudioStore();
-const playbackStore = usePlaybackStore();
-const historyStore = useHistoryStore();
+
+import { useAudioStore } from "@/stores/audioStore";
+import { useHistoryStore } from "@/stores/historyStore";
+import { usePlaybackStore } from "@/stores/playbackStore";
+
+const _audioStore = useAudioStore();
+const _playbackStore = usePlaybackStore();
+const _historyStore = useHistoryStore();
 
 // Expression editor composable
-const expressionEditor = useExpressionEditor();
+const _expressionEditor = useExpressionEditor();
 
 // Track points state for camera tracking overlay
-const trackPointsState = useTrackPoints();
+const _trackPointsState = useTrackPoints();
 
 // Tool state - synced with store
 const currentTool = computed({
   get: () => store.currentTool,
-  set: (tool: 'select' | 'pen' | 'text' | 'hand' | 'zoom' | 'segment') => store.setTool(tool)
+  set: (tool: "select" | "pen" | "text" | "hand" | "zoom" | "segment") =>
+    store.setTool(tool),
 });
 
 // Segmentation state - synced with store
-const segmentMode = computed(() => store.segmentMode);
-const segmentPendingMask = computed(() => store.segmentPendingMask);
-const segmentIsLoading = computed(() => store.segmentIsLoading);
+const _segmentMode = computed(() => store.segmentMode);
+const _segmentPendingMask = computed(() => store.segmentPendingMask);
+const _segmentIsLoading = computed(() => store.segmentIsLoading);
 
-function setSegmentMode(mode: 'point' | 'box') {
+function _setSegmentMode(mode: "point" | "box") {
   store.setSegmentMode(mode);
 }
 
-async function confirmSegmentMask() {
+async function _confirmSegmentMask() {
   await store.confirmSegmentMask();
 }
 
-function clearSegmentMask() {
+function _clearSegmentMask() {
   store.clearSegmentPendingMask();
 }
 
-const leftTab = ref<'project' | 'effects' | 'assets'>('project');
-const rightTab = ref<'effects' | 'properties' | 'camera' | 'audio' | 'preview' | 'ai' | 'generate'>('properties');
+const leftTab = ref<"project" | "effects" | "assets">("project");
+const _rightTab = ref<
+  "effects" | "properties" | "camera" | "audio" | "preview" | "ai" | "generate"
+>("properties");
 
 // Collapsible panel states
 const expandedPanels = ref({
@@ -335,14 +311,14 @@ const expandedPanels = ref({
   preview: false,
   renderQueue: false,
   physics: false,
-  styles: false
+  styles: false,
 });
 
 // AI section tab
-const aiTab = ref<'chat' | 'generate' | 'flow' | 'decompose'>('chat');
-const viewportTab = ref<'composition' | 'layer' | 'footage'>('composition');
+const aiTab = ref<"chat" | "generate" | "flow" | "decompose">("chat");
+const _viewportTab = ref<"composition" | "layer" | "footage">("composition");
 
-const viewZoom = ref('fit');
+const viewZoom = ref("fit");
 const showCurveEditor = ref(false);
 const showExportDialog = ref(false);
 const showComfyUIExportDialog = ref(false);
@@ -355,22 +331,24 @@ const showCameraTrackingImportDialog = ref(false);
 const showPreferencesDialog = ref(false);
 const showKeyboardShortcutsModal = ref(false);
 const showHDPreview = ref(false);
-const showTemplateBuilderDialog = ref(false);
+const _showTemplateBuilderDialog = ref(false);
 
 // Vision authoring state
 const pathSuggestions = ref<any[]>([]);
 const selectedPathIndex = ref<number | null>(null);
 
-const gpuTier = ref<GPUTier['tier']>('cpu');
+const gpuTier = ref<GPUTier["tier"]>("cpu");
 
 // CenterViewport ref - exposes threeCanvasRef
 const centerViewportRef = ref<InstanceType<typeof CenterViewport> | null>(null);
 
 // Computed ref to access threeCanvasRef through CenterViewport
-const threeCanvasRef = computed(() => centerViewportRef.value?.threeCanvasRef ?? null);
+const threeCanvasRef = computed(
+  () => centerViewportRef.value?.threeCanvasRef ?? null,
+);
 
 // Engine accessor for panels
-const canvasEngine = computed(() => centerViewportRef.value?.engine ?? null);
+const _canvasEngine = computed(() => centerViewportRef.value?.engine ?? null);
 
 // Asset handlers composable
 const {
@@ -382,13 +360,13 @@ const {
 } = useAssetHandlers({ canvasRef: centerViewportRef });
 
 // Camera state - use computed to get from store, fallback to default
-const activeCamera = computed<Camera3D>(() => {
+const _activeCamera = computed<Camera3D>(() => {
   const cam = store.getActiveCameraAtFrame();
   if (cam) return cam;
   // Fallback to a default camera
-  return createDefaultCamera('default', compWidth.value, compHeight.value);
+  return createDefaultCamera("default", compWidth.value, compHeight.value);
 });
-const viewportState = ref<ViewportState>(createDefaultViewportState());
+const _viewportState = ref<ViewportState>(createDefaultViewportState());
 const viewOptions = ref({
   showGrid: false,
   showRulers: false,
@@ -400,23 +378,23 @@ const viewOptions = ref({
   showSafeZones: false,
   showGuides: true,
   gridSize: 100,
-  gridDivisions: 10
+  gridDivisions: 10,
 });
 
 // Grid overlay computed style
-const gridOverlayStyle = computed(() => {
+const _gridOverlayStyle = computed(() => {
   const size = viewOptions.value.gridSize || 100;
   const divisions = viewOptions.value.gridDivisions || 10;
   const minorSize = size / divisions;
 
   // Create a repeating grid pattern using CSS
   return {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    pointerEvents: 'none',
+    pointerEvents: "none",
     zIndex: 5,
     backgroundImage: `
       linear-gradient(to right, ${gridColor.value} 1px, transparent 1px),
@@ -430,13 +408,13 @@ const gridOverlayStyle = computed(() => {
       ${size}px ${size}px,
       ${size}px ${size}px
     `,
-    opacity: 0.5
+    opacity: 0.5,
   };
 });
 
 // Snap indicator state (for visual feedback)
-const snapIndicatorX = ref<number | null>(null);
-const snapIndicatorY = ref<number | null>(null);
+const _snapIndicatorX = ref<number | null>(null);
+const _snapIndicatorY = ref<number | null>(null);
 
 // Composition dimensions
 const compWidth = computed(() => store.project?.composition?.width || 1920);
@@ -461,7 +439,7 @@ const keyboard = useKeyboardShortcuts({
   viewZoom,
   compWidth,
   compHeight,
-  assetStore
+  assetStore,
 });
 
 // Destructure commonly used values from keyboard composable
@@ -497,40 +475,40 @@ const {
   toggleLayerHidden,
   clearWorkArea,
   setGridSize,
-  toggleSnap
+  toggleSnap,
 } = keyboard;
 
 // Set up provides from keyboard composable
 setupKeyboardProvides();
 
 // Performance tracking
-const fps = ref(60);
-const memoryUsage = ref('0 MB');
-const renderProgress = ref(0);
+const _fps = ref(60);
+const memoryUsage = ref("0 MB");
+const _renderProgress = ref(0);
 
 // Computed
-const formattedTimecode = computed(() => {
+const _formattedTimecode = computed(() => {
   const frame = store.currentFrame;
   const fpsVal = store.project?.composition?.fps || 30;
   const totalSeconds = frame / fpsVal;
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = Math.floor(totalSeconds % 60);
   const frames = frame % fpsVal;
-  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}:${String(frames).padStart(2, '0')}`;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}:${String(frames).padStart(2, "0")}`;
 });
 
-const projectName = computed(() => {
-  return store.project?.meta?.name || 'Untitled Project';
+const _projectName = computed(() => {
+  return store.project?.meta?.name || "Untitled Project";
 });
 
-const compositionInfo = computed(() => {
+const _compositionInfo = computed(() => {
   const comp = store.project?.composition;
-  if (!comp) return 'No Composition';
+  if (!comp) return "No Composition";
   return `${comp.width}×${comp.height} @ ${comp.fps}fps`;
 });
 
-const canUndo = computed(() => store.canUndo);
-const canRedo = computed(() => store.canRedo);
+const _canUndo = computed(() => store.canUndo);
+const _canRedo = computed(() => store.canRedo);
 
 // ========================================================================
 // GUIDES SYSTEM (using composable)
@@ -547,25 +525,28 @@ const {
   clearAllGuides,
   getGuideStyle,
   createGuideFromRuler,
-  startGuideDrag
+  startGuideDrag,
 } = useGuides();
 
 // Provide guides state
-provide('guides', guides);
-provide('addGuide', addGuide);
-provide('removeGuide', removeGuide);
-provide('clearGuides', clearGuides);
-provide('updateGuidePosition', updateGuidePosition);
+provide("guides", guides);
+provide("addGuide", addGuide);
+provide("removeGuide", removeGuide);
+provide("clearGuides", clearGuides);
+provide("updateGuidePosition", updateGuidePosition);
 
 // Provide frame capture for template export and other features
-provide('captureFrame', async (): Promise<string | null> => {
+provide("captureFrame", async (): Promise<string | null> => {
   return centerViewportRef.value?.threeCanvasRef?.captureFrame() ?? null;
 });
 
 // ========================================================================
 // SNAP POINT CALCULATION (uses both guides and keyboard composable state)
 // ========================================================================
-function getSnapPoint(x: number, y: number): { x: number; y: number; snappedX: boolean; snappedY: boolean } {
+function getSnapPoint(
+  x: number,
+  y: number,
+): { x: number; y: number; snappedX: boolean; snappedY: boolean } {
   if (!snapEnabled.value) {
     return { x, y, snappedX: false, snappedY: false };
   }
@@ -594,11 +575,17 @@ function getSnapPoint(x: number, y: number): { x: number; y: number; snappedX: b
   // Snap to guides
   if (snapToGuides.value) {
     for (const guide of guides.value) {
-      if (guide.orientation === 'vertical' && Math.abs(x - guide.position) < snapTolerance.value) {
+      if (
+        guide.orientation === "vertical" &&
+        Math.abs(x - guide.position) < snapTolerance.value
+      ) {
         resultX = guide.position;
         snappedX = true;
       }
-      if (guide.orientation === 'horizontal' && Math.abs(y - guide.position) < snapTolerance.value) {
+      if (
+        guide.orientation === "horizontal" &&
+        Math.abs(y - guide.position) < snapTolerance.value
+      ) {
         resultY = guide.position;
         snappedY = true;
       }
@@ -638,9 +625,9 @@ function getSnapPoint(x: number, y: number): { x: number; y: number; snappedX: b
 }
 
 // Provide getSnapPoint (snap state already provided by keyboard composable)
-provide('getSnapPoint', getSnapPoint);
+provide("getSnapPoint", getSnapPoint);
 
-function updateCamera(camera: Camera3D) {
+function _updateCamera(camera: Camera3D) {
   // Update the camera in the store
   if (store.activeCameraId) {
     store.updateCamera(camera.id, camera);
@@ -650,17 +637,22 @@ function updateCamera(camera: Camera3D) {
 // Play a notification chime when export completes
 function playExportChime() {
   try {
-    const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const audioCtx = new (
+      window.AudioContext || (window as any).webkitAudioContext
+    )();
     const gainNode = audioCtx.createGain();
     gainNode.connect(audioCtx.destination);
     gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+    gainNode.gain.exponentialRampToValueAtTime(
+      0.01,
+      audioCtx.currentTime + 0.5,
+    );
 
     // Two-tone chime (pleasant major third)
     const freqs = [523.25, 659.25]; // C5, E5
     freqs.forEach((freq, i) => {
       const osc = audioCtx.createOscillator();
-      osc.type = 'sine';
+      osc.type = "sine";
       osc.frequency.setValueAtTime(freq, audioCtx.currentTime + i * 0.1);
       osc.connect(gainNode);
       osc.start(audioCtx.currentTime + i * 0.1);
@@ -668,22 +660,22 @@ function playExportChime() {
     });
   } catch (e) {
     // Silently fail if audio not available
-    console.warn('[Lattice] Audio notification not available:', e);
+    console.warn("[Lattice] Audio notification not available:", e);
   }
 }
 
-function onExportComplete() {
-  console.log('[Lattice] Matte export completed');
+function _onExportComplete() {
+  console.log("[Lattice] Matte export completed");
   playExportChime();
 }
 
-function onComfyUIExportComplete(result: any) {
-  console.log('[Lattice] ComfyUI export completed', result);
+function _onComfyUIExportComplete(result: any) {
+  console.log("[Lattice] ComfyUI export completed", result);
   showComfyUIExportDialog.value = false;
   playExportChime();
 }
 
-function onCompositionSettingsConfirm(settings: {
+function _onCompositionSettingsConfirm(settings: {
   name: string;
   width: number;
   height: number;
@@ -692,7 +684,7 @@ function onCompositionSettingsConfirm(settings: {
   backgroundColor: string;
   autoResizeToContent: boolean;
 }) {
-  console.log('[Lattice] Composition settings updated:', settings);
+  console.log("[Lattice] Composition settings updated:", settings);
 
   // Update active composition's settings
   store.updateCompositionSettings(store.activeCompositionId, {
@@ -701,7 +693,7 @@ function onCompositionSettingsConfirm(settings: {
     fps: settings.fps,
     frameCount: settings.frameCount,
     backgroundColor: settings.backgroundColor,
-    autoResizeToContent: settings.autoResizeToContent
+    autoResizeToContent: settings.autoResizeToContent,
   });
 
   // Rename the composition
@@ -710,7 +702,7 @@ function onCompositionSettingsConfirm(settings: {
   showCompositionSettingsDialog.value = false;
 }
 
-function onPrecomposeConfirm(name: string) {
+function _onPrecomposeConfirm(name: string) {
   if (store.selectedLayerIds.length > 0) {
     store.nestSelectedLayers(name);
     showPrecomposeDialog.value = false;
@@ -718,22 +710,25 @@ function onPrecomposeConfirm(name: string) {
 }
 
 // Camera tracking import handler
-function onCameraTrackingImported(result: { cameraLayerId?: string; warnings?: string[] }) {
+function _onCameraTrackingImported(result: {
+  cameraLayerId?: string;
+  warnings?: string[];
+}) {
   showCameraTrackingImportDialog.value = false;
 
   if (result.cameraLayerId) {
     // Select the imported camera
     store.selectLayer(result.cameraLayerId);
-    console.log('Camera tracking imported successfully:', result.cameraLayerId);
+    console.log("Camera tracking imported successfully:", result.cameraLayerId);
   }
 
   if (result.warnings && result.warnings.length > 0) {
-    console.warn('Camera tracking import warnings:', result.warnings);
+    console.warn("Camera tracking import warnings:", result.warnings);
   }
 }
 
 // Keyframe interpolation dialog handler
-function onKeyframeInterpolationConfirm(settings: {
+function _onKeyframeInterpolationConfirm(settings: {
   interpolation: BaseInterpolationType;
   easingPreset: string;
   controlMode: ControlMode;
@@ -748,13 +743,15 @@ function onKeyframeInterpolationConfirm(settings: {
     if (!transform) continue;
 
     // Check all animatable properties for keyframes
-    const props = ['position', 'rotation', 'scale', 'anchor', 'opacity'];
+    const props = ["position", "rotation", "scale", "anchor", "opacity"];
     for (const propName of props) {
       const prop = transform[propName];
       if (!prop?.keyframes) continue;
 
       // Sort keyframes by frame for proper next-keyframe lookup
-      const sortedKeyframes = [...prop.keyframes].sort((a: any, b: any) => a.frame - b.frame);
+      const sortedKeyframes = [...prop.keyframes].sort(
+        (a: any, b: any) => a.frame - b.frame,
+      );
 
       for (let i = 0; i < sortedKeyframes.length; i++) {
         const kf = sortedKeyframes[i];
@@ -764,7 +761,7 @@ function onKeyframeInterpolationConfirm(settings: {
           kf.controlMode = settings.controlMode;
 
           // For bezier, set easing preset handles
-          if (settings.interpolation === 'bezier' && settings.easingPreset) {
+          if (settings.interpolation === "bezier" && settings.easingPreset) {
             const presetHandles = getEasingPresetHandles(settings.easingPreset);
             if (presetHandles) {
               // Find next keyframe to calculate frame duration and value delta
@@ -772,10 +769,18 @@ function onKeyframeInterpolationConfirm(settings: {
               if (nextKf) {
                 const frameDuration = nextKf.frame - kf.frame;
                 // Get scalar value delta (for vectors, use magnitude)
-                const kfValue = typeof kf.value === 'number' ? kf.value :
-                  (kf.value?.x !== undefined ? Math.sqrt(kf.value.x ** 2 + kf.value.y ** 2) : 0);
-                const nextValue = typeof nextKf.value === 'number' ? nextKf.value :
-                  (nextKf.value?.x !== undefined ? Math.sqrt(nextKf.value.x ** 2 + nextKf.value.y ** 2) : 0);
+                const kfValue =
+                  typeof kf.value === "number"
+                    ? kf.value
+                    : kf.value?.x !== undefined
+                      ? Math.sqrt(kf.value.x ** 2 + kf.value.y ** 2)
+                      : 0;
+                const nextValue =
+                  typeof nextKf.value === "number"
+                    ? nextKf.value
+                    : nextKf.value?.x !== undefined
+                      ? Math.sqrt(nextKf.value.x ** 2 + nextKf.value.y ** 2)
+                      : 0;
                 const valueDelta = nextValue - kfValue;
 
                 // Convert normalized preset values to absolute frame/value offsets
@@ -783,14 +788,14 @@ function onKeyframeInterpolationConfirm(settings: {
                 kf.outHandle = {
                   frame: presetHandles.outX * frameDuration,
                   value: presetHandles.outY * valueDelta,
-                  enabled: true
+                  enabled: true,
                 };
                 // inHandle: relative to next keyframe, points back toward current
                 // Formula: frame = -(1 - inX) * duration, value = (1 - inY) * delta
                 nextKf.inHandle = {
                   frame: -(1 - presetHandles.inX) * frameDuration,
                   value: (1 - presetHandles.inY) * valueDelta,
-                  enabled: true
+                  enabled: true,
                 };
               }
               // Note: Last keyframe's outHandle has no effect (no next segment)
@@ -802,47 +807,54 @@ function onKeyframeInterpolationConfirm(settings: {
   }
 
   // Mark dirty and log
-  console.log(`[Lattice] Applied ${settings.interpolation} interpolation to ${selectedKeyframeIds.length} keyframes`);
+  console.log(
+    `[Lattice] Applied ${settings.interpolation} interpolation to ${selectedKeyframeIds.length} keyframes`,
+  );
   showKeyframeInterpolationDialog.value = false;
 }
 
 // Get bezier handle positions for easing presets
-function getEasingPresetHandles(preset: string): { outX: number; outY: number; inX: number; inY: number } | null {
+function getEasingPresetHandles(
+  preset: string,
+): { outX: number; outY: number; inX: number; inY: number } | null {
   // Standard easing preset handle positions
-  const presets: Record<string, { outX: number; outY: number; inX: number; inY: number }> = {
+  const presets: Record<
+    string,
+    { outX: number; outY: number; inX: number; inY: number }
+  > = {
     // Ease In
-    'easeInSine': { outX: 0.47, outY: 0, inX: 0.745, inY: 0.715 },
-    'easeInQuad': { outX: 0.55, outY: 0.085, inX: 0.68, inY: 0.53 },
-    'easeInCubic': { outX: 0.55, outY: 0.055, inX: 0.675, inY: 0.19 },
-    'easeInQuart': { outX: 0.895, outY: 0.03, inX: 0.685, inY: 0.22 },
-    'easeInQuint': { outX: 0.755, outY: 0.05, inX: 0.855, inY: 0.06 },
-    'easeInExpo': { outX: 0.95, outY: 0.05, inX: 0.795, inY: 0.035 },
-    'easeInCirc': { outX: 0.6, outY: 0.04, inX: 0.98, inY: 0.335 },
-    'easeInBack': { outX: 0.6, outY: -0.28, inX: 0.735, inY: 0.045 },
-    'easeInElastic': { outX: 0.5, outY: -0.5, inX: 0.7, inY: 0 },
+    easeInSine: { outX: 0.47, outY: 0, inX: 0.745, inY: 0.715 },
+    easeInQuad: { outX: 0.55, outY: 0.085, inX: 0.68, inY: 0.53 },
+    easeInCubic: { outX: 0.55, outY: 0.055, inX: 0.675, inY: 0.19 },
+    easeInQuart: { outX: 0.895, outY: 0.03, inX: 0.685, inY: 0.22 },
+    easeInQuint: { outX: 0.755, outY: 0.05, inX: 0.855, inY: 0.06 },
+    easeInExpo: { outX: 0.95, outY: 0.05, inX: 0.795, inY: 0.035 },
+    easeInCirc: { outX: 0.6, outY: 0.04, inX: 0.98, inY: 0.335 },
+    easeInBack: { outX: 0.6, outY: -0.28, inX: 0.735, inY: 0.045 },
+    easeInElastic: { outX: 0.5, outY: -0.5, inX: 0.7, inY: 0 },
 
     // Ease Out
-    'easeOutSine': { outX: 0.39, outY: 0.575, inX: 0.565, inY: 1 },
-    'easeOutQuad': { outX: 0.25, outY: 0.46, inX: 0.45, inY: 0.94 },
-    'easeOutCubic': { outX: 0.215, outY: 0.61, inX: 0.355, inY: 1 },
-    'easeOutQuart': { outX: 0.165, outY: 0.84, inX: 0.44, inY: 1 },
-    'easeOutQuint': { outX: 0.23, outY: 1, inX: 0.32, inY: 1 },
-    'easeOutExpo': { outX: 0.19, outY: 1, inX: 0.22, inY: 1 },
-    'easeOutCirc': { outX: 0.075, outY: 0.82, inX: 0.165, inY: 1 },
-    'easeOutBack': { outX: 0.175, outY: 0.885, inX: 0.32, inY: 1.275 },
-    'easeOutElastic': { outX: 0.3, outY: 1, inX: 0.5, inY: 1.5 },
-    'easeOutBounce': { outX: 0.2, outY: 0.9, inX: 0.3, inY: 1 },
+    easeOutSine: { outX: 0.39, outY: 0.575, inX: 0.565, inY: 1 },
+    easeOutQuad: { outX: 0.25, outY: 0.46, inX: 0.45, inY: 0.94 },
+    easeOutCubic: { outX: 0.215, outY: 0.61, inX: 0.355, inY: 1 },
+    easeOutQuart: { outX: 0.165, outY: 0.84, inX: 0.44, inY: 1 },
+    easeOutQuint: { outX: 0.23, outY: 1, inX: 0.32, inY: 1 },
+    easeOutExpo: { outX: 0.19, outY: 1, inX: 0.22, inY: 1 },
+    easeOutCirc: { outX: 0.075, outY: 0.82, inX: 0.165, inY: 1 },
+    easeOutBack: { outX: 0.175, outY: 0.885, inX: 0.32, inY: 1.275 },
+    easeOutElastic: { outX: 0.3, outY: 1, inX: 0.5, inY: 1.5 },
+    easeOutBounce: { outX: 0.2, outY: 0.9, inX: 0.3, inY: 1 },
 
     // Ease In/Out
-    'easeInOutSine': { outX: 0.445, outY: 0.05, inX: 0.55, inY: 0.95 },
-    'easeInOutQuad': { outX: 0.455, outY: 0.03, inX: 0.515, inY: 0.955 },
-    'easeInOutCubic': { outX: 0.645, outY: 0.045, inX: 0.355, inY: 1 },
-    'easeInOutQuart': { outX: 0.77, outY: 0, inX: 0.175, inY: 1 },
-    'easeInOutQuint': { outX: 0.86, outY: 0, inX: 0.07, inY: 1 },
-    'easeInOutExpo': { outX: 1, outY: 0, inX: 0, inY: 1 },
-    'easeInOutCirc': { outX: 0.785, outY: 0.135, inX: 0.15, inY: 0.86 },
-    'easeInOutBack': { outX: 0.68, outY: -0.55, inX: 0.265, inY: 1.55 },
-    'easeInOutElastic': { outX: 0.5, outY: -0.3, inX: 0.5, inY: 1.3 },
+    easeInOutSine: { outX: 0.445, outY: 0.05, inX: 0.55, inY: 0.95 },
+    easeInOutQuad: { outX: 0.455, outY: 0.03, inX: 0.515, inY: 0.955 },
+    easeInOutCubic: { outX: 0.645, outY: 0.045, inX: 0.355, inY: 1 },
+    easeInOutQuart: { outX: 0.77, outY: 0, inX: 0.175, inY: 1 },
+    easeInOutQuint: { outX: 0.86, outY: 0, inX: 0.07, inY: 1 },
+    easeInOutExpo: { outX: 1, outY: 0, inX: 0, inY: 1 },
+    easeInOutCirc: { outX: 0.785, outY: 0.135, inX: 0.15, inY: 0.86 },
+    easeInOutBack: { outX: 0.68, outY: -0.55, inX: 0.265, inY: 1.55 },
+    easeInOutElastic: { outX: 0.5, outY: -0.3, inX: 0.5, inY: 1.3 },
   };
 
   return presets[preset] || null;
@@ -850,10 +862,15 @@ function getEasingPresetHandles(preset: string): { outX: number; outY: number; i
 
 // Helper: Generate SVG path data from control points (for audio reactivity integration)
 function generatePathDataFromPoints(
-  points: Array<{ x: number; y: number; handleIn?: { x: number; y: number } | null; handleOut?: { x: number; y: number } | null }>,
-  closed: boolean
+  points: Array<{
+    x: number;
+    y: number;
+    handleIn?: { x: number; y: number } | null;
+    handleOut?: { x: number; y: number } | null;
+  }>,
+  closed: boolean,
 ): string {
-  if (points.length === 0) return '';
+  if (points.length === 0) return "";
   if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
 
   let d = `M ${points[0].x} ${points[0].y}`;
@@ -886,27 +903,27 @@ function generatePathDataFromPoints(
   }
 
   if (closed && points.length > 2) {
-    d += ' Z';
+    d += " Z";
   }
 
   return d;
 }
 
 // Path Suggestion handlers
-function onPathSuggestionClose() {
+function _onPathSuggestionClose() {
   showPathSuggestionDialog.value = false;
   // Clear preview when dialog closes
   pathSuggestions.value = [];
   selectedPathIndex.value = null;
 }
 
-function onPathSuggestionPreview(suggestions: any[]) {
+function _onPathSuggestionPreview(suggestions: any[]) {
   pathSuggestions.value = suggestions;
   selectedPathIndex.value = suggestions.length > 0 ? 0 : null;
 }
 
-function onPathSuggestionAccept(result: { keyframes: any[]; splines: any[] }) {
-  console.log('[Lattice] Path suggestion accepted:', result);
+function _onPathSuggestionAccept(result: { keyframes: any[]; splines: any[] }) {
+  console.log("[Lattice] Path suggestion accepted:", result);
 
   // Apply keyframes to the store
   if (result.keyframes && result.keyframes.length > 0) {
@@ -915,7 +932,12 @@ function onPathSuggestionAccept(result: { keyframes: any[]; splines: any[] }) {
       // Add keyframes to the appropriate layer/property
       // addKeyframe signature: (layerId, propertyPath, value, atFrame?)
       for (const keyframe of batch.keyframes) {
-        store.addKeyframe(batch.layerId, batch.propertyPath, keyframe.value, keyframe.frame);
+        store.addKeyframe(
+          batch.layerId,
+          batch.propertyPath,
+          keyframe.value,
+          keyframe.frame,
+        );
       }
     }
   }
@@ -936,20 +958,23 @@ function onPathSuggestionAccept(result: { keyframes: any[]; splines: any[] }) {
         id: p.id || `cp_${Date.now()}_${i}`,
         x: p.x,
         y: p.y,
-        depth: p.depth ?? 0,  // Preserve z-space depth
-        handleIn: p.handleIn || null,  // Preserve bezier handles from translator
+        depth: p.depth ?? 0, // Preserve z-space depth
+        handleIn: p.handleIn || null, // Preserve bezier handles from translator
         handleOut: p.handleOut || null,
-        type: p.type || 'smooth' as const
+        type: p.type || ("smooth" as const),
       }));
 
       // Generate SVG path data from control points for audio reactivity
-      const pathData = generatePathDataFromPoints(controlPoints, spline.closed || false);
+      const pathData = generatePathDataFromPoints(
+        controlPoints,
+        spline.closed || false,
+      );
 
       // Update the layer data with the points and pathData
       store.updateLayerData(layer.id, {
         controlPoints,
         pathData,
-        closed: spline.closed || false
+        closed: spline.closed || false,
       });
     }
   }
@@ -961,7 +986,7 @@ function onPathSuggestionAccept(result: { keyframes: any[]; splines: any[] }) {
 }
 
 // Get camera keyframes for the active camera
-const activeCameraKeyframes = computed(() => {
+const _activeCameraKeyframes = computed(() => {
   const activeCam = store.getActiveCameraAtFrame();
   if (!activeCam) return [];
   return store.getCameraKeyframes(activeCam.id);
@@ -972,11 +997,11 @@ function handleZoomChange() {
   const canvas = centerViewportRef.value?.threeCanvasRef;
   if (!canvas) return;
 
-  if (viewZoom.value === 'fit') {
+  if (viewZoom.value === "fit") {
     canvas.fitToView();
   } else {
     // Convert percentage string to decimal (e.g., '100' → 1.0, '200' → 2.0)
-    const zoomLevel = parseInt(viewZoom.value) / 100;
+    const zoomLevel = parseInt(viewZoom.value, 10) / 100;
     canvas.setZoom(zoomLevel);
   }
 }
@@ -1001,9 +1026,9 @@ const { handleMenuAction } = useMenuActions({
 });
 
 function triggerProjectOpen() {
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = '.lattice,.json';
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = ".lattice,.json";
   input.onchange = async (e) => {
     const file = (e.target as HTMLInputElement).files?.[0];
     if (file) {
@@ -1016,8 +1041,8 @@ function triggerProjectOpen() {
 /**
  * Handle preferences save
  */
-function handlePreferencesSave(preferences: any) {
-  console.log('Preferences saved:', preferences);
+function _handlePreferencesSave(preferences: any) {
+  console.log("Preferences saved:", preferences);
   // Apply relevant preferences immediately
   if (preferences.theme) {
     // Theme would be applied via themeStore
@@ -1025,7 +1050,7 @@ function handlePreferencesSave(preferences: any) {
 }
 
 // Freeze frame at playhead (available via Layer menu)
-function freezeFrameSelectedLayers() {
+function _freezeFrameSelectedLayers() {
   const selectedIds = store.selectedLayerIds;
   if (selectedIds.length === 0) return;
 
@@ -1039,7 +1064,7 @@ let perfInterval: number;
 
 function updatePerformanceStats() {
   // Memory usage (if available)
-  if ('memory' in performance) {
+  if ("memory" in performance) {
     const mem = (performance as any).memory;
     const usedMB = Math.round(mem.usedJSHeapSize / 1024 / 1024);
     memoryUsage.value = `${usedMB} MB`;
@@ -1051,7 +1076,7 @@ onMounted(async () => {
   const tierInfo = await detectGPUTier();
   gpuTier.value = tierInfo.tier;
 
-  window.addEventListener('keydown', handleKeydown);
+  window.addEventListener("keydown", handleKeydown);
 
   perfInterval = window.setInterval(updatePerformanceStats, 1000);
 
@@ -1062,7 +1087,7 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
-  window.removeEventListener('keydown', handleKeydown);
+  window.removeEventListener("keydown", handleKeydown);
   clearInterval(perfInterval);
 
   // Stop autosave timer

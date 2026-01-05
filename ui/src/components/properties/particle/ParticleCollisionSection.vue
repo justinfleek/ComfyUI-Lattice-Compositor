@@ -171,7 +171,7 @@
 </template>
 
 <script setup lang="ts">
-import type { CollisionConfig } from '@/types/project';
+import type { CollisionConfig } from "@/types/project";
 
 interface Props {
   collision: CollisionConfig;
@@ -181,11 +181,11 @@ interface Props {
 defineProps<Props>();
 
 const emit = defineEmits<{
-  (e: 'toggle'): void;
-  (e: 'update', key: keyof CollisionConfig, value: any): void;
+  (e: "toggle"): void;
+  (e: "update", key: keyof CollisionConfig, value: any): void;
 }>();
 
-function update(key: keyof CollisionConfig, value: any): void {
-  emit('update', key, value);
+function _update(key: keyof CollisionConfig, value: any): void {
+  emit("update", key, value);
 }
 </script>

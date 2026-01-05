@@ -333,59 +333,63 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
-import { useAssetStore } from '@/stores/assetStore';
-import { useCompositorStore } from '@/stores/compositorStore';
-import MaterialEditor from '@/components/materials/MaterialEditor.vue';
-import AssetUploader from '@/components/materials/AssetUploader.vue';
-import EnvironmentSettings from '@/components/materials/EnvironmentSettings.vue';
-import type { PBRMaterialConfig } from '@/services/materialSystem';
+import { computed, ref, watch } from "vue";
+import type { PBRMaterialConfig } from "@/services/materialSystem";
 import {
-  validateLoadedSprite,
-  validateLoadedSpritesheet,
   loadImageFromFile,
   type SpriteValidationIssue,
-  type SpriteMetadata,
-  type SpritesheetMetadata,
-} from '@/services/spriteValidation';
-import type { AssetType } from '@/types/assets';
+  validateLoadedSprite,
+  validateLoadedSpritesheet,
+} from "@/services/spriteValidation";
+import { useAssetStore } from "@/stores/assetStore";
+import { useCompositorStore } from "@/stores/compositorStore";
+import type { AssetType } from "@/types/assets";
 
 const assetStore = useAssetStore();
-const compositorStore = useCompositorStore();
+const _compositorStore = useCompositorStore();
 
 // Tab configuration
-const tabs = [
-  { id: 'materials', label: 'Materials', icon: '◉', tooltip: 'PBR Materials' },
-  { id: 'svg', label: 'SVG', icon: '✎', tooltip: 'SVG Logos & Shapes' },
-  { id: 'meshes', label: 'Meshes', icon: '◇', tooltip: 'Mesh Particles' },
-  { id: 'sprites', label: 'Sprites', icon: '▦', tooltip: 'Sprite Sheets' },
-  { id: 'environment', label: 'Env', icon: '☀', tooltip: 'Environment Map' },
+const _tabs = [
+  { id: "materials", label: "Materials", icon: "◉", tooltip: "PBR Materials" },
+  { id: "svg", label: "SVG", icon: "✎", tooltip: "SVG Logos & Shapes" },
+  { id: "meshes", label: "Meshes", icon: "◇", tooltip: "Mesh Particles" },
+  { id: "sprites", label: "Sprites", icon: "▦", tooltip: "Sprite Sheets" },
+  { id: "environment", label: "Env", icon: "☀", tooltip: "Environment Map" },
 ];
 
-const activeTab = ref('materials');
+const activeTab = ref("materials");
 
 // Material presets
-const materialPresets = [
-  'chrome', 'gold', 'silver', 'copper', 'brass',
-  'glass', 'plastic', 'rubber', 'wood', 'concrete',
-  'emissive', 'holographic',
+const _materialPresets = [
+  "chrome",
+  "gold",
+  "silver",
+  "copper",
+  "brass",
+  "glass",
+  "plastic",
+  "rubber",
+  "wood",
+  "concrete",
+  "emissive",
+  "holographic",
 ];
-const selectedPreset = ref('');
+const selectedPreset = ref("");
 
 // Computed lists
 const materials = computed(() => assetStore.materialList);
-const svgDocuments = computed(() => assetStore.svgDocumentList);
-const meshParticles = computed(() => assetStore.meshParticleList);
-const spriteSheets = computed(() => assetStore.spriteSheetList);
-const environment = computed(() => assetStore.environment);
+const _svgDocuments = computed(() => assetStore.svgDocumentList);
+const _meshParticles = computed(() => assetStore.meshParticleList);
+const _spriteSheets = computed(() => assetStore.spriteSheetList);
+const _environment = computed(() => assetStore.environment);
 
 // Selected items
-const selectedMaterial = computed(() => assetStore.selectedMaterial);
-const selectedSvg = computed(() => assetStore.selectedSvgDocument);
-const selectedMesh = computed(() => assetStore.selectedMeshParticle);
+const _selectedMaterial = computed(() => assetStore.selectedMaterial);
+const _selectedSvg = computed(() => assetStore.selectedSvgDocument);
+const _selectedMesh = computed(() => assetStore.selectedMeshParticle);
 
 // Primitive selection
-const selectedPrimitive = ref('');
+const selectedPrimitive = ref("");
 
 // Sprite import state
 const showSpriteImport = ref(false);
@@ -395,10 +399,12 @@ const spriteRows = ref(4);
 const spriteFrameRate = ref(24);
 
 // Enhanced sprite import state
-const spriteImportMode = ref<AssetType>('spritesheet');
+const spriteImportMode = ref<AssetType>("spritesheet");
 const spritePreview = ref<string | null>(null);
 const spriteImage = ref<HTMLImageElement | null>(null);
-const spriteImageDimensions = ref<{ width: number; height: number } | null>(null);
+const spriteImageDimensions = ref<{ width: number; height: number } | null>(
+  null,
+);
 const framePreviewInfo = ref<{
   frameWidth: number;
   frameHeight: number;
@@ -412,42 +418,48 @@ const hasBlockingErrors = ref(false);
 // MATERIALS
 // ========================================================================
 
-function createMaterial() {
-  assetStore.createEmptyMaterial('New Material');
+function _createMaterial() {
+  assetStore.createEmptyMaterial("New Material");
 }
 
-function createFromPreset() {
+function _createFromPreset() {
   if (selectedPreset.value) {
     assetStore.createMaterialFromPreset(selectedPreset.value);
-    selectedPreset.value = '';
+    selectedPreset.value = "";
   }
 }
 
-function selectMaterial(id: string) {
+function _selectMaterial(id: string) {
   assetStore.selectedMaterialId = id;
 }
 
-function deleteMaterial(id: string) {
+function _deleteMaterial(id: string) {
   assetStore.deleteMaterial(id);
 }
 
-function onMaterialUpdate(updates: Partial<PBRMaterialConfig>) {
+function _onMaterialUpdate(updates: Partial<PBRMaterialConfig>) {
   if (assetStore.selectedMaterialId) {
     assetStore.updateMaterial(assetStore.selectedMaterialId, updates);
   }
 }
 
-function onTextureUpload(textureType: string, file: File) {
+function _onTextureUpload(textureType: string, file: File) {
   if (assetStore.selectedMaterialId) {
-    assetStore.setMaterialTexture(assetStore.selectedMaterialId, textureType as keyof PBRMaterialConfig, file);
+    assetStore.setMaterialTexture(
+      assetStore.selectedMaterialId,
+      textureType as keyof PBRMaterialConfig,
+      file,
+    );
   }
 }
 
-function getMaterialPreviewStyle(mat: typeof materials.value[0]) {
+function _getMaterialPreviewStyle(mat: (typeof materials.value)[0]) {
   return {
-    backgroundColor: mat.config.color || '#808080',
-    backgroundImage: mat.config.maps?.albedo ? `url(${mat.config.maps.albedo})` : 'none',
-    backgroundSize: 'cover',
+    backgroundColor: mat.config.color || "#808080",
+    backgroundImage: mat.config.maps?.albedo
+      ? `url(${mat.config.maps.albedo})`
+      : "none",
+    backgroundSize: "cover",
   };
 }
 
@@ -455,36 +467,40 @@ function getMaterialPreviewStyle(mat: typeof materials.value[0]) {
 // SVG
 // ========================================================================
 
-async function onSvgUpload(file: File) {
+async function _onSvgUpload(file: File) {
   await assetStore.importSvgFromFile(file);
 }
 
-function selectSvg(id: string) {
+function _selectSvg(id: string) {
   assetStore.selectedSvgId = id;
 }
 
-function deleteSvg(id: string) {
+function _deleteSvg(id: string) {
   assetStore.deleteSvgDocument(id);
 }
 
-function updatePathDepth(pathIndex: number, event: Event) {
+function _updatePathDepth(pathIndex: number, event: Event) {
   if (!assetStore.selectedSvgId) return;
   const value = parseFloat((event.target as HTMLInputElement).value) || 0;
-  assetStore.updateSvgLayerConfig(assetStore.selectedSvgId, pathIndex, { depth: value });
+  assetStore.updateSvgLayerConfig(assetStore.selectedSvgId, pathIndex, {
+    depth: value,
+  });
 }
 
-function updatePathExtrusion(pathIndex: number, event: Event) {
+function _updatePathExtrusion(pathIndex: number, event: Event) {
   if (!assetStore.selectedSvgId) return;
   const value = parseFloat((event.target as HTMLInputElement).value) || 2;
-  assetStore.updateSvgLayerConfig(assetStore.selectedSvgId, pathIndex, { extrusionDepth: value });
+  assetStore.updateSvgLayerConfig(assetStore.selectedSvgId, pathIndex, {
+    extrusionDepth: value,
+  });
 }
 
-function createLayersFromSvg(svgId: string) {
+function _createLayersFromSvg(svgId: string) {
   // Emit event for parent to handle layer creation
-  emit('create-layers-from-svg', svgId);
+  emit("create-layers-from-svg", svgId);
 }
 
-function registerSvgAsMesh(svgId: string) {
+function _registerSvgAsMesh(svgId: string) {
   const svg = assetStore.svgDocuments.get(svgId);
   if (!svg) return;
 
@@ -494,31 +510,31 @@ function registerSvgAsMesh(svgId: string) {
   });
 
   // Switch to meshes tab
-  activeTab.value = 'meshes';
+  activeTab.value = "meshes";
 }
 
 // ========================================================================
 // MESH PARTICLES
 // ========================================================================
 
-function addPrimitiveMesh() {
+function _addPrimitiveMesh() {
   if (selectedPrimitive.value) {
     assetStore.registerPrimitiveMesh(selectedPrimitive.value as any);
-    selectedPrimitive.value = '';
+    selectedPrimitive.value = "";
   }
 }
 
-function selectMesh(id: string) {
+function _selectMesh(id: string) {
   assetStore.selectedMeshParticleId = id;
 }
 
-function deleteMesh(id: string) {
+function _deleteMesh(id: string) {
   assetStore.deleteMeshParticle(id);
 }
 
-function useAsEmitterShape() {
+function _useAsEmitterShape() {
   if (assetStore.selectedMeshParticleId) {
-    emit('use-mesh-as-emitter', assetStore.selectedMeshParticleId);
+    emit("use-mesh-as-emitter", assetStore.selectedMeshParticleId);
   }
 }
 
@@ -526,7 +542,7 @@ function useAsEmitterShape() {
 // SPRITE SHEETS
 // ========================================================================
 
-async function onSpriteFileSelect(file: File) {
+async function _onSpriteFileSelect(file: File) {
   pendingSpriteFile.value = file;
 
   // Create preview URL
@@ -544,12 +560,14 @@ async function onSpriteFileSelect(file: File) {
     // Run initial validation
     runValidation();
   } catch (error) {
-    console.error('Failed to load sprite image:', error);
-    validationIssues.value = [{
-      severity: 'error',
-      code: 'LOAD_ERROR',
-      message: 'Failed to load image file',
-    }];
+    console.error("Failed to load sprite image:", error);
+    validationIssues.value = [
+      {
+        severity: "error",
+        code: "LOAD_ERROR",
+        message: "Failed to load image file",
+      },
+    ];
     hasBlockingErrors.value = true;
   }
 }
@@ -559,7 +577,7 @@ function runValidation() {
 
   const filename = pendingSpriteFile.value.name;
 
-  if (spriteImportMode.value === 'sprite') {
+  if (spriteImportMode.value === "sprite") {
     // Single sprite validation (1x1 grid)
     const result = validateLoadedSprite(spriteImage.value, filename);
     validationIssues.value = result.issues;
@@ -571,7 +589,7 @@ function runValidation() {
       spriteImage.value,
       filename,
       spriteColumns.value,
-      spriteRows.value
+      spriteRows.value,
     );
     validationIssues.value = result.issues;
     hasBlockingErrors.value = !result.canImport;
@@ -594,7 +612,8 @@ function updateFramePreview() {
   const rows = spriteRows.value || 1;
   const frameWidth = spriteImageDimensions.value.width / cols;
   const frameHeight = spriteImageDimensions.value.height / rows;
-  const framesAlign = Number.isInteger(frameWidth) && Number.isInteger(frameHeight);
+  const framesAlign =
+    Number.isInteger(frameWidth) && Number.isInteger(frameHeight);
 
   framePreviewInfo.value = {
     frameWidth: Math.floor(frameWidth),
@@ -609,7 +628,7 @@ function updateFramePreview() {
 
 // Watch for grid changes to update preview
 watch([spriteColumns, spriteRows], () => {
-  if (spriteImportMode.value === 'spritesheet' && spriteImage.value) {
+  if (spriteImportMode.value === "spritesheet" && spriteImage.value) {
     updateFramePreview();
   }
 });
@@ -624,10 +643,10 @@ watch(spriteImportMode, () => {
 async function performImport() {
   if (!pendingSpriteFile.value || hasBlockingErrors.value) return;
 
-  if (spriteImportMode.value === 'sprite') {
+  if (spriteImportMode.value === "sprite") {
     // Import as single sprite
     await assetStore.importSprite(pendingSpriteFile.value, {
-      name: pendingSpriteFile.value.name.replace(/\.[^.]+$/, ''),
+      name: pendingSpriteFile.value.name.replace(/\.[^.]+$/, ""),
     });
   } else {
     // Import as spritesheet with validation
@@ -635,14 +654,14 @@ async function performImport() {
       pendingSpriteFile.value,
       spriteColumns.value,
       spriteRows.value,
-      { frameRate: spriteFrameRate.value }
+      { frameRate: spriteFrameRate.value },
     );
   }
 
   cancelSpriteImport();
 }
 
-async function importSpriteSheet() {
+async function _importSpriteSheet() {
   // Legacy function - redirect to performImport
   await performImport();
 }
@@ -663,17 +682,17 @@ function cancelSpriteImport() {
   framePreviewInfo.value = null;
   validationIssues.value = [];
   hasBlockingErrors.value = false;
-  spriteImportMode.value = 'spritesheet';
+  spriteImportMode.value = "spritesheet";
   spriteColumns.value = 4;
   spriteRows.value = 4;
   spriteFrameRate.value = 24;
 }
 
-function selectSprite(id: string) {
+function _selectSprite(id: string) {
   assetStore.selectedSpriteSheetId = id;
 }
 
-function deleteSprite(id: string) {
+function _deleteSprite(id: string) {
   assetStore.deleteSpriteSheet(id);
 }
 
@@ -681,19 +700,19 @@ function deleteSprite(id: string) {
 // ENVIRONMENT
 // ========================================================================
 
-function onEnvironmentUpdate(settings: any) {
+function _onEnvironmentUpdate(settings: any) {
   assetStore.updateEnvironment(settings);
-  emit('environment-update', settings);
+  emit("environment-update", settings);
 }
 
-async function onEnvironmentLoad(file: File) {
+async function _onEnvironmentLoad(file: File) {
   await assetStore.loadEnvironment(file);
-  emit('environment-load', assetStore.environment);
+  emit("environment-load", assetStore.environment);
 }
 
-function onEnvironmentClear() {
+function _onEnvironmentClear() {
   assetStore.clearEnvironment();
-  emit('environment-clear');
+  emit("environment-clear");
 }
 
 // ========================================================================
@@ -701,11 +720,11 @@ function onEnvironmentClear() {
 // ========================================================================
 
 const emit = defineEmits<{
-  (e: 'create-layers-from-svg', svgId: string): void;
-  (e: 'use-mesh-as-emitter', meshId: string): void;
-  (e: 'environment-update', settings: any): void;
-  (e: 'environment-load', settings: any): void;
-  (e: 'environment-clear'): void;
+  (e: "create-layers-from-svg", svgId: string): void;
+  (e: "use-mesh-as-emitter", meshId: string): void;
+  (e: "environment-update", settings: any): void;
+  (e: "environment-load", settings: any): void;
+  (e: "environment-clear"): void;
 }>();
 </script>
 

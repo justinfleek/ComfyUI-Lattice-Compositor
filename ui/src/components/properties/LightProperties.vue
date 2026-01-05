@@ -144,17 +144,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import type { Layer } from '@/types/project';
-import { useCompositorStore } from '@/stores/compositorStore';
-import { ScrubableNumber, SliderInput, AngleDial, ColorPicker } from '@/components/controls';
+import { computed } from "vue";
+import { useCompositorStore } from "@/stores/compositorStore";
+import type { Layer } from "@/types/project";
 
 interface LightData {
-  lightType: 'parallel' | 'spot' | 'point' | 'ambient';
+  lightType: "parallel" | "spot" | "point" | "ambient";
   color: string;
   intensity: number;
   radius: number;
-  falloff: 'none' | 'smooth' | 'inverseSquareClamped';
+  falloff: "none" | "smooth" | "inverseSquareClamped";
   falloffDistance: number;
   castShadows: boolean;
   shadowDarkness: number;
@@ -164,30 +163,35 @@ interface LightData {
 }
 
 const props = defineProps<{ layer: Layer }>();
-const emit = defineEmits(['update']);
+const emit = defineEmits(["update"]);
 const store = useCompositorStore();
 
 const lightData = computed<LightData>(() => {
-  return (props.layer.data as unknown as LightData) || {
-    lightType: 'spot',
-    color: '#ffffff',
-    intensity: 100,
-    radius: 500,
-    falloff: 'none',
-    falloffDistance: 500,
-    castShadows: false,
-    shadowDarkness: 100,
-    shadowDiffusion: 0,
-    coneAngle: 90,
-    coneFeather: 50
-  };
+  return (
+    (props.layer.data as unknown as LightData) || {
+      lightType: "spot",
+      color: "#ffffff",
+      intensity: 100,
+      radius: 500,
+      falloff: "none",
+      falloffDistance: 500,
+      castShadows: false,
+      shadowDarkness: 100,
+      shadowDiffusion: 0,
+      coneAngle: 90,
+      coneFeather: 50,
+    }
+  );
 });
 
-function update(key: keyof LightData, value: any) {
+function _update(key: keyof LightData, value: any) {
   store.updateLayer(props.layer.id, {
-    data: { ...lightData.value, [key]: value } as unknown as typeof props.layer.data
+    data: {
+      ...lightData.value,
+      [key]: value,
+    } as unknown as typeof props.layer.data,
   });
-  emit('update');
+  emit("update");
 }
 </script>
 

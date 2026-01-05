@@ -159,29 +159,31 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
+import { computed, onMounted, ref } from "vue";
+import { useCompositorStore } from "@/stores/compositorStore";
 import {
-  EFFECT_DEFINITIONS,
-  EFFECT_CATEGORIES,
   ANIMATION_PRESETS,
-  createEffect,
+  type AnimationPreset,
+  EFFECT_CATEGORIES,
+  EFFECT_DEFINITIONS,
   type EffectCategory,
-  type AnimationPreset
-} from '@/types/effects';
+} from "@/types/effects";
 
 const store = useCompositorStore();
 
 // State
-const activeTab = ref<'effects' | 'presets' | 'favorites'>('effects');
-const searchQuery = ref('');
-const expandedCategories = ref<EffectCategory[]>(['blur-sharpen', 'color-correction']);
-const expandedPresetCategories = ref<string[]>(['Fade', 'Scale']);
+const _activeTab = ref<"effects" | "presets" | "favorites">("effects");
+const searchQuery = ref("");
+const expandedCategories = ref<EffectCategory[]>([
+  "blur-sharpen",
+  "color-correction",
+]);
+const expandedPresetCategories = ref<string[]>(["Fade", "Scale"]);
 const favorites = ref<string[]>([]);
 
 // localStorage versioning for forward compatibility
 const STORAGE_VERSION = 1;
-const STORAGE_KEY = 'effect-favorites-v' + STORAGE_VERSION;
+const STORAGE_KEY = `effect-favorites-v${STORAGE_VERSION}`;
 
 // Load favorites from localStorage
 onMounted(() => {
@@ -190,7 +192,10 @@ onMounted(() => {
     try {
       const parsed = JSON.parse(saved);
       // Validate that it's an array of strings
-      if (Array.isArray(parsed) && parsed.every(item => typeof item === 'string')) {
+      if (
+        Array.isArray(parsed) &&
+        parsed.every((item) => typeof item === "string")
+      ) {
         favorites.value = parsed;
       } else {
         favorites.value = [];
@@ -212,30 +217,37 @@ const allEffects = computed(() => {
     key,
     name: def.name,
     category: def.category,
-    description: def.description
+    description: def.description,
   }));
 });
 
-const filteredCategories = computed(() => {
+const _filteredCategories = computed(() => {
   const query = searchQuery.value.toLowerCase();
 
-  return (Object.entries(EFFECT_CATEGORIES) as [EffectCategory, typeof EFFECT_CATEGORIES[EffectCategory]][]).map(([key, cat]) => {
-    const effects = allEffects.value.filter(e => {
-      if (e.category !== key) return false;
-      if (query && !e.name.toLowerCase().includes(query)) return false;
-      return true;
-    });
+  return (
+    Object.entries(EFFECT_CATEGORIES) as [
+      EffectCategory,
+      (typeof EFFECT_CATEGORIES)[EffectCategory],
+    ][]
+  )
+    .map(([key, cat]) => {
+      const effects = allEffects.value.filter((e) => {
+        if (e.category !== key) return false;
+        if (query && !e.name.toLowerCase().includes(query)) return false;
+        return true;
+      });
 
-    return {
-      key,
-      label: cat.label,
-      icon: cat.icon,
-      effects
-    };
-  }).filter(cat => cat.effects.length > 0);
+      return {
+        key,
+        label: cat.label,
+        icon: cat.icon,
+        effects,
+      };
+    })
+    .filter((cat) => cat.effects.length > 0);
 });
 
-const groupedPresets = computed(() => {
+const _groupedPresets = computed(() => {
   const query = searchQuery.value.toLowerCase();
   const groups: Record<string, AnimationPreset[]> = {};
 
@@ -250,16 +262,16 @@ const groupedPresets = computed(() => {
 
   return Object.entries(groups).map(([category, presets]) => ({
     category,
-    presets
+    presets,
   }));
 });
 
-const favoriteEffects = computed(() => {
-  return allEffects.value.filter(e => favorites.value.includes(e.key));
+const _favoriteEffects = computed(() => {
+  return allEffects.value.filter((e) => favorites.value.includes(e.key));
 });
 
 // Actions
-function toggleCategory(category: EffectCategory) {
+function _toggleCategory(category: EffectCategory) {
   const index = expandedCategories.value.indexOf(category);
   if (index >= 0) {
     expandedCategories.value.splice(index, 1);
@@ -268,7 +280,7 @@ function toggleCategory(category: EffectCategory) {
   }
 }
 
-function togglePresetCategory(category: string) {
+function _togglePresetCategory(category: string) {
   const index = expandedPresetCategories.value.indexOf(category);
   if (index >= 0) {
     expandedPresetCategories.value.splice(index, 1);
@@ -277,7 +289,7 @@ function togglePresetCategory(category: string) {
   }
 }
 
-function toggleFavorite(effectKey: string) {
+function _toggleFavorite(effectKey: string) {
   const index = favorites.value.indexOf(effectKey);
   if (index >= 0) {
     favorites.value.splice(index, 1);
@@ -287,14 +299,14 @@ function toggleFavorite(effectKey: string) {
   saveFavorites();
 }
 
-function getCategoryIcon(category: EffectCategory): string {
-  return EFFECT_CATEGORIES[category]?.icon || '?';
+function _getCategoryIcon(category: EffectCategory): string {
+  return EFFECT_CATEGORIES[category]?.icon || "?";
 }
 
-function applyEffect(effectKey: string) {
+function _applyEffect(effectKey: string) {
   const selectedLayer = store.selectedLayer;
   if (!selectedLayer) {
-    console.warn('No layer selected to apply effect');
+    console.warn("No layer selected to apply effect");
     return;
   }
 
@@ -302,7 +314,7 @@ function applyEffect(effectKey: string) {
   store.addEffectToLayer(selectedLayer.id, effectKey);
 }
 
-function applyPreset(preset: AnimationPreset) {
+function _applyPreset(preset: AnimationPreset) {
   const selectedLayer = store.selectedLayer;
   if (!selectedLayer) return;
 
@@ -325,12 +337,12 @@ function applyPreset(preset: AnimationPreset) {
 }
 
 // Drag and drop
-function onDragStart(effectKey: string, event: DragEvent) {
-  event.dataTransfer?.setData('application/effect', effectKey);
+function _onDragStart(effectKey: string, event: DragEvent) {
+  event.dataTransfer?.setData("application/effect", effectKey);
 }
 
-function onDragPreset(preset: AnimationPreset, event: DragEvent) {
-  event.dataTransfer?.setData('application/preset', JSON.stringify(preset));
+function _onDragPreset(preset: AnimationPreset, event: DragEvent) {
+  event.dataTransfer?.setData("application/preset", JSON.stringify(preset));
 }
 </script>
 

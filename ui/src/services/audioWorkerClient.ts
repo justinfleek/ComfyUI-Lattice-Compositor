@@ -4,15 +4,22 @@
  * Main thread interface for the audio analysis Web Worker.
  * Handles worker lifecycle, message passing, and progress callbacks.
  */
-import type { AudioAnalysis } from './audioFeatures';
+import type { AudioAnalysis } from "./audioFeatures";
 
 // ============================================================================
 // Types
 // ============================================================================
 
 export interface AudioAnalysisProgress {
-  phase: 'decoding' | 'amplitude' | 'rms' | 'frequency' | 'spectral' | 'onsets' | 'bpm';
-  progress: number;  // 0-1
+  phase:
+    | "decoding"
+    | "amplitude"
+    | "rms"
+    | "frequency"
+    | "spectral"
+    | "onsets"
+    | "bpm";
+  progress: number; // 0-1
   message: string;
 }
 
@@ -22,7 +29,7 @@ export interface AnalyzeOptions {
 
 // Worker message types
 interface ProgressMessage {
-  type: 'progress';
+  type: "progress";
   payload: {
     phase: string;
     progress: number;
@@ -31,12 +38,12 @@ interface ProgressMessage {
 }
 
 interface CompleteMessage {
-  type: 'complete';
+  type: "complete";
   payload: AudioAnalysis;
 }
 
 interface ErrorMessage {
-  type: 'error';
+  type: "error";
   payload: { message: string };
 }
 
@@ -49,7 +56,8 @@ type WorkerResponse = ProgressMessage | CompleteMessage | ErrorMessage;
 let worker: Worker | null = null;
 let currentResolve: ((analysis: AudioAnalysis) => void) | null = null;
 let currentReject: ((error: Error) => void) | null = null;
-let currentOnProgress: ((progress: AudioAnalysisProgress) => void) | null = null;
+let currentOnProgress: ((progress: AudioAnalysisProgress) => void) | null =
+  null;
 
 /**
  * Initialize the worker if not already running
@@ -58,33 +66,32 @@ function ensureWorker(): Worker {
   if (!worker) {
     // Create worker from the audioWorker.ts file
     // Vite handles the worker bundling with this syntax
-    worker = new Worker(
-      new URL('../workers/audioWorker.ts', import.meta.url),
-      { type: 'module' }
-    );
+    worker = new Worker(new URL("../workers/audioWorker.ts", import.meta.url), {
+      type: "module",
+    });
 
     worker.onmessage = (event: MessageEvent<WorkerResponse>) => {
       const message = event.data;
 
       switch (message.type) {
-        case 'progress':
+        case "progress":
           if (currentOnProgress) {
             currentOnProgress({
-              phase: message.payload.phase as AudioAnalysisProgress['phase'],
+              phase: message.payload.phase as AudioAnalysisProgress["phase"],
               progress: message.payload.progress,
-              message: message.payload.message
+              message: message.payload.message,
             });
           }
           break;
 
-        case 'complete':
+        case "complete":
           if (currentResolve) {
             currentResolve(message.payload);
             cleanup();
           }
           break;
 
-        case 'error':
+        case "error":
           if (currentReject) {
             currentReject(new Error(message.payload.message));
             cleanup();
@@ -95,7 +102,7 @@ function ensureWorker(): Worker {
 
     worker.onerror = (error) => {
       // Use console.error directly as this is in a worker context
-      console.error('[AudioWorker] Worker error:', error);
+      console.error("[AudioWorker] Worker error:", error);
       if (currentReject) {
         currentReject(new Error(`Worker error: ${error.message}`));
         cleanup();
@@ -131,7 +138,7 @@ export function terminateWorker(): void {
  */
 export function cancelAnalysis(): void {
   if (worker) {
-    worker.postMessage({ type: 'cancel' });
+    worker.postMessage({ type: "cancel" });
   }
 }
 
@@ -146,13 +153,13 @@ export function cancelAnalysis(): void {
 export async function analyzeAudioInWorker(
   audioBuffer: AudioBuffer,
   fps: number,
-  options: AnalyzeOptions = {}
+  options: AnalyzeOptions = {},
 ): Promise<AudioAnalysis> {
   const w = ensureWorker();
 
   // Check if an analysis is already in progress
   if (currentResolve) {
-    throw new Error('Analysis already in progress. Cancel it first.');
+    throw new Error("Analysis already in progress. Cancel it first.");
   }
 
   // Get channel data (use first channel)
@@ -169,14 +176,14 @@ export async function analyzeAudioInWorker(
     // Send to worker with transferable
     w.postMessage(
       {
-        type: 'analyze',
+        type: "analyze",
         payload: {
           channelData: channelDataCopy,
           sampleRate: audioBuffer.sampleRate,
-          fps
-        }
+          fps,
+        },
       },
-      [channelDataCopy.buffer]  // Transfer the buffer for performance
+      [channelDataCopy.buffer], // Transfer the buffer for performance
     );
   });
 }
@@ -192,14 +199,14 @@ export async function analyzeAudioInWorker(
 export async function loadAndAnalyzeAudio(
   file: File,
   fps: number,
-  options: AnalyzeOptions = {}
+  options: AnalyzeOptions = {},
 ): Promise<{ buffer: AudioBuffer; analysis: AudioAnalysis }> {
   // Report decoding progress
   if (options.onProgress) {
     options.onProgress({
-      phase: 'decoding',
+      phase: "decoding",
       progress: 0,
-      message: 'Decoding audio file...'
+      message: "Decoding audio file...",
     });
   }
 
@@ -216,9 +223,9 @@ export async function loadAndAnalyzeAudio(
 
   if (options.onProgress) {
     options.onProgress({
-      phase: 'decoding',
+      phase: "decoding",
       progress: 1,
-      message: 'Audio decoded successfully'
+      message: "Audio decoded successfully",
     });
   }
 
@@ -232,5 +239,5 @@ export default {
   analyzeAudioInWorker,
   loadAndAnalyzeAudio,
   cancelAnalysis,
-  terminateWorker
+  terminateWorker,
 };

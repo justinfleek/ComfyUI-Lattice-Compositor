@@ -8,8 +8,8 @@
  * - Motion blur estimation
  */
 
-import type { Camera3D, CameraKeyframe } from '@/types/camera';
-import { createNoise2D, createNoise3D } from 'simplex-noise';
+import { createNoise2D, createNoise3D } from "simplex-noise";
+import type { Camera3D, CameraKeyframe } from "@/types/camera";
 
 // ============================================================================
 // TYPES
@@ -29,7 +29,7 @@ export interface CameraShakeConfig {
   /** Shake decay (reduces over time, 0=constant, 1=full decay) */
   decay: number;
   /** Shake type */
-  type: 'handheld' | 'impact' | 'earthquake' | 'subtle' | 'custom';
+  type: "handheld" | "impact" | "earthquake" | "subtle" | "custom";
 }
 
 export interface RackFocusConfig {
@@ -42,7 +42,7 @@ export interface RackFocusConfig {
   /** Starting frame */
   startFrame: number;
   /** Easing type */
-  easing: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'snap';
+  easing: "linear" | "ease-in" | "ease-out" | "ease-in-out" | "snap";
   /** Hold duration at start (frames) */
   holdStart: number;
   /** Hold duration at end (frames) */
@@ -51,7 +51,7 @@ export interface RackFocusConfig {
 
 export interface AutoFocusConfig {
   /** Auto-focus mode */
-  mode: 'center' | 'point' | 'face' | 'nearest' | 'farthest';
+  mode: "center" | "point" | "face" | "nearest" | "farthest";
   /** Focus point (for 'point' mode, normalized 0-1) */
   focusPoint: { x: number; y: number };
   /** Smoothing factor (0=instant, 1=very smooth) */
@@ -75,7 +75,10 @@ export interface MotionBlurEstimate {
 // CAMERA SHAKE PRESETS
 // ============================================================================
 
-export const SHAKE_PRESETS: Record<CameraShakeConfig['type'], Partial<CameraShakeConfig>> = {
+export const SHAKE_PRESETS: Record<
+  CameraShakeConfig["type"],
+  Partial<CameraShakeConfig>
+> = {
   handheld: {
     intensity: 0.3,
     frequency: 1.0,
@@ -118,7 +121,7 @@ export const DEFAULT_SHAKE_CONFIG: CameraShakeConfig = {
   rotationScale: 0.5,
   seed: 12345,
   decay: 0,
-  type: 'handheld',
+  type: "handheld",
 };
 
 export const DEFAULT_RACK_FOCUS: RackFocusConfig = {
@@ -126,13 +129,13 @@ export const DEFAULT_RACK_FOCUS: RackFocusConfig = {
   endDistance: 2000,
   duration: 30,
   startFrame: 0,
-  easing: 'ease-in-out',
+  easing: "ease-in-out",
   holdStart: 0,
   holdEnd: 0,
 };
 
 export const DEFAULT_AUTOFOCUS: AutoFocusConfig = {
-  mode: 'center',
+  mode: "center",
   focusPoint: { x: 0.5, y: 0.5 },
   smoothing: 0.8,
   threshold: 10,
@@ -148,7 +151,6 @@ export const DEFAULT_AUTOFOCUS: AutoFocusConfig = {
  */
 export class CameraShake {
   private noise2D: ReturnType<typeof createNoise2D>;
-  private noise3D: ReturnType<typeof createNoise3D>;
   private config: CameraShakeConfig;
   private startFrame: number;
   private duration: number;
@@ -156,9 +158,13 @@ export class CameraShake {
   constructor(
     config: Partial<CameraShakeConfig> = {},
     startFrame: number = 0,
-    duration: number = Infinity
+    duration: number = Infinity,
   ) {
-    this.config = { ...DEFAULT_SHAKE_CONFIG, ...SHAKE_PRESETS[config.type || 'handheld'], ...config };
+    this.config = {
+      ...DEFAULT_SHAKE_CONFIG,
+      ...SHAKE_PRESETS[config.type || "handheld"],
+      ...config,
+    };
     this.startFrame = startFrame;
     this.duration = duration;
 
@@ -185,33 +191,33 @@ export class CameraShake {
       };
     }
 
-    const { intensity, frequency, rotationEnabled, rotationScale, decay } = this.config;
+    const { intensity, frequency, rotationEnabled, rotationScale, decay } =
+      this.config;
 
     // Calculate decay factor
-    const decayFactor = decay > 0
-      ? 1 - (relativeFrame / this.duration) * decay
-      : 1;
+    const decayFactor =
+      decay > 0 ? 1 - (relativeFrame / this.duration) * decay : 1;
 
     const time = relativeFrame * frequency * 0.1;
     const scale = intensity * decayFactor * 10; // 10 pixels base scale
 
     // Multi-frequency noise for natural motion
-    const posX = (
-      this.noise2D(time, 0) * 0.5 +
-      this.noise2D(time * 2.3, 100) * 0.3 +
-      this.noise2D(time * 5.7, 200) * 0.2
-    ) * scale;
+    const posX =
+      (this.noise2D(time, 0) * 0.5 +
+        this.noise2D(time * 2.3, 100) * 0.3 +
+        this.noise2D(time * 5.7, 200) * 0.2) *
+      scale;
 
-    const posY = (
-      this.noise2D(time, 1000) * 0.5 +
-      this.noise2D(time * 2.1, 1100) * 0.3 +
-      this.noise2D(time * 4.9, 1200) * 0.2
-    ) * scale;
+    const posY =
+      (this.noise2D(time, 1000) * 0.5 +
+        this.noise2D(time * 2.1, 1100) * 0.3 +
+        this.noise2D(time * 4.9, 1200) * 0.2) *
+      scale;
 
-    const posZ = (
-      this.noise2D(time, 2000) * 0.3 +
-      this.noise2D(time * 1.7, 2100) * 0.2
-    ) * scale * 0.5;
+    const posZ =
+      (this.noise2D(time, 2000) * 0.3 + this.noise2D(time * 1.7, 2100) * 0.2) *
+      scale *
+      0.5;
 
     // Rotation shake
     let rotation = { x: 0, y: 0, z: 0 };
@@ -254,7 +260,7 @@ export class CameraShake {
    */
   generateKeyframes(
     baseKeyframes: CameraKeyframe[],
-    interval: number = 1
+    interval: number = 1,
   ): CameraKeyframe[] {
     const result: CameraKeyframe[] = [];
     const frames = new Set<number>();
@@ -281,7 +287,7 @@ export class CameraShake {
 
       const keyframe: CameraKeyframe = {
         frame,
-        temporalInterpolation: 'linear',
+        temporalInterpolation: "linear",
       };
 
       if (base.position) {
@@ -310,7 +316,7 @@ export class CameraShake {
 
   private interpolateBaseKeyframe(
     keyframes: CameraKeyframe[],
-    frame: number
+    frame: number,
   ): Partial<CameraKeyframe> {
     if (keyframes.length === 0) return {};
     if (keyframes.length === 1) return keyframes[0];
@@ -337,20 +343,26 @@ export class CameraShake {
 
     return {
       frame,
-      position: before.position && after.position ? {
-        x: before.position.x + (after.position.x - before.position.x) * t,
-        y: before.position.y + (after.position.y - before.position.y) * t,
-        z: before.position.z + (after.position.z - before.position.z) * t,
-      } : before.position || after.position,
-      xRotation: before.xRotation !== undefined && after.xRotation !== undefined
-        ? before.xRotation + (after.xRotation - before.xRotation) * t
-        : before.xRotation ?? after.xRotation,
-      yRotation: before.yRotation !== undefined && after.yRotation !== undefined
-        ? before.yRotation + (after.yRotation - before.yRotation) * t
-        : before.yRotation ?? after.yRotation,
-      zRotation: before.zRotation !== undefined && after.zRotation !== undefined
-        ? before.zRotation + (after.zRotation - before.zRotation) * t
-        : before.zRotation ?? after.zRotation,
+      position:
+        before.position && after.position
+          ? {
+              x: before.position.x + (after.position.x - before.position.x) * t,
+              y: before.position.y + (after.position.y - before.position.y) * t,
+              z: before.position.z + (after.position.z - before.position.z) * t,
+            }
+          : before.position || after.position,
+      xRotation:
+        before.xRotation !== undefined && after.xRotation !== undefined
+          ? before.xRotation + (after.xRotation - before.xRotation) * t
+          : (before.xRotation ?? after.xRotation),
+      yRotation:
+        before.yRotation !== undefined && after.yRotation !== undefined
+          ? before.yRotation + (after.yRotation - before.yRotation) * t
+          : (before.yRotation ?? after.yRotation),
+      zRotation:
+        before.zRotation !== undefined && after.zRotation !== undefined
+          ? before.zRotation + (after.zRotation - before.zRotation) * t
+          : (before.zRotation ?? after.zRotation),
     };
   }
 
@@ -369,8 +381,19 @@ export class CameraShake {
 /**
  * Calculate focus distance for rack focus at a specific frame
  */
-export function getRackFocusDistance(config: RackFocusConfig, frame: number): number {
-  const { startDistance, endDistance, duration, startFrame, easing, holdStart, holdEnd } = config;
+export function getRackFocusDistance(
+  config: RackFocusConfig,
+  frame: number,
+): number {
+  const {
+    startDistance,
+    endDistance,
+    duration,
+    startFrame,
+    easing,
+    holdStart,
+    holdEnd,
+  } = config;
 
   const endFrame = startFrame + holdStart + duration + holdEnd;
 
@@ -402,23 +425,19 @@ export function getRackFocusDistance(config: RackFocusConfig, frame: number): nu
   return startDistance + (endDistance - startDistance) * easedT;
 }
 
-function applyRackEasing(t: number, easing: RackFocusConfig['easing']): number {
+function applyRackEasing(t: number, easing: RackFocusConfig["easing"]): number {
   switch (easing) {
-    case 'linear':
+    case "linear":
       return t;
-    case 'ease-in':
+    case "ease-in":
       return t * t * t;
-    case 'ease-out':
-      return 1 - Math.pow(1 - t, 3);
-    case 'ease-in-out':
-      return t < 0.5
-        ? 4 * t * t * t
-        : 1 - Math.pow(-2 * t + 2, 3) / 2;
-    case 'snap':
+    case "ease-out":
+      return 1 - (1 - t) ** 3;
+    case "ease-in-out":
+      return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
+    case "snap":
       // Quick transition at 80% mark
-      return t < 0.8
-        ? t * 0.1
-        : 0.1 + (t - 0.8) * 4.5;
+      return t < 0.8 ? t * 0.1 : 0.1 + (t - 0.8) * 4.5;
     default:
       return t;
   }
@@ -429,7 +448,7 @@ function applyRackEasing(t: number, easing: RackFocusConfig['easing']): number {
  */
 export function generateRackFocusKeyframes(
   config: RackFocusConfig,
-  interval: number = 2
+  interval: number = 2,
 ): CameraKeyframe[] {
   const keyframes: CameraKeyframe[] = [];
   const { startFrame, duration, holdStart, holdEnd } = config;
@@ -442,7 +461,7 @@ export function generateRackFocusKeyframes(
     keyframes.push({
       frame,
       focusDistance: getRackFocusDistance(config, frame),
-      temporalInterpolation: 'linear',
+      temporalInterpolation: "linear",
     });
   }
 
@@ -451,7 +470,7 @@ export function generateRackFocusKeyframes(
     keyframes.push({
       frame: endFrame,
       focusDistance: getRackFocusDistance(config, endFrame),
-      temporalInterpolation: 'linear',
+      temporalInterpolation: "linear",
     });
   }
 
@@ -468,7 +487,7 @@ export function generateRackFocusKeyframes(
 export function calculateAutoFocusDistance(
   depthMap: ImageData | null,
   config: AutoFocusConfig,
-  previousDistance: number
+  previousDistance: number,
 ): number {
   if (!depthMap) return previousDistance;
 
@@ -478,25 +497,46 @@ export function calculateAutoFocusDistance(
   let targetDistance: number;
 
   switch (mode) {
-    case 'center':
-      targetDistance = sampleDepthAt(data, width, height, 0.5, 0.5, sampleRadius);
+    case "center":
+      targetDistance = sampleDepthAt(
+        data,
+        width,
+        height,
+        0.5,
+        0.5,
+        sampleRadius,
+      );
       break;
 
-    case 'point':
-      targetDistance = sampleDepthAt(data, width, height, focusPoint.x, focusPoint.y, sampleRadius);
+    case "point":
+      targetDistance = sampleDepthAt(
+        data,
+        width,
+        height,
+        focusPoint.x,
+        focusPoint.y,
+        sampleRadius,
+      );
       break;
 
-    case 'nearest':
-      targetDistance = findExtreme(data, width, height, 'min');
+    case "nearest":
+      targetDistance = findExtreme(data, width, height, "min");
       break;
 
-    case 'farthest':
-      targetDistance = findExtreme(data, width, height, 'max');
+    case "farthest":
+      targetDistance = findExtreme(data, width, height, "max");
       break;
 
-    case 'face':
+    case "face":
       // Face detection would require ML - fallback to center for now
-      targetDistance = sampleDepthAt(data, width, height, 0.5, 0.4, sampleRadius * 2);
+      targetDistance = sampleDepthAt(
+        data,
+        width,
+        height,
+        0.5,
+        0.4,
+        sampleRadius * 2,
+      );
       break;
 
     default:
@@ -509,7 +549,9 @@ export function calculateAutoFocusDistance(
   }
 
   // Apply smoothing
-  return previousDistance + (targetDistance - previousDistance) * (1 - smoothing);
+  return (
+    previousDistance + (targetDistance - previousDistance) * (1 - smoothing)
+  );
 }
 
 function sampleDepthAt(
@@ -518,7 +560,7 @@ function sampleDepthAt(
   height: number,
   normalizedX: number,
   normalizedY: number,
-  radius: number
+  radius: number,
 ): number {
   const centerX = Math.floor(normalizedX * width);
   const centerY = Math.floor(normalizedY * height);
@@ -555,9 +597,9 @@ function findExtreme(
   data: Uint8ClampedArray,
   width: number,
   height: number,
-  type: 'min' | 'max'
+  type: "min" | "max",
 ): number {
-  let extreme = type === 'min' ? 255 : 0;
+  let extreme = type === "min" ? 255 : 0;
 
   // Sample every 10th pixel for performance
   for (let y = 0; y < height; y += 10) {
@@ -565,7 +607,7 @@ function findExtreme(
       const idx = (y * width + x) * 4;
       const depth = data[idx];
 
-      if (type === 'min') {
+      if (type === "min") {
         extreme = Math.min(extreme, depth);
       } else {
         extreme = Math.max(extreme, depth);
@@ -588,7 +630,7 @@ function findExtreme(
 export function estimateMotionBlur(
   currentCamera: Camera3D,
   previousCamera: Camera3D | null,
-  shutterAngle: number = 180 // degrees, 180 = half frame
+  shutterAngle: number = 180, // degrees, 180 = half frame
 ): MotionBlurEstimate {
   if (!previousCamera) {
     return { velocity: 0, blurAmount: 0, direction: 0 };
@@ -619,7 +661,7 @@ export function estimateMotionBlur(
  */
 export function generateMotionBlurKeyframes(
   cameraKeyframes: CameraKeyframe[],
-  shutterAngle: number = 180
+  shutterAngle: number = 180,
 ): Array<{ frame: number; blurAmount: number }> {
   const result: Array<{ frame: number; blurAmount: number }> = [];
 
@@ -652,16 +694,12 @@ export function generateMotionBlurKeyframes(
  * Create camera shake from preset
  */
 export function createCameraShake(
-  type: CameraShakeConfig['type'],
+  type: CameraShakeConfig["type"],
   overrides?: Partial<CameraShakeConfig>,
   startFrame?: number,
-  duration?: number
+  duration?: number,
 ): CameraShake {
-  return new CameraShake(
-    { type, ...overrides },
-    startFrame,
-    duration
-  );
+  return new CameraShake({ type, ...overrides }, startFrame, duration);
 }
 
 /**
@@ -671,7 +709,7 @@ export function createRackFocus(
   startDistance: number,
   endDistance: number,
   duration: number,
-  options?: Partial<RackFocusConfig>
+  options?: Partial<RackFocusConfig>,
 ): RackFocusConfig {
   return {
     ...DEFAULT_RACK_FOCUS,
@@ -686,8 +724,8 @@ export function createRackFocus(
  * Create autofocus configuration
  */
 export function createAutoFocus(
-  mode: AutoFocusConfig['mode'],
-  options?: Partial<AutoFocusConfig>
+  mode: AutoFocusConfig["mode"],
+  options?: Partial<AutoFocusConfig>,
 ): AutoFocusConfig {
   return {
     ...DEFAULT_AUTOFOCUS,

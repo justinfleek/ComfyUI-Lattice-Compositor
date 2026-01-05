@@ -5,8 +5,7 @@
  * Each layer type has its own data interface defining type-specific properties.
  */
 
-import type { AnimatableProperty } from './animation';
-import type { BlendMode } from './blendModes';
+import type { AnimatableProperty } from "./animation";
 
 // ============================================================
 // IMAGE LAYER DATA
@@ -16,7 +15,7 @@ export interface ImageLayerData {
   assetId: string | null;
 
   // Display options
-  fit: 'none' | 'contain' | 'cover' | 'fill';  // How to fit image in layer bounds
+  fit: "none" | "contain" | "cover" | "fill"; // How to fit image in layer bounds
 
   // Optional cropping (for segmented regions)
   cropEnabled?: boolean;
@@ -28,8 +27,8 @@ export interface ImageLayerData {
   };
 
   // Source info (for regeneration/editing)
-  sourceType?: 'file' | 'generated' | 'segmented';
-  segmentationMaskId?: string;  // If created via segmentation
+  sourceType?: "file" | "generated" | "segmented";
+  segmentationMaskId?: string; // If created via segmentation
 }
 
 // ============================================================
@@ -41,10 +40,10 @@ export interface DepthLayerData {
   assetId: string | null;
 
   /** Visualization mode */
-  visualizationMode: 'grayscale' | 'colormap' | 'contour' | '3d-mesh';
+  visualizationMode: "grayscale" | "colormap" | "contour" | "3d-mesh";
 
   /** Color map preset for visualization */
-  colorMap: 'turbo' | 'viridis' | 'plasma' | 'inferno' | 'magma' | 'grayscale';
+  colorMap: "turbo" | "viridis" | "plasma" | "inferno" | "magma" | "grayscale";
 
   /** Invert depth values (near <-> far) */
   invert: boolean;
@@ -74,10 +73,10 @@ export interface NormalLayerData {
   assetId: string | null;
 
   /** Visualization mode */
-  visualizationMode: 'rgb' | 'hemisphere' | 'arrows' | 'lit';
+  visualizationMode: "rgb" | "hemisphere" | "arrows" | "lit";
 
   /** Normal map format */
-  format: 'opengl' | 'directx';
+  format: "opengl" | "directx";
 
   /** Flip channels */
   flipX: boolean;
@@ -136,15 +135,15 @@ export interface VideoData {
   assetId: string | null;
 
   // Playback control
-  loop: boolean;              // Loop when reaching end
-  pingPong: boolean;          // Reverse at end instead of restart
-  startTime: number;          // Start offset in source video (seconds)
-  endTime?: number;           // End time in source (undefined = full duration)
-  speed: number;              // Playback speed (1 = normal, 2 = 2x, 0.5 = half)
+  loop: boolean; // Loop when reaching end
+  pingPong: boolean; // Reverse at end instead of restart
+  startTime: number; // Start offset in source video (seconds)
+  endTime?: number; // End time in source (undefined = full duration)
+  speed: number; // Playback speed (1 = normal, 2 = 2x, 0.5 = half)
 
   // Speed mapping (professional feature for time manipulation)
   speedMapEnabled: boolean;
-  speedMap?: AnimatableProperty<number>;  // Maps comp time to video time
+  speedMap?: AnimatableProperty<number>; // Maps comp time to video time
   /** @deprecated Use 'speedMapEnabled' instead */
   timeRemapEnabled?: boolean;
   /** @deprecated Use 'speedMap' instead */
@@ -152,18 +151,18 @@ export interface VideoData {
 
   // Timewarp - animatable speed with integration for smooth ramps
   timewarpEnabled?: boolean;
-  timewarpSpeed?: AnimatableProperty<number>;  // Speed % (100 = normal, 200 = 2x, 50 = 0.5x)
-  timewarpMethod?: 'whole-frames' | 'frame-mix' | 'pixel-motion';
+  timewarpSpeed?: AnimatableProperty<number>; // Speed % (100 = normal, 200 = 2x, 50 = 0.5x)
+  timewarpMethod?: "whole-frames" | "frame-mix" | "pixel-motion";
 
   // Frame blending for speed changes
-  frameBlending: 'none' | 'frame-mix' | 'pixel-motion';
+  frameBlending: "none" | "frame-mix" | "pixel-motion";
 
   // Audio
   audioEnabled: boolean;
-  audioLevel: number;         // 0-100
+  audioLevel: number; // 0-100
 
   // Poster frame (for thumbnails)
-  posterFrame: number;        // Frame to show when paused at start
+  posterFrame: number; // Frame to show when paused at start
 }
 
 // ============================================================
@@ -171,11 +170,11 @@ export interface VideoData {
 // ============================================================
 
 export interface NestedCompData {
-  compositionId: string;      // Reference to composition in project.compositions
+  compositionId: string; // Reference to composition in project.compositions
 
   // Speed mapping (time manipulation)
   speedMapEnabled: boolean;
-  speedMap?: AnimatableProperty<number>;  // Maps parent time to nested comp time
+  speedMap?: AnimatableProperty<number>; // Maps parent time to nested comp time
   /** @deprecated Use 'speedMapEnabled' instead */
   timeRemapEnabled?: boolean;
   /** @deprecated Use 'speedMap' instead */
@@ -183,8 +182,8 @@ export interface NestedCompData {
 
   // Timewarp - animatable speed with integration for smooth ramps
   timewarpEnabled?: boolean;
-  timewarpSpeed?: AnimatableProperty<number>;  // Speed % (100 = normal, 200 = 2x, 50 = 0.5x)
-  timewarpMethod?: 'whole-frames' | 'frame-mix' | 'pixel-motion';
+  timewarpSpeed?: AnimatableProperty<number>; // Speed % (100 = normal, 200 = 2x, 50 = 0.5x)
+  timewarpMethod?: "whole-frames" | "frame-mix" | "pixel-motion";
 
   // Flatten transform (render nested layers in parent's 3D space)
   flattenTransform: boolean;
@@ -199,21 +198,21 @@ export interface NestedCompData {
 // ============================================================
 
 export type GeneratedMapType =
-  | 'depth'         // DepthAnything V3
-  | 'normal'        // NormalCrafter
-  | 'edge'          // Canny/HED
-  | 'pose'          // DWPose/OpenPose
-  | 'segment'       // SAM2/MatSeg
-  | 'lineart'       // Lineart extraction
-  | 'softedge';     // Soft edge detection
+  | "depth" // DepthAnything V3
+  | "normal" // NormalCrafter
+  | "edge" // Canny/HED
+  | "pose" // DWPose/OpenPose
+  | "segment" // SAM2/MatSeg
+  | "lineart" // Lineart extraction
+  | "softedge"; // Soft edge detection
 
 export interface GeneratedMapData {
-  sourceLayerId: string;      // Which layer to generate from
+  sourceLayerId: string; // Which layer to generate from
   mapType: GeneratedMapType;
-  modelId: string;            // Which model to use
+  modelId: string; // Which model to use
   parameters: Record<string, any>;
-  cachedResult?: string;      // Base64 cached output
-  lastGenerated?: string;     // ISO timestamp
+  cachedResult?: string; // Base64 cached output
+  lastGenerated?: string; // ISO timestamp
 }
 
 // ============================================================
@@ -222,7 +221,13 @@ export interface GeneratedMapData {
 
 export interface GeneratedLayerData {
   /** Generated content type */
-  generationType: 'depth' | 'normal' | 'edge' | 'segment' | 'inpaint' | 'custom';
+  generationType:
+    | "depth"
+    | "normal"
+    | "edge"
+    | "segment"
+    | "inpaint"
+    | "custom";
 
   /** Source layer ID (input to generation) */
   sourceLayerId: string | null;
@@ -237,7 +242,7 @@ export interface GeneratedLayerData {
   generatedAssetId: string | null;
 
   /** Generation status */
-  status: 'pending' | 'generating' | 'complete' | 'error';
+  status: "pending" | "generating" | "complete" | "error";
   errorMessage?: string;
 
   /** Auto-regenerate when source changes */
@@ -253,7 +258,14 @@ export interface GeneratedLayerData {
 
 export interface MatteLayerData {
   /** Matte extraction method */
-  matteType: 'luminance' | 'alpha' | 'red' | 'green' | 'blue' | 'hue' | 'saturation';
+  matteType:
+    | "luminance"
+    | "alpha"
+    | "red"
+    | "green"
+    | "blue"
+    | "hue"
+    | "saturation";
 
   /** Invert the matte */
   invert: boolean;
@@ -271,7 +283,7 @@ export interface MatteLayerData {
   sourceLayerId: string | null;
 
   /** Preview mode */
-  previewMode: 'matte' | 'composite' | 'overlay';
+  previewMode: "matte" | "composite" | "overlay";
 }
 
 // ============================================================
@@ -289,7 +301,7 @@ export interface ControlLayerData {
   showIcon: boolean;
 
   /** Icon shape */
-  iconShape: 'crosshair' | 'diamond' | 'circle' | 'square';
+  iconShape: "crosshair" | "diamond" | "circle" | "square";
 
   /** Icon color */
   iconColor: string;
@@ -377,7 +389,7 @@ export interface ModelLayerData {
 
   /** Material overrides */
   materialOverride?: {
-    albedo?: string;      // Asset ID
+    albedo?: string; // Asset ID
     normal?: string;
     roughness?: string;
     metalness?: string;
@@ -420,11 +432,11 @@ export interface PointCloudLayerData {
   sizeAttenuation: boolean;
 
   /** Color mode */
-  colorMode: 'vertex' | 'height' | 'intensity' | 'solid';
+  colorMode: "vertex" | "height" | "intensity" | "solid";
   solidColor?: string;
 
   /** Height-based coloring */
-  heightColormap?: 'turbo' | 'viridis' | 'plasma' | 'grayscale';
+  heightColormap?: "turbo" | "viridis" | "plasma" | "grayscale";
   heightMin?: number;
   heightMax?: number;
 
@@ -438,9 +450,12 @@ export interface PointCloudLayerData {
   /** Clipping box */
   clipEnabled: boolean;
   clipBox?: {
-    minX: number; maxX: number;
-    minY: number; maxY: number;
-    minZ: number; maxZ: number;
+    minX: number;
+    maxX: number;
+    minY: number;
+    maxY: number;
+    minZ: number;
+    maxZ: number;
   };
 }
 
@@ -449,9 +464,9 @@ export interface PointCloudLayerData {
 // ============================================================
 
 export interface PoseKeypoint {
-  x: number;           // Normalized 0-1
-  y: number;           // Normalized 0-1
-  confidence: number;  // 0-1
+  x: number; // Normalized 0-1
+  y: number; // Normalized 0-1
+  confidence: number; // 0-1
 }
 
 export interface PoseLayerData {
@@ -459,7 +474,7 @@ export interface PoseLayerData {
   keypoints: PoseKeypoint[];
 
   /** Pose format */
-  format: 'openpose' | 'coco' | 'dwpose';
+  format: "openpose" | "coco" | "dwpose";
 
   /** Rendering options */
   lineWidth: number;
@@ -498,22 +513,22 @@ export const OPENPOSE_KEYPOINTS = {
 
 // Skeleton connections for rendering
 export const OPENPOSE_CONNECTIONS: [number, number][] = [
-  [0, 1],   // Nose to Neck
-  [1, 2],   // Neck to Right Shoulder
-  [2, 3],   // Right Shoulder to Elbow
-  [3, 4],   // Right Elbow to Wrist
-  [1, 5],   // Neck to Left Shoulder
-  [5, 6],   // Left Shoulder to Elbow
-  [6, 7],   // Left Elbow to Wrist
-  [1, 8],   // Neck to Right Hip
-  [8, 9],   // Right Hip to Knee
-  [9, 10],  // Right Knee to Ankle
-  [1, 11],  // Neck to Left Hip
+  [0, 1], // Nose to Neck
+  [1, 2], // Neck to Right Shoulder
+  [2, 3], // Right Shoulder to Elbow
+  [3, 4], // Right Elbow to Wrist
+  [1, 5], // Neck to Left Shoulder
+  [5, 6], // Left Shoulder to Elbow
+  [6, 7], // Left Elbow to Wrist
+  [1, 8], // Neck to Right Hip
+  [8, 9], // Right Hip to Knee
+  [9, 10], // Right Knee to Ankle
+  [1, 11], // Neck to Left Hip
   [11, 12], // Left Hip to Knee
   [12, 13], // Left Knee to Ankle
-  [0, 14],  // Nose to Right Eye
+  [0, 14], // Nose to Right Eye
   [14, 16], // Right Eye to Ear
-  [0, 15],  // Nose to Left Eye
+  [0, 15], // Nose to Left Eye
   [15, 17], // Left Eye to Ear
 ];
 
@@ -522,23 +537,23 @@ export const OPENPOSE_CONNECTIONS: [number, number][] = [
  */
 export function createDefaultPoseKeypoints(): PoseKeypoint[] {
   return [
-    { x: 0.5, y: 0.1, confidence: 1 },   // 0: nose
-    { x: 0.5, y: 0.2, confidence: 1 },   // 1: neck
+    { x: 0.5, y: 0.1, confidence: 1 }, // 0: nose
+    { x: 0.5, y: 0.2, confidence: 1 }, // 1: neck
     { x: 0.35, y: 0.25, confidence: 1 }, // 2: right_shoulder
-    { x: 0.2, y: 0.25, confidence: 1 },  // 3: right_elbow
+    { x: 0.2, y: 0.25, confidence: 1 }, // 3: right_elbow
     { x: 0.05, y: 0.25, confidence: 1 }, // 4: right_wrist
     { x: 0.65, y: 0.25, confidence: 1 }, // 5: left_shoulder
-    { x: 0.8, y: 0.25, confidence: 1 },  // 6: left_elbow
+    { x: 0.8, y: 0.25, confidence: 1 }, // 6: left_elbow
     { x: 0.95, y: 0.25, confidence: 1 }, // 7: left_wrist
-    { x: 0.4, y: 0.5, confidence: 1 },   // 8: right_hip
-    { x: 0.4, y: 0.7, confidence: 1 },   // 9: right_knee
-    { x: 0.4, y: 0.85, confidence: 1 },  // 10: right_ankle
-    { x: 0.6, y: 0.5, confidence: 1 },   // 11: left_hip
-    { x: 0.6, y: 0.7, confidence: 1 },   // 12: left_knee
-    { x: 0.6, y: 0.85, confidence: 1 },  // 13: left_ankle
+    { x: 0.4, y: 0.5, confidence: 1 }, // 8: right_hip
+    { x: 0.4, y: 0.7, confidence: 1 }, // 9: right_knee
+    { x: 0.4, y: 0.85, confidence: 1 }, // 10: right_ankle
+    { x: 0.6, y: 0.5, confidence: 1 }, // 11: left_hip
+    { x: 0.6, y: 0.7, confidence: 1 }, // 12: left_knee
+    { x: 0.6, y: 0.85, confidence: 1 }, // 13: left_ankle
     { x: 0.45, y: 0.08, confidence: 1 }, // 14: right_eye
     { x: 0.55, y: 0.08, confidence: 1 }, // 15: left_eye
-    { x: 0.4, y: 0.1, confidence: 1 },   // 16: right_ear
-    { x: 0.6, y: 0.1, confidence: 1 },   // 17: left_ear
+    { x: 0.4, y: 0.1, confidence: 1 }, // 16: right_ear
+    { x: 0.6, y: 0.1, confidence: 1 }, // 17: left_ear
   ];
 }

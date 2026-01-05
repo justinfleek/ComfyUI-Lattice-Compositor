@@ -81,7 +81,10 @@
 </template>
 
 <script setup lang="ts">
-import type { ParticleModulationConfig, ParticleEmitterConfig } from '@/types/project';
+import type {
+  ParticleEmitterConfig,
+  ParticleModulationConfig,
+} from "@/types/project";
 
 interface Props {
   modulations: ParticleModulationConfig[];
@@ -92,10 +95,15 @@ interface Props {
 defineProps<Props>();
 
 defineEmits<{
-  (e: 'toggle'): void;
-  (e: 'add'): void;
-  (e: 'remove', id: string): void;
-  (e: 'update', id: string, key: keyof ParticleModulationConfig, value: any): void;
+  (e: "toggle"): void;
+  (e: "add"): void;
+  (e: "remove", id: string): void;
+  (
+    e: "update",
+    id: string,
+    key: keyof ParticleModulationConfig,
+    value: any,
+  ): void;
 }>();
 </script>
 

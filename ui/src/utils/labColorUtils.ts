@@ -10,21 +10,21 @@
 
 // D65 white point reference values
 const D65_X = 95.047;
-const D65_Y = 100.000;
+const D65_Y = 100.0;
 const D65_Z = 108.883;
 
 // sRGB to XYZ conversion matrix (D65)
 const SRGB_TO_XYZ_MATRIX = [
   [0.4124564, 0.3575761, 0.1804375],
-  [0.2126729, 0.7151522, 0.0721750],
-  [0.0193339, 0.1191920, 0.9503041]
+  [0.2126729, 0.7151522, 0.072175],
+  [0.0193339, 0.119192, 0.9503041],
 ];
 
 // XYZ to sRGB conversion matrix (D65)
 const XYZ_TO_SRGB_MATRIX = [
   [3.2404542, -1.5371385, -0.4985314],
-  [-0.9692660, 1.8760108, 0.0415560],
-  [0.0556434, -0.2040259, 1.0572252]
+  [-0.969266, 1.8760108, 0.041556],
+  [0.0556434, -0.2040259, 1.0572252],
 ];
 
 // BT.709 luminance coefficients
@@ -36,9 +36,9 @@ export const BT709_B = 0.0722;
  * LAB color type
  */
 export interface LAB {
-  L: number;  // 0-100
-  a: number;  // -128 to +127 (green to red)
-  b: number;  // -128 to +127 (blue to yellow)
+  L: number; // 0-100
+  a: number; // -128 to +127 (green to red)
+  b: number; // -128 to +127 (blue to yellow)
 }
 
 /**
@@ -54,9 +54,9 @@ export interface XYZ {
  * YUV color type (for vectorscope)
  */
 export interface YUV {
-  Y: number;  // Luminance (0-1)
-  U: number;  // Blue-Yellow chrominance (-0.5 to +0.5)
-  V: number;  // Red-Cyan chrominance (-0.5 to +0.5)
+  Y: number; // Luminance (0-1)
+  U: number; // Blue-Yellow chrominance (-0.5 to +0.5)
+  V: number; // Red-Cyan chrominance (-0.5 to +0.5)
 }
 
 // ============================================================================
@@ -72,7 +72,7 @@ export function sRGBToLinear(value: number): number {
   if (v <= 0.04045) {
     return v / 12.92;
   }
-  return Math.pow((v + 0.055) / 1.055, 2.4);
+  return ((v + 0.055) / 1.055) ** 2.4;
 }
 
 /**
@@ -84,7 +84,7 @@ export function linearToSRGB(value: number): number {
   if (value <= 0.0031308) {
     v = value * 12.92;
   } else {
-    v = 1.055 * Math.pow(value, 1 / 2.4) - 0.055;
+    v = 1.055 * value ** (1 / 2.4) - 0.055;
   }
   return Math.round(Math.max(0, Math.min(255, v * 255)));
 }
@@ -103,15 +103,18 @@ export function rgbToXyz(r: number, g: number, b: number): XYZ {
   const bLinear = sRGBToLinear(b);
 
   // Apply matrix transformation
-  const X = rLinear * SRGB_TO_XYZ_MATRIX[0][0] +
-            gLinear * SRGB_TO_XYZ_MATRIX[0][1] +
-            bLinear * SRGB_TO_XYZ_MATRIX[0][2];
-  const Y = rLinear * SRGB_TO_XYZ_MATRIX[1][0] +
-            gLinear * SRGB_TO_XYZ_MATRIX[1][1] +
-            bLinear * SRGB_TO_XYZ_MATRIX[1][2];
-  const Z = rLinear * SRGB_TO_XYZ_MATRIX[2][0] +
-            gLinear * SRGB_TO_XYZ_MATRIX[2][1] +
-            bLinear * SRGB_TO_XYZ_MATRIX[2][2];
+  const X =
+    rLinear * SRGB_TO_XYZ_MATRIX[0][0] +
+    gLinear * SRGB_TO_XYZ_MATRIX[0][1] +
+    bLinear * SRGB_TO_XYZ_MATRIX[0][2];
+  const Y =
+    rLinear * SRGB_TO_XYZ_MATRIX[1][0] +
+    gLinear * SRGB_TO_XYZ_MATRIX[1][1] +
+    bLinear * SRGB_TO_XYZ_MATRIX[1][2];
+  const Z =
+    rLinear * SRGB_TO_XYZ_MATRIX[2][0] +
+    gLinear * SRGB_TO_XYZ_MATRIX[2][1] +
+    bLinear * SRGB_TO_XYZ_MATRIX[2][2];
 
   return { X: X * 100, Y: Y * 100, Z: Z * 100 };
 }
@@ -119,28 +122,31 @@ export function rgbToXyz(r: number, g: number, b: number): XYZ {
 /**
  * Convert XYZ to RGB (0-255)
  */
-export function xyzToRgb(X: number, Y: number, Z: number): [number, number, number] {
+export function xyzToRgb(
+  X: number,
+  Y: number,
+  Z: number,
+): [number, number, number] {
   // Normalize XYZ values
   const x = X / 100;
   const y = Y / 100;
   const z = Z / 100;
 
   // Apply matrix transformation to get linear RGB
-  const rLinear = x * XYZ_TO_SRGB_MATRIX[0][0] +
-                  y * XYZ_TO_SRGB_MATRIX[0][1] +
-                  z * XYZ_TO_SRGB_MATRIX[0][2];
-  const gLinear = x * XYZ_TO_SRGB_MATRIX[1][0] +
-                  y * XYZ_TO_SRGB_MATRIX[1][1] +
-                  z * XYZ_TO_SRGB_MATRIX[1][2];
-  const bLinear = x * XYZ_TO_SRGB_MATRIX[2][0] +
-                  y * XYZ_TO_SRGB_MATRIX[2][1] +
-                  z * XYZ_TO_SRGB_MATRIX[2][2];
+  const rLinear =
+    x * XYZ_TO_SRGB_MATRIX[0][0] +
+    y * XYZ_TO_SRGB_MATRIX[0][1] +
+    z * XYZ_TO_SRGB_MATRIX[0][2];
+  const gLinear =
+    x * XYZ_TO_SRGB_MATRIX[1][0] +
+    y * XYZ_TO_SRGB_MATRIX[1][1] +
+    z * XYZ_TO_SRGB_MATRIX[1][2];
+  const bLinear =
+    x * XYZ_TO_SRGB_MATRIX[2][0] +
+    y * XYZ_TO_SRGB_MATRIX[2][1] +
+    z * XYZ_TO_SRGB_MATRIX[2][2];
 
-  return [
-    linearToSRGB(rLinear),
-    linearToSRGB(gLinear),
-    linearToSRGB(bLinear)
-  ];
+  return [linearToSRGB(rLinear), linearToSRGB(gLinear), linearToSRGB(bLinear)];
 }
 
 // ============================================================================
@@ -155,7 +161,7 @@ function labF(t: number): number {
   const delta3 = delta * delta * delta;
 
   if (t > delta3) {
-    return Math.pow(t, 1 / 3);
+    return t ** (1 / 3);
   }
   return t / (3 * delta * delta) + 4 / 29;
 }
@@ -187,7 +193,7 @@ export function xyzToLab(X: number, Y: number, Z: number): LAB {
   return {
     L: 116 * fy - 16,
     a: 500 * (fx - fy),
-    b: 200 * (fy - fz)
+    b: 200 * (fy - fz),
   };
 }
 
@@ -202,7 +208,7 @@ export function labToXyz(L: number, a: number, b: number): XYZ {
   return {
     X: D65_X * labFInverse(fx),
     Y: D65_Y * labFInverse(fy),
-    Z: D65_Z * labFInverse(fz)
+    Z: D65_Z * labFInverse(fz),
   };
 }
 
@@ -221,7 +227,11 @@ export function rgbToLab(r: number, g: number, b: number): LAB {
 /**
  * Convert CIE LAB directly to RGB (0-255)
  */
-export function labToRgb(L: number, a: number, b: number): [number, number, number] {
+export function labToRgb(
+  L: number,
+  a: number,
+  b: number,
+): [number, number, number] {
   const xyz = labToXyz(L, a, b);
   return xyzToRgb(xyz.X, xyz.Y, xyz.Z);
 }
@@ -284,15 +294,19 @@ export function deltaE94(lab1: LAB, lab2: LAB): number {
  * Best for critical color matching applications
  */
 export function deltaE2000(lab1: LAB, lab2: LAB): number {
-  const L1 = lab1.L, a1 = lab1.a, b1 = lab1.b;
-  const L2 = lab2.L, a2 = lab2.a, b2 = lab2.b;
+  const L1 = lab1.L,
+    a1 = lab1.a,
+    b1 = lab1.b;
+  const L2 = lab2.L,
+    a2 = lab2.a,
+    b2 = lab2.b;
 
   // Step 1: Calculate C'i and h'i
   const C1 = Math.sqrt(a1 * a1 + b1 * b1);
   const C2 = Math.sqrt(a2 * a2 + b2 * b2);
   const Cb = (C1 + C2) / 2;
 
-  const G = 0.5 * (1 - Math.sqrt(Math.pow(Cb, 7) / (Math.pow(Cb, 7) + Math.pow(25, 7))));
+  const G = 0.5 * (1 - Math.sqrt(Cb ** 7 / (Cb ** 7 + 25 ** 7)));
 
   const a1p = a1 * (1 + G);
   const a2p = a2 * (1 + G);
@@ -300,9 +314,9 @@ export function deltaE2000(lab1: LAB, lab2: LAB): number {
   const C1p = Math.sqrt(a1p * a1p + b1 * b1);
   const C2p = Math.sqrt(a2p * a2p + b2 * b2);
 
-  const h1p = Math.atan2(b1, a1p) * 180 / Math.PI;
+  const h1p = (Math.atan2(b1, a1p) * 180) / Math.PI;
   const h1pAdj = h1p >= 0 ? h1p : h1p + 360;
-  const h2p = Math.atan2(b2, a2p) * 180 / Math.PI;
+  const h2p = (Math.atan2(b2, a2p) * 180) / Math.PI;
   const h2pAdj = h2p >= 0 ? h2p : h2p + 360;
 
   // Step 2: Calculate dL', dC', dH'
@@ -320,7 +334,7 @@ export function deltaE2000(lab1: LAB, lab2: LAB): number {
     dhp = h2pAdj - h1pAdj + 360;
   }
 
-  const dHp = 2 * Math.sqrt(C1p * C2p) * Math.sin(dhp * Math.PI / 360);
+  const dHp = 2 * Math.sqrt(C1p * C2p) * Math.sin((dhp * Math.PI) / 360);
 
   // Step 3: Calculate CIEDE2000
   const Lbp = (L1 + L2) / 2;
@@ -337,26 +351,30 @@ export function deltaE2000(lab1: LAB, lab2: LAB): number {
     Hbp = (h1pAdj + h2pAdj - 360) / 2;
   }
 
-  const T = 1 - 0.17 * Math.cos((Hbp - 30) * Math.PI / 180) +
-            0.24 * Math.cos(2 * Hbp * Math.PI / 180) +
-            0.32 * Math.cos((3 * Hbp + 6) * Math.PI / 180) -
-            0.20 * Math.cos((4 * Hbp - 63) * Math.PI / 180);
+  const T =
+    1 -
+    0.17 * Math.cos(((Hbp - 30) * Math.PI) / 180) +
+    0.24 * Math.cos((2 * Hbp * Math.PI) / 180) +
+    0.32 * Math.cos(((3 * Hbp + 6) * Math.PI) / 180) -
+    0.2 * Math.cos(((4 * Hbp - 63) * Math.PI) / 180);
 
-  const dTheta = 30 * Math.exp(-Math.pow((Hbp - 275) / 25, 2));
-  const RC = 2 * Math.sqrt(Math.pow(Cbp, 7) / (Math.pow(Cbp, 7) + Math.pow(25, 7)));
+  const dTheta = 30 * Math.exp(-(((Hbp - 275) / 25) ** 2));
+  const RC = 2 * Math.sqrt(Cbp ** 7 / (Cbp ** 7 + 25 ** 7));
 
-  const SL = 1 + (0.015 * Math.pow(Lbp - 50, 2)) / Math.sqrt(20 + Math.pow(Lbp - 50, 2));
+  const SL = 1 + (0.015 * (Lbp - 50) ** 2) / Math.sqrt(20 + (Lbp - 50) ** 2);
   const SC = 1 + 0.045 * Cbp;
   const SH = 1 + 0.015 * Cbp * T;
-  const RT = -Math.sin(2 * dTheta * Math.PI / 180) * RC;
+  const RT = -Math.sin((2 * dTheta * Math.PI) / 180) * RC;
 
-  const kL = 1, kC = 1, kH = 1;
+  const kL = 1,
+    kC = 1,
+    kH = 1;
 
   return Math.sqrt(
-    Math.pow(dLp / (kL * SL), 2) +
-    Math.pow(dCp / (kC * SC), 2) +
-    Math.pow(dHp / (kH * SH), 2) +
-    RT * (dCp / (kC * SC)) * (dHp / (kH * SH))
+    (dLp / (kL * SL)) ** 2 +
+      (dCp / (kC * SC)) ** 2 +
+      (dHp / (kH * SH)) ** 2 +
+      RT * (dCp / (kC * SC)) * (dHp / (kH * SH)),
   );
 }
 
@@ -375,8 +393,8 @@ export function rgbToYuv(r: number, g: number, b: number): YUV {
 
   // BT.709 coefficients
   const Y = BT709_R * rn + BT709_G * gn + BT709_B * bn;
-  const U = 0.5 * (bn - Y) / (1 - BT709_B);
-  const V = 0.5 * (rn - Y) / (1 - BT709_R);
+  const U = (0.5 * (bn - Y)) / (1 - BT709_B);
+  const V = (0.5 * (rn - Y)) / (1 - BT709_R);
 
   return { Y, U, V };
 }
@@ -384,15 +402,22 @@ export function rgbToYuv(r: number, g: number, b: number): YUV {
 /**
  * Convert YUV to RGB (0-255)
  */
-export function yuvToRgb(Y: number, U: number, V: number): [number, number, number] {
+export function yuvToRgb(
+  Y: number,
+  U: number,
+  V: number,
+): [number, number, number] {
   const r = Y + 2 * V * (1 - BT709_R);
-  const g = Y - 2 * U * BT709_B * (1 - BT709_B) / BT709_G - 2 * V * BT709_R * (1 - BT709_R) / BT709_G;
+  const g =
+    Y -
+    (2 * U * BT709_B * (1 - BT709_B)) / BT709_G -
+    (2 * V * BT709_R * (1 - BT709_R)) / BT709_G;
   const b = Y + 2 * U * (1 - BT709_B);
 
   return [
     Math.round(Math.max(0, Math.min(255, r * 255))),
     Math.round(Math.max(0, Math.min(255, g * 255))),
-    Math.round(Math.max(0, Math.min(255, b * 255)))
+    Math.round(Math.max(0, Math.min(255, b * 255))),
   ];
 }
 
@@ -404,7 +429,11 @@ export function yuvToRgb(Y: number, U: number, V: number): [number, number, numb
  * Convert RGB (0-255) to HSL
  * H: 0-360, S: 0-1, L: 0-1
  */
-export function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
+export function rgbToHsl(
+  r: number,
+  g: number,
+  b: number,
+): [number, number, number] {
   const rn = r / 255;
   const gn = g / 255;
   const bn = b / 255;
@@ -440,7 +469,11 @@ export function rgbToHsl(r: number, g: number, b: number): [number, number, numb
  * Convert HSL to RGB (0-255)
  * H: 0-360, S: 0-1, L: 0-1
  */
-export function hslToRgb(h: number, s: number, l: number): [number, number, number] {
+export function hslToRgb(
+  h: number,
+  s: number,
+  l: number,
+): [number, number, number] {
   h = ((h % 360) + 360) % 360; // Normalize hue
   h /= 360;
 
@@ -464,7 +497,7 @@ export function hslToRgb(h: number, s: number, l: number): [number, number, numb
   return [
     Math.round(hue2rgb(p, q, h + 1 / 3) * 255),
     Math.round(hue2rgb(p, q, h) * 255),
-    Math.round(hue2rgb(p, q, h - 1 / 3) * 255)
+    Math.round(hue2rgb(p, q, h - 1 / 3) * 255),
   ];
 }
 
@@ -484,7 +517,12 @@ export function rgbToLuminance(r: number, g: number, b: number): number {
  * Check if a color is within a tolerance of neutral gray
  * Uses LAB a* and b* components
  */
-export function isNeutral(r: number, g: number, b: number, tolerance: number = 5): boolean {
+export function isNeutral(
+  r: number,
+  g: number,
+  b: number,
+  tolerance: number = 5,
+): boolean {
   const lab = rgbToLab(r, g, b);
   return Math.abs(lab.a) < tolerance && Math.abs(lab.b) < tolerance;
 }
@@ -492,7 +530,11 @@ export function isNeutral(r: number, g: number, b: number, tolerance: number = 5
 /**
  * Get the complementary color
  */
-export function complementary(r: number, g: number, b: number): [number, number, number] {
+export function complementary(
+  r: number,
+  g: number,
+  b: number,
+): [number, number, number] {
   const [h, s, l] = rgbToHsl(r, g, b);
   return hslToRgb((h + 180) % 360, s, l);
 }

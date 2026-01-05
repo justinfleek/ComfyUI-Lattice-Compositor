@@ -33,7 +33,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue';
+import { nextTick, ref, watch } from "vue";
 
 const props = defineProps<{
   visible: boolean;
@@ -46,23 +46,26 @@ const emit = defineEmits<{
   confirm: [name: string];
 }>();
 
-const compName = ref(props.defaultName || 'Pre-comp 1');
+const compName = ref(props.defaultName || "Pre-comp 1");
 const nameInput = ref<HTMLInputElement | null>(null);
 
-watch(() => props.visible, (visible) => {
-  if (visible) {
-    compName.value = props.defaultName || 'Pre-comp 1';
-    nextTick(() => {
-      nameInput.value?.focus();
-      nameInput.value?.select();
-    });
-  }
-});
+watch(
+  () => props.visible,
+  (visible) => {
+    if (visible) {
+      compName.value = props.defaultName || "Pre-comp 1";
+      nextTick(() => {
+        nameInput.value?.focus();
+        nameInput.value?.select();
+      });
+    }
+  },
+);
 
-function confirm() {
+function _confirm() {
   if (compName.value.trim()) {
-    emit('confirm', compName.value.trim());
-    emit('close');
+    emit("confirm", compName.value.trim());
+    emit("close");
   }
 }
 </script>

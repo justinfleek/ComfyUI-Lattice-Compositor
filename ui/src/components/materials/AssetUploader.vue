@@ -61,28 +61,31 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import type { AssetType } from '@/types/project';
+import { computed, ref } from "vue";
+import type { AssetType } from "@/types/project";
 
-const props = withDefaults(defineProps<{
-  assetType?: AssetType;
-  label?: string;
-  multiple?: boolean;
-  maxSizeMB?: number;
-  // Alternative props
-  accept?: string;
-  buttonText?: string;
-}>(), {
-  assetType: 'image',
-  multiple: false,
-  maxSizeMB: 100,
-});
+const props = withDefaults(
+  defineProps<{
+    assetType?: AssetType;
+    label?: string;
+    multiple?: boolean;
+    maxSizeMB?: number;
+    // Alternative props
+    accept?: string;
+    buttonText?: string;
+  }>(),
+  {
+    assetType: "image",
+    multiple: false,
+    maxSizeMB: 100,
+  },
+);
 
 const emit = defineEmits<{
-  'upload': [file: File, dataUrl?: string];
-  'upload-multiple': [files: File[]];
-  'remove': [];
-  'error': [message: string];
+  upload: [file: File, dataUrl?: string];
+  "upload-multiple": [files: File[]];
+  remove: [];
+  error: [message: string];
 }>();
 
 // State
@@ -90,138 +93,147 @@ const fileInput = ref<HTMLInputElement | null>(null);
 const isDragging = ref(false);
 const isLoading = ref(false);
 const progress = ref(0);
-const progressText = ref('');
-const errorMessage = ref('');
-const assetName = ref('');
-const assetMeta = ref('');
+const progressText = ref("");
+const errorMessage = ref("");
+const assetName = ref("");
+const assetMeta = ref("");
 const previewImage = ref<string | null>(null);
 const hasAsset = ref(false);
 
 // Asset type configurations
-const assetConfigs: Record<AssetType, {
-  formats: string[];
-  icon: string;
-  hint: string;
-}> = {
+const assetConfigs: Record<
+  AssetType,
+  {
+    formats: string[];
+    icon: string;
+    hint: string;
+  }
+> = {
   model: {
-    formats: ['.gltf', '.glb', '.obj', '.fbx', '.dae', '.usdz'],
-    icon: 'pi-box',
-    hint: 'Drop 3D model file',
+    formats: [".gltf", ".glb", ".obj", ".fbx", ".dae", ".usdz"],
+    icon: "pi-box",
+    hint: "Drop 3D model file",
   },
   pointcloud: {
-    formats: ['.ply', '.pcd', '.xyz', '.pts', '.las'],
-    icon: 'pi-th-large',
-    hint: 'Drop point cloud file',
+    formats: [".ply", ".pcd", ".xyz", ".pts", ".las"],
+    icon: "pi-th-large",
+    hint: "Drop point cloud file",
   },
   texture: {
-    formats: ['.png', '.jpg', '.jpeg', '.webp', '.exr', '.hdr'],
-    icon: 'pi-image',
-    hint: 'Drop texture image',
+    formats: [".png", ".jpg", ".jpeg", ".webp", ".exr", ".hdr"],
+    icon: "pi-image",
+    hint: "Drop texture image",
   },
   material: {
-    formats: ['.json', '.mtl'],
-    icon: 'pi-palette',
-    hint: 'Drop material file',
+    formats: [".json", ".mtl"],
+    icon: "pi-palette",
+    hint: "Drop material file",
   },
   hdri: {
-    formats: ['.hdr', '.exr', '.jpg', '.png'],
-    icon: 'pi-globe',
-    hint: 'Drop HDRI environment',
+    formats: [".hdr", ".exr", ".jpg", ".png"],
+    icon: "pi-globe",
+    hint: "Drop HDRI environment",
   },
   svg: {
-    formats: ['.svg'],
-    icon: 'pi-star',
-    hint: 'Drop SVG file',
+    formats: [".svg"],
+    icon: "pi-star",
+    hint: "Drop SVG file",
   },
   sprite: {
-    formats: ['.png', '.jpg', '.webp', '.gif'],
-    icon: 'pi-image',
-    hint: 'Drop sprite image',
+    formats: [".png", ".jpg", ".webp", ".gif"],
+    icon: "pi-image",
+    hint: "Drop sprite image",
   },
   spritesheet: {
-    formats: ['.png', '.jpg', '.webp', '.json'],
-    icon: 'pi-th-large',
-    hint: 'Drop sprite sheet',
+    formats: [".png", ".jpg", ".webp", ".json"],
+    icon: "pi-th-large",
+    hint: "Drop sprite sheet",
   },
   lut: {
-    formats: ['.cube', '.3dl', '.png'],
-    icon: 'pi-sliders-h',
-    hint: 'Drop LUT file',
+    formats: [".cube", ".3dl", ".png"],
+    icon: "pi-sliders-h",
+    hint: "Drop LUT file",
   },
   depth_map: {
-    formats: ['.png', '.jpg', '.exr'],
-    icon: 'pi-map',
-    hint: 'Drop depth map',
+    formats: [".png", ".jpg", ".exr"],
+    icon: "pi-map",
+    hint: "Drop depth map",
   },
   image: {
-    formats: ['.png', '.jpg', '.jpeg', '.webp', '.gif'],
-    icon: 'pi-image',
-    hint: 'Drop image file',
+    formats: [".png", ".jpg", ".jpeg", ".webp", ".gif"],
+    icon: "pi-image",
+    hint: "Drop image file",
   },
   video: {
-    formats: ['.mp4', '.webm', '.mov'],
-    icon: 'pi-video',
-    hint: 'Drop video file',
+    formats: [".mp4", ".webm", ".mov"],
+    icon: "pi-video",
+    hint: "Drop video file",
   },
   audio: {
-    formats: ['.mp3', '.wav', '.ogg', '.m4a'],
-    icon: 'pi-volume-up',
-    hint: 'Drop audio file',
+    formats: [".mp3", ".wav", ".ogg", ".m4a"],
+    icon: "pi-volume-up",
+    hint: "Drop audio file",
   },
 };
 
 // Computed
-const config = computed(() => assetConfigs[props.assetType] || assetConfigs.image);
+const config = computed(
+  () => assetConfigs[props.assetType] || assetConfigs.image,
+);
 
-const acceptedFormats = computed(() => {
+const _acceptedFormats = computed(() => {
   // Use accept prop if provided
   if (props.accept) {
     return props.accept;
   }
   const formats = config.value.formats;
-  return formats.map(f => {
-    if (f === '.jpg') return 'image/jpeg';
-    if (f === '.png') return 'image/png';
-    if (f === '.webp') return 'image/webp';
-    if (f === '.gif') return 'image/gif';
-    if (f === '.svg') return 'image/svg+xml';
-    if (f === '.mp4') return 'video/mp4';
-    if (f === '.webm') return 'video/webm';
-    if (f === '.mp3') return 'audio/mpeg';
-    if (f === '.wav') return 'audio/wav';
-    if (f === '.ogg') return 'audio/ogg';
-    return f;
-  }).join(',');
+  return formats
+    .map((f) => {
+      if (f === ".jpg") return "image/jpeg";
+      if (f === ".png") return "image/png";
+      if (f === ".webp") return "image/webp";
+      if (f === ".gif") return "image/gif";
+      if (f === ".svg") return "image/svg+xml";
+      if (f === ".mp4") return "video/mp4";
+      if (f === ".webm") return "video/webm";
+      if (f === ".mp3") return "audio/mpeg";
+      if (f === ".wav") return "audio/wav";
+      if (f === ".ogg") return "audio/ogg";
+      return f;
+    })
+    .join(",");
 });
 
 const acceptedFormatsDisplay = computed(() => {
-  return config.value.formats.join(', ');
+  return config.value.formats.join(", ");
 });
 
-const placeholderIcon = computed(() => config.value.icon);
-const hint = computed(() => config.value.hint);
+const _placeholderIcon = computed(() => config.value.icon);
+const _hint = computed(() => config.value.hint);
 
-const label = computed(() => props.buttonText || props.label || `Upload ${props.assetType}`);
+const _label = computed(
+  () => props.buttonText || props.label || `Upload ${props.assetType}`,
+);
 
-const assetTypeIcon = computed(() => {
+const _assetTypeIcon = computed(() => {
   return config.value.icon;
 });
 
 // Methods
-function openFilePicker() {
+function _openFilePicker() {
   if (hasAsset.value) return;
   fileInput.value?.click();
 }
 
-function onDragOver() {
+function _onDragOver() {
   isDragging.value = true;
 }
 
-function onDragLeave() {
+function _onDragLeave() {
   isDragging.value = false;
 }
 
-function onDrop(e: DragEvent) {
+function _onDrop(e: DragEvent) {
   isDragging.value = false;
   const files = e.dataTransfer?.files;
   if (files && files.length > 0) {
@@ -233,7 +245,7 @@ function onDrop(e: DragEvent) {
   }
 }
 
-function onFileSelected(e: Event) {
+function _onFileSelected(e: Event) {
   const input = e.target as HTMLInputElement;
   if (input.files && input.files.length > 0) {
     if (props.multiple) {
@@ -245,26 +257,28 @@ function onFileSelected(e: Event) {
 }
 
 async function handleFile(file: File) {
-  errorMessage.value = '';
+  errorMessage.value = "";
 
   // Validate file size
   const sizeMB = file.size / (1024 * 1024);
   if (sizeMB > props.maxSizeMB) {
     errorMessage.value = `File too large (max ${props.maxSizeMB}MB)`;
-    emit('error', errorMessage.value);
+    emit("error", errorMessage.value);
     return;
   }
 
   // Validate file extension
-  const ext = '.' + file.name.split('.').pop()?.toLowerCase();
+  const ext = `.${file.name.split(".").pop()?.toLowerCase()}`;
   // If using custom accept, check against that; otherwise use config formats
   const validFormats = props.accept
-    ? props.accept.split(',').map(f => f.trim().toLowerCase())
+    ? props.accept.split(",").map((f) => f.trim().toLowerCase())
     : config.value.formats;
-  const isValidExt = validFormats.some(f => f === ext || f.includes('*') || f.includes('/'));
+  const isValidExt = validFormats.some(
+    (f) => f === ext || f.includes("*") || f.includes("/"),
+  );
   if (!isValidExt && !props.accept) {
     errorMessage.value = `Invalid format. Accepted: ${acceptedFormatsDisplay.value}`;
-    emit('error', errorMessage.value);
+    emit("error", errorMessage.value);
     return;
   }
 
@@ -272,52 +286,57 @@ async function handleFile(file: File) {
   // This prevents malicious files from being uploaded with fake extensions
   const mimeTypeMap: Record<string, string[]> = {
     // Images
-    '.png': ['image/png'],
-    '.jpg': ['image/jpeg'],
-    '.jpeg': ['image/jpeg'],
-    '.gif': ['image/gif'],
-    '.webp': ['image/webp'],
-    '.svg': ['image/svg+xml'],
-    '.exr': ['image/x-exr', 'application/octet-stream'], // EXR often has generic MIME
-    '.hdr': ['image/vnd.radiance', 'application/octet-stream'],
+    ".png": ["image/png"],
+    ".jpg": ["image/jpeg"],
+    ".jpeg": ["image/jpeg"],
+    ".gif": ["image/gif"],
+    ".webp": ["image/webp"],
+    ".svg": ["image/svg+xml"],
+    ".exr": ["image/x-exr", "application/octet-stream"], // EXR often has generic MIME
+    ".hdr": ["image/vnd.radiance", "application/octet-stream"],
     // Video
-    '.mp4': ['video/mp4'],
-    '.webm': ['video/webm'],
-    '.mov': ['video/quicktime'],
+    ".mp4": ["video/mp4"],
+    ".webm": ["video/webm"],
+    ".mov": ["video/quicktime"],
     // Audio
-    '.mp3': ['audio/mpeg'],
-    '.wav': ['audio/wav', 'audio/wave', 'audio/x-wav'],
-    '.ogg': ['audio/ogg', 'application/ogg'],
-    '.m4a': ['audio/mp4', 'audio/x-m4a'],
+    ".mp3": ["audio/mpeg"],
+    ".wav": ["audio/wav", "audio/wave", "audio/x-wav"],
+    ".ogg": ["audio/ogg", "application/ogg"],
+    ".m4a": ["audio/mp4", "audio/x-m4a"],
     // 3D Models
-    '.gltf': ['model/gltf+json', 'application/json'],
-    '.glb': ['model/gltf-binary', 'application/octet-stream'],
-    '.obj': ['text/plain', 'application/octet-stream'],
-    '.fbx': ['application/octet-stream'],
+    ".gltf": ["model/gltf+json", "application/json"],
+    ".glb": ["model/gltf-binary", "application/octet-stream"],
+    ".obj": ["text/plain", "application/octet-stream"],
+    ".fbx": ["application/octet-stream"],
     // Data files
-    '.json': ['application/json', 'text/json'],
-    '.cube': ['text/plain', 'application/octet-stream'], // LUT files
+    ".json": ["application/json", "text/json"],
+    ".cube": ["text/plain", "application/octet-stream"], // LUT files
     // Fonts
-    '.ttf': ['font/ttf', 'application/x-font-ttf'],
-    '.otf': ['font/otf', 'application/x-font-otf'],
-    '.woff': ['font/woff', 'application/font-woff'],
-    '.woff2': ['font/woff2', 'application/font-woff2'],
+    ".ttf": ["font/ttf", "application/x-font-ttf"],
+    ".otf": ["font/otf", "application/x-font-otf"],
+    ".woff": ["font/woff", "application/font-woff"],
+    ".woff2": ["font/woff2", "application/font-woff2"],
   };
   const expectedMimes = mimeTypeMap[ext];
-  if (expectedMimes && file.type && !expectedMimes.includes(file.type) && !file.type.includes('octet-stream')) {
-    errorMessage.value = `File type mismatch: expected ${expectedMimes.join(' or ')}, got ${file.type}`;
-    emit('error', errorMessage.value);
+  if (
+    expectedMimes &&
+    file.type &&
+    !expectedMimes.includes(file.type) &&
+    !file.type.includes("octet-stream")
+  ) {
+    errorMessage.value = `File type mismatch: expected ${expectedMimes.join(" or ")}, got ${file.type}`;
+    emit("error", errorMessage.value);
     return;
   }
 
   isLoading.value = true;
   progress.value = 0;
-  progressText.value = 'Loading...';
+  progressText.value = "Loading...";
 
   try {
     // Generate preview for images
     let dataUrl: string | undefined;
-    if (file.type.startsWith('image/')) {
+    if (file.type.startsWith("image/")) {
       dataUrl = await readFileAsDataUrl(file);
       previewImage.value = dataUrl;
     } else {
@@ -329,10 +348,10 @@ async function handleFile(file: File) {
     assetMeta.value = formatFileSize(file.size);
     hasAsset.value = true;
 
-    emit('upload', file, dataUrl);
-  } catch (err) {
-    errorMessage.value = 'Failed to load file';
-    emit('error', errorMessage.value);
+    emit("upload", file, dataUrl);
+  } catch (_err) {
+    errorMessage.value = "Failed to load file";
+    emit("error", errorMessage.value);
   } finally {
     isLoading.value = false;
   }
@@ -340,23 +359,25 @@ async function handleFile(file: File) {
 
 function handleMultipleFiles(files: File[]) {
   // Validate all files
-  const validFiles = files.filter(file => {
-    const ext = '.' + file.name.split('.').pop()?.toLowerCase();
+  const validFiles = files.filter((file) => {
+    const ext = `.${file.name.split(".").pop()?.toLowerCase()}`;
     const sizeMB = file.size / (1024 * 1024);
     return config.value.formats.includes(ext) && sizeMB <= props.maxSizeMB;
   });
 
   if (validFiles.length === 0) {
-    errorMessage.value = 'No valid files found';
-    emit('error', errorMessage.value);
+    errorMessage.value = "No valid files found";
+    emit("error", errorMessage.value);
     return;
   }
 
-  emit('upload-multiple', validFiles);
+  emit("upload-multiple", validFiles);
 
   // Show first file info
   assetName.value = `${validFiles.length} files`;
-  assetMeta.value = formatFileSize(validFiles.reduce((sum, f) => sum + f.size, 0));
+  assetMeta.value = formatFileSize(
+    validFiles.reduce((sum, f) => sum + f.size, 0),
+  );
   hasAsset.value = true;
 }
 
@@ -381,15 +402,15 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function removeAsset() {
+function _removeAsset() {
   hasAsset.value = false;
-  assetName.value = '';
-  assetMeta.value = '';
+  assetName.value = "";
+  assetMeta.value = "";
   previewImage.value = null;
   if (fileInput.value) {
-    fileInput.value.value = '';
+    fileInput.value.value = "";
   }
-  emit('remove');
+  emit("remove");
 }
 </script>
 

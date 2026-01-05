@@ -149,49 +149,67 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import type { Layer, DepthLayerData, AnimatableProperty } from '@/types/project';
-import { ScrubableNumber } from '@/components/controls';
+import { computed } from "vue";
+import { useCompositorStore } from "@/stores/compositorStore";
+import type {
+  AnimatableProperty,
+  DepthLayerData,
+  Layer,
+} from "@/types/project";
 
 const props = defineProps<{
   layer: Layer;
 }>();
 
-const emit = defineEmits<{
-  (e: 'update', data: Partial<DepthLayerData>): void;
-}>();
+const emit =
+  defineEmits<(e: "update", data: Partial<DepthLayerData>) => void>();
 
 const store = useCompositorStore();
 
 const depthData = computed(() => props.layer.data as DepthLayerData);
 
-function updateData<K extends keyof DepthLayerData>(key: K, value: DepthLayerData[K]) {
-  emit('update', { [key]: value } as Partial<DepthLayerData>);
+function _updateData<K extends keyof DepthLayerData>(
+  key: K,
+  value: DepthLayerData[K],
+) {
+  emit("update", { [key]: value } as Partial<DepthLayerData>);
 }
 
-function getAnimatableValue(prop: AnimatableProperty<number> | undefined): number {
+function _getAnimatableValue(
+  prop: AnimatableProperty<number> | undefined,
+): number {
   return prop?.value ?? 0;
 }
 
-function isAnimated(propName: string): boolean {
-  const prop = depthData.value[propName as keyof DepthLayerData] as AnimatableProperty<number> | undefined;
+function _isAnimated(propName: string): boolean {
+  const prop = depthData.value[propName as keyof DepthLayerData] as
+    | AnimatableProperty<number>
+    | undefined;
   return prop?.animated ?? false;
 }
 
-function updateAnimatable(propName: string, value: number) {
-  const prop = depthData.value[propName as keyof DepthLayerData] as AnimatableProperty<number>;
+function _updateAnimatable(propName: string, value: number) {
+  const prop = depthData.value[
+    propName as keyof DepthLayerData
+  ] as AnimatableProperty<number>;
   if (prop) {
-    emit('update', {
-      [propName]: { ...prop, value }
+    emit("update", {
+      [propName]: { ...prop, value },
     } as Partial<DepthLayerData>);
   }
 }
 
-function toggleKeyframe(propName: string) {
-  const prop = depthData.value[propName as keyof DepthLayerData] as AnimatableProperty<number>;
+function _toggleKeyframe(propName: string) {
+  const prop = depthData.value[
+    propName as keyof DepthLayerData
+  ] as AnimatableProperty<number>;
   if (prop) {
-    store.addKeyframe(props.layer.id, `data.${propName}`, store.currentFrame, prop.value);
+    store.addKeyframe(
+      props.layer.id,
+      `data.${propName}`,
+      store.currentFrame,
+      prop.value,
+    );
   }
 }
 </script>

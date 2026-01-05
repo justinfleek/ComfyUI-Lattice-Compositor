@@ -14,10 +14,7 @@ const loadingPromises = new Map<string, Promise<unknown>>();
 /**
  * Generic lazy loader with caching
  */
-async function lazyLoad<T>(
-  key: string,
-  loader: () => Promise<T>
-): Promise<T> {
+async function lazyLoad<T>(key: string, loader: () => Promise<T>): Promise<T> {
   // Return cached module
   if (moduleCache.has(key)) {
     return moduleCache.get(key) as T;
@@ -53,8 +50,8 @@ async function lazyLoad<T>(
  * Lazily load the WebGPU renderer
  */
 export async function loadWebGPURenderer() {
-  return lazyLoad('webgpuRenderer', async () => {
-    const module = await import('./webgpuRenderer');
+  return lazyLoad("webgpuRenderer", async () => {
+    const module = await import("./webgpuRenderer");
     return module;
   });
 }
@@ -63,8 +60,8 @@ export async function loadWebGPURenderer() {
  * Lazily load the matte exporter
  */
 export async function loadMatteExporter() {
-  return lazyLoad('matteExporter', async () => {
-    const module = await import('./matteExporter');
+  return lazyLoad("matteExporter", async () => {
+    const module = await import("./matteExporter");
     return module;
   });
 }
@@ -73,8 +70,8 @@ export async function loadMatteExporter() {
  * Lazily load JSZip for export
  */
 export async function loadJSZip() {
-  return lazyLoad('jszip', async () => {
-    const JSZip = (await import('jszip')).default;
+  return lazyLoad("jszip", async () => {
+    const JSZip = (await import("jszip")).default;
     return JSZip;
   });
 }
@@ -83,8 +80,8 @@ export async function loadJSZip() {
  * Lazily load MP4 muxer
  */
 export async function loadMP4Muxer() {
-  return lazyLoad('mp4-muxer', async () => {
-    const module = await import('mp4-muxer');
+  return lazyLoad("mp4-muxer", async () => {
+    const module = await import("mp4-muxer");
     return module;
   });
 }
@@ -93,8 +90,8 @@ export async function loadMP4Muxer() {
  * Lazily load WebM muxer
  */
 export async function loadWebMMuxer() {
-  return lazyLoad('webm-muxer', async () => {
-    const module = await import('webm-muxer');
+  return lazyLoad("webm-muxer", async () => {
+    const module = await import("webm-muxer");
     return module;
   });
 }
@@ -103,8 +100,8 @@ export async function loadWebMMuxer() {
  * Lazily load the particle system
  */
 export async function loadParticleSystem() {
-  return lazyLoad('particleSystem', async () => {
-    const module = await import('./particleSystem');
+  return lazyLoad("particleSystem", async () => {
+    const module = await import("./particleSystem");
     return module;
   });
 }
@@ -113,8 +110,8 @@ export async function loadParticleSystem() {
  * Lazily load 3D math utilities
  */
 export async function loadMath3D() {
-  return lazyLoad('math3d', async () => {
-    const module = await import('./math3d');
+  return lazyLoad("math3d", async () => {
+    const module = await import("./math3d");
     return module;
   });
 }
@@ -123,8 +120,8 @@ export async function loadMath3D() {
  * Lazily load camera trajectory service
  */
 export async function loadCameraTrajectory() {
-  return lazyLoad('cameraTrajectory', async () => {
-    const module = await import('./cameraTrajectory');
+  return lazyLoad("cameraTrajectory", async () => {
+    const module = await import("./cameraTrajectory");
     return module;
   });
 }
@@ -133,8 +130,8 @@ export async function loadCameraTrajectory() {
  * Lazily load depthflow service
  */
 export async function loadDepthflow() {
-  return lazyLoad('depthflow', async () => {
-    const module = await import('./depthflow');
+  return lazyLoad("depthflow", async () => {
+    const module = await import("./depthflow");
     return module;
   });
 }
@@ -155,7 +152,7 @@ export function preloadCommonModules(): void {
     loadMatteExporter().catch(() => {});
   };
 
-  if ('requestIdleCallback' in window) {
+  if ("requestIdleCallback" in window) {
     requestIdleCallback(preload, { timeout: 5000 });
   } else {
     setTimeout(preload, 1000);

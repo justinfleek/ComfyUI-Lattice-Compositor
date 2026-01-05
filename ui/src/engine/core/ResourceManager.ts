@@ -7,10 +7,10 @@
  * - Materials (shared materials)
  */
 
-import * as THREE from 'three';
-import type { AssetReference } from '@/types/project';
-import { renderLogger } from '@/utils/logger';
-import { validateURL } from '@/services/security/urlValidator';
+import * as THREE from "three";
+import { validateURL } from "@/services/security/urlValidator";
+import type { AssetReference } from "@/types/project";
+import { renderLogger } from "@/utils/logger";
 
 export interface TextureOptions {
   wrapS?: THREE.Wrapping;
@@ -89,11 +89,11 @@ export class ResourceManager {
   private initializeCommonGeometries(): void {
     // Unit plane (1x1, can be scaled)
     const plane = new THREE.PlaneGeometry(1, 1, 1, 1);
-    this.geometries.set('plane:1:1', plane);
+    this.geometries.set("plane:1:1", plane);
 
     // Unit quad for full-screen effects
     const quad = new THREE.PlaneGeometry(2, 2, 1, 1);
-    this.geometries.set('quad:fullscreen', quad);
+    this.geometries.set("quad:fullscreen", quad);
   }
 
   // ============================================================================
@@ -104,18 +104,28 @@ export class ResourceManager {
    * Load a texture from URL
    * SECURITY: Validates URL protocol before loading to prevent XSS and code injection
    */
-  async loadTexture(url: string, options?: TextureOptions): Promise<THREE.Texture> {
+  async loadTexture(
+    url: string,
+    options?: TextureOptions,
+  ): Promise<THREE.Texture> {
     // SECURITY: Validate URL before loading
-    const urlValidation = validateURL(url, 'asset');
+    const urlValidation = validateURL(url, "asset");
     if (!urlValidation.valid) {
-      const error = new Error(`[SECURITY] Blocked texture load: ${urlValidation.error}`);
-      renderLogger.error('ResourceManager:', error.message, 'URL:', url);
+      const error = new Error(
+        `[SECURITY] Blocked texture load: ${urlValidation.error}`,
+      );
+      renderLogger.error("ResourceManager:", error.message, "URL:", url);
       return Promise.reject(error);
     }
 
     // Log security warnings (e.g., HTTP without TLS)
     if (urlValidation.warning) {
-      renderLogger.warn('ResourceManager: Security warning for URL:', url, '-', urlValidation.warning);
+      renderLogger.warn(
+        "ResourceManager: Security warning for URL:",
+        url,
+        "-",
+        urlValidation.warning,
+      );
     }
 
     // Use sanitized URL (or original if sanitized is null for valid URLs)
@@ -142,9 +152,13 @@ export class ResourceManager {
         },
         undefined, // Progress callback
         (error) => {
-          renderLogger.error('ResourceManager: Failed to load texture:', safeUrl, error);
+          renderLogger.error(
+            "ResourceManager: Failed to load texture:",
+            safeUrl,
+            error,
+          );
           reject(error);
-        }
+        },
       );
     });
   }
@@ -155,7 +169,7 @@ export class ResourceManager {
   createTextureFromImageData(
     imageData: ImageData,
     id: string,
-    options?: TextureOptions
+    options?: TextureOptions,
   ): THREE.DataTexture {
     // Check cache
     const cached = this.textures.get(id);
@@ -172,7 +186,7 @@ export class ResourceManager {
       imageData.width,
       imageData.height,
       THREE.RGBAFormat,
-      THREE.UnsignedByteType
+      THREE.UnsignedByteType,
     );
 
     this.applyTextureOptions(texture, options);
@@ -190,7 +204,7 @@ export class ResourceManager {
   createTextureFromCanvas(
     canvas: HTMLCanvasElement | OffscreenCanvas,
     id: string,
-    options?: TextureOptions
+    options?: TextureOptions,
   ): THREE.CanvasTexture {
     // Check cache
     const cached = this.textures.get(id);
@@ -221,7 +235,10 @@ export class ResourceManager {
   /**
    * Apply options to a texture
    */
-  private applyTextureOptions(texture: THREE.Texture, options?: TextureOptions): void {
+  private applyTextureOptions(
+    texture: THREE.Texture,
+    options?: TextureOptions,
+  ): void {
     if (!options) {
       // Default options for crisp 2D graphics
       texture.minFilter = THREE.LinearFilter;
@@ -235,9 +252,11 @@ export class ResourceManager {
     if (options.wrapT !== undefined) texture.wrapT = options.wrapT;
     if (options.minFilter !== undefined) texture.minFilter = options.minFilter;
     if (options.magFilter !== undefined) texture.magFilter = options.magFilter;
-    if (options.generateMipmaps !== undefined) texture.generateMipmaps = options.generateMipmaps;
+    if (options.generateMipmaps !== undefined)
+      texture.generateMipmaps = options.generateMipmaps;
     if (options.flipY !== undefined) texture.flipY = options.flipY;
-    if (options.colorSpace !== undefined) texture.colorSpace = options.colorSpace;
+    if (options.colorSpace !== undefined)
+      texture.colorSpace = options.colorSpace;
   }
 
   /**
@@ -310,7 +329,10 @@ export class ResourceManager {
   /**
    * Get a circle geometry (cached)
    */
-  getCircleGeometry(radius: number = 1, segments: number = 32): THREE.CircleGeometry {
+  getCircleGeometry(
+    radius: number = 1,
+    segments: number = 32,
+  ): THREE.CircleGeometry {
     const key = `circle:${radius}:${segments}`;
 
     let geometry = this.geometries.get(key) as THREE.CircleGeometry;
@@ -332,7 +354,7 @@ export class ResourceManager {
   getBoxGeometry(
     width: number = 1,
     height: number = 1,
-    depth: number = 1
+    depth: number = 1,
   ): THREE.BoxGeometry {
     const key = `box:${width}:${height}:${depth}`;
 
@@ -353,7 +375,7 @@ export class ResourceManager {
    * Get the fullscreen quad geometry
    */
   getFullscreenQuad(): THREE.PlaneGeometry {
-    return this.geometries.get('quad:fullscreen') as THREE.PlaneGeometry;
+    return this.geometries.get("quad:fullscreen") as THREE.PlaneGeometry;
   }
 
   // ============================================================================
@@ -392,21 +414,21 @@ export class ResourceManager {
   /**
    * Create a non-cached material (for layers with unique properties)
    */
-  createMaterial(type: 'basic' | 'standard' | 'shader'): THREE.Material {
+  createMaterial(type: "basic" | "standard" | "shader"): THREE.Material {
     switch (type) {
-      case 'basic':
+      case "basic":
         return new THREE.MeshBasicMaterial({
           transparent: true,
           side: THREE.DoubleSide,
         });
 
-      case 'standard':
+      case "standard":
         return new THREE.MeshStandardMaterial({
           transparent: true,
           side: THREE.DoubleSide,
         });
 
-      case 'shader':
+      case "shader":
         return new THREE.ShaderMaterial();
 
       default:
@@ -485,6 +507,6 @@ export class ResourceManager {
     // A full implementation would track reference counts
 
     // For now, just log stats
-    renderLogger.debug('ResourceManager: Resource stats:', this.getStats());
+    renderLogger.debug("ResourceManager: Resource stats:", this.getStats());
   }
 }

@@ -225,38 +225,37 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue';
-import Dialog from 'primevue/dialog';
-import DOMPurify from 'dompurify';
-import { useCompositorStore } from '@/stores/compositorStore';
+import DOMPurify from "dompurify";
+import { computed, onMounted, ref, watch } from "vue";
 import {
+  autoGroupPoints,
+  DEFAULT_VTRACE_OPTIONS,
+  filterSmallPaths,
   getVectorizeService,
   normalizeControlPoints,
-  autoGroupPoints,
-  filterSmallPaths,
   type VectorizeResult,
   type VTraceOptions,
-  DEFAULT_VTRACE_OPTIONS,
-} from '@/services/vectorize';
-import type { Layer, ControlPoint } from '@/types/project';
+} from "@/services/vectorize";
+import { useCompositorStore } from "@/stores/compositorStore";
+import type { ControlPoint, Layer } from "@/types/project";
 
-const props = defineProps<{
+const _props = defineProps<{
   visible: boolean;
 }>();
 
 const emit = defineEmits<{
-  (e: 'close'): void;
-  (e: 'created', layerIds: string[]): void;
+  (e: "close"): void;
+  (e: "created", layerIds: string[]): void;
 }>();
 
 const store = useCompositorStore();
 const vectorizeService = getVectorizeService();
 
 // Source selection
-const sourceType = ref<'layer' | 'upload'>('layer');
-const selectedLayerId = ref('');
+const sourceType = ref<"layer" | "upload">("layer");
+const selectedLayerId = ref("");
 const uploadedImage = ref<string | null>(null);
-const fileInput = ref<HTMLInputElement | null>(null);
+const _fileInput = ref<HTMLInputElement | null>(null);
 
 // Preview
 const previewUrl = ref<string | null>(null);
@@ -264,7 +263,7 @@ const previewWidth = ref(0);
 const previewHeight = ref(0);
 
 // Mode
-const mode = ref<'trace' | 'ai'>('trace');
+const mode = ref<"trace" | "ai">("trace");
 const starVectorAvailable = ref(false);
 
 // Options
@@ -279,40 +278,41 @@ const enableAnimation = ref(true);
 // Progress
 const isProcessing = ref(false);
 const progressPercent = ref(0);
-const progressMessage = ref('');
+const progressMessage = ref("");
 
 // Result
 const result = ref<VectorizeResult | null>(null);
-const showSvgPreview = ref(false);
-const errorMessage = ref('');
+const _showSvgPreview = ref(false);
+const errorMessage = ref("");
 
 // Available layers (image layers only)
-const availableLayers = computed(() => {
+const _availableLayers = computed(() => {
   return store.layers.filter(
-    (l: Layer) => l.type === 'image' || l.type === 'video' || l.type === 'solid'
+    (l: Layer) =>
+      l.type === "image" || l.type === "video" || l.type === "solid",
   );
 });
 
 // Can vectorize?
-const canVectorize = computed(() => {
-  if (sourceType.value === 'layer') {
+const _canVectorize = computed(() => {
+  if (sourceType.value === "layer") {
     return !!selectedLayerId.value;
   }
   return !!uploadedImage.value;
 });
 
 // Sanitized SVG for preview using DOMPurify with SVG-specific config
-const sanitizedSvg = computed(() => {
-  if (!result.value?.svg) return '';
+const _sanitizedSvg = computed(() => {
+  if (!result.value?.svg) return "";
   return DOMPurify.sanitize(result.value.svg, {
     USE_PROFILES: { svg: true, svgFilters: true },
-    ADD_TAGS: ['use'],
+    ADD_TAGS: ["use"],
   });
 });
 
 // Watch source changes to update preview
 watch([sourceType, selectedLayerId], async () => {
-  if (sourceType.value === 'layer' && selectedLayerId.value) {
+  if (sourceType.value === "layer" && selectedLayerId.value) {
     await loadLayerPreview();
   }
 });
@@ -321,7 +321,8 @@ watch([sourceType, selectedLayerId], async () => {
 onMounted(async () => {
   try {
     const status = await vectorizeService.getStatus();
-    starVectorAvailable.value = status.starvector.available || status.starvector.downloaded;
+    starVectorAvailable.value =
+      status.starvector.available || status.starvector.downloaded;
   } catch {
     starVectorAvailable.value = false;
   }
@@ -354,12 +355,12 @@ async function loadLayerPreview() {
       img.src = previewUrl.value;
     }
   } catch (error) {
-    console.error('Failed to load layer preview:', error);
+    console.error("Failed to load layer preview:", error);
   }
 }
 
 // Handle file upload
-function onFileSelect(event: Event) {
+function _onFileSelect(event: Event) {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
   if (!file) return;
@@ -381,8 +382,8 @@ function onFileSelect(event: Event) {
 }
 
 // Start vectorization
-async function startVectorize() {
-  errorMessage.value = '';
+async function _startVectorize() {
+  errorMessage.value = "";
   result.value = null;
   isProcessing.value = true;
   progressPercent.value = 0;
@@ -391,26 +392,28 @@ async function startVectorize() {
     // Get image data URL
     let imageDataUrl: string;
 
-    if (sourceType.value === 'layer') {
-      const layer = store.layers.find((l: Layer) => l.id === selectedLayerId.value);
-      if (!layer) throw new Error('Layer not found');
+    if (sourceType.value === "layer") {
+      const layer = store.layers.find(
+        (l: Layer) => l.id === selectedLayerId.value,
+      );
+      if (!layer) throw new Error("Layer not found");
 
       const layerData = layer.data as any;
       if (layerData?.source) {
         imageDataUrl = layerData.source;
       } else if (layerData?.assetId) {
         const asset = store.project?.assets[layerData.assetId];
-        if (!asset?.data) throw new Error('Asset data not found');
+        if (!asset?.data) throw new Error("Asset data not found");
         imageDataUrl = asset.data;
       } else {
-        throw new Error('Could not get image data from layer');
+        throw new Error("Could not get image data from layer");
       }
     } else {
-      if (!uploadedImage.value) throw new Error('No image uploaded');
+      if (!uploadedImage.value) throw new Error("No image uploaded");
       imageDataUrl = uploadedImage.value;
     }
 
-    progressMessage.value = 'Vectorizing image...';
+    progressMessage.value = "Vectorizing image...";
     progressPercent.value = 30;
 
     // Run vectorization
@@ -422,24 +425,25 @@ async function startVectorize() {
       },
       (stage, message) => {
         progressMessage.value = message;
-        if (stage === 'downloading') progressPercent.value = 20;
-        else if (stage === 'tracing' || stage === 'vectorizing') progressPercent.value = 60;
-        else if (stage === 'complete') progressPercent.value = 100;
-      }
+        if (stage === "downloading") progressPercent.value = 20;
+        else if (stage === "tracing" || stage === "vectorizing")
+          progressPercent.value = 60;
+        else if (stage === "complete") progressPercent.value = 100;
+      },
     );
 
     progressPercent.value = 100;
     progressMessage.value = `Found ${result.value.pathCount} paths`;
-
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : 'Vectorization failed';
+    errorMessage.value =
+      error instanceof Error ? error.message : "Vectorization failed";
   } finally {
     isProcessing.value = false;
   }
 }
 
 // Create layers from result
-function createLayers() {
+function _createLayers() {
   if (!result.value) return;
 
   const createdLayerIds: string[] = [];
@@ -450,7 +454,7 @@ function createLayers() {
   // Normalize control points
   paths = normalizeControlPoints(paths, {
     groupByPath: groupByPath.value,
-    prefix: 'vec',
+    prefix: "vec",
   });
 
   if (createSeparateLayers.value) {
@@ -461,7 +465,7 @@ function createLayers() {
       // Auto-group by region if requested
       let controlPoints = path.controlPoints;
       if (autoGroupByRegion.value) {
-        controlPoints = autoGroupPoints(controlPoints, { method: 'quadrant' });
+        controlPoints = autoGroupPoints(controlPoints, { method: "quadrant" });
       }
 
       // Create the spline layer
@@ -472,9 +476,9 @@ function createLayers() {
       store.updateLayerData(layer.id, {
         controlPoints,
         closed: path.closed,
-        stroke: path.stroke || '#00ff00',
+        stroke: path.stroke || "#00ff00",
         strokeWidth: 2,
-        fill: path.fill || '',
+        fill: path.fill || "",
         animated: enableAnimation.value,
       });
 
@@ -500,26 +504,26 @@ function createLayers() {
     // Auto-group by region if requested (overrides path grouping)
     let controlPoints = allPoints;
     if (autoGroupByRegion.value) {
-      controlPoints = autoGroupPoints(allPoints, { method: 'quadrant' });
+      controlPoints = autoGroupPoints(allPoints, { method: "quadrant" });
     }
 
     const layer = store.createSplineLayer();
-    store.renameLayer(layer.id, 'Vectorized Paths');
+    store.renameLayer(layer.id, "Vectorized Paths");
 
     store.updateLayerData(layer.id, {
       controlPoints,
       closed: false,
-      stroke: '#00ff00',
+      stroke: "#00ff00",
       strokeWidth: 2,
-      fill: '',
+      fill: "",
       animated: enableAnimation.value,
     });
 
     createdLayerIds.push(layer.id);
   }
 
-  emit('created', createdLayerIds);
-  emit('close');
+  emit("created", createdLayerIds);
+  emit("close");
 }
 </script>
 

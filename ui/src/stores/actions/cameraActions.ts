@@ -4,13 +4,20 @@
  * Camera management including creation, deletion, keyframes, and interpolation.
  */
 
-import { storeLogger } from '@/utils/logger';
-import type { Layer, CameraLayerData, AnimatableProperty } from '@/types/project';
-import type { Camera3D, CameraKeyframe, ViewportState, ViewOptions } from '@/types/camera';
-import { createDefaultCamera, createDefaultViewportState, createDefaultViewOptions } from '@/types/camera';
-import { interpolateCameraAtFrame } from '@/services/export/cameraExportFormats';
-import { createDefaultTransform, createAnimatableProperty } from '@/types/project';
-import { useSelectionStore } from '../selectionStore';
+import { interpolateCameraAtFrame } from "@/services/export/cameraExportFormats";
+import type {
+  Camera3D,
+  CameraKeyframe,
+  ViewOptions,
+  ViewportState,
+} from "@/types/camera";
+import { createDefaultCamera } from "@/types/camera";
+import type { CameraLayerData, Layer } from "@/types/project";
+import {
+  createAnimatableProperty,
+  createDefaultTransform,
+} from "@/types/project";
+import { useSelectionStore } from "../selectionStore";
 
 /**
  * Safely compare frame numbers, handling NaN values
@@ -38,7 +45,9 @@ export interface CameraStore {
     meta: { modified: string };
   };
   currentFrame: number;
-  getActiveComp(): { settings: { width: number; height: number; frameCount: number } } | null;
+  getActiveComp(): {
+    settings: { width: number; height: number; frameCount: number };
+  } | null;
   getActiveCompLayers(): Layer[];
   pushHistory(): void;
   selectLayer(layerId: string): void;
@@ -49,7 +58,7 @@ export interface CameraStore {
  */
 export function createCameraLayer(
   store: CameraStore,
-  name?: string
+  name?: string,
 ): { camera: Camera3D; layer: Layer } {
   const comp = store.getActiveComp();
   const layers = store.getActiveCompLayers();
@@ -61,7 +70,7 @@ export function createCameraLayer(
   const camera = createDefaultCamera(
     cameraId,
     comp?.settings.width || 1024,
-    comp?.settings.height || 1024
+    comp?.settings.height || 1024,
   );
   camera.name = cameraName;
 
@@ -79,7 +88,7 @@ export function createCameraLayer(
   const layer: Layer = {
     id: layerId,
     name: cameraName,
-    type: 'camera',
+    type: "camera",
     visible: true,
     locked: false,
     isolate: false,
@@ -92,15 +101,16 @@ export function createCameraLayer(
     inPoint: 0,
     outPoint: frameCount,
     parentId: null,
-    blendMode: 'normal',
-    opacity: createAnimatableProperty('opacity', 100, 'number'),
+    blendMode: "normal",
+    opacity: createAnimatableProperty("opacity", 100, "number"),
     transform: createDefaultTransform(),
     properties: [],
     effects: [],
     data: {
       cameraId,
-      isActiveCamera: !store.activeCameraId || store.activeCameraId === cameraId
-    } as CameraLayerData
+      isActiveCamera:
+        !store.activeCameraId || store.activeCameraId === cameraId,
+    } as CameraLayerData,
   };
 
   layers.unshift(layer);
@@ -116,7 +126,10 @@ export function createCameraLayer(
 /**
  * Get a camera by ID
  */
-export function getCamera(store: CameraStore, cameraId: string): Camera3D | null {
+export function getCamera(
+  store: CameraStore,
+  cameraId: string,
+): Camera3D | null {
   return store.cameras.get(cameraId) || null;
 }
 
@@ -126,7 +139,7 @@ export function getCamera(store: CameraStore, cameraId: string): Camera3D | null
 export function updateCamera(
   store: CameraStore,
   cameraId: string,
-  updates: Partial<Camera3D>
+  updates: Partial<Camera3D>,
 ): void {
   const camera = store.cameras.get(cameraId);
   if (!camera) return;
@@ -146,7 +159,7 @@ export function setActiveCamera(store: CameraStore, cameraId: string): void {
   // Update all camera layers' isActiveCamera flag
   const layers = store.getActiveCompLayers();
   for (const layer of layers) {
-    if (layer.type === 'camera' && layer.data) {
+    if (layer.type === "camera" && layer.data) {
       const cameraData = layer.data as CameraLayerData;
       cameraData.isActiveCamera = cameraData.cameraId === cameraId;
     }
@@ -163,7 +176,8 @@ export function deleteCamera(store: CameraStore, cameraId: string): void {
 
   // Find the associated layer
   const layerIndex = layers.findIndex(
-    l => l.type === 'camera' && (l.data as CameraLayerData)?.cameraId === cameraId
+    (l) =>
+      l.type === "camera" && (l.data as CameraLayerData)?.cameraId === cameraId,
   );
 
   // Remove the layer if found
@@ -199,7 +213,7 @@ export function deleteCamera(store: CameraStore, cameraId: string): void {
  */
 export function getCameraKeyframes(
   store: CameraStore,
-  cameraId: string
+  cameraId: string,
 ): CameraKeyframe[] {
   return store.cameraKeyframes.get(cameraId) || [];
 }
@@ -210,7 +224,7 @@ export function getCameraKeyframes(
 export function addCameraKeyframe(
   store: CameraStore,
   cameraId: string,
-  keyframe: CameraKeyframe
+  keyframe: CameraKeyframe,
 ): void {
   let keyframes = store.cameraKeyframes.get(cameraId);
   if (!keyframes) {
@@ -219,7 +233,9 @@ export function addCameraKeyframe(
   }
 
   // Remove existing keyframe at same frame (use framesEqual to handle NaN)
-  const existingIndex = keyframes.findIndex(k => framesEqual(k.frame, keyframe.frame));
+  const existingIndex = keyframes.findIndex((k) =>
+    framesEqual(k.frame, keyframe.frame),
+  );
   if (existingIndex >= 0) {
     keyframes[existingIndex] = keyframe;
   } else {
@@ -237,12 +253,12 @@ export function addCameraKeyframe(
 export function removeCameraKeyframe(
   store: CameraStore,
   cameraId: string,
-  frame: number
+  frame: number,
 ): void {
   const keyframes = store.cameraKeyframes.get(cameraId);
   if (!keyframes) return;
 
-  const index = keyframes.findIndex(k => framesEqual(k.frame, frame));
+  const index = keyframes.findIndex((k) => framesEqual(k.frame, frame));
   if (index >= 0) {
     keyframes.splice(index, 1);
     store.project.meta.modified = new Date().toISOString();
@@ -255,7 +271,7 @@ export function removeCameraKeyframe(
 export function getCameraAtFrame(
   store: CameraStore,
   cameraId: string,
-  frame: number
+  frame: number,
 ): Camera3D | null {
   const camera = store.cameras.get(cameraId);
   if (!camera) return null;
@@ -288,7 +304,7 @@ export function getCameraAtFrame(
  */
 export function getActiveCameraAtFrame(
   store: CameraStore,
-  frame?: number
+  frame?: number,
 ): Camera3D | null {
   if (!store.activeCameraId) return null;
   // Use safeFrame to handle NaN (nullish coalescing doesn't catch NaN)
@@ -301,7 +317,7 @@ export function getActiveCameraAtFrame(
  */
 export function updateViewportState(
   store: CameraStore,
-  updates: Partial<ViewportState>
+  updates: Partial<ViewportState>,
 ): void {
   Object.assign(store.viewportState, updates);
 }
@@ -311,7 +327,7 @@ export function updateViewportState(
  */
 export function updateViewOptions(
   store: CameraStore,
-  updates: Partial<ViewOptions>
+  updates: Partial<ViewOptions>,
 ): void {
   Object.assign(store.viewOptions, updates);
 }

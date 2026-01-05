@@ -13,9 +13,9 @@
  * DETERMINISM: Group transforms applied to children deterministically
  */
 
-import * as THREE from 'three';
-import type { Layer, GroupLayerData } from '@/types/project';
-import { BaseLayer } from './BaseLayer';
+import * as THREE from "three";
+import type { GroupLayerData, Layer } from "@/types/project";
+import { BaseLayer } from "./BaseLayer";
 
 export class GroupLayer extends BaseLayer {
   private groupData: GroupLayerData;
@@ -35,9 +35,9 @@ export class GroupLayer extends BaseLayer {
     const data = layerData.data as Partial<GroupLayerData> | undefined;
     return {
       collapsed: data?.collapsed ?? false,
-      color: data?.color ?? '#888888',
+      color: data?.color ?? "#888888",
       passThrough: data?.passThrough ?? true,
-      isolate: data?.isolate ?? false
+      isolate: data?.isolate ?? false,
     };
   }
 
@@ -51,19 +51,17 @@ export class GroupLayer extends BaseLayer {
     // Dashed bounding box to show group bounds
     const geometry = new THREE.BufferGeometry();
     const positions = new Float32Array([
-      -50, -50, 0,  50, -50, 0,
-       50, -50, 0,  50,  50, 0,
-       50,  50, 0, -50,  50, 0,
-      -50,  50, 0, -50, -50, 0
+      -50, -50, 0, 50, -50, 0, 50, -50, 0, 50, 50, 0, 50, 50, 0, -50, 50, 0,
+      -50, 50, 0, -50, -50, 0,
     ]);
-    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
 
     const material = new THREE.LineDashedMaterial({
       color: this.getGroupColor(),
       dashSize: 5,
       gapSize: 3,
       transparent: true,
-      opacity: 0.5
+      opacity: 0.5,
     });
 
     this.boundingBox = new THREE.LineSegments(geometry, material);
@@ -78,7 +76,7 @@ export class GroupLayer extends BaseLayer {
     const material = new THREE.MeshBasicMaterial({
       color: this.getGroupColor(),
       transparent: true,
-      opacity: 0.7
+      opacity: 0.7,
     });
 
     this.labelMesh = new THREE.Mesh(geometry, material);
@@ -89,7 +87,7 @@ export class GroupLayer extends BaseLayer {
 
   private getGroupColor(): number {
     if (this.groupData.color) {
-      return parseInt(this.groupData.color.replace('#', ''), 16);
+      return parseInt(this.groupData.color.replace("#", ""), 16);
     }
     return 0x888888; // Default gray
   }
@@ -98,7 +96,7 @@ export class GroupLayer extends BaseLayer {
   // ABSTRACT IMPLEMENTATIONS
   // ============================================================================
 
-  protected onEvaluateFrame(frame: number): void {
+  protected onEvaluateFrame(_frame: number): void {
     // Group layer's transform is applied to the container,
     // which affects all child layers that reference this as parent
 
@@ -152,13 +150,36 @@ export class GroupLayer extends BaseLayer {
     const halfY = size.y / 2;
 
     const positions = new Float32Array([
-      -halfX, -halfY, 0,  halfX, -halfY, 0,
-       halfX, -halfY, 0,  halfX,  halfY, 0,
-       halfX,  halfY, 0, -halfX,  halfY, 0,
-      -halfX,  halfY, 0, -halfX, -halfY, 0
+      -halfX,
+      -halfY,
+      0,
+      halfX,
+      -halfY,
+      0,
+      halfX,
+      -halfY,
+      0,
+      halfX,
+      halfY,
+      0,
+      halfX,
+      halfY,
+      0,
+      -halfX,
+      halfY,
+      0,
+      -halfX,
+      halfY,
+      0,
+      -halfX,
+      -halfY,
+      0,
     ]);
 
-    this.boundingBox.geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    this.boundingBox.geometry.setAttribute(
+      "position",
+      new THREE.BufferAttribute(positions, 3),
+    );
     this.boundingBox.geometry.attributes.position.needsUpdate = true;
     this.boundingBox.computeLineDistances();
     this.boundingBox.position.copy(center);

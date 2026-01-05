@@ -185,32 +185,39 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import ScrubableNumber from '@/components/controls/ScrubableNumber.vue';
-import type { Keyframe } from '@/types/project';
-import { findNearestSnap } from '@/services/timelineSnap';
-import { getShapeForEasing, KEYFRAME_SHAPES } from '@/styles/keyframe-shapes';
+import { computed, onMounted, onUnmounted, ref } from "vue";
+import { findNearestSnap } from "@/services/timelineSnap";
+import { useCompositorStore } from "@/stores/compositorStore";
+import { getShapeForEasing, KEYFRAME_SHAPES } from "@/styles/keyframe-shapes";
+import type { Keyframe } from "@/types/project";
 
 // Get keyframe shape path for a given interpolation type
-function getKeyframeShapePath(interpolation: string = 'linear'): string {
+function _getKeyframeShapePath(interpolation: string = "linear"): string {
   const shapeKey = getShapeForEasing(interpolation);
   return KEYFRAME_SHAPES[shapeKey]?.path || KEYFRAME_SHAPES.diamond.path;
 }
 
-function getKeyframeShapeViewBox(interpolation: string = 'linear'): string {
+function _getKeyframeShapeViewBox(interpolation: string = "linear"): string {
   const shapeKey = getShapeForEasing(interpolation);
   const shape = KEYFRAME_SHAPES[shapeKey] || KEYFRAME_SHAPES.diamond;
   return `0 0 ${shape.width} ${shape.height}`;
 }
 
-function isStrokeShape(interpolation: string = 'linear'): boolean {
+function _isStrokeShape(interpolation: string = "linear"): boolean {
   const shapeKey = getShapeForEasing(interpolation);
   return KEYFRAME_SHAPES[shapeKey]?.stroke || false;
 }
 
-const props = defineProps(['name', 'property', 'layerId', 'propertyPath', 'layoutMode', 'pixelsPerFrame', 'gridStyle']);
-const emit = defineEmits(['selectKeyframe', 'deleteKeyframe', 'moveKeyframe']);
+const props = defineProps([
+  "name",
+  "property",
+  "layerId",
+  "propertyPath",
+  "layoutMode",
+  "pixelsPerFrame",
+  "gridStyle",
+]);
+const _emit = defineEmits(["selectKeyframe", "deleteKeyframe", "moveKeyframe"]);
 const store = useCompositorStore();
 
 const selectedKeyframeIds = ref<Set<string>>(new Set());
@@ -231,12 +238,12 @@ const contextMenu = ref<{
   visible: false,
   x: 0,
   y: 0,
-  keyframe: null
+  keyframe: null,
 });
 
-const contextMenuStyle = computed(() => ({
+const _contextMenuStyle = computed(() => ({
   left: `${contextMenu.value.x}px`,
-  top: `${contextMenu.value.y}px`
+  top: `${contextMenu.value.y}px`,
 }));
 
 // Track context menu (right-click on empty track area)
@@ -249,35 +256,41 @@ const trackContextMenu = ref<{
   visible: false,
   x: 0,
   y: 0,
-  frame: 0
+  frame: 0,
 });
 
-const trackContextMenuStyle = computed(() => ({
+const _trackContextMenuStyle = computed(() => ({
   left: `${trackContextMenu.value.x}px`,
-  top: `${trackContextMenu.value.y}px`
+  top: `${trackContextMenu.value.y}px`,
 }));
 
 // Check if this is a position property (for "Insert on Path" option)
-const isPositionProperty = computed(() =>
-  props.propertyPath?.includes('position') || props.name?.toLowerCase().includes('position')
+const _isPositionProperty = computed(
+  () =>
+    props.propertyPath?.includes("position") ||
+    props.name?.toLowerCase().includes("position"),
 );
 
 // Check if there are multiple keyframes (needed for path interpolation)
-const hasMultipleKeyframes = computed(() =>
-  (props.property?.keyframes?.length || 0) >= 2
+const _hasMultipleKeyframes = computed(
+  () => (props.property?.keyframes?.length || 0) >= 2,
 );
 
-const selectionBoxStyle = computed(() => {
+const _selectionBoxStyle = computed(() => {
   const left = Math.min(boxStartX.value, boxCurrentX.value);
   const width = Math.abs(boxCurrentX.value - boxStartX.value);
   return {
     left: `${left}px`,
-    width: `${width}px`
+    width: `${width}px`,
   };
 });
 
-const hasKeyframeAtCurrent = computed(() => props.property.keyframes?.some((k:any) => k.frame === store.currentFrame));
-const isSelected = computed(() => store.selectedPropertyPath === props.propertyPath);
+const _hasKeyframeAtCurrent = computed(() =>
+  props.property.keyframes?.some((k: any) => k.frame === store.currentFrame),
+);
+const _isSelected = computed(
+  () => store.selectedPropertyPath === props.propertyPath,
+);
 
 // Keyframe navigator computed properties
 const sortedKeyframes = computed(() => {
@@ -285,71 +298,90 @@ const sortedKeyframes = computed(() => {
   return [...kfs].sort((a: any, b: any) => a.frame - b.frame);
 });
 
-const hasPrevKeyframe = computed(() => {
+const _hasPrevKeyframe = computed(() => {
   return sortedKeyframes.value.some((kf: any) => kf.frame < store.currentFrame);
 });
 
-const hasNextKeyframe = computed(() => {
+const _hasNextKeyframe = computed(() => {
   return sortedKeyframes.value.some((kf: any) => kf.frame > store.currentFrame);
 });
 
 // Keyframe navigator functions
-function goToPrevKeyframe() {
-  const prevKfs = sortedKeyframes.value.filter((kf: any) => kf.frame < store.currentFrame);
+function _goToPrevKeyframe() {
+  const prevKfs = sortedKeyframes.value.filter(
+    (kf: any) => kf.frame < store.currentFrame,
+  );
   if (prevKfs.length > 0) {
     const prevKf = prevKfs[prevKfs.length - 1];
     store.setFrame(prevKf.frame);
   }
 }
 
-function goToNextKeyframe() {
-  const nextKf = sortedKeyframes.value.find((kf: any) => kf.frame > store.currentFrame);
+function _goToNextKeyframe() {
+  const nextKf = sortedKeyframes.value.find(
+    (kf: any) => kf.frame > store.currentFrame,
+  );
   if (nextKf) {
     store.setFrame(nextKf.frame);
   }
 }
 
-function toggleAnim() { store.setPropertyAnimated(props.layerId, props.propertyPath, !props.property.animated); }
-function addKeyframeAtCurrent() { store.addKeyframe(props.layerId, props.propertyPath, props.property.value); }
-function updateValDirect(v: any) {
+function _toggleAnim() {
+  store.setPropertyAnimated(
+    props.layerId,
+    props.propertyPath,
+    !props.property.animated,
+  );
+}
+function _addKeyframeAtCurrent() {
+  store.addKeyframe(props.layerId, props.propertyPath, props.property.value);
+}
+function _updateValDirect(v: any) {
   // Handle data.* properties differently - they're stored directly on layer.data
-  if (props.propertyPath.startsWith('data.')) {
-    const dataKey = props.propertyPath.replace('data.', '');
+  if (props.propertyPath.startsWith("data.")) {
+    const dataKey = props.propertyPath.replace("data.", "");
     store.updateLayerData(props.layerId, { [dataKey]: v });
   } else {
     store.setPropertyValue(props.layerId, props.propertyPath, v);
   }
 }
-function updateValByIndex(axis: string, v: number) {
+function _updateValByIndex(axis: string, v: number) {
   const newVal = { ...props.property.value, [axis]: v };
   store.setPropertyValue(props.layerId, props.propertyPath, newVal);
 }
-function selectProp() { store.selectProperty(props.propertyPath); }
+function _selectProp() {
+  store.selectProperty(props.propertyPath);
+}
 
 // Format dropdown option label (capitalize first letter)
-function formatOptionLabel(opt: string): string {
+function _formatOptionLabel(opt: string): string {
   return opt.charAt(0).toUpperCase() + opt.slice(1);
 }
 
 // Get tooltip for dropdown based on property name
-function getDropdownTitle(): string {
+function _getDropdownTitle(): string {
   switch (props.name) {
-    case 'Line Cap': return 'Butt: flat end, Round: rounded end, Square: extends end';
-    case 'Line Join': return 'Miter: sharp corner, Round: rounded corner, Bevel: flat corner';
-    default: return '';
+    case "Line Cap":
+      return "Butt: flat end, Round: rounded end, Square: extends end";
+    case "Line Join":
+      return "Miter: sharp corner, Round: rounded corner, Bevel: flat corner";
+    default:
+      return "";
   }
 }
 
 // Get tooltip for string input based on property name
-function getStringTitle(): string {
+function _getStringTitle(): string {
   switch (props.name) {
-    case 'Dashes': return 'Dash pattern: comma-separated values (e.g., 10, 5 for 10px dash, 5px gap)';
-    default: return '';
+    case "Dashes":
+      return "Dash pattern: comma-separated values (e.g., 10, 5 for 10px dash, 5px gap)";
+    default:
+      return "";
   }
 }
 
 // Handle mouse down on track - start box selection or navigate
-function handleTrackMouseDown(e: MouseEvent) {
+function _handleTrackMouseDown(e: MouseEvent) {
   const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
   const x = e.clientX - rect.left;
 
@@ -368,8 +400,10 @@ function handleTrackMouseDown(e: MouseEvent) {
     boxCurrentX.value = Math.max(0, currentX);
 
     // Select keyframes within the box
-    const minFrame = Math.min(boxStartX.value, boxCurrentX.value) / props.pixelsPerFrame;
-    const maxFrame = Math.max(boxStartX.value, boxCurrentX.value) / props.pixelsPerFrame;
+    const minFrame =
+      Math.min(boxStartX.value, boxCurrentX.value) / props.pixelsPerFrame;
+    const maxFrame =
+      Math.max(boxStartX.value, boxCurrentX.value) / props.pixelsPerFrame;
 
     if (!ev.shiftKey) {
       selectedKeyframeIds.value.clear();
@@ -382,7 +416,7 @@ function handleTrackMouseDown(e: MouseEvent) {
     }
   };
 
-  const onUp = (ev: MouseEvent) => {
+  const onUp = (_ev: MouseEvent) => {
     isBoxSelecting.value = false;
 
     // If it was just a click (no drag), navigate to that frame
@@ -392,16 +426,16 @@ function handleTrackMouseDown(e: MouseEvent) {
       store.setFrame(Math.max(0, Math.min(store.frameCount - 1, frame)));
     }
 
-    window.removeEventListener('mousemove', onMove);
-    window.removeEventListener('mouseup', onUp);
+    window.removeEventListener("mousemove", onMove);
+    window.removeEventListener("mouseup", onUp);
   };
 
-  window.addEventListener('mousemove', onMove);
-  window.addEventListener('mouseup', onUp);
+  window.addEventListener("mousemove", onMove);
+  window.addEventListener("mouseup", onUp);
 }
 
 // Keyframe selection and dragging
-function startKeyframeDrag(e: MouseEvent, kf: Keyframe<any>) {
+function _startKeyframeDrag(e: MouseEvent, kf: Keyframe<any>) {
   // Toggle selection with Shift, otherwise single select
   if (e.shiftKey) {
     if (selectedKeyframeIds.value.has(kf.id)) {
@@ -423,9 +457,16 @@ function startKeyframeDrag(e: MouseEvent, kf: Keyframe<any>) {
 
   // For scale mode, capture original keyframe positions
   const originalKeyframes: { id: string; frame: number }[] = isScaleMode
-    ? (props.property?.keyframes?.map((k: { id: string; frame: number }) => ({ id: k.id, frame: k.frame })) || [])
+    ? props.property?.keyframes?.map((k: { id: string; frame: number }) => ({
+        id: k.id,
+        frame: k.frame,
+      })) || []
     : [];
-  const anchorFrame = isScaleMode ? Math.min(...originalKeyframes.map((k: { id: string; frame: number }) => k.frame)) : 0;
+  const anchorFrame = isScaleMode
+    ? Math.min(
+        ...originalKeyframes.map((k: { id: string; frame: number }) => k.frame),
+      )
+    : 0;
 
   const onMove = (ev: MouseEvent) => {
     const dx = ev.clientX - startX;
@@ -433,7 +474,9 @@ function startKeyframeDrag(e: MouseEvent, kf: Keyframe<any>) {
     // Ctrl+Alt+Drag = Scale keyframes (maintain spacing proportions)
     if (isScaleMode && originalKeyframes.length > 1) {
       // Calculate scale factor: how much the drag represents relative to original span
-      const maxFrame = Math.max(...originalKeyframes.map((k: { id: string; frame: number }) => k.frame));
+      const maxFrame = Math.max(
+        ...originalKeyframes.map((k: { id: string; frame: number }) => k.frame),
+      );
       const originalSpan = maxFrame - anchorFrame;
       if (originalSpan > 0) {
         // Pixel drag converts to scale factor (100px = 0.5x scale adjustment)
@@ -443,12 +486,22 @@ function startKeyframeDrag(e: MouseEvent, kf: Keyframe<any>) {
         // Apply new positions to all keyframes based on scale
         for (const orig of originalKeyframes) {
           const relativePos = orig.frame - anchorFrame;
-          const newFrame = Math.max(0, Math.round(anchorFrame + relativePos * scaleFactor));
+          const newFrame = Math.max(
+            0,
+            Math.round(anchorFrame + relativePos * scaleFactor),
+          );
           if (newFrame !== orig.frame) {
             // Find current keyframe position and update
-            const currentKf = props.property?.keyframes?.find((k: { id: string }) => k.id === orig.id);
+            const currentKf = props.property?.keyframes?.find(
+              (k: { id: string }) => k.id === orig.id,
+            );
             if (currentKf && currentKf.frame !== newFrame) {
-              store.moveKeyframe(props.layerId, props.propertyPath, orig.id, newFrame);
+              store.moveKeyframe(
+                props.layerId,
+                props.propertyPath,
+                orig.id,
+                newFrame,
+              );
             }
           }
         }
@@ -458,17 +511,25 @@ function startKeyframeDrag(e: MouseEvent, kf: Keyframe<any>) {
 
     // Normal drag mode - move keyframe
     const frameDelta = Math.round(dx / props.pixelsPerFrame);
-    let newFrame = Math.max(0, Math.min(store.frameCount - 1, startFrame + frameDelta));
+    let newFrame = Math.max(
+      0,
+      Math.min(store.frameCount - 1, startFrame + frameDelta),
+    );
 
     // Apply snapping if enabled (hold Alt/Option to disable temporarily)
     if (!ev.altKey && store.snapConfig.enabled) {
-      const snap = findNearestSnap(newFrame, store.snapConfig, props.pixelsPerFrame, {
-        layers: store.layers,
-        selectedLayerId: props.layerId,
-        currentFrame: store.currentFrame,
-        audioAnalysis: store.audioAnalysis,
-        peakData: store.peakData
-      });
+      const snap = findNearestSnap(
+        newFrame,
+        store.snapConfig,
+        props.pixelsPerFrame,
+        {
+          layers: store.layers,
+          selectedLayerId: props.layerId,
+          currentFrame: store.currentFrame,
+          audioAnalysis: store.audioAnalysis,
+          peakData: store.peakData,
+        },
+      );
       if (snap) {
         newFrame = snap.frame;
       }
@@ -480,22 +541,22 @@ function startKeyframeDrag(e: MouseEvent, kf: Keyframe<any>) {
   };
 
   const onUp = () => {
-    window.removeEventListener('mousemove', onMove);
-    window.removeEventListener('mouseup', onUp);
+    window.removeEventListener("mousemove", onMove);
+    window.removeEventListener("mouseup", onUp);
   };
 
-  window.addEventListener('mousemove', onMove);
-  window.addEventListener('mouseup', onUp);
+  window.addEventListener("mousemove", onMove);
+  window.addEventListener("mouseup", onUp);
 }
 
 // Delete keyframe
-function deleteKeyframe(kfId: string) {
+function _deleteKeyframe(kfId: string) {
   store.removeKeyframe(props.layerId, props.propertyPath, kfId);
   selectedKeyframeIds.value.delete(kfId);
 }
 
 // Context menu functions
-function showContextMenu(e: MouseEvent, kf: Keyframe<any>) {
+function _showContextMenu(e: MouseEvent, kf: Keyframe<any>) {
   // Select the keyframe if not already selected
   if (!selectedKeyframeIds.value.has(kf.id)) {
     selectedKeyframeIds.value.clear();
@@ -509,7 +570,7 @@ function showContextMenu(e: MouseEvent, kf: Keyframe<any>) {
       visible: true,
       x: e.clientX - trackRect.left,
       y: e.clientY - trackRect.top,
-      keyframe: kf
+      keyframe: kf,
     };
   }
 }
@@ -524,10 +585,10 @@ function hideTrackContextMenu() {
 }
 
 // Show context menu on empty track area (right-click)
-function showTrackContextMenu(e: MouseEvent) {
+function _showTrackContextMenu(e: MouseEvent) {
   // Don't show if clicking on a keyframe (that has its own context menu)
   const target = e.target as HTMLElement;
-  if (target.closest('.keyframe')) return;
+  if (target.closest(".keyframe")) return;
 
   const rect = trackRef.value?.getBoundingClientRect();
   if (!rect) return;
@@ -543,12 +604,12 @@ function showTrackContextMenu(e: MouseEvent) {
     visible: true,
     x: x,
     y: e.clientY - rect.top,
-    frame: Math.max(0, Math.min(store.frameCount - 1, frame))
+    frame: Math.max(0, Math.min(store.frameCount - 1, frame)),
   };
 }
 
 // Add a keyframe at the clicked frame with interpolated value
-function addKeyframeAtFrame() {
+function _addKeyframeAtFrame() {
   const frame = trackContextMenu.value.frame;
   const currentValue = props.property?.value ?? 0;
   store.addKeyframe(props.layerId, props.propertyPath, currentValue, frame);
@@ -556,7 +617,7 @@ function addKeyframeAtFrame() {
 }
 
 // Insert keyframe by interpolating the position motion path
-function insertKeyframeOnPath() {
+function _insertKeyframeOnPath() {
   const frame = trackContextMenu.value.frame;
   const newKfId = store.insertKeyframeOnPath(props.layerId, frame);
   if (newKfId) {
@@ -566,27 +627,32 @@ function insertKeyframeOnPath() {
 }
 
 // Navigate to the clicked frame
-function goToClickedFrame() {
+function _goToClickedFrame() {
   store.setFrame(trackContextMenu.value.frame);
   hideTrackContextMenu();
 }
 
-function setInterpolation(type: 'linear' | 'bezier' | 'hold') {
+function _setInterpolation(type: "linear" | "bezier" | "hold") {
   // Apply to all selected keyframes
   for (const kfId of selectedKeyframeIds.value) {
-    store.setKeyframeInterpolation(props.layerId, props.propertyPath, kfId, type);
+    store.setKeyframeInterpolation(
+      props.layerId,
+      props.propertyPath,
+      kfId,
+      type,
+    );
   }
   hideContextMenu();
 }
 
-function goToKeyframe() {
+function _goToKeyframe() {
   if (contextMenu.value.keyframe) {
     store.setFrame(contextMenu.value.keyframe.frame);
   }
   hideContextMenu();
 }
 
-function deleteSelectedKeyframes() {
+function _deleteSelectedKeyframes() {
   for (const kfId of selectedKeyframeIds.value) {
     store.removeKeyframe(props.layerId, props.propertyPath, kfId);
   }
@@ -595,7 +661,7 @@ function deleteSelectedKeyframes() {
 }
 
 // Close context menus on click outside
-function handleGlobalClick(e: MouseEvent) {
+function handleGlobalClick(_e: MouseEvent) {
   if (contextMenu.value.visible) {
     hideContextMenu();
   }
@@ -605,11 +671,11 @@ function handleGlobalClick(e: MouseEvent) {
 }
 
 onMounted(() => {
-  document.addEventListener('click', handleGlobalClick);
+  document.addEventListener("click", handleGlobalClick);
 });
 
 onUnmounted(() => {
-  document.removeEventListener('click', handleGlobalClick);
+  document.removeEventListener("click", handleGlobalClick);
 });
 </script>
 

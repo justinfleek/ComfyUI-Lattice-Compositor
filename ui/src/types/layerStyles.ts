@@ -8,7 +8,7 @@
 //
 // ============================================================
 
-import type { AnimatableProperty, BlendMode } from './project';
+import type { AnimatableProperty, BlendMode } from "./project";
 
 // ============================================================
 // CORE TYPES
@@ -16,28 +16,28 @@ import type { AnimatableProperty, BlendMode } from './project';
 
 /** RGBA color with alpha */
 export interface RGBA {
-  r: number;  // 0-255
-  g: number;  // 0-255
-  b: number;  // 0-255
-  a: number;  // 0-1
+  r: number; // 0-255
+  g: number; // 0-255
+  b: number; // 0-255
+  a: number; // 0-1
 }
 
 /** Gradient stop */
 export interface GradientStop {
-  position: number;  // 0-1
+  position: number; // 0-1
   color: RGBA;
 }
 
 /** Gradient definition */
 export interface GradientDef {
-  type: 'linear' | 'radial';
+  type: "linear" | "radial";
   stops: GradientStop[];
-  angle?: number;  // For linear gradients (degrees)
+  angle?: number; // For linear gradients (degrees)
 }
 
 /** Contour curve for advanced effects */
 export interface ContourCurve {
-  points: Array<{ x: number; y: number }>;  // 0-1 normalized
+  points: Array<{ x: number; y: number }>; // 0-1 normalized
 }
 
 // ============================================================
@@ -111,7 +111,7 @@ export interface InnerShadowStyle extends BaseLayerStyle {
 // ============================================================
 
 /** Glow rendering technique */
-export type GlowTechnique = 'softer' | 'precise';
+export type GlowTechnique = "softer" | "precise";
 
 export interface OuterGlowStyle extends BaseLayerStyle {
   /** Glow color (if not using gradient) */
@@ -143,7 +143,7 @@ export interface OuterGlowStyle extends BaseLayerStyle {
 // ============================================================
 
 /** Where inner glow originates from */
-export type InnerGlowSource = 'center' | 'edge';
+export type InnerGlowSource = "center" | "edge";
 
 export interface InnerGlowStyle extends BaseLayerStyle {
   /** Glow color (if not using gradient) */
@@ -178,17 +178,17 @@ export interface InnerGlowStyle extends BaseLayerStyle {
 
 /** Bevel style type */
 export type BevelStyle =
-  | 'outer-bevel'     // Bevel on outside edge
-  | 'inner-bevel'     // Bevel on inside edge
-  | 'emboss'          // Raised emboss
-  | 'pillow-emboss'   // Sunken edges
-  | 'stroke-emboss';  // Bevel on stroke
+  | "outer-bevel" // Bevel on outside edge
+  | "inner-bevel" // Bevel on inside edge
+  | "emboss" // Raised emboss
+  | "pillow-emboss" // Sunken edges
+  | "stroke-emboss"; // Bevel on stroke
 
 /** Bevel rendering technique */
-export type BevelTechnique = 'smooth' | 'chisel-hard' | 'chisel-soft';
+export type BevelTechnique = "smooth" | "chisel-hard" | "chisel-soft";
 
 /** Bevel direction */
-export type BevelDirection = 'up' | 'down';
+export type BevelDirection = "up" | "down";
 
 export interface BevelEmbossStyle extends BaseLayerStyle {
   /** Bevel style type */
@@ -295,11 +295,11 @@ export interface ColorOverlayStyle extends BaseLayerStyle {
 
 /** Gradient overlay style type */
 export type GradientOverlayType =
-  | 'linear'
-  | 'radial'
-  | 'angle'
-  | 'reflected'
-  | 'diamond';
+  | "linear"
+  | "radial"
+  | "angle"
+  | "reflected"
+  | "diamond";
 
 export interface GradientOverlayStyle extends BaseLayerStyle {
   /** Gradient definition */
@@ -344,10 +344,10 @@ export interface PatternOverlayStyle extends BaseLayerStyle {
 // ============================================================
 
 /** Stroke position relative to edge */
-export type StrokePosition = 'outside' | 'inside' | 'center';
+export type StrokePosition = "outside" | "inside" | "center";
 
 /** Stroke fill type */
-export type StrokeFillType = 'color' | 'gradient' | 'pattern';
+export type StrokeFillType = "color" | "gradient" | "pattern";
 
 export interface StrokeStyle extends BaseLayerStyle {
   /** Stroke color (if fillType is 'color') */
@@ -486,7 +486,7 @@ export interface GlobalLightSettings {
 export function createStyleProperty<T>(
   name: string,
   value: T,
-  type: 'number' | 'color' | 'position' = 'number'
+  type: "number" | "color" | "position" = "number",
 ): AnimatableProperty<T> {
   return {
     id: `style-${name}-${Date.now()}`,
@@ -494,19 +494,24 @@ export function createStyleProperty<T>(
     type,
     value,
     animated: false,
-    keyframes: []
+    keyframes: [],
   };
 }
 
 /** Create default RGBA color */
-export function createRGBA(r: number, g: number, b: number, a: number = 1): RGBA {
+export function createRGBA(
+  r: number,
+  g: number,
+  b: number,
+  a: number = 1,
+): RGBA {
   return { r, g, b, a };
 }
 
 /** Create default layer styles (all disabled) */
 export function createDefaultLayerStyles(): LayerStyles {
   return {
-    enabled: false
+    enabled: false,
   };
 }
 
@@ -514,16 +519,16 @@ export function createDefaultLayerStyles(): LayerStyles {
 export function createDefaultDropShadow(): DropShadowStyle {
   return {
     enabled: true,
-    blendMode: 'multiply',
-    opacity: createStyleProperty('opacity', 75),
-    color: createStyleProperty('color', createRGBA(0, 0, 0, 1), 'color'),
-    angle: createStyleProperty('angle', 120),
+    blendMode: "multiply",
+    opacity: createStyleProperty("opacity", 75),
+    color: createStyleProperty("color", createRGBA(0, 0, 0, 1), "color"),
+    angle: createStyleProperty("angle", 120),
     useGlobalLight: true,
-    distance: createStyleProperty('distance', 5),
-    spread: createStyleProperty('spread', 0),
-    size: createStyleProperty('size', 5),
-    noise: createStyleProperty('noise', 0),
-    layerKnocksOut: true
+    distance: createStyleProperty("distance", 5),
+    spread: createStyleProperty("spread", 0),
+    size: createStyleProperty("size", 5),
+    noise: createStyleProperty("noise", 0),
+    layerKnocksOut: true,
   };
 }
 
@@ -531,15 +536,15 @@ export function createDefaultDropShadow(): DropShadowStyle {
 export function createDefaultInnerShadow(): InnerShadowStyle {
   return {
     enabled: true,
-    blendMode: 'multiply',
-    opacity: createStyleProperty('opacity', 75),
-    color: createStyleProperty('color', createRGBA(0, 0, 0, 1), 'color'),
-    angle: createStyleProperty('angle', 120),
+    blendMode: "multiply",
+    opacity: createStyleProperty("opacity", 75),
+    color: createStyleProperty("color", createRGBA(0, 0, 0, 1), "color"),
+    angle: createStyleProperty("angle", 120),
     useGlobalLight: true,
-    distance: createStyleProperty('distance', 5),
-    choke: createStyleProperty('choke', 0),
-    size: createStyleProperty('size', 5),
-    noise: createStyleProperty('noise', 0)
+    distance: createStyleProperty("distance", 5),
+    choke: createStyleProperty("choke", 0),
+    size: createStyleProperty("size", 5),
+    noise: createStyleProperty("noise", 0),
   };
 }
 
@@ -547,15 +552,15 @@ export function createDefaultInnerShadow(): InnerShadowStyle {
 export function createDefaultOuterGlow(): OuterGlowStyle {
   return {
     enabled: true,
-    blendMode: 'screen',
-    opacity: createStyleProperty('opacity', 75),
-    color: createStyleProperty('color', createRGBA(255, 255, 190, 1), 'color'),
-    technique: 'softer',
-    spread: createStyleProperty('spread', 0),
-    size: createStyleProperty('size', 5),
-    range: createStyleProperty('range', 50),
-    jitter: createStyleProperty('jitter', 0),
-    noise: createStyleProperty('noise', 0)
+    blendMode: "screen",
+    opacity: createStyleProperty("opacity", 75),
+    color: createStyleProperty("color", createRGBA(255, 255, 190, 1), "color"),
+    technique: "softer",
+    spread: createStyleProperty("spread", 0),
+    size: createStyleProperty("size", 5),
+    range: createStyleProperty("range", 50),
+    jitter: createStyleProperty("jitter", 0),
+    noise: createStyleProperty("noise", 0),
   };
 }
 
@@ -563,16 +568,16 @@ export function createDefaultOuterGlow(): OuterGlowStyle {
 export function createDefaultInnerGlow(): InnerGlowStyle {
   return {
     enabled: true,
-    blendMode: 'screen',
-    opacity: createStyleProperty('opacity', 75),
-    color: createStyleProperty('color', createRGBA(255, 255, 190, 1), 'color'),
-    technique: 'softer',
-    source: 'edge',
-    choke: createStyleProperty('choke', 0),
-    size: createStyleProperty('size', 5),
-    range: createStyleProperty('range', 50),
-    jitter: createStyleProperty('jitter', 0),
-    noise: createStyleProperty('noise', 0)
+    blendMode: "screen",
+    opacity: createStyleProperty("opacity", 75),
+    color: createStyleProperty("color", createRGBA(255, 255, 190, 1), "color"),
+    technique: "softer",
+    source: "edge",
+    choke: createStyleProperty("choke", 0),
+    size: createStyleProperty("size", 5),
+    range: createStyleProperty("range", 50),
+    jitter: createStyleProperty("jitter", 0),
+    noise: createStyleProperty("noise", 0),
   };
 }
 
@@ -580,23 +585,31 @@ export function createDefaultInnerGlow(): InnerGlowStyle {
 export function createDefaultBevelEmboss(): BevelEmbossStyle {
   return {
     enabled: true,
-    blendMode: 'normal',
-    opacity: createStyleProperty('opacity', 100),
-    style: 'inner-bevel',
-    technique: 'smooth',
-    depth: createStyleProperty('depth', 100),
-    direction: 'up',
-    size: createStyleProperty('size', 5),
-    soften: createStyleProperty('soften', 0),
-    angle: createStyleProperty('angle', 120),
+    blendMode: "normal",
+    opacity: createStyleProperty("opacity", 100),
+    style: "inner-bevel",
+    technique: "smooth",
+    depth: createStyleProperty("depth", 100),
+    direction: "up",
+    size: createStyleProperty("size", 5),
+    soften: createStyleProperty("soften", 0),
+    angle: createStyleProperty("angle", 120),
     useGlobalLight: true,
-    altitude: createStyleProperty('altitude', 30),
-    highlightMode: 'screen',
-    highlightColor: createStyleProperty('highlightColor', createRGBA(255, 255, 255, 1), 'color'),
-    highlightOpacity: createStyleProperty('highlightOpacity', 75),
-    shadowMode: 'multiply',
-    shadowColor: createStyleProperty('shadowColor', createRGBA(0, 0, 0, 1), 'color'),
-    shadowOpacity: createStyleProperty('shadowOpacity', 75)
+    altitude: createStyleProperty("altitude", 30),
+    highlightMode: "screen",
+    highlightColor: createStyleProperty(
+      "highlightColor",
+      createRGBA(255, 255, 255, 1),
+      "color",
+    ),
+    highlightOpacity: createStyleProperty("highlightOpacity", 75),
+    shadowMode: "multiply",
+    shadowColor: createStyleProperty(
+      "shadowColor",
+      createRGBA(0, 0, 0, 1),
+      "color",
+    ),
+    shadowOpacity: createStyleProperty("shadowOpacity", 75),
   };
 }
 
@@ -604,13 +617,13 @@ export function createDefaultBevelEmboss(): BevelEmbossStyle {
 export function createDefaultSatin(): SatinStyle {
   return {
     enabled: true,
-    blendMode: 'multiply',
-    opacity: createStyleProperty('opacity', 50),
-    color: createStyleProperty('color', createRGBA(0, 0, 0, 1), 'color'),
-    angle: createStyleProperty('angle', 19),
-    distance: createStyleProperty('distance', 11),
-    size: createStyleProperty('size', 14),
-    invert: true
+    blendMode: "multiply",
+    opacity: createStyleProperty("opacity", 50),
+    color: createStyleProperty("color", createRGBA(0, 0, 0, 1), "color"),
+    angle: createStyleProperty("angle", 19),
+    distance: createStyleProperty("distance", 11),
+    size: createStyleProperty("size", 14),
+    invert: true,
   };
 }
 
@@ -618,9 +631,9 @@ export function createDefaultSatin(): SatinStyle {
 export function createDefaultColorOverlay(): ColorOverlayStyle {
   return {
     enabled: true,
-    blendMode: 'normal',
-    opacity: createStyleProperty('opacity', 100),
-    color: createStyleProperty('color', createRGBA(255, 0, 0, 1), 'color')
+    blendMode: "normal",
+    opacity: createStyleProperty("opacity", 100),
+    color: createStyleProperty("color", createRGBA(255, 0, 0, 1), "color"),
   };
 }
 
@@ -628,21 +641,21 @@ export function createDefaultColorOverlay(): ColorOverlayStyle {
 export function createDefaultGradientOverlay(): GradientOverlayStyle {
   return {
     enabled: true,
-    blendMode: 'normal',
-    opacity: createStyleProperty('opacity', 100),
-    gradient: createStyleProperty('gradient', {
-      type: 'linear',
+    blendMode: "normal",
+    opacity: createStyleProperty("opacity", 100),
+    gradient: createStyleProperty("gradient", {
+      type: "linear",
       stops: [
         { position: 0, color: createRGBA(0, 0, 0, 1) },
-        { position: 1, color: createRGBA(255, 255, 255, 1) }
-      ]
+        { position: 1, color: createRGBA(255, 255, 255, 1) },
+      ],
     }),
-    style: 'linear',
-    angle: createStyleProperty('angle', 90),
-    scale: createStyleProperty('scale', 100),
+    style: "linear",
+    angle: createStyleProperty("angle", 90),
+    scale: createStyleProperty("scale", 100),
     alignWithLayer: true,
     reverse: false,
-    offset: createStyleProperty('offset', { x: 0, y: 0 }, 'position')
+    offset: createStyleProperty("offset", { x: 0, y: 0 }, "position"),
   };
 }
 
@@ -650,32 +663,32 @@ export function createDefaultGradientOverlay(): GradientOverlayStyle {
 export function createDefaultStroke(): StrokeStyle {
   return {
     enabled: true,
-    blendMode: 'normal',
-    opacity: createStyleProperty('opacity', 100),
-    color: createStyleProperty('color', createRGBA(255, 0, 0, 1), 'color'),
-    fillType: 'color',
-    size: createStyleProperty('size', 3),
-    position: 'outside'
+    blendMode: "normal",
+    opacity: createStyleProperty("opacity", 100),
+    color: createStyleProperty("color", createRGBA(255, 0, 0, 1), "color"),
+    fillType: "color",
+    size: createStyleProperty("size", 3),
+    position: "outside",
   };
 }
 
 /** Create default blending options */
 export function createDefaultBlendingOptions(): StyleBlendingOptions {
   return {
-    fillOpacity: createStyleProperty('fillOpacity', 100),
+    fillOpacity: createStyleProperty("fillOpacity", 100),
     blendInteriorStylesAsGroup: false,
     blendClippedLayersAsGroup: true,
     transparencyShapesLayer: true,
     layerMaskHidesEffects: false,
-    vectorMaskHidesEffects: false
+    vectorMaskHidesEffects: false,
   };
 }
 
 /** Create default global light settings */
 export function createDefaultGlobalLight(): GlobalLightSettings {
   return {
-    angle: createStyleProperty('angle', 120),
-    altitude: createStyleProperty('altitude', 30)
+    angle: createStyleProperty("angle", 120),
+    altitude: createStyleProperty("altitude", 30),
   };
 }
 

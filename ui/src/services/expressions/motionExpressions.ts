@@ -7,7 +7,7 @@
  * - elastic: Spring-like elastic motion
  */
 
-import type { Keyframe } from '@/types/project';
+import type { Keyframe } from "@/types/project";
 
 /**
  * Minimal expression context for motion expressions
@@ -33,7 +33,7 @@ export function inertia(
   ctx: MotionExpressionContext,
   amplitude: number = 0.1,
   frequency: number = 2.0,
-  decay: number = 2.0
+  decay: number = 2.0,
 ): number | number[] {
   const { time, keyframes, value, velocity } = ctx;
 
@@ -64,18 +64,26 @@ export function inertia(
   if (t <= 0) return value;
 
   // Calculate velocity at keyframe
-  const vel = typeof velocity === 'number' ? velocity : velocity[0];
-  const val = typeof value === 'number' ? value : value[0];
+  const vel = typeof velocity === "number" ? velocity : velocity[0];
+  const val = typeof value === "number" ? value : value[0];
 
-  const oscillation = vel * safeAmplitude * Math.sin(safeFrequency * t * 2 * Math.PI) / Math.exp(safeDecay * t);
+  const oscillation =
+    (vel * safeAmplitude * Math.sin(safeFrequency * t * 2 * Math.PI)) /
+    Math.exp(safeDecay * t);
 
-  if (typeof value === 'number') {
+  if (typeof value === "number") {
     return val + oscillation;
   }
   // For arrays, apply to all components
   return (value as number[]).map((v, i) => {
     const componentVel = (velocity as number[])[i] || 0;
-    return v + componentVel * safeAmplitude * Math.sin(safeFrequency * t * 2 * Math.PI) / Math.exp(safeDecay * t);
+    return (
+      v +
+      (componentVel *
+        safeAmplitude *
+        Math.sin(safeFrequency * t * 2 * Math.PI)) /
+        Math.exp(safeDecay * t)
+    );
   });
 }
 
@@ -86,13 +94,15 @@ export function inertia(
 export function bounce(
   ctx: MotionExpressionContext,
   elasticity: number = 0.7,
-  gravity: number = 4000
+  gravity: number = 4000,
 ): number | number[] {
   const { time, keyframes, value } = ctx;
 
   // Validate parameters
-  const safeElasticity = Number.isFinite(elasticity) ? Math.max(0, Math.min(1, elasticity)) : 0.7;
-  const safeGravity = (Number.isFinite(gravity) && gravity > 0) ? gravity : 4000;
+  const safeElasticity = Number.isFinite(elasticity)
+    ? Math.max(0, Math.min(1, elasticity))
+    : 0.7;
+  const safeGravity = Number.isFinite(gravity) && gravity > 0 ? gravity : 4000;
 
   if (keyframes.length === 0) return value;
 
@@ -123,7 +133,7 @@ export function bounce(
 
   // Calculate which bounce we're in
   while (bounceTime > 0 && totalBounces < maxBounces) {
-    const bounceDuration = Math.sqrt(2 * bounceHeight / safeGravity);
+    const bounceDuration = Math.sqrt((2 * bounceHeight) / safeGravity);
     if (bounceTime < bounceDuration * 2) {
       break;
     }
@@ -133,15 +143,17 @@ export function bounce(
   }
 
   // Position within current bounce
-  const bounceDuration = Math.sqrt(2 * bounceHeight / safeGravity);
+  const bounceDuration = Math.sqrt((2 * bounceHeight) / safeGravity);
   const bounceT = bounceTime / (bounceDuration * 2);
   const bounceOffset = bounceHeight * 4 * bounceT * (1 - bounceT);
 
-  if (typeof value === 'number') {
+  if (typeof value === "number") {
     return value - bounceOffset * (1 - safeElasticity);
   }
 
-  return (value as number[]).map((v) => v - bounceOffset * (1 - safeElasticity));
+  return (value as number[]).map(
+    (v) => v - bounceOffset * (1 - safeElasticity),
+  );
 }
 
 /**
@@ -151,13 +163,13 @@ export function bounce(
 export function elastic(
   ctx: MotionExpressionContext,
   amplitude: number = 1,
-  period: number = 0.3
+  period: number = 0.3,
 ): number | number[] {
   const { time, keyframes, value } = ctx;
 
   // Validate parameters
   const safeAmplitude = Number.isFinite(amplitude) ? amplitude : 1;
-  const safePeriod = (Number.isFinite(period) && period > 0) ? period : 0.3;
+  const safePeriod = Number.isFinite(period) && period > 0 ? period : 0.3;
 
   if (keyframes.length === 0) return value;
 
@@ -180,10 +192,10 @@ export function elastic(
   if (t <= 0) return value;
 
   const s = safePeriod / 4;
-  const decay = Math.pow(2, -10 * t);
-  const oscillation = decay * Math.sin((t - s) * (2 * Math.PI) / safePeriod);
+  const decay = 2 ** (-10 * t);
+  const oscillation = decay * Math.sin(((t - s) * (2 * Math.PI)) / safePeriod);
 
-  if (typeof value === 'number') {
+  if (typeof value === "number") {
     return value + safeAmplitude * oscillation;
   }
 

@@ -46,10 +46,10 @@ export interface GPUVortex {
 }
 
 export interface GPUParticleData {
-  positions: Float32Array;    // [x, y, prevX, prevY] per particle
-  velocities: Float32Array;   // [vx, vy, 0, 0] per particle
-  properties: Float32Array;   // [age, lifetime, size, baseSize] per particle
-  colors: Float32Array;       // [r, g, b, a] per particle
+  positions: Float32Array; // [x, y, prevX, prevY] per particle
+  velocities: Float32Array; // [vx, vy, 0, 0] per particle
+  properties: Float32Array; // [age, lifetime, size, baseSize] per particle
+  colors: Float32Array; // [r, g, b, a] per particle
   count: number;
 }
 
@@ -65,7 +65,7 @@ export interface WebGPUCapabilities {
 // WEBGPU COMPUTE SHADERS
 // ============================================================================
 
-const PARTICLE_UPDATE_SHADER = /* wgsl */`
+const PARTICLE_UPDATE_SHADER = /* wgsl */ `
 // Uniform buffer for simulation config
 struct SimConfig {
   gravity: f32,
@@ -223,7 +223,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 }
 `;
 
-const PARTICLE_SIZE_MODULATION_SHADER = /* wgsl */`
+const PARTICLE_SIZE_MODULATION_SHADER = /* wgsl */ `
 struct ModConfig {
   particleCount: u32,
   sizeOverLifeEnabled: u32,
@@ -336,45 +336,46 @@ export class ParticleGPUCompute {
    * Check WebGPU availability and capabilities
    */
   static async checkCapabilities(): Promise<WebGPUCapabilities> {
-    if (this._capabilities) {
-      return this._capabilities;
+    if (ParticleGPUCompute._capabilities) {
+      return ParticleGPUCompute._capabilities;
     }
 
     if (!navigator.gpu) {
-      this._capabilities = {
+      ParticleGPUCompute._capabilities = {
         available: false,
         adapter: null,
         device: null,
         maxWorkgroupSize: 0,
         maxBufferSize: 0,
       };
-      return this._capabilities;
+      return ParticleGPUCompute._capabilities;
     }
 
     try {
       const adapter = await navigator.gpu.requestAdapter({
-        powerPreference: 'high-performance',
+        powerPreference: "high-performance",
       });
 
       if (!adapter) {
-        this._capabilities = {
+        ParticleGPUCompute._capabilities = {
           available: false,
           adapter: null,
           device: null,
           maxWorkgroupSize: 0,
           maxBufferSize: 0,
         };
-        return this._capabilities;
+        return ParticleGPUCompute._capabilities;
       }
 
       const device = await adapter.requestDevice({
         requiredLimits: {
-          maxStorageBufferBindingSize: adapter.limits.maxStorageBufferBindingSize,
+          maxStorageBufferBindingSize:
+            adapter.limits.maxStorageBufferBindingSize,
           maxComputeWorkgroupSizeX: 256,
         },
       });
 
-      this._capabilities = {
+      ParticleGPUCompute._capabilities = {
         available: true,
         adapter,
         device,
@@ -382,17 +383,17 @@ export class ParticleGPUCompute {
         maxBufferSize: device.limits.maxStorageBufferBindingSize,
       };
 
-      return this._capabilities;
+      return ParticleGPUCompute._capabilities;
     } catch (error) {
-      console.warn('WebGPU initialization failed:', error);
-      this._capabilities = {
+      console.warn("WebGPU initialization failed:", error);
+      ParticleGPUCompute._capabilities = {
         available: false,
         adapter: null,
         device: null,
         maxWorkgroupSize: 0,
         maxBufferSize: 0,
       };
-      return this._capabilities;
+      return ParticleGPUCompute._capabilities;
     }
   }
 
@@ -400,7 +401,7 @@ export class ParticleGPUCompute {
    * Check if WebGPU compute is available
    */
   static async isAvailable(): Promise<boolean> {
-    const caps = await this.checkCapabilities();
+    const caps = await ParticleGPUCompute.checkCapabilities();
     return caps.available;
   }
 
@@ -415,7 +416,7 @@ export class ParticleGPUCompute {
     const caps = await ParticleGPUCompute.checkCapabilities();
 
     if (!caps.available || !caps.device) {
-      console.warn('WebGPU not available, using CPU fallback');
+      console.warn("WebGPU not available, using CPU fallback");
       return false;
     }
 
@@ -431,10 +432,12 @@ export class ParticleGPUCompute {
       this.createBuffers();
 
       this.initialized = true;
-      console.log(`WebGPU Particle Compute initialized for ${maxParticles} particles`);
+      console.log(
+        `WebGPU Particle Compute initialized for ${maxParticles} particles`,
+      );
       return true;
     } catch (error) {
-      console.error('Failed to initialize WebGPU compute:', error);
+      console.error("Failed to initialize WebGPU compute:", error);
       this.dispose();
       return false;
     }
@@ -448,31 +451,31 @@ export class ParticleGPUCompute {
 
     // Update pipeline
     const updateShaderModule = this.device.createShaderModule({
-      label: 'Particle Update Shader',
+      label: "Particle Update Shader",
       code: PARTICLE_UPDATE_SHADER,
     });
 
     this.updatePipeline = this.device.createComputePipeline({
-      label: 'Particle Update Pipeline',
-      layout: 'auto',
+      label: "Particle Update Pipeline",
+      layout: "auto",
       compute: {
         module: updateShaderModule,
-        entryPoint: 'main',
+        entryPoint: "main",
       },
     });
 
     // Modulation pipeline
     const modulationShaderModule = this.device.createShaderModule({
-      label: 'Particle Modulation Shader',
+      label: "Particle Modulation Shader",
       code: PARTICLE_SIZE_MODULATION_SHADER,
     });
 
     this.modulationPipeline = this.device.createComputePipeline({
-      label: 'Particle Modulation Pipeline',
-      layout: 'auto',
+      label: "Particle Modulation Pipeline",
+      layout: "auto",
       compute: {
         module: modulationShaderModule,
-        entryPoint: 'main',
+        entryPoint: "main",
       },
     });
   }
@@ -487,81 +490,93 @@ export class ParticleGPUCompute {
 
     // Position buffer: [x, y, prevX, prevY] per particle
     this.positionBuffer = this.device.createBuffer({
-      label: 'Particle Positions',
+      label: "Particle Positions",
       size: particleCount * 4 * 4, // 4 floats * 4 bytes
-      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
+      usage:
+        GPUBufferUsage.STORAGE |
+        GPUBufferUsage.COPY_DST |
+        GPUBufferUsage.COPY_SRC,
     });
 
     // Velocity buffer: [vx, vy, 0, 0] per particle
     this.velocityBuffer = this.device.createBuffer({
-      label: 'Particle Velocities',
+      label: "Particle Velocities",
       size: particleCount * 4 * 4,
-      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
+      usage:
+        GPUBufferUsage.STORAGE |
+        GPUBufferUsage.COPY_DST |
+        GPUBufferUsage.COPY_SRC,
     });
 
     // Properties buffer: [age, lifetime, size, baseSize] per particle
     this.propertiesBuffer = this.device.createBuffer({
-      label: 'Particle Properties',
+      label: "Particle Properties",
       size: particleCount * 4 * 4,
-      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
+      usage:
+        GPUBufferUsage.STORAGE |
+        GPUBufferUsage.COPY_DST |
+        GPUBufferUsage.COPY_SRC,
     });
 
     // Color buffer: [r, g, b, a] per particle
     this.colorBuffer = this.device.createBuffer({
-      label: 'Particle Colors',
+      label: "Particle Colors",
       size: particleCount * 4 * 4,
-      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
+      usage:
+        GPUBufferUsage.STORAGE |
+        GPUBufferUsage.COPY_DST |
+        GPUBufferUsage.COPY_SRC,
     });
 
     // Config uniform buffer (must be 16-byte aligned)
     this.configBuffer = this.device.createBuffer({
-      label: 'Simulation Config',
+      label: "Simulation Config",
       size: 32, // 8 values * 4 bytes, aligned to 16
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
 
     // Gravity wells buffer (16 max)
     this.gravityWellBuffer = this.device.createBuffer({
-      label: 'Gravity Wells',
+      label: "Gravity Wells",
       size: 16 * 8 * 4, // 16 wells * 8 floats * 4 bytes
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
     });
 
     // Vortex buffer (16 max)
     this.vortexBuffer = this.device.createBuffer({
-      label: 'Vortices',
+      label: "Vortices",
       size: 16 * 8 * 4, // 16 vortices * 8 floats * 4 bytes
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
     });
 
     // Modulation config buffer
     this.modulationConfigBuffer = this.device.createBuffer({
-      label: 'Modulation Config',
+      label: "Modulation Config",
       size: 32, // 8 values * 4 bytes
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
 
     // Staging buffers for readback
     this.stagingPositionBuffer = this.device.createBuffer({
-      label: 'Staging Positions',
+      label: "Staging Positions",
       size: particleCount * 4 * 4,
       usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
     });
 
     this.stagingVelocityBuffer = this.device.createBuffer({
-      label: 'Staging Velocities',
+      label: "Staging Velocities",
       size: particleCount * 4 * 4,
       usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
     });
 
     this.stagingPropertiesBuffer = this.device.createBuffer({
-      label: 'Staging Properties',
+      label: "Staging Properties",
       size: particleCount * 4 * 4,
       usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
     });
 
     this.stagingColorBuffer = this.device.createBuffer({
-      label: 'Staging Colors',
+      label: "Staging Colors",
       size: particleCount * 4 * 4,
       usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
     });
@@ -578,16 +593,36 @@ export class ParticleGPUCompute {
     if (!this.device || !this.initialized) return;
 
     // Cast Float32Array to BufferSource for WebGPU compatibility
-    this.device.queue.writeBuffer(this.positionBuffer!, 0, data.positions as BufferSource);
-    this.device.queue.writeBuffer(this.velocityBuffer!, 0, data.velocities as BufferSource);
-    this.device.queue.writeBuffer(this.propertiesBuffer!, 0, data.properties as BufferSource);
-    this.device.queue.writeBuffer(this.colorBuffer!, 0, data.colors as BufferSource);
+    this.device.queue.writeBuffer(
+      this.positionBuffer!,
+      0,
+      data.positions as BufferSource,
+    );
+    this.device.queue.writeBuffer(
+      this.velocityBuffer!,
+      0,
+      data.velocities as BufferSource,
+    );
+    this.device.queue.writeBuffer(
+      this.propertiesBuffer!,
+      0,
+      data.properties as BufferSource,
+    );
+    this.device.queue.writeBuffer(
+      this.colorBuffer!,
+      0,
+      data.colors as BufferSource,
+    );
   }
 
   /**
    * Upload simulation config to GPU
    */
-  uploadConfig(config: GPUParticleConfig, gravityWells: GPUGravityWell[], vortices: GPUVortex[]): void {
+  uploadConfig(
+    config: GPUParticleConfig,
+    gravityWells: GPUGravityWell[],
+    vortices: GPUVortex[],
+  ): void {
     if (!this.device || !this.initialized) return;
 
     // Config buffer
@@ -597,7 +632,9 @@ export class ParticleGPUCompute {
       config.windY,
       config.friction,
       config.deltaTime,
-      0, 0, 0, // Padding for alignment
+      0,
+      0,
+      0, // Padding for alignment
     ]);
     // Pack counts as uint32
     const configView = new DataView(configData.buffer);
@@ -647,7 +684,7 @@ export class ParticleGPUCompute {
     // Create bind group if needed
     if (!this.updateBindGroup) {
       this.updateBindGroup = this.device.createBindGroup({
-        label: 'Update Bind Group',
+        label: "Update Bind Group",
         layout: this.updatePipeline.getBindGroupLayout(0),
         entries: [
           { binding: 0, resource: { buffer: this.configBuffer! } },
@@ -682,7 +719,7 @@ export class ParticleGPUCompute {
     sizeOverLifeEnabled: boolean,
     sizeStart: number,
     sizeEnd: number,
-    easingType: number
+    easingType: number,
   ): void {
     if (!this.device || !this.initialized || !this.modulationPipeline) return;
 
@@ -690,7 +727,8 @@ export class ParticleGPUCompute {
     const modConfig = new Uint32Array([
       particleCount,
       sizeOverLifeEnabled ? 1 : 0,
-      0, 0, // Will be replaced with floats
+      0,
+      0, // Will be replaced with floats
     ]);
     const modConfigView = new DataView(modConfig.buffer);
     modConfigView.setFloat32(8, sizeStart, true);
@@ -702,7 +740,7 @@ export class ParticleGPUCompute {
     // Create bind group if needed
     if (!this.modulationBindGroup) {
       this.modulationBindGroup = this.device.createBindGroup({
-        label: 'Modulation Bind Group',
+        label: "Modulation Bind Group",
         layout: this.modulationPipeline.getBindGroupLayout(0),
         entries: [
           { binding: 0, resource: { buffer: this.modulationConfigBuffer! } },
@@ -747,27 +785,59 @@ export class ParticleGPUCompute {
 
     // Copy to staging buffers
     const commandEncoder = this.device.createCommandEncoder();
-    commandEncoder.copyBufferToBuffer(this.positionBuffer!, 0, this.stagingPositionBuffer!, 0, byteSize);
-    commandEncoder.copyBufferToBuffer(this.velocityBuffer!, 0, this.stagingVelocityBuffer!, 0, byteSize);
-    commandEncoder.copyBufferToBuffer(this.propertiesBuffer!, 0, this.stagingPropertiesBuffer!, 0, byteSize);
-    commandEncoder.copyBufferToBuffer(this.colorBuffer!, 0, this.stagingColorBuffer!, 0, byteSize);
+    commandEncoder.copyBufferToBuffer(
+      this.positionBuffer!,
+      0,
+      this.stagingPositionBuffer!,
+      0,
+      byteSize,
+    );
+    commandEncoder.copyBufferToBuffer(
+      this.velocityBuffer!,
+      0,
+      this.stagingVelocityBuffer!,
+      0,
+      byteSize,
+    );
+    commandEncoder.copyBufferToBuffer(
+      this.propertiesBuffer!,
+      0,
+      this.stagingPropertiesBuffer!,
+      0,
+      byteSize,
+    );
+    commandEncoder.copyBufferToBuffer(
+      this.colorBuffer!,
+      0,
+      this.stagingColorBuffer!,
+      0,
+      byteSize,
+    );
     this.device.queue.submit([commandEncoder.finish()]);
 
     // Map and read staging buffers
-    await this.stagingPositionBuffer!.mapAsync(GPUMapMode.READ);
-    await this.stagingVelocityBuffer!.mapAsync(GPUMapMode.READ);
-    await this.stagingPropertiesBuffer!.mapAsync(GPUMapMode.READ);
-    await this.stagingColorBuffer!.mapAsync(GPUMapMode.READ);
+    await this.stagingPositionBuffer?.mapAsync(GPUMapMode.READ);
+    await this.stagingVelocityBuffer?.mapAsync(GPUMapMode.READ);
+    await this.stagingPropertiesBuffer?.mapAsync(GPUMapMode.READ);
+    await this.stagingColorBuffer?.mapAsync(GPUMapMode.READ);
 
-    const positions = new Float32Array(this.stagingPositionBuffer!.getMappedRange().slice(0));
-    const velocities = new Float32Array(this.stagingVelocityBuffer!.getMappedRange().slice(0));
-    const properties = new Float32Array(this.stagingPropertiesBuffer!.getMappedRange().slice(0));
-    const colors = new Float32Array(this.stagingColorBuffer!.getMappedRange().slice(0));
+    const positions = new Float32Array(
+      this.stagingPositionBuffer?.getMappedRange().slice(0),
+    );
+    const velocities = new Float32Array(
+      this.stagingVelocityBuffer?.getMappedRange().slice(0),
+    );
+    const properties = new Float32Array(
+      this.stagingPropertiesBuffer?.getMappedRange().slice(0),
+    );
+    const colors = new Float32Array(
+      this.stagingColorBuffer?.getMappedRange().slice(0),
+    );
 
-    this.stagingPositionBuffer!.unmap();
-    this.stagingVelocityBuffer!.unmap();
-    this.stagingPropertiesBuffer!.unmap();
-    this.stagingColorBuffer!.unmap();
+    this.stagingPositionBuffer?.unmap();
+    this.stagingVelocityBuffer?.unmap();
+    this.stagingPropertiesBuffer?.unmap();
+    this.stagingColorBuffer?.unmap();
 
     return {
       positions,
@@ -875,12 +945,12 @@ export class HybridParticleSystem {
       this.useGPU = await this.gpu.initialize(this.maxParticles);
 
       if (this.useGPU) {
-        console.log('Hybrid particle system: GPU mode enabled');
+        console.log("Hybrid particle system: GPU mode enabled");
         return true;
       }
     }
 
-    console.log('Hybrid particle system: CPU mode (WebGPU not available)');
+    console.log("Hybrid particle system: CPU mode (WebGPU not available)");
     return false;
   }
 
@@ -912,7 +982,7 @@ export class HybridParticleSystem {
   async step(
     config: GPUParticleConfig,
     gravityWells: GPUGravityWell[],
-    vortices: GPUVortex[]
+    vortices: GPUVortex[],
   ): Promise<void> {
     if (this.useGPU && this.gpu) {
       // GPU path
@@ -934,7 +1004,7 @@ export class HybridParticleSystem {
   private stepCPU(
     config: GPUParticleConfig,
     gravityWells: GPUGravityWell[],
-    vortices: GPUVortex[]
+    vortices: GPUVortex[],
   ): void {
     const dt = config.deltaTime;
     const friction = 1 - config.friction;
@@ -1080,7 +1150,7 @@ export class HybridParticleSystem {
     r: number,
     g: number,
     b: number,
-    a: number
+    a: number,
   ): boolean {
     if (this.particleCount >= this.maxParticles) return false;
 

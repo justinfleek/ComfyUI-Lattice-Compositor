@@ -13,7 +13,7 @@ export interface URLValidationResult {
   error?: string;
   warning?: string;
   protocol: string;
-  riskLevel: 'safe' | 'warning' | 'blocked';
+  riskLevel: "safe" | "warning" | "blocked";
 }
 
 /**
@@ -21,18 +21,18 @@ export interface URLValidationResult {
  * These can execute code or access local resources
  */
 const BLOCKED_PROTOCOLS = [
-  'javascript:',   // XSS - code execution
-  'vbscript:',     // Legacy IE code execution
-  'file:',         // Local file system access
-  'ftp:',          // Unencrypted file transfer
-  'gopher:',       // Legacy protocol, security issues
-  'ws:',           // Unencrypted WebSocket (block for assets)
-  'wss:',          // WebSocket (block for assets)
-  'chrome:',       // Browser internals
-  'chrome-extension:',
-  'moz-extension:',
-  'about:',        // Browser internals
-  'view-source:',  // Source viewing
+  "javascript:", // XSS - code execution
+  "vbscript:", // Legacy IE code execution
+  "file:", // Local file system access
+  "ftp:", // Unencrypted file transfer
+  "gopher:", // Legacy protocol, security issues
+  "ws:", // Unencrypted WebSocket (block for assets)
+  "wss:", // WebSocket (block for assets)
+  "chrome:", // Browser internals
+  "chrome-extension:",
+  "moz-extension:",
+  "about:", // Browser internals
+  "view-source:", // Source viewing
 ] as const;
 
 /**
@@ -40,7 +40,7 @@ const BLOCKED_PROTOCOLS = [
  * data:text/html can contain scripts
  */
 const BLOCKED_DATA_PATTERNS = [
-  /^data:text\/html/i,           // HTML can contain scripts
+  /^data:text\/html/i, // HTML can contain scripts
   /^data:application\/javascript/i,
   /^data:application\/x-javascript/i,
   /^data:text\/javascript/i,
@@ -74,16 +74,16 @@ const SAFE_DATA_PATTERNS = [
  */
 export function validateURL(
   url: string,
-  context: 'asset' | 'fetch' | 'embed' = 'asset'
+  _context: "asset" | "fetch" | "embed" = "asset",
 ): URLValidationResult {
   // Null/undefined check
-  if (!url || typeof url !== 'string') {
+  if (!url || typeof url !== "string") {
     return {
       valid: false,
       sanitized: null,
-      error: 'URL is required',
-      protocol: 'none',
-      riskLevel: 'blocked',
+      error: "URL is required",
+      protocol: "none",
+      riskLevel: "blocked",
     };
   }
 
@@ -95,26 +95,29 @@ export function validateURL(
     return {
       valid: false,
       sanitized: null,
-      error: 'URL is empty',
-      protocol: 'none',
-      riskLevel: 'blocked',
+      error: "URL is empty",
+      protocol: "none",
+      riskLevel: "blocked",
     };
   }
 
   // Length limit (prevent DoS via extremely long URLs)
-  if (trimmedUrl.length > 2_000_000) { // 2MB for data URLs
+  if (trimmedUrl.length > 2_000_000) {
+    // 2MB for data URLs
     return {
       valid: false,
       sanitized: null,
-      error: 'URL exceeds maximum length (2MB)',
-      protocol: 'unknown',
-      riskLevel: 'blocked',
+      error: "URL exceeds maximum length (2MB)",
+      protocol: "unknown",
+      riskLevel: "blocked",
     };
   }
 
   // Extract protocol
-  const protocolMatch = trimmedUrl.match(/^([a-zA-Z][a-zA-Z0-9+.-]*):/) ;
-  const protocol = protocolMatch ? protocolMatch[1].toLowerCase() + ':' : 'relative';
+  const protocolMatch = trimmedUrl.match(/^([a-zA-Z][a-zA-Z0-9+.-]*):/);
+  const protocol = protocolMatch
+    ? `${protocolMatch[1].toLowerCase()}:`
+    : "relative";
 
   // Check blocked protocols
   for (const blocked of BLOCKED_PROTOCOLS) {
@@ -124,54 +127,59 @@ export function validateURL(
         sanitized: null,
         error: `Blocked protocol: ${blocked} - security risk`,
         protocol: blocked,
-        riskLevel: 'blocked',
+        riskLevel: "blocked",
       };
     }
   }
 
   // Handle data: URLs specially
-  if (protocol === 'data:') {
+  if (protocol === "data:") {
     return validateDataURL(trimmedUrl);
   }
 
   // Handle blob: URLs (created by browser, generally safe)
-  if (protocol === 'blob:') {
+  if (protocol === "blob:") {
     return {
       valid: true,
       sanitized: trimmedUrl,
-      protocol: 'blob:',
-      riskLevel: 'safe',
+      protocol: "blob:",
+      riskLevel: "safe",
     };
   }
 
   // HTTPS is safe
-  if (protocol === 'https:') {
+  if (protocol === "https:") {
     return {
       valid: true,
       sanitized: trimmedUrl,
-      protocol: 'https:',
-      riskLevel: 'safe',
+      protocol: "https:",
+      riskLevel: "safe",
     };
   }
 
   // HTTP is allowed with warning
-  if (protocol === 'http:') {
+  if (protocol === "http:") {
     return {
       valid: true,
       sanitized: trimmedUrl,
-      protocol: 'http:',
-      warning: 'Unencrypted HTTP connection - data may be intercepted',
-      riskLevel: 'warning',
+      protocol: "http:",
+      warning: "Unencrypted HTTP connection - data may be intercepted",
+      riskLevel: "warning",
     };
   }
 
   // Relative URLs are safe (resolved against current origin)
-  if (protocol === 'relative' || trimmedUrl.startsWith('/') || trimmedUrl.startsWith('./') || trimmedUrl.startsWith('../')) {
+  if (
+    protocol === "relative" ||
+    trimmedUrl.startsWith("/") ||
+    trimmedUrl.startsWith("./") ||
+    trimmedUrl.startsWith("../")
+  ) {
     return {
       valid: true,
       sanitized: trimmedUrl,
-      protocol: 'relative',
-      riskLevel: 'safe',
+      protocol: "relative",
+      riskLevel: "safe",
     };
   }
 
@@ -181,7 +189,7 @@ export function validateURL(
     sanitized: null,
     error: `Unknown protocol: ${protocol} - blocked for security`,
     protocol,
-    riskLevel: 'blocked',
+    riskLevel: "blocked",
   };
 }
 
@@ -196,9 +204,10 @@ function validateDataURL(url: string): URLValidationResult {
       return {
         valid: false,
         sanitized: null,
-        error: 'Data URL contains blocked content type (possible script injection)',
-        protocol: 'data:',
-        riskLevel: 'blocked',
+        error:
+          "Data URL contains blocked content type (possible script injection)",
+        protocol: "data:",
+        riskLevel: "blocked",
       };
     }
   }
@@ -209,22 +218,22 @@ function validateDataURL(url: string): URLValidationResult {
       return {
         valid: true,
         sanitized: url,
-        protocol: 'data:',
-        riskLevel: 'safe',
+        protocol: "data:",
+        riskLevel: "safe",
       };
     }
   }
 
   // Unknown data URL type - block by default
   const mimeMatch = url.match(/^data:([^;,]+)/);
-  const mime = mimeMatch ? mimeMatch[1] : 'unknown';
+  const mime = mimeMatch ? mimeMatch[1] : "unknown";
 
   return {
     valid: false,
     sanitized: null,
     error: `Data URL with unrecognized MIME type: ${mime}`,
-    protocol: 'data:',
-    riskLevel: 'blocked',
+    protocol: "data:",
+    riskLevel: "blocked",
   };
 }
 
@@ -240,11 +249,11 @@ export function sanitizeURLForHTML(url: string): string | null {
 
   // Escape HTML special characters
   return result.sanitized
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;');
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;");
 }
 
 /**
@@ -263,14 +272,20 @@ export function validateURLs(urls: string[]): Map<string, URLValidationResult> {
  * Check if URL is from a trusted domain
  * Used for additional security on sensitive operations
  */
-export function isTrustedDomain(url: string, trustedDomains: string[]): boolean {
+export function isTrustedDomain(
+  url: string,
+  trustedDomains: string[],
+): boolean {
   try {
     const parsed = new URL(url);
     const hostname = parsed.hostname.toLowerCase();
 
     for (const domain of trustedDomains) {
       const normalizedDomain = domain.toLowerCase();
-      if (hostname === normalizedDomain || hostname.endsWith('.' + normalizedDomain)) {
+      if (
+        hostname === normalizedDomain ||
+        hostname.endsWith(`.${normalizedDomain}`)
+      ) {
         return true;
       }
     }
@@ -286,12 +301,13 @@ export function isTrustedDomain(url: string, trustedDomains: string[]): boolean 
  */
 export function extractAndValidateURLs(text: string): URLValidationResult[] {
   // URL regex pattern
-  const urlPattern = /https?:\/\/[^\s<>"{}|\\^`\[\]]+|data:[^\s<>"{}|\\^`\[\]]+/gi;
+  const urlPattern =
+    /https?:\/\/[^\s<>"{}|\\^`[\]]+|data:[^\s<>"{}|\\^`[\]]+/gi;
   const matches = text.match(urlPattern) || [];
 
-  return matches.map(url => validateURL(url));
+  return matches.map((url) => validateURL(url));
 }
 
 // Export types for external use
-export type URLContext = 'asset' | 'fetch' | 'embed';
-export type URLRiskLevel = 'safe' | 'warning' | 'blocked';
+export type URLContext = "asset" | "fetch" | "embed";
+export type URLRiskLevel = "safe" | "warning" | "blocked";

@@ -4,79 +4,111 @@
  * Exports all Vue composables for the Lattice Compositor.
  */
 
-export { useCanvasSelection } from './useCanvasSelection';
-export type { SelectableItem, SelectionMode, UseCanvasSelectionOptions } from './useCanvasSelection';
-
-export { useCanvasSegmentation } from './useCanvasSegmentation';
-export type { SegmentBoxState } from './useCanvasSegmentation';
-
-export { useGuides } from './useGuides';
-
-export { useKeyboardShortcuts } from './useKeyboardShortcuts';
-
-export { useShapeDrawing } from './useShapeDrawing';
-export type { ShapeDrawBounds, ShapeDrawState } from './useShapeDrawing';
-
-export { useViewportGuides } from './useViewportGuides';
-export type { SafeFrameBounds, ResolutionGuide, UseViewportGuidesOptions } from './useViewportGuides';
-
-export { useSplineUtils } from './useSplineUtils';
-export type { LayerTransformValues } from './useSplineUtils';
-export {
-  evaluateBezier,
-  evaluateBezierTangent,
-  bezierArcLength,
-  findClosestPointOnPath,
-  findPointAtPosition,
-  generateSplinePath,
-  generateCurvePreview,
-  transformPointToComp,
-  transformPointToLayer,
-  calculateSmoothHandles,
-  simplifyPath
-} from './useSplineUtils';
-
+export type { AssetHandlersOptions } from "./useAssetHandlers";
+export { useAssetHandlers } from "./useAssetHandlers";
+export type { SegmentBoxState } from "./useCanvasSegmentation";
+export { useCanvasSegmentation } from "./useCanvasSegmentation";
+export type {
+  SelectableItem,
+  SelectionMode,
+  UseCanvasSelectionOptions,
+} from "./useCanvasSelection";
+export { useCanvasSelection } from "./useCanvasSelection";
+export type { CurveMargin, CurveViewState } from "./useCurveEditorCoords";
 // Curve Editor Composables
-export { useCurveEditorCoords } from './useCurveEditorCoords';
-export type { CurveViewState, CurveMargin } from './useCurveEditorCoords';
 export {
+  calculateGridStep,
   DEFAULT_CURVE_MARGIN,
   frameToScreenX,
-  screenXToFrame,
-  valueToScreenY,
-  screenYToValue,
+  getInHandleX,
+  getInHandleY,
+  getKeyframeDisplayValue,
   getKeyframeScreenX,
   getKeyframeScreenY,
   getNumericValue,
-  getKeyframeDisplayValue,
   getOutHandleX,
   getOutHandleY,
-  getInHandleX,
-  getInHandleY,
+  getPropertyPath,
   isKeyframeInView,
-  calculateGridStep,
-  getPropertyPath
-} from './useCurveEditorCoords';
-
-export { useCurveEditorView, createViewState, fitToView, fitSelectionToView, zoomIn, zoomOut, handleWheelZoom, panView } from './useCurveEditorView';
-export type { SelectedKeyframe } from './useCurveEditorView';
-
-export { useCurveEditorDraw, PROPERTY_COLORS, getPropertyColor, drawGrid, drawPropertyCurve, drawTimeRuler, drawValueAxis, drawMainCanvas } from './useCurveEditorDraw';
-
-export { useCurveEditorKeyboard, createKeyboardHandler, goToPreviousKeyframe, goToNextKeyframe, applyEasyEase } from './useCurveEditorKeyboard';
-export type { EasyEaseParams, CurveEditorKeyboardOptions } from './useCurveEditorKeyboard';
-
-export { useCurveEditorInteraction } from './useCurveEditorInteraction';
-export type { DragTarget as CurveDragTarget, SelectedKeyframe as CurveSelectedKeyframe, SelectionBox, CurveEditorInteractionOptions } from './useCurveEditorInteraction';
-
-export { useMenuActions } from './useMenuActions';
-export type { MenuActionsOptions } from './useMenuActions';
-
-export { useAssetHandlers } from './useAssetHandlers';
-export type { AssetHandlersOptions } from './useAssetHandlers';
-
-export { useSplineInteraction } from './useSplineInteraction';
-export type { DragTarget, PenSubMode, SplineInteractionOptions } from './useSplineInteraction';
-
-export { useViewportControls } from './useViewportControls';
-export type { ViewportControlsOptions, ViewportControlsReturn } from './useViewportControls';
+  screenXToFrame,
+  screenYToValue,
+  useCurveEditorCoords,
+  valueToScreenY,
+} from "./useCurveEditorCoords";
+export {
+  drawGrid,
+  drawMainCanvas,
+  drawPropertyCurve,
+  drawTimeRuler,
+  drawValueAxis,
+  getPropertyColor,
+  PROPERTY_COLORS,
+  useCurveEditorDraw,
+} from "./useCurveEditorDraw";
+export type {
+  CurveEditorInteractionOptions,
+  DragTarget as CurveDragTarget,
+  SelectedKeyframe as CurveSelectedKeyframe,
+  SelectionBox,
+} from "./useCurveEditorInteraction";
+export { useCurveEditorInteraction } from "./useCurveEditorInteraction";
+export type {
+  CurveEditorKeyboardOptions,
+  EasyEaseParams,
+} from "./useCurveEditorKeyboard";
+export {
+  applyEasyEase,
+  createKeyboardHandler,
+  goToNextKeyframe,
+  goToPreviousKeyframe,
+  useCurveEditorKeyboard,
+} from "./useCurveEditorKeyboard";
+export type { SelectedKeyframe } from "./useCurveEditorView";
+export {
+  createViewState,
+  fitSelectionToView,
+  fitToView,
+  handleWheelZoom,
+  panView,
+  useCurveEditorView,
+  zoomIn,
+  zoomOut,
+} from "./useCurveEditorView";
+export { useGuides } from "./useGuides";
+export { useKeyboardShortcuts } from "./useKeyboardShortcuts";
+export type { MenuActionsOptions } from "./useMenuActions";
+export { useMenuActions } from "./useMenuActions";
+export type { ShapeDrawBounds, ShapeDrawState } from "./useShapeDrawing";
+export { useShapeDrawing } from "./useShapeDrawing";
+export type {
+  DragTarget,
+  PenSubMode,
+  SplineInteractionOptions,
+} from "./useSplineInteraction";
+export { useSplineInteraction } from "./useSplineInteraction";
+export type { LayerTransformValues } from "./useSplineUtils";
+export {
+  bezierArcLength,
+  calculateSmoothHandles,
+  evaluateBezier,
+  evaluateBezierTangent,
+  findClosestPointOnPath,
+  findPointAtPosition,
+  generateCurvePreview,
+  generateSplinePath,
+  simplifyPath,
+  transformPointToComp,
+  transformPointToLayer,
+  useSplineUtils,
+} from "./useSplineUtils";
+export type {
+  ViewportControlsOptions,
+  ViewportControlsReturn,
+} from "./useViewportControls";
+export { useViewportControls } from "./useViewportControls";
+export type {
+  ResolutionGuide,
+  SafeFrameBounds,
+  UseViewportGuidesOptions,
+} from "./useViewportGuides";
+export { useViewportGuides } from "./useViewportGuides";

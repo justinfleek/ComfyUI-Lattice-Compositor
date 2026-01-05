@@ -10,43 +10,35 @@
  * - HDRI environment maps
  */
 
-import { defineStore } from 'pinia';
-import * as THREE from 'three';
+import { defineStore } from "pinia";
+import * as THREE from "three";
 import {
-  SVGExtrusionService,
-  svgExtrusionService,
-  type ParsedSVGDocument,
-  type ParsedSVGPath,
-  type ExtrusionConfig,
-  type SVGLayerConfig,
-} from '@/services/svgExtrusion';
-import {
-  MeshParticleManager,
-  meshParticleManager,
-  type RegisteredMeshParticle,
-  type MeshParticleConfig,
-} from '@/services/meshParticleManager';
-import {
-  SpriteSheetService,
-  spriteSheetService,
-  type SpriteSheetConfig,
-  type ParticleSpriteConfig,
-} from '@/services/spriteSheet';
-import {
-  MaterialSystem,
   materialSystem,
   type PBRMaterialConfig,
-  type MaterialPreset,
-} from '@/services/materialSystem';
+} from "@/services/materialSystem";
+import {
+  meshParticleManager,
+  type RegisteredMeshParticle,
+} from "@/services/meshParticleManager";
+import {
+  type ParticleSpriteConfig,
+  type SpriteSheetConfig,
+  spriteSheetService,
+} from "@/services/spriteSheet";
 import {
   loadAndValidateSprite,
   loadAndValidateSpritesheet,
-  type SpriteValidationResult,
   type SpritesheetValidationResult,
   type SpriteValidationIssue,
-} from '@/services/spriteValidation';
-import { useToastStore } from './toastStore';
-import { storeLogger } from '@/utils/logger';
+  type SpriteValidationResult,
+} from "@/services/spriteValidation";
+import {
+  type ParsedSVGDocument,
+  type SVGLayerConfig,
+  svgExtrusionService,
+} from "@/services/svgExtrusion";
+import { storeLogger } from "@/utils/logger";
+import { useToastStore } from "./toastStore";
 
 // ============================================================================
 // TYPES
@@ -76,7 +68,7 @@ export interface StoredMeshParticle {
   id: string;
   name: string;
   registration: RegisteredMeshParticle;
-  source: 'svg' | 'primitive' | 'model' | 'custom';
+  source: "svg" | "primitive" | "model" | "custom";
   sourceId?: string; // SVG path ID or model asset ID
 }
 
@@ -146,7 +138,7 @@ interface AssetState {
 // STORE
 // ============================================================================
 
-export const useAssetStore = defineStore('assets', {
+export const useAssetStore = defineStore("assets", {
   state: (): AssetState => ({
     // Materials
     materials: new Map(),
@@ -188,29 +180,44 @@ export const useAssetStore = defineStore('assets', {
 
   getters: {
     // Materials
-    materialList: (state): StoredMaterial[] => Array.from(state.materials.values()),
+    materialList: (state): StoredMaterial[] =>
+      Array.from(state.materials.values()),
     selectedMaterial: (state): StoredMaterial | null =>
-      state.selectedMaterialId ? state.materials.get(state.selectedMaterialId) ?? null : null,
+      state.selectedMaterialId
+        ? (state.materials.get(state.selectedMaterialId) ?? null)
+        : null,
 
     // SVG Documents
-    svgDocumentList: (state): StoredSVGDocument[] => Array.from(state.svgDocuments.values()),
+    svgDocumentList: (state): StoredSVGDocument[] =>
+      Array.from(state.svgDocuments.values()),
     selectedSvgDocument: (state): StoredSVGDocument | null =>
-      state.selectedSvgId ? state.svgDocuments.get(state.selectedSvgId) ?? null : null,
+      state.selectedSvgId
+        ? (state.svgDocuments.get(state.selectedSvgId) ?? null)
+        : null,
 
     // Mesh Particles
-    meshParticleList: (state): StoredMeshParticle[] => Array.from(state.meshParticles.values()),
+    meshParticleList: (state): StoredMeshParticle[] =>
+      Array.from(state.meshParticles.values()),
     selectedMeshParticle: (state): StoredMeshParticle | null =>
-      state.selectedMeshParticleId ? state.meshParticles.get(state.selectedMeshParticleId) ?? null : null,
+      state.selectedMeshParticleId
+        ? (state.meshParticles.get(state.selectedMeshParticleId) ?? null)
+        : null,
 
     // Sprite Sheets
-    spriteSheetList: (state): StoredSpriteSheet[] => Array.from(state.spriteSheets.values()),
+    spriteSheetList: (state): StoredSpriteSheet[] =>
+      Array.from(state.spriteSheets.values()),
     selectedSpriteSheet: (state): StoredSpriteSheet | null =>
-      state.selectedSpriteSheetId ? state.spriteSheets.get(state.selectedSpriteSheetId) ?? null : null,
+      state.selectedSpriteSheetId
+        ? (state.spriteSheets.get(state.selectedSpriteSheetId) ?? null)
+        : null,
 
     // Combined loading state
     isLoading: (state): boolean =>
-      state.isLoadingMaterial || state.isLoadingSvg || state.isLoadingMesh ||
-      state.isLoadingSpriteSheet || state.isLoadingEnvironment,
+      state.isLoadingMaterial ||
+      state.isLoadingSvg ||
+      state.isLoadingMesh ||
+      state.isLoadingSpriteSheet ||
+      state.isLoadingEnvironment,
   },
 
   actions: {
@@ -226,22 +233,42 @@ export const useAssetStore = defineStore('assets', {
 
       // Get preset base config (these are partial configs)
       const presetConfigs: Record<string, Partial<PBRMaterialConfig>> = {
-        chrome: { color: '#ffffff', metalness: 1, roughness: 0.1 },
-        gold: { color: '#ffd700', metalness: 1, roughness: 0.2 },
-        silver: { color: '#c0c0c0', metalness: 1, roughness: 0.15 },
-        copper: { color: '#b87333', metalness: 1, roughness: 0.3 },
-        brass: { color: '#b5a642', metalness: 0.9, roughness: 0.25 },
-        glass: { color: '#ffffff', metalness: 0, roughness: 0.1, opacity: 0.3, transparent: true },
-        plastic: { color: '#ffffff', metalness: 0, roughness: 0.4 },
-        rubber: { color: '#222222', metalness: 0, roughness: 0.9 },
-        wood: { color: '#8b4513', metalness: 0, roughness: 0.7 },
-        concrete: { color: '#808080', metalness: 0, roughness: 0.9 },
-        emissive: { color: '#ffffff', emissive: '#00aaff', emissiveIntensity: 2 },
-        holographic: { color: '#88ffff', metalness: 0.8, roughness: 0.2, emissive: '#ff00ff', emissiveIntensity: 0.5 },
+        chrome: { color: "#ffffff", metalness: 1, roughness: 0.1 },
+        gold: { color: "#ffd700", metalness: 1, roughness: 0.2 },
+        silver: { color: "#c0c0c0", metalness: 1, roughness: 0.15 },
+        copper: { color: "#b87333", metalness: 1, roughness: 0.3 },
+        brass: { color: "#b5a642", metalness: 0.9, roughness: 0.25 },
+        glass: {
+          color: "#ffffff",
+          metalness: 0,
+          roughness: 0.1,
+          opacity: 0.3,
+          transparent: true,
+        },
+        plastic: { color: "#ffffff", metalness: 0, roughness: 0.4 },
+        rubber: { color: "#222222", metalness: 0, roughness: 0.9 },
+        wood: { color: "#8b4513", metalness: 0, roughness: 0.7 },
+        concrete: { color: "#808080", metalness: 0, roughness: 0.9 },
+        emissive: {
+          color: "#ffffff",
+          emissive: "#00aaff",
+          emissiveIntensity: 2,
+        },
+        holographic: {
+          color: "#88ffff",
+          metalness: 0.8,
+          roughness: 0.2,
+          emissive: "#ff00ff",
+          emissiveIntensity: 0.5,
+        },
       };
 
       const presetConfig = presetConfigs[presetName] || {};
-      const config: PBRMaterialConfig = this.createDefaultMaterialConfig(id, customName || presetName, presetConfig);
+      const config: PBRMaterialConfig = this.createDefaultMaterialConfig(
+        id,
+        customName || presetName,
+        presetConfig,
+      );
 
       const stored: StoredMaterial = {
         id,
@@ -255,14 +282,14 @@ export const useAssetStore = defineStore('assets', {
       this.materials.set(id, stored);
       this.selectedMaterialId = id;
 
-      storeLogger.debug('Created material from preset:', presetName, id);
+      storeLogger.debug("Created material from preset:", presetName, id);
       return id;
     },
 
     /**
      * Create a new empty material
      */
-    createEmptyMaterial(name: string = 'New Material'): string {
+    createEmptyMaterial(name: string = "New Material"): string {
       const id = `mat_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
       const config = this.createDefaultMaterialConfig(id, name);
 
@@ -282,17 +309,21 @@ export const useAssetStore = defineStore('assets', {
     /**
      * Helper to create a full default material config
      */
-    createDefaultMaterialConfig(id: string, name: string, overrides: Partial<PBRMaterialConfig> = {}): PBRMaterialConfig {
+    createDefaultMaterialConfig(
+      id: string,
+      name: string,
+      overrides: Partial<PBRMaterialConfig> = {},
+    ): PBRMaterialConfig {
       return {
         id,
         name,
-        color: '#ffffff',
+        color: "#ffffff",
         opacity: 1,
         transparent: false,
         metalness: 0,
         roughness: 0.5,
         envMapIntensity: 1,
-        emissive: '#000000',
+        emissive: "#000000",
         emissiveIntensity: 0,
         normalScale: 1,
         displacementScale: 0,
@@ -302,7 +333,7 @@ export const useAssetStore = defineStore('assets', {
         textureRepeat: { x: 1, y: 1 },
         textureOffset: { x: 0, y: 0 },
         textureRotation: 0,
-        side: 'front',
+        side: "front",
         flatShading: false,
         wireframe: false,
         depthWrite: true,
@@ -329,7 +360,7 @@ export const useAssetStore = defineStore('assets', {
     async setMaterialTexture(
       materialId: string,
       textureType: keyof PBRMaterialConfig,
-      file: File
+      file: File,
     ): Promise<void> {
       const stored = this.materials.get(materialId);
       if (!stored) return;
@@ -375,11 +406,15 @@ export const useAssetStore = defineStore('assets', {
         opacity: config.opacity,
         flatShading: config.flatShading,
         wireframe: config.wireframe,
-        side: config.side === 'double' ? THREE.DoubleSide :
-              config.side === 'back' ? THREE.BackSide : THREE.FrontSide,
+        side:
+          config.side === "double"
+            ? THREE.DoubleSide
+            : config.side === "back"
+              ? THREE.BackSide
+              : THREE.FrontSide,
       });
 
-      if (config.emissive && config.emissive !== '#000000') {
+      if (config.emissive && config.emissive !== "#000000") {
         material.emissive = new THREE.Color(config.emissive);
         material.emissiveIntensity = config.emissiveIntensity;
       }
@@ -398,15 +433,15 @@ export const useAssetStore = defineStore('assets', {
       this.isLoadingSvg = true;
       try {
         const text = await file.text();
-        const name = file.name.replace(/\.svg$/i, '');
+        const name = file.name.replace(/\.svg$/i, "");
         const document = svgExtrusionService.loadFromString(text, name);
 
         // Generate default layer configs
         const layerConfigs = svgExtrusionService.generateAutoLayerConfigs(
           document,
-          0,      // baseDepth
-          5,      // depthIncrement between layers
-          2       // extrusionDepth per layer
+          0, // baseDepth
+          5, // depthIncrement between layers
+          2, // extrusionDepth per layer
         );
 
         const id = document.id;
@@ -421,7 +456,11 @@ export const useAssetStore = defineStore('assets', {
         this.svgDocuments.set(id, stored);
         this.selectedSvgId = id;
 
-        storeLogger.debug('Imported SVG:', name, `${document.paths.length} paths`);
+        storeLogger.debug(
+          "Imported SVG:",
+          name,
+          `${document.paths.length} paths`,
+        );
         return { success: true, assetId: id };
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
@@ -435,13 +474,19 @@ export const useAssetStore = defineStore('assets', {
     /**
      * Import SVG from URL
      */
-    async importSvgFromUrl(url: string, name?: string): Promise<AssetImportResult> {
+    async importSvgFromUrl(
+      url: string,
+      name?: string,
+    ): Promise<AssetImportResult> {
       this.isLoadingSvg = true;
       try {
         const document = await svgExtrusionService.loadFromURL(url, name);
 
         const layerConfigs = svgExtrusionService.generateAutoLayerConfigs(
-          document, 0, 5, 2
+          document,
+          0,
+          5,
+          2,
         );
 
         const id = document.id;
@@ -469,11 +514,18 @@ export const useAssetStore = defineStore('assets', {
     /**
      * Update layer config for an SVG path
      */
-    updateSvgLayerConfig(svgId: string, pathIndex: number, config: Partial<SVGLayerConfig>): void {
+    updateSvgLayerConfig(
+      svgId: string,
+      pathIndex: number,
+      config: Partial<SVGLayerConfig>,
+    ): void {
       const stored = this.svgDocuments.get(svgId);
       if (!stored || pathIndex >= stored.layerConfigs.length) return;
 
-      stored.layerConfigs[pathIndex] = { ...stored.layerConfigs[pathIndex], ...config };
+      stored.layerConfigs[pathIndex] = {
+        ...stored.layerConfigs[pathIndex],
+        ...config,
+      };
       this.svgDocuments.set(svgId, stored);
     },
 
@@ -501,7 +553,7 @@ export const useAssetStore = defineStore('assets', {
 
       return svgExtrusionService.createLayeredMeshes(
         stored.document,
-        stored.layerConfigs
+        stored.layerConfigs,
       );
     },
 
@@ -524,17 +576,29 @@ export const useAssetStore = defineStore('assets', {
      * Register a primitive shape as mesh particle
      */
     registerPrimitiveMesh(
-      type: 'cube' | 'sphere' | 'cone' | 'cylinder' | 'torus' | 'tetrahedron' | 'octahedron' | 'icosahedron',
+      type:
+        | "cube"
+        | "sphere"
+        | "cone"
+        | "cylinder"
+        | "torus"
+        | "tetrahedron"
+        | "octahedron"
+        | "icosahedron",
       name?: string,
-      size: number = 1
+      size: number = 1,
     ): string {
-      const registration = meshParticleManager.registerPrimitive(type, name, size);
+      const registration = meshParticleManager.registerPrimitive(
+        type,
+        name,
+        size,
+      );
 
       const stored: StoredMeshParticle = {
         id: registration.id,
         name: registration.name,
         registration,
-        source: 'primitive',
+        source: "primitive",
       };
 
       this.meshParticles.set(registration.id, stored);
@@ -550,7 +614,7 @@ export const useAssetStore = defineStore('assets', {
       svgId: string,
       pathIndex: number,
       name?: string,
-      options?: { extrusionDepth?: number; scale?: number }
+      options?: { extrusionDepth?: number; scale?: number },
     ): string | null {
       const stored = this.svgDocuments.get(svgId);
       if (!stored || pathIndex >= stored.document.paths.length) return null;
@@ -560,7 +624,7 @@ export const useAssetStore = defineStore('assets', {
         svgId,
         path.id,
         name || `${stored.name}_${pathIndex}`,
-        options
+        options,
       );
 
       if (!registration) return null;
@@ -569,7 +633,7 @@ export const useAssetStore = defineStore('assets', {
         id: registration.id,
         name: registration.name,
         registration,
-        source: 'svg',
+        source: "svg",
         sourceId: path.id,
       };
 
@@ -589,9 +653,19 @@ export const useAssetStore = defineStore('assets', {
     /**
      * Create instanced mesh for particle rendering
      */
-    createInstancedMesh(meshId: string, maxInstances: number, materialId?: string): THREE.InstancedMesh | null {
-      const material = materialId ? this.getThreeMaterial(materialId) : undefined;
-      const result = meshParticleManager.createInstancedMesh(meshId, maxInstances, material || undefined);
+    createInstancedMesh(
+      meshId: string,
+      maxInstances: number,
+      materialId?: string,
+    ): THREE.InstancedMesh | null {
+      const material = materialId
+        ? this.getThreeMaterial(materialId)
+        : undefined;
+      const result = meshParticleManager.createInstancedMesh(
+        meshId,
+        maxInstances,
+        material || undefined,
+      );
       return result?.mesh || null;
     },
 
@@ -617,15 +691,20 @@ export const useAssetStore = defineStore('assets', {
       file: File,
       columns: number,
       rows: number,
-      options?: { name?: string; frameRate?: number }
+      options?: { name?: string; frameRate?: number },
     ): Promise<AssetImportResult> {
       this.isLoadingSpriteSheet = true;
       try {
         const url = URL.createObjectURL(file);
-        const config = await spriteSheetService.loadFromGrid(url, columns, rows, {
-          name: options?.name || file.name.replace(/\.[^.]+$/, ''),
-          frameRate: options?.frameRate,
-        });
+        const config = await spriteSheetService.loadFromGrid(
+          url,
+          columns,
+          rows,
+          {
+            name: options?.name || file.name.replace(/\.[^.]+$/, ""),
+            frameRate: options?.frameRate,
+          },
+        );
 
         const stored: StoredSpriteSheet = {
           id: config.id,
@@ -652,7 +731,7 @@ export const useAssetStore = defineStore('assets', {
      */
     async importSprite(
       file: File,
-      options?: { name?: string; showWarnings?: boolean }
+      options?: { name?: string; showWarnings?: boolean },
     ): Promise<AssetImportResult & { validation?: SpriteValidationResult }> {
       const toastStore = useToastStore();
       const showWarnings = options?.showWarnings ?? true;
@@ -663,7 +742,9 @@ export const useAssetStore = defineStore('assets', {
       if (!validation.canImport) {
         // Handle blocking errors
         this.handleValidationIssues(validation.issues, toastStore, true);
-        this.lastError = validation.issues.find(i => i.severity === 'error')?.message || 'Validation failed';
+        this.lastError =
+          validation.issues.find((i) => i.severity === "error")?.message ||
+          "Validation failed";
         return { success: false, error: this.lastError, validation };
       }
 
@@ -676,7 +757,9 @@ export const useAssetStore = defineStore('assets', {
       const result = await this.importSpriteSheet(file, 1, 1, options);
 
       if (result.success) {
-        toastStore.success(`Sprite "${options?.name || file.name}" imported successfully`);
+        toastStore.success(
+          `Sprite "${options?.name || file.name}" imported successfully`,
+        );
       }
 
       return { ...result, validation };
@@ -689,8 +772,10 @@ export const useAssetStore = defineStore('assets', {
       file: File,
       columns: number,
       rows: number,
-      options?: { name?: string; frameRate?: number; showWarnings?: boolean }
-    ): Promise<AssetImportResult & { validation?: SpritesheetValidationResult }> {
+      options?: { name?: string; frameRate?: number; showWarnings?: boolean },
+    ): Promise<
+      AssetImportResult & { validation?: SpritesheetValidationResult }
+    > {
       const toastStore = useToastStore();
       const showWarnings = options?.showWarnings ?? true;
 
@@ -700,7 +785,9 @@ export const useAssetStore = defineStore('assets', {
       if (!validation.canImport) {
         // Handle blocking errors
         this.handleValidationIssues(validation.issues, toastStore, true);
-        this.lastError = validation.issues.find(i => i.severity === 'error')?.message || 'Validation failed';
+        this.lastError =
+          validation.issues.find((i) => i.severity === "error")?.message ||
+          "Validation failed";
         return { success: false, error: this.lastError, validation };
       }
 
@@ -715,7 +802,7 @@ export const useAssetStore = defineStore('assets', {
       if (result.success && validation.metadata) {
         const meta = validation.metadata;
         toastStore.success(
-          `Sprite sheet "${options?.name || file.name}" imported: ${meta.totalFrames} frames (${meta.frameWidth}x${meta.frameHeight}px each)`
+          `Sprite sheet "${options?.name || file.name}" imported: ${meta.totalFrames} frames (${meta.frameWidth}x${meta.frameHeight}px each)`,
         );
       }
 
@@ -728,12 +815,12 @@ export const useAssetStore = defineStore('assets', {
     handleValidationIssues(
       issues: SpriteValidationIssue[],
       toastStore: ReturnType<typeof useToastStore>,
-      errorsOnly: boolean = false
+      errorsOnly: boolean = false,
     ): void {
       for (const issue of issues) {
-        if (issue.severity === 'error') {
+        if (issue.severity === "error") {
           toastStore.error(issue.message);
-        } else if (!errorsOnly && issue.severity === 'warning') {
+        } else if (!errorsOnly && issue.severity === "warning") {
           toastStore.warning(issue.message);
         }
       }
@@ -746,7 +833,7 @@ export const useAssetStore = defineStore('assets', {
       sheetId: string,
       name: string,
       frames: number[],
-      options?: { frameRate?: number; loop?: boolean; pingPong?: boolean }
+      options?: { frameRate?: number; loop?: boolean; pingPong?: boolean },
     ): void {
       spriteSheetService.addAnimation(sheetId, {
         name,
@@ -761,7 +848,9 @@ export const useAssetStore = defineStore('assets', {
      * Get particle texture config for GPU particles
      */
     getParticleTextureConfig(sheetId: string): ParticleSpriteConfig | null {
-      return spriteSheetService.getParticleTextureConfig(sheetId) as ParticleSpriteConfig | null;
+      return spriteSheetService.getParticleTextureConfig(
+        sheetId,
+      ) as ParticleSpriteConfig | null;
     },
 
     /**
@@ -788,7 +877,11 @@ export const useAssetStore = defineStore('assets', {
      */
     async loadEnvironment(
       file: File,
-      options?: { intensity?: number; rotation?: number; useAsBackground?: boolean }
+      options?: {
+        intensity?: number;
+        rotation?: number;
+        useAsBackground?: boolean;
+      },
     ): Promise<AssetImportResult> {
       this.isLoadingEnvironment = true;
       try {
@@ -799,11 +892,12 @@ export const useAssetStore = defineStore('assets', {
           url,
           intensity: options?.intensity ?? this.environment.intensity,
           rotation: options?.rotation ?? this.environment.rotation,
-          useAsBackground: options?.useAsBackground ?? this.environment.useAsBackground,
+          useAsBackground:
+            options?.useAsBackground ?? this.environment.useAsBackground,
           enabled: true,
         };
 
-        storeLogger.debug('Environment loaded:', file.name);
+        storeLogger.debug("Environment loaded:", file.name);
         return { success: true };
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
@@ -817,7 +911,10 @@ export const useAssetStore = defineStore('assets', {
     /**
      * Load environment from preset URL
      */
-    async loadEnvironmentPreset(presetUrl: string, presetName: string): Promise<AssetImportResult> {
+    async loadEnvironmentPreset(
+      presetUrl: string,
+      presetName: string,
+    ): Promise<AssetImportResult> {
       this.isLoadingEnvironment = true;
       try {
         this.environment = {
@@ -881,14 +978,14 @@ export const useAssetStore = defineStore('assets', {
       for (const stored of this.materials.values()) {
         for (const key of Object.keys(stored.config)) {
           const value = (stored.config as any)[key];
-          if (typeof value === 'string' && value.startsWith('blob:')) {
+          if (typeof value === "string" && value.startsWith("blob:")) {
             URL.revokeObjectURL(value);
           }
         }
       }
 
       for (const stored of this.spriteSheets.values()) {
-        if (stored.textureUrl.startsWith('blob:')) {
+        if (stored.textureUrl.startsWith("blob:")) {
           URL.revokeObjectURL(stored.textureUrl);
         }
       }

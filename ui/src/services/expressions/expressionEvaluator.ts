@@ -5,21 +5,18 @@
  * evaluateCustomExpression, and preset/function evaluation.
  */
 
-import type { ExpressionContext, Expression } from './types';
-import type { LoopType } from './loopExpressions';
-import { inertia, bounce, elastic } from './motionExpressions';
-import { jitter } from './jitterExpressions';
-import { repeatAfter, repeatBefore } from './loopExpressions';
-import { valueAtTime } from './audioExpressions';
 import {
-  vectorAdd, vectorSub, vectorMul, vectorDiv,
-  vectorNormalize, vectorDot, vectorCross, noise
-} from './vectorMath';
-import {
-  toComp, fromComp, toWorld, fromWorld, lookAt,
-  type LayerTransform
-} from './coordinateConversion';
-import { evaluateInSES, isSESAvailable } from './sesEvaluator';
+  fromComp,
+  fromWorld,
+  type LayerTransform,
+  toComp,
+  toWorld,
+} from "./coordinateConversion";
+import { jitter } from "./jitterExpressions";
+import { repeatAfter, repeatBefore } from "./loopExpressions";
+import { bounce, elastic, inertia } from "./motionExpressions";
+import { evaluateInSES } from "./sesEvaluator";
+import type { Expression, ExpressionContext } from "./types";
 
 /**
  * SECURITY NOTE (BUG-006 - UPGRADED 2025-12-28):
@@ -49,7 +46,13 @@ import { evaluateInSES, isSESAvailable } from './sesEvaluator';
 // ============================================================
 
 export const timeExpressions = {
-  timeRamp(startTime: number, endTime: number, startValue: number, endValue: number, time: number): number {
+  timeRamp(
+    startTime: number,
+    endTime: number,
+    startValue: number,
+    endValue: number,
+    time: number,
+  ): number {
     if (time <= startTime) return startValue;
     if (time >= endTime) return endValue;
     const duration = endTime - startTime;
@@ -64,28 +67,53 @@ export const timeExpressions = {
   },
 
   sawtooth(time: number, frequency: number, amplitude: number = 1): number {
-    if (!Number.isFinite(time) || !Number.isFinite(frequency) || !Number.isFinite(amplitude)) return 0;
+    if (
+      !Number.isFinite(time) ||
+      !Number.isFinite(frequency) ||
+      !Number.isFinite(amplitude)
+    )
+      return 0;
     const t = time * frequency;
     return amplitude * 2 * (t - Math.floor(t + 0.5));
   },
 
   triangle(time: number, frequency: number, amplitude: number = 1): number {
-    if (!Number.isFinite(time) || !Number.isFinite(frequency) || !Number.isFinite(amplitude)) return 0;
+    if (
+      !Number.isFinite(time) ||
+      !Number.isFinite(frequency) ||
+      !Number.isFinite(amplitude)
+    )
+      return 0;
     const t = time * frequency;
     return amplitude * (2 * Math.abs(2 * (t - Math.floor(t + 0.5))) - 1);
   },
 
   square(time: number, frequency: number, amplitude: number = 1): number {
-    if (!Number.isFinite(time) || !Number.isFinite(frequency) || !Number.isFinite(amplitude)) return 0;
+    if (
+      !Number.isFinite(time) ||
+      !Number.isFinite(frequency) ||
+      !Number.isFinite(amplitude)
+    )
+      return 0;
     const t = time * frequency;
     return amplitude * (t - Math.floor(t) < 0.5 ? 1 : -1);
   },
 
-  sine(time: number, frequency: number, amplitude: number = 1, phase: number = 0): number {
+  sine(
+    time: number,
+    frequency: number,
+    amplitude: number = 1,
+    phase: number = 0,
+  ): number {
     return amplitude * Math.sin(2 * Math.PI * frequency * time + phase);
   },
 
-  pulse(time: number, frequency: number, dutyCycle: number = 0.5, amplitude: number = 1): number {
+  pulse(
+    time: number,
+    frequency: number,
+    dutyCycle: number = 0.5,
+    amplitude: number = 1,
+  ): number {
     const t = (time * frequency) % 1;
     return amplitude * (t < dutyCycle ? 1 : 0);
   },
@@ -104,7 +132,13 @@ export const mathExpressions = {
     return Math.min(max, Math.max(min, value));
   },
 
-  map(value: number, inMin: number, inMax: number, outMin: number, outMax: number): number {
+  map(
+    value: number,
+    inMin: number,
+    inMax: number,
+    outMin: number,
+    outMax: number,
+  ): number {
     const range = inMax - inMin;
     if (!Number.isFinite(range) || range === 0) return outMin;
     return outMin + (outMax - outMin) * ((value - inMin) / range);
@@ -151,11 +185,11 @@ export const mathExpressions = {
   },
 
   degreesToRadians(degrees: number): number {
-    return degrees * Math.PI / 180;
+    return (degrees * Math.PI) / 180;
   },
 
   radiansToDegrees(radians: number): number {
-    return radians * 180 / Math.PI;
+    return (radians * 180) / Math.PI;
   },
 
   seedRandom(seed: number, min: number = 0, max: number = 1): number {
@@ -164,8 +198,16 @@ export const mathExpressions = {
     return min + rand * (max - min);
   },
 
-  gaussRandom(mean: number = 0, stdDev: number = 1, seed: number = 12345): number {
-    if (!Number.isFinite(mean) || !Number.isFinite(stdDev) || !Number.isFinite(seed)) {
+  gaussRandom(
+    mean: number = 0,
+    stdDev: number = 1,
+    seed: number = 12345,
+  ): number {
+    if (
+      !Number.isFinite(mean) ||
+      !Number.isFinite(stdDev) ||
+      !Number.isFinite(seed)
+    ) {
       return 0;
     }
     const seededRand = (s: number) => {
@@ -194,7 +236,7 @@ export function expressionEase(
   tMin: number,
   tMax: number,
   vMin: number | number[],
-  vMax: number | number[]
+  vMax: number | number[],
 ): number | number[] {
   const range = tMax - tMin;
   let normalized: number;
@@ -205,9 +247,10 @@ export function expressionEase(
     normalized = Math.max(0, Math.min(1, normalized));
   }
 
-  const eased = normalized < 0.5
-    ? 4 * normalized * normalized * normalized
-    : 1 - Math.pow(-2 * normalized + 2, 3) / 2;
+  const eased =
+    normalized < 0.5
+      ? 4 * normalized * normalized * normalized
+      : 1 - (-2 * normalized + 2) ** 3 / 2;
 
   if (Array.isArray(vMin) && Array.isArray(vMax)) {
     return vMin.map((v, i) => v + (vMax[i] - v) * eased);
@@ -224,7 +267,7 @@ export function expressionEaseIn(
   tMin: number,
   tMax: number,
   vMin: number | number[],
-  vMax: number | number[]
+  vMax: number | number[],
 ): number | number[] {
   const range = tMax - tMin;
   let normalized: number;
@@ -252,7 +295,7 @@ export function expressionEaseOut(
   tMin: number,
   tMax: number,
   vMin: number | number[],
-  vMax: number | number[]
+  vMax: number | number[],
 ): number | number[] {
   const range = tMax - tMin;
   let normalized: number;
@@ -263,7 +306,7 @@ export function expressionEaseOut(
     normalized = Math.max(0, Math.min(1, normalized));
   }
 
-  const eased = 1 - Math.pow(1 - normalized, 3);
+  const eased = 1 - (1 - normalized) ** 3;
 
   if (Array.isArray(vMin) && Array.isArray(vMax)) {
     return vMin.map((v, i) => v + (vMax[i] - v) * eased);
@@ -281,42 +324,50 @@ export function expressionEaseOut(
  */
 export function evaluateExpression(
   expression: Expression,
-  ctx: ExpressionContext
+  ctx: ExpressionContext,
 ): number | number[] | string {
   if (!expression.enabled) return ctx.value;
 
   switch (expression.type) {
-    case 'preset':
+    case "preset":
       return evaluatePreset(expression.name, ctx, expression.params);
-    case 'function':
+    case "function":
       return evaluateFunction(expression.name, ctx, expression.params);
-    case 'custom':
-      return evaluateCustomExpression(expression.code || '', ctx);
+    case "custom":
+      return evaluateCustomExpression(expression.code || "", ctx);
     default:
       return ctx.value;
   }
 }
 
-function evaluatePreset(name: string, ctx: ExpressionContext, params: Record<string, any>): number | number[] {
+function evaluatePreset(
+  name: string,
+  ctx: ExpressionContext,
+  params: Record<string, any>,
+): number | number[] {
   switch (name) {
-    case 'inertia':
+    case "inertia":
       return inertia(ctx, params.amplitude, params.frequency, params.decay);
-    case 'bounce':
+    case "bounce":
       return bounce(ctx, params.elasticity, params.gravity);
-    case 'elastic':
+    case "elastic":
       return elastic(ctx, params.amplitude, params.period);
-    case 'jitter':
+    case "jitter":
       return jitter(ctx, params.frequency, params.amplitude, params.octaves);
-    case 'repeatAfter':
+    case "repeatAfter":
       return repeatAfter(ctx, params.type, params.numKeyframes);
-    case 'repeatBefore':
+    case "repeatBefore":
       return repeatBefore(ctx, params.type, params.numKeyframes);
     default:
       return ctx.value;
   }
 }
 
-function evaluateFunction(name: string, ctx: ExpressionContext, params: Record<string, any>): number | number[] {
+function evaluateFunction(
+  name: string,
+  ctx: ExpressionContext,
+  params: Record<string, any>,
+): number | number[] {
   // Time functions
   if (name in timeExpressions) {
     const fn = (timeExpressions as any)[name];
@@ -326,7 +377,7 @@ function evaluateFunction(name: string, ctx: ExpressionContext, params: Record<s
   // Math functions
   if (name in mathExpressions) {
     const fn = (mathExpressions as any)[name];
-    const val = typeof ctx.value === 'number' ? ctx.value : ctx.value[0];
+    const val = typeof ctx.value === "number" ? ctx.value : ctx.value[0];
     return fn(val, ...Object.values(params));
   }
 
@@ -344,17 +395,17 @@ function evaluateFunction(name: string, ctx: ExpressionContext, params: Record<s
  */
 export function evaluateCustomExpression(
   code: string,
-  ctx: ExpressionContext
+  ctx: ExpressionContext,
 ): number | number[] | string {
   // SECURITY: Type check - code must be a string
   // Prevents objects with malicious .trim() or valueOf() from being passed
-  if (typeof code !== 'string') {
-    console.warn('[SECURITY] Expression code is not a string:', typeof code);
+  if (typeof code !== "string") {
+    console.warn("[SECURITY] Expression code is not a string:", typeof code);
     return ctx.value;
   }
 
   // Empty code returns value unchanged
-  if (!code || code.trim() === '') {
+  if (!code || code.trim() === "") {
     return ctx.value;
   }
 
@@ -380,8 +431,8 @@ export function evaluateCustomExpression(
 // =============================================================================
 
 // Helper to create thisComp object
-function createThisCompObject(ctx: ExpressionContext) {
-  const fps = (Number.isFinite(ctx.fps) && ctx.fps > 0) ? ctx.fps : 30;
+function _createThisCompObject(ctx: ExpressionContext) {
+  const fps = Number.isFinite(ctx.fps) && ctx.fps > 0 ? ctx.fps : 30;
   const duration = Number.isFinite(ctx.duration) ? ctx.duration : 0;
 
   return {
@@ -395,19 +446,30 @@ function createThisCompObject(ctx: ExpressionContext) {
       const getLayerEffectParam = ctx.getLayerEffectParam;
       let layerId: string;
 
-      if (typeof nameOrIndex === 'number') {
-        const layerInfo = ctx.allLayers?.find(l => l.index === nameOrIndex);
+      if (typeof nameOrIndex === "number") {
+        const layerInfo = ctx.allLayers?.find((l) => l.index === nameOrIndex);
         layerId = layerInfo?.id ?? `layer_${nameOrIndex}`;
       } else {
-        const layerInfo = ctx.allLayers?.find(l => l.name === nameOrIndex);
+        const layerInfo = ctx.allLayers?.find((l) => l.name === nameOrIndex);
         layerId = layerInfo?.id ?? nameOrIndex;
       }
 
       const getTransform = (): LayerTransform => ({
-        position: (getLayerProperty?.(layerId, 'transform.position') as number[]) ?? [0, 0, 0],
-        scale: (getLayerProperty?.(layerId, 'transform.scale') as number[]) ?? [100, 100, 100],
-        rotation: (getLayerProperty?.(layerId, 'transform.rotation') as number[]) ?? [0, 0, 0],
-        anchor: (getLayerProperty?.(layerId, 'transform.anchorPoint') as number[]) ?? [0, 0, 0],
+        position: (getLayerProperty?.(
+          layerId,
+          "transform.position",
+        ) as number[]) ?? [0, 0, 0],
+        scale: (getLayerProperty?.(layerId, "transform.scale") as number[]) ?? [
+          100, 100, 100,
+        ],
+        rotation: (getLayerProperty?.(
+          layerId,
+          "transform.rotation",
+        ) as number[]) ?? [0, 0, 0],
+        anchor: (getLayerProperty?.(
+          layerId,
+          "transform.anchorPoint",
+        ) as number[]) ?? [0, 0, 0],
       });
 
       const createEffectAccessor = (effectName: string) => {
@@ -416,61 +478,86 @@ function createThisCompObject(ctx: ExpressionContext) {
         };
         accessor.param = accessor;
         // Slider Control
-        accessor.value = getLayerEffectParam?.(layerId, effectName, 'value') ?? 0;
-        accessor.slider = getLayerEffectParam?.(layerId, effectName, 'slider') ??
-                          getLayerEffectParam?.(layerId, effectName, 'Slider') ?? 0;
+        accessor.value =
+          getLayerEffectParam?.(layerId, effectName, "value") ?? 0;
+        accessor.slider =
+          getLayerEffectParam?.(layerId, effectName, "slider") ??
+          getLayerEffectParam?.(layerId, effectName, "Slider") ??
+          0;
         // Angle Control
-        accessor.angle = getLayerEffectParam?.(layerId, effectName, 'angle') ??
-                         getLayerEffectParam?.(layerId, effectName, 'Angle') ?? 0;
+        accessor.angle =
+          getLayerEffectParam?.(layerId, effectName, "angle") ??
+          getLayerEffectParam?.(layerId, effectName, "Angle") ??
+          0;
         // Checkbox Control
-        accessor.checkbox = getLayerEffectParam?.(layerId, effectName, 'checkbox') ??
-                            getLayerEffectParam?.(layerId, effectName, 'Checkbox') ?? false;
+        accessor.checkbox =
+          getLayerEffectParam?.(layerId, effectName, "checkbox") ??
+          getLayerEffectParam?.(layerId, effectName, "Checkbox") ??
+          false;
         // Color Control
-        accessor.color = getLayerEffectParam?.(layerId, effectName, 'color') ??
-                         getLayerEffectParam?.(layerId, effectName, 'Color') ?? [1, 1, 1, 1];
+        accessor.color = getLayerEffectParam?.(layerId, effectName, "color") ??
+          getLayerEffectParam?.(layerId, effectName, "Color") ?? [1, 1, 1, 1];
         // Point Control (2D and 3D)
-        accessor.point = getLayerEffectParam?.(layerId, effectName, 'point') ??
-                         getLayerEffectParam?.(layerId, effectName, 'Point') ?? [0, 0];
-        accessor.point3D = getLayerEffectParam?.(layerId, effectName, 'point3D') ??
-                           getLayerEffectParam?.(layerId, effectName, '3D Point') ?? [0, 0, 0];
+        accessor.point = getLayerEffectParam?.(layerId, effectName, "point") ??
+          getLayerEffectParam?.(layerId, effectName, "Point") ?? [0, 0];
+        accessor.point3D = getLayerEffectParam?.(
+          layerId,
+          effectName,
+          "point3D",
+        ) ??
+          getLayerEffectParam?.(layerId, effectName, "3D Point") ?? [0, 0, 0];
         // Dropdown Menu Control
-        accessor.menu = getLayerEffectParam?.(layerId, effectName, 'menu') ??
-                        getLayerEffectParam?.(layerId, effectName, 'Menu') ?? 1;
+        accessor.menu =
+          getLayerEffectParam?.(layerId, effectName, "menu") ??
+          getLayerEffectParam?.(layerId, effectName, "Menu") ??
+          1;
         // Layer Control
-        accessor.layer = getLayerEffectParam?.(layerId, effectName, 'layer') ??
-                         getLayerEffectParam?.(layerId, effectName, 'Layer') ?? null;
+        accessor.layer =
+          getLayerEffectParam?.(layerId, effectName, "layer") ??
+          getLayerEffectParam?.(layerId, effectName, "Layer") ??
+          null;
         return accessor;
       };
 
       return {
-        name: ctx.allLayers?.find(l => l.id === layerId)?.name ?? '',
-        index: ctx.allLayers?.find(l => l.id === layerId)?.index ?? 0,
-        position: getLayerProperty?.(layerId, 'transform.position') ?? [0, 0],
-        scale: getLayerProperty?.(layerId, 'transform.scale') ?? [100, 100],
-        rotation: getLayerProperty?.(layerId, 'transform.rotation') ?? 0,
-        opacity: getLayerProperty?.(layerId, 'transform.opacity') ?? 100,
-        anchorPoint: getLayerProperty?.(layerId, 'transform.anchorPoint') ?? [0, 0],
-        origin: getLayerProperty?.(layerId, 'transform.origin') ?? [0, 0],
+        name: ctx.allLayers?.find((l) => l.id === layerId)?.name ?? "",
+        index: ctx.allLayers?.find((l) => l.id === layerId)?.index ?? 0,
+        position: getLayerProperty?.(layerId, "transform.position") ?? [0, 0],
+        scale: getLayerProperty?.(layerId, "transform.scale") ?? [100, 100],
+        rotation: getLayerProperty?.(layerId, "transform.rotation") ?? 0,
+        opacity: getLayerProperty?.(layerId, "transform.opacity") ?? 100,
+        anchorPoint: getLayerProperty?.(layerId, "transform.anchorPoint") ?? [
+          0, 0,
+        ],
+        origin: getLayerProperty?.(layerId, "transform.origin") ?? [0, 0],
         transform: {
-          position: getLayerProperty?.(layerId, 'transform.position') ?? [0, 0, 0],
-          rotation: getLayerProperty?.(layerId, 'transform.rotation') ?? [0, 0, 0],
-          scale: getLayerProperty?.(layerId, 'transform.scale') ?? [100, 100, 100],
-          opacity: getLayerProperty?.(layerId, 'transform.opacity') ?? 100,
-          anchorPoint: getLayerProperty?.(layerId, 'transform.anchorPoint') ?? [0, 0, 0],
-          origin: getLayerProperty?.(layerId, 'transform.origin') ?? [0, 0, 0],
+          position: getLayerProperty?.(layerId, "transform.position") ?? [
+            0, 0, 0,
+          ],
+          rotation: getLayerProperty?.(layerId, "transform.rotation") ?? [
+            0, 0, 0,
+          ],
+          scale: getLayerProperty?.(layerId, "transform.scale") ?? [
+            100, 100, 100,
+          ],
+          opacity: getLayerProperty?.(layerId, "transform.opacity") ?? 100,
+          anchorPoint: getLayerProperty?.(layerId, "transform.anchorPoint") ?? [
+            0, 0, 0,
+          ],
+          origin: getLayerProperty?.(layerId, "transform.origin") ?? [0, 0, 0],
         },
         toComp: (point: number[]) => toComp(point, getTransform()),
         fromComp: (point: number[]) => fromComp(point, getTransform()),
         toWorld: (point: number[]) => toWorld(point, getTransform()),
         fromWorld: (point: number[]) => fromWorld(point, getTransform()),
-        effect: createEffectAccessor
+        effect: createEffectAccessor,
       };
-    }
+    },
   };
 }
 
 // Helper to create thisLayer object
-function createThisLayerObject(ctx: ExpressionContext) {
+function _createThisLayerObject(ctx: ExpressionContext) {
   return {
     name: ctx.layerName,
     index: ctx.layerIndex,
@@ -491,31 +578,39 @@ function createThisLayerObject(ctx: ExpressionContext) {
       origin: ctx.layerTransform?.origin ?? [0, 0, 0],
     },
     effect: (effectName: string) => {
-      const eff = ctx.layerEffects?.find(e => e.name === effectName || e.effectKey === effectName);
+      const eff = ctx.layerEffects?.find(
+        (e) => e.name === effectName || e.effectKey === effectName,
+      );
       const accessor = (paramName: string) => {
         if (!eff) return 0;
         return eff.parameters[paramName] ?? 0;
       };
       accessor.param = accessor;
       // Slider Control
-      accessor.value = eff?.parameters['value'] ?? 0;
-      accessor.slider = eff?.parameters['slider'] ?? eff?.parameters['Slider'] ?? 0;
+      accessor.value = eff?.parameters.value ?? 0;
+      accessor.slider = eff?.parameters.slider ?? eff?.parameters.Slider ?? 0;
       // Angle Control
-      accessor.angle = eff?.parameters['angle'] ?? eff?.parameters['Angle'] ?? 0;
+      accessor.angle = eff?.parameters.angle ?? eff?.parameters.Angle ?? 0;
       // Checkbox Control
-      accessor.checkbox = eff?.parameters['checkbox'] ?? eff?.parameters['Checkbox'] ?? false;
+      accessor.checkbox =
+        eff?.parameters.checkbox ?? eff?.parameters.Checkbox ?? false;
       // Color Control
-      accessor.color = eff?.parameters['color'] ?? eff?.parameters['Color'] ?? [1, 1, 1, 1];
+      accessor.color = eff?.parameters.color ??
+        eff?.parameters.Color ?? [1, 1, 1, 1];
       // Point Control (2D and 3D)
-      accessor.point = eff?.parameters['point'] ?? eff?.parameters['Point'] ?? [0, 0];
-      accessor.point3D = eff?.parameters['point3D'] ?? eff?.parameters['3D Point'] ?? [0, 0, 0];
+      accessor.point = eff?.parameters.point ?? eff?.parameters.Point ?? [0, 0];
+      accessor.point3D = eff?.parameters.point3D ??
+        eff?.parameters["3D Point"] ?? [0, 0, 0];
       // Dropdown Menu Control
-      accessor.menu = eff?.parameters['menu'] ?? eff?.parameters['Menu'] ?? 1;
+      accessor.menu = eff?.parameters.menu ?? eff?.parameters.Menu ?? 1;
       // Layer Control
-      accessor.layer = eff?.parameters['layer'] ?? eff?.parameters['Layer'] ?? null;
+      accessor.layer = eff?.parameters.layer ?? eff?.parameters.Layer ?? null;
       return accessor;
     },
-    sourceRectAtTime: (_t: number = ctx.time, _includeExtents: boolean = false) => {
+    sourceRectAtTime: (
+      _t: number = ctx.time,
+      _includeExtents: boolean = false,
+    ) => {
       return { top: 0, left: 0, width: 100, height: 100 };
     },
     toComp: (point: number[]) => {

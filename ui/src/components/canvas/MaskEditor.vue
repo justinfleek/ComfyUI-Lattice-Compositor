@@ -124,9 +124,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import type { LayerMask, MaskVertex, MaskPath, Layer } from '@/types/project';
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { useCompositorStore } from "@/stores/compositorStore";
+import type { LayerMask, MaskPath, MaskVertex } from "@/types/project";
 
 interface Props {
   layerId: string | null;
@@ -140,10 +140,10 @@ interface Props {
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-  (e: 'maskSelected', maskId: string | null): void;
-  (e: 'vertexSelected', maskId: string, vertexIndex: number | null): void;
-  (e: 'maskUpdated', maskId: string): void;
-  (e: 'pathClosed', maskId: string): void;
+  (e: "maskSelected", maskId: string | null): void;
+  (e: "vertexSelected", maskId: string, vertexIndex: number | null): void;
+  (e: "maskUpdated", maskId: string): void;
+  (e: "pathClosed", maskId: string): void;
 }>();
 
 const store = useCompositorStore();
@@ -154,7 +154,7 @@ const selectedVertexIndex = ref<number | null>(null);
 const previewPoint = ref<{ x: number; y: number } | null>(null);
 const closePathPreview = ref(false);
 const dragTarget = ref<{
-  type: 'vertex' | 'handleIn' | 'handleOut';
+  type: "vertex" | "handleIn" | "handleOut";
   startX: number;
   startY: number;
 } | null>(null);
@@ -163,7 +163,7 @@ const dragTarget = ref<{
 const visibleMasks = computed<LayerMask[]>(() => {
   if (!props.layerId) return [];
 
-  const layer = store.layers.find(l => l.id === props.layerId);
+  const layer = store.layers.find((l) => l.id === props.layerId);
   if (!layer) return [];
 
   return layer.masks ?? [];
@@ -172,7 +172,7 @@ const visibleMasks = computed<LayerMask[]>(() => {
 // Get the selected mask
 const selectedMask = computed<LayerMask | null>(() => {
   if (!selectedMaskId.value) return null;
-  return visibleMasks.value.find(m => m.id === selectedMaskId.value) ?? null;
+  return visibleMasks.value.find((m) => m.id === selectedMaskId.value) ?? null;
 });
 
 // Get vertices of selected mask
@@ -183,7 +183,7 @@ const selectedMaskVertices = computed<MaskVertex[]>(() => {
 });
 
 // Get the selected vertex
-const selectedVertex = computed<MaskVertex | null>(() => {
+const _selectedVertex = computed<MaskVertex | null>(() => {
   if (selectedVertexIndex.value === null) return null;
   return selectedMaskVertices.value[selectedVertexIndex.value] ?? null;
 });
@@ -196,9 +196,9 @@ function getMaskPathValue(mask: LayerMask): MaskPath | null {
 }
 
 // Generate SVG path data from mask vertices
-function getMaskPathData(mask: LayerMask): string {
+function _getMaskPathData(mask: LayerMask): string {
   const path = getMaskPathValue(mask);
-  if (!path || !path.vertices || path.vertices.length < 2) return '';
+  if (!path || !path.vertices || path.vertices.length < 2) return "";
 
   const vertices = path.vertices;
   let d = `M ${vertices[0].x} ${vertices[0].y}`;
@@ -216,7 +216,12 @@ function getMaskPathData(mask: LayerMask): string {
     const cp2y = next.y + (next.inTangentY || 0);
 
     // Use cubic bezier if any tangents exist
-    if (current.outTangentX || current.outTangentY || next.inTangentX || next.inTangentY) {
+    if (
+      current.outTangentX ||
+      current.outTangentY ||
+      next.inTangentX ||
+      next.inTangentY
+    ) {
       d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${next.x} ${next.y}`;
     } else {
       d += ` L ${next.x} ${next.y}`;
@@ -224,20 +229,27 @@ function getMaskPathData(mask: LayerMask): string {
   }
 
   if (path.closed) {
-    d += ' Z';
+    d += " Z";
   }
 
   return d;
 }
 
 // Check if vertex is a corner (no tangents)
-function isCornerVertex(vertex: MaskVertex): boolean {
-  return !vertex.inTangentX && !vertex.inTangentY &&
-         !vertex.outTangentX && !vertex.outTangentY;
+function _isCornerVertex(vertex: MaskVertex): boolean {
+  return (
+    !vertex.inTangentX &&
+    !vertex.inTangentY &&
+    !vertex.outTangentX &&
+    !vertex.outTangentY
+  );
 }
 
 // Convert screen coords to canvas coords
-function screenToCanvas(screenX: number, screenY: number): { x: number; y: number } {
+function screenToCanvas(
+  screenX: number,
+  screenY: number,
+): { x: number; y: number } {
   const vt = props.viewportTransform;
   const x = (screenX - vt[4]) / vt[0];
   const y = (screenY - vt[5]) / vt[3];
@@ -257,11 +269,11 @@ function getMousePos(event: MouseEvent): { x: number; y: number } {
 function selectMask(maskId: string) {
   selectedMaskId.value = maskId;
   selectedVertexIndex.value = null;
-  emit('maskSelected', maskId);
+  emit("maskSelected", maskId);
 }
 
 // Handle mouse events
-function handleMouseDown(event: MouseEvent) {
+function _handleMouseDown(event: MouseEvent) {
   if (!props.isMaskPenMode || !props.layerId) return;
 
   const pos = getMousePos(event);
@@ -270,7 +282,7 @@ function handleMouseDown(event: MouseEvent) {
   if (selectedMask.value && selectedMaskVertices.value.length >= 2) {
     const firstVertex = selectedMaskVertices.value[0];
     const dist = Math.sqrt(
-      Math.pow(pos.x - firstVertex.x, 2) + Math.pow(pos.y - firstVertex.y, 2)
+      (pos.x - firstVertex.x) ** 2 + (pos.y - firstVertex.y) ** 2,
     );
     if (dist < 15) {
       closePath();
@@ -287,7 +299,7 @@ function handleMouseDown(event: MouseEvent) {
   }
 }
 
-function handleMouseMove(event: MouseEvent) {
+function _handleMouseMove(event: MouseEvent) {
   const pos = getMousePos(event);
 
   // Update preview point
@@ -298,25 +310,29 @@ function handleMouseMove(event: MouseEvent) {
     if (selectedMaskVertices.value.length >= 2) {
       const firstVertex = selectedMaskVertices.value[0];
       const dist = Math.sqrt(
-        Math.pow(pos.x - firstVertex.x, 2) + Math.pow(pos.y - firstVertex.y, 2)
+        (pos.x - firstVertex.x) ** 2 + (pos.y - firstVertex.y) ** 2,
       );
       closePathPreview.value = dist < 15;
     }
   }
 
   // Handle dragging
-  if (dragTarget.value && selectedMask.value && selectedVertexIndex.value !== null) {
+  if (
+    dragTarget.value &&
+    selectedMask.value &&
+    selectedVertexIndex.value !== null
+  ) {
     const vertices = [...selectedMaskVertices.value];
     const vertex = { ...vertices[selectedVertexIndex.value] };
 
-    if (dragTarget.value.type === 'vertex') {
+    if (dragTarget.value.type === "vertex") {
       // Move vertex and its tangents
-      const dx = pos.x - vertex.x;
-      const dy = pos.y - vertex.y;
+      const _dx = pos.x - vertex.x;
+      const _dy = pos.y - vertex.y;
       vertex.x = pos.x;
       vertex.y = pos.y;
       // Tangents are relative, so they don't need to be moved
-    } else if (dragTarget.value.type === 'handleIn') {
+    } else if (dragTarget.value.type === "handleIn") {
       vertex.inTangentX = pos.x - vertex.x;
       vertex.inTangentY = pos.y - vertex.y;
       // Mirror for smooth vertex (Alt key to break tangents)
@@ -324,7 +340,7 @@ function handleMouseMove(event: MouseEvent) {
         vertex.outTangentX = -vertex.inTangentX;
         vertex.outTangentY = -vertex.inTangentY;
       }
-    } else if (dragTarget.value.type === 'handleOut') {
+    } else if (dragTarget.value.type === "handleOut") {
       vertex.outTangentX = pos.x - vertex.x;
       vertex.outTangentY = pos.y - vertex.y;
       // Mirror for smooth vertex (Alt key to break tangents)
@@ -339,30 +355,30 @@ function handleMouseMove(event: MouseEvent) {
   }
 }
 
-function handleMouseUp() {
+function _handleMouseUp() {
   dragTarget.value = null;
 }
 
-function startDragVertex(index: number, event: MouseEvent) {
+function _startDragVertex(index: number, event: MouseEvent) {
   selectedVertexIndex.value = index;
-  emit('vertexSelected', selectedMaskId.value!, index);
+  emit("vertexSelected", selectedMaskId.value!, index);
 
   if (!props.isMaskPenMode) {
     const pos = getMousePos(event);
     dragTarget.value = {
-      type: 'vertex',
+      type: "vertex",
       startX: pos.x,
-      startY: pos.y
+      startY: pos.y,
     };
   }
 }
 
-function startDragHandle(handleType: 'in' | 'out', event: MouseEvent) {
+function _startDragHandle(handleType: "in" | "out", event: MouseEvent) {
   const pos = getMousePos(event);
   dragTarget.value = {
-    type: handleType === 'in' ? 'handleIn' : 'handleOut',
+    type: handleType === "in" ? "handleIn" : "handleOut",
     startX: pos.x,
-    startY: pos.y
+    startY: pos.y,
   };
 }
 
@@ -376,54 +392,63 @@ function createNewMask(x: number, y: number) {
     name: `Mask ${visibleMasks.value.length + 1}`,
     enabled: true,
     locked: false,
-    mode: 'add',
+    mode: "add",
     inverted: false,
     path: {
       id: `path_${maskId}`,
-      name: 'Mask Path',
-      type: 'position',
+      name: "Mask Path",
+      type: "position",
       value: {
         closed: false,
-        vertices: [{ x, y, inTangentX: 0, inTangentY: 0, outTangentX: 0, outTangentY: 0 }]
+        vertices: [
+          {
+            x,
+            y,
+            inTangentX: 0,
+            inTangentY: 0,
+            outTangentX: 0,
+            outTangentY: 0,
+          },
+        ],
       },
       animated: false,
-      keyframes: []
+      keyframes: [],
     },
     opacity: {
       id: `opacity_${maskId}`,
-      name: 'Mask Opacity',
-      type: 'number',
+      name: "Mask Opacity",
+      type: "number",
       value: 100,
       animated: false,
-      keyframes: []
+      keyframes: [],
     },
     feather: {
       id: `feather_${maskId}`,
-      name: 'Mask Feather',
-      type: 'number',
+      name: "Mask Feather",
+      type: "number",
       value: 0,
       animated: false,
-      keyframes: []
+      keyframes: [],
     },
     expansion: {
       id: `expansion_${maskId}`,
-      name: 'Mask Expansion',
-      type: 'number',
+      name: "Mask Expansion",
+      type: "number",
       value: 0,
       animated: false,
-      keyframes: []
+      keyframes: [],
     },
-    color: getNextMaskColor()
+    color: getNextMaskColor(),
   };
 
   // Add mask to layer via store
-  const layer = store.layers.find(l => l.id === props.layerId);
+  const layer = store.layers.find((l) => l.id === props.layerId);
   if (layer) {
     const masks = [...(layer.masks ?? []), newMask];
     store.updateLayer(props.layerId, { masks });
     selectedMaskId.value = maskId;
     selectedVertexIndex.value = 0;
-    emit('maskSelected', maskId);
+    emit("maskSelected", maskId);
   }
 }
 
@@ -432,11 +457,12 @@ function addVertex(x: number, y: number) {
   if (!selectedMask.value || !props.layerId) return;
 
   const newVertex: MaskVertex = {
-    x, y,
+    x,
+    y,
     inTangentX: 0,
     inTangentY: 0,
     outTangentX: 0,
-    outTangentY: 0
+    outTangentY: 0,
   };
 
   const vertices = [...selectedMaskVertices.value, newVertex];
@@ -454,15 +480,15 @@ function updateMaskVertices(vertices: MaskVertex[]) {
   const updatedPath = { ...path, vertices };
   const updatedMask = {
     ...selectedMask.value,
-    path: { ...selectedMask.value.path, value: updatedPath }
+    path: { ...selectedMask.value.path, value: updatedPath },
   };
 
-  const masks = visibleMasks.value.map(m =>
-    m.id === selectedMaskId.value ? updatedMask : m
+  const masks = visibleMasks.value.map((m) =>
+    m.id === selectedMaskId.value ? updatedMask : m,
   );
 
   store.updateLayer(props.layerId, { masks });
-  emit('maskUpdated', selectedMaskId.value!);
+  emit("maskUpdated", selectedMaskId.value!);
 }
 
 // Close the mask path
@@ -475,19 +501,26 @@ function closePath() {
   const updatedPath = { ...path, closed: true };
   const updatedMask = {
     ...selectedMask.value,
-    path: { ...selectedMask.value.path, value: updatedPath }
+    path: { ...selectedMask.value.path, value: updatedPath },
   };
 
-  const masks = visibleMasks.value.map(m =>
-    m.id === selectedMaskId.value ? updatedMask : m
+  const masks = visibleMasks.value.map((m) =>
+    m.id === selectedMaskId.value ? updatedMask : m,
   );
 
   store.updateLayer(props.layerId, { masks });
-  emit('pathClosed', selectedMaskId.value!);
+  emit("pathClosed", selectedMaskId.value!);
 }
 
 // Get next mask color from palette
-const maskColors = ['#FFFF00', '#FF00FF', '#00FFFF', '#FF8800', '#88FF00', '#0088FF'];
+const maskColors = [
+  "#FFFF00",
+  "#FF00FF",
+  "#00FFFF",
+  "#FF8800",
+  "#88FF00",
+  "#0088FF",
+];
 function getNextMaskColor(): string {
   return maskColors[visibleMasks.value.length % maskColors.length];
 }
@@ -496,14 +529,19 @@ function getNextMaskColor(): string {
 function deleteSelectedVertex() {
   if (selectedVertexIndex.value === null || !selectedMask.value) return;
 
-  const vertices = selectedMaskVertices.value.filter((_, i) => i !== selectedVertexIndex.value);
+  const vertices = selectedMaskVertices.value.filter(
+    (_, i) => i !== selectedVertexIndex.value,
+  );
 
   if (vertices.length === 0) {
     // Delete entire mask if no vertices left
     deleteMask(selectedMaskId.value!);
   } else {
     updateMaskVertices(vertices);
-    selectedVertexIndex.value = Math.min(selectedVertexIndex.value, vertices.length - 1);
+    selectedVertexIndex.value = Math.min(
+      selectedVertexIndex.value,
+      vertices.length - 1,
+    );
   }
 }
 
@@ -511,42 +549,45 @@ function deleteSelectedVertex() {
 function deleteMask(maskId: string) {
   if (!props.layerId) return;
 
-  const masks = visibleMasks.value.filter(m => m.id !== maskId);
+  const masks = visibleMasks.value.filter((m) => m.id !== maskId);
   store.updateLayer(props.layerId, { masks });
 
   if (selectedMaskId.value === maskId) {
     selectedMaskId.value = masks.length > 0 ? masks[0].id : null;
     selectedVertexIndex.value = null;
-    emit('maskSelected', selectedMaskId.value);
+    emit("maskSelected", selectedMaskId.value);
   }
 }
 
 // Keyboard handling
 function handleKeyDown(event: KeyboardEvent) {
-  if (event.key === 'Delete' || event.key === 'Backspace') {
+  if (event.key === "Delete" || event.key === "Backspace") {
     if (selectedVertexIndex.value !== null) {
       deleteSelectedVertex();
       event.preventDefault();
     }
-  } else if (event.key === 'Escape') {
+  } else if (event.key === "Escape") {
     selectedVertexIndex.value = null;
     selectedMaskId.value = null;
-    emit('maskSelected', null);
+    emit("maskSelected", null);
   }
 }
 
 // Clear selection when layer changes
-watch(() => props.layerId, () => {
-  selectedMaskId.value = null;
-  selectedVertexIndex.value = null;
-});
+watch(
+  () => props.layerId,
+  () => {
+    selectedMaskId.value = null;
+    selectedVertexIndex.value = null;
+  },
+);
 
 onMounted(() => {
-  window.addEventListener('keydown', handleKeyDown);
+  window.addEventListener("keydown", handleKeyDown);
 });
 
 onUnmounted(() => {
-  window.removeEventListener('keydown', handleKeyDown);
+  window.removeEventListener("keydown", handleKeyDown);
 });
 
 // Expose for external access
@@ -558,7 +599,7 @@ defineExpose({
   clearSelection: () => {
     selectedMaskId.value = null;
     selectedVertexIndex.value = null;
-  }
+  },
 });
 </script>
 

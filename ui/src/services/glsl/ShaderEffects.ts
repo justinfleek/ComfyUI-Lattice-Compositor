@@ -5,7 +5,7 @@
  * Based on Jovi_GLSL patterns with Lattice-specific enhancements.
  */
 
-import { getGLSLEngine, type ShaderUniforms } from './GLSLEngine';
+import { getGLSLEngine, type ShaderUniforms } from "./GLSLEngine";
 
 // =============================================================================
 // SHADER EFFECT DEFINITIONS
@@ -13,10 +13,25 @@ import { getGLSLEngine, type ShaderUniforms } from './GLSLEngine';
 
 export interface ShaderEffectDefinition {
   name: string;
-  category: 'blur' | 'distort' | 'color' | 'generate' | 'stylize' | 'transition';
+  category:
+    | "blur"
+    | "distort"
+    | "color"
+    | "generate"
+    | "stylize"
+    | "transition";
   description: string;
   fragmentShader: string;
-  uniforms: Record<string, { type: string; default: number | number[]; min?: number; max?: number; step?: number }>;
+  uniforms: Record<
+    string,
+    {
+      type: string;
+      default: number | number[];
+      min?: number;
+      max?: number;
+      step?: number;
+    }
+  >;
 }
 
 // =============================================================================
@@ -24,10 +39,10 @@ export interface ShaderEffectDefinition {
 // =============================================================================
 
 export const BLUR_EFFECTS: Record<string, ShaderEffectDefinition> = {
-  'glsl-gaussian-blur': {
-    name: 'GLSL Gaussian Blur',
-    category: 'blur',
-    description: 'GPU-accelerated Gaussian blur with adjustable radius',
+  "glsl-gaussian-blur": {
+    name: "GLSL Gaussian Blur",
+    category: "blur",
+    description: "GPU-accelerated Gaussian blur with adjustable radius",
     fragmentShader: `
       precision highp float;
       uniform sampler2D iChannel0;
@@ -54,15 +69,15 @@ export const BLUR_EFFECTS: Record<string, ShaderEffectDefinition> = {
       }
     `,
     uniforms: {
-      u_radius: { type: 'float', default: 5, min: 0, max: 50, step: 0.5 },
-      u_direction: { type: 'vec2', default: [1, 0] }
-    }
+      u_radius: { type: "float", default: 5, min: 0, max: 50, step: 0.5 },
+      u_direction: { type: "vec2", default: [1, 0] },
+    },
   },
 
-  'glsl-directional-blur': {
-    name: 'GLSL Directional Blur',
-    category: 'blur',
-    description: 'Motion blur in a specified direction',
+  "glsl-directional-blur": {
+    name: "GLSL Directional Blur",
+    category: "blur",
+    description: "Motion blur in a specified direction",
     fragmentShader: `
       precision highp float;
       uniform sampler2D iChannel0;
@@ -89,16 +104,16 @@ export const BLUR_EFFECTS: Record<string, ShaderEffectDefinition> = {
       }
     `,
     uniforms: {
-      u_strength: { type: 'float', default: 10, min: 0, max: 100, step: 1 },
-      u_angle: { type: 'float', default: 0, min: 0, max: 360, step: 1 },
-      u_samples: { type: 'int', default: 16, min: 4, max: 32, step: 1 }
-    }
+      u_strength: { type: "float", default: 10, min: 0, max: 100, step: 1 },
+      u_angle: { type: "float", default: 0, min: 0, max: 360, step: 1 },
+      u_samples: { type: "int", default: 16, min: 4, max: 32, step: 1 },
+    },
   },
 
-  'glsl-radial-blur': {
-    name: 'GLSL Radial Blur',
-    category: 'blur',
-    description: 'Zoom or spin blur from a center point',
+  "glsl-radial-blur": {
+    name: "GLSL Radial Blur",
+    category: "blur",
+    description: "Zoom or spin blur from a center point",
     fragmentShader: `
       precision highp float;
       uniform sampler2D iChannel0;
@@ -143,12 +158,12 @@ export const BLUR_EFFECTS: Record<string, ShaderEffectDefinition> = {
       }
     `,
     uniforms: {
-      u_center: { type: 'vec2', default: [0.5, 0.5] },
-      u_strength: { type: 'float', default: 10, min: 0, max: 100, step: 1 },
-      u_samples: { type: 'int', default: 16, min: 4, max: 32, step: 1 },
-      u_mode: { type: 'int', default: 0, min: 0, max: 1, step: 1 }
-    }
-  }
+      u_center: { type: "vec2", default: [0.5, 0.5] },
+      u_strength: { type: "float", default: 10, min: 0, max: 100, step: 1 },
+      u_samples: { type: "int", default: 16, min: 4, max: 32, step: 1 },
+      u_mode: { type: "int", default: 0, min: 0, max: 1, step: 1 },
+    },
+  },
 };
 
 // =============================================================================
@@ -156,10 +171,10 @@ export const BLUR_EFFECTS: Record<string, ShaderEffectDefinition> = {
 // =============================================================================
 
 export const DISTORT_EFFECTS: Record<string, ShaderEffectDefinition> = {
-  'glsl-wave': {
-    name: 'GLSL Wave Distortion',
-    category: 'distort',
-    description: 'Animated wave distortion effect',
+  "glsl-wave": {
+    name: "GLSL Wave Distortion",
+    category: "distort",
+    description: "Animated wave distortion effect",
     fragmentShader: `
       precision highp float;
       uniform sampler2D iChannel0;
@@ -187,17 +202,17 @@ export const DISTORT_EFFECTS: Record<string, ShaderEffectDefinition> = {
       }
     `,
     uniforms: {
-      u_amplitude: { type: 'float', default: 10, min: 0, max: 100, step: 1 },
-      u_frequency: { type: 'float', default: 10, min: 0.1, max: 50, step: 0.1 },
-      u_speed: { type: 'float', default: 1, min: 0, max: 10, step: 0.1 },
-      u_direction: { type: 'int', default: 0, min: 0, max: 2, step: 1 }
-    }
+      u_amplitude: { type: "float", default: 10, min: 0, max: 100, step: 1 },
+      u_frequency: { type: "float", default: 10, min: 0.1, max: 50, step: 0.1 },
+      u_speed: { type: "float", default: 1, min: 0, max: 10, step: 0.1 },
+      u_direction: { type: "int", default: 0, min: 0, max: 2, step: 1 },
+    },
   },
 
-  'glsl-bulge': {
-    name: 'GLSL Bulge',
-    category: 'distort',
-    description: 'Spherical bulge/pinch distortion',
+  "glsl-bulge": {
+    name: "GLSL Bulge",
+    category: "distort",
+    description: "Spherical bulge/pinch distortion",
     fragmentShader: `
       precision highp float;
       uniform sampler2D iChannel0;
@@ -224,16 +239,16 @@ export const DISTORT_EFFECTS: Record<string, ShaderEffectDefinition> = {
       }
     `,
     uniforms: {
-      u_center: { type: 'vec2', default: [0.5, 0.5] },
-      u_radius: { type: 'float', default: 0.3, min: 0, max: 1, step: 0.01 },
-      u_strength: { type: 'float', default: 0.5, min: 0.1, max: 3, step: 0.1 }
-    }
+      u_center: { type: "vec2", default: [0.5, 0.5] },
+      u_radius: { type: "float", default: 0.3, min: 0, max: 1, step: 0.01 },
+      u_strength: { type: "float", default: 0.5, min: 0.1, max: 3, step: 0.1 },
+    },
   },
 
-  'glsl-twirl': {
-    name: 'GLSL Twirl',
-    category: 'distort',
-    description: 'Spiral twirl distortion',
+  "glsl-twirl": {
+    name: "GLSL Twirl",
+    category: "distort",
+    description: "Spiral twirl distortion",
     fragmentShader: `
       precision highp float;
       uniform sampler2D iChannel0;
@@ -264,16 +279,22 @@ export const DISTORT_EFFECTS: Record<string, ShaderEffectDefinition> = {
       }
     `,
     uniforms: {
-      u_center: { type: 'vec2', default: [0.5, 0.5] },
-      u_radius: { type: 'float', default: 0.4, min: 0, max: 1, step: 0.01 },
-      u_angle: { type: 'float', default: 3.14, min: -12.56, max: 12.56, step: 0.1 }
-    }
+      u_center: { type: "vec2", default: [0.5, 0.5] },
+      u_radius: { type: "float", default: 0.4, min: 0, max: 1, step: 0.01 },
+      u_angle: {
+        type: "float",
+        default: 3.14,
+        min: -12.56,
+        max: 12.56,
+        step: 0.1,
+      },
+    },
   },
 
-  'glsl-displacement': {
-    name: 'GLSL Displacement Map',
-    category: 'distort',
-    description: 'Displace pixels based on a second image',
+  "glsl-displacement": {
+    name: "GLSL Displacement Map",
+    category: "distort",
+    description: "Displace pixels based on a second image",
     fragmentShader: `
       precision highp float;
       uniform sampler2D iChannel0;
@@ -304,16 +325,16 @@ export const DISTORT_EFFECTS: Record<string, ShaderEffectDefinition> = {
       }
     `,
     uniforms: {
-      u_scaleX: { type: 'float', default: 50, min: 0, max: 500, step: 1 },
-      u_scaleY: { type: 'float', default: 50, min: 0, max: 500, step: 1 },
-      u_useAlpha: { type: 'int', default: 0, min: 0, max: 1, step: 1 }
-    }
+      u_scaleX: { type: "float", default: 50, min: 0, max: 500, step: 1 },
+      u_scaleY: { type: "float", default: 50, min: 0, max: 500, step: 1 },
+      u_useAlpha: { type: "int", default: 0, min: 0, max: 1, step: 1 },
+    },
   },
 
-  'glsl-turbulence': {
-    name: 'GLSL Turbulence Distort',
-    category: 'distort',
-    description: 'Noise-based turbulent distortion',
+  "glsl-turbulence": {
+    name: "GLSL Turbulence Distort",
+    category: "distort",
+    description: "Noise-based turbulent distortion",
     fragmentShader: `
       precision highp float;
       uniform sampler2D iChannel0;
@@ -379,12 +400,12 @@ export const DISTORT_EFFECTS: Record<string, ShaderEffectDefinition> = {
       }
     `,
     uniforms: {
-      u_amount: { type: 'float', default: 20, min: 0, max: 200, step: 1 },
-      u_scale: { type: 'float', default: 3, min: 0.1, max: 20, step: 0.1 },
-      u_speed: { type: 'float', default: 1, min: 0, max: 5, step: 0.1 },
-      u_octaves: { type: 'int', default: 4, min: 1, max: 8, step: 1 }
-    }
-  }
+      u_amount: { type: "float", default: 20, min: 0, max: 200, step: 1 },
+      u_scale: { type: "float", default: 3, min: 0.1, max: 20, step: 0.1 },
+      u_speed: { type: "float", default: 1, min: 0, max: 5, step: 0.1 },
+      u_octaves: { type: "int", default: 4, min: 1, max: 8, step: 1 },
+    },
+  },
 };
 
 // =============================================================================
@@ -392,10 +413,10 @@ export const DISTORT_EFFECTS: Record<string, ShaderEffectDefinition> = {
 // =============================================================================
 
 export const COLOR_EFFECTS: Record<string, ShaderEffectDefinition> = {
-  'glsl-chromatic-aberration': {
-    name: 'GLSL Chromatic Aberration',
-    category: 'color',
-    description: 'RGB channel separation effect',
+  "glsl-chromatic-aberration": {
+    name: "GLSL Chromatic Aberration",
+    category: "color",
+    description: "RGB channel separation effect",
     fragmentShader: `
       precision highp float;
       uniform sampler2D iChannel0;
@@ -427,16 +448,16 @@ export const COLOR_EFFECTS: Record<string, ShaderEffectDefinition> = {
       }
     `,
     uniforms: {
-      u_amount: { type: 'float', default: 5, min: 0, max: 50, step: 0.5 },
-      u_angle: { type: 'float', default: 0, min: 0, max: 360, step: 1 },
-      u_mode: { type: 'int', default: 0, min: 0, max: 1, step: 1 }
-    }
+      u_amount: { type: "float", default: 5, min: 0, max: 50, step: 0.5 },
+      u_angle: { type: "float", default: 0, min: 0, max: 360, step: 1 },
+      u_mode: { type: "int", default: 0, min: 0, max: 1, step: 1 },
+    },
   },
 
-  'glsl-color-grading': {
-    name: 'GLSL Color Grading',
-    category: 'color',
-    description: 'Lift/Gamma/Gain color grading',
+  "glsl-color-grading": {
+    name: "GLSL Color Grading",
+    category: "color",
+    description: "Lift/Gamma/Gain color grading",
     fragmentShader: `
       precision highp float;
       uniform sampler2D iChannel0;
@@ -467,17 +488,17 @@ export const COLOR_EFFECTS: Record<string, ShaderEffectDefinition> = {
       }
     `,
     uniforms: {
-      u_lift: { type: 'vec3', default: [0, 0, 0] },
-      u_gamma: { type: 'vec3', default: [1, 1, 1] },
-      u_gain: { type: 'vec3', default: [1, 1, 1] },
-      u_saturation: { type: 'float', default: 1, min: 0, max: 3, step: 0.1 }
-    }
+      u_lift: { type: "vec3", default: [0, 0, 0] },
+      u_gamma: { type: "vec3", default: [1, 1, 1] },
+      u_gain: { type: "vec3", default: [1, 1, 1] },
+      u_saturation: { type: "float", default: 1, min: 0, max: 3, step: 0.1 },
+    },
   },
 
-  'glsl-lut': {
-    name: 'GLSL LUT Application',
-    category: 'color',
-    description: 'Apply color lookup table',
+  "glsl-lut": {
+    name: "GLSL LUT Application",
+    category: "color",
+    description: "Apply color lookup table",
     fragmentShader: `
       precision highp float;
       uniform sampler2D iChannel0;
@@ -508,15 +529,15 @@ export const COLOR_EFFECTS: Record<string, ShaderEffectDefinition> = {
       }
     `,
     uniforms: {
-      u_intensity: { type: 'float', default: 1, min: 0, max: 1, step: 0.01 },
-      u_lutSize: { type: 'float', default: 32, min: 8, max: 64, step: 1 }
-    }
+      u_intensity: { type: "float", default: 1, min: 0, max: 1, step: 0.01 },
+      u_lutSize: { type: "float", default: 32, min: 8, max: 64, step: 1 },
+    },
   },
 
-  'glsl-vignette': {
-    name: 'GLSL Vignette',
-    category: 'color',
-    description: 'Darkened edges vignette effect',
+  "glsl-vignette": {
+    name: "GLSL Vignette",
+    category: "color",
+    description: "Darkened edges vignette effect",
     fragmentShader: `
       precision highp float;
       uniform sampler2D iChannel0;
@@ -549,12 +570,12 @@ export const COLOR_EFFECTS: Record<string, ShaderEffectDefinition> = {
       }
     `,
     uniforms: {
-      u_amount: { type: 'float', default: 0.5, min: 0, max: 2, step: 0.01 },
-      u_softness: { type: 'float', default: 0.5, min: 0, max: 1, step: 0.01 },
-      u_roundness: { type: 'float', default: 1, min: 0.1, max: 2, step: 0.1 },
-      u_center: { type: 'vec2', default: [0.5, 0.5] }
-    }
-  }
+      u_amount: { type: "float", default: 0.5, min: 0, max: 2, step: 0.01 },
+      u_softness: { type: "float", default: 0.5, min: 0, max: 1, step: 0.01 },
+      u_roundness: { type: "float", default: 1, min: 0.1, max: 2, step: 0.1 },
+      u_center: { type: "vec2", default: [0.5, 0.5] },
+    },
+  },
 };
 
 // =============================================================================
@@ -562,10 +583,10 @@ export const COLOR_EFFECTS: Record<string, ShaderEffectDefinition> = {
 // =============================================================================
 
 export const GENERATE_EFFECTS: Record<string, ShaderEffectDefinition> = {
-  'glsl-noise': {
-    name: 'GLSL Fractal Noise',
-    category: 'generate',
-    description: 'Animated fractal noise generator',
+  "glsl-noise": {
+    name: "GLSL Fractal Noise",
+    category: "generate",
+    description: "Animated fractal noise generator",
     fragmentShader: `
       precision highp float;
       uniform vec2 iResolution;
@@ -624,20 +645,26 @@ export const GENERATE_EFFECTS: Record<string, ShaderEffectDefinition> = {
       }
     `,
     uniforms: {
-      u_scale: { type: 'float', default: 4, min: 0.1, max: 20, step: 0.1 },
-      u_speed: { type: 'float', default: 0.5, min: 0, max: 5, step: 0.1 },
-      u_octaves: { type: 'int', default: 4, min: 1, max: 8, step: 1 },
-      u_persistence: { type: 'float', default: 0.5, min: 0.1, max: 1, step: 0.05 },
-      u_type: { type: 'int', default: 0, min: 0, max: 2, step: 1 },
-      u_color1: { type: 'vec3', default: [0, 0, 0] },
-      u_color2: { type: 'vec3', default: [1, 1, 1] }
-    }
+      u_scale: { type: "float", default: 4, min: 0.1, max: 20, step: 0.1 },
+      u_speed: { type: "float", default: 0.5, min: 0, max: 5, step: 0.1 },
+      u_octaves: { type: "int", default: 4, min: 1, max: 8, step: 1 },
+      u_persistence: {
+        type: "float",
+        default: 0.5,
+        min: 0.1,
+        max: 1,
+        step: 0.05,
+      },
+      u_type: { type: "int", default: 0, min: 0, max: 2, step: 1 },
+      u_color1: { type: "vec3", default: [0, 0, 0] },
+      u_color2: { type: "vec3", default: [1, 1, 1] },
+    },
   },
 
-  'glsl-gradient': {
-    name: 'GLSL Gradient',
-    category: 'generate',
-    description: 'Multi-point gradient generator',
+  "glsl-gradient": {
+    name: "GLSL Gradient",
+    category: "generate",
+    description: "Multi-point gradient generator",
     fragmentShader: `
       precision highp float;
       uniform vec2 iResolution;
@@ -679,15 +706,15 @@ export const GENERATE_EFFECTS: Record<string, ShaderEffectDefinition> = {
       }
     `,
     uniforms: {
-      u_start: { type: 'vec2', default: [0, 0] },
-      u_end: { type: 'vec2', default: [1, 1] },
-      u_color1: { type: 'vec3', default: [0, 0, 0] },
-      u_color2: { type: 'vec3', default: [1, 1, 1] },
-      u_color3: { type: 'vec3', default: [0.5, 0.5, 0.5] },
-      u_type: { type: 'int', default: 0, min: 0, max: 1, step: 1 },
-      u_colorCount: { type: 'int', default: 2, min: 2, max: 3, step: 1 }
-    }
-  }
+      u_start: { type: "vec2", default: [0, 0] },
+      u_end: { type: "vec2", default: [1, 1] },
+      u_color1: { type: "vec3", default: [0, 0, 0] },
+      u_color2: { type: "vec3", default: [1, 1, 1] },
+      u_color3: { type: "vec3", default: [0.5, 0.5, 0.5] },
+      u_type: { type: "int", default: 0, min: 0, max: 1, step: 1 },
+      u_colorCount: { type: "int", default: 2, min: 2, max: 3, step: 1 },
+    },
+  },
 };
 
 // =============================================================================
@@ -695,10 +722,10 @@ export const GENERATE_EFFECTS: Record<string, ShaderEffectDefinition> = {
 // =============================================================================
 
 export const STYLIZE_EFFECTS: Record<string, ShaderEffectDefinition> = {
-  'glsl-edge-detect': {
-    name: 'GLSL Edge Detection',
-    category: 'stylize',
-    description: 'Sobel edge detection',
+  "glsl-edge-detect": {
+    name: "GLSL Edge Detection",
+    category: "stylize",
+    description: "Sobel edge detection",
     fragmentShader: `
       precision highp float;
       uniform sampler2D iChannel0;
@@ -742,15 +769,15 @@ export const STYLIZE_EFFECTS: Record<string, ShaderEffectDefinition> = {
       }
     `,
     uniforms: {
-      u_threshold: { type: 'float', default: 0.1, min: 0, max: 1, step: 0.01 },
-      u_colorMode: { type: 'int', default: 0, min: 0, max: 1, step: 1 }
-    }
+      u_threshold: { type: "float", default: 0.1, min: 0, max: 1, step: 0.01 },
+      u_colorMode: { type: "int", default: 0, min: 0, max: 1, step: 1 },
+    },
   },
 
-  'glsl-posterize': {
-    name: 'GLSL Posterize',
-    category: 'stylize',
-    description: 'Reduce color levels',
+  "glsl-posterize": {
+    name: "GLSL Posterize",
+    category: "stylize",
+    description: "Reduce color levels",
     fragmentShader: `
       precision highp float;
       uniform sampler2D iChannel0;
@@ -768,14 +795,14 @@ export const STYLIZE_EFFECTS: Record<string, ShaderEffectDefinition> = {
       }
     `,
     uniforms: {
-      u_levels: { type: 'float', default: 8, min: 2, max: 32, step: 1 }
-    }
+      u_levels: { type: "float", default: 8, min: 2, max: 32, step: 1 },
+    },
   },
 
-  'glsl-pixelate': {
-    name: 'GLSL Pixelate',
-    category: 'stylize',
-    description: 'Pixel mosaic effect',
+  "glsl-pixelate": {
+    name: "GLSL Pixelate",
+    category: "stylize",
+    description: "Pixel mosaic effect",
     fragmentShader: `
       precision highp float;
       uniform sampler2D iChannel0;
@@ -792,14 +819,14 @@ export const STYLIZE_EFFECTS: Record<string, ShaderEffectDefinition> = {
       }
     `,
     uniforms: {
-      u_pixelSize: { type: 'float', default: 8, min: 1, max: 64, step: 1 }
-    }
+      u_pixelSize: { type: "float", default: 8, min: 1, max: 64, step: 1 },
+    },
   },
 
-  'glsl-halftone': {
-    name: 'GLSL Halftone',
-    category: 'stylize',
-    description: 'Print-style halftone dots',
+  "glsl-halftone": {
+    name: "GLSL Halftone",
+    category: "stylize",
+    description: "Print-style halftone dots",
     fragmentShader: `
       precision highp float;
       uniform sampler2D iChannel0;
@@ -853,16 +880,16 @@ export const STYLIZE_EFFECTS: Record<string, ShaderEffectDefinition> = {
       }
     `,
     uniforms: {
-      u_dotSize: { type: 'float', default: 4, min: 2, max: 32, step: 1 },
-      u_angle: { type: 'float', default: 45, min: 0, max: 90, step: 1 },
-      u_colorMode: { type: 'int', default: 0, min: 0, max: 1, step: 1 }
-    }
+      u_dotSize: { type: "float", default: 4, min: 2, max: 32, step: 1 },
+      u_angle: { type: "float", default: 45, min: 0, max: 90, step: 1 },
+      u_colorMode: { type: "int", default: 0, min: 0, max: 1, step: 1 },
+    },
   },
 
-  'glsl-glitch': {
-    name: 'GLSL Glitch',
-    category: 'stylize',
-    description: 'Digital glitch/corruption effect',
+  "glsl-glitch": {
+    name: "GLSL Glitch",
+    category: "stylize",
+    description: "Digital glitch/corruption effect",
     fragmentShader: `
       precision highp float;
       uniform sampler2D iChannel0;
@@ -908,11 +935,11 @@ export const STYLIZE_EFFECTS: Record<string, ShaderEffectDefinition> = {
       }
     `,
     uniforms: {
-      u_intensity: { type: 'float', default: 0.5, min: 0, max: 1, step: 0.01 },
-      u_speed: { type: 'float', default: 1, min: 0.1, max: 5, step: 0.1 },
-      u_blockSize: { type: 'float', default: 20, min: 5, max: 100, step: 1 }
-    }
-  }
+      u_intensity: { type: "float", default: 0.5, min: 0, max: 1, step: 0.01 },
+      u_speed: { type: "float", default: 1, min: 0.1, max: 5, step: 0.1 },
+      u_blockSize: { type: "float", default: 20, min: 5, max: 100, step: 1 },
+    },
+  },
 };
 
 // =============================================================================
@@ -920,10 +947,10 @@ export const STYLIZE_EFFECTS: Record<string, ShaderEffectDefinition> = {
 // =============================================================================
 
 export const TRANSITION_EFFECTS: Record<string, ShaderEffectDefinition> = {
-  'glsl-dissolve': {
-    name: 'GLSL Dissolve',
-    category: 'transition',
-    description: 'Noise-based dissolve transition',
+  "glsl-dissolve": {
+    name: "GLSL Dissolve",
+    category: "transition",
+    description: "Noise-based dissolve transition",
     fragmentShader: `
       precision highp float;
       uniform sampler2D iChannel0;
@@ -962,16 +989,16 @@ export const TRANSITION_EFFECTS: Record<string, ShaderEffectDefinition> = {
       }
     `,
     uniforms: {
-      u_progress: { type: 'float', default: 0, min: 0, max: 1, step: 0.01 },
-      u_softness: { type: 'float', default: 0.1, min: 0, max: 0.5, step: 0.01 },
-      u_noiseScale: { type: 'float', default: 10, min: 1, max: 50, step: 1 }
-    }
+      u_progress: { type: "float", default: 0, min: 0, max: 1, step: 0.01 },
+      u_softness: { type: "float", default: 0.1, min: 0, max: 0.5, step: 0.01 },
+      u_noiseScale: { type: "float", default: 10, min: 1, max: 50, step: 1 },
+    },
   },
 
-  'glsl-wipe': {
-    name: 'GLSL Directional Wipe',
-    category: 'transition',
-    description: 'Wipe transition with direction',
+  "glsl-wipe": {
+    name: "GLSL Directional Wipe",
+    category: "transition",
+    description: "Wipe transition with direction",
     fragmentShader: `
       precision highp float;
       uniform sampler2D iChannel0;
@@ -997,11 +1024,17 @@ export const TRANSITION_EFFECTS: Record<string, ShaderEffectDefinition> = {
       }
     `,
     uniforms: {
-      u_progress: { type: 'float', default: 0, min: 0, max: 1, step: 0.01 },
-      u_softness: { type: 'float', default: 0.05, min: 0, max: 0.5, step: 0.01 },
-      u_angle: { type: 'float', default: 0, min: 0, max: 360, step: 1 }
-    }
-  }
+      u_progress: { type: "float", default: 0, min: 0, max: 1, step: 0.01 },
+      u_softness: {
+        type: "float",
+        default: 0.05,
+        min: 0,
+        max: 0.5,
+        step: 0.01,
+      },
+      u_angle: { type: "float", default: 0, min: 0, max: 360, step: 1 },
+    },
+  },
 };
 
 // =============================================================================
@@ -1014,7 +1047,7 @@ export const ALL_SHADER_EFFECTS: Record<string, ShaderEffectDefinition> = {
   ...COLOR_EFFECTS,
   ...GENERATE_EFFECTS,
   ...STYLIZE_EFFECTS,
-  ...TRANSITION_EFFECTS
+  ...TRANSITION_EFFECTS,
 };
 
 // =============================================================================
@@ -1023,7 +1056,6 @@ export const ALL_SHADER_EFFECTS: Record<string, ShaderEffectDefinition> = {
 
 export class ShaderEffectProcessor {
   private engine: ReturnType<typeof getGLSLEngine>;
-  private currentEffect: string | null = null;
 
   constructor() {
     this.engine = getGLSLEngine();
@@ -1051,7 +1083,7 @@ export class ShaderEffectProcessor {
    */
   render(
     input: HTMLCanvasElement | ImageData,
-    uniforms: Partial<ShaderUniforms> = {}
+    uniforms: Partial<ShaderUniforms> = {},
   ): HTMLCanvasElement | null {
     return this.engine.render(input, uniforms);
   }
@@ -1066,9 +1098,13 @@ export class ShaderEffectProcessor {
   /**
    * Get all effects by category
    */
-  getEffectsByCategory(category: ShaderEffectDefinition['category']): Record<string, ShaderEffectDefinition> {
+  getEffectsByCategory(
+    category: ShaderEffectDefinition["category"],
+  ): Record<string, ShaderEffectDefinition> {
     return Object.fromEntries(
-      Object.entries(ALL_SHADER_EFFECTS).filter(([_, def]) => def.category === category)
+      Object.entries(ALL_SHADER_EFFECTS).filter(
+        ([_, def]) => def.category === category,
+      ),
     );
   }
 
@@ -1079,7 +1115,7 @@ export class ShaderEffectProcessor {
     return Object.entries(ALL_SHADER_EFFECTS).map(([key, def]) => ({
       key,
       name: def.name,
-      category: def.category
+      category: def.category,
     }));
   }
 

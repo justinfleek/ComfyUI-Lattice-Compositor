@@ -5,9 +5,9 @@
  * Extracted from WorkspaceLayout.vue to reduce file size and improve maintainability.
  */
 
-import type { Ref } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import { useAssetStore } from '@/stores/assetStore';
+import type { Ref } from "vue";
+import { useAssetStore } from "@/stores/assetStore";
+import { useCompositorStore } from "@/stores/compositorStore";
 
 export interface AssetHandlersOptions {
   // Template ref to component that exposes getEngine() - can be ThreeCanvas or CenterViewport
@@ -51,14 +51,16 @@ export function useAssetHandlers(options: AssetHandlersOptions) {
             ...layer.transform.position,
             value: {
               ...layer.transform.position.value,
-              z: config?.depth || 0
-            }
-          }
-        }
+              z: config?.depth || 0,
+            },
+          },
+        },
       });
     });
 
-    console.log(`[Lattice] Created ${storedSvg.document.paths.length} layers from SVG: ${storedSvg.name}`);
+    console.log(
+      `[Lattice] Created ${storedSvg.document.paths.length} layers from SVG: ${storedSvg.name}`,
+    );
   }
 
   /**
@@ -71,13 +73,13 @@ export function useAssetHandlers(options: AssetHandlersOptions) {
     // Get the selected layer if it's a particle layer
     const selectedLayerIds = store.selectedLayerIds;
     if (selectedLayerIds.length === 0) {
-      console.warn('[Lattice] No layer selected for mesh emitter');
+      console.warn("[Lattice] No layer selected for mesh emitter");
       return;
     }
 
     const layer = store.layers.find((l: any) => l.id === selectedLayerIds[0]);
-    if (!layer || layer.type !== 'particle') {
-      console.warn('[Lattice] Selected layer is not a particle layer');
+    if (!layer || layer.type !== "particle") {
+      console.warn("[Lattice] Selected layer is not a particle layer");
       return;
     }
 
@@ -85,10 +87,10 @@ export function useAssetHandlers(options: AssetHandlersOptions) {
     store.updateLayerData(layer.id, {
       emitter: {
         ...(layer.data as any).emitter,
-        shape: 'mesh',
+        shape: "mesh",
         meshVertices: emitterConfig.meshVertices,
         meshNormals: emitterConfig.meshNormals,
-      }
+      },
     });
 
     console.log(`[Lattice] Set mesh emitter for layer: ${layer.name}`);
@@ -121,9 +123,9 @@ export function useAssetHandlers(options: AssetHandlersOptions) {
           backgroundBlur: settings.backgroundBlur,
           useAsBackground: settings.useAsBackground,
         });
-        console.log('[Lattice] Environment map loaded');
+        console.log("[Lattice] Environment map loaded");
       } catch (error) {
-        console.error('[Lattice] Failed to load environment map:', error);
+        console.error("[Lattice] Failed to load environment map:", error);
       }
     }
   }

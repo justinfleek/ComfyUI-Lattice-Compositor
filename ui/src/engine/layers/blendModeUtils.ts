@@ -8,14 +8,17 @@
  * color-dodge, color-burn, difference, exclusion, darken, lighten
  */
 
-import * as THREE from 'three';
+import * as THREE from "three";
 
 /**
  * Configure a material's blend mode
  * @param material - Three.js material to configure
  * @param mode - Blend mode name
  */
-export function setMaterialBlendMode(material: THREE.Material, mode: string): void {
+export function setMaterialBlendMode(
+  material: THREE.Material,
+  mode: string,
+): void {
   // Reset to defaults first
   material.blending = THREE.NormalBlending;
   material.blendEquation = THREE.AddEquation;
@@ -26,19 +29,19 @@ export function setMaterialBlendMode(material: THREE.Material, mode: string): vo
   material.blendDstAlpha = THREE.OneMinusSrcAlphaFactor;
 
   switch (mode) {
-    case 'normal':
+    case "normal":
       material.blending = THREE.NormalBlending;
       break;
 
-    case 'add':
+    case "add":
       material.blending = THREE.AdditiveBlending;
       break;
 
-    case 'multiply':
+    case "multiply":
       material.blending = THREE.MultiplyBlending;
       break;
 
-    case 'screen':
+    case "screen":
       // Screen: 1 - (1-a)(1-b) = a + b - ab
       // In GL terms: src * 1 + dst * (1 - src)
       material.blending = THREE.CustomBlending;
@@ -47,37 +50,37 @@ export function setMaterialBlendMode(material: THREE.Material, mode: string): vo
       material.blendDst = THREE.OneMinusSrcColorFactor;
       break;
 
-    case 'overlay':
+    case "overlay":
       // Overlay is a combination of multiply and screen
       // Can't be done with simple blend factors - needs shader
       // Fallback to multiply for dark, screen for light
       material.blending = THREE.MultiplyBlending;
       break;
 
-    case 'soft-light':
+    case "soft-light":
       // Soft light is complex - needs shader
       // Approximate with normal blending at reduced opacity
       material.blending = THREE.NormalBlending;
       break;
 
-    case 'hard-light':
+    case "hard-light":
       // Hard light is overlay with layers swapped
       material.blending = THREE.MultiplyBlending;
       break;
 
-    case 'color-dodge':
+    case "color-dodge":
       // Color dodge: a / (1 - b)
       // Approximation using additive with boost
       material.blending = THREE.AdditiveBlending;
       break;
 
-    case 'color-burn':
+    case "color-burn":
       // Color burn: 1 - (1-a) / b
       // Approximation using subtractive
       material.blending = THREE.SubtractiveBlending;
       break;
 
-    case 'difference':
+    case "difference":
       // Difference: |a - b|
       // Use subtractive blending as approximation
       material.blending = THREE.CustomBlending;
@@ -86,7 +89,7 @@ export function setMaterialBlendMode(material: THREE.Material, mode: string): vo
       material.blendDst = THREE.OneFactor;
       break;
 
-    case 'exclusion':
+    case "exclusion":
       // Exclusion: a + b - 2ab
       // Similar to difference but softer
       material.blending = THREE.CustomBlending;
@@ -95,7 +98,7 @@ export function setMaterialBlendMode(material: THREE.Material, mode: string): vo
       material.blendDst = THREE.OneMinusSrcColorFactor;
       break;
 
-    case 'darken':
+    case "darken":
       // Darken: min(a, b)
       material.blending = THREE.CustomBlending;
       material.blendEquation = THREE.MinEquation;
@@ -103,7 +106,7 @@ export function setMaterialBlendMode(material: THREE.Material, mode: string): vo
       material.blendDst = THREE.OneFactor;
       break;
 
-    case 'lighten':
+    case "lighten":
       // Lighten: max(a, b)
       material.blending = THREE.CustomBlending;
       material.blendEquation = THREE.MaxEquation;
@@ -136,22 +139,22 @@ export function applyBlendModeToGroup(group: THREE.Group, mode: string): void {
  * Supported blend modes
  */
 export const SUPPORTED_BLEND_MODES = [
-  'normal',
-  'add',
-  'multiply',
-  'screen',
-  'overlay',
-  'soft-light',
-  'hard-light',
-  'color-dodge',
-  'color-burn',
-  'difference',
-  'exclusion',
-  'darken',
-  'lighten',
+  "normal",
+  "add",
+  "multiply",
+  "screen",
+  "overlay",
+  "soft-light",
+  "hard-light",
+  "color-dodge",
+  "color-burn",
+  "difference",
+  "exclusion",
+  "darken",
+  "lighten",
 ] as const;
 
-export type BlendModeName = typeof SUPPORTED_BLEND_MODES[number];
+export type BlendModeName = (typeof SUPPORTED_BLEND_MODES)[number];
 
 /**
  * Check if a blend mode is supported

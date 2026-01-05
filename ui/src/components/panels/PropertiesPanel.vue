@@ -433,57 +433,67 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, markRaw, inject, type Component, type Ref } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
+import {
+  type Component,
+  computed,
+  inject,
+  markRaw,
+  type Ref,
+  ref,
+  watch,
+} from "vue";
+import { useCompositorStore } from "@/stores/compositorStore";
 
 // Inject soloedProperty from parent for P/S/R/T/A/U shortcuts
-type SoloedProperty = 'position' | 'scale' | 'rotation' | 'opacity' | 'anchor' | 'animated' | null;
-const soloedProperty = inject<Ref<SoloedProperty>>('soloedProperty', ref(null));
-import { ScrubableNumber, SliderInput } from '@/components/controls';
-import type { BlendMode } from '@/types/project';
-import { createAnimatableProperty } from '@/types/project';
+type SoloedProperty =
+  | "position"
+  | "scale"
+  | "rotation"
+  | "opacity"
+  | "anchor"
+  | "animated"
+  | null;
+const soloedProperty = inject<Ref<SoloedProperty>>("soloedProperty", ref(null));
 
+import EffectControlsPanel from "@/components/panels/EffectControlsPanel.vue";
+import Model3DProperties from "@/components/panels/Model3DProperties.vue";
+import AudioProperties from "@/components/properties/AudioProperties.vue";
+import CameraProperties from "@/components/properties/CameraProperties.vue";
+import ControlProperties from "@/components/properties/ControlProperties.vue";
+import DepthflowProperties from "@/components/properties/DepthflowProperties.vue";
+import DepthProperties from "@/components/properties/DepthProperties.vue";
+import GeneratedProperties from "@/components/properties/GeneratedProperties.vue";
+import GroupProperties from "@/components/properties/GroupProperties.vue";
+import LightProperties from "@/components/properties/LightProperties.vue";
+import MatteProperties from "@/components/properties/MatteProperties.vue";
+import NestedCompProperties from "@/components/properties/NestedCompProperties.vue";
+import NormalProperties from "@/components/properties/NormalProperties.vue";
+import ParticleProperties from "@/components/properties/ParticleProperties.vue";
+import PathProperties from "@/components/properties/PathProperties.vue";
+import PoseProperties from "@/components/properties/PoseProperties.vue";
+import ShapeLayerProperties from "@/components/properties/ShapeLayerProperties.vue";
+import ShapeProperties from "@/components/properties/ShapeProperties.vue";
+import SolidProperties from "@/components/properties/SolidProperties.vue";
 // Layer-specific property panels
-import TextProperties from '@/components/properties/TextProperties.vue';
-import ParticleProperties from '@/components/properties/ParticleProperties.vue';
-import DepthflowProperties from '@/components/properties/DepthflowProperties.vue';
-import LightProperties from '@/components/properties/LightProperties.vue';
-import ShapeProperties from '@/components/properties/ShapeProperties.vue';
-import ShapeLayerProperties from '@/components/properties/ShapeLayerProperties.vue';
-import PathProperties from '@/components/properties/PathProperties.vue';
-import VideoProperties from '@/components/properties/VideoProperties.vue';
-import CameraProperties from '@/components/properties/CameraProperties.vue';
-import NestedCompProperties from '@/components/properties/NestedCompProperties.vue';
-import Model3DProperties from '@/components/panels/Model3DProperties.vue';
-import AudioProperties from '@/components/properties/AudioProperties.vue';
-import DepthProperties from '@/components/properties/DepthProperties.vue';
-import NormalProperties from '@/components/properties/NormalProperties.vue';
-import GeneratedProperties from '@/components/properties/GeneratedProperties.vue';
-import GroupProperties from '@/components/properties/GroupProperties.vue';
-import ControlProperties from '@/components/properties/ControlProperties.vue';
-import MatteProperties from '@/components/properties/MatteProperties.vue';
-import SolidProperties from '@/components/properties/SolidProperties.vue';
-import PoseProperties from '@/components/properties/PoseProperties.vue';
-import EffectControlsPanel from '@/components/panels/EffectControlsPanel.vue';
-import PropertyLink from '@/components/controls/PropertyLink.vue';
-import DriverList from '@/components/panels/DriverList.vue';
-import LayerStylesPanel from '@/components/properties/styles/LayerStylesPanel.vue';
-import PhysicsProperties from '@/components/properties/PhysicsProperties.vue';
-import type { PropertyPath } from '@/services/propertyDriver';
+import TextProperties from "@/components/properties/TextProperties.vue";
+import VideoProperties from "@/components/properties/VideoProperties.vue";
+import type { PropertyPath } from "@/services/propertyDriver";
+import type { BlendMode } from "@/types/project";
+import { createAnimatableProperty } from "@/types/project";
 
 const store = useCompositorStore();
 
 // State
-const expandedSections = ref<string[]>(['transform']);
+const expandedSections = ref<string[]>(["transform"]);
 const scaleLocked = ref(true);
 
-const layerName = ref('');
+const layerName = ref("");
 
 // Audio Path Animation state
 const audioPathAnimation = ref({
   enabled: false,
-  pathData: '',
-  movementMode: 'amplitude' as 'amplitude' | 'accumulate',
+  pathData: "",
+  movementMode: "amplitude" as "amplitude" | "accumulate",
   sensitivity: 1.0,
   smoothing: 0.3,
   release: 0.5,
@@ -505,101 +515,108 @@ const transform = ref({
   orientationZ: 0,
   rotationX: 0,
   rotationY: 0,
-  rotationZ: 0
+  rotationZ: 0,
 });
-const blendMode = ref('normal');
+const blendMode = ref("normal");
 const keyframes = ref<string[]>([]);
 
 // Blend modes
-const blendModes = [
-  { label: 'Normal', value: 'normal' },
-  { label: 'Multiply', value: 'multiply' },
-  { label: 'Screen', value: 'screen' },
-  { label: 'Overlay', value: 'overlay' },
-  { label: 'Soft Light', value: 'soft-light' },
-  { label: 'Hard Light', value: 'hard-light' },
-  { label: 'Color Dodge', value: 'color-dodge' },
-  { label: 'Color Burn', value: 'color-burn' },
-  { label: 'Darken', value: 'darken' },
-  { label: 'Lighten', value: 'lighten' },
-  { label: 'Difference', value: 'difference' },
-  { label: 'Exclusion', value: 'exclusion' },
-  { label: 'Hue', value: 'hue' },
-  { label: 'Saturation', value: 'saturation' },
-  { label: 'Color', value: 'color' },
-  { label: 'Luminosity', value: 'luminosity' },
-  { label: 'Add', value: 'add' }
+const _blendModes = [
+  { label: "Normal", value: "normal" },
+  { label: "Multiply", value: "multiply" },
+  { label: "Screen", value: "screen" },
+  { label: "Overlay", value: "overlay" },
+  { label: "Soft Light", value: "soft-light" },
+  { label: "Hard Light", value: "hard-light" },
+  { label: "Color Dodge", value: "color-dodge" },
+  { label: "Color Burn", value: "color-burn" },
+  { label: "Darken", value: "darken" },
+  { label: "Lighten", value: "lighten" },
+  { label: "Difference", value: "difference" },
+  { label: "Exclusion", value: "exclusion" },
+  { label: "Hue", value: "hue" },
+  { label: "Saturation", value: "saturation" },
+  { label: "Color", value: "color" },
+  { label: "Luminosity", value: "luminosity" },
+  { label: "Add", value: "add" },
 ];
 
 // Computed
 const selectedLayer = computed(() => store.selectedLayer);
 
 // Property solo visibility - determines which properties are shown based on P/S/R/T/A/U shortcuts
-const showAnchor = computed(() => {
+const _showAnchor = computed(() => {
   const solo = soloedProperty.value;
   if (!solo) return true;
-  if (solo === 'anchor') return true;
-  if (solo === 'animated') {
+  if (solo === "anchor") return true;
+  if (solo === "animated") {
     // Show if this property has keyframes
     return selectedLayer.value?.transform?.anchorPoint?.animated || false;
   }
   return false;
 });
 
-const showPosition = computed(() => {
+const _showPosition = computed(() => {
   const solo = soloedProperty.value;
   if (!solo) return true;
-  if (solo === 'position') return true;
-  if (solo === 'animated') {
+  if (solo === "position") return true;
+  if (solo === "animated") {
     return selectedLayer.value?.transform?.position?.animated || false;
   }
   return false;
 });
 
-const showScale = computed(() => {
+const _showScale = computed(() => {
   const solo = soloedProperty.value;
   if (!solo) return true;
-  if (solo === 'scale') return true;
-  if (solo === 'animated') {
+  if (solo === "scale") return true;
+  if (solo === "animated") {
     return selectedLayer.value?.transform?.scale?.animated || false;
   }
   return false;
 });
 
-const showRotation = computed(() => {
+const _showRotation = computed(() => {
   const solo = soloedProperty.value;
   if (!solo) return true;
-  if (solo === 'rotation') return true;
-  if (solo === 'animated') {
+  if (solo === "rotation") return true;
+  if (solo === "animated") {
     const t = selectedLayer.value?.transform;
-    return t?.rotation?.animated || t?.rotationX?.animated || t?.rotationY?.animated || t?.rotationZ?.animated || t?.orientation?.animated || false;
+    return (
+      t?.rotation?.animated ||
+      t?.rotationX?.animated ||
+      t?.rotationY?.animated ||
+      t?.rotationZ?.animated ||
+      t?.orientation?.animated ||
+      false
+    );
   }
   return false;
 });
 
-const showOpacity = computed(() => {
+const _showOpacity = computed(() => {
   const solo = soloedProperty.value;
   if (!solo) return true;
-  if (solo === 'opacity') return true;
-  if (solo === 'animated') {
+  if (solo === "opacity") return true;
+  if (solo === "animated") {
     return selectedLayer.value?.opacity?.animated || false;
   }
   return false;
 });
 
 // Show indicator when in solo mode
-const soloModeActive = computed(() => soloedProperty.value !== null);
+const _soloModeActive = computed(() => soloedProperty.value !== null);
 
 // Get layers that can be parents (exclude self and children to prevent cycles)
-const availableParents = computed(() => {
+const _availableParents = computed(() => {
   if (!selectedLayer.value) return [];
 
   const selfId = selectedLayer.value.id;
 
   // Get all descendant IDs to prevent circular parenting
   const getDescendantIds = (layerId: string): string[] => {
-    const children = store.layers.filter(l => l.parentId === layerId);
-    let ids = children.map(c => c.id);
+    const children = store.layers.filter((l) => l.parentId === layerId);
+    let ids = children.map((c) => c.id);
     for (const child of children) {
       ids = ids.concat(getDescendantIds(child.id));
     }
@@ -608,64 +625,62 @@ const availableParents = computed(() => {
 
   const descendantIds = new Set(getDescendantIds(selfId));
 
-  return store.layers.filter(l =>
-    l.id !== selfId &&
-    !descendantIds.has(l.id) &&
-    l.type !== 'camera' // Camera layers shouldn't be parents
+  return store.layers.filter(
+    (l) => l.id !== selfId && !descendantIds.has(l.id) && l.type !== "camera", // Camera layers shouldn't be parents
   );
 });
 
-const layerPropertiesComponent = computed<Component | null>(() => {
+const _layerPropertiesComponent = computed<Component | null>(() => {
   if (!selectedLayer.value) return null;
 
   switch (selectedLayer.value.type) {
-    case 'text':
+    case "text":
       return markRaw(TextProperties);
-    case 'particles':
-    case 'particle':
+    case "particles":
+    case "particle":
       return markRaw(ParticleProperties);
-    case 'depthflow':
+    case "depthflow":
       return markRaw(DepthflowProperties);
-    case 'light':
+    case "light":
       return markRaw(LightProperties);
-    case 'spline':
+    case "spline":
       return markRaw(ShapeProperties);
-    case 'path':
+    case "path":
       return markRaw(PathProperties);
-    case 'video':
+    case "video":
       return markRaw(VideoProperties);
-    case 'camera':
+    case "camera":
       return markRaw(CameraProperties);
-    case 'nestedComp':
+    case "nestedComp":
       return markRaw(NestedCompProperties);
-    case 'model':
-    case 'pointcloud':
+    case "model":
+    case "pointcloud":
       return markRaw(Model3DProperties);
-    case 'shape':
+    case "shape":
       return markRaw(ShapeLayerProperties);
-    case 'audio':
+    case "audio":
       return markRaw(AudioProperties);
-    case 'depth':
+    case "depth":
       return markRaw(DepthProperties);
-    case 'normal':
+    case "normal":
       return markRaw(NormalProperties);
-    case 'generated':
+    case "generated":
       return markRaw(GeneratedProperties);
-    case 'group':
+    case "group":
       return markRaw(GroupProperties);
-    case 'control':
+    case "control":
       return markRaw(ControlProperties);
-    case 'matte':
+    case "matte":
       return markRaw(MatteProperties);
-    case 'solid':
+    case "solid":
       return markRaw(SolidProperties);
-    case 'pose':
+    case "pose":
       return markRaw(PoseProperties);
-    case 'effectLayer':
-    case 'adjustment': // Deprecated, use 'effectLayer'
+    case "effectLayer":
+    case "adjustment": // Deprecated, use 'effectLayer'
       return markRaw(EffectControlsPanel);
-    case 'image':
-    case 'null':
+    case "image":
+    case "null":
       // These use default transform controls only
       return null;
     default:
@@ -682,11 +697,19 @@ function syncTransformFromLayer(layer: typeof selectedLayer.value) {
     position: {
       x: t?.position?.value?.x ?? 0,
       y: t?.position?.value?.y ?? 0,
-      z: t?.position?.value?.z ?? 0
+      z: t?.position?.value?.z ?? 0,
     },
-    scale: { x: t?.scale?.value?.x ?? 100, y: t?.scale?.value?.y ?? 100, z: t?.scale?.value?.z ?? 100 },
+    scale: {
+      x: t?.scale?.value?.x ?? 100,
+      y: t?.scale?.value?.y ?? 100,
+      z: t?.scale?.value?.z ?? 100,
+    },
     rotation: t?.rotation?.value ?? 0,
-    anchorPoint: { x: t?.anchorPoint?.value?.x ?? 0, y: t?.anchorPoint?.value?.y ?? 0, z: t?.anchorPoint?.value?.z ?? 0 },
+    anchorPoint: {
+      x: t?.anchorPoint?.value?.x ?? 0,
+      y: t?.anchorPoint?.value?.y ?? 0,
+      z: t?.anchorPoint?.value?.z ?? 0,
+    },
     opacity: layer.opacity?.value ?? 100,
     // 3D properties
     orientationX: t?.orientation?.value?.x ?? 0,
@@ -694,16 +717,20 @@ function syncTransformFromLayer(layer: typeof selectedLayer.value) {
     orientationZ: t?.orientation?.value?.z ?? 0,
     rotationX: t?.rotationX?.value ?? 0,
     rotationY: t?.rotationY?.value ?? 0,
-    rotationZ: t?.rotationZ?.value ?? 0
+    rotationZ: t?.rotationZ?.value ?? 0,
   };
-  blendMode.value = layer.blendMode || 'normal';
+  blendMode.value = layer.blendMode || "normal";
 }
 
 // Watch selected layer for selection changes
-watch(selectedLayer, (layer) => {
-  syncTransformFromLayer(layer);
-  syncAudioPathAnimationFromLayer(layer);
-}, { immediate: true });
+watch(
+  selectedLayer,
+  (layer) => {
+    syncTransformFromLayer(layer);
+    syncAudioPathAnimationFromLayer(layer);
+  },
+  { immediate: true },
+);
 
 // Sync audioPathAnimation from layer
 function syncAudioPathAnimationFromLayer(layer: typeof selectedLayer.value) {
@@ -712,8 +739,8 @@ function syncAudioPathAnimationFromLayer(layer: typeof selectedLayer.value) {
   if (apa) {
     audioPathAnimation.value = {
       enabled: apa.enabled ?? false,
-      pathData: apa.pathData ?? '',
-      movementMode: apa.movementMode ?? 'amplitude',
+      pathData: apa.pathData ?? "",
+      movementMode: apa.movementMode ?? "amplitude",
       sensitivity: apa.sensitivity ?? 1.0,
       smoothing: apa.smoothing ?? 0.3,
       release: apa.release ?? 0.5,
@@ -727,8 +754,8 @@ function syncAudioPathAnimationFromLayer(layer: typeof selectedLayer.value) {
     // Reset to defaults
     audioPathAnimation.value = {
       enabled: false,
-      pathData: '',
-      movementMode: 'amplitude',
+      pathData: "",
+      movementMode: "amplitude",
       sensitivity: 1.0,
       smoothing: 0.3,
       release: 0.5,
@@ -747,7 +774,7 @@ watch(
   () => {
     syncTransformFromLayer(selectedLayer.value);
   },
-  { deep: true }
+  { deep: true },
 );
 
 // Also watch opacity separately since it's not in transform
@@ -757,19 +784,23 @@ watch(
     if (newVal !== undefined) {
       transform.value.opacity = newVal;
     }
-  }
+  },
 );
 
 // Watch scale lock
-watch(() => transform.value.scale.x, (newX, oldX) => {
-  if (scaleLocked.value && newX !== oldX) {
-    const ratio = newX / oldX;
-    transform.value.scale.y = Math.round(transform.value.scale.y * ratio * 10) / 10;
-  }
-});
+watch(
+  () => transform.value.scale.x,
+  (newX, oldX) => {
+    if (scaleLocked.value && newX !== oldX) {
+      const ratio = newX / oldX;
+      transform.value.scale.y =
+        Math.round(transform.value.scale.y * ratio * 10) / 10;
+    }
+  },
+);
 
 // Methods
-function toggleSection(section: string) {
+function _toggleSection(section: string) {
   const index = expandedSections.value.indexOf(section);
   if (index >= 0) {
     expandedSections.value.splice(index, 1);
@@ -778,7 +809,7 @@ function toggleSection(section: string) {
   }
 }
 
-function updateLayerName() {
+function _updateLayerName() {
   if (selectedLayer.value && layerName.value) {
     selectedLayer.value.name = layerName.value;
   }
@@ -799,7 +830,11 @@ function updateTransform() {
     t.rotation.value = v.rotation;
   }
   if (t?.anchorPoint) {
-    t.anchorPoint.value = { x: v.anchorPoint.x, y: v.anchorPoint.y, z: v.anchorPoint.z };
+    t.anchorPoint.value = {
+      x: v.anchorPoint.x,
+      y: v.anchorPoint.y,
+      z: v.anchorPoint.z,
+    };
   }
   if (selectedLayer.value.opacity) {
     selectedLayer.value.opacity.value = v.opacity;
@@ -808,7 +843,11 @@ function updateTransform() {
   // 3D properties
   if (selectedLayer.value.threeD) {
     if (t?.orientation) {
-      t.orientation.value = { x: v.orientationX, y: v.orientationY, z: v.orientationZ };
+      t.orientation.value = {
+        x: v.orientationX,
+        y: v.orientationY,
+        z: v.orientationZ,
+      };
     }
     if (t?.rotationX) t.rotationX.value = v.rotationX;
     if (t?.rotationY) t.rotationY.value = v.rotationY;
@@ -818,13 +857,15 @@ function updateTransform() {
   onLayerUpdate();
 }
 
-function updateBlendMode() {
+function _updateBlendMode() {
   if (selectedLayer.value) {
-    store.updateLayer(selectedLayer.value.id, { blendMode: blendMode.value as BlendMode });
+    store.updateLayer(selectedLayer.value.id, {
+      blendMode: blendMode.value as BlendMode,
+    });
   }
 }
 
-function toggle3D(event: Event) {
+function _toggle3D(event: Event) {
   if (!selectedLayer.value) return;
   const threeD = (event.target as HTMLInputElement).checked;
   store.updateLayer(selectedLayer.value.id, { threeD });
@@ -846,16 +887,20 @@ function toggle3D(event: Event) {
 
     // Initialize 3D rotation properties if they don't exist
     if (!t.orientation) {
-      t.orientation = createAnimatableProperty('orientation', { x: 0, y: 0, z: 0 }, 'vector3');
+      t.orientation = createAnimatableProperty(
+        "orientation",
+        { x: 0, y: 0, z: 0 },
+        "vector3",
+      );
     }
     if (!t.rotationX) {
-      t.rotationX = createAnimatableProperty('rotationX', 0, 'number');
+      t.rotationX = createAnimatableProperty("rotationX", 0, "number");
     }
     if (!t.rotationY) {
-      t.rotationY = createAnimatableProperty('rotationY', 0, 'number');
+      t.rotationY = createAnimatableProperty("rotationY", 0, "number");
     }
     if (!t.rotationZ) {
-      t.rotationZ = createAnimatableProperty('rotationZ', 0, 'number');
+      t.rotationZ = createAnimatableProperty("rotationZ", 0, "number");
     }
   }
 }
@@ -864,7 +909,7 @@ function toggle3D(event: Event) {
 // AUDIO PATH ANIMATION METHODS
 // ============================================================
 
-function updateAudioPathEnabled(event: Event) {
+function _updateAudioPathEnabled(event: Event) {
   if (!selectedLayer.value) return;
   const enabled = (event.target as HTMLInputElement).checked;
   audioPathAnimation.value.enabled = enabled;
@@ -890,7 +935,7 @@ function updateAudioPathEnabled(event: Event) {
   onLayerUpdate();
 }
 
-function updateAudioPathData(event: Event) {
+function _updateAudioPathData(event: Event) {
   if (!selectedLayer.value?.audioPathAnimation) return;
   const pathData = (event.target as HTMLTextAreaElement).value;
   audioPathAnimation.value.pathData = pathData;
@@ -898,32 +943,39 @@ function updateAudioPathData(event: Event) {
   onLayerUpdate();
 }
 
-function updateAudioPathMode(event: Event) {
+function _updateAudioPathMode(event: Event) {
   if (!selectedLayer.value?.audioPathAnimation) return;
-  const mode = (event.target as HTMLSelectElement).value as 'amplitude' | 'accumulate';
+  const mode = (event.target as HTMLSelectElement).value as
+    | "amplitude"
+    | "accumulate";
   audioPathAnimation.value.movementMode = mode;
   selectedLayer.value.audioPathAnimation.movementMode = mode;
   onLayerUpdate();
 }
 
-function updateAudioPathConfig(key: keyof typeof audioPathAnimation.value, value: number | boolean) {
+function _updateAudioPathConfig(
+  key: keyof typeof audioPathAnimation.value,
+  value: number | boolean,
+) {
   if (!selectedLayer.value?.audioPathAnimation) return;
   (audioPathAnimation.value as any)[key] = value;
   (selectedLayer.value.audioPathAnimation as any)[key] = value;
   onLayerUpdate();
 }
 
-function hasKeyframe(property: string): boolean {
+function _hasKeyframe(property: string): boolean {
   return keyframes.value.includes(property);
 }
 
-function toggleKeyframe(property: string) {
+function _toggleKeyframe(property: string) {
   const index = keyframes.value.indexOf(property);
   if (index >= 0) {
     keyframes.value.splice(index, 1);
   } else {
     keyframes.value.push(property);
-    console.log(`Added keyframe for ${property} at frame ${store.currentFrame}`);
+    console.log(
+      `Added keyframe for ${property} at frame ${store.currentFrame}`,
+    );
   }
 }
 
@@ -938,7 +990,7 @@ function onLayerUpdate(dataUpdates?: Record<string, any>) {
   }
 }
 
-function updateParent(event: Event) {
+function _updateParent(event: Event) {
   if (!selectedLayer.value) return;
   const parentId = (event.target as HTMLSelectElement).value || null;
   store.setLayerParent(selectedLayer.value.id, parentId);
@@ -951,16 +1003,20 @@ function updateParent(event: Event) {
 /**
  * Get the driver linked to a property, if any
  */
-function getDriverForProperty(property: PropertyPath): { layerId: string; property: PropertyPath } | null {
+function _getDriverForProperty(
+  property: PropertyPath,
+): { layerId: string; property: PropertyPath } | null {
   if (!selectedLayer.value) return null;
 
   const drivers = store.getDriversForLayer(selectedLayer.value.id);
-  const driver = drivers.find(d => d.targetProperty === property && d.sourceType === 'property');
+  const driver = drivers.find(
+    (d) => d.targetProperty === property && d.sourceType === "property",
+  );
 
-  if (driver && driver.sourceLayerId && driver.sourceProperty) {
+  if (driver?.sourceLayerId && driver.sourceProperty) {
     return {
       layerId: driver.sourceLayerId,
-      property: driver.sourceProperty
+      property: driver.sourceProperty,
     };
   }
   return null;
@@ -969,9 +1025,9 @@ function getDriverForProperty(property: PropertyPath): { layerId: string; proper
 /**
  * Handle property link event
  */
-function onPropertyLink(
+function _onPropertyLink(
   targetProperty: PropertyPath,
-  source: { layerId: string; property: PropertyPath }
+  source: { layerId: string; property: PropertyPath },
 ) {
   if (!selectedLayer.value) return;
 
@@ -981,25 +1037,31 @@ function onPropertyLink(
     targetProperty,
     source.layerId,
     source.property,
-    { blendMode: 'add' }
+    { blendMode: "add" },
   );
 
-  console.log(`[PropertiesPanel] Linked ${selectedLayer.value.id}.${targetProperty} <- ${source.layerId}.${source.property}`);
+  console.log(
+    `[PropertiesPanel] Linked ${selectedLayer.value.id}.${targetProperty} <- ${source.layerId}.${source.property}`,
+  );
 }
 
 /**
  * Handle property unlink event
  */
-function onPropertyUnlink(targetProperty: PropertyPath) {
+function _onPropertyUnlink(targetProperty: PropertyPath) {
   if (!selectedLayer.value) return;
 
   // Find and remove the driver
   const drivers = store.getDriversForLayer(selectedLayer.value.id);
-  const driver = drivers.find(d => d.targetProperty === targetProperty && d.sourceType === 'property');
+  const driver = drivers.find(
+    (d) => d.targetProperty === targetProperty && d.sourceType === "property",
+  );
 
   if (driver) {
     store.removePropertyDriver(driver.id);
-    console.log(`[PropertiesPanel] Unlinked ${selectedLayer.value.id}.${targetProperty}`);
+    console.log(
+      `[PropertiesPanel] Unlinked ${selectedLayer.value.id}.${targetProperty}`,
+    );
   }
 }
 
@@ -1007,17 +1069,17 @@ function onPropertyUnlink(targetProperty: PropertyPath) {
  * Format rotation value in AE style: 0x+0°
  * e.g., 450 degrees = 1x+90°
  */
-function formatRotation(degrees: number): string {
+function _formatRotation(degrees: number): string {
   const revolutions = Math.floor(Math.abs(degrees) / 360);
   const remainder = Math.abs(degrees) % 360;
-  const sign = degrees < 0 ? '-' : '';
+  const sign = degrees < 0 ? "-" : "";
   return `${sign}${revolutions}x+${remainder.toFixed(1)}°`;
 }
 
 /**
  * Reset all transform values to defaults
  */
-function resetTransform() {
+function _resetTransform() {
   if (!selectedLayer.value) return;
 
   const comp = store.getActiveComp();
@@ -1051,10 +1113,10 @@ function resetTransform() {
 /**
  * Check if a property has a driver
  */
-function hasDriver(property: PropertyPath): boolean {
+function _hasDriver(property: PropertyPath): boolean {
   if (!selectedLayer.value) return false;
   const drivers = store.getDriversForLayer(selectedLayer.value.id);
-  return drivers.some(d => d.targetProperty === property && d.enabled);
+  return drivers.some((d) => d.targetProperty === property && d.enabled);
 }
 </script>
 

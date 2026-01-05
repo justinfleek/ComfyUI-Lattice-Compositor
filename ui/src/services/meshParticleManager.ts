@@ -14,9 +14,16 @@
  * - Mesh atlas for GPU texture-based instancing
  */
 
-import * as THREE from 'three';
-import type { EmitterShapeConfig, RenderConfig } from '../engine/particles/types';
-import { svgExtrusionService, type ParsedSVGPath, type SVGMeshParticleConfig } from './svgExtrusion';
+import * as THREE from "three";
+import type {
+  EmitterShapeConfig,
+  RenderConfig,
+} from "../engine/particles/types";
+import {
+  type ParsedSVGPath,
+  type SVGMeshParticleConfig,
+  svgExtrusionService,
+} from "./svgExtrusion";
 
 // ============================================================================
 // TYPES
@@ -24,10 +31,10 @@ import { svgExtrusionService, type ParsedSVGPath, type SVGMeshParticleConfig } f
 
 /** Mesh particle source type */
 export type MeshParticleSource =
-  | 'svg'           // From SVG extrusion
-  | 'model'         // From 3D model file
-  | 'primitive'     // Built-in primitive shapes
-  | 'custom';       // User-provided geometry
+  | "svg" // From SVG extrusion
+  | "model" // From 3D model file
+  | "primitive" // Built-in primitive shapes
+  | "custom"; // User-provided geometry
 
 /** Registered mesh particle definition */
 export interface RegisteredMeshParticle {
@@ -41,8 +48,8 @@ export interface RegisteredMeshParticle {
   faceCount: number;
 
   // Metadata
-  sourceId?: string;      // SVG path ID or model asset ID
-  thumbnail?: string;     // Base64 preview image
+  sourceId?: string; // SVG path ID or model asset ID
+  thumbnail?: string; // Base64 preview image
 
   // LOD levels (optional)
   lodGeometries?: THREE.BufferGeometry[];
@@ -66,7 +73,15 @@ export interface MeshParticleConfig {
   modelSubmeshIndex?: number;
 
   // Primitive options
-  primitiveType?: 'cube' | 'sphere' | 'cone' | 'cylinder' | 'torus' | 'tetrahedron' | 'octahedron' | 'icosahedron';
+  primitiveType?:
+    | "cube"
+    | "sphere"
+    | "cone"
+    | "cylinder"
+    | "torus"
+    | "tetrahedron"
+    | "octahedron"
+    | "icosahedron";
   primitiveSize?: number;
   primitiveDetail?: number;
 
@@ -77,7 +92,7 @@ export interface MeshParticleConfig {
   simplifyTolerance: number;
 
   // Material options (for rendering)
-  materialId?: string;      // Reference to MaterialSystem material
+  materialId?: string; // Reference to MaterialSystem material
   color?: string;
   metalness?: number;
   roughness?: number;
@@ -108,9 +123,6 @@ export class MeshParticleManager {
   /** Default material for mesh particles */
   private defaultMaterial: THREE.MeshStandardMaterial;
 
-  /** Texture loader for thumbnails */
-  private textureLoader: THREE.TextureLoader;
-
   constructor() {
     this.defaultMaterial = new THREE.MeshStandardMaterial({
       color: 0xffffff,
@@ -133,7 +145,7 @@ export class MeshParticleManager {
     name: string,
     geometry: THREE.BufferGeometry,
     source: MeshParticleSource,
-    config?: MeshParticleConfig
+    config?: MeshParticleConfig,
   ): RegisteredMeshParticle {
     // Ensure geometry has proper bounding info
     geometry.computeBoundingBox();
@@ -144,12 +156,12 @@ export class MeshParticleManager {
       name,
       source,
       geometry,
-      boundingBox: geometry.boundingBox!.clone(),
-      boundingSphere: geometry.boundingSphere!.clone(),
-      vertexCount: geometry.getAttribute('position')?.count ?? 0,
+      boundingBox: geometry.boundingBox?.clone(),
+      boundingSphere: geometry.boundingSphere?.clone(),
+      vertexCount: geometry.getAttribute("position")?.count ?? 0,
       faceCount: geometry.index
         ? geometry.index.count / 3
-        : (geometry.getAttribute('position')?.count ?? 0) / 3,
+        : (geometry.getAttribute("position")?.count ?? 0) / 3,
       config,
     };
 
@@ -164,7 +176,7 @@ export class MeshParticleManager {
     svgDocumentId: string,
     svgPathId: string,
     name: string,
-    options: Partial<SVGMeshParticleConfig> = {}
+    options: Partial<SVGMeshParticleConfig> = {},
   ): RegisteredMeshParticle | null {
     const document = svgExtrusionService.getDocument(svgDocumentId);
     if (!document) {
@@ -185,8 +197,8 @@ export class MeshParticleManager {
     });
 
     const id = `svg_particle_${svgDocumentId}_${svgPathId}`;
-    return this.registerMesh(id, name, geometry, 'svg', {
-      source: 'svg',
+    return this.registerMesh(id, name, geometry, "svg", {
+      source: "svg",
       svgDocumentId,
       svgPathId,
       svgExtrusionDepth: options.extrusionDepth ?? 1,
@@ -203,7 +215,7 @@ export class MeshParticleManager {
   registerFromSVGPath(
     path: ParsedSVGPath,
     name: string,
-    options: Partial<SVGMeshParticleConfig> = {}
+    options: Partial<SVGMeshParticleConfig> = {},
   ): RegisteredMeshParticle {
     const geometry = svgExtrusionService.createParticleMesh(path, {
       ...options,
@@ -211,8 +223,8 @@ export class MeshParticleManager {
     });
 
     const id = `svg_particle_${path.id}`;
-    return this.registerMesh(id, name, geometry, 'svg', {
-      source: 'svg',
+    return this.registerMesh(id, name, geometry, "svg", {
+      source: "svg",
       svgPathId: path.id,
       svgExtrusionDepth: options.extrusionDepth ?? 1,
       scale: options.scale ?? 0.01,
@@ -226,36 +238,46 @@ export class MeshParticleManager {
    * Register a primitive shape as mesh particle
    */
   registerPrimitive(
-    type: MeshParticleConfig['primitiveType'],
+    type: MeshParticleConfig["primitiveType"],
     name?: string,
     size: number = 1,
-    detail: number = 1
+    detail: number = 1,
   ): RegisteredMeshParticle {
     let geometry: THREE.BufferGeometry;
 
     switch (type) {
-      case 'cube':
+      case "cube":
         geometry = new THREE.BoxGeometry(size, size, size);
         break;
-      case 'sphere':
+      case "sphere":
         geometry = new THREE.SphereGeometry(size / 2, 8 * detail, 6 * detail);
         break;
-      case 'cone':
+      case "cone":
         geometry = new THREE.ConeGeometry(size / 2, size, 8 * detail);
         break;
-      case 'cylinder':
-        geometry = new THREE.CylinderGeometry(size / 2, size / 2, size, 8 * detail);
+      case "cylinder":
+        geometry = new THREE.CylinderGeometry(
+          size / 2,
+          size / 2,
+          size,
+          8 * detail,
+        );
         break;
-      case 'torus':
-        geometry = new THREE.TorusGeometry(size / 2, size / 6, 8 * detail, 12 * detail);
+      case "torus":
+        geometry = new THREE.TorusGeometry(
+          size / 2,
+          size / 6,
+          8 * detail,
+          12 * detail,
+        );
         break;
-      case 'tetrahedron':
+      case "tetrahedron":
         geometry = new THREE.TetrahedronGeometry(size / 2, detail - 1);
         break;
-      case 'octahedron':
+      case "octahedron":
         geometry = new THREE.OctahedronGeometry(size / 2, detail - 1);
         break;
-      case 'icosahedron':
+      case "icosahedron":
         geometry = new THREE.IcosahedronGeometry(size / 2, detail - 1);
         break;
       default:
@@ -263,10 +285,11 @@ export class MeshParticleManager {
     }
 
     const id = `primitive_${type}_${size}_${detail}`;
-    const displayName = name ?? `${type?.charAt(0).toUpperCase()}${type?.slice(1)}`;
+    const displayName =
+      name ?? `${type?.charAt(0).toUpperCase()}${type?.slice(1)}`;
 
-    return this.registerMesh(id, displayName, geometry, 'primitive', {
-      source: 'primitive',
+    return this.registerMesh(id, displayName, geometry, "primitive", {
+      source: "primitive",
       primitiveType: type,
       primitiveSize: size,
       primitiveDetail: detail,
@@ -284,10 +307,10 @@ export class MeshParticleManager {
     id: string,
     name: string,
     geometry: THREE.BufferGeometry,
-    config?: Partial<MeshParticleConfig>
+    config?: Partial<MeshParticleConfig>,
   ): RegisteredMeshParticle {
-    return this.registerMesh(id, name, geometry, 'custom', {
-      source: 'custom',
+    return this.registerMesh(id, name, geometry, "custom", {
+      source: "custom",
       scale: 1,
       centerOrigin: true,
       simplify: false,
@@ -306,7 +329,7 @@ export class MeshParticleManager {
   createInstancedMesh(
     meshId: string,
     maxInstances: number,
-    material?: THREE.Material
+    material?: THREE.Material,
   ): InstancedMeshParticles | null {
     const registration = this.meshRegistry.get(meshId);
     if (!registration) {
@@ -318,7 +341,7 @@ export class MeshParticleManager {
     const instancedMesh = new THREE.InstancedMesh(
       registration.geometry,
       mat,
-      maxInstances
+      maxInstances,
     );
 
     instancedMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
@@ -349,7 +372,7 @@ export class MeshParticleManager {
       rotation: THREE.Quaternion | THREE.Euler;
       scale: THREE.Vector3 | number;
       color?: THREE.Color;
-    }>
+    }>,
   ): void {
     const instance = this.instancedMeshes.get(meshId);
     if (!instance) return;
@@ -373,7 +396,7 @@ export class MeshParticleManager {
       }
 
       // Handle scale
-      if (typeof p.scale === 'number') {
+      if (typeof p.scale === "number") {
         scaleVec.set(p.scale, p.scale, p.scale);
       } else {
         scaleVec.copy(p.scale);
@@ -398,7 +421,9 @@ export class MeshParticleManager {
   /**
    * Create default material for a mesh
    */
-  private createMaterialForMesh(registration: RegisteredMeshParticle): THREE.Material {
+  private createMaterialForMesh(
+    registration: RegisteredMeshParticle,
+  ): THREE.Material {
     const config = registration.config;
 
     if (!config) {
@@ -406,10 +431,10 @@ export class MeshParticleManager {
     }
 
     return new THREE.MeshStandardMaterial({
-      color: new THREE.Color(config.color ?? '#ffffff'),
+      color: new THREE.Color(config.color ?? "#ffffff"),
       metalness: config.metalness ?? 0,
       roughness: config.roughness ?? 0.5,
-      emissive: new THREE.Color(config.emissive ?? '#000000'),
+      emissive: new THREE.Color(config.emissive ?? "#000000"),
       emissiveIntensity: config.emissiveIntensity ?? 0,
       side: THREE.DoubleSide,
     });
@@ -427,8 +452,8 @@ export class MeshParticleManager {
     const registration = this.meshRegistry.get(meshId);
     if (!registration) return null;
 
-    const position = registration.geometry.getAttribute('position');
-    const normal = registration.geometry.getAttribute('normal');
+    const position = registration.geometry.getAttribute("position");
+    const normal = registration.geometry.getAttribute("normal");
 
     if (!position) return null;
 
@@ -437,7 +462,7 @@ export class MeshParticleManager {
     const normals = normal ? new Float32Array(normal.array) : undefined;
 
     return {
-      type: 'mesh',
+      type: "mesh",
       meshVertices: vertices,
       meshNormals: normals,
     };
@@ -451,7 +476,7 @@ export class MeshParticleManager {
     if (!registration) return null;
 
     return {
-      mode: 'mesh',
+      mode: "mesh",
       meshGeometry: meshId,
     };
   }
@@ -466,7 +491,7 @@ export class MeshParticleManager {
   addLODLevels(
     meshId: string,
     lodGeometries: THREE.BufferGeometry[],
-    lodDistances: number[]
+    lodDistances: number[],
   ): void {
     const registration = this.meshRegistry.get(meshId);
     if (!registration) return;
@@ -478,7 +503,10 @@ export class MeshParticleManager {
   /**
    * Get appropriate LOD geometry for distance
    */
-  getLODGeometry(meshId: string, distance: number): THREE.BufferGeometry | null {
+  getLODGeometry(
+    meshId: string,
+    distance: number,
+  ): THREE.BufferGeometry | null {
     const registration = this.meshRegistry.get(meshId);
     if (!registration) return null;
 
@@ -504,7 +532,7 @@ export class MeshParticleManager {
    */
   async generateThumbnail(
     meshId: string,
-    size: number = 128
+    size: number = 128,
   ): Promise<string | null> {
     const registration = this.meshRegistry.get(meshId);
     if (!registration) return null;
@@ -520,7 +548,7 @@ export class MeshParticleManager {
         color: 0xffffff,
         metalness: 0.3,
         roughness: 0.6,
-      })
+      }),
     );
     scene.add(mesh);
 
@@ -538,7 +566,7 @@ export class MeshParticleManager {
     scene.add(ambient, directional);
 
     // Render to canvas
-    const canvas = document.createElement('canvas');
+    const canvas = document.createElement("canvas");
     canvas.width = size;
     canvas.height = size;
 
@@ -551,7 +579,7 @@ export class MeshParticleManager {
     renderer.render(scene, camera);
 
     // Get data URL
-    const dataUrl = canvas.toDataURL('image/png');
+    const dataUrl = canvas.toDataURL("image/png");
 
     // Cleanup
     renderer.dispose();
@@ -587,7 +615,7 @@ export class MeshParticleManager {
    */
   getMeshesBySource(source: MeshParticleSource): RegisteredMeshParticle[] {
     return Array.from(this.meshRegistry.values()).filter(
-      (m) => m.source === source
+      (m) => m.source === source,
     );
   }
 
@@ -661,8 +689,8 @@ export const meshParticleManager = new MeshParticleManager();
 
 export function createDefaultMeshParticleConfig(): MeshParticleConfig {
   return {
-    source: 'primitive',
-    primitiveType: 'sphere',
+    source: "primitive",
+    primitiveType: "sphere",
     primitiveSize: 1,
     primitiveDetail: 1,
     scale: 1,

@@ -12,10 +12,10 @@
  * - Smooth handle interpolation
  */
 
-import type { BezierPath, BezierVertex, Point2D } from '@/types/shapes';
-import { createLogger } from '@/utils/logger';
+import type { BezierPath, BezierVertex, Point2D } from "@/types/shapes";
+import { createLogger } from "@/utils/logger";
 
-const logger = createLogger('PathMorphing');
+const logger = createLogger("PathMorphing");
 
 // ============================================================================
 // TYPES
@@ -24,9 +24,13 @@ const logger = createLogger('PathMorphing');
 /** Configuration for path morphing preparation */
 export interface MorphConfig {
   /** Strategy for matching point counts */
-  pointMatchingStrategy: 'subdivide-shorter' | 'subdivide-both' | 'resample';
+  pointMatchingStrategy: "subdivide-shorter" | "subdivide-both" | "resample";
   /** Method for finding optimal vertex correspondence */
-  correspondenceMethod: 'index' | 'nearest-rotation' | 'nearest-distance' | 'manual';
+  correspondenceMethod:
+    | "index"
+    | "nearest-rotation"
+    | "nearest-distance"
+    | "manual";
   /** Manual correspondence mapping (vertex indices) */
   manualMapping?: number[];
   /** Number of segments for resampling (if using 'resample' strategy) */
@@ -45,8 +49,8 @@ export interface PreparedMorphPaths {
 
 /** Default configuration */
 export const DEFAULT_MORPH_CONFIG: MorphConfig = {
-  pointMatchingStrategy: 'subdivide-shorter',
-  correspondenceMethod: 'nearest-rotation',
+  pointMatchingStrategy: "subdivide-shorter",
+  correspondenceMethod: "nearest-rotation",
 };
 
 // ============================================================================
@@ -120,7 +124,7 @@ function cubicBezierPoint(
   p1: Point2D,
   p2: Point2D,
   p3: Point2D,
-  t: number
+  t: number,
 ): Point2D {
   const mt = 1 - t;
   const mt2 = mt * mt;
@@ -140,7 +144,7 @@ function splitCubicBezier(
   p1: Point2D,
   p2: Point2D,
   p3: Point2D,
-  t: number
+  t: number,
 ): [Point2D[], Point2D[]] {
   const q0 = lerpPoint(p0, p1, t);
   const q1 = lerpPoint(p1, p2, t);
@@ -150,8 +154,8 @@ function splitCubicBezier(
   const s = lerpPoint(r0, r1, t);
 
   return [
-    [p0, q0, r0, s],      // Left segment
-    [s, r1, q2, p3],      // Right segment
+    [p0, q0, r0, s], // Left segment
+    [s, r1, q2, p3], // Right segment
   ];
 }
 
@@ -161,7 +165,7 @@ function estimateSegmentLength(
   p1: Point2D,
   p2: Point2D,
   p3: Point2D,
-  samples: number = 10
+  samples: number = 10,
 ): number {
   let length = 0;
   let prev = p0;
@@ -183,7 +187,7 @@ function estimateSegmentLength(
 /** Get segment control points from a path */
 function getSegmentControlPoints(
   path: BezierPath,
-  segmentIndex: number
+  segmentIndex: number,
 ): { p0: Point2D; p1: Point2D; p2: Point2D; p3: Point2D } {
   const v0 = path.vertices[segmentIndex];
   const v1 = path.vertices[(segmentIndex + 1) % path.vertices.length];
@@ -197,8 +201,13 @@ function getSegmentControlPoints(
 }
 
 /** Calculate total arc length of a path */
-function getPathLength(path: BezierPath, samplesPerSegment: number = 10): number {
-  const numSegments = path.closed ? path.vertices.length : path.vertices.length - 1;
+function getPathLength(
+  path: BezierPath,
+  samplesPerSegment: number = 10,
+): number {
+  const numSegments = path.closed
+    ? path.vertices.length
+    : path.vertices.length - 1;
   let totalLength = 0;
 
   for (let i = 0; i < numSegments; i++) {
@@ -210,8 +219,13 @@ function getPathLength(path: BezierPath, samplesPerSegment: number = 10): number
 }
 
 /** Calculate arc lengths of each segment */
-function getSegmentLengths(path: BezierPath, samplesPerSegment: number = 10): number[] {
-  const numSegments = path.closed ? path.vertices.length : path.vertices.length - 1;
+function getSegmentLengths(
+  path: BezierPath,
+  samplesPerSegment: number = 10,
+): number[] {
+  const numSegments = path.closed
+    ? path.vertices.length
+    : path.vertices.length - 1;
   const lengths: number[] = [];
 
   for (let i = 0; i < numSegments; i++) {
@@ -226,19 +240,27 @@ function getSegmentLengths(path: BezierPath, samplesPerSegment: number = 10): nu
 function getPointAtArcLength(
   path: BezierPath,
   targetLength: number,
-  segmentLengths: number[]
+  segmentLengths: number[],
 ): { point: Point2D; segmentIndex: number; t: number } {
   let accumulated = 0;
 
   for (let i = 0; i < segmentLengths.length; i++) {
     const segmentLength = segmentLengths[i];
 
-    if (accumulated + segmentLength >= targetLength || i === segmentLengths.length - 1) {
-      const localT = segmentLength > 0
-        ? (targetLength - accumulated) / segmentLength
-        : 0;
+    if (
+      accumulated + segmentLength >= targetLength ||
+      i === segmentLengths.length - 1
+    ) {
+      const localT =
+        segmentLength > 0 ? (targetLength - accumulated) / segmentLength : 0;
       const { p0, p1, p2, p3 } = getSegmentControlPoints(path, i);
-      const point = cubicBezierPoint(p0, p1, p2, p3, Math.max(0, Math.min(1, localT)));
+      const point = cubicBezierPoint(
+        p0,
+        p1,
+        p2,
+        p3,
+        Math.max(0, Math.min(1, localT)),
+      );
 
       return { point, segmentIndex: i, t: localT };
     }
@@ -263,7 +285,7 @@ function getPointAtArcLength(
 function subdivideSegmentAt(
   path: BezierPath,
   segmentIndex: number,
-  t: number
+  t: number,
 ): BezierPath {
   const result = clonePath(path);
   const v0 = result.vertices[segmentIndex];
@@ -297,14 +319,17 @@ function subdivideSegmentAt(
 }
 
 /** Subdivide a path to have a specific number of vertices */
-function subdivideToVertexCount(path: BezierPath, targetCount: number): BezierPath {
+function subdivideToVertexCount(
+  path: BezierPath,
+  targetCount: number,
+): BezierPath {
   if (path.vertices.length >= targetCount) {
     return clonePath(path);
   }
 
   let current = clonePath(path);
   const segmentLengths = getSegmentLengths(current);
-  const totalLength = segmentLengths.reduce((sum, l) => sum + l, 0);
+  const _totalLength = segmentLengths.reduce((sum, l) => sum + l, 0);
 
   // Add vertices evenly distributed by arc length
   while (current.vertices.length < targetCount) {
@@ -340,7 +365,7 @@ function resamplePath(path: BezierPath, vertexCount: number): BezierPath {
     // Degenerate path - just clone vertices
     const vertices: BezierVertex[] = [];
     for (let i = 0; i < vertexCount; i++) {
-      const srcIdx = Math.floor(i * path.vertices.length / vertexCount);
+      const srcIdx = Math.floor((i * path.vertices.length) / vertexCount);
       vertices.push(cloneVertex(path.vertices[srcIdx]));
     }
     return { vertices, closed: path.closed };
@@ -357,8 +382,16 @@ function resamplePath(path: BezierPath, vertexCount: number): BezierPath {
     const prevLength = Math.max(0, targetLength - spacing * 0.33);
     const nextLength = Math.min(totalLength, targetLength + spacing * 0.33);
 
-    const prevPoint = getPointAtArcLength(path, prevLength, segmentLengths).point;
-    const nextPoint = getPointAtArcLength(path, nextLength, segmentLengths).point;
+    const prevPoint = getPointAtArcLength(
+      path,
+      prevLength,
+      segmentLengths,
+    ).point;
+    const nextPoint = getPointAtArcLength(
+      path,
+      nextLength,
+      segmentLengths,
+    ).point;
 
     const tangent = {
       x: (nextPoint.x - prevPoint.x) * 0.5,
@@ -389,7 +422,7 @@ function calculateTravelDistance(
   source: BezierPath,
   target: BezierPath,
   rotationOffset: number = 0,
-  reversed: boolean = false
+  reversed: boolean = false,
 ): number {
   const n = source.vertices.length;
   let total = 0;
@@ -402,7 +435,10 @@ function calculateTravelDistance(
       tgtIdx = (n - 1 - i + rotationOffset + n) % n;
     }
 
-    total += distance(source.vertices[srcIdx].point, target.vertices[tgtIdx].point);
+    total += distance(
+      source.vertices[srcIdx].point,
+      target.vertices[tgtIdx].point,
+    );
   }
 
   return total;
@@ -413,7 +449,7 @@ function calculateTravelDistance(
  */
 function findOptimalRotation(
   source: BezierPath,
-  target: BezierPath
+  target: BezierPath,
 ): { offset: number; reversed: boolean } {
   const n = source.vertices.length;
   let bestOffset = 0;
@@ -450,7 +486,7 @@ function findOptimalRotation(
 function rotateVertices(
   path: BezierPath,
   offset: number,
-  reverse: boolean = false
+  reverse: boolean = false,
 ): BezierPath {
   const n = path.vertices.length;
   const vertices: BezierVertex[] = [];
@@ -495,13 +531,13 @@ function rotateVertices(
 export function prepareMorphPaths(
   source: BezierPath,
   target: BezierPath,
-  config: Partial<MorphConfig> = {}
+  config: Partial<MorphConfig> = {},
 ): PreparedMorphPaths {
   const cfg: MorphConfig = { ...DEFAULT_MORPH_CONFIG, ...config };
 
   // Validate inputs
   if (source.vertices.length === 0 || target.vertices.length === 0) {
-    logger.warn('Cannot morph empty paths');
+    logger.warn("Cannot morph empty paths");
     return {
       source: clonePath(source),
       target: clonePath(target),
@@ -519,7 +555,7 @@ export function prepareMorphPaths(
 
   if (sourceCount !== targetCount) {
     switch (cfg.pointMatchingStrategy) {
-      case 'subdivide-shorter':
+      case "subdivide-shorter":
         if (sourceCount < targetCount) {
           preparedSource = subdivideToVertexCount(preparedSource, targetCount);
         } else {
@@ -527,14 +563,14 @@ export function prepareMorphPaths(
         }
         break;
 
-      case 'subdivide-both': {
+      case "subdivide-both": {
         const maxCount = Math.max(sourceCount, targetCount);
         preparedSource = subdivideToVertexCount(preparedSource, maxCount);
         preparedTarget = subdivideToVertexCount(preparedTarget, maxCount);
         break;
       }
 
-      case 'resample': {
+      case "resample": {
         const count = cfg.resampleCount ?? Math.max(sourceCount, targetCount);
         preparedSource = resamplePath(preparedSource, count);
         preparedTarget = resamplePath(preparedTarget, count);
@@ -549,19 +585,17 @@ export function prepareMorphPaths(
 
   if (preparedSource.closed && preparedTarget.closed) {
     switch (cfg.correspondenceMethod) {
-      case 'nearest-rotation':
-      case 'nearest-distance': {
+      case "nearest-rotation":
+      case "nearest-distance": {
         const result = findOptimalRotation(preparedSource, preparedTarget);
         rotationOffset = result.offset;
         reversed = result.reversed;
         break;
       }
 
-      case 'manual':
+      case "manual":
         // Manual mapping would be applied here if provided
         break;
-
-      case 'index':
       default:
         // Keep original indices
         break;
@@ -595,7 +629,7 @@ export function prepareMorphPaths(
 export function morphPaths(
   source: BezierPath,
   target: BezierPath,
-  t: number
+  t: number,
 ): BezierPath {
   // Clamp t to valid range
   t = Math.max(0, Math.min(1, t));
@@ -606,11 +640,19 @@ export function morphPaths(
 
   // Validate vertex counts match
   if (source.vertices.length !== target.vertices.length) {
-    logger.warn('Paths have different vertex counts - use prepareMorphPaths() first');
+    logger.warn(
+      "Paths have different vertex counts - use prepareMorphPaths() first",
+    );
     // Fall back to direct interpolation of first path's length
     const count = Math.min(source.vertices.length, target.vertices.length);
-    source = { vertices: source.vertices.slice(0, count), closed: source.closed };
-    target = { vertices: target.vertices.slice(0, count), closed: target.closed };
+    source = {
+      vertices: source.vertices.slice(0, count),
+      closed: source.closed,
+    };
+    target = {
+      vertices: target.vertices.slice(0, count),
+      closed: target.closed,
+    };
   }
 
   // Interpolate each vertex
@@ -645,9 +687,13 @@ export function morphPathsAuto(
   source: BezierPath,
   target: BezierPath,
   t: number,
-  config: Partial<MorphConfig> = {}
+  config: Partial<MorphConfig> = {},
 ): BezierPath {
-  const { source: prepSource, target: prepTarget } = prepareMorphPaths(source, target, config);
+  const { source: prepSource, target: prepTarget } = prepareMorphPaths(
+    source,
+    target,
+    config,
+  );
   return morphPaths(prepSource, prepTarget, t);
 }
 
@@ -661,14 +707,19 @@ export function morphPathsAuto(
  */
 export function getCorrespondence(
   source: BezierPath,
-  target: BezierPath
+  target: BezierPath,
 ): Array<{ sourceIndex: number; targetIndex: number }> {
   // First prepare paths
-  const { source: prepSource, target: prepTarget, rotationOffset, reversed } =
-    prepareMorphPaths(source, target);
+  const {
+    source: prepSource,
+    target: prepTarget,
+    rotationOffset,
+    reversed,
+  } = prepareMorphPaths(source, target);
 
   const n = prepSource.vertices.length;
-  const correspondence: Array<{ sourceIndex: number; targetIndex: number }> = [];
+  const correspondence: Array<{ sourceIndex: number; targetIndex: number }> =
+    [];
 
   for (let i = 0; i < n; i++) {
     let targetIdx = i;
@@ -698,23 +749,23 @@ export function getCorrespondence(
  * Used for type-safe path morphing in interpolation
  */
 export function isBezierPath(value: unknown): value is BezierPath {
-  if (typeof value !== 'object' || value === null) {
+  if (typeof value !== "object" || value === null) {
     return false;
   }
 
   const obj = value as Record<string, unknown>;
 
   // Must have 'vertices' array and 'closed' boolean
-  if (!Array.isArray(obj.vertices) || typeof obj.closed !== 'boolean') {
+  if (!Array.isArray(obj.vertices) || typeof obj.closed !== "boolean") {
     return false;
   }
 
   // Check first vertex structure (if any vertices exist)
   if (obj.vertices.length > 0) {
     const v = obj.vertices[0] as Record<string, unknown>;
-    if (typeof v !== 'object' || v === null) return false;
-    if (typeof (v.point as any)?.x !== 'number') return false;
-    if (typeof (v.point as any)?.y !== 'number') return false;
+    if (typeof v !== "object" || v === null) return false;
+    if (typeof (v.point as any)?.x !== "number") return false;
+    if (typeof (v.point as any)?.y !== "number") return false;
   }
 
   return true;

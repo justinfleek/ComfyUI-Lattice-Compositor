@@ -67,31 +67,43 @@
 </template>
 
 <script setup lang="ts">
-import type { InnerGlowStyle, InnerGlowUpdate, RGBA, GlowTechnique, InnerGlowSource } from '@/types/layerStyles';
-import type { BlendMode } from '@/types/project';
+import type {
+  InnerGlowStyle,
+  InnerGlowUpdate,
+  RGBA,
+} from "@/types/layerStyles";
+import type { BlendMode } from "@/types/project";
 
 defineProps<{
   style: InnerGlowStyle;
 }>();
 
-const emit = defineEmits<{
-  (e: 'update', updates: InnerGlowUpdate): void;
-}>();
+const _emit = defineEmits<(e: "update", updates: InnerGlowUpdate) => void>();
 
-const blendModes: BlendMode[] = ['normal', 'screen', 'lighten', 'color-dodge', 'linear-dodge', 'overlay'];
+const _blendModes: BlendMode[] = [
+  "normal",
+  "screen",
+  "lighten",
+  "color-dodge",
+  "linear-dodge",
+  "overlay",
+];
 
-function formatMode(mode: string): string {
-  return mode.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+function _formatMode(mode: string): string {
+  return mode
+    .split("-")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
 }
 
-function rgbaToHex(color: RGBA): string {
-  const r = Math.round(color.r).toString(16).padStart(2, '0');
-  const g = Math.round(color.g).toString(16).padStart(2, '0');
-  const b = Math.round(color.b).toString(16).padStart(2, '0');
+function _rgbaToHex(color: RGBA): string {
+  const r = Math.round(color.r).toString(16).padStart(2, "0");
+  const g = Math.round(color.g).toString(16).padStart(2, "0");
+  const b = Math.round(color.b).toString(16).padStart(2, "0");
   return `#${r}${g}${b}`;
 }
 
-function hexToRgba(hex: string): RGBA {
+function _hexToRgba(hex: string): RGBA {
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);

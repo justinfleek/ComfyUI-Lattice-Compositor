@@ -22,56 +22,78 @@
  * simulation. The same seed + config + frame produces identical results.
  * Math.random() is NEVER used directly.
  */
-import { EASING_PRESETS, applyEasing } from './interpolation';
-import { createNoise2D } from 'simplex-noise';
 
-// Import types
-import type {
-  Particle, TurbulenceConfig, ConnectionConfig, SubEmitterConfig,
-  EmitterShape, SplinePathEmission, SplineQueryResult, SplinePathProvider,
-  SpriteConfig, EmitterConfig, GravityWellConfig, VortexConfig,
-  LorenzAttractorConfig, ParticleModulation, CollisionConfig,
-  ParticleSystemConfig, RenderOptions, SpatialGrid,
-} from './particles/particleTypes';
-
+import { createNoise2D } from "simplex-noise";
+import { applyEasing, EASING_PRESETS } from "./interpolation";
 // Import factory functions
 import {
-  resetIdCounter, createDefaultSpriteConfig, createDefaultSplinePathEmission,
-  createDefaultCollisionConfig, createDefaultEmitterConfig, createDefaultTurbulenceConfig,
-  createDefaultConnectionConfig, createDefaultSubEmitterConfig, createDefaultGravityWellConfig,
-  createDefaultVortexConfig, createDefaultSystemConfig, createDefaultRenderOptions,
-} from './particles/particleDefaults';
-
-// Import SeededRandom class
-import { SeededRandom } from './particles/SeededRandom';
-
+  createDefaultRenderOptions,
+  createDefaultSystemConfig,
+} from "./particles/particleDefaults";
 // Import renderer functions
 import {
+  type ParticleRenderContext,
   renderParticlesToCanvas,
   renderParticlesToMask,
-  renderConnections,
-  type ParticleRenderContext,
-} from './particles/particleRenderer';
-
-// Re-export all types for backwards compatibility
-export type {
-  Particle, TurbulenceConfig, ConnectionConfig, SubEmitterConfig,
-  EmitterShape, SplinePathEmission, SplineQueryResult, SplinePathProvider,
-  SpriteConfig, EmitterConfig, GravityWellConfig, VortexConfig,
-  LorenzAttractorConfig, ParticleModulation, CollisionConfig,
-  ParticleSystemConfig, RenderOptions, SpatialGrid,
-} from './particles/particleTypes';
+} from "./particles/particleRenderer";
+// Import types
+import type {
+  EmitterConfig,
+  GravityWellConfig,
+  LorenzAttractorConfig,
+  Particle,
+  ParticleModulation,
+  ParticleSystemConfig,
+  RenderOptions,
+  SpatialGrid,
+  SplinePathProvider,
+  SpriteConfig,
+  SubEmitterConfig,
+  TurbulenceConfig,
+  VortexConfig,
+} from "./particles/particleTypes";
+// Import SeededRandom class
+import { SeededRandom } from "./particles/SeededRandom";
 
 // Re-export factory functions
 export {
-  resetIdCounter, createDefaultSpriteConfig, createDefaultSplinePathEmission,
-  createDefaultCollisionConfig, createDefaultEmitterConfig, createDefaultTurbulenceConfig,
-  createDefaultConnectionConfig, createDefaultSubEmitterConfig, createDefaultGravityWellConfig,
-  createDefaultVortexConfig, createDefaultSystemConfig, createDefaultRenderOptions,
-} from './particles/particleDefaults';
+  createDefaultCollisionConfig,
+  createDefaultConnectionConfig,
+  createDefaultEmitterConfig,
+  createDefaultGravityWellConfig,
+  createDefaultRenderOptions,
+  createDefaultSplinePathEmission,
+  createDefaultSpriteConfig,
+  createDefaultSubEmitterConfig,
+  createDefaultSystemConfig,
+  createDefaultTurbulenceConfig,
+  createDefaultVortexConfig,
+  resetIdCounter,
+} from "./particles/particleDefaults";
+// Re-export all types for backwards compatibility
+export type {
+  CollisionConfig,
+  ConnectionConfig,
+  EmitterConfig,
+  EmitterShape,
+  GravityWellConfig,
+  LorenzAttractorConfig,
+  Particle,
+  ParticleModulation,
+  ParticleSystemConfig,
+  RenderOptions,
+  SpatialGrid,
+  SplinePathEmission,
+  SplinePathProvider,
+  SplineQueryResult,
+  SpriteConfig,
+  SubEmitterConfig,
+  TurbulenceConfig,
+  VortexConfig,
+} from "./particles/particleTypes";
 
 // Re-export SeededRandom
-export { SeededRandom } from './particles/SeededRandom';
+export { SeededRandom } from "./particles/SeededRandom";
 
 // ============================================================================
 // Particle System Class
@@ -89,7 +111,8 @@ export class ParticleSystem {
   private frameCount: number = 0;
   private emissionAccumulators: Map<string, number> = new Map();
   private nextParticleId: number = 0;
-  private trailHistory: Map<number, Array<{x: number; y: number}>> = new Map();
+  private trailHistory: Map<number, Array<{ x: number; y: number }>> =
+    new Map();
 
   // ============================================================================
   // PARTICLE POOL - Recycles dead particles to reduce GC pressure
@@ -129,7 +152,10 @@ export class ParticleSystem {
   // Sequential emit state per emitter (for 'sequential' emit mode)
   private sequentialEmitT: Map<string, number> = new Map();
 
-  constructor(config: Partial<ParticleSystemConfig> = {}, seed: number = 12345) {
+  constructor(
+    config: Partial<ParticleSystemConfig> = {},
+    seed: number = 12345,
+  ) {
     this.config = { ...createDefaultSystemConfig(), ...config };
     this.rng = new SeededRandom(seed);
     // Create seeded noise using our RNG to seed simplex
@@ -188,11 +214,11 @@ export class ParticleSystem {
   async loadSprite(emitterId: string, imageUrl: string): Promise<void> {
     return new Promise((resolve, reject) => {
       const img = new Image();
-      img.crossOrigin = 'anonymous';
+      img.crossOrigin = "anonymous";
       img.onload = () => {
         this.spriteCache.set(emitterId, img);
         const emitter = this.emitters.get(emitterId);
-        if (emitter && emitter.sprite) {
+        if (emitter?.sprite) {
           emitter.sprite.imageData = img;
         }
         resolve();
@@ -205,10 +231,13 @@ export class ParticleSystem {
   /**
    * Set sprite image directly (for pre-loaded images)
    */
-  setSpriteImage(emitterId: string, image: HTMLImageElement | ImageBitmap): void {
+  setSpriteImage(
+    emitterId: string,
+    image: HTMLImageElement | ImageBitmap,
+  ): void {
     this.spriteCache.set(emitterId, image);
     const emitter = this.emitters.get(emitterId);
-    if (emitter && emitter.sprite) {
+    if (emitter?.sprite) {
       emitter.sprite.imageData = image;
     }
   }
@@ -230,7 +259,9 @@ export class ParticleSystem {
 
     // Handle initial burst
     if (config.initialBurst > 0 && config.enabled) {
-      const burstCount = Math.floor(config.emissionRate * config.initialBurst * 10);
+      const burstCount = Math.floor(
+        config.emissionRate * config.initialBurst * 10,
+      );
       for (let i = 0; i < burstCount; i++) {
         this.spawnParticle(config);
       }
@@ -311,7 +342,10 @@ export class ParticleSystem {
     this.lorenzAttractors.set(config.id, { ...config });
   }
 
-  updateLorenzAttractor(id: string, updates: Partial<LorenzAttractorConfig>): void {
+  updateLorenzAttractor(
+    id: string,
+    updates: Partial<LorenzAttractorConfig>,
+  ): void {
     const attractor = this.lorenzAttractors.get(id);
     if (attractor) {
       Object.assign(attractor, updates);
@@ -335,7 +369,7 @@ export class ParticleSystem {
   }
 
   removeModulation(id: string): void {
-    const index = this.modulations.findIndex(m => m.id === id);
+    const index = this.modulations.findIndex((m) => m.id === id);
     if (index >= 0) {
       this.modulations.splice(index, 1);
     }
@@ -362,10 +396,15 @@ export class ParticleSystem {
     this.featureOverrides.set(key, value);
   }
 
-  private getFeatureValue(param: string, emitterId: string): number | undefined {
+  private getFeatureValue(
+    param: string,
+    emitterId: string,
+  ): number | undefined {
     // Check specific emitter first, then global
-    return this.featureOverrides.get(`${emitterId}:${param}`)
-        ?? this.featureOverrides.get(`*:${param}`);
+    return (
+      this.featureOverrides.get(`${emitterId}:${param}`) ??
+      this.featureOverrides.get(`*:${param}`)
+    );
   }
 
   // ============================================================================
@@ -378,13 +417,18 @@ export class ParticleSystem {
       if (!emitter.enabled) return;
 
       // Get potentially audio-modified emission rate
-      const baseRate = this.getFeatureValue('emissionRate', id) ?? emitter.emissionRate;
+      const baseRate =
+        this.getFeatureValue("emissionRate", id) ?? emitter.emissionRate;
       const particlesToEmit = baseRate * deltaTime;
 
       // Accumulate fractional particles
-      let accumulated = (this.emissionAccumulators.get(id) || 0) + particlesToEmit;
+      let accumulated =
+        (this.emissionAccumulators.get(id) || 0) + particlesToEmit;
 
-      while (accumulated >= 1 && this.particles.length < this.config.maxParticles) {
+      while (
+        accumulated >= 1 &&
+        this.particles.length < this.config.maxParticles
+      ) {
         this.spawnParticle(emitter);
         accumulated -= 1;
       }
@@ -398,10 +442,13 @@ export class ParticleSystem {
     const windY = Math.sin(windRadians) * this.config.windStrength * 0.001;
 
     // Get potentially audio-modified global values
-    const gravity = this.getFeatureValue('gravity', '*') ?? this.config.gravity;
-    const windStrength = this.getFeatureValue('windStrength', '*') ?? this.config.windStrength;
-    const actualWindX = windX * (windStrength / Math.max(1, this.config.windStrength));
-    const actualWindY = windY * (windStrength / Math.max(1, this.config.windStrength));
+    const gravity = this.getFeatureValue("gravity", "*") ?? this.config.gravity;
+    const windStrength =
+      this.getFeatureValue("windStrength", "*") ?? this.config.windStrength;
+    const actualWindX =
+      windX * (windStrength / Math.max(1, this.config.windStrength));
+    const actualWindY =
+      windY * (windStrength / Math.max(1, this.config.windStrength));
 
     for (let i = this.particles.length - 1; i >= 0; i--) {
       const p = this.particles[i];
@@ -425,7 +472,7 @@ export class ParticleSystem {
       p.vy += actualWindY * deltaTime;
 
       // c. Apply gravity wells
-      this.gravityWells.forEach(well => {
+      this.gravityWells.forEach((well) => {
         if (!well.enabled) return;
 
         const dx = well.x - p.x;
@@ -437,13 +484,13 @@ export class ParticleSystem {
 
           // Apply falloff
           switch (well.falloff) {
-            case 'linear':
-              force *= 1 - (dist / well.radius);
+            case "linear":
+              force *= 1 - dist / well.radius;
               break;
-            case 'quadratic':
-              force *= Math.pow(1 - (dist / well.radius), 2);
+            case "quadratic":
+              force *= (1 - dist / well.radius) ** 2;
               break;
-            case 'constant':
+            case "constant":
               // No falloff
               break;
           }
@@ -457,7 +504,7 @@ export class ParticleSystem {
       });
 
       // d. Apply vortices
-      this.vortices.forEach(vortex => {
+      this.vortices.forEach((vortex) => {
         if (!vortex.enabled) return;
 
         const dx = vortex.x - p.x;
@@ -465,7 +512,7 @@ export class ParticleSystem {
         const dist = Math.sqrt(dx * dx + dy * dy);
 
         if (dist < vortex.radius && dist > 0.001) {
-          const influence = 1 - (dist / vortex.radius);
+          const influence = 1 - dist / vortex.radius;
           const strength = vortex.strength * 0.0001 * influence;
 
           // Perpendicular force (tangential)
@@ -485,7 +532,7 @@ export class ParticleSystem {
       });
 
       // d2. Apply lorenz attractors (strange attractors for chaotic motion)
-      this.lorenzAttractors.forEach(attractor => {
+      this.lorenzAttractors.forEach((attractor) => {
         if (!attractor.enabled) return;
 
         const dx = p.x - attractor.x;
@@ -493,14 +540,14 @@ export class ParticleSystem {
         const dist = Math.sqrt(dx * dx + dy * dy);
 
         if (dist < attractor.radius && dist > 0.001) {
-          const influence = 1 - (dist / attractor.radius);
+          const influence = 1 - dist / attractor.radius;
 
           // Lorenz attractor equations (adapted for 2D)
           // We use particle's local position relative to attractor as x,y
           // and simulate z as a function of distance from center
           const sigma = attractor.sigma;
           const rho = attractor.rho;
-          const beta = attractor.beta;
+          const _beta = attractor.beta;
 
           // Simulate z-coordinate based on distance (creates 3D-like behavior in 2D)
           const pseudoZ = dist * 0.1;
@@ -576,7 +623,10 @@ export class ParticleSystem {
     }
 
     // Particle-to-particle collision detection (after all positions updated)
-    if (this.config.collision?.enabled && this.config.collision.particleCollision) {
+    if (
+      this.config.collision?.enabled &&
+      this.config.collision.particleCollision
+    ) {
       this.handleParticleCollisions();
     }
 
@@ -593,34 +643,40 @@ export class ParticleSystem {
   /**
    * Update sprite animation frame based on age and play mode
    */
-  private updateSpriteFrame(p: Particle, sprite: SpriteConfig, _deltaTime: number): void {
+  private updateSpriteFrame(
+    p: Particle,
+    sprite: SpriteConfig,
+    _deltaTime: number,
+  ): void {
     const totalFrames = sprite.totalFrames;
-    const lifeRatio = p.age / p.lifetime;
+    const _lifeRatio = p.age / p.lifetime;
 
     switch (sprite.playMode) {
-      case 'loop': {
+      case "loop": {
         // Calculate frame based on age and frame rate
-        const framesElapsed = Math.floor(p.age * sprite.frameRate / 60); // Assuming 60fps base
+        const framesElapsed = Math.floor((p.age * sprite.frameRate) / 60); // Assuming 60fps base
         p.spriteIndex = framesElapsed % totalFrames;
         break;
       }
-      case 'once': {
+      case "once": {
         // Play through once, stop at last frame
-        const framesElapsed = Math.floor(p.age * sprite.frameRate / 60);
+        const framesElapsed = Math.floor((p.age * sprite.frameRate) / 60);
         p.spriteIndex = Math.min(framesElapsed, totalFrames - 1);
         break;
       }
-      case 'pingpong': {
+      case "pingpong": {
         // Play forward then backward
-        const framesElapsed = Math.floor(p.age * sprite.frameRate / 60);
+        const framesElapsed = Math.floor((p.age * sprite.frameRate) / 60);
         const cycle = Math.floor(framesElapsed / (totalFrames - 1));
         const frameInCycle = framesElapsed % (totalFrames - 1);
-        p.spriteIndex = cycle % 2 === 0 ? frameInCycle : (totalFrames - 1 - frameInCycle);
+        p.spriteIndex =
+          cycle % 2 === 0 ? frameInCycle : totalFrames - 1 - frameInCycle;
         break;
       }
-      case 'random': {
+      case "random": {
         // Frame already set randomly at spawn, but can also change over time
-        if (this.rng.bool(0.1)) { // 10% chance per frame to change
+        if (this.rng.bool(0.1)) {
+          // 10% chance per frame to change
           p.spriteIndex = this.rng.int(0, totalFrames - 1);
         }
         break;
@@ -646,7 +702,7 @@ export class ParticleSystem {
       if (!this.collisionGrid.has(key)) {
         this.collisionGrid.set(key, []);
       }
-      this.collisionGrid.get(key)!.push(p);
+      this.collisionGrid.get(key)?.push(p);
     }
 
     // Check collisions within neighboring cells
@@ -672,7 +728,8 @@ export class ParticleSystem {
 
             // Calculate collision distance
             const radiusP = (p.size / 1000) * collision.particleCollisionRadius;
-            const radiusO = (other.size / 1000) * collision.particleCollisionRadius;
+            const radiusO =
+              (other.size / 1000) * collision.particleCollisionRadius;
             const minDist = radiusP + radiusO;
 
             const dx2 = other.x - p.x;
@@ -687,13 +744,14 @@ export class ParticleSystem {
 
               // Response based on collision type
               switch (collision.particleCollisionResponse) {
-                case 'bounce': {
+                case "bounce": {
                   // Elastic collision with damping
                   const dvx = p.vx - other.vx;
                   const dvy = p.vy - other.vy;
                   const dvDotN = dvx * nx + dvy * ny;
 
-                  if (dvDotN > 0) { // Only if moving towards each other
+                  if (dvDotN > 0) {
+                    // Only if moving towards each other
                     const damping = collision.particleCollisionDamping;
                     p.vx -= dvDotN * nx * damping;
                     p.vy -= dvDotN * ny * damping;
@@ -709,7 +767,7 @@ export class ParticleSystem {
                   }
                   break;
                 }
-                case 'absorb': {
+                case "absorb": {
                   // Smaller particle dies, larger grows
                   if (p.size > other.size) {
                     p.size += other.size * 0.1;
@@ -720,7 +778,7 @@ export class ParticleSystem {
                   }
                   break;
                 }
-                case 'explode': {
+                case "explode": {
                   // Both particles die (sub-emitters will trigger)
                   p.age = p.lifetime + 1;
                   other.age = other.lifetime + 1;
@@ -752,7 +810,7 @@ export class ParticleSystem {
       if (collision.floorEnabled && p.y > collision.floorY) {
         p.y = collision.floorY;
         p.vy = -p.vy * bounciness;
-        p.vx *= (1 - friction);
+        p.vx *= 1 - friction;
         p.collisionCount++;
       }
 
@@ -760,7 +818,7 @@ export class ParticleSystem {
       if (collision.ceilingEnabled && p.y < collision.ceilingY) {
         p.y = collision.ceilingY;
         p.vy = -p.vy * bounciness;
-        p.vx *= (1 - friction);
+        p.vx *= 1 - friction;
         p.collisionCount++;
       }
 
@@ -769,13 +827,13 @@ export class ParticleSystem {
         if (p.x < 0) {
           p.x = 0;
           p.vx = -p.vx * bounciness;
-          p.vy *= (1 - friction);
+          p.vy *= 1 - friction;
           p.collisionCount++;
         }
         if (p.x > 1) {
           p.x = 1;
           p.vx = -p.vx * bounciness;
-          p.vy *= (1 - friction);
+          p.vy *= 1 - friction;
           p.collisionCount++;
         }
       }
@@ -789,7 +847,8 @@ export class ParticleSystem {
     const spawnPos = this.getEmitterSpawnPosition(emitter);
 
     // Use spline-provided direction if available, otherwise use emitter direction
-    const baseDirection = spawnPos.direction !== undefined ? spawnPos.direction : emitter.direction;
+    const baseDirection =
+      spawnPos.direction !== undefined ? spawnPos.direction : emitter.direction;
 
     // Calculate emission direction with spread (using seeded RNG)
     const spreadRad = (emitter.spread * Math.PI) / 180;
@@ -801,16 +860,22 @@ export class ParticleSystem {
     const speedNormalized = speed * 0.001;
 
     // Calculate size with variance (using seeded RNG)
-    const size = Math.max(1, this.rng.variance(emitter.size, emitter.sizeVariance));
+    const size = Math.max(
+      1,
+      this.rng.variance(emitter.size, emitter.sizeVariance),
+    );
 
     // Calculate lifetime with variance (using seeded RNG)
-    const lifetime = Math.max(1, this.rng.variance(emitter.particleLifetime, emitter.lifetimeVariance));
+    const lifetime = Math.max(
+      1,
+      this.rng.variance(emitter.particleLifetime, emitter.lifetimeVariance),
+    );
 
     // Calculate initial rotation and angular velocity
     let rotation = 0;
     let angularVelocity = 0;
     const sprite = emitter.sprite;
-    if (sprite && sprite.rotationEnabled) {
+    if (sprite?.rotationEnabled) {
       rotation = this.rng.angle(); // Random initial rotation (seeded)
       const rotSpeed = sprite.rotationSpeed * (Math.PI / 180); // Convert to radians
       const rotVariance = sprite.rotationSpeedVariance * (Math.PI / 180);
@@ -818,13 +883,13 @@ export class ParticleSystem {
     }
 
     // Align to velocity if configured
-    if (sprite && sprite.alignToVelocity) {
+    if (sprite?.alignToVelocity) {
       rotation = angle;
     }
 
     // Calculate sprite frame for animated sprites (using seeded RNG)
     let spriteIndex = 0;
-    if (sprite && sprite.isSheet && sprite.playMode === 'random') {
+    if (sprite?.isSheet && sprite.playMode === "random") {
       spriteIndex = this.rng.int(0, sprite.totalFrames - 1);
     }
 
@@ -879,7 +944,7 @@ export class ParticleSystem {
         rotation,
         angularVelocity,
         spriteIndex,
-        collisionCount: 0
+        collisionCount: 0,
       };
     }
 
@@ -892,14 +957,18 @@ export class ParticleSystem {
    * DETERMINISM: Uses seeded RNG (this.rng) for all randomness
    * Returns position and optionally a direction override for spline emission
    */
-  private getEmitterSpawnPosition(emitter: EmitterConfig): { x: number; y: number; direction?: number } {
-    const shape = emitter.shape || 'point';
+  private getEmitterSpawnPosition(emitter: EmitterConfig): {
+    x: number;
+    y: number;
+    direction?: number;
+  } {
+    const shape = emitter.shape || "point";
 
     switch (shape) {
-      case 'point':
+      case "point":
         return { x: emitter.x, y: emitter.y };
 
-      case 'line': {
+      case "line": {
         // Line from emitter position extending in direction
         const t = this.rng.next();
         const halfWidth = emitter.shapeWidth / 2;
@@ -909,18 +978,18 @@ export class ParticleSystem {
         const perpY = Math.cos(dirRad);
         return {
           x: emitter.x + perpX * (t - 0.5) * halfWidth * 2,
-          y: emitter.y + perpY * (t - 0.5) * halfWidth * 2
+          y: emitter.y + perpY * (t - 0.5) * halfWidth * 2,
         };
       }
 
-      case 'circle': {
+      case "circle": {
         const radius = emitter.shapeRadius;
         if (emitter.emitFromEdge) {
           // Emit from edge only
           const angle = this.rng.angle();
           return {
             x: emitter.x + Math.cos(angle) * radius,
-            y: emitter.y + Math.sin(angle) * radius
+            y: emitter.y + Math.sin(angle) * radius,
           };
         } else {
           // Emit from filled circle (uniform distribution)
@@ -928,25 +997,28 @@ export class ParticleSystem {
           const r = radius * Math.sqrt(this.rng.next()); // sqrt for uniform area distribution
           return {
             x: emitter.x + Math.cos(angle) * r,
-            y: emitter.y + Math.sin(angle) * r
+            y: emitter.y + Math.sin(angle) * r,
           };
         }
       }
 
-      case 'ring': {
+      case "ring": {
         // Donut shape - emit between inner and outer radius
         const innerR = emitter.shapeInnerRadius;
         const outerR = emitter.shapeRadius;
         const angle = this.rng.angle();
         // Uniform distribution in ring area
-        const r = Math.sqrt(this.rng.next() * (outerR * outerR - innerR * innerR) + innerR * innerR);
+        const r = Math.sqrt(
+          this.rng.next() * (outerR * outerR - innerR * innerR) +
+            innerR * innerR,
+        );
         return {
           x: emitter.x + Math.cos(angle) * r,
-          y: emitter.y + Math.sin(angle) * r
+          y: emitter.y + Math.sin(angle) * r,
         };
       }
 
-      case 'box': {
+      case "box": {
         const halfW = emitter.shapeWidth / 2;
         const halfH = emitter.shapeHeight / 2;
         if (emitter.emitFromEdge) {
@@ -958,24 +1030,39 @@ export class ParticleSystem {
             return { x: emitter.x - halfW + t, y: emitter.y - halfH };
           } else if (t < emitter.shapeWidth + emitter.shapeHeight) {
             // Right edge
-            return { x: emitter.x + halfW, y: emitter.y - halfH + (t - emitter.shapeWidth) };
+            return {
+              x: emitter.x + halfW,
+              y: emitter.y - halfH + (t - emitter.shapeWidth),
+            };
           } else if (t < 2 * emitter.shapeWidth + emitter.shapeHeight) {
             // Bottom edge
-            return { x: emitter.x + halfW - (t - emitter.shapeWidth - emitter.shapeHeight), y: emitter.y + halfH };
+            return {
+              x:
+                emitter.x +
+                halfW -
+                (t - emitter.shapeWidth - emitter.shapeHeight),
+              y: emitter.y + halfH,
+            };
           } else {
             // Left edge
-            return { x: emitter.x - halfW, y: emitter.y + halfH - (t - 2 * emitter.shapeWidth - emitter.shapeHeight) };
+            return {
+              x: emitter.x - halfW,
+              y:
+                emitter.y +
+                halfH -
+                (t - 2 * emitter.shapeWidth - emitter.shapeHeight),
+            };
           }
         } else {
           // Emit from filled box
           return {
             x: emitter.x + (this.rng.next() - 0.5) * emitter.shapeWidth,
-            y: emitter.y + (this.rng.next() - 0.5) * emitter.shapeHeight
+            y: emitter.y + (this.rng.next() - 0.5) * emitter.shapeHeight,
           };
         }
       }
 
-      case 'sphere': {
+      case "sphere": {
         // 3D sphere projected to 2D - use rejection sampling for uniform distribution
         const radius = emitter.shapeRadius;
         if (emitter.emitFromEdge) {
@@ -984,7 +1071,7 @@ export class ParticleSystem {
           const phi = Math.acos(2 * this.rng.next() - 1);
           return {
             x: emitter.x + Math.sin(phi) * Math.cos(theta) * radius,
-            y: emitter.y + Math.sin(phi) * Math.sin(theta) * radius
+            y: emitter.y + Math.sin(phi) * Math.sin(theta) * radius,
             // z would be: Math.cos(phi) * radius
           };
         } else {
@@ -997,32 +1084,32 @@ export class ParticleSystem {
           } while (x * x + y * y + z * z > 1);
           return {
             x: emitter.x + x * radius,
-            y: emitter.y + y * radius
+            y: emitter.y + y * radius,
           };
         }
       }
 
-      case 'spline': {
+      case "spline": {
         // Emit along a spline path
         return this.getSplineEmitPosition(emitter);
       }
 
-      case 'depth-map': {
+      case "depth-map": {
         // Emit from depth map values
         return this.getDepthMapEmitPosition(emitter);
       }
 
-      case 'mask': {
+      case "mask": {
         // Emit from mask/matte
         return this.getMaskEmitPosition(emitter);
       }
 
-      case 'cone': {
+      case "cone": {
         // Emit from cone volume
         // Cone opens along Y axis from emitter position
-        const coneAngle = ((emitter as any).coneAngle ?? 45) * Math.PI / 180;
-        const coneRadius = ((emitter as any).coneRadius ?? 0.1);
-        const coneLength = ((emitter as any).coneLength ?? 0.2);
+        const coneAngle = (((emitter as any).coneAngle ?? 45) * Math.PI) / 180;
+        const coneRadius = (emitter as any).coneRadius ?? 0.1;
+        const coneLength = (emitter as any).coneLength ?? 0.2;
 
         // Random point in cone
         const t = this.rng.next(); // 0-1 along cone length
@@ -1043,16 +1130,16 @@ export class ParticleSystem {
 
         return {
           x: emitter.x + localX * cosDir - localY * sinDir,
-          y: emitter.y + localX * sinDir + localY * cosDir
+          y: emitter.y + localX * sinDir + localY * cosDir,
         };
       }
 
-      case 'image': {
+      case "image": {
         // Emit from non-transparent pixels of a layer
         return this.getImageEmitPosition(emitter);
       }
 
-      case 'depthEdge': {
+      case "depthEdge": {
         // Emit from depth discontinuities (silhouette edges)
         return this.getDepthEdgeEmitPosition(emitter);
       }
@@ -1067,7 +1154,11 @@ export class ParticleSystem {
    * Returns position and optionally modifies emission direction
    * DETERMINISM: Uses seeded RNG (this.rng) for random positions
    */
-  private getSplineEmitPosition(emitter: EmitterConfig): { x: number; y: number; direction?: number } {
+  private getSplineEmitPosition(emitter: EmitterConfig): {
+    x: number;
+    y: number;
+    direction?: number;
+  } {
     const splinePath = emitter.splinePath;
 
     // Fall back to point emission if no spline path configured or no provider
@@ -1079,22 +1170,22 @@ export class ParticleSystem {
     let t: number;
 
     switch (splinePath.emitMode) {
-      case 'start':
+      case "start":
         // Emit near the start of the path
         t = splinePath.parameter * this.rng.next() * 0.1; // 0-10% of path
         break;
 
-      case 'end':
+      case "end":
         // Emit near the end of the path
-        t = 1 - (splinePath.parameter * this.rng.next() * 0.1); // 90-100% of path
+        t = 1 - splinePath.parameter * this.rng.next() * 0.1; // 90-100% of path
         break;
 
-      case 'random':
+      case "random":
         // Emit at random position along path
         t = this.rng.next();
         break;
 
-      case 'uniform':
+      case "uniform": {
         // Emit at evenly spaced intervals
         // Uses parameter as spacing interval (0-1 range)
         const interval = Math.max(0.01, splinePath.parameter);
@@ -1102,8 +1193,9 @@ export class ParticleSystem {
         const slot = this.rng.int(0, numSlots - 1);
         t = slot * interval;
         break;
+      }
 
-      case 'sequential':
+      case "sequential": {
         // Emit sequentially along path, advancing each emission
         // Uses parameter as speed (how much t advances per emission)
         const currentT = this.sequentialEmitT.get(emitter.id) ?? 0;
@@ -1115,6 +1207,7 @@ export class ParticleSystem {
         if (nextT > 1) nextT = nextT - 1;
         this.sequentialEmitT.set(emitter.id, nextT);
         break;
+      }
 
       default:
         t = this.rng.next();
@@ -1124,7 +1217,11 @@ export class ParticleSystem {
     t = Math.max(0, Math.min(1, t));
 
     // Query spline for position and tangent
-    const result = this.splineProvider(splinePath.layerId, t, this.currentFrame);
+    const result = this.splineProvider(
+      splinePath.layerId,
+      t,
+      this.currentFrame,
+    );
 
     if (!result) {
       // Spline not found, fall back to point emission
@@ -1138,7 +1235,9 @@ export class ParticleSystem {
     // Apply perpendicular offset if specified
     if (splinePath.offset !== 0) {
       // Calculate perpendicular direction from tangent
-      const tangentLength = Math.sqrt(result.tangent.x ** 2 + result.tangent.y ** 2);
+      const tangentLength = Math.sqrt(
+        result.tangent.x ** 2 + result.tangent.y ** 2,
+      );
       if (tangentLength > 0.0001) {
         const perpX = -result.tangent.y / tangentLength;
         const perpY = result.tangent.x / tangentLength;
@@ -1151,7 +1250,8 @@ export class ParticleSystem {
     let direction: number | undefined;
     if (splinePath.alignToPath) {
       // Calculate angle from tangent
-      const tangentAngle = Math.atan2(result.tangent.y, result.tangent.x) * (180 / Math.PI);
+      const tangentAngle =
+        Math.atan2(result.tangent.y, result.tangent.x) * (180 / Math.PI);
 
       if (splinePath.bidirectional && this.rng.bool(0.5)) {
         // Emit in opposite direction
@@ -1172,7 +1272,10 @@ export class ParticleSystem {
    * Emits particles from positions where depth values fall within the configured range
    * Uses cached emission points for performance
    */
-  private getDepthMapEmitPosition(emitter: EmitterConfig): { x: number; y: number } {
+  private getDepthMapEmitPosition(emitter: EmitterConfig): {
+    x: number;
+    y: number;
+  } {
     const config = (emitter as any).depthMapEmission;
 
     // Fall back to point emission if no depth map config
@@ -1205,7 +1308,9 @@ export class ParticleSystem {
   /**
    * Sample valid emission points from a depth map
    */
-  private sampleDepthMapEmissionPoints(config: any): Array<{ x: number; y: number; depth: number }> {
+  private sampleDepthMapEmissionPoints(
+    config: any,
+  ): Array<{ x: number; y: number; depth: number }> {
     const points: Array<{ x: number; y: number; depth: number }> = [];
 
     // Try to get the depth map image data from the layer provider
@@ -1219,7 +1324,7 @@ export class ParticleSystem {
             points.push({
               x: (x / gridSize - 0.5) * 500,
               y: (y / gridSize - 0.5) * 500,
-              depth
+              depth,
             });
           }
         }
@@ -1228,7 +1333,10 @@ export class ParticleSystem {
     }
 
     // Get actual depth map data
-    const depthData = this.depthMapProvider(config.sourceLayerId, this.currentFrame);
+    const depthData = this.depthMapProvider(
+      config.sourceLayerId,
+      this.currentFrame,
+    );
     if (!depthData) {
       return points;
     }
@@ -1241,7 +1349,7 @@ export class ParticleSystem {
         let depthValue = depthData.data[idx] / 255; // Normalize to 0-1
 
         // Handle depth mode (white=near or black=near)
-        if (config.depthMode === 'near-black') {
+        if (config.depthMode === "near-black") {
           depthValue = 1 - depthValue;
         }
 
@@ -1250,7 +1358,7 @@ export class ParticleSystem {
           points.push({
             x: x - depthData.width / 2,
             y: y - depthData.height / 2,
-            depth: depthValue
+            depth: depthValue,
           });
         }
       }
@@ -1263,7 +1371,10 @@ export class ParticleSystem {
    * Get emission position from mask/matte
    * Emits particles from bright areas of the mask
    */
-  private getMaskEmitPosition(emitter: EmitterConfig): { x: number; y: number } {
+  private getMaskEmitPosition(emitter: EmitterConfig): {
+    x: number;
+    y: number;
+  } {
     const config = (emitter as any).maskEmission;
 
     // Fall back to point emission if no mask config
@@ -1296,7 +1407,9 @@ export class ParticleSystem {
   /**
    * Sample valid emission points from a mask
    */
-  private sampleMaskEmissionPoints(config: any): Array<{ x: number; y: number }> {
+  private sampleMaskEmissionPoints(
+    config: any,
+  ): Array<{ x: number; y: number }> {
     const points: Array<{ x: number; y: number }> = [];
 
     // Try to get the mask image data from the layer provider
@@ -1312,10 +1425,16 @@ export class ParticleSystem {
     }
 
     // Determine which channel to sample
-    const channelIdx = config.channel === 'alpha' ? 3 :
-                       config.channel === 'red' ? 0 :
-                       config.channel === 'green' ? 1 :
-                       config.channel === 'blue' ? 2 : -1; // luminance
+    const channelIdx =
+      config.channel === "alpha"
+        ? 3
+        : config.channel === "red"
+          ? 0
+          : config.channel === "green"
+            ? 1
+            : config.channel === "blue"
+              ? 2
+              : -1; // luminance
 
     const sampleRate = Math.max(1, config.sampleRate || 1);
 
@@ -1326,9 +1445,11 @@ export class ParticleSystem {
         let value: number;
         if (channelIdx === -1) {
           // Luminance: weighted sum of RGB
-          value = (maskData.data[idx] * 0.299 +
-                   maskData.data[idx + 1] * 0.587 +
-                   maskData.data[idx + 2] * 0.114) / 255;
+          value =
+            (maskData.data[idx] * 0.299 +
+              maskData.data[idx + 1] * 0.587 +
+              maskData.data[idx + 2] * 0.114) /
+            255;
         } else {
           value = maskData.data[idx + channelIdx] / 255;
         }
@@ -1344,7 +1465,7 @@ export class ParticleSystem {
           if (this.rng.next() < config.density) {
             points.push({
               x: x - maskData.width / 2,
-              y: y - maskData.height / 2
+              y: y - maskData.height / 2,
             });
           }
         }
@@ -1355,23 +1476,33 @@ export class ParticleSystem {
   }
 
   // Cache for image-based emission points
-  private imageEmissionCache: Map<string, Array<{ x: number; y: number; depth?: number }>> = new Map();
+  private imageEmissionCache: Map<
+    string,
+    Array<{ x: number; y: number; depth?: number }>
+  > = new Map();
 
   // Provider functions for image data (set by the engine)
-  private depthMapProvider?: (layerId: string, frame: number) => ImageData | null;
+  private depthMapProvider?: (
+    layerId: string,
+    frame: number,
+  ) => ImageData | null;
   private maskProvider?: (layerId: string, frame: number) => ImageData | null;
 
   /**
    * Set the depth map provider function
    */
-  setDepthMapProvider(provider: (layerId: string, frame: number) => ImageData | null): void {
+  setDepthMapProvider(
+    provider: (layerId: string, frame: number) => ImageData | null,
+  ): void {
     this.depthMapProvider = provider;
   }
 
   /**
    * Set the mask provider function
    */
-  setMaskProvider(provider: (layerId: string, frame: number) => ImageData | null): void {
+  setMaskProvider(
+    provider: (layerId: string, frame: number) => ImageData | null,
+  ): void {
     this.maskProvider = provider;
   }
 
@@ -1386,7 +1517,10 @@ export class ParticleSystem {
    * Get emission position from image layer (non-transparent pixels)
    * Uses imageSourceLayerId and emissionThreshold from emitter config
    */
-  private getImageEmitPosition(emitter: EmitterConfig): { x: number; y: number } {
+  private getImageEmitPosition(emitter: EmitterConfig): {
+    x: number;
+    y: number;
+  } {
     const sourceLayerId = (emitter as any).imageSourceLayerId;
     const threshold = (emitter as any).emissionThreshold ?? 0.1;
 
@@ -1422,7 +1556,7 @@ export class ParticleSystem {
    */
   private sampleImageEmissionPoints(
     sourceLayerId: string,
-    threshold: number
+    threshold: number,
   ): Array<{ x: number; y: number }> {
     const points: Array<{ x: number; y: number }> = [];
 
@@ -1438,7 +1572,10 @@ export class ParticleSystem {
     }
 
     // Sample every Nth pixel for performance (adjust based on image size)
-    const sampleRate = Math.max(1, Math.floor(Math.sqrt(imageData.width * imageData.height) / 100));
+    const sampleRate = Math.max(
+      1,
+      Math.floor(Math.sqrt(imageData.width * imageData.height) / 100),
+    );
 
     for (let y = 0; y < imageData.height; y += sampleRate) {
       for (let x = 0; x < imageData.width; x += sampleRate) {
@@ -1448,8 +1585,8 @@ export class ParticleSystem {
         // Check if pixel is above threshold
         if (alpha > threshold) {
           points.push({
-            x: (x / imageData.width - 0.5),  // Normalize to -0.5 to 0.5
-            y: (y / imageData.height - 0.5)
+            x: x / imageData.width - 0.5, // Normalize to -0.5 to 0.5
+            y: y / imageData.height - 0.5,
           });
         }
       }
@@ -1462,7 +1599,10 @@ export class ParticleSystem {
    * Get emission position from depth edges (silhouette/discontinuity detection)
    * Uses depthSourceLayerId, depthEdgeThreshold, depthScale from emitter config
    */
-  private getDepthEdgeEmitPosition(emitter: EmitterConfig): { x: number; y: number } {
+  private getDepthEdgeEmitPosition(emitter: EmitterConfig): {
+    x: number;
+    y: number;
+  } {
     const sourceLayerId = (emitter as any).depthSourceLayerId;
     const threshold = (emitter as any).depthEdgeThreshold ?? 0.05;
 
@@ -1477,7 +1617,10 @@ export class ParticleSystem {
 
     // If no cache, regenerate points
     if (!emissionPoints) {
-      emissionPoints = this.sampleDepthEdgeEmissionPoints(sourceLayerId, threshold);
+      emissionPoints = this.sampleDepthEdgeEmissionPoints(
+        sourceLayerId,
+        threshold,
+      );
       this.imageEmissionCache.set(cacheKey, emissionPoints);
     }
 
@@ -1499,7 +1642,7 @@ export class ParticleSystem {
    */
   private sampleDepthEdgeEmissionPoints(
     sourceLayerId: string,
-    threshold: number
+    threshold: number,
   ): Array<{ x: number; y: number; depth?: number }> {
     const points: Array<{ x: number; y: number; depth?: number }> = [];
 
@@ -1540,9 +1683,9 @@ export class ParticleSystem {
         // Check if gradient exceeds threshold (edge detected)
         if (gradient > threshold) {
           points.push({
-            x: (x / width - 0.5),   // Normalize to -0.5 to 0.5
-            y: (y / height - 0.5),
-            depth: d               // Store depth for potential Z-axis use
+            x: x / width - 0.5, // Normalize to -0.5 to 0.5
+            y: y / height - 0.5,
+            depth: d, // Store depth for potential Z-axis use
           });
         }
       }
@@ -1557,7 +1700,12 @@ export class ParticleSystem {
     const px = Math.floor(p.x * this.boundaryMask.width);
     const py = Math.floor(p.y * this.boundaryMask.height);
 
-    if (px < 0 || px >= this.boundaryMask.width || py < 0 || py >= this.boundaryMask.height) {
+    if (
+      px < 0 ||
+      px >= this.boundaryMask.width ||
+      py < 0 ||
+      py >= this.boundaryMask.height
+    ) {
       return;
     }
 
@@ -1567,7 +1715,7 @@ export class ParticleSystem {
     // If mask is black (0), particle is in restricted area
     if (maskValue < 128) {
       switch (this.config.boundaryBehavior) {
-        case 'bounce':
+        case "bounce":
           // Simple bounce - reverse velocity
           p.vx *= -0.8;
           p.vy *= -0.8;
@@ -1575,10 +1723,10 @@ export class ParticleSystem {
           p.x = p.prevX;
           p.y = p.prevY;
           break;
-        case 'kill':
+        case "kill":
           p.age = p.lifetime + 1;
           break;
-        case 'wrap':
+        case "wrap":
           // Find valid position (simplified) - DETERMINISM: use seeded RNG
           p.x = this.rng.next();
           p.y = this.rng.next();
@@ -1589,18 +1737,30 @@ export class ParticleSystem {
 
   private handleCanvasBoundary(p: Particle): void {
     switch (this.config.boundaryBehavior) {
-      case 'bounce':
-        if (p.x < 0) { p.x = 0; p.vx *= -0.8; }
-        if (p.x > 1) { p.x = 1; p.vx *= -0.8; }
-        if (p.y < 0) { p.y = 0; p.vy *= -0.8; }
-        if (p.y > 1) { p.y = 1; p.vy *= -0.8; }
+      case "bounce":
+        if (p.x < 0) {
+          p.x = 0;
+          p.vx *= -0.8;
+        }
+        if (p.x > 1) {
+          p.x = 1;
+          p.vx *= -0.8;
+        }
+        if (p.y < 0) {
+          p.y = 0;
+          p.vy *= -0.8;
+        }
+        if (p.y > 1) {
+          p.y = 1;
+          p.vy *= -0.8;
+        }
         break;
-      case 'kill':
+      case "kill":
         if (p.x < -0.1 || p.x > 1.1 || p.y < -0.1 || p.y > 1.1) {
           p.age = p.lifetime + 1;
         }
         break;
-      case 'wrap':
+      case "wrap":
         if (p.x < 0) p.x += 1;
         if (p.x > 1) p.x -= 1;
         if (p.y < 0) p.y += 1;
@@ -1614,19 +1774,20 @@ export class ParticleSystem {
 
     for (const mod of this.modulations) {
       // Check if modulation applies to this particle's emitter
-      if (mod.emitterId !== '*' && mod.emitterId !== p.emitterId) continue;
+      if (mod.emitterId !== "*" && mod.emitterId !== p.emitterId) continue;
 
       // Get eased value
       const easingKey = mod.easing as keyof typeof EASING_PRESETS;
       const easing = EASING_PRESETS[easingKey] || EASING_PRESETS.linear;
       const easedRatio = applyEasing(lifeRatio, easing);
-      const value = mod.startValue + (mod.endValue - mod.startValue) * easedRatio;
+      const value =
+        mod.startValue + (mod.endValue - mod.startValue) * easedRatio;
 
       switch (mod.property) {
-        case 'size':
+        case "size":
           p.size = p.baseSize * value;
           break;
-        case 'speed':
+        case "speed": {
           // Modulate current velocity magnitude
           const currentSpeed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
           if (currentSpeed > 0.0001) {
@@ -1635,16 +1796,17 @@ export class ParticleSystem {
             p.vy *= scale;
           }
           break;
-        case 'opacity':
+        }
+        case "opacity":
           p.color[3] = Math.max(0, Math.min(255, p.baseColor[3] * value));
           break;
-        case 'colorR':
+        case "colorR":
           p.color[0] = Math.max(0, Math.min(255, value * 255));
           break;
-        case 'colorG':
+        case "colorG":
           p.color[1] = Math.max(0, Math.min(255, value * 255));
           break;
-        case 'colorB':
+        case "colorB":
           p.color[2] = Math.max(0, Math.min(255, value * 255));
           break;
       }
@@ -1659,7 +1821,7 @@ export class ParticleSystem {
     const turbFields = this.config.turbulenceFields || [];
     for (const turb of turbFields) {
       if (!turb.enabled) continue;
-      const nx = p.x * turb.scale * 1000;  // Scale up for noise variation
+      const nx = p.x * turb.scale * 1000; // Scale up for noise variation
       const ny = p.y * turb.scale * 1000;
       const nt = this.noiseTime * turb.evolutionSpeed;
       const angle = this.noise2D(nx + nt, ny + nt) * Math.PI * 2;
@@ -1675,13 +1837,15 @@ export class ParticleSystem {
   }
 
   updateTurbulence(id: string, updates: Partial<TurbulenceConfig>): void {
-    const turb = this.config.turbulenceFields?.find(t => t.id === id);
+    const turb = this.config.turbulenceFields?.find((t) => t.id === id);
     if (turb) Object.assign(turb, updates);
   }
 
   removeTurbulence(id: string): void {
     if (this.config.turbulenceFields) {
-      this.config.turbulenceFields = this.config.turbulenceFields.filter(t => t.id !== id);
+      this.config.turbulenceFields = this.config.turbulenceFields.filter(
+        (t) => t.id !== id,
+      );
     }
   }
 
@@ -1701,13 +1865,19 @@ export class ParticleSystem {
     const subEmitters = this.config.subEmitters || [];
     for (const sub of subEmitters) {
       if (!sub.enabled) continue;
-      if (sub.parentEmitterId !== '*' && sub.parentEmitterId !== deadParticle.emitterId) continue;
+      if (
+        sub.parentEmitterId !== "*" &&
+        sub.parentEmitterId !== deadParticle.emitterId
+      )
+        continue;
 
       for (let i = 0; i < sub.spawnCount; i++) {
-        const angle = (this.rng.next() - 0.5) * sub.spread * Math.PI / 180;
+        const angle = ((this.rng.next() - 0.5) * sub.spread * Math.PI) / 180;
         const baseAngle = Math.atan2(deadParticle.vy, deadParticle.vx);
         const emitAngle = baseAngle + angle;
-        const inheritedSpeed = Math.sqrt(deadParticle.vx ** 2 + deadParticle.vy ** 2) * sub.inheritVelocity;
+        const inheritedSpeed =
+          Math.sqrt(deadParticle.vx ** 2 + deadParticle.vy ** 2) *
+          sub.inheritVelocity;
         const totalSpeed = sub.speed * 0.001 + inheritedSpeed;
 
         const particle: Particle = {
@@ -1716,11 +1886,17 @@ export class ParticleSystem {
           y: deadParticle.y,
           prevX: deadParticle.x,
           prevY: deadParticle.y,
-          vx: Math.cos(emitAngle) * totalSpeed + deadParticle.vx * sub.inheritVelocity,
-          vy: Math.sin(emitAngle) * totalSpeed + deadParticle.vy * sub.inheritVelocity,
+          vx:
+            Math.cos(emitAngle) * totalSpeed +
+            deadParticle.vx * sub.inheritVelocity,
+          vy:
+            Math.sin(emitAngle) * totalSpeed +
+            deadParticle.vy * sub.inheritVelocity,
           age: 0,
           lifetime: sub.lifetime * (1 + (this.rng.next() - 0.5) * 0.2),
-          size: sub.size * (1 + (this.rng.next() - 0.5) * sub.sizeVariance / sub.size),
+          size:
+            sub.size *
+            (1 + ((this.rng.next() - 0.5) * sub.sizeVariance) / sub.size),
           baseSize: sub.size,
           color: [...sub.color, 255] as [number, number, number, number],
           baseColor: [...sub.color, 255] as [number, number, number, number],
@@ -1729,7 +1905,7 @@ export class ParticleSystem {
           rotation: deadParticle.rotation, // Inherit parent rotation
           angularVelocity: 0,
           spriteIndex: 0,
-          collisionCount: 0
+          collisionCount: 0,
         };
 
         this.particles.push(particle);
@@ -1744,13 +1920,15 @@ export class ParticleSystem {
   }
 
   updateSubEmitter(id: string, updates: Partial<SubEmitterConfig>): void {
-    const sub = this.config.subEmitters?.find(s => s.id === id);
+    const sub = this.config.subEmitters?.find((s) => s.id === id);
     if (sub) Object.assign(sub, updates);
   }
 
   removeSubEmitter(id: string): void {
     if (this.config.subEmitters) {
-      this.config.subEmitters = this.config.subEmitters.filter(s => s.id !== id);
+      this.config.subEmitters = this.config.subEmitters.filter(
+        (s) => s.id !== id,
+      );
     }
   }
 
@@ -1787,27 +1965,13 @@ export class ParticleSystem {
     const cellSize = this.renderOptions.connections?.maxDistance || 100;
     const cells = new Map<string, Particle[]>();
     for (const p of this.particles) {
-      const cellX = Math.floor(p.x * 1000 / cellSize);  // Scale normalized coords
-      const cellY = Math.floor(p.y * 1000 / cellSize);
+      const cellX = Math.floor((p.x * 1000) / cellSize); // Scale normalized coords
+      const cellY = Math.floor((p.y * 1000) / cellSize);
       const key = `${cellX},${cellY}`;
       if (!cells.has(key)) cells.set(key, []);
-      cells.get(key)!.push(p);
+      cells.get(key)?.push(p);
     }
     return { cellSize, cells };
-  }
-
-  private getNeighborParticles(p: Particle, grid: SpatialGrid): Particle[] {
-    const cellX = Math.floor(p.x * 1000 / grid.cellSize);
-    const cellY = Math.floor(p.y * 1000 / grid.cellSize);
-    const neighbors: Particle[] = [];
-    for (let dx = -1; dx <= 1; dx++) {
-      for (let dy = -1; dy <= 1; dy++) {
-        const key = `${cellX + dx},${cellY + dy}`;
-        const cell = grid.cells.get(key);
-        if (cell) neighbors.push(...cell);
-      }
-    }
-    return neighbors;
   }
 
   reset(): void {
@@ -1826,11 +1990,15 @@ export class ParticleSystem {
   /**
    * Get particle pool statistics for debugging
    */
-  getPoolStats(): { poolSize: number; maxPoolSize: number; activeParticles: number } {
+  getPoolStats(): {
+    poolSize: number;
+    maxPoolSize: number;
+    activeParticles: number;
+  } {
     return {
       poolSize: this.particlePool.length,
       maxPoolSize: this.poolMaxSize,
-      activeParticles: this.particles.length
+      activeParticles: this.particles.length,
     };
   }
 
@@ -1863,7 +2031,7 @@ export class ParticleSystem {
       readonly rotation: number;
       readonly emitterId: string;
     }[],
-    frameCount: number
+    frameCount: number,
   ): void {
     // Clear existing particles
     this.particles = [];
@@ -1935,7 +2103,7 @@ export class ParticleSystem {
     ctx: CanvasRenderingContext2D,
     width: number,
     height: number,
-    options: RenderOptions = createDefaultRenderOptions()
+    options: RenderOptions = createDefaultRenderOptions(),
   ): void {
     // Cache render options for spatial grid
     this.renderOptions = options;
@@ -1950,14 +2118,21 @@ export class ParticleSystem {
     };
 
     // Build spatial grid for connections
-    const spatialGrid = options.connections?.enabled ? this.buildSpatialGrid() : undefined;
+    const spatialGrid = options.connections?.enabled
+      ? this.buildSpatialGrid()
+      : undefined;
 
     // Delegate to the extracted renderer
     renderParticlesToCanvas(ctx, width, height, context, spatialGrid);
   }
 
   renderToMask(width: number, height: number): ImageData {
-    return renderParticlesToMask(width, height, this.particles, this.renderOptions);
+    return renderParticlesToMask(
+      width,
+      height,
+      this.particles,
+      this.renderOptions,
+    );
   }
 
   // ============================================================================
@@ -1971,7 +2146,7 @@ export class ParticleSystem {
       gravityWells: Array.from(this.gravityWells.values()),
       vortices: Array.from(this.vortices.values()),
       modulations: this.modulations,
-      frameCount: this.frameCount
+      frameCount: this.frameCount,
     };
   }
 

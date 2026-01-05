@@ -24,12 +24,14 @@ self.onmessage = (e) => {
     } catch (error) {
       self.postMessage({
         type: "error",
-        payload: { error: error instanceof Error ? error.message : "Unknown error" }
+        payload: {
+          error: error instanceof Error ? error.message : "Unknown error",
+        },
       });
     }
   }
 };
-function computeHistogram(pixels, width, height) {
+function computeHistogram(pixels, _width, _height) {
   const red = new Array(256).fill(0);
   const green = new Array(256).fill(0);
   const blue = new Array(256).fill(0);
@@ -72,7 +74,7 @@ function computeWaveform(pixels, width, height) {
   return {
     lumaPoints: new Float32Array(points),
     width: sampledWidth,
-    height: 256
+    height: 256,
   };
 }
 function computeVectorscope(pixels, width, height) {
@@ -109,7 +111,7 @@ function calculateVectorscopeTargets() {
     const V = (r - Y) * 0.5;
     return [
       Math.round((U + 0.5) * 255),
-      Math.round((0.5 - V) * 255)
+      Math.round((0.5 - V) * 255),
       // Inverted V for display
     ];
   };
@@ -130,9 +132,9 @@ function calculateVectorscopeTargets() {
     skinLine: [
       [128, 128],
       // Center
-      [175, 95]
+      [175, 95],
       // Toward typical skin tones
-    ]
+    ],
   };
 }
 function computeParade(pixels, width, height) {
@@ -160,17 +162,17 @@ function computeParade(pixels, width, height) {
     red: {
       lumaPoints: new Float32Array(redPoints),
       width: sampledWidth,
-      height: 256
+      height: 256,
     },
     green: {
       lumaPoints: new Float32Array(greenPoints),
       width: sampledWidth,
-      height: 256
+      height: 256,
     },
     blue: {
       lumaPoints: new Float32Array(bluePoints),
       width: sampledWidth,
-      height: 256
-    }
+      height: 256,
+    },
   };
 }

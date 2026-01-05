@@ -271,9 +271,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import { WAN_DURATION_PRESETS, calculateWanFrameCount, isValidWanFrameCount } from '@/config/exportPresets';
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import {
+  isValidWanFrameCount,
+  WAN_DURATION_PRESETS,
+} from "@/config/exportPresets";
+import { useCompositorStore } from "@/stores/compositorStore";
 
 interface CompositionDialogSettings {
   name: string;
@@ -282,7 +285,7 @@ interface CompositionDialogSettings {
   pixelAspectRatio: number;
   fps: number;
   frameCount: number;
-  resolution: 'full' | 'half' | 'third' | 'quarter';
+  resolution: "full" | "half" | "third" | "quarter";
   backgroundColor: string;
   autoResizeToContent: boolean;
   startTimecode: string;
@@ -296,65 +299,67 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: 'close'): void;
-  (e: 'confirm', settings: CompositionDialogSettings): void;
+  (e: "close"): void;
+  (e: "confirm", settings: CompositionDialogSettings): void;
 }>();
 
 const store = useCompositorStore();
 
 // State
-const activeTab = ref<'basic' | 'advanced'>('basic');
-const selectedPreset = ref('custom');
-const selectedDurationPreset = ref<string | number>('custom');
+const _activeTab = ref<"basic" | "advanced">("basic");
+const selectedPreset = ref("custom");
+const selectedDurationPreset = ref<string | number>("custom");
 const lockAspectRatio = ref(false);
 const aspectRatio = ref(16 / 9);
 const previewChanges = ref(false);
 
 const settings = ref<CompositionDialogSettings>({
-  name: 'Main Comp',
+  name: "Main Comp",
   width: 832,
   height: 480,
   pixelAspectRatio: 1,
   fps: 16,
   frameCount: 81,
-  resolution: 'full',
-  backgroundColor: '#000000',
+  resolution: "full",
+  backgroundColor: "#000000",
   autoResizeToContent: true,
-  startTimecode: '00:00:00:00',
+  startTimecode: "00:00:00:00",
   motionBlurEnabled: false,
   shutterAngle: 180,
   shutterPhase: -90,
 });
 
 // Computed
-const frameAspectRatio = computed(() => {
-  const ratio = (settings.value.width / settings.value.height) * settings.value.pixelAspectRatio;
+const _frameAspectRatio = computed(() => {
+  const ratio =
+    (settings.value.width / settings.value.height) *
+    settings.value.pixelAspectRatio;
   // Common ratios
-  if (Math.abs(ratio - 16/9) < 0.01) return '16:9 (1.78)';
-  if (Math.abs(ratio - 4/3) < 0.01) return '4:3 (1.33)';
-  if (Math.abs(ratio - 1) < 0.01) return '1:1 (1.0)';
-  if (Math.abs(ratio - 9/16) < 0.01) return '9:16 (0.56)';
-  if (Math.abs(ratio - 21/9) < 0.01) return '21:9 (2.33)';
+  if (Math.abs(ratio - 16 / 9) < 0.01) return "16:9 (1.78)";
+  if (Math.abs(ratio - 4 / 3) < 0.01) return "4:3 (1.33)";
+  if (Math.abs(ratio - 1) < 0.01) return "1:1 (1.0)";
+  if (Math.abs(ratio - 9 / 16) < 0.01) return "9:16 (0.56)";
+  if (Math.abs(ratio - 21 / 9) < 0.01) return "21:9 (2.33)";
   return `${ratio.toFixed(2)}`;
 });
 
-const durationSeconds = computed(() => {
+const _durationSeconds = computed(() => {
   return settings.value.frameCount / settings.value.fps;
 });
 
-const durationTimecode = ref('00:00:10:00');
+const durationTimecode = ref("00:00:10:00");
 
 // Frame count validation for 4n+1 pattern (Wan/AI models)
-const isValidFrameCount = computed(() => {
+const _isValidFrameCount = computed(() => {
   return isValidWanFrameCount(settings.value.frameCount);
 });
 
-const nearestValidFrameCount = computed(() => {
+const _nearestValidFrameCount = computed(() => {
   const n = Math.round((settings.value.frameCount - 1) / 4);
   return n * 4 + 1;
 });
 
-const resolutionInfo = computed(() => {
+const _resolutionInfo = computed(() => {
   const divisors = { full: 1, half: 2, third: 3, quarter: 4 };
   const d = divisors[settings.value.resolution];
   const w = Math.floor(settings.value.width / d);
@@ -363,34 +368,34 @@ const resolutionInfo = computed(() => {
   return `${w} x ${h}, ${mb} MB per 8bpc frame`;
 });
 
-const isAIPreset = computed(() => {
-  const aiPrefixes = ['sd15_', 'sdxl_', 'wan_', 'wan22_', 'hunyuan_'];
-  return aiPrefixes.some(prefix => selectedPreset.value.startsWith(prefix));
+const _isAIPreset = computed(() => {
+  const aiPrefixes = ["sd15_", "sdxl_", "wan_", "wan22_", "hunyuan_"];
+  return aiPrefixes.some((prefix) => selectedPreset.value.startsWith(prefix));
 });
 
 // Presets
 const presets: Record<string, Partial<CompositionDialogSettings>> = {
-  '1080p30': { width: 1920, height: 1080, fps: 30, frameCount: 300 },
-  '1080p60': { width: 1920, height: 1080, fps: 60, frameCount: 600 },
-  '720p30': { width: 1280, height: 720, fps: 30, frameCount: 300 },
-  '4k30': { width: 3840, height: 2160, fps: 30, frameCount: 300 },
-  'instagram_square': { width: 1080, height: 1080, fps: 30, frameCount: 300 },
-  'instagram_story': { width: 1080, height: 1920, fps: 30, frameCount: 300 },
-  'tiktok': { width: 1080, height: 1920, fps: 30, frameCount: 300 },
-  'youtube_short': { width: 1080, height: 1920, fps: 60, frameCount: 600 },
-  'sd15_512': { width: 512, height: 512, fps: 8, frameCount: 16 },
-  'sd15_768': { width: 768, height: 512, fps: 8, frameCount: 16 },
-  'sdxl_1024': { width: 1024, height: 1024, fps: 8, frameCount: 16 },
-  'wan_480p': { width: 832, height: 480, fps: 16, frameCount: 81 },
-  'wan_720p': { width: 1280, height: 720, fps: 16, frameCount: 81 },
-  'wan22_480p': { width: 832, height: 480, fps: 16, frameCount: 81 },
-  'wan22_720p': { width: 1280, height: 720, fps: 16, frameCount: 81 },
-  'hunyuan_720p': { width: 1280, height: 720, fps: 24, frameCount: 96 },
-  'hunyuan_540p': { width: 960, height: 540, fps: 24, frameCount: 96 },
+  "1080p30": { width: 1920, height: 1080, fps: 30, frameCount: 300 },
+  "1080p60": { width: 1920, height: 1080, fps: 60, frameCount: 600 },
+  "720p30": { width: 1280, height: 720, fps: 30, frameCount: 300 },
+  "4k30": { width: 3840, height: 2160, fps: 30, frameCount: 300 },
+  instagram_square: { width: 1080, height: 1080, fps: 30, frameCount: 300 },
+  instagram_story: { width: 1080, height: 1920, fps: 30, frameCount: 300 },
+  tiktok: { width: 1080, height: 1920, fps: 30, frameCount: 300 },
+  youtube_short: { width: 1080, height: 1920, fps: 60, frameCount: 600 },
+  sd15_512: { width: 512, height: 512, fps: 8, frameCount: 16 },
+  sd15_768: { width: 768, height: 512, fps: 8, frameCount: 16 },
+  sdxl_1024: { width: 1024, height: 1024, fps: 8, frameCount: 16 },
+  wan_480p: { width: 832, height: 480, fps: 16, frameCount: 81 },
+  wan_720p: { width: 1280, height: 720, fps: 16, frameCount: 81 },
+  wan22_480p: { width: 832, height: 480, fps: 16, frameCount: 81 },
+  wan22_720p: { width: 1280, height: 720, fps: 16, frameCount: 81 },
+  hunyuan_720p: { width: 1280, height: 720, fps: 24, frameCount: 96 },
+  hunyuan_540p: { width: 960, height: 540, fps: 24, frameCount: 96 },
 };
 
 // Methods
-function applyPreset() {
+function _applyPreset() {
   const preset = presets[selectedPreset.value];
   if (preset) {
     if (preset.width) settings.value.width = preset.width;
@@ -404,11 +409,11 @@ function applyPreset() {
   }
 }
 
-function applyDurationPreset() {
-  if (selectedDurationPreset.value === 'custom') return;
+function _applyDurationPreset() {
+  if (selectedDurationPreset.value === "custom") return;
 
   const frameCount = Number(selectedDurationPreset.value);
-  const preset = WAN_DURATION_PRESETS.find(p => p.frameCount === frameCount);
+  const preset = WAN_DURATION_PRESETS.find((p) => p.frameCount === frameCount);
 
   if (preset) {
     settings.value.frameCount = preset.frameCount;
@@ -419,39 +424,46 @@ function applyDurationPreset() {
 
 function updateDurationPresetSelection() {
   // Check if current frameCount matches a Wan preset
-  const matchingPreset = WAN_DURATION_PRESETS.find(p => p.frameCount === settings.value.frameCount);
+  const matchingPreset = WAN_DURATION_PRESETS.find(
+    (p) => p.frameCount === settings.value.frameCount,
+  );
   if (matchingPreset && settings.value.fps === 16) {
     selectedDurationPreset.value = matchingPreset.frameCount;
   } else {
-    selectedDurationPreset.value = 'custom';
+    selectedDurationPreset.value = "custom";
   }
 }
 
-function onDimensionChange(changed: 'width' | 'height') {
+function _onDimensionChange(changed: "width" | "height") {
   // Ensure divisible by 8
   settings.value.width = Math.round(settings.value.width / 8) * 8;
   settings.value.height = Math.round(settings.value.height / 8) * 8;
 
   if (lockAspectRatio.value) {
-    if (changed === 'width') {
-      settings.value.height = Math.round((settings.value.width / aspectRatio.value) / 8) * 8;
+    if (changed === "width") {
+      settings.value.height =
+        Math.round(settings.value.width / aspectRatio.value / 8) * 8;
     } else {
-      settings.value.width = Math.round((settings.value.height * aspectRatio.value) / 8) * 8;
+      settings.value.width =
+        Math.round((settings.value.height * aspectRatio.value) / 8) * 8;
     }
   } else {
     aspectRatio.value = settings.value.width / settings.value.height;
   }
 
-  selectedPreset.value = 'custom';
+  selectedPreset.value = "custom";
 }
 
-function parseDuration() {
+function _parseDuration() {
   // Parse timecode format HH:MM:SS:FF
-  const parts = durationTimecode.value.split(':').map(p => parseInt(p) || 0);
+  const parts = durationTimecode.value
+    .split(":")
+    .map((p) => parseInt(p, 10) || 0);
   if (parts.length === 4) {
     const [hours, minutes, seconds, frames] = parts;
     const totalSeconds = hours * 3600 + minutes * 60 + seconds;
-    settings.value.frameCount = Math.round(totalSeconds * settings.value.fps) + frames;
+    settings.value.frameCount =
+      Math.round(totalSeconds * settings.value.fps) + frames;
   } else if (parts.length === 1) {
     // Just frames
     settings.value.frameCount = parts[0];
@@ -470,23 +482,23 @@ function updateDurationTimecode() {
 }
 
 function pad(n: number): string {
-  return n.toString().padStart(2, '0');
+  return n.toString().padStart(2, "0");
 }
 
 function loadCurrentSettings() {
   // Get active composition's name, not project meta name
   const activeComp = store.activeComposition;
   settings.value = {
-    name: activeComp?.name || 'Main Comp',
+    name: activeComp?.name || "Main Comp",
     width: store.width,
     height: store.height,
     pixelAspectRatio: 1,
     fps: store.fps,
     frameCount: store.frameCount,
-    resolution: 'full',
-    backgroundColor: activeComp?.settings.backgroundColor || '#000000',
+    resolution: "full",
+    backgroundColor: activeComp?.settings.backgroundColor || "#000000",
     autoResizeToContent: activeComp?.settings.autoResizeToContent ?? true,
-    startTimecode: '00:00:00:00',
+    startTimecode: "00:00:00:00",
     motionBlurEnabled: false,
     shutterAngle: 180,
     shutterPhase: -90,
@@ -497,44 +509,55 @@ function loadCurrentSettings() {
 }
 
 function cancel() {
-  emit('close');
+  emit("close");
 }
 
 function confirm() {
-  emit('confirm', { ...settings.value });
-  emit('close');
+  emit("confirm", { ...settings.value });
+  emit("close");
 }
 
 // Keyboard handler
 function handleKeydown(e: KeyboardEvent) {
-  if (e.key === 'Escape') {
+  if (e.key === "Escape") {
     cancel();
-  } else if (e.key === 'Enter' && !e.shiftKey) {
+  } else if (e.key === "Enter" && !e.shiftKey) {
     confirm();
   }
 }
 
 // Watch for visibility changes to load current settings
-watch(() => props.visible, (visible) => {
-  if (visible) {
-    loadCurrentSettings();
-  }
-});
+watch(
+  () => props.visible,
+  (visible) => {
+    if (visible) {
+      loadCurrentSettings();
+    }
+  },
+);
 
 // Preview changes
-watch(settings, () => {
-  if (previewChanges.value && props.visible) {
-    // Apply changes temporarily for preview
-    store.resizeComposition(settings.value.width, settings.value.height, settings.value.frameCount);
-  }
-}, { deep: true });
+watch(
+  settings,
+  () => {
+    if (previewChanges.value && props.visible) {
+      // Apply changes temporarily for preview
+      store.resizeComposition(
+        settings.value.width,
+        settings.value.height,
+        settings.value.frameCount,
+      );
+    }
+  },
+  { deep: true },
+);
 
 onMounted(() => {
-  window.addEventListener('keydown', handleKeydown);
+  window.addEventListener("keydown", handleKeydown);
 });
 
 onUnmounted(() => {
-  window.removeEventListener('keydown', handleKeydown);
+  window.removeEventListener("keydown", handleKeydown);
 });
 </script>
 

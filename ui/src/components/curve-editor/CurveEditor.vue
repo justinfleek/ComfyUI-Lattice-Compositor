@@ -218,19 +218,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted, reactive } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import { EASING_PRESETS, getBezierCurvePoint } from '@/services/interpolation';
-import { findNearestSnap } from '@/services/timelineSnap';
-import type { AnimatableProperty, Keyframe, BezierHandle } from '@/types/project';
-import CurveEditorHeader from './CurveEditorHeader.vue';
-import CurveEditorPropertyList from './CurveEditorPropertyList.vue';
-import type { CurveMode, EasingPreset } from './CurveEditorHeader.vue';
-import { useCurveEditorInteraction } from '@/composables/useCurveEditorInteraction';
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue";
+import { EASING_PRESETS } from "@/services/interpolation";
+import { findNearestSnap } from "@/services/timelineSnap";
+import { useCompositorStore } from "@/stores/compositorStore";
+import type { AnimatableProperty, Keyframe } from "@/types/project";
+import type { CurveMode, EasingPreset } from "./CurveEditorHeader.vue";
 
-const emit = defineEmits<{
-  (e: 'close'): void;
-}>();
+const _emit = defineEmits<(e: "close") => void>();
 
 const store = useCompositorStore();
 
@@ -246,7 +241,7 @@ const canvasWidth = ref(400);
 const canvasHeight = ref(200);
 
 // Mode: value graph or speed graph
-const mode = ref<CurveMode>('value');
+const mode = ref<CurveMode>("value");
 
 // View state
 const viewState = reactive({
@@ -254,25 +249,32 @@ const viewState = reactive({
   frameEnd: 100,
   valueMin: 0,
   valueMax: 100,
-  zoom: 1
+  zoom: 1,
 });
 
 // Selection state
 const selectedPropertyIds = ref<string[]>([]);
 const visiblePropertyIds = ref<string[]>([]);
 const visibleDimensions = ref<Record<string, string[]>>({});
-const selectedKeyframes = ref<Array<{ propId: string; index: number; keyframe: Keyframe<any> }>>([]);
+const selectedKeyframes = ref<
+  Array<{ propId: string; index: number; keyframe: Keyframe<any> }>
+>([]);
 const hoveredKeyframe = ref<{ propId: string; index: number } | null>(null);
 
 // Interaction state
 const dragTarget = ref<{
-  type: 'keyframe' | 'inHandle' | 'outHandle' | 'pan' | 'select';
+  type: "keyframe" | "inHandle" | "outHandle" | "pan" | "select";
   propId?: string;
   index?: number;
   startX?: number;
   startY?: number;
 } | null>(null);
-const selectionBox = ref<{ x: number; y: number; width: number; height: number } | null>(null);
+const selectionBox = ref<{
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+} | null>(null);
 const contextMenu = ref<{ x: number; y: number } | null>(null);
 const clipboard = ref<Keyframe<any>[] | null>(null);
 
@@ -285,30 +287,30 @@ const margin = { top: 10, right: 10, bottom: 10, left: 10 };
 
 // Property colors
 const propertyColors: Record<string, string> = {
-  'Position': '#ff6b6b',
-  'Position.x': '#ff6b6b',
-  'Position.y': '#4ecdc4',
-  'Position.z': '#45b7d1',
-  'Scale': '#f7dc6f',
-  'Scale.x': '#f7dc6f',
-  'Scale.y': '#82e0aa',
-  'Scale.z': '#85c1e9',
-  'Rotation': '#bb8fce',
-  'Opacity': '#f8b739',
-  'default': '#7c9cff'
+  Position: "#ff6b6b",
+  "Position.x": "#ff6b6b",
+  "Position.y": "#4ecdc4",
+  "Position.z": "#45b7d1",
+  Scale: "#f7dc6f",
+  "Scale.x": "#f7dc6f",
+  "Scale.y": "#82e0aa",
+  "Scale.z": "#85c1e9",
+  Rotation: "#bb8fce",
+  Opacity: "#f8b739",
+  default: "#7c9cff",
 };
 
 // Presets list
-const presetList: EasingPreset[] = [
-  { key: 'linear', label: 'Linear', shortLabel: 'Lin' },
-  { key: 'easeIn', label: 'Ease In', shortLabel: 'In' },
-  { key: 'easeOut', label: 'Ease Out', shortLabel: 'Out' },
-  { key: 'easeInOut', label: 'Ease In/Out', shortLabel: 'I/O' },
-  { key: 'easeInCubic', label: 'Ease In Cubic', shortLabel: 'In3' },
-  { key: 'easeOutCubic', label: 'Ease Out Cubic', shortLabel: 'Ou3' },
-  { key: 'easeInOutCubic', label: 'Ease In/Out Cubic', shortLabel: 'IO3' },
-  { key: 'easeInBack', label: 'Ease In Back', shortLabel: 'InB' },
-  { key: 'easeOutBack', label: 'Ease Out Back', shortLabel: 'OuB' }
+const _presetList: EasingPreset[] = [
+  { key: "linear", label: "Linear", shortLabel: "Lin" },
+  { key: "easeIn", label: "Ease In", shortLabel: "In" },
+  { key: "easeOut", label: "Ease Out", shortLabel: "Out" },
+  { key: "easeInOut", label: "Ease In/Out", shortLabel: "I/O" },
+  { key: "easeInCubic", label: "Ease In Cubic", shortLabel: "In3" },
+  { key: "easeOutCubic", label: "Ease Out Cubic", shortLabel: "Ou3" },
+  { key: "easeInOutCubic", label: "Ease In/Out Cubic", shortLabel: "IO3" },
+  { key: "easeInBack", label: "Ease In Back", shortLabel: "InB" },
+  { key: "easeOutBack", label: "Ease Out Back", shortLabel: "OuB" },
 ];
 
 // Get all animatable properties from selected layer
@@ -334,24 +336,28 @@ const animatableProperties = computed((): AnimatableProperty<any>[] => {
 
 // Visible properties
 const visibleProperties = computed(() => {
-  return animatableProperties.value.filter(p =>
-    visiblePropertyIds.value.includes(p.id) && p.animated
+  return animatableProperties.value.filter(
+    (p) => visiblePropertyIds.value.includes(p.id) && p.animated,
   );
 });
 
 const allPropertiesVisible = computed(() => {
-  return animatableProperties.value.every(p => visiblePropertyIds.value.includes(p.id));
+  return animatableProperties.value.every((p) =>
+    visiblePropertyIds.value.includes(p.id),
+  );
 });
 
 // Current frame screen position
-const currentFrameScreenX = computed(() => {
+const _currentFrameScreenX = computed(() => {
   return frameToScreenX(store.currentFrame);
 });
 
 // Coordinate conversion functions
 function frameToScreenX(frame: number): number {
   const graphWidth = canvasWidth.value - margin.left - margin.right;
-  const t = (frame - viewState.frameStart) / (viewState.frameEnd - viewState.frameStart);
+  const t =
+    (frame - viewState.frameStart) /
+    (viewState.frameEnd - viewState.frameStart);
   return margin.left + t * graphWidth;
 }
 
@@ -363,7 +369,8 @@ function screenXToFrame(screenX: number): number {
 
 function valueToScreenY(value: number): number {
   const graphHeight = canvasHeight.value - margin.top - margin.bottom;
-  const t = (value - viewState.valueMin) / (viewState.valueMax - viewState.valueMin);
+  const t =
+    (value - viewState.valueMin) / (viewState.valueMax - viewState.valueMin);
   return canvasHeight.value - margin.bottom - t * graphHeight;
 }
 
@@ -378,21 +385,38 @@ function getKeyframeScreenX(kf: Keyframe<any>): number {
   return frameToScreenX(kf.frame);
 }
 
-function getKeyframeScreenY(prop: AnimatableProperty<any>, kf: Keyframe<any>): number {
-  const value = typeof kf.value === 'number' ? kf.value :
-    typeof kf.value === 'object' ? (kf.value.x ?? kf.value) : 0;
+function getKeyframeScreenY(
+  _prop: AnimatableProperty<any>,
+  kf: Keyframe<any>,
+): number {
+  const value =
+    typeof kf.value === "number"
+      ? kf.value
+      : typeof kf.value === "object"
+        ? (kf.value.x ?? kf.value)
+        : 0;
   return valueToScreenY(value);
 }
 
-function getKeyframeDisplayValue(selection: { propId: string; index: number; keyframe: Keyframe<any> } | undefined): number {
+function _getKeyframeDisplayValue(
+  selection:
+    | { propId: string; index: number; keyframe: Keyframe<any> }
+    | undefined,
+): number {
   if (!selection) return 0;
   const value = selection.keyframe.value;
-  return typeof value === 'number' ? value :
-    typeof value === 'object' ? (value.x ?? 0) : 0;
+  return typeof value === "number"
+    ? value
+    : typeof value === "object"
+      ? (value.x ?? 0)
+      : 0;
 }
 
 // Handle position helpers - using new absolute frame/value offsets
-function getOutHandleX(prop: AnimatableProperty<any>, kfIndex: number): number {
+function _getOutHandleX(
+  prop: AnimatableProperty<any>,
+  kfIndex: number,
+): number {
   const kf = prop.keyframes[kfIndex];
   if (!kf || !kf.outHandle.enabled) return frameToScreenX(kf.frame);
 
@@ -401,16 +425,20 @@ function getOutHandleX(prop: AnimatableProperty<any>, kfIndex: number): number {
   return frameToScreenX(handleFrame);
 }
 
-function getOutHandleY(prop: AnimatableProperty<any>, kfIndex: number): number {
+function _getOutHandleY(
+  prop: AnimatableProperty<any>,
+  kfIndex: number,
+): number {
   const kf = prop.keyframes[kfIndex];
-  if (!kf || !kf.outHandle.enabled) return valueToScreenY(getNumericValue(kf.value));
+  if (!kf || !kf.outHandle.enabled)
+    return valueToScreenY(getNumericValue(kf.value));
 
   // outHandle.value is absolute offset from keyframe value
   const handleValue = getNumericValue(kf.value) + kf.outHandle.value;
   return valueToScreenY(handleValue);
 }
 
-function getInHandleX(prop: AnimatableProperty<any>, kfIndex: number): number {
+function _getInHandleX(prop: AnimatableProperty<any>, kfIndex: number): number {
   const kf = prop.keyframes[kfIndex];
   if (!kf || !kf.inHandle.enabled) return frameToScreenX(kf.frame);
 
@@ -419,9 +447,10 @@ function getInHandleX(prop: AnimatableProperty<any>, kfIndex: number): number {
   return frameToScreenX(handleFrame);
 }
 
-function getInHandleY(prop: AnimatableProperty<any>, kfIndex: number): number {
+function _getInHandleY(prop: AnimatableProperty<any>, kfIndex: number): number {
   const kf = prop.keyframes[kfIndex];
-  if (!kf || !kf.inHandle.enabled) return valueToScreenY(getNumericValue(kf.value));
+  if (!kf || !kf.inHandle.enabled)
+    return valueToScreenY(getNumericValue(kf.value));
 
   // inHandle.value is absolute offset from keyframe value
   const handleValue = getNumericValue(kf.value) + kf.inHandle.value;
@@ -429,34 +458,36 @@ function getInHandleY(prop: AnimatableProperty<any>, kfIndex: number): number {
 }
 
 function getNumericValue(value: any): number {
-  if (typeof value === 'number') return value;
-  if (typeof value === 'object') return value.x ?? value.y ?? value.z ?? 0;
+  if (typeof value === "number") return value;
+  if (typeof value === "object") return value.x ?? value.y ?? value.z ?? 0;
   return 0;
 }
 
 // Utility functions
 function getPropertyColor(propId: string): string {
-  const prop = animatableProperties.value.find(p => p.id === propId);
+  const prop = animatableProperties.value.find((p) => p.id === propId);
   if (!prop) return propertyColors.default;
   return propertyColors[prop.name] ?? propertyColors.default;
 }
 
-function isKeyframeInView(kf: Keyframe<any>): boolean {
+function _isKeyframeInView(kf: Keyframe<any>): boolean {
   return kf.frame >= viewState.frameStart && kf.frame <= viewState.frameEnd;
 }
 
 function isKeyframeSelected(propId: string, index: number): boolean {
-  return selectedKeyframes.value.some(sk => sk.propId === propId && sk.index === index);
+  return selectedKeyframes.value.some(
+    (sk) => sk.propId === propId && sk.index === index,
+  );
 }
 
-function hasDimension(prop: AnimatableProperty<any>, dim: string): boolean {
+function _hasDimension(prop: AnimatableProperty<any>, dim: string): boolean {
   if (!prop.animated || prop.keyframes.length === 0) return false;
   const value = prop.keyframes[0].value;
-  return typeof value === 'object' && dim in value;
+  return typeof value === "object" && dim in value;
 }
 
 // Property management
-function toggleProperty(propId: string): void {
+function _toggleProperty(propId: string): void {
   const index = selectedPropertyIds.value.indexOf(propId);
   if (index === -1) {
     selectedPropertyIds.value.push(propId);
@@ -465,7 +496,7 @@ function toggleProperty(propId: string): void {
   }
 }
 
-function togglePropertyVisibility(propId: string): void {
+function _togglePropertyVisibility(propId: string): void {
   const index = visiblePropertyIds.value.indexOf(propId);
   if (index === -1) {
     visiblePropertyIds.value.push(propId);
@@ -475,16 +506,16 @@ function togglePropertyVisibility(propId: string): void {
   updateViewBounds();
 }
 
-function toggleAllProperties(): void {
+function _toggleAllProperties(): void {
   if (allPropertiesVisible.value) {
     visiblePropertyIds.value = [];
   } else {
-    visiblePropertyIds.value = animatableProperties.value.map(p => p.id);
+    visiblePropertyIds.value = animatableProperties.value.map((p) => p.id);
   }
   updateViewBounds();
 }
 
-function toggleDimension(propId: string, dim: string): void {
+function _toggleDimension(propId: string, dim: string): void {
   if (!visibleDimensions.value[propId]) {
     visibleDimensions.value[propId] = [];
   }
@@ -531,12 +562,12 @@ function updateViewBounds(): void {
   fitToView();
 }
 
-function toggleAutoSelect(): void {
+function _toggleAutoSelect(): void {
   autoSelectNearby.value = !autoSelectNearby.value;
 }
 
 // Preset handling
-function isPresetActive(presetKey: string): boolean {
+function _isPresetActive(presetKey: string): boolean {
   if (selectedKeyframes.value.length === 0) return false;
 
   const preset = EASING_PRESETS[presetKey as keyof typeof EASING_PRESETS];
@@ -544,14 +575,18 @@ function isPresetActive(presetKey: string): boolean {
 
   // Preset comparison is complex because presets are normalized (0-1)
   // but handles are absolute. For now, check by interpolation type.
-  if (presetKey === 'linear') {
-    return selectedKeyframes.value.every(sk => sk.keyframe.interpolation === 'linear');
+  if (presetKey === "linear") {
+    return selectedKeyframes.value.every(
+      (sk) => sk.keyframe.interpolation === "linear",
+    );
   }
   // For bezier presets, just check if it's bezier interpolation
-  return selectedKeyframes.value.every(sk => sk.keyframe.interpolation === 'bezier');
+  return selectedKeyframes.value.every(
+    (sk) => sk.keyframe.interpolation === "bezier",
+  );
 }
 
-function applyPreset(presetKey: string): void {
+function _applyPreset(presetKey: string): void {
   const preset = EASING_PRESETS[presetKey as keyof typeof EASING_PRESETS];
   if (!preset) return;
 
@@ -559,44 +594,75 @@ function applyPreset(presetKey: string): void {
   if (!layer) return;
 
   for (const sk of selectedKeyframes.value) {
-    const prop = animatableProperties.value.find(p => p.id === sk.propId);
+    const prop = animatableProperties.value.find((p) => p.id === sk.propId);
     if (!prop) continue;
 
     const propertyPath = getPropertyPath(prop);
     const kfIndex = sk.index;
     const prevKf = kfIndex > 0 ? prop.keyframes[kfIndex - 1] : null;
-    const nextKf = kfIndex < prop.keyframes.length - 1 ? prop.keyframes[kfIndex + 1] : null;
+    const nextKf =
+      kfIndex < prop.keyframes.length - 1 ? prop.keyframes[kfIndex + 1] : null;
 
     // Calculate durations for handle conversion
     const inDuration = prevKf ? sk.keyframe.frame - prevKf.frame : 10;
     const outDuration = nextKf ? nextKf.frame - sk.keyframe.frame : 10;
 
     // Convert normalized preset to absolute frame/value handles
-    if (presetKey === 'linear') {
-      store.setKeyframeInterpolation(layer.id, propertyPath, sk.keyframe.id, 'linear');
+    if (presetKey === "linear") {
+      store.setKeyframeInterpolation(
+        layer.id,
+        propertyPath,
+        sk.keyframe.id,
+        "linear",
+      );
       // Also update local reference
-      sk.keyframe.interpolation = 'linear';
-      sk.keyframe.outHandle = { frame: outDuration * 0.33, value: 0, enabled: false };
-      sk.keyframe.inHandle = { frame: -inDuration * 0.33, value: 0, enabled: false };
+      sk.keyframe.interpolation = "linear";
+      sk.keyframe.outHandle = {
+        frame: outDuration * 0.33,
+        value: 0,
+        enabled: false,
+      };
+      sk.keyframe.inHandle = {
+        frame: -inDuration * 0.33,
+        value: 0,
+        enabled: false,
+      };
     } else {
       // Apply normalized preset values scaled by duration
       const outHandle = {
         frame: preset.outHandle.x * outDuration,
         value: 0, // Would need value delta for proper curve
-        enabled: true
+        enabled: true,
       };
       const inHandle = {
         frame: -preset.inHandle.x * inDuration,
         value: 0, // Would need value delta for proper curve
-        enabled: true
+        enabled: true,
       };
 
-      store.setKeyframeInterpolation(layer.id, propertyPath, sk.keyframe.id, 'bezier');
-      store.setKeyframeHandle(layer.id, propertyPath, sk.keyframe.id, 'out', outHandle);
-      store.setKeyframeHandle(layer.id, propertyPath, sk.keyframe.id, 'in', inHandle);
+      store.setKeyframeInterpolation(
+        layer.id,
+        propertyPath,
+        sk.keyframe.id,
+        "bezier",
+      );
+      store.setKeyframeHandle(
+        layer.id,
+        propertyPath,
+        sk.keyframe.id,
+        "out",
+        outHandle,
+      );
+      store.setKeyframeHandle(
+        layer.id,
+        propertyPath,
+        sk.keyframe.id,
+        "in",
+        inHandle,
+      );
 
       // Update local reference
-      sk.keyframe.interpolation = 'bezier';
+      sk.keyframe.interpolation = "bezier";
       sk.keyframe.outHandle = outHandle;
       sk.keyframe.inHandle = inHandle;
     }
@@ -606,7 +672,7 @@ function applyPreset(presetKey: string): void {
 }
 
 // Mouse event handlers
-function handleMouseDown(event: MouseEvent): void {
+function _handleMouseDown(event: MouseEvent): void {
   const rect = canvasRef.value?.getBoundingClientRect();
   if (!rect) return;
 
@@ -615,18 +681,18 @@ function handleMouseDown(event: MouseEvent): void {
 
   if (event.button === 1 || (event.button === 0 && event.altKey)) {
     // Middle click or Alt+left click: pan
-    dragTarget.value = { type: 'pan', startX: x, startY: y };
+    dragTarget.value = { type: "pan", startX: x, startY: y };
   } else if (event.button === 0) {
     // Left click: selection box
     if (!event.shiftKey) {
       selectedKeyframes.value = [];
     }
     selectionBox.value = { x, y, width: 0, height: 0 };
-    dragTarget.value = { type: 'select', startX: x, startY: y };
+    dragTarget.value = { type: "select", startX: x, startY: y };
   }
 }
 
-function handleMouseMove(event: MouseEvent): void {
+function _handleMouseMove(event: MouseEvent): void {
   const rect = canvasRef.value?.getBoundingClientRect();
   if (!rect) return;
 
@@ -638,15 +704,17 @@ function handleMouseMove(event: MouseEvent): void {
 
   if (!dragTarget.value) return;
 
-  if (dragTarget.value.type === 'pan') {
+  if (dragTarget.value.type === "pan") {
     const dx = x - (dragTarget.value.startX ?? 0);
     const dy = y - (dragTarget.value.startY ?? 0);
 
     const graphWidth = canvasWidth.value - margin.left - margin.right;
     const graphHeight = canvasHeight.value - margin.top - margin.bottom;
 
-    const frameShift = -dx / graphWidth * (viewState.frameEnd - viewState.frameStart);
-    const valueShift = dy / graphHeight * (viewState.valueMax - viewState.valueMin);
+    const frameShift =
+      (-dx / graphWidth) * (viewState.frameEnd - viewState.frameStart);
+    const valueShift =
+      (dy / graphHeight) * (viewState.valueMax - viewState.valueMin);
 
     viewState.frameStart += frameShift;
     viewState.frameEnd += frameShift;
@@ -656,7 +724,7 @@ function handleMouseMove(event: MouseEvent): void {
     dragTarget.value.startX = x;
     dragTarget.value.startY = y;
     drawGraph();
-  } else if (dragTarget.value.type === 'select' && selectionBox.value) {
+  } else if (dragTarget.value.type === "select" && selectionBox.value) {
     const startX = dragTarget.value.startX ?? 0;
     const startY = dragTarget.value.startY ?? 0;
 
@@ -664,17 +732,20 @@ function handleMouseMove(event: MouseEvent): void {
       x: Math.min(x, startX),
       y: Math.min(y, startY),
       width: Math.abs(x - startX),
-      height: Math.abs(y - startY)
+      height: Math.abs(y - startY),
     };
-  } else if (dragTarget.value.type === 'keyframe') {
+  } else if (dragTarget.value.type === "keyframe") {
     moveSelectedKeyframes(x, y);
-  } else if (dragTarget.value.type === 'outHandle' || dragTarget.value.type === 'inHandle') {
+  } else if (
+    dragTarget.value.type === "outHandle" ||
+    dragTarget.value.type === "inHandle"
+  ) {
     moveHandle(x, y);
   }
 }
 
-function handleMouseUp(): void {
-  if (dragTarget.value?.type === 'select' && selectionBox.value) {
+function _handleMouseUp(): void {
+  if (dragTarget.value?.type === "select" && selectionBox.value) {
     selectKeyframesInBox();
   }
 
@@ -682,7 +753,7 @@ function handleMouseUp(): void {
   selectionBox.value = null;
 }
 
-function handleWheel(event: WheelEvent): void {
+function _handleWheel(event: WheelEvent): void {
   event.preventDefault();
 
   const rect = canvasRef.value?.getBoundingClientRect();
@@ -694,8 +765,10 @@ function handleWheel(event: WheelEvent): void {
   // Zoom around cursor position
   const frameAtCursor = screenXToFrame(x);
 
-  const newFrameStart = frameAtCursor - (frameAtCursor - viewState.frameStart) * zoomFactor;
-  const newFrameEnd = frameAtCursor + (viewState.frameEnd - frameAtCursor) * zoomFactor;
+  const newFrameStart =
+    frameAtCursor - (frameAtCursor - viewState.frameStart) * zoomFactor;
+  const newFrameEnd =
+    frameAtCursor + (viewState.frameEnd - frameAtCursor) * zoomFactor;
 
   if (event.shiftKey) {
     // Zoom time only
@@ -708,8 +781,10 @@ function handleWheel(event: WheelEvent): void {
 
     const y = event.clientY - rect.top;
     const valueAtCursor = screenYToValue(y);
-    viewState.valueMin = valueAtCursor - (valueAtCursor - viewState.valueMin) * zoomFactor;
-    viewState.valueMax = valueAtCursor + (viewState.valueMax - valueAtCursor) * zoomFactor;
+    viewState.valueMin =
+      valueAtCursor - (valueAtCursor - viewState.valueMin) * zoomFactor;
+    viewState.valueMax =
+      valueAtCursor + (viewState.valueMax - valueAtCursor) * zoomFactor;
   }
 
   drawGraph();
@@ -733,8 +808,12 @@ function updateHoveredKeyframe(x: number, y: number): void {
   }
 }
 
-function onKeyframeMouseDown(propId: string, index: number, event: MouseEvent): void {
-  const prop = animatableProperties.value.find(p => p.id === propId);
+function _onKeyframeMouseDown(
+  propId: string,
+  index: number,
+  event: MouseEvent,
+): void {
+  const prop = animatableProperties.value.find((p) => p.id === propId);
   if (!prop) return;
 
   const kf = prop.keyframes[index];
@@ -747,7 +826,7 @@ function onKeyframeMouseDown(propId: string, index: number, event: MouseEvent): 
     selectedKeyframes.value.push({ propId, index, keyframe: kf });
   }
 
-  dragTarget.value = { type: 'keyframe', propId, index };
+  dragTarget.value = { type: "keyframe", propId, index };
 }
 
 function selectKeyframesInBox(): void {
@@ -761,10 +840,18 @@ function selectKeyframesInBox(): void {
       const x = getKeyframeScreenX(kf);
       const y = getKeyframeScreenY(prop, kf);
 
-      if (x >= box.x && x <= box.x + box.width &&
-          y >= box.y && y <= box.y + box.height) {
+      if (
+        x >= box.x &&
+        x <= box.x + box.width &&
+        y >= box.y &&
+        y <= box.y + box.height
+      ) {
         if (!isKeyframeSelected(prop.id, i)) {
-          selectedKeyframes.value.push({ propId: prop.id, index: i, keyframe: kf });
+          selectedKeyframes.value.push({
+            propId: prop.id,
+            index: i,
+            keyframe: kf,
+          });
         }
       }
     }
@@ -781,32 +868,36 @@ function moveSelectedKeyframes(screenX: number, screenY: number): void {
   // For now, just move the first selected keyframe
   if (selectedKeyframes.value.length > 0) {
     const sk = selectedKeyframes.value[0];
-    const prop = animatableProperties.value.find(p => p.id === sk.propId);
+    const prop = animatableProperties.value.find((p) => p.id === sk.propId);
     if (!prop) return;
 
     // Apply smart snapping with audio beat/peak support
     if (snapEnabled.value && store.snapConfig.enabled) {
       // Calculate approximate pixels per frame for snapping threshold
-      const pixelsPerFrame = canvasWidth.value / (viewState.frameEnd - viewState.frameStart);
+      const pixelsPerFrame =
+        canvasWidth.value / (viewState.frameEnd - viewState.frameStart);
 
       const snap = findNearestSnap(newFrame, store.snapConfig, pixelsPerFrame, {
         layers: store.layers,
         selectedLayerId: layer.id,
         currentFrame: store.currentFrame,
         audioAnalysis: store.audioAnalysis,
-        peakData: store.peakData
+        peakData: store.peakData,
       });
 
       if (snap) {
         newFrame = snap.frame;
       } else {
         // Fallback to basic grid snap
-        newFrame = Math.round(newFrame / store.snapConfig.gridInterval) * store.snapConfig.gridInterval;
+        newFrame =
+          Math.round(newFrame / store.snapConfig.gridInterval) *
+          store.snapConfig.gridInterval;
       }
     }
 
     const frame = Math.max(0, Math.min(store.frameCount - 1, newFrame));
-    const value = typeof sk.keyframe.value === 'number' ? newValue : sk.keyframe.value;
+    const _value =
+      typeof sk.keyframe.value === "number" ? newValue : sk.keyframe.value;
 
     // Get property path from property name
     const propertyPath = getPropertyPath(prop);
@@ -814,12 +905,12 @@ function moveSelectedKeyframes(screenX: number, screenY: number): void {
     // Call store method to persist the change
     store.updateKeyframe(layer.id, propertyPath, sk.keyframe.id, {
       frame,
-      value: typeof sk.keyframe.value === 'number' ? newValue : undefined
+      value: typeof sk.keyframe.value === "number" ? newValue : undefined,
     });
 
     // Update local reference
     sk.keyframe.frame = frame;
-    if (typeof sk.keyframe.value === 'number') {
+    if (typeof sk.keyframe.value === "number") {
       sk.keyframe.value = newValue;
     }
   }
@@ -830,19 +921,25 @@ function moveSelectedKeyframes(screenX: number, screenY: number): void {
 // Helper to get property path from AnimatableProperty
 function getPropertyPath(prop: AnimatableProperty<any>): string {
   const name = prop.name.toLowerCase();
-  if (name === 'position') return 'transform.position';
-  if (name === 'scale') return 'transform.scale';
-  if (name === 'rotation') return 'transform.rotation';
-  if (name === 'opacity') return 'opacity';
-  if (name === 'origin' || name === 'anchor point') return 'transform.anchorPoint';
+  if (name === "position") return "transform.position";
+  if (name === "scale") return "transform.scale";
+  if (name === "rotation") return "transform.rotation";
+  if (name === "opacity") return "opacity";
+  if (name === "origin" || name === "anchor point")
+    return "transform.anchorPoint";
   return prop.id; // Custom properties use ID
 }
 
 // Handle dragging
-function startDragHandle(type: 'inHandle' | 'outHandle', propId: string, index: number, event: MouseEvent): void {
+function _startDragHandle(
+  type: "inHandle" | "outHandle",
+  propId: string,
+  index: number,
+  _event: MouseEvent,
+): void {
   dragTarget.value = { type, propId, index };
-  document.addEventListener('mousemove', onDragHandle);
-  document.addEventListener('mouseup', stopDragHandle);
+  document.addEventListener("mousemove", onDragHandle);
+  document.addEventListener("mouseup", stopDragHandle);
 }
 
 function onDragHandle(event: MouseEvent): void {
@@ -860,7 +957,9 @@ function moveHandle(screenX: number, screenY: number): void {
   const layer = store.selectedLayer;
   if (!layer) return;
 
-  const prop = animatableProperties.value.find(p => p.id === dragTarget.value!.propId);
+  const prop = animatableProperties.value.find(
+    (p) => p.id === dragTarget.value?.propId,
+  );
   if (!prop) return;
 
   const kfIndex = dragTarget.value.index!;
@@ -871,7 +970,7 @@ function moveHandle(screenX: number, screenY: number): void {
   const handleValue = screenYToValue(screenY);
   const propertyPath = getPropertyPath(prop);
 
-  if (dragTarget.value.type === 'outHandle') {
+  if (dragTarget.value.type === "outHandle") {
     const nextKf = prop.keyframes[kfIndex + 1];
 
     // Calculate frame offset (positive = forward from keyframe)
@@ -889,19 +988,19 @@ function moveHandle(screenX: number, screenY: number): void {
     const newHandle = {
       frame: frameOffset,
       value: valueOffset,
-      enabled: true
+      enabled: true,
     };
 
     // Call store method to persist
-    store.setKeyframeHandle(layer.id, propertyPath, kf.id, 'out', newHandle);
+    store.setKeyframeHandle(layer.id, propertyPath, kf.id, "out", newHandle);
 
     // Update local reference
     kf.outHandle = newHandle;
-    kf.interpolation = 'bezier';
+    kf.interpolation = "bezier";
 
     // Apply control mode constraints (spec B3/B4)
-    applyControlModeConstraints(kf, 'out', propertyPath);
-  } else if (dragTarget.value.type === 'inHandle') {
+    applyControlModeConstraints(kf, "out", propertyPath);
+  } else if (dragTarget.value.type === "inHandle") {
     const prevKf = prop.keyframes[kfIndex - 1];
 
     // Calculate frame offset (negative = backward from keyframe)
@@ -919,25 +1018,29 @@ function moveHandle(screenX: number, screenY: number): void {
     const newHandle = {
       frame: frameOffset,
       value: valueOffset,
-      enabled: true
+      enabled: true,
     };
 
     // Call store method to persist
-    store.setKeyframeHandle(layer.id, propertyPath, kf.id, 'in', newHandle);
+    store.setKeyframeHandle(layer.id, propertyPath, kf.id, "in", newHandle);
 
     // Update local reference
     kf.inHandle = newHandle;
 
     // Apply control mode constraints (spec B3/B4)
-    applyControlModeConstraints(kf, 'in', propertyPath);
+    applyControlModeConstraints(kf, "in", propertyPath);
   }
 
   drawGraph();
 }
 
 // Control mode constraints (from spec B2, B3, B4)
-function applyControlModeConstraints(kf: Keyframe<any>, changedHandle: 'in' | 'out', propertyPath: string): void {
-  if (!kf.controlMode || kf.controlMode === 'corner') {
+function applyControlModeConstraints(
+  kf: Keyframe<any>,
+  changedHandle: "in" | "out",
+  propertyPath: string,
+): void {
+  if (!kf.controlMode || kf.controlMode === "corner") {
     // Fully independent - no constraints (spec B4)
     return;
   }
@@ -945,28 +1048,32 @@ function applyControlModeConstraints(kf: Keyframe<any>, changedHandle: 'in' | 'o
   const layer = store.selectedLayer;
   if (!layer) return;
 
-  if (kf.controlMode === 'symmetric') {
+  if (kf.controlMode === "symmetric") {
     // Mirror opposite handle - same length, opposite direction (spec B2)
-    if (changedHandle === 'in') {
+    if (changedHandle === "in") {
       kf.outHandle.frame = -kf.inHandle.frame;
       kf.outHandle.value = -kf.inHandle.value;
       kf.outHandle.enabled = kf.inHandle.enabled;
       // Persist to store
-      store.setKeyframeHandle(layer.id, propertyPath, kf.id, 'out', { ...kf.outHandle });
+      store.setKeyframeHandle(layer.id, propertyPath, kf.id, "out", {
+        ...kf.outHandle,
+      });
     } else {
       kf.inHandle.frame = -kf.outHandle.frame;
       kf.inHandle.value = -kf.outHandle.value;
       kf.inHandle.enabled = kf.outHandle.enabled;
       // Persist to store
-      store.setKeyframeHandle(layer.id, propertyPath, kf.id, 'in', { ...kf.inHandle });
+      store.setKeyframeHandle(layer.id, propertyPath, kf.id, "in", {
+        ...kf.inHandle,
+      });
     }
   }
 
-  if (kf.controlMode === 'smooth') {
+  if (kf.controlMode === "smooth") {
     // Keep collinear but allow different lengths (spec B3)
-    const changed = changedHandle === 'in' ? kf.inHandle : kf.outHandle;
-    const other = changedHandle === 'in' ? kf.outHandle : kf.inHandle;
-    const otherType = changedHandle === 'in' ? 'out' : 'in';
+    const changed = changedHandle === "in" ? kf.inHandle : kf.outHandle;
+    const other = changedHandle === "in" ? kf.outHandle : kf.inHandle;
+    const otherType = changedHandle === "in" ? "out" : "in";
 
     if (changed.frame !== 0 || changed.value !== 0) {
       const angle = Math.atan2(changed.value, changed.frame);
@@ -977,23 +1084,25 @@ function applyControlModeConstraints(kf: Keyframe<any>, changedHandle: 'in' | 'o
       other.value = Math.sin(oppositeAngle) * otherLength;
 
       // Persist to store
-      store.setKeyframeHandle(layer.id, propertyPath, kf.id, otherType, { ...other });
+      store.setKeyframeHandle(layer.id, propertyPath, kf.id, otherType, {
+        ...other,
+      });
     }
   }
 }
 
 function stopDragHandle(): void {
   dragTarget.value = null;
-  document.removeEventListener('mousemove', onDragHandle);
-  document.removeEventListener('mouseup', stopDragHandle);
+  document.removeEventListener("mousemove", onDragHandle);
+  document.removeEventListener("mouseup", stopDragHandle);
 }
 
 // Context menu
-function showContextMenu(event: MouseEvent): void {
+function _showContextMenu(event: MouseEvent): void {
   contextMenu.value = { x: event.offsetX, y: event.offsetY };
 }
 
-function addKeyframeAtPosition(): void {
+function _addKeyframeAtPosition(): void {
   if (!contextMenu.value) return;
 
   const layer = store.selectedLayer;
@@ -1006,7 +1115,8 @@ function addKeyframeAtPosition(): void {
   if (visibleProperties.value.length > 0) {
     const prop = visibleProperties.value[0];
     const propertyPath = getPropertyPath(prop);
-    const keyframeValue = typeof prop.value === 'number' ? value : { x: value, y: value };
+    const keyframeValue =
+      typeof prop.value === "number" ? value : { x: value, y: value };
 
     // Call store method to persist - it handles sorting and animation flag
     store.addKeyframe(layer.id, propertyPath, keyframeValue, frame);
@@ -1021,7 +1131,7 @@ function deleteSelectedKeyframes(): void {
   if (!layer) return;
 
   for (const sk of selectedKeyframes.value) {
-    const prop = animatableProperties.value.find(p => p.id === sk.propId);
+    const prop = animatableProperties.value.find((p) => p.id === sk.propId);
     if (prop) {
       const propertyPath = getPropertyPath(prop);
       // Call store method to persist deletion
@@ -1032,11 +1142,11 @@ function deleteSelectedKeyframes(): void {
   drawGraph();
 }
 
-function copyKeyframes(): void {
-  clipboard.value = selectedKeyframes.value.map(sk => ({ ...sk.keyframe }));
+function _copyKeyframes(): void {
+  clipboard.value = selectedKeyframes.value.map((sk) => ({ ...sk.keyframe }));
 }
 
-function pasteKeyframes(): void {
+function _pasteKeyframes(): void {
   if (!clipboard.value || visibleProperties.value.length === 0) return;
 
   const layer = store.selectedLayer;
@@ -1049,18 +1159,40 @@ function pasteKeyframes(): void {
   for (const kf of clipboard.value) {
     const newFrame = kf.frame + offset;
     // Use store method to properly add keyframes
-    const newKeyframe = store.addKeyframe(layer.id, propertyPath, kf.value, newFrame);
+    const newKeyframe = store.addKeyframe(
+      layer.id,
+      propertyPath,
+      kf.value,
+      newFrame,
+    );
 
     // Set interpolation and handles on the newly created keyframe
     if (newKeyframe) {
-      if (kf.interpolation !== 'linear') {
-        store.setKeyframeInterpolation(layer.id, propertyPath, newKeyframe.id, kf.interpolation);
+      if (kf.interpolation !== "linear") {
+        store.setKeyframeInterpolation(
+          layer.id,
+          propertyPath,
+          newKeyframe.id,
+          kf.interpolation,
+        );
       }
       if (kf.inHandle?.enabled) {
-        store.setKeyframeHandle(layer.id, propertyPath, newKeyframe.id, 'in', kf.inHandle);
+        store.setKeyframeHandle(
+          layer.id,
+          propertyPath,
+          newKeyframe.id,
+          "in",
+          kf.inHandle,
+        );
       }
       if (kf.outHandle?.enabled) {
-        store.setKeyframeHandle(layer.id, propertyPath, newKeyframe.id, 'out', kf.outHandle);
+        store.setKeyframeHandle(
+          layer.id,
+          propertyPath,
+          newKeyframe.id,
+          "out",
+          kf.outHandle,
+        );
       }
     }
   }
@@ -1068,22 +1200,30 @@ function pasteKeyframes(): void {
   drawGraph();
 }
 
-function selectAllKeyframes(): void {
+function _selectAllKeyframes(): void {
   selectedKeyframes.value = [];
   for (const prop of visibleProperties.value) {
     for (let i = 0; i < prop.keyframes.length; i++) {
-      selectedKeyframes.value.push({ propId: prop.id, index: i, keyframe: prop.keyframes[i] });
+      selectedKeyframes.value.push({
+        propId: prop.id,
+        index: i,
+        keyframe: prop.keyframes[i],
+      });
     }
   }
 }
 
-function invertSelection(): void {
+function _invertSelection(): void {
   const newSelection: typeof selectedKeyframes.value = [];
 
   for (const prop of visibleProperties.value) {
     for (let i = 0; i < prop.keyframes.length; i++) {
       if (!isKeyframeSelected(prop.id, i)) {
-        newSelection.push({ propId: prop.id, index: i, keyframe: prop.keyframes[i] });
+        newSelection.push({
+          propId: prop.id,
+          index: i,
+          keyframe: prop.keyframes[i],
+        });
       }
     }
   }
@@ -1092,29 +1232,32 @@ function invertSelection(): void {
 }
 
 // Keyframe info updates
-function updateSelectedKeyframeFrame(event: Event): void {
-  const value = parseInt((event.target as HTMLInputElement).value);
-  if (selectedKeyframes.value.length > 0 && !isNaN(value)) {
+function _updateSelectedKeyframeFrame(event: Event): void {
+  const value = parseInt((event.target as HTMLInputElement).value, 10);
+  if (selectedKeyframes.value.length > 0 && !Number.isNaN(value)) {
     selectedKeyframes.value[0].keyframe.frame = value;
     drawGraph();
   }
 }
 
-function updateSelectedKeyframeValue(event: Event): void {
+function _updateSelectedKeyframeValue(event: Event): void {
   const value = parseFloat((event.target as HTMLInputElement).value);
-  if (selectedKeyframes.value.length > 0 && !isNaN(value)) {
+  if (selectedKeyframes.value.length > 0 && !Number.isNaN(value)) {
     const kf = selectedKeyframes.value[0].keyframe;
-    if (typeof kf.value === 'number') {
+    if (typeof kf.value === "number") {
       kf.value = value;
-    } else if (typeof kf.value === 'object') {
+    } else if (typeof kf.value === "object") {
       kf.value.x = value;
     }
     drawGraph();
   }
 }
 
-function updateSelectedKeyframeInterpolation(event: Event): void {
-  const value = (event.target as HTMLSelectElement).value as 'linear' | 'bezier' | 'hold';
+function _updateSelectedKeyframeInterpolation(event: Event): void {
+  const value = (event.target as HTMLSelectElement).value as
+    | "linear"
+    | "bezier"
+    | "hold";
   if (selectedKeyframes.value.length > 0) {
     selectedKeyframes.value[0].keyframe.interpolation = value;
     drawGraph();
@@ -1122,7 +1265,7 @@ function updateSelectedKeyframeInterpolation(event: Event): void {
 }
 
 // Time ruler click
-function onTimeRulerClick(event: MouseEvent): void {
+function _onTimeRulerClick(event: MouseEvent): void {
   const rect = timeRulerCanvas.value?.getBoundingClientRect();
   if (!rect) return;
 
@@ -1142,7 +1285,7 @@ function drawMainCanvas(): void {
   const canvas = canvasRef.value;
   if (!canvas) return;
 
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext("2d");
   if (!ctx) return;
 
   // Set canvas size
@@ -1150,7 +1293,7 @@ function drawMainCanvas(): void {
   canvas.height = canvasHeight.value;
 
   // Clear
-  ctx.fillStyle = '#1a1a1a';
+  ctx.fillStyle = "#1a1a1a";
   ctx.fillRect(0, 0, canvasWidth.value, canvasHeight.value);
 
   // Draw grid
@@ -1166,7 +1309,7 @@ function drawGrid(ctx: CanvasRenderingContext2D): void {
   const graphWidth = canvasWidth.value - margin.left - margin.right;
   const graphHeight = canvasHeight.value - margin.top - margin.bottom;
 
-  ctx.strokeStyle = '#2a2a2a';
+  ctx.strokeStyle = "#2a2a2a";
   ctx.lineWidth = 1;
 
   // Calculate grid spacing based on view
@@ -1177,7 +1320,11 @@ function drawGrid(ctx: CanvasRenderingContext2D): void {
 
   // Vertical lines (frame grid)
   const firstFrame = Math.ceil(viewState.frameStart / frameStep) * frameStep;
-  for (let frame = firstFrame; frame <= viewState.frameEnd; frame += frameStep) {
+  for (
+    let frame = firstFrame;
+    frame <= viewState.frameEnd;
+    frame += frameStep
+  ) {
     const x = frameToScreenX(frame);
     ctx.beginPath();
     ctx.moveTo(x, margin.top);
@@ -1187,7 +1334,11 @@ function drawGrid(ctx: CanvasRenderingContext2D): void {
 
   // Horizontal lines (value grid)
   const firstValue = Math.ceil(viewState.valueMin / valueStep) * valueStep;
-  for (let value = firstValue; value <= viewState.valueMax; value += valueStep) {
+  for (
+    let value = firstValue;
+    value <= viewState.valueMax;
+    value += valueStep
+  ) {
     const y = valueToScreenY(value);
     ctx.beginPath();
     ctx.moveTo(margin.left, y);
@@ -1196,7 +1347,7 @@ function drawGrid(ctx: CanvasRenderingContext2D): void {
   }
 
   // Zero lines
-  ctx.strokeStyle = '#3a3a3a';
+  ctx.strokeStyle = "#3a3a3a";
   ctx.lineWidth = 1;
 
   if (viewState.frameStart <= 0 && viewState.frameEnd >= 0) {
@@ -1216,9 +1367,13 @@ function drawGrid(ctx: CanvasRenderingContext2D): void {
   }
 }
 
-function calculateGridStep(range: number, pixelSize: number, targetSpacing: number): number {
-  const rawStep = range * targetSpacing / pixelSize;
-  const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
+function calculateGridStep(
+  range: number,
+  pixelSize: number,
+  targetSpacing: number,
+): number {
+  const rawStep = (range * targetSpacing) / pixelSize;
+  const magnitude = 10 ** Math.floor(Math.log10(rawStep));
   const normalized = rawStep / magnitude;
 
   if (normalized <= 1) return magnitude;
@@ -1227,7 +1382,10 @@ function calculateGridStep(range: number, pixelSize: number, targetSpacing: numb
   return 10 * magnitude;
 }
 
-function drawPropertyCurve(ctx: CanvasRenderingContext2D, prop: AnimatableProperty<any>): void {
+function drawPropertyCurve(
+  ctx: CanvasRenderingContext2D,
+  prop: AnimatableProperty<any>,
+): void {
   if (prop.keyframes.length < 2) return;
 
   const color = getPropertyColor(prop.id);
@@ -1235,7 +1393,7 @@ function drawPropertyCurve(ctx: CanvasRenderingContext2D, prop: AnimatableProper
   // Two-pass rendering per spec A1: black outline then colored fill
   for (let pass = 0; pass < 2; pass++) {
     if (pass === 0) {
-      ctx.strokeStyle = '#000';
+      ctx.strokeStyle = "#000";
       ctx.lineWidth = 4;
     } else {
       ctx.strokeStyle = color;
@@ -1250,7 +1408,8 @@ function drawPropertyCurve(ctx: CanvasRenderingContext2D, prop: AnimatableProper
       const kf2 = prop.keyframes[i + 1];
 
       // Skip segments outside view
-      if (kf2.frame < viewState.frameStart || kf1.frame > viewState.frameEnd) continue;
+      if (kf2.frame < viewState.frameStart || kf1.frame > viewState.frameEnd)
+        continue;
 
       const x1 = getKeyframeScreenX(kf1);
       const y1 = getKeyframeScreenY(prop, kf1);
@@ -1262,19 +1421,26 @@ function drawPropertyCurve(ctx: CanvasRenderingContext2D, prop: AnimatableProper
         started = true;
       }
 
-      if (kf1.interpolation === 'hold') {
+      if (kf1.interpolation === "hold") {
         // Step function (spec B5)
         ctx.lineTo(x2, y1);
         ctx.lineTo(x2, y2);
-      } else if (kf1.interpolation === 'linear' || (!kf1.outHandle.enabled && !kf2.inHandle.enabled)) {
+      } else if (
+        kf1.interpolation === "linear" ||
+        (!kf1.outHandle.enabled && !kf2.inHandle.enabled)
+      ) {
         // Straight line (spec B1)
         ctx.lineTo(x2, y2);
       } else {
         // Bezier curve using absolute handle offsets (spec B3/B4)
         const cp1x = frameToScreenX(kf1.frame + kf1.outHandle.frame);
-        const cp1y = valueToScreenY(getNumericValue(kf1.value) + kf1.outHandle.value);
+        const cp1y = valueToScreenY(
+          getNumericValue(kf1.value) + kf1.outHandle.value,
+        );
         const cp2x = frameToScreenX(kf2.frame + kf2.inHandle.frame);
-        const cp2y = valueToScreenY(getNumericValue(kf2.value) + kf2.inHandle.value);
+        const cp2y = valueToScreenY(
+          getNumericValue(kf2.value) + kf2.inHandle.value,
+        );
 
         ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x2, y2);
       }
@@ -1294,25 +1460,29 @@ function drawTimeRuler(): void {
   canvas.width = rect.width;
   canvas.height = 24;
 
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext("2d");
   if (!ctx) return;
 
-  ctx.fillStyle = '#252525';
+  ctx.fillStyle = "#252525";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   const frameRange = viewState.frameEnd - viewState.frameStart;
   const frameStep = calculateGridStep(frameRange, canvas.width, 60);
 
-  ctx.fillStyle = '#888';
-  ctx.font = '10px system-ui';
-  ctx.textAlign = 'center';
+  ctx.fillStyle = "#888";
+  ctx.font = "10px system-ui";
+  ctx.textAlign = "center";
 
   const firstFrame = Math.ceil(viewState.frameStart / frameStep) * frameStep;
-  for (let frame = firstFrame; frame <= viewState.frameEnd; frame += frameStep) {
+  for (
+    let frame = firstFrame;
+    frame <= viewState.frameEnd;
+    frame += frameStep
+  ) {
     const x = frameToScreenX(frame);
     ctx.fillText(frame.toString(), x, 16);
 
-    ctx.strokeStyle = '#444';
+    ctx.strokeStyle = "#444";
     ctx.beginPath();
     ctx.moveTo(x, 20);
     ctx.lineTo(x, 24);
@@ -1321,7 +1491,7 @@ function drawTimeRuler(): void {
 
   // Current frame marker
   const ctfX = frameToScreenX(store.currentFrame);
-  ctx.fillStyle = '#ff4444';
+  ctx.fillStyle = "#ff4444";
   ctx.beginPath();
   ctx.moveTo(ctfX - 5, 0);
   ctx.lineTo(ctfX + 5, 0);
@@ -1340,30 +1510,34 @@ function drawValueAxis(): void {
   canvas.width = 40;
   canvas.height = rect.height;
 
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext("2d");
   if (!ctx) return;
 
-  ctx.fillStyle = '#252525';
+  ctx.fillStyle = "#252525";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   const valueRange = viewState.valueMax - viewState.valueMin;
   const valueStep = calculateGridStep(valueRange, canvas.height, 30);
 
-  ctx.fillStyle = '#888';
-  ctx.font = '10px system-ui';
-  ctx.textAlign = 'right';
+  ctx.fillStyle = "#888";
+  ctx.font = "10px system-ui";
+  ctx.textAlign = "right";
 
   const firstValue = Math.ceil(viewState.valueMin / valueStep) * valueStep;
-  for (let value = firstValue; value <= viewState.valueMax; value += valueStep) {
+  for (
+    let value = firstValue;
+    value <= viewState.valueMax;
+    value += valueStep
+  ) {
     const y = valueToScreenY(value);
     ctx.fillText(value.toFixed(0), 36, y + 4);
   }
 }
 
 // Easy Ease functions (spec C1, C2, C3)
-function applyEasyEase(direction: 'both' | 'in' | 'out' = 'both'): void {
+function applyEasyEase(direction: "both" | "in" | "out" = "both"): void {
   for (const sk of selectedKeyframes.value) {
-    const prop = animatableProperties.value.find(p => p.id === sk.propId);
+    const prop = animatableProperties.value.find((p) => p.id === sk.propId);
     if (!prop) continue;
 
     const kf = sk.keyframe;
@@ -1371,7 +1545,8 @@ function applyEasyEase(direction: 'both' | 'in' | 'out' = 'both'): void {
 
     // Get adjacent keyframes for duration calculation
     const prevKf = kfIndex > 0 ? prop.keyframes[kfIndex - 1] : null;
-    const nextKf = kfIndex < prop.keyframes.length - 1 ? prop.keyframes[kfIndex + 1] : null;
+    const nextKf =
+      kfIndex < prop.keyframes.length - 1 ? prop.keyframes[kfIndex + 1] : null;
 
     // Calculate segment durations
     const inDuration = prevKf ? kf.frame - prevKf.frame : 10;
@@ -1380,26 +1555,26 @@ function applyEasyEase(direction: 'both' | 'in' | 'out' = 'both'): void {
     // 33.33% influence (spec C1)
     const influence = 0.3333;
 
-    if (direction === 'both' || direction === 'in') {
+    if (direction === "both" || direction === "in") {
       // Easy ease in - deceleration (spec C2)
       kf.inHandle = {
         frame: -inDuration * influence,
         value: 0, // 0 velocity at keyframe
-        enabled: true
+        enabled: true,
       };
     }
 
-    if (direction === 'both' || direction === 'out') {
+    if (direction === "both" || direction === "out") {
       // Easy ease out - acceleration (spec C3)
       kf.outHandle = {
         frame: outDuration * influence,
         value: 0, // 0 velocity at keyframe
-        enabled: true
+        enabled: true,
       };
     }
 
-    kf.interpolation = 'bezier';
-    kf.controlMode = 'smooth';
+    kf.interpolation = "bezier";
+    kf.controlMode = "smooth";
   }
 
   drawGraph();
@@ -1419,7 +1594,7 @@ function goToPreviousKeyframe(): void {
   }
 
   allKeyframes.sort((a, b) => a - b);
-  const prev = [...allKeyframes].reverse().find(f => f < currentFrame);
+  const prev = [...allKeyframes].reverse().find((f) => f < currentFrame);
   if (prev !== undefined) {
     store.setFrame(prev);
   }
@@ -1438,7 +1613,7 @@ function goToNextKeyframe(): void {
   }
 
   allKeyframes.sort((a, b) => a - b);
-  const next = allKeyframes.find(f => f > currentFrame);
+  const next = allKeyframes.find((f) => f > currentFrame);
   if (next !== undefined) {
     store.setFrame(next);
   }
@@ -1447,39 +1622,39 @@ function goToNextKeyframe(): void {
 // Keyboard shortcuts handler (spec I)
 function handleKeyDown(event: KeyboardEvent): void {
   // F9 Easy Ease
-  if (event.key === 'F9') {
+  if (event.key === "F9") {
     event.preventDefault();
     if (event.ctrlKey && event.shiftKey) {
-      applyEasyEase('out'); // Ctrl+Shift+F9 (spec C3)
+      applyEasyEase("out"); // Ctrl+Shift+F9 (spec C3)
     } else if (event.shiftKey) {
-      applyEasyEase('in'); // Shift+F9 (spec C2)
+      applyEasyEase("in"); // Shift+F9 (spec C2)
     } else {
-      applyEasyEase('both'); // F9 (spec C1)
+      applyEasyEase("both"); // F9 (spec C1)
     }
     return;
   }
 
   // J/K navigation (spec G4)
-  if (event.key.toLowerCase() === 'j') {
+  if (event.key.toLowerCase() === "j") {
     event.preventDefault();
     goToPreviousKeyframe();
     return;
   }
-  if (event.key.toLowerCase() === 'k') {
+  if (event.key.toLowerCase() === "k") {
     event.preventDefault();
     goToNextKeyframe();
     return;
   }
 
   // Delete selected keyframes
-  if (event.key === 'Delete' || event.key === 'Backspace') {
+  if (event.key === "Delete" || event.key === "Backspace") {
     event.preventDefault();
     deleteSelectedKeyframes();
     return;
   }
 
   // F = Fit selection to view
-  if (event.key.toLowerCase() === 'f' && !event.ctrlKey) {
+  if (event.key.toLowerCase() === "f" && !event.ctrlKey) {
     event.preventDefault();
     if (event.shiftKey) {
       fitToView(); // Shift+F = fit all
@@ -1492,12 +1667,12 @@ function handleKeyDown(event: KeyboardEvent): void {
   }
 
   // Zoom in/out with = / -
-  if (event.key === '=' || event.key === '+') {
+  if (event.key === "=" || event.key === "+") {
     event.preventDefault();
     zoomIn();
     return;
   }
-  if (event.key === '-' || event.key === '_') {
+  if (event.key === "-" || event.key === "_") {
     event.preventDefault();
     zoomOut();
     return;
@@ -1567,11 +1742,11 @@ onMounted(() => {
 
   // Initialize visibility
   visiblePropertyIds.value = animatableProperties.value
-    .filter(p => p.animated)
-    .map(p => p.id);
+    .filter((p) => p.animated)
+    .map((p) => p.id);
 
   // Add keyboard listener
-  window.addEventListener('keydown', handleKeyDown);
+  window.addEventListener("keydown", handleKeyDown);
 
   fitToView();
   drawGraph();
@@ -1579,7 +1754,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   resizeObserver?.disconnect();
-  window.removeEventListener('keydown', handleKeyDown);
+  window.removeEventListener("keydown", handleKeyDown);
 });
 
 // Redraw on changes
@@ -1587,10 +1762,14 @@ watch([() => store.currentFrame, visiblePropertyIds, mode], () => {
   drawGraph();
 });
 
-watch(animatableProperties, () => {
-  fitToView();
-  drawGraph();
-}, { deep: true });
+watch(
+  animatableProperties,
+  () => {
+    fitToView();
+    drawGraph();
+  },
+  { deep: true },
+);
 </script>
 
 <style scoped>

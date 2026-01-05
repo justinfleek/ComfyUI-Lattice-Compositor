@@ -51,26 +51,24 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import type { FillShape, ShapeColor } from '@/types/shapes';
-import { ScrubableNumber } from '@/components/controls';
-import KeyframeToggle from '../KeyframeToggle.vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import { createKeyframe } from '@/types/animation';
+import { computed } from "vue";
+import { useCompositorStore } from "@/stores/compositorStore";
+import { createKeyframe } from "@/types/animation";
+import type { FillShape } from "@/types/shapes";
 
 const props = defineProps<{ shape: FillShape; layerId: string }>();
-const emit = defineEmits(['update']);
+const emit = defineEmits(["update"]);
 const store = useCompositorStore();
 
-const colorHex = computed(() => {
+const _colorHex = computed(() => {
   const c = props.shape.color.value;
-  const r = Math.round(c.r).toString(16).padStart(2, '0');
-  const g = Math.round(c.g).toString(16).padStart(2, '0');
-  const b = Math.round(c.b).toString(16).padStart(2, '0');
+  const r = Math.round(c.r).toString(16).padStart(2, "0");
+  const g = Math.round(c.g).toString(16).padStart(2, "0");
+  const b = Math.round(c.b).toString(16).padStart(2, "0");
   return `#${r}${g}${b}`;
 });
 
-function updateColor(e: Event) {
+function _updateColor(e: Event) {
   const hex = (e.target as HTMLInputElement).value;
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
@@ -79,42 +77,48 @@ function updateColor(e: Event) {
   const updated = { ...props.shape };
   updated.color = {
     ...updated.color,
-    value: { r, g, b, a: updated.color.value.a }
+    value: { r, g, b, a: updated.color.value.a },
   };
-  emit('update', updated);
+  emit("update", updated);
 }
 
-function updateNumber(prop: 'opacity', value: number) {
+function _updateNumber(prop: "opacity", value: number) {
   const updated = { ...props.shape };
   updated[prop] = { ...updated[prop], value };
-  emit('update', updated);
+  emit("update", updated);
 }
 
-function updateFillRule(e: Event) {
+function _updateFillRule(e: Event) {
   const updated = { ...props.shape };
-  updated.fillRule = (e.target as HTMLSelectElement).value as 'nonzero' | 'evenodd';
-  emit('update', updated);
+  updated.fillRule = (e.target as HTMLSelectElement).value as
+    | "nonzero"
+    | "evenodd";
+  emit("update", updated);
 }
 
-function updateBlendMode(e: Event) {
+function _updateBlendMode(e: Event) {
   const updated = { ...props.shape };
   updated.blendMode = (e.target as HTMLSelectElement).value;
-  emit('update', updated);
+  emit("update", updated);
 }
 
-function toggleKeyframe(prop: 'color' | 'opacity') {
+function _toggleKeyframe(prop: "color" | "opacity") {
   const updated = { ...props.shape };
   const animProp = updated[prop];
   const frame = store.currentFrame;
 
-  const hasKf = animProp.keyframes.some(k => k.frame === frame);
+  const hasKf = animProp.keyframes.some((k) => k.frame === frame);
   if (hasKf) {
-    animProp.keyframes = animProp.keyframes.filter(k => k.frame !== frame) as typeof animProp.keyframes;
+    animProp.keyframes = animProp.keyframes.filter(
+      (k) => k.frame !== frame,
+    ) as typeof animProp.keyframes;
   } else {
-    (animProp.keyframes as unknown[]).push(createKeyframe(frame, animProp.value, 'linear'));
+    (animProp.keyframes as unknown[]).push(
+      createKeyframe(frame, animProp.value, "linear"),
+    );
   }
   animProp.animated = animProp.keyframes.length > 0;
-  emit('update', updated);
+  emit("update", updated);
 }
 </script>
 

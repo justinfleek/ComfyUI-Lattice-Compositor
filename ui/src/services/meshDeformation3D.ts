@@ -9,12 +9,12 @@
  * Works with ModelLayer for 3D file input (GLTF, FBX, OBJ, etc.)
  */
 
-import * as THREE from 'three';
-import type { AnimatableProperty, Vec3 } from '@/types/project';
-import { interpolateProperty } from './interpolation';
-import { createLogger } from '@/utils/logger';
+import type * as THREE from "three";
+import type { AnimatableProperty, Vec3 } from "@/types/project";
+import { createLogger } from "@/utils/logger";
+import { interpolateProperty } from "./interpolation";
 
-const logger = createLogger('MeshDeformation3D');
+const logger = createLogger("MeshDeformation3D");
 
 // ============================================================================
 // TYPES
@@ -105,7 +105,7 @@ export const DEFAULT_BOUNCE: BounceConfig = {
  */
 export function calculateSquashStretch(
   velocity: Vec3,
-  config: SquashStretchConfig = DEFAULT_SQUASH_STRETCH
+  config: SquashStretchConfig = DEFAULT_SQUASH_STRETCH,
 ): Vec3 {
   if (!config.enabled) {
     return { x: 1, y: 1, z: 1 };
@@ -113,9 +113,7 @@ export function calculateSquashStretch(
 
   // Calculate velocity magnitude
   const speed = Math.sqrt(
-    velocity.x * velocity.x +
-    velocity.y * velocity.y +
-    velocity.z * velocity.z
+    velocity.x * velocity.x + velocity.y * velocity.y + velocity.z * velocity.z,
   );
 
   // Below threshold, no deformation
@@ -133,7 +131,8 @@ export function calculateSquashStretch(
   // Calculate stretch factor based on speed
   // Using exponential approach to maxStretch
   const normalizedSpeed = Math.min(speed / 500, 1); // Normalize to 0-1
-  const stretchFactor = 1 + (config.maxStretch - 1) * normalizedSpeed * config.responsiveness;
+  const stretchFactor =
+    1 + (config.maxStretch - 1) * normalizedSpeed * config.responsiveness;
 
   // Calculate squash factor (perpendicular)
   // If preserveVolume, squash = 1/sqrt(stretch) to maintain volume
@@ -182,7 +181,7 @@ export function calculateSquashStretch(
 export function calculateVelocityAtFrame(
   position: AnimatableProperty<Vec3>,
   frame: number,
-  fps: number = 30
+  fps: number = 30,
 ): Vec3 {
   const dt = 1 / fps;
 
@@ -216,7 +215,7 @@ export function calculateBounceOffset(
   initialVelocityY: number,
   currentFrame: number,
   fps: number,
-  config: BounceConfig = DEFAULT_BOUNCE
+  config: BounceConfig = DEFAULT_BOUNCE,
 ): number {
   if (!config.enabled || currentFrame < impactFrame) {
     return 0;
@@ -263,8 +262,8 @@ export function calculateBounceOffset(
 export function calculateImpactSquash(
   impactFrame: number,
   currentFrame: number,
-  fps: number,
-  config: SquashStretchConfig = DEFAULT_SQUASH_STRETCH
+  _fps: number,
+  config: SquashStretchConfig = DEFAULT_SQUASH_STRETCH,
 ): Vec3 {
   const framesSinceImpact = currentFrame - impactFrame;
 
@@ -275,11 +274,12 @@ export function calculateImpactSquash(
   // Quick squash and recover
   // Peak squash at frame 1, recover by frame 5
   const squashProgress = framesSinceImpact / 5;
-  const squashAmount = Math.sin(squashProgress * Math.PI) * (1 - config.maxSquash);
+  const squashAmount =
+    Math.sin(squashProgress * Math.PI) * (1 - config.maxSquash);
 
   return {
     x: 1 + squashAmount * 0.5, // Expand horizontally
-    y: 1 - squashAmount,        // Compress vertically
+    y: 1 - squashAmount, // Compress vertically
     z: 1 + squashAmount * 0.5, // Expand depth
   };
 }
@@ -293,15 +293,15 @@ export function calculateImpactSquash(
  */
 export function createDefault3DPin(
   id: string,
-  position: Vec3
+  position: Vec3,
 ): Deformation3DPin {
   return {
     id,
     name: `Pin ${id.slice(-4)}`,
     position: {
       id: `${id}_pos`,
-      name: 'Position',
-      type: 'position',
+      name: "Position",
+      type: "position",
       value: { ...position },
       animated: false,
       keyframes: [],
@@ -319,7 +319,7 @@ export function createDefault3DPin(
 export function calculate3DPinWeight(
   vertexPosition: Vec3,
   pin: Deformation3DPin,
-  pinPosition: Vec3
+  pinPosition: Vec3,
 ): number {
   const dx = vertexPosition.x - pinPosition.x;
   const dy = vertexPosition.y - pinPosition.y;
@@ -336,7 +336,7 @@ export function calculate3DPinWeight(
 
   // Inverse distance weighting with radius falloff
   const normalizedDist = distance / pin.radius;
-  const weight = Math.pow(1 / (1 + normalizedDist), pin.falloff);
+  const weight = (1 / (1 + normalizedDist)) ** pin.falloff;
 
   // Apply stiffness (reduces deformation)
   return weight * (1 - pin.stiffness);
@@ -348,7 +348,7 @@ export function calculate3DPinWeight(
 export function deform3DPosition(
   originalPosition: Vec3,
   pins: Deformation3DPin[],
-  frame: number
+  frame: number,
 ): Vec3 {
   if (pins.length === 0) {
     return { ...originalPosition };
@@ -369,7 +369,11 @@ export function deform3DPosition(
     const deltaZ = pinPos.z - pin.restPosition.z;
 
     // Calculate weight for this vertex relative to pin's rest position
-    const weight = calculate3DPinWeight(originalPosition, pin, pin.restPosition);
+    const weight = calculate3DPinWeight(
+      originalPosition,
+      pin,
+      pin.restPosition,
+    );
 
     if (weight > 0) {
       // Apply weighted displacement
@@ -400,7 +404,7 @@ export function deform3DPosition(
  */
 export function applySquashStretchToObject(
   object: THREE.Object3D,
-  scale: Vec3
+  scale: Vec3,
 ): void {
   object.scale.set(scale.x, scale.y, scale.z);
 }
@@ -412,7 +416,7 @@ export function deformGeometryWithPins(
   geometry: THREE.BufferGeometry,
   originalPositions: Float32Array,
   pins: Deformation3DPin[],
-  frame: number
+  frame: number,
 ): void {
   const positions = geometry.attributes.position;
   const vertexCount = positions.count;
@@ -450,7 +454,7 @@ export class MeshDeformation3DService {
     layerId: string,
     geometry?: THREE.BufferGeometry,
     squashStretch?: Partial<SquashStretchConfig>,
-    bounce?: Partial<BounceConfig>
+    bounce?: Partial<BounceConfig>,
   ): void {
     this.pinsByLayer.set(layerId, []);
 
@@ -499,9 +503,10 @@ export class MeshDeformation3DService {
     layerId: string,
     frame: number,
     position: AnimatableProperty<Vec3>,
-    fps: number = 30
+    fps: number = 30,
   ): Deformation3DResult {
-    const squashConfig = this.squashStretchConfigs.get(layerId) ?? DEFAULT_SQUASH_STRETCH;
+    const squashConfig =
+      this.squashStretchConfigs.get(layerId) ?? DEFAULT_SQUASH_STRETCH;
 
     // Calculate velocity for squash/stretch
     const velocity = calculateVelocityAtFrame(position, frame, fps);

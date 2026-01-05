@@ -52,13 +52,13 @@ const DEFAULT_OPTIONS: Required<JSONSanitizeOptions> = {
  * Dangerous keys that could enable prototype pollution
  */
 const PROTOTYPE_KEYS = new Set([
-  '__proto__',
-  'constructor',
-  'prototype',
-  '__defineGetter__',
-  '__defineSetter__',
-  '__lookupGetter__',
-  '__lookupSetter__',
+  "__proto__",
+  "constructor",
+  "prototype",
+  "__defineGetter__",
+  "__defineSetter__",
+  "__lookupGetter__",
+  "__lookupSetter__",
 ]);
 
 /**
@@ -70,7 +70,7 @@ const PROTOTYPE_KEYS = new Set([
  */
 export function parseAndSanitize(
   jsonString: string,
-  options: JSONSanitizeOptions = {}
+  options: JSONSanitizeOptions = {},
 ): JSONSanitizeResult {
   const opts = { ...DEFAULT_OPTIONS, ...options };
   const warnings: string[] = [];
@@ -83,11 +83,11 @@ export function parseAndSanitize(
   };
 
   // Input validation
-  if (typeof jsonString !== 'string') {
+  if (typeof jsonString !== "string") {
     return {
       valid: false,
       data: null,
-      error: 'Input must be a string',
+      error: "Input must be a string",
       warnings,
       stats,
     };
@@ -112,7 +112,7 @@ export function parseAndSanitize(
     return {
       valid: false,
       data: null,
-      error: `Invalid JSON: ${e instanceof Error ? e.message : 'Parse error'}`,
+      error: `Invalid JSON: ${e instanceof Error ? e.message : "Parse error"}`,
       warnings,
       stats,
     };
@@ -131,7 +131,7 @@ export function parseAndSanitize(
     return {
       valid: false,
       data: null,
-      error: e instanceof Error ? e.message : 'Sanitization error',
+      error: e instanceof Error ? e.message : "Sanitization error",
       warnings,
       stats,
     };
@@ -147,7 +147,7 @@ export function parseAndSanitize(
  */
 export function sanitize(
   data: unknown,
-  options: JSONSanitizeOptions = {}
+  options: JSONSanitizeOptions = {},
 ): JSONSanitizeResult {
   const opts = { ...DEFAULT_OPTIONS, ...options };
   const warnings: string[] = [];
@@ -171,7 +171,7 @@ export function sanitize(
     return {
       valid: false,
       data: null,
-      error: e instanceof Error ? e.message : 'Sanitization error',
+      error: e instanceof Error ? e.message : "Sanitization error",
       warnings,
       stats,
     };
@@ -184,9 +184,9 @@ export function sanitize(
 function sanitizeValue(
   value: unknown,
   opts: Required<JSONSanitizeOptions>,
-  stats: JSONSanitizeResult['stats'],
+  stats: JSONSanitizeResult["stats"],
   warnings: string[],
-  depth: number
+  depth: number,
 ): unknown {
   // Track max depth
   if (depth > stats.depth) {
@@ -211,16 +211,16 @@ function sanitizeValue(
   // Primitives
   const type = typeof value;
 
-  if (type === 'boolean' || type === 'number') {
+  if (type === "boolean" || type === "number") {
     // Check for NaN/Infinity (not valid JSON but could slip through)
-    if (type === 'number' && !Number.isFinite(value as number)) {
+    if (type === "number" && !Number.isFinite(value as number)) {
       warnings.push(`Non-finite number replaced with null: ${value}`);
       return null;
     }
     return value;
   }
 
-  if (type === 'string') {
+  if (type === "string") {
     return sanitizeString(value as string, opts, stats, warnings);
   }
 
@@ -230,8 +230,14 @@ function sanitizeValue(
   }
 
   // Object
-  if (type === 'object') {
-    return sanitizeObject(value as Record<string, unknown>, opts, stats, warnings, depth);
+  if (type === "object") {
+    return sanitizeObject(
+      value as Record<string, unknown>,
+      opts,
+      stats,
+      warnings,
+      depth,
+    );
   }
 
   // Functions, symbols, etc. - remove
@@ -245,12 +251,14 @@ function sanitizeValue(
 function sanitizeString(
   str: string,
   opts: Required<JSONSanitizeOptions>,
-  stats: JSONSanitizeResult['stats'],
-  warnings: string[]
+  stats: JSONSanitizeResult["stats"],
+  warnings: string[],
 ): string {
   // Length check
   if (str.length > opts.maxStringLength) {
-    throw new Error(`String exceeds maximum length: ${str.length} bytes (max: ${opts.maxStringLength})`);
+    throw new Error(
+      `String exceeds maximum length: ${str.length} bytes (max: ${opts.maxStringLength})`,
+    );
   }
 
   // Track max string length
@@ -259,9 +267,9 @@ function sanitizeString(
   }
 
   // Remove null bytes if configured
-  if (opts.removeNullBytes && str.includes('\0')) {
-    warnings.push('Null bytes removed from string');
-    return str.replace(/\0/g, '');
+  if (opts.removeNullBytes && str.includes("\0")) {
+    warnings.push("Null bytes removed from string");
+    return str.replace(/\0/g, "");
   }
 
   return str;
@@ -273,20 +281,24 @@ function sanitizeString(
 function sanitizeArray(
   arr: unknown[],
   opts: Required<JSONSanitizeOptions>,
-  stats: JSONSanitizeResult['stats'],
+  stats: JSONSanitizeResult["stats"],
   warnings: string[],
-  depth: number
+  depth: number,
 ): unknown[] {
   // Length check
   if (arr.length > opts.maxArrayLength) {
-    throw new Error(`Array exceeds maximum length: ${arr.length} elements (max: ${opts.maxArrayLength})`);
+    throw new Error(
+      `Array exceeds maximum length: ${arr.length} elements (max: ${opts.maxArrayLength})`,
+    );
   }
 
   stats.totalArrayElements += arr.length;
 
   // Check cumulative elements (prevent many small arrays)
   if (stats.totalArrayElements > opts.maxArrayLength * 10) {
-    throw new Error(`Total array elements exceed limit: ${stats.totalArrayElements}`);
+    throw new Error(
+      `Total array elements exceed limit: ${stats.totalArrayElements}`,
+    );
   }
 
   // Sanitize each element
@@ -304,16 +316,18 @@ function sanitizeArray(
 function sanitizeObject(
   obj: Record<string, unknown>,
   opts: Required<JSONSanitizeOptions>,
-  stats: JSONSanitizeResult['stats'],
+  stats: JSONSanitizeResult["stats"],
   warnings: string[],
-  depth: number
+  depth: number,
 ): Record<string, unknown> {
   const keys = Object.keys(obj);
 
   // Key count check
   stats.totalKeys += keys.length;
   if (stats.totalKeys > opts.maxTotalKeys) {
-    throw new Error(`Total object keys exceed limit: ${stats.totalKeys} (max: ${opts.maxTotalKeys})`);
+    throw new Error(
+      `Total object keys exceed limit: ${stats.totalKeys} (max: ${opts.maxTotalKeys})`,
+    );
   }
 
   const result: Record<string, unknown> = {};
@@ -321,7 +335,9 @@ function sanitizeObject(
   for (const key of keys) {
     // Key length check
     if (key.length > opts.maxKeyLength) {
-      warnings.push(`Key truncated: ${key.slice(0, 50)}... (exceeded ${opts.maxKeyLength} chars)`);
+      warnings.push(
+        `Key truncated: ${key.slice(0, 50)}... (exceeded ${opts.maxKeyLength} chars)`,
+      );
       continue; // Skip this key entirely
     }
 
@@ -350,7 +366,10 @@ function sanitizeObject(
  * Quick validation without full sanitization
  * Use for fast rejection of obviously malicious input
  */
-export function quickValidate(jsonString: string, options: JSONSanitizeOptions = {}): boolean {
+export function quickValidate(
+  jsonString: string,
+  options: JSONSanitizeOptions = {},
+): boolean {
   const opts = { ...DEFAULT_OPTIONS, ...options };
 
   // Length check
@@ -362,7 +381,7 @@ export function quickValidate(jsonString: string, options: JSONSanitizeOptions =
   let maxBracketDepth = 0;
   let currentDepth = 0;
   for (const char of jsonString) {
-    if (char === '{' || char === '[') {
+    if (char === "{" || char === "[") {
       currentDepth++;
       if (currentDepth > maxBracketDepth) {
         maxBracketDepth = currentDepth;
@@ -370,7 +389,7 @@ export function quickValidate(jsonString: string, options: JSONSanitizeOptions =
       if (currentDepth > opts.maxDepth) {
         return false;
       }
-    } else if (char === '}' || char === ']') {
+    } else if (char === "}" || char === "]") {
       currentDepth--;
     }
   }
@@ -392,11 +411,11 @@ export function quickValidate(jsonString: string, options: JSONSanitizeOptions =
  */
 export function safeParse<T = unknown>(
   jsonString: string,
-  options: JSONSanitizeOptions = {}
+  options: JSONSanitizeOptions = {},
 ): T {
   const result = parseAndSanitize(jsonString, options);
   if (!result.valid) {
-    throw new Error(result.error || 'JSON validation failed');
+    throw new Error(result.error || "JSON validation failed");
   }
   return result.data as T;
 }
@@ -406,7 +425,7 @@ export function safeParse<T = unknown>(
  * Use after sanitization for additional safety
  */
 export function deepFreeze<T>(obj: T): T {
-  if (obj === null || typeof obj !== 'object') {
+  if (obj === null || typeof obj !== "object") {
     return obj;
   }
 

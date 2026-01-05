@@ -22,25 +22,23 @@
  */
 
 import type {
-  LayerStyles,
-  DropShadowStyle,
-  InnerShadowStyle,
-  OuterGlowStyle,
-  InnerGlowStyle,
   BevelEmbossStyle,
-  SatinStyle,
   ColorOverlayStyle,
+  DropShadowStyle,
+  GlobalLightSettings,
   GradientOverlayStyle,
-  StrokeStyle,
-  StyleBlendingOptions,
+  InnerGlowStyle,
+  InnerShadowStyle,
+  LayerStyles,
+  OuterGlowStyle,
   RGBA,
-  GradientDef,
-  GlobalLightSettings
-} from '@/types/layerStyles';
-import type { AnimatableProperty } from '@/types/project';
+  SatinStyle,
+  StrokeStyle,
+} from "@/types/layerStyles";
+import type { AnimatableProperty } from "@/types/project";
 // blendModes module provides blendImages, blendPixel etc. via default export
 // import blendModes from '../blendModes';
-import { interpolateProperty } from '../interpolation';
+import { interpolateProperty } from "../interpolation";
 
 // ============================================================================
 // UTILITY FUNCTIONS
@@ -62,7 +60,10 @@ export function setCurrentFrame(frame: number): void {
  * Get value from animatable property at current frame
  * Uses keyframe interpolation when property is animated
  */
-function getValue<T>(prop: AnimatableProperty<T> | undefined, defaultValue: T): T {
+function getValue<T>(
+  prop: AnimatableProperty<T> | undefined,
+  defaultValue: T,
+): T {
   if (!prop) return defaultValue;
 
   // Use keyframe interpolation if property is animated
@@ -81,10 +82,10 @@ function createMatchingCanvas(source: HTMLCanvasElement): {
   canvas: HTMLCanvasElement;
   ctx: CanvasRenderingContext2D;
 } {
-  const canvas = document.createElement('canvas');
+  const canvas = document.createElement("canvas");
   canvas.width = source.width;
   canvas.height = source.height;
-  const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true })!;
   return { canvas, ctx };
 }
 
@@ -98,12 +99,15 @@ function rgbaToString(color: RGBA, opacity: number = 1): string {
 /**
  * Calculate offset from angle and distance
  */
-function angleToOffset(angleDeg: number, distance: number): { x: number; y: number } {
+function angleToOffset(
+  angleDeg: number,
+  distance: number,
+): { x: number; y: number } {
   // Convert angle: 0° = right, 90° = up (matching Photoshop)
-  const angleRad = (angleDeg - 90) * Math.PI / 180;
+  const angleRad = ((angleDeg - 90) * Math.PI) / 180;
   return {
     x: Math.cos(angleRad) * distance,
-    y: -Math.sin(angleRad) * distance
+    y: -Math.sin(angleRad) * distance,
   };
 }
 
@@ -111,7 +115,7 @@ function angleToOffset(angleDeg: number, distance: number): { x: number; y: numb
  * Get alpha channel as separate canvas
  */
 function extractAlpha(source: HTMLCanvasElement): ImageData {
-  const ctx = source.getContext('2d', { willReadFrequently: true })!;
+  const ctx = source.getContext("2d", { willReadFrequently: true })!;
   return ctx.getImageData(0, 0, source.width, source.height);
 }
 
@@ -120,13 +124,13 @@ function extractAlpha(source: HTMLCanvasElement): ImageData {
  */
 function applyBlur(canvas: HTMLCanvasElement, radius: number): void {
   if (radius <= 0) return;
-  const ctx = canvas.getContext('2d')!;
+  const ctx = canvas.getContext("2d")!;
   ctx.filter = `blur(${radius}px)`;
   const temp = createMatchingCanvas(canvas);
   temp.ctx.drawImage(canvas, 0, 0);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(temp.canvas, 0, 0);
-  ctx.filter = 'none';
+  ctx.filter = "none";
 }
 
 /**
@@ -213,15 +217,16 @@ function erodeAlpha(imageData: ImageData, amount: number): ImageData {
 export function renderDropShadowStyle(
   input: HTMLCanvasElement,
   style: DropShadowStyle,
-  globalLight?: GlobalLightSettings
+  globalLight?: GlobalLightSettings,
 ): HTMLCanvasElement {
   if (!style.enabled) return input;
 
   const opacity = getValue(style.opacity, 75) / 100;
   const color = getValue(style.color, { r: 0, g: 0, b: 0, a: 1 });
-  const angle = style.useGlobalLight && globalLight
-    ? getValue(globalLight.angle, 120)
-    : getValue(style.angle, 120);
+  const angle =
+    style.useGlobalLight && globalLight
+      ? getValue(globalLight.angle, 120)
+      : getValue(style.angle, 120);
   const distance = getValue(style.distance, 5);
   const spread = getValue(style.spread, 0);
   const size = getValue(style.size, 5);
@@ -235,14 +240,19 @@ export function renderDropShadowStyle(
   // Draw input alpha as solid color for shadow
   shadowCtx.fillStyle = rgbaToString(color, 1);
   shadowCtx.fillRect(0, 0, shadowCanvas.width, shadowCanvas.height);
-  shadowCtx.globalCompositeOperation = 'destination-in';
+  shadowCtx.globalCompositeOperation = "destination-in";
   shadowCtx.drawImage(input, 0, 0);
-  shadowCtx.globalCompositeOperation = 'source-over';
+  shadowCtx.globalCompositeOperation = "source-over";
 
   // Apply spread (choke)
   if (spread > 0) {
     const spreadAmount = (spread / 100) * size;
-    const imageData = shadowCtx.getImageData(0, 0, shadowCanvas.width, shadowCanvas.height);
+    const imageData = shadowCtx.getImageData(
+      0,
+      0,
+      shadowCanvas.width,
+      shadowCanvas.height,
+    );
     const dilated = dilateAlpha(imageData, spreadAmount);
     shadowCtx.putImageData(dilated, 0, 0);
   }
@@ -262,9 +272,9 @@ export function renderDropShadowStyle(
     ctx.drawImage(input, 0, 0);
   } else {
     // Knock out shadow where original exists
-    ctx.globalCompositeOperation = 'destination-out';
+    ctx.globalCompositeOperation = "destination-out";
     ctx.drawImage(input, 0, 0);
-    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalCompositeOperation = "source-over";
     ctx.drawImage(input, 0, 0);
   }
 
@@ -281,15 +291,16 @@ export function renderDropShadowStyle(
 export function renderInnerShadowStyle(
   input: HTMLCanvasElement,
   style: InnerShadowStyle,
-  globalLight?: GlobalLightSettings
+  globalLight?: GlobalLightSettings,
 ): HTMLCanvasElement {
   if (!style.enabled) return input;
 
   const opacity = getValue(style.opacity, 75) / 100;
   const color = getValue(style.color, { r: 0, g: 0, b: 0, a: 1 });
-  const angle = style.useGlobalLight && globalLight
-    ? getValue(globalLight.angle, 120)
-    : getValue(style.angle, 120);
+  const angle =
+    style.useGlobalLight && globalLight
+      ? getValue(globalLight.angle, 120)
+      : getValue(style.angle, 120);
   const distance = getValue(style.distance, 5);
   const choke = getValue(style.choke, 0);
   const size = getValue(style.size, 5);
@@ -308,14 +319,19 @@ export function renderInnerShadowStyle(
   shadowCtx.fillRect(0, 0, shadowCanvas.width, shadowCanvas.height);
 
   // Cut out the layer shape (inverted)
-  shadowCtx.globalCompositeOperation = 'destination-out';
+  shadowCtx.globalCompositeOperation = "destination-out";
   shadowCtx.drawImage(input, -offsetX, -offsetY);
-  shadowCtx.globalCompositeOperation = 'source-over';
+  shadowCtx.globalCompositeOperation = "source-over";
 
   // Apply choke
   if (choke > 0) {
     const chokeAmount = (choke / 100) * size;
-    const imageData = shadowCtx.getImageData(0, 0, shadowCanvas.width, shadowCanvas.height);
+    const imageData = shadowCtx.getImageData(
+      0,
+      0,
+      shadowCanvas.width,
+      shadowCanvas.height,
+    );
     const eroded = erodeAlpha(imageData, chokeAmount);
     shadowCtx.putImageData(eroded, 0, 0);
   }
@@ -326,17 +342,19 @@ export function renderInnerShadowStyle(
   }
 
   // Clip shadow to original shape
-  const { canvas: clippedShadow, ctx: clippedCtx } = createMatchingCanvas(input);
+  const { canvas: clippedShadow, ctx: clippedCtx } =
+    createMatchingCanvas(input);
   clippedCtx.drawImage(shadowCanvas, 0, 0);
-  clippedCtx.globalCompositeOperation = 'destination-in';
+  clippedCtx.globalCompositeOperation = "destination-in";
   clippedCtx.drawImage(input, 0, 0);
 
   // Composite shadow onto output using blend mode
   ctx.globalAlpha = opacity;
-  ctx.globalCompositeOperation = style.blendMode === 'multiply' ? 'multiply' : 'source-over';
+  ctx.globalCompositeOperation =
+    style.blendMode === "multiply" ? "multiply" : "source-over";
   ctx.drawImage(clippedShadow, 0, 0);
   ctx.globalAlpha = 1;
-  ctx.globalCompositeOperation = 'source-over';
+  ctx.globalCompositeOperation = "source-over";
 
   return output;
 }
@@ -350,7 +368,7 @@ export function renderInnerShadowStyle(
  */
 export function renderOuterGlowStyle(
   input: HTMLCanvasElement,
-  style: OuterGlowStyle
+  style: OuterGlowStyle,
 ): HTMLCanvasElement {
   if (!style.enabled) return input;
 
@@ -367,14 +385,19 @@ export function renderOuterGlowStyle(
   // Draw input alpha as glow color
   glowCtx.fillStyle = rgbaToString(color, 1);
   glowCtx.fillRect(0, 0, glowCanvas.width, glowCanvas.height);
-  glowCtx.globalCompositeOperation = 'destination-in';
+  glowCtx.globalCompositeOperation = "destination-in";
   glowCtx.drawImage(input, 0, 0);
-  glowCtx.globalCompositeOperation = 'source-over';
+  glowCtx.globalCompositeOperation = "source-over";
 
   // Apply spread
   if (spread > 0) {
     const spreadAmount = (spread / 100) * size;
-    const imageData = glowCtx.getImageData(0, 0, glowCanvas.width, glowCanvas.height);
+    const imageData = glowCtx.getImageData(
+      0,
+      0,
+      glowCanvas.width,
+      glowCanvas.height,
+    );
     const dilated = dilateAlpha(imageData, spreadAmount);
     glowCtx.putImageData(dilated, 0, 0);
   }
@@ -386,10 +409,11 @@ export function renderOuterGlowStyle(
 
   // Draw glow behind original
   ctx.globalAlpha = opacity;
-  ctx.globalCompositeOperation = style.blendMode === 'screen' ? 'screen' : 'lighter';
+  ctx.globalCompositeOperation =
+    style.blendMode === "screen" ? "screen" : "lighter";
   ctx.drawImage(glowCanvas, 0, 0);
   ctx.globalAlpha = 1;
-  ctx.globalCompositeOperation = 'source-over';
+  ctx.globalCompositeOperation = "source-over";
 
   // Draw original on top
   ctx.drawImage(input, 0, 0);
@@ -406,13 +430,13 @@ export function renderOuterGlowStyle(
  */
 export function renderInnerGlowStyle(
   input: HTMLCanvasElement,
-  style: InnerGlowStyle
+  style: InnerGlowStyle,
 ): HTMLCanvasElement {
   if (!style.enabled) return input;
 
   const opacity = getValue(style.opacity, 75) / 100;
   const color = getValue(style.color, { r: 255, g: 255, b: 190, a: 1 });
-  const source = style.source ?? 'edge';
+  const source = style.source ?? "edge";
   const choke = getValue(style.choke, 0);
   const size = getValue(style.size, 5);
 
@@ -424,24 +448,30 @@ export function renderInnerGlowStyle(
   // Create glow layer
   const { canvas: glowCanvas, ctx: glowCtx } = createMatchingCanvas(input);
 
-  if (source === 'edge') {
+  if (source === "edge") {
     // Glow from edges inward
     // Create inverted alpha for edge detection
     glowCtx.fillStyle = rgbaToString(color, 1);
     glowCtx.fillRect(0, 0, glowCanvas.width, glowCanvas.height);
-    glowCtx.globalCompositeOperation = 'destination-out';
+    glowCtx.globalCompositeOperation = "destination-out";
 
     // Erode the shape to create edge glow
-    const { canvas: erodedCanvas, ctx: erodedCtx } = createMatchingCanvas(input);
+    const { canvas: erodedCanvas, ctx: erodedCtx } =
+      createMatchingCanvas(input);
     erodedCtx.drawImage(input, 0, 0);
     if (size > 0) {
-      const imageData = erodedCtx.getImageData(0, 0, erodedCanvas.width, erodedCanvas.height);
+      const imageData = erodedCtx.getImageData(
+        0,
+        0,
+        erodedCanvas.width,
+        erodedCanvas.height,
+      );
       const eroded = erodeAlpha(imageData, size);
       erodedCtx.putImageData(eroded, 0, 0);
     }
 
     glowCtx.drawImage(erodedCanvas, 0, 0);
-    glowCtx.globalCompositeOperation = 'source-over';
+    glowCtx.globalCompositeOperation = "source-over";
   } else {
     // Glow from center
     // Create radial gradient from center
@@ -450,8 +480,12 @@ export function renderInnerGlowStyle(
     const maxDist = Math.sqrt(centerX * centerX + centerY * centerY);
 
     const gradient = glowCtx.createRadialGradient(
-      centerX, centerY, 0,
-      centerX, centerY, maxDist
+      centerX,
+      centerY,
+      0,
+      centerX,
+      centerY,
+      maxDist,
     );
     gradient.addColorStop(0, rgbaToString(color, 1));
     gradient.addColorStop(1, rgbaToString(color, 0));
@@ -461,22 +495,23 @@ export function renderInnerGlowStyle(
   }
 
   // Apply blur
-  if (size > 0 && source === 'edge') {
+  if (size > 0 && source === "edge") {
     applyBlur(glowCanvas, size * (1 - choke / 100));
   }
 
   // Clip glow to original shape
   const { canvas: clippedGlow, ctx: clippedCtx } = createMatchingCanvas(input);
   clippedCtx.drawImage(glowCanvas, 0, 0);
-  clippedCtx.globalCompositeOperation = 'destination-in';
+  clippedCtx.globalCompositeOperation = "destination-in";
   clippedCtx.drawImage(input, 0, 0);
 
   // Composite glow onto output
   ctx.globalAlpha = opacity;
-  ctx.globalCompositeOperation = style.blendMode === 'screen' ? 'screen' : 'lighter';
+  ctx.globalCompositeOperation =
+    style.blendMode === "screen" ? "screen" : "lighter";
   ctx.drawImage(clippedGlow, 0, 0);
   ctx.globalAlpha = 1;
-  ctx.globalCompositeOperation = 'source-over';
+  ctx.globalCompositeOperation = "source-over";
 
   return output;
 }
@@ -491,18 +526,24 @@ export function renderInnerGlowStyle(
 export function renderBevelEmbossStyle(
   input: HTMLCanvasElement,
   style: BevelEmbossStyle,
-  globalLight?: GlobalLightSettings
+  globalLight?: GlobalLightSettings,
 ): HTMLCanvasElement {
   if (!style.enabled) return input;
 
   const depth = getValue(style.depth, 100) / 100;
   const size = getValue(style.size, 5);
   const soften = getValue(style.soften, 0);
-  const angle = style.useGlobalLight && globalLight
-    ? getValue(globalLight.angle, 120)
-    : getValue(style.angle, 120);
+  const angle =
+    style.useGlobalLight && globalLight
+      ? getValue(globalLight.angle, 120)
+      : getValue(style.angle, 120);
   const altitude = getValue(style.altitude, 30);
-  const highlightColor = getValue(style.highlightColor, { r: 255, g: 255, b: 255, a: 1 });
+  const highlightColor = getValue(style.highlightColor, {
+    r: 255,
+    g: 255,
+    b: 255,
+    a: 1,
+  });
   const shadowColor = getValue(style.shadowColor, { r: 0, g: 0, b: 0, a: 1 });
   const highlightOpacity = getValue(style.highlightOpacity, 75) / 100;
   const shadowOpacity = getValue(style.shadowOpacity, 75) / 100;
@@ -513,17 +554,18 @@ export function renderBevelEmbossStyle(
   ctx.drawImage(input, 0, 0);
 
   // Calculate light direction
-  const lightAngleRad = (angle - 90) * Math.PI / 180;
+  const lightAngleRad = ((angle - 90) * Math.PI) / 180;
   const lightX = Math.cos(lightAngleRad);
   const lightY = -Math.sin(lightAngleRad);
-  const lightZ = Math.sin(altitude * Math.PI / 180);
+  const lightZ = Math.sin((altitude * Math.PI) / 180);
 
   // Create height map from alpha
-  const inputCtx = input.getContext('2d', { willReadFrequently: true })!;
+  const inputCtx = input.getContext("2d", { willReadFrequently: true })!;
   const inputData = inputCtx.getImageData(0, 0, input.width, input.height);
 
   // Create highlight and shadow passes
-  const { canvas: highlightCanvas, ctx: highlightCtx } = createMatchingCanvas(input);
+  const { canvas: highlightCanvas, ctx: highlightCtx } =
+    createMatchingCanvas(input);
   const { canvas: shadowCanvas, ctx: shadowCtx } = createMatchingCanvas(input);
 
   const highlightData = highlightCtx.createImageData(input.width, input.height);
@@ -545,18 +587,23 @@ export function renderBevelEmbossStyle(
       const topIdx = ((y - 1) * width + x) * 4;
       const bottomIdx = ((y + 1) * width + x) * 4;
 
-      const gradX = (inputData.data[rightIdx + 3] - inputData.data[leftIdx + 3]) / 255;
-      const gradY = (inputData.data[bottomIdx + 3] - inputData.data[topIdx + 3]) / 255;
+      const gradX =
+        (inputData.data[rightIdx + 3] - inputData.data[leftIdx + 3]) / 255;
+      const gradY =
+        (inputData.data[bottomIdx + 3] - inputData.data[topIdx + 3]) / 255;
 
       // Calculate lighting
       const normalX = -gradX * size * depth;
       const normalY = -gradY * size * depth;
       const normalZ = 1;
-      const normalLen = Math.sqrt(normalX * normalX + normalY * normalY + normalZ * normalZ);
+      const normalLen = Math.sqrt(
+        normalX * normalX + normalY * normalY + normalZ * normalZ,
+      );
 
-      const dot = (normalX / normalLen * lightX +
-                   normalY / normalLen * lightY +
-                   normalZ / normalLen * lightZ);
+      const dot =
+        (normalX / normalLen) * lightX +
+        (normalY / normalLen) * lightY +
+        (normalZ / normalLen) * lightZ;
 
       if (dot > 0) {
         // Highlight
@@ -586,13 +633,15 @@ export function renderBevelEmbossStyle(
   }
 
   // Composite highlight and shadow
-  ctx.globalCompositeOperation = style.highlightMode === 'screen' ? 'screen' : 'lighter';
+  ctx.globalCompositeOperation =
+    style.highlightMode === "screen" ? "screen" : "lighter";
   ctx.drawImage(highlightCanvas, 0, 0);
 
-  ctx.globalCompositeOperation = style.shadowMode === 'multiply' ? 'multiply' : 'darken';
+  ctx.globalCompositeOperation =
+    style.shadowMode === "multiply" ? "multiply" : "darken";
   ctx.drawImage(shadowCanvas, 0, 0);
 
-  ctx.globalCompositeOperation = 'source-over';
+  ctx.globalCompositeOperation = "source-over";
 
   return output;
 }
@@ -606,7 +655,7 @@ export function renderBevelEmbossStyle(
  */
 export function renderSatinStyle(
   input: HTMLCanvasElement,
-  style: SatinStyle
+  style: SatinStyle,
 ): HTMLCanvasElement {
   if (!style.enabled) return input;
 
@@ -628,9 +677,9 @@ export function renderSatinStyle(
   const { canvas: satinCanvas, ctx: satinCtx } = createMatchingCanvas(input);
 
   // Draw two offset copies of the alpha
-  satinCtx.globalCompositeOperation = 'source-over';
+  satinCtx.globalCompositeOperation = "source-over";
   satinCtx.drawImage(input, offsetX, offsetY);
-  satinCtx.globalCompositeOperation = invert ? 'xor' : 'source-over';
+  satinCtx.globalCompositeOperation = invert ? "xor" : "source-over";
   satinCtx.drawImage(input, -offsetX, -offsetY);
 
   // Apply blur
@@ -639,22 +688,24 @@ export function renderSatinStyle(
   }
 
   // Colorize
-  const { canvas: coloredCanvas, ctx: coloredCtx } = createMatchingCanvas(input);
+  const { canvas: coloredCanvas, ctx: coloredCtx } =
+    createMatchingCanvas(input);
   coloredCtx.fillStyle = rgbaToString(color, 1);
   coloredCtx.fillRect(0, 0, coloredCanvas.width, coloredCanvas.height);
-  coloredCtx.globalCompositeOperation = 'destination-in';
+  coloredCtx.globalCompositeOperation = "destination-in";
   coloredCtx.drawImage(satinCanvas, 0, 0);
 
   // Clip to original shape
-  coloredCtx.globalCompositeOperation = 'destination-in';
+  coloredCtx.globalCompositeOperation = "destination-in";
   coloredCtx.drawImage(input, 0, 0);
 
   // Composite
   ctx.globalAlpha = opacity;
-  ctx.globalCompositeOperation = style.blendMode === 'multiply' ? 'multiply' : 'source-over';
+  ctx.globalCompositeOperation =
+    style.blendMode === "multiply" ? "multiply" : "source-over";
   ctx.drawImage(coloredCanvas, 0, 0);
   ctx.globalAlpha = 1;
-  ctx.globalCompositeOperation = 'source-over';
+  ctx.globalCompositeOperation = "source-over";
 
   return output;
 }
@@ -668,7 +719,7 @@ export function renderSatinStyle(
  */
 export function renderColorOverlayStyle(
   input: HTMLCanvasElement,
-  style: ColorOverlayStyle
+  style: ColorOverlayStyle,
 ): HTMLCanvasElement {
   if (!style.enabled) return input;
 
@@ -681,12 +732,13 @@ export function renderColorOverlayStyle(
   ctx.drawImage(input, 0, 0);
 
   // Create color overlay
-  const { canvas: overlayCanvas, ctx: overlayCtx } = createMatchingCanvas(input);
+  const { canvas: overlayCanvas, ctx: overlayCtx } =
+    createMatchingCanvas(input);
   overlayCtx.fillStyle = rgbaToString(color, 1);
   overlayCtx.fillRect(0, 0, overlayCanvas.width, overlayCanvas.height);
 
   // Clip to original shape
-  overlayCtx.globalCompositeOperation = 'destination-in';
+  overlayCtx.globalCompositeOperation = "destination-in";
   overlayCtx.drawImage(input, 0, 0);
 
   // Apply with blend mode
@@ -698,7 +750,7 @@ export function renderColorOverlayStyle(
   ctx.drawImage(overlayCanvas, 0, 0);
 
   ctx.globalAlpha = 1;
-  ctx.globalCompositeOperation = 'source-over';
+  ctx.globalCompositeOperation = "source-over";
 
   return output;
 }
@@ -708,24 +760,24 @@ export function renderColorOverlayStyle(
  */
 function getCompositeOperation(blendMode: string): GlobalCompositeOperation {
   const modeMap: Record<string, GlobalCompositeOperation> = {
-    'normal': 'source-over',
-    'multiply': 'multiply',
-    'screen': 'screen',
-    'overlay': 'overlay',
-    'darken': 'darken',
-    'lighten': 'lighten',
-    'color-dodge': 'color-dodge',
-    'color-burn': 'color-burn',
-    'hard-light': 'hard-light',
-    'soft-light': 'soft-light',
-    'difference': 'difference',
-    'exclusion': 'exclusion',
-    'hue': 'hue',
-    'saturation': 'saturation',
-    'color': 'color',
-    'luminosity': 'luminosity'
+    normal: "source-over",
+    multiply: "multiply",
+    screen: "screen",
+    overlay: "overlay",
+    darken: "darken",
+    lighten: "lighten",
+    "color-dodge": "color-dodge",
+    "color-burn": "color-burn",
+    "hard-light": "hard-light",
+    "soft-light": "soft-light",
+    difference: "difference",
+    exclusion: "exclusion",
+    hue: "hue",
+    saturation: "saturation",
+    color: "color",
+    luminosity: "luminosity",
   };
-  return modeMap[blendMode] ?? 'source-over';
+  return modeMap[blendMode] ?? "source-over";
 }
 
 // ============================================================================
@@ -737,17 +789,17 @@ function getCompositeOperation(blendMode: string): GlobalCompositeOperation {
  */
 export function renderGradientOverlayStyle(
   input: HTMLCanvasElement,
-  style: GradientOverlayStyle
+  style: GradientOverlayStyle,
 ): HTMLCanvasElement {
   if (!style.enabled) return input;
 
   const opacity = getValue(style.opacity, 100) / 100;
   const gradientDef = getValue(style.gradient, {
-    type: 'linear',
+    type: "linear",
     stops: [
       { position: 0, color: { r: 0, g: 0, b: 0, a: 1 } },
-      { position: 1, color: { r: 255, g: 255, b: 255, a: 1 } }
-    ]
+      { position: 1, color: { r: 255, g: 255, b: 255, a: 1 } },
+    ],
   });
   const angle = getValue(style.angle, 90);
   const scale = getValue(style.scale, 100) / 100;
@@ -761,7 +813,8 @@ export function renderGradientOverlayStyle(
   ctx.drawImage(input, 0, 0);
 
   // Create gradient overlay
-  const { canvas: overlayCanvas, ctx: overlayCtx } = createMatchingCanvas(input);
+  const { canvas: overlayCanvas, ctx: overlayCtx } =
+    createMatchingCanvas(input);
 
   const centerX = width / 2 + offset.x;
   const centerY = height / 2 + offset.y;
@@ -769,69 +822,74 @@ export function renderGradientOverlayStyle(
   let gradient: CanvasGradient;
 
   switch (style.style) {
-    case 'radial':
-    case 'diamond': {
-      const radius = Math.max(width, height) * scale / 2;
+    case "radial":
+    case "diamond": {
+      const radius = (Math.max(width, height) * scale) / 2;
       gradient = overlayCtx.createRadialGradient(
-        centerX, centerY, 0,
-        centerX, centerY, radius
+        centerX,
+        centerY,
+        0,
+        centerX,
+        centerY,
+        radius,
       );
       break;
     }
-    case 'angle': {
+    case "angle": {
       // Angle gradient approximated with conic gradient (not directly supported)
       // Fall back to linear for now
-      const angleRad = (angle - 90) * Math.PI / 180;
+      const angleRad = ((angle - 90) * Math.PI) / 180;
       const length = Math.max(width, height) * scale;
       gradient = overlayCtx.createLinearGradient(
-        centerX - Math.cos(angleRad) * length / 2,
-        centerY + Math.sin(angleRad) * length / 2,
-        centerX + Math.cos(angleRad) * length / 2,
-        centerY - Math.sin(angleRad) * length / 2
+        centerX - (Math.cos(angleRad) * length) / 2,
+        centerY + (Math.sin(angleRad) * length) / 2,
+        centerX + (Math.cos(angleRad) * length) / 2,
+        centerY - (Math.sin(angleRad) * length) / 2,
       );
       break;
     }
-    case 'reflected': {
+    case "reflected": {
       // Reflected gradient: goes from edge to center to edge
-      const angleRad = (angle - 90) * Math.PI / 180;
+      const angleRad = ((angle - 90) * Math.PI) / 180;
       const length = Math.max(width, height) * scale;
       gradient = overlayCtx.createLinearGradient(
-        centerX - Math.cos(angleRad) * length / 2,
-        centerY + Math.sin(angleRad) * length / 2,
-        centerX + Math.cos(angleRad) * length / 2,
-        centerY - Math.sin(angleRad) * length / 2
+        centerX - (Math.cos(angleRad) * length) / 2,
+        centerY + (Math.sin(angleRad) * length) / 2,
+        centerX + (Math.cos(angleRad) * length) / 2,
+        centerY - (Math.sin(angleRad) * length) / 2,
       );
       // Add mirrored stops
-      const stops = reverse ? [...gradientDef.stops].reverse() : gradientDef.stops;
-      stops.forEach(stop => {
+      const stops = reverse
+        ? [...gradientDef.stops].reverse()
+        : gradientDef.stops;
+      stops.forEach((stop) => {
         const pos = stop.position / 2; // First half
         gradient.addColorStop(pos, rgbaToString(stop.color, 1));
       });
-      [...stops].reverse().forEach(stop => {
+      [...stops].reverse().forEach((stop) => {
         const pos = 0.5 + (1 - stop.position) / 2; // Second half mirrored
         gradient.addColorStop(pos, rgbaToString(stop.color, 1));
       });
       overlayCtx.fillStyle = gradient;
       overlayCtx.fillRect(0, 0, width, height);
       // Skip normal stop addition
-      overlayCtx.globalCompositeOperation = 'destination-in';
+      overlayCtx.globalCompositeOperation = "destination-in";
       overlayCtx.drawImage(input, 0, 0);
       ctx.globalAlpha = opacity;
       ctx.globalCompositeOperation = getCompositeOperation(style.blendMode);
       ctx.drawImage(overlayCanvas, 0, 0);
       ctx.globalAlpha = 1;
-      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalCompositeOperation = "source-over";
       return output;
     }
-    case 'linear':
     default: {
-      const angleRad = (angle - 90) * Math.PI / 180;
+      const angleRad = ((angle - 90) * Math.PI) / 180;
       const length = Math.max(width, height) * scale;
       gradient = overlayCtx.createLinearGradient(
-        centerX - Math.cos(angleRad) * length / 2,
-        centerY + Math.sin(angleRad) * length / 2,
-        centerX + Math.cos(angleRad) * length / 2,
-        centerY - Math.sin(angleRad) * length / 2
+        centerX - (Math.cos(angleRad) * length) / 2,
+        centerY + (Math.sin(angleRad) * length) / 2,
+        centerX + (Math.cos(angleRad) * length) / 2,
+        centerY - (Math.sin(angleRad) * length) / 2,
       );
       break;
     }
@@ -839,7 +897,7 @@ export function renderGradientOverlayStyle(
 
   // Add gradient stops
   const stops = reverse ? [...gradientDef.stops].reverse() : gradientDef.stops;
-  stops.forEach(stop => {
+  stops.forEach((stop) => {
     const pos = reverse ? 1 - stop.position : stop.position;
     gradient.addColorStop(pos, rgbaToString(stop.color, 1));
   });
@@ -848,7 +906,7 @@ export function renderGradientOverlayStyle(
   overlayCtx.fillRect(0, 0, width, height);
 
   // Clip to original shape
-  overlayCtx.globalCompositeOperation = 'destination-in';
+  overlayCtx.globalCompositeOperation = "destination-in";
   overlayCtx.drawImage(input, 0, 0);
 
   // Apply with blend mode
@@ -857,7 +915,7 @@ export function renderGradientOverlayStyle(
   ctx.drawImage(overlayCanvas, 0, 0);
 
   ctx.globalAlpha = 1;
-  ctx.globalCompositeOperation = 'source-over';
+  ctx.globalCompositeOperation = "source-over";
 
   return output;
 }
@@ -871,74 +929,76 @@ export function renderGradientOverlayStyle(
  */
 export function renderStrokeStyle(
   input: HTMLCanvasElement,
-  style: StrokeStyle
+  style: StrokeStyle,
 ): HTMLCanvasElement {
   if (!style.enabled) return input;
 
   const opacity = getValue(style.opacity, 100) / 100;
   const color = getValue(style.color, { r: 255, g: 0, b: 0, a: 1 });
   const size = getValue(style.size, 3);
-  const position = style.position ?? 'outside';
+  const position = style.position ?? "outside";
 
   const { canvas: output, ctx } = createMatchingCanvas(input);
   const { width, height } = input;
 
   // Get input image data for alpha processing
-  const inputCtx = input.getContext('2d', { willReadFrequently: true })!;
+  const inputCtx = input.getContext("2d", { willReadFrequently: true })!;
   const inputData = inputCtx.getImageData(0, 0, width, height);
 
   // Create stroke based on position
   const { canvas: strokeCanvas, ctx: strokeCtx } = createMatchingCanvas(input);
 
   switch (position) {
-    case 'outside': {
+    case "outside": {
       // Dilate alpha, then subtract original
       const dilatedData = dilateAlpha(inputData, size);
       strokeCtx.putImageData(dilatedData, 0, 0);
-      strokeCtx.globalCompositeOperation = 'destination-out';
+      strokeCtx.globalCompositeOperation = "destination-out";
       strokeCtx.drawImage(input, 0, 0);
       break;
     }
-    case 'inside': {
+    case "inside": {
       // Original minus eroded
       strokeCtx.drawImage(input, 0, 0);
       const erodedData = erodeAlpha(inputData, size);
-      const { canvas: erodedCanvas, ctx: erodedCtx } = createMatchingCanvas(input);
+      const { canvas: erodedCanvas, ctx: erodedCtx } =
+        createMatchingCanvas(input);
       erodedCtx.putImageData(erodedData, 0, 0);
-      strokeCtx.globalCompositeOperation = 'destination-out';
+      strokeCtx.globalCompositeOperation = "destination-out";
       strokeCtx.drawImage(erodedCanvas, 0, 0);
       break;
     }
-    case 'center': {
+    case "center": {
       // Half outside, half inside
       const halfSize = size / 2;
       const dilatedData = dilateAlpha(inputData, halfSize);
       const erodedData = erodeAlpha(inputData, halfSize);
 
       strokeCtx.putImageData(dilatedData, 0, 0);
-      const { canvas: erodedCanvas, ctx: erodedCtx } = createMatchingCanvas(input);
+      const { canvas: erodedCanvas, ctx: erodedCtx } =
+        createMatchingCanvas(input);
       erodedCtx.putImageData(erodedData, 0, 0);
-      strokeCtx.globalCompositeOperation = 'destination-out';
+      strokeCtx.globalCompositeOperation = "destination-out";
       strokeCtx.drawImage(erodedCanvas, 0, 0);
       break;
     }
   }
 
   // Colorize stroke
-  strokeCtx.globalCompositeOperation = 'source-in';
+  strokeCtx.globalCompositeOperation = "source-in";
 
-  if (style.fillType === 'gradient' && style.gradient) {
+  if (style.fillType === "gradient" && style.gradient) {
     // Apply gradient fill
     const gradientAngle = getValue(style.gradientAngle, 90);
-    const angleRad = (gradientAngle - 90) * Math.PI / 180;
+    const angleRad = ((gradientAngle - 90) * Math.PI) / 180;
     const length = Math.max(width, height);
     const gradient = strokeCtx.createLinearGradient(
-      width / 2 - Math.cos(angleRad) * length / 2,
-      height / 2 + Math.sin(angleRad) * length / 2,
-      width / 2 + Math.cos(angleRad) * length / 2,
-      height / 2 - Math.sin(angleRad) * length / 2
+      width / 2 - (Math.cos(angleRad) * length) / 2,
+      height / 2 + (Math.sin(angleRad) * length) / 2,
+      width / 2 + (Math.cos(angleRad) * length) / 2,
+      height / 2 - (Math.sin(angleRad) * length) / 2,
     );
-    style.gradient.stops.forEach(stop => {
+    style.gradient.stops.forEach((stop) => {
       gradient.addColorStop(stop.position, rgbaToString(stop.color, 1));
     });
     strokeCtx.fillStyle = gradient;
@@ -947,16 +1007,16 @@ export function renderStrokeStyle(
   }
   strokeCtx.fillRect(0, 0, width, height);
 
-  strokeCtx.globalCompositeOperation = 'source-over';
+  strokeCtx.globalCompositeOperation = "source-over";
 
   // Composite: stroke behind or on top depending on position
-  if (position === 'outside') {
+  if (position === "outside") {
     // Stroke behind
     ctx.globalAlpha = opacity;
     ctx.globalCompositeOperation = getCompositeOperation(style.blendMode);
     ctx.drawImage(strokeCanvas, 0, 0);
     ctx.globalAlpha = 1;
-    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalCompositeOperation = "source-over";
     ctx.drawImage(input, 0, 0);
   } else {
     // Stroke on top (inside or center)
@@ -965,7 +1025,7 @@ export function renderStrokeStyle(
     ctx.globalCompositeOperation = getCompositeOperation(style.blendMode);
     ctx.drawImage(strokeCanvas, 0, 0);
     ctx.globalAlpha = 1;
-    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalCompositeOperation = "source-over";
   }
 
   return output;
@@ -992,7 +1052,7 @@ export function renderStrokeStyle(
 export function renderLayerStyles(
   input: HTMLCanvasElement,
   styles: LayerStyles,
-  globalLight?: GlobalLightSettings
+  globalLight?: GlobalLightSettings,
 ): HTMLCanvasElement {
   if (!styles.enabled) return input;
 
@@ -1002,7 +1062,8 @@ export function renderLayerStyles(
   if (styles.blendingOptions) {
     const fillOpacity = getValue(styles.blendingOptions.fillOpacity, 100) / 100;
     if (fillOpacity < 1) {
-      const { canvas: fadedCanvas, ctx: fadedCtx } = createMatchingCanvas(input);
+      const { canvas: fadedCanvas, ctx: fadedCtx } =
+        createMatchingCanvas(input);
       fadedCtx.globalAlpha = fillOpacity;
       fadedCtx.drawImage(input, 0, 0);
       result = fadedCanvas;
@@ -1070,5 +1131,5 @@ export {
   applyBlur,
   dilateAlpha,
   erodeAlpha,
-  getCompositeOperation
+  getCompositeOperation,
 };

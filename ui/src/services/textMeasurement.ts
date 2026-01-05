@@ -32,15 +32,15 @@ let measureContext: CanvasRenderingContext2D | null = null;
  */
 function getMeasureContext(): CanvasRenderingContext2D {
   if (!measureCanvas) {
-    measureCanvas = document.createElement('canvas');
+    measureCanvas = document.createElement("canvas");
     measureCanvas.width = 1;
     measureCanvas.height = 1;
   }
 
   if (!measureContext) {
-    measureContext = measureCanvas.getContext('2d');
+    measureContext = measureCanvas.getContext("2d");
     if (!measureContext) {
-      throw new Error('Failed to create measurement context');
+      throw new Error("Failed to create measurement context");
     }
   }
 
@@ -53,10 +53,10 @@ function getMeasureContext(): CanvasRenderingContext2D {
 export function buildFontString(
   fontFamily: string,
   fontSize: number,
-  fontWeight: string | number = 'normal',
-  fontStyle: string = 'normal'
+  fontWeight: string | number = "normal",
+  fontStyle: string = "normal",
 ): string {
-  const weight = typeof fontWeight === 'number' ? fontWeight : fontWeight;
+  const weight = typeof fontWeight === "number" ? fontWeight : fontWeight;
   return `${fontStyle} ${weight} ${fontSize}px ${fontFamily}`;
 }
 
@@ -67,8 +67,8 @@ export function measureText(
   text: string,
   fontFamily: string,
   fontSize: number,
-  fontWeight: string | number = 'normal',
-  fontStyle: string = 'normal'
+  fontWeight: string | number = "normal",
+  fontStyle: string = "normal",
 ): TextMetrics {
   const ctx = getMeasureContext();
   ctx.font = buildFontString(fontFamily, fontSize, fontWeight, fontStyle);
@@ -79,11 +79,12 @@ export function measureText(
     width: metrics.width,
     height: fontSize, // Fallback if actual metrics not available
     actualBoundingBoxAscent: metrics.actualBoundingBoxAscent ?? fontSize * 0.8,
-    actualBoundingBoxDescent: metrics.actualBoundingBoxDescent ?? fontSize * 0.2,
+    actualBoundingBoxDescent:
+      metrics.actualBoundingBoxDescent ?? fontSize * 0.2,
     actualBoundingBoxLeft: metrics.actualBoundingBoxLeft ?? 0,
     actualBoundingBoxRight: metrics.actualBoundingBoxRight ?? metrics.width,
     fontBoundingBoxAscent: metrics.fontBoundingBoxAscent ?? fontSize * 0.8,
-    fontBoundingBoxDescent: metrics.fontBoundingBoxDescent ?? fontSize * 0.2
+    fontBoundingBoxDescent: metrics.fontBoundingBoxDescent ?? fontSize * 0.2,
   };
 }
 
@@ -94,15 +95,15 @@ export function measureMultilineText(
   text: string,
   fontFamily: string,
   fontSize: number,
-  fontWeight: string | number = 'normal',
-  fontStyle: string = 'normal',
+  fontWeight: string | number = "normal",
+  fontStyle: string = "normal",
   lineHeight: number = 1.2,
-  letterSpacing: number = 0
+  letterSpacing: number = 0,
 ): TextRect {
   const ctx = getMeasureContext();
   ctx.font = buildFontString(fontFamily, fontSize, fontWeight, fontStyle);
 
-  const lines = text.split('\n');
+  const lines = text.split("\n");
   let maxWidth = 0;
   let totalHeight = 0;
   let firstLineAscent = 0;
@@ -127,7 +128,7 @@ export function measureMultilineText(
 
     // Calculate height
     if (index === 0) {
-      const metrics = ctx.measureText(line || 'M');
+      const metrics = ctx.measureText(line || "M");
       firstLineAscent = metrics.actualBoundingBoxAscent ?? fontSize * 0.8;
     }
   });
@@ -138,7 +139,7 @@ export function measureMultilineText(
     top: -firstLineAscent,
     left: 0,
     width: maxWidth,
-    height: totalHeight
+    height: totalHeight,
   };
 }
 
@@ -156,16 +157,16 @@ export function measureTextLayerRect(
     letterSpacing?: number;
     textAlign?: string;
   },
-  includeExtents: boolean = false
+  includeExtents: boolean = false,
 ): TextRect {
-  const text = data.text || '';
-  const fontFamily = data.fontFamily || 'Arial';
+  const text = data.text || "";
+  const fontFamily = data.fontFamily || "Arial";
   const fontSize = data.fontSize || 72;
-  const fontWeight = data.fontWeight || 'normal';
-  const fontStyle = data.fontStyle || 'normal';
+  const fontWeight = data.fontWeight || "normal";
+  const fontStyle = data.fontStyle || "normal";
   const lineHeight = data.lineHeight || 1.2;
   const letterSpacing = data.letterSpacing || 0;
-  const textAlign = data.textAlign || 'left';
+  const textAlign = data.textAlign || "left";
 
   const rect = measureMultilineText(
     text,
@@ -174,13 +175,13 @@ export function measureTextLayerRect(
     fontWeight,
     fontStyle,
     lineHeight,
-    letterSpacing
+    letterSpacing,
   );
 
   // Adjust left based on text alignment
-  if (textAlign === 'center') {
+  if (textAlign === "center") {
     rect.left = -rect.width / 2;
-  } else if (textAlign === 'right') {
+  } else if (textAlign === "right") {
     rect.left = -rect.width;
   }
 
@@ -206,11 +207,11 @@ export function isFontAvailable(fontFamily: string): boolean {
 
   // Measure with target font
   ctx.font = `72px ${fontFamily}`;
-  const targetWidth = ctx.measureText('abcdefghijklmnopqrstuvwxyz').width;
+  const targetWidth = ctx.measureText("abcdefghijklmnopqrstuvwxyz").width;
 
   // Measure with fallback
-  ctx.font = '72px monospace';
-  const fallbackWidth = ctx.measureText('abcdefghijklmnopqrstuvwxyz').width;
+  ctx.font = "72px monospace";
+  const fallbackWidth = ctx.measureText("abcdefghijklmnopqrstuvwxyz").width;
 
   // If widths differ, the font is available
   return targetWidth !== fallbackWidth;
@@ -223,24 +224,32 @@ export async function measureTextWithFont(
   text: string,
   fontFamily: string,
   fontSize: number,
-  fontWeight: string | number = 'normal',
-  fontStyle: string = 'normal',
-  timeout: number = 3000
+  fontWeight: string | number = "normal",
+  fontStyle: string = "normal",
+  timeout: number = 3000,
 ): Promise<TextMetrics> {
   // Try to load font if available via FontFace API
-  if ('fonts' in document) {
+  if ("fonts" in document) {
     try {
-      const fontString = buildFontString(fontFamily, fontSize, fontWeight, fontStyle);
+      const fontString = buildFontString(
+        fontFamily,
+        fontSize,
+        fontWeight,
+        fontStyle,
+      );
 
       // Wait for font to load
       await Promise.race([
         document.fonts.load(fontString, text),
         new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Font load timeout')), timeout)
-        )
+          setTimeout(() => reject(new Error("Font load timeout")), timeout),
+        ),
       ]);
     } catch (e) {
-      console.warn(`[TextMeasurement] Font "${fontFamily}" may not be loaded:`, e);
+      console.warn(
+        `[TextMeasurement] Font "${fontFamily}" may not be loaded:`,
+        e,
+      );
     }
   }
 
@@ -253,18 +262,19 @@ export async function measureTextWithFont(
 export function getBaselineOffset(
   fontFamily: string,
   fontSize: number,
-  verticalAlign: 'top' | 'middle' | 'bottom' | 'baseline' = 'baseline'
+  verticalAlign: "top" | "middle" | "bottom" | "baseline" = "baseline",
 ): number {
-  const metrics = measureText('Mg', fontFamily, fontSize);
+  const metrics = measureText("Mg", fontFamily, fontSize);
 
   switch (verticalAlign) {
-    case 'top':
+    case "top":
       return metrics.actualBoundingBoxAscent;
-    case 'middle':
-      return (metrics.actualBoundingBoxAscent - metrics.actualBoundingBoxDescent) / 2;
-    case 'bottom':
+    case "middle":
+      return (
+        (metrics.actualBoundingBoxAscent - metrics.actualBoundingBoxDescent) / 2
+      );
+    case "bottom":
       return -metrics.actualBoundingBoxDescent;
-    case 'baseline':
     default:
       return 0;
   }
@@ -277,7 +287,7 @@ export function getCharacterPositions(
   text: string,
   fontFamily: string,
   fontSize: number,
-  letterSpacing: number = 0
+  letterSpacing: number = 0,
 ): number[] {
   const ctx = getMeasureContext();
   ctx.font = buildFontString(fontFamily, fontSize);
@@ -311,5 +321,5 @@ export default {
   buildFontString,
   getBaselineOffset,
   getCharacterPositions,
-  cleanup
+  cleanup,
 };

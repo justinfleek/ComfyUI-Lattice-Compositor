@@ -14,11 +14,11 @@
  * - Rest/sleep events for knowing when camera stops
  */
 
-import * as THREE from 'three';
-import CameraControls from 'camera-controls';
-import type { AnimatableProperty } from '@/types/project';
-import type { CameraState, CameraAnimationProps } from '../types';
-import { KeyframeEvaluator } from '../animation/KeyframeEvaluator';
+import CameraControls from "camera-controls";
+import * as THREE from "three";
+import type { AnimatableProperty } from "@/types/project";
+import { KeyframeEvaluator } from "../animation/KeyframeEvaluator";
+import type { CameraAnimationProps, CameraState } from "../types";
 
 // Install camera-controls with Three.js subset
 CameraControls.install({ THREE });
@@ -46,7 +46,11 @@ export class CameraController {
   private defaultFov: number = 50;
 
   /** Animation properties */
-  private positionProp?: AnimatableProperty<{ x: number; y: number; z: number }>;
+  private positionProp?: AnimatableProperty<{
+    x: number;
+    y: number;
+    z: number;
+  }>;
   private targetProp?: AnimatableProperty<{ x: number; y: number; z: number }>;
   private fovProp?: AnimatableProperty<number>;
 
@@ -61,16 +65,16 @@ export class CameraController {
 
     // Create perspective camera
     this.camera = new THREE.PerspectiveCamera(
-      this.defaultFov,  // Field of view
-      width / height,   // Aspect ratio
-      0.1,              // Near plane
-      10000             // Far plane
+      this.defaultFov, // Field of view
+      width / height, // Aspect ratio
+      0.1, // Near plane
+      10000, // Far plane
     );
 
     // Default camera position: centered on composition, looking at center
     // Position camera to see full composition width at z=0
     const fovRad = THREE.MathUtils.degToRad(this.camera.fov);
-    const distance = (height / 2) / Math.tan(fovRad / 2);
+    const distance = height / 2 / Math.tan(fovRad / 2);
 
     // Store default position for reset
     this.defaultPosition = new THREE.Vector3(width / 2, -height / 2, distance);
@@ -110,7 +114,12 @@ export class CameraController {
     this.cameraControls.mouseButtons.wheel = CameraControls.ACTION.NONE; // Handled by ThreeCanvas
 
     // Set target to composition center
-    this.cameraControls.setTarget(this.target.x, this.target.y, this.target.z, false);
+    this.cameraControls.setTarget(
+      this.target.x,
+      this.target.y,
+      this.target.z,
+      false,
+    );
 
     // Configure smooth damping (camera-controls uses SmoothDamp, much better than OrbitControls)
     this.cameraControls.smoothTime = 0.15; // ~150ms transition time
@@ -134,7 +143,9 @@ export class CameraController {
     // IMPORTANT: Ensure camera starts perfectly aligned (front view)
     this.resetToDefault();
 
-    console.log('[CameraController] Camera controls enabled (camera-controls library, smooth transitions)');
+    console.log(
+      "[CameraController] Camera controls enabled (camera-controls library, smooth transitions)",
+    );
   }
 
   /**
@@ -171,7 +182,7 @@ export class CameraController {
   resetToDefault(): void {
     // Calculate the exact distance needed to see full composition height
     const fovRad = THREE.MathUtils.degToRad(this.defaultFov);
-    const distance = (this.height / 2) / Math.tan(fovRad / 2);
+    const distance = this.height / 2 / Math.tan(fovRad / 2);
 
     // Composition center in world coordinates
     // Composition spans (0, 0, 0) to (width, -height, 0)
@@ -192,9 +203,13 @@ export class CameraController {
     // Sync camera controls to this exact position (instant, no animation)
     if (this.cameraControls) {
       this.cameraControls.setLookAt(
-        this.camera.position.x, this.camera.position.y, this.camera.position.z,
-        this.target.x, this.target.y, this.target.z,
-        false // No animation
+        this.camera.position.x,
+        this.camera.position.y,
+        this.camera.position.z,
+        this.target.x,
+        this.target.y,
+        this.target.z,
+        false, // No animation
       );
     }
 
@@ -202,7 +217,9 @@ export class CameraController {
     this.zoomLevel = 1;
     this.panOffset.set(0, 0);
 
-    console.log(`[CameraController] resetToDefault: comp=${this.width}x${this.height}, center=(${centerX}, ${centerY}), cam=(${this.camera.position.x.toFixed(1)}, ${this.camera.position.y.toFixed(1)}, ${distance.toFixed(1)}), fov=${this.defaultFov}, aspect=${this.camera.aspect.toFixed(3)}`);
+    console.log(
+      `[CameraController] resetToDefault: comp=${this.width}x${this.height}, center=(${centerX}, ${centerY}), cam=(${this.camera.position.x.toFixed(1)}, ${this.camera.position.y.toFixed(1)}, ${distance.toFixed(1)}), fov=${this.defaultFov}, aspect=${this.camera.aspect.toFixed(3)}`,
+    );
   }
 
   /**
@@ -223,7 +240,12 @@ export class CameraController {
   setOrbitTarget(x: number, y: number, z: number, animate = false): void {
     this.target.set(x, -y, z);
     if (this.cameraControls) {
-      this.cameraControls.setTarget(this.target.x, this.target.y, this.target.z, animate);
+      this.cameraControls.setTarget(
+        this.target.x,
+        this.target.y,
+        this.target.z,
+        animate,
+      );
     }
   }
 
@@ -309,7 +331,7 @@ export class CameraController {
     this.camera.rotation.set(
       THREE.MathUtils.degToRad(x),
       THREE.MathUtils.degToRad(y),
-      THREE.MathUtils.degToRad(z)
+      THREE.MathUtils.degToRad(z),
     );
     this.camera.updateProjectionMatrix();
   }
@@ -392,7 +414,7 @@ export class CameraController {
     if (this.cameraControls && this.orbitEnabled) {
       // Just update the spherical radius for zoom
       const fovRad = THREE.MathUtils.degToRad(this.camera.fov);
-      const baseDistance = (this.height / 2) / Math.tan(fovRad / 2);
+      const baseDistance = this.height / 2 / Math.tan(fovRad / 2);
       this.spherical.radius = baseDistance / this.zoomLevel;
       this.updateCameraFromSpherical();
       return;
@@ -400,7 +422,7 @@ export class CameraController {
 
     // Calculate base camera distance for full composition view
     const fovRad = THREE.MathUtils.degToRad(this.camera.fov);
-    const baseDistance = (this.height / 2) / Math.tan(fovRad / 2);
+    const baseDistance = this.height / 2 / Math.tan(fovRad / 2);
 
     // Adjust distance based on zoom (zoom in = closer)
     const distance = baseDistance / this.zoomLevel;
@@ -428,7 +450,15 @@ export class CameraController {
     this.camera.updateProjectionMatrix();
 
     // Sync camera-controls internal state to prevent it from reverting our changes
-    this.cameraControls?.setLookAt(cameraPosX, cameraPosY, distance, cameraPosX, cameraPosY, 0, false);
+    this.cameraControls?.setLookAt(
+      cameraPosX,
+      cameraPosY,
+      distance,
+      cameraPosX,
+      cameraPosY,
+      0,
+      false,
+    );
   }
 
   /**
@@ -438,7 +468,11 @@ export class CameraController {
    * @param viewportHeight - The viewport height in pixels
    * @param padding - Padding in pixels around the composition (default 40)
    */
-  fitToViewport(viewportWidth: number, viewportHeight: number, padding: number = 40): void {
+  fitToViewport(
+    viewportWidth: number,
+    viewportHeight: number,
+    padding: number = 40,
+  ): void {
     // Calculate available space
     const availableWidth = viewportWidth - padding * 2;
     const availableHeight = viewportHeight - padding * 2;
@@ -457,7 +491,9 @@ export class CameraController {
     this.panOffset.set(0, 0);
     this.updateCameraForViewport();
 
-    console.log(`[CameraController] fitToViewport: viewport=${viewportWidth}x${viewportHeight}, comp=${this.width}x${this.height}, zoom=${fitZoom.toFixed(3)}, cam=(${this.camera.position.x.toFixed(1)}, ${this.camera.position.y.toFixed(1)}, ${this.camera.position.z.toFixed(1)})`);
+    console.log(
+      `[CameraController] fitToViewport: viewport=${viewportWidth}x${viewportHeight}, comp=${this.width}x${this.height}, zoom=${fitZoom.toFixed(3)}, cam=(${this.camera.position.x.toFixed(1)}, ${this.camera.position.y.toFixed(1)}, ${this.camera.position.z.toFixed(1)})`,
+    );
   }
 
   // ============================================================================
@@ -511,7 +547,9 @@ export class CameraController {
    * Note: The aspect ratio should be set separately using setViewportAspect()
    */
   resize(width: number, height: number): void {
-    console.log(`[CameraController] resize: NEW comp=${width}x${height} (was ${this.width}x${this.height})`);
+    console.log(
+      `[CameraController] resize: NEW comp=${width}x${height} (was ${this.width}x${this.height})`,
+    );
     this.width = width;
     this.height = height;
 
@@ -538,7 +576,11 @@ export class CameraController {
   /**
    * Convert screen coordinates to world position at a given Z depth
    */
-  screenToWorld(screenX: number, screenY: number, z: number = 0): THREE.Vector3 {
+  screenToWorld(
+    screenX: number,
+    screenY: number,
+    z: number = 0,
+  ): THREE.Vector3 {
     // Normalize to NDC (-1 to 1)
     const ndcX = (screenX / this.width) * 2 - 1;
     const ndcY = -(screenY / this.height) * 2 + 1;
@@ -562,7 +604,11 @@ export class CameraController {
   /**
    * Convert world position to screen coordinates
    */
-  worldToScreen(worldX: number, worldY: number, worldZ: number = 0): { x: number; y: number } {
+  worldToScreen(
+    worldX: number,
+    worldY: number,
+    worldZ: number = 0,
+  ): { x: number; y: number } {
     const vector = new THREE.Vector3(worldX, -worldY, worldZ);
     vector.project(this.camera);
 
@@ -612,7 +658,7 @@ export class CameraController {
     if (state.near !== undefined || state.far !== undefined) {
       this.setClipPlanes(
         state.near ?? this.camera.near,
-        state.far ?? this.camera.far
+        state.far ?? this.camera.far,
       );
     }
   }
@@ -622,7 +668,7 @@ export class CameraController {
    */
   reset(): void {
     const fovRad = THREE.MathUtils.degToRad(50);
-    const distance = (this.height / 2) / Math.tan(fovRad / 2);
+    const distance = this.height / 2 / Math.tan(fovRad / 2);
 
     this.camera.fov = 50;
     this.camera.position.set(this.width / 2, -this.height / 2, distance);
@@ -640,12 +686,12 @@ export class CameraController {
    */
   createOrthographic(): THREE.OrthographicCamera {
     const ortho = new THREE.OrthographicCamera(
-      0,              // Left
-      this.width,     // Right
-      0,              // Top (in screen coords)
-      -this.height,   // Bottom
-      0.1,            // Near
-      10000           // Far
+      0, // Left
+      this.width, // Right
+      0, // Top (in screen coords)
+      -this.height, // Bottom
+      0.1, // Near
+      10000, // Far
     );
 
     ortho.position.set(0, 0, 1000);
@@ -671,10 +717,15 @@ export class CameraController {
   enableOrbitMode(): void {
     this.orbitEnabled = true;
     // Calculate current spherical coordinates from camera position
-    const offset = new THREE.Vector3().subVectors(this.camera.position, this.target);
+    const offset = new THREE.Vector3().subVectors(
+      this.camera.position,
+      this.target,
+    );
     this.spherical.radius = offset.length();
     this.spherical.theta = Math.atan2(offset.x - this.target.x, offset.z);
-    this.spherical.phi = Math.acos(THREE.MathUtils.clamp(offset.y / this.spherical.radius, -1, 1));
+    this.spherical.phi = Math.acos(
+      THREE.MathUtils.clamp(offset.y / this.spherical.radius, -1, 1),
+    );
   }
 
   /**
@@ -704,7 +755,7 @@ export class CameraController {
     this.spherical.phi = THREE.MathUtils.clamp(
       this.spherical.phi - deltaPhi,
       0.01, // Prevent flipping at poles
-      Math.PI - 0.01
+      Math.PI - 0.01,
     );
 
     this.updateCameraFromSpherical();
@@ -724,8 +775,8 @@ export class CameraController {
     // Adjust radius
     this.spherical.radius = THREE.MathUtils.clamp(
       this.spherical.radius * (1 - delta * 0.1),
-      10,     // Minimum distance
-      50000   // Maximum distance
+      10, // Minimum distance
+      50000, // Maximum distance
     );
 
     this.updateCameraFromSpherical();
@@ -766,14 +817,20 @@ export class CameraController {
    */
   private updateCameraFromSpherical(): void {
     // Convert spherical to Cartesian
-    const x = this.spherical.radius * Math.sin(this.spherical.phi) * Math.sin(this.spherical.theta);
+    const x =
+      this.spherical.radius *
+      Math.sin(this.spherical.phi) *
+      Math.sin(this.spherical.theta);
     const y = this.spherical.radius * Math.cos(this.spherical.phi);
-    const z = this.spherical.radius * Math.sin(this.spherical.phi) * Math.cos(this.spherical.theta);
+    const z =
+      this.spherical.radius *
+      Math.sin(this.spherical.phi) *
+      Math.cos(this.spherical.theta);
 
     this.camera.position.set(
       this.target.x + x,
       this.target.y + y,
-      this.target.z + z
+      this.target.z + z,
     );
     this.camera.lookAt(this.target);
     this.camera.updateProjectionMatrix();
@@ -787,13 +844,13 @@ export class CameraController {
    * Available orthographic view presets
    */
   static readonly VIEW_PRESETS = {
-    front: { theta: 0, phi: Math.PI / 2, name: 'Front' },
-    back: { theta: Math.PI, phi: Math.PI / 2, name: 'Back' },
-    left: { theta: -Math.PI / 2, phi: Math.PI / 2, name: 'Left' },
-    right: { theta: Math.PI / 2, phi: Math.PI / 2, name: 'Right' },
-    top: { theta: 0, phi: 0.01, name: 'Top' },
-    bottom: { theta: 0, phi: Math.PI - 0.01, name: 'Bottom' },
-    perspective: { theta: Math.PI / 4, phi: Math.PI / 3, name: 'Perspective' },
+    front: { theta: 0, phi: Math.PI / 2, name: "Front" },
+    back: { theta: Math.PI, phi: Math.PI / 2, name: "Back" },
+    left: { theta: -Math.PI / 2, phi: Math.PI / 2, name: "Left" },
+    right: { theta: Math.PI / 2, phi: Math.PI / 2, name: "Right" },
+    top: { theta: 0, phi: 0.01, name: "Top" },
+    bottom: { theta: 0, phi: Math.PI - 0.01, name: "Bottom" },
+    perspective: { theta: Math.PI / 4, phi: Math.PI / 3, name: "Perspective" },
   } as const;
 
   /**
@@ -801,7 +858,10 @@ export class CameraController {
    * @param preset - Name of the view preset
    * @param animate - Whether to animate the transition (default: false)
    */
-  setViewPreset(preset: keyof typeof CameraController.VIEW_PRESETS, animate = false): void {
+  setViewPreset(
+    preset: keyof typeof CameraController.VIEW_PRESETS,
+    animate = false,
+  ): void {
     const view = CameraController.VIEW_PRESETS[preset];
     if (!view) return;
 
@@ -825,7 +885,7 @@ export class CameraController {
         const elapsed = currentTime - startTime;
         const t = Math.min(elapsed / duration, 1);
         // Use smooth easing
-        const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+        const eased = t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
 
         this.spherical.theta = startTheta + (targetTheta - startTheta) * eased;
         this.spherical.phi = startPhi + (targetPhi - startPhi) * eased;
@@ -863,7 +923,7 @@ export class CameraController {
 
     // Reset spherical to front-perspective view
     const fovRad = THREE.MathUtils.degToRad(this.camera.fov);
-    this.spherical.radius = (this.height / 2) / Math.tan(fovRad / 2);
+    this.spherical.radius = this.height / 2 / Math.tan(fovRad / 2);
     this.spherical.theta = 0;
     this.spherical.phi = Math.PI / 2;
 
@@ -890,20 +950,20 @@ export class CameraController {
     const center = new THREE.Vector3(
       (bounds.min.x + bounds.max.x) / 2,
       -(bounds.min.y + bounds.max.y) / 2, // Negate for screen coords
-      (bounds.min.z + bounds.max.z) / 2
+      (bounds.min.z + bounds.max.z) / 2,
     );
 
     // Calculate size of bounds
     const size = new THREE.Vector3(
       bounds.max.x - bounds.min.x,
       bounds.max.y - bounds.min.y,
-      bounds.max.z - bounds.min.z
+      bounds.max.z - bounds.min.z,
     );
 
     // Calculate required distance to fit bounds in view
     const maxDim = Math.max(size.x, size.y, size.z);
     const fovRad = THREE.MathUtils.degToRad(this.camera.fov);
-    const distance = (maxDim / 2) / Math.tan(fovRad / 2) * 1.5; // 1.5x padding
+    const distance = (maxDim / 2 / Math.tan(fovRad / 2)) * 1.5; // 1.5x padding
 
     // Update target and position
     this.target.copy(center);
@@ -926,7 +986,13 @@ export class CameraController {
    * @param height - Layer height
    * @param z - Layer Z position (default 0)
    */
-  focusOnLayer(x: number, y: number, width: number, height: number, z = 0): void {
+  focusOnLayer(
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    z = 0,
+  ): void {
     this.focusOnBounds({
       min: { x, y, z: z - 10 },
       max: { x: x + width, y: y + height, z: z + 10 },
@@ -938,13 +1004,16 @@ export class CameraController {
   // ============================================================================
 
   /** Stored camera bookmarks */
-  private bookmarks: Map<string, {
-    position: THREE.Vector3;
-    target: THREE.Vector3;
-    spherical: { radius: number; theta: number; phi: number };
-    fov: number;
-    orbitEnabled: boolean;
-  }> = new Map();
+  private bookmarks: Map<
+    string,
+    {
+      position: THREE.Vector3;
+      target: THREE.Vector3;
+      spherical: { radius: number; theta: number; phi: number };
+      fov: number;
+      orbitEnabled: boolean;
+    }
+  > = new Map();
 
   /**
    * Save current camera state as a bookmark
@@ -981,7 +1050,7 @@ export class CameraController {
       const animateBookmark = (currentTime: number) => {
         const elapsed = currentTime - startTime;
         const t = Math.min(elapsed / duration, 1);
-        const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+        const eased = t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
 
         this.camera.position.lerpVectors(startPos, bookmark.position, eased);
         this.target.lerpVectors(startTarget, bookmark.target, eased);
@@ -1031,17 +1100,24 @@ export class CameraController {
   /**
    * Export all bookmarks as JSON-serializable data
    */
-  exportBookmarks(): Record<string, {
-    position: { x: number; y: number; z: number };
-    target: { x: number; y: number; z: number };
-    spherical: { radius: number; theta: number; phi: number };
-    fov: number;
-    orbitEnabled: boolean;
-  }> {
+  exportBookmarks(): Record<
+    string,
+    {
+      position: { x: number; y: number; z: number };
+      target: { x: number; y: number; z: number };
+      spherical: { radius: number; theta: number; phi: number };
+      fov: number;
+      orbitEnabled: boolean;
+    }
+  > {
     const result: Record<string, any> = {};
     this.bookmarks.forEach((value, key) => {
       result[key] = {
-        position: { x: value.position.x, y: value.position.y, z: value.position.z },
+        position: {
+          x: value.position.x,
+          y: value.position.y,
+          z: value.position.z,
+        },
         target: { x: value.target.x, y: value.target.y, z: value.target.z },
         spherical: value.spherical,
         fov: value.fov,
@@ -1057,8 +1133,16 @@ export class CameraController {
   importBookmarks(data: Record<string, any>): void {
     Object.entries(data).forEach(([name, value]) => {
       this.bookmarks.set(name, {
-        position: new THREE.Vector3(value.position.x, value.position.y, value.position.z),
-        target: new THREE.Vector3(value.target.x, value.target.y, value.target.z),
+        position: new THREE.Vector3(
+          value.position.x,
+          value.position.y,
+          value.position.z,
+        ),
+        target: new THREE.Vector3(
+          value.target.x,
+          value.target.y,
+          value.target.z,
+        ),
         spherical: value.spherical,
         fov: value.fov,
         orbitEnabled: value.orbitEnabled,

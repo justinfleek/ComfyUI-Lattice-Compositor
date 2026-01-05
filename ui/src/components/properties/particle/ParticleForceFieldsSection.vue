@@ -218,8 +218,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import type { GravityWellConfig, VortexConfig } from '@/types/project';
+import { ref } from "vue";
+import type { GravityWellConfig, VortexConfig } from "@/types/project";
 
 interface Props {
   gravityWells: GravityWellConfig[];
@@ -230,16 +230,16 @@ interface Props {
 defineProps<Props>();
 
 defineEmits<{
-  (e: 'toggle'): void;
-  (e: 'addWell'): void;
-  (e: 'removeWell', id: string): void;
-  (e: 'updateWell', id: string, key: keyof GravityWellConfig, value: any): void;
-  (e: 'addVortex'): void;
-  (e: 'removeVortex', id: string): void;
-  (e: 'updateVortex', id: string, key: keyof VortexConfig, value: any): void;
+  (e: "toggle"): void;
+  (e: "addWell"): void;
+  (e: "removeWell", id: string): void;
+  (e: "updateWell", id: string, key: keyof GravityWellConfig, value: any): void;
+  (e: "addVortex"): void;
+  (e: "removeVortex", id: string): void;
+  (e: "updateVortex", id: string, key: keyof VortexConfig, value: any): void;
 }>();
 
-const activeTab = ref<'wells' | 'vortices'>('wells');
+const _activeTab = ref<"wells" | "vortices">("wells");
 </script>
 
 <style scoped>

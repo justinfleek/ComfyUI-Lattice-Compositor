@@ -9,8 +9,13 @@
  * - Mask expansion/contraction
  */
 
-import type { LayerMask, MaskPath, MaskVertex, MaskMode, TrackMatteType, AnimatableProperty } from '@/types/project';
-import { interpolateProperty } from '@/services/interpolation';
+import { interpolateProperty } from "@/services/interpolation";
+import type {
+  LayerMask,
+  MaskPath,
+  MaskVertex,
+  TrackMatteType,
+} from "@/types/project";
 
 // ============================================================================
 // MASK PATH RENDERING
@@ -45,8 +50,12 @@ function renderMaskPath(ctx: CanvasRenderingContext2D, path: MaskPath): void {
     const cp2y = next.y + next.inTangentY;
 
     // Check if this is a straight line (no tangents)
-    if (cp1x === current.x && cp1y === current.y &&
-        cp2x === next.x && cp2y === next.y) {
+    if (
+      cp1x === current.x &&
+      cp1y === current.y &&
+      cp2x === next.x &&
+      cp2y === next.y
+    ) {
       ctx.lineTo(next.x, next.y);
     } else {
       ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, next.x, next.y);
@@ -67,7 +76,7 @@ function renderMaskPath(ctx: CanvasRenderingContext2D, path: MaskPath): void {
 function calculateVertexNormal(
   prev: MaskVertex,
   curr: MaskVertex,
-  next: MaskVertex
+  next: MaskVertex,
 ): { nx: number; ny: number } {
   // Get incoming direction (from prev to curr, or from handleIn if present)
   let inDx: number, inDy: number;
@@ -133,7 +142,7 @@ function calculateVertexNormal(
 
   return {
     nx: nx * Math.min(miterFactor, 2),
-    ny: ny * Math.min(miterFactor, 2)
+    ny: ny * Math.min(miterFactor, 2),
   };
 }
 
@@ -160,10 +169,15 @@ function expandMaskPath(path: MaskPath, expansion: number): MaskPath {
 
     // Handle open paths: don't wrap around for first/last vertex
     const effectivePrev = !path.closed && i === 0 ? curr : prev;
-    const effectiveNext = !path.closed && i === vertices.length - 1 ? curr : next;
+    const effectiveNext =
+      !path.closed && i === vertices.length - 1 ? curr : next;
 
     // Calculate the outward normal at this vertex
-    const { nx, ny } = calculateVertexNormal(effectivePrev, curr, effectiveNext);
+    const { nx, ny } = calculateVertexNormal(
+      effectivePrev,
+      curr,
+      effectiveNext,
+    );
 
     // Offset the vertex along the normal
     const offsetX = nx * expansion;
@@ -171,7 +185,7 @@ function expandMaskPath(path: MaskPath, expansion: number): MaskPath {
 
     // Calculate handle scale factor based on distance change
     // This keeps curves proportional after expansion
-    const handleScale = 1 + (expansion / 100); // Approximate scale
+    const handleScale = 1 + expansion / 100; // Approximate scale
 
     expandedVertices.push({
       x: curr.x + offsetX,
@@ -180,7 +194,7 @@ function expandMaskPath(path: MaskPath, expansion: number): MaskPath {
       inTangentX: curr.inTangentX * handleScale,
       inTangentY: curr.inTangentY * handleScale,
       outTangentX: curr.outTangentX * handleScale,
-      outTangentY: curr.outTangentY * handleScale
+      outTangentY: curr.outTangentY * handleScale,
     });
   }
 
@@ -199,10 +213,10 @@ function expandMaskPath(path: MaskPath, expansion: number): MaskPath {
  * the motion blur of the underlying footage.
  */
 export interface VertexMotion {
-  dx: number;  // Motion in X
-  dy: number;  // Motion in Y
-  magnitude: number;  // Motion magnitude (speed)
-  angle: number;  // Motion angle in radians
+  dx: number; // Motion in X
+  dy: number; // Motion in Y
+  magnitude: number; // Motion magnitude (speed)
+  angle: number; // Motion angle in radians
 }
 
 /**
@@ -210,15 +224,18 @@ export interface VertexMotion {
  */
 function calculateMaskMotion(
   currentPath: MaskPath,
-  previousPath: MaskPath | null
+  previousPath: MaskPath | null,
 ): VertexMotion[] {
-  if (!previousPath || currentPath.vertices.length !== previousPath.vertices.length) {
+  if (
+    !previousPath ||
+    currentPath.vertices.length !== previousPath.vertices.length
+  ) {
     // No motion data - return zero motion
     return currentPath.vertices.map(() => ({
       dx: 0,
       dy: 0,
       magnitude: 0,
-      angle: 0
+      angle: 0,
     }));
   }
 
@@ -249,7 +266,7 @@ function applyMotionAwareFeather(
   canvas: HTMLCanvasElement,
   baseFeather: number,
   motionVectors: VertexMotion[],
-  motionScale: number = 1.0
+  motionScale: number = 1.0,
 ): HTMLCanvasElement {
   const width = canvas.width;
   const height = canvas.height;
@@ -273,11 +290,11 @@ function applyMotionAwareFeather(
   // If no significant motion, use regular isotropic feather
   if (avgMagnitude < 0.5) {
     if (baseFeather > 0) {
-      const ctx = canvas.getContext('2d')!;
-      const blurCanvas = document.createElement('canvas');
+      const ctx = canvas.getContext("2d")!;
+      const blurCanvas = document.createElement("canvas");
       blurCanvas.width = width;
       blurCanvas.height = height;
-      const blurCtx = blurCanvas.getContext('2d')!;
+      const blurCtx = blurCanvas.getContext("2d")!;
       blurCtx.filter = `blur(${baseFeather}px)`;
       blurCtx.drawImage(canvas, 0, 0);
       ctx.clearRect(0, 0, width, height);
@@ -288,7 +305,7 @@ function applyMotionAwareFeather(
 
   // Calculate motion-scaled feather
   const motionFeather = avgMagnitude * motionScale;
-  const totalFeather = baseFeather + motionFeather;
+  const _totalFeather = baseFeather + motionFeather;
 
   // Normalize motion direction
   const len = Math.sqrt(avgDx * avgDx + avgDy * avgDy);
@@ -297,16 +314,16 @@ function applyMotionAwareFeather(
 
   // Create directional motion blur
   // We'll use multiple offset blurs to simulate directional blur
-  const resultCanvas = document.createElement('canvas');
+  const resultCanvas = document.createElement("canvas");
   resultCanvas.width = width;
   resultCanvas.height = height;
-  const resultCtx = resultCanvas.getContext('2d')!;
+  const resultCtx = resultCanvas.getContext("2d")!;
 
   // Apply isotropic base feather
-  const baseCanvas = document.createElement('canvas');
+  const baseCanvas = document.createElement("canvas");
   baseCanvas.width = width;
   baseCanvas.height = height;
-  const baseCtx = baseCanvas.getContext('2d')!;
+  const baseCtx = baseCanvas.getContext("2d")!;
 
   if (baseFeather > 0) {
     baseCtx.filter = `blur(${baseFeather}px)`;
@@ -318,14 +335,14 @@ function applyMotionAwareFeather(
   resultCtx.globalAlpha = 1 / steps;
 
   for (let i = 0; i < steps; i++) {
-    const t = (i / (steps - 1)) - 0.5; // -0.5 to 0.5
+    const t = i / (steps - 1) - 0.5; // -0.5 to 0.5
     const offsetX = normDx * motionFeather * t;
     const offsetY = normDy * motionFeather * t;
     resultCtx.drawImage(baseCanvas, offsetX, offsetY);
   }
 
   // Copy result back to original canvas
-  const ctx = canvas.getContext('2d')!;
+  const ctx = canvas.getContext("2d")!;
   ctx.clearRect(0, 0, width, height);
   ctx.globalAlpha = 1;
   ctx.drawImage(resultCanvas, 0, 0);
@@ -340,7 +357,10 @@ const previousPathCache = new Map<string, { frame: number; path: MaskPath }>();
 /**
  * Get cached previous path for motion blur calculation
  */
-function getPreviousPath(maskId: string, currentFrame: number): MaskPath | null {
+function getPreviousPath(
+  maskId: string,
+  currentFrame: number,
+): MaskPath | null {
   const cached = previousPathCache.get(maskId);
   if (cached && cached.frame === currentFrame - 1) {
     return cached.path;
@@ -384,15 +404,15 @@ export function renderMask(
   width: number,
   height: number,
   frame: number,
-  fps: number = 16
+  fps: number = 16,
 ): HTMLCanvasElement {
-  const canvas = document.createElement('canvas');
+  const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
-  const ctx = canvas.getContext('2d')!;
+  const ctx = canvas.getContext("2d")!;
 
   // Start with black (transparent)
-  ctx.fillStyle = 'black';
+  ctx.fillStyle = "black";
   ctx.fillRect(0, 0, width, height);
 
   if (!mask.enabled) return canvas;
@@ -407,7 +427,7 @@ export function renderMask(
   const expandedPath = expandMaskPath(path, expansion);
 
   // Render the mask shape in white
-  ctx.fillStyle = 'white';
+  ctx.fillStyle = "white";
   renderMaskPath(ctx, expandedPath);
   ctx.fill();
 
@@ -430,7 +450,9 @@ export function renderMask(
   cachePath(mask.id, frame, path);
 
   // Check if there's significant motion
-  const avgMotion = motionVectors.reduce((sum, v) => sum + v.magnitude, 0) / motionVectors.length;
+  const avgMotion =
+    motionVectors.reduce((sum, v) => sum + v.magnitude, 0) /
+    motionVectors.length;
 
   if (feather > 0 || avgMotion > 1) {
     // Use motion-aware feathering if there's motion, otherwise regular blur
@@ -463,23 +485,23 @@ export function combineMasks(
   width: number,
   height: number,
   frame: number,
-  fps: number = 16
+  fps: number = 16,
 ): HTMLCanvasElement {
-  const resultCanvas = document.createElement('canvas');
+  const resultCanvas = document.createElement("canvas");
   resultCanvas.width = width;
   resultCanvas.height = height;
-  const resultCtx = resultCanvas.getContext('2d')!;
+  const resultCtx = resultCanvas.getContext("2d")!;
 
   // Start with white (fully visible) if no masks, black otherwise
-  const enabledMasks = masks.filter(m => m.enabled && m.mode !== 'none');
+  const enabledMasks = masks.filter((m) => m.enabled && m.mode !== "none");
   if (enabledMasks.length === 0) {
-    resultCtx.fillStyle = 'white';
+    resultCtx.fillStyle = "white";
     resultCtx.fillRect(0, 0, width, height);
     return resultCanvas;
   }
 
   // Start with black (nothing visible)
-  resultCtx.fillStyle = 'black';
+  resultCtx.fillStyle = "black";
   resultCtx.fillRect(0, 0, width, height);
 
   // Get result image data for pixel manipulation
@@ -489,7 +511,7 @@ export function combineMasks(
   // Process each mask
   for (const mask of enabledMasks) {
     const maskCanvas = renderMask(mask, width, height, frame, fps);
-    const maskCtx = maskCanvas.getContext('2d')!;
+    const maskCtx = maskCanvas.getContext("2d")!;
     const maskData = maskCtx.getImageData(0, 0, width, height);
     const maskPixels = maskData.data;
 
@@ -498,42 +520,42 @@ export function combineMasks(
       const maskValue = maskPixels[i]; // Use red channel as grayscale
 
       switch (mask.mode) {
-        case 'add':
+        case "add":
           // Union: max of values
           result[i] = Math.max(result[i], maskValue);
           result[i + 1] = Math.max(result[i + 1], maskValue);
           result[i + 2] = Math.max(result[i + 2], maskValue);
           break;
 
-        case 'subtract':
+        case "subtract":
           // Subtract: result minus mask
           result[i] = Math.max(0, result[i] - maskValue);
           result[i + 1] = Math.max(0, result[i + 1] - maskValue);
           result[i + 2] = Math.max(0, result[i + 2] - maskValue);
           break;
 
-        case 'intersect':
+        case "intersect":
           // Intersection: min of values
           result[i] = Math.min(result[i], maskValue);
           result[i + 1] = Math.min(result[i + 1], maskValue);
           result[i + 2] = Math.min(result[i + 2], maskValue);
           break;
 
-        case 'lighten':
+        case "lighten":
           // Max
           result[i] = Math.max(result[i], maskValue);
           result[i + 1] = Math.max(result[i + 1], maskValue);
           result[i + 2] = Math.max(result[i + 2], maskValue);
           break;
 
-        case 'darken':
+        case "darken":
           // Min
           result[i] = Math.min(result[i], maskValue);
           result[i + 1] = Math.min(result[i + 1], maskValue);
           result[i + 2] = Math.min(result[i + 2], maskValue);
           break;
 
-        case 'difference':
+        case "difference":
           // Absolute difference
           result[i] = Math.abs(result[i] - maskValue);
           result[i + 1] = Math.abs(result[i + 1] - maskValue);
@@ -557,28 +579,28 @@ export function combineMasks(
 export function applyTrackMatte(
   layerCanvas: HTMLCanvasElement,
   matteCanvas: HTMLCanvasElement,
-  matteType: TrackMatteType
+  matteType: TrackMatteType,
 ): HTMLCanvasElement {
-  if (matteType === 'none') return layerCanvas;
+  if (matteType === "none") return layerCanvas;
 
   const width = layerCanvas.width;
   const height = layerCanvas.height;
 
-  const resultCanvas = document.createElement('canvas');
+  const resultCanvas = document.createElement("canvas");
   resultCanvas.width = width;
   resultCanvas.height = height;
-  const resultCtx = resultCanvas.getContext('2d')!;
+  const resultCtx = resultCanvas.getContext("2d")!;
 
   // Get layer pixel data
-  const layerCtx = layerCanvas.getContext('2d')!;
+  const layerCtx = layerCanvas.getContext("2d")!;
   const layerData = layerCtx.getImageData(0, 0, width, height);
   const layer = layerData.data;
 
   // Get matte pixel data (scale if needed)
-  const matteScaled = document.createElement('canvas');
+  const matteScaled = document.createElement("canvas");
   matteScaled.width = width;
   matteScaled.height = height;
-  const matteScaledCtx = matteScaled.getContext('2d')!;
+  const matteScaledCtx = matteScaled.getContext("2d")!;
   matteScaledCtx.drawImage(matteCanvas, 0, 0, width, height);
   const matteData = matteScaledCtx.getImageData(0, 0, width, height);
   const matte = matteData.data;
@@ -588,24 +610,29 @@ export function applyTrackMatte(
     let matteValue: number;
 
     switch (matteType) {
-      case 'alpha':
+      case "alpha":
         // Use alpha channel directly
         matteValue = matte[i + 3] / 255;
         break;
 
-      case 'alpha_inverted':
+      case "alpha_inverted":
         // Invert alpha channel
-        matteValue = 1 - (matte[i + 3] / 255);
+        matteValue = 1 - matte[i + 3] / 255;
         break;
 
-      case 'luma':
+      case "luma":
         // Calculate luminance
-        matteValue = (matte[i] * 0.299 + matte[i + 1] * 0.587 + matte[i + 2] * 0.114) / 255;
+        matteValue =
+          (matte[i] * 0.299 + matte[i + 1] * 0.587 + matte[i + 2] * 0.114) /
+          255;
         break;
 
-      case 'luma_inverted':
+      case "luma_inverted":
         // Invert luminance
-        matteValue = 1 - (matte[i] * 0.299 + matte[i + 1] * 0.587 + matte[i + 2] * 0.114) / 255;
+        matteValue =
+          1 -
+          (matte[i] * 0.299 + matte[i + 1] * 0.587 + matte[i + 2] * 0.114) /
+            255;
         break;
 
       default:
@@ -631,7 +658,7 @@ export function applyMasksToLayer(
   layerCanvas: HTMLCanvasElement,
   masks: LayerMask[] | undefined,
   frame: number,
-  fps: number = 16
+  fps: number = 16,
 ): HTMLCanvasElement {
   if (!masks || masks.length === 0) return layerCanvas;
 
@@ -642,18 +669,18 @@ export function applyMasksToLayer(
   const combinedMask = combineMasks(masks, width, height, frame, fps);
 
   // Apply combined mask to layer
-  const resultCanvas = document.createElement('canvas');
+  const resultCanvas = document.createElement("canvas");
   resultCanvas.width = width;
   resultCanvas.height = height;
-  const resultCtx = resultCanvas.getContext('2d')!;
+  const resultCtx = resultCanvas.getContext("2d")!;
 
   // Get layer data
-  const layerCtx = layerCanvas.getContext('2d')!;
+  const layerCtx = layerCanvas.getContext("2d")!;
   const layerData = layerCtx.getImageData(0, 0, width, height);
   const layer = layerData.data;
 
   // Get mask data
-  const maskCtx = combinedMask.getContext('2d')!;
+  const maskCtx = combinedMask.getContext("2d")!;
   const maskData = maskCtx.getImageData(0, 0, width, height);
   const mask = maskData.data;
 
@@ -676,5 +703,5 @@ export default {
   combineMasks,
   applyTrackMatte,
   applyMasksToLayer,
-  clearMaskPathCacheOnSeek,  // BUG-066 fix: Clear on timeline seek
+  clearMaskPathCacheOnSeek, // BUG-066 fix: Clear on timeline seek
 };

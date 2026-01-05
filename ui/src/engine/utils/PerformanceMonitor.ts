@@ -8,8 +8,8 @@
  * - Memory usage (where available)
  */
 
-import type * as THREE from 'three';
-import type { PerformanceStats } from '../types';
+import type * as THREE from "three";
+import type { PerformanceStats } from "../types";
 
 export class PerformanceMonitor {
   // Frame timing
@@ -83,9 +83,10 @@ export class PerformanceMonitor {
     const memoryUsed = memory?.usedJSHeapSize ?? 0;
 
     // Calculate average frame time
-    const avgFrameTime = this.frameTimes.length > 0
-      ? this.frameTimes.reduce((a, b) => a + b, 0) / this.frameTimes.length
-      : 0;
+    const avgFrameTime =
+      this.frameTimes.length > 0
+        ? this.frameTimes.reduce((a, b) => a + b, 0) / this.frameTimes.length
+        : 0;
 
     this.lastStats = {
       fps: this.fps,
@@ -194,6 +195,6 @@ export class PerformanceMonitor {
       `Textures: ${stats.textures}`,
       `Geometries: ${stats.geometries}`,
       `Memory: ${(stats.memoryUsed / 1024 / 1024).toFixed(2)} MB`,
-    ].join('\n');
+    ].join("\n");
   }
 }

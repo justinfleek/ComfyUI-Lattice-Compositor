@@ -7,29 +7,29 @@
  * Uses Potrace-inspired algorithm for bitmap tracing.
  */
 
-import type { Point2D, BezierPath, BezierVertex } from '@/types/shapes';
-import { addPoints, subtractPoints, scalePoint, distance, normalize } from './shapeOperations';
+import type { BezierPath, BezierVertex, Point2D } from "@/types/shapes";
+import { distance, normalize, subtractPoints } from "./shapeOperations";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-export type TraceMode = 'blackAndWhite' | 'grayscale' | 'color';
+export type TraceMode = "blackAndWhite" | "grayscale" | "color";
 
 export interface TraceOptions {
   mode: TraceMode;
-  threshold: number;        // 0-255 for B&W mode
-  colors: number;           // Max colors for color mode (2-256)
-  cornerAngle: number;      // Degrees, threshold for corner detection
-  pathFitting: number;      // Tolerance for path simplification (0-10)
-  noiseReduction: number;   // Min area to keep (0-100 pixels)
-  ignoreWhite: boolean;     // Don't trace white areas
-  expandStrokes: boolean;   // Expand strokes to filled shapes
+  threshold: number; // 0-255 for B&W mode
+  colors: number; // Max colors for color mode (2-256)
+  cornerAngle: number; // Degrees, threshold for corner detection
+  pathFitting: number; // Tolerance for path simplification (0-10)
+  noiseReduction: number; // Min area to keep (0-100 pixels)
+  ignoreWhite: boolean; // Don't trace white areas
+  expandStrokes: boolean; // Expand strokes to filled shapes
 }
 
 export interface TraceResult {
   paths: BezierPath[];
-  colors: string[];         // Hex colors for each path
+  colors: string[]; // Hex colors for each path
   width: number;
   height: number;
 }
@@ -39,7 +39,7 @@ export interface TraceResult {
 // ============================================================================
 
 export const DEFAULT_TRACE_OPTIONS: TraceOptions = {
-  mode: 'blackAndWhite',
+  mode: "blackAndWhite",
   threshold: 128,
   colors: 16,
   cornerAngle: 20,
@@ -58,7 +58,7 @@ export const DEFAULT_TRACE_OPTIONS: TraceOptions = {
  */
 export async function traceImage(
   source: HTMLImageElement | HTMLCanvasElement | ImageData,
-  options: Partial<TraceOptions> = {}
+  options: Partial<TraceOptions> = {},
 ): Promise<TraceResult> {
   const opts = { ...DEFAULT_TRACE_OPTIONS, ...options };
 
@@ -66,11 +66,11 @@ export async function traceImage(
   const imageData = getImageData(source);
 
   switch (opts.mode) {
-    case 'blackAndWhite':
+    case "blackAndWhite":
       return traceBlackAndWhite(imageData, opts);
-    case 'grayscale':
+    case "grayscale":
       return traceGrayscale(imageData, opts);
-    case 'color':
+    case "color":
       return traceColor(imageData, opts);
     default:
       return traceBlackAndWhite(imageData, opts);
@@ -80,13 +80,15 @@ export async function traceImage(
 /**
  * Get ImageData from various sources
  */
-function getImageData(source: HTMLImageElement | HTMLCanvasElement | ImageData): ImageData {
+function getImageData(
+  source: HTMLImageElement | HTMLCanvasElement | ImageData,
+): ImageData {
   if (source instanceof ImageData) {
     return source;
   }
 
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d')!;
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d")!;
 
   if (source instanceof HTMLImageElement) {
     canvas.width = source.naturalWidth || source.width;
@@ -108,7 +110,10 @@ function getImageData(source: HTMLImageElement | HTMLCanvasElement | ImageData):
 /**
  * Trace black and white image
  */
-function traceBlackAndWhite(imageData: ImageData, options: TraceOptions): TraceResult {
+function traceBlackAndWhite(
+  imageData: ImageData,
+  options: TraceOptions,
+): TraceResult {
   const { width, height, data } = imageData;
 
   // Create binary bitmap
@@ -120,16 +125,21 @@ function traceBlackAndWhite(imageData: ImageData, options: TraceOptions): TraceR
   }
 
   // Extract contours
-  const contours = extractContours(bitmap, width, height, options.noiseReduction);
+  const contours = extractContours(
+    bitmap,
+    width,
+    height,
+    options.noiseReduction,
+  );
 
   // Convert contours to bezier paths
-  const paths = contours.map(contour =>
-    contourToBezierPath(contour, options.cornerAngle, options.pathFitting)
+  const paths = contours.map((contour) =>
+    contourToBezierPath(contour, options.cornerAngle, options.pathFitting),
   );
 
   return {
     paths,
-    colors: paths.map(() => '#000000'),
+    colors: paths.map(() => "#000000"),
     width,
     height,
   };
@@ -138,7 +148,10 @@ function traceBlackAndWhite(imageData: ImageData, options: TraceOptions): TraceR
 /**
  * Trace grayscale image (multiple threshold levels)
  */
-function traceGrayscale(imageData: ImageData, options: TraceOptions): TraceResult {
+function traceGrayscale(
+  imageData: ImageData,
+  options: TraceOptions,
+): TraceResult {
   const { width, height, data } = imageData;
   const levels = Math.min(16, Math.max(2, Math.floor(options.colors)));
 
@@ -158,16 +171,25 @@ function traceGrayscale(imageData: ImageData, options: TraceOptions): TraceResul
     }
 
     // Extract contours
-    const contours = extractContours(bitmap, width, height, options.noiseReduction);
+    const contours = extractContours(
+      bitmap,
+      width,
+      height,
+      options.noiseReduction,
+    );
 
     // Convert to paths
     for (const contour of contours) {
-      const path = contourToBezierPath(contour, options.cornerAngle, options.pathFitting);
+      const path = contourToBezierPath(
+        contour,
+        options.cornerAngle,
+        options.pathFitting,
+      );
       allPaths.push(path);
 
       // Calculate grayscale color for this level
       const grayValue = Math.floor(255 * (1 - level / levels));
-      const hex = grayValue.toString(16).padStart(2, '0');
+      const hex = grayValue.toString(16).padStart(2, "0");
       allColors.push(`#${hex}${hex}${hex}`);
     }
   }
@@ -212,15 +234,24 @@ function traceColor(imageData: ImageData, options: TraceOptions): TraceResult {
     }
 
     // Extract contours
-    const contours = extractContours(bitmap, width, height, options.noiseReduction);
+    const contours = extractContours(
+      bitmap,
+      width,
+      height,
+      options.noiseReduction,
+    );
 
     // Convert to paths
     for (const contour of contours) {
-      const path = contourToBezierPath(contour, options.cornerAngle, options.pathFitting);
+      const path = contourToBezierPath(
+        contour,
+        options.cornerAngle,
+        options.pathFitting,
+      );
       allPaths.push(path);
 
       // Convert color to hex
-      const hex = `#${color.r.toString(16).padStart(2, '0')}${color.g.toString(16).padStart(2, '0')}${color.b.toString(16).padStart(2, '0')}`;
+      const hex = `#${color.r.toString(16).padStart(2, "0")}${color.g.toString(16).padStart(2, "0")}${color.b.toString(16).padStart(2, "0")}`;
       allColors.push(hex);
     }
   }
@@ -249,7 +280,7 @@ function extractContours(
   bitmap: Uint8Array,
   width: number,
   height: number,
-  minArea: number
+  minArea: number,
 ): Contour[] {
   const visited = new Set<string>();
   const contours: Contour[] = [];
@@ -279,7 +310,14 @@ function extractContours(
 
       // If there's a transition, trace the contour
       if (pattern !== 0 && pattern !== 15) {
-        const contour = traceContour(padded, width + 2, height + 2, x, y, visited);
+        const contour = traceContour(
+          padded,
+          width + 2,
+          height + 2,
+          x,
+          y,
+          visited,
+        );
         if (contour.points.length >= 3) {
           // Calculate area
           const area = calculateContourArea(contour.points);
@@ -304,7 +342,7 @@ function traceContour(
   height: number,
   startX: number,
   startY: number,
-  visited: Set<string>
+  visited: Set<string>,
 ): Contour {
   const points: Point2D[] = [];
   let x = startX;
@@ -312,31 +350,46 @@ function traceContour(
   let prevDir = 0;
 
   const directions = [
-    { dx: 1, dy: 0 },   // Right
-    { dx: 0, dy: 1 },   // Down
-    { dx: -1, dy: 0 },  // Left
-    { dx: 0, dy: -1 },  // Up
+    { dx: 1, dy: 0 }, // Right
+    { dx: 0, dy: 1 }, // Down
+    { dx: -1, dy: 0 }, // Left
+    { dx: 0, dy: -1 }, // Up
   ];
 
   // Marching squares lookup table
   const getNextDir = (pattern: number, prevDir: number): number => {
     // Simplified direction lookup
     switch (pattern) {
-      case 1: return 3; // Up
-      case 2: return 0; // Right
-      case 3: return 0; // Right
-      case 4: return 1; // Down
-      case 5: return 3; // Saddle - prefer previous direction
-      case 6: return 1; // Down
-      case 7: return 0; // Right
-      case 8: return 2; // Left
-      case 9: return 3; // Up
-      case 10: return prevDir; // Saddle - keep previous
-      case 11: return 3; // Up
-      case 12: return 2; // Left
-      case 13: return 2; // Left
-      case 14: return 1; // Down
-      default: return 0;
+      case 1:
+        return 3; // Up
+      case 2:
+        return 0; // Right
+      case 3:
+        return 0; // Right
+      case 4:
+        return 1; // Down
+      case 5:
+        return 3; // Saddle - prefer previous direction
+      case 6:
+        return 1; // Down
+      case 7:
+        return 0; // Right
+      case 8:
+        return 2; // Left
+      case 9:
+        return 3; // Up
+      case 10:
+        return prevDir; // Saddle - keep previous
+      case 11:
+        return 3; // Up
+      case 12:
+        return 2; // Left
+      case 13:
+        return 2; // Left
+      case 14:
+        return 1; // Down
+      default:
+        return 0;
     }
   };
 
@@ -378,7 +431,7 @@ function traceContour(
 /**
  * Get interpolated edge point for marching squares
  */
-function getEdgePoint(x: number, y: number, pattern: number): Point2D {
+function getEdgePoint(x: number, y: number, _pattern: number): Point2D {
   // Return center of cell for simplicity
   // A more accurate implementation would interpolate along edges
   return { x: x + 0.5, y: y + 0.5 };
@@ -407,7 +460,7 @@ function calculateContourArea(points: Point2D[]): number {
 function contourToBezierPath(
   contour: Contour,
   cornerAngle: number,
-  tolerance: number
+  tolerance: number,
 ): BezierPath {
   const points = contour.points;
   if (points.length < 3) {
@@ -418,7 +471,7 @@ function contourToBezierPath(
   const simplified = douglasPeucker(points, tolerance);
 
   // Detect corners vs smooth points
-  const cornerThreshold = Math.cos((180 - cornerAngle) * Math.PI / 180);
+  const cornerThreshold = Math.cos(((180 - cornerAngle) * Math.PI) / 180);
   const vertices: BezierVertex[] = [];
 
   for (let i = 0; i < simplified.length; i++) {
@@ -495,14 +548,20 @@ function douglasPeucker(points: Point2D[], tolerance: number): Point2D[] {
 /**
  * Perpendicular distance from point to line
  */
-function perpendicularDistance(point: Point2D, lineStart: Point2D, lineEnd: Point2D): number {
+function perpendicularDistance(
+  point: Point2D,
+  lineStart: Point2D,
+  lineEnd: Point2D,
+): number {
   const dx = lineEnd.x - lineStart.x;
   const dy = lineEnd.y - lineStart.y;
   const length = Math.sqrt(dx * dx + dy * dy);
 
   if (length < 0.0001) return distance(point, lineStart);
 
-  const t = ((point.x - lineStart.x) * dx + (point.y - lineStart.y) * dy) / (length * length);
+  const t =
+    ((point.x - lineStart.x) * dx + (point.y - lineStart.y) * dy) /
+    (length * length);
   const closest = {
     x: lineStart.x + Math.max(0, Math.min(1, t)) * dx,
     y: lineStart.y + Math.max(0, Math.min(1, t)) * dy,
@@ -535,7 +594,8 @@ function quantizeColors(data: Uint8ClampedArray, maxColors: number): RGB[] {
     const b = data[i + 2];
     const a = data[i + 3];
 
-    if (a > 128) { // Skip transparent pixels
+    if (a > 128) {
+      // Skip transparent pixels
       colors.push({ r, g, b });
     }
   }
@@ -548,10 +608,12 @@ function quantizeColors(data: Uint8ClampedArray, maxColors: number): RGB[] {
   const buckets = medianCut(colors, maxColors);
 
   // Get average color of each bucket
-  return buckets.map(bucket => {
+  return buckets.map((bucket) => {
     if (bucket.length === 0) return { r: 0, g: 0, b: 0 };
 
-    let rSum = 0, gSum = 0, bSum = 0;
+    let rSum = 0,
+      gSum = 0,
+      bSum = 0;
     for (const c of bucket) {
       rSum += c.r;
       gSum += c.g;
@@ -572,21 +634,21 @@ function quantizeColors(data: Uint8ClampedArray, maxColors: number): RGB[] {
 function medianCut(colors: RGB[], maxBuckets: number): RGB[][] {
   if (colors.length === 0) return [[]];
 
-  let buckets: RGB[][] = [colors];
+  const buckets: RGB[][] = [colors];
 
   while (buckets.length < maxBuckets) {
     // Find bucket with largest range
     let maxRange = 0;
     let maxBucketIdx = 0;
-    let maxChannel: 'r' | 'g' | 'b' = 'r';
+    let maxChannel: "r" | "g" | "b" = "r";
 
     for (let i = 0; i < buckets.length; i++) {
       const bucket = buckets[i];
       if (bucket.length < 2) continue;
 
       // Find range in each channel
-      for (const channel of ['r', 'g', 'b'] as const) {
-        const values = bucket.map(c => c[channel]);
+      for (const channel of ["r", "g", "b"] as const) {
+        const values = bucket.map((c) => c[channel]);
         const range = Math.max(...values) - Math.min(...values);
         if (range > maxRange) {
           maxRange = range;

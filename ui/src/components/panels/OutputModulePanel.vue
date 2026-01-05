@@ -220,24 +220,30 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed, onMounted } from 'vue';
+import { computed, onMounted, ref, watch } from "vue";
 
 export interface OutputModuleSettings {
-  format: 'png-sequence' | 'jpeg-sequence' | 'webp-sequence' | 'mp4' | 'webm' | 'gif';
+  format:
+    | "png-sequence"
+    | "jpeg-sequence"
+    | "webp-sequence"
+    | "mp4"
+    | "webm"
+    | "gif";
   quality: number;
-  videoBitrate: 'low' | 'medium' | 'high' | 'ultra';
-  colorDepth: '8' | '16';
-  colorProfile: 'srgb' | 'display-p3' | 'prophoto-rgb' | 'none';
-  alpha: 'none' | 'straight' | 'premultiplied';
-  namingPattern: 'comp' | 'comp-frame' | 'frame-only' | 'custom';
+  videoBitrate: "low" | "medium" | "high" | "ultra";
+  colorDepth: "8" | "16";
+  colorProfile: "srgb" | "display-p3" | "prophoto-rgb" | "none";
+  alpha: "none" | "straight" | "premultiplied";
+  namingPattern: "comp" | "comp-frame" | "frame-only" | "custom";
   customPattern?: string;
   framePadding: number;
-  destination: 'download' | 'comfyui' | 'custom';
+  destination: "download" | "comfyui" | "custom";
   customPath?: string;
   createSubfolder: boolean;
   openOnComplete: boolean;
   notifyOnComplete: boolean;
-  postAction: 'none' | 'import' | 'comfyui-queue';
+  postAction: "none" | "import" | "comfyui-queue";
 }
 
 const props = defineProps<{
@@ -245,69 +251,79 @@ const props = defineProps<{
   compositionName?: string;
 }>();
 
-const emit = defineEmits<{
-  (e: 'update:settings', settings: OutputModuleSettings): void;
-}>();
+const emit =
+  defineEmits<(e: "update:settings", settings: OutputModuleSettings) => void>();
 
 // Local copy of settings for editing
-const localSettings = ref<OutputModuleSettings>({ ...getDefaultSettings(), ...props.settings });
+const localSettings = ref<OutputModuleSettings>({
+  ...getDefaultSettings(),
+  ...props.settings,
+});
 
 function getDefaultSettings(): OutputModuleSettings {
   return {
-    format: 'png-sequence',
+    format: "png-sequence",
     quality: 90,
-    videoBitrate: 'medium',
-    colorDepth: '8',
-    colorProfile: 'srgb',
-    alpha: 'none',
-    namingPattern: 'comp-frame',
-    customPattern: 'frame_[####]',
+    videoBitrate: "medium",
+    colorDepth: "8",
+    colorProfile: "srgb",
+    alpha: "none",
+    namingPattern: "comp-frame",
+    customPattern: "frame_[####]",
     framePadding: 4,
-    destination: 'download',
-    customPath: '',
+    destination: "download",
+    customPath: "",
     createSubfolder: true,
     openOnComplete: false,
     notifyOnComplete: true,
-    postAction: 'none'
+    postAction: "none",
   };
 }
 
 // Computed properties for conditional UI
-const showQualitySlider = computed(() =>
-  ['jpeg-sequence', 'webp-sequence', 'mp4', 'webm'].includes(localSettings.value.format)
+const _showQualitySlider = computed(() =>
+  ["jpeg-sequence", "webp-sequence", "mp4", "webm"].includes(
+    localSettings.value.format,
+  ),
 );
 
-const isVideoFormat = computed(() =>
-  ['mp4', 'webm'].includes(localSettings.value.format)
+const _isVideoFormat = computed(() =>
+  ["mp4", "webm"].includes(localSettings.value.format),
 );
 
-const isSequenceFormat = computed(() =>
-  ['png-sequence', 'jpeg-sequence', 'webp-sequence'].includes(localSettings.value.format)
+const _isSequenceFormat = computed(() =>
+  ["png-sequence", "jpeg-sequence", "webp-sequence"].includes(
+    localSettings.value.format,
+  ),
 );
 
 const supportsAlpha = computed(() =>
-  ['png-sequence', 'webp-sequence', 'webm'].includes(localSettings.value.format)
+  ["png-sequence", "webp-sequence", "webm"].includes(
+    localSettings.value.format,
+  ),
 );
 
 // Output preview
-const outputPreview = computed(() => {
-  const compName = props.compositionName || 'Composition';
+const _outputPreview = computed(() => {
+  const compName = props.compositionName || "Composition";
   const ext = getExtension(localSettings.value.format);
-  let name = '';
+  let name = "";
 
   switch (localSettings.value.namingPattern) {
-    case 'comp':
+    case "comp":
       name = compName;
       break;
-    case 'comp-frame':
-      name = `${compName}_${'0'.repeat(localSettings.value.framePadding || 4)}`;
+    case "comp-frame":
+      name = `${compName}_${"0".repeat(localSettings.value.framePadding || 4)}`;
       break;
-    case 'frame-only':
-      name = '0'.repeat(localSettings.value.framePadding || 4);
+    case "frame-only":
+      name = "0".repeat(localSettings.value.framePadding || 4);
       break;
-    case 'custom':
-      name = (localSettings.value.customPattern || 'frame_[####]')
-        .replace('[####]', '0'.repeat(localSettings.value.framePadding || 4));
+    case "custom":
+      name = (localSettings.value.customPattern || "frame_[####]").replace(
+        "[####]",
+        "0".repeat(localSettings.value.framePadding || 4),
+      );
       break;
   }
 
@@ -316,30 +332,41 @@ const outputPreview = computed(() => {
 
 function getExtension(format: string): string {
   switch (format) {
-    case 'png-sequence': return 'png';
-    case 'jpeg-sequence': return 'jpg';
-    case 'webp-sequence': return 'webp';
-    case 'mp4': return 'mp4';
-    case 'webm': return 'webm';
-    case 'gif': return 'gif';
-    default: return 'png';
+    case "png-sequence":
+      return "png";
+    case "jpeg-sequence":
+      return "jpg";
+    case "webp-sequence":
+      return "webp";
+    case "mp4":
+      return "mp4";
+    case "webm":
+      return "webm";
+    case "gif":
+      return "gif";
+    default:
+      return "png";
   }
 }
 
 // Sync with prop changes
-watch(() => props.settings, (newSettings) => {
-  localSettings.value = { ...getDefaultSettings(), ...newSettings };
-}, { deep: true });
+watch(
+  () => props.settings,
+  (newSettings) => {
+    localSettings.value = { ...getDefaultSettings(), ...newSettings };
+  },
+  { deep: true },
+);
 
 // Emit updates
 function emitUpdate() {
-  emit('update:settings', { ...localSettings.value });
+  emit("update:settings", { ...localSettings.value });
 }
 
-function handleFormatChange() {
+function _handleFormatChange() {
   // Adjust settings when format changes
   if (!supportsAlpha.value) {
-    localSettings.value.alpha = 'none';
+    localSettings.value.alpha = "none";
   }
   emitUpdate();
 }

@@ -11,12 +11,12 @@
  * - Animatable properties with driver system support
  */
 
-import * as THREE from 'three';
-import { RectAreaLightHelper } from 'three/addons/helpers/RectAreaLightHelper.js';
-import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
-import type { Layer, AnimatableProperty } from '@/types/project';
-import { BaseLayer } from './BaseLayer';
-import { layerLogger } from '@/utils/logger';
+import * as THREE from "three";
+import { RectAreaLightHelper } from "three/addons/helpers/RectAreaLightHelper.js";
+import { RectAreaLightUniformsLib } from "three/addons/lights/RectAreaLightUniformsLib.js";
+import type { AnimatableProperty, Layer } from "@/types/project";
+import { layerLogger } from "@/utils/logger";
+import { BaseLayer } from "./BaseLayer";
 
 // Initialize RectAreaLight uniforms (required for area lights)
 let rectAreaLightInitialized = false;
@@ -31,9 +31,9 @@ function initRectAreaLight() {
 // TYPES
 // ============================================================================
 
-export type LightType = 'point' | 'spot' | 'parallel' | 'ambient' | 'area';
-export type FalloffType = 'none' | 'smooth' | 'inverseSquareClamped';
-export type ShadowType = 'basic' | 'pcf' | 'pcfSoft' | 'vsm';
+export type LightType = "point" | "spot" | "parallel" | "ambient" | "area";
+export type FalloffType = "none" | "smooth" | "inverseSquareClamped";
+export type ShadowType = "basic" | "pcf" | "pcfSoft" | "vsm";
 
 /**
  * Color temperature presets in Kelvin
@@ -59,7 +59,7 @@ export type ColorTemperaturePreset = keyof typeof COLOR_TEMPERATURE_PRESETS;
 export interface PointOfInterest {
   enabled: boolean;
   /** Target type: 'position' for fixed point, 'layer' for layer tracking */
-  targetType: 'position' | 'layer';
+  targetType: "position" | "layer";
   /** Fixed target position (when targetType is 'position') */
   position: AnimatableProperty<{ x: number; y: number; z: number }>;
   /** Target layer ID (when targetType is 'layer') */
@@ -113,7 +113,7 @@ export interface ShadowConfig {
  * Light linking - controls which layers this light affects
  */
 export interface LightLinking {
-  mode: 'include' | 'exclude';
+  mode: "include" | "exclude";
   /** Layer IDs to include or exclude */
   layers: string[];
 }
@@ -187,7 +187,7 @@ function kelvinToRGB(kelvin: number): { r: number; g: number; b: number } {
     r = 255;
   } else {
     r = temp - 60;
-    r = 329.698727446 * Math.pow(r, -0.1332047592);
+    r = 329.698727446 * r ** -0.1332047592;
     r = Math.max(0, Math.min(255, r));
   }
 
@@ -197,7 +197,7 @@ function kelvinToRGB(kelvin: number): { r: number; g: number; b: number } {
     g = 99.4708025861 * Math.log(g) - 161.1195681661;
   } else {
     g = temp - 60;
-    g = 288.1221695283 * Math.pow(g, -0.0755148492);
+    g = 288.1221695283 * g ** -0.0755148492;
   }
   g = Math.max(0, Math.min(255, g));
 
@@ -230,10 +230,21 @@ export class LightLayer extends BaseLayer {
   private lastPOIFrame: number = -1; // Track last frame for deterministic smoothing
 
   // Path following callback (set by LayerManager)
-  private pathProvider: ((layerId: string, t: number, frame: number) => { point: { x: number; y: number; z: number }; tangent: { x: number; y: number } } | null) | null = null;
+  private pathProvider:
+    | ((
+        layerId: string,
+        t: number,
+        frame: number,
+      ) => {
+        point: { x: number; y: number; z: number };
+        tangent: { x: number; y: number };
+      } | null)
+    | null = null;
 
   // Layer position getter for POI layer tracking
-  private layerPositionGetter: ((layerId: string) => THREE.Vector3 | null) | null = null;
+  private layerPositionGetter:
+    | ((layerId: string) => THREE.Vector3 | null)
+    | null = null;
 
   constructor(layerData: Layer) {
     super(layerData);
@@ -265,15 +276,15 @@ export class LightLayer extends BaseLayer {
     const data = layerData.data as any;
 
     return {
-      lightType: data?.lightType ?? 'point',
-      color: data?.color ?? '#ffffff',
+      lightType: data?.lightType ?? "point",
+      color: data?.color ?? "#ffffff",
       colorTemperature: data?.colorTemperature,
       useColorTemperature: data?.useColorTemperature ?? false,
       intensity: data?.intensity ?? 100,
       physicalIntensity: data?.physicalIntensity,
       usePhysicalIntensity: data?.usePhysicalIntensity ?? false,
       radius: data?.radius ?? 500,
-      falloff: data?.falloff ?? 'none',
+      falloff: data?.falloff ?? "none",
       falloffDistance: data?.falloffDistance ?? 500,
       coneAngle: data?.coneAngle ?? 90,
       coneFeather: data?.coneFeather ?? 50,
@@ -282,14 +293,14 @@ export class LightLayer extends BaseLayer {
 
       pointOfInterest: {
         enabled: data?.pointOfInterest?.enabled ?? false,
-        targetType: data?.pointOfInterest?.targetType ?? 'position',
+        targetType: data?.pointOfInterest?.targetType ?? "position",
         position: data?.pointOfInterest?.position ?? {
-          id: 'poi_pos',
-          name: 'POI Position',
-          type: 'vector3',
+          id: "poi_pos",
+          name: "POI Position",
+          type: "vector3",
           value: { x: 0, y: 0, z: 0 },
           animated: false,
-          keyframes: []
+          keyframes: [],
         },
         targetLayerId: data?.pointOfInterest?.targetLayerId,
         offset: data?.pointOfInterest?.offset ?? { x: 0, y: 0, z: 0 },
@@ -300,27 +311,27 @@ export class LightLayer extends BaseLayer {
         enabled: data?.pathFollowing?.enabled ?? false,
         splineLayerId: data?.pathFollowing?.splineLayerId,
         progress: data?.pathFollowing?.progress ?? {
-          id: 'path_progress',
-          name: 'Path Progress',
-          type: 'number',
+          id: "path_progress",
+          name: "Path Progress",
+          type: "number",
           value: 0,
           animated: false,
-          keyframes: []
+          keyframes: [],
         },
         autoOrient: data?.pathFollowing?.autoOrient ?? true,
         bankAngle: data?.pathFollowing?.bankAngle ?? {
-          id: 'bank_angle',
-          name: 'Bank Angle',
-          type: 'number',
+          id: "bank_angle",
+          name: "Bank Angle",
+          type: "number",
           value: 0,
           animated: false,
-          keyframes: []
+          keyframes: [],
         },
       },
 
       shadow: {
         enabled: data?.shadow?.enabled ?? data?.castShadows ?? false,
-        type: data?.shadow?.type ?? 'pcf',
+        type: data?.shadow?.type ?? "pcf",
         mapSize: data?.shadow?.mapSize ?? 1024,
         darkness: data?.shadow?.darkness ?? data?.shadowDarkness ?? 100,
         radius: data?.shadow?.radius ?? data?.shadowDiffusion ?? 1,
@@ -332,7 +343,7 @@ export class LightLayer extends BaseLayer {
       },
 
       lightLinking: {
-        mode: data?.lightLinking?.mode ?? 'include',
+        mode: data?.lightLinking?.mode ?? "include",
         layers: data?.lightLinking?.layers ?? [],
       },
 
@@ -352,48 +363,58 @@ export class LightLayer extends BaseLayer {
     const intensity = this.getEffectiveIntensity();
 
     switch (this.lightData.lightType) {
-      case 'point': {
+      case "point": {
         const light = new THREE.PointLight(color, intensity);
-        light.distance = this.lightData.falloff === 'none' ? 0 : this.lightData.falloffDistance;
-        light.decay = this.lightData.falloff === 'inverseSquareClamped' ? 2 : 1;
+        light.distance =
+          this.lightData.falloff === "none"
+            ? 0
+            : this.lightData.falloffDistance;
+        light.decay = this.lightData.falloff === "inverseSquareClamped" ? 2 : 1;
         this.configureShadows(light);
         return light;
       }
 
-      case 'spot': {
+      case "spot": {
         const light = new THREE.SpotLight(color, intensity);
-        light.distance = this.lightData.falloff === 'none' ? 0 : this.lightData.falloffDistance;
-        light.decay = this.lightData.falloff === 'inverseSquareClamped' ? 2 : 1;
-        light.angle = THREE.MathUtils.degToRad((this.lightData.coneAngle ?? 90) / 2);
+        light.distance =
+          this.lightData.falloff === "none"
+            ? 0
+            : this.lightData.falloffDistance;
+        light.decay = this.lightData.falloff === "inverseSquareClamped" ? 2 : 1;
+        light.angle = THREE.MathUtils.degToRad(
+          (this.lightData.coneAngle ?? 90) / 2,
+        );
         light.penumbra = (this.lightData.coneFeather ?? 50) / 100;
         this.configureShadows(light);
         return light;
       }
 
-      case 'parallel': {
+      case "parallel": {
         const light = new THREE.DirectionalLight(color, intensity);
         this.configureShadows(light);
         return light;
       }
 
-      case 'ambient': {
+      case "ambient": {
         return new THREE.AmbientLight(color, intensity);
       }
 
-      case 'area': {
+      case "area": {
         initRectAreaLight();
         const light = new THREE.RectAreaLight(
           color,
           intensity,
           this.lightData.areaWidth ?? 100,
-          this.lightData.areaHeight ?? 100
+          this.lightData.areaHeight ?? 100,
         );
         // Area lights don't cast shadows in Three.js by default
         return light;
       }
 
       default:
-        layerLogger.warn(`LightLayer: Unknown light type: ${this.lightData.lightType}, defaulting to point`);
+        layerLogger.warn(
+          `LightLayer: Unknown light type: ${this.lightData.lightType}, defaulting to point`,
+        );
         return new THREE.PointLight(color, intensity);
     }
   }
@@ -407,7 +428,10 @@ export class LightLayer extends BaseLayer {
   }
 
   private getEffectiveIntensity(): number {
-    if (this.lightData.usePhysicalIntensity && this.lightData.physicalIntensity) {
+    if (
+      this.lightData.usePhysicalIntensity &&
+      this.lightData.physicalIntensity
+    ) {
       // Convert lumens to Three.js intensity (approximate)
       return this.lightData.physicalIntensity / 100;
     }
@@ -418,7 +442,9 @@ export class LightLayer extends BaseLayer {
   // SHADOW CONFIGURATION
   // ============================================================================
 
-  private configureShadows(light: THREE.PointLight | THREE.SpotLight | THREE.DirectionalLight): void {
+  private configureShadows(
+    light: THREE.PointLight | THREE.SpotLight | THREE.DirectionalLight,
+  ): void {
     const shadowConfig = this.lightData.shadow;
     light.castShadow = shadowConfig.enabled;
 
@@ -430,16 +456,16 @@ export class LightLayer extends BaseLayer {
 
     // Shadow type
     switch (shadowConfig.type) {
-      case 'basic':
+      case "basic":
         // BasicShadowMap is set on renderer, not per-light
         break;
-      case 'pcf':
+      case "pcf":
         light.shadow.radius = 1;
         break;
-      case 'pcfSoft':
+      case "pcfSoft":
         light.shadow.radius = shadowConfig.radius;
         break;
-      case 'vsm':
+      case "vsm":
         // VSM requires renderer configuration
         light.shadow.radius = shadowConfig.radius;
         break;
@@ -479,35 +505,43 @@ export class LightLayer extends BaseLayer {
     }
 
     switch (this.lightData.lightType) {
-      case 'point': {
-        const helper = new THREE.PointLightHelper(this.light as THREE.PointLight, this.lightData.radius / 10);
+      case "point": {
+        const helper = new THREE.PointLightHelper(
+          this.light as THREE.PointLight,
+          this.lightData.radius / 10,
+        );
         this.helper = helper;
         this.group.add(helper);
         break;
       }
 
-      case 'spot': {
+      case "spot": {
         const helper = new THREE.SpotLightHelper(this.light as THREE.SpotLight);
         this.helper = helper;
         this.group.add(helper);
         break;
       }
 
-      case 'parallel': {
-        const helper = new THREE.DirectionalLightHelper(this.light as THREE.DirectionalLight, 50);
+      case "parallel": {
+        const helper = new THREE.DirectionalLightHelper(
+          this.light as THREE.DirectionalLight,
+          50,
+        );
         this.helper = helper;
         this.group.add(helper);
         break;
       }
 
-      case 'area': {
-        const helper = new RectAreaLightHelper(this.light as THREE.RectAreaLight);
+      case "area": {
+        const helper = new RectAreaLightHelper(
+          this.light as THREE.RectAreaLight,
+        );
         this.helper = helper;
         this.group.add(helper);
         break;
       }
 
-      case 'ambient':
+      case "ambient":
         // No helper for ambient lights
         break;
     }
@@ -520,7 +554,9 @@ export class LightLayer extends BaseLayer {
   /**
    * Set callback for getting layer positions (for POI layer tracking)
    */
-  setLayerPositionGetter(getter: ((layerId: string) => THREE.Vector3 | null) | null): void {
+  setLayerPositionGetter(
+    getter: ((layerId: string) => THREE.Vector3 | null) | null,
+  ): void {
     this.layerPositionGetter = getter;
   }
 
@@ -532,12 +568,19 @@ export class LightLayer extends BaseLayer {
     if (!poi.enabled) return;
 
     // Only spot and parallel lights can look at a target
-    if (this.lightData.lightType !== 'spot' && this.lightData.lightType !== 'parallel') {
+    if (
+      this.lightData.lightType !== "spot" &&
+      this.lightData.lightType !== "parallel"
+    ) {
       return;
     }
 
     // Get target position
-    if (poi.targetType === 'layer' && poi.targetLayerId && this.layerPositionGetter) {
+    if (
+      poi.targetType === "layer" &&
+      poi.targetLayerId &&
+      this.layerPositionGetter
+    ) {
       const layerPos = this.layerPositionGetter(poi.targetLayerId);
       if (layerPos) {
         this.poiTarget.copy(layerPos);
@@ -579,7 +622,18 @@ export class LightLayer extends BaseLayer {
   /**
    * Set path provider callback (from LayerManager's spline provider)
    */
-  setPathProvider(provider: ((layerId: string, t: number, frame: number) => { point: { x: number; y: number; z: number }; tangent: { x: number; y: number } } | null) | null): void {
+  setPathProvider(
+    provider:
+      | ((
+          layerId: string,
+          t: number,
+          frame: number,
+        ) => {
+          point: { x: number; y: number; z: number };
+          tangent: { x: number; y: number };
+        } | null)
+      | null,
+  ): void {
     this.pathProvider = provider;
   }
 
@@ -661,8 +715,12 @@ export class LightLayer extends BaseLayer {
     // Validate distance (NaN would corrupt light falloff)
     const validDistance = Number.isFinite(distance) ? distance : 500;
     this.lightData.falloffDistance = validDistance;
-    if (this.light instanceof THREE.PointLight || this.light instanceof THREE.SpotLight) {
-      this.light.distance = this.lightData.falloff === 'none' ? 0 : validDistance;
+    if (
+      this.light instanceof THREE.PointLight ||
+      this.light instanceof THREE.SpotLight
+    ) {
+      this.light.distance =
+        this.lightData.falloff === "none" ? 0 : validDistance;
     }
   }
 
@@ -690,8 +748,8 @@ export class LightLayer extends BaseLayer {
   setAreaSize(width: number, height: number): void {
     if (this.light instanceof THREE.RectAreaLight) {
       // Validate dimensions (NaN/0 would corrupt area light)
-      const validWidth = (Number.isFinite(width) && width > 0) ? width : 100;
-      const validHeight = (Number.isFinite(height) && height > 0) ? height : 100;
+      const validWidth = Number.isFinite(width) && width > 0 ? width : 100;
+      const validHeight = Number.isFinite(height) && height > 0 ? height : 100;
       this.lightData.areaWidth = validWidth;
       this.lightData.areaHeight = validHeight;
       this.light.width = validWidth;
@@ -701,18 +759,22 @@ export class LightLayer extends BaseLayer {
 
   setShadowEnabled(enabled: boolean): void {
     this.lightData.shadow.enabled = enabled;
-    if (this.light instanceof THREE.PointLight ||
-        this.light instanceof THREE.SpotLight ||
-        this.light instanceof THREE.DirectionalLight) {
+    if (
+      this.light instanceof THREE.PointLight ||
+      this.light instanceof THREE.SpotLight ||
+      this.light instanceof THREE.DirectionalLight
+    ) {
       this.light.castShadow = enabled;
     }
   }
 
   setShadowType(type: ShadowType): void {
     this.lightData.shadow.type = type;
-    if (this.light instanceof THREE.PointLight ||
-        this.light instanceof THREE.SpotLight ||
-        this.light instanceof THREE.DirectionalLight) {
+    if (
+      this.light instanceof THREE.PointLight ||
+      this.light instanceof THREE.SpotLight ||
+      this.light instanceof THREE.DirectionalLight
+    ) {
       this.configureShadows(this.light);
     }
   }
@@ -723,10 +785,10 @@ export class LightLayer extends BaseLayer {
 
   setPointOfInterestTarget(layerId: string | null): void {
     if (layerId) {
-      this.lightData.pointOfInterest.targetType = 'layer';
+      this.lightData.pointOfInterest.targetType = "layer";
       this.lightData.pointOfInterest.targetLayerId = layerId;
     } else {
-      this.lightData.pointOfInterest.targetType = 'position';
+      this.lightData.pointOfInterest.targetType = "position";
       this.lightData.pointOfInterest.targetLayerId = undefined;
     }
   }
@@ -749,40 +811,42 @@ export class LightLayer extends BaseLayer {
    */
   getDriverPropertyValue(path: string): number | null {
     switch (path) {
-      case 'light.intensity':
+      case "light.intensity":
         return this.lightData.intensity;
-      case 'light.color.r':
+      case "light.color.r":
         return this.light.color.r * 255;
-      case 'light.color.g':
+      case "light.color.g":
         return this.light.color.g * 255;
-      case 'light.color.b':
+      case "light.color.b":
         return this.light.color.b * 255;
-      case 'light.colorTemperature':
+      case "light.colorTemperature":
         return this.lightData.colorTemperature ?? 6500;
-      case 'light.coneAngle':
+      case "light.coneAngle":
         return this.lightData.coneAngle ?? 90;
-      case 'light.penumbra':
-        return (this.lightData.coneFeather ?? 50);
-      case 'light.falloff':
+      case "light.penumbra":
+        return this.lightData.coneFeather ?? 50;
+      case "light.falloff":
         return this.lightData.falloffDistance;
-      case 'light.shadow.intensity':
+      case "light.shadow.intensity":
         return this.lightData.shadow.darkness;
-      case 'light.shadow.softness':
+      case "light.shadow.softness":
         return this.lightData.shadow.radius;
-      case 'light.shadow.bias':
+      case "light.shadow.bias":
         return this.lightData.shadow.bias * 10000; // Scale for readability
-      case 'light.poi.x':
+      case "light.poi.x":
         return this.poiTarget.x;
-      case 'light.poi.y':
+      case "light.poi.y":
         return this.poiTarget.y;
-      case 'light.poi.z':
+      case "light.poi.z":
         return this.poiTarget.z;
-      case 'light.areaSize.width':
+      case "light.areaSize.width":
         return this.lightData.areaWidth ?? 100;
-      case 'light.areaSize.height':
+      case "light.areaSize.height":
         return this.lightData.areaHeight ?? 100;
-      case 'light.physicalIntensity':
-        return this.lightData.physicalIntensity ?? (this.lightData.intensity * 100);
+      case "light.physicalIntensity":
+        return (
+          this.lightData.physicalIntensity ?? this.lightData.intensity * 100
+        );
       default:
         return null;
     }
@@ -794,69 +858,73 @@ export class LightLayer extends BaseLayer {
    */
   setDriverPropertyValue(path: string, value: number): void {
     switch (path) {
-      case 'light.intensity':
+      case "light.intensity":
         this.light.intensity = value / 100;
         this.lightData.intensity = value;
         break;
-      case 'light.color.r':
+      case "light.color.r":
         this.light.color.r = Math.max(0, Math.min(1, value / 255));
         break;
-      case 'light.color.g':
+      case "light.color.g":
         this.light.color.g = Math.max(0, Math.min(1, value / 255));
         break;
-      case 'light.color.b':
+      case "light.color.b":
         this.light.color.b = Math.max(0, Math.min(1, value / 255));
         break;
-      case 'light.colorTemperature':
+      case "light.colorTemperature":
         this.setColorTemperature(value);
         break;
-      case 'light.coneAngle':
+      case "light.coneAngle":
         this.setConeAngle(value);
         break;
-      case 'light.penumbra':
+      case "light.penumbra":
         this.setConeFeather(value);
         break;
-      case 'light.falloff':
+      case "light.falloff":
         this.setFalloffDistance(value);
         break;
-      case 'light.shadow.intensity':
+      case "light.shadow.intensity":
         this.lightData.shadow.darkness = value;
         break;
-      case 'light.shadow.softness':
+      case "light.shadow.softness":
         this.lightData.shadow.radius = value;
-        if (this.light instanceof THREE.PointLight ||
-            this.light instanceof THREE.SpotLight ||
-            this.light instanceof THREE.DirectionalLight) {
+        if (
+          this.light instanceof THREE.PointLight ||
+          this.light instanceof THREE.SpotLight ||
+          this.light instanceof THREE.DirectionalLight
+        ) {
           this.light.shadow.radius = value;
         }
         break;
-      case 'light.shadow.bias':
+      case "light.shadow.bias":
         this.lightData.shadow.bias = value / 10000;
-        if (this.light instanceof THREE.PointLight ||
-            this.light instanceof THREE.SpotLight ||
-            this.light instanceof THREE.DirectionalLight) {
+        if (
+          this.light instanceof THREE.PointLight ||
+          this.light instanceof THREE.SpotLight ||
+          this.light instanceof THREE.DirectionalLight
+        ) {
           this.light.shadow.bias = value / 10000;
         }
         break;
-      case 'light.poi.x':
+      case "light.poi.x":
         this.poiTarget.x = value;
         this.updatePointOfInterest(0);
         break;
-      case 'light.poi.y':
+      case "light.poi.y":
         this.poiTarget.y = value;
         this.updatePointOfInterest(0);
         break;
-      case 'light.poi.z':
+      case "light.poi.z":
         this.poiTarget.z = value;
         this.updatePointOfInterest(0);
         break;
-      case 'light.areaSize.width':
+      case "light.areaSize.width":
         this.setAreaSize(value, this.lightData.areaHeight ?? 100);
         break;
-      case 'light.areaSize.height':
+      case "light.areaSize.height":
         this.setAreaSize(this.lightData.areaWidth ?? 100, value);
         break;
-      case 'light.physicalIntensity':
+      case "light.physicalIntensity":
         this.lightData.physicalIntensity = value;
         if (this.lightData.usePhysicalIntensity) {
           this.light.intensity = value / 100;
@@ -894,7 +962,7 @@ export class LightLayer extends BaseLayer {
 
     const isInList = linking.layers.includes(layerId);
 
-    if (linking.mode === 'include') {
+    if (linking.mode === "include") {
       return isInList;
     } else {
       return !isInList;
@@ -924,13 +992,22 @@ export class LightLayer extends BaseLayer {
 
     // Animated intensity
     if (this.lightData.animatedIntensity?.animated) {
-      const intensity = this.evaluator.evaluate(this.lightData.animatedIntensity, frame);
+      const intensity = this.evaluator.evaluate(
+        this.lightData.animatedIntensity,
+        frame,
+      );
       this.light.intensity = intensity / 100;
     }
 
     // Animated cone angle
-    if (this.lightData.animatedConeAngle?.animated && this.light instanceof THREE.SpotLight) {
-      const angle = this.evaluator.evaluate(this.lightData.animatedConeAngle, frame);
+    if (
+      this.lightData.animatedConeAngle?.animated &&
+      this.light instanceof THREE.SpotLight
+    ) {
+      const angle = this.evaluator.evaluate(
+        this.lightData.animatedConeAngle,
+        frame,
+      );
       this.light.angle = THREE.MathUtils.degToRad(angle / 2);
       if (this.helper instanceof THREE.SpotLightHelper) {
         this.helper.update();
@@ -939,67 +1016,98 @@ export class LightLayer extends BaseLayer {
 
     // Animated color
     if (this.lightData.animatedColor?.animated) {
-      const color = this.evaluator.evaluate(this.lightData.animatedColor, frame);
+      const color = this.evaluator.evaluate(
+        this.lightData.animatedColor,
+        frame,
+      );
       this.light.color.set(color);
     }
 
     // Animated color temperature
-    if (this.lightData.animatedColorTemperature?.animated && this.lightData.useColorTemperature) {
-      const kelvin = this.evaluator.evaluate(this.lightData.animatedColorTemperature, frame);
+    if (
+      this.lightData.animatedColorTemperature?.animated &&
+      this.lightData.useColorTemperature
+    ) {
+      const kelvin = this.evaluator.evaluate(
+        this.lightData.animatedColorTemperature,
+        frame,
+      );
       const rgb = kelvinToRGB(kelvin);
       this.light.color.setRGB(rgb.r, rgb.g, rgb.b);
     }
 
     // Update helpers
     if (this.helper) {
-      if (this.helper instanceof THREE.PointLightHelper ||
-          this.helper instanceof THREE.SpotLightHelper ||
-          this.helper instanceof THREE.DirectionalLightHelper) {
+      if (
+        this.helper instanceof THREE.PointLightHelper ||
+        this.helper instanceof THREE.SpotLightHelper ||
+        this.helper instanceof THREE.DirectionalLightHelper
+      ) {
         this.helper.update();
       }
     }
   }
 
-  protected override onApplyEvaluatedState(state: import('../MotionEngine').EvaluatedLayer): void {
+  protected override onApplyEvaluatedState(
+    state: import("../MotionEngine").EvaluatedLayer,
+  ): void {
     const props = state.properties;
 
     // Apply evaluated intensity
-    if (props['intensity'] !== undefined) {
-      this.light.intensity = (props['intensity'] as number) / 100;
+    if (props.intensity !== undefined) {
+      this.light.intensity = (props.intensity as number) / 100;
     }
 
     // Apply evaluated cone angle
-    if (props['coneAngle'] !== undefined && this.light instanceof THREE.SpotLight) {
-      this.light.angle = THREE.MathUtils.degToRad((props['coneAngle'] as number) / 2);
+    if (
+      props.coneAngle !== undefined &&
+      this.light instanceof THREE.SpotLight
+    ) {
+      this.light.angle = THREE.MathUtils.degToRad(
+        (props.coneAngle as number) / 2,
+      );
       if (this.helper instanceof THREE.SpotLightHelper) {
         this.helper.update();
       }
     }
 
     // Apply evaluated color
-    if (props['color'] !== undefined) {
-      this.light.color.set(props['color'] as string);
+    if (props.color !== undefined) {
+      this.light.color.set(props.color as string);
     }
 
     // Apply evaluated color temperature
-    if (props['colorTemperature'] !== undefined && this.lightData.useColorTemperature) {
-      const rgb = kelvinToRGB(props['colorTemperature'] as number);
+    if (
+      props.colorTemperature !== undefined &&
+      this.lightData.useColorTemperature
+    ) {
+      const rgb = kelvinToRGB(props.colorTemperature as number);
       this.light.color.setRGB(rgb.r, rgb.g, rgb.b);
     }
 
     // Apply evaluated falloff distance
-    if (props['falloffDistance'] !== undefined) {
-      if (this.light instanceof THREE.PointLight || this.light instanceof THREE.SpotLight) {
-        this.light.distance = this.lightData.falloff === 'none' ? 0 : (props['falloffDistance'] as number);
+    if (props.falloffDistance !== undefined) {
+      if (
+        this.light instanceof THREE.PointLight ||
+        this.light instanceof THREE.SpotLight
+      ) {
+        this.light.distance =
+          this.lightData.falloff === "none"
+            ? 0
+            : (props.falloffDistance as number);
       }
     }
 
     // Apply POI position
-    if (props['poi.x'] !== undefined || props['poi.y'] !== undefined || props['poi.z'] !== undefined) {
+    if (
+      props["poi.x"] !== undefined ||
+      props["poi.y"] !== undefined ||
+      props["poi.z"] !== undefined
+    ) {
       this.poiTarget.set(
-        (props['poi.x'] as number) ?? this.poiTarget.x,
-        (props['poi.y'] as number) ?? this.poiTarget.y,
-        (props['poi.z'] as number) ?? this.poiTarget.z
+        (props["poi.x"] as number) ?? this.poiTarget.x,
+        (props["poi.y"] as number) ?? this.poiTarget.y,
+        (props["poi.z"] as number) ?? this.poiTarget.z,
       );
       this.updatePointOfInterest(0);
     }
@@ -1009,7 +1117,10 @@ export class LightLayer extends BaseLayer {
     const data = properties.data as Partial<LightData> | undefined;
     if (!data) return;
 
-    if (data.lightType !== undefined && data.lightType !== this.lightData.lightType) {
+    if (
+      data.lightType !== undefined &&
+      data.lightType !== this.lightData.lightType
+    ) {
       this.setLightType(data.lightType);
     }
 
@@ -1045,15 +1156,17 @@ export class LightLayer extends BaseLayer {
     if (data.areaWidth !== undefined || data.areaHeight !== undefined) {
       this.setAreaSize(
         data.areaWidth ?? this.lightData.areaWidth ?? 100,
-        data.areaHeight ?? this.lightData.areaHeight ?? 100
+        data.areaHeight ?? this.lightData.areaHeight ?? 100,
       );
     }
 
     if (data.shadow !== undefined) {
       Object.assign(this.lightData.shadow, data.shadow);
-      if (this.light instanceof THREE.PointLight ||
-          this.light instanceof THREE.SpotLight ||
-          this.light instanceof THREE.DirectionalLight) {
+      if (
+        this.light instanceof THREE.PointLight ||
+        this.light instanceof THREE.SpotLight ||
+        this.light instanceof THREE.DirectionalLight
+      ) {
         this.configureShadows(this.light);
       }
     }

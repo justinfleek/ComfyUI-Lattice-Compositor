@@ -9,11 +9,18 @@
  * - Layer boundary snapping (in/out points)
  */
 
-import type { AudioAnalysis, PeakData } from './audioFeatures';
-import type { Layer, AnimatableProperty } from '@/types/project';
+import type { AnimatableProperty, Layer } from "@/types/project";
+import type { AudioAnalysis, PeakData } from "./audioFeatures";
 
 /** Snap target types */
-export type SnapType = 'frame' | 'keyframe' | 'beat' | 'peak' | 'layer-in' | 'layer-out' | 'playhead';
+export type SnapType =
+  | "frame"
+  | "keyframe"
+  | "beat"
+  | "peak"
+  | "layer-in"
+  | "layer-out"
+  | "playhead";
 
 /** Snap result */
 export interface SnapResult {
@@ -61,7 +68,7 @@ export function findNearestSnap(
     currentFrame?: number;
     audioAnalysis?: AudioAnalysis | null;
     peakData?: PeakData | null;
-  }
+  },
 ): SnapResult | null {
   if (!config.enabled) {
     return null;
@@ -72,12 +79,13 @@ export function findNearestSnap(
 
   // Grid snapping
   if (config.snapToGrid) {
-    const nearestGridFrame = Math.round(frame / config.gridInterval) * config.gridInterval;
+    const nearestGridFrame =
+      Math.round(frame / config.gridInterval) * config.gridInterval;
     const gridDistance = Math.abs(frame - nearestGridFrame);
     if (gridDistance <= thresholdFrames) {
       snapTargets.push({
         frame: nearestGridFrame,
-        type: 'frame',
+        type: "frame",
         distance: gridDistance * pixelsPerFrame,
       });
     }
@@ -89,7 +97,13 @@ export function findNearestSnap(
       // Don't snap to selected layer's own keyframes when dragging
       if (layer.id === context.selectedLayerId) continue;
 
-      collectKeyframeSnapTargets(layer, frame, thresholdFrames, pixelsPerFrame, snapTargets);
+      collectKeyframeSnapTargets(
+        layer,
+        frame,
+        thresholdFrames,
+        pixelsPerFrame,
+        snapTargets,
+      );
     }
   }
 
@@ -100,7 +114,7 @@ export function findNearestSnap(
       if (distance <= thresholdFrames) {
         snapTargets.push({
           frame: onset,
-          type: 'beat',
+          type: "beat",
           distance: distance * pixelsPerFrame,
         });
       }
@@ -114,7 +128,7 @@ export function findNearestSnap(
       if (distance <= thresholdFrames) {
         snapTargets.push({
           frame: peakFrame,
-          type: 'peak',
+          type: "peak",
           distance: distance * pixelsPerFrame,
         });
       }
@@ -134,7 +148,7 @@ export function findNearestSnap(
       if (inDistance <= thresholdFrames) {
         snapTargets.push({
           frame: layerStart,
-          type: 'layer-in',
+          type: "layer-in",
           distance: inDistance * pixelsPerFrame,
         });
       }
@@ -142,7 +156,7 @@ export function findNearestSnap(
       if (outDistance <= thresholdFrames) {
         snapTargets.push({
           frame: layerEnd,
-          type: 'layer-out',
+          type: "layer-out",
           distance: outDistance * pixelsPerFrame,
         });
       }
@@ -155,7 +169,7 @@ export function findNearestSnap(
     if (distance <= thresholdFrames && distance > 0) {
       snapTargets.push({
         frame: context.currentFrame,
-        type: 'playhead',
+        type: "playhead",
         distance: distance * pixelsPerFrame,
       });
     }
@@ -168,13 +182,13 @@ export function findNearestSnap(
 
   // Prioritize by type: playhead > beat/peak > keyframe > layer > grid
   const priority: Record<SnapType, number> = {
-    'playhead': 5,
-    'beat': 4,
-    'peak': 4,
-    'keyframe': 3,
-    'layer-in': 2,
-    'layer-out': 2,
-    'frame': 1,
+    playhead: 5,
+    beat: 4,
+    peak: 4,
+    keyframe: 3,
+    "layer-in": 2,
+    "layer-out": 2,
+    frame: 1,
   };
 
   // Sort by distance first, then by priority (higher priority wins for same distance)
@@ -198,7 +212,7 @@ function collectKeyframeSnapTargets(
   frame: number,
   thresholdFrames: number,
   pixelsPerFrame: number,
-  targets: SnapResult[]
+  targets: SnapResult[],
 ): void {
   const properties: AnimatableProperty<any>[] = [
     layer.transform.position,
@@ -215,10 +229,12 @@ function collectKeyframeSnapTargets(
       const distance = Math.abs(frame - kf.frame);
       if (distance <= thresholdFrames) {
         // Avoid duplicates at same frame
-        if (!targets.some(t => t.frame === kf.frame && t.type === 'keyframe')) {
+        if (
+          !targets.some((t) => t.frame === kf.frame && t.type === "keyframe")
+        ) {
           targets.push({
             frame: kf.frame,
-            type: 'keyframe',
+            type: "keyframe",
             distance: distance * pixelsPerFrame,
           });
         }
@@ -247,12 +263,12 @@ export function getPeakFrames(peakData: PeakData | null): number[] {
 export function isNearBeat(
   frame: number,
   audioAnalysis: AudioAnalysis | null,
-  thresholdFrames: number = 2
+  thresholdFrames: number = 2,
 ): boolean {
   if (!audioAnalysis?.onsets) return false;
 
   return audioAnalysis.onsets.some(
-    onset => Math.abs(frame - onset) <= thresholdFrames
+    (onset) => Math.abs(frame - onset) <= thresholdFrames,
   );
 }
 
@@ -261,7 +277,7 @@ export function isNearBeat(
  */
 export function getNearestBeatFrame(
   frame: number,
-  audioAnalysis: AudioAnalysis | null
+  audioAnalysis: AudioAnalysis | null,
 ): number | null {
   if (!audioAnalysis?.onsets || audioAnalysis.onsets.length === 0) {
     return null;
@@ -295,13 +311,13 @@ export interface SnapIndicator {
  */
 export function getSnapColor(type: SnapType): string {
   const colors: Record<SnapType, string> = {
-    'frame': '#666',
-    'keyframe': '#7c9cff',
-    'beat': '#ffc107',
-    'peak': '#ff6b6b',
-    'layer-in': '#4ecdc4',
-    'layer-out': '#4ecdc4',
-    'playhead': '#ff4444',
+    frame: "#666",
+    keyframe: "#7c9cff",
+    beat: "#ffc107",
+    peak: "#ff6b6b",
+    "layer-in": "#4ecdc4",
+    "layer-out": "#4ecdc4",
+    playhead: "#ff4444",
   };
   return colors[type];
 }

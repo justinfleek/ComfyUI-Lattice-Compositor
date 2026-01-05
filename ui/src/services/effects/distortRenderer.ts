@@ -5,11 +5,11 @@
  * These effects manipulate pixel positions rather than colors.
  */
 import {
-  registerEffectRenderer,
   createMatchingCanvas,
   type EffectStackResult,
-  type EvaluatedEffectParams
-} from '../effectProcessor';
+  type EvaluatedEffectParams,
+  registerEffectRenderer,
+} from "../effectProcessor";
 
 // ============================================================================
 // SIMPLEX NOISE IMPLEMENTATION
@@ -25,9 +25,18 @@ class SimplexNoise {
   private permMod12: number[] = [];
 
   private static readonly grad3: number[][] = [
-    [1, 1, 0], [-1, 1, 0], [1, -1, 0], [-1, -1, 0],
-    [1, 0, 1], [-1, 0, 1], [1, 0, -1], [-1, 0, -1],
-    [0, 1, 1], [0, -1, 1], [0, 1, -1], [0, -1, -1]
+    [1, 1, 0],
+    [-1, 1, 0],
+    [1, -1, 0],
+    [-1, -1, 0],
+    [1, 0, 1],
+    [-1, 0, 1],
+    [1, 0, -1],
+    [-1, 0, -1],
+    [0, 1, 1],
+    [0, -1, 1],
+    [0, 1, -1],
+    [0, -1, -1],
   ];
 
   constructor(seed: number) {
@@ -38,7 +47,7 @@ class SimplexNoise {
     // Mulberry32 seeded random
     const mulberry32 = (s: number) => {
       return () => {
-        let t = (s += 0x6D2B79F5);
+        let t = (s += 0x6d2b79f5);
         t = Math.imul(t ^ (t >>> 15), t | 1);
         t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
         return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
@@ -91,9 +100,11 @@ class SimplexNoise {
     // Determine which simplex we're in
     let i1: number, j1: number;
     if (x0 > y0) {
-      i1 = 1; j1 = 0;
+      i1 = 1;
+      j1 = 0;
     } else {
-      i1 = 0; j1 = 1;
+      i1 = 0;
+      j1 = 1;
     }
 
     // Offsets for middle corner
@@ -112,7 +123,9 @@ class SimplexNoise {
     const gi2 = this.permMod12[ii + 1 + this.perm[jj + 1]];
 
     // Calculate contribution from the three corners
-    let n0 = 0, n1 = 0, n2 = 0;
+    let n0 = 0,
+      n1 = 0,
+      n2 = 0;
 
     let t0 = 0.5 - x0 * x0 - y0 * y0;
     if (t0 >= 0) {
@@ -151,8 +164,13 @@ class SimplexNoise {
  *
  * BUG-025/026/027/028 FIX: NaN values bypass Math.max/min clamps
  */
-function safeNum(val: unknown, def: number, min?: number, max?: number): number {
-  const num = typeof val === 'number' && Number.isFinite(val) ? val : def;
+function safeNum(
+  val: unknown,
+  def: number,
+  min?: number,
+  max?: number,
+): number {
+  const num = typeof val === "number" && Number.isFinite(val) ? val : def;
   if (min !== undefined && max !== undefined) {
     return Math.max(min, Math.min(max, num));
   }
@@ -181,7 +199,7 @@ function safeNum(val: unknown, def: number, min?: number, max?: number): number 
  */
 export function transformRenderer(
   input: EffectStackResult,
-  params: EvaluatedEffectParams
+  params: EvaluatedEffectParams,
 ): EffectStackResult {
   // BUG-025 FIX: Validate all numeric params to prevent NaN propagation
   const anchorPoint = params.anchor_point ?? { x: 0.5, y: 0.5 };
@@ -195,9 +213,9 @@ export function transformRenderer(
 
   const scaleWidth = safeNum(params.scale_width, 100, 0.01, 10000) / 100;
   const scaleHeight = safeNum(params.scale_height, 100, 0.01, 10000) / 100;
-  const skew = safeNum(params.skew, 0, -85, 85) * Math.PI / 180;
-  const skewAxis = safeNum(params.skew_axis, 0, -360, 360) * Math.PI / 180;
-  const rotation = safeNum(params.rotation, 0) * Math.PI / 180;
+  const skew = (safeNum(params.skew, 0, -85, 85) * Math.PI) / 180;
+  const skewAxis = (safeNum(params.skew_axis, 0, -360, 360) * Math.PI) / 180;
+  const rotation = (safeNum(params.rotation, 0) * Math.PI) / 180;
   const opacity = safeNum(params.opacity, 100, 0, 100) / 100;
 
   const { width, height } = input.canvas;
@@ -247,9 +265,9 @@ export function transformRenderer(
  */
 export function warpRenderer(
   input: EffectStackResult,
-  params: EvaluatedEffectParams
+  params: EvaluatedEffectParams,
 ): EffectStackResult {
-  const warpStyle = params.warp_style ?? 'arc';
+  const warpStyle = params.warp_style ?? "arc";
   // BUG-026 FIX: Validate numeric params to prevent NaN bypass of === 0 check
   const bend = safeNum(params.bend, 0, -100, 100) / 100;
   const hDistort = safeNum(params.horizontal_distortion, 0, -100, 100) / 100;
@@ -282,12 +300,12 @@ export function warpRenderer(
 
       // Apply warp based on style
       switch (warpStyle) {
-        case 'arc': {
+        case "arc": {
           const arcBend = bend * ny * ny;
           srcX = x + arcBend * centerX * nx;
           break;
         }
-        case 'bulge': {
+        case "bulge": {
           const r = Math.sqrt(nx * nx + ny * ny);
           if (r < 1) {
             const factor = 1 + bend * (1 - r * r);
@@ -296,22 +314,22 @@ export function warpRenderer(
           }
           break;
         }
-        case 'wave': {
+        case "wave": {
           srcX = x + Math.sin(ny * Math.PI * 2) * bend * width * 0.1;
           srcY = y + Math.sin(nx * Math.PI * 2) * bend * height * 0.1;
           break;
         }
-        case 'fisheye': {
+        case "fisheye": {
           const r = Math.sqrt(nx * nx + ny * ny);
           if (r > 0 && r < 1) {
             const theta = Math.atan2(ny, nx);
-            const newR = Math.pow(r, 1 + bend);
+            const newR = r ** (1 + bend);
             srcX = centerX + newR * Math.cos(theta) * centerX;
             srcY = centerY + newR * Math.sin(theta) * centerY;
           }
           break;
         }
-        case 'twist': {
+        case "twist": {
           const r = Math.sqrt(nx * nx + ny * ny);
           const angle = bend * Math.PI * (1 - r);
           const cos = Math.cos(angle);
@@ -355,9 +373,9 @@ export function warpRenderer(
 
         dst[outIdx + c] = Math.round(
           v00 * (1 - fx) * (1 - fy) +
-          v01 * fx * (1 - fy) +
-          v10 * (1 - fx) * fy +
-          v11 * fx * fy
+            v01 * fx * (1 - fy) +
+            v10 * (1 - fx) * fy +
+            v11 * fx * fy,
         );
       }
     }
@@ -375,15 +393,21 @@ export function warpRenderer(
  * Extract channel value from pixel based on channel type
  */
 function getChannelValue(
-  r: number, g: number, b: number, a: number,
-  channel: string
+  r: number,
+  g: number,
+  b: number,
+  a: number,
+  channel: string,
 ): number {
   switch (channel) {
-    case 'red': return r;
-    case 'green': return g;
-    case 'blue': return b;
-    case 'alpha': return a;
-    case 'luminance':
+    case "red":
+      return r;
+    case "green":
+      return g;
+    case "blue":
+      return b;
+    case "alpha":
+      return a;
     default:
       return 0.299 * r + 0.587 * g + 0.114 * b;
   }
@@ -398,19 +422,19 @@ function generateProceduralMap(
   height: number,
   mapType: string,
   scale: number,
-  seed: number = 12345
+  seed: number = 12345,
 ): ImageData {
-  const canvas = document.createElement('canvas');
+  const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
-  const ctx = canvas.getContext('2d')!;
+  const ctx = canvas.getContext("2d")!;
   const imageData = ctx.createImageData(width, height);
   const data = imageData.data;
 
   // Seeded random for deterministic noise
   const mulberry32 = (s: number) => {
     return () => {
-      let t = (s += 0x6D2B79F5);
+      let t = (s += 0x6d2b79f5);
       t = Math.imul(t ^ (t >>> 15), t | 1);
       t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
       return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
@@ -424,19 +448,19 @@ function generateProceduralMap(
       let value = 128; // Neutral (no displacement)
 
       switch (mapType) {
-        case 'noise':
+        case "noise":
           // Seeded pseudo-random noise (deterministic)
           value = Math.floor(random() * 256);
           break;
-        case 'gradient-h':
+        case "gradient-h":
           // Horizontal gradient
           value = Math.floor((x / width) * 255);
           break;
-        case 'gradient-v':
+        case "gradient-v":
           // Vertical gradient
           value = Math.floor((y / height) * 255);
           break;
-        case 'radial':
+        case "radial": {
           // Radial gradient from center
           const cx = width / 2;
           const cy = height / 2;
@@ -444,29 +468,35 @@ function generateProceduralMap(
           const maxDist = Math.sqrt(cx ** 2 + cy ** 2);
           value = Math.floor((1 - dist / maxDist) * 255);
           break;
-        case 'sine-h':
+        }
+        case "sine-h":
           // Horizontal sine wave
-          value = Math.floor(128 + 127 * Math.sin((x / width) * Math.PI * 2 * scale));
+          value = Math.floor(
+            128 + 127 * Math.sin((x / width) * Math.PI * 2 * scale),
+          );
           break;
-        case 'sine-v':
+        case "sine-v":
           // Vertical sine wave
-          value = Math.floor(128 + 127 * Math.sin((y / height) * Math.PI * 2 * scale));
+          value = Math.floor(
+            128 + 127 * Math.sin((y / height) * Math.PI * 2 * scale),
+          );
           break;
-        case 'checker':
+        case "checker": {
           // Checkerboard pattern
           const tileSize = Math.max(1, Math.floor(width / (scale * 10)));
           const checkX = Math.floor(x / tileSize) % 2;
           const checkY = Math.floor(y / tileSize) % 2;
           value = (checkX + checkY) % 2 === 0 ? 255 : 0;
           break;
+        }
         default:
           value = 128;
       }
 
-      data[i] = value;     // R
+      data[i] = value; // R
       data[i + 1] = value; // G
       data[i + 2] = value; // B
-      data[i + 3] = 255;   // A
+      data[i + 3] = 255; // A
     }
   }
 
@@ -476,7 +506,7 @@ function generateProceduralMap(
 /**
  * Map behavior types for layer displacement maps
  */
-type MapBehavior = 'center' | 'stretch' | 'tile';
+type MapBehavior = "center" | "stretch" | "tile";
 
 /**
  * Apply map behavior transformation to get pixel coordinates
@@ -496,15 +526,15 @@ function applyMapBehavior(
   targetHeight: number,
   mapWidth: number,
   mapHeight: number,
-  behavior: MapBehavior
+  behavior: MapBehavior,
 ): { mapX: number; mapY: number } {
   switch (behavior) {
-    case 'center': {
+    case "center": {
       // Center the map over the target layer
       const offsetX = (targetWidth - mapWidth) / 2;
       const offsetY = (targetHeight - mapHeight) / 2;
-      let mapX = x - offsetX;
-      let mapY = y - offsetY;
+      const mapX = x - offsetX;
+      const mapY = y - offsetY;
       // Return -1 if outside map bounds (no displacement)
       if (mapX < 0 || mapX >= mapWidth || mapY < 0 || mapY >= mapHeight) {
         return { mapX: -1, mapY: -1 };
@@ -512,14 +542,14 @@ function applyMapBehavior(
       return { mapX, mapY };
     }
 
-    case 'stretch': {
+    case "stretch": {
       // Stretch/shrink map to fit target dimensions
       const mapX = (x / targetWidth) * mapWidth;
       const mapY = (y / targetHeight) * mapHeight;
       return { mapX, mapY };
     }
 
-    case 'tile': {
+    case "tile": {
       // Tile the map across the target
       const mapX = ((x % mapWidth) + mapWidth) % mapWidth;
       const mapY = ((y % mapHeight) + mapHeight) % mapHeight;
@@ -530,7 +560,7 @@ function applyMapBehavior(
       // Default to stretch
       return {
         mapX: (x / targetWidth) * mapWidth,
-        mapY: (y / targetHeight) * mapHeight
+        mapY: (y / targetHeight) * mapHeight,
       };
   }
 }
@@ -555,24 +585,29 @@ function applyMapBehavior(
  */
 export function displacementMapRenderer(
   input: EffectStackResult,
-  params: EvaluatedEffectParams
+  params: EvaluatedEffectParams,
 ): EffectStackResult {
-  const mapType = params.map_type ?? 'layer';
-  const mapBehavior = (params.displacement_map_behavior ?? 'stretch') as MapBehavior;
-  const useHorizontal = params.use_for_horizontal ?? 'red';
-  const useVertical = params.use_for_vertical ?? 'green';
+  const mapType = params.map_type ?? "layer";
+  const mapBehavior = (params.displacement_map_behavior ??
+    "stretch") as MapBehavior;
+  const useHorizontal = params.use_for_horizontal ?? "red";
+  const useVertical = params.use_for_vertical ?? "green";
   // BUG-027 FIX: Validate numeric params to prevent NaN propagation
   const maxHorizontal = safeNum(params.max_horizontal, 0, -4000, 4000);
   const maxVertical = safeNum(params.max_vertical, 0, -4000, 4000);
-  const wrapMode = params.edge_behavior ?? 'off';
+  const wrapMode = params.edge_behavior ?? "off";
   const mapScale = safeNum(params.map_scale, 1, 0.1, 10);
 
   // Check for pre-rendered layer canvas (injected by render pipeline)
-  const mapLayerCanvas = params._mapLayerCanvas as HTMLCanvasElement | undefined;
+  const mapLayerCanvas = params._mapLayerCanvas as
+    | HTMLCanvasElement
+    | undefined;
 
   // No displacement if both are off or zero
-  if ((useHorizontal === 'off' || maxHorizontal === 0) &&
-      (useVertical === 'off' || maxVertical === 0)) {
+  if (
+    (useHorizontal === "off" || maxHorizontal === 0) &&
+    (useVertical === "off" || maxVertical === 0)
+  ) {
     return input;
   }
 
@@ -588,9 +623,9 @@ export function displacementMapRenderer(
   let mapWidth: number;
   let mapHeight: number;
 
-  if (mapType === 'layer' && mapLayerCanvas) {
+  if (mapType === "layer" && mapLayerCanvas) {
     // Use pre-rendered layer as displacement map
-    const mapCtx = mapLayerCanvas.getContext('2d');
+    const mapCtx = mapLayerCanvas.getContext("2d");
     if (mapCtx) {
       mapWidth = mapLayerCanvas.width;
       mapHeight = mapLayerCanvas.height;
@@ -598,12 +633,12 @@ export function displacementMapRenderer(
       mapData = mapImageData.data;
     } else {
       // Fallback to procedural if layer context unavailable
-      const dispMap = generateProceduralMap(width, height, 'noise', mapScale);
+      const dispMap = generateProceduralMap(width, height, "noise", mapScale);
       mapData = dispMap.data;
       mapWidth = width;
       mapHeight = height;
     }
-  } else if (mapType !== 'layer') {
+  } else if (mapType !== "layer") {
     // Generate procedural displacement map
     const dispMap = generateProceduralMap(width, height, mapType, mapScale);
     mapData = dispMap.data;
@@ -612,7 +647,7 @@ export function displacementMapRenderer(
   } else {
     // Layer mode but no canvas provided - use neutral map (no displacement)
     // This allows the effect to be configured before a layer is selected
-    const dispMap = generateProceduralMap(width, height, 'radial', mapScale);
+    const dispMap = generateProceduralMap(width, height, "radial", mapScale);
     mapData = dispMap.data;
     mapWidth = width;
     mapHeight = height;
@@ -628,7 +663,13 @@ export function displacementMapRenderer(
 
       // Apply map behavior to get displacement map coordinates
       const { mapX, mapY } = applyMapBehavior(
-        x, y, width, height, mapWidth, mapHeight, mapBehavior
+        x,
+        y,
+        width,
+        height,
+        mapWidth,
+        mapHeight,
+        mapBehavior,
       );
 
       // If outside map bounds (center mode), no displacement
@@ -657,9 +698,9 @@ export function displacementMapRenderer(
       const interpChannel = (channel: number): number => {
         return Math.round(
           mapData[mi00 + channel] * (1 - mfx) * (1 - mfy) +
-          mapData[mi10 + channel] * mfx * (1 - mfy) +
-          mapData[mi01 + channel] * (1 - mfx) * mfy +
-          mapData[mi11 + channel] * mfx * mfy
+            mapData[mi10 + channel] * mfx * (1 - mfy) +
+            mapData[mi01 + channel] * (1 - mfx) * mfy +
+            mapData[mi11 + channel] * mfx * mfy,
         );
       };
 
@@ -672,12 +713,12 @@ export function displacementMapRenderer(
       let dx = 0;
       let dy = 0;
 
-      if (useHorizontal !== 'off' && maxHorizontal !== 0) {
+      if (useHorizontal !== "off" && maxHorizontal !== 0) {
         const hValue = getChannelValue(mapR, mapG, mapB, mapA, useHorizontal);
         dx = ((hValue - 128) / 128) * maxHorizontal;
       }
 
-      if (useVertical !== 'off' && maxVertical !== 0) {
+      if (useVertical !== "off" && maxVertical !== 0) {
         const vValue = getChannelValue(mapR, mapG, mapB, mapA, useVertical);
         dy = ((vValue - 128) / 128) * maxVertical;
       }
@@ -687,15 +728,17 @@ export function displacementMapRenderer(
       let srcY = y - dy;
 
       // Handle edge wrapping
-      if (wrapMode === 'tiles') {
+      if (wrapMode === "tiles") {
         srcX = ((srcX % width) + width) % width;
         srcY = ((srcY % height) + height) % height;
-      } else if (wrapMode === 'mirror') {
+      } else if (wrapMode === "mirror") {
         srcX = Math.abs(srcX);
         srcY = Math.abs(srcY);
-        if (Math.floor(srcX / width) % 2 === 1) srcX = width - 1 - (srcX % width);
+        if (Math.floor(srcX / width) % 2 === 1)
+          srcX = width - 1 - (srcX % width);
         else srcX = srcX % width;
-        if (Math.floor(srcY / height) % 2 === 1) srcY = height - 1 - (srcY % height);
+        if (Math.floor(srcY / height) % 2 === 1)
+          srcY = height - 1 - (srcY % height);
         else srcY = srcY % height;
       } else {
         // Clamp to edges
@@ -725,9 +768,9 @@ export function displacementMapRenderer(
 
         dst[i + c] = Math.round(
           v00 * (1 - fx) * (1 - fy) +
-          v10 * fx * (1 - fy) +
-          v01 * (1 - fx) * fy +
-          v11 * fx * fy
+            v10 * fx * (1 - fy) +
+            v01 * (1 - fx) * fy +
+            v11 * fx * fy,
         );
       }
     }
@@ -746,18 +789,18 @@ export function displacementMapRenderer(
  * Displacement types for Turbulent Displace
  */
 type TurbulentDisplaceType =
-  | 'turbulent'        // Random organic distortion (default)
-  | 'bulge'            // Inflating/deflating effect
-  | 'twist'            // Rotational distortion
-  | 'turbulent-smoother' // Smoother turbulence
-  | 'horizontal'       // X-axis only
-  | 'vertical'         // Y-axis only
-  | 'cross';           // X and Y linked
+  | "turbulent" // Random organic distortion (default)
+  | "bulge" // Inflating/deflating effect
+  | "twist" // Rotational distortion
+  | "turbulent-smoother" // Smoother turbulence
+  | "horizontal" // X-axis only
+  | "vertical" // Y-axis only
+  | "cross"; // X and Y linked
 
 /**
  * Pinning options for edge handling
  */
-type PinningType = 'none' | 'all' | 'horizontal' | 'vertical';
+type PinningType = "none" | "all" | "horizontal" | "vertical";
 
 /**
  * Turbulent Displace effect renderer
@@ -777,9 +820,10 @@ type PinningType = 'none' | 'all' | 'horizontal' | 'vertical';
  */
 export function turbulentDisplaceRenderer(
   input: EffectStackResult,
-  params: EvaluatedEffectParams
+  params: EvaluatedEffectParams,
 ): EffectStackResult {
-  const displacementType = (params.displacement ?? 'turbulent') as TurbulentDisplaceType;
+  const displacementType = (params.displacement ??
+    "turbulent") as TurbulentDisplaceType;
   // BUG-027 FIX: Validate all numeric params to prevent NaN propagation
   const amount = safeNum(params.amount, 50, 0, 1000);
   const size = safeNum(params.size, 100, 1, 1000);
@@ -793,9 +837,9 @@ export function turbulentDisplaceRenderer(
   const offsetRaw = params.offset ?? { x: 0, y: 0 };
   const offset = {
     x: safeNum(offsetRaw.x, 0),
-    y: safeNum(offsetRaw.y, 0)
+    y: safeNum(offsetRaw.y, 0),
   };
-  const pinning = (params.pinning ?? 'none') as PinningType;
+  const pinning = (params.pinning ?? "none") as PinningType;
 
   // No displacement if amount is 0 (NaN params now safely default)
   if (amount === 0) {
@@ -812,10 +856,10 @@ export function turbulentDisplaceRenderer(
   const dst = outputData.data;
 
   // Calculate evolution phase for animation
-  let evolutionPhase = evolutionDeg * Math.PI / 180;
+  let evolutionPhase = (evolutionDeg * Math.PI) / 180;
   if (cycleEvolution && cycleRevolutions > 0) {
     // Normalize evolution to [0, 2π * cycleRevolutions] and wrap
-    evolutionPhase = (evolutionPhase % (2 * Math.PI * cycleRevolutions));
+    evolutionPhase = evolutionPhase % (2 * Math.PI * cycleRevolutions);
   }
 
   // Create noise generator with combined seed
@@ -823,7 +867,7 @@ export function turbulentDisplaceRenderer(
   const noise = new SimplexNoise(effectiveSeed);
 
   // Second noise for evolution animation (different pattern)
-  const evolutionNoise = new SimplexNoise(randomSeed + 12345);
+  const _evolutionNoise = new SimplexNoise(randomSeed + 12345);
 
   // Precompute center
   const centerX = width / 2;
@@ -836,14 +880,14 @@ export function turbulentDisplaceRenderer(
       let pinFactorH = 1;
       let pinFactorV = 1;
 
-      if (pinning === 'all' || pinning === 'horizontal') {
+      if (pinning === "all" || pinning === "horizontal") {
         // Pin top and bottom edges
         const edgeDist = Math.min(y, height - 1 - y);
         const edgeThreshold = height * 0.1; // 10% from edge
         pinFactorV = Math.min(1, edgeDist / edgeThreshold);
       }
 
-      if (pinning === 'all' || pinning === 'vertical') {
+      if (pinning === "all" || pinning === "vertical") {
         // Pin left and right edges
         const edgeDist = Math.min(x, width - 1 - x);
         const edgeThreshold = width * 0.1; // 10% from edge
@@ -859,7 +903,7 @@ export function turbulentDisplaceRenderer(
       let dy = 0;
 
       switch (displacementType) {
-        case 'turbulent': {
+        case "turbulent": {
           // Multi-octave turbulent noise
           let noiseX = 0;
           let noiseY = 0;
@@ -870,8 +914,12 @@ export function turbulentDisplaceRenderer(
           for (let octave = 0; octave < complexity; octave++) {
             // Use evolution phase for time-based variation
             const timeOffset = evolutionPhase * 0.1;
-            noiseX += noise.noise2D(nx * frequency + timeOffset, ny * frequency) * amplitude;
-            noiseY += noise.noise2D(nx * frequency + 100, ny * frequency + timeOffset) * amplitude;
+            noiseX +=
+              noise.noise2D(nx * frequency + timeOffset, ny * frequency) *
+              amplitude;
+            noiseY +=
+              noise.noise2D(nx * frequency + 100, ny * frequency + timeOffset) *
+              amplitude;
             maxAmp += amplitude;
             amplitude *= 0.5;
             frequency *= 2;
@@ -882,7 +930,7 @@ export function turbulentDisplaceRenderer(
           break;
         }
 
-        case 'turbulent-smoother': {
+        case "turbulent-smoother": {
           // Smoother turbulence with fewer octaves and more smoothing
           let noiseX = 0;
           let noiseY = 0;
@@ -893,8 +941,12 @@ export function turbulentDisplaceRenderer(
           const smoothComplexity = Math.max(1, complexity - 2);
           for (let octave = 0; octave < smoothComplexity; octave++) {
             const timeOffset = evolutionPhase * 0.05;
-            noiseX += noise.noise2D(nx * frequency + timeOffset, ny * frequency) * amplitude;
-            noiseY += noise.noise2D(nx * frequency + 100, ny * frequency + timeOffset) * amplitude;
+            noiseX +=
+              noise.noise2D(nx * frequency + timeOffset, ny * frequency) *
+              amplitude;
+            noiseY +=
+              noise.noise2D(nx * frequency + 100, ny * frequency + timeOffset) *
+              amplitude;
             maxAmp += amplitude;
             amplitude *= 0.6;
             frequency *= 1.5;
@@ -905,43 +957,53 @@ export function turbulentDisplaceRenderer(
           break;
         }
 
-        case 'bulge': {
+        case "bulge": {
           // Bulge effect: inflate/deflate based on noise
           const noiseVal = noise.noise2D(nx + evolutionPhase * 0.1, ny);
 
           // Calculate direction from center
           const fromCenterX = x - centerX;
           const fromCenterY = y - centerY;
-          const dist = Math.sqrt(fromCenterX * fromCenterX + fromCenterY * fromCenterY);
+          const dist = Math.sqrt(
+            fromCenterX * fromCenterX + fromCenterY * fromCenterY,
+          );
 
           if (dist > 0) {
-            const bulgeFactor = noiseVal * (amount / 100) * (1 - dist / Math.max(centerX, centerY));
+            const bulgeFactor =
+              noiseVal *
+              (amount / 100) *
+              (1 - dist / Math.max(centerX, centerY));
             dx = (fromCenterX / dist) * bulgeFactor * amount * 0.5 * pinFactorH;
             dy = (fromCenterY / dist) * bulgeFactor * amount * 0.5 * pinFactorV;
           }
           break;
         }
 
-        case 'twist': {
+        case "twist": {
           // Rotational swirl distortion
           const fromCenterX = x - centerX;
           const fromCenterY = y - centerY;
-          const dist = Math.sqrt(fromCenterX * fromCenterX + fromCenterY * fromCenterY);
+          const dist = Math.sqrt(
+            fromCenterX * fromCenterX + fromCenterY * fromCenterY,
+          );
           const maxDist = Math.sqrt(centerX * centerX + centerY * centerY);
 
           // Noise-based twist angle
           const noiseVal = noise.noise2D(nx + evolutionPhase * 0.1, ny);
-          const twistAngle = noiseVal * (amount / 50) * Math.PI * (1 - dist / maxDist);
+          const twistAngle =
+            noiseVal * (amount / 50) * Math.PI * (1 - dist / maxDist);
 
           const cos = Math.cos(twistAngle);
           const sin = Math.sin(twistAngle);
 
-          dx = ((fromCenterX * cos - fromCenterY * sin) - fromCenterX) * pinFactorH;
-          dy = ((fromCenterX * sin + fromCenterY * cos) - fromCenterY) * pinFactorV;
+          dx =
+            (fromCenterX * cos - fromCenterY * sin - fromCenterX) * pinFactorH;
+          dy =
+            (fromCenterX * sin + fromCenterY * cos - fromCenterY) * pinFactorV;
           break;
         }
 
-        case 'horizontal': {
+        case "horizontal": {
           // Horizontal displacement only
           let noiseX = 0;
           let amplitude = 1;
@@ -949,7 +1011,11 @@ export function turbulentDisplaceRenderer(
           let maxAmp = 0;
 
           for (let octave = 0; octave < complexity; octave++) {
-            noiseX += noise.noise2D(nx * frequency + evolutionPhase * 0.1, ny * frequency) * amplitude;
+            noiseX +=
+              noise.noise2D(
+                nx * frequency + evolutionPhase * 0.1,
+                ny * frequency,
+              ) * amplitude;
             maxAmp += amplitude;
             amplitude *= 0.5;
             frequency *= 2;
@@ -960,7 +1026,7 @@ export function turbulentDisplaceRenderer(
           break;
         }
 
-        case 'vertical': {
+        case "vertical": {
           // Vertical displacement only
           let noiseY = 0;
           let amplitude = 1;
@@ -968,7 +1034,11 @@ export function turbulentDisplaceRenderer(
           let maxAmp = 0;
 
           for (let octave = 0; octave < complexity; octave++) {
-            noiseY += noise.noise2D(nx * frequency + 100, ny * frequency + evolutionPhase * 0.1) * amplitude;
+            noiseY +=
+              noise.noise2D(
+                nx * frequency + 100,
+                ny * frequency + evolutionPhase * 0.1,
+              ) * amplitude;
             maxAmp += amplitude;
             amplitude *= 0.5;
             frequency *= 2;
@@ -979,7 +1049,7 @@ export function turbulentDisplaceRenderer(
           break;
         }
 
-        case 'cross': {
+        case "cross": {
           // Cross displacement: X and Y are linked (same noise value)
           let noiseVal = 0;
           let amplitude = 1;
@@ -987,7 +1057,11 @@ export function turbulentDisplaceRenderer(
           let maxAmp = 0;
 
           for (let octave = 0; octave < complexity; octave++) {
-            noiseVal += noise.noise2D(nx * frequency + evolutionPhase * 0.1, ny * frequency) * amplitude;
+            noiseVal +=
+              noise.noise2D(
+                nx * frequency + evolutionPhase * 0.1,
+                ny * frequency,
+              ) * amplitude;
             maxAmp += amplitude;
             amplitude *= 0.5;
             frequency *= 2;
@@ -1031,9 +1105,9 @@ export function turbulentDisplaceRenderer(
 
         dst[outIdx + c] = Math.round(
           v00 * (1 - fx) * (1 - fy) +
-          v10 * fx * (1 - fy) +
-          v01 * (1 - fx) * fy +
-          v11 * fx * fy
+            v10 * fx * (1 - fy) +
+            v01 * (1 - fx) * fy +
+            v11 * fx * fy,
         );
       }
     }
@@ -1062,13 +1136,13 @@ export function turbulentDisplaceRenderer(
  */
 export function rippleDistortRenderer(
   input: EffectStackResult,
-  params: EvaluatedEffectParams
+  params: EvaluatedEffectParams,
 ): EffectStackResult {
   // BUG-028 FIX: Validate all numeric params to prevent NaN propagation
   const centerRaw = params.center ?? { x: 0.5, y: 0.5 };
   const center = {
     x: safeNum(centerRaw.x, 0.5, 0, 1),
-    y: safeNum(centerRaw.y, 0.5, 0, 1)
+    y: safeNum(centerRaw.y, 0.5, 0, 1),
   };
   const radius = safeNum(params.radius, 200, 0, 10000);
   const wavelength = safeNum(params.wavelength, 50, 1, 1000);
@@ -1091,7 +1165,7 @@ export function rippleDistortRenderer(
 
   const centerX = center.x * width;
   const centerY = center.y * height;
-  const phase = phaseDeg * Math.PI / 180;
+  const phase = (phaseDeg * Math.PI) / 180;
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
@@ -1107,7 +1181,7 @@ export function rippleDistortRenderer(
         const ripple = Math.sin((dist / wavelength) * 2 * Math.PI + phase);
 
         // Apply decay from center
-        const falloff = Math.pow(1 - dist / radius, decay);
+        const falloff = (1 - dist / radius) ** decay;
         const displacement = ripple * amplitude * falloff;
 
         // Displace radially
@@ -1143,9 +1217,9 @@ export function rippleDistortRenderer(
 
         dst[outIdx + c] = Math.round(
           v00 * (1 - fx) * (1 - fy) +
-          v10 * fx * (1 - fy) +
-          v01 * (1 - fx) * fy +
-          v11 * fx * fy
+            v10 * fx * (1 - fy) +
+            v01 * (1 - fx) * fy +
+            v11 * fx * fy,
         );
       }
     }
@@ -1163,11 +1237,11 @@ export function rippleDistortRenderer(
  * Register all distort effect renderers
  */
 export function registerDistortEffects(): void {
-  registerEffectRenderer('transform', transformRenderer);
-  registerEffectRenderer('warp', warpRenderer);
-  registerEffectRenderer('displacement-map', displacementMapRenderer);
-  registerEffectRenderer('turbulent-displace', turbulentDisplaceRenderer);
-  registerEffectRenderer('ripple-distort', rippleDistortRenderer);
+  registerEffectRenderer("transform", transformRenderer);
+  registerEffectRenderer("warp", warpRenderer);
+  registerEffectRenderer("displacement-map", displacementMapRenderer);
+  registerEffectRenderer("turbulent-displace", turbulentDisplaceRenderer);
+  registerEffectRenderer("ripple-distort", rippleDistortRenderer);
 }
 
 export default {
@@ -1176,5 +1250,5 @@ export default {
   displacementMapRenderer,
   turbulentDisplaceRenderer,
   rippleDistortRenderer,
-  registerDistortEffects
+  registerDistortEffects,
 };

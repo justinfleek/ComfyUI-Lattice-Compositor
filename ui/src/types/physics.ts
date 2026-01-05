@@ -7,8 +7,7 @@
  * and support keyframe export for After Effects-style workflows.
  */
 
-import type { Vec2, Vec3 } from './transform';
-import type { AnimatableProperty } from './animation';
+import type { AnimatableProperty } from "./animation";
 
 // =============================================================================
 // ENUMS & CONSTANTS
@@ -18,56 +17,56 @@ import type { AnimatableProperty } from './animation';
  * Body type determines physics behavior
  */
 export type BodyType =
-  | 'static'    // Immovable, participates in collision
-  | 'dynamic'   // Fully simulated with mass, velocity, forces
-  | 'kinematic' // User-controlled position, no forces, collides with dynamic
-  | 'dormant'   // Dynamic that's asleep (optimized, wakes on collision)
-  | 'AEmatic'   // Follows AE keyframes when present, dynamic otherwise
-  | 'dead';     // Removed from simulation, no collision
+  | "static" // Immovable, participates in collision
+  | "dynamic" // Fully simulated with mass, velocity, forces
+  | "kinematic" // User-controlled position, no forces, collides with dynamic
+  | "dormant" // Dynamic that's asleep (optimized, wakes on collision)
+  | "AEmatic" // Follows AE keyframes when present, dynamic otherwise
+  | "dead"; // Removed from simulation, no collision
 
 /**
  * Joint types for connecting bodies
  */
 export type JointType =
-  | 'pivot'    // Rotation around single point (pin joint)
-  | 'spring'   // Springy connection with stiffness/damping
-  | 'distance' // Fixed distance constraint
-  | 'piston'   // Slide along axis with limits
-  | 'wheel'    // Motor-driven rotation
-  | 'weld'     // Rigid connection (no relative movement)
-  | 'blob'     // Soft blob-like connection
-  | 'rope';    // One-way constraint (max distance only)
+  | "pivot" // Rotation around single point (pin joint)
+  | "spring" // Springy connection with stiffness/damping
+  | "distance" // Fixed distance constraint
+  | "piston" // Slide along axis with limits
+  | "wheel" // Motor-driven rotation
+  | "weld" // Rigid connection (no relative movement)
+  | "blob" // Soft blob-like connection
+  | "rope"; // One-way constraint (max distance only)
 
 /**
  * Force field types
  */
 export type ForceType =
-  | 'gravity'    // Directional constant force
-  | 'wind'       // Directional force with turbulence
-  | 'attraction' // Point attractor/repeller
-  | 'explosion'  // Radial impulse
-  | 'buoyancy'   // Fluid buoyancy
-  | 'vortex'     // Rotational force
-  | 'drag';      // Air/fluid resistance
+  | "gravity" // Directional constant force
+  | "wind" // Directional force with turbulence
+  | "attraction" // Point attractor/repeller
+  | "explosion" // Radial impulse
+  | "buoyancy" // Fluid buoyancy
+  | "vortex" // Rotational force
+  | "drag"; // Air/fluid resistance
 
 /**
  * Collision shape types
  */
 export type ShapeType =
-  | 'circle'
-  | 'box'
-  | 'polygon'
-  | 'capsule'
-  | 'convex'    // Convex hull from points
-  | 'compound'; // Multiple shapes combined
+  | "circle"
+  | "box"
+  | "polygon"
+  | "capsule"
+  | "convex" // Convex hull from points
+  | "compound"; // Multiple shapes combined
 
 /**
  * Collision response types
  */
 export type CollisionResponse =
-  | 'collide'  // Normal collision response
-  | 'sensor'   // Detect but don't respond
-  | 'none';    // No collision detection
+  | "collide" // Normal collision response
+  | "sensor" // Detect but don't respond
+  | "none"; // No collision detection
 
 // =============================================================================
 // CORE PHYSICS TYPES
@@ -144,18 +143,18 @@ export interface CollisionFilter {
  */
 export interface RigidBodyConfig {
   id: string;
-  layerId: string;  // Link to Lattice layer
+  layerId: string; // Link to Lattice layer
 
   type: BodyType;
 
   // Physical properties
   mass: number;
-  moment?: number;  // Moment of inertia (auto-calculated if not set)
+  moment?: number; // Moment of inertia (auto-calculated if not set)
 
   // Position & velocity
   position: PhysicsVec2;
   velocity: PhysicsVec2;
-  angle: number;          // Rotation in radians
+  angle: number; // Rotation in radians
   angularVelocity: number;
 
   // Collision
@@ -165,16 +164,16 @@ export interface RigidBodyConfig {
   response: CollisionResponse;
 
   // Damping
-  linearDamping: number;   // 0-1, velocity reduction per second
-  angularDamping: number;  // 0-1, rotation reduction per second
+  linearDamping: number; // 0-1, velocity reduction per second
+  angularDamping: number; // 0-1, rotation reduction per second
 
   // Constraints
-  fixedRotation?: boolean;  // Prevent rotation
-  bullet?: boolean;         // CCD for fast-moving objects
+  fixedRotation?: boolean; // Prevent rotation
+  bullet?: boolean; // CCD for fast-moving objects
 
   // Sleep settings
   canSleep: boolean;
-  sleepThreshold: number;   // Velocity threshold for sleep
+  sleepThreshold: number; // Velocity threshold for sleep
 }
 
 /**
@@ -212,8 +211,8 @@ export interface ContactInfo {
 export interface JointConfigBase {
   id: string;
   type: JointType;
-  bodyA: string;  // Body ID
-  bodyB: string;  // Body ID (or 'world' for ground)
+  bodyA: string; // Body ID
+  bodyB: string; // Body ID (or 'world' for ground)
 
   /** Local anchor on body A */
   anchorA: PhysicsVec2;
@@ -231,12 +230,12 @@ export interface JointConfigBase {
  * Pivot joint - rotation around single point
  */
 export interface PivotJointConfig extends JointConfigBase {
-  type: 'pivot';
+  type: "pivot";
   /** Motor settings */
   motor?: {
     enabled: boolean;
-    targetAngle?: number;  // Target angle for servo mode
-    speed: number;         // Angular velocity
+    targetAngle?: number; // Target angle for servo mode
+    speed: number; // Angular velocity
     maxTorque: number;
   };
   /** Angle limits in radians */
@@ -250,7 +249,7 @@ export interface PivotJointConfig extends JointConfigBase {
  * Spring joint - springy connection
  */
 export interface SpringJointConfig extends JointConfigBase {
-  type: 'spring';
+  type: "spring";
   /** Rest length of spring */
   restLength: number;
   /** Spring stiffness (N/m) */
@@ -263,7 +262,7 @@ export interface SpringJointConfig extends JointConfigBase {
  * Distance joint - fixed distance constraint
  */
 export interface DistanceJointConfig extends JointConfigBase {
-  type: 'distance';
+  type: "distance";
   /** Fixed distance between anchors */
   distance: number;
 }
@@ -272,7 +271,7 @@ export interface DistanceJointConfig extends JointConfigBase {
  * Piston joint - slide along axis
  */
 export interface PistonJointConfig extends JointConfigBase {
-  type: 'piston';
+  type: "piston";
   /** Slide axis (local to bodyA) */
   axis: PhysicsVec2;
   /** Translation limits */
@@ -292,7 +291,7 @@ export interface PistonJointConfig extends JointConfigBase {
  * Wheel joint - motor-driven rotation
  */
 export interface WheelJointConfig extends JointConfigBase {
-  type: 'wheel';
+  type: "wheel";
   /** Suspension axis */
   axis: PhysicsVec2;
   /** Suspension frequency (Hz) */
@@ -311,7 +310,7 @@ export interface WheelJointConfig extends JointConfigBase {
  * Weld joint - rigid connection
  */
 export interface WeldJointConfig extends JointConfigBase {
-  type: 'weld';
+  type: "weld";
   /** Reference angle between bodies */
   referenceAngle: number;
   /** Softness (0 = rigid, higher = softer) */
@@ -323,7 +322,7 @@ export interface WeldJointConfig extends JointConfigBase {
  * Blob joint - soft connection for deformable shapes
  */
 export interface BlobJointConfig extends JointConfigBase {
-  type: 'blob';
+  type: "blob";
   /** Softness factor */
   softness: number;
   /** Pressure (for internal volume) */
@@ -334,7 +333,7 @@ export interface BlobJointConfig extends JointConfigBase {
  * Rope joint - maximum distance constraint
  */
 export interface RopeJointConfig extends JointConfigBase {
-  type: 'rope';
+  type: "rope";
   /** Maximum length */
   maxLength: number;
 }
@@ -374,7 +373,7 @@ export interface ForceFieldBase {
  * Gravity force - constant directional
  */
 export interface GravityForce extends ForceFieldBase {
-  type: 'gravity';
+  type: "gravity";
   /** Gravity vector (pixels/s²) */
   gravity: AnimatableProperty<PhysicsVec2>;
 }
@@ -383,7 +382,7 @@ export interface GravityForce extends ForceFieldBase {
  * Wind force - directional with turbulence
  */
 export interface WindForce extends ForceFieldBase {
-  type: 'wind';
+  type: "wind";
   /** Wind direction and strength */
   direction: AnimatableProperty<PhysicsVec2>;
   /** Turbulence strength */
@@ -398,7 +397,7 @@ export interface WindForce extends ForceFieldBase {
  * Attraction force - point attractor/repeller
  */
 export interface AttractionForce extends ForceFieldBase {
-  type: 'attraction';
+  type: "attraction";
   /** Attractor position */
   position: AnimatableProperty<PhysicsVec2>;
   /** Strength (negative = repel) */
@@ -406,14 +405,14 @@ export interface AttractionForce extends ForceFieldBase {
   /** Falloff radius (0 = infinite range) */
   radius: number;
   /** Falloff type */
-  falloff: 'linear' | 'quadratic' | 'constant';
+  falloff: "linear" | "quadratic" | "constant";
 }
 
 /**
  * Explosion force - radial impulse
  */
 export interface ExplosionForce extends ForceFieldBase {
-  type: 'explosion';
+  type: "explosion";
   /** Explosion center */
   position: PhysicsVec2;
   /** Impulse strength */
@@ -430,7 +429,7 @@ export interface ExplosionForce extends ForceFieldBase {
  * Buoyancy force - fluid simulation
  */
 export interface BuoyancyForce extends ForceFieldBase {
-  type: 'buoyancy';
+  type: "buoyancy";
   /** Fluid surface Y level */
   surfaceLevel: AnimatableProperty<number>;
   /** Fluid density */
@@ -445,7 +444,7 @@ export interface BuoyancyForce extends ForceFieldBase {
  * Vortex force - rotational
  */
 export interface VortexForce extends ForceFieldBase {
-  type: 'vortex';
+  type: "vortex";
   /** Center position */
   position: AnimatableProperty<PhysicsVec2>;
   /** Tangential strength */
@@ -460,7 +459,7 @@ export interface VortexForce extends ForceFieldBase {
  * Drag force - air/fluid resistance
  */
 export interface DragForce extends ForceFieldBase {
-  type: 'drag';
+  type: "drag";
   /** Linear drag coefficient */
   linear: number;
   /** Quadratic drag coefficient */
@@ -489,8 +488,8 @@ export interface VerletParticle {
   previousPosition: PhysicsVec2;
   acceleration: PhysicsVec2;
   mass: number;
-  pinned: boolean;  // Fixed in place
-  radius: number;   // For collision
+  pinned: boolean; // Fixed in place
+  radius: number; // For collision
 }
 
 /**
@@ -501,8 +500,8 @@ export interface VerletConstraint {
   particleA: string;
   particleB: string;
   restLength: number;
-  stiffness: number;  // 0-1, iterations needed for full constraint
-  breakThreshold?: number;  // Break if stretched beyond this
+  stiffness: number; // 0-1, iterations needed for full constraint
+  breakThreshold?: number; // Break if stretched beyond this
 }
 
 /**
@@ -565,8 +564,8 @@ export interface ClothConfig {
   layerId: string;
 
   /** Grid dimensions */
-  width: number;   // Columns
-  height: number;  // Rows
+  width: number; // Columns
+  height: number; // Rows
 
   /** Spacing between particles */
   spacing: number;
@@ -619,7 +618,11 @@ export interface ClothState {
   /** Particle positions in row-major order */
   positions: PhysicsVec2[];
   /** Broken constraints (torn) */
-  tornConstraints: Array<{ row: number; col: number; type: 'structural' | 'shear' | 'bend' }>;
+  tornConstraints: Array<{
+    row: number;
+    col: number;
+    type: "structural" | "shear" | "bend";
+  }>;
 }
 
 // =============================================================================
@@ -801,7 +804,7 @@ export interface KeyframeExportOptions {
   frameStep: number;
 
   /** Properties to export */
-  properties: Array<'position' | 'rotation' | 'scale'>;
+  properties: Array<"position" | "rotation" | "scale">;
 
   /** Simplify keyframes (remove redundant) */
   simplify: boolean;
@@ -810,7 +813,7 @@ export interface KeyframeExportOptions {
   simplifyTolerance: number;
 
   /** Interpolation type for exported keyframes */
-  interpolation: 'linear' | 'bezier';
+  interpolation: "linear" | "bezier";
 }
 
 /**
@@ -822,7 +825,7 @@ export interface ExportedKeyframes {
   keyframes: Array<{
     frame: number;
     value: number | PhysicsVec2;
-    interpolation: 'linear' | 'bezier';
+    interpolation: "linear" | "bezier";
     inHandle?: PhysicsVec2;
     outHandle?: PhysicsVec2;
   }>;
@@ -888,7 +891,7 @@ export interface PhysicsCompositionData {
  */
 export const HUMANOID_PRESETS: Record<string, HumanoidRagdollPreset> = {
   adult: {
-    name: 'Adult Human',
+    name: "Adult Human",
     scale: 170,
     proportions: {
       headSize: 20,
@@ -910,7 +913,7 @@ export const HUMANOID_PRESETS: Record<string, HumanoidRagdollPreset> = {
     },
   },
   child: {
-    name: 'Child',
+    name: "Child",
     scale: 100,
     proportions: {
       headSize: 18,
@@ -932,7 +935,7 @@ export const HUMANOID_PRESETS: Record<string, HumanoidRagdollPreset> = {
     },
   },
   cartoon: {
-    name: 'Cartoon Character',
+    name: "Cartoon Character",
     scale: 150,
     proportions: {
       headSize: 35,
@@ -976,7 +979,7 @@ export const DEFAULT_SPACE_CONFIG: PhysicsSpaceConfig = {
   timeStep: 1 / 60,
   velocityIterations: 8,
   positionIterations: 3,
-  gravity: { x: 0, y: 980 },  // Pixels per second squared (like After Effects)
+  gravity: { x: 0, y: 980 }, // Pixels per second squared (like After Effects)
   sleepEnabled: true,
   sleepTimeThreshold: 0.5,
   sleepVelocityThreshold: 10,

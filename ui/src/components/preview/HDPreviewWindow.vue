@@ -110,18 +110,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import { storeToRefs } from 'pinia';
+import { storeToRefs } from "pinia";
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import { useCompositorStore } from "@/stores/compositorStore";
 
 const props = defineProps<{
   visible: boolean;
   engine?: any;
 }>();
 
-const emit = defineEmits<{
-  (e: 'close'): void;
-}>();
+const _emit = defineEmits<(e: "close") => void>();
 
 const store = useCompositorStore();
 const { currentFrame, frameCount, fps, isPlaying } = storeToRefs(store);
@@ -132,7 +130,7 @@ const canvasContainerRef = ref<HTMLElement | null>(null);
 const previewCanvas = ref<HTMLCanvasElement | null>(null);
 
 // State
-const previewScale = ref<string | number>('fit');
+const previewScale = ref<string | number>("fit");
 const isFullscreen = ref(false);
 const isRendering = ref(false);
 const renderTime = ref<number | null>(null);
@@ -141,10 +139,12 @@ const containerHeight = ref(720);
 
 // Computed
 const compWidth = computed(() => store.getActiveComp()?.settings.width || 1024);
-const compHeight = computed(() => store.getActiveComp()?.settings.height || 576);
+const compHeight = computed(
+  () => store.getActiveComp()?.settings.height || 576,
+);
 
 const canvasWidth = computed(() => {
-  if (previewScale.value === 'fit') {
+  if (previewScale.value === "fit") {
     const aspect = compWidth.value / compHeight.value;
     const maxWidth = containerWidth.value - 48;
     const maxHeight = containerHeight.value - 140;
@@ -157,7 +157,7 @@ const canvasWidth = computed(() => {
 });
 
 const canvasHeight = computed(() => {
-  if (previewScale.value === 'fit') {
+  if (previewScale.value === "fit") {
     const aspect = compWidth.value / compHeight.value;
     const maxWidth = containerWidth.value - 48;
     const maxHeight = containerHeight.value - 140;
@@ -169,57 +169,57 @@ const canvasHeight = computed(() => {
   return Math.round(compHeight.value * Number(previewScale.value));
 });
 
-const resolutionLabel = computed(() => {
+const _resolutionLabel = computed(() => {
   return `${compWidth.value}x${compHeight.value}`;
 });
 
-const formattedTimecode = computed(() => {
+const _formattedTimecode = computed(() => {
   const seconds = currentFrame.value / fps.value;
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
   const frames = currentFrame.value % fps.value;
-  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}:${String(frames).padStart(2, '0')}`;
+  return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}:${String(frames).padStart(2, "0")}`;
 });
 
-const containerStyle = computed(() => ({
-  width: isFullscreen.value ? '100vw' : '90vw',
-  height: isFullscreen.value ? '100vh' : '90vh',
-  maxWidth: isFullscreen.value ? 'none' : '1600px',
-  maxHeight: isFullscreen.value ? 'none' : '900px',
+const _containerStyle = computed(() => ({
+  width: isFullscreen.value ? "100vw" : "90vw",
+  height: isFullscreen.value ? "100vh" : "90vh",
+  maxWidth: isFullscreen.value ? "none" : "1600px",
+  maxHeight: isFullscreen.value ? "none" : "900px",
 }));
 
-const canvasStyle = computed(() => ({
+const _canvasStyle = computed(() => ({
   width: `${canvasWidth.value}px`,
   height: `${canvasHeight.value}px`,
 }));
 
 // Methods
-function togglePlayback() {
+function _togglePlayback() {
   store.togglePlayback();
 }
 
-function goToStart() {
+function _goToStart() {
   store.setFrame(0);
 }
 
-function goToEnd() {
+function _goToEnd() {
   store.setFrame(frameCount.value - 1);
 }
 
-function stepForward() {
+function _stepForward() {
   store.setFrame(Math.min(currentFrame.value + 1, frameCount.value - 1));
 }
 
-function stepBackward() {
+function _stepBackward() {
   store.setFrame(Math.max(currentFrame.value - 1, 0));
 }
 
-function onScrub(e: Event) {
+function _onScrub(e: Event) {
   const target = e.target as HTMLInputElement;
   store.setFrame(parseInt(target.value, 10));
 }
 
-function toggleFullscreen() {
+function _toggleFullscreen() {
   if (!document.fullscreenElement) {
     overlayRef.value?.requestFullscreen();
     isFullscreen.value = true;
@@ -236,17 +236,24 @@ async function renderFrame() {
   isRendering.value = true;
 
   try {
-    const ctx = previewCanvas.value.getContext('2d');
+    const ctx = previewCanvas.value.getContext("2d");
     if (!ctx) return;
 
     // Get the engine's rendered frame
-    const sourceCanvas = props.engine.getCanvas?.() || props.engine.renderer?.domElement;
+    const sourceCanvas =
+      props.engine.getCanvas?.() || props.engine.renderer?.domElement;
     if (sourceCanvas) {
       ctx.clearRect(0, 0, canvasWidth.value, canvasHeight.value);
       ctx.drawImage(
         sourceCanvas,
-        0, 0, sourceCanvas.width, sourceCanvas.height,
-        0, 0, canvasWidth.value, canvasHeight.value
+        0,
+        0,
+        sourceCanvas.width,
+        sourceCanvas.height,
+        0,
+        0,
+        canvasWidth.value,
+        canvasHeight.value,
       );
     }
 
@@ -265,14 +272,17 @@ function updateContainerSize() {
 }
 
 // Watchers
-watch(() => props.visible, async (visible) => {
-  if (visible) {
-    await nextTick();
-    overlayRef.value?.focus();
-    updateContainerSize();
-    renderFrame();
-  }
-});
+watch(
+  () => props.visible,
+  async (visible) => {
+    if (visible) {
+      await nextTick();
+      overlayRef.value?.focus();
+      updateContainerSize();
+      renderFrame();
+    }
+  },
+);
 
 watch(currentFrame, () => {
   if (props.visible) {
@@ -282,14 +292,14 @@ watch(currentFrame, () => {
 
 // Lifecycle
 onMounted(() => {
-  window.addEventListener('resize', updateContainerSize);
-  document.addEventListener('fullscreenchange', () => {
+  window.addEventListener("resize", updateContainerSize);
+  document.addEventListener("fullscreenchange", () => {
     isFullscreen.value = !!document.fullscreenElement;
   });
 });
 
 onUnmounted(() => {
-  window.removeEventListener('resize', updateContainerSize);
+  window.removeEventListener("resize", updateContainerSize);
 });
 </script>
 

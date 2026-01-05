@@ -108,20 +108,21 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import { ScrubableNumber } from '@/components/controls';
-import KeyframeToggle from './KeyframeToggle.vue';
-import type { Layer, NestedCompData, AnimatableProperty } from '@/types/project';
-import { createAnimatableProperty } from '@/types/project';
+import { computed } from "vue";
+import { useCompositorStore } from "@/stores/compositorStore";
+import type {
+  AnimatableProperty,
+  Layer,
+  NestedCompData,
+} from "@/types/project";
+import { createAnimatableProperty } from "@/types/project";
 
 const props = defineProps<{
   layer: Layer;
 }>();
 
-const emit = defineEmits<{
-  (e: 'update', data: Partial<NestedCompData>): void;
-}>();
+const emit =
+  defineEmits<(e: "update", data: Partial<NestedCompData>) => void>();
 
 const store = useCompositorStore();
 
@@ -129,7 +130,7 @@ const store = useCompositorStore();
 const nestedCompData = computed<NestedCompData>(() => {
   const data = props.layer.data as NestedCompData | null;
   return {
-    compositionId: data?.compositionId ?? '',
+    compositionId: data?.compositionId ?? "",
     // New naming with backwards compatibility
     speedMapEnabled: data?.speedMapEnabled ?? data?.timeRemapEnabled ?? false,
     speedMap: data?.speedMap ?? data?.timeRemap,
@@ -158,55 +159,59 @@ const compInfo = computed(() => {
 });
 
 // Speed map computed properties (with backwards compatibility)
-const speedMapEnabled = computed(() => {
-  return nestedCompData.value.speedMapEnabled ?? nestedCompData.value.timeRemapEnabled ?? false;
+const _speedMapEnabled = computed(() => {
+  return (
+    nestedCompData.value.speedMapEnabled ??
+    nestedCompData.value.timeRemapEnabled ??
+    false
+  );
 });
 
 const speedMapProperty = computed(() => {
   return nestedCompData.value.speedMap ?? nestedCompData.value.timeRemap;
 });
 
-const speedMapValue = computed(() => {
+const _speedMapValue = computed(() => {
   const prop = speedMapProperty.value;
   if (!prop) return 0;
   return prop.value;
 });
 
 // Format duration as MM:SS.ms
-function formatDuration(seconds: number | undefined): string {
-  if (seconds === undefined) return '0:00';
+function _formatDuration(seconds: number | undefined): string {
+  if (seconds === undefined) return "0:00";
   const mins = Math.floor(seconds / 60);
   const secs = (seconds % 60).toFixed(2);
-  return `${mins}:${secs.padStart(5, '0')}`;
+  return `${mins}:${secs.padStart(5, "0")}`;
 }
 
 // Enter the nested comp composition
-function enterNestedComp() {
+function _enterNestedComp() {
   if (nestedCompData.value.compositionId) {
     store.enterNestedComp(nestedCompData.value.compositionId);
   }
 }
 
 // Speed map functions (with backwards compatibility)
-function toggleSpeedMap(e: Event) {
+function _toggleSpeedMap(e: Event) {
   const enabled = (e.target as HTMLInputElement).checked;
   const updates: Partial<NestedCompData> = {
     speedMapEnabled: enabled,
-    timeRemapEnabled: enabled  // Backwards compatibility
+    timeRemapEnabled: enabled, // Backwards compatibility
   };
 
   // Create speed map property if enabling
   if (enabled && !nestedCompData.value.speedMap) {
-    const newProp = createAnimatableProperty('Speed Map', 0, 'number');
+    const newProp = createAnimatableProperty("Speed Map", 0, "number");
     updates.speedMap = newProp;
-    updates.timeRemap = newProp;  // Backwards compatibility
+    updates.timeRemap = newProp; // Backwards compatibility
   }
 
   store.updateLayerData(props.layer.id, updates);
-  emit('update', updates);
+  emit("update", updates);
 }
 
-function updateSpeedMap(value: number) {
+function _updateSpeedMap(value: number) {
   const prop = speedMapProperty.value;
   if (prop) {
     const speedMap: AnimatableProperty<number> = {
@@ -215,47 +220,47 @@ function updateSpeedMap(value: number) {
     };
     store.updateLayerData(props.layer.id, {
       speedMap,
-      timeRemap: speedMap  // Backwards compatibility
+      timeRemap: speedMap, // Backwards compatibility
     });
-    emit('update', { speedMap });
+    emit("update", { speedMap });
   }
 }
 
 // Frame rate override
-function toggleFrameRateOverride(e: Event) {
+function _toggleFrameRateOverride(e: Event) {
   const enabled = (e.target as HTMLInputElement).checked;
   const updates: Partial<NestedCompData> = {
     overrideFrameRate: enabled,
-    frameRate: enabled ? (compInfo.value?.fps || 30) : undefined,
+    frameRate: enabled ? compInfo.value?.fps || 30 : undefined,
   };
   store.updateLayerData(props.layer.id, updates);
-  emit('update', updates);
+  emit("update", updates);
 }
 
-function updateFrameRate(value: number) {
+function _updateFrameRate(value: number) {
   store.updateLayerData(props.layer.id, { frameRate: value });
-  emit('update', { frameRate: value });
+  emit("update", { frameRate: value });
 }
 
 // Flatten transform
-function updateFlattenTransform(e: Event) {
+function _updateFlattenTransform(e: Event) {
   const enabled = (e.target as HTMLInputElement).checked;
   store.updateLayerData(props.layer.id, { flattenTransform: enabled });
   // Also update the layer-level flag
   store.updateLayer(props.layer.id, { flattenTransform: enabled });
-  emit('update', { flattenTransform: enabled });
+  emit("update", { flattenTransform: enabled });
 }
 
 // Keyframe event handlers
-function onKeyframeChange() {
+function _onKeyframeChange() {
   // Keyframe was added or removed - trigger update
-  emit('update', {});
+  emit("update", {});
 }
 
-function onAnimationToggled(animated: boolean) {
+function _onAnimationToggled(animated: boolean) {
   // Animation was enabled or disabled
-  console.log('[NestedCompProperties] Animation toggled:', animated);
-  emit('update', {});
+  console.log("[NestedCompProperties] Animation toggled:", animated);
+  emit("update", {});
 }
 </script>
 

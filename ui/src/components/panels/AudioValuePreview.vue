@@ -13,9 +13,9 @@
  * - Spectral features
  */
 
-import { computed, ref, watch } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import { getFeatureAtFrame, isBeatAtFrame } from '@/services/audioFeatures';
+import { computed, ref } from "vue";
+import { getFeatureAtFrame, isBeatAtFrame } from "@/services/audioFeatures";
+import { useCompositorStore } from "@/stores/compositorStore";
 
 const store = useCompositorStore();
 
@@ -26,64 +26,76 @@ const expanded = ref(false);
 const currentFrame = computed(() => store.currentFrame);
 
 // Check if audio is loaded
-const hasAudio = computed(() => !!store.audioAnalysis);
+const _hasAudio = computed(() => !!store.audioAnalysis);
 
 // Audio analysis data
 const audioAnalysis = computed(() => store.audioAnalysis);
 
 // Feature values at current frame
-const amplitude = computed(() => {
+const _amplitude = computed(() => {
   if (!audioAnalysis.value) return 0;
-  return getFeatureAtFrame(audioAnalysis.value, 'amplitude', currentFrame.value);
+  return getFeatureAtFrame(
+    audioAnalysis.value,
+    "amplitude",
+    currentFrame.value,
+  );
 });
 
-const bass = computed(() => {
+const _bass = computed(() => {
   if (!audioAnalysis.value) return 0;
-  return getFeatureAtFrame(audioAnalysis.value, 'bass', currentFrame.value);
+  return getFeatureAtFrame(audioAnalysis.value, "bass", currentFrame.value);
 });
 
-const mid = computed(() => {
+const _mid = computed(() => {
   if (!audioAnalysis.value) return 0;
-  return getFeatureAtFrame(audioAnalysis.value, 'mid', currentFrame.value);
+  return getFeatureAtFrame(audioAnalysis.value, "mid", currentFrame.value);
 });
 
-const high = computed(() => {
+const _high = computed(() => {
   if (!audioAnalysis.value) return 0;
-  return getFeatureAtFrame(audioAnalysis.value, 'high', currentFrame.value);
+  return getFeatureAtFrame(audioAnalysis.value, "high", currentFrame.value);
 });
 
-const isBeat = computed(() => {
+const _isBeat = computed(() => {
   if (!audioAnalysis.value) return false;
   return isBeatAtFrame(audioAnalysis.value, currentFrame.value);
 });
 
 // HPSS values
-const harmonic = computed(() => {
+const _harmonic = computed(() => {
   if (!audioAnalysis.value?.harmonicEnergy) return 0;
   return audioAnalysis.value.harmonicEnergy[currentFrame.value] ?? 0;
 });
 
-const percussive = computed(() => {
+const _percussive = computed(() => {
   if (!audioAnalysis.value?.percussiveEnergy) return 0;
   return audioAnalysis.value.percussiveEnergy[currentFrame.value] ?? 0;
 });
 
 // Spectral features
-const spectralCentroid = computed(() => {
+const _spectralCentroid = computed(() => {
   if (!audioAnalysis.value) return 0;
-  return getFeatureAtFrame(audioAnalysis.value, 'spectralCentroid', currentFrame.value);
+  return getFeatureAtFrame(
+    audioAnalysis.value,
+    "spectralCentroid",
+    currentFrame.value,
+  );
 });
 
-const spectralFlux = computed(() => {
+const _spectralFlux = computed(() => {
   if (!audioAnalysis.value) return 0;
-  return getFeatureAtFrame(audioAnalysis.value, 'spectralFlux', currentFrame.value);
+  return getFeatureAtFrame(
+    audioAnalysis.value,
+    "spectralFlux",
+    currentFrame.value,
+  );
 });
 
 // Format percentage
-const formatPercent = (value: number) => `${Math.round(value * 100)}%`;
+const _formatPercent = (value: number) => `${Math.round(value * 100)}%`;
 
 // Toggle expanded view
-const toggleExpanded = () => {
+const _toggleExpanded = () => {
   expanded.value = !expanded.value;
 };
 </script>

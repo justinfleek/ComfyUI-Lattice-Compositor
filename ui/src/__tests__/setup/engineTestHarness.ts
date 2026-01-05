@@ -9,10 +9,10 @@
  * and is tested separately in e2e tests.
  */
 
-import { MotionEngine } from '@/engine/MotionEngine';
-import { useCompositorStore } from '@/stores/compositorStore';
-import { createPinia, setActivePinia } from 'pinia';
-import type { FrameState } from '@/engine/MotionEngine';
+import { createPinia, setActivePinia } from "pinia";
+import type { FrameState } from "@/engine/MotionEngine";
+import { MotionEngine } from "@/engine/MotionEngine";
+import { useCompositorStore } from "@/stores/compositorStore";
 
 /**
  * Creates a real test environment with actual engine instances.
@@ -53,7 +53,7 @@ export function createEngineTestHarness() {
       const frameState = motionEngine.evaluate(
         frame,
         store.project,
-        store.audioAnalysis
+        store.audioAnalysis,
       );
       return frameState;
     },
@@ -64,7 +64,7 @@ export function createEngineTestHarness() {
     dispose() {
       // Clear store state
       store.$reset();
-    }
+    },
   };
 }
 

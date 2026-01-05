@@ -10,11 +10,11 @@
  * Extracted from colorRenderer.ts for modularity.
  */
 import {
-  registerEffectRenderer,
   createMatchingCanvas,
   type EffectStackResult,
-  type EvaluatedEffectParams
-} from '../effectProcessor';
+  type EvaluatedEffectParams,
+  registerEffectRenderer,
+} from "../effectProcessor";
 
 // ============================================================================
 // LIFT/GAMMA/GAIN
@@ -32,41 +32,72 @@ import {
  */
 export function liftGammaGainRenderer(
   input: EffectStackResult,
-  params: EvaluatedEffectParams
+  params: EvaluatedEffectParams,
 ): EffectStackResult {
   // Lift (shadow adjustment) - validate for NaN
   const liftRRaw = params.lift_red ?? 0;
   const liftGRaw = params.lift_green ?? 0;
   const liftBRaw = params.lift_blue ?? 0;
-  const liftR = Number.isFinite(liftRRaw) ? Math.max(-1, Math.min(1, liftRRaw)) : 0;
-  const liftG = Number.isFinite(liftGRaw) ? Math.max(-1, Math.min(1, liftGRaw)) : 0;
-  const liftB = Number.isFinite(liftBRaw) ? Math.max(-1, Math.min(1, liftBRaw)) : 0;
+  const liftR = Number.isFinite(liftRRaw)
+    ? Math.max(-1, Math.min(1, liftRRaw))
+    : 0;
+  const liftG = Number.isFinite(liftGRaw)
+    ? Math.max(-1, Math.min(1, liftGRaw))
+    : 0;
+  const liftB = Number.isFinite(liftBRaw)
+    ? Math.max(-1, Math.min(1, liftBRaw))
+    : 0;
 
   // Gamma (midtone adjustment) - validate for NaN
   const gammaRRaw = params.gamma_red ?? 1;
   const gammaGRaw = params.gamma_green ?? 1;
   const gammaBRaw = params.gamma_blue ?? 1;
-  const gammaR = Number.isFinite(gammaRRaw) ? Math.max(0.1, Math.min(4, gammaRRaw)) : 1;
-  const gammaG = Number.isFinite(gammaGRaw) ? Math.max(0.1, Math.min(4, gammaGRaw)) : 1;
-  const gammaB = Number.isFinite(gammaBRaw) ? Math.max(0.1, Math.min(4, gammaBRaw)) : 1;
+  const gammaR = Number.isFinite(gammaRRaw)
+    ? Math.max(0.1, Math.min(4, gammaRRaw))
+    : 1;
+  const gammaG = Number.isFinite(gammaGRaw)
+    ? Math.max(0.1, Math.min(4, gammaGRaw))
+    : 1;
+  const gammaB = Number.isFinite(gammaBRaw)
+    ? Math.max(0.1, Math.min(4, gammaBRaw))
+    : 1;
 
   // Gain (highlight adjustment) - validate for NaN
   const gainRRaw = params.gain_red ?? 1;
   const gainGRaw = params.gain_green ?? 1;
   const gainBRaw = params.gain_blue ?? 1;
-  const gainR = Number.isFinite(gainRRaw) ? Math.max(0, Math.min(4, gainRRaw)) : 1;
-  const gainG = Number.isFinite(gainGRaw) ? Math.max(0, Math.min(4, gainGRaw)) : 1;
-  const gainB = Number.isFinite(gainBRaw) ? Math.max(0, Math.min(4, gainBRaw)) : 1;
+  const gainR = Number.isFinite(gainRRaw)
+    ? Math.max(0, Math.min(4, gainRRaw))
+    : 1;
+  const gainG = Number.isFinite(gainGRaw)
+    ? Math.max(0, Math.min(4, gainGRaw))
+    : 1;
+  const gainB = Number.isFinite(gainBRaw)
+    ? Math.max(0, Math.min(4, gainBRaw))
+    : 1;
 
   // No change if all values are default
-  if (liftR === 0 && liftG === 0 && liftB === 0 &&
-      gammaR === 1 && gammaG === 1 && gammaB === 1 &&
-      gainR === 1 && gainG === 1 && gainB === 1) {
+  if (
+    liftR === 0 &&
+    liftG === 0 &&
+    liftB === 0 &&
+    gammaR === 1 &&
+    gammaG === 1 &&
+    gammaB === 1 &&
+    gainR === 1 &&
+    gainG === 1 &&
+    gainB === 1
+  ) {
     return input;
   }
 
   const output = createMatchingCanvas(input.canvas);
-  const imageData = input.ctx.getImageData(0, 0, input.canvas.width, input.canvas.height);
+  const imageData = input.ctx.getImageData(
+    0,
+    0,
+    input.canvas.width,
+    input.canvas.height,
+  );
   const data = imageData.data;
 
   // Build LUTs for each channel for performance
@@ -79,14 +110,14 @@ export function liftGammaGainRenderer(
     const normalized = v / 255;
     return normalized <= 0.04045
       ? normalized / 12.92
-      : Math.pow((normalized + 0.055) / 1.055, 2.4);
+      : ((normalized + 0.055) / 1.055) ** 2.4;
   };
 
   const linearToSRGB = (v: number): number => {
     const clamped = Math.max(0, Math.min(1, v));
     return clamped <= 0.0031308
       ? Math.round(clamped * 12.92 * 255)
-      : Math.round((1.055 * Math.pow(clamped, 1 / 2.4) - 0.055) * 255);
+      : Math.round((1.055 * clamped ** (1 / 2.4) - 0.055) * 255);
   };
 
   // Build LUTs
@@ -98,9 +129,12 @@ export function liftGammaGainRenderer(
 
     // Apply ASC CDL formula: (input * gain + lift) ^ (1/gamma)
     // Lift is applied before gamma, affecting primarily shadows
-    const gradedR = Math.pow(Math.max(0, linearR * gainR + liftR), 1 / Math.max(0.1, gammaR));
-    const gradedG = Math.pow(Math.max(0, linearG * gainG + liftG), 1 / Math.max(0.1, gammaG));
-    const gradedB = Math.pow(Math.max(0, linearB * gainB + liftB), 1 / Math.max(0.1, gammaB));
+    const gradedR =
+      Math.max(0, linearR * gainR + liftR) ** (1 / Math.max(0.1, gammaR));
+    const gradedG =
+      Math.max(0, linearG * gainG + liftG) ** (1 / Math.max(0.1, gammaG));
+    const gradedB =
+      Math.max(0, linearB * gainB + liftB) ** (1 / Math.max(0.1, gammaB));
 
     // Convert back to sRGB
     lutR[i] = linearToSRGB(gradedR);
@@ -146,12 +180,18 @@ export function liftGammaGainRenderer(
  */
 export function hslSecondaryRenderer(
   input: EffectStackResult,
-  params: EvaluatedEffectParams
+  params: EvaluatedEffectParams,
 ): EffectStackResult {
   // Helper to safely get numeric params
-  const safeNum = (val: unknown, def: number, min?: number, max?: number): number => {
-    const num = typeof val === 'number' && Number.isFinite(val) ? val : def;
-    if (min !== undefined && max !== undefined) return Math.max(min, Math.min(max, num));
+  const safeNum = (
+    val: unknown,
+    def: number,
+    min?: number,
+    max?: number,
+  ): number => {
+    const num = typeof val === "number" && Number.isFinite(val) ? val : def;
+    if (min !== undefined && max !== undefined)
+      return Math.max(min, Math.min(max, num));
     return num;
   };
 
@@ -180,11 +220,20 @@ export function hslSecondaryRenderer(
   }
 
   const output = createMatchingCanvas(input.canvas);
-  const imageData = input.ctx.getImageData(0, 0, input.canvas.width, input.canvas.height);
+  const imageData = input.ctx.getImageData(
+    0,
+    0,
+    input.canvas.width,
+    input.canvas.height,
+  );
   const data = imageData.data;
 
   // Helper: RGB to HSL
-  const rgbToHsl = (r: number, g: number, b: number): [number, number, number] => {
+  const rgbToHsl = (
+    r: number,
+    g: number,
+    b: number,
+  ): [number, number, number] => {
     const rn = r / 255;
     const gn = g / 255;
     const bn = b / 255;
@@ -199,16 +248,26 @@ export function hslSecondaryRenderer(
 
     let h: number;
     switch (max) {
-      case rn: h = ((gn - bn) / d + (gn < bn ? 6 : 0)) / 6; break;
-      case gn: h = ((bn - rn) / d + 2) / 6; break;
-      default: h = ((rn - gn) / d + 4) / 6; break;
+      case rn:
+        h = ((gn - bn) / d + (gn < bn ? 6 : 0)) / 6;
+        break;
+      case gn:
+        h = ((bn - rn) / d + 2) / 6;
+        break;
+      default:
+        h = ((rn - gn) / d + 4) / 6;
+        break;
     }
     return [h * 360, s, l];
   };
 
   // Helper: HSL to RGB
-  const hslToRgb = (h: number, s: number, l: number): [number, number, number] => {
-    h = ((h % 360) + 360) % 360 / 360;
+  const hslToRgb = (
+    h: number,
+    s: number,
+    l: number,
+  ): [number, number, number] => {
+    h = (((h % 360) + 360) % 360) / 360;
     if (s === 0) {
       const v = Math.round(l * 255);
       return [v, v, v];
@@ -216,22 +275,27 @@ export function hslSecondaryRenderer(
     const hue2rgb = (p: number, q: number, t: number): number => {
       if (t < 0) t += 1;
       if (t > 1) t -= 1;
-      if (t < 1/6) return p + (q - p) * 6 * t;
-      if (t < 1/2) return q;
-      if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+      if (t < 1 / 6) return p + (q - p) * 6 * t;
+      if (t < 1 / 2) return q;
+      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
       return p;
     };
     const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
     const p = 2 * l - q;
     return [
-      Math.round(hue2rgb(p, q, h + 1/3) * 255),
+      Math.round(hue2rgb(p, q, h + 1 / 3) * 255),
       Math.round(hue2rgb(p, q, h) * 255),
-      Math.round(hue2rgb(p, q, h - 1/3) * 255)
+      Math.round(hue2rgb(p, q, h - 1 / 3) * 255),
     ];
   };
 
   // Soft range function with falloff
-  const softRange = (value: number, min: number, max: number, falloff: number): number => {
+  const softRange = (
+    value: number,
+    min: number,
+    max: number,
+    falloff: number,
+  ): number => {
     if (value < min - falloff || value > max + falloff) return 0;
     if (value >= min && value <= max) return 1;
 
@@ -245,7 +309,12 @@ export function hslSecondaryRenderer(
   };
 
   // Hue range function (handles wraparound)
-  const hueMatch = (hue: number, center: number, width: number, falloff: number): number => {
+  const hueMatch = (
+    hue: number,
+    center: number,
+    width: number,
+    falloff: number,
+  ): number => {
     // Calculate shortest distance on color wheel
     let diff = Math.abs(hue - center);
     if (diff > 180) diff = 360 - diff;
@@ -311,31 +380,41 @@ export function hslSecondaryRenderer(
  */
 export function hueVsCurvesRenderer(
   input: EffectStackResult,
-  params: EvaluatedEffectParams
+  params: EvaluatedEffectParams,
 ): EffectStackResult {
   // Parse curve data (arrays of control points)
-  const hueVsHue: Array<{x: number, y: number}> = params.hue_vs_hue ?? [];
-  const hueVsSat: Array<{x: number, y: number}> = params.hue_vs_sat ?? [];
-  const hueVsLum: Array<{x: number, y: number}> = params.hue_vs_lum ?? [];
-  const lumVsSat: Array<{x: number, y: number}> = params.lum_vs_sat ?? [];
-  const satVsSat: Array<{x: number, y: number}> = params.sat_vs_sat ?? [];
+  const hueVsHue: Array<{ x: number; y: number }> = params.hue_vs_hue ?? [];
+  const hueVsSat: Array<{ x: number; y: number }> = params.hue_vs_sat ?? [];
+  const hueVsLum: Array<{ x: number; y: number }> = params.hue_vs_lum ?? [];
+  const lumVsSat: Array<{ x: number; y: number }> = params.lum_vs_sat ?? [];
+  const satVsSat: Array<{ x: number; y: number }> = params.sat_vs_sat ?? [];
 
   // No curves defined = no change
-  if (hueVsHue.length === 0 && hueVsSat.length === 0 && hueVsLum.length === 0 &&
-      lumVsSat.length === 0 && satVsSat.length === 0) {
+  if (
+    hueVsHue.length === 0 &&
+    hueVsSat.length === 0 &&
+    hueVsLum.length === 0 &&
+    lumVsSat.length === 0 &&
+    satVsSat.length === 0
+  ) {
     return input;
   }
 
   const output = createMatchingCanvas(input.canvas);
-  const imageData = input.ctx.getImageData(0, 0, input.canvas.width, input.canvas.height);
+  const imageData = input.ctx.getImageData(
+    0,
+    0,
+    input.canvas.width,
+    input.canvas.height,
+  );
   const data = imageData.data;
 
   // Build LUTs from curves
   const buildCurveLUT = (
-    points: Array<{x: number, y: number}>,
+    points: Array<{ x: number; y: number }>,
     inputRange: number,
     outputRange: number,
-    isDelta: boolean = true
+    isDelta: boolean = true,
   ): Float32Array => {
     const lut = new Float32Array(Math.ceil(inputRange) + 1);
 
@@ -393,40 +472,61 @@ export function hueVsCurvesRenderer(
   const satVsSatLUT = buildCurveLUT(satVsSat, 100, 100, false);
 
   // RGB <-> HSL helpers
-  const rgbToHsl = (r: number, g: number, b: number): [number, number, number] => {
-    const rn = r / 255, gn = g / 255, bn = b / 255;
-    const max = Math.max(rn, gn, bn), min = Math.min(rn, gn, bn);
+  const rgbToHsl = (
+    r: number,
+    g: number,
+    b: number,
+  ): [number, number, number] => {
+    const rn = r / 255,
+      gn = g / 255,
+      bn = b / 255;
+    const max = Math.max(rn, gn, bn),
+      min = Math.min(rn, gn, bn);
     const l = (max + min) / 2;
     if (max === min) return [0, 0, l];
     const d = max - min;
     const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
     let h: number;
     switch (max) {
-      case rn: h = ((gn - bn) / d + (gn < bn ? 6 : 0)) / 6; break;
-      case gn: h = ((bn - rn) / d + 2) / 6; break;
-      default: h = ((rn - gn) / d + 4) / 6; break;
+      case rn:
+        h = ((gn - bn) / d + (gn < bn ? 6 : 0)) / 6;
+        break;
+      case gn:
+        h = ((bn - rn) / d + 2) / 6;
+        break;
+      default:
+        h = ((rn - gn) / d + 4) / 6;
+        break;
     }
     return [h * 360, s * 100, l * 100];
   };
 
-  const hslToRgb = (h: number, s: number, l: number): [number, number, number] => {
-    h = ((h % 360) + 360) % 360 / 360;
+  const hslToRgb = (
+    h: number,
+    s: number,
+    l: number,
+  ): [number, number, number] => {
+    h = (((h % 360) + 360) % 360) / 360;
     s = s / 100;
     l = l / 100;
-    if (s === 0) { const v = Math.round(l * 255); return [v, v, v]; }
+    if (s === 0) {
+      const v = Math.round(l * 255);
+      return [v, v, v];
+    }
     const hue2rgb = (p: number, q: number, t: number): number => {
-      if (t < 0) t += 1; if (t > 1) t -= 1;
-      if (t < 1/6) return p + (q - p) * 6 * t;
-      if (t < 1/2) return q;
-      if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1 / 6) return p + (q - p) * 6 * t;
+      if (t < 1 / 2) return q;
+      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
       return p;
     };
     const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
     const p = 2 * l - q;
     return [
-      Math.round(hue2rgb(p, q, h + 1/3) * 255),
+      Math.round(hue2rgb(p, q, h + 1 / 3) * 255),
       Math.round(hue2rgb(p, q, h) * 255),
-      Math.round(hue2rgb(p, q, h - 1/3) * 255)
+      Math.round(hue2rgb(p, q, h - 1 / 3) * 255),
     ];
   };
 
@@ -435,7 +535,7 @@ export function hueVsCurvesRenderer(
     let [h, s, l] = rgbToHsl(data[i], data[i + 1], data[i + 2]);
 
     const hueIdx = Math.round(h) % 360;
-    const satIdx = Math.round(s);
+    const _satIdx = Math.round(s);
     const lumIdx = Math.round(l);
 
     // Apply curves in order
@@ -497,16 +597,22 @@ export function hueVsCurvesRenderer(
  */
 export function colorMatchRenderer(
   input: EffectStackResult,
-  params: EvaluatedEffectParams
+  params: EvaluatedEffectParams,
 ): EffectStackResult {
   const refHistR = params.reference_histogram_r as Uint32Array | undefined;
   const refHistG = params.reference_histogram_g as Uint32Array | undefined;
   const refHistB = params.reference_histogram_b as Uint32Array | undefined;
   const refPixelsRaw = params.reference_pixels as number | undefined;
-  const refPixels = typeof refPixelsRaw === 'number' && Number.isFinite(refPixelsRaw) && refPixelsRaw > 0
-    ? refPixelsRaw : 0;
+  const refPixels =
+    typeof refPixelsRaw === "number" &&
+    Number.isFinite(refPixelsRaw) &&
+    refPixelsRaw > 0
+      ? refPixelsRaw
+      : 0;
   const strengthRaw = (params.strength ?? 100) / 100;
-  const strength = Number.isFinite(strengthRaw) ? Math.max(0, Math.min(1, strengthRaw)) : 0;
+  const strength = Number.isFinite(strengthRaw)
+    ? Math.max(0, Math.min(1, strengthRaw))
+    : 0;
   const matchLuminance = params.match_luminance ?? true;
   const matchColor = params.match_color ?? true;
 
@@ -516,7 +622,12 @@ export function colorMatchRenderer(
   }
 
   const output = createMatchingCanvas(input.canvas);
-  const imageData = input.ctx.getImageData(0, 0, input.canvas.width, input.canvas.height);
+  const imageData = input.ctx.getImageData(
+    0,
+    0,
+    input.canvas.width,
+    input.canvas.height,
+  );
   const data = imageData.data;
   const pixelCount = input.canvas.width * input.canvas.height;
 
@@ -537,7 +648,10 @@ export function colorMatchRenderer(
   }
 
   // Build histogram matching LUTs
-  const buildMatchingLUT = (srcHist: Uint32Array, refHist: Uint32Array): Uint8Array => {
+  const buildMatchingLUT = (
+    srcHist: Uint32Array,
+    refHist: Uint32Array,
+  ): Uint8Array => {
     const lut = new Uint8Array(256);
 
     // Compute CDFs
@@ -592,7 +706,9 @@ export function colorMatchRenderer(
 
     // Source luminance
     for (let i = 0; i < data.length; i += 4) {
-      const lum = Math.round(data[i] * 0.2126 + data[i + 1] * 0.7152 + data[i + 2] * 0.0722);
+      const lum = Math.round(
+        data[i] * 0.2126 + data[i + 1] * 0.7152 + data[i + 2] * 0.0722,
+      );
       srcLumHist[Math.min(255, lum)]++;
     }
 
@@ -612,7 +728,9 @@ export function colorMatchRenderer(
     const g = data[i + 1];
     const b = data[i + 2];
 
-    let newR = r, newG = g, newB = b;
+    let newR = r,
+      newG = g,
+      newB = b;
 
     if (matchColor && lutR && lutG && lutB) {
       newR = lutR[r];
@@ -647,8 +765,8 @@ export function colorMatchRenderer(
  * Register all color grading effect renderers
  */
 export function registerColorGradingEffects(): void {
-  registerEffectRenderer('lift-gamma-gain', liftGammaGainRenderer);
-  registerEffectRenderer('hsl-secondary', hslSecondaryRenderer);
-  registerEffectRenderer('hue-vs-curves', hueVsCurvesRenderer);
-  registerEffectRenderer('color-match', colorMatchRenderer);
+  registerEffectRenderer("lift-gamma-gain", liftGammaGainRenderer);
+  registerEffectRenderer("hsl-secondary", hslSecondaryRenderer);
+  registerEffectRenderer("hue-vs-curves", hueVsCurvesRenderer);
+  registerEffectRenderer("color-match", colorMatchRenderer);
 }

@@ -433,30 +433,31 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import { MATERIAL_PRESETS } from '@/types/physics';
-import { bakePhysicsToKeyframes, resetPhysicsSimulation } from '@/stores/actions/physicsActions';
+import { onMounted, ref, watch } from "vue";
+import {
+  bakePhysicsToKeyframes,
+  resetPhysicsSimulation,
+} from "@/stores/actions/physicsActions";
+import { useCompositorStore } from "@/stores/compositorStore";
+import { MATERIAL_PRESETS } from "@/types/physics";
 
 const props = defineProps<{
   layerId: string;
 }>();
 
-const emit = defineEmits<{
-  (e: 'update'): void;
-}>();
+const emit = defineEmits<(e: "update") => void>();
 
 const store = useCompositorStore();
 
 // State
 const physicsEnabled = ref(false);
-const physicsType = ref<'rigid' | 'soft' | 'cloth' | 'ragdoll'>('rigid');
-const materialPreset = ref('default');
+const physicsType = ref<"rigid" | "soft" | "cloth" | "ragdoll">("rigid");
+const materialPreset = ref("default");
 
 const rigidBody = ref({
-  type: 'dynamic' as 'dynamic' | 'static' | 'kinematic' | 'AEmatic',
+  type: "dynamic" as "dynamic" | "static" | "kinematic" | "AEmatic",
   mass: 1,
-  shapeType: 'box' as 'circle' | 'box' | 'capsule' | 'polygon',
+  shapeType: "box" as "circle" | "box" | "capsule" | "polygon",
   radius: 20,
   width: 100,
   height: 100,
@@ -471,7 +472,7 @@ const cloth = ref({
   gridWidth: 20,
   gridHeight: 20,
   spacing: 10,
-  pinning: 'top' as 'none' | 'top' | 'corners' | 'left' | 'custom',
+  pinning: "top" as "none" | "top" | "corners" | "left" | "custom",
   stiffness: 0.8,
   damping: 0.98,
   tearable: false,
@@ -479,7 +480,7 @@ const cloth = ref({
 });
 
 const ragdoll = ref({
-  preset: 'adult' as 'adult' | 'child' | 'cartoon' | 'custom',
+  preset: "adult" as "adult" | "child" | "cartoon" | "custom",
   scale: 100,
   jointStiffness: 0.5,
   selfCollision: false,
@@ -509,7 +510,7 @@ function loadLayerPhysics() {
   const data = (layer.data as any)?.physics;
   if (data) {
     physicsEnabled.value = data.enabled ?? false;
-    physicsType.value = data.type ?? 'rigid';
+    physicsType.value = data.type ?? "rigid";
 
     if (data.rigidBody) {
       Object.assign(rigidBody.value, data.rigidBody);
@@ -537,49 +538,51 @@ function saveLayerPhysics() {
   const physicsData = {
     enabled: physicsEnabled.value,
     type: physicsType.value,
-    rigidBody: physicsType.value === 'rigid' ? { ...rigidBody.value } : undefined,
-    cloth: physicsType.value === 'cloth' ? { ...cloth.value } : undefined,
-    ragdoll: physicsType.value === 'ragdoll' ? { ...ragdoll.value } : undefined,
+    rigidBody:
+      physicsType.value === "rigid" ? { ...rigidBody.value } : undefined,
+    cloth: physicsType.value === "cloth" ? { ...cloth.value } : undefined,
+    ragdoll: physicsType.value === "ragdoll" ? { ...ragdoll.value } : undefined,
     collision: { ...collision.value },
     world: { ...world.value },
   };
 
   store.updateLayerData(props.layerId, { physics: physicsData });
-  emit('update');
+  emit("update");
 }
 
 // Handlers
-function togglePhysics() {
+function _togglePhysics() {
   saveLayerPhysics();
 }
 
-function onPhysicsTypeChange() {
+function _onPhysicsTypeChange() {
   saveLayerPhysics();
 }
 
-function updateRigidBody() {
+function _updateRigidBody() {
   saveLayerPhysics();
 }
 
-function updateCloth() {
+function _updateCloth() {
   saveLayerPhysics();
 }
 
-function updateRagdoll() {
+function _updateRagdoll() {
   saveLayerPhysics();
 }
 
-function updateCollision() {
+function _updateCollision() {
   saveLayerPhysics();
 }
 
-function updateWorld() {
+function _updateWorld() {
   saveLayerPhysics();
 }
 
-function applyMaterialPreset() {
-  if (materialPreset.value !== 'custom') {
-    const preset = MATERIAL_PRESETS[materialPreset.value as keyof typeof MATERIAL_PRESETS];
+function _applyMaterialPreset() {
+  if (materialPreset.value !== "custom") {
+    const preset =
+      MATERIAL_PRESETS[materialPreset.value as keyof typeof MATERIAL_PRESETS];
     if (preset) {
       rigidBody.value.restitution = preset.restitution;
       rigidBody.value.friction = preset.friction;
@@ -588,12 +591,12 @@ function applyMaterialPreset() {
   }
 }
 
-function toggleCollisionMask(group: number) {
-  collision.value.mask ^= (1 << (group - 1));
+function _toggleCollisionMask(group: number) {
+  collision.value.mask ^= 1 << (group - 1);
   saveLayerPhysics();
 }
 
-async function bakeToKeyframes() {
+async function _bakeToKeyframes() {
   try {
     await bakePhysicsToKeyframes(store, props.layerId, {
       startFrame: bakeSettings.value.startFrame,
@@ -603,24 +606,28 @@ async function bakeToKeyframes() {
     // Refresh layer data after baking
     loadLayerPhysics();
   } catch (error) {
-    console.error('Failed to bake physics to keyframes:', error);
+    console.error("Failed to bake physics to keyframes:", error);
   }
 }
 
-function resetSimulation() {
+function _resetSimulation() {
   try {
     resetPhysicsSimulation(store);
     // Refresh layer data after reset
     loadLayerPhysics();
   } catch (error) {
-    console.error('Failed to reset physics simulation:', error);
+    console.error("Failed to reset physics simulation:", error);
   }
 }
 
 // Watch for layer changes
-watch(() => props.layerId, () => {
-  loadLayerPhysics();
-}, { immediate: true });
+watch(
+  () => props.layerId,
+  () => {
+    loadLayerPhysics();
+  },
+  { immediate: true },
+);
 
 onMounted(() => {
   loadLayerPhysics();

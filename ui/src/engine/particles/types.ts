@@ -63,16 +63,16 @@ export interface ParticleGPUData {
 // ============================================================================
 
 export type EmitterShape =
-  | 'point'
-  | 'line'
-  | 'circle'
-  | 'sphere'
-  | 'box'
-  | 'cone'
-  | 'mesh'
-  | 'spline'
-  | 'image'      // Emit from non-transparent pixels
-  | 'depthEdge'; // Emit from depth discontinuities
+  | "point"
+  | "line"
+  | "circle"
+  | "sphere"
+  | "box"
+  | "cone"
+  | "mesh"
+  | "spline"
+  | "image" // Emit from non-transparent pixels
+  | "depthEdge"; // Emit from depth discontinuities
 
 export interface EmitterShapeConfig {
   type: EmitterShape;
@@ -86,7 +86,7 @@ export interface EmitterShapeConfig {
   // Circle/Sphere
   radius?: number;
   radiusVariance?: number;
-  emitFromEdge?: boolean;  // Edge only vs filled
+  emitFromEdge?: boolean; // Edge only vs filled
 
   // Box
   boxSize?: { x: number; y: number; z: number };
@@ -102,7 +102,7 @@ export interface EmitterShapeConfig {
 
   // Spline
   splineId?: string;
-  splineOffset?: number;  // 0-1 along path
+  splineOffset?: number; // 0-1 along path
 
   // Image-based
   imageData?: ImageData;
@@ -123,10 +123,10 @@ export interface EmitterConfig {
   shape: EmitterShapeConfig;
 
   // Emission
-  emissionRate: number;           // Particles per second
+  emissionRate: number; // Particles per second
   emissionRateVariance: number;
-  burstCount: number;             // For burst emission
-  burstInterval: number;          // Frames between bursts (0 = manual)
+  burstCount: number; // For burst emission
+  burstInterval: number; // Frames between bursts (0 = manual)
 
   // Initial particle properties
   initialSpeed: number;
@@ -154,7 +154,7 @@ export interface EmitterConfig {
 
   // Direction
   emissionDirection: { x: number; y: number; z: number };
-  emissionSpread: number;  // Cone angle in degrees
+  emissionSpread: number; // Cone angle in degrees
 
   // Audio reactivity
   burstOnBeat: boolean;
@@ -169,20 +169,20 @@ export interface EmitterConfig {
 // ============================================================================
 
 export type ForceFieldType =
-  | 'gravity'       // Directional gravity (GPU type 0)
-  | 'point'         // Point attractor/repeller (GPU type 1)
-  | 'vortex'        // Rotational force (GPU type 2)
-  | 'turbulence'    // Noise-based displacement (GPU type 3)
-  | 'drag'          // Velocity damping (GPU type 4)
-  | 'wind'          // Directional with gusts (GPU type 5)
-  | 'lorenz'        // Strange attractor (GPU type 6)
-  | 'curl'          // Curl noise for fluid-like motion (GPU type 7)
-  | 'magnetic'      // Lorentz force (velocity-dependent) (GPU type 8)
-  | 'orbit'         // Orbital/centripetal force (GPU type 9)
-  | 'bounds'        // Bounding box/sphere containment
-  | 'collision'     // Surface collision
-  | 'noise'         // General noise displacement
-  | 'path';         // Follow spline
+  | "gravity" // Directional gravity (GPU type 0)
+  | "point" // Point attractor/repeller (GPU type 1)
+  | "vortex" // Rotational force (GPU type 2)
+  | "turbulence" // Noise-based displacement (GPU type 3)
+  | "drag" // Velocity damping (GPU type 4)
+  | "wind" // Directional with gusts (GPU type 5)
+  | "lorenz" // Strange attractor (GPU type 6)
+  | "curl" // Curl noise for fluid-like motion (GPU type 7)
+  | "magnetic" // Lorentz force (velocity-dependent) (GPU type 8)
+  | "orbit" // Orbital/centripetal force (GPU type 9)
+  | "bounds" // Bounding box/sphere containment
+  | "collision" // Surface collision
+  | "noise" // General noise displacement
+  | "path"; // Follow spline
 
 export interface ForceFieldConfig {
   id: string;
@@ -195,7 +195,7 @@ export interface ForceFieldConfig {
   position: { x: number; y: number; z: number };
   falloffStart: number;
   falloffEnd: number;
-  falloffType: 'none' | 'linear' | 'quadratic' | 'exponential' | 'smoothstep';
+  falloffType: "none" | "linear" | "quadratic" | "exponential" | "smoothstep";
 
   // Type-specific parameters
 
@@ -229,7 +229,7 @@ export interface ForceFieldConfig {
   // Bounds
   boundsMin?: { x: number; y: number; z: number };
   boundsMax?: { x: number; y: number; z: number };
-  boundsBehavior?: 'none' | 'kill' | 'bounce' | 'wrap' | 'clamp' | 'stick';
+  boundsBehavior?: "none" | "kill" | "bounce" | "wrap" | "clamp" | "stick";
   bounceDamping?: number;
 
   // Collision
@@ -276,12 +276,12 @@ export interface FlockingConfig {
   cohesionRadius: number;
 
   // Perception
-  perceptionAngle: number;  // Field of view in degrees
+  perceptionAngle: number; // Field of view in degrees
   maxSpeed: number;
   maxForce: number;
 
   // Group behavior
-  groupId?: string;  // Only flock with same group
+  groupId?: string; // Only flock with same group
 }
 
 export interface AvoidanceConfig {
@@ -289,7 +289,7 @@ export interface AvoidanceConfig {
 
   // Obstacles to avoid
   obstacles: Array<{
-    type: 'sphere' | 'box' | 'mesh';
+    type: "sphere" | "box" | "mesh";
     position: { x: number; y: number; z: number };
     size: { x: number; y: number; z: number };
     meshData?: Float32Array;
@@ -297,7 +297,7 @@ export interface AvoidanceConfig {
 
   avoidanceRadius: number;
   avoidanceStrength: number;
-  predictionTime: number;  // Look ahead for collision
+  predictionTime: number; // Look ahead for collision
 }
 
 export interface PathFollowConfig {
@@ -305,13 +305,13 @@ export interface PathFollowConfig {
   splineId: string;
 
   followStrength: number;
-  arrivalRadius: number;    // Slow down when close
-  loopBehavior: 'stop' | 'loop' | 'pingpong';
+  arrivalRadius: number; // Slow down when close
+  loopBehavior: "stop" | "loop" | "pingpong";
 
   speedAlongPath: number;
   speedVariance: number;
 
-  offsetRadius: number;     // Random offset from path
+  offsetRadius: number; // Random offset from path
 }
 
 // ============================================================================
@@ -319,11 +319,11 @@ export interface PathFollowConfig {
 // ============================================================================
 
 export type SubEmitterTrigger =
-  | 'birth'
-  | 'death'
-  | 'collision'
-  | 'age'         // At specific age percentage
-  | 'manual';     // Triggered by event
+  | "birth"
+  | "death"
+  | "collision"
+  | "age" // At specific age percentage
+  | "manual"; // Triggered by event
 
 export interface SubEmitterConfig {
   id: string;
@@ -331,8 +331,8 @@ export interface SubEmitterConfig {
   trigger: SubEmitterTrigger;
 
   // Trigger conditions
-  triggerProbability: number;  // 0-1
-  triggerAgeMin?: number;      // For 'age' trigger
+  triggerProbability: number; // 0-1
+  triggerAgeMin?: number; // For 'age' trigger
   triggerAgeMax?: number;
   maxTriggersPerParticle?: number;
 
@@ -342,7 +342,7 @@ export interface SubEmitterConfig {
 
   // Inheritance
   inheritPosition: boolean;
-  inheritVelocity: number;     // 0-1 multiplier
+  inheritVelocity: number; // 0-1 multiplier
   inheritSize: number;
   inheritColor: number;
   inheritRotation: number;
@@ -356,15 +356,15 @@ export interface SubEmitterConfig {
 // ============================================================================
 
 export type ParticleRenderMode =
-  | 'billboard'      // Always face camera
-  | 'stretchedBillboard'  // Stretch along velocity
-  | 'mesh'           // 3D mesh per particle
-  | 'trail'          // Connected trail
-  | 'ribbon'         // Width-varying trail
-  | 'point';         // GL points (fastest)
+  | "billboard" // Always face camera
+  | "stretchedBillboard" // Stretch along velocity
+  | "mesh" // 3D mesh per particle
+  | "trail" // Connected trail
+  | "ribbon" // Width-varying trail
+  | "point"; // GL points (fastest)
 
 export interface ParticleTextureConfig {
-  diffuseMap?: string;        // URL or data URI
+  diffuseMap?: string; // URL or data URI
   normalMap?: string;
   emissiveMap?: string;
 
@@ -376,7 +376,16 @@ export interface ParticleTextureConfig {
   randomStartFrame?: boolean;
 
   // Procedural
-  proceduralType?: 'circle' | 'square' | 'star' | 'ring' | 'noise' | 'line' | 'triangle' | 'shadedSphere' | 'fadedSphere';
+  proceduralType?:
+    | "circle"
+    | "square"
+    | "star"
+    | "ring"
+    | "noise"
+    | "line"
+    | "triangle"
+    | "shadedSphere"
+    | "fadedSphere";
   proceduralParams?: Record<string, number>;
 }
 
@@ -418,7 +427,7 @@ export interface RenderConfig {
   depthTest: boolean;
 
   // Blending
-  blendMode: 'normal' | 'additive' | 'multiply' | 'screen' | 'premultiplied';
+  blendMode: "normal" | "additive" | "multiply" | "screen" | "premultiplied";
 
   // Stretched billboard
   stretchFactor: number;
@@ -430,10 +439,10 @@ export interface RenderConfig {
   trailSegments: number;
   trailWidthStart: number;
   trailWidthEnd: number;
-  trailFadeMode: 'none' | 'alpha' | 'width' | 'both';
+  trailFadeMode: "none" | "alpha" | "width" | "both";
 
   // Mesh rendering
-  meshGeometry?: string;  // Built-in or custom
+  meshGeometry?: string; // Built-in or custom
 
   // Textures
   texture: ParticleTextureConfig;
@@ -458,11 +467,23 @@ export interface RenderConfig {
 // ============================================================================
 
 export type ModulationCurve =
-  | { type: 'constant'; value: number }
-  | { type: 'linear'; start: number; end: number }
-  | { type: 'curve'; points: Array<{ time: number; value: number; inTangent?: number; outTangent?: number }> }
-  | { type: 'random'; min: number; max: number }
-  | { type: 'randomCurve'; minCurve: ModulationCurve; maxCurve: ModulationCurve };
+  | { type: "constant"; value: number }
+  | { type: "linear"; start: number; end: number }
+  | {
+      type: "curve";
+      points: Array<{
+        time: number;
+        value: number;
+        inTangent?: number;
+        outTangent?: number;
+      }>;
+    }
+  | { type: "random"; min: number; max: number }
+  | {
+      type: "randomCurve";
+      minCurve: ModulationCurve;
+      maxCurve: ModulationCurve;
+    };
 
 export interface LifetimeModulation {
   // Size
@@ -478,7 +499,10 @@ export interface LifetimeModulation {
   angularVelocityOverLifetime?: ModulationCurve;
 
   // Color
-  colorOverLifetime?: Array<{ time: number; color: [number, number, number, number] }>;
+  colorOverLifetime?: Array<{
+    time: number;
+    color: [number, number, number, number];
+  }>;
 
   // Opacity
   opacityOverLifetime?: ModulationCurve;
@@ -500,86 +524,86 @@ export interface LifetimeModulation {
 // Note: 'bpm' excluded - use getBPM(analysis) for track-level BPM
 export type AudioFeature =
   // Basic features
-  | 'amplitude'
-  | 'rms'
-  | 'spectralCentroid'
-  | 'onsets'
-  | 'peaks'  // BUG-083 fix: Add peaks for isPeakAtFrame() support
+  | "amplitude"
+  | "rms"
+  | "spectralCentroid"
+  | "onsets"
+  | "peaks" // BUG-083 fix: Add peaks for isPeakAtFrame() support
   // Frequency bands
-  | 'sub'
-  | 'bass'
-  | 'lowMid'
-  | 'mid'
-  | 'highMid'
-  | 'high'
+  | "sub"
+  | "bass"
+  | "lowMid"
+  | "mid"
+  | "highMid"
+  | "high"
   // Spectral features
-  | 'spectralFlux'
-  | 'zeroCrossingRate'
-  | 'zcr'
-  | 'spectralRolloff'
-  | 'rolloff'
-  | 'spectralFlatness'
-  | 'flatness'
+  | "spectralFlux"
+  | "zeroCrossingRate"
+  | "zcr"
+  | "spectralRolloff"
+  | "rolloff"
+  | "spectralFlatness"
+  | "flatness"
   // Chroma (pitch class)
-  | 'chromaEnergy'
-  | 'chromaC'
-  | 'chromaCs'
-  | 'chromaDb'
-  | 'chromaD'
-  | 'chromaDs'
-  | 'chromaEb'
-  | 'chromaE'
-  | 'chromaF'
-  | 'chromaFs'
-  | 'chromaGb'
-  | 'chromaG'
-  | 'chromaGs'
-  | 'chromaAb'
-  | 'chromaA'
-  | 'chromaAs'
-  | 'chromaBb'
-  | 'chromaB'
+  | "chromaEnergy"
+  | "chromaC"
+  | "chromaCs"
+  | "chromaDb"
+  | "chromaD"
+  | "chromaDs"
+  | "chromaEb"
+  | "chromaE"
+  | "chromaF"
+  | "chromaFs"
+  | "chromaGb"
+  | "chromaG"
+  | "chromaGs"
+  | "chromaAb"
+  | "chromaA"
+  | "chromaAs"
+  | "chromaBb"
+  | "chromaB"
   // HPSS (Harmonic-Percussive Source Separation)
-  | 'harmonicEnergy'
-  | 'harmonic'
-  | 'percussiveEnergy'
-  | 'percussive'
-  | 'hpRatio'
-  | 'harmonicPercussiveRatio'
+  | "harmonicEnergy"
+  | "harmonic"
+  | "percussiveEnergy"
+  | "percussive"
+  | "hpRatio"
+  | "harmonicPercussiveRatio"
   // MFCC (timbral features)
-  | 'mfcc0'
-  | 'mfcc1'
-  | 'mfcc2'
-  | 'mfcc3'
-  | 'mfcc4'
-  | 'mfcc5'
-  | 'mfcc6'
-  | 'mfcc7'
-  | 'mfcc8'
-  | 'mfcc9'
-  | 'mfcc10'
-  | 'mfcc11'
-  | 'mfcc12';
+  | "mfcc0"
+  | "mfcc1"
+  | "mfcc2"
+  | "mfcc3"
+  | "mfcc4"
+  | "mfcc5"
+  | "mfcc6"
+  | "mfcc7"
+  | "mfcc8"
+  | "mfcc9"
+  | "mfcc10"
+  | "mfcc11"
+  | "mfcc12";
 
 export interface AudioBinding {
   feature: AudioFeature;
-  smoothing: number;        // 0-1, temporal smoothing
-  min: number;              // Feature value mapping
+  smoothing: number; // 0-1, temporal smoothing
+  min: number; // Feature value mapping
   max: number;
 
   // Target
-  target: 'emitter' | 'forceField' | 'system';
+  target: "emitter" | "forceField" | "system";
   targetId: string;
   parameter: string;
 
   // Mapping
   outputMin: number;
   outputMax: number;
-  curve: 'linear' | 'exponential' | 'logarithmic' | 'step';
-  stepCount?: number;          // Number of discrete steps for 'step' curve (default: 5)
+  curve: "linear" | "exponential" | "logarithmic" | "step";
+  stepCount?: number; // Number of discrete steps for 'step' curve (default: 5)
 
   // Trigger mode (for discrete events)
-  triggerMode?: 'continuous' | 'onThreshold' | 'onBeat';
+  triggerMode?: "continuous" | "onThreshold" | "onBeat";
   threshold?: number;
 }
 
@@ -592,8 +616,8 @@ export interface GPUParticleSystemConfig {
   maxParticles: number;
 
   // Simulation
-  simulationSpace: 'local' | 'world';
-  deltaTimeMode: 'variable' | 'fixed';
+  simulationSpace: "local" | "world";
+  deltaTimeMode: "variable" | "fixed";
   fixedDeltaTime: number;
   timeScale: number;
 
@@ -620,8 +644,8 @@ export interface GPUParticleSystemConfig {
   audioBindings: AudioBinding[];
 
   // Optimization
-  spatialHashCellSize: number;  // For neighbor queries
-  updateFrequency: number;      // Frames between full updates (1 = every frame)
+  spatialHashCellSize: number; // For neighbor queries
+  updateFrequency: number; // Frames between full updates (1 = every frame)
   cullOffscreen: boolean;
 
   // Seeds for reproducibility
@@ -652,12 +676,12 @@ export interface ParticleSystemState {
 // ============================================================================
 
 export type ParticleEventType =
-  | 'particleBirth'
-  | 'particleDeath'
-  | 'particleCollision'
-  | 'emitterBurst'
-  | 'systemReset'
-  | 'audioTrigger';
+  | "particleBirth"
+  | "particleDeath"
+  | "particleCollision"
+  | "emitterBurst"
+  | "systemReset"
+  | "audioTrigger";
 
 export interface ParticleEvent {
   type: ParticleEventType;
@@ -673,10 +697,10 @@ export type ParticleEventHandler = (event: ParticleEvent) => void;
 
 export interface ConnectionConfig {
   enabled: boolean;
-  maxDistance: number;      // Maximum distance for connection
-  maxConnections: number;   // Max connections per particle
+  maxDistance: number; // Maximum distance for connection
+  maxConnections: number; // Max connections per particle
   lineWidth: number;
   lineOpacity: number;
-  fadeByDistance: boolean;  // Fade opacity based on distance
+  fadeByDistance: boolean; // Fade opacity based on distance
   color?: [number, number, number]; // Optional override color
 }

@@ -5,10 +5,10 @@
  * This is the core of RyanOnTheInside's "Flex Features" system.
  */
 
-import type { AudioAnalysis, PeakData } from './audioFeatures';
-import { getFeatureAtFrame, isPeakAtFrame } from './audioFeatures';
 // BUG-083 fix: Import AudioFeature from canonical source instead of duplicating
-import type { AudioFeature } from '@/engine/particles/types';
+import type { AudioFeature } from "@/engine/particles/types";
+import type { AudioAnalysis, PeakData } from "./audioFeatures";
+import { getFeatureAtFrame, isPeakAtFrame } from "./audioFeatures";
 
 // Re-export for consumers that import from this module
 export type { AudioFeature };
@@ -19,30 +19,47 @@ export type { AudioFeature };
 
 export type TargetParameter =
   // Particle parameters
-  | 'particle.emissionRate' | 'particle.speed' | 'particle.size'
-  | 'particle.gravity' | 'particle.windStrength' | 'particle.windDirection'
+  | "particle.emissionRate"
+  | "particle.speed"
+  | "particle.size"
+  | "particle.gravity"
+  | "particle.windStrength"
+  | "particle.windDirection"
   // Depthflow parameters
-  | 'depthflow.zoom' | 'depthflow.offsetX' | 'depthflow.offsetY'
-  | 'depthflow.rotation' | 'depthflow.depthScale'
+  | "depthflow.zoom"
+  | "depthflow.offsetX"
+  | "depthflow.offsetY"
+  | "depthflow.rotation"
+  | "depthflow.depthScale"
   // Path animation
-  | 'path.position'
+  | "path.position"
   // Generic layer properties
-  | 'layer.opacity' | 'layer.scale' | 'layer.rotation' | 'layer.x' | 'layer.y'
+  | "layer.opacity"
+  | "layer.scale"
+  | "layer.rotation"
+  | "layer.x"
+  | "layer.y"
   // Extended layer properties (inspired by filliptm's ComfyUI_Fill-Nodes)
   // Attribution: https://github.com/filliptm/ComfyUI_Fill-Nodes
-  | 'layer.scaleX' | 'layer.scaleY'        // Non-uniform scale (breathing effect)
-  | 'layer.brightness' | 'layer.saturation' // Color adjustments
-  | 'layer.contrast' | 'layer.hue'          // More color controls
-  | 'layer.blur'                            // Blur intensity
+  | "layer.scaleX"
+  | "layer.scaleY" // Non-uniform scale (breathing effect)
+  | "layer.brightness"
+  | "layer.saturation" // Color adjustments
+  | "layer.contrast"
+  | "layer.hue" // More color controls
+  | "layer.blur" // Blur intensity
   // Video layer properties
-  | 'video.playbackSpeed'                   // Time stretch/speed reactive
+  | "video.playbackSpeed" // Time stretch/speed reactive
   // Effect parameters (applied as effect modifiers)
-  | 'effect.glowIntensity' | 'effect.glowRadius'
-  | 'effect.edgeGlowIntensity'              // Edge glow reactive
-  | 'effect.glitchAmount'                   // Glitch reactive
-  | 'effect.rgbSplitAmount'                 // RGB split reactive
+  | "effect.glowIntensity"
+  | "effect.glowRadius"
+  | "effect.edgeGlowIntensity" // Edge glow reactive
+  | "effect.glitchAmount" // Glitch reactive
+  | "effect.rgbSplitAmount" // RGB split reactive
   // Camera properties
-  | 'camera.fov' | 'camera.dollyZ' | 'camera.shake'
+  | "camera.fov"
+  | "camera.dollyZ"
+  | "camera.shake"
   // Spline control point properties (dynamic index)
   // Format: spline.controlPoint.{index}.{x|y|depth}
   | `spline.controlPoint.${number}.x`
@@ -53,42 +70,42 @@ export interface AudioMapping {
   id: string;
   feature: AudioFeature;
   target: TargetParameter;
-  targetLayerId?: string;     // Which layer to affect
-  targetEmitterId?: string;   // For particle emitter-specific mapping
+  targetLayerId?: string; // Which layer to affect
+  targetEmitterId?: string; // For particle emitter-specific mapping
 
   // Core mapping parameters
-  sensitivity: number;        // Multiplier (default 1.0)
-  offset: number;             // Added to result (default 0)
-  min: number;                // Clamp minimum
-  max: number;                // Clamp maximum
-  smoothing: number;          // 0-1 temporal smoothing
-  invert: boolean;            // Flip the value (1 - value)
-  threshold: number;          // Values below this become 0 (noise gate)
-  enabled: boolean;           // Toggle mapping on/off
+  sensitivity: number; // Multiplier (default 1.0)
+  offset: number; // Added to result (default 0)
+  min: number; // Clamp minimum
+  max: number; // Clamp maximum
+  smoothing: number; // 0-1 temporal smoothing
+  invert: boolean; // Flip the value (1 - value)
+  threshold: number; // Values below this become 0 (noise gate)
+  enabled: boolean; // Toggle mapping on/off
 
   // ATI_AudioReactive style parameters
-  amplitudeCurve: number;     // Power curve (1=linear, >1=noise gate/expander, <1=compressor)
-  release: number;            // 0-1, return speed after peak (0=instant, 1=slow decay)
+  amplitudeCurve: number; // Power curve (1=linear, >1=noise gate/expander, <1=compressor)
+  release: number; // 0-1, return speed after peak (0=instant, 1=slow decay)
 
   // Beat/onset response (for flipOnBeat style effects)
-  beatResponse: 'none' | 'flip' | 'pulse' | 'toggle';
-  beatThreshold: number;      // 0-1, sensitivity for beat detection
+  beatResponse: "none" | "flip" | "pulse" | "toggle";
+  beatThreshold: number; // 0-1, sensitivity for beat detection
 
   // Value shaping
-  curve: 'linear' | 'exponential' | 'logarithmic' | 'smoothstep' | 'bounce';
+  curve: "linear" | "exponential" | "logarithmic" | "smoothstep" | "bounce";
 }
 
 export interface IPAdapterTransition {
-  imageLayerIds: string[];    // Layer IDs of images to transition between
-  peakData: PeakData;         // From detectPeaks()
-  blendMode: 'linear' | 'step' | 'smooth';
-  transitionLength: number;   // Frames for crossfade
-  minWeight: number;          // Minimum IPAdapter weight (0-1)
+  imageLayerIds: string[]; // Layer IDs of images to transition between
+  peakData: PeakData; // From detectPeaks()
+  blendMode: "linear" | "step" | "smooth";
+  transitionLength: number; // Frames for crossfade
+  minWeight: number; // Minimum IPAdapter weight (0-1)
 }
 
 export interface WeightSchedule {
   frame: number;
-  weights: number[];          // Weight for each image at this frame
+  weights: number[]; // Weight for each image at this frame
 }
 
 // ============================================================================
@@ -97,11 +114,12 @@ export interface WeightSchedule {
 
 export function createDefaultAudioMapping(
   id?: string,
-  feature: AudioFeature = 'amplitude',
-  target: TargetParameter = 'particle.emissionRate'
+  feature: AudioFeature = "amplitude",
+  target: TargetParameter = "particle.emissionRate",
 ): AudioMapping {
   return {
-    id: id || `mapping_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
+    id:
+      id || `mapping_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
     feature,
     target,
     targetLayerId: undefined,
@@ -116,11 +134,11 @@ export function createDefaultAudioMapping(
     threshold: 0,
     enabled: true,
     // ATI style
-    amplitudeCurve: 1.0,        // Linear by default
-    release: 0.5,              // Medium decay
-    beatResponse: 'none',
+    amplitudeCurve: 1.0, // Linear by default
+    release: 0.5, // Medium decay
+    beatResponse: "none",
     beatThreshold: 0.5,
-    curve: 'linear'
+    curve: "linear",
   };
 }
 
@@ -132,8 +150,8 @@ export class AudioReactiveMapper {
   private analysis: AudioAnalysis;
   private mappings: Map<string, AudioMapping> = new Map();
   private smoothedValues: Map<string, number> = new Map();
-  private releaseEnvelopes: Map<string, number> = new Map();  // ATI-style release tracking
-  private beatToggleStates: Map<string, number> = new Map();  // For beat toggle/flip
+  private releaseEnvelopes: Map<string, number> = new Map(); // ATI-style release tracking
+  private beatToggleStates: Map<string, number> = new Map(); // For beat toggle/flip
   private peakData: PeakData | null = null;
 
   constructor(analysis: AudioAnalysis) {
@@ -222,7 +240,7 @@ export class AudioReactiveMapper {
    */
   getMappingsForLayer(layerId: string): AudioMapping[] {
     return Array.from(this.mappings.values()).filter(
-      m => m.targetLayerId === layerId || m.targetLayerId === undefined
+      (m) => m.targetLayerId === layerId || m.targetLayerId === undefined,
     );
   }
 
@@ -232,7 +250,7 @@ export class AudioReactiveMapper {
    */
   getMappingsForEmitter(emitterId: string): AudioMapping[] {
     return Array.from(this.mappings.values()).filter(
-      m => m.targetEmitterId === emitterId || m.targetEmitterId === undefined
+      (m) => m.targetEmitterId === emitterId || m.targetEmitterId === undefined,
     );
   }
 
@@ -240,10 +258,15 @@ export class AudioReactiveMapper {
    * Get mappings for a specific layer and emitter combination
    * BUG-081 fix: Combined layer + emitter filtering for particle systems
    */
-  getMappingsForLayerEmitter(layerId: string, emitterId: string): AudioMapping[] {
-    return Array.from(this.mappings.values()).filter(m => {
-      const layerMatch = m.targetLayerId === layerId || m.targetLayerId === undefined;
-      const emitterMatch = m.targetEmitterId === emitterId || m.targetEmitterId === undefined;
+  getMappingsForLayerEmitter(
+    layerId: string,
+    emitterId: string,
+  ): AudioMapping[] {
+    return Array.from(this.mappings.values()).filter((m) => {
+      const layerMatch =
+        m.targetLayerId === layerId || m.targetLayerId === undefined;
+      const emitterMatch =
+        m.targetEmitterId === emitterId || m.targetEmitterId === undefined;
       return layerMatch && emitterMatch;
     });
   }
@@ -252,14 +275,16 @@ export class AudioReactiveMapper {
    * Get mappings for a specific target parameter
    */
   getMappingsForTarget(target: TargetParameter): AudioMapping[] {
-    return Array.from(this.mappings.values()).filter(m => m.target === target);
+    return Array.from(this.mappings.values()).filter(
+      (m) => m.target === target,
+    );
   }
 
   /**
    * Get raw feature value at frame (before mapping transforms)
    */
   getFeatureAtFrame(feature: AudioFeature, frame: number): number {
-    if (feature === 'peaks') {
+    if (feature === "peaks") {
       if (this.peakData) {
         return isPeakAtFrame(this.peakData, frame) ? 1 : 0;
       }
@@ -288,7 +313,7 @@ export class AudioReactiveMapper {
     // amplitudeCurve > 1 = expander (emphasize loud, suppress quiet)
     // amplitudeCurve < 1 = compressor (boost quiet, limit loud)
     if (mapping.amplitudeCurve !== 1.0) {
-      value = Math.pow(value, mapping.amplitudeCurve);
+      value = value ** mapping.amplitudeCurve;
     }
 
     // Apply release envelope (ATI style)
@@ -300,7 +325,7 @@ export class AudioReactiveMapper {
     } else {
       // Release: decay based on release parameter
       // release=0 means instant decay, release=1 means very slow
-      const decayRate = 1 - (mapping.release * 0.98);
+      const decayRate = 1 - mapping.release * 0.98;
       const newEnvelope = releaseEnvelope * decayRate;
       this.releaseEnvelopes.set(mappingId, newEnvelope);
       // Use the higher of current value or decaying envelope
@@ -308,33 +333,35 @@ export class AudioReactiveMapper {
     }
 
     // Apply beat response
-    if (mapping.beatResponse !== 'none') {
-      const isBeat = this.analysis.onsets.includes(frame) &&
-                     this.getFeatureAtFrame(mapping.feature, frame) > mapping.beatThreshold;
+    if (mapping.beatResponse !== "none") {
+      const isBeat =
+        this.analysis.onsets.includes(frame) &&
+        this.getFeatureAtFrame(mapping.feature, frame) > mapping.beatThreshold;
 
       if (isBeat) {
         const currentToggle = this.beatToggleStates.get(mappingId) || 0;
 
         switch (mapping.beatResponse) {
-          case 'flip':
+          case "flip":
             // Flip value direction on beat
             this.beatToggleStates.set(mappingId, currentToggle === 0 ? 1 : 0);
             break;
-          case 'pulse':
+          case "pulse":
             // Spike to max on beat
             value = 1;
             break;
-          case 'toggle':
+          case "toggle": {
             // Toggle between 0 and 1 on each beat
             const newToggle = currentToggle === 0 ? 1 : 0;
             this.beatToggleStates.set(mappingId, newToggle);
             value = newToggle;
             break;
+          }
         }
       }
 
       // Apply flip effect if active
-      if (mapping.beatResponse === 'flip') {
+      if (mapping.beatResponse === "flip") {
         const toggle = this.beatToggleStates.get(mappingId) || 0;
         if (toggle === 1) {
           value = 1 - value;
@@ -361,7 +388,8 @@ export class AudioReactiveMapper {
 
     // Apply smoothing
     const prevSmoothed = this.smoothedValues.get(mappingId) || 0;
-    const smoothed = prevSmoothed * mapping.smoothing + value * (1 - mapping.smoothing);
+    const smoothed =
+      prevSmoothed * mapping.smoothing + value * (1 - mapping.smoothing);
     this.smoothedValues.set(mappingId, smoothed);
 
     return smoothed;
@@ -396,7 +424,7 @@ export class AudioReactiveMapper {
    */
   getValuesForLayerAtFrame(
     layerId: string,
-    frame: number
+    frame: number,
   ): Map<TargetParameter, number> {
     const values = new Map<TargetParameter, number>();
 
@@ -425,13 +453,14 @@ export class AudioReactiveMapper {
    */
   getValuesForEmitterAtFrame(
     emitterId: string,
-    frame: number
+    frame: number,
   ): Map<TargetParameter, number> {
     const values = new Map<TargetParameter, number>();
 
     for (const mapping of this.mappings.values()) {
       if (!mapping.enabled) continue;
-      if (mapping.targetEmitterId && mapping.targetEmitterId !== emitterId) continue;
+      if (mapping.targetEmitterId && mapping.targetEmitterId !== emitterId)
+        continue;
 
       const value = this.getValueAtFrame(mapping.id, frame);
       const existing = values.get(mapping.target);
@@ -453,14 +482,15 @@ export class AudioReactiveMapper {
   getValuesForLayerEmitterAtFrame(
     layerId: string,
     emitterId: string,
-    frame: number
+    frame: number,
   ): Map<TargetParameter, number> {
     const values = new Map<TargetParameter, number>();
 
     for (const mapping of this.mappings.values()) {
       if (!mapping.enabled) continue;
       if (mapping.targetLayerId && mapping.targetLayerId !== layerId) continue;
-      if (mapping.targetEmitterId && mapping.targetEmitterId !== emitterId) continue;
+      if (mapping.targetEmitterId && mapping.targetEmitterId !== emitterId)
+        continue;
 
       const value = this.getValueAtFrame(mapping.id, frame);
       const existing = values.get(mapping.target);
@@ -478,29 +508,27 @@ export class AudioReactiveMapper {
   /**
    * Apply curve shaping to a value
    */
-  private applyCurve(value: number, curve: AudioMapping['curve']): number {
+  private applyCurve(value: number, curve: AudioMapping["curve"]): number {
     const clamped = Math.max(0, Math.min(1, value));
 
     switch (curve) {
-      case 'exponential':
+      case "exponential":
         return clamped * clamped;
 
-      case 'logarithmic':
+      case "logarithmic":
         return Math.sqrt(clamped);
 
-      case 'smoothstep':
+      case "smoothstep":
         return clamped * clamped * (3 - 2 * clamped);
 
-      case 'bounce':
+      case "bounce":
         // Overshoot and bounce back
         if (clamped < 0.5) {
           return 2 * clamped * clamped;
         } else {
           const t = clamped - 0.5;
-          return 0.5 + 0.5 * (1 - Math.pow(1 - 2 * t, 2));
+          return 0.5 + 0.5 * (1 - (1 - 2 * t) ** 2);
         }
-
-      case 'linear':
       default:
         return clamped;
     }
@@ -566,9 +594,10 @@ export class AudioReactiveMapper {
  */
 export function createIPAdapterSchedule(
   transition: IPAdapterTransition,
-  totalFrames: number
+  totalFrames: number,
 ): WeightSchedule[] {
-  const { imageLayerIds, peakData, blendMode, transitionLength, minWeight } = transition;
+  const { imageLayerIds, peakData, blendMode, transitionLength, minWeight } =
+    transition;
   const numImages = imageLayerIds.length;
 
   if (numImages === 0) return [];
@@ -609,14 +638,16 @@ export function createIPAdapterSchedule(
         let blend: number;
 
         switch (blendMode) {
-          case 'step':
+          case "step":
             blend = transitionProgress >= 0.5 ? 1 : 0;
             break;
-          case 'smooth':
+          case "smooth":
             // Smoothstep
-            blend = transitionProgress * transitionProgress * (3 - 2 * transitionProgress);
+            blend =
+              transitionProgress *
+              transitionProgress *
+              (3 - 2 * transitionProgress);
             break;
-          case 'linear':
           default:
             blend = transitionProgress;
         }
@@ -643,9 +674,9 @@ export function createIPAdapterSchedule(
  */
 export function getIPAdapterWeightsAtFrame(
   schedule: WeightSchedule[],
-  frame: number
+  frame: number,
 ): number[] {
-  const entry = schedule.find(s => s.frame === frame);
+  const entry = schedule.find((s) => s.frame === frame);
   return entry ? entry.weights : [];
 }
 
@@ -660,38 +691,38 @@ export function getFeatureDisplayName(feature: AudioFeature): string {
   // Partial because not all features need display names - fallback returns raw feature name
   const names: Partial<Record<AudioFeature, string>> = {
     // Core
-    amplitude: 'Amplitude',
-    rms: 'RMS Energy',
-    spectralCentroid: 'Brightness',
+    amplitude: "Amplitude",
+    rms: "RMS Energy",
+    spectralCentroid: "Brightness",
     // Frequency bands
-    sub: 'Sub Bass (20-60Hz)',
-    bass: 'Bass (60-250Hz)',
-    lowMid: 'Low Mid (250-500Hz)',
-    mid: 'Mid (500-2kHz)',
-    highMid: 'High Mid (2-4kHz)',
-    high: 'High (4-20kHz)',
+    sub: "Sub Bass (20-60Hz)",
+    bass: "Bass (60-250Hz)",
+    lowMid: "Low Mid (250-500Hz)",
+    mid: "Mid (500-2kHz)",
+    highMid: "High Mid (2-4kHz)",
+    high: "High (4-20kHz)",
     // Events
-    onsets: 'Beat Onsets',
-    peaks: 'Detected Peaks',
+    onsets: "Beat Onsets",
+    peaks: "Detected Peaks",
     // Enhanced features
-    spectralFlux: 'Spectral Flux (Transients)',
-    zeroCrossingRate: 'Zero Crossing (Percussive)',
-    spectralRolloff: 'Spectral Rolloff (High Freq)',
-    spectralFlatness: 'Spectral Flatness (Noise)',
-    chromaEnergy: 'Chroma Energy (Harmonic)',
+    spectralFlux: "Spectral Flux (Transients)",
+    zeroCrossingRate: "Zero Crossing (Percussive)",
+    spectralRolloff: "Spectral Rolloff (High Freq)",
+    spectralFlatness: "Spectral Flatness (Noise)",
+    chromaEnergy: "Chroma Energy (Harmonic)",
     // Pitch classes
-    chromaC: 'Chroma: C',
-    chromaCs: 'Chroma: C#/Db',
-    chromaD: 'Chroma: D',
-    chromaDs: 'Chroma: D#/Eb',
-    chromaE: 'Chroma: E',
-    chromaF: 'Chroma: F',
-    chromaFs: 'Chroma: F#/Gb',
-    chromaG: 'Chroma: G',
-    chromaGs: 'Chroma: G#/Ab',
-    chromaA: 'Chroma: A',
-    chromaAs: 'Chroma: A#/Bb',
-    chromaB: 'Chroma: B'
+    chromaC: "Chroma: C",
+    chromaCs: "Chroma: C#/Db",
+    chromaD: "Chroma: D",
+    chromaDs: "Chroma: D#/Eb",
+    chromaE: "Chroma: E",
+    chromaF: "Chroma: F",
+    chromaFs: "Chroma: F#/Gb",
+    chromaG: "Chroma: G",
+    chromaGs: "Chroma: G#/Ab",
+    chromaA: "Chroma: A",
+    chromaAs: "Chroma: A#/Bb",
+    chromaB: "Chroma: B",
   };
   return names[feature] || feature;
 }
@@ -701,49 +732,50 @@ export function getFeatureDisplayName(feature: AudioFeature): string {
  */
 export function getTargetDisplayName(target: TargetParameter): string {
   // Check for spline control point targets first
-  const splineMatch = target.match(/^spline\.controlPoint\.(\d+)\.(x|y|depth)$/);
+  const splineMatch = target.match(
+    /^spline\.controlPoint\.(\d+)\.(x|y|depth)$/,
+  );
   if (splineMatch) {
     const index = splineMatch[1];
-    const prop = splineMatch[2] === 'x' ? 'X'
-      : splineMatch[2] === 'y' ? 'Y'
-      : 'Depth';
+    const prop =
+      splineMatch[2] === "x" ? "X" : splineMatch[2] === "y" ? "Y" : "Depth";
     return `Spline: Control Point ${index} ${prop}`;
   }
 
   const names: Record<string, string> = {
-    'particle.emissionRate': 'Particle: Emission Rate',
-    'particle.speed': 'Particle: Speed',
-    'particle.size': 'Particle: Size',
-    'particle.gravity': 'Particle: Gravity',
-    'particle.windStrength': 'Particle: Wind Strength',
-    'particle.windDirection': 'Particle: Wind Direction',
-    'depthflow.zoom': 'Depthflow: Zoom',
-    'depthflow.offsetX': 'Depthflow: Offset X',
-    'depthflow.offsetY': 'Depthflow: Offset Y',
-    'depthflow.rotation': 'Depthflow: Rotation',
-    'depthflow.depthScale': 'Depthflow: Depth Scale',
-    'path.position': 'Path: Position',
-    'layer.opacity': 'Layer: Opacity',
-    'layer.scale': 'Layer: Scale (Uniform)',
-    'layer.scaleX': 'Layer: Scale X',
-    'layer.scaleY': 'Layer: Scale Y',
-    'layer.rotation': 'Layer: Rotation',
-    'layer.x': 'Layer: X Position',
-    'layer.y': 'Layer: Y Position',
-    'layer.brightness': 'Layer: Brightness',
-    'layer.saturation': 'Layer: Saturation',
-    'layer.contrast': 'Layer: Contrast',
-    'layer.hue': 'Layer: Hue Shift',
-    'layer.blur': 'Layer: Blur',
-    'video.playbackSpeed': 'Video: Playback Speed',
-    'effect.glowIntensity': 'Effect: Glow Intensity',
-    'effect.glowRadius': 'Effect: Glow Radius',
-    'effect.edgeGlowIntensity': 'Effect: Edge Glow',
-    'effect.glitchAmount': 'Effect: Glitch Amount',
-    'effect.rgbSplitAmount': 'Effect: RGB Split',
-    'camera.fov': 'Camera: Field of View',
-    'camera.dollyZ': 'Camera: Dolly Z',
-    'camera.shake': 'Camera: Shake Intensity'
+    "particle.emissionRate": "Particle: Emission Rate",
+    "particle.speed": "Particle: Speed",
+    "particle.size": "Particle: Size",
+    "particle.gravity": "Particle: Gravity",
+    "particle.windStrength": "Particle: Wind Strength",
+    "particle.windDirection": "Particle: Wind Direction",
+    "depthflow.zoom": "Depthflow: Zoom",
+    "depthflow.offsetX": "Depthflow: Offset X",
+    "depthflow.offsetY": "Depthflow: Offset Y",
+    "depthflow.rotation": "Depthflow: Rotation",
+    "depthflow.depthScale": "Depthflow: Depth Scale",
+    "path.position": "Path: Position",
+    "layer.opacity": "Layer: Opacity",
+    "layer.scale": "Layer: Scale (Uniform)",
+    "layer.scaleX": "Layer: Scale X",
+    "layer.scaleY": "Layer: Scale Y",
+    "layer.rotation": "Layer: Rotation",
+    "layer.x": "Layer: X Position",
+    "layer.y": "Layer: Y Position",
+    "layer.brightness": "Layer: Brightness",
+    "layer.saturation": "Layer: Saturation",
+    "layer.contrast": "Layer: Contrast",
+    "layer.hue": "Layer: Hue Shift",
+    "layer.blur": "Layer: Blur",
+    "video.playbackSpeed": "Video: Playback Speed",
+    "effect.glowIntensity": "Effect: Glow Intensity",
+    "effect.glowRadius": "Effect: Glow Radius",
+    "effect.edgeGlowIntensity": "Effect: Edge Glow",
+    "effect.glitchAmount": "Effect: Glitch Amount",
+    "effect.rgbSplitAmount": "Effect: RGB Split",
+    "camera.fov": "Camera: Field of View",
+    "camera.dollyZ": "Camera: Dolly Z",
+    "camera.shake": "Camera: Shake Intensity",
   };
   return names[target] || target;
 }
@@ -754,16 +786,38 @@ export function getTargetDisplayName(target: TargetParameter): string {
 export function getAllFeatures(): AudioFeature[] {
   return [
     // Core
-    'amplitude', 'rms', 'spectralCentroid',
+    "amplitude",
+    "rms",
+    "spectralCentroid",
     // Frequency bands
-    'sub', 'bass', 'lowMid', 'mid', 'highMid', 'high',
+    "sub",
+    "bass",
+    "lowMid",
+    "mid",
+    "highMid",
+    "high",
     // Events
-    'onsets', 'peaks',
+    "onsets",
+    "peaks",
     // Enhanced
-    'spectralFlux', 'zeroCrossingRate', 'spectralRolloff', 'spectralFlatness', 'chromaEnergy',
+    "spectralFlux",
+    "zeroCrossingRate",
+    "spectralRolloff",
+    "spectralFlatness",
+    "chromaEnergy",
     // Pitch classes
-    'chromaC', 'chromaCs', 'chromaD', 'chromaDs', 'chromaE', 'chromaF',
-    'chromaFs', 'chromaG', 'chromaGs', 'chromaA', 'chromaAs', 'chromaB'
+    "chromaC",
+    "chromaCs",
+    "chromaD",
+    "chromaDs",
+    "chromaE",
+    "chromaF",
+    "chromaFs",
+    "chromaG",
+    "chromaGs",
+    "chromaA",
+    "chromaAs",
+    "chromaB",
   ];
 }
 
@@ -772,13 +826,30 @@ export function getAllFeatures(): AudioFeature[] {
  */
 export function getFeaturesByCategory(): Record<string, AudioFeature[]> {
   return {
-    'Energy': ['amplitude', 'rms'],
-    'Frequency Bands': ['sub', 'bass', 'lowMid', 'mid', 'highMid', 'high'],
-    'Spectral': ['spectralCentroid', 'spectralFlux', 'spectralRolloff', 'spectralFlatness'],
-    'Events': ['onsets', 'peaks'],
-    'Harmonic': ['chromaEnergy', 'zeroCrossingRate'],
-    'Pitch Classes': ['chromaC', 'chromaCs', 'chromaD', 'chromaDs', 'chromaE', 'chromaF',
-                      'chromaFs', 'chromaG', 'chromaGs', 'chromaA', 'chromaAs', 'chromaB']
+    Energy: ["amplitude", "rms"],
+    "Frequency Bands": ["sub", "bass", "lowMid", "mid", "highMid", "high"],
+    Spectral: [
+      "spectralCentroid",
+      "spectralFlux",
+      "spectralRolloff",
+      "spectralFlatness",
+    ],
+    Events: ["onsets", "peaks"],
+    Harmonic: ["chromaEnergy", "zeroCrossingRate"],
+    "Pitch Classes": [
+      "chromaC",
+      "chromaCs",
+      "chromaD",
+      "chromaDs",
+      "chromaE",
+      "chromaF",
+      "chromaFs",
+      "chromaG",
+      "chromaGs",
+      "chromaA",
+      "chromaAs",
+      "chromaB",
+    ],
   };
 }
 
@@ -787,18 +858,39 @@ export function getFeaturesByCategory(): Record<string, AudioFeature[]> {
  */
 export function getAllTargets(): TargetParameter[] {
   return [
-    'particle.emissionRate', 'particle.speed', 'particle.size',
-    'particle.gravity', 'particle.windStrength', 'particle.windDirection',
-    'depthflow.zoom', 'depthflow.offsetX', 'depthflow.offsetY',
-    'depthflow.rotation', 'depthflow.depthScale',
-    'path.position',
-    'layer.opacity', 'layer.scale', 'layer.scaleX', 'layer.scaleY',
-    'layer.rotation', 'layer.x', 'layer.y',
-    'layer.brightness', 'layer.saturation', 'layer.contrast', 'layer.hue', 'layer.blur',
-    'video.playbackSpeed',
-    'effect.glowIntensity', 'effect.glowRadius', 'effect.edgeGlowIntensity',
-    'effect.glitchAmount', 'effect.rgbSplitAmount',
-    'camera.fov', 'camera.dollyZ', 'camera.shake'
+    "particle.emissionRate",
+    "particle.speed",
+    "particle.size",
+    "particle.gravity",
+    "particle.windStrength",
+    "particle.windDirection",
+    "depthflow.zoom",
+    "depthflow.offsetX",
+    "depthflow.offsetY",
+    "depthflow.rotation",
+    "depthflow.depthScale",
+    "path.position",
+    "layer.opacity",
+    "layer.scale",
+    "layer.scaleX",
+    "layer.scaleY",
+    "layer.rotation",
+    "layer.x",
+    "layer.y",
+    "layer.brightness",
+    "layer.saturation",
+    "layer.contrast",
+    "layer.hue",
+    "layer.blur",
+    "video.playbackSpeed",
+    "effect.glowIntensity",
+    "effect.glowRadius",
+    "effect.edgeGlowIntensity",
+    "effect.glitchAmount",
+    "effect.rgbSplitAmount",
+    "camera.fov",
+    "camera.dollyZ",
+    "camera.shake",
   ];
 }
 
@@ -808,35 +900,49 @@ export function getAllTargets(): TargetParameter[] {
  */
 export function getTargetsByCategory(): Record<string, TargetParameter[]> {
   return {
-    'Particle': [
-      'particle.emissionRate', 'particle.speed', 'particle.size',
-      'particle.gravity', 'particle.windStrength', 'particle.windDirection'
+    Particle: [
+      "particle.emissionRate",
+      "particle.speed",
+      "particle.size",
+      "particle.gravity",
+      "particle.windStrength",
+      "particle.windDirection",
     ],
-    'Depthflow': [
-      'depthflow.zoom', 'depthflow.offsetX', 'depthflow.offsetY',
-      'depthflow.rotation', 'depthflow.depthScale'
+    Depthflow: [
+      "depthflow.zoom",
+      "depthflow.offsetX",
+      "depthflow.offsetY",
+      "depthflow.rotation",
+      "depthflow.depthScale",
     ],
-    'Path': ['path.position'],
-    'Layer Transform': [
-      'layer.opacity', 'layer.scale', 'layer.scaleX', 'layer.scaleY',
-      'layer.rotation', 'layer.x', 'layer.y'
+    Path: ["path.position"],
+    "Layer Transform": [
+      "layer.opacity",
+      "layer.scale",
+      "layer.scaleX",
+      "layer.scaleY",
+      "layer.rotation",
+      "layer.x",
+      "layer.y",
     ],
     // Extended targets inspired by filliptm's ComfyUI_Fill-Nodes
     // Attribution: https://github.com/filliptm/ComfyUI_Fill-Nodes
-    'Layer Color': [
-      'layer.brightness', 'layer.saturation', 'layer.contrast', 'layer.hue'
+    "Layer Color": [
+      "layer.brightness",
+      "layer.saturation",
+      "layer.contrast",
+      "layer.hue",
     ],
-    'Layer Effects': [
-      'layer.blur',
-      'effect.glowIntensity', 'effect.glowRadius', 'effect.edgeGlowIntensity',
-      'effect.glitchAmount', 'effect.rgbSplitAmount'
+    "Layer Effects": [
+      "layer.blur",
+      "effect.glowIntensity",
+      "effect.glowRadius",
+      "effect.edgeGlowIntensity",
+      "effect.glitchAmount",
+      "effect.rgbSplitAmount",
     ],
-    'Video': [
-      'video.playbackSpeed'
-    ],
-    'Camera': [
-      'camera.fov', 'camera.dollyZ', 'camera.shake'
-    ]
+    Video: ["video.playbackSpeed"],
+    Camera: ["camera.fov", "camera.dollyZ", "camera.shake"],
     // Note: 'Spline' targets are generated dynamically based on control point count
     // Use createSplineControlPointTargets() to get targets for a specific spline
   };
@@ -847,7 +953,9 @@ export function getTargetsByCategory(): Record<string, TargetParameter[]> {
  * @param controlPointCount Number of control points in the spline
  * @returns Array of TargetParameter for each control point property
  */
-export function createSplineControlPointTargets(controlPointCount: number): TargetParameter[] {
+export function createSplineControlPointTargets(
+  controlPointCount: number,
+): TargetParameter[] {
   const targets: TargetParameter[] = [];
   for (let i = 0; i < controlPointCount; i++) {
     targets.push(`spline.controlPoint.${i}.x` as TargetParameter);
@@ -868,49 +976,51 @@ export function createSplineControlPointTargets(controlPointCount: number): Targ
  */
 export interface AudioReactiveModifiers {
   // Transform
-  opacity?: number;         // 0-1 additive
-  scaleX?: number;          // Additive to base scale
-  scaleY?: number;          // Additive to base scale
-  scaleUniform?: number;    // Additive to both X and Y
-  rotation?: number;        // Additive degrees
-  x?: number;               // Additive position
-  y?: number;               // Additive position
+  opacity?: number; // 0-1 additive
+  scaleX?: number; // Additive to base scale
+  scaleY?: number; // Additive to base scale
+  scaleUniform?: number; // Additive to both X and Y
+  rotation?: number; // Additive degrees
+  x?: number; // Additive position
+  y?: number; // Additive position
 
   // Color adjustments (all additive to base)
-  brightness?: number;      // -1 to 1
-  saturation?: number;      // -1 to 1
-  contrast?: number;        // -1 to 1
-  hue?: number;             // -180 to 180 degrees
+  brightness?: number; // -1 to 1
+  saturation?: number; // -1 to 1
+  contrast?: number; // -1 to 1
+  hue?: number; // -180 to 180 degrees
 
   // Effects
-  blur?: number;            // 0-100 radius
-  glowIntensity?: number;   // 0-10
-  glowRadius?: number;      // 0-100
+  blur?: number; // 0-100 radius
+  glowIntensity?: number; // 0-10
+  glowRadius?: number; // 0-100
   edgeGlowIntensity?: number;
-  glitchAmount?: number;    // 0-10
-  rgbSplitAmount?: number;  // 0-50
+  glitchAmount?: number; // 0-10
+  rgbSplitAmount?: number; // 0-50
 
   // Video
-  playbackSpeed?: number;   // Multiplier (1.0 = normal)
+  playbackSpeed?: number; // Multiplier (1.0 = normal)
 
   // Camera
-  fov?: number;             // Additive FOV degrees
-  dollyZ?: number;          // Additive Z position
-  shake?: number;           // 0-1 shake intensity
+  fov?: number; // Additive FOV degrees
+  dollyZ?: number; // Additive Z position
+  shake?: number; // 0-1 shake intensity
 
   // BUG-094 fix: Depthflow layer modifiers
-  depthflowZoom?: number;       // Additive zoom
-  depthflowOffsetX?: number;    // Additive offset X
-  depthflowOffsetY?: number;    // Additive offset Y
-  depthflowRotation?: number;   // Additive rotation
+  depthflowZoom?: number; // Additive zoom
+  depthflowOffsetX?: number; // Additive offset X
+  depthflowOffsetY?: number; // Additive offset Y
+  depthflowRotation?: number; // Additive rotation
   depthflowDepthScale?: number; // Additive depth scale
 
   // BUG-094 fix: Path animation modifier
-  pathPosition?: number;        // 0-1 position along path
+  pathPosition?: number; // 0-1 position along path
 
   // BUG-094 fix: Spline control point modifiers (dynamic)
   // Key format: splineControlPoint_{index}_{x|y|depth}
-  [key: `splineControlPoint_${number}_${'x' | 'y' | 'depth'}`]: number | undefined;
+  [key: `splineControlPoint_${number}_${"x" | "y" | "depth"}`]:
+    | number
+    | undefined;
 }
 
 /**
@@ -934,20 +1044,25 @@ export function collectParticleAudioReactiveModifiers(
   mapper: AudioReactiveMapper,
   layerId: string,
   emitterId: string,
-  frame: number
+  frame: number,
 ): ParticleAudioReactiveModifiers {
-  const values = mapper.getValuesForLayerEmitterAtFrame(layerId, emitterId, frame);
+  const values = mapper.getValuesForLayerEmitterAtFrame(
+    layerId,
+    emitterId,
+    frame,
+  );
   const modifiers: ParticleAudioReactiveModifiers = {};
 
   // Map particle target parameters to modifier properties
-  const targetToModifier: Record<string, keyof ParticleAudioReactiveModifiers> = {
-    'particle.emissionRate': 'emissionRate',
-    'particle.speed': 'speed',
-    'particle.size': 'size',
-    'particle.gravity': 'gravity',
-    'particle.windStrength': 'windStrength',
-    'particle.windDirection': 'windDirection'
-  };
+  const targetToModifier: Record<string, keyof ParticleAudioReactiveModifiers> =
+    {
+      "particle.emissionRate": "emissionRate",
+      "particle.speed": "speed",
+      "particle.size": "size",
+      "particle.gravity": "gravity",
+      "particle.windStrength": "windStrength",
+      "particle.windDirection": "windDirection",
+    };
 
   for (const [target, value] of values.entries()) {
     const modifierKey = targetToModifier[target];
@@ -965,42 +1080,42 @@ export function collectParticleAudioReactiveModifiers(
 export function collectAudioReactiveModifiers(
   mapper: AudioReactiveMapper,
   layerId: string,
-  frame: number
+  frame: number,
 ): AudioReactiveModifiers {
   const values = mapper.getValuesForLayerAtFrame(layerId, frame);
   const modifiers: AudioReactiveModifiers = {};
 
   // Map target parameters to modifier properties
   const targetToModifier: Record<string, keyof AudioReactiveModifiers> = {
-    'layer.opacity': 'opacity',
-    'layer.scale': 'scaleUniform',
-    'layer.scaleX': 'scaleX',
-    'layer.scaleY': 'scaleY',
-    'layer.rotation': 'rotation',
-    'layer.x': 'x',
-    'layer.y': 'y',
-    'layer.brightness': 'brightness',
-    'layer.saturation': 'saturation',
-    'layer.contrast': 'contrast',
-    'layer.hue': 'hue',
-    'layer.blur': 'blur',
-    'video.playbackSpeed': 'playbackSpeed',
-    'effect.glowIntensity': 'glowIntensity',
-    'effect.glowRadius': 'glowRadius',
-    'effect.edgeGlowIntensity': 'edgeGlowIntensity',
-    'effect.glitchAmount': 'glitchAmount',
-    'effect.rgbSplitAmount': 'rgbSplitAmount',
-    'camera.fov': 'fov',
-    'camera.dollyZ': 'dollyZ',
-    'camera.shake': 'shake',
+    "layer.opacity": "opacity",
+    "layer.scale": "scaleUniform",
+    "layer.scaleX": "scaleX",
+    "layer.scaleY": "scaleY",
+    "layer.rotation": "rotation",
+    "layer.x": "x",
+    "layer.y": "y",
+    "layer.brightness": "brightness",
+    "layer.saturation": "saturation",
+    "layer.contrast": "contrast",
+    "layer.hue": "hue",
+    "layer.blur": "blur",
+    "video.playbackSpeed": "playbackSpeed",
+    "effect.glowIntensity": "glowIntensity",
+    "effect.glowRadius": "glowRadius",
+    "effect.edgeGlowIntensity": "edgeGlowIntensity",
+    "effect.glitchAmount": "glitchAmount",
+    "effect.rgbSplitAmount": "rgbSplitAmount",
+    "camera.fov": "fov",
+    "camera.dollyZ": "dollyZ",
+    "camera.shake": "shake",
     // BUG-094 fix: Depthflow targets
-    'depthflow.zoom': 'depthflowZoom',
-    'depthflow.offsetX': 'depthflowOffsetX',
-    'depthflow.offsetY': 'depthflowOffsetY',
-    'depthflow.rotation': 'depthflowRotation',
-    'depthflow.depthScale': 'depthflowDepthScale',
+    "depthflow.zoom": "depthflowZoom",
+    "depthflow.offsetX": "depthflowOffsetX",
+    "depthflow.offsetY": "depthflowOffsetY",
+    "depthflow.rotation": "depthflowRotation",
+    "depthflow.depthScale": "depthflowDepthScale",
     // BUG-094 fix: Path target
-    'path.position': 'pathPosition'
+    "path.position": "pathPosition",
   };
 
   for (const [target, value] of values.entries()) {
@@ -1011,11 +1126,14 @@ export function collectAudioReactiveModifiers(
 
     // BUG-094 fix: Handle spline control point targets dynamically
     // Format: spline.controlPoint.{index}.{x|y|depth}
-    const splineMatch = target.match(/^spline\.controlPoint\.(\d+)\.(x|y|depth)$/);
+    const splineMatch = target.match(
+      /^spline\.controlPoint\.(\d+)\.(x|y|depth)$/,
+    );
     if (splineMatch) {
       const index = splineMatch[1];
-      const prop = splineMatch[2] as 'x' | 'y' | 'depth';
-      const key = `splineControlPoint_${index}_${prop}` as keyof AudioReactiveModifiers;
+      const prop = splineMatch[2] as "x" | "y" | "depth";
+      const key =
+        `splineControlPoint_${index}_${prop}` as keyof AudioReactiveModifiers;
       (modifiers as any)[key] = value;
     }
   }
@@ -1029,153 +1147,153 @@ export function collectAudioReactiveModifiers(
  */
 export const AUDIO_REACTIVE_PRESETS: Record<string, Partial<AudioMapping>[]> = {
   // Bass-driven breathing/pulsing effect
-  'bass-pulse': [
+  "bass-pulse": [
     {
-      feature: 'bass',
-      target: 'layer.scaleX',
+      feature: "bass",
+      target: "layer.scaleX",
       sensitivity: 0.3,
       min: 0,
       max: 0.2,
       smoothing: 0.3,
-      curve: 'smoothstep'
+      curve: "smoothstep",
     },
     {
-      feature: 'bass',
-      target: 'layer.scaleY',
+      feature: "bass",
+      target: "layer.scaleY",
       sensitivity: 0.3,
       min: 0,
       max: 0.2,
       smoothing: 0.3,
-      curve: 'smoothstep'
-    }
+      curve: "smoothstep",
+    },
   ],
 
   // Beat-synced brightness flash
-  'beat-flash': [
+  "beat-flash": [
     {
-      feature: 'onsets',
-      target: 'layer.brightness',
+      feature: "onsets",
+      target: "layer.brightness",
       sensitivity: 1.5,
       min: 0,
       max: 0.5,
       smoothing: 0.1,
       release: 0.8,
-      curve: 'exponential'
-    }
+      curve: "exponential",
+    },
   ],
 
   // High frequency saturation boost
-  'high-saturation': [
+  "high-saturation": [
     {
-      feature: 'high',
-      target: 'layer.saturation',
+      feature: "high",
+      target: "layer.saturation",
       sensitivity: 1.0,
       min: 0,
       max: 0.3,
       smoothing: 0.4,
-      curve: 'linear'
-    }
+      curve: "linear",
+    },
   ],
 
   // Drum-driven glitch effect
-  'drum-glitch': [
+  "drum-glitch": [
     {
-      feature: 'spectralFlux',
-      target: 'effect.glitchAmount',
+      feature: "spectralFlux",
+      target: "effect.glitchAmount",
       sensitivity: 2.0,
       min: 0,
       max: 5,
       smoothing: 0.1,
       release: 0.9,
       threshold: 0.3,
-      curve: 'exponential'
+      curve: "exponential",
     },
     {
-      feature: 'spectralFlux',
-      target: 'effect.rgbSplitAmount',
+      feature: "spectralFlux",
+      target: "effect.rgbSplitAmount",
       sensitivity: 15,
       min: 0,
       max: 20,
       smoothing: 0.1,
       release: 0.9,
       threshold: 0.3,
-      curve: 'exponential'
-    }
+      curve: "exponential",
+    },
   ],
 
   // Music-driven camera movement
-  'audio-camera': [
+  "audio-camera": [
     {
-      feature: 'bass',
-      target: 'camera.dollyZ',
+      feature: "bass",
+      target: "camera.dollyZ",
       sensitivity: 50,
       min: 0,
       max: 30,
       smoothing: 0.5,
-      curve: 'smoothstep'
+      curve: "smoothstep",
     },
     {
-      feature: 'spectralFlux',
-      target: 'camera.shake',
+      feature: "spectralFlux",
+      target: "camera.shake",
       sensitivity: 0.5,
       min: 0,
       max: 0.3,
       smoothing: 0.2,
       threshold: 0.4,
-      curve: 'exponential'
-    }
+      curve: "exponential",
+    },
   ],
 
   // Speed reactive video (slow-mo on bass drops)
-  'bass-slowmo': [
+  "bass-slowmo": [
     {
-      feature: 'bass',
-      target: 'video.playbackSpeed',
+      feature: "bass",
+      target: "video.playbackSpeed",
       sensitivity: -0.5,
       offset: 1.0,
       min: 0.3,
       max: 1.0,
       smoothing: 0.4,
       invert: false,
-      curve: 'smoothstep'
-    }
+      curve: "smoothstep",
+    },
   ],
 
   // Amplitude-driven glow
-  'amplitude-glow': [
+  "amplitude-glow": [
     {
-      feature: 'amplitude',
-      target: 'effect.glowIntensity',
+      feature: "amplitude",
+      target: "effect.glowIntensity",
       sensitivity: 3,
       min: 0,
       max: 3,
       smoothing: 0.3,
-      curve: 'exponential'
+      curve: "exponential",
     },
     {
-      feature: 'amplitude',
-      target: 'effect.glowRadius',
+      feature: "amplitude",
+      target: "effect.glowRadius",
       sensitivity: 30,
       min: 5,
       max: 40,
       smoothing: 0.3,
-      curve: 'exponential'
-    }
+      curve: "exponential",
+    },
   ],
 
   // Spectral blur effect
-  'spectral-blur': [
+  "spectral-blur": [
     {
-      feature: 'spectralCentroid',
-      target: 'layer.blur',
+      feature: "spectralCentroid",
+      target: "layer.blur",
       sensitivity: 20,
       min: 0,
       max: 15,
       smoothing: 0.4,
-      invert: true,  // More blur when less high frequency
-      curve: 'linear'
-    }
-  ]
+      invert: true, // More blur when less high frequency
+      curve: "linear",
+    },
+  ],
 };
 
 /**
@@ -1184,7 +1302,7 @@ export const AUDIO_REACTIVE_PRESETS: Record<string, Partial<AudioMapping>[]> = {
 export function applyAudioReactivePreset(
   mapper: AudioReactiveMapper,
   presetName: keyof typeof AUDIO_REACTIVE_PRESETS,
-  layerId: string
+  layerId: string,
 ): string[] {
   const preset = AUDIO_REACTIVE_PRESETS[presetName];
   if (!preset) return [];
@@ -1195,7 +1313,7 @@ export function applyAudioReactivePreset(
     const mapping = createDefaultAudioMapping(
       undefined,
       config.feature as AudioFeature,
-      config.target as TargetParameter
+      config.target as TargetParameter,
     );
 
     // Apply preset config
@@ -1221,7 +1339,7 @@ export default {
   getAllTargets,
   getTargetsByCategory,
   collectAudioReactiveModifiers,
-  collectParticleAudioReactiveModifiers,  // BUG-081 fix: Emitter-specific modifiers
+  collectParticleAudioReactiveModifiers, // BUG-081 fix: Emitter-specific modifiers
   applyAudioReactivePreset,
-  AUDIO_REACTIVE_PRESETS
+  AUDIO_REACTIVE_PRESETS,
 };

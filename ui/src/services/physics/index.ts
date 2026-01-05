@@ -6,124 +6,116 @@
  * All simulations are deterministic with checkpoint-based scrubbing support.
  */
 
-// Main physics engine
-export { PhysicsEngine, vec2, PhysicsRandom } from './PhysicsEngine';
-
-// Joint constraint system
-export { JointSystem } from './JointSystem';
-
-// Ragdoll builder
-export {
-  RagdollBuilder,
-  convertRagdollToPhysics,
-  extractRagdollState,
-  applyRagdollState,
-  HUMANOID_BONES,
-} from './RagdollBuilder';
-
 // Re-export types
 export type {
-  // Core types
-  PhysicsVec2,
-  PhysicsMaterial,
-  CollisionShape,
-  CollisionFilter,
-  BodyType,
-  ShapeType,
-  CollisionResponse,
-
-  // Rigid body
-  RigidBodyConfig,
-  RigidBodyState,
-  ContactInfo,
-
-  // Joints
-  JointType,
-  JointConfig,
-  PivotJointConfig,
-  SpringJointConfig,
-  DistanceJointConfig,
-  PistonJointConfig,
-  WheelJointConfig,
-  WeldJointConfig,
-  BlobJointConfig,
-  RopeJointConfig,
-
-  // Forces
-  ForceType,
-  ForceField,
-  GravityForce,
-  WindForce,
   AttractionForce,
-  ExplosionForce,
+  BlobJointConfig,
+  BodyType,
   BuoyancyForce,
-  VortexForce,
-  DragForce,
-
-  // Soft body
-  VerletParticle,
-  VerletConstraint,
-  SoftBodyConfig,
-  SoftBodyState,
-
   // Cloth
   ClothConfig,
   ClothState,
-
+  CollisionFilter,
+  CollisionResponse,
+  CollisionShape,
+  ContactInfo,
+  DistanceJointConfig,
+  DragForce,
+  ExplosionForce,
+  ExportedKeyframes,
+  ForceField,
+  // Forces
+  ForceType,
+  GravityForce,
+  HumanoidRagdollPreset,
+  JointConfig,
+  // Joints
+  JointType,
+  // Export
+  KeyframeExportOptions,
+  PhysicsCompositionData,
+  // Layer integration
+  PhysicsLayerData,
+  PhysicsMaterial,
+  PhysicsSimulationState,
+  // Space configuration
+  PhysicsSpaceConfig,
+  // Core types
+  PhysicsVec2,
+  PistonJointConfig,
+  PivotJointConfig,
   // Ragdoll
   RagdollBone,
   RagdollConfig,
   RagdollState,
-  HumanoidRagdollPreset,
-
-  // Space configuration
-  PhysicsSpaceConfig,
-  PhysicsSimulationState,
-
-  // Export
-  KeyframeExportOptions,
-  ExportedKeyframes,
-
-  // Layer integration
-  PhysicsLayerData,
-  PhysicsCompositionData,
-} from '@/types/physics';
-
+  // Rigid body
+  RigidBodyConfig,
+  RigidBodyState,
+  RopeJointConfig,
+  ShapeType,
+  SoftBodyConfig,
+  SoftBodyState,
+  SpringJointConfig,
+  VerletConstraint,
+  // Soft body
+  VerletParticle,
+  VortexForce,
+  WeldJointConfig,
+  WheelJointConfig,
+  WindForce,
+} from "@/types/physics";
 // Re-export presets
 export {
+  DEFAULT_SPACE_CONFIG,
   HUMANOID_PRESETS,
   MATERIAL_PRESETS,
-  DEFAULT_SPACE_CONFIG,
-} from '@/types/physics';
+} from "@/types/physics";
+// Joint constraint system
+export { JointSystem } from "./JointSystem";
+// Main physics engine
+export { PhysicsEngine, PhysicsRandom, vec2 } from "./PhysicsEngine";
+// Ragdoll builder
+export {
+  applyRagdollState,
+  convertRagdollToPhysics,
+  extractRagdollState,
+  HUMANOID_BONES,
+  RagdollBuilder,
+} from "./RagdollBuilder";
 
 // =============================================================================
 // CONVENIENCE FACTORY FUNCTIONS
 // =============================================================================
 
-import { PhysicsEngine } from './PhysicsEngine';
-import { RagdollBuilder } from './RagdollBuilder';
 import type {
-  PhysicsSpaceConfig,
-  RigidBodyConfig,
-  PhysicsVec2,
-  PhysicsMaterial,
+  ClothConfig,
   CollisionFilter,
   ForceField,
-  ClothConfig,
-} from '@/types/physics';
-import { DEFAULT_SPACE_CONFIG, MATERIAL_PRESETS } from '@/types/physics';
+  PhysicsMaterial,
+  PhysicsSpaceConfig,
+  PhysicsVec2,
+  RigidBodyConfig,
+} from "@/types/physics";
+import { MATERIAL_PRESETS } from "@/types/physics";
+import { PhysicsEngine } from "./PhysicsEngine";
+import { RagdollBuilder } from "./RagdollBuilder";
 
 /**
  * Create a new physics engine with default settings
  */
-export function createPhysicsEngine(config?: Partial<PhysicsSpaceConfig>): PhysicsEngine {
+export function createPhysicsEngine(
+  config?: Partial<PhysicsSpaceConfig>,
+): PhysicsEngine {
   return new PhysicsEngine(config);
 }
 
 /**
  * Create a new ragdoll builder
  */
-export function createRagdollBuilder(id: string, layerId: string): RagdollBuilder {
+export function createRagdollBuilder(
+  id: string,
+  layerId: string,
+): RagdollBuilder {
   return new RagdollBuilder(id, layerId);
 }
 
@@ -139,23 +131,27 @@ export function createCircleBody(
     mass?: number;
     material?: PhysicsMaterial;
     isStatic?: boolean;
-  }
+  },
 ): RigidBodyConfig {
-  const defaultFilter: CollisionFilter = { category: 1, mask: 0xffffffff, group: 0 };
+  const defaultFilter: CollisionFilter = {
+    category: 1,
+    mask: 0xffffffff,
+    group: 0,
+  };
 
   return {
     id,
     layerId,
-    type: options.isStatic ? 'static' : 'dynamic',
+    type: options.isStatic ? "static" : "dynamic",
     mass: options.mass ?? 1,
     position: { ...options.position },
     velocity: { x: 0, y: 0 },
     angle: 0,
     angularVelocity: 0,
-    shape: { type: 'circle', radius: options.radius },
+    shape: { type: "circle", radius: options.radius },
     material: options.material ?? MATERIAL_PRESETS.default,
     filter: defaultFilter,
-    response: 'collide',
+    response: "collide",
     linearDamping: 0.1,
     angularDamping: 0.1,
     canSleep: true,
@@ -176,23 +172,27 @@ export function createBoxBody(
     mass?: number;
     material?: PhysicsMaterial;
     isStatic?: boolean;
-  }
+  },
 ): RigidBodyConfig {
-  const defaultFilter: CollisionFilter = { category: 1, mask: 0xffffffff, group: 0 };
+  const defaultFilter: CollisionFilter = {
+    category: 1,
+    mask: 0xffffffff,
+    group: 0,
+  };
 
   return {
     id,
     layerId,
-    type: options.isStatic ? 'static' : 'dynamic',
+    type: options.isStatic ? "static" : "dynamic",
     mass: options.mass ?? 1,
     position: { ...options.position },
     velocity: { x: 0, y: 0 },
     angle: 0,
     angularVelocity: 0,
-    shape: { type: 'box', width: options.width, height: options.height },
+    shape: { type: "box", width: options.width, height: options.height },
     material: options.material ?? MATERIAL_PRESETS.default,
     filter: defaultFilter,
-    response: 'collide',
+    response: "collide",
     linearDamping: 0.1,
     angularDamping: 0.1,
     canSleep: true,
@@ -205,15 +205,22 @@ export function createBoxBody(
  */
 export function createGravityForce(
   id: string,
-  gravity: PhysicsVec2 = { x: 0, y: 980 }
+  gravity: PhysicsVec2 = { x: 0, y: 980 },
 ): ForceField {
   return {
     id,
-    type: 'gravity',
+    type: "gravity",
     enabled: true,
     startFrame: 0,
     endFrame: -1,
-    gravity: { id: `${id}-gravity`, name: 'Gravity', type: 'position' as const, value: { x: gravity.x, y: gravity.y, z: 0 }, animated: false, keyframes: [] },
+    gravity: {
+      id: `${id}-gravity`,
+      name: "Gravity",
+      type: "position" as const,
+      value: { x: gravity.x, y: gravity.y, z: 0 },
+      animated: false,
+      keyframes: [],
+    },
   } as ForceField;
 }
 
@@ -230,7 +237,7 @@ export function createClothConfig(
     spacing?: number;
     pinnedTop?: boolean;
     pinnedCorners?: boolean;
-  }
+  },
 ): ClothConfig {
   const spacing = options.spacing ?? 10;
   const pinnedParticles: number[] = [];
@@ -244,7 +251,11 @@ export function createClothConfig(
     pinnedParticles.push(options.width - 1); // Top-right
   }
 
-  const defaultFilter: CollisionFilter = { category: 1, mask: 0xffffffff, group: 0 };
+  const defaultFilter: CollisionFilter = {
+    category: 1,
+    mask: 0xffffffff,
+    group: 0,
+  };
 
   return {
     id,

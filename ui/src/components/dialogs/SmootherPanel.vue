@@ -151,9 +151,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import type { Keyframe } from '@/types/project';
+import { computed, ref, watch } from "vue";
+import { useCompositorStore } from "@/stores/compositorStore";
+import type { Keyframe } from "@/types/project";
 
 const props = defineProps<{
   visible: boolean;
@@ -173,18 +173,18 @@ const spatialSmoothing = ref(50);
 const temporalSmoothing = ref(25);
 const enableSimplification = ref(true);
 const simplifyTolerance = ref(2);
-const applyScope = ref<'selected' | 'all'>('all');
+const applyScope = ref<"selected" | "all">("all");
 
 // Computed
-const targetLayerName = computed(() => {
+const _targetLayerName = computed(() => {
   if (props.layerId) {
     const layer = store.getLayerById(props.layerId);
-    return layer?.name || 'Unknown';
+    return layer?.name || "Unknown";
   }
   const selectedIds = store.selectedLayerIds;
   if (selectedIds.length === 0) return null;
   const layer = store.getLayerById(selectedIds[0]);
-  return layer?.name || 'Unknown';
+  return layer?.name || "Unknown";
 });
 
 const targetKeyframes = computed<Keyframe<any>[]>(() => {
@@ -195,16 +195,19 @@ const targetKeyframes = computed<Keyframe<any>[]>(() => {
   if (!layer) return [];
 
   // Get position keyframes by default
-  const propertyPath = props.propertyPath || 'transform.position';
+  const propertyPath = props.propertyPath || "transform.position";
   let property = null;
 
-  if (propertyPath === 'transform.position' || propertyPath === 'position') {
+  if (propertyPath === "transform.position" || propertyPath === "position") {
     property = layer.transform?.position;
-  } else if (propertyPath === 'transform.scale' || propertyPath === 'scale') {
+  } else if (propertyPath === "transform.scale" || propertyPath === "scale") {
     property = layer.transform?.scale;
-  } else if (propertyPath === 'transform.rotation' || propertyPath === 'rotation') {
+  } else if (
+    propertyPath === "transform.rotation" ||
+    propertyPath === "rotation"
+  ) {
     property = layer.transform?.rotation;
-  } else if (propertyPath === 'opacity') {
+  } else if (propertyPath === "opacity") {
     property = layer.opacity;
   }
 
@@ -220,21 +223,24 @@ const estimatedKeyframeCount = computed(() => {
   // Rough estimate based on tolerance
   // Higher tolerance = fewer keyframes
   const reductionFactor = Math.min(0.9, simplifyTolerance.value / 25);
-  const estimated = Math.max(2, Math.round(originalKeyframeCount.value * (1 - reductionFactor)));
+  const estimated = Math.max(
+    2,
+    Math.round(originalKeyframeCount.value * (1 - reductionFactor)),
+  );
   return estimated;
 });
 
-const reductionPercent = computed(() => {
+const _reductionPercent = computed(() => {
   if (originalKeyframeCount.value === 0) return 100;
   return (estimatedKeyframeCount.value / originalKeyframeCount.value) * 100;
 });
 
 // Methods
-function applySmoothing() {
+function _applySmoothing() {
   const layerId = props.layerId || store.selectedLayerIds[0];
   if (!layerId) return;
 
-  const propertyPath = props.propertyPath || 'transform.position';
+  const propertyPath = props.propertyPath || "transform.position";
   const keyframes = [...targetKeyframes.value];
 
   if (keyframes.length < 3) return;
@@ -244,38 +250,47 @@ function applySmoothing() {
 
   // Apply spatial smoothing using moving average
   if (spatialSmoothing.value > 0) {
-    const windowSize = Math.max(3, Math.round((spatialSmoothing.value / 100) * 7) | 1);
+    const windowSize = Math.max(
+      3,
+      Math.round((spatialSmoothing.value / 100) * 7) | 1,
+    );
     const halfWindow = Math.floor(windowSize / 2);
 
     for (let i = 1; i < keyframes.length - 1; i++) {
       const kf = keyframes[i];
 
       // Calculate smoothed value
-      let sumX = 0, sumY = 0, count = 0;
+      let sumX = 0,
+        sumY = 0,
+        count = 0;
 
-      for (let j = Math.max(0, i - halfWindow); j <= Math.min(keyframes.length - 1, i + halfWindow); j++) {
+      for (
+        let j = Math.max(0, i - halfWindow);
+        j <= Math.min(keyframes.length - 1, i + halfWindow);
+        j++
+      ) {
         const other = keyframes[j];
-        if (typeof other.value === 'object' && 'x' in other.value) {
+        if (typeof other.value === "object" && "x" in other.value) {
           sumX += other.value.x;
           sumY += other.value.y;
           count++;
-        } else if (typeof other.value === 'number') {
+        } else if (typeof other.value === "number") {
           sumX += other.value;
           count++;
         }
       }
 
       if (count > 0) {
-        if (typeof kf.value === 'object' && 'x' in kf.value) {
+        if (typeof kf.value === "object" && "x" in kf.value) {
           const blendFactor = spatialSmoothing.value / 100;
           const smoothedX = sumX / count;
           const smoothedY = sumY / count;
           kf.value = {
             ...kf.value,
             x: kf.value.x * (1 - blendFactor) + smoothedX * blendFactor,
-            y: kf.value.y * (1 - blendFactor) + smoothedY * blendFactor
+            y: kf.value.y * (1 - blendFactor) + smoothedY * blendFactor,
           };
-        } else if (typeof kf.value === 'number') {
+        } else if (typeof kf.value === "number") {
           const blendFactor = spatialSmoothing.value / 100;
           const smoothed = sumX / count;
           kf.value = kf.value * (1 - blendFactor) + smoothed * blendFactor;
@@ -287,7 +302,10 @@ function applySmoothing() {
   // Apply simplification if enabled
   let finalKeyframes = keyframes;
   if (enableSimplification.value && simplifyTolerance.value > 0) {
-    finalKeyframes = simplifyKeyframesDouglasPeucker(keyframes, simplifyTolerance.value);
+    finalKeyframes = simplifyKeyframesDouglasPeucker(
+      keyframes,
+      simplifyTolerance.value,
+    );
   }
 
   // Update keyframes in store
@@ -296,22 +314,22 @@ function applySmoothing() {
   if (!layer) return;
 
   // Apply the smoothed/simplified keyframes
-  finalKeyframes.forEach(kf => {
+  finalKeyframes.forEach((kf) => {
     store.setKeyframeValue(layerId, propertyPath, kf.id, kf.value);
   });
 
   // If simplification removed keyframes, delete them
   if (enableSimplification.value) {
-    const keptIds = new Set(finalKeyframes.map(kf => kf.id));
-    keyframes.forEach(kf => {
+    const keptIds = new Set(finalKeyframes.map((kf) => kf.id));
+    keyframes.forEach((kf) => {
       if (!keptIds.has(kf.id)) {
         store.removeKeyframe(layerId, propertyPath, kf.id);
       }
     });
   }
 
-  emit('apply');
-  emit('close');
+  emit("apply");
+  emit("close");
 }
 
 /**
@@ -319,12 +337,12 @@ function applySmoothing() {
  */
 function simplifyKeyframesDouglasPeucker(
   keyframes: Keyframe<any>[],
-  tolerance: number
+  tolerance: number,
 ): Keyframe<any>[] {
   if (keyframes.length <= 2) return keyframes;
 
   const getValue = (kf: Keyframe<any>) => {
-    if (typeof kf.value === 'object' && 'x' in kf.value) {
+    if (typeof kf.value === "object" && "x" in kf.value) {
       return { x: kf.value.x, y: kf.value.y };
     }
     return { x: kf.value, y: 0 };
@@ -358,8 +376,14 @@ function simplifyKeyframesDouglasPeucker(
   }
 
   if (maxDist > tolerance) {
-    const left = simplifyKeyframesDouglasPeucker(keyframes.slice(0, maxIdx + 1), tolerance);
-    const right = simplifyKeyframesDouglasPeucker(keyframes.slice(maxIdx), tolerance);
+    const left = simplifyKeyframesDouglasPeucker(
+      keyframes.slice(0, maxIdx + 1),
+      tolerance,
+    );
+    const right = simplifyKeyframesDouglasPeucker(
+      keyframes.slice(maxIdx),
+      tolerance,
+    );
     return [...left.slice(0, -1), ...right];
   }
 
@@ -367,15 +391,18 @@ function simplifyKeyframesDouglasPeucker(
 }
 
 // Reset on dialog open
-watch(() => props.visible, (visible) => {
-  if (visible) {
-    spatialSmoothing.value = 50;
-    temporalSmoothing.value = 25;
-    enableSimplification.value = true;
-    simplifyTolerance.value = 2;
-    applyScope.value = 'all';
-  }
-});
+watch(
+  () => props.visible,
+  (visible) => {
+    if (visible) {
+      spatialSmoothing.value = 50;
+      temporalSmoothing.value = 25;
+      enableSimplification.value = true;
+      simplifyTolerance.value = 2;
+      applyScope.value = "all";
+    }
+  },
+);
 </script>
 
 <style scoped>

@@ -306,7 +306,10 @@
 </template>
 
 <script setup lang="ts">
-import type { ParticleRenderOptions, ConnectionRenderConfig } from '@/types/project';
+import type {
+  ConnectionRenderConfig,
+  ParticleRenderOptions,
+} from "@/types/project";
 
 interface Props {
   renderOptions: ParticleRenderOptions;
@@ -317,27 +320,37 @@ interface Props {
 defineProps<Props>();
 
 const emit = defineEmits<{
-  (e: 'toggle'): void;
-  (e: 'update', key: keyof ParticleRenderOptions, value: any): void;
-  (e: 'updateConnection', key: keyof ConnectionRenderConfig, value: any): void;
+  (e: "toggle"): void;
+  (e: "update", key: keyof ParticleRenderOptions, value: any): void;
+  (e: "updateConnection", key: keyof ConnectionRenderConfig, value: any): void;
 }>();
 
-function update(key: keyof ParticleRenderOptions, value: any): void {
-  emit('update', key, value);
+function _update(key: keyof ParticleRenderOptions, value: any): void {
+  emit("update", key, value);
 }
 
 // Color conversion helpers (engine uses 0-1 range)
-function rgbToHex(rgb: [number, number, number]): string {
-  const r = Math.round(rgb[0] * 255).toString(16).padStart(2, '0');
-  const g = Math.round(rgb[1] * 255).toString(16).padStart(2, '0');
-  const b = Math.round(rgb[2] * 255).toString(16).padStart(2, '0');
+function _rgbToHex(rgb: [number, number, number]): string {
+  const r = Math.round(rgb[0] * 255)
+    .toString(16)
+    .padStart(2, "0");
+  const g = Math.round(rgb[1] * 255)
+    .toString(16)
+    .padStart(2, "0");
+  const b = Math.round(rgb[2] * 255)
+    .toString(16)
+    .padStart(2, "0");
   return `#${r}${g}${b}`;
 }
 
-function hexToRgb(hex: string): [number, number, number] {
+function _hexToRgb(hex: string): [number, number, number] {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return result
-    ? [parseInt(result[1], 16) / 255, parseInt(result[2], 16) / 255, parseInt(result[3], 16) / 255]
+    ? [
+        parseInt(result[1], 16) / 255,
+        parseInt(result[2], 16) / 255,
+        parseInt(result[3], 16) / 255,
+      ]
     : [1, 1, 1];
 }
 </script>

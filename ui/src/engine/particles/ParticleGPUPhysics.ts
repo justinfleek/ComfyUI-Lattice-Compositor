@@ -8,18 +8,21 @@
  * Extracted from GPUParticleSystem.ts for modularity.
  */
 
-import * as THREE from 'three';
+import * as THREE from "three";
 import {
-  TRANSFORM_FEEDBACK_VERTEX_SHADER,
+  getFalloffTypeIndex,
+  getForceFieldTypeIndex,
+} from "./ParticleForceCalculator";
+import {
   TRANSFORM_FEEDBACK_FRAGMENT_SHADER,
-} from './particleShaders';
+  TRANSFORM_FEEDBACK_VERTEX_SHADER,
+} from "./particleShaders";
+import { type ForceFieldConfig, PARTICLE_STRIDE } from "./types";
 import {
   isWebGPUAvailable,
   WebGPUParticleCompute,
   type WebGPUParticleConfig,
-} from './webgpuParticleCompute';
-import { PARTICLE_STRIDE, type ForceFieldConfig } from './types';
-import { getForceFieldTypeIndex, getFalloffTypeIndex } from './ParticleForceCalculator';
+} from "./webgpuParticleCompute";
 
 // ============================================================================
 // CONSTANTS
@@ -28,12 +31,12 @@ import { getForceFieldTypeIndex, getFalloffTypeIndex } from './ParticleForceCalc
 export const MAX_FORCE_FIELDS = 16;
 
 const TF_VARYINGS = [
-  'tf_position',
-  'tf_velocity',
-  'tf_life',
-  'tf_physical',
-  'tf_rotation',
-  'tf_color',
+  "tf_position",
+  "tf_velocity",
+  "tf_life",
+  "tf_physical",
+  "tf_rotation",
+  "tf_color",
 ];
 
 // ============================================================================
@@ -91,12 +94,15 @@ export class ParticleGPUPhysics {
   private webgpuReadbackPending = false;
 
   // Buffer swap state
-  private currentBuffer: 'A' | 'B' = 'A';
+  private currentBuffer: "A" | "B" = "A";
 
   constructor(config: GPUPhysicsConfig) {
     this.config = {
       maxParticles: config.maxParticles,
-      bounds: config.bounds ?? { min: [-10000, -10000, -10000], max: [10000, 10000, 10000] },
+      bounds: config.bounds ?? {
+        min: [-10000, -10000, -10000],
+        max: [10000, 10000, 10000],
+      },
       damping: config.damping ?? 0.99,
       noiseScale: config.noiseScale ?? 0.005,
       noiseSpeed: config.noiseSpeed ?? 0.5,
@@ -113,7 +119,7 @@ export class ParticleGPUPhysics {
   async initialize(
     renderer: THREE.WebGLRenderer,
     particleBufferA: Float32Array,
-    particleBufferB: Float32Array
+    particleBufferB: Float32Array,
   ): Promise<void> {
     this.renderer = renderer;
     this.gl = renderer.getContext() as WebGL2RenderingContext;
@@ -132,7 +138,9 @@ export class ParticleGPUPhysics {
     try {
       const available = await isWebGPUAvailable();
       if (!available) {
-        console.log('WebGPU not available, will use Transform Feedback fallback');
+        console.log(
+          "WebGPU not available, will use Transform Feedback fallback",
+        );
         return false;
       }
 
@@ -151,10 +159,10 @@ export class ParticleGPUPhysics {
       this.webgpuInitialized = true;
       this.useGPUPhysics = false; // Disable Transform Feedback
 
-      console.log('WebGPU compute shaders initialized for particle physics');
+      console.log("WebGPU compute shaders initialized for particle physics");
       return true;
     } catch (error) {
-      console.warn('WebGPU initialization failed:', error);
+      console.warn("WebGPU initialization failed:", error);
       this.useWebGPU = false;
       return false;
     }
@@ -165,16 +173,18 @@ export class ParticleGPUPhysics {
    */
   private initializeTransformFeedback(
     particleBufferA: Float32Array,
-    particleBufferB: Float32Array
+    particleBufferB: Float32Array,
   ): void {
     if (!this.gl) return;
 
     const gl = this.gl;
 
     // Check for required extensions
-    const tfExtension = gl.getExtension('EXT_color_buffer_float');
+    const tfExtension = gl.getExtension("EXT_color_buffer_float");
     if (!tfExtension) {
-      console.warn('EXT_color_buffer_float not available, using CPU physics fallback');
+      console.warn(
+        "EXT_color_buffer_float not available, using CPU physics fallback",
+      );
       this.useGPUPhysics = false;
       return;
     }
@@ -184,7 +194,9 @@ export class ParticleGPUPhysics {
       this.transformFeedbackProgram = this.createTransformFeedbackProgram(gl);
 
       if (!this.transformFeedbackProgram) {
-        console.warn('Failed to create transform feedback program, using CPU physics');
+        console.warn(
+          "Failed to create transform feedback program, using CPU physics",
+        );
         this.useGPUPhysics = false;
         return;
       }
@@ -194,7 +206,7 @@ export class ParticleGPUPhysics {
       this.particleVboB = gl.createBuffer();
 
       if (!this.particleVboA || !this.particleVboB) {
-        throw new Error('Failed to create particle VBOs');
+        throw new Error("Failed to create particle VBOs");
       }
 
       // Initialize VBO A with particle data
@@ -210,7 +222,7 @@ export class ParticleGPUPhysics {
       this.vaoB = gl.createVertexArray();
 
       if (!this.vaoA || !this.vaoB) {
-        throw new Error('Failed to create VAOs');
+        throw new Error("Failed to create VAOs");
       }
 
       // Set up VAOs
@@ -222,7 +234,7 @@ export class ParticleGPUPhysics {
       this.transformFeedbackB = gl.createTransformFeedback();
 
       if (!this.transformFeedbackA || !this.transformFeedbackB) {
-        throw new Error('Failed to create transform feedback objects');
+        throw new Error("Failed to create transform feedback objects");
       }
 
       // Bind VBO B as output for transform feedback A
@@ -242,15 +254,15 @@ export class ParticleGPUPhysics {
         MAX_FORCE_FIELDS,
         4,
         THREE.RGBAFormat,
-        THREE.FloatType
+        THREE.FloatType,
       );
 
       this.useGPUPhysics = true;
       this.gpuPhysicsInitialized = true;
 
-      console.log('GPU physics initialized with Transform Feedback');
+      console.log("GPU physics initialized with Transform Feedback");
     } catch (error) {
-      console.warn('GPU physics initialization failed:', error);
+      console.warn("GPU physics initialization failed:", error);
       this.useGPUPhysics = false;
       this.cleanup();
     }
@@ -262,7 +274,7 @@ export class ParticleGPUPhysics {
   private setupParticleVAO(
     gl: WebGL2RenderingContext,
     vao: WebGLVertexArrayObject,
-    vbo: WebGLBuffer
+    vbo: WebGLBuffer,
   ): void {
     gl.bindVertexArray(vao);
     gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
@@ -299,7 +311,9 @@ export class ParticleGPUPhysics {
   /**
    * Create the transform feedback shader program
    */
-  private createTransformFeedbackProgram(gl: WebGL2RenderingContext): WebGLProgram | null {
+  private createTransformFeedbackProgram(
+    gl: WebGL2RenderingContext,
+  ): WebGLProgram | null {
     const vsSource = TRANSFORM_FEEDBACK_VERTEX_SHADER;
     const fsSource = TRANSFORM_FEEDBACK_FRAGMENT_SHADER;
 
@@ -312,7 +326,10 @@ export class ParticleGPUPhysics {
     gl.compileShader(vs);
 
     if (!gl.getShaderParameter(vs, gl.COMPILE_STATUS)) {
-      console.error('Transform feedback vertex shader error:', gl.getShaderInfoLog(vs));
+      console.error(
+        "Transform feedback vertex shader error:",
+        gl.getShaderInfoLog(vs),
+      );
       gl.deleteShader(vs);
       gl.deleteShader(fs);
       return null;
@@ -322,7 +339,10 @@ export class ParticleGPUPhysics {
     gl.compileShader(fs);
 
     if (!gl.getShaderParameter(fs, gl.COMPILE_STATUS)) {
-      console.error('Transform feedback fragment shader error:', gl.getShaderInfoLog(fs));
+      console.error(
+        "Transform feedback fragment shader error:",
+        gl.getShaderInfoLog(fs),
+      );
       gl.deleteShader(vs);
       gl.deleteShader(fs);
       return null;
@@ -344,7 +364,10 @@ export class ParticleGPUPhysics {
     gl.linkProgram(program);
 
     if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-      console.error('Transform feedback program link error:', gl.getProgramInfoLog(program));
+      console.error(
+        "Transform feedback program link error:",
+        gl.getProgramInfoLog(program),
+      );
       gl.deleteProgram(program);
       gl.deleteShader(vs);
       gl.deleteShader(fs);
@@ -372,12 +395,26 @@ export class ParticleGPUPhysics {
     particleBufferB: Float32Array,
     forceFields: Map<string, ForceFieldConfig>,
     freeIndices: number[],
-    onDeath: DeathCallback
-  ): { currentBuffer: 'A' | 'B'; particleCount: number } {
+    onDeath: DeathCallback,
+  ): { currentBuffer: "A" | "B"; particleCount: number } {
     if (this.useWebGPU && this.webgpuCompute) {
-      return this.updateWebGPU(dt, state, particleBufferA, particleBufferB, forceFields, freeIndices, onDeath);
+      return this.updateWebGPU(
+        dt,
+        state,
+        particleBufferA,
+        particleBufferB,
+        forceFields,
+        freeIndices,
+        onDeath,
+      );
     } else if (this.useGPUPhysics && this.transformFeedbackProgram) {
-      return this.updateTransformFeedback(dt, state, forceFields, freeIndices, onDeath);
+      return this.updateTransformFeedback(
+        dt,
+        state,
+        forceFields,
+        freeIndices,
+        onDeath,
+      );
     }
 
     // Return current state if no GPU physics
@@ -394,13 +431,14 @@ export class ParticleGPUPhysics {
     particleBufferB: Float32Array,
     forceFields: Map<string, ForceFieldConfig>,
     freeIndices: number[],
-    onDeath: DeathCallback
-  ): { currentBuffer: 'A' | 'B'; particleCount: number } {
+    onDeath: DeathCallback,
+  ): { currentBuffer: "A" | "B"; particleCount: number } {
     if (!this.webgpuCompute) {
       return { currentBuffer: this.currentBuffer, particleCount: -1 };
     }
 
-    const buffer = this.currentBuffer === 'A' ? particleBufferA : particleBufferB;
+    const buffer =
+      this.currentBuffer === "A" ? particleBufferA : particleBufferB;
 
     // Prepare force field data for WebGPU
     const forceFieldData: Array<{
@@ -419,11 +457,25 @@ export class ParticleGPUPhysics {
         position: [field.position.x, field.position.y, field.position.z],
         strength: field.strength,
         radius: field.falloffEnd,
-        falloff: field.falloffType === 'linear' ? 1 : field.falloffType === 'quadratic' ? 2 : 0,
+        falloff:
+          field.falloffType === "linear"
+            ? 1
+            : field.falloffType === "quadratic"
+              ? 2
+              : 0,
         direction: [
-          field.direction?.x ?? field.vortexAxis?.x ?? field.windDirection?.x ?? 0,
-          field.direction?.y ?? field.vortexAxis?.y ?? field.windDirection?.y ?? 0,
-          field.direction?.z ?? field.vortexAxis?.z ?? field.windDirection?.z ?? 0,
+          field.direction?.x ??
+            field.vortexAxis?.x ??
+            field.windDirection?.x ??
+            0,
+          field.direction?.y ??
+            field.vortexAxis?.y ??
+            field.windDirection?.y ??
+            0,
+          field.direction?.z ??
+            field.vortexAxis?.z ??
+            field.windDirection?.z ??
+            0,
         ],
       });
     }
@@ -437,7 +489,7 @@ export class ParticleGPUPhysics {
       dt,
       state.simulationTime,
       this.config.maxParticles,
-      forceFieldData.length
+      forceFieldData.length,
     );
 
     // Run physics step on GPU
@@ -447,30 +499,33 @@ export class ParticleGPUPhysics {
     let particleCount = -1;
     if (state.frameCount % 10 === 0 && !this.webgpuReadbackPending) {
       this.webgpuReadbackPending = true;
-      this.webgpuCompute.readParticles(this.config.maxParticles).then((data) => {
-        const targetBuffer = this.currentBuffer === 'A' ? particleBufferA : particleBufferB;
-        targetBuffer.set(data);
+      this.webgpuCompute
+        .readParticles(this.config.maxParticles)
+        .then((data) => {
+          const targetBuffer =
+            this.currentBuffer === "A" ? particleBufferA : particleBufferB;
+          targetBuffer.set(data);
 
-        // Process deaths
-        let activeCount = 0;
-        for (let i = 0; i < this.config.maxParticles; i++) {
-          const offset = i * PARTICLE_STRIDE;
-          const age = targetBuffer[offset + 6];
-          const lifetime = targetBuffer[offset + 7];
+          // Process deaths
+          let activeCount = 0;
+          for (let i = 0; i < this.config.maxParticles; i++) {
+            const offset = i * PARTICLE_STRIDE;
+            const age = targetBuffer[offset + 6];
+            const lifetime = targetBuffer[offset + 7];
 
-          if (lifetime > 0 && age < lifetime) {
-            activeCount++;
-          } else if (lifetime > 0 && age >= lifetime) {
-            if (!freeIndices.includes(i)) {
-              freeIndices.push(i);
-              onDeath(i);
+            if (lifetime > 0 && age < lifetime) {
+              activeCount++;
+            } else if (lifetime > 0 && age >= lifetime) {
+              if (!freeIndices.includes(i)) {
+                freeIndices.push(i);
+                onDeath(i);
+              }
             }
           }
-        }
 
-        particleCount = activeCount;
-        this.webgpuReadbackPending = false;
-      });
+          particleCount = activeCount;
+          this.webgpuReadbackPending = false;
+        });
     }
 
     return { currentBuffer: this.currentBuffer, particleCount };
@@ -484,8 +539,8 @@ export class ParticleGPUPhysics {
     state: GPUPhysicsState,
     forceFields: Map<string, ForceFieldConfig>,
     freeIndices: number[],
-    onDeath: DeathCallback
-  ): { currentBuffer: 'A' | 'B'; particleCount: number } {
+    onDeath: DeathCallback,
+  ): { currentBuffer: "A" | "B"; particleCount: number } {
     if (!this.gl || !this.transformFeedbackProgram) {
       return { currentBuffer: this.currentBuffer, particleCount: -1 };
     }
@@ -499,10 +554,22 @@ export class ParticleGPUPhysics {
     gl.useProgram(this.transformFeedbackProgram);
 
     // Set uniforms
-    const dtLoc = gl.getUniformLocation(this.transformFeedbackProgram, 'u_deltaTime');
-    const timeLoc = gl.getUniformLocation(this.transformFeedbackProgram, 'u_time');
-    const ffCountLoc = gl.getUniformLocation(this.transformFeedbackProgram, 'u_forceFieldCount');
-    const ffTexLoc = gl.getUniformLocation(this.transformFeedbackProgram, 'u_forceFields');
+    const dtLoc = gl.getUniformLocation(
+      this.transformFeedbackProgram,
+      "u_deltaTime",
+    );
+    const timeLoc = gl.getUniformLocation(
+      this.transformFeedbackProgram,
+      "u_time",
+    );
+    const ffCountLoc = gl.getUniformLocation(
+      this.transformFeedbackProgram,
+      "u_forceFieldCount",
+    );
+    const ffTexLoc = gl.getUniformLocation(
+      this.transformFeedbackProgram,
+      "u_forceFields",
+    );
 
     gl.uniform1f(dtLoc, dt);
     gl.uniform1f(timeLoc, state.simulationTime);
@@ -511,7 +578,9 @@ export class ParticleGPUPhysics {
     // Bind force field texture
     if (this.forceFieldTexture && this.renderer) {
       gl.activeTexture(gl.TEXTURE0);
-      const textureProps = this.renderer.properties.get(this.forceFieldTexture) as { __webglTexture?: WebGLTexture } | undefined;
+      const textureProps = this.renderer.properties.get(
+        this.forceFieldTexture,
+      ) as { __webglTexture?: WebGLTexture } | undefined;
       const tex = textureProps?.__webglTexture;
       if (tex) {
         gl.bindTexture(gl.TEXTURE_2D, tex);
@@ -520,9 +589,13 @@ export class ParticleGPUPhysics {
     }
 
     // Determine which buffers to use (ping-pong)
-    const readVAO = this.currentBuffer === 'A' ? this.vaoA : this.vaoB;
-    const writeTF = this.currentBuffer === 'A' ? this.transformFeedbackA : this.transformFeedbackB;
-    const writeVBO = this.currentBuffer === 'A' ? this.particleVboB : this.particleVboA;
+    const readVAO = this.currentBuffer === "A" ? this.vaoA : this.vaoB;
+    const writeTF =
+      this.currentBuffer === "A"
+        ? this.transformFeedbackA
+        : this.transformFeedbackB;
+    const writeVBO =
+      this.currentBuffer === "A" ? this.particleVboB : this.particleVboA;
 
     // Bind read VAO
     gl.bindVertexArray(readVAO);
@@ -548,16 +621,16 @@ export class ParticleGPUPhysics {
     gl.bindVertexArray(null);
 
     // Swap buffers for next frame
-    this.currentBuffer = this.currentBuffer === 'A' ? 'B' : 'A';
+    this.currentBuffer = this.currentBuffer === "A" ? "B" : "A";
 
     // Read back particle data periodically
     let particleCount = -1;
     if (state.frameCount % 10 === 0) {
       particleCount = this.readBackParticleData(
         writeVBO,
-        this.currentBuffer === 'A' ? this.particleVboA : this.particleVboB,
+        this.currentBuffer === "A" ? this.particleVboA : this.particleVboB,
         freeIndices,
-        onDeath
+        onDeath,
       );
     }
 
@@ -567,7 +640,9 @@ export class ParticleGPUPhysics {
   /**
    * Update force field texture data
    */
-  private updateForceFieldTexture(forceFields: Map<string, ForceFieldConfig>): void {
+  private updateForceFieldTexture(
+    forceFields: Map<string, ForceFieldConfig>,
+  ): void {
     if (!this.forceFieldBuffer || !this.forceFieldTexture) return;
 
     let fieldIndex = 0;
@@ -581,41 +656,59 @@ export class ParticleGPUPhysics {
       this.forceFieldBuffer[baseOffset + 0] = field.position.x;
       this.forceFieldBuffer[baseOffset + 1] = field.position.y;
       this.forceFieldBuffer[baseOffset + 2] = field.position.z;
-      this.forceFieldBuffer[baseOffset + 3] = getForceFieldTypeIndex(field.type);
+      this.forceFieldBuffer[baseOffset + 3] = getForceFieldTypeIndex(
+        field.type,
+      );
 
       // Row 1: strength, falloffStart, falloffEnd, falloffType
       this.forceFieldBuffer[baseOffset + 4] = field.strength;
       this.forceFieldBuffer[baseOffset + 5] = field.falloffStart;
       this.forceFieldBuffer[baseOffset + 6] = field.falloffEnd;
-      this.forceFieldBuffer[baseOffset + 7] = getFalloffTypeIndex(field.falloffType);
+      this.forceFieldBuffer[baseOffset + 7] = getFalloffTypeIndex(
+        field.falloffType,
+      );
 
       // Row 2: direction/axis.xyz, extra param
-      if (field.type === 'lorenz') {
+      if (field.type === "lorenz") {
         this.forceFieldBuffer[baseOffset + 8] = field.lorenzSigma ?? 10.0;
         this.forceFieldBuffer[baseOffset + 9] = field.lorenzRho ?? 28.0;
         this.forceFieldBuffer[baseOffset + 10] = field.lorenzBeta ?? 2.666667;
         this.forceFieldBuffer[baseOffset + 11] = 0;
-      } else if (field.type === 'orbit' || field.type === 'path') {
+      } else if (field.type === "orbit" || field.type === "path") {
         this.forceFieldBuffer[baseOffset + 8] = field.vortexAxis?.x ?? 0;
         this.forceFieldBuffer[baseOffset + 9] = field.vortexAxis?.y ?? 1;
         this.forceFieldBuffer[baseOffset + 10] = field.vortexAxis?.z ?? 0;
         this.forceFieldBuffer[baseOffset + 11] = field.pathRadius ?? 100;
       } else {
-        this.forceFieldBuffer[baseOffset + 8] = field.direction?.x ?? field.vortexAxis?.x ?? field.windDirection?.x ?? 0;
-        this.forceFieldBuffer[baseOffset + 9] = field.direction?.y ?? field.vortexAxis?.y ?? field.windDirection?.y ?? 0;
-        this.forceFieldBuffer[baseOffset + 10] = field.direction?.z ?? field.vortexAxis?.z ?? field.windDirection?.z ?? 0;
+        this.forceFieldBuffer[baseOffset + 8] =
+          field.direction?.x ??
+          field.vortexAxis?.x ??
+          field.windDirection?.x ??
+          0;
+        this.forceFieldBuffer[baseOffset + 9] =
+          field.direction?.y ??
+          field.vortexAxis?.y ??
+          field.windDirection?.y ??
+          0;
+        this.forceFieldBuffer[baseOffset + 10] =
+          field.direction?.z ??
+          field.vortexAxis?.z ??
+          field.windDirection?.z ??
+          0;
         this.forceFieldBuffer[baseOffset + 11] = field.inwardForce ?? 0;
       }
 
       // Row 3: extra params
-      if (field.type === 'magnetic') {
+      if (field.type === "magnetic") {
         this.forceFieldBuffer[baseOffset + 12] = 1.0;
         this.forceFieldBuffer[baseOffset + 13] = 0;
         this.forceFieldBuffer[baseOffset + 14] = 0;
         this.forceFieldBuffer[baseOffset + 15] = 0;
       } else {
-        this.forceFieldBuffer[baseOffset + 12] = field.noiseScale ?? field.linearDrag ?? field.gustStrength ?? 0;
-        this.forceFieldBuffer[baseOffset + 13] = field.noiseSpeed ?? field.quadraticDrag ?? field.gustFrequency ?? 0;
+        this.forceFieldBuffer[baseOffset + 12] =
+          field.noiseScale ?? field.linearDrag ?? field.gustStrength ?? 0;
+        this.forceFieldBuffer[baseOffset + 13] =
+          field.noiseSpeed ?? field.quadraticDrag ?? field.gustFrequency ?? 0;
         this.forceFieldBuffer[baseOffset + 14] = 0;
         this.forceFieldBuffer[baseOffset + 15] = 0;
       }
@@ -631,9 +724,9 @@ export class ParticleGPUPhysics {
    */
   private readBackParticleData(
     vbo: WebGLBuffer | null,
-    targetBuffer: Float32Array | WebGLBuffer | null,
-    freeIndices: number[],
-    onDeath: DeathCallback
+    _targetBuffer: Float32Array | WebGLBuffer | null,
+    _freeIndices: number[],
+    _onDeath: DeathCallback,
   ): number {
     if (!this.gl || !vbo) return -1;
 
@@ -657,7 +750,8 @@ export class ParticleGPUPhysics {
     if (!this.gl) return;
 
     const gl = this.gl;
-    const vbo = this.currentBuffer === 'A' ? this.particleVboA : this.particleVboB;
+    const vbo =
+      this.currentBuffer === "A" ? this.particleVboA : this.particleVboB;
 
     if (vbo) {
       gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
@@ -682,17 +776,17 @@ export class ParticleGPUPhysics {
     return this.useWebGPU;
   }
 
-  getCurrentBuffer(): 'A' | 'B' {
+  getCurrentBuffer(): "A" | "B" {
     return this.currentBuffer;
   }
 
-  setCurrentBuffer(buffer: 'A' | 'B'): void {
+  setCurrentBuffer(buffer: "A" | "B"): void {
     this.currentBuffer = buffer;
   }
 
   setEnabled(enabled: boolean): void {
     if (enabled && !this.gpuPhysicsInitialized && !this.webgpuInitialized) {
-      console.warn('Cannot enable GPU physics - not initialized');
+      console.warn("Cannot enable GPU physics - not initialized");
       return;
     }
     this.useGPUPhysics = enabled && this.gpuPhysicsInitialized;

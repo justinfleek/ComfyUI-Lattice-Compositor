@@ -1,21 +1,21 @@
-import { test, expect } from '@playwright/test';
-import { CompositorHelper } from '../../helpers/compositor';
+import { test } from "@playwright/test";
+import { CompositorHelper } from "../../helpers/compositor";
 
-test.describe('Tutorial 02: Neon Motion Trails - Phases 4-5 (Steps 41-82)', () => {
+test.describe("Tutorial 02: Neon Motion Trails - Phases 4-5 (Steps 41-82)", () => {
   let h: CompositorHelper;
 
   test.beforeEach(async ({ page }) => {
     h = new CompositorHelper(page);
-    await page.goto('/');
+    await page.goto("/");
     await page.waitForSelector('[data-testid="app-ready"]');
     await h.newProject();
-    await h.newComposition('Test', 1920, 1080, 30, 10);
-    await h.newShapeLayer('Light_Streak_01');
+    await h.newComposition("Test", 1920, 1080, 30, 10);
+    await h.newShapeLayer("Light_Streak_01");
   });
 
-  test('Phase 4: Stroke Properties (Steps 41-60)', async ({ page }) => {
+  test("Phase 4: Stroke Properties (Steps 41-60)", async ({ page }) => {
     // Step 43-45: Stroke color
-    await h.setStrokeColor(0, '#FFFFFF');
+    await h.setStrokeColor(0, "#FFFFFF");
 
     // Step 46-48: Stroke width
     await h.setStrokeWidth(0, 15);
@@ -24,23 +24,23 @@ test.describe('Tutorial 02: Neon Motion Trails - Phases 4-5 (Steps 41-82)', () =
     await h.setStrokeWidth(0, 15); // Reset
 
     // Step 49-52: Line cap
-    await h.setStrokeLineCap(0, 'butt');
-    await h.setStrokeLineCap(0, 'round');
-    await h.setStrokeLineCap(0, 'square');
-    await h.setStrokeLineCap(0, 'round'); // Final choice
+    await h.setStrokeLineCap(0, "butt");
+    await h.setStrokeLineCap(0, "round");
+    await h.setStrokeLineCap(0, "square");
+    await h.setStrokeLineCap(0, "round"); // Final choice
 
     // Step 53-56: Line join
-    await h.setStrokeLineJoin(0, 'miter');
-    await h.setStrokeLineJoin(0, 'round');
-    await h.setStrokeLineJoin(0, 'bevel');
-    await h.setStrokeLineJoin(0, 'round'); // Final choice
+    await h.setStrokeLineJoin(0, "miter");
+    await h.setStrokeLineJoin(0, "round");
+    await h.setStrokeLineJoin(0, "bevel");
+    await h.setStrokeLineJoin(0, "round"); // Final choice
 
     // UNDO/REDO
     await h.undo();
     await h.redo();
   });
 
-  test('Phase 5: Trim Paths Animator (Steps 61-82)', async ({ page }) => {
+  test("Phase 5: Trim Paths Animator (Steps 61-82)", async ({ page }) => {
     // Step 61-63: Add trim paths
     await h.addTrimPaths(0);
 

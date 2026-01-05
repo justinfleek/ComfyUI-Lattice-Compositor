@@ -5,35 +5,37 @@
  * This is the bridge between AI intent and store mutations.
  */
 
-import { useCompositorStore } from '@/stores/compositorStore';
-import { usePlaybackStore } from '@/stores/playbackStore';
-import { useSelectionStore } from '@/stores/selectionStore';
-import * as layerActions from '@/stores/actions/layerActions';
-import * as keyframeActions from '@/stores/actions/keyframeActions';
-import * as effectActions from '@/stores/actions/effectActions';
-import { getLayerDecompositionService } from '@/services/layerDecomposition';
 import {
-  getVectorizeService,
-  normalizeControlPoints,
-  autoGroupPoints,
-  filterSmallPaths,
-} from '@/services/vectorize';
-import type { ToolCall } from './toolDefinitions';
-import type { Layer, LayerType, InterpolationType, ControlPoint, CameraLayerData } from '@/types/project';
+  type CameraShakeConfig,
+  createRackFocus,
+  generateRackFocusKeyframes,
+  type RackFocusConfig,
+} from "@/services/cameraEnhancements";
 import {
   createTrajectoryFromPreset,
   generateTrajectoryKeyframes,
   type TrajectoryType,
-  type TrajectoryConfig,
-} from '@/services/cameraTrajectory';
+} from "@/services/cameraTrajectory";
+import { getLayerDecompositionService } from "@/services/layerDecomposition";
 import {
-  CameraShake,
-  createRackFocus,
-  generateRackFocusKeyframes,
-  type CameraShakeConfig,
-  type RackFocusConfig,
-  type AutoFocusConfig,
-} from '@/services/cameraEnhancements';
+  autoGroupPoints,
+  filterSmallPaths,
+  getVectorizeService,
+  normalizeControlPoints,
+} from "@/services/vectorize";
+import * as effectActions from "@/stores/actions/effectActions";
+import * as keyframeActions from "@/stores/actions/keyframeActions";
+import * as layerActions from "@/stores/actions/layerActions";
+import { useCompositorStore } from "@/stores/compositorStore";
+import { usePlaybackStore } from "@/stores/playbackStore";
+import { useSelectionStore } from "@/stores/selectionStore";
+import type {
+  CameraLayerData,
+  ControlPoint,
+  InterpolationType,
+  LayerType,
+} from "@/types/project";
+import type { ToolCall } from "./toolDefinitions";
 
 // ============================================================================
 // TYPES
@@ -64,99 +66,99 @@ export async function executeToolCall(toolCall: ToolCall): Promise<any> {
   // Route to appropriate handler
   switch (name) {
     // Layer Management
-    case 'createLayer':
+    case "createLayer":
       return executeCreateLayer(context, args);
-    case 'deleteLayer':
+    case "deleteLayer":
       return executeDeleteLayer(context, args);
-    case 'duplicateLayer':
+    case "duplicateLayer":
       return executeDuplicateLayer(context, args);
-    case 'renameLayer':
+    case "renameLayer":
       return executeRenameLayer(context, args);
-    case 'setLayerParent':
+    case "setLayerParent":
       return executeSetLayerParent(context, args);
-    case 'reorderLayers':
+    case "reorderLayers":
       return executeReorderLayers(context, args);
 
     // Property Modification
-    case 'setLayerProperty':
+    case "setLayerProperty":
       return executeSetLayerProperty(context, args);
-    case 'setLayerTransform':
+    case "setLayerTransform":
       return executeSetLayerTransform(context, args);
 
     // Keyframe Animation
-    case 'addKeyframe':
+    case "addKeyframe":
       return executeAddKeyframe(context, args);
-    case 'removeKeyframe':
+    case "removeKeyframe":
       return executeRemoveKeyframe(context, args);
-    case 'setKeyframeEasing':
+    case "setKeyframeEasing":
       return executeSetKeyframeEasing(context, args);
-    case 'scaleKeyframeTiming':
+    case "scaleKeyframeTiming":
       return executeScaleKeyframeTiming(context, args);
 
     // Expressions
-    case 'setExpression':
+    case "setExpression":
       return executeSetExpression(context, args);
-    case 'removeExpression':
+    case "removeExpression":
       return executeRemoveExpression(context, args);
 
     // Effects
-    case 'addEffect':
+    case "addEffect":
       return executeAddEffect(context, args);
-    case 'updateEffect':
+    case "updateEffect":
       return executeUpdateEffect(context, args);
-    case 'removeEffect':
+    case "removeEffect":
       return executeRemoveEffect(context, args);
 
     // Particle System
-    case 'configureParticles':
+    case "configureParticles":
       return executeConfigureParticles(context, args);
 
     // Camera System
-    case 'applyCameraTrajectory':
+    case "applyCameraTrajectory":
       return executeApplyCameraTrajectory(context, args);
-    case 'addCameraShake':
+    case "addCameraShake":
       return executeAddCameraShake(context, args);
-    case 'applyRackFocus':
+    case "applyRackFocus":
       return executeApplyRackFocus(context, args);
-    case 'setCameraPathFollowing':
+    case "setCameraPathFollowing":
       return executeSetCameraPathFollowing(context, args);
-    case 'setCameraAutoFocus':
+    case "setCameraAutoFocus":
       return executeSetCameraAutoFocus(context, args);
 
     // Text
-    case 'setTextContent':
+    case "setTextContent":
       return executeSetTextContent(context, args);
-    case 'setTextPath':
+    case "setTextPath":
       return executeSetTextPath(context, args);
 
     // Spline
-    case 'setSplinePoints':
+    case "setSplinePoints":
       return executeSetSplinePoints(context, args);
 
     // Speed Map (formerly Time Remapping)
-    case 'setSpeedMap':
+    case "setSpeedMap":
       return executeSetSpeedMap(context, args);
-    case 'setTimeRemap': // Legacy - redirects to setSpeedMap
+    case "setTimeRemap": // Legacy - redirects to setSpeedMap
       return executeSetSpeedMap(context, args);
 
     // Playback
-    case 'setCurrentFrame':
+    case "setCurrentFrame":
       return executeSetCurrentFrame(context, args);
-    case 'playPreview':
+    case "playPreview":
       return executePlayPreview(context, args);
 
     // AI Image Processing
-    case 'decomposeImage':
+    case "decomposeImage":
       return executeDecomposeImage(context, args);
-    case 'vectorizeImage':
+    case "vectorizeImage":
       return executeVectorizeImage(context, args);
 
     // Utility
-    case 'getLayerInfo':
+    case "getLayerInfo":
       return executeGetLayerInfo(context, args);
-    case 'findLayers':
+    case "findLayers":
       return executeFindLayers(context, args);
-    case 'getProjectState':
+    case "getProjectState":
       return executeGetProjectState(context, args);
 
     default:
@@ -173,7 +175,7 @@ export async function executeToolCall(toolCall: ToolCall): Promise<any> {
  */
 function validateArgs(
   args: Record<string, any>,
-  schema: Record<string, { type: string; required?: boolean }>
+  schema: Record<string, { type: string; required?: boolean }>,
 ): { valid: boolean; error?: string } {
   for (const [key, spec] of Object.entries(schema)) {
     const value = args[key];
@@ -187,11 +189,18 @@ function validateArgs(
     if (value === undefined || value === null) continue;
 
     // Type validation
-    const actualType = Array.isArray(value) ? 'array' : typeof value;
-    if (spec.type === 'array' && !Array.isArray(value)) {
+    const actualType = Array.isArray(value) ? "array" : typeof value;
+    if (spec.type === "array" && !Array.isArray(value)) {
       return { valid: false, error: `Argument ${key} must be an array` };
-    } else if (spec.type !== 'array' && spec.type !== 'any' && actualType !== spec.type) {
-      return { valid: false, error: `Argument ${key} must be ${spec.type}, got ${actualType}` };
+    } else if (
+      spec.type !== "array" &&
+      spec.type !== "any" &&
+      actualType !== spec.type
+    ) {
+      return {
+        valid: false,
+        error: `Argument ${key} must be ${spec.type}, got ${actualType}`,
+      };
     }
   }
   return { valid: true };
@@ -199,18 +208,18 @@ function validateArgs(
 
 function executeCreateLayer(
   context: ExecutionContext,
-  args: Record<string, any>
+  args: Record<string, any>,
 ): { layerId: string; message: string } {
   const { store } = context;
 
   // Validate arguments
   const validation = validateArgs(args, {
-    type: { type: 'string', required: true },
-    name: { type: 'string', required: false },
-    properties: { type: 'object', required: false },
-    position: { type: 'object', required: false },
-    inPoint: { type: 'number', required: false },
-    outPoint: { type: 'number', required: false },
+    type: { type: "string", required: true },
+    name: { type: "string", required: false },
+    properties: { type: "object", required: false },
+    position: { type: "object", required: false },
+    inPoint: { type: "number", required: false },
+    outPoint: { type: "number", required: false },
   });
   if (!validation.valid) {
     throw new Error(validation.error);
@@ -221,47 +230,51 @@ function executeCreateLayer(
   // Complete mapping of all 24 layer types
   const typeMap: Record<string, LayerType> = {
     // Core layer types
-    solid: 'solid',
-    text: 'text',
-    shape: 'shape',
-    spline: 'spline',
-    path: 'path',
-    image: 'image',
-    video: 'video',
-    audio: 'audio',
+    solid: "solid",
+    text: "text",
+    shape: "shape",
+    spline: "spline",
+    path: "path",
+    image: "image",
+    video: "video",
+    audio: "audio",
 
     // 3D layers
-    camera: 'camera',
-    light: 'light',
-    model: 'model',
-    pointcloud: 'pointcloud',
+    camera: "camera",
+    light: "light",
+    model: "model",
+    pointcloud: "pointcloud",
 
     // Particle systems (both names supported)
-    particle: 'particle',
-    particles: 'particles',
+    particle: "particle",
+    particles: "particles",
 
     // Special layers
-    control: 'control',
-    null: 'null',           // Legacy, maps to control
-    group: 'group',
-    nested: 'nestedComp',
-    nestedComp: 'nestedComp',
-    matte: 'matte',
+    control: "control",
+    null: "null", // Legacy, maps to control
+    group: "group",
+    nested: "nestedComp",
+    nestedComp: "nestedComp",
+    matte: "matte",
 
     // AI/Generated layers
-    depth: 'depth',
-    normal: 'normal',
-    generated: 'generated',
-    depthflow: 'depthflow',
+    depth: "depth",
+    normal: "normal",
+    generated: "generated",
+    depthflow: "depthflow",
 
     // Effect layers
-    effectLayer: 'effectLayer',
-    adjustment: 'adjustment',  // @deprecated alias for effectLayer
-    'effect-layer': 'effectLayer',  // kebab-case alias
+    effectLayer: "effectLayer",
+    adjustment: "adjustment", // @deprecated alias for effectLayer
+    "effect-layer": "effectLayer", // kebab-case alias
   };
 
   const internalType = typeMap[type] || type;
-  const layer = layerActions.createLayer(store, internalType as LayerType, name);
+  const layer = layerActions.createLayer(
+    store,
+    internalType as LayerType,
+    name,
+  );
 
   // Apply initial properties
   if (position) {
@@ -285,12 +298,12 @@ function executeCreateLayer(
 
 function executeDeleteLayer(
   context: ExecutionContext,
-  args: Record<string, any>
+  args: Record<string, any>,
 ): { success: boolean; message: string } {
   const { store } = context;
   const { layerId } = args;
 
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) {
     return { success: false, message: `Layer ${layerId} not found` };
   }
@@ -306,7 +319,7 @@ function executeDeleteLayer(
 
 function executeDuplicateLayer(
   context: ExecutionContext,
-  args: Record<string, any>
+  args: Record<string, any>,
 ): { layerId: string | null; message: string } {
   const { store } = context;
   const { layerId, newName } = args;
@@ -328,12 +341,12 @@ function executeDuplicateLayer(
 
 function executeRenameLayer(
   context: ExecutionContext,
-  args: Record<string, any>
+  args: Record<string, any>,
 ): { success: boolean; message: string } {
   const { store } = context;
   const { layerId, name } = args;
 
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) {
     return { success: false, message: `Layer ${layerId} not found` };
   }
@@ -353,7 +366,7 @@ function executeRenameLayer(
 
 function executeSetLayerParent(
   context: ExecutionContext,
-  args: Record<string, any>
+  args: Record<string, any>,
 ): { success: boolean; message: string } {
   const { store } = context;
   const { layerId, parentId } = args;
@@ -370,7 +383,7 @@ function executeSetLayerParent(
 
 function executeReorderLayers(
   context: ExecutionContext,
-  args: Record<string, any>
+  args: Record<string, any>,
 ): { success: boolean; message: string } {
   const { store } = context;
   const { layerId, newIndex } = args;
@@ -389,37 +402,37 @@ function executeReorderLayers(
 
 function executeSetLayerProperty(
   context: ExecutionContext,
-  args: Record<string, any>
+  args: Record<string, any>,
 ): { success: boolean; message: string } {
   const { store } = context;
   const { layerId, propertyPath, value } = args;
 
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) {
     return { success: false, message: `Layer ${layerId} not found` };
   }
 
   // Handle different property paths
-  const parts = propertyPath.split('.');
+  const parts = propertyPath.split(".");
 
-  if (parts[0] === 'data' && layer.data) {
+  if (parts[0] === "data" && layer.data) {
     // Layer-specific data (e.g., data.text, data.color)
     setNestedProperty(layer.data, parts.slice(1), value);
-  } else if (parts[0] === 'transform') {
+  } else if (parts[0] === "transform") {
     // Transform properties
     const prop = (layer.transform as any)[parts[1]];
-    if (prop && 'value' in prop) {
+    if (prop && "value" in prop) {
       prop.value = value;
     }
-  } else if (propertyPath === 'opacity') {
+  } else if (propertyPath === "opacity") {
     layer.opacity.value = value;
-  } else if (propertyPath === 'visible') {
+  } else if (propertyPath === "visible") {
     layer.visible = value;
-  } else if (propertyPath === 'locked') {
+  } else if (propertyPath === "locked") {
     layer.locked = value;
-  } else if (propertyPath === 'inPoint') {
+  } else if (propertyPath === "inPoint") {
     layer.inPoint = value;
-  } else if (propertyPath === 'outPoint') {
+  } else if (propertyPath === "outPoint") {
     layer.outPoint = value;
   } else {
     // Try to find in layer.data
@@ -440,12 +453,12 @@ function executeSetLayerProperty(
 
 function executeSetLayerTransform(
   context: ExecutionContext,
-  args: Record<string, any>
+  args: Record<string, any>,
 ): { success: boolean; message: string } {
   const { store } = context;
   const { layerId, position, scale, rotation, opacity, anchorPoint } = args;
 
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) {
     return { success: false, message: `Layer ${layerId} not found` };
   }
@@ -454,19 +467,19 @@ function executeSetLayerTransform(
 
   if (position !== undefined) {
     layer.transform.position.value = position;
-    changes.push('position');
+    changes.push("position");
   }
   if (scale !== undefined) {
     layer.transform.scale.value = scale;
-    changes.push('scale');
+    changes.push("scale");
   }
   if (rotation !== undefined) {
     layer.transform.rotation.value = rotation;
-    changes.push('rotation');
+    changes.push("rotation");
   }
   if (opacity !== undefined) {
     layer.opacity.value = opacity;
-    changes.push('opacity');
+    changes.push("opacity");
   }
   if (anchorPoint !== undefined) {
     // Use origin (new name) with fallback to anchorPoint
@@ -474,7 +487,7 @@ function executeSetLayerTransform(
     if (originProp) {
       originProp.value = anchorPoint;
     }
-    changes.push('origin');
+    changes.push("origin");
   }
 
   // BUG-043 FIX: Add pushHistory for undo/redo support
@@ -483,7 +496,7 @@ function executeSetLayerTransform(
 
   return {
     success: true,
-    message: `Updated transform: ${changes.join(', ')}`,
+    message: `Updated transform: ${changes.join(", ")}`,
   };
 }
 
@@ -493,15 +506,24 @@ function executeSetLayerTransform(
 
 function executeAddKeyframe(
   context: ExecutionContext,
-  args: Record<string, any>
+  args: Record<string, any>,
 ): { keyframeId: string | null; message: string } {
   const { store } = context;
   const { layerId, propertyPath, frame, value, interpolation } = args;
 
-  const keyframe = keyframeActions.addKeyframe(store, layerId, propertyPath, value, frame);
+  const keyframe = keyframeActions.addKeyframe(
+    store,
+    layerId,
+    propertyPath,
+    value,
+    frame,
+  );
 
   if (!keyframe) {
-    return { keyframeId: null, message: `Failed to add keyframe at frame ${frame}` };
+    return {
+      keyframeId: null,
+      message: `Failed to add keyframe at frame ${frame}`,
+    };
   }
 
   // Set interpolation if specified
@@ -511,7 +533,7 @@ function executeAddKeyframe(
       layerId,
       propertyPath,
       keyframe.id,
-      interpolation as InterpolationType
+      interpolation as InterpolationType,
     );
   }
 
@@ -523,12 +545,12 @@ function executeAddKeyframe(
 
 function executeRemoveKeyframe(
   context: ExecutionContext,
-  args: Record<string, any>
+  args: Record<string, any>,
 ): { success: boolean; message: string } {
   const { store } = context;
   const { layerId, propertyPath, frame } = args;
 
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) {
     return { success: false, message: `Layer ${layerId} not found` };
   }
@@ -539,7 +561,7 @@ function executeRemoveKeyframe(
     return { success: false, message: `Property ${propertyPath} not found` };
   }
 
-  const keyframe = property.keyframes.find(k => k.frame === frame);
+  const keyframe = property.keyframes.find((k) => k.frame === frame);
   if (!keyframe) {
     return { success: false, message: `No keyframe at frame ${frame}` };
   }
@@ -554,12 +576,12 @@ function executeRemoveKeyframe(
 
 function executeSetKeyframeEasing(
   context: ExecutionContext,
-  args: Record<string, any>
+  args: Record<string, any>,
 ): { success: boolean; message: string } {
   const { store } = context;
   const { layerId, propertyPath, frame, interpolation } = args;
 
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) {
     return { success: false, message: `Layer ${layerId} not found` };
   }
@@ -569,7 +591,7 @@ function executeSetKeyframeEasing(
     return { success: false, message: `Property ${propertyPath} not found` };
   }
 
-  const keyframe = property.keyframes.find(k => k.frame === frame);
+  const keyframe = property.keyframes.find((k) => k.frame === frame);
   if (!keyframe) {
     return { success: false, message: `No keyframe at frame ${frame}` };
   }
@@ -579,7 +601,7 @@ function executeSetKeyframeEasing(
     layerId,
     propertyPath,
     keyframe.id,
-    interpolation as InterpolationType
+    interpolation as InterpolationType,
   );
 
   return {
@@ -590,12 +612,12 @@ function executeSetKeyframeEasing(
 
 function executeScaleKeyframeTiming(
   context: ExecutionContext,
-  args: Record<string, any>
+  args: Record<string, any>,
 ): { success: boolean; message: string } {
   const { store } = context;
   const { layerId, scaleFactor, propertyPath } = args;
 
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) {
     return { success: false, message: `Layer ${layerId} not found` };
   }
@@ -603,7 +625,7 @@ function executeScaleKeyframeTiming(
   // Get all properties to scale
   const propertiesToScale: string[] = propertyPath
     ? [propertyPath]
-    : ['position', 'scale', 'rotation', 'opacity', 'anchorPoint'];
+    : ["position", "scale", "rotation", "opacity", "anchorPoint"];
 
   let scaledCount = 0;
 
@@ -638,12 +660,12 @@ function executeScaleKeyframeTiming(
 
 function executeSetExpression(
   context: ExecutionContext,
-  args: Record<string, any>
+  args: Record<string, any>,
 ): { success: boolean; message: string } {
   const { store } = context;
   const { layerId, propertyPath, expressionType, params } = args;
 
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) {
     return { success: false, message: `Layer ${layerId} not found` };
   }
@@ -656,7 +678,7 @@ function executeSetExpression(
   // Set expression on property
   property.expression = {
     enabled: true,
-    type: 'preset' as const,
+    type: "preset" as const,
     name: expressionType,
     params: params || {},
   };
@@ -673,12 +695,12 @@ function executeSetExpression(
 
 function executeRemoveExpression(
   context: ExecutionContext,
-  args: Record<string, any>
+  args: Record<string, any>,
 ): { success: boolean; message: string } {
   const { store } = context;
   const { layerId, propertyPath } = args;
 
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) {
     return { success: false, message: `Layer ${layerId} not found` };
   }
@@ -706,7 +728,7 @@ function executeRemoveExpression(
 
 function executeAddEffect(
   context: ExecutionContext,
-  args: Record<string, any>
+  args: Record<string, any>,
 ): { effectId: string | null; message: string } {
   const { store } = context;
   const { layerId, effectType, params } = args;
@@ -714,7 +736,7 @@ function executeAddEffect(
   effectActions.addEffectToLayer(store, layerId, effectType);
 
   // Get the newly added effect (last in array)
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
   const effect = layer?.effects?.[layer.effects.length - 1];
 
   if (!effect) {
@@ -724,7 +746,13 @@ function executeAddEffect(
   // Apply initial parameters
   if (params) {
     for (const [key, value] of Object.entries(params)) {
-      effectActions.updateEffectParameter(store, layerId, effect.id, key, value);
+      effectActions.updateEffectParameter(
+        store,
+        layerId,
+        effect.id,
+        key,
+        value,
+      );
     }
   }
 
@@ -736,17 +764,20 @@ function executeAddEffect(
 
 function executeUpdateEffect(
   context: ExecutionContext,
-  args: Record<string, any>
+  args: Record<string, any>,
 ): { success: boolean; message: string } {
   const { store } = context;
   const { layerId, effectId, params } = args;
 
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer?.effects) {
-    return { success: false, message: `Layer ${layerId} not found or has no effects` };
+    return {
+      success: false,
+      message: `Layer ${layerId} not found or has no effects`,
+    };
   }
 
-  const effect = layer.effects.find(e => e.id === effectId);
+  const effect = layer.effects.find((e) => e.id === effectId);
   if (!effect) {
     return { success: false, message: `Effect ${effectId} not found` };
   }
@@ -763,7 +794,7 @@ function executeUpdateEffect(
 
 function executeRemoveEffect(
   context: ExecutionContext,
-  args: Record<string, any>
+  args: Record<string, any>,
 ): { success: boolean; message: string } {
   const { store } = context;
   const { layerId, effectId } = args;
@@ -782,13 +813,13 @@ function executeRemoveEffect(
 
 function executeConfigureParticles(
   context: ExecutionContext,
-  args: Record<string, any>
+  args: Record<string, any>,
 ): { success: boolean; message: string } {
   const { store } = context;
   const { layerId, emitter, particles, physics } = args;
 
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
-  if (!layer || layer.type !== 'particles') {
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  if (!layer || layer.type !== "particles") {
     return { success: false, message: `Particle layer ${layerId} not found` };
   }
 
@@ -815,12 +846,10 @@ function executeConfigureParticles(
     }
     if (physics.wind) {
       particleData.systemConfig.windStrength = Math.sqrt(
-        physics.wind.x ** 2 + physics.wind.y ** 2
+        physics.wind.x ** 2 + physics.wind.y ** 2,
       );
-      particleData.systemConfig.windDirection = Math.atan2(
-        physics.wind.y,
-        physics.wind.x
-      ) * (180 / Math.PI);
+      particleData.systemConfig.windDirection =
+        Math.atan2(physics.wind.y, physics.wind.x) * (180 / Math.PI);
     }
     if (physics.turbulence) {
       // Map to system config if applicable
@@ -843,7 +872,7 @@ function executeConfigureParticles(
 
 function executeApplyCameraTrajectory(
   context: ExecutionContext,
-  args: Record<string, any>
+  args: Record<string, any>,
 ): { success: boolean; keyframeCount: number; message: string } {
   const { store } = context;
   const {
@@ -857,29 +886,44 @@ function executeApplyCameraTrajectory(
     center,
   } = args;
 
-  const layer = store.getActiveCompLayers().find(l => l.id === cameraLayerId);
-  if (!layer || layer.type !== 'camera') {
-    return { success: false, keyframeCount: 0, message: `Camera layer ${cameraLayerId} not found` };
+  const layer = store.getActiveCompLayers().find((l) => l.id === cameraLayerId);
+  if (!layer || layer.type !== "camera") {
+    return {
+      success: false,
+      keyframeCount: 0,
+      message: `Camera layer ${cameraLayerId} not found`,
+    };
   }
 
   const comp = store.getActiveComp();
-  const compSettings = comp?.settings || { width: 1920, height: 1080, frameCount: 81 };
+  const compSettings = comp?.settings || {
+    width: 1920,
+    height: 1080,
+    frameCount: 81,
+  };
 
   // Build trajectory configuration
-  const trajectoryConfig = createTrajectoryFromPreset(trajectoryType as TrajectoryType, {
-    duration: duration ?? compSettings.frameCount,
-    amplitude: amplitude ?? undefined,
-    loops: loops ?? undefined,
-    easing: easing ?? undefined,
-    center: center ?? {
-      x: compSettings.width / 2,
-      y: compSettings.height / 2,
-      z: 0,
+  const trajectoryConfig = createTrajectoryFromPreset(
+    trajectoryType as TrajectoryType,
+    {
+      duration: duration ?? compSettings.frameCount,
+      amplitude: amplitude ?? undefined,
+      loops: loops ?? undefined,
+      easing: easing ?? undefined,
+      center: center ?? {
+        x: compSettings.width / 2,
+        y: compSettings.height / 2,
+        z: 0,
+      },
     },
-  });
+  );
 
   // Generate keyframes
-  const keyframes = generateTrajectoryKeyframes(trajectoryConfig, startFrame, 5);
+  const keyframes = generateTrajectoryKeyframes(
+    trajectoryConfig,
+    startFrame,
+    5,
+  );
 
   // Apply keyframes to layer's camera data
   if (!layer.data) {
@@ -890,9 +934,17 @@ function executeApplyCameraTrajectory(
   // Initialize or update camera settings
   if (!cameraData.camera) {
     cameraData.camera = {
-      type: 'two-node',
-      position: { x: compSettings.width / 2, y: compSettings.height / 2, z: -1500 },
-      pointOfInterest: { x: compSettings.width / 2, y: compSettings.height / 2, z: 0 },
+      type: "two-node",
+      position: {
+        x: compSettings.width / 2,
+        y: compSettings.height / 2,
+        z: -1500,
+      },
+      pointOfInterest: {
+        x: compSettings.width / 2,
+        y: compSettings.height / 2,
+        z: 0,
+      },
       zoom: 1778,
       depthOfField: false,
       focusDistance: 1500,
@@ -907,24 +959,33 @@ function executeApplyCameraTrajectory(
   // Store trajectory keyframes in camera data (filter and map to required format)
   cameraData.trajectoryKeyframes = {
     position: keyframes.position
-      .filter(kf => kf.position !== undefined)
-      .map(kf => ({ frame: kf.frame, position: kf.position! })),
+      .filter((kf) => kf.position !== undefined)
+      .map((kf) => ({ frame: kf.frame, position: kf.position! })),
     pointOfInterest: keyframes.pointOfInterest
-      .filter(kf => kf.pointOfInterest !== undefined)
-      .map(kf => ({ frame: kf.frame, pointOfInterest: kf.pointOfInterest! })),
+      .filter((kf) => kf.pointOfInterest !== undefined)
+      .map((kf) => ({ frame: kf.frame, pointOfInterest: kf.pointOfInterest! })),
     zoom: keyframes.zoom
-      ?.filter(kf => kf.zoom !== undefined)
-      .map(kf => ({ frame: kf.frame, zoom: kf.zoom! })),
+      ?.filter((kf) => kf.zoom !== undefined)
+      .map((kf) => ({ frame: kf.frame, zoom: kf.zoom! })),
   };
 
   // Also create standard layer keyframes for position
   for (const kf of keyframes.position) {
     if (kf.position) {
-      keyframeActions.addKeyframe(store, cameraLayerId, 'cameraPosition', kf.position, kf.frame);
+      keyframeActions.addKeyframe(
+        store,
+        cameraLayerId,
+        "cameraPosition",
+        kf.position,
+        kf.frame,
+      );
     }
   }
 
-  const totalKeyframes = keyframes.position.length + keyframes.pointOfInterest.length + (keyframes.zoom?.length || 0);
+  const totalKeyframes =
+    keyframes.position.length +
+    keyframes.pointOfInterest.length +
+    (keyframes.zoom?.length || 0);
 
   return {
     success: true,
@@ -935,7 +996,7 @@ function executeApplyCameraTrajectory(
 
 function executeAddCameraShake(
   context: ExecutionContext,
-  args: Record<string, any>
+  args: Record<string, any>,
 ): { success: boolean; message: string } {
   const { store } = context;
   const {
@@ -950,9 +1011,12 @@ function executeAddCameraShake(
     seed,
   } = args;
 
-  const layer = store.getActiveCompLayers().find(l => l.id === cameraLayerId);
-  if (!layer || layer.type !== 'camera') {
-    return { success: false, message: `Camera layer ${cameraLayerId} not found` };
+  const layer = store.getActiveCompLayers().find((l) => l.id === cameraLayerId);
+  if (!layer || layer.type !== "camera") {
+    return {
+      success: false,
+      message: `Camera layer ${cameraLayerId} not found`,
+    };
   }
 
   const comp = store.getActiveComp();
@@ -999,7 +1063,7 @@ function executeAddCameraShake(
 
 function executeApplyRackFocus(
   context: ExecutionContext,
-  args: Record<string, any>
+  args: Record<string, any>,
 ): { success: boolean; keyframeCount: number; message: string } {
   const { store } = context;
   const {
@@ -1008,23 +1072,32 @@ function executeApplyRackFocus(
     endDistance,
     startFrame = 0,
     duration = 30,
-    easing = 'ease-in-out',
+    easing = "ease-in-out",
     holdStart = 0,
     holdEnd = 0,
   } = args;
 
-  const layer = store.getActiveCompLayers().find(l => l.id === cameraLayerId);
-  if (!layer || layer.type !== 'camera') {
-    return { success: false, keyframeCount: 0, message: `Camera layer ${cameraLayerId} not found` };
+  const layer = store.getActiveCompLayers().find((l) => l.id === cameraLayerId);
+  if (!layer || layer.type !== "camera") {
+    return {
+      success: false,
+      keyframeCount: 0,
+      message: `Camera layer ${cameraLayerId} not found`,
+    };
   }
 
   // Create rack focus config
-  const rackFocusConfig = createRackFocus(startDistance, endDistance, duration, {
-    startFrame,
-    easing: easing as RackFocusConfig['easing'],
-    holdStart,
-    holdEnd,
-  });
+  const rackFocusConfig = createRackFocus(
+    startDistance,
+    endDistance,
+    duration,
+    {
+      startFrame,
+      easing: easing as RackFocusConfig["easing"],
+      holdStart,
+      holdEnd,
+    },
+  );
 
   // Generate focus keyframes
   const focusKeyframes = generateRackFocusKeyframes(rackFocusConfig, 2);
@@ -1049,7 +1122,13 @@ function executeApplyRackFocus(
   // Apply focus keyframes to layer
   for (const kf of focusKeyframes) {
     if (kf.focusDistance !== undefined) {
-      keyframeActions.addKeyframe(store, cameraLayerId, 'focusDistance', kf.focusDistance, kf.frame);
+      keyframeActions.addKeyframe(
+        store,
+        cameraLayerId,
+        "focusDistance",
+        kf.focusDistance,
+        kf.frame,
+      );
     }
   }
 
@@ -1062,13 +1141,13 @@ function executeApplyRackFocus(
 
 function executeSetCameraPathFollowing(
   context: ExecutionContext,
-  args: Record<string, any>
+  args: Record<string, any>,
 ): { success: boolean; message: string } {
   const { store } = context;
   const {
     cameraLayerId,
     splineLayerId,
-    lookMode = 'tangent',
+    lookMode = "tangent",
     lookTarget,
     startOffset = 0,
     speed = 1.0,
@@ -1076,16 +1155,24 @@ function executeSetCameraPathFollowing(
     smoothing = 0.5,
   } = args;
 
-  const layer = store.getActiveCompLayers().find(l => l.id === cameraLayerId);
-  if (!layer || layer.type !== 'camera') {
-    return { success: false, message: `Camera layer ${cameraLayerId} not found` };
+  const layer = store.getActiveCompLayers().find((l) => l.id === cameraLayerId);
+  if (!layer || layer.type !== "camera") {
+    return {
+      success: false,
+      message: `Camera layer ${cameraLayerId} not found`,
+    };
   }
 
   // Verify spline layer exists if specified
   if (splineLayerId) {
-    const splineLayer = store.getActiveCompLayers().find(l => l.id === splineLayerId);
-    if (!splineLayer || splineLayer.type !== 'spline') {
-      return { success: false, message: `Spline layer ${splineLayerId} not found` };
+    const splineLayer = store
+      .getActiveCompLayers()
+      .find((l) => l.id === splineLayerId);
+    if (!splineLayer || splineLayer.type !== "spline") {
+      return {
+        success: false,
+        message: `Spline layer ${splineLayerId} not found`,
+      };
     }
   }
 
@@ -1098,7 +1185,7 @@ function executeSetCameraPathFollowing(
   cameraData.pathFollowingConfig = {
     enabled: !!splineLayerId,
     splineLayerId: splineLayerId || null,
-    lookMode: lookMode as 'tangent' | 'target' | 'fixed',
+    lookMode: lookMode as "tangent" | "target" | "fixed",
     lookTarget: lookTarget || null,
     startOffset,
     speed,
@@ -1120,20 +1207,23 @@ function executeSetCameraPathFollowing(
 
 function executeSetCameraAutoFocus(
   context: ExecutionContext,
-  args: Record<string, any>
+  args: Record<string, any>,
 ): { success: boolean; message: string } {
   const { store } = context;
   const {
     cameraLayerId,
     enabled = true,
-    mode = 'center',
+    mode = "center",
     focusPoint,
     smoothing = 0.8,
   } = args;
 
-  const layer = store.getActiveCompLayers().find(l => l.id === cameraLayerId);
-  if (!layer || layer.type !== 'camera') {
-    return { success: false, message: `Camera layer ${cameraLayerId} not found` };
+  const layer = store.getActiveCompLayers().find((l) => l.id === cameraLayerId);
+  if (!layer || layer.type !== "camera") {
+    return {
+      success: false,
+      message: `Camera layer ${cameraLayerId} not found`,
+    };
   }
 
   // Store autofocus config in layer data
@@ -1148,11 +1238,16 @@ function executeSetCameraAutoFocus(
   }
 
   // Map mode - 'face' mode from cameraEnhancements falls back to 'center' for our type
-  const mappedMode = mode === 'face' ? 'center' : mode as CameraLayerData['autoFocus'] extends { mode: infer M } ? M : never;
+  const mappedMode =
+    mode === "face"
+      ? "center"
+      : (mode as CameraLayerData["autoFocus"] extends { mode: infer M }
+          ? M
+          : never);
 
   cameraData.autoFocus = {
     enabled,
-    mode: mappedMode as 'center' | 'point' | 'nearest' | 'farthest',
+    mode: mappedMode as "center" | "point" | "nearest" | "farthest",
     focusPoint: focusPoint || { x: 0.5, y: 0.5 },
     smoothing,
     threshold: 10,
@@ -1177,13 +1272,14 @@ function executeSetCameraAutoFocus(
 
 function executeSetTextContent(
   context: ExecutionContext,
-  args: Record<string, any>
+  args: Record<string, any>,
 ): { success: boolean; message: string } {
   const { store } = context;
-  const { layerId, text, fontSize, fontFamily, fontWeight, color, alignment } = args;
+  const { layerId, text, fontSize, fontFamily, fontWeight, color, alignment } =
+    args;
 
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
-  if (!layer || layer.type !== 'text') {
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  if (!layer || layer.type !== "text") {
     return { success: false, message: `Text layer ${layerId} not found` };
   }
 
@@ -1214,13 +1310,13 @@ function executeSetTextContent(
 
 function executeSetTextPath(
   context: ExecutionContext,
-  args: Record<string, any>
+  args: Record<string, any>,
 ): { success: boolean; message: string } {
   const { store } = context;
   const { textLayerId, splineLayerId, startOffset } = args;
 
-  const layer = store.getActiveCompLayers().find(l => l.id === textLayerId);
-  if (!layer || layer.type !== 'text') {
+  const layer = store.getActiveCompLayers().find((l) => l.id === textLayerId);
+  if (!layer || layer.type !== "text") {
     return { success: false, message: `Text layer ${textLayerId} not found` };
   }
 
@@ -1252,13 +1348,13 @@ function executeSetTextPath(
 
 function executeSetSplinePoints(
   context: ExecutionContext,
-  args: Record<string, any>
+  args: Record<string, any>,
 ): { success: boolean; message: string } {
   const { store } = context;
   const { layerId, points, closed } = args;
 
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
-  if (!layer || layer.type !== 'spline') {
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  if (!layer || layer.type !== "spline") {
     return { success: false, message: `Spline layer ${layerId} not found` };
   }
 
@@ -1275,7 +1371,7 @@ function executeSetSplinePoints(
     y: p.y,
     handleIn: p.handleIn || null,
     handleOut: p.handleOut || null,
-    type: p.handleIn || p.handleOut ? 'smooth' : 'corner',
+    type: p.handleIn || p.handleOut ? "smooth" : "corner",
   }));
 
   if (closed !== undefined) {
@@ -1298,12 +1394,12 @@ function executeSetSplinePoints(
 
 function executeSetSpeedMap(
   context: ExecutionContext,
-  args: Record<string, any>
+  args: Record<string, any>,
 ): { success: boolean; message: string } {
   const { store } = context;
   const { layerId, enabled, keyframes } = args;
 
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) {
     return { success: false, message: `Layer ${layerId} not found` };
   }
@@ -1331,9 +1427,9 @@ function executeSetSpeedMap(
 }
 
 /** @deprecated Use executeSetSpeedMap instead */
-function executeSetTimeRemap(
+function _executeSetTimeRemap(
   context: ExecutionContext,
-  args: Record<string, any>
+  args: Record<string, any>,
 ): { success: boolean; message: string } {
   return executeSetSpeedMap(context, args);
 }
@@ -1344,7 +1440,7 @@ function executeSetTimeRemap(
 
 function executeSetCurrentFrame(
   context: ExecutionContext,
-  args: Record<string, any>
+  args: Record<string, any>,
 ): { frame: number; message: string } {
   const { store, playbackStore } = context;
   const { frame } = args;
@@ -1363,7 +1459,7 @@ function executeSetCurrentFrame(
 
 function executePlayPreview(
   context: ExecutionContext,
-  args: Record<string, any>
+  args: Record<string, any>,
 ): { playing: boolean; message: string } {
   const { store, playbackStore } = context;
   const { play } = args;
@@ -1375,7 +1471,7 @@ function executePlayPreview(
         comp.settings.fps,
         comp.settings.frameCount,
         comp.currentFrame,
-        (frame) => store.setFrame(frame)
+        (frame) => store.setFrame(frame),
       );
     }
   } else {
@@ -1394,18 +1490,20 @@ function executePlayPreview(
 
 async function executeDecomposeImage(
   context: ExecutionContext,
-  args: Record<string, any>
+  args: Record<string, any>,
 ): Promise<{ layerIds: string[]; message: string }> {
   const { store } = context;
   const { sourceLayerId, numLayers = 4 } = args;
 
   // Find the source layer
-  const sourceLayer = store.getActiveCompLayers().find(l => l.id === sourceLayerId);
+  const sourceLayer = store
+    .getActiveCompLayers()
+    .find((l) => l.id === sourceLayerId);
   if (!sourceLayer) {
     throw new Error(`Source layer ${sourceLayerId} not found`);
   }
 
-  if (sourceLayer.type !== 'image') {
+  if (sourceLayer.type !== "image") {
     throw new Error(`Layer ${sourceLayerId} is not an image layer`);
   }
 
@@ -1418,22 +1516,22 @@ async function executeDecomposeImage(
 
   // Convert to data URL if needed
   let imageDataUrl: string;
-  if (sourceUrl.startsWith('data:')) {
+  if (sourceUrl.startsWith("data:")) {
     imageDataUrl = sourceUrl;
   } else {
     // Load image and convert to data URL
     imageDataUrl = await new Promise((resolve, reject) => {
       const img = new Image();
-      img.crossOrigin = 'anonymous';
+      img.crossOrigin = "anonymous";
       img.onload = () => {
-        const canvas = document.createElement('canvas');
+        const canvas = document.createElement("canvas");
         canvas.width = img.naturalWidth;
         canvas.height = img.naturalHeight;
-        const ctx = canvas.getContext('2d')!;
+        const ctx = canvas.getContext("2d")!;
         ctx.drawImage(img, 0, 0);
-        resolve(canvas.toDataURL('image/png'));
+        resolve(canvas.toDataURL("image/png"));
       };
-      img.onerror = () => reject(new Error('Failed to load source image'));
+      img.onerror = () => reject(new Error("Failed to load source image"));
       img.src = sourceUrl;
     });
   }
@@ -1445,14 +1543,14 @@ async function executeDecomposeImage(
     { numLayers },
     (stage, message) => {
       console.log(`[AI Decompose] ${stage}: ${message}`);
-    }
+    },
   );
 
   // Create layers from result (reverse order so Background is at bottom)
   const createdLayerIds: string[] = [];
   for (let i = decomposedLayers.length - 1; i >= 0; i--) {
     const decomposed = decomposedLayers[i];
-    const layer = layerActions.createLayer(store, 'image', decomposed.label);
+    const layer = layerActions.createLayer(store, "image", decomposed.label);
     if (layer.data) {
       (layer.data as any).source = decomposed.image;
     }
@@ -1463,18 +1561,18 @@ async function executeDecomposeImage(
 
   return {
     layerIds: createdLayerIds,
-    message: `Decomposed image into ${decomposedLayers.length} layers: ${decomposedLayers.map(l => l.label).join(', ')}`,
+    message: `Decomposed image into ${decomposedLayers.length} layers: ${decomposedLayers.map((l) => l.label).join(", ")}`,
   };
 }
 
 async function executeVectorizeImage(
   context: ExecutionContext,
-  args: Record<string, any>
+  args: Record<string, any>,
 ): Promise<{ layerIds: string[]; message: string }> {
   const { store } = context;
   const {
     sourceLayerId,
-    mode = 'trace',
+    mode = "trace",
     separateLayers = true,
     groupByPath = true,
     autoGroupByRegion = false,
@@ -1483,13 +1581,21 @@ async function executeVectorizeImage(
   } = args;
 
   // Find the source layer
-  const sourceLayer = store.getActiveCompLayers().find(l => l.id === sourceLayerId);
+  const sourceLayer = store
+    .getActiveCompLayers()
+    .find((l) => l.id === sourceLayerId);
   if (!sourceLayer) {
     throw new Error(`Source layer ${sourceLayerId} not found`);
   }
 
-  if (sourceLayer.type !== 'image' && sourceLayer.type !== 'video' && sourceLayer.type !== 'solid') {
-    throw new Error(`Layer ${sourceLayerId} must be an image, video, or solid layer`);
+  if (
+    sourceLayer.type !== "image" &&
+    sourceLayer.type !== "video" &&
+    sourceLayer.type !== "solid"
+  ) {
+    throw new Error(
+      `Layer ${sourceLayerId} must be an image, video, or solid layer`,
+    );
   }
 
   // Get the source image URL
@@ -1500,28 +1606,28 @@ async function executeVectorizeImage(
     imageDataUrl = layerData.source;
   } else if (layerData?.assetId) {
     const asset = store.project?.assets[layerData.assetId];
-    if (!asset?.data) throw new Error('Asset data not found');
+    if (!asset?.data) throw new Error("Asset data not found");
     imageDataUrl = asset.data;
   } else if (layerData?.url) {
     imageDataUrl = layerData.url;
   } else {
-    throw new Error('Source layer has no image source');
+    throw new Error("Source layer has no image source");
   }
 
   // Convert to data URL if it's a regular URL
-  if (!imageDataUrl.startsWith('data:')) {
+  if (!imageDataUrl.startsWith("data:")) {
     imageDataUrl = await new Promise((resolve, reject) => {
       const img = new Image();
-      img.crossOrigin = 'anonymous';
+      img.crossOrigin = "anonymous";
       img.onload = () => {
-        const canvas = document.createElement('canvas');
+        const canvas = document.createElement("canvas");
         canvas.width = img.naturalWidth;
         canvas.height = img.naturalHeight;
-        const ctx = canvas.getContext('2d')!;
+        const ctx = canvas.getContext("2d")!;
         ctx.drawImage(img, 0, 0);
-        resolve(canvas.toDataURL('image/png'));
+        resolve(canvas.toDataURL("image/png"));
       };
-      img.onerror = () => reject(new Error('Failed to load source image'));
+      img.onerror = () => reject(new Error("Failed to load source image"));
       img.src = imageDataUrl;
     });
   }
@@ -1531,9 +1637,9 @@ async function executeVectorizeImage(
   const result = await vectorizeService.vectorize(
     imageDataUrl,
     {
-      mode: mode as 'trace' | 'ai',
+      mode: mode as "trace" | "ai",
       traceOptions: {
-        colorMode: traceOptions.colorMode || 'color',
+        colorMode: traceOptions.colorMode || "color",
         filterSpeckle: traceOptions.filterSpeckle ?? 4,
         cornerThreshold: traceOptions.cornerThreshold ?? 60,
         colorPrecision: traceOptions.colorPrecision ?? 6,
@@ -1542,14 +1648,14 @@ async function executeVectorizeImage(
     },
     (stage, message) => {
       console.log(`[AI Vectorize] ${stage}: ${message}`);
-    }
+    },
   );
 
   // Filter small paths and normalize control points
   let paths = filterSmallPaths(result.paths, 2);
   paths = normalizeControlPoints(paths, {
     groupByPath: groupByPath,
-    prefix: 'vec',
+    prefix: "vec",
   });
 
   const createdLayerIds: string[] = [];
@@ -1562,20 +1668,24 @@ async function executeVectorizeImage(
       // Auto-group by region if requested
       let controlPoints = path.controlPoints;
       if (autoGroupByRegion) {
-        controlPoints = autoGroupPoints(controlPoints, { method: 'quadrant' });
+        controlPoints = autoGroupPoints(controlPoints, { method: "quadrant" });
       }
 
       // Create the spline layer
-      const layer = layerActions.createLayer(store, 'spline', `Vector Path ${i + 1}`);
+      const layer = layerActions.createLayer(
+        store,
+        "spline",
+        `Vector Path ${i + 1}`,
+      );
 
       // Update with control points
       if (layer.data) {
         Object.assign(layer.data, {
           controlPoints,
           closed: path.closed,
-          stroke: path.stroke || '#00ff00',
+          stroke: path.stroke || "#00ff00",
           strokeWidth: 2,
-          fill: path.fill || '',
+          fill: path.fill || "",
           animated: enableAnimation,
         });
       }
@@ -1601,18 +1711,18 @@ async function executeVectorizeImage(
     // Auto-group by region if requested (overrides path grouping)
     let controlPoints = allPoints;
     if (autoGroupByRegion) {
-      controlPoints = autoGroupPoints(allPoints, { method: 'quadrant' });
+      controlPoints = autoGroupPoints(allPoints, { method: "quadrant" });
     }
 
-    const layer = layerActions.createLayer(store, 'spline', 'Vectorized Paths');
+    const layer = layerActions.createLayer(store, "spline", "Vectorized Paths");
 
     if (layer.data) {
       Object.assign(layer.data, {
         controlPoints,
         closed: false,
-        stroke: '#00ff00',
+        stroke: "#00ff00",
         strokeWidth: 2,
-        fill: '',
+        fill: "",
         animated: enableAnimation,
       });
     }
@@ -1634,12 +1744,12 @@ async function executeVectorizeImage(
 
 function executeGetLayerInfo(
   context: ExecutionContext,
-  args: Record<string, any>
+  args: Record<string, any>,
 ): { layer: Record<string, any> | null; message: string } {
   const { store } = context;
   const { layerId } = args;
 
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) {
     return { layer: null, message: `Layer ${layerId} not found` };
   }
@@ -1663,7 +1773,7 @@ function executeGetLayerInfo(
         anchorPoint: layer.transform.origin || layer.transform.anchorPoint,
       },
       opacity: layer.opacity,
-      effects: layer.effects?.map(e => ({
+      effects: layer.effects?.map((e) => ({
         id: e.id,
         effectKey: e.effectKey,
         name: e.name,
@@ -1676,8 +1786,11 @@ function executeGetLayerInfo(
 
 function executeFindLayers(
   context: ExecutionContext,
-  args: Record<string, any>
-): { layers: Array<{ id: string; name: string; type: string }>; message: string } {
+  args: Record<string, any>,
+): {
+  layers: Array<{ id: string; name: string; type: string }>;
+  message: string;
+} {
   const { store } = context;
   const { name, type } = args;
 
@@ -1685,15 +1798,15 @@ function executeFindLayers(
 
   if (name) {
     const lowerName = name.toLowerCase();
-    layers = layers.filter(l => l.name.toLowerCase().includes(lowerName));
+    layers = layers.filter((l) => l.name.toLowerCase().includes(lowerName));
   }
 
   if (type) {
-    layers = layers.filter(l => l.type === type);
+    layers = layers.filter((l) => l.type === type);
   }
 
   return {
-    layers: layers.map(l => ({
+    layers: layers.map((l) => ({
       id: l.id,
       name: l.name,
       type: l.type,
@@ -1704,24 +1817,26 @@ function executeFindLayers(
 
 function executeGetProjectState(
   context: ExecutionContext,
-  _args: Record<string, any>
+  _args: Record<string, any>,
 ): { state: any; message: string } {
   const { store } = context;
   const comp = store.getActiveComp();
 
   return {
     state: {
-      composition: comp ? {
-        id: comp.id,
-        name: comp.name,
-        width: comp.settings.width,
-        height: comp.settings.height,
-        frameCount: comp.settings.frameCount,
-        fps: comp.settings.fps,
-        currentFrame: comp.currentFrame,
-      } : null,
+      composition: comp
+        ? {
+            id: comp.id,
+            name: comp.name,
+            width: comp.settings.width,
+            height: comp.settings.height,
+            frameCount: comp.settings.frameCount,
+            fps: comp.settings.fps,
+            currentFrame: comp.currentFrame,
+          }
+        : null,
       layerCount: store.getActiveCompLayers().length,
-      layers: store.getActiveCompLayers().map(l => ({
+      layers: store.getActiveCompLayers().map((l) => ({
         id: l.id,
         name: l.name,
         type: l.type,

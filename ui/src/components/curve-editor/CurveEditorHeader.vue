@@ -67,7 +67,7 @@
 </template>
 
 <script setup lang="ts">
-export type CurveMode = 'value' | 'speed';
+export type CurveMode = "value" | "speed";
 
 export interface EasingPreset {
   key: string;
@@ -84,12 +84,12 @@ defineProps<{
 }>();
 
 defineEmits<{
-  'update:mode': [mode: CurveMode];
-  'update:autoSelectNearby': [value: boolean];
-  'update:snapEnabled': [value: boolean];
-  'applyPreset': [key: string];
-  'fitToView': [];
-  'close': [];
+  "update:mode": [mode: CurveMode];
+  "update:autoSelectNearby": [value: boolean];
+  "update:snapEnabled": [value: boolean];
+  applyPreset: [key: string];
+  fitToView: [];
+  close: [];
 }>();
 </script>
 

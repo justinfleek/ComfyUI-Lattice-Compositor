@@ -13,9 +13,18 @@
  * - Memory: Bounded by maxCacheSize
  */
 
-import type { EvaluatedLayer, EvaluatedTransform, EvaluatedEffect } from '@/engine/MotionEngine';
-import type { Layer, AnimatableProperty, EffectInstance, LayerTransform } from '@/types/project';
-import { interpolateProperty } from '@/services/interpolation';
+import type {
+  EvaluatedEffect,
+  EvaluatedLayer,
+  EvaluatedTransform,
+} from "@/engine/MotionEngine";
+import { interpolateProperty } from "@/services/interpolation";
+import type {
+  AnimatableProperty,
+  EffectInstance,
+  Layer,
+  LayerTransform,
+} from "@/types/project";
 
 // ============================================================================
 // VERSION TRACKING
@@ -104,7 +113,10 @@ function isCacheValid(entry: CacheEntry, layerId: string): boolean {
 /**
  * Get cached evaluation result if valid
  */
-export function getCachedEvaluation(layerId: string, frame: number): EvaluatedLayer | null {
+export function getCachedEvaluation(
+  layerId: string,
+  frame: number,
+): EvaluatedLayer | null {
   const key = buildCacheKey(layerId, frame);
   const entry = evaluationCache.get(key);
 
@@ -123,7 +135,7 @@ export function getCachedEvaluation(layerId: string, frame: number): EvaluatedLa
 export function setCachedEvaluation(
   layerId: string,
   frame: number,
-  evaluatedLayer: EvaluatedLayer
+  evaluatedLayer: EvaluatedLayer,
 ): void {
   // Evict old entries if cache is full
   if (evaluationCache.size >= MAX_CACHE_SIZE) {
@@ -143,8 +155,9 @@ export function setCachedEvaluation(
  */
 function evictOldEntries(count: number): void {
   // Sort entries by access time
-  const entries = Array.from(evaluationCache.entries())
-    .sort(([, a], [, b]) => a.accessTime - b.accessTime);
+  const entries = Array.from(evaluationCache.entries()).sort(
+    ([, a], [, b]) => a.accessTime - b.accessTime,
+  );
 
   // Remove oldest entries
   for (let i = 0; i < count && i < entries.length; i++) {
@@ -162,7 +175,7 @@ export function clearLayerCache(layerId: string): void {
       keysToDelete.push(key);
     }
   }
-  keysToDelete.forEach(key => evaluationCache.delete(key));
+  keysToDelete.forEach((key) => evaluationCache.delete(key));
 }
 
 /**
@@ -196,12 +209,14 @@ export function getEvaluationCacheStats(): {
 /**
  * Type guard for animatable properties
  */
-function isAnimatableProperty(value: unknown): value is AnimatableProperty<unknown> {
+function isAnimatableProperty(
+  value: unknown,
+): value is AnimatableProperty<unknown> {
   return (
-    typeof value === 'object' &&
+    typeof value === "object" &&
     value !== null &&
-    'value' in value &&
-    'keyframes' in value
+    "value" in value &&
+    "keyframes" in value
   );
 }
 
@@ -213,12 +228,14 @@ function evaluateTransform(
   frame: number,
   transform: LayerTransform,
   is3D: boolean,
-  fps: number
+  fps: number,
 ): EvaluatedTransform {
   const position = interpolateProperty(transform.position, frame, fps);
   // Use origin (new name) with fallback to anchorPoint for backwards compatibility
   const originProp = transform.origin || transform.anchorPoint;
-  const origin = originProp ? interpolateProperty(originProp, frame, fps) : { x: 0, y: 0, z: 0 };
+  const origin = originProp
+    ? interpolateProperty(originProp, frame, fps)
+    : { x: 0, y: 0, z: 0 };
   const scale = interpolateProperty(transform.scale, frame, fps);
   const rotation = interpolateProperty(transform.rotation, frame, fps);
 
@@ -255,7 +272,7 @@ function evaluateTransform(
 function evaluateEffects(
   frame: number,
   effects: EffectInstance[],
-  fps: number
+  fps: number,
 ): EvaluatedEffect[] {
   return effects.map((effect) => {
     const evaluatedParams: Record<string, unknown> = {};
@@ -284,7 +301,7 @@ function evaluateEffects(
 function evaluateLayerProperties(
   frame: number,
   layer: Layer,
-  fps: number
+  fps: number,
 ): Record<string, unknown> {
   const evaluated: Record<string, unknown> = {};
 
@@ -315,7 +332,11 @@ function evaluateLayerProperties(
  * @param fps - Frames per second (REQUIRED for correct expression evaluation)
  * @returns The evaluated layer state
  */
-export function evaluateLayerCached(layer: Layer, frame: number, fps: number): EvaluatedLayer {
+export function evaluateLayerCached(
+  layer: Layer,
+  frame: number,
+  fps: number,
+): EvaluatedLayer {
   // Check cache first
   const cached = getCachedEvaluation(layer.id, frame);
   if (cached) {
@@ -328,7 +349,12 @@ export function evaluateLayerCached(layer: Layer, frame: number, fps: number): E
   const inRange = frame >= start && frame <= end;
   const visible = layer.visible && inRange;
 
-  const transform = evaluateTransform(frame, layer.transform, layer.threeD, fps);
+  const transform = evaluateTransform(
+    frame,
+    layer.transform,
+    layer.threeD,
+    fps,
+  );
   const opacity = interpolateProperty(layer.opacity, frame, fps);
   const effects = evaluateEffects(frame, layer.effects, fps);
   const properties = evaluateLayerProperties(frame, layer, fps);
@@ -365,8 +391,12 @@ export function evaluateLayerCached(layer: Layer, frame: number, fps: number): E
  * @param fps - Frames per second (REQUIRED for correct expression evaluation)
  * @returns Array of evaluated layers
  */
-export function evaluateLayersCached(layers: Layer[], frame: number, fps: number): EvaluatedLayer[] {
-  return layers.map(layer => evaluateLayerCached(layer, frame, fps));
+export function evaluateLayersCached(
+  layers: Layer[],
+  frame: number,
+  fps: number,
+): EvaluatedLayer[] {
+  return layers.map((layer) => evaluateLayerCached(layer, frame, fps));
 }
 
 // ============================================================================

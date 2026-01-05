@@ -12,67 +12,64 @@
  * - Extrude (3D)
  */
 
-import * as THREE from 'three';
-import { BaseLayer } from './BaseLayer';
-import type { Layer } from '@/types/project';
-import type {
-  ShapeLayerData,
-  ShapeContent,
-  ShapeGroup,
-  ShapeGenerator,
-  ShapeModifier,
-  PathOperator,
-  ShapeTransform,
-  RepeaterOperator,
-  BezierPath,
-  BezierVertex,
-  Point2D,
-  ShapeColor,
-  FillShape,
-  StrokeShape,
-  GradientFillShape,
-  GradientStrokeShape,
-  TrimPathsOperator,
-  MergePathsOperator,
-  OffsetPathsOperator,
-  PuckerBloatOperator,
-  WigglePathsOperator,
-  ZigZagOperator,
-  TwistOperator,
-  RoundedCornersOperator,
-  RectangleShape,
-  EllipseShape,
-  PolygonShape,
-  StarShape,
-  PathShape,
-  ExtrudeOperator,
-  SimplifyPathOperator,
-  SmoothPathOperator,
-  IllustratorOperator,
-} from '@/types/shapes';
+import * as THREE from "three";
+import { interpolateProperty } from "@/services/interpolation";
 import {
-  ShapeOperations,
-  generateRectangle,
+  applyRepeater,
+  clonePath,
   generateEllipse,
   generatePolygon,
+  generateRectangle,
   generateStar,
-  trimPath,
   mergePaths,
   offsetPath,
   puckerBloat,
-  wigglePath,
-  zigZagPath,
-  twistPath,
   roundCorners,
+  ShapeOperations,
   simplifyPath,
   smoothPath,
-  applyRepeater,
   transformPath,
-  clonePath,
-} from '@/services/shapeOperations';
-import { layerLogger } from '@/utils/logger';
-import { interpolateProperty } from '@/services/interpolation';
-import type { AnimatableProperty } from '@/types/project';
+  trimPath,
+  twistPath,
+  wigglePath,
+  zigZagPath,
+} from "@/services/shapeOperations";
+import type { AnimatableProperty, Layer } from "@/types/project";
+import type {
+  BezierPath,
+  EllipseShape,
+  ExtrudeOperator,
+  FillShape,
+  GradientFillShape,
+  GradientStrokeShape,
+  IllustratorOperator,
+  MergePathsOperator,
+  OffsetPathsOperator,
+  PathOperator,
+  PathShape,
+  Point2D,
+  PolygonShape,
+  PuckerBloatOperator,
+  RectangleShape,
+  RepeaterOperator,
+  RoundedCornersOperator,
+  ShapeColor,
+  ShapeContent,
+  ShapeGenerator,
+  ShapeGroup,
+  ShapeLayerData,
+  ShapeModifier,
+  ShapeTransform,
+  SimplifyPathOperator,
+  SmoothPathOperator,
+  StarShape,
+  StrokeShape,
+  TrimPathsOperator,
+  TwistOperator,
+  WigglePathsOperator,
+  ZigZagOperator,
+} from "@/types/shapes";
+import { BaseLayer } from "./BaseLayer";
 
 // ============================================================================
 // EVALUATED SHAPE STATE
@@ -83,7 +80,7 @@ interface EvaluatedPath {
   fill?: {
     color: ShapeColor;
     opacity: number;
-    rule: 'nonzero' | 'evenodd';
+    rule: "nonzero" | "evenodd";
   };
   stroke?: {
     color: ShapeColor;
@@ -95,14 +92,14 @@ interface EvaluatedPath {
     dashOffset: number;
   };
   gradientFill?: {
-    type: 'linear' | 'radial';
+    type: "linear" | "radial";
     stops: Array<{ position: number; color: ShapeColor }>;
     startPoint: Point2D;
     endPoint: Point2D;
     opacity: number;
   };
   gradientStroke?: {
-    type: 'linear' | 'radial';
+    type: "linear" | "radial";
     stops: Array<{ position: number; color: ShapeColor }>;
     startPoint: Point2D;
     endPoint: Point2D;
@@ -120,7 +117,7 @@ interface EvaluatedPath {
 // ============================================================================
 
 export class ShapeLayer extends BaseLayer {
-  public readonly type = 'shape' as const;
+  public readonly type = "shape" as const;
 
   // Shape data
   private shapeData: ShapeLayerData;
@@ -148,14 +145,14 @@ export class ShapeLayer extends BaseLayer {
     // Get shape data from layer
     this.shapeData = (layerData.data as ShapeLayerData) || {
       contents: [],
-      blendMode: 'normal',
-      quality: 'normal',
+      blendMode: "normal",
+      quality: "normal",
       gpuAccelerated: true,
     };
 
     // Create canvas for rendering
     this.canvas = new OffscreenCanvas(this.canvasWidth, this.canvasHeight);
-    this.ctx = this.canvas.getContext('2d')!;
+    this.ctx = this.canvas.getContext("2d")!;
 
     // Create texture
     this.texture = new THREE.CanvasTexture(this.canvas as any);
@@ -164,7 +161,10 @@ export class ShapeLayer extends BaseLayer {
     this.texture.magFilter = THREE.LinearFilter;
 
     // Create mesh
-    const geometry = new THREE.PlaneGeometry(this.canvasWidth, this.canvasHeight);
+    const geometry = new THREE.PlaneGeometry(
+      this.canvasWidth,
+      this.canvasHeight,
+    );
     const material = new THREE.MeshBasicMaterial({
       map: this.texture,
       transparent: true,
@@ -192,17 +192,18 @@ export class ShapeLayer extends BaseLayer {
    */
   setSize(width: number, height: number): void {
     // Validate dimensions (NaN/0 would create invalid canvas)
-    const validWidth = (Number.isFinite(width) && width > 0) ? width : 1920;
-    const validHeight = (Number.isFinite(height) && height > 0) ? height : 1080;
+    const validWidth = Number.isFinite(width) && width > 0 ? width : 1920;
+    const validHeight = Number.isFinite(height) && height > 0 ? height : 1080;
 
-    if (validWidth === this.canvasWidth && validHeight === this.canvasHeight) return;
+    if (validWidth === this.canvasWidth && validHeight === this.canvasHeight)
+      return;
 
     this.canvasWidth = validWidth;
     this.canvasHeight = validHeight;
 
     // Recreate canvas with validated dimensions
     this.canvas = new OffscreenCanvas(validWidth, validHeight);
-    this.ctx = this.canvas.getContext('2d')!;
+    this.ctx = this.canvas.getContext("2d")!;
 
     // Update texture
     this.texture.image = this.canvas as any;
@@ -322,49 +323,49 @@ export class ShapeLayer extends BaseLayer {
 
     for (const content of contents) {
       switch (content.type) {
-        case 'rectangle':
-        case 'ellipse':
-        case 'polygon':
-        case 'star':
-        case 'path':
+        case "rectangle":
+        case "ellipse":
+        case "polygon":
+        case "star":
+        case "path":
           generators.push(content as ShapeGenerator);
           break;
-        case 'fill':
-        case 'stroke':
-        case 'gradientFill':
-        case 'gradientStroke':
+        case "fill":
+        case "stroke":
+        case "gradientFill":
+        case "gradientStroke":
           modifiers.push(content as ShapeModifier);
           break;
-        case 'trimPaths':
-        case 'mergePaths':
-        case 'offsetPaths':
-        case 'puckerBloat':
-        case 'wigglePaths':
-        case 'zigZag':
-        case 'twist':
-        case 'roundedCorners':
+        case "trimPaths":
+        case "mergePaths":
+        case "offsetPaths":
+        case "puckerBloat":
+        case "wigglePaths":
+        case "zigZag":
+        case "twist":
+        case "roundedCorners":
           operators.push(content as PathOperator);
           break;
-        case 'repeater':
+        case "repeater":
           repeaters.push(content as RepeaterOperator);
           break;
-        case 'transform':
+        case "transform":
           transforms.push(content as ShapeTransform);
           break;
-        case 'group':
+        case "group":
           groups.push(content as ShapeGroup);
           break;
-        case 'simplifyPath':
-        case 'smoothPath':
-        case 'extrude':
-        case 'trace':
+        case "simplifyPath":
+        case "smoothPath":
+        case "extrude":
+        case "trace":
           illustratorOps.push(content as IllustratorOperator);
           break;
       }
     }
 
     // Generate base paths
-    let paths: BezierPath[] = generators.map(gen => this.generatePath(gen));
+    let paths: BezierPath[] = generators.map((gen) => this.generatePath(gen));
 
     // Apply path operators in order
     for (const op of operators) {
@@ -378,7 +379,7 @@ export class ShapeLayer extends BaseLayer {
 
     // Apply transforms
     for (const transform of transforms) {
-      paths = paths.map(p => this.applyShapeTransform(p, transform));
+      paths = paths.map((p) => this.applyShapeTransform(p, transform));
     }
 
     // Apply repeaters
@@ -414,7 +415,7 @@ export class ShapeLayer extends BaseLayer {
    */
   private generatePath(generator: ShapeGenerator): BezierPath {
     switch (generator.type) {
-      case 'rectangle': {
+      case "rectangle": {
         const rect = generator as RectangleShape;
         const pos = this.getAnimatedValue(rect.position);
         const size = this.getAnimatedValue(rect.size);
@@ -422,24 +423,31 @@ export class ShapeLayer extends BaseLayer {
         return generateRectangle(pos, size, roundness, rect.direction);
       }
 
-      case 'ellipse': {
+      case "ellipse": {
         const ellipse = generator as EllipseShape;
         const pos = this.getAnimatedValue(ellipse.position);
         const size = this.getAnimatedValue(ellipse.size);
         return generateEllipse(pos, size, ellipse.direction);
       }
 
-      case 'polygon': {
+      case "polygon": {
         const poly = generator as PolygonShape;
         const pos = this.getAnimatedValue(poly.position);
         const points = this.getAnimatedValue(poly.points);
         const radius = this.getAnimatedValue(poly.outerRadius);
         const roundness = this.getAnimatedValue(poly.outerRoundness);
         const rotation = this.getAnimatedValue(poly.rotation);
-        return generatePolygon(pos, points, radius, roundness, rotation, poly.direction);
+        return generatePolygon(
+          pos,
+          points,
+          radius,
+          roundness,
+          rotation,
+          poly.direction,
+        );
       }
 
-      case 'star': {
+      case "star": {
         const star = generator as StarShape;
         const pos = this.getAnimatedValue(star.position);
         const points = this.getAnimatedValue(star.points);
@@ -448,10 +456,19 @@ export class ShapeLayer extends BaseLayer {
         const outerRound = this.getAnimatedValue(star.outerRoundness);
         const innerRound = this.getAnimatedValue(star.innerRoundness);
         const rotation = this.getAnimatedValue(star.rotation);
-        return generateStar(pos, points, outerR, innerR, outerRound, innerRound, rotation, star.direction);
+        return generateStar(
+          pos,
+          points,
+          outerR,
+          innerR,
+          outerRound,
+          innerRound,
+          rotation,
+          star.direction,
+        );
       }
 
-      case 'path': {
+      case "path": {
         const pathShape = generator as PathShape;
         return clonePath(this.getAnimatedValue(pathShape.path));
       }
@@ -464,9 +481,12 @@ export class ShapeLayer extends BaseLayer {
   /**
    * Apply a path operator to paths
    */
-  private applyOperator(paths: BezierPath[], operator: PathOperator): BezierPath[] {
+  private applyOperator(
+    paths: BezierPath[],
+    operator: PathOperator,
+  ): BezierPath[] {
     switch (operator.type) {
-      case 'trimPaths': {
+      case "trimPaths": {
         const trim = operator as TrimPathsOperator;
         const start = this.getAnimatedValue(trim.start);
         const end = this.getAnimatedValue(trim.end);
@@ -477,8 +497,10 @@ export class ShapeLayer extends BaseLayer {
         const validEnd = Number.isFinite(end) ? end : 100;
         const validOffset = Number.isFinite(offset) ? offset : 0;
 
-        if (trim.mode === 'simultaneously') {
-          return paths.map(p => trimPath(p, validStart, validEnd, validOffset));
+        if (trim.mode === "simultaneously") {
+          return paths.map((p) =>
+            trimPath(p, validStart, validEnd, validOffset),
+          );
         } else {
           // Individually - trim each path based on its index
           // Guard against division by zero when paths.length is 0
@@ -491,12 +513,12 @@ export class ShapeLayer extends BaseLayer {
         }
       }
 
-      case 'mergePaths': {
+      case "mergePaths": {
         const merge = operator as MergePathsOperator;
         return mergePaths(paths, merge.mode);
       }
 
-      case 'offsetPaths': {
+      case "offsetPaths": {
         const offset = operator as OffsetPathsOperator;
         const amount = this.getAnimatedValue(offset.amount);
         const copies = this.getAnimatedValue(offset.copies);
@@ -504,51 +526,70 @@ export class ShapeLayer extends BaseLayer {
         const miter = this.getAnimatedValue(offset.miterLimit);
 
         if (copies <= 1) {
-          return paths.map(p => offsetPath(p, amount, offset.lineJoin, miter));
+          return paths.map((p) =>
+            offsetPath(p, amount, offset.lineJoin, miter),
+          );
         } else {
-          return paths.flatMap(p =>
-            ShapeOperations.offsetPathMultiple(p, amount, copies, copyOff, offset.lineJoin, miter)
+          return paths.flatMap((p) =>
+            ShapeOperations.offsetPathMultiple(
+              p,
+              amount,
+              copies,
+              copyOff,
+              offset.lineJoin,
+              miter,
+            ),
           );
         }
       }
 
-      case 'puckerBloat': {
+      case "puckerBloat": {
         const pb = operator as PuckerBloatOperator;
         const amount = this.getAnimatedValue(pb.amount);
-        return paths.map(p => puckerBloat(p, amount));
+        return paths.map((p) => puckerBloat(p, amount));
       }
 
-      case 'wigglePaths': {
+      case "wigglePaths": {
         const wiggle = operator as WigglePathsOperator;
         const size = this.getAnimatedValue(wiggle.size);
         const detail = this.getAnimatedValue(wiggle.detail);
         const correlation = this.getAnimatedValue(wiggle.correlation);
-        const temporal = this.getAnimatedValue(wiggle.temporalPhase) + this.currentFrame * 0.1;
+        const temporal =
+          this.getAnimatedValue(wiggle.temporalPhase) + this.currentFrame * 0.1;
         const spatial = this.getAnimatedValue(wiggle.spatialPhase);
 
         return paths.map((p, i) =>
-          wigglePath(p, size, detail, wiggle.points, correlation, temporal, spatial, wiggle.randomSeed + i)
+          wigglePath(
+            p,
+            size,
+            detail,
+            wiggle.points,
+            correlation,
+            temporal,
+            spatial,
+            wiggle.randomSeed + i,
+          ),
         );
       }
 
-      case 'zigZag': {
+      case "zigZag": {
         const zz = operator as ZigZagOperator;
         const size = this.getAnimatedValue(zz.size);
         const ridges = this.getAnimatedValue(zz.ridgesPerSegment);
-        return paths.map(p => zigZagPath(p, size, ridges, zz.points));
+        return paths.map((p) => zigZagPath(p, size, ridges, zz.points));
       }
 
-      case 'twist': {
+      case "twist": {
         const twist = operator as TwistOperator;
         const angle = this.getAnimatedValue(twist.angle);
         const center = this.getAnimatedValue(twist.center);
-        return paths.map(p => twistPath(p, angle, center));
+        return paths.map((p) => twistPath(p, angle, center));
       }
 
-      case 'roundedCorners': {
+      case "roundedCorners": {
         const rc = operator as RoundedCornersOperator;
         const radius = this.getAnimatedValue(rc.radius);
-        return paths.map(p => roundCorners(p, radius));
+        return paths.map((p) => roundCorners(p, radius));
       }
 
       default:
@@ -559,27 +600,30 @@ export class ShapeLayer extends BaseLayer {
   /**
    * Apply Illustrator-specific operators
    */
-  private applyIllustratorOperator(paths: BezierPath[], operator: IllustratorOperator): BezierPath[] {
+  private applyIllustratorOperator(
+    paths: BezierPath[],
+    operator: IllustratorOperator,
+  ): BezierPath[] {
     switch (operator.type) {
-      case 'simplifyPath': {
+      case "simplifyPath": {
         const simp = operator as SimplifyPathOperator;
         const tolerance = this.getAnimatedValue(simp.tolerance);
-        return paths.map(p => simplifyPath(p, tolerance, simp.straightLines));
+        return paths.map((p) => simplifyPath(p, tolerance, simp.straightLines));
       }
 
-      case 'smoothPath': {
+      case "smoothPath": {
         const smooth = operator as SmoothPathOperator;
         const amount = this.getAnimatedValue(smooth.amount);
-        return paths.map(p => smoothPath(p, amount));
+        return paths.map((p) => smoothPath(p, amount));
       }
 
-      case 'extrude': {
+      case "extrude": {
         // Extrude creates 3D geometry, handled separately
         this.createExtrudedGeometry(paths, operator as ExtrudeOperator);
         return paths;
       }
 
-      case 'trace': {
+      case "trace": {
         // Trace is handled at a higher level (needs image source)
         return paths;
       }
@@ -592,7 +636,10 @@ export class ShapeLayer extends BaseLayer {
   /**
    * Apply a shape transform
    */
-  private applyShapeTransform(path: BezierPath, transform: ShapeTransform): BezierPath {
+  private applyShapeTransform(
+    path: BezierPath,
+    transform: ShapeTransform,
+  ): BezierPath {
     const anchor = this.getAnimatedValue(transform.anchorPoint);
     const position = this.getAnimatedValue(transform.position);
     const scale = this.getAnimatedValue(transform.scale);
@@ -604,7 +651,10 @@ export class ShapeLayer extends BaseLayer {
   /**
    * Apply repeater operator
    */
-  private applyRepeater(paths: BezierPath[], repeater: RepeaterOperator): BezierPath[] {
+  private applyRepeater(
+    paths: BezierPath[],
+    repeater: RepeaterOperator,
+  ): BezierPath[] {
     const rawCopies = this.getAnimatedValue(repeater.copies);
     // Validate copies (NaN would bypass the <= 1 check and cause issues downstream)
     const copies = Number.isFinite(rawCopies) ? Math.floor(rawCopies) : 1;
@@ -619,12 +669,20 @@ export class ShapeLayer extends BaseLayer {
     const endOp = this.getAnimatedValue(repeater.transform.endOpacity);
 
     const repeated = applyRepeater(
-      paths, copies, offset, anchor, position, scale, rotation, startOp, endOp
+      paths,
+      copies,
+      offset,
+      anchor,
+      position,
+      scale,
+      rotation,
+      startOp,
+      endOp,
     );
 
     // Flatten the results (ignoring opacity for now - would need per-path opacity)
     const result: BezierPath[] = [];
-    if (repeater.composite === 'below') {
+    if (repeater.composite === "below") {
       // Original first, then copies
       result.push(...paths);
       for (const rep of repeated.slice(1)) {
@@ -644,9 +702,12 @@ export class ShapeLayer extends BaseLayer {
   /**
    * Apply a modifier (fill/stroke) to an evaluated path
    */
-  private applyModifier(evalPath: EvaluatedPath, modifier: ShapeModifier): void {
+  private applyModifier(
+    evalPath: EvaluatedPath,
+    modifier: ShapeModifier,
+  ): void {
     switch (modifier.type) {
-      case 'fill': {
+      case "fill": {
         const fill = modifier as FillShape;
         evalPath.fill = {
           color: this.getAnimatedValue(fill.color),
@@ -656,7 +717,7 @@ export class ShapeLayer extends BaseLayer {
         break;
       }
 
-      case 'stroke': {
+      case "stroke": {
         const stroke = modifier as StrokeShape;
         evalPath.stroke = {
           color: this.getAnimatedValue(stroke.color),
@@ -670,7 +731,7 @@ export class ShapeLayer extends BaseLayer {
         break;
       }
 
-      case 'gradientFill': {
+      case "gradientFill": {
         const grad = modifier as GradientFillShape;
         const gradDef = this.getAnimatedValue(grad.gradient);
         evalPath.gradientFill = {
@@ -683,7 +744,7 @@ export class ShapeLayer extends BaseLayer {
         break;
       }
 
-      case 'gradientStroke': {
+      case "gradientStroke": {
         const gradStroke = modifier as GradientStrokeShape;
         const gradDef = this.getAnimatedValue(gradStroke.gradient);
         evalPath.gradientStroke = {
@@ -709,7 +770,12 @@ export class ShapeLayer extends BaseLayer {
   private getAnimatedValue<T>(prop: AnimatableProperty<T>): T {
     // Use the interpolation service for proper keyframe interpolation
     // This handles all interpolation types (linear, bezier, hold) and expressions
-    return interpolateProperty(prop, this.currentFrame, this.compositionFps, this.layerData.id);
+    return interpolateProperty(
+      prop,
+      this.currentFrame,
+      this.compositionFps,
+      this.layerData.id,
+    );
   }
 
   /**
@@ -730,7 +796,7 @@ export class ShapeLayer extends BaseLayer {
       const gradient = this.createGradient(gradientFill);
       this.ctx.globalAlpha = gradientFill.opacity / 100;
       this.ctx.fillStyle = gradient;
-      this.ctx.fill(path2d, 'nonzero');
+      this.ctx.fill(path2d, "nonzero");
     } else if (fill) {
       this.ctx.globalAlpha = fill.opacity / 100;
       this.ctx.fillStyle = this.colorToCSS(fill.color);
@@ -750,7 +816,7 @@ export class ShapeLayer extends BaseLayer {
         this.ctx.setLineDash(gradientStroke.dashPattern);
         this.ctx.lineDashOffset = gradientStroke.dashOffset;
       } else {
-        this.ctx.setLineDash([]);  // Reset dash pattern for solid strokes
+        this.ctx.setLineDash([]); // Reset dash pattern for solid strokes
       }
 
       this.ctx.stroke(path2d);
@@ -765,7 +831,7 @@ export class ShapeLayer extends BaseLayer {
         this.ctx.setLineDash(stroke.dashPattern);
         this.ctx.lineDashOffset = stroke.dashOffset;
       } else {
-        this.ctx.setLineDash([]);  // Reset dash pattern for solid strokes
+        this.ctx.setLineDash([]); // Reset dash pattern for solid strokes
       }
 
       this.ctx.stroke(path2d);
@@ -817,7 +883,9 @@ export class ShapeLayer extends BaseLayer {
   /**
    * Create canvas gradient
    */
-  private createGradient(gradDef: EvaluatedPath['gradientFill'] | EvaluatedPath['gradientStroke']): CanvasGradient {
+  private createGradient(
+    gradDef: EvaluatedPath["gradientFill"] | EvaluatedPath["gradientStroke"],
+  ): CanvasGradient {
     if (!gradDef) {
       return this.ctx.createLinearGradient(0, 0, 0, 0);
     }
@@ -829,13 +897,18 @@ export class ShapeLayer extends BaseLayer {
 
     let gradient: CanvasGradient;
 
-    if (gradDef.type === 'linear') {
+    if (gradDef.type === "linear") {
       gradient = this.ctx.createLinearGradient(startX, startY, endX, endY);
     } else {
-      const radius = Math.sqrt(
-        Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2)
+      const radius = Math.sqrt((endX - startX) ** 2 + (endY - startY) ** 2);
+      gradient = this.ctx.createRadialGradient(
+        startX,
+        startY,
+        0,
+        startX,
+        startY,
+        radius,
       );
-      gradient = this.ctx.createRadialGradient(startX, startY, 0, startX, startY, radius);
     }
 
     for (const stop of gradDef.stops) {
@@ -848,7 +921,10 @@ export class ShapeLayer extends BaseLayer {
   /**
    * Create extruded 3D geometry from paths
    */
-  private createExtrudedGeometry(paths: BezierPath[], extrude: ExtrudeOperator): void {
+  private createExtrudedGeometry(
+    paths: BezierPath[],
+    extrude: ExtrudeOperator,
+  ): void {
     // Clear existing extrusions
     for (const mesh of this.extrudedMeshes) {
       this.extrudeGroup.remove(mesh);
@@ -860,7 +936,7 @@ export class ShapeLayer extends BaseLayer {
     const depth = this.getAnimatedValue(extrude.depth);
     const bevelDepth = this.getAnimatedValue(extrude.bevelDepth);
     const frontColor = this.getAnimatedValue(extrude.material.frontColor);
-    const sideColor = this.getAnimatedValue(extrude.material.sideColor);
+    const _sideColor = this.getAnimatedValue(extrude.material.sideColor);
 
     for (const path of paths) {
       if (path.vertices.length < 3 || !path.closed) continue;
@@ -893,7 +969,11 @@ export class ShapeLayer extends BaseLayer {
 
       // Create material
       const material = new THREE.MeshStandardMaterial({
-        color: new THREE.Color(frontColor.r / 255, frontColor.g / 255, frontColor.b / 255),
+        color: new THREE.Color(
+          frontColor.r / 255,
+          frontColor.g / 255,
+          frontColor.b / 255,
+        ),
         metalness: 0.1,
         roughness: 0.8,
       });

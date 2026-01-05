@@ -186,17 +186,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
+import { computed, onMounted, ref, watch } from "vue";
 import {
-  getLayerDecompositionService,
-  type DecompositionModelStatus,
   type DecomposedLayer,
-} from '@/services/layerDecomposition';
+  type DecompositionModelStatus,
+  getLayerDecompositionService,
+} from "@/services/layerDecomposition";
+import { useCompositorStore } from "@/stores/compositorStore";
 
 const emit = defineEmits<{
-  (e: 'close'): void;
-  (e: 'decomposed', layers: DecomposedLayer[]): void;
+  (e: "close"): void;
+  (e: "decomposed", layers: DecomposedLayer[]): void;
 }>();
 
 const store = useCompositorStore();
@@ -205,8 +205,8 @@ const store = useCompositorStore();
 const modelStatus = ref<DecompositionModelStatus | null>(null);
 
 // Source selection
-const sourceType = ref<'layer' | 'upload'>('layer');
-const selectedLayerId = ref('');
+const sourceType = ref<"layer" | "upload">("layer");
+const selectedLayerId = ref("");
 const uploadedImage = ref<string | null>(null);
 const fileInput = ref<HTMLInputElement | null>(null);
 
@@ -215,7 +215,7 @@ const numLayers = ref(4);
 const guidanceScale = ref(3.0);
 const numInferenceSteps = ref(50);
 const seed = ref<number | undefined>(undefined);
-const showAdvanced = ref(false);
+const _showAdvanced = ref(false);
 
 // Organization options
 const groupIntoComp = ref(true); // Group decomposed layers into nested comp
@@ -224,75 +224,81 @@ const autoUnload = ref(true); // Free GPU memory after decomposition
 
 // Processing state
 const isProcessing = ref(false);
-const progressMessage = ref('');
+const progressMessage = ref("");
 const progressIndeterminate = ref(false);
-const errorMessage = ref('');
+const errorMessage = ref("");
 
 // Get image layers from composition
 const imageLayers = computed(() => {
   const layers = store.getActiveCompLayers();
-  return layers.filter(l => l.type === 'image' || l.type === 'solid');
+  return layers.filter((l) => l.type === "image" || l.type === "solid");
 });
 
 const hasImageLayers = computed(() => imageLayers.value.length > 0);
 
 // Model status display
 const statusClass = computed(() => {
-  if (!modelStatus.value) return 'checking';
-  if (modelStatus.value.error) return 'error';
-  if (modelStatus.value.loading) return 'loading';
-  if (modelStatus.value.loaded) return 'ready';
-  if (modelStatus.value.downloaded) return 'downloaded';
-  return 'not-downloaded';
+  if (!modelStatus.value) return "checking";
+  if (modelStatus.value.error) return "error";
+  if (modelStatus.value.loading) return "loading";
+  if (modelStatus.value.loaded) return "ready";
+  if (modelStatus.value.downloaded) return "downloaded";
+  return "not-downloaded";
 });
 
-const statusIcon = computed(() => {
+const _statusIcon = computed(() => {
   switch (statusClass.value) {
-    case 'ready': return 'pi pi-check-circle';
-    case 'downloaded': return 'pi pi-download';
-    case 'loading': return 'pi pi-spin pi-spinner';
-    case 'checking': return 'pi pi-spin pi-spinner';
-    case 'error': return 'pi pi-exclamation-circle';
-    default: return 'pi pi-cloud-download';
+    case "ready":
+      return "pi pi-check-circle";
+    case "downloaded":
+      return "pi pi-download";
+    case "loading":
+      return "pi pi-spin pi-spinner";
+    case "checking":
+      return "pi pi-spin pi-spinner";
+    case "error":
+      return "pi pi-exclamation-circle";
+    default:
+      return "pi pi-cloud-download";
   }
 });
 
-const statusText = computed(() => {
-  if (!modelStatus.value) return 'Checking model status...';
+const _statusText = computed(() => {
+  if (!modelStatus.value) return "Checking model status...";
   if (modelStatus.value.error) return `Error: ${modelStatus.value.error}`;
-  if (modelStatus.value.loading) return 'Loading model...';
-  if (modelStatus.value.loaded) return 'Model ready';
-  if (modelStatus.value.downloaded) return 'Model downloaded (not loaded)';
-  return 'Model not downloaded';
+  if (modelStatus.value.loading) return "Loading model...";
+  if (modelStatus.value.loaded) return "Model ready";
+  if (modelStatus.value.downloaded) return "Model downloaded (not loaded)";
+  return "Model not downloaded";
 });
 
 // Can decompose?
 const canDecompose = computed(() => {
   if (!modelStatus.value) return false;
-  if (sourceType.value === 'layer' && !selectedLayerId.value) return false;
-  if (sourceType.value === 'upload' && !uploadedImage.value) return false;
+  if (sourceType.value === "layer" && !selectedLayerId.value) return false;
+  if (sourceType.value === "upload" && !uploadedImage.value) return false;
   return true;
 });
 
 // Button text based on state
-const buttonText = computed(() => {
-  if (!modelStatus.value) return 'Checking...';
+const _buttonText = computed(() => {
+  if (!modelStatus.value) return "Checking...";
   if (isProcessing.value) {
-    if (!modelStatus.value.downloaded) return 'Downloading...';
-    if (!modelStatus.value.loaded) return 'Loading...';
-    return 'Decomposing...';
+    if (!modelStatus.value.downloaded) return "Downloading...";
+    if (!modelStatus.value.loaded) return "Loading...";
+    return "Decomposing...";
   }
-  if (!modelStatus.value.downloaded) return 'Download & Decompose';
-  if (!modelStatus.value.loaded) return 'Load & Decompose';
-  return 'Decompose Image';
+  if (!modelStatus.value.downloaded) return "Download & Decompose";
+  if (!modelStatus.value.loaded) return "Load & Decompose";
+  return "Decompose Image";
 });
 
 // File handling
-function triggerUpload() {
+function _triggerUpload() {
   fileInput.value?.click();
 }
 
-function handleFileSelect(event: Event) {
+function _handleFileSelect(event: Event) {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
   if (file) {
@@ -300,9 +306,9 @@ function handleFileSelect(event: Event) {
   }
 }
 
-function handleDrop(event: DragEvent) {
+function _handleDrop(event: DragEvent) {
   const file = event.dataTransfer?.files[0];
-  if (file && file.type.startsWith('image/')) {
+  if (file?.type.startsWith("image/")) {
     loadImageFile(file);
   }
 }
@@ -317,24 +323,24 @@ function loadImageFile(file: File) {
 
 // Get source image as data URL
 async function getSourceImage(): Promise<string | null> {
-  if (sourceType.value === 'upload') {
+  if (sourceType.value === "upload") {
     return uploadedImage.value;
   }
 
   // Get from layer
-  const layer = imageLayers.value.find(l => l.id === selectedLayerId.value);
+  const layer = imageLayers.value.find((l) => l.id === selectedLayerId.value);
   if (!layer) return null;
 
   // For image layers, get the source URL via asset lookup
-  if (layer.type === 'image' && layer.data) {
-    const imageData = layer.data as import('@/types/project').ImageLayerData;
+  if (layer.type === "image" && layer.data) {
+    const imageData = layer.data as import("@/types/project").ImageLayerData;
     if (imageData.assetId) {
       // Look up asset to get actual URL/data
       const asset = store.project?.assets?.[imageData.assetId];
       const source = asset?.data || imageData.assetId;
       if (source) {
         // If it's already a data URL, return it directly
-        if (source.startsWith('data:')) {
+        if (source.startsWith("data:")) {
           return source;
         }
         // Otherwise, load and convert to data URL
@@ -344,15 +350,16 @@ async function getSourceImage(): Promise<string | null> {
   }
 
   // For solid layers, create a canvas with the color
-  if (layer.type === 'solid' && layer.data) {
-    const solidData = layer.data as unknown as import('@/types/project').SolidLayerData;
-    const canvas = document.createElement('canvas');
+  if (layer.type === "solid" && layer.data) {
+    const solidData =
+      layer.data as unknown as import("@/types/project").SolidLayerData;
+    const canvas = document.createElement("canvas");
     canvas.width = solidData.width || store.width;
     canvas.height = solidData.height || store.height;
-    const ctx = canvas.getContext('2d')!;
-    ctx.fillStyle = solidData.color || '#808080';
+    const ctx = canvas.getContext("2d")!;
+    ctx.fillStyle = solidData.color || "#808080";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    return canvas.toDataURL('image/png');
+    return canvas.toDataURL("image/png");
   }
 
   return null;
@@ -362,22 +369,24 @@ async function getSourceImage(): Promise<string | null> {
 async function loadImageAsDataUrl(url: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.crossOrigin = 'anonymous';
+    img.crossOrigin = "anonymous";
     img.onload = () => {
-      const canvas = document.createElement('canvas');
+      const canvas = document.createElement("canvas");
       canvas.width = img.naturalWidth;
       canvas.height = img.naturalHeight;
-      const ctx = canvas.getContext('2d')!;
+      const ctx = canvas.getContext("2d")!;
       ctx.drawImage(img, 0, 0);
-      resolve(canvas.toDataURL('image/png'));
+      resolve(canvas.toDataURL("image/png"));
     };
-    img.onerror = () => reject(new Error('Failed to load image'));
+    img.onerror = () => reject(new Error("Failed to load image"));
     img.src = url;
   });
 }
 
 // Create layers from decomposition result
-async function createLayersFromDecomposition(decomposedLayers: DecomposedLayer[]) {
+async function createLayersFromDecomposition(
+  decomposedLayers: DecomposedLayer[],
+) {
   const comp = store.getActiveComp();
   if (!comp) return;
 
@@ -389,7 +398,7 @@ async function createLayersFromDecomposition(decomposedLayers: DecomposedLayer[]
       height: comp.settings.height,
       frameCount: comp.settings.frameCount,
       fps: comp.settings.fps,
-      backgroundColor: '#00000000', // Transparent
+      backgroundColor: "#00000000", // Transparent
     });
 
     // Switch to nested comp to add layers
@@ -399,7 +408,7 @@ async function createLayersFromDecomposition(decomposedLayers: DecomposedLayer[]
     // Create image layers for each decomposed layer (reverse order so Background is at bottom)
     for (let i = decomposedLayers.length - 1; i >= 0; i--) {
       const decomposed = decomposedLayers[i];
-      const layer = store.createLayer('image', decomposed.label);
+      const layer = store.createLayer("image", decomposed.label);
       if (layer.data) {
         (layer.data as any).source = decomposed.image;
       }
@@ -409,7 +418,7 @@ async function createLayersFromDecomposition(decomposedLayers: DecomposedLayer[]
     store.switchComposition(originalCompId);
 
     // Add the nested comp as a layer in the original
-    const nestedLayer = store.createLayer('nestedComp', nestedCompName);
+    const nestedLayer = store.createLayer("nestedComp", nestedCompName);
     if (nestedLayer.data) {
       (nestedLayer.data as any).compositionId = nestedComp.id;
     }
@@ -417,7 +426,7 @@ async function createLayersFromDecomposition(decomposedLayers: DecomposedLayer[]
     // Create layers directly in current composition (original behavior)
     for (let i = decomposedLayers.length - 1; i >= 0; i--) {
       const decomposed = decomposedLayers[i];
-      const layer = store.createLayer('image', decomposed.label);
+      const layer = store.createLayer("image", decomposed.label);
       if (layer.data) {
         (layer.data as any).source = decomposed.image;
       }
@@ -428,21 +437,21 @@ async function createLayersFromDecomposition(decomposedLayers: DecomposedLayer[]
 }
 
 // Main decomposition function
-async function startDecomposition() {
+async function _startDecomposition() {
   if (!canDecompose.value || isProcessing.value) return;
 
   isProcessing.value = true;
-  errorMessage.value = '';
+  errorMessage.value = "";
   progressIndeterminate.value = true;
 
   try {
     const service = getLayerDecompositionService();
 
     // Get source image
-    progressMessage.value = 'Preparing source image...';
+    progressMessage.value = "Preparing source image...";
     const sourceImage = await getSourceImage();
     if (!sourceImage) {
-      throw new Error('Failed to get source image');
+      throw new Error("Failed to get source image");
     }
 
     // Run decomposition with auto-setup
@@ -458,26 +467,30 @@ async function startDecomposition() {
       },
       (stage, message) => {
         progressMessage.value = message;
-        progressIndeterminate.value = stage !== 'decomposing';
+        progressIndeterminate.value = stage !== "decomposing";
 
         // Refresh model status during setup
-        if (stage === 'downloading' || stage === 'loading' || stage === 'cleanup') {
+        if (
+          stage === "downloading" ||
+          stage === "loading" ||
+          stage === "cleanup"
+        ) {
           checkModelStatus();
         }
-      }
+      },
     );
 
     // Create layers from result
-    progressMessage.value = 'Creating layers...';
+    progressMessage.value = "Creating layers...";
     await createLayersFromDecomposition(layers);
 
     // Emit success
-    emit('decomposed', layers);
-    emit('close');
-
+    emit("decomposed", layers);
+    emit("close");
   } catch (err) {
-    errorMessage.value = err instanceof Error ? err.message : 'Decomposition failed';
-    console.error('[DecomposeDialog] Error:', err);
+    errorMessage.value =
+      err instanceof Error ? err.message : "Decomposition failed";
+    console.error("[DecomposeDialog] Error:", err);
   } finally {
     isProcessing.value = false;
     progressIndeterminate.value = false;
@@ -490,13 +503,13 @@ async function checkModelStatus() {
     const service = getLayerDecompositionService();
     modelStatus.value = await service.getStatus();
   } catch (err) {
-    console.error('[DecomposeDialog] Failed to get model status:', err);
+    console.error("[DecomposeDialog] Failed to get model status:", err);
     modelStatus.value = {
       downloaded: false,
       loaded: false,
       loading: false,
-      error: 'Failed to connect to backend',
-      model_path: '',
+      error: "Failed to connect to backend",
+      model_path: "",
       model_size_gb: 28.8,
       verification: null,
       download_progress: null,
@@ -505,11 +518,15 @@ async function checkModelStatus() {
 }
 
 // Auto-select first image layer if available
-watch(hasImageLayers, (has) => {
-  if (has && !selectedLayerId.value) {
-    selectedLayerId.value = imageLayers.value[0]?.id || '';
-  }
-}, { immediate: true });
+watch(
+  hasImageLayers,
+  (has) => {
+    if (has && !selectedLayerId.value) {
+      selectedLayerId.value = imageLayers.value[0]?.id || "";
+    }
+  },
+  { immediate: true },
+);
 
 // Initialize
 onMounted(() => {
@@ -517,7 +534,7 @@ onMounted(() => {
 
   // If no image layers, default to upload
   if (!hasImageLayers.value) {
-    sourceType.value = 'upload';
+    sourceType.value = "upload";
   }
 });
 </script>

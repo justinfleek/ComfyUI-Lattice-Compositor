@@ -4,15 +4,15 @@
  * Handles: Web-safe fonts, Google Fonts, and Local Font Access API (Chrome/Edge)
  */
 
-import { createLogger } from '@/utils/logger';
+import { createLogger } from "@/utils/logger";
 
-const fontLogger = createLogger('Font');
+const fontLogger = createLogger("Font");
 
 export interface FontInfo {
   family: string;
   fullName: string;
   style: string;
-  source: 'system' | 'websafe' | 'google';
+  source: "system" | "websafe" | "google";
 }
 
 export interface FontCategory {
@@ -22,24 +22,75 @@ export interface FontCategory {
 
 // Web-safe fonts that work everywhere
 const WEB_SAFE_FONTS: FontInfo[] = [
-  { family: 'Arial', fullName: 'Arial', style: 'normal', source: 'websafe' },
-  { family: 'Arial Black', fullName: 'Arial Black', style: 'normal', source: 'websafe' },
-  { family: 'Verdana', fullName: 'Verdana', style: 'normal', source: 'websafe' },
-  { family: 'Tahoma', fullName: 'Tahoma', style: 'normal', source: 'websafe' },
-  { family: 'Trebuchet MS', fullName: 'Trebuchet MS', style: 'normal', source: 'websafe' },
-  { family: 'Times New Roman', fullName: 'Times New Roman', style: 'normal', source: 'websafe' },
-  { family: 'Georgia', fullName: 'Georgia', style: 'normal', source: 'websafe' },
-  { family: 'Courier New', fullName: 'Courier New', style: 'normal', source: 'websafe' },
-  { family: 'Impact', fullName: 'Impact', style: 'normal', source: 'websafe' },
-  { family: 'Comic Sans MS', fullName: 'Comic Sans MS', style: 'normal', source: 'websafe' },
+  { family: "Arial", fullName: "Arial", style: "normal", source: "websafe" },
+  {
+    family: "Arial Black",
+    fullName: "Arial Black",
+    style: "normal",
+    source: "websafe",
+  },
+  {
+    family: "Verdana",
+    fullName: "Verdana",
+    style: "normal",
+    source: "websafe",
+  },
+  { family: "Tahoma", fullName: "Tahoma", style: "normal", source: "websafe" },
+  {
+    family: "Trebuchet MS",
+    fullName: "Trebuchet MS",
+    style: "normal",
+    source: "websafe",
+  },
+  {
+    family: "Times New Roman",
+    fullName: "Times New Roman",
+    style: "normal",
+    source: "websafe",
+  },
+  {
+    family: "Georgia",
+    fullName: "Georgia",
+    style: "normal",
+    source: "websafe",
+  },
+  {
+    family: "Courier New",
+    fullName: "Courier New",
+    style: "normal",
+    source: "websafe",
+  },
+  { family: "Impact", fullName: "Impact", style: "normal", source: "websafe" },
+  {
+    family: "Comic Sans MS",
+    fullName: "Comic Sans MS",
+    style: "normal",
+    source: "websafe",
+  },
 ];
 
 // Popular Google Fonts
 const GOOGLE_FONTS = [
-  'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Oswald',
-  'Raleway', 'Poppins', 'Nunito', 'Playfair Display', 'Merriweather',
-  'Ubuntu', 'PT Sans', 'Roboto Mono', 'Bebas Neue', 'Source Sans Pro',
-  'Inter', 'Fira Sans', 'Quicksand', 'Work Sans', 'Barlow'
+  "Roboto",
+  "Open Sans",
+  "Lato",
+  "Montserrat",
+  "Oswald",
+  "Raleway",
+  "Poppins",
+  "Nunito",
+  "Playfair Display",
+  "Merriweather",
+  "Ubuntu",
+  "PT Sans",
+  "Roboto Mono",
+  "Bebas Neue",
+  "Source Sans Pro",
+  "Inter",
+  "Fira Sans",
+  "Quicksand",
+  "Work Sans",
+  "Barlow",
 ];
 
 class FontService {
@@ -54,7 +105,7 @@ class FontService {
     if (this.initialized) return;
 
     // Try to load system fonts (Chrome/Edge 103+ only)
-    if ('queryLocalFonts' in window) {
+    if ("queryLocalFonts" in window) {
       await this.loadSystemFonts();
     }
 
@@ -74,25 +125,26 @@ class FontService {
       const familyMap = new Map<string, FontInfo>();
 
       for (const font of fonts) {
-        if (!familyMap.has(font.family) || font.style === 'Regular') {
+        if (!familyMap.has(font.family) || font.style === "Regular") {
           familyMap.set(font.family, {
             family: font.family,
             fullName: font.fullName,
             style: font.style,
-            source: 'system'
+            source: "system",
           });
         }
       }
 
-      this.systemFonts = Array.from(familyMap.values())
-        .sort((a, b) => a.family.localeCompare(b.family));
+      this.systemFonts = Array.from(familyMap.values()).sort((a, b) =>
+        a.family.localeCompare(b.family),
+      );
 
       fontLogger.debug(`Loaded ${this.systemFonts.length} system fonts`);
     } catch (error) {
-      if ((error as Error).name === 'NotAllowedError') {
-        fontLogger.info('User denied font access permission');
+      if ((error as Error).name === "NotAllowedError") {
+        fontLogger.info("User denied font access permission");
       } else {
-        fontLogger.error('Error loading system fonts:', error);
+        fontLogger.error("Error loading system fonts:", error);
       }
     }
   }
@@ -106,26 +158,26 @@ class FontService {
     // System fonts (if available)
     if (this.systemFonts.length > 0) {
       categories.push({
-        name: 'System Fonts',
-        fonts: this.systemFonts
+        name: "System Fonts",
+        fonts: this.systemFonts,
       });
     }
 
     // Web-safe fonts
     categories.push({
-      name: 'Web Safe',
-      fonts: WEB_SAFE_FONTS
+      name: "Web Safe",
+      fonts: WEB_SAFE_FONTS,
     });
 
     // Google Fonts
     categories.push({
-      name: 'Google Fonts',
-      fonts: GOOGLE_FONTS.map(family => ({
+      name: "Google Fonts",
+      fonts: GOOGLE_FONTS.map((family) => ({
         family,
         fullName: family,
-        style: 'normal',
-        source: 'google' as const
-      }))
+        style: "normal",
+        source: "google" as const,
+      })),
     });
 
     return categories;
@@ -137,9 +189,9 @@ class FontService {
   getAllFontFamilies(): string[] {
     const families = new Set<string>();
 
-    WEB_SAFE_FONTS.forEach(f => families.add(f.family));
-    GOOGLE_FONTS.forEach(f => families.add(f));
-    this.systemFonts.forEach(f => families.add(f.family));
+    WEB_SAFE_FONTS.forEach((f) => families.add(f.family));
+    GOOGLE_FONTS.forEach((f) => families.add(f));
+    this.systemFonts.forEach((f) => families.add(f.family));
 
     return Array.from(families).sort();
   }
@@ -147,7 +199,10 @@ class FontService {
   /**
    * Load a Google Font dynamically
    */
-  async loadGoogleFont(family: string, weights: string[] = ['400', '700']): Promise<void> {
+  async loadGoogleFont(
+    family: string,
+    weights: string[] = ["400", "700"],
+  ): Promise<void> {
     if (this.loadedGoogleFonts.has(family)) return;
 
     // Security: Only allow whitelisted Google Fonts to prevent arbitrary external resource loading
@@ -156,12 +211,12 @@ class FontService {
       return;
     }
 
-    const weightsStr = weights.join(';');
+    const weightsStr = weights.join(";");
     const url = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family)}:wght@${weightsStr}&display=swap`;
 
     // Create and append link element
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
     link.href = url;
     document.head.appendChild(link);
 
@@ -180,7 +235,7 @@ class FontService {
    */
   async ensureFont(family: string): Promise<boolean> {
     // Check if it's web-safe
-    if (WEB_SAFE_FONTS.some(f => f.family === family)) {
+    if (WEB_SAFE_FONTS.some((f) => f.family === family)) {
       return true;
     }
 
@@ -191,7 +246,7 @@ class FontService {
     }
 
     // Check if it's a loaded system font
-    if (this.systemFonts.some(f => f.family === family)) {
+    if (this.systemFonts.some((f) => f.family === family)) {
       return true;
     }
 
@@ -203,12 +258,12 @@ class FontService {
    * Check if a font is available by measuring text
    */
   private isFontAvailable(family: string): boolean {
-    const testString = 'mmmmmmmmmmlli';
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d')!;
+    const testString = "mmmmmmmmmmlli";
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d")!;
 
     // Measure with monospace fallback
-    ctx.font = '72px monospace';
+    ctx.font = "72px monospace";
     const fallbackWidth = ctx.measureText(testString).width;
 
     // Measure with requested font
@@ -243,8 +298,8 @@ class FontService {
    * Request system font access (must be triggered by user action)
    */
   async requestSystemFontAccess(): Promise<boolean> {
-    if (!('queryLocalFonts' in window)) {
-      fontLogger.info('Local Font Access API not available');
+    if (!("queryLocalFonts" in window)) {
+      fontLogger.info("Local Font Access API not available");
       return false;
     }
 

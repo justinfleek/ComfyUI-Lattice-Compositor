@@ -495,10 +495,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
-import type { Layer, DepthflowLayerData, DepthflowConfig, DepthflowPreset, CameraToDepthflowConfig } from '@/types/project';
-import { useCompositorStore } from '@/stores/compositorStore';
-import KeyframeToggle from './KeyframeToggle.vue';
+import { computed, onMounted, onUnmounted, ref } from "vue";
+import { useCompositorStore } from "@/stores/compositorStore";
+import type {
+  CameraToDepthflowConfig,
+  DepthflowConfig,
+  DepthflowLayerData,
+  DepthflowPreset,
+  Layer,
+} from "@/types/project";
 
 const DEFAULT_CAMERA_SYNC_CONFIG: CameraToDepthflowConfig = {
   sensitivityX: 0.5,
@@ -509,7 +514,7 @@ const DEFAULT_CAMERA_SYNC_CONFIG: CameraToDepthflowConfig = {
   invertX: false,
   invertY: false,
   zoomClamp: { min: 0.5, max: 3 },
-  offsetClamp: { min: -1, max: 1 }
+  offsetClamp: { min: -1, max: 1 },
 };
 
 interface Props {
@@ -518,9 +523,8 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const emit = defineEmits<{
-  (e: 'update', data: Partial<DepthflowLayerData>): void;
-}>();
+const emit =
+  defineEmits<(e: "update", data: Partial<DepthflowLayerData>) => void>();
 
 const store = useCompositorStore();
 
@@ -531,66 +535,120 @@ const previewFrame = ref(0);
 const previewAnimationId = ref<number | null>(null);
 
 // UI State
-const expandedSections = ref(new Set(['source', 'preset', 'camera']));
+const expandedSections = ref(new Set(["source", "preset", "camera"]));
 const presetIntensity = ref(1.0);
 const previewSize = 200;
 
 // Presets
-const presets = [
-  { value: 'static' as DepthflowPreset, label: 'Static', icon: 'pi pi-stop' },
-  { value: 'zoom_in' as DepthflowPreset, label: 'Zoom In', icon: 'pi pi-search-plus' },
-  { value: 'zoom_out' as DepthflowPreset, label: 'Zoom Out', icon: 'pi pi-search-minus' },
-  { value: 'dolly_zoom_in' as DepthflowPreset, label: 'Dolly In', icon: 'pi pi-video' },
-  { value: 'dolly_zoom_out' as DepthflowPreset, label: 'Dolly Out', icon: 'pi pi-video' },
-  { value: 'pan_left' as DepthflowPreset, label: 'Pan Left', icon: 'pi pi-arrow-left' },
-  { value: 'pan_right' as DepthflowPreset, label: 'Pan Right', icon: 'pi pi-arrow-right' },
-  { value: 'pan_up' as DepthflowPreset, label: 'Pan Up', icon: 'pi pi-arrow-up' },
-  { value: 'pan_down' as DepthflowPreset, label: 'Pan Down', icon: 'pi pi-arrow-down' },
-  { value: 'circle_cw' as DepthflowPreset, label: 'Circle CW', icon: 'pi pi-replay' },
-  { value: 'circle_ccw' as DepthflowPreset, label: 'Circle CCW', icon: 'pi pi-refresh' },
-  { value: 'horizontal_swing' as DepthflowPreset, label: 'H Swing', icon: 'pi pi-arrows-h' },
-  { value: 'vertical_swing' as DepthflowPreset, label: 'V Swing', icon: 'pi pi-arrows-v' },
-  { value: 'custom' as DepthflowPreset, label: 'Custom', icon: 'pi pi-sliders-h' }
+const _presets = [
+  { value: "static" as DepthflowPreset, label: "Static", icon: "pi pi-stop" },
+  {
+    value: "zoom_in" as DepthflowPreset,
+    label: "Zoom In",
+    icon: "pi pi-search-plus",
+  },
+  {
+    value: "zoom_out" as DepthflowPreset,
+    label: "Zoom Out",
+    icon: "pi pi-search-minus",
+  },
+  {
+    value: "dolly_zoom_in" as DepthflowPreset,
+    label: "Dolly In",
+    icon: "pi pi-video",
+  },
+  {
+    value: "dolly_zoom_out" as DepthflowPreset,
+    label: "Dolly Out",
+    icon: "pi pi-video",
+  },
+  {
+    value: "pan_left" as DepthflowPreset,
+    label: "Pan Left",
+    icon: "pi pi-arrow-left",
+  },
+  {
+    value: "pan_right" as DepthflowPreset,
+    label: "Pan Right",
+    icon: "pi pi-arrow-right",
+  },
+  {
+    value: "pan_up" as DepthflowPreset,
+    label: "Pan Up",
+    icon: "pi pi-arrow-up",
+  },
+  {
+    value: "pan_down" as DepthflowPreset,
+    label: "Pan Down",
+    icon: "pi pi-arrow-down",
+  },
+  {
+    value: "circle_cw" as DepthflowPreset,
+    label: "Circle CW",
+    icon: "pi pi-replay",
+  },
+  {
+    value: "circle_ccw" as DepthflowPreset,
+    label: "Circle CCW",
+    icon: "pi pi-refresh",
+  },
+  {
+    value: "horizontal_swing" as DepthflowPreset,
+    label: "H Swing",
+    icon: "pi pi-arrows-h",
+  },
+  {
+    value: "vertical_swing" as DepthflowPreset,
+    label: "V Swing",
+    icon: "pi pi-arrows-v",
+  },
+  {
+    value: "custom" as DepthflowPreset,
+    label: "Custom",
+    icon: "pi pi-sliders-h",
+  },
 ];
 
 // Computed
 const config = computed((): DepthflowLayerData => {
   const data = props.layer.data as DepthflowLayerData | null;
-  return data || {
-    sourceLayerId: '',
-    depthLayerId: '',
-    config: {
-      preset: 'static',
-      zoom: 1.0,
-      offsetX: 0,
-      offsetY: 0,
-      rotation: 0,
-      depthScale: 1.0,
-      focusDepth: 0.5,
-      dollyZoom: 0,
-      orbitRadius: 0.1,
-      orbitSpeed: 360,
-      swingAmplitude: 0.1,
-      swingFrequency: 1,
-      edgeDilation: 5,
-      inpaintEdges: true
+  return (
+    data || {
+      sourceLayerId: "",
+      depthLayerId: "",
+      config: {
+        preset: "static",
+        zoom: 1.0,
+        offsetX: 0,
+        offsetY: 0,
+        rotation: 0,
+        depthScale: 1.0,
+        focusDepth: 0.5,
+        dollyZoom: 0,
+        orbitRadius: 0.1,
+        orbitSpeed: 360,
+        swingAmplitude: 0.1,
+        swingFrequency: 1,
+        edgeDilation: 5,
+        inpaintEdges: true,
+      },
     }
-  };
+  );
 });
 
 const depthflowConfig = computed(() => config.value.config);
 const totalFrames = computed(() => store.frameCount);
 
-const imageLayers = computed(() =>
-  store.layers.filter(l => l.type === 'image' || l.type === 'generated')
+const _imageLayers = computed(() =>
+  store.layers.filter((l) => l.type === "image" || l.type === "generated"),
 );
 
-const depthLayers = computed(() =>
-  store.layers.filter(l => l.type === 'depth' || l.type === 'generated')
+const _depthLayers = computed(() =>
+  store.layers.filter((l) => l.type === "depth" || l.type === "generated"),
 );
 
-const cameraLayers = computed(() =>
-  store.layers.filter(l => l.type === 'camera')
+const _cameraLayers = computed(() =>
+  store.layers.filter((l) => l.type === "camera"),
 );
 
 const cameraSyncConfig = computed((): CameraToDepthflowConfig => {
@@ -598,30 +656,30 @@ const cameraSyncConfig = computed((): CameraToDepthflowConfig => {
 });
 
 const isOrbitPreset = computed(() =>
-  ['circle_cw', 'circle_ccw'].includes(depthflowConfig.value.preset)
+  ["circle_cw", "circle_ccw"].includes(depthflowConfig.value.preset),
 );
 
 const isSwingPreset = computed(() =>
-  ['horizontal_swing', 'vertical_swing'].includes(depthflowConfig.value.preset)
+  ["horizontal_swing", "vertical_swing"].includes(depthflowConfig.value.preset),
 );
 
 const isDollyPreset = computed(() =>
-  ['dolly_zoom_in', 'dolly_zoom_out'].includes(depthflowConfig.value.preset)
+  ["dolly_zoom_in", "dolly_zoom_out"].includes(depthflowConfig.value.preset),
 );
 
-const showPresetSettings = computed(() =>
-  isOrbitPreset.value || isSwingPreset.value || isDollyPreset.value
+const _showPresetSettings = computed(
+  () => isOrbitPreset.value || isSwingPreset.value || isDollyPreset.value,
 );
 
-const presetSettingsTitle = computed(() => {
-  if (isOrbitPreset.value) return 'Orbit Settings';
-  if (isSwingPreset.value) return 'Swing Settings';
-  if (isDollyPreset.value) return 'Dolly Zoom Settings';
-  return 'Preset Settings';
+const _presetSettingsTitle = computed(() => {
+  if (isOrbitPreset.value) return "Orbit Settings";
+  if (isSwingPreset.value) return "Swing Settings";
+  if (isDollyPreset.value) return "Dolly Zoom Settings";
+  return "Preset Settings";
 });
 
 // Methods
-function toggleSection(section: string): void {
+function _toggleSection(section: string): void {
   if (expandedSections.value.has(section)) {
     expandedSections.value.delete(section);
   } else {
@@ -629,39 +687,42 @@ function toggleSection(section: string): void {
   }
 }
 
-function updateConfig(key: keyof DepthflowLayerData, value: any): void {
-  emit('update', { [key]: value });
+function _updateConfig(key: keyof DepthflowLayerData, value: any): void {
+  emit("update", { [key]: value });
 }
 
 function updateDepthflowConfig(key: keyof DepthflowConfig, value: any): void {
-  emit('update', {
-    config: { ...depthflowConfig.value, [key]: value }
+  emit("update", {
+    config: { ...depthflowConfig.value, [key]: value },
   });
 }
 
-function selectPreset(preset: DepthflowPreset): void {
-  updateDepthflowConfig('preset', preset);
+function _selectPreset(preset: DepthflowPreset): void {
+  updateDepthflowConfig("preset", preset);
 }
 
-function updateCameraSyncConfig(key: keyof CameraToDepthflowConfig, value: any): void {
-  emit('update', {
-    cameraSyncConfig: { ...cameraSyncConfig.value, [key]: value }
+function _updateCameraSyncConfig(
+  key: keyof CameraToDepthflowConfig,
+  value: any,
+): void {
+  emit("update", {
+    cameraSyncConfig: { ...cameraSyncConfig.value, [key]: value },
   });
 }
 
-function updatePresetIntensity(intensity: number): void {
+function _updatePresetIntensity(intensity: number): void {
   presetIntensity.value = intensity;
   // Apply intensity to relevant parameters based on preset
   if (isOrbitPreset.value) {
-    updateDepthflowConfig('orbitRadius', 0.1 * intensity);
+    updateDepthflowConfig("orbitRadius", 0.1 * intensity);
   } else if (isSwingPreset.value) {
-    updateDepthflowConfig('swingAmplitude', 0.1 * intensity);
+    updateDepthflowConfig("swingAmplitude", 0.1 * intensity);
   } else {
-    updateDepthflowConfig('depthScale', 1.0 * intensity);
+    updateDepthflowConfig("depthScale", 1.0 * intensity);
   }
 }
 
-function togglePreview(): void {
+function _togglePreview(): void {
   isPreviewPlaying.value = !isPreviewPlaying.value;
 
   if (isPreviewPlaying.value) {
@@ -689,22 +750,26 @@ function renderPreview(): void {
   const canvas = previewCanvas.value;
   if (!canvas) return;
 
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext("2d");
   if (!ctx) return;
 
   // Clear canvas
-  ctx.fillStyle = '#1e1e1e';
+  ctx.fillStyle = "#1e1e1e";
   ctx.fillRect(0, 0, previewSize, previewSize);
 
   // Draw placeholder preview
-  ctx.fillStyle = '#333';
+  ctx.fillStyle = "#333";
   ctx.fillRect(10, 10, previewSize - 20, previewSize - 20);
 
-  ctx.fillStyle = '#666';
-  ctx.font = '12px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('Depthflow Preview', previewSize / 2, previewSize / 2);
-  ctx.fillText(`Frame ${previewFrame.value}`, previewSize / 2, previewSize / 2 + 16);
+  ctx.fillStyle = "#666";
+  ctx.font = "12px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("Depthflow Preview", previewSize / 2, previewSize / 2);
+  ctx.fillText(
+    `Frame ${previewFrame.value}`,
+    previewSize / 2,
+    previewSize / 2 + 16,
+  );
 }
 
 // Lifecycle
@@ -719,15 +784,15 @@ onUnmounted(() => {
 });
 
 // Keyframe event handlers
-function onKeyframeChange() {
+function _onKeyframeChange() {
   // Keyframe was added or removed - trigger update
-  emit('update', {});
+  emit("update", {});
 }
 
-function onAnimationToggled(animated: boolean) {
+function _onAnimationToggled(animated: boolean) {
   // Animation was enabled or disabled
-  console.log('[DepthflowProperties] Animation toggled:', animated);
-  emit('update', {});
+  console.log("[DepthflowProperties] Animation toggled:", animated);
+  emit("update", {});
 }
 </script>
 

@@ -44,22 +44,23 @@ export interface AudioAnalysis {
   bpm: number;
 
   // Enhanced features (from RyanOnTheInside/Yvann)
-  spectralFlux: number[];           // Rate of spectral change (useful for beats)
-  zeroCrossingRate: number[];       // Percussiveness indicator
-  spectralRolloff: number[];        // High-frequency energy cutoff
-  spectralFlatness: number[];       // Tonal vs noise-like (0=tonal, 1=noise)
-  chromaFeatures?: ChromaFeatures;  // Key/chord detection
+  spectralFlux: number[]; // Rate of spectral change (useful for beats)
+  zeroCrossingRate: number[]; // Percussiveness indicator
+  spectralRolloff: number[]; // High-frequency energy cutoff
+  spectralFlatness: number[]; // Tonal vs noise-like (0=tonal, 1=noise)
+  chromaFeatures?: ChromaFeatures; // Key/chord detection
 
   // HPSS: Harmonic-Percussive Source Separation (librosa standard)
-  harmonicEnergy?: number[];        // Tonal/harmonic content per frame
-  percussiveEnergy?: number[];      // Transient/percussive content per frame
-  hpRatio?: number[];               // Harmonic-to-percussive ratio per frame
+  harmonicEnergy?: number[]; // Tonal/harmonic content per frame
+  percussiveEnergy?: number[]; // Transient/percussive content per frame
+  hpRatio?: number[]; // Harmonic-to-percussive ratio per frame
 
   // MFCC: Mel-frequency cepstral coefficients (timbral features)
-  mfcc?: number[][];                // [frameIndex][coefficient] - 13 coefficients per frame
-  mfccStats?: {                     // Per-coefficient normalization stats (BUG-076 fix)
-    min: number[];                  // Min value per coefficient [13]
-    max: number[];                  // Max value per coefficient [13]
+  mfcc?: number[][]; // [frameIndex][coefficient] - 13 coefficients per frame
+  mfccStats?: {
+    // Per-coefficient normalization stats (BUG-076 fix)
+    min: number[]; // Min value per coefficient [13]
+    max: number[]; // Max value per coefficient [13]
   };
 }
 
@@ -74,21 +75,21 @@ export interface FrequencyBandRanges {
 
 // Chroma features for key/chord detection (12 pitch classes)
 export interface ChromaFeatures {
-  chroma: number[][];         // [frameIndex][pitchClass] 12 values per frame (C, C#, D, etc.)
-  chromaEnergy: number[];     // Total chroma energy per frame
-  estimatedKey: string;       // Best guess at musical key
-  keyConfidence: number;      // 0-1 confidence in key estimation
+  chroma: number[][]; // [frameIndex][pitchClass] 12 values per frame (C, C#, D, etc.)
+  chromaEnergy: number[]; // Total chroma energy per frame
+  estimatedKey: string; // Best guess at musical key
+  keyConfidence: number; // 0-1 confidence in key estimation
 }
 
 // Audio analysis configuration (matches Yvann-Nodes)
 // Note: hopSize intentionally omitted - analysis is locked to video frame
 // boundaries for deterministic playback (BUG-078)
 export interface AudioAnalysisConfig {
-  fftSize: number;            // 512, 1024, 2048, 4096
-  minFrequency: number;       // Filter low frequencies (default 20)
-  maxFrequency: number;       // Filter high frequencies (default 20000)
+  fftSize: number; // 512, 1024, 2048, 4096
+  minFrequency: number; // Filter low frequencies (default 20)
+  maxFrequency: number; // Filter high frequencies (default 20000)
   // Analysis modes (like Yvann)
-  analysisMode: 'full' | 'drums' | 'vocals' | 'bass' | 'other';
+  analysisMode: "full" | "drums" | "vocals" | "bass" | "other";
   // Stem data (if pre-separated)
   stemData?: {
     drums?: AudioBuffer;
@@ -110,7 +111,7 @@ const FREQUENCY_BANDS: FrequencyBandRanges = {
   lowMid: [250, 500],
   mid: [500, 2000],
   highMid: [2000, 4000],
-  high: [4000, 20000]
+  high: [4000, 20000],
 };
 
 // ============================================================================
@@ -162,7 +163,7 @@ export async function loadAudioFromUrl(url: string): Promise<AudioBuffer> {
 export async function analyzeAudio(
   buffer: AudioBuffer,
   fps: number,
-  config?: Partial<AudioAnalysisConfig>
+  config?: Partial<AudioAnalysisConfig>,
 ): Promise<AudioAnalysis> {
   const duration = buffer.duration;
   const frameCount = Math.ceil(duration * fps);
@@ -170,7 +171,11 @@ export async function analyzeAudio(
 
   // Determine which buffer to analyze based on mode
   let analyzeBuffer = buffer;
-  if (config?.analysisMode && config.analysisMode !== 'full' && config.stemData) {
+  if (
+    config?.analysisMode &&
+    config.analysisMode !== "full" &&
+    config.stemData
+  ) {
     const stemKey = config.analysisMode as keyof typeof config.stemData;
     if (config.stemData[stemKey]) {
       analyzeBuffer = config.stemData[stemKey]!;
@@ -180,7 +185,11 @@ export async function analyzeAudio(
   // Extract features
   const amplitudeEnvelope = extractAmplitudeEnvelope(analyzeBuffer, fps);
   const rmsEnergy = extractRMSEnergy(analyzeBuffer, fps);
-  const frequencyBands = await extractFrequencyBands(analyzeBuffer, fps, config);
+  const frequencyBands = await extractFrequencyBands(
+    analyzeBuffer,
+    fps,
+    config,
+  );
   const spectralCentroid = await extractSpectralCentroid(analyzeBuffer, fps);
   const onsets = detectOnsets(analyzeBuffer, fps);
   const bpm = detectBPM(analyzeBuffer);
@@ -220,7 +229,7 @@ export async function analyzeAudio(
     hpRatio: hpss.hpRatio,
     // MFCC (BUG-076 fix: include per-coefficient normalization stats)
     mfcc: mfccResult.mfcc,
-    mfccStats: mfccResult.stats
+    mfccStats: mfccResult.stats,
   };
 }
 
@@ -231,7 +240,10 @@ export async function analyzeAudio(
 /**
  * Extract amplitude envelope (peak values per frame)
  */
-export function extractAmplitudeEnvelope(buffer: AudioBuffer, fps: number): number[] {
+export function extractAmplitudeEnvelope(
+  buffer: AudioBuffer,
+  fps: number,
+): number[] {
   const channelData = buffer.getChannelData(0); // Use first channel
   const samplesPerFrame = Math.floor(buffer.sampleRate / fps);
   const frameCount = Math.ceil(buffer.duration * fps);
@@ -239,7 +251,10 @@ export function extractAmplitudeEnvelope(buffer: AudioBuffer, fps: number): numb
 
   for (let frame = 0; frame < frameCount; frame++) {
     const startSample = frame * samplesPerFrame;
-    const endSample = Math.min(startSample + samplesPerFrame, channelData.length);
+    const endSample = Math.min(
+      startSample + samplesPerFrame,
+      channelData.length,
+    );
 
     let maxAmp = 0;
     for (let i = startSample; i < endSample; i++) {
@@ -252,7 +267,7 @@ export function extractAmplitudeEnvelope(buffer: AudioBuffer, fps: number): numb
 
   // Normalize to 0-1
   const maxValue = Math.max(...envelope, 0.0001);
-  return envelope.map(v => v / maxValue);
+  return envelope.map((v) => v / maxValue);
 }
 
 // ============================================================================
@@ -270,7 +285,10 @@ export function extractRMSEnergy(buffer: AudioBuffer, fps: number): number[] {
 
   for (let frame = 0; frame < frameCount; frame++) {
     const startSample = frame * samplesPerFrame;
-    const endSample = Math.min(startSample + samplesPerFrame, channelData.length);
+    const endSample = Math.min(
+      startSample + samplesPerFrame,
+      channelData.length,
+    );
 
     let sumSquares = 0;
     let count = 0;
@@ -285,7 +303,7 @@ export function extractRMSEnergy(buffer: AudioBuffer, fps: number): number[] {
 
   // Normalize to 0-1
   const maxValue = Math.max(...rmsValues, 0.0001);
-  return rmsValues.map(v => v / maxValue);
+  return rmsValues.map((v) => v / maxValue);
 }
 
 // ============================================================================
@@ -299,8 +317,8 @@ export function extractRMSEnergy(buffer: AudioBuffer, fps: number): number[] {
 export async function extractFrequencyBands(
   buffer: AudioBuffer,
   fps: number,
-  config?: Partial<AudioAnalysisConfig>
-): Promise<AudioAnalysis['frequencyBands']> {
+  config?: Partial<AudioAnalysisConfig>,
+): Promise<AudioAnalysis["frequencyBands"]> {
   const duration = buffer.duration;
   const frameCount = Math.ceil(duration * fps);
   const sampleRate = buffer.sampleRate;
@@ -309,11 +327,7 @@ export async function extractFrequencyBands(
   const fftSize = config?.fftSize ?? DEFAULT_FFT_SIZE;
 
   // Create offline context for analysis
-  const offlineCtx = new OfflineAudioContext(
-    1,
-    buffer.length,
-    sampleRate
-  );
+  const offlineCtx = new OfflineAudioContext(1, buffer.length, sampleRate);
 
   const source = offlineCtx.createBufferSource();
   source.buffer = buffer;
@@ -326,13 +340,13 @@ export async function extractFrequencyBands(
   analyser.connect(offlineCtx.destination);
 
   // Initialize band arrays
-  const bands: AudioAnalysis['frequencyBands'] = {
+  const bands: AudioAnalysis["frequencyBands"] = {
     sub: [],
     bass: [],
     lowMid: [],
     mid: [],
     highMid: [],
-    high: []
+    high: [],
   };
 
   const binFrequency = sampleRate / fftSize;
@@ -344,22 +358,25 @@ export async function extractFrequencyBands(
   const maxBin = Math.ceil(maxFreq / binFrequency);
 
   // Calculate bin ranges for each band, clamped to min/max frequency
-  const bandBins = Object.entries(FREQUENCY_BANDS).reduce((acc, [band, [low, high]]) => {
-    // Clamp band ranges to config frequency limits
-    const clampedLow = Math.max(low, minFreq);
-    const clampedHigh = Math.min(high, maxFreq);
+  const bandBins = Object.entries(FREQUENCY_BANDS).reduce(
+    (acc, [band, [low, high]]) => {
+      // Clamp band ranges to config frequency limits
+      const clampedLow = Math.max(low, minFreq);
+      const clampedHigh = Math.min(high, maxFreq);
 
-    // Skip band entirely if outside frequency range
-    if (clampedLow >= clampedHigh) {
-      acc[band as keyof FrequencyBandRanges] = { start: 0, end: 0 };
-    } else {
-      acc[band as keyof FrequencyBandRanges] = {
-        start: Math.max(minBin, Math.floor(clampedLow / binFrequency)),
-        end: Math.min(maxBin, Math.ceil(clampedHigh / binFrequency))
-      };
-    }
-    return acc;
-  }, {} as Record<keyof FrequencyBandRanges, { start: number; end: number }>);
+      // Skip band entirely if outside frequency range
+      if (clampedLow >= clampedHigh) {
+        acc[band as keyof FrequencyBandRanges] = { start: 0, end: 0 };
+      } else {
+        acc[band as keyof FrequencyBandRanges] = {
+          start: Math.max(minBin, Math.floor(clampedLow / binFrequency)),
+          end: Math.min(maxBin, Math.ceil(clampedHigh / binFrequency)),
+        };
+      }
+      return acc;
+    },
+    {} as Record<keyof FrequencyBandRanges, { start: number; end: number }>,
+  );
 
   // Process each frame
   const samplesPerFrame = Math.floor(sampleRate / fps);
@@ -376,7 +393,7 @@ export async function extractFrequencyBands(
     const windowSize = endSample - startSample;
     if (windowSize < 64) {
       // Not enough samples, use previous values or zero
-      Object.keys(bands).forEach(band => {
+      Object.keys(bands).forEach((band) => {
         const arr = bands[band as keyof typeof bands];
         arr.push(arr.length > 0 ? arr[arr.length - 1] : 0);
       });
@@ -384,7 +401,9 @@ export async function extractFrequencyBands(
     }
 
     // Perform simple FFT using the channel data
-    const fftResult = simpleFFT(channelData.slice(startSample, startSample + fftSize));
+    const fftResult = simpleFFT(
+      channelData.slice(startSample, startSample + fftSize),
+    );
 
     // Extract band energies
     for (const [band, { start, end }] of Object.entries(bandBins)) {
@@ -401,7 +420,7 @@ export async function extractFrequencyBands(
   // Normalize each band to 0-1
   for (const band of Object.keys(bands) as (keyof typeof bands)[]) {
     const maxValue = Math.max(...bands[band], 0.0001);
-    bands[band] = bands[band].map(v => v / maxValue);
+    bands[band] = bands[band].map((v) => v / maxValue);
   }
 
   return bands;
@@ -446,7 +465,10 @@ function simpleFFT(samples: Float32Array): number[] {
 /**
  * Extract spectral centroid (brightness) per frame
  */
-export async function extractSpectralCentroid(buffer: AudioBuffer, fps: number): Promise<number[]> {
+export async function extractSpectralCentroid(
+  buffer: AudioBuffer,
+  fps: number,
+): Promise<number[]> {
   const frameCount = Math.ceil(buffer.duration * fps);
   const sampleRate = buffer.sampleRate;
   const channelData = buffer.getChannelData(0);
@@ -458,11 +480,15 @@ export async function extractSpectralCentroid(buffer: AudioBuffer, fps: number):
     const startSample = frame * samplesPerFrame;
 
     if (startSample + DEFAULT_FFT_SIZE > channelData.length) {
-      centroids.push(centroids.length > 0 ? centroids[centroids.length - 1] : 0);
+      centroids.push(
+        centroids.length > 0 ? centroids[centroids.length - 1] : 0,
+      );
       continue;
     }
 
-    const fftResult = simpleFFT(channelData.slice(startSample, startSample + DEFAULT_FFT_SIZE));
+    const fftResult = simpleFFT(
+      channelData.slice(startSample, startSample + DEFAULT_FFT_SIZE),
+    );
 
     // Calculate spectral centroid
     let weightedSum = 0;
@@ -480,7 +506,7 @@ export async function extractSpectralCentroid(buffer: AudioBuffer, fps: number):
 
   // Normalize to 0-1
   const maxValue = Math.max(...centroids, 0.0001);
-  return centroids.map(v => v / maxValue);
+  return centroids.map((v) => v / maxValue);
 }
 
 // ============================================================================
@@ -493,7 +519,7 @@ export async function extractSpectralCentroid(buffer: AudioBuffer, fps: number):
 export function detectOnsets(
   buffer: AudioBuffer,
   fps: number,
-  sensitivity: number = 0.5
+  sensitivity: number = 0.5,
 ): number[] {
   const channelData = buffer.getChannelData(0);
   const sampleRate = buffer.sampleRate;
@@ -512,7 +538,9 @@ export function detectOnsets(
       continue;
     }
 
-    const spectrum = simpleFFT(channelData.slice(startSample, startSample + DEFAULT_FFT_SIZE));
+    const spectrum = simpleFFT(
+      channelData.slice(startSample, startSample + DEFAULT_FFT_SIZE),
+    );
 
     if (prevSpectrum) {
       // Calculate flux (sum of positive differences)
@@ -550,7 +578,10 @@ export function detectOnsets(
 /**
  * Calculate adaptive threshold for onset detection
  */
-function calculateAdaptiveThreshold(flux: number[], sensitivity: number): number[] {
+function calculateAdaptiveThreshold(
+  flux: number[],
+  sensitivity: number,
+): number[] {
   const windowSize = 10;
   const threshold: number[] = [];
 
@@ -560,7 +591,7 @@ function calculateAdaptiveThreshold(flux: number[], sensitivity: number): number
     const window = flux.slice(start, end);
     const mean = window.reduce((a, b) => a + b, 0) / window.length;
     const std = Math.sqrt(
-      window.reduce((a, b) => a + (b - mean) ** 2, 0) / window.length
+      window.reduce((a, b) => a + (b - mean) ** 2, 0) / window.length,
     );
 
     // Threshold = mean + sensitivity * std
@@ -577,7 +608,10 @@ function calculateAdaptiveThreshold(flux: number[], sensitivity: number): number
 /**
  * Extract spectral flux (rate of spectral change) - great for beat detection
  */
-export function extractSpectralFlux(buffer: AudioBuffer, fps: number): number[] {
+export function extractSpectralFlux(
+  buffer: AudioBuffer,
+  fps: number,
+): number[] {
   const channelData = buffer.getChannelData(0);
   const samplesPerFrame = Math.floor(buffer.sampleRate / fps);
   const frameCount = Math.ceil(buffer.duration * fps);
@@ -592,7 +626,9 @@ export function extractSpectralFlux(buffer: AudioBuffer, fps: number): number[] 
       continue;
     }
 
-    const spectrum = simpleFFT(channelData.slice(startSample, startSample + DEFAULT_FFT_SIZE));
+    const spectrum = simpleFFT(
+      channelData.slice(startSample, startSample + DEFAULT_FFT_SIZE),
+    );
 
     if (prevSpectrum) {
       // Spectral flux = sum of positive differences (only increases)
@@ -611,13 +647,16 @@ export function extractSpectralFlux(buffer: AudioBuffer, fps: number): number[] 
 
   // Normalize
   const maxValue = Math.max(...flux, 0.0001);
-  return flux.map(v => v / maxValue);
+  return flux.map((v) => v / maxValue);
 }
 
 /**
  * Extract zero crossing rate - indicates percussiveness/noisiness
  */
-export function extractZeroCrossingRate(buffer: AudioBuffer, fps: number): number[] {
+export function extractZeroCrossingRate(
+  buffer: AudioBuffer,
+  fps: number,
+): number[] {
   const channelData = buffer.getChannelData(0);
   const samplesPerFrame = Math.floor(buffer.sampleRate / fps);
   const frameCount = Math.ceil(buffer.duration * fps);
@@ -625,12 +664,17 @@ export function extractZeroCrossingRate(buffer: AudioBuffer, fps: number): numbe
 
   for (let frame = 0; frame < frameCount; frame++) {
     const startSample = frame * samplesPerFrame;
-    const endSample = Math.min(startSample + samplesPerFrame, channelData.length);
+    const endSample = Math.min(
+      startSample + samplesPerFrame,
+      channelData.length,
+    );
 
     let crossings = 0;
     for (let i = startSample + 1; i < endSample; i++) {
-      if ((channelData[i] >= 0 && channelData[i - 1] < 0) ||
-          (channelData[i] < 0 && channelData[i - 1] >= 0)) {
+      if (
+        (channelData[i] >= 0 && channelData[i - 1] < 0) ||
+        (channelData[i] < 0 && channelData[i - 1] >= 0)
+      ) {
         crossings++;
       }
     }
@@ -642,14 +686,18 @@ export function extractZeroCrossingRate(buffer: AudioBuffer, fps: number): numbe
 
   // Normalize to 0-1
   const maxValue = Math.max(...zcr, 0.0001);
-  return zcr.map(v => v / maxValue);
+  return zcr.map((v) => v / maxValue);
 }
 
 /**
  * Extract spectral rolloff - frequency below which 85% of energy lies
  * Good for detecting high-frequency content (hihats, cymbals)
  */
-export function extractSpectralRolloff(buffer: AudioBuffer, fps: number, rolloffPercent: number = 0.85): number[] {
+export function extractSpectralRolloff(
+  buffer: AudioBuffer,
+  fps: number,
+  rolloffPercent: number = 0.85,
+): number[] {
   const channelData = buffer.getChannelData(0);
   const samplesPerFrame = Math.floor(buffer.sampleRate / fps);
   const frameCount = Math.ceil(buffer.duration * fps);
@@ -664,7 +712,9 @@ export function extractSpectralRolloff(buffer: AudioBuffer, fps: number, rolloff
       continue;
     }
 
-    const spectrum = simpleFFT(channelData.slice(startSample, startSample + DEFAULT_FFT_SIZE));
+    const spectrum = simpleFFT(
+      channelData.slice(startSample, startSample + DEFAULT_FFT_SIZE),
+    );
 
     // Calculate total energy
     const totalEnergy = spectrum.reduce((a, b) => a + b, 0);
@@ -687,14 +737,17 @@ export function extractSpectralRolloff(buffer: AudioBuffer, fps: number, rolloff
 
   // Normalize to 0-1
   const maxValue = Math.max(...rolloff, 0.0001);
-  return rolloff.map(v => v / maxValue);
+  return rolloff.map((v) => v / maxValue);
 }
 
 /**
  * Extract spectral flatness - measure of noise-like vs tonal character
  * 0 = very tonal (clear pitch), 1 = noise-like
  */
-export function extractSpectralFlatness(buffer: AudioBuffer, fps: number): number[] {
+export function extractSpectralFlatness(
+  buffer: AudioBuffer,
+  fps: number,
+): number[] {
   const channelData = buffer.getChannelData(0);
   const samplesPerFrame = Math.floor(buffer.sampleRate / fps);
   const frameCount = Math.ceil(buffer.duration * fps);
@@ -708,10 +761,12 @@ export function extractSpectralFlatness(buffer: AudioBuffer, fps: number): numbe
       continue;
     }
 
-    const spectrum = simpleFFT(channelData.slice(startSample, startSample + DEFAULT_FFT_SIZE));
+    const spectrum = simpleFFT(
+      channelData.slice(startSample, startSample + DEFAULT_FFT_SIZE),
+    );
 
     // Remove zeros to avoid log(0)
-    const nonZero = spectrum.filter(v => v > 1e-10);
+    const nonZero = spectrum.filter((v) => v > 1e-10);
     if (nonZero.length === 0) {
       flatness.push(0);
       continue;
@@ -736,14 +791,30 @@ export function extractSpectralFlatness(buffer: AudioBuffer, fps: number): numbe
  * Extract chroma features (12 pitch classes)
  * Useful for music-aware animations that respond to harmony
  */
-export function extractChromaFeatures(buffer: AudioBuffer, fps: number): ChromaFeatures {
+export function extractChromaFeatures(
+  buffer: AudioBuffer,
+  fps: number,
+): ChromaFeatures {
   const channelData = buffer.getChannelData(0);
   const sampleRate = buffer.sampleRate;
   const samplesPerFrame = Math.floor(sampleRate / fps);
   const frameCount = Math.ceil(buffer.duration * fps);
 
   // Pitch class frequencies (A4 = 440Hz reference)
-  const pitchNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+  const pitchNames = [
+    "C",
+    "C#",
+    "D",
+    "D#",
+    "E",
+    "F",
+    "F#",
+    "G",
+    "G#",
+    "A",
+    "A#",
+    "B",
+  ];
 
   const chroma: number[][] = [];
   const chromaEnergy: number[] = [];
@@ -761,7 +832,9 @@ export function extractChromaFeatures(buffer: AudioBuffer, fps: number): ChromaF
       continue;
     }
 
-    const spectrum = simpleFFT(channelData.slice(startSample, startSample + DEFAULT_FFT_SIZE));
+    const spectrum = simpleFFT(
+      channelData.slice(startSample, startSample + DEFAULT_FFT_SIZE),
+    );
 
     // Map each bin to a pitch class
     for (let bin = 1; bin < spectrum.length; bin++) {
@@ -780,7 +853,7 @@ export function extractChromaFeatures(buffer: AudioBuffer, fps: number): ChromaF
 
     // Normalize frame chroma
     const maxChroma = Math.max(...frameChroma, 0.0001);
-    const normalizedChroma = frameChroma.map(v => v / maxChroma);
+    const normalizedChroma = frameChroma.map((v) => v / maxChroma);
 
     chroma.push(normalizedChroma);
     chromaEnergy.push(frameChroma.reduce((a, b) => a + b, 0));
@@ -805,18 +878,19 @@ export function extractChromaFeatures(buffer: AudioBuffer, fps: number): ChromaF
   }
 
   // Simple key estimation (major vs minor check could be added)
-  const estimatedKey = pitchNames[dominantPitch] + ' major';
-  const keyConfidence = maxTotal / (totalChroma.reduce((a, b) => a + b, 0) + 0.0001);
+  const estimatedKey = `${pitchNames[dominantPitch]} major`;
+  const keyConfidence =
+    maxTotal / (totalChroma.reduce((a, b) => a + b, 0) + 0.0001);
 
   // Normalize chromaEnergy
   const maxEnergy = Math.max(...chromaEnergy, 0.0001);
-  const normalizedEnergy = chromaEnergy.map(v => v / maxEnergy);
+  const normalizedEnergy = chromaEnergy.map((v) => v / maxEnergy);
 
   return {
     chroma,
     chromaEnergy: normalizedEnergy,
     estimatedKey,
-    keyConfidence
+    keyConfidence,
   };
 }
 
@@ -909,132 +983,132 @@ function applyEnvelopeFollower(signal: number[], smoothing: number): number[] {
 export function getFeatureAtFrame(
   analysis: AudioAnalysis,
   feature: string,
-  frame: number
+  frame: number,
 ): number {
   const clampedFrame = Math.max(0, Math.min(frame, analysis.frameCount - 1));
 
   switch (feature) {
-    case 'amplitude':
+    case "amplitude":
       return analysis.amplitudeEnvelope[clampedFrame] ?? 0;
 
-    case 'rms':
+    case "rms":
       return analysis.rmsEnergy[clampedFrame] ?? 0;
 
-    case 'spectralCentroid':
+    case "spectralCentroid":
       return analysis.spectralCentroid[clampedFrame] ?? 0;
 
-    case 'sub':
+    case "sub":
       return analysis.frequencyBands.sub[clampedFrame] ?? 0;
 
-    case 'bass':
+    case "bass":
       return analysis.frequencyBands.bass[clampedFrame] ?? 0;
 
-    case 'lowMid':
+    case "lowMid":
       return analysis.frequencyBands.lowMid[clampedFrame] ?? 0;
 
-    case 'mid':
+    case "mid":
       return analysis.frequencyBands.mid[clampedFrame] ?? 0;
 
-    case 'highMid':
+    case "highMid":
       return analysis.frequencyBands.highMid[clampedFrame] ?? 0;
 
-    case 'high':
+    case "high":
       return analysis.frequencyBands.high[clampedFrame] ?? 0;
 
-    case 'onsets':
+    case "onsets":
       // Return 1 if this frame is an onset, 0 otherwise
       return analysis.onsets.includes(clampedFrame) ? 1 : 0;
 
     // Enhanced features
-    case 'spectralFlux':
+    case "spectralFlux":
       return analysis.spectralFlux?.[clampedFrame] ?? 0;
 
-    case 'zeroCrossingRate':
-    case 'zcr':
+    case "zeroCrossingRate":
+    case "zcr":
       return analysis.zeroCrossingRate?.[clampedFrame] ?? 0;
 
-    case 'spectralRolloff':
-    case 'rolloff':
+    case "spectralRolloff":
+    case "rolloff":
       return analysis.spectralRolloff?.[clampedFrame] ?? 0;
 
-    case 'spectralFlatness':
-    case 'flatness':
+    case "spectralFlatness":
+    case "flatness":
       return analysis.spectralFlatness?.[clampedFrame] ?? 0;
 
-    case 'chromaEnergy':
+    case "chromaEnergy":
       return analysis.chromaFeatures?.chromaEnergy[clampedFrame] ?? 0;
 
     // Individual chroma pitch classes (C, C#, D, etc.)
-    case 'chromaC':
+    case "chromaC":
       return analysis.chromaFeatures?.chroma[clampedFrame]?.[0] ?? 0;
-    case 'chromaCs':
-    case 'chromaDb':
+    case "chromaCs":
+    case "chromaDb":
       return analysis.chromaFeatures?.chroma[clampedFrame]?.[1] ?? 0;
-    case 'chromaD':
+    case "chromaD":
       return analysis.chromaFeatures?.chroma[clampedFrame]?.[2] ?? 0;
-    case 'chromaDs':
-    case 'chromaEb':
+    case "chromaDs":
+    case "chromaEb":
       return analysis.chromaFeatures?.chroma[clampedFrame]?.[3] ?? 0;
-    case 'chromaE':
+    case "chromaE":
       return analysis.chromaFeatures?.chroma[clampedFrame]?.[4] ?? 0;
-    case 'chromaF':
+    case "chromaF":
       return analysis.chromaFeatures?.chroma[clampedFrame]?.[5] ?? 0;
-    case 'chromaFs':
-    case 'chromaGb':
+    case "chromaFs":
+    case "chromaGb":
       return analysis.chromaFeatures?.chroma[clampedFrame]?.[6] ?? 0;
-    case 'chromaG':
+    case "chromaG":
       return analysis.chromaFeatures?.chroma[clampedFrame]?.[7] ?? 0;
-    case 'chromaGs':
-    case 'chromaAb':
+    case "chromaGs":
+    case "chromaAb":
       return analysis.chromaFeatures?.chroma[clampedFrame]?.[8] ?? 0;
-    case 'chromaA':
+    case "chromaA":
       return analysis.chromaFeatures?.chroma[clampedFrame]?.[9] ?? 0;
-    case 'chromaAs':
-    case 'chromaBb':
+    case "chromaAs":
+    case "chromaBb":
       return analysis.chromaFeatures?.chroma[clampedFrame]?.[10] ?? 0;
-    case 'chromaB':
+    case "chromaB":
       return analysis.chromaFeatures?.chroma[clampedFrame]?.[11] ?? 0;
 
     // BUG-075 fix: HPSS features access
-    case 'harmonicEnergy':
-    case 'harmonic':
+    case "harmonicEnergy":
+    case "harmonic":
       return analysis.harmonicEnergy?.[clampedFrame] ?? 0;
 
-    case 'percussiveEnergy':
-    case 'percussive':
+    case "percussiveEnergy":
+    case "percussive":
       return analysis.percussiveEnergy?.[clampedFrame] ?? 0;
 
-    case 'hpRatio':
-    case 'harmonicPercussiveRatio':
+    case "hpRatio":
+    case "harmonicPercussiveRatio":
       return analysis.hpRatio?.[clampedFrame] ?? 0;
 
     // BUG-076 fix: MFCC coefficients with per-coefficient min-max normalization
     // MFCC0 (log energy) has different range than MFCC1-12 (spectral shape)
-    case 'mfcc0':
+    case "mfcc0":
       return normalizeMFCCCoeff(analysis, clampedFrame, 0);
-    case 'mfcc1':
+    case "mfcc1":
       return normalizeMFCCCoeff(analysis, clampedFrame, 1);
-    case 'mfcc2':
+    case "mfcc2":
       return normalizeMFCCCoeff(analysis, clampedFrame, 2);
-    case 'mfcc3':
+    case "mfcc3":
       return normalizeMFCCCoeff(analysis, clampedFrame, 3);
-    case 'mfcc4':
+    case "mfcc4":
       return normalizeMFCCCoeff(analysis, clampedFrame, 4);
-    case 'mfcc5':
+    case "mfcc5":
       return normalizeMFCCCoeff(analysis, clampedFrame, 5);
-    case 'mfcc6':
+    case "mfcc6":
       return normalizeMFCCCoeff(analysis, clampedFrame, 6);
-    case 'mfcc7':
+    case "mfcc7":
       return normalizeMFCCCoeff(analysis, clampedFrame, 7);
-    case 'mfcc8':
+    case "mfcc8":
       return normalizeMFCCCoeff(analysis, clampedFrame, 8);
-    case 'mfcc9':
+    case "mfcc9":
       return normalizeMFCCCoeff(analysis, clampedFrame, 9);
-    case 'mfcc10':
+    case "mfcc10":
       return normalizeMFCCCoeff(analysis, clampedFrame, 10);
-    case 'mfcc11':
+    case "mfcc11":
       return normalizeMFCCCoeff(analysis, clampedFrame, 11);
-    case 'mfcc12':
+    case "mfcc12":
       return normalizeMFCCCoeff(analysis, clampedFrame, 12);
 
     default:
@@ -1046,12 +1120,16 @@ export function getFeatureAtFrame(
  * BUG-076 fix: Normalize MFCC coefficient using per-coefficient min-max from analyzed audio
  * Returns 0-1 range suitable for driving visual parameters
  */
-function normalizeMFCCCoeff(analysis: AudioAnalysis, frame: number, coeff: number): number {
+function normalizeMFCCCoeff(
+  analysis: AudioAnalysis,
+  frame: number,
+  coeff: number,
+): number {
   const value = analysis.mfcc?.[frame]?.[coeff];
   if (value === undefined) return 0;
 
   const stats = analysis.mfccStats;
-  if (!stats) return 0;  // No stats available, return 0
+  if (!stats) return 0; // No stats available, return 0
 
   const min = stats.min[coeff];
   const max = stats.max[coeff];
@@ -1076,7 +1154,7 @@ export function getSmoothedFeature(
   analysis: AudioAnalysis,
   feature: string,
   frame: number,
-  smoothingWindow: number = 3
+  smoothingWindow: number = 3,
 ): number {
   let sum = 0;
   let count = 0;
@@ -1097,13 +1175,13 @@ export function getSmoothedFeature(
 export function normalizeFeature(
   values: number[],
   min: number = 0,
-  max: number = 1
+  max: number = 1,
 ): number[] {
   const minVal = Math.min(...values);
   const maxVal = Math.max(...values);
   const range = maxVal - minVal || 1;
 
-  return values.map(v => min + ((v - minVal) / range) * (max - min));
+  return values.map((v) => min + ((v - minVal) / range) * (max - min));
 }
 
 /**
@@ -1111,21 +1189,19 @@ export function normalizeFeature(
  */
 export function applyFeatureCurve(
   value: number,
-  curve: 'linear' | 'exponential' | 'logarithmic' | 'smoothstep' = 'linear'
+  curve: "linear" | "exponential" | "logarithmic" | "smoothstep" = "linear",
 ): number {
   const clamped = Math.max(0, Math.min(1, value));
 
   switch (curve) {
-    case 'exponential':
+    case "exponential":
       return clamped * clamped;
 
-    case 'logarithmic':
+    case "logarithmic":
       return Math.sqrt(clamped);
 
-    case 'smoothstep':
+    case "smoothstep":
       return clamped * clamped * (3 - 2 * clamped);
-
-    case 'linear':
     default:
       return clamped;
   }
@@ -1136,16 +1212,16 @@ export function applyFeatureCurve(
 // ============================================================================
 
 export interface PeakDetectionConfig {
-  threshold: number;          // Minimum value to count as peak (0-1)
-  minPeaksDistance: number;   // Minimum frames between peaks
-  multiply: number;           // Amplification factor before detection
+  threshold: number; // Minimum value to count as peak (0-1)
+  minPeaksDistance: number; // Minimum frames between peaks
+  multiply: number; // Amplification factor before detection
 }
 
 export interface PeakData {
-  indices: number[];          // Frame indices where peaks occur
-  values: number[];           // Peak values at those frames
+  indices: number[]; // Frame indices where peaks occur
+  values: number[]; // Peak values at those frames
   count: number;
-  alternating: number[];      // Same length as total frames, alternates 0/1 at each peak
+  alternating: number[]; // Same length as total frames, alternates 0/1 at each peak
 }
 
 /**
@@ -1154,12 +1230,12 @@ export interface PeakData {
  */
 export function detectPeaks(
   weights: number[],
-  config: PeakDetectionConfig
+  config: PeakDetectionConfig,
 ): PeakData {
   const { threshold, minPeaksDistance, multiply } = config;
 
   // Apply multiply factor
-  const amplified = weights.map(w => Math.min(1, w * multiply));
+  const amplified = weights.map((w) => Math.min(1, w * multiply));
 
   // Find local maxima above threshold
   const rawPeaks: Array<{ index: number; value: number }> = [];
@@ -1181,7 +1257,7 @@ export function detectPeaks(
   for (const peak of rawPeaks) {
     // Check if there's a recent peak within minPeaksDistance
     const recentPeakIndex = filteredPeaks.findIndex(
-      p => Math.abs(p.index - peak.index) < minPeaksDistance
+      (p) => Math.abs(p.index - peak.index) < minPeaksDistance,
     );
 
     if (recentPeakIndex === -1) {
@@ -1203,7 +1279,7 @@ export function detectPeaks(
   let currentState = 0;
 
   for (let i = 0; i < weights.length; i++) {
-    const isPeak = filteredPeaks.some(p => p.index === i);
+    const isPeak = filteredPeaks.some((p) => p.index === i);
     if (isPeak) {
       currentState = 1 - currentState; // Flip
     }
@@ -1211,10 +1287,10 @@ export function detectPeaks(
   }
 
   return {
-    indices: filteredPeaks.map(p => p.index),
-    values: filteredPeaks.map(p => p.value),
+    indices: filteredPeaks.map((p) => p.index),
+    values: filteredPeaks.map((p) => p.value),
     count: filteredPeaks.length,
-    alternating
+    alternating,
   };
 }
 
@@ -1225,17 +1301,17 @@ export function generatePeakGraph(
   weights: number[],
   peaks: PeakData,
   width: number,
-  height: number
+  height: number,
 ): ImageData {
   const canvas = new OffscreenCanvas(width, height);
-  const ctx = canvas.getContext('2d')!;
+  const ctx = canvas.getContext("2d")!;
 
   // Background
-  ctx.fillStyle = '#1e1e1e';
+  ctx.fillStyle = "#1e1e1e";
   ctx.fillRect(0, 0, width, height);
 
   // Draw weight curve
-  ctx.strokeStyle = '#4a90d9';
+  ctx.strokeStyle = "#4a90d9";
   ctx.lineWidth = 1;
   ctx.beginPath();
 
@@ -1252,7 +1328,7 @@ export function generatePeakGraph(
   ctx.stroke();
 
   // Draw peak markers
-  ctx.fillStyle = '#ff6b6b';
+  ctx.fillStyle = "#ff6b6b";
   for (let i = 0; i < peaks.indices.length; i++) {
     const x = (peaks.indices[i] / weights.length) * width;
     const y = height - peaks.values[i] * height * 0.9 - 5;
@@ -1263,7 +1339,7 @@ export function generatePeakGraph(
   }
 
   // Draw alternating regions
-  ctx.fillStyle = 'rgba(255, 193, 7, 0.1)';
+  ctx.fillStyle = "rgba(255, 193, 7, 0.1)";
   let regionStart = 0;
   let inRegion = peaks.alternating[0] === 1;
 
@@ -1320,7 +1396,7 @@ export function isPeakAtFrame(peaks: PeakData, frame: number): boolean {
 export function extractHPSS(
   buffer: AudioBuffer,
   fps: number,
-  kernelSize: number = 31
+  kernelSize: number = 31,
 ): { harmonicEnergy: number[]; percussiveEnergy: number[]; hpRatio: number[] } {
   const channelData = buffer.getChannelData(0);
   const sampleRate = buffer.sampleRate;
@@ -1342,16 +1418,17 @@ export function extractHPSS(
     // Copy and window
     for (let i = 0; i < fftSize && startSample + i < channelData.length; i++) {
       // Hann window
-      const window = 0.5 * (1 - Math.cos(2 * Math.PI * i / (fftSize - 1)));
+      const window = 0.5 * (1 - Math.cos((2 * Math.PI * i) / (fftSize - 1)));
       frameData[i] = channelData[startSample + i] * window;
     }
 
     // Simple DFT (for small FFT sizes, good enough)
     const magnitudes: number[] = [];
     for (let k = 0; k < numBins; k++) {
-      let real = 0, imag = 0;
+      let real = 0,
+        imag = 0;
       for (let n = 0; n < fftSize; n++) {
-        const angle = -2 * Math.PI * k * n / fftSize;
+        const angle = (-2 * Math.PI * k * n) / fftSize;
         real += frameData[n] * Math.cos(angle);
         imag += frameData[n] * Math.sin(angle);
       }
@@ -1424,9 +1501,9 @@ export function extractHPSS(
   const maxP = Math.max(...percussiveEnergy, 1e-10);
 
   return {
-    harmonicEnergy: harmonicEnergy.map(v => v / maxH),
-    percussiveEnergy: percussiveEnergy.map(v => v / maxP),
-    hpRatio: hpRatio.map(v => Math.min(v, 10) / 10) // Clamp and normalize
+    harmonicEnergy: harmonicEnergy.map((v) => v / maxH),
+    percussiveEnergy: percussiveEnergy.map((v) => v / maxP),
+    hpRatio: hpRatio.map((v) => Math.min(v, 10) / 10), // Clamp and normalize
   };
 }
 
@@ -1447,7 +1524,7 @@ export function extractMFCC(
   buffer: AudioBuffer,
   fps: number,
   numCoeffs: number = 13,
-  numMelFilters: number = 40
+  numMelFilters: number = 40,
 ): { mfcc: number[][]; stats: { min: number[]; max: number[] } } {
   const channelData = buffer.getChannelData(0);
   const sampleRate = buffer.sampleRate;
@@ -1468,16 +1545,17 @@ export function extractMFCC(
 
     // Copy and window
     for (let i = 0; i < fftSize && startSample + i < channelData.length; i++) {
-      const window = 0.5 * (1 - Math.cos(2 * Math.PI * i / (fftSize - 1)));
+      const window = 0.5 * (1 - Math.cos((2 * Math.PI * i) / (fftSize - 1)));
       frameData[i] = channelData[startSample + i] * window;
     }
 
     // Compute power spectrum
     const powerSpectrum: number[] = [];
     for (let k = 0; k < numBins; k++) {
-      let real = 0, imag = 0;
+      let real = 0,
+        imag = 0;
       for (let n = 0; n < fftSize; n++) {
-        const angle = -2 * Math.PI * k * n / fftSize;
+        const angle = (-2 * Math.PI * k * n) / fftSize;
         real += frameData[n] * Math.cos(angle);
         imag += frameData[n] * Math.sin(angle);
       }
@@ -1499,7 +1577,8 @@ export function extractMFCC(
     for (let c = 0; c < numCoeffs; c++) {
       let sum = 0;
       for (let m = 0; m < numMelFilters; m++) {
-        sum += melEnergies[m] * Math.cos(Math.PI * c * (m + 0.5) / numMelFilters);
+        sum +=
+          melEnergies[m] * Math.cos((Math.PI * c * (m + 0.5)) / numMelFilters);
       }
       mfcc.push(sum);
     }
@@ -1511,7 +1590,7 @@ export function extractMFCC(
   // MFCC0 (log energy) has different range than MFCC1-12 (spectral shape)
   const stats = {
     min: new Array(numCoeffs).fill(Infinity),
-    max: new Array(numCoeffs).fill(-Infinity)
+    max: new Array(numCoeffs).fill(-Infinity),
   };
 
   for (const frame of mfccFrames) {
@@ -1524,7 +1603,7 @@ export function extractMFCC(
   // Handle edge cases for normalization
   for (let c = 0; c < numCoeffs; c++) {
     // Edge case: 0 frames - stats remain Infinity/-Infinity
-    if (!isFinite(stats.min[c]) || !isFinite(stats.max[c])) {
+    if (!Number.isFinite(stats.min[c]) || !Number.isFinite(stats.max[c])) {
       stats.min[c] = 0;
       stats.max[c] = 1;
     }
@@ -1544,11 +1623,11 @@ export function extractMFCC(
 function createMelFilterbank(
   numFilters: number,
   numBins: number,
-  sampleRate: number
+  sampleRate: number,
 ): number[][] {
   // Mel scale conversion functions
   const hzToMel = (hz: number) => 2595 * Math.log10(1 + hz / 700);
-  const melToHz = (mel: number) => 700 * (Math.pow(10, mel / 2595) - 1);
+  const melToHz = (mel: number) => 700 * (10 ** (mel / 2595) - 1);
 
   const minMel = hzToMel(0);
   const maxMel = hzToMel(sampleRate / 2);
@@ -1556,13 +1635,13 @@ function createMelFilterbank(
   // Create mel points
   const melPoints: number[] = [];
   for (let i = 0; i <= numFilters + 1; i++) {
-    melPoints.push(minMel + (maxMel - minMel) * i / (numFilters + 1));
+    melPoints.push(minMel + ((maxMel - minMel) * i) / (numFilters + 1));
   }
 
   // Convert to bin indices
-  const binPoints = melPoints.map(mel => {
+  const binPoints = melPoints.map((mel) => {
     const hz = melToHz(mel);
-    return Math.floor((numBins - 1) * 2 * hz / sampleRate);
+    return Math.floor(((numBins - 1) * 2 * hz) / sampleRate);
   });
 
   // Create filterbank
@@ -1600,7 +1679,7 @@ export default {
   detectOnsets,
   detectBPM,
   getFeatureAtFrame,
-  getBPM,  // BUG-074 fix: track-level BPM accessor
+  getBPM, // BUG-074 fix: track-level BPM accessor
   getSmoothedFeature,
   normalizeFeature,
   applyFeatureCurve,
@@ -1610,5 +1689,5 @@ export default {
   isPeakAtFrame,
   // HPSS & MFCC (librosa-style)
   extractHPSS,
-  extractMFCC
+  extractMFCC,
 };

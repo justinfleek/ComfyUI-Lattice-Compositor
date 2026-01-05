@@ -13,11 +13,11 @@
  * DETERMINISM: Audio position calculated from frame, not real-time
  */
 
-import * as THREE from 'three';
-import type { Layer, AudioLayerData } from '@/types/project';
-import { createAnimatableProperty } from '@/types/project';
-import { BaseLayer } from './BaseLayer';
-import { interpolateProperty } from '@/services/interpolation';
+import * as THREE from "three";
+import { interpolateProperty } from "@/services/interpolation";
+import type { AudioLayerData, Layer } from "@/types/project";
+import { createAnimatableProperty } from "@/types/project";
+import { BaseLayer } from "./BaseLayer";
 
 // Web Audio nodes for playback
 interface AudioPlaybackNodes {
@@ -62,16 +62,16 @@ export class AudioLayer extends BaseLayer {
     const data = layerData.data as Partial<AudioLayerData> | undefined;
     return {
       assetId: data?.assetId ?? null,
-      level: data?.level ?? createAnimatableProperty('Level', 0, 'number'),
+      level: data?.level ?? createAnimatableProperty("Level", 0, "number"),
       muted: data?.muted ?? false,
       solo: data?.solo ?? false,
-      pan: data?.pan ?? createAnimatableProperty('Pan', 0, 'number'),
+      pan: data?.pan ?? createAnimatableProperty("Pan", 0, "number"),
       loop: data?.loop ?? false,
       startTime: data?.startTime ?? 0,
       speed: data?.speed ?? 1,
       showWaveform: data?.showWaveform ?? true,
-      waveformColor: data?.waveformColor ?? '#4a90d9',
-      exposeFeatures: data?.exposeFeatures ?? false
+      waveformColor: data?.waveformColor ?? "#4a90d9",
+      exposeFeatures: data?.exposeFeatures ?? false,
     };
   }
 
@@ -88,24 +88,32 @@ export class AudioLayer extends BaseLayer {
     const bodyMaterial = new THREE.MeshBasicMaterial({
       color: 0x4a90d9,
       transparent: true,
-      opacity: 0.8
+      opacity: 0.8,
     });
     const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
     this.iconGroup.add(body);
 
     // Sound waves (arcs)
-    const waveMaterial = new THREE.LineBasicMaterial({ color: 0x4a90d9, transparent: true, opacity: 0.6 });
+    const waveMaterial = new THREE.LineBasicMaterial({
+      color: 0x4a90d9,
+      transparent: true,
+      opacity: 0.6,
+    });
 
     for (let i = 0; i < 3; i++) {
       const curve = new THREE.EllipseCurve(
-        15, 0,
-        10 + i * 8, 15 + i * 5,
-        -Math.PI / 3, Math.PI / 3,
-        false, 0
+        15,
+        0,
+        10 + i * 8,
+        15 + i * 5,
+        -Math.PI / 3,
+        Math.PI / 3,
+        false,
+        0,
       );
       const points = curve.getPoints(20);
       const geometry = new THREE.BufferGeometry().setFromPoints(
-        points.map(p => new THREE.Vector3(p.x, p.y, 0))
+        points.map((p) => new THREE.Vector3(p.x, p.y, 0)),
       );
       const wave = new THREE.Line(geometry, waveMaterial);
       this.iconGroup.add(wave);
@@ -122,12 +130,20 @@ export class AudioLayer extends BaseLayer {
   protected onEvaluateFrame(frame: number): void {
     // Evaluate animated audio properties
     if (this.audioData.level) {
-      const level = interpolateProperty(this.audioData.level, frame, this.compositionFps);
+      const _level = interpolateProperty(
+        this.audioData.level,
+        frame,
+        this.compositionFps,
+      );
       // Level would be applied to audio playback engine
     }
 
     if (this.audioData.pan) {
-      const pan = interpolateProperty(this.audioData.pan, frame, this.compositionFps);
+      const _pan = interpolateProperty(
+        this.audioData.pan,
+        frame,
+        this.compositionFps,
+      );
       // Pan would be applied to audio playback engine
     }
 
@@ -181,12 +197,16 @@ export class AudioLayer extends BaseLayer {
    */
   getAudioTimeForFrame(frame: number, fps: number): number {
     // Validate fps (0/NaN would cause division by zero or NaN propagation)
-    const validFps = (Number.isFinite(fps) && fps > 0) ? fps : 30;
+    const validFps = Number.isFinite(fps) && fps > 0 ? fps : 30;
     const validFrame = Number.isFinite(frame) ? frame : 0;
     const layerTime = validFrame / validFps;
     // Validate speed (NaN would corrupt audio time calculation)
-    const validSpeed = Number.isFinite(this.audioData.speed) ? this.audioData.speed : 1;
-    const validStartTime = Number.isFinite(this.audioData.startTime) ? this.audioData.startTime : 0;
+    const validSpeed = Number.isFinite(this.audioData.speed)
+      ? this.audioData.speed
+      : 1;
+    const validStartTime = Number.isFinite(this.audioData.startTime)
+      ? this.audioData.startTime
+      : 0;
     const audioTime = (layerTime - validStartTime) * validSpeed;
     return Math.max(0, audioTime);
   }
@@ -237,7 +257,7 @@ export class AudioLayer extends BaseLayer {
       buffer,
       isPlaying: false,
       startTime: 0,
-      startOffset: 0
+      startOffset: 0,
     };
 
     // Apply initial level
@@ -258,7 +278,7 @@ export class AudioLayer extends BaseLayer {
     const context = this.playbackNodes.context;
 
     // Resume context if suspended (browser autoplay policy)
-    if (context.state === 'suspended') {
+    if (context.state === "suspended") {
       context.resume();
     }
 
@@ -266,7 +286,10 @@ export class AudioLayer extends BaseLayer {
     const audioTime = this.getAudioTimeForFrame(frame, fps);
 
     // Don't start if audio position would be beyond buffer duration
-    if (audioTime < 0 || (!this.audioData.loop && audioTime >= this.playbackNodes.buffer.duration)) {
+    if (
+      audioTime < 0 ||
+      (!this.audioData.loop && audioTime >= this.playbackNodes.buffer.duration)
+    ) {
       return;
     }
 
@@ -335,12 +358,12 @@ export class AudioLayer extends BaseLayer {
     // Convert dB to linear: linear = 10^(dB/20)
     // Clamp to reasonable range: -60dB to +12dB
     const clampedDb = Math.max(-60, Math.min(12, validDb));
-    const linearGain = clampedDb <= -60 ? 0 : Math.pow(10, clampedDb / 20);
+    const linearGain = clampedDb <= -60 ? 0 : 10 ** (clampedDb / 20);
 
     // Use setValueAtTime for immediate update without clicks
     this.playbackNodes.gainNode.gain.setValueAtTime(
       linearGain,
-      this.playbackNodes.context.currentTime
+      this.playbackNodes.context.currentTime,
     );
   }
 
@@ -358,7 +381,7 @@ export class AudioLayer extends BaseLayer {
 
     this.playbackNodes.panNode.pan.setValueAtTime(
       clampedPan,
-      this.playbackNodes.context.currentTime
+      this.playbackNodes.context.currentTime,
     );
   }
 
@@ -372,7 +395,7 @@ export class AudioLayer extends BaseLayer {
     const context = this.playbackNodes.context;
 
     // Resume context if suspended
-    if (context.state === 'suspended') {
+    if (context.state === "suspended") {
       context.resume();
     }
 
@@ -381,7 +404,8 @@ export class AudioLayer extends BaseLayer {
 
     // Calculate audio time
     const audioTime = this.getAudioTimeForFrame(frame, fps);
-    if (audioTime < 0 || audioTime >= this.playbackNodes.buffer.duration) return;
+    if (audioTime < 0 || audioTime >= this.playbackNodes.buffer.duration)
+      return;
 
     // Create source for scrub
     const source = context.createBufferSource();
@@ -391,7 +415,10 @@ export class AudioLayer extends BaseLayer {
 
     // Play a short 100ms snippet
     const scrubDuration = 0.1;
-    const endTime = Math.min(audioTime + scrubDuration, this.playbackNodes.buffer.duration);
+    const endTime = Math.min(
+      audioTime + scrubDuration,
+      this.playbackNodes.buffer.duration,
+    );
 
     this.playbackNodes.source = source;
     source.start(0, audioTime, endTime - audioTime);
@@ -405,13 +432,21 @@ export class AudioLayer extends BaseLayer {
 
     // Interpolate and apply level
     if (this.audioData.level) {
-      const level: number = interpolateProperty(this.audioData.level, frame, this.compositionFps);
+      const level: number = interpolateProperty(
+        this.audioData.level,
+        frame,
+        this.compositionFps,
+      );
       this.updateGain(level);
     }
 
     // Interpolate and apply pan
     if (this.audioData.pan) {
-      const pan: number = interpolateProperty(this.audioData.pan, frame, this.compositionFps);
+      const pan: number = interpolateProperty(
+        this.audioData.pan,
+        frame,
+        this.compositionFps,
+      );
       this.updatePan(pan);
     }
   }

@@ -13,7 +13,7 @@
  * - Async initialization to prevent main thread blocking
  */
 
-import { engineLogger } from '@/utils/logger';
+import { engineLogger } from "@/utils/logger";
 
 // ============================================================================
 // TYPES
@@ -29,55 +29,55 @@ export interface WebGPUCapabilities {
 
 export interface BlurParams {
   radius: number;
-  quality: 'low' | 'medium' | 'high';
-  direction?: 'horizontal' | 'vertical' | 'both';
+  quality: "low" | "medium" | "high";
+  direction?: "horizontal" | "vertical" | "both";
 }
 
 export interface ColorCorrectionParams {
-  brightness: number;  // -1 to 1
-  contrast: number;    // -1 to 1
-  saturation: number;  // -1 to 1
-  hue: number;         // -180 to 180
+  brightness: number; // -1 to 1
+  contrast: number; // -1 to 1
+  saturation: number; // -1 to 1
+  hue: number; // -180 to 180
 }
 
 export interface RadialBlurParams {
-  centerX: number;     // 0-1 normalized
-  centerY: number;     // 0-1 normalized
-  amount: number;      // Blur amount
-  samples?: number;    // Sample count (default 32)
+  centerX: number; // 0-1 normalized
+  centerY: number; // 0-1 normalized
+  amount: number; // Blur amount
+  samples?: number; // Sample count (default 32)
 }
 
 export interface DirectionalBlurParams {
-  angle: number;       // Degrees
-  length: number;      // Blur length in pixels
-  samples?: number;    // Sample count (default 32)
+  angle: number; // Degrees
+  length: number; // Blur length in pixels
+  samples?: number; // Sample count (default 32)
 }
 
 export interface DisplacementParams {
-  maxHorizontal: number;   // Max horizontal displacement in pixels
-  maxVertical: number;     // Max vertical displacement in pixels
-  hChannel?: 'red' | 'green' | 'blue' | 'alpha' | 'luminance';
-  vChannel?: 'red' | 'green' | 'blue' | 'alpha' | 'luminance';
+  maxHorizontal: number; // Max horizontal displacement in pixels
+  maxVertical: number; // Max vertical displacement in pixels
+  hChannel?: "red" | "green" | "blue" | "alpha" | "luminance";
+  vChannel?: "red" | "green" | "blue" | "alpha" | "luminance";
 }
 
 export interface WarpParams {
-  style: 'bulge' | 'wave' | 'fisheye' | 'twist';
-  bend: number;        // -1 to 1
-  hDistort?: number;   // Horizontal distortion
-  vDistort?: number;   // Vertical distortion
+  style: "bulge" | "wave" | "fisheye" | "twist";
+  bend: number; // -1 to 1
+  hDistort?: number; // Horizontal distortion
+  vDistort?: number; // Vertical distortion
 }
 
 export interface GlowParams {
-  radius: number;      // Glow radius
-  intensity: number;   // Glow intensity
-  threshold?: number;  // Brightness threshold (0-1)
+  radius: number; // Glow radius
+  intensity: number; // Glow intensity
+  threshold?: number; // Brightness threshold (0-1)
   color?: { r: number; g: number; b: number };
 }
 
 export interface LevelsParams {
-  inputBlack: number;  // 0-1
-  inputWhite: number;  // 0-1
-  gamma: number;       // 0.1-10
+  inputBlack: number; // 0-1
+  inputWhite: number; // 0-1
+  gamma: number; // 0.1-10
   outputBlack: number; // 0-1
   outputWhite: number; // 0-1
 }
@@ -577,7 +577,6 @@ class WebGPURenderer {
   private colorPipeline: GPUComputePipeline | null = null;
   private radialBlurPipeline: GPUComputePipeline | null = null;
   private directionalBlurPipeline: GPUComputePipeline | null = null;
-  private displacementPipeline: GPUComputePipeline | null = null;
   private warpPipeline: GPUComputePipeline | null = null;
   private glowPipeline: GPUComputePipeline | null = null;
   private levelsPipeline: GPUComputePipeline | null = null;
@@ -587,7 +586,6 @@ class WebGPURenderer {
   private colorBindGroupLayout: GPUBindGroupLayout | null = null;
   private radialBlurBindGroupLayout: GPUBindGroupLayout | null = null;
   private directionalBlurBindGroupLayout: GPUBindGroupLayout | null = null;
-  private displacementBindGroupLayout: GPUBindGroupLayout | null = null;
   private warpBindGroupLayout: GPUBindGroupLayout | null = null;
   private glowBindGroupLayout: GPUBindGroupLayout | null = null;
   private levelsBindGroupLayout: GPUBindGroupLayout | null = null;
@@ -607,19 +605,19 @@ class WebGPURenderer {
   private async doInitialize(): Promise<boolean> {
     try {
       // Check WebGPU availability
-      if (!('gpu' in navigator)) {
-        engineLogger.info('WebGPU not available - using Canvas2D fallback');
+      if (!("gpu" in navigator)) {
+        engineLogger.info("WebGPU not available - using Canvas2D fallback");
         this.initialized = true;
         return false;
       }
 
       // Request adapter
       const adapter = await navigator.gpu.requestAdapter({
-        powerPreference: 'high-performance',
+        powerPreference: "high-performance",
       });
 
       if (!adapter) {
-        engineLogger.warn('WebGPU adapter not available');
+        engineLogger.warn("WebGPU adapter not available");
         this.initialized = true;
         return false;
       }
@@ -647,14 +645,14 @@ class WebGPURenderer {
       await this.createShaderModules();
       await this.createPipelines();
 
-      engineLogger.info('WebGPU initialized successfully', {
+      engineLogger.info("WebGPU initialized successfully", {
         features: this.capabilities.features.slice(0, 5),
       });
 
       this.initialized = true;
       return true;
     } catch (error) {
-      engineLogger.error('WebGPU initialization failed:', error);
+      engineLogger.error("WebGPU initialization failed:", error);
       this.initialized = true;
       return false;
     }
@@ -665,36 +663,73 @@ class WebGPURenderer {
     const device = this.capabilities.device;
 
     this.blurModule = device.createShaderModule({ code: BLUR_COMPUTE_SHADER });
-    this.colorModule = device.createShaderModule({ code: COLOR_CORRECTION_SHADER });
-    this.radialBlurModule = device.createShaderModule({ code: RADIAL_BLUR_SHADER });
-    this.directionalBlurModule = device.createShaderModule({ code: DIRECTIONAL_BLUR_SHADER });
-    this.displacementModule = device.createShaderModule({ code: DISPLACEMENT_SHADER });
+    this.colorModule = device.createShaderModule({
+      code: COLOR_CORRECTION_SHADER,
+    });
+    this.radialBlurModule = device.createShaderModule({
+      code: RADIAL_BLUR_SHADER,
+    });
+    this.directionalBlurModule = device.createShaderModule({
+      code: DIRECTIONAL_BLUR_SHADER,
+    });
+    this.displacementModule = device.createShaderModule({
+      code: DISPLACEMENT_SHADER,
+    });
     this.warpModule = device.createShaderModule({ code: WARP_SHADER });
     this.glowModule = device.createShaderModule({ code: GLOW_SHADER });
     this.levelsModule = device.createShaderModule({ code: LEVELS_SHADER });
   }
 
   private async createPipelines(): Promise<void> {
-    if (!this.capabilities.device || !this.blurModule || !this.colorModule) return;
+    if (!this.capabilities.device || !this.blurModule || !this.colorModule)
+      return;
 
     const device = this.capabilities.device;
 
     // Standard layout: input texture + output texture + uniform params
     const standardLayout = device.createBindGroupLayout({
       entries: [
-        { binding: 0, visibility: GPUShaderStage.COMPUTE, texture: { sampleType: 'float' } },
-        { binding: 1, visibility: GPUShaderStage.COMPUTE, storageTexture: { format: 'rgba8unorm', access: 'write-only' } },
-        { binding: 2, visibility: GPUShaderStage.COMPUTE, buffer: { type: 'uniform' } },
+        {
+          binding: 0,
+          visibility: GPUShaderStage.COMPUTE,
+          texture: { sampleType: "float" },
+        },
+        {
+          binding: 1,
+          visibility: GPUShaderStage.COMPUTE,
+          storageTexture: { format: "rgba8unorm", access: "write-only" },
+        },
+        {
+          binding: 2,
+          visibility: GPUShaderStage.COMPUTE,
+          buffer: { type: "uniform" },
+        },
       ],
     });
 
     // Displacement layout: input + displacement map + output + params
     const displacementLayout = device.createBindGroupLayout({
       entries: [
-        { binding: 0, visibility: GPUShaderStage.COMPUTE, texture: { sampleType: 'float' } },
-        { binding: 1, visibility: GPUShaderStage.COMPUTE, texture: { sampleType: 'float' } },
-        { binding: 2, visibility: GPUShaderStage.COMPUTE, storageTexture: { format: 'rgba8unorm', access: 'write-only' } },
-        { binding: 3, visibility: GPUShaderStage.COMPUTE, buffer: { type: 'uniform' } },
+        {
+          binding: 0,
+          visibility: GPUShaderStage.COMPUTE,
+          texture: { sampleType: "float" },
+        },
+        {
+          binding: 1,
+          visibility: GPUShaderStage.COMPUTE,
+          texture: { sampleType: "float" },
+        },
+        {
+          binding: 2,
+          visibility: GPUShaderStage.COMPUTE,
+          storageTexture: { format: "rgba8unorm", access: "write-only" },
+        },
+        {
+          binding: 3,
+          visibility: GPUShaderStage.COMPUTE,
+          buffer: { type: "uniform" },
+        },
       ],
     });
 
@@ -709,21 +744,33 @@ class WebGPURenderer {
     this.displacementBindGroupLayout = displacementLayout;
 
     // Helper to create pipeline
-    const createPipeline = (module: GPUShaderModule, layout: GPUBindGroupLayout) =>
+    const createPipeline = (
+      module: GPUShaderModule,
+      layout: GPUBindGroupLayout,
+    ) =>
       device.createComputePipeline({
         layout: device.createPipelineLayout({ bindGroupLayouts: [layout] }),
-        compute: { module, entryPoint: 'main' },
+        compute: { module, entryPoint: "main" },
       });
 
     // Create all pipelines
     this.blurPipeline = createPipeline(this.blurModule, standardLayout);
     this.colorPipeline = createPipeline(this.colorModule!, standardLayout);
-    this.radialBlurPipeline = createPipeline(this.radialBlurModule!, standardLayout);
-    this.directionalBlurPipeline = createPipeline(this.directionalBlurModule!, standardLayout);
+    this.radialBlurPipeline = createPipeline(
+      this.radialBlurModule!,
+      standardLayout,
+    );
+    this.directionalBlurPipeline = createPipeline(
+      this.directionalBlurModule!,
+      standardLayout,
+    );
     this.warpPipeline = createPipeline(this.warpModule!, standardLayout);
     this.glowPipeline = createPipeline(this.glowModule!, standardLayout);
     this.levelsPipeline = createPipeline(this.levelsModule!, standardLayout);
-    this.displacementPipeline = createPipeline(this.displacementModule!, displacementLayout);
+    this.displacementPipeline = createPipeline(
+      this.displacementModule!,
+      displacementLayout,
+    );
   }
 
   /**
@@ -746,7 +793,7 @@ class WebGPURenderer {
    */
   async blur(
     source: ImageData | HTMLCanvasElement,
-    params: BlurParams
+    params: BlurParams,
   ): Promise<ImageData> {
     if (!this.capabilities.available || !this.capabilities.device) {
       return this.blurCanvas2D(source, params);
@@ -755,14 +802,14 @@ class WebGPURenderer {
     try {
       return await this.blurWebGPU(source, params);
     } catch (error) {
-      engineLogger.warn('WebGPU blur failed, falling back to Canvas2D:', error);
+      engineLogger.warn("WebGPU blur failed, falling back to Canvas2D:", error);
       return this.blurCanvas2D(source, params);
     }
   }
 
   private async blurWebGPU(
     source: ImageData | HTMLCanvasElement,
-    params: BlurParams
+    params: BlurParams,
   ): Promise<ImageData> {
     const device = this.capabilities.device!;
     const imageData = this.toImageData(source);
@@ -771,7 +818,7 @@ class WebGPURenderer {
     // Create input texture
     const inputTexture = device.createTexture({
       size: [width, height],
-      format: 'rgba8unorm',
+      format: "rgba8unorm",
       usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
     });
 
@@ -780,13 +827,13 @@ class WebGPURenderer {
       { texture: inputTexture },
       imageData.data,
       { bytesPerRow: width * 4, rowsPerImage: height },
-      { width, height }
+      { width, height },
     );
 
     // Create output texture
     const outputTexture = device.createTexture({
       size: [width, height],
-      format: 'rgba8unorm',
+      format: "rgba8unorm",
       usage: GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.COPY_SRC,
     });
 
@@ -798,7 +845,7 @@ class WebGPURenderer {
     });
     new Float32Array(paramsBuffer.getMappedRange()).set([
       params.radius,
-      params.direction === 'vertical' ? 1 : 0,
+      params.direction === "vertical" ? 1 : 0,
       width,
       height,
     ]);
@@ -821,7 +868,7 @@ class WebGPURenderer {
     passEncoder.setBindGroup(0, bindGroup);
     passEncoder.dispatchWorkgroups(
       Math.ceil(width / 16),
-      Math.ceil(height / 16)
+      Math.ceil(height / 16),
     );
     passEncoder.end();
 
@@ -833,14 +880,16 @@ class WebGPURenderer {
     commandEncoder.copyTextureToBuffer(
       { texture: outputTexture },
       { buffer: outputBuffer, bytesPerRow: width * 4 },
-      { width, height }
+      { width, height },
     );
 
     device.queue.submit([commandEncoder.finish()]);
 
     // Read back result
     await outputBuffer.mapAsync(GPUMapMode.READ);
-    const resultData = new Uint8ClampedArray(outputBuffer.getMappedRange().slice(0));
+    const resultData = new Uint8ClampedArray(
+      outputBuffer.getMappedRange().slice(0),
+    );
     outputBuffer.unmap();
 
     // Clean up
@@ -854,11 +903,11 @@ class WebGPURenderer {
 
   private blurCanvas2D(
     source: ImageData | HTMLCanvasElement,
-    params: BlurParams
+    params: BlurParams,
   ): ImageData {
     const imageData = this.toImageData(source);
     const canvas = new OffscreenCanvas(imageData.width, imageData.height);
-    const ctx = canvas.getContext('2d')!;
+    const ctx = canvas.getContext("2d")!;
 
     // Use CSS filter for blur (works on OffscreenCanvas in most browsers)
     ctx.putImageData(imageData, 0, 0);
@@ -873,7 +922,7 @@ class WebGPURenderer {
    */
   async colorCorrect(
     source: ImageData | HTMLCanvasElement,
-    params: ColorCorrectionParams
+    params: ColorCorrectionParams,
   ): Promise<ImageData> {
     if (!this.capabilities.available || !this.capabilities.device) {
       return this.colorCorrectCanvas2D(source, params);
@@ -882,14 +931,14 @@ class WebGPURenderer {
     try {
       return await this.colorCorrectWebGPU(source, params);
     } catch (error) {
-      engineLogger.warn('WebGPU color correction failed, falling back:', error);
+      engineLogger.warn("WebGPU color correction failed, falling back:", error);
       return this.colorCorrectCanvas2D(source, params);
     }
   }
 
   private async colorCorrectWebGPU(
     source: ImageData | HTMLCanvasElement,
-    params: ColorCorrectionParams
+    params: ColorCorrectionParams,
   ): Promise<ImageData> {
     const device = this.capabilities.device!;
     const imageData = this.toImageData(source);
@@ -898,7 +947,7 @@ class WebGPURenderer {
     // Create input texture
     const inputTexture = device.createTexture({
       size: [width, height],
-      format: 'rgba8unorm',
+      format: "rgba8unorm",
       usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
     });
 
@@ -906,13 +955,13 @@ class WebGPURenderer {
       { texture: inputTexture },
       imageData.data,
       { bytesPerRow: width * 4, rowsPerImage: height },
-      { width, height }
+      { width, height },
     );
 
     // Create output texture
     const outputTexture = device.createTexture({
       size: [width, height],
-      format: 'rgba8unorm',
+      format: "rgba8unorm",
       usage: GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.COPY_SRC,
     });
 
@@ -947,7 +996,7 @@ class WebGPURenderer {
     passEncoder.setBindGroup(0, bindGroup);
     passEncoder.dispatchWorkgroups(
       Math.ceil(width / 16),
-      Math.ceil(height / 16)
+      Math.ceil(height / 16),
     );
     passEncoder.end();
 
@@ -959,13 +1008,15 @@ class WebGPURenderer {
     commandEncoder.copyTextureToBuffer(
       { texture: outputTexture },
       { buffer: outputBuffer, bytesPerRow: width * 4 },
-      { width, height }
+      { width, height },
     );
 
     device.queue.submit([commandEncoder.finish()]);
 
     await outputBuffer.mapAsync(GPUMapMode.READ);
-    const resultData = new Uint8ClampedArray(outputBuffer.getMappedRange().slice(0));
+    const resultData = new Uint8ClampedArray(
+      outputBuffer.getMappedRange().slice(0),
+    );
     outputBuffer.unmap();
 
     // Clean up
@@ -979,7 +1030,7 @@ class WebGPURenderer {
 
   private colorCorrectCanvas2D(
     source: ImageData | HTMLCanvasElement,
-    params: ColorCorrectionParams
+    params: ColorCorrectionParams,
   ): ImageData {
     const imageData = this.toImageData(source);
     const data = imageData.data;
@@ -1024,20 +1075,23 @@ class WebGPURenderer {
    */
   async radialBlur(
     source: ImageData | HTMLCanvasElement,
-    params: RadialBlurParams
+    params: RadialBlurParams,
   ): Promise<ImageData> {
     if (!this.capabilities.available || !this.radialBlurPipeline) {
       return this.radialBlurCanvas2D(source, params);
     }
-    return this.runStandardCompute(source, this.radialBlurPipeline!, this.radialBlurBindGroupLayout!, [
-      params.centerX,
-      params.centerY,
-      params.amount,
-      params.samples ?? 32,
-    ]);
+    return this.runStandardCompute(
+      source,
+      this.radialBlurPipeline!,
+      this.radialBlurBindGroupLayout!,
+      [params.centerX, params.centerY, params.amount, params.samples ?? 32],
+    );
   }
 
-  private radialBlurCanvas2D(source: ImageData | HTMLCanvasElement, params: RadialBlurParams): ImageData {
+  private radialBlurCanvas2D(
+    source: ImageData | HTMLCanvasElement,
+    params: RadialBlurParams,
+  ): ImageData {
     // CPU fallback - simplified version
     const imageData = this.toImageData(source);
     const { width, height, data } = imageData;
@@ -1050,16 +1104,22 @@ class WebGPURenderer {
       for (let x = 0; x < width; x++) {
         const dx = x - centerX;
         const dy = y - centerY;
-        let r = 0, g = 0, b = 0, a = 0;
+        let r = 0,
+          g = 0,
+          b = 0,
+          a = 0;
 
         for (let s = 0; s < samples; s++) {
-          const t = (s / (samples - 1)) - 0.5;
+          const t = s / (samples - 1) - 0.5;
           const sx = Math.round(x + dx * t * params.amount * 0.01);
           const sy = Math.round(y + dy * t * params.amount * 0.01);
           const clampX = Math.max(0, Math.min(width - 1, sx));
           const clampY = Math.max(0, Math.min(height - 1, sy));
           const si = (clampY * width + clampX) * 4;
-          r += data[si]; g += data[si + 1]; b += data[si + 2]; a += data[si + 3];
+          r += data[si];
+          g += data[si + 1];
+          b += data[si + 2];
+          a += data[si + 3];
         }
 
         const i = (y * width + x) * 4;
@@ -1077,37 +1137,54 @@ class WebGPURenderer {
    */
   async directionalBlur(
     source: ImageData | HTMLCanvasElement,
-    params: DirectionalBlurParams
+    params: DirectionalBlurParams,
   ): Promise<ImageData> {
     if (!this.capabilities.available || !this.directionalBlurPipeline) {
       return this.directionalBlurCanvas2D(source, params);
     }
-    return this.runStandardCompute(source, this.directionalBlurPipeline!, this.directionalBlurBindGroupLayout!, [
-      params.angle,
-      params.length,
-      params.samples ?? 32,
-      0, // padding
-    ]);
+    return this.runStandardCompute(
+      source,
+      this.directionalBlurPipeline!,
+      this.directionalBlurBindGroupLayout!,
+      [
+        params.angle,
+        params.length,
+        params.samples ?? 32,
+        0, // padding
+      ],
+    );
   }
 
-  private directionalBlurCanvas2D(source: ImageData | HTMLCanvasElement, params: DirectionalBlurParams): ImageData {
+  private directionalBlurCanvas2D(
+    source: ImageData | HTMLCanvasElement,
+    params: DirectionalBlurParams,
+  ): ImageData {
     const imageData = this.toImageData(source);
     const { width, height, data } = imageData;
     const output = new Uint8ClampedArray(data.length);
-    const angleRad = params.angle * Math.PI / 180;
+    const angleRad = (params.angle * Math.PI) / 180;
     const dirX = Math.cos(angleRad) * params.length;
     const dirY = Math.sin(angleRad) * params.length;
     const samples = params.samples ?? 32;
 
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
-        let r = 0, g = 0, b = 0, a = 0;
+        let r = 0,
+          g = 0,
+          b = 0,
+          a = 0;
         for (let s = 0; s < samples; s++) {
-          const t = (s / (samples - 1)) - 0.5;
+          const t = s / (samples - 1) - 0.5;
           const sx = Math.max(0, Math.min(width - 1, Math.round(x + dirX * t)));
-          const sy = Math.max(0, Math.min(height - 1, Math.round(y + dirY * t)));
+          const sy = Math.max(
+            0,
+            Math.min(height - 1, Math.round(y + dirY * t)),
+          );
           const si = (sy * width + sx) * 4;
-          r += data[si]; g += data[si + 1]; b += data[si + 2]; a += data[si + 3];
+          r += data[si];
+          g += data[si + 1];
+          b += data[si + 2];
+          a += data[si + 3];
         }
         const i = (y * width + x) * 4;
         output[i] = r / samples;
@@ -1124,21 +1201,29 @@ class WebGPURenderer {
    */
   async warp(
     source: ImageData | HTMLCanvasElement,
-    params: WarpParams
+    params: WarpParams,
   ): Promise<ImageData> {
     if (!this.capabilities.available || !this.warpPipeline) {
       return this.warpCanvas2D(source, params);
     }
     const styleMap = { bulge: 0, wave: 1, fisheye: 2, twist: 3 };
-    return this.runStandardCompute(source, this.warpPipeline!, this.warpBindGroupLayout!, [
-      styleMap[params.style] ?? 0,
-      params.bend,
-      params.hDistort ?? 0,
-      params.vDistort ?? 0,
-    ]);
+    return this.runStandardCompute(
+      source,
+      this.warpPipeline!,
+      this.warpBindGroupLayout!,
+      [
+        styleMap[params.style] ?? 0,
+        params.bend,
+        params.hDistort ?? 0,
+        params.vDistort ?? 0,
+      ],
+    );
   }
 
-  private warpCanvas2D(source: ImageData | HTMLCanvasElement, params: WarpParams): ImageData {
+  private warpCanvas2D(
+    source: ImageData | HTMLCanvasElement,
+    _params: WarpParams,
+  ): ImageData {
     // Simplified CPU fallback
     const imageData = this.toImageData(source);
     return imageData; // Return unchanged for CPU fallback - GPU is strongly preferred for warps
@@ -1149,12 +1234,12 @@ class WebGPURenderer {
    */
   async glow(
     source: ImageData | HTMLCanvasElement,
-    params: GlowParams
+    params: GlowParams,
   ): Promise<ImageData> {
     if (!this.capabilities.available || !this.glowPipeline) {
       return this.glowCanvas2D(source, params);
     }
-    const device = this.capabilities.device!;
+    const _device = this.capabilities.device!;
     const imageData = this.toImageData(source);
     const { width, height } = imageData;
 
@@ -1170,10 +1255,18 @@ class WebGPURenderer {
       1, // alpha
     ]);
 
-    return this.runStandardComputeWithParams(source, this.glowPipeline!, this.glowBindGroupLayout!, paramsData);
+    return this.runStandardComputeWithParams(
+      source,
+      this.glowPipeline!,
+      this.glowBindGroupLayout!,
+      paramsData,
+    );
   }
 
-  private glowCanvas2D(source: ImageData | HTMLCanvasElement, params: GlowParams): ImageData {
+  private glowCanvas2D(
+    source: ImageData | HTMLCanvasElement,
+    _params: GlowParams,
+  ): ImageData {
     // Simple CPU glow - just return input
     return this.toImageData(source);
   }
@@ -1183,22 +1276,32 @@ class WebGPURenderer {
    */
   async levels(
     source: ImageData | HTMLCanvasElement,
-    params: LevelsParams
+    params: LevelsParams,
   ): Promise<ImageData> {
     if (!this.capabilities.available || !this.levelsPipeline) {
       return this.levelsCanvas2D(source, params);
     }
-    return this.runStandardComputeWithParams(source, this.levelsPipeline!, this.levelsBindGroupLayout!, new Float32Array([
-      params.inputBlack,
-      params.inputWhite,
-      params.gamma,
-      params.outputBlack,
-      params.outputWhite,
-      0, 0, 0, // padding to 32 bytes
-    ]));
+    return this.runStandardComputeWithParams(
+      source,
+      this.levelsPipeline!,
+      this.levelsBindGroupLayout!,
+      new Float32Array([
+        params.inputBlack,
+        params.inputWhite,
+        params.gamma,
+        params.outputBlack,
+        params.outputWhite,
+        0,
+        0,
+        0, // padding to 32 bytes
+      ]),
+    );
   }
 
-  private levelsCanvas2D(source: ImageData | HTMLCanvasElement, params: LevelsParams): ImageData {
+  private levelsCanvas2D(
+    source: ImageData | HTMLCanvasElement,
+    params: LevelsParams,
+  ): ImageData {
     const imageData = this.toImageData(source);
     const data = imageData.data;
     const inputRange = Math.max(params.inputWhite - params.inputBlack, 0.001);
@@ -1209,7 +1312,7 @@ class WebGPURenderer {
       for (let c = 0; c < 3; c++) {
         let v = data[i + c] / 255;
         v = Math.max(0, Math.min(1, (v - params.inputBlack) / inputRange));
-        v = Math.pow(v, invGamma);
+        v = v ** invGamma;
         v = params.outputBlack + v * outputRange;
         data[i + c] = Math.max(0, Math.min(255, Math.round(v * 255)));
       }
@@ -1228,9 +1331,14 @@ class WebGPURenderer {
     source: ImageData | HTMLCanvasElement,
     pipeline: GPUComputePipeline,
     layout: GPUBindGroupLayout,
-    params: number[]
+    params: number[],
   ): Promise<ImageData> {
-    return this.runStandardComputeWithParams(source, pipeline, layout, new Float32Array(params));
+    return this.runStandardComputeWithParams(
+      source,
+      pipeline,
+      layout,
+      new Float32Array(params),
+    );
   }
 
   /**
@@ -1240,7 +1348,7 @@ class WebGPURenderer {
     source: ImageData | HTMLCanvasElement,
     pipeline: GPUComputePipeline,
     layout: GPUBindGroupLayout,
-    paramsData: Float32Array
+    paramsData: Float32Array,
   ): Promise<ImageData> {
     const device = this.capabilities.device!;
     const imageData = this.toImageData(source);
@@ -1249,19 +1357,19 @@ class WebGPURenderer {
     // Create textures
     const inputTexture = device.createTexture({
       size: [width, height],
-      format: 'rgba8unorm',
+      format: "rgba8unorm",
       usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
     });
     device.queue.writeTexture(
       { texture: inputTexture },
       imageData.data,
       { bytesPerRow: width * 4, rowsPerImage: height },
-      { width, height }
+      { width, height },
     );
 
     const outputTexture = device.createTexture({
       size: [width, height],
-      format: 'rgba8unorm',
+      format: "rgba8unorm",
       usage: GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.COPY_SRC,
     });
 
@@ -1290,7 +1398,10 @@ class WebGPURenderer {
     const passEncoder = commandEncoder.beginComputePass();
     passEncoder.setPipeline(pipeline);
     passEncoder.setBindGroup(0, bindGroup);
-    passEncoder.dispatchWorkgroups(Math.ceil(width / 16), Math.ceil(height / 16));
+    passEncoder.dispatchWorkgroups(
+      Math.ceil(width / 16),
+      Math.ceil(height / 16),
+    );
     passEncoder.end();
 
     // Copy output
@@ -1301,13 +1412,15 @@ class WebGPURenderer {
     commandEncoder.copyTextureToBuffer(
       { texture: outputTexture },
       { buffer: outputBuffer, bytesPerRow: width * 4 },
-      { width, height }
+      { width, height },
     );
 
     device.queue.submit([commandEncoder.finish()]);
 
     await outputBuffer.mapAsync(GPUMapMode.READ);
-    const resultData = new Uint8ClampedArray(outputBuffer.getMappedRange().slice(0));
+    const resultData = new Uint8ClampedArray(
+      outputBuffer.getMappedRange().slice(0),
+    );
     outputBuffer.unmap();
 
     // Clean up
@@ -1326,7 +1439,7 @@ class WebGPURenderer {
     if (source instanceof ImageData) {
       return source;
     }
-    const ctx = source.getContext('2d')!;
+    const ctx = source.getContext("2d")!;
     return ctx.getImageData(0, 0, source.width, source.height);
   }
 
@@ -1373,7 +1486,7 @@ class WebGPURenderer {
     this.warpBindGroupLayout = null;
     this.glowBindGroupLayout = null;
     this.levelsBindGroupLayout = null;
-    engineLogger.info('WebGPU renderer disposed');
+    engineLogger.info("WebGPU renderer disposed");
   }
 }
 

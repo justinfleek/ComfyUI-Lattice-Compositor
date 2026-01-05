@@ -138,96 +138,52 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import type {
-  ShapeContent,
-  ShapeGroup,
-  RectangleShape,
-  EllipseShape,
-  PolygonShape,
-  StarShape,
-  PathShape,
-  FillShape,
-  StrokeShape,
-  GradientFillShape,
-  GradientStrokeShape,
-  TrimPathsOperator,
-  RepeaterOperator,
-  OffsetPathsOperator,
-  PuckerBloatOperator,
-  WigglePathsOperator,
-  ZigZagOperator,
-  TwistOperator,
-  RoundedCornersOperator,
-  MergePathsOperator,
-  ShapeTransform,
-} from '@/types/shapes';
+import { ref } from "vue";
+import type { ShapeContent } from "@/types/shapes";
 
-// Sub-editors (inline for now, can be extracted)
-import RectangleEditor from './shape-editors/RectangleEditor.vue';
-import EllipseEditor from './shape-editors/EllipseEditor.vue';
-import PolygonEditor from './shape-editors/PolygonEditor.vue';
-import StarEditor from './shape-editors/StarEditor.vue';
-import PathEditor from './shape-editors/PathEditor.vue';
-import FillEditor from './shape-editors/FillEditor.vue';
-import StrokeEditor from './shape-editors/StrokeEditor.vue';
-import GradientFillEditor from './shape-editors/GradientFillEditor.vue';
-import GradientStrokeEditor from './shape-editors/GradientStrokeEditor.vue';
-import TrimPathsEditor from './shape-editors/TrimPathsEditor.vue';
-import RepeaterEditor from './shape-editors/RepeaterEditor.vue';
-import OffsetPathsEditor from './shape-editors/OffsetPathsEditor.vue';
-import PuckerBloatEditor from './shape-editors/PuckerBloatEditor.vue';
-import WigglePathsEditor from './shape-editors/WigglePathsEditor.vue';
-import ZigZagEditor from './shape-editors/ZigZagEditor.vue';
-import TwistEditor from './shape-editors/TwistEditor.vue';
-import RoundedCornersEditor from './shape-editors/RoundedCornersEditor.vue';
-import MergePathsEditor from './shape-editors/MergePathsEditor.vue';
-import TransformEditor from './shape-editors/TransformEditor.vue';
-import GroupEditor from './shape-editors/GroupEditor.vue';
-
-const props = defineProps<{
+const _props = defineProps<{
   item: ShapeContent;
   index: number;
   depth: number;
   layerId: string;
 }>();
 
-const emit = defineEmits(['update', 'delete', 'move-up', 'move-down']);
+const emit = defineEmits(["update", "delete", "move-up", "move-down"]);
 
-const isExpanded = ref(false);
+const _isExpanded = ref(false);
 
-function getItemIcon(type: string): string {
+function _getItemIcon(type: string): string {
   const icons: Record<string, string> = {
     // Generators
-    rectangle: '▭',
-    ellipse: '○',
-    polygon: '⬡',
-    star: '★',
-    path: '〰',
+    rectangle: "▭",
+    ellipse: "○",
+    polygon: "⬡",
+    star: "★",
+    path: "〰",
     // Modifiers
-    fill: '◼',
-    stroke: '◻',
-    gradientFill: '▤',
-    gradientStroke: '▥',
+    fill: "◼",
+    stroke: "◻",
+    gradientFill: "▤",
+    gradientStroke: "▥",
     // Operators
-    trimPaths: '✂',
-    repeater: '⊞',
-    offsetPaths: '⊕',
-    puckerBloat: '◉',
-    wigglePaths: '∿',
-    zigZag: '⚡',
-    twist: '⟳',
-    roundedCorners: '◢',
-    mergePaths: '⊗',
+    trimPaths: "✂",
+    repeater: "⊞",
+    offsetPaths: "⊕",
+    puckerBloat: "◉",
+    wigglePaths: "∿",
+    zigZag: "⚡",
+    twist: "⟳",
+    roundedCorners: "◢",
+    mergePaths: "⊗",
     // Structure
-    group: '📁',
-    transform: '⤢',
+    group: "📁",
+    transform: "⤢",
   };
-  return icons[type] || '•';
+  return icons[type] || "•";
 }
 
-function emitUpdate(updated: ShapeContent) {
-  emit('update', updated);
+function _emitUpdate(updated: ShapeContent) {
+  emit("update", updated);
 }
 </script>
 

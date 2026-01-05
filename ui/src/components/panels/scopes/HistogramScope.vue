@@ -8,7 +8,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, computed } from 'vue';
+import { onMounted, ref, watch } from "vue";
 
 interface HistogramResult {
   red: number[];
@@ -29,11 +29,11 @@ const canvasHeight = 150;
 
 // Colors
 const COLORS = {
-  red: 'rgba(255, 80, 80, 0.7)',
-  green: 'rgba(80, 255, 80, 0.7)',
-  blue: 'rgba(80, 80, 255, 0.7)',
-  luminance: 'rgba(200, 200, 200, 0.5)',
-  grid: 'rgba(60, 60, 60, 0.5)'
+  red: "rgba(255, 80, 80, 0.7)",
+  green: "rgba(80, 255, 80, 0.7)",
+  blue: "rgba(80, 80, 255, 0.7)",
+  luminance: "rgba(200, 200, 200, 0.5)",
+  grid: "rgba(60, 60, 60, 0.5)",
 };
 
 onMounted(() => {
@@ -48,11 +48,11 @@ function drawHistogram() {
   const canvas = canvasRef.value;
   if (!canvas) return;
 
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext("2d");
   if (!ctx) return;
 
   // Clear
-  ctx.fillStyle = '#000';
+  ctx.fillStyle = "#000";
   ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
   // Draw grid lines
@@ -61,7 +61,7 @@ function drawHistogram() {
 
   // Vertical grid (at 64, 128, 192)
   for (let i = 1; i < 4; i++) {
-    const x = (i * 64);
+    const x = i * 64;
     ctx.beginPath();
     ctx.moveTo(x, 0);
     ctx.lineTo(x, canvasHeight);
@@ -70,7 +70,7 @@ function drawHistogram() {
 
   // Horizontal grid
   for (let i = 1; i < 4; i++) {
-    const y = (i * canvasHeight / 4);
+    const y = (i * canvasHeight) / 4;
     ctx.beginPath();
     ctx.moveTo(0, y);
     ctx.lineTo(canvasWidth, y);
@@ -86,20 +86,20 @@ function drawHistogram() {
   drawChannel(ctx, luminance, adjustedMax, COLORS.luminance);
 
   // Draw RGB channels with additive blending
-  ctx.globalCompositeOperation = 'screen';
+  ctx.globalCompositeOperation = "screen";
 
   drawChannel(ctx, red, adjustedMax, COLORS.red);
   drawChannel(ctx, green, adjustedMax, COLORS.green);
   drawChannel(ctx, blue, adjustedMax, COLORS.blue);
 
-  ctx.globalCompositeOperation = 'source-over';
+  ctx.globalCompositeOperation = "source-over";
 }
 
 function drawChannel(
   ctx: CanvasRenderingContext2D,
   data: number[],
   maxCount: number,
-  color: string
+  color: string,
 ) {
   ctx.fillStyle = color;
   ctx.beginPath();

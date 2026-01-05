@@ -15,7 +15,7 @@ export interface Fog3DParams {
   fogColor: { r: number; g: number; b: number };
   fogOpacity: number;
   scattering: number;
-  gradientMode: 'linear' | 'exponential' | 'exponential2';
+  gradientMode: "linear" | "exponential" | "exponential2";
   useCompCamera: boolean;
   layerDepth: number;
 }
@@ -28,9 +28,9 @@ export interface DepthMatteParams {
 }
 
 export interface Glasses3DParams {
-  view3D: 'red-cyan' | 'green-magenta' | 'amber-blue';
-  leftView: 'red' | 'green' | 'blue';
-  rightView: 'cyan' | 'magenta' | 'yellow';
+  view3D: "red-cyan" | "green-magenta" | "amber-blue";
+  leftView: "red" | "green" | "blue";
+  rightView: "cyan" | "magenta" | "yellow";
   convergence: number;
   balance: number;
 }
@@ -46,27 +46,32 @@ function calculateFogFactor(
   depth: number,
   startDepth: number,
   endDepth: number,
-  mode: 'linear' | 'exponential' | 'exponential2'
+  mode: "linear" | "exponential" | "exponential2",
 ): number {
   // Normalize depth to 0-1 range
   const range = endDepth - startDepth;
   if (range === 0) return depth >= startDepth ? 1 : 0;
 
-  const normalizedDepth = Math.max(0, Math.min(1, (depth - startDepth) / range));
+  const normalizedDepth = Math.max(
+    0,
+    Math.min(1, (depth - startDepth) / range),
+  );
 
   switch (mode) {
-    case 'linear':
+    case "linear":
       return normalizedDepth;
 
-    case 'exponential':
+    case "exponential": {
       // GL_EXP fog: f = e^(-density * depth)
       const density = 2.0; // Adjustable
       return 1 - Math.exp(-density * normalizedDepth);
+    }
 
-    case 'exponential2':
+    case "exponential2": {
       // GL_EXP2 fog: f = e^(-(density * depth)^2)
       const density2 = 2.0;
-      return 1 - Math.exp(-Math.pow(density2 * normalizedDepth, 2));
+      return 1 - Math.exp(-((density2 * normalizedDepth) ** 2));
+    }
 
     default:
       return normalizedDepth;
@@ -80,12 +85,12 @@ export function applyFog3D(
   input: ImageData,
   depthMap: ImageData | null,
   params: Fog3DParams,
-  cameraDepth: number = 0
+  cameraDepth: number = 0,
 ): ImageData {
   const output = new ImageData(
     new Uint8ClampedArray(input.data),
     input.width,
-    input.height
+    input.height,
   );
 
   const data = output.data;
@@ -121,7 +126,7 @@ export function applyFog3D(
       depth,
       params.fogStartDepth,
       params.fogEndDepth,
-      params.gradientMode
+      params.gradientMode,
     );
 
     // Apply scattering (adds slight color variation)
@@ -156,12 +161,12 @@ export function applyDepthMatte(
   input: ImageData,
   depthMap: ImageData | null,
   params: DepthMatteParams,
-  layerDepth: number = 0
+  layerDepth: number = 0,
 ): ImageData {
   const output = new ImageData(
     new Uint8ClampedArray(input.data),
     input.width,
-    input.height
+    input.height,
   );
 
   const data = output.data;
@@ -192,9 +197,11 @@ export function applyDepthMatte(
       } else if (depth >= params.farDepth + softRange) {
         matteValue = 1;
       } else if (depth < params.nearDepth) {
-        matteValue = (depth - (params.nearDepth - softRange)) / softRange * 0.5;
+        matteValue =
+          ((depth - (params.nearDepth - softRange)) / softRange) * 0.5;
       } else if (depth > params.farDepth) {
-        matteValue = 0.5 + (softRange - (depth - params.farDepth)) / softRange * 0.5;
+        matteValue =
+          0.5 + ((softRange - (depth - params.farDepth)) / softRange) * 0.5;
       } else {
         // Within range
         matteValue = (depth - params.nearDepth) / range;
@@ -230,12 +237,12 @@ export function applyDepthMatte(
 export function apply3DGlasses(
   leftImage: ImageData,
   rightImage: ImageData | null,
-  params: Glasses3DParams
+  params: Glasses3DParams,
 ): ImageData {
   const output = new ImageData(
     new Uint8ClampedArray(leftImage.data),
     leftImage.width,
-    leftImage.height
+    leftImage.height,
   );
 
   const leftData = leftImage.data;
@@ -251,8 +258,14 @@ export function apply3DGlasses(
       const i = (y * leftImage.width + x) * 4;
 
       // Get offset indices for convergence
-      const leftX = Math.max(0, Math.min(leftImage.width - 1, x - convergenceOffset));
-      const rightX = Math.max(0, Math.min(leftImage.width - 1, x + convergenceOffset));
+      const leftX = Math.max(
+        0,
+        Math.min(leftImage.width - 1, x - convergenceOffset),
+      );
+      const rightX = Math.max(
+        0,
+        Math.min(leftImage.width - 1, x + convergenceOffset),
+      );
 
       const leftI = (y * leftImage.width + leftX) * 4;
       const rightI = (y * leftImage.width + rightX) * 4;
@@ -268,25 +281,43 @@ export function apply3DGlasses(
 
       // Apply anaglyph based on mode
       switch (params.view3D) {
-        case 'red-cyan':
+        case "red-cyan":
           // Left eye = red channel, Right eye = cyan (green + blue)
-          outData[i] = Math.round(leftR * balanceFactor + rightR * (1 - balanceFactor) * 0.3);
-          outData[i + 1] = Math.round(rightG * balanceFactor + leftG * (1 - balanceFactor) * 0.3);
-          outData[i + 2] = Math.round(rightB * balanceFactor + leftB * (1 - balanceFactor) * 0.3);
+          outData[i] = Math.round(
+            leftR * balanceFactor + rightR * (1 - balanceFactor) * 0.3,
+          );
+          outData[i + 1] = Math.round(
+            rightG * balanceFactor + leftG * (1 - balanceFactor) * 0.3,
+          );
+          outData[i + 2] = Math.round(
+            rightB * balanceFactor + leftB * (1 - balanceFactor) * 0.3,
+          );
           break;
 
-        case 'green-magenta':
+        case "green-magenta":
           // Left eye = green, Right eye = magenta (red + blue)
-          outData[i] = Math.round(rightR * balanceFactor + leftR * (1 - balanceFactor) * 0.3);
-          outData[i + 1] = Math.round(leftG * balanceFactor + rightG * (1 - balanceFactor) * 0.3);
-          outData[i + 2] = Math.round(rightB * balanceFactor + leftB * (1 - balanceFactor) * 0.3);
+          outData[i] = Math.round(
+            rightR * balanceFactor + leftR * (1 - balanceFactor) * 0.3,
+          );
+          outData[i + 1] = Math.round(
+            leftG * balanceFactor + rightG * (1 - balanceFactor) * 0.3,
+          );
+          outData[i + 2] = Math.round(
+            rightB * balanceFactor + leftB * (1 - balanceFactor) * 0.3,
+          );
           break;
 
-        case 'amber-blue':
+        case "amber-blue":
           // Left eye = amber (red + green), Right eye = blue
-          outData[i] = Math.round(leftR * balanceFactor + rightR * (1 - balanceFactor) * 0.3);
-          outData[i + 1] = Math.round(leftG * balanceFactor + rightG * (1 - balanceFactor) * 0.3);
-          outData[i + 2] = Math.round(rightB * balanceFactor + leftB * (1 - balanceFactor) * 0.3);
+          outData[i] = Math.round(
+            leftR * balanceFactor + rightR * (1 - balanceFactor) * 0.3,
+          );
+          outData[i + 1] = Math.round(
+            leftG * balanceFactor + rightG * (1 - balanceFactor) * 0.3,
+          );
+          outData[i + 2] = Math.round(
+            rightB * balanceFactor + leftB * (1 - balanceFactor) * 0.3,
+          );
           break;
       }
 
@@ -308,22 +339,22 @@ export const DEFAULT_FOG_3D_PARAMS: Fog3DParams = {
   fogColor: { r: 200, g: 200, b: 220 },
   fogOpacity: 100,
   scattering: 0,
-  gradientMode: 'linear',
+  gradientMode: "linear",
   useCompCamera: true,
-  layerDepth: 0
+  layerDepth: 0,
 };
 
 export const DEFAULT_DEPTH_MATTE_PARAMS: DepthMatteParams = {
   nearDepth: 0,
   farDepth: 1000,
   invert: false,
-  softness: 0
+  softness: 0,
 };
 
 export const DEFAULT_3D_GLASSES_PARAMS: Glasses3DParams = {
-  view3D: 'red-cyan',
-  leftView: 'red',
-  rightView: 'cyan',
+  view3D: "red-cyan",
+  leftView: "red",
+  rightView: "cyan",
   convergence: 0,
-  balance: 0
+  balance: 0,
 };

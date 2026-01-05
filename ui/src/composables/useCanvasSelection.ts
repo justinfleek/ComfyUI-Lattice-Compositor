@@ -10,10 +10,10 @@
  * - Layer bounds hit testing
  */
 
-import { ref, computed, type Ref, onMounted, onUnmounted } from 'vue';
-import { createLogger } from '@/utils/logger';
+import { computed, onMounted, onUnmounted, type Ref, ref } from "vue";
+import { createLogger } from "@/utils/logger";
 
-const logger = createLogger('CanvasSelection');
+const logger = createLogger("CanvasSelection");
 
 // ============================================================================
 // TYPES
@@ -36,7 +36,7 @@ export interface SelectableItem {
   bounds: Rect;
 }
 
-export type SelectionMode = 'replace' | 'add' | 'subtract' | 'intersect';
+export type SelectionMode = "replace" | "add" | "subtract" | "intersect";
 
 export interface SelectionState {
   /** Is selection in progress */
@@ -109,7 +109,10 @@ export function rectFromPoints(p1: Point, p2: Point): Rect {
 /**
  * Get point from mouse event relative to element
  */
-export function getRelativePoint(event: MouseEvent, element: HTMLElement): Point {
+export function getRelativePoint(
+  event: MouseEvent,
+  element: HTMLElement,
+): Point {
   const rect = element.getBoundingClientRect();
   return {
     x: event.clientX - rect.left,
@@ -146,7 +149,7 @@ export function useCanvasSelection(options: UseCanvasSelectionOptions) {
     selectionRect: null,
     startPoint: null,
     currentPoint: null,
-    mode: 'replace',
+    mode: "replace",
   });
 
   // Track mouse state
@@ -162,15 +165,15 @@ export function useCanvasSelection(options: UseCanvasSelectionOptions) {
    */
   function getSelectionMode(event: MouseEvent | KeyboardEvent): SelectionMode {
     if (event.shiftKey && event.altKey) {
-      return 'intersect';
+      return "intersect";
     }
     if (event.shiftKey) {
-      return 'add';
+      return "add";
     }
     if (event.altKey) {
-      return 'subtract';
+      return "subtract";
     }
-    return 'replace';
+    return "replace";
   }
 
   // ============================================================================
@@ -183,28 +186,31 @@ export function useCanvasSelection(options: UseCanvasSelectionOptions) {
   function findItemsInRect(rect: Rect): string[] {
     const items = getSelectableItems();
     return items
-      .filter(item => rectsIntersect(rect, item.bounds))
-      .map(item => item.id);
+      .filter((item) => rectsIntersect(rect, item.bounds))
+      .map((item) => item.id);
   }
 
   /**
    * Apply selection based on mode
    */
-  function applySelection(selectedIds: string[], mode: SelectionMode): string[] {
+  function applySelection(
+    selectedIds: string[],
+    mode: SelectionMode,
+  ): string[] {
     const current = currentSelection?.value || [];
 
     switch (mode) {
-      case 'replace':
+      case "replace":
         return selectedIds;
 
-      case 'add':
+      case "add":
         return [...new Set([...current, ...selectedIds])];
 
-      case 'subtract':
-        return current.filter(id => !selectedIds.includes(id));
+      case "subtract":
+        return current.filter((id) => !selectedIds.includes(id));
 
-      case 'intersect':
-        return current.filter(id => selectedIds.includes(id));
+      case "intersect":
+        return current.filter((id) => selectedIds.includes(id));
 
       default:
         return selectedIds;
@@ -224,7 +230,7 @@ export function useCanvasSelection(options: UseCanvasSelectionOptions) {
 
     // Don't start selection if clicking on a layer (let layer handle it)
     const target = event.target as HTMLElement;
-    if (target.closest('[data-selectable]')) return;
+    if (target.closest("[data-selectable]")) return;
 
     const point = getRelativePoint(event, canvasRef.value);
 
@@ -263,7 +269,7 @@ export function useCanvasSelection(options: UseCanvasSelectionOptions) {
     }
   }
 
-  function handleMouseUp(event: MouseEvent) {
+  function handleMouseUp(_event: MouseEvent) {
     if (!isDragging) return;
 
     isDragging = false;
@@ -278,7 +284,9 @@ export function useCanvasSelection(options: UseCanvasSelectionOptions) {
       // Notify callback
       onSelectionChange(finalSelection, state.value.mode);
 
-      logger.debug(`Selection completed: ${finalSelection.length} items (${state.value.mode})`);
+      logger.debug(
+        `Selection completed: ${finalSelection.length} items (${state.value.mode})`,
+      );
     }
 
     // Reset state
@@ -310,21 +318,21 @@ export function useCanvasSelection(options: UseCanvasSelectionOptions) {
   function setupListeners() {
     if (!canvasRef.value) return;
 
-    canvasRef.value.addEventListener('mousedown', handleMouseDown);
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
+    canvasRef.value.addEventListener("mousedown", handleMouseDown);
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
   }
 
   function cleanupListeners() {
     if (canvasRef.value) {
-      canvasRef.value.removeEventListener('mousedown', handleMouseDown);
+      canvasRef.value.removeEventListener("mousedown", handleMouseDown);
     }
-    window.removeEventListener('mousemove', handleMouseMove);
-    window.removeEventListener('mouseup', handleMouseUp);
-    window.removeEventListener('keydown', handleKeyDown);
-    window.removeEventListener('keyup', handleKeyUp);
+    window.removeEventListener("mousemove", handleMouseMove);
+    window.removeEventListener("mouseup", handleMouseUp);
+    window.removeEventListener("keydown", handleKeyDown);
+    window.removeEventListener("keyup", handleKeyUp);
   }
 
   onMounted(() => {
@@ -345,14 +353,14 @@ export function useCanvasSelection(options: UseCanvasSelectionOptions) {
     const { x, y, width, height } = state.value.selectionRect;
 
     return {
-      position: 'absolute' as const,
+      position: "absolute" as const,
       left: `${x}px`,
       top: `${y}px`,
       width: `${width}px`,
       height: `${height}px`,
-      border: '1px dashed var(--lattice-accent, #8B5CF6)',
-      backgroundColor: 'rgba(139, 92, 246, 0.1)',
-      pointerEvents: 'none' as const,
+      border: "1px dashed var(--lattice-accent, #8B5CF6)",
+      backgroundColor: "rgba(139, 92, 246, 0.1)",
+      pointerEvents: "none" as const,
       zIndex: 9999,
     };
   });
@@ -378,7 +386,7 @@ export function useCanvasSelection(options: UseCanvasSelectionOptions) {
     selectionRectStyle,
 
     /** Manually start selection at a point */
-    startSelection(point: Point, mode: SelectionMode = 'replace') {
+    startSelection(point: Point, mode: SelectionMode = "replace") {
       state.value.startPoint = point;
       state.value.currentPoint = point;
       state.value.mode = mode;

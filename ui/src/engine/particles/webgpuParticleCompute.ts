@@ -382,7 +382,6 @@ export interface WebGPUParticleConfig {
 export class WebGPUParticleCompute {
   private device: GPUDevice;
   private pipeline: GPUComputePipeline | null = null;
-  private bindGroup: GPUBindGroup | null = null;
 
   // Buffers
   private particleBufferA: GPUBuffer | null = null;
@@ -398,7 +397,7 @@ export class WebGPUParticleCompute {
   constructor(config: WebGPUParticleConfig) {
     const device = getGPUDevice();
     if (!device) {
-      throw new Error('WebGPU device not available');
+      throw new Error("WebGPU device not available");
     }
     this.device = device;
     this.config = config;
@@ -417,10 +416,10 @@ export class WebGPUParticleCompute {
 
     // Create compute pipeline
     this.pipeline = this.device.createComputePipeline({
-      layout: 'auto',
+      layout: "auto",
       compute: {
         module: shaderModule,
-        entryPoint: 'main',
+        entryPoint: "main",
       },
     });
 
@@ -429,12 +428,18 @@ export class WebGPUParticleCompute {
 
     this.particleBufferA = this.device.createBuffer({
       size: particleByteSize,
-      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
+      usage:
+        GPUBufferUsage.STORAGE |
+        GPUBufferUsage.COPY_DST |
+        GPUBufferUsage.COPY_SRC,
     });
 
     this.particleBufferB = this.device.createBuffer({
       size: particleByteSize,
-      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
+      usage:
+        GPUBufferUsage.STORAGE |
+        GPUBufferUsage.COPY_DST |
+        GPUBufferUsage.COPY_SRC,
     });
 
     // Create params uniform buffer
@@ -455,7 +460,12 @@ export class WebGPUParticleCompute {
   /**
    * Update simulation parameters
    */
-  updateParams(deltaTime: number, time: number, particleCount: number, forceFieldCount: number): void {
+  updateParams(
+    deltaTime: number,
+    time: number,
+    particleCount: number,
+    forceFieldCount: number,
+  ): void {
     if (!this.paramsBuffer) return;
 
     const paramsBuffer = new ArrayBuffer(64);
@@ -484,24 +494,33 @@ export class WebGPUParticleCompute {
    * Upload particle data to GPU
    */
   uploadParticles(data: Float32Array): void {
-    const gpuBuffer = this.pingPong === 0 ? this.particleBufferA : this.particleBufferB;
+    const gpuBuffer =
+      this.pingPong === 0 ? this.particleBufferA : this.particleBufferB;
     if (gpuBuffer) {
       // Use the underlying ArrayBuffer to avoid SharedArrayBuffer issues
-      this.device.queue.writeBuffer(gpuBuffer, 0, data.buffer, data.byteOffset, data.byteLength);
+      this.device.queue.writeBuffer(
+        gpuBuffer,
+        0,
+        data.buffer,
+        data.byteOffset,
+        data.byteLength,
+      );
     }
   }
 
   /**
    * Upload force field data
    */
-  uploadForceFields(forceFields: Array<{
-    type: number;
-    position: [number, number, number];
-    strength: number;
-    radius: number;
-    falloff: number;
-    direction: [number, number, number];
-  }>): void {
+  uploadForceFields(
+    forceFields: Array<{
+      type: number;
+      position: [number, number, number];
+      strength: number;
+      radius: number;
+      falloff: number;
+      direction: [number, number, number];
+    }>,
+  ): void {
     if (!this.forceFieldBuffer) return;
 
     const buffer = new ArrayBuffer(16 * 12 * 4); // 16 fields * 12 floats * 4 bytes
@@ -531,12 +550,20 @@ export class WebGPUParticleCompute {
    * Execute physics simulation step
    */
   step(particleCount: number): void {
-    if (!this.pipeline || !this.particleBufferA || !this.particleBufferB || !this.paramsBuffer || !this.forceFieldBuffer) {
+    if (
+      !this.pipeline ||
+      !this.particleBufferA ||
+      !this.particleBufferB ||
+      !this.paramsBuffer ||
+      !this.forceFieldBuffer
+    ) {
       return;
     }
 
-    const inputBuffer = this.pingPong === 0 ? this.particleBufferA : this.particleBufferB;
-    const outputBuffer = this.pingPong === 0 ? this.particleBufferB : this.particleBufferA;
+    const inputBuffer =
+      this.pingPong === 0 ? this.particleBufferA : this.particleBufferB;
+    const outputBuffer =
+      this.pingPong === 0 ? this.particleBufferB : this.particleBufferA;
 
     // Create bind group for this frame
     const bindGroup = this.device.createBindGroup({
@@ -573,7 +600,8 @@ export class WebGPUParticleCompute {
    * Read particle data back from GPU
    */
   async readParticles(particleCount: number): Promise<Float32Array> {
-    const buffer = this.pingPong === 0 ? this.particleBufferA : this.particleBufferB;
+    const buffer =
+      this.pingPong === 0 ? this.particleBufferA : this.particleBufferB;
     if (!buffer) {
       return new Float32Array(0);
     }

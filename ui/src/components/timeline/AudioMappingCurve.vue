@@ -23,10 +23,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
-import type { AudioAnalysis } from '@/services/audioFeatures';
-import { getFeatureAtFrame } from '@/services/audioFeatures';
-import type { AudioMapping } from '@/services/audioReactiveMapping';
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import type { AudioAnalysis } from "@/services/audioFeatures";
+import { getFeatureAtFrame } from "@/services/audioFeatures";
+import type { AudioMapping } from "@/services/audioReactiveMapping";
 
 interface Props {
   mapping: AudioMapping;
@@ -37,20 +37,25 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  height: 30
+  height: 30,
 });
 
 // Refs
 const canvasRef = ref<HTMLCanvasElement | null>(null);
-const hoverInfo = ref<{ x: number; frame: number; raw: number; mapped: number } | null>(null);
+const hoverInfo = ref<{
+  x: number;
+  frame: number;
+  raw: number;
+  mapped: number;
+} | null>(null);
 
 // Computed
-const playheadPosition = computed(() =>
-  (props.currentFrame / props.totalFrames) * 100
+const _playheadPosition = computed(
+  () => (props.currentFrame / props.totalFrames) * 100,
 );
 
 // Methods
-function handleMouseMove(event: MouseEvent): void {
+function _handleMouseMove(event: MouseEvent): void {
   const canvas = canvasRef.value;
   if (!canvas) return;
 
@@ -65,7 +70,7 @@ function handleMouseMove(event: MouseEvent): void {
   hoverInfo.value = { x, frame, raw, mapped };
 }
 
-function handleMouseLeave(): void {
+function _handleMouseLeave(): void {
   hoverInfo.value = null;
 }
 
@@ -103,20 +108,20 @@ function draw(): void {
     canvas.height = props.height;
   }
 
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext("2d");
   if (!ctx) return;
 
   const width = canvas.width;
   const height = canvas.height;
 
   // Clear
-  ctx.fillStyle = '#1a1a1a';
+  ctx.fillStyle = "#1a1a1a";
   ctx.fillRect(0, 0, width, height);
 
   // Draw threshold line
   if (props.mapping.threshold > 0) {
     const thresholdY = height - props.mapping.threshold * height * 0.9 - 2;
-    ctx.strokeStyle = 'rgba(255, 193, 7, 0.5)';
+    ctx.strokeStyle = "rgba(255, 193, 7, 0.5)";
     ctx.setLineDash([4, 4]);
     ctx.beginPath();
     ctx.moveTo(0, thresholdY);
@@ -137,7 +142,7 @@ function draw(): void {
   }
 
   // Draw raw feature curve (thin line)
-  ctx.strokeStyle = 'rgba(74, 144, 217, 0.4)';
+  ctx.strokeStyle = "rgba(74, 144, 217, 0.4)";
   ctx.lineWidth = 1;
   ctx.beginPath();
 
@@ -154,7 +159,7 @@ function draw(): void {
   ctx.stroke();
 
   // Draw mapped output curve (filled area)
-  ctx.fillStyle = 'rgba(74, 144, 217, 0.3)';
+  ctx.fillStyle = "rgba(74, 144, 217, 0.3)";
   ctx.beginPath();
   ctx.moveTo(0, height);
 
@@ -169,7 +174,7 @@ function draw(): void {
   ctx.fill();
 
   // Draw mapped curve outline
-  ctx.strokeStyle = '#4a90d9';
+  ctx.strokeStyle = "#4a90d9";
   ctx.lineWidth = 1.5;
   ctx.beginPath();
 
@@ -190,7 +195,7 @@ function draw(): void {
   const currentMapped = mappedPoints[props.currentFrame] ?? 0;
   const currentY = height - currentMapped * height * 0.9 - 2;
 
-  ctx.fillStyle = '#ff6b6b';
+  ctx.fillStyle = "#ff6b6b";
   ctx.beginPath();
   ctx.arc(currentX, currentY, 4, 0, Math.PI * 2);
   ctx.fill();
@@ -202,7 +207,7 @@ watch(
   () => {
     draw();
   },
-  { deep: true }
+  { deep: true },
 );
 
 // Lifecycle

@@ -7,9 +7,9 @@
  * - Edge Feathering: Soften matte edges
  */
 
-import { createLogger } from '@/utils/logger';
+import { createLogger } from "@/utils/logger";
 
-const logger = createLogger('MatteEdge');
+const _logger = createLogger("MatteEdge");
 
 // ============================================================================
 // Types
@@ -41,7 +41,7 @@ export interface EdgeFeatherParams {
   /** Feather radius in pixels */
   radius: number;
   /** Feather direction: 'both', 'inward', 'outward' */
-  direction: 'both' | 'inward' | 'outward';
+  direction: "both" | "inward" | "outward";
 }
 
 // ============================================================================
@@ -57,23 +57,38 @@ export function applyChoker(
   alpha: Float32Array,
   width: number,
   height: number,
-  params: ChokerParams
+  params: ChokerParams,
 ): Float32Array {
   let result = alpha.slice();
 
   for (let iter = 0; iter < params.iterations; iter++) {
     if (params.amount < 0) {
       // Shrink: erode the alpha
-      result = erodeAlpha(result, width, height, Math.abs(params.amount) / params.iterations) as Float32Array<ArrayBuffer>;
+      result = erodeAlpha(
+        result,
+        width,
+        height,
+        Math.abs(params.amount) / params.iterations,
+      ) as Float32Array<ArrayBuffer>;
     } else if (params.amount > 0) {
       // Expand: dilate the alpha
-      result = dilateAlpha(result, width, height, params.amount / params.iterations) as Float32Array<ArrayBuffer>;
+      result = dilateAlpha(
+        result,
+        width,
+        height,
+        params.amount / params.iterations,
+      ) as Float32Array<ArrayBuffer>;
     }
   }
 
   // Apply softness (edge blur)
   if (params.softness > 0) {
-    result = gaussianBlurAlpha(result, width, height, params.softness) as Float32Array<ArrayBuffer>;
+    result = gaussianBlurAlpha(
+      result,
+      width,
+      height,
+      params.softness,
+    ) as Float32Array<ArrayBuffer>;
   }
 
   return result;
@@ -86,7 +101,7 @@ function erodeAlpha(
   alpha: Float32Array,
   width: number,
   height: number,
-  amount: number
+  amount: number,
 ): Float32Array {
   const result = new Float32Array(alpha.length);
   const radius = Math.ceil(amount);
@@ -125,7 +140,7 @@ function dilateAlpha(
   alpha: Float32Array,
   width: number,
   height: number,
-  amount: number
+  amount: number,
 ): Float32Array {
   const result = new Float32Array(alpha.length);
   const radius = Math.ceil(amount);
@@ -164,7 +179,7 @@ function gaussianBlurAlpha(
   alpha: Float32Array,
   width: number,
   height: number,
-  sigma: number
+  sigma: number,
 ): Float32Array {
   // Generate 1D Gaussian kernel
   const radius = Math.ceil(sigma * 3);
@@ -223,12 +238,12 @@ function gaussianBlurAlpha(
 export function applySpillSuppressor(
   imageData: ImageData,
   alpha: Float32Array,
-  params: SpillSuppressorParams
+  params: SpillSuppressorParams,
 ): ImageData {
   const result = new ImageData(
     new Uint8ClampedArray(imageData.data),
     imageData.width,
-    imageData.height
+    imageData.height,
   );
   const data = result.data;
 
@@ -237,7 +252,8 @@ export function applySpillSuppressor(
   const spillB = params.spillColor.b;
 
   // Normalize spill color for comparison
-  const spillLength = Math.sqrt(spillR * spillR + spillG * spillG + spillB * spillB) || 1;
+  const spillLength =
+    Math.sqrt(spillR * spillR + spillG * spillG + spillB * spillB) || 1;
   const normSpillR = spillR / spillLength;
   const normSpillG = spillG / spillLength;
   const normSpillB = spillB / spillLength;
@@ -257,19 +273,27 @@ export function applySpillSuppressor(
 
     // Calculate spill amount using color similarity
     const spillAmount = calculateSpillAmount(
-      r, g, b,
-      normSpillR, normSpillG, normSpillB,
-      spillR, spillG, spillB,
-      params.tolerance
+      r,
+      g,
+      b,
+      normSpillR,
+      normSpillG,
+      normSpillB,
+      spillR,
+      spillG,
+      spillB,
+      params.tolerance,
     );
 
     if (spillAmount > 0) {
       // Apply spill suppression
       const [newR, newG, newB] = suppressSpill(
-        r, g, b,
+        r,
+        g,
+        b,
         spillAmount,
         params.desaturate,
-        params.replaceColor
+        params.replaceColor,
       );
 
       data[i] = newR;
@@ -285,10 +309,16 @@ export function applySpillSuppressor(
  * Calculate how much a pixel is affected by spill
  */
 function calculateSpillAmount(
-  r: number, g: number, b: number,
-  normSpillR: number, normSpillG: number, normSpillB: number,
-  spillR: number, spillG: number, spillB: number,
-  tolerance: number
+  r: number,
+  g: number,
+  b: number,
+  normSpillR: number,
+  normSpillG: number,
+  normSpillB: number,
+  spillR: number,
+  spillG: number,
+  spillB: number,
+  tolerance: number,
 ): number {
   // Calculate color similarity using dot product
   const length = Math.sqrt(r * r + g * g + b * b) || 1;
@@ -296,7 +326,8 @@ function calculateSpillAmount(
   const normG = g / length;
   const normB = b / length;
 
-  const similarity = normR * normSpillR + normG * normSpillG + normB * normSpillB;
+  const similarity =
+    normR * normSpillR + normG * normSpillG + normB * normSpillB;
 
   // Map similarity to spill amount based on tolerance
   const threshold = 1 - tolerance;
@@ -319,7 +350,8 @@ function calculateSpillAmount(
   spillDominance = Math.max(0, spillDominance);
 
   // Combine similarity and dominance
-  const amount = ((similarity - threshold) / tolerance) * (0.5 + spillDominance * 0.5);
+  const amount =
+    ((similarity - threshold) / tolerance) * (0.5 + spillDominance * 0.5);
   return Math.min(1, Math.max(0, amount));
 }
 
@@ -327,10 +359,12 @@ function calculateSpillAmount(
  * Suppress spill in a pixel
  */
 function suppressSpill(
-  r: number, g: number, b: number,
+  r: number,
+  g: number,
+  b: number,
   spillAmount: number,
   desaturate: number,
-  replaceColor?: { r: number; g: number; b: number }
+  replaceColor?: { r: number; g: number; b: number },
 ): [number, number, number] {
   let newR = r;
   let newG = g;
@@ -371,7 +405,7 @@ export function applyEdgeFeather(
   alpha: Float32Array,
   width: number,
   height: number,
-  params: EdgeFeatherParams
+  params: EdgeFeatherParams,
 ): Float32Array {
   const { radius, direction } = params;
 
@@ -381,7 +415,14 @@ export function applyEdgeFeather(
   const edges = detectEdges(alpha, width, height);
 
   // Create distance field from edges
-  const distanceField = computeDistanceField(edges, alpha, width, height, radius, direction);
+  const distanceField = computeDistanceField(
+    edges,
+    alpha,
+    width,
+    height,
+    radius,
+    direction,
+  );
 
   // Apply feathering based on distance
   const result = new Float32Array(alpha.length);
@@ -390,11 +431,11 @@ export function applyEdgeFeather(
     const dist = distanceField[i];
     const originalAlpha = alpha[i];
 
-    if (direction === 'both') {
+    if (direction === "both") {
       // Feather both inward and outward
       const t = Math.max(0, Math.min(1, (dist + radius) / (2 * radius)));
       result[i] = t;
-    } else if (direction === 'inward') {
+    } else if (direction === "inward") {
       // Only feather inward (reduce alpha at edges)
       if (dist < 0) {
         const t = Math.max(0, 1 + dist / radius);
@@ -422,7 +463,7 @@ export function applyEdgeFeather(
 function detectEdges(
   alpha: Float32Array,
   width: number,
-  height: number
+  height: number,
 ): Float32Array {
   const edges = new Float32Array(alpha.length);
 
@@ -469,7 +510,7 @@ function computeDistanceField(
   width: number,
   height: number,
   maxDist: number,
-  direction: string
+  _direction: string,
 ): Float32Array {
   const result = new Float32Array(alpha.length);
   const searchRadius = Math.ceil(maxDist);
@@ -524,11 +565,14 @@ export function extractAlpha(imageData: ImageData): Float32Array {
 /**
  * Apply alpha channel to ImageData
  */
-export function applyAlpha(imageData: ImageData, alpha: Float32Array): ImageData {
+export function applyAlpha(
+  imageData: ImageData,
+  alpha: Float32Array,
+): ImageData {
   const result = new ImageData(
     new Uint8ClampedArray(imageData.data),
     imageData.width,
-    imageData.height
+    imageData.height,
   );
 
   for (let i = 0; i < alpha.length; i++) {
@@ -546,12 +590,12 @@ export function applyAlpha(imageData: ImageData, alpha: Float32Array): ImageData
 export function analyzeEdgeQuality(
   alpha: Float32Array,
   width: number,
-  height: number
+  height: number,
 ): {
   averageEdgeWidth: number;
-  edgeSharpness: number;     // 0 (soft) to 1 (hard)
-  suggestedFeather: number;  // Recommended feather amount
-  edgePixelRatio: number;    // Ratio of edge to solid pixels
+  edgeSharpness: number; // 0 (soft) to 1 (hard)
+  suggestedFeather: number; // Recommended feather amount
+  edgePixelRatio: number; // Ratio of edge to solid pixels
 } {
   let edgePixels = 0;
   let totalEdgeWidth = 0;
@@ -594,7 +638,8 @@ export function analyzeEdgeQuality(
 
   // Suggest feather based on current edge quality
   // Sharp edges may need more feathering, soft edges less
-  const suggestedFeather = edgeSharpness > 0.7 ? 2 : edgeSharpness > 0.4 ? 1 : 0;
+  const suggestedFeather =
+    edgeSharpness > 0.7 ? 2 : edgeSharpness > 0.4 ? 1 : 0;
 
   return {
     averageEdgeWidth,

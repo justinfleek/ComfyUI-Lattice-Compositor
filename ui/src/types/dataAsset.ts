@@ -12,7 +12,7 @@
 /**
  * Type of data file
  */
-export type DataFileType = 'json' | 'csv' | 'tsv' | 'mgjson';
+export type DataFileType = "json" | "csv" | "tsv" | "mgjson";
 
 /**
  * Base interface for all data assets
@@ -21,9 +21,9 @@ export interface DataAssetBase {
   id: string;
   name: string;
   type: DataFileType;
-  filePath?: string;          // Original file path (if imported from file)
-  lastModified: number;       // Timestamp of last modification
-  rawContent: string;         // Original raw file content
+  filePath?: string; // Original file path (if imported from file)
+  lastModified: number; // Timestamp of last modification
+  rawContent: string; // Original raw file content
 }
 
 /**
@@ -32,8 +32,8 @@ export interface DataAssetBase {
  * Stores parsed JSON data accessible via sourceData property.
  */
 export interface JSONDataAsset extends DataAssetBase {
-  type: 'json' | 'mgjson';
-  sourceData: any;            // Parsed JSON object
+  type: "json" | "mgjson";
+  sourceData: any; // Parsed JSON object
 }
 
 /**
@@ -42,11 +42,11 @@ export interface JSONDataAsset extends DataAssetBase {
  * Stores parsed tabular data accessible via dataValue() method.
  */
 export interface CSVDataAsset extends DataAssetBase {
-  type: 'csv' | 'tsv';
-  headers: string[];          // Column headers (first row)
-  rows: string[][];           // Data rows (excluding header)
-  numRows: number;            // Total rows including header
-  numColumns: number;         // Number of columns
+  type: "csv" | "tsv";
+  headers: string[]; // Column headers (first row)
+  rows: string[][]; // Data rows (excluding header)
+  numRows: number; // Total rows including header
+  numColumns: number; // Number of columns
 }
 
 /**
@@ -151,18 +151,18 @@ export interface DataParseResult {
  * Options for CSV parsing
  */
 export interface CSVParseOptions {
-  delimiter?: string;         // Default: ',' for CSV, '\t' for TSV
-  hasHeaders?: boolean;       // Default: true
-  trimWhitespace?: boolean;   // Default: true
-  skipEmptyRows?: boolean;    // Default: true
+  delimiter?: string; // Default: ',' for CSV, '\t' for TSV
+  hasHeaders?: boolean; // Default: true
+  trimWhitespace?: boolean; // Default: true
+  skipEmptyRows?: boolean; // Default: true
 }
 
 /**
  * Options for JSON parsing
  */
 export interface JSONParseOptions {
-  allowComments?: boolean;    // Strip // and /* */ comments
-  strict?: boolean;           // Strict JSON parsing
+  allowComments?: boolean; // Strip // and /* */ comments
+  strict?: boolean; // Strict JSON parsing
 }
 
 // ============================================================================
@@ -175,7 +175,7 @@ export interface JSONParseOptions {
 export interface ChartDataPoint {
   label: string;
   value: number;
-  [key: string]: any;         // Additional properties
+  [key: string]: any; // Additional properties
 }
 
 /**
@@ -196,7 +196,7 @@ export interface ChartDataExtractor {
   extractSeries(
     data: DataAsset,
     labelKey: string,
-    valueKey: string
+    valueKey: string,
   ): ChartDataPoint[];
 
   /**
@@ -205,7 +205,7 @@ export interface ChartDataExtractor {
   extractMultiSeries(
     data: DataAsset,
     labelKey: string,
-    valueKeys: string[]
+    valueKeys: string[],
   ): ChartSeries[];
 }
 
@@ -217,33 +217,33 @@ export interface ChartDataExtractor {
  * Check if asset is JSON type
  */
 export function isJSONAsset(asset: DataAsset): asset is JSONDataAsset {
-  return asset.type === 'json' || asset.type === 'mgjson';
+  return asset.type === "json" || asset.type === "mgjson";
 }
 
 /**
  * Check if asset is CSV/TSV type
  */
 export function isCSVAsset(asset: DataAsset): asset is CSVDataAsset {
-  return asset.type === 'csv' || asset.type === 'tsv';
+  return asset.type === "csv" || asset.type === "tsv";
 }
 
 /**
  * Check if file extension is supported data type
  */
 export function isSupportedDataFile(filename: string): boolean {
-  const ext = filename.toLowerCase().split('.').pop();
-  return ['json', 'csv', 'tsv', 'mgjson'].includes(ext || '');
+  const ext = filename.toLowerCase().split(".").pop();
+  return ["json", "csv", "tsv", "mgjson"].includes(ext || "");
 }
 
 /**
  * Get data file type from filename
  */
 export function getDataFileType(filename: string): DataFileType | null {
-  const ext = filename.toLowerCase().split('.').pop();
-  if (ext === 'json') return 'json';
-  if (ext === 'csv') return 'csv';
-  if (ext === 'tsv') return 'tsv';
-  if (ext === 'mgjson') return 'mgjson';
+  const ext = filename.toLowerCase().split(".").pop();
+  if (ext === "json") return "json";
+  if (ext === "csv") return "csv";
+  if (ext === "tsv") return "tsv";
+  if (ext === "mgjson") return "mgjson";
   return null;
 }
 

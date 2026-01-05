@@ -9,18 +9,18 @@
  * Capabilities: Decomposes single images into 3-16+ RGBA layers
  */
 
-import { createLogger } from '@/utils/logger';
-import { getComfyUIClient } from './comfyui/comfyuiClient';
+import { createLogger } from "@/utils/logger";
+import { getComfyUIClient } from "./comfyui/comfyuiClient";
 import {
+  canAllocate,
   registerAllocation,
   unregisterAllocation,
-  canAllocate,
   VRAM_ESTIMATES,
-} from './memoryBudget';
+} from "./memoryBudget";
 
-const logger = createLogger('LayerDecomposition');
+const logger = createLogger("LayerDecomposition");
 
-const MODEL_ALLOCATION_ID = 'model:qwen-image-layered';
+const MODEL_ALLOCATION_ID = "model:qwen-image-layered";
 
 // ============================================================================
 // Types
@@ -41,7 +41,13 @@ export interface DownloadProgress {
   total_files: number;
   bytes_downloaded: number;
   total_bytes: number;
-  stage: 'idle' | 'starting' | 'downloading' | 'verifying' | 'complete' | 'error';
+  stage:
+    | "idle"
+    | "starting"
+    | "downloading"
+    | "verifying"
+    | "complete"
+    | "error";
 }
 
 export interface DecompositionModelStatus {
@@ -72,7 +78,7 @@ export interface DecompositionOptions {
 }
 
 export interface DecompositionResult {
-  status: 'success' | 'error';
+  status: "success" | "error";
   message: string;
   layers?: DecomposedLayer[];
 }
@@ -94,16 +100,18 @@ export class LayerDecompositionService {
    */
   async getStatus(): Promise<DecompositionModelStatus> {
     try {
-      const response = await fetch(`${this.baseUrl}/lattice/decomposition/status`);
+      const response = await fetch(
+        `${this.baseUrl}/lattice/decomposition/status`,
+      );
       const result = await response.json();
 
-      if (result.status === 'success') {
+      if (result.status === "success") {
         return result.data;
       }
 
-      throw new Error(result.message || 'Failed to get model status');
+      throw new Error(result.message || "Failed to get model status");
     } catch (error) {
-      logger.error('Failed to get model status:', error);
+      logger.error("Failed to get model status:", error);
       throw error;
     }
   }
@@ -113,29 +121,40 @@ export class LayerDecompositionService {
    *
    * @param onProgress - Optional callback for download progress
    */
-  async downloadModel(onProgress?: (stage: string, progress: number) => void): Promise<void> {
+  async downloadModel(
+    onProgress?: (stage: string, progress: number) => void,
+  ): Promise<void> {
     try {
-      onProgress?.('starting', 0);
+      onProgress?.("starting", 0);
 
-      const response = await fetch(`${this.baseUrl}/lattice/decomposition/download`, {
-        method: 'POST',
-      });
+      const response = await fetch(
+        `${this.baseUrl}/lattice/decomposition/download`,
+        {
+          method: "POST",
+        },
+      );
 
       const result = await response.json();
 
-      if (result.status === 'error') {
+      if (result.status === "error") {
         throw new Error(result.message);
       }
 
       // Check verification result
-      if (result.verification && !result.verification.verified && result.verification.files_invalid.length > 0) {
-        throw new Error(`Model verification failed: ${result.verification.message}`);
+      if (
+        result.verification &&
+        !result.verification.verified &&
+        result.verification.files_invalid.length > 0
+      ) {
+        throw new Error(
+          `Model verification failed: ${result.verification.message}`,
+        );
       }
 
-      onProgress?.('complete', 100);
-      logger.info('Model download complete');
+      onProgress?.("complete", 100);
+      logger.info("Model download complete");
     } catch (error) {
-      logger.error('Model download failed:', error);
+      logger.error("Model download failed:", error);
       throw error;
     }
   }
@@ -145,16 +164,18 @@ export class LayerDecompositionService {
    */
   async getDownloadProgress(): Promise<DownloadProgress> {
     try {
-      const response = await fetch(`${this.baseUrl}/lattice/decomposition/progress`);
+      const response = await fetch(
+        `${this.baseUrl}/lattice/decomposition/progress`,
+      );
       const result = await response.json();
 
-      if (result.status === 'success') {
+      if (result.status === "success") {
         return result.data;
       }
 
-      throw new Error(result.message || 'Failed to get download progress');
+      throw new Error(result.message || "Failed to get download progress");
     } catch (error) {
-      logger.error('Failed to get download progress:', error);
+      logger.error("Failed to get download progress:", error);
       throw error;
     }
   }
@@ -164,14 +185,17 @@ export class LayerDecompositionService {
    */
   async verifyModel(): Promise<ModelVerification> {
     try {
-      const response = await fetch(`${this.baseUrl}/lattice/decomposition/verify`, {
-        method: 'POST',
-      });
+      const response = await fetch(
+        `${this.baseUrl}/lattice/decomposition/verify`,
+        {
+          method: "POST",
+        },
+      );
       const result = await response.json();
 
       return result.data;
     } catch (error) {
-      logger.error('Failed to verify model:', error);
+      logger.error("Failed to verify model:", error);
       throw error;
     }
   }
@@ -185,7 +209,7 @@ export class LayerDecompositionService {
    */
   pollDownloadProgress(
     onProgress: (progress: DownloadProgress) => void,
-    intervalMs: number = 1000
+    intervalMs: number = 1000,
   ): () => void {
     let stopped = false;
 
@@ -197,14 +221,18 @@ export class LayerDecompositionService {
         onProgress(progress);
 
         // Stop polling if download is complete or errored
-        if (progress.stage === 'complete' || progress.stage === 'error' || progress.stage === 'idle') {
+        if (
+          progress.stage === "complete" ||
+          progress.stage === "error" ||
+          progress.stage === "idle"
+        ) {
           return;
         }
 
         // Continue polling
         setTimeout(poll, intervalMs);
       } catch (error) {
-        logger.warn('Progress poll failed:', error);
+        logger.warn("Progress poll failed:", error);
         if (!stopped) {
           setTimeout(poll, intervalMs * 2); // Backoff on error
         }
@@ -223,37 +251,40 @@ export class LayerDecompositionService {
    */
   async loadModel(): Promise<void> {
     // Check if we have enough memory before loading
-    const memCheck = canAllocate(VRAM_ESTIMATES['model:qwen-image-layered']);
+    const memCheck = canAllocate(VRAM_ESTIMATES["model:qwen-image-layered"]);
     if (!memCheck.canProceed) {
-      throw new Error(memCheck.warning?.message || 'Insufficient GPU memory');
+      throw new Error(memCheck.warning?.message || "Insufficient GPU memory");
     }
 
     try {
-      const response = await fetch(`${this.baseUrl}/lattice/decomposition/load`, {
-        method: 'POST',
-      });
+      const response = await fetch(
+        `${this.baseUrl}/lattice/decomposition/load`,
+        {
+          method: "POST",
+        },
+      );
 
       const result = await response.json();
 
-      if (result.status === 'error') {
+      if (result.status === "error") {
         throw new Error(result.message);
       }
 
       // Register memory allocation
       registerAllocation(
         MODEL_ALLOCATION_ID,
-        'Qwen Image Layered Model',
-        'model',
-        VRAM_ESTIMATES['model:qwen-image-layered'],
+        "Qwen Image Layered Model",
+        "model",
+        VRAM_ESTIMATES["model:qwen-image-layered"],
         {
           canUnload: true,
           unloadFn: () => this.unloadModel(),
-        }
+        },
       );
 
-      logger.info('Model loaded:', result.message);
+      logger.info("Model loaded:", result.message);
     } catch (error) {
-      logger.error('Model load failed:', error);
+      logger.error("Model load failed:", error);
       throw error;
     }
   }
@@ -263,22 +294,25 @@ export class LayerDecompositionService {
    */
   async unloadModel(): Promise<void> {
     try {
-      const response = await fetch(`${this.baseUrl}/lattice/decomposition/unload`, {
-        method: 'POST',
-      });
+      const response = await fetch(
+        `${this.baseUrl}/lattice/decomposition/unload`,
+        {
+          method: "POST",
+        },
+      );
 
       const result = await response.json();
 
-      if (result.status === 'error') {
+      if (result.status === "error") {
         throw new Error(result.message);
       }
 
       // Unregister memory allocation
       unregisterAllocation(MODEL_ALLOCATION_ID);
 
-      logger.info('Model unloaded');
+      logger.info("Model unloaded");
     } catch (error) {
-      logger.error('Model unload failed:', error);
+      logger.error("Model unload failed:", error);
       throw error;
     }
   }
@@ -292,31 +326,34 @@ export class LayerDecompositionService {
    */
   async decompose(
     imageDataUrl: string,
-    options: DecompositionOptions = {}
+    options: DecompositionOptions = {},
   ): Promise<DecomposedLayer[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/lattice/decomposition/decompose`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          image: imageDataUrl,
-          num_layers: options.numLayers ?? 4,
-          guidance_scale: options.guidanceScale ?? 3.0,
-          num_inference_steps: options.numInferenceSteps ?? 50,
-          seed: options.seed ?? null,
-        }),
-      });
+      const response = await fetch(
+        `${this.baseUrl}/lattice/decomposition/decompose`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            image: imageDataUrl,
+            num_layers: options.numLayers ?? 4,
+            guidance_scale: options.guidanceScale ?? 3.0,
+            num_inference_steps: options.numInferenceSteps ?? 50,
+            seed: options.seed ?? null,
+          }),
+        },
+      );
 
       const result = await response.json();
 
-      if (result.status === 'error') {
+      if (result.status === "error") {
         throw new Error(result.message);
       }
 
       logger.info(`Decomposition complete: ${result.layers.length} layers`);
       return result.layers;
     } catch (error) {
-      logger.error('Decomposition failed:', error);
+      logger.error("Decomposition failed:", error);
       throw error;
     }
   }
@@ -331,50 +368,49 @@ export class LayerDecompositionService {
   async decomposeWithAutoSetup(
     imageDataUrl: string,
     options: DecompositionOptions = {},
-    onProgress?: (stage: string, message: string) => void
+    onProgress?: (stage: string, message: string) => void,
   ): Promise<DecomposedLayer[]> {
     const autoUnload = options.autoUnload !== false; // Default true
     const generateLabels = options.generateSemanticLabels !== false; // Default true
 
     try {
       // Check status
-      onProgress?.('checking', 'Checking model status...');
+      onProgress?.("checking", "Checking model status...");
       const status = await this.getStatus();
 
       // Download if needed
       if (!status.downloaded) {
-        onProgress?.('downloading', 'Downloading model (28.8GB)...');
+        onProgress?.("downloading", "Downloading model (28.8GB)...");
         await this.downloadModel();
       }
 
       // Load if needed
       if (!status.loaded) {
-        onProgress?.('loading', 'Loading model into GPU memory...');
+        onProgress?.("loading", "Loading model into GPU memory...");
         await this.loadModel();
       }
 
       // Decompose
-      onProgress?.('decomposing', 'Decomposing image into layers...');
+      onProgress?.("decomposing", "Decomposing image into layers...");
       const layers = await this.decompose(imageDataUrl, options);
 
       // Generate semantic labels if requested
       if (generateLabels && layers.length > 0) {
-        onProgress?.('labeling', 'Generating semantic labels...');
+        onProgress?.("labeling", "Generating semantic labels...");
         await this.generateSemanticLabels(layers);
       }
 
-      onProgress?.('complete', `Generated ${layers.length} layers`);
+      onProgress?.("complete", `Generated ${layers.length} layers`);
       return layers;
-
     } finally {
       // Auto-unload to free GPU memory (critical for large workflows)
       if (autoUnload) {
-        onProgress?.('cleanup', 'Freeing GPU memory...');
+        onProgress?.("cleanup", "Freeing GPU memory...");
         try {
           await this.unloadModel();
-          logger.info('Model auto-unloaded to free GPU memory');
+          logger.info("Model auto-unloaded to free GPU memory");
         } catch (unloadError) {
-          logger.warn('Failed to auto-unload model:', unloadError);
+          logger.warn("Failed to auto-unload model:", unloadError);
         }
       }
     }
@@ -384,7 +420,9 @@ export class LayerDecompositionService {
    * Generate semantic labels for decomposed layers using simple heuristics
    * Analyzes alpha channel coverage and position to assign meaningful names
    */
-  private async generateSemanticLabels(layers: DecomposedLayer[]): Promise<void> {
+  private async generateSemanticLabels(
+    layers: DecomposedLayer[],
+  ): Promise<void> {
     // Analyze each layer to generate semantic labels
     for (let i = 0; i < layers.length; i++) {
       const layer = layers[i];
@@ -392,10 +430,10 @@ export class LayerDecompositionService {
       try {
         // Load image to analyze
         const img = await dataUrlToImage(layer.image);
-        const canvas = document.createElement('canvas');
+        const canvas = document.createElement("canvas");
         canvas.width = img.naturalWidth;
         canvas.height = img.naturalHeight;
-        const ctx = canvas.getContext('2d')!;
+        const ctx = canvas.getContext("2d")!;
         ctx.drawImage(img, 0, 0);
 
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -417,7 +455,9 @@ export class LayerDecompositionService {
 
 let defaultService: LayerDecompositionService | null = null;
 
-export function getLayerDecompositionService(serverAddress?: string): LayerDecompositionService {
+export function getLayerDecompositionService(
+  serverAddress?: string,
+): LayerDecompositionService {
   if (!defaultService) {
     defaultService = new LayerDecompositionService(serverAddress);
   }
@@ -432,19 +472,19 @@ export function getLayerDecompositionService(serverAddress?: string): LayerDecom
  * Convert a canvas to a data URL
  */
 export function canvasToDataUrl(canvas: HTMLCanvasElement): string {
-  return canvas.toDataURL('image/png');
+  return canvas.toDataURL("image/png");
 }
 
 /**
  * Convert an Image element to a data URL
  */
 export function imageToDataUrl(img: HTMLImageElement): string {
-  const canvas = document.createElement('canvas');
+  const canvas = document.createElement("canvas");
   canvas.width = img.naturalWidth;
   canvas.height = img.naturalHeight;
-  const ctx = canvas.getContext('2d')!;
+  const ctx = canvas.getContext("2d")!;
   ctx.drawImage(img, 0, 0);
-  return canvas.toDataURL('image/png');
+  return canvas.toDataURL("image/png");
 }
 
 /**
@@ -497,7 +537,9 @@ function analyzeLayerContent(imageData: ImageData): LayerAnalysis {
   let solidPixels = 0;
   let weightedX = 0;
   let weightedY = 0;
-  let totalR = 0, totalG = 0, totalB = 0;
+  let totalR = 0,
+    totalG = 0,
+    totalB = 0;
   let colorSamples = 0;
 
   for (let y = 0; y < height; y++) {
@@ -531,9 +573,14 @@ function analyzeLayerContent(imageData: ImageData): LayerAnalysis {
   const centerX = visiblePixels > 0 ? weightedX / visiblePixels / width : 0.5;
   const centerY = visiblePixels > 0 ? weightedY / visiblePixels / height : 0.5;
 
-  const avgColor = colorSamples > 0
-    ? { r: totalR / colorSamples, g: totalG / colorSamples, b: totalB / colorSamples }
-    : { r: 128, g: 128, b: 128 };
+  const avgColor =
+    colorSamples > 0
+      ? {
+          r: totalR / colorSamples,
+          g: totalG / colorSamples,
+          b: totalB / colorSamples,
+        }
+      : { r: 128, g: 128, b: 128 };
 
   return {
     coverage,
@@ -555,27 +602,27 @@ function analyzeLayerContent(imageData: ImageData): LayerAnalysis {
 function generateLabelFromAnalysis(
   analysis: LayerAnalysis,
   index: number,
-  totalLayers: number
+  totalLayers: number,
 ): string {
   const position = index / (totalLayers - 1); // 0 = first, 1 = last
 
   // First layer is typically background
   if (index === 0) {
     if (analysis.isDense) {
-      return 'Background (Solid)';
+      return "Background (Solid)";
     }
     if (analysis.isUpper && analysis.coverage > 0.3) {
-      return 'Background (Sky)';
+      return "Background (Sky)";
     }
-    return 'Background';
+    return "Background";
   }
 
   // Last layer is typically foreground subject
   if (index === totalLayers - 1) {
     if (analysis.isSparse) {
-      return 'Foreground (Details)';
+      return "Foreground (Details)";
     }
-    return 'Foreground (Subject)';
+    return "Foreground (Subject)";
   }
 
   // Middle layers - analyze characteristics

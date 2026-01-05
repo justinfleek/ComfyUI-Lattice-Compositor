@@ -27,7 +27,7 @@ export interface EvalResult {
 }
 
 let worker: Worker | null = null;
-let workerReady = false;
+let _workerReady = false;
 let requestId = 0;
 const pending = new Map<number, PendingRequest>();
 
@@ -39,28 +39,28 @@ function createWorker(): Worker {
   if (worker) {
     worker.terminate();
     worker = null;
-    workerReady = false;
+    _workerReady = false;
   }
 
   // Clear any pending requests (they'll timeout anyway)
   for (const [, req] of pending) {
     clearTimeout(req.timer);
-    req.resolve({ value: 0, timedOut: true, error: 'Worker recreated' });
+    req.resolve({ value: 0, timedOut: true, error: "Worker recreated" });
   }
   pending.clear();
 
   // Create new worker
   const w = new Worker(
-    new URL('../../workers/expressionWorker.ts', import.meta.url),
-    { type: 'module' }
+    new URL("../../workers/expressionWorker.ts", import.meta.url),
+    { type: "module" },
   );
 
   w.onmessage = (e) => {
     const data = e.data;
 
     // Handle ready signal
-    if (data.type === 'ready') {
-      workerReady = true;
+    if (data.type === "ready") {
+      _workerReady = true;
       return;
     }
 
@@ -79,7 +79,7 @@ function createWorker(): Worker {
   };
 
   w.onerror = (e) => {
-    console.error('[WorkerEvaluator] Worker error:', e.message);
+    console.error("[WorkerEvaluator] Worker error:", e.message);
     // Recreate worker on error
     worker = createWorker();
   };
@@ -97,15 +97,15 @@ function createWorker(): Worker {
  */
 export async function evaluateWithTimeout(
   code: string,
-  context: Record<string, unknown>
+  context: Record<string, unknown>,
 ): Promise<EvalResult> {
   // Input validation
-  if (typeof code !== 'string' || code.length === 0) {
-    return { value: 0, timedOut: false, error: 'Empty code' };
+  if (typeof code !== "string" || code.length === 0) {
+    return { value: 0, timedOut: false, error: "Empty code" };
   }
 
   if (code.length > 10240) {
-    return { value: 0, timedOut: false, error: 'Expression too long' };
+    return { value: 0, timedOut: false, error: "Expression too long" };
   }
 
   // Ensure worker exists
@@ -115,13 +115,15 @@ export async function evaluateWithTimeout(
 
   // Prevent memory leak
   if (pending.size >= MAX_PENDING) {
-    console.warn('[WorkerEvaluator] Too many pending requests, clearing oldest');
+    console.warn(
+      "[WorkerEvaluator] Too many pending requests, clearing oldest",
+    );
     const oldest = pending.keys().next().value;
     if (oldest !== undefined) {
       const req = pending.get(oldest);
       if (req) {
         clearTimeout(req.timer);
-        req.resolve({ value: 0, timedOut: true, error: 'Evicted' });
+        req.resolve({ value: 0, timedOut: true, error: "Evicted" });
         pending.delete(oldest);
       }
     }
@@ -133,7 +135,7 @@ export async function evaluateWithTimeout(
     const timer = setTimeout(() => {
       // TIMEOUT: Expression took too long (probably infinite loop)
       pending.delete(id);
-      console.warn('[WorkerEvaluator] Expression timeout - terminating worker');
+      console.warn("[WorkerEvaluator] Expression timeout - terminating worker");
 
       // Terminate and recreate worker
       worker = createWorker();
@@ -145,7 +147,7 @@ export async function evaluateWithTimeout(
     pending.set(id, { resolve, timer });
 
     // Send to worker
-    worker!.postMessage({ id, code, context });
+    worker?.postMessage({ id, code, context });
   });
 }
 
@@ -153,7 +155,7 @@ export async function evaluateWithTimeout(
  * Check if worker evaluation is available
  */
 export function isWorkerAvailable(): boolean {
-  return typeof Worker !== 'undefined';
+  return typeof Worker !== "undefined";
 }
 
 /**
@@ -163,7 +165,7 @@ export function terminateWorker(): void {
   if (worker) {
     worker.terminate();
     worker = null;
-    workerReady = false;
+    _workerReady = false;
   }
   for (const [, req] of pending) {
     clearTimeout(req.timer);

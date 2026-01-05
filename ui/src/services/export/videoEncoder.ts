@@ -6,9 +6,12 @@
  * Supports H.264/AVC and VP9 codecs with configurable quality.
  */
 
-import { exportLogger } from '@/utils/logger';
-import { Muxer as WebMMuxer, ArrayBufferTarget as WebMTarget } from 'webm-muxer';
-import { Muxer as MP4Muxer, ArrayBufferTarget as MP4Target } from 'mp4-muxer';
+import { Muxer as MP4Muxer, ArrayBufferTarget as MP4Target } from "mp4-muxer";
+import {
+  Muxer as WebMMuxer,
+  ArrayBufferTarget as WebMTarget,
+} from "webm-muxer";
+import { exportLogger } from "@/utils/logger";
 
 // ============================================================================
 // Types
@@ -18,9 +21,9 @@ export interface VideoEncoderConfig {
   width: number;
   height: number;
   frameRate: number;
-  codec: 'avc' | 'vp9' | 'vp8';
+  codec: "avc" | "vp9" | "vp8";
   bitrate?: number; // bits per second
-  quality?: 'low' | 'medium' | 'high' | 'lossless';
+  quality?: "low" | "medium" | "high" | "lossless";
 }
 
 export interface EncodingProgress {
@@ -43,8 +46,9 @@ export interface EncodedVideo {
 // ============================================================================
 
 export function isWebCodecsSupported(): boolean {
-  return typeof VideoEncoder !== 'undefined' &&
-         typeof VideoFrame !== 'undefined';
+  return (
+    typeof VideoEncoder !== "undefined" && typeof VideoFrame !== "undefined"
+  );
 }
 
 export async function getSupportedCodecs(): Promise<string[]> {
@@ -52,10 +56,10 @@ export async function getSupportedCodecs(): Promise<string[]> {
 
   const codecs: string[] = [];
   const testConfigs = [
-    { codec: 'avc1.42E01F', name: 'avc' },   // H.264 Baseline
-    { codec: 'avc1.640028', name: 'avc' },   // H.264 High
-    { codec: 'vp9', name: 'vp9' },
-    { codec: 'vp8', name: 'vp8' },
+    { codec: "avc1.42E01F", name: "avc" }, // H.264 Baseline
+    { codec: "avc1.640028", name: "avc" }, // H.264 High
+    { codec: "vp9", name: "vp9" },
+    { codec: "vp8", name: "vp8" },
   ];
 
   for (const { codec, name } of testConfigs) {
@@ -97,9 +101,11 @@ export class WebCodecsVideoEncoder {
   /**
    * Initialize the encoder
    */
-  async initialize(onProgress?: (progress: EncodingProgress) => void): Promise<void> {
+  async initialize(
+    onProgress?: (progress: EncodingProgress) => void,
+  ): Promise<void> {
     if (!isWebCodecsSupported()) {
-      throw new Error('WebCodecs API is not supported in this browser');
+      throw new Error("WebCodecs API is not supported in this browser");
     }
 
     this.onProgress = onProgress;
@@ -124,20 +130,20 @@ export class WebCodecsVideoEncoder {
     }
 
     // Initialize the appropriate muxer based on codec
-    if (this.config.codec === 'avc') {
+    if (this.config.codec === "avc") {
       // H.264 → MP4 container
       this.mp4Muxer = new MP4Muxer({
         target: new MP4Target(),
         video: {
-          codec: 'avc',
+          codec: "avc",
           width: this.config.width,
           height: this.config.height,
         },
-        fastStart: 'in-memory', // Moves moov atom to beginning for streaming
+        fastStart: "in-memory", // Moves moov atom to beginning for streaming
       });
     } else {
       // VP8/VP9 → WebM container
-      const webmCodec = this.config.codec === 'vp9' ? 'V_VP9' : 'V_VP8';
+      const webmCodec = this.config.codec === "vp9" ? "V_VP9" : "V_VP8";
       this.webmMuxer = new WebMMuxer({
         target: new WebMTarget(),
         video: {
@@ -149,11 +155,14 @@ export class WebCodecsVideoEncoder {
     }
 
     this.encoder = new VideoEncoder({
-      output: (chunk: EncodedVideoChunk, metadata?: EncodedVideoChunkMetadata) => {
+      output: (
+        chunk: EncodedVideoChunk,
+        metadata?: EncodedVideoChunkMetadata,
+      ) => {
         this.handleChunk(chunk, metadata);
       },
       error: (error: DOMException) => {
-        exportLogger.error('VideoEncoder: Encoding error:', error);
+        exportLogger.error("VideoEncoder: Encoding error:", error);
         throw error;
       },
     });
@@ -174,10 +183,10 @@ export class WebCodecsVideoEncoder {
     imageData: ImageData | OffscreenCanvas | HTMLCanvasElement,
     frameIndex: number,
     totalFrames: number,
-    keyFrame = false
+    keyFrame = false,
   ): Promise<void> {
     if (!this.encoder) {
-      throw new Error('Encoder not initialized');
+      throw new Error("Encoder not initialized");
     }
 
     // Create VideoFrame from image data
@@ -190,7 +199,7 @@ export class WebCodecsVideoEncoder {
         duration: 1_000_000 / this.config.frameRate,
         codedWidth: imageData.width,
         codedHeight: imageData.height,
-        format: 'RGBA',
+        format: "RGBA",
       });
     } else {
       // Canvas
@@ -225,7 +234,7 @@ export class WebCodecsVideoEncoder {
    */
   async finalize(): Promise<EncodedVideo> {
     if (!this.encoder) {
-      throw new Error('Encoder not initialized');
+      throw new Error("Encoder not initialized");
     }
 
     // Flush remaining frames
@@ -242,17 +251,17 @@ export class WebCodecsVideoEncoder {
     if (this.mp4Muxer) {
       this.mp4Muxer.finalize();
       const buffer = this.mp4Muxer.target.buffer;
-      blob = new Blob([buffer], { type: 'video/mp4' });
-      mimeType = 'video/mp4';
+      blob = new Blob([buffer], { type: "video/mp4" });
+      mimeType = "video/mp4";
       this.mp4Muxer = null;
     } else if (this.webmMuxer) {
       this.webmMuxer.finalize();
       const buffer = this.webmMuxer.target.buffer;
-      blob = new Blob([buffer], { type: 'video/webm' });
-      mimeType = 'video/webm';
+      blob = new Blob([buffer], { type: "video/webm" });
+      mimeType = "video/webm";
       this.webmMuxer = null;
     } else {
-      throw new Error('No muxer initialized');
+      throw new Error("No muxer initialized");
     }
 
     return {
@@ -280,7 +289,10 @@ export class WebCodecsVideoEncoder {
   // Private Methods
   // ============================================================================
 
-  private handleChunk(chunk: EncodedVideoChunk, metadata?: EncodedVideoChunkMetadata): void {
+  private handleChunk(
+    chunk: EncodedVideoChunk,
+    metadata?: EncodedVideoChunkMetadata,
+  ): void {
     // Pass chunk to the appropriate muxer
     if (this.mp4Muxer) {
       this.mp4Muxer.addVideoChunk(chunk, metadata);
@@ -292,15 +304,15 @@ export class WebCodecsVideoEncoder {
 
   private getCodecString(): string {
     switch (this.config.codec) {
-      case 'avc':
+      case "avc":
         // H.264 High Profile Level 4.0 (up to 1080p30)
-        return 'avc1.640028';
-      case 'vp9':
-        return 'vp09.00.10.08';
-      case 'vp8':
-        return 'vp8';
+        return "avc1.640028";
+      case "vp9":
+        return "vp09.00.10.08";
+      case "vp8":
+        return "vp8";
       default:
-        return 'avc1.640028';
+        return "avc1.640028";
     }
   }
 
@@ -314,13 +326,13 @@ export class WebCodecsVideoEncoder {
     const baseRate = pixels * this.config.frameRate;
 
     switch (this.config.quality) {
-      case 'low':
+      case "low":
         return Math.round(baseRate * 0.05);
-      case 'medium':
+      case "medium":
         return Math.round(baseRate * 0.1);
-      case 'high':
+      case "high":
         return Math.round(baseRate * 0.2);
-      case 'lossless':
+      case "lossless":
         return Math.round(baseRate * 0.5);
       default:
         return Math.round(baseRate * 0.1); // medium default
@@ -338,7 +350,7 @@ export class WebCodecsVideoEncoder {
 export async function encodeFrameSequence(
   frames: (ImageData | OffscreenCanvas | HTMLCanvasElement)[],
   config: VideoEncoderConfig,
-  onProgress?: (progress: EncodingProgress) => void
+  onProgress?: (progress: EncodingProgress) => void,
 ): Promise<EncodedVideo> {
   const encoder = new WebCodecsVideoEncoder(config);
   await encoder.initialize(onProgress);
@@ -357,7 +369,7 @@ export async function encodeFromGenerator(
   generator: AsyncGenerator<ImageData | OffscreenCanvas, void, unknown>,
   config: VideoEncoderConfig,
   totalFrames: number,
-  onProgress?: (progress: EncodingProgress) => void
+  onProgress?: (progress: EncodingProgress) => void,
 ): Promise<EncodedVideo> {
   const encoder = new WebCodecsVideoEncoder(config);
   await encoder.initialize(onProgress);
@@ -375,11 +387,13 @@ export async function encodeFromGenerator(
  * Download encoded video
  */
 export function downloadVideo(video: EncodedVideo, filename: string): void {
-  const extension = video.mimeType.includes('webm') ? 'webm' : 'mp4';
-  const fullFilename = filename.includes('.') ? filename : `${filename}.${extension}`;
+  const extension = video.mimeType.includes("webm") ? "webm" : "mp4";
+  const fullFilename = filename.includes(".")
+    ? filename
+    : `${filename}.${extension}`;
 
   const url = URL.createObjectURL(video.blob);
-  const a = document.createElement('a');
+  const a = document.createElement("a");
   a.href = url;
   a.download = fullFilename;
   document.body.appendChild(a);

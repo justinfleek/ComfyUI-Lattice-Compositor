@@ -46,16 +46,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, nextTick } from 'vue';
-import type { TemplateComment } from '@/types/templateBuilder';
+import { nextTick, onMounted, ref, watch } from "vue";
+import type { TemplateComment } from "@/types/templateBuilder";
 
 const props = defineProps<{
   comment: TemplateComment;
 }>();
 
 const emit = defineEmits<{
-  (e: 'update', commentId: string, text: string): void;
-  (e: 'remove'): void;
+  (e: "update", commentId: string, text: string): void;
+  (e: "remove"): void;
 }>();
 
 // Local state
@@ -64,12 +64,15 @@ const isExpanded = ref(true);
 const textareaRef = ref<HTMLTextAreaElement | null>(null);
 
 // Watch for external changes
-watch(() => props.comment.text, (newText) => {
-  localText.value = newText;
-});
+watch(
+  () => props.comment.text,
+  (newText) => {
+    localText.value = newText;
+  },
+);
 
 // Toggle expand/collapse
-function toggleExpand() {
+function _toggleExpand() {
   isExpanded.value = !isExpanded.value;
   if (isExpanded.value) {
     nextTick(() => {
@@ -79,9 +82,9 @@ function toggleExpand() {
 }
 
 // Update comment text
-function updateText() {
+function _updateText() {
   if (localText.value !== props.comment.text) {
-    emit('update', props.comment.id, localText.value);
+    emit("update", props.comment.id, localText.value);
   }
 }
 
@@ -89,8 +92,8 @@ function updateText() {
 function autoResize() {
   const textarea = textareaRef.value;
   if (textarea) {
-    textarea.style.height = 'auto';
-    textarea.style.height = Math.max(60, textarea.scrollHeight) + 'px';
+    textarea.style.height = "auto";
+    textarea.style.height = `${Math.max(60, textarea.scrollHeight)}px`;
   }
 }
 

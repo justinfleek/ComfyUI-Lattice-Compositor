@@ -11,18 +11,18 @@
      ======================================== */
 
   /* Surface Colors (Dark to Light) - Very dark grey base (not pure black) */
-  --lattice-void: #0a0a0a;           /* Very dark grey app background */
-  --lattice-surface-0: #0e0e0e;      /* Canvas background */
-  --lattice-surface-1: #141414;      /* Panel backgrounds */
-  --lattice-surface-2: #1a1a1a;      /* Headers, elevated surfaces */
-  --lattice-surface-3: #222222;      /* Hover states */
-  --lattice-surface-4: #2a2a2a;      /* Active/pressed states */
+  --lattice-void: #0a0a0a; /* Very dark grey app background */
+  --lattice-surface-0: #0e0e0e; /* Canvas background */
+  --lattice-surface-1: #141414; /* Panel backgrounds */
+  --lattice-surface-2: #1a1a1a; /* Headers, elevated surfaces */
+  --lattice-surface-3: #222222; /* Hover states */
+  --lattice-surface-4: #2a2a2a; /* Active/pressed states */
 
   /* Accent Colors (Default: Dark Purple / Violet theme) */
-  --lattice-accent: #8B5CF6;
-  --lattice-accent-hover: #9D7AFA;
-  --lattice-accent-secondary: #A78BFA;
-  --lattice-accent-gradient: linear-gradient(135deg, #8B5CF6, #A78BFA);
+  --lattice-accent: #8b5cf6;
+  --lattice-accent-hover: #9d7afa;
+  --lattice-accent-secondary: #a78bfa;
+  --lattice-accent-gradient: linear-gradient(135deg, #8b5cf6, #a78bfa);
   --lattice-accent-glow: rgba(139, 92, 246, 0.3);
   --lattice-accent-muted: rgba(139, 92, 246, 0.15);
 
@@ -32,73 +32,75 @@
      ======================================== */
 
   /* Violet (Default) */
-  --lattice-theme-violet-primary: #8B5CF6;
-  --lattice-theme-violet-secondary: #EC4899;
-  --lattice-theme-violet-gradient: linear-gradient(135deg, #8B5CF6, #EC4899);
+  --lattice-theme-violet-primary: #8b5cf6;
+  --lattice-theme-violet-secondary: #ec4899;
+  --lattice-theme-violet-gradient: linear-gradient(135deg, #8b5cf6, #ec4899);
 
   /* Ocean */
-  --lattice-theme-ocean-primary: #06B6D4;
-  --lattice-theme-ocean-secondary: #3B82F6;
-  --lattice-theme-ocean-gradient: linear-gradient(135deg, #06B6D4, #3B82F6);
+  --lattice-theme-ocean-primary: #06b6d4;
+  --lattice-theme-ocean-secondary: #3b82f6;
+  --lattice-theme-ocean-gradient: linear-gradient(135deg, #06b6d4, #3b82f6);
 
   /* Rose (formerly Sunset) */
-  --lattice-theme-sunset-primary: #FB7185;
-  --lattice-theme-sunset-secondary: #F43F5E;
-  --lattice-theme-sunset-gradient: linear-gradient(135deg, #FB7185, #F43F5E);
+  --lattice-theme-sunset-primary: #fb7185;
+  --lattice-theme-sunset-secondary: #f43f5e;
+  --lattice-theme-sunset-gradient: linear-gradient(135deg, #fb7185, #f43f5e);
 
   /* Forest */
-  --lattice-theme-forest-primary: #10B981;
-  --lattice-theme-forest-secondary: #06B6D4;
-  --lattice-theme-forest-gradient: linear-gradient(135deg, #10B981, #06B6D4);
+  --lattice-theme-forest-primary: #10b981;
+  --lattice-theme-forest-secondary: #06b6d4;
+  --lattice-theme-forest-gradient: linear-gradient(135deg, #10b981, #06b6d4);
 
   /* Ember */
-  --lattice-theme-ember-primary: #EF4444;
-  --lattice-theme-ember-secondary: #F97316;
-  --lattice-theme-ember-gradient: linear-gradient(135deg, #EF4444, #F97316);
+  --lattice-theme-ember-primary: #ef4444;
+  --lattice-theme-ember-secondary: #f97316;
+  --lattice-theme-ember-gradient: linear-gradient(135deg, #ef4444, #f97316);
 
   /* Mono (grayscale) */
-  --lattice-theme-mono-primary: #6B7280;
-  --lattice-theme-mono-secondary: #9CA3AF;
-  --lattice-theme-mono-gradient: linear-gradient(135deg, #4B5563, #6B7280);
+  --lattice-theme-mono-primary: #6b7280;
+  --lattice-theme-mono-secondary: #9ca3af;
+  --lattice-theme-mono-gradient: linear-gradient(135deg, #4b5563, #6b7280);
 
   /* Text Colors */
-  --lattice-text-primary: #E5E5E5;   /* Main text (not pure white) */
-  --lattice-text-secondary: #9CA3AF; /* Labels, hints */
-  --lattice-text-muted: #6B7280;     /* Placeholders, disabled */
-  --lattice-text-inverse: #050505;   /* Text on light backgrounds */
+  --lattice-text-primary: #e5e5e5; /* Main text (not pure white) */
+  --lattice-text-secondary: #9ca3af; /* Labels, hints */
+  --lattice-text-muted: #6b7280; /* Placeholders, disabled */
+  --lattice-text-inverse: #050505; /* Text on light backgrounds */
 
   /* Semantic Colors */
-  --lattice-success: #10B981;        /* Emerald */
+  --lattice-success: #10b981; /* Emerald */
   --lattice-success-bg: rgba(16, 185, 129, 0.15);
-  --lattice-warning: #F59E0B;        /* Amber */
+  --lattice-warning: #f59e0b; /* Amber */
   --lattice-warning-bg: rgba(245, 158, 11, 0.15);
-  --lattice-error: #F43F5E;          /* Rose */
+  --lattice-error: #f43f5e; /* Rose */
   --lattice-error-bg: rgba(244, 63, 94, 0.15);
-  --lattice-info: #3B82F6;           /* Blue */
+  --lattice-info: #3b82f6; /* Blue */
   --lattice-info-bg: rgba(59, 130, 246, 0.15);
 
   /* Timeline Colors (Layer type colors) */
-  --lattice-timeline-video: #FFD700;    /* Gold for video/image clips */
-  --lattice-timeline-audio: #9B59B6;    /* Purple for audio tracks */
-  --lattice-timeline-text: #8B5CF6;     /* Purple for text layers */
-  --lattice-timeline-effect: #FF6B9D;   /* Pink for effects */
-  --lattice-timeline-shape: #2ECC71;    /* Green for shapes */
-  --lattice-timeline-camera: #06B6D4;   /* Cyan for camera */
-  --lattice-timeline-null: #6B7280;     /* Gray for null/control */
-  --lattice-timeline-particle: #F59E0B; /* Amber for particles */
+  --lattice-timeline-video: #ffd700; /* Gold for video/image clips */
+  --lattice-timeline-audio: #9b59b6; /* Purple for audio tracks */
+  --lattice-timeline-text: #8b5cf6; /* Purple for text layers */
+  --lattice-timeline-effect: #ff6b9d; /* Pink for effects */
+  --lattice-timeline-shape: #2ecc71; /* Green for shapes */
+  --lattice-timeline-camera: #06b6d4; /* Cyan for camera */
+  --lattice-timeline-null: #6b7280; /* Gray for null/control */
+  --lattice-timeline-particle: #f59e0b; /* Amber for particles */
 
   /* Border Colors */
-  --lattice-border-subtle: #1a1a1a;     /* Nearly invisible */
-  --lattice-border-default: #2a2a2a;    /* Subtle separation */
-  --lattice-border-hover: #3a3a3a;      /* Visible on hover */
+  --lattice-border-subtle: #1a1a1a; /* Nearly invisible */
+  --lattice-border-default: #2a2a2a; /* Subtle separation */
+  --lattice-border-hover: #3a3a3a; /* Visible on hover */
   --lattice-border-accent: var(--lattice-accent);
 
   /* ========================================
      TYPOGRAPHY
      ======================================== */
 
-  --lattice-font-sans: 'Inter', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --lattice-font-mono: 'JetBrains Mono', 'SF Mono', Monaco, Consolas, monospace;
+  --lattice-font-sans:
+    "Inter", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  --lattice-font-mono: "JetBrains Mono", "SF Mono", Monaco, Consolas, monospace;
 
   /* Font Sizes (increased for readability) */
   --lattice-text-xs: 11px;
@@ -147,9 +149,9 @@
   --lattice-radius-sm: 2px;
   --lattice-radius-md: 4px;
   --lattice-radius-lg: 6px;
-  --lattice-radius-xl: 8px;      /* Panels - was 16px */
-  --lattice-radius-2xl: 12px;    /* Large cards - was 20px */
-  --lattice-radius-full: 999px;  /* Pills only */
+  --lattice-radius-xl: 8px; /* Panels - was 16px */
+  --lattice-radius-2xl: 12px; /* Large cards - was 20px */
+  --lattice-radius-full: 999px; /* Pills only */
 
   /* ========================================
      SHADOWS
@@ -229,17 +231,35 @@
 }
 
 /* Surface Levels */
-.surface-0 { background: var(--lattice-surface-0); }
-.surface-1 { background: var(--lattice-surface-1); }
-.surface-2 { background: var(--lattice-surface-2); }
-.surface-3 { background: var(--lattice-surface-3); }
-.surface-4 { background: var(--lattice-surface-4); }
+.surface-0 {
+  background: var(--lattice-surface-0);
+}
+.surface-1 {
+  background: var(--lattice-surface-1);
+}
+.surface-2 {
+  background: var(--lattice-surface-2);
+}
+.surface-3 {
+  background: var(--lattice-surface-3);
+}
+.surface-4 {
+  background: var(--lattice-surface-4);
+}
 
 /* Text Colors */
-.text-primary { color: var(--lattice-text-primary); }
-.text-secondary { color: var(--lattice-text-secondary); }
-.text-muted { color: var(--lattice-text-muted); }
-.text-accent { color: var(--lattice-accent); }
+.text-primary {
+  color: var(--lattice-text-primary);
+}
+.text-secondary {
+  color: var(--lattice-text-secondary);
+}
+.text-muted {
+  color: var(--lattice-text-muted);
+}
+.text-accent {
+  color: var(--lattice-accent);
+}
 
 /* Accent Background */
 .bg-accent {
@@ -256,7 +276,9 @@
 .focus-ring:focus,
 .focus-ring:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--lattice-void), 0 0 0 4px var(--lattice-accent);
+  box-shadow:
+    0 0 0 2px var(--lattice-void),
+    0 0 0 4px var(--lattice-accent);
 }
 
 /* Pill Shape */
@@ -275,5 +297,5 @@
 
 /* Use in SVG: stroke="url(#lattice-gradient-purple-pink)" */
 .gradient-defs {
-  --gradient-purple-pink: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+  --gradient-purple-pink: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
 }

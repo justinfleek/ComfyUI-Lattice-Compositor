@@ -3,10 +3,16 @@
  *
  * Generates frame sequences with text and particles excluded for Wan video generation.
  */
-import type { LatticeProject, Layer, TextData, SplineData, ParticleLayerData } from '@/types/project';
-import { interpolateProperty } from './interpolation';
-import { ArcLengthParameterizer, pathCommandsToBezier } from './arcLength';
-import { ParticleSystem } from './particleSystem';
+import type {
+  LatticeProject,
+  Layer,
+  ParticleLayerData,
+  SplineData,
+  TextData,
+} from "@/types/project";
+import { ArcLengthParameterizer, pathCommandsToBezier } from "./arcLength";
+import { interpolateProperty } from "./interpolation";
+import { ParticleSystem } from "./particleSystem";
 
 export interface ExportProgress {
   frame: number;
@@ -19,7 +25,7 @@ export type ProgressCallback = (progress: ExportProgress) => void;
 export interface ExportOptions {
   width: number;
   height: number;
-  matteMode: 'exclude_text' | 'include_all';
+  matteMode: "exclude_text" | "include_all";
 }
 
 export interface DimensionValidation {
@@ -53,18 +59,24 @@ class MatteExporter {
       valid,
       correctedWidth: finalWidth,
       correctedHeight: finalHeight,
-      message: valid ? undefined : `Adjusted to ${finalWidth}x${finalHeight} (divisible by 8)`
+      message: valid
+        ? undefined
+        : `Adjusted to ${finalWidth}x${finalHeight} (divisible by 8)`,
     };
   }
 
   /**
    * Get standard resolution presets with 8-divisible dimensions
    */
-  getResolutionPresets(): Array<{ label: string; width: number; height: number }> {
+  getResolutionPresets(): Array<{
+    label: string;
+    width: number;
+    height: number;
+  }> {
     return [
-      { label: '480p (848x480)', width: 848, height: 480 },
-      { label: '720p (1280x720)', width: 1280, height: 720 },
-      { label: '1080p (1920x1080)', width: 1920, height: 1080 }
+      { label: "480p (848x480)", width: 848, height: 480 },
+      { label: "720p (1280x720)", width: 1280, height: 720 },
+      { label: "1080p (1920x1080)", width: 1920, height: 1080 },
     ];
   }
 
@@ -80,14 +92,14 @@ class MatteExporter {
   async generateMatteSequence(
     project: LatticeProject,
     options: ExportOptions,
-    onProgress?: ProgressCallback
+    onProgress?: ProgressCallback,
   ): Promise<Blob[]> {
     const { frameCount } = project.composition;
     const { width, height } = options;
 
     // Initialize offscreen canvas
     this.offscreenCanvas = new OffscreenCanvas(width, height);
-    this.ctx = this.offscreenCanvas.getContext('2d')!;
+    this.ctx = this.offscreenCanvas.getContext("2d")!;
 
     // Initialize particle systems for particle layers
     this.initializeParticleSystems(project);
@@ -100,7 +112,7 @@ class MatteExporter {
         onProgress({
           frame,
           total: frameCount,
-          percent: Math.round((frame / frameCount) * 100)
+          percent: Math.round((frame / frameCount) * 100),
         });
       }
 
@@ -120,7 +132,7 @@ class MatteExporter {
       onProgress({
         frame: frameCount,
         total: frameCount,
-        percent: 100
+        percent: 100,
       });
     }
 
@@ -133,49 +145,57 @@ class MatteExporter {
   async generateFrame(
     project: LatticeProject,
     frame: number,
-    options: ExportOptions
+    options: ExportOptions,
   ): Promise<Blob> {
     const ctx = this.ctx!;
     const { width, height } = options;
 
     // Clear with WHITE (include everything by default)
-    ctx.fillStyle = '#FFFFFF';
+    ctx.fillStyle = "#FFFFFF";
     ctx.fillRect(0, 0, width, height);
 
     // If include_all mode, return white frame
-    if (options.matteMode === 'include_all') {
-      return await this.offscreenCanvas!.convertToBlob({ type: 'image/png' });
+    if (options.matteMode === "include_all") {
+      return await this.offscreenCanvas?.convertToBlob({ type: "image/png" });
     }
 
     // Set BLACK for exclusion
-    ctx.fillStyle = '#000000';
+    ctx.fillStyle = "#000000";
 
     // Calculate scale factor for resolution difference
     const scaleX = width / project.composition.width;
     const scaleY = height / project.composition.height;
 
     // Find text layers that are visible at this frame
-    const textLayers = project.layers.filter(layer => {
+    const textLayers = project.layers.filter((layer) => {
       const start = layer.startFrame ?? layer.inPoint ?? 0;
       const end = layer.endFrame ?? layer.outPoint ?? 80;
-      return layer.type === 'text' &&
-        layer.visible &&
-        frame >= start &&
-        frame <= end;
+      return (
+        layer.type === "text" && layer.visible && frame >= start && frame <= end
+      );
     });
 
     for (const layer of textLayers) {
-      await this.renderTextLayerToMatte(ctx, layer, project, frame, scaleX, scaleY);
+      await this.renderTextLayerToMatte(
+        ctx,
+        layer,
+        project,
+        frame,
+        scaleX,
+        scaleY,
+      );
     }
 
     // Find particle layers that are visible at this frame
-    const particleLayers = project.layers.filter(layer => {
+    const particleLayers = project.layers.filter((layer) => {
       const start = layer.startFrame ?? layer.inPoint ?? 0;
       const end = layer.endFrame ?? layer.outPoint ?? 80;
-      return layer.type === 'particles' &&
+      return (
+        layer.type === "particles" &&
         layer.visible &&
         frame >= start &&
-        frame <= end;
+        frame <= end
+      );
     });
 
     for (const layer of particleLayers) {
@@ -183,7 +203,7 @@ class MatteExporter {
     }
 
     // Convert to PNG blob
-    return await this.offscreenCanvas!.convertToBlob({ type: 'image/png' });
+    return await this.offscreenCanvas?.convertToBlob({ type: "image/png" });
   }
 
   /**
@@ -192,14 +212,16 @@ class MatteExporter {
   async generatePreviewFrame(
     project: LatticeProject,
     frame: number,
-    options: ExportOptions
+    options: ExportOptions,
   ): Promise<string> {
     // Ensure canvas is initialized
-    if (!this.offscreenCanvas ||
-        this.offscreenCanvas.width !== options.width ||
-        this.offscreenCanvas.height !== options.height) {
+    if (
+      !this.offscreenCanvas ||
+      this.offscreenCanvas.width !== options.width ||
+      this.offscreenCanvas.height !== options.height
+    ) {
       this.offscreenCanvas = new OffscreenCanvas(options.width, options.height);
-      this.ctx = this.offscreenCanvas.getContext('2d')!;
+      this.ctx = this.offscreenCanvas.getContext("2d")!;
     }
 
     const blob = await this.generateFrame(project, frame, options);
@@ -215,13 +237,13 @@ class MatteExporter {
     project: LatticeProject,
     frame: number,
     scaleX: number,
-    scaleY: number
+    scaleY: number,
   ): Promise<void> {
     const textData = layer.data as TextData;
     if (!textData) return;
 
     // Get animated font size
-    const fontSizeProp = layer.properties.find(p => p.name === 'fontSize');
+    const fontSizeProp = layer.properties.find((p) => p.name === "fontSize");
     const fontSize = fontSizeProp
       ? interpolateProperty(fontSizeProp, frame)
       : textData.fontSize;
@@ -233,9 +255,26 @@ class MatteExporter {
 
     // Check if text is on a path
     if (textData.pathLayerId) {
-      await this.renderTextOnPathToMatte(ctx, layer, textData, project, frame, scaledFontSize, scaleX, scaleY);
+      await this.renderTextOnPathToMatte(
+        ctx,
+        layer,
+        textData,
+        project,
+        frame,
+        scaledFontSize,
+        scaleX,
+        scaleY,
+      );
     } else {
-      this.renderTextBlockToMatte(ctx, layer, textData, frame, scaledFontSize, scaleX, scaleY);
+      this.renderTextBlockToMatte(
+        ctx,
+        layer,
+        textData,
+        frame,
+        scaledFontSize,
+        scaleX,
+        scaleY,
+      );
     }
   }
 
@@ -251,14 +290,15 @@ class MatteExporter {
     frame: number,
     fontSize: number,
     scaleX: number,
-    scaleY: number
+    scaleY: number,
   ): Promise<void> {
     // Find the path layer
-    const pathLayer = project.layers.find(l => l.id === textData.pathLayerId);
-    if (!pathLayer || pathLayer.type !== 'spline') return;
+    const pathLayer = project.layers.find((l) => l.id === textData.pathLayerId);
+    if (!pathLayer || pathLayer.type !== "spline") return;
 
     const splineData = pathLayer.data as SplineData;
-    if (!splineData?.controlPoints || splineData.controlPoints.length < 2) return;
+    if (!splineData?.controlPoints || splineData.controlPoints.length < 2)
+      return;
 
     // Build path commands from control points
     const pathCommands = this.buildPathCommands(splineData);
@@ -272,7 +312,7 @@ class MatteExporter {
     const parameterizer = new ArcLengthParameterizer(bezierCurve);
 
     // Get animated path offset
-    const offsetProp = layer.properties.find(p => p.name === 'pathOffset');
+    const offsetProp = layer.properties.find((p) => p.name === "pathOffset");
     const pathOffset = offsetProp
       ? interpolateProperty(offsetProp, frame)
       : textData.pathOffset;
@@ -284,9 +324,9 @@ class MatteExporter {
     const padding = 4 * Math.min(scaleX, scaleY); // Scale padding
 
     for (const char of textData.text) {
-      if (char === ' ') {
+      if (char === " ") {
         // Skip spaces but add width
-        const spaceWidth = ctx.measureText(' ').width;
+        const spaceWidth = ctx.measureText(" ").width;
         currentDistance += spaceWidth + textData.letterSpacing;
         continue;
       }
@@ -294,9 +334,13 @@ class MatteExporter {
       const charWidth = ctx.measureText(char).width;
 
       // Clamp distance
-      const clampedDistance = Math.max(0, Math.min(currentDistance, totalLength));
+      const clampedDistance = Math.max(
+        0,
+        Math.min(currentDistance, totalLength),
+      );
 
-      const { point, tangent } = parameterizer.getPointAtDistance(clampedDistance);
+      const { point, tangent } =
+        parameterizer.getPointAtDistance(clampedDistance);
       const angle = Math.atan2(tangent.y, tangent.x);
 
       // Scale the position
@@ -312,7 +356,7 @@ class MatteExporter {
         -padding,
         -fontSize - padding,
         charWidth + padding * 2,
-        fontSize + padding * 2
+        fontSize + padding * 2,
       );
 
       ctx.restore();
@@ -331,7 +375,7 @@ class MatteExporter {
     const pathCommands: any[] = [];
 
     // Move to first point
-    pathCommands.push(['M', cp[0].x, cp[0].y]);
+    pathCommands.push(["M", cp[0].x, cp[0].y]);
 
     // Create cubic bezier curves between points
     for (let i = 0; i < cp.length - 1; i++) {
@@ -342,12 +386,7 @@ class MatteExporter {
       const h1 = p1.handleOut || { x: p1.x, y: p1.y };
       const h2 = p2.handleIn || { x: p2.x, y: p2.y };
 
-      pathCommands.push([
-        'C',
-        h1.x, h1.y,
-        h2.x, h2.y,
-        p2.x, p2.y
-      ]);
+      pathCommands.push(["C", h1.x, h1.y, h2.x, h2.y, p2.x, p2.y]);
     }
 
     return pathCommands;
@@ -364,7 +403,7 @@ class MatteExporter {
     frame: number,
     fontSize: number,
     scaleX: number,
-    scaleY: number
+    scaleY: number,
   ): void {
     // Get transform
     const positionProp = layer.transform.position;
@@ -394,7 +433,7 @@ class MatteExporter {
       -padding,
       -textHeight - padding,
       textWidth + padding * 2,
-      textHeight + padding * 2
+      textHeight + padding * 2,
     );
 
     ctx.restore();
@@ -405,32 +444,29 @@ class MatteExporter {
    */
   async downloadAsZip(
     frames: Blob[],
-    filename: string = 'matte_sequence',
-    onProgress?: (percent: number) => void
+    filename: string = "matte_sequence",
+    onProgress?: (percent: number) => void,
   ): Promise<void> {
     // Dynamic import JSZip
-    const JSZip = (await import('jszip')).default;
+    const JSZip = (await import("jszip")).default;
     const zip = new JSZip();
 
     // Add frames to zip
     frames.forEach((blob, index) => {
-      const frameName = `${filename}_${String(index).padStart(4, '0')}.png`;
+      const frameName = `${filename}_${String(index).padStart(4, "0")}.png`;
       zip.file(frameName, blob);
     });
 
     // Generate zip with progress
-    const content = await zip.generateAsync(
-      { type: 'blob' },
-      (metadata) => {
-        if (onProgress) {
-          onProgress(Math.round(metadata.percent));
-        }
+    const content = await zip.generateAsync({ type: "blob" }, (metadata) => {
+      if (onProgress) {
+        onProgress(Math.round(metadata.percent));
       }
-    );
+    });
 
     // Download
     const url = URL.createObjectURL(content);
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = url;
     link.download = `${filename}.zip`;
     document.body.appendChild(link);
@@ -447,7 +483,7 @@ class MatteExporter {
     this.particleSystems.clear();
 
     const particleLayers = project.layers.filter(
-      layer => layer.type === 'particles'
+      (layer) => layer.type === "particles",
     );
 
     for (const layer of particleLayers) {
@@ -490,13 +526,16 @@ class MatteExporter {
    * Step particle systems to the current frame
    * For sequential export, we step from frame 0 through each frame
    */
-  private stepParticleSystemsToFrame(project: LatticeProject, frame: number): void {
+  private stepParticleSystemsToFrame(
+    project: LatticeProject,
+    frame: number,
+  ): void {
     // Only step if this isn't the first frame (systems already initialized at frame 0)
     if (frame === 0) return;
 
     // Step all visible particle systems
     for (const layer of project.layers) {
-      if (layer.type !== 'particles') continue;
+      if (layer.type !== "particles") continue;
 
       const system = this.particleSystems.get(layer.id);
       if (!system) continue;
@@ -517,7 +556,7 @@ class MatteExporter {
     ctx: OffscreenCanvasRenderingContext2D,
     layer: Layer,
     width: number,
-    height: number
+    height: number,
   ): void {
     const system = this.particleSystems.get(layer.id);
     if (!system) return;
@@ -527,15 +566,15 @@ class MatteExporter {
 
     // Create a temporary canvas to hold the mask
     const tempCanvas = new OffscreenCanvas(width, height);
-    const tempCtx = tempCanvas.getContext('2d')!;
+    const tempCtx = tempCanvas.getContext("2d")!;
     tempCtx.putImageData(maskData, 0, 0);
 
     // Composite the mask onto the main canvas
     // The mask already has black particles on white background
     // We use 'multiply' to combine - white stays white, black stays black
-    ctx.globalCompositeOperation = 'multiply';
+    ctx.globalCompositeOperation = "multiply";
     ctx.drawImage(tempCanvas, 0, 0);
-    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalCompositeOperation = "source-over";
   }
 
   /**

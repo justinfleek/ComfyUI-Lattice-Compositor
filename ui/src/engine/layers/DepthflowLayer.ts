@@ -8,11 +8,15 @@
  * - Edge dilation and inpainting for cleaner parallax
  */
 
-import * as THREE from 'three';
-import type { Layer, DepthflowLayerData, DepthflowConfig, AnimatableProperty } from '@/types/project';
-import type { ResourceManager } from '../core/ResourceManager';
-import { BaseLayer } from './BaseLayer';
-import { layerLogger } from '@/utils/logger';
+import * as THREE from "three";
+import type {
+  DepthflowConfig,
+  DepthflowLayerData,
+  Layer,
+} from "@/types/project";
+import { layerLogger } from "@/utils/logger";
+import type { ResourceManager } from "../core/ResourceManager";
+import { BaseLayer } from "./BaseLayer";
 
 // ============================================================================
 // SHADERS
@@ -120,9 +124,6 @@ export class DepthflowLayer extends BaseLayer {
   private width: number = 1920;
   private height: number = 1080;
 
-  // Animation state
-  private animationTime: number = 0;
-
   constructor(layerData: Layer, resources: ResourceManager) {
     super(layerData);
 
@@ -173,10 +174,10 @@ export class DepthflowLayer extends BaseLayer {
     const data = layerData.data as DepthflowLayerData | null;
 
     return {
-      sourceLayerId: data?.sourceLayerId ?? '',
-      depthLayerId: data?.depthLayerId ?? '',
+      sourceLayerId: data?.sourceLayerId ?? "",
+      depthLayerId: data?.depthLayerId ?? "",
       config: {
-        preset: data?.config?.preset ?? 'static',
+        preset: data?.config?.preset ?? "static",
         zoom: data?.config?.zoom ?? 1,
         offsetX: data?.config?.offsetX ?? 0,
         offsetY: data?.config?.offsetY ?? 0,
@@ -205,21 +206,28 @@ export class DepthflowLayer extends BaseLayer {
   private async loadTextures(): Promise<void> {
     // Load source texture
     if (this.depthflowData.sourceLayerId) {
-      const sourceTexture = await this.loadTextureFromLayer(this.depthflowData.sourceLayerId);
+      const sourceTexture = await this.loadTextureFromLayer(
+        this.depthflowData.sourceLayerId,
+      );
       if (sourceTexture) {
         this.sourceTexture = sourceTexture;
         this.material.uniforms.sourceTexture.value = sourceTexture;
 
         // Update dimensions from texture
         if (sourceTexture.image) {
-          this.setDimensions(sourceTexture.image.width, sourceTexture.image.height);
+          this.setDimensions(
+            sourceTexture.image.width,
+            sourceTexture.image.height,
+          );
         }
       }
     }
 
     // Load depth texture
     if (this.depthflowData.depthLayerId) {
-      const depthTexture = await this.loadTextureFromLayer(this.depthflowData.depthLayerId);
+      const depthTexture = await this.loadTextureFromLayer(
+        this.depthflowData.depthLayerId,
+      );
       if (depthTexture) {
         this.depthTexture = depthTexture;
         this.material.uniforms.depthTexture.value = depthTexture;
@@ -230,13 +238,17 @@ export class DepthflowLayer extends BaseLayer {
   /**
    * Load texture from a layer (image layer asset)
    */
-  private async loadTextureFromLayer(layerId: string): Promise<THREE.Texture | null> {
+  private async loadTextureFromLayer(
+    layerId: string,
+  ): Promise<THREE.Texture | null> {
     // Try to get the layer's texture from ResourceManager
     // This assumes the source layer is an image layer with an assetId
     const texture = this.resources.getLayerTexture(layerId);
     if (texture) return texture;
 
-    layerLogger.warn(`DepthflowLayer: Could not load texture for layer ${layerId}`);
+    layerLogger.warn(
+      `DepthflowLayer: Could not load texture for layer ${layerId}`,
+    );
     return null;
   }
 
@@ -245,8 +257,8 @@ export class DepthflowLayer extends BaseLayer {
    */
   setDimensions(width: number, height: number): void {
     // Validate dimensions (NaN/0 would create invalid geometry)
-    const validWidth = (Number.isFinite(width) && width > 0) ? width : 1920;
-    const validHeight = (Number.isFinite(height) && height > 0) ? height : 1080;
+    const validWidth = Number.isFinite(width) && width > 0 ? width : 1920;
+    const validHeight = Number.isFinite(height) && height > 0 ? height : 1080;
 
     if (validWidth === this.width && validHeight === this.height) return;
 
@@ -302,7 +314,9 @@ export class DepthflowLayer extends BaseLayer {
       this.material.uniforms.zoom.value = config.zoom;
     }
     if (config.rotation !== undefined) {
-      this.material.uniforms.rotation.value = THREE.MathUtils.degToRad(config.rotation);
+      this.material.uniforms.rotation.value = THREE.MathUtils.degToRad(
+        config.rotation,
+      );
     }
     if (config.edgeDilation !== undefined) {
       this.material.uniforms.edgeDilation.value = config.edgeDilation;
@@ -312,7 +326,10 @@ export class DepthflowLayer extends BaseLayer {
   /**
    * Calculate preset-based animation values
    */
-  private calculatePresetValues(frame: number, fps: number = 16): {
+  private calculatePresetValues(
+    frame: number,
+    fps: number = 16,
+  ): {
     zoom: number;
     offsetX: number;
     offsetY: number;
@@ -327,67 +344,73 @@ export class DepthflowLayer extends BaseLayer {
     let zoom = config.zoom;
     let offsetX = config.offsetX;
     let offsetY = config.offsetY;
-    let rotation = config.rotation;
+    const rotation = config.rotation;
 
     switch (config.preset) {
-      case 'static':
+      case "static":
         // No animation
         break;
 
-      case 'zoom_in':
+      case "zoom_in":
         zoom = 1 + progress * 0.5;
         break;
 
-      case 'zoom_out':
+      case "zoom_out":
         zoom = 1.5 - progress * 0.5;
         break;
 
-      case 'dolly_zoom_in':
+      case "dolly_zoom_in":
         zoom = 1 + progress * 0.5;
         // Counteract zoom with depth to create vertigo effect
-        this.material.uniforms.depthScale.value = config.depthScale * (1 + config.dollyZoom * progress);
+        this.material.uniforms.depthScale.value =
+          config.depthScale * (1 + config.dollyZoom * progress);
         break;
 
-      case 'dolly_zoom_out':
+      case "dolly_zoom_out":
         zoom = 1.5 - progress * 0.5;
-        this.material.uniforms.depthScale.value = config.depthScale * (1 + config.dollyZoom * (1 - progress));
+        this.material.uniforms.depthScale.value =
+          config.depthScale * (1 + config.dollyZoom * (1 - progress));
         break;
 
-      case 'pan_left':
+      case "pan_left":
         offsetX = progress * 0.2;
         break;
 
-      case 'pan_right':
+      case "pan_right":
         offsetX = -progress * 0.2;
         break;
 
-      case 'pan_up':
+      case "pan_up":
         offsetY = progress * 0.2;
         break;
 
-      case 'pan_down':
+      case "pan_down":
         offsetY = -progress * 0.2;
         break;
 
-      case 'circle_cw':
+      case "circle_cw":
         offsetX = Math.sin(progress * Math.PI * 2) * config.orbitRadius;
         offsetY = Math.cos(progress * Math.PI * 2) * config.orbitRadius;
         break;
 
-      case 'circle_ccw':
+      case "circle_ccw":
         offsetX = -Math.sin(progress * Math.PI * 2) * config.orbitRadius;
         offsetY = Math.cos(progress * Math.PI * 2) * config.orbitRadius;
         break;
 
-      case 'horizontal_swing':
-        offsetX = Math.sin(time * config.swingFrequency * Math.PI * 2) * config.swingAmplitude;
+      case "horizontal_swing":
+        offsetX =
+          Math.sin(time * config.swingFrequency * Math.PI * 2) *
+          config.swingAmplitude;
         break;
 
-      case 'vertical_swing':
-        offsetY = Math.sin(time * config.swingFrequency * Math.PI * 2) * config.swingAmplitude;
+      case "vertical_swing":
+        offsetY =
+          Math.sin(time * config.swingFrequency * Math.PI * 2) *
+          config.swingAmplitude;
         break;
 
-      case 'custom':
+      case "custom":
         // Use animated properties (handled in evaluateFrame)
         break;
     }
@@ -400,7 +423,7 @@ export class DepthflowLayer extends BaseLayer {
   // ============================================================================
 
   protected onEvaluateFrame(frame: number): void {
-    const config = this.depthflowData.config;
+    const _config = this.depthflowData.config;
 
     // Use composition fps for correct animation timing
     const fps = this.compositionFps;
@@ -418,26 +441,35 @@ export class DepthflowLayer extends BaseLayer {
       zoom = this.evaluator.evaluate(this.depthflowData.animatedZoom, frame);
     }
     if (this.depthflowData.animatedOffsetX) {
-      offsetX = this.evaluator.evaluate(this.depthflowData.animatedOffsetX, frame);
+      offsetX = this.evaluator.evaluate(
+        this.depthflowData.animatedOffsetX,
+        frame,
+      );
     }
     if (this.depthflowData.animatedOffsetY) {
-      offsetY = this.evaluator.evaluate(this.depthflowData.animatedOffsetY, frame);
+      offsetY = this.evaluator.evaluate(
+        this.depthflowData.animatedOffsetY,
+        frame,
+      );
     }
     if (this.depthflowData.animatedRotation) {
-      rotation = this.evaluator.evaluate(this.depthflowData.animatedRotation, frame);
+      rotation = this.evaluator.evaluate(
+        this.depthflowData.animatedRotation,
+        frame,
+      );
     }
     if (this.depthflowData.animatedDepthScale) {
       this.material.uniforms.depthScale.value = this.evaluator.evaluate(
         this.depthflowData.animatedDepthScale,
-        frame
+        frame,
       );
     }
 
     // Apply driven values
-    zoom = this.getDrivenOrBase('depthflow.zoom', zoom);
-    offsetX = this.getDrivenOrBase('depthflow.offsetX', offsetX);
-    offsetY = this.getDrivenOrBase('depthflow.offsetY', offsetY);
-    rotation = this.getDrivenOrBase('depthflow.rotation', rotation);
+    zoom = this.getDrivenOrBase("depthflow.zoom", zoom);
+    offsetX = this.getDrivenOrBase("depthflow.offsetX", offsetX);
+    offsetY = this.getDrivenOrBase("depthflow.offsetY", offsetY);
+    rotation = this.getDrivenOrBase("depthflow.rotation", rotation);
 
     // Update uniforms
     this.material.uniforms.zoom.value = zoom;
@@ -449,50 +481,78 @@ export class DepthflowLayer extends BaseLayer {
     this.material.needsUpdate = true;
   }
 
-  protected override onApplyEvaluatedState(state: import('../MotionEngine').EvaluatedLayer): void {
+  protected override onApplyEvaluatedState(
+    state: import("../MotionEngine").EvaluatedLayer,
+  ): void {
     const props = state.properties;
 
     // Apply evaluated depthflow properties
-    if (props['zoom'] !== undefined) {
-      this.material.uniforms.zoom.value = props['zoom'] as number;
+    if (props.zoom !== undefined) {
+      this.material.uniforms.zoom.value = props.zoom as number;
     }
 
-    if (props['offsetX'] !== undefined || props['offsetY'] !== undefined) {
-      const offsetX = (props['offsetX'] as number) ?? this.material.uniforms.offset.value.x;
-      const offsetY = (props['offsetY'] as number) ?? this.material.uniforms.offset.value.y;
+    if (props.offsetX !== undefined || props.offsetY !== undefined) {
+      const offsetX =
+        (props.offsetX as number) ?? this.material.uniforms.offset.value.x;
+      const offsetY =
+        (props.offsetY as number) ?? this.material.uniforms.offset.value.y;
       this.material.uniforms.offset.value.set(offsetX, offsetY);
     }
 
-    if (props['rotation'] !== undefined) {
-      this.material.uniforms.rotation.value = THREE.MathUtils.degToRad(props['rotation'] as number);
+    if (props.rotation !== undefined) {
+      this.material.uniforms.rotation.value = THREE.MathUtils.degToRad(
+        props.rotation as number,
+      );
     }
 
-    if (props['depthScale'] !== undefined) {
-      this.material.uniforms.depthScale.value = props['depthScale'] as number;
+    if (props.depthScale !== undefined) {
+      this.material.uniforms.depthScale.value = props.depthScale as number;
     }
 
     // Apply audio-reactive modifiers (additive to base values)
     // Validate all audio modifier values to prevent NaN from corrupting uniforms
     const audioMod = this.currentAudioModifiers;
 
-    if (audioMod.depthflowZoom !== undefined && Number.isFinite(audioMod.depthflowZoom) && audioMod.depthflowZoom !== 0) {
+    if (
+      audioMod.depthflowZoom !== undefined &&
+      Number.isFinite(audioMod.depthflowZoom) &&
+      audioMod.depthflowZoom !== 0
+    ) {
       this.material.uniforms.zoom.value += audioMod.depthflowZoom;
     }
 
-    if (audioMod.depthflowOffsetX !== undefined && Number.isFinite(audioMod.depthflowOffsetX) && audioMod.depthflowOffsetX !== 0) {
+    if (
+      audioMod.depthflowOffsetX !== undefined &&
+      Number.isFinite(audioMod.depthflowOffsetX) &&
+      audioMod.depthflowOffsetX !== 0
+    ) {
       this.material.uniforms.offset.value.x += audioMod.depthflowOffsetX;
     }
 
-    if (audioMod.depthflowOffsetY !== undefined && Number.isFinite(audioMod.depthflowOffsetY) && audioMod.depthflowOffsetY !== 0) {
+    if (
+      audioMod.depthflowOffsetY !== undefined &&
+      Number.isFinite(audioMod.depthflowOffsetY) &&
+      audioMod.depthflowOffsetY !== 0
+    ) {
       this.material.uniforms.offset.value.y += audioMod.depthflowOffsetY;
     }
 
-    if (audioMod.depthflowRotation !== undefined && Number.isFinite(audioMod.depthflowRotation) && audioMod.depthflowRotation !== 0) {
+    if (
+      audioMod.depthflowRotation !== undefined &&
+      Number.isFinite(audioMod.depthflowRotation) &&
+      audioMod.depthflowRotation !== 0
+    ) {
       // Add rotation in radians (convert from degrees)
-      this.material.uniforms.rotation.value += THREE.MathUtils.degToRad(audioMod.depthflowRotation);
+      this.material.uniforms.rotation.value += THREE.MathUtils.degToRad(
+        audioMod.depthflowRotation,
+      );
     }
 
-    if (audioMod.depthflowDepthScale !== undefined && Number.isFinite(audioMod.depthflowDepthScale) && audioMod.depthflowDepthScale !== 0) {
+    if (
+      audioMod.depthflowDepthScale !== undefined &&
+      Number.isFinite(audioMod.depthflowDepthScale) &&
+      audioMod.depthflowDepthScale !== 0
+    ) {
       this.material.uniforms.depthScale.value += audioMod.depthflowDepthScale;
     }
 
@@ -505,11 +565,17 @@ export class DepthflowLayer extends BaseLayer {
     if (!data) return;
 
     // Update source/depth layers
-    if (data.sourceLayerId !== undefined && data.sourceLayerId !== this.depthflowData.sourceLayerId) {
+    if (
+      data.sourceLayerId !== undefined &&
+      data.sourceLayerId !== this.depthflowData.sourceLayerId
+    ) {
       this.setSourceLayer(data.sourceLayerId);
     }
 
-    if (data.depthLayerId !== undefined && data.depthLayerId !== this.depthflowData.depthLayerId) {
+    if (
+      data.depthLayerId !== undefined &&
+      data.depthLayerId !== this.depthflowData.depthLayerId
+    ) {
       this.setDepthLayer(data.depthLayerId);
     }
 

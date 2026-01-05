@@ -52,7 +52,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from 'vue';
+import { computed, nextTick, ref, watch } from "vue";
 
 interface Shortcut {
   keys: string;
@@ -68,184 +68,195 @@ const props = defineProps<{
   show: boolean;
 }>();
 
-const emit = defineEmits<{
-  (e: 'close'): void;
-}>();
+const _emit = defineEmits<(e: "close") => void>();
 
-const searchQuery = ref('');
+const searchQuery = ref("");
 const searchInput = ref<HTMLInputElement | null>(null);
 
 // Focus search input when modal opens
-watch(() => props.show, (isVisible) => {
-  if (isVisible) {
-    nextTick(() => {
-      searchInput.value?.focus();
-    });
-  } else {
-    searchQuery.value = '';
-  }
-});
+watch(
+  () => props.show,
+  (isVisible) => {
+    if (isVisible) {
+      nextTick(() => {
+        searchInput.value?.focus();
+      });
+    } else {
+      searchQuery.value = "";
+    }
+  },
+);
 
 const allCategories: Category[] = [
   {
-    name: 'Playback',
+    name: "Playback",
     shortcuts: [
-      { keys: 'Space', description: 'Play / Pause' },
-      { keys: 'Home', description: 'Go to start' },
-      { keys: 'End', description: 'Go to end' },
-      { keys: 'Left', description: 'Step backward 1 frame' },
-      { keys: 'Right', description: 'Step forward 1 frame' },
-      { keys: 'Shift+Left', description: 'Step backward 10 frames' },
-      { keys: 'Shift+Right', description: 'Step forward 10 frames' },
-      { keys: 'J', description: 'Go to previous keyframe' },
-      { keys: 'K', description: 'Go to next keyframe' },
-      { keys: 'Ctrl+.', description: 'Audio preview only' },
-    ]
+      { keys: "Space", description: "Play / Pause" },
+      { keys: "Home", description: "Go to start" },
+      { keys: "End", description: "Go to end" },
+      { keys: "Left", description: "Step backward 1 frame" },
+      { keys: "Right", description: "Step forward 1 frame" },
+      { keys: "Shift+Left", description: "Step backward 10 frames" },
+      { keys: "Shift+Right", description: "Step forward 10 frames" },
+      { keys: "J", description: "Go to previous keyframe" },
+      { keys: "K", description: "Go to next keyframe" },
+      { keys: "Ctrl+.", description: "Audio preview only" },
+    ],
   },
   {
-    name: 'Layer Selection',
+    name: "Layer Selection",
     shortcuts: [
-      { keys: 'Ctrl+A', description: 'Select all layers' },
-      { keys: 'Ctrl+Up', description: 'Select previous layer' },
-      { keys: 'Ctrl+Down', description: 'Select next layer' },
-      { keys: 'Ctrl+Shift+Up', description: 'Extend selection to previous layer' },
-      { keys: 'Ctrl+Shift+Down', description: 'Extend selection to next layer' },
-      { keys: 'Delete', description: 'Delete selected layers' },
-    ]
+      { keys: "Ctrl+A", description: "Select all layers" },
+      { keys: "Ctrl+Up", description: "Select previous layer" },
+      { keys: "Ctrl+Down", description: "Select next layer" },
+      {
+        keys: "Ctrl+Shift+Up",
+        description: "Extend selection to previous layer",
+      },
+      {
+        keys: "Ctrl+Shift+Down",
+        description: "Extend selection to next layer",
+      },
+      { keys: "Delete", description: "Delete selected layers" },
+    ],
   },
   {
-    name: 'Layer Editing',
+    name: "Layer Editing",
     shortcuts: [
-      { keys: 'Ctrl+D', description: 'Duplicate selected layers' },
-      { keys: 'Ctrl+C', description: 'Copy selected layers' },
-      { keys: 'Ctrl+X', description: 'Cut selected layers' },
-      { keys: 'Ctrl+V', description: 'Paste layers' },
-      { keys: 'Ctrl+L', description: 'Toggle layer lock' },
-      { keys: 'Ctrl+Shift+C', description: 'Pre-compose selected layers' },
-      { keys: 'Ctrl+Shift+D', description: 'Split layer at playhead' },
-      { keys: 'Ctrl+Alt+R', description: 'Reverse layer / Reverse keyframes' },
-      { keys: 'Alt+Shift+F', description: 'Freeze frame at playhead' },
-      { keys: 'Ctrl+Alt+F', description: 'Fit layer to composition' },
-      { keys: 'Ctrl+Alt+Shift+F', description: 'Fit layer to composition height' },
-    ]
+      { keys: "Ctrl+D", description: "Duplicate selected layers" },
+      { keys: "Ctrl+C", description: "Copy selected layers" },
+      { keys: "Ctrl+X", description: "Cut selected layers" },
+      { keys: "Ctrl+V", description: "Paste layers" },
+      { keys: "Ctrl+L", description: "Toggle layer lock" },
+      { keys: "Ctrl+Shift+C", description: "Pre-compose selected layers" },
+      { keys: "Ctrl+Shift+D", description: "Split layer at playhead" },
+      { keys: "Ctrl+Alt+R", description: "Reverse layer / Reverse keyframes" },
+      { keys: "Alt+Shift+F", description: "Freeze frame at playhead" },
+      { keys: "Ctrl+Alt+F", description: "Fit layer to composition" },
+      {
+        keys: "Ctrl+Alt+Shift+F",
+        description: "Fit layer to composition height",
+      },
+    ],
   },
   {
-    name: 'Layer Timing',
+    name: "Layer Timing",
     shortcuts: [
-      { keys: 'I', description: 'Go to layer in point' },
-      { keys: 'O', description: 'Go to layer out point' },
-      { keys: '[', description: 'Move in point to playhead' },
-      { keys: ']', description: 'Move out point to playhead' },
-      { keys: 'Alt+[', description: 'Trim in point to playhead' },
-      { keys: 'Alt+]', description: 'Trim out point to playhead' },
-      { keys: 'Ctrl+Alt+T', description: 'Time stretch dialog' },
-    ]
+      { keys: "I", description: "Go to layer in point" },
+      { keys: "O", description: "Go to layer out point" },
+      { keys: "[", description: "Move in point to playhead" },
+      { keys: "]", description: "Move out point to playhead" },
+      { keys: "Alt+[", description: "Trim in point to playhead" },
+      { keys: "Alt+]", description: "Trim out point to playhead" },
+      { keys: "Ctrl+Alt+T", description: "Time stretch dialog" },
+    ],
   },
   {
-    name: 'Property Reveal (Solo)',
+    name: "Property Reveal (Solo)",
     shortcuts: [
-      { keys: 'P', description: 'Position' },
-      { keys: 'S', description: 'Scale' },
-      { keys: 'R', description: 'Rotation' },
-      { keys: 'T', description: 'Opacity (Transparency)' },
-      { keys: 'A', description: 'Anchor Point (Origin)' },
-      { keys: 'U', description: 'All animated properties' },
-      { keys: 'U U', description: 'All modified properties' },
-      { keys: 'E', description: 'Effects' },
-      { keys: 'E E', description: 'Expressions' },
-      { keys: 'M', description: 'Masks' },
-      { keys: 'M M', description: 'All mask properties' },
-    ]
+      { keys: "P", description: "Position" },
+      { keys: "S", description: "Scale" },
+      { keys: "R", description: "Rotation" },
+      { keys: "T", description: "Opacity (Transparency)" },
+      { keys: "A", description: "Anchor Point (Origin)" },
+      { keys: "U", description: "All animated properties" },
+      { keys: "U U", description: "All modified properties" },
+      { keys: "E", description: "Effects" },
+      { keys: "E E", description: "Expressions" },
+      { keys: "M", description: "Masks" },
+      { keys: "M M", description: "All mask properties" },
+    ],
   },
   {
-    name: 'Keyframes',
+    name: "Keyframes",
     shortcuts: [
-      { keys: 'F9', description: 'Apply smooth easing' },
-      { keys: 'Shift+F9', description: 'Apply ease in' },
-      { keys: 'Ctrl+Shift+F9', description: 'Apply ease out' },
-      { keys: 'Ctrl+Alt+H', description: 'Convert to hold keyframes' },
-      { keys: 'Ctrl+Shift+K', description: 'Keyframe interpolation dialog' },
-    ]
+      { keys: "F9", description: "Apply smooth easing" },
+      { keys: "Shift+F9", description: "Apply ease in" },
+      { keys: "Ctrl+Shift+F9", description: "Apply ease out" },
+      { keys: "Ctrl+Alt+H", description: "Convert to hold keyframes" },
+      { keys: "Ctrl+Shift+K", description: "Keyframe interpolation dialog" },
+    ],
   },
   {
-    name: 'Tools',
+    name: "Tools",
     shortcuts: [
-      { keys: 'V', description: 'Selection tool' },
-      { keys: 'H', description: 'Hand tool (pan)' },
-      { keys: 'Z', description: 'Zoom tool' },
-      { keys: 'P', description: 'Pen tool' },
-      { keys: 'T', description: 'Text tool' },
-    ]
+      { keys: "V", description: "Selection tool" },
+      { keys: "H", description: "Hand tool (pan)" },
+      { keys: "Z", description: "Zoom tool" },
+      { keys: "P", description: "Pen tool" },
+      { keys: "T", description: "Text tool" },
+    ],
   },
   {
-    name: 'View & Zoom',
+    name: "View & Zoom",
     shortcuts: [
-      { keys: '=', description: 'Zoom timeline in' },
-      { keys: '-', description: 'Zoom timeline out' },
-      { keys: ';', description: 'Zoom timeline to fit' },
-      { keys: 'Ctrl+=', description: 'Zoom viewer in' },
-      { keys: 'Ctrl+-', description: 'Zoom viewer out' },
-      { keys: 'Ctrl+0', description: 'Fit viewer to window' },
-      { keys: 'Shift+G', description: 'Toggle curve editor' },
-      { keys: 'Ctrl+Shift+H', description: 'Toggle transparency grid' },
-      { keys: 'Ctrl+Shift+R', description: 'Toggle rulers' },
-      { keys: 'Ctrl+Shift+;', description: 'Toggle snap' },
-    ]
+      { keys: "=", description: "Zoom timeline in" },
+      { keys: "-", description: "Zoom timeline out" },
+      { keys: ";", description: "Zoom timeline to fit" },
+      { keys: "Ctrl+=", description: "Zoom viewer in" },
+      { keys: "Ctrl+-", description: "Zoom viewer out" },
+      { keys: "Ctrl+0", description: "Fit viewer to window" },
+      { keys: "Shift+G", description: "Toggle curve editor" },
+      { keys: "Ctrl+Shift+H", description: "Toggle transparency grid" },
+      { keys: "Ctrl+Shift+R", description: "Toggle rulers" },
+      { keys: "Ctrl+Shift+;", description: "Toggle snap" },
+    ],
   },
   {
-    name: 'Work Area',
+    name: "Work Area",
     shortcuts: [
-      { keys: 'B', description: 'Set work area start' },
-      { keys: 'N', description: 'Set work area end' },
-    ]
+      { keys: "B", description: "Set work area start" },
+      { keys: "N", description: "Set work area end" },
+    ],
   },
   {
-    name: 'Project & Dialogs',
+    name: "Project & Dialogs",
     shortcuts: [
-      { keys: 'Ctrl+K', description: 'Composition settings' },
-      { keys: 'Ctrl+M', description: 'Export dialog' },
-      { keys: 'Ctrl+I', description: 'Import asset' },
-      { keys: 'Ctrl+Shift+I', description: 'Import camera tracking' },
-      { keys: 'Ctrl+Z', description: 'Undo' },
-      { keys: 'Ctrl+Shift+Z', description: 'Redo' },
-      { keys: '?', description: 'Toggle keyboard shortcuts' },
-    ]
+      { keys: "Ctrl+K", description: "Composition settings" },
+      { keys: "Ctrl+M", description: "Export dialog" },
+      { keys: "Ctrl+I", description: "Import asset" },
+      { keys: "Ctrl+Shift+I", description: "Import camera tracking" },
+      { keys: "Ctrl+Z", description: "Undo" },
+      { keys: "Ctrl+Shift+Z", description: "Redo" },
+      { keys: "?", description: "Toggle keyboard shortcuts" },
+    ],
   },
 ];
 
-function parseKeys(keyString: string): string[] {
-  return keyString.split('+').map(key => {
+function _parseKeys(keyString: string): string[] {
+  return keyString.split("+").map((key) => {
     // Format special keys
     const keyMap: Record<string, string> = {
-      'Ctrl': 'Ctrl',
-      'Shift': 'Shift',
-      'Alt': 'Alt',
-      'Space': 'Space',
-      'Left': '←',
-      'Right': '→',
-      'Up': '↑',
-      'Down': '↓',
-      'Delete': 'Del',
+      Ctrl: "Ctrl",
+      Shift: "Shift",
+      Alt: "Alt",
+      Space: "Space",
+      Left: "←",
+      Right: "→",
+      Up: "↑",
+      Down: "↓",
+      Delete: "Del",
     };
     return keyMap[key] || key;
   });
 }
 
-const filteredCategories = computed(() => {
+const _filteredCategories = computed(() => {
   if (!searchQuery.value.trim()) {
     return allCategories;
   }
 
   const query = searchQuery.value.toLowerCase();
   return allCategories
-    .map(category => ({
+    .map((category) => ({
       name: category.name,
       shortcuts: category.shortcuts.filter(
-        s => s.description.toLowerCase().includes(query) ||
-             s.keys.toLowerCase().includes(query)
-      )
+        (s) =>
+          s.description.toLowerCase().includes(query) ||
+          s.keys.toLowerCase().includes(query),
+      ),
     }))
-    .filter(category => category.shortcuts.length > 0);
+    .filter((category) => category.shortcuts.length > 0);
 });
 </script>
 

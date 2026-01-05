@@ -8,8 +8,6 @@
  * Extracted from GPUParticleSystem.ts for modularity.
  */
 
-import { PARTICLE_STRIDE } from './types';
-
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -23,9 +21,12 @@ export interface ParticleFrameCache {
   simulationTime: number;
   rngState: number;
   emitterAccumulators: Map<string, number>;
-  particleEmitters: Map<number, string>;  // BUG-063 fix: Track which emitter spawned each particle
-  audioSmoothedValues: Map<number, number>;  // BUG-064 fix: Audio EMA filter history
-  particleInitialValues: Map<number, { size: number; opacity: number; randomOffset: number }>;  // BUG-073/070 fix: Initial values + random offset
+  particleEmitters: Map<number, string>; // BUG-063 fix: Track which emitter spawned each particle
+  audioSmoothedValues: Map<number, number>; // BUG-064 fix: Audio EMA filter history
+  particleInitialValues: Map<
+    number,
+    { size: number; opacity: number; randomOffset: number }
+  >; // BUG-073/070 fix: Initial values + random offset
 }
 
 export interface CacheStats {
@@ -43,12 +44,15 @@ export interface CacheStats {
 export class ParticleFrameCacheSystem {
   private frameCache: Map<number, ParticleFrameCache> = new Map();
   private cacheVersion: number = 0;
-  private cacheInterval: number = 30;  // Cache every N frames
+  private cacheInterval: number = 30; // Cache every N frames
   private maxCacheSize: number = 100;
   private currentSimulatedFrame: number = -1;
-  private readonly maxParticles: number;
 
-  constructor(maxParticles: number, cacheInterval: number = 30, maxCacheSize: number = 100) {
+  constructor(
+    maxParticles: number,
+    cacheInterval: number = 30,
+    maxCacheSize: number = 100,
+  ) {
     this.maxParticles = maxParticles;
     this.cacheInterval = cacheInterval;
     this.maxCacheSize = maxCacheSize;
@@ -70,9 +74,12 @@ export class ParticleFrameCacheSystem {
     simulationTime: number,
     rngState: number,
     emitters: Map<string, { accumulator: number }>,
-    particleEmitters: Map<number, string>,  // BUG-063 fix: Track which emitter spawned each particle
-    audioSmoothedValues: Map<number, number>,  // BUG-064 fix: Audio EMA filter history
-    particleInitialValues: Map<number, { size: number; opacity: number; randomOffset: number }>  // BUG-073/070 fix: Initial values + random offset
+    particleEmitters: Map<number, string>, // BUG-063 fix: Track which emitter spawned each particle
+    audioSmoothedValues: Map<number, number>, // BUG-064 fix: Audio EMA filter history
+    particleInitialValues: Map<
+      number,
+      { size: number; opacity: number; randomOffset: number }
+    >, // BUG-073/070 fix: Initial values + random offset
   ): void {
     // Don't cache if we've exceeded max size - remove oldest
     if (this.frameCache.size >= this.maxCacheSize) {
@@ -95,9 +102,9 @@ export class ParticleFrameCacheSystem {
       simulationTime,
       rngState,
       emitterAccumulators,
-      particleEmitters: new Map(particleEmitters),  // BUG-063 fix: Deep copy the map
-      audioSmoothedValues: new Map(audioSmoothedValues),  // BUG-064 fix: Deep copy the map
-      particleInitialValues: new Map(particleInitialValues),  // BUG-073 fix: Deep copy the map
+      particleEmitters: new Map(particleEmitters), // BUG-063 fix: Deep copy the map
+      audioSmoothedValues: new Map(audioSmoothedValues), // BUG-064 fix: Deep copy the map
+      particleInitialValues: new Map(particleInitialValues), // BUG-073 fix: Deep copy the map
     });
   }
 
@@ -121,7 +128,12 @@ export class ParticleFrameCacheSystem {
     let nearestFrame = -1;
     for (const frame of this.frameCache.keys()) {
       const cached = this.frameCache.get(frame);
-      if (cached && cached.version === this.cacheVersion && frame <= targetFrame && frame > nearestFrame) {
+      if (
+        cached &&
+        cached.version === this.cacheVersion &&
+        frame <= targetFrame &&
+        frame > nearestFrame
+      ) {
         nearestFrame = frame;
       }
     }

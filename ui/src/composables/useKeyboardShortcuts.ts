@@ -1,11 +1,21 @@
-import { ref, computed, provide, type Ref, type ComputedRef } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import { useSelectionStore } from '@/stores/selectionStore';
-import { usePlaybackStore } from '@/stores/playbackStore';
-import { useAudioStore } from '@/stores/audioStore';
+import { type ComputedRef, computed, provide, type Ref, ref } from "vue";
+import { useAudioStore } from "@/stores/audioStore";
+import { useCompositorStore } from "@/stores/compositorStore";
+import { usePlaybackStore } from "@/stores/playbackStore";
+import { useSelectionStore } from "@/stores/selectionStore";
 
 // Types
-export type SoloPropertyType = 'position' | 'scale' | 'rotation' | 'opacity' | 'anchor' | 'animated' | 'modified' | 'expressions' | 'effects' | 'masks';
+export type SoloPropertyType =
+  | "position"
+  | "scale"
+  | "rotation"
+  | "opacity"
+  | "anchor"
+  | "animated"
+  | "modified"
+  | "expressions"
+  | "effects"
+  | "masks";
 
 export interface KeyboardShortcutsOptions {
   // Refs for dialogs
@@ -21,7 +31,11 @@ export interface KeyboardShortcutsOptions {
   // UI state refs
   currentTool: Ref<string>;
   leftTab: Ref<string>;
-  viewOptions: Ref<{ showGrid: boolean; showRulers: boolean; gridSize: number }>;
+  viewOptions: Ref<{
+    showGrid: boolean;
+    showRulers: boolean;
+    gridSize: number;
+  }>;
 
   // Canvas/viewer refs
   threeCanvasRef: Ref<any>;
@@ -56,7 +70,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     viewZoom,
     compWidth,
     compHeight,
-    assetStore
+    assetStore,
   } = options;
 
   // ========================================================================
@@ -103,11 +117,22 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
       if (!layer?.transform) continue;
 
       const transform = layer.transform as any;
-      for (const propKey of ['position', 'scale', 'rotation', 'anchor', 'opacity']) {
+      for (const propKey of [
+        "position",
+        "scale",
+        "rotation",
+        "anchor",
+        "opacity",
+      ]) {
         const prop = transform[propKey];
         if (prop?.animated && prop?.keyframes) {
           for (const kf of prop.keyframes) {
-            store.setKeyframeInterpolation(layerId, `transform.${propKey}`, kf.id, 'bezier');
+            store.setKeyframeInterpolation(
+              layerId,
+              `transform.${propKey}`,
+              kf.id,
+              "bezier",
+            );
             keyframesUpdated++;
           }
         }
@@ -115,14 +140,16 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
 
       if (layer.opacity?.animated && layer.opacity?.keyframes) {
         for (const kf of layer.opacity.keyframes) {
-          store.setKeyframeInterpolation(layerId, 'opacity', kf.id, 'bezier');
+          store.setKeyframeInterpolation(layerId, "opacity", kf.id, "bezier");
           keyframesUpdated++;
         }
       }
     }
 
     if (keyframesUpdated > 0) {
-      console.log(`[Lattice] Applied smooth easing to ${keyframesUpdated} keyframes`);
+      console.log(
+        `[Lattice] Applied smooth easing to ${keyframesUpdated} keyframes`,
+      );
     }
   }
 
@@ -137,15 +164,31 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
       if (!layer?.transform) continue;
 
       const transform = layer.transform as any;
-      for (const propKey of ['position', 'scale', 'rotation', 'anchor', 'opacity']) {
+      for (const propKey of [
+        "position",
+        "scale",
+        "rotation",
+        "anchor",
+        "opacity",
+      ]) {
         const prop = transform[propKey];
         if (prop?.animated && prop?.keyframes) {
           for (const kf of prop.keyframes) {
-            store.setKeyframeInterpolation(layerId, `transform.${propKey}`, kf.id, 'bezier');
-            store.updateKeyframeHandles?.(layerId, `transform.${propKey}`, kf.id, {
-              inHandle: { x: -0.42, y: 0 },
-              outHandle: { x: 0.1, y: 0 }
-            });
+            store.setKeyframeInterpolation(
+              layerId,
+              `transform.${propKey}`,
+              kf.id,
+              "bezier",
+            );
+            store.updateKeyframeHandles?.(
+              layerId,
+              `transform.${propKey}`,
+              kf.id,
+              {
+                inHandle: { x: -0.42, y: 0 },
+                outHandle: { x: 0.1, y: 0 },
+              },
+            );
             keyframesUpdated++;
           }
         }
@@ -153,7 +196,9 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     }
 
     if (keyframesUpdated > 0) {
-      console.log(`[Lattice] Applied Smooth In to ${keyframesUpdated} keyframes`);
+      console.log(
+        `[Lattice] Applied Smooth In to ${keyframesUpdated} keyframes`,
+      );
     }
   }
 
@@ -168,15 +213,31 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
       if (!layer?.transform) continue;
 
       const transform = layer.transform as any;
-      for (const propKey of ['position', 'scale', 'rotation', 'anchor', 'opacity']) {
+      for (const propKey of [
+        "position",
+        "scale",
+        "rotation",
+        "anchor",
+        "opacity",
+      ]) {
         const prop = transform[propKey];
         if (prop?.animated && prop?.keyframes) {
           for (const kf of prop.keyframes) {
-            store.setKeyframeInterpolation(layerId, `transform.${propKey}`, kf.id, 'bezier');
-            store.updateKeyframeHandles?.(layerId, `transform.${propKey}`, kf.id, {
-              inHandle: { x: -0.1, y: 0 },
-              outHandle: { x: 0.42, y: 0 }
-            });
+            store.setKeyframeInterpolation(
+              layerId,
+              `transform.${propKey}`,
+              kf.id,
+              "bezier",
+            );
+            store.updateKeyframeHandles?.(
+              layerId,
+              `transform.${propKey}`,
+              kf.id,
+              {
+                inHandle: { x: -0.1, y: 0 },
+                outHandle: { x: 0.42, y: 0 },
+              },
+            );
             keyframesUpdated++;
           }
         }
@@ -184,7 +245,9 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     }
 
     if (keyframesUpdated > 0) {
-      console.log(`[Lattice] Applied Smooth Out to ${keyframesUpdated} keyframes`);
+      console.log(
+        `[Lattice] Applied Smooth Out to ${keyframesUpdated} keyframes`,
+      );
     }
   }
 
@@ -203,7 +266,13 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
       if (!layer?.transform) continue;
 
       const transform = layer.transform as any;
-      for (const propKey of ['position', 'scale', 'rotation', 'anchor', 'opacity']) {
+      for (const propKey of [
+        "position",
+        "scale",
+        "rotation",
+        "anchor",
+        "opacity",
+      ]) {
         const prop = transform[propKey];
         if (prop?.animated && prop?.keyframes) {
           for (const kf of prop.keyframes) {
@@ -232,7 +301,13 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
       if (!layer?.transform) continue;
 
       const transform = layer.transform as any;
-      for (const propKey of ['position', 'scale', 'rotation', 'anchor', 'opacity']) {
+      for (const propKey of [
+        "position",
+        "scale",
+        "rotation",
+        "anchor",
+        "opacity",
+      ]) {
         const prop = transform[propKey];
         if (prop?.animated && prop?.keyframes) {
           for (const kf of prop.keyframes) {
@@ -263,7 +338,10 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
       }
       soloedProperties.value = new Set(soloedProperties.value);
     } else {
-      if (soloedProperties.value.size === 1 && soloedProperties.value.has(prop)) {
+      if (
+        soloedProperties.value.size === 1 &&
+        soloedProperties.value.has(prop)
+      ) {
         soloedProperties.value = new Set();
       } else {
         soloedProperties.value = new Set([prop]);
@@ -288,7 +366,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
 
     lastKeyPress.value = { key, time: now };
 
-    if (last && last.key === key && (now - last.time) < DOUBLE_TAP_THRESHOLD) {
+    if (last && last.key === key && now - last.time < DOUBLE_TAP_THRESHOLD) {
       lastKeyPress.value = null;
       return true;
     }
@@ -305,20 +383,24 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
   function setWorkAreaStart() {
     workAreaStart.value = store.currentFrame;
     playbackStore.setWorkArea(workAreaStart.value, workAreaEnd.value);
-    console.log(`[Lattice] Render range start set to frame ${store.currentFrame}`);
+    console.log(
+      `[Lattice] Render range start set to frame ${store.currentFrame}`,
+    );
   }
 
   function setWorkAreaEnd() {
     workAreaEnd.value = store.currentFrame;
     playbackStore.setWorkArea(workAreaStart.value, workAreaEnd.value);
-    console.log(`[Lattice] Render range end set to frame ${store.currentFrame}`);
+    console.log(
+      `[Lattice] Render range end set to frame ${store.currentFrame}`,
+    );
   }
 
   function clearWorkArea() {
     workAreaStart.value = null;
     workAreaEnd.value = null;
     playbackStore.clearWorkArea();
-    console.log('[Lattice] Render range cleared');
+    console.log("[Lattice] Render range cleared");
   }
 
   // ========================================================================
@@ -328,7 +410,9 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
 
   function toggleHiddenLayersVisibility() {
     showHiddenLayers.value = !showHiddenLayers.value;
-    console.log(`[Lattice] Hidden layers visibility: ${showHiddenLayers.value ? 'shown' : 'hidden'}`);
+    console.log(
+      `[Lattice] Hidden layers visibility: ${showHiddenLayers.value ? "shown" : "hidden"}`,
+    );
   }
 
   function toggleLayerHidden(layerId: string) {
@@ -346,7 +430,9 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
 
   function togglePreviewPause() {
     previewUpdatesPaused.value = !previewUpdatesPaused.value;
-    console.log(`[Lattice] Preview updates: ${previewUpdatesPaused.value ? 'PAUSED' : 'active'}`);
+    console.log(
+      `[Lattice] Preview updates: ${previewUpdatesPaused.value ? "PAUSED" : "active"}`,
+    );
   }
 
   // ========================================================================
@@ -356,18 +442,20 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
 
   function toggleTransparencyGrid() {
     showTransparencyGrid.value = !showTransparencyGrid.value;
-    console.log(`[Lattice] Transparency grid: ${showTransparencyGrid.value ? 'ON' : 'OFF'}`);
+    console.log(
+      `[Lattice] Transparency grid: ${showTransparencyGrid.value ? "ON" : "OFF"}`,
+    );
   }
 
   // ========================================================================
   // GRID OVERLAY (Ctrl+')
   // ========================================================================
-  const gridColor = ref('#444444');
-  const gridMajorColor = ref('#666666');
+  const gridColor = ref("#444444");
+  const gridMajorColor = ref("#666666");
 
   function toggleGrid() {
     viewOptions.value.showGrid = !viewOptions.value.showGrid;
-    console.log(`[Lattice] Grid: ${viewOptions.value.showGrid ? 'ON' : 'OFF'}`);
+    console.log(`[Lattice] Grid: ${viewOptions.value.showGrid ? "ON" : "OFF"}`);
   }
 
   function setGridSize(size: number) {
@@ -377,11 +465,13 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
   // ========================================================================
   // RULERS (Ctrl+Shift+R)
   // ========================================================================
-  const rulerUnits = ref<'pixels' | 'percent'>('pixels');
+  const rulerUnits = ref<"pixels" | "percent">("pixels");
 
   function toggleRulers() {
     viewOptions.value.showRulers = !viewOptions.value.showRulers;
-    console.log(`[Lattice] Rulers: ${viewOptions.value.showRulers ? 'ON' : 'OFF'}`);
+    console.log(
+      `[Lattice] Rulers: ${viewOptions.value.showRulers ? "ON" : "OFF"}`,
+    );
   }
 
   // ========================================================================
@@ -395,7 +485,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
 
   function toggleSnap() {
     snapEnabled.value = !snapEnabled.value;
-    console.log(`[Lattice] Snap: ${snapEnabled.value ? 'ON' : 'OFF'}`);
+    console.log(`[Lattice] Snap: ${snapEnabled.value ? "ON" : "OFF"}`);
   }
 
   // ========================================================================
@@ -487,7 +577,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
       return;
     }
 
-    const currentIndex = layers.findIndex(l => l.id === selectedIds[0]);
+    const currentIndex = layers.findIndex((l) => l.id === selectedIds[0]);
     if (currentIndex > 0) {
       const targetLayer = layers[currentIndex - 1];
       if (extend) {
@@ -508,7 +598,9 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
       return;
     }
 
-    const lastSelectedIndex = layers.findIndex(l => l.id === selectedIds[selectedIds.length - 1]);
+    const lastSelectedIndex = layers.findIndex(
+      (l) => l.id === selectedIds[selectedIds.length - 1],
+    );
     if (lastSelectedIndex < layers.length - 1) {
       const targetLayer = layers[lastSelectedIndex + 1];
       if (extend) {
@@ -541,7 +633,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
         if (newLayer) {
           store.updateLayer(newLayer.id, {
             inPoint: currentFrame,
-            outPoint: outPoint
+            outPoint: outPoint,
           });
           store.renameLayer(newLayer.id, `${layer.name} (split)`);
         }
@@ -571,7 +663,9 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     for (const id of selectedIds) {
       store.freezeFrameAtPlayhead(id);
     }
-    console.log('[Lattice] Freeze frame created at playhead for selected layers');
+    console.log(
+      "[Lattice] Freeze frame created at playhead for selected layers",
+    );
   }
 
   // ========================================================================
@@ -619,7 +713,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
 
   function zoomViewerToFit() {
     viewerZoom.value = 1;
-    viewZoom.value = 'fit';
+    viewZoom.value = "fit";
     if (threeCanvasRef.value) {
       threeCanvasRef.value.fitToView?.();
     }
@@ -627,7 +721,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
 
   function zoomViewerTo100() {
     viewerZoom.value = 1;
-    viewZoom.value = '100';
+    viewZoom.value = "100";
     if (threeCanvasRef.value) {
       threeCanvasRef.value.setZoom?.(1);
     }
@@ -647,11 +741,22 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
       if (!layer?.transform) continue;
 
       const transform = layer.transform as any;
-      for (const propKey of ['position', 'scale', 'rotation', 'anchor', 'opacity']) {
+      for (const propKey of [
+        "position",
+        "scale",
+        "rotation",
+        "anchor",
+        "opacity",
+      ]) {
         const prop = transform[propKey];
         if (prop?.animated && prop?.keyframes) {
           for (const kf of prop.keyframes) {
-            store.setKeyframeInterpolation(layerId, `transform.${propKey}`, kf.id, 'hold');
+            store.setKeyframeInterpolation(
+              layerId,
+              `transform.${propKey}`,
+              kf.id,
+              "hold",
+            );
             keyframesUpdated++;
           }
         }
@@ -709,11 +814,11 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
       store.updateLayerTransform?.(id, {
         position: { x: centerX, y: centerY, z: 0 },
         scale: { x: scale * 100, y: scale * 100, z: 100 },
-        anchor: { x: layerW / 2, y: layerH / 2, z: 0 }
+        anchor: { x: layerW / 2, y: layerH / 2, z: 0 },
       });
     }
 
-    console.log('[Lattice] Fit layer(s) to composition');
+    console.log("[Lattice] Fit layer(s) to composition");
   }
 
   function fitLayerToCompWidth() {
@@ -732,11 +837,11 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
       const scale = compW / layerW;
 
       store.updateLayerTransform?.(id, {
-        scale: { x: scale * 100, y: scale * 100, z: 100 }
+        scale: { x: scale * 100, y: scale * 100, z: 100 },
       });
     }
 
-    console.log('[Lattice] Fit layer(s) to composition width');
+    console.log("[Lattice] Fit layer(s) to composition width");
   }
 
   function fitLayerToCompHeight() {
@@ -755,11 +860,11 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
       const scale = compH / layerH;
 
       store.updateLayerTransform?.(id, {
-        scale: { x: scale * 100, y: scale * 100, z: 100 }
+        scale: { x: scale * 100, y: scale * 100, z: 100 },
       });
     }
 
-    console.log('[Lattice] Fit layer(s) to composition height');
+    console.log("[Lattice] Fit layer(s) to composition height");
   }
 
   // ========================================================================
@@ -796,8 +901,10 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
       const centerY = layerH / 2;
 
       const transform = layer.transform as any;
-      const currentAnchor = transform?.anchor?.value || transform?.anchor?.defaultValue || { x: 0, y: 0, z: 0 };
-      const currentPos = transform?.position?.value || transform?.position?.defaultValue || { x: 0, y: 0, z: 0 };
+      const currentAnchor = transform?.anchor?.value ||
+        transform?.anchor?.defaultValue || { x: 0, y: 0, z: 0 };
+      const currentPos = transform?.position?.value ||
+        transform?.position?.defaultValue || { x: 0, y: 0, z: 0 };
 
       const offsetX = centerX - (currentAnchor.x || 0);
       const offsetY = centerY - (currentAnchor.y || 0);
@@ -807,12 +914,12 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
         position: {
           x: (currentPos.x || 0) + offsetX,
           y: (currentPos.y || 0) + offsetY,
-          z: currentPos.z || 0
-        }
+          z: currentPos.z || 0,
+        },
       });
     }
 
-    console.log('[Lattice] Centered anchor point(s)');
+    console.log("[Lattice] Centered anchor point(s)");
   }
 
   // ========================================================================
@@ -830,30 +937,31 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
       if (!layer) continue;
 
       const transform = layer.transform as any;
-      const currentPos = transform?.position?.value || transform?.position?.defaultValue || { x: 0, y: 0, z: 0 };
+      const currentPos = transform?.position?.value ||
+        transform?.position?.defaultValue || { x: 0, y: 0, z: 0 };
 
       store.updateLayerTransform?.(id, {
-        position: { x: centerX, y: centerY, z: currentPos.z || 0 }
+        position: { x: centerX, y: centerY, z: currentPos.z || 0 },
       });
     }
 
-    console.log('[Lattice] Centered layer(s) in composition');
+    console.log("[Lattice] Centered layer(s) in composition");
   }
 
   // ========================================================================
   // CREATE EFFECT LAYER (Ctrl+Alt+Y)
   // ========================================================================
   function createAdjustmentLayer() {
-    store.addLayer('adjustment', 'Effect Layer');
-    console.log('[Lattice] Created effect layer');
+    store.addLayer("adjustment", "Effect Layer");
+    console.log("[Lattice] Created effect layer");
   }
 
   // ========================================================================
   // CREATE CONTROL LAYER (Ctrl+Alt+Shift+Y)
   // ========================================================================
   function createNullLayer() {
-    store.addLayer('null', 'Control');
-    console.log('[Lattice] Created control layer');
+    store.addLayer("null", "Control");
+    console.log("[Lattice] Created control layer");
   }
 
   // ========================================================================
@@ -862,7 +970,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
   function revealSourceInProject() {
     const selectedIds = store.selectedLayerIds;
     if (selectedIds.length === 0) {
-      console.log('[Lattice] No layer selected to reveal source');
+      console.log("[Lattice] No layer selected to reveal source");
       return;
     }
 
@@ -874,17 +982,19 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
 
     if (data?.assetId) {
       assetId = data.assetId;
-    } else if (layer.type === 'nestedComp') {
+    } else if (layer.type === "nestedComp") {
       if (data?.compositionId) {
-        leftTab.value = 'comps';
-        console.log(`[Lattice] Revealed nested comp source: ${data.compositionId}`);
+        leftTab.value = "comps";
+        console.log(
+          `[Lattice] Revealed nested comp source: ${data.compositionId}`,
+        );
         return;
       }
     }
 
     if (assetId) {
-      leftTab.value = 'assets';
-      if (typeof store.selectAsset === 'function') {
+      leftTab.value = "assets";
+      if (typeof store.selectAsset === "function") {
         store.selectAsset(assetId);
       }
       console.log(`[Lattice] Revealed source asset: ${assetId}`);
@@ -908,7 +1018,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
 
       const transform = layer.transform as any;
       if (transform) {
-        const props = ['position', 'rotation', 'scale', 'anchor', 'opacity'];
+        const props = ["position", "rotation", "scale", "anchor", "opacity"];
         for (const propName of props) {
           const prop = transform[propName];
           if (prop?.keyframes && Array.isArray(prop.keyframes)) {
@@ -922,14 +1032,14 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
       const data = layer.data as any;
       if (data) {
         const checkForKeyframes = (obj: any) => {
-          if (!obj || typeof obj !== 'object') return;
+          if (!obj || typeof obj !== "object") return;
           if (Array.isArray(obj.keyframes)) {
             for (const kf of obj.keyframes) {
               if (kf.id) keyframeIds.push(kf.id);
             }
           }
           for (const key of Object.keys(obj)) {
-            if (typeof obj[key] === 'object') checkForKeyframes(obj[key]);
+            if (typeof obj[key] === "object") checkForKeyframes(obj[key]);
           }
         };
         checkForKeyframes(data);
@@ -938,7 +1048,9 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
 
     if (keyframeIds.length > 0) {
       useSelectionStore().selectKeyframes(keyframeIds);
-      console.log(`[Lattice] Selected ${keyframeIds.length} keyframes on ${selectedIds.length} layer(s)`);
+      console.log(
+        `[Lattice] Selected ${keyframeIds.length} keyframes on ${selectedIds.length} layer(s)`,
+      );
       return true;
     }
     return false;
@@ -954,13 +1066,13 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     const firstLayer = store.getLayerById(selectedIds[0]);
     if (!firstLayer) return;
 
-    const targetColor = firstLayer.labelColor || '#808080';
+    const targetColor = firstLayer.labelColor || "#808080";
 
     const layers = store.layers;
     const matchingIds: string[] = [];
 
     for (const layer of layers) {
-      const layerColor = layer.labelColor || '#808080';
+      const layerColor = layer.labelColor || "#808080";
       if (layerColor === targetColor) {
         matchingIds.push(layer.id);
       }
@@ -970,9 +1082,11 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
       if (store.selectLayers) {
         store.selectLayers(matchingIds);
       } else {
-        matchingIds.forEach(id => store.selectLayer(id, true));
+        matchingIds.forEach((id) => store.selectLayer(id, true));
       }
-      console.log(`[Lattice] Selected ${matchingIds.length} layers with label color ${targetColor}`);
+      console.log(
+        `[Lattice] Selected ${matchingIds.length} layers with label color ${targetColor}`,
+      );
     }
   }
 
@@ -980,9 +1094,10 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
   // ASSET IMPORT (Ctrl+I)
   // ========================================================================
   function triggerAssetImport() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.svg,.gltf,.glb,.obj,.fbx,.hdr,.exr,.png,.jpg,.jpeg,.webp,.gif,.mp4,.webm,.mov';
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept =
+      ".svg,.gltf,.glb,.obj,.fbx,.hdr,.exr,.png,.jpg,.jpeg,.webp,.gif,.mp4,.webm,.mov";
     input.multiple = true;
     input.onchange = async (e) => {
       const files = (e.target as HTMLInputElement).files;
@@ -990,19 +1105,19 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
 
       // Use Array.from() for explicit iteration (FileList is array-like)
       for (const file of Array.from(files)) {
-        const ext = file.name.split('.').pop()?.toLowerCase();
-        if (ext === 'svg') {
+        const ext = file.name.split(".").pop()?.toLowerCase();
+        if (ext === "svg") {
           await assetStore.importSvgFromFile(file);
-        } else if (['hdr', 'exr'].includes(ext || '')) {
+        } else if (["hdr", "exr"].includes(ext || "")) {
           await assetStore.loadEnvironment(file);
-        } else if (['png', 'jpg', 'jpeg', 'webp', 'gif'].includes(ext || '')) {
+        } else if (["png", "jpg", "jpeg", "webp", "gif"].includes(ext || "")) {
           // Import image as layer
           const url = URL.createObjectURL(file);
           const img = new Image();
           img.onload = () => {
-            const layerName = file.name.replace(/\.[^/.]+$/, '');
-            const layer = store.addLayer('image', layerName);
-            if (layer && layer.data) {
+            const layerName = file.name.replace(/\.[^/.]+$/, "");
+            const layer = store.addLayer("image", layerName);
+            if (layer?.data) {
               const data = layer.data as unknown as Record<string, unknown>;
               data.src = url;
               data.width = img.width;
@@ -1011,22 +1126,22 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
             }
           };
           img.src = url;
-        } else if (['mp4', 'webm', 'mov'].includes(ext || '')) {
+        } else if (["mp4", "webm", "mov"].includes(ext || "")) {
           // Import video as layer
           const url = URL.createObjectURL(file);
-          const layerName = file.name.replace(/\.[^/.]+$/, '');
-          const layer = store.addLayer('video', layerName);
-          if (layer && layer.data) {
+          const layerName = file.name.replace(/\.[^/.]+$/, "");
+          const layer = store.addLayer("video", layerName);
+          if (layer?.data) {
             const data = layer.data as unknown as Record<string, unknown>;
             data.src = url;
             data.originalFilename = file.name;
           }
-        } else if (['gltf', 'glb', 'obj', 'fbx'].includes(ext || '')) {
+        } else if (["gltf", "glb", "obj", "fbx"].includes(ext || "")) {
           // Import 3D model
           const url = URL.createObjectURL(file);
-          const layerName = file.name.replace(/\.[^/.]+$/, '');
-          const layer = store.addLayer('model', layerName);
-          if (layer && layer.data) {
+          const layerName = file.name.replace(/\.[^/.]+$/, "");
+          const layer = store.addLayer("model", layerName);
+          if (layer?.data) {
             const data = layer.data as unknown as Record<string, unknown>;
             data.src = url;
             data.format = ext;
@@ -1035,7 +1150,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
         }
       }
 
-      leftTab.value = 'project';
+      leftTab.value = "project";
     };
     input.click();
   }
@@ -1060,46 +1175,48 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
   // ========================================================================
   function handleKeydown(e: KeyboardEvent) {
     // Don't handle if input is focused
-    if (document.activeElement?.tagName === 'INPUT' ||
-        document.activeElement?.tagName === 'TEXTAREA') {
+    if (
+      document.activeElement?.tagName === "INPUT" ||
+      document.activeElement?.tagName === "TEXTAREA"
+    ) {
       return;
     }
 
     const hasSelectedLayer = store.selectedLayerIds.length > 0;
 
     switch (e.key.toLowerCase()) {
-      case ' ':
+      case " ":
         e.preventDefault();
         togglePlay();
         break;
 
       // Property solo shortcuts (AE-style)
-      case 'p':
+      case "p":
         if (hasSelectedLayer && !e.ctrlKey && !e.metaKey) {
           e.preventDefault();
-          soloProperty('position', e.shiftKey);
+          soloProperty("position", e.shiftKey);
         } else if (!e.ctrlKey && !e.metaKey && !e.shiftKey) {
-          currentTool.value = 'pen';
+          currentTool.value = "pen";
         }
         break;
-      case 's':
+      case "s":
         if (hasSelectedLayer && !e.ctrlKey && !e.metaKey) {
           e.preventDefault();
-          soloProperty('scale', e.shiftKey);
+          soloProperty("scale", e.shiftKey);
         }
         break;
-      case 't':
+      case "t":
         if ((e.ctrlKey || e.metaKey) && e.altKey && hasSelectedLayer) {
           e.preventDefault();
           openTimeStretchDialog();
         } else if (hasSelectedLayer && !e.ctrlKey && !e.metaKey) {
           e.preventDefault();
-          soloProperty('opacity', e.shiftKey);
+          soloProperty("opacity", e.shiftKey);
         } else if (!e.ctrlKey && !e.metaKey && !e.shiftKey) {
-          currentTool.value = 'text';
+          currentTool.value = "text";
         }
         break;
-      case 'a':
+      case "a":
         if (e.ctrlKey || e.metaKey) {
           e.preventDefault();
           if (hasSelectedLayer) {
@@ -1112,44 +1229,44 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
           }
         } else if (hasSelectedLayer) {
           e.preventDefault();
-          soloProperty('anchor', e.shiftKey);
+          soloProperty("anchor", e.shiftKey);
         } else if (!e.shiftKey) {
-          leftTab.value = 'assets';
+          leftTab.value = "assets";
         }
         break;
-      case 'u':
+      case "u":
         if (hasSelectedLayer && !e.ctrlKey && !e.metaKey) {
           e.preventDefault();
-          if (isDoubleTap('u')) {
-            soloProperty('modified', e.shiftKey);
+          if (isDoubleTap("u")) {
+            soloProperty("modified", e.shiftKey);
           } else {
-            soloProperty('animated', e.shiftKey);
+            soloProperty("animated", e.shiftKey);
           }
         }
         break;
 
-      case 'e':
+      case "e":
         if ((e.ctrlKey || e.metaKey) && e.altKey && hasSelectedLayer) {
           e.preventDefault();
           revealSourceInProject();
         } else if (hasSelectedLayer && !e.ctrlKey && !e.metaKey) {
           e.preventDefault();
-          if (isDoubleTap('e')) {
-            soloProperty('expressions', e.shiftKey);
+          if (isDoubleTap("e")) {
+            soloProperty("expressions", e.shiftKey);
           } else {
-            soloProperty('effects', e.shiftKey);
+            soloProperty("effects", e.shiftKey);
           }
         }
         break;
 
-      case 'm':
+      case "m":
         if (hasSelectedLayer && !e.ctrlKey && !e.metaKey) {
           e.preventDefault();
-          if (isDoubleTap('m')) {
-            soloProperty('masks', e.shiftKey);
-            console.log('[Lattice] Showing all mask properties (MM)');
+          if (isDoubleTap("m")) {
+            soloProperty("masks", e.shiftKey);
+            console.log("[Lattice] Showing all mask properties (MM)");
           } else {
-            soloProperty('masks', e.shiftKey);
+            soloProperty("masks", e.shiftKey);
           }
         } else if (e.ctrlKey || e.metaKey) {
           e.preventDefault();
@@ -1157,7 +1274,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
         }
         break;
 
-      case 'h':
+      case "h":
         if (e.ctrlKey && e.altKey) {
           e.preventDefault();
           convertToHoldKeyframes();
@@ -1165,10 +1282,10 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
           e.preventDefault();
           toggleTransparencyGrid();
         } else if (!e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) {
-          currentTool.value = 'hand';
+          currentTool.value = "hand";
         }
         break;
-      case 'z':
+      case "z":
         if (e.ctrlKey || e.metaKey) {
           e.preventDefault();
           if (e.shiftKey) {
@@ -1177,46 +1294,48 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
             undo();
           }
         } else {
-          currentTool.value = 'zoom';
+          currentTool.value = "zoom";
         }
         break;
 
       // Navigation
-      case 'end':
+      case "end":
         e.preventDefault();
         goToEnd();
         break;
-      case 'pageup':
+      case "pageup":
         e.preventDefault();
         stepBackward(e.shiftKey ? 10 : 1);
         break;
-      case 'pagedown':
+      case "pagedown":
         e.preventDefault();
         stepForward(e.shiftKey ? 10 : 1);
         break;
-      case 'arrowleft':
+      case "arrowleft":
         e.preventDefault();
         stepBackward(e.shiftKey ? 10 : 1);
         break;
-      case 'arrowright':
+      case "arrowright":
         e.preventDefault();
         stepForward(e.shiftKey ? 10 : 1);
         break;
 
       // Keyframe navigation (J/K)
-      case 'j':
+      case "j":
         if (!e.ctrlKey && !e.metaKey) {
           e.preventDefault();
           goToPrevKeyframe();
         }
         break;
-      case 'k':
+      case "k":
         if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
           e.preventDefault();
           if (store.selectedKeyframeIds.length > 0) {
             showKeyframeInterpolationDialog.value = true;
           } else {
-            console.log('[Lattice] No keyframes selected for interpolation dialog');
+            console.log(
+              "[Lattice] No keyframes selected for interpolation dialog",
+            );
           }
         } else if (e.ctrlKey || e.metaKey) {
           e.preventDefault();
@@ -1227,7 +1346,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
         }
         break;
 
-      case 'g':
+      case "g":
         if ((e.ctrlKey || e.metaKey) && e.shiftKey && hasSelectedLayer) {
           e.preventDefault();
           selectLayersByLabel();
@@ -1236,7 +1355,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
           showCurveEditor.value = !showCurveEditor.value;
         }
         break;
-      case 'i':
+      case "i":
         if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
           // Ctrl+Shift+I - Import Camera Tracking
           e.preventDefault();
@@ -1249,7 +1368,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
           goToLayerInPoint();
         }
         break;
-      case 'o':
+      case "o":
         if (hasSelectedLayer && !e.ctrlKey && !e.metaKey) {
           e.preventDefault();
           goToLayerOutPoint();
@@ -1257,7 +1376,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
         break;
 
       // Pre-compose (Ctrl+Shift+C)
-      case 'c':
+      case "c":
         if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
           e.preventDefault();
           if (store.selectedLayerIds.length > 0) {
@@ -1268,14 +1387,14 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
           store.copySelectedLayers();
         }
         break;
-      case 'delete':
-      case 'backspace':
+      case "delete":
+      case "backspace":
         if (store.selectedLayerIds.length > 0) {
           e.preventDefault();
           store.deleteSelectedLayers();
         }
         break;
-      case 'f9':
+      case "f9":
         e.preventDefault();
         if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
           applySmoothEaseOut();
@@ -1285,15 +1404,15 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
           applySmoothEasing();
         }
         break;
-      case 'v':
+      case "v":
         if (e.ctrlKey || e.metaKey) {
           e.preventDefault();
           store.pasteLayers();
         } else if (!e.shiftKey) {
-          currentTool.value = 'select';
+          currentTool.value = "select";
         }
         break;
-      case 'x':
+      case "x":
         if (e.ctrlKey || e.metaKey) {
           e.preventDefault();
           store.cutSelectedLayers();
@@ -1301,7 +1420,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
         break;
 
       // Layer timing ([ and ])
-      case '[':
+      case "[":
         if (e.altKey) {
           e.preventDefault();
           trimLayerInPoint();
@@ -1310,7 +1429,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
           moveLayerInPointToPlayhead();
         }
         break;
-      case ']':
+      case "]":
         if (e.altKey) {
           e.preventDefault();
           trimLayerOutPoint();
@@ -1321,13 +1440,13 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
         break;
 
       // Layer navigation (Ctrl+Arrow)
-      case 'arrowup':
+      case "arrowup":
         if (e.ctrlKey || e.metaKey) {
           e.preventDefault();
           selectPreviousLayer(e.shiftKey);
         }
         break;
-      case 'arrowdown':
+      case "arrowdown":
         if (e.ctrlKey || e.metaKey) {
           e.preventDefault();
           selectNextLayer(e.shiftKey);
@@ -1335,7 +1454,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
         break;
 
       // Split/Duplicate layer
-      case 'd':
+      case "d":
         if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
           e.preventDefault();
           splitLayerAtPlayhead();
@@ -1346,7 +1465,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
         break;
 
       // R key shortcuts
-      case 'r':
+      case "r":
         if ((e.ctrlKey || e.metaKey) && e.shiftKey && !e.altKey) {
           e.preventDefault();
           toggleRulers();
@@ -1358,13 +1477,13 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
           timeReverseKeyframes();
         } else if (hasSelectedLayer && !e.ctrlKey && !e.metaKey) {
           e.preventDefault();
-          soloProperty('rotation', e.shiftKey);
+          soloProperty("rotation", e.shiftKey);
         }
         break;
 
       // Timeline zoom
-      case '=':
-      case '+':
+      case "=":
+      case "+":
         if (e.ctrlKey || e.metaKey) {
           e.preventDefault();
           zoomViewerIn();
@@ -1373,7 +1492,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
           zoomTimelineIn();
         }
         break;
-      case '-':
+      case "-":
         if (e.ctrlKey || e.metaKey) {
           e.preventDefault();
           zoomViewerOut();
@@ -1382,7 +1501,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
           zoomTimelineOut();
         }
         break;
-      case ';':
+      case ";":
         if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
           e.preventDefault();
           toggleSnap();
@@ -1391,7 +1510,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
           zoomTimelineToFit();
         }
         break;
-      case '0':
+      case "0":
         if (e.ctrlKey || e.metaKey) {
           e.preventDefault();
           zoomViewerToFit();
@@ -1402,7 +1521,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
         break;
 
       // Audio-only preview
-      case '.':
+      case ".":
         if (e.ctrlKey || e.metaKey) {
           e.preventDefault();
           audioStore.toggleAudioPlayback(store.currentFrame, store.fps);
@@ -1410,13 +1529,13 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
         break;
 
       // Work area
-      case 'b':
+      case "b":
         if (!e.ctrlKey && !e.metaKey && !e.shiftKey) {
           e.preventDefault();
           setWorkAreaStart();
         }
         break;
-      case 'n':
+      case "n":
         if (!e.ctrlKey && !e.metaKey && !e.shiftKey) {
           e.preventDefault();
           setWorkAreaEnd();
@@ -1424,7 +1543,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
         break;
 
       // Lock layer
-      case 'l':
+      case "l":
         if (e.ctrlKey || e.metaKey) {
           e.preventDefault();
           toggleLayerLock();
@@ -1432,13 +1551,13 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
         break;
 
       // Preview pause
-      case 'capslock':
+      case "capslock":
         e.preventDefault();
         togglePreviewPause();
         break;
 
       // Fit layer to comp / Freeze frame
-      case 'f':
+      case "f":
         if ((e.ctrlKey || e.metaKey) && e.altKey) {
           e.preventDefault();
           if (e.shiftKey) {
@@ -1457,7 +1576,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
         break;
 
       // Y key shortcuts
-      case 'y':
+      case "y":
         if ((e.ctrlKey || e.metaKey) && e.altKey && e.shiftKey) {
           e.preventDefault();
           createNullLayer();
@@ -1471,7 +1590,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
         break;
 
       // Home key shortcuts
-      case 'home':
+      case "home":
         if ((e.ctrlKey || e.metaKey) && e.altKey) {
           e.preventDefault();
           centerAnchorPoint();
@@ -1486,7 +1605,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
 
       // Grid toggle
       case "'":
-      case '`':
+      case "`":
         if (e.ctrlKey || e.metaKey) {
           e.preventDefault();
           toggleGrid();
@@ -1494,7 +1613,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
         break;
 
       // Keyboard shortcuts modal
-      case '?':
+      case "?":
         e.preventDefault();
         if (showKeyboardShortcutsModal) {
           showKeyboardShortcutsModal.value = !showKeyboardShortcutsModal.value;
@@ -1507,23 +1626,23 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
   // PROVIDE STATE TO CHILD COMPONENTS
   // ========================================================================
   function setupProvides() {
-    provide('soloedProperty', soloedProperty);
-    provide('soloedProperties', soloedProperties);
-    provide('workAreaStart', workAreaStart);
-    provide('workAreaEnd', workAreaEnd);
-    provide('showHiddenLayers', showHiddenLayers);
-    provide('toggleLayerHidden', toggleLayerHidden);
-    provide('previewUpdatesPaused', previewUpdatesPaused);
-    provide('showTransparencyGrid', showTransparencyGrid);
-    provide('gridColor', gridColor);
-    provide('gridMajorColor', gridMajorColor);
-    provide('rulerUnits', rulerUnits);
-    provide('snapEnabled', snapEnabled);
-    provide('snapToGrid', snapToGrid);
-    provide('snapToGuides', snapToGuides);
-    provide('snapToLayers', snapToLayers);
-    provide('snapTolerance', snapTolerance);
-    provide('toggleSnap', toggleSnap);
+    provide("soloedProperty", soloedProperty);
+    provide("soloedProperties", soloedProperties);
+    provide("workAreaStart", workAreaStart);
+    provide("workAreaEnd", workAreaEnd);
+    provide("showHiddenLayers", showHiddenLayers);
+    provide("toggleLayerHidden", toggleLayerHidden);
+    provide("previewUpdatesPaused", previewUpdatesPaused);
+    provide("showTransparencyGrid", showTransparencyGrid);
+    provide("gridColor", gridColor);
+    provide("gridMajorColor", gridMajorColor);
+    provide("rulerUnits", rulerUnits);
+    provide("snapEnabled", snapEnabled);
+    provide("snapToGrid", snapToGrid);
+    provide("snapToGuides", snapToGuides);
+    provide("snapToLayers", snapToLayers);
+    provide("snapTolerance", snapTolerance);
+    provide("toggleSnap", toggleSnap);
   }
 
   return {
@@ -1607,6 +1726,6 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     triggerAssetImport,
     openTimeStretchDialog,
     handleKeydown,
-    setupProvides
+    setupProvides,
   };
 }

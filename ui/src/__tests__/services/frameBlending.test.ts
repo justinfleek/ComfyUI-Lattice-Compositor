@@ -8,12 +8,11 @@
  * interpolate between source frames for smoother playback.
  */
 
-import { describe, test, expect, beforeEach } from 'vitest';
-import { setActivePinia, createPinia } from 'pinia';
-import { useCompositorStore } from '../../stores/compositorStore';
-import type { CompositionSettings } from '../../types/project';
+import { createPinia, setActivePinia } from "pinia";
+import { beforeEach, describe, expect, test } from "vitest";
+import { useCompositorStore } from "../../stores/compositorStore";
 
-describe('Frame Blending', () => {
+describe("Frame Blending", () => {
   let store: ReturnType<typeof useCompositorStore>;
 
   beforeEach(() => {
@@ -22,21 +21,21 @@ describe('Frame Blending', () => {
     store = useCompositorStore();
   });
 
-  describe('CompositionSettings.frameBlendingEnabled', () => {
-    test('new compositions have frameBlendingEnabled = false by default', () => {
-      const comp = store.createComposition('Test Comp');
+  describe("CompositionSettings.frameBlendingEnabled", () => {
+    test("new compositions have frameBlendingEnabled = false by default", () => {
+      const comp = store.createComposition("Test Comp");
       expect(comp.settings.frameBlendingEnabled).toBe(false);
     });
 
-    test('can create composition with frameBlendingEnabled = true', () => {
-      const comp = store.createComposition('Blended Comp', {
-        frameBlendingEnabled: true
+    test("can create composition with frameBlendingEnabled = true", () => {
+      const comp = store.createComposition("Blended Comp", {
+        frameBlendingEnabled: true,
       });
       expect(comp.settings.frameBlendingEnabled).toBe(true);
     });
 
-    test('frameBlendingEnabled can be updated via updateCompositionSettings', () => {
-      const comp = store.createComposition('Test Comp');
+    test("frameBlendingEnabled can be updated via updateCompositionSettings", () => {
+      const comp = store.createComposition("Test Comp");
       expect(comp.settings.frameBlendingEnabled).toBe(false);
 
       store.updateCompositionSettings(comp.id, { frameBlendingEnabled: true });
@@ -46,9 +45,9 @@ describe('Frame Blending', () => {
     });
   });
 
-  describe('enableFrameBlending', () => {
-    test('enables frame blending for composition', () => {
-      const comp = store.createComposition('Test Comp');
+  describe("enableFrameBlending", () => {
+    test("enables frame blending for composition", () => {
+      const comp = store.createComposition("Test Comp");
       expect(comp.settings.frameBlendingEnabled).toBe(false);
 
       store.enableFrameBlending(comp.id);
@@ -57,9 +56,9 @@ describe('Frame Blending', () => {
       expect(updated?.settings.frameBlendingEnabled).toBe(true);
     });
 
-    test('is idempotent when already enabled', () => {
-      const comp = store.createComposition('Test Comp', {
-        frameBlendingEnabled: true
+    test("is idempotent when already enabled", () => {
+      const comp = store.createComposition("Test Comp", {
+        frameBlendingEnabled: true,
       });
 
       store.enableFrameBlending(comp.id);
@@ -68,18 +67,18 @@ describe('Frame Blending', () => {
       expect(updated?.settings.frameBlendingEnabled).toBe(true);
     });
 
-    test('does nothing for non-existent composition', () => {
+    test("does nothing for non-existent composition", () => {
       // Should not throw
       expect(() => {
-        store.enableFrameBlending('non-existent-id');
+        store.enableFrameBlending("non-existent-id");
       }).not.toThrow();
     });
   });
 
-  describe('disableFrameBlending', () => {
-    test('disables frame blending for composition', () => {
-      const comp = store.createComposition('Test Comp', {
-        frameBlendingEnabled: true
+  describe("disableFrameBlending", () => {
+    test("disables frame blending for composition", () => {
+      const comp = store.createComposition("Test Comp", {
+        frameBlendingEnabled: true,
       });
       expect(comp.settings.frameBlendingEnabled).toBe(true);
 
@@ -89,8 +88,8 @@ describe('Frame Blending', () => {
       expect(updated?.settings.frameBlendingEnabled).toBe(false);
     });
 
-    test('is idempotent when already disabled', () => {
-      const comp = store.createComposition('Test Comp');
+    test("is idempotent when already disabled", () => {
+      const comp = store.createComposition("Test Comp");
 
       store.disableFrameBlending(comp.id);
 
@@ -99,9 +98,9 @@ describe('Frame Blending', () => {
     });
   });
 
-  describe('toggleFrameBlending', () => {
-    test('toggles from false to true', () => {
-      const comp = store.createComposition('Test Comp');
+  describe("toggleFrameBlending", () => {
+    test("toggles from false to true", () => {
+      const comp = store.createComposition("Test Comp");
       expect(comp.settings.frameBlendingEnabled).toBe(false);
 
       store.toggleFrameBlending(comp.id);
@@ -110,9 +109,9 @@ describe('Frame Blending', () => {
       expect(updated?.settings.frameBlendingEnabled).toBe(true);
     });
 
-    test('toggles from true to false', () => {
-      const comp = store.createComposition('Test Comp', {
-        frameBlendingEnabled: true
+    test("toggles from true to false", () => {
+      const comp = store.createComposition("Test Comp", {
+        frameBlendingEnabled: true,
       });
 
       store.toggleFrameBlending(comp.id);
@@ -121,60 +120,80 @@ describe('Frame Blending', () => {
       expect(updated?.settings.frameBlendingEnabled).toBe(false);
     });
 
-    test('multiple toggles cycle correctly', () => {
-      const comp = store.createComposition('Test Comp');
+    test("multiple toggles cycle correctly", () => {
+      const comp = store.createComposition("Test Comp");
 
       store.toggleFrameBlending(comp.id);
-      expect(store.getComposition(comp.id)?.settings.frameBlendingEnabled).toBe(true);
+      expect(store.getComposition(comp.id)?.settings.frameBlendingEnabled).toBe(
+        true,
+      );
 
       store.toggleFrameBlending(comp.id);
-      expect(store.getComposition(comp.id)?.settings.frameBlendingEnabled).toBe(false);
+      expect(store.getComposition(comp.id)?.settings.frameBlendingEnabled).toBe(
+        false,
+      );
 
       store.toggleFrameBlending(comp.id);
-      expect(store.getComposition(comp.id)?.settings.frameBlendingEnabled).toBe(true);
+      expect(store.getComposition(comp.id)?.settings.frameBlendingEnabled).toBe(
+        true,
+      );
     });
   });
 
-  describe('Undo/Redo', () => {
-    test('enableFrameBlending can be undone', () => {
-      const comp = store.createComposition('Test Comp');
+  describe("Undo/Redo", () => {
+    test("enableFrameBlending can be undone", () => {
+      const comp = store.createComposition("Test Comp");
 
       store.enableFrameBlending(comp.id);
-      expect(store.getComposition(comp.id)?.settings.frameBlendingEnabled).toBe(true);
+      expect(store.getComposition(comp.id)?.settings.frameBlendingEnabled).toBe(
+        true,
+      );
 
       store.undo();
-      expect(store.getComposition(comp.id)?.settings.frameBlendingEnabled).toBe(false);
+      expect(store.getComposition(comp.id)?.settings.frameBlendingEnabled).toBe(
+        false,
+      );
     });
 
-    test('disableFrameBlending can be undone', () => {
-      const comp = store.createComposition('Test Comp', {
-        frameBlendingEnabled: true
+    test("disableFrameBlending can be undone", () => {
+      const comp = store.createComposition("Test Comp", {
+        frameBlendingEnabled: true,
       });
 
       store.disableFrameBlending(comp.id);
-      expect(store.getComposition(comp.id)?.settings.frameBlendingEnabled).toBe(false);
+      expect(store.getComposition(comp.id)?.settings.frameBlendingEnabled).toBe(
+        false,
+      );
 
       store.undo();
-      expect(store.getComposition(comp.id)?.settings.frameBlendingEnabled).toBe(true);
+      expect(store.getComposition(comp.id)?.settings.frameBlendingEnabled).toBe(
+        true,
+      );
     });
 
-    test('toggleFrameBlending can be undone and redone', () => {
-      const comp = store.createComposition('Test Comp');
+    test("toggleFrameBlending can be undone and redone", () => {
+      const comp = store.createComposition("Test Comp");
 
       store.toggleFrameBlending(comp.id);
-      expect(store.getComposition(comp.id)?.settings.frameBlendingEnabled).toBe(true);
+      expect(store.getComposition(comp.id)?.settings.frameBlendingEnabled).toBe(
+        true,
+      );
 
       store.undo();
-      expect(store.getComposition(comp.id)?.settings.frameBlendingEnabled).toBe(false);
+      expect(store.getComposition(comp.id)?.settings.frameBlendingEnabled).toBe(
+        false,
+      );
 
       store.redo();
-      expect(store.getComposition(comp.id)?.settings.frameBlendingEnabled).toBe(true);
+      expect(store.getComposition(comp.id)?.settings.frameBlendingEnabled).toBe(
+        true,
+      );
     });
   });
 
-  describe('Save/Load', () => {
-    test('frameBlendingEnabled survives serialization', () => {
-      const comp = store.createComposition('Test Comp');
+  describe("Save/Load", () => {
+    test("frameBlendingEnabled survives serialization", () => {
+      const comp = store.createComposition("Test Comp");
       store.enableFrameBlending(comp.id);
 
       // Serialize
@@ -190,30 +209,30 @@ describe('Frame Blending', () => {
 
       // Find the composition
       const loadedComp = Object.values(freshStore.project.compositions).find(
-        c => c.name === 'Test Comp'
+        (c) => c.name === "Test Comp",
       );
       expect(loadedComp).toBeDefined();
       expect(loadedComp?.settings.frameBlendingEnabled).toBe(true);
     });
 
-    test('frameBlendingEnabled defaults to false for legacy projects', () => {
+    test("frameBlendingEnabled defaults to false for legacy projects", () => {
       // Simulate a legacy project without frameBlendingEnabled
       const legacyProjectData = {
-        version: '1.0.0',
-        name: 'Legacy Project',
+        version: "1.0.0",
+        name: "Legacy Project",
         composition: {
           width: 1920,
           height: 1080,
           frameCount: 100,
           fps: 30,
           duration: 100 / 30,
-          backgroundColor: '#000000',
-          autoResizeToContent: true
+          backgroundColor: "#000000",
+          autoResizeToContent: true,
           // No frameBlendingEnabled field
         },
         compositions: {},
         assets: {},
-        layers: []
+        layers: [],
       };
 
       // Create fresh store and load
@@ -230,81 +249,92 @@ describe('Frame Blending', () => {
     });
   });
 
-  describe('Frame Blending Behavior', () => {
-    test('when disabled, time-stretched layers show whole frames', () => {
-      const comp = store.createComposition('Test Comp');
-      const layer = store.createLayer('solid', 'Test Layer');
+  describe("Frame Blending Behavior", () => {
+    test("when disabled, time-stretched layers show whole frames", () => {
+      const _comp = store.createComposition("Test Comp");
+      const layer = store.createLayer("solid", "Test Layer");
 
       // Set timeStretch to 50% (half speed = longer duration)
       store.updateLayer(layer.id, { timeStretch: 50 });
 
       // With frame blending OFF, we use whole frames only
-      const expectedMode = 'whole-frames';
-      expect(['whole-frames', 'frame-mix', 'pixel-motion']).toContain(expectedMode);
+      const expectedMode = "whole-frames";
+      expect(["whole-frames", "frame-mix", "pixel-motion"]).toContain(
+        expectedMode,
+      );
     });
 
-    test('when enabled, time-stretched layers interpolate frames', () => {
-      const comp = store.createComposition('Test Comp');
+    test("when enabled, time-stretched layers interpolate frames", () => {
+      const comp = store.createComposition("Test Comp");
       store.enableFrameBlending(comp.id);
-      const layer = store.createLayer('solid', 'Test Layer');
+      const layer = store.createLayer("solid", "Test Layer");
 
       store.updateLayer(layer.id, { timeStretch: 50 });
 
       // With frame blending ON, we can use frame-mix or pixel-motion
-      const possibleModes = ['frame-mix', 'pixel-motion'];
-      expect(possibleModes).toContain('frame-mix');
+      const possibleModes = ["frame-mix", "pixel-motion"];
+      expect(possibleModes).toContain("frame-mix");
     });
   });
 
-  describe('Tutorial 04 Steps', () => {
-    test('Step: Composition has frameBlendingEnabled property', () => {
-      const comp = store.createComposition('Test');
-      expect(comp.settings).toHaveProperty('frameBlendingEnabled');
+  describe("Tutorial 04 Steps", () => {
+    test("Step: Composition has frameBlendingEnabled property", () => {
+      const comp = store.createComposition("Test");
+      expect(comp.settings).toHaveProperty("frameBlendingEnabled");
     });
 
-    test('Step: Frame blending can be toggled for composition', () => {
-      const comp = store.createComposition('Test');
+    test("Step: Frame blending can be toggled for composition", () => {
+      const comp = store.createComposition("Test");
 
       // Initially off
       expect(comp.settings.frameBlendingEnabled).toBe(false);
 
       // Toggle on
       store.toggleFrameBlending(comp.id);
-      expect(store.getComposition(comp.id)?.settings.frameBlendingEnabled).toBe(true);
+      expect(store.getComposition(comp.id)?.settings.frameBlendingEnabled).toBe(
+        true,
+      );
 
       // Toggle off
       store.toggleFrameBlending(comp.id);
-      expect(store.getComposition(comp.id)?.settings.frameBlendingEnabled).toBe(false);
+      expect(store.getComposition(comp.id)?.settings.frameBlendingEnabled).toBe(
+        false,
+      );
     });
 
-    test('Step: Frame blending affects time-remapped layers', () => {
+    test("Step: Frame blending affects time-remapped layers", () => {
       // When frameBlendingEnabled is true and a layer has:
       // - timeStretch != 100 (slow motion or speed up)
       // - speedMap enabled (variable speed)
       // Then the layer should interpolate between source frames
 
-      const comp = store.createComposition('Test');
+      const comp = store.createComposition("Test");
       store.enableFrameBlending(comp.id);
 
       // The comp setting is checked when rendering time-remapped layers
-      expect(store.getComposition(comp.id)?.settings.frameBlendingEnabled).toBe(true);
+      expect(store.getComposition(comp.id)?.settings.frameBlendingEnabled).toBe(
+        true,
+      );
     });
   });
 
-  describe('Determinism', () => {
-    test('frame blending setting is deterministic', () => {
-      const comp1 = store.createComposition('Test 1');
-      const comp2 = store.createComposition('Test 2');
+  describe("Determinism", () => {
+    test("frame blending setting is deterministic", () => {
+      const comp1 = store.createComposition("Test 1");
+      const comp2 = store.createComposition("Test 2");
 
       // Both should start with same default
-      expect(comp1.settings.frameBlendingEnabled).toBe(comp2.settings.frameBlendingEnabled);
+      expect(comp1.settings.frameBlendingEnabled).toBe(
+        comp2.settings.frameBlendingEnabled,
+      );
 
       // Same operations should produce same results
       store.enableFrameBlending(comp1.id);
       store.enableFrameBlending(comp2.id);
 
-      expect(store.getComposition(comp1.id)?.settings.frameBlendingEnabled)
-        .toBe(store.getComposition(comp2.id)?.settings.frameBlendingEnabled);
+      expect(
+        store.getComposition(comp1.id)?.settings.frameBlendingEnabled,
+      ).toBe(store.getComposition(comp2.id)?.settings.frameBlendingEnabled);
     });
   });
 });

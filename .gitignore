@@ -24,9 +24,9 @@ INVENTORY.md
 docs/PROJECT_PROGRESS.md
 specs/
 
-# Nix development environment (local only)
-flake.nix
-flake.lock
+# Nix development environment
+# flake.nix - tracked for reproducibility
+# flake.lock - tracked for reproducibility
 
 # Claude Code settings (local only)
 .claude/
@@ -52,3 +52,4 @@ ui/e2e/screenshots/
 # Test artifacts
 ui/test-inventory.txt
 ui/test-malicious.lattice.json
+web/

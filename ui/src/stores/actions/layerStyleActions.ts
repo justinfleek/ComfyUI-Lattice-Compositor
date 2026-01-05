@@ -8,36 +8,23 @@
  * - Create style presets
  */
 
-import { storeLogger } from '@/utils/logger';
-import type { Layer } from '@/types/project';
-import type {
-  LayerStyles,
-  DropShadowStyle,
-  InnerShadowStyle,
-  OuterGlowStyle,
-  InnerGlowStyle,
-  BevelEmbossStyle,
-  SatinStyle,
-  ColorOverlayStyle,
-  GradientOverlayStyle,
-  StrokeStyle,
-  StyleBlendingOptions,
-  RGBA
-} from '@/types/layerStyles';
+import { markLayerDirty } from "@/services/layerEvaluationCache";
+import type { LayerStyles, RGBA } from "@/types/layerStyles";
 import {
-  createDefaultLayerStyles,
-  createDefaultDropShadow,
-  createDefaultInnerShadow,
-  createDefaultOuterGlow,
-  createDefaultInnerGlow,
   createDefaultBevelEmboss,
-  createDefaultSatin,
+  createDefaultBlendingOptions,
   createDefaultColorOverlay,
+  createDefaultDropShadow,
   createDefaultGradientOverlay,
+  createDefaultInnerGlow,
+  createDefaultInnerShadow,
+  createDefaultLayerStyles,
+  createDefaultOuterGlow,
+  createDefaultSatin,
   createDefaultStroke,
-  createDefaultBlendingOptions
-} from '@/types/layerStyles';
-import { markLayerDirty } from '@/services/layerEvaluationCache';
+} from "@/types/layerStyles";
+import type { Layer } from "@/types/project";
+import { storeLogger } from "@/utils/logger";
 
 // ============================================================================
 // STORE INTERFACE
@@ -58,9 +45,12 @@ export interface LayerStyleStore {
 /**
  * Get a layer by ID from the active composition
  */
-function getLayerById(store: LayerStyleStore, layerId: string): Layer | undefined {
+function getLayerById(
+  store: LayerStyleStore,
+  layerId: string,
+): Layer | undefined {
   const layers = store.getActiveCompLayers();
-  return layers.find(l => l.id === layerId);
+  return layers.find((l) => l.id === layerId);
 }
 
 /**
@@ -90,11 +80,11 @@ function updateModified(store: LayerStyleStore): void {
 export function setLayerStylesEnabled(
   store: LayerStyleStore,
   layerId: string,
-  enabled: boolean
+  enabled: boolean,
 ): void {
   const layer = getLayerById(store, layerId);
   if (!layer) {
-    storeLogger.warn('setLayerStylesEnabled: Layer not found', { layerId });
+    storeLogger.warn("setLayerStylesEnabled: Layer not found", { layerId });
     return;
   }
 
@@ -105,7 +95,7 @@ export function setLayerStylesEnabled(
   markLayerDirty(layerId);
   updateModified(store);
 
-  storeLogger.debug('setLayerStylesEnabled', { layerId, enabled });
+  storeLogger.debug("setLayerStylesEnabled", { layerId, enabled });
 }
 
 /**
@@ -115,11 +105,11 @@ export function setStyleEnabled(
   store: LayerStyleStore,
   layerId: string,
   styleType: keyof LayerStyles,
-  enabled: boolean
+  enabled: boolean,
 ): void {
   const layer = getLayerById(store, layerId);
   if (!layer) {
-    storeLogger.warn('setStyleEnabled: Layer not found', { layerId });
+    storeLogger.warn("setStyleEnabled: Layer not found", { layerId });
     return;
   }
 
@@ -129,34 +119,34 @@ export function setStyleEnabled(
   // Create default style if enabling and doesn't exist
   if (enabled && !styles[styleType]) {
     switch (styleType) {
-      case 'dropShadow':
+      case "dropShadow":
         styles.dropShadow = createDefaultDropShadow();
         break;
-      case 'innerShadow':
+      case "innerShadow":
         styles.innerShadow = createDefaultInnerShadow();
         break;
-      case 'outerGlow':
+      case "outerGlow":
         styles.outerGlow = createDefaultOuterGlow();
         break;
-      case 'innerGlow':
+      case "innerGlow":
         styles.innerGlow = createDefaultInnerGlow();
         break;
-      case 'bevelEmboss':
+      case "bevelEmboss":
         styles.bevelEmboss = createDefaultBevelEmboss();
         break;
-      case 'satin':
+      case "satin":
         styles.satin = createDefaultSatin();
         break;
-      case 'colorOverlay':
+      case "colorOverlay":
         styles.colorOverlay = createDefaultColorOverlay();
         break;
-      case 'gradientOverlay':
+      case "gradientOverlay":
         styles.gradientOverlay = createDefaultGradientOverlay();
         break;
-      case 'stroke':
+      case "stroke":
         styles.stroke = createDefaultStroke();
         break;
-      case 'blendingOptions':
+      case "blendingOptions":
         styles.blendingOptions = createDefaultBlendingOptions();
         break;
     }
@@ -164,7 +154,7 @@ export function setStyleEnabled(
 
   // Set enabled state
   const style = styles[styleType];
-  if (style && typeof style === 'object' && 'enabled' in style) {
+  if (style && typeof style === "object" && "enabled" in style) {
     (style as any).enabled = enabled;
   }
 
@@ -176,7 +166,7 @@ export function setStyleEnabled(
   markLayerDirty(layerId);
   updateModified(store);
 
-  storeLogger.debug('setStyleEnabled', { layerId, styleType, enabled });
+  storeLogger.debug("setStyleEnabled", { layerId, styleType, enabled });
 }
 
 // ============================================================================
@@ -188,17 +178,17 @@ export function setStyleEnabled(
  */
 export function updateStyleProperty<
   T extends keyof LayerStyles,
-  K extends keyof NonNullable<LayerStyles[T]>
+  K extends keyof NonNullable<LayerStyles[T]>,
 >(
   store: LayerStyleStore,
   layerId: string,
   styleType: T,
   property: K,
-  value: any
+  value: any,
 ): void {
   const layer = getLayerById(store, layerId);
   if (!layer) {
-    storeLogger.warn('updateStyleProperty: Layer not found', { layerId });
+    storeLogger.warn("updateStyleProperty: Layer not found", { layerId });
     return;
   }
 
@@ -207,12 +197,19 @@ export function updateStyleProperty<
   const style = styles[styleType] as any;
 
   if (!style) {
-    storeLogger.warn('updateStyleProperty: Style not found', { layerId, styleType });
+    storeLogger.warn("updateStyleProperty: Style not found", {
+      layerId,
+      styleType,
+    });
     return;
   }
 
   // Handle animatable properties
-  if (style[property] && typeof style[property] === 'object' && 'value' in style[property]) {
+  if (
+    style[property] &&
+    typeof style[property] === "object" &&
+    "value" in style[property]
+  ) {
     style[property].value = value;
   } else {
     style[property] = value;
@@ -221,7 +218,12 @@ export function updateStyleProperty<
   markLayerDirty(layerId);
   updateModified(store);
 
-  storeLogger.debug('updateStyleProperty', { layerId, styleType, property, value });
+  storeLogger.debug("updateStyleProperty", {
+    layerId,
+    styleType,
+    property,
+    value,
+  });
 }
 
 /**
@@ -231,11 +233,11 @@ export function setStyle<T extends keyof LayerStyles>(
   store: LayerStyleStore,
   layerId: string,
   styleType: T,
-  styleConfig: LayerStyles[T]
+  styleConfig: LayerStyles[T],
 ): void {
   const layer = getLayerById(store, layerId);
   if (!layer) {
-    storeLogger.warn('setStyle: Layer not found', { layerId });
+    storeLogger.warn("setStyle: Layer not found", { layerId });
     return;
   }
 
@@ -246,7 +248,7 @@ export function setStyle<T extends keyof LayerStyles>(
   markLayerDirty(layerId);
   updateModified(store);
 
-  storeLogger.debug('setStyle', { layerId, styleType });
+  storeLogger.debug("setStyle", { layerId, styleType });
 }
 
 /**
@@ -255,11 +257,11 @@ export function setStyle<T extends keyof LayerStyles>(
 export function setLayerStyles(
   store: LayerStyleStore,
   layerId: string,
-  layerStyles: LayerStyles
+  layerStyles: LayerStyles,
 ): void {
   const layer = getLayerById(store, layerId);
   if (!layer) {
-    storeLogger.warn('setLayerStyles: Layer not found', { layerId });
+    storeLogger.warn("setLayerStyles: Layer not found", { layerId });
     return;
   }
 
@@ -269,7 +271,7 @@ export function setLayerStyles(
   markLayerDirty(layerId);
   updateModified(store);
 
-  storeLogger.debug('setLayerStyles', { layerId });
+  storeLogger.debug("setLayerStyles", { layerId });
 }
 
 // ============================================================================
@@ -284,18 +286,18 @@ let styleClipboard: LayerStyles | null = null;
  */
 export function copyLayerStyles(
   store: LayerStyleStore,
-  layerId: string
+  layerId: string,
 ): LayerStyles | null {
   const layer = getLayerById(store, layerId);
   if (!layer || !layer.layerStyles) {
-    storeLogger.warn('copyLayerStyles: Layer or styles not found', { layerId });
+    storeLogger.warn("copyLayerStyles: Layer or styles not found", { layerId });
     return null;
   }
 
   // Deep clone the styles
   styleClipboard = JSON.parse(JSON.stringify(layer.layerStyles));
 
-  storeLogger.debug('copyLayerStyles', { layerId });
+  storeLogger.debug("copyLayerStyles", { layerId });
   return styleClipboard;
 }
 
@@ -305,17 +307,17 @@ export function copyLayerStyles(
 export function pasteLayerStyles(
   store: LayerStyleStore,
   layerId: string,
-  styles?: LayerStyles
+  styles?: LayerStyles,
 ): void {
   const stylesToPaste = styles ?? styleClipboard;
   if (!stylesToPaste) {
-    storeLogger.warn('pasteLayerStyles: No styles in clipboard');
+    storeLogger.warn("pasteLayerStyles: No styles in clipboard");
     return;
   }
 
   const layer = getLayerById(store, layerId);
   if (!layer) {
-    storeLogger.warn('pasteLayerStyles: Layer not found', { layerId });
+    storeLogger.warn("pasteLayerStyles: Layer not found", { layerId });
     return;
   }
 
@@ -327,7 +329,7 @@ export function pasteLayerStyles(
   markLayerDirty(layerId);
   updateModified(store);
 
-  storeLogger.debug('pasteLayerStyles', { layerId });
+  storeLogger.debug("pasteLayerStyles", { layerId });
 }
 
 /**
@@ -336,11 +338,11 @@ export function pasteLayerStyles(
 export function pasteLayerStylesToMultiple(
   store: LayerStyleStore,
   layerIds: string[],
-  styles?: LayerStyles
+  styles?: LayerStyles,
 ): void {
   const stylesToPaste = styles ?? styleClipboard;
   if (!stylesToPaste) {
-    storeLogger.warn('pasteLayerStylesToMultiple: No styles in clipboard');
+    storeLogger.warn("pasteLayerStylesToMultiple: No styles in clipboard");
     return;
   }
 
@@ -355,7 +357,7 @@ export function pasteLayerStylesToMultiple(
   }
 
   updateModified(store);
-  storeLogger.debug('pasteLayerStylesToMultiple', { layerIds });
+  storeLogger.debug("pasteLayerStylesToMultiple", { layerIds });
 }
 
 /**
@@ -363,11 +365,11 @@ export function pasteLayerStylesToMultiple(
  */
 export function clearLayerStyles(
   store: LayerStyleStore,
-  layerId: string
+  layerId: string,
 ): void {
   const layer = getLayerById(store, layerId);
   if (!layer) {
-    storeLogger.warn('clearLayerStyles: Layer not found', { layerId });
+    storeLogger.warn("clearLayerStyles: Layer not found", { layerId });
     return;
   }
 
@@ -377,7 +379,7 @@ export function clearLayerStyles(
   markLayerDirty(layerId);
   updateModified(store);
 
-  storeLogger.debug('clearLayerStyles', { layerId });
+  storeLogger.debug("clearLayerStyles", { layerId });
 }
 
 /**
@@ -411,7 +413,7 @@ export function addDropShadow(
     spread?: number;
     size?: number;
     opacity?: number;
-  }
+  },
 ): void {
   const layer = getLayerById(store, layerId);
   if (!layer) return;
@@ -425,7 +427,8 @@ export function addDropShadow(
   if (options) {
     if (options.color) shadow.color.value = options.color;
     if (options.angle !== undefined) shadow.angle.value = options.angle;
-    if (options.distance !== undefined) shadow.distance.value = options.distance;
+    if (options.distance !== undefined)
+      shadow.distance.value = options.distance;
     if (options.spread !== undefined) shadow.spread.value = options.spread;
     if (options.size !== undefined) shadow.size.value = options.size;
     if (options.opacity !== undefined) shadow.opacity.value = options.opacity;
@@ -436,7 +439,7 @@ export function addDropShadow(
   markLayerDirty(layerId);
   updateModified(store);
 
-  storeLogger.debug('addDropShadow', { layerId, options });
+  storeLogger.debug("addDropShadow", { layerId, options });
 }
 
 /**
@@ -448,9 +451,9 @@ export function addStroke(
   options?: {
     color?: RGBA;
     size?: number;
-    position?: 'outside' | 'inside' | 'center';
+    position?: "outside" | "inside" | "center";
     opacity?: number;
-  }
+  },
 ): void {
   const layer = getLayerById(store, layerId);
   if (!layer) return;
@@ -473,7 +476,7 @@ export function addStroke(
   markLayerDirty(layerId);
   updateModified(store);
 
-  storeLogger.debug('addStroke', { layerId, options });
+  storeLogger.debug("addStroke", { layerId, options });
 }
 
 /**
@@ -487,7 +490,7 @@ export function addOuterGlow(
     spread?: number;
     size?: number;
     opacity?: number;
-  }
+  },
 ): void {
   const layer = getLayerById(store, layerId);
   if (!layer) return;
@@ -510,7 +513,7 @@ export function addOuterGlow(
   markLayerDirty(layerId);
   updateModified(store);
 
-  storeLogger.debug('addOuterGlow', { layerId, options });
+  storeLogger.debug("addOuterGlow", { layerId, options });
 }
 
 /**
@@ -523,7 +526,7 @@ export function addColorOverlay(
     color?: RGBA;
     opacity?: number;
     blendMode?: string;
-  }
+  },
 ): void {
   const layer = getLayerById(store, layerId);
   if (!layer) return;
@@ -545,7 +548,7 @@ export function addColorOverlay(
   markLayerDirty(layerId);
   updateModified(store);
 
-  storeLogger.debug('addColorOverlay', { layerId, options });
+  storeLogger.debug("addColorOverlay", { layerId, options });
 }
 
 /**
@@ -555,15 +558,20 @@ export function addBevelEmboss(
   store: LayerStyleStore,
   layerId: string,
   options?: {
-    style?: 'outer-bevel' | 'inner-bevel' | 'emboss' | 'pillow-emboss' | 'stroke-emboss';
-    technique?: 'smooth' | 'chisel-hard' | 'chisel-soft';
+    style?:
+      | "outer-bevel"
+      | "inner-bevel"
+      | "emboss"
+      | "pillow-emboss"
+      | "stroke-emboss";
+    technique?: "smooth" | "chisel-hard" | "chisel-soft";
     depth?: number;
-    direction?: 'up' | 'down';
+    direction?: "up" | "down";
     size?: number;
     soften?: number;
     angle?: number;
     altitude?: number;
-  }
+  },
 ): void {
   const layer = getLayerById(store, layerId);
   if (!layer) return;
@@ -590,7 +598,7 @@ export function addBevelEmboss(
   markLayerDirty(layerId);
   updateModified(store);
 
-  storeLogger.debug('addBevelEmboss', { layerId, options });
+  storeLogger.debug("addBevelEmboss", { layerId, options });
 }
 
 // ============================================================================
@@ -599,77 +607,224 @@ export function addBevelEmboss(
 
 /** Built-in style presets */
 export const STYLE_PRESETS: Record<string, Partial<LayerStyles>> = {
-  'soft-shadow': {
+  "soft-shadow": {
     enabled: true,
     dropShadow: {
       ...createDefaultDropShadow(),
-      opacity: { id: '', name: '', type: 'number', value: 40, animated: false, keyframes: [] },
-      size: { id: '', name: '', type: 'number', value: 15, animated: false, keyframes: [] },
-      distance: { id: '', name: '', type: 'number', value: 8, animated: false, keyframes: [] }
-    }
+      opacity: {
+        id: "",
+        name: "",
+        type: "number",
+        value: 40,
+        animated: false,
+        keyframes: [],
+      },
+      size: {
+        id: "",
+        name: "",
+        type: "number",
+        value: 15,
+        animated: false,
+        keyframes: [],
+      },
+      distance: {
+        id: "",
+        name: "",
+        type: "number",
+        value: 8,
+        animated: false,
+        keyframes: [],
+      },
+    },
   },
-  'hard-shadow': {
+  "hard-shadow": {
     enabled: true,
     dropShadow: {
       ...createDefaultDropShadow(),
-      opacity: { id: '', name: '', type: 'number', value: 80, animated: false, keyframes: [] },
-      size: { id: '', name: '', type: 'number', value: 0, animated: false, keyframes: [] },
-      spread: { id: '', name: '', type: 'number', value: 100, animated: false, keyframes: [] },
-      distance: { id: '', name: '', type: 'number', value: 4, animated: false, keyframes: [] }
-    }
+      opacity: {
+        id: "",
+        name: "",
+        type: "number",
+        value: 80,
+        animated: false,
+        keyframes: [],
+      },
+      size: {
+        id: "",
+        name: "",
+        type: "number",
+        value: 0,
+        animated: false,
+        keyframes: [],
+      },
+      spread: {
+        id: "",
+        name: "",
+        type: "number",
+        value: 100,
+        animated: false,
+        keyframes: [],
+      },
+      distance: {
+        id: "",
+        name: "",
+        type: "number",
+        value: 4,
+        animated: false,
+        keyframes: [],
+      },
+    },
   },
-  'neon-glow': {
+  "neon-glow": {
     enabled: true,
     outerGlow: {
       ...createDefaultOuterGlow(),
-      color: { id: '', name: '', type: 'color', value: { r: 0, g: 255, b: 255, a: 1 }, animated: false, keyframes: [] },
-      opacity: { id: '', name: '', type: 'number', value: 100, animated: false, keyframes: [] },
-      size: { id: '', name: '', type: 'number', value: 20, animated: false, keyframes: [] }
+      color: {
+        id: "",
+        name: "",
+        type: "color",
+        value: { r: 0, g: 255, b: 255, a: 1 },
+        animated: false,
+        keyframes: [],
+      },
+      opacity: {
+        id: "",
+        name: "",
+        type: "number",
+        value: 100,
+        animated: false,
+        keyframes: [],
+      },
+      size: {
+        id: "",
+        name: "",
+        type: "number",
+        value: 20,
+        animated: false,
+        keyframes: [],
+      },
     },
     innerGlow: {
       ...createDefaultInnerGlow(),
-      color: { id: '', name: '', type: 'color', value: { r: 255, g: 255, b: 255, a: 1 }, animated: false, keyframes: [] },
-      opacity: { id: '', name: '', type: 'number', value: 75, animated: false, keyframes: [] },
-      size: { id: '', name: '', type: 'number', value: 5, animated: false, keyframes: [] }
-    }
+      color: {
+        id: "",
+        name: "",
+        type: "color",
+        value: { r: 255, g: 255, b: 255, a: 1 },
+        animated: false,
+        keyframes: [],
+      },
+      opacity: {
+        id: "",
+        name: "",
+        type: "number",
+        value: 75,
+        animated: false,
+        keyframes: [],
+      },
+      size: {
+        id: "",
+        name: "",
+        type: "number",
+        value: 5,
+        animated: false,
+        keyframes: [],
+      },
+    },
   },
-  'simple-stroke': {
+  "simple-stroke": {
     enabled: true,
     stroke: {
       ...createDefaultStroke(),
-      color: { id: '', name: '', type: 'color', value: { r: 0, g: 0, b: 0, a: 1 }, animated: false, keyframes: [] },
-      size: { id: '', name: '', type: 'number', value: 2, animated: false, keyframes: [] },
-      position: 'outside'
-    }
+      color: {
+        id: "",
+        name: "",
+        type: "color",
+        value: { r: 0, g: 0, b: 0, a: 1 },
+        animated: false,
+        keyframes: [],
+      },
+      size: {
+        id: "",
+        name: "",
+        type: "number",
+        value: 2,
+        animated: false,
+        keyframes: [],
+      },
+      position: "outside",
+    },
   },
-  'embossed': {
+  embossed: {
     enabled: true,
     bevelEmboss: {
       ...createDefaultBevelEmboss(),
-      style: 'emboss',
-      depth: { id: '', name: '', type: 'number', value: 200, animated: false, keyframes: [] },
-      size: { id: '', name: '', type: 'number', value: 3, animated: false, keyframes: [] }
-    }
+      style: "emboss",
+      depth: {
+        id: "",
+        name: "",
+        type: "number",
+        value: 200,
+        animated: false,
+        keyframes: [],
+      },
+      size: {
+        id: "",
+        name: "",
+        type: "number",
+        value: 3,
+        animated: false,
+        keyframes: [],
+      },
+    },
   },
-  'inner-bevel': {
+  "inner-bevel": {
     enabled: true,
     bevelEmboss: {
       ...createDefaultBevelEmboss(),
-      style: 'inner-bevel',
-      technique: 'smooth',
-      depth: { id: '', name: '', type: 'number', value: 100, animated: false, keyframes: [] },
-      size: { id: '', name: '', type: 'number', value: 5, animated: false, keyframes: [] }
-    }
+      style: "inner-bevel",
+      technique: "smooth",
+      depth: {
+        id: "",
+        name: "",
+        type: "number",
+        value: 100,
+        animated: false,
+        keyframes: [],
+      },
+      size: {
+        id: "",
+        name: "",
+        type: "number",
+        value: 5,
+        animated: false,
+        keyframes: [],
+      },
+    },
   },
-  'pillow-emboss': {
+  "pillow-emboss": {
     enabled: true,
     bevelEmboss: {
       ...createDefaultBevelEmboss(),
-      style: 'pillow-emboss',
-      depth: { id: '', name: '', type: 'number', value: 150, animated: false, keyframes: [] },
-      size: { id: '', name: '', type: 'number', value: 10, animated: false, keyframes: [] }
-    }
-  }
+      style: "pillow-emboss",
+      depth: {
+        id: "",
+        name: "",
+        type: "number",
+        value: 150,
+        animated: false,
+        keyframes: [],
+      },
+      size: {
+        id: "",
+        name: "",
+        type: "number",
+        value: 10,
+        animated: false,
+        keyframes: [],
+      },
+    },
+  },
 };
 
 /**
@@ -678,11 +833,11 @@ export const STYLE_PRESETS: Record<string, Partial<LayerStyles>> = {
 export function applyStylePreset(
   store: LayerStyleStore,
   layerId: string,
-  presetName: string
+  presetName: string,
 ): void {
   const preset = STYLE_PRESETS[presetName];
   if (!preset) {
-    storeLogger.warn('applyStylePreset: Preset not found', { presetName });
+    storeLogger.warn("applyStylePreset: Preset not found", { presetName });
     return;
   }
 
@@ -698,7 +853,7 @@ export function applyStylePreset(
   markLayerDirty(layerId);
   updateModified(store);
 
-  storeLogger.debug('applyStylePreset', { layerId, presetName });
+  storeLogger.debug("applyStylePreset", { layerId, presetName });
 }
 
 /**

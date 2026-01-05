@@ -45,36 +45,50 @@
 </template>
 
 <script setup lang="ts">
-import type { StrokeStyle, StrokeStyleUpdate, StrokePosition, StrokeFillType, RGBA } from '@/types/layerStyles';
-import type { BlendMode } from '@/types/project';
+import type {
+  RGBA,
+  StrokeFillType,
+  StrokePosition,
+  StrokeStyle,
+  StrokeStyleUpdate,
+} from "@/types/layerStyles";
+import type { BlendMode } from "@/types/project";
 
 defineProps<{
   style: StrokeStyle;
 }>();
 
-const emit = defineEmits<{
-  (e: 'update', updates: StrokeStyleUpdate): void;
-}>();
+const _emit = defineEmits<(e: "update", updates: StrokeStyleUpdate) => void>();
 
 // Typed array validates these are valid BlendMode values at compile time
-const blendModes: BlendMode[] = ['normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten'];
+const _blendModes: BlendMode[] = [
+  "normal",
+  "multiply",
+  "screen",
+  "overlay",
+  "darken",
+  "lighten",
+];
 
 // Typed arrays for other selects - validates options match type definitions
-const strokePositions: StrokePosition[] = ['outside', 'inside', 'center'];
-const strokeFillTypes: StrokeFillType[] = ['color', 'gradient'];
+const _strokePositions: StrokePosition[] = ["outside", "inside", "center"];
+const _strokeFillTypes: StrokeFillType[] = ["color", "gradient"];
 
-function formatMode(mode: string): string {
-  return mode.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+function _formatMode(mode: string): string {
+  return mode
+    .split("-")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
 }
 
-function rgbaToHex(color: RGBA): string {
-  const r = Math.round(color.r).toString(16).padStart(2, '0');
-  const g = Math.round(color.g).toString(16).padStart(2, '0');
-  const b = Math.round(color.b).toString(16).padStart(2, '0');
+function _rgbaToHex(color: RGBA): string {
+  const r = Math.round(color.r).toString(16).padStart(2, "0");
+  const g = Math.round(color.g).toString(16).padStart(2, "0");
+  const b = Math.round(color.b).toString(16).padStart(2, "0");
   return `#${r}${g}${b}`;
 }
 
-function hexToRgba(hex: string): RGBA {
+function _hexToRgba(hex: string): RGBA {
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);

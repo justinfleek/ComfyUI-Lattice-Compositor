@@ -5,46 +5,50 @@
  * and layer-specific updates (spline, 3D, parenting).
  */
 
-import { toRaw } from 'vue';
-import { storeLogger } from '@/utils/logger';
+import { toRaw } from "vue";
 import type {
-  Layer,
   AnimatableProperty,
-  SplineData,
-  ControlPoint,
-  AnimatableControlPoint,
-  EvaluatedControlPoint,
-  ClipboardKeyframe,
   AnyLayerData,
-  PropertyValue,
-  LayerType,
+  ClipboardKeyframe,
+  ControlPoint,
   ImageLayerData,
-  VideoData,
+  Keyframe,
+  Layer,
   NestedCompData,
-  Keyframe
-} from '@/types/project';
-import { createDefaultTransform, createAnimatableProperty, controlPointToAnimatable, animatableToControlPoint, isLayerOfType } from '@/types/project';
+  PropertyValue,
+  SplineData,
+  VideoData,
+} from "@/types/project";
+import {
+  createAnimatableProperty,
+  createDefaultTransform,
+  isLayerOfType,
+} from "@/types/project";
+import { storeLogger } from "@/utils/logger";
 
 /**
  * Layer source replacement data for asset/composition swapping
  */
 export interface LayerSourceReplacement {
-  type: 'asset' | 'composition' | string;
+  type: "asset" | "composition" | string;
   name: string;
   path?: string;
   id?: string;
   assetId?: string;
-  data?: string;  // Base64 data URL for asset data
+  data?: string; // Base64 data URL for asset data
 }
-import { useSelectionStore } from '../selectionStore';
-import { markLayerDirty, clearLayerCache } from '@/services/layerEvaluationCache';
-import { interpolateProperty } from '@/services/interpolation';
-import { textToVectorFromUrl, type TextToVectorResult, type CharacterVectorGroup } from '@/services/textToVector';
-import type { BezierPath, BezierVertex } from '@/types/shapes';
-import { getDefaultLayerData } from './layer/layerDefaults';
+
+import {
+  clearLayerCache,
+  markLayerDirty,
+} from "@/services/layerEvaluationCache";
+import { textToVectorFromUrl } from "@/services/textToVector";
+import type { BezierPath } from "@/types/shapes";
+import { useSelectionStore } from "../selectionStore";
+import { getDefaultLayerData } from "./layer/layerDefaults";
 
 // Re-export from sub-modules for backwards compatibility
-export * from './layers/layerTimeActions';
+export * from "./layers/layerTimeActions";
 
 // ============================================================================
 // STORE INTERFACE
@@ -59,7 +63,10 @@ export interface LayerStore {
     layers: Layer[];
     keyframes: ClipboardKeyframe[];
   };
-  getActiveComp(): { settings: { width: number; height: number; frameCount: number }; layers: Layer[] } | null;
+  getActiveComp(): {
+    settings: { width: number; height: number; frameCount: number };
+    layers: Layer[];
+  } | null;
   getActiveCompLayers(): Layer[];
   pushHistory(): void;
 }
@@ -73,22 +80,22 @@ export interface LayerStore {
  */
 export function createLayer(
   store: LayerStore,
-  type: Layer['type'],
-  name?: string
+  type: Layer["type"],
+  name?: string,
 ): Layer {
   const id = `layer_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
 
   // Get type-specific data from layer defaults module
   const layerData = getDefaultLayerData(type, {
     width: store.project.composition.width,
-    height: store.project.composition.height
+    height: store.project.composition.height,
   });
 
   // Initialize audio props for video/audio layers
-  let audioProps = undefined;
-  if (type === 'video' || type === 'audio') {
+  let audioProps;
+  if (type === "video" || type === "audio") {
     audioProps = {
-      level: createAnimatableProperty('Audio Levels', 0, 'number') // 0dB default
+      level: createAnimatableProperty("Audio Levels", 0, "number"), // 0dB default
     };
   }
 
@@ -97,15 +104,28 @@ export function createLayer(
 
   // Spline layer properties for timeline
   // Note: Splines don't have Fill (only shapes/text do) - they only have stroke
-  if (type === 'spline') {
-    const splineData = layerData as unknown as { strokeWidth?: number; strokeOpacity?: number };
+  if (type === "spline") {
+    const splineData = layerData as unknown as {
+      strokeWidth?: number;
+      strokeOpacity?: number;
+    };
     layerProperties = [
-      createAnimatableProperty('Stroke Width', splineData?.strokeWidth ?? 2, 'number', 'Stroke'),
-      createAnimatableProperty('Stroke Opacity', splineData?.strokeOpacity ?? 100, 'number', 'Stroke'),
+      createAnimatableProperty(
+        "Stroke Width",
+        splineData?.strokeWidth ?? 2,
+        "number",
+        "Stroke",
+      ),
+      createAnimatableProperty(
+        "Stroke Opacity",
+        splineData?.strokeOpacity ?? 100,
+        "number",
+        "Stroke",
+      ),
       // Line Cap, Line Join, Dashes are stored in layer.data and shown in More Options
-      createAnimatableProperty('Trim Start', 0, 'number', 'Trim Paths'),
-      createAnimatableProperty('Trim End', 100, 'number', 'Trim Paths'),
-      createAnimatableProperty('Trim Offset', 0, 'number', 'Trim Paths'),
+      createAnimatableProperty("Trim Start", 0, "number", "Trim Paths"),
+      createAnimatableProperty("Trim End", 100, "number", "Trim Paths"),
+      createAnimatableProperty("Trim Offset", 0, "number", "Trim Paths"),
       // Note: "Closed" is stored in layer.data.closed as a boolean, not animatable
       // It's displayed in the timeline via the Path Options group in EnhancedLayerTrack
     ];
@@ -115,15 +135,19 @@ export function createLayer(
   const layers = store.getActiveCompLayers();
 
   // Create transform with position centered in composition
-  const compWidth = comp?.settings.width || store.project.composition.width || 1920;
-  const compHeight = comp?.settings.height || store.project.composition.height || 1080;
+  const compWidth =
+    comp?.settings.width || store.project.composition.width || 1920;
+  const compHeight =
+    comp?.settings.height || store.project.composition.height || 1080;
   const centeredTransform = createDefaultTransform();
   // Center the layer in the composition
   centeredTransform.position.value = { x: compWidth / 2, y: compHeight / 2 };
 
   const layer: Layer = {
     id,
-    name: name || `${type.charAt(0).toUpperCase() + type.slice(1)} ${layers.length + 1}`,
+    name:
+      name ||
+      `${type.charAt(0).toUpperCase() + type.slice(1)} ${layers.length + 1}`,
     type,
     visible: true,
     locked: false,
@@ -137,34 +161,34 @@ export function createLayer(
     inPoint: 0,
     outPoint: (comp?.settings.frameCount || 81) - 1,
     parentId: null,
-    blendMode: 'normal',
-    opacity: createAnimatableProperty('opacity', 100, 'number'),
+    blendMode: "normal",
+    opacity: createAnimatableProperty("opacity", 100, "number"),
     transform: centeredTransform,
     audio: audioProps,
     properties: layerProperties,
     effects: [],
-    data: layerData as Layer['data']
+    data: layerData as Layer["data"],
   };
 
   // Camera layers should use createCameraLayer() instead
-  if (type === 'camera') {
-    storeLogger.warn('Use createCameraLayer() for camera layers');
+  if (type === "camera") {
+    storeLogger.warn("Use createCameraLayer() for camera layers");
   }
 
-  console.log('[layerActions] Creating layer:', {
+  console.log("[layerActions] Creating layer:", {
     id: layer.id,
     type: layer.type,
     name: layer.name,
     position: layer.transform?.position?.value,
     data: layer.data,
-    layersCountBefore: layers.length
+    layersCountBefore: layers.length,
   });
 
   layers.unshift(layer);
 
-  console.log('[layerActions] Layer added:', {
+  console.log("[layerActions] Layer added:", {
     layersCountAfter: layers.length,
-    allLayerIds: layers.map(l => l.id)
+    allLayerIds: layers.map((l) => l.id),
   });
 
   store.project.meta.modified = new Date().toISOString();
@@ -176,18 +200,21 @@ export function createLayer(
 /**
  * Create a text layer with proper data structure and AE-compatible properties
  */
-export function createTextLayer(store: LayerStore, text: string = 'Text'): Layer {
-  const layer = createLayer(store, 'text', text.substring(0, 20));
+export function createTextLayer(
+  store: LayerStore,
+  text: string = "Text",
+): Layer {
+  const layer = createLayer(store, "text", text.substring(0, 20));
 
   // Set up text data with full AE parity
   const textData = {
     text,
-    fontFamily: 'Arial',
+    fontFamily: "Arial",
     fontSize: 72,
-    fontWeight: '400' as const,
-    fontStyle: 'normal' as const,
-    fill: '#ffffff',
-    stroke: '',
+    fontWeight: "400" as const,
+    fontStyle: "normal" as const,
+    fill: "#ffffff",
+    stroke: "",
     strokeWidth: 0,
     // Character Properties (AE Animator defaults)
     tracking: 0,
@@ -199,7 +226,7 @@ export function createTextLayer(store: LayerStore, text: string = 'Text'): Layer
     // Paragraph (legacy aliases)
     letterSpacing: 0,
     lineHeight: 1.2,
-    textAlign: 'left' as const,
+    textAlign: "left" as const,
     // Path Options (Full AE Parity)
     pathLayerId: null,
     pathReversed: false,
@@ -208,35 +235,66 @@ export function createTextLayer(store: LayerStore, text: string = 'Text'): Layer
     pathFirstMargin: 0,
     pathLastMargin: 0,
     pathOffset: 0,
-    pathAlign: 'left' as const,
+    pathAlign: "left" as const,
     // More Options (AE Advanced)
-    anchorPointGrouping: 'character' as const,
+    anchorPointGrouping: "character" as const,
     groupingAlignment: { x: 0, y: 0 },
-    fillAndStroke: 'fill-over-stroke' as const,
-    interCharacterBlending: 'normal' as const,
+    fillAndStroke: "fill-over-stroke" as const,
+    interCharacterBlending: "normal" as const,
     // 3D Text
-    perCharacter3D: false
+    perCharacter3D: false,
   };
 
   layer.data = textData;
 
   // Text Properties for timeline
-  layer.properties.push(createAnimatableProperty('Font Size', 72, 'number', 'Text'));
-  layer.properties.push(createAnimatableProperty('Fill Color', '#ffffff', 'color', 'Text'));
-  layer.properties.push(createAnimatableProperty('Stroke Color', '#000000', 'color', 'Text'));
-  layer.properties.push(createAnimatableProperty('Stroke Width', 0, 'number', 'Text'));
+  layer.properties.push(
+    createAnimatableProperty("Font Size", 72, "number", "Text"),
+  );
+  layer.properties.push(
+    createAnimatableProperty("Fill Color", "#ffffff", "color", "Text"),
+  );
+  layer.properties.push(
+    createAnimatableProperty("Stroke Color", "#000000", "color", "Text"),
+  );
+  layer.properties.push(
+    createAnimatableProperty("Stroke Width", 0, "number", "Text"),
+  );
   // Path Options
-  layer.properties.push(createAnimatableProperty('Path Offset', 0, 'number', 'Path Options'));
-  layer.properties.push(createAnimatableProperty('First Margin', 0, 'number', 'Path Options'));
-  layer.properties.push(createAnimatableProperty('Last Margin', 0, 'number', 'Path Options'));
+  layer.properties.push(
+    createAnimatableProperty("Path Offset", 0, "number", "Path Options"),
+  );
+  layer.properties.push(
+    createAnimatableProperty("First Margin", 0, "number", "Path Options"),
+  );
+  layer.properties.push(
+    createAnimatableProperty("Last Margin", 0, "number", "Path Options"),
+  );
   // More Options
-  layer.properties.push(createAnimatableProperty('Grouping Alignment', { x: 0, y: 0 }, 'position', 'More Options'));
+  layer.properties.push(
+    createAnimatableProperty(
+      "Grouping Alignment",
+      { x: 0, y: 0 },
+      "position",
+      "More Options",
+    ),
+  );
   // Advanced / Animators
-  layer.properties.push(createAnimatableProperty('Tracking', 0, 'number', 'Advanced'));
-  layer.properties.push(createAnimatableProperty('Line Spacing', 0, 'number', 'Advanced'));
-  layer.properties.push(createAnimatableProperty('Character Offset', 0, 'number', 'Advanced'));
-  layer.properties.push(createAnimatableProperty('Character Value', 0, 'number', 'Advanced'));
-  layer.properties.push(createAnimatableProperty('Blur', { x: 0, y: 0 }, 'position', 'Advanced'));
+  layer.properties.push(
+    createAnimatableProperty("Tracking", 0, "number", "Advanced"),
+  );
+  layer.properties.push(
+    createAnimatableProperty("Line Spacing", 0, "number", "Advanced"),
+  );
+  layer.properties.push(
+    createAnimatableProperty("Character Offset", 0, "number", "Advanced"),
+  );
+  layer.properties.push(
+    createAnimatableProperty("Character Value", 0, "number", "Advanced"),
+  );
+  layer.properties.push(
+    createAnimatableProperty("Blur", { x: 0, y: 0 }, "position", "Advanced"),
+  );
 
   return layer;
 }
@@ -245,15 +303,15 @@ export function createTextLayer(store: LayerStore, text: string = 'Text'): Layer
  * Create a spline layer with proper data structure
  */
 export function createSplineLayer(store: LayerStore): Layer {
-  const layer = createLayer(store, 'spline');
+  const layer = createLayer(store, "spline");
 
   const splineData: SplineData = {
-    pathData: '',
+    pathData: "",
     controlPoints: [],
     closed: false,
-    stroke: '#00ff00',
+    stroke: "#00ff00",
     strokeWidth: 2,
-    fill: ''
+    fill: "",
   };
 
   layer.data = splineData;
@@ -264,8 +322,11 @@ export function createSplineLayer(store: LayerStore): Layer {
 /**
  * Create a shape layer with proper data structure
  */
-export function createShapeLayer(store: LayerStore, name: string = 'Shape Layer'): Layer {
-  return createLayer(store, 'shape', name);
+export function createShapeLayer(
+  store: LayerStore,
+  name: string = "Shape Layer",
+): Layer {
+  return createLayer(store, "shape", name);
 }
 
 // ============================================================================
@@ -292,10 +353,10 @@ export interface DeleteLayerOptions {
 export function deleteLayer(
   store: LayerStore,
   layerId: string,
-  options?: DeleteLayerOptions
+  options?: DeleteLayerOptions,
 ): void {
   const layers = store.getActiveCompLayers();
-  const index = layers.findIndex(l => l.id === layerId);
+  const index = layers.findIndex((l) => l.id === layerId);
   if (index === -1) return;
 
   layers.splice(index, 1);
@@ -316,11 +377,15 @@ export function deleteLayer(
     // Clear followPath reference but preserve constraint settings (keyframes, offset, etc.)
     if (layer.followPath?.pathLayerId === layerId) {
       layer.followPath.enabled = false;
-      layer.followPath.pathLayerId = '';
+      layer.followPath.pathLayerId = "";
     }
 
     // Clear text layer path reference
-    if (layer.type === 'text' && layer.data && (layer.data as any).pathLayerId === layerId) {
+    if (
+      layer.type === "text" &&
+      layer.data &&
+      (layer.data as any).pathLayerId === layerId
+    ) {
       (layer.data as any).pathLayerId = null;
     }
   }
@@ -348,9 +413,12 @@ export function deleteLayer(
 /**
  * Duplicate a layer
  */
-export function duplicateLayer(store: LayerStore, layerId: string): Layer | null {
+export function duplicateLayer(
+  store: LayerStore,
+  layerId: string,
+): Layer | null {
   const layers = store.getActiveCompLayers();
-  const original = layers.find(l => l.id === layerId);
+  const original = layers.find((l) => l.id === layerId);
   if (!original) return null;
 
   // Deep clone the layer - use toRaw to handle Vue reactive proxies
@@ -358,13 +426,13 @@ export function duplicateLayer(store: LayerStore, layerId: string): Layer | null
 
   // Generate new IDs
   duplicate.id = crypto.randomUUID();
-  duplicate.name = original.name + ' Copy';
+  duplicate.name = `${original.name} Copy`;
 
   // Generate new keyframe IDs to avoid conflicts
   regenerateKeyframeIds(duplicate);
 
   // Insert after the original
-  const index = layers.findIndex(l => l.id === layerId);
+  const index = layers.findIndex((l) => l.id === layerId);
   layers.splice(index, 0, duplicate);
 
   store.project.meta.modified = new Date().toISOString();
@@ -383,12 +451,18 @@ export function duplicateLayer(store: LayerStore, layerId: string): Layer | null
 export function copySelectedLayers(store: LayerStore): void {
   const layers = store.getActiveCompLayers();
   const selection = useSelectionStore();
-  const selectedLayers = layers.filter(l => selection.selectedLayerIds.includes(l.id));
+  const selectedLayers = layers.filter((l) =>
+    selection.selectedLayerIds.includes(l.id),
+  );
   if (selectedLayers.length === 0) return;
 
   // Deep clone layers to clipboard - use toRaw to handle Vue reactive proxies
-  store.clipboard.layers = selectedLayers.map(layer => structuredClone(toRaw(layer)));
-  storeLogger.debug(`Copied ${store.clipboard.layers.length} layer(s) to clipboard`);
+  store.clipboard.layers = selectedLayers.map((layer) =>
+    structuredClone(toRaw(layer)),
+  );
+  storeLogger.debug(
+    `Copied ${store.clipboard.layers.length} layer(s) to clipboard`,
+  );
 }
 
 /**
@@ -406,7 +480,7 @@ export function pasteLayers(store: LayerStore): Layer[] {
 
     // Generate new IDs
     newLayer.id = crypto.randomUUID();
-    newLayer.name = clipboardLayer.name + ' Copy';
+    newLayer.name = `${clipboardLayer.name} Copy`;
 
     // Generate new keyframe IDs
     regenerateKeyframeIds(newLayer);
@@ -419,7 +493,7 @@ export function pasteLayers(store: LayerStore): Layer[] {
   }
 
   // Select pasted layers
-  useSelectionStore().selectLayers(pastedLayers.map(l => l.id));
+  useSelectionStore().selectLayers(pastedLayers.map((l) => l.id));
 
   store.project.meta.modified = new Date().toISOString();
   store.pushHistory();
@@ -448,16 +522,21 @@ export function cutSelectedLayers(store: LayerStore): void {
  * Note: Locked layers can only have their 'locked' property changed.
  * All other updates are blocked.
  */
-export function updateLayer(store: LayerStore, layerId: string, updates: Partial<Layer>): void {
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+export function updateLayer(
+  store: LayerStore,
+  layerId: string,
+  updates: Partial<Layer>,
+): void {
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) return;
 
   // If layer is locked, only allow changing the 'locked' property itself
   if (layer.locked) {
     const updateKeys = Object.keys(updates);
-    const onlyChangingLocked = updateKeys.length === 1 && updateKeys[0] === 'locked';
+    const onlyChangingLocked =
+      updateKeys.length === 1 && updateKeys[0] === "locked";
     if (!onlyChangingLocked) {
-      storeLogger.warn('Cannot update locked layer:', layerId);
+      storeLogger.warn("Cannot update locked layer:", layerId);
       return;
     }
   }
@@ -480,19 +559,19 @@ export function updateLayer(store: LayerStore, layerId: string, updates: Partial
 export function updateLayerData(
   store: LayerStore,
   layerId: string,
-  dataUpdates: Partial<AnyLayerData> & Record<string, unknown>
+  dataUpdates: Partial<AnyLayerData> & Record<string, unknown>,
 ): void {
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer || !layer.data) return;
 
   // Locked layers cannot have their data updated
   if (layer.locked) {
-    storeLogger.warn('Cannot update data on locked layer:', layerId);
+    storeLogger.warn("Cannot update data on locked layer:", layerId);
     return;
   }
 
   // Use spread operator with toRaw to ensure plain objects for structuredClone
-  layer.data = { ...toRaw(layer.data), ...dataUpdates } as Layer['data'];
+  layer.data = { ...toRaw(layer.data), ...dataUpdates } as Layer["data"];
   markLayerDirty(layerId); // Invalidate evaluation cache
   store.project.meta.modified = new Date().toISOString();
   store.pushHistory();
@@ -505,61 +584,69 @@ export function updateLayerData(
 export function replaceLayerSource(
   store: LayerStore,
   layerId: string,
-  newSource: LayerSourceReplacement
+  newSource: LayerSourceReplacement,
 ): void {
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) return;
 
   // Use assetId if provided, otherwise use id as assetId
   const assetId = newSource.assetId || newSource.id || null;
 
   // Determine source update based on layer type and new source type
-  if (isLayerOfType(layer, 'image') && newSource.type === 'asset' && assetId) {
+  if (isLayerOfType(layer, "image") && newSource.type === "asset" && assetId) {
     // Replace image source - preserve existing data, update assetId
     layer.data.assetId = assetId;
     layer.name = newSource.name || layer.name;
-  } else if (isLayerOfType(layer, 'video') && newSource.type === 'asset' && assetId) {
+  } else if (
+    isLayerOfType(layer, "video") &&
+    newSource.type === "asset" &&
+    assetId
+  ) {
     // Replace video source - preserve existing data, update assetId
     layer.data.assetId = assetId;
     layer.name = newSource.name || layer.name;
-  } else if (layer.type === 'solid' && newSource.type === 'asset' && assetId) {
+  } else if (layer.type === "solid" && newSource.type === "asset" && assetId) {
     // Convert solid to image layer (source replacement changes type)
     // Type assertion needed: we're intentionally mutating the layer type
-    (layer as Layer).type = 'image';
-    const imageData: ImageLayerData = { assetId, fit: 'none' };
+    (layer as Layer).type = "image";
+    const imageData: ImageLayerData = { assetId, fit: "none" };
     layer.data = imageData;
     layer.name = newSource.name || layer.name;
-  } else if (isLayerOfType(layer, 'nestedComp') && newSource.type === 'composition' && newSource.id) {
+  } else if (
+    isLayerOfType(layer, "nestedComp") &&
+    newSource.type === "composition" &&
+    newSource.id
+  ) {
     // Replace nested comp source - preserve existing data, update compositionId
     layer.data.compositionId = newSource.id;
     layer.name = newSource.name || layer.name;
-  } else if (newSource.type === 'composition' && newSource.id) {
+  } else if (newSource.type === "composition" && newSource.id) {
     // Convert any layer to nested comp
     // Type assertion needed: we're intentionally mutating the layer type
-    (layer as Layer).type = 'nestedComp';
+    (layer as Layer).type = "nestedComp";
     const nestedCompData: NestedCompData = {
       compositionId: newSource.id,
       speedMapEnabled: false,
       flattenTransform: false,
-      overrideFrameRate: false
+      overrideFrameRate: false,
     };
     layer.data = nestedCompData;
     layer.name = newSource.name || layer.name;
-  } else if (newSource.type === 'asset' && assetId) {
+  } else if (newSource.type === "asset" && assetId) {
     // Generic asset replacement - determine new type from asset or file extension
-    const path = newSource.path || '';
-    const ext = path.split('.').pop()?.toLowerCase() || '';
-    const imageExts = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'];
-    const videoExts = ['mp4', 'webm', 'mov', 'avi'];
+    const path = newSource.path || "";
+    const ext = path.split(".").pop()?.toLowerCase() || "";
+    const imageExts = ["png", "jpg", "jpeg", "gif", "webp", "svg"];
+    const videoExts = ["mp4", "webm", "mov", "avi"];
 
     if (imageExts.includes(ext)) {
       // Type assertion needed: we're intentionally mutating the layer type
-      (layer as Layer).type = 'image';
-      const imageData: ImageLayerData = { assetId, fit: 'none' };
+      (layer as Layer).type = "image";
+      const imageData: ImageLayerData = { assetId, fit: "none" };
       layer.data = imageData;
     } else if (videoExts.includes(ext)) {
       // Type assertion needed: we're intentionally mutating the layer type
-      (layer as Layer).type = 'video';
+      (layer as Layer).type = "video";
       const videoData: VideoData = {
         assetId,
         loop: true,
@@ -567,10 +654,10 @@ export function replaceLayerSource(
         startTime: 0,
         speed: 1,
         speedMapEnabled: false,
-        frameBlending: 'none',
+        frameBlending: "none",
         audioEnabled: true,
         audioLevel: 100,
-        posterFrame: 0
+        posterFrame: 0,
       };
       layer.data = videoData;
     }
@@ -586,15 +673,19 @@ export function replaceLayerSource(
 /**
  * Reorder layers
  */
-export function moveLayer(store: LayerStore, layerId: string, newIndex: number): void {
+export function moveLayer(
+  store: LayerStore,
+  layerId: string,
+  newIndex: number,
+): void {
   // Validate newIndex (NaN coerces to 0 in splice, causing wrong position)
   if (!Number.isInteger(newIndex) || newIndex < 0) {
-    storeLogger.warn('moveLayer: Invalid index:', newIndex);
+    storeLogger.warn("moveLayer: Invalid index:", newIndex);
     return;
   }
 
   const layers = store.getActiveCompLayers();
-  const currentIndex = layers.findIndex(l => l.id === layerId);
+  const currentIndex = layers.findIndex((l) => l.id === layerId);
   if (currentIndex === -1) return;
 
   // Clamp index to valid range
@@ -614,7 +705,7 @@ export function moveLayer(store: LayerStore, layerId: string, newIndex: number):
  * Toggle 3D mode for a layer
  */
 export function toggleLayer3D(store: LayerStore, layerId: string): void {
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) return;
 
   layer.threeD = !layer.threeD;
@@ -625,37 +716,41 @@ export function toggleLayer3D(store: LayerStore, layerId: string): void {
     // Force reactivity by replacing the entire value objects
     // Position - always create new object with z
     const pos = t.position.value as { x: number; y: number; z?: number };
-    const posZ = 'z' in pos && typeof pos.z === 'number' ? pos.z : 0;
+    const posZ = "z" in pos && typeof pos.z === "number" ? pos.z : 0;
     t.position.value = { x: pos.x, y: pos.y, z: posZ };
-    t.position.type = 'vector3';
+    t.position.type = "vector3";
 
     // Origin (formerly Anchor Point)
     const originProp = t.origin || t.anchorPoint;
     if (originProp) {
       const orig = originProp.value as { x: number; y: number; z?: number };
-      const origZ = 'z' in orig && typeof orig.z === 'number' ? orig.z : 0;
+      const origZ = "z" in orig && typeof orig.z === "number" ? orig.z : 0;
       originProp.value = { x: orig.x, y: orig.y, z: origZ };
-      originProp.type = 'vector3';
+      originProp.type = "vector3";
     }
 
     // Scale
     const scl = t.scale.value as { x: number; y: number; z?: number };
-    const sclZ = 'z' in scl && typeof scl.z === 'number' ? scl.z : 100;
+    const sclZ = "z" in scl && typeof scl.z === "number" ? scl.z : 100;
     t.scale.value = { x: scl.x, y: scl.y, z: sclZ };
-    t.scale.type = 'vector3';
+    t.scale.type = "vector3";
 
     // Initialize 3D rotations
     if (!t.orientation) {
-      t.orientation = createAnimatableProperty('orientation', { x: 0, y: 0, z: 0 }, 'vector3');
+      t.orientation = createAnimatableProperty(
+        "orientation",
+        { x: 0, y: 0, z: 0 },
+        "vector3",
+      );
     }
     if (!t.rotationX) {
-      t.rotationX = createAnimatableProperty('rotationX', 0, 'number');
+      t.rotationX = createAnimatableProperty("rotationX", 0, "number");
     }
     if (!t.rotationY) {
-      t.rotationY = createAnimatableProperty('rotationY', 0, 'number');
+      t.rotationY = createAnimatableProperty("rotationY", 0, "number");
     }
     if (!t.rotationZ) {
-      t.rotationZ = createAnimatableProperty('rotationZ', 0, 'number');
+      t.rotationZ = createAnimatableProperty("rotationZ", 0, "number");
       // Copy existing 2D rotation to Z rotation
       t.rotationZ.value = t.rotation.value;
     }
@@ -677,9 +772,13 @@ export function toggleLayer3D(store: LayerStore, layerId: string): void {
 /**
  * Set a layer's parent for parenting/hierarchy
  */
-export function setLayerParent(store: LayerStore, layerId: string, parentId: string | null): void {
+export function setLayerParent(
+  store: LayerStore,
+  layerId: string,
+  parentId: string | null,
+): void {
   const layers = store.getActiveCompLayers();
-  const layer = layers.find(l => l.id === layerId);
+  const layer = layers.find((l) => l.id === layerId);
   if (!layer) return;
 
   // Prevent self-parenting
@@ -689,18 +788,18 @@ export function setLayerParent(store: LayerStore, layerId: string, parentId: str
   if (parentId) {
     const getDescendants = (id: string): Set<string> => {
       const descendants = new Set<string>();
-      const children = layers.filter(l => l.parentId === id);
+      const children = layers.filter((l) => l.parentId === id);
       for (const child of children) {
         descendants.add(child.id);
         const childDescendants = getDescendants(child.id);
-        childDescendants.forEach(d => descendants.add(d));
+        childDescendants.forEach((d) => descendants.add(d));
       }
       return descendants;
     };
 
     const descendants = getDescendants(layerId);
     if (descendants.has(parentId)) {
-      storeLogger.warn('Cannot set parent: would create circular reference');
+      storeLogger.warn("Cannot set parent: would create circular reference");
       return;
     }
   }
@@ -716,21 +815,21 @@ export function setLayerParent(store: LayerStore, layerId: string, parentId: str
 
 // Re-export all spline operations for backwards compatibility
 export {
-  type SplineControlPoint,
   addSplineControlPoint,
-  insertSplineControlPoint,
-  updateSplineControlPoint,
-  deleteSplineControlPoint,
-  enableSplineAnimation,
   addSplinePointKeyframe,
   addSplinePointPositionKeyframe,
-  updateSplinePointWithKeyframe,
+  deleteSplineControlPoint,
+  enableSplineAnimation,
   getEvaluatedSplinePoints,
-  isSplineAnimated,
   hasSplinePointKeyframes,
+  insertSplineControlPoint,
+  isSplineAnimated,
+  type SplineControlPoint,
   simplifySpline,
   smoothSplineHandles,
-} from './layer/splineActions';
+  updateSplineControlPoint,
+  updateSplinePointWithKeyframe,
+} from "./layer/splineActions";
 
 // ============================================================================
 // SELECTION (delegated to selectionStore)
@@ -739,7 +838,11 @@ export {
 /**
  * Select a layer
  */
-export function selectLayer(_store: LayerStore, layerId: string, addToSelection = false): void {
+export function selectLayer(
+  _store: LayerStore,
+  layerId: string,
+  addToSelection = false,
+): void {
   const selection = useSelectionStore();
   if (addToSelection) {
     selection.addToSelection(layerId);
@@ -774,13 +877,16 @@ function regenerateKeyframeIds(layer: Layer): void {
   type TransformProp = AnimatableProperty<PropertyValue> | undefined;
 
   if (layer.transform) {
-    const transformRecord = layer.transform as unknown as Record<string, TransformProp>;
+    const transformRecord = layer.transform as unknown as Record<
+      string,
+      TransformProp
+    >;
     for (const key of Object.keys(layer.transform)) {
       const prop = transformRecord[key];
       if (prop?.keyframes) {
         prop.keyframes = prop.keyframes.map((kf: Keyframe<PropertyValue>) => ({
           ...kf,
-          id: crypto.randomUUID()
+          id: crypto.randomUUID(),
         }));
       }
     }
@@ -790,7 +896,7 @@ function regenerateKeyframeIds(layer: Layer): void {
       if (prop.keyframes) {
         prop.keyframes = prop.keyframes.map((kf: Keyframe<PropertyValue>) => ({
           ...kf,
-          id: crypto.randomUUID()
+          id: crypto.randomUUID(),
         }));
       }
     }
@@ -801,25 +907,28 @@ function regenerateKeyframeIds(layer: Layer): void {
  * Get a layer by ID
  */
 export function getLayerById(store: LayerStore, layerId: string): Layer | null {
-  return store.getActiveCompLayers().find(l => l.id === layerId) || null;
+  return store.getActiveCompLayers().find((l) => l.id === layerId) || null;
 }
 
 /**
  * Get all children of a layer
  */
 export function getLayerChildren(store: LayerStore, layerId: string): Layer[] {
-  return store.getActiveCompLayers().filter(l => l.parentId === layerId);
+  return store.getActiveCompLayers().filter((l) => l.parentId === layerId);
 }
 
 /**
  * Get all descendants of a layer (recursive)
  */
-export function getLayerDescendants(store: LayerStore, layerId: string): Layer[] {
+export function getLayerDescendants(
+  store: LayerStore,
+  layerId: string,
+): Layer[] {
   const layers = store.getActiveCompLayers();
   const descendants: Layer[] = [];
 
   const collectDescendants = (id: string) => {
-    const children = layers.filter(l => l.parentId === id);
+    const children = layers.filter((l) => l.parentId === id);
     for (const child of children) {
       descendants.push(child);
       collectDescendants(child.id);
@@ -840,19 +949,21 @@ export function getLayerDescendants(store: LayerStore, layerId: string): Layer[]
 function bezierPathToControlPoints(path: BezierPath): ControlPoint[] {
   return path.vertices.map((vertex, index) => {
     // BezierVertex handles are RELATIVE, ControlPoint handles are ABSOLUTE
-    const handleIn = (vertex.inHandle.x !== 0 || vertex.inHandle.y !== 0)
-      ? {
-          x: vertex.point.x + vertex.inHandle.x,
-          y: vertex.point.y + vertex.inHandle.y,
-        }
-      : null;
+    const handleIn =
+      vertex.inHandle.x !== 0 || vertex.inHandle.y !== 0
+        ? {
+            x: vertex.point.x + vertex.inHandle.x,
+            y: vertex.point.y + vertex.inHandle.y,
+          }
+        : null;
 
-    const handleOut = (vertex.outHandle.x !== 0 || vertex.outHandle.y !== 0)
-      ? {
-          x: vertex.point.x + vertex.outHandle.x,
-          y: vertex.point.y + vertex.outHandle.y,
-        }
-      : null;
+    const handleOut =
+      vertex.outHandle.x !== 0 || vertex.outHandle.y !== 0
+        ? {
+            x: vertex.point.x + vertex.outHandle.x,
+            y: vertex.point.y + vertex.outHandle.y,
+          }
+        : null;
 
     return {
       id: `cp_${Date.now()}_${index}_${Math.random().toString(36).slice(2, 6)}`,
@@ -861,7 +972,7 @@ function bezierPathToControlPoints(path: BezierPath): ControlPoint[] {
       depth: 0,
       handleIn,
       handleOut,
-      type: (handleIn || handleOut) ? 'smooth' as const : 'corner' as const,
+      type: handleIn || handleOut ? ("smooth" as const) : ("corner" as const),
     };
   });
 }
@@ -870,7 +981,7 @@ function bezierPathToControlPoints(path: BezierPath): ControlPoint[] {
  * Convert SVG d path data to ControlPoints
  * Used as fallback when BezierPath is not available
  */
-function pathDataToControlPoints(pathData: string): ControlPoint[] {
+function _pathDataToControlPoints(pathData: string): ControlPoint[] {
   const points: ControlPoint[] = [];
   // Simple SVG path parser for M, L, C, Q, Z commands
   const commands = pathData.match(/[MLCQZ][^MLCQZ]*/gi) || [];
@@ -880,10 +991,14 @@ function pathDataToControlPoints(pathData: string): ControlPoint[] {
 
   for (const cmd of commands) {
     const type = cmd[0].toUpperCase();
-    const args = cmd.slice(1).trim().split(/[\s,]+/).map(parseFloat);
+    const args = cmd
+      .slice(1)
+      .trim()
+      .split(/[\s,]+/)
+      .map(parseFloat);
 
     switch (type) {
-      case 'M':
+      case "M":
         currentX = args[0];
         currentY = args[1];
         points.push({
@@ -893,10 +1008,10 @@ function pathDataToControlPoints(pathData: string): ControlPoint[] {
           depth: 0,
           handleIn: null,
           handleOut: null,
-          type: 'corner',
+          type: "corner",
         });
         break;
-      case 'L':
+      case "L":
         currentX = args[0];
         currentY = args[1];
         points.push({
@@ -906,10 +1021,10 @@ function pathDataToControlPoints(pathData: string): ControlPoint[] {
           depth: 0,
           handleIn: null,
           handleOut: null,
-          type: 'corner',
+          type: "corner",
         });
         break;
-      case 'C':
+      case "C": {
         // Cubic bezier: cp1x, cp1y, cp2x, cp2y, x, y
         const lastPoint = points[points.length - 1];
         if (lastPoint) {
@@ -924,9 +1039,10 @@ function pathDataToControlPoints(pathData: string): ControlPoint[] {
           depth: 0,
           handleIn: { x: args[2], y: args[3] },
           handleOut: null,
-          type: 'smooth',
+          type: "smooth",
         });
         break;
+      }
     }
   }
 
@@ -953,11 +1069,13 @@ export async function convertTextLayerToSplines(
     keepOriginal?: boolean;
     /** Group character layers under a null parent */
     groupCharacters?: boolean;
-  } = {}
+  } = {},
 ): Promise<string[] | null> {
   const layer = getLayerById(store, layerId);
-  if (!layer || layer.type !== 'text') {
-    storeLogger.error('convertTextLayerToSplines: Layer not found or not a text layer');
+  if (!layer || layer.type !== "text") {
+    storeLogger.error(
+      "convertTextLayerToSplines: Layer not found or not a text layer",
+    );
     return null;
   }
 
@@ -971,13 +1089,14 @@ export async function convertTextLayerToSplines(
   };
 
   if (!textData.text) {
-    storeLogger.error('convertTextLayerToSplines: No text content');
+    storeLogger.error("convertTextLayerToSplines: No text content");
     return null;
   }
 
   // Get font URL - use Google Fonts CDN as fallback
-  const fontUrl = options.fontUrl ||
-    `https://fonts.gstatic.com/s/${textData.fontFamily.toLowerCase().replace(/\s+/g, '')}/v1/regular.woff`;
+  const fontUrl =
+    options.fontUrl ||
+    `https://fonts.gstatic.com/s/${textData.fontFamily.toLowerCase().replace(/\s+/g, "")}/v1/regular.woff`;
 
   try {
     // Convert text to vector paths
@@ -989,11 +1108,11 @@ export async function convertTextLayerToSplines(
         x: layer.transform.position.value.x,
         y: layer.transform.position.value.y,
         kerning: true,
-      }
+      },
     );
 
     if (!result.allPaths.length && !result.characters.length) {
-      storeLogger.error('convertTextLayerToSplines: No paths generated');
+      storeLogger.error("convertTextLayerToSplines: No paths generated");
       return null;
     }
 
@@ -1001,14 +1120,14 @@ export async function convertTextLayerToSplines(
 
     const createdLayerIds: string[] = [];
     const layers = store.getActiveCompLayers();
-    const originalIndex = layers.findIndex(l => l.id === layerId);
+    const _originalIndex = layers.findIndex((l) => l.id === layerId);
 
     if (options.perCharacter && result.characters.length > 0) {
       // Create parent group layer if requested
       let parentId: string | null = layer.parentId ?? null;
 
       if (options.groupCharacters) {
-        const groupLayer = createLayer(store, 'null', `${layer.name} (Group)`);
+        const groupLayer = createLayer(store, "null", `${layer.name} (Group)`);
         groupLayer.transform = { ...layer.transform };
         parentId = groupLayer.id;
         createdLayerIds.push(groupLayer.id);
@@ -1019,7 +1138,7 @@ export async function convertTextLayerToSplines(
         const charGroup = result.characters[i];
 
         // Skip whitespace characters
-        if (charGroup.character.trim() === '' || charGroup.paths.length === 0) {
+        if (charGroup.character.trim() === "" || charGroup.paths.length === 0) {
           continue;
         }
 
@@ -1033,16 +1152,16 @@ export async function convertTextLayerToSplines(
         if (allControlPoints.length === 0) continue;
 
         const charLayerName = `${layer.name} - "${charGroup.character}" [${i}]`;
-        const charLayer = createLayer(store, 'spline', charLayerName);
+        const charLayer = createLayer(store, "spline", charLayerName);
 
         // Set up spline data
         const splineData: SplineData = {
-          pathData: '',
+          pathData: "",
           controlPoints: allControlPoints,
           closed: charGroup.paths[0]?.closed ?? true,
-          stroke: textData.stroke || '',
+          stroke: textData.stroke || "",
           strokeWidth: textData.strokeWidth || 0,
-          fill: textData.fill || '#ffffff',
+          fill: textData.fill || "#ffffff",
         };
 
         charLayer.data = splineData;
@@ -1054,10 +1173,14 @@ export async function convertTextLayerToSplines(
         if (!options.groupCharacters) {
           charLayer.transform = {
             ...createDefaultTransform(),
-            position: createAnimatableProperty('Position', {
-              x: layer.transform.position.value.x + charGroup.bounds.x,
-              y: layer.transform.position.value.y,
-            }, 'position'),
+            position: createAnimatableProperty(
+              "Position",
+              {
+                x: layer.transform.position.value.x + charGroup.bounds.x,
+                y: layer.transform.position.value.y,
+              },
+              "position",
+            ),
           };
         }
 
@@ -1073,19 +1196,25 @@ export async function convertTextLayerToSplines(
       }
 
       if (allControlPoints.length === 0) {
-        storeLogger.error('convertTextLayerToSplines: No control points generated');
+        storeLogger.error(
+          "convertTextLayerToSplines: No control points generated",
+        );
         return null;
       }
 
-      const splineLayer = createLayer(store, 'spline', `${layer.name} (Spline)`);
+      const splineLayer = createLayer(
+        store,
+        "spline",
+        `${layer.name} (Spline)`,
+      );
 
       const splineData: SplineData = {
-        pathData: '',
+        pathData: "",
         controlPoints: allControlPoints,
         closed: result.allPaths[0]?.closed ?? true,
-        stroke: textData.stroke || '',
+        stroke: textData.stroke || "",
         strokeWidth: textData.strokeWidth || 0,
-        fill: textData.fill || '#ffffff',
+        fill: textData.fill || "#ffffff",
       };
 
       splineLayer.data = splineData;
@@ -1109,11 +1238,12 @@ export async function convertTextLayerToSplines(
       selectionStore.selectLayer(createdLayerIds[0]);
     }
 
-    storeLogger.info(`Converted text layer to ${createdLayerIds.length} spline layer(s)`);
+    storeLogger.info(
+      `Converted text layer to ${createdLayerIds.length} spline layer(s)`,
+    );
     return createdLayerIds;
-
   } catch (error) {
-    storeLogger.error('convertTextLayerToSplines: Failed to convert', error);
+    storeLogger.error("convertTextLayerToSplines: Failed to convert", error);
     return null;
   }
 }
@@ -1146,30 +1276,32 @@ export function copyPathToPosition(
     /** Number of keyframes to create (default: auto based on path complexity) */
     keyframeCount?: number;
     /** Interpolation type for keyframes (default: 'bezier') */
-    interpolation?: 'linear' | 'bezier' | 'hold';
+    interpolation?: "linear" | "bezier" | "hold";
     /** Apply spatial tangents from path handles (default: true) */
     useSpatialTangents?: boolean;
     /** Reverse the path direction (default: false) */
     reversed?: boolean;
-  } = {}
+  } = {},
 ): number | null {
   const comp = store.getActiveComp();
   if (!comp) {
-    storeLogger.error('copyPathToPosition: No active composition');
+    storeLogger.error("copyPathToPosition: No active composition");
     return null;
   }
 
   // Get source spline layer
-  const sourceLayer = comp.layers.find(l => l.id === sourceSplineLayerId);
-  if (!sourceLayer || sourceLayer.type !== 'spline' || !sourceLayer.data) {
-    storeLogger.error('copyPathToPosition: Source layer not found or not a spline');
+  const sourceLayer = comp.layers.find((l) => l.id === sourceSplineLayerId);
+  if (!sourceLayer || sourceLayer.type !== "spline" || !sourceLayer.data) {
+    storeLogger.error(
+      "copyPathToPosition: Source layer not found or not a spline",
+    );
     return null;
   }
 
   // Get target layer
-  const targetLayer = comp.layers.find(l => l.id === targetLayerId);
+  const targetLayer = comp.layers.find((l) => l.id === targetLayerId);
   if (!targetLayer) {
-    storeLogger.error('copyPathToPosition: Target layer not found');
+    storeLogger.error("copyPathToPosition: Target layer not found");
     return null;
   }
 
@@ -1177,32 +1309,38 @@ export function copyPathToPosition(
   const controlPoints = splineData.controlPoints || [];
 
   if (controlPoints.length < 2) {
-    storeLogger.error('copyPathToPosition: Path needs at least 2 control points');
+    storeLogger.error(
+      "copyPathToPosition: Path needs at least 2 control points",
+    );
     return null;
   }
 
   // Configuration
   const useFullDuration = options.useFullDuration ?? true;
   const startFrame = options.startFrame ?? 0;
-  const endFrame = options.endFrame ?? (comp.settings.frameCount - 1);
-  const interpolation = options.interpolation ?? 'bezier';
+  const endFrame = options.endFrame ?? comp.settings.frameCount - 1;
+  const interpolation = options.interpolation ?? "bezier";
   const useSpatialTangents = options.useSpatialTangents ?? true;
   const reversed = options.reversed ?? false;
 
   // Calculate frame range
   const frameStart = useFullDuration ? 0 : startFrame;
-  const frameEnd = useFullDuration ? (comp.settings.frameCount - 1) : endFrame;
+  const frameEnd = useFullDuration ? comp.settings.frameCount - 1 : endFrame;
   const frameDuration = frameEnd - frameStart;
 
   // Determine keyframe count based on path complexity or use specified value
   const defaultKeyframeCount = Math.max(
     controlPoints.length,
-    Math.ceil(frameDuration / 5) // At least one keyframe every 5 frames
+    Math.ceil(frameDuration / 5), // At least one keyframe every 5 frames
   );
   const keyframeCount = options.keyframeCount ?? defaultKeyframeCount;
 
   // Sample points along the path
-  const sampledPoints = samplePathPoints(controlPoints, keyframeCount, splineData.closed ?? false);
+  const sampledPoints = samplePathPoints(
+    controlPoints,
+    keyframeCount,
+    splineData.closed ?? false,
+  );
   if (reversed) {
     sampledPoints.reverse();
   }
@@ -1212,10 +1350,10 @@ export function copyPathToPosition(
     id: string;
     frame: number;
     value: { x: number; y: number; z: number };
-    interpolation: 'linear' | 'bezier' | 'hold';
+    interpolation: "linear" | "bezier" | "hold";
     inHandle: { frame: number; value: number; enabled: boolean };
     outHandle: { frame: number; value: number; enabled: boolean };
-    controlMode: 'symmetric' | 'smooth' | 'corner';
+    controlMode: "symmetric" | "smooth" | "corner";
     spatialInTangent?: { x: number; y: number; z: number };
     spatialOutTangent?: { x: number; y: number; z: number };
   }> = [];
@@ -1226,22 +1364,25 @@ export function copyPathToPosition(
     const point = sampledPoints[i];
 
     // Calculate frame distance to neighboring keyframes for handle influence
-    const prevFrame = i > 0 ? keyframes[i - 1]?.frame ?? 0 : 0;
-    const nextFrame = i < sampledPoints.length - 1
-      ? Math.round(frameStart + ((i + 1) / (sampledPoints.length - 1)) * frameDuration)
-      : frameDuration;
+    const prevFrame = i > 0 ? (keyframes[i - 1]?.frame ?? 0) : 0;
+    const nextFrame =
+      i < sampledPoints.length - 1
+        ? Math.round(
+            frameStart + ((i + 1) / (sampledPoints.length - 1)) * frameDuration,
+          )
+        : frameDuration;
 
     const inInfluence = (frame - prevFrame) * 0.33;
     const outInfluence = (nextFrame - frame) * 0.33;
 
-    const keyframe: typeof keyframes[0] = {
+    const keyframe: (typeof keyframes)[0] = {
       id: `kf_${Date.now()}_${i}`,
       frame,
       value: { x: point.x, y: point.y, z: point.depth ?? 0 },
       interpolation,
       inHandle: { frame: -inInfluence, value: 0, enabled: true },
       outHandle: { frame: outInfluence, value: 0, enabled: true },
-      controlMode: 'smooth'
+      controlMode: "smooth",
     };
 
     // Apply spatial tangents from path handles if available
@@ -1249,12 +1390,12 @@ export function copyPathToPosition(
       keyframe.spatialInTangent = {
         x: point.handleIn.x - point.x,
         y: point.handleIn.y - point.y,
-        z: 0
+        z: 0,
       };
       keyframe.spatialOutTangent = {
         x: point.handleOut.x - point.x,
         y: point.handleOut.y - point.y,
-        z: 0
+        z: 0,
       };
     }
 
@@ -1266,13 +1407,19 @@ export function copyPathToPosition(
 
   targetLayer.transform.position.animated = true;
   // Type assertion needed: our keyframes match Keyframe<{x,y,z}> structure
-  targetLayer.transform.position.keyframes = keyframes as Keyframe<{ x: number; y: number; z: number }>[];
+  targetLayer.transform.position.keyframes = keyframes as Keyframe<{
+    x: number;
+    y: number;
+    z: number;
+  }>[];
 
   // Mark layer dirty for re-evaluation
   markLayerDirty(targetLayerId);
   store.project.meta.modified = new Date().toISOString();
 
-  storeLogger.info(`copyPathToPosition: Created ${keyframes.length} position keyframes on layer "${targetLayer.name}"`);
+  storeLogger.info(
+    `copyPathToPosition: Created ${keyframes.length} position keyframes on layer "${targetLayer.name}"`,
+  );
   return keyframes.length;
 }
 
@@ -1283,11 +1430,23 @@ export function copyPathToPosition(
 function samplePathPoints(
   controlPoints: ControlPoint[],
   count: number,
-  closed: boolean
-): Array<{ x: number; y: number; depth?: number; handleIn?: { x: number; y: number }; handleOut?: { x: number; y: number } }> {
+  closed: boolean,
+): Array<{
+  x: number;
+  y: number;
+  depth?: number;
+  handleIn?: { x: number; y: number };
+  handleOut?: { x: number; y: number };
+}> {
   if (controlPoints.length === 0) return [];
   if (controlPoints.length === 1) {
-    return [{ x: controlPoints[0].x, y: controlPoints[0].y, depth: controlPoints[0].depth }];
+    return [
+      {
+        x: controlPoints[0].x,
+        y: controlPoints[0].y,
+        depth: controlPoints[0].depth,
+      },
+    ];
   }
 
   // Build path segments
@@ -1344,7 +1503,13 @@ function samplePathPoints(
   }
 
   // Sample along path
-  const result: Array<{ x: number; y: number; depth?: number; handleIn?: { x: number; y: number }; handleOut?: { x: number; y: number } }> = [];
+  const result: Array<{
+    x: number;
+    y: number;
+    depth?: number;
+    handleIn?: { x: number; y: number };
+    handleOut?: { x: number; y: number };
+  }> = [];
 
   // Guard against division by zero (count must be at least 2)
   if (count < 2) {
@@ -1362,7 +1527,10 @@ function samplePathPoints(
     const targetDist = i * step;
 
     // Find the segment containing this distance
-    while (segIndex < segments.length - 1 && currentDist + segments[segIndex].length < targetDist) {
+    while (
+      segIndex < segments.length - 1 &&
+      currentDist + segments[segIndex].length < targetDist
+    ) {
       currentDist += segments[segIndex].length;
       segIndex++;
     }
@@ -1383,20 +1551,33 @@ function samplePathPoints(
     const point = evaluateCubicBezier(seg.p0, seg.p1, seg.p2, seg.p3, t);
 
     // Interpolate depth
-    const depth = seg.p0.depth !== undefined && seg.p3.depth !== undefined
-      ? seg.p0.depth + (seg.p3.depth - seg.p0.depth) * t
-      : undefined;
+    const depth =
+      seg.p0.depth !== undefined && seg.p3.depth !== undefined
+        ? seg.p0.depth + (seg.p3.depth - seg.p0.depth) * t
+        : undefined;
 
     // Calculate tangent for handles
-    const tangent = evaluateCubicBezierDerivative(seg.p0, seg.p1, seg.p2, seg.p3, t);
+    const tangent = evaluateCubicBezierDerivative(
+      seg.p0,
+      seg.p1,
+      seg.p2,
+      seg.p3,
+      t,
+    );
     const handleScale = 20; // Scale factor for handle length
 
     result.push({
       x: point.x,
       y: point.y,
       depth,
-      handleIn: { x: point.x - tangent.x * handleScale, y: point.y - tangent.y * handleScale },
-      handleOut: { x: point.x + tangent.x * handleScale, y: point.y + tangent.y * handleScale }
+      handleIn: {
+        x: point.x - tangent.x * handleScale,
+        y: point.y - tangent.y * handleScale,
+      },
+      handleOut: {
+        x: point.x + tangent.x * handleScale,
+        y: point.y + tangent.y * handleScale,
+      },
     });
   }
 
@@ -1411,7 +1592,7 @@ function approximateBezierLength(
   p1: { x: number; y: number },
   p2: { x: number; y: number },
   p3: { x: number; y: number },
-  samples: number = 10
+  samples: number = 10,
 ): number {
   let length = 0;
   let prev = p0;
@@ -1419,9 +1600,7 @@ function approximateBezierLength(
   for (let i = 1; i <= samples; i++) {
     const t = i / samples;
     const curr = evaluateCubicBezier(p0, p1, p2, p3, t);
-    length += Math.sqrt(
-      (curr.x - prev.x) ** 2 + (curr.y - prev.y) ** 2
-    );
+    length += Math.sqrt((curr.x - prev.x) ** 2 + (curr.y - prev.y) ** 2);
     prev = curr;
   }
 
@@ -1436,7 +1615,7 @@ function evaluateCubicBezier(
   p1: { x: number; y: number },
   p2: { x: number; y: number },
   p3: { x: number; y: number },
-  t: number
+  t: number,
 ): { x: number; y: number } {
   const t2 = t * t;
   const t3 = t2 * t;
@@ -1446,7 +1625,7 @@ function evaluateCubicBezier(
 
   return {
     x: mt3 * p0.x + 3 * mt2 * t * p1.x + 3 * mt * t2 * p2.x + t3 * p3.x,
-    y: mt3 * p0.y + 3 * mt2 * t * p1.y + 3 * mt * t2 * p2.y + t3 * p3.y
+    y: mt3 * p0.y + 3 * mt2 * t * p1.y + 3 * mt * t2 * p2.y + t3 * p3.y,
   };
 }
 
@@ -1458,14 +1637,20 @@ function evaluateCubicBezierDerivative(
   p1: { x: number; y: number },
   p2: { x: number; y: number },
   p3: { x: number; y: number },
-  t: number
+  t: number,
 ): { x: number; y: number } {
   const t2 = t * t;
   const mt = 1 - t;
   const mt2 = mt * mt;
 
-  const dx = 3 * mt2 * (p1.x - p0.x) + 6 * mt * t * (p2.x - p1.x) + 3 * t2 * (p3.x - p2.x);
-  const dy = 3 * mt2 * (p1.y - p0.y) + 6 * mt * t * (p2.y - p1.y) + 3 * t2 * (p3.y - p2.y);
+  const dx =
+    3 * mt2 * (p1.x - p0.x) +
+    6 * mt * t * (p2.x - p1.x) +
+    3 * t2 * (p3.x - p2.x);
+  const dy =
+    3 * mt2 * (p1.y - p0.y) +
+    6 * mt * t * (p2.y - p1.y) +
+    3 * t2 * (p3.y - p2.y);
 
   // Normalize
   const len = Math.sqrt(dx * dx + dy * dy);
@@ -1502,26 +1687,22 @@ export interface SequenceLayersOptions {
 export function sequenceLayers(
   store: LayerStore,
   layerIds: string[],
-  options: SequenceLayersOptions = {}
+  options: SequenceLayersOptions = {},
 ): number {
-  const {
-    gapFrames = 0,
-    startFrame = 0,
-    reverse = false
-  } = options;
+  const { gapFrames = 0, startFrame = 0, reverse = false } = options;
 
   if (layerIds.length < 2) {
-    storeLogger.warn('sequenceLayers: need at least 2 layers');
+    storeLogger.warn("sequenceLayers: need at least 2 layers");
     return 0;
   }
 
   // Get layers in order
   const layers = layerIds
-    .map(id => store.getActiveCompLayers().find(l => l.id === id))
+    .map((id) => store.getActiveCompLayers().find((l) => l.id === id))
     .filter((l): l is Layer => l !== null && l !== undefined);
 
   if (layers.length < 2) {
-    storeLogger.warn('sequenceLayers: could not find enough layers');
+    storeLogger.warn("sequenceLayers: could not find enough layers");
     return 0;
   }
 
@@ -1533,7 +1714,7 @@ export function sequenceLayers(
 
   let currentFrame = startFrame;
 
-  orderedLayers.forEach((layer, index) => {
+  orderedLayers.forEach((layer, _index) => {
     const duration = layer.endFrame - layer.startFrame;
 
     // Set new start/end frames
@@ -1548,7 +1729,9 @@ export function sequenceLayers(
 
   store.project.meta.modified = new Date().toISOString();
 
-  storeLogger.info(`sequenceLayers: sequenced ${orderedLayers.length} layers starting at frame ${startFrame}`);
+  storeLogger.info(
+    `sequenceLayers: sequenced ${orderedLayers.length} layers starting at frame ${startFrame}`,
+  );
   return orderedLayers.length;
 }
 
@@ -1568,7 +1751,7 @@ export interface ExponentialScaleOptions {
   /** Number of keyframes to create (more = smoother) */
   keyframeCount?: number;
   /** Whether to apply to X, Y, or both */
-  axis?: 'both' | 'x' | 'y';
+  axis?: "both" | "x" | "y";
 }
 
 /**
@@ -1585,7 +1768,7 @@ export interface ExponentialScaleOptions {
 export function applyExponentialScale(
   store: LayerStore,
   layerId: string,
-  options: ExponentialScaleOptions = {}
+  options: ExponentialScaleOptions = {},
 ): number {
   const {
     startScale = 100,
@@ -1593,22 +1776,24 @@ export function applyExponentialScale(
     startFrame = 0,
     endFrame = 30,
     keyframeCount = 10,
-    axis = 'both'
+    axis = "both",
   } = options;
 
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) {
-    storeLogger.warn('applyExponentialScale: layer not found');
+    storeLogger.warn("applyExponentialScale: layer not found");
     return 0;
   }
 
   // Validate scale values (prevent division by zero)
   if (!Number.isFinite(startScale) || startScale === 0) {
-    storeLogger.warn('applyExponentialScale: startScale must be a non-zero finite number');
+    storeLogger.warn(
+      "applyExponentialScale: startScale must be a non-zero finite number",
+    );
     return 0;
   }
   if (!Number.isFinite(endScale)) {
-    storeLogger.warn('applyExponentialScale: endScale must be a finite number');
+    storeLogger.warn("applyExponentialScale: endScale must be a finite number");
     return 0;
   }
 
@@ -1628,14 +1813,14 @@ export function applyExponentialScale(
     const frame = Math.round(startFrame + t * duration);
 
     // Exponential formula: startScale * ratio^t
-    const scaleValue = startScale * Math.pow(ratio, t);
+    const scaleValue = startScale * ratio ** t;
 
     const currentValue = layer.transform.scale.value;
     let newValue: { x: number; y: number; z?: number };
 
-    if (axis === 'x') {
+    if (axis === "x") {
       newValue = { x: scaleValue, y: currentValue.y, z: currentValue.z };
-    } else if (axis === 'y') {
+    } else if (axis === "y") {
       newValue = { x: currentValue.x, y: scaleValue, z: currentValue.z };
     } else {
       newValue = { x: scaleValue, y: scaleValue, z: currentValue.z };
@@ -1645,16 +1830,18 @@ export function applyExponentialScale(
       id: `kf_expscale_${frame}_${Date.now()}_${i}`,
       frame,
       value: newValue,
-      interpolation: 'linear', // Linear between exponential samples gives smooth curve
+      interpolation: "linear", // Linear between exponential samples gives smooth curve
       inHandle: { frame: -2, value: 0, enabled: false },
       outHandle: { frame: 2, value: 0, enabled: false },
-      controlMode: 'smooth'
+      controlMode: "smooth",
     });
   }
 
   markLayerDirty(layerId);
   store.project.meta.modified = new Date().toISOString();
 
-  storeLogger.info(`applyExponentialScale: created ${keyframeCount + 1} keyframes for exponential scale ${startScale}% -> ${endScale}%`);
+  storeLogger.info(
+    `applyExponentialScale: created ${keyframeCount + 1} keyframes for exponential scale ${startScale}% -> ${endScale}%`,
+  );
   return keyframeCount + 1;
 }

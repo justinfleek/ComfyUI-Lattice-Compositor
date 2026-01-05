@@ -5,10 +5,16 @@
  * navigation, easing presets, and keyframe manipulation.
  */
 
-import type { Ref } from 'vue';
-import type { AnimatableProperty, Keyframe } from '@/types/project';
-import type { CurveViewState } from './useCurveEditorCoords';
-import { fitToView, fitSelectionToView, zoomIn, zoomOut, type SelectedKeyframe } from './useCurveEditorView';
+import type { Ref } from "vue";
+import type { AnimatableProperty } from "@/types/project";
+import type { CurveViewState } from "./useCurveEditorCoords";
+import {
+  fitSelectionToView,
+  fitToView,
+  type SelectedKeyframe,
+  zoomIn,
+  zoomOut,
+} from "./useCurveEditorView";
 
 // ============================================================
 // KEYFRAME NAVIGATION
@@ -20,7 +26,7 @@ import { fitToView, fitSelectionToView, zoomIn, zoomOut, type SelectedKeyframe }
 export function goToPreviousKeyframe(
   currentFrame: number,
   visibleProperties: AnimatableProperty<any>[],
-  setFrame: (frame: number) => void
+  setFrame: (frame: number) => void,
 ): void {
   const allKeyframes: number[] = [];
 
@@ -33,7 +39,7 @@ export function goToPreviousKeyframe(
   }
 
   allKeyframes.sort((a, b) => a - b);
-  const prev = [...allKeyframes].reverse().find(f => f < currentFrame);
+  const prev = [...allKeyframes].reverse().find((f) => f < currentFrame);
   if (prev !== undefined) {
     setFrame(prev);
   }
@@ -45,7 +51,7 @@ export function goToPreviousKeyframe(
 export function goToNextKeyframe(
   currentFrame: number,
   visibleProperties: AnimatableProperty<any>[],
-  setFrame: (frame: number) => void
+  setFrame: (frame: number) => void,
 ): void {
   const allKeyframes: number[] = [];
 
@@ -58,7 +64,7 @@ export function goToNextKeyframe(
   }
 
   allKeyframes.sort((a, b) => a - b);
-  const next = allKeyframes.find(f => f > currentFrame);
+  const next = allKeyframes.find((f) => f > currentFrame);
   if (next !== undefined) {
     setFrame(next);
   }
@@ -71,7 +77,7 @@ export function goToNextKeyframe(
 export interface EasyEaseParams {
   selectedKeyframes: SelectedKeyframe[];
   animatableProperties: AnimatableProperty<any>[];
-  direction: 'both' | 'in' | 'out';
+  direction: "both" | "in" | "out";
 }
 
 /**
@@ -81,7 +87,7 @@ export function applyEasyEase(params: EasyEaseParams): void {
   const { selectedKeyframes, animatableProperties, direction } = params;
 
   for (const sk of selectedKeyframes) {
-    const prop = animatableProperties.find(p => p.id === sk.propId);
+    const prop = animatableProperties.find((p) => p.id === sk.propId);
     if (!prop) continue;
 
     const kf = sk.keyframe;
@@ -89,7 +95,8 @@ export function applyEasyEase(params: EasyEaseParams): void {
 
     // Get adjacent keyframes for duration calculation
     const prevKf = kfIndex > 0 ? prop.keyframes[kfIndex - 1] : null;
-    const nextKf = kfIndex < prop.keyframes.length - 1 ? prop.keyframes[kfIndex + 1] : null;
+    const nextKf =
+      kfIndex < prop.keyframes.length - 1 ? prop.keyframes[kfIndex + 1] : null;
 
     // Calculate segment durations
     const inDuration = prevKf ? kf.frame - prevKf.frame : 10;
@@ -98,26 +105,26 @@ export function applyEasyEase(params: EasyEaseParams): void {
     // 33.33% influence
     const influence = 0.3333;
 
-    if (direction === 'both' || direction === 'in') {
+    if (direction === "both" || direction === "in") {
       // Easy ease in - deceleration
       kf.inHandle = {
         frame: -inDuration * influence,
         value: 0, // 0 velocity at keyframe
-        enabled: true
+        enabled: true,
       };
     }
 
-    if (direction === 'both' || direction === 'out') {
+    if (direction === "both" || direction === "out") {
       // Easy ease out - acceleration
       kf.outHandle = {
         frame: outDuration * influence,
         value: 0, // 0 velocity at keyframe
-        enabled: true
+        enabled: true,
       };
     }
 
-    kf.interpolation = 'bezier';
-    kf.controlMode = 'smooth';
+    kf.interpolation = "bezier";
+    kf.controlMode = "smooth";
   }
 }
 
@@ -148,54 +155,58 @@ export function createKeyboardHandler(options: CurveEditorKeyboardOptions) {
     currentFrame,
     setFrame,
     deleteSelectedKeyframes,
-    drawGraph
+    drawGraph,
   } = options;
 
   return function handleKeyDown(event: KeyboardEvent): void {
     // F9 Easy Ease
-    if (event.key === 'F9') {
+    if (event.key === "F9") {
       event.preventDefault();
-      let direction: 'both' | 'in' | 'out' = 'both';
+      let direction: "both" | "in" | "out" = "both";
       if (event.ctrlKey && event.shiftKey) {
-        direction = 'out'; // Ctrl+Shift+F9
+        direction = "out"; // Ctrl+Shift+F9
       } else if (event.shiftKey) {
-        direction = 'in'; // Shift+F9
+        direction = "in"; // Shift+F9
       }
       applyEasyEase({
         selectedKeyframes: selectedKeyframes.value,
         animatableProperties: animatableProperties.value,
-        direction
+        direction,
       });
       drawGraph();
       return;
     }
 
     // J/K navigation
-    if (event.key.toLowerCase() === 'j') {
+    if (event.key.toLowerCase() === "j") {
       event.preventDefault();
       goToPreviousKeyframe(currentFrame, visibleProperties.value, setFrame);
       return;
     }
-    if (event.key.toLowerCase() === 'k') {
+    if (event.key.toLowerCase() === "k") {
       event.preventDefault();
       goToNextKeyframe(currentFrame, visibleProperties.value, setFrame);
       return;
     }
 
     // Delete selected keyframes
-    if (event.key === 'Delete' || event.key === 'Backspace') {
+    if (event.key === "Delete" || event.key === "Backspace") {
       event.preventDefault();
       deleteSelectedKeyframes();
       return;
     }
 
     // F = Fit to view
-    if (event.key.toLowerCase() === 'f' && !event.ctrlKey) {
+    if (event.key.toLowerCase() === "f" && !event.ctrlKey) {
       event.preventDefault();
       if (event.shiftKey) {
         fitToView(viewState, visibleProperties.value);
       } else if (selectedKeyframes.value.length > 0) {
-        fitSelectionToView(viewState, selectedKeyframes.value, visibleProperties.value);
+        fitSelectionToView(
+          viewState,
+          selectedKeyframes.value,
+          visibleProperties.value,
+        );
       } else {
         fitToView(viewState, visibleProperties.value);
       }
@@ -204,13 +215,13 @@ export function createKeyboardHandler(options: CurveEditorKeyboardOptions) {
     }
 
     // Zoom in/out with = / -
-    if (event.key === '=' || event.key === '+') {
+    if (event.key === "=" || event.key === "+") {
       event.preventDefault();
       zoomIn(viewState);
       drawGraph();
       return;
     }
-    if (event.key === '-' || event.key === '_') {
+    if (event.key === "-" || event.key === "_") {
       event.preventDefault();
       zoomOut(viewState);
       drawGraph();
@@ -228,23 +239,25 @@ export function useCurveEditorKeyboard(options: CurveEditorKeyboardOptions) {
 
   return {
     handleKeyDown,
-    goToPreviousKeyframe: () => goToPreviousKeyframe(
-      options.currentFrame,
-      options.visibleProperties.value,
-      options.setFrame
-    ),
-    goToNextKeyframe: () => goToNextKeyframe(
-      options.currentFrame,
-      options.visibleProperties.value,
-      options.setFrame
-    ),
-    applyEasyEase: (direction: 'both' | 'in' | 'out' = 'both') => {
+    goToPreviousKeyframe: () =>
+      goToPreviousKeyframe(
+        options.currentFrame,
+        options.visibleProperties.value,
+        options.setFrame,
+      ),
+    goToNextKeyframe: () =>
+      goToNextKeyframe(
+        options.currentFrame,
+        options.visibleProperties.value,
+        options.setFrame,
+      ),
+    applyEasyEase: (direction: "both" | "in" | "out" = "both") => {
       applyEasyEase({
         selectedKeyframes: options.selectedKeyframes.value,
         animatableProperties: options.animatableProperties.value,
-        direction
+        direction,
       });
       options.drawGraph();
-    }
+    },
   };
 }

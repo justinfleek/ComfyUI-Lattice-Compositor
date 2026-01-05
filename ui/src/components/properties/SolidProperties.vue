@@ -103,24 +103,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import type { SolidLayerData } from '@/types/project';
+import { computed, reactive } from "vue";
+import { useCompositorStore } from "@/stores/compositorStore";
+import type { SolidLayerData } from "@/types/project";
 
 const props = defineProps<{
   layerId: string;
 }>();
 
-const emit = defineEmits<{
-  (e: 'update', data: Partial<SolidLayerData>): void;
-}>();
+const emit =
+  defineEmits<(e: "update", data: Partial<SolidLayerData>) => void>();
 
 const store = useCompositorStore();
 
 // Expanded sections
-const expandedSections = reactive(new Set<string>(['color', 'shadow']));
+const expandedSections = reactive(new Set<string>(["color", "shadow"]));
 
-function toggleSection(section: string) {
+function _toggleSection(section: string) {
   if (expandedSections.has(section)) {
     expandedSections.delete(section);
   } else {
@@ -129,24 +128,27 @@ function toggleSection(section: string) {
 }
 
 // Get layer data
-const layer = computed(() => store.layers.find(l => l.id === props.layerId));
+const layer = computed(() => store.layers.find((l) => l.id === props.layerId));
 
-const solidData = computed<SolidLayerData>(() => {
+const _solidData = computed<SolidLayerData>(() => {
   const data = layer.value?.data as SolidLayerData | undefined;
   return {
-    color: data?.color ?? '#808080',
+    color: data?.color ?? "#808080",
     width: data?.width ?? 1920,
     height: data?.height ?? 1080,
     shadowCatcher: data?.shadowCatcher ?? false,
     shadowOpacity: data?.shadowOpacity ?? 50,
-    shadowColor: data?.shadowColor ?? '#000000',
+    shadowColor: data?.shadowColor ?? "#000000",
     receiveShadow: data?.receiveShadow ?? false,
   };
 });
 
-function updateSolidData<K extends keyof SolidLayerData>(key: K, value: SolidLayerData[K]) {
+function _updateSolidData<K extends keyof SolidLayerData>(
+  key: K,
+  value: SolidLayerData[K],
+) {
   store.updateLayerData(props.layerId, { [key]: value });
-  emit('update', { [key]: value });
+  emit("update", { [key]: value });
 }
 </script>
 

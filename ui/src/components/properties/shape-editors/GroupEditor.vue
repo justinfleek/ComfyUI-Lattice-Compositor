@@ -28,27 +28,26 @@
 </template>
 
 <script setup lang="ts">
-import type { ShapeGroup, ShapeTransform } from '@/types/shapes';
-import TransformEditor from './TransformEditor.vue';
+import type { ShapeGroup, ShapeTransform } from "@/types/shapes";
 
 const props = defineProps<{ group: ShapeGroup; layerId: string }>();
-const emit = defineEmits(['update']);
+const emit = defineEmits(["update"]);
 
-function updateName(e: Event) {
+function _updateName(e: Event) {
   const updated = { ...props.group };
   updated.name = (e.target as HTMLInputElement).value;
-  emit('update', updated);
+  emit("update", updated);
 }
 
-function updateBlendMode(e: Event) {
+function _updateBlendMode(e: Event) {
   const updated = { ...props.group };
   updated.blendMode = (e.target as HTMLSelectElement).value;
-  emit('update', updated);
+  emit("update", updated);
 }
 
-function updateTransform(transform: ShapeTransform) {
+function _updateTransform(transform: ShapeTransform) {
   const updated = { ...props.group, transform };
-  emit('update', updated);
+  emit("update", updated);
 }
 </script>
 

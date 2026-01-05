@@ -11,8 +11,8 @@
  * Extracted from GPUParticleSystem.ts for modularity.
  */
 
-import * as THREE from 'three';
-import type { ModulationCurve } from './types';
+import * as THREE from "three";
+import type { ModulationCurve } from "./types";
 
 // ============================================================================
 // TYPES
@@ -76,17 +76,21 @@ export class ParticleModulationCurves {
    * @param t - Normalized time (0-1) representing particle lifetime progress
    * @param randomOffset - BUG-070 fix: Per-particle random offset (0-1) for deterministic random curves
    */
-  evaluateCurve(curve: ModulationCurve | undefined, t: number, randomOffset?: number): number {
+  evaluateCurve(
+    curve: ModulationCurve | undefined,
+    t: number,
+    randomOffset?: number,
+  ): number {
     if (!curve) return 1;
 
     switch (curve.type) {
-      case 'constant':
+      case "constant":
         return curve.value;
 
-      case 'linear':
+      case "linear":
         return curve.start + (curve.end - curve.start) * t;
 
-      case 'curve': {
+      case "curve": {
         // Find surrounding keyframes
         const points = curve.points;
         if (points.length === 0) return 1;
@@ -119,22 +123,28 @@ export class ParticleModulationCurves {
         const h3 = t3 - 2 * t2 + localT;
         const h4 = t3 - t2;
 
-        return h1 * p0.value + h2 * p1.value +
-               h3 * (p0.outTangent ?? 0) + h4 * (p1.inTangent ?? 0);
+        return (
+          h1 * p0.value +
+          h2 * p1.value +
+          h3 * (p0.outTangent ?? 0) +
+          h4 * (p1.inTangent ?? 0)
+        );
       }
 
-      case 'random':
+      case "random": {
         // BUG-070 fix: Use per-particle random offset instead of calling rng() each frame
         // This ensures deterministic behavior - same particle gets same random value throughout lifetime
         const randVal = randomOffset !== undefined ? randomOffset : this.rng();
         return curve.min + randVal * (curve.max - curve.min);
+      }
 
-      case 'randomCurve': {
+      case "randomCurve": {
         // BUG-070 fix: Pass randomOffset to nested curve evaluations
         const min = this.evaluateCurve(curve.minCurve, t, randomOffset);
         const max = this.evaluateCurve(curve.maxCurve, t, randomOffset);
         // Use same random offset for interpolation between min/max curves
-        const randInterp = randomOffset !== undefined ? randomOffset : this.rng();
+        const randInterp =
+          randomOffset !== undefined ? randomOffset : this.rng();
         return min + randInterp * (max - min);
       }
 
@@ -155,7 +165,11 @@ export class ParticleModulationCurves {
     const sizeData = new Float32Array(this.resolution);
     this.sampleCurve(modulation.sizeOverLifetime, sizeData);
     const sizeTexture = new THREE.DataTexture(
-      sizeData, this.resolution, 1, THREE.RedFormat, THREE.FloatType
+      sizeData,
+      this.resolution,
+      1,
+      THREE.RedFormat,
+      THREE.FloatType,
     );
     sizeTexture.needsUpdate = true;
 
@@ -163,7 +177,11 @@ export class ParticleModulationCurves {
     const opacityData = new Float32Array(this.resolution);
     this.sampleCurve(modulation.opacityOverLifetime, opacityData);
     const opacityTexture = new THREE.DataTexture(
-      opacityData, this.resolution, 1, THREE.RedFormat, THREE.FloatType
+      opacityData,
+      this.resolution,
+      1,
+      THREE.RedFormat,
+      THREE.FloatType,
     );
     opacityTexture.needsUpdate = true;
 
@@ -182,7 +200,11 @@ export class ParticleModulationCurves {
       colorData[i * 4 + 3] = color[3];
     }
     const colorTexture = new THREE.DataTexture(
-      colorData, this.resolution, 1, THREE.RGBAFormat, THREE.FloatType
+      colorData,
+      this.resolution,
+      1,
+      THREE.RGBAFormat,
+      THREE.FloatType,
     );
     colorTexture.needsUpdate = true;
 
@@ -213,7 +235,10 @@ export class ParticleModulationCurves {
   /**
    * Sample color gradient at time t
    */
-  sampleColorGradient(stops: ColorStop[], t: number): [number, number, number, number] {
+  sampleColorGradient(
+    stops: ColorStop[],
+    t: number,
+  ): [number, number, number, number] {
     if (stops.length === 0) return [1, 1, 1, 1];
     if (stops.length === 1) return stops[0].color;
 

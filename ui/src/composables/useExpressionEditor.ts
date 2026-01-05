@@ -1,14 +1,17 @@
-import { ref, shallowRef } from 'vue';
-import type { AnimatableProperty, PropertyExpression } from '@/types/project';
-import { useCompositorStore } from '@/stores/compositorStore';
-import { setPropertyExpression, removePropertyExpression } from '@/stores/actions/keyframeActions';
-import { isExpressionSafe } from '@/services/expressions/expressionValidator';
+import { ref, shallowRef } from "vue";
+import { isExpressionSafe } from "@/services/expressions/expressionValidator";
+import {
+  removePropertyExpression,
+  setPropertyExpression,
+} from "@/stores/actions/keyframeActions";
+import { useCompositorStore } from "@/stores/compositorStore";
+import type { AnimatableProperty, PropertyExpression } from "@/types/project";
 
 // Global state for expression editor
 const isVisible = ref(false);
 const currentProperty = shallowRef<AnimatableProperty<any> | null>(null);
-const currentLayerId = ref<string>('');
-const currentPropertyPath = ref<string>('');
+const currentLayerId = ref<string>("");
+const currentPropertyPath = ref<string>("");
 
 /**
  * Composable for global expression editor state
@@ -21,7 +24,7 @@ export function useExpressionEditor() {
   function openExpressionEditor(
     property: AnimatableProperty<any>,
     layerId: string,
-    propertyPath: string = ''
+    propertyPath: string = "",
   ) {
     currentProperty.value = property;
     currentLayerId.value = layerId;
@@ -41,25 +44,36 @@ export function useExpressionEditor() {
    * BUG-042 FIX: Use store action instead of direct mutation for undo/redo support
    * SECURITY: Validates custom expressions before applying to prevent DoS
    */
-  async function applyExpression(expression: PropertyExpression): Promise<boolean> {
+  async function applyExpression(
+    expression: PropertyExpression,
+  ): Promise<boolean> {
     if (!currentLayerId.value || !currentPropertyPath.value) {
       closeExpressionEditor();
       return false;
     }
 
     // SECURITY: Validate custom expressions before applying
-    if (expression.type === 'custom' && expression.params?.code) {
+    if (expression.type === "custom" && expression.params?.code) {
       const code = expression.params.code as string;
       const safe = await isExpressionSafe(code);
       if (!safe) {
-        console.error('[SECURITY] Expression blocked - timeout detected (possible infinite loop)');
-        alert('Expression blocked: This expression appears to contain an infinite loop and could hang your browser.');
+        console.error(
+          "[SECURITY] Expression blocked - timeout detected (possible infinite loop)",
+        );
+        alert(
+          "Expression blocked: This expression appears to contain an infinite loop and could hang your browser.",
+        );
         return false;
       }
     }
 
     const store = useCompositorStore();
-    setPropertyExpression(store, currentLayerId.value, currentPropertyPath.value, expression);
+    setPropertyExpression(
+      store,
+      currentLayerId.value,
+      currentPropertyPath.value,
+      expression,
+    );
     closeExpressionEditor();
     return true;
   }
@@ -71,7 +85,11 @@ export function useExpressionEditor() {
   function removeExpression() {
     if (currentLayerId.value && currentPropertyPath.value) {
       const store = useCompositorStore();
-      removePropertyExpression(store, currentLayerId.value, currentPropertyPath.value);
+      removePropertyExpression(
+        store,
+        currentLayerId.value,
+        currentPropertyPath.value,
+      );
     }
     closeExpressionEditor();
   }
@@ -86,6 +104,6 @@ export function useExpressionEditor() {
     openExpressionEditor,
     closeExpressionEditor,
     applyExpression,
-    removeExpression
+    removeExpression,
   };
 }

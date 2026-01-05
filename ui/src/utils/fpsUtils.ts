@@ -30,7 +30,10 @@ export const MAX_FPS = 120;
  * const fps = validateFps(null);       // Returns 16 (null is invalid)
  * ```
  */
-export function validateFps(fps: number | null | undefined, fallback: number = DEFAULT_FPS): number {
+export function validateFps(
+  fps: number | null | undefined,
+  fallback: number = DEFAULT_FPS,
+): number {
   if (fps === null || fps === undefined || !Number.isFinite(fps) || fps <= 0) {
     return fallback;
   }
@@ -52,7 +55,11 @@ export function validateFps(fps: number | null | undefined, fallback: number = D
  * const duration = safeDivideByFps(frames, fps, 1); // frames / fps or 1
  * ```
  */
-export function safeDivideByFps(numerator: number, fps: number | null | undefined, fallback: number = 0): number {
+export function safeDivideByFps(
+  numerator: number,
+  fps: number | null | undefined,
+  _fallback: number = 0,
+): number {
   const validFps = validateFps(fps);
   return numerator / validFps;
 }
@@ -131,9 +138,14 @@ export function calculateFrameCount(duration: number, fps: number): number {
  * }
  * ```
  */
-export function assertValidFps(fps: number | null | undefined, context?: string): asserts fps is number {
+export function assertValidFps(
+  fps: number | null | undefined,
+  context?: string,
+): asserts fps is number {
   if (fps === null || fps === undefined || !Number.isFinite(fps) || fps <= 0) {
-    const ctx = context ? ` in ${context}` : '';
-    throw new Error(`Invalid fps value${ctx}: ${fps}. FPS must be a positive number.`);
+    const ctx = context ? ` in ${context}` : "";
+    throw new Error(
+      `Invalid fps value${ctx}: ${fps}. FPS must be a positive number.`,
+    );
   }
 }

@@ -3,24 +3,29 @@
  * Orchestrates the full export process from compositor to ComfyUI
  */
 
+import { getComfyUIClient } from "@/services/comfyui/comfyuiClient";
+import {
+  generateWorkflowForTarget,
+  validateWorkflow,
+  type WorkflowParams,
+} from "@/services/comfyui/workflowTemplates";
+import { evaluateLayerCached } from "@/services/layerEvaluationCache";
+import type { Camera3D, CameraKeyframe } from "@/types/camera";
 import type {
+  DepthMapFormat,
   ExportConfig,
-  ExportResult,
   ExportProgress,
+  ExportResult,
   ExportTarget,
   GenerationProgress,
-  DepthMapFormat,
-} from '@/types/export';
-import type { Layer } from '@/types/project';
-import type { CameraKeyframe, Camera3D } from '@/types/camera';
-
-import { renderDepthFrame, convertDepthToFormat, depthToImageData, exportDepthSequence } from './depthRenderer';
-import { exportCameraForTarget } from './cameraExportFormats';
-import { getComfyUIClient } from '@/services/comfyui/comfyuiClient';
-import { generateWorkflowForTarget, validateWorkflow, type WorkflowParams } from '@/services/comfyui/workflowTemplates';
-import { EXPORT_PRESETS, DEPTH_FORMAT_SPECS } from '@/config/exportPresets';
-import { evaluateLayerCached } from '@/services/layerEvaluationCache';
-import type { EvaluatedLayer } from '@/engine/MotionEngine';
+} from "@/types/export";
+import type { Layer } from "@/types/project";
+import { exportCameraForTarget } from "./cameraExportFormats";
+import {
+  convertDepthToFormat,
+  depthToImageData,
+  renderDepthFrame,
+} from "./depthRenderer";
 
 // ============================================================================
 // Types
@@ -62,7 +67,7 @@ export class ExportPipeline {
     this.abortSignal = options.abortSignal;
 
     if (this.abortSignal) {
-      this.abortSignal.addEventListener('abort', () => {
+      this.abortSignal.addEventListener("abort", () => {
         this.aborted = true;
       });
     }
@@ -70,16 +75,16 @@ export class ExportPipeline {
 
   private checkAborted(): void {
     if (this.aborted) {
-      throw new Error('Export aborted');
+      throw new Error("Export aborted");
     }
   }
 
   private updateProgress(progress: Partial<ExportProgress>): void {
     this.onProgress({
-      stage: 'preparing',
+      stage: "preparing",
       stageProgress: 0,
       overallProgress: 0,
-      message: '',
+      message: "",
       ...progress,
     });
   }
@@ -100,10 +105,10 @@ export class ExportPipeline {
 
     try {
       this.updateProgress({
-        stage: 'preparing',
+        stage: "preparing",
         stageProgress: 0,
         overallProgress: 0,
-        message: 'Preparing export...',
+        message: "Preparing export...",
       });
 
       // Validate config
@@ -154,12 +159,13 @@ export class ExportPipeline {
       }
 
       result.success = result.errors.length === 0;
-
     } catch (error) {
-      if (error instanceof Error && error.message === 'Export aborted') {
-        result.errors.push('Export was cancelled');
+      if (error instanceof Error && error.message === "Export aborted") {
+        result.errors.push("Export was cancelled");
       } else {
-        result.errors.push(error instanceof Error ? error.message : 'Unknown error');
+        result.errors.push(
+          error instanceof Error ? error.message : "Unknown error",
+        );
       }
     }
 
@@ -175,38 +181,48 @@ export class ExportPipeline {
     const errors: string[] = [];
 
     if (this.config.width < 64 || this.config.width > 4096) {
-      errors.push('Width must be between 64 and 4096');
+      errors.push("Width must be between 64 and 4096");
     }
 
     if (this.config.height < 64 || this.config.height > 4096) {
-      errors.push('Height must be between 64 and 4096');
+      errors.push("Height must be between 64 and 4096");
     }
 
     if (this.config.frameCount < 1 || this.config.frameCount > 1000) {
-      errors.push('Frame count must be between 1 and 1000');
+      errors.push("Frame count must be between 1 and 1000");
     }
 
     if (this.config.fps < 1 || this.config.fps > 120) {
-      errors.push('FPS must be between 1 and 120');
+      errors.push("FPS must be between 1 and 120");
     }
 
-    if (this.config.startFrame < 0 || this.config.startFrame >= this.config.frameCount) {
-      errors.push('Invalid start frame');
+    if (
+      this.config.startFrame < 0 ||
+      this.config.startFrame >= this.config.frameCount
+    ) {
+      errors.push("Invalid start frame");
     }
 
-    if (this.config.endFrame <= this.config.startFrame || this.config.endFrame > this.config.frameCount) {
-      errors.push('Invalid end frame');
+    if (
+      this.config.endFrame <= this.config.startFrame ||
+      this.config.endFrame > this.config.frameCount
+    ) {
+      errors.push("Invalid end frame");
     }
 
     if (!this.config.prompt && this.needsPrompt()) {
-      errors.push('Prompt is required for this export target');
+      errors.push("Prompt is required for this export target");
     }
 
     return errors;
   }
 
   private needsPrompt(): boolean {
-    const noPromptTargets: ExportTarget[] = ['controlnet-depth', 'controlnet-canny', 'controlnet-lineart'];
+    const noPromptTargets: ExportTarget[] = [
+      "controlnet-depth",
+      "controlnet-canny",
+      "controlnet-lineart",
+    ];
     return !noPromptTargets.includes(this.config.target);
   }
 
@@ -216,20 +232,20 @@ export class ExportPipeline {
 
   private async renderReferenceFrame(result: ExportResult): Promise<void> {
     this.updateProgress({
-      stage: 'rendering_frames',
+      stage: "rendering_frames",
       stageProgress: 0,
       overallProgress: 5,
-      message: 'Rendering reference frame...',
+      message: "Rendering reference frame...",
     });
 
     const canvas = new OffscreenCanvas(this.config.width, this.config.height);
-    const ctx = canvas.getContext('2d')!;
+    const ctx = canvas.getContext("2d")!;
 
     // Render the first frame
     await this.renderFrameToCanvas(ctx, this.config.startFrame);
 
     // Convert to blob and save
-    const blob = await canvas.convertToBlob({ type: 'image/png' });
+    const blob = await canvas.convertToBlob({ type: "image/png" });
     const filename = `${this.config.filenamePrefix}_reference.png`;
 
     // If ComfyUI server is configured, upload
@@ -239,33 +255,36 @@ export class ExportPipeline {
       result.outputFiles.referenceImage = uploadResult.name;
     } else {
       // Save locally (browser download)
-      result.outputFiles.referenceImage = await this.saveBlobLocally(blob, filename);
+      result.outputFiles.referenceImage = await this.saveBlobLocally(
+        blob,
+        filename,
+      );
     }
 
     this.updateProgress({
-      stage: 'rendering_frames',
+      stage: "rendering_frames",
       stageProgress: 100,
       overallProgress: 10,
-      message: 'Reference frame complete',
+      message: "Reference frame complete",
     });
   }
 
   private async renderLastFrame(result: ExportResult): Promise<void> {
     this.updateProgress({
-      stage: 'rendering_frames',
+      stage: "rendering_frames",
       stageProgress: 0,
       overallProgress: 12,
-      message: 'Rendering last frame...',
+      message: "Rendering last frame...",
     });
 
     const canvas = new OffscreenCanvas(this.config.width, this.config.height);
-    const ctx = canvas.getContext('2d')!;
+    const ctx = canvas.getContext("2d")!;
 
     // Render the last frame
     await this.renderFrameToCanvas(ctx, this.config.endFrame - 1);
 
     // Convert to blob and save
-    const blob = await canvas.convertToBlob({ type: 'image/png' });
+    const blob = await canvas.convertToBlob({ type: "image/png" });
     const filename = `${this.config.filenamePrefix}_last.png`;
 
     if (this.config.comfyuiServer) {
@@ -277,23 +296,23 @@ export class ExportPipeline {
     }
 
     this.updateProgress({
-      stage: 'rendering_frames',
+      stage: "rendering_frames",
       stageProgress: 100,
       overallProgress: 15,
-      message: 'Last frame complete',
+      message: "Last frame complete",
     });
   }
 
   private async renderFrameToCanvas(
     ctx: OffscreenCanvasRenderingContext2D,
-    frameIndex: number
+    frameIndex: number,
   ): Promise<void> {
     // Clear canvas
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
     // Sort layers by z-index (back to front)
     const sortedLayers = [...this.layers]
-      .filter(layer => layer.visible)
+      .filter((layer) => layer.visible)
       .sort((a, b) => {
         const az = a.transform?.position?.value?.z ?? 0;
         const bz = b.transform?.position?.value?.z ?? 0;
@@ -309,7 +328,7 @@ export class ExportPipeline {
   private async renderLayerToCanvas(
     ctx: OffscreenCanvasRenderingContext2D,
     layer: Layer,
-    frameIndex: number
+    frameIndex: number,
   ): Promise<void> {
     // CRITICAL FIX: Evaluate layer properties with keyframes, expressions, and data-driven values
     // Previously this used static .value which ignored all animation
@@ -324,9 +343,10 @@ export class ExportPipeline {
     // Get evaluated transform (includes keyframe interpolation + expressions)
     const pos = evaluated.transform.position;
     const scaleVal = evaluated.transform.scale;
-    const rotation = typeof evaluated.transform.rotation === 'number'
-      ? evaluated.transform.rotation
-      : (evaluated.transform.rotation as any)?.z ?? 0;
+    const rotation =
+      typeof evaluated.transform.rotation === "number"
+        ? evaluated.transform.rotation
+        : ((evaluated.transform.rotation as any)?.z ?? 0);
     const opacity = evaluated.opacity;
 
     ctx.save();
@@ -339,26 +359,27 @@ export class ExportPipeline {
 
     // Draw layer content
     const layerData = layer.data as any;
-    if (layer.type === 'image' && layerData?.src) {
+    if (layer.type === "image" && layerData?.src) {
       // Create image from content URL
       const img = await this.loadImage(layerData.src);
       ctx.drawImage(img, -img.width / 2, -img.height / 2);
-    } else if (layer.type === 'solid' && layerData?.color) {
-      ctx.fillStyle = layerData.color || '#000000';
+    } else if (layer.type === "solid" && layerData?.color) {
+      ctx.fillStyle = layerData.color || "#000000";
       const width = layerData.width ?? 100;
       const height = layerData.height ?? 100;
       ctx.fillRect(-width / 2, -height / 2, width, height);
-    } else if (layer.type === 'text' && layerData?.text) {
+    } else if (layer.type === "text" && layerData?.text) {
       // Render text with evaluated properties
       const textContent = evaluated.properties.textContent ?? layerData.text;
-      const fontSize = evaluated.properties.fontSize ?? layerData.fontSize ?? 48;
-      const fontFamily = layerData.fontFamily ?? 'Arial';
-      const fillColor = layerData.fillColor ?? '#ffffff';
+      const fontSize =
+        evaluated.properties.fontSize ?? layerData.fontSize ?? 48;
+      const fontFamily = layerData.fontFamily ?? "Arial";
+      const fillColor = layerData.fillColor ?? "#ffffff";
 
       ctx.fillStyle = fillColor;
       ctx.font = `${fontSize}px ${fontFamily}`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
       ctx.fillText(String(textContent), 0, 0);
     }
 
@@ -389,9 +410,9 @@ export class ExportPipeline {
       const progress = (i / frameCount) * 100;
 
       this.updateProgress({
-        stage: 'rendering_depth',
+        stage: "rendering_depth",
         stageProgress: progress,
-        overallProgress: 15 + (progress * 0.25),
+        overallProgress: 15 + progress * 0.25,
         currentFrame: i + 1,
         totalFrames: frameCount,
         message: `Rendering depth frame ${i + 1}/${frameCount}`,
@@ -400,9 +421,9 @@ export class ExportPipeline {
       // Render depth for this frame - need camera for proper depth calculation
       // For now use a default camera if not available
       const defaultCamera: Camera3D = {
-        id: 'default',
-        name: 'Default Camera',
-        type: 'one-node',
+        id: "default",
+        name: "Default Camera",
+        type: "one-node",
         position: { x: 0, y: 0, z: 1000 },
         pointOfInterest: { x: 0, y: 0, z: 0 },
         orientation: { x: 0, y: 0, z: 0 },
@@ -413,7 +434,7 @@ export class ExportPipeline {
         focalLength: 50,
         angleOfView: 60,
         filmSize: 36,
-        measureFilmSize: 'horizontal',
+        measureFilmSize: "horizontal",
         nearClip: 0.1,
         farClip: 100,
         depthOfField: {
@@ -436,7 +457,7 @@ export class ExportPipeline {
           threshold: 1,
           saturation: 1,
         },
-        autoOrient: 'off',
+        autoOrient: "off",
       };
 
       const depthResult = renderDepthFrame({
@@ -452,27 +473,32 @@ export class ExportPipeline {
       // Convert to target format
       const convertedDepth = convertDepthToFormat(
         depthResult,
-        this.config.depthFormat
+        this.config.depthFormat,
       );
 
       // Create image data
       const imageData = depthToImageData(
         convertedDepth,
         this.config.width,
-        this.config.height
+        this.config.height,
       );
 
       // Convert to canvas and blob
       const canvas = new OffscreenCanvas(this.config.width, this.config.height);
-      const ctx = canvas.getContext('2d')!;
+      const ctx = canvas.getContext("2d")!;
       ctx.putImageData(imageData, 0, 0);
 
-      const blob = await canvas.convertToBlob({ type: 'image/png' });
-      const filename = `${this.config.filenamePrefix}_depth_${String(i).padStart(5, '0')}.png`;
+      const blob = await canvas.convertToBlob({ type: "image/png" });
+      const filename = `${this.config.filenamePrefix}_depth_${String(i).padStart(5, "0")}.png`;
 
       if (this.config.comfyuiServer) {
         const client = getComfyUIClient(this.config.comfyuiServer);
-        const uploadResult = await client.uploadImage(blob, filename, 'input', 'depth_sequence');
+        const uploadResult = await client.uploadImage(
+          blob,
+          filename,
+          "input",
+          "depth_sequence",
+        );
         depthFiles.push(uploadResult.name);
       } else {
         depthFiles.push(await this.saveBlobLocally(blob, filename));
@@ -482,10 +508,10 @@ export class ExportPipeline {
     result.outputFiles.depthSequence = depthFiles;
 
     this.updateProgress({
-      stage: 'rendering_depth',
+      stage: "rendering_depth",
       stageProgress: 100,
       overallProgress: 40,
-      message: 'Depth sequence complete',
+      message: "Depth sequence complete",
     });
   }
 
@@ -504,9 +530,9 @@ export class ExportPipeline {
       const progress = (i / frameCount) * 100;
 
       this.updateProgress({
-        stage: 'rendering_control',
+        stage: "rendering_control",
         stageProgress: progress,
-        overallProgress: 40 + (progress * 0.2),
+        overallProgress: 40 + progress * 0.2,
         currentFrame: i + 1,
         totalFrames: frameCount,
         message: `Rendering control frame ${i + 1}/${frameCount}`,
@@ -514,18 +540,26 @@ export class ExportPipeline {
 
       // Render the frame
       const canvas = new OffscreenCanvas(this.config.width, this.config.height);
-      const ctx = canvas.getContext('2d')!;
+      const ctx = canvas.getContext("2d")!;
       await this.renderFrameToCanvas(ctx, frameIndex);
 
       // Apply control preprocessing based on type
-      const controlCanvas = await this.applyControlPreprocessing(canvas, this.config.controlType || 'depth');
+      const controlCanvas = await this.applyControlPreprocessing(
+        canvas,
+        this.config.controlType || "depth",
+      );
 
-      const blob = await controlCanvas.convertToBlob({ type: 'image/png' });
-      const filename = `${this.config.filenamePrefix}_control_${String(i).padStart(5, '0')}.png`;
+      const blob = await controlCanvas.convertToBlob({ type: "image/png" });
+      const filename = `${this.config.filenamePrefix}_control_${String(i).padStart(5, "0")}.png`;
 
       if (this.config.comfyuiServer) {
         const client = getComfyUIClient(this.config.comfyuiServer);
-        const uploadResult = await client.uploadImage(blob, filename, 'input', 'control_sequence');
+        const uploadResult = await client.uploadImage(
+          blob,
+          filename,
+          "input",
+          "control_sequence",
+        );
         controlFiles.push(uploadResult.name);
       } else {
         controlFiles.push(await this.saveBlobLocally(blob, filename));
@@ -535,35 +569,35 @@ export class ExportPipeline {
     result.outputFiles.controlSequence = controlFiles;
 
     this.updateProgress({
-      stage: 'rendering_control',
+      stage: "rendering_control",
       stageProgress: 100,
       overallProgress: 60,
-      message: 'Control sequence complete',
+      message: "Control sequence complete",
     });
   }
 
   private async applyControlPreprocessing(
     input: OffscreenCanvas,
-    controlType: string
+    controlType: string,
   ): Promise<OffscreenCanvas> {
     const output = new OffscreenCanvas(input.width, input.height);
-    const ctx = output.getContext('2d')!;
-    const inputCtx = input.getContext('2d')!;
+    const ctx = output.getContext("2d")!;
+    const inputCtx = input.getContext("2d")!;
     const imageData = inputCtx.getImageData(0, 0, input.width, input.height);
     const data = imageData.data;
 
     switch (controlType) {
-      case 'canny':
+      case "canny":
         // Simple edge detection (Sobel-like)
         this.applyEdgeDetection(data, input.width, input.height);
         break;
 
-      case 'lineart':
+      case "lineart":
         // Convert to grayscale with high contrast
         this.applyLineart(data);
         break;
 
-      case 'softedge':
+      case "softedge":
         // Softer edge detection
         this.applySoftEdge(data, input.width, input.height);
         break;
@@ -577,13 +611,19 @@ export class ExportPipeline {
     return output;
   }
 
-  private applyEdgeDetection(data: Uint8ClampedArray, width: number, height: number): void {
+  private applyEdgeDetection(
+    data: Uint8ClampedArray,
+    width: number,
+    height: number,
+  ): void {
     const grayscale = new Float32Array(width * height);
 
     // Convert to grayscale
     for (let i = 0; i < width * height; i++) {
       const idx = i * 4;
-      grayscale[i] = (data[idx] * 0.299 + data[idx + 1] * 0.587 + data[idx + 2] * 0.114) / 255;
+      grayscale[i] =
+        (data[idx] * 0.299 + data[idx + 1] * 0.587 + data[idx + 2] * 0.114) /
+        255;
     }
 
     // Simple Sobel-like edge detection
@@ -593,13 +633,20 @@ export class ExportPipeline {
         const idx = y * width + x;
 
         const gx =
-          -grayscale[idx - width - 1] + grayscale[idx - width + 1] +
-          -2 * grayscale[idx - 1] + 2 * grayscale[idx + 1] +
-          -grayscale[idx + width - 1] + grayscale[idx + width + 1];
+          -grayscale[idx - width - 1] +
+          grayscale[idx - width + 1] +
+          -2 * grayscale[idx - 1] +
+          2 * grayscale[idx + 1] +
+          -grayscale[idx + width - 1] +
+          grayscale[idx + width + 1];
 
         const gy =
-          -grayscale[idx - width - 1] - 2 * grayscale[idx - width] - grayscale[idx - width + 1] +
-          grayscale[idx + width - 1] + 2 * grayscale[idx + width] + grayscale[idx + width + 1];
+          -grayscale[idx - width - 1] -
+          2 * grayscale[idx - width] -
+          grayscale[idx - width + 1] +
+          grayscale[idx + width - 1] +
+          2 * grayscale[idx + width] +
+          grayscale[idx + width + 1];
 
         edges[idx] = Math.min(1, Math.sqrt(gx * gx + gy * gy) * 2);
       }
@@ -625,7 +672,11 @@ export class ExportPipeline {
     }
   }
 
-  private applySoftEdge(data: Uint8ClampedArray, width: number, height: number): void {
+  private applySoftEdge(
+    data: Uint8ClampedArray,
+    width: number,
+    height: number,
+  ): void {
     // Similar to edge detection but with Gaussian blur
     this.applyEdgeDetection(data, width, height);
 
@@ -661,17 +712,17 @@ export class ExportPipeline {
 
   private async exportCameraData(result: ExportResult): Promise<void> {
     this.updateProgress({
-      stage: 'exporting_camera',
+      stage: "exporting_camera",
       stageProgress: 0,
       overallProgress: 60,
-      message: 'Exporting camera data...',
+      message: "Exporting camera data...",
     });
 
     // Create a default camera for export if none provided
     const exportCamera: Camera3D = {
-      id: 'export',
-      name: 'Export Camera',
-      type: 'one-node',
+      id: "export",
+      name: "Export Camera",
+      type: "one-node",
       position: { x: 0, y: 0, z: 1000 },
       pointOfInterest: { x: 0, y: 0, z: 0 },
       orientation: { x: 0, y: 0, z: 0 },
@@ -682,7 +733,7 @@ export class ExportPipeline {
       focalLength: 50,
       angleOfView: 60,
       filmSize: 36,
-      measureFilmSize: 'horizontal',
+      measureFilmSize: "horizontal",
       nearClip: 0.1,
       farClip: 100,
       depthOfField: {
@@ -693,9 +744,15 @@ export class ExportPipeline {
         blurLevel: 1,
         lockToZoom: false,
       },
-      iris: { shape: 7, rotation: 0, roundness: 0, aspectRatio: 1, diffractionFringe: 0 },
+      iris: {
+        shape: 7,
+        rotation: 0,
+        roundness: 0,
+        aspectRatio: 1,
+        diffractionFringe: 0,
+      },
       highlight: { gain: 0, threshold: 1, saturation: 1 },
-      autoOrient: 'off',
+      autoOrient: "off",
     };
 
     const cameraData = exportCameraForTarget(
@@ -705,24 +762,29 @@ export class ExportPipeline {
       this.config.endFrame - this.config.startFrame,
       this.config.width,
       this.config.height,
-      this.config.fps
+      this.config.fps,
     );
 
     const filename = `${this.config.filenamePrefix}_camera.json`;
-    const blob = new Blob([JSON.stringify(cameraData, null, 2)], { type: 'application/json' });
+    const blob = new Blob([JSON.stringify(cameraData, null, 2)], {
+      type: "application/json",
+    });
 
     if (this.config.comfyuiServer) {
       // Save as metadata (not uploaded to ComfyUI)
       result.outputFiles.cameraData = filename;
     } else {
-      result.outputFiles.cameraData = await this.saveBlobLocally(blob, filename);
+      result.outputFiles.cameraData = await this.saveBlobLocally(
+        blob,
+        filename,
+      );
     }
 
     this.updateProgress({
-      stage: 'exporting_camera',
+      stage: "exporting_camera",
       stageProgress: 100,
       overallProgress: 65,
-      message: 'Camera data exported',
+      message: "Camera data exported",
     });
   }
 
@@ -732,10 +794,10 @@ export class ExportPipeline {
 
   private async generateWorkflow(result: ExportResult): Promise<void> {
     this.updateProgress({
-      stage: 'generating_workflow',
+      stage: "generating_workflow",
       stageProgress: 0,
       overallProgress: 65,
-      message: 'Generating workflow...',
+      message: "Generating workflow...",
     });
 
     // Build workflow parameters
@@ -773,15 +835,20 @@ export class ExportPipeline {
 
     // Save workflow
     const filename = `${this.config.filenamePrefix}_workflow.json`;
-    const blob = new Blob([JSON.stringify(workflow, null, 2)], { type: 'application/json' });
+    const blob = new Blob([JSON.stringify(workflow, null, 2)], {
+      type: "application/json",
+    });
 
-    result.outputFiles.workflowJson = await this.saveBlobLocally(blob, filename);
+    result.outputFiles.workflowJson = await this.saveBlobLocally(
+      blob,
+      filename,
+    );
 
     this.updateProgress({
-      stage: 'generating_workflow',
+      stage: "generating_workflow",
       stageProgress: 100,
       overallProgress: 70,
-      message: 'Workflow generated',
+      message: "Workflow generated",
     });
   }
 
@@ -795,10 +862,10 @@ export class ExportPipeline {
     }
 
     this.updateProgress({
-      stage: 'queuing',
+      stage: "queuing",
       stageProgress: 0,
       overallProgress: 70,
-      message: 'Connecting to ComfyUI...',
+      message: "Connecting to ComfyUI...",
     });
 
     const client = getComfyUIClient(this.config.comfyuiServer);
@@ -806,7 +873,7 @@ export class ExportPipeline {
     // Check connection
     const connected = await client.checkConnection();
     if (!connected) {
-      result.errors.push('Could not connect to ComfyUI server');
+      result.errors.push("Could not connect to ComfyUI server");
       return;
     }
 
@@ -815,49 +882,58 @@ export class ExportPipeline {
     const workflow = await response.json();
 
     this.updateProgress({
-      stage: 'queuing',
+      stage: "queuing",
       stageProgress: 50,
       overallProgress: 75,
-      message: 'Queueing workflow...',
+      message: "Queueing workflow...",
     });
 
     // Queue the workflow
     const promptResult = await client.queuePrompt(workflow);
     result.outputFiles.promptId = promptResult.prompt_id;
 
-    if (promptResult.node_errors && Object.keys(promptResult.node_errors).length > 0) {
-      result.errors.push('Workflow has node errors: ' + JSON.stringify(promptResult.node_errors));
+    if (
+      promptResult.node_errors &&
+      Object.keys(promptResult.node_errors).length > 0
+    ) {
+      result.errors.push(
+        `Workflow has node errors: ${JSON.stringify(promptResult.node_errors)}`,
+      );
       return;
     }
 
     this.updateProgress({
-      stage: 'generating',
+      stage: "generating",
       stageProgress: 0,
       overallProgress: 80,
-      message: 'Generating video...',
+      message: "Generating video...",
     });
 
     // Wait for completion
     try {
-      await client.waitForPrompt(promptResult.prompt_id, (progress: GenerationProgress) => {
-        this.updateProgress({
-          stage: 'generating',
-          stageProgress: progress.percentage,
-          overallProgress: 80 + (progress.percentage * 0.15),
-          message: `Generating: ${progress.percentage.toFixed(0)}%`,
-          preview: progress.preview,
-        });
-      });
+      await client.waitForPrompt(
+        promptResult.prompt_id,
+        (progress: GenerationProgress) => {
+          this.updateProgress({
+            stage: "generating",
+            stageProgress: progress.percentage,
+            overallProgress: 80 + progress.percentage * 0.15,
+            message: `Generating: ${progress.percentage.toFixed(0)}%`,
+            preview: progress.preview,
+          });
+        },
+      );
 
       this.updateProgress({
-        stage: 'complete',
+        stage: "complete",
         stageProgress: 100,
         overallProgress: 100,
-        message: 'Export complete!',
+        message: "Export complete!",
       });
-
     } catch (error) {
-      result.errors.push(error instanceof Error ? error.message : 'Generation failed');
+      result.errors.push(
+        error instanceof Error ? error.message : "Generation failed",
+      );
     }
   }
 
@@ -870,7 +946,7 @@ export class ExportPipeline {
     const url = URL.createObjectURL(blob);
 
     // Trigger download
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
     a.download = filename;
     document.body.appendChild(a);
@@ -890,7 +966,7 @@ export async function exportToComfyUI(
   layers: Layer[],
   cameraKeyframes: CameraKeyframe[],
   config: ExportConfig,
-  onProgress?: (progress: ExportProgress) => void
+  onProgress?: (progress: ExportProgress) => void,
 ): Promise<ExportResult> {
   const pipeline = new ExportPipeline({
     layers,
@@ -911,27 +987,27 @@ export async function quickExportDepthSequence(
   width: number,
   height: number,
   frameCount: number,
-  format: DepthMapFormat = 'midas',
-  onProgress?: (progress: ExportProgress) => void
+  format: DepthMapFormat = "midas",
+  onProgress?: (progress: ExportProgress) => void,
 ): Promise<ExportResult> {
   const config: ExportConfig = {
-    target: 'controlnet-depth',
+    target: "controlnet-depth",
     width,
     height,
     frameCount,
     fps: 24,
     startFrame: 0,
     endFrame: frameCount,
-    outputDir: '',
-    filenamePrefix: 'depth_export',
+    outputDir: "",
+    filenamePrefix: "depth_export",
     exportDepthMap: true,
     exportControlImages: false,
     exportCameraData: false,
     exportReferenceFrame: false,
     exportLastFrame: false,
     depthFormat: format,
-    prompt: '',
-    negativePrompt: '',
+    prompt: "",
+    negativePrompt: "",
     autoQueueWorkflow: false,
   };
 
@@ -941,26 +1017,26 @@ export async function quickExportDepthSequence(
 export async function quickExportReferenceFrame(
   layers: Layer[],
   width: number,
-  height: number
+  height: number,
 ): Promise<string | null> {
   const config: ExportConfig = {
-    target: 'wan22-i2v',
+    target: "wan22-i2v",
     width,
     height,
     frameCount: 1,
     fps: 24,
     startFrame: 0,
     endFrame: 1,
-    outputDir: '',
-    filenamePrefix: 'reference',
+    outputDir: "",
+    filenamePrefix: "reference",
     exportDepthMap: false,
     exportControlImages: false,
     exportCameraData: false,
     exportReferenceFrame: true,
     exportLastFrame: false,
-    depthFormat: 'midas',
-    prompt: '',
-    negativePrompt: '',
+    depthFormat: "midas",
+    prompt: "",
+    negativePrompt: "",
     autoQueueWorkflow: false,
   };
 

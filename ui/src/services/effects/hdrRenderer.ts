@@ -12,24 +12,24 @@
 // =============================================================================
 
 export interface HDRParams {
-  intensity: number;          // 0.0 - 5.0, overall HDR effect strength
-  shadowIntensity: number;    // 0.0 - 1.0, shadow recovery
+  intensity: number; // 0.0 - 5.0, overall HDR effect strength
+  shadowIntensity: number; // 0.0 - 1.0, shadow recovery
   highlightIntensity: number; // 0.0 - 1.0, highlight recovery
-  gamma: number;              // 0.1 - 3.0, gamma correction
-  contrast: number;           // 0.0 - 2.0, contrast enhancement
-  saturationBoost: number;    // 0.0 - 2.0, color saturation
+  gamma: number; // 0.1 - 3.0, gamma correction
+  contrast: number; // 0.0 - 2.0, contrast enhancement
+  saturationBoost: number; // 0.0 - 2.0, color saturation
 }
 
 export interface LABColor {
-  L: number;  // Lightness: 0-100
-  a: number;  // Green-Red: -128 to 127
-  b: number;  // Blue-Yellow: -128 to 127
+  L: number; // Lightness: 0-100
+  a: number; // Green-Red: -128 to 127
+  b: number; // Blue-Yellow: -128 to 127
 }
 
 export interface RGBColor {
-  r: number;  // 0-255
-  g: number;  // 0-255
-  b: number;  // 0-255
+  r: number; // 0-255
+  g: number; // 0-255
+  b: number; // 0-255
 }
 
 export interface XYZColor {
@@ -57,9 +57,9 @@ function rgbToXyz(rgb: RGBColor): XYZColor {
   let b = rgb.b / 255;
 
   // sRGB gamma correction (inverse)
-  r = r > 0.04045 ? Math.pow((r + 0.055) / 1.055, 2.4) : r / 12.92;
-  g = g > 0.04045 ? Math.pow((g + 0.055) / 1.055, 2.4) : g / 12.92;
-  b = b > 0.04045 ? Math.pow((b + 0.055) / 1.055, 2.4) : b / 12.92;
+  r = r > 0.04045 ? ((r + 0.055) / 1.055) ** 2.4 : r / 12.92;
+  g = g > 0.04045 ? ((g + 0.055) / 1.055) ** 2.4 : g / 12.92;
+  b = b > 0.04045 ? ((b + 0.055) / 1.055) ** 2.4 : b / 12.92;
 
   // Scale to 100
   r *= 100;
@@ -69,8 +69,8 @@ function rgbToXyz(rgb: RGBColor): XYZColor {
   // Convert to XYZ using sRGB matrix (D65)
   return {
     X: r * 0.4124564 + g * 0.3575761 + b * 0.1804375,
-    Y: r * 0.2126729 + g * 0.7151522 + b * 0.0721750,
-    Z: r * 0.0193339 + g * 0.1191920 + b * 0.9503041
+    Y: r * 0.2126729 + g * 0.7151522 + b * 0.072175,
+    Z: r * 0.0193339 + g * 0.119192 + b * 0.9503041,
   };
 }
 
@@ -83,20 +83,20 @@ function xyzToRgb(xyz: XYZColor): RGBColor {
   const z = xyz.Z / 100;
 
   // Convert XYZ to linear RGB
-  let r = x *  3.2404542 + y * -1.5371385 + z * -0.4985314;
-  let g = x * -0.9692660 + y *  1.8760108 + z *  0.0415560;
-  let b = x *  0.0556434 + y * -0.2040259 + z *  1.0572252;
+  let r = x * 3.2404542 + y * -1.5371385 + z * -0.4985314;
+  let g = x * -0.969266 + y * 1.8760108 + z * 0.041556;
+  let b = x * 0.0556434 + y * -0.2040259 + z * 1.0572252;
 
   // Apply sRGB gamma correction
-  r = r > 0.0031308 ? 1.055 * Math.pow(r, 1 / 2.4) - 0.055 : 12.92 * r;
-  g = g > 0.0031308 ? 1.055 * Math.pow(g, 1 / 2.4) - 0.055 : 12.92 * g;
-  b = b > 0.0031308 ? 1.055 * Math.pow(b, 1 / 2.4) - 0.055 : 12.92 * b;
+  r = r > 0.0031308 ? 1.055 * r ** (1 / 2.4) - 0.055 : 12.92 * r;
+  g = g > 0.0031308 ? 1.055 * g ** (1 / 2.4) - 0.055 : 12.92 * g;
+  b = b > 0.0031308 ? 1.055 * b ** (1 / 2.4) - 0.055 : 12.92 * b;
 
   // Clamp and scale to 0-255
   return {
     r: Math.max(0, Math.min(255, Math.round(r * 255))),
     g: Math.max(0, Math.min(255, Math.round(g * 255))),
-    b: Math.max(0, Math.min(255, Math.round(b * 255)))
+    b: Math.max(0, Math.min(255, Math.round(b * 255))),
   };
 }
 
@@ -112,14 +112,14 @@ function xyzToLab(xyz: XYZColor): LABColor {
   const epsilon = 0.008856;
   const kappa = 903.3;
 
-  x = x > epsilon ? Math.pow(x, 1/3) : (kappa * x + 16) / 116;
-  y = y > epsilon ? Math.pow(y, 1/3) : (kappa * y + 16) / 116;
-  z = z > epsilon ? Math.pow(z, 1/3) : (kappa * z + 16) / 116;
+  x = x > epsilon ? x ** (1 / 3) : (kappa * x + 16) / 116;
+  y = y > epsilon ? y ** (1 / 3) : (kappa * y + 16) / 116;
+  z = z > epsilon ? z ** (1 / 3) : (kappa * z + 16) / 116;
 
   return {
     L: 116 * y - 16,
     a: 500 * (x - y),
-    b: 200 * (y - z)
+    b: 200 * (y - z),
   };
 }
 
@@ -139,8 +139,10 @@ function labToXyz(lab: LABColor): XYZColor {
 
   return {
     X: REF_X * (x3 > epsilon ? x3 : (116 * x - 16) / kappa),
-    Y: REF_Y * (lab.L > kappa * epsilon ? Math.pow((lab.L + 16) / 116, 3) : lab.L / kappa),
-    Z: REF_Z * (z3 > epsilon ? z3 : (116 * z - 16) / kappa)
+    Y:
+      REF_Y *
+      (lab.L > kappa * epsilon ? ((lab.L + 16) / 116) ** 3 : lab.L / kappa),
+    Z: REF_Z * (z3 > epsilon ? z3 : (116 * z - 16) / kappa),
   };
 }
 
@@ -167,23 +169,23 @@ export function labToRgb(lab: LABColor): RGBColor {
  */
 function createLuminanceMask(
   L: number,
-  targetRange: 'shadows' | 'midtones' | 'highlights'
+  targetRange: "shadows" | "midtones" | "highlights",
 ): number {
   // Normalize L to 0-1
   const normalizedL = L / 100;
 
   switch (targetRange) {
-    case 'shadows':
+    case "shadows":
       // Affects darker areas more strongly
-      return 1 - Math.pow(normalizedL, 0.5);
+      return 1 - normalizedL ** 0.5;
 
-    case 'midtones':
+    case "midtones":
       // Bell curve centered at 0.5
-      return 1 - 4 * Math.pow(normalizedL - 0.5, 2);
+      return 1 - 4 * (normalizedL - 0.5) ** 2;
 
-    case 'highlights':
+    case "highlights":
       // Affects lighter areas more strongly
-      return Math.pow(normalizedL, 0.5);
+      return normalizedL ** 0.5;
 
     default:
       return 1;
@@ -193,26 +195,25 @@ function createLuminanceMask(
 /**
  * Apply HDR tone mapping to a single LAB pixel
  */
-function processLABPixel(
-  lab: LABColor,
-  params: HDRParams
-): LABColor {
+function processLABPixel(lab: LABColor, params: HDRParams): LABColor {
   let { L, a, b } = lab;
 
   // Calculate luminance masks
-  const shadowMask = createLuminanceMask(L, 'shadows');
-  const highlightMask = createLuminanceMask(L, 'highlights');
+  const shadowMask = createLuminanceMask(L, "shadows");
+  const highlightMask = createLuminanceMask(L, "highlights");
 
   // Shadow recovery: lift dark areas
-  const shadowLift = shadowMask * params.shadowIntensity * params.intensity * 20;
+  const shadowLift =
+    shadowMask * params.shadowIntensity * params.intensity * 20;
   L = L + shadowLift;
 
   // Highlight recovery: compress bright areas
-  const highlightCompress = highlightMask * params.highlightIntensity * params.intensity * 15;
+  const highlightCompress =
+    highlightMask * params.highlightIntensity * params.intensity * 15;
   L = L - highlightCompress;
 
   // Apply gamma correction
-  L = Math.pow(L / 100, 1 / params.gamma) * 100;
+  L = (L / 100) ** (1 / params.gamma) * 100;
 
   // Apply contrast (S-curve)
   if (params.contrast !== 1.0) {
@@ -220,9 +221,10 @@ function processLABPixel(
     const contrastFactor = params.contrast;
 
     // S-curve contrast
-    const contrastedL = normalizedL < 0.5
-      ? 0.5 * Math.pow(2 * normalizedL, contrastFactor)
-      : 1 - 0.5 * Math.pow(2 * (1 - normalizedL), contrastFactor);
+    const contrastedL =
+      normalizedL < 0.5
+        ? 0.5 * (2 * normalizedL) ** contrastFactor
+        : 1 - 0.5 * (2 * (1 - normalizedL)) ** contrastFactor;
 
     L = contrastedL * 100;
   }
@@ -245,14 +247,11 @@ function processLABPixel(
 /**
  * Apply HDR effect to an ImageData object
  */
-export function applyHDREffect(
-  input: ImageData,
-  params: HDRParams
-): ImageData {
+export function applyHDREffect(input: ImageData, params: HDRParams): ImageData {
   const output = new ImageData(
     new Uint8ClampedArray(input.data),
     input.width,
-    input.height
+    input.height,
   );
 
   const data = output.data;
@@ -262,7 +261,7 @@ export function applyHDREffect(
     const rgb: RGBColor = {
       r: data[i],
       g: data[i + 1],
-      b: data[i + 2]
+      b: data[i + 2],
     };
 
     // Convert to LAB
@@ -289,7 +288,7 @@ export function applyHDREffect(
 // =============================================================================
 
 export interface ColorBalanceLABParams {
-  shadowsCyan_Red: number;      // -100 to 100
+  shadowsCyan_Red: number; // -100 to 100
   shadowsMagenta_Green: number;
   shadowsYellow_Blue: number;
   midtonesCyan_Red: number;
@@ -306,12 +305,12 @@ export interface ColorBalanceLABParams {
  */
 export function applyColorBalanceLAB(
   input: ImageData,
-  params: ColorBalanceLABParams
+  params: ColorBalanceLABParams,
 ): ImageData {
   const output = new ImageData(
     new Uint8ClampedArray(input.data),
     input.width,
-    input.height
+    input.height,
   );
 
   const data = output.data;
@@ -320,16 +319,16 @@ export function applyColorBalanceLAB(
     const rgb: RGBColor = {
       r: data[i],
       g: data[i + 1],
-      b: data[i + 2]
+      b: data[i + 2],
     };
 
     const lab = rgbToLab(rgb);
     const originalL = lab.L;
 
     // Calculate masks
-    const shadowMask = createLuminanceMask(lab.L, 'shadows');
-    const midtoneMask = createLuminanceMask(lab.L, 'midtones');
-    const highlightMask = createLuminanceMask(lab.L, 'highlights');
+    const shadowMask = createLuminanceMask(lab.L, "shadows");
+    const midtoneMask = createLuminanceMask(lab.L, "midtones");
+    const highlightMask = createLuminanceMask(lab.L, "highlights");
 
     // Apply shadow adjustments
     lab.a += shadowMask * params.shadowsCyan_Red * 0.5;
@@ -371,11 +370,11 @@ export function applyColorBalanceLAB(
 }
 
 export interface SelectiveColorLABParams {
-  targetHue: number;        // 0-360 (which hue to affect)
-  hueRange: number;         // 0-180 (range around target hue)
-  hueShift: number;         // -180 to 180
+  targetHue: number; // 0-360 (which hue to affect)
+  hueRange: number; // 0-180 (range around target hue)
+  hueShift: number; // -180 to 180
   saturationAdjust: number; // -100 to 100
-  lightnessAdjust: number;  // -100 to 100
+  lightnessAdjust: number; // -100 to 100
 }
 
 /**
@@ -383,12 +382,12 @@ export interface SelectiveColorLABParams {
  */
 export function applySelectiveColorLAB(
   input: ImageData,
-  params: SelectiveColorLABParams
+  params: SelectiveColorLABParams,
 ): ImageData {
   const output = new ImageData(
     new Uint8ClampedArray(input.data),
     input.width,
-    input.height
+    input.height,
   );
 
   const data = output.data;
@@ -397,13 +396,13 @@ export function applySelectiveColorLAB(
     const rgb: RGBColor = {
       r: data[i],
       g: data[i + 1],
-      b: data[i + 2]
+      b: data[i + 2],
     };
 
     const lab = rgbToLab(rgb);
 
     // Calculate hue from a/b
-    let hue = Math.atan2(lab.b, lab.a) * 180 / Math.PI;
+    let hue = (Math.atan2(lab.b, lab.a) * 180) / Math.PI;
     if (hue < 0) hue += 360;
 
     // Calculate saturation (chroma)
@@ -415,10 +414,11 @@ export function applySelectiveColorLAB(
 
     const influence = Math.max(0, 1 - hueDiff / params.hueRange);
 
-    if (influence > 0 && chroma > 5) { // Only affect saturated pixels
+    if (influence > 0 && chroma > 5) {
+      // Only affect saturated pixels
       // Apply hue shift
       const newHue = hue + params.hueShift * influence;
-      const newHueRad = newHue * Math.PI / 180;
+      const newHueRad = (newHue * Math.PI) / 180;
 
       // Apply saturation adjustment
       const satFactor = 1 + (params.saturationAdjust / 100) * influence;
@@ -457,7 +457,7 @@ export const DEFAULT_HDR_PARAMS: HDRParams = {
   highlightIntensity: 0.3,
   gamma: 1.0,
   contrast: 1.0,
-  saturationBoost: 1.0
+  saturationBoost: 1.0,
 };
 
 export const DEFAULT_COLOR_BALANCE_LAB_PARAMS: ColorBalanceLABParams = {
@@ -470,7 +470,7 @@ export const DEFAULT_COLOR_BALANCE_LAB_PARAMS: ColorBalanceLABParams = {
   highlightsCyan_Red: 0,
   highlightsMagenta_Green: 0,
   highlightsYellow_Blue: 0,
-  preserveLuminosity: true
+  preserveLuminosity: true,
 };
 
 export const DEFAULT_SELECTIVE_COLOR_LAB_PARAMS: SelectiveColorLABParams = {
@@ -478,7 +478,7 @@ export const DEFAULT_SELECTIVE_COLOR_LAB_PARAMS: SelectiveColorLABParams = {
   hueRange: 30,
   hueShift: 0,
   saturationAdjust: 0,
-  lightnessAdjust: 0
+  lightnessAdjust: 0,
 };
 
 // =============================================================================
@@ -486,48 +486,188 @@ export const DEFAULT_SELECTIVE_COLOR_LAB_PARAMS: SelectiveColorLABParams = {
 // =============================================================================
 
 export const HDR_EFFECT_DEFINITIONS = {
-  'hdr': {
-    name: 'HDR',
-    category: 'color',
-    description: 'HDR tone mapping with LAB color space processing',
+  hdr: {
+    name: "HDR",
+    category: "color",
+    description: "HDR tone mapping with LAB color space processing",
     parameters: [
-      { name: 'Intensity', type: 'slider', min: 0, max: 5, default: 1, step: 0.1 },
-      { name: 'Shadow Intensity', type: 'slider', min: 0, max: 1, default: 0.3, step: 0.05 },
-      { name: 'Highlight Intensity', type: 'slider', min: 0, max: 1, default: 0.3, step: 0.05 },
-      { name: 'Gamma', type: 'slider', min: 0.1, max: 3, default: 1, step: 0.05 },
-      { name: 'Contrast', type: 'slider', min: 0, max: 2, default: 1, step: 0.05 },
-      { name: 'Saturation Boost', type: 'slider', min: 0, max: 2, default: 1, step: 0.05 }
-    ]
+      {
+        name: "Intensity",
+        type: "slider",
+        min: 0,
+        max: 5,
+        default: 1,
+        step: 0.1,
+      },
+      {
+        name: "Shadow Intensity",
+        type: "slider",
+        min: 0,
+        max: 1,
+        default: 0.3,
+        step: 0.05,
+      },
+      {
+        name: "Highlight Intensity",
+        type: "slider",
+        min: 0,
+        max: 1,
+        default: 0.3,
+        step: 0.05,
+      },
+      {
+        name: "Gamma",
+        type: "slider",
+        min: 0.1,
+        max: 3,
+        default: 1,
+        step: 0.05,
+      },
+      {
+        name: "Contrast",
+        type: "slider",
+        min: 0,
+        max: 2,
+        default: 1,
+        step: 0.05,
+      },
+      {
+        name: "Saturation Boost",
+        type: "slider",
+        min: 0,
+        max: 2,
+        default: 1,
+        step: 0.05,
+      },
+    ],
   },
 
-  'color-balance-lab': {
-    name: 'Color Balance (LAB)',
-    category: 'color',
-    description: 'Color balance adjustments in perceptually uniform LAB space',
+  "color-balance-lab": {
+    name: "Color Balance (LAB)",
+    category: "color",
+    description: "Color balance adjustments in perceptually uniform LAB space",
     parameters: [
-      { name: 'Shadows Cyan-Red', type: 'slider', min: -100, max: 100, default: 0, step: 1 },
-      { name: 'Shadows Magenta-Green', type: 'slider', min: -100, max: 100, default: 0, step: 1 },
-      { name: 'Shadows Yellow-Blue', type: 'slider', min: -100, max: 100, default: 0, step: 1 },
-      { name: 'Midtones Cyan-Red', type: 'slider', min: -100, max: 100, default: 0, step: 1 },
-      { name: 'Midtones Magenta-Green', type: 'slider', min: -100, max: 100, default: 0, step: 1 },
-      { name: 'Midtones Yellow-Blue', type: 'slider', min: -100, max: 100, default: 0, step: 1 },
-      { name: 'Highlights Cyan-Red', type: 'slider', min: -100, max: 100, default: 0, step: 1 },
-      { name: 'Highlights Magenta-Green', type: 'slider', min: -100, max: 100, default: 0, step: 1 },
-      { name: 'Highlights Yellow-Blue', type: 'slider', min: -100, max: 100, default: 0, step: 1 },
-      { name: 'Preserve Luminosity', type: 'checkbox', default: true }
-    ]
+      {
+        name: "Shadows Cyan-Red",
+        type: "slider",
+        min: -100,
+        max: 100,
+        default: 0,
+        step: 1,
+      },
+      {
+        name: "Shadows Magenta-Green",
+        type: "slider",
+        min: -100,
+        max: 100,
+        default: 0,
+        step: 1,
+      },
+      {
+        name: "Shadows Yellow-Blue",
+        type: "slider",
+        min: -100,
+        max: 100,
+        default: 0,
+        step: 1,
+      },
+      {
+        name: "Midtones Cyan-Red",
+        type: "slider",
+        min: -100,
+        max: 100,
+        default: 0,
+        step: 1,
+      },
+      {
+        name: "Midtones Magenta-Green",
+        type: "slider",
+        min: -100,
+        max: 100,
+        default: 0,
+        step: 1,
+      },
+      {
+        name: "Midtones Yellow-Blue",
+        type: "slider",
+        min: -100,
+        max: 100,
+        default: 0,
+        step: 1,
+      },
+      {
+        name: "Highlights Cyan-Red",
+        type: "slider",
+        min: -100,
+        max: 100,
+        default: 0,
+        step: 1,
+      },
+      {
+        name: "Highlights Magenta-Green",
+        type: "slider",
+        min: -100,
+        max: 100,
+        default: 0,
+        step: 1,
+      },
+      {
+        name: "Highlights Yellow-Blue",
+        type: "slider",
+        min: -100,
+        max: 100,
+        default: 0,
+        step: 1,
+      },
+      { name: "Preserve Luminosity", type: "checkbox", default: true },
+    ],
   },
 
-  'selective-color-lab': {
-    name: 'Selective Color (LAB)',
-    category: 'color',
-    description: 'Target and adjust specific color ranges in LAB space',
+  "selective-color-lab": {
+    name: "Selective Color (LAB)",
+    category: "color",
+    description: "Target and adjust specific color ranges in LAB space",
     parameters: [
-      { name: 'Target Hue', type: 'slider', min: 0, max: 360, default: 0, step: 1 },
-      { name: 'Hue Range', type: 'slider', min: 0, max: 180, default: 30, step: 1 },
-      { name: 'Hue Shift', type: 'slider', min: -180, max: 180, default: 0, step: 1 },
-      { name: 'Saturation Adjust', type: 'slider', min: -100, max: 100, default: 0, step: 1 },
-      { name: 'Lightness Adjust', type: 'slider', min: -100, max: 100, default: 0, step: 1 }
-    ]
-  }
+      {
+        name: "Target Hue",
+        type: "slider",
+        min: 0,
+        max: 360,
+        default: 0,
+        step: 1,
+      },
+      {
+        name: "Hue Range",
+        type: "slider",
+        min: 0,
+        max: 180,
+        default: 30,
+        step: 1,
+      },
+      {
+        name: "Hue Shift",
+        type: "slider",
+        min: -180,
+        max: 180,
+        default: 0,
+        step: 1,
+      },
+      {
+        name: "Saturation Adjust",
+        type: "slider",
+        min: -100,
+        max: 100,
+        default: 0,
+        step: 1,
+      },
+      {
+        name: "Lightness Adjust",
+        type: "slider",
+        min: -100,
+        max: 100,
+        default: 0,
+        step: 1,
+      },
+    ],
+  },
 };

@@ -12,28 +12,25 @@
  */
 
 import type {
-  PhysicsSpaceConfig,
+  ClothConfig,
+  ClothState,
+  ContactInfo,
+  ExportedKeyframes,
+  ForceField,
+  KeyframeExportOptions,
   PhysicsSimulationState,
+  PhysicsSpaceConfig,
+  PhysicsVec2,
+  RagdollBone,
+  RagdollState,
   RigidBodyConfig,
   RigidBodyState,
   SoftBodyConfig,
   SoftBodyState,
-  ClothConfig,
-  ClothState,
-  RagdollConfig,
-  RagdollState,
-  JointConfig,
-  ForceField,
-  ContactInfo,
-  PhysicsVec2,
-  KeyframeExportOptions,
-  ExportedKeyframes,
-  RagdollBone,
-} from '@/types/physics';
-import { DEFAULT_SPACE_CONFIG } from '@/types/physics';
+} from "@/types/physics";
+import { DEFAULT_SPACE_CONFIG } from "@/types/physics";
 
-import { SeededRandom } from '../particleSystem';
-import { extractRagdollState } from './RagdollBuilder';
+import { extractRagdollState } from "./RagdollBuilder";
 
 // =============================================================================
 // SEEDED RANDOM FOR PHYSICS
@@ -129,9 +126,11 @@ const vec2 = {
     y: a.y + (b.y - a.y) * t,
   }),
 
-  distance: (a: PhysicsVec2, b: PhysicsVec2): number => vec2.length(vec2.sub(b, a)),
+  distance: (a: PhysicsVec2, b: PhysicsVec2): number =>
+    vec2.length(vec2.sub(b, a)),
 
-  distanceSq: (a: PhysicsVec2, b: PhysicsVec2): number => vec2.lengthSq(vec2.sub(b, a)),
+  distanceSq: (a: PhysicsVec2, b: PhysicsVec2): number =>
+    vec2.lengthSq(vec2.sub(b, a)),
 };
 
 // =============================================================================
@@ -161,14 +160,22 @@ class RigidBodySimulator {
   }
 
   addBody(bodyConfig: RigidBodyConfig): void {
-    const inverseMass = bodyConfig.type === 'static' || bodyConfig.type === 'dead' ? 0 : 1 / bodyConfig.mass;
+    const inverseMass =
+      bodyConfig.type === "static" || bodyConfig.type === "dead"
+        ? 0
+        : 1 / bodyConfig.mass;
 
     // Calculate moment of inertia if not provided
     let moment = bodyConfig.moment;
     if (!moment && bodyConfig.mass > 0) {
       moment = this.calculateMomentOfInertia(bodyConfig);
     }
-    const inverseInertia = bodyConfig.type === 'static' || bodyConfig.type === 'dead' || bodyConfig.fixedRotation ? 0 : 1 / (moment || 1);
+    const inverseInertia =
+      bodyConfig.type === "static" ||
+      bodyConfig.type === "dead" ||
+      bodyConfig.fixedRotation
+        ? 0
+        : 1 / (moment || 1);
 
     const body: InternalRigidBody = {
       config: bodyConfig,
@@ -204,23 +211,23 @@ class RigidBodySimulator {
     const shape = config.shape;
 
     switch (shape.type) {
-      case 'circle': {
+      case "circle": {
         const r = shape.radius || 10;
         return (mass * r * r) / 2;
       }
-      case 'box': {
+      case "box": {
         const w = shape.width || 10;
         const h = shape.height || 10;
         return (mass * (w * w + h * h)) / 12;
       }
-      case 'capsule': {
+      case "capsule": {
         const r = shape.radius || 5;
         const l = shape.length || 20;
         // Approximate as rectangle + semicircles
-        const rectMass = mass * l / (l + Math.PI * r);
+        const rectMass = (mass * l) / (l + Math.PI * r);
         const circleMass = mass - rectMass;
         const rectI = (rectMass * (l * l + 4 * r * r)) / 12;
-        const circleI = circleMass * r * r / 2;
+        const circleI = (circleMass * r * r) / 2;
         return rectI + circleI;
       }
       default:
@@ -241,11 +248,18 @@ class RigidBodySimulator {
     }
   }
 
-  applyImpulse(bodyId: string, impulse: PhysicsVec2, point?: PhysicsVec2): void {
+  applyImpulse(
+    bodyId: string,
+    impulse: PhysicsVec2,
+    point?: PhysicsVec2,
+  ): void {
     const body = this.bodies.get(bodyId);
     if (!body || body.inverseMass === 0) return;
 
-    body.velocity = vec2.add(body.velocity, vec2.scale(impulse, body.inverseMass));
+    body.velocity = vec2.add(
+      body.velocity,
+      vec2.scale(impulse, body.inverseMass),
+    );
 
     if (point) {
       const r = vec2.sub(point, body.position);
@@ -259,19 +273,23 @@ class RigidBodySimulator {
 
   integrate(dt: number): void {
     for (const body of this.bodies.values()) {
-      if (body.config.type === 'static' || body.config.type === 'dead') continue;
+      if (body.config.type === "static" || body.config.type === "dead")
+        continue;
       if (body.isSleeping) continue;
 
       // Semi-implicit Euler integration
       // Update velocity
       body.velocity = vec2.add(
         body.velocity,
-        vec2.scale(body.force, body.inverseMass * dt)
+        vec2.scale(body.force, body.inverseMass * dt),
       );
       body.angularVelocity += body.torque * body.inverseInertia * dt;
 
       // Apply damping
-      body.velocity = vec2.scale(body.velocity, 1 - body.config.linearDamping * dt);
+      body.velocity = vec2.scale(
+        body.velocity,
+        1 - body.config.linearDamping * dt,
+      );
       body.angularVelocity *= 1 - body.config.angularDamping * dt;
 
       // Update position
@@ -286,7 +304,10 @@ class RigidBodySimulator {
       if (this.config.sleepEnabled && body.config.canSleep) {
         const speed = vec2.length(body.velocity);
         const angSpeed = Math.abs(body.angularVelocity);
-        if (speed < this.config.sleepVelocityThreshold && angSpeed < this.config.sleepVelocityThreshold * 0.1) {
+        if (
+          speed < this.config.sleepVelocityThreshold &&
+          angSpeed < this.config.sleepVelocityThreshold * 0.1
+        ) {
           body.sleepTime += dt;
           if (body.sleepTime > this.config.sleepTimeThreshold) {
             body.isSleeping = true;
@@ -354,11 +375,17 @@ class CollisionDetector {
 
         // Skip if both static or either dead
         if (bodyA.inverseMass === 0 && bodyB.inverseMass === 0) continue;
-        if (bodyA.config.type === 'dead' || bodyB.config.type === 'dead') continue;
-        if (bodyA.config.response === 'none' || bodyB.config.response === 'none') continue;
+        if (bodyA.config.type === "dead" || bodyB.config.type === "dead")
+          continue;
+        if (
+          bodyA.config.response === "none" ||
+          bodyB.config.response === "none"
+        )
+          continue;
 
         // Check collision filter
-        if (!this.shouldCollide(bodyA.config.filter, bodyB.config.filter)) continue;
+        if (!this.shouldCollide(bodyA.config.filter, bodyB.config.filter))
+          continue;
 
         // Narrow phase - shape-specific detection
         const collision = this.detectShapeCollision(bodyA, bodyB);
@@ -371,30 +398,39 @@ class CollisionDetector {
     return pairs;
   }
 
-  private shouldCollide(filterA: { category: number; mask: number; group: number }, filterB: { category: number; mask: number; group: number }): boolean {
+  private shouldCollide(
+    filterA: { category: number; mask: number; group: number },
+    filterB: { category: number; mask: number; group: number },
+  ): boolean {
     // Group filtering
     if (filterA.group !== 0 && filterA.group === filterB.group) {
       return filterA.group > 0; // Positive = always collide, negative = never
     }
 
     // Category/mask filtering
-    return (filterA.mask & filterB.category) !== 0 && (filterB.mask & filterA.category) !== 0;
+    return (
+      (filterA.mask & filterB.category) !== 0 &&
+      (filterB.mask & filterA.category) !== 0
+    );
   }
 
-  private detectShapeCollision(bodyA: InternalRigidBody, bodyB: InternalRigidBody): CollisionPair | null {
+  private detectShapeCollision(
+    bodyA: InternalRigidBody,
+    bodyB: InternalRigidBody,
+  ): CollisionPair | null {
     const shapeA = bodyA.config.shape;
     const shapeB = bodyB.config.shape;
 
     // Circle vs Circle
-    if (shapeA.type === 'circle' && shapeB.type === 'circle') {
+    if (shapeA.type === "circle" && shapeB.type === "circle") {
       return this.circleVsCircle(bodyA, bodyB);
     }
 
     // Circle vs Box
-    if (shapeA.type === 'circle' && shapeB.type === 'box') {
+    if (shapeA.type === "circle" && shapeB.type === "box") {
       return this.circleVsBox(bodyA, bodyB);
     }
-    if (shapeA.type === 'box' && shapeB.type === 'circle') {
+    if (shapeA.type === "box" && shapeB.type === "circle") {
       const result = this.circleVsBox(bodyB, bodyA);
       if (result) {
         // Swap bodies and flip normal
@@ -409,7 +445,7 @@ class CollisionDetector {
     }
 
     // Box vs Box
-    if (shapeA.type === 'box' && shapeB.type === 'box') {
+    if (shapeA.type === "box" && shapeB.type === "box") {
       return this.boxVsBox(bodyA, bodyB);
     }
 
@@ -417,7 +453,10 @@ class CollisionDetector {
     return this.circleVsCircle(bodyA, bodyB);
   }
 
-  private circleVsCircle(bodyA: InternalRigidBody, bodyB: InternalRigidBody): CollisionPair | null {
+  private circleVsCircle(
+    bodyA: InternalRigidBody,
+    bodyB: InternalRigidBody,
+  ): CollisionPair | null {
     const radiusA = bodyA.config.shape.radius || 10;
     const radiusB = bodyB.config.shape.radius || 10;
 
@@ -435,7 +474,10 @@ class CollisionDetector {
     return { bodyA, bodyB, normal, depth, contactPoint };
   }
 
-  private circleVsBox(circleBody: InternalRigidBody, boxBody: InternalRigidBody): CollisionPair | null {
+  private circleVsBox(
+    circleBody: InternalRigidBody,
+    boxBody: InternalRigidBody,
+  ): CollisionPair | null {
     const radius = circleBody.config.shape.radius || 10;
     const halfW = (boxBody.config.shape.width || 20) / 2;
     const halfH = (boxBody.config.shape.height || 20) / 2;
@@ -480,12 +522,17 @@ class CollisionDetector {
     const dist = Math.sqrt(distSq);
 
     // Local normal
-    const localNormal = dist > 0 ? vec2.scale(localDiff, 1 / dist) : { x: 1, y: 0 };
+    const localNormal =
+      dist > 0 ? vec2.scale(localDiff, 1 / dist) : { x: 1, y: 0 };
 
     // Transform back to world space
     const worldNormal = {
-      x: localNormal.x * Math.cos(boxBody.angle) - localNormal.y * Math.sin(boxBody.angle),
-      y: localNormal.x * Math.sin(boxBody.angle) + localNormal.y * Math.cos(boxBody.angle),
+      x:
+        localNormal.x * Math.cos(boxBody.angle) -
+        localNormal.y * Math.sin(boxBody.angle),
+      y:
+        localNormal.x * Math.sin(boxBody.angle) +
+        localNormal.y * Math.cos(boxBody.angle),
     };
 
     if (inside) {
@@ -496,12 +543,18 @@ class CollisionDetector {
       normal = worldNormal;
     }
 
-    const contactPoint = vec2.sub(circleBody.position, vec2.scale(normal, radius));
+    const contactPoint = vec2.sub(
+      circleBody.position,
+      vec2.scale(normal, radius),
+    );
 
     return { bodyA: circleBody, bodyB: boxBody, normal, depth, contactPoint };
   }
 
-  private boxVsBox(bodyA: InternalRigidBody, bodyB: InternalRigidBody): CollisionPair | null {
+  private boxVsBox(
+    bodyA: InternalRigidBody,
+    bodyB: InternalRigidBody,
+  ): CollisionPair | null {
     // Simplified AABB check for now (ignores rotation)
     const halfWA = (bodyA.config.shape.width || 20) / 2;
     const halfHA = (bodyA.config.shape.height || 20) / 2;
@@ -561,7 +614,8 @@ class CollisionResolver {
     const { bodyA, bodyB, normal, depth, contactPoint } = pair;
 
     // Check for sensor mode
-    const isSensor = bodyA.config.response === 'sensor' || bodyB.config.response === 'sensor';
+    const isSensor =
+      bodyA.config.response === "sensor" || bodyB.config.response === "sensor";
 
     // Calculate relative velocity at contact point
     const rA = vec2.sub(contactPoint, bodyA.position);
@@ -569,11 +623,11 @@ class CollisionResolver {
 
     const velA = vec2.add(
       bodyA.velocity,
-      vec2.perpendicular(vec2.scale(rA, bodyA.angularVelocity))
+      vec2.perpendicular(vec2.scale(rA, bodyA.angularVelocity)),
     );
     const velB = vec2.add(
       bodyB.velocity,
-      vec2.perpendicular(vec2.scale(rB, bodyB.angularVelocity))
+      vec2.perpendicular(vec2.scale(rB, bodyB.angularVelocity)),
     );
 
     const relativeVelocity = vec2.sub(velB, velA);
@@ -585,7 +639,7 @@ class CollisionResolver {
     // Calculate restitution
     const restitution = Math.min(
       bodyA.config.material.restitution,
-      bodyB.config.material.restitution
+      bodyB.config.material.restitution,
     );
 
     // Calculate effective inverse mass
@@ -607,20 +661,26 @@ class CollisionResolver {
     if (!isSensor) {
       const impulse = vec2.scale(normal, j);
 
-      bodyA.velocity = vec2.sub(bodyA.velocity, vec2.scale(impulse, bodyA.inverseMass));
+      bodyA.velocity = vec2.sub(
+        bodyA.velocity,
+        vec2.scale(impulse, bodyA.inverseMass),
+      );
       bodyA.angularVelocity -= bodyA.inverseInertia * vec2.cross(rA, impulse);
 
-      bodyB.velocity = vec2.add(bodyB.velocity, vec2.scale(impulse, bodyB.inverseMass));
+      bodyB.velocity = vec2.add(
+        bodyB.velocity,
+        vec2.scale(impulse, bodyB.inverseMass),
+      );
       bodyB.angularVelocity += bodyB.inverseInertia * vec2.cross(rB, impulse);
 
       // Friction
       const tangent = vec2.normalize(
-        vec2.sub(relativeVelocity, vec2.scale(normal, normalVelocity))
+        vec2.sub(relativeVelocity, vec2.scale(normal, normalVelocity)),
       );
       const tangentVelocity = vec2.dot(relativeVelocity, tangent);
 
       const friction = Math.sqrt(
-        bodyA.config.material.friction * bodyB.config.material.friction
+        bodyA.config.material.friction * bodyB.config.material.friction,
       );
 
       let jt = -tangentVelocity / invMassSum;
@@ -628,17 +688,31 @@ class CollisionResolver {
 
       const frictionImpulse = vec2.scale(tangent, jt);
 
-      bodyA.velocity = vec2.sub(bodyA.velocity, vec2.scale(frictionImpulse, bodyA.inverseMass));
-      bodyB.velocity = vec2.add(bodyB.velocity, vec2.scale(frictionImpulse, bodyB.inverseMass));
+      bodyA.velocity = vec2.sub(
+        bodyA.velocity,
+        vec2.scale(frictionImpulse, bodyA.inverseMass),
+      );
+      bodyB.velocity = vec2.add(
+        bodyB.velocity,
+        vec2.scale(frictionImpulse, bodyB.inverseMass),
+      );
 
       // Position correction
       const correction = vec2.scale(
         normal,
-        Math.max(depth - this.config.collisionSlop, 0) * this.config.collisionBias / invMassSum
+        (Math.max(depth - this.config.collisionSlop, 0) *
+          this.config.collisionBias) /
+          invMassSum,
       );
 
-      bodyA.position = vec2.sub(bodyA.position, vec2.scale(correction, bodyA.inverseMass));
-      bodyB.position = vec2.add(bodyB.position, vec2.scale(correction, bodyB.inverseMass));
+      bodyA.position = vec2.sub(
+        bodyA.position,
+        vec2.scale(correction, bodyA.inverseMass),
+      );
+      bodyB.position = vec2.add(
+        bodyB.position,
+        vec2.scale(correction, bodyB.inverseMass),
+      );
 
       // Wake both bodies
       bodyA.isSleeping = false;
@@ -750,7 +824,10 @@ class SoftBodySimulator {
   applyForce(particleId: string, force: PhysicsVec2): void {
     const particle = this.particles.get(particleId);
     if (particle && !particle.pinned) {
-      particle.acceleration = vec2.add(particle.acceleration, vec2.scale(force, particle.invMass));
+      particle.acceleration = vec2.add(
+        particle.acceleration,
+        vec2.scale(force, particle.invMass),
+      );
     }
   }
 
@@ -775,7 +852,7 @@ class SoftBodySimulator {
       particle.previousPosition = vec2.clone(particle.position);
       particle.position = vec2.add(
         vec2.add(particle.position, dampedVelocity),
-        vec2.scale(particle.acceleration, dtSq)
+        vec2.scale(particle.acceleration, dtSq),
       );
 
       // Clear acceleration
@@ -797,7 +874,10 @@ class SoftBodySimulator {
         if (distance === 0) continue;
 
         // Check for breaking
-        if (constraint.breakThreshold && distance > constraint.restLength * constraint.breakThreshold) {
+        if (
+          constraint.breakThreshold &&
+          distance > constraint.restLength * constraint.breakThreshold
+        ) {
           constraint.broken = true;
           continue;
         }
@@ -822,7 +902,7 @@ class SoftBodySimulator {
     const constraintIds = this.softBodyConstraints.get(softBodyId);
     if (!particleIds) return null;
 
-    const particles = particleIds.map(id => {
+    const particles = particleIds.map((id) => {
       const p = this.particles.get(id)!;
       return {
         id: p.id,
@@ -832,8 +912,8 @@ class SoftBodySimulator {
     });
 
     const brokenConstraints = (constraintIds || [])
-      .filter(id => this.constraints.get(id)?.broken)
-      .map(id => id);
+      .filter((id) => this.constraints.get(id)?.broken)
+      .map((id) => id);
 
     return {
       id: softBodyId,
@@ -842,7 +922,7 @@ class SoftBodySimulator {
     };
   }
 
-  loadState(softBodyId: string, state: SoftBodyState): void {
+  loadState(_softBodyId: string, state: SoftBodyState): void {
     for (const ps of state.particles) {
       const particle = this.particles.get(ps.id);
       if (particle) {
@@ -865,11 +945,14 @@ class SoftBodySimulator {
 // =============================================================================
 
 class ClothSimulator {
-  private cloths: Map<string, {
-    config: ClothConfig;
-    particles: InternalVerletParticle[];
-    constraints: InternalVerletConstraint[];
-  }> = new Map();
+  private cloths: Map<
+    string,
+    {
+      config: ClothConfig;
+      particles: InternalVerletParticle[];
+      constraints: InternalVerletConstraint[];
+    }
+  > = new Map();
 
   createCloth(config: ClothConfig): void {
     const particles: InternalVerletParticle[] = [];
@@ -1026,7 +1109,7 @@ class ClothSimulator {
         particle.previousPosition = vec2.clone(particle.position);
         particle.position = vec2.add(
           vec2.add(particle.position, dampedVelocity),
-          vec2.scale(particle.acceleration, dtSq)
+          vec2.scale(particle.acceleration, dtSq),
         );
 
         particle.acceleration = vec2.create();
@@ -1042,8 +1125,8 @@ class ClothSimulator {
         for (const constraint of cloth.constraints) {
           if (constraint.broken) continue;
 
-          const pA = cloth.particles.find(p => p.id === constraint.particleA);
-          const pB = cloth.particles.find(p => p.id === constraint.particleB);
+          const pA = cloth.particles.find((p) => p.id === constraint.particleA);
+          const pB = cloth.particles.find((p) => p.id === constraint.particleB);
           if (!pA || !pB) continue;
 
           const diff = vec2.sub(pB.position, pA.position);
@@ -1051,13 +1134,19 @@ class ClothSimulator {
           if (distance === 0) continue;
 
           // Check for tearing
-          if (constraint.breakThreshold && distance > constraint.restLength * constraint.breakThreshold) {
+          if (
+            constraint.breakThreshold &&
+            distance > constraint.restLength * constraint.breakThreshold
+          ) {
             constraint.broken = true;
             continue;
           }
 
           const error = (distance - constraint.restLength) / distance;
-          const correction = vec2.scale(diff, error * constraint.stiffness * 0.5);
+          const correction = vec2.scale(
+            diff,
+            error * constraint.stiffness * 0.5,
+          );
 
           const totalMass = pA.invMass + pB.invMass;
           if (totalMass === 0) continue;
@@ -1078,19 +1167,23 @@ class ClothSimulator {
 
     return {
       id: clothId,
-      positions: cloth.particles.map(p => vec2.clone(p.position)),
+      positions: cloth.particles.map((p) => vec2.clone(p.position)),
       tornConstraints: cloth.constraints
-        .filter(c => c.broken)
-        .map(c => {
+        .filter((c) => c.broken)
+        .map((c) => {
           // Parse constraint ID to get row/col/type
-          const parts = c.id.split('_');
-          const type = parts[1].startsWith('h') ? 'structural' :
-                       parts[1].startsWith('v') ? 'structural' :
-                       parts[1].startsWith('s') ? 'shear' : 'bend';
-          const index = parseInt(parts[2]);
+          const parts = c.id.split("_");
+          const type = parts[1].startsWith("h")
+            ? "structural"
+            : parts[1].startsWith("v")
+              ? "structural"
+              : parts[1].startsWith("s")
+                ? "shear"
+                : "bend";
+          const index = parseInt(parts[2], 10);
           const col = index % cloth.config.width;
           const row = Math.floor(index / cloth.config.width);
-          return { row, col, type: type as 'structural' | 'shear' | 'bend' };
+          return { row, col, type: type as "structural" | "shear" | "bend" };
         }),
     };
   }
@@ -1099,18 +1192,28 @@ class ClothSimulator {
     const cloth = this.cloths.get(clothId);
     if (!cloth) return;
 
-    for (let i = 0; i < state.positions.length && i < cloth.particles.length; i++) {
+    for (
+      let i = 0;
+      i < state.positions.length && i < cloth.particles.length;
+      i++
+    ) {
       cloth.particles[i].position = vec2.clone(state.positions[i]);
       cloth.particles[i].previousPosition = vec2.clone(state.positions[i]);
     }
 
     // Restore torn constraints
-    const tornSet = new Set(state.tornConstraints.map(t => `${t.row}_${t.col}_${t.type}`));
+    const tornSet = new Set(
+      state.tornConstraints.map((t) => `${t.row}_${t.col}_${t.type}`),
+    );
     for (const constraint of cloth.constraints) {
-      const parts = constraint.id.split('_');
-      const type = parts[1].startsWith('h') || parts[1].startsWith('v') ? 'structural' :
-                   parts[1].startsWith('s') ? 'shear' : 'bend';
-      const index = parseInt(parts[2]);
+      const parts = constraint.id.split("_");
+      const type =
+        parts[1].startsWith("h") || parts[1].startsWith("v")
+          ? "structural"
+          : parts[1].startsWith("s")
+            ? "shear"
+            : "bend";
+      const index = parseInt(parts[2], 10);
       const col = index % cloth.config.width;
       const row = Math.floor(index / cloth.config.width);
       constraint.broken = tornSet.has(`${row}_${col}_${type}`);
@@ -1124,7 +1227,6 @@ class ClothSimulator {
 
 class ForceFieldProcessor {
   private forceFields: ForceField[] = [];
-  private random: PhysicsRandom;
 
   constructor(seed: number) {
     this.random = new PhysicsRandom(seed);
@@ -1137,16 +1239,17 @@ class ForceFieldProcessor {
   processForces(
     frame: number,
     bodies: InternalRigidBody[],
-    applyForce: (bodyId: string, force: PhysicsVec2) => void
+    applyForce: (bodyId: string, force: PhysicsVec2) => void,
   ): void {
     for (const field of this.forceFields) {
       if (!field.enabled) continue;
       if (frame < field.startFrame) continue;
       if (field.endFrame >= 0 && frame > field.endFrame) continue;
 
-      const affectedIds = field.affectedBodies && field.affectedBodies.length > 0
-        ? new Set(field.affectedBodies)
-        : null;
+      const affectedIds =
+        field.affectedBodies && field.affectedBodies.length > 0
+          ? new Set(field.affectedBodies)
+          : null;
 
       for (const body of bodies) {
         if (body.inverseMass === 0) continue;
@@ -1160,20 +1263,30 @@ class ForceFieldProcessor {
     }
   }
 
-  private calculateForce(field: ForceField, body: InternalRigidBody, frame: number): PhysicsVec2 | null {
+  private calculateForce(
+    field: ForceField,
+    body: InternalRigidBody,
+    frame: number,
+  ): PhysicsVec2 | null {
     switch (field.type) {
-      case 'gravity': {
+      case "gravity": {
         const gravity = this.evaluateAnimatable(field.gravity, frame);
         return vec2.scale(gravity, body.config.mass);
       }
 
-      case 'wind': {
+      case "wind": {
         const direction = this.evaluateAnimatable(field.direction, frame);
         const turbulence = this.evaluateAnimatable(field.turbulence, frame);
 
         // Add turbulence using simplex-like noise (simplified)
-        const noiseX = Math.sin(body.position.x * field.frequency + frame * 0.1 + field.seed) * turbulence;
-        const noiseY = Math.cos(body.position.y * field.frequency + frame * 0.1 + field.seed * 2) * turbulence;
+        const noiseX =
+          Math.sin(
+            body.position.x * field.frequency + frame * 0.1 + field.seed,
+          ) * turbulence;
+        const noiseY =
+          Math.cos(
+            body.position.y * field.frequency + frame * 0.1 + field.seed * 2,
+          ) * turbulence;
 
         return {
           x: direction.x + noiseX,
@@ -1181,7 +1294,7 @@ class ForceFieldProcessor {
         };
       }
 
-      case 'attraction': {
+      case "attraction": {
         const center = this.evaluateAnimatable(field.position, frame);
         const strength = this.evaluateAnimatable(field.strength, frame);
 
@@ -1194,13 +1307,14 @@ class ForceFieldProcessor {
 
         let forceMag: number;
         switch (field.falloff) {
-          case 'linear':
-            forceMag = strength * (field.radius > 0 ? (field.radius - dist) / field.radius : 1);
+          case "linear":
+            forceMag =
+              strength *
+              (field.radius > 0 ? (field.radius - dist) / field.radius : 1);
             break;
-          case 'quadratic':
+          case "quadratic":
             forceMag = strength / distSq;
             break;
-          case 'constant':
           default:
             forceMag = strength;
         }
@@ -1208,7 +1322,7 @@ class ForceFieldProcessor {
         return vec2.scale(vec2.normalize(diff), forceMag * body.config.mass);
       }
 
-      case 'explosion': {
+      case "explosion": {
         if (frame !== field.triggerFrame) return null;
 
         const diff = vec2.sub(body.position, field.position);
@@ -1217,14 +1331,20 @@ class ForceFieldProcessor {
         if (dist > field.radius || dist < 1) return null;
 
         const falloff = 1 - dist / field.radius;
-        const impulse = vec2.scale(vec2.normalize(diff), field.strength * falloff);
+        const impulse = vec2.scale(
+          vec2.normalize(diff),
+          field.strength * falloff,
+        );
 
         // Apply as impulse, not force
-        body.velocity = vec2.add(body.velocity, vec2.scale(impulse, body.inverseMass));
+        body.velocity = vec2.add(
+          body.velocity,
+          vec2.scale(impulse, body.inverseMass),
+        );
         return null;
       }
 
-      case 'buoyancy': {
+      case "buoyancy": {
         const surfaceLevel = this.evaluateAnimatable(field.surfaceLevel, frame);
         const submergedDepth = body.position.y - surfaceLevel;
 
@@ -1235,12 +1355,14 @@ class ForceFieldProcessor {
         const submergedRatio = Math.min(1, submergedDepth / (radius * 2));
 
         // Buoyancy force (upward)
-        const buoyancyForce = -field.density * submergedRatio * body.config.mass * 980;
+        const buoyancyForce =
+          -field.density * submergedRatio * body.config.mass * 980;
 
         // Drag forces
         const dragX = -field.linearDrag * body.velocity.x * submergedRatio;
         const dragY = -field.linearDrag * body.velocity.y * submergedRatio;
-        const angularDrag = -field.angularDrag * body.angularVelocity * submergedRatio;
+        const angularDrag =
+          -field.angularDrag * body.angularVelocity * submergedRatio;
 
         body.angularVelocity += angularDrag;
 
@@ -1250,7 +1372,7 @@ class ForceFieldProcessor {
         };
       }
 
-      case 'vortex': {
+      case "vortex": {
         const center = this.evaluateAnimatable(field.position, frame);
         const strength = this.evaluateAnimatable(field.strength, frame);
 
@@ -1263,18 +1385,21 @@ class ForceFieldProcessor {
 
         // Tangential force (perpendicular to radius)
         const tangent = vec2.perpendicular(vec2.normalize(diff));
-        const tangentialForce = vec2.scale(tangent, strength * falloff * body.config.mass);
+        const tangentialForce = vec2.scale(
+          tangent,
+          strength * falloff * body.config.mass,
+        );
 
         // Inward force
         const inwardForce = vec2.scale(
           vec2.scale(vec2.normalize(diff), -1),
-          field.inwardForce * falloff * body.config.mass
+          field.inwardForce * falloff * body.config.mass,
         );
 
         return vec2.add(tangentialForce, inwardForce);
       }
 
-      case 'drag': {
+      case "drag": {
         const speed = vec2.length(body.velocity);
         if (speed < 0.01) return null;
 
@@ -1287,13 +1412,16 @@ class ForceFieldProcessor {
     }
   }
 
-  private evaluateAnimatable<T>(prop: { value?: T; defaultValue?: T } | T, _frame: number): T {
+  private evaluateAnimatable<T>(
+    prop: { value?: T; defaultValue?: T } | T,
+    _frame: number,
+  ): T {
     // Simplified - in production would evaluate keyframes
-    if (typeof prop === 'object' && prop !== null) {
-      if ('value' in prop) {
+    if (typeof prop === "object" && prop !== null) {
+      if ("value" in prop) {
         return prop.value as T;
       }
-      if ('defaultValue' in prop) {
+      if ("defaultValue" in prop) {
         return prop.defaultValue as T;
       }
     }
@@ -1318,7 +1446,6 @@ interface PhysicsCheckpoint {
  */
 export class PhysicsEngine {
   private config: PhysicsSpaceConfig;
-  private random: PhysicsRandom;
 
   private rigidBodySimulator: RigidBodySimulator;
   private collisionDetector: CollisionDetector;
@@ -1422,7 +1549,7 @@ export class PhysicsEngine {
   // Simulation
   evaluateFrame(targetFrame: number): PhysicsSimulationState {
     if (!this.isInitialized) {
-      throw new Error('Physics engine not initialized');
+      throw new Error("Physics engine not initialized");
     }
 
     // Check if we can use cache
@@ -1457,7 +1584,11 @@ export class PhysicsEngine {
       this.simulateStep(frame);
 
       // Save checkpoint
-      if (frame % this.checkpointInterval === 0 && frame > 0 && !this.checkpoints.has(frame)) {
+      if (
+        frame % this.checkpointInterval === 0 &&
+        frame > 0 &&
+        !this.checkpoints.has(frame)
+      ) {
         this.saveCheckpoint(frame);
       }
     }
@@ -1475,16 +1606,14 @@ export class PhysicsEngine {
       if (body.inverseMass > 0) {
         this.rigidBodySimulator.applyForce(
           body.config.id,
-          vec2.scale(this.config.gravity, body.config.mass)
+          vec2.scale(this.config.gravity, body.config.mass),
         );
       }
     }
 
     // Process force fields
-    this.forceFieldProcessor.processForces(
-      frame,
-      bodies,
-      (id, force) => this.rigidBodySimulator.applyForce(id, force)
+    this.forceFieldProcessor.processForces(frame, bodies, (id, force) =>
+      this.rigidBodySimulator.applyForce(id, force),
     );
 
     // Integrate rigid bodies
@@ -1534,10 +1663,14 @@ export class PhysicsEngine {
     return {
       frame,
       rigidBodies: this.rigidBodySimulator.getState(),
-      softBodies: this.getSoftBodyIds().map(id => this.softBodySimulator.getState(id)!).filter(Boolean),
-      cloths: this.getClothIds().map(id => this.clothSimulator.getState(id)!).filter(Boolean),
+      softBodies: this.getSoftBodyIds()
+        .map((id) => this.softBodySimulator.getState(id)!)
+        .filter(Boolean),
+      cloths: this.getClothIds()
+        .map((id) => this.clothSimulator.getState(id)!)
+        .filter(Boolean),
       ragdolls: ragdollStates,
-      contacts: pairs.map(p => ({
+      contacts: pairs.map((p) => ({
         bodyA: p.bodyA.config.id,
         bodyB: p.bodyB.config.id,
         point: p.contactPoint,
@@ -1552,8 +1685,12 @@ export class PhysicsEngine {
     this.checkpoints.set(frame, {
       frame,
       rigidBodyStates: this.rigidBodySimulator.getState(),
-      softBodyStates: this.getSoftBodyIds().map(id => this.softBodySimulator.getState(id)!).filter(Boolean),
-      clothStates: this.getClothIds().map(id => this.clothSimulator.getState(id)!).filter(Boolean),
+      softBodyStates: this.getSoftBodyIds()
+        .map((id) => this.softBodySimulator.getState(id)!)
+        .filter(Boolean),
+      clothStates: this.getClothIds()
+        .map((id) => this.clothSimulator.getState(id)!)
+        .filter(Boolean),
       randomState: this.config.seed + frame, // Simplified - in production, would save actual RNG state
     });
   }
@@ -1577,17 +1714,24 @@ export class PhysicsEngine {
   // Keyframe export
   exportKeyframes(options: KeyframeExportOptions): ExportedKeyframes[] {
     const results: ExportedKeyframes[] = [];
-    const frameData: Map<string, Array<{ frame: number; position: PhysicsVec2; angle: number }>> = new Map();
+    const frameData: Map<
+      string,
+      Array<{ frame: number; position: PhysicsVec2; angle: number }>
+    > = new Map();
 
     // Collect data for each frame
-    for (let frame = options.startFrame; frame <= options.endFrame; frame += options.frameStep) {
+    for (
+      let frame = options.startFrame;
+      frame <= options.endFrame;
+      frame += options.frameStep
+    ) {
       const state = this.evaluateFrame(frame);
 
       for (const body of state.rigidBodies) {
         if (!frameData.has(body.id)) {
           frameData.set(body.id, []);
         }
-        frameData.get(body.id)!.push({
+        frameData.get(body.id)?.push({
           frame,
           position: body.position,
           angle: body.angle,
@@ -1603,11 +1747,11 @@ export class PhysicsEngine {
 
       const layerId = body.config.layerId;
 
-      if (options.properties.includes('position')) {
-        const keyframes = data.map(d => ({
+      if (options.properties.includes("position")) {
+        const keyframes = data.map((d) => ({
           frame: d.frame,
           value: d.position,
-          interpolation: options.interpolation as 'linear' | 'bezier',
+          interpolation: options.interpolation as "linear" | "bezier",
         }));
 
         // Simplify if requested
@@ -1617,16 +1761,16 @@ export class PhysicsEngine {
 
         results.push({
           layerId,
-          property: 'transform.position',
+          property: "transform.position",
           keyframes: simplifiedKeyframes,
         });
       }
 
-      if (options.properties.includes('rotation')) {
-        const keyframes = data.map(d => ({
+      if (options.properties.includes("rotation")) {
+        const keyframes = data.map((d) => ({
           frame: d.frame,
           value: d.angle * (180 / Math.PI), // Convert to degrees
-          interpolation: options.interpolation as 'linear' | 'bezier',
+          interpolation: options.interpolation as "linear" | "bezier",
         }));
 
         const simplifiedKeyframes = options.simplify
@@ -1635,7 +1779,7 @@ export class PhysicsEngine {
 
         results.push({
           layerId,
-          property: 'transform.rotation.z',
+          property: "transform.rotation.z",
           keyframes: simplifiedKeyframes,
         });
       }
@@ -1645,9 +1789,13 @@ export class PhysicsEngine {
   }
 
   private simplifyKeyframes<T>(
-    keyframes: Array<{ frame: number; value: T; interpolation: 'linear' | 'bezier' }>,
-    tolerance: number
-  ): Array<{ frame: number; value: T; interpolation: 'linear' | 'bezier' }> {
+    keyframes: Array<{
+      frame: number;
+      value: T;
+      interpolation: "linear" | "bezier";
+    }>,
+    tolerance: number,
+  ): Array<{ frame: number; value: T; interpolation: "linear" | "bezier" }> {
     if (keyframes.length <= 2) return keyframes;
 
     // Simple Douglas-Peucker-like simplification for position keyframes
@@ -1660,7 +1808,7 @@ export class PhysicsEngine {
       const next = keyframes[i + 1].value;
 
       // Check if current point deviates significantly from line
-      if (typeof curr === 'object' && curr !== null && 'x' in curr) {
+      if (typeof curr === "object" && curr !== null && "x" in curr) {
         const p = prev as unknown as PhysicsVec2;
         const c = curr as unknown as PhysicsVec2;
         const n = next as unknown as PhysicsVec2;
@@ -1669,7 +1817,13 @@ export class PhysicsEngine {
         const lineDir = vec2.sub(n, p);
         const lineLen = vec2.length(lineDir);
         if (lineLen > 0) {
-          const t = Math.max(0, Math.min(1, vec2.dot(vec2.sub(c, p), lineDir) / (lineLen * lineLen)));
+          const t = Math.max(
+            0,
+            Math.min(
+              1,
+              vec2.dot(vec2.sub(c, p), lineDir) / (lineLen * lineLen),
+            ),
+          );
           const projection = vec2.add(p, vec2.scale(lineDir, t));
           const distance = vec2.distance(c, projection);
 
@@ -1678,13 +1832,14 @@ export class PhysicsEngine {
             lastAdded = i;
           }
         }
-      } else if (typeof curr === 'number') {
+      } else if (typeof curr === "number") {
         // For scalar values
         const p = prev as unknown as number;
         const c = curr as unknown as number;
         const n = next as unknown as number;
 
-        const expected = p + (n - p) * ((i - lastAdded) / (keyframes.length - 1 - lastAdded));
+        const expected =
+          p + (n - p) * ((i - lastAdded) / (keyframes.length - 1 - lastAdded));
         if (Math.abs(c - expected) > tolerance) {
           simplified.push(keyframes[i]);
           lastAdded = i;

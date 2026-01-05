@@ -56,50 +56,58 @@
 </template>
 
 <script setup lang="ts">
-import type { RectangleShape, Point2D } from '@/types/shapes';
-import { ScrubableNumber } from '@/components/controls';
-import KeyframeToggle from '../KeyframeToggle.vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import { createKeyframe } from '@/types/animation';
+import { useCompositorStore } from "@/stores/compositorStore";
+import { createKeyframe } from "@/types/animation";
+import type { RectangleShape } from "@/types/shapes";
 
 const props = defineProps<{ shape: RectangleShape; layerId: string }>();
-const emit = defineEmits(['update']);
+const emit = defineEmits(["update"]);
 const store = useCompositorStore();
 
-function updatePoint(prop: 'position' | 'size', axis: 'x' | 'y', value: number) {
+function _updatePoint(
+  prop: "position" | "size",
+  axis: "x" | "y",
+  value: number,
+) {
   const updated = { ...props.shape };
   updated[prop] = {
     ...updated[prop],
-    value: { ...updated[prop].value, [axis]: value }
+    value: { ...updated[prop].value, [axis]: value },
   };
-  emit('update', updated);
+  emit("update", updated);
 }
 
-function updateNumber(prop: 'roundness', value: number) {
+function _updateNumber(prop: "roundness", value: number) {
   const updated = { ...props.shape };
   updated[prop] = { ...updated[prop], value };
-  emit('update', updated);
+  emit("update", updated);
 }
 
-function updateDirection(e: Event) {
+function _updateDirection(e: Event) {
   const updated = { ...props.shape };
-  updated.direction = parseInt((e.target as HTMLSelectElement).value) as 1 | -1;
-  emit('update', updated);
+  updated.direction = parseInt((e.target as HTMLSelectElement).value, 10) as
+    | 1
+    | -1;
+  emit("update", updated);
 }
 
-function toggleKeyframe(prop: 'position' | 'size' | 'roundness') {
+function _toggleKeyframe(prop: "position" | "size" | "roundness") {
   const updated = { ...props.shape };
   const animProp = updated[prop];
   const frame = store.currentFrame;
 
-  const hasKf = animProp.keyframes.some(k => k.frame === frame);
+  const hasKf = animProp.keyframes.some((k) => k.frame === frame);
   if (hasKf) {
-    animProp.keyframes = animProp.keyframes.filter(k => k.frame !== frame) as typeof animProp.keyframes;
+    animProp.keyframes = animProp.keyframes.filter(
+      (k) => k.frame !== frame,
+    ) as typeof animProp.keyframes;
   } else {
-    (animProp.keyframes as unknown[]).push(createKeyframe(frame, animProp.value, 'linear'));
+    (animProp.keyframes as unknown[]).push(
+      createKeyframe(frame, animProp.value, "linear"),
+    );
   }
   animProp.animated = animProp.keyframes.length > 0;
-  emit('update', updated);
+  emit("update", updated);
 }
 </script>
 

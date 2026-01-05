@@ -16,10 +16,10 @@
  * - SuGaR (Guédon & Lepetit 2023) - Gaussian to mesh extraction
  */
 
-import * as THREE from 'three';
-import { createLogger } from '@/utils/logger';
+import * as THREE from "three";
+import { createLogger } from "@/utils/logger";
 
-const logger = createLogger('GaussianSplatting');
+const logger = createLogger("GaussianSplatting");
 
 // ============================================================================
 // TYPES
@@ -76,7 +76,7 @@ interface PLYHeader {
   vertexCount: number;
   properties: string[];
   headerSize: number;
-  format: 'ascii' | 'binary_little_endian' | 'binary_big_endian';
+  format: "ascii" | "binary_little_endian" | "binary_big_endian";
 }
 
 // ============================================================================
@@ -92,7 +92,7 @@ export const DEFAULT_QUALITY: GaussianRenderQuality = {
 };
 
 /** Spherical harmonics coefficients per degree */
-const SH_COEFFS_PER_DEGREE = [1, 4, 9, 16]; // Cumulative: degree 0=1, 1=4, 2=9, 3=16
+const _SH_COEFFS_PER_DEGREE = [1, 4, 9, 16]; // Cumulative: degree 0=1, 1=4, 2=9, 3=16
 
 // ============================================================================
 // PLY PARSING
@@ -102,12 +102,14 @@ const SH_COEFFS_PER_DEGREE = [1, 4, 9, 16]; // Cumulative: degree 0=1, 1=4, 2=9,
  * Parse PLY file header
  */
 function parsePLYHeader(data: ArrayBuffer): PLYHeader {
-  const decoder = new TextDecoder('utf-8');
-  const text = decoder.decode(new Uint8Array(data, 0, Math.min(data.byteLength, 4096)));
-  const lines = text.split('\n');
+  const decoder = new TextDecoder("utf-8");
+  const text = decoder.decode(
+    new Uint8Array(data, 0, Math.min(data.byteLength, 4096)),
+  );
+  const lines = text.split("\n");
 
   let vertexCount = 0;
-  let format: PLYHeader['format'] = 'ascii';
+  let format: PLYHeader["format"] = "ascii";
   const properties: string[] = [];
   let headerSize = 0;
 
@@ -115,23 +117,23 @@ function parsePLYHeader(data: ArrayBuffer): PLYHeader {
     headerSize += line.length + 1; // +1 for newline
     const trimmed = line.trim();
 
-    if (trimmed === 'end_header') {
+    if (trimmed === "end_header") {
       break;
     }
 
-    if (trimmed.startsWith('format ')) {
-      const parts = trimmed.split(' ');
-      if (parts[1] === 'binary_little_endian') format = 'binary_little_endian';
-      else if (parts[1] === 'binary_big_endian') format = 'binary_big_endian';
-      else format = 'ascii';
+    if (trimmed.startsWith("format ")) {
+      const parts = trimmed.split(" ");
+      if (parts[1] === "binary_little_endian") format = "binary_little_endian";
+      else if (parts[1] === "binary_big_endian") format = "binary_big_endian";
+      else format = "ascii";
     }
 
-    if (trimmed.startsWith('element vertex ')) {
-      vertexCount = parseInt(trimmed.split(' ')[2], 10);
+    if (trimmed.startsWith("element vertex ")) {
+      vertexCount = parseInt(trimmed.split(" ")[2], 10);
     }
 
-    if (trimmed.startsWith('property ')) {
-      const parts = trimmed.split(' ');
+    if (trimmed.startsWith("property ")) {
+      const parts = trimmed.split(" ");
       properties.push(parts[parts.length - 1]);
     }
   }
@@ -145,8 +147,8 @@ function parsePLYHeader(data: ArrayBuffer): PLYHeader {
 function is3DGSFormat(properties: string[]): boolean {
   // 3DGS files have: x, y, z, f_dc_0-2 (color), opacity, scale_0-2, rot_0-3
   // Plus optional f_rest_* for spherical harmonics
-  const required = ['x', 'y', 'z', 'opacity'];
-  return required.every(prop => properties.includes(prop));
+  const required = ["x", "y", "z", "opacity"];
+  return required.every((prop) => properties.includes(prop));
 }
 
 /**
@@ -154,7 +156,7 @@ function is3DGSFormat(properties: string[]): boolean {
  */
 function parseBinaryPLY(
   data: ArrayBuffer,
-  header: PLYHeader
+  header: PLYHeader,
 ): GaussianSplatScene {
   const view = new DataView(data);
   const gaussians: GaussianPrimitive[] = [];
@@ -169,8 +171,8 @@ function parseBinaryPLY(
   const bytesPerVertex = offset;
 
   // Parse each vertex
-  let dataOffset = header.headerSize;
-  const littleEndian = header.format === 'binary_little_endian';
+  const dataOffset = header.headerSize;
+  const littleEndian = header.format === "binary_little_endian";
 
   const boundingBox = new THREE.Box3();
 
@@ -178,25 +180,33 @@ function parseBinaryPLY(
     const baseOffset = dataOffset + i * bytesPerVertex;
 
     // Position
-    const x = view.getFloat32(baseOffset + propOffsets['x'], littleEndian);
-    const y = view.getFloat32(baseOffset + propOffsets['y'], littleEndian);
-    const z = view.getFloat32(baseOffset + propOffsets['z'], littleEndian);
+    const x = view.getFloat32(baseOffset + propOffsets.x, littleEndian);
+    const y = view.getFloat32(baseOffset + propOffsets.y, littleEndian);
+    const z = view.getFloat32(baseOffset + propOffsets.z, littleEndian);
     const position = new THREE.Vector3(x, y, z);
 
     boundingBox.expandByPoint(position);
 
     // Color (DC component - base color)
-    let r = 0.5, g = 0.5, b = 0.5;
-    if ('f_dc_0' in propOffsets) {
+    let r = 0.5,
+      g = 0.5,
+      b = 0.5;
+    if ("f_dc_0" in propOffsets) {
       // Convert from spherical harmonics DC component to RGB
       const SH_C0 = 0.28209479177387814;
-      r = 0.5 + SH_C0 * view.getFloat32(baseOffset + propOffsets['f_dc_0'], littleEndian);
-      g = 0.5 + SH_C0 * view.getFloat32(baseOffset + propOffsets['f_dc_1'], littleEndian);
-      b = 0.5 + SH_C0 * view.getFloat32(baseOffset + propOffsets['f_dc_2'], littleEndian);
-    } else if ('red' in propOffsets) {
-      r = view.getFloat32(baseOffset + propOffsets['red'], littleEndian);
-      g = view.getFloat32(baseOffset + propOffsets['green'], littleEndian);
-      b = view.getFloat32(baseOffset + propOffsets['blue'], littleEndian);
+      r =
+        0.5 +
+        SH_C0 * view.getFloat32(baseOffset + propOffsets.f_dc_0, littleEndian);
+      g =
+        0.5 +
+        SH_C0 * view.getFloat32(baseOffset + propOffsets.f_dc_1, littleEndian);
+      b =
+        0.5 +
+        SH_C0 * view.getFloat32(baseOffset + propOffsets.f_dc_2, littleEndian);
+    } else if ("red" in propOffsets) {
+      r = view.getFloat32(baseOffset + propOffsets.red, littleEndian);
+      g = view.getFloat32(baseOffset + propOffsets.green, littleEndian);
+      b = view.getFloat32(baseOffset + propOffsets.blue, littleEndian);
       // Normalize if needed (might be 0-255)
       if (r > 1 || g > 1 || b > 1) {
         r /= 255;
@@ -207,32 +217,46 @@ function parseBinaryPLY(
     const color = new THREE.Color(
       Math.max(0, Math.min(1, r)),
       Math.max(0, Math.min(1, g)),
-      Math.max(0, Math.min(1, b))
+      Math.max(0, Math.min(1, b)),
     );
 
     // Opacity (sigmoid activation)
     let opacity = 1.0;
-    if ('opacity' in propOffsets) {
-      const rawOpacity = view.getFloat32(baseOffset + propOffsets['opacity'], littleEndian);
+    if ("opacity" in propOffsets) {
+      const rawOpacity = view.getFloat32(
+        baseOffset + propOffsets.opacity,
+        littleEndian,
+      );
       opacity = 1 / (1 + Math.exp(-rawOpacity)); // Sigmoid
     }
 
     // Scale (exp activation)
-    let scaleX = 0.01, scaleY = 0.01, scaleZ = 0.01;
-    if ('scale_0' in propOffsets) {
-      scaleX = Math.exp(view.getFloat32(baseOffset + propOffsets['scale_0'], littleEndian));
-      scaleY = Math.exp(view.getFloat32(baseOffset + propOffsets['scale_1'], littleEndian));
-      scaleZ = Math.exp(view.getFloat32(baseOffset + propOffsets['scale_2'], littleEndian));
+    let scaleX = 0.01,
+      scaleY = 0.01,
+      scaleZ = 0.01;
+    if ("scale_0" in propOffsets) {
+      scaleX = Math.exp(
+        view.getFloat32(baseOffset + propOffsets.scale_0, littleEndian),
+      );
+      scaleY = Math.exp(
+        view.getFloat32(baseOffset + propOffsets.scale_1, littleEndian),
+      );
+      scaleZ = Math.exp(
+        view.getFloat32(baseOffset + propOffsets.scale_2, littleEndian),
+      );
     }
     const scale = new THREE.Vector3(scaleX, scaleY, scaleZ);
 
     // Rotation (quaternion, normalized)
-    let qw = 1, qx = 0, qy = 0, qz = 0;
-    if ('rot_0' in propOffsets) {
-      qw = view.getFloat32(baseOffset + propOffsets['rot_0'], littleEndian);
-      qx = view.getFloat32(baseOffset + propOffsets['rot_1'], littleEndian);
-      qy = view.getFloat32(baseOffset + propOffsets['rot_2'], littleEndian);
-      qz = view.getFloat32(baseOffset + propOffsets['rot_3'], littleEndian);
+    let qw = 1,
+      qx = 0,
+      qy = 0,
+      qz = 0;
+    if ("rot_0" in propOffsets) {
+      qw = view.getFloat32(baseOffset + propOffsets.rot_0, littleEndian);
+      qx = view.getFloat32(baseOffset + propOffsets.rot_1, littleEndian);
+      qy = view.getFloat32(baseOffset + propOffsets.rot_2, littleEndian);
+      qz = view.getFloat32(baseOffset + propOffsets.rot_3, littleEndian);
     }
     const rotation = new THREE.Quaternion(qx, qy, qz, qw).normalize();
 
@@ -241,11 +265,14 @@ function parseBinaryPLY(
 
     // Spherical harmonics (rest coefficients)
     let sh: Float32Array | undefined;
-    const shProps = header.properties.filter(p => p.startsWith('f_rest_'));
+    const shProps = header.properties.filter((p) => p.startsWith("f_rest_"));
     if (shProps.length > 0) {
       sh = new Float32Array(shProps.length);
       for (let j = 0; j < shProps.length; j++) {
-        sh[j] = view.getFloat32(baseOffset + propOffsets[shProps[j]], littleEndian);
+        sh[j] = view.getFloat32(
+          baseOffset + propOffsets[shProps[j]],
+          littleEndian,
+        );
       }
     }
 
@@ -267,10 +294,14 @@ function parseBinaryPLY(
   const maxExtent = Math.max(size.x, size.y, size.z);
 
   // Determine SH degree from property count
-  const shPropCount = header.properties.filter(p => p.startsWith('f_rest_')).length;
+  const shPropCount = header.properties.filter((p) =>
+    p.startsWith("f_rest_"),
+  ).length;
   let shDegree = 0;
-  if (shPropCount >= 45) shDegree = 3; // 3 * (16-1) = 45
-  else if (shPropCount >= 24) shDegree = 2; // 3 * (9-1) = 24
+  if (shPropCount >= 45)
+    shDegree = 3; // 3 * (16-1) = 45
+  else if (shPropCount >= 24)
+    shDegree = 2; // 3 * (9-1) = 24
   else if (shPropCount >= 9) shDegree = 1; // 3 * (4-1) = 9
 
   logger.info(`Loaded ${gaussians.length} Gaussians, SH degree ${shDegree}`);
@@ -287,18 +318,27 @@ function parseBinaryPLY(
 /**
  * Calculate 3D covariance matrix from scale and rotation
  */
-function calculateCovariance(scale: THREE.Vector3, rotation: THREE.Quaternion): Float32Array {
+function calculateCovariance(
+  scale: THREE.Vector3,
+  rotation: THREE.Quaternion,
+): Float32Array {
   // Create rotation matrix from quaternion
   const R = new THREE.Matrix3().setFromMatrix4(
-    new THREE.Matrix4().makeRotationFromQuaternion(rotation)
+    new THREE.Matrix4().makeRotationFromQuaternion(rotation),
   );
 
   // Scale matrix S = diag(scale)
   // Covariance = R * S * S^T * R^T = R * S^2 * R^T
   const S2 = new THREE.Matrix3().set(
-    scale.x * scale.x, 0, 0,
-    0, scale.y * scale.y, 0,
-    0, 0, scale.z * scale.z
+    scale.x * scale.x,
+    0,
+    0,
+    0,
+    scale.y * scale.y,
+    0,
+    0,
+    0,
+    scale.z * scale.z,
   );
 
   // M = R * S2
@@ -329,7 +369,7 @@ function calculateCovariance(scale: THREE.Vector3, rotation: THREE.Quaternion): 
  */
 export function createGaussianBuffers(
   scene: GaussianSplatScene,
-  quality: GaussianRenderQuality = DEFAULT_QUALITY
+  quality: GaussianRenderQuality = DEFAULT_QUALITY,
 ): {
   positions: Float32Array;
   colors: Float32Array;
@@ -373,15 +413,21 @@ export function createGaussianBuffers(
  */
 export function createGaussianPoints(
   scene: GaussianSplatScene,
-  quality: GaussianRenderQuality = DEFAULT_QUALITY
+  quality: GaussianRenderQuality = DEFAULT_QUALITY,
 ): THREE.Points {
   const buffers = createGaussianBuffers(scene, quality);
 
   const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute('position', new THREE.BufferAttribute(buffers.positions, 3));
-  geometry.setAttribute('color', new THREE.BufferAttribute(buffers.colors, 3));
-  geometry.setAttribute('size', new THREE.BufferAttribute(buffers.sizes, 1));
-  geometry.setAttribute('opacity', new THREE.BufferAttribute(buffers.opacities, 1));
+  geometry.setAttribute(
+    "position",
+    new THREE.BufferAttribute(buffers.positions, 3),
+  );
+  geometry.setAttribute("color", new THREE.BufferAttribute(buffers.colors, 3));
+  geometry.setAttribute("size", new THREE.BufferAttribute(buffers.sizes, 1));
+  geometry.setAttribute(
+    "opacity",
+    new THREE.BufferAttribute(buffers.opacities, 1),
+  );
 
   const material = new THREE.ShaderMaterial({
     uniforms: {
@@ -471,17 +517,21 @@ export class GaussianSplattingService {
     const header = parsePLYHeader(data);
 
     if (!is3DGSFormat(header.properties)) {
-      throw new Error('PLY file is not in 3DGS format (missing required properties)');
+      throw new Error(
+        "PLY file is not in 3DGS format (missing required properties)",
+      );
     }
 
-    if (header.format === 'ascii') {
-      throw new Error('ASCII PLY format not supported, use binary format');
+    if (header.format === "ascii") {
+      throw new Error("ASCII PLY format not supported, use binary format");
     }
 
     const scene = parseBinaryPLY(data, header);
     this.scenes.set(id, scene);
 
-    logger.info(`Loaded 3DGS scene "${id}" with ${scene.gaussians.length} Gaussians`);
+    logger.info(
+      `Loaded 3DGS scene "${id}" with ${scene.gaussians.length} Gaussians`,
+    );
 
     return scene;
   }
@@ -566,7 +616,7 @@ export class GaussianSplattingService {
 export function sortGaussiansByDepth(
   scene: GaussianSplatScene,
   cameraPosition: THREE.Vector3,
-  indices?: Uint32Array
+  indices?: Uint32Array,
 ): Uint32Array {
   const count = scene.gaussians.length;
   const sortedIndices = indices || new Uint32Array(count);
@@ -590,12 +640,12 @@ export function sortGaussiansByDepth(
  */
 export function reorderBuffers(
   geometry: THREE.BufferGeometry,
-  sortedIndices: Uint32Array
+  sortedIndices: Uint32Array,
 ): void {
-  const position = geometry.getAttribute('position') as THREE.BufferAttribute;
-  const color = geometry.getAttribute('color') as THREE.BufferAttribute;
-  const size = geometry.getAttribute('size') as THREE.BufferAttribute;
-  const opacity = geometry.getAttribute('opacity') as THREE.BufferAttribute;
+  const position = geometry.getAttribute("position") as THREE.BufferAttribute;
+  const color = geometry.getAttribute("color") as THREE.BufferAttribute;
+  const size = geometry.getAttribute("size") as THREE.BufferAttribute;
+  const opacity = geometry.getAttribute("opacity") as THREE.BufferAttribute;
 
   const count = sortedIndices.length;
   const newPositions = new Float32Array(count * 3);

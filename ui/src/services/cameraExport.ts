@@ -3,8 +3,8 @@
  * Exports camera data to various formats including Uni3C
  */
 
-import type { Camera3D, CameraKeyframe } from '../types/camera';
-import { focalLengthToFOV } from './math3d';
+import type { Camera3D, CameraKeyframe } from "../types/camera";
+import { focalLengthToFOV } from "./math3d";
 
 /**
  * Uni3C Camera Track Format
@@ -28,8 +28,8 @@ export interface Uni3CFrame {
   timestamp: number;
   camera: {
     position: { x: number; y: number; z: number };
-    rotation: { x: number; y: number; z: number };  // Euler angles in degrees
-    fov: number;  // Vertical FOV in degrees
+    rotation: { x: number; y: number; z: number }; // Euler angles in degrees
+    fov: number; // Vertical FOV in degrees
     aspectRatio: number;
     nearClip: number;
     farClip: number;
@@ -51,7 +51,7 @@ export function exportToUni3C(
   compWidth: number,
   compHeight: number,
   startFrame: number = 0,
-  endFrame: number = 100
+  endFrame: number = 100,
 ): Uni3CTrack {
   const frames: Uni3CFrame[] = [];
   const aspectRatio = compWidth / compHeight;
@@ -64,24 +64,27 @@ export function exportToUni3C(
     const rotation = {
       x: interpolated.orientation.x + interpolated.xRotation,
       y: interpolated.orientation.y + interpolated.yRotation,
-      z: interpolated.orientation.z + interpolated.zRotation
+      z: interpolated.orientation.z + interpolated.zRotation,
     };
 
     // For two-node camera, calculate rotation from position and POI
-    if (camera.type === 'two-node') {
+    if (camera.type === "two-node") {
       const dir = {
         x: interpolated.pointOfInterest.x - interpolated.position.x,
         y: interpolated.pointOfInterest.y - interpolated.position.y,
-        z: interpolated.pointOfInterest.z - interpolated.position.z
+        z: interpolated.pointOfInterest.z - interpolated.position.z,
       };
 
       // Calculate yaw (Y rotation) and pitch (X rotation) from direction
       const horizontalDist = Math.sqrt(dir.x * dir.x + dir.z * dir.z);
-      rotation.y = Math.atan2(dir.x, dir.z) * 180 / Math.PI;
-      rotation.x = -Math.atan2(dir.y, horizontalDist) * 180 / Math.PI;
+      rotation.y = (Math.atan2(dir.x, dir.z) * 180) / Math.PI;
+      rotation.x = (-Math.atan2(dir.y, horizontalDist) * 180) / Math.PI;
     }
 
-    const fov = focalLengthToFOV(interpolated.focalLength, interpolated.filmSize);
+    const fov = focalLengthToFOV(
+      interpolated.focalLength,
+      interpolated.filmSize,
+    );
 
     frames.push({
       frame,
@@ -92,27 +95,29 @@ export function exportToUni3C(
         fov,
         aspectRatio,
         nearClip: interpolated.nearClip,
-        farClip: interpolated.farClip
+        farClip: interpolated.farClip,
       },
-      dof: interpolated.depthOfField.enabled ? {
-        enabled: true,
-        focusDistance: interpolated.depthOfField.focusDistance,
-        aperture: interpolated.depthOfField.aperture
-      } : undefined
+      dof: interpolated.depthOfField.enabled
+        ? {
+            enabled: true,
+            focusDistance: interpolated.depthOfField.focusDistance,
+            aperture: interpolated.depthOfField.aperture,
+          }
+        : undefined,
     });
   }
 
   return {
-    version: '1.0',
+    version: "1.0",
     fps,
     frames,
     metadata: {
-      source: 'Lattice Compositor',
+      source: "Lattice Compositor",
       exportDate: new Date().toISOString(),
       cameraName: camera.name,
       compWidth,
-      compHeight
-    }
+      compHeight,
+    },
   };
 }
 
@@ -122,7 +127,7 @@ export function exportToUni3C(
 function interpolateCamera(
   camera: Camera3D,
   keyframes: CameraKeyframe[],
-  frame: number
+  frame: number,
 ): Camera3D {
   if (keyframes.length === 0) {
     return camera;
@@ -158,7 +163,8 @@ function interpolateCamera(
   }
 
   // Interpolate between keyframes
-  const t = (frame - prevKeyframe.frame) / (nextKeyframe.frame - prevKeyframe.frame);
+  const t =
+    (frame - prevKeyframe.frame) / (nextKeyframe.frame - prevKeyframe.frame);
   const eased = getEasedT(t, prevKeyframe, nextKeyframe);
 
   return interpolateBetweenKeyframes(camera, prevKeyframe, nextKeyframe, eased);
@@ -180,9 +186,10 @@ function applyKeyframe(camera: Camera3D, keyframe: CameraKeyframe): Camera3D {
     focalLength: keyframe.focalLength ?? camera.focalLength,
     depthOfField: {
       ...camera.depthOfField,
-      focusDistance: keyframe.focusDistance ?? camera.depthOfField.focusDistance,
-      aperture: keyframe.aperture ?? camera.depthOfField.aperture
-    }
+      focusDistance:
+        keyframe.focusDistance ?? camera.depthOfField.focusDistance,
+      aperture: keyframe.aperture ?? camera.depthOfField.aperture,
+    },
   };
 }
 
@@ -192,27 +199,30 @@ function applyKeyframe(camera: Camera3D, keyframe: CameraKeyframe): Camera3D {
 function getEasedT(
   t: number,
   prevKeyframe: CameraKeyframe,
-  nextKeyframe: CameraKeyframe
+  nextKeyframe: CameraKeyframe,
 ): number {
-  const interpolation = prevKeyframe.temporalInterpolation ?? 'linear';
+  const interpolation = prevKeyframe.temporalInterpolation ?? "linear";
 
   switch (interpolation) {
-    case 'hold':
+    case "hold":
       return 0;
-    case 'bezier':
+    case "bezier":
       // Use bezier handles if available
       if (prevKeyframe.outHandle && nextKeyframe.inHandle) {
         return cubicBezier(
           t,
-          0, 0,
-          prevKeyframe.outHandle.x, prevKeyframe.outHandle.y,
-          nextKeyframe.inHandle.x, nextKeyframe.inHandle.y,
-          1, 1
+          0,
+          0,
+          prevKeyframe.outHandle.x,
+          prevKeyframe.outHandle.y,
+          nextKeyframe.inHandle.x,
+          nextKeyframe.inHandle.y,
+          1,
+          1,
         );
       }
       // Default ease
       return easeInOut(t);
-    case 'linear':
     default:
       return t;
   }
@@ -225,44 +235,64 @@ function interpolateBetweenKeyframes(
   camera: Camera3D,
   prev: CameraKeyframe,
   next: CameraKeyframe,
-  t: number
+  t: number,
 ): Camera3D {
   const lerp = (a: number, b: number) => a + (b - a) * t;
   const lerpVec3 = (
     a: { x: number; y: number; z: number } | undefined,
     b: { x: number; y: number; z: number } | undefined,
-    def: { x: number; y: number; z: number }
+    def: { x: number; y: number; z: number },
   ) => {
     const from = a ?? def;
     const to = b ?? def;
     return {
       x: lerp(from.x, to.x),
       y: lerp(from.y, to.y),
-      z: lerp(from.z, to.z)
+      z: lerp(from.z, to.z),
     };
   };
 
   return {
     ...camera,
     position: lerpVec3(prev.position, next.position, camera.position),
-    pointOfInterest: lerpVec3(prev.pointOfInterest, next.pointOfInterest, camera.pointOfInterest),
-    orientation: lerpVec3(prev.orientation, next.orientation, camera.orientation),
-    xRotation: lerp(prev.xRotation ?? camera.xRotation, next.xRotation ?? camera.xRotation),
-    yRotation: lerp(prev.yRotation ?? camera.yRotation, next.yRotation ?? camera.yRotation),
-    zRotation: lerp(prev.zRotation ?? camera.zRotation, next.zRotation ?? camera.zRotation),
+    pointOfInterest: lerpVec3(
+      prev.pointOfInterest,
+      next.pointOfInterest,
+      camera.pointOfInterest,
+    ),
+    orientation: lerpVec3(
+      prev.orientation,
+      next.orientation,
+      camera.orientation,
+    ),
+    xRotation: lerp(
+      prev.xRotation ?? camera.xRotation,
+      next.xRotation ?? camera.xRotation,
+    ),
+    yRotation: lerp(
+      prev.yRotation ?? camera.yRotation,
+      next.yRotation ?? camera.yRotation,
+    ),
+    zRotation: lerp(
+      prev.zRotation ?? camera.zRotation,
+      next.zRotation ?? camera.zRotation,
+    ),
     zoom: lerp(prev.zoom ?? camera.zoom, next.zoom ?? camera.zoom),
-    focalLength: lerp(prev.focalLength ?? camera.focalLength, next.focalLength ?? camera.focalLength),
+    focalLength: lerp(
+      prev.focalLength ?? camera.focalLength,
+      next.focalLength ?? camera.focalLength,
+    ),
     depthOfField: {
       ...camera.depthOfField,
       focusDistance: lerp(
         prev.focusDistance ?? camera.depthOfField.focusDistance,
-        next.focusDistance ?? camera.depthOfField.focusDistance
+        next.focusDistance ?? camera.depthOfField.focusDistance,
       ),
       aperture: lerp(
         prev.aperture ?? camera.depthOfField.aperture,
-        next.aperture ?? camera.depthOfField.aperture
-      )
-    }
+        next.aperture ?? camera.depthOfField.aperture,
+      ),
+    },
   };
 }
 
@@ -271,10 +301,14 @@ function interpolateBetweenKeyframes(
  */
 function cubicBezier(
   t: number,
-  x0: number, y0: number,
-  x1: number, y1: number,
-  x2: number, y2: number,
-  x3: number, y3: number
+  _x0: number,
+  y0: number,
+  _x1: number,
+  y1: number,
+  _x2: number,
+  y2: number,
+  _x3: number,
+  y3: number,
 ): number {
   // Simple approximation - find t for x, return y
   const mt = 1 - t;
@@ -290,7 +324,7 @@ function cubicBezier(
  * Simple ease in-out
  */
 function easeInOut(t: number): number {
-  return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+  return t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
 }
 
 /**
@@ -298,26 +332,32 @@ function easeInOut(t: number): number {
  */
 export function exportCameraJSON(
   camera: Camera3D,
-  keyframes: CameraKeyframe[]
+  keyframes: CameraKeyframe[],
 ): string {
-  return JSON.stringify({
-    camera,
-    keyframes,
-    exportedAt: new Date().toISOString(),
-    version: '1.0'
-  }, null, 2);
+  return JSON.stringify(
+    {
+      camera,
+      keyframes,
+      exportedAt: new Date().toISOString(),
+      version: "1.0",
+    },
+    null,
+    2,
+  );
 }
 
 /**
  * Import camera from JSON
  */
-export function importCameraJSON(json: string): { camera: Camera3D; keyframes: CameraKeyframe[] } | null {
+export function importCameraJSON(
+  json: string,
+): { camera: Camera3D; keyframes: CameraKeyframe[] } | null {
   try {
     const data = JSON.parse(json);
     if (data.camera && data.keyframes) {
       return {
         camera: data.camera,
-        keyframes: data.keyframes
+        keyframes: data.keyframes,
       };
     }
     return null;
@@ -332,7 +372,7 @@ export function importCameraJSON(json: string): { camera: Camera3D; keyframes: C
 export function exportToAEScript(
   camera: Camera3D,
   keyframes: CameraKeyframe[],
-  compName: string
+  _compName: string,
 ): string {
   let script = `// After Effects Camera Import Script
 // Generated by Lattice Compositor
@@ -349,14 +389,14 @@ export function exportToAEScript(
   var cameraOptions = camera.property("ADBE Camera Options Group");
 
   // Set camera type
-  camera.property("ADBE Camera Options Group").property("ADBE Camera Type").setValue(${camera.type === 'two-node' ? 2 : 1});
+  camera.property("ADBE Camera Options Group").property("ADBE Camera Type").setValue(${camera.type === "two-node" ? 2 : 1});
 
   // Set initial position
   camera.position.setValue([${camera.position.x}, ${camera.position.y}, ${camera.position.z}]);
 
 `;
 
-  if (camera.type === 'two-node') {
+  if (camera.type === "two-node") {
     script += `  // Set point of interest
   camera.pointOfInterest.setValue([${camera.pointOfInterest.x}, ${camera.pointOfInterest.y}, ${camera.pointOfInterest.z}]);
 
@@ -406,10 +446,14 @@ export function exportToAEScript(
 /**
  * Download file helper
  */
-export function downloadFile(content: string, filename: string, mimeType: string = 'application/json') {
+export function downloadFile(
+  content: string,
+  filename: string,
+  mimeType: string = "application/json",
+) {
   const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
+  const link = document.createElement("a");
   link.href = url;
   link.download = filename;
   document.body.appendChild(link);

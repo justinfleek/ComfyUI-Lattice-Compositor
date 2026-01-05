@@ -11,7 +11,7 @@
  * - Keyframe simplification using Douglas-Peucker algorithm
  */
 
-import type { Keyframe } from '@/types/project';
+import type { Keyframe } from "@/types/project";
 
 // ============================================================================
 // TYPES
@@ -76,7 +76,7 @@ export const DEFAULT_RECORDING_OPTIONS: RecordingOptions = {
  */
 export function smoothMotion(
   motion: RecordedMotion,
-  smoothingAmount: number
+  smoothingAmount: number,
 ): RecordedMotion {
   if (motion.samples.length < 3 || smoothingAmount <= 0) {
     return { ...motion, samples: [...motion.samples] };
@@ -135,7 +135,7 @@ function generateGaussianKernel(radius: number): number[] {
 
   // Normalize kernel
   const sum = kernel.reduce((a, b) => a + b, 0);
-  return kernel.map(w => w / sum);
+  return kernel.map((w) => w / sum);
 }
 
 /**
@@ -143,7 +143,7 @@ function generateGaussianKernel(radius: number): number[] {
  */
 export function smoothMotionMovingAverage(
   motion: RecordedMotion,
-  windowSize: number
+  windowSize: number,
 ): RecordedMotion {
   if (motion.samples.length < windowSize || windowSize < 2) {
     return { ...motion, samples: [...motion.samples] };
@@ -155,7 +155,11 @@ export function smoothMotionMovingAverage(
     let sumY = 0;
     let count = 0;
 
-    for (let j = Math.max(0, i - halfWindow); j <= Math.min(motion.samples.length - 1, i + halfWindow); j++) {
+    for (
+      let j = Math.max(0, i - halfWindow);
+      j <= Math.min(motion.samples.length - 1, i + halfWindow);
+      j++
+    ) {
       sumX += motion.samples[j].x;
       sumY += motion.samples[j].y;
       count++;
@@ -190,7 +194,7 @@ export function smoothMotionMovingAverage(
 export function convertMotionToKeyframes(
   motion: RecordedMotion,
   frameRate: number,
-  startFrame: number
+  startFrame: number,
 ): Array<Keyframe<{ x: number; y: number }>> {
   if (motion.samples.length === 0) {
     return [];
@@ -223,10 +227,10 @@ export function convertMotionToKeyframes(
       id: `kf_${motion.pinId}_${startFrame + f}`,
       frame: startFrame + f,
       value: { x: pos.x, y: pos.y },
-      interpolation: 'linear',
+      interpolation: "linear",
       inHandle: { frame: -5, value: 0, enabled: false },
       outHandle: { frame: 5, value: 0, enabled: false },
-      controlMode: 'smooth',
+      controlMode: "smooth",
     });
   }
 
@@ -238,7 +242,7 @@ export function convertMotionToKeyframes(
  */
 function interpolatePositionAtTime(
   samples: MotionSample[],
-  time: number
+  time: number,
 ): { x: number; y: number } {
   // Before first sample
   if (time <= samples[0].time) {
@@ -285,14 +289,14 @@ function interpolatePositionAtTime(
  */
 export function simplifyKeyframes(
   keyframes: Array<Keyframe<{ x: number; y: number }>>,
-  tolerance: number
+  tolerance: number,
 ): Array<Keyframe<{ x: number; y: number }>> {
   if (keyframes.length <= 2) {
     return [...keyframes];
   }
 
   // Convert to point array for Douglas-Peucker
-  const points = keyframes.map(kf => ({
+  const points = keyframes.map((kf) => ({
     frame: kf.frame,
     x: kf.value.x,
     y: kf.value.y,
@@ -303,7 +307,7 @@ export function simplifyKeyframes(
   const simplified = douglasPeucker(points, tolerance);
 
   // Return simplified keyframes
-  return simplified.map(p => p.keyframe);
+  return simplified.map((p) => p.keyframe);
 }
 
 interface DPPoint {
@@ -354,7 +358,11 @@ function douglasPeucker(points: DPPoint[], tolerance: number): DPPoint[] {
  * Calculate perpendicular distance from point to line segment
  * Uses frame as x-axis and position magnitude as y-axis
  */
-function perpendicularDistance(point: DPPoint, lineStart: DPPoint, lineEnd: DPPoint): number {
+function perpendicularDistance(
+  point: DPPoint,
+  lineStart: DPPoint,
+  lineEnd: DPPoint,
+): number {
   // Treat frame as time axis, combine x/y into 2D position space
   // We measure distance in position space (pixels)
 
@@ -386,7 +394,7 @@ function perpendicularDistance(point: DPPoint, lineStart: DPPoint, lineEnd: DPPo
  */
 export function removeRedundantKeyframes(
   keyframes: Array<Keyframe<{ x: number; y: number }>>,
-  minDistance: number
+  minDistance: number,
 ): Array<Keyframe<{ x: number; y: number }>> {
   if (keyframes.length <= 2) {
     return [...keyframes];
@@ -399,8 +407,7 @@ export function removeRedundantKeyframes(
     const curr = keyframes[i];
 
     const dist = Math.sqrt(
-      (curr.value.x - prev.value.x) ** 2 +
-      (curr.value.y - prev.value.y) ** 2
+      (curr.value.x - prev.value.x) ** 2 + (curr.value.y - prev.value.y) ** 2,
     );
 
     // Keep keyframe if it moved more than minDistance
@@ -460,7 +467,10 @@ export class MotionRecorder {
     const time = now - this.startTime;
 
     // Throttle samples based on minSampleInterval
-    if (time - this.lastSampleTime < this.options.minSampleInterval && this.samples.length > 0) {
+    if (
+      time - this.lastSampleTime < this.options.minSampleInterval &&
+      this.samples.length > 0
+    ) {
       return;
     }
 
@@ -517,7 +527,7 @@ export function processRecordedMotion(
   frameRate: number,
   startFrame: number,
   smoothingAmount: number = 50,
-  simplifyTolerance: number = 2
+  simplifyTolerance: number = 2,
 ): Array<Keyframe<{ x: number; y: number }>> {
   // Step 1: Smooth
   const smoothed = smoothMotion(motion, smoothingAmount);
@@ -592,7 +602,8 @@ export function getMotionAverageSpeed(motion: RecordedMotion): number {
   if (motion.samples.length < 2) return 0;
 
   const pathLength = getMotionPathLength(motion);
-  const duration = motion.samples[motion.samples.length - 1].time - motion.samples[0].time;
+  const duration =
+    motion.samples[motion.samples.length - 1].time - motion.samples[0].time;
 
   if (duration <= 0) return 0;
 

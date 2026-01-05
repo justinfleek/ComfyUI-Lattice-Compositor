@@ -155,11 +155,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
-import { EXPRESSION_PRESETS, validateExpression } from '@/services/expressions';
-import { useCompositorStore } from '@/stores/compositorStore';
-import { isCSVAsset, isJSONAsset } from '@/types/dataAsset';
-import type { PropertyExpression } from '@/types/project';
+import { computed, ref, watch } from "vue";
+import { EXPRESSION_PRESETS, validateExpression } from "@/services/expressions";
+import { useCompositorStore } from "@/stores/compositorStore";
+import type { PropertyExpression } from "@/types/project";
 
 interface Props {
   visible: boolean;
@@ -170,32 +169,32 @@ const props = defineProps<Props>();
 const store = useCompositorStore();
 
 const emit = defineEmits<{
-  (e: 'close'): void;
-  (e: 'apply', expression: PropertyExpression): void;
-  (e: 'remove'): void;
+  (e: "close"): void;
+  (e: "apply", expression: PropertyExpression): void;
+  (e: "remove"): void;
 }>();
 
-const mode = ref<'preset' | 'custom' | 'data'>('preset');
-const selectedPreset = ref<string>('');
-const customExpression = ref<string>('');
+const mode = ref<"preset" | "custom" | "data">("preset");
+const selectedPreset = ref<string>("");
+const customExpression = ref<string>("");
 const expressionError = ref<string | null>(null);
 
 // Data-driven mode state
-const selectedDataAsset = ref<string>('');
-const selectedColumn = ref<string>('');
-const jsonPropertyPath = ref<string>('');
-const rowMappingMode = ref<'frame' | 'time' | 'manual'>('frame');
+const selectedDataAsset = ref<string>("");
+const selectedColumn = ref<string>("");
+const jsonPropertyPath = ref<string>("");
+const rowMappingMode = ref<"frame" | "time" | "manual">("frame");
 const manualRowOffset = ref(0);
 
 // Get available data assets from project
-const availableDataAssets = computed(() => {
+const _availableDataAssets = computed(() => {
   const assets = store.project?.dataAssets ?? {};
   return Object.entries(assets).map(([name, asset]) => ({
     name,
     type: asset.type,
     headers: asset.headers,
     numRows: asset.numRows,
-    numColumns: asset.numColumns
+    numColumns: asset.numColumns,
   }));
 });
 
@@ -210,82 +209,84 @@ const selectedAssetDetails = computed(() => {
 // Is selected asset CSV/TSV?
 const isCSVType = computed(() => {
   const asset = selectedAssetDetails.value;
-  return asset && (asset.type === 'csv' || asset.type === 'tsv');
+  return asset && (asset.type === "csv" || asset.type === "tsv");
 });
 
 // Is selected asset JSON?
 const isJSONType = computed(() => {
   const asset = selectedAssetDetails.value;
-  return asset && (asset.type === 'json' || asset.type === 'mgjson');
+  return asset && (asset.type === "json" || asset.type === "mgjson");
 });
 
 // CSV headers for column dropdown
-const csvHeaders = computed(() => {
+const _csvHeaders = computed(() => {
   const asset = selectedAssetDetails.value;
   return asset?.headers ?? [];
 });
 
 // Generate expression code from data selection
 const generatedDataExpression = computed(() => {
-  if (!selectedDataAsset.value) return '';
+  if (!selectedDataAsset.value) return "";
 
   const assetName = JSON.stringify(selectedDataAsset.value);
 
   if (isCSVType.value) {
     // CSV: footage("file.csv").dataValue([row, column])
-    const column = selectedColumn.value || '0';
+    const column = selectedColumn.value || "0";
     const columnRef = /^\d+$/.test(column) ? column : JSON.stringify(column);
 
-    let rowExpr = 'frame';
-    if (rowMappingMode.value === 'time') {
-      rowExpr = 'Math.round(time)';
-    } else if (rowMappingMode.value === 'manual') {
+    let rowExpr = "frame";
+    if (rowMappingMode.value === "time") {
+      rowExpr = "Math.round(time)";
+    } else if (rowMappingMode.value === "manual") {
       rowExpr = `frame + ${manualRowOffset.value}`;
     }
 
     return `footage(${assetName}).dataValue([${rowExpr}, ${columnRef}])`;
   } else if (isJSONType.value) {
     // JSON: footage("file.json").sourceData.path
-    const path = jsonPropertyPath.value || '';
+    const path = jsonPropertyPath.value || "";
     if (path) {
       return `footage(${assetName}).sourceData.${path}`;
     }
     return `footage(${assetName}).sourceData`;
   }
 
-  return '';
+  return "";
 });
 
 // Check if property already has an expression
-const hasExpression = computed(() => {
+const _hasExpression = computed(() => {
   return props.currentExpression?.enabled ?? false;
 });
 
 // Preset descriptions
 const presetDescriptions: Record<string, string> = {
-  inertiaLight: 'Adds subtle overshoot after keyframes end',
-  inertiaHeavy: 'Adds noticeable overshoot with slower settle',
-  bounceGentle: 'Soft bouncing at the end of motion',
-  bounceFirm: 'Quick bouncing with higher energy',
-  elasticSnappy: 'Snappy spring-like motion',
-  elasticLoose: 'Loose, wobbly spring motion',
-  jitterSubtle: 'Subtle random movement (noise)',
-  jitterModerate: 'Moderate random movement',
-  jitterIntense: 'Strong random movement',
-  repeatCycle: 'Loop keyframes from start',
-  repeatPingpong: 'Loop keyframes back and forth',
-  repeatOffset: 'Loop with continuous offset'
+  inertiaLight: "Adds subtle overshoot after keyframes end",
+  inertiaHeavy: "Adds noticeable overshoot with slower settle",
+  bounceGentle: "Soft bouncing at the end of motion",
+  bounceFirm: "Quick bouncing with higher energy",
+  elasticSnappy: "Snappy spring-like motion",
+  elasticLoose: "Loose, wobbly spring motion",
+  jitterSubtle: "Subtle random movement (noise)",
+  jitterModerate: "Moderate random movement",
+  jitterIntense: "Strong random movement",
+  repeatCycle: "Loop keyframes from start",
+  repeatPingpong: "Loop keyframes back and forth",
+  repeatOffset: "Loop with continuous offset",
 };
 
-const presetDescription = computed(() => {
-  return presetDescriptions[selectedPreset.value] || '';
+const _presetDescription = computed(() => {
+  return presetDescriptions[selectedPreset.value] || "";
 });
 
 // Validate custom expression when it changes
 watch(customExpression, (code) => {
-  if (mode.value === 'custom' && code.trim()) {
+  if (mode.value === "custom" && code.trim()) {
     const result = validateExpression(code);
-    expressionError.value = result.valid ? null : result.error || 'Invalid expression';
+    expressionError.value = result.valid
+      ? null
+      : result.error || "Invalid expression";
   } else {
     expressionError.value = null;
   }
@@ -293,77 +294,80 @@ watch(customExpression, (code) => {
 
 // Can apply if preset selected, custom expression entered without errors, or data configured
 const canApply = computed(() => {
-  if (mode.value === 'preset') {
-    return selectedPreset.value !== '';
-  } else if (mode.value === 'data') {
+  if (mode.value === "preset") {
+    return selectedPreset.value !== "";
+  } else if (mode.value === "data") {
     if (!selectedDataAsset.value) return false;
     if (isCSVType.value && !selectedColumn.value) return false;
     return true;
   }
   // Custom mode: must have content and no errors
-  return customExpression.value.trim() !== '' && !expressionError.value;
+  return customExpression.value.trim() !== "" && !expressionError.value;
 });
 
 // Initialize from current expression when dialog opens
-watch(() => props.visible, (visible) => {
-  if (visible && props.currentExpression) {
-    // Check if it's a data-driven expression by checking params
-    const params = props.currentExpression.params as any;
-    if (params?.dataAsset) {
-      // Restore data-driven state
-      mode.value = 'data';
-      selectedDataAsset.value = params.dataAsset || '';
-      selectedColumn.value = params.column || '';
-      jsonPropertyPath.value = params.jsonPath || '';
-      rowMappingMode.value = params.rowMapping || 'frame';
-      manualRowOffset.value = params.rowOffset || 0;
-    } else if (props.currentExpression.type === 'preset') {
-      mode.value = 'preset';
-      // Find matching preset
-      const presetKey = Object.keys(EXPRESSION_PRESETS).find(key => {
-        const preset = EXPRESSION_PRESETS[key];
-        return preset.name === props.currentExpression?.name;
-      });
-      selectedPreset.value = presetKey || '';
-    } else {
-      mode.value = 'custom';
-      customExpression.value = props.currentExpression.name || '';
+watch(
+  () => props.visible,
+  (visible) => {
+    if (visible && props.currentExpression) {
+      // Check if it's a data-driven expression by checking params
+      const params = props.currentExpression.params as any;
+      if (params?.dataAsset) {
+        // Restore data-driven state
+        mode.value = "data";
+        selectedDataAsset.value = params.dataAsset || "";
+        selectedColumn.value = params.column || "";
+        jsonPropertyPath.value = params.jsonPath || "";
+        rowMappingMode.value = params.rowMapping || "frame";
+        manualRowOffset.value = params.rowOffset || 0;
+      } else if (props.currentExpression.type === "preset") {
+        mode.value = "preset";
+        // Find matching preset
+        const presetKey = Object.keys(EXPRESSION_PRESETS).find((key) => {
+          const preset = EXPRESSION_PRESETS[key];
+          return preset.name === props.currentExpression?.name;
+        });
+        selectedPreset.value = presetKey || "";
+      } else {
+        mode.value = "custom";
+        customExpression.value = props.currentExpression.name || "";
+      }
+    } else if (visible) {
+      // Reset all state
+      mode.value = "preset";
+      selectedPreset.value = "";
+      customExpression.value = "";
+      selectedDataAsset.value = "";
+      selectedColumn.value = "";
+      jsonPropertyPath.value = "";
+      rowMappingMode.value = "frame";
+      manualRowOffset.value = 0;
     }
-  } else if (visible) {
-    // Reset all state
-    mode.value = 'preset';
-    selectedPreset.value = '';
-    customExpression.value = '';
-    selectedDataAsset.value = '';
-    selectedColumn.value = '';
-    jsonPropertyPath.value = '';
-    rowMappingMode.value = 'frame';
-    manualRowOffset.value = 0;
-  }
-});
+  },
+);
 
-function apply() {
+function _apply() {
   if (!canApply.value) return;
 
   let expression: PropertyExpression;
 
-  if (mode.value === 'preset') {
+  if (mode.value === "preset") {
     const preset = EXPRESSION_PRESETS[selectedPreset.value];
     if (preset) {
       expression = {
         enabled: true,
-        type: 'preset',
+        type: "preset",
         name: preset.name,
-        params: { ...preset.params }
+        params: { ...preset.params },
       };
     } else {
       return;
     }
-  } else if (mode.value === 'data') {
+  } else if (mode.value === "data") {
     // Data-driven expression - generate the footage() code
     expression = {
       enabled: true,
-      type: 'custom',  // Treat as custom expression
+      type: "custom", // Treat as custom expression
       name: generatedDataExpression.value,
       params: {
         // Store metadata for potential re-editing
@@ -371,25 +375,25 @@ function apply() {
         column: selectedColumn.value,
         jsonPath: jsonPropertyPath.value,
         rowMapping: rowMappingMode.value,
-        rowOffset: manualRowOffset.value
-      }
+        rowOffset: manualRowOffset.value,
+      },
     };
   } else {
     expression = {
       enabled: true,
-      type: 'custom',
+      type: "custom",
       name: customExpression.value.trim(),
-      params: {}
+      params: {},
     };
   }
 
-  emit('apply', expression);
-  emit('close');
+  emit("apply", expression);
+  emit("close");
 }
 
-function remove() {
-  emit('remove');
-  emit('close');
+function _remove() {
+  emit("remove");
+  emit("close");
 }
 </script>
 

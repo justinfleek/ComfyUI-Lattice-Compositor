@@ -144,24 +144,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import type { Keyframe } from '@/types/project';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import { useCompositorStore } from "@/stores/compositorStore";
+import type { Keyframe } from "@/types/project";
 
 // ═══════════════════════════════════════════════════════════════════
 // CONSTANTS - Curve Colors
 // ═══════════════════════════════════════════════════════════════════
 
 const CURVE_COLORS: Record<string, string> = {
-  'Position X': '#ff4d4d',    // Red
-  'Position Y': '#4dff4d',    // Green
-  'Position Z': '#4d4dff',    // Blue
-  'Scale X': '#ffb34d',       // Orange
-  'Scale Y': '#ffff4d',       // Yellow
-  'Rotation': '#d94dff',      // Purple
-  'Opacity': '#4dffff',       // Cyan
-  'Anchor Point X': '#ff4d4d',
-  'Anchor Point Y': '#4dff4d',
+  "Position X": "#ff4d4d", // Red
+  "Position Y": "#4dff4d", // Green
+  "Position Z": "#4d4dff", // Blue
+  "Scale X": "#ffb34d", // Orange
+  "Scale Y": "#ffff4d", // Yellow
+  Rotation: "#d94dff", // Purple
+  Opacity: "#4dffff", // Cyan
+  "Anchor Point X": "#ff4d4d",
+  "Anchor Point Y": "#4dff4d",
 };
 
 // ═══════════════════════════════════════════════════════════════════
@@ -185,12 +185,12 @@ const props = defineProps<{
   frameCount: number;
   currentFrame: number;
   selectedPropertyIds: string[];
-  graphMode: 'value' | 'speed';
+  graphMode: "value" | "speed";
 }>();
 
 const emit = defineEmits<{
-  (e: 'selectKeyframe', id: string, addToSelection: boolean): void;
-  (e: 'update:graphMode', mode: 'value' | 'speed'): void;
+  (e: "selectKeyframe", id: string, addToSelection: boolean): void;
+  (e: "update:graphMode", mode: "value" | "speed"): void;
 }>();
 
 const store = useCompositorStore();
@@ -199,7 +199,7 @@ const store = useCompositorStore();
 // REFS
 // ═══════════════════════════════════════════════════════════════════
 
-const containerRef = ref<HTMLDivElement | null>(null);
+const _containerRef = ref<HTMLDivElement | null>(null);
 const canvasAreaRef = ref<HTMLDivElement | null>(null);
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 
@@ -207,8 +207,8 @@ const canvasRef = ref<HTMLCanvasElement | null>(null);
 // VIEWPORT STATE (Zoom & Pan)
 // ═══════════════════════════════════════════════════════════════════
 
-const zoomLevel = ref(5.0);       // Pixels per frame
-const scrollOffset = ref(0);      // Frame at left edge
+const zoomLevel = ref(5.0); // Pixels per frame
+const scrollOffset = ref(0); // Frame at left edge
 
 // ═══════════════════════════════════════════════════════════════════
 // COORDINATE TRANSFORMS
@@ -219,19 +219,19 @@ function frameToPixel(frame: number): number {
 }
 
 function pixelToFrame(pixel: number): number {
-  return (pixel / zoomLevel.value) + scrollOffset.value;
+  return pixel / zoomLevel.value + scrollOffset.value;
 }
 
 function valueToPixel(value: number, height: number): number {
   const range = valueRange.value;
   const normalized = (value - range.min) / (range.max - range.min);
-  return height - (normalized * height); // Flip Y (0 at bottom)
+  return height - normalized * height; // Flip Y (0 at bottom)
 }
 
 function pixelToValue(pixel: number, height: number): number {
   const range = valueRange.value;
   const normalized = (height - pixel) / height;
-  return range.min + (normalized * (range.max - range.min));
+  return range.min + normalized * (range.max - range.min);
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -244,7 +244,7 @@ const selectedKeyframeIds = computed(() => store.selectedKeyframeIds);
 // COMPUTED - Playhead Position
 // ═══════════════════════════════════════════════════════════════════
 
-const playheadPx = computed(() => frameToPixel(props.currentFrame));
+const _playheadPx = computed(() => frameToPixel(props.currentFrame));
 
 // ═══════════════════════════════════════════════════════════════════
 // COMPUTED - Collect All Curves (with Separated Dimensions)
@@ -253,70 +253,79 @@ const playheadPx = computed(() => frameToPixel(props.currentFrame));
 const allCurves = computed<CurveData[]>(() => {
   const curves: CurveData[] = [];
 
-  store.layers.forEach(layer => {
+  store.layers.forEach((layer) => {
     // Position X/Y (always separated for graph editing)
-    if (layer.transform.position.animated && layer.transform.position.keyframes.length > 0) {
+    if (
+      layer.transform.position.animated &&
+      layer.transform.position.keyframes.length > 0
+    ) {
       const pos = layer.transform.position;
       curves.push({
         id: `${layer.id}-position-x`,
         layerId: layer.id,
-        propertyPath: 'transform.position',
-        name: 'Position X',
-        color: CURVE_COLORS['Position X'],
-        keyframes: pos.keyframes.map(kf => ({
+        propertyPath: "transform.position",
+        name: "Position X",
+        color: CURVE_COLORS["Position X"],
+        keyframes: pos.keyframes.map((kf) => ({
           ...kf,
-          value: typeof kf.value === 'object' ? kf.value.x : kf.value
-        }))
+          value: typeof kf.value === "object" ? kf.value.x : kf.value,
+        })),
       });
       curves.push({
         id: `${layer.id}-position-y`,
         layerId: layer.id,
-        propertyPath: 'transform.position',
-        name: 'Position Y',
-        color: CURVE_COLORS['Position Y'],
-        keyframes: pos.keyframes.map(kf => ({
+        propertyPath: "transform.position",
+        name: "Position Y",
+        color: CURVE_COLORS["Position Y"],
+        keyframes: pos.keyframes.map((kf) => ({
           ...kf,
-          value: typeof kf.value === 'object' ? kf.value.y : kf.value
-        }))
+          value: typeof kf.value === "object" ? kf.value.y : kf.value,
+        })),
       });
     }
 
     // Scale X/Y
-    if (layer.transform.scale.animated && layer.transform.scale.keyframes.length > 0) {
+    if (
+      layer.transform.scale.animated &&
+      layer.transform.scale.keyframes.length > 0
+    ) {
       const scale = layer.transform.scale;
       curves.push({
         id: `${layer.id}-scale-x`,
         layerId: layer.id,
-        propertyPath: 'transform.scale',
-        name: 'Scale X',
-        color: CURVE_COLORS['Scale X'],
-        keyframes: scale.keyframes.map(kf => ({
+        propertyPath: "transform.scale",
+        name: "Scale X",
+        color: CURVE_COLORS["Scale X"],
+        keyframes: scale.keyframes.map((kf) => ({
           ...kf,
-          value: typeof kf.value === 'object' ? kf.value.x : kf.value
-        }))
+          value: typeof kf.value === "object" ? kf.value.x : kf.value,
+        })),
       });
       curves.push({
         id: `${layer.id}-scale-y`,
         layerId: layer.id,
-        propertyPath: 'transform.scale',
-        name: 'Scale Y',
-        color: CURVE_COLORS['Scale Y'],
-        keyframes: scale.keyframes.map(kf => ({
+        propertyPath: "transform.scale",
+        name: "Scale Y",
+        color: CURVE_COLORS["Scale Y"],
+        keyframes: scale.keyframes.map((kf) => ({
           ...kf,
-          value: typeof kf.value === 'object' ? kf.value.y : kf.value
-        }))
+          value: typeof kf.value === "object" ? kf.value.y : kf.value,
+        })),
       });
     }
 
     // Rotation
-    if (layer.transform.rotation.animated && layer.transform.rotation.keyframes.length > 0) {
+    if (
+      layer.transform.rotation.animated &&
+      layer.transform.rotation.keyframes.length > 0
+    ) {
       curves.push({
         id: `${layer.id}-rotation`,
         layerId: layer.id,
-        propertyPath: 'transform.rotation',
-        name: 'Rotation',
-        color: CURVE_COLORS['Rotation'],
-        keyframes: layer.transform.rotation.keyframes
+        propertyPath: "transform.rotation",
+        name: "Rotation",
+        color: CURVE_COLORS.Rotation,
+        keyframes: layer.transform.rotation.keyframes,
       });
     }
 
@@ -325,10 +334,10 @@ const allCurves = computed<CurveData[]>(() => {
       curves.push({
         id: `${layer.id}-opacity`,
         layerId: layer.id,
-        propertyPath: 'opacity',
-        name: 'Opacity',
-        color: CURVE_COLORS['Opacity'],
-        keyframes: layer.opacity.keyframes
+        propertyPath: "opacity",
+        name: "Opacity",
+        color: CURVE_COLORS.Opacity,
+        keyframes: layer.opacity.keyframes,
       });
     }
   });
@@ -341,7 +350,9 @@ const visibleCurves = computed(() => {
   if (props.selectedPropertyIds.length === 0) {
     return allCurves.value;
   }
-  return allCurves.value.filter(c => props.selectedPropertyIds.includes(c.id));
+  return allCurves.value.filter((c) =>
+    props.selectedPropertyIds.includes(c.id),
+  );
 });
 
 // ═══════════════════════════════════════════════════════════════════
@@ -349,10 +360,10 @@ const visibleCurves = computed(() => {
 // ═══════════════════════════════════════════════════════════════════
 
 const valueRange = computed(() => {
-  if (props.graphMode === 'speed') {
+  if (props.graphMode === "speed") {
     // Speed mode: 0 to max speed
     let maxSpeed = 100;
-    visibleCurves.value.forEach(curve => {
+    visibleCurves.value.forEach((curve) => {
       for (let f = 0; f < props.frameCount - 1; f++) {
         const speed = calculateSpeedAtFrame(curve, f);
         maxSpeed = Math.max(maxSpeed, speed);
@@ -363,9 +374,9 @@ const valueRange = computed(() => {
 
   // Value mode
   const values: number[] = [];
-  visibleCurves.value.forEach(curve => {
-    curve.keyframes.forEach(kf => {
-      const v = typeof kf.value === 'number' ? kf.value : 0;
+  visibleCurves.value.forEach((curve) => {
+    curve.keyframes.forEach((kf) => {
+      const v = typeof kf.value === "number" ? kf.value : 0;
       values.push(v);
     });
   });
@@ -385,30 +396,36 @@ const valueRange = computed(() => {
 // COMPUTED - Y-Axis Labels & Units
 // ═══════════════════════════════════════════════════════════════════
 
-const yAxisUnit = computed(() => {
-  if (props.graphMode === 'speed') {
-    const hasRotation = visibleCurves.value.some(c => c.name.includes('Rotation'));
-    return hasRotation ? 'deg/sec' : 'px/sec';
+const _yAxisUnit = computed(() => {
+  if (props.graphMode === "speed") {
+    const hasRotation = visibleCurves.value.some((c) =>
+      c.name.includes("Rotation"),
+    );
+    return hasRotation ? "deg/sec" : "px/sec";
   }
-  const hasRotation = visibleCurves.value.some(c => c.name.includes('Rotation'));
-  const hasOpacity = visibleCurves.value.some(c => c.name.includes('Opacity'));
-  if (hasRotation) return 'deg';
-  if (hasOpacity) return '%';
-  return 'px';
+  const hasRotation = visibleCurves.value.some((c) =>
+    c.name.includes("Rotation"),
+  );
+  const hasOpacity = visibleCurves.value.some((c) =>
+    c.name.includes("Opacity"),
+  );
+  if (hasRotation) return "deg";
+  if (hasOpacity) return "%";
+  return "px";
 });
 
-const yAxisLabels = computed(() => {
+const _yAxisLabels = computed(() => {
   const range = valueRange.value;
   const labels: { value: number; percent: number; text: string }[] = [];
   const steps = 5;
   const stepSize = (range.max - range.min) / steps;
 
   for (let i = 0; i <= steps; i++) {
-    const value = range.max - (i * stepSize);
+    const value = range.max - i * stepSize;
     labels.push({
       value,
       percent: (i / steps) * 100,
-      text: value.toFixed(0)
+      text: value.toFixed(0),
     });
   }
 
@@ -432,13 +449,13 @@ const selectedKeyframeData = computed<SelectedKeyframeInfo | null>(() => {
   const selectedId = selectedKeyframeIds.value[0];
 
   for (const curve of visibleCurves.value) {
-    const kf = curve.keyframes.find(k => k.id === selectedId);
+    const kf = curve.keyframes.find((k) => k.id === selectedId);
     if (kf) {
       return {
         curve,
         keyframe: kf,
         frame: kf.frame,
-        value: typeof kf.value === 'number' ? kf.value : 0
+        value: typeof kf.value === "number" ? kf.value : 0,
       };
     }
   }
@@ -446,22 +463,30 @@ const selectedKeyframeData = computed<SelectedKeyframeInfo | null>(() => {
   return null;
 });
 
-function formatValueForInput(value: number): string {
+function _formatValueForInput(value: number): string {
   return value.toFixed(2);
 }
 
-function updateSelectedKeyframeFrame(e: Event) {
+function _updateSelectedKeyframeFrame(e: Event) {
   const data = selectedKeyframeData.value;
   if (!data) return;
 
   const input = e.target as HTMLInputElement;
-  const newFrame = Math.max(0, Math.min(props.frameCount - 1, parseInt(input.value) || 0));
+  const newFrame = Math.max(
+    0,
+    Math.min(props.frameCount - 1, parseInt(input.value, 10) || 0),
+  );
 
-  store.moveKeyframe(data.curve.layerId, data.curve.propertyPath, data.keyframe.id, newFrame);
+  store.moveKeyframe(
+    data.curve.layerId,
+    data.curve.propertyPath,
+    data.keyframe.id,
+    newFrame,
+  );
   draw();
 }
 
-function updateSelectedKeyframeValue(e: Event) {
+function _updateSelectedKeyframeValue(e: Event) {
   const data = selectedKeyframeData.value;
   if (!data) return;
 
@@ -469,7 +494,12 @@ function updateSelectedKeyframeValue(e: Event) {
   const newValue = parseFloat(input.value) || 0;
 
   // Update the keyframe value
-  store.setKeyframeValue(data.curve.layerId, data.curve.propertyPath, data.keyframe.id, newValue);
+  store.setKeyframeValue(
+    data.curve.layerId,
+    data.curve.propertyPath,
+    data.keyframe.id,
+    newValue,
+  );
   draw();
 }
 
@@ -507,21 +537,25 @@ function sampleCurveValue(curve: CurveData, t: number): number {
   const duration = kf2.frame - kf1.frame;
   const localT = (t - kf1.frame) / duration;
 
-  const v1 = typeof kf1.value === 'number' ? kf1.value : 0;
-  const v2 = typeof kf2.value === 'number' ? kf2.value : 0;
+  const v1 = typeof kf1.value === "number" ? kf1.value : 0;
+  const v2 = typeof kf2.value === "number" ? kf2.value : 0;
 
-  const interp = kf1.interpolation || 'linear';
+  const interp = kf1.interpolation || "linear";
 
-  if (interp === 'hold') {
+  if (interp === "hold") {
     return v1;
-  } else if (interp === 'bezier' && kf1.outHandle?.enabled && kf2.inHandle?.enabled) {
+  } else if (
+    interp === "bezier" &&
+    kf1.outHandle?.enabled &&
+    kf2.inHandle?.enabled
+  ) {
     // Cubic bezier interpolation
     return cubicBezierValue(
       v1,
       v1 + (kf1.outHandle?.value || 0),
       v2 + (kf2.inHandle?.value || 0),
       v2,
-      localT
+      localT,
     );
   } else {
     // Linear
@@ -530,7 +564,13 @@ function sampleCurveValue(curve: CurveData, t: number): number {
 }
 
 // Cubic bezier value calculation
-function cubicBezierValue(p0: number, p1: number, p2: number, p3: number, t: number): number {
+function cubicBezierValue(
+  p0: number,
+  p1: number,
+  p2: number,
+  p3: number,
+  t: number,
+): number {
   const mt = 1 - t;
   return (
     mt * mt * mt * p0 +
@@ -549,7 +589,7 @@ function draw() {
   const container = canvasAreaRef.value;
   if (!canvas || !container) return;
 
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext("2d");
   if (!ctx) return;
 
   const rect = container.getBoundingClientRect();
@@ -566,16 +606,16 @@ function draw() {
   drawGrid(ctx, w, h, range);
 
   // Curves
-  visibleCurves.value.forEach(curve => {
+  visibleCurves.value.forEach((curve) => {
     if (curve.keyframes.length < 1) return;
 
     // Two-pass: black outline then colored
     for (let pass = 0; pass < 2; pass++) {
-      ctx.strokeStyle = pass === 0 ? '#000' : curve.color;
+      ctx.strokeStyle = pass === 0 ? "#000" : curve.color;
       ctx.lineWidth = pass === 0 ? 4 : 2;
       ctx.beginPath();
 
-      if (props.graphMode === 'value') {
+      if (props.graphMode === "value") {
         drawValueCurve(ctx, curve, h, range);
       } else {
         drawSpeedCurve(ctx, curve, h);
@@ -586,8 +626,13 @@ function draw() {
   });
 }
 
-function drawGrid(ctx: CanvasRenderingContext2D, w: number, h: number, range: { min: number; max: number }) {
-  ctx.strokeStyle = '#333';
+function drawGrid(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  range: { min: number; max: number },
+) {
+  ctx.strokeStyle = "#333";
   ctx.lineWidth = 1;
 
   // Vertical grid (time) - based on zoom
@@ -615,7 +660,7 @@ function drawGrid(ctx: CanvasRenderingContext2D, w: number, h: number, range: { 
 
   // Zero line
   if (range.min < 0 && range.max > 0) {
-    ctx.strokeStyle = '#555';
+    ctx.strokeStyle = "#555";
     ctx.lineWidth = 1;
     const zeroY = valueToPixel(0, h);
     ctx.beginPath();
@@ -625,12 +670,17 @@ function drawGrid(ctx: CanvasRenderingContext2D, w: number, h: number, range: { 
   }
 }
 
-function drawValueCurve(ctx: CanvasRenderingContext2D, curve: CurveData, h: number, range: { min: number; max: number }) {
+function drawValueCurve(
+  ctx: CanvasRenderingContext2D,
+  curve: CurveData,
+  h: number,
+  _range: { min: number; max: number },
+) {
   const sorted = [...curve.keyframes].sort((a, b) => a.frame - b.frame);
 
   for (let i = 0; i < sorted.length; i++) {
     const kf = sorted[i];
-    const v = typeof kf.value === 'number' ? kf.value : 0;
+    const v = typeof kf.value === "number" ? kf.value : 0;
     const x = frameToPixel(kf.frame);
     const y = valueToPixel(v, h);
 
@@ -640,15 +690,19 @@ function drawValueCurve(ctx: CanvasRenderingContext2D, curve: CurveData, h: numb
     }
 
     const prev = sorted[i - 1];
-    const prevV = typeof prev.value === 'number' ? prev.value : 0;
-    const interp = prev.interpolation || 'linear';
+    const prevV = typeof prev.value === "number" ? prev.value : 0;
+    const interp = prev.interpolation || "linear";
 
-    if (interp === 'hold') {
-      const prevX = frameToPixel(prev.frame);
+    if (interp === "hold") {
+      const _prevX = frameToPixel(prev.frame);
       const prevY = valueToPixel(prevV, h);
       ctx.lineTo(x, prevY);
       ctx.lineTo(x, y);
-    } else if (interp === 'bezier' && prev.outHandle?.enabled && kf.inHandle?.enabled) {
+    } else if (
+      interp === "bezier" &&
+      prev.outHandle?.enabled &&
+      kf.inHandle?.enabled
+    ) {
       const cp1x = frameToPixel(prev.frame + prev.outHandle.frame);
       const cp1y = valueToPixel(prevV + prev.outHandle.value, h);
       const cp2x = frameToPixel(kf.frame + kf.inHandle.frame);
@@ -661,12 +715,19 @@ function drawValueCurve(ctx: CanvasRenderingContext2D, curve: CurveData, h: numb
 }
 
 // SPEED GRAPH - The "Bell Curve" (derivative visualization)
-function drawSpeedCurve(ctx: CanvasRenderingContext2D, curve: CurveData, h: number) {
-  const speedRange = valueRange.value;
+function drawSpeedCurve(
+  ctx: CanvasRenderingContext2D,
+  curve: CurveData,
+  h: number,
+) {
+  const _speedRange = valueRange.value;
   const step = 0.5; // Sample every half frame for smoothness
 
   const startFrame = Math.max(0, scrollOffset.value - 10);
-  const endFrame = Math.min(props.frameCount, scrollOffset.value + (ctx.canvas.width / zoomLevel.value) + 10);
+  const endFrame = Math.min(
+    props.frameCount,
+    scrollOffset.value + ctx.canvas.width / zoomLevel.value + 10,
+  );
 
   let first = true;
 
@@ -688,20 +749,24 @@ function drawSpeedCurve(ctx: CanvasRenderingContext2D, curve: CurveData, h: numb
 // POSITIONING HELPERS
 // ═══════════════════════════════════════════════════════════════════
 
-function getKeyframeStyle(curve: CurveData, kf: Keyframe<any>) {
-  const value = typeof kf.value === 'number' ? kf.value : 0;
+function _getKeyframeStyle(_curve: CurveData, kf: Keyframe<any>) {
+  const value = typeof kf.value === "number" ? kf.value : 0;
   const h = canvasRef.value?.height || 300;
   return {
     left: `${frameToPixel(kf.frame)}px`,
-    top: `${valueToPixel(value, h)}px`
+    top: `${valueToPixel(value, h)}px`,
   };
 }
 
-function getHandleStyle(curve: CurveData, kf: Keyframe<any>, type: 'in' | 'out') {
-  const handle = type === 'in' ? kf.inHandle : kf.outHandle;
-  if (!handle?.enabled) return { display: 'none' };
+function _getHandleStyle(
+  curve: CurveData,
+  kf: Keyframe<any>,
+  type: "in" | "out",
+) {
+  const handle = type === "in" ? kf.inHandle : kf.outHandle;
+  if (!handle?.enabled) return { display: "none" };
 
-  const kfValue = typeof kf.value === 'number' ? kf.value : 0;
+  const kfValue = typeof kf.value === "number" ? kf.value : 0;
   const handleFrame = kf.frame + handle.frame;
   const handleValue = kfValue + handle.value;
   const h = canvasRef.value?.height || 300;
@@ -709,45 +774,51 @@ function getHandleStyle(curve: CurveData, kf: Keyframe<any>, type: 'in' | 'out')
   return {
     left: `${frameToPixel(handleFrame)}px`,
     top: `${valueToPixel(handleValue, h)}px`,
-    background: curve.color
+    background: curve.color,
   };
 }
 
-function getHandleLineCoords(curve: CurveData, kf: Keyframe<any>, type: 'in' | 'out') {
-  const handle = type === 'in' ? kf.inHandle : kf.outHandle;
+function _getHandleLineCoords(
+  _curve: CurveData,
+  kf: Keyframe<any>,
+  type: "in" | "out",
+) {
+  const handle = type === "in" ? kf.inHandle : kf.outHandle;
   if (!handle?.enabled) return { x1: 0, y1: 0, x2: 0, y2: 0 };
 
-  const kfValue = typeof kf.value === 'number' ? kf.value : 0;
+  const kfValue = typeof kf.value === "number" ? kf.value : 0;
   const h = canvasRef.value?.height || 300;
 
   return {
     x1: frameToPixel(kf.frame),
     y1: valueToPixel(kfValue, h),
     x2: frameToPixel(kf.frame + handle.frame),
-    y2: valueToPixel(kfValue + handle.value, h)
+    y2: valueToPixel(kfValue + handle.value, h),
   };
 }
 
-function formatValue(value: any): string {
-  if (typeof value === 'number') return value.toFixed(1);
-  if (typeof value === 'object') return JSON.stringify(value);
+function _formatValue(value: any): string {
+  if (typeof value === "number") return value.toFixed(1);
+  if (typeof value === "object") return JSON.stringify(value);
   return String(value);
 }
 
 /**
  * Check if interpolation type is an easing function (not linear/bezier/hold)
  */
-function isEasingInterpolation(interpolation: string): boolean {
-  return interpolation.startsWith('easeIn') ||
-         interpolation.startsWith('easeOut') ||
-         interpolation.startsWith('easeInOut');
+function _isEasingInterpolation(interpolation: string): boolean {
+  return (
+    interpolation.startsWith("easeIn") ||
+    interpolation.startsWith("easeOut") ||
+    interpolation.startsWith("easeInOut")
+  );
 }
 
 // ═══════════════════════════════════════════════════════════════════
 // ZOOM & PAN CONTROLS
 // ═══════════════════════════════════════════════════════════════════
 
-function handleWheel(event: WheelEvent) {
+function _handleWheel(event: WheelEvent) {
   if (event.ctrlKey || event.metaKey) {
     // Zoom
     const zoomFactor = event.deltaY > 0 ? 0.9 : 1.1;
@@ -760,25 +831,25 @@ function handleWheel(event: WheelEvent) {
   draw();
 }
 
-function zoomIn() {
+function _zoomIn() {
   zoomLevel.value = Math.min(50, zoomLevel.value * 1.2);
   draw();
 }
 
-function zoomOut() {
+function _zoomOut() {
   zoomLevel.value = Math.max(0.5, zoomLevel.value / 1.2);
   draw();
 }
 
-function fitToView() {
+function _fitToView() {
   const w = canvasRef.value?.width || 800;
   zoomLevel.value = w / props.frameCount;
   scrollOffset.value = 0;
   draw();
 }
 
-function setGraphMode(mode: 'value' | 'speed') {
-  emit('update:graphMode', mode);
+function _setGraphMode(mode: "value" | "speed") {
+  emit("update:graphMode", mode);
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -786,42 +857,51 @@ function setGraphMode(mode: 'value' | 'speed') {
 // ═══════════════════════════════════════════════════════════════════
 
 let isDragging = false;
-let dragType: 'keyframe' | 'handle' | 'pan' | null = null;
+let dragType: "keyframe" | "handle" | "pan" | null = null;
 let dragCurve: CurveData | null = null;
 let dragKeyframe: Keyframe<any> | null = null;
-let dragHandleType: 'in' | 'out' | null = null;
+let dragHandleType: "in" | "out" | null = null;
 let dragStartPos = { x: 0, y: 0 };
 
-function handleMouseDown(event: MouseEvent) {
+function _handleMouseDown(event: MouseEvent) {
   if (event.button === 1 || (event.button === 0 && event.shiftKey)) {
     // Middle mouse or shift+left = pan
     isDragging = true;
-    dragType = 'pan';
+    dragType = "pan";
     dragStartPos = { x: event.clientX, y: event.clientY };
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
     event.preventDefault();
   }
 }
 
-function startKeyframeDrag(curve: CurveData, kf: Keyframe<any>, event: MouseEvent) {
+function _startKeyframeDrag(
+  curve: CurveData,
+  kf: Keyframe<any>,
+  event: MouseEvent,
+) {
   isDragging = true;
-  dragType = 'keyframe';
+  dragType = "keyframe";
   dragCurve = curve;
   dragKeyframe = kf;
-  document.addEventListener('mousemove', handleMouseMove);
-  document.addEventListener('mouseup', handleMouseUp);
+  document.addEventListener("mousemove", handleMouseMove);
+  document.addEventListener("mouseup", handleMouseUp);
   event.preventDefault();
 }
 
-function startHandleDrag(curve: CurveData, kf: Keyframe<any>, handleType: 'in' | 'out', event: MouseEvent) {
+function _startHandleDrag(
+  curve: CurveData,
+  kf: Keyframe<any>,
+  handleType: "in" | "out",
+  event: MouseEvent,
+) {
   isDragging = true;
-  dragType = 'handle';
+  dragType = "handle";
   dragCurve = curve;
   dragKeyframe = kf;
   dragHandleType = handleType;
-  document.addEventListener('mousemove', handleMouseMove);
-  document.addEventListener('mouseup', handleMouseUp);
+  document.addEventListener("mousemove", handleMouseMove);
+  document.addEventListener("mouseup", handleMouseUp);
   event.preventDefault();
 }
 
@@ -833,19 +913,30 @@ function handleMouseMove(event: MouseEvent) {
   const y = event.clientY - rect.top;
   const h = rect.height;
 
-  if (dragType === 'pan') {
+  if (dragType === "pan") {
     const dx = event.clientX - dragStartPos.x;
     scrollOffset.value -= dx / zoomLevel.value;
     scrollOffset.value = Math.max(0, scrollOffset.value);
     dragStartPos = { x: event.clientX, y: event.clientY };
-  } else if (dragType === 'keyframe' && dragCurve && dragKeyframe) {
+  } else if (dragType === "keyframe" && dragCurve && dragKeyframe) {
     const newFrame = Math.round(pixelToFrame(x));
     const clampedFrame = Math.max(0, Math.min(props.frameCount - 1, newFrame));
-    store.moveKeyframe(dragCurve.layerId, dragCurve.propertyPath, dragKeyframe.id, clampedFrame);
-  } else if (dragType === 'handle' && dragCurve && dragKeyframe && dragHandleType) {
+    store.moveKeyframe(
+      dragCurve.layerId,
+      dragCurve.propertyPath,
+      dragKeyframe.id,
+      clampedFrame,
+    );
+  } else if (
+    dragType === "handle" &&
+    dragCurve &&
+    dragKeyframe &&
+    dragHandleType
+  ) {
     const mouseFrame = pixelToFrame(x);
     const mouseValue = pixelToValue(y, h);
-    const kfValue = typeof dragKeyframe.value === 'number' ? dragKeyframe.value : 0;
+    const kfValue =
+      typeof dragKeyframe.value === "number" ? dragKeyframe.value : 0;
 
     const frameOffset = mouseFrame - dragKeyframe.frame;
     const valueOffset = mouseValue - kfValue;
@@ -859,7 +950,7 @@ function handleMouseMove(event: MouseEvent) {
       dragKeyframe.id,
       dragHandleType,
       { frame: frameOffset, value: valueOffset, enabled: true },
-      breakHandle
+      breakHandle,
     );
   }
 
@@ -872,12 +963,12 @@ function handleMouseUp() {
   dragCurve = null;
   dragKeyframe = null;
   dragHandleType = null;
-  document.removeEventListener('mousemove', handleMouseMove);
-  document.removeEventListener('mouseup', handleMouseUp);
+  document.removeEventListener("mousemove", handleMouseMove);
+  document.removeEventListener("mouseup", handleMouseUp);
 }
 
-function selectKeyframe(id: string, event: MouseEvent) {
-  emit('selectKeyframe', id, event.shiftKey);
+function _selectKeyframe(id: string, event: MouseEvent) {
+  emit("selectKeyframe", id, event.shiftKey);
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -885,18 +976,23 @@ function selectKeyframe(id: string, event: MouseEvent) {
 // ═══════════════════════════════════════════════════════════════════
 
 watch(
-  () => [visibleCurves.value, props.frameCount, props.currentFrame, props.graphMode],
+  () => [
+    visibleCurves.value,
+    props.frameCount,
+    props.currentFrame,
+    props.graphMode,
+  ],
   () => nextTick(draw),
-  { deep: true }
+  { deep: true },
 );
 
 onMounted(() => {
   nextTick(draw);
-  window.addEventListener('resize', draw);
+  window.addEventListener("resize", draw);
 });
 
 onUnmounted(() => {
-  window.removeEventListener('resize', draw);
+  window.removeEventListener("resize", draw);
 });
 </script>
 

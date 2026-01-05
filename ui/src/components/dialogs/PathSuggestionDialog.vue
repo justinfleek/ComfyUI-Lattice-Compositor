@@ -142,21 +142,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import { isValidExternalURL } from '@/utils/security';
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import {
+  type CameraMotionIntent,
   motionIntentResolver,
   motionIntentTranslator,
-  type VisionModelId,
-  type MotionIntentResult,
   type SceneContext,
   type SplineMotionIntent,
-  type CameraMotionIntent,
-} from '@/services/visionAuthoring';
+  type VisionModelId,
+} from "@/services/visionAuthoring";
+import { useCompositorStore } from "@/stores/compositorStore";
+import { isValidExternalURL } from "@/utils/security";
 
 interface SuggestionItem {
-  type: 'camera' | 'spline' | 'particle' | 'layer';
+  type: "camera" | "spline" | "particle" | "layer";
   description: string;
   confidence: number;
   points?: Array<{ x: number; y: number; depth?: number }>;
@@ -170,32 +169,35 @@ interface PromptPreset {
   prompt: string;
 }
 
-const props = defineProps<{
+const _props = defineProps<{
   visible: boolean;
 }>();
 
 const emit = defineEmits<{
-  (e: 'close'): void;
-  (e: 'accept', result: { keyframes: any[]; splines: any[] }): void;
-  (e: 'preview', suggestions: SuggestionItem[]): void;
+  (e: "close"): void;
+  (e: "accept", result: { keyframes: any[]; splines: any[] }): void;
+  (e: "preview", suggestions: SuggestionItem[]): void;
 }>();
 
 const store = useCompositorStore();
 
 // Model configuration
-const selectedModel = ref<VisionModelId>('rule-based');
-const localEndpoint = ref('http://localhost:8188/api/vlm');
+const selectedModel = ref<VisionModelId>("rule-based");
+const localEndpoint = ref("http://localhost:8188/api/vlm");
 
 // API key status (from backend)
-const apiKeyStatus = ref<{ openai: boolean; anthropic: boolean }>({ openai: false, anthropic: false });
+const apiKeyStatus = ref<{ openai: boolean; anthropic: boolean }>({
+  openai: false,
+  anthropic: false,
+});
 
 // Prompt
-const prompt = ref('');
+const prompt = ref("");
 const selectedPreset = ref<string | null>(null);
 
 // Status
-const status = ref<'idle' | 'loading' | 'success' | 'error'>('idle');
-const statusMessage = ref('');
+const status = ref<"idle" | "loading" | "success" | "error">("idle");
+const statusMessage = ref("");
 
 // Results
 const suggestions = ref<SuggestionItem[]>([]);
@@ -203,40 +205,50 @@ const selectedSuggestion = ref<number | null>(null);
 const showPreview = ref(true);
 
 // Prompt presets
-const promptPresets: PromptPreset[] = [
-  { id: 'dolly', label: 'Dolly', prompt: 'Gentle dolly in towards the subject' },
-  { id: 'orbit', label: 'Orbit', prompt: 'Slow orbit around the center point' },
-  { id: 'drift', label: 'Drift', prompt: 'Subtle floating drift movement' },
-  { id: 'handheld', label: 'Handheld', prompt: 'Organic handheld camera shake' },
-  { id: 'pan', label: 'Pan', prompt: 'Smooth horizontal pan across the scene' },
-  { id: 'crane', label: 'Crane', prompt: 'Vertical crane movement' },
+const _promptPresets: PromptPreset[] = [
+  {
+    id: "dolly",
+    label: "Dolly",
+    prompt: "Gentle dolly in towards the subject",
+  },
+  { id: "orbit", label: "Orbit", prompt: "Slow orbit around the center point" },
+  { id: "drift", label: "Drift", prompt: "Subtle floating drift movement" },
+  {
+    id: "handheld",
+    label: "Handheld",
+    prompt: "Organic handheld camera shake",
+  },
+  { id: "pan", label: "Pan", prompt: "Smooth horizontal pan across the scene" },
+  { id: "crane", label: "Crane", prompt: "Vertical crane movement" },
 ];
 
 // Computed
-const isCloudModel = computed(() => {
-  return ['gpt-4v', 'gpt-4o', 'claude-vision'].includes(selectedModel.value);
+const _isCloudModel = computed(() => {
+  return ["gpt-4v", "gpt-4o", "claude-vision"].includes(selectedModel.value);
 });
 
 const isLocalModel = computed(() => {
-  return ['qwen-vl', 'qwen2-vl', 'llava', 'local-vlm'].includes(selectedModel.value);
+  return ["qwen-vl", "qwen2-vl", "llava", "local-vlm"].includes(
+    selectedModel.value,
+  );
 });
 
-const selectedProvider = computed(() => {
-  if (selectedModel.value.startsWith('gpt-')) return 'openai';
-  if (selectedModel.value === 'claude-vision') return 'anthropic';
-  return 'openai';
+const _selectedProvider = computed(() => {
+  if (selectedModel.value.startsWith("gpt-")) return "openai";
+  if (selectedModel.value === "claude-vision") return "anthropic";
+  return "openai";
 });
 
 // Check API key status from backend
 async function checkApiStatus() {
   try {
-    const response = await fetch('/lattice/api/status');
+    const response = await fetch("/lattice/api/status");
     const result = await response.json();
-    if (result.status === 'success') {
+    if (result.status === "success") {
       apiKeyStatus.value = result.providers;
     }
   } catch (error) {
-    console.warn('Failed to check API status:', error);
+    console.warn("Failed to check API status:", error);
   }
 }
 
@@ -246,14 +258,14 @@ onMounted(() => {
 });
 
 // Methods
-function selectPreset(preset: PromptPreset) {
+function _selectPreset(preset: PromptPreset) {
   selectedPreset.value = preset.id;
   prompt.value = preset.prompt;
 }
 
-async function testConnection() {
-  status.value = 'loading';
-  statusMessage.value = 'Testing connection...';
+async function _testConnection() {
+  status.value = "loading";
+  statusMessage.value = "Testing connection...";
 
   try {
     // Configure the resolver (API key handled server-side)
@@ -273,40 +285,55 @@ async function testConnection() {
       currentFrame: store.currentFrame,
     };
 
-    await motionIntentResolver.resolve('test', testContext, selectedModel.value);
-    status.value = 'success';
-    statusMessage.value = 'Connection successful!';
+    await motionIntentResolver.resolve(
+      "test",
+      testContext,
+      selectedModel.value,
+    );
+    status.value = "success";
+    statusMessage.value = "Connection successful!";
   } catch (error) {
-    status.value = 'error';
-    statusMessage.value = `Connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
+    status.value = "error";
+    statusMessage.value = `Connection failed: ${error instanceof Error ? error.message : "Unknown error"}`;
   }
 }
 
 /**
  * Load depth map image and convert to Float32Array for depth sampling
  */
-async function loadDepthMapAsFloat32Array(depthMapUrl: string | null): Promise<Float32Array | undefined> {
+async function loadDepthMapAsFloat32Array(
+  depthMapUrl: string | null,
+): Promise<Float32Array | undefined> {
   if (!depthMapUrl) return undefined;
 
   // Validate URL to prevent SSRF attacks
-  if (!isValidExternalURL(depthMapUrl, { allowData: true, allowBlob: true, allowHttp: true })) {
-    console.warn('[Security] Blocked depth map URL:', depthMapUrl.substring(0, 50));
+  if (
+    !isValidExternalURL(depthMapUrl, {
+      allowData: true,
+      allowBlob: true,
+      allowHttp: true,
+    })
+  ) {
+    console.warn(
+      "[Security] Blocked depth map URL:",
+      depthMapUrl.substring(0, 50),
+    );
     return undefined;
   }
 
   try {
     const img = new Image();
-    img.crossOrigin = 'anonymous';
+    img.crossOrigin = "anonymous";
     await new Promise<void>((resolve, reject) => {
       img.onload = () => resolve();
       img.onerror = reject;
       img.src = depthMapUrl;
     });
 
-    const canvas = document.createElement('canvas');
+    const canvas = document.createElement("canvas");
     canvas.width = img.width;
     canvas.height = img.height;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (!ctx) return undefined;
 
     ctx.drawImage(img, 0, 0);
@@ -324,7 +351,7 @@ async function loadDepthMapAsFloat32Array(depthMapUrl: string | null): Promise<F
 
     return depthArray;
   } catch (error) {
-    console.warn('[PathSuggestionDialog] Failed to load depth map:', error);
+    console.warn("[PathSuggestionDialog] Failed to load depth map:", error);
     return undefined;
   }
 }
@@ -335,14 +362,22 @@ async function loadDepthMapAsFloat32Array(depthMapUrl: string | null): Promise<F
 async function captureCurrentFrameImage(): Promise<ImageData | undefined> {
   try {
     // Try to get the canvas element from the viewport
-    const canvas = document.querySelector('.viewport-content canvas') as HTMLCanvasElement;
+    const canvas = document.querySelector(
+      ".viewport-content canvas",
+    ) as HTMLCanvasElement;
     if (!canvas) return undefined;
 
-    const ctx = canvas.getContext('2d') || canvas.getContext('webgl2') || canvas.getContext('webgl');
+    const ctx =
+      canvas.getContext("2d") ||
+      canvas.getContext("webgl2") ||
+      canvas.getContext("webgl");
     if (!ctx) return undefined;
 
     // For WebGL context, we need to read pixels differently
-    if (ctx instanceof WebGLRenderingContext || ctx instanceof WebGL2RenderingContext) {
+    if (
+      ctx instanceof WebGLRenderingContext ||
+      ctx instanceof WebGL2RenderingContext
+    ) {
       const width = canvas.width;
       const height = canvas.height;
       const pixels = new Uint8Array(width * height * 4);
@@ -370,20 +405,20 @@ async function captureCurrentFrameImage(): Promise<ImageData | undefined> {
 
     return undefined;
   } catch (error) {
-    console.warn('[PathSuggestionDialog] Failed to capture frame:', error);
+    console.warn("[PathSuggestionDialog] Failed to capture frame:", error);
     return undefined;
   }
 }
 
 async function suggestPaths() {
   if (!prompt.value.trim()) {
-    status.value = 'error';
-    statusMessage.value = 'Please enter a motion description';
+    status.value = "error";
+    statusMessage.value = "Please enter a motion description";
     return;
   }
 
-  status.value = 'loading';
-  statusMessage.value = 'Analyzing scene and generating suggestions...';
+  status.value = "loading";
+  statusMessage.value = "Analyzing scene and generating suggestions...";
   suggestions.value = [];
   selectedSuggestion.value = null;
 
@@ -411,7 +446,11 @@ async function suggestPaths() {
     };
 
     // Get suggestions from the AI
-    const result = await motionIntentResolver.resolve(prompt.value, context, selectedModel.value);
+    const result = await motionIntentResolver.resolve(
+      prompt.value,
+      context,
+      selectedModel.value,
+    );
 
     // Convert result to suggestion items
     const items: SuggestionItem[] = [];
@@ -420,7 +459,7 @@ async function suggestPaths() {
     if (result.cameraIntents) {
       for (const intent of result.cameraIntents) {
         items.push({
-          type: 'camera',
+          type: "camera",
           description: `${intent.type} motion - ${intent.intensity}`,
           confidence: 0.8,
           duration: intent.durationFrames,
@@ -433,18 +472,22 @@ async function suggestPaths() {
     if (result.splineIntents) {
       for (const intent of result.splineIntents) {
         items.push({
-          type: 'spline',
+          type: "spline",
           description: `${intent.usage} - ${intent.suggestedPoints.length} point path`,
           confidence: 0.9,
-          points: intent.suggestedPoints.map(p => ({ x: p.x, y: p.y, depth: p.depth })),
+          points: intent.suggestedPoints.map((p) => ({
+            x: p.x,
+            y: p.y,
+            depth: p.depth,
+          })),
           intent: intent as any,
         });
       }
     }
 
     suggestions.value = items;
-    status.value = 'success';
-    statusMessage.value = `Found ${items.length} suggestion${items.length !== 1 ? 's' : ''}`;
+    status.value = "success";
+    statusMessage.value = `Found ${items.length} suggestion${items.length !== 1 ? "s" : ""}`;
 
     // Auto-select first suggestion
     if (items.length > 0) {
@@ -453,15 +496,15 @@ async function suggestPaths() {
 
     // Emit preview if enabled
     if (showPreview.value) {
-      emit('preview', suggestions.value);
+      emit("preview", suggestions.value);
     }
   } catch (error) {
-    status.value = 'error';
-    statusMessage.value = `Analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
+    status.value = "error";
+    statusMessage.value = `Analysis failed: ${error instanceof Error ? error.message : "Unknown error"}`;
   }
 }
 
-function acceptSuggestion() {
+function _acceptSuggestion() {
   if (selectedSuggestion.value === null) return;
 
   const suggestion = suggestions.value[selectedSuggestion.value];
@@ -471,10 +514,10 @@ function acceptSuggestion() {
   };
 
   // Translate the intent to keyframes
-  if (suggestion.type === 'camera') {
+  if (suggestion.type === "camera") {
     const activeCamera = store.activeCamera;
     if (!activeCamera) {
-      statusMessage.value = 'No active camera to animate';
+      statusMessage.value = "No active camera to animate";
       return;
     }
     // translateCameraIntent returns KeyframeBatch[] directly
@@ -482,50 +525,50 @@ function acceptSuggestion() {
       suggestion.intent as CameraMotionIntent,
       activeCamera.id,
       activeCamera.position,
-      store.frameCount
+      store.frameCount,
     );
     result.keyframes = batches;
-  } else if (suggestion.type === 'spline') {
+  } else if (suggestion.type === "spline") {
     const translation = motionIntentTranslator.translateSplineIntent(
       suggestion.intent as SplineMotionIntent,
       store.width,
-      store.height
+      store.height,
     );
     result.splines = translation.newSplines || [];
   }
 
-  emit('accept', result);
-  emit('close');
+  emit("accept", result);
+  emit("close");
 }
 
 function cancel() {
-  emit('close');
+  emit("close");
 }
 
 // Watch for preview toggle
 watch(showPreview, (show) => {
   if (show && suggestions.value.length > 0) {
-    emit('preview', suggestions.value);
+    emit("preview", suggestions.value);
   } else {
-    emit('preview', []);
+    emit("preview", []);
   }
 });
 
 // Keyboard handler
 function handleKeydown(e: KeyboardEvent) {
-  if (e.key === 'Escape') {
+  if (e.key === "Escape") {
     cancel();
-  } else if (e.key === 'Enter' && e.ctrlKey) {
+  } else if (e.key === "Enter" && e.ctrlKey) {
     suggestPaths();
   }
 }
 
 onMounted(() => {
-  window.addEventListener('keydown', handleKeydown);
+  window.addEventListener("keydown", handleKeydown);
 });
 
 onUnmounted(() => {
-  window.removeEventListener('keydown', handleKeydown);
+  window.removeEventListener("keydown", handleKeydown);
 });
 </script>
 

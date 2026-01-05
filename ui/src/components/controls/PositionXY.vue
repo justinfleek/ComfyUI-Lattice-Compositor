@@ -55,7 +55,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { computed, ref } from "vue";
 
 interface Props {
   x: number;
@@ -77,28 +77,28 @@ const props = withDefaults(defineProps<Props>(), {
   min: -Infinity,
   max: Infinity,
   disabled: false,
-  precision: 2
+  precision: 2,
 });
 
 const emit = defineEmits<{
-  (e: 'update:x', value: number): void;
-  (e: 'update:y', value: number): void;
-  (e: 'update:z', value: number): void;
-  (e: 'update:linked', value: boolean): void;
+  (e: "update:x", value: number): void;
+  (e: "update:y", value: number): void;
+  (e: "update:z", value: number): void;
+  (e: "update:linked", value: boolean): void;
 }>();
 
 const linked = ref(props.linked);
 const previousX = ref(props.x);
 const previousY = ref(props.y);
 
-const hasZ = computed(() => props.z !== undefined);
+const _hasZ = computed(() => props.z !== undefined);
 
 const displayX = computed(() => round(props.x));
 const displayY = computed(() => round(props.y));
-const displayZ = computed(() => props.z !== undefined ? round(props.z) : 0);
+const displayZ = computed(() => (props.z !== undefined ? round(props.z) : 0));
 
 function round(value: number): number {
-  const factor = Math.pow(10, props.precision);
+  const factor = 10 ** props.precision;
   return Math.round(value * factor) / factor;
 }
 
@@ -106,64 +106,64 @@ function clamp(value: number): number {
   return Math.max(props.min, Math.min(props.max, value));
 }
 
-function toggleLink(): void {
+function _toggleLink(): void {
   linked.value = !linked.value;
-  emit('update:linked', linked.value);
+  emit("update:linked", linked.value);
 }
 
-function onXInput(e: Event): void {
+function _onXInput(e: Event): void {
   const input = e.target as HTMLInputElement;
   const value = parseFloat(input.value);
 
-  if (!isNaN(value)) {
+  if (!Number.isNaN(value)) {
     const newX = round(clamp(value));
     const deltaX = newX - previousX.value;
 
-    emit('update:x', newX);
+    emit("update:x", newX);
 
     if (linked.value) {
-      emit('update:y', round(clamp(props.y + deltaX)));
+      emit("update:y", round(clamp(props.y + deltaX)));
     }
 
     previousX.value = newX;
   }
 }
 
-function onYInput(e: Event): void {
+function _onYInput(e: Event): void {
   const input = e.target as HTMLInputElement;
   const value = parseFloat(input.value);
 
-  if (!isNaN(value)) {
+  if (!Number.isNaN(value)) {
     const newY = round(clamp(value));
     const deltaY = newY - previousY.value;
 
-    emit('update:y', newY);
+    emit("update:y", newY);
 
     if (linked.value) {
-      emit('update:x', round(clamp(props.x + deltaY)));
+      emit("update:x", round(clamp(props.x + deltaY)));
     }
 
     previousY.value = newY;
   }
 }
 
-function onZInput(e: Event): void {
+function _onZInput(e: Event): void {
   const input = e.target as HTMLInputElement;
   const value = parseFloat(input.value);
 
-  if (!isNaN(value)) {
-    emit('update:z', round(clamp(value)));
+  if (!Number.isNaN(value)) {
+    emit("update:z", round(clamp(value)));
   }
 }
 
-function onBlur(e: FocusEvent, axis: 'x' | 'y' | 'z'): void {
+function _onBlur(e: FocusEvent, axis: "x" | "y" | "z"): void {
   const input = e.target as HTMLInputElement;
   const value = parseFloat(input.value);
 
-  if (isNaN(value)) {
-    if (axis === 'x') input.value = displayX.value.toString();
-    else if (axis === 'y') input.value = displayY.value.toString();
-    else if (axis === 'z') input.value = displayZ.value.toString();
+  if (Number.isNaN(value)) {
+    if (axis === "x") input.value = displayX.value.toString();
+    else if (axis === "y") input.value = displayY.value.toString();
+    else if (axis === "z") input.value = displayZ.value.toString();
   }
 }
 </script>

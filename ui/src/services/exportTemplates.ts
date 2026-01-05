@@ -5,7 +5,7 @@
  * Templates are stored in localStorage for persistence.
  */
 
-import type { ExportConfig, ExportTarget } from '@/types/export';
+import type { ExportConfig, ExportTarget } from "@/types/export";
 
 // ============================================================================
 // Types
@@ -29,7 +29,7 @@ export interface ExportTemplateStore {
 // Storage Key
 // ============================================================================
 
-const STORAGE_KEY = 'lattice-export-templates';
+const STORAGE_KEY = "lattice-export-templates";
 
 // ============================================================================
 // Default Templates
@@ -37,13 +37,13 @@ const STORAGE_KEY = 'lattice-export-templates';
 
 const DEFAULT_TEMPLATES: ExportTemplate[] = [
   {
-    id: 'default-wan-5s',
-    name: 'Wan 2.2 (5 seconds)',
-    description: 'Standard Wan 2.2 export at 832x480, 81 frames',
+    id: "default-wan-5s",
+    name: "Wan 2.2 (5 seconds)",
+    description: "Standard Wan 2.2 export at 832x480, 81 frames",
     createdAt: Date.now(),
     modifiedAt: Date.now(),
     config: {
-      target: 'wan22-i2v' as ExportTarget,
+      target: "wan22-i2v" as ExportTarget,
       width: 832,
       height: 480,
       frameCount: 81,
@@ -53,13 +53,13 @@ const DEFAULT_TEMPLATES: ExportTemplate[] = [
     },
   },
   {
-    id: 'default-hd-sequence',
-    name: 'HD Image Sequence',
-    description: 'PNG sequence at 1280x720 for compositing',
+    id: "default-hd-sequence",
+    name: "HD Image Sequence",
+    description: "PNG sequence at 1280x720 for compositing",
     createdAt: Date.now(),
     modifiedAt: Date.now(),
     config: {
-      target: 'custom-workflow' as ExportTarget,
+      target: "custom-workflow" as ExportTarget,
       width: 1280,
       height: 720,
       frameCount: 81,
@@ -68,13 +68,13 @@ const DEFAULT_TEMPLATES: ExportTemplate[] = [
     },
   },
   {
-    id: 'default-controlnet',
-    name: 'ControlNet Depth',
-    description: 'Single frame depth map for ControlNet',
+    id: "default-controlnet",
+    name: "ControlNet Depth",
+    description: "Single frame depth map for ControlNet",
     createdAt: Date.now(),
     modifiedAt: Date.now(),
     config: {
-      target: 'controlnet-depth' as ExportTarget,
+      target: "controlnet-depth" as ExportTarget,
       width: 1024,
       height: 1024,
       frameCount: 1,
@@ -105,13 +105,19 @@ class ExportTemplateService {
       if (stored) {
         const parsed = JSON.parse(stored) as ExportTemplateStore;
         // Merge with defaults (don't overwrite user's default templates)
-        const userTemplates = parsed.templates.filter(t => !t.id.startsWith('default-'));
-        const defaultIds = new Set(DEFAULT_TEMPLATES.map(t => t.id));
-        const existingDefaults = parsed.templates.filter(t => defaultIds.has(t.id));
+        const userTemplates = parsed.templates.filter(
+          (t) => !t.id.startsWith("default-"),
+        );
+        const defaultIds = new Set(DEFAULT_TEMPLATES.map((t) => t.id));
+        const existingDefaults = parsed.templates.filter((t) =>
+          defaultIds.has(t.id),
+        );
 
         return {
           templates: [
-            ...DEFAULT_TEMPLATES.filter(d => !existingDefaults.find(e => e.id === d.id)),
+            ...DEFAULT_TEMPLATES.filter(
+              (d) => !existingDefaults.find((e) => e.id === d.id),
+            ),
             ...existingDefaults,
             ...userTemplates,
           ],
@@ -119,7 +125,7 @@ class ExportTemplateService {
         };
       }
     } catch (e) {
-      console.warn('[ExportTemplates] Failed to load from storage:', e);
+      console.warn("[ExportTemplates] Failed to load from storage:", e);
     }
 
     return {
@@ -131,7 +137,7 @@ class ExportTemplateService {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(this.store));
     } catch (e) {
-      console.warn('[ExportTemplates] Failed to save to storage:', e);
+      console.warn("[ExportTemplates] Failed to save to storage:", e);
     }
   }
 
@@ -150,7 +156,7 @@ class ExportTemplateService {
    * Get a template by ID
    */
   getTemplate(id: string): ExportTemplate | undefined {
-    return this.store.templates.find(t => t.id === id);
+    return this.store.templates.find((t) => t.id === id);
   }
 
   /**
@@ -169,7 +175,7 @@ class ExportTemplateService {
   saveTemplate(
     name: string,
     config: Partial<ExportConfig>,
-    description?: string
+    description?: string,
   ): ExportTemplate {
     const now = Date.now();
     const template: ExportTemplate = {
@@ -193,14 +199,14 @@ class ExportTemplateService {
    */
   updateTemplate(
     id: string,
-    updates: Partial<Pick<ExportTemplate, 'name' | 'description' | 'config'>>
+    updates: Partial<Pick<ExportTemplate, "name" | "description" | "config">>,
   ): ExportTemplate | null {
-    const index = this.store.templates.findIndex(t => t.id === id);
+    const index = this.store.templates.findIndex((t) => t.id === id);
     if (index === -1) return null;
 
     // Don't allow modifying default templates directly
-    if (id.startsWith('default-')) {
-      console.warn('[ExportTemplates] Cannot modify default templates');
+    if (id.startsWith("default-")) {
+      console.warn("[ExportTemplates] Cannot modify default templates");
       return null;
     }
 
@@ -219,12 +225,12 @@ class ExportTemplateService {
    */
   deleteTemplate(id: string): boolean {
     // Don't allow deleting default templates
-    if (id.startsWith('default-')) {
-      console.warn('[ExportTemplates] Cannot delete default templates');
+    if (id.startsWith("default-")) {
+      console.warn("[ExportTemplates] Cannot delete default templates");
       return false;
     }
 
-    const index = this.store.templates.findIndex(t => t.id === id);
+    const index = this.store.templates.findIndex((t) => t.id === id);
     if (index === -1) return false;
 
     this.store.templates.splice(index, 1);
@@ -258,7 +264,7 @@ class ExportTemplateService {
     return this.saveTemplate(
       newName || `${original.name} (Copy)`,
       { ...original.config },
-      original.description
+      original.description,
     );
   }
 
@@ -266,7 +272,9 @@ class ExportTemplateService {
    * Export templates to JSON (for backup/sharing)
    */
   exportToJson(): string {
-    const userTemplates = this.store.templates.filter(t => !t.id.startsWith('default-'));
+    const userTemplates = this.store.templates.filter(
+      (t) => !t.id.startsWith("default-"),
+    );
     return JSON.stringify(userTemplates, null, 2);
   }
 
@@ -301,7 +309,7 @@ class ExportTemplateService {
 
       return imported;
     } catch (e) {
-      console.error('[ExportTemplates] Failed to import:', e);
+      console.error("[ExportTemplates] Failed to import:", e);
       return 0;
     }
   }
@@ -314,7 +322,7 @@ class ExportTemplateService {
       templates: [...DEFAULT_TEMPLATES],
     };
     this.saveToStorage();
-    console.log('[ExportTemplates] Reset to defaults');
+    console.log("[ExportTemplates] Reset to defaults");
   }
 }
 

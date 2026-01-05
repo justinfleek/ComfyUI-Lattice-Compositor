@@ -13,11 +13,11 @@
  */
 
 export type MaskShapeType =
-  | 'ellipse'
-  | 'superellipse'
-  | 'fourier'
-  | 'concavePolygon'
-  | 'centeredRectangle';
+  | "ellipse"
+  | "superellipse"
+  | "fourier"
+  | "concavePolygon"
+  | "centeredRectangle";
 
 export interface MaskGeneratorOptions {
   width: number;
@@ -42,7 +42,7 @@ function createRng(seed: number) {
   return {
     random(): number {
       state |= 0;
-      state = (state + 0x6D2B79F5) | 0;
+      state = (state + 0x6d2b79f5) | 0;
       let t = Math.imul(state ^ (state >>> 15), 1 | state);
       t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
       return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
@@ -63,7 +63,7 @@ function createRng(seed: number) {
     gamma(shape: number, scale: number = 1): number {
       // Marsaglia and Tsang's method for shape >= 1
       if (shape < 1) {
-        return this.gamma(shape + 1, scale) * Math.pow(this.random(), 1 / shape);
+        return this.gamma(shape + 1, scale) * this.random() ** (1 / shape);
       }
       const d = shape - 1 / 3;
       const c = 1 / Math.sqrt(9 * d);
@@ -76,7 +76,8 @@ function createRng(seed: number) {
         v = v * v * v;
         const u = this.random();
         if (u < 1 - 0.0331 * (x * x) * (x * x)) return d * v * scale;
-        if (Math.log(u) < 0.5 * x * x + d * (1 - v + Math.log(v))) return d * v * scale;
+        if (Math.log(u) < 0.5 * x * x + d * (1 - v + Math.log(v)))
+          return d * v * scale;
       }
     },
     choice<T>(arr: T[]): T {
@@ -90,7 +91,7 @@ function createRng(seed: number) {
         result.push(copy.splice(idx, 1)[0]);
       }
       return result;
-    }
+    },
   };
 }
 
@@ -103,7 +104,7 @@ export function generateMask(options: MaskGeneratorOptions): Uint8Array {
     height,
     areaRatioRange = [0.1, 0.5],
     shapeTypes,
-    seed = Date.now()
+    seed = Date.now(),
   } = options;
 
   const rng = createRng(seed);
@@ -121,16 +122,20 @@ export function generateMask(options: MaskGeneratorOptions): Uint8Array {
   }
 
   const families: MaskShapeType[] = [
-    'ellipse', 'superellipse', 'fourier', 'concavePolygon', 'centeredRectangle'
+    "ellipse",
+    "superellipse",
+    "fourier",
+    "concavePolygon",
+    "centeredRectangle",
   ];
   const family = shapeTypes
-    ? rng.choice(shapeTypes.filter(s => families.includes(s)) || families)
+    ? rng.choice(shapeTypes.filter((s) => families.includes(s)) || families)
     : rng.choice(families);
 
   const minDim = Math.min(width, height);
   const MIN_R = Math.max(2, 0.01 * minDim);
 
-  function sampleCenter(marginScale = 0.10): [number, number] {
+  function sampleCenter(marginScale = 0.1): [number, number] {
     const my = Math.max(1, Math.round(marginScale * height));
     const mx = Math.max(1, Math.round(marginScale * width));
     const cy = rng.integers(my, Math.max(my + 1, height - my));
@@ -150,7 +155,12 @@ export function generateMask(options: MaskGeneratorOptions): Uint8Array {
   }
 
   // Set pixel at (y, x)
-  function setPixel(mask: Uint8Array, y: number, x: number, value: number): void {
+  function setPixel(
+    mask: Uint8Array,
+    y: number,
+    x: number,
+    value: number,
+  ): void {
     if (y >= 0 && y < height && x >= 0 && x < width) {
       mask[y * width + x] = value;
     }
@@ -186,13 +196,13 @@ export function generateMask(options: MaskGeneratorOptions): Uint8Array {
 
     // Get 8-neighbors in clockwise order
     const neighbors = [
-      getPixel(mask, y - 1, x),     // N
+      getPixel(mask, y - 1, x), // N
       getPixel(mask, y - 1, x + 1), // NE
-      getPixel(mask, y, x + 1),     // E
+      getPixel(mask, y, x + 1), // E
       getPixel(mask, y + 1, x + 1), // SE
-      getPixel(mask, y + 1, x),     // S
+      getPixel(mask, y + 1, x), // S
       getPixel(mask, y + 1, x - 1), // SW
-      getPixel(mask, y, x - 1),     // W
+      getPixel(mask, y, x - 1), // W
       getPixel(mask, y - 1, x - 1), // NW
     ];
 
@@ -223,9 +233,10 @@ export function generateMask(options: MaskGeneratorOptions): Uint8Array {
       if (candidates.length === 0) break;
 
       const need = targetArea - current;
-      const take = candidates.length <= need
-        ? candidates
-        : rng.choiceMultiple(candidates, need);
+      const take =
+        candidates.length <= need
+          ? candidates
+          : rng.choiceMultiple(candidates, need);
 
       for (const idx of take) {
         result[idx] = 1;
@@ -254,7 +265,10 @@ export function generateMask(options: MaskGeneratorOptions): Uint8Array {
       if (simplePoints.length === 0) break;
 
       const need = current - targetArea;
-      const takeCount = Math.min(need, Math.max(32, Math.floor(simplePoints.length / 2)));
+      const takeCount = Math.min(
+        need,
+        Math.max(32, Math.floor(simplePoints.length / 2)),
+      );
       const take = rng.choiceMultiple(simplePoints, takeCount);
 
       for (const idx of take) {
@@ -268,7 +282,7 @@ export function generateMask(options: MaskGeneratorOptions): Uint8Array {
 
   // Shape generators
   function ellipseMaskFn(): (scale: number) => Uint8Array {
-    const [cy, cx] = sampleCenter(0.10);
+    const [cy, cx] = sampleCenter(0.1);
     const ar = rng.uniform(0.5, 2.0);
     const ry0 = Math.max(MIN_R, rng.uniform(0.15, 0.35) * height);
     const rx0 = Math.max(MIN_R, ar * ry0);
@@ -280,7 +294,7 @@ export function generateMask(options: MaskGeneratorOptions): Uint8Array {
 
       for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
-          const v = Math.pow((y - cy) / ry, 2) + Math.pow((x - cx) / rx, 2);
+          const v = ((y - cy) / ry) ** 2 + ((x - cx) / rx) ** 2;
           if (v <= 1.0) setPixel(mask, y, x, 1);
         }
       }
@@ -292,7 +306,7 @@ export function generateMask(options: MaskGeneratorOptions): Uint8Array {
     const [cy, cx] = sampleCenter(0.12);
     const n = rng.uniform(2.2, 6.0);
     const ar = rng.uniform(0.6, 1.7);
-    const b0 = Math.max(MIN_R, rng.uniform(0.12, 0.30) * height);
+    const b0 = Math.max(MIN_R, rng.uniform(0.12, 0.3) * height);
     const a0 = Math.max(MIN_R, ar * b0);
 
     return (scale: number) => {
@@ -302,7 +316,7 @@ export function generateMask(options: MaskGeneratorOptions): Uint8Array {
 
       for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
-          const v = Math.pow(Math.abs((x - cx) / a), n) + Math.pow(Math.abs((y - cy) / b), n);
+          const v = Math.abs((x - cx) / a) ** n + Math.abs((y - cy) / b) ** n;
           if (v <= 1.0) setPixel(mask, y, x, 1);
         }
       }
@@ -382,9 +396,13 @@ export function generateMask(options: MaskGeneratorOptions): Uint8Array {
     let cumSum = 0;
     for (let i = 0; i < Nv; i++) {
       cumSum += gaps[i];
-      angles.push((2 * Math.PI * cumSum / gapSum) + rng.uniform(0, 2 * Math.PI));
+      angles.push(
+        (2 * Math.PI * cumSum) / gapSum + rng.uniform(0, 2 * Math.PI),
+      );
     }
-    angles = angles.map(a => ((a % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI));
+    angles = angles.map(
+      (a) => ((a % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI),
+    );
     angles.sort((a, b) => a - b);
 
     // Base radius
@@ -403,16 +421,18 @@ export function generateMask(options: MaskGeneratorOptions): Uint8Array {
 
     // Localized dents
     const M = rng.integers(2, 5);
-    const dentCenters = Array.from({ length: M }, () => rng.uniform(0, 2 * Math.PI));
-    const dentWidths = Array.from({ length: M }, () => rng.uniform(0.10, 0.35));
+    const dentCenters = Array.from({ length: M }, () =>
+      rng.uniform(0, 2 * Math.PI),
+    );
+    const dentWidths = Array.from({ length: M }, () => rng.uniform(0.1, 0.35));
     const dentDepths = Array.from({ length: M }, () => rng.uniform(0.18, 0.42));
 
-    const dentFactor = angles.map((angle, i) => {
+    const dentFactor = angles.map((angle, _i) => {
       let dent = 0;
       for (let m = 0; m < M; m++) {
         let dtheta = angle - dentCenters[m];
         dtheta = Math.atan2(Math.sin(dtheta), Math.cos(dtheta));
-        dent += Math.exp(-0.5 * Math.pow(dtheta / dentWidths[m], 2)) * dentDepths[m];
+        dent += Math.exp(-0.5 * (dtheta / dentWidths[m]) ** 2) * dentDepths[m];
       }
       return Math.max(0.25, Math.min(1.6, 1.0 - dent));
     });
@@ -431,7 +451,7 @@ export function generateMask(options: MaskGeneratorOptions): Uint8Array {
         const py = Math.round(cy + scaledR * Math.sin(angles[i]));
         return [
           Math.max(1, Math.min(width - 2, px)),
-          Math.max(1, Math.min(height - 2, py))
+          Math.max(1, Math.min(height - 2, py)),
         ];
       });
 
@@ -445,7 +465,7 @@ export function generateMask(options: MaskGeneratorOptions): Uint8Array {
     const cy = Math.floor(height / 2);
     const cx = Math.floor(width / 2);
     const ar = rng.uniform(0.6, 1.7);
-    const sy0 = Math.max(MIN_R, rng.uniform(0.12, 0.30) * height);
+    const sy0 = Math.max(MIN_R, rng.uniform(0.12, 0.3) * height);
     const sx0 = Math.max(MIN_R, ar * sy0);
 
     const roughAmpX = rng.uniform(0.5, 3.0);
@@ -504,12 +524,18 @@ export function generateMask(options: MaskGeneratorOptions): Uint8Array {
   }
 
   // Polygon fill helper (scanline algorithm)
-  function fillPolygon(mask: Uint8Array, vertices: [number, number][], w: number, h: number): void {
+  function fillPolygon(
+    mask: Uint8Array,
+    vertices: [number, number][],
+    w: number,
+    h: number,
+  ): void {
     if (vertices.length < 3) return;
 
     // Find bounding box
-    let minY = h, maxY = 0;
-    for (const [x, y] of vertices) {
+    let minY = h,
+      maxY = 0;
+    for (const [_x, y] of vertices) {
       if (y < minY) minY = y;
       if (y > maxY) maxY = y;
     }
@@ -525,7 +551,7 @@ export function generateMask(options: MaskGeneratorOptions): Uint8Array {
         const [x2, y2] = vertices[(i + 1) % vertices.length];
 
         if ((y1 <= y && y2 > y) || (y2 <= y && y1 > y)) {
-          const x = x1 + (y - y1) / (y2 - y1) * (x2 - x1);
+          const x = x1 + ((y - y1) / (y2 - y1)) * (x2 - x1);
           intersections.push(x);
         }
       }
@@ -543,8 +569,13 @@ export function generateMask(options: MaskGeneratorOptions): Uint8Array {
   }
 
   // Binary search for scale
-  function findScaleInRange(maskFn: (scale: number) => Uint8Array): { mask: Uint8Array; area: number; hit: boolean } {
-    let sLo = 0, aLo = 0;
+  function findScaleInRange(maskFn: (scale: number) => Uint8Array): {
+    mask: Uint8Array;
+    area: number;
+    hit: boolean;
+  } {
+    let sLo = 0,
+      aLo = 0;
     let sHi = 1.0;
     let mHi = maskFn(sHi);
     let aHi = countArea(mHi);
@@ -597,19 +628,18 @@ export function generateMask(options: MaskGeneratorOptions): Uint8Array {
   // Select shape family and create mask function
   let maskFn: (scale: number) => Uint8Array;
   switch (family) {
-    case 'ellipse':
+    case "ellipse":
       maskFn = ellipseMaskFn();
       break;
-    case 'superellipse':
+    case "superellipse":
       maskFn = superellipseMaskFn();
       break;
-    case 'fourier':
+    case "fourier":
       maskFn = fourierMaskFn();
       break;
-    case 'centeredRectangle':
+    case "centeredRectangle":
       maskFn = centeredRectangleMaskFn();
       break;
-    case 'concavePolygon':
     default:
       maskFn = concavePolygonMaskFn();
       break;
@@ -636,7 +666,7 @@ export function maskToImageData(
   width: number,
   height: number,
   foregroundColor: [number, number, number, number] = [255, 255, 255, 255],
-  backgroundColor: [number, number, number, number] = [0, 0, 0, 255]
+  backgroundColor: [number, number, number, number] = [0, 0, 0, 255],
 ): ImageData {
   const imageData = new ImageData(width, height);
   const data = imageData.data;
@@ -656,11 +686,15 @@ export function maskToImageData(
 /**
  * Convert mask to canvas for preview
  */
-export function maskToCanvas(mask: Uint8Array, width: number, height: number): HTMLCanvasElement {
-  const canvas = document.createElement('canvas');
+export function maskToCanvas(
+  mask: Uint8Array,
+  width: number,
+  height: number,
+): HTMLCanvasElement {
+  const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
-  const ctx = canvas.getContext('2d')!;
+  const ctx = canvas.getContext("2d")!;
   const imageData = maskToImageData(mask, width, height);
   ctx.putImageData(imageData, 0, 0);
   return canvas;
@@ -669,8 +703,12 @@ export function maskToCanvas(mask: Uint8Array, width: number, height: number): H
 /**
  * Export mask as PNG data URL
  */
-export function maskToDataURL(mask: Uint8Array, width: number, height: number): string {
-  return maskToCanvas(mask, width, height).toDataURL('image/png');
+export function maskToDataURL(
+  mask: Uint8Array,
+  width: number,
+  height: number,
+): string {
+  return maskToCanvas(mask, width, height).toDataURL("image/png");
 }
 
 /**
@@ -680,18 +718,20 @@ export function generateMaskSequence(
   width: number,
   height: number,
   frameCount: number,
-  options?: Partial<MaskGeneratorOptions>
+  options?: Partial<MaskGeneratorOptions>,
 ): Uint8Array[] {
   const masks: Uint8Array[] = [];
   const baseSeed = options?.seed ?? Date.now();
 
   for (let i = 0; i < frameCount; i++) {
-    masks.push(generateMask({
-      width,
-      height,
-      ...options,
-      seed: baseSeed + i
-    }));
+    masks.push(
+      generateMask({
+        width,
+        height,
+        ...options,
+        seed: baseSeed + i,
+      }),
+    );
   }
 
   return masks;

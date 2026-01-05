@@ -1,4 +1,8 @@
-import { C as COCO_BONES, g as getBoneColor, O as OPENPOSE_COLORS } from './lattice-main.js';
+import {
+  C as COCO_BONES,
+  g as getBoneColor,
+  O as OPENPOSE_COLORS,
+} from "./lattice-main.js";
 
 function renderPoseFrame(poses, config) {
   const canvas = document.createElement("canvas");
@@ -18,7 +22,7 @@ function renderSinglePose(ctx, pose, config) {
   const toPixel = (kp) => ({
     x: kp.x * width,
     y: kp.y * height,
-    visible: kp.confidence > 0.1
+    visible: kp.confidence > 0.1,
   });
   if (config.showBones) {
     ctx.lineCap = "round";
@@ -29,7 +33,9 @@ function renderSinglePose(ctx, pose, config) {
       const start = toPixel(keypoints[startIdx]);
       const end = toPixel(keypoints[endIdx]);
       if (!start.visible || !end.visible) return;
-      ctx.strokeStyle = config.useOpenPoseColors ? getBoneColor(boneIndex) : config.customColor || "#FFFFFF";
+      ctx.strokeStyle = config.useOpenPoseColors
+        ? getBoneColor(boneIndex)
+        : config.customColor || "#FFFFFF";
       ctx.beginPath();
       ctx.moveTo(start.x, start.y);
       ctx.lineTo(end.x, end.y);
@@ -42,7 +48,7 @@ function renderSinglePose(ctx, pose, config) {
       if (!point.visible) return;
       let color = config.customColor || "#FFFFFF";
       if (config.useOpenPoseColors) {
-        if (index <= 1 || index >= 14 && index <= 17) {
+        if (index <= 1 || (index >= 14 && index <= 17)) {
           color = OPENPOSE_COLORS.head;
         } else if (index >= 2 && index <= 4) {
           color = OPENPOSE_COLORS.right_arm;
@@ -76,12 +82,12 @@ function exportToOpenPoseJSON(poses) {
       pose_keypoints_3d: [],
       face_keypoints_3d: [],
       hand_left_keypoints_3d: [],
-      hand_right_keypoints_3d: []
+      hand_right_keypoints_3d: [],
     };
   });
   return {
     version: 1.3,
-    people
+    people,
   };
 }
 function exportPoseForControlNet(poses, width, height) {
@@ -93,10 +99,11 @@ function exportPoseForControlNet(poses, width, height) {
     showKeypoints: true,
     showBones: true,
     useOpenPoseColors: true,
-    backgroundColor: "#000000"};
+    backgroundColor: "#000000",
+  };
   return {
     canvas: renderPoseFrame(poses, config),
-    json: exportToOpenPoseJSON(poses)
+    json: exportToOpenPoseJSON(poses),
   };
 }
 

@@ -76,7 +76,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 
 const props = defineProps<{
   visible: boolean;
@@ -85,17 +85,17 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: 'confirm', fps: number): void;
-  (e: 'cancel'): void;
+  (e: "confirm", fps: number): void;
+  (e: "cancel"): void;
 }>();
 
 // Common fps options with descriptions
 const fpsOptions = [
-  { value: 8, label: 'AnimateDiff' },
-  { value: 16, label: 'WAN / Mochi' },
-  { value: 24, label: 'Film' },
-  { value: 30, label: 'Standard' },
-  { value: 60, label: 'High FR' },
+  { value: 8, label: "AnimateDiff" },
+  { value: 16, label: "WAN / Mochi" },
+  { value: 24, label: "Film" },
+  { value: 30, label: "Standard" },
+  { value: 60, label: "High FR" },
 ];
 
 const selectedFps = ref<number>(16); // Default to WAN standard
@@ -110,12 +110,12 @@ const effectiveFps = computed(() => {
 });
 
 // Frame count preview
-const frameCountPreview = computed(() => {
+const _frameCountPreview = computed(() => {
   if (!effectiveFps.value || !props.videoDuration) return null;
   return Math.ceil(props.videoDuration * effectiveFps.value);
 });
 
-function onCustomToggle() {
+function _onCustomToggle() {
   if (useCustomFps.value) {
     customFpsValue.value = selectedFps.value;
   }
@@ -123,24 +123,24 @@ function onCustomToggle() {
 
 function confirm() {
   if (effectiveFps.value) {
-    emit('confirm', effectiveFps.value);
+    emit("confirm", effectiveFps.value);
   }
 }
 
 function cancel() {
-  emit('cancel');
+  emit("cancel");
 }
 
 // Keyboard handler
 function handleKeyDown(e: KeyboardEvent) {
   if (!props.visible) return;
 
-  if (e.key === 'Escape') {
+  if (e.key === "Escape") {
     cancel();
-  } else if (e.key === 'Enter' && effectiveFps.value) {
+  } else if (e.key === "Enter" && effectiveFps.value) {
     confirm();
-  } else if (e.key >= '1' && e.key <= '5' && !useCustomFps.value) {
-    const index = parseInt(e.key) - 1;
+  } else if (e.key >= "1" && e.key <= "5" && !useCustomFps.value) {
+    const index = parseInt(e.key, 10) - 1;
     if (fpsOptions[index]) {
       selectedFps.value = fpsOptions[index].value;
     }
@@ -148,20 +148,23 @@ function handleKeyDown(e: KeyboardEvent) {
 }
 
 // Reset selection when dialog opens
-watch(() => props.visible, (visible) => {
-  if (visible) {
-    selectedFps.value = 16;
-    useCustomFps.value = false;
-    customFpsValue.value = 30;
-  }
-});
+watch(
+  () => props.visible,
+  (visible) => {
+    if (visible) {
+      selectedFps.value = 16;
+      useCustomFps.value = false;
+      customFpsValue.value = 30;
+    }
+  },
+);
 
 onMounted(() => {
-  document.addEventListener('keydown', handleKeyDown);
+  document.addEventListener("keydown", handleKeyDown);
 });
 
 onUnmounted(() => {
-  document.removeEventListener('keydown', handleKeyDown);
+  document.removeEventListener("keydown", handleKeyDown);
 });
 </script>
 

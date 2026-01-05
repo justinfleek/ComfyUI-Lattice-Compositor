@@ -268,17 +268,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import { useAssetStore } from '@/stores/assetStore';
-import { ScrubableNumber, SliderInput, ColorPicker } from '@/components/controls';
+import { computed, reactive, ref, watch } from "vue";
+import { useAssetStore } from "@/stores/assetStore";
+import { useCompositorStore } from "@/stores/compositorStore";
 
 const props = defineProps<{
   layerId: string;
 }>();
 
 const emit = defineEmits<{
-  'open-material-editor': [];
+  "open-material-editor": [];
 }>();
 
 const store = useCompositorStore();
@@ -293,19 +292,21 @@ const sections = reactive({
 });
 
 // Get layer data
-const layer = computed(() => store.layers.find(l => l.id === props.layerId));
+const layer = computed(() => store.layers.find((l) => l.id === props.layerId));
 const layerData = computed(() => layer.value?.data as any);
 
 // Check if point cloud
-const isPointCloud = computed(() => layer.value?.type === 'pointcloud');
+const isPointCloud = computed(() => layer.value?.type === "pointcloud");
 
 // Transform values
 const position = computed(() => {
   const val = layer.value?.transform.position.value;
-  return val ? { x: val.x || 0, y: val.y || 0, z: val.z || 0 } : { x: 0, y: 0, z: 0 };
+  return val
+    ? { x: val.x || 0, y: val.y || 0, z: val.z || 0 }
+    : { x: 0, y: 0, z: 0 };
 });
 
-const rotation = computed(() => {
+const _rotation = computed(() => {
   // 3D models use rotationX/Y/Z properties
   const transform = layer.value?.transform;
   if (!transform) return { x: 0, y: 0, z: 0 };
@@ -313,18 +314,20 @@ const rotation = computed(() => {
   return {
     x: transform.rotationX?.value || 0,
     y: transform.rotationY?.value || 0,
-    z: transform.rotationZ?.value || transform.rotation?.value || 0
+    z: transform.rotationZ?.value || transform.rotation?.value || 0,
   };
 });
 
 const scale = computed(() => {
   const val = layer.value?.transform.scale.value;
-  return val ? { x: val.x || 100, y: val.y || 100, z: val.z || 100 } : { x: 100, y: 100, z: 100 };
+  return val
+    ? { x: val.x || 100, y: val.y || 100, z: val.z || 100 }
+    : { x: 100, y: 100, z: 100 };
 });
 
 // Material
-const selectedMaterialId = ref<string>('');
-const materials = computed(() => assetStore.materialList);
+const selectedMaterialId = ref<string>("");
+const _materials = computed(() => assetStore.materialList);
 
 // Display options
 const uniformScale = ref(true);
@@ -335,40 +338,44 @@ const receiveShadows = ref(true);
 
 // Point cloud options
 const pointSize = ref(2);
-const pointColor = ref('#ffffff');
+const pointColor = ref("#ffffff");
 const useVertexColors = ref(true);
 const sizeAttenuation = ref(true);
 
 // Initialize from layer data
-watch(() => props.layerId, () => {
-  if (layerData.value) {
-    selectedMaterialId.value = layerData.value.materialId || '';
-    showWireframe.value = layerData.value.wireframe || false;
-    showBoundingBox.value = layerData.value.showBoundingBox || false;
-    castShadows.value = layerData.value.castShadows ?? true;
-    receiveShadows.value = layerData.value.receiveShadows ?? true;
+watch(
+  () => props.layerId,
+  () => {
+    if (layerData.value) {
+      selectedMaterialId.value = layerData.value.materialId || "";
+      showWireframe.value = layerData.value.wireframe || false;
+      showBoundingBox.value = layerData.value.showBoundingBox || false;
+      castShadows.value = layerData.value.castShadows ?? true;
+      receiveShadows.value = layerData.value.receiveShadows ?? true;
 
-    if (isPointCloud.value) {
-      pointSize.value = layerData.value.pointSize || 2;
-      pointColor.value = layerData.value.pointColor || '#ffffff';
-      useVertexColors.value = layerData.value.useVertexColors ?? true;
-      sizeAttenuation.value = layerData.value.sizeAttenuation ?? true;
+      if (isPointCloud.value) {
+        pointSize.value = layerData.value.pointSize || 2;
+        pointColor.value = layerData.value.pointColor || "#ffffff";
+        useVertexColors.value = layerData.value.useVertexColors ?? true;
+        sizeAttenuation.value = layerData.value.sizeAttenuation ?? true;
+      }
     }
-  }
-}, { immediate: true });
+  },
+  { immediate: true },
+);
 
 // Methods
-function toggleSection(section: keyof typeof sections) {
+function _toggleSection(section: keyof typeof sections) {
   sections[section] = !sections[section];
 }
 
-function updatePosition(axis: 'x' | 'y' | 'z', value: number) {
+function _updatePosition(axis: "x" | "y" | "z", value: number) {
   const current = { ...position.value };
   current[axis] = value;
   store.updateLayerTransform(props.layerId, { position: current });
 }
 
-function updateRotation(axis: 'x' | 'y' | 'z', value: number) {
+function _updateRotation(axis: "x" | "y" | "z", value: number) {
   // 3D models use rotationX/Y/Z properties, not the single 'rotation' property
   const targetLayer = layer.value;
   if (!targetLayer?.transform) return;
@@ -376,7 +383,7 @@ function updateRotation(axis: 'x' | 'y' | 'z', value: number) {
   const propMap = {
     x: targetLayer.transform.rotationX,
     y: targetLayer.transform.rotationY,
-    z: targetLayer.transform.rotationZ
+    z: targetLayer.transform.rotationZ,
   };
 
   const prop = propMap[axis];
@@ -385,9 +392,11 @@ function updateRotation(axis: 'x' | 'y' | 'z', value: number) {
   }
 }
 
-function updateScale(axis: 'x' | 'y' | 'z', value: number) {
+function _updateScale(axis: "x" | "y" | "z", value: number) {
   if (uniformScale.value) {
-    store.updateLayerTransform(props.layerId, { scale: { x: value, y: value, z: value } });
+    store.updateLayerTransform(props.layerId, {
+      scale: { x: value, y: value, z: value },
+    });
   } else {
     const current = { ...scale.value };
     current[axis] = value;
@@ -395,60 +404,70 @@ function updateScale(axis: 'x' | 'y' | 'z', value: number) {
   }
 }
 
-function toggleUniformScale() {
+function _toggleUniformScale() {
   uniformScale.value = !uniformScale.value;
 }
 
-function assignMaterial() {
-  store.updateLayerData(props.layerId, { materialId: selectedMaterialId.value || null });
+function _assignMaterial() {
+  store.updateLayerData(props.layerId, {
+    materialId: selectedMaterialId.value || null,
+  });
 }
 
-function openMaterialEditor() {
-  emit('open-material-editor');
+function _openMaterialEditor() {
+  emit("open-material-editor");
 }
 
-function toggleWireframe() {
+function _toggleWireframe() {
   showWireframe.value = !showWireframe.value;
   store.updateLayerData(props.layerId, { wireframe: showWireframe.value });
 }
 
-function toggleBoundingBox() {
+function _toggleBoundingBox() {
   showBoundingBox.value = !showBoundingBox.value;
-  store.updateLayerData(props.layerId, { showBoundingBox: showBoundingBox.value });
+  store.updateLayerData(props.layerId, {
+    showBoundingBox: showBoundingBox.value,
+  });
 }
 
-function toggleCastShadows() {
+function _toggleCastShadows() {
   castShadows.value = !castShadows.value;
   store.updateLayerData(props.layerId, { castShadows: castShadows.value });
 }
 
-function toggleReceiveShadows() {
+function _toggleReceiveShadows() {
   receiveShadows.value = !receiveShadows.value;
-  store.updateLayerData(props.layerId, { receiveShadows: receiveShadows.value });
+  store.updateLayerData(props.layerId, {
+    receiveShadows: receiveShadows.value,
+  });
 }
 
 // Point cloud methods
-function updatePointSize(value: number) {
+function _updatePointSize(value: number) {
   pointSize.value = value;
   store.updateLayerData(props.layerId, { pointSize: value });
 }
 
-function updatePointColor(value: string) {
+function _updatePointColor(value: string) {
   pointColor.value = value;
   store.updateLayerData(props.layerId, { pointColor: value });
 }
 
-function toggleVertexColors() {
+function _toggleVertexColors() {
   useVertexColors.value = !useVertexColors.value;
-  store.updateLayerData(props.layerId, { useVertexColors: useVertexColors.value });
+  store.updateLayerData(props.layerId, {
+    useVertexColors: useVertexColors.value,
+  });
 }
 
-function toggleSizeAttenuation() {
+function _toggleSizeAttenuation() {
   sizeAttenuation.value = !sizeAttenuation.value;
-  store.updateLayerData(props.layerId, { sizeAttenuation: sizeAttenuation.value });
+  store.updateLayerData(props.layerId, {
+    sizeAttenuation: sizeAttenuation.value,
+  });
 }
 
-function formatNumber(num: number): string {
+function _formatNumber(num: number): string {
   return num.toLocaleString();
 }
 </script>

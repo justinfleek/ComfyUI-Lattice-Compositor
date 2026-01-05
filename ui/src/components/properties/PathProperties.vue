@@ -141,80 +141,94 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import type { Layer, PathLayerData } from '@/types/project';
-import { useCompositorStore } from '@/stores/compositorStore';
-import { ScrubableNumber } from '@/components/controls';
+import { computed, ref } from "vue";
+import { useCompositorStore } from "@/stores/compositorStore";
+import type { Layer, PathLayerData } from "@/types/project";
 
 const props = defineProps<{ layer: Layer }>();
-const emit = defineEmits(['update']);
+const emit = defineEmits(["update"]);
 const store = useCompositorStore();
 
-const expandedSections = ref<string[]>(['guide', 'path']);
+const expandedSections = ref<string[]>(["guide", "path"]);
 
 // Guide presets
 const guidePresets = [
-  { name: 'Solid', color: '#00FFFF', dash: 0, gap: 0, icon: '―' },
-  { name: 'Dotted', color: '#00FFFF', dash: 2, gap: 4, icon: '··' },
-  { name: 'Dashed', color: '#00FFFF', dash: 10, gap: 5, icon: '- -' },
-  { name: 'Long Dash', color: '#00FFFF', dash: 20, gap: 10, icon: '——' },
+  { name: "Solid", color: "#00FFFF", dash: 0, gap: 0, icon: "―" },
+  { name: "Dotted", color: "#00FFFF", dash: 2, gap: 4, icon: "··" },
+  { name: "Dashed", color: "#00FFFF", dash: 10, gap: 5, icon: "- -" },
+  { name: "Long Dash", color: "#00FFFF", dash: 20, gap: 10, icon: "——" },
 ];
 
 const pathData = computed<PathLayerData>(() => {
-  return props.layer.data as PathLayerData || {
-    pathData: '',
-    controlPoints: [],
-    closed: false,
-    showGuide: true,
-    guideColor: '#00FFFF',
-    guideDashPattern: [10, 5],
-  };
+  return (
+    (props.layer.data as PathLayerData) || {
+      pathData: "",
+      controlPoints: [],
+      closed: false,
+      showGuide: true,
+      guideColor: "#00FFFF",
+      guideDashPattern: [10, 5],
+    }
+  );
 });
 
-const dashValue = computed(() => pathData.value.guideDashPattern?.[0] ?? 10);
-const gapValue = computed(() => pathData.value.guideDashPattern?.[1] ?? 5);
+const _dashValue = computed(() => pathData.value.guideDashPattern?.[0] ?? 10);
+const _gapValue = computed(() => pathData.value.guideDashPattern?.[1] ?? 5);
 
 // Find layers that reference this path
-const attachedLayers = computed(() => {
+const _attachedLayers = computed(() => {
   const layerId = props.layer.id;
-  const attached: Array<{ id: string; name: string; type: string; usage: string }> = [];
+  const attached: Array<{
+    id: string;
+    name: string;
+    type: string;
+    usage: string;
+  }> = [];
 
   for (const layer of store.layers) {
     // Check text layers for path reference
-    if (layer.type === 'text') {
+    if (layer.type === "text") {
       const textData = layer.data as { pathLayerId?: string } | null;
       if (textData?.pathLayerId === layerId) {
         attached.push({
           id: layer.id,
           name: layer.name,
           type: layer.type,
-          usage: 'Text on path',
+          usage: "Text on path",
         });
       }
     }
 
     // Check camera layers for spline path
-    if (layer.type === 'camera') {
-      const cameraData = layer.data as { trajectory?: { splineLayerId?: string } } | null;
+    if (layer.type === "camera") {
+      const cameraData = layer.data as {
+        trajectory?: { splineLayerId?: string };
+      } | null;
       if (cameraData?.trajectory?.splineLayerId === layerId) {
         attached.push({
           id: layer.id,
           name: layer.name,
           type: layer.type,
-          usage: 'Camera path',
+          usage: "Camera path",
         });
       }
     }
 
     // Check particle layers for spline emission
-    if (layer.type === 'particles') {
-      const particleData = layer.data as { emitters?: Array<{ shape?: string; splinePath?: { layerId?: string } }> } | null;
-      if (particleData?.emitters?.some(e => e.shape === 'spline' && e.splinePath?.layerId === layerId)) {
+    if (layer.type === "particles") {
+      const particleData = layer.data as {
+        emitters?: Array<{ shape?: string; splinePath?: { layerId?: string } }>;
+      } | null;
+      if (
+        particleData?.emitters?.some(
+          (e) => e.shape === "spline" && e.splinePath?.layerId === layerId,
+        )
+      ) {
         attached.push({
           id: layer.id,
           name: layer.name,
           type: layer.type,
-          usage: 'Particle emitter',
+          usage: "Particle emitter",
         });
       }
     }
@@ -224,7 +238,7 @@ const attachedLayers = computed(() => {
 });
 
 // Toggle section visibility
-function toggleSection(section: string) {
+function _toggleSection(section: string) {
   const idx = expandedSections.value.indexOf(section);
   if (idx >= 0) {
     expandedSections.value.splice(idx, 1);
@@ -236,39 +250,45 @@ function toggleSection(section: string) {
 // Update layer data
 function update(key: keyof PathLayerData | string, value: any) {
   store.updateLayer(props.layer.id, {
-    data: { ...pathData.value, [key]: value }
+    data: { ...pathData.value, [key]: value },
   });
-  emit('update');
+  emit("update");
 }
 
 // Toggle guide visibility
-function toggleGuide(e: Event) {
+function _toggleGuide(e: Event) {
   const checked = (e.target as HTMLInputElement).checked;
-  update('showGuide', checked);
+  update("showGuide", checked);
 }
 
 // Update dash pattern
-function updateDash(value: number) {
-  const pattern: [number, number] = [value, pathData.value.guideDashPattern?.[1] ?? 5];
-  update('guideDashPattern', pattern);
+function _updateDash(value: number) {
+  const pattern: [number, number] = [
+    value,
+    pathData.value.guideDashPattern?.[1] ?? 5,
+  ];
+  update("guideDashPattern", pattern);
 }
 
-function updateGap(value: number) {
-  const pattern: [number, number] = [pathData.value.guideDashPattern?.[0] ?? 10, value];
-  update('guideDashPattern', pattern);
+function _updateGap(value: number) {
+  const pattern: [number, number] = [
+    pathData.value.guideDashPattern?.[0] ?? 10,
+    value,
+  ];
+  update("guideDashPattern", pattern);
 }
 
 // Apply guide preset
-function applyPreset(preset: typeof guidePresets[0]) {
-  update('guideColor', preset.color);
+function _applyPreset(preset: (typeof guidePresets)[0]) {
+  update("guideColor", preset.color);
   if (preset.dash === 0 && preset.gap === 0) {
-    update('guideDashPattern', [1, 0]); // Solid line
+    update("guideDashPattern", [1, 0]); // Solid line
   } else {
-    update('guideDashPattern', [preset.dash, preset.gap]);
+    update("guideDashPattern", [preset.dash, preset.gap]);
   }
 }
 
-function isPresetActive(preset: typeof guidePresets[0]): boolean {
+function _isPresetActive(preset: (typeof guidePresets)[0]): boolean {
   const dash = pathData.value.guideDashPattern?.[0] ?? 10;
   const gap = pathData.value.guideDashPattern?.[1] ?? 5;
   if (preset.dash === 0 && preset.gap === 0) {
@@ -278,17 +298,17 @@ function isPresetActive(preset: typeof guidePresets[0]): boolean {
 }
 
 // Get layer icon
-function getLayerIcon(type: string): string {
+function _getLayerIcon(type: string): string {
   const icons: Record<string, string> = {
-    text: 'T',
-    camera: '🎥',
-    particles: '✨',
+    text: "T",
+    camera: "🎥",
+    particles: "✨",
   };
-  return icons[type] || '◇';
+  return icons[type] || "◇";
 }
 
 // Select attached layer
-function selectLayer(layerId: string) {
+function _selectLayer(layerId: string) {
   store.selectLayer(layerId);
 }
 </script>

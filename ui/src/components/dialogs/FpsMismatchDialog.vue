@@ -71,7 +71,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted } from 'vue';
+import { computed, onMounted, onUnmounted } from "vue";
 
 const props = defineProps<{
   visible: boolean;
@@ -82,13 +82,13 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: 'match'): void;
-  (e: 'conform'): void;
-  (e: 'cancel'): void;
+  (e: "match"): void;
+  (e: "conform"): void;
+  (e: "cancel"): void;
 }>();
 
 // Calculate what duration would be after conforming (time-stretch)
-const conformedDuration = computed(() => {
+const _conformedDuration = computed(() => {
   // If video is 30fps and comp is 16fps, video plays slower
   // stretchFactor = compositionFps / importedFps
   const stretchFactor = props.compositionFps / props.importedFps;
@@ -106,36 +106,36 @@ function formatDuration(seconds: number): string {
 }
 
 function handleMatch() {
-  emit('match');
+  emit("match");
 }
 
 function handleConform() {
-  emit('conform');
+  emit("conform");
 }
 
 function cancel() {
-  emit('cancel');
+  emit("cancel");
 }
 
 // Keyboard handler
 function handleKeyDown(e: KeyboardEvent) {
   if (!props.visible) return;
 
-  if (e.key === 'Escape') {
+  if (e.key === "Escape") {
     cancel();
-  } else if (e.key === '1') {
+  } else if (e.key === "1") {
     handleMatch();
-  } else if (e.key === '2') {
+  } else if (e.key === "2") {
     handleConform();
   }
 }
 
 onMounted(() => {
-  document.addEventListener('keydown', handleKeyDown);
+  document.addEventListener("keydown", handleKeyDown);
 });
 
 onUnmounted(() => {
-  document.removeEventListener('keydown', handleKeyDown);
+  document.removeEventListener("keydown", handleKeyDown);
 });
 </script>
 

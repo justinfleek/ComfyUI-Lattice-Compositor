@@ -36,7 +36,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { computed, ref } from "vue";
 
 interface Props {
   modelValue: number;
@@ -55,12 +55,10 @@ const props = withDefaults(defineProps<Props>(), {
   step: 1,
   showValue: true,
   disabled: false,
-  precision: 2
+  precision: 2,
 });
 
-const emit = defineEmits<{
-  (e: 'update:modelValue', value: number): void;
-}>();
+const emit = defineEmits<(e: "update:modelValue", value: number) => void>();
 
 const trackRef = ref<HTMLDivElement | null>(null);
 const isScrubbing = ref(false);
@@ -68,7 +66,7 @@ const isDragging = ref(false);
 const scrubStartX = ref(0);
 const scrubStartValue = ref(0);
 
-const fillPercent = computed(() => {
+const _fillPercent = computed(() => {
   const range = props.max - props.min;
   if (range === 0) return 0;
   return ((props.modelValue - props.min) / range) * 100;
@@ -86,21 +84,21 @@ function clamp(value: number): number {
 }
 
 function round(value: number): number {
-  const factor = Math.pow(10, props.precision);
+  const factor = 10 ** props.precision;
   return Math.round(value * factor) / factor;
 }
 
-function startScrub(e: MouseEvent): void {
+function _startScrub(e: MouseEvent): void {
   if (props.disabled) return;
 
   isScrubbing.value = true;
   scrubStartX.value = e.clientX;
   scrubStartValue.value = props.modelValue;
 
-  document.addEventListener('mousemove', onScrubMove);
-  document.addEventListener('mouseup', stopScrub);
-  document.body.style.cursor = 'ew-resize';
-  document.body.style.userSelect = 'none';
+  document.addEventListener("mousemove", onScrubMove);
+  document.addEventListener("mouseup", stopScrub);
+  document.body.style.cursor = "ew-resize";
+  document.body.style.userSelect = "none";
 }
 
 function onScrubMove(e: MouseEvent): void {
@@ -115,36 +113,36 @@ function onScrubMove(e: MouseEvent): void {
   const newValue = round(clamp(scrubStartValue.value + deltaValue));
 
   if (newValue !== props.modelValue) {
-    emit('update:modelValue', newValue);
+    emit("update:modelValue", newValue);
   }
 }
 
 function stopScrub(): void {
   isScrubbing.value = false;
-  document.removeEventListener('mousemove', onScrubMove);
-  document.removeEventListener('mouseup', stopScrub);
-  document.body.style.cursor = '';
-  document.body.style.userSelect = '';
+  document.removeEventListener("mousemove", onScrubMove);
+  document.removeEventListener("mouseup", stopScrub);
+  document.body.style.cursor = "";
+  document.body.style.userSelect = "";
 }
 
-function onTrackClick(e: MouseEvent): void {
+function _onTrackClick(e: MouseEvent): void {
   if (props.disabled || !trackRef.value) return;
 
   const rect = trackRef.value.getBoundingClientRect();
   const percent = (e.clientX - rect.left) / rect.width;
   const value = props.min + percent * (props.max - props.min);
 
-  emit('update:modelValue', round(clamp(value)));
+  emit("update:modelValue", round(clamp(value)));
 }
 
-function startThumbDrag(_e: MouseEvent): void {
+function _startThumbDrag(_e: MouseEvent): void {
   if (props.disabled) return;
 
   isDragging.value = true;
-  document.addEventListener('mousemove', onThumbDrag);
-  document.addEventListener('mouseup', stopThumbDrag);
-  document.body.style.cursor = 'grabbing';
-  document.body.style.userSelect = 'none';
+  document.addEventListener("mousemove", onThumbDrag);
+  document.addEventListener("mouseup", stopThumbDrag);
+  document.body.style.cursor = "grabbing";
+  document.body.style.userSelect = "none";
 }
 
 function onThumbDrag(e: MouseEvent): void {
@@ -152,33 +150,34 @@ function onThumbDrag(e: MouseEvent): void {
 
   const rect = trackRef.value.getBoundingClientRect();
   const percent = (e.clientX - rect.left) / rect.width;
-  const value = props.min + Math.max(0, Math.min(1, percent)) * (props.max - props.min);
+  const value =
+    props.min + Math.max(0, Math.min(1, percent)) * (props.max - props.min);
 
-  emit('update:modelValue', round(clamp(value)));
+  emit("update:modelValue", round(clamp(value)));
 }
 
 function stopThumbDrag(): void {
   isDragging.value = false;
-  document.removeEventListener('mousemove', onThumbDrag);
-  document.removeEventListener('mouseup', stopThumbDrag);
-  document.body.style.cursor = '';
-  document.body.style.userSelect = '';
+  document.removeEventListener("mousemove", onThumbDrag);
+  document.removeEventListener("mouseup", stopThumbDrag);
+  document.body.style.cursor = "";
+  document.body.style.userSelect = "";
 }
 
-function onInput(e: Event): void {
+function _onInput(e: Event): void {
   const input = e.target as HTMLInputElement;
   const value = parseFloat(input.value);
 
-  if (!isNaN(value)) {
-    emit('update:modelValue', round(clamp(value)));
+  if (!Number.isNaN(value)) {
+    emit("update:modelValue", round(clamp(value)));
   }
 }
 
-function onBlur(e: FocusEvent): void {
+function _onBlur(e: FocusEvent): void {
   const input = e.target as HTMLInputElement;
   const value = parseFloat(input.value);
 
-  if (isNaN(value)) {
+  if (Number.isNaN(value)) {
     input.value = displayValue.value.toString();
   }
 }

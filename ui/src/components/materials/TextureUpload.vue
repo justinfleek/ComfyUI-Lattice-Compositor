@@ -85,9 +85,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import { ScrubableNumber, SliderInput } from '@/components/controls';
-import type { TextureMapType } from '@/types/project';
+import { computed, ref } from "vue";
+import type { TextureMapType } from "@/types/project";
 
 const props = defineProps<{
   mapType: TextureMapType;
@@ -102,50 +101,50 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  'upload': [file: File, dataUrl: string];
-  'remove': [];
-  'update:repeatX': [value: number];
-  'update:repeatY': [value: number];
-  'update:offsetX': [value: number];
-  'update:offsetY': [value: number];
-  'update:normalScale': [value: number];
+  upload: [file: File, dataUrl: string];
+  remove: [];
+  "update:repeatX": [value: number];
+  "update:repeatY": [value: number];
+  "update:offsetX": [value: number];
+  "update:offsetY": [value: number];
+  "update:normalScale": [value: number];
 }>();
 
 const fileInput = ref<HTMLInputElement | null>(null);
 const isDragging = ref(false);
-const previewUrl = ref(props.textureUrl || '');
-const textureSize = ref('');
+const previewUrl = ref(props.textureUrl || "");
+const textureSize = ref("");
 
 const mapLabels: Record<TextureMapType, string> = {
-  albedo: 'Albedo / Color',
-  normal: 'Normal Map',
-  roughness: 'Roughness',
-  metalness: 'Metalness',
-  ao: 'Ambient Occlusion',
-  emissive: 'Emissive',
-  height: 'Height / Displacement',
-  opacity: 'Opacity / Alpha',
-  specular: 'Specular',
+  albedo: "Albedo / Color",
+  normal: "Normal Map",
+  roughness: "Roughness",
+  metalness: "Metalness",
+  ao: "Ambient Occlusion",
+  emissive: "Emissive",
+  height: "Height / Displacement",
+  opacity: "Opacity / Alpha",
+  specular: "Specular",
 };
 
-const mapLabel = computed(() => mapLabels[props.mapType] || props.mapType);
-const hasTexture = computed(() => !!previewUrl.value || !!props.textureUrl);
+const _mapLabel = computed(() => mapLabels[props.mapType] || props.mapType);
+const _hasTexture = computed(() => !!previewUrl.value || !!props.textureUrl);
 
-const acceptedFormats = 'image/png,image/jpeg,image/webp,image/exr';
+const _acceptedFormats = "image/png,image/jpeg,image/webp,image/exr";
 
-function openFilePicker() {
+function _openFilePicker() {
   fileInput.value?.click();
 }
 
-function onDragOver(e: DragEvent) {
+function _onDragOver(_e: DragEvent) {
   isDragging.value = true;
 }
 
-function onDragLeave(e: DragEvent) {
+function _onDragLeave(_e: DragEvent) {
   isDragging.value = false;
 }
 
-function onDrop(e: DragEvent) {
+function _onDrop(e: DragEvent) {
   isDragging.value = false;
   const files = e.dataTransfer?.files;
   if (files && files.length > 0) {
@@ -153,7 +152,7 @@ function onDrop(e: DragEvent) {
   }
 }
 
-function onFileSelected(e: Event) {
+function _onFileSelected(e: Event) {
   const input = e.target as HTMLInputElement;
   if (input.files && input.files.length > 0) {
     handleFile(input.files[0]);
@@ -162,8 +161,8 @@ function onFileSelected(e: Event) {
 
 function handleFile(file: File) {
   // Validate file type
-  if (!file.type.startsWith('image/')) {
-    console.warn('Invalid file type:', file.type);
+  if (!file.type.startsWith("image/")) {
+    console.warn("Invalid file type:", file.type);
     return;
   }
 
@@ -180,18 +179,18 @@ function handleFile(file: File) {
     };
     img.src = dataUrl;
 
-    emit('upload', file, dataUrl);
+    emit("upload", file, dataUrl);
   };
   reader.readAsDataURL(file);
 }
 
-function removeTexture() {
-  previewUrl.value = '';
-  textureSize.value = '';
+function _removeTexture() {
+  previewUrl.value = "";
+  textureSize.value = "";
   if (fileInput.value) {
-    fileInput.value.value = '';
+    fileInput.value.value = "";
   }
-  emit('remove');
+  emit("remove");
 }
 </script>
 

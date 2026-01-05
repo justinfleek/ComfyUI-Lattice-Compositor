@@ -9,15 +9,14 @@
  */
 
 import {
-  COCO_KEYPOINTS,
   COCO_BONES,
   getBoneColor,
+  interpolatePoses,
   OPENPOSE_COLORS,
   type Pose,
-  type PoseKeypoint,
   type PoseFormat,
-  interpolatePoses
-} from '@/engine/layers/PoseLayer';
+  type PoseKeypoint,
+} from "@/engine/layers/PoseLayer";
 
 // ============================================================================
 // TYPES
@@ -44,7 +43,7 @@ export interface PoseExportConfig {
   backgroundColor: string;
 
   /** Output format */
-  outputFormat: 'images' | 'json' | 'both';
+  outputFormat: "images" | "json" | "both";
 }
 
 export interface PoseFrame {
@@ -101,12 +100,12 @@ export interface PoseExportResult {
  */
 export function renderPoseFrame(
   poses: Pose[],
-  config: PoseExportConfig
+  config: PoseExportConfig,
 ): HTMLCanvasElement {
-  const canvas = document.createElement('canvas');
+  const canvas = document.createElement("canvas");
   canvas.width = config.width;
   canvas.height = config.height;
-  const ctx = canvas.getContext('2d')!;
+  const ctx = canvas.getContext("2d")!;
 
   // Fill background
   ctx.fillStyle = config.backgroundColor;
@@ -126,21 +125,23 @@ export function renderPoseFrame(
 function renderSinglePose(
   ctx: CanvasRenderingContext2D,
   pose: Pose,
-  config: PoseExportConfig
+  config: PoseExportConfig,
 ): void {
   const { keypoints } = pose;
   const { width, height } = config;
 
   // Convert normalized coords to pixels
-  const toPixel = (kp: PoseKeypoint): { x: number; y: number; visible: boolean } => ({
+  const toPixel = (
+    kp: PoseKeypoint,
+  ): { x: number; y: number; visible: boolean } => ({
     x: kp.x * width,
     y: kp.y * height,
-    visible: kp.confidence > 0.1
+    visible: kp.confidence > 0.1,
   });
 
   // Render bones
   if (config.showBones) {
-    ctx.lineCap = 'round';
+    ctx.lineCap = "round";
     ctx.lineWidth = config.boneWidth;
 
     COCO_BONES.forEach((bone, boneIndex) => {
@@ -154,7 +155,7 @@ function renderSinglePose(
 
       ctx.strokeStyle = config.useOpenPoseColors
         ? getBoneColor(boneIndex)
-        : (config.customColor || '#FFFFFF');
+        : config.customColor || "#FFFFFF";
 
       ctx.beginPath();
       ctx.moveTo(start.x, start.y);
@@ -169,7 +170,7 @@ function renderSinglePose(
       const point = toPixel(kp);
       if (!point.visible) return;
 
-      let color = config.customColor || '#FFFFFF';
+      let color = config.customColor || "#FFFFFF";
       if (config.useOpenPoseColors) {
         if (index <= 1 || (index >= 14 && index <= 17)) {
           color = OPENPOSE_COLORS.head;
@@ -202,7 +203,7 @@ function renderSinglePose(
 export function createPoseSequence(
   keyframePoses: Array<{ frame: number; poses: Pose[] }>,
   totalFrames: number,
-  fps: number = 16
+  fps: number = 16,
 ): PoseSequence {
   const frames: PoseFrame[] = [];
 
@@ -215,7 +216,10 @@ export function createPoseSequence(
     let nextKf = sortedKeyframes[sortedKeyframes.length - 1];
 
     for (let i = 0; i < sortedKeyframes.length - 1; i++) {
-      if (sortedKeyframes[i].frame <= frameNum && sortedKeyframes[i + 1].frame >= frameNum) {
+      if (
+        sortedKeyframes[i].frame <= frameNum &&
+        sortedKeyframes[i + 1].frame >= frameNum
+      ) {
         prevKf = sortedKeyframes[i];
         nextKf = sortedKeyframes[i + 1];
         break;
@@ -234,7 +238,9 @@ export function createPoseSequence(
       // Interpolate each pose
       const numPoses = Math.min(prevKf.poses.length, nextKf.poses.length);
       for (let i = 0; i < numPoses; i++) {
-        interpolatedPoses.push(interpolatePoses(prevKf.poses[i], nextKf.poses[i], t));
+        interpolatedPoses.push(
+          interpolatePoses(prevKf.poses[i], nextKf.poses[i], t),
+        );
       }
 
       frames.push({ frameNumber: frameNum, poses: interpolatedPoses });
@@ -243,8 +249,8 @@ export function createPoseSequence(
 
   return {
     frames,
-    format: 'coco18',
-    fps
+    format: "coco18",
+    fps,
   };
 }
 
@@ -256,7 +262,7 @@ export function createPoseSequence(
  * Export pose sequence to OpenPose JSON format
  */
 export function exportToOpenPoseJSON(poses: Pose[]): OpenPoseJSON {
-  const people = poses.map(pose => {
+  const people = poses.map((pose) => {
     const pose_keypoints_2d: number[] = [];
 
     for (const kp of pose.keypoints) {
@@ -272,13 +278,13 @@ export function exportToOpenPoseJSON(poses: Pose[]): OpenPoseJSON {
       pose_keypoints_3d: [],
       face_keypoints_3d: [],
       hand_left_keypoints_3d: [],
-      hand_right_keypoints_3d: []
+      hand_right_keypoints_3d: [],
     };
   });
 
   return {
     version: 1.3,
-    people
+    people,
   };
 }
 
@@ -287,26 +293,27 @@ export function exportToOpenPoseJSON(poses: Pose[]): OpenPoseJSON {
  */
 export function exportPoseSequence(
   sequence: PoseSequence,
-  config: PoseExportConfig
+  config: PoseExportConfig,
 ): PoseExportResult {
   const result: PoseExportResult = {};
 
   // Filter frames by range
   const framesToExport = sequence.frames.filter(
-    f => f.frameNumber >= config.startFrame && f.frameNumber <= config.endFrame
+    (f) =>
+      f.frameNumber >= config.startFrame && f.frameNumber <= config.endFrame,
   );
 
   // Export images
-  if (config.outputFormat === 'images' || config.outputFormat === 'both') {
-    result.images = framesToExport.map(frame =>
-      renderPoseFrame(frame.poses, config)
+  if (config.outputFormat === "images" || config.outputFormat === "both") {
+    result.images = framesToExport.map((frame) =>
+      renderPoseFrame(frame.poses, config),
     );
   }
 
   // Export JSON
-  if (config.outputFormat === 'json' || config.outputFormat === 'both') {
-    result.jsonFrames = framesToExport.map(frame =>
-      exportToOpenPoseJSON(frame.poses)
+  if (config.outputFormat === "json" || config.outputFormat === "both") {
+    result.jsonFrames = framesToExport.map((frame) =>
+      exportToOpenPoseJSON(frame.poses),
     );
 
     result.sequenceJson = {
@@ -315,8 +322,8 @@ export function exportPoseSequence(
         frameCount: framesToExport.length,
         fps: sequence.fps,
         width: config.width,
-        height: config.height
-      }
+        height: config.height,
+      },
     };
   }
 
@@ -329,7 +336,7 @@ export function exportPoseSequence(
 export function exportPoseForControlNet(
   poses: Pose[],
   width: number,
-  height: number
+  height: number,
 ): { canvas: HTMLCanvasElement; json: OpenPoseJSON } {
   const config: PoseExportConfig = {
     width,
@@ -341,13 +348,13 @@ export function exportPoseForControlNet(
     showKeypoints: true,
     showBones: true,
     useOpenPoseColors: true,
-    backgroundColor: '#000000',
-    outputFormat: 'both'
+    backgroundColor: "#000000",
+    outputFormat: "both",
   };
 
   return {
     canvas: renderPoseFrame(poses, config),
-    json: exportToOpenPoseJSON(poses)
+    json: exportToOpenPoseJSON(poses),
   };
 }
 
@@ -370,14 +377,14 @@ export function importFromOpenPoseJSON(json: OpenPoseJSON): Pose[] {
         keypoints.push({
           x: kp[i],
           y: kp[i + 1],
-          confidence: kp[i + 2]
+          confidence: kp[i + 2],
         });
       }
 
       poses.push({
         id: `imported_${Date.now()}_${poses.length}`,
         keypoints,
-        format: 'coco18'
+        format: "coco18",
       });
     }
   }
@@ -390,17 +397,17 @@ export function importFromOpenPoseJSON(json: OpenPoseJSON): Pose[] {
  */
 export function importPoseSequence(
   jsonFrames: OpenPoseJSON[],
-  fps: number = 16
+  fps: number = 16,
 ): PoseSequence {
   const frames: PoseFrame[] = jsonFrames.map((json, index) => ({
     frameNumber: index,
-    poses: importFromOpenPoseJSON(json)
+    poses: importFromOpenPoseJSON(json),
   }));
 
   return {
     frames,
-    format: 'coco18',
-    fps
+    format: "coco18",
+    fps,
   };
 }
 
@@ -419,8 +426,8 @@ export function createDefaultPoseExportConfig(): PoseExportConfig {
     showKeypoints: true,
     showBones: true,
     useOpenPoseColors: true,
-    backgroundColor: '#000000',
-    outputFormat: 'both'
+    backgroundColor: "#000000",
+    outputFormat: "both",
   };
 }
 
@@ -436,5 +443,5 @@ export default {
   exportPoseForControlNet,
   importFromOpenPoseJSON,
   importPoseSequence,
-  createDefaultPoseExportConfig
+  createDefaultPoseExportConfig,
 };

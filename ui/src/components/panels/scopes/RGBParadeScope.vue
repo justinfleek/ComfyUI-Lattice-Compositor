@@ -8,7 +8,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue';
+import { onMounted, ref, watch } from "vue";
 
 interface WaveformResult {
   lumaPoints: Float32Array;
@@ -28,7 +28,7 @@ const props = defineProps<{
 }>();
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
-const canvasWidth = 384;  // 128 * 3 channels
+const canvasWidth = 384; // 128 * 3 channels
 const canvasHeight = 150;
 
 const CHANNEL_WIDTH = canvasWidth / 3;
@@ -37,7 +37,7 @@ const CHANNEL_WIDTH = canvasWidth / 3;
 const COLORS = {
   red: [255, 100, 100],
   green: [100, 255, 100],
-  blue: [100, 100, 255]
+  blue: [100, 100, 255],
 };
 
 onMounted(() => {
@@ -52,20 +52,20 @@ function drawParade() {
   const canvas = canvasRef.value;
   if (!canvas) return;
 
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext("2d");
   if (!ctx) return;
 
   // Clear
-  ctx.fillStyle = '#000';
+  ctx.fillStyle = "#000";
   ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
   // Draw grid for each channel
-  drawGrid(ctx, 0, 'R');
-  drawGrid(ctx, CHANNEL_WIDTH, 'G');
-  drawGrid(ctx, CHANNEL_WIDTH * 2, 'B');
+  drawGrid(ctx, 0, "R");
+  drawGrid(ctx, CHANNEL_WIDTH, "G");
+  drawGrid(ctx, CHANNEL_WIDTH * 2, "B");
 
   // Draw separators
-  ctx.strokeStyle = 'rgba(80, 80, 80, 0.8)';
+  ctx.strokeStyle = "rgba(80, 80, 80, 0.8)";
   ctx.lineWidth = 1;
 
   ctx.beginPath();
@@ -85,13 +85,17 @@ function drawParade() {
   drawChannel(ctx, blue, CHANNEL_WIDTH * 2, COLORS.blue);
 }
 
-function drawGrid(ctx: CanvasRenderingContext2D, offsetX: number, label: string) {
-  ctx.strokeStyle = 'rgba(60, 60, 60, 0.5)';
+function drawGrid(
+  ctx: CanvasRenderingContext2D,
+  offsetX: number,
+  label: string,
+) {
+  ctx.strokeStyle = "rgba(60, 60, 60, 0.5)";
   ctx.lineWidth = 1;
 
   // Horizontal lines
   for (let i = 1; i < 4; i++) {
-    const y = (i * canvasHeight / 4);
+    const y = (i * canvasHeight) / 4;
     ctx.beginPath();
     ctx.moveTo(offsetX, y);
     ctx.lineTo(offsetX + CHANNEL_WIDTH, y);
@@ -99,9 +103,9 @@ function drawGrid(ctx: CanvasRenderingContext2D, offsetX: number, label: string)
   }
 
   // Label
-  ctx.fillStyle = 'rgba(100, 100, 100, 0.8)';
-  ctx.font = '10px monospace';
-  ctx.textAlign = 'center';
+  ctx.fillStyle = "rgba(100, 100, 100, 0.8)";
+  ctx.font = "10px monospace";
+  ctx.textAlign = "center";
   ctx.fillText(label, offsetX + CHANNEL_WIDTH / 2, canvasHeight - 4);
 }
 
@@ -109,7 +113,7 @@ function drawChannel(
   ctx: CanvasRenderingContext2D,
   data: WaveformResult,
   offsetX: number,
-  color: number[]
+  color: number[],
 ) {
   const { lumaPoints } = data;
   const alpha = Math.min(1, 0.4 * props.brightness);

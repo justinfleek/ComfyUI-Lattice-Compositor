@@ -11,32 +11,37 @@
  * - View transforms for preview
  */
 
-import { createLogger } from '@/utils/logger';
+import { createLogger } from "@/utils/logger";
 
-const logger = createLogger('ColorProfile');
+const logger = createLogger("ColorProfile");
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
 export type ColorSpace =
-  | 'sRGB'
-  | 'linear-sRGB'
-  | 'Adobe-RGB'
-  | 'Display-P3'
-  | 'ProPhoto-RGB'
-  | 'ACEScg'
-  | 'Rec709'
-  | 'Rec2020';
+  | "sRGB"
+  | "linear-sRGB"
+  | "Adobe-RGB"
+  | "Display-P3"
+  | "ProPhoto-RGB"
+  | "ACEScg"
+  | "Rec709"
+  | "Rec2020";
 
-export type ViewTransform = 'sRGB' | 'Display-P3' | 'Rec709' | 'ACES-sRGB' | 'Filmic';
+export type ViewTransform =
+  | "sRGB"
+  | "Display-P3"
+  | "Rec709"
+  | "ACES-sRGB"
+  | "Filmic";
 
 export interface ColorSpaceInfo {
   name: string;
   description: string;
-  gamut: 'narrow' | 'wide' | 'ultra-wide';
-  gamma: number | 'linear';
-  whitePoint: [number, number];  // xy chromaticity
+  gamut: "narrow" | "wide" | "ultra-wide";
+  gamma: number | "linear";
+  whitePoint: [number, number]; // xy chromaticity
   primaries: {
     red: [number, number];
     green: [number, number];
@@ -50,7 +55,7 @@ export interface ColorSettings {
   /** View transform for preview */
   viewTransform: ViewTransform;
   /** Export color space */
-  exportColorSpace: ColorSpace | 'source';
+  exportColorSpace: ColorSpace | "source";
   /** Enable linear RGB compositing */
   linearCompositing: boolean;
   /** Display gamma correction */
@@ -61,7 +66,7 @@ export interface ICCProfile {
   /** Profile name */
   name: string;
   /** Color space */
-  colorSpace: ColorSpace | 'unknown';
+  colorSpace: ColorSpace | "unknown";
   /** Profile class (input, display, output, etc.) */
   profileClass: string;
   /** Profile data as ArrayBuffer */
@@ -84,99 +89,99 @@ export type XYZ = [number, number, number];
 // ============================================================================
 
 export const COLOR_SPACES: Record<ColorSpace, ColorSpaceInfo> = {
-  'sRGB': {
-    name: 'sRGB',
-    description: 'Standard RGB (web/most displays)',
-    gamut: 'narrow',
+  sRGB: {
+    name: "sRGB",
+    description: "Standard RGB (web/most displays)",
+    gamut: "narrow",
     gamma: 2.2,
-    whitePoint: [0.3127, 0.3290],  // D65
+    whitePoint: [0.3127, 0.329], // D65
     primaries: {
       red: [0.64, 0.33],
-      green: [0.30, 0.60],
+      green: [0.3, 0.6],
       blue: [0.15, 0.06],
     },
   },
-  'linear-sRGB': {
-    name: 'Linear sRGB',
-    description: 'sRGB without gamma (for compositing)',
-    gamut: 'narrow',
-    gamma: 'linear',
-    whitePoint: [0.3127, 0.3290],
+  "linear-sRGB": {
+    name: "Linear sRGB",
+    description: "sRGB without gamma (for compositing)",
+    gamut: "narrow",
+    gamma: "linear",
+    whitePoint: [0.3127, 0.329],
     primaries: {
       red: [0.64, 0.33],
-      green: [0.30, 0.60],
+      green: [0.3, 0.6],
       blue: [0.15, 0.06],
     },
   },
-  'Adobe-RGB': {
-    name: 'Adobe RGB (1998)',
-    description: 'Wide gamut for print',
-    gamut: 'wide',
+  "Adobe-RGB": {
+    name: "Adobe RGB (1998)",
+    description: "Wide gamut for print",
+    gamut: "wide",
     gamma: 2.2,
-    whitePoint: [0.3127, 0.3290],
+    whitePoint: [0.3127, 0.329],
     primaries: {
       red: [0.64, 0.33],
       green: [0.21, 0.71],
       blue: [0.15, 0.06],
     },
   },
-  'Display-P3': {
-    name: 'Display P3',
-    description: 'Apple/DCI wide gamut',
-    gamut: 'wide',
+  "Display-P3": {
+    name: "Display P3",
+    description: "Apple/DCI wide gamut",
+    gamut: "wide",
     gamma: 2.2,
-    whitePoint: [0.3127, 0.3290],
+    whitePoint: [0.3127, 0.329],
     primaries: {
       red: [0.68, 0.32],
       green: [0.265, 0.69],
       blue: [0.15, 0.06],
     },
   },
-  'ProPhoto-RGB': {
-    name: 'ProPhoto RGB',
-    description: 'Ultra-wide gamut for photography',
-    gamut: 'ultra-wide',
+  "ProPhoto-RGB": {
+    name: "ProPhoto RGB",
+    description: "Ultra-wide gamut for photography",
+    gamut: "ultra-wide",
     gamma: 1.8,
-    whitePoint: [0.3457, 0.3585],  // D50
+    whitePoint: [0.3457, 0.3585], // D50
     primaries: {
       red: [0.7347, 0.2653],
       green: [0.1596, 0.8404],
       blue: [0.0366, 0.0001],
     },
   },
-  'ACEScg': {
-    name: 'ACEScg',
-    description: 'ACES working space (linear, wide)',
-    gamut: 'ultra-wide',
-    gamma: 'linear',
-    whitePoint: [0.32168, 0.33767],  // ACES white
+  ACEScg: {
+    name: "ACEScg",
+    description: "ACES working space (linear, wide)",
+    gamut: "ultra-wide",
+    gamma: "linear",
+    whitePoint: [0.32168, 0.33767], // ACES white
     primaries: {
       red: [0.713, 0.293],
-      green: [0.165, 0.830],
+      green: [0.165, 0.83],
       blue: [0.128, 0.044],
     },
   },
-  'Rec709': {
-    name: 'Rec. 709',
-    description: 'HDTV standard',
-    gamut: 'narrow',
+  Rec709: {
+    name: "Rec. 709",
+    description: "HDTV standard",
+    gamut: "narrow",
     gamma: 2.4,
-    whitePoint: [0.3127, 0.3290],
+    whitePoint: [0.3127, 0.329],
     primaries: {
       red: [0.64, 0.33],
-      green: [0.30, 0.60],
+      green: [0.3, 0.6],
       blue: [0.15, 0.06],
     },
   },
-  'Rec2020': {
-    name: 'Rec. 2020',
-    description: 'UHD/HDR standard',
-    gamut: 'ultra-wide',
+  Rec2020: {
+    name: "Rec. 2020",
+    description: "UHD/HDR standard",
+    gamut: "ultra-wide",
     gamma: 2.4,
-    whitePoint: [0.3127, 0.3290],
+    whitePoint: [0.3127, 0.329],
     primaries: {
       red: [0.708, 0.292],
-      green: [0.170, 0.797],
+      green: [0.17, 0.797],
       blue: [0.131, 0.046],
     },
   },
@@ -193,7 +198,7 @@ export function sRGBToLinear(value: number): number {
   if (value <= 0.04045) {
     return value / 12.92;
   }
-  return Math.pow((value + 0.055) / 1.055, 2.4);
+  return ((value + 0.055) / 1.055) ** 2.4;
 }
 
 /**
@@ -203,21 +208,21 @@ export function linearToSRGB(value: number): number {
   if (value <= 0.0031308) {
     return value * 12.92;
   }
-  return 1.055 * Math.pow(value, 1 / 2.4) - 0.055;
+  return 1.055 * value ** (1 / 2.4) - 0.055;
 }
 
 /**
  * Simple gamma transfer function
  */
 export function gammaToLinear(value: number, gamma: number): number {
-  return Math.pow(Math.max(0, value), gamma);
+  return Math.max(0, value) ** gamma;
 }
 
 /**
  * Simple gamma inverse transfer function
  */
 export function linearToGamma(value: number, gamma: number): number {
-  return Math.pow(Math.max(0, value), 1 / gamma);
+  return Math.max(0, value) ** (1 / gamma);
 }
 
 /**
@@ -226,16 +231,12 @@ export function linearToGamma(value: number, gamma: number): number {
 export function linearizeRGB(rgb: RGB, colorSpace: ColorSpace): RGB {
   const info = COLOR_SPACES[colorSpace];
 
-  if (info.gamma === 'linear') {
+  if (info.gamma === "linear") {
     return rgb;
   }
 
-  if (colorSpace === 'sRGB' || colorSpace === 'linear-sRGB') {
-    return [
-      sRGBToLinear(rgb[0]),
-      sRGBToLinear(rgb[1]),
-      sRGBToLinear(rgb[2]),
-    ];
+  if (colorSpace === "sRGB" || colorSpace === "linear-sRGB") {
+    return [sRGBToLinear(rgb[0]), sRGBToLinear(rgb[1]), sRGBToLinear(rgb[2])];
   }
 
   const gamma = info.gamma;
@@ -252,16 +253,12 @@ export function linearizeRGB(rgb: RGB, colorSpace: ColorSpace): RGB {
 export function applyGammaRGB(rgb: RGB, colorSpace: ColorSpace): RGB {
   const info = COLOR_SPACES[colorSpace];
 
-  if (info.gamma === 'linear') {
+  if (info.gamma === "linear") {
     return rgb;
   }
 
-  if (colorSpace === 'sRGB') {
-    return [
-      linearToSRGB(rgb[0]),
-      linearToSRGB(rgb[1]),
-      linearToSRGB(rgb[2]),
-    ];
+  if (colorSpace === "sRGB") {
+    return [linearToSRGB(rgb[0]), linearToSRGB(rgb[1]), linearToSRGB(rgb[2])];
   }
 
   const gamma = info.gamma;
@@ -282,20 +279,20 @@ export function applyGammaRGB(rgb: RGB, colorSpace: ColorSpace): RGB {
 type Matrix3x3 = [
   [number, number, number],
   [number, number, number],
-  [number, number, number]
+  [number, number, number],
 ];
 
 // sRGB to XYZ (D65)
 const SRGB_TO_XYZ: Matrix3x3 = [
   [0.4124564, 0.3575761, 0.1804375],
-  [0.2126729, 0.7151522, 0.0721750],
-  [0.0193339, 0.1191920, 0.9503041],
+  [0.2126729, 0.7151522, 0.072175],
+  [0.0193339, 0.119192, 0.9503041],
 ];
 
 // XYZ to sRGB (D65)
 const XYZ_TO_SRGB: Matrix3x3 = [
   [3.2404542, -1.5371385, -0.4985314],
-  [-0.9692660, 1.8760108, 0.0415560],
+  [-0.969266, 1.8760108, 0.041556],
   [0.0556434, -0.2040259, 1.0572252],
 ];
 
@@ -303,34 +300,37 @@ const XYZ_TO_SRGB: Matrix3x3 = [
 const P3_TO_XYZ: Matrix3x3 = [
   [0.4865709, 0.2656677, 0.1982173],
   [0.2289746, 0.6917385, 0.0792869],
-  [0.0000000, 0.0451134, 1.0439444],
+  [0.0, 0.0451134, 1.0439444],
 ];
 
 // XYZ to Display P3 (D65)
 const XYZ_TO_P3: Matrix3x3 = [
   [2.4934969, -0.9313836, -0.4027108],
-  [-0.8294890, 1.7626641, 0.0236247],
+  [-0.829489, 1.7626641, 0.0236247],
   [0.0358458, -0.0761724, 0.9568845],
 ];
 
 // Adobe RGB to XYZ (D65)
 const ADOBERGB_TO_XYZ: Matrix3x3 = [
-  [0.5767309, 0.1855540, 0.1881852],
+  [0.5767309, 0.185554, 0.1881852],
   [0.2973769, 0.6273491, 0.0752741],
   [0.0270343, 0.0706872, 0.9911085],
 ];
 
 // XYZ to Adobe RGB (D65)
 const XYZ_TO_ADOBERGB: Matrix3x3 = [
-  [2.0413690, -0.5649464, -0.3446944],
-  [-0.9692660, 1.8760108, 0.0415560],
+  [2.041369, -0.5649464, -0.3446944],
+  [-0.969266, 1.8760108, 0.041556],
   [0.0134474, -0.1183897, 1.0154096],
 ];
 
 /**
  * Matrix-vector multiplication
  */
-function matrixMultiply(m: Matrix3x3, v: [number, number, number]): [number, number, number] {
+function matrixMultiply(
+  m: Matrix3x3,
+  v: [number, number, number],
+): [number, number, number] {
   return [
     m[0][0] * v[0] + m[0][1] * v[1] + m[0][2] * v[2],
     m[1][0] * v[0] + m[1][1] * v[1] + m[1][2] * v[2],
@@ -351,13 +351,13 @@ export function rgbToXYZ(rgb: RGB, colorSpace: ColorSpace): XYZ {
 
   // Then apply matrix based on source color space
   switch (colorSpace) {
-    case 'sRGB':
-    case 'linear-sRGB':
-    case 'Rec709':
+    case "sRGB":
+    case "linear-sRGB":
+    case "Rec709":
       return matrixMultiply(SRGB_TO_XYZ, linear);
-    case 'Display-P3':
+    case "Display-P3":
       return matrixMultiply(P3_TO_XYZ, linear);
-    case 'Adobe-RGB':
+    case "Adobe-RGB":
       return matrixMultiply(ADOBERGB_TO_XYZ, linear);
     default:
       // Default to sRGB matrix
@@ -373,15 +373,15 @@ export function xyzToRGB(xyz: XYZ, colorSpace: ColorSpace): RGB {
 
   // Apply inverse matrix based on target color space
   switch (colorSpace) {
-    case 'sRGB':
-    case 'linear-sRGB':
-    case 'Rec709':
+    case "sRGB":
+    case "linear-sRGB":
+    case "Rec709":
       linear = matrixMultiply(XYZ_TO_SRGB, xyz);
       break;
-    case 'Display-P3':
+    case "Display-P3":
       linear = matrixMultiply(XYZ_TO_P3, xyz);
       break;
-    case 'Adobe-RGB':
+    case "Adobe-RGB":
       linear = matrixMultiply(XYZ_TO_ADOBERGB, xyz);
       break;
     default:
@@ -395,15 +395,19 @@ export function xyzToRGB(xyz: XYZ, colorSpace: ColorSpace): RGB {
 /**
  * Convert RGB from one color space to another
  */
-export function convertColorSpace(rgb: RGB, from: ColorSpace, to: ColorSpace): RGB {
+export function convertColorSpace(
+  rgb: RGB,
+  from: ColorSpace,
+  to: ColorSpace,
+): RGB {
   if (from === to) return rgb;
 
   // Handle linear conversions directly
-  if (from === 'linear-sRGB' && to === 'sRGB') {
-    return applyGammaRGB(rgb, 'sRGB');
+  if (from === "linear-sRGB" && to === "sRGB") {
+    return applyGammaRGB(rgb, "sRGB");
   }
-  if (from === 'sRGB' && to === 'linear-sRGB') {
-    return linearizeRGB(rgb, 'sRGB');
+  if (from === "sRGB" && to === "linear-sRGB") {
+    return linearizeRGB(rgb, "sRGB");
   }
 
   // General conversion via XYZ
@@ -428,18 +432,18 @@ export function parseICCProfile(data: ArrayBuffer): ICCProfile | null {
       view.getUint8(36),
       view.getUint8(37),
       view.getUint8(38),
-      view.getUint8(39)
+      view.getUint8(39),
     );
 
-    if (signature !== 'acsp') {
-      logger.warn('Invalid ICC profile signature');
+    if (signature !== "acsp") {
+      logger.warn("Invalid ICC profile signature");
       return null;
     }
 
     // Profile size
     const size = view.getUint32(0);
     if (size !== data.byteLength) {
-      logger.warn('ICC profile size mismatch');
+      logger.warn("ICC profile size mismatch");
     }
 
     // Color space type (offset 16)
@@ -447,7 +451,7 @@ export function parseICCProfile(data: ArrayBuffer): ICCProfile | null {
       view.getUint8(16),
       view.getUint8(17),
       view.getUint8(18),
-      view.getUint8(19)
+      view.getUint8(19),
     ).trim();
 
     // Profile class (offset 12)
@@ -455,59 +459,66 @@ export function parseICCProfile(data: ArrayBuffer): ICCProfile | null {
       view.getUint8(12),
       view.getUint8(13),
       view.getUint8(14),
-      view.getUint8(15)
+      view.getUint8(15),
     ).trim();
 
     // Parse description tag to get name
     // Tag table starts at offset 128
     const tagCount = view.getUint32(128);
-    let name = 'Unknown Profile';
+    let name = "Unknown Profile";
 
     for (let i = 0; i < tagCount; i++) {
-      const tagOffset = 132 + (i * 12);
+      const tagOffset = 132 + i * 12;
       const tagSig = String.fromCharCode(
         view.getUint8(tagOffset),
         view.getUint8(tagOffset + 1),
         view.getUint8(tagOffset + 2),
-        view.getUint8(tagOffset + 3)
+        view.getUint8(tagOffset + 3),
       );
 
-      if (tagSig === 'desc') {
+      if (tagSig === "desc") {
         const dataOffset = view.getUint32(tagOffset + 4);
-        const dataSize = view.getUint32(tagOffset + 8);
+        const _dataSize = view.getUint32(tagOffset + 8);
 
         // Read description string (simplified)
         const descType = String.fromCharCode(
           view.getUint8(dataOffset),
           view.getUint8(dataOffset + 1),
           view.getUint8(dataOffset + 2),
-          view.getUint8(dataOffset + 3)
+          view.getUint8(dataOffset + 3),
         );
 
-        if (descType === 'desc') {
+        if (descType === "desc") {
           const strLen = view.getUint32(dataOffset + 8);
-          const strBytes = new Uint8Array(data, dataOffset + 12, Math.min(strLen - 1, 100));
-          name = new TextDecoder('ascii').decode(strBytes);
+          const strBytes = new Uint8Array(
+            data,
+            dataOffset + 12,
+            Math.min(strLen - 1, 100),
+          );
+          name = new TextDecoder("ascii").decode(strBytes);
         }
         break;
       }
     }
 
     // Determine color space
-    let colorSpace: ColorSpace | 'unknown' = 'unknown';
-    if (colorSpaceType === 'RGB') {
+    let colorSpace: ColorSpace | "unknown" = "unknown";
+    if (colorSpaceType === "RGB") {
       // Try to identify specific RGB space from name
       const nameLower = name.toLowerCase();
-      if (nameLower.includes('srgb')) {
-        colorSpace = 'sRGB';
-      } else if (nameLower.includes('display p3') || nameLower.includes('p3')) {
-        colorSpace = 'Display-P3';
-      } else if (nameLower.includes('adobe rgb') || nameLower.includes('adobergb')) {
-        colorSpace = 'Adobe-RGB';
-      } else if (nameLower.includes('prophoto')) {
-        colorSpace = 'ProPhoto-RGB';
+      if (nameLower.includes("srgb")) {
+        colorSpace = "sRGB";
+      } else if (nameLower.includes("display p3") || nameLower.includes("p3")) {
+        colorSpace = "Display-P3";
+      } else if (
+        nameLower.includes("adobe rgb") ||
+        nameLower.includes("adobergb")
+      ) {
+        colorSpace = "Adobe-RGB";
+      } else if (nameLower.includes("prophoto")) {
+        colorSpace = "ProPhoto-RGB";
       } else {
-        colorSpace = 'sRGB';  // Default assumption
+        colorSpace = "sRGB"; // Default assumption
       }
     }
 
@@ -516,10 +527,10 @@ export function parseICCProfile(data: ArrayBuffer): ICCProfile | null {
       colorSpace,
       profileClass,
       data,
-      whitePoint: [0.9505, 1.0, 1.0890],  // D65 default
+      whitePoint: [0.9505, 1.0, 1.089], // D65 default
     };
   } catch (error) {
-    logger.warn('Failed to parse ICC profile:', error);
+    logger.warn("Failed to parse ICC profile:", error);
     return null;
   }
 }
@@ -527,23 +538,25 @@ export function parseICCProfile(data: ArrayBuffer): ICCProfile | null {
 /**
  * Extract ICC profile from image file
  */
-export async function extractICCFromImage(imageData: ArrayBuffer): Promise<ICCProfile | null> {
+export async function extractICCFromImage(
+  imageData: ArrayBuffer,
+): Promise<ICCProfile | null> {
   try {
     const view = new DataView(imageData);
 
     // Check for PNG
-    if (view.getUint32(0) === 0x89504E47) {
+    if (view.getUint32(0) === 0x89504e47) {
       return extractICCFromPNG(imageData);
     }
 
     // Check for JPEG
-    if (view.getUint16(0) === 0xFFD8) {
+    if (view.getUint16(0) === 0xffd8) {
       return extractICCFromJPEG(imageData);
     }
 
     return null;
   } catch (error) {
-    logger.warn('Failed to extract ICC profile:', error);
+    logger.warn("Failed to extract ICC profile:", error);
     return null;
   }
 }
@@ -553,7 +566,7 @@ export async function extractICCFromImage(imageData: ArrayBuffer): Promise<ICCPr
  */
 function extractICCFromPNG(data: ArrayBuffer): ICCProfile | null {
   const view = new DataView(data);
-  let offset = 8;  // Skip PNG signature
+  let offset = 8; // Skip PNG signature
 
   while (offset < data.byteLength) {
     const chunkLength = view.getUint32(offset);
@@ -561,14 +574,17 @@ function extractICCFromPNG(data: ArrayBuffer): ICCProfile | null {
       view.getUint8(offset + 4),
       view.getUint8(offset + 5),
       view.getUint8(offset + 6),
-      view.getUint8(offset + 7)
+      view.getUint8(offset + 7),
     );
 
-    if (chunkType === 'iCCP') {
+    if (chunkType === "iCCP") {
       // ICC Profile chunk found
       // Skip to profile data (after null-terminated name and compression method)
       let nameEnd = offset + 8;
-      while (view.getUint8(nameEnd) !== 0 && nameEnd < offset + 8 + chunkLength) {
+      while (
+        view.getUint8(nameEnd) !== 0 &&
+        nameEnd < offset + 8 + chunkLength
+      ) {
         nameEnd++;
       }
 
@@ -577,11 +593,15 @@ function extractICCFromPNG(data: ArrayBuffer): ICCProfile | null {
 
       if (compressionMethod === 0) {
         // Deflate compressed
-        const compressedData = new Uint8Array(data, nameEnd + 2, chunkLength - (nameEnd - offset - 8) - 2);
+        const _compressedData = new Uint8Array(
+          data,
+          nameEnd + 2,
+          chunkLength - (nameEnd - offset - 8) - 2,
+        );
 
         // Decompress using pako or similar (simplified - return null for now)
         // In production, you'd use pako.inflate(compressedData)
-        logger.debug('Found compressed ICC profile in PNG');
+        logger.debug("Found compressed ICC profile in PNG");
       }
     }
 
@@ -597,16 +617,16 @@ function extractICCFromPNG(data: ArrayBuffer): ICCProfile | null {
  */
 function extractICCFromJPEG(data: ArrayBuffer): ICCProfile | null {
   const view = new DataView(data);
-  let offset = 2;  // Skip SOI marker
+  let offset = 2; // Skip SOI marker
 
   const profileChunks: ArrayBuffer[] = [];
 
   while (offset < data.byteLength) {
     const marker = view.getUint16(offset);
 
-    if (marker === 0xFFD9) break;  // EOI
+    if (marker === 0xffd9) break; // EOI
 
-    if ((marker & 0xFF00) !== 0xFF00) {
+    if ((marker & 0xff00) !== 0xff00) {
       offset++;
       continue;
     }
@@ -614,7 +634,7 @@ function extractICCFromJPEG(data: ArrayBuffer): ICCProfile | null {
     const segmentLength = view.getUint16(offset + 2);
 
     // APP2 marker with ICC_PROFILE
-    if (marker === 0xFFE2) {
+    if (marker === 0xffe2) {
       const iccSignature = String.fromCharCode(
         view.getUint8(offset + 4),
         view.getUint8(offset + 5),
@@ -623,10 +643,10 @@ function extractICCFromJPEG(data: ArrayBuffer): ICCProfile | null {
         view.getUint8(offset + 8),
         view.getUint8(offset + 9),
         view.getUint8(offset + 10),
-        view.getUint8(offset + 11)
+        view.getUint8(offset + 11),
       );
 
-      if (iccSignature === 'ICC_PROF') {
+      if (iccSignature === "ICC_PROF") {
         // const chunkNum = view.getUint8(offset + 14);
         // const totalChunks = view.getUint8(offset + 15);
         const profileData = data.slice(offset + 18, offset + 2 + segmentLength);
@@ -639,7 +659,10 @@ function extractICCFromJPEG(data: ArrayBuffer): ICCProfile | null {
 
   if (profileChunks.length > 0) {
     // Concatenate chunks
-    const totalSize = profileChunks.reduce((sum, chunk) => sum + chunk.byteLength, 0);
+    const totalSize = profileChunks.reduce(
+      (sum, chunk) => sum + chunk.byteLength,
+      0,
+    );
     const combined = new Uint8Array(totalSize);
     let pos = 0;
     for (const chunk of profileChunks) {
@@ -663,9 +686,9 @@ export class ColorProfileService {
 
   constructor(settings?: Partial<ColorSettings>) {
     this.settings = {
-      workingColorSpace: settings?.workingColorSpace ?? 'sRGB',
-      viewTransform: settings?.viewTransform ?? 'sRGB',
-      exportColorSpace: settings?.exportColorSpace ?? 'sRGB',
+      workingColorSpace: settings?.workingColorSpace ?? "sRGB",
+      viewTransform: settings?.viewTransform ?? "sRGB",
+      exportColorSpace: settings?.exportColorSpace ?? "sRGB",
       linearCompositing: settings?.linearCompositing ?? false,
       displayGamma: settings?.displayGamma ?? 2.2,
     };
@@ -681,7 +704,7 @@ export class ColorProfileService {
 
   updateSettings(settings: Partial<ColorSettings>): void {
     Object.assign(this.settings, settings);
-    logger.debug('Color settings updated:', this.settings);
+    logger.debug("Color settings updated:", this.settings);
   }
 
   setWorkingColorSpace(colorSpace: ColorSpace): void {
@@ -700,7 +723,10 @@ export class ColorProfileService {
   // PROFILE MANAGEMENT
   // ============================================================================
 
-  async loadProfile(name: string, data: ArrayBuffer): Promise<ICCProfile | null> {
+  async loadProfile(
+    name: string,
+    data: ArrayBuffer,
+  ): Promise<ICCProfile | null> {
     const profile = parseICCProfile(data);
     if (profile) {
       this.loadedProfiles.set(name, profile);
@@ -713,7 +739,9 @@ export class ColorProfileService {
     return this.loadedProfiles.get(name);
   }
 
-  async extractProfileFromImage(imageData: ArrayBuffer): Promise<ICCProfile | null> {
+  async extractProfileFromImage(
+    imageData: ArrayBuffer,
+  ): Promise<ICCProfile | null> {
     return extractICCFromImage(imageData);
   }
 
@@ -732,9 +760,10 @@ export class ColorProfileService {
    * Convert from working color space to export space
    */
   toExportSpace(rgb: RGB): RGB {
-    const exportSpace = this.settings.exportColorSpace === 'source'
-      ? this.settings.workingColorSpace
-      : this.settings.exportColorSpace;
+    const exportSpace =
+      this.settings.exportColorSpace === "source"
+        ? this.settings.workingColorSpace
+        : this.settings.exportColorSpace;
     return convertColorSpace(rgb, this.settings.workingColorSpace, exportSpace);
   }
 
@@ -745,12 +774,20 @@ export class ColorProfileService {
     // For now, just convert to display color space
     // In production, you'd implement ACES view transforms
     switch (this.settings.viewTransform) {
-      case 'Display-P3':
-        return convertColorSpace(rgb, this.settings.workingColorSpace, 'Display-P3');
-      case 'Rec709':
-        return convertColorSpace(rgb, this.settings.workingColorSpace, 'Rec709');
+      case "Display-P3":
+        return convertColorSpace(
+          rgb,
+          this.settings.workingColorSpace,
+          "Display-P3",
+        );
+      case "Rec709":
+        return convertColorSpace(
+          rgb,
+          this.settings.workingColorSpace,
+          "Rec709",
+        );
       default:
-        return convertColorSpace(rgb, this.settings.workingColorSpace, 'sRGB');
+        return convertColorSpace(rgb, this.settings.workingColorSpace, "sRGB");
     }
   }
 
@@ -777,7 +814,10 @@ export class ColorProfileService {
   /**
    * Convert ImageData to working color space
    */
-  convertImageToWorkingSpace(imageData: ImageData, sourceSpace: ColorSpace): ImageData {
+  convertImageToWorkingSpace(
+    imageData: ImageData,
+    sourceSpace: ColorSpace,
+  ): ImageData {
     if (sourceSpace === this.settings.workingColorSpace) return imageData;
 
     const data = imageData.data;
@@ -790,7 +830,7 @@ export class ColorProfileService {
       result[i] = Math.round(converted[0] * 255);
       result[i + 1] = Math.round(converted[1] * 255);
       result[i + 2] = Math.round(converted[2] * 255);
-      result[i + 3] = data[i + 3];  // Preserve alpha
+      result[i + 3] = data[i + 3]; // Preserve alpha
     }
 
     return new ImageData(result, imageData.width, imageData.height);
@@ -800,7 +840,7 @@ export class ColorProfileService {
    * Convert ImageData for export
    */
   convertImageForExport(imageData: ImageData): ImageData {
-    if (this.settings.exportColorSpace === 'source') return imageData;
+    if (this.settings.exportColorSpace === "source") return imageData;
 
     const data = imageData.data;
     const result = new Uint8ClampedArray(data.length);
@@ -832,7 +872,9 @@ export function getColorProfileService(): ColorProfileService {
   return serviceInstance;
 }
 
-export function initializeColorManagement(settings?: Partial<ColorSettings>): ColorProfileService {
+export function initializeColorManagement(
+  settings?: Partial<ColorSettings>,
+): ColorProfileService {
   serviceInstance = new ColorProfileService(settings);
   return serviceInstance;
 }

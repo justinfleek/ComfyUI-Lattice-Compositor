@@ -108,54 +108,64 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import type { Layer, MatteLayerData } from '@/types/project';
-import { ScrubableNumber } from '@/components/controls';
+import { computed } from "vue";
+import { useCompositorStore } from "@/stores/compositorStore";
+import type { Layer, MatteLayerData } from "@/types/project";
 
 const props = defineProps<{
   layer: Layer;
 }>();
 
-const emit = defineEmits<{
-  (e: 'update', data: Partial<MatteLayerData>): void;
-}>();
+const emit =
+  defineEmits<(e: "update", data: Partial<MatteLayerData>) => void>();
 
 const store = useCompositorStore();
 
 const matteData = computed(() => props.layer.data as MatteLayerData);
 
 // Get layers that can be matte sources
-const sourceLayers = computed(() => {
-  return store.layers.filter(l =>
-    l.id !== props.layer.id &&
-    ['image', 'video', 'solid', 'text', 'shape', 'spline'].includes(l.type)
+const _sourceLayers = computed(() => {
+  return store.layers.filter(
+    (l) =>
+      l.id !== props.layer.id &&
+      ["image", "video", "solid", "text", "shape", "spline"].includes(l.type),
   );
 });
 
-const previewModes = [
-  { value: 'matte', label: 'Matte', description: 'View matte as grayscale' },
-  { value: 'composite', label: 'Result', description: 'View composited result' },
-  { value: 'overlay', label: 'Overlay', description: 'View matte overlaid on source' },
+const _previewModes = [
+  { value: "matte", label: "Matte", description: "View matte as grayscale" },
+  {
+    value: "composite",
+    label: "Result",
+    description: "View composited result",
+  },
+  {
+    value: "overlay",
+    label: "Overlay",
+    description: "View matte overlaid on source",
+  },
 ] as const;
 
-function updateData<K extends keyof MatteLayerData>(key: K, value: MatteLayerData[K]) {
-  emit('update', { [key]: value } as Partial<MatteLayerData>);
+function updateData<K extends keyof MatteLayerData>(
+  key: K,
+  value: MatteLayerData[K],
+) {
+  emit("update", { [key]: value } as Partial<MatteLayerData>);
 }
 
-function resetToDefaults() {
-  emit('update', {
-    matteType: 'luminance',
+function _resetToDefaults() {
+  emit("update", {
+    matteType: "luminance",
     invert: false,
     threshold: 0.5,
     feather: 0,
     expansion: 0,
-    previewMode: 'matte'
+    previewMode: "matte",
   });
 }
 
-function invertMatte() {
-  updateData('invert', !matteData.value.invert);
+function _invertMatte() {
+  updateData("invert", !matteData.value.invert);
 }
 </script>
 

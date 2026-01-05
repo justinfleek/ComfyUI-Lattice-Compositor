@@ -10,37 +10,45 @@
 
 /** Asset types supported by the compositor */
 export type AssetType =
-  | 'depth_map'     // Depth map image
-  | 'image'         // Standard image (PNG, JPG, WebP)
-  | 'video'         // Video file (MP4, WebM)
-  | 'audio'         // Audio file (MP3, WAV, OGG)
-  | 'model'         // 3D model (GLTF, OBJ, FBX, USD)
-  | 'pointcloud'    // Point cloud (PLY, PCD, LAS)
-  | 'texture'       // PBR texture map
-  | 'material'      // Material definition (with texture refs)
-  | 'hdri'          // Environment map (HDR, EXR)
-  | 'svg'           // Vector graphic (for extrusion)
-  | 'sprite'        // Single image for particles (no grid)
-  | 'spritesheet'   // Sprite sheet for particles (grid of frames)
-  | 'lut';          // Color lookup table
+  | "depth_map" // Depth map image
+  | "image" // Standard image (PNG, JPG, WebP)
+  | "video" // Video file (MP4, WebM)
+  | "audio" // Audio file (MP3, WAV, OGG)
+  | "model" // 3D model (GLTF, OBJ, FBX, USD)
+  | "pointcloud" // Point cloud (PLY, PCD, LAS)
+  | "texture" // PBR texture map
+  | "material" // Material definition (with texture refs)
+  | "hdri" // Environment map (HDR, EXR)
+  | "svg" // Vector graphic (for extrusion)
+  | "sprite" // Single image for particles (no grid)
+  | "spritesheet" // Sprite sheet for particles (grid of frames)
+  | "lut"; // Color lookup table
 
 /** PBR texture map types */
 export type TextureMapType =
-  | 'albedo'        // Base color / diffuse
-  | 'normal'        // Normal map
-  | 'roughness'     // Roughness map
-  | 'metalness'     // Metalness map
-  | 'ao'            // Ambient occlusion
-  | 'emissive'      // Emissive map
-  | 'height'        // Height/displacement map
-  | 'opacity'       // Alpha/opacity map
-  | 'specular';     // Specular map (for non-PBR workflows)
+  | "albedo" // Base color / diffuse
+  | "normal" // Normal map
+  | "roughness" // Roughness map
+  | "metalness" // Metalness map
+  | "ao" // Ambient occlusion
+  | "emissive" // Emissive map
+  | "height" // Height/displacement map
+  | "opacity" // Alpha/opacity map
+  | "specular"; // Specular map (for non-PBR workflows)
 
 /** 3D model formats */
-export type ModelFormat = 'gltf' | 'glb' | 'obj' | 'fbx' | 'usd' | 'usda' | 'usdc' | 'usdz';
+export type ModelFormat =
+  | "gltf"
+  | "glb"
+  | "obj"
+  | "fbx"
+  | "usd"
+  | "usda"
+  | "usdc"
+  | "usdz";
 
 /** Point cloud formats */
-export type PointCloudFormat = 'ply' | 'pcd' | 'las' | 'laz' | 'xyz' | 'pts';
+export type PointCloudFormat = "ply" | "pcd" | "las" | "laz" | "xyz" | "pts";
 
 /** Model bounding box */
 export interface ModelBoundingBox {
@@ -57,25 +65,25 @@ export interface ModelBoundingBox {
 export interface AssetReference {
   id: string;
   type: AssetType;
-  source: 'comfyui_node' | 'file' | 'generated' | 'url';
+  source: "comfyui_node" | "file" | "generated" | "url";
   nodeId?: string;
   width: number;
   height: number;
-  data: string;       // Base64 or URL - always required for valid assets
-  filename?: string;  // Original filename
+  data: string; // Base64 or URL - always required for valid assets
+  filename?: string; // Original filename
 
   // Video/Audio specific metadata
-  frameCount?: number;    // Total frames in video
-  duration?: number;      // Duration in seconds
-  fps?: number;           // Source FPS (for video)
-  hasAudio?: boolean;     // Video has audio track
+  frameCount?: number; // Total frames in video
+  duration?: number; // Duration in seconds
+  fps?: number; // Source FPS (for video)
+  hasAudio?: boolean; // Video has audio track
   audioChannels?: number; // 1=mono, 2=stereo
-  sampleRate?: number;    // Audio sample rate
+  sampleRate?: number; // Audio sample rate
 
   // 3D Model metadata
   modelFormat?: ModelFormat;
   modelBoundingBox?: ModelBoundingBox;
-  modelAnimations?: string[];   // Animation clip names
+  modelAnimations?: string[]; // Animation clip names
   modelMeshCount?: number;
   modelVertexCount?: number;
 
@@ -85,18 +93,18 @@ export interface AssetReference {
 
   // Texture metadata
   textureMapType?: TextureMapType;
-  textureColorSpace?: 'srgb' | 'linear';
+  textureColorSpace?: "srgb" | "linear";
 
   // Material definition (references other texture assets)
   materialMaps?: {
-    albedo?: string;      // Asset ID for albedo texture
-    normal?: string;      // Asset ID for normal map
-    roughness?: string;   // Asset ID for roughness map
-    metalness?: string;   // Asset ID for metalness map
-    ao?: string;          // Asset ID for AO map
-    emissive?: string;    // Asset ID for emissive map
-    height?: string;      // Asset ID for height map
-    opacity?: string;     // Asset ID for opacity map
+    albedo?: string; // Asset ID for albedo texture
+    normal?: string; // Asset ID for normal map
+    roughness?: string; // Asset ID for roughness map
+    metalness?: string; // Asset ID for metalness map
+    ao?: string; // Asset ID for AO map
+    emissive?: string; // Asset ID for emissive map
+    height?: string; // Asset ID for height map
+    opacity?: string; // Asset ID for opacity map
   };
 
   // HDRI metadata
@@ -104,7 +112,7 @@ export interface AssetReference {
   hdriRotation?: number;
 
   // SVG metadata (for extrusion)
-  svgPaths?: number;      // Number of paths in SVG
+  svgPaths?: number; // Number of paths in SVG
   svgViewBox?: { x: number; y: number; width: number; height: number };
 
   // Sprite sheet metadata
@@ -132,10 +140,10 @@ export interface AssetReference {
  */
 export interface DataAssetReference {
   id: string;
-  name: string;                    // Original filename
-  type: 'json' | 'csv' | 'tsv' | 'mgjson';
-  rawContent: string;              // Original file content
-  lastModified: number;            // Timestamp
+  name: string; // Original filename
+  type: "json" | "csv" | "tsv" | "mgjson";
+  rawContent: string; // Original file content
+  lastModified: number; // Timestamp
 
   // For JSON: the parsed data
   sourceData?: any;

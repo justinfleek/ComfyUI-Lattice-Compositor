@@ -31,73 +31,70 @@ export const easings = {
   easeInQuad: (t: number): number => t * t,
   easeOutQuad: (t: number): number => 1 - (1 - t) * (1 - t),
   easeInOutQuad: (t: number): number =>
-    t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2,
+    t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2,
 
   // Cubic (power of 3)
   easeInCubic: (t: number): number => t * t * t,
-  easeOutCubic: (t: number): number => 1 - Math.pow(1 - t, 3),
+  easeOutCubic: (t: number): number => 1 - (1 - t) ** 3,
   easeInOutCubic: (t: number): number =>
-    t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2,
+    t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2,
 
   // Quart (power of 4)
   easeInQuart: (t: number): number => t * t * t * t,
-  easeOutQuart: (t: number): number => 1 - Math.pow(1 - t, 4),
+  easeOutQuart: (t: number): number => 1 - (1 - t) ** 4,
   easeInOutQuart: (t: number): number =>
-    t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2,
+    t < 0.5 ? 8 * t * t * t * t : 1 - (-2 * t + 2) ** 4 / 2,
 
   // Quint (power of 5)
   easeInQuint: (t: number): number => t * t * t * t * t,
-  easeOutQuint: (t: number): number => 1 - Math.pow(1 - t, 5),
+  easeOutQuint: (t: number): number => 1 - (1 - t) ** 5,
   easeInOutQuint: (t: number): number =>
-    t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 * t + 2, 5) / 2,
+    t < 0.5 ? 16 * t * t * t * t * t : 1 - (-2 * t + 2) ** 5 / 2,
 
   // Expo (exponential)
-  easeInExpo: (t: number): number =>
-    t === 0 ? 0 : Math.pow(2, 10 * t - 10),
-  easeOutExpo: (t: number): number =>
-    t === 1 ? 1 : 1 - Math.pow(2, -10 * t),
+  easeInExpo: (t: number): number => (t === 0 ? 0 : 2 ** (10 * t - 10)),
+  easeOutExpo: (t: number): number => (t === 1 ? 1 : 1 - 2 ** (-10 * t)),
   easeInOutExpo: (t: number): number => {
     if (t === 0) return 0;
     if (t === 1) return 1;
-    if (t < 0.5) return Math.pow(2, 20 * t - 10) / 2;
-    return (2 - Math.pow(2, -20 * t + 10)) / 2;
+    if (t < 0.5) return 2 ** (20 * t - 10) / 2;
+    return (2 - 2 ** (-20 * t + 10)) / 2;
   },
 
   // Circ (circular)
-  easeInCirc: (t: number): number => 1 - Math.sqrt(1 - Math.pow(t, 2)),
-  easeOutCirc: (t: number): number => Math.sqrt(1 - Math.pow(t - 1, 2)),
+  easeInCirc: (t: number): number => 1 - Math.sqrt(1 - t ** 2),
+  easeOutCirc: (t: number): number => Math.sqrt(1 - (t - 1) ** 2),
   easeInOutCirc: (t: number): number =>
     t < 0.5
-      ? (1 - Math.sqrt(1 - Math.pow(2 * t, 2))) / 2
-      : (Math.sqrt(1 - Math.pow(-2 * t + 2, 2)) + 1) / 2,
+      ? (1 - Math.sqrt(1 - (2 * t) ** 2)) / 2
+      : (Math.sqrt(1 - (-2 * t + 2) ** 2) + 1) / 2,
 
   // Back (overshoot)
   easeInBack: (t: number): number => c3 * t * t * t - c1 * t * t,
-  easeOutBack: (t: number): number =>
-    1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2),
+  easeOutBack: (t: number): number => 1 + c3 * (t - 1) ** 3 + c1 * (t - 1) ** 2,
   easeInOutBack: (t: number): number =>
     t < 0.5
-      ? (Math.pow(2 * t, 2) * ((c2 + 1) * 2 * t - c2)) / 2
-      : (Math.pow(2 * t - 2, 2) * ((c2 + 1) * (t * 2 - 2) + c2) + 2) / 2,
+      ? ((2 * t) ** 2 * ((c2 + 1) * 2 * t - c2)) / 2
+      : ((2 * t - 2) ** 2 * ((c2 + 1) * (t * 2 - 2) + c2) + 2) / 2,
 
   // Elastic
   easeInElastic: (t: number): number => {
     if (t === 0) return 0;
     if (t === 1) return 1;
-    return -Math.pow(2, 10 * t - 10) * Math.sin((t * 10 - 10.75) * c4);
+    return -(2 ** (10 * t - 10)) * Math.sin((t * 10 - 10.75) * c4);
   },
   easeOutElastic: (t: number): number => {
     if (t === 0) return 0;
     if (t === 1) return 1;
-    return Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
+    return 2 ** (-10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
   },
   easeInOutElastic: (t: number): number => {
     if (t === 0) return 0;
     if (t === 1) return 1;
     if (t < 0.5) {
-      return -(Math.pow(2, 20 * t - 10) * Math.sin((20 * t - 11.125) * c5)) / 2;
+      return -(2 ** (20 * t - 10) * Math.sin((20 * t - 11.125) * c5)) / 2;
     }
-    return (Math.pow(2, -20 * t + 10) * Math.sin((20 * t - 11.125) * c5)) / 2 + 1;
+    return (2 ** (-20 * t + 10) * Math.sin((20 * t - 11.125) * c5)) / 2 + 1;
   },
 
   // Bounce
@@ -135,17 +132,21 @@ export const easingNames: EasingName[] = Object.keys(easings) as EasingName[];
  * Grouped easing names for organized UI display
  */
 export const easingGroups = {
-  'Linear': ['linear'] as EasingName[],
-  'Sine': ['easeInSine', 'easeOutSine', 'easeInOutSine'] as EasingName[],
-  'Quad': ['easeInQuad', 'easeOutQuad', 'easeInOutQuad'] as EasingName[],
-  'Cubic': ['easeInCubic', 'easeOutCubic', 'easeInOutCubic'] as EasingName[],
-  'Quart': ['easeInQuart', 'easeOutQuart', 'easeInOutQuart'] as EasingName[],
-  'Quint': ['easeInQuint', 'easeOutQuint', 'easeInOutQuint'] as EasingName[],
-  'Expo': ['easeInExpo', 'easeOutExpo', 'easeInOutExpo'] as EasingName[],
-  'Circ': ['easeInCirc', 'easeOutCirc', 'easeInOutCirc'] as EasingName[],
-  'Back': ['easeInBack', 'easeOutBack', 'easeInOutBack'] as EasingName[],
-  'Elastic': ['easeInElastic', 'easeOutElastic', 'easeInOutElastic'] as EasingName[],
-  'Bounce': ['easeInBounce', 'easeOutBounce', 'easeInOutBounce'] as EasingName[],
+  Linear: ["linear"] as EasingName[],
+  Sine: ["easeInSine", "easeOutSine", "easeInOutSine"] as EasingName[],
+  Quad: ["easeInQuad", "easeOutQuad", "easeInOutQuad"] as EasingName[],
+  Cubic: ["easeInCubic", "easeOutCubic", "easeInOutCubic"] as EasingName[],
+  Quart: ["easeInQuart", "easeOutQuart", "easeInOutQuart"] as EasingName[],
+  Quint: ["easeInQuint", "easeOutQuint", "easeInOutQuint"] as EasingName[],
+  Expo: ["easeInExpo", "easeOutExpo", "easeInOutExpo"] as EasingName[],
+  Circ: ["easeInCirc", "easeOutCirc", "easeInOutCirc"] as EasingName[],
+  Back: ["easeInBack", "easeOutBack", "easeInOutBack"] as EasingName[],
+  Elastic: [
+    "easeInElastic",
+    "easeOutElastic",
+    "easeInOutElastic",
+  ] as EasingName[],
+  Bounce: ["easeInBounce", "easeOutBounce", "easeInOutBounce"] as EasingName[],
 } as const;
 
 /**
@@ -166,7 +167,7 @@ export function getEasing(name: string): EasingFunction {
  * @param easingName - Name of the easing function
  * @returns Eased value (0-1)
  */
-export function applyEasing(t: number, easingName: string = 'linear'): number {
+export function applyEasing(t: number, easingName: string = "linear"): number {
   const easingFn = getEasing(easingName);
   return easingFn(Math.max(0, Math.min(1, t)));
 }
@@ -183,7 +184,7 @@ export function interpolateWithEasing(
   start: number,
   end: number,
   t: number,
-  easingName: string = 'linear'
+  easingName: string = "linear",
 ): number {
   const easedT = applyEasing(t, easingName);
   return start + (end - start) * easedT;

@@ -10,76 +10,102 @@
  */
 export type BlendMode =
   // Normal
-  | 'normal'
-  | 'dissolve'
+  | "normal"
+  | "dissolve"
   // Darken
-  | 'darken'
-  | 'multiply'
-  | 'color-burn'
-  | 'linear-burn'
-  | 'darker-color'
+  | "darken"
+  | "multiply"
+  | "color-burn"
+  | "linear-burn"
+  | "darker-color"
   // Lighten
-  | 'lighten'
-  | 'screen'
-  | 'color-dodge'
-  | 'linear-dodge'
-  | 'lighter-color'
-  | 'add'
+  | "lighten"
+  | "screen"
+  | "color-dodge"
+  | "linear-dodge"
+  | "lighter-color"
+  | "add"
   // Contrast
-  | 'overlay'
-  | 'soft-light'
-  | 'hard-light'
-  | 'vivid-light'
-  | 'linear-light'
-  | 'pin-light'
-  | 'hard-mix'
+  | "overlay"
+  | "soft-light"
+  | "hard-light"
+  | "vivid-light"
+  | "linear-light"
+  | "pin-light"
+  | "hard-mix"
   // Inversion
-  | 'difference'
-  | 'exclusion'
-  | 'subtract'
-  | 'divide'
+  | "difference"
+  | "exclusion"
+  | "subtract"
+  | "divide"
   // Component (HSL)
-  | 'hue'
-  | 'saturation'
-  | 'color'
-  | 'luminosity'
+  | "hue"
+  | "saturation"
+  | "color"
+  | "luminosity"
   // AE-specific
-  | 'stencil-alpha'
-  | 'stencil-luma'
-  | 'silhouette-alpha'
-  | 'silhouette-luma'
-  | 'alpha-add'
-  | 'luminescent-premul';
+  | "stencil-alpha"
+  | "stencil-luma"
+  | "silhouette-alpha"
+  | "silhouette-luma"
+  | "alpha-add"
+  | "luminescent-premul";
 
 /**
  * Blend mode categories for UI organization
  */
 export const BLEND_MODE_CATEGORIES = {
-  normal: ['normal', 'dissolve'],
-  darken: ['darken', 'multiply', 'color-burn', 'linear-burn', 'darker-color'],
-  lighten: ['lighten', 'screen', 'color-dodge', 'linear-dodge', 'lighter-color', 'add'],
-  contrast: ['overlay', 'soft-light', 'hard-light', 'vivid-light', 'linear-light', 'pin-light', 'hard-mix'],
-  inversion: ['difference', 'exclusion', 'subtract', 'divide'],
-  component: ['hue', 'saturation', 'color', 'luminosity'],
-  utility: ['stencil-alpha', 'stencil-luma', 'silhouette-alpha', 'silhouette-luma', 'alpha-add', 'luminescent-premul']
+  normal: ["normal", "dissolve"],
+  darken: ["darken", "multiply", "color-burn", "linear-burn", "darker-color"],
+  lighten: [
+    "lighten",
+    "screen",
+    "color-dodge",
+    "linear-dodge",
+    "lighter-color",
+    "add",
+  ],
+  contrast: [
+    "overlay",
+    "soft-light",
+    "hard-light",
+    "vivid-light",
+    "linear-light",
+    "pin-light",
+    "hard-mix",
+  ],
+  inversion: ["difference", "exclusion", "subtract", "divide"],
+  component: ["hue", "saturation", "color", "luminosity"],
+  utility: [
+    "stencil-alpha",
+    "stencil-luma",
+    "silhouette-alpha",
+    "silhouette-luma",
+    "alpha-add",
+    "luminescent-premul",
+  ],
 } as const;
 
 /**
  * Get blend mode category
  */
-export function getBlendModeCategory(mode: BlendMode): keyof typeof BLEND_MODE_CATEGORIES {
+export function getBlendModeCategory(
+  mode: BlendMode,
+): keyof typeof BLEND_MODE_CATEGORIES {
   for (const [category, modes] of Object.entries(BLEND_MODE_CATEGORIES)) {
     if ((modes as readonly string[]).includes(mode)) {
       return category as keyof typeof BLEND_MODE_CATEGORIES;
     }
   }
-  return 'normal';
+  return "normal";
 }
 
 /**
  * Get all blend modes in a category
  */
-export function getBlendModesInCategory(category: keyof typeof BLEND_MODE_CATEGORIES): BlendMode[] {
+export function getBlendModesInCategory(
+  category: keyof typeof BLEND_MODE_CATEGORIES,
+): BlendMode[] {
   return [...BLEND_MODE_CATEGORIES[category]] as BlendMode[];
 }
 

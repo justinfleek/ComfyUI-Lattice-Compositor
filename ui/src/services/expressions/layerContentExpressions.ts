@@ -5,8 +5,8 @@
  * Includes sourceRectAtTime, textSource, and effectValue.
  */
 
-import { measureTextLayerRect } from '../textMeasurement';
-import type { SourceRect, TextSourceInfo } from './types';
+import { measureTextLayerRect } from "../textMeasurement";
+import type { SourceRect, TextSourceInfo } from "./types";
 
 // ============================================================
 // SOURCE RECT AT TIME
@@ -30,29 +30,29 @@ export function sourceRectAtTime(
   layerData: any,
   layerType: string,
   _time: number = 0,
-  includeExtents: boolean = false
+  includeExtents: boolean = false,
 ): SourceRect {
   const defaultRect: SourceRect = {
     top: 0,
     left: 0,
     width: 100,
-    height: 100
+    height: 100,
   };
 
   if (!layerData) return defaultRect;
 
   switch (layerType) {
-    case 'text':
+    case "text":
       return getTextSourceRect(layerData, includeExtents);
 
-    case 'shape':
+    case "shape":
       return getShapeSourceRect(layerData, includeExtents);
 
-    case 'solid':
+    case "solid":
       return getSolidSourceRect(layerData);
 
-    case 'image':
-    case 'video':
+    case "image":
+    case "video":
       return getMediaSourceRect(layerData);
 
     default:
@@ -71,7 +71,7 @@ function getTextSourceRect(data: any, includeExtents: boolean): SourceRect {
     top: rect.top,
     left: rect.left,
     width: rect.width,
-    height: rect.height
+    height: rect.height,
   };
 }
 
@@ -79,8 +79,10 @@ function getTextSourceRect(data: any, includeExtents: boolean): SourceRect {
  * Calculate source rect for shape layers
  */
 function getShapeSourceRect(data: any, includeExtents: boolean): SourceRect {
-  let minX = Infinity, minY = Infinity;
-  let maxX = -Infinity, maxY = -Infinity;
+  let minX = Infinity,
+    minY = Infinity;
+  let maxX = -Infinity,
+    maxY = -Infinity;
 
   const paths = data.paths || [];
 
@@ -100,7 +102,7 @@ function getShapeSourceRect(data: any, includeExtents: boolean): SourceRect {
     });
   });
 
-  if (!isFinite(minX)) {
+  if (!Number.isFinite(minX)) {
     return { top: 0, left: 0, width: 100, height: 100 };
   }
 
@@ -119,7 +121,7 @@ function getShapeSourceRect(data: any, includeExtents: boolean): SourceRect {
     top: minY,
     left: minX,
     width,
-    height
+    height,
   };
 }
 
@@ -134,7 +136,7 @@ function getSolidSourceRect(data: any): SourceRect {
     top: -height / 2,
     left: -width / 2,
     width,
-    height
+    height,
   };
 }
 
@@ -149,7 +151,7 @@ function getMediaSourceRect(data: any): SourceRect {
     top: -height / 2,
     left: -width / 2,
     width,
-    height
+    height,
   };
 }
 
@@ -163,15 +165,15 @@ function getMediaSourceRect(data: any): SourceRect {
  */
 export function textSource(layerData: any): TextSourceInfo {
   return {
-    text: layerData?.text || '',
+    text: layerData?.text || "",
     fontSize: layerData?.fontSize || 72,
-    fontFamily: layerData?.fontFamily || 'Arial',
-    fontStyle: layerData?.fontStyle || 'normal',
+    fontFamily: layerData?.fontFamily || "Arial",
+    fontStyle: layerData?.fontStyle || "normal",
     fillColor: layerData?.fill || { r: 1, g: 1, b: 1, a: 1 },
     strokeColor: layerData?.stroke || { r: 0, g: 0, b: 0, a: 1 },
     strokeWidth: layerData?.strokeWidth || 0,
     tracking: layerData?.letterSpacing || 0,
-    leading: layerData?.lineHeight || 1.2
+    leading: layerData?.lineHeight || 1.2,
   };
 }
 
@@ -197,14 +199,14 @@ export function effectValue(
   effects: any[] | undefined,
   effectName: string,
   parameterName: string,
-  _frame: number = 0
+  _frame: number = 0,
 ): any {
   if (!effects || effects.length === 0) return null;
 
   const effect = effects.find((e: any) => e.name === effectName);
   if (!effect) return null;
 
-  const paramKey = parameterName.toLowerCase().replace(/\s+/g, '_');
+  const paramKey = parameterName.toLowerCase().replace(/\s+/g, "_");
   const param = effect.parameters?.[paramKey];
 
   if (!param) return null;
@@ -221,12 +223,12 @@ export function effectValue(
  */
 export const layer = {
   sourceRectAtTime,
-  textSource
+  textSource,
 };
 
 /**
  * Effect access namespace for expressions
  */
 export const effect = {
-  value: effectValue
+  value: effectValue,
 };

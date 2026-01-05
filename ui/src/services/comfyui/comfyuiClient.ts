@@ -3,14 +3,14 @@
  * HTTP and WebSocket client for ComfyUI server communication
  */
 
-import { createLogger } from '@/utils/logger';
-import { secureUUID } from '@/utils/security';
 import type {
-  ComfyUIWorkflow,
-  ComfyUIPromptResult,
   ComfyUIHistoryEntry,
+  ComfyUIPromptResult,
+  ComfyUIWorkflow,
   GenerationProgress,
-} from '@/types/export';
+} from "@/types/export";
+import { createLogger } from "@/utils/logger";
+import { secureUUID } from "@/utils/security";
 
 // ============================================================================
 // Types
@@ -21,7 +21,7 @@ export interface ComfyUIClientConfig {
   clientId?: string;
 }
 
-const comfyLogger = createLogger('ComfyUI');
+const comfyLogger = createLogger("ComfyUI");
 
 export interface UploadResult {
   name: string;
@@ -63,13 +63,13 @@ export class ComfyUIClient {
   private messageHandlers: Map<string, (data: any) => void> = new Map();
 
   constructor(config: ComfyUIClientConfig) {
-    this.serverAddress = config.serverAddress.replace(/\/$/, '');
+    this.serverAddress = config.serverAddress.replace(/\/$/, "");
     this.clientId = config.clientId || this.generateClientId();
   }
 
   private generateClientId(): string {
     // Use cryptographically secure UUID generation
-    return 'lattice_' + secureUUID();
+    return `lattice_${secureUUID()}`;
   }
 
   // ============================================================================
@@ -81,10 +81,13 @@ export class ComfyUIClient {
    */
   async checkConnection(): Promise<boolean> {
     try {
-      const response = await fetch(`http://${this.serverAddress}/system_stats`, {
-        method: 'GET',
-        signal: AbortSignal.timeout(5000),
-      });
+      const response = await fetch(
+        `http://${this.serverAddress}/system_stats`,
+        {
+          method: "GET",
+          signal: AbortSignal.timeout(5000),
+        },
+      );
       return response.ok;
     } catch {
       return false;
@@ -123,20 +126,20 @@ export class ComfyUIClient {
   async uploadImage(
     imageData: Blob | File,
     filename: string,
-    type: 'input' | 'temp' = 'input',
+    type: "input" | "temp" = "input",
     subfolder?: string,
-    overwrite: boolean = true
+    overwrite: boolean = true,
   ): Promise<UploadResult> {
     const formData = new FormData();
-    formData.append('image', imageData, filename);
-    formData.append('type', type);
-    formData.append('overwrite', overwrite.toString());
+    formData.append("image", imageData, filename);
+    formData.append("type", type);
+    formData.append("overwrite", overwrite.toString());
     if (subfolder) {
-      formData.append('subfolder', subfolder);
+      formData.append("subfolder", subfolder);
     }
 
     const response = await fetch(`http://${this.serverAddress}/upload/image`, {
-      method: 'POST',
+      method: "POST",
       body: formData,
     });
 
@@ -154,15 +157,15 @@ export class ComfyUIClient {
   async uploadMask(
     maskData: Blob | File,
     filename: string,
-    originalRef: { filename: string; subfolder?: string; type?: string }
+    originalRef: { filename: string; subfolder?: string; type?: string },
   ): Promise<UploadResult> {
     const formData = new FormData();
-    formData.append('image', maskData, filename);
-    formData.append('original_ref', JSON.stringify(originalRef));
-    formData.append('type', 'input');
+    formData.append("image", maskData, filename);
+    formData.append("original_ref", JSON.stringify(originalRef));
+    formData.append("type", "input");
 
     const response = await fetch(`http://${this.serverAddress}/upload/mask`, {
-      method: 'POST',
+      method: "POST",
       body: formData,
     });
 
@@ -178,7 +181,7 @@ export class ComfyUIClient {
    */
   async queuePrompt(
     workflow: ComfyUIWorkflow,
-    extraData?: Record<string, any>
+    extraData?: Record<string, any>,
   ): Promise<ComfyUIPromptResult> {
     const payload = {
       prompt: workflow,
@@ -187,8 +190,8 @@ export class ComfyUIClient {
     };
 
     const response = await fetch(`http://${this.serverAddress}/prompt`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
 
@@ -203,7 +206,9 @@ export class ComfyUIClient {
   /**
    * Get execution history for a prompt
    */
-  async getHistory(promptId?: string): Promise<Record<string, ComfyUIHistoryEntry>> {
+  async getHistory(
+    promptId?: string,
+  ): Promise<Record<string, ComfyUIHistoryEntry>> {
     const url = promptId
       ? `http://${this.serverAddress}/history/${promptId}`
       : `http://${this.serverAddress}/history`;
@@ -222,8 +227,8 @@ export class ComfyUIClient {
    */
   async getOutput(
     filename: string,
-    subfolder: string = '',
-    type: 'output' | 'temp' | 'input' = 'output'
+    subfolder: string = "",
+    type: "output" | "temp" | "input" = "output",
   ): Promise<Blob> {
     const params = new URLSearchParams({
       filename,
@@ -245,8 +250,8 @@ export class ComfyUIClient {
    */
   async getOutputAsDataURL(
     filename: string,
-    subfolder: string = '',
-    type: 'output' | 'temp' | 'input' = 'output'
+    subfolder: string = "",
+    type: "output" | "temp" | "input" = "output",
   ): Promise<string> {
     const blob = await this.getOutput(filename, subfolder, type);
     return new Promise((resolve, reject) => {
@@ -262,7 +267,7 @@ export class ComfyUIClient {
    */
   async interrupt(): Promise<void> {
     const response = await fetch(`http://${this.serverAddress}/interrupt`, {
-      method: 'POST',
+      method: "POST",
     });
 
     if (!response.ok) {
@@ -275,8 +280,8 @@ export class ComfyUIClient {
    */
   async clearQueue(): Promise<void> {
     const response = await fetch(`http://${this.serverAddress}/queue`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ clear: true }),
     });
 
@@ -288,31 +293,38 @@ export class ComfyUIClient {
   /**
    * Delete item from queue
    */
-  async deleteFromQueue(deleteType: 'queue' | 'history', ids: string[]): Promise<void> {
+  async deleteFromQueue(
+    deleteType: "queue" | "history",
+    ids: string[],
+  ): Promise<void> {
     const response = await fetch(`http://${this.serverAddress}/${deleteType}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ delete: ids }),
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to delete from ${deleteType}: ${await response.text()}`);
+      throw new Error(
+        `Failed to delete from ${deleteType}: ${await response.text()}`,
+      );
     }
   }
 
   /**
    * Get available models
    */
-  async getModels(type: 'checkpoints' | 'loras' | 'vae' | 'controlnet'): Promise<string[]> {
+  async getModels(
+    type: "checkpoints" | "loras" | "vae" | "controlnet",
+  ): Promise<string[]> {
     const folderMap: Record<string, string> = {
-      checkpoints: 'checkpoints',
-      loras: 'loras',
-      vae: 'vae',
-      controlnet: 'controlnet',
+      checkpoints: "checkpoints",
+      loras: "loras",
+      vae: "vae",
+      controlnet: "controlnet",
     };
 
     const response = await fetch(
-      `http://${this.serverAddress}/models/${folderMap[type]}`
+      `http://${this.serverAddress}/models/${folderMap[type]}`,
     );
 
     if (!response.ok) {
@@ -326,7 +338,7 @@ export class ComfyUIClient {
    * Get available ControlNet models
    */
   async getControlNetModels(): Promise<string[]> {
-    return this.getModels('controlnet');
+    return this.getModels("controlnet");
   }
 
   // ============================================================================
@@ -343,17 +355,17 @@ export class ComfyUIClient {
       this.ws = new WebSocket(wsUrl);
 
       this.ws.onopen = () => {
-        comfyLogger.debug('WebSocket connected');
+        comfyLogger.debug("WebSocket connected");
         resolve();
       };
 
       this.ws.onerror = (event) => {
-        comfyLogger.error('WebSocket error:', event);
-        reject(new Error('WebSocket connection failed'));
+        comfyLogger.error("WebSocket error:", event);
+        reject(new Error("WebSocket connection failed"));
       };
 
       this.ws.onclose = () => {
-        comfyLogger.debug('WebSocket disconnected');
+        comfyLogger.debug("WebSocket disconnected");
         this.ws = null;
       };
 
@@ -362,7 +374,7 @@ export class ComfyUIClient {
           const data = JSON.parse(event.data);
           this.handleWebSocketMessage(data);
         } catch (e) {
-          comfyLogger.error('Failed to parse WebSocket message:', e);
+          comfyLogger.error("Failed to parse WebSocket message:", e);
         }
       };
     });
@@ -385,7 +397,7 @@ export class ComfyUIClient {
    */
   destroy(): void {
     this.disconnectWebSocket();
-    comfyLogger.debug('ComfyUI client destroyed');
+    comfyLogger.debug("ComfyUI client destroyed");
   }
 
   /**
@@ -419,7 +431,7 @@ export class ComfyUIClient {
     }
 
     // Also call 'all' handler if registered
-    const allHandler = this.messageHandlers.get('all');
+    const allHandler = this.messageHandlers.get("all");
     if (allHandler) {
       allHandler(data);
     }
@@ -435,15 +447,15 @@ export class ComfyUIClient {
   async uploadImageData(
     imageData: ImageData,
     filename: string,
-    subfolder?: string
+    subfolder?: string,
   ): Promise<UploadResult> {
     // Convert ImageData to PNG blob using canvas
     const canvas = new OffscreenCanvas(imageData.width, imageData.height);
-    const ctx = canvas.getContext('2d')!;
+    const ctx = canvas.getContext("2d")!;
     ctx.putImageData(imageData, 0, 0);
-    const blob = await canvas.convertToBlob({ type: 'image/png' });
+    const blob = await canvas.convertToBlob({ type: "image/png" });
 
-    return this.uploadImage(blob, filename, 'input', subfolder);
+    return this.uploadImage(blob, filename, "input", subfolder);
   }
 
   /**
@@ -452,22 +464,22 @@ export class ComfyUIClient {
   async uploadCanvas(
     canvas: HTMLCanvasElement | OffscreenCanvas,
     filename: string,
-    subfolder?: string
+    subfolder?: string,
   ): Promise<UploadResult> {
     let blob: Blob;
 
     if (canvas instanceof OffscreenCanvas) {
-      blob = await canvas.convertToBlob({ type: 'image/png' });
+      blob = await canvas.convertToBlob({ type: "image/png" });
     } else {
       blob = await new Promise<Blob>((resolve, reject) => {
         canvas.toBlob((b) => {
           if (b) resolve(b);
-          else reject(new Error('Failed to convert canvas to blob'));
-        }, 'image/png');
+          else reject(new Error("Failed to convert canvas to blob"));
+        }, "image/png");
       });
     }
 
-    return this.uploadImage(blob, filename, 'input', subfolder);
+    return this.uploadImage(blob, filename, "input", subfolder);
   }
 
   /**
@@ -476,7 +488,7 @@ export class ComfyUIClient {
   async waitForPrompt(
     promptId: string,
     onProgress?: (progress: GenerationProgress) => void,
-    timeoutMs: number = 300000 // 5 minutes default
+    timeoutMs: number = 300000, // 5 minutes default
   ): Promise<ComfyUIHistoryEntry> {
     const startTime = Date.now();
 
@@ -489,24 +501,24 @@ export class ComfyUIClient {
       let completed = false;
 
       const cleanup = () => {
-        this.offMessage('progress');
-        this.offMessage('executing');
-        this.offMessage('executed');
-        this.offMessage('execution_error');
+        this.offMessage("progress");
+        this.offMessage("executing");
+        this.offMessage("executed");
+        this.offMessage("execution_error");
       };
 
       const checkTimeout = () => {
         if (Date.now() - startTime > timeoutMs) {
           cleanup();
-          reject(new Error('Prompt execution timed out'));
+          reject(new Error("Prompt execution timed out"));
         }
       };
 
       // Progress updates
-      this.onMessage('progress', (data) => {
+      this.onMessage("progress", (data) => {
         checkTimeout();
         onProgress?.({
-          status: 'executing',
+          status: "executing",
           currentStep: data.data.value,
           totalSteps: data.data.max,
           percentage: (data.data.value / data.data.max) * 100,
@@ -514,11 +526,11 @@ export class ComfyUIClient {
       });
 
       // Node execution
-      this.onMessage('executing', (data) => {
+      this.onMessage("executing", (data) => {
         checkTimeout();
         if (data.data.prompt_id === promptId) {
           onProgress?.({
-            status: 'executing',
+            status: "executing",
             currentNode: data.data.node,
             percentage: 10, // Approximate
           });
@@ -526,13 +538,13 @@ export class ComfyUIClient {
       });
 
       // Completion
-      this.onMessage('executed', async (data) => {
+      this.onMessage("executed", async (data) => {
         if (data.data.prompt_id === promptId && !completed) {
           completed = true;
           cleanup();
 
           onProgress?.({
-            status: 'completed',
+            status: "completed",
             percentage: 100,
           });
 
@@ -543,16 +555,16 @@ export class ComfyUIClient {
       });
 
       // Error
-      this.onMessage('execution_error', (data) => {
+      this.onMessage("execution_error", (data) => {
         if (data.data.prompt_id === promptId) {
           cleanup();
 
           onProgress?.({
-            status: 'error',
+            status: "error",
             percentage: 0,
           });
 
-          reject(new Error(data.data.exception_message || 'Execution failed'));
+          reject(new Error(data.data.exception_message || "Execution failed"));
         }
       });
     });
@@ -563,7 +575,7 @@ export class ComfyUIClient {
    */
   async executeWorkflow(
     workflow: ComfyUIWorkflow,
-    onProgress?: (progress: GenerationProgress) => void
+    onProgress?: (progress: GenerationProgress) => void,
   ): Promise<{
     promptId: string;
     history: ComfyUIHistoryEntry;
@@ -573,7 +585,7 @@ export class ComfyUIClient {
     const { prompt_id } = await this.queuePrompt(workflow);
 
     onProgress?.({
-      status: 'queued',
+      status: "queued",
       percentage: 0,
     });
 
@@ -581,7 +593,11 @@ export class ComfyUIClient {
     const history = await this.waitForPrompt(prompt_id, onProgress);
 
     // Collect outputs
-    const outputs: Array<{ filename: string; subfolder: string; type: string }> = [];
+    const outputs: Array<{
+      filename: string;
+      subfolder: string;
+      type: string;
+    }> = [];
 
     for (const nodeOutputs of Object.values(history.outputs)) {
       if (nodeOutputs.images) {
@@ -619,9 +635,12 @@ export class ComfyUIClient {
 let defaultClient: ComfyUIClient | null = null;
 
 export function getComfyUIClient(serverAddress?: string): ComfyUIClient {
-  if (!defaultClient || (serverAddress && serverAddress !== defaultClient.server)) {
+  if (
+    !defaultClient ||
+    (serverAddress && serverAddress !== defaultClient.server)
+  ) {
     defaultClient = new ComfyUIClient({
-      serverAddress: serverAddress || '127.0.0.1:8188',
+      serverAddress: serverAddress || "127.0.0.1:8188",
     });
   }
   return defaultClient;

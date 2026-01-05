@@ -119,9 +119,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import type { AnimatableProperty, Keyframe } from '@/types/project';
+import { computed, ref } from "vue";
+import { useCompositorStore } from "@/stores/compositorStore";
+import type { AnimatableProperty, Keyframe } from "@/types/project";
 
 interface Props {
   layerId: string | null;
@@ -138,15 +138,22 @@ interface Props {
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-  (e: 'keyframeSelected', keyframeId: string, addToSelection: boolean): void;
-  (e: 'goToFrame', frame: number): void;
-  (e: 'tangentUpdated', keyframeId: string, tangentType: 'in' | 'out', value: { x: number; y: number }): void;
+  (e: "keyframeSelected", keyframeId: string, addToSelection: boolean): void;
+  (e: "goToFrame", frame: number): void;
+  (
+    e: "tangentUpdated",
+    keyframeId: string,
+    tangentType: "in" | "out",
+    value: { x: number; y: number },
+  ): void;
 }>();
 
 const store = useCompositorStore();
 
 // Drag state
-const draggingHandle = ref<{ keyframeId: string; type: 'in' | 'out' } | null>(null);
+const draggingHandle = ref<{ keyframeId: string; type: "in" | "out" } | null>(
+  null,
+);
 const dragStart = ref<{ x: number; y: number } | null>(null);
 
 // Selected keyframes (from store or local state)
@@ -158,15 +165,17 @@ const selectedKeyframeIds = computed(() => {
 type PositionValue = { x: number; y: number; z?: number };
 
 // Get position property from layer
-const positionProperty = computed((): AnimatableProperty<PositionValue> | null => {
-  if (!props.layerId) return null;
-  const layer = store.getLayerById?.(props.layerId);
-  if (!layer?.transform?.position) return null;
-  return layer.transform.position;
-});
+const positionProperty = computed(
+  (): AnimatableProperty<PositionValue> | null => {
+    if (!props.layerId) return null;
+    const layer = store.getLayerById?.(props.layerId);
+    if (!layer?.transform?.position) return null;
+    return layer.transform.position;
+  },
+);
 
 // Check if layer has position keyframes
-const hasPositionKeyframes = computed(() => {
+const _hasPositionKeyframes = computed(() => {
   const prop = positionProperty.value;
   if (!prop) return false;
   return prop.animated && prop.keyframes && prop.keyframes.length >= 2;
@@ -183,13 +192,13 @@ const keyframeMarkers = computed(() => {
     position: {
       x: kf.value.x || 0,
       y: kf.value.y || 0,
-      z: kf.value.z || 0
-    }
+      z: kf.value.z || 0,
+    },
   }));
 });
 
 // Get keyframes with tangent info for display
-const keyframesWithTangents = computed(() => {
+const _keyframesWithTangents = computed(() => {
   const prop = positionProperty.value;
   if (!prop?.keyframes) return [];
 
@@ -231,15 +240,15 @@ const keyframesWithTangents = computed(() => {
       inTangent,
       outTangent,
       showTangents: isSelected,
-      interpolation: kf.interpolation
+      interpolation: kf.interpolation,
     };
   });
 });
 
 // Generate SVG path data for the motion path
-const pathData = computed(() => {
+const _pathData = computed(() => {
   const markers = keyframeMarkers.value;
-  if (markers.length < 2) return '';
+  if (markers.length < 2) return "";
 
   let d = `M ${markers[0].position.x} ${markers[0].position.y}`;
 
@@ -264,19 +273,23 @@ const pathData = computed(() => {
 });
 
 // Current interpolated position
-const currentPosition = computed(() => {
+const _currentPosition = computed(() => {
   const prop = positionProperty.value;
   if (!prop) return null;
 
   // Get current value at frame
-  const value = store.evaluatePropertyAtFrame?.(props.layerId!, 'transform.position', props.currentFrame);
+  const value = store.evaluatePropertyAtFrame?.(
+    props.layerId!,
+    "transform.position",
+    props.currentFrame,
+  );
   if (!value || !Array.isArray(value)) return null;
 
   return { x: value[0] || 0, y: value[1] || 0 };
 });
 
 // Frame ticks along the path (every 5 frames)
-const frameTicks = computed(() => {
+const _frameTicks = computed(() => {
   const prop = positionProperty.value;
   if (!prop?.keyframes || prop.keyframes.length < 2) return [];
 
@@ -287,10 +300,17 @@ const frameTicks = computed(() => {
   // Add tick every 5 frames
   for (let frame = firstFrame; frame <= lastFrame; frame += 5) {
     // Skip if this is a keyframe (will be shown as diamond)
-    if (prop.keyframes.some((kf: Keyframe<PositionValue>) => kf.frame === frame)) continue;
+    if (
+      prop.keyframes.some((kf: Keyframe<PositionValue>) => kf.frame === frame)
+    )
+      continue;
 
     // Interpolate position at this frame
-    const value = store.evaluatePropertyAtFrame?.(props.layerId!, 'transform.position', frame);
+    const value = store.evaluatePropertyAtFrame?.(
+      props.layerId!,
+      "transform.position",
+      frame,
+    );
     if (value && Array.isArray(value)) {
       ticks.push({ frame, x: value[0] || 0, y: value[1] || 0 });
     }
@@ -300,52 +320,56 @@ const frameTicks = computed(() => {
 });
 
 // SVG overlay style (matches viewport transform)
-const overlayStyle = computed(() => {
-  const tx = props.viewportTransform[4] || 0;  // translateX
-  const ty = props.viewportTransform[5] || 0;  // translateY
+const _overlayStyle = computed(() => {
+  const tx = props.viewportTransform[4] || 0; // translateX
+  const ty = props.viewportTransform[5] || 0; // translateY
 
   return {
-    position: 'absolute' as const,
-    top: '0',
-    left: '0',
+    position: "absolute" as const,
+    top: "0",
+    left: "0",
     width: `${props.containerWidth}px`,
     height: `${props.containerHeight}px`,
     transform: `translate(${tx}px, ${ty}px) scale(${props.zoom})`,
-    transformOrigin: 'top left' as const,
-    pointerEvents: 'none' as const,
-    zIndex: 100
+    transformOrigin: "top left" as const,
+    pointerEvents: "none" as const,
+    zIndex: 100,
   };
 });
 
 // Generate diamond shape points for keyframe markers
-function getDiamondPoints(cx: number, cy: number, size: number): string {
+function _getDiamondPoints(cx: number, cy: number, size: number): string {
   return `${cx},${cy - size} ${cx + size},${cy} ${cx},${cy + size} ${cx - size},${cy}`;
 }
 
 // Handle keyframe selection
-function selectKeyframe(event: MouseEvent, keyframeId: string) {
+function _selectKeyframe(event: MouseEvent, keyframeId: string) {
   const addToSelection = event.shiftKey || event.ctrlKey || event.metaKey;
-  emit('keyframeSelected', keyframeId, addToSelection);
+  emit("keyframeSelected", keyframeId, addToSelection);
 }
 
 // Double-click to go to keyframe frame
-function goToKeyframe(frame: number) {
-  emit('goToFrame', frame);
+function _goToKeyframe(frame: number) {
+  emit("goToFrame", frame);
 }
 
 // Start dragging tangent handle
-function startDragTangent(event: MouseEvent, keyframeId: string, type: 'in' | 'out') {
+function _startDragTangent(
+  event: MouseEvent,
+  keyframeId: string,
+  type: "in" | "out",
+) {
   draggingHandle.value = { keyframeId, type };
   dragStart.value = { x: event.clientX, y: event.clientY };
   event.preventDefault();
 }
 
 // Mouse handlers for tangent dragging
-function handleMouseDown(event: MouseEvent) {
+function _handleMouseDown(_event: MouseEvent) {
   // Handle is started in startDragTangent
 }
 
-function handleMouseMove(event: MouseEvent) {
+function _handleMouseMove(event: MouseEvent) {
   if (!draggingHandle.value || !dragStart.value) return;
 
   // Calculate delta in canvas coordinates
@@ -353,12 +377,17 @@ function handleMouseMove(event: MouseEvent) {
   const dy = (event.clientY - dragStart.value.y) / props.zoom;
 
   // Emit tangent update
-  emit('tangentUpdated', draggingHandle.value.keyframeId, draggingHandle.value.type, { x: dx, y: dy });
+  emit(
+    "tangentUpdated",
+    draggingHandle.value.keyframeId,
+    draggingHandle.value.type,
+    { x: dx, y: dy },
+  );
 
   dragStart.value = { x: event.clientX, y: event.clientY };
 }
 
-function handleMouseUp() {
+function _handleMouseUp() {
   draggingHandle.value = null;
   dragStart.value = null;
 }

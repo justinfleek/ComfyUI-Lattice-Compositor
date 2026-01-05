@@ -7,17 +7,17 @@
  * - TTM: Motion masks from deformed mesh
  */
 
-import type { WarpPin } from '@/types/meshWarp';
-import type { MeshFromAlphaResult } from '../alphaToMesh';
-import type { WanMoveTrajectory } from './wanMoveExport';
-import { interpolateProperty } from '../interpolation';
-import { _testCalculateTriangleDepths } from '../effects/meshDeformRenderer';
+import type { WarpPin } from "@/types/meshWarp";
+import type { MeshFromAlphaResult } from "../alphaToMesh";
+import { _testCalculateTriangleDepths } from "../effects/meshDeformRenderer";
+import { interpolateProperty } from "../interpolation";
+import type { WanMoveTrajectory } from "./wanMoveExport";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-export type DepthFormat = 'uint8' | 'uint16' | 'float32';
+export type DepthFormat = "uint8" | "uint16" | "float32";
 
 export interface CompositionInfo {
   width: number;
@@ -41,18 +41,19 @@ export interface CompositionInfo {
 export function exportPinsAsTrajectory(
   pins: WarpPin[],
   frameRange: [number, number],
-  composition: CompositionInfo
+  composition: CompositionInfo,
 ): WanMoveTrajectory {
   const [startFrame, endFrame] = frameRange;
   const numFrames = endFrame - startFrame + 1;
   const { width, height, frameRate } = composition;
 
   // Filter to pins with meaningful positions (not starch or overlap-only)
-  const trackablePins = pins.filter(pin =>
-    pin.type === 'position' ||
-    pin.type === 'advanced' ||
-    pin.type === 'bend' ||
-    pin.type === 'rotation'
+  const trackablePins = pins.filter(
+    (pin) =>
+      pin.type === "position" ||
+      pin.type === "advanced" ||
+      pin.type === "bend" ||
+      pin.type === "rotation",
   );
 
   const tracks: number[][][] = [];
@@ -86,8 +87,8 @@ export function exportPinsAsTrajectory(
       numFrames,
       width,
       height,
-      fps: frameRate
-    }
+      fps: frameRate,
+    },
   };
 }
 
@@ -98,24 +99,27 @@ export function exportPinsAsTrajectory(
 export function exportPinsAsTrajectoryWithMetadata(
   pins: WarpPin[],
   frameRange: [number, number],
-  composition: CompositionInfo
-): WanMoveTrajectory & { pinMetadata: Array<{ id: string; name: string; type: string }> } {
+  composition: CompositionInfo,
+): WanMoveTrajectory & {
+  pinMetadata: Array<{ id: string; name: string; type: string }>;
+} {
   const trajectory = exportPinsAsTrajectory(pins, frameRange, composition);
 
-  const trackablePins = pins.filter(pin =>
-    pin.type === 'position' ||
-    pin.type === 'advanced' ||
-    pin.type === 'bend' ||
-    pin.type === 'rotation'
+  const trackablePins = pins.filter(
+    (pin) =>
+      pin.type === "position" ||
+      pin.type === "advanced" ||
+      pin.type === "bend" ||
+      pin.type === "rotation",
   );
 
   return {
     ...trajectory,
-    pinMetadata: trackablePins.map(pin => ({
+    pinMetadata: trackablePins.map((pin) => ({
       id: pin.id,
       name: pin.name,
-      type: pin.type
-    }))
+      type: pin.type,
+    })),
   };
 }
 
@@ -143,20 +147,19 @@ export function exportOverlapAsDepth(
   frame: number,
   width: number,
   height: number,
-  format: DepthFormat = 'uint8'
+  format: DepthFormat = "uint8",
 ): Uint8Array | Uint16Array | Float32Array {
   // Create depth buffer
   let depthBuffer: Uint8Array | Uint16Array | Float32Array;
   const pixelCount = width * height;
 
   switch (format) {
-    case 'uint16':
+    case "uint16":
       depthBuffer = new Uint16Array(pixelCount);
       break;
-    case 'float32':
+    case "float32":
       depthBuffer = new Float32Array(pixelCount);
       break;
-    case 'uint8':
     default:
       depthBuffer = new Uint8Array(pixelCount);
   }
@@ -165,13 +168,18 @@ export function exportOverlapAsDepth(
   depthBuffer.fill(0);
 
   // Check if there are any overlap pins - if not, return empty depth buffer
-  const hasOverlapPins = pins.some(p => p.type === 'overlap');
+  const hasOverlapPins = pins.some((p) => p.type === "overlap");
   if (!hasOverlapPins) {
     return depthBuffer;
   }
 
   // Get triangle depths from overlap pins
-  const triangleDepths = _testCalculateTriangleDepths(mesh, deformedVertices, pins, frame);
+  const triangleDepths = _testCalculateTriangleDepths(
+    mesh,
+    deformedVertices,
+    pins,
+    frame,
+  );
 
   // Rasterize each triangle with its depth value
   for (const { index: t, depth } of triangleDepths) {
@@ -194,13 +202,12 @@ export function exportOverlapAsDepth(
     // Convert to output format
     let depthValue: number;
     switch (format) {
-      case 'uint16':
+      case "uint16":
         depthValue = Math.round(normalizedDepth * 65535);
         break;
-      case 'float32':
+      case "float32":
         depthValue = normalizedDepth;
         break;
-      case 'uint8':
       default:
         depthValue = Math.round(normalizedDepth * 255);
     }
@@ -210,8 +217,13 @@ export function exportOverlapAsDepth(
       depthBuffer,
       width,
       height,
-      ax, ay, bx, by, cx, cy,
-      depthValue
+      ax,
+      ay,
+      bx,
+      by,
+      cx,
+      cy,
+      depthValue,
     );
   }
 
@@ -226,10 +238,13 @@ function rasterizeTriangleDepth(
   buffer: Uint8Array | Uint16Array | Float32Array,
   width: number,
   height: number,
-  ax: number, ay: number,
-  bx: number, by: number,
-  cx: number, cy: number,
-  depthValue: number
+  ax: number,
+  ay: number,
+  bx: number,
+  by: number,
+  cx: number,
+  cy: number,
+  depthValue: number,
 ): void {
   // Calculate bounding box
   const minX = Math.max(0, Math.floor(Math.min(ax, bx, cx)));
@@ -267,7 +282,7 @@ function rasterizeTriangleDepth(
 export function depthBufferToImageData(
   depthBuffer: Uint8Array | Uint16Array | Float32Array,
   width: number,
-  height: number
+  height: number,
 ): ImageData {
   const imageData = new ImageData(width, height);
   const isUint16 = depthBuffer instanceof Uint16Array;
@@ -284,10 +299,10 @@ export function depthBufferToImageData(
     }
 
     const pixelIdx = i * 4;
-    imageData.data[pixelIdx] = value;     // R
+    imageData.data[pixelIdx] = value; // R
     imageData.data[pixelIdx + 1] = value; // G
     imageData.data[pixelIdx + 2] = value; // B
-    imageData.data[pixelIdx + 3] = 255;   // A
+    imageData.data[pixelIdx + 3] = 255; // A
   }
 
   return imageData;
@@ -311,7 +326,7 @@ export function exportDeformedMeshMask(
   mesh: MeshFromAlphaResult,
   deformedVertices: Float32Array,
   width: number,
-  height: number
+  height: number,
 ): ImageData {
   const imageData = new ImageData(width, height);
 
@@ -347,9 +362,12 @@ function rasterizeTriangleMask(
   imageData: ImageData,
   width: number,
   height: number,
-  ax: number, ay: number,
-  bx: number, by: number,
-  cx: number, cy: number
+  ax: number,
+  ay: number,
+  bx: number,
+  by: number,
+  cx: number,
+  cy: number,
 ): void {
   // Calculate bounding box
   const minX = Math.max(0, Math.floor(Math.min(ax, bx, cx)));
@@ -372,7 +390,7 @@ function rasterizeTriangleMask(
       // Point inside triangle?
       if (w1 >= 0 && w2 >= 0 && w3 >= 0) {
         const pixelIdx = (y * width + x) * 4;
-        imageData.data[pixelIdx] = 255;     // R = white
+        imageData.data[pixelIdx] = 255; // R = white
         imageData.data[pixelIdx + 1] = 255; // G = white
         imageData.data[pixelIdx + 2] = 255; // B = white
         // Alpha already set to 255
@@ -389,7 +407,7 @@ export function exportDeformedMeshMaskBinary(
   mesh: MeshFromAlphaResult,
   deformedVertices: Float32Array,
   width: number,
-  height: number
+  height: number,
 ): Uint8Array {
   const mask = new Uint8Array(width * height);
 
@@ -418,9 +436,12 @@ function rasterizeTriangleBinaryMask(
   mask: Uint8Array,
   width: number,
   height: number,
-  ax: number, ay: number,
-  bx: number, by: number,
-  cx: number, cy: number
+  ax: number,
+  ay: number,
+  bx: number,
+  by: number,
+  cx: number,
+  cy: number,
 ): void {
   const minX = Math.max(0, Math.floor(Math.min(ax, bx, cx)));
   const maxX = Math.min(width - 1, Math.ceil(Math.max(ax, bx, cx)));
@@ -454,20 +475,27 @@ function rasterizeTriangleBinaryMask(
 export function exportPinPositionsPerFrame(
   pins: WarpPin[],
   frameRange: [number, number],
-  frameRate: number
-): Array<{ frame: number; positions: Array<{ id: string; x: number; y: number }> }> {
+  frameRate: number,
+): Array<{
+  frame: number;
+  positions: Array<{ id: string; x: number; y: number }>;
+}> {
   const [startFrame, endFrame] = frameRange;
-  const result: Array<{ frame: number; positions: Array<{ id: string; x: number; y: number }> }> = [];
+  const result: Array<{
+    frame: number;
+    positions: Array<{ id: string; x: number; y: number }>;
+  }> = [];
 
-  const trackablePins = pins.filter(pin =>
-    pin.type === 'position' ||
-    pin.type === 'advanced' ||
-    pin.type === 'bend' ||
-    pin.type === 'rotation'
+  const trackablePins = pins.filter(
+    (pin) =>
+      pin.type === "position" ||
+      pin.type === "advanced" ||
+      pin.type === "bend" ||
+      pin.type === "rotation",
   );
 
   for (let f = startFrame; f <= endFrame; f++) {
-    const positions = trackablePins.map(pin => {
+    const positions = trackablePins.map((pin) => {
       const pos = interpolateProperty(pin.position, f, frameRate);
       return { id: pin.id, x: pos.x, y: pos.y };
     });
@@ -487,17 +515,28 @@ export function exportOverlapDepthSequence(
   frameRange: [number, number],
   width: number,
   height: number,
-  format: DepthFormat = 'uint8'
+  format: DepthFormat = "uint8",
 ): Array<{ frame: number; depth: Uint8Array | Uint16Array | Float32Array }> {
   const [startFrame, endFrame] = frameRange;
-  const result: Array<{ frame: number; depth: Uint8Array | Uint16Array | Float32Array }> = [];
+  const result: Array<{
+    frame: number;
+    depth: Uint8Array | Uint16Array | Float32Array;
+  }> = [];
 
   for (let f = startFrame; f <= endFrame; f++) {
     const frameIndex = f - startFrame;
     const deformedVertices = deformedVerticesPerFrame[frameIndex];
 
     if (deformedVertices) {
-      const depth = exportOverlapAsDepth(mesh, deformedVertices, pins, f, width, height, format);
+      const depth = exportOverlapAsDepth(
+        mesh,
+        deformedVertices,
+        pins,
+        f,
+        width,
+        height,
+        format,
+      );
       result.push({ frame: f, depth });
     }
   }
@@ -513,7 +552,7 @@ export function exportMeshMaskSequence(
   deformedVerticesPerFrame: Float32Array[],
   frameRange: [number, number],
   width: number,
-  height: number
+  height: number,
 ): Array<{ frame: number; mask: ImageData }> {
   const [startFrame, endFrame] = frameRange;
   const result: Array<{ frame: number; mask: ImageData }> = [];
@@ -523,7 +562,12 @@ export function exportMeshMaskSequence(
     const deformedVertices = deformedVerticesPerFrame[frameIndex];
 
     if (deformedVertices) {
-      const mask = exportDeformedMeshMask(mesh, deformedVertices, width, height);
+      const mask = exportDeformedMeshMask(
+        mesh,
+        deformedVertices,
+        width,
+        height,
+      );
       result.push({ frame: f, mask });
     }
   }

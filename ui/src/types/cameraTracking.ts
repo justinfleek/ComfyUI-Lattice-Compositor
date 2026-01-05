@@ -67,12 +67,12 @@ export interface CameraIntrinsics {
     k1?: number;
     k2?: number;
     k3?: number;
-    p1?: number;  // Tangential
+    p1?: number; // Tangential
     p2?: number;
   };
 
   /** Camera model type */
-  model?: 'pinhole' | 'radial' | 'brown' | 'fisheye';
+  model?: "pinhole" | "radial" | "brown" | "fisheye";
 }
 
 /**
@@ -120,7 +120,7 @@ export interface CameraTrackingSolve {
   version: string;
 
   /** Source application/tool */
-  source: 'colmap' | 'opensfm' | 'blender' | 'nuke' | 'custom' | string;
+  source: "colmap" | "opensfm" | "blender" | "nuke" | "custom" | string;
 
   /** Solve metadata */
   metadata: {

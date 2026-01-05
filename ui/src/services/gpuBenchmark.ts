@@ -8,10 +8,13 @@
  * - Detecting performance regressions
  */
 
-import { processEffectStack, processEffectStackAsync } from './effectProcessor';
-import { gpuEffectDispatcher, initializeGPUEffects } from './gpuEffectDispatcher';
-import type { EffectInstance } from '@/types/effects';
-import { engineLogger } from '@/utils/logger';
+import type { EffectInstance } from "@/types/effects";
+import { engineLogger } from "@/utils/logger";
+import { processEffectStack, processEffectStackAsync } from "./effectProcessor";
+import {
+  gpuEffectDispatcher,
+  initializeGPUEffects,
+} from "./gpuEffectDispatcher";
 
 // ============================================================================
 // TYPES
@@ -48,16 +51,16 @@ export interface BenchmarkSuite {
  * Create a test canvas with random noise pattern
  */
 function createTestCanvas(width: number, height: number): HTMLCanvasElement {
-  const canvas = document.createElement('canvas');
+  const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
-  const ctx = canvas.getContext('2d')!;
+  const ctx = canvas.getContext("2d")!;
 
   // Create a gradient + noise pattern for realistic testing
   const gradient = ctx.createLinearGradient(0, 0, width, height);
-  gradient.addColorStop(0, '#ff6b6b');
-  gradient.addColorStop(0.5, '#4ecdc4');
-  gradient.addColorStop(1, '#45b7d1');
+  gradient.addColorStop(0, "#ff6b6b");
+  gradient.addColorStop(0.5, "#4ecdc4");
+  gradient.addColorStop(1, "#45b7d1");
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, width, height);
 
@@ -78,19 +81,29 @@ function createTestCanvas(width: number, height: number): HTMLCanvasElement {
 /**
  * Create a test effect instance
  */
-function createTestEffect(effectKey: string, params: Record<string, any> = {}): EffectInstance {
+function createTestEffect(
+  effectKey: string,
+  params: Record<string, any> = {},
+): EffectInstance {
   return {
     id: `test-${effectKey}`,
     effectKey,
     name: effectKey,
     enabled: true,
     expanded: true,
-    category: 'blur-sharpen',
+    category: "blur-sharpen",
     parameters: Object.fromEntries(
       Object.entries(params).map(([key, value]) => [
         key,
-        { id: `param-${key}`, name: key, type: 'number' as const, value, animated: false, keyframes: [] }
-      ])
+        {
+          id: `param-${key}`,
+          name: key,
+          type: "number" as const,
+          value,
+          animated: false,
+          keyframes: [],
+        },
+      ]),
     ),
   };
 }
@@ -101,19 +114,19 @@ function createTestEffect(effectKey: string, params: Record<string, any> = {}): 
 
 const BENCHMARK_EFFECTS: Array<{ key: string; params: Record<string, any> }> = [
   // Blur effects (high GPU benefit)
-  { key: 'gaussian-blur', params: { radius: 20 } },
-  { key: 'radial-blur', params: { centerX: 0.5, centerY: 0.5, amount: 50 } },
-  { key: 'directional-blur', params: { angle: 45, length: 30 } },
+  { key: "gaussian-blur", params: { radius: 20 } },
+  { key: "radial-blur", params: { centerX: 0.5, centerY: 0.5, amount: 50 } },
+  { key: "directional-blur", params: { angle: 45, length: 30 } },
 
   // Color effects (moderate GPU benefit)
-  { key: 'brightness-contrast', params: { brightness: 20, contrast: 30 } },
-  { key: 'hue-saturation', params: { hue: 30, saturation: 20 } },
-  { key: 'levels', params: { inputBlack: 10, inputWhite: 245, gamma: 1.2 } },
-  { key: 'glow', params: { radius: 15, intensity: 0.8 } },
+  { key: "brightness-contrast", params: { brightness: 20, contrast: 30 } },
+  { key: "hue-saturation", params: { hue: 30, saturation: 20 } },
+  { key: "levels", params: { inputBlack: 10, inputWhite: 245, gamma: 1.2 } },
+  { key: "glow", params: { radius: 15, intensity: 0.8 } },
 
   // Distort effects (high GPU benefit)
-  { key: 'warp', params: { style: 'wave', bend: 0.5 } },
-  { key: 'turbulent-displace', params: { amount: 50 } },
+  { key: "warp", params: { style: "wave", bend: 0.5 } },
+  { key: "turbulent-displace", params: { amount: 50 } },
 ];
 
 // ============================================================================
@@ -127,19 +140,19 @@ async function benchmarkEffect(
   effectKey: string,
   params: Record<string, any>,
   canvas: HTMLCanvasElement,
-  iterations: number
+  iterations: number,
 ): Promise<BenchmarkResult> {
   const effect = createTestEffect(effectKey, params);
   const effects = [effect];
 
   // Warm-up run
-  processEffectStack(effects, canvas, 0, 'high');
+  processEffectStack(effects, canvas, 0, "high");
   await processEffectStackAsync(effects, canvas, 0);
 
   // CPU benchmark
   const cpuStart = performance.now();
   for (let i = 0; i < iterations; i++) {
-    processEffectStack(effects, canvas, 0, 'high');
+    processEffectStack(effects, canvas, 0, "high");
   }
   const cpuEnd = performance.now();
   const cpuTimeMs = (cpuEnd - cpuStart) / iterations;
@@ -152,7 +165,7 @@ async function benchmarkEffect(
   const gpuEnd = performance.now();
   const gpuTimeMs = (gpuEnd - gpuStart) / iterations;
 
-  const caps = gpuEffectDispatcher.getCapabilities();
+  const _caps = gpuEffectDispatcher.getCapabilities();
 
   return {
     effectKey,
@@ -171,9 +184,13 @@ async function benchmarkEffect(
 export async function runBenchmarkSuite(
   width: number = 1920,
   height: number = 1080,
-  iterations: number = 5
+  iterations: number = 5,
 ): Promise<BenchmarkSuite> {
-  engineLogger.info('Starting GPU benchmark suite', { width, height, iterations });
+  engineLogger.info("Starting GPU benchmark suite", {
+    width,
+    height,
+    iterations,
+  });
 
   // Initialize GPU
   await initializeGPUEffects();
@@ -205,8 +222,9 @@ export async function runBenchmarkSuite(
   const averageSpeedup = totalCpuTime / Math.max(totalGpuTime, 0.001);
 
   const sortedBySpeedup = [...results].sort((a, b) => b.speedup - a.speedup);
-  const bestEffect = sortedBySpeedup[0]?.effectKey || 'none';
-  const worstEffect = sortedBySpeedup[sortedBySpeedup.length - 1]?.effectKey || 'none';
+  const bestEffect = sortedBySpeedup[0]?.effectKey || "none";
+  const worstEffect =
+    sortedBySpeedup[sortedBySpeedup.length - 1]?.effectKey || "none";
 
   const summary = {
     totalCpuTime,
@@ -214,11 +232,11 @@ export async function runBenchmarkSuite(
     averageSpeedup,
     bestEffect,
     worstEffect,
-    gpuAvailable: caps.preferredPath !== 'canvas2d',
+    gpuAvailable: caps.preferredPath !== "canvas2d",
     renderPath: caps.preferredPath,
   };
 
-  engineLogger.info('Benchmark suite complete', summary);
+  engineLogger.info("Benchmark suite complete", summary);
 
   return { results, summary };
 }
@@ -230,7 +248,7 @@ export async function quickBenchmark(
   effectKey: string,
   params: Record<string, any> = {},
   width: number = 1920,
-  height: number = 1080
+  height: number = 1080,
 ): Promise<BenchmarkResult> {
   await initializeGPUEffects();
   const canvas = createTestCanvas(width, height);
@@ -241,13 +259,13 @@ export async function quickBenchmark(
  * Print benchmark results to console
  */
 export function printBenchmarkResults(suite: BenchmarkSuite): void {
-  console.log('\n=== GPU Effect Benchmark Results ===\n');
+  console.log("\n=== GPU Effect Benchmark Results ===\n");
   console.log(`GPU Available: ${suite.summary.gpuAvailable}`);
   console.log(`Render Path: ${suite.summary.renderPath}`);
-  console.log('');
+  console.log("");
 
-  console.log('Effect                | CPU (ms) | GPU (ms) | Speedup');
-  console.log('---------------------|----------|----------|--------');
+  console.log("Effect                | CPU (ms) | GPU (ms) | Speedup");
+  console.log("---------------------|----------|----------|--------");
 
   for (const result of suite.results) {
     const effect = result.effectKey.padEnd(20);
@@ -257,7 +275,7 @@ export function printBenchmarkResults(suite: BenchmarkSuite): void {
     console.log(`${effect} | ${cpu} | ${gpu} | ${speedup}x`);
   }
 
-  console.log('');
+  console.log("");
   console.log(`Total CPU Time: ${suite.summary.totalCpuTime.toFixed(2)}ms`);
   console.log(`Total GPU Time: ${suite.summary.totalGpuTime.toFixed(2)}ms`);
   console.log(`Average Speedup: ${suite.summary.averageSpeedup.toFixed(2)}x`);

@@ -18,49 +18,54 @@
  * ```
  */
 
-import * as THREE from 'three';
-import { SceneManager } from './core/SceneManager';
-import { RenderPipeline } from './core/RenderPipeline';
-import { LayerManager } from './core/LayerManager';
-import { CameraController } from './core/CameraController';
-import { ResourceManager } from './core/ResourceManager';
-import type { BaseLayer } from './layers/BaseLayer';
-import { PerformanceMonitor } from './utils/PerformanceMonitor';
+import * as THREE from "three";
+import type { TargetParameter } from "@/services/audioReactiveMapping";
+// Import 3D services for initialization
+import { materialSystem } from "@/services/materialSystem";
+import { meshParticleManager } from "@/services/meshParticleManager";
+import { spriteSheetService } from "@/services/spriteSheet";
+import { svgExtrusionService } from "@/services/svgExtrusion";
+import type { Layer } from "@/types/project";
+import { engineLogger } from "@/utils/logger";
+import { BackgroundManager } from "./BackgroundManager";
+import { CameraController } from "./core/CameraController";
+import { LayerManager } from "./core/LayerManager";
+import { RenderPipeline } from "./core/RenderPipeline";
+import { ResourceManager } from "./core/ResourceManager";
+import { SceneManager } from "./core/SceneManager";
+import type { BaseLayer } from "./layers/BaseLayer";
+import type { FrameState } from "./MotionEngine";
+// Extracted utilities and managers
+import { NestedCompRenderer } from "./NestedCompRenderer";
+import {
+  type LayerTransformUpdate,
+  TransformControlsManager,
+} from "./TransformControlsManager";
 import type {
-  LatticeEngineConfig,
-  RenderState,
-  PerformanceStats,
-  EngineEventType,
-  EngineEventHandler,
-  EngineEvent,
   CaptureResult,
   DepthCaptureResult,
-  ExportFrameOptions,
-} from './types';
-import type { Layer } from '@/types/project';
-import type { TargetParameter } from '@/services/audioReactiveMapping';
-import { engineLogger } from '@/utils/logger';
-import type { FrameState } from './MotionEngine';
-
-// Import 3D services for initialization
-import { materialSystem } from '@/services/materialSystem';
-import { svgExtrusionService } from '@/services/svgExtrusion';
-import { meshParticleManager } from '@/services/meshParticleManager';
-import { spriteSheetService } from '@/services/spriteSheet';
-
-// Extracted utilities and managers
-import { NestedCompRenderer } from './NestedCompRenderer';
-import { TransformControlsManager, type LayerTransformUpdate } from './TransformControlsManager';
-import { BackgroundManager } from './BackgroundManager';
+  EngineEvent,
+  EngineEventHandler,
+  EngineEventType,
+  LatticeEngineConfig,
+  PerformanceStats,
+  RenderState,
+} from "./types";
+import { PerformanceMonitor } from "./utils/PerformanceMonitor";
 
 /** Callback to get audio reactive values at a frame */
-export type AudioReactiveGetter = (frame: number) => Map<TargetParameter, number>;
+export type AudioReactiveGetter = (
+  frame: number,
+) => Map<TargetParameter, number>;
 
 /** Callback to get audio reactive values for a specific layer */
-export type LayerAudioReactiveGetter = (layerId: string, frame: number) => Map<TargetParameter, number>;
+export type LayerAudioReactiveGetter = (
+  layerId: string,
+  frame: number,
+) => Map<TargetParameter, number>;
 
 // LayerTransformUpdate is now imported from TransformControlsManager
-export type { LayerTransformUpdate } from './TransformControlsManager';
+export type { LayerTransformUpdate } from "./TransformControlsManager";
 
 export class LatticeEngine {
   // Core subsystems
@@ -85,7 +90,7 @@ export class LatticeEngine {
   private viewportTransform: number[] = [1, 0, 0, 1, 0, 0];
 
   // Render mode
-  private renderMode: 'color' | 'depth' | 'normal' = 'color';
+  private renderMode: "color" | "depth" | "normal" = "color";
 
   // Audio reactivity
   private audioReactiveGetter: LayerAudioReactiveGetter | null = null;
@@ -119,7 +124,7 @@ export class LatticeEngine {
       alpha: config.alpha ?? true,
       backgroundColor: config.backgroundColor ?? null,
       debug: config.debug ?? false,
-      powerPreference: config.powerPreference ?? 'high-performance',
+      powerPreference: config.powerPreference ?? "high-performance",
     };
 
     // Initialize state
@@ -146,33 +151,37 @@ export class LatticeEngine {
     // Camera is initialized with COMPOSITION dimensions for position/target calculation
     this.camera = new CameraController(
       this.config.compositionWidth!,
-      this.config.compositionHeight!
+      this.config.compositionHeight!,
     );
     // Set camera aspect ratio to VIEWPORT dimensions (required for correct rendering)
     this.camera.setViewportAspect(this.config.width, this.config.height);
 
-    this.renderer = new RenderPipeline({
-      canvas: this.config.canvas,
-      width: this.config.width,
-      height: this.config.height,
-      pixelRatio: this.config.pixelRatio,
-      antialias: this.config.antialias,
-      alpha: this.config.alpha,
-    }, this.scene, this.camera);
+    this.renderer = new RenderPipeline(
+      {
+        canvas: this.config.canvas,
+        width: this.config.width,
+        height: this.config.height,
+        pixelRatio: this.config.pixelRatio,
+        antialias: this.config.antialias,
+        alpha: this.config.alpha,
+      },
+      this.scene,
+      this.camera,
+    );
     this.layers = new LayerManager(this.scene, this.resources);
     this.performance = new PerformanceMonitor();
 
     // Set composition size for bounds
     this.scene.setCompositionSize(
       this.config.compositionWidth!,
-      this.config.compositionHeight!
+      this.config.compositionHeight!,
     );
 
     // Handle WebGL context loss
     this.setupContextLossHandling();
 
     if (this.config.debug) {
-      engineLogger.debug('Initialized', this.config);
+      engineLogger.debug("Initialized", this.config);
     }
   }
 
@@ -182,17 +191,23 @@ export class LatticeEngine {
 
   private validateConfig(config: LatticeEngineConfig): void {
     if (!(config.canvas instanceof HTMLCanvasElement)) {
-      throw new Error('LatticeEngine requires a valid HTMLCanvasElement');
+      throw new Error("LatticeEngine requires a valid HTMLCanvasElement");
     }
 
     // NaN bypasses <= 0 check, so validate with Number.isFinite first
-    if (!Number.isFinite(config.width) || !Number.isFinite(config.height) ||
-        config.width <= 0 || config.height <= 0) {
-      throw new Error('LatticeEngine requires positive finite width and height');
+    if (
+      !Number.isFinite(config.width) ||
+      !Number.isFinite(config.height) ||
+      config.width <= 0 ||
+      config.height <= 0
+    ) {
+      throw new Error(
+        "LatticeEngine requires positive finite width and height",
+      );
     }
 
     if (config.width > 8192 || config.height > 8192) {
-      throw new Error('LatticeEngine maximum dimension is 8192 pixels');
+      throw new Error("LatticeEngine maximum dimension is 8192 pixels");
     }
   }
 
@@ -208,10 +223,10 @@ export class LatticeEngine {
     this.assertNotDisposed();
 
     this.layers.create(layerData);
-    this.emit('layerAdded', { layerId: layerData.id });
+    this.emit("layerAdded", { layerId: layerData.id });
 
     if (this.config.debug) {
-      engineLogger.debug('Layer added:', layerData.id, layerData.type);
+      engineLogger.debug("Layer added:", layerData.id, layerData.type);
     }
   }
 
@@ -224,7 +239,7 @@ export class LatticeEngine {
     this.assertNotDisposed();
 
     this.layers.update(layerId, properties);
-    this.emit('layerUpdated', { layerId, properties });
+    this.emit("layerUpdated", { layerId, properties });
   }
 
   /**
@@ -235,10 +250,10 @@ export class LatticeEngine {
     this.assertNotDisposed();
 
     this.layers.remove(layerId);
-    this.emit('layerRemoved', { layerId });
+    this.emit("layerRemoved", { layerId });
 
     if (this.config.debug) {
-      engineLogger.debug('Layer removed:', layerId);
+      engineLogger.debug("Layer removed:", layerId);
     }
   }
 
@@ -273,7 +288,7 @@ export class LatticeEngine {
     this.assertNotDisposed();
 
     const existingIds = new Set(this.layers.getLayerIds());
-    const newIds = new Set(layers.map(l => l.id));
+    const newIds = new Set(layers.map((l) => l.id));
 
     // Remove layers that no longer exist
     for (const id of existingIds) {
@@ -301,7 +316,11 @@ export class LatticeEngine {
    * This allows layers to access project assets
    * @param getter - Function that retrieves assets by ID
    */
-  setAssetGetter(getter: (assetId: string) => import('@/types/project').AssetReference | undefined): void {
+  setAssetGetter(
+    getter: (
+      assetId: string,
+    ) => import("@/types/project").AssetReference | undefined,
+  ): void {
     this.resources.setAssetGetter(getter);
   }
 
@@ -310,7 +329,12 @@ export class LatticeEngine {
    * Called when a video layer finishes loading its metadata
    * @param callback - Function called with layer ID and video metadata
    */
-  setVideoMetadataCallback(callback: (layerId: string, metadata: import('./layers/VideoLayer').VideoMetadata) => void): void {
+  setVideoMetadataCallback(
+    callback: (
+      layerId: string,
+      metadata: import("./layers/VideoLayer").VideoMetadata,
+    ) => void,
+  ): void {
     this.layers.setVideoMetadataCallback(callback);
   }
 
@@ -319,7 +343,9 @@ export class LatticeEngine {
    * Allows nested comp layers to render nested compositions
    * @param context - Render context with composition access
    */
-  setNestedCompRenderContext(context: import('./layers/NestedCompLayer').NestedCompRenderContext): void {
+  setNestedCompRenderContext(
+    context: import("./layers/NestedCompLayer").NestedCompRenderContext,
+  ): void {
     this.layers.setNestedCompRenderContext(context);
   }
 
@@ -331,9 +357,9 @@ export class LatticeEngine {
    * @param atFrameGetter - Function to get Camera3D with keyframe interpolation at a specific frame
    */
   setCameraCallbacks(
-    getter: import('./layers/CameraLayer').CameraGetter,
-    updater: import('./layers/CameraLayer').CameraUpdater,
-    atFrameGetter?: import('./layers/CameraLayer').CameraAtFrameGetter
+    getter: import("./layers/CameraLayer").CameraGetter,
+    updater: import("./layers/CameraLayer").CameraUpdater,
+    atFrameGetter?: import("./layers/CameraLayer").CameraAtFrameGetter,
   ): void {
     this.layers.setCameraCallbacks(getter, updater, atFrameGetter);
     // Store getter for active camera sync
@@ -341,7 +367,7 @@ export class LatticeEngine {
   }
 
   // Active camera tracking
-  private activeCameraGetter?: import('./layers/CameraLayer').CameraGetter;
+  private activeCameraGetter?: import("./layers/CameraLayer").CameraGetter;
   private activeCameraId: string | null = null;
 
   /**
@@ -363,12 +389,13 @@ export class LatticeEngine {
 
     // Get the CameraLayer instance
     const cameraLayer = this.layers.getLayer(this.activeCameraId);
-    if (!cameraLayer || cameraLayer.type !== 'camera') {
+    if (!cameraLayer || cameraLayer.type !== "camera") {
       return;
     }
 
     // Get Camera3D data from store via the layer
-    const typedLayer = cameraLayer as import('./layers/CameraLayer').CameraLayer;
+    const typedLayer =
+      cameraLayer as import("./layers/CameraLayer").CameraLayer;
     const exportData = typedLayer.getExportData();
     if (!exportData) {
       return;
@@ -376,10 +403,18 @@ export class LatticeEngine {
 
     // Update the render camera from Camera3D data
     // Position
-    this.camera.setPosition(exportData.position.x, exportData.position.y, exportData.position.z);
+    this.camera.setPosition(
+      exportData.position.x,
+      exportData.position.y,
+      exportData.position.z,
+    );
 
     // Rotation (Camera3D uses degrees)
-    this.camera.setRotation(exportData.rotation.x, exportData.rotation.y, exportData.rotation.z);
+    this.camera.setRotation(
+      exportData.rotation.x,
+      exportData.rotation.y,
+      exportData.rotation.z,
+    );
 
     // FOV
     this.camera.setFOV(exportData.fov);
@@ -389,7 +424,7 @@ export class LatticeEngine {
 
     // Sync DOF settings from camera
     const camera3d = typedLayer.getCameraAtCurrentFrame();
-    if (camera3d && camera3d.depthOfField) {
+    if (camera3d?.depthOfField) {
       this.setDOFFromCamera(camera3d.depthOfField);
     }
   }
@@ -400,7 +435,7 @@ export class LatticeEngine {
    */
   setCompositionFPS(fps: number): void {
     // Validate fps (NaN/0/negative would corrupt time-based calculations)
-    const validFps = (Number.isFinite(fps) && fps > 0) ? fps : 30;
+    const validFps = Number.isFinite(fps) && fps > 0 ? fps : 30;
     this.layers.setCompositionFPS(validFps);
   }
 
@@ -431,7 +466,7 @@ export class LatticeEngine {
 
     // Log initialization
     if (this.config.debug) {
-      engineLogger.debug('3D services initialized');
+      engineLogger.debug("3D services initialized");
     }
   }
 
@@ -570,19 +605,19 @@ export class LatticeEngine {
   /**
    * Apply evaluated camera state directly
    */
-  private applyCameraState(cameraState: FrameState['camera']): void {
+  private applyCameraState(cameraState: FrameState["camera"]): void {
     if (!cameraState) return;
 
     // Update camera controller with evaluated values
     this.camera.setPositionDirect(
       cameraState.position.x,
       cameraState.position.y,
-      cameraState.position.z
+      cameraState.position.z,
     );
     this.camera.setTargetDirect(
       cameraState.target.x,
       cameraState.target.y,
-      cameraState.target.z
+      cameraState.target.z,
     );
     this.camera.setFOV(cameraState.fov);
   }
@@ -642,14 +677,14 @@ export class LatticeEngine {
     this.assertNotDisposed();
 
     this.performance.beginFrame();
-    this.emit('frameStart', { frame: this.state.currentFrame });
+    this.emit("frameStart", { frame: this.state.currentFrame });
 
     // Update orbit controls if enabled (for smooth damping)
     this.camera.updateOrbitControls();
 
     this.renderer.render();
 
-    this.emit('frameEnd', { frame: this.state.currentFrame });
+    this.emit("frameEnd", { frame: this.state.currentFrame });
     this.performance.endFrame(this.renderer.getWebGLRenderer());
   }
 
@@ -712,26 +747,38 @@ export class LatticeEngine {
     width: number,
     height: number,
     compositionWidth?: number,
-    compositionHeight?: number
+    compositionHeight?: number,
   ): void {
     this.assertNotDisposed();
 
     // NaN bypasses <= 0 check, so validate with Number.isFinite first
-    if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
-      engineLogger.warn('Invalid resize dimensions:', width, height);
+    if (
+      !Number.isFinite(width) ||
+      !Number.isFinite(height) ||
+      width <= 0 ||
+      height <= 0
+    ) {
+      engineLogger.warn("Invalid resize dimensions:", width, height);
       return;
     }
 
-    console.log(`[LatticeEngine] resize: viewport=${width}x${height}, comp=${compositionWidth ?? 'undefined'}x${compositionHeight ?? 'undefined'}`);
+    console.log(
+      `[LatticeEngine] resize: viewport=${width}x${height}, comp=${compositionWidth ?? "undefined"}x${compositionHeight ?? "undefined"}`,
+    );
 
     this.state.viewport = { width, height };
     this.renderer.resize(width, height);
 
     // ONLY update camera composition dimensions if explicitly provided and valid
     // Otherwise, just update the viewport aspect
-    if (compositionWidth !== undefined && compositionHeight !== undefined &&
-        Number.isFinite(compositionWidth) && Number.isFinite(compositionHeight) &&
-        compositionWidth > 0 && compositionHeight > 0) {
+    if (
+      compositionWidth !== undefined &&
+      compositionHeight !== undefined &&
+      Number.isFinite(compositionWidth) &&
+      Number.isFinite(compositionHeight) &&
+      compositionWidth > 0 &&
+      compositionHeight > 0
+    ) {
       this.camera.resize(compositionWidth, compositionHeight);
     }
 
@@ -741,7 +788,7 @@ export class LatticeEngine {
     // Update SplineLayer resolutions for Line2 materials
     this.updateSplineResolutions(width, height);
 
-    this.emit('resize', { width, height, compositionWidth, compositionHeight });
+    this.emit("resize", { width, height, compositionWidth, compositionHeight });
   }
 
   /**
@@ -750,7 +797,10 @@ export class LatticeEngine {
   private updateSplineResolutions(width: number, height: number): void {
     const layers = this.layers.getAllLayers();
     for (const layer of layers) {
-      if ('setResolution' in layer && typeof (layer as any).setResolution === 'function') {
+      if (
+        "setResolution" in layer &&
+        typeof (layer as any).setResolution === "function"
+      ) {
         (layer as any).setResolution(width, height);
       }
     }
@@ -777,8 +827,13 @@ export class LatticeEngine {
     this.assertNotDisposed();
 
     // NaN bypasses <= 0 check, so validate with Number.isFinite first
-    if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
-      engineLogger.warn('Invalid resolution dimensions:', width, height);
+    if (
+      !Number.isFinite(width) ||
+      !Number.isFinite(height) ||
+      width <= 0 ||
+      height <= 0
+    ) {
+      engineLogger.warn("Invalid resolution dimensions:", width, height);
       return;
     }
 
@@ -790,7 +845,7 @@ export class LatticeEngine {
     // Update spline layer resolutions for Line2 materials
     this.updateSplineResolutions(width, height);
 
-    this.emit('resolutionChange', { width, height });
+    this.emit("resolutionChange", { width, height });
   }
 
   // ============================================================================
@@ -834,7 +889,8 @@ export class LatticeEngine {
    */
   fitCompositionToViewport(padding: number = 40): void {
     // Validate padding (NaN/negative would corrupt viewport calculations)
-    const validPadding = (Number.isFinite(padding) && padding >= 0) ? padding : 40;
+    const validPadding =
+      Number.isFinite(padding) && padding >= 0 ? padding : 40;
     const { width, height } = this.state.viewport;
     this.camera.fitToViewport(width, height, validPadding);
   }
@@ -933,7 +989,7 @@ export class LatticeEngine {
   /**
    * Get current DOF configuration
    */
-  getDOF(): import('./core/RenderPipeline').DOFConfig {
+  getDOF(): import("./core/RenderPipeline").DOFConfig {
     return this.renderer.getDOF();
   }
 
@@ -945,7 +1001,7 @@ export class LatticeEngine {
    * Configure SSAO effect
    * @param config - SSAO configuration options
    */
-  setSSAO(config: Partial<import('./core/RenderPipeline').SSAOConfig>): void {
+  setSSAO(config: Partial<import("./core/RenderPipeline").SSAOConfig>): void {
     this.renderer.setSSAO(config);
   }
 
@@ -975,7 +1031,7 @@ export class LatticeEngine {
   /**
    * Get current SSAO configuration
    */
-  getSSAO(): import('./core/RenderPipeline').SSAOConfig {
+  getSSAO(): import("./core/RenderPipeline").SSAOConfig {
     return this.renderer.getSSAO();
   }
 
@@ -988,7 +1044,7 @@ export class LatticeEngine {
    * Makes emissive objects (lights, bright particles) glow
    * @param config - Bloom configuration options
    */
-  setBloom(config: Partial<import('./core/RenderPipeline').BloomConfig>): void {
+  setBloom(config: Partial<import("./core/RenderPipeline").BloomConfig>): void {
     this.renderer.setBloom(config);
   }
 
@@ -1018,7 +1074,7 @@ export class LatticeEngine {
   /**
    * Get current bloom configuration
    */
-  getBloom(): import('./core/RenderPipeline').BloomConfig {
+  getBloom(): import("./core/RenderPipeline").BloomConfig {
     return this.renderer.getBloom();
   }
 
@@ -1033,7 +1089,7 @@ export class LatticeEngine {
   setViewportTransform(transform: number[]): void {
     // Validate transform array (must be 6 numbers, all finite)
     if (!Array.isArray(transform) || transform.length < 6) {
-      engineLogger.warn('Invalid viewport transform: expected 6-element array');
+      engineLogger.warn("Invalid viewport transform: expected 6-element array");
       return;
     }
 
@@ -1086,7 +1142,7 @@ export class LatticeEngine {
   setBackgroundImage(image: HTMLImageElement): void {
     this.assertNotDisposed();
     this.ensureBackgroundManager();
-    this.backgroundManager!.setBackgroundImage(image);
+    this.backgroundManager?.setBackgroundImage(image);
   }
 
   /**
@@ -1096,11 +1152,15 @@ export class LatticeEngine {
    */
   setDepthMap(
     image: HTMLImageElement,
-    options: { colormap?: 'viridis' | 'plasma' | 'grayscale'; opacity?: number; visible?: boolean }
+    options: {
+      colormap?: "viridis" | "plasma" | "grayscale";
+      opacity?: number;
+      visible?: boolean;
+    },
   ): void {
     this.assertNotDisposed();
     this.ensureBackgroundManager();
-    this.backgroundManager!.setDepthMap(image, options);
+    this.backgroundManager?.setDepthMap(image, options);
   }
 
   /**
@@ -1108,15 +1168,15 @@ export class LatticeEngine {
    */
   setDepthOverlayVisible(visible: boolean): void {
     this.ensureBackgroundManager();
-    this.backgroundManager!.setDepthOverlayVisible(visible);
+    this.backgroundManager?.setDepthOverlayVisible(visible);
   }
 
   /**
    * Set depth colormap
    */
-  setDepthColormap(colormap: 'viridis' | 'plasma' | 'grayscale'): void {
+  setDepthColormap(colormap: "viridis" | "plasma" | "grayscale"): void {
     this.ensureBackgroundManager();
-    this.backgroundManager!.setDepthColormap(colormap);
+    this.backgroundManager?.setDepthColormap(colormap);
   }
 
   /**
@@ -1124,15 +1184,19 @@ export class LatticeEngine {
    */
   setDepthOpacity(opacity: number): void {
     this.ensureBackgroundManager();
-    this.backgroundManager!.setDepthOpacity(opacity);
+    this.backgroundManager?.setDepthOpacity(opacity);
   }
 
   /**
    * Get current depth map settings
    */
-  getDepthMapSettings(): { colormap: 'viridis' | 'plasma' | 'grayscale'; opacity: number; visible: boolean } {
+  getDepthMapSettings(): {
+    colormap: "viridis" | "plasma" | "grayscale";
+    opacity: number;
+    visible: boolean;
+  } {
     this.ensureBackgroundManager();
-    return this.backgroundManager!.getDepthMapSettings();
+    return this.backgroundManager?.getDepthMapSettings();
   }
 
   /**
@@ -1151,7 +1215,7 @@ export class LatticeEngine {
   /**
    * Set the render mode (color, depth, normal)
    */
-  setRenderMode(mode: 'color' | 'depth' | 'normal'): void {
+  setRenderMode(mode: "color" | "depth" | "normal"): void {
     this.renderMode = mode;
     this.renderer.setRenderMode(mode);
   }
@@ -1159,7 +1223,7 @@ export class LatticeEngine {
   /**
    * Get the current render mode
    */
-  getRenderMode(): 'color' | 'depth' | 'normal' {
+  getRenderMode(): "color" | "depth" | "normal" {
     return this.renderMode;
   }
 
@@ -1183,7 +1247,7 @@ export class LatticeEngine {
    */
   async loadEnvironmentMap(
     url: string,
-    config?: Partial<import('./core/SceneManager').EnvironmentMapConfig>
+    config?: Partial<import("./core/SceneManager").EnvironmentMapConfig>,
   ): Promise<THREE.Texture> {
     // Ensure environment support is initialized
     this.initializeEnvironmentSupport();
@@ -1195,7 +1259,7 @@ export class LatticeEngine {
    * @param config - Partial configuration to update
    */
   setEnvironmentConfig(
-    config: Partial<import('./core/SceneManager').EnvironmentMapConfig>
+    config: Partial<import("./core/SceneManager").EnvironmentMapConfig>,
   ): void {
     this.scene.setEnvironmentConfig(config);
   }
@@ -1203,7 +1267,7 @@ export class LatticeEngine {
   /**
    * Get current environment map configuration
    */
-  getEnvironmentConfig(): import('./core/SceneManager').EnvironmentMapConfig {
+  getEnvironmentConfig(): import("./core/SceneManager").EnvironmentMapConfig {
     return this.scene.getEnvironmentConfig();
   }
 
@@ -1343,7 +1407,7 @@ export class LatticeEngine {
   initializeTransformControls(): void {
     this.assertNotDisposed();
     this.ensureTransformControlsManager();
-    this.transformControlsManager!.initialize();
+    this.transformControlsManager?.initialize();
   }
 
   /**
@@ -1351,10 +1415,12 @@ export class LatticeEngine {
    * Called whenever a layer is transformed via the controls
    */
   setTransformChangeCallback(
-    callback: ((layerId: string, transform: LayerTransformUpdate) => void) | null
+    callback:
+      | ((layerId: string, transform: LayerTransformUpdate) => void)
+      | null,
   ): void {
     this.ensureTransformControlsManager();
-    this.transformControlsManager!.setTransformChangeCallback(callback);
+    this.transformControlsManager?.setTransformChangeCallback(callback);
   }
 
   /**
@@ -1364,7 +1430,7 @@ export class LatticeEngine {
   selectLayer(layerId: string | null): void {
     this.assertNotDisposed();
     this.ensureTransformControlsManager();
-    this.transformControlsManager!.selectLayer(layerId);
+    this.transformControlsManager?.selectLayer(layerId);
   }
 
   /**
@@ -1372,7 +1438,7 @@ export class LatticeEngine {
    */
   focusOnLayer(layerId: string): void {
     this.ensureTransformControlsManager();
-    this.transformControlsManager!.focusOnLayer(layerId);
+    this.transformControlsManager?.focusOnLayer(layerId);
   }
 
   /**
@@ -1386,16 +1452,16 @@ export class LatticeEngine {
    * Set the transform mode
    * @param mode - 'translate' | 'rotate' | 'scale'
    */
-  setTransformMode(mode: 'translate' | 'rotate' | 'scale'): void {
+  setTransformMode(mode: "translate" | "rotate" | "scale"): void {
     this.ensureTransformControlsManager();
-    this.transformControlsManager!.setMode(mode);
+    this.transformControlsManager?.setMode(mode);
   }
 
   /**
    * Get the current transform mode
    */
-  getTransformMode(): 'translate' | 'rotate' | 'scale' {
-    return this.transformControlsManager?.getMode() ?? 'translate';
+  getTransformMode(): "translate" | "rotate" | "scale" {
+    return this.transformControlsManager?.getMode() ?? "translate";
   }
 
   /**
@@ -1446,7 +1512,7 @@ export class LatticeEngine {
       imageData,
       width: imageData.width,
       height: imageData.height,
-      format: 'rgba',
+      format: "rgba",
     };
   }
 
@@ -1456,18 +1522,19 @@ export class LatticeEngine {
    * @param quality - Quality for lossy formats (0-1)
    */
   async captureFrameAsBlob(
-    format: 'png' | 'jpeg' | 'webp' = 'png',
-    quality: number = 0.95
+    format: "png" | "jpeg" | "webp" = "png",
+    quality: number = 0.95,
   ): Promise<Blob> {
     this.assertNotDisposed();
 
     // Validate quality (NaN or out of range would cause issues)
-    const validQuality = (Number.isFinite(quality) && quality >= 0 && quality <= 1) ? quality : 0.95;
+    const validQuality =
+      Number.isFinite(quality) && quality >= 0 && quality <= 1 ? quality : 0.95;
 
     const { imageData, width, height } = this.captureFrame();
 
     const canvas = new OffscreenCanvas(width, height);
-    const ctx = canvas.getContext('2d')!;
+    const ctx = canvas.getContext("2d")!;
     ctx.putImageData(imageData, 0, 0);
 
     return canvas.convertToBlob({
@@ -1525,7 +1592,7 @@ export class LatticeEngine {
     if (!this.eventHandlers.has(type)) {
       this.eventHandlers.set(type, new Set());
     }
-    this.eventHandlers.get(type)!.add(handler);
+    this.eventHandlers.get(type)?.add(handler);
   }
 
   /**
@@ -1544,7 +1611,7 @@ export class LatticeEngine {
       data,
     };
 
-    this.eventHandlers.get(type)?.forEach(handler => {
+    this.eventHandlers.get(type)?.forEach((handler) => {
       try {
         handler(event);
       } catch (error) {
@@ -1564,17 +1631,20 @@ export class LatticeEngine {
     this.contextLostHandler = (event: Event) => {
       event.preventDefault();
       this.stopRenderLoop();
-      this.emit('contextLost', null);
-      engineLogger.warn('WebGL context lost');
+      this.emit("contextLost", null);
+      engineLogger.warn("WebGL context lost");
     };
 
     this.contextRestoredHandler = () => {
-      this.emit('contextRestored', null);
-      engineLogger.info('WebGL context restored');
+      this.emit("contextRestored", null);
+      engineLogger.info("WebGL context restored");
     };
 
-    canvas.addEventListener('webglcontextlost', this.contextLostHandler);
-    canvas.addEventListener('webglcontextrestored', this.contextRestoredHandler);
+    canvas.addEventListener("webglcontextlost", this.contextLostHandler);
+    canvas.addEventListener(
+      "webglcontextrestored",
+      this.contextRestoredHandler,
+    );
   }
 
   // ============================================================================
@@ -1597,7 +1667,7 @@ export class LatticeEngine {
 
   private assertNotDisposed(): void {
     if (this.state.isDisposed) {
-      throw new Error('LatticeEngine has been disposed');
+      throw new Error("LatticeEngine has been disposed");
     }
   }
 
@@ -1614,7 +1684,7 @@ export class LatticeEngine {
       this.nestedCompRenderer = new NestedCompRenderer(
         this.resources,
         this.renderer,
-        this.camera.camera
+        this.camera.camera,
       );
     }
     return this.nestedCompRenderer;
@@ -1634,7 +1704,7 @@ export class LatticeEngine {
     compositionId: string,
     layers: Layer[],
     settings: { width: number; height: number; fps: number },
-    frame: number
+    frame: number,
   ): THREE.Texture | null {
     this.assertNotDisposed();
     return this.getNestedCompRenderer().renderToTexture(
@@ -1642,7 +1712,7 @@ export class LatticeEngine {
       layers,
       settings,
       frame,
-      this.audioReactiveGetter
+      this.audioReactiveGetter,
     );
   }
 
@@ -1685,11 +1755,14 @@ export class LatticeEngine {
     // Remove WebGL context event listeners
     const canvas = this.config.canvas;
     if (this.contextLostHandler) {
-      canvas.removeEventListener('webglcontextlost', this.contextLostHandler);
+      canvas.removeEventListener("webglcontextlost", this.contextLostHandler);
       this.contextLostHandler = null;
     }
     if (this.contextRestoredHandler) {
-      canvas.removeEventListener('webglcontextrestored', this.contextRestoredHandler);
+      canvas.removeEventListener(
+        "webglcontextrestored",
+        this.contextRestoredHandler,
+      );
       this.contextRestoredHandler = null;
     }
 
@@ -1715,10 +1788,10 @@ export class LatticeEngine {
     this.eventHandlers.clear();
 
     this.state.isDisposed = true;
-    this.emit('dispose', null);
+    this.emit("dispose", null);
 
     if (this.config.debug) {
-      engineLogger.debug('Disposed');
+      engineLogger.debug("Disposed");
     }
   }
 }

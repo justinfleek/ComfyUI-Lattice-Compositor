@@ -50,15 +50,17 @@
 </template>
 
 <script setup lang="ts">
-import type { StyleBlendingOptions, StyleBlendingOptionsUpdate } from '@/types/layerStyles';
+import type {
+  StyleBlendingOptions,
+  StyleBlendingOptionsUpdate,
+} from "@/types/layerStyles";
 
 defineProps<{
   options: StyleBlendingOptions;
 }>();
 
-const emit = defineEmits<{
-  (e: 'update', updates: StyleBlendingOptionsUpdate): void;
-}>();
+const _emit =
+  defineEmits<(e: "update", updates: StyleBlendingOptionsUpdate) => void>();
 </script>
 
 <style scoped>

@@ -17,12 +17,22 @@
 /**
  * Available stem types from Demucs separation
  */
-export type StemType = 'vocals' | 'drums' | 'bass' | 'other' | 'guitar' | 'piano';
+export type StemType =
+  | "vocals"
+  | "drums"
+  | "bass"
+  | "other"
+  | "guitar"
+  | "piano";
 
 /**
  * Demucs model variants
  */
-export type DemucsModel = 'htdemucs' | 'htdemucs_ft' | 'htdemucs_6s' | 'mdx_extra';
+export type DemucsModel =
+  | "htdemucs"
+  | "htdemucs_ft"
+  | "htdemucs_6s"
+  | "mdx_extra";
 
 /**
  * Model information from backend
@@ -40,7 +50,7 @@ export interface StemModel {
  * Separated stems result
  */
 export interface StemSeparationResult {
-  status: 'success' | 'error';
+  status: "success" | "error";
   message?: string;
   stems?: Record<StemType, string>; // stem name -> base64 WAV
   available_stems?: StemType[];
@@ -54,10 +64,10 @@ export interface StemSeparationResult {
  * Stem isolation result (single stem + everything else)
  */
 export interface StemIsolationResult {
-  status: 'success' | 'error';
+  status: "success" | "error";
   message?: string;
   isolated?: string; // base64 WAV of isolated stem
-  removed?: string;  // base64 WAV of everything else mixed
+  removed?: string; // base64 WAV of everything else mixed
   stem?: StemType;
   sample_rate?: number;
   duration?: number;
@@ -73,7 +83,7 @@ export type StemProgressCallback = (progress: number, message: string) => void;
 // API Communication
 // ============================================================================
 
-const API_BASE = '/lattice/audio/stems';
+const API_BASE = "/lattice/audio/stems";
 
 /**
  * Get available stem separation models
@@ -83,14 +93,14 @@ export async function getStemModels(): Promise<StemModel[]> {
     const response = await fetch(`${API_BASE}/models`);
     const data = await response.json();
 
-    if (data.status === 'success') {
+    if (data.status === "success") {
       return data.models;
     }
 
-    console.warn('Failed to get stem models:', data.message);
+    console.warn("Failed to get stem models:", data.message);
     return getDefaultModels();
   } catch (error) {
-    console.warn('Stem separation backend not available:', error);
+    console.warn("Stem separation backend not available:", error);
     return getDefaultModels();
   }
 }
@@ -101,29 +111,29 @@ export async function getStemModels(): Promise<StemModel[]> {
 function getDefaultModels(): StemModel[] {
   return [
     {
-      id: 'htdemucs',
-      name: 'HT-Demucs',
-      description: 'Hybrid Transformer Demucs - Best quality, slower',
-      stems: ['drums', 'bass', 'other', 'vocals'],
+      id: "htdemucs",
+      name: "HT-Demucs",
+      description: "Hybrid Transformer Demucs - Best quality, slower",
+      stems: ["drums", "bass", "other", "vocals"],
       sample_rate: 44100,
-      recommended: true
+      recommended: true,
     },
     {
-      id: 'htdemucs_ft',
-      name: 'HT-Demucs Fine-tuned',
-      description: 'Fine-tuned on MusDB-HQ - Highest quality',
-      stems: ['drums', 'bass', 'other', 'vocals'],
+      id: "htdemucs_ft",
+      name: "HT-Demucs Fine-tuned",
+      description: "Fine-tuned on MusDB-HQ - Highest quality",
+      stems: ["drums", "bass", "other", "vocals"],
       sample_rate: 44100,
-      recommended: false
+      recommended: false,
     },
     {
-      id: 'mdx_extra',
-      name: 'MDX Extra',
-      description: 'Fast and accurate - Good balance',
-      stems: ['drums', 'bass', 'other', 'vocals'],
+      id: "mdx_extra",
+      name: "MDX Extra",
+      description: "Fast and accurate - Good balance",
+      stems: ["drums", "bass", "other", "vocals"],
       sample_rate: 44100,
-      recommended: false
-    }
+      recommended: false,
+    },
   ];
 }
 
@@ -152,15 +162,17 @@ export async function separateStems(
   options: {
     model?: DemucsModel;
     stems?: StemType[];
-  } = {}
+  } = {},
 ): Promise<StemSeparationResult> {
   try {
     // Convert audio to base64
     let audioBase64: string;
 
-    if (typeof audioData === 'string') {
+    if (typeof audioData === "string") {
       // Already base64
-      audioBase64 = audioData.includes(',') ? audioData.split(',')[1] : audioData;
+      audioBase64 = audioData.includes(",")
+        ? audioData.split(",")[1]
+        : audioData;
     } else if (audioData instanceof Blob) {
       audioBase64 = await blobToBase64(audioData);
     } else {
@@ -169,30 +181,30 @@ export async function separateStems(
     }
 
     const response = await fetch(`${API_BASE}/separate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         audio: audioBase64,
-        model: options.model || 'htdemucs',
-        stems: options.stems
-      })
+        model: options.model || "htdemucs",
+        stems: options.stems,
+      }),
     });
 
     const result = await response.json();
 
     if (!response.ok) {
       return {
-        status: 'error',
-        message: result.message || `HTTP ${response.status}`
+        status: "error",
+        message: result.message || `HTTP ${response.status}`,
       };
     }
 
     return result;
   } catch (error) {
-    console.error('Stem separation failed:', error);
+    console.error("Stem separation failed:", error);
     return {
-      status: 'error',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      status: "error",
+      message: error instanceof Error ? error.message : "Unknown error",
     };
   }
 }
@@ -222,13 +234,15 @@ export async function separateStems(
 export async function isolateStem(
   audioData: ArrayBuffer | Blob | string,
   stem: StemType,
-  model: DemucsModel = 'htdemucs'
+  model: DemucsModel = "htdemucs",
 ): Promise<StemIsolationResult> {
   try {
     let audioBase64: string;
 
-    if (typeof audioData === 'string') {
-      audioBase64 = audioData.includes(',') ? audioData.split(',')[1] : audioData;
+    if (typeof audioData === "string") {
+      audioBase64 = audioData.includes(",")
+        ? audioData.split(",")[1]
+        : audioData;
     } else if (audioData instanceof Blob) {
       audioBase64 = await blobToBase64(audioData);
     } else {
@@ -236,30 +250,30 @@ export async function isolateStem(
     }
 
     const response = await fetch(`${API_BASE}/isolate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         audio: audioBase64,
         stem,
-        model
-      })
+        model,
+      }),
     });
 
     const result = await response.json();
 
     if (!response.ok) {
       return {
-        status: 'error',
-        message: result.message || `HTTP ${response.status}`
+        status: "error",
+        message: result.message || `HTTP ${response.status}`,
       };
     }
 
     return result;
   } catch (error) {
-    console.error('Stem isolation failed:', error);
+    console.error("Stem isolation failed:", error);
     return {
-      status: 'error',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      status: "error",
+      message: error instanceof Error ? error.message : "Unknown error",
     };
   }
 }
@@ -300,12 +314,12 @@ export async function isolateStem(
 export async function separateStemsForReactivity(
   audioData: ArrayBuffer | Blob | string,
   audioContext: AudioContext,
-  model: DemucsModel = 'htdemucs'
+  model: DemucsModel = "htdemucs",
 ): Promise<Record<StemType, AudioBuffer> | null> {
   const result = await separateStems(audioData, { model });
 
-  if (result.status !== 'success' || !result.stems) {
-    console.error('Failed to separate stems:', result.message);
+  if (result.status !== "success" || !result.stems) {
+    console.error("Failed to separate stems:", result.message);
     return null;
   }
 
@@ -333,7 +347,7 @@ export async function separateStemsForReactivity(
  */
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
-  let binary = '';
+  let binary = "";
   for (let i = 0; i < bytes.byteLength; i++) {
     binary += String.fromCharCode(bytes[i]);
   }
@@ -361,7 +375,7 @@ async function blobToBase64(blob: Blob): Promise<string> {
     reader.onloadend = () => {
       const result = reader.result as string;
       // Remove data URL prefix
-      const base64 = result.split(',')[1];
+      const base64 = result.split(",")[1];
       resolve(base64);
     };
     reader.onerror = reject;
@@ -372,7 +386,10 @@ async function blobToBase64(blob: Blob): Promise<string> {
 /**
  * Convert base64 string to Blob
  */
-export function base64ToBlob(base64: string, mimeType: string = 'audio/wav'): Blob {
+export function base64ToBlob(
+  base64: string,
+  mimeType: string = "audio/wav",
+): Blob {
   const bytes = base64ToArrayBuffer(base64);
   return new Blob([bytes], { type: mimeType });
 }
@@ -381,10 +398,10 @@ export function base64ToBlob(base64: string, mimeType: string = 'audio/wav'): Bl
  * Create a download link for a stem
  */
 export function downloadStem(base64: string, filename: string): void {
-  const blob = base64ToBlob(base64, 'audio/wav');
+  const blob = base64ToBlob(base64, "audio/wav");
   const url = URL.createObjectURL(blob);
 
-  const a = document.createElement('a');
+  const a = document.createElement("a");
   a.href = url;
   a.download = filename;
   a.click();
@@ -396,15 +413,19 @@ export function downloadStem(base64: string, filename: string): void {
  * Create an audio element for playback
  */
 export function createAudioElement(base64: string): HTMLAudioElement {
-  const blob = base64ToBlob(base64, 'audio/wav');
+  const blob = base64ToBlob(base64, "audio/wav");
   const url = URL.createObjectURL(blob);
 
   const audio = new Audio(url);
 
   // Clean up URL when audio is loaded
-  audio.addEventListener('loadeddata', () => {
-    URL.revokeObjectURL(url);
-  }, { once: true });
+  audio.addEventListener(
+    "loadeddata",
+    () => {
+      URL.revokeObjectURL(url);
+    },
+    { once: true },
+  );
 
   return audio;
 }
@@ -421,8 +442,8 @@ export const STEM_PRESETS = {
    * Karaoke mode - remove vocals, keep instrumental
    */
   karaoke: {
-    description: 'Remove vocals for karaoke',
-    stem: 'vocals' as StemType,
+    description: "Remove vocals for karaoke",
+    stem: "vocals" as StemType,
     useRemoved: true, // Use the "removed" output (instrumental)
   },
 
@@ -430,8 +451,8 @@ export const STEM_PRESETS = {
    * Vocal isolation - extract vocals only
    */
   vocals: {
-    description: 'Extract vocals only',
-    stem: 'vocals' as StemType,
+    description: "Extract vocals only",
+    stem: "vocals" as StemType,
     useRemoved: false,
   },
 
@@ -439,8 +460,8 @@ export const STEM_PRESETS = {
    * Drum isolation - for drum practice or analysis
    */
   drums: {
-    description: 'Extract drums for practice',
-    stem: 'drums' as StemType,
+    description: "Extract drums for practice",
+    stem: "drums" as StemType,
     useRemoved: false,
   },
 
@@ -448,8 +469,8 @@ export const STEM_PRESETS = {
    * Bass isolation - for bass practice or mixing
    */
   bass: {
-    description: 'Extract bass for practice',
-    stem: 'bass' as StemType,
+    description: "Extract bass for practice",
+    stem: "bass" as StemType,
     useRemoved: false,
   },
 
@@ -457,8 +478,8 @@ export const STEM_PRESETS = {
    * Accompaniment - everything except melody instruments
    */
   accompaniment: {
-    description: 'Keep drums and bass only',
-    stems: ['drums', 'bass'] as StemType[],
+    description: "Keep drums and bass only",
+    stems: ["drums", "bass"] as StemType[],
   },
 } as const;
 
@@ -468,8 +489,8 @@ export const STEM_PRESETS = {
 export async function isStemSeparationAvailable(): Promise<boolean> {
   try {
     const response = await fetch(`${API_BASE}/models`, {
-      method: 'GET',
-      signal: AbortSignal.timeout(3000) // 3 second timeout
+      method: "GET",
+      signal: AbortSignal.timeout(3000), // 3 second timeout
     });
     return response.ok;
   } catch {

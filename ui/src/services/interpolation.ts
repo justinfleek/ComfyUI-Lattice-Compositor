@@ -24,17 +24,21 @@
  * - Bezier handle normalization caching (15-25% gain for bezier-heavy animations)
  * - Cached computations where possible
  */
-import type { Keyframe, AnimatableProperty, BezierHandle, PropertyExpression } from '@/types/project';
-import type { BezierPath } from '@/types/shapes';
-import { getEasing, easings, type EasingName } from './easing';
-import { renderLogger } from '@/utils/logger';
+import type {
+  AnimatableProperty,
+  BezierHandle,
+  Keyframe,
+} from "@/types/project";
+import type { BezierPath } from "@/types/shapes";
+import { renderLogger } from "@/utils/logger";
+import { createFootageAccessor } from "./dataImport";
+import { easings, getEasing } from "./easing";
 import {
-  evaluateExpression,
-  type ExpressionContext,
   type Expression,
-} from './expressions';
-import { morphPaths, prepareMorphPaths, isBezierPath } from './pathMorphing';
-import { createFootageAccessor } from './dataImport';
+  type ExpressionContext,
+  evaluateExpression,
+} from "./expressions";
+import { isBezierPath, morphPaths, prepareMorphPaths } from "./pathMorphing";
 
 // ============================================================================
 // BEZIER HANDLE CACHE
@@ -69,7 +73,7 @@ class BezierCache {
     outHandle: BezierHandle,
     inHandle: BezierHandle,
     frameDuration: number,
-    valueDelta: number
+    valueDelta: number,
   ): string {
     // Round to 4 decimal places for consistent keys
     const round = (n: number) => Math.round(n * 10000);
@@ -83,7 +87,7 @@ class BezierCache {
     outHandle: BezierHandle,
     inHandle: BezierHandle,
     frameDuration: number,
-    valueDelta: number
+    valueDelta: number,
   ): NormalizedBezier {
     const key = this.makeKey(outHandle, inHandle, frameDuration, valueDelta);
 
@@ -96,9 +100,11 @@ class BezierCache {
     }
 
     // Compute normalized control points
-    const x1 = frameDuration > 0 ? Math.abs(outHandle.frame) / frameDuration : 0.33;
+    const x1 =
+      frameDuration > 0 ? Math.abs(outHandle.frame) / frameDuration : 0.33;
     const y1 = valueDelta !== 0 ? outHandle.value / valueDelta : 0.33;
-    const x2 = frameDuration > 0 ? 1 - Math.abs(inHandle.frame) / frameDuration : 0.67;
+    const x2 =
+      frameDuration > 0 ? 1 - Math.abs(inHandle.frame) / frameDuration : 0.67;
     const y2 = valueDelta !== 0 ? 1 - inHandle.value / valueDelta : 0.67;
 
     const normalized: NormalizedBezier = { x1, y1, x2, y2 };
@@ -183,12 +189,20 @@ function findKeyframeIndex<T>(keyframes: Keyframe<T>[], frame: number): number {
  * Calculate the scalar delta between two values for bezier normalization
  */
 function getValueDelta<T>(v1: T, v2: T): number {
-  if (typeof v1 === 'number' && typeof v2 === 'number') {
+  if (typeof v1 === "number" && typeof v2 === "number") {
     return v2 - v1;
   }
   // For vectors, use magnitude of the difference
-  if (typeof v1 === 'object' && v1 !== null && 'x' in v1 && 'y' in v1 &&
-      typeof v2 === 'object' && v2 !== null && 'x' in v2 && 'y' in v2) {
+  if (
+    typeof v1 === "object" &&
+    v1 !== null &&
+    "x" in v1 &&
+    "y" in v1 &&
+    typeof v2 === "object" &&
+    v2 !== null &&
+    "x" in v2 &&
+    "y" in v2
+  ) {
     const dx = (v2 as any).x - (v1 as any).x;
     const dy = (v2 as any).y - (v1 as any).y;
     return Math.sqrt(dx * dx + dy * dy) || 1;
@@ -209,8 +223,8 @@ export function interpolateProperty<T>(
   property: AnimatableProperty<T>,
   frame: number,
   fps: number = 16,
-  layerId: string = '',
-  compDuration?: number
+  layerId: string = "",
+  compDuration?: number,
 ): T {
   // Calculate base interpolated value
   let value: T;
@@ -228,8 +242,7 @@ export function interpolateProperty<T>(
     // After last keyframe - return last keyframe value
     else if (frame >= keyframes[keyframes.length - 1].frame) {
       value = keyframes[keyframes.length - 1].value;
-    }
-    else {
+    } else {
       // Find surrounding keyframes using binary search (O(log n) instead of O(n))
       const idx = findKeyframeIndex(keyframes, frame);
       const k1 = keyframes[idx];
@@ -241,21 +254,29 @@ export function interpolateProperty<T>(
       let t = duration > 0 ? elapsed / duration : 0;
 
       // Apply interpolation based on type
-      const interpolation = k1.interpolation || 'linear';
+      const interpolation = k1.interpolation || "linear";
 
-      if (interpolation === 'hold') {
+      if (interpolation === "hold") {
         value = k1.value;
       } else {
-        if (interpolation === 'bezier') {
+        if (interpolation === "bezier") {
           // Use bezier handles for custom curves
           const valueDelta = getValueDelta(k1.value, k2.value);
-          t = cubicBezierEasing(t, k1.outHandle, k2.inHandle, duration, valueDelta);
-        } else if (interpolation !== 'linear' && interpolation in easings) {
+          t = cubicBezierEasing(
+            t,
+            k1.outHandle,
+            k2.inHandle,
+            duration,
+            valueDelta,
+          );
+        } else if (interpolation !== "linear" && interpolation in easings) {
           // Apply named easing function
           const easingFn = getEasing(interpolation);
           t = easingFn(t);
-        } else if (interpolation !== 'linear') {
-          renderLogger.warn(`Unknown interpolation type: ${interpolation}, using linear`);
+        } else if (interpolation !== "linear") {
+          renderLogger.warn(
+            `Unknown interpolation type: ${interpolation}, using linear`,
+          );
         }
 
         // Interpolate the value based on type
@@ -266,7 +287,14 @@ export function interpolateProperty<T>(
 
   // Apply expression if present
   if (property.expression?.enabled) {
-    value = applyPropertyExpression(property, value, frame, fps, layerId, compDuration);
+    value = applyPropertyExpression(
+      property,
+      value,
+      frame,
+      fps,
+      layerId,
+      compDuration,
+    );
   }
 
   return value;
@@ -281,7 +309,7 @@ function applyPropertyExpression<T>(
   frame: number,
   fps: number,
   layerId: string,
-  compDuration?: number
+  compDuration?: number,
 ): T {
   const expr = property.expression;
   if (!expr || !expr.enabled) return value;
@@ -291,7 +319,7 @@ function applyPropertyExpression<T>(
   const velocity = calculateVelocity(property, frame, fps);
 
   // BUG-041 FIX: Use actual composition duration if provided, otherwise default to 81/fps (4n+1 pattern)
-  const duration = compDuration ?? (81 / fps);
+  const duration = compDuration ?? 81 / fps;
   const frameCount = Math.round(duration * fps);
 
   const ctx: ExpressionContext = {
@@ -301,7 +329,7 @@ function applyPropertyExpression<T>(
     duration,
     layerId,
     layerIndex: 0,
-    layerName: '',
+    layerName: "",
     inPoint: 0,
     outPoint: frameCount,
     propertyName: property.name,
@@ -315,7 +343,7 @@ function applyPropertyExpression<T>(
 
   // Convert PropertyExpression to Expression format
   const expression: Expression = {
-    type: expr.type as 'preset' | 'function' | 'custom',
+    type: expr.type as "preset" | "function" | "custom",
     name: expr.name,
     params: expr.params as Record<string, any>,
     enabled: expr.enabled,
@@ -333,23 +361,23 @@ function applyPropertyExpression<T>(
 function calculateVelocity<T>(
   property: AnimatableProperty<T>,
   frame: number,
-  fps: number
+  fps: number,
 ): number | number[] {
   const delta = 0.5; // Sample half frame before and after
 
   const valueBefore = interpolatePropertyBase(property, frame - delta);
   const valueAfter = interpolatePropertyBase(property, frame + delta);
 
-  if (typeof valueBefore === 'number' && typeof valueAfter === 'number') {
+  if (typeof valueBefore === "number" && typeof valueAfter === "number") {
     return (valueAfter - valueBefore) * fps;
   }
 
-  if (typeof valueBefore === 'object' && typeof valueAfter === 'object') {
+  if (typeof valueBefore === "object" && typeof valueAfter === "object") {
     const vb = valueBefore as any;
     const va = valueAfter as any;
-    if ('x' in vb && 'y' in vb) {
+    if ("x" in vb && "y" in vb) {
       const result = [(va.x - vb.x) * fps, (va.y - vb.y) * fps];
-      if ('z' in vb && 'z' in va) {
+      if ("z" in vb && "z" in va) {
         result.push((va.z - vb.z) * fps);
       }
       return result;
@@ -364,7 +392,7 @@ function calculateVelocity<T>(
  */
 function interpolatePropertyBase<T>(
   property: AnimatableProperty<T>,
-  frame: number
+  frame: number,
 ): T {
   if (!property.animated || property.keyframes.length === 0) {
     return property.value;
@@ -388,14 +416,14 @@ function interpolatePropertyBase<T>(
   const elapsed = frame - k1.frame;
   let t = duration > 0 ? elapsed / duration : 0;
 
-  const interpolation = k1.interpolation || 'linear';
+  const interpolation = k1.interpolation || "linear";
 
-  if (interpolation === 'hold') {
+  if (interpolation === "hold") {
     return k1.value;
-  } else if (interpolation === 'bezier') {
+  } else if (interpolation === "bezier") {
     const valueDelta = getValueDelta(k1.value, k2.value);
     t = cubicBezierEasing(t, k1.outHandle, k2.inHandle, duration, valueDelta);
-  } else if (interpolation !== 'linear' && interpolation in easings) {
+  } else if (interpolation !== "linear" && interpolation in easings) {
     const easingFn = getEasing(interpolation);
     t = easingFn(t);
   }
@@ -424,7 +452,7 @@ function cubicBezierEasing(
   outHandle: BezierHandle,
   inHandle: BezierHandle,
   frameDuration: number = 1,
-  valueDelta: number = 1
+  valueDelta: number = 1,
 ): number {
   // If handles are disabled, return linear
   if (!outHandle.enabled && !inHandle.enabled) {
@@ -432,7 +460,12 @@ function cubicBezierEasing(
   }
 
   // Get normalized control points from cache (or compute and cache)
-  const { x1, y1, x2, y2 } = bezierCache.get(outHandle, inHandle, frameDuration, valueDelta);
+  const { x1, y1, x2, y2 } = bezierCache.get(
+    outHandle,
+    inHandle,
+    frameDuration,
+    valueDelta,
+  );
 
   // Find t value for given x using Newton-Raphson iteration
   // With early exit when error is small enough (typically converges in 2-4 iterations)
@@ -461,7 +494,13 @@ function cubicBezierEasing(
 /**
  * Cubic bezier point calculation
  */
-function bezierPoint(t: number, p0: number, p1: number, p2: number, p3: number): number {
+function bezierPoint(
+  t: number,
+  p0: number,
+  p1: number,
+  p2: number,
+  p3: number,
+): number {
   const mt = 1 - t;
   return (
     mt * mt * mt * p0 +
@@ -474,12 +513,16 @@ function bezierPoint(t: number, p0: number, p1: number, p2: number, p3: number):
 /**
  * Cubic bezier derivative
  */
-function bezierDerivative(t: number, p0: number, p1: number, p2: number, p3: number): number {
+function bezierDerivative(
+  t: number,
+  p0: number,
+  p1: number,
+  p2: number,
+  p3: number,
+): number {
   const mt = 1 - t;
   return (
-    3 * mt * mt * (p1 - p0) +
-    6 * mt * t * (p2 - p1) +
-    3 * t * t * (p3 - p2)
+    3 * mt * mt * (p1 - p0) + 6 * mt * t * (p2 - p1) + 3 * t * t * (p3 - p2)
   );
 }
 
@@ -489,32 +532,36 @@ function bezierDerivative(t: number, p0: number, p1: number, p2: number, p3: num
  */
 function interpolateValue<T>(v1: T, v2: T, t: number): T {
   // Number
-  if (typeof v1 === 'number' && typeof v2 === 'number') {
+  if (typeof v1 === "number" && typeof v2 === "number") {
     return (v1 + (v2 - v1) * t) as T;
   }
 
   // Position/Vector object (Supports 2D and 3D)
   if (
-    typeof v1 === 'object' && v1 !== null &&
-    typeof v2 === 'object' && v2 !== null &&
-    'x' in v1 && 'y' in v1 &&
-    'x' in v2 && 'y' in v2
+    typeof v1 === "object" &&
+    v1 !== null &&
+    typeof v2 === "object" &&
+    v2 !== null &&
+    "x" in v1 &&
+    "y" in v1 &&
+    "x" in v2 &&
+    "y" in v2
   ) {
     const val1 = v1 as any;
     const val2 = v2 as any;
 
     const result: any = {
       x: val1.x + (val2.x - val1.x) * t,
-      y: val1.y + (val2.y - val1.y) * t
+      y: val1.y + (val2.y - val1.y) * t,
     };
 
     // Handle Z if present in both
-    if ('z' in val1 && 'z' in val2) {
+    if ("z" in val1 && "z" in val2) {
       result.z = val1.z + (val2.z - val1.z) * t;
-    } else if ('z' in val1) {
+    } else if ("z" in val1) {
       // Transitioning from 3D to 2D (rare, but handle it)
       result.z = val1.z * (1 - t);
-    } else if ('z' in val2) {
+    } else if ("z" in val2) {
       // Transitioning from 2D to 3D
       result.z = val2.z * t;
     }
@@ -523,8 +570,12 @@ function interpolateValue<T>(v1: T, v2: T, t: number): T {
   }
 
   // Color (hex string)
-  if (typeof v1 === 'string' && typeof v2 === 'string' &&
-      v1.startsWith('#') && v2.startsWith('#')) {
+  if (
+    typeof v1 === "string" &&
+    typeof v2 === "string" &&
+    v1.startsWith("#") &&
+    v2.startsWith("#")
+  ) {
     return interpolateColor(v1, v2, t) as T;
   }
 
@@ -553,11 +604,14 @@ function interpolateColor(c1: string, c2: string, t: number): string {
   const g = Math.round(g1 + (g2 - g1) * t);
   const b = Math.round(b1 + (b2 - b1) * t);
 
-  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+  return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
 }
 
 // Path morph cache for prepared paths (keyed by path pair hashes)
-const pathMorphCache = new Map<string, { source: BezierPath; target: BezierPath }>();
+const pathMorphCache = new Map<
+  string,
+  { source: BezierPath; target: BezierPath }
+>();
 const PATH_MORPH_CACHE_MAX = 100;
 
 /**
@@ -566,10 +620,10 @@ const PATH_MORPH_CACHE_MAX = 100;
 function hashBezierPath(path: BezierPath): string {
   // Use vertex count and first/last point coordinates for a quick hash
   const v = path.vertices;
-  if (v.length === 0) return 'empty';
+  if (v.length === 0) return "empty";
   const first = v[0];
   const last = v[v.length - 1];
-  return `${v.length}_${first.point.x.toFixed(1)}_${first.point.y.toFixed(1)}_${last.point.x.toFixed(1)}_${last.point.y.toFixed(1)}_${path.closed ? 'c' : 'o'}`;
+  return `${v.length}_${first.point.x.toFixed(1)}_${first.point.y.toFixed(1)}_${last.point.x.toFixed(1)}_${last.point.y.toFixed(1)}_${path.closed ? "c" : "o"}`;
 }
 
 /**
@@ -581,7 +635,11 @@ function hashBezierPath(path: BezierPath): string {
  *
  * The prepared paths are cached to avoid re-computation on each frame.
  */
-function interpolatePath(p1: BezierPath, p2: BezierPath, t: number): BezierPath {
+function interpolatePath(
+  p1: BezierPath,
+  p2: BezierPath,
+  t: number,
+): BezierPath {
   // Edge cases
   if (t <= 0) return p1;
   if (t >= 1) return p2;
@@ -623,24 +681,24 @@ export function clearPathMorphCache(): void {
 export const EASING_PRESETS_NORMALIZED = {
   linear: {
     outHandle: { x: 0.33, y: 0.33 },
-    inHandle: { x: 0.33, y: 0.33 }
+    inHandle: { x: 0.33, y: 0.33 },
   },
   easeIn: {
     outHandle: { x: 0.42, y: 0 },
-    inHandle: { x: 0.33, y: 0.33 }
+    inHandle: { x: 0.33, y: 0.33 },
   },
   easeOut: {
     outHandle: { x: 0.33, y: 0.33 },
-    inHandle: { x: 0.58, y: 1 }
+    inHandle: { x: 0.58, y: 1 },
   },
   easeInOut: {
     outHandle: { x: 0.42, y: 0 },
-    inHandle: { x: 0.58, y: 1 }
+    inHandle: { x: 0.58, y: 1 },
   },
   easeOutBack: {
     outHandle: { x: 0.33, y: 0.33 },
-    inHandle: { x: 0.34, y: 1.56 }  // Overshoot
-  }
+    inHandle: { x: 0.34, y: 1.56 }, // Overshoot
+  },
 };
 
 // Legacy alias for backwards compatibility
@@ -653,7 +711,7 @@ export const EASING_PRESETS = EASING_PRESETS_NORMALIZED;
 export function createHandlesForPreset(
   presetName: keyof typeof EASING_PRESETS_NORMALIZED,
   frameDuration: number,
-  valueDelta: number
+  valueDelta: number,
 ): { inHandle: BezierHandle; outHandle: BezierHandle } {
   const preset = EASING_PRESETS_NORMALIZED[presetName];
 
@@ -661,13 +719,13 @@ export function createHandlesForPreset(
     outHandle: {
       frame: preset.outHandle.x * frameDuration,
       value: preset.outHandle.y * valueDelta,
-      enabled: true
+      enabled: true,
     },
     inHandle: {
       frame: -preset.inHandle.x * frameDuration,
       value: -preset.inHandle.y * valueDelta,
-      enabled: true
-    }
+      enabled: true,
+    },
   };
 }
 
@@ -678,11 +736,11 @@ export function createHandlesForPreset(
 export function applyEasingPreset(
   keyframe: Keyframe<any>,
   presetName: keyof typeof EASING_PRESETS_NORMALIZED,
-  _direction: 'in' | 'out' | 'both' = 'both'
+  _direction: "in" | "out" | "both" = "both",
 ): void {
   // For the new system, we simply set the interpolation type to 'bezier'
   // The actual easing is applied through named easings in the interpolation property
-  keyframe.interpolation = presetName === 'linear' ? 'linear' : 'bezier';
+  keyframe.interpolation = presetName === "linear" ? "linear" : "bezier";
 }
 
 /**
@@ -700,17 +758,19 @@ export function getBezierCurvePoint(
   outHandle: BezierHandle,
   inHandle: BezierHandle,
   frameDuration: number = 1,
-  valueDelta: number = 1
+  valueDelta: number = 1,
 ): { x: number; y: number } {
   // Convert absolute handles to normalized 0-1 space
-  const x1 = frameDuration > 0 ? Math.abs(outHandle.frame) / frameDuration : 0.33;
+  const x1 =
+    frameDuration > 0 ? Math.abs(outHandle.frame) / frameDuration : 0.33;
   const y1 = valueDelta !== 0 ? outHandle.value / valueDelta : 0.33;
-  const x2 = frameDuration > 0 ? 1 - Math.abs(inHandle.frame) / frameDuration : 0.67;
+  const x2 =
+    frameDuration > 0 ? 1 - Math.abs(inHandle.frame) / frameDuration : 0.67;
   const y2 = valueDelta !== 0 ? 1 - inHandle.value / valueDelta : 0.67;
 
   return {
     x: bezierPoint(t, 0, x1, x2, 1),
-    y: bezierPoint(t, 0, y1, y2, 1)
+    y: bezierPoint(t, 0, y1, y2, 1),
   };
 }
 
@@ -721,7 +781,7 @@ export function getBezierCurvePoint(
 export function getBezierCurvePointNormalized(
   t: number,
   outHandle: { x: number; y: number },
-  inHandle: { x: number; y: number }
+  inHandle: { x: number; y: number },
 ): { x: number; y: number } {
   const x1 = outHandle.x;
   const y1 = outHandle.y;
@@ -730,7 +790,7 @@ export function getBezierCurvePointNormalized(
 
   return {
     x: bezierPoint(t, 0, x1, x2, 1),
-    y: bezierPoint(t, 0, y1, y2, 1)
+    y: bezierPoint(t, 0, y1, y2, 1),
   };
 }
 
@@ -740,13 +800,20 @@ export function getBezierCurvePointNormalized(
  */
 export function applyEasing(
   ratio: number,
-  preset: { outHandle: { x: number; y: number }; inHandle: { x: number; y: number } }
+  preset: {
+    outHandle: { x: number; y: number };
+    inHandle: { x: number; y: number };
+  },
 ): number {
   // Clamp ratio to 0-1
   const t = Math.max(0, Math.min(1, ratio));
 
   // Get the bezier curve point at t using normalized values
-  const point = getBezierCurvePointNormalized(t, preset.outHandle, preset.inHandle);
+  const point = getBezierCurvePointNormalized(
+    t,
+    preset.outHandle,
+    preset.inHandle,
+  );
 
   // Return the y value (eased value)
   return point.y;

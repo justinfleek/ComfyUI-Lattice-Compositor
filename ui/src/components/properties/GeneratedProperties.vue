@@ -101,37 +101,37 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import type { Layer, GeneratedLayerData } from '@/types/project';
+import { computed, ref } from "vue";
 import {
-  PREPROCESSOR_REGISTRY,
-  getPreprocessorsForType,
-  getDefaultPreprocessor,
   generateFromLayer,
+  getDefaultPreprocessor,
+  getPreprocessorsForType,
+  PREPROCESSOR_REGISTRY,
   type PreprocessorInfo,
-} from '@/services/preprocessorService';
+} from "@/services/preprocessorService";
+import { useCompositorStore } from "@/stores/compositorStore";
+import type { GeneratedLayerData, Layer } from "@/types/project";
 
 const props = defineProps<{
   layer: Layer;
 }>();
 
-const emit = defineEmits<{
-  (e: 'update', data: Partial<GeneratedLayerData>): void;
-}>();
+const emit =
+  defineEmits<(e: "update", data: Partial<GeneratedLayerData>) => void>();
 
 const store = useCompositorStore();
 
 // Progress message shown during generation
-const progressMessage = ref('');
+const progressMessage = ref("");
 
 const generatedData = computed(() => props.layer.data as GeneratedLayerData);
 
 // Get layers that can be sources (images, video, other layers - not this one)
-const sourceLayers = computed(() => {
-  return store.layers.filter(l =>
-    l.id !== props.layer.id &&
-    ['image', 'video', 'solid', 'text', 'spline', 'shape'].includes(l.type)
+const _sourceLayers = computed(() => {
+  return store.layers.filter(
+    (l) =>
+      l.id !== props.layer.id &&
+      ["image", "video", "solid", "text", "spline", "shape"].includes(l.type),
   );
 });
 
@@ -144,17 +144,17 @@ const generationResolution = computed(() => {
   // Round to nearest standard resolution (256, 384, 512, 768, 1024)
   const standardResolutions = [256, 384, 512, 768, 1024];
   return standardResolutions.reduce((prev, curr) =>
-    Math.abs(curr - minDim) < Math.abs(prev - minDim) ? curr : prev
+    Math.abs(curr - minDim) < Math.abs(prev - minDim) ? curr : prev,
   );
 });
 
 // Get available preprocessors based on selected generation type
 const availablePreprocessors = computed((): PreprocessorInfo[] => {
-  return getPreprocessorsForType(generatedData.value.generationType || 'depth');
+  return getPreprocessorsForType(generatedData.value.generationType || "depth");
 });
 
 // Group preprocessors by category for the dropdown
-const preprocessorGroups = computed(() => {
+const _preprocessorGroups = computed(() => {
   const groups: Record<string, PreprocessorInfo[]> = {};
   for (const p of availablePreprocessors.value) {
     const category = p.category.charAt(0).toUpperCase() + p.category.slice(1);
@@ -167,53 +167,73 @@ const preprocessorGroups = computed(() => {
 });
 
 // Get the current preprocessor info
-const currentPreprocessor = computed((): PreprocessorInfo | null => {
-  const model = generatedData.value.model || getDefaultPreprocessor(generatedData.value.generationType || 'depth');
+const _currentPreprocessor = computed((): PreprocessorInfo | null => {
+  const model =
+    generatedData.value.model ||
+    getDefaultPreprocessor(generatedData.value.generationType || "depth");
   return PREPROCESSOR_REGISTRY[model] || null;
 });
 
-const statusIcon = computed(() => {
+const _statusIcon = computed(() => {
   switch (generatedData.value.status) {
-    case 'pending': return '○';
-    case 'generating': return '◐';
-    case 'complete': return '●';
-    case 'error': return '✕';
-    default: return '○';
+    case "pending":
+      return "○";
+    case "generating":
+      return "◐";
+    case "complete":
+      return "●";
+    case "error":
+      return "✕";
+    default:
+      return "○";
   }
 });
 
-const statusText = computed(() => {
+const _statusText = computed(() => {
   switch (generatedData.value.status) {
-    case 'pending': return 'Not generated';
-    case 'generating': return progressMessage.value || 'Generating...';
-    case 'complete': return 'Complete';
-    case 'error': return 'Error';
-    default: return 'Unknown';
+    case "pending":
+      return "Not generated";
+    case "generating":
+      return progressMessage.value || "Generating...";
+    case "complete":
+      return "Complete";
+    case "error":
+      return "Error";
+    default:
+      return "Unknown";
   }
 });
 
-function updateData<K extends keyof GeneratedLayerData>(key: K, value: GeneratedLayerData[K]) {
-  emit('update', { [key]: value } as Partial<GeneratedLayerData>);
+function updateData<K extends keyof GeneratedLayerData>(
+  key: K,
+  value: GeneratedLayerData[K],
+) {
+  emit("update", { [key]: value } as Partial<GeneratedLayerData>);
 }
 
 // When generation type changes, update to the default preprocessor for that type
-function onGenerationTypeChange(type: string) {
-  updateData('generationType', type as GeneratedLayerData['generationType']);
-  updateData('model', getDefaultPreprocessor(type));
+function _onGenerationTypeChange(type: string) {
+  updateData("generationType", type as GeneratedLayerData["generationType"]);
+  updateData("model", getDefaultPreprocessor(type));
 }
 
-async function regenerate() {
+async function _regenerate() {
   const sourceLayerId = generatedData.value.sourceLayerId;
   if (!sourceLayerId) {
-    emit('update', { status: 'error', errorMessage: 'No source layer selected' });
+    emit("update", {
+      status: "error",
+      errorMessage: "No source layer selected",
+    });
     return;
   }
 
-  const preprocessorId = generatedData.value.model || getDefaultPreprocessor(generatedData.value.generationType || 'depth');
+  const preprocessorId =
+    generatedData.value.model ||
+    getDefaultPreprocessor(generatedData.value.generationType || "depth");
 
   // Set status to generating
-  emit('update', { status: 'generating', errorMessage: undefined });
-  progressMessage.value = 'Starting...';
+  emit("update", { status: "generating", errorMessage: undefined });
+  progressMessage.value = "Starting...";
 
   try {
     // Call the real preprocessor backend using composition-derived resolution
@@ -227,44 +247,44 @@ async function regenerate() {
       store.currentFrame,
       (status) => {
         progressMessage.value = status;
-      }
+      },
     );
 
     if (result.success && result.assetId) {
-      emit('update', {
-        status: 'complete',
+      emit("update", {
+        status: "complete",
         generatedAssetId: result.assetId,
         lastGenerated: new Date().toISOString(),
         errorMessage: undefined,
       });
     } else {
-      emit('update', {
-        status: 'error',
-        errorMessage: result.error || 'Generation failed',
+      emit("update", {
+        status: "error",
+        errorMessage: result.error || "Generation failed",
       });
     }
   } catch (error) {
-    emit('update', {
-      status: 'error',
-      errorMessage: error instanceof Error ? error.message : 'Unknown error',
+    emit("update", {
+      status: "error",
+      errorMessage: error instanceof Error ? error.message : "Unknown error",
     });
   } finally {
-    progressMessage.value = '';
+    progressMessage.value = "";
   }
 }
 
-function clearGenerated() {
-  emit('update', {
-    status: 'pending',
+function _clearGenerated() {
+  emit("update", {
+    status: "pending",
     generatedAssetId: null,
     lastGenerated: undefined,
-    errorMessage: undefined
+    errorMessage: undefined,
   });
 }
 
-function formatTime(isoString: string): string {
+function _formatTime(isoString: string): string {
   const date = new Date(isoString);
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 </script>
 

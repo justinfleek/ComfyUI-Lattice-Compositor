@@ -521,96 +521,125 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import type { Layer, CameraLayerData, AnimatableProperty, CameraDepthOfField, CameraPathFollowing, CameraShakeData, CameraRackFocusData, Vec3 } from '@/types/project';
-import { createKeyframe } from '@/types/animation';
-import { useCompositorStore } from '@/stores/compositorStore';
-import { ScrubableNumber } from '@/components/controls';
+import { computed, ref } from "vue";
 import {
   createTrajectoryFromPreset,
   generateTrajectoryKeyframes,
   type TrajectoryType,
-} from '@/services/cameraTrajectory';
+} from "@/services/cameraTrajectory";
+import { useCompositorStore } from "@/stores/compositorStore";
+import { createKeyframe } from "@/types/animation";
+import type {
+  AnimatableProperty,
+  CameraDepthOfField,
+  CameraLayerData,
+  CameraPathFollowing,
+  CameraRackFocusData,
+  CameraShakeData,
+  Layer,
+  Vec3,
+} from "@/types/project";
 
 const props = defineProps<{ layer: Layer }>();
-const emit = defineEmits(['update']);
+const emit = defineEmits(["update"]);
 const store = useCompositorStore();
 
-const expandedSections = ref<string[]>(['settings', 'dof']);
+const expandedSections = ref<string[]>(["settings", "dof"]);
 
 // Get camera data with defaults
 const cameraData = computed<CameraLayerData>(() => {
-  return (props.layer.data as CameraLayerData) || {
-    cameraId: '',
-    isActiveCamera: false,
-  };
+  return (
+    (props.layer.data as CameraLayerData) || {
+      cameraId: "",
+      isActiveCamera: false,
+    }
+  );
 });
 
 // Depth of field with defaults
 const depthOfField = computed<CameraDepthOfField>(() => {
-  return cameraData.value.depthOfField || {
-    enabled: false,
-    focusDistance: 500,
-    aperture: 2.8,
-    blurLevel: 50,
-  };
+  return (
+    cameraData.value.depthOfField || {
+      enabled: false,
+      focusDistance: 500,
+      aperture: 2.8,
+      blurLevel: 50,
+    }
+  );
 });
 
-const dofEnabled = computed(() => depthOfField.value.enabled);
+const _dofEnabled = computed(() => depthOfField.value.enabled);
 
 // Path following with defaults
 const pathFollowing = computed<CameraPathFollowing>(() => {
-  return cameraData.value.pathFollowing || {
-    enabled: false,
-    pathLayerId: '',
-    parameter: { id: '', name: 'Path Position', type: 'number', value: 0, animated: false, keyframes: [], group: 'Path Following' },
-    lookAhead: 0.05,
-    bankingStrength: 0,
-    offsetY: 0,
-    alignToPath: true,
-    autoAdvance: false,
-    autoAdvanceSpeed: 0.01,
-  };
+  return (
+    cameraData.value.pathFollowing || {
+      enabled: false,
+      pathLayerId: "",
+      parameter: {
+        id: "",
+        name: "Path Position",
+        type: "number",
+        value: 0,
+        animated: false,
+        keyframes: [],
+        group: "Path Following",
+      },
+      lookAhead: 0.05,
+      bankingStrength: 0,
+      offsetY: 0,
+      alignToPath: true,
+      autoAdvance: false,
+      autoAdvanceSpeed: 0.01,
+    }
+  );
 });
 
 // Get available spline and path layers for path following
 // Camera can follow both visible shape splines (e.g., logo outline) and invisible path guides
-const splineLayers = computed(() => {
-  return store.layers.filter(l => (l.type === 'spline' || l.type === 'path') && l.id !== props.layer.id);
+const _splineLayers = computed(() => {
+  return store.layers.filter(
+    (l) =>
+      (l.type === "spline" || l.type === "path") && l.id !== props.layer.id,
+  );
 });
 
 // Camera shake with defaults
 const cameraShake = computed<CameraShakeData>(() => {
-  return cameraData.value.shake || {
-    enabled: false,
-    type: 'handheld',
-    intensity: 0.3,
-    frequency: 1.0,
-    rotationEnabled: true,
-    rotationScale: 0.5,
-    seed: Math.floor(Math.random() * 100000),
-    decay: 0,
-    startFrame: 0,
-    duration: 81,
-  };
+  return (
+    cameraData.value.shake || {
+      enabled: false,
+      type: "handheld",
+      intensity: 0.3,
+      frequency: 1.0,
+      rotationEnabled: true,
+      rotationScale: 0.5,
+      seed: Math.floor(Math.random() * 100000),
+      decay: 0,
+      startFrame: 0,
+      duration: 81,
+    }
+  );
 });
 
 // Rack focus with defaults
 const rackFocus = computed<CameraRackFocusData>(() => {
-  return cameraData.value.rackFocus || {
-    enabled: false,
-    startDistance: 500,
-    endDistance: 2000,
-    duration: 30,
-    startFrame: 0,
-    easing: 'ease-in-out',
-    holdStart: 0,
-    holdEnd: 0,
-  };
+  return (
+    cameraData.value.rackFocus || {
+      enabled: false,
+      startDistance: 500,
+      endDistance: 2000,
+      duration: 30,
+      startFrame: 0,
+      easing: "ease-in-out",
+      holdStart: 0,
+      holdEnd: 0,
+    }
+  );
 });
 
 // Toggle section visibility
-function toggleSection(section: string) {
+function _toggleSection(section: string) {
   const idx = expandedSections.value.indexOf(section);
   if (idx >= 0) {
     expandedSections.value.splice(idx, 1);
@@ -622,74 +651,78 @@ function toggleSection(section: string) {
 // Update camera data
 function update(key: keyof CameraLayerData | string, value: any) {
   store.updateLayer(props.layer.id, {
-    data: { ...cameraData.value, [key]: value }
+    data: { ...cameraData.value, [key]: value },
   });
-  emit('update');
+  emit("update");
 }
 
 // Toggle DOF
-function toggleDOF(e: Event) {
+function _toggleDOF(e: Event) {
   const checked = (e.target as HTMLInputElement).checked;
   const newDOF = { ...depthOfField.value, enabled: checked };
-  update('depthOfField', newDOF);
+  update("depthOfField", newDOF);
 }
 
 // Toggle path following
-function togglePathFollowing(e: Event) {
+function _togglePathFollowing(e: Event) {
   const checked = (e.target as HTMLInputElement).checked;
   const newPath = { ...pathFollowing.value, enabled: checked };
-  update('pathFollowing', newPath);
+  update("pathFollowing", newPath);
 }
 
 // Update path layer
-function updatePathLayer(e: Event) {
+function _updatePathLayer(e: Event) {
   const layerId = (e.target as HTMLSelectElement).value;
   const newPath = { ...pathFollowing.value, pathLayerId: layerId };
-  update('pathFollowing', newPath);
+  update("pathFollowing", newPath);
 }
 
 // Update path config value
-function updatePathConfig(key: keyof CameraPathFollowing, value: any) {
+function _updatePathConfig(key: keyof CameraPathFollowing, value: any) {
   const newPath = { ...pathFollowing.value, [key]: value };
-  update('pathFollowing', newPath);
+  update("pathFollowing", newPath);
 }
 
 // Toggle camera shake
-function toggleCameraShake(e: Event) {
+function _toggleCameraShake(e: Event) {
   const checked = (e.target as HTMLInputElement).checked;
   const newShake = { ...cameraShake.value, enabled: checked };
-  update('shake', newShake);
+  update("shake", newShake);
 }
 
 // Update shake config value
-function updateShakeConfig(key: keyof CameraShakeData, value: any) {
+function _updateShakeConfig(key: keyof CameraShakeData, value: any) {
   const newShake = { ...cameraShake.value, [key]: value };
-  update('shake', newShake);
+  update("shake", newShake);
 }
 
 // Toggle rack focus
-function toggleRackFocus(e: Event) {
+function _toggleRackFocus(e: Event) {
   const checked = (e.target as HTMLInputElement).checked;
   const newRackFocus = { ...rackFocus.value, enabled: checked };
-  update('rackFocus', newRackFocus);
+  update("rackFocus", newRackFocus);
 
   // Enable DOF if enabling rack focus
   if (checked) {
     const newDOF = { ...depthOfField.value, enabled: true };
-    update('depthOfField', newDOF);
+    update("depthOfField", newDOF);
   }
 }
 
 // Update rack focus config value
-function updateRackFocusConfig(key: keyof CameraRackFocusData, value: any) {
+function _updateRackFocusConfig(key: keyof CameraRackFocusData, value: any) {
   const newRackFocus = { ...rackFocus.value, [key]: value };
-  update('rackFocus', newRackFocus);
+  update("rackFocus", newRackFocus);
 }
 
 // Apply trajectory preset
-function applyTrajectory(trajectoryType: TrajectoryType) {
+function _applyTrajectory(trajectoryType: TrajectoryType) {
   const comp = store.getActiveComp();
-  const compSettings = comp?.settings || { width: 1920, height: 1080, frameCount: 81 };
+  const compSettings = comp?.settings || {
+    width: 1920,
+    height: 1080,
+    frameCount: 81,
+  };
 
   // Create trajectory config
   const trajectoryConfig = createTrajectoryFromPreset(trajectoryType, {
@@ -705,27 +738,27 @@ function applyTrajectory(trajectoryType: TrajectoryType) {
   const keyframes = generateTrajectoryKeyframes(trajectoryConfig, 0, 5);
 
   // Store trajectory keyframes in camera data
-  update('trajectoryKeyframes', {
+  update("trajectoryKeyframes", {
     position: keyframes.position,
     pointOfInterest: keyframes.pointOfInterest,
     zoom: keyframes.zoom,
   });
 
-  emit('update');
+  emit("update");
 }
 
 // Update path parameter (animatable)
-function updatePathProperty(key: string, value: number) {
+function _updatePathProperty(_key: string, value: number) {
   const param = pathFollowing.value.parameter;
   const newParam = { ...param, value };
   const newPath = { ...pathFollowing.value, parameter: newParam };
-  update('pathFollowing', newPath);
+  update("pathFollowing", newPath);
 
   // Also update in layer.properties if it exists (via store)
-  const prop = getProperty('Path Position');
+  const prop = getProperty("Path Position");
   if (prop) {
-    const updatedProperties = (props.layer.properties || []).map(p =>
-      p.name === 'Path Position' ? { ...p, value } : p
+    const updatedProperties = (props.layer.properties || []).map((p) =>
+      p.name === "Path Position" ? { ...p, value } : p,
     );
     store.updateLayer(props.layer.id, { properties: updatedProperties });
   }
@@ -733,67 +766,75 @@ function updatePathProperty(key: string, value: number) {
 
 // Get animatable property from layer.properties
 function getProperty(name: string): AnimatableProperty<number> | undefined {
-  return props.layer.properties?.find(p => p.name === name) as AnimatableProperty<number> | undefined;
+  return props.layer.properties?.find((p) => p.name === name) as
+    | AnimatableProperty<number>
+    | undefined;
 }
 
 // Get property value
-function getPropertyValue(name: string): number | undefined {
+function _getPropertyValue(name: string): number | undefined {
   const prop = getProperty(name);
   return prop?.value;
 }
 
 // Check if animated
-function isAnimated(name: string): boolean {
+function _isAnimated(name: string): boolean {
   const prop = getProperty(name);
   return prop?.animated ?? false;
 }
 
 // Update animatable property
-function updateAnimatable(propName: string, value: number, dataKey: string) {
+function _updateAnimatable(propName: string, value: number, dataKey: string) {
   // Update in layer.properties (via store)
   const prop = getProperty(propName);
   if (prop) {
-    const updatedProperties = (props.layer.properties || []).map(p =>
-      p.name === propName ? { ...p, value } : p
+    const updatedProperties = (props.layer.properties || []).map((p) =>
+      p.name === propName ? { ...p, value } : p,
     );
     store.updateLayer(props.layer.id, { properties: updatedProperties });
   }
 
   // Update in camera data's animated property
-  const animProp = (cameraData.value as any)[dataKey] as AnimatableProperty<number> | undefined;
+  const animProp = (cameraData.value as any)[dataKey] as
+    | AnimatableProperty<number>
+    | undefined;
   if (animProp) {
     const updatedAnimProp = { ...animProp, value };
     update(dataKey, updatedAnimProp);
   }
-  emit('update');
+  emit("update");
 }
 
 // Update DOF animatable property
-function updateDOFAnimatable(propName: string, value: number, dofKey: keyof CameraDepthOfField) {
+function _updateDOFAnimatable(
+  propName: string,
+  value: number,
+  dofKey: keyof CameraDepthOfField,
+) {
   const newDOF = { ...depthOfField.value, [dofKey]: value };
-  update('depthOfField', newDOF);
+  update("depthOfField", newDOF);
 
   // Also update in layer.properties (via store)
   const prop = getProperty(propName);
   if (prop) {
-    const updatedProperties = (props.layer.properties || []).map(p =>
-      p.name === propName ? { ...p, value } : p
+    const updatedProperties = (props.layer.properties || []).map((p) =>
+      p.name === propName ? { ...p, value } : p,
     );
     store.updateLayer(props.layer.id, { properties: updatedProperties });
   }
-  emit('update');
+  emit("update");
 }
 
 // Ensure property exists in layer.properties
 function ensureProperty(propName: string, defaultValue: number, group: string) {
   const existingProperties = props.layer.properties || [];
-  const existing = existingProperties.find(p => p.name === propName);
+  const existing = existingProperties.find((p) => p.name === propName);
 
   if (!existing) {
     const newProperty = {
       id: `prop_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
       name: propName,
-      type: 'number',
+      type: "number",
       value: defaultValue,
       animated: false,
       keyframes: [],
@@ -802,83 +843,102 @@ function ensureProperty(propName: string, defaultValue: number, group: string) {
 
     // Update via store to track in history
     store.updateLayer(props.layer.id, {
-      properties: [...existingProperties, newProperty]
+      properties: [...existingProperties, newProperty],
     });
   }
 }
 
 // Toggle keyframe
-function toggleKeyframe(propName: string, dataKey: string, defaultValue: number) {
-  ensureProperty(propName, defaultValue, propName.includes('Focus') || propName.includes('Aperture') || propName.includes('Blur') ? 'Depth of Field' : 'Camera');
+function _toggleKeyframe(
+  propName: string,
+  _dataKey: string,
+  defaultValue: number,
+) {
+  ensureProperty(
+    propName,
+    defaultValue,
+    propName.includes("Focus") ||
+      propName.includes("Aperture") ||
+      propName.includes("Blur")
+      ? "Depth of Field"
+      : "Camera",
+  );
 
   const prop = getProperty(propName);
   if (prop) {
     const frame = store.currentFrame;
-    const hasKeyframeAtFrame = prop.keyframes.some(k => k.frame === frame);
+    const hasKeyframeAtFrame = prop.keyframes.some((k) => k.frame === frame);
 
     let updatedKeyframes: typeof prop.keyframes;
     let updatedAnimated: boolean;
 
     if (hasKeyframeAtFrame) {
-      updatedKeyframes = prop.keyframes.filter(k => k.frame !== frame);
+      updatedKeyframes = prop.keyframes.filter((k) => k.frame !== frame);
       updatedAnimated = updatedKeyframes.length > 0;
     } else {
       updatedKeyframes = [
         ...prop.keyframes,
-        createKeyframe(frame, prop.value, 'linear'),
+        createKeyframe(frame, prop.value, "linear"),
       ];
       updatedAnimated = true;
     }
 
     // Update via store to track in history
-    const updatedProperties = (props.layer.properties || []).map(p =>
+    const updatedProperties = (props.layer.properties || []).map((p) =>
       p.name === propName
         ? { ...p, keyframes: updatedKeyframes, animated: updatedAnimated }
-        : p
+        : p,
     );
     store.updateLayer(props.layer.id, { properties: updatedProperties });
-    emit('update');
+    emit("update");
   }
 }
 
 // Toggle path keyframe
-function togglePathKeyframe(propName: string) {
-  ensureProperty(propName, pathFollowing.value.parameter?.value ?? 0, 'Path Following');
+function _togglePathKeyframe(propName: string) {
+  ensureProperty(
+    propName,
+    pathFollowing.value.parameter?.value ?? 0,
+    "Path Following",
+  );
 
   const prop = getProperty(propName);
   if (prop) {
     const frame = store.currentFrame;
-    const hasKeyframeAtFrame = prop.keyframes.some(k => k.frame === frame);
+    const hasKeyframeAtFrame = prop.keyframes.some((k) => k.frame === frame);
 
     let updatedKeyframes: typeof prop.keyframes;
     let updatedAnimated: boolean;
 
     if (hasKeyframeAtFrame) {
-      updatedKeyframes = prop.keyframes.filter(k => k.frame !== frame);
+      updatedKeyframes = prop.keyframes.filter((k) => k.frame !== frame);
       updatedAnimated = updatedKeyframes.length > 0;
     } else {
       updatedKeyframes = [
         ...prop.keyframes,
-        createKeyframe(frame, prop.value, 'linear'),
+        createKeyframe(frame, prop.value, "linear"),
       ];
       updatedAnimated = true;
     }
 
     // Update via store to track in history
-    const updatedProperties = (props.layer.properties || []).map(p =>
+    const updatedProperties = (props.layer.properties || []).map((p) =>
       p.name === propName
         ? { ...p, keyframes: updatedKeyframes, animated: updatedAnimated }
-        : p
+        : p,
     );
     store.updateLayer(props.layer.id, { properties: updatedProperties });
-    emit('update');
+    emit("update");
   }
 }
 
 // Get Vec3 value
-function getVec3Value(propName: string, axis: 'x' | 'y' | 'z'): number {
-  const dataKey = propName === 'Position' ? 'animatedPosition' : 'animatedTarget';
-  const animProp = (cameraData.value as any)[dataKey] as AnimatableProperty<Vec3> | undefined;
+function _getVec3Value(propName: string, axis: "x" | "y" | "z"): number {
+  const dataKey =
+    propName === "Position" ? "animatedPosition" : "animatedTarget";
+  const animProp = (cameraData.value as any)[dataKey] as
+    | AnimatableProperty<Vec3>
+    | undefined;
   if (animProp?.value) {
     return animProp.value[axis] ?? 0;
   }
@@ -886,18 +946,25 @@ function getVec3Value(propName: string, axis: 'x' | 'y' | 'z'): number {
 }
 
 // Update Vec3 property
-function updateVec3Property(propName: string, axis: 'x' | 'y' | 'z', value: number, dataKey: string) {
-  let animProp = (cameraData.value as any)[dataKey] as AnimatableProperty<Vec3> | undefined;
+function _updateVec3Property(
+  propName: string,
+  axis: "x" | "y" | "z",
+  value: number,
+  dataKey: string,
+) {
+  let animProp = (cameraData.value as any)[dataKey] as
+    | AnimatableProperty<Vec3>
+    | undefined;
 
   if (!animProp) {
     animProp = {
       id: `prop_${dataKey}_${Date.now()}`,
       name: propName,
-      type: 'vector3',
+      type: "vector3",
       value: { x: 0, y: 0, z: 0 },
       animated: false,
       keyframes: [],
-      group: 'Position & Target',
+      group: "Position & Target",
     };
   }
 
@@ -907,29 +974,33 @@ function updateVec3Property(propName: string, axis: 'x' | 'y' | 'z', value: numb
 }
 
 // Toggle Vec3 keyframe
-function toggleVec3Keyframe(propName: string, dataKey: string) {
-  let animProp = (cameraData.value as any)[dataKey] as AnimatableProperty<Vec3> | undefined;
+function _toggleVec3Keyframe(propName: string, dataKey: string) {
+  let animProp = (cameraData.value as any)[dataKey] as
+    | AnimatableProperty<Vec3>
+    | undefined;
 
   if (!animProp) {
     animProp = {
       id: `prop_${dataKey}_${Date.now()}`,
       name: propName,
-      type: 'vector3',
+      type: "vector3",
       value: { x: 0, y: 0, z: 0 },
       animated: false,
       keyframes: [],
-      group: 'Position & Target',
+      group: "Position & Target",
     };
   }
 
   const frame = store.currentFrame;
-  const hasKeyframeAtFrame = animProp.keyframes.some(k => k.frame === frame);
+  const hasKeyframeAtFrame = animProp.keyframes.some((k) => k.frame === frame);
 
   if (hasKeyframeAtFrame) {
-    animProp.keyframes = animProp.keyframes.filter(k => k.frame !== frame);
+    animProp.keyframes = animProp.keyframes.filter((k) => k.frame !== frame);
     animProp.animated = animProp.keyframes.length > 0;
   } else {
-    animProp.keyframes.push(createKeyframe(frame, { ...animProp.value }, 'linear'));
+    animProp.keyframes.push(
+      createKeyframe(frame, { ...animProp.value }, "linear"),
+    );
     animProp.animated = true;
   }
 

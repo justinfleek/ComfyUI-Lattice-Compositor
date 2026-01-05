@@ -14,19 +14,19 @@
  */
 
 import type {
-  JointConfig,
-  PivotJointConfig,
-  SpringJointConfig,
-  DistanceJointConfig,
-  PistonJointConfig,
-  WheelJointConfig,
-  WeldJointConfig,
   BlobJointConfig,
-  RopeJointConfig,
+  DistanceJointConfig,
+  JointConfig,
   PhysicsVec2,
-} from '@/types/physics';
+  PistonJointConfig,
+  PivotJointConfig,
+  RopeJointConfig,
+  SpringJointConfig,
+  WeldJointConfig,
+  WheelJointConfig,
+} from "@/types/physics";
 
-import { vec2 } from './PhysicsEngine';
+import { vec2 } from "./PhysicsEngine";
 
 // =============================================================================
 // INTERNAL BODY INTERFACE
@@ -42,7 +42,11 @@ interface JointBody {
 }
 
 type GetBodyFn = (id: string) => JointBody | null;
-type ApplyImpulseFn = (id: string, impulse: PhysicsVec2, point: PhysicsVec2) => void;
+type ApplyImpulseFn = (
+  id: string,
+  impulse: PhysicsVec2,
+  point: PhysicsVec2,
+) => void;
 
 // =============================================================================
 // JOINT CONSTRAINT SOLVER
@@ -78,13 +82,15 @@ export class JointSystem {
   solveConstraints(
     getBody: GetBodyFn,
     applyImpulse: ApplyImpulseFn,
-    dt: number
+    dt: number,
   ): void {
     for (const joint of this.joints.values()) {
       if (this.brokenJoints.has(joint.id)) continue;
 
-      const bodyA = joint.bodyA === 'world' ? this.getWorldBody() : getBody(joint.bodyA);
-      const bodyB = joint.bodyB === 'world' ? this.getWorldBody() : getBody(joint.bodyB);
+      const bodyA =
+        joint.bodyA === "world" ? this.getWorldBody() : getBody(joint.bodyA);
+      const bodyB =
+        joint.bodyB === "world" ? this.getWorldBody() : getBody(joint.bodyB);
 
       if (!bodyA || !bodyB) continue;
 
@@ -111,24 +117,24 @@ export class JointSystem {
     bodyA: JointBody,
     bodyB: JointBody,
     applyImpulse: ApplyImpulseFn,
-    dt: number
+    dt: number,
   ): boolean {
     switch (joint.type) {
-      case 'pivot':
+      case "pivot":
         return this.solvePivotJoint(joint, bodyA, bodyB, applyImpulse);
-      case 'spring':
+      case "spring":
         return this.solveSpringJoint(joint, bodyA, bodyB, applyImpulse, dt);
-      case 'distance':
+      case "distance":
         return this.solveDistanceJoint(joint, bodyA, bodyB, applyImpulse);
-      case 'piston':
+      case "piston":
         return this.solvePistonJoint(joint, bodyA, bodyB, applyImpulse, dt);
-      case 'wheel':
+      case "wheel":
         return this.solveWheelJoint(joint, bodyA, bodyB, applyImpulse, dt);
-      case 'weld':
+      case "weld":
         return this.solveWeldJoint(joint, bodyA, bodyB, applyImpulse);
-      case 'blob':
+      case "blob":
         return this.solveBlobJoint(joint, bodyA, bodyB, applyImpulse);
-      case 'rope':
+      case "rope":
         return this.solveRopeJoint(joint, bodyA, bodyB, applyImpulse);
       default:
         return false;
@@ -142,7 +148,7 @@ export class JointSystem {
     joint: PivotJointConfig,
     bodyA: JointBody,
     bodyB: JointBody,
-    applyImpulse: ApplyImpulseFn
+    applyImpulse: ApplyImpulseFn,
   ): boolean {
     // Get world space anchor points
     const rA = vec2.rotate(joint.anchorA, bodyA.angle);
@@ -177,10 +183,10 @@ export class JointSystem {
     const impulse = vec2.scale(error, -1 / effectiveMass);
 
     // Apply impulse
-    if (joint.bodyA !== 'world') {
+    if (joint.bodyA !== "world") {
       applyImpulse(joint.bodyA, vec2.scale(impulse, -1), anchorA);
     }
-    if (joint.bodyB !== 'world') {
+    if (joint.bodyB !== "world") {
       applyImpulse(joint.bodyB, impulse, anchorB);
     }
 
@@ -195,17 +201,21 @@ export class JointSystem {
         targetAngularVelocity = angleError * 5; // Simple P controller
       }
 
-      const relativeAngularVelocity = bodyB.angularVelocity - bodyA.angularVelocity;
+      const relativeAngularVelocity =
+        bodyB.angularVelocity - bodyA.angularVelocity;
       const angularError = targetAngularVelocity - relativeAngularVelocity;
 
       const maxTorque = joint.motor.maxTorque;
-      const torqueImpulse = Math.max(-maxTorque, Math.min(maxTorque, angularError * 0.1));
+      const torqueImpulse = Math.max(
+        -maxTorque,
+        Math.min(maxTorque, angularError * 0.1),
+      );
 
       // Apply angular impulse
-      if (joint.bodyA !== 'world' && bodyA.inverseInertia > 0) {
+      if (joint.bodyA !== "world" && bodyA.inverseInertia > 0) {
         bodyA.angularVelocity -= torqueImpulse * bodyA.inverseInertia;
       }
-      if (joint.bodyB !== 'world' && bodyB.inverseInertia > 0) {
+      if (joint.bodyB !== "world" && bodyB.inverseInertia > 0) {
         bodyB.angularVelocity += torqueImpulse * bodyB.inverseInertia;
       }
     }
@@ -235,7 +245,7 @@ export class JointSystem {
     bodyA: JointBody,
     bodyB: JointBody,
     applyImpulse: ApplyImpulseFn,
-    dt: number
+    dt: number,
   ): boolean {
     // Get world space anchor points
     const rA = vec2.rotate(joint.anchorA, bodyA.angle);
@@ -258,8 +268,14 @@ export class JointSystem {
 
     // Damping force
     const relativeVelocity = vec2.sub(
-      vec2.add(bodyB.velocity, vec2.perpendicular(vec2.scale(rB, bodyB.angularVelocity))),
-      vec2.add(bodyA.velocity, vec2.perpendicular(vec2.scale(rA, bodyA.angularVelocity)))
+      vec2.add(
+        bodyB.velocity,
+        vec2.perpendicular(vec2.scale(rB, bodyB.angularVelocity)),
+      ),
+      vec2.add(
+        bodyA.velocity,
+        vec2.perpendicular(vec2.scale(rA, bodyA.angularVelocity)),
+      ),
     );
     const dampingForce = vec2.dot(relativeVelocity, direction) * joint.damping;
 
@@ -273,10 +289,10 @@ export class JointSystem {
     }
 
     // Apply impulse
-    if (joint.bodyA !== 'world') {
+    if (joint.bodyA !== "world") {
       applyImpulse(joint.bodyA, vec2.scale(impulse, -1), anchorA);
     }
-    if (joint.bodyB !== 'world') {
+    if (joint.bodyB !== "world") {
       applyImpulse(joint.bodyB, impulse, anchorB);
     }
 
@@ -290,7 +306,7 @@ export class JointSystem {
     joint: DistanceJointConfig,
     bodyA: JointBody,
     bodyB: JointBody,
-    applyImpulse: ApplyImpulseFn
+    applyImpulse: ApplyImpulseFn,
   ): boolean {
     // Get world space anchor points
     const rA = vec2.rotate(joint.anchorA, bodyA.angle);
@@ -329,10 +345,10 @@ export class JointSystem {
     const impulse = vec2.scale(direction, error / effectiveMass);
 
     // Apply impulse
-    if (joint.bodyA !== 'world') {
+    if (joint.bodyA !== "world") {
       applyImpulse(joint.bodyA, vec2.scale(impulse, -1), anchorA);
     }
-    if (joint.bodyB !== 'world') {
+    if (joint.bodyB !== "world") {
       applyImpulse(joint.bodyB, impulse, anchorB);
     }
 
@@ -347,7 +363,7 @@ export class JointSystem {
     bodyA: JointBody,
     bodyB: JointBody,
     applyImpulse: ApplyImpulseFn,
-    dt: number
+    dt: number,
   ): boolean {
     // Get world space axis
     const axis = vec2.normalize(vec2.rotate(joint.axis, bodyA.angle));
@@ -366,10 +382,10 @@ export class JointSystem {
     const perpError = vec2.dot(diff, perpAxis);
     if (Math.abs(perpError) > 0.01) {
       const correction = vec2.scale(perpAxis, -perpError * 0.5);
-      if (joint.bodyA !== 'world') {
+      if (joint.bodyA !== "world") {
         applyImpulse(joint.bodyA, vec2.scale(correction, -1), anchorA);
       }
-      if (joint.bodyB !== 'world') {
+      if (joint.bodyB !== "world") {
         applyImpulse(joint.bodyB, correction, anchorB);
       }
     }
@@ -378,19 +394,25 @@ export class JointSystem {
     const translation = vec2.dot(diff, axis);
     if (joint.limits) {
       if (translation < joint.limits.min) {
-        const correction = vec2.scale(axis, (joint.limits.min - translation) * 0.5);
-        if (joint.bodyA !== 'world') {
+        const correction = vec2.scale(
+          axis,
+          (joint.limits.min - translation) * 0.5,
+        );
+        if (joint.bodyA !== "world") {
           applyImpulse(joint.bodyA, vec2.scale(correction, -1), anchorA);
         }
-        if (joint.bodyB !== 'world') {
+        if (joint.bodyB !== "world") {
           applyImpulse(joint.bodyB, correction, anchorB);
         }
       } else if (translation > joint.limits.max) {
-        const correction = vec2.scale(axis, (translation - joint.limits.max) * -0.5);
-        if (joint.bodyA !== 'world') {
+        const correction = vec2.scale(
+          axis,
+          (translation - joint.limits.max) * -0.5,
+        );
+        if (joint.bodyA !== "world") {
           applyImpulse(joint.bodyA, vec2.scale(correction, -1), anchorA);
         }
-        if (joint.bodyB !== 'world') {
+        if (joint.bodyB !== "world") {
           applyImpulse(joint.bodyB, correction, anchorB);
         }
       }
@@ -402,14 +424,14 @@ export class JointSystem {
       const motorError = joint.motor.speed - relVel;
       const motorImpulse = Math.max(
         -joint.motor.maxForce * dt,
-        Math.min(joint.motor.maxForce * dt, motorError * 0.5)
+        Math.min(joint.motor.maxForce * dt, motorError * 0.5),
       );
 
       const impulse = vec2.scale(axis, motorImpulse);
-      if (joint.bodyA !== 'world') {
+      if (joint.bodyA !== "world") {
         applyImpulse(joint.bodyA, vec2.scale(impulse, -1), anchorA);
       }
-      if (joint.bodyB !== 'world') {
+      if (joint.bodyB !== "world") {
         applyImpulse(joint.bodyB, impulse, anchorB);
       }
     }
@@ -425,7 +447,7 @@ export class JointSystem {
     bodyA: JointBody,
     bodyB: JointBody,
     applyImpulse: ApplyImpulseFn,
-    dt: number
+    dt: number,
   ): boolean {
     // Get world space axis (suspension direction)
     const axis = vec2.normalize(vec2.rotate(joint.axis, bodyA.angle));
@@ -441,7 +463,10 @@ export class JointSystem {
 
     // Suspension spring (along axis)
     const suspensionOffset = vec2.dot(diff, axis);
-    const suspensionVel = vec2.dot(vec2.sub(bodyB.velocity, bodyA.velocity), axis);
+    const suspensionVel = vec2.dot(
+      vec2.sub(bodyB.velocity, bodyA.velocity),
+      axis,
+    );
 
     // Spring-damper formula
     const omega = 2 * Math.PI * joint.frequency;
@@ -449,10 +474,10 @@ export class JointSystem {
     const springForce = omega * omega * suspensionOffset + c * suspensionVel;
 
     const suspensionImpulse = vec2.scale(axis, -springForce * dt);
-    if (joint.bodyA !== 'world') {
+    if (joint.bodyA !== "world") {
       applyImpulse(joint.bodyA, vec2.scale(suspensionImpulse, -1), anchorA);
     }
-    if (joint.bodyB !== 'world') {
+    if (joint.bodyB !== "world") {
       applyImpulse(joint.bodyB, suspensionImpulse, anchorB);
     }
 
@@ -461,25 +486,29 @@ export class JointSystem {
     const perpError = vec2.dot(diff, perpAxis);
     if (Math.abs(perpError) > 0.01) {
       const correction = vec2.scale(perpAxis, -perpError * 0.5);
-      if (joint.bodyA !== 'world') {
+      if (joint.bodyA !== "world") {
         applyImpulse(joint.bodyA, vec2.scale(correction, -1), anchorA);
       }
-      if (joint.bodyB !== 'world') {
+      if (joint.bodyB !== "world") {
         applyImpulse(joint.bodyB, correction, anchorB);
       }
     }
 
     // Motor (rotation)
     if (joint.motor?.enabled) {
-      const relativeAngularVelocity = bodyB.angularVelocity - bodyA.angularVelocity;
+      const relativeAngularVelocity =
+        bodyB.angularVelocity - bodyA.angularVelocity;
       const motorError = joint.motor.speed - relativeAngularVelocity;
       const maxTorque = joint.motor.maxTorque;
-      const torqueImpulse = Math.max(-maxTorque * dt, Math.min(maxTorque * dt, motorError * 0.5));
+      const torqueImpulse = Math.max(
+        -maxTorque * dt,
+        Math.min(maxTorque * dt, motorError * 0.5),
+      );
 
-      if (joint.bodyA !== 'world' && bodyA.inverseInertia > 0) {
+      if (joint.bodyA !== "world" && bodyA.inverseInertia > 0) {
         bodyA.angularVelocity -= torqueImpulse * bodyA.inverseInertia;
       }
-      if (joint.bodyB !== 'world' && bodyB.inverseInertia > 0) {
+      if (joint.bodyB !== "world" && bodyB.inverseInertia > 0) {
         bodyB.angularVelocity += torqueImpulse * bodyB.inverseInertia;
       }
     }
@@ -494,7 +523,7 @@ export class JointSystem {
     joint: WeldJointConfig,
     bodyA: JointBody,
     bodyB: JointBody,
-    applyImpulse: ApplyImpulseFn
+    applyImpulse: ApplyImpulseFn,
   ): boolean {
     // Position constraint (like pivot)
     const rA = vec2.rotate(joint.anchorA, bodyA.angle);
@@ -510,10 +539,10 @@ export class JointSystem {
       const effectiveMass = bodyA.inverseMass + bodyB.inverseMass;
       if (effectiveMass > 0) {
         const correction = vec2.scale(posError, 0.5 / effectiveMass);
-        if (joint.bodyA !== 'world') {
+        if (joint.bodyA !== "world") {
           applyImpulse(joint.bodyA, vec2.scale(correction, -1), anchorA);
         }
-        if (joint.bodyB !== 'world') {
+        if (joint.bodyB !== "world") {
           applyImpulse(joint.bodyB, correction, anchorB);
         }
       }
@@ -535,12 +564,16 @@ export class JointSystem {
         const relAngVel = bodyB.angularVelocity - bodyA.angularVelocity;
         const torque = omega * omega * angleError + c * relAngVel;
 
-        if (bodyA.inverseInertia > 0) bodyA.angularVelocity += torque * 0.5 * bodyA.inverseInertia;
-        if (bodyB.inverseInertia > 0) bodyB.angularVelocity -= torque * 0.5 * bodyB.inverseInertia;
+        if (bodyA.inverseInertia > 0)
+          bodyA.angularVelocity += torque * 0.5 * bodyA.inverseInertia;
+        if (bodyB.inverseInertia > 0)
+          bodyB.angularVelocity -= torque * 0.5 * bodyB.inverseInertia;
       } else {
         // Rigid weld
-        if (bodyA.inverseInertia > 0) bodyA.angularVelocity += angularCorrection;
-        if (bodyB.inverseInertia > 0) bodyB.angularVelocity -= angularCorrection;
+        if (bodyA.inverseInertia > 0)
+          bodyA.angularVelocity += angularCorrection;
+        if (bodyB.inverseInertia > 0)
+          bodyB.angularVelocity -= angularCorrection;
       }
     }
 
@@ -554,7 +587,7 @@ export class JointSystem {
     joint: BlobJointConfig,
     bodyA: JointBody,
     bodyB: JointBody,
-    applyImpulse: ApplyImpulseFn
+    applyImpulse: ApplyImpulseFn,
   ): boolean {
     // Soft position constraint
     const rA = vec2.rotate(joint.anchorA, bodyA.angle);
@@ -571,10 +604,10 @@ export class JointSystem {
       const stiffness = 1 / (1 + joint.softness);
       const correction = vec2.scale(diff, stiffness * 0.5);
 
-      if (joint.bodyA !== 'world') {
+      if (joint.bodyA !== "world") {
         applyImpulse(joint.bodyA, vec2.scale(correction, -1), anchorA);
       }
-      if (joint.bodyB !== 'world') {
+      if (joint.bodyB !== "world") {
         applyImpulse(joint.bodyB, correction, anchorB);
       }
     }
@@ -582,13 +615,14 @@ export class JointSystem {
     // Pressure effect (push apart if too close)
     if (joint.pressure > 0 && distance < joint.pressure) {
       const pushForce = (joint.pressure - distance) * 0.1;
-      const pushDir = distance > 0 ? vec2.scale(diff, 1 / distance) : { x: 1, y: 0 };
+      const pushDir =
+        distance > 0 ? vec2.scale(diff, 1 / distance) : { x: 1, y: 0 };
       const push = vec2.scale(pushDir, -pushForce);
 
-      if (joint.bodyA !== 'world') {
+      if (joint.bodyA !== "world") {
         applyImpulse(joint.bodyA, push, anchorA);
       }
-      if (joint.bodyB !== 'world') {
+      if (joint.bodyB !== "world") {
         applyImpulse(joint.bodyB, vec2.scale(push, -1), anchorB);
       }
     }
@@ -603,7 +637,7 @@ export class JointSystem {
     joint: RopeJointConfig,
     bodyA: JointBody,
     bodyB: JointBody,
-    applyImpulse: ApplyImpulseFn
+    applyImpulse: ApplyImpulseFn,
   ): boolean {
     // Get world space anchor points
     const rA = vec2.rotate(joint.anchorA, bodyA.angle);
@@ -643,10 +677,10 @@ export class JointSystem {
     const impulse = vec2.scale(direction, error / effectiveMass);
 
     // Apply impulse
-    if (joint.bodyA !== 'world') {
+    if (joint.bodyA !== "world") {
       applyImpulse(joint.bodyA, vec2.scale(impulse, -1), anchorA);
     }
-    if (joint.bodyB !== 'world') {
+    if (joint.bodyB !== "world") {
       applyImpulse(joint.bodyB, impulse, anchorB);
     }
 
@@ -678,7 +712,7 @@ export class JointSystem {
    * Get joint state for serialization
    */
   getState(): { id: string; broken: boolean }[] {
-    return Array.from(this.joints.keys()).map(id => ({
+    return Array.from(this.joints.keys()).map((id) => ({
       id,
       broken: this.brokenJoints.has(id),
     }));

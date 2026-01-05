@@ -203,19 +203,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
+import { computed, onMounted, onUnmounted, ref } from "vue";
+import type { LLMProvider } from "@/services/ai/depthEstimation";
 import {
-  getLayerDecompositionService,
   type DecompositionModelStatus,
-} from '@/services/layerDecomposition';
+  getLayerDecompositionService,
+} from "@/services/layerDecomposition";
 import {
-  decomposeImageToLayers,
-  checkDecompositionModelStatus,
-  downloadDecompositionModel,
   type DecompositionResult,
-} from '@/stores/actions/layerDecompositionActions';
-import type { LLMProvider } from '@/services/ai/depthEstimation';
+  decomposeImageToLayers,
+  downloadDecompositionModel,
+} from "@/stores/actions/layerDecompositionActions";
+import { useCompositorStore } from "@/stores/compositorStore";
 
 const store = useCompositorStore();
 const service = getLayerDecompositionService();
@@ -228,7 +227,7 @@ const modelStatus = ref<Partial<DecompositionModelStatus>>({
 });
 const isDownloading = ref(false);
 const downloadProgress = ref(0);
-const downloadStage = ref('');
+const downloadStage = ref("");
 
 const fileInput = ref<HTMLInputElement | null>(null);
 const selectedFile = ref<File | null>(null);
@@ -236,33 +235,33 @@ const previewUrl = ref<string | null>(null);
 
 const numLayers = ref(5);
 const autoDepth = ref(true);
-const depthProvider = ref<LLMProvider>('openai');
+const depthProvider = ref<LLMProvider>("openai");
 const zScale = ref(500);
 const autoUnload = ref(true);
 
 const isDecomposing = ref(false);
 const decomposeProgress = ref(0);
-const progressMessage = ref('');
+const progressMessage = ref("");
 const result = ref<DecompositionResult | null>(null);
 const errorMessage = ref<string | null>(null);
 
 // Computed
-const modelStatusClass = computed(() => {
-  if (modelStatus.value.loaded) return 'loaded';
-  if (modelStatus.value.downloaded) return 'ready';
-  return 'not-ready';
+const _modelStatusClass = computed(() => {
+  if (modelStatus.value.loaded) return "loaded";
+  if (modelStatus.value.downloaded) return "ready";
+  return "not-ready";
 });
 
-const modelStatusText = computed(() => {
-  if (modelStatus.value.loaded) return 'Loaded';
-  if (modelStatus.value.downloaded) return 'Ready';
-  return 'Not Downloaded';
+const _modelStatusText = computed(() => {
+  if (modelStatus.value.loaded) return "Loaded";
+  if (modelStatus.value.downloaded) return "Ready";
+  return "Not Downloaded";
 });
 
-const canDecompose = computed(() => {
-  return modelStatus.value.downloaded &&
-         previewUrl.value &&
-         !isDecomposing.value;
+const _canDecompose = computed(() => {
+  return (
+    modelStatus.value.downloaded && previewUrl.value && !isDecomposing.value
+  );
 });
 
 // Methods
@@ -271,14 +270,14 @@ async function checkStatus() {
     const status = await service.getStatus();
     modelStatus.value = status;
   } catch (error) {
-    console.warn('Failed to check model status:', error);
+    console.warn("Failed to check model status:", error);
   }
 }
 
-async function startDownload() {
+async function _startDownload() {
   isDownloading.value = true;
   downloadProgress.value = 0;
-  downloadStage.value = 'Starting...';
+  downloadStage.value = "Starting...";
   errorMessage.value = null;
 
   try {
@@ -289,18 +288,19 @@ async function startDownload() {
 
     await checkStatus();
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : 'Download failed';
+    errorMessage.value =
+      error instanceof Error ? error.message : "Download failed";
   } finally {
     isDownloading.value = false;
   }
 }
 
-function triggerFileSelect() {
+function _triggerFileSelect() {
   if (!modelStatus.value.downloaded) return;
   fileInput.value?.click();
 }
 
-function handleFileSelect(event: Event) {
+function _handleFileSelect(event: Event) {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
   if (file) {
@@ -311,10 +311,10 @@ function handleFileSelect(event: Event) {
   }
 }
 
-function handleDrop(event: DragEvent) {
+function _handleDrop(event: DragEvent) {
   if (!modelStatus.value.downloaded) return;
   const file = event.dataTransfer?.files?.[0];
-  if (file && file.type.startsWith('image/')) {
+  if (file?.type.startsWith("image/")) {
     selectedFile.value = file;
     previewUrl.value = URL.createObjectURL(file);
     result.value = null;
@@ -322,7 +322,7 @@ function handleDrop(event: DragEvent) {
   }
 }
 
-function clearImage() {
+function _clearImage() {
   if (previewUrl.value) {
     URL.revokeObjectURL(previewUrl.value);
   }
@@ -331,12 +331,12 @@ function clearImage() {
   result.value = null;
 }
 
-async function startDecomposition() {
+async function _startDecomposition() {
   if (!previewUrl.value || !selectedFile.value) return;
 
   isDecomposing.value = true;
   decomposeProgress.value = 0;
-  progressMessage.value = 'Starting...';
+  progressMessage.value = "Starting...";
   errorMessage.value = null;
   result.value = null;
 
@@ -354,7 +354,7 @@ async function startDecomposition() {
         depthProvider: depthProvider.value,
         zSpaceScale: zScale.value,
         autoUnload: autoUnload.value,
-        onProgress: (stage, message, progress) => {
+        onProgress: (_stage, message, progress) => {
           progressMessage.value = message;
           if (progress !== undefined) {
             decomposeProgress.value = progress;
@@ -362,17 +362,17 @@ async function startDecomposition() {
         },
         groupLayers: true,
         groupName: `Decomposed: ${selectedFile.value.name}`,
-      }
+      },
     );
 
     result.value = decompositionResult;
 
     if (!decompositionResult.success) {
-      errorMessage.value = decompositionResult.error || 'Decomposition failed';
+      errorMessage.value = decompositionResult.error || "Decomposition failed";
     }
-
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : 'Decomposition failed';
+    errorMessage.value =
+      error instanceof Error ? error.message : "Decomposition failed";
   } finally {
     isDecomposing.value = false;
   }
@@ -387,14 +387,16 @@ function fileToDataUrl(file: File): Promise<string> {
   });
 }
 
-function selectLayer(layerId: string) {
+function _selectLayer(layerId: string) {
   store.selectLayer(layerId, false);
 }
 
-function getLayerZ(layer: any): number {
-  return layer.transform?.position?.value?.z ||
-         layer.transform?.position?.defaultValue?.z ||
-         0;
+function _getLayerZ(layer: any): number {
+  return (
+    layer.transform?.position?.value?.z ||
+    layer.transform?.position?.defaultValue?.z ||
+    0
+  );
 }
 
 // Lifecycle

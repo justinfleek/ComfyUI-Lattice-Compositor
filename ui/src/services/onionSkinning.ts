@@ -13,15 +13,15 @@
  * Reference: ComfyUI-TRELLIS2_Motion onion skinning patterns
  */
 
-import { createLogger } from '@/utils/logger';
+import { createLogger } from "@/utils/logger";
 
-const logger = createLogger('OnionSkinning');
+const logger = createLogger("OnionSkinning");
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-export type OpacityFalloff = 'linear' | 'exponential' | 'constant';
+export type OpacityFalloff = "linear" | "exponential" | "constant";
 
 export interface OnionSkinConfig {
   /** Enable onion skinning */
@@ -47,7 +47,7 @@ export interface OnionSkinConfig {
   /** Only show keyframe positions (ignores spacing if true) */
   keyframesOnly: boolean;
   /** Blend mode for compositing */
-  blendMode: 'normal' | 'multiply' | 'screen' | 'overlay';
+  blendMode: "normal" | "multiply" | "screen" | "overlay";
 }
 
 export interface OnionSkinFrame {
@@ -60,7 +60,7 @@ export interface OnionSkinFrame {
   /** Tint intensity (0-1) */
   tintIntensity: number;
   /** Whether this is a past or future frame */
-  direction: 'before' | 'after';
+  direction: "before" | "after";
   /** Distance from current frame */
   distance: number;
 }
@@ -82,15 +82,15 @@ export const DEFAULT_ONION_SKIN_CONFIG: OnionSkinConfig = {
   enabled: false,
   framesBefore: 3,
   framesAfter: 2,
-  opacityFalloff: 'exponential',
+  opacityFalloff: "exponential",
   maxOpacity: 0.5,
   minOpacity: 0.1,
-  beforeColor: '#ff4444',  // Red for past
-  afterColor: '#44ff44',   // Green for future
+  beforeColor: "#ff4444", // Red for past
+  afterColor: "#44ff44", // Green for future
   tintIntensity: 0.3,
   spacing: 1,
   keyframesOnly: false,
-  blendMode: 'normal',
+  blendMode: "normal",
 };
 
 // ============================================================================
@@ -102,7 +102,7 @@ export const ONION_SKIN_PRESETS: Record<string, Partial<OnionSkinConfig>> = {
   traditional: {
     framesBefore: 5,
     framesAfter: 1,
-    opacityFalloff: 'exponential',
+    opacityFalloff: "exponential",
     maxOpacity: 0.6,
     tintIntensity: 0.4,
   },
@@ -111,7 +111,7 @@ export const ONION_SKIN_PRESETS: Record<string, Partial<OnionSkinConfig>> = {
     framesBefore: 5,
     framesAfter: 5,
     keyframesOnly: true,
-    opacityFalloff: 'constant',
+    opacityFalloff: "constant",
     maxOpacity: 0.4,
     tintIntensity: 0.5,
   },
@@ -119,7 +119,7 @@ export const ONION_SKIN_PRESETS: Record<string, Partial<OnionSkinConfig>> = {
   light: {
     framesBefore: 2,
     framesAfter: 1,
-    opacityFalloff: 'linear',
+    opacityFalloff: "linear",
     maxOpacity: 0.3,
     tintIntensity: 0.2,
   },
@@ -127,7 +127,7 @@ export const ONION_SKIN_PRESETS: Record<string, Partial<OnionSkinConfig>> = {
   heavy: {
     framesBefore: 4,
     framesAfter: 3,
-    opacityFalloff: 'linear',
+    opacityFalloff: "linear",
     maxOpacity: 0.7,
     tintIntensity: 0.5,
   },
@@ -136,7 +136,7 @@ export const ONION_SKIN_PRESETS: Record<string, Partial<OnionSkinConfig>> = {
     framesBefore: 8,
     framesAfter: 4,
     spacing: 2,
-    opacityFalloff: 'exponential',
+    opacityFalloff: "exponential",
     maxOpacity: 0.4,
     tintIntensity: 0.6,
   },
@@ -144,7 +144,7 @@ export const ONION_SKIN_PRESETS: Record<string, Partial<OnionSkinConfig>> = {
   cycle: {
     framesBefore: 3,
     framesAfter: 3,
-    opacityFalloff: 'constant',
+    opacityFalloff: "constant",
     maxOpacity: 0.35,
     tintIntensity: 0.3,
   },
@@ -162,7 +162,7 @@ export function calculateOpacity(
   maxFrames: number,
   falloff: OpacityFalloff,
   maxOpacity: number,
-  minOpacity: number
+  minOpacity: number,
 ): number {
   if (distance <= 0) return maxOpacity;
   if (distance > maxFrames) return 0;
@@ -172,18 +172,18 @@ export function calculateOpacity(
   let opacity: number;
 
   switch (falloff) {
-    case 'linear':
+    case "linear":
       // Linear falloff: opacity decreases linearly with distance
       opacity = maxOpacity * (1 - normalizedDistance);
       break;
 
-    case 'exponential':
+    case "exponential":
       // Exponential falloff: opacity decreases faster at greater distances
       // Using e^(-2*x) for a nice curve
       opacity = maxOpacity * Math.exp(-2 * normalizedDistance);
       break;
 
-    case 'constant':
+    case "constant":
       // Constant opacity for all frames
       opacity = maxOpacity;
       break;
@@ -201,7 +201,7 @@ export function calculateOpacity(
  */
 export function parseColor(color: string): { r: number; g: number; b: number } {
   // Handle hex colors
-  if (color.startsWith('#')) {
+  if (color.startsWith("#")) {
     const hex = color.slice(1);
     if (hex.length === 3) {
       return {
@@ -222,9 +222,9 @@ export function parseColor(color: string): { r: number; g: number; b: number } {
   const rgbMatch = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
   if (rgbMatch) {
     return {
-      r: parseInt(rgbMatch[1]) / 255,
-      g: parseInt(rgbMatch[2]) / 255,
-      b: parseInt(rgbMatch[3]) / 255,
+      r: parseInt(rgbMatch[1], 10) / 255,
+      g: parseInt(rgbMatch[2], 10) / 255,
+      b: parseInt(rgbMatch[3], 10) / 255,
     };
   }
 
@@ -243,7 +243,7 @@ export function calculateOnionSkinFrames(
   currentFrame: number,
   totalFrames: number,
   config: OnionSkinConfig,
-  keyframeFrames?: number[]
+  keyframeFrames?: number[],
 ): OnionSkinFrame[] {
   if (!config.enabled) return [];
 
@@ -253,7 +253,7 @@ export function calculateOnionSkinFrames(
   if (config.keyframesOnly && keyframeFrames) {
     // Only show keyframes before current
     const keyframesBefore = keyframeFrames
-      .filter(f => f < currentFrame)
+      .filter((f) => f < currentFrame)
       .sort((a, b) => b - a) // Sort descending (closest first)
       .slice(0, config.framesBefore);
 
@@ -265,7 +265,7 @@ export function calculateOnionSkinFrames(
         config.framesBefore,
         config.opacityFalloff,
         config.maxOpacity,
-        config.minOpacity
+        config.minOpacity,
       );
 
       if (opacity >= config.minOpacity) {
@@ -274,7 +274,7 @@ export function calculateOnionSkinFrames(
           opacity,
           tintColor: config.beforeColor,
           tintIntensity: config.tintIntensity,
-          direction: 'before',
+          direction: "before",
           distance,
         });
       }
@@ -292,7 +292,7 @@ export function calculateOnionSkinFrames(
         config.framesBefore,
         config.opacityFalloff,
         config.maxOpacity,
-        config.minOpacity
+        config.minOpacity,
       );
 
       if (opacity >= config.minOpacity) {
@@ -301,7 +301,7 @@ export function calculateOnionSkinFrames(
           opacity,
           tintColor: config.beforeColor,
           tintIntensity: config.tintIntensity,
-          direction: 'before',
+          direction: "before",
           distance: i,
         });
       }
@@ -312,7 +312,7 @@ export function calculateOnionSkinFrames(
   if (config.keyframesOnly && keyframeFrames) {
     // Only show keyframes after current
     const keyframesAfter = keyframeFrames
-      .filter(f => f > currentFrame)
+      .filter((f) => f > currentFrame)
       .sort((a, b) => a - b) // Sort ascending (closest first)
       .slice(0, config.framesAfter);
 
@@ -324,7 +324,7 @@ export function calculateOnionSkinFrames(
         config.framesAfter,
         config.opacityFalloff,
         config.maxOpacity,
-        config.minOpacity
+        config.minOpacity,
       );
 
       if (opacity >= config.minOpacity) {
@@ -333,7 +333,7 @@ export function calculateOnionSkinFrames(
           opacity,
           tintColor: config.afterColor,
           tintIntensity: config.tintIntensity,
-          direction: 'after',
+          direction: "after",
           distance,
         });
       }
@@ -351,7 +351,7 @@ export function calculateOnionSkinFrames(
         config.framesAfter,
         config.opacityFalloff,
         config.maxOpacity,
-        config.minOpacity
+        config.minOpacity,
       );
 
       if (opacity >= config.minOpacity) {
@@ -360,7 +360,7 @@ export function calculateOnionSkinFrames(
           opacity,
           tintColor: config.afterColor,
           tintIntensity: config.tintIntensity,
-          direction: 'after',
+          direction: "after",
           distance: i,
         });
       }
@@ -393,7 +393,7 @@ export class OnionSkinningService {
    */
   setConfig(config: Partial<OnionSkinConfig>): void {
     this.config = { ...this.config, ...config };
-    logger.debug('Onion skin config updated:', this.config);
+    logger.debug("Onion skin config updated:", this.config);
   }
 
   /**
@@ -455,7 +455,10 @@ export class OnionSkinningService {
    * Cache keyframes for a layer
    */
   cacheKeyframes(layerId: string, keyframeFrames: number[]): void {
-    this.keyframeCache.set(layerId, [...keyframeFrames].sort((a, b) => a - b));
+    this.keyframeCache.set(
+      layerId,
+      [...keyframeFrames].sort((a, b) => a - b),
+    );
   }
 
   /**
@@ -471,7 +474,7 @@ export class OnionSkinningService {
   getAllKeyframeFrames(): number[] {
     const allFrames = new Set<number>();
     for (const frames of this.keyframeCache.values()) {
-      frames.forEach(f => allFrames.add(f));
+      frames.forEach((f) => allFrames.add(f));
     }
     return [...allFrames].sort((a, b) => a - b);
   }
@@ -479,7 +482,10 @@ export class OnionSkinningService {
   /**
    * Calculate render data for current frame
    */
-  getRenderData(currentFrame: number, totalFrames: number): OnionSkinRenderData {
+  getRenderData(
+    currentFrame: number,
+    totalFrames: number,
+  ): OnionSkinRenderData {
     const keyframeFrames = this.config.keyframesOnly
       ? this.getAllKeyframeFrames()
       : undefined;
@@ -488,7 +494,7 @@ export class OnionSkinningService {
       currentFrame,
       totalFrames,
       this.config,
-      keyframeFrames
+      keyframeFrames,
     );
 
     return {
@@ -504,7 +510,7 @@ export class OnionSkinningService {
   reset(): void {
     this.config = { ...DEFAULT_ONION_SKIN_CONFIG };
     this.keyframeCache.clear();
-    logger.debug('Onion skin service reset');
+    logger.debug("Onion skin service reset");
   }
 }
 
@@ -520,23 +526,23 @@ export function compositeOnionSkinFrame(
   ctx: CanvasRenderingContext2D,
   frameImage: ImageData | HTMLCanvasElement | HTMLImageElement,
   frame: OnionSkinFrame,
-  blendMode: OnionSkinConfig['blendMode'] = 'normal'
+  blendMode: OnionSkinConfig["blendMode"] = "normal",
 ): void {
   ctx.save();
 
   // Set blend mode
   switch (blendMode) {
-    case 'multiply':
-      ctx.globalCompositeOperation = 'multiply';
+    case "multiply":
+      ctx.globalCompositeOperation = "multiply";
       break;
-    case 'screen':
-      ctx.globalCompositeOperation = 'screen';
+    case "screen":
+      ctx.globalCompositeOperation = "screen";
       break;
-    case 'overlay':
-      ctx.globalCompositeOperation = 'overlay';
+    case "overlay":
+      ctx.globalCompositeOperation = "overlay";
       break;
     default:
-      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalCompositeOperation = "source-over";
   }
 
   // Set opacity
@@ -552,7 +558,7 @@ export function compositeOnionSkinFrame(
   // Apply tint if intensity > 0
   if (frame.tintIntensity > 0) {
     const rgb = parseColor(frame.tintColor);
-    ctx.globalCompositeOperation = 'multiply';
+    ctx.globalCompositeOperation = "multiply";
     ctx.globalAlpha = frame.tintIntensity * frame.opacity;
     ctx.fillStyle = `rgb(${Math.floor(rgb.r * 255)}, ${Math.floor(rgb.g * 255)}, ${Math.floor(rgb.b * 255)})`;
     ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);

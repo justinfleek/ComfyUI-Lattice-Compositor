@@ -181,48 +181,42 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, type Ref } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import { useSelectionStore } from '@/stores/selectionStore';
-import { useAudioStore } from '@/stores/audioStore';
-import DecomposeDialog from '@/components/dialogs/DecomposeDialog.vue';
-import VectorizeDialog from '@/components/dialogs/VectorizeDialog.vue';
-import FpsMismatchDialog from '@/components/dialogs/FpsMismatchDialog.vue';
-import FpsSelectDialog from '@/components/dialogs/FpsSelectDialog.vue';
+import { computed, ref } from "vue";
+import { importDataFromFile } from "@/services/dataImport";
+import type { DecomposedLayer } from "@/services/layerDecomposition";
+import { exportLayers, exportSplineLayer } from "@/services/svgExport";
+import type {
+  VideoImportFpsMismatch,
+  VideoImportFpsUnknown,
+} from "@/stores/actions/videoActions";
 import {
-  PhFilmSlate, PhFolder, PhImage, PhSpeakerHigh, PhChartBar, PhFile, PhSparkle
-} from '@phosphor-icons/vue';
-import type { DecomposedLayer } from '@/services/layerDecomposition';
-import { exportSplineLayer, exportLayers } from '@/services/svgExport';
-import {
-  importDataFromFile,
-  getDataAsset,
-  getAllDataAssets,
-  reloadDataAsset
-} from '@/services/dataImport';
-import { isCSVAsset, isJSONAsset, getDataFileType, isSupportedDataFile } from '@/types/dataAsset';
-import type { VideoImportFpsMismatch, VideoImportFpsUnknown } from '@/stores/actions/videoActions';
-import {
-  completeVideoImportWithMatch,
+  cancelVideoImport,
   completeVideoImportWithConform,
+  completeVideoImportWithMatch,
   completeVideoImportWithUserFps,
-  cancelVideoImport
-} from '@/stores/actions/videoActions';
+} from "@/stores/actions/videoActions";
+import { useAudioStore } from "@/stores/audioStore";
+import { useCompositorStore } from "@/stores/compositorStore";
+import { useSelectionStore } from "@/stores/selectionStore";
+import {
+  getDataFileType,
+  isCSVAsset,
+  isJSONAsset,
+  isSupportedDataFile,
+} from "@/types/dataAsset";
 
-const emit = defineEmits<{
-  (e: 'openCompositionSettings'): void;
-}>();
+const emit = defineEmits<(e: "openCompositionSettings") => void>();
 
 interface ProjectItem {
   id: string;
   name: string;
-  type: 'composition' | 'footage' | 'solid' | 'audio' | 'folder' | 'data';
+  type: "composition" | "footage" | "solid" | "audio" | "folder" | "data";
   width?: number;
   height?: number;
   duration?: number;
   fps?: number;
-  dataType?: 'json' | 'csv' | 'tsv' | 'mgjson';  // For data files
-  dataInfo?: string;  // Summary info like "5 rows, 3 columns"
+  dataType?: "json" | "csv" | "tsv" | "mgjson"; // For data files
+  dataInfo?: string; // Summary info like "5 rows, 3 columns"
 }
 
 interface Folder {
@@ -238,7 +232,7 @@ const selectionStore = useSelectionStore();
 const fileInputRef = ref<HTMLInputElement | null>(null);
 
 // State
-const showSearch = ref(false);
+const _showSearch = ref(false);
 const showNewMenu = ref(false);
 const showDecomposeDialog = ref(false);
 const showVectorizeDialog = ref(false);
@@ -246,19 +240,19 @@ const showFpsMismatchDialog = ref(false);
 const pendingFpsMismatch = ref<VideoImportFpsMismatch | null>(null);
 const showFpsSelectDialog = ref(false);
 const pendingFpsUnknown = ref<VideoImportFpsUnknown | null>(null);
-const searchQuery = ref('');
+const searchQuery = ref("");
 const selectedItem = ref<string | null>(null);
-const expandedFolders = ref<string[]>(['compositions', 'footage']);
+const expandedFolders = ref<string[]>(["compositions", "footage"]);
 const customFolders = ref<Folder[]>([]);
 
 // Check if selected layer is a spline layer
-const hasSelectedSplineLayer = computed(() => {
+const _hasSelectedSplineLayer = computed(() => {
   const selectedLayerIds = selectionStore.selectedLayerIds;
   if (selectedLayerIds.length === 0) return false;
 
   const layers = store.getActiveCompLayers();
-  const selectedLayer = layers.find(l => l.id === selectedLayerIds[0]);
-  return selectedLayer?.type === 'spline';
+  const selectedLayer = layers.find((l) => l.id === selectedLayerIds[0]);
+  return selectedLayer?.type === "spline";
 });
 
 // Reactive storage for footage items (persists across re-renders)
@@ -268,54 +262,61 @@ const footageItems = ref<ProjectItem[]>([]);
 const solidItems = computed<ProjectItem[]>(() => {
   const layers = store.layers || [];
   return layers
-    .filter(l => l.type === 'solid')
-    .map(l => ({
+    .filter((l) => l.type === "solid")
+    .map((l) => ({
       id: l.id,
       name: l.name,
-      type: 'solid' as const,
+      type: "solid" as const,
       width: (l.data as { width?: number })?.width || store.width,
       height: (l.data as { height?: number })?.height || store.height,
-      color: (l.data as { color?: string })?.color || '#808080'
+      color: (l.data as { color?: string })?.color || "#808080",
     }));
 });
 
 // Folders computed from store - reactively updates when compositions change
 const folders = computed<Folder[]>(() => {
   // Get all compositions from the store
-  const compositions = Object.values(store.project.compositions || {}).map(comp => ({
-    id: comp.id,
-    name: comp.name,
-    type: 'composition' as const,
-    width: comp.settings.width,
-    height: comp.settings.height,
-    fps: comp.settings.fps,
-    duration: comp.settings.frameCount
-  }));
+  const compositions = Object.values(store.project.compositions || {}).map(
+    (comp) => ({
+      id: comp.id,
+      name: comp.name,
+      type: "composition" as const,
+      width: comp.settings.width,
+      height: comp.settings.height,
+      fps: comp.settings.fps,
+      duration: comp.settings.frameCount,
+    }),
+  );
 
   const systemFolders: Folder[] = [
     {
-      id: 'compositions',
-      name: 'Compositions',
-      items: compositions.length > 0 ? compositions : [{
-        id: 'comp-main',
-        name: store.activeComposition?.name || 'Main Comp',
-        type: 'composition' as const,
-        width: store.width,
-        height: store.height,
-        fps: store.fps,
-        duration: store.frameCount
-      }]
+      id: "compositions",
+      name: "Compositions",
+      items:
+        compositions.length > 0
+          ? compositions
+          : [
+              {
+                id: "comp-main",
+                name: store.activeComposition?.name || "Main Comp",
+                type: "composition" as const,
+                width: store.width,
+                height: store.height,
+                fps: store.fps,
+                duration: store.frameCount,
+              },
+            ],
     },
     {
-      id: 'footage',
-      name: 'Footage',
-      items: footageItems.value
+      id: "footage",
+      name: "Footage",
+      items: footageItems.value,
     },
     {
-      id: 'solids',
-      name: 'Solids',
-      items: solidItems.value  // Now computed from store.layers
-    }
+      id: "solids",
+      name: "Solids",
+      items: solidItems.value, // Now computed from store.layers
+    },
   ];
 
   return [...systemFolders, ...customFolders.value];
@@ -324,116 +325,124 @@ const folders = computed<Folder[]>(() => {
 const items = ref<ProjectItem[]>([]);
 
 // Computed
-const filteredFolders = computed(() => {
+const _filteredFolders = computed(() => {
   if (!searchQuery.value) return folders.value;
 
   const query = searchQuery.value.toLowerCase();
-  return folders.value.map(folder => ({
-    ...folder,
-    items: folder.items.filter(item =>
-      item.name.toLowerCase().includes(query)
-    )
-  })).filter(folder => folder.items.length > 0 || folder.name.toLowerCase().includes(query));
+  return folders.value
+    .map((folder) => ({
+      ...folder,
+      items: folder.items.filter((item) =>
+        item.name.toLowerCase().includes(query),
+      ),
+    }))
+    .filter(
+      (folder) =>
+        folder.items.length > 0 || folder.name.toLowerCase().includes(query),
+    );
 });
 
-const filteredRootItems = computed(() => {
+const _filteredRootItems = computed(() => {
   if (!searchQuery.value) return items.value;
 
   const query = searchQuery.value.toLowerCase();
-  return items.value.filter(item =>
-    item.name.toLowerCase().includes(query)
-  );
+  return items.value.filter((item) => item.name.toLowerCase().includes(query));
 });
 
 // Preview data for the selected item
-const selectedPreview = computed(() => {
+const _selectedPreview = computed(() => {
   if (!selectedItem.value) return null;
 
   // Find the item
   let item: ProjectItem | null = null;
   for (const folder of folders.value) {
-    const found = folder.items.find(i => i.id === selectedItem.value);
+    const found = folder.items.find((i) => i.id === selectedItem.value);
     if (found) {
       item = found;
       break;
     }
   }
   if (!item) {
-    item = items.value.find(i => i.id === selectedItem.value) || null;
+    item = items.value.find((i) => i.id === selectedItem.value) || null;
   }
   if (!item) return null;
 
   // Get asset data if available
   const asset = store.project.assets[item.id];
 
-  if (item.type === 'footage' && asset) {
-    if (asset.type === 'image') {
+  if (item.type === "footage" && asset) {
+    if (asset.type === "image") {
       return {
-        type: 'image',
+        type: "image",
         url: asset.data as string,
         name: item.name,
-        details: asset.width && asset.height ? `${asset.width} × ${asset.height}` : 'Image',
-        icon: '🖼'
+        details:
+          asset.width && asset.height
+            ? `${asset.width} × ${asset.height}`
+            : "Image",
+        icon: "🖼",
       };
-    } else if (asset.type === 'video') {
+    } else if (asset.type === "video") {
       return {
-        type: 'video',
+        type: "video",
         url: asset.data as string,
         name: item.name,
-        details: `${item.width || '?'} × ${item.height || '?'} • ${item.fps || '?'}fps`,
-        icon: '🎬'
+        details: `${item.width || "?"} × ${item.height || "?"} • ${item.fps || "?"}fps`,
+        icon: "🎬",
       };
     }
-  } else if (item.type === 'composition') {
+  } else if (item.type === "composition") {
     const comp = store.getComposition(item.id);
     return {
-      type: 'composition',
+      type: "composition",
       url: null,
       name: item.name,
-      details: comp ? `${comp.settings.width} × ${comp.settings.height} • ${comp.settings.fps}fps` : 'Composition',
-      icon: '🎬'
+      details: comp
+        ? `${comp.settings.width} × ${comp.settings.height} • ${comp.settings.fps}fps`
+        : "Composition",
+      icon: "🎬",
     };
-  } else if (item.type === 'solid') {
+  } else if (item.type === "solid") {
     return {
-      type: 'solid',
+      type: "solid",
       url: null,
       name: item.name,
-      details: 'Solid Layer',
-      icon: '⬜'
+      details: "Solid Layer",
+      icon: "⬜",
     };
-  } else if (item.type === 'audio') {
+  } else if (item.type === "audio") {
     return {
-      type: 'audio',
+      type: "audio",
       url: null,
       name: item.name,
-      details: 'Audio File',
-      icon: '🔊'
+      details: "Audio File",
+      icon: "🔊",
     };
   }
 
   return null;
 });
 
-const selectedItemDetails = computed(() => {
+const _selectedItemDetails = computed(() => {
   if (!selectedItem.value) return null;
 
   // Find in folders
   for (const folder of folders.value) {
-    const item = folder.items.find(i => i.id === selectedItem.value);
+    const item = folder.items.find((i) => i.id === selectedItem.value);
     if (item) {
       return {
         name: item.name,
-        info: getItemInfo(item)
+        info: getItemInfo(item),
       };
     }
   }
 
   // Find in root items
-  const item = items.value.find(i => i.id === selectedItem.value);
+  const item = items.value.find((i) => i.id === selectedItem.value);
   if (item) {
     return {
       name: item.name,
-      info: getItemInfo(item)
+      info: getItemInfo(item),
     };
   }
 
@@ -450,138 +459,150 @@ function toggleFolder(folderId: string) {
   }
 }
 
-function selectItem(itemId: string) {
+function _selectItem(itemId: string) {
   selectedItem.value = itemId;
 }
 
-function openItem(item: ProjectItem) {
-  if (item.type === 'composition') {
+function _openItem(item: ProjectItem) {
+  if (item.type === "composition") {
     // Switch to composition (opens in timeline and viewer)
     store.switchComposition(item.id);
-  } else if (item.type === 'folder') {
+  } else if (item.type === "folder") {
     // Toggle folder expansion
     toggleFolder(item.id);
-  } else if (item.type === 'footage' || item.type === 'solid') {
+  } else if (item.type === "footage" || item.type === "solid") {
     // Add footage/solid as a new layer at the current frame
     const asset = store.project.assets[item.id];
     if (asset) {
-      const layerType = item.type === 'solid' ? 'solid' : 'image';
+      const layerType = item.type === "solid" ? "solid" : "image";
       const layer = store.createLayer(layerType, item.name);
       if (layer && asset.data) {
         // Link the asset to the layer AND provide the source URL
         store.updateLayerData(layer.id, {
           assetId: item.id,
-          source: asset.data  // The actual image/video URL
+          source: asset.data, // The actual image/video URL
         });
       }
-      console.log('[ProjectPanel] Created layer from asset:', layer?.id, item.name);
+      console.log(
+        "[ProjectPanel] Created layer from asset:",
+        layer?.id,
+        item.name,
+      );
     }
-  } else if (item.type === 'audio') {
+  } else if (item.type === "audio") {
     // Load audio into the audio panel
     const asset = store.project.assets[item.id];
-    if (asset && asset.data) {
+    if (asset?.data) {
       // Fetch the audio data and load it
       fetch(asset.data as string)
-        .then(response => response.blob())
-        .then(blob => {
-          const file = new File([blob], item.name, { type: blob.type || 'audio/mpeg' });
+        .then((response) => response.blob())
+        .then((blob) => {
+          const file = new File([blob], item.name, {
+            type: blob.type || "audio/mpeg",
+          });
           const audioStore = useAudioStore();
           const fps = store.activeComposition?.settings.fps || 16;
           audioStore.loadAudio(file, fps);
         })
-        .catch(err => console.error('[ProjectPanel] Failed to load audio:', err));
+        .catch((err) =>
+          console.error("[ProjectPanel] Failed to load audio:", err),
+        );
     }
   }
 }
 
-function createNewComposition() {
+function _createNewComposition() {
   showNewMenu.value = false;
-  emit('openCompositionSettings');
+  emit("openCompositionSettings");
 }
 
-function createNewFolder() {
+function _createNewFolder() {
   showNewMenu.value = false;
   const folderNumber = customFolders.value.length + 1;
   const newFolder: Folder = {
     id: `folder_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
     name: `Folder ${folderNumber}`,
-    items: []
+    items: [],
   };
   customFolders.value.push(newFolder);
   expandedFolders.value.push(newFolder.id);
   selectedItem.value = newFolder.id;
-  console.log('[ProjectPanel] Created folder:', newFolder.name);
+  console.log("[ProjectPanel] Created folder:", newFolder.name);
 }
 
-function createNewSolid() {
+function _createNewSolid() {
   showNewMenu.value = false;
-  const layer = store.createLayer('solid', 'Solid');
-  console.log('[ProjectPanel] Created solid layer:', layer.id);
+  const layer = store.createLayer("solid", "Solid");
+  console.log("[ProjectPanel] Created solid layer:", layer.id);
 }
 
-function createNewText() {
+function _createNewText() {
   showNewMenu.value = false;
-  const layer = store.createTextLayer('Text');
-  console.log('[ProjectPanel] Created text layer:', layer.id);
+  const layer = store.createTextLayer("Text");
+  console.log("[ProjectPanel] Created text layer:", layer.id);
 }
 
-function createNewControl() {
+function _createNewControl() {
   showNewMenu.value = false;
-  const layer = store.createLayer('control', 'Control');
-  console.log('[ProjectPanel] Created control layer:', layer.id);
+  const layer = store.createLayer("control", "Control");
+  console.log("[ProjectPanel] Created control layer:", layer.id);
 }
 
-function createNewSpline() {
+function _createNewSpline() {
   showNewMenu.value = false;
   const layer = store.createSplineLayer();
-  console.log('[ProjectPanel] Created spline layer:', layer.id);
+  console.log("[ProjectPanel] Created spline layer:", layer.id);
 }
 
-function createNewModel() {
+function _createNewModel() {
   showNewMenu.value = false;
-  const layer = store.createLayer('model', '3D Model');
-  console.log('[ProjectPanel] Created model layer:', layer.id);
+  const layer = store.createLayer("model", "3D Model");
+  console.log("[ProjectPanel] Created model layer:", layer.id);
 }
 
-function createNewPointCloud() {
+function _createNewPointCloud() {
   showNewMenu.value = false;
-  const layer = store.createLayer('pointcloud', 'Point Cloud');
-  console.log('[ProjectPanel] Created point cloud layer:', layer.id);
+  const layer = store.createLayer("pointcloud", "Point Cloud");
+  console.log("[ProjectPanel] Created point cloud layer:", layer.id);
 }
 
-function openDecomposeDialog() {
+function _openDecomposeDialog() {
   showNewMenu.value = false;
   showDecomposeDialog.value = true;
 }
 
-function openVectorizeDialog() {
+function _openVectorizeDialog() {
   showNewMenu.value = false;
   showVectorizeDialog.value = true;
 }
 
-function onDecomposed(layers: DecomposedLayer[]) {
-  console.log('[ProjectPanel] Image decomposed into', layers.length, 'layers');
+function _onDecomposed(layers: DecomposedLayer[]) {
+  console.log("[ProjectPanel] Image decomposed into", layers.length, "layers");
 }
 
-function onVectorized(layerIds: string[]) {
-  console.log('[ProjectPanel] Created', layerIds.length, 'vectorized layers');
+function _onVectorized(layerIds: string[]) {
+  console.log("[ProjectPanel] Created", layerIds.length, "vectorized layers");
 }
 
 // ============================================================
 // FPS MISMATCH HANDLERS
 // ============================================================
 
-async function handleFpsMismatchMatch() {
+async function _handleFpsMismatchMatch() {
   if (!pendingFpsMismatch.value) return;
 
   const result = pendingFpsMismatch.value;
-  console.log('[ProjectPanel] FPS mismatch: User chose MATCH -', result.importedFps, 'fps');
+  console.log(
+    "[ProjectPanel] FPS mismatch: User chose MATCH -",
+    result.importedFps,
+    "fps",
+  );
 
   // Complete import with match (precomp existing, change comp fps)
   const layer = await completeVideoImportWithMatch(
     store,
     result.pendingImport,
-    result.fileName
+    result.fileName,
   );
 
   if (layer) {
@@ -589,13 +610,13 @@ async function handleFpsMismatchMatch() {
     footageItems.value.push({
       id: layer.id,
       name: result.fileName,
-      type: 'footage',
+      type: "footage",
       width: store.width,
       height: store.height,
       duration: store.frameCount,
-      fps: store.fps
+      fps: store.fps,
     });
-    console.log('[ProjectPanel] Video layer created after match:', layer.id);
+    console.log("[ProjectPanel] Video layer created after match:", layer.id);
   }
 
   // Close dialog and clear pending
@@ -603,41 +624,45 @@ async function handleFpsMismatchMatch() {
   pendingFpsMismatch.value = null;
 }
 
-function handleFpsMismatchConform() {
+function _handleFpsMismatchConform() {
   if (!pendingFpsMismatch.value) return;
 
   const result = pendingFpsMismatch.value;
-  console.log('[ProjectPanel] FPS mismatch: User chose CONFORM -', result.compositionFps, 'fps');
+  console.log(
+    "[ProjectPanel] FPS mismatch: User chose CONFORM -",
+    result.compositionFps,
+    "fps",
+  );
 
   // Complete import with conform (time-stretch video)
   const layer = completeVideoImportWithConform(
     store,
     result.pendingImport,
     result.fileName,
-    result.compositionFps
+    result.compositionFps,
   );
 
   // Add to footage items
   footageItems.value.push({
     id: layer.id,
     name: result.fileName,
-    type: 'footage',
+    type: "footage",
     width: store.width,
     height: store.height,
     duration: store.frameCount,
-    fps: store.fps
+    fps: store.fps,
   });
-  console.log('[ProjectPanel] Video layer created after conform:', layer.id);
+  console.log("[ProjectPanel] Video layer created after conform:", layer.id);
 
   // Close dialog and clear pending
   showFpsMismatchDialog.value = false;
   pendingFpsMismatch.value = null;
 }
 
-function handleFpsMismatchCancel() {
+function _handleFpsMismatchCancel() {
   if (!pendingFpsMismatch.value) return;
 
-  console.log('[ProjectPanel] FPS mismatch: User cancelled');
+  console.log("[ProjectPanel] FPS mismatch: User cancelled");
 
   // Clean up the pending import
   cancelVideoImport(store, pendingFpsMismatch.value.pendingImport);
@@ -651,11 +676,16 @@ function handleFpsMismatchCancel() {
 // FPS SELECT HANDLERS (for unknown fps)
 // ============================================================
 
-async function handleFpsSelected(fps: number) {
+async function _handleFpsSelected(fps: number) {
   if (!pendingFpsUnknown.value) return;
 
   const pending = pendingFpsUnknown.value;
-  console.log('[ProjectPanel] FPS selected by user:', fps, 'for', pending.fileName);
+  console.log(
+    "[ProjectPanel] FPS selected by user:",
+    fps,
+    "for",
+    pending.fileName,
+  );
 
   // Complete import with user-specified fps
   const result = await completeVideoImportWithUserFps(
@@ -663,7 +693,7 @@ async function handleFpsSelected(fps: number) {
     pending.pendingImport,
     pending.fileName,
     fps,
-    true // autoResizeComposition
+    true, // autoResizeComposition
   );
 
   // Close fps select dialog
@@ -671,33 +701,41 @@ async function handleFpsSelected(fps: number) {
   pendingFpsUnknown.value = null;
 
   // Handle the result - may trigger fps_mismatch dialog
-  if (result.status === 'fps_mismatch') {
+  if (result.status === "fps_mismatch") {
     // Chain to fps mismatch dialog
     pendingFpsMismatch.value = result;
     showFpsMismatchDialog.value = true;
-    console.log('[ProjectPanel] FPS mismatch after selection:', result.importedFps, 'vs', result.compositionFps);
+    console.log(
+      "[ProjectPanel] FPS mismatch after selection:",
+      result.importedFps,
+      "vs",
+      result.compositionFps,
+    );
     return;
   }
 
-  if (result.status === 'success') {
+  if (result.status === "success") {
     // Add to footage items
     footageItems.value.push({
       id: result.layer.id,
       name: pending.fileName,
-      type: 'footage',
+      type: "footage",
       width: store.width,
       height: store.height,
       duration: store.frameCount,
-      fps: store.fps
+      fps: store.fps,
     });
-    console.log('[ProjectPanel] Video layer created after fps selection:', result.layer.id);
+    console.log(
+      "[ProjectPanel] Video layer created after fps selection:",
+      result.layer.id,
+    );
   }
 }
 
-function handleFpsSelectCancel() {
+function _handleFpsSelectCancel() {
   if (!pendingFpsUnknown.value) return;
 
-  console.log('[ProjectPanel] FPS select: User cancelled');
+  console.log("[ProjectPanel] FPS select: User cancelled");
 
   // Clean up the pending import
   cancelVideoImport(store, pendingFpsUnknown.value.pendingImport);
@@ -707,14 +745,17 @@ function handleFpsSelectCancel() {
   pendingFpsUnknown.value = null;
 }
 
-function cleanupUnusedAssets() {
+function _cleanupUnusedAssets() {
   showNewMenu.value = false;
   const result = store.removeUnusedAssets();
   if (result.removed > 0) {
-    console.log(`[ProjectPanel] Removed ${result.removed} unused assets:`, result.assetNames);
+    console.log(
+      `[ProjectPanel] Removed ${result.removed} unused assets:`,
+      result.assetNames,
+    );
     // Could show a toast notification here
   } else {
-    console.log('[ProjectPanel] No unused assets to remove');
+    console.log("[ProjectPanel] No unused assets to remove");
   }
 }
 
@@ -727,56 +768,67 @@ function getSelectedSplineLayer() {
   if (selectedLayerIds.length === 0) return null;
 
   const layers = store.getActiveCompLayers();
-  const layer = layers.find(l => l.id === selectedLayerIds[0]);
-  return layer?.type === 'spline' ? layer : null;
+  const layer = layers.find((l) => l.id === selectedLayerIds[0]);
+  return layer?.type === "spline" ? layer : null;
 }
 
-function exportSelectedLayerSVG() {
+function _exportSelectedLayerSVG() {
   const layer = getSelectedSplineLayer();
   if (!layer) {
-    console.warn('[ProjectPanel] No spline layer selected');
+    console.warn("[ProjectPanel] No spline layer selected");
     return;
   }
 
   try {
     const svg = exportSplineLayer(layer);
     // Copy to clipboard
-    navigator.clipboard.writeText(svg).then(() => {
-      console.log('[ProjectPanel] SVG copied to clipboard');
-    }).catch(err => {
-      console.error('[ProjectPanel] Failed to copy SVG:', err);
-    });
+    navigator.clipboard
+      .writeText(svg)
+      .then(() => {
+        console.log("[ProjectPanel] SVG copied to clipboard");
+      })
+      .catch((err) => {
+        console.error("[ProjectPanel] Failed to copy SVG:", err);
+      });
   } catch (error) {
-    console.error('[ProjectPanel] Failed to export SVG:', error);
+    console.error("[ProjectPanel] Failed to export SVG:", error);
   }
 }
 
-function exportCompositionSVG() {
+function _exportCompositionSVG() {
   const comp = store.activeComposition;
   if (!comp) {
-    console.warn('[ProjectPanel] No active composition');
+    console.warn("[ProjectPanel] No active composition");
     return;
   }
 
   try {
     const svg = exportLayers(comp.layers, {
-      viewBox: { x: 0, y: 0, width: comp.settings.width, height: comp.settings.height }
+      viewBox: {
+        x: 0,
+        y: 0,
+        width: comp.settings.width,
+        height: comp.settings.height,
+      },
     });
     // Copy to clipboard
-    navigator.clipboard.writeText(svg).then(() => {
-      console.log('[ProjectPanel] Composition SVG copied to clipboard');
-    }).catch(err => {
-      console.error('[ProjectPanel] Failed to copy SVG:', err);
-    });
+    navigator.clipboard
+      .writeText(svg)
+      .then(() => {
+        console.log("[ProjectPanel] Composition SVG copied to clipboard");
+      })
+      .catch((err) => {
+        console.error("[ProjectPanel] Failed to copy SVG:", err);
+      });
   } catch (error) {
-    console.error('[ProjectPanel] Failed to export composition SVG:', error);
+    console.error("[ProjectPanel] Failed to export composition SVG:", error);
   }
 }
 
 function downloadSVG(svgContent: string, filename: string) {
-  const blob = new Blob([svgContent], { type: 'image/svg+xml' });
+  const blob = new Blob([svgContent], { type: "image/svg+xml" });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
+  const a = document.createElement("a");
   a.href = url;
   a.download = filename;
   document.body.appendChild(a);
@@ -785,47 +837,52 @@ function downloadSVG(svgContent: string, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-function exportSelectedLayerSVGDownload() {
+function _exportSelectedLayerSVGDownload() {
   const layer = getSelectedSplineLayer();
   if (!layer) {
-    console.warn('[ProjectPanel] No spline layer selected');
+    console.warn("[ProjectPanel] No spline layer selected");
     return;
   }
 
   try {
     const svg = exportSplineLayer(layer);
-    const filename = `${layer.name.replace(/[^a-z0-9]/gi, '_')}.svg`;
+    const filename = `${layer.name.replace(/[^a-z0-9]/gi, "_")}.svg`;
     downloadSVG(svg, filename);
-    console.log('[ProjectPanel] SVG downloaded:', filename);
+    console.log("[ProjectPanel] SVG downloaded:", filename);
   } catch (error) {
-    console.error('[ProjectPanel] Failed to export SVG:', error);
+    console.error("[ProjectPanel] Failed to export SVG:", error);
   }
 }
 
-function exportCompositionSVGDownload() {
+function _exportCompositionSVGDownload() {
   const comp = store.activeComposition;
   if (!comp) {
-    console.warn('[ProjectPanel] No active composition');
+    console.warn("[ProjectPanel] No active composition");
     return;
   }
 
   try {
     const svg = exportLayers(comp.layers, {
-      viewBox: { x: 0, y: 0, width: comp.settings.width, height: comp.settings.height }
+      viewBox: {
+        x: 0,
+        y: 0,
+        width: comp.settings.width,
+        height: comp.settings.height,
+      },
     });
-    const filename = `${comp.name.replace(/[^a-z0-9]/gi, '_')}.svg`;
+    const filename = `${comp.name.replace(/[^a-z0-9]/gi, "_")}.svg`;
     downloadSVG(svg, filename);
-    console.log('[ProjectPanel] Composition SVG downloaded:', filename);
+    console.log("[ProjectPanel] Composition SVG downloaded:", filename);
   } catch (error) {
-    console.error('[ProjectPanel] Failed to export composition SVG:', error);
+    console.error("[ProjectPanel] Failed to export composition SVG:", error);
   }
 }
 
-function triggerFileImport() {
+function _triggerFileImport() {
   fileInputRef.value?.click();
 }
 
-async function handleFileImport(event: Event) {
+async function _handleFileImport(event: Event) {
   const input = event.target as HTMLInputElement;
   const files = input.files;
   if (!files || files.length === 0) return;
@@ -836,7 +893,7 @@ async function handleFileImport(event: Event) {
       const result = await importDataFromFile(file);
       if (result.success && result.asset) {
         const dataType = getDataFileType(file.name);
-        let dataInfo = '';
+        let dataInfo = "";
 
         if (isCSVAsset(result.asset)) {
           dataInfo = `${result.asset.rows.length} rows, ${result.asset.numColumns} columns`;
@@ -844,7 +901,7 @@ async function handleFileImport(event: Event) {
           const data = result.asset.sourceData;
           if (Array.isArray(data)) {
             dataInfo = `Array with ${data.length} items`;
-          } else if (typeof data === 'object' && data !== null) {
+          } else if (typeof data === "object" && data !== null) {
             dataInfo = `Object with ${Object.keys(data).length} properties`;
           }
         }
@@ -859,25 +916,37 @@ async function handleFileImport(event: Event) {
           type: result.asset.type,
           rawContent: result.asset.rawContent,
           lastModified: result.asset.lastModified,
-          sourceData: isJSONAsset(result.asset) ? result.asset.sourceData : undefined,
+          sourceData: isJSONAsset(result.asset)
+            ? result.asset.sourceData
+            : undefined,
           headers: isCSVAsset(result.asset) ? result.asset.headers : undefined,
           rows: isCSVAsset(result.asset) ? result.asset.rows : undefined,
           numRows: isCSVAsset(result.asset) ? result.asset.numRows : undefined,
-          numColumns: isCSVAsset(result.asset) ? result.asset.numColumns : undefined
+          numColumns: isCSVAsset(result.asset)
+            ? result.asset.numColumns
+            : undefined,
         };
 
         const newItem: ProjectItem = {
           id: result.asset.id,
           name: file.name,
-          type: 'data',
+          type: "data",
           dataType: dataType || undefined,
-          dataInfo
+          dataInfo,
         };
 
         footageItems.value.push(newItem);
-        console.log('[ProjectPanel] Data file imported and stored in project:', file.name, dataType, dataInfo);
+        console.log(
+          "[ProjectPanel] Data file imported and stored in project:",
+          file.name,
+          dataType,
+          dataInfo,
+        );
       } else {
-        console.error('[ProjectPanel] Failed to import data file:', result.error);
+        console.error(
+          "[ProjectPanel] Failed to import data file:",
+          result.error,
+        );
       }
       continue;
     }
@@ -890,47 +959,59 @@ async function handleFileImport(event: Event) {
     };
 
     // Handle different file types
-    if (type === 'audio') {
+    if (type === "audio") {
       // Handle audio loading through store
       store.loadAudio(file);
-    } else if (file.type.startsWith('video/')) {
+    } else if (file.type.startsWith("video/")) {
       // Handle video import - creates video layer with auto-resize
       // May return fps_mismatch requiring user decision
       const result = await store.createVideoLayer(file, true);
 
-      if (result.status === 'error') {
-        console.error('[ProjectPanel] Failed to import video:', result.error);
+      if (result.status === "error") {
+        console.error("[ProjectPanel] Failed to import video:", result.error);
         continue;
       }
 
-      if (result.status === 'fps_mismatch') {
+      if (result.status === "fps_mismatch") {
         // Show fps mismatch dialog
         pendingFpsMismatch.value = result;
         showFpsMismatchDialog.value = true;
-        console.log('[ProjectPanel] FPS mismatch detected:', result.importedFps, 'vs', result.compositionFps);
+        console.log(
+          "[ProjectPanel] FPS mismatch detected:",
+          result.importedFps,
+          "vs",
+          result.compositionFps,
+        );
         // Don't add to footage items yet - wait for user decision
         continue;
       }
 
-      if (result.status === 'fps_unknown') {
+      if (result.status === "fps_unknown") {
         // Show fps select dialog - user must specify video fps
         pendingFpsUnknown.value = result;
         showFpsSelectDialog.value = true;
-        console.log('[ProjectPanel] FPS unknown - user must specify:', result.fileName);
+        console.log(
+          "[ProjectPanel] FPS unknown - user must specify:",
+          result.fileName,
+        );
         // Don't add to footage items yet - wait for user selection
         continue;
       }
 
       // Success - layer was created
-      if (result.status === 'success') {
+      if (result.status === "success") {
         newItem.id = result.layer.id;
         newItem.width = store.width;
         newItem.height = store.height;
         newItem.duration = store.frameCount;
         newItem.fps = store.fps;
-        console.log('[ProjectPanel] Video layer created:', result.layer.id, result.layer.name);
+        console.log(
+          "[ProjectPanel] Video layer created:",
+          result.layer.id,
+          result.layer.name,
+        );
       }
-    } else if (file.type.startsWith('image/')) {
+    } else if (file.type.startsWith("image/")) {
       // Handle image import - add to project assets only (no layer creation)
       // User double-clicks in project panel to add to timeline
       const imageUrl = URL.createObjectURL(file);
@@ -945,12 +1026,17 @@ async function handleFileImport(event: Event) {
           asset.width = img.naturalWidth;
           asset.height = img.naturalHeight;
           // Also update the project item
-          const projItem = footageItems.value.find(i => i.id === assetId);
+          const projItem = footageItems.value.find((i) => i.id === assetId);
           if (projItem) {
             projItem.width = img.naturalWidth;
             projItem.height = img.naturalHeight;
           }
-          console.log('[ProjectPanel] Image dimensions loaded:', img.naturalWidth, 'x', img.naturalHeight);
+          console.log(
+            "[ProjectPanel] Image dimensions loaded:",
+            img.naturalWidth,
+            "x",
+            img.naturalHeight,
+          );
         }
       };
       img.src = imageUrl;
@@ -958,49 +1044,59 @@ async function handleFileImport(event: Event) {
       // Add to assets (dimensions will be updated when image loads)
       store.project.assets[assetId] = {
         id: assetId,
-        type: 'image',
-        source: 'file',
+        type: "image",
+        source: "file",
         width: 0, // Updated in onload
         height: 0,
-        data: imageUrl
+        data: imageUrl,
       };
 
       // Use assetId as item ID so openItem() can find it
       newItem.id = assetId;
-      console.log('[ProjectPanel] Image added to project assets:', assetId, file.name);
+      console.log(
+        "[ProjectPanel] Image added to project assets:",
+        assetId,
+        file.name,
+      );
     }
 
     // Add to footage items (reactive ref)
     footageItems.value.push(newItem);
-    console.log('[ProjectPanel] Imported:', file.name, type, 'total footage:', footageItems.value.length);
+    console.log(
+      "[ProjectPanel] Imported:",
+      file.name,
+      type,
+      "total footage:",
+      footageItems.value.length,
+    );
   }
 
   // Reset input
-  input.value = '';
+  input.value = "";
 }
 
-function getFileType(file: File): ProjectItem['type'] {
+function getFileType(file: File): ProjectItem["type"] {
   const mime = file.type;
-  if (mime.startsWith('audio/')) return 'audio';
-  if (mime.startsWith('video/')) return 'footage';
-  if (mime.startsWith('image/')) return 'footage';
-  return 'footage';
+  if (mime.startsWith("audio/")) return "audio";
+  if (mime.startsWith("video/")) return "footage";
+  if (mime.startsWith("image/")) return "footage";
+  return "footage";
 }
 
-function getItemIcon(type: ProjectItem['type']): string {
-  const icons: Record<ProjectItem['type'], string> = {
-    composition: '▶',
-    footage: '▧',
-    solid: '■',
-    audio: '♪',
-    folder: '▣',
-    data: '⊟'
+function _getItemIcon(type: ProjectItem["type"]): string {
+  const icons: Record<ProjectItem["type"], string> = {
+    composition: "▶",
+    footage: "▧",
+    solid: "■",
+    audio: "♪",
+    folder: "▣",
+    data: "⊟",
   };
-  return icons[type] || '○';
+  return icons[type] || "○";
 }
 
 function getItemInfo(item: ProjectItem): string {
-  if (item.type === 'composition' || item.type === 'footage') {
+  if (item.type === "composition" || item.type === "footage") {
     const parts: string[] = [];
     if (item.width && item.height) {
       parts.push(`${item.width}×${item.height}`);
@@ -1012,9 +1108,9 @@ function getItemInfo(item: ProjectItem): string {
       const seconds = item.duration / (item.fps || 30);
       parts.push(`${seconds.toFixed(1)}s`);
     }
-    return parts.join(' • ');
+    return parts.join(" • ");
   }
-  if (item.type === 'data') {
+  if (item.type === "data") {
     // Show data type and info for data files
     const parts: string[] = [];
     if (item.dataType) {
@@ -1023,13 +1119,13 @@ function getItemInfo(item: ProjectItem): string {
     if (item.dataInfo) {
       parts.push(item.dataInfo);
     }
-    return parts.join(' • ');
+    return parts.join(" • ");
   }
-  return '';
+  return "";
 }
 
-function onDragStart(item: ProjectItem, event: DragEvent) {
-  event.dataTransfer?.setData('application/project-item', JSON.stringify(item));
+function _onDragStart(item: ProjectItem, event: DragEvent) {
+  event.dataTransfer?.setData("application/project-item", JSON.stringify(item));
 }
 </script>
 

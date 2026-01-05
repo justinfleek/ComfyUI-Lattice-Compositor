@@ -8,29 +8,29 @@
 // ============================================================================
 
 export type ExportTarget =
-  | 'wan22-i2v'           // Wan 2.2 Image-to-Video
-  | 'wan22-t2v'           // Wan 2.2 Text-to-Video
-  | 'wan22-fun-camera'    // Wan 2.2 Fun Camera Control
-  | 'wan22-first-last'    // Wan 2.2 First+Last Frame
-  | 'uni3c-camera'        // Uni3C Camera Control
-  | 'uni3c-motion'        // Uni3C Human Motion + Camera
-  | 'motionctrl'          // MotionCtrl camera poses
-  | 'motionctrl-svd'      // MotionCtrl for SVD
-  | 'cogvideox'           // CogVideoX I2V
-  | 'controlnet-depth'    // Depth map for ControlNet
-  | 'controlnet-canny'    // Canny edge for ControlNet
-  | 'controlnet-lineart'  // Line art for ControlNet
-  | 'animatediff-cameractrl' // AnimateDiff CameraCtrl
-  | 'custom-workflow'     // User's custom workflow
+  | "wan22-i2v" // Wan 2.2 Image-to-Video
+  | "wan22-t2v" // Wan 2.2 Text-to-Video
+  | "wan22-fun-camera" // Wan 2.2 Fun Camera Control
+  | "wan22-first-last" // Wan 2.2 First+Last Frame
+  | "uni3c-camera" // Uni3C Camera Control
+  | "uni3c-motion" // Uni3C Human Motion + Camera
+  | "motionctrl" // MotionCtrl camera poses
+  | "motionctrl-svd" // MotionCtrl for SVD
+  | "cogvideox" // CogVideoX I2V
+  | "controlnet-depth" // Depth map for ControlNet
+  | "controlnet-canny" // Canny edge for ControlNet
+  | "controlnet-lineart" // Line art for ControlNet
+  | "animatediff-cameractrl" // AnimateDiff CameraCtrl
+  | "custom-workflow" // User's custom workflow
   // New model targets (Dec 2025)
-  | 'light-x'             // Light-X relighting + camera
-  | 'wan-move'            // Wan-Move point trajectories
-  | 'ati'                 // ATI Any Trajectory Instruction
-  | 'ttm'                 // TTM Time-to-Move cut-and-drag
-  | 'ttm-wan'             // TTM with Wan 2.1 backend
-  | 'ttm-cogvideox'       // TTM with CogVideoX backend
-  | 'ttm-svd'             // TTM with SVD backend
-  | 'camera-comfyui';     // camera-comfyUI 4x4 matrices
+  | "light-x" // Light-X relighting + camera
+  | "wan-move" // Wan-Move point trajectories
+  | "ati" // ATI Any Trajectory Instruction
+  | "ttm" // TTM Time-to-Move cut-and-drag
+  | "ttm-wan" // TTM with Wan 2.1 backend
+  | "ttm-cogvideox" // TTM with CogVideoX backend
+  | "ttm-svd" // TTM with SVD backend
+  | "camera-comfyui"; // camera-comfyUI 4x4 matrices
 
 // ============================================================================
 // Export Configuration
@@ -106,17 +106,17 @@ export interface ExportResult {
 // ============================================================================
 
 export type DepthMapFormat =
-  | 'midas'        // MiDaS format: 0=far, 255=near (inverted)
-  | 'zoe'          // Zoe format: linear, 0=near, 65535=far (16-bit)
-  | 'depth-pro'    // Depth-Pro format: metric depth in meters
-  | 'normalized';  // Normalized 0-1 range (model-agnostic)
+  | "midas" // MiDaS format: 0=far, 255=near (inverted)
+  | "zoe" // Zoe format: linear, 0=near, 65535=far (16-bit)
+  | "depth-pro" // Depth-Pro format: metric depth in meters
+  | "normalized"; // Normalized 0-1 range (model-agnostic)
 
 export interface DepthExportOptions {
   format: DepthMapFormat;
   bitDepth: 8 | 16;
   invert: boolean;
   normalize: boolean;
-  colormap: 'grayscale' | 'viridis' | 'magma' | 'plasma';
+  colormap: "grayscale" | "viridis" | "magma" | "plasma";
   nearClip: number;
   farClip: number;
 }
@@ -126,14 +126,14 @@ export interface DepthExportOptions {
 // ============================================================================
 
 export type ControlType =
-  | 'depth'
-  | 'canny'
-  | 'lineart'
-  | 'softedge'
-  | 'normal'
-  | 'scribble'
-  | 'seg'
-  | 'pose';
+  | "depth"
+  | "canny"
+  | "lineart"
+  | "softedge"
+  | "normal"
+  | "scribble"
+  | "seg"
+  | "pose";
 
 export interface ControlExportConfig {
   type: ControlType;
@@ -158,15 +158,15 @@ export interface MotionCtrlCameraData {
 
 // MotionCtrl-SVD Presets
 export type MotionCtrlSVDPreset =
-  | 'zoom_in'
-  | 'zoom_out'
-  | 'pan_left'
-  | 'pan_right'
-  | 'pan_up'
-  | 'pan_down'
-  | 'rotate_cw'
-  | 'rotate_ccw'
-  | 'static';
+  | "zoom_in"
+  | "zoom_out"
+  | "pan_left"
+  | "pan_right"
+  | "pan_up"
+  | "pan_down"
+  | "rotate_cw"
+  | "rotate_ccw"
+  | "static";
 
 export interface MotionCtrlSVDCameraData {
   motion_camera: MotionCtrlSVDPreset;
@@ -175,23 +175,23 @@ export interface MotionCtrlSVDCameraData {
 
 // Wan 2.2 Fun Camera
 export type Wan22CameraMotion =
-  | 'Static'
-  | 'Pan Up'
-  | 'Pan Down'
-  | 'Pan Left'
-  | 'Pan Right'
-  | 'Zoom In'
-  | 'Zoom Out'
-  | 'Pan Up + Zoom In'
-  | 'Pan Up + Zoom Out'
-  | 'Pan Down + Zoom In'
-  | 'Pan Down + Zoom Out'
-  | 'Pan Left + Zoom In'
-  | 'Pan Left + Zoom Out'
-  | 'Pan Right + Zoom In'
-  | 'Pan Right + Zoom Out'
-  | 'Orbital Left'
-  | 'Orbital Right';
+  | "Static"
+  | "Pan Up"
+  | "Pan Down"
+  | "Pan Left"
+  | "Pan Right"
+  | "Zoom In"
+  | "Zoom Out"
+  | "Pan Up + Zoom In"
+  | "Pan Up + Zoom Out"
+  | "Pan Down + Zoom In"
+  | "Pan Down + Zoom Out"
+  | "Pan Left + Zoom In"
+  | "Pan Left + Zoom Out"
+  | "Pan Right + Zoom In"
+  | "Pan Right + Zoom Out"
+  | "Orbital Left"
+  | "Orbital Right";
 
 export interface Wan22FunCameraData {
   camera_motion: Wan22CameraMotion;
@@ -209,10 +209,15 @@ export interface Uni3CCameraTrajectory {
 }
 
 export type Uni3CTrajType =
-  | 'custom'
-  | 'free1' | 'free2' | 'free3' | 'free4' | 'free5'
-  | 'swing1' | 'swing2'
-  | 'orbit';
+  | "custom"
+  | "free1"
+  | "free2"
+  | "free3"
+  | "free4"
+  | "free5"
+  | "swing1"
+  | "swing2"
+  | "orbit";
 
 export interface Uni3CCameraData {
   traj_type: Uni3CTrajType;
@@ -220,25 +225,25 @@ export interface Uni3CCameraData {
   keyframes?: Array<{
     frame: number;
     params: Uni3CCameraTrajectory;
-    interpolation: 'linear' | 'bezier';
+    interpolation: "linear" | "bezier";
   }>;
 }
 
 // AnimateDiff CameraCtrl
 export type CameraCtrlMotionType =
-  | 'Static'
-  | 'Move Forward'
-  | 'Move Backward'
-  | 'Move Left'
-  | 'Move Right'
-  | 'Move Up'
-  | 'Move Down'
-  | 'Rotate Left'
-  | 'Rotate Right'
-  | 'Rotate Up'
-  | 'Rotate Down'
-  | 'Roll Left'
-  | 'Roll Right';
+  | "Static"
+  | "Move Forward"
+  | "Move Backward"
+  | "Move Left"
+  | "Move Right"
+  | "Move Up"
+  | "Move Down"
+  | "Rotate Left"
+  | "Rotate Right"
+  | "Rotate Up"
+  | "Rotate Down"
+  | "Roll Left"
+  | "Roll Right";
 
 export interface CameraCtrlPoses {
   motion_type: CameraCtrlMotionType;
@@ -298,18 +303,21 @@ export interface ComfyUIPromptResult {
 
 export interface ComfyUIHistoryEntry {
   prompt: ComfyUIWorkflow;
-  outputs: Record<string, {
-    images?: Array<{
-      filename: string;
-      subfolder: string;
-      type: string;
-    }>;
-    gifs?: Array<{
-      filename: string;
-      subfolder: string;
-      type: string;
-    }>;
-  }>;
+  outputs: Record<
+    string,
+    {
+      images?: Array<{
+        filename: string;
+        subfolder: string;
+        type: string;
+      }>;
+      gifs?: Array<{
+        filename: string;
+        subfolder: string;
+        type: string;
+      }>;
+    }
+  >;
   status: {
     status_str: string;
     completed: boolean;
@@ -321,25 +329,25 @@ export interface ComfyUIHistoryEntry {
 // Video Output Types
 // ============================================================================
 
-export type VideoFormat = 'mp4' | 'webm' | 'gif' | 'webp' | 'image_sequence';
-export type VideoCodec = 'h264' | 'h265' | 'vp9' | 'av1';
+export type VideoFormat = "mp4" | "webm" | "gif" | "webp" | "image_sequence";
+export type VideoCodec = "h264" | "h265" | "vp9" | "av1";
 
 // Frame sequence formats
 export type FrameSequenceFormat =
-  | 'png'       // Lossless, 8-bit RGBA (browser)
-  | 'jpeg'      // Lossy, 8-bit RGB (browser)
-  | 'webp'      // Modern format (browser)
-  | 'tiff'      // 8/16-bit (backend)
-  | 'exr'       // HDR 16/32-bit float (backend)
-  | 'dpx';      // Film 10/16-bit (backend)
+  | "png" // Lossless, 8-bit RGBA (browser)
+  | "jpeg" // Lossy, 8-bit RGB (browser)
+  | "webp" // Modern format (browser)
+  | "tiff" // 8/16-bit (backend)
+  | "exr" // HDR 16/32-bit float (backend)
+  | "dpx"; // Film 10/16-bit (backend)
 
 export interface FrameSequenceOptions {
   format: FrameSequenceFormat;
-  quality: number;           // 0-100 for lossy
-  filenamePattern: string;   // e.g., "frame_{frame:04d}"
+  quality: number; // 0-100 for lossy
+  filenamePattern: string; // e.g., "frame_{frame:04d}"
   outputDir: string;
   bitDepth?: 8 | 10 | 16 | 32;
-  colorSpace?: 'sRGB' | 'Linear' | 'ACEScg' | 'Rec709';
+  colorSpace?: "sRGB" | "Linear" | "ACEScg" | "Rec709";
 }
 
 export interface VideoEncoderOptions {
@@ -357,18 +365,18 @@ export interface VideoEncoderOptions {
 // ============================================================================
 
 export type ExportStage =
-  | 'preparing'
-  | 'rendering_frames'
-  | 'rendering_depth'
-  | 'rendering_control'
-  | 'exporting_camera'
-  | 'generating_workflow'
-  | 'uploading'
-  | 'queuing'
-  | 'generating'
-  | 'downloading'
-  | 'complete'
-  | 'error';
+  | "preparing"
+  | "rendering_frames"
+  | "rendering_depth"
+  | "rendering_control"
+  | "exporting_camera"
+  | "generating_workflow"
+  | "uploading"
+  | "queuing"
+  | "generating"
+  | "downloading"
+  | "complete"
+  | "error";
 
 export interface ExportProgress {
   stage: ExportStage;
@@ -381,7 +389,7 @@ export interface ExportProgress {
 }
 
 export interface GenerationProgress {
-  status: 'queued' | 'executing' | 'completed' | 'error';
+  status: "queued" | "executing" | "completed" | "error";
   currentNode?: string;
   currentStep?: number;
   totalSteps?: number;

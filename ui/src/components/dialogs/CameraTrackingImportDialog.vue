@@ -160,17 +160,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue';
+import { reactive, ref, watch } from "vue";
 import {
-  parseLatticeTrackingJSON,
-  parseBlenderTrackingJSON,
   detectTrackingFormat,
   importCameraTracking,
-} from '@/services/cameraTrackingImport';
+  parseBlenderTrackingJSON,
+  parseLatticeTrackingJSON,
+} from "@/services/cameraTrackingImport";
 import type {
-  CameraTrackingSolve,
   CameraTrackingImportOptions,
-} from '@/types/cameraTracking';
+  CameraTrackingSolve,
+} from "@/types/cameraTracking";
 
 // Local type with required properties (always initialized in this dialog)
 interface DialogImportOptions extends CameraTrackingImportOptions {
@@ -187,13 +187,16 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: 'close'): void;
-  (e: 'imported', result: { cameraLayerId?: string; warnings?: string[] }): void;
+  (e: "close"): void;
+  (
+    e: "imported",
+    result: { cameraLayerId?: string; warnings?: string[] },
+  ): void;
 }>();
 
 const isDragging = ref(false);
 const selectedFile = ref<File | null>(null);
-const detectedFormat = ref<string>('unknown');
+const detectedFormat = ref<string>("unknown");
 const parseResult = ref<CameraTrackingSolve | null>(null);
 const error = ref<string | null>(null);
 const importing = ref(false);
@@ -213,34 +216,37 @@ const options = reactive<DialogImportOptions>({
   },
 });
 
-watch(() => props.visible, (visible) => {
-  if (!visible) {
-    clearFile();
-  }
-});
+watch(
+  () => props.visible,
+  (visible) => {
+    if (!visible) {
+      clearFile();
+    }
+  },
+);
 
 function close() {
-  emit('close');
+  emit("close");
 }
 
 function clearFile() {
   selectedFile.value = null;
   parseResult.value = null;
   error.value = null;
-  detectedFormat.value = 'unknown';
+  detectedFormat.value = "unknown";
 }
 
-function handleFileSelect(event: Event) {
+function _handleFileSelect(event: Event) {
   const input = event.target as HTMLInputElement;
-  if (input.files && input.files[0]) {
+  if (input.files?.[0]) {
     processFile(input.files[0]);
   }
 }
 
-function handleDrop(event: DragEvent) {
+function _handleDrop(event: DragEvent) {
   isDragging.value = false;
   const files = event.dataTransfer?.files;
-  if (files && files[0]) {
+  if (files?.[0]) {
     processFile(files[0]);
   }
 }
@@ -255,26 +261,28 @@ async function processFile(file: File) {
     detectedFormat.value = detectTrackingFormat(content);
 
     switch (detectedFormat.value) {
-      case 'lattice':
+      case "lattice":
         parseResult.value = parseLatticeTrackingJSON(content);
         break;
-      case 'blender':
+      case "blender":
         parseResult.value = parseBlenderTrackingJSON(content);
         // Auto-enable flip Y for Blender
         options.flipY = true;
         break;
-      case 'colmap':
-        error.value = 'COLMAP format requires multiple files (cameras.txt, images.txt). Please use a combined JSON export.';
+      case "colmap":
+        error.value =
+          "COLMAP format requires multiple files (cameras.txt, images.txt). Please use a combined JSON export.";
         break;
       default:
-        error.value = 'Unknown tracking format. Please use Lattice JSON or Blender export.';
+        error.value =
+          "Unknown tracking format. Please use Lattice JSON or Blender export.";
     }
   } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Failed to parse file';
+    error.value = err instanceof Error ? err.message : "Failed to parse file";
   }
 }
 
-async function importTracking() {
+async function _importTracking() {
   if (!parseResult.value) return;
 
   importing.value = true;
@@ -284,16 +292,16 @@ async function importTracking() {
     const result = await importCameraTracking(parseResult.value, options);
 
     if (result.success) {
-      emit('imported', {
+      emit("imported", {
         cameraLayerId: result.cameraLayerId,
         warnings: result.warnings,
       });
       close();
     } else {
-      error.value = result.error || 'Import failed';
+      error.value = result.error || "Import failed";
     }
   } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Import failed';
+    error.value = err instanceof Error ? err.message : "Import failed";
   } finally {
     importing.value = false;
   }

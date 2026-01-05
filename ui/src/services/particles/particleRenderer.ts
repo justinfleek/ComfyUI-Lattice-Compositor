@@ -5,7 +5,13 @@
  * All functions are pure and receive particle state as parameters.
  */
 
-import type { Particle, RenderOptions, EmitterConfig, ConnectionConfig, SpatialGrid } from './particleTypes';
+import type {
+  ConnectionConfig,
+  EmitterConfig,
+  Particle,
+  RenderOptions,
+  SpatialGrid,
+} from "./particleTypes";
 
 // ============================================================================
 // Types
@@ -29,8 +35,8 @@ export interface ParticleRenderContext {
  */
 function getNeighborParticles(p: Particle, grid: SpatialGrid): Particle[] {
   const neighbors: Particle[] = [];
-  const cellX = Math.floor(p.x * 1000 / grid.cellSize);
-  const cellY = Math.floor(p.y * 1000 / grid.cellSize);
+  const cellX = Math.floor((p.x * 1000) / grid.cellSize);
+  const cellY = Math.floor((p.y * 1000) / grid.cellSize);
 
   for (let dx = -1; dx <= 1; dx++) {
     for (let dy = -1; dy <= 1; dy++) {
@@ -50,30 +56,44 @@ export function renderParticlesToCanvas(
   width: number,
   height: number,
   context: ParticleRenderContext,
-  spatialGrid?: SpatialGrid
+  spatialGrid?: SpatialGrid,
 ): void {
-  const { particles, renderOptions: options, trailHistory, emitters, spriteCache } = context;
+  const {
+    particles,
+    renderOptions: options,
+    trailHistory,
+    emitters,
+    spriteCache,
+  } = context;
 
   ctx.save();
 
   // Set blend mode
   switch (options.blendMode) {
-    case 'additive':
-      ctx.globalCompositeOperation = 'lighter';
+    case "additive":
+      ctx.globalCompositeOperation = "lighter";
       break;
-    case 'multiply':
-      ctx.globalCompositeOperation = 'multiply';
+    case "multiply":
+      ctx.globalCompositeOperation = "multiply";
       break;
-    case 'screen':
-      ctx.globalCompositeOperation = 'screen';
+    case "screen":
+      ctx.globalCompositeOperation = "screen";
       break;
     default:
-      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalCompositeOperation = "source-over";
   }
 
   // Render particle connections first, before particles
   if (options.connections?.enabled && spatialGrid) {
-    renderConnections(ctx, width, height, particles, options.connections, spatialGrid, getNeighborParticles);
+    renderConnections(
+      ctx,
+      width,
+      height,
+      particles,
+      options.connections,
+      spatialGrid,
+      getNeighborParticles,
+    );
   }
 
   for (const p of particles) {
@@ -91,9 +111,9 @@ export function renderParticlesToCanvas(
         const trailLen = Math.min(trail.length, options.trailLength);
         for (let i = 0; i < trailLen; i++) {
           const tp = trail[i];
-          const opacity = p.color[3] * Math.pow(options.trailOpacityFalloff, i + 1);
+          const opacity = p.color[3] * options.trailOpacityFalloff ** (i + 1);
           ctx.strokeStyle = `rgba(${p.color[0]}, ${p.color[1]}, ${p.color[2]}, ${opacity / 255})`;
-          ctx.lineWidth = size * Math.pow(options.trailOpacityFalloff, i);
+          ctx.lineWidth = size * options.trailOpacityFalloff ** i;
           ctx.lineTo(tp.x * width, tp.y * height);
         }
         ctx.stroke();
@@ -110,10 +130,30 @@ export function renderParticlesToCanvas(
 
     // Motion blur rendering
     if (options.motionBlur && (p.vx !== 0 || p.vy !== 0)) {
-      renderParticleWithMotionBlur(ctx, p, x, y, size, options, emitters, spriteCache);
+      renderParticleWithMotionBlur(
+        ctx,
+        p,
+        x,
+        y,
+        size,
+        options,
+        emitters,
+        spriteCache,
+      );
     } else {
       // Standard particle rendering
-      renderParticleShape(ctx, x, y, size, p.color, options.particleShape, p, options, emitters, spriteCache);
+      renderParticleShape(
+        ctx,
+        x,
+        y,
+        size,
+        p.color,
+        options.particleShape,
+        p,
+        options,
+        emitters,
+        spriteCache,
+      );
     }
   }
 
@@ -131,14 +171,25 @@ export function renderParticleWithMotionBlur(
   size: number,
   options: RenderOptions,
   emitters: Map<string, EmitterConfig>,
-  spriteCache: Map<string, HTMLImageElement | ImageBitmap>
+  spriteCache: Map<string, HTMLImageElement | ImageBitmap>,
 ): void {
   // Calculate velocity magnitude
   const velocityMag = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
 
   // If velocity is too small, render normally
   if (velocityMag < 0.0001) {
-    renderParticleShape(ctx, x, y, size, p.color, options.particleShape, undefined, undefined, emitters, spriteCache);
+    renderParticleShape(
+      ctx,
+      x,
+      y,
+      size,
+      p.color,
+      options.particleShape,
+      undefined,
+      undefined,
+      emitters,
+      spriteCache,
+    );
     return;
   }
 
@@ -170,12 +221,34 @@ export function renderParticleWithMotionBlur(
     ctx.fillStyle = `rgba(${p.color[0]}, ${p.color[1]}, ${p.color[2]}, ${Math.min(1, alpha)})`;
 
     // Draw sample
-    renderParticleShape(ctx, sampleX, sampleY, sampleSize, null, options.particleShape, p, options, emitters, spriteCache);
+    renderParticleShape(
+      ctx,
+      sampleX,
+      sampleY,
+      sampleSize,
+      null,
+      options.particleShape,
+      p,
+      options,
+      emitters,
+      spriteCache,
+    );
   }
 
   // Draw the main particle at full opacity
   ctx.fillStyle = `rgba(${p.color[0]}, ${p.color[1]}, ${p.color[2]}, ${p.color[3] / 255})`;
-  renderParticleShape(ctx, x, y, size, p.color, options.particleShape, p, options, emitters, spriteCache);
+  renderParticleShape(
+    ctx,
+    x,
+    y,
+    size,
+    p.color,
+    options.particleShape,
+    p,
+    options,
+    emitters,
+    spriteCache,
+  );
 }
 
 /**
@@ -187,11 +260,11 @@ export function renderParticleShape(
   y: number,
   size: number,
   color: [number, number, number, number] | null,
-  shape: RenderOptions['particleShape'],
+  shape: RenderOptions["particleShape"],
   particle?: Particle,
   options?: RenderOptions,
   emitters?: Map<string, EmitterConfig>,
-  spriteCache?: Map<string, HTMLImageElement | ImageBitmap>
+  spriteCache?: Map<string, HTMLImageElement | ImageBitmap>,
 ): void {
   // Set fill color if provided
   if (color) {
@@ -199,7 +272,7 @@ export function renderParticleShape(
   }
 
   // Handle sprite rendering
-  if (shape === 'sprite' && particle && emitters && spriteCache) {
+  if (shape === "sprite" && particle && emitters && spriteCache) {
     renderSprite(ctx, x, y, size, particle, options, emitters, spriteCache);
     return;
   }
@@ -217,17 +290,17 @@ export function renderParticleShape(
   } else {
     // Draw particle shape without rotation
     switch (shape) {
-      case 'circle':
+      case "circle":
         ctx.beginPath();
         ctx.arc(x, y, size / 2, 0, Math.PI * 2);
         ctx.fill();
         break;
 
-      case 'square':
+      case "square":
         ctx.fillRect(x - size / 2, y - size / 2, size, size);
         break;
 
-      case 'triangle':
+      case "triangle":
         ctx.beginPath();
         ctx.moveTo(x, y - size / 2);
         ctx.lineTo(x - size / 2, y + size / 2);
@@ -236,7 +309,7 @@ export function renderParticleShape(
         ctx.fill();
         break;
 
-      case 'star':
+      case "star":
         drawStar(ctx, x, y, 5, size / 2, size / 4);
         ctx.fill();
         break;
@@ -250,20 +323,20 @@ export function renderParticleShape(
 export function drawShapeAtOrigin(
   ctx: CanvasRenderingContext2D,
   size: number,
-  shape: RenderOptions['particleShape']
+  shape: RenderOptions["particleShape"],
 ): void {
   switch (shape) {
-    case 'circle':
+    case "circle":
       ctx.beginPath();
       ctx.arc(0, 0, size / 2, 0, Math.PI * 2);
       ctx.fill();
       break;
 
-    case 'square':
+    case "square":
       ctx.fillRect(-size / 2, -size / 2, size, size);
       break;
 
-    case 'triangle':
+    case "triangle":
       ctx.beginPath();
       ctx.moveTo(0, -size / 2);
       ctx.lineTo(-size / 2, size / 2);
@@ -272,7 +345,7 @@ export function drawShapeAtOrigin(
       ctx.fill();
       break;
 
-    case 'star':
+    case "star":
       drawStar(ctx, 0, 0, 5, size / 2, size / 4);
       ctx.fill();
       break;
@@ -290,7 +363,7 @@ export function renderSprite(
   particle: Particle,
   options: RenderOptions | undefined,
   emitters: Map<string, EmitterConfig>,
-  spriteCache: Map<string, HTMLImageElement | ImageBitmap>
+  spriteCache: Map<string, HTMLImageElement | ImageBitmap>,
 ): void {
   const emitter = emitters.get(particle.emitterId);
   if (!emitter?.sprite?.enabled) {
@@ -333,7 +406,7 @@ export function renderSprite(
   let sw = image.width;
   let sh = image.height;
 
-  if (sprite.isSheet && sprite.columns > 1 || sprite.rows > 1) {
+  if ((sprite.isSheet && sprite.columns > 1) || sprite.rows > 1) {
     const frameWidth = image.width / sprite.columns;
     const frameHeight = image.height / sprite.rows;
     const col = particle.spriteIndex % sprite.columns;
@@ -356,8 +429,14 @@ export function renderSprite(
   const halfSize = size / 2;
   ctx.drawImage(
     image,
-    sx, sy, sw, sh,      // Source rectangle
-    -halfSize, -halfSize, size, size  // Destination rectangle
+    sx,
+    sy,
+    sw,
+    sh, // Source rectangle
+    -halfSize,
+    -halfSize,
+    size,
+    size, // Destination rectangle
   );
 
   ctx.restore();
@@ -372,7 +451,7 @@ export function drawStar(
   cy: number,
   spikes: number,
   outerRadius: number,
-  innerRadius: number
+  innerRadius: number,
 ): void {
   ctx.beginPath();
   let rotation = -Math.PI / 2;
@@ -409,13 +488,13 @@ export function renderConnections(
   particles: Particle[],
   config: ConnectionConfig,
   spatialGrid: SpatialGrid,
-  getNeighbors: (p: Particle, grid: SpatialGrid) => Particle[]
+  getNeighbors: (p: Particle, grid: SpatialGrid) => Particle[],
 ): void {
   if (!config.enabled || particles.length < 2) {
     return;
   }
 
-  const maxDist = config.maxDistance / 1000;  // Normalize to 0-1
+  const maxDist = config.maxDistance / 1000; // Normalize to 0-1
   const maxDistSq = maxDist * maxDist;
 
   ctx.lineWidth = config.lineWidth;
@@ -425,7 +504,7 @@ export function renderConnections(
     let connectionCount = 0;
 
     for (const other of neighbors) {
-      if (other.id <= p.id) continue;  // Only draw each connection once
+      if (other.id <= p.id) continue; // Only draw each connection once
       if (connectionCount >= config.maxConnections) break;
 
       const dx = other.x - p.x;
@@ -436,7 +515,7 @@ export function renderConnections(
         const dist = Math.sqrt(distSq);
         let opacity = config.lineOpacity;
         if (config.fadeByDistance) {
-          opacity *= 1 - (dist / maxDist);
+          opacity *= 1 - dist / maxDist;
         }
 
         const r = Math.round((p.color[0] + other.color[0]) / 2);
@@ -462,20 +541,20 @@ export function renderParticlesToMask(
   width: number,
   height: number,
   particles: Particle[],
-  renderOptions: RenderOptions
+  renderOptions: RenderOptions,
 ): ImageData {
   const canvas = new OffscreenCanvas(width, height);
-  const ctx = canvas.getContext('2d')!;
+  const ctx = canvas.getContext("2d")!;
 
   // Start with white (include all)
-  ctx.fillStyle = '#FFFFFF';
+  ctx.fillStyle = "#FFFFFF";
   ctx.fillRect(0, 0, width, height);
 
   // Draw connections as black (exclude) if enabled
   const connConfig = renderOptions.connections;
   if (connConfig?.enabled && particles.length >= 2) {
-    ctx.strokeStyle = '#000000';
-    ctx.lineWidth = connConfig.lineWidth * 2;  // Slightly thicker for matte
+    ctx.strokeStyle = "#000000";
+    ctx.lineWidth = connConfig.lineWidth * 2; // Slightly thicker for matte
     // Note: For mask rendering, we use a simplified connection approach
     // since we don't need colors
     const maxDist = connConfig.maxDistance;
@@ -500,7 +579,7 @@ export function renderParticlesToMask(
   }
 
   // Draw particles as black (exclude)
-  ctx.fillStyle = '#000000';
+  ctx.fillStyle = "#000000";
   for (const p of particles) {
     const x = p.x * width;
     const y = p.y * height;

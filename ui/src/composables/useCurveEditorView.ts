@@ -4,16 +4,16 @@
  * Manages the view state (zoom, pan, fit to view) for the curve editor.
  */
 
-import { reactive, type Ref } from 'vue';
-import type { AnimatableProperty, Keyframe } from '@/types/project';
+import { type Ref, reactive } from "vue";
+import type { AnimatableProperty, Keyframe } from "@/types/project";
 import {
-  type CurveViewState,
   type CurveMargin,
+  type CurveViewState,
   DEFAULT_CURVE_MARGIN,
   getNumericValue,
   screenXToFrame,
-  screenYToValue
-} from './useCurveEditorCoords';
+  screenYToValue,
+} from "./useCurveEditorCoords";
 
 export interface SelectedKeyframe {
   propId: string;
@@ -32,14 +32,14 @@ export function createViewState(
   frameStart = 0,
   frameEnd = 100,
   valueMin = 0,
-  valueMax = 100
+  valueMax = 100,
 ): CurveViewState {
   return reactive({
     frameStart,
     frameEnd,
     valueMin,
     valueMax,
-    zoom: 1
+    zoom: 1,
   });
 }
 
@@ -52,7 +52,7 @@ export function createViewState(
  */
 export function fitToView(
   viewState: CurveViewState,
-  visibleProperties: AnimatableProperty<any>[]
+  visibleProperties: AnimatableProperty<any>[],
 ): void {
   if (visibleProperties.length === 0) return;
 
@@ -87,7 +87,7 @@ export function fitToView(
 export function fitSelectionToView(
   viewState: CurveViewState,
   selectedKeyframes: SelectedKeyframe[],
-  visibleProperties: AnimatableProperty<any>[]
+  visibleProperties: AnimatableProperty<any>[],
 ): void {
   if (selectedKeyframes.length === 0) {
     fitToView(viewState, visibleProperties);
@@ -149,7 +149,7 @@ export function handleWheelZoom(
   canvasWidth: number,
   canvasHeight: number,
   canvasRect: DOMRect,
-  margin: CurveMargin = DEFAULT_CURVE_MARGIN
+  margin: CurveMargin = DEFAULT_CURVE_MARGIN,
 ): void {
   event.preventDefault();
 
@@ -159,8 +159,10 @@ export function handleWheelZoom(
   // Zoom around cursor position
   const frameAtCursor = screenXToFrame(x, viewState, canvasWidth, margin);
 
-  const newFrameStart = frameAtCursor - (frameAtCursor - viewState.frameStart) * zoomFactor;
-  const newFrameEnd = frameAtCursor + (viewState.frameEnd - frameAtCursor) * zoomFactor;
+  const newFrameStart =
+    frameAtCursor - (frameAtCursor - viewState.frameStart) * zoomFactor;
+  const newFrameEnd =
+    frameAtCursor + (viewState.frameEnd - frameAtCursor) * zoomFactor;
 
   if (event.shiftKey) {
     // Zoom time only
@@ -173,8 +175,10 @@ export function handleWheelZoom(
 
     const y = event.clientY - canvasRect.top;
     const valueAtCursor = screenYToValue(y, viewState, canvasHeight, margin);
-    viewState.valueMin = valueAtCursor - (valueAtCursor - viewState.valueMin) * zoomFactor;
-    viewState.valueMax = valueAtCursor + (viewState.valueMax - valueAtCursor) * zoomFactor;
+    viewState.valueMin =
+      valueAtCursor - (valueAtCursor - viewState.valueMin) * zoomFactor;
+    viewState.valueMax =
+      valueAtCursor + (viewState.valueMax - valueAtCursor) * zoomFactor;
   }
 }
 
@@ -191,13 +195,15 @@ export function panView(
   deltaY: number,
   canvasWidth: number,
   canvasHeight: number,
-  margin: CurveMargin = DEFAULT_CURVE_MARGIN
+  margin: CurveMargin = DEFAULT_CURVE_MARGIN,
 ): void {
   const graphWidth = canvasWidth - margin.left - margin.right;
   const graphHeight = canvasHeight - margin.top - margin.bottom;
 
-  const frameShift = -deltaX / graphWidth * (viewState.frameEnd - viewState.frameStart);
-  const valueShift = deltaY / graphHeight * (viewState.valueMax - viewState.valueMin);
+  const frameShift =
+    (-deltaX / graphWidth) * (viewState.frameEnd - viewState.frameStart);
+  const valueShift =
+    (deltaY / graphHeight) * (viewState.valueMax - viewState.valueMin);
 
   viewState.frameStart += frameShift;
   viewState.frameEnd += frameShift;
@@ -213,7 +219,7 @@ export function useCurveEditorView(
   canvasWidth: Ref<number>,
   canvasHeight: Ref<number>,
   visibleProperties: Ref<AnimatableProperty<any>[]>,
-  margin: CurveMargin = DEFAULT_CURVE_MARGIN
+  margin: CurveMargin = DEFAULT_CURVE_MARGIN,
 ) {
   const viewState = createViewState();
 
@@ -230,9 +236,23 @@ export function useCurveEditorView(
     zoomOut: () => zoomOut(viewState),
 
     handleWheelZoom: (event: WheelEvent, canvasRect: DOMRect) =>
-      handleWheelZoom(event, viewState, canvasWidth.value, canvasHeight.value, canvasRect, margin),
+      handleWheelZoom(
+        event,
+        viewState,
+        canvasWidth.value,
+        canvasHeight.value,
+        canvasRect,
+        margin,
+      ),
 
     panView: (deltaX: number, deltaY: number) =>
-      panView(viewState, deltaX, deltaY, canvasWidth.value, canvasHeight.value, margin)
+      panView(
+        viewState,
+        deltaX,
+        deltaY,
+        canvasWidth.value,
+        canvasHeight.value,
+        margin,
+      ),
   };
 }

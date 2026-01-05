@@ -14,27 +14,27 @@
  * @module services/midiToKeyframes
  */
 
-import type { Keyframe, AnimatableProperty } from '@/types/project';
+import type { AnimatableProperty, Keyframe } from "@/types/project";
 
 // ============================================================================
 // Types
 // ============================================================================
 
 export interface MIDINote {
-  noteNumber: number;     // 0-127 MIDI note
-  noteName: string;       // e.g., "C4", "F#5"
-  velocity: number;       // 0-127
-  startTime: number;      // Seconds
-  duration: number;       // Seconds
-  channel: number;        // 0-15
+  noteNumber: number; // 0-127 MIDI note
+  noteName: string; // e.g., "C4", "F#5"
+  velocity: number; // 0-127
+  startTime: number; // Seconds
+  duration: number; // Seconds
+  channel: number; // 0-15
   track: number;
 }
 
 export interface MIDIControlChange {
-  controller: number;     // CC number (0-127)
+  controller: number; // CC number (0-127)
   controllerName: string; // e.g., "Modulation", "Expression"
-  value: number;          // 0-127
-  time: number;           // Seconds
+  value: number; // 0-127
+  time: number; // Seconds
   channel: number;
   track: number;
 }
@@ -46,50 +46,67 @@ export interface MIDITrack {
 }
 
 export interface MIDIParsedFile {
-  format: number;         // 0, 1, or 2
-  ticksPerBeat: number;   // Resolution
+  format: number; // 0, 1, or 2
+  ticksPerBeat: number; // Resolution
   tempos: Array<{ time: number; bpm: number }>;
-  timeSignatures: Array<{ time: number; numerator: number; denominator: number }>;
+  timeSignatures: Array<{
+    time: number;
+    numerator: number;
+    denominator: number;
+  }>;
   tracks: MIDITrack[];
-  duration: number;       // Total duration in seconds
+  duration: number; // Total duration in seconds
 }
 
 export interface MIDIToKeyframeConfig {
   // Source selection
-  trackIndex?: number;    // Specific track, or all if undefined
-  channel?: number;       // Specific channel, or all if undefined
+  trackIndex?: number; // Specific track, or all if undefined
+  channel?: number; // Specific channel, or all if undefined
   noteRange?: { min: number; max: number }; // Filter notes
 
   // Mapping type
-  mappingType: 'noteOnOff' | 'noteVelocity' | 'notePitch' | 'controlChange';
+  mappingType: "noteOnOff" | "noteVelocity" | "notePitch" | "controlChange";
 
   // For controlChange type
   ccNumber?: number;
 
   // Value mapping
-  valueMin: number;       // Output minimum
-  valueMax: number;       // Output maximum
+  valueMin: number; // Output minimum
+  valueMax: number; // Output maximum
 
   // Timing
-  fps: number;            // Frame rate for keyframe conversion
+  fps: number; // Frame rate for keyframe conversion
 
   // Options
   sustainPedal?: boolean; // Respect sustain pedal (CC64)
-  interpolation?: 'linear' | 'hold' | 'bezier';
+  interpolation?: "linear" | "hold" | "bezier";
 }
 
 // ============================================================================
 // Note Names
 // ============================================================================
 
-const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+const NOTE_NAMES = [
+  "C",
+  "C#",
+  "D",
+  "D#",
+  "E",
+  "F",
+  "F#",
+  "G",
+  "G#",
+  "A",
+  "A#",
+  "B",
+];
 
 // BUG-099/100 fix: Simple deterministic hash for IDs
 // Uses djb2 algorithm - fast and has good distribution
 function simpleHash(str: string): string {
   let hash = 5381;
   for (let i = 0; i < str.length; i++) {
-    hash = ((hash << 5) + hash) + str.charCodeAt(i);
+    hash = (hash << 5) + hash + str.charCodeAt(i);
     hash = hash & hash; // Convert to 32-bit integer
   }
   return Math.abs(hash).toString(36);
@@ -106,30 +123,30 @@ function midiNoteToName(noteNumber: number): string {
 // ============================================================================
 
 const CC_NAMES: Record<number, string> = {
-  0: 'Bank Select',
-  1: 'Modulation',
-  2: 'Breath',
-  4: 'Foot Controller',
-  5: 'Portamento Time',
-  7: 'Volume',
-  8: 'Balance',
-  10: 'Pan',
-  11: 'Expression',
-  64: 'Sustain Pedal',
-  65: 'Portamento',
-  66: 'Sostenuto',
-  67: 'Soft Pedal',
-  68: 'Legato',
-  69: 'Hold 2',
-  71: 'Resonance',
-  72: 'Release Time',
-  73: 'Attack Time',
-  74: 'Cutoff',
-  75: 'Decay Time',
-  91: 'Reverb',
-  93: 'Chorus',
-  94: 'Detune',
-  95: 'Phaser'
+  0: "Bank Select",
+  1: "Modulation",
+  2: "Breath",
+  4: "Foot Controller",
+  5: "Portamento Time",
+  7: "Volume",
+  8: "Balance",
+  10: "Pan",
+  11: "Expression",
+  64: "Sustain Pedal",
+  65: "Portamento",
+  66: "Sostenuto",
+  67: "Soft Pedal",
+  68: "Legato",
+  69: "Hold 2",
+  71: "Resonance",
+  72: "Release Time",
+  73: "Attack Time",
+  74: "Cutoff",
+  75: "Decay Time",
+  91: "Reverb",
+  93: "Chorus",
+  94: "Detune",
+  95: "Phaser",
 };
 
 function ccNumberToName(cc: number): string {
@@ -143,14 +160,16 @@ function ccNumberToName(cc: number): string {
 /**
  * Parse a Standard MIDI File
  */
-export async function parseMIDIFile(arrayBuffer: ArrayBuffer): Promise<MIDIParsedFile> {
+export async function parseMIDIFile(
+  arrayBuffer: ArrayBuffer,
+): Promise<MIDIParsedFile> {
   const view = new DataView(arrayBuffer);
   let offset = 0;
 
   // Read header chunk
   const headerChunk = readString(view, offset, 4);
-  if (headerChunk !== 'MThd') {
-    throw new Error('Invalid MIDI file: Missing MThd header');
+  if (headerChunk !== "MThd") {
+    throw new Error("Invalid MIDI file: Missing MThd header");
   }
   offset += 4;
 
@@ -171,15 +190,23 @@ export async function parseMIDIFile(arrayBuffer: ArrayBuffer): Promise<MIDIParse
   // Parse tracks
   const tracks: MIDITrack[] = [];
   const tempos: Array<{ time: number; bpm: number }> = [{ time: 0, bpm: 120 }];
-  const timeSignatures: Array<{ time: number; numerator: number; denominator: number }> = [
-    { time: 0, numerator: 4, denominator: 4 }
-  ];
+  const timeSignatures: Array<{
+    time: number;
+    numerator: number;
+    denominator: number;
+  }> = [{ time: 0, numerator: 4, denominator: 4 }];
   // BUG-098 fix: Track tempo changes by tick position for accurate timing
   // Don't initialize with default - we'll add it after parsing if no tick 0 tempo exists
   const tempoChangesByTick: Array<{ tick: number; bpm: number }> = [];
 
   for (let t = 0; t < numTracks; t++) {
-    const trackResult = parseTrack(view, offset, ticksPerBeat, tempos, tempoChangesByTick);
+    const trackResult = parseTrack(
+      view,
+      offset,
+      ticksPerBeat,
+      tempos,
+      tempoChangesByTick,
+    );
     tracks.push(trackResult.track);
     offset = trackResult.nextOffset;
 
@@ -222,7 +249,7 @@ export async function parseMIDIFile(arrayBuffer: ArrayBuffer): Promise<MIDIParse
     tempos,
     timeSignatures,
     tracks,
-    duration: maxDuration
+    duration: maxDuration,
   };
 }
 
@@ -234,7 +261,7 @@ export async function parseMIDIFile(arrayBuffer: ArrayBuffer): Promise<MIDIParse
 function ticksToSecondsWithTempoMap(
   ticks: number,
   ticksPerBeat: number,
-  tempoChanges: Array<{ tick: number; bpm: number }>
+  tempoChanges: Array<{ tick: number; bpm: number }>,
 ): number {
   if (tempoChanges.length === 0) {
     // No tempo changes, use default 120 BPM
@@ -280,19 +307,23 @@ function parseTrack(
   ticksPerBeat: number,
   globalTempos: Array<{ time: number; bpm: number }>,
   // BUG-098 fix: Track tempo changes by tick position for accurate timing
-  tempoChangesByTick: Array<{ tick: number; bpm: number }>
+  tempoChangesByTick: Array<{ tick: number; bpm: number }>,
 ): {
   track: MIDITrack;
   nextOffset: number;
   tempos: Array<{ time: number; bpm: number }>;
-  timeSignatures: Array<{ time: number; numerator: number; denominator: number }>;
+  timeSignatures: Array<{
+    time: number;
+    numerator: number;
+    denominator: number;
+  }>;
   tempoChangesByTick: Array<{ tick: number; bpm: number }>;
 } {
   let offset = startOffset;
 
   // Read track header
   const trackChunk = readString(view, offset, 4);
-  if (trackChunk !== 'MTrk') {
+  if (trackChunk !== "MTrk") {
     throw new Error(`Invalid track header at offset ${offset}`);
   }
   offset += 4;
@@ -303,17 +334,24 @@ function parseTrack(
   const trackEnd = offset + trackLength;
 
   const track: MIDITrack = {
-    name: '',
+    name: "",
     notes: [],
-    controlChanges: []
+    controlChanges: [],
   };
 
   const tempos: Array<{ time: number; bpm: number }> = [];
-  const timeSignatures: Array<{ time: number; numerator: number; denominator: number }> = [];
+  const timeSignatures: Array<{
+    time: number;
+    numerator: number;
+    denominator: number;
+  }> = [];
   const localTempoChanges: Array<{ tick: number; bpm: number }> = [];
 
   // Track note-on events for pairing with note-off
-  const activeNotes = new Map<string, { noteNumber: number; velocity: number; startTick: number; channel: number }>();
+  const activeNotes = new Map<
+    string,
+    { noteNumber: number; velocity: number; startTick: number; channel: number }
+  >();
 
   let currentTick = 0;
   let runningStatus = 0;
@@ -340,8 +378,8 @@ function parseTrack(
       offset++;
     }
 
-    const eventType = status & 0xF0;
-    const channel = status & 0x0F;
+    const eventType = status & 0xf0;
+    const channel = status & 0x0f;
 
     // Note Off
     if (eventType === 0x80) {
@@ -358,7 +396,7 @@ function parseTrack(
           startTime: ticksToSeconds(activeNote.startTick),
           duration: ticksToSeconds(currentTick - activeNote.startTick),
           channel,
-          track: 0
+          track: 0,
         });
         activeNotes.delete(key);
       }
@@ -381,20 +419,25 @@ function parseTrack(
             startTime: ticksToSeconds(activeNote.startTick),
             duration: ticksToSeconds(currentTick - activeNote.startTick),
             channel,
-            track: 0
+            track: 0,
           });
           activeNotes.delete(key);
         }
       } else {
-        activeNotes.set(key, { noteNumber, velocity, startTick: currentTick, channel });
+        activeNotes.set(key, {
+          noteNumber,
+          velocity,
+          startTick: currentTick,
+          channel,
+        });
       }
     }
     // Polyphonic Aftertouch
-    else if (eventType === 0xA0) {
+    else if (eventType === 0xa0) {
       offset += 2;
     }
     // Control Change
-    else if (eventType === 0xB0) {
+    else if (eventType === 0xb0) {
       const controller = view.getUint8(offset++);
       const value = view.getUint8(offset++);
 
@@ -404,23 +447,23 @@ function parseTrack(
         value,
         time: ticksToSeconds(currentTick),
         channel,
-        track: 0
+        track: 0,
       });
     }
     // Program Change
-    else if (eventType === 0xC0) {
+    else if (eventType === 0xc0) {
       offset++;
     }
     // Channel Aftertouch
-    else if (eventType === 0xD0) {
+    else if (eventType === 0xd0) {
       offset++;
     }
     // Pitch Bend
-    else if (eventType === 0xE0) {
+    else if (eventType === 0xe0) {
       offset += 2;
     }
     // Meta Event
-    else if (status === 0xFF) {
+    else if (status === 0xff) {
       const metaType = view.getUint8(offset++);
       const lengthResult = readVariableLength(view, offset);
       const length = lengthResult.value;
@@ -446,32 +489,45 @@ function parseTrack(
       // Time Signature
       else if (metaType === 0x58 && length >= 2) {
         const numerator = view.getUint8(offset);
-        const denominator = Math.pow(2, view.getUint8(offset + 1));
-        timeSignatures.push({ time: ticksToSeconds(currentTick), numerator, denominator });
+        const denominator = 2 ** view.getUint8(offset + 1);
+        timeSignatures.push({
+          time: ticksToSeconds(currentTick),
+          numerator,
+          denominator,
+        });
       }
 
       offset += length;
     }
     // SysEx
-    else if (status === 0xF0 || status === 0xF7) {
+    else if (status === 0xf0 || status === 0xf7) {
       const lengthResult = readVariableLength(view, offset);
       offset = lengthResult.nextOffset + lengthResult.value;
     }
   }
 
-  return { track, nextOffset: trackEnd, tempos, timeSignatures, tempoChangesByTick: localTempoChanges };
+  return {
+    track,
+    nextOffset: trackEnd,
+    tempos,
+    timeSignatures,
+    tempoChangesByTick: localTempoChanges,
+  };
 }
 
 /**
  * Read variable-length quantity
  */
-function readVariableLength(view: DataView, offset: number): { value: number; nextOffset: number } {
+function readVariableLength(
+  view: DataView,
+  offset: number,
+): { value: number; nextOffset: number } {
   let value = 0;
   let byte: number;
 
   do {
     byte = view.getUint8(offset++);
-    value = (value << 7) | (byte & 0x7F);
+    value = (value << 7) | (byte & 0x7f);
   } while (byte & 0x80);
 
   return { value, nextOffset: offset };
@@ -481,7 +537,7 @@ function readVariableLength(view: DataView, offset: number): { value: number; ne
  * Read string from buffer
  */
 function readString(view: DataView, offset: number, length: number): string {
-  let str = '';
+  let str = "";
   for (let i = 0; i < length; i++) {
     str += String.fromCharCode(view.getUint8(offset + i));
   }
@@ -501,19 +557,23 @@ function readString(view: DataView, offset: number, length: number): string {
 export function midiNotesToKeyframes(
   midiFile: MIDIParsedFile,
   config: MIDIToKeyframeConfig,
-  idPrefix?: string
+  idPrefix?: string,
 ): Keyframe<number>[] {
   const keyframes: Keyframe<number>[] = [];
   const fps = config.fps;
 
   // BUG-100 fix: Generate unique prefix from config if not provided
-  const prefix = idPrefix || simpleHash(JSON.stringify({
-    type: config.mappingType,
-    track: config.trackIndex,
-    channel: config.channel,
-    range: config.noteRange,
-    duration: midiFile.duration
-  }));
+  const prefix =
+    idPrefix ||
+    simpleHash(
+      JSON.stringify({
+        type: config.mappingType,
+        track: config.trackIndex,
+        channel: config.channel,
+        range: config.noteRange,
+        duration: midiFile.duration,
+      }),
+    );
 
   // Collect notes from specified tracks/channels
   const notes: MIDINote[] = [];
@@ -522,10 +582,15 @@ export function midiNotesToKeyframes(
     if (config.trackIndex !== undefined && t !== config.trackIndex) continue;
 
     for (const note of midiFile.tracks[t].notes) {
-      if (config.channel !== undefined && note.channel !== config.channel) continue;
+      if (config.channel !== undefined && note.channel !== config.channel)
+        continue;
 
       if (config.noteRange) {
-        if (note.noteNumber < config.noteRange.min || note.noteNumber > config.noteRange.max) continue;
+        if (
+          note.noteNumber < config.noteRange.min ||
+          note.noteNumber > config.noteRange.max
+        )
+          continue;
       }
 
       notes.push({ ...note, track: t });
@@ -544,66 +609,73 @@ export function midiNotesToKeyframes(
     let value: number;
 
     switch (config.mappingType) {
-      case 'noteOnOff':
+      case "noteOnOff":
         // Create on/off keyframes
         keyframes.push({
           id: `midi_${prefix}_${keyframeId++}`,
           frame: startFrame,
           value: config.valueMax,
-          interpolation: config.interpolation || 'hold',
+          interpolation: config.interpolation || "hold",
           inHandle: { frame: 0, value: 0, enabled: false },
           outHandle: { frame: 0, value: 0, enabled: false },
-          controlMode: 'smooth' as const
+          controlMode: "smooth" as const,
         });
         keyframes.push({
           id: `midi_${prefix}_${keyframeId++}`,
           frame: endFrame,
           value: config.valueMin,
-          interpolation: config.interpolation || 'hold',
+          interpolation: config.interpolation || "hold",
           inHandle: { frame: 0, value: 0, enabled: false },
           outHandle: { frame: 0, value: 0, enabled: false },
-          controlMode: 'smooth' as const
+          controlMode: "smooth" as const,
         });
         break;
 
-      case 'noteVelocity':
+      case "noteVelocity":
         // Value based on velocity
-        value = config.valueMin + (note.velocity / 127) * (config.valueMax - config.valueMin);
+        value =
+          config.valueMin +
+          (note.velocity / 127) * (config.valueMax - config.valueMin);
         keyframes.push({
           id: `midi_${prefix}_${keyframeId++}`,
           frame: startFrame,
           value,
-          interpolation: config.interpolation || 'linear',
+          interpolation: config.interpolation || "linear",
           inHandle: { frame: 0, value: 0, enabled: false },
           outHandle: { frame: 0, value: 0, enabled: false },
-          controlMode: 'smooth' as const
+          controlMode: "smooth" as const,
         });
         keyframes.push({
           id: `midi_${prefix}_${keyframeId++}`,
           frame: endFrame,
           value: config.valueMin,
-          interpolation: config.interpolation || 'linear',
+          interpolation: config.interpolation || "linear",
           inHandle: { frame: 0, value: 0, enabled: false },
           outHandle: { frame: 0, value: 0, enabled: false },
-          controlMode: 'smooth' as const
+          controlMode: "smooth" as const,
         });
         break;
 
-      case 'notePitch':
+      case "notePitch": {
         // Value based on note number
-        const pitchRange = (config.noteRange?.max ?? 127) - (config.noteRange?.min ?? 0);
-        const normalizedPitch = (note.noteNumber - (config.noteRange?.min ?? 0)) / pitchRange;
-        value = config.valueMin + normalizedPitch * (config.valueMax - config.valueMin);
+        const pitchRange =
+          (config.noteRange?.max ?? 127) - (config.noteRange?.min ?? 0);
+        const normalizedPitch =
+          (note.noteNumber - (config.noteRange?.min ?? 0)) / pitchRange;
+        value =
+          config.valueMin +
+          normalizedPitch * (config.valueMax - config.valueMin);
         keyframes.push({
           id: `midi_${prefix}_${keyframeId++}`,
           frame: startFrame,
           value,
-          interpolation: config.interpolation || 'linear',
+          interpolation: config.interpolation || "linear",
           inHandle: { frame: 0, value: 0, enabled: false },
           outHandle: { frame: 0, value: 0, enabled: false },
-          controlMode: 'smooth' as const
+          controlMode: "smooth" as const,
         });
         break;
+      }
     }
   }
 
@@ -622,23 +694,27 @@ export function midiNotesToKeyframes(
 export function midiCCToKeyframes(
   midiFile: MIDIParsedFile,
   config: MIDIToKeyframeConfig,
-  idPrefix?: string
+  idPrefix?: string,
 ): Keyframe<number>[] {
   if (config.ccNumber === undefined) {
-    throw new Error('ccNumber is required for controlChange mapping');
+    throw new Error("ccNumber is required for controlChange mapping");
   }
 
   const keyframes: Keyframe<number>[] = [];
   const fps = config.fps;
 
   // BUG-100 fix: Generate unique prefix from config if not provided
-  const prefix = idPrefix || simpleHash(JSON.stringify({
-    type: 'cc',
-    ccNumber: config.ccNumber,
-    track: config.trackIndex,
-    channel: config.channel,
-    duration: midiFile.duration
-  }));
+  const prefix =
+    idPrefix ||
+    simpleHash(
+      JSON.stringify({
+        type: "cc",
+        ccNumber: config.ccNumber,
+        track: config.trackIndex,
+        channel: config.channel,
+        duration: midiFile.duration,
+      }),
+    );
 
   // Collect CC events from specified tracks/channels
   const ccEvents: MIDIControlChange[] = [];
@@ -647,7 +723,8 @@ export function midiCCToKeyframes(
     if (config.trackIndex !== undefined && t !== config.trackIndex) continue;
 
     for (const cc of midiFile.tracks[t].controlChanges) {
-      if (config.channel !== undefined && cc.channel !== config.channel) continue;
+      if (config.channel !== undefined && cc.channel !== config.channel)
+        continue;
       if (cc.controller !== config.ccNumber) continue;
 
       ccEvents.push({ ...cc, track: t });
@@ -661,16 +738,17 @@ export function midiCCToKeyframes(
 
   for (const cc of ccEvents) {
     const frame = Math.round(cc.time * fps);
-    const value = config.valueMin + (cc.value / 127) * (config.valueMax - config.valueMin);
+    const value =
+      config.valueMin + (cc.value / 127) * (config.valueMax - config.valueMin);
 
     keyframes.push({
       id: `midi_${prefix}_${keyframeId++}`,
       frame,
       value,
-      interpolation: config.interpolation || 'linear',
+      interpolation: config.interpolation || "linear",
       inHandle: { frame: 0, value: 0, enabled: false },
       outHandle: { frame: 0, value: 0, enabled: false },
-      controlMode: 'smooth' as const
+      controlMode: "smooth" as const,
     });
   }
 
@@ -683,32 +761,35 @@ export function midiCCToKeyframes(
 export function createMIDIAnimatableProperty(
   name: string,
   midiFile: MIDIParsedFile,
-  config: MIDIToKeyframeConfig
+  config: MIDIToKeyframeConfig,
 ): AnimatableProperty<number> {
   // BUG-099 fix: Generate deterministic ID from name and config (no Date.now() or Math.random())
-  const idHash = simpleHash(JSON.stringify({
-    name,
-    mappingType: config.mappingType,
-    trackIndex: config.trackIndex,
-    channel: config.channel,
-    ccNumber: config.ccNumber,
-    duration: midiFile.duration,
-    trackCount: midiFile.tracks.length
-  }));
+  const idHash = simpleHash(
+    JSON.stringify({
+      name,
+      mappingType: config.mappingType,
+      trackIndex: config.trackIndex,
+      channel: config.channel,
+      ccNumber: config.ccNumber,
+      duration: midiFile.duration,
+      trackCount: midiFile.tracks.length,
+    }),
+  );
   const id = `midi_prop_${idHash}`;
 
   // Pass the id as prefix so keyframes are also unique
-  const keyframes = config.mappingType === 'controlChange'
-    ? midiCCToKeyframes(midiFile, config, idHash)
-    : midiNotesToKeyframes(midiFile, config, idHash);
+  const keyframes =
+    config.mappingType === "controlChange"
+      ? midiCCToKeyframes(midiFile, config, idHash)
+      : midiNotesToKeyframes(midiFile, config, idHash);
 
   return {
     id,
     name,
-    type: 'number' as const,
+    type: "number" as const,
     value: config.valueMin,
     animated: keyframes.length > 0,
-    keyframes
+    keyframes,
   };
 }
 
@@ -722,5 +803,5 @@ export default {
   midiCCToKeyframes,
   createMIDIAnimatableProperty,
   midiNoteToName,
-  ccNumberToName
+  ccNumberToName,
 };

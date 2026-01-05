@@ -175,7 +175,7 @@
 </template>
 
 <script setup lang="ts">
-import type { AudioBindingConfig } from '@/types/project';
+import type { AudioBindingConfig } from "@/types/project";
 
 interface Props {
   audioBindings: AudioBindingConfig[];
@@ -185,10 +185,10 @@ interface Props {
 defineProps<Props>();
 
 defineEmits<{
-  (e: 'toggle'): void;
-  (e: 'add'): void;
-  (e: 'remove', id: string): void;
-  (e: 'update', id: string, key: keyof AudioBindingConfig, value: any): void;
+  (e: "toggle"): void;
+  (e: "add"): void;
+  (e: "remove", id: string): void;
+  (e: "update", id: string, key: keyof AudioBindingConfig, value: any): void;
 }>();
 </script>
 

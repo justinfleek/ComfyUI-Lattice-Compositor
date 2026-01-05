@@ -12,10 +12,10 @@
  * - Thread-safe for use in Web Workers (future)
  */
 
-import opentype from 'opentype.js';
-import { createLogger } from '@/utils/logger';
+import opentype from "opentype.js";
+import { createLogger } from "@/utils/logger";
 
-const logger = createLogger('TextShaper');
+const logger = createLogger("TextShaper");
 
 // ============================================================================
 // Types
@@ -90,7 +90,7 @@ export interface TextShapingOptions {
   /** Word spacing multiplier (default: 1) */
   wordSpacing?: number;
   /** Writing direction (default: 'ltr') */
-  direction?: 'ltr' | 'rtl';
+  direction?: "ltr" | "rtl";
   /** Language tag for language-specific features */
   language?: string;
   /** Script tag (default: 'latn' for Latin) */
@@ -164,9 +164,9 @@ const DEFAULT_SHAPING_OPTIONS: Required<TextShapingOptions> = {
   smcp: false,
   letterSpacing: 0,
   wordSpacing: 1,
-  direction: 'ltr',
-  language: 'en',
-  script: 'latn',
+  direction: "ltr",
+  language: "en",
+  script: "latn",
 };
 
 // ============================================================================
@@ -190,7 +190,7 @@ class TextShaper {
     let url = fontUrl;
     if (!url) {
       // Try common font URL patterns
-      const sanitizedName = fontFamily.replace(/\s+/g, '').toLowerCase();
+      const sanitizedName = fontFamily.replace(/\s+/g, "").toLowerCase();
       url = `https://fonts.gstatic.com/s/${sanitizedName}/v1/${sanitizedName}-Regular.ttf`;
     }
 
@@ -270,7 +270,9 @@ class TextShaper {
       lineGap: (font as any).tables?.hhea?.lineGap ?? 0,
       capHeight: (font as any).tables?.os2?.sCapHeight ?? font.ascender * 0.7,
       xHeight: (font as any).tables?.os2?.sxHeight ?? font.ascender * 0.5,
-      hasKerning: font.kerningPairs !== undefined && Object.keys(font.kerningPairs).length > 0,
+      hasKerning:
+        font.kerningPairs !== undefined &&
+        Object.keys(font.kerningPairs).length > 0,
       hasGSUB,
       hasGPOS,
       isVariableFont,
@@ -285,7 +287,7 @@ class TextShaper {
   async shape(
     text: string,
     fontFamily: string,
-    options?: Partial<TextShapingOptions>
+    options?: Partial<TextShapingOptions>,
   ): Promise<ShapedText> {
     const opts = { ...DEFAULT_SHAPING_OPTIONS, ...options };
     const cacheKey = this.getShapingCacheKey(text, fontFamily, opts);
@@ -305,7 +307,7 @@ class TextShaper {
     // Shape the text
     const glyphs: ShapedGlyph[] = [];
     let x = 0;
-    let y = 0;
+    const y = 0;
 
     for (let i = 0; i < text.length; i++) {
       const char = text[i];
@@ -314,7 +316,8 @@ class TextShaper {
       if (!glyph) {
         // Use notdef glyph
         const notdef = font.glyphs.get(0);
-        const advanceWidth = (notdef?.advanceWidth ?? font.unitsPerEm * 0.5) * scale;
+        const advanceWidth =
+          (notdef?.advanceWidth ?? font.unitsPerEm * 0.5) * scale;
         glyphs.push({
           character: char,
           charIndex: i,
@@ -337,7 +340,7 @@ class TextShaper {
 
       // Apply word spacing
       let finalAdvance = advanceWidth;
-      if (char === ' ') {
+      if (char === " ") {
         finalAdvance *= opts.wordSpacing;
       }
 
@@ -375,7 +378,8 @@ class TextShaper {
     // Calculate text metrics
     const ascender = metrics.ascender * scale;
     const descender = metrics.descender * scale;
-    const lineHeight = (metrics.ascender - metrics.descender + metrics.lineGap) * scale;
+    const lineHeight =
+      (metrics.ascender - metrics.descender + metrics.lineGap) * scale;
 
     const result: ShapedText = {
       glyphs,
@@ -402,7 +406,7 @@ class TextShaper {
   shapeSync(
     text: string,
     fontFamily: string,
-    options?: Partial<TextShapingOptions>
+    options?: Partial<TextShapingOptions>,
   ): ShapedText {
     const opts = { ...DEFAULT_SHAPING_OPTIONS, ...options };
     const { font, metrics } = this.getCachedFont(fontFamily);
@@ -411,7 +415,7 @@ class TextShaper {
     const scale = opts.fontSize / font.unitsPerEm;
     const glyphs: ShapedGlyph[] = [];
     let x = 0;
-    let y = 0;
+    const y = 0;
 
     for (let i = 0; i < text.length; i++) {
       const char = text[i];
@@ -419,7 +423,8 @@ class TextShaper {
 
       if (!glyph) {
         const notdef = font.glyphs.get(0);
-        const advanceWidth = (notdef?.advanceWidth ?? font.unitsPerEm * 0.5) * scale;
+        const advanceWidth =
+          (notdef?.advanceWidth ?? font.unitsPerEm * 0.5) * scale;
         glyphs.push({
           character: char,
           charIndex: i,
@@ -440,7 +445,7 @@ class TextShaper {
       const bbox = glyph.getBoundingBox();
 
       let finalAdvance = advanceWidth;
-      if (char === ' ') {
+      if (char === " ") {
         finalAdvance *= opts.wordSpacing;
       }
 
@@ -476,7 +481,8 @@ class TextShaper {
 
     const ascender = metrics.ascender * scale;
     const descender = metrics.descender * scale;
-    const lineHeight = (metrics.ascender - metrics.descender + metrics.lineGap) * scale;
+    const lineHeight =
+      (metrics.ascender - metrics.descender + metrics.lineGap) * scale;
 
     return {
       glyphs,
@@ -500,7 +506,7 @@ class TextShaper {
     text: string,
     fontFamily: string,
     fontSize: number,
-    options?: { kern?: boolean; letterSpacing?: number }
+    options?: { kern?: boolean; letterSpacing?: number },
   ): number[] {
     try {
       const shaped = this.shapeSync(text, fontFamily, {
@@ -508,7 +514,7 @@ class TextShaper {
         kern: options?.kern ?? true,
         letterSpacing: options?.letterSpacing ?? 0,
       });
-      return shaped.glyphs.map(g => g.xAdvance);
+      return shaped.glyphs.map((g) => g.xAdvance);
     } catch {
       // Fallback to heuristic if font not loaded
       return this.getHeuristicCharacterWidths(text, fontSize);
@@ -522,7 +528,7 @@ class TextShaper {
     text: string,
     fontFamily: string,
     fontSize: number,
-    options?: { kern?: boolean; letterSpacing?: number }
+    options?: { kern?: boolean; letterSpacing?: number },
   ): number[] {
     try {
       const shaped = this.shapeSync(text, fontFamily, {
@@ -530,7 +536,7 @@ class TextShaper {
         kern: options?.kern ?? true,
         letterSpacing: options?.letterSpacing ?? 0,
       });
-      return shaped.glyphs.map(g => g.x);
+      return shaped.glyphs.map((g) => g.x);
     } catch {
       // Fallback to heuristic
       const widths = this.getHeuristicCharacterWidths(text, fontSize);
@@ -547,16 +553,19 @@ class TextShaper {
   /**
    * Fallback heuristic character widths (matching original TextLayer behavior)
    */
-  private getHeuristicCharacterWidths(text: string, fontSize: number): number[] {
+  private getHeuristicCharacterWidths(
+    text: string,
+    fontSize: number,
+  ): number[] {
     const avgCharWidth = fontSize * 0.6;
     const widths: number[] = [];
 
     for (const char of text) {
-      if ('iIl1|!.,;:\'"'.includes(char)) {
+      if ("iIl1|!.,;:'\"".includes(char)) {
         widths.push(avgCharWidth * 0.4); // Narrow
-      } else if ('mwMW'.includes(char)) {
+      } else if ("mwMW".includes(char)) {
         widths.push(avgCharWidth * 1.3); // Wide
-      } else if (char === ' ') {
+      } else if (char === " ") {
         widths.push(avgCharWidth * 0.5); // Space
       } else {
         widths.push(avgCharWidth); // Average
@@ -587,7 +596,7 @@ class TextShaper {
   clearCache(): void {
     fontCache.clear();
     shapingCache.clear();
-    logger.debug('TextShaper caches cleared');
+    logger.debug("TextShaper caches cleared");
   }
 
   /**
@@ -614,7 +623,7 @@ class TextShaper {
   private getShapingCacheKey(
     text: string,
     fontFamily: string,
-    opts: Required<TextShapingOptions>
+    opts: Required<TextShapingOptions>,
   ): string {
     return `${fontFamily.toLowerCase()}:${opts.fontSize}:${opts.kern}:${opts.letterSpacing}:${text}`;
   }
@@ -632,29 +641,29 @@ class TextShaper {
 
   private getAppliedFeatures(
     opts: Required<TextShapingOptions>,
-    metrics: FontMetrics
+    metrics: FontMetrics,
   ): string[] {
     const features: string[] = [];
 
     // opentype.js only supports kerning from the kern table
     // Advanced features (liga, clig, dlig, smcp) require harfbuzz.js
     if (opts.kern && metrics.hasKerning) {
-      features.push('kern');
+      features.push("kern");
     }
 
     // Note: These features are requested but not applied without harfbuzz
     // We still track them for future implementation
     if (opts.liga && metrics.hasGSUB) {
-      features.push('liga (pending)');
+      features.push("liga (pending)");
     }
     if (opts.clig && metrics.hasGSUB) {
-      features.push('clig (pending)');
+      features.push("clig (pending)");
     }
     if (opts.dlig && metrics.hasGSUB) {
-      features.push('dlig (pending)');
+      features.push("dlig (pending)");
     }
     if (opts.smcp && metrics.hasGSUB) {
-      features.push('smcp (pending)');
+      features.push("smcp (pending)");
     }
 
     return features;
@@ -676,7 +685,7 @@ export const textShaper = new TextShaper();
  */
 export async function loadFontForShaping(
   fontFamily: string,
-  fontUrl?: string
+  fontUrl?: string,
 ): Promise<FontMetrics> {
   return textShaper.loadFont(fontFamily, fontUrl);
 }
@@ -687,7 +696,7 @@ export async function loadFontForShaping(
 export async function shapeText(
   text: string,
   fontFamily: string,
-  options?: Partial<TextShapingOptions>
+  options?: Partial<TextShapingOptions>,
 ): Promise<ShapedText> {
   return textShaper.shape(text, fontFamily, options);
 }
@@ -698,7 +707,7 @@ export async function shapeText(
 export function shapeTextSync(
   text: string,
   fontFamily: string,
-  options?: Partial<TextShapingOptions>
+  options?: Partial<TextShapingOptions>,
 ): ShapedText {
   return textShaper.shapeSync(text, fontFamily, options);
 }
@@ -710,7 +719,7 @@ export function getCharacterWidths(
   text: string,
   fontFamily: string,
   fontSize: number,
-  options?: { kern?: boolean; letterSpacing?: number }
+  options?: { kern?: boolean; letterSpacing?: number },
 ): number[] {
   return textShaper.getCharacterWidths(text, fontFamily, fontSize, options);
 }

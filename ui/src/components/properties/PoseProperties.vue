@@ -236,37 +236,49 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import type { PoseLayerData, PoseKeypoint, PoseFormat } from '@/types/project';
+import { computed, reactive } from "vue";
+import { useCompositorStore } from "@/stores/compositorStore";
+import type { PoseFormat, PoseLayerData } from "@/types/project";
 
 const props = defineProps<{
   layerId: string;
 }>();
 
-const emit = defineEmits<{
-  (e: 'update', data: Partial<PoseLayerData>): void;
-}>();
+const emit = defineEmits<(e: "update", data: Partial<PoseLayerData>) => void>();
 
 const store = useCompositorStore();
 
 // COCO 18 keypoint names
-const keypointNames = [
-  'Nose', 'Neck',
-  'R.Shoulder', 'R.Elbow', 'R.Wrist',
-  'L.Shoulder', 'L.Elbow', 'L.Wrist',
-  'R.Hip', 'R.Knee', 'R.Ankle',
-  'L.Hip', 'L.Knee', 'L.Ankle',
-  'R.Eye', 'L.Eye', 'R.Ear', 'L.Ear'
+const _keypointNames = [
+  "Nose",
+  "Neck",
+  "R.Shoulder",
+  "R.Elbow",
+  "R.Wrist",
+  "L.Shoulder",
+  "L.Elbow",
+  "L.Wrist",
+  "R.Hip",
+  "R.Knee",
+  "R.Ankle",
+  "L.Hip",
+  "L.Knee",
+  "L.Ankle",
+  "R.Eye",
+  "L.Eye",
+  "R.Ear",
+  "L.Ear",
 ];
 
 // Typed array validates pose formats at compile time
-const poseFormats: PoseFormat[] = ['coco18', 'body25', 'custom'];
+const _poseFormats: PoseFormat[] = ["coco18", "body25", "custom"];
 
 // Expanded sections
-const expandedSections = reactive(new Set<string>(['skeleton', 'display', 'colors']));
+const expandedSections = reactive(
+  new Set<string>(["skeleton", "display", "colors"]),
+);
 
-function toggleSection(section: string) {
+function _toggleSection(section: string) {
   if (expandedSections.has(section)) {
     expandedSections.delete(section);
   } else {
@@ -276,26 +288,28 @@ function toggleSection(section: string) {
 
 // Computed pose data
 const poseData = computed(() => {
-  const layer = store.layers.find(l => l.id === props.layerId);
-  return (layer?.data as PoseLayerData) || {
-    poses: [],
-    format: 'coco18',
-    normalized: true,
-    boneWidth: 4,
-    keypointRadius: 4,
-    showKeypoints: true,
-    showBones: true,
-    showLabels: false,
-    useDefaultColors: true,
-    customBoneColor: '#FFFFFF',
-    customKeypointColor: '#FF0000',
-    selectedKeypoint: -1,
-    selectedPose: 0,
-  };
+  const layer = store.layers.find((l) => l.id === props.layerId);
+  return (
+    (layer?.data as PoseLayerData) || {
+      poses: [],
+      format: "coco18",
+      normalized: true,
+      boneWidth: 4,
+      keypointRadius: 4,
+      showKeypoints: true,
+      showBones: true,
+      showLabels: false,
+      useDefaultColors: true,
+      customBoneColor: "#FFFFFF",
+      customKeypointColor: "#FF0000",
+      selectedKeypoint: -1,
+      selectedPose: 0,
+    }
+  );
 });
 
 // Selected keypoint for editing
-const selectedKeypoint = computed(() => {
+const _selectedKeypoint = computed(() => {
   const poseIdx = poseData.value.selectedPose ?? 0;
   const kpIdx = poseData.value.selectedKeypoint ?? -1;
   if (kpIdx < 0) return null;
@@ -304,24 +318,30 @@ const selectedKeypoint = computed(() => {
 });
 
 // Update pose layer data
-function updatePoseData<K extends keyof PoseLayerData>(key: K, value: PoseLayerData[K]) {
+function _updatePoseData<K extends keyof PoseLayerData>(
+  key: K,
+  value: PoseLayerData[K],
+) {
   store.updateLayerData(props.layerId, { [key]: value });
-  emit('update', { [key]: value });
+  emit("update", { [key]: value });
 }
 
 // Format pose format for display
 const poseFormatLabels: Record<PoseFormat, string> = {
-  coco18: 'COCO 18-point',
-  body25: 'Body 25-point',
-  custom: 'Custom'
+  coco18: "COCO 18-point",
+  body25: "Body 25-point",
+  custom: "Custom",
 };
 
-function formatPoseFormat(fmt: PoseFormat): string {
+function _formatPoseFormat(fmt: PoseFormat): string {
   return poseFormatLabels[fmt];
 }
 
 // Update selected keypoint position
-function updateKeypointPosition(axis: 'x' | 'y' | 'confidence', value: number) {
+function _updateKeypointPosition(
+  axis: "x" | "y" | "confidence",
+  value: number,
+) {
   const poseIdx = poseData.value.selectedPose ?? 0;
   const kpIdx = poseData.value.selectedKeypoint ?? -1;
   if (kpIdx < 0) return;
@@ -334,26 +354,29 @@ function updateKeypointPosition(axis: 'x' | 'y' | 'confidence', value: number) {
   poses[poseIdx] = { ...poses[poseIdx], keypoints };
 
   store.updateLayerData(props.layerId, { poses });
-  emit('update', { poses });
+  emit("update", { poses });
 }
 
 // Add a new pose (copy of current)
-function addPose() {
+function _addPose() {
   const poses = [...(poseData.value.poses || [])];
   const currentPose = poses[poseData.value.selectedPose ?? 0];
   if (currentPose) {
     poses.push({
       id: `pose-${Date.now()}`,
       format: currentPose.format,
-      keypoints: currentPose.keypoints.map(kp => ({ ...kp })),
+      keypoints: currentPose.keypoints.map((kp) => ({ ...kp })),
     });
-    store.updateLayerData(props.layerId, { poses, selectedPose: poses.length - 1 });
-    emit('update', { poses });
+    store.updateLayerData(props.layerId, {
+      poses,
+      selectedPose: poses.length - 1,
+    });
+    emit("update", { poses });
   }
 }
 
 // Remove selected pose
-function removePose() {
+function _removePose() {
   const poses = [...(poseData.value.poses || [])];
   if (poses.length <= 1) return;
 
@@ -362,56 +385,64 @@ function removePose() {
   const newSelected = Math.min(idx, poses.length - 1);
 
   store.updateLayerData(props.layerId, { poses, selectedPose: newSelected });
-  emit('update', { poses, selectedPose: newSelected });
+  emit("update", { poses, selectedPose: newSelected });
 }
 
 // Export to OpenPose JSON
-async function exportOpenPoseJSON() {
+async function _exportOpenPoseJSON() {
   try {
-    const { exportToOpenPoseJSON } = await import('@/services/export/poseExport');
-    const poses = poseData.value.poses?.map(p => ({
-      id: p.id,
-      format: p.format,
-      keypoints: p.keypoints,
-    })) || [];
+    const { exportToOpenPoseJSON } = await import(
+      "@/services/export/poseExport"
+    );
+    const poses =
+      poseData.value.poses?.map((p) => ({
+        id: p.id,
+        format: p.format,
+        keypoints: p.keypoints,
+      })) || [];
 
     const json = exportToOpenPoseJSON(poses);
-    const blob = new Blob([JSON.stringify(json, null, 2)], { type: 'application/json' });
+    const blob = new Blob([JSON.stringify(json, null, 2)], {
+      type: "application/json",
+    });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = 'openpose.json';
+    a.download = "openpose.json";
     a.click();
     URL.revokeObjectURL(url);
   } catch (err) {
-    console.error('Failed to export OpenPose JSON:', err);
+    console.error("Failed to export OpenPose JSON:", err);
   }
 }
 
 // Export ControlNet image
-async function exportControlNetImage() {
+async function _exportControlNetImage() {
   try {
-    const { exportPoseForControlNet } = await import('@/services/export/poseExport');
+    const { exportPoseForControlNet } = await import(
+      "@/services/export/poseExport"
+    );
     const comp = store.getActiveComp();
     const width = comp?.settings.width ?? 512;
     const height = comp?.settings.height ?? 512;
 
-    const poses = poseData.value.poses?.map(p => ({
-      id: p.id,
-      format: p.format,
-      keypoints: p.keypoints,
-    })) || [];
+    const poses =
+      poseData.value.poses?.map((p) => ({
+        id: p.id,
+        format: p.format,
+        keypoints: p.keypoints,
+      })) || [];
 
     const result = exportPoseForControlNet(poses, width, height);
 
     // Download canvas as PNG
-    const dataUrl = result.canvas.toDataURL('image/png');
-    const a = document.createElement('a');
+    const dataUrl = result.canvas.toDataURL("image/png");
+    const a = document.createElement("a");
     a.href = dataUrl;
-    a.download = 'controlnet_pose.png';
+    a.download = "controlnet_pose.png";
     a.click();
   } catch (err) {
-    console.error('Failed to export ControlNet image:', err);
+    console.error("Failed to export ControlNet image:", err);
   }
 }
 </script>

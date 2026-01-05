@@ -8,18 +8,37 @@
  * - Resource lifecycle
  */
 
-import * as THREE from 'three';
-import type { Layer, AnimatableProperty, LayerTransform, LayerMask, MatteType, LayerMotionBlurSettings, AutoOrientMode, LayerStyles } from '@/types/project';
-import type { EffectInstance } from '@/types/effects';
-import { renderLayerStyles } from '@/services/effects/layerStyleRenderer';
-import type { LayerInstance } from '../types';
-import type { TargetParameter } from '@/services/audioReactiveMapping';
-import { KeyframeEvaluator } from '../animation/KeyframeEvaluator';
-import { processEffectStack, hasEnabledEffects } from '@/services/effectProcessor';
-import { applyMasksToLayer, applyTrackMatte } from '@/services/effects/maskRenderer';
-import { MotionBlurProcessor, createDefaultMotionBlurSettings, type VelocityData } from '@/services/motionBlur';
-import { layerLogger } from '@/utils/logger';
-import { setMaterialBlendMode, applyBlendModeToGroup } from './blendModeUtils';
+import * as THREE from "three";
+import type { TargetParameter } from "@/services/audioReactiveMapping";
+import {
+  hasEnabledEffects,
+  processEffectStack,
+} from "@/services/effectProcessor";
+import { renderLayerStyles } from "@/services/effects/layerStyleRenderer";
+import {
+  applyMasksToLayer,
+  applyTrackMatte,
+} from "@/services/effects/maskRenderer";
+import {
+  createDefaultMotionBlurSettings,
+  MotionBlurProcessor,
+  type VelocityData,
+} from "@/services/motionBlur";
+import type { EffectInstance } from "@/types/effects";
+import type {
+  AnimatableProperty,
+  AutoOrientMode,
+  Layer,
+  LayerMask,
+  LayerMotionBlurSettings,
+  LayerStyles,
+  LayerTransform,
+  MatteType,
+} from "@/types/project";
+import { layerLogger } from "@/utils/logger";
+import { KeyframeEvaluator } from "../animation/KeyframeEvaluator";
+import type { LayerInstance } from "../types";
+import { applyBlendModeToGroup } from "./blendModeUtils";
 
 export abstract class BaseLayer implements LayerInstance {
   /** Unique layer identifier */
@@ -61,7 +80,7 @@ export abstract class BaseLayer implements LayerInstance {
   protected threeD: boolean;
 
   /** Auto-orient mode (billboard to camera, along path, etc.) */
-  protected autoOrient: AutoOrientMode = 'off';
+  protected autoOrient: AutoOrientMode = "off";
 
   /** Blend mode */
   protected blendMode: string;
@@ -88,13 +107,14 @@ export abstract class BaseLayer implements LayerInstance {
   protected layerStyles: LayerStyles | undefined;
 
   /** Layer quality mode (draft = faster, best = full quality) */
-  protected quality: 'draft' | 'best' = 'best';
+  protected quality: "draft" | "best" = "best";
 
   /** Composition FPS for time-based effects (set by LayerManager) */
   protected compositionFps: number = 16;
 
   /** BUG-090 fix: Current audio modifiers for color adjustments */
-  protected currentAudioModifiers: import('../MotionEngine').AudioReactiveModifiers = {};
+  protected currentAudioModifiers: import("../MotionEngine").AudioReactiveModifiers =
+    {};
 
   /** Source canvas for effect processing (lazy initialized) */
   protected effectSourceCanvas: HTMLCanvasElement | null = null;
@@ -110,7 +130,7 @@ export abstract class BaseLayer implements LayerInstance {
   protected masks: LayerMask[] = [];
 
   /** Matte source type (uses another layer as alpha/luma source) */
-  protected matteType: MatteType = 'none';
+  protected matteType: MatteType = "none";
 
   /** ID of the layer used as matte source */
   protected matteLayerId: string | null = null;
@@ -193,13 +213,13 @@ export abstract class BaseLayer implements LayerInstance {
     this.opacity = layerData.opacity;
     this.transform = layerData.transform;
     this.threeD = layerData.threeD ?? false;
-    this.autoOrient = layerData.autoOrient ?? 'off';
-    this.blendMode = layerData.blendMode ?? 'normal';
+    this.autoOrient = layerData.autoOrient ?? "off";
+    this.blendMode = layerData.blendMode ?? "normal";
     this.parentId = layerData.parentId ?? null;
     this.effects = layerData.effects ?? [];
     this.effectsEnabled = layerData.effectsEnabled !== false; // Default true
     this.layerStyles = layerData.layerStyles;
-    this.quality = layerData.quality ?? 'best';
+    this.quality = layerData.quality ?? "best";
 
     // Motion blur properties
     this.motionBlur = layerData.motionBlur ?? false;
@@ -208,9 +228,11 @@ export abstract class BaseLayer implements LayerInstance {
 
     // Mask & matte properties (with backwards compatibility for old property names)
     this.masks = layerData.masks ?? [];
-    this.matteType = layerData.matteType ?? layerData.trackMatteType ?? 'none';
-    this.matteLayerId = layerData.matteLayerId ?? layerData.trackMatteLayerId ?? null;
-    this.matteCompositionId = layerData.matteCompositionId ?? layerData.trackMatteCompositionId ?? null;
+    this.matteType = layerData.matteType ?? layerData.trackMatteType ?? "none";
+    this.matteLayerId =
+      layerData.matteLayerId ?? layerData.trackMatteLayerId ?? null;
+    this.matteCompositionId =
+      layerData.matteCompositionId ?? layerData.trackMatteCompositionId ?? null;
     this.preserveTransparency = layerData.preserveTransparency ?? false;
   }
 
@@ -219,7 +241,7 @@ export abstract class BaseLayer implements LayerInstance {
    * Subclasses should call this at the end of their constructor
    */
   protected initializeBlendMode(): void {
-    if (this.blendMode !== 'normal') {
+    if (this.blendMode !== "normal") {
       this.applyBlendMode(this.blendMode);
     }
   }
@@ -253,9 +275,14 @@ export abstract class BaseLayer implements LayerInstance {
 
     // Evaluate opacity (apply driven value if present, then audio reactive)
     let baseOpacity = this.evaluator.evaluate(this.opacity, frame);
-    baseOpacity = this.getDrivenOrBase('opacity', baseOpacity);
+    baseOpacity = this.getDrivenOrBase("opacity", baseOpacity);
     // Apply audio reactive modulation to opacity (multiplicative, clamped 0-100)
-    const opacityValue = this.applyAudioModulation(baseOpacity, 'layer.opacity', 'multiply', { min: 0, max: 100 });
+    const opacityValue = this.applyAudioModulation(
+      baseOpacity,
+      "layer.opacity",
+      "multiply",
+      { min: 0, max: 100 },
+    );
     this.applyOpacity(opacityValue);
 
     // Evaluate transform (with audio reactive modulation)
@@ -270,25 +297,34 @@ export abstract class BaseLayer implements LayerInstance {
    */
   protected evaluateTransform(frame: number): void {
     // Position (apply driven values if present, then audio reactive)
-    const basePosition = this.evaluator.evaluate(this.transform.position, frame);
-    let posX = this.getDrivenOrBase('transform.position.x', basePosition.x);
-    let posY = this.getDrivenOrBase('transform.position.y', basePosition.y);
-    const posZ = this.getDrivenOrBase('transform.position.z', basePosition.z ?? 0);
+    const basePosition = this.evaluator.evaluate(
+      this.transform.position,
+      frame,
+    );
+    let posX = this.getDrivenOrBase("transform.position.x", basePosition.x);
+    let posY = this.getDrivenOrBase("transform.position.y", basePosition.y);
+    const posZ = this.getDrivenOrBase(
+      "transform.position.z",
+      basePosition.z ?? 0,
+    );
 
     // Apply audio reactive modulation to position (additive)
-    posX = this.applyAudioModulation(posX, 'layer.x', 'add');
-    posY = this.applyAudioModulation(posY, 'layer.y', 'add');
+    posX = this.applyAudioModulation(posX, "layer.x", "add");
+    posY = this.applyAudioModulation(posY, "layer.y", "add");
 
     const position = { x: posX, y: posY, z: posZ };
 
     // Scale (stored as percentage, convert to multiplier)
     const baseScale = this.evaluator.evaluate(this.transform.scale, frame);
-    let scaleX = this.getDrivenOrBase('transform.scale.x', baseScale.x ?? 100);
-    let scaleY = this.getDrivenOrBase('transform.scale.y', baseScale.y ?? 100);
-    const scaleZ = this.getDrivenOrBase('transform.scale.z', baseScale.z ?? 100);
+    let scaleX = this.getDrivenOrBase("transform.scale.x", baseScale.x ?? 100);
+    let scaleY = this.getDrivenOrBase("transform.scale.y", baseScale.y ?? 100);
+    const scaleZ = this.getDrivenOrBase(
+      "transform.scale.z",
+      baseScale.z ?? 100,
+    );
 
     // Apply audio reactive modulation to scale (multiplicative, affects both X and Y uniformly)
-    const audioScaleMod = this.getAudioReactiveValue('layer.scale');
+    const audioScaleMod = this.getAudioReactiveValue("layer.scale");
     if (audioScaleMod !== 0) {
       const scaleFactor = 0.5 + audioScaleMod; // 0 -> 0.5x, 0.5 -> 1x, 1 -> 1.5x
       scaleX *= scaleFactor;
@@ -299,14 +335,16 @@ export abstract class BaseLayer implements LayerInstance {
 
     // Origin (formerly anchorPoint)
     const originProp = this.transform.origin || this.transform.anchorPoint;
-    const baseOrigin = originProp ? this.evaluator.evaluate(originProp, frame) : { x: 0, y: 0, z: 0 };
+    const baseOrigin = originProp
+      ? this.evaluator.evaluate(originProp, frame)
+      : { x: 0, y: 0, z: 0 };
     const origin = {
-      x: this.getDrivenOrBase('transform.origin.x', baseOrigin.x ?? 0),
-      y: this.getDrivenOrBase('transform.origin.y', baseOrigin.y ?? 0),
-      z: this.getDrivenOrBase('transform.origin.z', baseOrigin.z ?? 0)
+      x: this.getDrivenOrBase("transform.origin.x", baseOrigin.x ?? 0),
+      y: this.getDrivenOrBase("transform.origin.y", baseOrigin.y ?? 0),
+      z: this.getDrivenOrBase("transform.origin.z", baseOrigin.z ?? 0),
     };
     // Keep anchorPoint alias for backwards compatibility
-    const anchorPoint = origin;
+    const _anchorPoint = origin;
 
     // Rotation (depends on 3D mode)
     let rotation = 0;
@@ -318,25 +356,28 @@ export abstract class BaseLayer implements LayerInstance {
       const baseRotX = this.transform.rotationX
         ? this.evaluator.evaluate(this.transform.rotationX, frame)
         : 0;
-      rotationX = this.getDrivenOrBase('transform.rotationX', baseRotX);
+      rotationX = this.getDrivenOrBase("transform.rotationX", baseRotX);
 
       const baseRotY = this.transform.rotationY
         ? this.evaluator.evaluate(this.transform.rotationY, frame)
         : 0;
-      rotationY = this.getDrivenOrBase('transform.rotationY', baseRotY);
+      rotationY = this.getDrivenOrBase("transform.rotationY", baseRotY);
 
       const baseRotZ = this.transform.rotationZ
         ? this.evaluator.evaluate(this.transform.rotationZ, frame)
         : 0;
-      rotation = this.getDrivenOrBase('transform.rotationZ', baseRotZ);
+      rotation = this.getDrivenOrBase("transform.rotationZ", baseRotZ);
     } else {
       // 2D mode: use single rotation
-      const baseRotation = this.evaluator.evaluate(this.transform.rotation, frame);
-      rotation = this.getDrivenOrBase('transform.rotation', baseRotation);
+      const baseRotation = this.evaluator.evaluate(
+        this.transform.rotation,
+        frame,
+      );
+      rotation = this.getDrivenOrBase("transform.rotation", baseRotation);
     }
 
     // Apply audio reactive modulation to rotation (additive, scaled to degrees)
-    const audioRotMod = this.getAudioReactiveValue('layer.rotation');
+    const audioRotMod = this.getAudioReactiveValue("layer.rotation");
     if (audioRotMod !== 0) {
       rotation += audioRotMod * 360; // Full rotation range
     }
@@ -397,7 +438,7 @@ export abstract class BaseLayer implements LayerInstance {
     this.group.position.set(
       posX - originX,
       -(posY - originY), // Negate for screen coords
-      posZ - originZ
+      posZ - originZ,
     );
 
     // Rotation (convert degrees to radians)
@@ -405,7 +446,7 @@ export abstract class BaseLayer implements LayerInstance {
     this.group.rotation.set(
       THREE.MathUtils.degToRad(rotX),
       THREE.MathUtils.degToRad(rotY),
-      THREE.MathUtils.degToRad(-rotZ)
+      THREE.MathUtils.degToRad(-rotZ),
     );
 
     // Scale
@@ -425,11 +466,11 @@ export abstract class BaseLayer implements LayerInstance {
    * @param pathTangent - Optional path tangent vector (for 'alongPath' mode)
    */
   applyAutoOrient(camera?: THREE.Camera, pathTangent?: THREE.Vector3): void {
-    if (this.autoOrient === 'off') {
+    if (this.autoOrient === "off") {
       return;
     }
 
-    if (this.autoOrient === 'toCamera' && camera) {
+    if (this.autoOrient === "toCamera" && camera) {
       // Billboard mode: Layer always faces the camera
       // Keep position, just modify rotation to face camera
       const cameraPosition = new THREE.Vector3();
@@ -439,7 +480,7 @@ export abstract class BaseLayer implements LayerInstance {
       this.group.getWorldPosition(layerPosition);
 
       // Calculate direction from layer to camera
-      const direction = new THREE.Vector3()
+      const _direction = new THREE.Vector3()
         .subVectors(cameraPosition, layerPosition)
         .normalize();
 
@@ -459,7 +500,7 @@ export abstract class BaseLayer implements LayerInstance {
       this.group.updateMatrix();
     }
 
-    if (this.autoOrient === 'alongPath' && pathTangent) {
+    if (this.autoOrient === "alongPath" && pathTangent) {
       // Orient along motion path tangent
       // The tangent vector points in the direction of movement
       const angle = Math.atan2(pathTangent.y, pathTangent.x);
@@ -500,8 +541,10 @@ export abstract class BaseLayer implements LayerInstance {
 
     this.group.traverse((child) => {
       if (child instanceof THREE.Mesh && child.material) {
-        const material = child.material as THREE.Material & { opacity?: number };
-        if ('opacity' in material) {
+        const material = child.material as THREE.Material & {
+          opacity?: number;
+        };
+        if ("opacity" in material) {
           material.opacity = normalizedOpacity;
           material.transparent = normalizedOpacity < 1;
           material.needsUpdate = true;
@@ -529,7 +572,7 @@ export abstract class BaseLayer implements LayerInstance {
    *
    * @param state - Pre-evaluated layer state from MotionEngine
    */
-  applyEvaluatedState(state: import('../MotionEngine').EvaluatedLayer): void {
+  applyEvaluatedState(state: import("../MotionEngine").EvaluatedLayer): void {
     // Set visibility
     this.group.visible = state.visible;
 
@@ -539,7 +582,7 @@ export abstract class BaseLayer implements LayerInstance {
 
     // Apply opacity (with driven value override if present)
     // Audio modifiers for opacity are already applied in MotionEngine.evaluateLayers
-    const opacity = this.getDrivenOrBase('opacity', state.opacity);
+    const opacity = this.getDrivenOrBase("opacity", state.opacity);
     this.applyOpacity(opacity);
 
     // Get audio modifiers (additive values from audio mappings)
@@ -552,16 +595,29 @@ export abstract class BaseLayer implements LayerInstance {
     // Audio modifiers are ADDITIVE to the base transform values
     const transform = state.transform;
     // Use origin (new name) with fallback to anchorPoint (deprecated)
-    const originVal = transform.origin || transform.anchorPoint || { x: 0, y: 0, z: 0 };
+    const originVal = transform.origin ||
+      transform.anchorPoint || { x: 0, y: 0, z: 0 };
 
     // Calculate base values with driven overrides
-    let posX = this.getDrivenOrBase('transform.position.x', transform.position.x);
-    let posY = this.getDrivenOrBase('transform.position.y', transform.position.y);
-    let posZ = this.getDrivenOrBase('transform.position.z', transform.position.z ?? 0);
-    let scaleX = this.getDrivenOrBase('transform.scale.x', transform.scale.x ?? 100) / 100;
-    let scaleY = this.getDrivenOrBase('transform.scale.y', transform.scale.y ?? 100) / 100;
-    let scaleZ = this.getDrivenOrBase('transform.scale.z', transform.scale.z ?? 100) / 100;
-    let rotZ = this.getDrivenOrBase('transform.rotation', transform.rotation);
+    let posX = this.getDrivenOrBase(
+      "transform.position.x",
+      transform.position.x,
+    );
+    let posY = this.getDrivenOrBase(
+      "transform.position.y",
+      transform.position.y,
+    );
+    const posZ = this.getDrivenOrBase(
+      "transform.position.z",
+      transform.position.z ?? 0,
+    );
+    let scaleX =
+      this.getDrivenOrBase("transform.scale.x", transform.scale.x ?? 100) / 100;
+    let scaleY =
+      this.getDrivenOrBase("transform.scale.y", transform.scale.y ?? 100) / 100;
+    let scaleZ =
+      this.getDrivenOrBase("transform.scale.z", transform.scale.z ?? 100) / 100;
+    let rotZ = this.getDrivenOrBase("transform.rotation", transform.rotation);
 
     // Apply audio modifiers (additive)
     if (audioMod.x !== undefined) posX += audioMod.x;
@@ -575,21 +631,27 @@ export abstract class BaseLayer implements LayerInstance {
       scaleY *= scaleMult;
       scaleZ *= scaleMult;
     }
-    if (audioMod.scaleX !== undefined) scaleX *= (1 + audioMod.scaleX);
-    if (audioMod.scaleY !== undefined) scaleY *= (1 + audioMod.scaleY);
+    if (audioMod.scaleX !== undefined) scaleX *= 1 + audioMod.scaleX;
+    if (audioMod.scaleY !== undefined) scaleY *= 1 + audioMod.scaleY;
 
     this.applyTransform({
       position: { x: posX, y: posY, z: posZ },
       rotation: {
-        x: this.getDrivenOrBase('transform.rotationX', transform.rotationX ?? 0),
-        y: this.getDrivenOrBase('transform.rotationY', transform.rotationY ?? 0),
+        x: this.getDrivenOrBase(
+          "transform.rotationX",
+          transform.rotationX ?? 0,
+        ),
+        y: this.getDrivenOrBase(
+          "transform.rotationY",
+          transform.rotationY ?? 0,
+        ),
         z: rotZ,
       },
       scale: { x: scaleX, y: scaleY, z: scaleZ },
       origin: {
-        x: this.getDrivenOrBase('transform.origin.x', originVal.x),
-        y: this.getDrivenOrBase('transform.origin.y', originVal.y),
-        z: this.getDrivenOrBase('transform.origin.z', originVal.z ?? 0),
+        x: this.getDrivenOrBase("transform.origin.x", originVal.x),
+        y: this.getDrivenOrBase("transform.origin.y", originVal.y),
+        z: this.getDrivenOrBase("transform.origin.z", originVal.z ?? 0),
       },
     });
 
@@ -601,7 +663,9 @@ export abstract class BaseLayer implements LayerInstance {
    * Override in subclasses for type-specific state application
    * Default implementation calls legacy onEvaluateFrame for compatibility
    */
-  protected onApplyEvaluatedState(state: import('../MotionEngine').EvaluatedLayer): void {
+  protected onApplyEvaluatedState(
+    _state: import("../MotionEngine").EvaluatedLayer,
+  ): void {
     // Default: fall back to legacy evaluation for backwards compatibility
     // Subclasses should override this to use evaluated state directly
     // NOTE: This is a transitional measure - eventually all layers should
@@ -668,14 +732,16 @@ export abstract class BaseLayer implements LayerInstance {
       this.matteType = newMatteType;
     }
 
-    const newMatteLayerId = properties.matteLayerId ?? properties.trackMatteLayerId;
+    const newMatteLayerId =
+      properties.matteLayerId ?? properties.trackMatteLayerId;
     if (newMatteLayerId !== undefined) {
       this.matteLayerId = newMatteLayerId;
       // Clear the cached canvas when matte source changes
       this.matteCanvas = null;
     }
 
-    const newMatteCompId = properties.matteCompositionId ?? properties.trackMatteCompositionId;
+    const newMatteCompId =
+      properties.matteCompositionId ?? properties.trackMatteCompositionId;
     if (newMatteCompId !== undefined) {
       this.matteCompositionId = newMatteCompId;
       // Clear the cached canvas when matte composition changes
@@ -790,8 +856,8 @@ export abstract class BaseLayer implements LayerInstance {
   protected applyAudioModulation(
     baseValue: number,
     target: TargetParameter,
-    mode: 'add' | 'multiply' | 'replace' = 'add',
-    range: { min?: number; max?: number } = {}
+    mode: "add" | "multiply" | "replace" = "add",
+    range: { min?: number; max?: number } = {},
   ): number {
     // Validate baseValue (NaN propagates through all calculations)
     const validBase = Number.isFinite(baseValue) ? baseValue : 0;
@@ -803,15 +869,14 @@ export abstract class BaseLayer implements LayerInstance {
 
     let result: number;
     switch (mode) {
-      case 'multiply':
+      case "multiply":
         // Audio value of 0.5 = no change, 0 = halved, 1 = doubled
         result = validBase * (0.5 + validAudio);
         break;
-      case 'replace':
+      case "replace":
         // Audio value directly replaces base value
         result = validAudio;
         break;
-      case 'add':
       default:
         // Audio value added to base (scaled to reasonable range)
         result = validBase + validAudio * 100; // Scale for typical property ranges
@@ -914,11 +979,13 @@ export abstract class BaseLayer implements LayerInstance {
    */
   protected hasColorModifiers(): boolean {
     const m = this.currentAudioModifiers;
-    return m.brightness !== undefined ||
-           m.saturation !== undefined ||
-           m.contrast !== undefined ||
-           m.hue !== undefined ||
-           m.blur !== undefined;  // BUG-091: Include blur
+    return (
+      m.brightness !== undefined ||
+      m.saturation !== undefined ||
+      m.contrast !== undefined ||
+      m.hue !== undefined ||
+      m.blur !== undefined
+    ); // BUG-091: Include blur
   }
 
   /**
@@ -927,7 +994,9 @@ export abstract class BaseLayer implements LayerInstance {
    * @param canvas - Source canvas to apply adjustments to
    * @returns New canvas with adjustments applied, or original if no adjustments needed
    */
-  protected applyColorAdjustments(canvas: HTMLCanvasElement): HTMLCanvasElement {
+  protected applyColorAdjustments(
+    canvas: HTMLCanvasElement,
+  ): HTMLCanvasElement {
     const m = this.currentAudioModifiers;
 
     // Build CSS filter string
@@ -956,7 +1025,7 @@ export abstract class BaseLayer implements LayerInstance {
 
     // BUG-091: Blur - audio value 0 = no blur, 1 = 20px blur
     if (m.blur !== undefined && m.blur !== 0) {
-      const blurPx = Math.max(0, m.blur * 20);  // Scale 0-1 to 0-20px
+      const blurPx = Math.max(0, m.blur * 20); // Scale 0-1 to 0-20px
       filters.push(`blur(${blurPx}px)`);
     }
 
@@ -968,25 +1037,25 @@ export abstract class BaseLayer implements LayerInstance {
     // Create new canvas with filters applied
     // Note: blur filter extends beyond canvas bounds, so we need padding
     const blurPadding = m.blur ? Math.ceil(m.blur * 20 * 2) : 0;
-    const resultCanvas = document.createElement('canvas');
+    const resultCanvas = document.createElement("canvas");
     resultCanvas.width = canvas.width + blurPadding * 2;
     resultCanvas.height = canvas.height + blurPadding * 2;
-    const ctx = resultCanvas.getContext('2d');
+    const ctx = resultCanvas.getContext("2d");
 
     if (!ctx) {
       return canvas;
     }
 
     // Apply CSS filter and draw with padding offset
-    ctx.filter = filters.join(' ');
+    ctx.filter = filters.join(" ");
     ctx.drawImage(canvas, blurPadding, blurPadding);
 
     // If blur was applied, we need to crop back to original size
     if (blurPadding > 0) {
-      const croppedCanvas = document.createElement('canvas');
+      const croppedCanvas = document.createElement("canvas");
       croppedCanvas.width = canvas.width;
       croppedCanvas.height = canvas.height;
-      const croppedCtx = croppedCanvas.getContext('2d');
+      const croppedCtx = croppedCanvas.getContext("2d");
       if (croppedCtx) {
         croppedCtx.drawImage(resultCanvas, -blurPadding, -blurPadding);
         return croppedCanvas;
@@ -1000,7 +1069,10 @@ export abstract class BaseLayer implements LayerInstance {
    * Get audio modifier values for effect parameters
    * Used by effect processing to apply audio-reactive glow intensity/radius
    */
-  protected getEffectAudioModifiers(): { glowIntensity?: number; glowRadius?: number } {
+  protected getEffectAudioModifiers(): {
+    glowIntensity?: number;
+    glowRadius?: number;
+  } {
     return {
       glowIntensity: this.currentAudioModifiers.glowIntensity,
       glowRadius: this.currentAudioModifiers.glowRadius,
@@ -1018,14 +1090,14 @@ export abstract class BaseLayer implements LayerInstance {
   /**
    * Set layer quality mode (draft = faster preview, best = full quality)
    */
-  setQuality(quality: 'draft' | 'best'): void {
+  setQuality(quality: "draft" | "best"): void {
     this.quality = quality;
   }
 
   /**
    * Get layer quality mode
    */
-  getQuality(): 'draft' | 'best' {
+  getQuality(): "draft" | "best" {
     return this.quality;
   }
 
@@ -1033,7 +1105,7 @@ export abstract class BaseLayer implements LayerInstance {
    * Check if layer is in draft quality mode
    */
   isDraftQuality(): boolean {
-    return this.quality === 'draft';
+    return this.quality === "draft";
   }
 
   /**
@@ -1060,14 +1132,14 @@ export abstract class BaseLayer implements LayerInstance {
     try {
       // Pass quality mode to effect processor
       // Draft mode uses faster, lower-quality effect rendering
-      const qualityHint = this.isDraftQuality() ? 'draft' : 'high';
+      const qualityHint = this.isDraftQuality() ? "draft" : "high";
 
       // Build context for time-based effects (Echo, Posterize Time)
       // These effects need frame, fps, and layerId to access frame buffers
       const effectContext = {
         frame,
         fps: this.compositionFps,
-        layerId: this.id
+        layerId: this.id,
       };
 
       // STEP 1: Apply layer styles FIRST (before effects)
@@ -1091,7 +1163,7 @@ export abstract class BaseLayer implements LayerInstance {
           qualityHint,
           effectContext,
           this.compositionFps,
-          this.currentAudioModifiers
+          this.currentAudioModifiers,
         );
         processedCanvas = result.canvas;
       }
@@ -1104,12 +1176,19 @@ export abstract class BaseLayer implements LayerInstance {
       // Apply motion blur as final step if enabled
       if (this.motionBlur) {
         const currentTransform = this.getCurrentTransformValues();
-        processedCanvas = this.applyMotionBlur(processedCanvas, frame, currentTransform);
+        processedCanvas = this.applyMotionBlur(
+          processedCanvas,
+          frame,
+          currentTransform,
+        );
       }
 
       return processedCanvas;
     } catch (error) {
-      layerLogger.error(`Error processing effects for layer ${this.id}:`, error);
+      layerLogger.error(
+        `Error processing effects for layer ${this.id}:`,
+        error,
+      );
       return null;
     }
   }
@@ -1187,7 +1266,11 @@ export abstract class BaseLayer implements LayerInstance {
           }
         : { ...createDefaultMotionBlurSettings(), enabled: true };
 
-      this.motionBlurProcessor = new MotionBlurProcessor(width, height, settings);
+      this.motionBlurProcessor = new MotionBlurProcessor(
+        width,
+        height,
+        settings,
+      );
     } else if (
       this.motionBlurProcessor.getSettings().shutterAngle !==
       (this.motionBlurSettings?.shutterAngle ?? 180)
@@ -1218,8 +1301,10 @@ export abstract class BaseLayer implements LayerInstance {
       y: currentTransform.position.y - this.prevTransform.position.y,
       rotation: currentTransform.rotation - this.prevTransform.rotation,
       scale:
-        ((currentTransform.scale.x - this.prevTransform.scale.x) +
-         (currentTransform.scale.y - this.prevTransform.scale.y)) / 2,
+        (currentTransform.scale.x -
+          this.prevTransform.scale.x +
+          (currentTransform.scale.y - this.prevTransform.scale.y)) /
+        2,
     };
   }
 
@@ -1237,7 +1322,7 @@ export abstract class BaseLayer implements LayerInstance {
       position: { x: number; y: number; z: number };
       rotation: number;
       scale: { x: number; y: number };
-    }
+    },
   ): HTMLCanvasElement {
     if (!this.motionBlur) {
       return sourceCanvas;
@@ -1261,32 +1346,48 @@ export abstract class BaseLayer implements LayerInstance {
     };
 
     // Skip blur if velocity is negligible
-    const velocityMagnitude = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
-    if (velocityMagnitude < 0.5 && Math.abs(velocity.rotation) < 0.5 && Math.abs(velocity.scale) < 0.01) {
+    const velocityMagnitude = Math.sqrt(
+      velocity.x * velocity.x + velocity.y * velocity.y,
+    );
+    if (
+      velocityMagnitude < 0.5 &&
+      Math.abs(velocity.rotation) < 0.5 &&
+      Math.abs(velocity.scale) < 0.01
+    ) {
       return sourceCanvas;
     }
 
     // Apply motion blur
     try {
       // Convert HTMLCanvasElement to OffscreenCanvas for the processor
-      const offscreen = new OffscreenCanvas(sourceCanvas.width, sourceCanvas.height);
-      const ctx = offscreen.getContext('2d');
+      const offscreen = new OffscreenCanvas(
+        sourceCanvas.width,
+        sourceCanvas.height,
+      );
+      const ctx = offscreen.getContext("2d");
       if (ctx) {
         ctx.drawImage(sourceCanvas, 0, 0);
-        const blurredOffscreen = this.motionBlurProcessor.applyMotionBlur(offscreen, velocity, frame);
+        const blurredOffscreen = this.motionBlurProcessor.applyMotionBlur(
+          offscreen,
+          velocity,
+          frame,
+        );
 
         // Convert back to HTMLCanvasElement
-        const resultCanvas = document.createElement('canvas');
+        const resultCanvas = document.createElement("canvas");
         resultCanvas.width = sourceCanvas.width;
         resultCanvas.height = sourceCanvas.height;
-        const resultCtx = resultCanvas.getContext('2d');
+        const resultCtx = resultCanvas.getContext("2d");
         if (resultCtx) {
           resultCtx.drawImage(blurredOffscreen, 0, 0);
           return resultCanvas;
         }
       }
     } catch (error) {
-      layerLogger.error(`Error applying motion blur to layer ${this.id}:`, error);
+      layerLogger.error(
+        `Error applying motion blur to layer ${this.id}:`,
+        error,
+      );
     }
 
     return sourceCanvas;
@@ -1310,7 +1411,7 @@ export abstract class BaseLayer implements LayerInstance {
   setMotionBlurSettings(settings: Partial<LayerMotionBlurSettings>): void {
     if (!this.motionBlurSettings) {
       this.motionBlurSettings = {
-        type: 'standard',
+        type: "standard",
         shutterAngle: 180,
         shutterPhase: -90,
         samplesPerFrame: 16,
@@ -1338,14 +1439,14 @@ export abstract class BaseLayer implements LayerInstance {
    * Check if this layer has any enabled masks
    */
   protected hasMasks(): boolean {
-    return this.masks.length > 0 && this.masks.some(m => m.enabled);
+    return this.masks.length > 0 && this.masks.some((m) => m.enabled);
   }
 
   /**
    * Check if this layer has a matte source assigned
    */
   protected hasMatte(): boolean {
-    return this.matteType !== 'none' && this.matteCanvas !== null;
+    return this.matteType !== "none" && this.matteCanvas !== null;
   }
 
   /** @deprecated Use hasMatte() instead */
@@ -1423,12 +1524,20 @@ export abstract class BaseLayer implements LayerInstance {
    * @param frame - Current frame for animated masks
    * @returns Processed canvas with masks applied
    */
-  protected processMasksAndMattes(canvas: HTMLCanvasElement, frame: number): HTMLCanvasElement {
+  protected processMasksAndMattes(
+    canvas: HTMLCanvasElement,
+    frame: number,
+  ): HTMLCanvasElement {
     let result = canvas;
 
     // Apply layer masks (vector paths)
     if (this.hasMasks()) {
-      result = applyMasksToLayer(result, this.masks, frame, this.compositionFps);
+      result = applyMasksToLayer(
+        result,
+        this.masks,
+        frame,
+        this.compositionFps,
+      );
     }
 
     // Apply matte source (uses another layer's canvas)
@@ -1485,7 +1594,9 @@ export abstract class BaseLayer implements LayerInstance {
    * Apply pre-evaluated effects from MotionEngine
    * Uses the evaluated effect parameters rather than re-evaluating
    */
-  protected applyEvaluatedEffects(evaluatedEffects: readonly import('../MotionEngine').EvaluatedEffect[]): void {
+  protected applyEvaluatedEffects(
+    evaluatedEffects: readonly import("../MotionEngine").EvaluatedEffect[],
+  ): void {
     if (evaluatedEffects.length === 0 || !this.hasEnabledEffects()) {
       return;
     }
@@ -1502,7 +1613,7 @@ export abstract class BaseLayer implements LayerInstance {
    * Process effects using pre-evaluated parameters
    */
   protected processEffectsWithEvaluated(
-    evaluatedEffects: readonly import('../MotionEngine').EvaluatedEffect[]
+    evaluatedEffects: readonly import("../MotionEngine").EvaluatedEffect[],
   ): HTMLCanvasElement | null {
     const sourceCanvas = this.getSourceCanvas();
     if (!sourceCanvas) {
@@ -1515,11 +1626,15 @@ export abstract class BaseLayer implements LayerInstance {
       if (!evalEffect.enabled) continue;
 
       // Find matching effect instance
-      const effect = this.effects.find(e => e.id === evalEffect.id);
+      const effect = this.effects.find((e) => e.id === evalEffect.id);
       if (!effect) continue;
 
       // Apply effect with pre-evaluated parameters
-      const result = this.processEffectWithParams(effect, currentCanvas, evalEffect.parameters);
+      const result = this.processEffectWithParams(
+        effect,
+        currentCanvas,
+        evalEffect.parameters,
+      );
       if (result) {
         currentCanvas = result;
       }
@@ -1532,9 +1647,9 @@ export abstract class BaseLayer implements LayerInstance {
    * Process a single effect with pre-evaluated parameters
    */
   protected processEffectWithParams(
-    effect: EffectInstance,
-    sourceCanvas: HTMLCanvasElement,
-    params: Record<string, unknown>
+    _effect: EffectInstance,
+    _sourceCanvas: HTMLCanvasElement,
+    _params: Record<string, unknown>,
   ): HTMLCanvasElement | null {
     // This would delegate to effect-specific processors
     // For now, mark canvas for re-processing with new params
@@ -1590,7 +1705,7 @@ export abstract class BaseLayer implements LayerInstance {
    */
   setCompositionFps(fps: number): void {
     // Validate fps (NaN/0 causes division errors in time-based effects)
-    this.compositionFps = (Number.isFinite(fps) && fps > 0) ? fps : 16;
+    this.compositionFps = Number.isFinite(fps) && fps > 0 ? fps : 16;
   }
 
   // ============================================================================
@@ -1617,7 +1732,9 @@ export abstract class BaseLayer implements LayerInstance {
     // Validate frame bounds (NaN/Infinity would cause infinite loop or no iterations)
     const rawStart = startFrame ?? this.inPoint;
     const rawEnd = endFrame ?? this.outPoint;
-    const start = Number.isFinite(rawStart) ? Math.max(0, Math.floor(rawStart)) : 0;
+    const start = Number.isFinite(rawStart)
+      ? Math.max(0, Math.floor(rawStart))
+      : 0;
     const end = Number.isFinite(rawEnd) ? Math.floor(rawEnd) : start;
 
     // Cap motion path length to prevent memory exhaustion (max 10,000 points)
@@ -1674,7 +1791,7 @@ export abstract class BaseLayer implements LayerInstance {
     // Create line geometry
     const geometry = new THREE.BufferGeometry().setFromPoints(curvePoints);
     const material = new THREE.LineBasicMaterial({
-      color: 0x4a90d9,  // Blue motion path
+      color: 0x4a90d9, // Blue motion path
       linewidth: 2,
       transparent: true,
       opacity: 0.8,
@@ -1711,7 +1828,7 @@ export abstract class BaseLayer implements LayerInstance {
     // Create a small diamond shape for each keyframe
     const markerGeometry = new THREE.OctahedronGeometry(5, 0);
     const markerMaterial = new THREE.MeshBasicMaterial({
-      color: 0xffcc00,  // Yellow keyframe markers
+      color: 0xffcc00, // Yellow keyframe markers
       transparent: true,
       opacity: 0.9,
       depthTest: false,
@@ -1719,7 +1836,10 @@ export abstract class BaseLayer implements LayerInstance {
 
     for (const kf of positionKeyframes) {
       const pos = kf.value;
-      const marker = new THREE.Mesh(markerGeometry.clone(), markerMaterial.clone());
+      const marker = new THREE.Mesh(
+        markerGeometry.clone(),
+        markerMaterial.clone(),
+      );
       marker.position.set(pos.x, -pos.y, pos.z ?? 0);
       marker.userData.frame = kf.frame;
       this.motionPathMarkers.add(marker);
@@ -1851,7 +1971,7 @@ export abstract class BaseLayer implements LayerInstance {
     // X label (red sphere)
     const xSphere = new THREE.Mesh(
       sphereGeom.clone(),
-      new THREE.MeshBasicMaterial({ color: 0xff0000, depthTest: false })
+      new THREE.MeshBasicMaterial({ color: 0xff0000, depthTest: false }),
     );
     xSphere.position.set(size + 5, 0, 0);
     this.axisGizmo.add(xSphere);
@@ -1859,7 +1979,7 @@ export abstract class BaseLayer implements LayerInstance {
     // Y label (green sphere)
     const ySphere = new THREE.Mesh(
       sphereGeom.clone(),
-      new THREE.MeshBasicMaterial({ color: 0x00ff00, depthTest: false })
+      new THREE.MeshBasicMaterial({ color: 0x00ff00, depthTest: false }),
     );
     ySphere.position.set(0, size + 5, 0);
     this.axisGizmo.add(ySphere);
@@ -1868,7 +1988,7 @@ export abstract class BaseLayer implements LayerInstance {
     if (this.threeD) {
       const zSphere = new THREE.Mesh(
         sphereGeom.clone(),
-        new THREE.MeshBasicMaterial({ color: 0x0088ff, depthTest: false })
+        new THREE.MeshBasicMaterial({ color: 0x0088ff, depthTest: false }),
       );
       zSphere.position.set(0, 0, size + 5);
       this.axisGizmo.add(zSphere);
@@ -1978,7 +2098,7 @@ export abstract class BaseLayer implements LayerInstance {
         child.geometry?.dispose();
 
         if (Array.isArray(child.material)) {
-          child.material.forEach(m => m.dispose());
+          child.material.forEach((m) => m.dispose());
         } else if (child.material) {
           child.material.dispose();
         }

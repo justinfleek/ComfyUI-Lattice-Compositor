@@ -63,8 +63,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
-import type { AudioAnalysis, PeakData } from '@/services/audioFeatures';
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import type { AudioAnalysis, PeakData } from "@/services/audioFeatures";
 
 interface Props {
   audioBuffer: AudioBuffer | null;
@@ -77,12 +77,10 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  height: 60
+  height: 60,
 });
 
-const emit = defineEmits<{
-  (e: 'seek', frame: number): void;
-}>();
+const emit = defineEmits<(e: "seek", frame: number) => void>();
 
 // Refs
 const containerRef = ref<HTMLDivElement | null>(null);
@@ -90,28 +88,22 @@ const canvasRef = ref<HTMLCanvasElement | null>(null);
 const hoverFrame = ref<number | null>(null);
 
 // Computed
-const playheadPosition = computed(() =>
-  (props.currentFrame / props.totalFrames) * 100
+const _playheadPosition = computed(
+  () => (props.currentFrame / props.totalFrames) * 100,
 );
 
-const hoverPosition = computed(() =>
-  hoverFrame.value !== null
-    ? (hoverFrame.value / props.totalFrames) * 100
-    : 0
+const _hoverPosition = computed(() =>
+  hoverFrame.value !== null ? (hoverFrame.value / props.totalFrames) * 100 : 0,
 );
 
-const visibleOnsets = computed(() =>
-  props.analysis?.onsets ?? []
-);
+const _visibleOnsets = computed(() => props.analysis?.onsets ?? []);
 
-const visiblePeaks = computed(() =>
-  props.peakData?.indices ?? []
-);
+const _visiblePeaks = computed(() => props.peakData?.indices ?? []);
 
-const fps = computed(() => props.fps);
+const _fps = computed(() => props.fps);
 
 // Methods
-function handleClick(event: MouseEvent): void {
+function _handleClick(event: MouseEvent): void {
   if (!containerRef.value) return;
 
   const rect = containerRef.value.getBoundingClientRect();
@@ -119,10 +111,10 @@ function handleClick(event: MouseEvent): void {
   const ratio = x / rect.width;
   const frame = Math.round(ratio * props.totalFrames);
 
-  emit('seek', Math.max(0, Math.min(frame, props.totalFrames - 1)));
+  emit("seek", Math.max(0, Math.min(frame, props.totalFrames - 1)));
 }
 
-function handleMouseMove(event: MouseEvent): void {
+function _handleMouseMove(event: MouseEvent): void {
   if (!containerRef.value) return;
 
   const rect = containerRef.value.getBoundingClientRect();
@@ -131,15 +123,15 @@ function handleMouseMove(event: MouseEvent): void {
   hoverFrame.value = Math.round(ratio * props.totalFrames);
 }
 
-function handleMouseLeave(): void {
+function _handleMouseLeave(): void {
   hoverFrame.value = null;
 }
 
-function formatTime(seconds: number): string {
+function _formatTime(seconds: number): string {
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
   const ms = Math.floor((seconds % 1) * 100);
-  return `${mins}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
+  return `${mins}:${secs.toString().padStart(2, "0")}.${ms.toString().padStart(2, "0")}`;
 }
 
 function drawWaveform(): void {
@@ -152,19 +144,19 @@ function drawWaveform(): void {
   canvas.width = rect.width;
   canvas.height = props.height;
 
-  const ctx = canvas.getContext('2d')!;
+  const ctx = canvas.getContext("2d")!;
   const width = canvas.width;
   const height = canvas.height;
 
   // Clear
-  ctx.fillStyle = '#1e1e1e';
+  ctx.fillStyle = "#1e1e1e";
   ctx.fillRect(0, 0, width, height);
 
   // Draw waveform
   const channelData = props.audioBuffer.getChannelData(0);
   const samplesPerPixel = Math.ceil(channelData.length / width);
 
-  ctx.strokeStyle = '#3d5a80';
+  ctx.strokeStyle = "#3d5a80";
   ctx.lineWidth = 1;
   ctx.beginPath();
 
@@ -172,7 +164,10 @@ function drawWaveform(): void {
 
   for (let x = 0; x < width; x++) {
     const startSample = x * samplesPerPixel;
-    const endSample = Math.min(startSample + samplesPerPixel, channelData.length);
+    const endSample = Math.min(
+      startSample + samplesPerPixel,
+      channelData.length,
+    );
 
     let min = 0;
     let max = 0;
@@ -193,7 +188,7 @@ function drawWaveform(): void {
 
   // Draw amplitude envelope overlay
   if (props.analysis) {
-    ctx.strokeStyle = '#4a90d9';
+    ctx.strokeStyle = "#4a90d9";
     ctx.lineWidth = 1.5;
     ctx.beginPath();
 
@@ -214,7 +209,7 @@ function drawWaveform(): void {
 
   // Draw RMS energy (lighter overlay)
   if (props.analysis) {
-    ctx.strokeStyle = 'rgba(74, 144, 217, 0.3)';
+    ctx.strokeStyle = "rgba(74, 144, 217, 0.3)";
     ctx.lineWidth = 1;
     ctx.beginPath();
 
@@ -239,7 +234,7 @@ watch(
   () => [props.audioBuffer, props.analysis, props.peakData],
   () => {
     drawWaveform();
-  }
+  },
 );
 
 // Lifecycle

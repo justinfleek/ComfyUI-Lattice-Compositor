@@ -11,23 +11,22 @@
  * @module CameraExportFormatsAdversarialTests
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, expect, it, vi } from "vitest";
 
 import {
-  interpolateCameraAtFrame,
-  computeViewMatrix,
-  computeProjectionMatrix,
-  exportToMotionCtrl,
-  exportToMotionCtrlSVD,
-  detectMotionCtrlSVDPreset,
   analyzeCameraMotion,
-  mapToWan22FunCamera,
-  exportToUni3C,
-  exportToCameraCtrl,
-  exportCameraMatrices,
+  computeProjectionMatrix,
+  computeViewMatrix,
+  detectMotionCtrlSVDPreset,
   exportCameraForTarget,
-} from '@/services/export/cameraExportFormats';
-import type { Camera3D, CameraKeyframe } from '@/types/camera';
+  exportCameraMatrices,
+  exportToCameraCtrl,
+  exportToMotionCtrl,
+  exportToUni3C,
+  interpolateCameraAtFrame,
+  mapToWan22FunCamera,
+} from "@/services/export/cameraExportFormats";
+import type { Camera3D, CameraKeyframe } from "@/types/camera";
 
 // ============================================================================
 // Test Fixtures
@@ -35,9 +34,9 @@ import type { Camera3D, CameraKeyframe } from '@/types/camera';
 
 function createValidCamera(overrides: Partial<Camera3D> = {}): Camera3D {
   return {
-    id: 'test-camera',
-    name: 'Test Camera',
-    type: 'perspective',
+    id: "test-camera",
+    name: "Test Camera",
+    type: "perspective",
     position: { x: 0, y: 0, z: -500 },
     orientation: { x: 0, y: 0, z: 0 },
     xRotation: 0,
@@ -59,7 +58,10 @@ function createValidCamera(overrides: Partial<Camera3D> = {}): Camera3D {
   } as Camera3D;
 }
 
-function createKeyframe(frame: number, overrides: Partial<CameraKeyframe> = {}): CameraKeyframe {
+function createKeyframe(
+  frame: number,
+  overrides: Partial<CameraKeyframe> = {},
+): CameraKeyframe {
   return {
     frame,
     position: { x: 0, y: 0, z: -500 },
@@ -75,9 +77,8 @@ function createKeyframe(frame: number, overrides: Partial<CameraKeyframe> = {}):
 // CRITICAL: View Matrix Computation
 // ============================================================================
 
-describe('CRITICAL: computeViewMatrix - Invalid Rotation Values', () => {
-
-  it('should handle NaN rotation values', () => {
+describe("CRITICAL: computeViewMatrix - Invalid Rotation Values", () => {
+  it("should handle NaN rotation values", () => {
     const cam = {
       position: { x: 0, y: 0, z: -500 },
       rotation: { x: NaN, y: NaN, z: NaN },
@@ -101,7 +102,7 @@ describe('CRITICAL: computeViewMatrix - Invalid Rotation Values', () => {
     }
   });
 
-  it('should handle Infinity position values', () => {
+  it("should handle Infinity position values", () => {
     const cam = {
       position: { x: Infinity, y: -Infinity, z: 0 },
       rotation: { x: 0, y: 0, z: 0 },
@@ -118,7 +119,7 @@ describe('CRITICAL: computeViewMatrix - Invalid Rotation Values', () => {
     expect(matrix.length).toBe(4);
   });
 
-  it('should handle extreme rotation values (multiple rotations)', () => {
+  it("should handle extreme rotation values (multiple rotations)", () => {
     const cam = {
       position: { x: 0, y: 0, z: -500 },
       rotation: { x: 720, y: 1080, z: 3600 }, // Multiple full rotations
@@ -137,7 +138,7 @@ describe('CRITICAL: computeViewMatrix - Invalid Rotation Values', () => {
     }
   });
 
-  it('should produce orthonormal rotation part', () => {
+  it("should produce orthonormal rotation part", () => {
     const cam = {
       position: { x: 0, y: 0, z: 0 },
       rotation: { x: 30, y: 45, z: 15 },
@@ -173,9 +174,8 @@ describe('CRITICAL: computeViewMatrix - Invalid Rotation Values', () => {
 // CRITICAL: Projection Matrix Validation
 // ============================================================================
 
-describe('CRITICAL: computeProjectionMatrix - Invalid Aspect Ratio', () => {
-
-  it('should throw for zero aspect ratio', () => {
+describe("CRITICAL: computeProjectionMatrix - Invalid Aspect Ratio", () => {
+  it("should throw for zero aspect ratio", () => {
     const cam = {
       position: { x: 0, y: 0, z: -500 },
       rotation: { x: 0, y: 0, z: 0 },
@@ -189,7 +189,7 @@ describe('CRITICAL: computeProjectionMatrix - Invalid Aspect Ratio', () => {
     }).toThrow(/aspect.*0|invalid/i);
   });
 
-  it('should throw for negative aspect ratio', () => {
+  it("should throw for negative aspect ratio", () => {
     const cam = {
       position: { x: 0, y: 0, z: -500 },
       rotation: { x: 0, y: 0, z: 0 },
@@ -203,7 +203,7 @@ describe('CRITICAL: computeProjectionMatrix - Invalid Aspect Ratio', () => {
     }).toThrow(/aspect.*-1.78|invalid/i);
   });
 
-  it('should throw for NaN aspect ratio', () => {
+  it("should throw for NaN aspect ratio", () => {
     const cam = {
       position: { x: 0, y: 0, z: -500 },
       rotation: { x: 0, y: 0, z: 0 },
@@ -217,8 +217,8 @@ describe('CRITICAL: computeProjectionMatrix - Invalid Aspect Ratio', () => {
     }).toThrow(/aspect.*NaN|invalid/i);
   });
 
-  it('should use fallback for invalid nearClip', () => {
-    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  it("should use fallback for invalid nearClip", () => {
+    const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {});
 
     const cam = {
       position: { x: 0, y: 0, z: -500 },
@@ -236,8 +236,8 @@ describe('CRITICAL: computeProjectionMatrix - Invalid Aspect Ratio', () => {
     consoleWarn.mockRestore();
   });
 
-  it('should use fallback when farClip <= nearClip', () => {
-    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  it("should use fallback when farClip <= nearClip", () => {
+    const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {});
 
     const cam = {
       position: { x: 0, y: 0, z: -500 },
@@ -255,8 +255,8 @@ describe('CRITICAL: computeProjectionMatrix - Invalid Aspect Ratio', () => {
     consoleWarn.mockRestore();
   });
 
-  it('should handle NaN focalLength with fallback', () => {
-    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  it("should handle NaN focalLength with fallback", () => {
+    const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {});
 
     const cam = {
       position: { x: 0, y: 0, z: -500 },
@@ -285,9 +285,8 @@ describe('CRITICAL: computeProjectionMatrix - Invalid Aspect Ratio', () => {
 // HIGH: Camera Interpolation Edge Cases
 // ============================================================================
 
-describe('HIGH: interpolateCameraAtFrame - Empty/Missing Keyframes', () => {
-
-  it('should return camera defaults for empty keyframes array', () => {
+describe("HIGH: interpolateCameraAtFrame - Empty/Missing Keyframes", () => {
+  it("should return camera defaults for empty keyframes array", () => {
     const camera = createValidCamera();
     const result = interpolateCameraAtFrame(camera, [], 10);
 
@@ -296,16 +295,18 @@ describe('HIGH: interpolateCameraAtFrame - Empty/Missing Keyframes', () => {
     expect(result.focalLength).toBe(camera.focalLength);
   });
 
-  it('should return camera defaults for null keyframes', () => {
+  it("should return camera defaults for null keyframes", () => {
     const camera = createValidCamera();
     const result = interpolateCameraAtFrame(camera, null as any, 10);
 
     expect(result.position).toEqual(camera.position);
   });
 
-  it('should handle single keyframe', () => {
+  it("should handle single keyframe", () => {
     const camera = createValidCamera();
-    const keyframes = [createKeyframe(5, { position: { x: 100, y: 0, z: -500 } })];
+    const keyframes = [
+      createKeyframe(5, { position: { x: 100, y: 0, z: -500 } }),
+    ];
 
     // Before keyframe
     const before = interpolateCameraAtFrame(camera, keyframes, 0);
@@ -320,7 +321,7 @@ describe('HIGH: interpolateCameraAtFrame - Empty/Missing Keyframes', () => {
     expect(after.position.x).toBe(100);
   });
 
-  it('should handle keyframes without position', () => {
+  it("should handle keyframes without position", () => {
     const camera = createValidCamera({ position: { x: 50, y: 0, z: -500 } });
     const keyframes = [
       { frame: 0, orientation: { x: 0, y: 0, z: 0 } } as CameraKeyframe,
@@ -333,7 +334,7 @@ describe('HIGH: interpolateCameraAtFrame - Empty/Missing Keyframes', () => {
     expect(result.position).toEqual(camera.position);
   });
 
-  it('should interpolate angles correctly across 360 boundary', () => {
+  it("should interpolate angles correctly across 360 boundary", () => {
     const camera = createValidCamera();
     const keyframes = [
       createKeyframe(0, { orientation: { x: 0, y: 350, z: 0 } }),
@@ -348,9 +349,8 @@ describe('HIGH: interpolateCameraAtFrame - Empty/Missing Keyframes', () => {
   });
 });
 
-describe('HIGH: interpolateCameraAtFrame - Division by Zero', () => {
-
-  it('should handle keyframes at same frame', () => {
+describe("HIGH: interpolateCameraAtFrame - Division by Zero", () => {
+  it("should handle keyframes at same frame", () => {
     const camera = createValidCamera();
     const keyframes = [
       createKeyframe(5, { position: { x: 0, y: 0, z: -500 } }),
@@ -367,9 +367,8 @@ describe('HIGH: interpolateCameraAtFrame - Division by Zero', () => {
 // HIGH: Motion Analysis
 // ============================================================================
 
-describe('HIGH: analyzeCameraMotion - Edge Cases', () => {
-
-  it('should return no motion for empty keyframes', () => {
+describe("HIGH: analyzeCameraMotion - Edge Cases", () => {
+  it("should return no motion for empty keyframes", () => {
     const result = analyzeCameraMotion([]);
 
     expect(result.hasPan).toBe(false);
@@ -378,14 +377,14 @@ describe('HIGH: analyzeCameraMotion - Edge Cases', () => {
     expect(result.hasRotation).toBe(false);
   });
 
-  it('should return no motion for single keyframe', () => {
+  it("should return no motion for single keyframe", () => {
     const result = analyzeCameraMotion([createKeyframe(0)]);
 
     expect(result.hasPan).toBe(false);
     expect(result.hasZoom).toBe(false);
   });
 
-  it('should handle keyframes with missing position/orientation', () => {
+  it("should handle keyframes with missing position/orientation", () => {
     const keyframes = [
       { frame: 0 } as CameraKeyframe,
       { frame: 10 } as CameraKeyframe,
@@ -401,23 +400,22 @@ describe('HIGH: analyzeCameraMotion - Edge Cases', () => {
 // HIGH: MotionCtrl Export
 // ============================================================================
 
-describe('HIGH: exportToMotionCtrl - Frame Count Validation', () => {
-
-  it('should return empty poses for zero frame count', () => {
+describe("HIGH: exportToMotionCtrl - Frame Count Validation", () => {
+  it("should return empty poses for zero frame count", () => {
     const camera = createValidCamera();
     const result = exportToMotionCtrl(camera, [], 0);
 
     expect(result.camera_poses).toEqual([]);
   });
 
-  it('should handle negative frame count gracefully', () => {
+  it("should handle negative frame count gracefully", () => {
     const camera = createValidCamera();
     const result = exportToMotionCtrl(camera, [], -10);
 
     expect(result.camera_poses).toEqual([]);
   });
 
-  it('should export correct number of poses', () => {
+  it("should export correct number of poses", () => {
     const camera = createValidCamera();
     const result = exportToMotionCtrl(camera, [], 24);
 
@@ -429,22 +427,21 @@ describe('HIGH: exportToMotionCtrl - Frame Count Validation', () => {
 // HIGH: Uni3C Export (Deprecated but should still work)
 // ============================================================================
 
-describe('HIGH: exportToUni3C - Dimension Validation', () => {
-
-  it('should warn about non-functional export', () => {
-    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+describe("HIGH: exportToUni3C - Dimension Validation", () => {
+  it("should warn about non-functional export", () => {
+    const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {});
 
     const camera = createValidCamera();
     exportToUni3C(camera, [], 10, 1920, 1080);
 
     expect(consoleWarn).toHaveBeenCalledWith(
-      expect.stringContaining('non-functional')
+      expect.stringContaining("non-functional"),
     );
 
     consoleWarn.mockRestore();
   });
 
-  it('should handle zero dimensions in offset calculation', () => {
+  it("should handle zero dimensions in offset calculation", () => {
     const camera = createValidCamera();
     const keyframes = [
       createKeyframe(0),
@@ -453,7 +450,7 @@ describe('HIGH: exportToUni3C - Dimension Validation', () => {
 
     // Should not crash with zero dimensions (would cause divide by zero)
     const result = exportToUni3C(camera, keyframes, 10, 0, 0);
-    expect(result.traj_type).toBe('custom');
+    expect(result.traj_type).toBe("custom");
   });
 });
 
@@ -461,9 +458,8 @@ describe('HIGH: exportToUni3C - Dimension Validation', () => {
 // HIGH: exportCameraMatrices - Full Validation
 // ============================================================================
 
-describe('HIGH: exportCameraMatrices - Input Validation', () => {
-
-  it('should throw for zero dimensions', () => {
+describe("HIGH: exportCameraMatrices - Input Validation", () => {
+  it("should throw for zero dimensions", () => {
     const camera = createValidCamera();
 
     expect(() => {
@@ -476,7 +472,7 @@ describe('HIGH: exportCameraMatrices - Input Validation', () => {
     }).toThrow(/invalid.*dimensions|width.*height/i);
   });
 
-  it('should throw for zero fps', () => {
+  it("should throw for zero fps", () => {
     const camera = createValidCamera();
 
     expect(() => {
@@ -489,8 +485,8 @@ describe('HIGH: exportCameraMatrices - Input Validation', () => {
     }).toThrow(/fps.*0|invalid/i);
   });
 
-  it('should use fallback for NaN values', () => {
-    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  it("should use fallback for NaN values", () => {
+    const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const camera = createValidCamera();
 
     const result = exportCameraMatrices(camera, [], {
@@ -509,7 +505,7 @@ describe('HIGH: exportCameraMatrices - Input Validation', () => {
     consoleWarn.mockRestore();
   });
 
-  it('should ensure frame count is at least 1', () => {
+  it("should ensure frame count is at least 1", () => {
     const camera = createValidCamera();
 
     const result = exportCameraMatrices(camera, [], {
@@ -522,7 +518,7 @@ describe('HIGH: exportCameraMatrices - Input Validation', () => {
     expect(result.frames.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('should produce valid frame data with no NaN', () => {
+  it("should produce valid frame data with no NaN", () => {
     const camera = createValidCamera();
     const keyframes = [createKeyframe(0), createKeyframe(10)];
 
@@ -552,57 +548,55 @@ describe('HIGH: exportCameraMatrices - Input Validation', () => {
 // MEDIUM: Format-Specific Exports
 // ============================================================================
 
-describe('MEDIUM: detectMotionCtrlSVDPreset - Motion Detection', () => {
-
-  it('should detect static for no keyframes', () => {
+describe("MEDIUM: detectMotionCtrlSVDPreset - Motion Detection", () => {
+  it("should detect static for no keyframes", () => {
     const result = detectMotionCtrlSVDPreset([]);
-    expect(result).toBe('static');
+    expect(result).toBe("static");
   });
 
-  it('should detect static for single keyframe', () => {
+  it("should detect static for single keyframe", () => {
     const result = detectMotionCtrlSVDPreset([createKeyframe(0)]);
-    expect(result).toBe('static');
+    expect(result).toBe("static");
   });
 
-  it('should detect zoom_in for forward Z movement', () => {
+  it("should detect zoom_in for forward Z movement", () => {
     const keyframes = [
       createKeyframe(0, { position: { x: 0, y: 0, z: -500 } }),
       createKeyframe(10, { position: { x: 0, y: 0, z: -400 } }),
     ];
 
     const result = detectMotionCtrlSVDPreset(keyframes);
-    expect(result).toBe('zoom_in');
+    expect(result).toBe("zoom_in");
   });
 
-  it('should detect zoom_out for backward Z movement', () => {
+  it("should detect zoom_out for backward Z movement", () => {
     const keyframes = [
       createKeyframe(0, { position: { x: 0, y: 0, z: -500 } }),
       createKeyframe(10, { position: { x: 0, y: 0, z: -600 } }),
     ];
 
     const result = detectMotionCtrlSVDPreset(keyframes);
-    expect(result).toBe('zoom_out');
+    expect(result).toBe("zoom_out");
   });
 
-  it('should detect rotation', () => {
+  it("should detect rotation", () => {
     const keyframes = [
       createKeyframe(0, { orientation: { x: 0, y: 0, z: 0 } }),
       createKeyframe(10, { orientation: { x: 0, y: 30, z: 0 } }),
     ];
 
     const result = detectMotionCtrlSVDPreset(keyframes);
-    expect(result).toBe('rotate_cw');
+    expect(result).toBe("rotate_cw");
   });
 });
 
-describe('MEDIUM: mapToWan22FunCamera - Preset Mapping', () => {
-
-  it('should return Static for no motion', () => {
+describe("MEDIUM: mapToWan22FunCamera - Preset Mapping", () => {
+  it("should return Static for no motion", () => {
     const result = mapToWan22FunCamera([]);
-    expect(result.camera_motion).toBe('Static');
+    expect(result.camera_motion).toBe("Static");
   });
 
-  it('should detect orbital motion', () => {
+  it("should detect orbital motion", () => {
     const keyframes = [
       createKeyframe(0, {
         position: { x: 0, y: 0, z: -500 },
@@ -623,15 +617,14 @@ describe('MEDIUM: mapToWan22FunCamera - Preset Mapping', () => {
 // MEDIUM: CameraCtrl Export
 // ============================================================================
 
-describe('MEDIUM: exportToCameraCtrl - Motion Type Detection', () => {
-
-  it('should return Static for no motion', () => {
+describe("MEDIUM: exportToCameraCtrl - Motion Type Detection", () => {
+  it("should return Static for no motion", () => {
     const result = exportToCameraCtrl([], 24);
-    expect(result.motion_type).toBe('Static');
+    expect(result.motion_type).toBe("Static");
     expect(result.speed).toBe(0);
   });
 
-  it('should calculate speed from motion magnitude', () => {
+  it("should calculate speed from motion magnitude", () => {
     const keyframes = [
       createKeyframe(0, { position: { x: 0, y: 0, z: -500 } }),
       createKeyframe(10, { position: { x: 0, y: 0, z: -200 } }), // Large zoom
@@ -647,21 +640,28 @@ describe('MEDIUM: exportToCameraCtrl - Motion Type Detection', () => {
 // EDGE: exportCameraForTarget - Unknown Target
 // ============================================================================
 
-describe('EDGE: exportCameraForTarget - Target Routing', () => {
-
-  it('should route to MotionCtrl for motionctrl target', () => {
+describe("EDGE: exportCameraForTarget - Target Routing", () => {
+  it("should route to MotionCtrl for motionctrl target", () => {
     const camera = createValidCamera();
-    const result = exportCameraForTarget('motionctrl', camera, [], 10);
+    const result = exportCameraForTarget("motionctrl", camera, [], 10);
 
-    expect(result).toHaveProperty('camera_poses');
+    expect(result).toHaveProperty("camera_poses");
   });
 
-  it('should route to full matrices for unknown target', () => {
+  it("should route to full matrices for unknown target", () => {
     const camera = createValidCamera();
-    const result = exportCameraForTarget('unknown-target' as any, camera, [], 10, 1920, 1080, 24);
+    const result = exportCameraForTarget(
+      "unknown-target" as any,
+      camera,
+      [],
+      10,
+      1920,
+      1080,
+      24,
+    );
 
     // Should fall through to exportCameraMatrices
-    expect(result).toHaveProperty('frames');
-    expect(result).toHaveProperty('metadata');
+    expect(result).toHaveProperty("frames");
+    expect(result).toHaveProperty("metadata");
   });
 });

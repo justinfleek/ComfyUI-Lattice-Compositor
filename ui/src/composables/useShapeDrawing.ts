@@ -5,8 +5,8 @@
  * Supports rectangle, ellipse, polygon, and star shapes.
  */
 
-import { ref, computed } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
+import { computed, ref } from "vue";
+import { useCompositorStore } from "@/stores/compositorStore";
 
 export interface ShapeDrawBounds {
   x1: number;
@@ -19,17 +19,21 @@ export interface ShapeDrawState {
   isDrawing: boolean;
   start: { x: number; y: number } | null;
   end: { x: number; y: number } | null;
-  tool: 'rectangle' | 'ellipse' | 'polygon' | 'star' | null;
+  tool: "rectangle" | "ellipse" | "polygon" | "star" | null;
 }
 
 /**
  * Helper to create an animatable property
  */
-function createAnimatableProp<T>(value: T): { value: T; animated: boolean; keyframes: any[] } {
+function createAnimatableProp<T>(value: T): {
+  value: T;
+  animated: boolean;
+  keyframes: any[];
+} {
   return {
     value,
     animated: false,
-    keyframes: []
+    keyframes: [],
   };
 }
 
@@ -44,7 +48,7 @@ function createDefaultShapeTransform() {
     rotation: createAnimatableProp(0),
     skew: createAnimatableProp(0),
     skewAxis: createAnimatableProp(0),
-    opacity: createAnimatableProp(100)
+    opacity: createAnimatableProp(100),
   };
 }
 
@@ -55,11 +59,13 @@ export function useShapeDrawing() {
   const isDrawingShape = ref(false);
   const shapeDrawStart = ref<{ x: number; y: number } | null>(null);
   const shapeDrawEnd = ref<{ x: number; y: number } | null>(null);
-  const currentShapeTool = ref<'rectangle' | 'ellipse' | 'polygon' | 'star' | null>(null);
+  const currentShapeTool = ref<
+    "rectangle" | "ellipse" | "polygon" | "star" | null
+  >(null);
 
   // Check if current tool is a shape tool
   const isShapeTool = computed(() =>
-    ['rectangle', 'ellipse', 'polygon', 'star'].includes(store.currentTool)
+    ["rectangle", "ellipse", "polygon", "star"].includes(store.currentTool),
   );
 
   /**
@@ -71,7 +77,10 @@ export function useShapeDrawing() {
     if (!start || !end) return null;
 
     const options = store.shapeToolOptions;
-    let x1 = start.x, y1 = start.y, x2 = end.x, y2 = end.y;
+    let x1 = start.x,
+      y1 = start.y,
+      x2 = end.x,
+      y2 = end.y;
 
     // Handle constrain (shift) - make square/circle
     if (options.constrain) {
@@ -98,20 +107,20 @@ export function useShapeDrawing() {
    */
   const shapePreviewPath = computed(() => {
     const bounds = shapePreviewBounds.value;
-    if (!bounds) return '';
+    if (!bounds) return "";
 
     const width = Math.abs(bounds.x2 - bounds.x1);
     const height = Math.abs(bounds.y2 - bounds.y1);
-    if (width === 0 || height === 0) return '';
+    if (width === 0 || height === 0) return "";
 
     const tool = currentShapeTool.value;
     const options = store.shapeToolOptions;
 
     switch (tool) {
-      case 'rectangle':
+      case "rectangle":
         return `M 0 0 L ${width} 0 L ${width} ${height} L 0 ${height} Z`;
 
-      case 'ellipse': {
+      case "ellipse": {
         const rx = width / 2;
         const ry = height / 2;
         const cx = rx;
@@ -119,7 +128,7 @@ export function useShapeDrawing() {
         return `M ${cx} ${cy - ry} A ${rx} ${ry} 0 1 1 ${cx} ${cy + ry} A ${rx} ${ry} 0 1 1 ${cx} ${cy - ry} Z`;
       }
 
-      case 'polygon': {
+      case "polygon": {
         const sides = options.polygonSides || 6;
         const cx = width / 2;
         const cy = height / 2;
@@ -129,12 +138,12 @@ export function useShapeDrawing() {
           const angle = (i / sides) * Math.PI * 2 - Math.PI / 2;
           const px = cx + Math.cos(angle) * r;
           const py = cy + Math.sin(angle) * r;
-          points.push(`${i === 0 ? 'M' : 'L'} ${px} ${py}`);
+          points.push(`${i === 0 ? "M" : "L"} ${px} ${py}`);
         }
-        return points.join(' ') + ' Z';
+        return `${points.join(" ")} Z`;
       }
 
-      case 'star': {
+      case "star": {
         const numPoints = options.starPoints || 5;
         const innerRatio = options.starInnerRadius || 0.5;
         const cx = width / 2;
@@ -147,13 +156,13 @@ export function useShapeDrawing() {
           const r = i % 2 === 0 ? outerR : innerR;
           const px = cx + Math.cos(angle) * r;
           const py = cy + Math.sin(angle) * r;
-          points.push(`${i === 0 ? 'M' : 'L'} ${px} ${py}`);
+          points.push(`${i === 0 ? "M" : "L"} ${px} ${py}`);
         }
-        return points.join(' ') + ' Z';
+        return `${points.join(" ")} Z`;
       }
 
       default:
-        return '';
+        return "";
     }
   });
 
@@ -161,8 +170,8 @@ export function useShapeDrawing() {
    * Start shape drawing
    */
   function startDrawing(
-    tool: 'rectangle' | 'ellipse' | 'polygon' | 'star',
-    scenePos: { x: number; y: number }
+    tool: "rectangle" | "ellipse" | "polygon" | "star",
+    scenePos: { x: number; y: number },
   ) {
     currentShapeTool.value = tool;
     shapeDrawStart.value = { x: scenePos.x, y: scenePos.y };
@@ -222,8 +231,8 @@ export function useShapeDrawing() {
    * Create a shape layer from drawn bounds
    */
   function createShapeFromDraw(
-    shapeType: 'rectangle' | 'ellipse' | 'polygon' | 'star',
-    bounds: ShapeDrawBounds
+    shapeType: "rectangle" | "ellipse" | "polygon" | "star",
+    bounds: ShapeDrawBounds,
   ) {
     const width = Math.abs(bounds.x2 - bounds.x1);
     const height = Math.abs(bounds.y2 - bounds.y1);
@@ -231,7 +240,7 @@ export function useShapeDrawing() {
     const centerY = (bounds.y1 + bounds.y2) / 2;
 
     // Create a new shape layer
-    const newLayer = store.createLayer('shape');
+    const newLayer = store.createLayer("shape");
 
     // Get current shape tool options
     const options = store.shapeToolOptions;
@@ -243,14 +252,14 @@ export function useShapeDrawing() {
     }
 
     // Find or create a default group
-    let group = shapeData.contents.find((c: any) => c.type === 'group');
+    let group = shapeData.contents.find((c: any) => c.type === "group");
     if (!group) {
       group = {
-        type: 'group',
-        name: 'Group 1',
+        type: "group",
+        name: "Group 1",
         contents: [],
         transform: createDefaultShapeTransform(),
-        blendMode: 'normal'
+        blendMode: "normal",
       };
       shapeData.contents.push(group);
     }
@@ -261,69 +270,71 @@ export function useShapeDrawing() {
     // Create the shape generator
     let generator: any;
     switch (shapeType) {
-      case 'rectangle':
+      case "rectangle":
         generator = {
-          type: 'rectangle',
-          name: 'Rectangle Path',
+          type: "rectangle",
+          name: "Rectangle Path",
           size: createAnimatableProp({ x: width, y: height }),
           position: createAnimatableProp({ x: 0, y: 0 }),
-          roundness: createAnimatableProp(0)
+          roundness: createAnimatableProp(0),
         };
         break;
 
-      case 'ellipse':
+      case "ellipse":
         generator = {
-          type: 'ellipse',
-          name: 'Ellipse Path',
+          type: "ellipse",
+          name: "Ellipse Path",
           size: createAnimatableProp({ x: width, y: height }),
-          position: createAnimatableProp({ x: 0, y: 0 })
+          position: createAnimatableProp({ x: 0, y: 0 }),
         };
         break;
 
-      case 'polygon':
+      case "polygon":
         generator = {
-          type: 'polygon',
-          name: 'Polygon Path',
+          type: "polygon",
+          name: "Polygon Path",
           points: createAnimatableProp(options.polygonSides),
           position: createAnimatableProp({ x: 0, y: 0 }),
           outerRadius: createAnimatableProp(Math.min(width, height) / 2),
-          outerRoundness: createAnimatableProp(0)
+          outerRoundness: createAnimatableProp(0),
         };
         break;
 
-      case 'star':
+      case "star":
         generator = {
-          type: 'star',
-          name: 'Star Path',
+          type: "star",
+          name: "Star Path",
           points: createAnimatableProp(options.starPoints),
           position: createAnimatableProp({ x: 0, y: 0 }),
           outerRadius: createAnimatableProp(Math.min(width, height) / 2),
-          innerRadius: createAnimatableProp(Math.min(width, height) / 2 * options.starInnerRadius),
+          innerRadius: createAnimatableProp(
+            (Math.min(width, height) / 2) * options.starInnerRadius,
+          ),
           outerRoundness: createAnimatableProp(0),
-          innerRoundness: createAnimatableProp(0)
+          innerRoundness: createAnimatableProp(0),
         };
         break;
     }
 
     // Add fill and stroke
     const fill = {
-      type: 'fill',
-      name: 'Fill',
+      type: "fill",
+      name: "Fill",
       color: createAnimatableProp({ r: 0.4, g: 0.5, b: 1, a: 1 }),
       opacity: createAnimatableProp(100),
-      blendMode: 'normal'
+      blendMode: "normal",
     };
 
     const stroke = {
-      type: 'stroke',
-      name: 'Stroke',
+      type: "stroke",
+      name: "Stroke",
       color: createAnimatableProp({ r: 1, g: 1, b: 1, a: 1 }),
       opacity: createAnimatableProp(100),
       width: createAnimatableProp(2),
-      lineCap: 'round',
-      lineJoin: 'round',
+      lineCap: "round",
+      lineJoin: "round",
       miterLimit: 4,
-      blendMode: 'normal'
+      blendMode: "normal",
     };
 
     group.contents = [generator, fill, stroke];
@@ -333,18 +344,18 @@ export function useShapeDrawing() {
       transform: {
         ...newLayer.transform,
         position: {
-          ...newLayer.transform!.position,
-          value: { x: centerX, y: centerY, z: 0 }
-        }
+          ...newLayer.transform?.position,
+          value: { x: centerX, y: centerY, z: 0 },
+        },
       },
-      data: shapeData
+      data: shapeData,
     });
 
     // Select the new layer
     store.selectLayer(newLayer.id);
 
     // Switch back to select tool
-    store.setTool('select');
+    store.setTool("select");
   }
 
   return {
@@ -364,6 +375,6 @@ export function useShapeDrawing() {
     updateDrawing,
     cancelDrawing,
     finishDrawing,
-    createShapeFromDraw
+    createShapeFromDraw,
   };
 }

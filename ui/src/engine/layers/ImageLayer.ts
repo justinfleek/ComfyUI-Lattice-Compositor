@@ -7,17 +7,16 @@
  * - Dynamic texture updates
  */
 
-import * as THREE from 'three';
-import type { Layer } from '@/types/project';
-import type { ResourceManager } from '../core/ResourceManager';
-import { BaseLayer } from './BaseLayer';
-import { layerLogger } from '@/utils/logger';
+import * as THREE from "three";
+import type { Layer } from "@/types/project";
+import { layerLogger } from "@/utils/logger";
+import type { ResourceManager } from "../core/ResourceManager";
+import { BaseLayer } from "./BaseLayer";
 
 export class ImageLayer extends BaseLayer {
   private mesh: THREE.Mesh;
   private geometry: THREE.PlaneGeometry;
   private material: THREE.MeshBasicMaterial;
-  private texture: THREE.Texture | null = null;
 
   /** Resource manager for texture loading */
   private readonly resources: ResourceManager;
@@ -30,7 +29,7 @@ export class ImageLayer extends BaseLayer {
   private sourceUrl: string | null = null;
 
   /** Fit mode for image display */
-  private fit: 'none' | 'contain' | 'cover' | 'fill' = 'none';
+  private fit: "none" | "contain" | "cover" | "fill" = "none";
 
   /** Target dimensions for fit calculations (null = use native dimensions) */
   private targetWidth: number | null = null;
@@ -86,7 +85,7 @@ export class ImageLayer extends BaseLayer {
     source: string | null;
     targetWidth: number | null;
     targetHeight: number | null;
-    fit: 'none' | 'contain' | 'cover' | 'fill';
+    fit: "none" | "contain" | "cover" | "fill";
   } {
     const data = layerData.data as any;
 
@@ -94,7 +93,7 @@ export class ImageLayer extends BaseLayer {
       source: data?.source ?? data?.url ?? data?.assetId ?? null,
       targetWidth: data?.width ?? null,
       targetHeight: data?.height ?? null,
-      fit: data?.fit ?? 'none',
+      fit: data?.fit ?? "none",
     };
   }
 
@@ -135,7 +134,8 @@ export class ImageLayer extends BaseLayer {
     // Update dimensions from texture
     if (texture.image) {
       this.imageWidth = texture.image.width || texture.image.videoWidth || 100;
-      this.imageHeight = texture.image.height || texture.image.videoHeight || 100;
+      this.imageHeight =
+        texture.image.height || texture.image.videoHeight || 100;
       this.updateMeshSize();
 
       // Invalidate texture canvas when source changes
@@ -157,7 +157,7 @@ export class ImageLayer extends BaseLayer {
         magFilter: THREE.LinearFilter,
         generateMipmaps: false,
         colorSpace: THREE.SRGBColorSpace,
-      }
+      },
     );
 
     this.setTexture(texture);
@@ -175,7 +175,7 @@ export class ImageLayer extends BaseLayer {
         magFilter: THREE.LinearFilter,
         generateMipmaps: false,
         colorSpace: THREE.SRGBColorSpace,
-      }
+      },
     );
 
     this.setTexture(texture);
@@ -190,18 +190,30 @@ export class ImageLayer extends BaseLayer {
 
     // Calculate final dimensions based on fit mode
     // Validate dimensions (guard against 0/NaN from upstream)
-    let finalWidth = (Number.isFinite(this.imageWidth) && this.imageWidth > 0) ? this.imageWidth : 100;
-    let finalHeight = (Number.isFinite(this.imageHeight) && this.imageHeight > 0) ? this.imageHeight : 100;
+    let finalWidth =
+      Number.isFinite(this.imageWidth) && this.imageWidth > 0
+        ? this.imageWidth
+        : 100;
+    let finalHeight =
+      Number.isFinite(this.imageHeight) && this.imageHeight > 0
+        ? this.imageHeight
+        : 100;
 
     // Only apply fit if we have valid target dimensions and fit is not 'none'
-    const validTargetWidth = this.targetWidth && Number.isFinite(this.targetWidth) && this.targetWidth > 0;
-    const validTargetHeight = this.targetHeight && Number.isFinite(this.targetHeight) && this.targetHeight > 0;
-    if (validTargetWidth && validTargetHeight && this.fit !== 'none') {
+    const validTargetWidth =
+      this.targetWidth &&
+      Number.isFinite(this.targetWidth) &&
+      this.targetWidth > 0;
+    const validTargetHeight =
+      this.targetHeight &&
+      Number.isFinite(this.targetHeight) &&
+      this.targetHeight > 0;
+    if (validTargetWidth && validTargetHeight && this.fit !== "none") {
       const targetAspect = this.targetWidth! / this.targetHeight!;
       const imageAspect = finalWidth / finalHeight;
 
       switch (this.fit) {
-        case 'contain':
+        case "contain":
           // Scale to fit within target bounds, preserving aspect ratio
           if (imageAspect > targetAspect) {
             // Image is wider than target - fit to width
@@ -214,7 +226,7 @@ export class ImageLayer extends BaseLayer {
           }
           break;
 
-        case 'cover':
+        case "cover":
           // Scale to cover target bounds, preserving aspect ratio (may crop)
           if (imageAspect > targetAspect) {
             // Image is wider than target - fit to height, crop width
@@ -227,7 +239,7 @@ export class ImageLayer extends BaseLayer {
           }
           break;
 
-        case 'fill':
+        case "fill":
           // Stretch to fill target bounds exactly (ignores aspect ratio)
           finalWidth = this.targetWidth!;
           finalHeight = this.targetHeight!;
@@ -259,8 +271,8 @@ export class ImageLayer extends BaseLayer {
    */
   setDimensions(width: number, height: number): void {
     // Validate dimensions (NaN/0 would corrupt geometry and cause division by zero)
-    this.imageWidth = (Number.isFinite(width) && width > 0) ? width : 100;
-    this.imageHeight = (Number.isFinite(height) && height > 0) ? height : 100;
+    this.imageWidth = Number.isFinite(width) && width > 0 ? width : 100;
+    this.imageHeight = Number.isFinite(height) && height > 0 ? height : 100;
     this.updateMeshSize();
   }
 
@@ -300,16 +312,21 @@ export class ImageLayer extends BaseLayer {
       return null;
     }
 
-    const image = this.originalTexture.image as HTMLImageElement | HTMLCanvasElement | ImageBitmap;
+    const image = this.originalTexture.image as
+      | HTMLImageElement
+      | HTMLCanvasElement
+      | ImageBitmap;
 
     // Lazy create/resize canvas
-    if (!this.textureCanvas ||
-        this.textureCanvas.width !== this.imageWidth ||
-        this.textureCanvas.height !== this.imageHeight) {
-      this.textureCanvas = document.createElement('canvas');
+    if (
+      !this.textureCanvas ||
+      this.textureCanvas.width !== this.imageWidth ||
+      this.textureCanvas.height !== this.imageHeight
+    ) {
+      this.textureCanvas = document.createElement("canvas");
       this.textureCanvas.width = this.imageWidth;
       this.textureCanvas.height = this.imageHeight;
-      this.textureCanvasCtx = this.textureCanvas.getContext('2d');
+      this.textureCanvasCtx = this.textureCanvas.getContext("2d");
     }
 
     if (!this.textureCanvasCtx) {
@@ -318,7 +335,13 @@ export class ImageLayer extends BaseLayer {
 
     // Draw original image to canvas
     this.textureCanvasCtx.clearRect(0, 0, this.imageWidth, this.imageHeight);
-    this.textureCanvasCtx.drawImage(image, 0, 0, this.imageWidth, this.imageHeight);
+    this.textureCanvasCtx.drawImage(
+      image,
+      0,
+      0,
+      this.imageWidth,
+      this.imageHeight,
+    );
 
     return this.textureCanvas;
   }
@@ -326,7 +349,9 @@ export class ImageLayer extends BaseLayer {
   /**
    * Apply processed effects canvas back to the material
    */
-  protected override applyProcessedEffects(processedCanvas: HTMLCanvasElement): void {
+  protected override applyProcessedEffects(
+    processedCanvas: HTMLCanvasElement,
+  ): void {
     // Create a new texture from the processed canvas
     const processedTexture = this.resources.createTextureFromCanvas(
       processedCanvas,
@@ -336,7 +361,7 @@ export class ImageLayer extends BaseLayer {
         magFilter: THREE.LinearFilter,
         generateMipmaps: false,
         colorSpace: THREE.SRGBColorSpace,
-      }
+      },
     );
 
     // Apply to material (keep original texture reference intact)
@@ -354,10 +379,12 @@ export class ImageLayer extends BaseLayer {
     this.evaluateEffects(frame);
   }
 
-  protected override onApplyEvaluatedState(state: import('../MotionEngine').EvaluatedLayer): void {
+  protected override onApplyEvaluatedState(
+    state: import("../MotionEngine").EvaluatedLayer,
+  ): void {
     // Apply tint if present in evaluated properties
-    if (state.properties['tint'] !== undefined) {
-      this.setTint(state.properties['tint'] as string | number);
+    if (state.properties.tint !== undefined) {
+      this.setTint(state.properties.tint as string | number);
     }
 
     // Process effects using evaluated effect parameters

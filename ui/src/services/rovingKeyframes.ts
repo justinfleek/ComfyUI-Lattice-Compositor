@@ -26,8 +26,8 @@
  * ```
  */
 
-import * as THREE from 'three';
-import type { Keyframe } from '@/types/project';
+import * as THREE from "three";
+import type { Keyframe } from "@/types/project";
 
 /** Position can be either an array [x, y, z] or an object {x, y, z} */
 export type PositionValue = number[] | { x: number; y: number; z?: number };
@@ -77,10 +77,7 @@ export interface RovingResult<T extends PositionValue = PositionValue> {
  * Calculate arc length between two 3D points along a cubic bezier curve
  * Uses linear interpolation for simplicity (can upgrade to bezier if needed)
  */
-function calculateSegmentLength(
-  p1: PositionValue,
-  p2: PositionValue
-): number {
+function calculateSegmentLength(p1: PositionValue, p2: PositionValue): number {
   const [x1, y1, z1] = extractXYZ(p1);
   const [x2, y2, z2] = extractXYZ(p2);
   const dx = x2 - x1;
@@ -92,7 +89,9 @@ function calculateSegmentLength(
 /**
  * Build a Three.js curve path from position keyframes
  */
-function buildCurvePath(keyframes: Keyframe<PositionValue>[]): THREE.CurvePath<THREE.Vector3> {
+function buildCurvePath(
+  keyframes: Keyframe<PositionValue>[],
+): THREE.CurvePath<THREE.Vector3> {
   const path = new THREE.CurvePath<THREE.Vector3>();
 
   for (let i = 0; i < keyframes.length - 1; i++) {
@@ -114,12 +113,12 @@ function buildCurvePath(keyframes: Keyframe<PositionValue>[]): THREE.CurvePath<T
     const p1 = new THREE.Vector3(
       p0.x + dx * 0.33,
       p0.y + dy * 0.33,
-      p0.z + dz * 0.33
+      p0.z + dz * 0.33,
     );
     const p2 = new THREE.Vector3(
       p0.x + dx * 0.66,
       p0.y + dy * 0.66,
-      p0.z + dz * 0.66
+      p0.z + dz * 0.66,
     );
 
     const curve = new THREE.CubicBezierCurve3(p0, p1, p2, p3);
@@ -142,13 +141,9 @@ function buildCurvePath(keyframes: Keyframe<PositionValue>[]): THREE.CurvePath<T
  */
 export function applyRovingKeyframes<T extends PositionValue>(
   keyframes: Keyframe<T>[],
-  options: RovingOptions = {}
+  options: RovingOptions = {},
 ): RovingResult<T> {
-  const {
-    anchorFirst = true,
-    anchorLast = true,
-    minKeyframes = 3
-  } = options;
+  const { anchorFirst = true, anchorLast = true, minKeyframes = 3 } = options;
 
   // Validate input
   if (!keyframes || keyframes.length < minKeyframes) {
@@ -157,7 +152,7 @@ export function applyRovingKeyframes<T extends PositionValue>(
       totalLength: 0,
       segmentLengths: [],
       success: false,
-      error: `Roving requires at least ${minKeyframes} keyframes`
+      error: `Roving requires at least ${minKeyframes} keyframes`,
     };
   }
 
@@ -175,7 +170,7 @@ export function applyRovingKeyframes<T extends PositionValue>(
       totalLength: 0,
       segmentLengths: [],
       success: false,
-      error: 'First and last keyframes must have different frame numbers'
+      error: "First and last keyframes must have different frame numbers",
     };
   }
 
@@ -189,7 +184,7 @@ export function applyRovingKeyframes<T extends PositionValue>(
       totalLength: 0,
       segmentLengths: [],
       success: false,
-      error: 'Motion path has zero length'
+      error: "Motion path has zero length",
     };
   }
 
@@ -200,7 +195,7 @@ export function applyRovingKeyframes<T extends PositionValue>(
   for (let i = 1; i < sorted.length; i++) {
     const segmentLength = calculateSegmentLength(
       sorted[i - 1].value,
-      sorted[i].value
+      sorted[i].value,
     );
     cumulativeLength += segmentLength;
     segmentLengths.push(cumulativeLength);
@@ -232,7 +227,7 @@ export function applyRovingKeyframes<T extends PositionValue>(
     keyframes: newKeyframes,
     totalLength,
     segmentLengths,
-    success: true
+    success: true,
   };
 }
 
@@ -245,7 +240,7 @@ export function applyRovingKeyframes<T extends PositionValue>(
  */
 export function wouldRovingChange(
   keyframes: Keyframe<PositionValue>[],
-  threshold: number = 2
+  threshold: number = 2,
 ): boolean {
   if (keyframes.length < 3) return false;
 
@@ -273,7 +268,7 @@ export function wouldRovingChange(
  */
 export function getEvenlySpacedFrames(
   keyframes: Keyframe<PositionValue>[],
-  numPoints: number
+  numPoints: number,
 ): number[] {
   if (keyframes.length < 2 || numPoints < 2) {
     return [];
@@ -303,7 +298,7 @@ export function getEvenlySpacedFrames(
  */
 export function calculateVelocities(
   keyframes: Keyframe<PositionValue>[],
-  fps: number = 16
+  fps: number = 16,
 ): number[] {
   if (keyframes.length < 2) return [];
 
@@ -317,7 +312,10 @@ export function calculateVelocities(
       if (dt <= 0) {
         velocities.push(0);
       } else {
-        const distance = calculateSegmentLength(sorted[0].value, sorted[1].value);
+        const distance = calculateSegmentLength(
+          sorted[0].value,
+          sorted[1].value,
+        );
         velocities.push(distance / dt);
       }
     } else if (i === sorted.length - 1) {
@@ -326,7 +324,10 @@ export function calculateVelocities(
       if (dt <= 0) {
         velocities.push(0);
       } else {
-        const distance = calculateSegmentLength(sorted[i - 1].value, sorted[i].value);
+        const distance = calculateSegmentLength(
+          sorted[i - 1].value,
+          sorted[i].value,
+        );
         velocities.push(distance / dt);
       }
     } else {

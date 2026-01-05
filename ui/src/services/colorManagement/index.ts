@@ -5,30 +5,30 @@
  */
 
 export {
-  ColorProfileService,
-  getColorProfileService,
-  initializeColorManagement,
-  colorUtils,
-  // Types
-  type ColorSpace,
-  type ViewTransform,
-  type ColorSpaceInfo,
-  type ColorSettings,
-  type ICCProfile,
-  type RGB,
-  type XYZ,
+  applyGammaRGB,
   // Constants
   COLOR_SPACES,
+  ColorProfileService,
+  type ColorSettings,
+  // Types
+  type ColorSpace,
+  type ColorSpaceInfo,
+  colorUtils,
+  convertColorSpace,
+  extractICCFromImage,
+  gammaToLinear,
+  getColorProfileService,
+  type ICCProfile,
+  initializeColorManagement,
+  linearizeRGB,
+  linearToGamma,
+  linearToSRGB,
+  parseICCProfile,
+  type RGB,
+  rgbToXYZ,
   // Functions
   sRGBToLinear,
-  linearToSRGB,
-  gammaToLinear,
-  linearToGamma,
-  linearizeRGB,
-  applyGammaRGB,
-  rgbToXYZ,
+  type ViewTransform,
+  type XYZ,
   xyzToRGB,
-  convertColorSpace,
-  parseICCProfile,
-  extractICCFromImage,
-} from './ColorProfileService';
+} from "./ColorProfileService";

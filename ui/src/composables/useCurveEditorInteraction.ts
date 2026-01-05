@@ -4,13 +4,13 @@
  * Extracted from CurveEditor.vue to reduce file size.
  */
 
-import { ref, type Ref } from 'vue';
-import type { AnimatableProperty, Keyframe } from '@/types/project';
-import type { CurveViewState, CurveMargin } from './useCurveEditorCoords';
+import { type Ref, ref } from "vue";
+import type { AnimatableProperty, Keyframe } from "@/types/project";
+import type { CurveMargin, CurveViewState } from "./useCurveEditorCoords";
 
 // Types
 export interface DragTarget {
-  type: 'keyframe' | 'inHandle' | 'outHandle' | 'pan' | 'select';
+  type: "keyframe" | "inHandle" | "outHandle" | "pan" | "select";
   propId?: string;
   index?: number;
   startX?: number;
@@ -50,7 +50,10 @@ export interface CurveEditorInteractionOptions {
   valueToScreenY: (value: number) => number;
   screenYToValue: (screenY: number) => number;
   getKeyframeScreenX: (kf: Keyframe<any>) => number;
-  getKeyframeScreenY: (prop: AnimatableProperty<any>, kf: Keyframe<any>) => number;
+  getKeyframeScreenY: (
+    prop: AnimatableProperty<any>,
+    kf: Keyframe<any>,
+  ) => number;
   getNumericValue: (value: any) => number;
   getPropertyPath: (prop: AnimatableProperty<any>) => string;
 
@@ -59,7 +62,9 @@ export interface CurveEditorInteractionOptions {
   store: any;
 }
 
-export function useCurveEditorInteraction(options: CurveEditorInteractionOptions) {
+export function useCurveEditorInteraction(
+  options: CurveEditorInteractionOptions,
+) {
   const {
     canvasRef,
     canvasWidth,
@@ -92,7 +97,9 @@ export function useCurveEditorInteraction(options: CurveEditorInteractionOptions
 
   // Helper functions
   function isKeyframeSelected(propId: string, index: number): boolean {
-    return selectedKeyframes.value.some(sk => sk.propId === propId && sk.index === index);
+    return selectedKeyframes.value.some(
+      (sk) => sk.propId === propId && sk.index === index,
+    );
   }
 
   function updateHoveredKeyframe(x: number, y: number): void {
@@ -123,14 +130,14 @@ export function useCurveEditorInteraction(options: CurveEditorInteractionOptions
 
     if (event.button === 1 || (event.button === 0 && event.altKey)) {
       // Middle click or Alt+left click: pan
-      dragTarget.value = { type: 'pan', startX: x, startY: y };
+      dragTarget.value = { type: "pan", startX: x, startY: y };
     } else if (event.button === 0) {
       // Left click: selection box
       if (!event.shiftKey) {
         selectedKeyframes.value = [];
       }
       selectionBox.value = { x, y, width: 0, height: 0 };
-      dragTarget.value = { type: 'select', startX: x, startY: y };
+      dragTarget.value = { type: "select", startX: x, startY: y };
     }
   }
 
@@ -146,15 +153,17 @@ export function useCurveEditorInteraction(options: CurveEditorInteractionOptions
 
     if (!dragTarget.value) return;
 
-    if (dragTarget.value.type === 'pan') {
+    if (dragTarget.value.type === "pan") {
       const dx = x - (dragTarget.value.startX ?? 0);
       const dy = y - (dragTarget.value.startY ?? 0);
 
       const graphWidth = canvasWidth.value - margin.left - margin.right;
       const graphHeight = canvasHeight.value - margin.top - margin.bottom;
 
-      const frameShift = -dx / graphWidth * (viewState.frameEnd - viewState.frameStart);
-      const valueShift = dy / graphHeight * (viewState.valueMax - viewState.valueMin);
+      const frameShift =
+        (-dx / graphWidth) * (viewState.frameEnd - viewState.frameStart);
+      const valueShift =
+        (dy / graphHeight) * (viewState.valueMax - viewState.valueMin);
 
       viewState.frameStart += frameShift;
       viewState.frameEnd += frameShift;
@@ -164,7 +173,7 @@ export function useCurveEditorInteraction(options: CurveEditorInteractionOptions
       dragTarget.value.startX = x;
       dragTarget.value.startY = y;
       drawGraph();
-    } else if (dragTarget.value.type === 'select' && selectionBox.value) {
+    } else if (dragTarget.value.type === "select" && selectionBox.value) {
       const startX = dragTarget.value.startX ?? 0;
       const startY = dragTarget.value.startY ?? 0;
 
@@ -172,17 +181,20 @@ export function useCurveEditorInteraction(options: CurveEditorInteractionOptions
         x: Math.min(x, startX),
         y: Math.min(y, startY),
         width: Math.abs(x - startX),
-        height: Math.abs(y - startY)
+        height: Math.abs(y - startY),
       };
-    } else if (dragTarget.value.type === 'keyframe') {
+    } else if (dragTarget.value.type === "keyframe") {
       moveSelectedKeyframes(x, y);
-    } else if (dragTarget.value.type === 'outHandle' || dragTarget.value.type === 'inHandle') {
+    } else if (
+      dragTarget.value.type === "outHandle" ||
+      dragTarget.value.type === "inHandle"
+    ) {
       moveHandle(x, y);
     }
   }
 
   function handleMouseUp(): void {
-    if (dragTarget.value?.type === 'select' && selectionBox.value) {
+    if (dragTarget.value?.type === "select" && selectionBox.value) {
       selectKeyframesInBox();
     }
 
@@ -202,8 +214,10 @@ export function useCurveEditorInteraction(options: CurveEditorInteractionOptions
     // Zoom around cursor position
     const frameAtCursor = screenXToFrame(x);
 
-    const newFrameStart = frameAtCursor - (frameAtCursor - viewState.frameStart) * zoomFactor;
-    const newFrameEnd = frameAtCursor + (viewState.frameEnd - frameAtCursor) * zoomFactor;
+    const newFrameStart =
+      frameAtCursor - (frameAtCursor - viewState.frameStart) * zoomFactor;
+    const newFrameEnd =
+      frameAtCursor + (viewState.frameEnd - frameAtCursor) * zoomFactor;
 
     if (event.shiftKey) {
       // Zoom time only
@@ -216,16 +230,22 @@ export function useCurveEditorInteraction(options: CurveEditorInteractionOptions
 
       const y = event.clientY - rect.top;
       const valueAtCursor = screenYToValue(y);
-      viewState.valueMin = valueAtCursor - (valueAtCursor - viewState.valueMin) * zoomFactor;
-      viewState.valueMax = valueAtCursor + (viewState.valueMax - valueAtCursor) * zoomFactor;
+      viewState.valueMin =
+        valueAtCursor - (valueAtCursor - viewState.valueMin) * zoomFactor;
+      viewState.valueMax =
+        valueAtCursor + (viewState.valueMax - valueAtCursor) * zoomFactor;
     }
 
     drawGraph();
   }
 
   // Keyframe interaction
-  function onKeyframeMouseDown(propId: string, index: number, event: MouseEvent): void {
-    const prop = animatableProperties.value.find(p => p.id === propId);
+  function onKeyframeMouseDown(
+    propId: string,
+    index: number,
+    event: MouseEvent,
+  ): void {
+    const prop = animatableProperties.value.find((p) => p.id === propId);
     if (!prop) return;
 
     const kf = prop.keyframes[index];
@@ -238,7 +258,7 @@ export function useCurveEditorInteraction(options: CurveEditorInteractionOptions
       selectedKeyframes.value.push({ propId, index, keyframe: kf });
     }
 
-    dragTarget.value = { type: 'keyframe', propId, index };
+    dragTarget.value = { type: "keyframe", propId, index };
   }
 
   function selectKeyframesInBox(): void {
@@ -252,10 +272,18 @@ export function useCurveEditorInteraction(options: CurveEditorInteractionOptions
         const x = getKeyframeScreenX(kf);
         const y = getKeyframeScreenY(prop, kf);
 
-        if (x >= box.x && x <= box.x + box.width &&
-            y >= box.y && y <= box.y + box.height) {
+        if (
+          x >= box.x &&
+          x <= box.x + box.width &&
+          y >= box.y &&
+          y <= box.y + box.height
+        ) {
           if (!isKeyframeSelected(prop.id, i)) {
-            selectedKeyframes.value.push({ propId: prop.id, index: i, keyframe: kf });
+            selectedKeyframes.value.push({
+              propId: prop.id,
+              index: i,
+              keyframe: kf,
+            });
           }
         }
       }
@@ -263,7 +291,7 @@ export function useCurveEditorInteraction(options: CurveEditorInteractionOptions
   }
 
   function moveSelectedKeyframes(screenX: number, screenY: number): void {
-    let newFrame = Math.round(screenXToFrame(screenX));
+    const newFrame = Math.round(screenXToFrame(screenX));
     const newValue = screenYToValue(screenY);
 
     const layer = store.selectedLayer;
@@ -272,11 +300,12 @@ export function useCurveEditorInteraction(options: CurveEditorInteractionOptions
     // For now, just move the first selected keyframe
     if (selectedKeyframes.value.length > 0) {
       const sk = selectedKeyframes.value[0];
-      const prop = animatableProperties.value.find(p => p.id === sk.propId);
+      const prop = animatableProperties.value.find((p) => p.id === sk.propId);
       if (!prop) return;
 
       const frame = Math.max(0, Math.min(store.frameCount - 1, newFrame));
-      const value = typeof sk.keyframe.value === 'number' ? newValue : sk.keyframe.value;
+      const _value =
+        typeof sk.keyframe.value === "number" ? newValue : sk.keyframe.value;
 
       // Get property path from property name
       const propertyPath = getPropertyPath(prop);
@@ -284,12 +313,12 @@ export function useCurveEditorInteraction(options: CurveEditorInteractionOptions
       // Call store method to persist the change
       store.updateKeyframe(layer.id, propertyPath, sk.keyframe.id, {
         frame,
-        value: typeof sk.keyframe.value === 'number' ? newValue : undefined
+        value: typeof sk.keyframe.value === "number" ? newValue : undefined,
       });
 
       // Update local reference
       sk.keyframe.frame = frame;
-      if (typeof sk.keyframe.value === 'number') {
+      if (typeof sk.keyframe.value === "number") {
         sk.keyframe.value = newValue;
       }
     }
@@ -298,7 +327,12 @@ export function useCurveEditorInteraction(options: CurveEditorInteractionOptions
   }
 
   // Handle dragging
-  function startDragHandle(type: 'inHandle' | 'outHandle', propId: string, index: number, _event: MouseEvent): void {
+  function startDragHandle(
+    type: "inHandle" | "outHandle",
+    propId: string,
+    index: number,
+    _event: MouseEvent,
+  ): void {
     dragTarget.value = { type, propId, index };
   }
 
@@ -308,7 +342,9 @@ export function useCurveEditorInteraction(options: CurveEditorInteractionOptions
     const layer = store.selectedLayer;
     if (!layer) return;
 
-    const prop = animatableProperties.value.find(p => p.id === dragTarget.value!.propId);
+    const prop = animatableProperties.value.find(
+      (p) => p.id === dragTarget.value?.propId,
+    );
     if (!prop) return;
 
     const kfIndex = dragTarget.value.index!;
@@ -319,14 +355,17 @@ export function useCurveEditorInteraction(options: CurveEditorInteractionOptions
     const handleValue = screenYToValue(screenY);
     const propertyPath = getPropertyPath(prop);
 
-    if (dragTarget.value.type === 'outHandle') {
+    if (dragTarget.value.type === "outHandle") {
       const nextKf = prop.keyframes[kfIndex + 1];
 
       // Calculate frame offset (positive = forward from keyframe)
       let frameOffset = handleFrame - kf.frame;
       // Constrain: cannot go past next keyframe or before current
       if (nextKf) {
-        frameOffset = Math.max(0, Math.min(nextKf.frame - kf.frame, frameOffset));
+        frameOffset = Math.max(
+          0,
+          Math.min(nextKf.frame - kf.frame, frameOffset),
+        );
       } else {
         frameOffset = Math.max(0, frameOffset);
       }
@@ -337,23 +376,26 @@ export function useCurveEditorInteraction(options: CurveEditorInteractionOptions
       const newHandle = {
         frame: frameOffset,
         value: valueOffset,
-        enabled: true
+        enabled: true,
       };
 
       // Call store method to persist
-      store.setKeyframeHandle(layer.id, propertyPath, kf.id, 'out', newHandle);
+      store.setKeyframeHandle(layer.id, propertyPath, kf.id, "out", newHandle);
 
       // Update local reference
       kf.outHandle = newHandle;
-      kf.interpolation = 'bezier';
-    } else if (dragTarget.value.type === 'inHandle') {
+      kf.interpolation = "bezier";
+    } else if (dragTarget.value.type === "inHandle") {
       const prevKf = prop.keyframes[kfIndex - 1];
 
       // Calculate frame offset (typically negative = backward from keyframe)
       let frameOffset = handleFrame - kf.frame;
       // Constrain: cannot go before previous keyframe or after current
       if (prevKf) {
-        frameOffset = Math.max(prevKf.frame - kf.frame, Math.min(0, frameOffset));
+        frameOffset = Math.max(
+          prevKf.frame - kf.frame,
+          Math.min(0, frameOffset),
+        );
       } else {
         frameOffset = Math.min(0, frameOffset);
       }
@@ -364,15 +406,15 @@ export function useCurveEditorInteraction(options: CurveEditorInteractionOptions
       const newHandle = {
         frame: frameOffset,
         value: valueOffset,
-        enabled: true
+        enabled: true,
       };
 
       // Call store method to persist
-      store.setKeyframeHandle(layer.id, propertyPath, kf.id, 'in', newHandle);
+      store.setKeyframeHandle(layer.id, propertyPath, kf.id, "in", newHandle);
 
       // Update local reference
       kf.inHandle = newHandle;
-      kf.interpolation = 'bezier';
+      kf.interpolation = "bezier";
     }
 
     drawGraph();
@@ -412,7 +454,7 @@ export function useCurveEditorInteraction(options: CurveEditorInteractionOptions
     if (!layer) return;
 
     for (const sk of selectedKeyframes.value) {
-      const prop = animatableProperties.value.find(p => p.id === sk.propId);
+      const prop = animatableProperties.value.find((p) => p.id === sk.propId);
       if (prop) {
         const propertyPath = getPropertyPath(prop);
         store.removeKeyframe(layer.id, propertyPath, sk.keyframe.id);
@@ -425,7 +467,7 @@ export function useCurveEditorInteraction(options: CurveEditorInteractionOptions
   }
 
   function copyKeyframes(): void {
-    clipboard.value = selectedKeyframes.value.map(sk => ({ ...sk.keyframe }));
+    clipboard.value = selectedKeyframes.value.map((sk) => ({ ...sk.keyframe }));
     contextMenu.value = null;
   }
 
@@ -437,7 +479,8 @@ export function useCurveEditorInteraction(options: CurveEditorInteractionOptions
 
     // Paste at current frame, offset from first copied keyframe
     const currentFrame = store.currentFrame;
-    const offsetFrame = clipboard.value.length > 0 ? clipboard.value[0].frame : 0;
+    const offsetFrame =
+      clipboard.value.length > 0 ? clipboard.value[0].frame : 0;
 
     for (const kf of clipboard.value) {
       const newFrame = currentFrame + (kf.frame - offsetFrame);
@@ -446,17 +489,39 @@ export function useCurveEditorInteraction(options: CurveEditorInteractionOptions
         const prop = visibleProperties.value[0];
         const propertyPath = getPropertyPath(prop);
 
-        const newKeyframe = store.addKeyframe(layer.id, propertyPath, kf.value, newFrame);
+        const newKeyframe = store.addKeyframe(
+          layer.id,
+          propertyPath,
+          kf.value,
+          newFrame,
+        );
 
         if (newKeyframe) {
-          if (kf.interpolation !== 'linear') {
-            store.setKeyframeInterpolation(layer.id, propertyPath, newKeyframe.id, kf.interpolation);
+          if (kf.interpolation !== "linear") {
+            store.setKeyframeInterpolation(
+              layer.id,
+              propertyPath,
+              newKeyframe.id,
+              kf.interpolation,
+            );
           }
           if (kf.inHandle?.enabled) {
-            store.setKeyframeHandle(layer.id, propertyPath, newKeyframe.id, 'in', kf.inHandle);
+            store.setKeyframeHandle(
+              layer.id,
+              propertyPath,
+              newKeyframe.id,
+              "in",
+              kf.inHandle,
+            );
           }
           if (kf.outHandle?.enabled) {
-            store.setKeyframeHandle(layer.id, propertyPath, newKeyframe.id, 'out', kf.outHandle);
+            store.setKeyframeHandle(
+              layer.id,
+              propertyPath,
+              newKeyframe.id,
+              "out",
+              kf.outHandle,
+            );
           }
         }
       }
@@ -470,7 +535,11 @@ export function useCurveEditorInteraction(options: CurveEditorInteractionOptions
     selectedKeyframes.value = [];
     for (const prop of visibleProperties.value) {
       for (let i = 0; i < prop.keyframes.length; i++) {
-        selectedKeyframes.value.push({ propId: prop.id, index: i, keyframe: prop.keyframes[i] });
+        selectedKeyframes.value.push({
+          propId: prop.id,
+          index: i,
+          keyframe: prop.keyframes[i],
+        });
       }
     }
   }
@@ -481,7 +550,11 @@ export function useCurveEditorInteraction(options: CurveEditorInteractionOptions
     for (const prop of visibleProperties.value) {
       for (let i = 0; i < prop.keyframes.length; i++) {
         if (!isKeyframeSelected(prop.id, i)) {
-          newSelection.push({ propId: prop.id, index: i, keyframe: prop.keyframes[i] });
+          newSelection.push({
+            propId: prop.id,
+            index: i,
+            keyframe: prop.keyframes[i],
+          });
         }
       }
     }
@@ -491,16 +564,16 @@ export function useCurveEditorInteraction(options: CurveEditorInteractionOptions
 
   // Keyboard handler
   function handleKeyDown(event: KeyboardEvent): void {
-    if (event.key === 'Delete' || event.key === 'Backspace') {
+    if (event.key === "Delete" || event.key === "Backspace") {
       deleteSelectedKeyframes();
-    } else if (event.key === 'a' && (event.ctrlKey || event.metaKey)) {
+    } else if (event.key === "a" && (event.ctrlKey || event.metaKey)) {
       event.preventDefault();
       selectAllKeyframes();
-    } else if (event.key === 'c' && (event.ctrlKey || event.metaKey)) {
+    } else if (event.key === "c" && (event.ctrlKey || event.metaKey)) {
       copyKeyframes();
-    } else if (event.key === 'v' && (event.ctrlKey || event.metaKey)) {
+    } else if (event.key === "v" && (event.ctrlKey || event.metaKey)) {
       pasteKeyframes();
-    } else if (event.key === 'i' && (event.ctrlKey || event.metaKey)) {
+    } else if (event.key === "i" && (event.ctrlKey || event.metaKey)) {
       event.preventDefault();
       invertSelection();
     }

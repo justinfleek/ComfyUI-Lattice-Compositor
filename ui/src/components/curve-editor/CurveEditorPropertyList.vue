@@ -67,7 +67,7 @@
 </template>
 
 <script setup lang="ts">
-import type { AnimatableProperty } from '@/types/project';
+import type { AnimatableProperty } from "@/types/project";
 
 defineProps<{
   animatableProperties: AnimatableProperty<any>[];
@@ -80,10 +80,10 @@ defineProps<{
 }>();
 
 defineEmits<{
-  'toggleAllProperties': [];
-  'toggleProperty': [propId: string];
-  'togglePropertyVisibility': [propId: string];
-  'toggleDimension': [propId: string, dim: string];
+  toggleAllProperties: [];
+  toggleProperty: [propId: string];
+  togglePropertyVisibility: [propId: string];
+  toggleDimension: [propId: string, dim: string];
 }>();
 </script>
 

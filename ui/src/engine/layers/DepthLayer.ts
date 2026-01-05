@@ -11,11 +11,11 @@
  * DETERMINISM: Uses frame-based evaluation only
  */
 
-import * as THREE from 'three';
-import type { Layer, DepthLayerData } from '@/types/project';
-import { createAnimatableProperty } from '@/types/project';
-import { BaseLayer } from './BaseLayer';
-import { interpolateProperty } from '@/services/interpolation';
+import * as THREE from "three";
+import { interpolateProperty } from "@/services/interpolation";
+import type { DepthLayerData, Layer } from "@/types/project";
+import { createAnimatableProperty } from "@/types/project";
+import { BaseLayer } from "./BaseLayer";
 
 // Color map LUTs (256 colors each)
 const COLORMAPS: Record<string, THREE.Color[]> = {
@@ -24,7 +24,7 @@ const COLORMAPS: Record<string, THREE.Color[]> = {
   plasma: generatePlasmaColormap(),
   inferno: generateInfernoColormap(),
   magma: generateMagmaColormap(),
-  grayscale: generateGrayscaleColormap()
+  grayscale: generateGrayscaleColormap(),
 };
 
 export class DepthLayer extends BaseLayer {
@@ -47,18 +47,20 @@ export class DepthLayer extends BaseLayer {
     const data = layerData.data as Partial<DepthLayerData> | undefined;
     return {
       assetId: data?.assetId ?? null,
-      visualizationMode: data?.visualizationMode ?? 'colormap',
-      colorMap: data?.colorMap ?? 'turbo',
+      visualizationMode: data?.visualizationMode ?? "colormap",
+      colorMap: data?.colorMap ?? "turbo",
       invert: data?.invert ?? false,
       minDepth: data?.minDepth ?? 0,
       maxDepth: data?.maxDepth ?? 1,
       autoNormalize: data?.autoNormalize ?? true,
       contourLevels: data?.contourLevels ?? 10,
-      contourColor: data?.contourColor ?? '#ffffff',
+      contourColor: data?.contourColor ?? "#ffffff",
       contourWidth: data?.contourWidth ?? 1.0,
-      meshDisplacement: data?.meshDisplacement ?? createAnimatableProperty('Mesh Displacement', 50, 'number'),
+      meshDisplacement:
+        data?.meshDisplacement ??
+        createAnimatableProperty("Mesh Displacement", 50, "number"),
       meshResolution: data?.meshResolution ?? 64,
-      wireframe: data?.wireframe ?? false
+      wireframe: data?.wireframe ?? false,
     };
   }
 
@@ -75,9 +77,11 @@ export class DepthLayer extends BaseLayer {
         maxDepth: { value: this.depthData.maxDepth },
         opacity: { value: 1.0 },
         contourLevels: { value: this.depthData.contourLevels || 10 },
-        contourColor: { value: new THREE.Color(this.depthData.contourColor || '#ffffff') },
+        contourColor: {
+          value: new THREE.Color(this.depthData.contourColor || "#ffffff"),
+        },
         contourWidth: { value: this.depthData.contourWidth || 1.0 },
-        visualizationMode: { value: this.getVisualizationModeIndex() }
+        visualizationMode: { value: this.getVisualizationModeIndex() },
       },
       vertexShader: `
         varying vec2 vUv;
@@ -135,7 +139,7 @@ export class DepthLayer extends BaseLayer {
           gl_FragColor = vec4(color, opacity);
         }
       `,
-      transparent: true
+      transparent: true,
     });
 
     this.mesh = new THREE.Mesh(geometry, this.material);
@@ -148,11 +152,16 @@ export class DepthLayer extends BaseLayer {
 
   private getVisualizationModeIndex(): number {
     switch (this.depthData.visualizationMode) {
-      case 'grayscale': return 0;
-      case 'colormap': return 1;
-      case 'contour': return 2;
-      case '3d-mesh': return 3;
-      default: return 0;
+      case "grayscale":
+        return 0;
+      case "colormap":
+        return 1;
+      case "contour":
+        return 2;
+      case "3d-mesh":
+        return 3;
+      default:
+        return 0;
     }
   }
 
@@ -172,7 +181,12 @@ export class DepthLayer extends BaseLayer {
       this.colormapTexture.dispose();
     }
 
-    this.colormapTexture = new THREE.DataTexture(data, 256, 1, THREE.RGBAFormat);
+    this.colormapTexture = new THREE.DataTexture(
+      data,
+      256,
+      1,
+      THREE.RGBAFormat,
+    );
     this.colormapTexture.needsUpdate = true;
 
     if (this.material) {
@@ -199,18 +213,31 @@ export class DepthLayer extends BaseLayer {
     const layerId = this.id;
 
     // Evaluate animated properties
-    if (this.depthData.meshDisplacement && this.depthData.visualizationMode === '3d-mesh') {
-      const displacement = interpolateProperty(this.depthData.meshDisplacement, frame, fps, layerId);
+    if (
+      this.depthData.meshDisplacement &&
+      this.depthData.visualizationMode === "3d-mesh"
+    ) {
+      const _displacement = interpolateProperty(
+        this.depthData.meshDisplacement,
+        frame,
+        fps,
+        layerId,
+      );
       // Would be used for mesh displacement if implementing 3D mesh mode
     }
 
     // Update uniforms (validate depth values to prevent NaN propagation to shader)
     this.material.uniforms.invert.value = this.depthData.invert ? 1.0 : 0.0;
-    const minDepth = Number.isFinite(this.depthData.minDepth) ? this.depthData.minDepth : 0;
-    const maxDepth = Number.isFinite(this.depthData.maxDepth) ? this.depthData.maxDepth : 1;
+    const minDepth = Number.isFinite(this.depthData.minDepth)
+      ? this.depthData.minDepth
+      : 0;
+    const maxDepth = Number.isFinite(this.depthData.maxDepth)
+      ? this.depthData.maxDepth
+      : 1;
     this.material.uniforms.minDepth.value = minDepth;
     this.material.uniforms.maxDepth.value = maxDepth;
-    this.material.uniforms.visualizationMode.value = this.getVisualizationModeIndex();
+    this.material.uniforms.visualizationMode.value =
+      this.getVisualizationModeIndex();
   }
 
   protected onUpdate(properties: Partial<Layer>): void {
@@ -225,16 +252,23 @@ export class DepthLayer extends BaseLayer {
 
       if (this.material) {
         if (data.contourColor) {
-          this.material.uniforms.contourColor.value = new THREE.Color(data.contourColor);
+          this.material.uniforms.contourColor.value = new THREE.Color(
+            data.contourColor,
+          );
         }
         if (data.contourLevels !== undefined) {
           // Validate contourLevels (NaN/0/negative would corrupt contour rendering)
-          const validLevels = (Number.isFinite(data.contourLevels) && data.contourLevels > 0) ? data.contourLevels : 10;
+          const validLevels =
+            Number.isFinite(data.contourLevels) && data.contourLevels > 0
+              ? data.contourLevels
+              : 10;
           this.material.uniforms.contourLevels.value = validLevels;
         }
         if (data.contourWidth !== undefined) {
           // Validate contourWidth (NaN would corrupt contour line rendering)
-          const validWidth = Number.isFinite(data.contourWidth) ? Math.max(0, data.contourWidth) : 1.0;
+          const validWidth = Number.isFinite(data.contourWidth)
+            ? Math.max(0, data.contourWidth)
+            : 1.0;
           this.material.uniforms.contourWidth.value = validWidth;
         }
       }
@@ -278,11 +312,13 @@ function generateViridisColormap(): THREE.Color[] {
     const r = 0.267004 + t * (0.993248 - 0.267004);
     const g = 0.004874 + t * (0.906157 - 0.004874);
     const b = 0.329415 + t * (0.143936 - 0.329415);
-    colors.push(new THREE.Color(
-      Math.max(0, Math.min(1, r)),
-      Math.max(0, Math.min(1, g)),
-      Math.max(0, Math.min(1, b))
-    ));
+    colors.push(
+      new THREE.Color(
+        Math.max(0, Math.min(1, r)),
+        Math.max(0, Math.min(1, g)),
+        Math.max(0, Math.min(1, b)),
+      ),
+    );
   }
   return colors;
 }
@@ -294,11 +330,13 @@ function generatePlasmaColormap(): THREE.Color[] {
     const r = 0.050383 + t * (0.940015 - 0.050383);
     const g = 0.029803 + t * (0.975158 - 0.029803);
     const b = 0.527975 + t * (0.131326 - 0.527975);
-    colors.push(new THREE.Color(
-      Math.max(0, Math.min(1, r)),
-      Math.max(0, Math.min(1, g)),
-      Math.max(0, Math.min(1, b))
-    ));
+    colors.push(
+      new THREE.Color(
+        Math.max(0, Math.min(1, r)),
+        Math.max(0, Math.min(1, g)),
+        Math.max(0, Math.min(1, b)),
+      ),
+    );
   }
   return colors;
 }

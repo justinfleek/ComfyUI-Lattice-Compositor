@@ -7,7 +7,12 @@
  * Extracted from GPUParticleSystem.ts for modularity.
  */
 
-import type { AudioFeature, AudioBinding, EmitterConfig, ForceFieldConfig } from './types';
+import type {
+  AudioBinding,
+  AudioFeature,
+  EmitterConfig,
+  ForceFieldConfig,
+} from "./types";
 
 // ============================================================================
 // PARTICLE AUDIO REACTIVE SYSTEM CLASS
@@ -17,8 +22,6 @@ export class ParticleAudioReactive {
   private audioFeatures: Map<AudioFeature, number> = new Map();
   private smoothedAudioValues: Map<number, number> = new Map();
   private audioBindings: AudioBinding[] = [];
-
-  constructor() {}
 
   /**
    * Set audio bindings configuration
@@ -64,11 +67,11 @@ export class ParticleAudioReactive {
    * Note: 'onsets' is the actual audio feature for transient/beat detection
    */
   triggerBeat(): void {
-    this.audioFeatures.set('onsets', 1);
+    this.audioFeatures.set("onsets", 1);
 
     // Reset onset flag after frame
     requestAnimationFrame(() => {
-      this.audioFeatures.set('onsets', 0);
+      this.audioFeatures.set("onsets", 0);
     });
   }
 
@@ -76,7 +79,7 @@ export class ParticleAudioReactive {
    * Check if beat/onset is currently triggered
    */
   isBeatTriggered(): boolean {
-    return this.audioFeatures.get('onsets') === 1;
+    return this.audioFeatures.get("onsets") === 1;
   }
 
   // ============================================================================
@@ -87,8 +90,11 @@ export class ParticleAudioReactive {
    * Apply audio modulation to emitters and force fields
    */
   applyModulation(
-    emitters: Map<string, EmitterConfig & { accumulator: number; velocity: unknown }>,
-    forceFields: Map<string, ForceFieldConfig>
+    emitters: Map<
+      string,
+      EmitterConfig & { accumulator: number; velocity: unknown }
+    >,
+    forceFields: Map<string, ForceFieldConfig>,
   ): void {
     for (let i = 0; i < this.audioBindings.length; i++) {
       const binding = this.audioBindings[i];
@@ -98,49 +104,60 @@ export class ParticleAudioReactive {
       // smoothing = 0 means no smoothing (instant response)
       // smoothing = 1 means maximum smoothing (very slow response)
       const previousSmoothed = this.smoothedAudioValues.get(i) ?? featureValue;
-      const alpha = 1 - (binding.smoothing || 0);  // Convert smoothing to alpha
+      const alpha = 1 - (binding.smoothing || 0); // Convert smoothing to alpha
       const smoothed = alpha * featureValue + (1 - alpha) * previousSmoothed;
       this.smoothedAudioValues.set(i, smoothed);
 
       // Map to output range
-      const t = Math.max(0, Math.min(1, (smoothed - binding.min) / (binding.max - binding.min)));
-      let output = binding.outputMin + t * (binding.outputMax - binding.outputMin);
+      const t = Math.max(
+        0,
+        Math.min(1, (smoothed - binding.min) / (binding.max - binding.min)),
+      );
+      let output =
+        binding.outputMin + t * (binding.outputMax - binding.outputMin);
 
       // Apply curve
-      if (binding.curve === 'exponential') {
-        output = binding.outputMin + Math.pow(t, 2) * (binding.outputMax - binding.outputMin);
-      } else if (binding.curve === 'logarithmic') {
-        output = binding.outputMin + Math.sqrt(t) * (binding.outputMax - binding.outputMin);
-      } else if (binding.curve === 'step') {
+      if (binding.curve === "exponential") {
+        output =
+          binding.outputMin + t ** 2 * (binding.outputMax - binding.outputMin);
+      } else if (binding.curve === "logarithmic") {
+        output =
+          binding.outputMin +
+          Math.sqrt(t) * (binding.outputMax - binding.outputMin);
+      } else if (binding.curve === "step") {
         // Step curve: snap to discrete steps
         const steps = Math.max(2, binding.stepCount ?? 5);
         const steppedT = Math.floor(t * steps) / steps;
-        output = binding.outputMin + steppedT * (binding.outputMax - binding.outputMin);
+        output =
+          binding.outputMin +
+          steppedT * (binding.outputMax - binding.outputMin);
       }
 
       // Check trigger mode
-      const triggerMode = binding.triggerMode ?? 'continuous';
-      if (triggerMode === 'onThreshold') {
+      const triggerMode = binding.triggerMode ?? "continuous";
+      if (triggerMode === "onThreshold") {
         // Only apply when smoothed value exceeds threshold
         const threshold = binding.threshold ?? 0.5;
         if (t < threshold) continue;
-      } else if (triggerMode === 'onBeat') {
+      } else if (triggerMode === "onBeat") {
         // Only apply when beat/onset is detected
-        const onsetValue = this.audioFeatures.get('onsets') ?? 0;
+        const onsetValue = this.audioFeatures.get("onsets") ?? 0;
         if (onsetValue < 0.5) continue;
       }
       // triggerMode === 'continuous' - always apply (default behavior)
 
       // Apply to target
-      if (binding.target === 'emitter') {
+      if (binding.target === "emitter") {
         const emitter = emitters.get(binding.targetId);
         if (emitter) {
-          (emitter as unknown as Record<string, unknown>)[binding.parameter] = output;
+          (emitter as unknown as Record<string, unknown>)[binding.parameter] =
+            output;
         }
-      } else if (binding.target === 'forceField') {
+      } else if (binding.target === "forceField") {
         const field = forceFields.get(binding.targetId);
         if (field) {
-          (field as unknown as Record<string, unknown>)[binding.parameter] = output;
+          (field as unknown as Record<string, unknown>)[binding.parameter] =
+            output;
         }
       }
     }
@@ -149,9 +166,17 @@ export class ParticleAudioReactive {
   /**
    * Get audio modulation for a specific parameter
    */
-  getModulation(target: string, targetId: string, parameter: string): number | undefined {
+  getModulation(
+    target: string,
+    targetId: string,
+    parameter: string,
+  ): number | undefined {
     for (const binding of this.audioBindings) {
-      if (binding.target === target && binding.targetId === targetId && binding.parameter === parameter) {
+      if (
+        binding.target === target &&
+        binding.targetId === targetId &&
+        binding.parameter === parameter
+      ) {
         const featureValue = this.audioFeatures.get(binding.feature) ?? 0;
         const t = (featureValue - binding.min) / (binding.max - binding.min);
         return binding.outputMin + t * (binding.outputMax - binding.outputMin);

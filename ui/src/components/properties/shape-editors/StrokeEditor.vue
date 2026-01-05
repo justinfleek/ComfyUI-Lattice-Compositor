@@ -162,40 +162,38 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import type { StrokeShape, LineCap, LineJoin } from '@/types/shapes';
-import { ScrubableNumber } from '@/components/controls';
-import KeyframeToggle from '../KeyframeToggle.vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import { createKeyframe } from '@/types/animation';
+import { computed, ref } from "vue";
+import { useCompositorStore } from "@/stores/compositorStore";
+import { createKeyframe } from "@/types/animation";
+import type { StrokeShape } from "@/types/shapes";
 
 const props = defineProps<{ shape: StrokeShape; layerId: string }>();
-const emit = defineEmits(['update']);
+const emit = defineEmits(["update"]);
 const store = useCompositorStore();
 
 const taperExpanded = ref(false);
 
-function toggleTaper() {
+function _toggleTaper() {
   taperExpanded.value = !taperExpanded.value;
 }
 
-const colorHex = computed(() => {
+const _colorHex = computed(() => {
   const c = props.shape.color.value;
-  const r = Math.round(c.r).toString(16).padStart(2, '0');
-  const g = Math.round(c.g).toString(16).padStart(2, '0');
-  const b = Math.round(c.b).toString(16).padStart(2, '0');
+  const r = Math.round(c.r).toString(16).padStart(2, "0");
+  const g = Math.round(c.g).toString(16).padStart(2, "0");
+  const b = Math.round(c.b).toString(16).padStart(2, "0");
   return `#${r}${g}${b}`;
 });
 
-const dashString = computed(() => {
-  return props.shape.dashPattern.value.join(', ');
+const _dashString = computed(() => {
+  return props.shape.dashPattern.value.join(", ");
 });
 
-const hasDashes = computed(() => {
+const _hasDashes = computed(() => {
   return props.shape.dashPattern.value.length > 0;
 });
 
-function updateColor(e: Event) {
+function _updateColor(e: Event) {
   const hex = (e.target as HTMLInputElement).value;
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
@@ -204,50 +202,72 @@ function updateColor(e: Event) {
   const updated = { ...props.shape };
   updated.color = {
     ...updated.color,
-    value: { r, g, b, a: updated.color.value.a }
+    value: { r, g, b, a: updated.color.value.a },
   };
-  emit('update', updated);
+  emit("update", updated);
 }
 
-function updateNumber(prop: 'opacity' | 'width' | 'dashOffset', value: number) {
+function _updateNumber(
+  prop: "opacity" | "width" | "dashOffset",
+  value: number,
+) {
   const updated = { ...props.shape };
   updated[prop] = { ...updated[prop], value };
-  emit('update', updated);
+  emit("update", updated);
 }
 
-function updateMeta(key: string, value: any) {
+function _updateMeta(key: string, value: any) {
   const updated = { ...props.shape, [key]: value };
-  emit('update', updated);
+  emit("update", updated);
 }
 
-function updateTaper(prop: string, value: number) {
+function _updateTaper(prop: string, value: number) {
   const updated = { ...props.shape };
   (updated as any)[prop] = { ...(updated as any)[prop], value };
-  emit('update', updated);
+  emit("update", updated);
 }
 
-function updateDashes(e: Event) {
+function _updateDashes(e: Event) {
   const input = (e.target as HTMLInputElement).value;
-  const values = input.trim() ? input.split(',').map(v => parseFloat(v.trim())).filter(v => !isNaN(v) && v >= 0) : [];
+  const values = input.trim()
+    ? input
+        .split(",")
+        .map((v) => parseFloat(v.trim()))
+        .filter((v) => !Number.isNaN(v) && v >= 0)
+    : [];
 
   const updated = { ...props.shape };
   updated.dashPattern = { ...updated.dashPattern, value: values };
-  emit('update', updated);
+  emit("update", updated);
 }
 
-function toggleKeyframe(prop: 'color' | 'opacity' | 'width' | 'dashOffset' | 'taperStartLength' | 'taperStartWidth' | 'taperStartEase' | 'taperEndLength' | 'taperEndWidth' | 'taperEndEase') {
+function _toggleKeyframe(
+  prop:
+    | "color"
+    | "opacity"
+    | "width"
+    | "dashOffset"
+    | "taperStartLength"
+    | "taperStartWidth"
+    | "taperStartEase"
+    | "taperEndLength"
+    | "taperEndWidth"
+    | "taperEndEase",
+) {
   const updated = { ...props.shape };
   const animProp = (updated as any)[prop];
   const frame = store.currentFrame;
 
   const hasKf = animProp.keyframes.some((k: any) => k.frame === frame);
   if (hasKf) {
-    animProp.keyframes = animProp.keyframes.filter((k: any) => k.frame !== frame);
+    animProp.keyframes = animProp.keyframes.filter(
+      (k: any) => k.frame !== frame,
+    );
   } else {
-    animProp.keyframes.push(createKeyframe(frame, animProp.value, 'linear'));
+    animProp.keyframes.push(createKeyframe(frame, animProp.value, "linear"));
   }
   animProp.animated = animProp.keyframes.length > 0;
-  emit('update', updated);
+  emit("update", updated);
 }
 </script>
 

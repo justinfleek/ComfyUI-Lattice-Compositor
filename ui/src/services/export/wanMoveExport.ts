@@ -11,33 +11,32 @@
  * @see https://github.com/ali-vilab/Wan-Move
  */
 
-import type { ControlPoint } from '@/types/spline';
+import type { ControlPoint } from "@/types/spline";
 
 // Import flow generators and utilities from extracted module
 import {
-  SeededRandom,
-  simplexNoise2D,
-  generateSpiralFlow,
-  generateWaveFlow,
-  generateExplosionFlow,
-  generateVortexFlow,
   generateDataRiverFlow,
+  generateExplosionFlow,
   generateMorphFlow,
+  generateSpiralFlow,
   generateSwarmFlow,
-} from './wanMoveFlowGenerators';
+  generateVortexFlow,
+  generateWaveFlow,
+  SeededRandom,
+} from "./wanMoveFlowGenerators";
 
 // Re-export for backwards compatibility
 export {
+  generateDataRiverFlow,
+  generateExplosionFlow,
+  generateMorphFlow,
+  generateSpiralFlow,
+  generateSwarmFlow,
+  generateVortexFlow,
+  generateWaveFlow,
   SeededRandom,
   simplexNoise2D,
-  generateSpiralFlow,
-  generateWaveFlow,
-  generateExplosionFlow,
-  generateVortexFlow,
-  generateDataRiverFlow,
-  generateMorphFlow,
-  generateSwarmFlow,
-} from './wanMoveFlowGenerators';
+} from "./wanMoveFlowGenerators";
 
 // Type alias for backwards compatibility
 type SplinePoint = ControlPoint;
@@ -63,7 +62,14 @@ export interface WanMoveTrajectory {
 
 export interface GenerativeFlowConfig {
   /** Flow pattern type */
-  pattern: 'spiral' | 'wave' | 'explosion' | 'vortex' | 'data-river' | 'morph' | 'swarm';
+  pattern:
+    | "spiral"
+    | "wave"
+    | "explosion"
+    | "vortex"
+    | "data-river"
+    | "morph"
+    | "swarm";
   /** Number of trajectory points */
   numPoints: number;
   /** Number of frames */
@@ -103,9 +109,9 @@ export interface GenerativeFlowParams {
   riverTurbulence?: number;
 
   // Morph
-  morphSource?: 'circle' | 'grid' | 'text' | 'custom';
-  morphTarget?: 'circle' | 'grid' | 'text' | 'custom';
-  morphEasing?: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out';
+  morphSource?: "circle" | "grid" | "text" | "custom";
+  morphTarget?: "circle" | "grid" | "text" | "custom";
+  morphEasing?: "linear" | "ease-in" | "ease-out" | "ease-in-out";
 
   // Swarm
   swarmCohesion?: number;
@@ -123,9 +129,9 @@ export interface DataDrivenFlowConfig {
   /** Data source - array of values per point */
   data: number[];
   /** How data maps to motion */
-  mapping: 'speed' | 'direction' | 'amplitude' | 'phase' | 'size';
+  mapping: "speed" | "direction" | "amplitude" | "phase" | "size";
   /** Base flow pattern */
-  basePattern: GenerativeFlowConfig['pattern'];
+  basePattern: GenerativeFlowConfig["pattern"];
   /** Number of frames */
   numFrames: number;
   /** Canvas dimensions */
@@ -142,8 +148,11 @@ export interface DataDrivenFlowConfig {
 /**
  * Generate flow from imported data values
  */
-export function generateDataDrivenFlow(config: DataDrivenFlowConfig): WanMoveTrajectory {
-  const { data, mapping, basePattern, numFrames, width, height, splinePath } = config;
+export function generateDataDrivenFlow(
+  config: DataDrivenFlowConfig,
+): WanMoveTrajectory {
+  const { data, mapping, basePattern, numFrames, width, height, splinePath } =
+    config;
   const numPoints = data.length;
 
   // Generate base pattern
@@ -153,26 +162,41 @@ export function generateDataDrivenFlow(config: DataDrivenFlowConfig): WanMoveTra
     numFrames,
     width,
     height,
-    params: { seed: 42 }
+    params: { seed: 42 },
   };
 
   let baseFlow: WanMoveTrajectory;
   switch (basePattern) {
-    case 'spiral': baseFlow = generateSpiralFlow(baseConfig); break;
-    case 'wave': baseFlow = generateWaveFlow(baseConfig); break;
-    case 'explosion': baseFlow = generateExplosionFlow(baseConfig); break;
-    case 'vortex': baseFlow = generateVortexFlow(baseConfig); break;
-    case 'data-river': baseFlow = generateDataRiverFlow(baseConfig); break;
-    case 'morph': baseFlow = generateMorphFlow(baseConfig); break;
-    case 'swarm': baseFlow = generateSwarmFlow(baseConfig); break;
-    default: baseFlow = generateSpiralFlow(baseConfig);
+    case "spiral":
+      baseFlow = generateSpiralFlow(baseConfig);
+      break;
+    case "wave":
+      baseFlow = generateWaveFlow(baseConfig);
+      break;
+    case "explosion":
+      baseFlow = generateExplosionFlow(baseConfig);
+      break;
+    case "vortex":
+      baseFlow = generateVortexFlow(baseConfig);
+      break;
+    case "data-river":
+      baseFlow = generateDataRiverFlow(baseConfig);
+      break;
+    case "morph":
+      baseFlow = generateMorphFlow(baseConfig);
+      break;
+    case "swarm":
+      baseFlow = generateSwarmFlow(baseConfig);
+      break;
+    default:
+      baseFlow = generateSpiralFlow(baseConfig);
   }
 
   // Normalize data to 0-1
   const minVal = Math.min(...data);
   const maxVal = Math.max(...data);
   const range = maxVal - minVal || 1;
-  const normalizedData = data.map(v => (v - minVal) / range);
+  const normalizedData = data.map((v) => (v - minVal) / range);
 
   // Modify trajectories based on data mapping
   const modifiedTracks = baseFlow.tracks.map((track, i) => {
@@ -182,14 +206,17 @@ export function generateDataDrivenFlow(config: DataDrivenFlowConfig): WanMoveTra
       const [x, y] = point;
 
       switch (mapping) {
-        case 'speed': {
+        case "speed": {
           // Data controls speed: higher values = faster progression
           const speedMult = 0.5 + dataVal * 1.5;
-          const adjustedF = Math.min(track.length - 1, Math.floor(f * speedMult));
+          const adjustedF = Math.min(
+            track.length - 1,
+            Math.floor(f * speedMult),
+          );
           return track[adjustedF];
         }
 
-        case 'amplitude': {
+        case "amplitude": {
           // Data controls distance from center
           const cx = width / 2;
           const cy = height / 2;
@@ -199,7 +226,7 @@ export function generateDataDrivenFlow(config: DataDrivenFlowConfig): WanMoveTra
           return [cx + dx * ampMult, cy + dy * ampMult];
         }
 
-        case 'phase': {
+        case "phase": {
           // Data controls phase offset (circular motion)
           const cx = width / 2;
           const cy = height / 2;
@@ -219,7 +246,7 @@ export function generateDataDrivenFlow(config: DataDrivenFlowConfig): WanMoveTra
   return {
     tracks: modifiedTracks,
     visibility: baseFlow.visibility,
-    metadata: baseFlow.metadata
+    metadata: baseFlow.metadata,
   };
 }
 
@@ -237,13 +264,13 @@ export function generateSplineFlow(
     stagger?: number;
     looping?: boolean;
     seed?: number;
-  } = {}
+  } = {},
 ): WanMoveTrajectory {
   const { spread = 20, stagger = 0.3, looping = false, seed = 42 } = options;
   const rng = new SeededRandom(seed);
 
   if (splinePoints.length < 2) {
-    throw new Error('Spline must have at least 2 points');
+    throw new Error("Spline must have at least 2 points");
   }
 
   // Sample spline at many points
@@ -269,7 +296,7 @@ export function generateSplineFlow(
     const lateralOffset = rng.gaussian(0, spread);
 
     for (let f = 0; f < numFrames; f++) {
-      let t = (f / numFrames + startOffset);
+      let t = f / numFrames + startOffset;
 
       if (looping) {
         t = t % 1;
@@ -285,12 +312,13 @@ export function generateSplineFlow(
       const prevIdx = Math.max(0, sampleIdx - 1);
       const tangent = {
         x: splineSamples[nextIdx].x - splineSamples[prevIdx].x,
-        y: splineSamples[nextIdx].y - splineSamples[prevIdx].y
+        y: splineSamples[nextIdx].y - splineSamples[prevIdx].y,
       };
-      const tangentLen = Math.sqrt(tangent.x * tangent.x + tangent.y * tangent.y) || 1;
+      const tangentLen =
+        Math.sqrt(tangent.x * tangent.x + tangent.y * tangent.y) || 1;
       const perpendicular = {
         x: -tangent.y / tangentLen,
-        y: tangent.x / tangentLen
+        y: tangent.x / tangentLen,
       };
 
       const x = point.x + perpendicular.x * lateralOffset;
@@ -298,7 +326,7 @@ export function generateSplineFlow(
 
       track.push([
         Math.max(0, Math.min(width, x)),
-        Math.max(0, Math.min(height, y))
+        Math.max(0, Math.min(height, y)),
       ]);
 
       vis.push(t <= 1);
@@ -311,12 +339,15 @@ export function generateSplineFlow(
   return {
     tracks,
     visibility,
-    metadata: { numPoints, numFrames, width, height, fps: 16 }
+    metadata: { numPoints, numFrames, width, height, fps: 16 },
   };
 }
 
 // Helper: sample spline at parameter t
-function sampleSplineAt(points: SplinePoint[], t: number): { x: number; y: number } {
+function sampleSplineAt(
+  points: SplinePoint[],
+  t: number,
+): { x: number; y: number } {
   const numSegments = points.length - 1;
   const segmentT = t * numSegments;
   const segmentIdx = Math.min(numSegments - 1, Math.floor(segmentT));
@@ -341,8 +372,10 @@ function sampleSplineAt(points: SplinePoint[], t: number): { x: number; y: numbe
   const mt3 = mt2 * mt;
 
   return {
-    x: mt3 * cp0.x + 3 * mt2 * localT * cp1.x + 3 * mt * t2 * cp2.x + t3 * cp3.x,
-    y: mt3 * cp0.y + 3 * mt2 * localT * cp1.y + 3 * mt * t2 * cp2.y + t3 * cp3.y
+    x:
+      mt3 * cp0.x + 3 * mt2 * localT * cp1.x + 3 * mt * t2 * cp2.x + t3 * cp3.x,
+    y:
+      mt3 * cp0.y + 3 * mt2 * localT * cp1.y + 3 * mt * t2 * cp2.y + t3 * cp3.y,
   };
 }
 
@@ -354,11 +387,15 @@ function sampleSplineAt(points: SplinePoint[], t: number): { x: number; y: numbe
  * Export trajectory data as JSON (for JavaScript/ComfyUI consumption)
  */
 export function exportAsJSON(trajectory: WanMoveTrajectory): string {
-  return JSON.stringify({
-    tracks: trajectory.tracks,
-    visibility: trajectory.visibility,
-    metadata: trajectory.metadata
-  }, null, 2);
+  return JSON.stringify(
+    {
+      tracks: trajectory.tracks,
+      visibility: trajectory.visibility,
+      metadata: trajectory.metadata,
+    },
+    null,
+    2,
+  );
 }
 
 /**
@@ -396,8 +433,8 @@ export function exportAsNPYData(trajectory: WanMoveTrajectory): {
     visibility: visFlat,
     shape: {
       tracks: [numPoints, numFrames, 2],
-      visibility: [numPoints, numFrames]
-    }
+      visibility: [numPoints, numFrames],
+    },
   };
 }
 
@@ -406,7 +443,7 @@ export function exportAsNPYData(trajectory: WanMoveTrajectory): {
  */
 export async function exportWanMovePackage(
   trajectory: WanMoveTrajectory,
-  sourceImage?: HTMLImageElement | ImageBitmap
+  sourceImage?: HTMLImageElement | ImageBitmap,
 ): Promise<{
   trajectoryJSON: string;
   trajectoryNPY: ReturnType<typeof exportAsNPYData>;
@@ -421,15 +458,15 @@ export async function exportWanMovePackage(
     // Render trajectory visualization on source image
     const canvas = new OffscreenCanvas(
       trajectory.metadata.width,
-      trajectory.metadata.height
+      trajectory.metadata.height,
     );
-    const ctx = canvas.getContext('2d')!;
+    const ctx = canvas.getContext("2d")!;
 
     // Draw source image
     ctx.drawImage(sourceImage, 0, 0, canvas.width, canvas.height);
 
     // Draw trajectory lines (for visualization/debugging)
-    ctx.strokeStyle = 'rgba(255, 100, 100, 0.5)';
+    ctx.strokeStyle = "rgba(255, 100, 100, 0.5)";
     ctx.lineWidth = 1;
 
     for (const track of trajectory.tracks) {
@@ -442,13 +479,13 @@ export async function exportWanMovePackage(
       ctx.stroke();
     }
 
-    conditioningImage = await canvas.convertToBlob({ type: 'image/png' });
+    conditioningImage = await canvas.convertToBlob({ type: "image/png" });
   }
 
   return {
     trajectoryJSON,
     trajectoryNPY,
-    conditioningImage
+    conditioningImage,
   };
 }
 
@@ -471,62 +508,65 @@ export interface ColorGradient {
 
 /** Built-in color gradients for data visualization */
 export const COLOR_GRADIENTS: Record<string, ColorGradient> = {
-  'viridis': {
+  viridis: {
     stops: [
       { position: 0, color: [68, 1, 84] },
       { position: 0.25, color: [59, 82, 139] },
       { position: 0.5, color: [33, 145, 140] },
       { position: 0.75, color: [94, 201, 98] },
-      { position: 1, color: [253, 231, 37] }
-    ]
+      { position: 1, color: [253, 231, 37] },
+    ],
   },
-  'plasma': {
+  plasma: {
     stops: [
       { position: 0, color: [13, 8, 135] },
       { position: 0.25, color: [126, 3, 168] },
       { position: 0.5, color: [204, 71, 120] },
       { position: 0.75, color: [248, 149, 64] },
-      { position: 1, color: [240, 249, 33] }
-    ]
+      { position: 1, color: [240, 249, 33] },
+    ],
   },
-  'inferno': {
+  inferno: {
     stops: [
       { position: 0, color: [0, 0, 4] },
       { position: 0.25, color: [87, 16, 110] },
       { position: 0.5, color: [188, 55, 84] },
       { position: 0.75, color: [249, 142, 9] },
-      { position: 1, color: [252, 255, 164] }
-    ]
+      { position: 1, color: [252, 255, 164] },
+    ],
   },
-  'cool-warm': {
+  "cool-warm": {
     stops: [
       { position: 0, color: [59, 76, 192] },
       { position: 0.5, color: [221, 221, 221] },
-      { position: 1, color: [180, 4, 38] }
-    ]
+      { position: 1, color: [180, 4, 38] },
+    ],
   },
-  'rainbow': {
+  rainbow: {
     stops: [
       { position: 0, color: [255, 0, 0] },
       { position: 0.2, color: [255, 165, 0] },
       { position: 0.4, color: [255, 255, 0] },
       { position: 0.6, color: [0, 255, 0] },
       { position: 0.8, color: [0, 0, 255] },
-      { position: 1, color: [128, 0, 128] }
-    ]
+      { position: 1, color: [128, 0, 128] },
+    ],
   },
-  'depth': {
+  depth: {
     stops: [
       { position: 0, color: [0, 0, 0] },
-      { position: 1, color: [255, 255, 255] }
-    ]
-  }
+      { position: 1, color: [255, 255, 255] },
+    ],
+  },
 };
 
 /**
  * Sample color from gradient at position t (0-1)
  */
-export function sampleGradient(gradient: ColorGradient, t: number): [number, number, number] {
+export function sampleGradient(
+  gradient: ColorGradient,
+  t: number,
+): [number, number, number] {
   t = Math.max(0, Math.min(1, t));
 
   const stops = gradient.stops;
@@ -551,7 +591,7 @@ export function sampleGradient(gradient: ColorGradient, t: number): [number, num
   return [
     Math.round(lower.color[0] + (upper.color[0] - lower.color[0]) * localT),
     Math.round(lower.color[1] + (upper.color[1] - lower.color[1]) * localT),
-    Math.round(lower.color[2] + (upper.color[2] - lower.color[2]) * localT)
+    Math.round(lower.color[2] + (upper.color[2] - lower.color[2]) * localT),
   ];
 }
 
@@ -561,7 +601,7 @@ export function sampleGradient(gradient: ColorGradient, t: number): [number, num
 export function addColorToTrajectory(
   trajectory: WanMoveTrajectory,
   dataValues: number[],
-  gradientName: keyof typeof COLOR_GRADIENTS = 'viridis'
+  gradientName: keyof typeof COLOR_GRADIENTS = "viridis",
 ): ColoredTrajectory {
   const gradient = COLOR_GRADIENTS[gradientName];
   const minVal = Math.min(...dataValues);
@@ -571,7 +611,8 @@ export function addColorToTrajectory(
   const colors: number[][][] = [];
 
   for (let i = 0; i < trajectory.tracks.length; i++) {
-    const normalizedValue = (dataValues[i % dataValues.length] - minVal) / range;
+    const normalizedValue =
+      (dataValues[i % dataValues.length] - minVal) / range;
     const color = sampleGradient(gradient, normalizedValue);
 
     // Same color for all frames of this trajectory
@@ -581,7 +622,7 @@ export function addColorToTrajectory(
   return {
     ...trajectory,
     colors,
-    dataValues
+    dataValues,
   };
 }
 
@@ -590,7 +631,7 @@ export function addColorToTrajectory(
  */
 export function addTimeColorToTrajectory(
   trajectory: WanMoveTrajectory,
-  gradientName: keyof typeof COLOR_GRADIENTS = 'plasma'
+  gradientName: keyof typeof COLOR_GRADIENTS = "plasma",
 ): ColoredTrajectory {
   const gradient = COLOR_GRADIENTS[gradientName];
   const colors: number[][][] = [];
@@ -613,7 +654,7 @@ export function addTimeColorToTrajectory(
 // ============================================================================
 
 export interface AttractorConfig {
-  type: 'lorenz' | 'rossler' | 'aizawa' | 'thomas' | 'halvorsen';
+  type: "lorenz" | "rossler" | "aizawa" | "thomas" | "halvorsen";
   numPoints: number;
   numFrames: number;
   width: number;
@@ -631,7 +672,9 @@ export interface AttractorConfig {
  * Generate Lorenz attractor trajectories
  * Creates the famous "butterfly" chaotic pattern
  */
-export function generateLorenzAttractor(config: AttractorConfig): WanMoveTrajectory {
+export function generateLorenzAttractor(
+  config: AttractorConfig,
+): WanMoveTrajectory {
   const { numPoints, numFrames, width, height, seed = 42 } = config;
   const dt = config.dt ?? 0.005;
   const scale = config.scale ?? 8;
@@ -684,7 +727,7 @@ export function generateLorenzAttractor(config: AttractorConfig): WanMoveTraject
 
       track.push([
         Math.max(0, Math.min(width, px)),
-        Math.max(0, Math.min(height, py))
+        Math.max(0, Math.min(height, py)),
       ]);
       vis.push(true);
     }
@@ -696,7 +739,7 @@ export function generateLorenzAttractor(config: AttractorConfig): WanMoveTraject
   return {
     tracks,
     visibility,
-    metadata: { numPoints, numFrames, width, height, fps: 16 }
+    metadata: { numPoints, numFrames, width, height, fps: 16 },
   };
 }
 
@@ -704,7 +747,9 @@ export function generateLorenzAttractor(config: AttractorConfig): WanMoveTraject
  * Generate Rössler attractor trajectories
  * Creates a simpler spiral-like chaotic pattern
  */
-export function generateRosslerAttractor(config: AttractorConfig): WanMoveTrajectory {
+export function generateRosslerAttractor(
+  config: AttractorConfig,
+): WanMoveTrajectory {
   const { numPoints, numFrames, width, height, seed = 42 } = config;
   const dt = config.dt ?? 0.02;
   const scale = config.scale ?? 15;
@@ -753,7 +798,7 @@ export function generateRosslerAttractor(config: AttractorConfig): WanMoveTrajec
 
       track.push([
         Math.max(0, Math.min(width, px)),
-        Math.max(0, Math.min(height, py))
+        Math.max(0, Math.min(height, py)),
       ]);
       vis.push(true);
     }
@@ -765,14 +810,16 @@ export function generateRosslerAttractor(config: AttractorConfig): WanMoveTrajec
   return {
     tracks,
     visibility,
-    metadata: { numPoints, numFrames, width, height, fps: 16 }
+    metadata: { numPoints, numFrames, width, height, fps: 16 },
   };
 }
 
 /**
  * Generate Aizawa attractor (beautiful 3D torus-like chaos)
  */
-export function generateAizawaAttractor(config: AttractorConfig): WanMoveTrajectory {
+export function generateAizawaAttractor(
+  config: AttractorConfig,
+): WanMoveTrajectory {
   const { numPoints, numFrames, width, height, seed = 42 } = config;
   const dt = config.dt ?? 0.01;
   const scale = config.scale ?? 80;
@@ -781,7 +828,12 @@ export function generateAizawaAttractor(config: AttractorConfig): WanMoveTraject
   const rng = new SeededRandom(seed);
 
   // Aizawa parameters
-  const a = 0.95, b = 0.7, c = 0.6, d = 3.5, e = 0.25, f = 0.1;
+  const a = 0.95,
+    b = 0.7,
+    c = 0.6,
+    d = 3.5,
+    e = 0.25,
+    f = 0.1;
 
   const tracks: number[][][] = [];
   const visibility: boolean[][] = [];
@@ -798,7 +850,12 @@ export function generateAizawaAttractor(config: AttractorConfig): WanMoveTraject
     for (let s = 0; s < 500; s++) {
       const dx = (z - b) * x - d * y;
       const dy = d * x + (z - b) * y;
-      const dz = c + a * z - (z * z * z) / 3 - (x * x + y * y) * (1 + e * z) + f * z * x * x * x;
+      const dz =
+        c +
+        a * z -
+        (z * z * z) / 3 -
+        (x * x + y * y) * (1 + e * z) +
+        f * z * x * x * x;
       x += dx * dt;
       y += dy * dt;
       z += dz * dt;
@@ -808,7 +865,12 @@ export function generateAizawaAttractor(config: AttractorConfig): WanMoveTraject
       for (let s = 0; s < 8; s++) {
         const dx = (z - b) * x - d * y;
         const dy = d * x + (z - b) * y;
-        const dz = c + a * z - (z * z * z) / 3 - (x * x + y * y) * (1 + e * z) + f * z * x * x * x;
+        const dz =
+          c +
+          a * z -
+          (z * z * z) / 3 -
+          (x * x + y * y) * (1 + e * z) +
+          f * z * x * x * x;
         x += dx * dt;
         y += dy * dt;
         z += dz * dt;
@@ -819,7 +881,7 @@ export function generateAizawaAttractor(config: AttractorConfig): WanMoveTraject
 
       track.push([
         Math.max(0, Math.min(width, px)),
-        Math.max(0, Math.min(height, py))
+        Math.max(0, Math.min(height, py)),
       ]);
       vis.push(true);
     }
@@ -831,7 +893,7 @@ export function generateAizawaAttractor(config: AttractorConfig): WanMoveTraject
   return {
     tracks,
     visibility,
-    metadata: { numPoints, numFrames, width, height, fps: 16 }
+    metadata: { numPoints, numFrames, width, height, fps: 16 },
   };
 }
 
@@ -849,21 +911,32 @@ export interface ShapeTargetConfig {
   /** Target shape */
   target: ShapeDefinition;
   /** Easing function */
-  easing?: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'elastic' | 'bounce';
+  easing?:
+    | "linear"
+    | "ease-in"
+    | "ease-out"
+    | "ease-in-out"
+    | "elastic"
+    | "bounce";
   /** Add organic noise during morph */
   morphNoise?: number;
   seed?: number;
 }
 
 export type ShapeDefinition =
-  | { type: 'circle'; radius?: number; center?: { x: number; y: number } }
-  | { type: 'grid'; columns?: number; rows?: number; padding?: number }
-  | { type: 'text'; text: string; fontSize?: number }
-  | { type: 'heart' }
-  | { type: 'star'; points?: number; innerRadius?: number; outerRadius?: number }
-  | { type: 'spiral'; turns?: number }
-  | { type: 'random' }
-  | { type: 'custom'; points: Array<{ x: number; y: number }> };
+  | { type: "circle"; radius?: number; center?: { x: number; y: number } }
+  | { type: "grid"; columns?: number; rows?: number; padding?: number }
+  | { type: "text"; text: string; fontSize?: number }
+  | { type: "heart" }
+  | {
+      type: "star";
+      points?: number;
+      innerRadius?: number;
+      outerRadius?: number;
+    }
+  | { type: "spiral"; turns?: number }
+  | { type: "random" }
+  | { type: "custom"; points: Array<{ x: number; y: number }> };
 
 /**
  * Generate points for a shape
@@ -873,26 +946,26 @@ function generateShapePoints(
   numPoints: number,
   width: number,
   height: number,
-  rng: SeededRandom
+  rng: SeededRandom,
 ): Array<{ x: number; y: number }> {
   const cx = width / 2;
   const cy = height / 2;
   const size = Math.min(width, height) * 0.4;
 
   switch (shape.type) {
-    case 'circle': {
+    case "circle": {
       const radius = shape.radius ?? size;
       const center = shape.center ?? { x: cx, y: cy };
       return Array.from({ length: numPoints }, (_, i) => {
         const angle = (i / numPoints) * Math.PI * 2;
         return {
           x: center.x + Math.cos(angle) * radius,
-          y: center.y + Math.sin(angle) * radius
+          y: center.y + Math.sin(angle) * radius,
         };
       });
     }
 
-    case 'grid': {
+    case "grid": {
       const cols = shape.columns ?? Math.ceil(Math.sqrt(numPoints));
       const rows = shape.rows ?? Math.ceil(numPoints / cols);
       const padding = shape.padding ?? 0.1;
@@ -902,14 +975,18 @@ function generateShapePoints(
         const col = i % cols;
         const row = Math.floor(i / cols);
         points.push({
-          x: width * padding + (col / (cols - 1 || 1)) * width * (1 - 2 * padding),
-          y: height * padding + (row / (rows - 1 || 1)) * height * (1 - 2 * padding)
+          x:
+            width * padding +
+            (col / (cols - 1 || 1)) * width * (1 - 2 * padding),
+          y:
+            height * padding +
+            (row / (rows - 1 || 1)) * height * (1 - 2 * padding),
         });
       }
       return points;
     }
 
-    case 'text': {
+    case "text": {
       // Generate points along text path (simplified - creates rough outline)
       const text = shape.text;
       const fontSize = shape.fontSize ?? 100;
@@ -928,26 +1005,30 @@ function generateShapePoints(
 
         points.push({
           x: charX + Math.cos(angle) * charRadius + fontSize * 0.3,
-          y: cy + Math.sin(angle) * charRadius
+          y: cy + Math.sin(angle) * charRadius,
         });
       }
       return points;
     }
 
-    case 'heart': {
+    case "heart": {
       return Array.from({ length: numPoints }, (_, i) => {
         const t = (i / numPoints) * Math.PI * 2;
         // Heart parametric equation
-        const x = 16 * Math.pow(Math.sin(t), 3);
-        const y = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+        const x = 16 * Math.sin(t) ** 3;
+        const y =
+          13 * Math.cos(t) -
+          5 * Math.cos(2 * t) -
+          2 * Math.cos(3 * t) -
+          Math.cos(4 * t);
         return {
-          x: cx + x * size / 20,
-          y: cy - y * size / 20 // Flip y for screen coords
+          x: cx + (x * size) / 20,
+          y: cy - (y * size) / 20, // Flip y for screen coords
         };
       });
     }
 
-    case 'star': {
+    case "star": {
       const outerRadius = shape.outerRadius ?? size;
       const innerRadius = shape.innerRadius ?? size * 0.4;
       const starPoints = shape.points ?? 5;
@@ -961,12 +1042,12 @@ function generateShapePoints(
 
         return {
           x: cx + Math.cos(angle) * radius,
-          y: cy + Math.sin(angle) * radius
+          y: cy + Math.sin(angle) * radius,
         };
       });
     }
 
-    case 'spiral': {
+    case "spiral": {
       const turns = shape.turns ?? 3;
       return Array.from({ length: numPoints }, (_, i) => {
         const t = i / numPoints;
@@ -974,19 +1055,19 @@ function generateShapePoints(
         const radius = t * size;
         return {
           x: cx + Math.cos(angle) * radius,
-          y: cy + Math.sin(angle) * radius
+          y: cy + Math.sin(angle) * radius,
         };
       });
     }
 
-    case 'random': {
+    case "random": {
       return Array.from({ length: numPoints }, () => ({
         x: rng.range(width * 0.1, width * 0.9),
-        y: rng.range(height * 0.1, height * 0.9)
+        y: rng.range(height * 0.1, height * 0.9),
       }));
     }
 
-    case 'custom': {
+    case "custom": {
       // Distribute points along custom shape
       if (shape.points.length === 0) return [];
       return Array.from({ length: numPoints }, (_, i) => {
@@ -995,8 +1076,12 @@ function generateShapePoints(
         const upper = Math.ceil(idx) % shape.points.length;
         const t = idx - lower;
         return {
-          x: shape.points[lower].x + (shape.points[upper].x - shape.points[lower].x) * t,
-          y: shape.points[lower].y + (shape.points[upper].y - shape.points[lower].y) * t
+          x:
+            shape.points[lower].x +
+            (shape.points[upper].x - shape.points[lower].x) * t,
+          y:
+            shape.points[lower].y +
+            (shape.points[upper].y - shape.points[lower].y) * t,
         };
       });
     }
@@ -1006,35 +1091,65 @@ function generateShapePoints(
 /**
  * Generate shape-to-shape morph trajectories
  */
-export function generateShapeMorph(config: ShapeTargetConfig): WanMoveTrajectory {
-  const { numPoints, numFrames, width, height, source, target, seed = 42 } = config;
+export function generateShapeMorph(
+  config: ShapeTargetConfig,
+): WanMoveTrajectory {
+  const {
+    numPoints,
+    numFrames,
+    width,
+    height,
+    source,
+    target,
+    seed = 42,
+  } = config;
   const morphNoise = config.morphNoise ?? 0.1;
-  const easing = config.easing ?? 'ease-in-out';
+  const easing = config.easing ?? "ease-in-out";
 
   const rng = new SeededRandom(seed);
 
-  const sourcePoints = generateShapePoints(source, numPoints, width, height, rng);
-  const targetPoints = generateShapePoints(target, numPoints, width, height, rng);
+  const sourcePoints = generateShapePoints(
+    source,
+    numPoints,
+    width,
+    height,
+    rng,
+  );
+  const targetPoints = generateShapePoints(
+    target,
+    numPoints,
+    width,
+    height,
+    rng,
+  );
 
   // Easing functions
   const easingFn = (t: number): number => {
     switch (easing) {
-      case 'ease-in': return t * t * t;
-      case 'ease-out': return 1 - Math.pow(1 - t, 3);
-      case 'ease-in-out': return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-      case 'elastic': {
+      case "ease-in":
+        return t * t * t;
+      case "ease-out":
+        return 1 - (1 - t) ** 3;
+      case "ease-in-out":
+        return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
+      case "elastic": {
         const c4 = (2 * Math.PI) / 3;
-        return t === 0 ? 0 : t === 1 ? 1 :
-          Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
+        return t === 0
+          ? 0
+          : t === 1
+            ? 1
+            : 2 ** (-10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
       }
-      case 'bounce': {
-        const n1 = 7.5625, d1 = 2.75;
+      case "bounce": {
+        const n1 = 7.5625,
+          d1 = 2.75;
         if (t < 1 / d1) return n1 * t * t;
         if (t < 2 / d1) return n1 * (t -= 1.5 / d1) * t + 0.75;
         if (t < 2.5 / d1) return n1 * (t -= 2.25 / d1) * t + 0.9375;
         return n1 * (t -= 2.625 / d1) * t + 0.984375;
       }
-      default: return t;
+      default:
+        return t;
     }
   };
 
@@ -1062,7 +1177,7 @@ export function generateShapeMorph(config: ShapeTargetConfig): WanMoveTrajectory
 
       track.push([
         Math.max(0, Math.min(width, x)),
-        Math.max(0, Math.min(height, y))
+        Math.max(0, Math.min(height, y)),
       ]);
       vis.push(true);
     }
@@ -1074,7 +1189,7 @@ export function generateShapeMorph(config: ShapeTargetConfig): WanMoveTrajectory
   return {
     tracks,
     visibility,
-    metadata: { numPoints, numFrames, width, height, fps: 16 }
+    metadata: { numPoints, numFrames, width, height, fps: 16 },
   };
 }
 
@@ -1090,7 +1205,7 @@ export interface ForcePoint {
   /** Influence radius */
   radius: number;
   /** Falloff type */
-  falloff?: 'linear' | 'quadratic' | 'none';
+  falloff?: "linear" | "quadratic" | "none";
 }
 
 export interface ForceFieldConfig {
@@ -1101,7 +1216,7 @@ export interface ForceFieldConfig {
   /** Force points (attractors/repulsors) */
   forces: ForcePoint[];
   /** Initial distribution */
-  initialDistribution?: 'random' | 'grid' | 'edge' | 'center';
+  initialDistribution?: "random" | "grid" | "edge" | "center";
   /** Global damping */
   damping?: number;
   /** Maximum speed */
@@ -1112,11 +1227,13 @@ export interface ForceFieldConfig {
 /**
  * Generate trajectories influenced by force fields
  */
-export function generateForceFieldFlow(config: ForceFieldConfig): WanMoveTrajectory {
+export function generateForceFieldFlow(
+  config: ForceFieldConfig,
+): WanMoveTrajectory {
   const { numPoints, numFrames, width, height, forces, seed = 42 } = config;
   const damping = config.damping ?? 0.98;
   const maxSpeed = config.maxSpeed ?? 15;
-  const distribution = config.initialDistribution ?? 'random';
+  const distribution = config.initialDistribution ?? "random";
 
   const rng = new SeededRandom(seed);
 
@@ -1127,26 +1244,37 @@ export function generateForceFieldFlow(config: ForceFieldConfig): WanMoveTraject
     let x: number, y: number;
 
     switch (distribution) {
-      case 'grid': {
+      case "grid": {
         const cols = Math.ceil(Math.sqrt(numPoints));
         const col = i % cols;
         const row = Math.floor(i / cols);
-        x = (col + 0.5) / cols * width;
-        y = (row + 0.5) / cols * height;
+        x = ((col + 0.5) / cols) * width;
+        y = ((row + 0.5) / cols) * height;
         break;
       }
-      case 'edge': {
+      case "edge": {
         const side = i % 4;
         const t = rng.next();
         switch (side) {
-          case 0: x = t * width; y = 0; break;
-          case 1: x = width; y = t * height; break;
-          case 2: x = t * width; y = height; break;
-          default: x = 0; y = t * height;
+          case 0:
+            x = t * width;
+            y = 0;
+            break;
+          case 1:
+            x = width;
+            y = t * height;
+            break;
+          case 2:
+            x = t * width;
+            y = height;
+            break;
+          default:
+            x = 0;
+            y = t * height;
         }
         break;
       }
-      case 'center': {
+      case "center": {
         const angle = rng.next() * Math.PI * 2;
         const radius = rng.next() * Math.min(width, height) * 0.1;
         x = width / 2 + Math.cos(angle) * radius;
@@ -1176,7 +1304,8 @@ export function generateForceFieldFlow(config: ForceFieldConfig): WanMoveTraject
       const p = particles[i];
 
       // Calculate force from all force points
-      let fx = 0, fy = 0;
+      let fx = 0,
+        fy = 0;
 
       for (const force of forces) {
         const dx = force.x - p.x;
@@ -1185,10 +1314,16 @@ export function generateForceFieldFlow(config: ForceFieldConfig): WanMoveTraject
 
         if (dist < force.radius && dist > 0) {
           let falloffMult = 1;
-          switch (force.falloff ?? 'quadratic') {
-            case 'linear': falloffMult = 1 - dist / force.radius; break;
-            case 'quadratic': falloffMult = Math.pow(1 - dist / force.radius, 2); break;
-            case 'none': falloffMult = 1; break;
+          switch (force.falloff ?? "quadratic") {
+            case "linear":
+              falloffMult = 1 - dist / force.radius;
+              break;
+            case "quadratic":
+              falloffMult = (1 - dist / force.radius) ** 2;
+              break;
+            case "none":
+              falloffMult = 1;
+              break;
           }
 
           const strength = force.strength * falloffMult;
@@ -1219,7 +1354,7 @@ export function generateForceFieldFlow(config: ForceFieldConfig): WanMoveTraject
       // Record
       tracks[i].push([
         Math.max(0, Math.min(width, p.x)),
-        Math.max(0, Math.min(height, p.y))
+        Math.max(0, Math.min(height, p.y)),
       ]);
       visibility[i].push(p.x >= 0 && p.x <= width && p.y >= 0 && p.y <= height);
     }
@@ -1228,7 +1363,7 @@ export function generateForceFieldFlow(config: ForceFieldConfig): WanMoveTraject
   return {
     tracks,
     visibility,
-    metadata: { numPoints, numFrames, width, height, fps: 16 }
+    metadata: { numPoints, numFrames, width, height, fps: 16 },
   };
 }
 
@@ -1251,7 +1386,7 @@ export interface FlowLayer {
  */
 export function compositeFlowLayers(layers: FlowLayer[]): WanMoveTrajectory {
   if (layers.length === 0) {
-    throw new Error('At least one layer required');
+    throw new Error("At least one layer required");
   }
 
   // Use first layer's metadata as base
@@ -1274,8 +1409,8 @@ export function compositeFlowLayers(layers: FlowLayer[]): WanMoveTrajectory {
       numFrames: firstMeta.numFrames,
       width: firstMeta.width,
       height: firstMeta.height,
-      fps: firstMeta.fps
-    }
+      fps: firstMeta.fps,
+    },
   };
 }
 
@@ -1327,21 +1462,21 @@ export function renderTrajectoryFrame(
   ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   trajectory: WanMoveTrajectory | ColoredTrajectory,
   frame: number,
-  options: RenderOptions = {}
+  options: RenderOptions = {},
 ): void {
   const {
-    background = '#0a0a0a',
+    background = "#0a0a0a",
     showTrails = true,
     trailLength = 10,
     trailFade = true,
     pointSize = 2,
     useTrajectoryColors = true,
-    defaultColor = '#8b5cf6',
-    showVelocity = false
+    defaultColor = "#8b5cf6",
+    showVelocity = false,
   } = options;
 
   const { tracks, metadata } = trajectory;
-  const colors = 'colors' in trajectory ? trajectory.colors : undefined;
+  const colors = "colors" in trajectory ? trajectory.colors : undefined;
   const { width, height } = metadata;
 
   // Clear
@@ -1373,10 +1508,12 @@ export function renderTrajectoryFrame(
 
       if (trailFade) {
         const gradient = ctx.createLinearGradient(
-          track[startFrame][0], track[startFrame][1],
-          track[frame][0], track[frame][1]
+          track[startFrame][0],
+          track[startFrame][1],
+          track[frame][0],
+          track[frame][1],
         );
-        gradient.addColorStop(0, 'transparent');
+        gradient.addColorStop(0, "transparent");
         gradient.addColorStop(1, color);
         ctx.strokeStyle = gradient;
       } else {
@@ -1398,7 +1535,7 @@ export function renderTrajectoryFrame(
       const vx = track[frame][0] - track[frame - 1][0];
       const vy = track[frame][1] - track[frame - 1][1];
 
-      ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+      ctx.strokeStyle = "rgba(255,255,255,0.3)";
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(track[frame][0], track[frame][1]);
@@ -1413,17 +1550,17 @@ export function renderTrajectoryFrame(
  */
 export async function renderTrajectorySequence(
   trajectory: WanMoveTrajectory | ColoredTrajectory,
-  options: RenderOptions = {}
+  options: RenderOptions = {},
 ): Promise<Blob[]> {
   const { width, height, numFrames } = trajectory.metadata;
   const canvas = new OffscreenCanvas(width, height);
-  const ctx = canvas.getContext('2d')!;
+  const ctx = canvas.getContext("2d")!;
 
   const frames: Blob[] = [];
 
   for (let f = 0; f < numFrames; f++) {
     renderTrajectoryFrame(ctx, trajectory, f, options);
-    const blob = await canvas.convertToBlob({ type: 'image/png' });
+    const blob = await canvas.convertToBlob({ type: "image/png" });
     frames.push(blob);
   }
 
@@ -1436,78 +1573,78 @@ export async function renderTrajectorySequence(
 
 export const FLOW_PRESETS = {
   /** Data flowing through neural pathways */
-  'neural-flow': {
-    pattern: 'data-river' as const,
+  "neural-flow": {
+    pattern: "data-river" as const,
     params: {
       riverWidth: 0.4,
       riverCurve: 2,
       riverTurbulence: 0.15,
-      noiseStrength: 0.08
-    }
+      noiseStrength: 0.08,
+    },
   },
 
   /** Particles spiraling into a black hole */
-  'singularity': {
-    pattern: 'vortex' as const,
+  singularity: {
+    pattern: "vortex" as const,
     params: {
       vortexStrength: 0.8,
       vortexRadius: 0.4,
-      noiseStrength: 0.05
-    }
+      noiseStrength: 0.05,
+    },
   },
 
   /** Big bang style data explosion */
-  'data-genesis': {
-    pattern: 'explosion' as const,
+  "data-genesis": {
+    pattern: "explosion" as const,
     params: {
       explosionSpeed: 1.2,
       explosionDecay: 0.92,
-      noiseStrength: 0.15
-    }
+      noiseStrength: 0.15,
+    },
   },
 
   /** Gentle wave of information */
-  'information-tide': {
-    pattern: 'wave' as const,
+  "information-tide": {
+    pattern: "wave" as const,
     params: {
       waveAmplitude: 0.12,
       waveFrequency: 2,
       waveLayers: 8,
-      noiseStrength: 0.05
-    }
+      noiseStrength: 0.05,
+    },
   },
 
   /** Spiral galaxy formation */
-  'cosmic-spiral': {
-    pattern: 'spiral' as const,
+  "cosmic-spiral": {
+    pattern: "spiral" as const,
     params: {
       spiralTurns: 4,
       spiralExpansion: 1.2,
-      noiseStrength: 0.1
-    }
+      noiseStrength: 0.1,
+    },
   },
 
   /** Data morphing between shapes */
-  'metamorphosis': {
-    pattern: 'morph' as const,
+  metamorphosis: {
+    pattern: "morph" as const,
     params: {
-      morphSource: 'grid' as const,
-      morphTarget: 'circle' as const,
-      morphEasing: 'ease-in-out' as const,
-      noiseStrength: 0.08
-    }
+      morphSource: "grid" as const,
+      morphTarget: "circle" as const,
+      morphEasing: "ease-in-out" as const,
+      noiseStrength: 0.08,
+    },
   },
 
   /** Collective intelligence swarm */
-  'hivemind': {
-    pattern: 'swarm' as const,
+  hivemind: {
+    pattern: "swarm" as const,
     params: {
       swarmCohesion: 0.015,
       swarmSeparation: 25,
       swarmAlignment: 0.08,
-      swarmSpeed: 4
-    }
-  }
+      swarmSpeed: 4,
+    },
+  },
 };
 
 /**
@@ -1519,7 +1656,7 @@ export function generateFromPreset(
   numFrames: number,
   width: number,
   height: number,
-  seed?: number
+  seed?: number,
 ): WanMoveTrajectory {
   const preset = FLOW_PRESETS[presetName];
   const config: GenerativeFlowConfig = {
@@ -1528,18 +1665,26 @@ export function generateFromPreset(
     numFrames,
     width,
     height,
-    params: { ...preset.params, seed: seed ?? 42 }
+    params: { ...preset.params, seed: seed ?? 42 },
   };
 
   switch (preset.pattern) {
-    case 'spiral': return generateSpiralFlow(config);
-    case 'wave': return generateWaveFlow(config);
-    case 'explosion': return generateExplosionFlow(config);
-    case 'vortex': return generateVortexFlow(config);
-    case 'data-river': return generateDataRiverFlow(config);
-    case 'morph': return generateMorphFlow(config);
-    case 'swarm': return generateSwarmFlow(config);
-    default: return generateSpiralFlow(config);
+    case "spiral":
+      return generateSpiralFlow(config);
+    case "wave":
+      return generateWaveFlow(config);
+    case "explosion":
+      return generateExplosionFlow(config);
+    case "vortex":
+      return generateVortexFlow(config);
+    case "data-river":
+      return generateDataRiverFlow(config);
+    case "morph":
+      return generateMorphFlow(config);
+    case "swarm":
+      return generateSwarmFlow(config);
+    default:
+      return generateSpiralFlow(config);
   }
 }
 
@@ -1548,21 +1693,21 @@ export function generateFromPreset(
 // ============================================================================
 
 export const ATTRACTOR_PRESETS = {
-  'lorenz-butterfly': {
-    type: 'lorenz' as const,
+  "lorenz-butterfly": {
+    type: "lorenz" as const,
     scale: 8,
-    dt: 0.005
+    dt: 0.005,
   },
-  'rossler-spiral': {
-    type: 'rossler' as const,
+  "rossler-spiral": {
+    type: "rossler" as const,
     scale: 15,
-    dt: 0.02
+    dt: 0.02,
   },
-  'aizawa-torus': {
-    type: 'aizawa' as const,
+  "aizawa-torus": {
+    type: "aizawa" as const,
     scale: 80,
-    dt: 0.01
-  }
+    dt: 0.01,
+  },
 };
 
 // ============================================================================
@@ -1570,26 +1715,26 @@ export const ATTRACTOR_PRESETS = {
 // ============================================================================
 
 export const SHAPE_PRESETS = {
-  'grid-to-circle': {
-    source: { type: 'grid' as const },
-    target: { type: 'circle' as const },
-    easing: 'ease-in-out' as const
+  "grid-to-circle": {
+    source: { type: "grid" as const },
+    target: { type: "circle" as const },
+    easing: "ease-in-out" as const,
   },
-  'random-to-heart': {
-    source: { type: 'random' as const },
-    target: { type: 'heart' as const },
-    easing: 'elastic' as const
+  "random-to-heart": {
+    source: { type: "random" as const },
+    target: { type: "heart" as const },
+    easing: "elastic" as const,
   },
-  'circle-to-star': {
-    source: { type: 'circle' as const },
-    target: { type: 'star' as const, points: 5 },
-    easing: 'bounce' as const
+  "circle-to-star": {
+    source: { type: "circle" as const },
+    target: { type: "star" as const, points: 5 },
+    easing: "bounce" as const,
   },
-  'spiral-to-grid': {
-    source: { type: 'spiral' as const, turns: 3 },
-    target: { type: 'grid' as const },
-    easing: 'ease-out' as const
-  }
+  "spiral-to-grid": {
+    source: { type: "spiral" as const, turns: 3 },
+    target: { type: "grid" as const },
+    easing: "ease-out" as const,
+  },
 };
 
 // ============================================================================
@@ -1642,6 +1787,5 @@ export default {
   FLOW_PRESETS,
   ATTRACTOR_PRESETS,
   SHAPE_PRESETS,
-  generateFromPreset
+  generateFromPreset,
 };
-

@@ -8,24 +8,22 @@
  * - Frame capture for export
  */
 
-import * as THREE from 'three';
-import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
-import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
-import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
-import { BokehPass } from 'three/examples/jsm/postprocessing/BokehPass.js';
-import { SSAOPass } from 'three/examples/jsm/postprocessing/SSAOPass.js';
-import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
-import { Pass } from 'three/examples/jsm/postprocessing/Pass.js';
-import type { SceneManager } from './SceneManager';
-import type { CameraController } from './CameraController';
+import * as THREE from "three";
+import { BokehPass } from "three/examples/jsm/postprocessing/BokehPass.js";
+import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
+import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
+import type { Pass } from "three/examples/jsm/postprocessing/Pass.js";
+import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
+import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
+import { SSAOPass } from "three/examples/jsm/postprocessing/SSAOPass.js";
+import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
 import {
-  MotionBlurProcessor,
-  type MotionBlurSettings,
-  type MotionBlurType,
-  createDefaultMotionBlurSettings,
   MOTION_BLUR_PRESETS,
-} from '@/services/motionBlur';
+  MotionBlurProcessor,
+  type MotionBlurType,
+} from "@/services/motionBlur";
+import type { CameraController } from "./CameraController";
+import type { SceneManager } from "./SceneManager";
 
 // Local Pass type since PostPass doesn't exist in main namespace
 type PostPass = Pass;
@@ -36,9 +34,9 @@ type PostPass = Pass;
 
 export interface DOFConfig {
   enabled: boolean;
-  focusDistance: number;  // Focus distance in world units
-  aperture: number;       // Aperture size (affects bokeh intensity)
-  maxBlur: number;        // Maximum blur amount (0-1)
+  focusDistance: number; // Focus distance in world units
+  aperture: number; // Aperture size (affects bokeh intensity)
+  maxBlur: number; // Maximum blur amount (0-1)
 }
 
 /**
@@ -46,11 +44,11 @@ export interface DOFConfig {
  */
 export interface SSAOConfig {
   enabled: boolean;
-  kernelRadius: number;     // Occlusion sampling radius (default: 8)
-  minDistance: number;      // Minimum distance threshold (default: 0.005)
-  maxDistance: number;      // Maximum distance threshold (default: 0.1)
-  intensity: number;        // Occlusion intensity multiplier (default: 1)
-  output: 'default' | 'ssao' | 'blur' | 'depth' | 'normal';
+  kernelRadius: number; // Occlusion sampling radius (default: 8)
+  minDistance: number; // Minimum distance threshold (default: 0.005)
+  maxDistance: number; // Maximum distance threshold (default: 0.1)
+  intensity: number; // Occlusion intensity multiplier (default: 1)
+  output: "default" | "ssao" | "blur" | "depth" | "normal";
 }
 
 /**
@@ -59,9 +57,9 @@ export interface SSAOConfig {
  */
 export interface BloomConfig {
   enabled: boolean;
-  strength: number;         // Bloom intensity (default: 1.5)
-  radius: number;           // Bloom spread radius (default: 0.4)
-  threshold: number;        // Brightness threshold for bloom (default: 0.85)
+  strength: number; // Bloom intensity (default: 1.5)
+  radius: number; // Bloom spread radius (default: 0.4)
+  threshold: number; // Brightness threshold for bloom (default: 0.85)
 }
 
 /**
@@ -71,11 +69,11 @@ export interface BloomConfig {
 export interface MotionBlurConfig {
   enabled: boolean;
   type: MotionBlurType;
-  shutterAngle: number;     // 0-720 (180 = standard film)
-  shutterPhase: number;     // -180 to 180
-  samplesPerFrame: number;  // Quality (2-64)
+  shutterAngle: number; // 0-720 (180 = standard film)
+  shutterPhase: number; // -180 to 180
+  samplesPerFrame: number; // Quality (2-64)
   // For advanced use
-  preset?: string;          // Named preset from MOTION_BLUR_PRESETS
+  preset?: string; // Named preset from MOTION_BLUR_PRESETS
 }
 
 export interface RenderPipelineConfig {
@@ -99,7 +97,6 @@ export class RenderPipeline {
 
   // Frame capture
   private readonly captureCanvas: OffscreenCanvas;
-  private readonly captureCtx: OffscreenCanvasRenderingContext2D;
 
   // Depth capture material
   private readonly depthMaterial: THREE.ShaderMaterial;
@@ -113,7 +110,7 @@ export class RenderPipeline {
   private pixelRatio: number;
 
   // Render mode
-  private renderMode: 'color' | 'depth' | 'normal' = 'color';
+  private renderMode: "color" | "depth" | "normal" = "color";
 
   // DOF pass
   private bokehPass: BokehPass | null = null;
@@ -132,7 +129,7 @@ export class RenderPipeline {
     minDistance: 0.005,
     maxDistance: 0.1,
     intensity: 1,
-    output: 'default',
+    output: "default",
   };
 
   // Bloom pass (for emissive objects and lights)
@@ -148,19 +145,16 @@ export class RenderPipeline {
   private motionBlurProcessor: MotionBlurProcessor;
   private motionBlurConfig: MotionBlurConfig = {
     enabled: false,
-    type: 'standard',
+    type: "standard",
     shutterAngle: 180,
     shutterPhase: -90,
     samplesPerFrame: 16,
-  };
-  private previousFrameTransform: { x: number; y: number; rotation: number; scaleX: number; scaleY: number } = {
-    x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1
   };
 
   constructor(
     config: RenderPipelineConfig,
     scene: SceneManager,
-    camera: CameraController
+    camera: CameraController,
   ) {
     this.scene = scene;
     this.camera = camera;
@@ -174,7 +168,7 @@ export class RenderPipeline {
       antialias: config.antialias ?? true,
       alpha: config.alpha ?? true,
       preserveDrawingBuffer: true, // Required for frame capture
-      powerPreference: 'high-performance',
+      powerPreference: "high-performance",
       stencil: false,
       depth: true,
     });
@@ -190,11 +184,16 @@ export class RenderPipeline {
       this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
       this.renderer.toneMappingExposure = 1.0;
     } catch (e) {
-      console.warn('[RenderPipeline] Could not set color space/tone mapping:', e);
+      console.warn(
+        "[RenderPipeline] Could not set color space/tone mapping:",
+        e,
+      );
       // Fallback: just set tone mapping exposure if possible
       try {
         this.renderer.toneMappingExposure = 1.0;
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
 
     // Enable shadows
@@ -214,7 +213,7 @@ export class RenderPipeline {
 
     // Create capture canvas
     this.captureCanvas = new OffscreenCanvas(scaledWidth, scaledHeight);
-    this.captureCtx = this.captureCanvas.getContext('2d')!;
+    this.captureCtx = this.captureCanvas.getContext("2d")!;
 
     // Create depth material
     this.depthMaterial = this.createDepthMaterial();
@@ -223,14 +222,20 @@ export class RenderPipeline {
     this.normalMaterial = new THREE.MeshNormalMaterial();
 
     // Initialize motion blur processor
-    this.motionBlurProcessor = new MotionBlurProcessor(scaledWidth, scaledHeight);
+    this.motionBlurProcessor = new MotionBlurProcessor(
+      scaledWidth,
+      scaledHeight,
+    );
   }
 
   // ============================================================================
   // RENDER TARGET CREATION
   // ============================================================================
 
-  private createColorTarget(width: number, height: number): THREE.WebGLRenderTarget {
+  private createColorTarget(
+    width: number,
+    height: number,
+  ): THREE.WebGLRenderTarget {
     const target = new THREE.WebGLRenderTarget(width, height, {
       minFilter: THREE.LinearFilter,
       magFilter: THREE.LinearFilter,
@@ -251,7 +256,10 @@ export class RenderPipeline {
     return target;
   }
 
-  private createDepthTarget(width: number, height: number): THREE.WebGLRenderTarget {
+  private createDepthTarget(
+    width: number,
+    height: number,
+  ): THREE.WebGLRenderTarget {
     const target = new THREE.WebGLRenderTarget(width, height, {
       minFilter: THREE.NearestFilter,
       magFilter: THREE.NearestFilter,
@@ -327,7 +335,7 @@ export class RenderPipeline {
   addPass(pass: PostPass): void {
     // Insert before output pass
     const outputIndex = this.composer.passes.findIndex(
-      p => p.constructor.name === 'OutputPass'
+      (p) => p.constructor.name === "OutputPass",
     );
 
     if (outputIndex > -1) {
@@ -381,8 +389,8 @@ export class RenderPipeline {
    * Create the bokeh (DOF) pass
    */
   private createBokehPass(): void {
-    const scaledWidth = Math.floor(this.width * this.pixelRatio);
-    const scaledHeight = Math.floor(this.height * this.pixelRatio);
+    const _scaledWidth = Math.floor(this.width * this.pixelRatio);
+    const _scaledHeight = Math.floor(this.height * this.pixelRatio);
 
     // BokehPass needs the scene, camera, and focus parameters
     this.bokehPass = new BokehPass(
@@ -392,7 +400,7 @@ export class RenderPipeline {
         focus: this.dofConfig.focusDistance,
         aperture: this.dofConfig.aperture,
         maxblur: this.dofConfig.maxBlur,
-      } as any // width/height are needed but not in types
+      } as any, // width/height are needed but not in types
     );
 
     // Insert before output pass
@@ -475,13 +483,13 @@ export class RenderPipeline {
       this.scene.scene,
       this.camera.camera,
       scaledWidth,
-      scaledHeight
+      scaledHeight,
     );
 
     // SSAO should be applied early in the pipeline (after render, before DOF)
     // Find the render pass and insert after it
     const renderPassIndex = this.composer.passes.findIndex(
-      p => p.constructor.name === 'RenderPass'
+      (p) => p.constructor.name === "RenderPass",
     );
 
     if (renderPassIndex > -1) {
@@ -502,12 +510,12 @@ export class RenderPipeline {
     this.ssaoPass.maxDistance = this.ssaoConfig.maxDistance;
 
     // Map output mode to SSAOPass output enum
-    const outputMap: Record<SSAOConfig['output'], number> = {
-      'default': SSAOPass.OUTPUT.Default,
-      'ssao': SSAOPass.OUTPUT.SSAO,
-      'blur': SSAOPass.OUTPUT.Blur,
-      'depth': SSAOPass.OUTPUT.Depth,
-      'normal': SSAOPass.OUTPUT.Normal,
+    const outputMap: Record<SSAOConfig["output"], number> = {
+      default: SSAOPass.OUTPUT.Default,
+      ssao: SSAOPass.OUTPUT.SSAO,
+      blur: SSAOPass.OUTPUT.Blur,
+      depth: SSAOPass.OUTPUT.Depth,
+      normal: SSAOPass.OUTPUT.Normal,
     };
     this.ssaoPass.output = outputMap[this.ssaoConfig.output];
   }
@@ -575,13 +583,13 @@ export class RenderPipeline {
       new THREE.Vector2(scaledWidth, scaledHeight),
       this.bloomConfig.strength,
       this.bloomConfig.radius,
-      this.bloomConfig.threshold
+      this.bloomConfig.threshold,
     );
 
     // Insert bloom after SSAO but before DOF
     // Find SSAO pass first
     const ssaoIndex = this.composer.passes.findIndex(
-      p => p.constructor.name === 'SSAOPass'
+      (p) => p.constructor.name === "SSAOPass",
     );
 
     if (ssaoIndex > -1) {
@@ -589,7 +597,7 @@ export class RenderPipeline {
     } else {
       // Insert after render pass
       const renderIndex = this.composer.passes.findIndex(
-        p => p.constructor.name === 'RenderPass'
+        (p) => p.constructor.name === "RenderPass",
       );
       if (renderIndex > -1) {
         this.composer.insertPass(this.bloomPass, renderIndex + 1);
@@ -680,7 +688,7 @@ export class RenderPipeline {
     if (preset) {
       this.setMotionBlur({
         enabled: true,
-        type: preset.type || 'standard',
+        type: preset.type || "standard",
         shutterAngle: preset.shutterAngle || 180,
         shutterPhase: preset.shutterPhase || -90,
         samplesPerFrame: preset.samplesPerFrame || 16,
@@ -729,7 +737,7 @@ export class RenderPipeline {
       this.composer.render();
     } catch (e) {
       // Log but don't crash - the render loop must continue
-      console.warn('[RenderPipeline] Render error (continuing):', e);
+      console.warn("[RenderPipeline] Render error (continuing):", e);
     }
   }
 
@@ -758,7 +766,7 @@ export class RenderPipeline {
    * Uses post-processing to visualize depth/normals from the depth buffer
    * This works with ALL geometry including text since it reads from the depth buffer
    */
-  setRenderMode(mode: 'color' | 'depth' | 'normal'): void {
+  setRenderMode(mode: "color" | "depth" | "normal"): void {
     this.renderMode = mode;
 
     // Remove existing visualization passes
@@ -774,7 +782,7 @@ export class RenderPipeline {
     // Clear any override material
     this.scene.scene.overrideMaterial = null;
 
-    if (mode === 'depth') {
+    if (mode === "depth") {
       // Create depth visualization pass that reads from the depth buffer
       // Uses the colorTarget's depth texture which contains actual Z-depth of ALL geometry
       this.depthVisualizationPass = new ShaderPass({
@@ -815,14 +823,14 @@ export class RenderPipeline {
 
       // Insert before output pass
       const outputIndex = this.composer.passes.findIndex(
-        p => p.constructor.name === 'OutputPass'
+        (p) => p.constructor.name === "OutputPass",
       );
       if (outputIndex > -1) {
         this.composer.insertPass(this.depthVisualizationPass, outputIndex);
       } else {
         this.composer.addPass(this.depthVisualizationPass);
       }
-    } else if (mode === 'normal') {
+    } else if (mode === "normal") {
       // Screen-space normal reconstruction from depth buffer
       // This works with ALL geometry including text, particles, etc.
       // Reconstructs normals by computing gradients in the depth buffer
@@ -836,8 +844,12 @@ export class RenderPipeline {
           cameraNear: { value: this.camera.camera.near },
           cameraFar: { value: this.camera.camera.far },
           resolution: { value: new THREE.Vector2(scaledWidth, scaledHeight) },
-          cameraProjectionMatrix: { value: this.camera.camera.projectionMatrix },
-          cameraProjectionMatrixInverse: { value: this.camera.camera.projectionMatrixInverse },
+          cameraProjectionMatrix: {
+            value: this.camera.camera.projectionMatrix,
+          },
+          cameraProjectionMatrixInverse: {
+            value: this.camera.camera.projectionMatrixInverse,
+          },
         },
         vertexShader: `
           varying vec2 vUv;
@@ -914,7 +926,7 @@ export class RenderPipeline {
 
       // Insert before output pass
       const outputIndex = this.composer.passes.findIndex(
-        p => p.constructor.name === 'OutputPass'
+        (p) => p.constructor.name === "OutputPass",
       );
       if (outputIndex > -1) {
         this.composer.insertPass(this.normalVisualizationPass, outputIndex);
@@ -928,7 +940,7 @@ export class RenderPipeline {
   /**
    * Get the current render mode
    */
-  getRenderMode(): 'color' | 'depth' | 'normal' {
+  getRenderMode(): "color" | "depth" | "normal" {
     return this.renderMode;
   }
 
@@ -947,8 +959,11 @@ export class RenderPipeline {
     const buffer = new Uint8Array(width * height * 4);
     this.renderer.readRenderTargetPixels(
       this.colorTarget,
-      0, 0, width, height,
-      buffer
+      0,
+      0,
+      width,
+      height,
+      buffer,
     );
 
     // Convert to Uint8ClampedArray and flip Y
@@ -978,8 +993,11 @@ export class RenderPipeline {
     const buffer = new Float32Array(width * height * 4);
     this.renderer.readRenderTargetPixels(
       this.depthTarget,
-      0, 0, width, height,
-      buffer
+      0,
+      0,
+      width,
+      height,
+      buffer,
     );
 
     // Extract single channel (depth is in all channels for float target)
@@ -1101,7 +1119,11 @@ export class RenderPipeline {
   /**
    * Create or get a render target for a nested composition
    */
-  getNestedCompRenderTarget(compositionId: string, width: number, height: number): THREE.WebGLRenderTarget {
+  getNestedCompRenderTarget(
+    compositionId: string,
+    width: number,
+    height: number,
+  ): THREE.WebGLRenderTarget {
     const key = `${compositionId}_${width}_${height}`;
 
     let target = this.nestedCompTargets.get(key);
@@ -1128,7 +1150,7 @@ export class RenderPipeline {
   renderSceneToTexture(
     scene: THREE.Scene,
     camera: THREE.Camera,
-    target: THREE.WebGLRenderTarget
+    target: THREE.WebGLRenderTarget,
   ): THREE.Texture {
     const prevTarget = this.renderer.getRenderTarget();
 
@@ -1146,7 +1168,7 @@ export class RenderPipeline {
   disposeNestedCompTarget(compositionId: string): void {
     // Find and dispose all targets for this composition
     for (const [key, target] of this.nestedCompTargets.entries()) {
-      if (key.startsWith(compositionId + '_')) {
+      if (key.startsWith(`${compositionId}_`)) {
         target.dispose();
         this.nestedCompTargets.delete(key);
       }
@@ -1162,7 +1184,6 @@ export class RenderPipeline {
     }
     this.nestedCompTargets.clear();
   }
-
 
   // ============================================================================
   // DISPOSAL

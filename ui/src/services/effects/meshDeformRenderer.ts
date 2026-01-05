@@ -12,25 +12,22 @@
  * 4. Deform vertices based on pin influences
  * 5. Render deformed triangles with texture mapping
  */
-import {
-  registerEffectRenderer,
-  createMatchingCanvas,
-  type EffectStackResult,
-  type EvaluatedEffectParams
-} from '../effectProcessor';
+
+import type { WarpPin } from "@/types/meshWarp";
+import { createLogger } from "@/utils/logger";
 import {
   generateMeshFromAlpha,
-  type MeshFromAlphaResult
-} from '../alphaToMesh';
+  type MeshFromAlphaResult,
+} from "../alphaToMesh";
 import {
-  type WarpPin,
-  type WarpPinType,
-  createDefaultWarpPin
-} from '@/types/meshWarp';
-import { interpolateProperty } from '../interpolation';
-import { createLogger } from '@/utils/logger';
+  createMatchingCanvas,
+  type EffectStackResult,
+  type EvaluatedEffectParams,
+  registerEffectRenderer,
+} from "../effectProcessor";
+import { interpolateProperty } from "../interpolation";
 
-const logger = createLogger('MeshDeformRenderer');
+const logger = createLogger("MeshDeformRenderer");
 
 // ============================================================================
 // TYPES
@@ -79,8 +76,8 @@ const meshCaches = new Map<string, MeshCache>();
  */
 function hashCanvas(canvas: HTMLCanvasElement): string {
   // Sample sparse pixels for fast comparison
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return '';
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return "";
 
   const { width, height } = canvas;
   const samples: number[] = [width, height];
@@ -88,14 +85,14 @@ function hashCanvas(canvas: HTMLCanvasElement): string {
   // Sample 9 pixels in a grid
   for (let y = 0; y < 3; y++) {
     for (let x = 0; x < 3; x++) {
-      const px = Math.floor((x + 0.5) * width / 3);
-      const py = Math.floor((y + 0.5) * height / 3);
+      const px = Math.floor(((x + 0.5) * width) / 3);
+      const py = Math.floor(((y + 0.5) * height) / 3);
       const data = ctx.getImageData(px, py, 1, 1).data;
       samples.push(data[3]); // Just alpha for mesh generation
     }
   }
 
-  return samples.join(',');
+  return samples.join(",");
 }
 
 /**
@@ -105,7 +102,7 @@ function getOrGenerateMesh(
   effectId: string,
   inputCanvas: HTMLCanvasElement,
   params: EvaluatedEffectParams,
-  pins: WarpPin[]
+  pins: WarpPin[],
 ): { mesh: MeshFromAlphaResult; weights: Float32Array } {
   const triangleCount = params.triangle_count ?? 200;
   const expansion = params.expansion ?? 3;
@@ -115,26 +112,36 @@ function getOrGenerateMesh(
 
   // Check cache
   const cached = meshCaches.get(effectId);
-  if (cached &&
-      cached.inputHash === inputHash &&
-      cached.params.triangleCount === triangleCount &&
-      cached.params.expansion === expansion &&
-      cached.params.alphaThreshold === alphaThreshold) {
+  if (
+    cached &&
+    cached.inputHash === inputHash &&
+    cached.params.triangleCount === triangleCount &&
+    cached.params.expansion === expansion &&
+    cached.params.alphaThreshold === alphaThreshold
+  ) {
     // Recalculate weights if pin count changed
-    if (pins.length > 0 && cached.weights.length !== cached.mesh.vertexCount * pins.length) {
+    if (
+      pins.length > 0 &&
+      cached.weights.length !== cached.mesh.vertexCount * pins.length
+    ) {
       cached.weights = calculatePinWeights(cached.mesh, pins, params);
     }
     return { mesh: cached.mesh, weights: cached.weights };
   }
 
   // Generate new mesh
-  const ctx = inputCanvas.getContext('2d')!;
-  const imageData = ctx.getImageData(0, 0, inputCanvas.width, inputCanvas.height);
+  const ctx = inputCanvas.getContext("2d")!;
+  const imageData = ctx.getImageData(
+    0,
+    0,
+    inputCanvas.width,
+    inputCanvas.height,
+  );
 
   const mesh = generateMeshFromAlpha(imageData, {
     triangleCount,
     expansion,
-    alphaThreshold
+    alphaThreshold,
   });
 
   // Calculate weights
@@ -145,10 +152,12 @@ function getOrGenerateMesh(
     mesh,
     weights,
     inputHash,
-    params: { triangleCount, expansion, alphaThreshold }
+    params: { triangleCount, expansion, alphaThreshold },
   });
 
-  logger.debug(`Generated mesh for ${effectId}: ${mesh.vertexCount} vertices, ${mesh.triangleCount} triangles`);
+  logger.debug(
+    `Generated mesh for ${effectId}: ${mesh.vertexCount} vertices, ${mesh.triangleCount} triangles`,
+  );
 
   return { mesh, weights };
 }
@@ -164,13 +173,13 @@ function getOrGenerateMesh(
 function calculatePinWeights(
   mesh: MeshFromAlphaResult,
   pins: WarpPin[],
-  params: EvaluatedEffectParams
+  params: EvaluatedEffectParams,
 ): Float32Array {
   if (pins.length === 0) {
     return new Float32Array(0);
   }
 
-  const falloffMethod = params.pin_falloff ?? 'inverse-distance';
+  const falloffMethod = params.pin_falloff ?? "inverse-distance";
   const falloffPower = params.falloff_power ?? 2;
 
   const weights = new Float32Array(mesh.vertexCount * pins.length);
@@ -193,7 +202,7 @@ function calculatePinWeights(
 
       let weight = 0;
 
-      if (falloffMethod === 'radial-basis') {
+      if (falloffMethod === "radial-basis") {
         // Gaussian RBF
         const sigma = radius / 3;
         weight = Math.exp(-(dist * dist) / (2 * sigma * sigma));
@@ -202,14 +211,14 @@ function calculatePinWeights(
         if (dist < 0.001) {
           weight = 1000; // Near-infinite weight at pin position
         } else if (dist < radius) {
-          weight = Math.pow(1 - dist / radius, falloffPower);
+          weight = (1 - dist / radius) ** falloffPower;
         } else {
           weight = 0;
         }
       }
 
       // Starch pins reduce influence
-      if (pin.type === 'starch') {
+      if (pin.type === "starch") {
         // Starch doesn't contribute to deformation, but affects nearby weights
         weight = 0;
       }
@@ -228,7 +237,7 @@ function calculatePinWeights(
     // Apply starch stiffness reduction
     for (let p = 0; p < pins.length; p++) {
       const pin = pins[p];
-      if (pin.type === 'starch' && pin.stiffness > 0) {
+      if (pin.type === "starch" && pin.stiffness > 0) {
         const px = pin.position.value.x;
         const py = pin.position.value.y;
         const dx = vx - px;
@@ -236,7 +245,7 @@ function calculatePinWeights(
         const dist = Math.sqrt(dx * dx + dy * dy);
 
         if (dist < pin.radius) {
-          const stiffFactor = 1 - (pin.stiffness * (1 - dist / pin.radius));
+          const stiffFactor = 1 - pin.stiffness * (1 - dist / pin.radius);
           // Reduce all weights for this vertex by stiffness factor
           for (let q = 0; q < pins.length; q++) {
             weights[v * pins.length + q] *= stiffFactor;
@@ -258,7 +267,7 @@ function calculatePinWeights(
  */
 function evaluatePinAtFrame(
   pin: WarpPin,
-  frame: number
+  frame: number,
 ): { position: Point2D; rotation: number; scale: number } {
   const position = interpolateProperty(pin.position, frame) as Point2D;
   const rotation = interpolateProperty(pin.rotation, frame) as number;
@@ -274,7 +283,7 @@ function deformMesh(
   mesh: MeshFromAlphaResult,
   pins: WarpPin[],
   weights: Float32Array,
-  frame: number
+  frame: number,
 ): Float32Array {
   const deformed = new Float32Array(mesh.vertices.length);
 
@@ -285,7 +294,7 @@ function deformMesh(
   }
 
   // Evaluate all pins at current frame
-  const pinStates = pins.map(pin => {
+  const pinStates = pins.map((pin) => {
     const current = evaluatePinAtFrame(pin, frame);
     const rest = { x: pin.position.value.x, y: pin.position.value.y };
     return {
@@ -294,8 +303,8 @@ function deformMesh(
       rest,
       delta: {
         x: current.position.x - rest.x,
-        y: current.position.y - rest.y
-      }
+        y: current.position.y - rest.y,
+      },
     };
   });
 
@@ -316,21 +325,25 @@ function deformMesh(
       const { pin, current, rest, delta } = state;
 
       // Skip overlap pins (they don't affect vertex positions)
-      if (pin.type === 'overlap') continue;
+      if (pin.type === "overlap") continue;
 
       // Calculate deformation based on pin type
       let pinDx = 0;
       let pinDy = 0;
 
       // Position translation (for position and advanced types)
-      if (pin.type === 'position' || pin.type === 'advanced') {
+      if (pin.type === "position" || pin.type === "advanced") {
         pinDx += delta.x;
         pinDy += delta.y;
       }
 
       // Rotation (for bend, rotation, and advanced types)
-      if (pin.type === 'bend' || pin.type === 'rotation' || pin.type === 'advanced') {
-        const rotationRad = current.rotation * Math.PI / 180;
+      if (
+        pin.type === "bend" ||
+        pin.type === "rotation" ||
+        pin.type === "advanced"
+      ) {
+        const rotationRad = (current.rotation * Math.PI) / 180;
         if (Math.abs(rotationRad) > 0.0001) {
           // Rotate vertex around pin's rest position
           const relX = vx - rest.x;
@@ -345,7 +358,7 @@ function deformMesh(
       }
 
       // Scale (for bend and advanced types)
-      if (pin.type === 'bend' || pin.type === 'advanced') {
+      if (pin.type === "bend" || pin.type === "advanced") {
         if (Math.abs(current.scale - 1) > 0.0001) {
           const relX = vx - rest.x;
           const relY = vy - rest.y;
@@ -377,9 +390,13 @@ function renderTriangle(
   outputData: ImageData,
   inputData: ImageData,
   // Original (source) triangle vertices
-  srcA: Point2D, srcB: Point2D, srcC: Point2D,
+  srcA: Point2D,
+  srcB: Point2D,
+  srcC: Point2D,
   // Deformed (destination) triangle vertices
-  dstA: Point2D, dstB: Point2D, dstC: Point2D
+  dstA: Point2D,
+  dstB: Point2D,
+  dstC: Point2D,
 ): void {
   const { width, height, data: dst } = outputData;
   const { width: srcWidth, height: srcHeight, data: src } = inputData;
@@ -388,18 +405,27 @@ function renderTriangle(
   const minX = Math.max(0, Math.floor(Math.min(dstA.x, dstB.x, dstC.x)));
   const maxX = Math.min(width - 1, Math.ceil(Math.max(dstA.x, dstB.x, dstC.x)));
   const minY = Math.max(0, Math.floor(Math.min(dstA.y, dstB.y, dstC.y)));
-  const maxY = Math.min(height - 1, Math.ceil(Math.max(dstA.y, dstB.y, dstC.y)));
+  const maxY = Math.min(
+    height - 1,
+    Math.ceil(Math.max(dstA.y, dstB.y, dstC.y)),
+  );
 
   // Precompute barycentric coordinate denominators
-  const denom = (dstB.y - dstC.y) * (dstA.x - dstC.x) + (dstC.x - dstB.x) * (dstA.y - dstC.y);
+  const denom =
+    (dstB.y - dstC.y) * (dstA.x - dstC.x) +
+    (dstC.x - dstB.x) * (dstA.y - dstC.y);
   if (Math.abs(denom) < 0.0001) return; // Degenerate triangle
 
   // Process each pixel in bounding box
   for (let y = minY; y <= maxY; y++) {
     for (let x = minX; x <= maxX; x++) {
       // Calculate barycentric coordinates
-      const w1 = ((dstB.y - dstC.y) * (x - dstC.x) + (dstC.x - dstB.x) * (y - dstC.y)) / denom;
-      const w2 = ((dstC.y - dstA.y) * (x - dstC.x) + (dstA.x - dstC.x) * (y - dstC.y)) / denom;
+      const w1 =
+        ((dstB.y - dstC.y) * (x - dstC.x) + (dstC.x - dstB.x) * (y - dstC.y)) /
+        denom;
+      const w2 =
+        ((dstC.y - dstA.y) * (x - dstC.x) + (dstA.x - dstC.x) * (y - dstC.y)) /
+        denom;
       const w3 = 1 - w1 - w2;
 
       // Check if point is inside triangle
@@ -410,7 +436,8 @@ function renderTriangle(
       const srcY = w1 * srcA.y + w2 * srcB.y + w3 * srcC.y;
 
       // Clamp to source bounds
-      if (srcX < 0 || srcX >= srcWidth - 1 || srcY < 0 || srcY >= srcHeight - 1) continue;
+      if (srcX < 0 || srcX >= srcWidth - 1 || srcY < 0 || srcY >= srcHeight - 1)
+        continue;
 
       // Bilinear sample from source
       const x0 = Math.floor(srcX);
@@ -435,9 +462,9 @@ function renderTriangle(
 
         const value = Math.round(
           v00 * (1 - fx) * (1 - fy) +
-          v10 * fx * (1 - fy) +
-          v01 * (1 - fx) * fy +
-          v11 * fx * fy
+            v10 * fx * (1 - fy) +
+            v01 * (1 - fx) * fy +
+            v11 * fx * fy,
         );
 
         // Alpha blend with existing content
@@ -447,7 +474,9 @@ function renderTriangle(
         } else {
           // RGB - blend based on alpha
           const alpha = value / 255;
-          dst[outIdx + c] = Math.round(dst[outIdx + c] * (1 - alpha) + value * alpha);
+          dst[outIdx + c] = Math.round(
+            dst[outIdx + c] * (1 - alpha) + value * alpha,
+          );
         }
       }
     }
@@ -471,13 +500,16 @@ function calculateTriangleDepths(
   mesh: MeshFromAlphaResult,
   deformedVertices: Float32Array,
   pins: WarpPin[],
-  frame: number
+  frame: number,
 ): TriangleDepth[] {
-  const overlapPins = pins.filter(p => p.type === 'overlap');
+  const overlapPins = pins.filter((p) => p.type === "overlap");
 
   if (overlapPins.length === 0) {
     // No overlap pins - return triangles in original order with depth 0
-    return Array.from({ length: mesh.triangleCount }, (_, i) => ({ index: i, depth: 0 }));
+    return Array.from({ length: mesh.triangleCount }, (_, i) => ({
+      index: i,
+      depth: 0,
+    }));
   }
 
   const depths: TriangleDepth[] = [];
@@ -488,8 +520,16 @@ function calculateTriangleDepths(
     const i2 = mesh.triangles[t * 3 + 2];
 
     // Calculate triangle centroid (using deformed positions)
-    const cx = (deformedVertices[i0 * 2] + deformedVertices[i1 * 2] + deformedVertices[i2 * 2]) / 3;
-    const cy = (deformedVertices[i0 * 2 + 1] + deformedVertices[i1 * 2 + 1] + deformedVertices[i2 * 2 + 1]) / 3;
+    const cx =
+      (deformedVertices[i0 * 2] +
+        deformedVertices[i1 * 2] +
+        deformedVertices[i2 * 2]) /
+      3;
+    const cy =
+      (deformedVertices[i0 * 2 + 1] +
+        deformedVertices[i1 * 2 + 1] +
+        deformedVertices[i2 * 2 + 1]) /
+      3;
 
     // Calculate weighted depth from overlap pins
     let totalDepth = 0;
@@ -497,7 +537,9 @@ function calculateTriangleDepths(
 
     for (const pin of overlapPins) {
       // Get animated inFront value at current frame
-      const inFront = pin.inFront ? interpolateProperty(pin.inFront, frame) as number : 0;
+      const inFront = pin.inFront
+        ? (interpolateProperty(pin.inFront, frame) as number)
+        : 0;
 
       // Calculate distance from centroid to pin (using rest position)
       const px = pin.position.value.x;
@@ -508,7 +550,7 @@ function calculateTriangleDepths(
 
       // Weight based on distance and pin radius
       if (dist < pin.radius) {
-        const weight = 1 - (dist / pin.radius);
+        const weight = 1 - dist / pin.radius;
         totalDepth += inFront * weight;
         totalWeight += weight;
       }
@@ -532,13 +574,18 @@ function renderDeformedMesh(
   deformedVertices: Float32Array,
   pins: WarpPin[] = [],
   frame: number = 0,
-  enableOverlap: boolean = false
+  enableOverlap: boolean = false,
 ): void {
   const { width, height } = outputCtx.canvas;
 
   // Get input image data
-  const inputCtx = inputCanvas.getContext('2d')!;
-  const inputData = inputCtx.getImageData(0, 0, inputCanvas.width, inputCanvas.height);
+  const inputCtx = inputCanvas.getContext("2d")!;
+  const inputData = inputCtx.getImageData(
+    0,
+    0,
+    inputCanvas.width,
+    inputCanvas.height,
+  );
 
   // Create output image data (cleared)
   const outputData = outputCtx.createImageData(width, height);
@@ -550,7 +597,7 @@ function renderDeformedMesh(
     const depths = calculateTriangleDepths(mesh, deformedVertices, pins, frame);
     // Sort by depth ascending (lower depth = behind = render first)
     depths.sort((a, b) => a.depth - b.depth);
-    triangleOrder = depths.map(d => d.index);
+    triangleOrder = depths.map((d) => d.index);
   } else {
     // Original order
     triangleOrder = Array.from({ length: mesh.triangleCount }, (_, i) => i);
@@ -568,9 +615,18 @@ function renderDeformedMesh(
     const srcC = { x: mesh.vertices[i2 * 2], y: mesh.vertices[i2 * 2 + 1] };
 
     // Destination (deformed) vertices
-    const dstA = { x: deformedVertices[i0 * 2], y: deformedVertices[i0 * 2 + 1] };
-    const dstB = { x: deformedVertices[i1 * 2], y: deformedVertices[i1 * 2 + 1] };
-    const dstC = { x: deformedVertices[i2 * 2], y: deformedVertices[i2 * 2 + 1] };
+    const dstA = {
+      x: deformedVertices[i0 * 2],
+      y: deformedVertices[i0 * 2 + 1],
+    };
+    const dstB = {
+      x: deformedVertices[i1 * 2],
+      y: deformedVertices[i1 * 2 + 1],
+    };
+    const dstC = {
+      x: deformedVertices[i2 * 2],
+      y: deformedVertices[i2 * 2 + 1],
+    };
 
     renderTriangle(outputData, inputData, srcA, srcB, srcC, dstA, dstB, dstC);
   }
@@ -589,10 +645,10 @@ function renderMeshWireframe(
   ctx: CanvasRenderingContext2D,
   vertices: Float32Array,
   triangles: Uint32Array,
-  vertexCount: number,
-  triangleCount: number
+  _vertexCount: number,
+  triangleCount: number,
 ): void {
-  ctx.strokeStyle = 'rgba(0, 255, 0, 0.5)';
+  ctx.strokeStyle = "rgba(0, 255, 0, 0.5)";
   ctx.lineWidth = 1;
 
   for (let t = 0; t < triangleCount; t++) {
@@ -622,7 +678,7 @@ function renderMeshWireframe(
 function renderPins(
   ctx: CanvasRenderingContext2D,
   pins: WarpPin[],
-  frame: number
+  frame: number,
 ): void {
   for (const pin of pins) {
     const { position, rotation, scale } = evaluatePinAtFrame(pin, frame);
@@ -630,17 +686,28 @@ function renderPins(
     // Pin color based on type
     let color: string;
     switch (pin.type) {
-      case 'position': color = 'yellow'; break;
-      case 'bend': color = 'orange'; break;
-      case 'starch': color = 'cyan'; break;
-      case 'overlap': color = 'magenta'; break;
-      case 'advanced': color = 'white'; break;
-      default: color = 'gray';
+      case "position":
+        color = "yellow";
+        break;
+      case "bend":
+        color = "orange";
+        break;
+      case "starch":
+        color = "cyan";
+        break;
+      case "overlap":
+        color = "magenta";
+        break;
+      case "advanced":
+        color = "white";
+        break;
+      default:
+        color = "gray";
     }
 
     // Draw pin
     ctx.fillStyle = color;
-    ctx.strokeStyle = 'black';
+    ctx.strokeStyle = "black";
     ctx.lineWidth = 2;
 
     ctx.beginPath();
@@ -656,8 +723,12 @@ function renderPins(
     ctx.stroke();
 
     // Draw rotation indicator for bend/rotation/advanced pins
-    if (pin.type === 'bend' || pin.type === 'rotation' || pin.type === 'advanced') {
-      const rad = rotation * Math.PI / 180;
+    if (
+      pin.type === "bend" ||
+      pin.type === "rotation" ||
+      pin.type === "advanced"
+    ) {
+      const rad = (rotation * Math.PI) / 180;
       const indicatorLen = 15;
       ctx.strokeStyle = color;
       ctx.lineWidth = 2;
@@ -665,7 +736,7 @@ function renderPins(
       ctx.moveTo(position.x, position.y);
       ctx.lineTo(
         position.x + Math.cos(rad) * indicatorLen,
-        position.y + Math.sin(rad) * indicatorLen
+        position.y + Math.sin(rad) * indicatorLen,
       );
       ctx.stroke();
     }
@@ -695,7 +766,7 @@ function renderPins(
  */
 export function meshDeformRenderer(
   input: EffectStackResult,
-  params: EvaluatedEffectParams
+  params: EvaluatedEffectParams,
 ): EffectStackResult {
   const effectInstance = params._effectInstance;
   const frame = params._frame ?? 0;
@@ -713,9 +784,15 @@ export function meshDeformRenderer(
       output.ctx.drawImage(input.canvas, 0, 0);
 
       if (showMesh) {
-        const effectId = effectInstance?.id ?? 'temp';
+        const effectId = effectInstance?.id ?? "temp";
         const { mesh } = getOrGenerateMesh(effectId, input.canvas, params, []);
-        renderMeshWireframe(output.ctx, mesh.vertices, mesh.triangles, mesh.vertexCount, mesh.triangleCount);
+        renderMeshWireframe(
+          output.ctx,
+          mesh.vertices,
+          mesh.triangles,
+          mesh.vertexCount,
+          mesh.triangleCount,
+        );
       }
 
       return output;
@@ -726,7 +803,12 @@ export function meshDeformRenderer(
   const effectId = effectInstance?.id ?? `temp-${Date.now()}`;
 
   // Get or generate mesh
-  const { mesh, weights } = getOrGenerateMesh(effectId, input.canvas, params, pins);
+  const { mesh, weights } = getOrGenerateMesh(
+    effectId,
+    input.canvas,
+    params,
+    pins,
+  );
 
   // Deform mesh
   const deformedVertices = deformMesh(mesh, pins, weights, frame);
@@ -736,11 +818,25 @@ export function meshDeformRenderer(
 
   // Create output and render deformed mesh
   const output = createMatchingCanvas(input.canvas);
-  renderDeformedMesh(output.ctx, input.canvas, mesh, deformedVertices, pins, frame, enableOverlap);
+  renderDeformedMesh(
+    output.ctx,
+    input.canvas,
+    mesh,
+    deformedVertices,
+    pins,
+    frame,
+    enableOverlap,
+  );
 
   // Debug overlays
   if (showMesh) {
-    renderMeshWireframe(output.ctx, deformedVertices, mesh.triangles, mesh.vertexCount, mesh.triangleCount);
+    renderMeshWireframe(
+      output.ctx,
+      deformedVertices,
+      mesh.triangles,
+      mesh.vertexCount,
+      mesh.triangleCount,
+    );
   }
 
   if (showPins) {
@@ -758,7 +854,7 @@ export function meshDeformRenderer(
  * Register mesh-deform effect renderer
  */
 export function registerMeshDeformEffect(): void {
-  registerEffectRenderer('mesh-deform', meshDeformRenderer);
+  registerEffectRenderer("mesh-deform", meshDeformRenderer);
 }
 
 /**
@@ -794,7 +890,7 @@ export function _testGetCacheSize(): number {
 export function _testCalculateWeights(
   mesh: MeshFromAlphaResult,
   pins: WarpPin[],
-  params: EvaluatedEffectParams
+  params: EvaluatedEffectParams,
 ): Float32Array {
   return calculatePinWeights(mesh, pins, params);
 }
@@ -806,7 +902,7 @@ export function _testDeformMesh(
   mesh: MeshFromAlphaResult,
   pins: WarpPin[],
   weights: Float32Array,
-  frame: number
+  frame: number,
 ): Float32Array {
   return deformMesh(mesh, pins, weights, frame);
 }
@@ -818,7 +914,7 @@ export function _testCalculateTriangleDepths(
   mesh: MeshFromAlphaResult,
   deformedVertices: Float32Array,
   pins: WarpPin[],
-  frame: number
+  frame: number,
 ): Array<{ index: number; depth: number }> {
   return calculateTriangleDepths(mesh, deformedVertices, pins, frame);
 }
@@ -826,5 +922,5 @@ export function _testCalculateTriangleDepths(
 export default {
   meshDeformRenderer,
   registerMeshDeformEffect,
-  clearMeshDeformCaches
+  clearMeshDeformCaches,
 };

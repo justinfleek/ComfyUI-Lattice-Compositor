@@ -13,13 +13,13 @@
  */
 
 import type {
-  Point2D,
-  BezierVertex,
   BezierPath,
+  BezierVertex,
+  Point2D,
   WigglePointType,
   ZigZagPointType,
-} from '@/types/shapes';
-import { SeededRandom } from '../particleSystem';
+} from "@/types/shapes";
+import { SeededRandom } from "../particleSystem";
 
 // ============================================================================
 // LOCAL UTILITY IMPORTS
@@ -93,7 +93,7 @@ function cubicBezierPoint(
   p1: Point2D,
   p2: Point2D,
   p3: Point2D,
-  t: number
+  t: number,
 ): Point2D {
   const mt = 1 - t;
   const mt2 = mt * mt;
@@ -113,15 +113,21 @@ function cubicBezierDerivative(
   p1: Point2D,
   p2: Point2D,
   p3: Point2D,
-  t: number
+  t: number,
 ): Point2D {
   const mt = 1 - t;
   const mt2 = mt * mt;
   const t2 = t * t;
 
   return {
-    x: 3 * mt2 * (p1.x - p0.x) + 6 * mt * t * (p2.x - p1.x) + 3 * t2 * (p3.x - p2.x),
-    y: 3 * mt2 * (p1.y - p0.y) + 6 * mt * t * (p2.y - p1.y) + 3 * t2 * (p3.y - p2.y),
+    x:
+      3 * mt2 * (p1.x - p0.x) +
+      6 * mt * t * (p2.x - p1.x) +
+      3 * t2 * (p3.x - p2.x),
+    y:
+      3 * mt2 * (p1.y - p0.y) +
+      6 * mt * t * (p2.y - p1.y) +
+      3 * t2 * (p3.y - p2.y),
   };
 }
 
@@ -131,14 +137,23 @@ function splitCubicBezier(
   p1: Point2D,
   p2: Point2D,
   p3: Point2D,
-  t: number
+  t: number,
 ): [Point2D[], Point2D[]] {
   const p01 = { x: p0.x + (p1.x - p0.x) * t, y: p0.y + (p1.y - p0.y) * t };
   const p12 = { x: p1.x + (p2.x - p1.x) * t, y: p1.y + (p2.y - p1.y) * t };
   const p23 = { x: p2.x + (p3.x - p2.x) * t, y: p2.y + (p3.y - p2.y) * t };
-  const p012 = { x: p01.x + (p12.x - p01.x) * t, y: p01.y + (p12.y - p01.y) * t };
-  const p123 = { x: p12.x + (p23.x - p12.x) * t, y: p12.y + (p23.y - p12.y) * t };
-  const p0123 = { x: p012.x + (p123.x - p012.x) * t, y: p012.y + (p123.y - p012.y) * t };
+  const p012 = {
+    x: p01.x + (p12.x - p01.x) * t,
+    y: p01.y + (p12.y - p01.y) * t,
+  };
+  const p123 = {
+    x: p12.x + (p23.x - p12.x) * t,
+    y: p12.y + (p23.y - p12.y) * t,
+  };
+  const p0123 = {
+    x: p012.x + (p123.x - p012.x) * t,
+    y: p012.y + (p123.y - p012.y) * t,
+  };
 
   return [
     [p0, p01, p012, p0123],
@@ -152,7 +167,7 @@ function cubicBezierLength(
   p1: Point2D,
   p2: Point2D,
   p3: Point2D,
-  samples: number = 10
+  samples: number = 10,
 ): number {
   let length = 0;
   let prevPoint = p0;
@@ -172,7 +187,9 @@ function cubicBezierLength(
 /** Get total path length */
 function getPathLength(path: BezierPath): number {
   let totalLength = 0;
-  const numSegments = path.closed ? path.vertices.length : path.vertices.length - 1;
+  const numSegments = path.closed
+    ? path.vertices.length
+    : path.vertices.length - 1;
 
   for (let i = 0; i < numSegments; i++) {
     const v0 = path.vertices[i];
@@ -193,7 +210,7 @@ function getPathLength(path: BezierPath): number {
 function getPointAtDistance(
   path: BezierPath,
   targetDistance: number,
-  totalLength?: number
+  totalLength?: number,
 ): { point: Point2D; tangent: Point2D } | null {
   if (path.vertices.length < 2) return null;
 
@@ -201,7 +218,9 @@ function getPointAtDistance(
   if (pathLen < 0.001) return null;
 
   let accumulatedLength = 0;
-  const numSegments = path.closed ? path.vertices.length : path.vertices.length - 1;
+  const numSegments = path.closed
+    ? path.vertices.length
+    : path.vertices.length - 1;
 
   for (let i = 0; i < numSegments; i++) {
     const v0 = path.vertices[i];
@@ -236,9 +255,16 @@ function getPointAtDistance(
 }
 
 /** Get bounding box of a path */
-function getPathBounds(path: BezierPath): { x: number; y: number; width: number; height: number } {
-  let minX = Infinity, minY = Infinity;
-  let maxX = -Infinity, maxY = -Infinity;
+function getPathBounds(path: BezierPath): {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+} {
+  let minX = Infinity,
+    minY = Infinity;
+  let maxX = -Infinity,
+    maxY = -Infinity;
 
   for (const v of path.vertices) {
     minX = Math.min(minX, v.point.x);
@@ -280,7 +306,7 @@ export function puckerBloat(path: BezierPath, amount: number): BezierPath {
   // Amount is -100 to 100, convert to factor
   const factor = amount / 100;
 
-  const result: BezierVertex[] = path.vertices.map(v => {
+  const result: BezierVertex[] = path.vertices.map((v) => {
     // Direction from centroid to point
     const dir = subtractPoints(v.point, centroid);
     const dist = Math.sqrt(dir.x * dir.x + dir.y * dir.y);
@@ -318,7 +344,9 @@ function subdividePath(path: BezierPath, levels: number = 1): BezierPath {
 
   for (let level = 0; level < levels; level++) {
     const result: BezierVertex[] = [];
-    const numSegments = current.closed ? current.vertices.length : current.vertices.length - 1;
+    const numSegments = current.closed
+      ? current.vertices.length
+      : current.vertices.length - 1;
 
     for (let i = 0; i < numSegments; i++) {
       const v0 = current.vertices[i];
@@ -370,7 +398,7 @@ export function wigglePath(
   correlation: number,
   temporalPhase: number,
   spatialPhase: number,
-  seed: number
+  seed: number,
 ): BezierPath {
   if (path.vertices.length < 2 || size < 0.001) {
     return clonePath(path);
@@ -404,16 +432,22 @@ export function wigglePath(
     };
 
     const offset = {
-      x: prevOffset.x * correlationFactor + newOffset.x * (1 - correlationFactor),
-      y: prevOffset.y * correlationFactor + newOffset.y * (1 - correlationFactor),
+      x:
+        prevOffset.x * correlationFactor +
+        newOffset.x * (1 - correlationFactor),
+      y:
+        prevOffset.y * correlationFactor +
+        newOffset.y * (1 - correlationFactor),
     };
 
     prevOffset = offset;
 
     const newVertex: BezierVertex = {
       point: addPoints(v.point, offset),
-      inHandle: pointType === 'smooth' ? clonePoint(v.inHandle) : { x: 0, y: 0 },
-      outHandle: pointType === 'smooth' ? clonePoint(v.outHandle) : { x: 0, y: 0 },
+      inHandle:
+        pointType === "smooth" ? clonePoint(v.inHandle) : { x: 0, y: 0 },
+      outHandle:
+        pointType === "smooth" ? clonePoint(v.outHandle) : { x: 0, y: 0 },
     };
 
     result.push(newVertex);
@@ -433,7 +467,7 @@ export function zigZagPath(
   path: BezierPath,
   size: number,
   ridgesPerSegment: number,
-  pointType: ZigZagPointType
+  pointType: ZigZagPointType,
 ): BezierPath {
   if (path.vertices.length < 2 || size < 0.001 || ridgesPerSegment < 1) {
     return clonePath(path);
@@ -441,7 +475,9 @@ export function zigZagPath(
 
   const result: BezierVertex[] = [];
   const totalLength = getPathLength(path);
-  const ridgeLength = totalLength / (ridgesPerSegment * (path.vertices.length - (path.closed ? 0 : 1)));
+  const ridgeLength =
+    totalLength /
+    (ridgesPerSegment * (path.vertices.length - (path.closed ? 0 : 1)));
 
   let currentDistance = 0;
   let zigDirection = 1;
@@ -456,12 +492,14 @@ export function zigZagPath(
 
     const vertex: BezierVertex = {
       point: addPoints(pointData.point, offset),
-      inHandle: pointType === 'smooth'
-        ? scalePoint(pointData.tangent, -ridgeLength * 0.3)
-        : { x: 0, y: 0 },
-      outHandle: pointType === 'smooth'
-        ? scalePoint(pointData.tangent, ridgeLength * 0.3)
-        : { x: 0, y: 0 },
+      inHandle:
+        pointType === "smooth"
+          ? scalePoint(pointData.tangent, -ridgeLength * 0.3)
+          : { x: 0, y: 0 },
+      outHandle:
+        pointType === "smooth"
+          ? scalePoint(pointData.tangent, ridgeLength * 0.3)
+          : { x: 0, y: 0 },
     };
 
     result.push(vertex);
@@ -503,7 +541,7 @@ export function roughenPath(
   size: number,
   detail: number,
   seed: number,
-  relative: boolean = false
+  relative: boolean = false,
 ): BezierPath {
   if (path.vertices.length < 2 || size < 0.001 || detail < 1) {
     return clonePath(path);
@@ -516,7 +554,9 @@ export function roughenPath(
   let actualSize = size;
   if (relative) {
     const bounds = getPathBounds(path);
-    const diagonal = Math.sqrt(bounds.width * bounds.width + bounds.height * bounds.height);
+    const diagonal = Math.sqrt(
+      bounds.width * bounds.width + bounds.height * bounds.height,
+    );
     actualSize = (size / 100) * diagonal;
   }
 
@@ -563,7 +603,7 @@ export function roughenPath(
 // WAVE PATH
 // ============================================================================
 
-export type WaveType = 'sine' | 'triangle' | 'square';
+export type WaveType = "sine" | "triangle" | "square";
 
 /**
  * Apply a wave deformation along a path
@@ -580,7 +620,7 @@ export function wavePath(
   amplitude: number,
   frequency: number,
   phase: number = 0,
-  waveType: WaveType = 'sine'
+  waveType: WaveType = "sine",
 ): BezierPath {
   if (path.vertices.length < 2 || amplitude < 0.001 || frequency < 0.1) {
     return clonePath(path);
@@ -608,15 +648,14 @@ export function wavePath(
     // Calculate wave value based on type
     let waveValue: number;
     switch (waveType) {
-      case 'triangle':
+      case "triangle":
         // Triangle wave: linear ramp up and down
         waveValue = Math.abs(((waveInput / Math.PI) % 2) - 1) * 2 - 1;
         break;
-      case 'square':
+      case "square":
         // Square wave: -1 or 1
         waveValue = Math.sin(waveInput) >= 0 ? 1 : -1;
         break;
-      case 'sine':
       default:
         // Sine wave
         waveValue = Math.sin(waveInput);
@@ -654,14 +693,15 @@ export function wavePath(
 export function twistPath(
   path: BezierPath,
   angle: number,
-  center: Point2D
+  center: Point2D,
 ): BezierPath {
   if (path.vertices.length < 2 || Math.abs(angle) < 0.001) {
     return clonePath(path);
   }
 
   // Find the bounding box to determine twist falloff
-  let minY = Infinity, maxY = -Infinity;
+  let minY = Infinity,
+    maxY = -Infinity;
   for (const v of path.vertices) {
     minY = Math.min(minY, v.point.y);
     maxY = Math.max(maxY, v.point.y);
@@ -672,7 +712,7 @@ export function twistPath(
 
   const angleRad = (angle * Math.PI) / 180;
 
-  const result: BezierVertex[] = path.vertices.map(v => {
+  const result: BezierVertex[] = path.vertices.map((v) => {
     // Twist amount based on vertical position
     const yNorm = (v.point.y - minY) / height;
     const localAngle = angleRad * yNorm;

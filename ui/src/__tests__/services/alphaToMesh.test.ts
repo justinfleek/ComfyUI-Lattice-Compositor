@@ -2,24 +2,20 @@
  * Tests for alpha-to-mesh generator
  * Verifies mesh generation from image alpha channels
  */
-import { describe, it, expect } from 'vitest';
-import {
-  generateMeshFromAlpha,
-  type MeshFromAlphaResult,
-  type AlphaToMeshOptions,
-} from '@/services/alphaToMesh';
+import { describe, expect, it } from "vitest";
+import { generateMeshFromAlpha } from "@/services/alphaToMesh";
 
 // Helper to create test ImageData
 function createTestImageData(
   width: number,
   height: number,
-  fillAlpha: (x: number, y: number) => number
+  fillAlpha: (x: number, y: number) => number,
 ): ImageData {
   const data = new Uint8ClampedArray(width * height * 4);
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       const i = (y * width + x) * 4;
-      data[i] = 255;     // R
+      data[i] = 255; // R
       data[i + 1] = 255; // G
       data[i + 2] = 255; // B
       data[i + 3] = fillAlpha(x, y); // A
@@ -28,9 +24,9 @@ function createTestImageData(
   return new ImageData(data, width, height);
 }
 
-describe('generateMeshFromAlpha', () => {
-  describe('basic functionality', () => {
-    it('generates mesh from fully opaque image', () => {
+describe("generateMeshFromAlpha", () => {
+  describe("basic functionality", () => {
+    it("generates mesh from fully opaque image", () => {
       const imageData = createTestImageData(100, 100, () => 255);
       const result = generateMeshFromAlpha(imageData);
 
@@ -40,7 +36,7 @@ describe('generateMeshFromAlpha', () => {
       expect(result.triangles.length).toBe(result.triangleCount * 3);
     });
 
-    it('generates mesh from image with circular alpha', () => {
+    it("generates mesh from image with circular alpha", () => {
       const size = 100;
       const centerX = 50;
       const centerY = 50;
@@ -64,7 +60,7 @@ describe('generateMeshFromAlpha', () => {
       expect(result.bounds.height).toBeGreaterThan(radius);
     });
 
-    it('handles completely transparent image with fallback mesh', () => {
+    it("handles completely transparent image with fallback mesh", () => {
       const imageData = createTestImageData(100, 100, () => 0);
       const result = generateMeshFromAlpha(imageData);
 
@@ -75,8 +71,8 @@ describe('generateMeshFromAlpha', () => {
       expect(result.bounds.height).toBe(100);
     });
 
-    it('handles image with partial transparency threshold', () => {
-      const imageData = createTestImageData(100, 100, (x, y) => {
+    it("handles image with partial transparency threshold", () => {
+      const imageData = createTestImageData(100, 100, (x, _y) => {
         // Left half: 100 alpha (below default threshold of 128)
         // Right half: 200 alpha (above threshold)
         return x < 50 ? 100 : 200;
@@ -89,18 +85,24 @@ describe('generateMeshFromAlpha', () => {
     });
   });
 
-  describe('options', () => {
-    it('respects triangleCount option for density', () => {
+  describe("options", () => {
+    it("respects triangleCount option for density", () => {
       const imageData = createTestImageData(200, 200, () => 255);
 
-      const lowDensity = generateMeshFromAlpha(imageData, { triangleCount: 50 });
-      const highDensity = generateMeshFromAlpha(imageData, { triangleCount: 500 });
+      const lowDensity = generateMeshFromAlpha(imageData, {
+        triangleCount: 50,
+      });
+      const highDensity = generateMeshFromAlpha(imageData, {
+        triangleCount: 500,
+      });
 
       // Higher target should produce more triangles
-      expect(highDensity.triangleCount).toBeGreaterThan(lowDensity.triangleCount);
+      expect(highDensity.triangleCount).toBeGreaterThan(
+        lowDensity.triangleCount,
+      );
     });
 
-    it('respects expansion option', () => {
+    it("respects expansion option", () => {
       const size = 100;
       const imageData = createTestImageData(size, size, (x, y) => {
         // Small centered square
@@ -135,32 +137,42 @@ describe('generateMeshFromAlpha', () => {
       expect(maxDistWithExp).toBeGreaterThanOrEqual(maxDistNoExp);
     });
 
-    it('respects alphaThreshold option', () => {
-      const imageData = createTestImageData(100, 100, (x, y) => {
+    it("respects alphaThreshold option", () => {
+      const imageData = createTestImageData(100, 100, (x, _y) => {
         // Gradient from 0 to 255 across width
         return Math.floor((x / 100) * 255);
       });
 
-      const lowThreshold = generateMeshFromAlpha(imageData, { alphaThreshold: 50 });
-      const highThreshold = generateMeshFromAlpha(imageData, { alphaThreshold: 200 });
+      const lowThreshold = generateMeshFromAlpha(imageData, {
+        alphaThreshold: 50,
+      });
+      const highThreshold = generateMeshFromAlpha(imageData, {
+        alphaThreshold: 200,
+      });
 
       // Low threshold should have wider bounds (more pixels included)
       expect(lowThreshold.bounds.x).toBeLessThan(highThreshold.bounds.x);
     });
 
-    it('respects minBoundarySpacing option', () => {
+    it("respects minBoundarySpacing option", () => {
       const imageData = createTestImageData(200, 200, () => 255);
 
-      const smallSpacing = generateMeshFromAlpha(imageData, { minBoundarySpacing: 2 });
-      const largeSpacing = generateMeshFromAlpha(imageData, { minBoundarySpacing: 20 });
+      const smallSpacing = generateMeshFromAlpha(imageData, {
+        minBoundarySpacing: 2,
+      });
+      const largeSpacing = generateMeshFromAlpha(imageData, {
+        minBoundarySpacing: 20,
+      });
 
       // Smaller spacing should produce more boundary points (and thus more vertices)
-      expect(smallSpacing.vertexCount).toBeGreaterThan(largeSpacing.vertexCount);
+      expect(smallSpacing.vertexCount).toBeGreaterThan(
+        largeSpacing.vertexCount,
+      );
     });
   });
 
-  describe('output format', () => {
-    it('returns proper Float32Array for vertices', () => {
+  describe("output format", () => {
+    it("returns proper Float32Array for vertices", () => {
       const imageData = createTestImageData(50, 50, () => 255);
       const result = generateMeshFromAlpha(imageData);
 
@@ -178,7 +190,7 @@ describe('generateMeshFromAlpha', () => {
       }
     });
 
-    it('returns proper Uint32Array for triangles', () => {
+    it("returns proper Uint32Array for triangles", () => {
       const imageData = createTestImageData(50, 50, () => 255);
       const result = generateMeshFromAlpha(imageData);
 
@@ -191,7 +203,7 @@ describe('generateMeshFromAlpha', () => {
       }
     });
 
-    it('returns accurate bounds', () => {
+    it("returns accurate bounds", () => {
       const imageData = createTestImageData(100, 100, (x, y) => {
         // Rectangle from (20,30) to (70,80)
         return x >= 20 && x <= 70 && y >= 30 && y <= 80 ? 255 : 0;
@@ -207,8 +219,8 @@ describe('generateMeshFromAlpha', () => {
     });
   });
 
-  describe('edge cases', () => {
-    it('handles very small image with appropriate mesh size', () => {
+  describe("edge cases", () => {
+    it("handles very small image with appropriate mesh size", () => {
       const imageData = createTestImageData(5, 5, () => 255);
       const result = generateMeshFromAlpha(imageData);
 
@@ -219,7 +231,7 @@ describe('generateMeshFromAlpha', () => {
       expect(result.bounds.height).toBeLessThanOrEqual(10);
     });
 
-    it('handles single pixel alpha with fallback to full-image mesh', () => {
+    it("handles single pixel alpha with fallback to full-image mesh", () => {
       const imageData = createTestImageData(50, 50, (x, y) => {
         return x === 25 && y === 25 ? 255 : 0;
       });
@@ -233,7 +245,7 @@ describe('generateMeshFromAlpha', () => {
       expect(result.vertexCount).toBeGreaterThanOrEqual(4);
     });
 
-    it('handles diagonal line with bounds covering the line', () => {
+    it("handles diagonal line with bounds covering the line", () => {
       const imageData = createTestImageData(100, 100, (x, y) => {
         // Diagonal line with 3px thickness
         return Math.abs(x - y) <= 3 ? 255 : 0;
@@ -249,7 +261,7 @@ describe('generateMeshFromAlpha', () => {
       expect(result.bounds.y + result.bounds.height).toBeGreaterThanOrEqual(90);
     });
 
-    it('handles complex shape (ring) covering outer boundary', () => {
+    it("handles complex shape (ring) covering outer boundary", () => {
       const imageData = createTestImageData(100, 100, (x, y) => {
         const dx = x - 50;
         const dy = y - 50;
@@ -268,7 +280,7 @@ describe('generateMeshFromAlpha', () => {
       expect(result.bounds.y + result.bounds.height).toBeGreaterThanOrEqual(85);
     });
 
-    it('handles non-square image with correct aspect ratio', () => {
+    it("handles non-square image with correct aspect ratio", () => {
       const imageData = createTestImageData(200, 50, () => 255);
       const result = generateMeshFromAlpha(imageData);
 
@@ -279,8 +291,8 @@ describe('generateMeshFromAlpha', () => {
     });
   });
 
-  describe('triangulation quality', () => {
-    it('produces valid triangles (no degenerate triangles)', () => {
+  describe("triangulation quality", () => {
+    it("produces valid triangles (no degenerate triangles)", () => {
       const imageData = createTestImageData(100, 100, () => 255);
       const result = generateMeshFromAlpha(imageData);
 
@@ -303,12 +315,13 @@ describe('generateMeshFromAlpha', () => {
         const cy = result.vertices[c * 2 + 1];
 
         // Triangle should have non-zero area (not degenerate)
-        const area = Math.abs((bx - ax) * (cy - ay) - (cx - ax) * (by - ay)) / 2;
+        const area =
+          Math.abs((bx - ax) * (cy - ay) - (cx - ax) * (by - ay)) / 2;
         expect(area).toBeGreaterThan(0.001);
       }
     });
 
-    it('produces connected mesh where all triangles reference valid vertices', () => {
+    it("produces connected mesh where all triangles reference valid vertices", () => {
       const imageData = createTestImageData(100, 100, () => 255);
       const result = generateMeshFromAlpha(imageData);
 

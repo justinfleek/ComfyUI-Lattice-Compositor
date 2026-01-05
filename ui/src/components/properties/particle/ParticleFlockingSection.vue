@@ -136,7 +136,7 @@
 </template>
 
 <script setup lang="ts">
-import type { FlockingConfig } from '@/types/project';
+import type { FlockingConfig } from "@/types/project";
 
 interface Props {
   flocking: FlockingConfig;
@@ -146,11 +146,11 @@ interface Props {
 defineProps<Props>();
 
 const emit = defineEmits<{
-  (e: 'toggle'): void;
-  (e: 'update', key: keyof FlockingConfig, value: any): void;
+  (e: "toggle"): void;
+  (e: "update", key: keyof FlockingConfig, value: any): void;
 }>();
 
-function update(key: keyof FlockingConfig, value: any): void {
-  emit('update', key, value);
+function _update(key: keyof FlockingConfig, value: any): void {
+  emit("update", key, value);
 }
 </script>

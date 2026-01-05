@@ -25,12 +25,12 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: 'toggle', enabled: boolean): void;
-  (e: 'expand', expanded: boolean): void;
+  (e: "toggle", enabled: boolean): void;
+  (e: "expand", expanded: boolean): void;
 }>();
 
-function toggleExpand() {
-  emit('expand', !props.expanded);
+function _toggleExpand() {
+  emit("expand", !props.expanded);
 }
 </script>
 

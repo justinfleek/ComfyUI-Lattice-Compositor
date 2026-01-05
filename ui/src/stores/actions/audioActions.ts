@@ -5,14 +5,31 @@
  * Extracted from compositorStore for better maintainability.
  */
 
-import { storeLogger } from '@/utils/logger';
-import type { AudioAnalysis, PeakData, PeakDetectionConfig } from '@/services/audioFeatures';
-import { getFeatureAtFrame, detectPeaks, isBeatAtFrame } from '@/services/audioFeatures';
-import { loadAndAnalyzeAudio, cancelAnalysis } from '@/services/audioWorkerClient';
-import type { AudioMapping, TargetParameter } from '@/services/audioReactiveMapping';
-import { AudioReactiveMapper } from '@/services/audioReactiveMapping';
-import { AudioPathAnimator, type PathAnimatorConfig } from '@/services/audioPathAnimator';
-import type { AudioParticleMapping } from '@/types/project';
+import type {
+  AudioAnalysis,
+  PeakData,
+  PeakDetectionConfig,
+} from "@/services/audioFeatures";
+import {
+  detectPeaks,
+  getFeatureAtFrame,
+  isBeatAtFrame,
+} from "@/services/audioFeatures";
+import {
+  AudioPathAnimator,
+  type PathAnimatorConfig,
+} from "@/services/audioPathAnimator";
+import type {
+  AudioMapping,
+  TargetParameter,
+} from "@/services/audioReactiveMapping";
+import { AudioReactiveMapper } from "@/services/audioReactiveMapping";
+import {
+  cancelAnalysis,
+  loadAndAnalyzeAudio,
+} from "@/services/audioWorkerClient";
+import type { AudioParticleMapping } from "@/types/project";
+import { storeLogger } from "@/utils/logger";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AudioReactiveMapperType = AudioReactiveMapper | any;
@@ -31,7 +48,7 @@ export interface AudioStore {
   audioFile: File | null;
   audioVolume: number;
   audioMuted: boolean;
-  audioLoadingState: 'idle' | 'decoding' | 'analyzing' | 'complete' | 'error';
+  audioLoadingState: "idle" | "decoding" | "analyzing" | "complete" | "error";
   audioLoadingProgress: number;
   audioLoadingPhase: string;
   audioLoadingError: string | null;
@@ -42,7 +59,9 @@ export interface AudioStore {
   audioReactiveMapper: AudioReactiveMapperType | null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   pathAnimators: Map<string, AudioPathAnimator | any>;
-  propertyDriverSystem: { setAudioAnalysis(analysis: AudioAnalysis): void } | null;
+  propertyDriverSystem: {
+    setAudioAnalysis(analysis: AudioAnalysis): void;
+  } | null;
 
   // Methods the store must provide
   getActiveComp(): { currentFrame: number } | null;
@@ -56,9 +75,9 @@ export async function loadAudio(store: AudioStore, file: File): Promise<void> {
   store.audioFile = file;
   store.audioBuffer = null;
   store.audioAnalysis = null;
-  store.audioLoadingState = 'decoding';
+  store.audioLoadingState = "decoding";
   store.audioLoadingProgress = 0;
-  store.audioLoadingPhase = 'Preparing...';
+  store.audioLoadingPhase = "Preparing...";
   store.audioLoadingError = null;
 
   try {
@@ -67,22 +86,22 @@ export async function loadAudio(store: AudioStore, file: File): Promise<void> {
       store.project.composition.fps,
       {
         onProgress: (progress) => {
-          if (progress.phase === 'decoding') {
-            store.audioLoadingState = 'decoding';
+          if (progress.phase === "decoding") {
+            store.audioLoadingState = "decoding";
           } else {
-            store.audioLoadingState = 'analyzing';
+            store.audioLoadingState = "analyzing";
           }
           store.audioLoadingProgress = progress.progress;
           store.audioLoadingPhase = progress.message;
-        }
-      }
+        },
+      },
     );
 
     store.audioBuffer = result.buffer;
     store.audioAnalysis = result.analysis;
-    store.audioLoadingState = 'complete';
+    store.audioLoadingState = "complete";
     store.audioLoadingProgress = 1;
-    store.audioLoadingPhase = 'Complete';
+    store.audioLoadingPhase = "Complete";
 
     // Initialize the audio reactive mapper
     initializeAudioReactiveMapper(store);
@@ -92,18 +111,18 @@ export async function loadAudio(store: AudioStore, file: File): Promise<void> {
       store.propertyDriverSystem.setAudioAnalysis(store.audioAnalysis);
     }
 
-    storeLogger.debug('Audio loaded:', {
+    storeLogger.debug("Audio loaded:", {
       duration: store.audioBuffer.duration,
       bpm: store.audioAnalysis.bpm,
-      frameCount: store.audioAnalysis.frameCount
+      frameCount: store.audioAnalysis.frameCount,
     });
   } catch (error) {
-    storeLogger.error('Failed to load audio:', error);
+    storeLogger.error("Failed to load audio:", error);
     store.audioFile = null;
     store.audioBuffer = null;
     store.audioAnalysis = null;
     store.audioReactiveMapper = null;
-    store.audioLoadingState = 'error';
+    store.audioLoadingState = "error";
     store.audioLoadingError = (error as Error).message;
   }
 }
@@ -113,9 +132,9 @@ export async function loadAudio(store: AudioStore, file: File): Promise<void> {
  */
 export function cancelAudioLoad(store: AudioStore): void {
   cancelAnalysis();
-  store.audioLoadingState = 'idle';
+  store.audioLoadingState = "idle";
   store.audioLoadingProgress = 0;
-  store.audioLoadingPhase = '';
+  store.audioLoadingPhase = "";
   store.audioLoadingError = null;
 }
 
@@ -150,7 +169,7 @@ export function clearAudio(store: AudioStore): void {
 export function getAudioFeatureAtFrame(
   store: AudioStore,
   feature: string,
-  frame?: number
+  frame?: number,
 ): number {
   if (!store.audioAnalysis) return 0;
   const targetFrame = safeFrame(frame ?? store.getActiveComp()?.currentFrame);
@@ -172,7 +191,7 @@ export function setPeakData(store: AudioStore, peakData: PeakData): void {
  */
 export function detectAudioPeaks(
   store: AudioStore,
-  config: PeakDetectionConfig
+  config: PeakDetectionConfig,
 ): PeakData | null {
   if (!store.audioAnalysis) return null;
 
@@ -190,7 +209,10 @@ export function detectAudioPeaks(
 /**
  * Add new audio mapping
  */
-export function addAudioMapping(store: AudioStore, mapping: AudioMapping): void {
+export function addAudioMapping(
+  store: AudioStore,
+  mapping: AudioMapping,
+): void {
   store.audioReactiveMappings.push(mapping);
 
   if (store.audioReactiveMapper) {
@@ -202,7 +224,9 @@ export function addAudioMapping(store: AudioStore, mapping: AudioMapping): void 
  * Remove audio mapping by ID
  */
 export function removeAudioMapping(store: AudioStore, mappingId: string): void {
-  const index = store.audioReactiveMappings.findIndex(m => m.id === mappingId);
+  const index = store.audioReactiveMappings.findIndex(
+    (m) => m.id === mappingId,
+  );
   if (index >= 0) {
     store.audioReactiveMappings.splice(index, 1);
   }
@@ -218,9 +242,9 @@ export function removeAudioMapping(store: AudioStore, mappingId: string): void {
 export function updateAudioMapping(
   store: AudioStore,
   mappingId: string,
-  updates: Partial<AudioMapping>
+  updates: Partial<AudioMapping>,
 ): void {
-  const mapping = store.audioReactiveMappings.find(m => m.id === mappingId);
+  const mapping = store.audioReactiveMappings.find((m) => m.id === mappingId);
   if (mapping) {
     Object.assign(mapping, updates);
   }
@@ -236,7 +260,7 @@ export function updateAudioMapping(
 export function getMappedValueAtFrame(
   store: AudioStore,
   mappingId: string,
-  frame: number
+  frame: number,
 ): number {
   if (!store.audioReactiveMapper) return 0;
   return store.audioReactiveMapper.getValueAtFrame(mappingId, frame);
@@ -247,7 +271,7 @@ export function getMappedValueAtFrame(
  */
 export function getAllMappedValuesAtFrame(
   store: AudioStore,
-  frame?: number
+  frame?: number,
 ): Map<TargetParameter, number> {
   if (!store.audioReactiveMapper) return new Map();
   const targetFrame = safeFrame(frame ?? store.getActiveComp()?.currentFrame);
@@ -259,10 +283,12 @@ export function getAllMappedValuesAtFrame(
  */
 export function getActiveMappingsForLayer(
   store: AudioStore,
-  layerId: string
+  layerId: string,
 ): AudioMapping[] {
   return store.audioReactiveMappings.filter(
-    m => m.enabled && (m.targetLayerId === layerId || m.targetLayerId === undefined)
+    (m) =>
+      m.enabled &&
+      (m.targetLayerId === layerId || m.targetLayerId === undefined),
   );
 }
 
@@ -272,7 +298,7 @@ export function getActiveMappingsForLayer(
 export function getAudioReactiveValuesForLayer(
   store: AudioStore,
   layerId: string,
-  frame: number
+  frame: number,
 ): Map<TargetParameter, number> {
   if (!store.audioReactiveMapper) return new Map();
   return store.audioReactiveMapper.getValuesForLayerAtFrame(layerId, frame);
@@ -283,7 +309,10 @@ export function getAudioReactiveValuesForLayer(
  */
 export function isBeatAtCurrentFrame(store: AudioStore): boolean {
   if (!store.audioAnalysis) return false;
-  return isBeatAtFrame(store.audioAnalysis, safeFrame(store.getActiveComp()?.currentFrame));
+  return isBeatAtFrame(
+    store.audioAnalysis,
+    safeFrame(store.getActiveComp()?.currentFrame),
+  );
 }
 
 /**
@@ -320,7 +349,7 @@ export function initializeAudioReactiveMapper(store: AudioStore): void {
 export function createPathAnimator(
   store: AudioStore,
   layerId: string,
-  config: Partial<PathAnimatorConfig> = {}
+  config: Partial<PathAnimatorConfig> = {},
 ): void {
   // Dispose existing animator before creating new one
   const existing = store.pathAnimators.get(layerId);
@@ -338,7 +367,7 @@ export function createPathAnimator(
 export function setPathAnimatorPath(
   store: AudioStore,
   layerId: string,
-  pathData: string
+  pathData: string,
 ): void {
   const animator = store.pathAnimators.get(layerId);
   if (animator) {
@@ -352,7 +381,7 @@ export function setPathAnimatorPath(
 export function updatePathAnimatorConfig(
   store: AudioStore,
   layerId: string,
-  config: Partial<PathAnimatorConfig>
+  config: Partial<PathAnimatorConfig>,
 ): void {
   const animator = store.pathAnimators.get(layerId);
   if (animator) {
@@ -376,7 +405,7 @@ export function removePathAnimator(store: AudioStore, layerId: string): void {
  */
 export function getPathAnimator(
   store: AudioStore,
-  layerId: string
+  layerId: string,
 ): AudioPathAnimator | undefined {
   return store.pathAnimators.get(layerId) as AudioPathAnimator | undefined;
 }
@@ -388,7 +417,7 @@ export function updatePathAnimators(store: AudioStore): void {
   if (!store.audioAnalysis) return;
 
   const frame = safeFrame(store.getActiveComp()?.currentFrame);
-  const amplitude = getFeatureAtFrame(store.audioAnalysis, 'amplitude', frame);
+  const amplitude = getFeatureAtFrame(store.audioAnalysis, "amplitude", frame);
   const isBeat = isBeatAtFrame(store.audioAnalysis, frame);
 
   for (const [_layerId, animator] of store.pathAnimators) {
@@ -415,7 +444,7 @@ export function resetPathAnimators(store: AudioStore): void {
 export function applyAudioToParticles(
   store: AudioStore,
   layerId: string,
-  mapping: AudioParticleMapping
+  mapping: AudioParticleMapping,
 ): void {
   const existing = store.audioMappings.get(layerId) || [];
   existing.push(mapping);
@@ -428,14 +457,14 @@ export function applyAudioToParticles(
 export function removeLegacyAudioMapping(
   store: AudioStore,
   layerId: string,
-  index: number
+  index: number,
 ): void {
   const mappings = store.audioMappings.get(layerId);
   if (!mappings) return;
 
   // Validate index is a valid integer within bounds
   if (!Number.isInteger(index) || index < 0 || index >= mappings.length) {
-    storeLogger.warn('[Audio] Invalid mapping index:', index);
+    storeLogger.warn("[Audio] Invalid mapping index:", index);
     return;
   }
 
@@ -450,7 +479,7 @@ export function removeLegacyAudioMapping(
  */
 export function getAudioMappingsForLayer(
   store: AudioStore,
-  layerId: string
+  layerId: string,
 ): AudioParticleMapping[] {
   return store.audioMappings.get(layerId) || [];
 }
@@ -459,8 +488,7 @@ export function getAudioMappingsForLayer(
 // CONVERT AUDIO TO KEYFRAMES
 // ============================================================
 
-import type { Layer, AnimatableProperty, Keyframe } from '@/types/project';
-import { createAnimatableProperty } from '@/types/project';
+import type { AnimatableProperty, Keyframe, Layer } from "@/types/project";
 
 export interface ConvertAudioToKeyframesStore extends AudioStore {
   createLayer(type: string, name: string): Layer;
@@ -496,29 +524,31 @@ export function convertAudioToKeyframes(
   store: ConvertAudioToKeyframesStore,
   options: {
     name?: string;
-    amplitudeScale?: number;  // Multiplier for amplitude values (default: 100)
-    smoothing?: number;       // Smoothing factor 0-1 (default: 0)
-  } = {}
+    amplitudeScale?: number; // Multiplier for amplitude values (default: 100)
+    smoothing?: number; // Smoothing factor 0-1 (default: 0)
+  } = {},
 ): AudioAmplitudeResult | null {
   if (!store.audioAnalysis || !store.audioBuffer) {
-    storeLogger.error('convertAudioToKeyframes: No audio loaded');
+    storeLogger.error("convertAudioToKeyframes: No audio loaded");
     return null;
   }
 
   const {
-    name = 'Audio Amplitude',
+    name = "Audio Amplitude",
     amplitudeScale: rawScale = 100,
-    smoothing: rawSmoothing = 0
+    smoothing: rawSmoothing = 0,
   } = options;
 
   // Validate numeric options (destructuring defaults don't catch NaN)
   const amplitudeScale = Number.isFinite(rawScale) ? rawScale : 100;
-  const smoothing = Number.isFinite(rawSmoothing) ? Math.max(0, Math.min(1, rawSmoothing)) : 0;
+  const smoothing = Number.isFinite(rawSmoothing)
+    ? Math.max(0, Math.min(1, rawSmoothing))
+    : 0;
 
   store.pushHistory();
 
   // Create the null layer
-  const layer = store.createLayer('null', name);
+  const layer = store.createLayer("null", name);
 
   // Get audio data
   const analysis = store.audioAnalysis;
@@ -527,25 +557,30 @@ export function convertAudioToKeyframes(
   const fps = store.project.composition.fps;
 
   // Extract channel data
-  const channelData = extractChannelAmplitudes(buffer, frameCount, fps, smoothing);
+  const channelData = extractChannelAmplitudes(
+    buffer,
+    frameCount,
+    fps,
+    smoothing,
+  );
 
   // Create properties with keyframes
   const bothChannelsProperty = createAmplitudeProperty(
-    'Both Channels',
+    "Both Channels",
     channelData.both,
-    amplitudeScale
+    amplitudeScale,
   );
 
   const leftChannelProperty = createAmplitudeProperty(
-    'Left Channel',
+    "Left Channel",
     channelData.left,
-    amplitudeScale
+    amplitudeScale,
   );
 
   const rightChannelProperty = createAmplitudeProperty(
-    'Right Channel',
+    "Right Channel",
     channelData.right,
-    amplitudeScale
+    amplitudeScale,
   );
 
   // Add properties to layer
@@ -553,14 +588,16 @@ export function convertAudioToKeyframes(
   layer.properties.push(leftChannelProperty);
   layer.properties.push(rightChannelProperty);
 
-  storeLogger.info(`convertAudioToKeyframes: Created "${name}" with ${frameCount} keyframes per channel`);
+  storeLogger.info(
+    `convertAudioToKeyframes: Created "${name}" with ${frameCount} keyframes per channel`,
+  );
 
   return {
     layerId: layer.id,
     layerName: layer.name,
     bothChannelsPropertyId: bothChannelsProperty.id,
     leftChannelPropertyId: leftChannelProperty.id,
-    rightChannelPropertyId: rightChannelProperty.id
+    rightChannelPropertyId: rightChannelProperty.id,
   };
 }
 
@@ -571,11 +608,11 @@ function extractChannelAmplitudes(
   buffer: AudioBuffer,
   frameCount: number,
   fps: number,
-  smoothing: number
+  smoothing: number,
 ): { both: number[]; left: number[]; right: number[] } {
   // Validate numeric parameters
   if (!Number.isFinite(fps) || fps <= 0) {
-    storeLogger.warn('[Audio] Invalid fps:', fps, '- using default 30');
+    storeLogger.warn("[Audio] Invalid fps:", fps, "- using default 30");
     fps = 30;
   }
 
@@ -626,7 +663,7 @@ function extractChannelAmplitudes(
     return {
       left: applySmoothing(leftAmplitudes, smoothing),
       right: applySmoothing(rightAmplitudes, smoothing),
-      both: applySmoothing(bothAmplitudes, smoothing)
+      both: applySmoothing(bothAmplitudes, smoothing),
     };
   }
 
@@ -652,7 +689,7 @@ function applySmoothing(values: number[], factor: number): number[] {
 function createAmplitudeProperty(
   name: string,
   amplitudes: number[],
-  scale: number
+  scale: number,
 ): AnimatableProperty<number> {
   const id = `prop_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
 
@@ -663,19 +700,19 @@ function createAmplitudeProperty(
     id: `kf_${id}_${frame}`,
     frame,
     value: Number.isFinite(amp) ? amp * safeScale : 0,
-    interpolation: 'linear' as const,
+    interpolation: "linear" as const,
     inHandle: { frame: 0, value: 0, enabled: false },
     outHandle: { frame: 0, value: 0, enabled: false },
-    controlMode: 'smooth' as const
+    controlMode: "smooth" as const,
   }));
 
   return {
     id,
     name,
-    type: 'number' as const,
+    type: "number" as const,
     value: 0,
     animated: true,
-    keyframes
+    keyframes,
   };
 }
 
@@ -683,11 +720,11 @@ function createAmplitudeProperty(
  * Get the Audio Amplitude layer if it exists
  */
 export function getAudioAmplitudeLayer(
-  store: ConvertAudioToKeyframesStore
+  store: ConvertAudioToKeyframesStore,
 ): Layer | undefined {
-  return store.getActiveCompLayers().find(l =>
-    l.type === 'null' && l.name === 'Audio Amplitude'
-  );
+  return store
+    .getActiveCompLayers()
+    .find((l) => l.type === "null" && l.name === "Audio Amplitude");
 }
 
 /**
@@ -701,29 +738,34 @@ export function getAudioAmplitudeLayer(
  */
 export function getAudioAmplitudeAtFrame(
   store: ConvertAudioToKeyframesStore,
-  channel: 'both' | 'left' | 'right',
-  frame: number
+  channel: "both" | "left" | "right",
+  frame: number,
 ): number {
   const layer = getAudioAmplitudeLayer(store);
   if (!layer) return 0;
 
-  const propertyName = channel === 'both' ? 'Both Channels' :
-                       channel === 'left' ? 'Left Channel' : 'Right Channel';
+  const propertyName =
+    channel === "both"
+      ? "Both Channels"
+      : channel === "left"
+        ? "Left Channel"
+        : "Right Channel";
 
-  const property = layer.properties.find(p => p.name === propertyName);
-  if (!property || !property.animated || property.keyframes.length === 0) return 0;
+  const property = layer.properties.find((p) => p.name === propertyName);
+  if (!property || !property.animated || property.keyframes.length === 0)
+    return 0;
 
   // Find the keyframe at this frame
-  const keyframe = property.keyframes.find(k => k.frame === frame);
+  const keyframe = property.keyframes.find((k) => k.frame === frame);
   if (keyframe) return keyframe.value as number;
 
   // If no exact keyframe, interpolate (though we have keyframes at every frame)
   // Find surrounding keyframes
   const prevKf = [...property.keyframes]
-    .filter(k => k.frame <= frame)
+    .filter((k) => k.frame <= frame)
     .sort((a, b) => b.frame - a.frame)[0];
   const nextKf = [...property.keyframes]
-    .filter(k => k.frame > frame)
+    .filter((k) => k.frame > frame)
     .sort((a, b) => a.frame - b.frame)[0];
 
   if (!prevKf && !nextKf) return property.value as number;
@@ -738,7 +780,10 @@ export function getAudioAmplitudeAtFrame(
 
   // Linear interpolation
   const t = (frame - prevKf.frame) / frameDiff;
-  return (prevKf.value as number) + t * ((nextKf.value as number) - (prevKf.value as number));
+  return (
+    (prevKf.value as number) +
+    t * ((nextKf.value as number) - (prevKf.value as number))
+  );
 }
 
 // ============================================================
@@ -748,7 +793,13 @@ export function getAudioAmplitudeAtFrame(
 /**
  * Frequency band names for keyframe conversion
  */
-export type FrequencyBandName = 'sub' | 'bass' | 'lowMid' | 'mid' | 'highMid' | 'high';
+export type FrequencyBandName =
+  | "sub"
+  | "bass"
+  | "lowMid"
+  | "mid"
+  | "highMid"
+  | "high";
 
 export interface FrequencyBandResult {
   layerId: string;
@@ -780,49 +831,49 @@ export function convertFrequencyBandsToKeyframes(
   store: ConvertAudioToKeyframesStore,
   options: {
     name?: string;
-    scale?: number;       // Multiplier for values (default: 100)
-    smoothing?: number;   // Smoothing factor 0-1 (default: 0)
-    bands?: FrequencyBandName[];  // Which bands to include (default: all)
-  } = {}
+    scale?: number; // Multiplier for values (default: 100)
+    smoothing?: number; // Smoothing factor 0-1 (default: 0)
+    bands?: FrequencyBandName[]; // Which bands to include (default: all)
+  } = {},
 ): FrequencyBandResult | null {
   if (!store.audioAnalysis) {
-    storeLogger.error('convertFrequencyBandsToKeyframes: No audio loaded');
+    storeLogger.error("convertFrequencyBandsToKeyframes: No audio loaded");
     return null;
   }
 
   const {
-    name = 'Audio Spectrum',
+    name = "Audio Spectrum",
     scale = 100,
     smoothing = 0,
-    bands = ['sub', 'bass', 'lowMid', 'mid', 'highMid', 'high']
+    bands = ["sub", "bass", "lowMid", "mid", "highMid", "high"],
   } = options;
 
   store.pushHistory();
 
   // Create the null layer
-  const layer = store.createLayer('null', name);
+  const layer = store.createLayer("null", name);
 
   // Get frequency band data from analysis
   const analysis = store.audioAnalysis;
   const bandData = analysis.frequencyBands;
 
   const propertyIds: Record<FrequencyBandName, string> = {
-    sub: '',
-    bass: '',
-    lowMid: '',
-    mid: '',
-    highMid: '',
-    high: ''
+    sub: "",
+    bass: "",
+    lowMid: "",
+    mid: "",
+    highMid: "",
+    high: "",
   };
 
   // Band display names
   const bandNames: Record<FrequencyBandName, string> = {
-    sub: 'Sub (20-60 Hz)',
-    bass: 'Bass (60-250 Hz)',
-    lowMid: 'Low Mid (250-500 Hz)',
-    mid: 'Mid (500-2000 Hz)',
-    highMid: 'High Mid (2-4 kHz)',
-    high: 'High (4-20 kHz)'
+    sub: "Sub (20-60 Hz)",
+    bass: "Bass (60-250 Hz)",
+    lowMid: "Low Mid (250-500 Hz)",
+    mid: "Mid (500-2000 Hz)",
+    highMid: "High Mid (2-4 kHz)",
+    high: "High (4-20 kHz)",
   };
 
   // Create property for each requested band
@@ -834,23 +885,21 @@ export function convertFrequencyBandsToKeyframes(
     const data = smoothing > 0 ? applySmoothing(rawData, smoothing) : rawData;
 
     // Create property with keyframes
-    const property = createAmplitudeProperty(
-      bandNames[bandKey],
-      data,
-      scale
-    );
+    const property = createAmplitudeProperty(bandNames[bandKey], data, scale);
 
     layer.properties.push(property);
     propertyIds[bandKey] = property.id;
   }
 
   const frameCount = analysis.frameCount;
-  storeLogger.info(`convertFrequencyBandsToKeyframes: Created "${name}" with ${bands.length} bands, ${frameCount} keyframes each`);
+  storeLogger.info(
+    `convertFrequencyBandsToKeyframes: Created "${name}" with ${bands.length} bands, ${frameCount} keyframes each`,
+  );
 
   return {
     layerId: layer.id,
     layerName: layer.name,
-    propertyIds
+    propertyIds,
   };
 }
 
@@ -894,23 +943,19 @@ export function convertAllAudioFeaturesToKeyframes(
     name?: string;
     scale?: number;
     smoothing?: number;
-  } = {}
+  } = {},
 ): AudioFeaturesResult | null {
   if (!store.audioAnalysis || !store.audioBuffer) {
-    storeLogger.error('convertAllAudioFeaturesToKeyframes: No audio loaded');
+    storeLogger.error("convertAllAudioFeaturesToKeyframes: No audio loaded");
     return null;
   }
 
-  const {
-    name = 'Audio Features',
-    scale = 100,
-    smoothing = 0
-  } = options;
+  const { name = "Audio Features", scale = 100, smoothing = 0 } = options;
 
   store.pushHistory();
 
   // Create the null layer
-  const layer = store.createLayer('null', name);
+  const layer = store.createLayer("null", name);
 
   const analysis = store.audioAnalysis;
   const buffer = store.audioBuffer;
@@ -918,22 +963,39 @@ export function convertAllAudioFeaturesToKeyframes(
   const fps = store.project.composition.fps;
 
   // Extract channel amplitudes
-  const channelData = extractChannelAmplitudes(buffer, frameCount, fps, smoothing);
+  const channelData = extractChannelAmplitudes(
+    buffer,
+    frameCount,
+    fps,
+    smoothing,
+  );
 
   // Initialize result
   const result: AudioFeaturesResult = {
     layerId: layer.id,
     layerName: layer.name,
-    amplitude: { both: '', left: '', right: '' },
-    bands: { sub: '', bass: '', lowMid: '', mid: '', highMid: '', high: '' },
-    spectral: { centroid: '', flux: '', rolloff: '', flatness: '' },
-    dynamics: { rms: '', zeroCrossing: '' }
+    amplitude: { both: "", left: "", right: "" },
+    bands: { sub: "", bass: "", lowMid: "", mid: "", highMid: "", high: "" },
+    spectral: { centroid: "", flux: "", rolloff: "", flatness: "" },
+    dynamics: { rms: "", zeroCrossing: "" },
   };
 
   // ----- AMPLITUDE SECTION -----
-  const bothProp = createAmplitudeProperty('Amplitude - Both', channelData.both, scale);
-  const leftProp = createAmplitudeProperty('Amplitude - Left', channelData.left, scale);
-  const rightProp = createAmplitudeProperty('Amplitude - Right', channelData.right, scale);
+  const bothProp = createAmplitudeProperty(
+    "Amplitude - Both",
+    channelData.both,
+    scale,
+  );
+  const leftProp = createAmplitudeProperty(
+    "Amplitude - Left",
+    channelData.left,
+    scale,
+  );
+  const rightProp = createAmplitudeProperty(
+    "Amplitude - Right",
+    channelData.right,
+    scale,
+  );
 
   layer.properties.push(bothProp);
   layer.properties.push(leftProp);
@@ -945,15 +1007,22 @@ export function convertAllAudioFeaturesToKeyframes(
 
   // ----- FREQUENCY BANDS SECTION -----
   const bandNames: Record<FrequencyBandName, string> = {
-    sub: 'Band - Sub (20-60 Hz)',
-    bass: 'Band - Bass (60-250 Hz)',
-    lowMid: 'Band - Low Mid (250-500 Hz)',
-    mid: 'Band - Mid (500-2000 Hz)',
-    highMid: 'Band - High Mid (2-4 kHz)',
-    high: 'Band - High (4-20 kHz)'
+    sub: "Band - Sub (20-60 Hz)",
+    bass: "Band - Bass (60-250 Hz)",
+    lowMid: "Band - Low Mid (250-500 Hz)",
+    mid: "Band - Mid (500-2000 Hz)",
+    highMid: "Band - High Mid (2-4 kHz)",
+    high: "Band - High (4-20 kHz)",
   };
 
-  const allBands: FrequencyBandName[] = ['sub', 'bass', 'lowMid', 'mid', 'highMid', 'high'];
+  const allBands: FrequencyBandName[] = [
+    "sub",
+    "bass",
+    "lowMid",
+    "mid",
+    "highMid",
+    "high",
+  ];
   for (const bandKey of allBands) {
     const rawData = analysis.frequencyBands[bandKey];
     if (!rawData || rawData.length === 0) continue;
@@ -967,11 +1036,15 @@ export function convertAllAudioFeaturesToKeyframes(
   // ----- SPECTRAL FEATURES SECTION -----
   if (analysis.spectralCentroid && analysis.spectralCentroid.length > 0) {
     // Normalize spectral centroid to 0-1 range (typical values 0-10000 Hz)
-    const normalizedCentroid = analysis.spectralCentroid.map(v => Math.min(1, v / 10000));
+    const normalizedCentroid = analysis.spectralCentroid.map((v) =>
+      Math.min(1, v / 10000),
+    );
     const centroidProp = createAmplitudeProperty(
-      'Spectral - Centroid',
-      smoothing > 0 ? applySmoothing(normalizedCentroid, smoothing) : normalizedCentroid,
-      scale
+      "Spectral - Centroid",
+      smoothing > 0
+        ? applySmoothing(normalizedCentroid, smoothing)
+        : normalizedCentroid,
+      scale,
     );
     layer.properties.push(centroidProp);
     result.spectral.centroid = centroidProp.id;
@@ -979,9 +1052,11 @@ export function convertAllAudioFeaturesToKeyframes(
 
   if (analysis.spectralFlux && analysis.spectralFlux.length > 0) {
     const fluxProp = createAmplitudeProperty(
-      'Spectral - Flux',
-      smoothing > 0 ? applySmoothing(analysis.spectralFlux, smoothing) : analysis.spectralFlux,
-      scale
+      "Spectral - Flux",
+      smoothing > 0
+        ? applySmoothing(analysis.spectralFlux, smoothing)
+        : analysis.spectralFlux,
+      scale,
     );
     layer.properties.push(fluxProp);
     result.spectral.flux = fluxProp.id;
@@ -989,11 +1064,15 @@ export function convertAllAudioFeaturesToKeyframes(
 
   if (analysis.spectralRolloff && analysis.spectralRolloff.length > 0) {
     // Normalize rolloff to 0-1 range
-    const normalizedRolloff = analysis.spectralRolloff.map(v => Math.min(1, v / 10000));
+    const normalizedRolloff = analysis.spectralRolloff.map((v) =>
+      Math.min(1, v / 10000),
+    );
     const rolloffProp = createAmplitudeProperty(
-      'Spectral - Rolloff',
-      smoothing > 0 ? applySmoothing(normalizedRolloff, smoothing) : normalizedRolloff,
-      scale
+      "Spectral - Rolloff",
+      smoothing > 0
+        ? applySmoothing(normalizedRolloff, smoothing)
+        : normalizedRolloff,
+      scale,
     );
     layer.properties.push(rolloffProp);
     result.spectral.rolloff = rolloffProp.id;
@@ -1001,9 +1080,11 @@ export function convertAllAudioFeaturesToKeyframes(
 
   if (analysis.spectralFlatness && analysis.spectralFlatness.length > 0) {
     const flatnessProp = createAmplitudeProperty(
-      'Spectral - Flatness',
-      smoothing > 0 ? applySmoothing(analysis.spectralFlatness, smoothing) : analysis.spectralFlatness,
-      scale
+      "Spectral - Flatness",
+      smoothing > 0
+        ? applySmoothing(analysis.spectralFlatness, smoothing)
+        : analysis.spectralFlatness,
+      scale,
     );
     layer.properties.push(flatnessProp);
     result.spectral.flatness = flatnessProp.id;
@@ -1012,9 +1093,11 @@ export function convertAllAudioFeaturesToKeyframes(
   // ----- DYNAMICS SECTION -----
   if (analysis.rmsEnergy && analysis.rmsEnergy.length > 0) {
     const rmsProp = createAmplitudeProperty(
-      'Dynamics - RMS Energy',
-      smoothing > 0 ? applySmoothing(analysis.rmsEnergy, smoothing) : analysis.rmsEnergy,
-      scale
+      "Dynamics - RMS Energy",
+      smoothing > 0
+        ? applySmoothing(analysis.rmsEnergy, smoothing)
+        : analysis.rmsEnergy,
+      scale,
     );
     layer.properties.push(rmsProp);
     result.dynamics.rms = rmsProp.id;
@@ -1022,16 +1105,20 @@ export function convertAllAudioFeaturesToKeyframes(
 
   if (analysis.zeroCrossingRate && analysis.zeroCrossingRate.length > 0) {
     const zcrProp = createAmplitudeProperty(
-      'Dynamics - Zero Crossing Rate',
-      smoothing > 0 ? applySmoothing(analysis.zeroCrossingRate, smoothing) : analysis.zeroCrossingRate,
-      scale
+      "Dynamics - Zero Crossing Rate",
+      smoothing > 0
+        ? applySmoothing(analysis.zeroCrossingRate, smoothing)
+        : analysis.zeroCrossingRate,
+      scale,
     );
     layer.properties.push(zcrProp);
     result.dynamics.zeroCrossing = zcrProp.id;
   }
 
   const propCount = layer.properties.length;
-  storeLogger.info(`convertAllAudioFeaturesToKeyframes: Created "${name}" with ${propCount} properties, ${frameCount} keyframes each`);
+  storeLogger.info(
+    `convertAllAudioFeaturesToKeyframes: Created "${name}" with ${propCount} properties, ${frameCount} keyframes each`,
+  );
 
   return result;
 }
@@ -1047,31 +1134,36 @@ export function convertAllAudioFeaturesToKeyframes(
 export function getFrequencyBandAtFrame(
   store: ConvertAudioToKeyframesStore,
   band: FrequencyBandName,
-  frame: number
+  frame: number,
 ): number {
-  const layer = store.getActiveCompLayers().find(l =>
-    l.type === 'null' && (l.name === 'Audio Spectrum' || l.name === 'Audio Features')
-  );
+  const layer = store
+    .getActiveCompLayers()
+    .find(
+      (l) =>
+        l.type === "null" &&
+        (l.name === "Audio Spectrum" || l.name === "Audio Features"),
+    );
   if (!layer) return 0;
 
   // Find property containing the band name
   const bandLabels: Record<FrequencyBandName, string[]> = {
-    sub: ['Sub', '20-60'],
-    bass: ['Bass', '60-250'],
-    lowMid: ['Low Mid', '250-500'],
-    mid: ['Mid (500', '500-2000'],
-    highMid: ['High Mid', '2-4 kHz', '2000-4000'],
-    high: ['High (4', '4-20 kHz', '4000-20000']
+    sub: ["Sub", "20-60"],
+    bass: ["Bass", "60-250"],
+    lowMid: ["Low Mid", "250-500"],
+    mid: ["Mid (500", "500-2000"],
+    highMid: ["High Mid", "2-4 kHz", "2000-4000"],
+    high: ["High (4", "4-20 kHz", "4000-20000"],
   };
 
-  const property = layer.properties.find(p =>
-    bandLabels[band].some(label => p.name.includes(label))
+  const property = layer.properties.find((p) =>
+    bandLabels[band].some((label) => p.name.includes(label)),
   );
 
-  if (!property || !property.animated || property.keyframes.length === 0) return 0;
+  if (!property || !property.animated || property.keyframes.length === 0)
+    return 0;
 
   // Find the keyframe at this frame
-  const keyframe = property.keyframes.find(k => k.frame === frame);
+  const keyframe = property.keyframes.find((k) => k.frame === frame);
   if (keyframe) return keyframe.value as number;
 
   return property.value as number;

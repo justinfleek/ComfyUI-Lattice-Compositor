@@ -10,14 +10,11 @@
  * Import from '@/services/particles' for all particle utilities.
  */
 
-// Type definitions
-export * from './particleTypes';
-
 // Default factory functions
-export * from './particleDefaults';
-
-// Seeded random number generator
-export { SeededRandom } from './SeededRandom';
-
+export * from "./particleDefaults";
 // Rendering functions
-export * from './particleRenderer';
+export * from "./particleRenderer";
+// Type definitions
+export * from "./particleTypes";
+// Seeded random number generator
+export { SeededRandom } from "./SeededRandom";

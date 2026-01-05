@@ -5,11 +5,10 @@
  * Import stores from this file for cleaner imports.
  */
 
+export { type AudioStore, useAudioStore } from "./audioStore";
 // Main compositor store (legacy - being refactored)
-export { useCompositorStore } from './compositorStore';
-
+export { useCompositorStore } from "./compositorStore";
+export { type HistoryStore, useHistoryStore } from "./historyStore";
 // Domain-specific stores
-export { usePlaybackStore, type PlaybackStore } from './playbackStore';
-export { useAudioStore, type AudioStore } from './audioStore';
-export { useSelectionStore, type SelectionStore } from './selectionStore';
-export { useHistoryStore, type HistoryStore } from './historyStore';
+export { type PlaybackStore, usePlaybackStore } from "./playbackStore";
+export { type SelectionStore, useSelectionStore } from "./selectionStore";

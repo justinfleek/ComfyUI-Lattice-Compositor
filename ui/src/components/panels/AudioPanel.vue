@@ -638,59 +638,54 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import { useAudioStore } from '@/stores/audioStore';
-import { SliderInput } from '@/components/controls';
-import AudioProperties from '@/components/properties/AudioProperties.vue';
-import AudioValuePreview from '@/components/panels/AudioValuePreview.vue';
-import {
-  PhFolder, PhMusicNote, PhSpeakerHigh, PhSpeakerSlash, PhMicrophone,
-  PhGuitar, PhSparkle, PhLink, PhArrowsClockwise, PhMapPin, PhTimer, PhKeyboard
-} from '@phosphor-icons/vue';
+import { PhKeyboard } from "@phosphor-icons/vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { useAudioStore } from "@/stores/audioStore";
+import { useCompositorStore } from "@/stores/compositorStore";
+
 // PhPiano doesn't exist in phosphor-icons, using PhKeyboard as substitute
-const PhPiano = PhKeyboard;
+const _PhPiano = PhKeyboard;
+
 import {
-  separateStems as separateStemsService,
-  isolateStem,
-  downloadStem,
-  createAudioElement,
-  getStemModels,
-  type StemType,
-  type DemucsModel,
-  type StemModel,
-} from '@/services/audio/stemSeparation';
-import {
-  createEnhancedBeatGrid,
   BEAT_DETECTION_PRESETS,
-  DEFAULT_BEAT_CONFIG,
   type BeatGrid,
+  createEnhancedBeatGrid,
+  DEFAULT_BEAT_CONFIG,
   type EnhancedBeatConfig,
-} from '@/services/audio/enhancedBeatDetection';
+} from "@/services/audio/enhancedBeatDetection";
+import {
+  createAudioElement,
+  type DemucsModel,
+  downloadStem,
+  getStemModels,
+  isolateStem,
+  type StemModel,
+  type StemType,
+  separateStems as separateStemsService,
+} from "@/services/audio/stemSeparation";
 import {
   getMIDIService,
-  midiNoteToName,
   type MIDIDeviceInfo,
   type MIDIMessage,
-} from '@/services/midi';
+} from "@/services/midi";
 import {
-  parseMIDIFile,
-  midiNotesToKeyframes,
-  midiCCToKeyframes,
   type MIDIParsedFile,
   type MIDIToKeyframeConfig,
-} from '@/services/midiToKeyframes';
+  midiCCToKeyframes,
+  midiNotesToKeyframes,
+  parseMIDIFile,
+} from "@/services/midiToKeyframes";
 
 const store = useCompositorStore();
 const audioStore = useAudioStore();
 
 // Stem separation state
 const stemSectionExpanded = ref(false);
-const selectedModel = ref<DemucsModel>('htdemucs');
+const selectedModel = ref<DemucsModel>("htdemucs");
 const availableModels = ref<StemModel[]>([]); // BUG-089 fix: dynamic model list
 const isSeparating = ref(false);
 const separationProgress = ref(0);
-const separationMessage = ref('');
+const separationMessage = ref("");
 const separatedStems = ref<Record<string, string> | null>(null);
 const separationError = ref<string | null>(null);
 const currentStemAudio = ref<HTMLAudioElement | null>(null);
@@ -698,31 +693,33 @@ const audioFileInput = ref<HTMLInputElement | null>(null);
 const waveformCanvas = ref<HTMLCanvasElement | null>(null);
 
 // Enhanced beat detection state
-const beatSectionExpanded = ref(false);
-const beatPreset = ref('');
+const _beatSectionExpanded = ref(false);
+const beatPreset = ref("");
 const beatConfig = ref<EnhancedBeatConfig>({ ...DEFAULT_BEAT_CONFIG });
 const beatGrid = ref<BeatGrid | null>(null);
 const isAnalyzingBeats = ref(false);
 
 // Convert Audio to Keyframes state
-const convertSectionExpanded = ref(false);
-const convertLayerName = ref('Audio Amplitude');
+const _convertSectionExpanded = ref(false);
+const convertLayerName = ref("Audio Amplitude");
 const convertAmplitudeScale = ref(100);
 const convertSmoothing = ref(3);
 const isConverting = ref(false);
-const convertResult = ref<{ layerName: string; keyframeCount: number } | null>(null);
+const convertResult = ref<{ layerName: string; keyframeCount: number } | null>(
+  null,
+);
 const convertError = ref<string | null>(null);
 
-const confidenceClass = computed(() => {
-  if (!beatGrid.value) return '';
+const _confidenceClass = computed(() => {
+  if (!beatGrid.value) return "";
   const c = beatGrid.value.bpmConfidence;
-  if (c >= 0.8) return 'high';
-  if (c >= 0.5) return 'medium';
-  return 'low';
+  if (c >= 0.8) return "high";
+  if (c >= 0.5) return "medium";
+  return "low";
 });
 
 // MIDI state
-const midiSectionExpanded = ref(false);
+const _midiSectionExpanded = ref(false);
 const midiAvailable = ref(false);
 const midiDevices = ref<MIDIDeviceInfo[]>([]);
 const isRefreshingMIDI = ref(false);
@@ -731,81 +728,91 @@ const recentMIDIMessages = ref<MIDIMessage[]>([]);
 let midiListenerRemove: (() => void) | null = null;
 
 // MIDI File to Keyframes state
-const midiFileSectionExpanded = ref(false);
+const _midiFileSectionExpanded = ref(false);
 const midiFileInput = ref<HTMLInputElement | null>(null);
 const loadedMIDIFile = ref<MIDIParsedFile | null>(null);
-const midiFileName = ref('');
+const midiFileName = ref("");
 const isLoadingMIDI = ref(false);
 const midiTrackIndex = ref<number | undefined>(undefined);
 const midiChannel = ref<number | undefined>(undefined);
-const midiMappingType = ref<'noteOnOff' | 'noteVelocity' | 'notePitch' | 'controlChange'>('noteVelocity');
+const midiMappingType = ref<
+  "noteOnOff" | "noteVelocity" | "notePitch" | "controlChange"
+>("noteVelocity");
 const midiCCNumber = ref(1); // Modulation by default
 const midiValueMin = ref(0);
 const midiValueMax = ref(100);
-const midiInterpolation = ref<'linear' | 'hold' | 'bezier'>('linear');
-const midiLayerName = ref('MIDI Animation');
+const midiInterpolation = ref<"linear" | "hold" | "bezier">("linear");
+const midiLayerName = ref("MIDI Animation");
 const isConvertingMIDI = ref(false);
-const midiConvertResult = ref<{ layerName: string; keyframeCount: number } | null>(null);
+const midiConvertResult = ref<{
+  layerName: string;
+  keyframeCount: number;
+} | null>(null);
 const midiConvertError = ref<string | null>(null);
 
 // Audio Path Animation state
-const pathAnimSectionExpanded = ref(false);
-const pathAnimSplineId = ref('');
-const pathAnimTargetId = ref('');
-const pathAnimMode = ref<'amplitude' | 'accumulate'>('amplitude');
+const _pathAnimSectionExpanded = ref(false);
+const pathAnimSplineId = ref("");
+const pathAnimTargetId = ref("");
+const pathAnimMode = ref<"amplitude" | "accumulate">("amplitude");
 const pathAnimSensitivity = ref(1.0);
-const pathAnimSmoothing = ref(0.3);
-const pathAnimFeature = ref<'amplitude' | 'bass' | 'mid' | 'high'>('amplitude');
+const _pathAnimSmoothing = ref(0.3);
+const pathAnimFeature = ref<"amplitude" | "bass" | "mid" | "high">("amplitude");
 const isCreatingPathAnim = ref(false);
 const pathAnimResult = ref<string | null>(null);
 const pathAnimError = ref<string | null>(null);
 
 // Audio volume/mute now uses store state
-const masterVolume = computed({
+const _masterVolume = computed({
   get: () => store.audioVolume,
-  set: (val: number) => store.setAudioVolume(val)
+  set: (val: number) => store.setAudioVolume(val),
 });
-const isMuted = computed({
+const _isMuted = computed({
   get: () => store.audioMuted,
-  set: (val: boolean) => store.setAudioMuted(val)
+  set: (val: boolean) => store.setAudioMuted(val),
 });
 
 const hasAudio = computed(() => !!store.audioBuffer);
-const audioFileName = computed(() => store.audioFile?.name || 'Unknown');
-const audioSampleRate = computed(() => store.audioBuffer ? `${(store.audioBuffer.sampleRate / 1000).toFixed(1)} kHz` : '');
-const audioDuration = computed(() => {
-  if (!store.audioBuffer) return '0:00';
+const _audioFileName = computed(() => store.audioFile?.name || "Unknown");
+const _audioSampleRate = computed(() =>
+  store.audioBuffer
+    ? `${(store.audioBuffer.sampleRate / 1000).toFixed(1)} kHz`
+    : "",
+);
+const _audioDuration = computed(() => {
+  if (!store.audioBuffer) return "0:00";
   const m = Math.floor(store.audioBuffer.duration / 60);
   const s = Math.floor(store.audioBuffer.duration % 60);
-  return `${m}:${s.toString().padStart(2, '0')}`;
+  return `${m}:${s.toString().padStart(2, "0")}`;
 });
 
 // Active stem for audio reactivity
-const activeStemName = computed(() => audioStore.activeStemName);
+const _activeStemName = computed(() => audioStore.activeStemName);
 
 // Path animator computed properties
-const splineLayers = computed(() => {
-  return store.layers.filter(l => l.type === 'spline' || l.type === 'path');
+const _splineLayers = computed(() => {
+  return store.layers.filter((l) => l.type === "spline" || l.type === "path");
 });
 
-const animatableLayers = computed(() => {
-  return store.layers.filter(l =>
-    l.type !== 'camera' &&
-    l.type !== 'light' &&
-    l.type !== 'audio' &&
-    l.id !== pathAnimSplineId.value
+const _animatableLayers = computed(() => {
+  return store.layers.filter(
+    (l) =>
+      l.type !== "camera" &&
+      l.type !== "light" &&
+      l.type !== "audio" &&
+      l.id !== pathAnimSplineId.value,
   );
 });
 
 // Create path animator function
-async function createPathAnimator() {
+async function _createPathAnimator() {
   if (!pathAnimSplineId.value || !pathAnimTargetId.value) {
-    pathAnimError.value = 'Please select both a path layer and target layer';
+    pathAnimError.value = "Please select both a path layer and target layer";
     return;
   }
 
   if (!store.audioBuffer || !store.audioAnalysis) {
-    pathAnimError.value = 'Please load and analyze audio first';
+    pathAnimError.value = "Please load and analyze audio first";
     return;
   }
 
@@ -814,28 +821,35 @@ async function createPathAnimator() {
   pathAnimResult.value = null;
 
   try {
-    const splineLayer = store.layers.find(l => l.id === pathAnimSplineId.value);
-    const targetLayer = store.layers.find(l => l.id === pathAnimTargetId.value);
+    const splineLayer = store.layers.find(
+      (l) => l.id === pathAnimSplineId.value,
+    );
+    const targetLayer = store.layers.find(
+      (l) => l.id === pathAnimTargetId.value,
+    );
 
     if (!splineLayer || !targetLayer) {
-      pathAnimError.value = 'Could not find selected layers';
+      pathAnimError.value = "Could not find selected layers";
       return;
     }
 
     // Get audio feature data based on selection
     const audioData = store.audioAnalysis;
-    const fps = store.fps || 16;
+    const _fps = store.fps || 16;
     const frameCount = store.frameCount;
 
     // Build keyframes for the target layer position based on audio
-    const keyframes: Array<{ frame: number; value: { x: number; y: number; z: number } }> = [];
+    const keyframes: Array<{
+      frame: number;
+      value: { x: number; y: number; z: number };
+    }> = [];
 
     // Get spline path data for position mapping
     const splineData = splineLayer.data as any;
     const controlPoints = splineData?.controlPoints || [];
 
     if (controlPoints.length < 2) {
-      pathAnimError.value = 'Path layer needs at least 2 control points';
+      pathAnimError.value = "Path layer needs at least 2 control points";
       return;
     }
 
@@ -843,13 +857,13 @@ async function createPathAnimator() {
     for (let frame = 0; frame < frameCount; frame++) {
       // Get audio value for this frame based on selected feature
       let audioValue = 0;
-      if (pathAnimFeature.value === 'amplitude') {
+      if (pathAnimFeature.value === "amplitude") {
         audioValue = audioData.amplitudeEnvelope?.[frame] || 0;
-      } else if (pathAnimFeature.value === 'bass') {
+      } else if (pathAnimFeature.value === "bass") {
         audioValue = audioData.frequencyBands?.bass?.[frame] || 0;
-      } else if (pathAnimFeature.value === 'mid') {
+      } else if (pathAnimFeature.value === "mid") {
         audioValue = audioData.frequencyBands?.mid?.[frame] || 0;
-      } else if (pathAnimFeature.value === 'high') {
+      } else if (pathAnimFeature.value === "high") {
         audioValue = audioData.frequencyBands?.high?.[frame] || 0;
       }
 
@@ -857,9 +871,10 @@ async function createPathAnimator() {
       audioValue = Math.min(1, audioValue * pathAnimSensitivity.value);
 
       // Map audio value to position along path (0-1)
-      const t = pathAnimMode.value === 'amplitude'
-        ? audioValue  // Direct mapping
-        : frame / frameCount;  // Linear for accumulate (simplified)
+      const t =
+        pathAnimMode.value === "amplitude"
+          ? audioValue // Direct mapping
+          : frame / frameCount; // Linear for accumulate (simplified)
 
       // Linear interpolation along control points
       const pathIndex = t * (controlPoints.length - 1);
@@ -877,58 +892,66 @@ async function createPathAnimator() {
       if (frame % 4 === 0 || frame === frameCount - 1) {
         keyframes.push({
           frame,
-          value: { x, y, z: 0 }
+          value: { x, y, z: 0 },
         });
       }
     }
 
     // Apply keyframes to target layer's position
     if (keyframes.length > 0) {
-      store.updateLayerProperty(targetLayer.id, 'transform.position', {
+      store.updateLayerProperty(targetLayer.id, "transform.position", {
         ...targetLayer.transform.position,
         animated: true,
-        keyframes: keyframes.map(kf => ({
+        keyframes: keyframes.map((kf) => ({
           id: `kf_${Date.now()}_${kf.frame}`,
           frame: kf.frame,
           value: kf.value,
-          interpolation: 'bezier' as const,
+          interpolation: "bezier" as const,
           inHandle: { frame: -4, value: 0, enabled: true },
           outHandle: { frame: 4, value: 0, enabled: true },
-          controlMode: 'smooth' as const
-        }))
+          controlMode: "smooth" as const,
+        })),
       });
 
       pathAnimResult.value = `Created ${keyframes.length} keyframes on "${targetLayer.name}" following "${splineLayer.name}"`;
-      console.log(`[Lattice] Audio path animator: ${keyframes.length} keyframes created`);
+      console.log(
+        `[Lattice] Audio path animator: ${keyframes.length} keyframes created`,
+      );
     }
   } catch (err) {
-    pathAnimError.value = err instanceof Error ? err.message : 'Unknown error';
-    console.error('[Lattice] Audio path animator error:', err);
+    pathAnimError.value = err instanceof Error ? err.message : "Unknown error";
+    console.error("[Lattice] Audio path animator error:", err);
   } finally {
     isCreatingPathAnim.value = false;
   }
 }
 
-function useMainAudio() {
+function _useMainAudio() {
   audioStore.setActiveStem(null);
-  console.log('[Lattice] Switched to main audio for reactivity');
+  console.log("[Lattice] Switched to main audio for reactivity");
 }
 
-function loadAudioFile() { audioFileInput.value?.click(); }
+function _loadAudioFile() {
+  audioFileInput.value?.click();
+}
 
-async function handleAudioFileSelected(e: Event) {
+async function _handleAudioFileSelected(e: Event) {
   const input = e.target as HTMLInputElement;
   if (input.files?.length) await store.loadAudio(input.files[0]);
-  input.value = '';
+  input.value = "";
 }
 
-function removeAudio() { store.clearAudio(); }
+function _removeAudio() {
+  store.clearAudio();
+}
 
-function toggleMute() { store.toggleAudioMute(); }
+function _toggleMute() {
+  store.toggleAudioMute();
+}
 
-async function convertAudioToKeyframes() {
+async function _convertAudioToKeyframes() {
   if (!store.audioBuffer) {
-    convertError.value = 'No audio loaded';
+    convertError.value = "No audio loaded";
     return;
   }
 
@@ -938,9 +961,9 @@ async function convertAudioToKeyframes() {
 
   try {
     const result = store.convertAudioToKeyframes({
-      name: convertLayerName.value || 'Audio Amplitude',
+      name: convertLayerName.value || "Audio Amplitude",
       amplitudeScale: convertAmplitudeScale.value / 100,
-      smoothing: convertSmoothing.value
+      smoothing: convertSmoothing.value,
     });
 
     if (result) {
@@ -950,14 +973,16 @@ async function convertAudioToKeyframes() {
       const kfCount = layer?.properties?.[0]?.keyframes?.length || 0;
       convertResult.value = {
         layerName: result.layerName,
-        keyframeCount: kfCount
+        keyframeCount: kfCount,
       };
-      console.log(`[Lattice] Created Audio Amplitude layer "${result.layerName}" with ${kfCount} keyframes per channel`);
+      console.log(
+        `[Lattice] Created Audio Amplitude layer "${result.layerName}" with ${kfCount} keyframes per channel`,
+      );
     } else {
-      convertError.value = 'Failed to create audio amplitude layer';
+      convertError.value = "Failed to create audio amplitude layer";
     }
   } catch (err) {
-    convertError.value = err instanceof Error ? err.message : 'Unknown error';
+    convertError.value = err instanceof Error ? err.message : "Unknown error";
   } finally {
     isConverting.value = false;
   }
@@ -966,26 +991,27 @@ async function convertAudioToKeyframes() {
 function drawWaveform() {
   if (!waveformCanvas.value || !store.audioBuffer) return;
   const canvas = waveformCanvas.value;
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext("2d");
   if (!ctx) return;
 
   const rect = canvas.getBoundingClientRect();
-  const w = canvas.width = rect.width * window.devicePixelRatio;
-  const h = canvas.height = 60 * window.devicePixelRatio;
+  const _w = (canvas.width = rect.width * window.devicePixelRatio);
+  const _h = (canvas.height = 60 * window.devicePixelRatio);
   ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
 
   const data = store.audioBuffer.getChannelData(0);
   const step = Math.ceil(data.length / rect.width);
   const amp = 30;
 
-  ctx.fillStyle = '#1a1a1a';
+  ctx.fillStyle = "#1a1a1a";
   ctx.fillRect(0, 0, rect.width, 60);
 
   ctx.beginPath();
-  ctx.strokeStyle = '#4a90d9';
+  ctx.strokeStyle = "#4a90d9";
   ctx.lineWidth = 1;
-  for(let i = 0; i < rect.width; i++) {
-    let min = 1.0; let max = -1.0;
+  for (let i = 0; i < rect.width; i++) {
+    let min = 1.0;
+    let max = -1.0;
     for (let j = 0; j < step; j++) {
       const datum = data[i * step + j];
       if (datum < min) min = datum;
@@ -998,7 +1024,7 @@ function drawWaveform() {
 
   // Playhead
   const px = (store.currentFrame / store.frameCount) * rect.width;
-  ctx.fillStyle = '#fff';
+  ctx.fillStyle = "#fff";
   ctx.fillRect(px, 0, 1, 60);
 }
 
@@ -1020,12 +1046,12 @@ async function loadStemModels() {
   try {
     availableModels.value = await getStemModels();
     // Set default to recommended model if available
-    const recommended = availableModels.value.find(m => m.recommended);
+    const recommended = availableModels.value.find((m) => m.recommended);
     if (recommended) {
       selectedModel.value = recommended.id;
     }
-  } catch (error) {
-    console.warn('[Lattice] Failed to load stem models, using defaults');
+  } catch (_error) {
+    console.warn("[Lattice] Failed to load stem models, using defaults");
   }
 }
 
@@ -1036,19 +1062,19 @@ watch(stemSectionExpanded, (expanded) => {
   }
 });
 
-function getStemIcon(stemName: string): string {
+function _getStemIcon(stemName: string): string {
   const icons: Record<string, string> = {
-    vocals: '🎤',
-    drums: '🥁',
-    bass: '🎸',
-    other: '🎹',
-    guitar: '🎸',
-    piano: '🎹',
+    vocals: "🎤",
+    drums: "🥁",
+    bass: "🎸",
+    other: "🎹",
+    guitar: "🎸",
+    piano: "🎹",
   };
-  return icons[stemName] || '🎵';
+  return icons[stemName] || "🎵";
 }
 
-async function separateStem(stem: StemType) {
+async function _separateStem(stem: StemType) {
   if (!store.audioFile) return;
 
   isSeparating.value = true;
@@ -1062,83 +1088,92 @@ async function separateStem(stem: StemType) {
 
     const result = await isolateStem(arrayBuffer, stem, selectedModel.value);
 
-    if (result.status === 'success' && result.isolated) {
+    if (result.status === "success" && result.isolated) {
       separatedStems.value = {
         [stem]: result.isolated,
-        [`no_${stem}`]: result.removed || '',
+        [`no_${stem}`]: result.removed || "",
       };
       separationProgress.value = 100;
-      separationMessage.value = 'Complete!';
+      separationMessage.value = "Complete!";
     } else {
-      separationError.value = result.message || 'Separation failed';
+      separationError.value = result.message || "Separation failed";
     }
   } catch (err) {
-    separationError.value = err instanceof Error ? err.message : 'Unknown error';
+    separationError.value =
+      err instanceof Error ? err.message : "Unknown error";
   } finally {
     isSeparating.value = false;
   }
 }
 
-async function makeKaraoke() {
+async function _makeKaraoke() {
   if (!store.audioFile) return;
 
   isSeparating.value = true;
   separationError.value = null;
   separationProgress.value = 10;
-  separationMessage.value = 'Creating karaoke track...';
+  separationMessage.value = "Creating karaoke track...";
 
   try {
     const arrayBuffer = await store.audioFile.arrayBuffer();
     separationProgress.value = 30;
 
-    const result = await isolateStem(arrayBuffer, 'vocals', selectedModel.value);
+    const result = await isolateStem(
+      arrayBuffer,
+      "vocals",
+      selectedModel.value,
+    );
 
-    if (result.status === 'success' && result.removed) {
+    if (result.status === "success" && result.removed) {
       separatedStems.value = {
         karaoke: result.removed,
-        vocals: result.isolated || '',
+        vocals: result.isolated || "",
       };
       separationProgress.value = 100;
-      separationMessage.value = 'Karaoke track ready!';
+      separationMessage.value = "Karaoke track ready!";
     } else {
-      separationError.value = result.message || 'Karaoke creation failed';
+      separationError.value = result.message || "Karaoke creation failed";
     }
   } catch (err) {
-    separationError.value = err instanceof Error ? err.message : 'Unknown error';
+    separationError.value =
+      err instanceof Error ? err.message : "Unknown error";
   } finally {
     isSeparating.value = false;
   }
 }
 
-async function separateAll() {
+async function _separateAll() {
   if (!store.audioFile) return;
 
   isSeparating.value = true;
   separationError.value = null;
   separationProgress.value = 10;
-  separationMessage.value = 'Separating all stems...';
+  separationMessage.value = "Separating all stems...";
 
   try {
     const arrayBuffer = await store.audioFile.arrayBuffer();
     separationProgress.value = 30;
 
-    const result = await separateStemsService(arrayBuffer, { model: selectedModel.value });
+    const result = await separateStemsService(arrayBuffer, {
+      model: selectedModel.value,
+    });
 
-    if (result.status === 'success' && result.stems) {
+    if (result.status === "success" && result.stems) {
       separatedStems.value = result.stems as Record<string, string>;
       separationProgress.value = 100;
       separationMessage.value = `Separated ${Object.keys(result.stems).length} stems!`;
     } else {
-      separationError.value = result.message || 'Separation failed';
+      separationError.value = result.message || "Separation failed";
     }
   } catch (err) {
-    separationError.value = err instanceof Error ? err.message : 'Unknown error';
+    separationError.value =
+      err instanceof Error ? err.message : "Unknown error";
   } finally {
     isSeparating.value = false;
   }
 }
 
-function playStem(stemName: string) {
+function _playStem(stemName: string) {
   if (!separatedStems.value?.[stemName]) return;
 
   // Stop current playback
@@ -1154,14 +1189,14 @@ function playStem(stemName: string) {
   currentStemAudio.value = audio;
 }
 
-function downloadStemFile(stemName: string) {
+function _downloadStemFile(stemName: string) {
   if (!separatedStems.value?.[stemName]) return;
 
-  const fileName = `${store.audioFile?.name?.replace(/\.[^.]+$/, '') || 'audio'}_${stemName}.wav`;
+  const fileName = `${store.audioFile?.name?.replace(/\.[^.]+$/, "") || "audio"}_${stemName}.wav`;
   downloadStem(separatedStems.value[stemName], fileName);
 }
 
-async function useStemForReactivity(stemName: string) {
+async function _useStemForReactivity(stemName: string) {
   if (!separatedStems.value?.[stemName]) return;
 
   const stemData = separatedStems.value[stemName];
@@ -1186,9 +1221,13 @@ async function useStemForReactivity(stemName: string) {
     console.log(`[Lattice] ${stemName} stem now active for audio reactivity`);
   } catch (error) {
     // BUG-087 fix: Show error in UI, not just console
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
     separationError.value = `Failed to load ${stemName} stem: ${errorMessage}`;
-    console.error(`[Lattice] Failed to use ${stemName} stem for reactivity:`, error);
+    console.error(
+      `[Lattice] Failed to use ${stemName} stem for reactivity:`,
+      error,
+    );
   }
 }
 
@@ -1196,7 +1235,7 @@ async function useStemForReactivity(stemName: string) {
 // Enhanced Beat Detection Functions
 // ============================================================================
 
-function applyBeatPreset() {
+function _applyBeatPreset() {
   if (beatPreset.value && BEAT_DETECTION_PRESETS[beatPreset.value]) {
     const preset = BEAT_DETECTION_PRESETS[beatPreset.value];
     beatConfig.value = { ...DEFAULT_BEAT_CONFIG, ...preset };
@@ -1207,9 +1246,9 @@ function applyBeatPreset() {
   }
 }
 
-function updateBeatConfig() {
+function _updateBeatConfig() {
   // Clear preset when manually editing
-  beatPreset.value = '';
+  beatPreset.value = "";
   // Re-analyze if we already have results
   if (store.audioAnalysis && beatGrid.value) {
     analyzeBeats();
@@ -1218,7 +1257,7 @@ function updateBeatConfig() {
 
 async function analyzeBeats() {
   if (!store.audioAnalysis) {
-    console.warn('[Lattice] No audio analysis available for beat detection');
+    console.warn("[Lattice] No audio analysis available for beat detection");
     return;
   }
 
@@ -1231,23 +1270,25 @@ async function analyzeBeats() {
     beatGrid.value = createEnhancedBeatGrid(
       store.audioAnalysis,
       fps,
-      beatConfig.value
+      beatConfig.value,
     );
 
-    console.log(`[Lattice] Beat detection complete: ${beatGrid.value.bpm} BPM, ${beatGrid.value.beats.length} beats`);
+    console.log(
+      `[Lattice] Beat detection complete: ${beatGrid.value.bpm} BPM, ${beatGrid.value.beats.length} beats`,
+    );
   } catch (error) {
-    console.error('[Lattice] Beat detection failed:', error);
+    console.error("[Lattice] Beat detection failed:", error);
     beatGrid.value = null;
   } finally {
     isAnalyzingBeats.value = false;
   }
 }
 
-function snapToBeats() {
+function _snapToBeats() {
   if (!beatGrid.value) return;
 
   // Get all beat frames
-  const beatFrames = beatGrid.value.beats.map(b => b.frame);
+  const beatFrames = beatGrid.value.beats.map((b) => b.frame);
 
   // Snap selected keyframes to nearest beat
   const selectedLayers = store.selectedLayerIds;
@@ -1263,7 +1304,7 @@ function snapToBeats() {
       transform.position,
       transform.rotation,
       transform.scale,
-      layer.opacity  // opacity is on layer, not transform
+      layer.opacity, // opacity is on layer, not transform
     ];
 
     for (const prop of animProps) {
@@ -1294,11 +1335,11 @@ function snapToBeats() {
   if (snappedCount > 0) {
     console.log(`[Lattice] Snapped ${snappedCount} keyframes to beats`);
   } else {
-    console.log('[Lattice] No keyframes were close enough to beats to snap');
+    console.log("[Lattice] No keyframes were close enough to beats to snap");
   }
 }
 
-function markBeatsAsMarkers() {
+function _markBeatsAsMarkers() {
   if (!beatGrid.value) return;
 
   // Add markers at downbeats (first beat of each measure)
@@ -1307,11 +1348,13 @@ function markBeatsAsMarkers() {
     store.addMarker({
       frame,
       label: `Bar ${i + 1}`,
-      color: '#8B5CF6'
+      color: "#8B5CF6",
     });
   }
 
-  console.log(`[Lattice] Added ${beatGrid.value.downbeats.length} beat markers`);
+  console.log(
+    `[Lattice] Added ${beatGrid.value.downbeats.length} beat markers`,
+  );
 }
 
 // ============================================================================
@@ -1330,7 +1373,7 @@ async function initMIDI() {
   }
 }
 
-async function refreshMIDIDevices() {
+async function _refreshMIDIDevices() {
   isRefreshingMIDI.value = true;
 
   try {
@@ -1339,7 +1382,7 @@ async function refreshMIDIDevices() {
     midiDevices.value = midiService.getInputDevices();
     console.log(`[Lattice] Found ${midiDevices.value.length} MIDI devices`);
   } catch (error) {
-    console.error('[Lattice] Failed to refresh MIDI devices:', error);
+    console.error("[Lattice] Failed to refresh MIDI devices:", error);
   } finally {
     isRefreshingMIDI.value = false;
   }
@@ -1360,7 +1403,8 @@ watch(midiMonitorEnabled, (enabled) => {
   if (enabled) {
     // Start listening
     midiService.addGlobalListener(handleMIDIMessage);
-    midiListenerRemove = () => midiService.removeGlobalListener(handleMIDIMessage);
+    midiListenerRemove = () =>
+      midiService.removeGlobalListener(handleMIDIMessage);
   } else {
     // Stop listening
     if (midiListenerRemove) {
@@ -1375,11 +1419,11 @@ watch(midiMonitorEnabled, (enabled) => {
 // MIDI File to Keyframes Functions
 // ============================================================================
 
-function loadMIDIFile() {
+function _loadMIDIFile() {
   midiFileInput.value?.click();
 }
 
-async function handleMIDIFileSelected(e: Event) {
+async function _handleMIDIFileSelected(e: Event) {
   const input = e.target as HTMLInputElement;
   if (!input.files?.length) return;
 
@@ -1392,49 +1436,61 @@ async function handleMIDIFileSelected(e: Event) {
     const arrayBuffer = await file.arrayBuffer();
     loadedMIDIFile.value = await parseMIDIFile(arrayBuffer);
     midiFileName.value = file.name;
-    console.log(`[Lattice] Loaded MIDI file: ${file.name}, ${loadedMIDIFile.value.tracks.length} tracks, ${loadedMIDIFile.value.duration.toFixed(2)}s`);
+    console.log(
+      `[Lattice] Loaded MIDI file: ${file.name}, ${loadedMIDIFile.value.tracks.length} tracks, ${loadedMIDIFile.value.duration.toFixed(2)}s`,
+    );
   } catch (err) {
-    midiConvertError.value = err instanceof Error ? err.message : 'Failed to parse MIDI file';
+    midiConvertError.value =
+      err instanceof Error ? err.message : "Failed to parse MIDI file";
     loadedMIDIFile.value = null;
   } finally {
     isLoadingMIDI.value = false;
-    input.value = '';
+    input.value = "";
   }
 }
 
-function removeMIDIFile() {
+function _removeMIDIFile() {
   loadedMIDIFile.value = null;
-  midiFileName.value = '';
+  midiFileName.value = "";
   midiConvertResult.value = null;
   midiConvertError.value = null;
 }
 
-const midiTracks = computed(() => {
+const _midiTracks = computed(() => {
   if (!loadedMIDIFile.value) return [];
   return loadedMIDIFile.value.tracks.map((t, i) => ({
     index: i,
     name: t.name || `Track ${i + 1}`,
     noteCount: t.notes.length,
-    ccCount: t.controlChanges.length
+    ccCount: t.controlChanges.length,
   }));
 });
 
-const midiFileInfo = computed(() => {
+const _midiFileInfo = computed(() => {
   if (!loadedMIDIFile.value) return null;
-  const totalNotes = loadedMIDIFile.value.tracks.reduce((sum, t) => sum + t.notes.length, 0);
-  const totalCC = loadedMIDIFile.value.tracks.reduce((sum, t) => sum + t.controlChanges.length, 0);
+  const totalNotes = loadedMIDIFile.value.tracks.reduce(
+    (sum, t) => sum + t.notes.length,
+    0,
+  );
+  const totalCC = loadedMIDIFile.value.tracks.reduce(
+    (sum, t) => sum + t.controlChanges.length,
+    0,
+  );
   return {
     duration: loadedMIDIFile.value.duration.toFixed(2),
     trackCount: loadedMIDIFile.value.tracks.length,
     totalNotes,
     totalCC,
-    bpm: loadedMIDIFile.value.tempos[loadedMIDIFile.value.tempos.length - 1]?.bpm?.toFixed(1) || '120'
+    bpm:
+      loadedMIDIFile.value.tempos[
+        loadedMIDIFile.value.tempos.length - 1
+      ]?.bpm?.toFixed(1) || "120",
   };
 });
 
-async function convertMIDIToKeyframes() {
+async function _convertMIDIToKeyframes() {
   if (!loadedMIDIFile.value) {
-    midiConvertError.value = 'No MIDI file loaded';
+    midiConvertError.value = "No MIDI file loaded";
     return;
   }
 
@@ -1448,54 +1504,65 @@ async function convertMIDIToKeyframes() {
       trackIndex: midiTrackIndex.value,
       channel: midiChannel.value,
       mappingType: midiMappingType.value,
-      ccNumber: midiMappingType.value === 'controlChange' ? midiCCNumber.value : undefined,
+      ccNumber:
+        midiMappingType.value === "controlChange"
+          ? midiCCNumber.value
+          : undefined,
       valueMin: midiValueMin.value,
       valueMax: midiValueMax.value,
       fps,
-      interpolation: midiInterpolation.value
+      interpolation: midiInterpolation.value,
     };
 
-    const keyframes = midiMappingType.value === 'controlChange'
-      ? midiCCToKeyframes(loadedMIDIFile.value, config)
-      : midiNotesToKeyframes(loadedMIDIFile.value, config);
+    const keyframes =
+      midiMappingType.value === "controlChange"
+        ? midiCCToKeyframes(loadedMIDIFile.value, config)
+        : midiNotesToKeyframes(loadedMIDIFile.value, config);
 
     if (keyframes.length === 0) {
-      midiConvertError.value = 'No keyframes generated. Check track/channel selection.';
+      midiConvertError.value =
+        "No keyframes generated. Check track/channel selection.";
       return;
     }
 
     // Create a null layer with the keyframes
-    const layer = store.addLayer('null', midiLayerName.value || 'MIDI Animation');
+    const layer = store.addLayer(
+      "null",
+      midiLayerName.value || "MIDI Animation",
+    );
 
     if (layer) {
       // Apply keyframes to scale.x as a driver property
       layer.transform.scale = {
         id: `midi_scale_${Date.now()}`,
-        name: 'Scale',
+        name: "Scale",
         value: { x: midiValueMin.value, y: midiValueMin.value, z: 1 },
         animated: true,
-        keyframes: keyframes.map(kf => ({
+        keyframes: keyframes.map((kf) => ({
           id: `kf_${Date.now()}_${kf.frame}`,
           frame: kf.frame,
           value: { x: kf.value, y: kf.value, z: 1 },
-          interpolation: 'linear' as const,
+          interpolation: "linear" as const,
           inHandle: { frame: 0, value: 0, enabled: false },
           outHandle: { frame: 0, value: 0, enabled: false },
-          controlMode: 'smooth' as const
-        }))
+          controlMode: "smooth" as const,
+        })),
       } as any;
 
       midiConvertResult.value = {
         layerName: layer.name,
-        keyframeCount: keyframes.length
+        keyframeCount: keyframes.length,
       };
 
-      console.log(`[Lattice] Created MIDI layer "${layer.name}" with ${keyframes.length} keyframes`);
+      console.log(
+        `[Lattice] Created MIDI layer "${layer.name}" with ${keyframes.length} keyframes`,
+      );
     } else {
-      midiConvertError.value = 'Failed to create layer';
+      midiConvertError.value = "Failed to create layer";
     }
   } catch (err) {
-    midiConvertError.value = err instanceof Error ? err.message : 'Unknown error';
+    midiConvertError.value =
+      err instanceof Error ? err.message : "Unknown error";
   } finally {
     isConvertingMIDI.value = false;
   }

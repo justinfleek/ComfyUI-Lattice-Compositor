@@ -5,14 +5,23 @@
  * server persistence, and autosave functionality.
  */
 
-import { toRaw } from 'vue';
-import { storeLogger } from '@/utils/logger';
-import type { LatticeProject } from '@/types/project';
-import { saveProject, loadProject, listProjects, deleteProject } from '@/services/projectStorage';
-import { migrateProject, needsMigration, CURRENT_SCHEMA_VERSION } from '@/services/projectMigration';
-import { validateProjectExpressions } from '@/services/expressions/expressionValidator';
-import { validateURL } from '@/services/security/urlValidator';
-import { validateProjectStructure } from '@/utils/security';
+import { toRaw } from "vue";
+import { validateProjectExpressions } from "@/services/expressions/expressionValidator";
+import {
+  CURRENT_SCHEMA_VERSION,
+  migrateProject,
+  needsMigration,
+} from "@/services/projectMigration";
+import {
+  deleteProject,
+  listProjects,
+  loadProject,
+  saveProject,
+} from "@/services/projectStorage";
+import { validateURL } from "@/services/security/urlValidator";
+import type { LatticeProject } from "@/types/project";
+import { storeLogger } from "@/utils/logger";
+import { validateProjectStructure } from "@/utils/security";
 
 // ============================================================================
 // STORE INTERFACE
@@ -46,7 +55,9 @@ export function pushHistory(store: ProjectStore): void {
   }
 
   // Deep clone the project using toRaw to deproxy reactive objects
-  const snapshot = structuredClone(toRaw(store.project)) as typeof store.project;
+  const snapshot = structuredClone(
+    toRaw(store.project),
+  ) as typeof store.project;
   store.historyStack.push(snapshot);
   store.historyIndex = store.historyStack.length - 1;
 
@@ -102,7 +113,9 @@ export function canRedo(store: ProjectStore): boolean {
  */
 export function clearHistory(store: ProjectStore): void {
   // Use toRaw to deproxy reactive objects before cloning
-  const snapshot = structuredClone(toRaw(store.project)) as typeof store.project;
+  const snapshot = structuredClone(
+    toRaw(store.project),
+  ) as typeof store.project;
   store.historyStack = [snapshot];
   store.historyIndex = 0;
 }
@@ -125,7 +138,7 @@ export function exportProject(store: ProjectStore): string {
 export function importProject(
   store: ProjectStore,
   json: string,
-  pushHistoryFn: () => void
+  pushHistoryFn: () => void,
 ): boolean {
   try {
     let project = JSON.parse(json) as LatticeProject;
@@ -134,13 +147,15 @@ export function importProject(
     // Migration transforms v1 format to v2 format
     if (needsMigration(project)) {
       const oldVersion = (project as any).schemaVersion ?? 1;
-      storeLogger.info(`Migrating project from schema v${oldVersion} to v${CURRENT_SCHEMA_VERSION}`);
+      storeLogger.info(
+        `Migrating project from schema v${oldVersion} to v${CURRENT_SCHEMA_VERSION}`,
+      );
       const migrationResult = migrateProject(project);
       if (migrationResult.success && migrationResult.project) {
         project = migrationResult.project as LatticeProject;
-        storeLogger.info('Project migration completed successfully');
+        storeLogger.info("Project migration completed successfully");
       } else {
-        storeLogger.error('Project migration failed:', migrationResult.error);
+        storeLogger.error("Project migration failed:", migrationResult.error);
         return false;
       }
     }
@@ -148,9 +163,12 @@ export function importProject(
     // SECURITY: Validate structure AFTER migration (ensures v2 format)
     // This catches NaN/Infinity values and malformed data
     try {
-      validateProjectStructure(project, 'Imported project');
+      validateProjectStructure(project, "Imported project");
     } catch (validationError) {
-      storeLogger.error('Project structure validation failed:', validationError);
+      storeLogger.error(
+        "Project structure validation failed:",
+        validationError,
+      );
       return false;
     }
 
@@ -158,7 +176,7 @@ export function importProject(
     pushHistoryFn();
     return true;
   } catch (err) {
-    storeLogger.error('Failed to import project:', err);
+    storeLogger.error("Failed to import project:", err);
     return false;
   }
 }
@@ -175,7 +193,7 @@ export function importProject(
 export async function loadProjectFromFile(
   store: ProjectStore,
   file: File,
-  pushHistoryFn: () => void
+  pushHistoryFn: () => void,
 ): Promise<boolean> {
   try {
     const json = await file.text();
@@ -188,34 +206,36 @@ export async function loadProjectFromFile(
 
       if (!validation.valid) {
         const dangerList = validation.dangerous
-          .map(d => `  - ${d.location}: ${d.reason}`)
-          .join('\n');
+          .map((d) => `  - ${d.location}: ${d.reason}`)
+          .join("\n");
         storeLogger.error(
-          `[SECURITY] Project contains ${validation.dangerous.length} dangerous expression(s):\n${dangerList}`
+          `[SECURITY] Project contains ${validation.dangerous.length} dangerous expression(s):\n${dangerList}`,
         );
         console.warn(
           `[SECURITY] Dangerous expressions detected in "${file.name}":\n${dangerList}\n` +
-          'These expressions may contain infinite loops. Project load blocked for safety.'
+            "These expressions may contain infinite loops. Project load blocked for safety.",
         );
         return false;
       }
 
       if (validation.total > 0) {
-        storeLogger.info(`[SECURITY] Validated ${validation.validated}/${validation.total} expressions (all safe)`);
+        storeLogger.info(
+          `[SECURITY] Validated ${validation.validated}/${validation.total} expressions (all safe)`,
+        );
       }
-    } catch (parseErr) {
+    } catch (_parseErr) {
       // JSON parse error will be caught by importProject, let it handle
     }
 
     const success = importProject(store, json, pushHistoryFn);
 
     if (success) {
-      storeLogger.info('Loaded project from file:', file.name);
+      storeLogger.info("Loaded project from file:", file.name);
     }
 
     return success;
   } catch (err) {
-    storeLogger.error('Failed to load project from file:', err);
+    storeLogger.error("Failed to load project from file:", err);
     return false;
   }
 }
@@ -230,23 +250,23 @@ export async function loadProjectFromFile(
  */
 export async function saveProjectToServer(
   store: ProjectStore,
-  projectId?: string
+  projectId?: string,
 ): Promise<string | null> {
   try {
     const result = await saveProject(store.project, projectId);
 
-    if (result.status === 'success' && result.project_id) {
+    if (result.status === "success" && result.project_id) {
       store.lastSaveProjectId = result.project_id;
       store.lastSaveTime = Date.now();
       store.hasUnsavedChanges = false;
-      storeLogger.info('Project saved to server:', result.project_id);
+      storeLogger.info("Project saved to server:", result.project_id);
       return result.project_id;
     } else {
-      storeLogger.error('Failed to save project:', result.message);
+      storeLogger.error("Failed to save project:", result.message);
       return null;
     }
   } catch (err) {
-    storeLogger.error('Error saving project to server:', err);
+    storeLogger.error("Error saving project to server:", err);
     return null;
   }
 }
@@ -258,25 +278,27 @@ export async function saveProjectToServer(
 export async function loadProjectFromServer(
   store: ProjectStore,
   projectId: string,
-  pushHistoryFn: () => void
+  pushHistoryFn: () => void,
 ): Promise<boolean> {
   try {
     const result = await loadProject(projectId);
 
-    if (result.status === 'success' && result.project) {
+    if (result.status === "success" && result.project) {
       let project = result.project;
 
       // Check if migration is needed and apply it FIRST
       // Migration transforms v1 format to v2 format
       if (needsMigration(project)) {
         const oldVersion = (project as any).schemaVersion ?? 1;
-        storeLogger.info(`Migrating project from schema v${oldVersion} to v${CURRENT_SCHEMA_VERSION}`);
+        storeLogger.info(
+          `Migrating project from schema v${oldVersion} to v${CURRENT_SCHEMA_VERSION}`,
+        );
         const migrationResult = migrateProject(project);
         if (migrationResult.success && migrationResult.project) {
           project = migrationResult.project as LatticeProject;
-          storeLogger.info('Project migration completed successfully');
+          storeLogger.info("Project migration completed successfully");
         } else {
-          storeLogger.error('Project migration failed:', migrationResult.error);
+          storeLogger.error("Project migration failed:", migrationResult.error);
           return false;
         }
       }
@@ -286,7 +308,10 @@ export async function loadProjectFromServer(
       try {
         validateProjectStructure(project, `Server project '${projectId}'`);
       } catch (validationError) {
-        storeLogger.error('Project structure validation failed:', validationError);
+        storeLogger.error(
+          "Project structure validation failed:",
+          validationError,
+        );
         return false;
       }
 
@@ -294,20 +319,22 @@ export async function loadProjectFromServer(
       const validation = await validateProjectExpressions(project);
       if (!validation.valid) {
         const dangerList = validation.dangerous
-          .map(d => `  - ${d.location}: ${d.reason}`)
-          .join('\n');
+          .map((d) => `  - ${d.location}: ${d.reason}`)
+          .join("\n");
         storeLogger.error(
-          `[SECURITY] Project contains ${validation.dangerous.length} dangerous expression(s):\n${dangerList}`
+          `[SECURITY] Project contains ${validation.dangerous.length} dangerous expression(s):\n${dangerList}`,
         );
         console.warn(
           `[SECURITY] Dangerous expressions detected in project "${projectId}":\n${dangerList}\n` +
-          'These expressions may contain infinite loops. Project load blocked for safety.'
+            "These expressions may contain infinite loops. Project load blocked for safety.",
         );
         return false;
       }
 
       if (validation.total > 0) {
-        storeLogger.info(`[SECURITY] Validated ${validation.validated}/${validation.total} expressions (all safe)`);
+        storeLogger.info(
+          `[SECURITY] Validated ${validation.validated}/${validation.total} expressions (all safe)`,
+        );
       }
 
       store.project = project;
@@ -315,14 +342,14 @@ export async function loadProjectFromServer(
       store.lastSaveProjectId = projectId;
       store.lastSaveTime = Date.now();
       store.hasUnsavedChanges = false;
-      storeLogger.info('Project loaded from server:', projectId);
+      storeLogger.info("Project loaded from server:", projectId);
       return true;
     } else {
-      storeLogger.error('Failed to load project:', result.message);
+      storeLogger.error("Failed to load project:", result.message);
       return false;
     }
   } catch (err) {
-    storeLogger.error('Error loading project from server:', err);
+    storeLogger.error("Error loading project from server:", err);
     return false;
   }
 }
@@ -330,16 +357,18 @@ export async function loadProjectFromServer(
 /**
  * List all projects saved on server
  */
-export async function listServerProjects(): Promise<Array<{ id: string; name: string; modified?: string }>> {
+export async function listServerProjects(): Promise<
+  Array<{ id: string; name: string; modified?: string }>
+> {
   try {
     const result = await listProjects();
 
-    if (result.status === 'success' && result.projects) {
+    if (result.status === "success" && result.projects) {
       return result.projects;
     }
     return [];
   } catch (err) {
-    storeLogger.error('Error listing projects:', err);
+    storeLogger.error("Error listing projects:", err);
     return [];
   }
 }
@@ -350,9 +379,9 @@ export async function listServerProjects(): Promise<Array<{ id: string; name: st
 export async function deleteServerProject(projectId: string): Promise<boolean> {
   try {
     const result = await deleteProject(projectId);
-    return result.status === 'success';
+    return result.status === "success";
   } catch (err) {
-    storeLogger.error('Error deleting project:', err);
+    storeLogger.error("Error deleting project:", err);
     return false;
   }
 }
@@ -366,7 +395,7 @@ export async function deleteServerProject(projectId: string): Promise<boolean> {
  */
 export function startAutosave(
   store: ProjectStore,
-  performAutosaveFn: () => Promise<void>
+  performAutosaveFn: () => Promise<void>,
 ): void {
   // Don't start if already running or disabled
   if (store.autosaveTimerId !== null || !store.autosaveEnabled) {
@@ -375,9 +404,9 @@ export function startAutosave(
 
   store.autosaveTimerId = window.setInterval(
     performAutosaveFn,
-    store.autosaveIntervalMs
+    store.autosaveIntervalMs,
   );
-  storeLogger.info('Autosave started with interval:', store.autosaveIntervalMs);
+  storeLogger.info("Autosave started with interval:", store.autosaveIntervalMs);
 }
 
 /**
@@ -387,7 +416,7 @@ export function stopAutosave(store: ProjectStore): void {
   if (store.autosaveTimerId !== null && store.autosaveTimerId !== undefined) {
     window.clearInterval(store.autosaveTimerId);
     store.autosaveTimerId = null;
-    storeLogger.info('Autosave stopped');
+    storeLogger.info("Autosave stopped");
   }
 }
 
@@ -397,13 +426,17 @@ export function stopAutosave(store: ProjectStore): void {
 export function configureAutosave(
   store: ProjectStore,
   options: { enabled?: boolean; intervalMs?: number },
-  performAutosaveFn: () => Promise<void>
+  performAutosaveFn: () => Promise<void>,
 ): void {
   if (options.enabled !== undefined) {
     store.autosaveEnabled = options.enabled;
   }
   // Validate intervalMs (NaN in setInterval causes unpredictable behavior)
-  if (options.intervalMs !== undefined && Number.isFinite(options.intervalMs) && options.intervalMs > 0) {
+  if (
+    options.intervalMs !== undefined &&
+    Number.isFinite(options.intervalMs) &&
+    options.intervalMs > 0
+  ) {
     store.autosaveIntervalMs = options.intervalMs;
   }
 
@@ -424,16 +457,16 @@ export async function performAutosave(store: ProjectStore): Promise<void> {
     const existingProjectId = store.lastSaveProjectId || undefined;
     const result = await saveProject(store.project, existingProjectId);
 
-    if (result.status === 'success' && result.project_id) {
+    if (result.status === "success" && result.project_id) {
       store.lastSaveProjectId = result.project_id;
       store.lastSaveTime = Date.now();
       store.hasUnsavedChanges = false;
-      storeLogger.info('Autosaved project:', result.project_id);
+      storeLogger.info("Autosaved project:", result.project_id);
     } else {
-      storeLogger.error('Autosave failed:', result.message);
+      storeLogger.error("Autosave failed:", result.message);
     }
   } catch (error) {
-    storeLogger.error('Autosave failed:', error);
+    storeLogger.error("Autosave failed:", error);
   }
 }
 
@@ -452,16 +485,16 @@ export function markUnsavedChanges(store: ProjectStore): void {
  * Create a default new project structure
  */
 export function createDefaultProject(): LatticeProject {
-  const mainCompId = 'comp_main';
+  const mainCompId = "comp_main";
 
   return {
-    version: '1.0.0',
+    version: "1.0.0",
     schemaVersion: CURRENT_SCHEMA_VERSION,
     meta: {
-      name: 'Untitled Project',
+      name: "Untitled Project",
       created: new Date().toISOString(),
       modified: new Date().toISOString(),
-      author: ''
+      author: "",
     },
     // Legacy single-comp alias
     composition: {
@@ -470,34 +503,34 @@ export function createDefaultProject(): LatticeProject {
       frameCount: 81,
       fps: 16,
       duration: 5.0625, // 81 frames at 16fps
-      backgroundColor: '#1a1a1a',
+      backgroundColor: "#1a1a1a",
       autoResizeToContent: false,
-      frameBlendingEnabled: false
+      frameBlendingEnabled: false,
     },
     // Multi-composition support
     compositions: {
       [mainCompId]: {
         id: mainCompId,
-        name: 'Main Comp',
+        name: "Main Comp",
         settings: {
           width: 1920,
           height: 1080,
           frameCount: 81,
           fps: 16,
           duration: 5.0625,
-          backgroundColor: '#1a1a1a',
+          backgroundColor: "#1a1a1a",
           autoResizeToContent: false,
-          frameBlendingEnabled: false
+          frameBlendingEnabled: false,
         },
         layers: [],
         currentFrame: 0,
-        isNestedComp: false
-      }
+        isNestedComp: false,
+      },
     },
     mainCompositionId: mainCompId,
     layers: [], // Legacy
     currentFrame: 0,
-    assets: {}
+    assets: {},
   };
 }
 
@@ -510,7 +543,7 @@ export function resetProject(store: ProjectStore): void {
   store.lastSaveTime = 0;
   store.hasUnsavedChanges = false;
   clearHistory(store);
-  storeLogger.info('Project reset to default state');
+  storeLogger.info("Project reset to default state");
 }
 
 // ============================================================================
@@ -527,16 +560,16 @@ export function findUsedAssetIds(store: ProjectStore): Set<string> {
   for (const comp of Object.values(store.project.compositions)) {
     for (const layer of comp.layers) {
       // Check layer data for asset references
-      if (layer.data && typeof layer.data === 'object') {
+      if (layer.data && typeof layer.data === "object") {
         const data = layer.data as Record<string, any>;
 
         // Common asset ID field
-        if (data.assetId && typeof data.assetId === 'string') {
+        if (data.assetId && typeof data.assetId === "string") {
           usedIds.add(data.assetId);
         }
 
         // Source asset ID (for derived assets)
-        if (data.sourceAssetId && typeof data.sourceAssetId === 'string') {
+        if (data.sourceAssetId && typeof data.sourceAssetId === "string") {
           usedIds.add(data.sourceAssetId);
         }
 
@@ -569,7 +602,10 @@ export function findUsedAssetIds(store: ProjectStore): Set<string> {
  * Remove unused assets from the project (Reduce Project)
  * Returns the number of assets removed
  */
-export function removeUnusedAssets(store: ProjectStore): { removed: number; assetNames: string[] } {
+export function removeUnusedAssets(store: ProjectStore): {
+  removed: number;
+  assetNames: string[];
+} {
   const usedIds = findUsedAssetIds(store);
   const assets = store.project.assets;
   const removedNames: string[] = [];
@@ -617,7 +653,7 @@ export function getAssetUsageStats(store: ProjectStore): {
     total: Object.keys(assets).length,
     used: usedIds.size,
     unused: unusedNames.length,
-    unusedNames
+    unusedNames,
   };
 }
 
@@ -629,23 +665,24 @@ export async function collectFiles(
   options: {
     includeUnused?: boolean;
     projectName?: string;
-  } = {}
+  } = {},
 ): Promise<Blob> {
   const { includeUnused = false, projectName } = options;
 
   // Dynamically import JSZip
-  const JSZip = (await import('jszip')).default;
+  const JSZip = (await import("jszip")).default;
   const zip = new JSZip();
 
   // Create project folder
-  const folderName = projectName || store.project.meta.name || 'lattice-project';
+  const folderName =
+    projectName || store.project.meta.name || "lattice-project";
   const folder = zip.folder(folderName);
-  if (!folder) throw new Error('Failed to create ZIP folder');
+  if (!folder) throw new Error("Failed to create ZIP folder");
 
   // Get assets to include
   const usedIds = includeUnused ? null : findUsedAssetIds(store);
   const assets = store.project.assets;
-  const assetsFolder = folder.folder('assets');
+  const assetsFolder = folder.folder("assets");
 
   // Collect asset files
   const assetManifest: Record<string, string> = {}; // assetId -> relative path
@@ -654,23 +691,29 @@ export async function collectFiles(
     // Skip unused assets if not including them
     if (usedIds && !usedIds.has(assetId)) continue;
 
-    const filename = asset.filename || `${assetId}.${getExtensionForAsset(asset)}`;
+    const filename =
+      asset.filename || `${assetId}.${getExtensionForAsset(asset)}`;
     assetManifest[assetId] = `assets/${filename}`;
 
     // Add asset data to ZIP
     if (asset.data) {
       // Asset has inline data (base64 or data URL)
-      if (asset.data.startsWith('data:')) {
+      if (asset.data.startsWith("data:")) {
         // Data URL - extract base64 part
-        const base64Data = asset.data.split(',')[1];
+        const base64Data = asset.data.split(",")[1];
         if (base64Data) {
           assetsFolder?.file(filename, base64Data, { base64: true });
         }
-      } else if (asset.data.startsWith('blob:') || asset.data.startsWith('http')) {
+      } else if (
+        asset.data.startsWith("blob:") ||
+        asset.data.startsWith("http")
+      ) {
         // URL - fetch the data with security validation
-        const urlValidation = validateURL(asset.data, 'fetch');
+        const urlValidation = validateURL(asset.data, "fetch");
         if (!urlValidation.valid) {
-          storeLogger.warn(`[SECURITY] Skipped asset ${assetId}: ${urlValidation.error}`);
+          storeLogger.warn(
+            `[SECURITY] Skipped asset ${assetId}: ${urlValidation.error}`,
+          );
           continue;
         }
         try {
@@ -695,16 +738,18 @@ export async function collectFiles(
   (exportProject as any)._assetManifest = assetManifest;
 
   // Save project JSON
-  folder.file('project.lattice.json', JSON.stringify(exportProject, null, 2));
+  folder.file("project.lattice.json", JSON.stringify(exportProject, null, 2));
 
   // Generate ZIP
   const zipBlob = await zip.generateAsync({
-    type: 'blob',
-    compression: 'DEFLATE',
-    compressionOptions: { level: 6 }
+    type: "blob",
+    compression: "DEFLATE",
+    compressionOptions: { level: 6 },
   });
 
-  storeLogger.info(`Collected files: ${Object.keys(assetManifest).length} assets, project JSON`);
+  storeLogger.info(
+    `Collected files: ${Object.keys(assetManifest).length} assets, project JSON`,
+  );
   return zipBlob;
 }
 
@@ -713,17 +758,23 @@ export async function collectFiles(
  */
 function getExtensionForAsset(asset: any): string {
   if (asset.filename) {
-    const ext = asset.filename.split('.').pop();
+    const ext = asset.filename.split(".").pop();
     if (ext) return ext;
   }
 
   switch (asset.type) {
-    case 'image': return 'png';
-    case 'video': return 'mp4';
-    case 'audio': return 'mp3';
-    case 'model': return 'glb';
-    case 'pointcloud': return 'ply';
-    default: return 'bin';
+    case "image":
+      return "png";
+    case "video":
+      return "mp4";
+    case "audio":
+      return "mp3";
+    case "model":
+      return "glb";
+    case "pointcloud":
+      return "ply";
+    default:
+      return "bin";
   }
 }
 
@@ -732,14 +783,14 @@ function getExtensionForAsset(asset: any): string {
  */
 export async function downloadCollectedFiles(
   store: ProjectStore,
-  options: { includeUnused?: boolean } = {}
+  options: { includeUnused?: boolean } = {},
 ): Promise<void> {
-  const projectName = store.project.meta.name || 'lattice-project';
+  const projectName = store.project.meta.name || "lattice-project";
   const zipBlob = await collectFiles(store, { ...options, projectName });
 
   // Trigger download
   const url = URL.createObjectURL(zipBlob);
-  const a = document.createElement('a');
+  const a = document.createElement("a");
   a.href = url;
   a.download = `${projectName}.zip`;
   document.body.appendChild(a);

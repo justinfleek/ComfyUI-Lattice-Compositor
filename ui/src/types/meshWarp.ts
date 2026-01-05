@@ -8,7 +8,7 @@
  * allowing organic animation by manipulating control pins.
  */
 
-import type { AnimatableProperty } from './project';
+import type { AnimatableProperty } from "./project";
 
 // ============================================================================
 // PIN TYPES
@@ -16,12 +16,12 @@ import type { AnimatableProperty } from './project';
 
 /** Type of warp pin */
 export type WarpPinType =
-  | 'position'   // Deform pin: Move mesh vertices by animating position
-  | 'rotation'   // Rotation pin: Rotate around fixed point (legacy, use 'bend' for new code)
-  | 'starch'     // Stiffness pin: Define rigid areas that resist deformation
-  | 'overlap'    // Overlap pin: Control depth/z-order during deformation
-  | 'bend'       // Bend pin: Rotation + scale at joints (position is fixed reference)
-  | 'advanced';  // Advanced pin: Full transform control (position + rotation + scale)
+  | "position" // Deform pin: Move mesh vertices by animating position
+  | "rotation" // Rotation pin: Rotate around fixed point (legacy, use 'bend' for new code)
+  | "starch" // Stiffness pin: Define rigid areas that resist deformation
+  | "overlap" // Overlap pin: Control depth/z-order during deformation
+  | "bend" // Bend pin: Rotation + scale at joints (position is fixed reference)
+  | "advanced"; // Advanced pin: Full transform control (position + rotation + scale)
 
 /**
  * A control pin for mesh warp deformation
@@ -123,10 +123,10 @@ export interface WarpDeformationResult {
 
 /** Method for calculating pin influence weights */
 export type WarpWeightMethod =
-  | 'inverse-distance'   // Standard 1/d^n falloff
-  | 'heat-diffusion'     // Heat equation simulation
-  | 'radial-basis'       // RBF interpolation
-  | 'bounded';           // Bounded biharmonic weights
+  | "inverse-distance" // Standard 1/d^n falloff
+  | "heat-diffusion" // Heat equation simulation
+  | "radial-basis" // RBF interpolation
+  | "bounded"; // Bounded biharmonic weights
 
 /**
  * Options for weight calculation
@@ -148,7 +148,7 @@ export interface WarpWeightOptions {
 
 /** Default weight calculation options */
 export const DEFAULT_WARP_WEIGHT_OPTIONS: WarpWeightOptions = {
-  method: 'inverse-distance',
+  method: "inverse-distance",
   falloffPower: 2,
   normalize: true,
   minWeight: 0.001,
@@ -159,7 +159,7 @@ export function createDefaultWarpPin(
   id: string,
   x: number,
   y: number,
-  type: WarpPinType = 'position'
+  type: WarpPinType = "position",
 ): WarpPin {
   const pin: WarpPin = {
     id,
@@ -167,26 +167,26 @@ export function createDefaultWarpPin(
     type,
     position: {
       id: `pin_pos_${id}`,
-      name: 'Position',
-      type: 'position',
+      name: "Position",
+      type: "position",
       value: { x, y },
       animated: false,
       keyframes: [],
     },
     radius: 50,
-    stiffness: type === 'starch' ? 1.0 : 0.0,
+    stiffness: type === "starch" ? 1.0 : 0.0,
     rotation: {
       id: `pin_rot_${id}`,
-      name: 'Rotation',
-      type: 'number',
+      name: "Rotation",
+      type: "number",
       value: 0,
       animated: false,
       keyframes: [],
     },
     scale: {
       id: `pin_scale_${id}`,
-      name: 'Scale',
-      type: 'number',
+      name: "Scale",
+      type: "number",
       value: 1,
       animated: false,
       keyframes: [],
@@ -196,11 +196,11 @@ export function createDefaultWarpPin(
   };
 
   // Add inFront property for overlap pins
-  if (type === 'overlap') {
+  if (type === "overlap") {
     pin.inFront = {
       id: `pin_infront_${id}`,
-      name: 'In Front',
-      type: 'number',
+      name: "In Front",
+      type: "number",
       value: 0,
       animated: false,
       keyframes: [],
@@ -214,17 +214,16 @@ export function createDefaultWarpPin(
 function getPinDefaultName(type: WarpPinType, id: string): string {
   const suffix = id.slice(-4);
   switch (type) {
-    case 'position':
+    case "position":
       return `Deform ${suffix}`;
-    case 'starch':
+    case "starch":
       return `Stiffness ${suffix}`;
-    case 'overlap':
+    case "overlap":
       return `Overlap ${suffix}`;
-    case 'bend':
+    case "bend":
       return `Bend ${suffix}`;
-    case 'advanced':
+    case "advanced":
       return `Advanced ${suffix}`;
-    case 'rotation':
     default:
       return `Pin ${suffix}`;
   }

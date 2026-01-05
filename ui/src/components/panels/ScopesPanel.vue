@@ -63,12 +63,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, computed } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import HistogramScope from './scopes/HistogramScope.vue';
-import WaveformScope from './scopes/WaveformScope.vue';
-import VectorscopeScope from './scopes/VectorscopeScope.vue';
-import RGBParadeScope from './scopes/RGBParadeScope.vue';
+import { onMounted, onUnmounted, ref, watch } from "vue";
+import { useCompositorStore } from "@/stores/compositorStore";
 
 // Types from worker
 interface HistogramResult {
@@ -105,11 +101,13 @@ interface ParadeResult {
   blue: WaveformResult;
 }
 
-const store = useCompositorStore();
+const _store = useCompositorStore();
 
 // UI state
-const activeScope = ref<'histogram' | 'waveform' | 'vectorscope' | 'parade'>('histogram');
-const brightness = ref(1.5);
+const activeScope = ref<"histogram" | "waveform" | "vectorscope" | "parade">(
+  "histogram",
+);
+const _brightness = ref(1.5);
 const isAnalyzing = ref(false);
 
 // Scope data
@@ -127,15 +125,14 @@ const ANALYSIS_INTERVAL = 100; // ms between analyses (10 fps for scopes)
 // Initialize worker
 onMounted(() => {
   try {
-    worker = new Worker(
-      new URL('@/workers/scopeWorker.ts', import.meta.url),
-      { type: 'module' }
-    );
+    worker = new Worker(new URL("@/workers/scopeWorker.ts", import.meta.url), {
+      type: "module",
+    });
 
     worker.onmessage = (e) => {
       const { type, payload } = e.data;
 
-      if (type === 'complete') {
+      if (type === "complete") {
         isAnalyzing.value = false;
 
         if (payload.histogram) {
@@ -150,8 +147,8 @@ onMounted(() => {
         if (payload.parade) {
           paradeData.value = payload.parade;
         }
-      } else if (type === 'error') {
-        console.error('Scope worker error:', payload.error);
+      } else if (type === "error") {
+        console.error("Scope worker error:", payload.error);
         isAnalyzing.value = false;
       }
     };
@@ -159,7 +156,7 @@ onMounted(() => {
     // Start analysis loop
     startAnalysisLoop();
   } catch (error) {
-    console.error('Failed to create scope worker:', error);
+    console.error("Failed to create scope worker:", error);
   }
 });
 
@@ -205,33 +202,37 @@ function requestAnalysis() {
   isAnalyzing.value = true;
 
   // Determine which scopes to compute
-  const scopes: ('histogram' | 'waveform' | 'vectorscope' | 'parade')[] = [activeScope.value];
+  const scopes: ("histogram" | "waveform" | "vectorscope" | "parade")[] = [
+    activeScope.value,
+  ];
 
   worker.postMessage({
-    type: 'analyze',
+    type: "analyze",
     payload: {
       imageData: imageData.data,
       width: imageData.width,
       height: imageData.height,
-      scopes
-    }
+      scopes,
+    },
   });
 }
 
 // Get image data from the canvas
 function getCanvasImageData(): ImageData | null {
   // Try to get canvas from engine
-  const canvas = document.querySelector('.three-canvas canvas') as HTMLCanvasElement;
+  const canvas = document.querySelector(
+    ".three-canvas canvas",
+  ) as HTMLCanvasElement;
   if (!canvas) return null;
 
   try {
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
     if (ctx) {
       return ctx.getImageData(0, 0, canvas.width, canvas.height);
     }
 
     // For WebGL canvas, we need to read pixels differently
-    const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+    const gl = canvas.getContext("webgl2") || canvas.getContext("webgl");
     if (gl) {
       const width = canvas.width;
       const height = canvas.height;
@@ -252,7 +253,7 @@ function getCanvasImageData(): ImageData | null {
       return new ImageData(flipped, width, height);
     }
   } catch (error) {
-    console.error('Failed to get canvas image data:', error);
+    console.error("Failed to get canvas image data:", error);
   }
 
   return null;

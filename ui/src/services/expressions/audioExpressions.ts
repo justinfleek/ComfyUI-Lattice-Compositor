@@ -5,8 +5,8 @@
  * posterizeTime, and interpolation helpers.
  */
 
-import type { Keyframe } from '@/types/project';
-import type { ExpressionContext } from './types';
+import type { Keyframe } from "@/types/project";
+import type { ExpressionContext } from "./types";
 
 // ============================================================
 // VALUE AT TIME
@@ -24,7 +24,7 @@ import type { ExpressionContext } from './types';
  */
 export function valueAtTime(
   ctx: ExpressionContext,
-  targetTime: number
+  targetTime: number,
 ): number | number[] {
   const { keyframes, fps, value } = ctx;
 
@@ -54,7 +54,10 @@ export function valueAtTime(
   let nextKf = sortedKfs[1];
 
   for (let i = 0; i < sortedKfs.length - 1; i++) {
-    if (targetFrame >= sortedKfs[i].frame && targetFrame < sortedKfs[i + 1].frame) {
+    if (
+      targetFrame >= sortedKfs[i].frame &&
+      targetFrame < sortedKfs[i + 1].frame
+    ) {
       prevKf = sortedKfs[i];
       nextKf = sortedKfs[i + 1];
       break;
@@ -64,14 +67,14 @@ export function valueAtTime(
   // Linear interpolation between keyframes
   const t = (targetFrame - prevKf.frame) / (nextKf.frame - prevKf.frame);
 
-  if (typeof prevKf.value === 'number' && typeof nextKf.value === 'number') {
+  if (typeof prevKf.value === "number" && typeof nextKf.value === "number") {
     return prevKf.value + t * (nextKf.value - prevKf.value);
   }
 
   // Array interpolation
   if (Array.isArray(prevKf.value) && Array.isArray(nextKf.value)) {
-    return prevKf.value.map((v, i) =>
-      v + t * ((nextKf.value as number[])[i] - v)
+    return prevKf.value.map(
+      (v, i) => v + t * ((nextKf.value as number[])[i] - v),
     );
   }
 
@@ -99,7 +102,7 @@ export function valueAtTime(
  */
 export function posterizeTime(
   ctx: ExpressionContext,
-  framesPerSecond: number
+  framesPerSecond: number,
 ): number {
   const { time } = ctx;
 
@@ -122,7 +125,7 @@ export function posterizeTime(
  */
 export function posterizedFrame(
   ctx: ExpressionContext,
-  framesPerSecond: number
+  framesPerSecond: number,
 ): number {
   const quantizedTime = posterizeTime(ctx, framesPerSecond);
   return Math.floor(quantizedTime * ctx.fps);
@@ -154,7 +157,7 @@ export function linearInterp(
   tMin: number,
   tMax: number,
   vMin: number,
-  vMax: number
+  vMax: number,
 ): number {
   // Normalize t to 0-1 range within input range
   const normalized = Math.max(0, Math.min(1, (t - tMin) / (tMax - tMin)));
@@ -185,15 +188,16 @@ export function easeInterp(
   tMin: number,
   tMax: number,
   vMin: number,
-  vMax: number
+  vMax: number,
 ): number {
   // Normalize t to 0-1 range within input range
   const normalized = Math.max(0, Math.min(1, (t - tMin) / (tMax - tMin)));
 
   // Apply smooth ease (cubic ease-in-out)
-  const eased = normalized < 0.5
-    ? 4 * normalized * normalized * normalized
-    : 1 - Math.pow(-2 * normalized + 2, 3) / 2;
+  const eased =
+    normalized < 0.5
+      ? 4 * normalized * normalized * normalized
+      : 1 - (-2 * normalized + 2) ** 3 / 2;
 
   // Map to output range
   return vMin + eased * (vMax - vMin);
@@ -207,7 +211,7 @@ export function easeInInterp(
   tMin: number,
   tMax: number,
   vMin: number,
-  vMax: number
+  vMax: number,
 ): number {
   const normalized = Math.max(0, Math.min(1, (t - tMin) / (tMax - tMin)));
   const eased = normalized * normalized * normalized;
@@ -222,10 +226,10 @@ export function easeOutInterp(
   tMin: number,
   tMax: number,
   vMin: number,
-  vMax: number
+  vMax: number,
 ): number {
   const normalized = Math.max(0, Math.min(1, (t - tMin) / (tMax - tMin)));
-  const eased = 1 - Math.pow(1 - normalized, 3);
+  const eased = 1 - (1 - normalized) ** 3;
   return vMin + eased * (vMax - vMin);
 }
 
@@ -249,15 +253,15 @@ export function audioAmplitude(
   keyframes: Keyframe<number>[],
   frame: number,
   fps: number,
-  timeOffset: number = 0
+  timeOffset: number = 0,
 ): number {
   if (!keyframes || keyframes.length === 0) return 0;
 
   // Apply time offset
-  const targetFrame = frame - (timeOffset * fps);
+  const targetFrame = frame - timeOffset * fps;
 
   // Find the keyframe at this frame
-  const exactKf = keyframes.find(k => k.frame === Math.floor(targetFrame));
+  const exactKf = keyframes.find((k) => k.frame === Math.floor(targetFrame));
   if (exactKf) return exactKf.value;
 
   // Interpolate between keyframes
@@ -270,9 +274,16 @@ export function audioAmplitude(
 
   // Find surrounding keyframes
   for (let i = 0; i < sortedKfs.length - 1; i++) {
-    if (targetFrame >= sortedKfs[i].frame && targetFrame < sortedKfs[i + 1].frame) {
-      const t = (targetFrame - sortedKfs[i].frame) / (sortedKfs[i + 1].frame - sortedKfs[i].frame);
-      return sortedKfs[i].value + t * (sortedKfs[i + 1].value - sortedKfs[i].value);
+    if (
+      targetFrame >= sortedKfs[i].frame &&
+      targetFrame < sortedKfs[i + 1].frame
+    ) {
+      const t =
+        (targetFrame - sortedKfs[i].frame) /
+        (sortedKfs[i + 1].frame - sortedKfs[i].frame);
+      return (
+        sortedKfs[i].value + t * (sortedKfs[i + 1].value - sortedKfs[i].value)
+      );
     }
   }
 
