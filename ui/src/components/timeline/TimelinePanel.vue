@@ -217,29 +217,30 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch, nextTick, inject, type Ref, type CSSProperties } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import type { Layer } from '@/types/project';
-import { useAudioStore } from '@/stores/audioStore';
-import { usePlaybackStore } from '@/stores/playbackStore';
-import EnhancedLayerTrack from './EnhancedLayerTrack.vue';
-import CompositionTabs from './CompositionTabs.vue';
-import OnionSkinControls from './OnionSkinControls.vue';
-import AudioTrack from './AudioTrack.vue';
-import { findNearestSnap } from '@/services/timelineSnap';
 import {
-  PhSparkle, PhCamera, PhLightbulb, PhSpeakerHigh, PhFolder, PhGearSix,
-  PhTrash, PhEye, PhLock, PhSun, PhRobot, PhFilmStrip, PhCube,
-  PhCloud, PhWaves, PhCompass, PhEyeSlash
-} from '@phosphor-icons/vue';
+  type CSSProperties,
+  computed,
+  inject,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  type Ref,
+  ref,
+  watch,
+} from "vue";
+import { findNearestSnap } from "@/services/timelineSnap";
+import { useAudioStore } from "@/stores/audioStore";
+import { useCompositorStore } from "@/stores/compositorStore";
+import { usePlaybackStore } from "@/stores/playbackStore";
+import type { Layer } from "@/types/project";
 
 // Inject work area state from WorkspaceLayout
-const workAreaStart = inject<Ref<number | null>>('workAreaStart', ref(null));
-const workAreaEnd = inject<Ref<number | null>>('workAreaEnd', ref(null));
+const workAreaStart = inject<Ref<number | null>>("workAreaStart", ref(null));
+const workAreaEnd = inject<Ref<number | null>>("workAreaEnd", ref(null));
 
-const emit = defineEmits<{
-  (e: 'openCompositionSettings'): void;
-  (e: 'openPathSuggestion'): void;
+const _emit = defineEmits<{
+  (e: "openCompositionSettings"): void;
+  (e: "openPathSuggestion"): void;
 }>();
 
 const store = useCompositorStore();
@@ -260,9 +261,11 @@ let isScrollingTrack = false;
 const viewportWidth = ref(1000); // Default, updated by observer
 const isDragOver = ref(false);
 
-const filteredLayers = computed(() => store.displayedLayers || []);
+const _filteredLayers = computed(() => store.displayedLayers || []);
 // Playhead position as percentage of timeline
-const playheadPositionPct = computed(() => (store.currentFrame / store.frameCount) * 100);
+const _playheadPositionPct = computed(
+  () => (store.currentFrame / store.frameCount) * 100,
+);
 
 // Zoom calculation: 0% = fit viewport exactly, 100% = max zoom (~20 frames visible)
 // At 100% zoom with 1200px viewport: 1200/80 = 15 frames visible
@@ -285,65 +288,68 @@ const timelineWidth = computed(() => {
   return store.frameCount * effectivePpf.value;
 });
 
-const computedWidthStyle = computed(() => timelineWidth.value + 'px');
+const computedWidthStyle = computed(() => `${timelineWidth.value}px`);
 
 // Work area computed properties
-const hasWorkArea = computed(() => workAreaStart.value !== null && workAreaEnd.value !== null);
-const workAreaLeftPct = computed(() => {
+const hasWorkArea = computed(
+  () => workAreaStart.value !== null && workAreaEnd.value !== null,
+);
+const _workAreaLeftPct = computed(() => {
   if (workAreaStart.value === null) return 0;
   return (workAreaStart.value / store.frameCount) * 100;
 });
-const workAreaWidthPct = computed(() => {
+const _workAreaWidthPct = computed(() => {
   if (workAreaStart.value === null || workAreaEnd.value === null) return 100;
   const start = Math.min(workAreaStart.value, workAreaEnd.value);
   const end = Math.max(workAreaStart.value, workAreaEnd.value);
   return ((end - start) / store.frameCount) * 100;
 });
-const workAreaStyle = computed(() => {
-  if (!hasWorkArea.value) return { display: 'none' };
+const _workAreaStyle = computed(() => {
+  if (!hasWorkArea.value) return { display: "none" };
   const start = Math.min(workAreaStart.value!, workAreaEnd.value!);
   const end = Math.max(workAreaStart.value!, workAreaEnd.value!);
   return {
-    left: (start / store.frameCount) * 100 + '%',
-    width: ((end - start) / store.frameCount) * 100 + '%'
+    left: `${(start / store.frameCount) * 100}%`,
+    width: `${((end - start) / store.frameCount) * 100}%`,
   };
 });
 
-const sidebarGridStyle = computed(() => ({
-  display: 'grid',
-  gridTemplateColumns: '24px 24px 30px 24px 24px 24px 1fr 70px 70px',
-  alignItems: 'center',
-  height: '32px',
-  width: '100%',
-  boxSizing: 'border-box'
+const _sidebarGridStyle = computed(() => ({
+  display: "grid",
+  gridTemplateColumns: "24px 24px 30px 24px 24px 24px 1fr 70px 70px",
+  alignItems: "center",
+  height: "32px",
+  width: "100%",
+  boxSizing: "border-box",
 }));
 
 // Actions
-function toggleAddLayerMenu() { showAddLayerMenu.value = !showAddLayerMenu.value; }
+function _toggleAddLayerMenu() {
+  showAddLayerMenu.value = !showAddLayerMenu.value;
+}
 
 // Compute position for fixed dropdown menu
-const addLayerMenuStyle = computed((): CSSProperties => {
+const _addLayerMenuStyle = computed((): CSSProperties => {
   if (!showAddLayerMenu.value || !addLayerContainer.value) {
     return {};
   }
   const rect = addLayerContainer.value.getBoundingClientRect();
   return {
-    position: 'fixed',
+    position: "fixed",
     left: `${rect.left}px`,
     bottom: `${window.innerHeight - rect.top + 8}px`,
   };
 });
 
-function addLayer(type: string) {
+function _addLayer(type: string) {
   let newLayer: Layer | undefined;
 
-  if (type === 'text') newLayer = store.createTextLayer();
-  else if (type === 'video') newLayer = store.createLayer('video');
-  else if (type === 'camera') {
+  if (type === "text") newLayer = store.createTextLayer();
+  else if (type === "video") newLayer = store.createLayer("video");
+  else if (type === "camera") {
     const result = store.createCameraLayer();
     newLayer = result.layer;
-  }
-  else if (type === 'particles') newLayer = store.createParticleLayer();
+  } else if (type === "particles") newLayer = store.createParticleLayer();
   else newLayer = store.createLayer(type as any);
 
   showAddLayerMenu.value = false;
@@ -353,21 +359,25 @@ function addLayer(type: string) {
     store.selectLayer(newLayer.id);
 
     // Activate appropriate tool based on layer type
-    if (type === 'spline' || type === 'shape' || type === 'path') {
-      store.setTool('pen');
-    } else if (type === 'text') {
-      store.setTool('text');
+    if (type === "spline" || type === "shape" || type === "path") {
+      store.setTool("pen");
+    } else if (type === "text") {
+      store.setTool("text");
     } else {
-      store.setTool('select');
+      store.setTool("select");
     }
   }
 }
 
-function selectLayer(id: string) { store.selectLayer(id); }
-function updateLayer(id: string, u: any) { store.updateLayer(id, u); }
+function _selectLayer(id: string) {
+  store.selectLayer(id);
+}
+function _updateLayer(id: string, u: any) {
+  store.updateLayer(id, u);
+}
 
 // Handle audio track seek
-function handleAudioSeek(frame: number) {
+function _handleAudioSeek(frame: number) {
   store.setFrame(frame);
   // Also trigger audio scrub for feedback
   audioStore.scrubAudio(frame, store.fps);
@@ -376,25 +386,25 @@ function handleAudioSeek(frame: number) {
 // ============================================================
 // DRAG & DROP FROM PROJECT PANEL
 // ============================================================
-function onDragOver(event: DragEvent) {
-  if (event.dataTransfer?.types.includes('application/project-item')) {
+function _onDragOver(event: DragEvent) {
+  if (event.dataTransfer?.types.includes("application/project-item")) {
     isDragOver.value = true;
   }
 }
 
-function onDragLeave() {
+function _onDragLeave() {
   isDragOver.value = false;
 }
 
-function onDrop(event: DragEvent) {
+function _onDrop(event: DragEvent) {
   event.preventDefault();
   event.stopPropagation();
   isDragOver.value = false;
 
-  const data = event.dataTransfer?.getData('application/project-item');
-  console.log('[TimelinePanel] onDrop called, data:', data);
+  const data = event.dataTransfer?.getData("application/project-item");
+  console.log("[TimelinePanel] onDrop called, data:", data);
   if (!data) {
-    console.log('[TimelinePanel] No project-item data found');
+    console.log("[TimelinePanel] No project-item data found");
     return;
   }
 
@@ -402,67 +412,104 @@ function onDrop(event: DragEvent) {
     const item = JSON.parse(data) as {
       id: string;
       name: string;
-      type: 'composition' | 'footage' | 'solid' | 'audio' | 'folder';
+      type: "composition" | "footage" | "solid" | "audio" | "folder";
       width?: number;
       height?: number;
     };
 
-    console.log('[TimelinePanel] Dropped item:', item);
+    console.log("[TimelinePanel] Dropped item:", item);
 
     // Handle different item types
-    if (item.type === 'composition') {
+    if (item.type === "composition") {
       // Create a nested composition layer
-      const layer = store.createLayer('nestedComp', item.name);
+      const layer = store.createLayer("nestedComp", item.name);
       if (layer) {
         (layer.data as any).compositionId = item.id;
         store.selectLayer(layer.id);
-        console.log('[TimelinePanel] Created precomp layer for composition:', item.name);
+        console.log(
+          "[TimelinePanel] Created precomp layer for composition:",
+          item.name,
+        );
       }
-    } else if (item.type === 'footage') {
+    } else if (item.type === "footage") {
       // For footage, check if it's an existing asset
       const asset = store.project.assets[item.id];
       if (asset) {
-        if (asset.type === 'video') {
-          const layer = store.createLayer('video', item.name);
+        if (asset.type === "video") {
+          const layer = store.createLayer("video", item.name);
           if (layer) {
             (layer.data as any).assetId = item.id;
             store.selectLayer(layer.id);
-            console.log('[TimelinePanel] Created video layer from asset:', item.name);
+            console.log(
+              "[TimelinePanel] Created video layer from asset:",
+              item.name,
+            );
           }
-        } else if (asset.type === 'image') {
+        } else if (asset.type === "image") {
           // Helper function to resize comp and create layer
           const resizeAndCreateLayer = (width: number, height: number) => {
             const compId = store.activeCompositionId;
             if (compId && width > 0 && height > 0) {
-              console.log('[TimelinePanel] Resizing comp', compId, 'to', width, 'x', height);
+              console.log(
+                "[TimelinePanel] Resizing comp",
+                compId,
+                "to",
+                width,
+                "x",
+                height,
+              );
               store.updateCompositionSettings(compId, { width, height });
-              console.log('[TimelinePanel] Comp resized. New size:', store.width, 'x', store.height);
+              console.log(
+                "[TimelinePanel] Comp resized. New size:",
+                store.width,
+                "x",
+                store.height,
+              );
             }
 
-            const layer = store.createLayer('image', item.name);
+            const layer = store.createLayer("image", item.name);
             if (layer) {
               (layer.data as any).assetId = item.id;
               (layer.data as any).source = asset.data;
               store.selectLayer(layer.id);
-              console.log('[TimelinePanel] Created image layer:', layer.id);
+              console.log("[TimelinePanel] Created image layer:", layer.id);
             }
           };
 
           // If asset already has dimensions, use them directly
-          if (asset.width && asset.height && asset.width > 0 && asset.height > 0) {
-            console.log('[TimelinePanel] Using cached dimensions:', asset.width, 'x', asset.height);
+          if (
+            asset.width &&
+            asset.height &&
+            asset.width > 0 &&
+            asset.height > 0
+          ) {
+            console.log(
+              "[TimelinePanel] Using cached dimensions:",
+              asset.width,
+              "x",
+              asset.height,
+            );
             resizeAndCreateLayer(asset.width, asset.height);
           } else {
             // Load image to get dimensions
             const img = new Image();
             img.onload = () => {
-              console.log('[TimelinePanel] Image loaded:', img.naturalWidth, 'x', img.naturalHeight);
+              console.log(
+                "[TimelinePanel] Image loaded:",
+                img.naturalWidth,
+                "x",
+                img.naturalHeight,
+              );
               resizeAndCreateLayer(img.naturalWidth, img.naturalHeight);
             };
             img.onerror = (e) => {
-              console.error('[TimelinePanel] Failed to load image:', asset.data, e);
+              console.error(
+                "[TimelinePanel] Failed to load image:",
+                asset.data,
+                e,
+              );
               // Still create the layer even if image fails to load for dimensions
-              const layer = store.createLayer('image', item.name);
+              const layer = store.createLayer("image", item.name);
               if (layer) {
                 (layer.data as any).assetId = item.id;
                 (layer.data as any).source = asset.data;
@@ -474,33 +521,43 @@ function onDrop(event: DragEvent) {
         }
       } else {
         // Generic footage - create image layer
-        const layer = store.createLayer('image', item.name);
+        const layer = store.createLayer("image", item.name);
         if (layer) {
           store.selectLayer(layer.id);
-          console.log('[TimelinePanel] Created image layer:', item.name);
+          console.log("[TimelinePanel] Created image layer:", item.name);
         }
       }
-    } else if (item.type === 'solid') {
-      const layer = store.createLayer('solid', item.name);
+    } else if (item.type === "solid") {
+      const layer = store.createLayer("solid", item.name);
       if (layer) {
         store.selectLayer(layer.id);
-        console.log('[TimelinePanel] Created solid layer:', item.name);
+        console.log("[TimelinePanel] Created solid layer:", item.name);
       }
-    } else if (item.type === 'audio') {
+    } else if (item.type === "audio") {
       // Audio tracks don't create layers, they go to the audio panel
-      console.log('[TimelinePanel] Audio dropped - should be loaded via AudioPanel');
+      console.log(
+        "[TimelinePanel] Audio dropped - should be loaded via AudioPanel",
+      );
     }
   } catch (error) {
-    console.error('[TimelinePanel] Failed to parse dropped item:', error);
+    console.error("[TimelinePanel] Failed to parse dropped item:", error);
   }
 }
-function deleteSelectedLayers() { store.selectedLayerIds.forEach(id => store.deleteLayer(id)); }
-function setFrame(e: Event) { store.setFrame(parseInt((e.target as HTMLInputElement).value) || 0); }
-function togglePlayback() { store.togglePlayback(); }
-function handleToggleExpand(id: string, val: boolean) { expandedLayers.value[id] = val; }
+function deleteSelectedLayers() {
+  store.selectedLayerIds.forEach((id) => store.deleteLayer(id));
+}
+function _setFrame(e: Event) {
+  store.setFrame(parseInt((e.target as HTMLInputElement).value, 10) || 0);
+}
+function togglePlayback() {
+  store.togglePlayback();
+}
+function _handleToggleExpand(id: string, val: boolean) {
+  expandedLayers.value[id] = val;
+}
 
 // Format frame as timecode (HH;MM;SS;FF) SMPTE format
-function formatTimecode(frame: number): string {
+function _formatTimecode(frame: number): string {
   const fps = store.fps;
   const totalSeconds = Math.floor(frame / fps);
   const frames = Math.floor(frame % fps);
@@ -508,14 +565,14 @@ function formatTimecode(frame: number): string {
   const minutes = Math.floor(totalSeconds / 60) % 60;
   const hours = Math.floor(totalSeconds / 3600);
 
-  const pad = (n: number, len: number = 2) => String(n).padStart(len, '0');
+  const pad = (n: number, len: number = 2) => String(n).padStart(len, "0");
   return `${pad(hours)};${pad(minutes)};${pad(seconds)};${pad(frames)}`;
 }
 
 function drawRuler() {
   const cvs = rulerCanvas.value;
   if (!cvs) return;
-  const ctx = cvs.getContext('2d');
+  const ctx = cvs.getContext("2d");
   if (!ctx) return;
 
   // Width fills viewport (or larger when zoomed in)
@@ -523,11 +580,11 @@ function drawRuler() {
   cvs.width = width;
   cvs.height = 30;
 
-  ctx.fillStyle = '#222';
+  ctx.fillStyle = "#222";
   ctx.fillRect(0, 0, cvs.width, cvs.height);
-  ctx.strokeStyle = '#666';
-  ctx.fillStyle = '#aaa';
-  ctx.font = '11px sans-serif';
+  ctx.strokeStyle = "#666";
+  ctx.fillStyle = "#aaa";
+  ctx.font = "11px sans-serif";
 
   // Calculate label step based on available space, not raw ppf
   // Ensure labels have enough room and don't overlap
@@ -537,7 +594,7 @@ function drawRuler() {
 
   // Round up to a nice number for clean ruler
   const niceSteps = [1, 2, 5, 10, 20, 25, 50, 100, 200];
-  const majorStep = niceSteps.find(s => s >= idealStep) || 200;
+  const majorStep = niceSteps.find((s) => s >= idealStep) || 200;
 
   // Minor step is half of major, or 0 if major is 1
   const minorStep = majorStep > 1 ? Math.floor(majorStep / 2) : 0;
@@ -551,18 +608,18 @@ function drawRuler() {
 
     if (f % majorStep === 0) {
       // Major Tick
-      ctx.strokeStyle = '#888';
+      ctx.strokeStyle = "#888";
       ctx.beginPath();
       ctx.moveTo(x, 12);
       ctx.lineTo(x, 30);
       ctx.stroke();
 
       // Label - majorStep already accounts for spacing
-      ctx.fillStyle = '#ccc';
+      ctx.fillStyle = "#ccc";
       ctx.fillText(String(f), x + 3, 10);
     } else if (minorStep > 0 && f % minorStep === 0) {
       // Minor Tick
-      ctx.strokeStyle = '#555';
+      ctx.strokeStyle = "#555";
       ctx.beginPath();
       ctx.moveTo(x, 22);
       ctx.lineTo(x, 30);
@@ -572,7 +629,7 @@ function drawRuler() {
 
   // Draw beat markers (onsets)
   if (audioStore.audioAnalysis?.onsets) {
-    ctx.strokeStyle = 'rgba(255, 193, 7, 0.6)'; // Gold/amber for beats
+    ctx.strokeStyle = "rgba(255, 193, 7, 0.6)"; // Gold/amber for beats
     ctx.lineWidth = 1;
     for (const onset of audioStore.audioAnalysis.onsets) {
       const x = (onset / frameCount) * width;
@@ -586,7 +643,7 @@ function drawRuler() {
 
   // Draw peak markers (diamonds at top)
   if (audioStore.peakData?.indices) {
-    ctx.fillStyle = 'rgba(255, 107, 107, 0.9)'; // Red for peaks
+    ctx.fillStyle = "rgba(255, 107, 107, 0.9)"; // Red for peaks
     for (const peakFrame of audioStore.peakData.indices) {
       const x = (peakFrame / frameCount) * width;
       // Draw small diamond
@@ -601,33 +658,46 @@ function drawRuler() {
   }
 
   // Draw bottom border line
-  ctx.strokeStyle = '#444';
+  ctx.strokeStyle = "#444";
   ctx.beginPath();
   ctx.moveTo(0, 29.5);
   ctx.lineTo(cvs.width, 29.5);
   ctx.stroke();
 }
 
-function startRulerScrub(e: MouseEvent) {
-  const rect = rulerCanvas.value!.getBoundingClientRect();
-  const scrollX = rulerScrollRef.value?.scrollLeft || trackScrollRef.value?.scrollLeft || 0;
+function _startRulerScrub(e: MouseEvent) {
+  const rect = rulerCanvas.value?.getBoundingClientRect();
+  const _scrollX =
+    rulerScrollRef.value?.scrollLeft || trackScrollRef.value?.scrollLeft || 0;
 
   // Track if this is an audio scrub (Ctrl held at start)
   const isAudioScrub = e.ctrlKey || e.metaKey;
 
   const update = (ev: MouseEvent) => {
-    const currentScrollX = rulerScrollRef.value?.scrollLeft || trackScrollRef.value?.scrollLeft || 0;
-    const x = (ev.clientX - rect.left) + currentScrollX;
+    const currentScrollX =
+      rulerScrollRef.value?.scrollLeft || trackScrollRef.value?.scrollLeft || 0;
+    const x = ev.clientX - rect.left + currentScrollX;
     // Convert x position to frame using proportional formula
-    let f = Math.max(0, Math.min(store.frameCount - 1, (x / timelineWidth.value) * store.frameCount));
+    let f = Math.max(
+      0,
+      Math.min(
+        store.frameCount - 1,
+        (x / timelineWidth.value) * store.frameCount,
+      ),
+    );
 
     // Apply snapping (hold Alt/Option to disable)
     if (!ev.altKey && store.snapConfig.enabled) {
-      const snap = findNearestSnap(Math.round(f), store.snapConfig, effectivePpf.value, {
-        layers: store.layers,
-        audioAnalysis: store.audioAnalysis,
-        peakData: store.peakData
-      });
+      const snap = findNearestSnap(
+        Math.round(f),
+        store.snapConfig,
+        effectivePpf.value,
+        {
+          layers: store.layers,
+          audioAnalysis: store.audioAnalysis,
+          peakData: store.peakData,
+        },
+      );
       if (snap) {
         f = snap.frame;
       }
@@ -643,41 +713,61 @@ function startRulerScrub(e: MouseEvent) {
   };
 
   update(e);
-  window.addEventListener('mousemove', update);
-  window.addEventListener('mouseup', () => {
-    window.removeEventListener('mousemove', update);
-    // Stop any audio scrub when mouse is released
-    if (isAudioScrub) {
-      audioStore.stopAudio();
-    }
-  }, { once: true });
+  window.addEventListener("mousemove", update);
+  window.addEventListener(
+    "mouseup",
+    () => {
+      window.removeEventListener("mousemove", update);
+      // Stop any audio scrub when mouse is released
+      if (isAudioScrub) {
+        audioStore.stopAudio();
+      }
+    },
+    { once: true },
+  );
 }
 
-function startResize(e: MouseEvent) {
+function _startResize(e: MouseEvent) {
   const startX = e.clientX;
   const startW = sidebarWidth.value;
-  const onMove = (ev: MouseEvent) => { sidebarWidth.value = Math.max(450, startW + (ev.clientX - startX)); };
-  window.addEventListener('mousemove', onMove);
-  window.addEventListener('mouseup', () => window.removeEventListener('mousemove', onMove), { once: true });
+  const onMove = (ev: MouseEvent) => {
+    sidebarWidth.value = Math.max(450, startW + (ev.clientX - startX));
+  };
+  window.addEventListener("mousemove", onMove);
+  window.addEventListener(
+    "mouseup",
+    () => window.removeEventListener("mousemove", onMove),
+    { once: true },
+  );
 }
 
 // Work Area functions
-function clearWorkArea() {
+function _clearWorkArea() {
   workAreaStart.value = null;
   workAreaEnd.value = null;
   playbackStore.clearWorkArea();
 }
 
-function startWorkAreaDrag(handle: 'start' | 'end', e: MouseEvent) {
-  const rect = rulerCanvas.value!.getBoundingClientRect();
-  const scrollX = rulerScrollRef.value?.scrollLeft || trackScrollRef.value?.scrollLeft || 0;
+function _startWorkAreaDrag(handle: "start" | "end", e: MouseEvent) {
+  const rect = rulerCanvas.value?.getBoundingClientRect();
+  const _scrollX =
+    rulerScrollRef.value?.scrollLeft || trackScrollRef.value?.scrollLeft || 0;
 
   const update = (ev: MouseEvent) => {
-    const currentScrollX = rulerScrollRef.value?.scrollLeft || trackScrollRef.value?.scrollLeft || 0;
-    const x = (ev.clientX - rect.left) + currentScrollX;
-    let frame = Math.round(Math.max(0, Math.min(store.frameCount - 1, (x / timelineWidth.value) * store.frameCount)));
+    const currentScrollX =
+      rulerScrollRef.value?.scrollLeft || trackScrollRef.value?.scrollLeft || 0;
+    const x = ev.clientX - rect.left + currentScrollX;
+    let frame = Math.round(
+      Math.max(
+        0,
+        Math.min(
+          store.frameCount - 1,
+          (x / timelineWidth.value) * store.frameCount,
+        ),
+      ),
+    );
 
-    if (handle === 'start') {
+    if (handle === "start") {
       // Clamp start to be before end
       if (workAreaEnd.value !== null) {
         frame = Math.min(frame, workAreaEnd.value - 1);
@@ -693,27 +783,33 @@ function startWorkAreaDrag(handle: 'start' | 'end', e: MouseEvent) {
   };
 
   update(e);
-  window.addEventListener('mousemove', update);
-  window.addEventListener('mouseup', () => {
-    window.removeEventListener('mousemove', update);
-    // Sync final work area to playbackStore
-    playbackStore.setWorkArea(workAreaStart.value, workAreaEnd.value);
-  }, { once: true });
+  window.addEventListener("mousemove", update);
+  window.addEventListener(
+    "mouseup",
+    () => {
+      window.removeEventListener("mousemove", update);
+      // Sync final work area to playbackStore
+      playbackStore.setWorkArea(workAreaStart.value, workAreaEnd.value);
+    },
+    { once: true },
+  );
 }
 
 // Scroll synchronization between sidebar and track area
-function syncSidebarScroll(e: Event) {
+function _syncSidebarScroll(e: Event) {
   if (isScrollingTrack) return;
   isScrollingSidebar = true;
   const target = e.target as HTMLElement;
   if (trackScrollRef.value) {
     trackScrollRef.value.scrollTop = target.scrollTop;
   }
-  requestAnimationFrame(() => { isScrollingSidebar = false; });
+  requestAnimationFrame(() => {
+    isScrollingSidebar = false;
+  });
 }
 
 // Handle track scroll - syncs vertical scroll to sidebar and horizontal to ruler
-function handleTrackScroll(e: Event) {
+function _handleTrackScroll(e: Event) {
   const target = e.target as HTMLElement;
 
   // Sync vertical scroll to sidebar
@@ -722,7 +818,9 @@ function handleTrackScroll(e: Event) {
     if (sidebarScrollRef.value) {
       sidebarScrollRef.value.scrollTop = target.scrollTop;
     }
-    requestAnimationFrame(() => { isScrollingTrack = false; });
+    requestAnimationFrame(() => {
+      isScrollingTrack = false;
+    });
   }
 
   // Sync horizontal scroll to ruler
@@ -732,47 +830,54 @@ function handleTrackScroll(e: Event) {
 }
 
 // Sync ruler horizontal scroll to track area
-function syncRulerScroll(e: Event) {
+function _syncRulerScroll(e: Event) {
   const target = e.target as HTMLElement;
   if (trackScrollRef.value) {
     trackScrollRef.value.scrollLeft = target.scrollLeft;
   }
 }
 
-function handleKeydown(e: KeyboardEvent) {
-  if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+function _handleKeydown(e: KeyboardEvent) {
+  if (
+    e.target instanceof HTMLInputElement ||
+    e.target instanceof HTMLTextAreaElement
+  )
+    return;
 
   // Playback
-  if (e.code === 'Space') { e.preventDefault(); togglePlayback(); }
+  if (e.code === "Space") {
+    e.preventDefault();
+    togglePlayback();
+  }
 
   // Delete
-  if (e.code === 'Delete' || e.code === 'Backspace') {
+  if (e.code === "Delete" || e.code === "Backspace") {
     e.preventDefault();
     deleteSelectedLayers();
   }
 
   // Copy/Cut/Paste
-  if ((e.ctrlKey || e.metaKey) && e.code === 'KeyC') {
+  if ((e.ctrlKey || e.metaKey) && e.code === "KeyC") {
     e.preventDefault();
     store.copySelectedLayers();
   }
-  if ((e.ctrlKey || e.metaKey) && e.code === 'KeyX') {
+  if ((e.ctrlKey || e.metaKey) && e.code === "KeyX") {
     e.preventDefault();
     store.cutSelectedLayers();
   }
-  if ((e.ctrlKey || e.metaKey) && e.code === 'KeyV') {
+  if ((e.ctrlKey || e.metaKey) && e.code === "KeyV") {
     e.preventDefault();
     store.pasteLayers();
   }
 
   // Select All
-  if ((e.ctrlKey || e.metaKey) && e.code === 'KeyA') {
+  if ((e.ctrlKey || e.metaKey) && e.code === "KeyA") {
     e.preventDefault();
     store.selectAllLayers();
   }
 
   // Duplicate (Ctrl+D)
-  if ((e.ctrlKey || e.metaKey) && e.code === 'KeyD') {
+  if ((e.ctrlKey || e.metaKey) && e.code === "KeyD") {
     e.preventDefault();
     for (const id of store.selectedLayerIds) {
       store.duplicateLayer(id);
@@ -783,8 +888,11 @@ function handleKeydown(e: KeyboardEvent) {
 let resizeObserver: ResizeObserver | null = null;
 
 onMounted(() => {
-  window.addEventListener('mousedown', (e) => {
-    if (addLayerContainer.value && !addLayerContainer.value.contains(e.target as Node)) {
+  window.addEventListener("mousedown", (e) => {
+    if (
+      addLayerContainer.value &&
+      !addLayerContainer.value.contains(e.target as Node)
+    ) {
       showAddLayerMenu.value = false;
     }
   });
@@ -797,7 +905,8 @@ onMounted(() => {
 
     resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
-        viewportWidth.value = entry.contentRect.width || elementToObserve.clientWidth || 1000;
+        viewportWidth.value =
+          entry.contentRect.width || elementToObserve.clientWidth || 1000;
         drawRuler(); // Redraw ruler on resize
       }
     });
@@ -807,7 +916,8 @@ onMounted(() => {
   // Draw ruler after a short delay to ensure layout is complete
   setTimeout(() => {
     if (trackScrollRef.value) {
-      viewportWidth.value = trackScrollRef.value.clientWidth || viewportWidth.value;
+      viewportWidth.value =
+        trackScrollRef.value.clientWidth || viewportWidth.value;
     }
     drawRuler();
   }, 50);
@@ -817,13 +927,16 @@ onUnmounted(() => {
   if (resizeObserver) resizeObserver.disconnect();
 });
 
-watch(() => [
-  computedWidthStyle.value,
-  zoomPercent.value,
-  store.frameCount,
-  audioStore.audioAnalysis,
-  audioStore.peakData
-], () => nextTick(drawRuler));
+watch(
+  () => [
+    computedWidthStyle.value,
+    zoomPercent.value,
+    store.frameCount,
+    audioStore.audioAnalysis,
+    audioStore.peakData,
+  ],
+  () => nextTick(drawRuler),
+);
 </script>
 
 <style scoped>

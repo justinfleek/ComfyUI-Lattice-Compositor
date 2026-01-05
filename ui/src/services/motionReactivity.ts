@@ -15,7 +15,7 @@
  * @module services/motionReactivity
  */
 
-import type { Layer } from '@/types/project';
+import type { Layer } from "@/types/project";
 
 // ============================================================================
 // Types
@@ -25,9 +25,9 @@ export interface MotionState {
   position: { x: number; y: number; z: number };
   velocity: { x: number; y: number; z: number };
   acceleration: { x: number; y: number; z: number };
-  speed: number;           // Magnitude of velocity
+  speed: number; // Magnitude of velocity
   accelerationMag: number; // Magnitude of acceleration
-  direction: number;       // Angle in radians (2D, XY plane)
+  direction: number; // Angle in radians (2D, XY plane)
   verticalDirection: number; // Vertical angle (XZ plane)
 }
 
@@ -44,11 +44,11 @@ export interface MotionReactivityConfig {
   targetPropertyPath: string;
 
   // Value mapping
-  sensitivity: number;     // Multiplier
-  smoothing: number;       // Temporal smoothing (0-1)
-  min: number;             // Output minimum
-  max: number;             // Output maximum
-  curve: 'linear' | 'exponential' | 'logarithmic' | 'step';
+  sensitivity: number; // Multiplier
+  smoothing: number; // Temporal smoothing (0-1)
+  min: number; // Output minimum
+  max: number; // Output maximum
+  curve: "linear" | "exponential" | "logarithmic" | "step";
 
   // Feature-specific options
   options?: {
@@ -62,16 +62,16 @@ export interface MotionReactivityConfig {
 }
 
 export type MotionFeature =
-  | 'speed'              // Speed (velocity magnitude)
-  | 'acceleration'       // Acceleration magnitude
-  | 'velocityX'          // X component of velocity
-  | 'velocityY'          // Y component of velocity
-  | 'velocityZ'          // Z component of velocity
-  | 'direction'          // 2D direction angle (normalized 0-1)
-  | 'verticalDirection'  // Vertical direction angle (normalized 0-1)
-  | 'isMoving'           // Binary: 1 if moving, 0 if stationary
-  | 'isAccelerating'     // Binary: 1 if accelerating, 0 if decelerating
-  | 'directionChange';   // Rate of direction change (turning)
+  | "speed" // Speed (velocity magnitude)
+  | "acceleration" // Acceleration magnitude
+  | "velocityX" // X component of velocity
+  | "velocityY" // Y component of velocity
+  | "velocityZ" // Z component of velocity
+  | "direction" // 2D direction angle (normalized 0-1)
+  | "verticalDirection" // Vertical direction angle (normalized 0-1)
+  | "isMoving" // Binary: 1 if moving, 0 if stationary
+  | "isAccelerating" // Binary: 1 if accelerating, 0 if decelerating
+  | "directionChange"; // Rate of direction change (turning)
 
 // ============================================================================
 // Motion State Computation
@@ -92,7 +92,10 @@ export function computeMotionState(
   layer: Layer,
   frame: number,
   fps: number,
-  getPositionAtFrame: (layer: Layer, frame: number) => { x: number; y: number; z: number }
+  getPositionAtFrame: (
+    layer: Layer,
+    frame: number,
+  ) => { x: number; y: number; z: number },
 ): MotionState {
   // Check cache first
   let layerCache = motionStateCache.get(layer.id);
@@ -108,33 +111,36 @@ export function computeMotionState(
   // Get positions at current and previous frames
   const pos = getPositionAtFrame(layer, frame);
   const prevPos = frame > 0 ? getPositionAtFrame(layer, frame - 1) : pos;
-  const prevPrevPos = frame > 1 ? getPositionAtFrame(layer, frame - 2) : prevPos;
+  const prevPrevPos =
+    frame > 1 ? getPositionAtFrame(layer, frame - 2) : prevPos;
 
   // Compute velocity (units per second)
   const dt = 1 / fps;
   const velocity = {
     x: (pos.x - prevPos.x) / dt,
     y: (pos.y - prevPos.y) / dt,
-    z: (pos.z - prevPos.z) / dt
+    z: (pos.z - prevPos.z) / dt,
   };
 
   // Compute previous velocity for acceleration
   const prevVelocity = {
     x: (prevPos.x - prevPrevPos.x) / dt,
     y: (prevPos.y - prevPrevPos.y) / dt,
-    z: (prevPos.z - prevPrevPos.z) / dt
+    z: (prevPos.z - prevPrevPos.z) / dt,
   };
 
   // Compute acceleration (units per second squared)
   const acceleration = {
     x: (velocity.x - prevVelocity.x) / dt,
     y: (velocity.y - prevVelocity.y) / dt,
-    z: (velocity.z - prevVelocity.z) / dt
+    z: (velocity.z - prevVelocity.z) / dt,
   };
 
   // Compute magnitudes
   const speed = Math.sqrt(velocity.x ** 2 + velocity.y ** 2 + velocity.z ** 2);
-  const accelerationMag = Math.sqrt(acceleration.x ** 2 + acceleration.y ** 2 + acceleration.z ** 2);
+  const accelerationMag = Math.sqrt(
+    acceleration.x ** 2 + acceleration.y ** 2 + acceleration.z ** 2,
+  );
 
   // Compute directions
   const direction = Math.atan2(velocity.y, velocity.x);
@@ -148,7 +154,7 @@ export function computeMotionState(
     speed,
     accelerationMag,
     direction,
-    verticalDirection
+    verticalDirection,
   };
 
   // Cache the result
@@ -171,56 +177,66 @@ export function getMotionFeatureValue(
   frame: number,
   fps: number,
   feature: MotionFeature,
-  getPositionAtFrame: (layer: Layer, frame: number) => { x: number; y: number; z: number },
-  options?: MotionReactivityConfig['options']
+  getPositionAtFrame: (
+    layer: Layer,
+    frame: number,
+  ) => { x: number; y: number; z: number },
+  _options?: MotionReactivityConfig["options"],
 ): number {
   const state = computeMotionState(layer, frame, fps, getPositionAtFrame);
 
   switch (feature) {
-    case 'speed':
+    case "speed":
       return state.speed;
 
-    case 'acceleration':
+    case "acceleration":
       return state.accelerationMag;
 
-    case 'velocityX':
+    case "velocityX":
       return state.velocity.x;
 
-    case 'velocityY':
+    case "velocityY":
       return state.velocity.y;
 
-    case 'velocityZ':
+    case "velocityZ":
       return state.velocity.z;
 
-    case 'direction':
+    case "direction":
       // Normalize to 0-1 range (0 = right, 0.25 = up, 0.5 = left, 0.75 = down)
       return (state.direction + Math.PI) / (2 * Math.PI);
 
-    case 'verticalDirection':
+    case "verticalDirection":
       // Normalize to 0-1 range
       return (state.verticalDirection + Math.PI / 2) / Math.PI;
 
-    case 'isMoving':
+    case "isMoving":
       // Binary: 1 if speed > threshold, 0 otherwise
       return state.speed > 0.1 ? 1 : 0;
 
-    case 'isAccelerating':
+    case "isAccelerating": {
       // Binary: 1 if acceleration is positive in direction of motion
       const dotProduct =
         state.velocity.x * state.acceleration.x +
         state.velocity.y * state.acceleration.y +
         state.velocity.z * state.acceleration.z;
       return dotProduct > 0 ? 1 : 0;
+    }
 
-    case 'directionChange':
+    case "directionChange": {
       // Compare direction with previous frame
       if (frame === 0) return 0;
-      const prevState = computeMotionState(layer, frame - 1, fps, getPositionAtFrame);
+      const prevState = computeMotionState(
+        layer,
+        frame - 1,
+        fps,
+        getPositionAtFrame,
+      );
       let directionDiff = state.direction - prevState.direction;
       // Wrap around
       if (directionDiff > Math.PI) directionDiff -= 2 * Math.PI;
       if (directionDiff < -Math.PI) directionDiff += 2 * Math.PI;
       return Math.abs(directionDiff) / Math.PI; // Normalize to 0-1
+    }
 
     default:
       return 0;
@@ -237,7 +253,7 @@ export function getMotionFeatureValue(
 export function calculateProximity(
   sourcePos: { x: number; y: number; z: number },
   targetPos: { x: number; y: number; z: number },
-  maxDistance: number = 1000
+  maxDistance: number = 1000,
 ): number {
   const dx = targetPos.x - sourcePos.x;
   const dy = targetPos.y - sourcePos.y;
@@ -256,7 +272,10 @@ export function getProximityValue(
   frame: number,
   targetPoint: { x: number; y: number; z: number },
   maxDistance: number,
-  getPositionAtFrame: (layer: Layer, frame: number) => { x: number; y: number; z: number }
+  getPositionAtFrame: (
+    layer: Layer,
+    frame: number,
+  ) => { x: number; y: number; z: number },
 ): number {
   const sourcePos = getPositionAtFrame(layer, frame);
   return calculateProximity(sourcePos, targetPoint, maxDistance);
@@ -271,16 +290,16 @@ export function getProximityValue(
  */
 export function applyMotionCurve(
   value: number,
-  curve: MotionReactivityConfig['curve']
+  curve: MotionReactivityConfig["curve"],
 ): number {
   switch (curve) {
-    case 'linear':
+    case "linear":
       return value;
-    case 'exponential':
+    case "exponential":
       return value * value;
-    case 'logarithmic':
+    case "logarithmic":
       return Math.log(1 + value * (Math.E - 1));
-    case 'step':
+    case "step":
       return value > 0.5 ? 1 : 0;
     default:
       return value;
@@ -295,8 +314,11 @@ export function getMappedMotionValue(
   layer: Layer,
   frame: number,
   fps: number,
-  getPositionAtFrame: (layer: Layer, frame: number) => { x: number; y: number; z: number },
-  previousValue?: number
+  getPositionAtFrame: (
+    layer: Layer,
+    frame: number,
+  ) => { x: number; y: number; z: number },
+  previousValue?: number,
 ): number {
   if (!config.enabled) return config.min;
 
@@ -307,7 +329,7 @@ export function getMappedMotionValue(
     fps,
     config.feature,
     getPositionAtFrame,
-    config.options
+    config.options,
   );
 
   // Apply sensitivity
@@ -324,7 +346,8 @@ export function getMappedMotionValue(
 
   // Apply smoothing if previous value available
   if (previousValue !== undefined && config.smoothing > 0) {
-    outputValue = previousValue * config.smoothing + outputValue * (1 - config.smoothing);
+    outputValue =
+      previousValue * config.smoothing + outputValue * (1 - config.smoothing);
   }
 
   return outputValue;
@@ -355,7 +378,7 @@ export function getMotionCacheStats(): { layers: number; totalFrames: number } {
   }
   return {
     layers: motionStateCache.size,
-    totalFrames
+    totalFrames,
   };
 }
 
@@ -371,5 +394,5 @@ export default {
   applyMotionCurve,
   getMappedMotionValue,
   clearMotionCache,
-  getMotionCacheStats
+  getMotionCacheStats,
 };

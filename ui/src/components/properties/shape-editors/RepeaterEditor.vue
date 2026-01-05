@@ -103,74 +103,96 @@
 </template>
 
 <script setup lang="ts">
-import type { RepeaterOperator, RepeaterComposite, Point2D } from '@/types/shapes';
-import { ScrubableNumber } from '@/components/controls';
-import KeyframeToggle from '../KeyframeToggle.vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import { createKeyframe } from '@/types/animation';
+import { useCompositorStore } from "@/stores/compositorStore";
+import { createKeyframe } from "@/types/animation";
+import type { RepeaterComposite, RepeaterOperator } from "@/types/shapes";
 
 const props = defineProps<{ operator: RepeaterOperator; layerId: string }>();
-const emit = defineEmits(['update']);
+const emit = defineEmits(["update"]);
 const store = useCompositorStore();
 
-function updateNumber(prop: 'copies' | 'offset', value: number) {
+function _updateNumber(prop: "copies" | "offset", value: number) {
   const updated = { ...props.operator };
   updated[prop] = { ...updated[prop], value };
-  emit('update', updated);
+  emit("update", updated);
 }
 
-function updateComposite(e: Event) {
+function _updateComposite(e: Event) {
   const updated = { ...props.operator };
-  updated.composite = (e.target as HTMLSelectElement).value as RepeaterComposite;
-  emit('update', updated);
+  updated.composite = (e.target as HTMLSelectElement)
+    .value as RepeaterComposite;
+  emit("update", updated);
 }
 
-function updateTransformPoint(prop: 'position' | 'scale' | 'anchorPoint', axis: 'x' | 'y', value: number) {
+function _updateTransformPoint(
+  prop: "position" | "scale" | "anchorPoint",
+  axis: "x" | "y",
+  value: number,
+) {
   const updated = { ...props.operator };
   updated.transform = { ...updated.transform };
   updated.transform[prop] = {
     ...updated.transform[prop],
-    value: { ...updated.transform[prop].value, [axis]: value }
+    value: { ...updated.transform[prop].value, [axis]: value },
   };
-  emit('update', updated);
+  emit("update", updated);
 }
 
-function updateTransformNumber(prop: 'rotation' | 'startOpacity' | 'endOpacity', value: number) {
+function _updateTransformNumber(
+  prop: "rotation" | "startOpacity" | "endOpacity",
+  value: number,
+) {
   const updated = { ...props.operator };
   updated.transform = { ...updated.transform };
   updated.transform[prop] = { ...updated.transform[prop], value };
-  emit('update', updated);
+  emit("update", updated);
 }
 
-function toggleKeyframe(prop: 'copies' | 'offset') {
+function _toggleKeyframe(prop: "copies" | "offset") {
   const updated = { ...props.operator };
   const animProp = updated[prop];
   const frame = store.currentFrame;
 
-  const hasKf = animProp.keyframes.some(k => k.frame === frame);
+  const hasKf = animProp.keyframes.some((k) => k.frame === frame);
   if (hasKf) {
-    animProp.keyframes = animProp.keyframes.filter(k => k.frame !== frame) as typeof animProp.keyframes;
+    animProp.keyframes = animProp.keyframes.filter(
+      (k) => k.frame !== frame,
+    ) as typeof animProp.keyframes;
   } else {
-    (animProp.keyframes as unknown[]).push(createKeyframe(frame, animProp.value, 'linear'));
+    (animProp.keyframes as unknown[]).push(
+      createKeyframe(frame, animProp.value, "linear"),
+    );
   }
   animProp.animated = animProp.keyframes.length > 0;
-  emit('update', updated);
+  emit("update", updated);
 }
 
-function toggleTransformKeyframe(prop: 'position' | 'scale' | 'anchorPoint' | 'rotation' | 'startOpacity' | 'endOpacity') {
+function _toggleTransformKeyframe(
+  prop:
+    | "position"
+    | "scale"
+    | "anchorPoint"
+    | "rotation"
+    | "startOpacity"
+    | "endOpacity",
+) {
   const updated = { ...props.operator };
   updated.transform = { ...updated.transform };
   const animProp = updated.transform[prop];
   const frame = store.currentFrame;
 
-  const hasKf = animProp.keyframes.some(k => k.frame === frame);
+  const hasKf = animProp.keyframes.some((k) => k.frame === frame);
   if (hasKf) {
-    animProp.keyframes = animProp.keyframes.filter(k => k.frame !== frame) as typeof animProp.keyframes;
+    animProp.keyframes = animProp.keyframes.filter(
+      (k) => k.frame !== frame,
+    ) as typeof animProp.keyframes;
   } else {
-    (animProp.keyframes as unknown[]).push(createKeyframe(frame, animProp.value, 'linear'));
+    (animProp.keyframes as unknown[]).push(
+      createKeyframe(frame, animProp.value, "linear"),
+    );
   }
   animProp.animated = animProp.keyframes.length > 0;
-  emit('update', updated);
+  emit("update", updated);
 }
 </script>
 

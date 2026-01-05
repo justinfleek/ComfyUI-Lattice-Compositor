@@ -9,22 +9,25 @@
  */
 
 import type {
-  CameraMotionIntent,
-  SplineMotionIntent,
-  ParticleMotionIntent,
-  LayerMotionIntent,
-  KeyframeBatch,
-  TranslationResult,
-  MotionIntensity,
-  EasingType,
-  ControlPoint,
-} from './types';
-import type { Keyframe, Layer, ControlPoint as ProjectControlPoint } from '@/types/project';
-
+  Keyframe,
+  Layer,
+  ControlPoint as ProjectControlPoint,
+} from "@/types/project";
 // Use the same ControlPoint type (they should be identical)
-import { createLogger } from '@/utils/logger';
+import { createLogger } from "@/utils/logger";
+import type {
+  CameraMotionIntent,
+  ControlPoint,
+  EasingType,
+  KeyframeBatch,
+  LayerMotionIntent,
+  MotionIntensity,
+  ParticleMotionIntent,
+  SplineMotionIntent,
+  TranslationResult,
+} from "./types";
 
-const logger = createLogger('MotionIntentTranslator');
+const logger = createLogger("MotionIntentTranslator");
 
 // ============================================================================
 // INTENSITY MAPPINGS
@@ -46,7 +49,7 @@ const INTENSITY_TO_ROTATION: Record<MotionIntensity, number> = {
   dramatic: 90,
 };
 
-const INTENSITY_TO_SCALE: Record<MotionIntensity, number> = {
+const _INTENSITY_TO_SCALE: Record<MotionIntensity, number> = {
   very_subtle: 0.02,
   subtle: 0.05,
   medium: 0.1,
@@ -67,33 +70,33 @@ function getEasingHandles(easing: EasingType, duration: number): BezierHandles {
   const third = duration / 3;
 
   switch (easing) {
-    case 'linear':
+    case "linear":
       return {
         inHandle: { frame: 0, value: 0, enabled: false },
         outHandle: { frame: 0, value: 0, enabled: false },
       };
-    case 'easeIn':
+    case "easeIn":
       return {
         inHandle: { frame: 0, value: 0, enabled: false },
         outHandle: { frame: third, value: 0, enabled: true },
       };
-    case 'easeOut':
+    case "easeOut":
       return {
         inHandle: { frame: -third, value: 0, enabled: true },
         outHandle: { frame: 0, value: 0, enabled: false },
       };
-    case 'easeInOut':
+    case "easeInOut":
       return {
         inHandle: { frame: -third, value: 0, enabled: true },
         outHandle: { frame: third, value: 0, enabled: true },
       };
-    case 'bounce':
+    case "bounce":
       // Simplified bounce - would need more keyframes for true bounce
       return {
         inHandle: { frame: -third * 0.5, value: 0, enabled: true },
         outHandle: { frame: third * 0.5, value: 0, enabled: true },
       };
-    case 'elastic':
+    case "elastic":
       // Simplified elastic
       return {
         inHandle: { frame: -third * 0.3, value: 0, enabled: true },
@@ -119,135 +122,140 @@ export class MotionIntentTranslator {
     intent: CameraMotionIntent,
     cameraLayerId: string,
     currentPosition: { x: number; y: number; z: number },
-    compositionFrameCount: number
+    compositionFrameCount: number,
   ): KeyframeBatch[] {
     const duration = intent.durationFrames ?? compositionFrameCount;
     const distance = INTENSITY_TO_DISTANCE[intent.intensity];
     const rotation = INTENSITY_TO_ROTATION[intent.intensity];
-    const easing = intent.suggestedEasing ?? 'easeInOut';
+    const easing = intent.suggestedEasing ?? "easeInOut";
 
     const batches: KeyframeBatch[] = [];
 
     switch (intent.type) {
-      case 'dolly':
+      case "dolly":
         batches.push(
           this.createPositionKeyframes(
             cameraLayerId,
-            'transform.position.z',
+            "transform.position.z",
             currentPosition.z,
-            currentPosition.z + (intent.axis === 'z' ? distance : 0),
+            currentPosition.z + (intent.axis === "z" ? distance : 0),
             0,
             duration,
-            easing
-          )
+            easing,
+          ),
         );
         break;
 
-      case 'truck':
+      case "truck":
         batches.push(
           this.createPositionKeyframes(
             cameraLayerId,
-            'transform.position.x',
+            "transform.position.x",
             currentPosition.x,
             currentPosition.x + distance,
             0,
             duration,
-            easing
-          )
+            easing,
+          ),
         );
         break;
 
-      case 'pedestal':
+      case "pedestal":
         batches.push(
           this.createPositionKeyframes(
             cameraLayerId,
-            'transform.position.y',
+            "transform.position.y",
             currentPosition.y,
             currentPosition.y + distance,
             0,
             duration,
-            easing
-          )
+            easing,
+          ),
         );
         break;
 
-      case 'pan':
+      case "pan":
         batches.push(
           this.createRotationKeyframes(
             cameraLayerId,
-            'transform.rotation.y',
+            "transform.rotation.y",
             0,
             rotation,
             0,
             duration,
-            easing
-          )
+            easing,
+          ),
         );
         break;
 
-      case 'tilt':
+      case "tilt":
         batches.push(
           this.createRotationKeyframes(
             cameraLayerId,
-            'transform.rotation.x',
+            "transform.rotation.x",
             0,
             rotation,
             0,
             duration,
-            easing
-          )
+            easing,
+          ),
         );
         break;
 
-      case 'roll':
+      case "roll":
         batches.push(
           this.createRotationKeyframes(
             cameraLayerId,
-            'transform.rotation.z',
+            "transform.rotation.z",
             0,
             rotation,
             0,
             duration,
-            easing
-          )
+            easing,
+          ),
         );
         break;
 
-      case 'zoom':
+      case "zoom":
         // Zoom via FOV change
         batches.push(
           this.createPositionKeyframes(
             cameraLayerId,
-            'camera.fov',
+            "camera.fov",
             60,
             60 - distance * 0.5, // Narrower FOV = zoom in
             0,
             duration,
-            easing
-          )
+            easing,
+          ),
         );
         break;
 
-      case 'drift':
+      case "drift":
         // Subtle multi-axis movement
         batches.push(
-          ...this.createDriftKeyframes(cameraLayerId, currentPosition, duration, intent.intensity)
+          ...this.createDriftKeyframes(
+            cameraLayerId,
+            currentPosition,
+            duration,
+            intent.intensity,
+          ),
         );
         break;
 
-      case 'handheld':
+      case "handheld":
         // Noisy movement simulation
         batches.push(
           ...this.createHandheldKeyframes(
             cameraLayerId,
             currentPosition,
             duration,
-            intent.noiseAmount ?? 0.5
-          )
+            intent.noiseAmount ?? 0.5,
+          ),
         );
         break;
 
-      case 'orbit':
+      case "orbit":
         // Orbit around a point
         if (intent.orbitCenter) {
           batches.push(
@@ -256,23 +264,28 @@ export class MotionIntentTranslator {
               currentPosition,
               intent.orbitCenter,
               duration,
-              intent.intensity
-            )
+              intent.intensity,
+            ),
           );
         }
         break;
 
-      case 'crane':
+      case "crane":
         // Vertical arc movement
         batches.push(
-          ...this.createCraneKeyframes(cameraLayerId, currentPosition, duration, intent.intensity)
+          ...this.createCraneKeyframes(
+            cameraLayerId,
+            currentPosition,
+            duration,
+            intent.intensity,
+          ),
         );
         break;
 
-      case 'follow_path':
+      case "follow_path":
         // Path following handled separately via spline
         if (intent.suggestedPath) {
-          logger.info('Camera path following requires spline layer creation');
+          logger.info("Camera path following requires spline layer creation");
         }
         break;
     }
@@ -285,19 +298,31 @@ export class MotionIntentTranslator {
    */
   translateSplineIntent(
     intent: SplineMotionIntent,
-    compositionWidth: number,
-    compositionHeight: number
+    _compositionWidth: number,
+    _compositionHeight: number,
   ): TranslationResult {
     // Convert suggested points to project control points
-    const controlPoints: ProjectControlPoint[] = intent.suggestedPoints.map((p, i) => ({
-      id: p.id ?? `sp_${i}`,
-      x: p.x,
-      y: p.y,
-      depth: p.depth ?? 0,
-      handleIn: this.generateHandle(intent.suggestedPoints, i, -1, intent.smoothness),
-      handleOut: this.generateHandle(intent.suggestedPoints, i, 1, intent.smoothness),
-      type: p.type ?? 'smooth',
-    }));
+    const controlPoints: ProjectControlPoint[] = intent.suggestedPoints.map(
+      (p, i) => ({
+        id: p.id ?? `sp_${i}`,
+        x: p.x,
+        y: p.y,
+        depth: p.depth ?? 0,
+        handleIn: this.generateHandle(
+          intent.suggestedPoints,
+          i,
+          -1,
+          intent.smoothness,
+        ),
+        handleOut: this.generateHandle(
+          intent.suggestedPoints,
+          i,
+          1,
+          intent.smoothness,
+        ),
+        type: p.type ?? "smooth",
+      }),
+    );
 
     return {
       keyframeBatches: [],
@@ -316,8 +341,8 @@ export class MotionIntentTranslator {
    */
   translateParticleIntent(
     intent: ParticleMotionIntent,
-    compositionWidth: number,
-    compositionHeight: number
+    _compositionWidth: number,
+    _compositionHeight: number,
   ): TranslationResult {
     // Map behavior to particle system config
     const baseConfig: Record<string, unknown> = {
@@ -327,7 +352,7 @@ export class MotionIntentTranslator {
     };
 
     switch (intent.behavior) {
-      case 'snow':
+      case "snow":
         Object.assign(baseConfig, {
           direction: 270,
           speed: 50,
@@ -335,7 +360,7 @@ export class MotionIntentTranslator {
           gravity: 0.1,
         });
         break;
-      case 'rain':
+      case "rain":
         Object.assign(baseConfig, {
           direction: 270,
           speed: 200,
@@ -343,7 +368,7 @@ export class MotionIntentTranslator {
           gravity: 0.5,
         });
         break;
-      case 'dust':
+      case "dust":
         Object.assign(baseConfig, {
           direction: 0,
           speed: 20,
@@ -351,7 +376,7 @@ export class MotionIntentTranslator {
           gravity: 0,
         });
         break;
-      case 'fireflies':
+      case "fireflies":
         Object.assign(baseConfig, {
           direction: 90,
           speed: 30,
@@ -359,7 +384,7 @@ export class MotionIntentTranslator {
           gravity: -0.05,
         });
         break;
-      case 'explosion':
+      case "explosion":
         Object.assign(baseConfig, {
           direction: 0,
           spread: 360,
@@ -369,7 +394,7 @@ export class MotionIntentTranslator {
           emissionRate: 0,
         });
         break;
-      case 'vortex':
+      case "vortex":
         Object.assign(baseConfig, {
           direction: 0,
           spread: 360,
@@ -383,7 +408,7 @@ export class MotionIntentTranslator {
       keyframeBatches: [],
       newLayers: [
         {
-          type: 'particles',
+          type: "particles",
           name: `AI Particles - ${intent.behavior}`,
           config: baseConfig,
         },
@@ -397,7 +422,7 @@ export class MotionIntentTranslator {
   translateLayerIntent(
     intent: LayerMotionIntent,
     layer: Layer,
-    compositionFrameCount: number
+    compositionFrameCount: number,
   ): KeyframeBatch[] {
     const duration = compositionFrameCount;
     const amplitude = intent.amplitude;
@@ -406,97 +431,97 @@ export class MotionIntentTranslator {
     const batches: KeyframeBatch[] = [];
 
     switch (intent.motionType) {
-      case 'parallax':
+      case "parallax":
         // Parallax based on depth would need depth info
         batches.push(
           this.createOscillatingKeyframes(
             layer.id,
-            'transform.position.x',
+            "transform.position.x",
             0,
             amplitude * 50,
             duration,
             frequency,
-            intent.phase ?? 0
-          )
+            intent.phase ?? 0,
+          ),
         );
         break;
 
-      case 'float':
+      case "float":
         batches.push(
           this.createOscillatingKeyframes(
             layer.id,
-            'transform.position.y',
+            "transform.position.y",
             0,
             amplitude * 30,
             duration,
             frequency,
-            intent.phase ?? 0
-          )
+            intent.phase ?? 0,
+          ),
         );
         break;
 
-      case 'sway':
+      case "sway":
         batches.push(
           this.createOscillatingKeyframes(
             layer.id,
-            'transform.position.x',
+            "transform.position.x",
             0,
             amplitude * 40,
             duration,
             frequency,
-            intent.phase ?? 0
-          )
+            intent.phase ?? 0,
+          ),
         );
         break;
 
-      case 'breathe':
+      case "breathe":
         batches.push(
           this.createOscillatingKeyframes(
             layer.id,
-            'transform.scale.x',
+            "transform.scale.x",
             100,
             100 + amplitude * 10,
             duration,
             frequency,
-            intent.phase ?? 0
+            intent.phase ?? 0,
           ),
           this.createOscillatingKeyframes(
             layer.id,
-            'transform.scale.y',
+            "transform.scale.y",
             100,
             100 + amplitude * 10,
             duration,
             frequency,
-            intent.phase ?? 0
-          )
+            intent.phase ?? 0,
+          ),
         );
         break;
 
-      case 'pulse':
+      case "pulse":
         batches.push(
           this.createOscillatingKeyframes(
             layer.id,
-            'opacity',
+            "opacity",
             100,
             100 - amplitude * 30,
             duration,
             frequency * 2,
-            intent.phase ?? 0
-          )
+            intent.phase ?? 0,
+          ),
         );
         break;
 
-      case 'rotate':
+      case "rotate":
         batches.push(
           this.createPositionKeyframes(
             layer.id,
-            'transform.rotation.z',
+            "transform.rotation.z",
             0,
             360 * frequency,
             0,
             duration,
-            'linear'
-          )
+            "linear",
+          ),
         );
         break;
     }
@@ -515,7 +540,7 @@ export class MotionIntentTranslator {
     endValue: number,
     startFrame: number,
     endFrame: number,
-    easing: EasingType
+    easing: EasingType,
   ): KeyframeBatch {
     const handles = getEasingHandles(easing, endFrame - startFrame);
 
@@ -527,18 +552,18 @@ export class MotionIntentTranslator {
           id: `kf_${layerId}_${propertyPath}_0`,
           frame: startFrame,
           value: startValue,
-          interpolation: easing === 'linear' ? 'linear' : 'bezier',
+          interpolation: easing === "linear" ? "linear" : "bezier",
           ...handles,
-          controlMode: 'smooth',
+          controlMode: "smooth",
         },
         {
           id: `kf_${layerId}_${propertyPath}_1`,
           frame: endFrame,
           value: endValue,
-          interpolation: 'linear',
+          interpolation: "linear",
           inHandle: { frame: 0, value: 0, enabled: false },
           outHandle: { frame: 0, value: 0, enabled: false },
-          controlMode: 'smooth',
+          controlMode: "smooth",
         },
       ],
     };
@@ -551,7 +576,7 @@ export class MotionIntentTranslator {
     endValue: number,
     startFrame: number,
     endFrame: number,
-    easing: EasingType
+    easing: EasingType,
   ): KeyframeBatch {
     return this.createPositionKeyframes(
       layerId,
@@ -560,7 +585,7 @@ export class MotionIntentTranslator {
       endValue,
       startFrame,
       endFrame,
-      easing
+      easing,
     );
   }
 
@@ -571,7 +596,7 @@ export class MotionIntentTranslator {
     amplitude: number,
     duration: number,
     cycles: number,
-    phase: number
+    phase: number,
   ): KeyframeBatch {
     const keyframes: Keyframe<number>[] = [];
     const framesPerCycle = duration / cycles;
@@ -606,10 +631,10 @@ export class MotionIntentTranslator {
         id: `kf_${layerId}_${propertyPath}_${i}`,
         frame,
         value,
-        interpolation: 'bezier',
+        interpolation: "bezier",
         inHandle: { frame: -quarterCycle * 0.5, value: 0, enabled: true },
         outHandle: { frame: quarterCycle * 0.5, value: 0, enabled: true },
-        controlMode: 'smooth',
+        controlMode: "smooth",
       });
     }
 
@@ -620,14 +645,38 @@ export class MotionIntentTranslator {
     layerId: string,
     startPosition: { x: number; y: number; z: number },
     duration: number,
-    intensity: MotionIntensity
+    intensity: MotionIntensity,
   ): KeyframeBatch[] {
     const distance = INTENSITY_TO_DISTANCE[intensity] * 0.3;
 
     return [
-      this.createOscillatingKeyframes(layerId, 'transform.position.x', startPosition.x, distance, duration, 0.5, 0),
-      this.createOscillatingKeyframes(layerId, 'transform.position.y', startPosition.y, distance * 0.7, duration, 0.3, 0.25),
-      this.createOscillatingKeyframes(layerId, 'transform.position.z', startPosition.z, distance * 0.5, duration, 0.4, 0.5),
+      this.createOscillatingKeyframes(
+        layerId,
+        "transform.position.x",
+        startPosition.x,
+        distance,
+        duration,
+        0.5,
+        0,
+      ),
+      this.createOscillatingKeyframes(
+        layerId,
+        "transform.position.y",
+        startPosition.y,
+        distance * 0.7,
+        duration,
+        0.3,
+        0.25,
+      ),
+      this.createOscillatingKeyframes(
+        layerId,
+        "transform.position.z",
+        startPosition.z,
+        distance * 0.5,
+        duration,
+        0.4,
+        0.5,
+      ),
     ];
   }
 
@@ -635,7 +684,7 @@ export class MotionIntentTranslator {
     layerId: string,
     startPosition: { x: number; y: number; z: number },
     duration: number,
-    noiseAmount: number
+    noiseAmount: number,
   ): KeyframeBatch[] {
     // Generate pseudo-random noise keyframes
     // Using deterministic seed based on layerId
@@ -643,7 +692,7 @@ export class MotionIntentTranslator {
     const amplitude = noiseAmount * 5;
     const keyframes: KeyframeBatch[] = [];
 
-    for (const axis of ['x', 'y', 'z'] as const) {
+    for (const axis of ["x", "y", "z"] as const) {
       const axisKeyframes: Keyframe<number>[] = [];
       const baseValue = startPosition[axis];
       const numKeyframes = Math.floor(duration / 4); // Keyframe every 4 frames
@@ -657,10 +706,10 @@ export class MotionIntentTranslator {
           id: `kf_${layerId}_handheld_${axis}_${i}`,
           frame,
           value: baseValue + noise,
-          interpolation: 'bezier',
+          interpolation: "bezier",
           inHandle: { frame: -1, value: 0, enabled: true },
           outHandle: { frame: 1, value: 0, enabled: true },
-          controlMode: 'smooth',
+          controlMode: "smooth",
         });
       }
 
@@ -679,12 +728,12 @@ export class MotionIntentTranslator {
     startPosition: { x: number; y: number; z: number },
     center: { x: number; y: number; z: number },
     duration: number,
-    intensity: MotionIntensity
+    intensity: MotionIntensity,
   ): KeyframeBatch[] {
-    const radius = Math.sqrt(
-      Math.pow(startPosition.x - center.x, 2) +
-      Math.pow(startPosition.z - center.z, 2)
-    ) || INTENSITY_TO_DISTANCE[intensity];
+    const radius =
+      Math.sqrt(
+        (startPosition.x - center.x) ** 2 + (startPosition.z - center.z) ** 2,
+      ) || INTENSITY_TO_DISTANCE[intensity];
 
     const numKeyframes = 8;
     const xKeyframes: Keyframe<number>[] = [];
@@ -698,26 +747,42 @@ export class MotionIntentTranslator {
         id: `kf_${layerId}_orbit_x_${i}`,
         frame,
         value: center.x + Math.cos(angle) * radius,
-        interpolation: 'bezier',
-        inHandle: { frame: -duration / numKeyframes * 0.3, value: 0, enabled: true },
-        outHandle: { frame: duration / numKeyframes * 0.3, value: 0, enabled: true },
-        controlMode: 'smooth',
+        interpolation: "bezier",
+        inHandle: {
+          frame: (-duration / numKeyframes) * 0.3,
+          value: 0,
+          enabled: true,
+        },
+        outHandle: {
+          frame: (duration / numKeyframes) * 0.3,
+          value: 0,
+          enabled: true,
+        },
+        controlMode: "smooth",
       });
 
       zKeyframes.push({
         id: `kf_${layerId}_orbit_z_${i}`,
         frame,
         value: center.z + Math.sin(angle) * radius,
-        interpolation: 'bezier',
-        inHandle: { frame: -duration / numKeyframes * 0.3, value: 0, enabled: true },
-        outHandle: { frame: duration / numKeyframes * 0.3, value: 0, enabled: true },
-        controlMode: 'smooth',
+        interpolation: "bezier",
+        inHandle: {
+          frame: (-duration / numKeyframes) * 0.3,
+          value: 0,
+          enabled: true,
+        },
+        outHandle: {
+          frame: (duration / numKeyframes) * 0.3,
+          value: 0,
+          enabled: true,
+        },
+        controlMode: "smooth",
       });
     }
 
     return [
-      { layerId, propertyPath: 'transform.position.x', keyframes: xKeyframes },
-      { layerId, propertyPath: 'transform.position.z', keyframes: zKeyframes },
+      { layerId, propertyPath: "transform.position.x", keyframes: xKeyframes },
+      { layerId, propertyPath: "transform.position.z", keyframes: zKeyframes },
     ];
   }
 
@@ -725,7 +790,7 @@ export class MotionIntentTranslator {
     layerId: string,
     startPosition: { x: number; y: number; z: number },
     duration: number,
-    intensity: MotionIntensity
+    intensity: MotionIntensity,
   ): KeyframeBatch[] {
     const height = INTENSITY_TO_DISTANCE[intensity];
 
@@ -733,21 +798,21 @@ export class MotionIntentTranslator {
     return [
       this.createPositionKeyframes(
         layerId,
-        'transform.position.y',
+        "transform.position.y",
         startPosition.y,
         startPosition.y + height,
         0,
         duration / 2,
-        'easeOut'
+        "easeOut",
       ),
       this.createPositionKeyframes(
         layerId,
-        'transform.position.z',
+        "transform.position.z",
         startPosition.z,
         startPosition.z + height * 0.5,
         0,
         duration,
-        'easeInOut'
+        "easeInOut",
       ),
     ];
   }
@@ -760,7 +825,7 @@ export class MotionIntentTranslator {
     points: ControlPoint[],
     index: number,
     direction: -1 | 1,
-    smoothness: number
+    smoothness: number,
   ): { x: number; y: number } | null {
     const prevPoint = points[index - 1];
     const nextPoint = points[index + 1];
@@ -795,15 +860,19 @@ export class MotionIntentTranslator {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash;
     }
     return Math.abs(hash);
   }
 
-  private deterministicNoise(seed: number, axis: string, frame: number): number {
+  private deterministicNoise(
+    seed: number,
+    axis: string,
+    frame: number,
+  ): number {
     // Simple deterministic pseudo-random
-    const axisOffset = axis === 'x' ? 0 : axis === 'y' ? 1000 : 2000;
+    const axisOffset = axis === "x" ? 0 : axis === "y" ? 1000 : 2000;
     const combined = seed + axisOffset + frame * 13;
     const x = Math.sin(combined) * 10000;
     return x - Math.floor(x) - 0.5;

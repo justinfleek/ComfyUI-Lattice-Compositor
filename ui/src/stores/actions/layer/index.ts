@@ -8,8 +8,7 @@
  * Import from '@/stores/actions/layer' for all layer actions.
  */
 
-// Spline operations
-export * from './splineActions';
-
 // Layer defaults
-export * from './layerDefaults';
+export * from "./layerDefaults";
+// Spline operations
+export * from "./splineActions";

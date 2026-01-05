@@ -116,30 +116,31 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import type { Layer, NormalLayerData } from '@/types/project';
-import { ScrubableNumber } from '@/components/controls';
+import { computed } from "vue";
+import type { Layer, NormalLayerData } from "@/types/project";
 
 const props = defineProps<{
   layer: Layer;
 }>();
 
-const emit = defineEmits<{
-  (e: 'update', data: Partial<NormalLayerData>): void;
-}>();
+const emit =
+  defineEmits<(e: "update", data: Partial<NormalLayerData>) => void>();
 
 const normalData = computed(() => props.layer.data as NormalLayerData);
 
-function updateData<K extends keyof NormalLayerData>(key: K, value: NormalLayerData[K]) {
-  emit('update', { [key]: value } as Partial<NormalLayerData>);
+function _updateData<K extends keyof NormalLayerData>(
+  key: K,
+  value: NormalLayerData[K],
+) {
+  emit("update", { [key]: value } as Partial<NormalLayerData>);
 }
 
-function updateLightDirection(axis: 'x' | 'y' | 'z', value: number) {
-  emit('update', {
+function _updateLightDirection(axis: "x" | "y" | "z", value: number) {
+  emit("update", {
     lightDirection: {
       ...normalData.value.lightDirection,
-      [axis]: value
-    }
+      [axis]: value,
+    },
   });
 }
 </script>

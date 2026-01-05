@@ -265,10 +265,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch } from 'vue';
-import { ColorPicker, SliderInput, ScrubableNumber } from '@/components/controls';
-import TextureUpload from './TextureUpload.vue';
-import type { TextureMapType } from '@/types/project';
+import { computed, reactive, ref, watch } from "vue";
+import type { TextureMapType } from "@/types/project";
 
 // Material configuration interface
 interface MaterialConfig {
@@ -283,7 +281,7 @@ interface MaterialConfig {
   envMapIntensity: number;
   flatShading: boolean;
   wireframe: boolean;
-  side: 'front' | 'back' | 'double';
+  side: "front" | "back" | "double";
   maps: Partial<Record<TextureMapType, string>>;
   textureRepeat: { x: number; y: number };
 }
@@ -303,27 +301,27 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  'update:modelValue': [value: MaterialConfig];
-  'save-preset': [name: string, config: MaterialConfig];
+  "update:modelValue": [value: MaterialConfig];
+  "save-preset": [name: string, config: MaterialConfig];
   // Events for AssetsPanel
-  'update': [updates: Partial<MaterialConfig>];
-  'texture-upload': [textureType: string, file: File];
+  update: [updates: Partial<MaterialConfig>];
+  "texture-upload": [textureType: string, file: File];
 }>();
 
 // Default material values
 const defaultMaterial: MaterialConfig = {
-  color: '#ffffff',
+  color: "#ffffff",
   metalness: 0,
   roughness: 0.5,
   opacity: 1,
   transparent: false,
-  emissive: '#000000',
+  emissive: "#000000",
   emissiveIntensity: 0,
   normalScale: 1,
   envMapIntensity: 1,
   flatShading: false,
   wireframe: false,
-  side: 'front',
+  side: "front",
   maps: {},
   textureRepeat: { x: 1, y: 1 },
 };
@@ -331,50 +329,66 @@ const defaultMaterial: MaterialConfig = {
 // Material presets
 const presets: MaterialPreset[] = [
   {
-    id: 'chrome',
-    name: 'Chrome',
-    config: { color: '#ffffff', metalness: 1, roughness: 0.1 },
+    id: "chrome",
+    name: "Chrome",
+    config: { color: "#ffffff", metalness: 1, roughness: 0.1 },
   },
   {
-    id: 'gold',
-    name: 'Gold',
-    config: { color: '#ffd700', metalness: 1, roughness: 0.2 },
+    id: "gold",
+    name: "Gold",
+    config: { color: "#ffd700", metalness: 1, roughness: 0.2 },
   },
   {
-    id: 'copper',
-    name: 'Copper',
-    config: { color: '#b87333', metalness: 1, roughness: 0.3 },
+    id: "copper",
+    name: "Copper",
+    config: { color: "#b87333", metalness: 1, roughness: 0.3 },
   },
   {
-    id: 'plastic',
-    name: 'Plastic',
-    config: { color: '#ffffff', metalness: 0, roughness: 0.4 },
+    id: "plastic",
+    name: "Plastic",
+    config: { color: "#ffffff", metalness: 0, roughness: 0.4 },
   },
   {
-    id: 'rubber',
-    name: 'Rubber',
-    config: { color: '#222222', metalness: 0, roughness: 0.9 },
+    id: "rubber",
+    name: "Rubber",
+    config: { color: "#222222", metalness: 0, roughness: 0.9 },
   },
   {
-    id: 'glass',
-    name: 'Glass',
-    config: { color: '#ffffff', metalness: 0, roughness: 0.1, opacity: 0.3, transparent: true },
+    id: "glass",
+    name: "Glass",
+    config: {
+      color: "#ffffff",
+      metalness: 0,
+      roughness: 0.1,
+      opacity: 0.3,
+      transparent: true,
+    },
   },
   {
-    id: 'emissive',
-    name: 'Emissive',
-    config: { color: '#ffffff', emissive: '#00aaff', emissiveIntensity: 2, metalness: 0, roughness: 0.5 },
+    id: "emissive",
+    name: "Emissive",
+    config: {
+      color: "#ffffff",
+      emissive: "#00aaff",
+      emissiveIntensity: 2,
+      metalness: 0,
+      roughness: 0.5,
+    },
   },
   {
-    id: 'matte',
-    name: 'Matte',
-    config: { color: '#cccccc', metalness: 0, roughness: 1 },
+    id: "matte",
+    name: "Matte",
+    config: { color: "#cccccc", metalness: 0, roughness: 1 },
   },
 ];
 
 // Reactive state - merge from both modelValue and config props
-const material = reactive<MaterialConfig>({ ...defaultMaterial, ...props.modelValue, ...props.config });
-const selectedPreset = ref('');
+const material = reactive<MaterialConfig>({
+  ...defaultMaterial,
+  ...props.modelValue,
+  ...props.config,
+});
+const selectedPreset = ref("");
 const sections = reactive({
   basic: true,
   emissive: false,
@@ -383,76 +397,87 @@ const sections = reactive({
 });
 
 // Computed
-const hasAnyTexture = computed(() => {
-  return Object.values(material.maps).some(url => !!url);
+const _hasAnyTexture = computed(() => {
+  return Object.values(material.maps).some((url) => !!url);
 });
 
 // Watch for external changes
-watch(() => props.modelValue, (newVal) => {
-  if (newVal) {
-    Object.assign(material, { ...defaultMaterial, ...newVal });
-  }
-}, { deep: true });
+watch(
+  () => props.modelValue,
+  (newVal) => {
+    if (newVal) {
+      Object.assign(material, { ...defaultMaterial, ...newVal });
+    }
+  },
+  { deep: true },
+);
 
-watch(() => props.config, (newVal) => {
-  if (newVal) {
-    Object.assign(material, { ...defaultMaterial, ...newVal });
-  }
-}, { deep: true });
+watch(
+  () => props.config,
+  (newVal) => {
+    if (newVal) {
+      Object.assign(material, { ...defaultMaterial, ...newVal });
+    }
+  },
+  { deep: true },
+);
 
 // Methods
-function toggleSection(section: keyof typeof sections) {
+function _toggleSection(section: keyof typeof sections) {
   sections[section] = !sections[section];
 }
 
-function updateMaterial<K extends keyof MaterialConfig>(key: K, value: MaterialConfig[K]) {
+function _updateMaterial<K extends keyof MaterialConfig>(
+  key: K,
+  value: MaterialConfig[K],
+) {
   material[key] = value;
-  selectedPreset.value = ''; // Clear preset when manually editing
+  selectedPreset.value = ""; // Clear preset when manually editing
   emitUpdate();
 }
 
-function updateTextureRepeat(axis: 'x' | 'y', value: number) {
+function _updateTextureRepeat(axis: "x" | "y", value: number) {
   material.textureRepeat[axis] = value;
   emitUpdate();
 }
 
-function uploadTexture(mapType: TextureMapType, file: File, dataUrl: string) {
+function _uploadTexture(mapType: TextureMapType, file: File, dataUrl: string) {
   material.maps[mapType] = dataUrl;
   emitUpdate();
-  emit('texture-upload', mapType, file);
+  emit("texture-upload", mapType, file);
 }
 
-function removeTexture(mapType: TextureMapType) {
+function _removeTexture(mapType: TextureMapType) {
   delete material.maps[mapType];
   emitUpdate();
 }
 
-function applyPreset() {
+function _applyPreset() {
   if (!selectedPreset.value) return;
 
-  const preset = presets.find(p => p.id === selectedPreset.value);
+  const preset = presets.find((p) => p.id === selectedPreset.value);
   if (preset) {
     Object.assign(material, { ...defaultMaterial, ...preset.config });
     emitUpdate();
   }
 }
 
-function resetMaterial() {
+function _resetMaterial() {
   Object.assign(material, defaultMaterial);
-  selectedPreset.value = '';
+  selectedPreset.value = "";
   emitUpdate();
 }
 
-function saveMaterial() {
-  const name = prompt('Enter preset name:');
+function _saveMaterial() {
+  const name = prompt("Enter preset name:");
   if (name) {
-    emit('save-preset', name, { ...material });
+    emit("save-preset", name, { ...material });
   }
 }
 
 function emitUpdate() {
-  emit('update:modelValue', { ...material });
-  emit('update', { ...material });
+  emit("update:modelValue", { ...material });
+  emit("update", { ...material });
 }
 </script>
 

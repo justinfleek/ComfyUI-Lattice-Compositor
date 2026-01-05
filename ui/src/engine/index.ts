@@ -4,91 +4,98 @@
  * Export all public APIs for the compositor rendering engine.
  */
 
-// Main engine
-export { LatticeEngine } from './LatticeEngine';
-export type { LatticeEngineConfig } from './types';
-
+export type { EasingFunction } from "./animation/EasingFunctions";
+export {
+  easingFunctions,
+  getEasing,
+  getEasingNames,
+  hasEasing,
+} from "./animation/EasingFunctions";
+// Animation
+export { KeyframeEvaluator } from "./animation/KeyframeEvaluator";
+export { CameraController } from "./core/CameraController";
+export { LayerManager } from "./core/LayerManager";
+export { RenderPipeline } from "./core/RenderPipeline";
+export { ResourceManager } from "./core/ResourceManager";
 // Core subsystems
-export { SceneManager } from './core/SceneManager';
-export { RenderPipeline } from './core/RenderPipeline';
-export { CameraController } from './core/CameraController';
-export { LayerManager } from './core/LayerManager';
-export { ResourceManager } from './core/ResourceManager';
-
+export { SceneManager } from "./core/SceneManager";
+// Main engine
+export { LatticeEngine } from "./LatticeEngine";
 // Layer types
-export { BaseLayer } from './layers/BaseLayer';
-export { ImageLayer } from './layers/ImageLayer';
-export { SolidLayer } from './layers/SolidLayer';
-export { ControlLayer } from './layers/ControlLayer';
-export { TextLayer } from './layers/TextLayer';
-export { SplineLayer } from './layers/SplineLayer';
-export { ParticleLayer } from './layers/ParticleLayer';
-export { VideoLayer, extractVideoMetadata, calculateCompositionFromVideo } from './layers/VideoLayer';
-export { NestedCompLayer } from './layers/NestedCompLayer';
-export { CameraLayer } from './layers/CameraLayer';
-export type { AnchorPointGrouping, FillStrokeOrder, InterCharacterBlending } from './layers/TextLayer';
-export type { VideoMetadata, VideoLayerEvents } from './layers/VideoLayer';
-export type { NestedCompRenderContext } from './layers/NestedCompLayer';
-export type { CameraGetter, CameraUpdater } from './layers/CameraLayer';
-
+export { BaseLayer } from "./layers/BaseLayer";
+export type { CameraGetter, CameraUpdater } from "./layers/CameraLayer";
+export { CameraLayer } from "./layers/CameraLayer";
+export { ControlLayer } from "./layers/ControlLayer";
+export { ImageLayer } from "./layers/ImageLayer";
+export type { NestedCompRenderContext } from "./layers/NestedCompLayer";
+export { NestedCompLayer } from "./layers/NestedCompLayer";
+export { ParticleLayer } from "./layers/ParticleLayer";
+export { SolidLayer } from "./layers/SolidLayer";
+export { SplineLayer } from "./layers/SplineLayer";
+export type {
+  AnchorPointGrouping,
+  FillStrokeOrder,
+  InterCharacterBlending,
+} from "./layers/TextLayer";
+export { TextLayer } from "./layers/TextLayer";
+export type { VideoLayerEvents, VideoMetadata } from "./layers/VideoLayer";
+export {
+  calculateCompositionFromVideo,
+  extractVideoMetadata,
+  VideoLayer,
+} from "./layers/VideoLayer";
+export type {
+  AudioBinding,
+  AudioFeature,
+  EmitterConfig,
+  FlockingConfig,
+  ForceFieldConfig,
+  GPUParticleSystemConfig,
+  ModulationCurve,
+  ParticleRenderMode,
+} from "./particles";
 // GPU Particle System
 export {
-  GPUParticleSystem,
   createDefaultConfig as createDefaultParticleConfig,
   createDefaultEmitter,
   createDefaultForceField,
-} from './particles';
-export type {
-  GPUParticleSystemConfig,
-  EmitterConfig,
-  ForceFieldConfig,
-  AudioFeature,
-  AudioBinding,
-  FlockingConfig,
-  ParticleRenderMode,
-  ModulationCurve,
-} from './particles';
-
-// Animation
-export { KeyframeEvaluator } from './animation/KeyframeEvaluator';
-export { easingFunctions, getEasing, getEasingNames, hasEasing } from './animation/EasingFunctions';
-export type { EasingFunction } from './animation/EasingFunctions';
-
-// Utilities
-export { PerformanceMonitor } from './utils/PerformanceMonitor';
-
+  GPUParticleSystem,
+} from "./particles";
 // Types
 export type {
-  RenderState,
-  LayerInstance,
-  Transform3D,
-  EvaluatedTransform,
-  CameraState,
-  CameraAnimationProps,
-  RenderTargetConfig,
-  CaptureResult,
-  DepthCaptureResult,
-  EffectConfig,
   BlurEffectConfig,
-  GlowEffectConfig,
-  KeyframeEvaluation,
-  InterpolationFn,
-  TextRenderConfig,
-  CharacterTransform,
-  ParticleState,
-  EmissionConfig,
-  PathPoint,
-  PathConfig,
-  ExportFrameOptions,
-  ExportSequenceOptions,
-  PerformanceStats,
-  PerformanceConfig,
-  EngineEventType,
-  EngineEventHandler,
-  EngineEvent,
-  Vector2Like,
-  Vector3Like,
-  ColorLike,
   BoundingBox2D,
   BoundingBox3D,
-} from './types';
+  CameraAnimationProps,
+  CameraState,
+  CaptureResult,
+  CharacterTransform,
+  ColorLike,
+  DepthCaptureResult,
+  EffectConfig,
+  EmissionConfig,
+  EngineEvent,
+  EngineEventHandler,
+  EngineEventType,
+  EvaluatedTransform,
+  ExportFrameOptions,
+  ExportSequenceOptions,
+  GlowEffectConfig,
+  InterpolationFn,
+  KeyframeEvaluation,
+  LatticeEngineConfig,
+  LayerInstance,
+  ParticleState,
+  PathConfig,
+  PathPoint,
+  PerformanceConfig,
+  PerformanceStats,
+  RenderState,
+  RenderTargetConfig,
+  TextRenderConfig,
+  Transform3D,
+  Vector2Like,
+  Vector3Like,
+} from "./types";
+// Utilities
+export { PerformanceMonitor } from "./utils/PerformanceMonitor";

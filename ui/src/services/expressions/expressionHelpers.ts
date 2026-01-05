@@ -7,8 +7,8 @@
  * - Easing application
  */
 
-import type { Keyframe, InterpolationType } from '@/types/project';
-import { EASING_FUNCTIONS } from './easing';
+import type { InterpolationType, Keyframe } from "@/types/project";
+import { EASING_FUNCTIONS } from "./easing";
 
 // ============================================================================
 // VALUE OPERATIONS
@@ -18,7 +18,7 @@ import { EASING_FUNCTIONS } from './easing';
  * Subtract two values (numbers or arrays)
  */
 export function subtractValues(a: any, b: any): number | number[] {
-  if (typeof a === 'number' && typeof b === 'number') {
+  if (typeof a === "number" && typeof b === "number") {
     return a - b;
   }
   if (Array.isArray(a) && Array.isArray(b)) {
@@ -31,7 +31,7 @@ export function subtractValues(a: any, b: any): number | number[] {
  * Add two values (numbers or arrays)
  */
 export function addValues(a: any, b: any): number | number[] {
-  if (typeof a === 'number' && typeof b === 'number') {
+  if (typeof a === "number" && typeof b === "number") {
     return a + b;
   }
   if (Array.isArray(a) && Array.isArray(b)) {
@@ -44,7 +44,7 @@ export function addValues(a: any, b: any): number | number[] {
  * Scale a value by a scalar
  */
 export function scaleValue(v: any, s: number): number | number[] {
-  if (typeof v === 'number') {
+  if (typeof v === "number") {
     return v * s;
   }
   if (Array.isArray(v)) {
@@ -57,7 +57,7 @@ export function scaleValue(v: any, s: number): number | number[] {
  * Linear interpolation between two values
  */
 export function lerpValues(a: any, b: any, t: number): number | number[] {
-  if (typeof a === 'number' && typeof b === 'number') {
+  if (typeof a === "number" && typeof b === "number") {
     return a + (b - a) * t;
   }
   if (Array.isArray(a) && Array.isArray(b)) {
@@ -73,7 +73,10 @@ export function lerpValues(a: any, b: any, t: number): number | number[] {
 /**
  * Apply easing function to a t value
  */
-export function applyEasing(t: number, interpolation: InterpolationType): number {
+export function applyEasing(
+  t: number,
+  interpolation: InterpolationType,
+): number {
   const fn = EASING_FUNCTIONS[interpolation];
   return fn ? fn(t) : t;
 }
@@ -85,7 +88,11 @@ export function applyEasing(t: number, interpolation: InterpolationType): number
 /**
  * Interpolate keyframes at a specific time
  */
-export function interpolateAtTime(keyframes: Keyframe<any>[], time: number, fps: number): number | number[] {
+export function interpolateAtTime(
+  keyframes: Keyframe<any>[],
+  time: number,
+  fps: number,
+): number | number[] {
   const frame = time * fps;
 
   // Find surrounding keyframes

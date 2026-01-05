@@ -13,10 +13,10 @@
  */
 export function normalize(
   values: number[],
-  maxValue: number = Math.max(...values)
+  maxValue: number = Math.max(...values),
 ): number[] {
   const safeMax = maxValue || 0.0001; // Prevent division by zero
-  return values.map(v => v / safeMax);
+  return values.map((v) => v / safeMax);
 }
 
 /**
@@ -52,7 +52,7 @@ export function mapRange(
   inMin: number,
   inMax: number,
   outMin: number,
-  outMax: number
+  outMax: number,
 ): number {
   const normalized = (value - inMin) / (inMax - inMin);
   return outMin + normalized * (outMax - outMin);

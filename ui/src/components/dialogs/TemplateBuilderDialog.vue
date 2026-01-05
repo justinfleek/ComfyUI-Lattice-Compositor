@@ -314,67 +314,62 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, inject, onMounted, onUnmounted } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import JSZip from 'jszip';
-import type {
-  TemplateConfig,
-  ExposedProperty,
-  PropertyGroup,
-  TemplateComment,
-  SavedTemplate,
-  LatticeTemplate
-} from '@/types/templateBuilder';
-import {
-  initializeTemplate,
-  clearTemplate,
-  addExposedProperty,
-  removeExposedProperty,
-  addPropertyGroup,
-  removePropertyGroup,
-  movePropertyToGroup,
-  reorderExposedProperties,
-  addComment,
-  removeComment as removeCommentFn,
-  updateComment as updateCommentFn,
-  getExposableProperties,
-  getOrganizedProperties,
-  isExposedProperty as checkIsExposedProperty,
-  validateTemplate,
-  prepareTemplateExport
-} from '@/services/templateBuilder';
+import JSZip from "jszip";
+import { computed, inject, onMounted, onUnmounted, ref, watch } from "vue";
 import {
   safeJSONParse,
   safeJSONStringify,
-  validateLatticeTemplate
-} from '@/services/jsonValidation';
-import type { Layer, Composition } from '@/types/project';
-import ExposedPropertyControl from '../panels/ExposedPropertyControl.vue';
-import CommentControl from '../panels/CommentControl.vue';
+  validateLatticeTemplate,
+} from "@/services/jsonValidation";
+import {
+  addComment,
+  addExposedProperty,
+  addPropertyGroup,
+  isExposedProperty as checkIsExposedProperty,
+  clearTemplate,
+  getExposableProperties,
+  getOrganizedProperties,
+  initializeTemplate,
+  movePropertyToGroup,
+  prepareTemplateExport,
+  removeComment as removeCommentFn,
+  removeExposedProperty,
+  removePropertyGroup,
+  reorderExposedProperties,
+  updateComment as updateCommentFn,
+  validateTemplate,
+} from "@/services/templateBuilder";
+import { useCompositorStore } from "@/stores/compositorStore";
+import type { Layer } from "@/types/project";
+import type {
+  ExposedProperty,
+  LatticeTemplate,
+  PropertyGroup,
+  SavedTemplate,
+  TemplateComment,
+} from "@/types/templateBuilder";
 
 // Props and emits for dialog mode
-const props = defineProps<{
+const _props = defineProps<{
   visible: boolean;
 }>();
 
-const emit = defineEmits<{
-  (e: 'close'): void;
-}>();
+const emit = defineEmits<(e: "close") => void>();
 
-function close() {
-  emit('close');
+function _close() {
+  emit("close");
 }
 
 // Inject frame capture from parent
-const captureFrame = inject<() => Promise<string | null>>('captureFrame');
+const captureFrame = inject<() => Promise<string | null>>("captureFrame");
 
 // Store
 const store = useCompositorStore();
 
 // State
-const activeTab = ref<'browse' | 'edit'>('edit');
-const searchQuery = ref('');
-const selectedMasterCompId = ref('');
+const activeTab = ref<"browse" | "edit">("edit");
+const searchQuery = ref("");
+const selectedMasterCompId = ref("");
 const showAddMenu = ref(false);
 const selectedPropertyId = ref<string | null>(null);
 const showPropertyPicker = ref(false);
@@ -397,13 +392,13 @@ const dragOverIndex = ref<number>(-1);
 const dragOverGroupId = ref<string | null>(null);
 
 // Computed
-const compositions = computed(() => Object.values(store.project.compositions));
+const _compositions = computed(() => Object.values(store.project.compositions));
 
 const activeComposition = computed(() => store.activeComposition);
 
 const activeCompLayers = computed(() => activeComposition.value?.layers || []);
 
-const hasTemplate = computed(() => {
+const _hasTemplate = computed(() => {
   return activeComposition.value?.templateConfig !== undefined;
 });
 
@@ -411,13 +406,13 @@ const templateConfig = computed(() => {
   return activeComposition.value?.templateConfig;
 });
 
-const templateName = computed({
-  get: () => templateConfig.value?.name || '',
+const _templateName = computed({
+  get: () => templateConfig.value?.name || "",
   set: (value: string) => {
     if (templateConfig.value) {
       templateConfig.value.name = value;
     }
-  }
+  },
 });
 
 const organizedProperties = computed(() => {
@@ -427,23 +422,24 @@ const organizedProperties = computed(() => {
   return getOrganizedProperties(templateConfig.value);
 });
 
-const exposableProperties = computed(() => {
+const _exposableProperties = computed(() => {
   if (!selectedLayerForPicker.value) return [];
   return getExposableProperties(selectedLayerForPicker.value);
 });
 
-const filteredTemplates = computed(() => {
+const _filteredTemplates = computed(() => {
   if (!searchQuery.value) return savedTemplates.value;
   const query = searchQuery.value.toLowerCase();
-  return savedTemplates.value.filter(t =>
-    t.name.toLowerCase().includes(query) ||
-    t.author?.toLowerCase().includes(query) ||
-    t.tags?.some(tag => tag.toLowerCase().includes(query))
+  return savedTemplates.value.filter(
+    (t) =>
+      t.name.toLowerCase().includes(query) ||
+      t.author?.toLowerCase().includes(query) ||
+      t.tags?.some((tag) => tag.toLowerCase().includes(query)),
   );
 });
 
 // Methods
-function setMasterComposition() {
+function _setMasterComposition() {
   if (!selectedMasterCompId.value) return;
 
   const comp = store.project.compositions[selectedMasterCompId.value];
@@ -453,39 +449,39 @@ function setMasterComposition() {
   store.pushHistory();
 }
 
-function clearMasterComposition() {
+function _clearMasterComposition() {
   if (!activeComposition.value) return;
 
   clearTemplate(activeComposition.value);
   store.pushHistory();
 }
 
-function updateTemplateName() {
+function _updateTemplateName() {
   if (templateConfig.value) {
     templateConfig.value.modified = new Date().toISOString();
     store.pushHistory();
   }
 }
 
-function toggleAddMenu() {
+function _toggleAddMenu() {
   showAddMenu.value = !showAddMenu.value;
 }
 
-function addGroup() {
+function _addGroup() {
   if (!templateConfig.value) return;
-  addPropertyGroup(templateConfig.value, 'New Group');
+  addPropertyGroup(templateConfig.value, "New Group");
   showAddMenu.value = false;
   store.pushHistory();
 }
 
-function addCommentItem() {
+function _addCommentItem() {
   if (!templateConfig.value) return;
-  addComment(templateConfig.value, 'Enter instructions here...');
+  addComment(templateConfig.value, "Enter instructions here...");
   showAddMenu.value = false;
   store.pushHistory();
 }
 
-function showLayerProperties(layer: Layer) {
+function _showLayerProperties(layer: Layer) {
   selectedLayerForPicker.value = layer;
   showPropertyPicker.value = true;
   showAddMenu.value = false;
@@ -496,7 +492,11 @@ function closePropertyPicker() {
   selectedLayerForPicker.value = null;
 }
 
-function addPropertyFromPicker(prop: { path: string; name: string; type: any }) {
+function _addPropertyFromPicker(prop: {
+  path: string;
+  name: string;
+  type: any;
+}) {
   if (!templateConfig.value || !selectedLayerForPicker.value) return;
 
   addExposedProperty(
@@ -504,52 +504,57 @@ function addPropertyFromPicker(prop: { path: string; name: string; type: any }) 
     selectedLayerForPicker.value.id,
     prop.path,
     prop.name,
-    prop.type
+    prop.type,
   );
 
   closePropertyPicker();
   store.pushHistory();
 }
 
-function selectProperty(item: ExposedProperty | TemplateComment) {
+function _selectProperty(item: ExposedProperty | TemplateComment) {
   selectedPropertyId.value = item.id;
 }
 
-function removeProperty(propertyId: string) {
+function _removeProperty(propertyId: string) {
   if (!templateConfig.value) return;
   removeExposedProperty(templateConfig.value, propertyId);
   store.pushHistory();
 }
 
-function removeCommentItem(commentId: string) {
+function _removeCommentItem(commentId: string) {
   if (!templateConfig.value) return;
   removeCommentFn(templateConfig.value, commentId);
   store.pushHistory();
 }
 
-function toggleGroup(groupId: string) {
+function _toggleGroup(groupId: string) {
   if (!templateConfig.value) return;
-  const group = templateConfig.value.groups.find(g => g.id === groupId);
+  const group = templateConfig.value.groups.find((g) => g.id === groupId);
   if (group) {
     group.expanded = !group.expanded;
   }
 }
 
-function updateGroupName(group: PropertyGroup) {
+function _updateGroupName(_group: PropertyGroup) {
   if (!templateConfig.value) return;
   templateConfig.value.modified = new Date().toISOString();
   store.pushHistory();
 }
 
-function removeGroup(groupId: string) {
+function _removeGroup(groupId: string) {
   if (!templateConfig.value) return;
   removePropertyGroup(templateConfig.value, groupId);
   store.pushHistory();
 }
 
-function handlePropertyUpdate(propertyId: string, updates: Partial<ExposedProperty>) {
+function _handlePropertyUpdate(
+  propertyId: string,
+  updates: Partial<ExposedProperty>,
+) {
   if (!templateConfig.value) return;
-  const property = templateConfig.value.exposedProperties.find(p => p.id === propertyId);
+  const property = templateConfig.value.exposedProperties.find(
+    (p) => p.id === propertyId,
+  );
   if (property) {
     Object.assign(property, updates);
     templateConfig.value.modified = new Date().toISOString();
@@ -557,17 +562,19 @@ function handlePropertyUpdate(propertyId: string, updates: Partial<ExposedProper
   }
 }
 
-function handleCommentUpdate(commentId: string, text: string) {
+function _handleCommentUpdate(commentId: string, text: string) {
   if (!templateConfig.value) return;
   updateCommentFn(templateConfig.value, commentId, text);
   store.pushHistory();
 }
 
-function getLayerById(layerId: string): Layer | undefined {
-  return activeCompLayers.value.find(l => l.id === layerId);
+function _getLayerById(layerId: string): Layer | undefined {
+  return activeCompLayers.value.find((l) => l.id === layerId);
 }
 
-function isExposedProperty(item: ExposedProperty | TemplateComment): item is ExposedProperty {
+function _isExposedProperty(
+  item: ExposedProperty | TemplateComment,
+): item is ExposedProperty {
   return checkIsExposedProperty(item);
 }
 
@@ -575,24 +582,24 @@ function isExposedProperty(item: ExposedProperty | TemplateComment): item is Exp
 // DRAG AND DROP
 // ===========================================
 
-function handleDragStart(
+function _handleDragStart(
   event: DragEvent,
   item: ExposedProperty | TemplateComment,
-  index: number,
-  groupId?: string
+  _index: number,
+  groupId?: string,
 ) {
   draggedItem.value = item;
   draggedGroup.value = null;
   draggedFromGroupId.value = groupId || null;
-  event.dataTransfer?.setData('text/plain', item.id);
-  event.dataTransfer!.effectAllowed = 'move';
+  event.dataTransfer?.setData("text/plain", item.id);
+  event.dataTransfer!.effectAllowed = "move";
 }
 
-function handleGroupDragStart(event: DragEvent, group: PropertyGroup) {
+function _handleGroupDragStart(event: DragEvent, group: PropertyGroup) {
   draggedGroup.value = group;
   draggedItem.value = null;
-  event.dataTransfer?.setData('text/plain', group.id);
-  event.dataTransfer!.effectAllowed = 'move';
+  event.dataTransfer?.setData("text/plain", group.id);
+  event.dataTransfer!.effectAllowed = "move";
 }
 
 function handleDragEnd() {
@@ -603,16 +610,16 @@ function handleDragEnd() {
   dragOverGroupId.value = null;
 }
 
-function handleDragOver(event: DragEvent) {
+function _handleDragOver(event: DragEvent) {
   event.preventDefault();
 }
 
-function setDragOver(index: number, groupId: string | null) {
+function _setDragOver(index: number, groupId: string | null) {
   dragOverIndex.value = index;
   dragOverGroupId.value = groupId;
 }
 
-function handleDrop(event: DragEvent) {
+function _handleDrop(event: DragEvent) {
   event.preventDefault();
 
   if (!templateConfig.value) return;
@@ -621,12 +628,16 @@ function handleDrop(event: DragEvent) {
   if (draggedItem.value) {
     // If item was in a group, remove it from the group
     if (draggedFromGroupId.value) {
-      movePropertyToGroup(templateConfig.value, draggedItem.value.id, undefined);
+      movePropertyToGroup(
+        templateConfig.value,
+        draggedItem.value.id,
+        undefined,
+      );
     }
 
     // Reorder based on drop position
     if (dragOverIndex.value >= 0) {
-      const ids = organizedProperties.value.ungrouped.map(p => p.id);
+      const ids = organizedProperties.value.ungrouped.map((p) => p.id);
       const fromIndex = ids.indexOf(draggedItem.value.id);
       if (fromIndex !== -1) {
         ids.splice(fromIndex, 1);
@@ -641,7 +652,7 @@ function handleDrop(event: DragEvent) {
   handleDragEnd();
 }
 
-function handleDropToGroup(event: DragEvent, groupId: string) {
+function _handleDropToGroup(event: DragEvent, groupId: string) {
   event.preventDefault();
   event.stopPropagation();
 
@@ -658,12 +669,14 @@ function handleDropToGroup(event: DragEvent, groupId: string) {
 // TEMPLATE OPERATIONS
 // ===========================================
 
-function selectTemplate(template: SavedTemplate) {
+function _selectTemplate(template: SavedTemplate) {
   selectedTemplateId.value = template.id;
 }
 
-function applySelectedTemplate() {
-  const template = savedTemplates.value.find(t => t.id === selectedTemplateId.value);
+function _applySelectedTemplate() {
+  const template = savedTemplates.value.find(
+    (t) => t.id === selectedTemplateId.value,
+  );
   if (template) {
     applyTemplate(template);
   }
@@ -671,7 +684,7 @@ function applySelectedTemplate() {
 
 async function applyTemplate(template: SavedTemplate) {
   if (!activeComposition.value) {
-    alert('Please select a composition first');
+    alert("Please select a composition first");
     return;
   }
 
@@ -679,7 +692,7 @@ async function applyTemplate(template: SavedTemplate) {
     // Load the template data
     const tplData = template.templateData;
     if (!tplData) {
-      alert('Template data not found');
+      alert("Template data not found");
       return;
     }
 
@@ -688,31 +701,39 @@ async function applyTemplate(template: SavedTemplate) {
       // Copy template config
       activeComposition.value.templateConfig = {
         ...tplData.templateConfig,
-        masterCompositionId: activeComposition.value.id
+        masterCompositionId: activeComposition.value.id,
       };
 
       // Apply exposed property default values
-      tplData.templateConfig.exposedProperties.forEach((prop: ExposedProperty) => {
-        const layer = activeComposition.value?.layers.find(l => l.name === prop.sourceLayerId);
-        if (layer && prop.defaultValue !== undefined) {
-          // Set the property value on the layer
-          setNestedProperty(layer, prop.sourcePropertyPath, prop.defaultValue);
-        }
-      });
+      tplData.templateConfig.exposedProperties.forEach(
+        (prop: ExposedProperty) => {
+          const layer = activeComposition.value?.layers.find(
+            (l) => l.name === prop.sourceLayerId,
+          );
+          if (layer && prop.defaultValue !== undefined) {
+            // Set the property value on the layer
+            setNestedProperty(
+              layer,
+              prop.sourcePropertyPath,
+              prop.defaultValue,
+            );
+          }
+        },
+      );
 
       store.pushHistory();
-      activeTab.value = 'edit';
+      activeTab.value = "edit";
 
-      console.log('[TemplateBuilder] Template applied:', template.name);
+      console.log("[TemplateBuilder] Template applied:", template.name);
     }
   } catch (error) {
-    console.error('[TemplateBuilder] Failed to apply template:', error);
-    alert('Failed to apply template');
+    console.error("[TemplateBuilder] Failed to apply template:", error);
+    alert("Failed to apply template");
   }
 }
 
 function setNestedProperty(obj: any, path: string, value: any) {
-  const parts = path.split('.');
+  const parts = path.split(".");
   let current = obj;
 
   for (let i = 0; i < parts.length - 1; i++) {
@@ -723,18 +744,22 @@ function setNestedProperty(obj: any, path: string, value: any) {
   }
 
   const lastPart = parts[parts.length - 1];
-  if (current[lastPart] && typeof current[lastPart] === 'object' && 'value' in current[lastPart]) {
+  if (
+    current[lastPart] &&
+    typeof current[lastPart] === "object" &&
+    "value" in current[lastPart]
+  ) {
     current[lastPart].value = value;
   } else {
     current[lastPart] = value;
   }
 }
 
-function importTemplate() {
+function _importTemplate() {
   fileInput.value?.click();
 }
 
-async function handleFileImport(event: Event) {
+async function _handleFileImport(event: Event) {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
   if (!file) return;
@@ -742,15 +767,15 @@ async function handleFileImport(event: Event) {
   try {
     let templateData: LatticeTemplate | null = null;
 
-    if (file.name.endsWith('.zip')) {
+    if (file.name.endsWith(".zip")) {
       // Load as ZIP (bundled template with assets)
       const zip = await JSZip.loadAsync(file);
-      const manifestFile = zip.file('manifest.json');
+      const manifestFile = zip.file("manifest.json");
       if (!manifestFile) {
-        throw new Error('Invalid template bundle: missing manifest.json');
+        throw new Error("Invalid template bundle: missing manifest.json");
       }
 
-      const manifestJson = await manifestFile.async('string');
+      const manifestJson = await manifestFile.async("string");
       const parsed = safeJSONParse<LatticeTemplate>(manifestJson);
       if (!parsed.success) {
         throw new Error(`Invalid manifest JSON: ${parsed.error}`);
@@ -769,30 +794,33 @@ async function handleFileImport(event: Event) {
     // Validate
     const validation = validateLatticeTemplate(templateData);
     if (!validation.valid) {
-      throw new Error(`Invalid template: ${validation.errors.map(e => e.message).join(', ')}`);
+      throw new Error(
+        `Invalid template: ${validation.errors.map((e) => e.message).join(", ")}`,
+      );
     }
 
     // Add to saved templates
     const newTemplate: SavedTemplate = {
       id: `template_${Date.now()}`,
       name: templateData.templateConfig.name,
-      author: 'Imported',
+      author: "Imported",
       posterImage: templateData.posterImage,
       tags: [],
       importDate: new Date().toISOString(),
-      templateData: templateData
+      templateData: templateData,
     };
 
     savedTemplates.value.push(newTemplate);
-    console.log('[TemplateBuilder] Template imported:', newTemplate.name);
+    console.log("[TemplateBuilder] Template imported:", newTemplate.name);
 
     // Reset file input
-    input.value = '';
-
+    input.value = "";
   } catch (error) {
-    console.error('[TemplateBuilder] Import failed:', error);
-    alert(`Import failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    input.value = '';
+    console.error("[TemplateBuilder] Import failed:", error);
+    alert(
+      `Import failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+    );
+    input.value = "";
   }
 }
 
@@ -800,9 +828,9 @@ async function handleFileImport(event: Event) {
 // POSTER FRAME CAPTURE
 // ===========================================
 
-async function capturePosterFrame() {
+async function _capturePosterFrame() {
   if (!captureFrame) {
-    console.warn('[TemplateBuilder] Frame capture not available');
+    console.warn("[TemplateBuilder] Frame capture not available");
     return;
   }
 
@@ -814,7 +842,7 @@ async function capturePosterFrame() {
     store.setFrame(posterFrame.value);
 
     // Wait for render
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     // Capture
     const imageData = await captureFrame();
@@ -826,14 +854,13 @@ async function capturePosterFrame() {
         templateConfig.value.posterFrame = posterFrame.value;
       }
 
-      console.log('[TemplateBuilder] Poster frame captured');
+      console.log("[TemplateBuilder] Poster frame captured");
     }
 
     // Restore frame
     store.setFrame(originalFrame);
-
   } catch (error) {
-    console.error('[TemplateBuilder] Failed to capture poster frame:', error);
+    console.error("[TemplateBuilder] Failed to capture poster frame:", error);
   } finally {
     isCapturing.value = false;
   }
@@ -843,39 +870,42 @@ async function capturePosterFrame() {
 // TEMPLATE EXPORT
 // ===========================================
 
-async function exportTemplate() {
+async function _exportTemplate() {
   if (!activeComposition.value || !templateConfig.value) return;
 
   isExporting.value = true;
 
   try {
     // Validate template
-    const validation = validateTemplate(templateConfig.value, activeComposition.value);
+    const validation = validateTemplate(
+      templateConfig.value,
+      activeComposition.value,
+    );
     if (!validation.valid) {
-      console.error('Template validation failed:', validation.errors);
-      alert('Template validation failed:\n' + validation.errors.join('\n'));
+      console.error("Template validation failed:", validation.errors);
+      alert(`Template validation failed:\n${validation.errors.join("\n")}`);
       return;
     }
 
     if (validation.warnings.length > 0) {
-      console.warn('Template warnings:', validation.warnings);
+      console.warn("Template warnings:", validation.warnings);
     }
 
     // Capture poster frame if not already captured
-    let posterImage = posterImagePreview.value || '';
+    let posterImage = posterImagePreview.value || "";
     if (!posterImage && captureFrame) {
-      posterImage = await captureFrame() || '';
+      posterImage = (await captureFrame()) || "";
     }
 
     // Prepare template data
     const template = prepareTemplateExport(
       activeComposition.value,
       store.project.assets,
-      posterImage
+      posterImage,
     );
 
     if (!template) {
-      alert('Export failed: Could not prepare template');
+      alert("Export failed: Could not prepare template");
       return;
     }
 
@@ -886,21 +916,22 @@ async function exportTemplate() {
     }
 
     // Create blob and download as .lattice.json
-    const blob = new Blob([jsonResult.json], { type: 'application/json' });
+    const blob = new Blob([jsonResult.json], { type: "application/json" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = `${templateConfig.value.name.replace(/\s+/g, '_')}.lattice.json`;
+    a.download = `${templateConfig.value.name.replace(/\s+/g, "_")}.lattice.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    console.log('[TemplateBuilder] Template exported successfully');
-
+    console.log("[TemplateBuilder] Template exported successfully");
   } catch (error) {
-    console.error('[TemplateBuilder] Export failed:', error);
-    alert(`Export failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    console.error("[TemplateBuilder] Export failed:", error);
+    alert(
+      `Export failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+    );
   } finally {
     isExporting.value = false;
   }
@@ -909,7 +940,7 @@ async function exportTemplate() {
 // Close menu when clicking outside
 function handleClickOutside(event: MouseEvent) {
   const target = event.target as HTMLElement;
-  if (!target.closest('.add-dropdown')) {
+  if (!target.closest(".add-dropdown")) {
     showAddMenu.value = false;
   }
 }
@@ -923,33 +954,33 @@ watch(activeComposition, (comp) => {
 
 // Lifecycle
 onMounted(() => {
-  document.addEventListener('click', handleClickOutside);
+  document.addEventListener("click", handleClickOutside);
 
   // Load installed templates from localStorage
   try {
-    const saved = localStorage.getItem('lattice_saved_templates');
+    const saved = localStorage.getItem("lattice_saved_templates");
     if (saved) {
       const parsed = safeJSONParse<SavedTemplate[]>(saved, []);
       if (parsed.success && parsed.data) {
         savedTemplates.value = parsed.data;
       }
     }
-  } catch (e) {
-    console.warn('[TemplateBuilder] Failed to load saved templates');
+  } catch (_e) {
+    console.warn("[TemplateBuilder] Failed to load saved templates");
   }
 });
 
 onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside);
+  document.removeEventListener("click", handleClickOutside);
 
   // Save installed templates
   try {
     const result = safeJSONStringify(savedTemplates.value);
     if (result.success) {
-      localStorage.setItem('lattice_saved_templates', result.json);
+      localStorage.setItem("lattice_saved_templates", result.json);
     }
-  } catch (e) {
-    console.warn('[TemplateBuilder] Failed to save templates');
+  } catch (_e) {
+    console.warn("[TemplateBuilder] Failed to save templates");
   }
 });
 </script>

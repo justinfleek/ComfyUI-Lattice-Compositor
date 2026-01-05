@@ -5,10 +5,10 @@
  * for the ThreeCanvas viewport.
  */
 
-import { ref, computed, type Ref, type ComputedRef } from 'vue';
-import * as THREE from 'three';
-import { useCompositorStore } from '@/stores/compositorStore';
-import type { LatticeEngine } from '@/engine';
+import * as THREE from "three";
+import { type ComputedRef, computed, type Ref, ref } from "vue";
+import type { LatticeEngine } from "@/engine";
+import { useCompositorStore } from "@/stores/compositorStore";
 
 export interface SafeFrameBounds {
   left: number;
@@ -33,9 +33,9 @@ export interface ResolutionGuide {
 
 // Standard resolution presets
 const RESOLUTION_PRESETS = [
-  { name: '480p', width: 854, height: 480, color: '#F59E0B' },   // Amber
-  { name: '720p', width: 1280, height: 720, color: '#8B5CF6' },  // Purple
-  { name: '1080p', width: 1920, height: 1080, color: '#06B6D4' } // Cyan
+  { name: "480p", width: 854, height: 480, color: "#F59E0B" }, // Amber
+  { name: "720p", width: 1280, height: 720, color: "#8B5CF6" }, // Purple
+  { name: "1080p", width: 1920, height: 1080, color: "#06B6D4" }, // Cyan
 ];
 
 export interface UseViewportGuidesOptions {
@@ -54,7 +54,7 @@ export function useViewportGuides(options: UseViewportGuidesOptions) {
     canvasWidth,
     canvasHeight,
     zoom,
-    viewportTransform
+    viewportTransform,
   } = options;
 
   const store = useCompositorStore();
@@ -64,7 +64,7 @@ export function useViewportGuides(options: UseViewportGuidesOptions) {
 
   // Guide visibility toggles
   const showSafeFrameGuides = ref(false);
-  const showResolutionGuides = ref(false);  // Off by default
+  const showResolutionGuides = ref(false); // Off by default
 
   /**
    * Force update of guide positions (call after camera changes)
@@ -80,7 +80,13 @@ export function useViewportGuides(options: UseViewportGuidesOptions) {
   const safeFrameBounds: ComputedRef<SafeFrameBounds> = computed(() => {
     // Reactive dependencies: these trigger recompute when camera changes
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const _ = [zoom.value, viewportTransform.value, canvasWidth.value, canvasHeight.value, cameraUpdateTrigger.value];
+    const _ = [
+      zoom.value,
+      viewportTransform.value,
+      canvasWidth.value,
+      canvasHeight.value,
+      cameraUpdateTrigger.value,
+    ];
 
     if (!containerRef.value || !engine.value) {
       return { left: 0, top: 0, right: 0, bottom: 0 };
@@ -112,10 +118,10 @@ export function useViewportGuides(options: UseViewportGuidesOptions) {
     bottomRight.project(camera);
 
     // Convert to screen pixels
-    const left = (topLeft.x + 1) / 2 * viewportWidth;
-    const top = (-topLeft.y + 1) / 2 * viewportHeight;
-    const right = (bottomRight.x + 1) / 2 * viewportWidth;
-    const bottom = (-bottomRight.y + 1) / 2 * viewportHeight;
+    const left = ((topLeft.x + 1) / 2) * viewportWidth;
+    const top = ((-topLeft.y + 1) / 2) * viewportHeight;
+    const right = ((bottomRight.x + 1) / 2) * viewportWidth;
+    const bottom = ((-bottomRight.y + 1) / 2) * viewportHeight;
 
     return { left, top, right, bottom };
   });
@@ -124,10 +130,10 @@ export function useViewportGuides(options: UseViewportGuidesOptions) {
   const safeFrameLeftStyle = computed(() => {
     const bounds = safeFrameBounds.value;
     return {
-      left: '0',
-      top: '0',
+      left: "0",
+      top: "0",
       width: `${Math.max(0, bounds.left)}px`,
-      height: '100%'
+      height: "100%",
     };
   });
 
@@ -135,9 +141,9 @@ export function useViewportGuides(options: UseViewportGuidesOptions) {
     const bounds = safeFrameBounds.value;
     return {
       left: `${bounds.right}px`,
-      top: '0',
+      top: "0",
       width: `calc(100% - ${bounds.right}px)`,
-      height: '100%'
+      height: "100%",
     };
   });
 
@@ -145,9 +151,9 @@ export function useViewportGuides(options: UseViewportGuidesOptions) {
     const bounds = safeFrameBounds.value;
     return {
       left: `${Math.max(0, bounds.left)}px`,
-      top: '0',
+      top: "0",
       width: `${bounds.right - Math.max(0, bounds.left)}px`,
-      height: `${Math.max(0, bounds.top)}px`
+      height: `${Math.max(0, bounds.top)}px`,
     };
   });
 
@@ -157,7 +163,7 @@ export function useViewportGuides(options: UseViewportGuidesOptions) {
       left: `${Math.max(0, bounds.left)}px`,
       top: `${bounds.bottom}px`,
       width: `${bounds.right - Math.max(0, bounds.left)}px`,
-      height: `calc(100% - ${bounds.bottom}px)`
+      height: `calc(100% - ${bounds.bottom}px)`,
     };
   });
 
@@ -172,14 +178,14 @@ export function useViewportGuides(options: UseViewportGuidesOptions) {
 
     // Only show if the bounds are valid
     if (width <= 0 || height <= 0) {
-      return { display: 'none' };
+      return { display: "none" };
     }
 
     return {
       left: `${bounds.left}px`,
       top: `${bounds.top}px`,
       width: `${width}px`,
-      height: `${height}px`
+      height: `${height}px`,
     };
   });
 
@@ -190,7 +196,13 @@ export function useViewportGuides(options: UseViewportGuidesOptions) {
   const resolutionCropGuides: ComputedRef<ResolutionGuide[]> = computed(() => {
     // Reactive dependencies
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const _ = [zoom.value, viewportTransform.value, canvasWidth.value, canvasHeight.value, cameraUpdateTrigger.value];
+    const _ = [
+      zoom.value,
+      viewportTransform.value,
+      canvasWidth.value,
+      canvasHeight.value,
+      cameraUpdateTrigger.value,
+    ];
 
     if (!containerRef.value || !engine.value) {
       return [];
@@ -202,7 +214,12 @@ export function useViewportGuides(options: UseViewportGuidesOptions) {
     const compHeight = store.height || 1080;
 
     // Check for valid dimensions
-    if (viewportWidth <= 0 || viewportHeight <= 0 || compWidth <= 0 || compHeight <= 0) {
+    if (
+      viewportWidth <= 0 ||
+      viewportHeight <= 0 ||
+      compWidth <= 0 ||
+      compHeight <= 0
+    ) {
       return [];
     }
 
@@ -226,17 +243,25 @@ export function useViewportGuides(options: UseViewportGuidesOptions) {
       const halfCropHeight = preset.height / 2;
 
       // Project corner points to screen space (centered on composition, not world origin)
-      const topLeft3D = new THREE.Vector3(compCenterX - halfCropWidth, compCenterY + halfCropHeight, 0);
-      const bottomRight3D = new THREE.Vector3(compCenterX + halfCropWidth, compCenterY - halfCropHeight, 0);
+      const topLeft3D = new THREE.Vector3(
+        compCenterX - halfCropWidth,
+        compCenterY + halfCropHeight,
+        0,
+      );
+      const bottomRight3D = new THREE.Vector3(
+        compCenterX + halfCropWidth,
+        compCenterY - halfCropHeight,
+        0,
+      );
 
       topLeft3D.project(camera);
       bottomRight3D.project(camera);
 
       // Convert from NDC (-1 to 1) to screen pixels
-      const left = (topLeft3D.x + 1) / 2 * viewportWidth;
-      const top = (-topLeft3D.y + 1) / 2 * viewportHeight;
-      const right = (bottomRight3D.x + 1) / 2 * viewportWidth;
-      const bottom = (-bottomRight3D.y + 1) / 2 * viewportHeight;
+      const left = ((topLeft3D.x + 1) / 2) * viewportWidth;
+      const top = ((-topLeft3D.y + 1) / 2) * viewportHeight;
+      const right = ((bottomRight3D.x + 1) / 2) * viewportWidth;
+      const bottom = ((-bottomRight3D.y + 1) / 2) * viewportHeight;
 
       const boxWidth = right - left;
       const boxHeight = bottom - top;
@@ -253,8 +278,8 @@ export function useViewportGuides(options: UseViewportGuidesOptions) {
             top: `${top}px`,
             width: `${boxWidth}px`,
             height: `${boxHeight}px`,
-            borderColor: preset.color
-          }
+            borderColor: preset.color,
+          },
         });
       }
     }
@@ -294,6 +319,6 @@ export function useViewportGuides(options: UseViewportGuidesOptions) {
     // Methods
     triggerGuideUpdate,
     toggleSafeFrameGuides,
-    toggleResolutionGuides
+    toggleResolutionGuides,
   };
 }

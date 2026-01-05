@@ -15,19 +15,19 @@
  * - Same frame + same project = identical path geometry
  */
 
-import * as THREE from 'three';
-import { Line2 } from 'three/examples/jsm/lines/Line2.js';
-import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry.js';
-import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
+import * as THREE from "three";
+import { Line2 } from "three/examples/jsm/lines/Line2.js";
+import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js";
+import { LineMaterial } from "three/examples/jsm/lines/LineMaterial.js";
+import { interpolateProperty } from "@/services/interpolation";
 import type {
+  AnimatableControlPoint,
+  ControlPoint,
+  EvaluatedControlPoint,
   Layer,
   PathLayerData,
-  ControlPoint,
-  AnimatableControlPoint,
-  EvaluatedControlPoint,
-} from '@/types/project';
-import { BaseLayer } from './BaseLayer';
-import { interpolateProperty } from '@/services/interpolation';
+} from "@/types/project";
+import { BaseLayer } from "./BaseLayer";
 
 export class PathLayer extends BaseLayer {
   /** The dashed guide line mesh */
@@ -52,7 +52,7 @@ export class PathLayer extends BaseLayer {
   private cachedEvaluatedPoints: EvaluatedControlPoint[] | null = null;
 
   /** Hash of last evaluated points for change detection */
-  private lastPointsHash: string = '';
+  private lastPointsHash: string = "";
 
   constructor(layerData: Layer) {
     super(layerData);
@@ -81,9 +81,9 @@ export class PathLayer extends BaseLayer {
     return {
       controlPoints: data?.controlPoints ?? [],
       closed: data?.closed ?? false,
-      pathData: data?.pathData ?? '',
+      pathData: data?.pathData ?? "",
       showGuide: data?.showGuide ?? true,
-      guideColor: data?.guideColor ?? '#00FFFF',
+      guideColor: data?.guideColor ?? "#00FFFF",
       guideDashPattern: data?.guideDashPattern ?? [10, 5],
       animatedControlPoints: data?.animatedControlPoints,
       animated: data?.animated,
@@ -118,14 +118,14 @@ export class PathLayer extends BaseLayer {
         new THREE.Vector3(
           p0.handleOut?.x ?? p0.x,
           -(p0.handleOut?.y ?? p0.y),
-          z0
+          z0,
         ),
         new THREE.Vector3(
           p1.handleIn?.x ?? p1.x,
           -(p1.handleIn?.y ?? p1.y),
-          z1
+          z1,
         ),
-        new THREE.Vector3(p1.x, -p1.y, z1)
+        new THREE.Vector3(p1.x, -p1.y, z1),
       );
 
       this.curve.add(bezier);
@@ -144,14 +144,14 @@ export class PathLayer extends BaseLayer {
         new THREE.Vector3(
           lastPoint.handleOut?.x ?? lastPoint.x,
           -(lastPoint.handleOut?.y ?? lastPoint.y),
-          zLast
+          zLast,
         ),
         new THREE.Vector3(
           firstPoint.handleIn?.x ?? firstPoint.x,
           -(firstPoint.handleIn?.y ?? firstPoint.y),
-          zFirst
+          zFirst,
         ),
-        new THREE.Vector3(firstPoint.x, -firstPoint.y, zFirst)
+        new THREE.Vector3(firstPoint.x, -firstPoint.y, zFirst),
       );
 
       this.curve.add(closingBezier);
@@ -258,7 +258,9 @@ export class PathLayer extends BaseLayer {
   /**
    * Get point and rotation for placing objects along path
    */
-  getTransformAt(t: number): { position: THREE.Vector3; rotation: number } | null {
+  getTransformAt(
+    t: number,
+  ): { position: THREE.Vector3; rotation: number } | null {
     const point = this.getPointAt(t);
     const tangent = this.getTangentAt(t);
 
@@ -312,7 +314,7 @@ export class PathLayer extends BaseLayer {
     if (this.animatedPoints && this.animatedPoints.length > 0) {
       // Animated path - interpolate each control point
       points = this.animatedPoints.map((acp) =>
-        this.evaluateControlPointAtFrame(acp, frame)
+        this.evaluateControlPointAtFrame(acp, frame),
       );
     } else {
       // Static path - convert ControlPoint to EvaluatedControlPoint
@@ -340,7 +342,7 @@ export class PathLayer extends BaseLayer {
    */
   private evaluateControlPointAtFrame(
     acp: AnimatableControlPoint,
-    frame: number
+    frame: number,
   ): EvaluatedControlPoint {
     // Use composition fps for correct animation timing (not hardcoded 30fps)
     const fps = this.compositionFps;
@@ -350,7 +352,9 @@ export class PathLayer extends BaseLayer {
       id: acp.id,
       x: interpolateProperty(acp.x, frame, fps, layerId),
       y: interpolateProperty(acp.y, frame, fps, layerId),
-      depth: acp.depth ? interpolateProperty(acp.depth, frame, fps, layerId) : 0,
+      depth: acp.depth
+        ? interpolateProperty(acp.depth, frame, fps, layerId)
+        : 0,
       handleIn: acp.handleIn
         ? {
             x: interpolateProperty(acp.handleIn.x, frame, fps, layerId),
@@ -374,7 +378,7 @@ export class PathLayer extends BaseLayer {
   private computePointsHash(points: EvaluatedControlPoint[]): string {
     return points
       .map((p) => `${p.x.toFixed(2)},${p.y.toFixed(2)},${p.depth.toFixed(2)}`)
-      .join('|');
+      .join("|");
   }
 
   // ============================================================================
@@ -428,11 +432,14 @@ export class PathLayer extends BaseLayer {
    */
   setResolution(width: number, height: number): void {
     // Validate dimensions (NaN would corrupt LineMaterial resolution)
-    const validWidth = (Number.isFinite(width) && width > 0) ? width : 1920;
-    const validHeight = (Number.isFinite(height) && height > 0) ? height : 1080;
+    const validWidth = Number.isFinite(width) && width > 0 ? width : 1920;
+    const validHeight = Number.isFinite(height) && height > 0 ? height : 1080;
     this.resolution.set(validWidth, validHeight);
     if (this.guideLine) {
-      (this.guideLine.material as LineMaterial).resolution.set(validWidth, validHeight);
+      (this.guideLine.material as LineMaterial).resolution.set(
+        validWidth,
+        validHeight,
+      );
     }
   }
 
@@ -457,7 +464,7 @@ export class PathLayer extends BaseLayer {
     this.pathData.animated = true;
     this.lastEvaluatedFrame = -1;
     this.cachedEvaluatedPoints = null;
-    this.lastPointsHash = '';
+    this.lastPointsHash = "";
   }
 
   /**
@@ -511,14 +518,14 @@ export class PathLayer extends BaseLayer {
         new THREE.Vector3(
           p0.handleOut?.x ?? p0.x,
           -(p0.handleOut?.y ?? p0.y),
-          z0
+          z0,
         ),
         new THREE.Vector3(
           p1.handleIn?.x ?? p1.x,
           -(p1.handleIn?.y ?? p1.y),
-          z1
+          z1,
         ),
-        new THREE.Vector3(p1.x, -p1.y, z1)
+        new THREE.Vector3(p1.x, -p1.y, z1),
       );
 
       this.curve.add(bezier);
@@ -534,14 +541,14 @@ export class PathLayer extends BaseLayer {
         new THREE.Vector3(
           lastPoint.handleOut?.x ?? lastPoint.x,
           -(lastPoint.handleOut?.y ?? lastPoint.y),
-          lastPoint.depth
+          lastPoint.depth,
         ),
         new THREE.Vector3(
           firstPoint.handleIn?.x ?? firstPoint.x,
           -(firstPoint.handleIn?.y ?? firstPoint.y),
-          firstPoint.depth
+          firstPoint.depth,
         ),
-        new THREE.Vector3(firstPoint.x, -firstPoint.y, firstPoint.depth)
+        new THREE.Vector3(firstPoint.x, -firstPoint.y, firstPoint.depth),
       );
 
       this.curve.add(closingBezier);
@@ -554,13 +561,13 @@ export class PathLayer extends BaseLayer {
   }
 
   protected override onApplyEvaluatedState(
-    state: import('../MotionEngine').EvaluatedLayer
+    state: import("../MotionEngine").EvaluatedLayer,
   ): void {
     const props = state.properties;
 
     // Apply evaluated control points if present
-    if (props['controlPoints'] !== undefined) {
-      const points = props['controlPoints'] as EvaluatedControlPoint[];
+    if (props.controlPoints !== undefined) {
+      const points = props.controlPoints as EvaluatedControlPoint[];
       const pointsHash = this.computePointsHash(points);
       if (pointsHash !== this.lastPointsHash) {
         this.buildPathFromEvaluatedPoints(points);

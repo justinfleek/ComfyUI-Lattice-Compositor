@@ -4,7 +4,7 @@
  * Functions for validating expressions without executing them.
  */
 
-import type { ExpressionValidationResult } from './types';
+import type { ExpressionValidationResult } from "./types";
 
 // ============================================================
 // EXPRESSION VALIDATION
@@ -15,7 +15,7 @@ import type { ExpressionValidationResult } from './types';
  * Returns validation result with error details if invalid
  */
 export function validateExpression(code: string): ExpressionValidationResult {
-  if (!code || code.trim() === '') {
+  if (!code || code.trim() === "") {
     return { valid: true };
   }
 
@@ -46,7 +46,7 @@ export function validateExpression(code: string): ExpressionValidationResult {
       // Objects
       thisComp: {
         duration: 5,
-        frameDuration: 1/30,
+        frameDuration: 1 / 30,
         width: 1920,
         height: 1080,
         numLayers: 0,
@@ -60,7 +60,7 @@ export function validateExpression(code: string): ExpressionValidationResult {
         }),
       },
       thisLayer: {
-        name: '',
+        name: "",
         index: 0,
         inPoint: 0,
         outPoint: 5,
@@ -117,8 +117,8 @@ export function validateExpression(code: string): ExpressionValidationResult {
 
     // Clean up error message
     errorMessage = errorMessage
-      .replace(/^SyntaxError:\s*/i, '')
-      .replace(/\(anonymous\)/g, 'expression');
+      .replace(/^SyntaxError:\s*/i, "")
+      .replace(/\(anonymous\)/g, "expression");
 
     return {
       valid: false,
@@ -132,28 +132,112 @@ export function validateExpression(code: string): ExpressionValidationResult {
 /**
  * Get list of available expression functions for autocomplete/documentation
  */
-export function getExpressionFunctions(): Array<{ name: string; description: string; syntax: string }> {
+export function getExpressionFunctions(): Array<{
+  name: string;
+  description: string;
+  syntax: string;
+}> {
   return [
-    { name: 'wiggle', description: 'Random oscillation', syntax: 'wiggle(frequency, amplitude)' },
-    { name: 'loopOut', description: 'Loop after last keyframe', syntax: 'loopOut("cycle" | "pingpong" | "offset" | "continue")' },
-    { name: 'loopIn', description: 'Loop before first keyframe', syntax: 'loopIn("cycle" | "pingpong" | "offset" | "continue")' },
-    { name: 'repeatAfter', description: 'Repeat keyframes after last', syntax: 'repeatAfter("cycle" | "pingpong" | "offset")' },
-    { name: 'repeatBefore', description: 'Repeat keyframes before first', syntax: 'repeatBefore("cycle" | "pingpong" | "offset")' },
-    { name: 'ease', description: 'Smooth interpolation', syntax: 'ease(t, tMin, tMax, vMin, vMax)' },
-    { name: 'easeIn', description: 'Ease in interpolation', syntax: 'easeIn(t, tMin, tMax, vMin, vMax)' },
-    { name: 'easeOut', description: 'Ease out interpolation', syntax: 'easeOut(t, tMin, tMax, vMin, vMax)' },
-    { name: 'linear', description: 'Linear interpolation', syntax: 'linear(t, tMin, tMax, vMin, vMax)' },
-    { name: 'random', description: 'Seeded random number', syntax: 'random() or random(min, max)' },
-    { name: 'noise', description: 'Perlin-like noise', syntax: 'noise(value) or noise([x, y, z])' },
-    { name: 'clamp', description: 'Clamp value to range', syntax: 'clamp(value, min, max)' },
-    { name: 'inertia', description: 'Inertia/overshoot', syntax: 'inertia(amplitude, frequency, decay)' },
-    { name: 'bounce', description: 'Bounce at end', syntax: 'bounce(elasticity, gravity)' },
-    { name: 'elastic', description: 'Elastic spring', syntax: 'elastic(amplitude, frequency, decay)' },
-    { name: 'valueAtTime', description: 'Property value at time', syntax: 'valueAtTime(time)' },
-    { name: 'velocityAtTime', description: 'Velocity at time', syntax: 'velocityAtTime(time)' },
-    { name: 'speedAtTime', description: 'Speed (velocity magnitude) at time', syntax: 'speedAtTime(time)' },
-    { name: 'key', description: 'Get keyframe by index', syntax: 'key(index)' },
-    { name: 'nearestKey', description: 'Get nearest keyframe', syntax: 'nearestKey(time)' },
-    { name: 'footage', description: 'Access data file', syntax: 'footage("filename.csv").dataValue([row, col])' },
+    {
+      name: "wiggle",
+      description: "Random oscillation",
+      syntax: "wiggle(frequency, amplitude)",
+    },
+    {
+      name: "loopOut",
+      description: "Loop after last keyframe",
+      syntax: 'loopOut("cycle" | "pingpong" | "offset" | "continue")',
+    },
+    {
+      name: "loopIn",
+      description: "Loop before first keyframe",
+      syntax: 'loopIn("cycle" | "pingpong" | "offset" | "continue")',
+    },
+    {
+      name: "repeatAfter",
+      description: "Repeat keyframes after last",
+      syntax: 'repeatAfter("cycle" | "pingpong" | "offset")',
+    },
+    {
+      name: "repeatBefore",
+      description: "Repeat keyframes before first",
+      syntax: 'repeatBefore("cycle" | "pingpong" | "offset")',
+    },
+    {
+      name: "ease",
+      description: "Smooth interpolation",
+      syntax: "ease(t, tMin, tMax, vMin, vMax)",
+    },
+    {
+      name: "easeIn",
+      description: "Ease in interpolation",
+      syntax: "easeIn(t, tMin, tMax, vMin, vMax)",
+    },
+    {
+      name: "easeOut",
+      description: "Ease out interpolation",
+      syntax: "easeOut(t, tMin, tMax, vMin, vMax)",
+    },
+    {
+      name: "linear",
+      description: "Linear interpolation",
+      syntax: "linear(t, tMin, tMax, vMin, vMax)",
+    },
+    {
+      name: "random",
+      description: "Seeded random number",
+      syntax: "random() or random(min, max)",
+    },
+    {
+      name: "noise",
+      description: "Perlin-like noise",
+      syntax: "noise(value) or noise([x, y, z])",
+    },
+    {
+      name: "clamp",
+      description: "Clamp value to range",
+      syntax: "clamp(value, min, max)",
+    },
+    {
+      name: "inertia",
+      description: "Inertia/overshoot",
+      syntax: "inertia(amplitude, frequency, decay)",
+    },
+    {
+      name: "bounce",
+      description: "Bounce at end",
+      syntax: "bounce(elasticity, gravity)",
+    },
+    {
+      name: "elastic",
+      description: "Elastic spring",
+      syntax: "elastic(amplitude, frequency, decay)",
+    },
+    {
+      name: "valueAtTime",
+      description: "Property value at time",
+      syntax: "valueAtTime(time)",
+    },
+    {
+      name: "velocityAtTime",
+      description: "Velocity at time",
+      syntax: "velocityAtTime(time)",
+    },
+    {
+      name: "speedAtTime",
+      description: "Speed (velocity magnitude) at time",
+      syntax: "speedAtTime(time)",
+    },
+    { name: "key", description: "Get keyframe by index", syntax: "key(index)" },
+    {
+      name: "nearestKey",
+      description: "Get nearest keyframe",
+      syntax: "nearestKey(time)",
+    },
+    {
+      name: "footage",
+      description: "Access data file",
+      syntax: 'footage("filename.csv").dataValue([row, col])',
+    },
   ];
 }

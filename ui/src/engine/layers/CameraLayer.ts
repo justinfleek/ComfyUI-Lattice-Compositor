@@ -13,18 +13,22 @@
  * - Keyframe evaluation for camera properties
  */
 
-import * as THREE from 'three';
-import type { Layer, CameraLayerData, CameraPathFollowing } from '@/types/project';
-import type { Camera3D } from '@/types/camera';
-import type { SplineQueryResult } from '@/services/particleSystem';
-import { interpolateProperty } from '@/services/interpolation';
-import { BaseLayer } from './BaseLayer';
+import * as THREE from "three";
+import { interpolateProperty } from "@/services/interpolation";
+import type { SplineQueryResult } from "@/services/particleSystem";
+import type { Camera3D } from "@/types/camera";
+import type {
+  CameraLayerData,
+  CameraPathFollowing,
+  Layer,
+} from "@/types/project";
+import { BaseLayer } from "./BaseLayer";
 
 /** Spline path provider callback type for camera path following */
 export type CameraSplineProvider = (
   layerId: string,
   t: number,
-  frame: number
+  frame: number,
 ) => SplineQueryResult | null;
 
 // ============================================================================
@@ -35,10 +39,16 @@ export type CameraSplineProvider = (
 export type CameraGetter = (cameraId: string) => Camera3D | null;
 
 /** Callback to get Camera3D data with keyframe interpolation at a specific frame */
-export type CameraAtFrameGetter = (cameraId: string, frame: number) => Camera3D | null;
+export type CameraAtFrameGetter = (
+  cameraId: string,
+  frame: number,
+) => Camera3D | null;
 
 /** Callback to update Camera3D data in store */
-export type CameraUpdater = (cameraId: string, updates: Partial<Camera3D>) => void;
+export type CameraUpdater = (
+  cameraId: string,
+  updates: Partial<Camera3D>,
+) => void;
 
 // ============================================================================
 // CAMERA LAYER
@@ -51,30 +61,30 @@ export class CameraLayer extends BaseLayer {
   // Callbacks to store
   private cameraGetter?: CameraGetter;
   private cameraAtFrameGetter?: CameraAtFrameGetter;
-  private cameraUpdater?: CameraUpdater;
 
   // Track current frame for interpolation
   private currentFrame: number = 0;
 
   // Visual wireframe (shown in editor)
   private wireframe: THREE.Group | null = null;
-  private wireframeVisible: boolean = true;
 
   // Frustum visualization
   private frustumHelper: THREE.Group | null = null;
   private showFrustum: boolean = true;
 
   // Track last camera state for frustum updates
-  private lastFrustumState: { fov: number; near: number; far: number; aspect: number } | null = null;
+  private lastFrustumState: {
+    fov: number;
+    near: number;
+    far: number;
+    aspect: number;
+  } | null = null;
 
   // Composition aspect ratio for frustum visualization
   private compositionAspect: number = 16 / 9;
 
   // Spline provider for path following
   private splineProvider: CameraSplineProvider | null = null;
-
-  // Auto-advance parameter (for autoAdvance mode)
-  private autoAdvanceT: number = 0;
 
   constructor(layerData: Layer) {
     super(layerData);
@@ -100,7 +110,7 @@ export class CameraLayer extends BaseLayer {
     const data = layerData.data as CameraLayerData | null;
 
     return {
-      cameraId: data?.cameraId ?? '',
+      cameraId: data?.cameraId ?? "",
       isActiveCamera: data?.isActiveCamera ?? false,
       pathFollowing: data?.pathFollowing,
     };
@@ -112,7 +122,7 @@ export class CameraLayer extends BaseLayer {
   setCameraCallbacks(
     getter: CameraGetter,
     updater: CameraUpdater,
-    atFrameGetter?: CameraAtFrameGetter
+    atFrameGetter?: CameraAtFrameGetter,
   ): void {
     this.cameraGetter = getter;
     this.cameraUpdater = updater;
@@ -131,7 +141,8 @@ export class CameraLayer extends BaseLayer {
    */
   setCompositionAspect(aspect: number): void {
     // Validate aspect ratio (NaN/0 would corrupt frustum calculations)
-    this.compositionAspect = (Number.isFinite(aspect) && aspect > 0) ? aspect : 16 / 9;
+    this.compositionAspect =
+      Number.isFinite(aspect) && aspect > 0 ? aspect : 16 / 9;
   }
 
   /**
@@ -170,7 +181,11 @@ export class CameraLayer extends BaseLayer {
 
     // Camera body (box)
     const bodySize = 40;
-    const bodyGeometry = new THREE.BoxGeometry(bodySize, bodySize * 0.6, bodySize * 0.8);
+    const bodyGeometry = new THREE.BoxGeometry(
+      bodySize,
+      bodySize * 0.6,
+      bodySize * 0.8,
+    );
     const bodyMaterial = new THREE.MeshBasicMaterial({
       color,
       wireframe: true,
@@ -182,7 +197,11 @@ export class CameraLayer extends BaseLayer {
     this.wireframe.add(body);
 
     // Lens cone
-    const coneGeometry = new THREE.ConeGeometry(bodySize * 0.3, bodySize * 0.6, 8);
+    const coneGeometry = new THREE.ConeGeometry(
+      bodySize * 0.3,
+      bodySize * 0.6,
+      8,
+    );
     const coneMaterial = new THREE.MeshBasicMaterial({
       color,
       wireframe: true,
@@ -196,7 +215,10 @@ export class CameraLayer extends BaseLayer {
     this.wireframe.add(cone);
 
     // Film plane indicator
-    const planeGeometry = new THREE.PlaneGeometry(bodySize * 0.8, bodySize * 0.5);
+    const planeGeometry = new THREE.PlaneGeometry(
+      bodySize * 0.8,
+      bodySize * 0.5,
+    );
     const planeMaterial = new THREE.MeshBasicMaterial({
       color,
       transparent: true,
@@ -245,10 +267,15 @@ export class CameraLayer extends BaseLayer {
 
     // Calculate frustum dimensions based on camera properties
     // Validate all camera values (NaN would corrupt geometry calculations)
-    const near = (Number.isFinite(camera.nearClip) && camera.nearClip > 0) ? camera.nearClip : 0.1;
+    const near =
+      Number.isFinite(camera.nearClip) && camera.nearClip > 0
+        ? camera.nearClip
+        : 0.1;
     const rawFar = Number.isFinite(camera.farClip) ? camera.farClip : 1000;
     const far = Math.min(rawFar, 2000); // Cap for visualization
-    const rawAngle = Number.isFinite(camera.angleOfView) ? camera.angleOfView : 50;
+    const rawAngle = Number.isFinite(camera.angleOfView)
+      ? camera.angleOfView
+      : 50;
     const fov = rawAngle * (Math.PI / 180);
     const aspect = this.compositionAspect;
 
@@ -279,20 +306,30 @@ export class CameraLayer extends BaseLayer {
 
     // Near plane
     const nearPlane = new THREE.BufferGeometry().setFromPoints([
-      nearTL, nearTR, nearBR, nearBL, nearTL
+      nearTL,
+      nearTR,
+      nearBR,
+      nearBL,
+      nearTL,
     ]);
     this.frustumHelper.add(new THREE.Line(nearPlane, frustumMaterial));
 
     // Far plane
     const farPlane = new THREE.BufferGeometry().setFromPoints([
-      farTL, farTR, farBR, farBL, farTL
+      farTL,
+      farTR,
+      farBR,
+      farBL,
+      farTL,
     ]);
     this.frustumHelper.add(new THREE.Line(farPlane, frustumMaterial));
 
     // Connecting lines
     const edges = [
-      [nearTL, farTL], [nearTR, farTR],
-      [nearBL, farBL], [nearBR, farBR]
+      [nearTL, farTL],
+      [nearTR, farTR],
+      [nearBL, farBL],
+      [nearBR, farBR],
     ];
 
     for (const [start, end] of edges) {
@@ -316,7 +353,9 @@ export class CameraLayer extends BaseLayer {
     this.wireframe.traverse((child) => {
       if (child instanceof THREE.Mesh || child instanceof THREE.Line) {
         // Skip the up vector indicator (green line)
-        const material = child.material as THREE.MeshBasicMaterial | THREE.LineBasicMaterial;
+        const material = child.material as
+          | THREE.MeshBasicMaterial
+          | THREE.LineBasicMaterial;
         if (material.color.getHex() === 0x00ff00) return;
         material.color.setHex(color);
       }
@@ -343,7 +382,10 @@ export class CameraLayer extends BaseLayer {
 
     // If we have a frame-aware getter, use it for interpolation
     if (this.cameraAtFrameGetter) {
-      return this.cameraAtFrameGetter(this.cameraData.cameraId, this.currentFrame);
+      return this.cameraAtFrameGetter(
+        this.cameraData.cameraId,
+        this.currentFrame,
+      );
     }
 
     // Fallback to base camera if no frame getter
@@ -419,9 +461,10 @@ export class CameraLayer extends BaseLayer {
 
     // Check for path following
     const pathFollowing = this.cameraData.pathFollowing;
-    const usePathFollowing = pathFollowing?.enabled &&
-                             pathFollowing.pathLayerId &&
-                             this.splineProvider;
+    const usePathFollowing =
+      pathFollowing?.enabled &&
+      pathFollowing.pathLayerId &&
+      this.splineProvider;
 
     if (usePathFollowing && pathFollowing) {
       // Apply path following
@@ -431,15 +474,15 @@ export class CameraLayer extends BaseLayer {
       this.group.position.set(
         camera.position.x,
         camera.position.y,
-        camera.position.z
+        camera.position.z,
       );
 
       // For two-node camera, orient towards point of interest
-      if (camera.type === 'two-node' && camera.pointOfInterest) {
+      if (camera.type === "two-node" && camera.pointOfInterest) {
         const poi = new THREE.Vector3(
           camera.pointOfInterest.x,
           camera.pointOfInterest.y,
-          camera.pointOfInterest.z
+          camera.pointOfInterest.z,
         );
         this.group.lookAt(poi);
 
@@ -451,7 +494,7 @@ export class CameraLayer extends BaseLayer {
           (camera.orientation.x + camera.xRotation) * degToRad,
           (camera.orientation.y + camera.yRotation) * degToRad,
           (camera.orientation.z + camera.zRotation) * degToRad,
-          'YXZ' // Standard 3D rotation order (heading-pitch-roll)
+          "YXZ", // Standard 3D rotation order (heading-pitch-roll)
         );
       }
     }
@@ -464,7 +507,8 @@ export class CameraLayer extends BaseLayer {
       aspect: this.compositionAspect,
     };
 
-    const needsFrustumUpdate = !this.lastFrustumState ||
+    const needsFrustumUpdate =
+      !this.lastFrustumState ||
       this.lastFrustumState.fov !== currentState.fov ||
       this.lastFrustumState.near !== currentState.near ||
       this.lastFrustumState.far !== currentState.far ||
@@ -480,13 +524,19 @@ export class CameraLayer extends BaseLayer {
     }
   }
 
-  protected override onApplyEvaluatedState(state: import('../MotionEngine').EvaluatedLayer): void {
+  protected override onApplyEvaluatedState(
+    state: import("../MotionEngine").EvaluatedLayer,
+  ): void {
     const props = state.properties;
 
     // Apply evaluated path parameter if using path following
-    if (props['pathParameter'] !== undefined && this.cameraData.pathFollowing?.enabled) {
+    if (
+      props.pathParameter !== undefined &&
+      this.cameraData.pathFollowing?.enabled
+    ) {
       // Update the parameter value directly for the next evaluation
-      this.cameraData.pathFollowing.parameter.value = props['pathParameter'] as number;
+      this.cameraData.pathFollowing.parameter.value =
+        props.pathParameter as number;
     }
     // Note: pathPosition audio modifier is applied in applyPathFollowing() where the actual
     // path query happens, ensuring it's applied regardless of evaluation path (legacy or new)
@@ -499,7 +549,7 @@ export class CameraLayer extends BaseLayer {
   private applyPathFollowing(
     frame: number,
     pathFollowing: CameraPathFollowing,
-    camera: Camera3D
+    camera: Camera3D,
   ): void {
     if (!this.splineProvider) return;
 
@@ -510,12 +560,19 @@ export class CameraLayer extends BaseLayer {
       // Auto-advance mode: calculate t from frame
       // DETERMINISM: t is calculated from frame, not accumulated state
       // Validate autoAdvanceSpeed (NaN would propagate through modulo)
-      const validSpeed = Number.isFinite(pathFollowing.autoAdvanceSpeed) ? pathFollowing.autoAdvanceSpeed : 0.01;
+      const validSpeed = Number.isFinite(pathFollowing.autoAdvanceSpeed)
+        ? pathFollowing.autoAdvanceSpeed
+        : 0.01;
       const validFrame = Number.isFinite(frame) ? frame : 0;
       t = (validFrame * validSpeed) % 1;
     } else {
       // Manual/keyframed mode: interpolate from animated property
-      t = interpolateProperty(pathFollowing.parameter, frame, this.compositionFps, this.id);
+      t = interpolateProperty(
+        pathFollowing.parameter,
+        frame,
+        this.compositionFps,
+        this.id,
+      );
     }
 
     // Validate t after interpolation (could return NaN from expression)
@@ -524,7 +581,11 @@ export class CameraLayer extends BaseLayer {
     // Apply pathPosition audio modifier to t
     // pathPosition is 0-1, additive to the path parameter
     const audioMod = this.currentAudioModifiers;
-    if (audioMod.pathPosition !== undefined && Number.isFinite(audioMod.pathPosition) && audioMod.pathPosition !== 0) {
+    if (
+      audioMod.pathPosition !== undefined &&
+      Number.isFinite(audioMod.pathPosition) &&
+      audioMod.pathPosition !== 0
+    ) {
       t += audioMod.pathPosition;
     }
 
@@ -536,26 +597,38 @@ export class CameraLayer extends BaseLayer {
 
     if (!pathResult) {
       // Fall back to camera position if spline not found
-      this.group.position.set(camera.position.x, camera.position.y, camera.position.z);
+      this.group.position.set(
+        camera.position.x,
+        camera.position.y,
+        camera.position.z,
+      );
       return;
     }
 
     // Calculate look-ahead position for orientation
     let lookTarget: SplineQueryResult | null = null;
     // Validate lookAhead (NaN would produce NaN lookAheadT)
-    const validLookAhead = Number.isFinite(pathFollowing.lookAhead) ? pathFollowing.lookAhead : 0;
+    const validLookAhead = Number.isFinite(pathFollowing.lookAhead)
+      ? pathFollowing.lookAhead
+      : 0;
     if (pathFollowing.alignToPath && validLookAhead > 0) {
       const lookAheadT = Math.min(1, t + validLookAhead);
-      lookTarget = this.splineProvider(pathFollowing.pathLayerId, lookAheadT, frame);
+      lookTarget = this.splineProvider(
+        pathFollowing.pathLayerId,
+        lookAheadT,
+        frame,
+      );
     }
 
     // Set camera position
     // Validate offsetY (NaN would corrupt position)
-    const validOffsetY = Number.isFinite(pathFollowing.offsetY) ? pathFollowing.offsetY : 0;
+    const validOffsetY = Number.isFinite(pathFollowing.offsetY)
+      ? pathFollowing.offsetY
+      : 0;
     const position = new THREE.Vector3(
       pathResult.point.x,
       pathResult.point.y + validOffsetY,
-      pathResult.point.z
+      pathResult.point.z,
     );
     this.group.position.copy(position);
 
@@ -566,7 +639,7 @@ export class CameraLayer extends BaseLayer {
         const target = new THREE.Vector3(
           lookTarget.point.x,
           lookTarget.point.y + validOffsetY,
-          lookTarget.point.z
+          lookTarget.point.z,
         );
         this.group.lookAt(target);
       } else {
@@ -574,7 +647,7 @@ export class CameraLayer extends BaseLayer {
         const tangent = new THREE.Vector3(
           pathResult.tangent.x,
           pathResult.tangent.y,
-          0
+          0,
         ).normalize();
 
         // Calculate rotation from tangent
@@ -586,7 +659,11 @@ export class CameraLayer extends BaseLayer {
 
       // Apply banking on turns
       // Validate bankingStrength (NaN would corrupt rotation)
-      const validBankingStrength = Number.isFinite(pathFollowing.bankingStrength) ? pathFollowing.bankingStrength : 0;
+      const validBankingStrength = Number.isFinite(
+        pathFollowing.bankingStrength,
+      )
+        ? pathFollowing.bankingStrength
+        : 0;
       if (validBankingStrength > 0) {
         // Calculate curvature from tangent change
         // Get tangent at slightly different positions
@@ -594,20 +671,34 @@ export class CameraLayer extends BaseLayer {
         const tBefore = Math.max(0, t - epsilon);
         const tAfter = Math.min(1, t + epsilon);
 
-        const before = this.splineProvider(pathFollowing.pathLayerId, tBefore, frame);
-        const after = this.splineProvider(pathFollowing.pathLayerId, tAfter, frame);
+        const before = this.splineProvider(
+          pathFollowing.pathLayerId,
+          tBefore,
+          frame,
+        );
+        const after = this.splineProvider(
+          pathFollowing.pathLayerId,
+          tAfter,
+          frame,
+        );
 
         if (before && after) {
           // Calculate turn direction
-          const tangent1 = new THREE.Vector2(before.tangent.x, before.tangent.y).normalize();
-          const tangent2 = new THREE.Vector2(after.tangent.x, after.tangent.y).normalize();
+          const tangent1 = new THREE.Vector2(
+            before.tangent.x,
+            before.tangent.y,
+          ).normalize();
+          const tangent2 = new THREE.Vector2(
+            after.tangent.x,
+            after.tangent.y,
+          ).normalize();
 
           // Cross product for turn direction (positive = right turn)
           const cross = tangent1.x * tangent2.y - tangent1.y * tangent2.x;
 
           // Apply banking rotation (validate cross in case of zero-length tangents)
           if (Number.isFinite(cross)) {
-            const bankAngle = cross * validBankingStrength * Math.PI / 4;
+            const bankAngle = (cross * validBankingStrength * Math.PI) / 4;
             this.group.rotateZ(bankAngle);
           }
         }

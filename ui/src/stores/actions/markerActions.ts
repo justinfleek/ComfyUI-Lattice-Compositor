@@ -6,8 +6,8 @@
  * beat synchronization, and annotation.
  */
 
-import { storeLogger } from '@/utils/logger';
-import type { Marker, Composition } from '@/types/project';
+import type { Composition, Marker } from "@/types/project";
+import { storeLogger } from "@/utils/logger";
 
 /**
  * Compare two frame values safely, handling NaN
@@ -43,11 +43,11 @@ export interface MarkerStore {
  */
 export function addMarker(
   store: MarkerStore,
-  marker: Omit<Marker, 'id'> & { id?: string }
+  marker: Omit<Marker, "id"> & { id?: string },
 ): Marker | null {
   const comp = store.getActiveComp();
   if (!comp) {
-    storeLogger.warn('addMarker: No active composition');
+    storeLogger.warn("addMarker: No active composition");
     return null;
   }
 
@@ -58,25 +58,29 @@ export function addMarker(
 
   // Generate ID if not provided
   const newMarker: Marker = {
-    id: marker.id || `marker_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
+    id:
+      marker.id ||
+      `marker_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
     frame: marker.frame,
     label: marker.label,
     color: marker.color,
     duration: marker.duration,
-    comment: marker.comment
+    comment: marker.comment,
   };
 
   // Check for existing marker at same frame (use framesEqual to handle NaN)
-  const existingIndex = comp.markers.findIndex(m => framesEqual(m.frame, marker.frame));
+  const existingIndex = comp.markers.findIndex((m) =>
+    framesEqual(m.frame, marker.frame),
+  );
   if (existingIndex >= 0) {
     // Replace existing marker at same frame
     comp.markers[existingIndex] = newMarker;
-    storeLogger.debug('addMarker: Replaced marker at frame', marker.frame);
+    storeLogger.debug("addMarker: Replaced marker at frame", marker.frame);
   } else {
     // Add new marker and sort by frame
     comp.markers.push(newMarker);
     comp.markers.sort((a, b) => a.frame - b.frame);
-    storeLogger.debug('addMarker: Added marker at frame', marker.frame);
+    storeLogger.debug("addMarker: Added marker at frame", marker.frame);
   }
 
   store.project.meta.modified = new Date().toISOString();
@@ -92,32 +96,35 @@ export function removeMarker(store: MarkerStore, markerId: string): boolean {
   const comp = store.getActiveComp();
   if (!comp?.markers) return false;
 
-  const index = comp.markers.findIndex(m => m.id === markerId);
+  const index = comp.markers.findIndex((m) => m.id === markerId);
   if (index < 0) return false;
 
   comp.markers.splice(index, 1);
   store.project.meta.modified = new Date().toISOString();
   store.pushHistory();
 
-  storeLogger.debug('removeMarker: Removed marker', markerId);
+  storeLogger.debug("removeMarker: Removed marker", markerId);
   return true;
 }
 
 /**
  * Remove a marker at a specific frame
  */
-export function removeMarkerAtFrame(store: MarkerStore, frame: number): boolean {
+export function removeMarkerAtFrame(
+  store: MarkerStore,
+  frame: number,
+): boolean {
   const comp = store.getActiveComp();
   if (!comp?.markers) return false;
 
-  const index = comp.markers.findIndex(m => framesEqual(m.frame, frame));
+  const index = comp.markers.findIndex((m) => framesEqual(m.frame, frame));
   if (index < 0) return false;
 
   comp.markers.splice(index, 1);
   store.project.meta.modified = new Date().toISOString();
   store.pushHistory();
 
-  storeLogger.debug('removeMarkerAtFrame: Removed marker at frame', frame);
+  storeLogger.debug("removeMarkerAtFrame: Removed marker at frame", frame);
   return true;
 }
 
@@ -127,12 +134,12 @@ export function removeMarkerAtFrame(store: MarkerStore, frame: number): boolean 
 export function updateMarker(
   store: MarkerStore,
   markerId: string,
-  updates: Partial<Omit<Marker, 'id'>>
+  updates: Partial<Omit<Marker, "id">>,
 ): boolean {
   const comp = store.getActiveComp();
   if (!comp?.markers) return false;
 
-  const marker = comp.markers.find(m => m.id === markerId);
+  const marker = comp.markers.find((m) => m.id === markerId);
   if (!marker) return false;
 
   // Apply updates (validate frame to prevent NaN)
@@ -152,7 +159,7 @@ export function updateMarker(
   store.project.meta.modified = new Date().toISOString();
   store.pushHistory();
 
-  storeLogger.debug('updateMarker: Updated marker', markerId);
+  storeLogger.debug("updateMarker: Updated marker", markerId);
   return true;
 }
 
@@ -167,7 +174,7 @@ export function clearMarkers(store: MarkerStore): void {
   store.project.meta.modified = new Date().toISOString();
   store.pushHistory();
 
-  storeLogger.debug('clearMarkers: Cleared all markers');
+  storeLogger.debug("clearMarkers: Cleared all markers");
 }
 
 // ============================================================================
@@ -187,15 +194,18 @@ export function getMarkers(store: MarkerStore): Marker[] {
  */
 export function getMarker(store: MarkerStore, markerId: string): Marker | null {
   const comp = store.getActiveComp();
-  return comp?.markers?.find(m => m.id === markerId) || null;
+  return comp?.markers?.find((m) => m.id === markerId) || null;
 }
 
 /**
  * Get marker at a specific frame
  */
-export function getMarkerAtFrame(store: MarkerStore, frame: number): Marker | null {
+export function getMarkerAtFrame(
+  store: MarkerStore,
+  frame: number,
+): Marker | null {
   const comp = store.getActiveComp();
-  return comp?.markers?.find(m => m.frame === frame) || null;
+  return comp?.markers?.find((m) => m.frame === frame) || null;
 }
 
 /**
@@ -204,34 +214,44 @@ export function getMarkerAtFrame(store: MarkerStore, frame: number): Marker | nu
 export function getMarkersInRange(
   store: MarkerStore,
   startFrame: number,
-  endFrame: number
+  endFrame: number,
 ): Marker[] {
   const comp = store.getActiveComp();
   if (!comp?.markers) return [];
 
-  return comp.markers.filter(m => m.frame >= startFrame && m.frame <= endFrame);
+  return comp.markers.filter(
+    (m) => m.frame >= startFrame && m.frame <= endFrame,
+  );
 }
 
 /**
  * Get the next marker after a given frame
  */
-export function getNextMarker(store: MarkerStore, frame: number): Marker | null {
+export function getNextMarker(
+  store: MarkerStore,
+  frame: number,
+): Marker | null {
   const comp = store.getActiveComp();
   if (!comp?.markers) return null;
 
-  return comp.markers.find(m => m.frame > frame) || null;
+  return comp.markers.find((m) => m.frame > frame) || null;
 }
 
 /**
  * Get the previous marker before a given frame
  */
-export function getPreviousMarker(store: MarkerStore, frame: number): Marker | null {
+export function getPreviousMarker(
+  store: MarkerStore,
+  frame: number,
+): Marker | null {
   const comp = store.getActiveComp();
   if (!comp?.markers) return null;
 
   // Find all markers before the frame and return the last one
-  const previousMarkers = comp.markers.filter(m => m.frame < frame);
-  return previousMarkers.length > 0 ? previousMarkers[previousMarkers.length - 1] : null;
+  const previousMarkers = comp.markers.filter((m) => m.frame < frame);
+  return previousMarkers.length > 0
+    ? previousMarkers[previousMarkers.length - 1]
+    : null;
 }
 
 // ============================================================================
@@ -242,7 +262,10 @@ export function getPreviousMarker(store: MarkerStore, frame: number): Marker | n
  * Jump to the next marker
  * @returns The frame number of the next marker, or null if none
  */
-export function jumpToNextMarker(store: MarkerStore, currentFrame: number): number | null {
+export function jumpToNextMarker(
+  store: MarkerStore,
+  currentFrame: number,
+): number | null {
   const nextMarker = getNextMarker(store, currentFrame);
   return nextMarker?.frame ?? null;
 }
@@ -251,7 +274,10 @@ export function jumpToNextMarker(store: MarkerStore, currentFrame: number): numb
  * Jump to the previous marker
  * @returns The frame number of the previous marker, or null if none
  */
-export function jumpToPreviousMarker(store: MarkerStore, currentFrame: number): number | null {
+export function jumpToPreviousMarker(
+  store: MarkerStore,
+  currentFrame: number,
+): number | null {
   const prevMarker = getPreviousMarker(store, currentFrame);
   return prevMarker?.frame ?? null;
 }
@@ -265,7 +291,7 @@ export function jumpToPreviousMarker(store: MarkerStore, currentFrame: number): 
  */
 export function addMarkers(
   store: MarkerStore,
-  markers: Array<Omit<Marker, 'id'>>
+  markers: Array<Omit<Marker, "id">>,
 ): Marker[] {
   const comp = store.getActiveComp();
   if (!comp) return [];
@@ -283,11 +309,13 @@ export function addMarkers(
       label: markerData.label,
       color: markerData.color,
       duration: markerData.duration,
-      comment: markerData.comment
+      comment: markerData.comment,
     };
 
     // Check for existing marker at same frame (use framesEqual to handle NaN)
-    const existingIndex = comp.markers.findIndex(m => framesEqual(m.frame, markerData.frame));
+    const existingIndex = comp.markers.findIndex((m) =>
+      framesEqual(m.frame, markerData.frame),
+    );
     if (existingIndex >= 0) {
       comp.markers[existingIndex] = newMarker;
     } else {
@@ -303,25 +331,33 @@ export function addMarkers(
   store.project.meta.modified = new Date().toISOString();
   store.pushHistory();
 
-  storeLogger.debug('addMarkers: Added', newMarkers.length, 'markers');
+  storeLogger.debug("addMarkers: Added", newMarkers.length, "markers");
   return newMarkers;
 }
 
 /**
  * Remove markers by color (useful for removing all beat markers)
  */
-export function removeMarkersByColor(store: MarkerStore, color: string): number {
+export function removeMarkersByColor(
+  store: MarkerStore,
+  color: string,
+): number {
   const comp = store.getActiveComp();
   if (!comp?.markers) return 0;
 
   const originalLength = comp.markers.length;
-  comp.markers = comp.markers.filter(m => m.color !== color);
+  comp.markers = comp.markers.filter((m) => m.color !== color);
   const removedCount = originalLength - comp.markers.length;
 
   if (removedCount > 0) {
     store.project.meta.modified = new Date().toISOString();
     store.pushHistory();
-    storeLogger.debug('removeMarkersByColor: Removed', removedCount, 'markers with color', color);
+    storeLogger.debug(
+      "removeMarkersByColor: Removed",
+      removedCount,
+      "markers with color",
+      color,
+    );
   }
 
   return removedCount;

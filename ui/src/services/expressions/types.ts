@@ -4,8 +4,8 @@
  * Type definitions used across expression modules.
  */
 
-import type { Keyframe } from '@/types/project';
-import type { FootageDataAccessor } from '@/types/dataAsset';
+import type { FootageDataAccessor } from "@/types/dataAsset";
+import type { Keyframe } from "@/types/project";
 
 // ============================================================
 // EXPRESSION CONTEXT
@@ -13,26 +13,26 @@ import type { FootageDataAccessor } from '@/types/dataAsset';
 
 export interface ExpressionContext {
   // Time
-  time: number;           // Current time in seconds
-  frame: number;          // Current frame number
-  fps: number;            // Frames per second
-  duration: number;       // Composition duration
+  time: number; // Current time in seconds
+  frame: number; // Current frame number
+  fps: number; // Frames per second
+  duration: number; // Composition duration
 
   // Composition info
-  compWidth?: number;     // Composition width in pixels
-  compHeight?: number;    // Composition height in pixels
+  compWidth?: number; // Composition width in pixels
+  compHeight?: number; // Composition height in pixels
 
   // Layer info
   layerId: string;
   layerIndex: number;
   layerName: string;
-  inPoint: number;        // Layer start time
-  outPoint: number;       // Layer end time
+  inPoint: number; // Layer start time
+  outPoint: number; // Layer end time
 
   // Property info
   propertyName: string;
-  value: number | number[];  // Current interpolated value
-  velocity: number | number[];  // Current velocity
+  value: number | number[]; // Current interpolated value
+  velocity: number | number[]; // Current velocity
 
   // Keyframe info
   numKeys: number;
@@ -45,7 +45,10 @@ export interface ExpressionContext {
   params?: Record<string, any>;
 
   // Other layer properties (for linking)
-  getLayerProperty?: (layerId: string, propertyPath: string) => number | number[] | null;
+  getLayerProperty?: (
+    layerId: string,
+    propertyPath: string,
+  ) => number | number[] | null;
 
   // Data-driven animation (footage access)
   footage?: (name: string) => FootageDataAccessor | null;
@@ -58,7 +61,7 @@ export interface ExpressionContext {
     rotation: number[];
     scale: number[];
     opacity: number;
-    origin: number[];  // anchor point
+    origin: number[]; // anchor point
   };
 
   // Current layer's effects (for thisLayer.effect())
@@ -77,7 +80,11 @@ export interface ExpressionContext {
   }>;
 
   // Get effect parameter value from any layer
-  getLayerEffectParam?: (layerId: string, effectName: string, paramName: string) => number | number[] | string | boolean | null;
+  getLayerEffectParam?: (
+    layerId: string,
+    effectName: string,
+    paramName: string,
+  ) => number | number[] | string | boolean | null;
 }
 
 // ============================================================
@@ -85,11 +92,11 @@ export interface ExpressionContext {
 // ============================================================
 
 export interface Expression {
-  type: 'preset' | 'function' | 'custom';
+  type: "preset" | "function" | "custom";
   name: string;
   params: Record<string, any>;
   enabled: boolean;
-  code?: string;  // For custom expressions - JavaScript code string
+  code?: string; // For custom expressions - JavaScript code string
 }
 
 // ============================================================
@@ -111,10 +118,10 @@ export interface ExpressionValidationResult {
  * Source rectangle interface matching After Effects
  */
 export interface SourceRect {
-  top: number;     // Y position of top edge
-  left: number;    // X position of left edge
-  width: number;   // Width of content
-  height: number;  // Height of content
+  top: number; // Y position of top edge
+  left: number; // X position of left edge
+  width: number; // Width of content
+  height: number; // Height of content
 }
 
 // ============================================================

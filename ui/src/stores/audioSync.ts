@@ -16,8 +16,8 @@
  * and should be called after any audio operation.
  */
 
-import { useAudioStore } from './audioStore';
-import type { AudioAnalysis } from '@/services/audioFeatures';
+import type { AudioAnalysis } from "@/services/audioFeatures";
+import { useAudioStore } from "./audioStore";
 
 /**
  * Interface for the target store that receives synced audio state.
@@ -27,7 +27,7 @@ export interface AudioSyncTarget {
   audioBuffer: AudioBuffer | null;
   audioFile: File | null;
   audioAnalysis: AudioAnalysis | null;
-  audioLoadingState: 'idle' | 'decoding' | 'analyzing' | 'complete' | 'error';
+  audioLoadingState: "idle" | "decoding" | "analyzing" | "complete" | "error";
   audioLoadingProgress: number;
   audioLoadingPhase: string;
   audioLoadingError: string | null;
@@ -46,11 +46,11 @@ export function syncAudioState(
     audioBuffer: AudioBuffer | null;
     audioFile: File | null;
     audioAnalysis: AudioAnalysis | null;
-    loadingState: 'idle' | 'decoding' | 'analyzing' | 'complete' | 'error';
+    loadingState: "idle" | "decoding" | "analyzing" | "complete" | "error";
     loadingProgress: number;
     loadingPhase: string;
     loadingError: string | null;
-  }
+  },
 ): void {
   // If no source provided, get from audioStore (requires Pinia context)
   const audioSource = source ?? useAudioStore();
@@ -70,7 +70,7 @@ export function syncAudioState(
  */
 export function checkAudioStateSync(
   a: { audioBuffer: AudioBuffer | null; audioFile: File | null },
-  b: { audioBuffer: AudioBuffer | null; audioFile: File | null }
+  b: { audioBuffer: AudioBuffer | null; audioFile: File | null },
 ): boolean {
   // Compare by reference for buffers (they should be the same object)
   if (a.audioBuffer !== b.audioBuffer) return false;
@@ -84,21 +84,21 @@ export function checkAudioStateSync(
  */
 export function createSyncValidator(
   storeA: { audioBuffer: AudioBuffer | null; audioFile: File | null },
-  storeB: { audioBuffer: AudioBuffer | null; audioFile: File | null }
+  storeB: { audioBuffer: AudioBuffer | null; audioFile: File | null },
 ): () => { inSync: boolean; drift: string[] } {
   return () => {
     const drift: string[] = [];
 
     if (storeA.audioBuffer !== storeB.audioBuffer) {
-      drift.push('audioBuffer');
+      drift.push("audioBuffer");
     }
     if (storeA.audioFile !== storeB.audioFile) {
-      drift.push('audioFile');
+      drift.push("audioFile");
     }
 
     return {
       inSync: drift.length === 0,
-      drift
+      drift,
     };
   };
 }

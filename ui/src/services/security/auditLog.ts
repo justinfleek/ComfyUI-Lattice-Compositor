@@ -22,9 +22,16 @@ export interface AuditLogEntry {
   /** ISO timestamp */
   timestamp: string;
   /** Event category */
-  category: 'tool_call' | 'tool_result' | 'rate_limit' | 'vram_check' | 'user_confirmation' | 'security_warning' | 'error';
+  category:
+    | "tool_call"
+    | "tool_result"
+    | "rate_limit"
+    | "vram_check"
+    | "user_confirmation"
+    | "security_warning"
+    | "error";
   /** Event severity */
-  severity: 'info' | 'warning' | 'error' | 'critical';
+  severity: "info" | "warning" | "error" | "critical";
   /** Tool name (for tool events) */
   toolName?: string;
   /** Tool arguments (sanitized) */
@@ -43,9 +50,9 @@ export interface AuditLogEntry {
 
 export interface AuditLogQuery {
   /** Filter by category */
-  category?: AuditLogEntry['category'];
+  category?: AuditLogEntry["category"];
   /** Filter by severity */
-  severity?: AuditLogEntry['severity'];
+  severity?: AuditLogEntry["severity"];
   /** Filter by tool name */
   toolName?: string;
   /** Filter by session ID */
@@ -73,9 +80,9 @@ export interface AuditLogStats {
 // Constants
 // ============================================================================
 
-const DB_NAME = 'LatticeSecurityAudit';
+const DB_NAME = "LatticeSecurityAudit";
 const DB_VERSION = 1;
-const STORE_NAME = 'auditLog';
+const STORE_NAME = "auditLog";
 
 /** Maximum entries to keep (auto-prune oldest) */
 const MAX_ENTRIES = 10000;
@@ -96,7 +103,7 @@ let currentSessionId: string | null = null;
 function getSessionId(): string {
   if (currentSessionId) return currentSessionId;
 
-  const stored = sessionStorage.getItem('lattice_audit_session_id');
+  const stored = sessionStorage.getItem("lattice_audit_session_id");
   if (stored) {
     currentSessionId = stored;
     return stored;
@@ -104,7 +111,7 @@ function getSessionId(): string {
 
   // Generate new session ID
   currentSessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-  sessionStorage.setItem('lattice_audit_session_id', currentSessionId);
+  sessionStorage.setItem("lattice_audit_session_id", currentSessionId);
   return currentSessionId;
 }
 
@@ -121,7 +128,10 @@ function openDatabase(): Promise<IDBDatabase> {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
 
     request.onerror = () => {
-      console.error('[SECURITY AUDIT] Failed to open IndexedDB:', request.error);
+      console.error(
+        "[SECURITY AUDIT] Failed to open IndexedDB:",
+        request.error,
+      );
       reject(request.error);
     };
 
@@ -135,17 +145,19 @@ function openDatabase(): Promise<IDBDatabase> {
       // Create audit log store with indexes
       if (!db.objectStoreNames.contains(STORE_NAME)) {
         const store = db.createObjectStore(STORE_NAME, {
-          keyPath: 'id',
+          keyPath: "id",
           autoIncrement: true,
         });
 
         // Indexes for efficient querying
-        store.createIndex('timestamp', 'timestamp', { unique: false });
-        store.createIndex('category', 'category', { unique: false });
-        store.createIndex('severity', 'severity', { unique: false });
-        store.createIndex('toolName', 'toolName', { unique: false });
-        store.createIndex('sessionId', 'sessionId', { unique: false });
-        store.createIndex('category_timestamp', ['category', 'timestamp'], { unique: false });
+        store.createIndex("timestamp", "timestamp", { unique: false });
+        store.createIndex("category", "category", { unique: false });
+        store.createIndex("severity", "severity", { unique: false });
+        store.createIndex("toolName", "toolName", { unique: false });
+        store.createIndex("sessionId", "sessionId", { unique: false });
+        store.createIndex("category_timestamp", ["category", "timestamp"], {
+          unique: false,
+        });
       }
     };
   });
@@ -164,11 +176,11 @@ function openDatabase(): Promise<IDBDatabase> {
  * Logging failures should never block the main application.
  */
 export async function logAuditEntry(
-  entry: Omit<AuditLogEntry, 'id' | 'timestamp' | 'sessionId'>
+  entry: Omit<AuditLogEntry, "id" | "timestamp" | "sessionId">,
 ): Promise<void> {
   try {
     const db = await openDatabase();
-    const transaction = db.transaction(STORE_NAME, 'readwrite');
+    const transaction = db.transaction(STORE_NAME, "readwrite");
     const store = transaction.objectStore(STORE_NAME);
 
     const fullEntry: AuditLogEntry = {
@@ -178,21 +190,26 @@ export async function logAuditEntry(
     };
 
     // Also log to console for immediate visibility
-    const consoleMethod = entry.severity === 'error' || entry.severity === 'critical'
-      ? console.error
-      : entry.severity === 'warning'
-        ? console.warn
-        : console.log;
-    consoleMethod(`[SECURITY AUDIT] [${entry.category}] ${entry.message}`, entry.toolArguments || '');
+    const consoleMethod =
+      entry.severity === "error" || entry.severity === "critical"
+        ? console.error
+        : entry.severity === "warning"
+          ? console.warn
+          : console.log;
+    consoleMethod(
+      `[SECURITY AUDIT] [${entry.category}] ${entry.message}`,
+      entry.toolArguments || "",
+    );
 
     store.add(fullEntry);
 
     // Auto-prune if needed (async, don't wait)
-    pruneOldEntries().catch(err => console.warn('[SECURITY AUDIT] Prune failed:', err));
-
+    pruneOldEntries().catch((err) =>
+      console.warn("[SECURITY AUDIT] Prune failed:", err),
+    );
   } catch (error) {
     // Never throw from audit logging - just warn
-    console.warn('[SECURITY AUDIT] Failed to log entry:', error);
+    console.warn("[SECURITY AUDIT] Failed to log entry:", error);
   }
 }
 
@@ -202,11 +219,11 @@ export async function logAuditEntry(
 export async function logToolCall(
   toolName: string,
   toolArguments: Record<string, unknown>,
-  userAction?: string
+  userAction?: string,
 ): Promise<void> {
   await logAuditEntry({
-    category: 'tool_call',
-    severity: 'info',
+    category: "tool_call",
+    severity: "info",
     toolName,
     toolArguments: sanitizeArguments(toolArguments),
     message: `Tool call: ${toolName}`,
@@ -221,11 +238,11 @@ export async function logToolResult(
   toolName: string,
   success: boolean,
   message: string,
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, unknown>,
 ): Promise<void> {
   await logAuditEntry({
-    category: 'tool_result',
-    severity: success ? 'info' : 'warning',
+    category: "tool_result",
+    severity: success ? "info" : "warning",
     toolName,
     success,
     message,
@@ -239,11 +256,11 @@ export async function logToolResult(
 export async function logRateLimit(
   toolName: string,
   currentCount: number,
-  maxCount: number
+  maxCount: number,
 ): Promise<void> {
   await logAuditEntry({
-    category: 'rate_limit',
-    severity: 'warning',
+    category: "rate_limit",
+    severity: "warning",
     toolName,
     message: `Rate limit reached for ${toolName}: ${currentCount}/${maxCount}`,
     metadata: { currentCount, maxCount },
@@ -257,11 +274,11 @@ export async function logVRAMCheck(
   toolName: string,
   passed: boolean,
   required: number,
-  available: number
+  available: number,
 ): Promise<void> {
   await logAuditEntry({
-    category: 'vram_check',
-    severity: passed ? 'info' : 'warning',
+    category: "vram_check",
+    severity: passed ? "info" : "warning",
     toolName,
     success: passed,
     message: passed
@@ -276,11 +293,11 @@ export async function logVRAMCheck(
  */
 export async function logUserConfirmation(
   toolName: string,
-  confirmed: boolean
+  confirmed: boolean,
 ): Promise<void> {
   await logAuditEntry({
-    category: 'user_confirmation',
-    severity: confirmed ? 'info' : 'warning',
+    category: "user_confirmation",
+    severity: confirmed ? "info" : "warning",
     toolName,
     success: confirmed,
     message: confirmed
@@ -294,11 +311,11 @@ export async function logUserConfirmation(
  */
 export async function logSecurityWarning(
   message: string,
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, unknown>,
 ): Promise<void> {
   await logAuditEntry({
-    category: 'security_warning',
-    severity: 'critical',
+    category: "security_warning",
+    severity: "critical",
     message: `SECURITY WARNING: ${message}`,
     metadata,
   });
@@ -311,10 +328,12 @@ export async function logSecurityWarning(
 /**
  * Query audit log entries.
  */
-export async function queryAuditLog(query: AuditLogQuery = {}): Promise<AuditLogEntry[]> {
+export async function queryAuditLog(
+  query: AuditLogQuery = {},
+): Promise<AuditLogEntry[]> {
   try {
     const db = await openDatabase();
-    const transaction = db.transaction(STORE_NAME, 'readonly');
+    const transaction = db.transaction(STORE_NAME, "readonly");
     const store = transaction.objectStore(STORE_NAME);
 
     return new Promise((resolve, reject) => {
@@ -323,14 +342,14 @@ export async function queryAuditLog(query: AuditLogQuery = {}): Promise<AuditLog
 
       // Use appropriate index based on query
       if (query.category) {
-        const index = store.index('category');
-        cursor = index.openCursor(IDBKeyRange.only(query.category), 'prev');
+        const index = store.index("category");
+        cursor = index.openCursor(IDBKeyRange.only(query.category), "prev");
       } else if (query.sessionId) {
-        const index = store.index('sessionId');
-        cursor = index.openCursor(IDBKeyRange.only(query.sessionId), 'prev');
+        const index = store.index("sessionId");
+        cursor = index.openCursor(IDBKeyRange.only(query.sessionId), "prev");
       } else {
-        const index = store.index('timestamp');
-        cursor = index.openCursor(null, 'prev'); // Newest first
+        const index = store.index("timestamp");
+        cursor = index.openCursor(null, "prev"); // Newest first
       }
 
       const limit = query.limit ?? 100;
@@ -378,7 +397,7 @@ export async function queryAuditLog(query: AuditLogQuery = {}): Promise<AuditLog
       cursor.onerror = () => reject(cursor.error);
     });
   } catch (error) {
-    console.warn('[SECURITY AUDIT] Query failed:', error);
+    console.warn("[SECURITY AUDIT] Query failed:", error);
     return [];
   }
 }
@@ -389,7 +408,7 @@ export async function queryAuditLog(query: AuditLogQuery = {}): Promise<AuditLog
 export async function getAuditStats(): Promise<AuditLogStats> {
   try {
     const db = await openDatabase();
-    const transaction = db.transaction(STORE_NAME, 'readonly');
+    const transaction = db.transaction(STORE_NAME, "readonly");
     const store = transaction.objectStore(STORE_NAME);
 
     return new Promise((resolve, reject) => {
@@ -418,14 +437,17 @@ export async function getAuditStats(): Promise<AuditLogStats> {
         const entry = result.value as AuditLogEntry;
 
         // Track by category
-        stats.byCategory[entry.category] = (stats.byCategory[entry.category] || 0) + 1;
+        stats.byCategory[entry.category] =
+          (stats.byCategory[entry.category] || 0) + 1;
 
         // Track by severity
-        stats.bySeverity[entry.severity] = (stats.bySeverity[entry.severity] || 0) + 1;
+        stats.bySeverity[entry.severity] =
+          (stats.bySeverity[entry.severity] || 0) + 1;
 
         // Track by tool name
         if (entry.toolName) {
-          stats.byToolName[entry.toolName] = (stats.byToolName[entry.toolName] || 0) + 1;
+          stats.byToolName[entry.toolName] =
+            (stats.byToolName[entry.toolName] || 0) + 1;
         }
 
         // Track oldest/newest
@@ -442,7 +464,7 @@ export async function getAuditStats(): Promise<AuditLogStats> {
       cursor.onerror = () => reject(cursor.error);
     });
   } catch (error) {
-    console.warn('[SECURITY AUDIT] Stats query failed:', error);
+    console.warn("[SECURITY AUDIT] Stats query failed:", error);
     return {
       totalEntries: 0,
       byCategory: {},
@@ -476,12 +498,12 @@ export async function exportAuditLog(query?: AuditLogQuery): Promise<string> {
  */
 export async function downloadAuditLog(query?: AuditLogQuery): Promise<void> {
   const json = await exportAuditLog(query);
-  const blob = new Blob([json], { type: 'application/json' });
+  const blob = new Blob([json], { type: "application/json" });
   const url = URL.createObjectURL(blob);
 
-  const a = document.createElement('a');
+  const a = document.createElement("a");
   a.href = url;
-  a.download = `lattice-security-audit-${new Date().toISOString().split('T')[0]}.json`;
+  a.download = `lattice-security-audit-${new Date().toISOString().split("T")[0]}.json`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -498,7 +520,7 @@ export async function downloadAuditLog(query?: AuditLogQuery): Promise<void> {
 async function pruneOldEntries(): Promise<number> {
   try {
     const db = await openDatabase();
-    const transaction = db.transaction(STORE_NAME, 'readwrite');
+    const transaction = db.transaction(STORE_NAME, "readwrite");
     const store = transaction.objectStore(STORE_NAME);
 
     // Check count first
@@ -512,7 +534,7 @@ async function pruneOldEntries(): Promise<number> {
         // Prune if over max entries
         if (count > MAX_ENTRIES) {
           const toDelete = count - MAX_ENTRIES;
-          const index = store.index('timestamp');
+          const index = store.index("timestamp");
           const cursor = index.openCursor(); // Oldest first
 
           cursor.onsuccess = () => {
@@ -535,7 +557,7 @@ async function pruneOldEntries(): Promise<number> {
           cutoff.setDate(cutoff.getDate() - MAX_AGE_DAYS);
           const cutoffStr = cutoff.toISOString();
 
-          const index = store.index('timestamp');
+          const index = store.index("timestamp");
           const range = IDBKeyRange.upperBound(cutoffStr);
           const cursor = index.openCursor(range);
 
@@ -543,7 +565,9 @@ async function pruneOldEntries(): Promise<number> {
             const result = cursor.result;
             if (!result) {
               if (deleted > 0) {
-                console.log(`[SECURITY AUDIT] Pruned ${deleted} entries older than ${MAX_AGE_DAYS} days`);
+                console.log(
+                  `[SECURITY AUDIT] Pruned ${deleted} entries older than ${MAX_AGE_DAYS} days`,
+                );
               }
               resolve(deleted);
               return;
@@ -561,7 +585,7 @@ async function pruneOldEntries(): Promise<number> {
       countRequest.onerror = () => reject(countRequest.error);
     });
   } catch (error) {
-    console.warn('[SECURITY AUDIT] Prune failed:', error);
+    console.warn("[SECURITY AUDIT] Prune failed:", error);
     return 0;
   }
 }
@@ -570,36 +594,38 @@ async function pruneOldEntries(): Promise<number> {
  * Clear all audit log entries.
  * SECURITY: Requires explicit confirmation, logged as security event.
  */
-export async function clearAuditLog(confirmationCode: string): Promise<boolean> {
+export async function clearAuditLog(
+  confirmationCode: string,
+): Promise<boolean> {
   // Require specific confirmation code to prevent accidental clearing
-  if (confirmationCode !== 'CLEAR_AUDIT_LOG') {
-    console.warn('[SECURITY AUDIT] Clear rejected: invalid confirmation code');
+  if (confirmationCode !== "CLEAR_AUDIT_LOG") {
+    console.warn("[SECURITY AUDIT] Clear rejected: invalid confirmation code");
     return false;
   }
 
   try {
     // Log the clear action BEFORE clearing
     await logAuditEntry({
-      category: 'security_warning',
-      severity: 'critical',
-      message: 'Audit log cleared by user action',
+      category: "security_warning",
+      severity: "critical",
+      message: "Audit log cleared by user action",
       metadata: { clearedAt: new Date().toISOString() },
     });
 
     const db = await openDatabase();
-    const transaction = db.transaction(STORE_NAME, 'readwrite');
+    const transaction = db.transaction(STORE_NAME, "readwrite");
     const store = transaction.objectStore(STORE_NAME);
 
     return new Promise((resolve, reject) => {
       const request = store.clear();
       request.onsuccess = () => {
-        console.log('[SECURITY AUDIT] Audit log cleared');
+        console.log("[SECURITY AUDIT] Audit log cleared");
         resolve(true);
       };
       request.onerror = () => reject(request.error);
     });
   } catch (error) {
-    console.error('[SECURITY AUDIT] Clear failed:', error);
+    console.error("[SECURITY AUDIT] Clear failed:", error);
     return false;
   }
 }
@@ -612,28 +638,32 @@ export async function clearAuditLog(confirmationCode: string): Promise<boolean> 
  * Sanitize tool arguments for logging.
  * Removes potentially sensitive data, truncates long strings.
  */
-function sanitizeArguments(args: Record<string, unknown>): Record<string, unknown> {
+function sanitizeArguments(
+  args: Record<string, unknown>,
+): Record<string, unknown> {
   const sanitized: Record<string, unknown> = {};
 
   for (const [key, value] of Object.entries(args)) {
     // Skip potentially sensitive keys
-    if (key.toLowerCase().includes('password') ||
-        key.toLowerCase().includes('secret') ||
-        key.toLowerCase().includes('token') ||
-        key.toLowerCase().includes('key')) {
-      sanitized[key] = '[REDACTED]';
+    if (
+      key.toLowerCase().includes("password") ||
+      key.toLowerCase().includes("secret") ||
+      key.toLowerCase().includes("token") ||
+      key.toLowerCase().includes("key")
+    ) {
+      sanitized[key] = "[REDACTED]";
       continue;
     }
 
     // Truncate long strings
-    if (typeof value === 'string' && value.length > 500) {
-      sanitized[key] = value.substring(0, 500) + '...[truncated]';
+    if (typeof value === "string" && value.length > 500) {
+      sanitized[key] = `${value.substring(0, 500)}...[truncated]`;
       continue;
     }
 
     // Truncate data URLs
-    if (typeof value === 'string' && value.startsWith('data:')) {
-      sanitized[key] = value.substring(0, 50) + '...[data URL truncated]';
+    if (typeof value === "string" && value.startsWith("data:")) {
+      sanitized[key] = `${value.substring(0, 50)}...[data URL truncated]`;
       continue;
     }
 

@@ -10,31 +10,34 @@
  * - Automatic composition resize on import
  */
 
-import * as THREE from 'three';
-import type { Layer, VideoData, AnimatableProperty, AssetReference } from '@/types/project';
-import type { ResourceManager } from '../core/ResourceManager';
-import { BaseLayer } from './BaseLayer';
-import { KeyframeEvaluator } from '../animation/KeyframeEvaluator';
-import { layerLogger } from '@/utils/logger';
-import { VideoDecoderService, isWebCodecsSupported } from '@/services/videoDecoder';
+import * as THREE from "three";
+import {
+  isWebCodecsSupported,
+  VideoDecoderService,
+} from "@/services/videoDecoder";
+import type { AssetReference, Layer, VideoData } from "@/types/project";
+import { layerLogger } from "@/utils/logger";
+import { KeyframeEvaluator } from "../animation/KeyframeEvaluator";
+import type { ResourceManager } from "../core/ResourceManager";
+import { BaseLayer } from "./BaseLayer";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
 export interface VideoMetadata {
-  duration: number;      // Total duration in seconds
-  frameCount: number;    // Total frame count (estimated if fps unknown)
-  fps: number | null;    // Source FPS (null if detection failed)
+  duration: number; // Total duration in seconds
+  frameCount: number; // Total frame count (estimated if fps unknown)
+  fps: number | null; // Source FPS (null if detection failed)
   width: number;
   height: number;
   hasAudio: boolean;
 }
 
 export interface VideoLayerEvents {
-  'metadata-loaded': VideoMetadata;
-  'playback-ended': void;
-  'loop-point': number;  // Frame at which loop occurred
+  "metadata-loaded": VideoMetadata;
+  "playback-ended": undefined;
+  "loop-point": number; // Frame at which loop occurred
 }
 
 // ============================================================================
@@ -62,7 +65,6 @@ export class VideoLayer extends BaseLayer {
 
   // Playback state
   private lastEvaluatedFrame: number = -1;
-  private isPlaying: boolean = false;
 
   // Frame-accurate decoder (WebCodecs API)
   private frameAccurateDecoder: VideoDecoderService | null = null;
@@ -87,7 +89,6 @@ export class VideoLayer extends BaseLayer {
   private blendCanvas: HTMLCanvasElement | null = null;
   private blendCtx: CanvasRenderingContext2D | null = null;
   private lastVideoTime: number = -1;
-  private prevFrameTime: number = -1;
 
   constructor(layerData: Layer, resources: ResourceManager) {
     super(layerData);
@@ -131,9 +132,10 @@ export class VideoLayer extends BaseLayer {
       speedMapEnabled: data?.speedMapEnabled ?? data?.timeRemapEnabled ?? false,
       speedMap: data?.speedMap ?? data?.timeRemap,
       // Backwards compatibility aliases
-      timeRemapEnabled: data?.timeRemapEnabled ?? data?.speedMapEnabled ?? false,
+      timeRemapEnabled:
+        data?.timeRemapEnabled ?? data?.speedMapEnabled ?? false,
       timeRemap: data?.timeRemap ?? data?.speedMap,
-      frameBlending: data?.frameBlending ?? 'none',
+      frameBlending: data?.frameBlending ?? "none",
       audioEnabled: data?.audioEnabled ?? true,
       audioLevel: data?.audioLevel ?? 100,
       posterFrame: data?.posterFrame ?? 0,
@@ -168,7 +170,7 @@ export class VideoLayer extends BaseLayer {
     // Get asset reference from ResourceManager
     const asset = this.resources.getAsset(assetId);
 
-    if (!asset || asset.type !== 'video') {
+    if (!asset || asset.type !== "video") {
       layerLogger.warn(`VideoLayer: Asset ${assetId} not found or not a video`);
       return;
     }
@@ -177,12 +179,12 @@ export class VideoLayer extends BaseLayer {
     this.videoData.assetId = assetId;
 
     // Create video element
-    this.videoElement = document.createElement('video');
-    this.videoElement.crossOrigin = 'anonymous';
+    this.videoElement = document.createElement("video");
+    this.videoElement.crossOrigin = "anonymous";
     this.videoElement.playsInline = true;
     this.videoElement.muted = !this.videoData.audioEnabled;
-    this.videoElement.loop = false;  // We handle looping manually for precise control
-    this.videoElement.preload = 'auto';
+    this.videoElement.loop = false; // We handle looping manually for precise control
+    this.videoElement.preload = "auto";
 
     // Set source
     if (asset.data) {
@@ -208,7 +210,9 @@ export class VideoLayer extends BaseLayer {
   /**
    * Initialize WebCodecs-based decoder for frame-accurate seeking
    */
-  private async initializeFrameAccurateDecoder(videoUrl: string): Promise<void> {
+  private async initializeFrameAccurateDecoder(
+    videoUrl: string,
+  ): Promise<void> {
     try {
       // Fetch the video file as blob for WebCodecs
       const response = await fetch(videoUrl);
@@ -217,7 +221,7 @@ export class VideoLayer extends BaseLayer {
 
       // Create and initialize the decoder
       this.frameAccurateDecoder = new VideoDecoderService(blobUrl, {
-        maxCacheSize: 100,  // Cache up to 100 frames
+        maxCacheSize: 100, // Cache up to 100 frames
       });
 
       const info = await this.frameAccurateDecoder.initialize();
@@ -232,15 +236,20 @@ export class VideoLayer extends BaseLayer {
       }
 
       // Create canvas for decoded frames
-      this.decodedFrameCanvas = document.createElement('canvas');
+      this.decodedFrameCanvas = document.createElement("canvas");
       this.decodedFrameCanvas.width = info.width;
       this.decodedFrameCanvas.height = info.height;
-      this.decodedFrameCtx = this.decodedFrameCanvas.getContext('2d');
+      this.decodedFrameCtx = this.decodedFrameCanvas.getContext("2d");
 
       this.useFrameAccurateDecoding = true;
-      layerLogger.debug(`VideoLayer: WebCodecs decoder initialized - ${info.frameCount} frames @ ${info.fps}fps`);
+      layerLogger.debug(
+        `VideoLayer: WebCodecs decoder initialized - ${info.frameCount} frames @ ${info.fps}fps`,
+      );
     } catch (error) {
-      layerLogger.warn('VideoLayer: WebCodecs decoder failed, falling back to HTMLVideoElement:', error);
+      layerLogger.warn(
+        "VideoLayer: WebCodecs decoder failed, falling back to HTMLVideoElement:",
+        error,
+      );
       this.useFrameAccurateDecoding = false;
       this.frameAccurateDecoder = null;
     }
@@ -252,7 +261,7 @@ export class VideoLayer extends BaseLayer {
   private waitForMetadata(): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!this.videoElement) {
-        reject(new Error('No video element'));
+        reject(new Error("No video element"));
         return;
       }
 
@@ -268,12 +277,15 @@ export class VideoLayer extends BaseLayer {
       };
 
       const cleanup = () => {
-        this.videoElement?.removeEventListener('loadedmetadata', onLoadedMetadata);
-        this.videoElement?.removeEventListener('error', onError);
+        this.videoElement?.removeEventListener(
+          "loadedmetadata",
+          onLoadedMetadata,
+        );
+        this.videoElement?.removeEventListener("error", onError);
       };
 
-      this.videoElement.addEventListener('loadedmetadata', onLoadedMetadata);
-      this.videoElement.addEventListener('error', onError);
+      this.videoElement.addEventListener("loadedmetadata", onLoadedMetadata);
+      this.videoElement.addEventListener("error", onError);
 
       // Trigger load
       this.videoElement.load();
@@ -315,7 +327,9 @@ export class VideoLayer extends BaseLayer {
     // Notify listeners (for composition auto-resize)
     this.onMetadataLoaded?.(this.metadata);
 
-    layerLogger.debug(`VideoLayer: Loaded: ${width}x${height}, ${frameCount} frames @ ${fps}fps, ${duration.toFixed(2)}s`);
+    layerLogger.debug(
+      `VideoLayer: Loaded: ${width}x${height}, ${frameCount} frames @ ${fps}fps, ${duration.toFixed(2)}s`,
+    );
   }
 
   /**
@@ -393,7 +407,10 @@ export class VideoLayer extends BaseLayer {
 
     // Fallback to HTMLVideoElement (±0.5 frame drift)
     if (this.videoElement) {
-      const clampedTime = Math.max(0, Math.min(videoTime, this.videoElement.duration));
+      const clampedTime = Math.max(
+        0,
+        Math.min(videoTime, this.videoElement.duration),
+      );
       this.videoElement.currentTime = clampedTime;
     }
   }
@@ -402,11 +419,19 @@ export class VideoLayer extends BaseLayer {
    * Frame-accurate seek using WebCodecs API
    */
   private async seekToFrameAccurate(videoTime: number): Promise<void> {
-    if (!this.frameAccurateDecoder || !this.metadata || this.metadata.fps === null) return;
+    if (
+      !this.frameAccurateDecoder ||
+      !this.metadata ||
+      this.metadata.fps === null
+    )
+      return;
 
     // Convert time to frame number
     const targetFrame = Math.round(videoTime * this.metadata.fps);
-    const clampedFrame = Math.max(0, Math.min(targetFrame, this.metadata.frameCount - 1));
+    const clampedFrame = Math.max(
+      0,
+      Math.min(targetFrame, this.metadata.frameCount - 1),
+    );
 
     try {
       // Get the exact frame from the decoder
@@ -414,7 +439,12 @@ export class VideoLayer extends BaseLayer {
 
       if (frameInfo && this.decodedFrameCtx && this.decodedFrameCanvas) {
         // Draw the decoded frame to canvas
-        this.decodedFrameCtx.clearRect(0, 0, this.decodedFrameCanvas.width, this.decodedFrameCanvas.height);
+        this.decodedFrameCtx.clearRect(
+          0,
+          0,
+          this.decodedFrameCanvas.width,
+          this.decodedFrameCanvas.height,
+        );
 
         if (frameInfo.bitmap instanceof ImageBitmap) {
           this.decodedFrameCtx.drawImage(frameInfo.bitmap, 0, 0);
@@ -424,11 +454,17 @@ export class VideoLayer extends BaseLayer {
         this.updateTextureFromDecodedFrame();
       }
     } catch (error) {
-      layerLogger.warn('VideoLayer: Frame-accurate seek failed, falling back:', error);
+      layerLogger.warn(
+        "VideoLayer: Frame-accurate seek failed, falling back:",
+        error,
+      );
 
       // Fallback to HTMLVideoElement
       if (this.videoElement) {
-        const clampedTime = Math.max(0, Math.min(videoTime, this.videoElement.duration));
+        const clampedTime = Math.max(
+          0,
+          Math.min(videoTime, this.videoElement.duration),
+        );
         this.videoElement.currentTime = clampedTime;
       }
     }
@@ -442,7 +478,9 @@ export class VideoLayer extends BaseLayer {
 
     // Create or update texture from canvas
     if (!this.decodedFrameTexture) {
-      this.decodedFrameTexture = new THREE.CanvasTexture(this.decodedFrameCanvas);
+      this.decodedFrameTexture = new THREE.CanvasTexture(
+        this.decodedFrameCanvas,
+      );
       this.decodedFrameTexture.minFilter = THREE.LinearFilter;
       this.decodedFrameTexture.magFilter = THREE.LinearFilter;
       this.decodedFrameTexture.colorSpace = THREE.SRGBColorSpace;
@@ -466,10 +504,14 @@ export class VideoLayer extends BaseLayer {
     if (!this.metadata) return 0;
 
     // If speed map is enabled and animated, use that (overrides other time controls)
-    const speedMapEnabled = this.videoData.speedMapEnabled ?? this.videoData.timeRemapEnabled;
+    const speedMapEnabled =
+      this.videoData.speedMapEnabled ?? this.videoData.timeRemapEnabled;
     const speedMapProp = this.videoData.speedMap ?? this.videoData.timeRemap;
     if (speedMapEnabled && speedMapProp?.animated) {
-      const remappedTime = this.videoEvaluator.evaluate(speedMapProp, compositionFrame);
+      const remappedTime = this.videoEvaluator.evaluate(
+        speedMapProp,
+        compositionFrame,
+      );
       // Validate speed map result (NaN would break video playback)
       return Number.isFinite(remappedTime) ? remappedTime : 0;
     }
@@ -485,15 +527,19 @@ export class VideoLayer extends BaseLayer {
     // Combined: effectiveSpeed = (100 / |timeStretch|) * speed
     const stretchFactor = timeStretch !== 0 ? 100 / Math.abs(timeStretch) : 0;
     // Validate speed (NaN would cause video time calculation to fail)
-    const speed = Number.isFinite(this.videoData.speed) ? this.videoData.speed : 1;
+    const speed = Number.isFinite(this.videoData.speed)
+      ? this.videoData.speed
+      : 1;
     const effectiveSpeed = stretchFactor * speed;
 
     // Calculate time relative to layer start
     const layerStartFrame = this.layerData.startFrame ?? 0;
     const layerFrame = compositionFrame - layerStartFrame;
     // Validate FPS (NaN would cause division issues)
-    const compFps = (Number.isFinite(this.compositionFPS) && this.compositionFPS > 0)
-      ? this.compositionFPS : 16;
+    const compFps =
+      Number.isFinite(this.compositionFPS) && this.compositionFPS > 0
+        ? this.compositionFPS
+        : 16;
 
     // Convert to video time with effective speed
     let videoTime = (layerFrame / compFps) * effectiveSpeed;
@@ -509,7 +555,10 @@ export class VideoLayer extends BaseLayer {
     // Handle reversed playback
     if (isReversed && effectiveDuration > 0) {
       // Reverse: map videoTime to (effectiveDuration - videoTime)
-      videoTime = this.videoData.startTime + effectiveDuration - (videoTime - this.videoData.startTime);
+      videoTime =
+        this.videoData.startTime +
+        effectiveDuration -
+        (videoTime - this.videoData.startTime);
     }
 
     // Handle looping
@@ -519,16 +568,23 @@ export class VideoLayer extends BaseLayer {
         // Ping-pong: 0 -> duration -> 0 -> duration...
         const cycles = Math.floor(relativeTime / effectiveDuration);
         const phase = relativeTime % effectiveDuration;
-        const adjustedPhase = cycles % 2 === 0 ? phase : effectiveDuration - phase;
+        const adjustedPhase =
+          cycles % 2 === 0 ? phase : effectiveDuration - phase;
         videoTime = this.videoData.startTime + adjustedPhase;
       } else {
         // Standard loop
-        videoTime = this.videoData.startTime + (((relativeTime % effectiveDuration) + effectiveDuration) % effectiveDuration);
+        videoTime =
+          this.videoData.startTime +
+          (((relativeTime % effectiveDuration) + effectiveDuration) %
+            effectiveDuration);
       }
     }
 
     // Clamp to valid range
-    videoTime = Math.max(this.videoData.startTime, Math.min(videoTime, this.metadata.duration));
+    videoTime = Math.max(
+      this.videoData.startTime,
+      Math.min(videoTime, this.metadata.duration),
+    );
 
     return videoTime;
   }
@@ -562,7 +618,7 @@ export class VideoLayer extends BaseLayer {
    */
   setFPS(fps: number): void {
     // Validate fps (NaN would break time calculations)
-    this.compositionFPS = (Number.isFinite(fps) && fps > 0) ? fps : 16;
+    this.compositionFPS = Number.isFinite(fps) && fps > 0 ? fps : 16;
   }
 
   /**
@@ -621,7 +677,7 @@ export class VideoLayer extends BaseLayer {
     this.videoData.endTime = time;
   }
 
-  setFrameBlending(mode: 'none' | 'frame-mix' | 'pixel-motion'): void {
+  setFrameBlending(mode: "none" | "frame-mix" | "pixel-motion"): void {
     this.videoData.frameBlending = mode;
     // Frame blending would be implemented via shader in a full implementation
   }
@@ -652,8 +708,9 @@ export class VideoLayer extends BaseLayer {
 
     // Check if frame blending should be applied
     // Layer switch (frameBlending) enables blending, videoData.frameBlending specifies mode
-    const shouldBlend = this.layerData.frameBlending === true &&
-                        this.videoData.frameBlending !== 'none';
+    const shouldBlend =
+      this.layerData.frameBlending === true &&
+      this.videoData.frameBlending !== "none";
 
     if (shouldBlend && this.prevFrameCtx && this.blendCtx && this.blendCanvas) {
       return this.getBlendedFrame(width, height);
@@ -671,33 +728,39 @@ export class VideoLayer extends BaseLayer {
    */
   private ensureCanvases(width: number, height: number): void {
     // Main effect canvas
-    if (!this.effectCanvas ||
-        this.effectCanvas.width !== width ||
-        this.effectCanvas.height !== height) {
-      this.effectCanvas = document.createElement('canvas');
+    if (
+      !this.effectCanvas ||
+      this.effectCanvas.width !== width ||
+      this.effectCanvas.height !== height
+    ) {
+      this.effectCanvas = document.createElement("canvas");
       this.effectCanvas.width = width;
       this.effectCanvas.height = height;
-      this.effectCanvasCtx = this.effectCanvas.getContext('2d');
+      this.effectCanvasCtx = this.effectCanvas.getContext("2d");
     }
 
     // Previous frame canvas (for blending)
-    if (!this.prevFrameCanvas ||
-        this.prevFrameCanvas.width !== width ||
-        this.prevFrameCanvas.height !== height) {
-      this.prevFrameCanvas = document.createElement('canvas');
+    if (
+      !this.prevFrameCanvas ||
+      this.prevFrameCanvas.width !== width ||
+      this.prevFrameCanvas.height !== height
+    ) {
+      this.prevFrameCanvas = document.createElement("canvas");
       this.prevFrameCanvas.width = width;
       this.prevFrameCanvas.height = height;
-      this.prevFrameCtx = this.prevFrameCanvas.getContext('2d');
+      this.prevFrameCtx = this.prevFrameCanvas.getContext("2d");
     }
 
     // Blend output canvas
-    if (!this.blendCanvas ||
-        this.blendCanvas.width !== width ||
-        this.blendCanvas.height !== height) {
-      this.blendCanvas = document.createElement('canvas');
+    if (
+      !this.blendCanvas ||
+      this.blendCanvas.width !== width ||
+      this.blendCanvas.height !== height
+    ) {
+      this.blendCanvas = document.createElement("canvas");
       this.blendCanvas.width = width;
       this.blendCanvas.height = height;
-      this.blendCtx = this.blendCanvas.getContext('2d');
+      this.blendCtx = this.blendCanvas.getContext("2d");
     }
   }
 
@@ -705,15 +768,24 @@ export class VideoLayer extends BaseLayer {
    * Get blended frame between previous and current video frame
    * Used for smooth slow-motion playback
    */
-  private getBlendedFrame(width: number, height: number): HTMLCanvasElement | null {
-    if (!this.videoElement || !this.metadata || !this.blendCtx || !this.blendCanvas ||
-        !this.prevFrameCtx || !this.prevFrameCanvas) {
+  private getBlendedFrame(
+    width: number,
+    height: number,
+  ): HTMLCanvasElement | null {
+    if (
+      !this.videoElement ||
+      !this.metadata ||
+      !this.blendCtx ||
+      !this.blendCanvas ||
+      !this.prevFrameCtx ||
+      !this.prevFrameCanvas
+    ) {
       return null;
     }
 
     const currentVideoTime = this.videoElement.currentTime;
     const videoFps = this.metadata.fps || 30;
-    const frameDuration = 1 / videoFps;
+    const _frameDuration = 1 / videoFps;
 
     // Calculate the fractional position between video frames
     const currentVideoFrame = currentVideoTime * videoFps;
@@ -742,8 +814,8 @@ export class VideoLayer extends BaseLayer {
     this.lastVideoTime = currentVideoTime;
 
     // Draw current frame
-    this.effectCanvasCtx!.clearRect(0, 0, width, height);
-    this.effectCanvasCtx!.drawImage(this.videoElement, 0, 0, width, height);
+    this.effectCanvasCtx?.clearRect(0, 0, width, height);
+    this.effectCanvasCtx?.drawImage(this.videoElement, 0, 0, width, height);
 
     // If blend factor is very close to 0 or 1, skip blending
     if (blendFactor < 0.01 || blendFactor > 0.99) {
@@ -770,7 +842,9 @@ export class VideoLayer extends BaseLayer {
   /**
    * Apply processed effects canvas back to the material
    */
-  protected override applyProcessedEffects(processedCanvas: HTMLCanvasElement): void {
+  protected override applyProcessedEffects(
+    processedCanvas: HTMLCanvasElement,
+  ): void {
     if (!this.material || !this.metadata) return;
 
     // Create a new texture from the processed canvas
@@ -782,7 +856,7 @@ export class VideoLayer extends BaseLayer {
         magFilter: THREE.LinearFilter,
         generateMipmaps: false,
         colorSpace: THREE.SRGBColorSpace,
-      }
+      },
     );
 
     // Apply to material
@@ -817,26 +891,31 @@ export class VideoLayer extends BaseLayer {
     }
   }
 
-  protected override onApplyEvaluatedState(state: import('../MotionEngine').EvaluatedLayer): void {
+  protected override onApplyEvaluatedState(
+    state: import("../MotionEngine").EvaluatedLayer,
+  ): void {
     const props = state.properties;
 
     // Apply speed map if evaluated (direct video time in seconds)
     // Check both new 'speedMap' and legacy 'timeRemap' for backwards compatibility
-    const speedMapValue = props['speedMap'] ?? props['timeRemap'];
+    const speedMapValue = props.speedMap ?? props.timeRemap;
     if (speedMapValue !== undefined && this.videoElement) {
       const targetTime = speedMapValue as number;
-      const clampedTime = Math.max(0, Math.min(targetTime, this.videoElement.duration || targetTime));
+      const clampedTime = Math.max(
+        0,
+        Math.min(targetTime, this.videoElement.duration || targetTime),
+      );
       this.videoElement.currentTime = clampedTime;
     }
 
     // Apply speed if evaluated
-    if (props['speed'] !== undefined) {
-      this.videoData.speed = props['speed'] as number;
+    if (props.speed !== undefined) {
+      this.videoData.speed = props.speed as number;
     }
 
     // Apply audio level if evaluated
-    if (props['audioLevel'] !== undefined) {
-      this.setAudioLevel(props['audioLevel'] as number);
+    if (props.audioLevel !== undefined) {
+      this.setAudioLevel(props.audioLevel as number);
     }
 
     // Apply effects
@@ -853,7 +932,10 @@ export class VideoLayer extends BaseLayer {
     const data = properties.data as Partial<VideoData> | undefined;
 
     if (data) {
-      if (data.assetId !== undefined && data.assetId !== this.videoData.assetId) {
+      if (
+        data.assetId !== undefined &&
+        data.assetId !== this.videoData.assetId
+      ) {
         if (data.assetId) {
           this.loadVideo(data.assetId);
         } else {
@@ -866,8 +948,10 @@ export class VideoLayer extends BaseLayer {
       if (data.speed !== undefined) this.setSpeed(data.speed);
       if (data.startTime !== undefined) this.setStartTime(data.startTime);
       if (data.endTime !== undefined) this.setEndTime(data.endTime);
-      if (data.frameBlending !== undefined) this.setFrameBlending(data.frameBlending);
-      if (data.audioEnabled !== undefined) this.setAudioEnabled(data.audioEnabled);
+      if (data.frameBlending !== undefined)
+        this.setFrameBlending(data.frameBlending);
+      if (data.audioEnabled !== undefined)
+        this.setAudioEnabled(data.audioEnabled);
       if (data.audioLevel !== undefined) this.setAudioLevel(data.audioLevel);
     }
   }
@@ -878,7 +962,7 @@ export class VideoLayer extends BaseLayer {
   private clearVideo(): void {
     if (this.videoElement) {
       this.videoElement.pause();
-      this.videoElement.src = '';
+      this.videoElement.src = "";
       this.videoElement = null;
     }
 
@@ -949,9 +1033,12 @@ export class VideoLayer extends BaseLayer {
  * Detect video fps using requestVideoFrameCallback API
  * Returns detected fps or null if detection fails/unsupported
  */
-async function detectVideoFps(video: HTMLVideoElement, timeout: number = 2000): Promise<number | null> {
+async function detectVideoFps(
+  video: HTMLVideoElement,
+  timeout: number = 2000,
+): Promise<number | null> {
   // Check if requestVideoFrameCallback is supported
-  if (!('requestVideoFrameCallback' in video)) {
+  if (!("requestVideoFrameCallback" in video)) {
     return null;
   }
 
@@ -966,7 +1053,10 @@ async function detectVideoFps(video: HTMLVideoElement, timeout: number = 2000): 
     video.muted = true;
     video.currentTime = 0;
 
-    const onFrame = (_now: DOMHighResTimeStamp, metadata: VideoFrameCallbackMetadata) => {
+    const onFrame = (
+      _now: DOMHighResTimeStamp,
+      metadata: VideoFrameCallbackMetadata,
+    ) => {
       if (startTime === null) {
         startTime = metadata.mediaTime;
         lastMediaTime = metadata.mediaTime;
@@ -981,7 +1071,7 @@ async function detectVideoFps(video: HTMLVideoElement, timeout: number = 2000): 
       lastMediaTime = metadata.mediaTime;
 
       // Collect enough frames for accurate measurement (at least 10 frames or 0.5 seconds)
-      if (frameCount >= 15 || (metadata.mediaTime - startTime) >= 0.5) {
+      if (frameCount >= 15 || metadata.mediaTime - startTime >= 0.5) {
         video.pause();
         video.currentTime = 0;
         clearTimeout(timeoutId);
@@ -990,13 +1080,18 @@ async function detectVideoFps(video: HTMLVideoElement, timeout: number = 2000): 
           // Calculate average frame duration, excluding outliers
           const sorted = [...frameTimes].sort((a, b) => a - b);
           const trimmed = sorted.slice(1, -1); // Remove min/max
-          const avgFrameDuration = trimmed.reduce((a, b) => a + b, 0) / trimmed.length;
+          const avgFrameDuration =
+            trimmed.reduce((a, b) => a + b, 0) / trimmed.length;
           const detectedFps = Math.round(1 / avgFrameDuration);
 
           // Snap to common frame rates
-          const commonFps = [8, 12, 15, 16, 23.976, 24, 25, 29.97, 30, 48, 50, 59.94, 60];
+          const commonFps = [
+            8, 12, 15, 16, 23.976, 24, 25, 29.97, 30, 48, 50, 59.94, 60,
+          ];
           const snapped = commonFps.reduce((prev, curr) =>
-            Math.abs(curr - detectedFps) < Math.abs(prev - detectedFps) ? curr : prev
+            Math.abs(curr - detectedFps) < Math.abs(prev - detectedFps)
+              ? curr
+              : prev,
           );
 
           resolve(Math.abs(snapped - detectedFps) <= 2 ? snapped : detectedFps);
@@ -1009,12 +1104,15 @@ async function detectVideoFps(video: HTMLVideoElement, timeout: number = 2000): 
       (video as any).requestVideoFrameCallback(onFrame);
     };
 
-    video.play().then(() => {
-      (video as any).requestVideoFrameCallback(onFrame);
-    }).catch(() => {
-      clearTimeout(timeoutId);
-      resolve(null);
-    });
+    video
+      .play()
+      .then(() => {
+        (video as any).requestVideoFrameCallback(onFrame);
+      })
+      .catch(() => {
+        clearTimeout(timeoutId);
+        resolve(null);
+      });
   });
 }
 
@@ -1054,25 +1152,25 @@ function estimateFpsFromDuration(duration: number): number | null {
  * Attempts to detect actual fps using requestVideoFrameCallback API
  */
 export async function extractVideoMetadata(
-  source: string | File | Blob
+  source: string | File | Blob,
 ): Promise<VideoMetadata> {
   return new Promise((resolve, reject) => {
-    const video = document.createElement('video');
-    video.crossOrigin = 'anonymous';
-    video.preload = 'auto'; // Need more than metadata for fps detection
+    const video = document.createElement("video");
+    video.crossOrigin = "anonymous";
+    video.preload = "auto"; // Need more than metadata for fps detection
 
     let sourceUrl: string;
-    const isObjectUrl = typeof source !== 'string';
+    const isObjectUrl = typeof source !== "string";
 
-    if (typeof source === 'string') {
+    if (typeof source === "string") {
       sourceUrl = source;
     } else {
       sourceUrl = URL.createObjectURL(source);
     }
 
     const cleanup = () => {
-      video.removeEventListener('loadeddata', onLoad);
-      video.removeEventListener('error', onError);
+      video.removeEventListener("loadeddata", onLoad);
+      video.removeEventListener("error", onError);
       if (isObjectUrl) {
         URL.revokeObjectURL(sourceUrl);
       }
@@ -1089,9 +1187,10 @@ export async function extractVideoMetadata(
 
       // Calculate frame count - use detected fps or estimate at 30fps for display
       // (actual frame count will be recalculated once user specifies fps)
-      const frameCount = fps !== null
-        ? Math.ceil(video.duration * fps)
-        : Math.ceil(video.duration * 30); // Placeholder estimate
+      const frameCount =
+        fps !== null
+          ? Math.ceil(video.duration * fps)
+          : Math.ceil(video.duration * 30); // Placeholder estimate
 
       const metadata: VideoMetadata = {
         duration: video.duration,
@@ -1108,11 +1207,11 @@ export async function extractVideoMetadata(
 
     const onError = () => {
       cleanup();
-      reject(new Error('Failed to load video metadata'));
+      reject(new Error("Failed to load video metadata"));
     };
 
-    video.addEventListener('loadeddata', onLoad);
-    video.addEventListener('error', onError);
+    video.addEventListener("loadeddata", onLoad);
+    video.addEventListener("error", onError);
     video.src = sourceUrl;
   });
 }
@@ -1122,9 +1221,12 @@ export async function extractVideoMetadata(
  * Uses video's native fps for frame count to preserve all frames
  * Note: This should only be called when fps is known (not null)
  */
-export function calculateCompositionFromVideo(
-  metadata: VideoMetadata
-): { width: number; height: number; frameCount: number; fps: number } {
+export function calculateCompositionFromVideo(metadata: VideoMetadata): {
+  width: number;
+  height: number;
+  frameCount: number;
+  fps: number;
+} {
   // Round dimensions to nearest multiple of 8 (required for most AI models)
   const width = Math.round(metadata.width / 8) * 8;
   const height = Math.round(metadata.height / 8) * 8;
@@ -1132,7 +1234,7 @@ export function calculateCompositionFromVideo(
   // Use video's native fps to preserve all frames
   // Assert fps is non-null (callers should ensure fps is known before calling)
   if (metadata.fps === null) {
-    throw new Error('calculateCompositionFromVideo called with unknown fps');
+    throw new Error("calculateCompositionFromVideo called with unknown fps");
   }
   const fps = metadata.fps;
   const frameCount = metadata.frameCount;

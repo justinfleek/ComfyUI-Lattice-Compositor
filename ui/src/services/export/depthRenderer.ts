@@ -3,10 +3,10 @@
  * Generates depth maps from compositor scene for AI video generation
  */
 
-import type { Camera3D } from '@/types/camera';
-import type { Layer } from '@/types/project';
-import type { DepthMapFormat, DepthExportOptions } from '@/types/export';
-import { DEPTH_FORMAT_SPECS } from '@/config/exportPresets';
+import { DEPTH_FORMAT_SPECS } from "@/config/exportPresets";
+import type { Camera3D } from "@/types/camera";
+import type { DepthMapFormat } from "@/types/export";
+import type { Layer } from "@/types/project";
 
 // ============================================================================
 // Types
@@ -38,7 +38,9 @@ export interface DepthRenderResult {
  * Render depth map from compositor scene
  * Calculates depth based on layer Z positions and camera perspective
  */
-export function renderDepthFrame(options: DepthRenderOptions): DepthRenderResult {
+export function renderDepthFrame(
+  options: DepthRenderOptions,
+): DepthRenderResult {
   const { width, height, nearClip, farClip, camera, layers, frame } = options;
 
   // Create depth buffer
@@ -50,7 +52,7 @@ export function renderDepthFrame(options: DepthRenderOptions): DepthRenderResult
 
   // Sort layers by Z depth (front to back from camera's perspective)
   const sortedLayers = [...layers]
-    .filter(l => l.visible)
+    .filter((l) => l.visible)
     .sort((a, b) => {
       const aZ = getLayerDepth(a, frame);
       const bZ = getLayerDepth(b, frame);
@@ -80,11 +82,26 @@ export function renderDepthFrame(options: DepthRenderOptions): DepthRenderResult
 
     // Fill depth buffer for layer area
     // For layers with depth maps (depthflow), use their depth data
-    if (layer.type === 'depthflow' && hasDepthData(layer)) {
-      fillDepthFromDepthflow(depthBuffer, layer, bounds, width, height, nearClip, farClip);
+    if (layer.type === "depthflow" && hasDepthData(layer)) {
+      fillDepthFromDepthflow(
+        depthBuffer,
+        layer,
+        bounds,
+        width,
+        height,
+        nearClip,
+        farClip,
+      );
     } else {
       // Solid layers get uniform depth
-      fillUniformDepth(depthBuffer, bounds, clampedDepth, layerOpacity, width, height);
+      fillUniformDepth(
+        depthBuffer,
+        bounds,
+        clampedDepth,
+        layerOpacity,
+        width,
+        height,
+      );
     }
   }
 
@@ -113,7 +130,7 @@ function getLayerDepth(layer: Layer, frame: number): number {
   // Static position
   if (position.value) {
     const value = position.value;
-    if (typeof value === 'object' && 'z' in value) {
+    if (typeof value === "object" && "z" in value) {
       return (value as { z?: number }).z ?? 0;
     }
   }
@@ -126,11 +143,15 @@ function getLayerDepth(layer: Layer, frame: number): number {
  * Get layer opacity at frame
  */
 function getLayerOpacity(layer: Layer, frame: number): number {
-  if (layer.opacity && 'keyframes' in layer.opacity && layer.opacity.keyframes?.length > 0) {
+  if (
+    layer.opacity &&
+    "keyframes" in layer.opacity &&
+    layer.opacity.keyframes?.length > 0
+  ) {
     return (interpolateValue(layer.opacity.keyframes, frame) || 100) / 100;
   }
 
-  if (layer.opacity && 'value' in layer.opacity) {
+  if (layer.opacity && "value" in layer.opacity) {
     return (layer.opacity.value || 100) / 100;
   }
 
@@ -142,16 +163,17 @@ function getLayerOpacity(layer: Layer, frame: number): number {
  */
 function getLayerScreenBounds(
   layer: Layer,
-  frame: number,
-  camera: Camera3D,
+  _frame: number,
+  _camera: Camera3D,
   screenWidth: number,
-  screenHeight: number
+  screenHeight: number,
 ): { x: number; y: number; width: number; height: number } | null {
   // Get layer position from transform
-  let x = 0, y = 0;
+  let x = 0,
+    y = 0;
 
   const position = layer.transform?.position;
-  if (position && 'value' in position) {
+  if (position && "value" in position) {
     const value = position.value;
     if (Array.isArray(value)) {
       x = value[0] || 0;
@@ -164,9 +186,10 @@ function getLayerScreenBounds(
   const layerHeight = (layer as any).height || screenHeight;
 
   // Get scale from transform
-  let scaleX = 1, scaleY = 1;
+  let scaleX = 1,
+    scaleY = 1;
   const scale = layer.transform?.scale;
-  if (scale && 'value' in scale) {
+  if (scale && "value" in scale) {
     const value = scale.value;
     if (Array.isArray(value)) {
       scaleX = (value[0] || 100) / 100;
@@ -179,9 +202,10 @@ function getLayerScreenBounds(
   const finalHeight = layerHeight * scaleY;
 
   // Get anchor point from transform
-  let anchorX = 0.5, anchorY = 0.5;
+  let anchorX = 0.5,
+    anchorY = 0.5;
   const anchorPoint = layer.transform?.anchorPoint;
-  if (anchorPoint && 'value' in anchorPoint) {
+  if (anchorPoint && "value" in anchorPoint) {
     const value = anchorPoint.value;
     if (Array.isArray(value)) {
       anchorX = (value[0] || 0) / layerWidth + 0.5;
@@ -196,8 +220,14 @@ function getLayerScreenBounds(
   // Clip to screen
   const clippedX = Math.max(0, Math.min(screenWidth, screenX));
   const clippedY = Math.max(0, Math.min(screenHeight, screenY));
-  const clippedWidth = Math.max(0, Math.min(screenWidth - clippedX, finalWidth - (clippedX - screenX)));
-  const clippedHeight = Math.max(0, Math.min(screenHeight - clippedY, finalHeight - (clippedY - screenY)));
+  const clippedWidth = Math.max(
+    0,
+    Math.min(screenWidth - clippedX, finalWidth - (clippedX - screenX)),
+  );
+  const clippedHeight = Math.max(
+    0,
+    Math.min(screenHeight - clippedY, finalHeight - (clippedY - screenY)),
+  );
 
   if (clippedWidth <= 0 || clippedHeight <= 0) return null;
 
@@ -213,7 +243,7 @@ function getLayerScreenBounds(
  * Check if layer has depth data (depthflow layers)
  */
 function hasDepthData(layer: Layer): boolean {
-  return layer.type === 'depthflow' && !!(layer as any).depthMapData;
+  return layer.type === "depthflow" && !!(layer as any).depthMapData;
 }
 
 /**
@@ -226,7 +256,7 @@ function fillDepthFromDepthflow(
   screenWidth: number,
   screenHeight: number,
   nearClip: number,
-  farClip: number
+  farClip: number,
 ): void {
   const depthData = (layer as any).depthMapData as Uint8Array | Float32Array;
   const depthWidth = (layer as any).depthWidth || bounds.width;
@@ -237,7 +267,13 @@ function fillDepthFromDepthflow(
       const screenX = Math.floor(bounds.x + x);
       const screenY = Math.floor(bounds.y + y);
 
-      if (screenX < 0 || screenX >= screenWidth || screenY < 0 || screenY >= screenHeight) continue;
+      if (
+        screenX < 0 ||
+        screenX >= screenWidth ||
+        screenY < 0 ||
+        screenY >= screenHeight
+      )
+        continue;
 
       // Sample from depth map
       const sampleX = Math.floor((x / bounds.width) * depthWidth);
@@ -273,7 +309,7 @@ function fillUniformDepth(
   depth: number,
   opacity: number,
   screenWidth: number,
-  screenHeight: number
+  screenHeight: number,
 ): void {
   const startX = Math.floor(bounds.x);
   const startY = Math.floor(bounds.y);
@@ -295,7 +331,11 @@ function fillUniformDepth(
 /**
  * Interpolate value from keyframes
  */
-function interpolateValue(keyframes: any[], frame: number, index?: number): number | null {
+function interpolateValue(
+  keyframes: any[],
+  frame: number,
+  index?: number,
+): number | null {
   if (!keyframes || keyframes.length === 0) return null;
 
   // Find surrounding keyframes
@@ -319,8 +359,14 @@ function interpolateValue(keyframes: any[], frame: number, index?: number): numb
 
   // Linear interpolation
   const t = (frame - prev.frame) / (next.frame - prev.frame);
-  const prevValue = index !== undefined && Array.isArray(prev.value) ? prev.value[index] : prev.value;
-  const nextValue = index !== undefined && Array.isArray(next.value) ? next.value[index] : next.value;
+  const prevValue =
+    index !== undefined && Array.isArray(prev.value)
+      ? prev.value[index]
+      : prev.value;
+  const nextValue =
+    index !== undefined && Array.isArray(next.value)
+      ? next.value[index]
+      : next.value;
 
   return prevValue + (nextValue - prevValue) * t;
 }
@@ -334,7 +380,7 @@ function interpolateValue(keyframes: any[], frame: number, index?: number): numb
  */
 export function convertDepthToFormat(
   result: DepthRenderResult,
-  format: DepthMapFormat
+  format: DepthMapFormat,
 ): Uint8Array | Uint16Array {
   const spec = DEPTH_FORMAT_SPECS[format];
   const { depthBuffer, width, height, minDepth, maxDepth } = result;
@@ -386,7 +432,7 @@ export function convertDepthToFormat(
 export function depthToImageData(
   depthData: Uint8Array | Uint16Array,
   width: number,
-  height: number
+  height: number,
 ): ImageData {
   const imageData = new ImageData(width, height);
   const is16bit = depthData instanceof Uint16Array;
@@ -395,10 +441,10 @@ export function depthToImageData(
     const value = is16bit ? Math.floor(depthData[i] / 256) : depthData[i];
 
     const pixelIdx = i * 4;
-    imageData.data[pixelIdx] = value;     // R
+    imageData.data[pixelIdx] = value; // R
     imageData.data[pixelIdx + 1] = value; // G
     imageData.data[pixelIdx + 2] = value; // B
-    imageData.data[pixelIdx + 3] = 255;   // A
+    imageData.data[pixelIdx + 3] = 255; // A
   }
 
   return imageData;
@@ -411,7 +457,7 @@ export function applyColormap(
   depthData: Uint8Array | Uint16Array,
   width: number,
   height: number,
-  colormap: 'grayscale' | 'viridis' | 'magma' | 'plasma'
+  colormap: "grayscale" | "viridis" | "magma" | "plasma",
 ): ImageData {
   const imageData = new ImageData(width, height);
   const is16bit = depthData instanceof Uint16Array;
@@ -436,22 +482,22 @@ export function applyColormap(
  */
 function getColormapColor(
   t: number,
-  colormap: string
+  colormap: string,
 ): [number, number, number] {
   // Clamp t to 0-1
   t = Math.max(0, Math.min(1, t));
 
   switch (colormap) {
-    case 'viridis':
+    case "viridis":
       return viridisColormap(t);
-    case 'magma':
+    case "magma":
       return magmaColormap(t);
-    case 'plasma':
+    case "plasma":
       return plasmaColormap(t);
-    case 'grayscale':
-    default:
+    default: {
       const v = Math.round(t * 255);
       return [v, v, v];
+    }
   }
 }
 
@@ -474,7 +520,8 @@ function viridisColormap(t: number): [number, number, number] {
   const i = Math.floor(idx);
   const f = idx - i;
 
-  if (i >= colors.length - 1) return colors[colors.length - 1] as [number, number, number];
+  if (i >= colors.length - 1)
+    return colors[colors.length - 1] as [number, number, number];
 
   return [
     Math.round(colors[i][0] + (colors[i + 1][0] - colors[i][0]) * f),
@@ -501,7 +548,8 @@ function magmaColormap(t: number): [number, number, number] {
   const i = Math.floor(idx);
   const f = idx - i;
 
-  if (i >= colors.length - 1) return colors[colors.length - 1] as [number, number, number];
+  if (i >= colors.length - 1)
+    return colors[colors.length - 1] as [number, number, number];
 
   return [
     Math.round(colors[i][0] + (colors[i + 1][0] - colors[i][0]) * f),
@@ -528,7 +576,8 @@ function plasmaColormap(t: number): [number, number, number] {
   const i = Math.floor(idx);
   const f = idx - i;
 
-  if (i >= colors.length - 1) return colors[colors.length - 1] as [number, number, number];
+  if (i >= colors.length - 1)
+    return colors[colors.length - 1] as [number, number, number];
 
   return [
     Math.round(colors[i][0] + (colors[i + 1][0] - colors[i][0]) * f),
@@ -555,7 +604,7 @@ export async function exportDepthSequence(
     format: DepthMapFormat;
     outputDir: string;
   },
-  onProgress?: (frame: number, total: number) => void
+  onProgress?: (frame: number, total: number) => void,
 ): Promise<string[]> {
   const outputPaths: string[] = [];
   const spec = DEPTH_FORMAT_SPECS[options.format];
@@ -579,10 +628,14 @@ export async function exportDepthSequence(
     const depthData = convertDepthToFormat(result, options.format);
 
     // Create image data
-    const imageData = depthToImageData(depthData, options.width, options.height);
+    const _imageData = depthToImageData(
+      depthData,
+      options.width,
+      options.height,
+    );
 
     // Generate filename
-    const filename = `depth_${String(i).padStart(5, '0')}.png`;
+    const filename = `depth_${String(i).padStart(5, "0")}.png`;
     const outputPath = `${options.outputDir}/depth/${filename}`;
 
     // Note: Actual file saving would need to use canvas.toBlob() or similar
@@ -604,7 +657,7 @@ export function generateDepthMetadata(
   width: number,
   height: number,
   minDepth: number,
-  maxDepth: number
+  maxDepth: number,
 ): object {
   const spec = DEPTH_FORMAT_SPECS[format];
 
@@ -623,6 +676,6 @@ export function generateDepthMetadata(
       max: maxDepth,
     },
     generatedAt: new Date().toISOString(),
-    generator: 'Lattice Compositor',
+    generator: "Lattice Compositor",
   };
 }

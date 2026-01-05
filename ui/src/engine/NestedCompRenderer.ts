@@ -10,14 +10,14 @@
  * - Resource cleanup
  */
 
-import * as THREE from 'three';
-import { SceneManager } from './core/SceneManager';
-import { LayerManager } from './core/LayerManager';
-import { ResourceManager } from './core/ResourceManager';
-import { RenderPipeline } from './core/RenderPipeline';
-import type { Layer } from '@/types/project';
-import type { LayerAudioReactiveGetter } from './LatticeEngine';
-import { engineLogger } from '@/utils/logger';
+import * as THREE from "three";
+import type { Layer } from "@/types/project";
+import { engineLogger } from "@/utils/logger";
+import { LayerManager } from "./core/LayerManager";
+import type { RenderPipeline } from "./core/RenderPipeline";
+import type { ResourceManager } from "./core/ResourceManager";
+import { SceneManager } from "./core/SceneManager";
+import type { LayerAudioReactiveGetter } from "./LatticeEngine";
 
 export interface CompositionSettings {
   width: number;
@@ -38,7 +38,7 @@ export class NestedCompRenderer {
   constructor(
     private readonly resources: ResourceManager,
     private readonly renderer: RenderPipeline,
-    private readonly mainCamera: THREE.PerspectiveCamera
+    private readonly mainCamera: THREE.PerspectiveCamera,
   ) {}
 
   /**
@@ -57,7 +57,7 @@ export class NestedCompRenderer {
     layers: Layer[],
     settings: CompositionSettings,
     frame: number,
-    audioReactiveGetter: LayerAudioReactiveGetter | null = null
+    audioReactiveGetter: LayerAudioReactiveGetter | null = null,
   ): THREE.Texture | null {
     try {
       // Check if we already rendered this frame (texture caching)
@@ -65,7 +65,7 @@ export class NestedCompRenderer {
       const target = this.renderer.getNestedCompRenderTarget(
         compositionId,
         settings.width,
-        settings.height
+        settings.height,
       );
 
       // If same frame, return cached texture
@@ -93,7 +93,7 @@ export class NestedCompRenderer {
 
       // Sync layers - add new, update existing, remove deleted
       const currentLayerIds = new Set(layerManager.getLayerIds());
-      const targetLayerIds = new Set(layers.map(l => l.id));
+      const targetLayerIds = new Set(layers.map((l) => l.id));
 
       // Remove layers that are no longer in the composition
       for (const id of currentLayerIds) {
@@ -121,7 +121,7 @@ export class NestedCompRenderer {
         settings.height / 2,
         -settings.height / 2,
         0.1,
-        10000
+        10000,
       );
       orthoCamera.position.set(0, 0, 1000);
       orthoCamera.lookAt(0, 0, 0);
@@ -130,7 +130,7 @@ export class NestedCompRenderer {
       const texture = this.renderer.renderSceneToTexture(
         scene.scene,
         orthoCamera,
-        target
+        target,
       );
 
       // Cache the frame number
@@ -138,7 +138,11 @@ export class NestedCompRenderer {
 
       return texture;
     } catch (error) {
-      engineLogger.error('Failed to render composition to texture:', compositionId, error);
+      engineLogger.error(
+        "Failed to render composition to texture:",
+        compositionId,
+        error,
+      );
       return null;
     }
   }

@@ -13,38 +13,38 @@ export interface MIDIDeviceInfo {
   id: string;
   name: string;
   manufacturer: string;
-  type: 'input' | 'output';
-  state: 'connected' | 'disconnected';
+  type: "input" | "output";
+  state: "connected" | "disconnected";
 }
 
 export interface MIDIMessage {
   timestamp: number;
   type: MIDIMessageType;
-  channel: number;  // 1-16
-  note?: number;    // 0-127 for note events
+  channel: number; // 1-16
+  note?: number; // 0-127 for note events
   velocity?: number; // 0-127 for note events
   controller?: number; // 0-127 for CC events
-  value?: number;   // 0-127 for CC, 0-16383 for pitch bend
+  value?: number; // 0-127 for CC, 0-16383 for pitch bend
   program?: number; // 0-127 for program change
   raw: Uint8Array;
 }
 
 export type MIDIMessageType =
-  | 'note-on'
-  | 'note-off'
-  | 'control-change'
-  | 'program-change'
-  | 'pitch-bend'
-  | 'aftertouch'
-  | 'channel-pressure'
-  | 'system';
+  | "note-on"
+  | "note-off"
+  | "control-change"
+  | "program-change"
+  | "pitch-bend"
+  | "aftertouch"
+  | "channel-pressure"
+  | "system";
 
 export interface MIDIFilter {
-  channels?: number[];      // 1-16, empty = all
+  channels?: number[]; // 1-16, empty = all
   types?: MIDIMessageType[];
   noteRange?: { min: number; max: number }; // 0-127
   velocityRange?: { min: number; max: number }; // 0-127
-  controllers?: number[];   // Specific CC numbers
+  controllers?: number[]; // Specific CC numbers
 }
 
 export interface MIDIMapping {
@@ -58,14 +58,14 @@ export interface MIDIMapping {
   targetPropertyPath: string;
 
   // Transform
-  inputMin: number;  // 0-127
-  inputMax: number;  // 0-127
+  inputMin: number; // 0-127
+  inputMax: number; // 0-127
   outputMin: number;
   outputMax: number;
   smoothing: number; // 0-1
 
   // Mode
-  mode: 'absolute' | 'relative' | 'toggle' | 'trigger';
+  mode: "absolute" | "relative" | "toggle" | "trigger";
 
   // For note events
   useVelocity: boolean;
@@ -91,7 +91,8 @@ export class MIDIService {
 
   // Current state for property mapping
   private ccValues: Map<string, number> = new Map(); // "channel:controller" -> value
-  private noteStates: Map<string, { velocity: number; timestamp: number }> = new Map(); // "channel:note" -> state
+  private noteStates: Map<string, { velocity: number; timestamp: number }> =
+    new Map(); // "channel:note" -> state
   private smoothedValues: Map<string, number> = new Map(); // mapping id -> smoothed value
 
   // =============================================================================
@@ -112,7 +113,7 @@ export class MIDIService {
   private async _doInitialize(): Promise<boolean> {
     // Check for Web MIDI API support
     if (!navigator.requestMIDIAccess) {
-      console.warn('Web MIDI API not supported in this browser');
+      console.warn("Web MIDI API not supported in this browser");
       return false;
     }
 
@@ -134,10 +135,12 @@ export class MIDIService {
       });
 
       this.isInitialized = true;
-      console.log(`MIDI initialized: ${this.inputs.size} inputs, ${this.outputs.size} outputs`);
+      console.log(
+        `MIDI initialized: ${this.inputs.size} inputs, ${this.outputs.size} outputs`,
+      );
       return true;
     } catch (error) {
-      console.error('Failed to initialize MIDI:', error);
+      console.error("Failed to initialize MIDI:", error);
       return false;
     }
   }
@@ -169,20 +172,20 @@ export class MIDIService {
     this.inputs.forEach((input, id) => {
       devices.push({
         id,
-        name: input.name || 'Unknown Input',
-        manufacturer: input.manufacturer || 'Unknown',
-        type: 'input',
-        state: input.state as 'connected' | 'disconnected'
+        name: input.name || "Unknown Input",
+        manufacturer: input.manufacturer || "Unknown",
+        type: "input",
+        state: input.state as "connected" | "disconnected",
       });
     });
 
     this.outputs.forEach((output, id) => {
       devices.push({
         id,
-        name: output.name || 'Unknown Output',
-        manufacturer: output.manufacturer || 'Unknown',
-        type: 'output',
-        state: output.state as 'connected' | 'disconnected'
+        name: output.name || "Unknown Output",
+        manufacturer: output.manufacturer || "Unknown",
+        type: "output",
+        state: output.state as "connected" | "disconnected",
       });
     });
 
@@ -193,14 +196,14 @@ export class MIDIService {
    * Get input devices only
    */
   getInputDevices(): MIDIDeviceInfo[] {
-    return this.getDevices().filter(d => d.type === 'input');
+    return this.getDevices().filter((d) => d.type === "input");
   }
 
   /**
    * Get output devices only
    */
   getOutputDevices(): MIDIDeviceInfo[] {
-    return this.getDevices().filter(d => d.type === 'output');
+    return this.getDevices().filter((d) => d.type === "output");
   }
 
   private registerInput(id: string, input: MIDIInput): void {
@@ -212,16 +215,16 @@ export class MIDIService {
     const port = event.port;
     if (!port) return;
 
-    if (port.type === 'input') {
-      if (port.state === 'connected') {
+    if (port.type === "input") {
+      if (port.state === "connected") {
         this.registerInput(port.id, port as MIDIInput);
         console.log(`MIDI input connected: ${port.name}`);
       } else {
         this.inputs.delete(port.id);
         console.log(`MIDI input disconnected: ${port.name}`);
       }
-    } else if (port.type === 'output') {
-      if (port.state === 'connected') {
+    } else if (port.type === "output") {
+      if (port.state === "connected") {
         this.outputs.set(port.id, port as MIDIOutput);
         console.log(`MIDI output connected: ${port.name}`);
       } else {
@@ -256,67 +259,70 @@ export class MIDIService {
     // Notify device-specific listeners
     const deviceListeners = this.listeners.get(deviceId);
     if (deviceListeners) {
-      deviceListeners.forEach(callback => callback(message));
+      deviceListeners.forEach((callback) => callback(message));
     }
 
     // Notify global listeners
-    this.globalListeners.forEach(callback => callback(message));
+    this.globalListeners.forEach((callback) => callback(message));
   }
 
-  private parseMIDIMessage(data: Uint8Array, timestamp: number): MIDIMessage | null {
+  private parseMIDIMessage(
+    data: Uint8Array,
+    timestamp: number,
+  ): MIDIMessage | null {
     const status = data[0];
-    const messageType = status & 0xF0;
-    const channel = (status & 0x0F) + 1; // MIDI channels are 1-16
+    const messageType = status & 0xf0;
+    const channel = (status & 0x0f) + 1; // MIDI channels are 1-16
 
     const message: MIDIMessage = {
       timestamp,
-      type: 'system',
+      type: "system",
       channel,
-      raw: data
+      raw: data,
     };
 
     switch (messageType) {
       case 0x90: // Note On
-        message.type = data[2] > 0 ? 'note-on' : 'note-off'; // Velocity 0 = note off
+        message.type = data[2] > 0 ? "note-on" : "note-off"; // Velocity 0 = note off
         message.note = data[1];
         message.velocity = data[2];
         break;
 
       case 0x80: // Note Off
-        message.type = 'note-off';
+        message.type = "note-off";
         message.note = data[1];
         message.velocity = data[2];
         break;
 
-      case 0xB0: // Control Change
-        message.type = 'control-change';
+      case 0xb0: // Control Change
+        message.type = "control-change";
         message.controller = data[1];
         message.value = data[2];
         break;
 
-      case 0xC0: // Program Change
-        message.type = 'program-change';
+      case 0xc0: // Program Change
+        message.type = "program-change";
         message.program = data[1];
         break;
 
-      case 0xE0: // Pitch Bend
-        message.type = 'pitch-bend';
+      case 0xe0: // Pitch Bend
+        message.type = "pitch-bend";
         message.value = (data[2] << 7) | data[1]; // 14-bit value
         break;
 
-      case 0xA0: // Polyphonic Aftertouch
-        message.type = 'aftertouch';
+      case 0xa0: // Polyphonic Aftertouch
+        message.type = "aftertouch";
         message.note = data[1];
         message.value = data[2];
         break;
 
-      case 0xD0: // Channel Pressure
-        message.type = 'channel-pressure';
+      case 0xd0: // Channel Pressure
+        message.type = "channel-pressure";
         message.value = data[1];
         break;
 
-      case 0xF0: // System messages
-        message.type = 'system';
+      case 0xf0: // System messages
+        message.type = "system";
         message.channel = 0;
         break;
 
@@ -328,20 +334,24 @@ export class MIDIService {
   }
 
   private updateState(message: MIDIMessage): void {
-    if (message.type === 'control-change' && message.controller !== undefined && message.value !== undefined) {
+    if (
+      message.type === "control-change" &&
+      message.controller !== undefined &&
+      message.value !== undefined
+    ) {
       const key = `${message.channel}:${message.controller}`;
       this.ccValues.set(key, message.value);
     }
 
-    if (message.type === 'note-on' && message.note !== undefined) {
+    if (message.type === "note-on" && message.note !== undefined) {
       const key = `${message.channel}:${message.note}`;
       this.noteStates.set(key, {
         velocity: message.velocity || 127,
-        timestamp: message.timestamp
+        timestamp: message.timestamp,
       });
     }
 
-    if (message.type === 'note-off' && message.note !== undefined) {
+    if (message.type === "note-off" && message.note !== undefined) {
       const key = `${message.channel}:${message.note}`;
       this.noteStates.delete(key);
     }
@@ -372,7 +382,7 @@ export class MIDIService {
     if (!this.listeners.has(deviceId)) {
       this.listeners.set(deviceId, new Set());
     }
-    this.listeners.get(deviceId)!.add(callback);
+    this.listeners.get(deviceId)?.add(callback);
   }
 
   /**
@@ -402,20 +412,30 @@ export class MIDIService {
 
     // Note range filter
     if (filter.noteRange && message.note !== undefined) {
-      if (message.note < filter.noteRange.min || message.note > filter.noteRange.max) {
+      if (
+        message.note < filter.noteRange.min ||
+        message.note > filter.noteRange.max
+      ) {
         return false;
       }
     }
 
     // Velocity range filter
     if (filter.velocityRange && message.velocity !== undefined) {
-      if (message.velocity < filter.velocityRange.min || message.velocity > filter.velocityRange.max) {
+      if (
+        message.velocity < filter.velocityRange.min ||
+        message.velocity > filter.velocityRange.max
+      ) {
         return false;
       }
     }
 
     // Controller filter
-    if (filter.controllers && filter.controllers.length > 0 && message.controller !== undefined) {
+    if (
+      filter.controllers &&
+      filter.controllers.length > 0 &&
+      message.controller !== undefined
+    ) {
       if (!filter.controllers.includes(message.controller)) return false;
     }
 
@@ -425,7 +445,10 @@ export class MIDIService {
   /**
    * Create a filtered listener
    */
-  addFilteredListener(filter: MIDIFilter, callback: MIDIEventCallback): () => void {
+  addFilteredListener(
+    filter: MIDIFilter,
+    callback: MIDIEventCallback,
+  ): () => void {
     const wrappedCallback = (message: MIDIMessage) => {
       if (this.matchesFilter(message, filter)) {
         callback(message);
@@ -450,7 +473,10 @@ export class MIDIService {
   /**
    * Get the current state of a note
    */
-  getNoteState(channel: number, note: number): { velocity: number; timestamp: number } | undefined {
+  getNoteState(
+    channel: number,
+    note: number,
+  ): { velocity: number; timestamp: number } | undefined {
     return this.noteStates.get(`${channel}:${note}`);
   }
 
@@ -467,7 +493,7 @@ export class MIDIService {
   getHeldNotes(): { channel: number; note: number; velocity: number }[] {
     const notes: { channel: number; note: number; velocity: number }[] = [];
     this.noteStates.forEach((state, key) => {
-      const [channel, note] = key.split(':').map(Number);
+      const [channel, note] = key.split(":").map(Number);
       notes.push({ channel, note, velocity: state.velocity });
     });
     return notes;
@@ -500,9 +526,10 @@ export class MIDIService {
       } else if (mapping.useNoteNumber && message.note !== undefined) {
         inputValue = message.note;
       } else if (message.value !== undefined) {
-        inputValue = message.type === 'pitch-bend'
-          ? message.value / 16383 * 127 // Normalize pitch bend to 0-127
-          : message.value;
+        inputValue =
+          message.type === "pitch-bend"
+            ? (message.value / 16383) * 127 // Normalize pitch bend to 0-127
+            : message.value;
       } else if (message.controller !== undefined) {
         inputValue = this.getCCValue(message.channel, message.controller) || 0;
       }
@@ -513,13 +540,18 @@ export class MIDIService {
     }
 
     // Map input range to output range
-    const normalizedInput = (inputValue - mapping.inputMin) / (mapping.inputMax - mapping.inputMin);
+    const normalizedInput =
+      (inputValue - mapping.inputMin) / (mapping.inputMax - mapping.inputMin);
     const clampedInput = Math.max(0, Math.min(1, normalizedInput));
-    let outputValue = mapping.outputMin + clampedInput * (mapping.outputMax - mapping.outputMin);
+    let outputValue =
+      mapping.outputMin +
+      clampedInput * (mapping.outputMax - mapping.outputMin);
 
     // Apply smoothing
     const currentSmoothed = this.smoothedValues.get(mapping.id) ?? outputValue;
-    outputValue = currentSmoothed + (outputValue - currentSmoothed) * (1 - mapping.smoothing);
+    outputValue =
+      currentSmoothed +
+      (outputValue - currentSmoothed) * (1 - mapping.smoothing);
     this.smoothedValues.set(mapping.id, outputValue);
 
     return outputValue;
@@ -543,7 +575,7 @@ export class MIDIService {
       output.send(message);
       return true;
     } catch (error) {
-      console.error('Failed to send MIDI message:', error);
+      console.error("Failed to send MIDI message:", error);
       return false;
     }
   }
@@ -551,7 +583,12 @@ export class MIDIService {
   /**
    * Send a Note On message
    */
-  sendNoteOn(deviceId: string, channel: number, note: number, velocity: number = 127): boolean {
+  sendNoteOn(
+    deviceId: string,
+    channel: number,
+    note: number,
+    velocity: number = 127,
+  ): boolean {
     const status = 0x90 | (channel - 1);
     return this.sendMessage(deviceId, [status, note, velocity]);
   }
@@ -559,7 +596,12 @@ export class MIDIService {
   /**
    * Send a Note Off message
    */
-  sendNoteOff(deviceId: string, channel: number, note: number, velocity: number = 0): boolean {
+  sendNoteOff(
+    deviceId: string,
+    channel: number,
+    note: number,
+    velocity: number = 0,
+  ): boolean {
     const status = 0x80 | (channel - 1);
     return this.sendMessage(deviceId, [status, note, velocity]);
   }
@@ -567,8 +609,13 @@ export class MIDIService {
   /**
    * Send a Control Change message
    */
-  sendCC(deviceId: string, channel: number, controller: number, value: number): boolean {
-    const status = 0xB0 | (channel - 1);
+  sendCC(
+    deviceId: string,
+    channel: number,
+    controller: number,
+    value: number,
+  ): boolean {
+    const status = 0xb0 | (channel - 1);
     return this.sendMessage(deviceId, [status, controller, value]);
   }
 
@@ -586,13 +633,20 @@ export class MIDIService {
     const data = new Uint8Array(buffer);
 
     // Verify MIDI file header
-    if (data[0] !== 0x4D || data[1] !== 0x54 || data[2] !== 0x68 || data[3] !== 0x64) {
-      throw new Error('Invalid MIDI file: Missing MThd header');
+    if (
+      data[0] !== 0x4d ||
+      data[1] !== 0x54 ||
+      data[2] !== 0x68 ||
+      data[3] !== 0x64
+    ) {
+      throw new Error("Invalid MIDI file: Missing MThd header");
     }
 
     // This is a simplified parser - full MIDI files are complex
     // For production use, integrate a proper MIDI parser library
-    console.warn('MIDI file parsing is simplified. Consider using midi-parser-js for full support.');
+    console.warn(
+      "MIDI file parsing is simplified. Consider using midi-parser-js for full support.",
+    );
 
     const messages: MIDIMessage[] = [];
     // ... Full parsing would go here
@@ -609,7 +663,7 @@ export class MIDIService {
    */
   dispose(): void {
     // Remove all listeners from inputs
-    this.inputs.forEach(input => {
+    this.inputs.forEach((input) => {
       input.onmidimessage = null;
     });
 
@@ -627,7 +681,7 @@ export class MIDIService {
     this.isInitialized = false;
     this.initPromise = null;
 
-    console.log('MIDI service disposed');
+    console.log("MIDI service disposed");
   }
 }
 
@@ -659,7 +713,20 @@ export function disposeMIDIService(): void {
  * Get note name from MIDI note number
  */
 export function midiNoteToName(note: number): string {
-  const names = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+  const names = [
+    "C",
+    "C#",
+    "D",
+    "D#",
+    "E",
+    "F",
+    "F#",
+    "G",
+    "G#",
+    "A",
+    "A#",
+    "B",
+  ];
   const octave = Math.floor(note / 12) - 1;
   const name = names[note % 12];
   return `${name}${octave}`;
@@ -673,12 +740,22 @@ export function noteNameToMidi(name: string): number {
   if (!match) return -1;
 
   const noteNames: Record<string, number> = {
-    'C': 0, 'C#': 1, 'D': 2, 'D#': 3, 'E': 4, 'F': 5,
-    'F#': 6, 'G': 7, 'G#': 8, 'A': 9, 'A#': 10, 'B': 11
+    C: 0,
+    "C#": 1,
+    D: 2,
+    "D#": 3,
+    E: 4,
+    F: 5,
+    "F#": 6,
+    G: 7,
+    "G#": 8,
+    A: 9,
+    "A#": 10,
+    B: 11,
   };
 
   const noteName = match[1].toUpperCase();
-  const octave = parseInt(match[2]);
+  const octave = parseInt(match[2], 10);
 
   if (!(noteName in noteNames)) return -1;
 

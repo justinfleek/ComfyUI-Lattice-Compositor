@@ -142,7 +142,7 @@
 </template>
 
 <script setup lang="ts">
-export type PenSubMode = 'add' | 'insert' | 'delete' | 'convert';
+export type PenSubMode = "add" | "insert" | "delete" | "convert";
 
 defineProps<{
   isPenMode: boolean;
@@ -158,14 +158,14 @@ defineProps<{
 }>();
 
 defineEmits<{
-  'setPenSubMode': [mode: PenSubMode];
-  'smoothSelectedPoints': [];
-  'simplifySpline': [];
-  'toggleClosePath': [];
-  'update:smoothTolerance': [value: number];
-  'updateSelectedPointDepth': [event: Event];
-  'toggleSplineAnimation': [];
-  'keyframeSelectedPoints': [];
+  setPenSubMode: [mode: PenSubMode];
+  smoothSelectedPoints: [];
+  simplifySpline: [];
+  toggleClosePath: [];
+  "update:smoothTolerance": [value: number];
+  updateSelectedPointDepth: [event: Event];
+  toggleSplineAnimation: [];
+  keyframeSelectedPoints: [];
 }>();
 </script>
 

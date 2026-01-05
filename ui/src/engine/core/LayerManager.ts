@@ -20,42 +20,58 @@
  * All new code should use applyEvaluatedState().
  */
 
-import * as THREE from 'three';
-import type { Layer, LayerType, LayerMask } from '@/types/project';
-import type { SceneManager } from './SceneManager';
-import type { ResourceManager } from './ResourceManager';
-import type { LayerInstance } from '../types';
-import type { EvaluatedLayer } from '../MotionEngine';
-import { BaseLayer } from '../layers/BaseLayer';
-import { ImageLayer } from '../layers/ImageLayer';
-import { SolidLayer } from '../layers/SolidLayer';
-import { ControlLayer } from '../layers/ControlLayer';
-import { TextLayer } from '../layers/TextLayer';
-import { SplineLayer } from '../layers/SplineLayer';
-import { PathLayer } from '../layers/PathLayer';
-import { ParticleLayer } from '../layers/ParticleLayer';
-import { VideoLayer, type VideoMetadata } from '../layers/VideoLayer';
-import { NestedCompLayer, type NestedCompRenderContext } from '../layers/NestedCompLayer';
-import { EffectLayer, type EffectLayerRenderContext, type AdjustmentRenderContext } from '../layers/EffectLayer';
-import { CameraLayer, type CameraGetter, type CameraUpdater } from '../layers/CameraLayer';
-import { LightLayer } from '../layers/LightLayer';
-import { DepthflowLayer } from '../layers/DepthflowLayer';
-import { ProceduralMatteLayer } from '../layers/ProceduralMatteLayer';
-import { ShapeLayer } from '../layers/ShapeLayer';
-import { ModelLayer } from '../layers/ModelLayer';
-import { PointCloudLayer } from '../layers/PointCloudLayer';
-import { DepthLayer } from '../layers/DepthLayer';
-import { NormalLayer } from '../layers/NormalLayer';
-import { AudioLayer } from '../layers/AudioLayer';
-import { GeneratedLayer } from '../layers/GeneratedLayer';
-import { GroupLayer } from '../layers/GroupLayer';
-import { PoseLayer } from '../layers/PoseLayer';
-import type { TargetParameter } from '@/services/audioReactiveMapping';
-import type { SplineQueryResult, SplinePathProvider } from '@/services/particleSystem';
-import { layerLogger } from '@/utils/logger';
+import * as THREE from "three";
+import type { TargetParameter } from "@/services/audioReactiveMapping";
+import type {
+  SplinePathProvider,
+  SplineQueryResult,
+} from "@/services/particleSystem";
+import type { Layer, LayerMask, LayerType } from "@/types/project";
+import { layerLogger } from "@/utils/logger";
+import { AudioLayer } from "../layers/AudioLayer";
+import type { BaseLayer } from "../layers/BaseLayer";
+import {
+  type CameraGetter,
+  CameraLayer,
+  type CameraUpdater,
+} from "../layers/CameraLayer";
+import { ControlLayer } from "../layers/ControlLayer";
+import { DepthflowLayer } from "../layers/DepthflowLayer";
+import { DepthLayer } from "../layers/DepthLayer";
+import {
+  type AdjustmentRenderContext,
+  EffectLayer,
+  type EffectLayerRenderContext,
+} from "../layers/EffectLayer";
+import { GeneratedLayer } from "../layers/GeneratedLayer";
+import { GroupLayer } from "../layers/GroupLayer";
+import { ImageLayer } from "../layers/ImageLayer";
+import { LightLayer } from "../layers/LightLayer";
+import { ModelLayer } from "../layers/ModelLayer";
+import {
+  NestedCompLayer,
+  type NestedCompRenderContext,
+} from "../layers/NestedCompLayer";
+import { NormalLayer } from "../layers/NormalLayer";
+import { ParticleLayer } from "../layers/ParticleLayer";
+import { PathLayer } from "../layers/PathLayer";
+import { PointCloudLayer } from "../layers/PointCloudLayer";
+import { PoseLayer } from "../layers/PoseLayer";
+import { ProceduralMatteLayer } from "../layers/ProceduralMatteLayer";
+import { ShapeLayer } from "../layers/ShapeLayer";
+import { SolidLayer } from "../layers/SolidLayer";
+import { SplineLayer } from "../layers/SplineLayer";
+import { TextLayer } from "../layers/TextLayer";
+import { VideoLayer, type VideoMetadata } from "../layers/VideoLayer";
+import type { EvaluatedLayer } from "../MotionEngine";
+import type { ResourceManager } from "./ResourceManager";
+import type { SceneManager } from "./SceneManager";
 
 /** Callback to get audio reactive values for a specific layer at a frame */
-export type LayerAudioReactiveGetter = (layerId: string, frame: number) => Map<TargetParameter, number>;
+export type LayerAudioReactiveGetter = (
+  layerId: string,
+  frame: number,
+) => Map<TargetParameter, number>;
 
 export class LayerManager {
   private readonly scene: SceneManager;
@@ -63,11 +79,14 @@ export class LayerManager {
   private readonly layers: Map<string, BaseLayer>;
 
   // Callbacks
-  private onVideoMetadataLoaded?: (layerId: string, metadata: VideoMetadata) => void;
+  private onVideoMetadataLoaded?: (
+    layerId: string,
+    metadata: VideoMetadata,
+  ) => void;
   private nestedCompRenderContext: NestedCompRenderContext | null = null;
   private effectLayerRenderContext: EffectLayerRenderContext | null = null;
   private cameraGetter?: CameraGetter;
-  private cameraAtFrameGetter?: import('../layers/CameraLayer').CameraAtFrameGetter;
+  private cameraAtFrameGetter?: import("../layers/CameraLayer").CameraAtFrameGetter;
   private cameraUpdater?: CameraUpdater;
 
   // Renderer reference for particle systems
@@ -89,7 +108,13 @@ export class LayerManager {
   private renderOrder: string[] = [];
 
   // Callback to get cross-composition matte canvas
-  private crossCompMatteGetter: ((compositionId: string, layerId: string, frame: number) => HTMLCanvasElement | null) | null = null;
+  private crossCompMatteGetter:
+    | ((
+        compositionId: string,
+        layerId: string,
+        frame: number,
+      ) => HTMLCanvasElement | null)
+    | null = null;
 
   constructor(scene: SceneManager, resources: ResourceManager) {
     this.scene = scene;
@@ -105,7 +130,9 @@ export class LayerManager {
    * Set callback for when a video layer loads its metadata
    * Used by the store to auto-resize composition based on video duration
    */
-  setVideoMetadataCallback(callback: (layerId: string, metadata: VideoMetadata) => void): void {
+  setVideoMetadataCallback(
+    callback: (layerId: string, metadata: VideoMetadata) => void,
+  ): void {
     this.onVideoMetadataLoaded = callback;
   }
 
@@ -118,7 +145,7 @@ export class LayerManager {
 
     // Update existing nested comp layers
     for (const layer of this.layers.values()) {
-      if (layer.type === 'nestedComp') {
+      if (layer.type === "nestedComp") {
         (layer as NestedCompLayer).setRenderContext(context);
       }
     }
@@ -134,9 +161,12 @@ export class LayerManager {
     // Update existing effect layers
     for (const layer of this.layers.values()) {
       const layerData = (layer as any).layerData;
-      if (layer.type === 'solid' && (layerData?.effectLayer || layerData?.adjustmentLayer)) {
+      if (
+        layer.type === "solid" &&
+        (layerData?.effectLayer || layerData?.adjustmentLayer)
+      ) {
         // Check if method exists before calling (SolidLayer doesn't have setRenderContext)
-        if ('setRenderContext' in layer) {
+        if ("setRenderContext" in layer) {
           (layer as unknown as EffectLayer).setRenderContext(context);
         }
       }
@@ -154,7 +184,7 @@ export class LayerManager {
   setCameraCallbacks(
     getter: CameraGetter,
     updater: CameraUpdater,
-    atFrameGetter?: import('../layers/CameraLayer').CameraAtFrameGetter
+    atFrameGetter?: import("../layers/CameraLayer").CameraAtFrameGetter,
   ): void {
     this.cameraGetter = getter;
     this.cameraUpdater = updater;
@@ -162,8 +192,12 @@ export class LayerManager {
 
     // Update existing camera layers
     for (const layer of this.layers.values()) {
-      if (layer.type === 'camera') {
-        (layer as CameraLayer).setCameraCallbacks(getter, updater, atFrameGetter);
+      if (layer.type === "camera") {
+        (layer as CameraLayer).setCameraCallbacks(
+          getter,
+          updater,
+          atFrameGetter,
+        );
       }
     }
   }
@@ -177,7 +211,7 @@ export class LayerManager {
 
     // Update existing particle layers
     for (const layer of this.layers.values()) {
-      if (layer.type === 'particles') {
+      if (layer.type === "particles") {
         (layer as ParticleLayer).setRenderer(renderer);
       }
     }
@@ -195,13 +229,13 @@ export class LayerManager {
       layer.setCompositionFps(fps);
 
       // Type-specific FPS handling
-      if (layer.type === 'particles') {
+      if (layer.type === "particles") {
         (layer as ParticleLayer).setFPS(fps);
       }
-      if (layer.type === 'video') {
+      if (layer.type === "video") {
         (layer as VideoLayer).setFPS(fps);
       }
-      if (layer.type === 'nestedComp') {
+      if (layer.type === "nestedComp") {
         (layer as NestedCompLayer).setFPS(fps);
       }
     }
@@ -232,15 +266,17 @@ export class LayerManager {
   create(layerData: Layer): BaseLayer {
     // Check for duplicate ID
     if (this.layers.has(layerData.id)) {
-      layerLogger.warn(`LayerManager: Layer ${layerData.id} already exists, updating instead`);
+      layerLogger.warn(
+        `LayerManager: Layer ${layerData.id} already exists, updating instead`,
+      );
       this.update(layerData.id, layerData);
       return this.layers.get(layerData.id)!;
     }
 
-    console.log('[LayerManager] Creating layer:', {
+    console.log("[LayerManager] Creating layer:", {
       id: layerData.id,
       type: layerData.type,
-      name: layerData.name
+      name: layerData.name,
     });
 
     // Create layer instance
@@ -263,10 +299,10 @@ export class LayerManager {
     // Add to scene (only if not parented - parented layers are children of their parent's group)
     if (!layer.hasParent()) {
       this.scene.addToComposition(layer.getObject());
-      console.log('[LayerManager] Added to scene:', {
+      console.log("[LayerManager] Added to scene:", {
         id: layerData.id,
         objectName: layer.getObject().name,
-        sceneChildCount: this.scene.compositionGroup.children.length
+        sceneChildCount: this.scene.compositionGroup.children.length,
       });
     }
 
@@ -281,30 +317,34 @@ export class LayerManager {
     layer.setCompositionFps(this.compositionFPS);
 
     // Video layer: hook up metadata callback for auto-resize
-    if (layer.type === 'video' && this.onVideoMetadataLoaded) {
+    if (layer.type === "video" && this.onVideoMetadataLoaded) {
       const videoLayer = layer as VideoLayer;
       videoLayer.setMetadataCallback((metadata) => {
-        this.onVideoMetadataLoaded!(layerData.id, metadata);
+        this.onVideoMetadataLoaded?.(layerData.id, metadata);
       });
     }
 
     // Nested comp layer: provide render context
-    if (layer.type === 'nestedComp' && this.nestedCompRenderContext) {
+    if (layer.type === "nestedComp" && this.nestedCompRenderContext) {
       const nestedCompLayer = layer as NestedCompLayer;
       nestedCompLayer.setRenderContext(this.nestedCompRenderContext);
     }
 
     // Camera layer: provide camera data access and spline provider
-    if (layer.type === 'camera' && this.cameraGetter && this.cameraUpdater) {
+    if (layer.type === "camera" && this.cameraGetter && this.cameraUpdater) {
       const cameraLayer = layer as CameraLayer;
-      cameraLayer.setCameraCallbacks(this.cameraGetter, this.cameraUpdater, this.cameraAtFrameGetter);
+      cameraLayer.setCameraCallbacks(
+        this.cameraGetter,
+        this.cameraUpdater,
+        this.cameraAtFrameGetter,
+      );
 
       // Set up spline provider for path following
       cameraLayer.setSplineProvider(this.createSplineProvider());
     }
 
     // Particle layer: provide renderer and FPS
-    if (layer.type === 'particles') {
+    if (layer.type === "particles") {
       const particleLayer = layer as ParticleLayer;
       if (this.rendererRef) {
         particleLayer.setRenderer(this.rendererRef);
@@ -313,28 +353,33 @@ export class LayerManager {
     }
 
     // Video layer: provide FPS
-    if (layer.type === 'video') {
+    if (layer.type === "video") {
       const videoLayer = layer as VideoLayer;
       videoLayer.setFPS(this.compositionFPS);
     }
 
     // Nested comp layer: provide FPS
-    if (layer.type === 'nestedComp') {
+    if (layer.type === "nestedComp") {
       const nestedCompLayer = layer as NestedCompLayer;
       nestedCompLayer.setFPS(this.compositionFPS);
     }
 
     // Any layer with effectLayer/adjustmentLayer flag: provide render context
-    if ((layerData.effectLayer || layerData.adjustmentLayer) && this.effectLayerRenderContext) {
+    if (
+      (layerData.effectLayer || layerData.adjustmentLayer) &&
+      this.effectLayerRenderContext
+    ) {
       // The layer might be a solid or any other type with effect layer flag
       // Cast to access setRenderContext if available
-      if ('setRenderContext' in layer) {
-        (layer as unknown as EffectLayer).setRenderContext(this.effectLayerRenderContext);
+      if ("setRenderContext" in layer) {
+        (layer as unknown as EffectLayer).setRenderContext(
+          this.effectLayerRenderContext,
+        );
       }
     }
 
     // Light layer: provide layer position getter for POI and spline provider for path
-    if (layer.type === 'light') {
+    if (layer.type === "light") {
       const lightLayer = layer as LightLayer;
 
       // Provide a way to get other layer positions (for POI targeting)
@@ -342,7 +387,11 @@ export class LayerManager {
         const targetLayer = this.layers.get(layerId);
         if (targetLayer) {
           const obj = targetLayer.getObject();
-          return new THREE.Vector3(obj.position.x, obj.position.y, obj.position.z);
+          return new THREE.Vector3(
+            obj.position.x,
+            obj.position.y,
+            obj.position.z,
+          );
         }
         return null;
       });
@@ -357,84 +406,88 @@ export class LayerManager {
    */
   private createLayerInstance(layerData: Layer): BaseLayer {
     switch (layerData.type) {
-      case 'image':
+      case "image":
         return new ImageLayer(layerData, this.resources);
 
-      case 'solid':
+      case "solid":
         return new SolidLayer(layerData);
 
-      case 'control':
-      case 'null': // Deprecated, use 'control'
+      case "control":
+      case "null": // Deprecated, use 'control'
         return new ControlLayer(layerData);
 
-      case 'text':
+      case "text":
         return new TextLayer(layerData, this.resources);
 
-      case 'spline':
+      case "spline":
         return new SplineLayer(layerData);
 
-      case 'path':
+      case "path":
         return new PathLayer(layerData);
 
-      case 'particles':
+      case "particles":
         return new ParticleLayer(layerData);
 
-      case 'video':
+      case "video":
         return new VideoLayer(layerData, this.resources);
 
-      case 'nestedComp':
+      case "nestedComp":
         return new NestedCompLayer(layerData);
 
-      case 'camera':
+      case "camera":
         return new CameraLayer(layerData);
 
-      case 'light':
+      case "light":
         return new LightLayer(layerData);
 
-      case 'depthflow':
+      case "depthflow":
         return new DepthflowLayer(layerData, this.resources);
 
-      case 'matte':
+      case "matte":
         return new ProceduralMatteLayer(layerData);
 
-      case 'shape':
+      case "shape":
         return new ShapeLayer(layerData);
 
-      case 'model':
+      case "model":
         return new ModelLayer(layerData);
 
-      case 'pointcloud':
+      case "pointcloud":
         return new PointCloudLayer(layerData);
 
-      case 'depth':
+      case "depth":
         return new DepthLayer(layerData);
 
-      case 'normal':
+      case "normal":
         return new NormalLayer(layerData);
 
-      case 'audio':
+      case "audio":
         return new AudioLayer(layerData);
 
-      case 'generated':
+      case "generated":
         return new GeneratedLayer(layerData);
 
-      case 'group':
+      case "group":
         return new GroupLayer(layerData);
 
-      case 'particle':
+      case "particle":
         // Legacy particle type - use ParticleLayer with simplified config
-        layerLogger.info('LayerManager: Legacy particle type, using ParticleLayer');
+        layerLogger.info(
+          "LayerManager: Legacy particle type, using ParticleLayer",
+        );
         return new ParticleLayer(layerData);
 
-      case 'pose':
+      case "pose":
         return new PoseLayer(layerData);
 
-      case 'effectLayer':
-      case 'adjustment': // Deprecated, use 'effectLayer'
+      case "effectLayer":
+      case "adjustment": // Deprecated, use 'effectLayer'
         return new EffectLayer(layerData);
 
       default:
-        layerLogger.warn(`LayerManager: Unknown layer type: ${layerData.type}, creating ControlLayer`);
+        layerLogger.warn(
+          `LayerManager: Unknown layer type: ${layerData.type}, creating ControlLayer`,
+        );
         return new ControlLayer(layerData);
     }
   }
@@ -460,7 +513,9 @@ export class LayerManager {
   /**
    * Batch update multiple layers
    */
-  batchUpdate(updates: Array<{ id: string; properties: Partial<Layer> }>): void {
+  batchUpdate(
+    updates: Array<{ id: string; properties: Partial<Layer> }>,
+  ): void {
     for (const { id, properties } of updates) {
       this.update(id, properties);
     }
@@ -504,7 +559,7 @@ export class LayerManager {
    * Remove all layers
    */
   removeAll(): void {
-    for (const [id, layer] of this.layers) {
+    for (const [_id, layer] of this.layers) {
       this.scene.removeFromComposition(layer.getObject());
       layer.dispose();
     }
@@ -531,14 +586,17 @@ export class LayerManager {
    * @param evaluatedLayers - Pre-evaluated layer states from MotionEngine
    * @param frame - Optional frame number for animated spline/mask evaluation
    */
-  applyEvaluatedState(evaluatedLayers: readonly EvaluatedLayer[], frame?: number): void {
+  applyEvaluatedState(
+    evaluatedLayers: readonly EvaluatedLayer[],
+    frame?: number,
+  ): void {
     const currentFrame = frame ?? 0;
 
     // First, apply state to spline and path layers so they evaluate their control points
     // This ensures animated paths are ready before text layers query them
     for (const evalLayer of evaluatedLayers) {
       const layer = this.layers.get(evalLayer.id);
-      if (layer && (layer.type === 'spline' || layer.type === 'path')) {
+      if (layer && (layer.type === "spline" || layer.type === "path")) {
         layer.applyEvaluatedState(evalLayer);
       }
     }
@@ -553,7 +611,7 @@ export class LayerManager {
     // Apply evaluated state to remaining layers
     for (const evalLayer of evaluatedLayers) {
       const layer = this.layers.get(evalLayer.id);
-      if (layer && layer.type !== 'spline' && layer.type !== 'path') {
+      if (layer && layer.type !== "spline" && layer.type !== "path") {
         layer.applyEvaluatedState(evalLayer);
       }
     }
@@ -572,7 +630,10 @@ export class LayerManager {
    * @param frame - The frame number
    * @param audioReactiveGetter - Optional callback to get audio reactive values
    */
-  evaluateFrame(frame: number, audioReactiveGetter?: LayerAudioReactiveGetter | null): void {
+  evaluateFrame(
+    frame: number,
+    audioReactiveGetter?: LayerAudioReactiveGetter | null,
+  ): void {
     // First, update text-on-path connections
     this.updateTextPathConnections(frame);
 
@@ -648,7 +709,7 @@ export class LayerManager {
    */
   private updateTextPathConnections(frame?: number): void {
     for (const layer of this.layers.values()) {
-      if (layer.type === 'text') {
+      if (layer.type === "text") {
         const textLayer = layer as TextLayer;
         const textData = textLayer.getTextData();
 
@@ -656,17 +717,22 @@ export class LayerManager {
           const pathSourceLayer = this.layers.get(textData.pathLayerId);
 
           // Support both spline and path layer types
-          if (pathSourceLayer && (pathSourceLayer.type === 'spline' || pathSourceLayer.type === 'path')) {
+          if (
+            pathSourceLayer &&
+            (pathSourceLayer.type === "spline" ||
+              pathSourceLayer.type === "path")
+          ) {
             // Both SplineLayer and PathLayer have the same path interface
             const pathLayer = pathSourceLayer as SplineLayer | PathLayer;
 
             // Check if path is animated and we have a frame
             if (pathLayer.isAnimated() && frame !== undefined) {
               // Get evaluated control points for this frame
-              const evaluatedPoints = pathLayer.getEvaluatedControlPoints(frame);
+              const evaluatedPoints =
+                pathLayer.getEvaluatedControlPoints(frame);
 
               // Convert EvaluatedControlPoint to ControlPoint for TextLayer
-              const controlPoints = evaluatedPoints.map(ep => ({
+              const controlPoints = evaluatedPoints.map((ep) => ({
                 id: ep.id,
                 x: ep.x,
                 y: ep.y,
@@ -677,7 +743,10 @@ export class LayerManager {
               }));
 
               // Update text layer with animated path
-              textLayer.setPathFromControlPoints(controlPoints, pathLayer.isClosed());
+              textLayer.setPathFromControlPoints(
+                controlPoints,
+                pathLayer.isClosed(),
+              );
             } else {
               // Static path - use cached curve
               const curve = pathLayer.getCurve();
@@ -706,7 +775,11 @@ export class LayerManager {
    * ```
    */
   createSplineProvider(): SplinePathProvider {
-    return (layerId: string, t: number, frame: number): SplineQueryResult | null => {
+    return (
+      layerId: string,
+      t: number,
+      frame: number,
+    ): SplineQueryResult | null => {
       return this.querySplinePath(layerId, t, frame);
     };
   }
@@ -721,11 +794,15 @@ export class LayerManager {
    * @param frame - Current frame for animated paths
    * @returns Position, tangent, and length or null if layer not found
    */
-  querySplinePath(layerId: string, t: number, frame: number): SplineQueryResult | null {
+  querySplinePath(
+    layerId: string,
+    t: number,
+    frame: number,
+  ): SplineQueryResult | null {
     const layer = this.layers.get(layerId);
 
     // Support both spline and path layer types
-    if (!layer || (layer.type !== 'spline' && layer.type !== 'path')) {
+    if (!layer || (layer.type !== "spline" && layer.type !== "path")) {
       return null;
     }
 
@@ -773,7 +850,7 @@ export class LayerManager {
   getSplineLayerIds(): string[] {
     const ids: string[] = [];
     for (const [id, layer] of this.layers) {
-      if (layer.type === 'spline' || layer.type === 'path') {
+      if (layer.type === "spline" || layer.type === "path") {
         ids.push(id);
       }
     }
@@ -786,7 +863,7 @@ export class LayerManager {
   getPathLayerIds(): string[] {
     const ids: string[] = [];
     for (const [id, layer] of this.layers) {
-      if (layer.type === 'path') {
+      if (layer.type === "path") {
         ids.push(id);
       }
     }
@@ -800,7 +877,7 @@ export class LayerManager {
   connectTextToPath(textLayerId: string, pathLayerId: string | null): void {
     const textLayer = this.layers.get(textLayerId) as TextLayer | undefined;
 
-    if (!textLayer || textLayer.type !== 'text') {
+    if (!textLayer || textLayer.type !== "text") {
       layerLogger.warn(`LayerManager: Text layer ${textLayerId} not found`);
       return;
     }
@@ -813,8 +890,13 @@ export class LayerManager {
     const pathSourceLayer = this.layers.get(pathLayerId);
 
     // Support both spline and path layer types
-    if (!pathSourceLayer || (pathSourceLayer.type !== 'spline' && pathSourceLayer.type !== 'path')) {
-      layerLogger.warn(`LayerManager: Spline/path layer ${pathLayerId} not found`);
+    if (
+      !pathSourceLayer ||
+      (pathSourceLayer.type !== "spline" && pathSourceLayer.type !== "path")
+    ) {
+      layerLogger.warn(
+        `LayerManager: Spline/path layer ${pathLayerId} not found`,
+      );
       return;
     }
 
@@ -855,7 +937,7 @@ export class LayerManager {
    */
   getLayersByType(type: LayerType): BaseLayer[] {
     return Array.from(this.layers.values()).filter(
-      layer => layer.type === type
+      (layer) => layer.type === type,
     );
   }
 
@@ -1036,7 +1118,13 @@ export class LayerManager {
    * to be used as matte sources.
    */
   setCrossCompMatteGetter(
-    getter: ((compositionId: string, layerId: string, frame: number) => HTMLCanvasElement | null) | null
+    getter:
+      | ((
+          compositionId: string,
+          layerId: string,
+          frame: number,
+        ) => HTMLCanvasElement | null)
+      | null,
   ): void {
     this.crossCompMatteGetter = getter;
   }
@@ -1063,7 +1151,7 @@ export class LayerManager {
       const matteLayerId = layer.getTrackMatteLayerId();
       const matteType = layer.getTrackMatteType();
 
-      if (!matteLayerId || matteType === 'none') {
+      if (!matteLayerId || matteType === "none") {
         continue;
       }
 
@@ -1072,11 +1160,15 @@ export class LayerManager {
       // Check if this is a cross-composition matte
       if (layer.hasCrossCompMatte() && this.crossCompMatteGetter) {
         const compositionId = layer.getTrackMatteCompositionId()!;
-        matteCanvas = this.crossCompMatteGetter(compositionId, matteLayerId, frame);
+        matteCanvas = this.crossCompMatteGetter(
+          compositionId,
+          matteLayerId,
+          frame,
+        );
 
         if (!matteCanvas) {
           layerLogger.warn(
-            `Cross-comp track matte not found: composition=${compositionId}, layer=${matteLayerId}`
+            `Cross-comp track matte not found: composition=${compositionId}, layer=${matteLayerId}`,
           );
         }
       } else {
@@ -1114,7 +1206,10 @@ export class LayerManager {
    * @param frame - Current frame for animated content
    * @returns Canvas with layer's rendered content, or null if unavailable
    */
-  private getLayerRenderedCanvas(layer: BaseLayer, frame: number): HTMLCanvasElement | null {
+  private getLayerRenderedCanvas(
+    layer: BaseLayer,
+    _frame: number,
+  ): HTMLCanvasElement | null {
     // For layers with getSourceCanvas, use that
     // Note: This is a simplified implementation - in production,
     // this would need to render the full layer to an offscreen canvas
@@ -1126,14 +1221,16 @@ export class LayerManager {
 
     // Cast to access protected method via any type assertion
     // In production, BaseLayer would expose a public getRenderedCanvas() method
-    const sourceCanvas = (layer as unknown as { getSourceCanvas(): HTMLCanvasElement | null }).getSourceCanvas?.();
+    const sourceCanvas = (
+      layer as unknown as { getSourceCanvas(): HTMLCanvasElement | null }
+    ).getSourceCanvas?.();
 
     if (sourceCanvas) {
       // Clone the canvas to avoid mutation issues
-      const canvas = document.createElement('canvas');
+      const canvas = document.createElement("canvas");
       canvas.width = sourceCanvas.width;
       canvas.height = sourceCanvas.height;
-      const ctx = canvas.getContext('2d');
+      const ctx = canvas.getContext("2d");
       if (ctx) {
         ctx.drawImage(sourceCanvas, 0, 0);
         return canvas;
@@ -1177,7 +1274,9 @@ export class LayerManager {
     const visit = (layerId: string): void => {
       if (visited.has(layerId)) return;
       if (visiting.has(layerId)) {
-        layerLogger.warn(`Circular track matte dependency detected involving layer ${layerId}`);
+        layerLogger.warn(
+          `Circular track matte dependency detected involving layer ${layerId}`,
+        );
         return;
       }
 
@@ -1226,11 +1325,7 @@ export class LayerManager {
   /**
    * Get layers at a screen position
    */
-  getLayersAtPosition(
-    x: number,
-    y: number,
-    camera: THREE.Camera
-  ): BaseLayer[] {
+  getLayersAtPosition(x: number, y: number, camera: THREE.Camera): BaseLayer[] {
     const raycaster = new THREE.Raycaster();
     const pointer = new THREE.Vector2(x, y);
 
@@ -1251,7 +1346,7 @@ export class LayerManager {
     }
 
     return Array.from(layerIds)
-      .map(id => this.layers.get(id))
+      .map((id) => this.layers.get(id))
       .filter((layer): layer is BaseLayer => layer !== undefined);
   }
 

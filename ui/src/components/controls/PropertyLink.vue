@@ -78,8 +78,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
-import type { PropertyPath } from '@/services/propertyDriver';
+import { computed, onUnmounted, ref } from "vue";
+import type { PropertyPath } from "@/services/propertyDriver";
 
 interface DropTarget {
   layerId: string;
@@ -96,8 +96,8 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: 'link', target: { layerId: string; property: PropertyPath }): void;
-  (e: 'unlink'): void;
+  (e: "link", target: { layerId: string; property: PropertyPath }): void;
+  (e: "unlink"): void;
 }>();
 
 const containerRef = ref<HTMLDivElement | null>(null);
@@ -106,33 +106,33 @@ const dragStart = ref({ x: 0, y: 0 });
 const dragEnd = ref({ x: 0, y: 0 });
 const currentDropTarget = ref<DropTarget | null>(null);
 
-const hasLink = computed(() => !!props.linkedTo);
+const _hasLink = computed(() => !!props.linkedTo);
 
-const linkTargetName = computed(() => {
-  if (!props.linkedTo) return '';
+const _linkTargetName = computed(() => {
+  if (!props.linkedTo) return "";
   return `${props.linkedTo.layerId}.${props.linkedTo.property}`;
 });
 
-const lineStyle = computed(() => ({
-  position: 'fixed' as const,
+const _lineStyle = computed(() => ({
+  position: "fixed" as const,
   top: 0,
   left: 0,
-  width: '100vw',
-  height: '100vh',
-  pointerEvents: 'none' as const,
-  zIndex: 10000
+  width: "100vw",
+  height: "100vh",
+  pointerEvents: "none" as const,
+  zIndex: 10000,
 }));
 
-const dropTargetStyle = computed(() => {
+const _dropTargetStyle = computed(() => {
   if (!currentDropTarget.value) return {};
   const rect = currentDropTarget.value.rect;
   return {
-    position: 'fixed' as const,
+    position: "fixed" as const,
     top: `${rect.top}px`,
     left: `${rect.left}px`,
     width: `${rect.width}px`,
     height: `${rect.height}px`,
-    zIndex: 9999
+    zIndex: 9999,
   };
 });
 
@@ -141,9 +141,9 @@ function findDropTargets(): DropTarget[] {
   const targets: DropTarget[] = [];
 
   // Find all elements with data-link-target attribute
-  const elements = document.querySelectorAll('[data-link-target]');
+  const elements = document.querySelectorAll("[data-link-target]");
 
-  elements.forEach(el => {
+  elements.forEach((el) => {
     const htmlEl = el as HTMLElement;
     const layerId = htmlEl.dataset.linkLayerId;
     const property = htmlEl.dataset.linkTarget as PropertyPath;
@@ -160,7 +160,7 @@ function findDropTargets(): DropTarget[] {
         property,
         label,
         element: htmlEl,
-        rect: htmlEl.getBoundingClientRect()
+        rect: htmlEl.getBoundingClientRect(),
       });
     }
   });
@@ -169,10 +169,19 @@ function findDropTargets(): DropTarget[] {
 }
 
 // Find drop target at position
-function findTargetAtPosition(x: number, y: number, targets: DropTarget[]): DropTarget | null {
+function findTargetAtPosition(
+  x: number,
+  y: number,
+  targets: DropTarget[],
+): DropTarget | null {
   for (const target of targets) {
     const rect = target.rect;
-    if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+    if (
+      x >= rect.left &&
+      x <= rect.right &&
+      y >= rect.top &&
+      y <= rect.bottom
+    ) {
       return target;
     }
   }
@@ -181,17 +190,20 @@ function findTargetAtPosition(x: number, y: number, targets: DropTarget[]): Drop
 
 let dropTargets: DropTarget[] = [];
 
-function startDrag(e: MouseEvent | TouchEvent) {
+function _startDrag(e: MouseEvent | TouchEvent) {
   e.preventDefault();
   e.stopPropagation();
 
-  const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-  const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+  const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+  const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
 
   // Get start position from the link handle
   const rect = containerRef.value?.getBoundingClientRect();
   if (rect) {
-    dragStart.value = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+    dragStart.value = {
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2,
+    };
   } else {
     dragStart.value = { x: clientX, y: clientY };
   }
@@ -203,22 +215,22 @@ function startDrag(e: MouseEvent | TouchEvent) {
   dropTargets = findDropTargets();
 
   // Add listeners
-  window.addEventListener('mousemove', onDrag);
-  window.addEventListener('mouseup', endDrag);
-  window.addEventListener('touchmove', onDrag);
-  window.addEventListener('touchend', endDrag);
+  window.addEventListener("mousemove", onDrag);
+  window.addEventListener("mouseup", endDrag);
+  window.addEventListener("touchmove", onDrag);
+  window.addEventListener("touchend", endDrag);
 }
 
 function onDrag(e: MouseEvent | TouchEvent) {
   if (!isDragging.value) return;
 
-  const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-  const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+  const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+  const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
 
   dragEnd.value = { x: clientX, y: clientY };
 
   // Update drop target rects (in case of scroll)
-  dropTargets.forEach(t => {
+  dropTargets.forEach((t) => {
     t.rect = t.element.getBoundingClientRect();
   });
 
@@ -229,14 +241,16 @@ function onDrag(e: MouseEvent | TouchEvent) {
 function endDrag(e: MouseEvent | TouchEvent) {
   if (!isDragging.value) return;
 
-  const clientX = 'changedTouches' in e ? e.changedTouches[0].clientX : e.clientX;
-  const clientY = 'changedTouches' in e ? e.changedTouches[0].clientY : e.clientY;
+  const clientX =
+    "changedTouches" in e ? e.changedTouches[0].clientX : e.clientX;
+  const clientY =
+    "changedTouches" in e ? e.changedTouches[0].clientY : e.clientY;
 
   // Check if we're over a valid drop target
   const target = findTargetAtPosition(clientX, clientY, dropTargets);
 
   if (target) {
-    emit('link', { layerId: target.layerId, property: target.property });
+    emit("link", { layerId: target.layerId, property: target.property });
   }
 
   // Cleanup
@@ -244,22 +258,22 @@ function endDrag(e: MouseEvent | TouchEvent) {
   currentDropTarget.value = null;
   dropTargets = [];
 
-  window.removeEventListener('mousemove', onDrag);
-  window.removeEventListener('mouseup', endDrag);
-  window.removeEventListener('touchmove', onDrag);
-  window.removeEventListener('touchend', endDrag);
+  window.removeEventListener("mousemove", onDrag);
+  window.removeEventListener("mouseup", endDrag);
+  window.removeEventListener("touchmove", onDrag);
+  window.removeEventListener("touchend", endDrag);
 }
 
-function clearLink() {
-  emit('unlink');
+function _clearLink() {
+  emit("unlink");
 }
 
 onUnmounted(() => {
   // Cleanup any lingering listeners
-  window.removeEventListener('mousemove', onDrag);
-  window.removeEventListener('mouseup', endDrag);
-  window.removeEventListener('touchmove', onDrag);
-  window.removeEventListener('touchend', endDrag);
+  window.removeEventListener("mousemove", onDrag);
+  window.removeEventListener("mouseup", endDrag);
+  window.removeEventListener("touchmove", onDrag);
+  window.removeEventListener("touchend", endDrag);
 });
 </script>
 

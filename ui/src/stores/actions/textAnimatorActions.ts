@@ -6,31 +6,28 @@
  * text animation features.
  */
 
-import type { Layer, TextData, Composition, ControlPoint } from '@/types/project';
-import type {
-  TextAnimator,
-  TextRangeSelector,
-  TextWigglySelector,
-  TextExpressionSelector,
-  TextAnimatorProperties,
-} from '@/types/text';
+import { isExpressionSafe } from "@/services/expressions/expressionValidator";
 import {
+  calculateCharacterInfluence,
+  calculateCompleteCharacterInfluence,
+  createExpressionSelector,
   createTextAnimator,
   createWigglySelector,
-  createExpressionSelector,
-  calculateCompleteCharacterInfluence,
-  calculateCharacterInfluence,
   getAnimatableValue,
-  DEFAULT_RANGE_SELECTOR,
-} from '@/services/textAnimator';
-import { isExpressionSafe } from '@/services/expressions/expressionValidator';
+} from "@/services/textAnimator";
 import {
-  TextOnPathService,
-  createDefaultPathConfig,
-  type TextOnPathConfig,
   type CharacterPlacement,
-} from '@/services/textOnPath';
-import { createAnimatableProperty } from '@/types/animation';
+  type TextOnPathConfig,
+  TextOnPathService,
+} from "@/services/textOnPath";
+import { createAnimatableProperty } from "@/types/animation";
+import type {
+  Composition,
+  ControlPoint,
+  Layer,
+  TextData,
+} from "@/types/project";
+import type { TextAnimator, TextAnimatorProperties } from "@/types/text";
 
 // ============================================================================
 // STORE INTERFACE
@@ -68,21 +65,21 @@ export interface RangeSelectorConfig {
   start?: number;
   end?: number;
   offset?: number;
-  shape?: 'square' | 'ramp_up' | 'ramp_down' | 'triangle' | 'round' | 'smooth';
+  shape?: "square" | "ramp_up" | "ramp_down" | "triangle" | "round" | "smooth";
   amount?: number;
   smoothness?: number;
-  basedOn?: 'characters' | 'words' | 'lines';
+  basedOn?: "characters" | "words" | "lines";
   randomizeOrder?: boolean;
 }
 
 export interface ExpressionSelectorConfig {
   expression?: string;
-  mode?: 'add' | 'subtract' | 'intersect' | 'min' | 'max' | 'difference';
-  basedOn?: 'characters' | 'words' | 'lines';
+  mode?: "add" | "subtract" | "intersect" | "min" | "max" | "difference";
+  basedOn?: "characters" | "words" | "lines";
 }
 
 export interface WigglySelectorConfig {
-  mode?: 'add' | 'subtract' | 'intersect' | 'min' | 'max' | 'difference';
+  mode?: "add" | "subtract" | "intersect" | "min" | "max" | "difference";
   maxAmount?: number;
   minAmount?: number;
   wigglesPerSecond?: number;
@@ -99,8 +96,8 @@ export interface WigglySelectorConfig {
  * Get a text layer by ID and validate it's a text layer
  */
 function getTextLayer(store: TextAnimatorStore, layerId: string): Layer | null {
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
-  if (!layer || layer.type !== 'text') return null;
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  if (!layer || layer.type !== "text") return null;
   return layer;
 }
 
@@ -123,7 +120,7 @@ function ensureAnimatorsArray(textData: TextData): void {
 /**
  * Generate unique ID
  */
-function generateId(prefix: string = 'ta'): string {
+function _generateId(prefix: string = "ta"): string {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 }
 
@@ -137,7 +134,7 @@ function generateId(prefix: string = 'ta'): string {
 export function addTextAnimator(
   store: TextAnimatorStore,
   layerId: string,
-  config: AddTextAnimatorConfig = {}
+  config: AddTextAnimatorConfig = {},
 ): TextAnimator | null {
   const layer = getTextLayer(store, layerId);
   if (!layer) return null;
@@ -155,70 +152,70 @@ export function addTextAnimator(
   if (config.properties) {
     if (config.properties.position) {
       animator.properties.position = createAnimatableProperty(
-        'Position',
+        "Position",
         config.properties.position.value,
-        'position'
+        "position",
       );
     }
     if (config.properties.scale) {
       animator.properties.scale = createAnimatableProperty(
-        'Scale',
+        "Scale",
         config.properties.scale.value,
-        'position'
+        "position",
       );
     }
     if (config.properties.rotation !== undefined) {
       animator.properties.rotation = createAnimatableProperty(
-        'Rotation',
+        "Rotation",
         config.properties.rotation.value,
-        'number'
+        "number",
       );
     }
     if (config.properties.opacity !== undefined) {
       animator.properties.opacity = createAnimatableProperty(
-        'Opacity',
+        "Opacity",
         config.properties.opacity.value,
-        'number'
+        "number",
       );
     }
     if (config.properties.tracking !== undefined) {
       animator.properties.tracking = createAnimatableProperty(
-        'Tracking',
+        "Tracking",
         config.properties.tracking.value,
-        'number'
+        "number",
       );
     }
     if (config.properties.fillColor) {
       animator.properties.fillColor = createAnimatableProperty(
-        'Fill Color',
+        "Fill Color",
         config.properties.fillColor.value,
-        'color'
+        "color",
       );
     }
     if (config.properties.strokeColor) {
       animator.properties.strokeColor = createAnimatableProperty(
-        'Stroke Color',
+        "Stroke Color",
         config.properties.strokeColor.value,
-        'color'
+        "color",
       );
     }
     if (config.properties.strokeWidth !== undefined) {
       animator.properties.strokeWidth = createAnimatableProperty(
-        'Stroke Width',
+        "Stroke Width",
         config.properties.strokeWidth.value,
-        'number'
+        "number",
       );
     }
     if (config.properties.blur) {
       animator.properties.blur = createAnimatableProperty(
-        'Blur',
+        "Blur",
         config.properties.blur.value,
-        'position'
+        "position",
       );
     }
   }
 
-  textData.animators!.push(animator);
+  textData.animators?.push(animator);
   store.project.meta.modified = new Date().toISOString();
 
   return animator;
@@ -230,7 +227,7 @@ export function addTextAnimator(
 export function removeTextAnimator(
   store: TextAnimatorStore,
   layerId: string,
-  animatorId: string
+  animatorId: string,
 ): boolean {
   const layer = getTextLayer(store, layerId);
   if (!layer) return false;
@@ -238,7 +235,7 @@ export function removeTextAnimator(
   const textData = getTextData(layer);
   if (!textData || !textData.animators) return false;
 
-  const index = textData.animators.findIndex(a => a.id === animatorId);
+  const index = textData.animators.findIndex((a) => a.id === animatorId);
   if (index === -1) return false;
 
   store.pushHistory();
@@ -255,7 +252,7 @@ export function updateTextAnimator(
   store: TextAnimatorStore,
   layerId: string,
   animatorId: string,
-  updates: Partial<TextAnimator>
+  updates: Partial<TextAnimator>,
 ): boolean {
   const layer = getTextLayer(store, layerId);
   if (!layer) return false;
@@ -263,7 +260,7 @@ export function updateTextAnimator(
   const textData = getTextData(layer);
   if (!textData || !textData.animators) return false;
 
-  const animator = textData.animators.find(a => a.id === animatorId);
+  const animator = textData.animators.find((a) => a.id === animatorId);
   if (!animator) return false;
 
   store.pushHistory();
@@ -288,7 +285,7 @@ export function updateTextAnimator(
 export function getTextAnimator(
   store: TextAnimatorStore,
   layerId: string,
-  animatorId: string
+  animatorId: string,
 ): TextAnimator | null {
   const layer = getTextLayer(store, layerId);
   if (!layer) return null;
@@ -296,7 +293,7 @@ export function getTextAnimator(
   const textData = getTextData(layer);
   if (!textData || !textData.animators) return null;
 
-  return textData.animators.find(a => a.id === animatorId) || null;
+  return textData.animators.find((a) => a.id === animatorId) || null;
 }
 
 /**
@@ -304,7 +301,7 @@ export function getTextAnimator(
  */
 export function getTextAnimators(
   store: TextAnimatorStore,
-  layerId: string
+  layerId: string,
 ): TextAnimator[] {
   const layer = getTextLayer(store, layerId);
   if (!layer) return [];
@@ -326,7 +323,7 @@ export function configureRangeSelector(
   store: TextAnimatorStore,
   layerId: string,
   animatorId: string,
-  config: RangeSelectorConfig
+  config: RangeSelectorConfig,
 ): boolean {
   const layer = getTextLayer(store, layerId);
   if (!layer) return false;
@@ -334,7 +331,7 @@ export function configureRangeSelector(
   const textData = getTextData(layer);
   if (!textData || !textData.animators) return false;
 
-  const animator = textData.animators.find(a => a.id === animatorId);
+  const animator = textData.animators.find((a) => a.id === animatorId);
   if (!animator) return false;
 
   store.pushHistory();
@@ -348,7 +345,8 @@ export function configureRangeSelector(
   if (config.amount !== undefined) selector.amount = config.amount;
   if (config.smoothness !== undefined) selector.smoothness = config.smoothness;
   if (config.basedOn !== undefined) selector.basedOn = config.basedOn;
-  if (config.randomizeOrder !== undefined) selector.randomizeOrder = config.randomizeOrder;
+  if (config.randomizeOrder !== undefined)
+    selector.randomizeOrder = config.randomizeOrder;
 
   store.project.meta.modified = new Date().toISOString();
   return true;
@@ -366,7 +364,7 @@ export async function configureExpressionSelector(
   store: TextAnimatorStore,
   layerId: string,
   animatorId: string,
-  config: ExpressionSelectorConfig
+  config: ExpressionSelectorConfig,
 ): Promise<boolean> {
   const layer = getTextLayer(store, layerId);
   if (!layer) return false;
@@ -374,14 +372,20 @@ export async function configureExpressionSelector(
   const textData = getTextData(layer);
   if (!textData || !textData.animators) return false;
 
-  const animator = textData.animators.find(a => a.id === animatorId);
+  const animator = textData.animators.find((a) => a.id === animatorId);
   if (!animator) return false;
 
   // SECURITY: Validate expression before applying
-  if (config.expression !== undefined && typeof config.expression === 'string' && config.expression.trim()) {
+  if (
+    config.expression !== undefined &&
+    typeof config.expression === "string" &&
+    config.expression.trim()
+  ) {
     const safe = await isExpressionSafe(config.expression);
     if (!safe) {
-      console.error('[SECURITY] Expression blocked - timeout detected (possible infinite loop)');
+      console.error(
+        "[SECURITY] Expression blocked - timeout detected (possible infinite loop)",
+      );
       return false;
     }
   }
@@ -391,14 +395,15 @@ export async function configureExpressionSelector(
   // Create expression selector if doesn't exist
   if (!animator.expressionSelector) {
     animator.expressionSelector = createExpressionSelector(
-      config.expression || 'selectorValue'
+      config.expression || "selectorValue",
     );
   }
 
   const selector = animator.expressionSelector;
   selector.enabled = true;
 
-  if (config.expression !== undefined) selector.amountExpression = config.expression;
+  if (config.expression !== undefined)
+    selector.amountExpression = config.expression;
   if (config.mode !== undefined) selector.mode = config.mode;
   if (config.basedOn !== undefined) selector.basedOn = config.basedOn;
 
@@ -412,7 +417,7 @@ export async function configureExpressionSelector(
 export function removeExpressionSelector(
   store: TextAnimatorStore,
   layerId: string,
-  animatorId: string
+  animatorId: string,
 ): boolean {
   const layer = getTextLayer(store, layerId);
   if (!layer) return false;
@@ -420,7 +425,7 @@ export function removeExpressionSelector(
   const textData = getTextData(layer);
   if (!textData || !textData.animators) return false;
 
-  const animator = textData.animators.find(a => a.id === animatorId);
+  const animator = textData.animators.find((a) => a.id === animatorId);
   if (!animator || !animator.expressionSelector) return false;
 
   store.pushHistory();
@@ -440,7 +445,7 @@ export function configureWigglySelector(
   store: TextAnimatorStore,
   layerId: string,
   animatorId: string,
-  config: WigglySelectorConfig
+  config: WigglySelectorConfig,
 ): boolean {
   const layer = getTextLayer(store, layerId);
   if (!layer) return false;
@@ -448,7 +453,7 @@ export function configureWigglySelector(
   const textData = getTextData(layer);
   if (!textData || !textData.animators) return false;
 
-  const animator = textData.animators.find(a => a.id === animatorId);
+  const animator = textData.animators.find((a) => a.id === animatorId);
   if (!animator) return false;
 
   store.pushHistory();
@@ -464,9 +469,12 @@ export function configureWigglySelector(
   if (config.mode !== undefined) selector.mode = config.mode;
   if (config.maxAmount !== undefined) selector.maxAmount = config.maxAmount;
   if (config.minAmount !== undefined) selector.minAmount = config.minAmount;
-  if (config.wigglesPerSecond !== undefined) selector.wigglesPerSecond = config.wigglesPerSecond;
-  if (config.correlation !== undefined) selector.correlation = config.correlation;
-  if (config.lockDimensions !== undefined) selector.lockDimensions = config.lockDimensions;
+  if (config.wigglesPerSecond !== undefined)
+    selector.wigglesPerSecond = config.wigglesPerSecond;
+  if (config.correlation !== undefined)
+    selector.correlation = config.correlation;
+  if (config.lockDimensions !== undefined)
+    selector.lockDimensions = config.lockDimensions;
   if (config.randomSeed !== undefined) selector.randomSeed = config.randomSeed;
 
   store.project.meta.modified = new Date().toISOString();
@@ -479,7 +487,7 @@ export function configureWigglySelector(
 export function removeWigglySelector(
   store: TextAnimatorStore,
   layerId: string,
-  animatorId: string
+  animatorId: string,
 ): boolean {
   const layer = getTextLayer(store, layerId);
   if (!layer) return false;
@@ -487,7 +495,7 @@ export function removeWigglySelector(
   const textData = getTextData(layer);
   if (!textData || !textData.animators) return false;
 
-  const animator = textData.animators.find(a => a.id === animatorId);
+  const animator = textData.animators.find((a) => a.id === animatorId);
   if (!animator || !animator.wigglySelector) return false;
 
   store.pushHistory();
@@ -509,7 +517,7 @@ export function removeWigglySelector(
 export function getCharacterTransforms(
   store: TextAnimatorStore,
   layerId: string,
-  frame: number
+  frame: number,
 ): CharacterTransform[] {
   const layer = getTextLayer(store, layerId);
   if (!layer) return [];
@@ -517,7 +525,7 @@ export function getCharacterTransforms(
   const textData = getTextData(layer);
   if (!textData) return [];
 
-  const text = textData.text || '';
+  const text = textData.text || "";
   const totalChars = text.length;
   if (totalChars === 0) return [];
 
@@ -551,7 +559,7 @@ export function getCharacterTransforms(
         totalChars,
         animator,
         frame,
-        fps
+        fps,
       );
 
       // Skip if no influence
@@ -614,7 +622,7 @@ export function getSelectionValues(
   store: TextAnimatorStore,
   layerId: string,
   animatorId: string,
-  frame: number
+  frame: number,
 ): number[] {
   const layer = getTextLayer(store, layerId);
   if (!layer) return [];
@@ -622,11 +630,11 @@ export function getSelectionValues(
   const textData = getTextData(layer);
   if (!textData) return [];
 
-  const text = textData.text || '';
+  const text = textData.text || "";
   const totalChars = text.length;
   if (totalChars === 0) return [];
 
-  const animator = textData.animators?.find(a => a.id === animatorId);
+  const animator = textData.animators?.find((a) => a.id === animatorId);
   if (!animator) return [];
 
   const comp = store.getActiveComp();
@@ -639,7 +647,7 @@ export function getSelectionValues(
       totalChars,
       animator,
       frame,
-      fps
+      fps,
     );
     // Return as percentage (0-100)
     values.push(influence * 100);
@@ -657,7 +665,7 @@ export function getRangeSelectionValue(
   layerId: string,
   animatorId: string,
   charIndex: number,
-  frame: number
+  frame: number,
 ): number {
   const layer = getTextLayer(store, layerId);
   if (!layer) return 0;
@@ -665,18 +673,18 @@ export function getRangeSelectionValue(
   const textData = getTextData(layer);
   if (!textData) return 0;
 
-  const text = textData.text || '';
+  const text = textData.text || "";
   const totalChars = text.length;
   if (totalChars === 0 || charIndex < 0 || charIndex >= totalChars) return 0;
 
-  const animator = textData.animators?.find(a => a.id === animatorId);
+  const animator = textData.animators?.find((a) => a.id === animatorId);
   if (!animator) return 0;
 
   const influence = calculateCharacterInfluence(
     charIndex,
     totalChars,
     animator.rangeSelector,
-    frame
+    frame,
   );
 
   // Return as percentage (0-100)
@@ -695,7 +703,7 @@ export function setAnimatorPropertyValue(
   layerId: string,
   animatorId: string,
   propertyName: keyof TextAnimatorProperties,
-  value: any
+  value: any,
 ): boolean {
   const layer = getTextLayer(store, layerId);
   if (!layer) return false;
@@ -703,13 +711,18 @@ export function setAnimatorPropertyValue(
   const textData = getTextData(layer);
   if (!textData || !textData.animators) return false;
 
-  const animator = textData.animators.find(a => a.id === animatorId);
+  const animator = textData.animators.find((a) => a.id === animatorId);
   if (!animator) return false;
 
   store.pushHistory();
 
   // Create property if doesn't exist
-  const valueType = typeof value === 'object' ? 'position' : typeof value === 'number' ? 'number' : 'color';
+  const valueType =
+    typeof value === "object"
+      ? "position"
+      : typeof value === "number"
+        ? "number"
+        : "color";
   const propName = String(propertyName);
 
   const props = animator.properties as Record<string, any>;
@@ -717,7 +730,7 @@ export function setAnimatorPropertyValue(
     props[propName] = createAnimatableProperty(
       propName,
       value,
-      valueType as any
+      valueType as any,
     );
   } else {
     props[propName].value = value;
@@ -732,7 +745,7 @@ export function setAnimatorPropertyValue(
  */
 export function hasTextAnimators(
   store: TextAnimatorStore,
-  layerId: string
+  layerId: string,
 ): boolean {
   const layer = getTextLayer(store, layerId);
   if (!layer) return false;
@@ -746,13 +759,13 @@ export function hasTextAnimators(
  */
 export function getTextContent(
   store: TextAnimatorStore,
-  layerId: string
+  layerId: string,
 ): string {
   const layer = getTextLayer(store, layerId);
-  if (!layer) return '';
+  if (!layer) return "";
 
   const textData = getTextData(layer);
-  return textData?.text || '';
+  return textData?.text || "";
 }
 
 /**
@@ -761,7 +774,7 @@ export function getTextContent(
 export function setTextContent(
   store: TextAnimatorStore,
   layerId: string,
-  text: string
+  text: string,
 ): boolean {
   const layer = getTextLayer(store, layerId);
   if (!layer) return false;
@@ -803,7 +816,7 @@ export interface TextPathConfig {
   firstMargin?: number;
   lastMargin?: number;
   offset?: number;
-  align?: 'left' | 'center' | 'right';
+  align?: "left" | "center" | "right";
 }
 
 /**
@@ -812,7 +825,7 @@ export interface TextPathConfig {
 export function setTextPath(
   store: TextAnimatorStore,
   layerId: string,
-  config: TextPathConfig
+  config: TextPathConfig,
 ): boolean {
   const layer = getTextLayer(store, layerId);
   if (!layer) return false;
@@ -832,7 +845,7 @@ export function setTextPath(
     firstMargin: config.firstMargin ?? 0,
     lastMargin: config.lastMargin ?? 0,
     offset: config.offset ?? 0,
-    align: config.align ?? 'left',
+    align: config.align ?? "left",
   };
 
   // Set path on service
@@ -848,7 +861,7 @@ export function setTextPath(
  */
 export function getTextPathConfig(
   store: TextAnimatorStore,
-  layerId: string
+  layerId: string,
 ): TextPathConfig | null {
   const layer = getTextLayer(store, layerId);
   if (!layer) return null;
@@ -865,7 +878,7 @@ export function getTextPathConfig(
 export function updateTextPath(
   store: TextAnimatorStore,
   layerId: string,
-  updates: Partial<TextPathConfig>
+  updates: Partial<TextPathConfig>,
 ): boolean {
   const layer = getTextLayer(store, layerId);
   if (!layer) return false;
@@ -903,7 +916,7 @@ export function updateTextPath(
 export function getCharacterPathPlacements(
   store: TextAnimatorStore,
   layerId: string,
-  frame: number
+  _frame: number,
 ): CharacterPlacement[] {
   const layer = getTextLayer(store, layerId);
   if (!layer) return [];
@@ -912,11 +925,15 @@ export function getCharacterPathPlacements(
   if (!textData) return [];
 
   const pathConfig = (textData as any).pathConfig;
-  if (!pathConfig || !pathConfig.pathPoints || pathConfig.pathPoints.length < 2) {
+  if (
+    !pathConfig ||
+    !pathConfig.pathPoints ||
+    pathConfig.pathPoints.length < 2
+  ) {
     return [];
   }
 
-  const text = textData.text || '';
+  const text = textData.text || "";
   if (text.length === 0) return [];
 
   const service = getPathService(layerId);
@@ -940,11 +957,16 @@ export function getCharacterPathPlacements(
     firstMargin: pathConfig.firstMargin ?? 0,
     lastMargin: pathConfig.lastMargin ?? 0,
     offset: pathConfig.offset ?? 0,
-    align: pathConfig.align ?? 'left',
+    align: pathConfig.align ?? "left",
   };
 
   const tracking = (textData as any).tracking || 0;
-  return service.calculatePlacements(characterWidths, config, tracking, fontSize);
+  return service.calculatePlacements(
+    characterWidths,
+    config,
+    tracking,
+    fontSize,
+  );
 }
 
 /**
@@ -952,7 +974,7 @@ export function getCharacterPathPlacements(
  */
 export function getPathLength(
   store: TextAnimatorStore,
-  layerId: string
+  layerId: string,
 ): number {
   const layer = getTextLayer(store, layerId);
   if (!layer) return 0;
@@ -961,7 +983,11 @@ export function getPathLength(
   if (!textData) return 0;
 
   const pathConfig = (textData as any).pathConfig;
-  if (!pathConfig || !pathConfig.pathPoints || pathConfig.pathPoints.length < 2) {
+  if (
+    !pathConfig ||
+    !pathConfig.pathPoints ||
+    pathConfig.pathPoints.length < 2
+  ) {
     return 0;
   }
 
@@ -978,7 +1004,7 @@ export function getPathLength(
  */
 export function clearTextPath(
   store: TextAnimatorStore,
-  layerId: string
+  layerId: string,
 ): boolean {
   const layer = getTextLayer(store, layerId);
   if (!layer) return false;
@@ -1006,7 +1032,7 @@ export function clearTextPath(
  */
 export function hasTextPath(
   store: TextAnimatorStore,
-  layerId: string
+  layerId: string,
 ): boolean {
   const layer = getTextLayer(store, layerId);
   if (!layer) return false;
@@ -1015,5 +1041,5 @@ export function hasTextPath(
   if (!textData) return false;
 
   const pathConfig = (textData as any).pathConfig;
-  return !!(pathConfig && pathConfig.pathPoints && pathConfig.pathPoints.length >= 2);
+  return !!(pathConfig?.pathPoints && pathConfig.pathPoints.length >= 2);
 }

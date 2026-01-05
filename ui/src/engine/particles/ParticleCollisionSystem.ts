@@ -8,14 +8,20 @@
  * Extracted from GPUParticleSystem.ts for modularity.
  */
 
-import { PARTICLE_STRIDE } from './types';
-import { SpatialHashGrid } from './SpatialHashGrid';
+import type { SpatialHashGrid } from "./SpatialHashGrid";
+import { PARTICLE_STRIDE } from "./types";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-export type BoundsBehavior = 'none' | 'kill' | 'bounce' | 'wrap' | 'clamp' | 'stick';
+export type BoundsBehavior =
+  | "none"
+  | "kill"
+  | "bounce"
+  | "wrap"
+  | "clamp"
+  | "stick";
 
 export interface CollisionConfig {
   enabled: boolean;
@@ -50,7 +56,7 @@ export class ParticleCollisionSystem {
       bounciness: config.bounciness ?? 0.5,
       friction: config.friction ?? 0.1,
       bounds: config.bounds,
-      boundsBehavior: config.boundsBehavior ?? 'none',
+      boundsBehavior: config.boundsBehavior ?? "none",
     };
   }
 
@@ -74,7 +80,7 @@ export class ParticleCollisionSystem {
     if (!this.config.enabled) return;
 
     // Apply boundary collisions
-    if (this.config.bounds && this.config.boundsBehavior !== 'none') {
+    if (this.config.bounds && this.config.boundsBehavior !== "none") {
       this.applyBoundaryCollisions(particleBuffer);
     }
 
@@ -116,111 +122,123 @@ export class ParticleCollisionSystem {
 
       // X boundaries
       if (px < min.x) {
-        if (behavior === 'bounce') {
+        if (behavior === "bounce") {
           px = min.x + (min.x - px);
           vx = -vx * bounciness;
-        } else if (behavior === 'wrap') {
+        } else if (behavior === "wrap") {
           px = max.x - (min.x - px);
-        } else if (behavior === 'kill') {
+        } else if (behavior === "kill") {
           buffer[offset + 6] = buffer[offset + 7]; // Set age = lifetime (kill)
           continue;
-        } else if (behavior === 'clamp') {
+        } else if (behavior === "clamp") {
           px = min.x;
           vx = 0; // Stop X velocity but keep other motion
-        } else if (behavior === 'stick') {
+        } else if (behavior === "stick") {
           px = min.x;
-          vx = 0; vy = 0; vz = 0; // Stop all motion when stuck
+          vx = 0;
+          vy = 0;
+          vz = 0; // Stop all motion when stuck
         }
         collided = true;
       } else if (px > max.x) {
-        if (behavior === 'bounce') {
+        if (behavior === "bounce") {
           px = max.x - (px - max.x);
           vx = -vx * bounciness;
-        } else if (behavior === 'wrap') {
+        } else if (behavior === "wrap") {
           px = min.x + (px - max.x);
-        } else if (behavior === 'kill') {
+        } else if (behavior === "kill") {
           buffer[offset + 6] = buffer[offset + 7];
           continue;
-        } else if (behavior === 'clamp') {
+        } else if (behavior === "clamp") {
           px = max.x;
           vx = 0; // Stop X velocity but keep other motion
-        } else if (behavior === 'stick') {
+        } else if (behavior === "stick") {
           px = max.x;
-          vx = 0; vy = 0; vz = 0;
+          vx = 0;
+          vy = 0;
+          vz = 0;
         }
         collided = true;
       }
 
       // Y boundaries (includes floor/ceiling)
       if (py < min.y) {
-        if (behavior === 'bounce') {
+        if (behavior === "bounce") {
           py = min.y + (min.y - py);
           vy = -vy * bounciness;
-        } else if (behavior === 'wrap') {
+        } else if (behavior === "wrap") {
           py = max.y - (min.y - py);
-        } else if (behavior === 'kill') {
+        } else if (behavior === "kill") {
           buffer[offset + 6] = buffer[offset + 7];
           continue;
-        } else if (behavior === 'clamp') {
+        } else if (behavior === "clamp") {
           py = min.y;
           vy = 0; // Stop Y velocity but keep other motion
-        } else if (behavior === 'stick') {
+        } else if (behavior === "stick") {
           py = min.y;
-          vx = 0; vy = 0; vz = 0;
+          vx = 0;
+          vy = 0;
+          vz = 0;
         }
         collided = true;
       } else if (py > max.y) {
-        if (behavior === 'bounce') {
+        if (behavior === "bounce") {
           py = max.y - (py - max.y);
           vy = -vy * bounciness;
-        } else if (behavior === 'wrap') {
+        } else if (behavior === "wrap") {
           py = min.y + (py - max.y);
-        } else if (behavior === 'kill') {
+        } else if (behavior === "kill") {
           buffer[offset + 6] = buffer[offset + 7];
           continue;
-        } else if (behavior === 'clamp') {
+        } else if (behavior === "clamp") {
           py = max.y;
           vy = 0; // Stop Y velocity but keep other motion
-        } else if (behavior === 'stick') {
+        } else if (behavior === "stick") {
           py = max.y;
-          vx = 0; vy = 0; vz = 0;
+          vx = 0;
+          vy = 0;
+          vz = 0;
         }
         collided = true;
       }
 
       // Z boundaries
       if (pz < min.z) {
-        if (behavior === 'bounce') {
+        if (behavior === "bounce") {
           pz = min.z + (min.z - pz);
           vz = -vz * bounciness;
-        } else if (behavior === 'wrap') {
+        } else if (behavior === "wrap") {
           pz = max.z - (min.z - pz);
-        } else if (behavior === 'kill') {
+        } else if (behavior === "kill") {
           buffer[offset + 6] = buffer[offset + 7];
           continue;
-        } else if (behavior === 'clamp') {
+        } else if (behavior === "clamp") {
           pz = min.z;
           vz = 0; // Stop Z velocity but keep other motion
-        } else if (behavior === 'stick') {
+        } else if (behavior === "stick") {
           pz = min.z;
-          vx = 0; vy = 0; vz = 0;
+          vx = 0;
+          vy = 0;
+          vz = 0;
         }
         collided = true;
       } else if (pz > max.z) {
-        if (behavior === 'bounce') {
+        if (behavior === "bounce") {
           pz = max.z - (pz - max.z);
           vz = -vz * bounciness;
-        } else if (behavior === 'wrap') {
+        } else if (behavior === "wrap") {
           pz = min.z + (pz - max.z);
-        } else if (behavior === 'kill') {
+        } else if (behavior === "kill") {
           buffer[offset + 6] = buffer[offset + 7];
           continue;
-        } else if (behavior === 'clamp') {
+        } else if (behavior === "clamp") {
           pz = max.z;
           vz = 0; // Stop Z velocity but keep other motion
-        } else if (behavior === 'stick') {
+        } else if (behavior === "stick") {
           pz = max.z;
-          vx = 0; vy = 0; vz = 0;
+          vx = 0;
+          vy = 0;
+          vz = 0;
         }
         collided = true;
       }
@@ -304,7 +322,7 @@ export class ParticleCollisionSystem {
 
           // Impulse magnitude
           const totalMass = mass1 + mass2;
-          const impulse = -(1 + bounciness) * dvn / totalMass;
+          const impulse = (-(1 + bounciness) * dvn) / totalMass;
 
           // Apply impulse
           vx += impulse * mass2 * nx;

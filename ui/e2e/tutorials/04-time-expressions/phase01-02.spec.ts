@@ -1,20 +1,20 @@
-import { test, expect } from '@playwright/test';
-import { CompositorHelper } from '../../helpers/compositor';
+import { expect, test } from "@playwright/test";
+import { CompositorHelper } from "../../helpers/compositor";
 
-test.describe('Tutorial 04: Time Remapping - Phases 1-2 (Steps 1-42)', () => {
+test.describe("Tutorial 04: Time Remapping - Phases 1-2 (Steps 1-42)", () => {
   let h: CompositorHelper;
 
   test.beforeEach(async ({ page }) => {
     h = new CompositorHelper(page);
-    await page.goto('/');
+    await page.goto("/");
     await page.waitForSelector('[data-testid="app-ready"]');
     await h.newProject();
-    await h.newComposition('Time_Test', 1920, 1080, 24, 10);
+    await h.newComposition("Time_Test", 1920, 1080, 24, 10);
   });
 
-  test('Phase 1: Layer Time Properties (Steps 1-18)', async ({ page }) => {
+  test("Phase 1: Layer Time Properties (Steps 1-18)", async ({ page }) => {
     // Step 1-3: Create comp with footage (using solid as placeholder)
-    await h.newSolid('Footage');
+    await h.newSolid("Footage");
 
     // Step 4-5: Verify layer timing
     const startFrame = await h.getLayerStartFrame(0);
@@ -40,8 +40,8 @@ test.describe('Tutorial 04: Time Remapping - Phases 1-2 (Steps 1-42)', () => {
     await h.redo();
   });
 
-  test('Phase 2: Time Stretch (Steps 19-42)', async ({ page }) => {
-    await h.newSolid('Footage');
+  test("Phase 2: Time Stretch (Steps 19-42)", async ({ page }) => {
+    await h.newSolid("Footage");
     await h.setLayerEndFrame(0, 120); // 5 second layer
 
     // Step 20-24: Basic time stretch
@@ -66,12 +66,12 @@ test.describe('Tutorial 04: Time Remapping - Phases 1-2 (Steps 1-42)', () => {
 
     // Step 37-42: Stretch anchor
     await h.setTimeStretch(0, 100); // Reset
-    await h.setStretchAnchor(0, 'startFrame');
+    await h.setStretchAnchor(0, "startFrame");
     await h.setTimeStretch(0, 200);
     // Should extend rightward
 
     await h.setTimeStretch(0, 100);
-    await h.setStretchAnchor(0, 'endFrame');
+    await h.setStretchAnchor(0, "endFrame");
     await h.setTimeStretch(0, 200);
     // Should extend leftward
 

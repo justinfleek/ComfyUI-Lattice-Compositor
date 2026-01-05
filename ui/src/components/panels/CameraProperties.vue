@@ -675,30 +675,26 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, computed, ref } from 'vue';
-import type { Camera3D, CameraType, MeasureFilmSize, AutoOrientMode } from '../../types/camera';
-import { CAMERA_PRESETS } from '../../types/camera';
-import { focalLengthToFOV, fovToFocalLength } from '../../services/math3d';
-import { ScrubableNumber, SliderInput, AngleDial } from '../controls';
-import { useCompositorStore } from '@/stores/compositorStore';
+import { computed, reactive, ref } from "vue";
 import {
-  type TrajectoryType,
-  type TrajectoryConfig,
-  DEFAULT_TRAJECTORY,
-  TRAJECTORY_PRESETS,
-  getTrajectoryDescription,
-  getTrajectoryTypesByCategory,
-  getTrajectoryPosition,
-  generateTrajectoryKeyframes,
-  createTrajectoryFromPreset
-} from '@/services/cameraTrajectory';
-import {
+  type CameraShake,
   type CameraShakeConfig,
-  CameraShake,
-  SHAKE_PRESETS,
+  createCameraShake,
   DEFAULT_SHAKE_CONFIG,
-  createCameraShake
-} from '@/services/cameraEnhancements';
+  SHAKE_PRESETS,
+} from "@/services/cameraEnhancements";
+import {
+  DEFAULT_TRAJECTORY,
+  generateTrajectoryKeyframes,
+  getTrajectoryDescription,
+  getTrajectoryPosition,
+  getTrajectoryTypesByCategory,
+  type TrajectoryConfig,
+  type TrajectoryType,
+} from "@/services/cameraTrajectory";
+import { useCompositorStore } from "@/stores/compositorStore";
+import { focalLengthToFOV, fovToFocalLength } from "../../services/math3d";
+import type { CAMERA_PRESETS, Camera3D } from "../../types/camera";
 
 // Store connection
 const store = useCompositorStore();
@@ -707,7 +703,7 @@ const store = useCompositorStore();
 const camera = computed<Camera3D | null>(() => {
   // First, check if a camera layer is selected
   const selectedLayer = store.selectedLayer;
-  if (selectedLayer?.type === 'camera' && selectedLayer.data) {
+  if (selectedLayer?.type === "camera" && selectedLayer.data) {
     const cameraData = selectedLayer.data as { cameraId: string };
     return store.getCamera(cameraData.cameraId);
   }
@@ -724,47 +720,58 @@ const expandedSections = reactive({
   autoOrient: false,
   clipping: false,
   trajectory: false,
-  shake: false
+  shake: false,
 });
 
 // Trajectory configuration
 const trajectoryConfig = reactive<TrajectoryConfig>({
-  ...DEFAULT_TRAJECTORY
+  ...DEFAULT_TRAJECTORY,
 });
 
 // Camera Shake configuration
 const shakeConfig = reactive<CameraShakeConfig>({
-  ...DEFAULT_SHAKE_CONFIG
+  ...DEFAULT_SHAKE_CONFIG,
 });
-const shakeEnabled = ref(false);
+const _shakeEnabled = ref(false);
 const shakeDuration = ref(81); // Default composition length
 let activeCameraShake: CameraShake | null = null;
 
 // Get trajectory types grouped by category
-const trajectoryTypesByCategory = computed(() => getTrajectoryTypesByCategory());
+const _trajectoryTypesByCategory = computed(() =>
+  getTrajectoryTypesByCategory(),
+);
 
 // Get description for current trajectory type
-const trajectoryDescription = computed(() => getTrajectoryDescription(trajectoryConfig.type));
+const _trajectoryDescription = computed(() =>
+  getTrajectoryDescription(trajectoryConfig.type),
+);
 
 // Check if current trajectory is orbital (shows loops control)
-const isOrbitalTrajectory = computed(() => {
-  const orbitalTypes: TrajectoryType[] = ['orbit', 'orbit_reverse', 'circle', 'figure8', 'spiral_in', 'spiral_out'];
+const _isOrbitalTrajectory = computed(() => {
+  const orbitalTypes: TrajectoryType[] = [
+    "orbit",
+    "orbit_reverse",
+    "circle",
+    "figure8",
+    "spiral_in",
+    "spiral_out",
+  ];
   return orbitalTypes.includes(trajectoryConfig.type);
 });
 
 // Format trajectory name for display
-function formatTrajectoryName(type: TrajectoryType): string {
+function _formatTrajectoryName(type: TrajectoryType): string {
   return type
-    .split('_')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 }
 
 // Preview animation timer
 const previewAnimationId = ref<number | null>(null);
 
 // Preview the trajectory motion
-function previewTrajectory() {
+function _previewTrajectory() {
   if (!camera.value) return;
 
   // Cancel any existing preview
@@ -780,10 +787,10 @@ function previewTrajectory() {
     ...trajectoryConfig,
     center: { ...camera.value.pointOfInterest },
     baseDistance: Math.sqrt(
-      Math.pow(camera.value.position.x - camera.value.pointOfInterest.x, 2) +
-      Math.pow(camera.value.position.y - camera.value.pointOfInterest.y, 2) +
-      Math.pow(camera.value.position.z - camera.value.pointOfInterest.z, 2)
-    )
+      (camera.value.position.x - camera.value.pointOfInterest.x) ** 2 +
+        (camera.value.position.y - camera.value.pointOfInterest.y) ** 2 +
+        (camera.value.position.z - camera.value.pointOfInterest.z) ** 2,
+    ),
   };
 
   function animate() {
@@ -793,9 +800,9 @@ function previewTrajectory() {
     const { position, target } = getTrajectoryPosition(config, t);
 
     // Update camera position live
-    store.updateCamera(camera.value!.id, {
+    store.updateCamera(camera.value?.id, {
       position,
-      pointOfInterest: target
+      pointOfInterest: target,
     });
 
     if (t < 1) {
@@ -809,20 +816,20 @@ function previewTrajectory() {
 }
 
 // Apply trajectory as keyframes
-function applyTrajectory() {
+function _applyTrajectory() {
   if (!camera.value) return;
 
   // Calculate base distance from current camera setup
   const baseDistance = Math.sqrt(
-    Math.pow(camera.value.position.x - camera.value.pointOfInterest.x, 2) +
-    Math.pow(camera.value.position.y - camera.value.pointOfInterest.y, 2) +
-    Math.pow(camera.value.position.z - camera.value.pointOfInterest.z, 2)
+    (camera.value.position.x - camera.value.pointOfInterest.x) ** 2 +
+      (camera.value.position.y - camera.value.pointOfInterest.y) ** 2 +
+      (camera.value.position.z - camera.value.pointOfInterest.z) ** 2,
   );
 
   const config: TrajectoryConfig = {
     ...trajectoryConfig,
     center: { ...camera.value.pointOfInterest },
-    baseDistance
+    baseDistance,
   };
 
   const keyframes = generateTrajectoryKeyframes(config, store.currentFrame);
@@ -858,19 +865,21 @@ function applyTrajectory() {
     }
   }
 
-  console.log(`Applied ${keyframes.position.length} camera trajectory keyframes`);
+  console.log(
+    `Applied ${keyframes.position.length} camera trajectory keyframes`,
+  );
 }
 
 // ============================================================================
 // CAMERA SHAKE
 // ============================================================================
 
-function applyShakePreset(preset: CameraShakeConfig['type']) {
+function _applyShakePreset(preset: CameraShakeConfig["type"]) {
   const presetConfig = SHAKE_PRESETS[preset];
   Object.assign(shakeConfig, presetConfig, { type: preset });
 }
 
-function previewShake() {
+function _previewShake() {
   if (!camera.value) return;
 
   // Create shake instance
@@ -878,7 +887,7 @@ function previewShake() {
     shakeConfig.type,
     shakeConfig,
     store.currentFrame,
-    shakeDuration.value
+    shakeDuration.value,
   );
 
   // Store original camera position
@@ -896,7 +905,7 @@ function previewShake() {
     if (elapsed < duration && activeCameraShake) {
       const offset = activeCameraShake.getOffset(frame);
 
-      store.updateCamera(camera.value!.id, {
+      store.updateCamera(camera.value?.id, {
         position: {
           x: originalPosition.x + offset.position.x,
           y: originalPosition.y + offset.position.y,
@@ -906,15 +915,15 @@ function previewShake() {
           x: originalOrientation.x + offset.rotation.x,
           y: originalOrientation.y + offset.rotation.y,
           z: originalOrientation.z + offset.rotation.z,
-        }
+        },
       });
 
       requestAnimationFrame(animate);
     } else {
       // Restore original position
-      store.updateCamera(camera.value!.id, {
+      store.updateCamera(camera.value?.id, {
         position: originalPosition,
-        orientation: originalOrientation
+        orientation: originalOrientation,
       });
       activeCameraShake = null;
     }
@@ -923,7 +932,7 @@ function previewShake() {
   requestAnimationFrame(animate);
 }
 
-function applyShakeKeyframes() {
+function _applyShakeKeyframes() {
   if (!camera.value) return;
 
   // Create shake instance
@@ -931,7 +940,7 @@ function applyShakeKeyframes() {
     shakeConfig.type,
     shakeConfig,
     store.currentFrame,
-    shakeDuration.value
+    shakeDuration.value,
   );
 
   // Get existing keyframes for the camera (stored separately in store, not on Camera3D)
@@ -948,85 +957,94 @@ function applyShakeKeyframes() {
   console.log(`Applied ${shakenKeyframes.length} camera shake keyframes`);
 }
 
-function toggleSection(section: keyof typeof expandedSections) {
+function _toggleSection(section: keyof typeof expandedSections) {
   expandedSections[section] = !expandedSections[section];
 }
 
-function updateProperty<K extends keyof Camera3D>(key: K, value: Camera3D[K]) {
+function _updateProperty<K extends keyof Camera3D>(key: K, value: Camera3D[K]) {
   if (!camera.value) return;
   store.updateCamera(camera.value.id, { [key]: value });
 }
 
-function updatePosition(axis: 'x' | 'y' | 'z', value: number) {
+function _updatePosition(axis: "x" | "y" | "z", value: number) {
   if (!camera.value) return;
   store.updateCamera(camera.value.id, {
-    position: { ...camera.value.position, [axis]: value }
+    position: { ...camera.value.position, [axis]: value },
   });
 }
 
-function updatePOI(axis: 'x' | 'y' | 'z', value: number) {
+function _updatePOI(axis: "x" | "y" | "z", value: number) {
   if (!camera.value) return;
   store.updateCamera(camera.value.id, {
-    pointOfInterest: { ...camera.value.pointOfInterest, [axis]: value }
+    pointOfInterest: { ...camera.value.pointOfInterest, [axis]: value },
   });
 }
 
-function updateOrientation(axis: 'x' | 'y' | 'z', value: number) {
+function _updateOrientation(axis: "x" | "y" | "z", value: number) {
   if (!camera.value) return;
   store.updateCamera(camera.value.id, {
-    orientation: { ...camera.value.orientation, [axis]: value }
+    orientation: { ...camera.value.orientation, [axis]: value },
   });
 }
 
-function updateFocalLength(value: number) {
+function _updateFocalLength(value: number) {
   if (!camera.value) return;
   const angleOfView = focalLengthToFOV(value, camera.value.filmSize);
   store.updateCamera(camera.value.id, {
     focalLength: value,
-    angleOfView
+    angleOfView,
   });
 }
 
-function updateAngleOfView(value: number) {
+function _updateAngleOfView(value: number) {
   if (!camera.value) return;
   const focalLength = fovToFocalLength(value, camera.value.filmSize);
   store.updateCamera(camera.value.id, {
     angleOfView: value,
-    focalLength
+    focalLength,
   });
 }
 
-function updateDOF<K extends keyof Camera3D['depthOfField']>(key: K, value: Camera3D['depthOfField'][K]) {
+function _updateDOF<K extends keyof Camera3D["depthOfField"]>(
+  key: K,
+  value: Camera3D["depthOfField"][K],
+) {
   if (!camera.value) return;
   store.updateCamera(camera.value.id, {
-    depthOfField: { ...camera.value.depthOfField, [key]: value }
+    depthOfField: { ...camera.value.depthOfField, [key]: value },
   });
 }
 
-function updateIris<K extends keyof Camera3D['iris']>(key: K, value: Camera3D['iris'][K]) {
+function _updateIris<K extends keyof Camera3D["iris"]>(
+  key: K,
+  value: Camera3D["iris"][K],
+) {
   if (!camera.value) return;
   store.updateCamera(camera.value.id, {
-    iris: { ...camera.value.iris, [key]: value }
+    iris: { ...camera.value.iris, [key]: value },
   });
 }
 
-function updateHighlight<K extends keyof Camera3D['highlight']>(key: K, value: Camera3D['highlight'][K]) {
+function _updateHighlight<K extends keyof Camera3D["highlight"]>(
+  key: K,
+  value: Camera3D["highlight"][K],
+) {
   if (!camera.value) return;
   store.updateCamera(camera.value.id, {
-    highlight: { ...camera.value.highlight, [key]: value }
+    highlight: { ...camera.value.highlight, [key]: value },
   });
 }
 
-function applyPreset(preset: typeof CAMERA_PRESETS[number]) {
+function _applyPreset(preset: (typeof CAMERA_PRESETS)[number]) {
   if (!camera.value) return;
   store.updateCamera(camera.value.id, {
     focalLength: preset.focalLength,
     angleOfView: preset.angleOfView,
-    zoom: preset.zoom
+    zoom: preset.zoom,
   });
 }
 
-function createCamera() {
+function _createCamera() {
   store.createCameraLayer();
 }
 </script>

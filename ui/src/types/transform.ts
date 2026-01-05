@@ -4,8 +4,8 @@
 // Extracted from project.ts for better modularity
 // ============================================================
 
-import type { AnimatableProperty } from './animation';
-import { createAnimatableProperty } from './animation';
+import type { AnimatableProperty } from "./animation";
+import { createAnimatableProperty } from "./animation";
 
 // ============================================================
 // VECTOR TYPES
@@ -69,12 +69,12 @@ export interface LayerTransform {
 // ============================================================
 
 export type MotionBlurType =
-  | 'standard'     // Standard shutter-based blur
-  | 'pixel'        // Pixel motion blur (analyzes frame differences)
-  | 'directional'  // Directional blur (fixed direction)
-  | 'radial'       // Radial blur (spin/zoom from center)
-  | 'vector'       // Vector-based (uses velocity data)
-  | 'adaptive';    // Auto-selects based on motion
+  | "standard" // Standard shutter-based blur
+  | "pixel" // Pixel motion blur (analyzes frame differences)
+  | "directional" // Directional blur (fixed direction)
+  | "radial" // Radial blur (spin/zoom from center)
+  | "vector" // Vector-based (uses velocity data)
+  | "adaptive"; // Auto-selects based on motion
 
 export interface LayerMotionBlurSettings {
   /** Blur type */
@@ -90,7 +90,7 @@ export interface LayerMotionBlurSettings {
   /** For directional blur: blur length in pixels */
   blurLength?: number;
   /** For radial blur: 'spin' or 'zoom' */
-  radialMode?: 'spin' | 'zoom';
+  radialMode?: "spin" | "zoom";
   /** For radial blur: center point (0-1 normalized) */
   radialCenterX?: number;
   radialCenterY?: number;
@@ -104,7 +104,7 @@ export interface LayerMotionBlurSettings {
 
 export interface LayerMaterialOptions {
   /** Whether this layer casts shadows */
-  castsShadows: 'off' | 'on' | 'only';
+  castsShadows: "off" | "on" | "only";
   /** Light transmission percentage (0-100) */
   lightTransmission: number;
   /** Whether this layer accepts shadows from other layers */
@@ -130,7 +130,11 @@ export interface LayerMaterialOptions {
 /**
  * Auto-Orient Mode - How a layer orients itself in 3D space
  */
-export type AutoOrientMode = 'off' | 'toCamera' | 'alongPath' | 'toPointOfInterest';
+export type AutoOrientMode =
+  | "off"
+  | "toCamera"
+  | "alongPath"
+  | "toPointOfInterest";
 
 /**
  * Follow Path Constraint - Position a layer along a path/spline layer
@@ -161,7 +165,7 @@ export interface FollowPathConstraint {
   banking: AnimatableProperty<number>;
 
   /** Loop behavior when progress goes beyond 0-1 */
-  loopMode: 'clamp' | 'loop' | 'pingpong';
+  loopMode: "clamp" | "loop" | "pingpong";
 }
 
 // ============================================================
@@ -172,19 +176,35 @@ export interface FollowPathConstraint {
  * Create default layer transform
  */
 export function createDefaultTransform(): LayerTransform {
-  const originProp = createAnimatableProperty('origin', { x: 0, y: 0, z: 0 }, 'vector3');
+  const originProp = createAnimatableProperty(
+    "origin",
+    { x: 0, y: 0, z: 0 },
+    "vector3",
+  );
   return {
-    position: createAnimatableProperty('position', { x: 0, y: 0, z: 0 }, 'vector3'),
+    position: createAnimatableProperty(
+      "position",
+      { x: 0, y: 0, z: 0 },
+      "vector3",
+    ),
     origin: originProp,
     // @deprecated alias for backwards compatibility
     anchorPoint: originProp,
-    scale: createAnimatableProperty('scale', { x: 100, y: 100, z: 100 }, 'vector3'),
-    rotation: createAnimatableProperty('rotation', 0, 'number'),
+    scale: createAnimatableProperty(
+      "scale",
+      { x: 100, y: 100, z: 100 },
+      "vector3",
+    ),
+    rotation: createAnimatableProperty("rotation", 0, "number"),
     // 3D rotation properties (always present for consistent structure)
-    orientation: createAnimatableProperty('orientation', { x: 0, y: 0, z: 0 }, 'vector3'),
-    rotationX: createAnimatableProperty('rotationX', 0, 'number'),
-    rotationY: createAnimatableProperty('rotationY', 0, 'number'),
-    rotationZ: createAnimatableProperty('rotationZ', 0, 'number')
+    orientation: createAnimatableProperty(
+      "orientation",
+      { x: 0, y: 0, z: 0 },
+      "vector3",
+    ),
+    rotationX: createAnimatableProperty("rotationX", 0, "number"),
+    rotationY: createAnimatableProperty("rotationY", 0, "number"),
+    rotationZ: createAnimatableProperty("rotationZ", 0, "number"),
   };
 }
 
@@ -192,7 +212,9 @@ export function createDefaultTransform(): LayerTransform {
  * Normalize a layer transform to use the new 'origin' property.
  * Handles migration from 'anchorPoint' to 'origin'.
  */
-export function normalizeLayerTransform(transform: LayerTransform): LayerTransform {
+export function normalizeLayerTransform(
+  transform: LayerTransform,
+): LayerTransform {
   // If origin is missing but anchorPoint exists, use anchorPoint as origin
   if (!transform.origin && transform.anchorPoint) {
     transform.origin = transform.anchorPoint;
@@ -207,17 +229,19 @@ export function normalizeLayerTransform(transform: LayerTransform): LayerTransfo
 /**
  * Create default Follow Path constraint
  */
-export function createFollowPathConstraint(pathLayerId: string): FollowPathConstraint {
+export function createFollowPathConstraint(
+  pathLayerId: string,
+): FollowPathConstraint {
   return {
     enabled: true,
     pathLayerId,
-    progress: createAnimatableProperty('Progress', 0, 'number'),
-    offset: createAnimatableProperty('Offset', 0, 'number'),
+    progress: createAnimatableProperty("Progress", 0, "number"),
+    offset: createAnimatableProperty("Offset", 0, "number"),
     tangentOffset: 0,
     autoOrient: true,
-    rotationOffset: createAnimatableProperty('Rotation Offset', 0, 'number'),
-    banking: createAnimatableProperty('Banking', 0, 'number'),
-    loopMode: 'clamp',
+    rotationOffset: createAnimatableProperty("Rotation Offset", 0, "number"),
+    banking: createAnimatableProperty("Banking", 0, "number"),
+    loopMode: "clamp",
   };
 }
 
@@ -234,9 +258,21 @@ export function separatePositionDimensions(transform: LayerTransform): void {
   const currentValue = pos.value;
 
   // Create separate X, Y, Z properties
-  transform.positionX = createAnimatableProperty('Position X', currentValue.x, 'number');
-  transform.positionY = createAnimatableProperty('Position Y', currentValue.y, 'number');
-  transform.positionZ = createAnimatableProperty('Position Z', currentValue.z ?? 0, 'number');
+  transform.positionX = createAnimatableProperty(
+    "Position X",
+    currentValue.x,
+    "number",
+  );
+  transform.positionY = createAnimatableProperty(
+    "Position Y",
+    currentValue.y,
+    "number",
+  );
+  transform.positionZ = createAnimatableProperty(
+    "Position Z",
+    currentValue.z ?? 0,
+    "number",
+  );
 
   // Copy keyframes to separate properties
   if (pos.animated && pos.keyframes.length > 0) {
@@ -244,28 +280,28 @@ export function separatePositionDimensions(transform: LayerTransform): void {
     transform.positionY.animated = true;
     transform.positionZ.animated = true;
 
-    pos.keyframes.forEach(kf => {
+    pos.keyframes.forEach((kf) => {
       const val = kf.value;
 
       // X keyframe
-      transform.positionX!.keyframes.push({
+      transform.positionX?.keyframes.push({
         ...kf,
         id: `${kf.id}_x`,
-        value: val.x
+        value: val.x,
       });
 
       // Y keyframe
-      transform.positionY!.keyframes.push({
+      transform.positionY?.keyframes.push({
         ...kf,
         id: `${kf.id}_y`,
-        value: val.y
+        value: val.y,
       });
 
       // Z keyframe
-      transform.positionZ!.keyframes.push({
+      transform.positionZ?.keyframes.push({
         ...kf,
         id: `${kf.id}_z`,
-        value: val.z ?? 0
+        value: val.z ?? 0,
       });
     });
   }
@@ -292,14 +328,14 @@ export function linkPositionDimensions(transform: LayerTransform): void {
   transform.position.value = {
     x: posX.value,
     y: posY.value,
-    z: posZ?.value ?? 0
+    z: posZ?.value ?? 0,
   };
 
   // Merge keyframes - collect all unique frames
   const allFrames = new Set<number>();
-  posX.keyframes.forEach(kf => allFrames.add(kf.frame));
-  posY.keyframes.forEach(kf => allFrames.add(kf.frame));
-  posZ?.keyframes.forEach(kf => allFrames.add(kf.frame));
+  posX.keyframes.forEach((kf) => allFrames.add(kf.frame));
+  posY.keyframes.forEach((kf) => allFrames.add(kf.frame));
+  posZ?.keyframes.forEach((kf) => allFrames.add(kf.frame));
 
   // Clear existing keyframes
   transform.position.keyframes = [];
@@ -308,15 +344,21 @@ export function linkPositionDimensions(transform: LayerTransform): void {
   // Create combined keyframes at each frame
   const sortedFrames = Array.from(allFrames).sort((a, b) => a - b);
 
-  sortedFrames.forEach(frame => {
-    const xKf = posX.keyframes.find(k => k.frame === frame);
-    const yKf = posY.keyframes.find(k => k.frame === frame);
-    const zKf = posZ?.keyframes.find(k => k.frame === frame);
+  sortedFrames.forEach((frame) => {
+    const xKf = posX.keyframes.find((k) => k.frame === frame);
+    const yKf = posY.keyframes.find((k) => k.frame === frame);
+    const zKf = posZ?.keyframes.find((k) => k.frame === frame);
 
     // Get values (interpolate if keyframe doesn't exist at this frame)
-    const xVal = xKf?.value ?? getInterpolatedValue(posX.keyframes, frame) ?? posX.value;
-    const yVal = yKf?.value ?? getInterpolatedValue(posY.keyframes, frame) ?? posY.value;
-    const zVal = zKf?.value ?? getInterpolatedValue(posZ?.keyframes ?? [], frame) ?? posZ?.value ?? 0;
+    const xVal =
+      xKf?.value ?? getInterpolatedValue(posX.keyframes, frame) ?? posX.value;
+    const yVal =
+      yKf?.value ?? getInterpolatedValue(posY.keyframes, frame) ?? posY.value;
+    const zVal =
+      zKf?.value ??
+      getInterpolatedValue(posZ?.keyframes ?? [], frame) ??
+      posZ?.value ??
+      0;
 
     // Use the first available keyframe as template for handles/interpolation
     const templateKf = xKf || yKf || zKf;
@@ -325,10 +367,14 @@ export function linkPositionDimensions(transform: LayerTransform): void {
       id: `kf_pos_${frame}_${Date.now()}`,
       frame,
       value: { x: xVal, y: yVal, z: zVal },
-      interpolation: templateKf?.interpolation ?? 'linear',
+      interpolation: templateKf?.interpolation ?? "linear",
       inHandle: templateKf?.inHandle ?? { frame: -5, value: 0, enabled: false },
-      outHandle: templateKf?.outHandle ?? { frame: 5, value: 0, enabled: false },
-      controlMode: templateKf?.controlMode ?? 'smooth'
+      outHandle: templateKf?.outHandle ?? {
+        frame: 5,
+        value: 0,
+        enabled: false,
+      },
+      controlMode: templateKf?.controlMode ?? "smooth",
     });
   });
 
@@ -350,34 +396,46 @@ export function separateScaleDimensions(transform: LayerTransform): void {
   const scale = transform.scale;
   const currentValue = scale.value;
 
-  transform.scaleX = createAnimatableProperty('Scale X', currentValue.x, 'number');
-  transform.scaleY = createAnimatableProperty('Scale Y', currentValue.y, 'number');
-  transform.scaleZ = createAnimatableProperty('Scale Z', currentValue.z ?? 100, 'number');
+  transform.scaleX = createAnimatableProperty(
+    "Scale X",
+    currentValue.x,
+    "number",
+  );
+  transform.scaleY = createAnimatableProperty(
+    "Scale Y",
+    currentValue.y,
+    "number",
+  );
+  transform.scaleZ = createAnimatableProperty(
+    "Scale Z",
+    currentValue.z ?? 100,
+    "number",
+  );
 
   if (scale.animated && scale.keyframes.length > 0) {
     transform.scaleX.animated = true;
     transform.scaleY.animated = true;
     transform.scaleZ.animated = true;
 
-    scale.keyframes.forEach(kf => {
+    scale.keyframes.forEach((kf) => {
       const val = kf.value;
 
-      transform.scaleX!.keyframes.push({
+      transform.scaleX?.keyframes.push({
         ...kf,
         id: `${kf.id}_x`,
-        value: val.x
+        value: val.x,
       });
 
-      transform.scaleY!.keyframes.push({
+      transform.scaleY?.keyframes.push({
         ...kf,
         id: `${kf.id}_y`,
-        value: val.y
+        value: val.y,
       });
 
-      transform.scaleZ!.keyframes.push({
+      transform.scaleZ?.keyframes.push({
         ...kf,
         id: `${kf.id}_z`,
-        value: val.z ?? 100
+        value: val.z ?? 100,
       });
     });
   }
@@ -401,27 +459,37 @@ export function linkScaleDimensions(transform: LayerTransform): void {
   transform.scale.value = {
     x: scaleX.value,
     y: scaleY.value,
-    z: scaleZ?.value ?? 100
+    z: scaleZ?.value ?? 100,
   };
 
   const allFrames = new Set<number>();
-  scaleX.keyframes.forEach(kf => allFrames.add(kf.frame));
-  scaleY.keyframes.forEach(kf => allFrames.add(kf.frame));
-  scaleZ?.keyframes.forEach(kf => allFrames.add(kf.frame));
+  scaleX.keyframes.forEach((kf) => allFrames.add(kf.frame));
+  scaleY.keyframes.forEach((kf) => allFrames.add(kf.frame));
+  scaleZ?.keyframes.forEach((kf) => allFrames.add(kf.frame));
 
   transform.scale.keyframes = [];
   transform.scale.animated = allFrames.size > 0;
 
   const sortedFrames = Array.from(allFrames).sort((a, b) => a - b);
 
-  sortedFrames.forEach(frame => {
-    const xKf = scaleX.keyframes.find(k => k.frame === frame);
-    const yKf = scaleY.keyframes.find(k => k.frame === frame);
-    const zKf = scaleZ?.keyframes.find(k => k.frame === frame);
+  sortedFrames.forEach((frame) => {
+    const xKf = scaleX.keyframes.find((k) => k.frame === frame);
+    const yKf = scaleY.keyframes.find((k) => k.frame === frame);
+    const zKf = scaleZ?.keyframes.find((k) => k.frame === frame);
 
-    const xVal = xKf?.value ?? getInterpolatedValue(scaleX.keyframes, frame) ?? scaleX.value;
-    const yVal = yKf?.value ?? getInterpolatedValue(scaleY.keyframes, frame) ?? scaleY.value;
-    const zVal = zKf?.value ?? getInterpolatedValue(scaleZ?.keyframes ?? [], frame) ?? scaleZ?.value ?? 100;
+    const xVal =
+      xKf?.value ??
+      getInterpolatedValue(scaleX.keyframes, frame) ??
+      scaleX.value;
+    const yVal =
+      yKf?.value ??
+      getInterpolatedValue(scaleY.keyframes, frame) ??
+      scaleY.value;
+    const zVal =
+      zKf?.value ??
+      getInterpolatedValue(scaleZ?.keyframes ?? [], frame) ??
+      scaleZ?.value ??
+      100;
 
     const templateKf = xKf || yKf || zKf;
 
@@ -429,10 +497,14 @@ export function linkScaleDimensions(transform: LayerTransform): void {
       id: `kf_scale_${frame}_${Date.now()}`,
       frame,
       value: { x: xVal, y: yVal, z: zVal },
-      interpolation: templateKf?.interpolation ?? 'linear',
+      interpolation: templateKf?.interpolation ?? "linear",
       inHandle: templateKf?.inHandle ?? { frame: -5, value: 0, enabled: false },
-      outHandle: templateKf?.outHandle ?? { frame: 5, value: 0, enabled: false },
-      controlMode: templateKf?.controlMode ?? 'smooth'
+      outHandle: templateKf?.outHandle ?? {
+        frame: 5,
+        value: 0,
+        enabled: false,
+      },
+      controlMode: templateKf?.controlMode ?? "smooth",
     });
   });
 
@@ -448,7 +520,10 @@ export function linkScaleDimensions(transform: LayerTransform): void {
 /**
  * Helper: Get interpolated value at a frame from keyframes array
  */
-function getInterpolatedValue(keyframes: Array<{ frame: number; value: number }>, frame: number): number | undefined {
+function getInterpolatedValue(
+  keyframes: Array<{ frame: number; value: number }>,
+  frame: number,
+): number | undefined {
   if (keyframes.length === 0) return undefined;
   if (keyframes.length === 1) return keyframes[0].value;
 
@@ -458,12 +533,14 @@ function getInterpolatedValue(keyframes: Array<{ frame: number; value: number }>
   if (frame <= sorted[0].frame) return sorted[0].value;
 
   // After last keyframe
-  if (frame >= sorted[sorted.length - 1].frame) return sorted[sorted.length - 1].value;
+  if (frame >= sorted[sorted.length - 1].frame)
+    return sorted[sorted.length - 1].value;
 
   // Find surrounding keyframes
   for (let i = 0; i < sorted.length - 1; i++) {
     if (sorted[i].frame <= frame && sorted[i + 1].frame > frame) {
-      const t = (frame - sorted[i].frame) / (sorted[i + 1].frame - sorted[i].frame);
+      const t =
+        (frame - sorted[i].frame) / (sorted[i + 1].frame - sorted[i].frame);
       return sorted[i].value + (sorted[i + 1].value - sorted[i].value) * t;
     }
   }

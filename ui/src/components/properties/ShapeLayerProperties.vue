@@ -93,62 +93,40 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
-import type { Layer } from '@/types/project';
-import type {
-  ShapeLayerData,
-  ShapeContent,
-  ShapeGroup,
-  RectangleShape,
-  EllipseShape,
-  PolygonShape,
-  StarShape,
-  PathShape,
-  FillShape,
-  StrokeShape,
-  TrimPathsOperator,
-  RepeaterOperator,
-  OffsetPathsOperator,
-  PuckerBloatOperator,
-  WigglePathsOperator,
-  ZigZagOperator,
-  TwistOperator,
-  RoundedCornersOperator,
-  MergePathsOperator,
-  ShapeTransform,
-} from '@/types/shapes';
+import { computed, ref } from "vue";
+import { useCompositorStore } from "@/stores/compositorStore";
+import type { Layer } from "@/types/project";
+import type { ShapeContent, ShapeLayerData } from "@/types/shapes";
 import {
-  createDefaultShapeLayerData,
-  createDefaultGroup,
-  createDefaultRectangle,
   createDefaultEllipse,
-  createDefaultPolygon,
-  createDefaultStar,
-  createDefaultPath,
   createDefaultFill,
-  createDefaultStroke,
   createDefaultGradientFill,
   createDefaultGradientStroke,
-  createDefaultTrimPaths,
-  createDefaultRepeater,
+  createDefaultGroup,
+  createDefaultMergePaths,
   createDefaultOffsetPaths,
+  createDefaultPath,
+  createDefaultPolygon,
   createDefaultPuckerBloat,
+  createDefaultRectangle,
+  createDefaultRepeater,
+  createDefaultRoundedCorners,
+  createDefaultShapeLayerData,
+  createDefaultShapeTransform,
+  createDefaultStar,
+  createDefaultStroke,
+  createDefaultTrimPaths,
+  createDefaultTwist,
   createDefaultWigglePaths,
   createDefaultZigZag,
-  createDefaultTwist,
-  createDefaultRoundedCorners,
-  createDefaultMergePaths,
-  createDefaultShapeTransform,
-} from '@/types/shapes';
-import { useCompositorStore } from '@/stores/compositorStore';
-import ShapeContentItem from './ShapeContentItem.vue';
+} from "@/types/shapes";
 
 const props = defineProps<{ layer: Layer }>();
-const emit = defineEmits(['update']);
+const emit = defineEmits(["update"]);
 const store = useCompositorStore();
 
-const expandedSections = ref<string[]>(['contents', 'settings']);
-const newContentType = ref<string>('');
+const expandedSections = ref<string[]>(["contents", "settings"]);
+const newContentType = ref<string>("");
 
 // Get layer data with defaults
 const layerData = computed<ShapeLayerData>(() => {
@@ -159,7 +137,7 @@ const layerData = computed<ShapeLayerData>(() => {
   return data;
 });
 
-function toggleSection(section: string) {
+function _toggleSection(section: string) {
   const idx = expandedSections.value.indexOf(section);
   if (idx >= 0) {
     expandedSections.value.splice(idx, 1);
@@ -168,14 +146,14 @@ function toggleSection(section: string) {
   }
 }
 
-function updateData() {
+function _updateData() {
   store.updateLayer(props.layer.id, {
-    data: { ...layerData.value }
+    data: { ...layerData.value },
   });
-  emit('update');
+  emit("update");
 }
 
-function addContent() {
+function _addContent() {
   if (!newContentType.value) return;
 
   const contents = [...(layerData.value.contents || [])];
@@ -183,67 +161,67 @@ function addContent() {
 
   switch (newContentType.value) {
     // Generators
-    case 'rectangle':
+    case "rectangle":
       newItem = createDefaultRectangle();
       break;
-    case 'ellipse':
+    case "ellipse":
       newItem = createDefaultEllipse();
       break;
-    case 'polygon':
+    case "polygon":
       newItem = createDefaultPolygon();
       break;
-    case 'star':
+    case "star":
       newItem = createDefaultStar();
       break;
-    case 'path':
+    case "path":
       newItem = createDefaultPath();
       break;
     // Modifiers
-    case 'fill':
+    case "fill":
       newItem = createDefaultFill();
       break;
-    case 'stroke':
+    case "stroke":
       newItem = createDefaultStroke();
       break;
-    case 'gradientFill':
+    case "gradientFill":
       newItem = createDefaultGradientFill();
       break;
-    case 'gradientStroke':
+    case "gradientStroke":
       newItem = createDefaultGradientStroke();
       break;
     // Operators
-    case 'trimPaths':
+    case "trimPaths":
       newItem = createDefaultTrimPaths();
       break;
-    case 'repeater':
+    case "repeater":
       newItem = createDefaultRepeater();
       break;
-    case 'offsetPaths':
+    case "offsetPaths":
       newItem = createDefaultOffsetPaths();
       break;
-    case 'puckerBloat':
+    case "puckerBloat":
       newItem = createDefaultPuckerBloat();
       break;
-    case 'wigglePaths':
+    case "wigglePaths":
       newItem = createDefaultWigglePaths();
       break;
-    case 'zigZag':
+    case "zigZag":
       newItem = createDefaultZigZag();
       break;
-    case 'twist':
+    case "twist":
       newItem = createDefaultTwist();
       break;
-    case 'roundedCorners':
+    case "roundedCorners":
       newItem = createDefaultRoundedCorners();
       break;
-    case 'mergePaths':
+    case "mergePaths":
       newItem = createDefaultMergePaths();
       break;
     // Structure
-    case 'group':
+    case "group":
       newItem = createDefaultGroup();
       break;
-    case 'transform':
+    case "transform":
       newItem = createDefaultShapeTransform();
       break;
     default:
@@ -253,33 +231,33 @@ function addContent() {
   contents.push(newItem);
 
   store.updateLayer(props.layer.id, {
-    data: { ...layerData.value, contents }
+    data: { ...layerData.value, contents },
   });
-  emit('update');
-  newContentType.value = '';
+  emit("update");
+  newContentType.value = "";
 }
 
-function updateContentItem(index: number, updatedItem: ShapeContent) {
+function _updateContentItem(index: number, updatedItem: ShapeContent) {
   const contents = [...(layerData.value.contents || [])];
   contents[index] = updatedItem;
 
   store.updateLayer(props.layer.id, {
-    data: { ...layerData.value, contents }
+    data: { ...layerData.value, contents },
   });
-  emit('update');
+  emit("update");
 }
 
-function deleteContentItem(index: number) {
+function _deleteContentItem(index: number) {
   const contents = [...(layerData.value.contents || [])];
   contents.splice(index, 1);
 
   store.updateLayer(props.layer.id, {
-    data: { ...layerData.value, contents }
+    data: { ...layerData.value, contents },
   });
-  emit('update');
+  emit("update");
 }
 
-function moveContentItem(index: number, direction: -1 | 1) {
+function _moveContentItem(index: number, direction: -1 | 1) {
   const contents = [...(layerData.value.contents || [])];
   const newIndex = index + direction;
   if (newIndex < 0 || newIndex >= contents.length) return;
@@ -288,9 +266,9 @@ function moveContentItem(index: number, direction: -1 | 1) {
   [contents[index], contents[newIndex]] = [contents[newIndex], contents[index]];
 
   store.updateLayer(props.layer.id, {
-    data: { ...layerData.value, contents }
+    data: { ...layerData.value, contents },
   });
-  emit('update');
+  emit("update");
 }
 </script>
 

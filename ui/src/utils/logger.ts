@@ -6,7 +6,7 @@
  * In development, all logs are shown.
  */
 
-export type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'none';
+export type LogLevel = "debug" | "info" | "warn" | "error" | "none";
 
 interface LoggerConfig {
   level: LogLevel;
@@ -24,8 +24,8 @@ const LOG_LEVELS: Record<LogLevel, number> = {
 
 // Default configuration - can be overridden
 const config: LoggerConfig = {
-  level: import.meta.env?.DEV ? 'debug' : 'warn',
-  prefix: '[Lattice]',
+  level: import.meta.env?.DEV ? "debug" : "warn",
+  prefix: "[Lattice]",
   enableTimestamp: false,
 };
 
@@ -61,7 +61,11 @@ function shouldLog(level: LogLevel): boolean {
   return LOG_LEVELS[level] >= LOG_LEVELS[config.level];
 }
 
-function formatMessage(level: string, context: string, message: string): string {
+function formatMessage(
+  _level: string,
+  context: string,
+  message: string,
+): string {
   const parts: string[] = [];
 
   if (config.enableTimestamp) {
@@ -78,7 +82,7 @@ function formatMessage(level: string, context: string, message: string): string 
 
   parts.push(message);
 
-  return parts.join(' ');
+  return parts.join(" ");
 }
 
 /**
@@ -87,26 +91,26 @@ function formatMessage(level: string, context: string, message: string): string 
 export function createLogger(context: string) {
   return {
     debug(message: string, ...args: any[]): void {
-      if (shouldLog('debug')) {
-        console.log(formatMessage('DEBUG', context, message), ...args);
+      if (shouldLog("debug")) {
+        console.log(formatMessage("DEBUG", context, message), ...args);
       }
     },
 
     info(message: string, ...args: any[]): void {
-      if (shouldLog('info')) {
-        console.info(formatMessage('INFO', context, message), ...args);
+      if (shouldLog("info")) {
+        console.info(formatMessage("INFO", context, message), ...args);
       }
     },
 
     warn(message: string, ...args: any[]): void {
-      if (shouldLog('warn')) {
-        console.warn(formatMessage('WARN', context, message), ...args);
+      if (shouldLog("warn")) {
+        console.warn(formatMessage("WARN", context, message), ...args);
       }
     },
 
     error(message: string, ...args: any[]): void {
-      if (shouldLog('error')) {
-        console.error(formatMessage('ERROR', context, message), ...args);
+      if (shouldLog("error")) {
+        console.error(formatMessage("ERROR", context, message), ...args);
       }
     },
 
@@ -115,16 +119,16 @@ export function createLogger(context: string) {
      */
     log(level: LogLevel, message: string, ...args: any[]): void {
       switch (level) {
-        case 'debug':
+        case "debug":
           this.debug(message, ...args);
           break;
-        case 'info':
+        case "info":
           this.info(message, ...args);
           break;
-        case 'warn':
+        case "warn":
           this.warn(message, ...args);
           break;
-        case 'error':
+        case "error":
           this.error(message, ...args);
           break;
       }
@@ -134,13 +138,13 @@ export function createLogger(context: string) {
      * Group related logs (collapsible in console)
      */
     group(label: string): void {
-      if (shouldLog('debug')) {
-        console.group(formatMessage('', context, label));
+      if (shouldLog("debug")) {
+        console.group(formatMessage("", context, label));
       }
     },
 
     groupEnd(): void {
-      if (shouldLog('debug')) {
+      if (shouldLog("debug")) {
         console.groupEnd();
       }
     },
@@ -149,8 +153,8 @@ export function createLogger(context: string) {
      * Log a table (useful for arrays/objects)
      */
     table(data: any): void {
-      if (shouldLog('debug')) {
-        console.log(formatMessage('', context, 'Table:'));
+      if (shouldLog("debug")) {
+        console.log(formatMessage("", context, "Table:"));
         console.table(data);
       }
     },
@@ -159,13 +163,13 @@ export function createLogger(context: string) {
      * Measure time for an operation
      */
     time(label: string): void {
-      if (shouldLog('debug')) {
+      if (shouldLog("debug")) {
         console.time(`${config.prefix} [${context}] ${label}`);
       }
     },
 
     timeEnd(label: string): void {
-      if (shouldLog('debug')) {
+      if (shouldLog("debug")) {
         console.timeEnd(`${config.prefix} [${context}] ${label}`);
       }
     },
@@ -173,14 +177,14 @@ export function createLogger(context: string) {
 }
 
 // Default logger instance
-export const logger = createLogger('App');
+export const logger = createLogger("App");
 
 // Pre-configured loggers for common modules
-export const storeLogger = createLogger('Store');
-export const engineLogger = createLogger('Engine');
-export const layerLogger = createLogger('Layer');
-export const renderLogger = createLogger('Render');
-export const audioLogger = createLogger('Audio');
-export const exportLogger = createLogger('Export');
+export const storeLogger = createLogger("Store");
+export const engineLogger = createLogger("Engine");
+export const layerLogger = createLogger("Layer");
+export const renderLogger = createLogger("Render");
+export const audioLogger = createLogger("Audio");
+export const exportLogger = createLogger("Export");
 
 export default logger;

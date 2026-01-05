@@ -10,7 +10,7 @@
  * - 7 generative flow patterns: spiral, wave, explosion, vortex, data-river, morph, swarm
  */
 
-import type { WanMoveTrajectory, GenerativeFlowConfig } from './wanMoveExport';
+import type { GenerativeFlowConfig, WanMoveTrajectory } from "./wanMoveExport";
 
 // ============================================================================
 // SEEDED RANDOM (for deterministic generation)
@@ -24,10 +24,10 @@ export class SeededRandom {
   }
 
   next(): number {
-    let t = this.state += 0x6D2B79F5;
-    t = Math.imul(t ^ t >>> 15, t | 1);
-    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    let t = (this.state += 0x6d2b79f5);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   }
 
   range(min: number, max: number): number {
@@ -63,7 +63,7 @@ export function simplexNoise2D(x: number, y: number, seed: number): number {
     const h = hash & 7;
     const u = h < 4 ? dx : dy;
     const v = h < 4 ? dy : dx;
-    return ((h & 1) ? -u : u) + ((h & 2) ? -2 * v : 2 * v);
+    return (h & 1 ? -u : u) + (h & 2 ? -2 * v : 2 * v);
   };
 
   const lerp = (a: number, b: number, t: number) => a + t * (b - a);
@@ -87,7 +87,9 @@ export function simplexNoise2D(x: number, y: number, seed: number): number {
 /**
  * Generate spiral galaxy flow pattern
  */
-export function generateSpiralFlow(config: GenerativeFlowConfig): WanMoveTrajectory {
+export function generateSpiralFlow(
+  config: GenerativeFlowConfig,
+): WanMoveTrajectory {
   const { numPoints, numFrames, width, height, params } = config;
   const rng = new SeededRandom(params.seed ?? 42);
 
@@ -125,7 +127,7 @@ export function generateSpiralFlow(config: GenerativeFlowConfig): WanMoveTraject
 
       track.push([
         Math.max(0, Math.min(width, x)),
-        Math.max(0, Math.min(height, y))
+        Math.max(0, Math.min(height, y)),
       ]);
 
       // Visibility: fade out at edges
@@ -140,14 +142,16 @@ export function generateSpiralFlow(config: GenerativeFlowConfig): WanMoveTraject
   return {
     tracks,
     visibility,
-    metadata: { numPoints, numFrames, width, height, fps: 16 }
+    metadata: { numPoints, numFrames, width, height, fps: 16 },
   };
 }
 
 /**
  * Generate wave/ocean flow pattern
  */
-export function generateWaveFlow(config: GenerativeFlowConfig): WanMoveTrajectory {
+export function generateWaveFlow(
+  config: GenerativeFlowConfig,
+): WanMoveTrajectory {
   const { numPoints, numFrames, width, height, params } = config;
   const rng = new SeededRandom(params.seed ?? 42);
 
@@ -165,7 +169,7 @@ export function generateWaveFlow(config: GenerativeFlowConfig): WanMoveTrajector
     const vis: boolean[] = [];
 
     const layer = Math.floor(rng.next() * layers);
-    const layerY = (layer + 0.5) / layers * height;
+    const layerY = ((layer + 0.5) / layers) * height;
     const startX = rng.next() * width;
     const phaseOffset = rng.next() * Math.PI * 2;
     const amplitudeVariation = 0.5 + rng.next() * 0.5;
@@ -174,19 +178,26 @@ export function generateWaveFlow(config: GenerativeFlowConfig): WanMoveTrajector
       const t = f / numFrames;
 
       // Move across screen
-      const x = (startX + t * width * speed * 10) % (width * 1.2) - width * 0.1;
+      const x =
+        ((startX + t * width * speed * 10) % (width * 1.2)) - width * 0.1;
 
       // Wave motion
-      const wave = Math.sin(x / width * Math.PI * 2 * frequency + phaseOffset + t * Math.PI * 4);
+      const wave = Math.sin(
+        (x / width) * Math.PI * 2 * frequency + phaseOffset + t * Math.PI * 4,
+      );
       const y = layerY + wave * amplitude * amplitudeVariation;
 
       // Add turbulent noise
-      const noiseVal = simplexNoise2D(x * 0.01, f * 0.05 + layer, params.seed ?? 42);
+      const noiseVal = simplexNoise2D(
+        x * 0.01,
+        f * 0.05 + layer,
+        params.seed ?? 42,
+      );
       const noisedY = y + (noiseVal - 0.5) * amplitude * noise * 4;
 
       track.push([
         Math.max(0, Math.min(width, x)),
-        Math.max(0, Math.min(height, noisedY))
+        Math.max(0, Math.min(height, noisedY)),
       ]);
 
       vis.push(x >= 0 && x <= width);
@@ -199,14 +210,16 @@ export function generateWaveFlow(config: GenerativeFlowConfig): WanMoveTrajector
   return {
     tracks,
     visibility,
-    metadata: { numPoints, numFrames, width, height, fps: 16 }
+    metadata: { numPoints, numFrames, width, height, fps: 16 },
   };
 }
 
 /**
  * Generate explosion/big bang pattern
  */
-export function generateExplosionFlow(config: GenerativeFlowConfig): WanMoveTrajectory {
+export function generateExplosionFlow(
+  config: GenerativeFlowConfig,
+): WanMoveTrajectory {
   const { numPoints, numFrames, width, height, params } = config;
   const rng = new SeededRandom(params.seed ?? 42);
 
@@ -242,8 +255,14 @@ export function generateExplosionFlow(config: GenerativeFlowConfig): WanMoveTraj
       } else {
         // Exploding outward
         // Add noise for turbulence
-        const noiseX = (simplexNoise2D(i * 0.1, f * 0.1, params.seed ?? 42) - 0.5) * noise * 50;
-        const noiseY = (simplexNoise2D(i * 0.1 + 100, f * 0.1, params.seed ?? 42) - 0.5) * noise * 50;
+        const noiseX =
+          (simplexNoise2D(i * 0.1, f * 0.1, params.seed ?? 42) - 0.5) *
+          noise *
+          50;
+        const noiseY =
+          (simplexNoise2D(i * 0.1 + 100, f * 0.1, params.seed ?? 42) - 0.5) *
+          noise *
+          50;
 
         x += vx + noiseX;
         y += vy + noiseY;
@@ -254,7 +273,7 @@ export function generateExplosionFlow(config: GenerativeFlowConfig): WanMoveTraj
 
         track.push([
           Math.max(0, Math.min(width, x)),
-          Math.max(0, Math.min(height, y))
+          Math.max(0, Math.min(height, y)),
         ]);
 
         vis.push(x >= 0 && x <= width && y >= 0 && y <= height);
@@ -268,14 +287,16 @@ export function generateExplosionFlow(config: GenerativeFlowConfig): WanMoveTraj
   return {
     tracks,
     visibility,
-    metadata: { numPoints, numFrames, width, height, fps: 16 }
+    metadata: { numPoints, numFrames, width, height, fps: 16 },
   };
 }
 
 /**
  * Generate vortex/whirlpool pattern
  */
-export function generateVortexFlow(config: GenerativeFlowConfig): WanMoveTrajectory {
+export function generateVortexFlow(
+  config: GenerativeFlowConfig,
+): WanMoveTrajectory {
   const { numPoints, numFrames, width, height, params } = config;
   const rng = new SeededRandom(params.seed ?? 42);
 
@@ -300,8 +321,8 @@ export function generateVortexFlow(config: GenerativeFlowConfig): WanMoveTraject
 
     for (let f = 0; f < numFrames; f++) {
       // Spiral inward while rotating
-      angle += strength * (1 + (maxRadius - radius) / maxRadius * 2);
-      radius = Math.max(10, radius - (radius * 0.01 * strength));
+      angle += strength * (1 + ((maxRadius - radius) / maxRadius) * 2);
+      radius = Math.max(10, radius - radius * 0.01 * strength);
 
       // Add noise
       const noiseVal = simplexNoise2D(angle, radius * 0.01, params.seed ?? 42);
@@ -312,7 +333,7 @@ export function generateVortexFlow(config: GenerativeFlowConfig): WanMoveTraject
 
       track.push([
         Math.max(0, Math.min(width, x)),
-        Math.max(0, Math.min(height, y))
+        Math.max(0, Math.min(height, y)),
       ]);
 
       vis.push(true);
@@ -325,14 +346,16 @@ export function generateVortexFlow(config: GenerativeFlowConfig): WanMoveTraject
   return {
     tracks,
     visibility,
-    metadata: { numPoints, numFrames, width, height, fps: 16 }
+    metadata: { numPoints, numFrames, width, height, fps: 16 },
   };
 }
 
 /**
  * Generate data river flow (particles flowing along a curved path)
  */
-export function generateDataRiverFlow(config: GenerativeFlowConfig): WanMoveTrajectory {
+export function generateDataRiverFlow(
+  config: GenerativeFlowConfig,
+): WanMoveTrajectory {
   const { numPoints, numFrames, width, height, params } = config;
   const rng = new SeededRandom(params.seed ?? 42);
 
@@ -365,12 +388,17 @@ export function generateDataRiverFlow(config: GenerativeFlowConfig): WanMoveTraj
       const baseY = riverPath(x);
 
       // Lane position + turbulence
-      const turbNoise = simplexNoise2D(x * 0.01, f * 0.05 + i * 0.1, params.seed ?? 42);
-      const y = baseY + laneOffset + (turbNoise - 0.5) * riverWidth * turbulence * 2;
+      const turbNoise = simplexNoise2D(
+        x * 0.01,
+        f * 0.05 + i * 0.1,
+        params.seed ?? 42,
+      );
+      const y =
+        baseY + laneOffset + (turbNoise - 0.5) * riverWidth * turbulence * 2;
 
       track.push([
         Math.max(0, Math.min(width, x)),
-        Math.max(0, Math.min(height, y))
+        Math.max(0, Math.min(height, y)),
       ]);
 
       vis.push(x >= 0 && x <= width);
@@ -383,20 +411,22 @@ export function generateDataRiverFlow(config: GenerativeFlowConfig): WanMoveTraj
   return {
     tracks,
     visibility,
-    metadata: { numPoints, numFrames, width, height, fps: 16 }
+    metadata: { numPoints, numFrames, width, height, fps: 16 },
   };
 }
 
 /**
  * Generate morph flow (points transitioning between two shapes)
  */
-export function generateMorphFlow(config: GenerativeFlowConfig): WanMoveTrajectory {
+export function generateMorphFlow(
+  config: GenerativeFlowConfig,
+): WanMoveTrajectory {
   const { numPoints, numFrames, width, height, params } = config;
   const rng = new SeededRandom(params.seed ?? 42);
 
-  const sourceShape = params.morphSource ?? 'grid';
-  const targetShape = params.morphTarget ?? 'circle';
-  const easing = params.morphEasing ?? 'ease-in-out';
+  const sourceShape = params.morphSource ?? "grid";
+  const targetShape = params.morphTarget ?? "circle";
+  const easing = params.morphEasing ?? "ease-in-out";
 
   // Generate source positions
   const sourcePositions: { x: number; y: number }[] = [];
@@ -404,48 +434,48 @@ export function generateMorphFlow(config: GenerativeFlowConfig): WanMoveTrajecto
 
   for (let i = 0; i < numPoints; i++) {
     // Source shape
-    if (sourceShape === 'grid') {
+    if (sourceShape === "grid") {
       const cols = Math.ceil(Math.sqrt(numPoints));
       const row = Math.floor(i / cols);
       const col = i % cols;
       sourcePositions.push({
-        x: (col + 0.5) / cols * width * 0.8 + width * 0.1,
-        y: (row + 0.5) / cols * height * 0.8 + height * 0.1
+        x: ((col + 0.5) / cols) * width * 0.8 + width * 0.1,
+        y: ((row + 0.5) / cols) * height * 0.8 + height * 0.1,
       });
-    } else if (sourceShape === 'circle') {
+    } else if (sourceShape === "circle") {
       const angle = (i / numPoints) * Math.PI * 2;
       const radius = Math.min(width, height) * 0.35;
       sourcePositions.push({
         x: width / 2 + Math.cos(angle) * radius,
-        y: height / 2 + Math.sin(angle) * radius
+        y: height / 2 + Math.sin(angle) * radius,
       });
     } else {
       sourcePositions.push({
         x: rng.next() * width,
-        y: rng.next() * height
+        y: rng.next() * height,
       });
     }
 
     // Target shape
-    if (targetShape === 'grid') {
+    if (targetShape === "grid") {
       const cols = Math.ceil(Math.sqrt(numPoints));
       const row = Math.floor(i / cols);
       const col = i % cols;
       targetPositions.push({
-        x: (col + 0.5) / cols * width * 0.8 + width * 0.1,
-        y: (row + 0.5) / cols * height * 0.8 + height * 0.1
+        x: ((col + 0.5) / cols) * width * 0.8 + width * 0.1,
+        y: ((row + 0.5) / cols) * height * 0.8 + height * 0.1,
       });
-    } else if (targetShape === 'circle') {
+    } else if (targetShape === "circle") {
       const angle = (i / numPoints) * Math.PI * 2;
       const radius = Math.min(width, height) * 0.35;
       targetPositions.push({
         x: width / 2 + Math.cos(angle) * radius,
-        y: height / 2 + Math.sin(angle) * radius
+        y: height / 2 + Math.sin(angle) * radius,
       });
     } else {
       targetPositions.push({
         x: rng.next() * width,
-        y: rng.next() * height
+        y: rng.next() * height,
       });
     }
   }
@@ -456,10 +486,14 @@ export function generateMorphFlow(config: GenerativeFlowConfig): WanMoveTrajecto
   // Easing functions
   const easingFn = (t: number): number => {
     switch (easing) {
-      case 'ease-in': return t * t;
-      case 'ease-out': return 1 - (1 - t) * (1 - t);
-      case 'ease-in-out': return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-      default: return t;
+      case "ease-in":
+        return t * t;
+      case "ease-out":
+        return 1 - (1 - t) * (1 - t);
+      case "ease-in-out":
+        return t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
+      default:
+        return t;
     }
   };
 
@@ -478,12 +512,18 @@ export function generateMorphFlow(config: GenerativeFlowConfig): WanMoveTrajecto
       const noise = simplexNoise2D(i * 0.1, f * 0.02, params.seed ?? 42);
       const noiseOffset = (noise - 0.5) * 20;
 
-      const x = src.x + (tgt.x - src.x) * easedT + noiseOffset * (1 - Math.abs(t - 0.5) * 2);
-      const y = src.y + (tgt.y - src.y) * easedT + noiseOffset * (1 - Math.abs(t - 0.5) * 2);
+      const x =
+        src.x +
+        (tgt.x - src.x) * easedT +
+        noiseOffset * (1 - Math.abs(t - 0.5) * 2);
+      const y =
+        src.y +
+        (tgt.y - src.y) * easedT +
+        noiseOffset * (1 - Math.abs(t - 0.5) * 2);
 
       track.push([
         Math.max(0, Math.min(width, x)),
-        Math.max(0, Math.min(height, y))
+        Math.max(0, Math.min(height, y)),
       ]);
 
       vis.push(true);
@@ -496,14 +536,16 @@ export function generateMorphFlow(config: GenerativeFlowConfig): WanMoveTrajecto
   return {
     tracks,
     visibility,
-    metadata: { numPoints, numFrames, width, height, fps: 16 }
+    metadata: { numPoints, numFrames, width, height, fps: 16 },
   };
 }
 
 /**
  * Generate swarm/flocking behavior pattern
  */
-export function generateSwarmFlow(config: GenerativeFlowConfig): WanMoveTrajectory {
+export function generateSwarmFlow(
+  config: GenerativeFlowConfig,
+): WanMoveTrajectory {
   const { numPoints, numFrames, width, height, params } = config;
   const rng = new SeededRandom(params.seed ?? 42);
 
@@ -519,7 +561,7 @@ export function generateSwarmFlow(config: GenerativeFlowConfig): WanMoveTrajecto
       x: rng.next() * width,
       y: rng.next() * height,
       vx: rng.range(-maxSpeed, maxSpeed),
-      vy: rng.range(-maxSpeed, maxSpeed)
+      vy: rng.range(-maxSpeed, maxSpeed),
     });
   }
 
@@ -535,10 +577,14 @@ export function generateSwarmFlow(config: GenerativeFlowConfig): WanMoveTrajecto
   // Simulate each frame
   for (let f = 0; f < numFrames; f++) {
     // Calculate swarm forces
-    const forces: { fx: number; fy: number }[] = particles.map(() => ({ fx: 0, fy: 0 }));
+    const forces: { fx: number; fy: number }[] = particles.map(() => ({
+      fx: 0,
+      fy: 0,
+    }));
 
     // Calculate center of mass
-    let cx = 0, cy = 0;
+    let cx = 0,
+      cy = 0;
     for (const p of particles) {
       cx += p.x;
       cy += p.y;
@@ -567,7 +613,9 @@ export function generateSwarmFlow(config: GenerativeFlowConfig): WanMoveTrajecto
       }
 
       // Alignment: match average velocity (sample nearby particles)
-      let avgVx = 0, avgVy = 0, count = 0;
+      let avgVx = 0,
+        avgVy = 0,
+        count = 0;
       for (let j = Math.max(0, i - 10); j < Math.min(numPoints, i + 10); j++) {
         avgVx += particles[j].vx;
         avgVy += particles[j].vy;
@@ -583,7 +631,8 @@ export function generateSwarmFlow(config: GenerativeFlowConfig): WanMoveTrajecto
       if (p.x < margin) forces[i].fx += (margin - p.x) * 0.1;
       if (p.x > width - margin) forces[i].fx -= (p.x - (width - margin)) * 0.1;
       if (p.y < margin) forces[i].fy += (margin - p.y) * 0.1;
-      if (p.y > height - margin) forces[i].fy -= (p.y - (height - margin)) * 0.1;
+      if (p.y > height - margin)
+        forces[i].fy -= (p.y - (height - margin)) * 0.1;
     }
 
     // Update particles
@@ -606,7 +655,7 @@ export function generateSwarmFlow(config: GenerativeFlowConfig): WanMoveTrajecto
       // Record position
       tracks[i].push([
         Math.max(0, Math.min(width, p.x)),
-        Math.max(0, Math.min(height, p.y))
+        Math.max(0, Math.min(height, p.y)),
       ]);
       visibility[i].push(true);
     }
@@ -615,6 +664,6 @@ export function generateSwarmFlow(config: GenerativeFlowConfig): WanMoveTrajecto
   return {
     tracks,
     visibility,
-    metadata: { numPoints, numFrames, width, height, fps: 16 }
+    metadata: { numPoints, numFrames, width, height, fps: 16 },
   };
 }

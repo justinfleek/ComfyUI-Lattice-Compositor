@@ -21,38 +21,38 @@
 // ============================================================================
 
 export interface ColorSample {
-  r: number;      // 0-1
-  g: number;      // 0-1
-  b: number;      // 0-1
-  a: number;      // 0-1
-  brightness: number;  // 0-1 (luminance)
-  hue: number;         // 0-1 (0 = red, 0.33 = green, 0.67 = blue)
-  saturation: number;  // 0-1
-  value: number;       // 0-1 (HSV value)
+  r: number; // 0-1
+  g: number; // 0-1
+  b: number; // 0-1
+  a: number; // 0-1
+  brightness: number; // 0-1 (luminance)
+  hue: number; // 0-1 (0 = red, 0.33 = green, 0.67 = blue)
+  saturation: number; // 0-1
+  value: number; // 0-1 (HSV value)
 }
 
 export interface DepthSample {
-  depth: number;       // 0-1 (0 = near, 1 = far)
-  normalized: number;  // 0-1 after range mapping
-  gradient: number;    // Depth gradient magnitude
+  depth: number; // 0-1 (0 = near, 1 = far)
+  normalized: number; // 0-1 after range mapping
+  gradient: number; // Depth gradient magnitude
 }
 
 export type SampleMode =
-  | 'point'           // Single pixel
-  | 'average'         // Area average
-  | 'max'             // Maximum in area
-  | 'min'             // Minimum in area
-  | 'dominant';       // Dominant color (k-means)
+  | "point" // Single pixel
+  | "average" // Area average
+  | "max" // Maximum in area
+  | "min" // Minimum in area
+  | "dominant"; // Dominant color (k-means)
 
 export type ColorFeature =
-  | 'brightness'
-  | 'hue'
-  | 'saturation'
-  | 'value'
-  | 'red'
-  | 'green'
-  | 'blue'
-  | 'alpha';
+  | "brightness"
+  | "hue"
+  | "saturation"
+  | "value"
+  | "red"
+  | "green"
+  | "blue"
+  | "alpha";
 
 export interface ColorReactivityConfig {
   id: string;
@@ -64,7 +64,7 @@ export interface ColorReactivityConfig {
 
   // Sample position (normalized 0-1)
   position: { x: number; y: number };
-  sampleRadius: number;  // For area modes (pixels)
+  sampleRadius: number; // For area modes (pixels)
 
   // Feature extraction
   feature: ColorFeature;
@@ -93,8 +93,8 @@ export interface DepthReactivityConfig {
   sampleRadius: number;
 
   // Depth range mapping
-  nearPlane: number;   // Depth value considered "near"
-  farPlane: number;    // Depth value considered "far"
+  nearPlane: number; // Depth value considered "near"
+  farPlane: number; // Depth value considered "far"
 
   // Target property
   targetLayerId: string;
@@ -119,7 +119,7 @@ export interface MotionDetectionConfig {
   region: { x: number; y: number; width: number; height: number };
 
   // Threshold for motion detection
-  threshold: number;  // 0-1
+  threshold: number; // 0-1
 
   // Target property
   targetLayerId: string;
@@ -139,7 +139,11 @@ export interface MotionDetectionConfig {
 /**
  * Convert RGB to HSV
  */
-export function rgbToHsv(r: number, g: number, b: number): { h: number; s: number; v: number } {
+export function rgbToHsv(
+  r: number,
+  g: number,
+  b: number,
+): { h: number; s: number; v: number } {
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
   const d = max - min;
@@ -176,14 +180,22 @@ export function calculateBrightness(r: number, g: number, b: number): number {
 /**
  * Create color sample from RGBA values
  */
-export function createColorSample(r: number, g: number, b: number, a: number): ColorSample {
+export function createColorSample(
+  r: number,
+  g: number,
+  b: number,
+  a: number,
+): ColorSample {
   const hsv = rgbToHsv(r, g, b);
   return {
-    r, g, b, a,
+    r,
+    g,
+    b,
+    a,
     brightness: calculateBrightness(r, g, b),
     hue: hsv.h,
     saturation: hsv.s,
-    value: hsv.v
+    value: hsv.v,
   };
 }
 
@@ -197,7 +209,7 @@ export function createColorSample(r: number, g: number, b: number, a: number): C
 export function samplePixel(
   imageData: ImageData,
   x: number,
-  y: number
+  y: number,
 ): ColorSample {
   const px = Math.floor(x);
   const py = Math.floor(y);
@@ -222,9 +234,12 @@ export function sampleAreaAverage(
   imageData: ImageData,
   centerX: number,
   centerY: number,
-  radius: number
+  radius: number,
 ): ColorSample {
-  let totalR = 0, totalG = 0, totalB = 0, totalA = 0;
+  let totalR = 0,
+    totalG = 0,
+    totalB = 0,
+    totalA = 0;
   let count = 0;
 
   const startX = Math.max(0, Math.floor(centerX - radius));
@@ -255,7 +270,7 @@ export function sampleAreaAverage(
     totalR / count / 255,
     totalG / count / 255,
     totalB / count / 255,
-    totalA / count / 255
+    totalA / count / 255,
   );
 }
 
@@ -267,7 +282,7 @@ export function sampleAreaMax(
   centerX: number,
   centerY: number,
   radius: number,
-  feature: ColorFeature = 'brightness'
+  feature: ColorFeature = "brightness",
 ): ColorSample {
   let maxValue = -Infinity;
   let maxSample: ColorSample | null = null;
@@ -303,7 +318,7 @@ export function sampleAreaMin(
   centerX: number,
   centerY: number,
   radius: number,
-  feature: ColorFeature = 'brightness'
+  feature: ColorFeature = "brightness",
 ): ColorSample {
   let minValue = Infinity;
   let minSample: ColorSample | null = null;
@@ -334,17 +349,29 @@ export function sampleAreaMin(
 /**
  * Get specific feature value from color sample
  */
-export function getFeatureValue(sample: ColorSample, feature: ColorFeature): number {
+export function getFeatureValue(
+  sample: ColorSample,
+  feature: ColorFeature,
+): number {
   switch (feature) {
-    case 'brightness': return sample.brightness;
-    case 'hue': return sample.hue;
-    case 'saturation': return sample.saturation;
-    case 'value': return sample.value;
-    case 'red': return sample.r;
-    case 'green': return sample.g;
-    case 'blue': return sample.b;
-    case 'alpha': return sample.a;
-    default: return sample.brightness;
+    case "brightness":
+      return sample.brightness;
+    case "hue":
+      return sample.hue;
+    case "saturation":
+      return sample.saturation;
+    case "value":
+      return sample.value;
+    case "red":
+      return sample.r;
+    case "green":
+      return sample.g;
+    case "blue":
+      return sample.b;
+    case "alpha":
+      return sample.a;
+    default:
+      return sample.brightness;
   }
 }
 
@@ -362,7 +389,7 @@ export function sampleColorFromImageData(
     sampleMode: SampleMode;
     sampleRadius: number;
     feature: ColorFeature;
-  }
+  },
 ): number {
   // Convert normalized position to pixel coordinates
   const px = config.position.x * imageData.width;
@@ -371,19 +398,31 @@ export function sampleColorFromImageData(
   let sample: ColorSample;
 
   switch (config.sampleMode) {
-    case 'point':
+    case "point":
       sample = samplePixel(imageData, px, py);
       break;
-    case 'average':
+    case "average":
       sample = sampleAreaAverage(imageData, px, py, config.sampleRadius);
       break;
-    case 'max':
-      sample = sampleAreaMax(imageData, px, py, config.sampleRadius, config.feature);
+    case "max":
+      sample = sampleAreaMax(
+        imageData,
+        px,
+        py,
+        config.sampleRadius,
+        config.feature,
+      );
       break;
-    case 'min':
-      sample = sampleAreaMin(imageData, px, py, config.sampleRadius, config.feature);
+    case "min":
+      sample = sampleAreaMin(
+        imageData,
+        px,
+        py,
+        config.sampleRadius,
+        config.feature,
+      );
       break;
-    case 'dominant':
+    case "dominant":
       // For dominant, fall back to average (k-means would be expensive)
       sample = sampleAreaAverage(imageData, px, py, config.sampleRadius);
       break;
@@ -400,7 +439,7 @@ export function sampleColorFromImageData(
 export function getMappedColorValue(
   imageData: ImageData,
   config: ColorReactivityConfig,
-  previousValue?: number
+  previousValue?: number,
 ): number {
   if (!config.enabled) return config.min;
 
@@ -409,7 +448,7 @@ export function getMappedColorValue(
     position: config.position,
     sampleMode: config.sampleMode,
     sampleRadius: config.sampleRadius,
-    feature: config.feature
+    feature: config.feature,
   });
 
   // Apply sensitivity
@@ -428,7 +467,8 @@ export function getMappedColorValue(
 
   // Apply smoothing
   if (previousValue !== undefined && config.smoothing > 0) {
-    outputValue = previousValue * config.smoothing + outputValue * (1 - config.smoothing);
+    outputValue =
+      previousValue * config.smoothing + outputValue * (1 - config.smoothing);
   }
 
   return outputValue;
@@ -444,7 +484,7 @@ export function getMappedColorValue(
 export function sampleDepth(
   imageData: ImageData,
   x: number,
-  y: number
+  y: number,
 ): number {
   const sample = samplePixel(imageData, x, y);
   // Depth maps are typically grayscale, use brightness
@@ -457,19 +497,21 @@ export function sampleDepth(
 export function sampleDepthWithGradient(
   imageData: ImageData,
   x: number,
-  y: number
+  y: number,
 ): DepthSample {
   const depth = sampleDepth(imageData, x, y);
 
   // Calculate gradient using Sobel-like approach
-  const dx = sampleDepth(imageData, x + 1, y) - sampleDepth(imageData, x - 1, y);
-  const dy = sampleDepth(imageData, x, y + 1) - sampleDepth(imageData, x, y - 1);
+  const dx =
+    sampleDepth(imageData, x + 1, y) - sampleDepth(imageData, x - 1, y);
+  const dy =
+    sampleDepth(imageData, x, y + 1) - sampleDepth(imageData, x, y - 1);
   const gradient = Math.sqrt(dx * dx + dy * dy);
 
   return {
     depth,
     normalized: depth,
-    gradient
+    gradient,
   };
 }
 
@@ -479,7 +521,7 @@ export function sampleDepthWithGradient(
 export function getMappedDepthValue(
   imageData: ImageData,
   config: DepthReactivityConfig,
-  previousValue?: number
+  previousValue?: number,
 ): number {
   if (!config.enabled) return config.min;
 
@@ -499,7 +541,8 @@ export function getMappedDepthValue(
 
   // Map depth to near/far range
   const range = config.farPlane - config.nearPlane;
-  let normalizedDepth = range > 0 ? (depthValue - config.nearPlane) / range : depthValue;
+  let normalizedDepth =
+    range > 0 ? (depthValue - config.nearPlane) / range : depthValue;
   normalizedDepth = Math.max(0, Math.min(1, normalizedDepth));
 
   // Apply sensitivity
@@ -516,7 +559,8 @@ export function getMappedDepthValue(
 
   // Apply smoothing
   if (previousValue !== undefined && config.smoothing > 0) {
-    outputValue = previousValue * config.smoothing + outputValue * (1 - config.smoothing);
+    outputValue =
+      previousValue * config.smoothing + outputValue * (1 - config.smoothing);
   }
 
   return outputValue;
@@ -533,17 +577,25 @@ export function calculateMotion(
   currentFrame: ImageData,
   previousFrame: ImageData,
   region: { x: number; y: number; width: number; height: number },
-  threshold: number = 0.1
+  threshold: number = 0.1,
 ): number {
-  if (currentFrame.width !== previousFrame.width ||
-      currentFrame.height !== previousFrame.height) {
+  if (
+    currentFrame.width !== previousFrame.width ||
+    currentFrame.height !== previousFrame.height
+  ) {
     return 0;
   }
 
   const startX = Math.floor(region.x * currentFrame.width);
   const startY = Math.floor(region.y * currentFrame.height);
-  const endX = Math.min(currentFrame.width, Math.ceil((region.x + region.width) * currentFrame.width));
-  const endY = Math.min(currentFrame.height, Math.ceil((region.y + region.height) * currentFrame.height));
+  const endX = Math.min(
+    currentFrame.width,
+    Math.ceil((region.x + region.width) * currentFrame.width),
+  );
+  const endY = Math.min(
+    currentFrame.height,
+    Math.ceil((region.y + region.height) * currentFrame.height),
+  );
 
   let totalDiff = 0;
   let pixelCount = 0;
@@ -553,9 +605,14 @@ export function calculateMotion(
       const idx = (y * currentFrame.width + x) * 4;
 
       // Calculate per-pixel difference
-      const dr = Math.abs(currentFrame.data[idx] - previousFrame.data[idx]) / 255;
-      const dg = Math.abs(currentFrame.data[idx + 1] - previousFrame.data[idx + 1]) / 255;
-      const db = Math.abs(currentFrame.data[idx + 2] - previousFrame.data[idx + 2]) / 255;
+      const dr =
+        Math.abs(currentFrame.data[idx] - previousFrame.data[idx]) / 255;
+      const dg =
+        Math.abs(currentFrame.data[idx + 1] - previousFrame.data[idx + 1]) /
+        255;
+      const db =
+        Math.abs(currentFrame.data[idx + 2] - previousFrame.data[idx + 2]) /
+        255;
 
       const diff = (dr + dg + db) / 3;
 
@@ -577,7 +634,7 @@ export function getMappedMotionValue(
   currentFrame: ImageData,
   previousFrame: ImageData | null,
   config: MotionDetectionConfig,
-  previousValue?: number
+  previousValue?: number,
 ): number {
   if (!config.enabled || !previousFrame) return config.min;
 
@@ -586,7 +643,7 @@ export function getMappedMotionValue(
     currentFrame,
     previousFrame,
     config.region,
-    config.threshold
+    config.threshold,
   );
 
   // Apply sensitivity
@@ -598,7 +655,8 @@ export function getMappedMotionValue(
 
   // Apply smoothing
   if (previousValue !== undefined && config.smoothing > 0) {
-    outputValue = previousValue * config.smoothing + outputValue * (1 - config.smoothing);
+    outputValue =
+      previousValue * config.smoothing + outputValue * (1 - config.smoothing);
   }
 
   return outputValue;
@@ -613,7 +671,7 @@ export function getMappedMotionValue(
  */
 export function analyzeRegion(
   imageData: ImageData,
-  region: { x: number; y: number; width: number; height: number }
+  region: { x: number; y: number; width: number; height: number },
 ): {
   averageColor: ColorSample;
   brightest: ColorSample;
@@ -623,11 +681,21 @@ export function analyzeRegion(
 } {
   const startX = Math.floor(region.x * imageData.width);
   const startY = Math.floor(region.y * imageData.height);
-  const endX = Math.min(imageData.width, Math.ceil((region.x + region.width) * imageData.width));
-  const endY = Math.min(imageData.height, Math.ceil((region.y + region.height) * imageData.height));
+  const endX = Math.min(
+    imageData.width,
+    Math.ceil((region.x + region.width) * imageData.width),
+  );
+  const endY = Math.min(
+    imageData.height,
+    Math.ceil((region.y + region.height) * imageData.height),
+  );
 
-  let totalR = 0, totalG = 0, totalB = 0, totalA = 0;
-  let maxBrightness = 0, minBrightness = 1;
+  let totalR = 0,
+    totalG = 0,
+    totalB = 0,
+    totalA = 0;
+  let maxBrightness = 0,
+    minBrightness = 1;
   let brightest: ColorSample | null = null;
   let darkest: ColorSample | null = null;
   let pixelCount = 0;
@@ -664,7 +732,7 @@ export function analyzeRegion(
       brightest: empty,
       darkest: empty,
       averageBrightness: 0,
-      colorVariance: 0
+      colorVariance: 0,
     };
   }
 
@@ -672,18 +740,21 @@ export function analyzeRegion(
     totalR / pixelCount,
     totalG / pixelCount,
     totalB / pixelCount,
-    totalA / pixelCount
+    totalA / pixelCount,
   );
 
-  const averageBrightness = brightnesses.reduce((a, b) => a + b, 0) / brightnesses.length;
-  const variance = brightnesses.reduce((sum, b) => sum + (b - averageBrightness) ** 2, 0) / brightnesses.length;
+  const averageBrightness =
+    brightnesses.reduce((a, b) => a + b, 0) / brightnesses.length;
+  const variance =
+    brightnesses.reduce((sum, b) => sum + (b - averageBrightness) ** 2, 0) /
+    brightnesses.length;
 
   return {
     averageColor,
     brightest: brightest || averageColor,
     darkest: darkest || averageColor,
     averageBrightness,
-    colorVariance: Math.sqrt(variance)
+    colorVariance: Math.sqrt(variance),
   };
 }
 
@@ -718,5 +789,5 @@ export default {
   getMappedMotionValue,
 
   // Region analysis
-  analyzeRegion
+  analyzeRegion,
 };

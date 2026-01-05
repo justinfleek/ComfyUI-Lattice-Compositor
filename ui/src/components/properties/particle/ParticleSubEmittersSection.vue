@@ -132,7 +132,7 @@
 </template>
 
 <script setup lang="ts">
-import type { SubEmitterConfig, ParticleEmitterConfig } from '@/types/project';
+import type { ParticleEmitterConfig, SubEmitterConfig } from "@/types/project";
 
 interface Props {
   subEmitters: SubEmitterConfig[];
@@ -143,15 +143,15 @@ interface Props {
 defineProps<Props>();
 
 defineEmits<{
-  (e: 'toggle'): void;
-  (e: 'add'): void;
-  (e: 'remove', id: string): void;
-  (e: 'update', id: string, key: keyof SubEmitterConfig, value: any): void;
-  (e: 'updateColor', id: string, hex: string): void;
+  (e: "toggle"): void;
+  (e: "add"): void;
+  (e: "remove", id: string): void;
+  (e: "update", id: string, key: keyof SubEmitterConfig, value: any): void;
+  (e: "updateColor", id: string, hex: string): void;
 }>();
 
-function rgbToHex(rgb: [number, number, number]): string {
-  return '#' + rgb.map(c => c.toString(16).padStart(2, '0')).join('');
+function _rgbToHex(rgb: [number, number, number]): string {
+  return `#${rgb.map((c) => c.toString(16).padStart(2, "0")).join("")}`;
 }
 </script>
 

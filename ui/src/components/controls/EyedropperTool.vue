@@ -31,8 +31,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { calculateWhiteBalanceCorrection } from '@/services/colorAnalysis/histogramService';
+import { computed, onMounted, onUnmounted, ref } from "vue";
+import { calculateWhiteBalanceCorrection } from "@/services/colorAnalysis/histogramService";
 
 interface SampledColor {
   r: number;
@@ -40,15 +40,16 @@ interface SampledColor {
   b: number;
 }
 
-const emit = defineEmits<{
-  (e: 'apply', correction: { temperature: number; tint: number }): void;
-}>();
+const emit =
+  defineEmits<
+    (e: "apply", correction: { temperature: number; tint: number }) => void
+  >();
 
 const isActive = ref(false);
 const sampledColor = ref<SampledColor | null>(null);
 
-const sampledColorHex = computed(() => {
-  if (!sampledColor.value) return '#000';
+const _sampledColorHex = computed(() => {
+  if (!sampledColor.value) return "#000";
   const { r, g, b } = sampledColor.value;
   return `rgb(${r}, ${g}, ${b})`;
 });
@@ -58,7 +59,7 @@ const correction = computed(() => {
   return calculateWhiteBalanceCorrection(
     sampledColor.value.r,
     sampledColor.value.g,
-    sampledColor.value.b
+    sampledColor.value.b,
   );
 });
 
@@ -70,7 +71,7 @@ onMounted(() => {
     if (!isActive.value) return;
 
     const canvas = e.target as HTMLCanvasElement;
-    if (!canvas || !canvas.tagName || canvas.tagName !== 'CANVAS') return;
+    if (!canvas || !canvas.tagName || canvas.tagName !== "CANVAS") return;
 
     e.preventDefault();
     e.stopPropagation();
@@ -78,64 +79,78 @@ onMounted(() => {
     // Get canvas coordinates
     const rect = canvas.getBoundingClientRect();
     const x = Math.round((e.clientX - rect.left) * (canvas.width / rect.width));
-    const y = Math.round((e.clientY - rect.top) * (canvas.height / rect.height));
+    const y = Math.round(
+      (e.clientY - rect.top) * (canvas.height / rect.height),
+    );
 
     // Sample pixel
     const color = samplePixel(canvas, x, y);
     if (color) {
       sampledColor.value = color;
       isActive.value = false;
-      document.body.style.cursor = '';
+      document.body.style.cursor = "";
     }
   };
 
-  document.addEventListener('click', canvasClickHandler, true);
+  document.addEventListener("click", canvasClickHandler, true);
 });
 
 onUnmounted(() => {
   if (canvasClickHandler) {
-    document.removeEventListener('click', canvasClickHandler, true);
+    document.removeEventListener("click", canvasClickHandler, true);
   }
-  document.body.style.cursor = '';
+  document.body.style.cursor = "";
 });
 
-function toggleEyedropper() {
+function _toggleEyedropper() {
   isActive.value = !isActive.value;
 
   if (isActive.value) {
-    document.body.style.cursor = 'crosshair';
+    document.body.style.cursor = "crosshair";
   } else {
-    document.body.style.cursor = '';
+    document.body.style.cursor = "";
   }
 }
 
-function samplePixel(canvas: HTMLCanvasElement, x: number, y: number): SampledColor | null {
+function samplePixel(
+  canvas: HTMLCanvasElement,
+  x: number,
+  y: number,
+): SampledColor | null {
   // Try 2D context first
-  const ctx2d = canvas.getContext('2d', { willReadFrequently: true });
+  const ctx2d = canvas.getContext("2d", { willReadFrequently: true });
   if (ctx2d) {
     const pixel = ctx2d.getImageData(x, y, 1, 1).data;
     return { r: pixel[0], g: pixel[1], b: pixel[2] };
   }
 
   // Try WebGL
-  const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+  const gl = canvas.getContext("webgl2") || canvas.getContext("webgl");
   if (gl) {
     const pixel = new Uint8Array(4);
     // WebGL Y is inverted
-    gl.readPixels(x, canvas.height - y - 1, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel);
+    gl.readPixels(
+      x,
+      canvas.height - y - 1,
+      1,
+      1,
+      gl.RGBA,
+      gl.UNSIGNED_BYTE,
+      pixel,
+    );
     return { r: pixel[0], g: pixel[1], b: pixel[2] };
   }
 
   return null;
 }
 
-function applyCorrection() {
+function _applyCorrection() {
   if (correction.value) {
-    emit('apply', correction.value);
+    emit("apply", correction.value);
   }
 }
 
-function clearSample() {
+function _clearSample() {
   sampledColor.value = null;
 }
 </script>

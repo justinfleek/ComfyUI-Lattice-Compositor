@@ -6,23 +6,45 @@
  */
 
 import {
-  linear, easeInQuad, easeOutQuad, easeInOutQuad,
-  easeInCubic, easeOutCubic, easeInOutCubic,
-  easeInQuart, easeOutQuart, easeInOutQuart,
-  easeInQuint, easeOutQuint, easeInOutQuint,
-  easeInSine, easeOutSine, easeInOutSine,
-  easeInExpo, easeOutExpo, easeInOutExpo,
-  easeInCirc, easeOutCirc, easeInOutCirc,
-  easeInBack, easeOutBack, easeInOutBack,
-  easeInElastic, easeOutElastic, easeInOutElastic,
-  easeInBounce, easeOutBounce, easeInOutBounce,
-  stepStart, stepEnd, cubicBezier
-} from './easing';
-
-import { inertia, bounce, elastic } from './motionExpressions';
-import { jitter, temporalJitter } from './jitterExpressions';
-import { repeatAfter, repeatBefore } from './loopExpressions';
-import { timeExpressions, mathExpressions } from './expressionEvaluator';
+  cubicBezier,
+  easeInBack,
+  easeInBounce,
+  easeInCirc,
+  easeInCubic,
+  easeInElastic,
+  easeInExpo,
+  easeInOutBack,
+  easeInOutBounce,
+  easeInOutCirc,
+  easeInOutCubic,
+  easeInOutElastic,
+  easeInOutExpo,
+  easeInOutQuad,
+  easeInOutQuart,
+  easeInOutQuint,
+  easeInOutSine,
+  easeInQuad,
+  easeInQuart,
+  easeInQuint,
+  easeInSine,
+  easeOutBack,
+  easeOutBounce,
+  easeOutCirc,
+  easeOutCubic,
+  easeOutElastic,
+  easeOutExpo,
+  easeOutQuad,
+  easeOutQuart,
+  easeOutQuint,
+  easeOutSine,
+  linear,
+  stepEnd,
+  stepStart,
+} from "./easing";
+import { mathExpressions, timeExpressions } from "./expressionEvaluator";
+import { jitter, temporalJitter } from "./jitterExpressions";
+import { repeatAfter, repeatBefore } from "./loopExpressions";
+import { bounce, elastic, inertia } from "./motionExpressions";
 
 // ============================================================
 // NAMESPACE EXPORTS

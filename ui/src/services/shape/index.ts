@@ -10,10 +10,10 @@
 // Path modifier effects
 export {
   puckerBloat,
-  wigglePath,
-  zigZagPath,
   roughenPath,
-  wavePath,
   twistPath,
   type WaveType,
-} from './pathModifiers';
+  wavePath,
+  wigglePath,
+  zigZagPath,
+} from "./pathModifiers";

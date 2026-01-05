@@ -26,12 +26,16 @@
  * @see AUDIT/SECURITY_ARCHITECTURE.md
  */
 
-import { logSecurityWarning } from './auditLog';
+import { logSecurityWarning } from "./auditLog";
 
 // TweetNaCl type interface (library is optional, loaded dynamically)
 interface NaClSignDetached {
   (message: Uint8Array, secretKey: Uint8Array): Uint8Array;
-  verify(message: Uint8Array, signature: Uint8Array, publicKey: Uint8Array): boolean;
+  verify(
+    message: Uint8Array,
+    signature: Uint8Array,
+    publicKey: Uint8Array,
+  ): boolean;
 }
 
 interface TweetNaCl {
@@ -47,9 +51,11 @@ interface TweetNaCl {
  */
 async function loadNaCl(): Promise<TweetNaCl | null> {
   try {
-    return await import('tweetnacl');
+    return await import("tweetnacl");
   } catch {
-    console.warn('[SECURITY] tweetnacl not installed - template signing unavailable');
+    console.warn(
+      "[SECURITY] tweetnacl not installed - template signing unavailable",
+    );
     return null;
   }
 }
@@ -60,7 +66,7 @@ async function loadNaCl(): Promise<TweetNaCl | null> {
 
 export interface TemplateSignature {
   /** Signature algorithm (always "Ed25519") */
-  algorithm: 'Ed25519';
+  algorithm: "Ed25519";
   /** Base64-encoded public key that created this signature */
   publicKey: string;
   /** Base64-encoded signature */
@@ -79,7 +85,7 @@ export interface VerificationResult {
   /** Whether it's signed by the official Lattice key */
   isOfficial: boolean;
   /** Verification status for UI display */
-  status: 'official' | 'third-party-valid' | 'third-party-invalid' | 'unsigned';
+  status: "official" | "third-party-valid" | "third-party-invalid" | "unsigned";
   /** Human-readable message */
   message: string;
   /** Signer public key (if signed) */
@@ -113,12 +119,12 @@ export interface SignedTemplate {
  * console.log('Private:', Buffer.from(keypair.secretKey).toString('base64'));
  * ```
  */
-const OFFICIAL_PUBLIC_KEY = 'xmCWXfRKw7DQLuyQdqQIJlAb+r0arpUu2oVjTdJgv/k=';
+const OFFICIAL_PUBLIC_KEY = "xmCWXfRKw7DQLuyQdqQIJlAb+r0arpUu2oVjTdJgv/k=";
 
 /**
  * Signature version we understand.
  */
-const SUPPORTED_VERSIONS = ['1.0'];
+const SUPPORTED_VERSIONS = ["1.0"];
 
 // ============================================================================
 // Verification Functions
@@ -130,15 +136,17 @@ const SUPPORTED_VERSIONS = ['1.0'];
  * @param template - Parsed .lattice.json content
  * @returns Verification result
  */
-export async function verifyTemplate(template: unknown): Promise<VerificationResult> {
+export async function verifyTemplate(
+  template: unknown,
+): Promise<VerificationResult> {
   // Type check
-  if (!template || typeof template !== 'object') {
+  if (!template || typeof template !== "object") {
     return {
       isSigned: false,
       isValid: false,
       isOfficial: false,
-      status: 'unsigned',
-      message: 'Invalid template format',
+      status: "unsigned",
+      message: "Invalid template format",
     };
   }
 
@@ -151,20 +159,23 @@ export async function verifyTemplate(template: unknown): Promise<VerificationRes
       isSigned: false,
       isValid: false,
       isOfficial: false,
-      status: 'unsigned',
-      message: 'Template is not signed. Exercise caution with untrusted templates.',
+      status: "unsigned",
+      message:
+        "Template is not signed. Exercise caution with untrusted templates.",
     };
   }
 
   // Validate signature structure
   if (!isValidSignatureStructure(signature)) {
-    await logSecurityWarning('Invalid template signature structure', { signature });
+    await logSecurityWarning("Invalid template signature structure", {
+      signature,
+    });
     return {
       isSigned: true,
       isValid: false,
       isOfficial: false,
-      status: 'third-party-invalid',
-      message: 'Template has invalid signature format.',
+      status: "third-party-invalid",
+      message: "Template has invalid signature format.",
     };
   }
 
@@ -174,7 +185,7 @@ export async function verifyTemplate(template: unknown): Promise<VerificationRes
       isSigned: true,
       isValid: false,
       isOfficial: false,
-      status: 'third-party-invalid',
+      status: "third-party-invalid",
       message: `Unsupported signature version: ${signature.version}`,
     };
   }
@@ -182,11 +193,14 @@ export async function verifyTemplate(template: unknown): Promise<VerificationRes
   // Verify the signature
   try {
     // Extract template data (everything except _signature) for verification
-    const { _signature: _, ...templateData } = template as Record<string, unknown>;
+    const { _signature: _, ...templateData } = template as Record<
+      string,
+      unknown
+    >;
     const isValid = await verifySignature(templateData, signature);
 
     if (!isValid) {
-      await logSecurityWarning('Template signature verification failed', {
+      await logSecurityWarning("Template signature verification failed", {
         publicKey: signature.publicKey,
         signedAt: signature.signedAt,
       });
@@ -194,8 +208,9 @@ export async function verifyTemplate(template: unknown): Promise<VerificationRes
         isSigned: true,
         isValid: false,
         isOfficial: false,
-        status: 'third-party-invalid',
-        message: 'Template signature is invalid. The template may have been tampered with.',
+        status: "third-party-invalid",
+        message:
+          "Template signature is invalid. The template may have been tampered with.",
         signerPublicKey: signature.publicKey,
         signedAt: signature.signedAt,
       };
@@ -209,8 +224,8 @@ export async function verifyTemplate(template: unknown): Promise<VerificationRes
         isSigned: true,
         isValid: true,
         isOfficial: true,
-        status: 'official',
-        message: 'Verified official Lattice template.',
+        status: "official",
+        message: "Verified official Lattice template.",
         signerPublicKey: signature.publicKey,
         signedAt: signature.signedAt,
       };
@@ -221,20 +236,20 @@ export async function verifyTemplate(template: unknown): Promise<VerificationRes
       isSigned: true,
       isValid: true,
       isOfficial: false,
-      status: 'third-party-valid',
-      message: 'Template is signed by a third party. Verify you trust the source.',
+      status: "third-party-valid",
+      message:
+        "Template is signed by a third party. Verify you trust the source.",
       signerPublicKey: signature.publicKey,
       signedAt: signature.signedAt,
     };
-
   } catch (error) {
-    console.error('[SECURITY] Signature verification error:', error);
+    console.error("[SECURITY] Signature verification error:", error);
     return {
       isSigned: true,
       isValid: false,
       isOfficial: false,
-      status: 'third-party-invalid',
-      message: `Signature verification failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      status: "third-party-invalid",
+      message: `Signature verification failed: ${error instanceof Error ? error.message : "Unknown error"}`,
     };
   }
 }
@@ -252,34 +267,33 @@ export async function isOfficialTemplate(template: unknown): Promise<boolean> {
  */
 export function getVerificationBadge(result: VerificationResult): {
   label: string;
-  color: 'green' | 'yellow' | 'red' | 'gray';
+  color: "green" | "yellow" | "red" | "gray";
   icon: string;
 } {
   switch (result.status) {
-    case 'official':
+    case "official":
       return {
-        label: 'Verified by Lattice',
-        color: 'green',
-        icon: '✓',
+        label: "Verified by Lattice",
+        color: "green",
+        icon: "✓",
       };
-    case 'third-party-valid':
+    case "third-party-valid":
       return {
-        label: 'Third-party (valid signature)',
-        color: 'yellow',
-        icon: '⚠',
+        label: "Third-party (valid signature)",
+        color: "yellow",
+        icon: "⚠",
       };
-    case 'third-party-invalid':
+    case "third-party-invalid":
       return {
-        label: 'Invalid signature',
-        color: 'red',
-        icon: '✗',
+        label: "Invalid signature",
+        color: "red",
+        icon: "✗",
       };
-    case 'unsigned':
     default:
       return {
-        label: 'Unsigned template',
-        color: 'gray',
-        icon: '?',
+        label: "Unsigned template",
+        color: "gray",
+        icon: "?",
       };
   }
 }
@@ -300,13 +314,13 @@ export function getVerificationBadge(result: VerificationResult): {
  */
 export async function signTemplate(
   template: Record<string, unknown>,
-  privateKeyBase64: string
+  privateKeyBase64: string,
 ): Promise<SignedTemplate> {
   // This function requires tweetnacl which may not be bundled
   // It's meant for build-time use only
   const nacl = await loadNaCl();
   if (!nacl) {
-    throw new Error('tweetnacl not installed - run: npm install tweetnacl');
+    throw new Error("tweetnacl not installed - run: npm install tweetnacl");
   }
 
   try {
@@ -322,11 +336,11 @@ export async function signTemplate(
     const signatureBytes = nacl.sign.detached(messageBytes, privateKey);
 
     const signature: TemplateSignature = {
-      algorithm: 'Ed25519',
+      algorithm: "Ed25519",
       publicKey: uint8ArrayToBase64(publicKey),
       signature: uint8ArrayToBase64(signatureBytes),
       signedAt: new Date().toISOString(),
-      version: '1.0',
+      version: "1.0",
     };
 
     return {
@@ -334,7 +348,9 @@ export async function signTemplate(
       _signature: signature,
     };
   } catch (error) {
-    throw new Error(`Failed to sign template: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Failed to sign template: ${error instanceof Error ? error.message : "Unknown error"}`,
+    );
   }
 }
 
@@ -347,11 +363,13 @@ export async function signTemplate(
  */
 async function verifySignature(
   data: Record<string, unknown>,
-  signature: TemplateSignature
+  signature: TemplateSignature,
 ): Promise<boolean> {
   const nacl = await loadNaCl();
   if (!nacl) {
-    console.error('[SECURITY] tweetnacl not installed - cannot verify signatures');
+    console.error(
+      "[SECURITY] tweetnacl not installed - cannot verify signatures",
+    );
     return false;
   }
 
@@ -365,9 +383,8 @@ async function verifySignature(
 
     // Verify
     return nacl.sign.detached.verify(messageBytes, signatureBytes, publicKey);
-
   } catch (error) {
-    console.error('[SECURITY] Signature verification error:', error);
+    console.error("[SECURITY] Signature verification error:", error);
     return false;
   }
 }
@@ -376,16 +393,16 @@ async function verifySignature(
  * Validate signature structure.
  */
 function isValidSignatureStructure(sig: unknown): sig is TemplateSignature {
-  if (!sig || typeof sig !== 'object') return false;
+  if (!sig || typeof sig !== "object") return false;
 
   const s = sig as Record<string, unknown>;
 
   return (
-    s.algorithm === 'Ed25519' &&
-    typeof s.publicKey === 'string' &&
-    typeof s.signature === 'string' &&
-    typeof s.signedAt === 'string' &&
-    typeof s.version === 'string'
+    s.algorithm === "Ed25519" &&
+    typeof s.publicKey === "string" &&
+    typeof s.signature === "string" &&
+    typeof s.signedAt === "string" &&
+    typeof s.version === "string"
   );
 }
 
@@ -399,7 +416,7 @@ function isValidSignatureStructure(sig: unknown): sig is TemplateSignature {
 function createCanonicalJson(obj: unknown): string {
   return JSON.stringify(obj, (_, value) => {
     // Only sort object keys, leave arrays and primitives alone
-    if (value && typeof value === 'object' && !Array.isArray(value)) {
+    if (value && typeof value === "object" && !Array.isArray(value)) {
       const sorted: Record<string, unknown> = {};
       for (const key of Object.keys(value).sort()) {
         sorted[key] = value[key];
@@ -426,7 +443,7 @@ function base64ToUint8Array(base64: string): Uint8Array {
  * Convert Uint8Array to base64 string.
  */
 function uint8ArrayToBase64(bytes: Uint8Array): string {
-  let binary = '';
+  let binary = "";
   for (let i = 0; i < bytes.length; i++) {
     binary += String.fromCharCode(bytes[i]);
   }
@@ -463,8 +480,8 @@ export async function loadAndVerifyTemplate(json: string): Promise<{
         isSigned: false,
         isValid: false,
         isOfficial: false,
-        status: 'unsigned',
-        message: `Failed to parse template: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        status: "unsigned",
+        message: `Failed to parse template: ${error instanceof Error ? error.message : "Unknown error"}`,
       },
     };
   }
@@ -473,22 +490,26 @@ export async function loadAndVerifyTemplate(json: string): Promise<{
 /**
  * Check if a template should show a warning before loading.
  */
-export function shouldWarnBeforeLoading(verification: VerificationResult): boolean {
-  return verification.status !== 'official';
+export function shouldWarnBeforeLoading(
+  verification: VerificationResult,
+): boolean {
+  return verification.status !== "official";
 }
 
 /**
  * Get warning message for non-official templates.
  */
-export function getLoadingWarning(verification: VerificationResult): string | null {
+export function getLoadingWarning(
+  verification: VerificationResult,
+): string | null {
   switch (verification.status) {
-    case 'official':
+    case "official":
       return null;
-    case 'third-party-valid':
-      return 'This template is signed by a third party. Only load templates from sources you trust.';
-    case 'third-party-invalid':
-      return 'WARNING: This template has an invalid signature. It may have been tampered with. Do not load unless you trust the source.';
-    case 'unsigned':
-      return 'This template is unsigned. Only load templates from sources you trust.';
+    case "third-party-valid":
+      return "This template is signed by a third party. Only load templates from sources you trust.";
+    case "third-party-invalid":
+      return "WARNING: This template has an invalid signature. It may have been tampered with. Do not load unless you trust the source.";
+    case "unsigned":
+      return "This template is unsigned. Only load templates from sources you trust.";
   }
 }

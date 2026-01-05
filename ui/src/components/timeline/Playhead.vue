@@ -10,24 +10,22 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
+import { computed, ref } from "vue";
+import { useCompositorStore } from "@/stores/compositorStore";
 
 interface Props {
-  trackOffset: number;  // Offset from left where tracks start
-  trackWidth: number;   // Width of track area
+  trackOffset: number; // Offset from left where tracks start
+  trackWidth: number; // Width of track area
 }
 
 const props = defineProps<Props>();
 
-const emit = defineEmits<{
-  (e: 'scrub', frame: number): void;
-}>();
+const emit = defineEmits<(e: "scrub", frame: number) => void>();
 
 const store = useCompositorStore();
 
 // Calculate position based on current frame
-const position = computed(() => {
+const _position = computed(() => {
   const frameCount = store.frameCount;
   const progress = store.currentFrame / (frameCount - 1);
   return props.trackOffset + progress * props.trackWidth;
@@ -36,17 +34,17 @@ const position = computed(() => {
 // Drag state
 const isDragging = ref(false);
 
-function startDrag(event: MouseEvent) {
+function _startDrag(event: MouseEvent) {
   isDragging.value = true;
-  document.addEventListener('mousemove', handleDrag);
-  document.addEventListener('mouseup', stopDrag);
+  document.addEventListener("mousemove", handleDrag);
+  document.addEventListener("mouseup", stopDrag);
   handleDrag(event);
 }
 
 function handleDrag(event: MouseEvent) {
   if (!isDragging.value) return;
 
-  const parent = (event.target as HTMLElement).closest('.timeline-content');
+  const parent = (event.target as HTMLElement).closest(".timeline-content");
   if (!parent) return;
 
   const rect = parent.getBoundingClientRect();
@@ -54,13 +52,13 @@ function handleDrag(event: MouseEvent) {
   const progress = Math.max(0, Math.min(1, x / props.trackWidth));
   const frame = Math.round(progress * (store.frameCount - 1));
 
-  emit('scrub', frame);
+  emit("scrub", frame);
 }
 
 function stopDrag() {
   isDragging.value = false;
-  document.removeEventListener('mousemove', handleDrag);
-  document.removeEventListener('mouseup', stopDrag);
+  document.removeEventListener("mousemove", handleDrag);
+  document.removeEventListener("mouseup", stopDrag);
 }
 </script>
 

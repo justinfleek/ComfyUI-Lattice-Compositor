@@ -8,11 +8,11 @@
  * the iPod commercial / light streaks aesthetic.
  */
 import {
-  registerEffectRenderer,
   createMatchingCanvas,
   type EffectStackResult,
-  type EvaluatedEffectParams
-} from '../effectProcessor';
+  type EvaluatedEffectParams,
+  registerEffectRenderer,
+} from "../effectProcessor";
 
 // ============================================================================
 // FRAME BUFFER FOR TIME EFFECTS
@@ -22,7 +22,7 @@ import {
 interface FrameBufferEntry {
   imageData: ImageData;
   frame: number;
-  storedAtFrame: number;  // BUG-065 fix: Use frame number instead of wall-clock time for determinism
+  storedAtFrame: number; // BUG-065 fix: Use frame number instead of wall-clock time for determinism
 }
 
 /**
@@ -31,9 +31,8 @@ interface FrameBufferEntry {
  */
 class TimeEffectFrameBuffer {
   private buffer: FrameBufferEntry[] = [];
-  private readonly maxFrames = 64;  // Max stored frames
-  private readonly maxAge = 5000;   // 5 second TTL
-  private layerId: string = '';
+  private readonly maxFrames = 64; // Max stored frames
+  private layerId: string = "";
 
   /**
    * Set the layer this buffer is associated with
@@ -50,19 +49,19 @@ class TimeEffectFrameBuffer {
    * BUG-065 fix: Uses frame number for timestamp instead of Date.now() for determinism
    */
   store(frame: number, canvas: HTMLCanvasElement): void {
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
     // Remove existing entry for this frame
-    this.buffer = this.buffer.filter(e => e.frame !== frame);
+    this.buffer = this.buffer.filter((e) => e.frame !== frame);
 
     // Add new entry - use frame number as timestamp for deterministic cleanup
     this.buffer.push({
       imageData,
       frame,
-      storedAtFrame: frame  // BUG-065 fix: Frame-based timestamp
+      storedAtFrame: frame, // BUG-065 fix: Frame-based timestamp
     });
 
     // Trim to max size (keep most recent)
@@ -76,14 +75,16 @@ class TimeEffectFrameBuffer {
    * Returns null if frame not found
    */
   get(frame: number): ImageData | null {
-    const entry = this.buffer.find(e => e.frame === frame);
+    const entry = this.buffer.find((e) => e.frame === frame);
     return entry ? entry.imageData : null;
   }
 
   /**
    * Get the closest frame to the target
    */
-  getClosest(targetFrame: number): { imageData: ImageData; frame: number } | null {
+  getClosest(
+    targetFrame: number,
+  ): { imageData: ImageData; frame: number } | null {
     if (this.buffer.length === 0) return null;
 
     let closest = this.buffer[0];
@@ -107,9 +108,13 @@ class TimeEffectFrameBuffer {
   getEchoFrames(
     currentFrame: number,
     echoTimeFrames: number,
-    numEchoes: number
+    numEchoes: number,
   ): Array<{ imageData: ImageData; frame: number; echoIndex: number }> {
-    const results: Array<{ imageData: ImageData; frame: number; echoIndex: number }> = [];
+    const results: Array<{
+      imageData: ImageData;
+      frame: number;
+      echoIndex: number;
+    }> = [];
 
     for (let i = 1; i <= numEchoes; i++) {
       const targetFrame = Math.round(currentFrame + echoTimeFrames * i);
@@ -135,8 +140,10 @@ class TimeEffectFrameBuffer {
    */
   cleanup(currentFrame: number): void {
     // Keep frames within maxFrames distance of current frame
-    const maxFrameDistance = this.maxFrames * 2;  // Allow some buffer for echo effects
-    this.buffer = this.buffer.filter(e => Math.abs(currentFrame - e.storedAtFrame) < maxFrameDistance);
+    const maxFrameDistance = this.maxFrames * 2; // Allow some buffer for echo effects
+    this.buffer = this.buffer.filter(
+      (e) => Math.abs(currentFrame - e.storedAtFrame) < maxFrameDistance,
+    );
   }
 
   /**
@@ -146,11 +153,11 @@ class TimeEffectFrameBuffer {
     if (this.buffer.length === 0) {
       return { frames: 0, oldestFrame: -1, newestFrame: -1 };
     }
-    const frames = this.buffer.map(e => e.frame);
+    const frames = this.buffer.map((e) => e.frame);
     return {
       frames: this.buffer.length,
       oldestFrame: Math.min(...frames),
-      newestFrame: Math.max(...frames)
+      newestFrame: Math.max(...frames),
     };
   }
 }
@@ -186,8 +193,14 @@ export function clearAllFrameBuffers(): void {
 /**
  * Echo Operator types - how echoes are composited
  */
-type EchoOperator = 'add' | 'screen' | 'maximum' | 'minimum' |
-                   'composite_back' | 'composite_front' | 'blend';
+type EchoOperator =
+  | "add"
+  | "screen"
+  | "maximum"
+  | "minimum"
+  | "composite_back"
+  | "composite_front"
+  | "blend";
 
 /**
  * Echo effect renderer
@@ -208,25 +221,32 @@ type EchoOperator = 'add' | 'screen' | 'maximum' | 'minimum' |
  */
 export function echoRenderer(
   input: EffectStackResult,
-  params: EvaluatedEffectParams
+  params: EvaluatedEffectParams,
 ): EffectStackResult {
   // Get frame info from extended params (needed for echoTime default calculation)
   const frame = params._frame ?? 0;
   // Validate fps (nullish coalescing doesn't catch NaN)
-  const fps = (Number.isFinite(params._fps) && params._fps > 0) ? params._fps : 16;
+  const fps =
+    Number.isFinite(params._fps) && params._fps > 0 ? params._fps : 16;
 
   // Extract parameters with defaults
   // Validate numeric params (NaN bypasses Math.max/min clamps)
-  const rawEchoTime = params.echo_time ?? (-1 / fps);
-  const echoTime = Number.isFinite(rawEchoTime) ? rawEchoTime : (-1 / fps);
+  const rawEchoTime = params.echo_time ?? -1 / fps;
+  const echoTime = Number.isFinite(rawEchoTime) ? rawEchoTime : -1 / fps;
   const rawNumEchoes = params.number_of_echoes ?? 8;
-  const numEchoes = Number.isFinite(rawNumEchoes) ? Math.max(1, Math.min(50, rawNumEchoes)) : 8;
+  const numEchoes = Number.isFinite(rawNumEchoes)
+    ? Math.max(1, Math.min(50, rawNumEchoes))
+    : 8;
   const rawIntensity = params.starting_intensity ?? 1.0;
-  const startingIntensity = Number.isFinite(rawIntensity) ? Math.max(0, Math.min(1, rawIntensity)) : 1.0;
+  const startingIntensity = Number.isFinite(rawIntensity)
+    ? Math.max(0, Math.min(1, rawIntensity))
+    : 1.0;
   const rawDecay = params.decay ?? 0.5;
-  const decay = Number.isFinite(rawDecay) ? Math.max(0, Math.min(1, rawDecay)) : 0.5;
-  const operator: EchoOperator = params.echo_operator ?? 'add';
-  const layerId = params._layerId ?? 'default';
+  const decay = Number.isFinite(rawDecay)
+    ? Math.max(0, Math.min(1, rawDecay))
+    : 0.5;
+  const operator: EchoOperator = params.echo_operator ?? "add";
+  const layerId = params._layerId ?? "default";
 
   // Calculate echo time in frames
   const echoTimeFrames = echoTime * fps;
@@ -246,7 +266,7 @@ export function echoRenderer(
   const output = createMatchingCanvas(input.canvas);
 
   // Start with current frame (or empty for composite_back)
-  if (operator === 'composite_back') {
+  if (operator === "composite_back") {
     // Echoes go behind, current frame on top
     output.ctx.clearRect(0, 0, width, height);
   } else {
@@ -259,7 +279,7 @@ export function echoRenderer(
   // Calculate intensities for each echo
   const intensities: number[] = [];
   for (let i = 0; i < numEchoes; i++) {
-    intensities.push(startingIntensity * Math.pow(1 - decay, i));
+    intensities.push(startingIntensity * (1 - decay) ** i);
   }
 
   // Composite echoes based on operator
@@ -268,54 +288,52 @@ export function echoRenderer(
     if (intensity <= 0.001) continue;
 
     // Create temp canvas for this echo
-    const tempCanvas = document.createElement('canvas');
+    const tempCanvas = document.createElement("canvas");
     tempCanvas.width = width;
     tempCanvas.height = height;
-    const tempCtx = tempCanvas.getContext('2d')!;
+    const tempCtx = tempCanvas.getContext("2d")!;
     tempCtx.putImageData(echoData.imageData, 0, 0);
 
     // Apply based on operator
     switch (operator) {
-      case 'add':
-        output.ctx.globalCompositeOperation = 'lighter';
+      case "add":
+        output.ctx.globalCompositeOperation = "lighter";
         output.ctx.globalAlpha = intensity;
         output.ctx.drawImage(tempCanvas, 0, 0);
         break;
 
-      case 'screen':
-        output.ctx.globalCompositeOperation = 'screen';
+      case "screen":
+        output.ctx.globalCompositeOperation = "screen";
         output.ctx.globalAlpha = intensity;
         output.ctx.drawImage(tempCanvas, 0, 0);
         break;
 
-      case 'maximum':
-        output.ctx.globalCompositeOperation = 'lighten';
+      case "maximum":
+        output.ctx.globalCompositeOperation = "lighten";
         output.ctx.globalAlpha = intensity;
         output.ctx.drawImage(tempCanvas, 0, 0);
         break;
 
-      case 'minimum':
-        output.ctx.globalCompositeOperation = 'darken';
+      case "minimum":
+        output.ctx.globalCompositeOperation = "darken";
         output.ctx.globalAlpha = intensity;
         output.ctx.drawImage(tempCanvas, 0, 0);
         break;
 
-      case 'composite_back':
+      case "composite_back":
         // Draw echo behind current content
-        output.ctx.globalCompositeOperation = 'destination-over';
+        output.ctx.globalCompositeOperation = "destination-over";
         output.ctx.globalAlpha = intensity;
         output.ctx.drawImage(tempCanvas, 0, 0);
         break;
 
-      case 'composite_front':
-        output.ctx.globalCompositeOperation = 'source-over';
+      case "composite_front":
+        output.ctx.globalCompositeOperation = "source-over";
         output.ctx.globalAlpha = intensity;
         output.ctx.drawImage(tempCanvas, 0, 0);
         break;
-
-      case 'blend':
       default:
-        output.ctx.globalCompositeOperation = 'source-over';
+        output.ctx.globalCompositeOperation = "source-over";
         output.ctx.globalAlpha = intensity;
         output.ctx.drawImage(tempCanvas, 0, 0);
         break;
@@ -323,11 +341,11 @@ export function echoRenderer(
   }
 
   // Reset composite operation
-  output.ctx.globalCompositeOperation = 'source-over';
+  output.ctx.globalCompositeOperation = "source-over";
   output.ctx.globalAlpha = 1;
 
   // If composite_back, draw current frame on top
-  if (operator === 'composite_back') {
+  if (operator === "composite_back") {
     output.ctx.drawImage(input.canvas, 0, 0);
   }
 
@@ -348,15 +366,18 @@ export function echoRenderer(
  */
 export function posterizeTimeRenderer(
   input: EffectStackResult,
-  params: EvaluatedEffectParams
+  params: EvaluatedEffectParams,
 ): EffectStackResult {
   // Validate numeric params (NaN bypasses Math.max/min clamps)
   const rawTargetFps = params.frame_rate ?? 12;
-  const targetFps = Number.isFinite(rawTargetFps) ? Math.max(1, Math.min(60, rawTargetFps)) : 12;
+  const targetFps = Number.isFinite(rawTargetFps)
+    ? Math.max(1, Math.min(60, rawTargetFps))
+    : 12;
   const frame = params._frame ?? 0;
   // Validate fps to prevent division by NaN
-  const fps = (Number.isFinite(params._fps) && params._fps > 0) ? params._fps : 16;
-  const layerId = params._layerId ?? 'default';
+  const fps =
+    Number.isFinite(params._fps) && params._fps > 0 ? params._fps : 16;
+  const layerId = params._layerId ?? "default";
 
   // Calculate which "posterized" frame this belongs to
   const frameRatio = fps / targetFps;
@@ -397,7 +418,7 @@ function generateTimeDisplacementMap(
   width: number,
   height: number,
   mapType: string,
-  scale: number
+  scale: number,
 ): Float32Array {
   const map = new Float32Array(width * height);
 
@@ -407,36 +428,38 @@ function generateTimeDisplacementMap(
       let value = 0; // Neutral (no displacement)
 
       switch (mapType) {
-        case 'gradient-h':
+        case "gradient-h":
           value = x / width; // 0 to 1 left to right
           break;
-        case 'gradient-v':
+        case "gradient-v":
           value = y / height; // 0 to 1 top to bottom
           break;
-        case 'radial':
+        case "radial": {
           const cx = width / 2;
           const cy = height / 2;
           const dist = Math.sqrt((x - cx) ** 2 + (y - cy) ** 2);
           const maxDist = Math.sqrt(cx ** 2 + cy ** 2);
           value = dist / maxDist; // 0 at center, 1 at edges
           break;
-        case 'sine-h':
+        }
+        case "sine-h":
           value = 0.5 + 0.5 * Math.sin((x / width) * Math.PI * 2 * scale);
           break;
-        case 'sine-v':
+        case "sine-v":
           value = 0.5 + 0.5 * Math.sin((y / height) * Math.PI * 2 * scale);
           break;
-        case 'diagonal':
-          value = ((x / width) + (y / height)) / 2;
+        case "diagonal":
+          value = (x / width + y / height) / 2;
           break;
-        case 'center-out':
+        case "center-out": {
           // Radial but inverted (center is most displaced)
           const cx2 = width / 2;
           const cy2 = height / 2;
           const dist2 = Math.sqrt((x - cx2) ** 2 + (y - cy2) ** 2);
           const maxDist2 = Math.sqrt(cx2 ** 2 + cy2 ** 2);
-          value = 1 - (dist2 / maxDist2);
+          value = 1 - dist2 / maxDist2;
           break;
+        }
         default:
           value = 0.5;
       }
@@ -463,18 +486,20 @@ function generateTimeDisplacementMap(
  */
 export function timeDisplacementRenderer(
   input: EffectStackResult,
-  params: EvaluatedEffectParams
+  params: EvaluatedEffectParams,
 ): EffectStackResult {
   // Validate numeric params (NaN bypasses === 0 check)
   const rawMaxDisplacement = params.max_displacement ?? 10;
-  const maxDisplacement = Number.isFinite(rawMaxDisplacement) ? rawMaxDisplacement : 10;
-  const mapType = params.map_type ?? 'gradient-h';
+  const maxDisplacement = Number.isFinite(rawMaxDisplacement)
+    ? rawMaxDisplacement
+    : 10;
+  const mapType = params.map_type ?? "gradient-h";
   const rawMapScale = params.map_scale ?? 1;
   const mapScale = Number.isFinite(rawMapScale) ? rawMapScale : 1;
   const rawBias = params.time_offset_bias ?? 0;
   const bias = Number.isFinite(rawBias) ? rawBias : 0;
   const frame = params._frame ?? 0;
-  const layerId = params._layerId ?? 'default';
+  const layerId = params._layerId ?? "default";
 
   // No effect if max displacement is 0
   if (maxDisplacement === 0) {
@@ -553,11 +578,11 @@ const frozenFrames = new Map<string, { frame: number; imageData: ImageData }>();
  */
 export function freezeFrameRenderer(
   input: EffectStackResult,
-  params: EvaluatedEffectParams
+  params: EvaluatedEffectParams,
 ): EffectStackResult {
   const freezeAtFrame = Math.max(0, Math.round(params.freeze_at_frame ?? 0));
   const frame = params._frame ?? 0;
-  const layerId = params._layerId ?? 'default';
+  const layerId = params._layerId ?? "default";
   const cacheKey = `${layerId}_freeze`;
 
   // Get frame buffer for storing/retrieving frames
@@ -588,7 +613,10 @@ export function freezeFrameRenderer(
   const frozenImageData = buffer.get(freezeAtFrame);
   if (frozenImageData) {
     // Cache it for future use
-    frozenFrames.set(cacheKey, { frame: freezeAtFrame, imageData: frozenImageData });
+    frozenFrames.set(cacheKey, {
+      frame: freezeAtFrame,
+      imageData: frozenImageData,
+    });
 
     const { width, height } = input.canvas;
     const output = createMatchingCanvas(input.canvas);
@@ -642,7 +670,7 @@ export function clearTimeEffectStateOnSeek(): void {
 /**
  * Timewarp interpolation methods
  */
-export type TimewarpMethod = 'whole-frames' | 'frame-mix' | 'pixel-motion';
+export type TimewarpMethod = "whole-frames" | "frame-mix" | "pixel-motion";
 
 /**
  * Apply Timewarp frame blending between two source frames
@@ -660,7 +688,7 @@ export function applyTimewarpBlending(
   frame2Data: ImageData,
   blendFactor: number,
   method: TimewarpMethod,
-  motionBlur: number = 0.5
+  motionBlur: number = 0.5,
 ): ImageData {
   const width = frame1Data.width;
   const height = frame1Data.height;
@@ -674,12 +702,12 @@ export function applyTimewarpBlending(
   }
 
   switch (method) {
-    case 'whole-frames': {
+    case "whole-frames": {
       // Nearest frame - no interpolation
       return blendFactor < 0.5 ? frame1Data : frame2Data;
     }
 
-    case 'frame-mix': {
+    case "frame-mix": {
       // Simple cross-fade between frames
       const output = new ImageData(width, height);
       const dst = output.data;
@@ -688,15 +716,18 @@ export function applyTimewarpBlending(
 
       for (let i = 0; i < dst.length; i += 4) {
         dst[i] = src1[i] * (1 - blendFactor) + src2[i] * blendFactor;
-        dst[i + 1] = src1[i + 1] * (1 - blendFactor) + src2[i + 1] * blendFactor;
-        dst[i + 2] = src1[i + 2] * (1 - blendFactor) + src2[i + 2] * blendFactor;
-        dst[i + 3] = src1[i + 3] * (1 - blendFactor) + src2[i + 3] * blendFactor;
+        dst[i + 1] =
+          src1[i + 1] * (1 - blendFactor) + src2[i + 1] * blendFactor;
+        dst[i + 2] =
+          src1[i + 2] * (1 - blendFactor) + src2[i + 2] * blendFactor;
+        dst[i + 3] =
+          src1[i + 3] * (1 - blendFactor) + src2[i + 3] * blendFactor;
       }
 
       return output;
     }
 
-    case 'pixel-motion': {
+    case "pixel-motion": {
       // Optical flow-based interpolation
       const output = new ImageData(width, height);
       computePixelMotionInterpolation(
@@ -706,7 +737,7 @@ export function applyTimewarpBlending(
         blendFactor,
         motionBlur,
         width,
-        height
+        height,
       );
       return output;
     }
@@ -727,7 +758,7 @@ function computePixelMotionInterpolation(
   blend: number,
   motionBlurAmount: number,
   width: number,
-  height: number
+  height: number,
 ): void {
   const blockSize = 8; // Motion estimation block size
   const searchRadius = 8; // Search radius for motion vectors
@@ -739,7 +770,7 @@ function computePixelMotionInterpolation(
     width,
     height,
     blockSize,
-    searchRadius
+    searchRadius,
   );
 
   const dst = output.data;
@@ -771,13 +802,20 @@ function computePixelMotionInterpolation(
       const sample2 = samplePixelBilinear(src2, srcX2, srcY2, width, height);
 
       // Blend samples with motion blur consideration
-      const blurFactor = Math.min(1, motionBlurAmount * Math.sqrt(mv.x * mv.x + mv.y * mv.y) / 10);
+      const blurFactor = Math.min(
+        1,
+        (motionBlurAmount * Math.sqrt(mv.x * mv.x + mv.y * mv.y)) / 10,
+      );
       const adjustedBlend = blend * (1 - blurFactor * 0.5);
 
-      dst[pixelIdx] = sample1.r * (1 - adjustedBlend) + sample2.r * adjustedBlend;
-      dst[pixelIdx + 1] = sample1.g * (1 - adjustedBlend) + sample2.g * adjustedBlend;
-      dst[pixelIdx + 2] = sample1.b * (1 - adjustedBlend) + sample2.b * adjustedBlend;
-      dst[pixelIdx + 3] = sample1.a * (1 - adjustedBlend) + sample2.a * adjustedBlend;
+      dst[pixelIdx] =
+        sample1.r * (1 - adjustedBlend) + sample2.r * adjustedBlend;
+      dst[pixelIdx + 1] =
+        sample1.g * (1 - adjustedBlend) + sample2.g * adjustedBlend;
+      dst[pixelIdx + 2] =
+        sample1.b * (1 - adjustedBlend) + sample2.b * adjustedBlend;
+      dst[pixelIdx + 3] =
+        sample1.a * (1 - adjustedBlend) + sample2.a * adjustedBlend;
     }
   }
 }
@@ -791,7 +829,7 @@ function computeBlockMotionVectors(
   width: number,
   height: number,
   blockSize: number,
-  searchRadius: number
+  searchRadius: number,
 ): Array<{ x: number; y: number }> {
   const blocksPerRow = Math.ceil(width / blockSize);
   const blocksPerCol = Math.ceil(height / blockSize);
@@ -831,8 +869,14 @@ function computeBlockMotionVectors(
               const idx2 = (y2 * width + x2) * 4;
 
               // Luminance-based SAD for efficiency
-              const lum1 = src1[idx1] * 0.299 + src1[idx1 + 1] * 0.587 + src1[idx1 + 2] * 0.114;
-              const lum2 = src2[idx2] * 0.299 + src2[idx2 + 1] * 0.587 + src2[idx2 + 2] * 0.114;
+              const lum1 =
+                src1[idx1] * 0.299 +
+                src1[idx1 + 1] * 0.587 +
+                src1[idx1 + 2] * 0.114;
+              const lum2 =
+                src2[idx2] * 0.299 +
+                src2[idx2 + 1] * 0.587 +
+                src2[idx2 + 2] * 0.114;
 
               sad += Math.abs(lum1 - lum2);
               validPixels++;
@@ -867,7 +911,7 @@ function samplePixelBilinear(
   x: number,
   y: number,
   width: number,
-  height: number
+  height: number,
 ): { r: number; g: number; b: number; a: number } {
   // Clamp coordinates
   const x0 = Math.max(0, Math.min(width - 1, Math.floor(x)));
@@ -883,10 +927,38 @@ function samplePixelBilinear(
   const idx01 = (y1 * width + x0) * 4;
   const idx11 = (y1 * width + x1) * 4;
 
-  const r = bilinearInterpolate(data[idx00], data[idx10], data[idx01], data[idx11], fx, fy);
-  const g = bilinearInterpolate(data[idx00 + 1], data[idx10 + 1], data[idx01 + 1], data[idx11 + 1], fx, fy);
-  const b = bilinearInterpolate(data[idx00 + 2], data[idx10 + 2], data[idx01 + 2], data[idx11 + 2], fx, fy);
-  const a = bilinearInterpolate(data[idx00 + 3], data[idx10 + 3], data[idx01 + 3], data[idx11 + 3], fx, fy);
+  const r = bilinearInterpolate(
+    data[idx00],
+    data[idx10],
+    data[idx01],
+    data[idx11],
+    fx,
+    fy,
+  );
+  const g = bilinearInterpolate(
+    data[idx00 + 1],
+    data[idx10 + 1],
+    data[idx01 + 1],
+    data[idx11 + 1],
+    fx,
+    fy,
+  );
+  const b = bilinearInterpolate(
+    data[idx00 + 2],
+    data[idx10 + 2],
+    data[idx01 + 2],
+    data[idx11 + 2],
+    fx,
+    fy,
+  );
+  const a = bilinearInterpolate(
+    data[idx00 + 3],
+    data[idx10 + 3],
+    data[idx01 + 3],
+    data[idx11 + 3],
+    fx,
+    fy,
+  );
 
   return { r, g, b, a };
 }
@@ -894,7 +966,14 @@ function samplePixelBilinear(
 /**
  * Bilinear interpolation helper
  */
-function bilinearInterpolate(v00: number, v10: number, v01: number, v11: number, fx: number, fy: number): number {
+function bilinearInterpolate(
+  v00: number,
+  v10: number,
+  v01: number,
+  v11: number,
+  fx: number,
+  fy: number,
+): number {
   const v0 = v00 * (1 - fx) + v10 * fx;
   const v1 = v01 * (1 - fx) + v11 * fx;
   return v0 * (1 - fy) + v1 * fy;
@@ -917,7 +996,7 @@ function bilinearInterpolate(v00: number, v10: number, v01: number, v11: number,
 export function pixelMotionBlend(
   frame1: ImageData,
   frame2: ImageData,
-  blend: number
+  blend: number,
 ): ImageData {
   const width = frame1.width;
   const height = frame1.height;
@@ -930,7 +1009,7 @@ export function pixelMotionBlend(
     blend,
     0.5, // Default motion blur
     width,
-    height
+    height,
   );
 
   return output;
@@ -945,10 +1024,10 @@ export function pixelMotionBlend(
  * Note: Timewarp is NOT an effect - it's a layer property that modifies timing
  */
 export function registerTimeEffects(): void {
-  registerEffectRenderer('echo', echoRenderer);
-  registerEffectRenderer('posterize-time', posterizeTimeRenderer);
-  registerEffectRenderer('freeze-frame', freezeFrameRenderer);
-  registerEffectRenderer('time-displacement', timeDisplacementRenderer);
+  registerEffectRenderer("echo", echoRenderer);
+  registerEffectRenderer("posterize-time", posterizeTimeRenderer);
+  registerEffectRenderer("freeze-frame", freezeFrameRenderer);
+  registerEffectRenderer("time-displacement", timeDisplacementRenderer);
 }
 
 export default {
@@ -962,6 +1041,6 @@ export default {
   clearAllFrameBuffers,
   clearAllFrozenFrames,
   clearFrozenFrame,
-  clearTimeEffectStateOnSeek,  // BUG-065 fix: Unified clear for timeline seek
-  getFrameBuffer
+  clearTimeEffectStateOnSeek, // BUG-065 fix: Unified clear for timeline seek
+  getFrameBuffer,
 };

@@ -18,11 +18,11 @@
  * legal defensibility and clearer terminology.
  */
 
-import * as THREE from 'three';
-import type { Layer, AnimatableProperty } from '@/types/project';
-import { BaseLayer } from './BaseLayer';
-import { processEffectStack, hasEnabledEffects } from '@/services/effectProcessor';
-import { layerLogger } from '@/utils/logger';
+import * as THREE from "three";
+import { processEffectStack } from "@/services/effectProcessor";
+import type { Layer } from "@/types/project";
+import { layerLogger } from "@/utils/logger";
+import { BaseLayer } from "./BaseLayer";
 
 // ============================================================================
 // TYPES
@@ -30,7 +30,10 @@ import { layerLogger } from '@/utils/logger';
 
 export interface EffectLayerRenderContext {
   /** Function to render layers below this one to a texture */
-  renderLayersBelow: (effectLayerId: string, frame: number) => HTMLCanvasElement | null;
+  renderLayersBelow: (
+    effectLayerId: string,
+    frame: number,
+  ) => HTMLCanvasElement | null;
   /** Function to get canvas dimensions */
   getCanvasDimensions: () => { width: number; height: number };
   /** Mark layers below as handled (don't render them normally) */
@@ -57,14 +60,9 @@ export class EffectLayer extends BaseLayer {
 
   // Canvas for effect processing
   private effectCanvas: HTMLCanvasElement | null = null;
-  private effectCtx: CanvasRenderingContext2D | null = null;
 
   // Layer IDs that this effect layer affects
   private affectedLayerIds: string[] = [];
-
-  // Composition dimensions
-  private compWidth: number = 1;
-  private compHeight: number = 1;
 
   constructor(layerData: Layer) {
     super(layerData);
@@ -107,8 +105,8 @@ export class EffectLayer extends BaseLayer {
     if (!this.mesh) return;
 
     // Validate dimensions (NaN/0 would create invalid geometry and canvas)
-    const validWidth = (Number.isFinite(width) && width > 0) ? width : 1920;
-    const validHeight = (Number.isFinite(height) && height > 0) ? height : 1080;
+    const validWidth = Number.isFinite(width) && width > 0 ? width : 1920;
+    const validHeight = Number.isFinite(height) && height > 0 ? height : 1080;
 
     this.compWidth = validWidth;
     this.compHeight = validHeight;
@@ -117,10 +115,10 @@ export class EffectLayer extends BaseLayer {
     this.mesh.geometry = new THREE.PlaneGeometry(validWidth, validHeight);
 
     // Create/resize effect canvas
-    this.effectCanvas = document.createElement('canvas');
+    this.effectCanvas = document.createElement("canvas");
     this.effectCanvas.width = validWidth;
     this.effectCanvas.height = validHeight;
-    this.effectCtx = this.effectCanvas.getContext('2d');
+    this.effectCtx = this.effectCanvas.getContext("2d");
   }
 
   // ============================================================================
@@ -164,7 +162,8 @@ export class EffectLayer extends BaseLayer {
 
     // Check if this effect layer is enabled and has effects
     // Support both new 'effectLayer' property and legacy 'adjustmentLayer'
-    const isEffectLayerMode = this.layerData.effectLayer ?? this.layerData.adjustmentLayer;
+    const isEffectLayerMode =
+      this.layerData.effectLayer ?? this.layerData.adjustmentLayer;
     if (!this.hasEnabledEffects() || !isEffectLayerMode) {
       // Hide the mesh when not acting as effect layer
       this.material.visible = false;
@@ -181,16 +180,22 @@ export class EffectLayer extends BaseLayer {
 
     // Apply effects to the source canvas
     try {
-      const qualityHint = this.isDraftQuality() ? 'draft' : 'high';
+      const qualityHint = this.isDraftQuality() ? "draft" : "high";
 
       // Build context for time-based effects (Echo, Posterize Time)
       const effectContext = {
         frame,
         fps: this.compositionFps,
-        layerId: this.id
+        layerId: this.id,
       };
 
-      const result = processEffectStack(this.effects, sourceCanvas, frame, qualityHint, effectContext);
+      const result = processEffectStack(
+        this.effects,
+        sourceCanvas,
+        frame,
+        qualityHint,
+        effectContext,
+      );
 
       // Create texture from result
       this.updateResultTexture(result.canvas);
@@ -206,7 +211,9 @@ export class EffectLayer extends BaseLayer {
     }
   }
 
-  protected override onApplyEvaluatedState(state: import('../MotionEngine').EvaluatedLayer): void {
+  protected override onApplyEvaluatedState(
+    state: import("../MotionEngine").EvaluatedLayer,
+  ): void {
     // Apply opacity to material (opacity is on EvaluatedLayer, not transform)
     if (state.opacity !== undefined && this.material) {
       // Validate opacity (NaN would corrupt material rendering)
@@ -251,7 +258,9 @@ export class EffectLayer extends BaseLayer {
    * Check if this layer is currently acting as an effect layer
    */
   isEffectLayerMode(): boolean {
-    return (this.layerData.effectLayer ?? this.layerData.adjustmentLayer) === true;
+    return (
+      (this.layerData.effectLayer ?? this.layerData.adjustmentLayer) === true
+    );
   }
 
   /**

@@ -80,11 +80,11 @@ interface Props {
 defineProps<Props>();
 
 const emit = defineEmits<{
-  (e: 'toggle'): void;
-  (e: 'update', key: keyof VisualizationConfig, value: any): void;
+  (e: "toggle"): void;
+  (e: "update", key: keyof VisualizationConfig, value: any): void;
 }>();
 
-function update(key: keyof VisualizationConfig, value: any): void {
-  emit('update', key, value);
+function _update(key: keyof VisualizationConfig, value: any): void {
+  emit("update", key, value);
 }
 </script>

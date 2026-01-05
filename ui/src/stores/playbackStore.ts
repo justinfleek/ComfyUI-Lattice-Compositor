@@ -4,9 +4,9 @@
  * Manages playback state including play/pause, frame navigation, and scrubbing.
  * This is a focused store extracted from compositorStore for better maintainability.
  */
-import { defineStore } from 'pinia';
-import { storeLogger } from '@/utils/logger';
-import { validateFps } from '@/utils/fpsUtils';
+import { defineStore } from "pinia";
+import { validateFps } from "@/utils/fpsUtils";
+import { storeLogger } from "@/utils/logger";
 
 interface PlaybackState {
   isPlaying: boolean;
@@ -19,7 +19,7 @@ interface PlaybackState {
   workAreaEnd: number | null;
 }
 
-export const usePlaybackStore = defineStore('playback', {
+export const usePlaybackStore = defineStore("playback", {
   state: (): PlaybackState => ({
     isPlaying: false,
     playbackRequestId: null,
@@ -32,9 +32,11 @@ export const usePlaybackStore = defineStore('playback', {
 
   getters: {
     playing: (state) => state.isPlaying,
-    hasWorkArea: (state) => state.workAreaStart !== null && state.workAreaEnd !== null,
+    hasWorkArea: (state) =>
+      state.workAreaStart !== null && state.workAreaEnd !== null,
     effectiveStartFrame: (state) => state.workAreaStart ?? 0,
-    effectiveEndFrame: (state) => (frameCount: number) => state.workAreaEnd ?? frameCount - 1,
+    effectiveEndFrame: (state) => (frameCount: number) =>
+      state.workAreaEnd ?? frameCount - 1,
   },
 
   actions: {
@@ -44,7 +46,7 @@ export const usePlaybackStore = defineStore('playback', {
     setWorkArea(start: number | null, end: number | null): void {
       this.workAreaStart = start;
       this.workAreaEnd = end;
-      storeLogger.debug('Work area set:', { start, end });
+      storeLogger.debug("Work area set:", { start, end });
     },
 
     /**
@@ -53,7 +55,7 @@ export const usePlaybackStore = defineStore('playback', {
     clearWorkArea(): void {
       this.workAreaStart = null;
       this.workAreaEnd = null;
-      storeLogger.debug('Work area cleared');
+      storeLogger.debug("Work area cleared");
     },
 
     /**
@@ -67,7 +69,7 @@ export const usePlaybackStore = defineStore('playback', {
       fps: number,
       frameCount: number,
       currentFrame: number,
-      onFrame: (frame: number) => void
+      onFrame: (frame: number) => void,
     ): void {
       if (this.isPlaying) return;
 
@@ -124,7 +126,14 @@ export const usePlaybackStore = defineStore('playback', {
       };
 
       this.playbackRequestId = requestAnimationFrame(tick);
-      storeLogger.debug('Playback started at frame', currentFrame, 'range:', rangeStart, '-', rangeEnd);
+      storeLogger.debug(
+        "Playback started at frame",
+        currentFrame,
+        "range:",
+        rangeStart,
+        "-",
+        rangeEnd,
+      );
     },
 
     /**
@@ -137,7 +146,7 @@ export const usePlaybackStore = defineStore('playback', {
       }
       this.isPlaying = false;
       this.playbackStartTime = null;
-      storeLogger.debug('Playback stopped');
+      storeLogger.debug("Playback stopped");
     },
 
     /**
@@ -147,7 +156,7 @@ export const usePlaybackStore = defineStore('playback', {
       fps: number,
       frameCount: number,
       currentFrame: number,
-      onFrame: (frame: number) => void
+      onFrame: (frame: number) => void,
     ): void {
       if (this.isPlaying) {
         this.stop();
@@ -185,7 +194,7 @@ export const usePlaybackStore = defineStore('playback', {
     stepForward(
       currentFrame: number,
       frameCount: number,
-      onFrame: (frame: number) => void
+      onFrame: (frame: number) => void,
     ): void {
       this.stop();
       const newFrame = Math.min(currentFrame + 1, frameCount - 1);
@@ -195,10 +204,7 @@ export const usePlaybackStore = defineStore('playback', {
     /**
      * Step backward one frame
      */
-    stepBackward(
-      currentFrame: number,
-      onFrame: (frame: number) => void
-    ): void {
+    stepBackward(currentFrame: number, onFrame: (frame: number) => void): void {
       this.stop();
       const newFrame = Math.max(currentFrame - 1, 0);
       onFrame(newFrame);
@@ -207,7 +213,11 @@ export const usePlaybackStore = defineStore('playback', {
     /**
      * Jump to specific frame
      */
-    goToFrame(frame: number, frameCount: number, onFrame: (frame: number) => void): void {
+    goToFrame(
+      frame: number,
+      frameCount: number,
+      onFrame: (frame: number) => void,
+    ): void {
       const clampedFrame = Math.max(0, Math.min(frame, frameCount - 1));
       onFrame(clampedFrame);
     },

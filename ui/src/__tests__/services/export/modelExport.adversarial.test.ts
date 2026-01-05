@@ -11,42 +11,111 @@
  * @module ModelExportAdversarialTests
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, expect, it, vi } from "vitest";
 
 // Note: We need to mock THREE.js and canvas for Node environment
 // Using proper class constructors instead of arrow functions (TEST-001 fix)
-vi.mock('three', () => {
+vi.mock("three", () => {
   class MockVector3 {
-    constructor(public x = 0, public y = 0, public z = 0) {}
-    set(x: number, y: number, z: number) { this.x = x; this.y = y; this.z = z; return this; }
-    clone() { return new MockVector3(this.x, this.y, this.z); }
-    copy(v: MockVector3) { this.x = v.x; this.y = v.y; this.z = v.z; return this; }
-    add(v: MockVector3) { this.x += v.x; this.y += v.y; this.z += v.z; return this; }
-    sub(v: MockVector3) { this.x -= v.x; this.y -= v.y; this.z -= v.z; return this; }
-    multiplyScalar(s: number) { this.x *= s; this.y *= s; this.z *= s; return this; }
-    length() { return Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z); }
-    normalize() { const l = this.length(); if (l > 0) { this.x /= l; this.y /= l; this.z /= l; } return this; }
-    applyMatrix4(m: MockMatrix4) { return this; }
-    applyQuaternion(q: MockQuaternion) { return this; }
+    constructor(
+      public x = 0,
+      public y = 0,
+      public z = 0,
+    ) {}
+    set(x: number, y: number, z: number) {
+      this.x = x;
+      this.y = y;
+      this.z = z;
+      return this;
+    }
+    clone() {
+      return new MockVector3(this.x, this.y, this.z);
+    }
+    copy(v: MockVector3) {
+      this.x = v.x;
+      this.y = v.y;
+      this.z = v.z;
+      return this;
+    }
+    add(v: MockVector3) {
+      this.x += v.x;
+      this.y += v.y;
+      this.z += v.z;
+      return this;
+    }
+    sub(v: MockVector3) {
+      this.x -= v.x;
+      this.y -= v.y;
+      this.z -= v.z;
+      return this;
+    }
+    multiplyScalar(s: number) {
+      this.x *= s;
+      this.y *= s;
+      this.z *= s;
+      return this;
+    }
+    length() {
+      return Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
+    }
+    normalize() {
+      const l = this.length();
+      if (l > 0) {
+        this.x /= l;
+        this.y /= l;
+        this.z /= l;
+      }
+      return this;
+    }
+    applyMatrix4(_m: MockMatrix4) {
+      return this;
+    }
+    applyQuaternion(_q: MockQuaternion) {
+      return this;
+    }
   }
 
   class MockEuler {
-    constructor(public x = 0, public y = 0, public z = 0, public order = 'XYZ') {}
+    constructor(
+      public x = 0,
+      public y = 0,
+      public z = 0,
+      public order = "XYZ",
+    ) {}
     set(x: number, y: number, z: number, order?: string) {
-      this.x = x; this.y = y; this.z = z;
+      this.x = x;
+      this.y = y;
+      this.z = z;
       if (order) this.order = order;
       return this;
     }
-    clone() { return new MockEuler(this.x, this.y, this.z, this.order); }
-    setFromQuaternion(q: MockQuaternion, order?: string) { return this; }
+    clone() {
+      return new MockEuler(this.x, this.y, this.z, this.order);
+    }
+    setFromQuaternion(_q: MockQuaternion, _order?: string) {
+      return this;
+    }
   }
 
   class MockQuaternion {
-    constructor(public x = 0, public y = 0, public z = 0, public w = 1) {}
-    setFromEuler(euler: MockEuler) { return this; }
-    clone() { return new MockQuaternion(this.x, this.y, this.z, this.w); }
-    multiply(q: MockQuaternion) { return this; }
-    invert() { return this; }
+    constructor(
+      public x = 0,
+      public y = 0,
+      public z = 0,
+      public w = 1,
+    ) {}
+    setFromEuler(_euler: MockEuler) {
+      return this;
+    }
+    clone() {
+      return new MockQuaternion(this.x, this.y, this.z, this.w);
+    }
+    multiply(_q: MockQuaternion) {
+      return this;
+    }
+    invert() {
+      return this;
+    }
   }
 
   class MockMatrix4 {
@@ -57,10 +126,18 @@ vi.mock('three', () => {
     }
     identity() {
       this.elements.fill(0);
-      this.elements[0] = this.elements[5] = this.elements[10] = this.elements[15] = 1;
+      this.elements[0] =
+        this.elements[5] =
+        this.elements[10] =
+        this.elements[15] =
+          1;
       return this;
     }
-    compose(position: MockVector3, quaternion: MockQuaternion, scale: MockVector3) {
+    compose(
+      position: MockVector3,
+      _quaternion: MockQuaternion,
+      _scale: MockVector3,
+    ) {
       // Simplified compose - sets translation in last column
       this.identity();
       this.elements[12] = position.x;
@@ -68,14 +145,20 @@ vi.mock('three', () => {
       this.elements[14] = position.z;
       return this;
     }
-    multiply(m: MockMatrix4) { return this; }
-    invert() { return this; }
+    multiply(_m: MockMatrix4) {
+      return this;
+    }
+    invert() {
+      return this;
+    }
     clone() {
       const m = new MockMatrix4();
       m.elements.set(this.elements);
       return m;
     }
-    toArray() { return Array.from(this.elements); }
+    toArray() {
+      return Array.from(this.elements);
+    }
   }
 
   return {
@@ -84,29 +167,29 @@ vi.mock('three', () => {
     Quaternion: MockQuaternion,
     Matrix4: MockMatrix4,
     MathUtils: {
-      degToRad: (deg: number) => deg * Math.PI / 180,
-      radToDeg: (rad: number) => rad * 180 / Math.PI,
+      degToRad: (deg: number) => (deg * Math.PI) / 180,
+      radToDeg: (rad: number) => (rad * 180) / Math.PI,
     },
   };
 });
 
 import {
-  camera3DToMatrix4x4,
-  exportCameraTrajectory,
-  extractLayerTrajectory,
-  exportWanMoveTrajectories,
-  exportWanMoveTracksForKijai,
   calculatePanSpeed,
-  generateMotionMask,
-  generateCombinedMotionMask,
-  imageDataToBase64,
+  camera3DToMatrix4x4,
   createNpyHeader,
-  trajectoriesToNpy,
+  exportCameraTrajectory,
   exportForModel,
+  exportWanMoveTracksForKijai,
+  exportWanMoveTrajectories,
+  extractLayerTrajectory,
+  generateCombinedMotionMask,
+  generateMotionMask,
+  imageDataToBase64,
   type PointTrajectory,
-} from '@/services/modelExport';
-import type { Camera3D } from '@/types/camera';
-import type { Layer } from '@/types/project';
+  trajectoriesToNpy,
+} from "@/services/modelExport";
+import type { Camera3D } from "@/types/camera";
+import type { Layer } from "@/types/project";
 
 // ============================================================================
 // Test Fixtures
@@ -114,9 +197,9 @@ import type { Layer } from '@/types/project';
 
 function createValidCamera(overrides: Partial<Camera3D> = {}): Camera3D {
   return {
-    id: 'test-camera',
-    name: 'Test Camera',
-    type: 'perspective',
+    id: "test-camera",
+    name: "Test Camera",
+    type: "perspective",
     position: { x: 0, y: 0, z: -500 },
     orientation: { x: 0, y: 0, z: 0 },
     xRotation: 0,
@@ -140,9 +223,9 @@ function createValidCamera(overrides: Partial<Camera3D> = {}): Camera3D {
 
 function createValidLayer(overrides: Partial<Layer> = {}): Layer {
   return {
-    id: 'test-layer',
-    name: 'Test Layer',
-    type: 'solid',
+    id: "test-layer",
+    name: "Test Layer",
+    type: "solid",
     visible: true,
     startFrame: 0,
     endFrame: 100,
@@ -159,9 +242,11 @@ function createValidLayer(overrides: Partial<Layer> = {}): Layer {
   } as unknown as Layer;
 }
 
-function createValidTrajectory(overrides: Partial<PointTrajectory> = {}): PointTrajectory {
+function _createValidTrajectory(
+  overrides: Partial<PointTrajectory> = {},
+): PointTrajectory {
   return {
-    id: 'test-traj',
+    id: "test-traj",
     points: [
       { frame: 0, x: 0, y: 0 },
       { frame: 1, x: 10, y: 10 },
@@ -177,15 +262,15 @@ const mockCanvas = {
   width: 512,
   height: 512,
   getContext: vi.fn(() => ({
-    fillStyle: '',
+    fillStyle: "",
     fillRect: vi.fn(),
     getImageData: vi.fn(() => new ImageData(512, 512)),
     putImageData: vi.fn(),
   })),
-  toDataURL: vi.fn(() => 'data:image/png;base64,mock'),
+  toDataURL: vi.fn(() => "data:image/png;base64,mock"),
 };
 
-vi.stubGlobal('document', {
+vi.stubGlobal("document", {
   createElement: vi.fn(() => mockCanvas),
 });
 
@@ -193,67 +278,65 @@ vi.stubGlobal('document', {
 // CRITICAL: NPY Binary Format Tests
 // ============================================================================
 
-describe('CRITICAL: NPY Binary Format - Header Generation', () => {
-
-  describe('createNpyHeader - Shape Validation', () => {
-
-    it('should throw for empty shape array', () => {
+describe("CRITICAL: NPY Binary Format - Header Generation", () => {
+  describe("createNpyHeader - Shape Validation", () => {
+    it("should throw for empty shape array", () => {
       expect(() => {
         createNpyHeader([]);
       }).toThrow(/empty|undefined/i);
     });
 
-    it('should throw for undefined shape', () => {
+    it("should throw for undefined shape", () => {
       expect(() => {
         createNpyHeader(undefined as any);
       }).toThrow(/empty|undefined/i);
     });
 
-    it('should throw for negative dimensions', () => {
+    it("should throw for negative dimensions", () => {
       expect(() => {
         createNpyHeader([-1, 10, 2]);
       }).toThrow(/negative|invalid/i);
     });
 
-    it('should throw for NaN dimensions', () => {
+    it("should throw for NaN dimensions", () => {
       expect(() => {
         createNpyHeader([NaN, 10, 2]);
       }).toThrow(/NaN|invalid/i);
     });
 
-    it('should throw for Infinity dimensions', () => {
+    it("should throw for Infinity dimensions", () => {
       expect(() => {
         createNpyHeader([Infinity, 10, 2]);
       }).toThrow(/Infinity|invalid/i);
     });
 
-    it('should throw for non-integer dimensions', () => {
+    it("should throw for non-integer dimensions", () => {
       expect(() => {
         createNpyHeader([10.5, 10, 2]);
       }).toThrow(/integer|invalid/i);
     });
 
-    it('should handle valid single-dimension shape', () => {
+    it("should handle valid single-dimension shape", () => {
       const header = createNpyHeader([10]);
       expect(header).toBeInstanceOf(Uint8Array);
       expect(header.length).toBeGreaterThan(10);
     });
 
-    it('should handle zero dimension (valid but empty array)', () => {
+    it("should handle zero dimension (valid but empty array)", () => {
       // Note: Shape [0, 10, 2] is valid in NumPy - represents empty array
       const header = createNpyHeader([0, 10, 2]);
       expect(header).toBeInstanceOf(Uint8Array);
     });
 
-    it('should include Python tuple syntax in header', () => {
+    it("should include Python tuple syntax in header", () => {
       const header = createNpyHeader([10, 5, 2]);
       const headerStr = new TextDecoder().decode(header);
       // Should contain Python tuple format: (10, 5, 2)
-      expect(headerStr).toContain('(');
-      expect(headerStr).toContain(')');
+      expect(headerStr).toContain("(");
+      expect(headerStr).toContain(")");
     });
 
-    it('should include trailing comma for single-element tuple', () => {
+    it("should include trailing comma for single-element tuple", () => {
       const header = createNpyHeader([10]);
       const headerStr = new TextDecoder().decode(header);
       // Python single-element tuple: (10,)
@@ -262,23 +345,26 @@ describe('CRITICAL: NPY Binary Format - Header Generation', () => {
   });
 });
 
-describe('CRITICAL: NPY Binary Format - trajectoriesToNpy', () => {
-
-  it('should throw for empty trajectories array', () => {
+describe("CRITICAL: NPY Binary Format - trajectoriesToNpy", () => {
+  it("should throw for empty trajectories array", () => {
     expect(() => {
       trajectoriesToNpy([]);
     }).toThrow(/empty/i);
   });
 
-  it('should throw for trajectory with no points', () => {
+  it("should throw for trajectory with no points", () => {
     expect(() => {
       trajectoriesToNpy([[]]);
     }).toThrow(/no points/i);
   });
 
-  it('should handle NaN values in trajectory points gracefully', () => {
+  it("should handle NaN values in trajectory points gracefully", () => {
     const trajectories = [
-      [[NaN, 0], [10, NaN], [20, 20]],
+      [
+        [NaN, 0],
+        [10, NaN],
+        [20, 20],
+      ],
     ];
 
     // Should not throw - should replace NaN with 0
@@ -286,12 +372,19 @@ describe('CRITICAL: NPY Binary Format - trajectoriesToNpy', () => {
     expect(blob).toBeInstanceOf(Blob);
   });
 
-  it('should warn but not crash for mismatched frame counts', () => {
-    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  it("should warn but not crash for mismatched frame counts", () => {
+    const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {});
 
     const trajectories = [
-      [[0, 0], [10, 10], [20, 20]],  // 3 frames
-      [[0, 0], [10, 10]],             // 2 frames
+      [
+        [0, 0],
+        [10, 10],
+        [20, 20],
+      ], // 3 frames
+      [
+        [0, 0],
+        [10, 10],
+      ], // 2 frames
     ];
 
     const blob = trajectoriesToNpy(trajectories);
@@ -301,10 +394,8 @@ describe('CRITICAL: NPY Binary Format - trajectoriesToNpy', () => {
     consoleWarn.mockRestore();
   });
 
-  it('should handle undefined points in trajectory', () => {
-    const trajectories = [
-      [[0, 0], undefined as any, [20, 20]],
-    ];
+  it("should handle undefined points in trajectory", () => {
+    const trajectories = [[[0, 0], undefined as any, [20, 20]]];
 
     // Should not crash - should use fallback
     const blob = trajectoriesToNpy(trajectories);
@@ -316,9 +407,8 @@ describe('CRITICAL: NPY Binary Format - trajectoriesToNpy', () => {
 // CRITICAL: Camera Matrix Export
 // ============================================================================
 
-describe('CRITICAL: Camera Matrix Export - NaN/Infinity Handling', () => {
-
-  it('should throw for NaN camera position', () => {
+describe("CRITICAL: Camera Matrix Export - NaN/Infinity Handling", () => {
+  it("should throw for NaN camera position", () => {
     const camera = createValidCamera({
       position: { x: NaN, y: 0, z: 0 },
     });
@@ -328,7 +418,7 @@ describe('CRITICAL: Camera Matrix Export - NaN/Infinity Handling', () => {
     }).toThrow(/position.*NaN|invalid/i);
   });
 
-  it('should throw for Infinity camera position', () => {
+  it("should throw for Infinity camera position", () => {
     const camera = createValidCamera({
       position: { x: Infinity, y: 0, z: 0 },
     });
@@ -338,8 +428,8 @@ describe('CRITICAL: Camera Matrix Export - NaN/Infinity Handling', () => {
     }).toThrow(/position.*Infinity|invalid/i);
   });
 
-  it('should use fallback for NaN orientation (non-critical)', () => {
-    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  it("should use fallback for NaN orientation (non-critical)", () => {
+    const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {});
 
     const camera = createValidCamera({
       orientation: { x: NaN, y: 0, z: 0 },
@@ -354,8 +444,8 @@ describe('CRITICAL: Camera Matrix Export - NaN/Infinity Handling', () => {
     consoleWarn.mockRestore();
   });
 
-  it('should use fallback for NaN rotation values', () => {
-    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  it("should use fallback for NaN rotation values", () => {
+    const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {});
 
     const camera = createValidCamera({
       xRotation: NaN,
@@ -371,16 +461,15 @@ describe('CRITICAL: Camera Matrix Export - NaN/Infinity Handling', () => {
   });
 });
 
-describe('CRITICAL: exportCameraTrajectory - Input Validation', () => {
-
-  it('should return empty result for empty camera array', () => {
+describe("CRITICAL: exportCameraTrajectory - Input Validation", () => {
+  it("should return empty result for empty camera array", () => {
     const result = exportCameraTrajectory([], 24, 1920, 1080);
 
     expect(result.matrices).toEqual([]);
     expect(result.metadata.frameCount).toBe(0);
   });
 
-  it('should throw for invalid fps', () => {
+  it("should throw for invalid fps", () => {
     const cameras = [createValidCamera()];
 
     expect(() => {
@@ -388,7 +477,7 @@ describe('CRITICAL: exportCameraTrajectory - Input Validation', () => {
     }).toThrow(/fps.*0|invalid/i);
   });
 
-  it('should throw for negative fps', () => {
+  it("should throw for negative fps", () => {
     const cameras = [createValidCamera()];
 
     expect(() => {
@@ -396,7 +485,7 @@ describe('CRITICAL: exportCameraTrajectory - Input Validation', () => {
     }).toThrow(/fps.*-24|invalid/i);
   });
 
-  it('should throw for NaN fps', () => {
+  it("should throw for NaN fps", () => {
     const cameras = [createValidCamera()];
 
     expect(() => {
@@ -404,8 +493,8 @@ describe('CRITICAL: exportCameraTrajectory - Input Validation', () => {
     }).toThrow(/fps.*NaN|invalid/i);
   });
 
-  it('should use fallback for invalid dimensions', () => {
-    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  it("should use fallback for invalid dimensions", () => {
+    const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const cameras = [createValidCamera()];
 
     const result = exportCameraTrajectory(cameras, 24, NaN, NaN);
@@ -417,7 +506,7 @@ describe('CRITICAL: exportCameraTrajectory - Input Validation', () => {
     consoleWarn.mockRestore();
   });
 
-  it('should provide detailed error if camera at specific frame fails', () => {
+  it("should provide detailed error if camera at specific frame fails", () => {
     const cameras = [
       createValidCamera(),
       createValidCamera({ position: { x: NaN, y: NaN, z: NaN } }),
@@ -433,9 +522,8 @@ describe('CRITICAL: exportCameraTrajectory - Input Validation', () => {
 // HIGH: Trajectory Export Tests
 // ============================================================================
 
-describe('HIGH: WanMove Trajectory Export', () => {
-
-  it('should return empty result for empty trajectories', () => {
+describe("HIGH: WanMove Trajectory Export", () => {
+  it("should return empty result for empty trajectories", () => {
     const result = exportWanMoveTrajectories([], 1920, 1080);
 
     expect(result.trajectories).toEqual([]);
@@ -443,26 +531,28 @@ describe('HIGH: WanMove Trajectory Export', () => {
     expect(result.metadata.numFrames).toBe(0);
   });
 
-  it('should handle trajectories with no points', () => {
-    const trajectories: PointTrajectory[] = [{
-      id: 'empty',
-      points: [],
-      visibility: [],
-    }];
+  it("should handle trajectories with no points", () => {
+    const trajectories: PointTrajectory[] = [
+      {
+        id: "empty",
+        points: [],
+        visibility: [],
+      },
+    ];
 
     const result = exportWanMoveTrajectories(trajectories, 1920, 1080);
     expect(result.metadata.numFrames).toBe(0);
   });
 
-  it('should handle mixed 2D/3D trajectories', () => {
+  it("should handle mixed 2D/3D trajectories", () => {
     const trajectories: PointTrajectory[] = [
       {
-        id: 'traj-2d',
+        id: "traj-2d",
         points: [{ frame: 0, x: 0, y: 0 }],
         visibility: [true],
       },
       {
-        id: 'traj-3d',
+        id: "traj-3d",
         points: [{ frame: 0, x: 0, y: 0, z: 100 }],
         visibility: [true],
       },
@@ -475,27 +565,31 @@ describe('HIGH: WanMove Trajectory Export', () => {
   });
 });
 
-describe('HIGH: Kijai WanMove Format', () => {
-
-  it('should return empty array for empty trajectories', () => {
+describe("HIGH: Kijai WanMove Format", () => {
+  it("should return empty array for empty trajectories", () => {
     const result = exportWanMoveTracksForKijai([]);
     expect(result).toEqual([]);
   });
 
-  it('should convert to [{x,y}] format correctly', () => {
-    const trajectories: PointTrajectory[] = [{
-      id: 'test',
-      points: [
-        { frame: 0, x: 100, y: 200 },
-        { frame: 1, x: 150, y: 250 },
-      ],
-      visibility: [true, true],
-    }];
+  it("should convert to [{x,y}] format correctly", () => {
+    const trajectories: PointTrajectory[] = [
+      {
+        id: "test",
+        points: [
+          { frame: 0, x: 100, y: 200 },
+          { frame: 1, x: 150, y: 250 },
+        ],
+        visibility: [true, true],
+      },
+    ];
 
     const result = exportWanMoveTracksForKijai(trajectories);
 
     expect(result).toEqual([
-      [{ x: 100, y: 200 }, { x: 150, y: 250 }],
+      [
+        { x: 100, y: 200 },
+        { x: 150, y: 250 },
+      ],
     ]);
   });
 });
@@ -504,13 +598,12 @@ describe('HIGH: Kijai WanMove Format', () => {
 // HIGH: Pan Speed Calculation
 // ============================================================================
 
-describe('HIGH: calculatePanSpeed - Division by Zero', () => {
-
-  const mockGetPosition = (layer: Layer, frame: number) => {
+describe("HIGH: calculatePanSpeed - Division by Zero", () => {
+  const mockGetPosition = (_layer: Layer, frame: number) => {
     return { x: frame * 10, y: frame * 5 };
   };
 
-  it('should return zero speed for equal start/end frames', () => {
+  it("should return zero speed for equal start/end frames", () => {
     const layer = createValidLayer();
     const result = calculatePanSpeed(layer, 0, 0, mockGetPosition);
 
@@ -518,7 +611,7 @@ describe('HIGH: calculatePanSpeed - Division by Zero', () => {
     expect(result.y).toBe(0);
   });
 
-  it('should return zero speed for endFrame < startFrame', () => {
+  it("should return zero speed for endFrame < startFrame", () => {
     const layer = createValidLayer();
     const result = calculatePanSpeed(layer, 10, 5, mockGetPosition);
 
@@ -526,8 +619,8 @@ describe('HIGH: calculatePanSpeed - Division by Zero', () => {
     expect(result.y).toBe(0);
   });
 
-  it('should return zero speed for NaN frames', () => {
-    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  it("should return zero speed for NaN frames", () => {
+    const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const layer = createValidLayer();
 
     const result = calculatePanSpeed(layer, NaN, 10, mockGetPosition);
@@ -539,7 +632,7 @@ describe('HIGH: calculatePanSpeed - Division by Zero', () => {
     consoleWarn.mockRestore();
   });
 
-  it('should handle NaN positions from getter', () => {
+  it("should handle NaN positions from getter", () => {
     const layer = createValidLayer();
     const nanGetter = () => ({ x: NaN, y: NaN });
 
@@ -555,11 +648,10 @@ describe('HIGH: calculatePanSpeed - Division by Zero', () => {
 // HIGH: Motion Mask Generation
 // ============================================================================
 
-describe('HIGH: generateMotionMask - Dimension Validation', () => {
-
+describe("HIGH: generateMotionMask - Dimension Validation", () => {
   const mockGetBounds = () => ({ x: 100, y: 100, width: 200, height: 200 });
 
-  it('should throw for zero width', () => {
+  it("should throw for zero width", () => {
     const layer = createValidLayer();
 
     expect(() => {
@@ -567,7 +659,7 @@ describe('HIGH: generateMotionMask - Dimension Validation', () => {
     }).toThrow(/width.*0|invalid/i);
   });
 
-  it('should throw for negative height', () => {
+  it("should throw for negative height", () => {
     const layer = createValidLayer();
 
     expect(() => {
@@ -575,7 +667,7 @@ describe('HIGH: generateMotionMask - Dimension Validation', () => {
     }).toThrow(/height.*-100|invalid/i);
   });
 
-  it('should throw for NaN dimensions', () => {
+  it("should throw for NaN dimensions", () => {
     const layer = createValidLayer();
 
     expect(() => {
@@ -583,7 +675,7 @@ describe('HIGH: generateMotionMask - Dimension Validation', () => {
     }).toThrow(/NaN|invalid/i);
   });
 
-  it('should throw for dimensions exceeding 8192', () => {
+  it("should throw for dimensions exceeding 8192", () => {
     const layer = createValidLayer();
 
     expect(() => {
@@ -591,7 +683,7 @@ describe('HIGH: generateMotionMask - Dimension Validation', () => {
     }).toThrow(/16384|exceeds|too large/i);
   });
 
-  it('should handle NaN bounds gracefully', () => {
+  it("should handle NaN bounds gracefully", () => {
     const layer = createValidLayer();
     const nanBoundsGetter = () => ({ x: NaN, y: NaN, width: NaN, height: NaN });
 
@@ -601,11 +693,10 @@ describe('HIGH: generateMotionMask - Dimension Validation', () => {
   });
 });
 
-describe('HIGH: generateCombinedMotionMask - Multi-Layer', () => {
-
+describe("HIGH: generateCombinedMotionMask - Multi-Layer", () => {
   const mockGetBounds = () => ({ x: 100, y: 100, width: 200, height: 200 });
 
-  it('should throw for invalid dimensions', () => {
+  it("should throw for invalid dimensions", () => {
     const layers = [createValidLayer()];
 
     expect(() => {
@@ -613,7 +704,7 @@ describe('HIGH: generateCombinedMotionMask - Multi-Layer', () => {
     }).toThrow(/invalid/i);
   });
 
-  it('should handle empty layers array', () => {
+  it("should handle empty layers array", () => {
     const result = generateCombinedMotionMask([], 512, 512, mockGetBounds);
 
     // Should return black image (no motion regions)
@@ -622,14 +713,14 @@ describe('HIGH: generateCombinedMotionMask - Multi-Layer', () => {
     expect(result.height).toBe(512);
   });
 
-  it('should continue if one layer throws', () => {
-    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  it("should continue if one layer throws", () => {
+    const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {});
 
     const layers = [createValidLayer(), createValidLayer()];
     let callCount = 0;
     const throwingGetter = () => {
       callCount++;
-      if (callCount === 1) throw new Error('Layer 1 failed');
+      if (callCount === 1) throw new Error("Layer 1 failed");
       return { x: 100, y: 100, width: 200, height: 200 };
     };
 
@@ -646,23 +737,26 @@ describe('HIGH: generateCombinedMotionMask - Multi-Layer', () => {
 // HIGH: imageDataToBase64 Validation
 // ============================================================================
 
-describe('HIGH: imageDataToBase64 - Input Validation', () => {
-
-  it('should throw for null ImageData', () => {
+describe("HIGH: imageDataToBase64 - Input Validation", () => {
+  it("should throw for null ImageData", () => {
     expect(() => {
       imageDataToBase64(null as any);
     }).toThrow(/invalid/i);
   });
 
-  it('should throw for ImageData with zero dimensions', () => {
-    const badImageData = { width: 0, height: 0, data: new Uint8ClampedArray(0) } as ImageData;
+  it("should throw for ImageData with zero dimensions", () => {
+    const badImageData = {
+      width: 0,
+      height: 0,
+      data: new Uint8ClampedArray(0),
+    } as ImageData;
 
     expect(() => {
       imageDataToBase64(badImageData);
     }).toThrow(/invalid|width.*0/i);
   });
 
-  it('should throw for ImageData with missing data', () => {
+  it("should throw for ImageData with missing data", () => {
     const badImageData = { width: 100, height: 100, data: null } as any;
 
     expect(() => {
@@ -675,11 +769,10 @@ describe('HIGH: imageDataToBase64 - Input Validation', () => {
 // HIGH: exportForModel - Unknown Target
 // ============================================================================
 
-describe('HIGH: exportForModel - Unknown Target Handling', () => {
-
-  it('should return error for unknown target', async () => {
+describe("HIGH: exportForModel - Unknown Target Handling", () => {
+  it("should return error for unknown target", async () => {
     const result = await exportForModel({
-      target: 'unknown-model' as any,
+      target: "unknown-model" as any,
       layers: [],
       cameras: [],
       compWidth: 1920,
@@ -695,10 +788,14 @@ describe('HIGH: exportForModel - Unknown Target Handling', () => {
     expect(result.error).toMatch(/unknown.*target|valid targets/i);
   });
 
-  it('should return error for TTM with no animated layers', async () => {
+  it("should return error for TTM with no animated layers", async () => {
     const result = await exportForModel({
-      target: 'ttm',
-      layers: [createValidLayer({ transform: { position: { animated: false } } as any })],
+      target: "ttm",
+      layers: [
+        createValidLayer({
+          transform: { position: { animated: false } } as any,
+        }),
+      ],
       cameras: [],
       compWidth: 1920,
       compHeight: 1080,
@@ -713,9 +810,9 @@ describe('HIGH: exportForModel - Unknown Target Handling', () => {
     expect(result.error).toMatch(/no animated layers/i);
   });
 
-  it('should return error for particles with no particle data', async () => {
+  it("should return error for particles with no particle data", async () => {
     const result = await exportForModel({
-      target: 'particles',
+      target: "particles",
       layers: [],
       cameras: [],
       compWidth: 1920,
@@ -736,11 +833,13 @@ describe('HIGH: exportForModel - Unknown Target Handling', () => {
 // MEDIUM: Layer Trajectory Extraction
 // ============================================================================
 
-describe('MEDIUM: extractLayerTrajectory - Edge Cases', () => {
+describe("MEDIUM: extractLayerTrajectory - Edge Cases", () => {
+  const mockGetPosition = (_layer: Layer, frame: number) => ({
+    x: frame * 10,
+    y: frame * 5,
+  });
 
-  const mockGetPosition = (layer: Layer, frame: number) => ({ x: frame * 10, y: frame * 5 });
-
-  it('should handle layer with no startFrame/endFrame', () => {
+  it("should handle layer with no startFrame/endFrame", () => {
     const layer = createValidLayer({
       startFrame: undefined,
       endFrame: undefined,
@@ -754,16 +853,16 @@ describe('MEDIUM: extractLayerTrajectory - Edge Cases', () => {
     // Visibility should use fallback (0 to 80)
   });
 
-  it('should handle invisible layers', () => {
+  it("should handle invisible layers", () => {
     const layer = createValidLayer({ visible: false });
 
     const result = extractLayerTrajectory(layer, 0, 10, mockGetPosition);
 
     // All visibility should be false
-    expect(result.visibility.every(v => v === false)).toBe(true);
+    expect(result.visibility.every((v) => v === false)).toBe(true);
   });
 
-  it('should handle single frame range', () => {
+  it("should handle single frame range", () => {
     const layer = createValidLayer();
 
     const result = extractLayerTrajectory(layer, 5, 5, mockGetPosition);

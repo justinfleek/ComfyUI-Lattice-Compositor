@@ -7,11 +7,11 @@
  * Extracted from GPUParticleSystem.ts for modularity.
  */
 
-import * as THREE from 'three';
+import * as THREE from "three";
 import {
-  PARTICLE_GLOW_VERTEX_SHADER,
   PARTICLE_GLOW_FRAGMENT_SHADER,
-} from './particleShaders';
+  PARTICLE_GLOW_VERTEX_SHADER,
+} from "./particleShaders";
 
 // ============================================================================
 // TYPES
@@ -51,14 +51,12 @@ export class ParticleTextureSystem {
   private material: THREE.ShaderMaterial | null = null;
   private instancedGeometry: THREE.InstancedBufferGeometry | null = null;
 
-  constructor() {}
-
   /**
    * Set the material and geometry references
    */
   setRenderTargets(
     material: THREE.ShaderMaterial | null,
-    instancedGeometry: THREE.InstancedBufferGeometry | null
+    instancedGeometry: THREE.InstancedBufferGeometry | null,
   ): void {
     this.material = material;
     this.instancedGeometry = instancedGeometry;
@@ -71,13 +69,16 @@ export class ParticleTextureSystem {
   /**
    * Load a particle texture from URL or data URI
    */
-  loadTexture(url: string, spriteSheet?: {
-    columns?: number;
-    rows?: number;
-    animate?: boolean;
-    frameRate?: number;
-    randomStart?: boolean;
-  }): Promise<void> {
+  loadTexture(
+    url: string,
+    spriteSheet?: {
+      columns?: number;
+      rows?: number;
+      animate?: boolean;
+      frameRate?: number;
+      randomStart?: boolean;
+    },
+  ): Promise<void> {
     return new Promise((resolve, reject) => {
       const loader = new THREE.TextureLoader();
 
@@ -111,10 +112,14 @@ export class ParticleTextureSystem {
 
               this.material.uniforms.spriteSheetSize.value.set(cols, rows);
               this.material.uniforms.spriteFrameCount.value = cols * rows;
-              this.material.uniforms.animateSprite.value = spriteSheet.animate ? 1 : 0;
-              this.material.uniforms.spriteFrameRate.value = spriteSheet.frameRate ?? 10;
+              this.material.uniforms.animateSprite.value = spriteSheet.animate
+                ? 1
+                : 0;
+              this.material.uniforms.spriteFrameRate.value =
+                spriteSheet.frameRate ?? 10;
               // BUG-068 fix: Enable randomStartFrame uniform when configured
-              this.material.uniforms.randomStartFrame.value = spriteSheet.randomStart ? 1 : 0;
+              this.material.uniforms.randomStartFrame.value =
+                spriteSheet.randomStart ? 1 : 0;
             }
 
             this.material.needsUpdate = true;
@@ -124,9 +129,9 @@ export class ParticleTextureSystem {
         },
         undefined,
         (error) => {
-          console.error('Failed to load particle texture:', error);
+          console.error("Failed to load particle texture:", error);
           reject(error);
-        }
+        },
       );
     });
   }
@@ -154,7 +159,19 @@ export class ParticleTextureSystem {
    * BUG-067 fix: All 9 shapes now supported
    * @param shape 0=none, 1=circle, 2=ring, 3=square, 4=star, 5=noise, 6=line, 7=triangle, 8=shadedSphere, 9=fadedSphere
    */
-  setProceduralShape(shape: 'none' | 'circle' | 'ring' | 'square' | 'star' | 'noise' | 'line' | 'triangle' | 'shadedSphere' | 'fadedSphere'): void {
+  setProceduralShape(
+    shape:
+      | "none"
+      | "circle"
+      | "ring"
+      | "square"
+      | "star"
+      | "noise"
+      | "line"
+      | "triangle"
+      | "shadedSphere"
+      | "fadedSphere",
+  ): void {
     const shapeMap: Record<string, number> = {
       none: 0,
       circle: 1,
@@ -165,7 +182,7 @@ export class ParticleTextureSystem {
       line: 6,
       triangle: 7,
       shadedSphere: 8,
-      fadedSphere: 9
+      fadedSphere: 9,
     };
     if (this.material) {
       this.material.uniforms.hasDiffuseMap.value = 0;
@@ -197,12 +214,15 @@ export class ParticleTextureSystem {
    * Configure motion blur effect
    * Stretches particles along their velocity direction
    */
-  setMotionBlur(config: MotionBlurConfig, renderConfig: {
-    motionBlur?: boolean;
-    motionBlurStrength?: number;
-    minStretch?: number;
-    maxStretch?: number;
-  }): void {
+  setMotionBlur(
+    config: MotionBlurConfig,
+    renderConfig: {
+      motionBlur?: boolean;
+      motionBlurStrength?: number;
+      minStretch?: number;
+      maxStretch?: number;
+    },
+  ): void {
     if (!this.material) return;
 
     this.material.uniforms.motionBlurEnabled.value = config.enabled ? 1 : 0;
@@ -248,7 +268,7 @@ export class ParticleTextureSystem {
       vertexShader: PARTICLE_GLOW_VERTEX_SHADER,
       fragmentShader: PARTICLE_GLOW_FRAGMENT_SHADER,
       uniforms: {
-        glowRadius: { value: config.radius / 10 },  // Normalize to 0-1 range
+        glowRadius: { value: config.radius / 10 }, // Normalize to 0-1 range
         glowIntensity: { value: config.intensity },
       },
       transparent: true,
@@ -260,13 +280,17 @@ export class ParticleTextureSystem {
     // Clone instanced geometry for glow pass
     this.glowMesh = new THREE.Mesh(this.instancedGeometry, this.glowMaterial);
     this.glowMesh.frustumCulled = false;
-    this.glowMesh.renderOrder = -1;  // Render glow behind particles
+    this.glowMesh.renderOrder = -1; // Render glow behind particles
   }
 
   /**
    * Update glow configuration
    */
-  setGlow(config: { enabled?: boolean; radius?: number; intensity?: number }): void {
+  setGlow(config: {
+    enabled?: boolean;
+    radius?: number;
+    intensity?: number;
+  }): void {
     if (!this.glowConfig) {
       this.glowConfig = { enabled: false, radius: 10, intensity: 0.5 };
     }

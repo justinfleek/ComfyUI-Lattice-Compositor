@@ -9,12 +9,17 @@
  * - Kerning and spacing
  */
 
-import opentype from 'opentype.js';
-import type { ControlPoint, Layer, SplineData, AnimatableProperty } from '@/types/project';
-import type { BezierPath, BezierVertex, Point2D } from '@/types/shapes';
-import { createLogger } from '@/utils/logger';
+import opentype from "opentype.js";
+import type {
+  AnimatableProperty,
+  ControlPoint,
+  Layer,
+  SplineData,
+} from "@/types/project";
+import type { BezierPath, BezierVertex, Point2D } from "@/types/shapes";
+import { createLogger } from "@/utils/logger";
 
-const logger = createLogger('TextToVector');
+const logger = createLogger("TextToVector");
 
 // ============================================================================
 // Helpers
@@ -24,10 +29,10 @@ const logger = createLogger('TextToVector');
 function createAnimatableProperty<T>(
   name: string,
   value: T,
-  type: 'number' | 'position' | 'color' | 'enum' | 'vector3'
+  type: "number" | "position" | "color" | "enum" | "vector3",
 ): AnimatableProperty<T> {
   return {
-    id: `prop_${name.toLowerCase().replace(/\s+/g, '_')}_${Date.now()}`,
+    id: `prop_${name.toLowerCase().replace(/\s+/g, "_")}_${Date.now()}`,
     name,
     type,
     value,
@@ -122,7 +127,7 @@ export async function loadFont(fontFamily: string): Promise<opentype.Font> {
   let url = fontUrlMap.get(key);
   if (!url) {
     // Try Google Fonts as fallback
-    url = `https://fonts.gstatic.com/s/${key.replace(/\s+/g, '')}/v1/${key.replace(/\s+/g, '')}-Regular.ttf`;
+    url = `https://fonts.gstatic.com/s/${key.replace(/\s+/g, "")}/v1/${key.replace(/\s+/g, "")}-Regular.ttf`;
   }
 
   logger.info(`Loading font: ${fontFamily} from ${url}`);
@@ -140,7 +145,10 @@ export async function loadFont(fontFamily: string): Promise<opentype.Font> {
 /**
  * Load font from ArrayBuffer
  */
-export function loadFontFromBuffer(fontFamily: string, buffer: ArrayBuffer): opentype.Font {
+export function loadFontFromBuffer(
+  fontFamily: string,
+  buffer: ArrayBuffer,
+): opentype.Font {
   const font = opentype.parse(buffer);
   fontCache.set(fontFamily.toLowerCase(), font);
   return font;
@@ -176,7 +184,7 @@ const DEFAULT_OPTIONS: Required<TextToVectorOptions> = {
 export async function textToVector(
   text: string,
   fontFamily: string,
-  options?: TextToVectorOptions
+  options?: TextToVectorOptions,
 ): Promise<TextToVectorResult> {
   const opts = { ...DEFAULT_OPTIONS, ...options };
 
@@ -217,7 +225,7 @@ export async function textToVector(
 function getCharacterPaths(
   text: string,
   font: opentype.Font,
-  opts: Required<TextToVectorOptions>
+  opts: Required<TextToVectorOptions>,
 ): CharacterVectorGroup[] {
   const groups: CharacterVectorGroup[] = [];
   let x = 0;
@@ -244,7 +252,8 @@ function getCharacterPaths(
     };
 
     // Calculate advance width
-    const advanceWidth = (glyph.advanceWidth ?? 0) * (opts.fontSize / font.unitsPerEm);
+    const advanceWidth =
+      (glyph.advanceWidth ?? 0) * (opts.fontSize / font.unitsPerEm);
 
     groups.push({
       character: char,
@@ -281,7 +290,7 @@ function commandsToBezierPaths(commands: opentype.PathCommand[]): BezierPath[] {
 
   for (const cmd of commands) {
     switch (cmd.type) {
-      case 'M': // Move to
+      case "M": // Move to
         if (currentPath.length > 0) {
           paths.push({ vertices: currentPath, closed: false });
           currentPath = [];
@@ -290,7 +299,7 @@ function commandsToBezierPaths(commands: opentype.PathCommand[]): BezierPath[] {
         startPoint = { ...currentPoint };
         break;
 
-      case 'L': // Line to
+      case "L": // Line to
         currentPath.push({
           point: { ...currentPoint },
           inHandle: { x: 0, y: 0 },
@@ -299,7 +308,7 @@ function commandsToBezierPaths(commands: opentype.PathCommand[]): BezierPath[] {
         currentPoint = { x: cmd.x, y: cmd.y };
         break;
 
-      case 'C': // Cubic bezier
+      case "C": // Cubic bezier
         currentPath.push({
           point: { ...currentPoint },
           inHandle: { x: 0, y: 0 },
@@ -311,10 +320,10 @@ function commandsToBezierPaths(commands: opentype.PathCommand[]): BezierPath[] {
         currentPoint = { x: cmd.x, y: cmd.y };
         break;
 
-      case 'Q': // Quadratic bezier - convert to cubic
+      case "Q": // Quadratic bezier - convert to cubic
         {
-          const cp1x = currentPoint.x + (2/3) * (cmd.x1 - currentPoint.x);
-          const cp1y = currentPoint.y + (2/3) * (cmd.y1 - currentPoint.y);
+          const cp1x = currentPoint.x + (2 / 3) * (cmd.x1 - currentPoint.x);
+          const cp1y = currentPoint.y + (2 / 3) * (cmd.y1 - currentPoint.y);
 
           currentPath.push({
             point: { ...currentPoint },
@@ -328,7 +337,7 @@ function commandsToBezierPaths(commands: opentype.PathCommand[]): BezierPath[] {
         }
         break;
 
-      case 'Z': // Close path
+      case "Z": // Close path
         currentPath.push({
           point: { ...currentPoint },
           inHandle: { x: 0, y: 0 },
@@ -368,10 +377,10 @@ export async function textLayerToSplines(
   options?: TextToVectorOptions & {
     groupByCharacter?: boolean;
     preservePosition?: boolean;
-  }
+  },
 ): Promise<{ layers: Partial<Layer>[]; result: TextToVectorResult }> {
-  if (textLayer.type !== 'text' || !textLayer.data) {
-    throw new Error('Layer must be a text layer');
+  if (textLayer.type !== "text" || !textLayer.data) {
+    throw new Error("Layer must be a text layer");
   }
 
   const textData = textLayer.data as {
@@ -380,8 +389,8 @@ export async function textLayerToSplines(
     fontSize?: number;
   };
 
-  const text = textData.text || '';
-  const fontFamily = textData.font || 'Arial';
+  const text = textData.text || "";
+  const fontFamily = textData.font || "Arial";
   const fontSize = options?.fontSize ?? textData.fontSize ?? 72;
 
   const result = await textToVector(text, fontFamily, { ...options, fontSize });
@@ -399,27 +408,39 @@ export async function textLayerToSplines(
       const controlPoints = bezierPathsToControlPoints(charGroup.paths);
 
       const splineData: SplineData = {
-        pathData: '',
+        pathData: "",
         controlPoints,
         closed: charGroup.paths[0]?.closed ?? false,
-        stroke: '#ffffff',
+        stroke: "#ffffff",
         strokeWidth: 2,
-        fill: 'transparent',
+        fill: "transparent",
       };
 
       layers.push({
         name: `${textLayer.name} - "${charGroup.character}"`,
-        type: 'spline',
+        type: "spline",
         data: splineData,
         transform: {
-          position: createAnimatableProperty('Position', {
-            x: layerX + charGroup.bounds.x,
-            y: layerY + charGroup.bounds.y,
-            z: 0,
-          }, 'position'),
-          rotation: textLayer.transform?.rotation ?? createAnimatableProperty('Rotation', 0, 'number'),
-          scale: textLayer.transform?.scale ?? createAnimatableProperty('Scale', { x: 100, y: 100 }, 'position'),
-          anchorPoint: createAnimatableProperty('Anchor Point', { x: 0, y: 0, z: 0 }, 'position'),
+          position: createAnimatableProperty(
+            "Position",
+            {
+              x: layerX + charGroup.bounds.x,
+              y: layerY + charGroup.bounds.y,
+              z: 0,
+            },
+            "position",
+          ),
+          rotation:
+            textLayer.transform?.rotation ??
+            createAnimatableProperty("Rotation", 0, "number"),
+          scale:
+            textLayer.transform?.scale ??
+            createAnimatableProperty("Scale", { x: 100, y: 100 }, "position"),
+          anchorPoint: createAnimatableProperty(
+            "Anchor Point",
+            { x: 0, y: 0, z: 0 },
+            "position",
+          ),
         },
         inPoint: textLayer.inPoint,
         outPoint: textLayer.outPoint,
@@ -429,27 +450,39 @@ export async function textLayerToSplines(
     const allControlPoints = bezierPathsToControlPoints(result.allPaths);
 
     const splineData: SplineData = {
-      pathData: '',
+      pathData: "",
       controlPoints: allControlPoints,
       closed: result.allPaths[0]?.closed ?? false,
-      stroke: '#ffffff',
+      stroke: "#ffffff",
       strokeWidth: 2,
-      fill: 'transparent',
+      fill: "transparent",
     };
 
     layers.push({
       name: `${textLayer.name} - Vectorized`,
-      type: 'spline',
+      type: "spline",
       data: splineData,
       transform: {
-        position: createAnimatableProperty('Position', {
-          x: layerX + result.bounds.x,
-          y: layerY + result.bounds.y,
-          z: 0,
-        }, 'position'),
-        rotation: textLayer.transform?.rotation ?? createAnimatableProperty('Rotation', 0, 'number'),
-        scale: textLayer.transform?.scale ?? createAnimatableProperty('Scale', { x: 100, y: 100 }, 'position'),
-        anchorPoint: createAnimatableProperty('Anchor Point', { x: 0, y: 0, z: 0 }, 'position'),
+        position: createAnimatableProperty(
+          "Position",
+          {
+            x: layerX + result.bounds.x,
+            y: layerY + result.bounds.y,
+            z: 0,
+          },
+          "position",
+        ),
+        rotation:
+          textLayer.transform?.rotation ??
+          createAnimatableProperty("Rotation", 0, "number"),
+        scale:
+          textLayer.transform?.scale ??
+          createAnimatableProperty("Scale", { x: 100, y: 100 }, "position"),
+        anchorPoint: createAnimatableProperty(
+          "Anchor Point",
+          { x: 0, y: 0, z: 0 },
+          "position",
+        ),
       },
       inPoint: textLayer.inPoint,
       outPoint: textLayer.outPoint,
@@ -474,12 +507,14 @@ function bezierPathsToControlPoints(paths: BezierPath[]): ControlPoint[] {
         id: `cp_${globalIndex++}`,
         x: v.point.x,
         y: v.point.y,
-        handleIn: v.inHandle.x !== 0 || v.inHandle.y !== 0
-          ? { x: v.point.x + v.inHandle.x, y: v.point.y + v.inHandle.y }
-          : null,
-        handleOut: v.outHandle.x !== 0 || v.outHandle.y !== 0
-          ? { x: v.point.x + v.outHandle.x, y: v.point.y + v.outHandle.y }
-          : null,
+        handleIn:
+          v.inHandle.x !== 0 || v.inHandle.y !== 0
+            ? { x: v.point.x + v.inHandle.x, y: v.point.y + v.inHandle.y }
+            : null,
+        handleOut:
+          v.outHandle.x !== 0 || v.outHandle.y !== 0
+            ? { x: v.point.x + v.outHandle.x, y: v.point.y + v.outHandle.y }
+            : null,
         type: getPointType(v),
       });
     }
@@ -491,12 +526,12 @@ function bezierPathsToControlPoints(paths: BezierPath[]): ControlPoint[] {
 /**
  * Determine control point type based on handles
  */
-function getPointType(v: BezierVertex): 'corner' | 'smooth' | 'symmetric' {
+function getPointType(v: BezierVertex): "corner" | "smooth" | "symmetric" {
   const hasIn = v.inHandle.x !== 0 || v.inHandle.y !== 0;
   const hasOut = v.outHandle.x !== 0 || v.outHandle.y !== 0;
 
   if (!hasIn && !hasOut) {
-    return 'corner';
+    return "corner";
   }
 
   if (hasIn && hasOut) {
@@ -506,13 +541,13 @@ function getPointType(v: BezierVertex): 'corner' | 'smooth' | 'symmetric' {
     if (Math.abs(inLen - outLen) < 0.1) {
       const cross = v.inHandle.x * v.outHandle.y - v.inHandle.y * v.outHandle.x;
       if (Math.abs(cross) < 0.1) {
-        return 'symmetric';
+        return "symmetric";
       }
     }
-    return 'smooth';
+    return "smooth";
   }
 
-  return 'corner';
+  return "corner";
 }
 
 // ============================================================================
@@ -534,7 +569,7 @@ export async function textToVectorFromUrl(
   text: string,
   fontUrl: string,
   fontSize: number,
-  options?: TextToVectorFromUrlOptions
+  options?: TextToVectorFromUrlOptions,
 ): Promise<TextToVectorResult> {
   const opts = {
     x: options?.x ?? 0,
@@ -584,7 +619,8 @@ export async function textToVectorFromUrl(
     };
 
     // Calculate advance width
-    const advanceWidth = (glyph.advanceWidth ?? 0) * (fontSize / font.unitsPerEm);
+    const advanceWidth =
+      (glyph.advanceWidth ?? 0) * (fontSize / font.unitsPerEm);
 
     characters.push({
       character: char,
@@ -621,7 +657,7 @@ export async function textToVectorFromUrl(
     characters,
     bounds,
     text,
-    fontFamily: font.names.fontFamily?.en || 'Unknown',
+    fontFamily: font.names.fontFamily?.en || "Unknown",
     fontSize,
   };
 }

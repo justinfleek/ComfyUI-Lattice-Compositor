@@ -12,7 +12,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch } from "vue";
 
 const props = defineProps<{
   title: string;
@@ -20,21 +20,22 @@ const props = defineProps<{
   badge?: string | number;
 }>();
 
-const emit = defineEmits<{
-  (e: 'toggle', expanded: boolean): void;
-}>();
+const emit = defineEmits<(e: "toggle", expanded: boolean) => void>();
 
 const isExpanded = ref(props.expanded ?? true);
 
-watch(() => props.expanded, (val) => {
-  if (val !== undefined) {
-    isExpanded.value = val;
-  }
-});
+watch(
+  () => props.expanded,
+  (val) => {
+    if (val !== undefined) {
+      isExpanded.value = val;
+    }
+  },
+);
 
-function toggle() {
+function _toggle() {
   isExpanded.value = !isExpanded.value;
-  emit('toggle', isExpanded.value);
+  emit("toggle", isExpanded.value);
 }
 </script>
 

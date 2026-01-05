@@ -10,9 +10,9 @@
  * - Per-layer waveform caching
  */
 
-import { createLogger } from '@/utils/logger';
+import { createLogger } from "@/utils/logger";
 
-const logger = createLogger('TimelineWaveform');
+const logger = createLogger("TimelineWaveform");
 
 // ============================================================================
 // TYPES
@@ -28,7 +28,7 @@ export interface WaveformData {
   /** Total number of samples */
   totalSamples: number;
   /** Pre-computed peaks at different resolutions */
-  peaks: Map<number, Float32Array>;  // samplesPerPixel -> peaks
+  peaks: Map<number, Float32Array>; // samplesPerPixel -> peaks
   /** Beat positions in seconds */
   beats?: number[];
   /** BPM if detected */
@@ -53,7 +53,7 @@ export interface WaveformRenderOptions {
   /** Beat marker color */
   beatColor?: string;
   /** Waveform style */
-  style?: 'bars' | 'line' | 'filled';
+  style?: "bars" | "line" | "filled";
   /** Opacity (0-1) */
   opacity?: number;
 }
@@ -81,7 +81,7 @@ const waveformCache: Map<string, WaveformData> = new Map();
 export function computePeaks(
   audioBuffer: AudioBuffer,
   samplesPerPixel: number,
-  channel: number = -1
+  channel: number = -1,
 ): Float32Array {
   const numChannels = audioBuffer.numberOfChannels;
   const totalSamples = audioBuffer.length;
@@ -98,7 +98,7 @@ export function computePeaks(
     }
   }
 
-  const peaks = new Float32Array(numPeaks * 2);  // min/max pairs
+  const peaks = new Float32Array(numPeaks * 2); // min/max pairs
 
   for (let i = 0; i < numPeaks; i++) {
     const startSample = i * samplesPerPixel;
@@ -129,7 +129,7 @@ export function computePeaks(
  * Generate peaks at multiple resolutions (mipmap levels)
  */
 export function generatePeakMipmap(
-  audioBuffer: AudioBuffer
+  audioBuffer: AudioBuffer,
 ): Map<number, Float32Array> {
   const peaks = new Map<number, Float32Array>();
 
@@ -149,7 +149,7 @@ export function generatePeakMipmap(
  */
 export function getPeaksAtResolution(
   waveform: WaveformData,
-  samplesPerPixel: number
+  samplesPerPixel: number,
 ): Float32Array | null {
   // Find closest available resolution
   let closestRes = 256;
@@ -177,7 +177,7 @@ export async function createWaveformData(
   id: string,
   audioBuffer: AudioBuffer,
   beats?: number[],
-  bpm?: number
+  bpm?: number,
 ): Promise<WaveformData> {
   // Check cache
   const cached = waveformCache.get(id);
@@ -230,12 +230,12 @@ export function clearWaveformCache(id?: string): void {
 export function renderWaveform(
   canvas: HTMLCanvasElement,
   waveform: WaveformData,
-  options: WaveformRenderOptions
+  options: WaveformRenderOptions,
 ): void {
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext("2d");
   if (!ctx) return;
 
-  const { width, height, startTime, endTime, color, style = 'bars' } = options;
+  const { width, height, startTime, endTime, color, style = "bars" } = options;
 
   // Resize canvas if needed
   if (canvas.width !== width || canvas.height !== height) {
@@ -253,7 +253,9 @@ export function renderWaveform(
 
   // Calculate samples per pixel for this view
   const viewDuration = endTime - startTime;
-  const samplesPerPixel = Math.round((viewDuration * waveform.sampleRate) / width);
+  const samplesPerPixel = Math.round(
+    (viewDuration * waveform.sampleRate) / width,
+  );
 
   // Get peaks at appropriate resolution
   const peaks = getPeaksAtResolution(waveform, samplesPerPixel);
@@ -262,9 +264,10 @@ export function renderWaveform(
   // Calculate which peaks to render
   const startSample = Math.floor(startTime * waveform.sampleRate);
   const endSample = Math.ceil(endTime * waveform.sampleRate);
-  const peakResolution = Array.from(waveform.peaks.keys()).find(k =>
-    waveform.peaks.get(k) === peaks
-  ) || 256;
+  const peakResolution =
+    Array.from(waveform.peaks.keys()).find(
+      (k) => waveform.peaks.get(k) === peaks,
+    ) || 256;
 
   const startPeak = Math.floor(startSample / peakResolution);
   const endPeak = Math.ceil(endSample / peakResolution);
@@ -276,47 +279,48 @@ export function renderWaveform(
   ctx.fillStyle = color;
   ctx.strokeStyle = color;
 
-  if (style === 'line') {
+  if (style === "line") {
     ctx.lineWidth = 1;
     ctx.beginPath();
   }
 
   // Render peaks
   for (let i = 0; i < width; i++) {
-    const peakIndex = startPeak + Math.floor((i / width) * (endPeak - startPeak));
+    const peakIndex =
+      startPeak + Math.floor((i / width) * (endPeak - startPeak));
 
     if (peakIndex * 2 + 1 >= peaks.length) break;
 
     const min = peaks[peakIndex * 2];
     const max = peaks[peakIndex * 2 + 1];
 
-    const minY = centerY - (min * centerY);
-    const maxY = centerY - (max * centerY);
+    const minY = centerY - min * centerY;
+    const maxY = centerY - max * centerY;
 
-    if (style === 'bars') {
+    if (style === "bars") {
       // Vertical bar from min to max
       ctx.fillRect(i, maxY, 1, minY - maxY);
-    } else if (style === 'filled') {
+    } else if (style === "filled") {
       // Filled from center
       ctx.fillRect(i, maxY, 1, centerY - maxY);
       ctx.fillRect(i, centerY, 1, minY - centerY);
-    } else if (style === 'line') {
+    } else if (style === "line") {
       if (i === 0) {
-        ctx.moveTo(i, centerY - (((min + max) / 2) * centerY));
+        ctx.moveTo(i, centerY - ((min + max) / 2) * centerY);
       } else {
-        ctx.lineTo(i, centerY - (((min + max) / 2) * centerY));
+        ctx.lineTo(i, centerY - ((min + max) / 2) * centerY);
       }
     }
   }
 
-  if (style === 'line') {
+  if (style === "line") {
     ctx.stroke();
   }
 
   // Render beat markers
   if (options.showBeats && waveform.beats) {
     ctx.globalAlpha = 0.7;
-    ctx.strokeStyle = options.beatColor || '#f59e0b';
+    ctx.strokeStyle = options.beatColor || "#f59e0b";
     ctx.lineWidth = 1;
 
     for (const beat of waveform.beats) {
@@ -338,13 +342,13 @@ export function renderWaveform(
  */
 export async function renderWaveformToImage(
   waveform: WaveformData,
-  options: WaveformRenderOptions
+  options: WaveformRenderOptions,
 ): Promise<ImageBitmap> {
   const canvas = new OffscreenCanvas(options.width, options.height);
-  const ctx = canvas.getContext('2d')!;
+  const ctx = canvas.getContext("2d")!;
 
   // Create a temporary regular canvas for rendering
-  const tempCanvas = document.createElement('canvas');
+  const tempCanvas = document.createElement("canvas");
   tempCanvas.width = options.width;
   tempCanvas.height = options.height;
 
@@ -388,7 +392,7 @@ export interface TimelineWaveformConfig {
 export function renderTimelineWaveform(
   canvas: HTMLCanvasElement,
   waveform: WaveformData,
-  config: TimelineWaveformConfig
+  config: TimelineWaveformConfig,
 ): void {
   const {
     layerColor,
@@ -426,10 +430,10 @@ export function renderTimelineWaveform(
     startTime: Math.max(0, audioStartTime),
     endTime: Math.min(waveform.duration, audioEndTime),
     color: layerColor,
-    style: 'filled',
+    style: "filled",
     opacity: 0.5,
     showBeats: true,
-    beatColor: '#8B5CF6',
+    beatColor: "#8B5CF6",
   });
 }
 

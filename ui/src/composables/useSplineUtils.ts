@@ -5,7 +5,7 @@
  * Includes bezier evaluation, arc-length parameterization, and path finding.
  */
 
-import type { ControlPoint, EvaluatedControlPoint } from '@/types/project';
+import type { ControlPoint, EvaluatedControlPoint } from "@/types/project";
 
 // ============================================================
 // BEZIER CURVE EVALUATION
@@ -26,7 +26,7 @@ export function evaluateBezier(
   h0: { x: number; y: number },
   h1: { x: number; y: number },
   p1: { x: number; y: number },
-  t: number
+  t: number,
 ): { x: number; y: number } {
   const mt = 1 - t;
   const mt2 = mt * mt;
@@ -36,7 +36,7 @@ export function evaluateBezier(
 
   return {
     x: mt3 * p0.x + 3 * mt2 * t * h0.x + 3 * mt * t2 * h1.x + t3 * p1.x,
-    y: mt3 * p0.y + 3 * mt2 * t * h0.y + 3 * mt * t2 * h1.y + t3 * p1.y
+    y: mt3 * p0.y + 3 * mt2 * t * h0.y + 3 * mt * t2 * h1.y + t3 * p1.y,
   };
 }
 
@@ -55,15 +55,21 @@ export function evaluateBezierTangent(
   h0: { x: number; y: number },
   h1: { x: number; y: number },
   p1: { x: number; y: number },
-  t: number
+  t: number,
 ): { x: number; y: number } {
   const mt = 1 - t;
   const mt2 = mt * mt;
   const t2 = t * t;
 
   return {
-    x: 3 * mt2 * (h0.x - p0.x) + 6 * mt * t * (h1.x - h0.x) + 3 * t2 * (p1.x - h1.x),
-    y: 3 * mt2 * (h0.y - p0.y) + 6 * mt * t * (h1.y - h0.y) + 3 * t2 * (p1.y - h1.y)
+    x:
+      3 * mt2 * (h0.x - p0.x) +
+      6 * mt * t * (h1.x - h0.x) +
+      3 * t2 * (p1.x - h1.x),
+    y:
+      3 * mt2 * (h0.y - p0.y) +
+      6 * mt * t * (h1.y - h0.y) +
+      3 * t2 * (p1.y - h1.y),
   };
 }
 
@@ -82,7 +88,7 @@ export function bezierArcLength(
   h0: { x: number; y: number },
   h1: { x: number; y: number },
   p1: { x: number; y: number },
-  samples: number = 10
+  samples: number = 10,
 ): number {
   let length = 0;
   let prev = p0;
@@ -116,11 +122,17 @@ export function findClosestPointOnPath(
   pos: { x: number; y: number },
   controlPoints: (ControlPoint | EvaluatedControlPoint)[],
   closed: boolean = false,
-  threshold: number = 20
+  threshold: number = 20,
 ): { x: number; y: number; segmentIndex: number; t: number } | null {
   if (controlPoints.length < 2) return null;
 
-  let closest: { x: number; y: number; segmentIndex: number; t: number; dist: number } | null = null;
+  let closest: {
+    x: number;
+    y: number;
+    segmentIndex: number;
+    t: number;
+    dist: number;
+  } | null = null;
 
   const segmentCount = closed ? controlPoints.length : controlPoints.length - 1;
 
@@ -145,7 +157,12 @@ export function findClosestPointOnPath(
 
   // Only return if within threshold
   if (closest && closest.dist < threshold) {
-    return { x: closest.x, y: closest.y, segmentIndex: closest.segmentIndex, t: closest.t };
+    return {
+      x: closest.x,
+      y: closest.y,
+      segmentIndex: closest.segmentIndex,
+      t: closest.t,
+    };
   }
   return null;
 }
@@ -158,10 +175,12 @@ export function findClosestPointOnPath(
  * @param threshold - Hit detection radius (default 10)
  * @returns The point if found, null otherwise
  */
-export function findPointAtPosition<T extends ControlPoint | EvaluatedControlPoint>(
+export function findPointAtPosition<
+  T extends ControlPoint | EvaluatedControlPoint,
+>(
   pos: { x: number; y: number },
   controlPoints: T[],
-  threshold: number = 10
+  threshold: number = 10,
 ): T | null {
   for (const point of controlPoints) {
     const dist = Math.sqrt((pos.x - point.x) ** 2 + (pos.y - point.y) ** 2);
@@ -185,9 +204,9 @@ export function findPointAtPosition<T extends ControlPoint | EvaluatedControlPoi
  */
 export function generateSplinePath(
   controlPoints: (ControlPoint | EvaluatedControlPoint)[],
-  closed: boolean = false
+  closed: boolean = false,
 ): string {
-  if (controlPoints.length === 0) return '';
+  if (controlPoints.length === 0) return "";
   if (controlPoints.length === 1) {
     return `M ${controlPoints[0].x},${controlPoints[0].y}`;
   }
@@ -207,7 +226,7 @@ export function generateSplinePath(
   }
 
   if (closed) {
-    d += ' Z';
+    d += " Z";
   }
 
   return d;
@@ -224,7 +243,7 @@ export function generateSplinePath(
 export function generateCurvePreview(
   prevPoint: ControlPoint | EvaluatedControlPoint,
   newPoint: { x: number; y: number },
-  dragPos: { x: number; y: number }
+  dragPos: { x: number; y: number },
 ): string {
   // Calculate the handle offset from the drag
   const dx = dragPos.x - newPoint.x;
@@ -270,7 +289,7 @@ export interface LayerTransformValues {
  */
 export function transformPointToComp(
   point: { x: number; y: number },
-  transform: LayerTransformValues
+  transform: LayerTransformValues,
 ): { x: number; y: number } {
   const { position, rotation, scale, anchorPoint } = transform;
 
@@ -292,7 +311,7 @@ export function transformPointToComp(
   // Step 4: Add position (move to composition location)
   return {
     x: rx + position.x,
-    y: ry + position.y
+    y: ry + position.y,
   };
 }
 
@@ -305,7 +324,7 @@ export function transformPointToComp(
  */
 export function transformPointToLayer(
   point: { x: number; y: number },
-  transform: LayerTransformValues
+  transform: LayerTransformValues,
 ): { x: number; y: number } {
   const { position, rotation, scale, anchorPoint } = transform;
 
@@ -327,7 +346,7 @@ export function transformPointToLayer(
   // Step 4: Add anchor point back
   return {
     x: x + anchorPoint.x,
-    y: y + anchorPoint.y
+    y: y + anchorPoint.y,
   };
 }
 
@@ -347,7 +366,7 @@ export function transformPointToLayer(
 export function calculateSmoothHandles(
   points: (ControlPoint | EvaluatedControlPoint)[],
   index: number,
-  tension: number = 0.3
+  tension: number = 0.3,
 ): { handleIn: { x: number; y: number }; handleOut: { x: number; y: number } } {
   const point = points[index];
   const prev = points[index - 1] ?? points[points.length - 1]; // Wrap for closed paths
@@ -358,8 +377,12 @@ export function calculateSmoothHandles(
   const dy = next.y - prev.y;
 
   // Handle length based on distance to neighbors
-  const distToPrev = Math.sqrt((point.x - prev.x) ** 2 + (point.y - prev.y) ** 2);
-  const distToNext = Math.sqrt((next.x - point.x) ** 2 + (next.y - point.y) ** 2);
+  const distToPrev = Math.sqrt(
+    (point.x - prev.x) ** 2 + (point.y - prev.y) ** 2,
+  );
+  const distToNext = Math.sqrt(
+    (next.x - point.x) ** 2 + (next.y - point.y) ** 2,
+  );
 
   const handleLenIn = distToPrev * tension;
   const handleLenOut = distToNext * tension;
@@ -372,12 +395,12 @@ export function calculateSmoothHandles(
   return {
     handleIn: {
       x: point.x - nx * handleLenIn,
-      y: point.y - ny * handleLenIn
+      y: point.y - ny * handleLenIn,
     },
     handleOut: {
       x: point.x + nx * handleLenOut,
-      y: point.y + ny * handleLenOut
-    }
+      y: point.y + ny * handleLenOut,
+    },
   };
 }
 
@@ -390,7 +413,7 @@ export function calculateSmoothHandles(
  */
 export function simplifyPath<T extends { x: number; y: number }>(
   points: T[],
-  tolerance: number
+  tolerance: number,
 ): T[] {
   if (points.length <= 2) return points;
 
@@ -428,19 +451,26 @@ export function simplifyPath<T extends { x: number; y: number }>(
 function perpendicularDistance(
   point: { x: number; y: number },
   lineStart: { x: number; y: number },
-  lineEnd: { x: number; y: number }
+  lineEnd: { x: number; y: number },
 ): number {
   const dx = lineEnd.x - lineStart.x;
   const dy = lineEnd.y - lineStart.y;
   const len = Math.sqrt(dx * dx + dy * dy);
 
   if (len === 0) {
-    return Math.sqrt((point.x - lineStart.x) ** 2 + (point.y - lineStart.y) ** 2);
+    return Math.sqrt(
+      (point.x - lineStart.x) ** 2 + (point.y - lineStart.y) ** 2,
+    );
   }
 
-  const t = Math.max(0, Math.min(1,
-    ((point.x - lineStart.x) * dx + (point.y - lineStart.y) * dy) / (len * len)
-  ));
+  const t = Math.max(
+    0,
+    Math.min(
+      1,
+      ((point.x - lineStart.x) * dx + (point.y - lineStart.y) * dy) /
+        (len * len),
+    ),
+  );
 
   const projX = lineStart.x + t * dx;
   const projY = lineStart.y + t * dy;
@@ -473,6 +503,6 @@ export function useSplineUtils() {
 
     // Path smoothing/simplification
     calculateSmoothHandles,
-    simplifyPath
+    simplifyPath,
   };
 }

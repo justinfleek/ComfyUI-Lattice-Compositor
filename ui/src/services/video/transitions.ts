@@ -11,42 +11,42 @@
 // ============================================================================
 
 export type TransitionBlendMode =
-  | 'normal'      // Linear crossfade
-  | 'multiply'    // Darker, dramatic
-  | 'screen'      // Lighter, ethereal
-  | 'overlay'     // High contrast
-  | 'soft-light'  // Subtle contrast
-  | 'add'         // Bright flash
-  | 'subtract'    // Dark flash
-  | 'dissolve'    // Randomized fade
-  | 'wipe-left'   // Directional wipe
-  | 'wipe-right'
-  | 'wipe-up'
-  | 'wipe-down'
-  | 'radial-wipe' // Circular reveal
-  | 'iris-in'     // Circle expanding
-  | 'iris-out'    // Circle contracting
-  | 'cross-zoom'; // Zoom blur transition
+  | "normal" // Linear crossfade
+  | "multiply" // Darker, dramatic
+  | "screen" // Lighter, ethereal
+  | "overlay" // High contrast
+  | "soft-light" // Subtle contrast
+  | "add" // Bright flash
+  | "subtract" // Dark flash
+  | "dissolve" // Randomized fade
+  | "wipe-left" // Directional wipe
+  | "wipe-right"
+  | "wipe-up"
+  | "wipe-down"
+  | "radial-wipe" // Circular reveal
+  | "iris-in" // Circle expanding
+  | "iris-out" // Circle contracting
+  | "cross-zoom"; // Zoom blur transition
 
 export type TransitionEasing =
-  | 'linear'
-  | 'ease-in'
-  | 'ease-out'
-  | 'ease-in-out'
-  | 'bounce';
+  | "linear"
+  | "ease-in"
+  | "ease-out"
+  | "ease-in-out"
+  | "bounce";
 
 export interface TransitionConfig {
   blendMode: TransitionBlendMode;
-  duration: number;           // Duration in frames
+  duration: number; // Duration in frames
   easing: TransitionEasing;
-  direction?: number;         // 0-360 for wipes (degrees)
-  softness?: number;          // 0-1 edge softness
-  centerX?: number;           // 0-1 for radial effects
-  centerY?: number;           // 0-1 for radial effects
+  direction?: number; // 0-360 for wipes (degrees)
+  softness?: number; // 0-1 edge softness
+  centerX?: number; // 0-1 for radial effects
+  centerY?: number; // 0-1 for radial effects
 }
 
 export interface TransitionState {
-  progress: number;           // 0-1 transition progress
+  progress: number; // 0-1 transition progress
   fromCanvas: HTMLCanvasElement;
   toCanvas: HTMLCanvasElement;
   config: TransitionConfig;
@@ -58,13 +58,13 @@ export interface TransitionState {
 
 function applyEasing(t: number, easing: TransitionEasing): number {
   switch (easing) {
-    case 'ease-in':
+    case "ease-in":
       return t * t;
-    case 'ease-out':
+    case "ease-out":
       return 1 - (1 - t) * (1 - t);
-    case 'ease-in-out':
-      return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-    case 'bounce':
+    case "ease-in-out":
+      return t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
+    case "bounce": {
       const n1 = 7.5625;
       const d1 = 2.75;
       let tt = t;
@@ -77,7 +77,7 @@ function applyEasing(t: number, easing: TransitionEasing): number {
       } else {
         return n1 * (tt -= 2.625 / d1) * tt + 0.984375;
       }
-    case 'linear':
+    }
     default:
       return t;
   }
@@ -145,7 +145,7 @@ function renderNormalTransition(
   output: CanvasRenderingContext2D,
   fromData: ImageData,
   toData: ImageData,
-  progress: number
+  progress: number,
 ): void {
   const data = output.createImageData(fromData.width, fromData.height);
   const from = fromData.data;
@@ -170,7 +170,7 @@ function renderBlendTransition(
   fromData: ImageData,
   toData: ImageData,
   progress: number,
-  blendFn: (a: number, b: number) => number
+  blendFn: (a: number, b: number) => number,
 ): void {
   const data = output.createImageData(fromData.width, fromData.height);
   const from = fromData.data;
@@ -201,7 +201,7 @@ function renderDissolveTransition(
   fromData: ImageData,
   toData: ImageData,
   progress: number,
-  seed: number = 12345
+  seed: number = 12345,
 ): void {
   const data = output.createImageData(fromData.width, fromData.height);
   const from = fromData.data;
@@ -241,8 +241,8 @@ function renderWipeTransition(
   fromData: ImageData,
   toData: ImageData,
   progress: number,
-  direction: 'left' | 'right' | 'up' | 'down',
-  softness: number = 0.1
+  direction: "left" | "right" | "up" | "down",
+  softness: number = 0.1,
 ): void {
   const { width, height } = fromData;
   const data = output.createImageData(width, height);
@@ -250,9 +250,13 @@ function renderWipeTransition(
   const to = toData.data;
   const out = data.data;
 
-  const softnessPixels = Math.max(1, Math.floor(
-    (direction === 'left' || direction === 'right' ? width : height) * softness
-  ));
+  const _softnessPixels = Math.max(
+    1,
+    Math.floor(
+      (direction === "left" || direction === "right" ? width : height) *
+        softness,
+    ),
+  );
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
@@ -260,16 +264,16 @@ function renderWipeTransition(
 
       let localProgress: number;
       switch (direction) {
-        case 'left':
+        case "left":
           localProgress = (width - x) / width;
           break;
-        case 'right':
+        case "right":
           localProgress = x / width;
           break;
-        case 'up':
+        case "up":
           localProgress = (height - y) / height;
           break;
-        case 'down':
+        case "down":
           localProgress = y / height;
           break;
       }
@@ -307,7 +311,7 @@ function renderRadialWipeTransition(
   progress: number,
   centerX: number = 0.5,
   centerY: number = 0.5,
-  softness: number = 0.05
+  softness: number = 0.05,
 ): void {
   const { width, height } = fromData;
   const data = output.createImageData(width, height);
@@ -357,10 +361,10 @@ function renderIrisTransition(
   fromData: ImageData,
   toData: ImageData,
   progress: number,
-  direction: 'in' | 'out',
+  direction: "in" | "out",
   centerX: number = 0.5,
   centerY: number = 0.5,
-  softness: number = 0.1
+  softness: number = 0.1,
 ): void {
   const { width, height } = fromData;
   const data = output.createImageData(width, height);
@@ -373,7 +377,7 @@ function renderIrisTransition(
   const maxRadius = Math.sqrt(width * width + height * height) / 2;
 
   // For iris-in, radius grows; for iris-out, radius shrinks
-  const effectiveProgress = direction === 'in' ? progress : 1 - progress;
+  const effectiveProgress = direction === "in" ? progress : 1 - progress;
   const targetRadius = maxRadius * effectiveProgress;
   const softnessRadius = maxRadius * softness;
 
@@ -386,12 +390,12 @@ function renderIrisTransition(
       // Soft edge around the iris
       let blend: number;
       if (dist < targetRadius - softnessRadius / 2) {
-        blend = direction === 'in' ? 1 : 0;
+        blend = direction === "in" ? 1 : 0;
       } else if (dist > targetRadius + softnessRadius / 2) {
-        blend = direction === 'in' ? 0 : 1;
+        blend = direction === "in" ? 0 : 1;
       } else {
         const t = (dist - (targetRadius - softnessRadius / 2)) / softnessRadius;
-        blend = direction === 'in' ? 1 - t : t;
+        blend = direction === "in" ? 1 - t : t;
       }
 
       out[i] = from[i] * (1 - blend) + to[i] * blend;
@@ -421,30 +425,30 @@ export function renderTransition(
   fromCanvas: HTMLCanvasElement,
   toCanvas: HTMLCanvasElement,
   progress: number,
-  config: TransitionConfig
+  config: TransitionConfig,
 ): HTMLCanvasElement {
   const { width, height } = fromCanvas;
 
   // Create output canvas
-  const output = document.createElement('canvas');
+  const output = document.createElement("canvas");
   output.width = width;
   output.height = height;
-  const ctx = output.getContext('2d');
+  const ctx = output.getContext("2d");
   if (!ctx) {
-    throw new Error('Failed to get 2d context');
+    throw new Error("Failed to get 2d context");
   }
 
   // Apply easing to progress
   const easedProgress = applyEasing(
     Math.max(0, Math.min(1, progress)),
-    config.easing
+    config.easing,
   );
 
   // Get image data from both canvases
-  const fromCtx = fromCanvas.getContext('2d');
-  const toCtx = toCanvas.getContext('2d');
+  const fromCtx = fromCanvas.getContext("2d");
+  const toCtx = toCanvas.getContext("2d");
   if (!fromCtx || !toCtx) {
-    throw new Error('Failed to get source contexts');
+    throw new Error("Failed to get source contexts");
   }
 
   const fromData = fromCtx.getImageData(0, 0, width, height);
@@ -452,76 +456,139 @@ export function renderTransition(
 
   // Render based on blend mode
   switch (config.blendMode) {
-    case 'normal':
+    case "normal":
       renderNormalTransition(ctx, fromData, toData, easedProgress);
       break;
 
-    case 'multiply':
-      renderBlendTransition(ctx, fromData, toData, easedProgress, blendMultiply);
+    case "multiply":
+      renderBlendTransition(
+        ctx,
+        fromData,
+        toData,
+        easedProgress,
+        blendMultiply,
+      );
       break;
 
-    case 'screen':
+    case "screen":
       renderBlendTransition(ctx, fromData, toData, easedProgress, blendScreen);
       break;
 
-    case 'overlay':
+    case "overlay":
       renderBlendTransition(ctx, fromData, toData, easedProgress, blendOverlay);
       break;
 
-    case 'soft-light':
-      renderBlendTransition(ctx, fromData, toData, easedProgress, blendSoftLight);
+    case "soft-light":
+      renderBlendTransition(
+        ctx,
+        fromData,
+        toData,
+        easedProgress,
+        blendSoftLight,
+      );
       break;
 
-    case 'add':
+    case "add":
       renderBlendTransition(ctx, fromData, toData, easedProgress, blendAdd);
       break;
 
-    case 'subtract':
-      renderBlendTransition(ctx, fromData, toData, easedProgress, blendSubtract);
+    case "subtract":
+      renderBlendTransition(
+        ctx,
+        fromData,
+        toData,
+        easedProgress,
+        blendSubtract,
+      );
       break;
 
-    case 'dissolve':
+    case "dissolve":
       renderDissolveTransition(ctx, fromData, toData, easedProgress);
       break;
 
-    case 'wipe-left':
-      renderWipeTransition(ctx, fromData, toData, easedProgress, 'left', config.softness);
+    case "wipe-left":
+      renderWipeTransition(
+        ctx,
+        fromData,
+        toData,
+        easedProgress,
+        "left",
+        config.softness,
+      );
       break;
 
-    case 'wipe-right':
-      renderWipeTransition(ctx, fromData, toData, easedProgress, 'right', config.softness);
+    case "wipe-right":
+      renderWipeTransition(
+        ctx,
+        fromData,
+        toData,
+        easedProgress,
+        "right",
+        config.softness,
+      );
       break;
 
-    case 'wipe-up':
-      renderWipeTransition(ctx, fromData, toData, easedProgress, 'up', config.softness);
+    case "wipe-up":
+      renderWipeTransition(
+        ctx,
+        fromData,
+        toData,
+        easedProgress,
+        "up",
+        config.softness,
+      );
       break;
 
-    case 'wipe-down':
-      renderWipeTransition(ctx, fromData, toData, easedProgress, 'down', config.softness);
+    case "wipe-down":
+      renderWipeTransition(
+        ctx,
+        fromData,
+        toData,
+        easedProgress,
+        "down",
+        config.softness,
+      );
       break;
 
-    case 'radial-wipe':
+    case "radial-wipe":
       renderRadialWipeTransition(
-        ctx, fromData, toData, easedProgress,
-        config.centerX, config.centerY, config.softness
+        ctx,
+        fromData,
+        toData,
+        easedProgress,
+        config.centerX,
+        config.centerY,
+        config.softness,
       );
       break;
 
-    case 'iris-in':
+    case "iris-in":
       renderIrisTransition(
-        ctx, fromData, toData, easedProgress, 'in',
-        config.centerX, config.centerY, config.softness
+        ctx,
+        fromData,
+        toData,
+        easedProgress,
+        "in",
+        config.centerX,
+        config.centerY,
+        config.softness,
       );
       break;
 
-    case 'iris-out':
+    case "iris-out":
       renderIrisTransition(
-        ctx, fromData, toData, easedProgress, 'out',
-        config.centerX, config.centerY, config.softness
+        ctx,
+        fromData,
+        toData,
+        easedProgress,
+        "out",
+        config.centerX,
+        config.centerY,
+        config.softness,
       );
       break;
 
-    case 'cross-zoom':
+    case "cross-zoom":
       // For cross-zoom, we use a combination of scale + blur + crossfade
       // This is a simplified version - full implementation would need GPU
       renderNormalTransition(ctx, fromData, toData, easedProgress);
@@ -545,7 +612,7 @@ export function renderTransition(
 export function getTransitionProgress(
   currentFrame: number,
   transitionStartFrame: number,
-  transitionDuration: number
+  transitionDuration: number,
 ): number | null {
   if (currentFrame < transitionStartFrame) return null;
   if (currentFrame >= transitionStartFrame + transitionDuration) return null;
@@ -558,12 +625,12 @@ export function getTransitionProgress(
  */
 export function createDefaultTransition(): TransitionConfig {
   return {
-    blendMode: 'normal',
-    duration: 16,  // 1 second at 16fps
-    easing: 'ease-in-out',
+    blendMode: "normal",
+    duration: 16, // 1 second at 16fps
+    easing: "ease-in-out",
     softness: 0.1,
     centerX: 0.5,
-    centerY: 0.5
+    centerY: 0.5,
   };
 }
 
@@ -571,84 +638,84 @@ export function createDefaultTransition(): TransitionConfig {
  * Predefined transition presets
  */
 export const TRANSITION_PRESETS: Record<string, TransitionConfig> = {
-  'fade': {
-    blendMode: 'normal',
+  fade: {
+    blendMode: "normal",
     duration: 16,
-    easing: 'ease-in-out',
-    softness: 0.1
+    easing: "ease-in-out",
+    softness: 0.1,
   },
-  'flash-fade': {
-    blendMode: 'add',
+  "flash-fade": {
+    blendMode: "add",
     duration: 8,
-    easing: 'ease-out',
-    softness: 0.1
+    easing: "ease-out",
+    softness: 0.1,
   },
-  'dark-fade': {
-    blendMode: 'multiply',
+  "dark-fade": {
+    blendMode: "multiply",
     duration: 16,
-    easing: 'ease-in-out',
-    softness: 0.1
+    easing: "ease-in-out",
+    softness: 0.1,
   },
-  'dreamy': {
-    blendMode: 'screen',
+  dreamy: {
+    blendMode: "screen",
     duration: 24,
-    easing: 'ease-out',
-    softness: 0.2
+    easing: "ease-out",
+    softness: 0.2,
   },
-  'dramatic': {
-    blendMode: 'overlay',
+  dramatic: {
+    blendMode: "overlay",
     duration: 16,
-    easing: 'ease-in-out',
-    softness: 0.1
+    easing: "ease-in-out",
+    softness: 0.1,
   },
-  'soft-cut': {
-    blendMode: 'soft-light',
+  "soft-cut": {
+    blendMode: "soft-light",
     duration: 8,
-    easing: 'linear',
-    softness: 0.1
+    easing: "linear",
+    softness: 0.1,
   },
-  'dissolve': {
-    blendMode: 'dissolve',
+  dissolve: {
+    blendMode: "dissolve",
     duration: 16,
-    easing: 'linear',
-    softness: 0.1
+    easing: "linear",
+    softness: 0.1,
   },
-  'wipe-left': {
-    blendMode: 'wipe-left',
+  "wipe-left": {
+    blendMode: "wipe-left",
     duration: 16,
-    easing: 'ease-in-out',
-    softness: 0.1
+    easing: "ease-in-out",
+    softness: 0.1,
   },
-  'wipe-right': {
-    blendMode: 'wipe-right',
+  "wipe-right": {
+    blendMode: "wipe-right",
     duration: 16,
-    easing: 'ease-in-out',
-    softness: 0.1
+    easing: "ease-in-out",
+    softness: 0.1,
   },
-  'iris-reveal': {
-    blendMode: 'iris-in',
+  "iris-reveal": {
+    blendMode: "iris-in",
     duration: 24,
-    easing: 'ease-out',
+    easing: "ease-out",
     softness: 0.15,
     centerX: 0.5,
-    centerY: 0.5
+    centerY: 0.5,
   },
-  'iris-close': {
-    blendMode: 'iris-out',
+  "iris-close": {
+    blendMode: "iris-out",
     duration: 24,
-    easing: 'ease-in',
+    easing: "ease-in",
     softness: 0.15,
     centerX: 0.5,
-    centerY: 0.5
+    centerY: 0.5,
   },
-  'clock-wipe': {
-    blendMode: 'radial-wipe',
+  "clock-wipe": {
+    blendMode: "radial-wipe",
     duration: 24,
-    easing: 'linear',
+    easing: "linear",
     softness: 0.05,
     centerX: 0.5,
-    centerY: 0.5
-  }
+    centerY: 0.5,
+  },
 };
 
 /**
@@ -656,9 +723,22 @@ export const TRANSITION_PRESETS: Record<string, TransitionConfig> = {
  */
 export function getAllTransitionModes(): TransitionBlendMode[] {
   return [
-    'normal', 'multiply', 'screen', 'overlay', 'soft-light', 'add', 'subtract',
-    'dissolve', 'wipe-left', 'wipe-right', 'wipe-up', 'wipe-down',
-    'radial-wipe', 'iris-in', 'iris-out', 'cross-zoom'
+    "normal",
+    "multiply",
+    "screen",
+    "overlay",
+    "soft-light",
+    "add",
+    "subtract",
+    "dissolve",
+    "wipe-left",
+    "wipe-right",
+    "wipe-up",
+    "wipe-down",
+    "radial-wipe",
+    "iris-in",
+    "iris-out",
+    "cross-zoom",
   ];
 }
 
@@ -667,22 +747,22 @@ export function getAllTransitionModes(): TransitionBlendMode[] {
  */
 export function getTransitionModeName(mode: TransitionBlendMode): string {
   const names: Record<TransitionBlendMode, string> = {
-    'normal': 'Crossfade',
-    'multiply': 'Multiply Fade',
-    'screen': 'Screen Fade',
-    'overlay': 'Overlay Fade',
-    'soft-light': 'Soft Light',
-    'add': 'Additive Flash',
-    'subtract': 'Subtractive',
-    'dissolve': 'Dissolve',
-    'wipe-left': 'Wipe Left',
-    'wipe-right': 'Wipe Right',
-    'wipe-up': 'Wipe Up',
-    'wipe-down': 'Wipe Down',
-    'radial-wipe': 'Clock Wipe',
-    'iris-in': 'Iris In',
-    'iris-out': 'Iris Out',
-    'cross-zoom': 'Cross Zoom'
+    normal: "Crossfade",
+    multiply: "Multiply Fade",
+    screen: "Screen Fade",
+    overlay: "Overlay Fade",
+    "soft-light": "Soft Light",
+    add: "Additive Flash",
+    subtract: "Subtractive",
+    dissolve: "Dissolve",
+    "wipe-left": "Wipe Left",
+    "wipe-right": "Wipe Right",
+    "wipe-up": "Wipe Up",
+    "wipe-down": "Wipe Down",
+    "radial-wipe": "Clock Wipe",
+    "iris-in": "Iris In",
+    "iris-out": "Iris Out",
+    "cross-zoom": "Cross Zoom",
   };
   return names[mode] || mode;
 }
@@ -693,5 +773,5 @@ export default {
   createDefaultTransition,
   getAllTransitionModes,
   getTransitionModeName,
-  TRANSITION_PRESETS
+  TRANSITION_PRESETS,
 };

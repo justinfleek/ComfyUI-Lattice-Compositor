@@ -7,17 +7,38 @@
  * Enhanced with stackable motion components (Depthflow-style).
  */
 
-import { renderLogger } from '@/utils/logger';
+import { renderLogger } from "@/utils/logger";
 
 // ============================================================================
 // Motion Component Types (Depthflow-style stackable effects)
 // ============================================================================
 
-export type MotionType = 'linear' | 'exponential' | 'sine' | 'cosine' | 'arc' | 'setTarget' | 'bounce' | 'elastic';
+export type MotionType =
+  | "linear"
+  | "exponential"
+  | "sine"
+  | "cosine"
+  | "arc"
+  | "setTarget"
+  | "bounce"
+  | "elastic";
 
-export type MotionParameter = 'zoom' | 'offsetX' | 'offsetY' | 'rotation' | 'depthScale' | 'focusDepth';
+export type MotionParameter =
+  | "zoom"
+  | "offsetX"
+  | "offsetY"
+  | "rotation"
+  | "depthScale"
+  | "focusDepth";
 
-export type EasingType = 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'bounce' | 'elastic' | 'back';
+export type EasingType =
+  | "linear"
+  | "ease-in"
+  | "ease-out"
+  | "ease-in-out"
+  | "bounce"
+  | "elastic"
+  | "back";
 
 export interface MotionComponent {
   id: string;
@@ -25,31 +46,31 @@ export interface MotionComponent {
   parameter: MotionParameter;
   startValue: number;
   endValue: number;
-  startFrame: number;      // Relative to layer start
-  endFrame: number;        // Relative to layer start
+  startFrame: number; // Relative to layer start
+  endFrame: number; // Relative to layer start
   easing: EasingType;
-  amplitude?: number;      // For sine/cosine/arc
-  frequency?: number;      // For sine/cosine
-  loops?: number;          // Number of cycles
-  phase?: number;          // Starting phase (0-1)
+  amplitude?: number; // For sine/cosine/arc
+  frequency?: number; // For sine/cosine
+  loops?: number; // Number of cycles
+  phase?: number; // Starting phase (0-1)
   enabled: boolean;
 }
 
 export interface DOFConfig {
   enabled: boolean;
-  focusDepth: number;      // 0-1, depth value to focus on
-  aperture: number;        // Blur strength
-  bokehShape: 'circle' | 'hexagon' | 'heart';
+  focusDepth: number; // 0-1, depth value to focus on
+  aperture: number; // Blur strength
+  bokehShape: "circle" | "hexagon" | "heart";
   bokehSize: number;
 }
 
 export interface DepthflowEnhanced {
   motions: MotionComponent[];
   dof: DOFConfig;
-  vignette: number;        // 0-1, edge darkening
-  quality: number;         // 1-100
-  ssaa: number;            // 0-2 supersampling
-  tilingMode: 'none' | 'repeat' | 'mirror';
+  vignette: number; // 0-1, edge darkening
+  quality: number; // 1-100
+  ssaa: number; // 0-2 supersampling
+  tilingMode: "none" | "repeat" | "mirror";
 }
 
 // ============================================================================
@@ -57,20 +78,20 @@ export interface DepthflowEnhanced {
 // ============================================================================
 
 export type DepthflowPreset =
-  | 'static'
-  | 'zoom_in'
-  | 'zoom_out'
-  | 'dolly_zoom_in'
-  | 'dolly_zoom_out'
-  | 'pan_left'
-  | 'pan_right'
-  | 'pan_up'
-  | 'pan_down'
-  | 'circle_cw'
-  | 'circle_ccw'
-  | 'horizontal_swing'
-  | 'vertical_swing'
-  | 'custom';
+  | "static"
+  | "zoom_in"
+  | "zoom_out"
+  | "dolly_zoom_in"
+  | "dolly_zoom_out"
+  | "pan_left"
+  | "pan_right"
+  | "pan_up"
+  | "pan_down"
+  | "circle_cw"
+  | "circle_ccw"
+  | "horizontal_swing"
+  | "vertical_swing"
+  | "custom";
 
 export interface DepthflowConfig {
   preset: DepthflowPreset;
@@ -101,7 +122,7 @@ export interface DepthflowState {
 
 export function createDefaultDepthflowConfig(): DepthflowConfig {
   return {
-    preset: 'static',
+    preset: "static",
     zoom: 1.0,
     offsetX: 0,
     offsetY: 0,
@@ -114,7 +135,7 @@ export function createDefaultDepthflowConfig(): DepthflowConfig {
     swingAmplitude: 0.1,
     swingFrequency: 0.5,
     edgeDilation: 5,
-    inpaintEdges: true
+    inpaintEdges: true,
   };
 }
 
@@ -123,8 +144,8 @@ export function createDefaultDOFConfig(): DOFConfig {
     enabled: false,
     focusDepth: 0.5,
     aperture: 2.8,
-    bokehShape: 'circle',
-    bokehSize: 1.0
+    bokehShape: "circle",
+    bokehSize: 1.0,
   };
 }
 
@@ -135,7 +156,7 @@ export function createDefaultEnhancedConfig(): DepthflowEnhanced {
     vignette: 0,
     quality: 80,
     ssaa: 1,
-    tilingMode: 'none'
+    tilingMode: "none",
   };
 }
 
@@ -145,18 +166,20 @@ export function createDefaultEnhancedConfig(): DepthflowEnhanced {
 
 let motionIdCounter = 0;
 
-export function createMotionComponent(overrides?: Partial<MotionComponent>): MotionComponent {
+export function createMotionComponent(
+  overrides?: Partial<MotionComponent>,
+): MotionComponent {
   return {
     id: `motion_${++motionIdCounter}`,
-    type: 'linear',
-    parameter: 'zoom',
+    type: "linear",
+    parameter: "zoom",
     startValue: 1.0,
     endValue: 1.2,
     startFrame: 0,
     endFrame: 30,
-    easing: 'ease-in-out',
+    easing: "ease-in-out",
     enabled: true,
-    ...overrides
+    ...overrides,
   };
 }
 
@@ -165,21 +188,19 @@ export function createMotionComponent(overrides?: Partial<MotionComponent>): Mot
  */
 export function applyEasing(t: number, easing: EasingType): number {
   switch (easing) {
-    case 'linear':
+    case "linear":
       return t;
 
-    case 'ease-in':
+    case "ease-in":
       return t * t;
 
-    case 'ease-out':
+    case "ease-out":
       return 1 - (1 - t) * (1 - t);
 
-    case 'ease-in-out':
-      return t < 0.5
-        ? 2 * t * t
-        : 1 - Math.pow(-2 * t + 2, 2) / 2;
+    case "ease-in-out":
+      return t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
 
-    case 'bounce': {
+    case "bounce": {
       const n1 = 7.5625;
       const d1 = 2.75;
       if (t < 1 / d1) {
@@ -193,19 +214,19 @@ export function applyEasing(t: number, easing: EasingType): number {
       }
     }
 
-    case 'elastic': {
+    case "elastic": {
       const c4 = (2 * Math.PI) / 3;
       return t === 0
         ? 0
         : t === 1
-        ? 1
-        : Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
+          ? 1
+          : 2 ** (-10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
     }
 
-    case 'back': {
+    case "back": {
       const c1 = 1.70158;
       const c3 = c1 + 1;
-      return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+      return 1 + c3 * (t - 1) ** 3 + c1 * (t - 1) ** 2;
     }
 
     default:
@@ -218,7 +239,7 @@ export function applyEasing(t: number, easing: EasingType): number {
  */
 export function evaluateMotionComponent(
   motion: MotionComponent,
-  frame: number
+  frame: number,
 ): number | null {
   if (!motion.enabled) return null;
 
@@ -239,57 +260,67 @@ export function evaluateMotionComponent(
 
   // Calculate value based on motion type
   switch (motion.type) {
-    case 'linear':
+    case "linear":
       return motion.startValue + (motion.endValue - motion.startValue) * easedT;
 
-    case 'exponential': {
+    case "exponential": {
       const ratio = motion.endValue / motion.startValue;
-      return motion.startValue * Math.pow(ratio, easedT);
+      return motion.startValue * ratio ** easedT;
     }
 
-    case 'sine': {
-      const amplitude = motion.amplitude ?? (motion.endValue - motion.startValue) / 2;
+    case "sine": {
+      const amplitude =
+        motion.amplitude ?? (motion.endValue - motion.startValue) / 2;
       const frequency = motion.frequency ?? 1;
       const phase = motion.phase ?? 0;
       const loops = motion.loops ?? 1;
       const baseValue = (motion.startValue + motion.endValue) / 2;
-      return baseValue + amplitude * Math.sin((easedT * loops + phase) * Math.PI * 2 * frequency);
+      return (
+        baseValue +
+        amplitude * Math.sin((easedT * loops + phase) * Math.PI * 2 * frequency)
+      );
     }
 
-    case 'cosine': {
-      const amplitude = motion.amplitude ?? (motion.endValue - motion.startValue) / 2;
+    case "cosine": {
+      const amplitude =
+        motion.amplitude ?? (motion.endValue - motion.startValue) / 2;
       const frequency = motion.frequency ?? 1;
       const phase = motion.phase ?? 0;
       const loops = motion.loops ?? 1;
       const baseValue = (motion.startValue + motion.endValue) / 2;
-      return baseValue + amplitude * Math.cos((easedT * loops + phase) * Math.PI * 2 * frequency);
+      return (
+        baseValue +
+        amplitude * Math.cos((easedT * loops + phase) * Math.PI * 2 * frequency)
+      );
     }
 
-    case 'arc': {
+    case "arc": {
       // Arc motion: follows a curved path
       const amplitude = motion.amplitude ?? 1;
-      const midValue = (motion.startValue + motion.endValue) / 2;
+      const _midValue = (motion.startValue + motion.endValue) / 2;
       const range = motion.endValue - motion.startValue;
       // Parabolic arc
       const arcOffset = amplitude * 4 * easedT * (1 - easedT);
       return motion.startValue + range * easedT + arcOffset;
     }
 
-    case 'setTarget':
+    case "setTarget":
       // Instant jump to end value at start frame
       return frame >= motion.startFrame ? motion.endValue : motion.startValue;
 
-    case 'bounce': {
+    case "bounce": {
       // Bouncy transition
-      const baseValue = motion.startValue + (motion.endValue - motion.startValue) * easedT;
+      const baseValue =
+        motion.startValue + (motion.endValue - motion.startValue) * easedT;
       const bounceDecay = Math.exp(-easedT * 5);
       const bounce = Math.sin(easedT * Math.PI * 4) * bounceDecay * 0.2;
       return baseValue * (1 + bounce);
     }
 
-    case 'elastic': {
+    case "elastic": {
       // Elastic overshoot
-      const baseValue = motion.startValue + (motion.endValue - motion.startValue) * easedT;
+      const baseValue =
+        motion.startValue + (motion.endValue - motion.startValue) * easedT;
       if (easedT === 0 || easedT === 1) return baseValue;
       const elasticDecay = Math.exp(-easedT * 3);
       const elastic = Math.sin(easedT * Math.PI * 6) * elasticDecay * 0.3;
@@ -308,9 +339,11 @@ export function evaluateMotionsForParameter(
   motions: MotionComponent[],
   parameter: MotionParameter,
   frame: number,
-  baseValue: number
+  baseValue: number,
 ): number {
-  const parameterMotions = motions.filter(m => m.parameter === parameter && m.enabled);
+  const parameterMotions = motions.filter(
+    (m) => m.parameter === parameter && m.enabled,
+  );
 
   if (parameterMotions.length === 0) {
     return baseValue;
@@ -337,7 +370,7 @@ export function evaluateMotionsForParameter(
 export function evaluateAllMotions(
   motions: MotionComponent[],
   frame: number,
-  baseConfig: DepthflowConfig
+  baseConfig: DepthflowConfig,
 ): {
   zoom: number;
   offsetX: number;
@@ -347,12 +380,37 @@ export function evaluateAllMotions(
   focusDepth: number;
 } {
   return {
-    zoom: evaluateMotionsForParameter(motions, 'zoom', frame, baseConfig.zoom),
-    offsetX: evaluateMotionsForParameter(motions, 'offsetX', frame, baseConfig.offsetX),
-    offsetY: evaluateMotionsForParameter(motions, 'offsetY', frame, baseConfig.offsetY),
-    rotation: evaluateMotionsForParameter(motions, 'rotation', frame, baseConfig.rotation),
-    depthScale: evaluateMotionsForParameter(motions, 'depthScale', frame, baseConfig.depthScale),
-    focusDepth: evaluateMotionsForParameter(motions, 'focusDepth', frame, baseConfig.focusDepth),
+    zoom: evaluateMotionsForParameter(motions, "zoom", frame, baseConfig.zoom),
+    offsetX: evaluateMotionsForParameter(
+      motions,
+      "offsetX",
+      frame,
+      baseConfig.offsetX,
+    ),
+    offsetY: evaluateMotionsForParameter(
+      motions,
+      "offsetY",
+      frame,
+      baseConfig.offsetY,
+    ),
+    rotation: evaluateMotionsForParameter(
+      motions,
+      "rotation",
+      frame,
+      baseConfig.rotation,
+    ),
+    depthScale: evaluateMotionsForParameter(
+      motions,
+      "depthScale",
+      frame,
+      baseConfig.depthScale,
+    ),
+    focusDepth: evaluateMotionsForParameter(
+      motions,
+      "focusDepth",
+      frame,
+      baseConfig.focusDepth,
+    ),
   };
 }
 
@@ -362,158 +420,158 @@ export function evaluateAllMotions(
 
 export const MOTION_PRESETS: Record<string, MotionComponent[]> = {
   // Gentle zoom in
-  'zoom_in_gentle': [
+  zoom_in_gentle: [
     createMotionComponent({
-      type: 'linear',
-      parameter: 'zoom',
+      type: "linear",
+      parameter: "zoom",
       startValue: 1.0,
       endValue: 1.15,
-      easing: 'ease-in-out'
-    })
+      easing: "ease-in-out",
+    }),
   ],
 
   // Ken Burns effect
-  'ken_burns': [
+  ken_burns: [
     createMotionComponent({
-      type: 'linear',
-      parameter: 'zoom',
+      type: "linear",
+      parameter: "zoom",
       startValue: 1.0,
       endValue: 1.2,
-      easing: 'ease-out'
+      easing: "ease-out",
     }),
     createMotionComponent({
-      type: 'linear',
-      parameter: 'offsetX',
+      type: "linear",
+      parameter: "offsetX",
       startValue: -0.1,
       endValue: 0.1,
-      easing: 'ease-in-out'
-    })
+      easing: "ease-in-out",
+    }),
   ],
 
   // Vertigo (dolly zoom)
-  'vertigo': [
+  vertigo: [
     createMotionComponent({
-      type: 'linear',
-      parameter: 'zoom',
+      type: "linear",
+      parameter: "zoom",
       startValue: 1.0,
       endValue: 1.5,
-      easing: 'ease-in'
+      easing: "ease-in",
     }),
     createMotionComponent({
-      type: 'linear',
-      parameter: 'depthScale',
+      type: "linear",
+      parameter: "depthScale",
       startValue: 1.0,
       endValue: 0.3,
-      easing: 'ease-in'
-    })
+      easing: "ease-in",
+    }),
   ],
 
   // Breathing effect
-  'breathing': [
+  breathing: [
     createMotionComponent({
-      type: 'sine',
-      parameter: 'zoom',
+      type: "sine",
+      parameter: "zoom",
       startValue: 1.0,
       endValue: 1.0,
       amplitude: 0.03,
       frequency: 0.5,
       loops: 2,
-      easing: 'linear'
+      easing: "linear",
     }),
     createMotionComponent({
-      type: 'cosine',
-      parameter: 'depthScale',
+      type: "cosine",
+      parameter: "depthScale",
       startValue: 1.0,
       endValue: 1.0,
       amplitude: 0.1,
       frequency: 0.5,
       loops: 2,
-      easing: 'linear'
-    })
+      easing: "linear",
+    }),
   ],
 
   // Swing left to right
-  'swing_horizontal': [
+  swing_horizontal: [
     createMotionComponent({
-      type: 'sine',
-      parameter: 'offsetX',
+      type: "sine",
+      parameter: "offsetX",
       startValue: 0,
       endValue: 0,
       amplitude: 0.15,
       frequency: 1,
       loops: 1,
-      easing: 'linear'
-    })
+      easing: "linear",
+    }),
   ],
 
   // Circular orbit
-  'orbit': [
+  orbit: [
     createMotionComponent({
-      type: 'sine',
-      parameter: 'offsetX',
+      type: "sine",
+      parameter: "offsetX",
       startValue: 0,
       endValue: 0,
       amplitude: 0.1,
       frequency: 1,
       loops: 1,
       phase: 0,
-      easing: 'linear'
+      easing: "linear",
     }),
     createMotionComponent({
-      type: 'cosine',
-      parameter: 'offsetY',
+      type: "cosine",
+      parameter: "offsetY",
       startValue: 0,
       endValue: 0,
       amplitude: 0.1,
       frequency: 1,
       loops: 1,
       phase: 0,
-      easing: 'linear'
-    })
+      easing: "linear",
+    }),
   ],
 
   // Focus pull (rack focus)
-  'rack_focus': [
+  rack_focus: [
     createMotionComponent({
-      type: 'linear',
-      parameter: 'focusDepth',
+      type: "linear",
+      parameter: "focusDepth",
       startValue: 0.2,
       endValue: 0.8,
-      easing: 'ease-in-out'
-    })
+      easing: "ease-in-out",
+    }),
   ],
 
   // Dramatic reveal
-  'reveal': [
+  reveal: [
     createMotionComponent({
-      type: 'exponential',
-      parameter: 'zoom',
+      type: "exponential",
+      parameter: "zoom",
       startValue: 1.5,
       endValue: 1.0,
-      easing: 'ease-out'
+      easing: "ease-out",
     }),
     createMotionComponent({
-      type: 'linear',
-      parameter: 'depthScale',
+      type: "linear",
+      parameter: "depthScale",
       startValue: 0.5,
       endValue: 1.0,
-      easing: 'ease-out'
-    })
+      easing: "ease-out",
+    }),
   ],
 
   // Tilt shift simulation
-  'tilt_shift': [
+  tilt_shift: [
     createMotionComponent({
-      type: 'sine',
-      parameter: 'focusDepth',
+      type: "sine",
+      parameter: "focusDepth",
       startValue: 0.5,
       endValue: 0.5,
       amplitude: 0.3,
       frequency: 0.25,
       loops: 1,
-      easing: 'linear'
-    })
-  ]
+      easing: "linear",
+    }),
+  ],
 };
 
 /**
@@ -522,16 +580,16 @@ export const MOTION_PRESETS: Record<string, MotionComponent[]> = {
 export function applyMotionPreset(
   presetName: string,
   startFrame: number,
-  duration: number
+  duration: number,
 ): MotionComponent[] {
   const preset = MOTION_PRESETS[presetName];
   if (!preset) return [];
 
-  return preset.map(motion => ({
+  return preset.map((motion) => ({
     ...motion,
     id: `motion_${++motionIdCounter}`,
     startFrame,
-    endFrame: startFrame + duration
+    endFrame: startFrame + duration,
   }));
 }
 
@@ -547,18 +605,18 @@ export function getMotionPresetNames(): string[] {
  */
 export function getMotionPresetDescription(presetName: string): string {
   const descriptions: Record<string, string> = {
-    'zoom_in_gentle': 'Smooth zoom in effect',
-    'ken_burns': 'Classic documentary-style pan and zoom',
-    'vertigo': 'Hitchcock-style dolly zoom (background changes size)',
-    'breathing': 'Subtle pulsing effect that simulates breathing',
-    'swing_horizontal': 'Gentle left-right swinging motion',
-    'orbit': 'Circular orbiting motion around center',
-    'rack_focus': 'Shift focus from foreground to background',
-    'reveal': 'Dramatic zoom-out reveal',
-    'tilt_shift': 'Animated miniature/tilt-shift focus effect'
+    zoom_in_gentle: "Smooth zoom in effect",
+    ken_burns: "Classic documentary-style pan and zoom",
+    vertigo: "Hitchcock-style dolly zoom (background changes size)",
+    breathing: "Subtle pulsing effect that simulates breathing",
+    swing_horizontal: "Gentle left-right swinging motion",
+    orbit: "Circular orbiting motion around center",
+    rack_focus: "Shift focus from foreground to background",
+    reveal: "Dramatic zoom-out reveal",
+    tilt_shift: "Animated miniature/tilt-shift focus effect",
   };
 
-  return descriptions[presetName] || 'Custom motion effect';
+  return descriptions[presetName] || "Custom motion effect";
 }
 
 // ============================================================================
@@ -679,21 +737,23 @@ export class DepthflowRenderer {
   private height: number = 0;
 
   constructor() {
-    this.sourceCanvas = document.createElement('canvas');
-    this.depthCanvas = document.createElement('canvas');
-    this.outputCanvas = document.createElement('canvas');
+    this.sourceCanvas = document.createElement("canvas");
+    this.depthCanvas = document.createElement("canvas");
+    this.outputCanvas = document.createElement("canvas");
 
     this.initWebGL();
   }
 
   private initWebGL(): void {
-    const gl = this.outputCanvas.getContext('webgl2', {
+    const gl = this.outputCanvas.getContext("webgl2", {
       premultipliedAlpha: false,
-      preserveDrawingBuffer: true
+      preserveDrawingBuffer: true,
     });
 
     if (!gl) {
-      renderLogger.warn('Depthflow: WebGL2 not available, using Canvas2D fallback');
+      renderLogger.warn(
+        "Depthflow: WebGL2 not available, using Canvas2D fallback",
+      );
       this.useWebGL = false;
       return;
     }
@@ -702,8 +762,16 @@ export class DepthflowRenderer {
     this.useWebGL = true;
 
     // Create shader program
-    const vertexShader = this.compileShader(gl, gl.VERTEX_SHADER, VERTEX_SHADER);
-    const fragmentShader = this.compileShader(gl, gl.FRAGMENT_SHADER, FRAGMENT_SHADER);
+    const vertexShader = this.compileShader(
+      gl,
+      gl.VERTEX_SHADER,
+      VERTEX_SHADER,
+    );
+    const fragmentShader = this.compileShader(
+      gl,
+      gl.FRAGMENT_SHADER,
+      FRAGMENT_SHADER,
+    );
 
     if (!vertexShader || !fragmentShader) {
       this.useWebGL = false;
@@ -716,7 +784,10 @@ export class DepthflowRenderer {
     gl.linkProgram(program);
 
     if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-      renderLogger.error('Depthflow: Program link error:', gl.getProgramInfoLog(program));
+      renderLogger.error(
+        "Depthflow: Program link error:",
+        gl.getProgramInfoLog(program),
+      );
       this.useWebGL = false;
       return;
     }
@@ -725,40 +796,49 @@ export class DepthflowRenderer {
 
     // Get uniform locations
     this.uniforms = {
-      u_source: gl.getUniformLocation(program, 'u_source'),
-      u_depth: gl.getUniformLocation(program, 'u_depth'),
-      u_zoom: gl.getUniformLocation(program, 'u_zoom'),
-      u_offset: gl.getUniformLocation(program, 'u_offset'),
-      u_rotation: gl.getUniformLocation(program, 'u_rotation'),
-      u_depthScale: gl.getUniformLocation(program, 'u_depthScale'),
-      u_focusDepth: gl.getUniformLocation(program, 'u_focusDepth'),
-      u_edgeDilation: gl.getUniformLocation(program, 'u_edgeDilation'),
-      u_resolution: gl.getUniformLocation(program, 'u_resolution')
+      u_source: gl.getUniformLocation(program, "u_source"),
+      u_depth: gl.getUniformLocation(program, "u_depth"),
+      u_zoom: gl.getUniformLocation(program, "u_zoom"),
+      u_offset: gl.getUniformLocation(program, "u_offset"),
+      u_rotation: gl.getUniformLocation(program, "u_rotation"),
+      u_depthScale: gl.getUniformLocation(program, "u_depthScale"),
+      u_focusDepth: gl.getUniformLocation(program, "u_focusDepth"),
+      u_edgeDilation: gl.getUniformLocation(program, "u_edgeDilation"),
+      u_resolution: gl.getUniformLocation(program, "u_resolution"),
     };
 
     // Create buffers
     this.positionBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-      -1, -1,  1, -1,  -1, 1,
-      -1, 1,   1, -1,   1, 1
-    ]), gl.STATIC_DRAW);
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]),
+      gl.STATIC_DRAW,
+    );
 
     this.texCoordBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-      0, 1,  1, 1,  0, 0,
-      0, 0,  1, 1,  1, 0
-    ]), gl.STATIC_DRAW);
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array([0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0]),
+      gl.STATIC_DRAW,
+    );
   }
 
-  private compileShader(gl: WebGL2RenderingContext, type: number, source: string): WebGLShader | null {
+  private compileShader(
+    gl: WebGL2RenderingContext,
+    type: number,
+    source: string,
+  ): WebGLShader | null {
     const shader = gl.createShader(type)!;
     gl.shaderSource(shader, source);
     gl.compileShader(shader);
 
     if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-      renderLogger.error('Depthflow: Shader compile error:', gl.getShaderInfoLog(shader));
+      renderLogger.error(
+        "Depthflow: Shader compile error:",
+        gl.getShaderInfoLog(shader),
+      );
       gl.deleteShader(shader);
       return null;
     }
@@ -770,12 +850,12 @@ export class DepthflowRenderer {
     if (image instanceof ImageData) {
       this.sourceCanvas.width = image.width;
       this.sourceCanvas.height = image.height;
-      const ctx = this.sourceCanvas.getContext('2d')!;
+      const ctx = this.sourceCanvas.getContext("2d")!;
       ctx.putImageData(image, 0, 0);
     } else {
       this.sourceCanvas.width = image.width;
       this.sourceCanvas.height = image.height;
-      const ctx = this.sourceCanvas.getContext('2d')!;
+      const ctx = this.sourceCanvas.getContext("2d")!;
       ctx.drawImage(image, 0, 0);
     }
 
@@ -785,7 +865,7 @@ export class DepthflowRenderer {
     this.outputCanvas.height = this.height;
 
     if (this.useWebGL && this.gl) {
-      this.updateTexture('source');
+      this.updateTexture("source");
     }
   }
 
@@ -793,25 +873,25 @@ export class DepthflowRenderer {
     if (depth instanceof ImageData) {
       this.depthCanvas.width = depth.width;
       this.depthCanvas.height = depth.height;
-      const ctx = this.depthCanvas.getContext('2d')!;
+      const ctx = this.depthCanvas.getContext("2d")!;
       ctx.putImageData(depth, 0, 0);
     } else {
       this.depthCanvas.width = depth.width;
       this.depthCanvas.height = depth.height;
-      const ctx = this.depthCanvas.getContext('2d')!;
+      const ctx = this.depthCanvas.getContext("2d")!;
       ctx.drawImage(depth, 0, 0);
     }
 
     if (this.useWebGL && this.gl) {
-      this.updateTexture('depth');
+      this.updateTexture("depth");
     }
   }
 
-  private updateTexture(which: 'source' | 'depth'): void {
+  private updateTexture(which: "source" | "depth"): void {
     const gl = this.gl!;
-    const canvas = which === 'source' ? this.sourceCanvas : this.depthCanvas;
+    const canvas = which === "source" ? this.sourceCanvas : this.depthCanvas;
 
-    if (which === 'source') {
+    if (which === "source") {
       if (this.sourceTexture) gl.deleteTexture(this.sourceTexture);
       this.sourceTexture = gl.createTexture();
       gl.activeTexture(gl.TEXTURE0);
@@ -841,7 +921,10 @@ export class DepthflowRenderer {
   /**
    * Get animated camera parameters for a specific frame based on preset
    */
-  private getAnimatedParams(frame: number, totalFrames: number): {
+  private getAnimatedParams(
+    frame: number,
+    totalFrames: number,
+  ): {
     zoom: number;
     offsetX: number;
     offsetY: number;
@@ -849,78 +932,81 @@ export class DepthflowRenderer {
     depthScale: number;
   } {
     const progress = totalFrames > 1 ? frame / (totalFrames - 1) : 0;
-    const { preset, orbitRadius, orbitSpeed, swingAmplitude, swingFrequency } = this.config;
+    const { preset, orbitRadius, orbitSpeed, swingAmplitude, swingFrequency } =
+      this.config;
 
     let zoom = this.config.zoom;
     let offsetX = this.config.offsetX;
     let offsetY = this.config.offsetY;
-    let rotation = this.config.rotation;
+    const rotation = this.config.rotation;
     let depthScale = this.config.depthScale;
 
     switch (preset) {
-      case 'static':
+      case "static":
         // No animation
         break;
 
-      case 'zoom_in':
+      case "zoom_in":
         zoom = 1.0 + progress * 0.3;
         break;
 
-      case 'zoom_out':
+      case "zoom_out":
         zoom = 1.0 - progress * 0.3;
         break;
 
-      case 'dolly_zoom_in':
+      case "dolly_zoom_in":
         // Vertigo effect: zoom in while decreasing depth scale
         zoom = 1.0 + progress * 0.4;
         depthScale = this.config.depthScale * (1.0 - progress * 0.5);
         break;
 
-      case 'dolly_zoom_out':
+      case "dolly_zoom_out":
         // Reverse vertigo
         zoom = 1.0 - progress * 0.3;
         depthScale = this.config.depthScale * (1.0 + progress * 0.5);
         break;
 
-      case 'pan_left':
+      case "pan_left":
         offsetX = -progress * 0.3;
         break;
 
-      case 'pan_right':
+      case "pan_right":
         offsetX = progress * 0.3;
         break;
 
-      case 'pan_up':
+      case "pan_up":
         offsetY = -progress * 0.3;
         break;
 
-      case 'pan_down':
+      case "pan_down":
         offsetY = progress * 0.3;
         break;
 
-      case 'circle_cw': {
+      case "circle_cw": {
         const angle = progress * Math.PI * 2 * (orbitSpeed / 360);
         offsetX = Math.cos(angle) * orbitRadius;
         offsetY = Math.sin(angle) * orbitRadius;
         break;
       }
 
-      case 'circle_ccw': {
+      case "circle_ccw": {
         const angle = -progress * Math.PI * 2 * (orbitSpeed / 360);
         offsetX = Math.cos(angle) * orbitRadius;
         offsetY = Math.sin(angle) * orbitRadius;
         break;
       }
 
-      case 'horizontal_swing':
-        offsetX = Math.sin(progress * Math.PI * 2 * swingFrequency) * swingAmplitude;
+      case "horizontal_swing":
+        offsetX =
+          Math.sin(progress * Math.PI * 2 * swingFrequency) * swingAmplitude;
         break;
 
-      case 'vertical_swing':
-        offsetY = Math.sin(progress * Math.PI * 2 * swingFrequency) * swingAmplitude;
+      case "vertical_swing":
+        offsetY =
+          Math.sin(progress * Math.PI * 2 * swingFrequency) * swingAmplitude;
         break;
 
-      case 'custom':
+      case "custom":
         // Use config values directly (allow keyframe animation)
         break;
     }
@@ -969,13 +1055,13 @@ export class DepthflowRenderer {
     gl.uniform2f(this.uniforms.u_resolution, this.width, this.height);
 
     // Bind position attribute
-    const positionLoc = gl.getAttribLocation(this.program!, 'a_position');
+    const positionLoc = gl.getAttribLocation(this.program!, "a_position");
     gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
     gl.enableVertexAttribArray(positionLoc);
     gl.vertexAttribPointer(positionLoc, 2, gl.FLOAT, false, 0, 0);
 
     // Bind texcoord attribute
-    const texCoordLoc = gl.getAttribLocation(this.program!, 'a_texCoord');
+    const texCoordLoc = gl.getAttribLocation(this.program!, "a_texCoord");
     gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordBuffer);
     gl.enableVertexAttribArray(texCoordLoc);
     gl.vertexAttribPointer(texCoordLoc, 2, gl.FLOAT, false, 0, 0);
@@ -985,7 +1071,15 @@ export class DepthflowRenderer {
 
     // Read pixels
     const pixels = new Uint8ClampedArray(this.width * this.height * 4);
-    gl.readPixels(0, 0, this.width, this.height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+    gl.readPixels(
+      0,
+      0,
+      this.width,
+      this.height,
+      gl.RGBA,
+      gl.UNSIGNED_BYTE,
+      pixels,
+    );
 
     // Flip Y (WebGL has inverted Y)
     const flipped = new Uint8ClampedArray(pixels.length);
@@ -1005,9 +1099,9 @@ export class DepthflowRenderer {
     rotation: number;
     depthScale: number;
   }): ImageData {
-    const ctx = this.outputCanvas.getContext('2d')!;
-    const sourceCtx = this.sourceCanvas.getContext('2d')!;
-    const depthCtx = this.depthCanvas.getContext('2d')!;
+    const ctx = this.outputCanvas.getContext("2d")!;
+    const sourceCtx = this.sourceCanvas.getContext("2d")!;
+    const depthCtx = this.depthCanvas.getContext("2d")!;
 
     const sourceData = sourceCtx.getImageData(0, 0, this.width, this.height);
     const depthData = depthCtx.getImageData(0, 0, this.width, this.height);
@@ -1028,8 +1122,8 @@ export class DepthflowRenderer {
         const depthDiff = (depth - focusDepth) * depthScale;
 
         // Calculate source coordinates
-        let sx = (x / this.width - 0.5);
-        let sy = (y / this.height - 0.5);
+        let sx = x / this.width - 0.5;
+        let sy = y / this.height - 0.5;
 
         // Apply rotation
         const rx = sx * cosR - sy * sinR;
@@ -1096,7 +1190,10 @@ export class DepthflowRenderer {
     return outputData;
   }
 
-  renderSequence(totalFrames: number, onProgress?: (frame: number) => void): ImageData[] {
+  renderSequence(
+    totalFrames: number,
+    onProgress?: (frame: number) => void,
+  ): ImageData[] {
     const frames: ImageData[] = [];
 
     for (let i = 0; i < totalFrames; i++) {
@@ -1112,30 +1209,37 @@ export class DepthflowRenderer {
   /**
    * Get preset configuration with optional intensity modifier
    */
-  getPresetConfig(preset: DepthflowPreset, intensity: number = 1.0): Partial<DepthflowConfig> {
+  getPresetConfig(
+    preset: DepthflowPreset,
+    intensity: number = 1.0,
+  ): Partial<DepthflowConfig> {
     const base: Partial<DepthflowConfig> = { preset };
 
     switch (preset) {
-      case 'zoom_in':
-      case 'zoom_out':
+      case "zoom_in":
+      case "zoom_out":
         return { ...base, depthScale: 1.0 * intensity };
 
-      case 'dolly_zoom_in':
-      case 'dolly_zoom_out':
-        return { ...base, depthScale: 1.5 * intensity, dollyZoom: 0.5 * intensity };
+      case "dolly_zoom_in":
+      case "dolly_zoom_out":
+        return {
+          ...base,
+          depthScale: 1.5 * intensity,
+          dollyZoom: 0.5 * intensity,
+        };
 
-      case 'pan_left':
-      case 'pan_right':
-      case 'pan_up':
-      case 'pan_down':
+      case "pan_left":
+      case "pan_right":
+      case "pan_up":
+      case "pan_down":
         return { ...base, depthScale: 0.8 * intensity };
 
-      case 'circle_cw':
-      case 'circle_ccw':
+      case "circle_cw":
+      case "circle_ccw":
         return { ...base, orbitRadius: 0.1 * intensity, orbitSpeed: 360 };
 
-      case 'horizontal_swing':
-      case 'vertical_swing':
+      case "horizontal_swing":
+      case "vertical_swing":
         return { ...base, swingAmplitude: 0.1 * intensity, swingFrequency: 1 };
 
       default:
@@ -1170,9 +1274,9 @@ export class DepthflowRenderer {
 // ============================================================================
 
 export interface DepthSliceConfig {
-  numSlices: number;          // K-means clusters (2-10)
-  sliceIndex: number;         // Which slice to isolate (0 to numSlices-1)
-  featherAmount: number;      // Edge softness in pixels
+  numSlices: number; // K-means clusters (2-10)
+  sliceIndex: number; // Which slice to isolate (0 to numSlices-1)
+  featherAmount: number; // Edge softness in pixels
 }
 
 /**
@@ -1181,7 +1285,7 @@ export interface DepthSliceConfig {
  */
 export function createDepthSliceMask(
   depthMap: ImageData,
-  config: DepthSliceConfig
+  config: DepthSliceConfig,
 ): ImageData {
   const { numSlices, sliceIndex, featherAmount } = config;
   const { width, height, data } = depthMap;
@@ -1205,11 +1309,12 @@ export function createDepthSliceMask(
 
   // Get the range for the selected slice
   const sliceMin = sliceIndex === 0 ? 0 : clusterCenters[sliceIndex - 1];
-  const sliceMax = sliceIndex < clusterCenters.length ? clusterCenters[sliceIndex] : 1;
+  const sliceMax =
+    sliceIndex < clusterCenters.length ? clusterCenters[sliceIndex] : 1;
 
   // Create mask with feathering
   const canvas = new OffscreenCanvas(width, height);
-  const ctx = canvas.getContext('2d')!;
+  const ctx = canvas.getContext("2d")!;
   const outputImageData = ctx.createImageData(width, height);
   const outputData = outputImageData.data;
 
@@ -1224,9 +1329,8 @@ export function createDepthSliceMask(
       maskValue = 255;
     } else {
       // Outside slice - calculate feather falloff
-      const distanceToSlice = depth < sliceMin
-        ? sliceMin - depth
-        : depth - sliceMax;
+      const distanceToSlice =
+        depth < sliceMin ? sliceMin - depth : depth - sliceMax;
 
       // Convert featherAmount from pixels to depth units (approximate)
       const featherDepth = featherAmount / Math.max(width, height);
@@ -1257,7 +1361,11 @@ export function createDepthSliceMask(
 /**
  * K-means clustering algorithm
  */
-function kMeansClustering(values: number[], k: number, maxIterations: number = 50): number[] {
+function kMeansClustering(
+  values: number[],
+  k: number,
+  maxIterations: number = 50,
+): number[] {
   // Initialize cluster centers evenly spaced
   let centers: number[] = [];
   for (let i = 0; i < k; i++) {
@@ -1290,7 +1398,8 @@ function kMeansClustering(values: number[], k: number, maxIterations: number = 5
 
     for (let c = 0; c < k; c++) {
       if (assignments[c].length > 0) {
-        const mean = assignments[c].reduce((a, b) => a + b, 0) / assignments[c].length;
+        const mean =
+          assignments[c].reduce((a, b) => a + b, 0) / assignments[c].length;
         newCenters.push(mean);
 
         if (Math.abs(mean - centers[c]) > 0.001) {
@@ -1379,7 +1488,7 @@ export function createAnimatedDepthSlice(
   depthMap: ImageData,
   numSlices: number,
   frameCount: number,
-  featherAmount: number
+  featherAmount: number,
 ): ImageData[] {
   const masks: ImageData[] = [];
 
@@ -1391,7 +1500,7 @@ export function createAnimatedDepthSlice(
     const mask = createDepthSliceMask(depthMap, {
       numSlices,
       sliceIndex,
-      featherAmount
+      featherAmount,
     });
 
     masks.push(mask);
@@ -1406,7 +1515,7 @@ export function createAnimatedDepthSlice(
 export function createAllDepthSlices(
   depthMap: ImageData,
   numSlices: number,
-  featherAmount: number
+  featherAmount: number,
 ): ImageData[] {
   const masks: ImageData[] = [];
 
@@ -1414,7 +1523,7 @@ export function createAllDepthSlices(
     const mask = createDepthSliceMask(depthMap, {
       numSlices,
       sliceIndex,
-      featherAmount
+      featherAmount,
     });
     masks.push(mask);
   }
@@ -1457,7 +1566,7 @@ export const DEFAULT_CAMERA_SYNC_CONFIG: CameraToDepthflowConfig = {
   invertX: false,
   invertY: false,
   zoomClamp: { min: 0.5, max: 3 },
-  offsetClamp: { min: -1, max: 1 }
+  offsetClamp: { min: -1, max: 1 },
 };
 
 /**
@@ -1483,7 +1592,7 @@ export function cameraToDepthflowParams(
   camera: CameraState,
   compWidth: number,
   compHeight: number,
-  config: CameraToDepthflowConfig = DEFAULT_CAMERA_SYNC_CONFIG
+  config: CameraToDepthflowConfig = DEFAULT_CAMERA_SYNC_CONFIG,
 ): Partial<DepthflowConfig> {
   // Camera position affects parallax offset
   // Normalize by composition size for consistent behavior
@@ -1495,13 +1604,22 @@ export function cameraToDepthflowParams(
   let offsetY = normalizedY * config.sensitivityY * (config.invertY ? -1 : 1);
 
   // Clamp offsets
-  offsetX = Math.max(config.offsetClamp.min, Math.min(config.offsetClamp.max, offsetX));
-  offsetY = Math.max(config.offsetClamp.min, Math.min(config.offsetClamp.max, offsetY));
+  offsetX = Math.max(
+    config.offsetClamp.min,
+    Math.min(config.offsetClamp.max, offsetX),
+  );
+  offsetY = Math.max(
+    config.offsetClamp.min,
+    Math.min(config.offsetClamp.max, offsetY),
+  );
 
   // Camera Z position affects zoom
   // Moving camera closer (smaller Z) = zooming in
-  const zoomFromZ = config.baseZoom - (camera.position.z * config.sensitivityZ);
-  const zoom = Math.max(config.zoomClamp.min, Math.min(config.zoomClamp.max, zoomFromZ));
+  const zoomFromZ = config.baseZoom - camera.position.z * config.sensitivityZ;
+  const zoom = Math.max(
+    config.zoomClamp.min,
+    Math.min(config.zoomClamp.max, zoomFromZ),
+  );
 
   // Camera Z rotation affects depthflow rotation directly
   const rotation = camera.rotation.z * config.sensitivityRotation;
@@ -1510,7 +1628,7 @@ export function cameraToDepthflowParams(
     offsetX,
     offsetY,
     zoom,
-    rotation
+    rotation,
   };
 }
 
@@ -1530,16 +1648,16 @@ export function cameraTrajToDepthflowMotions(
   }>,
   compWidth: number,
   compHeight: number,
-  config: CameraToDepthflowConfig = DEFAULT_CAMERA_SYNC_CONFIG
+  config: CameraToDepthflowConfig = DEFAULT_CAMERA_SYNC_CONFIG,
 ): MotionComponent[] {
   if (cameraKeyframes.length < 2) return [];
 
   const motions: MotionComponent[] = [];
 
   // Convert each camera keyframe to depthflow parameters
-  const depthflowKeyframes = cameraKeyframes.map(kf => ({
+  const depthflowKeyframes = cameraKeyframes.map((kf) => ({
     frame: kf.frame,
-    params: cameraToDepthflowParams(kf.camera, compWidth, compHeight, config)
+    params: cameraToDepthflowParams(kf.camera, compWidth, compHeight, config),
   }));
 
   // Create motion components for each parameter transition
@@ -1548,35 +1666,41 @@ export function cameraTrajToDepthflowMotions(
     const next = depthflowKeyframes[i + 1];
 
     // OffsetX motion
-    if (current.params.offsetX !== undefined && next.params.offsetX !== undefined) {
+    if (
+      current.params.offsetX !== undefined &&
+      next.params.offsetX !== undefined
+    ) {
       if (current.params.offsetX !== next.params.offsetX) {
         motions.push({
           id: `camera_sync_offsetX_${i}`,
-          type: 'linear',
-          parameter: 'offsetX',
+          type: "linear",
+          parameter: "offsetX",
           startValue: current.params.offsetX,
           endValue: next.params.offsetX,
           startFrame: current.frame,
           endFrame: next.frame,
-          easing: 'ease-in-out',
-          enabled: true
+          easing: "ease-in-out",
+          enabled: true,
         });
       }
     }
 
     // OffsetY motion
-    if (current.params.offsetY !== undefined && next.params.offsetY !== undefined) {
+    if (
+      current.params.offsetY !== undefined &&
+      next.params.offsetY !== undefined
+    ) {
       if (current.params.offsetY !== next.params.offsetY) {
         motions.push({
           id: `camera_sync_offsetY_${i}`,
-          type: 'linear',
-          parameter: 'offsetY',
+          type: "linear",
+          parameter: "offsetY",
           startValue: current.params.offsetY,
           endValue: next.params.offsetY,
           startFrame: current.frame,
           endFrame: next.frame,
-          easing: 'ease-in-out',
-          enabled: true
+          easing: "ease-in-out",
+          enabled: true,
         });
       }
     }
@@ -1586,31 +1710,34 @@ export function cameraTrajToDepthflowMotions(
       if (current.params.zoom !== next.params.zoom) {
         motions.push({
           id: `camera_sync_zoom_${i}`,
-          type: 'linear',
-          parameter: 'zoom',
+          type: "linear",
+          parameter: "zoom",
           startValue: current.params.zoom,
           endValue: next.params.zoom,
           startFrame: current.frame,
           endFrame: next.frame,
-          easing: 'ease-in-out',
-          enabled: true
+          easing: "ease-in-out",
+          enabled: true,
         });
       }
     }
 
     // Rotation motion
-    if (current.params.rotation !== undefined && next.params.rotation !== undefined) {
+    if (
+      current.params.rotation !== undefined &&
+      next.params.rotation !== undefined
+    ) {
       if (current.params.rotation !== next.params.rotation) {
         motions.push({
           id: `camera_sync_rotation_${i}`,
-          type: 'linear',
-          parameter: 'rotation',
+          type: "linear",
+          parameter: "rotation",
           startValue: current.params.rotation,
           endValue: next.params.rotation,
           startFrame: current.frame,
           endFrame: next.frame,
-          easing: 'ease-in-out',
-          enabled: true
+          easing: "ease-in-out",
+          enabled: true,
         });
       }
     }
@@ -1634,16 +1761,21 @@ export function evaluateCameraSyncedDepthflow(
   baseConfig: DepthflowConfig,
   compWidth: number,
   compHeight: number,
-  syncConfig: CameraToDepthflowConfig = DEFAULT_CAMERA_SYNC_CONFIG
+  syncConfig: CameraToDepthflowConfig = DEFAULT_CAMERA_SYNC_CONFIG,
 ): DepthflowConfig {
-  const cameraParams = cameraToDepthflowParams(camera, compWidth, compHeight, syncConfig);
+  const cameraParams = cameraToDepthflowParams(
+    camera,
+    compWidth,
+    compHeight,
+    syncConfig,
+  );
 
   return {
     ...baseConfig,
     zoom: cameraParams.zoom ?? baseConfig.zoom,
     offsetX: cameraParams.offsetX ?? baseConfig.offsetX,
     offsetY: cameraParams.offsetY ?? baseConfig.offsetY,
-    rotation: cameraParams.rotation ?? baseConfig.rotation
+    rotation: cameraParams.rotation ?? baseConfig.rotation,
   };
 }
 

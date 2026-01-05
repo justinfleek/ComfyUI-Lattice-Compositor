@@ -3,23 +3,23 @@
  * Export camera animations to various AI video generation formats
  */
 
-import type { Camera3D, CameraKeyframe } from '@/types/camera';
+import { focalLengthToFOV } from "@/services/math3d";
+import type { Camera3D, CameraKeyframe } from "@/types/camera";
 import type {
+  CameraCtrlMotionType,
+  CameraCtrlPoses,
+  FullCameraExport,
+  FullCameraFrame,
   MotionCtrlCameraData,
   MotionCtrlPose,
   MotionCtrlSVDCameraData,
   MotionCtrlSVDPreset,
-  Wan22CameraMotion,
-  Wan22FunCameraData,
   Uni3CCameraData,
   Uni3CCameraTrajectory,
   Uni3CTrajType,
-  CameraCtrlPoses,
-  CameraCtrlMotionType,
-  FullCameraExport,
-  FullCameraFrame,
-} from '@/types/export';
-import { focalLengthToFOV } from '@/services/math3d';
+  Wan22CameraMotion,
+  Wan22FunCameraData,
+} from "@/types/export";
 
 // ============================================================================
 // Camera Interpolation
@@ -39,7 +39,7 @@ interface InterpolatedCamera {
 export function interpolateCameraAtFrame(
   camera: Camera3D,
   keyframes: CameraKeyframe[],
-  frame: number
+  frame: number,
 ): InterpolatedCamera {
   if (!keyframes || keyframes.length === 0) {
     return {
@@ -80,13 +80,18 @@ export function interpolateCameraAtFrame(
   if (!next) next = prev;
 
   // Helper to get value with fallback
-  const getPos = (kf: CameraKeyframe | null | undefined) => kf?.position ?? camera.position;
-  const getOri = (kf: CameraKeyframe | null | undefined) => kf?.orientation ?? camera.orientation;
-  const getFocal = (kf: CameraKeyframe | null | undefined) => kf?.focalLength ?? camera.focalLength;
-  const getZoom = (kf: CameraKeyframe | null | undefined) => kf?.zoom ?? camera.zoom;
-  const getFocusDist = (kf: CameraKeyframe | null | undefined) => kf?.focusDistance ?? camera.depthOfField.focusDistance;
+  const getPos = (kf: CameraKeyframe | null | undefined) =>
+    kf?.position ?? camera.position;
+  const getOri = (kf: CameraKeyframe | null | undefined) =>
+    kf?.orientation ?? camera.orientation;
+  const getFocal = (kf: CameraKeyframe | null | undefined) =>
+    kf?.focalLength ?? camera.focalLength;
+  const getZoom = (kf: CameraKeyframe | null | undefined) =>
+    kf?.zoom ?? camera.zoom;
+  const getFocusDist = (kf: CameraKeyframe | null | undefined) =>
+    kf?.focusDistance ?? camera.depthOfField.focusDistance;
 
-  if (prev!.frame === next!.frame) {
+  if (prev?.frame === next?.frame) {
     return {
       position: getPos(prev),
       rotation: getOri(prev),
@@ -97,7 +102,7 @@ export function interpolateCameraAtFrame(
   }
 
   // Interpolate
-  const t = (frame - prev!.frame) / (next!.frame - prev!.frame);
+  const t = (frame - prev?.frame) / (next?.frame - prev?.frame);
 
   const prevPos = getPos(prev);
   const nextPos = getPos(next);
@@ -144,14 +149,17 @@ export function computeViewMatrix(cam: InterpolatedCamera): number[][] {
   const { position, rotation } = cam;
 
   // Convert degrees to radians
-  const rx = rotation.x * Math.PI / 180;
-  const ry = rotation.y * Math.PI / 180;
-  const rz = rotation.z * Math.PI / 180;
+  const rx = (rotation.x * Math.PI) / 180;
+  const ry = (rotation.y * Math.PI) / 180;
+  const rz = (rotation.z * Math.PI) / 180;
 
   // Rotation matrices
-  const cosX = Math.cos(rx), sinX = Math.sin(rx);
-  const cosY = Math.cos(ry), sinY = Math.sin(ry);
-  const cosZ = Math.cos(rz), sinZ = Math.sin(rz);
+  const cosX = Math.cos(rx),
+    sinX = Math.sin(rx);
+  const cosY = Math.cos(ry),
+    sinY = Math.sin(ry);
+  const cosZ = Math.cos(rz),
+    sinZ = Math.sin(rz);
 
   // Combined rotation (Y * X * Z order)
   const r00 = cosY * cosZ + sinY * sinX * sinZ;
@@ -188,10 +196,10 @@ export function computeProjectionMatrix(
   cam: InterpolatedCamera,
   aspectRatio: number,
   nearClip: number = 0.1,
-  farClip: number = 1000
+  farClip: number = 1000,
 ): number[][] {
   const fov = focalLengthToFOV(cam.focalLength, 36); // 36mm film
-  const fovRad = fov * Math.PI / 180;
+  const fovRad = (fov * Math.PI) / 180;
   const tanHalfFov = Math.tan(fovRad / 2);
 
   const f = 1 / tanHalfFov;
@@ -215,7 +223,7 @@ export function computeProjectionMatrix(
 export function exportToMotionCtrl(
   camera: Camera3D,
   keyframes: CameraKeyframe[],
-  frameCount: number
+  frameCount: number,
 ): MotionCtrlCameraData {
   const poses: MotionCtrlPose[] = [];
 
@@ -235,9 +243,9 @@ export function exportToMotionCtrl(
  * Detect best MotionCtrl-SVD preset from keyframes
  */
 export function detectMotionCtrlSVDPreset(
-  keyframes: CameraKeyframe[]
+  keyframes: CameraKeyframe[],
 ): MotionCtrlSVDPreset {
-  if (!keyframes || keyframes.length < 2) return 'static';
+  if (!keyframes || keyframes.length < 2) return "static";
 
   const first = keyframes[0];
   const last = keyframes[keyframes.length - 1];
@@ -257,24 +265,24 @@ export function detectMotionCtrlSVDPreset(
 
   // Check for zoom (Z movement)
   if (Math.abs(deltaZ) > threshold) {
-    return deltaZ < 0 ? 'zoom_in' : 'zoom_out';
+    return deltaZ < 0 ? "zoom_in" : "zoom_out";
   }
 
   // Check for rotation
   if (Math.abs(deltaRy) > 15) {
-    return deltaRy > 0 ? 'rotate_cw' : 'rotate_ccw';
+    return deltaRy > 0 ? "rotate_cw" : "rotate_ccw";
   }
 
   // Check for pan
   if (Math.abs(deltaX) > threshold) {
-    return deltaX > 0 ? 'pan_right' : 'pan_left';
+    return deltaX > 0 ? "pan_right" : "pan_left";
   }
 
   if (Math.abs(deltaY) > threshold) {
-    return deltaY > 0 ? 'pan_down' : 'pan_up';
+    return deltaY > 0 ? "pan_down" : "pan_up";
   }
 
-  return 'static';
+  return "static";
 }
 
 /**
@@ -283,11 +291,11 @@ export function detectMotionCtrlSVDPreset(
 export function exportToMotionCtrlSVD(
   camera: Camera3D,
   keyframes: CameraKeyframe[],
-  frameCount: number
+  frameCount: number,
 ): MotionCtrlSVDCameraData {
   const preset = detectMotionCtrlSVDPreset(keyframes);
 
-  if (preset !== 'static' && keyframes.length <= 2) {
+  if (preset !== "static" && keyframes.length <= 2) {
     // Use preset for simple motions
     return { motion_camera: preset };
   }
@@ -307,13 +315,13 @@ export function exportToMotionCtrlSVD(
 
 interface CameraMotionAnalysis {
   hasPan: boolean;
-  panDirection?: 'up' | 'down' | 'left' | 'right';
+  panDirection?: "up" | "down" | "left" | "right";
   panMagnitude: number;
   hasZoom: boolean;
-  zoomDirection?: 'in' | 'out';
+  zoomDirection?: "in" | "out";
   zoomMagnitude: number;
   hasOrbit: boolean;
-  orbitDirection?: 'left' | 'right';
+  orbitDirection?: "left" | "right";
   orbitMagnitude: number;
   hasRotation: boolean;
   rotationMagnitude: number;
@@ -322,7 +330,9 @@ interface CameraMotionAnalysis {
 /**
  * Analyze camera motion pattern from keyframes
  */
-export function analyzeCameraMotion(keyframes: CameraKeyframe[]): CameraMotionAnalysis {
+export function analyzeCameraMotion(
+  keyframes: CameraKeyframe[],
+): CameraMotionAnalysis {
   if (!keyframes || keyframes.length < 2) {
     return {
       hasPan: false,
@@ -356,28 +366,28 @@ export function analyzeCameraMotion(keyframes: CameraKeyframe[]): CameraMotionAn
   const orbitThreshold = 20;
 
   // Determine pan
-  let panDirection: 'up' | 'down' | 'left' | 'right' | undefined;
+  let panDirection: "up" | "down" | "left" | "right" | undefined;
   const panX = Math.abs(deltaX);
   const panY = Math.abs(deltaY);
 
   if (panX > panThreshold || panY > panThreshold) {
     if (panX > panY) {
-      panDirection = deltaX > 0 ? 'right' : 'left';
+      panDirection = deltaX > 0 ? "right" : "left";
     } else {
-      panDirection = deltaY > 0 ? 'down' : 'up';
+      panDirection = deltaY > 0 ? "down" : "up";
     }
   }
 
   // Determine zoom
-  let zoomDirection: 'in' | 'out' | undefined;
+  let zoomDirection: "in" | "out" | undefined;
   if (Math.abs(deltaZ) > zoomThreshold) {
-    zoomDirection = deltaZ < 0 ? 'in' : 'out';
+    zoomDirection = deltaZ < 0 ? "in" : "out";
   }
 
   // Determine orbit (rotation around Y with position change)
-  let orbitDirection: 'left' | 'right' | undefined;
+  let orbitDirection: "left" | "right" | undefined;
   if (Math.abs(deltaRy) > orbitThreshold && Math.abs(deltaX) > panThreshold) {
-    orbitDirection = deltaRy > 0 ? 'right' : 'left';
+    orbitDirection = deltaRy > 0 ? "right" : "left";
   }
 
   return {
@@ -398,22 +408,26 @@ export function analyzeCameraMotion(keyframes: CameraKeyframe[]): CameraMotionAn
 /**
  * Map compositor camera motion to Wan 2.2 Fun Camera preset
  */
-export function mapToWan22FunCamera(keyframes: CameraKeyframe[]): Wan22FunCameraData {
+export function mapToWan22FunCamera(
+  keyframes: CameraKeyframe[],
+): Wan22FunCameraData {
   const motion = analyzeCameraMotion(keyframes);
 
-  let preset: Wan22CameraMotion = 'Static';
+  let preset: Wan22CameraMotion = "Static";
 
   // Priority: Orbit > Zoom+Pan > Zoom > Pan
   if (motion.hasOrbit) {
-    preset = motion.orbitDirection === 'left' ? 'Orbital Left' : 'Orbital Right';
+    preset =
+      motion.orbitDirection === "left" ? "Orbital Left" : "Orbital Right";
   } else if (motion.hasZoom && motion.hasPan) {
-    const panDir = capitalize(motion.panDirection || 'up');
-    const zoomDir = motion.zoomDirection === 'in' ? 'Zoom In' : 'Zoom Out';
+    const panDir = capitalize(motion.panDirection || "up");
+    const zoomDir = motion.zoomDirection === "in" ? "Zoom In" : "Zoom Out";
     preset = `Pan ${panDir} + ${zoomDir}` as Wan22CameraMotion;
   } else if (motion.hasZoom) {
-    preset = motion.zoomDirection === 'in' ? 'Zoom In' : 'Zoom Out';
+    preset = motion.zoomDirection === "in" ? "Zoom In" : "Zoom Out";
   } else if (motion.hasPan) {
-    preset = `Pan ${capitalize(motion.panDirection || 'up')}` as Wan22CameraMotion;
+    preset =
+      `Pan ${capitalize(motion.panDirection || "up")}` as Wan22CameraMotion;
   }
 
   return { camera_motion: preset };
@@ -430,24 +444,26 @@ function capitalize(s: string): string {
 /**
  * Detect Uni3C trajectory type from keyframes
  */
-export function detectUni3CTrajectoryType(keyframes: CameraKeyframe[]): Uni3CTrajType {
+export function detectUni3CTrajectoryType(
+  keyframes: CameraKeyframe[],
+): Uni3CTrajType {
   const motion = analyzeCameraMotion(keyframes);
 
   if (motion.hasOrbit && motion.orbitMagnitude > 45) {
-    return 'orbit';
+    return "orbit";
   }
 
   if (motion.hasPan && motion.hasZoom) {
     // Complex motion -> custom
-    return 'custom';
+    return "custom";
   }
 
   // Simple motions might match presets
   if (!motion.hasPan && !motion.hasZoom && !motion.hasOrbit) {
-    return 'free1'; // Minimal motion
+    return "free1"; // Minimal motion
   }
 
-  return 'custom';
+  return "custom";
 }
 
 /**
@@ -458,11 +474,11 @@ export function exportToUni3C(
   keyframes: CameraKeyframe[],
   frameCount: number,
   compWidth: number,
-  compHeight: number
+  compHeight: number,
 ): Uni3CCameraData {
   const detectedType = detectUni3CTrajectoryType(keyframes);
 
-  if (detectedType !== 'custom') {
+  if (detectedType !== "custom") {
     return { traj_type: detectedType };
   }
 
@@ -485,7 +501,7 @@ export function exportToUni3C(
   }
 
   return {
-    traj_type: 'custom',
+    traj_type: "custom",
     custom_trajectory: trajectory,
   };
 }
@@ -497,25 +513,31 @@ export function exportToUni3C(
 /**
  * Detect AnimateDiff CameraCtrl motion type
  */
-export function detectCameraCtrlMotionType(keyframes: CameraKeyframe[]): CameraCtrlMotionType {
+export function detectCameraCtrlMotionType(
+  keyframes: CameraKeyframe[],
+): CameraCtrlMotionType {
   const motion = analyzeCameraMotion(keyframes);
 
   if (!motion.hasPan && !motion.hasZoom && !motion.hasRotation) {
-    return 'Static';
+    return "Static";
   }
 
   // Check zoom
   if (motion.hasZoom) {
-    return motion.zoomDirection === 'in' ? 'Move Forward' : 'Move Backward';
+    return motion.zoomDirection === "in" ? "Move Forward" : "Move Backward";
   }
 
   // Check pan
   if (motion.hasPan) {
     switch (motion.panDirection) {
-      case 'left': return 'Move Left';
-      case 'right': return 'Move Right';
-      case 'up': return 'Move Up';
-      case 'down': return 'Move Down';
+      case "left":
+        return "Move Left";
+      case "right":
+        return "Move Right";
+      case "up":
+        return "Move Up";
+      case "down":
+        return "Move Down";
     }
   }
 
@@ -531,16 +553,19 @@ export function detectCameraCtrlMotionType(keyframes: CameraKeyframe[]): CameraC
     const deltaRy = lastOri.y - firstOri.y;
     const deltaRz = lastOri.z - firstOri.z;
 
-    if (Math.abs(deltaRy) > Math.abs(deltaRx) && Math.abs(deltaRy) > Math.abs(deltaRz)) {
-      return deltaRy > 0 ? 'Rotate Right' : 'Rotate Left';
+    if (
+      Math.abs(deltaRy) > Math.abs(deltaRx) &&
+      Math.abs(deltaRy) > Math.abs(deltaRz)
+    ) {
+      return deltaRy > 0 ? "Rotate Right" : "Rotate Left";
     }
     if (Math.abs(deltaRx) > Math.abs(deltaRz)) {
-      return deltaRx > 0 ? 'Rotate Down' : 'Rotate Up';
+      return deltaRx > 0 ? "Rotate Down" : "Rotate Up";
     }
-    return deltaRz > 0 ? 'Roll Right' : 'Roll Left';
+    return deltaRz > 0 ? "Roll Right" : "Roll Left";
   }
 
-  return 'Static';
+  return "Static";
 }
 
 /**
@@ -548,7 +573,7 @@ export function detectCameraCtrlMotionType(keyframes: CameraKeyframe[]): CameraC
  */
 export function exportToCameraCtrl(
   keyframes: CameraKeyframe[],
-  frameCount: number
+  frameCount: number,
 ): CameraCtrlPoses {
   const motionType = detectCameraCtrlMotionType(keyframes);
 
@@ -586,7 +611,7 @@ export function exportCameraMatrices(
     width: number;
     height: number;
     fps: number;
-  }
+  },
 ): FullCameraExport {
   const frames: FullCameraFrame[] = [];
   const aspectRatio = options.width / options.height;
@@ -627,7 +652,7 @@ export function exportCameraMatrices(
 // Export Router
 // ============================================================================
 
-import type { ExportTarget } from '@/types/export';
+import type { ExportTarget } from "@/types/export";
 
 /**
  * Export camera data for a specific target format
@@ -639,23 +664,29 @@ export function exportCameraForTarget(
   frameCount: number,
   compWidth: number = 1920,
   compHeight: number = 1080,
-  fps: number = 24
+  fps: number = 24,
 ): object {
   switch (target) {
-    case 'motionctrl':
+    case "motionctrl":
       return exportToMotionCtrl(camera, keyframes, frameCount);
 
-    case 'motionctrl-svd':
+    case "motionctrl-svd":
       return exportToMotionCtrlSVD(camera, keyframes, frameCount);
 
-    case 'wan22-fun-camera':
+    case "wan22-fun-camera":
       return mapToWan22FunCamera(keyframes);
 
-    case 'uni3c-camera':
-    case 'uni3c-motion':
-      return exportToUni3C(camera, keyframes, frameCount, compWidth, compHeight);
+    case "uni3c-camera":
+    case "uni3c-motion":
+      return exportToUni3C(
+        camera,
+        keyframes,
+        frameCount,
+        compWidth,
+        compHeight,
+      );
 
-    case 'animatediff-cameractrl':
+    case "animatediff-cameractrl":
       return exportToCameraCtrl(keyframes, frameCount);
 
     default:

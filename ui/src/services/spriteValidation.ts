@@ -16,16 +16,16 @@ export const SPRITE_CONSTRAINTS = {
   /** Minimum frame size in pixels */
   MIN_FRAME_SIZE: 16,
   /** Supported image formats */
-  SUPPORTED_FORMATS: ['png', 'jpg', 'jpeg', 'webp', 'gif'] as const,
+  SUPPORTED_FORMATS: ["png", "jpg", "jpeg", "webp", "gif"] as const,
   /** Formats that support alpha channel */
-  ALPHA_FORMATS: ['png', 'webp', 'gif'] as const,
+  ALPHA_FORMATS: ["png", "webp", "gif"] as const,
 } as const;
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-export type ValidationSeverity = 'error' | 'warning';
+export type ValidationSeverity = "error" | "warning";
 
 export interface SpriteValidationIssue {
   severity: ValidationSeverity;
@@ -61,7 +61,8 @@ export interface SpriteValidationResult {
   metadata: SpriteMetadata | null;
 }
 
-export interface SpritesheetValidationResult extends Omit<SpriteValidationResult, 'metadata'> {
+export interface SpritesheetValidationResult
+  extends Omit<SpriteValidationResult, "metadata"> {
   metadata: SpritesheetMetadata | null;
 }
 
@@ -80,7 +81,7 @@ export function isPowerOfTwo(n: number): boolean {
  * Get file extension from filename
  */
 export function getFileExtension(filename: string): string {
-  const ext = filename.split('.').pop()?.toLowerCase() || '';
+  const ext = filename.split(".").pop()?.toLowerCase() || "";
   return ext;
 }
 
@@ -89,7 +90,7 @@ export function getFileExtension(filename: string): string {
  */
 export function formatSupportsAlpha(format: string): boolean {
   return SPRITE_CONSTRAINTS.ALPHA_FORMATS.includes(
-    format as typeof SPRITE_CONSTRAINTS.ALPHA_FORMATS[number]
+    format as (typeof SPRITE_CONSTRAINTS.ALPHA_FORMATS)[number],
   );
 }
 
@@ -118,8 +119,8 @@ export function loadImageFromFile(file: File): Promise<HTMLImageElement> {
  * Detect if an image has alpha channel by sampling pixels
  */
 export function detectAlphaChannel(img: HTMLImageElement): boolean {
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
   if (!ctx) return false;
 
   // Sample a small portion for performance
@@ -141,7 +142,7 @@ export function detectAlphaChannel(img: HTMLImageElement): boolean {
     }
   } catch (e) {
     // CORS or other security error - assume no alpha
-    console.warn('[SpriteValidation] Could not detect alpha channel:', e);
+    console.warn("[SpriteValidation] Could not detect alpha channel:", e);
   }
 
   return false;
@@ -154,16 +155,20 @@ export function detectAlphaChannel(img: HTMLImageElement): boolean {
 /**
  * Validate file format
  */
-export function validateSpriteFormat(filename: string): SpriteValidationIssue | null {
+export function validateSpriteFormat(
+  filename: string,
+): SpriteValidationIssue | null {
   const ext = getFileExtension(filename);
 
-  if (!SPRITE_CONSTRAINTS.SUPPORTED_FORMATS.includes(
-    ext as typeof SPRITE_CONSTRAINTS.SUPPORTED_FORMATS[number]
-  )) {
+  if (
+    !SPRITE_CONSTRAINTS.SUPPORTED_FORMATS.includes(
+      ext as (typeof SPRITE_CONSTRAINTS.SUPPORTED_FORMATS)[number],
+    )
+  ) {
     return {
-      severity: 'error',
-      code: 'INVALID_FORMAT',
-      message: `Unsupported format "${ext}". Supported: ${SPRITE_CONSTRAINTS.SUPPORTED_FORMATS.join(', ')}`,
+      severity: "error",
+      code: "INVALID_FORMAT",
+      message: `Unsupported format "${ext}". Supported: ${SPRITE_CONSTRAINTS.SUPPORTED_FORMATS.join(", ")}`,
     };
   }
 
@@ -175,7 +180,7 @@ export function validateSpriteFormat(filename: string): SpriteValidationIssue | 
  */
 export function validateSpriteImage(
   img: HTMLImageElement,
-  filename: string
+  filename: string,
 ): { issues: SpriteValidationIssue[]; metadata: SpriteMetadata } {
   const issues: SpriteValidationIssue[] = [];
   const ext = getFileExtension(filename);
@@ -190,11 +195,13 @@ export function validateSpriteImage(
   };
 
   // Check texture size (BLOCKING ERROR)
-  if (img.width > SPRITE_CONSTRAINTS.MAX_TEXTURE_SIZE ||
-      img.height > SPRITE_CONSTRAINTS.MAX_TEXTURE_SIZE) {
+  if (
+    img.width > SPRITE_CONSTRAINTS.MAX_TEXTURE_SIZE ||
+    img.height > SPRITE_CONSTRAINTS.MAX_TEXTURE_SIZE
+  ) {
     issues.push({
-      severity: 'error',
-      code: 'TEXTURE_TOO_LARGE',
+      severity: "error",
+      code: "TEXTURE_TOO_LARGE",
       message: `Image size ${img.width}x${img.height} exceeds maximum ${SPRITE_CONSTRAINTS.MAX_TEXTURE_SIZE}x${SPRITE_CONSTRAINTS.MAX_TEXTURE_SIZE}`,
     });
   }
@@ -202,18 +209,19 @@ export function validateSpriteImage(
   // Check power of two (WARNING)
   if (!metadata.isPowerOfTwo) {
     issues.push({
-      severity: 'warning',
-      code: 'NOT_POWER_OF_TWO',
+      severity: "warning",
+      code: "NOT_POWER_OF_TWO",
       message: `Dimensions ${img.width}x${img.height} are not power of 2. This may cause mipmapping issues on some GPUs.`,
     });
   }
 
   // Check alpha channel for JPG (WARNING)
-  if (ext === 'jpg' || ext === 'jpeg') {
+  if (ext === "jpg" || ext === "jpeg") {
     issues.push({
-      severity: 'warning',
-      code: 'NO_ALPHA_SUPPORT',
-      message: 'JPG format does not support transparency. Particles will have no alpha channel.',
+      severity: "warning",
+      code: "NO_ALPHA_SUPPORT",
+      message:
+        "JPG format does not support transparency. Particles will have no alpha channel.",
     });
   }
 
@@ -227,14 +235,15 @@ export function validateSpritesheet(
   img: HTMLImageElement,
   filename: string,
   columns: number,
-  rows: number
+  rows: number,
 ): { issues: SpriteValidationIssue[]; metadata: SpritesheetMetadata } {
   // First validate as regular sprite
   const { issues, metadata: baseMetadata } = validateSpriteImage(img, filename);
 
   const frameWidth = img.width / columns;
   const frameHeight = img.height / rows;
-  const framesAlign = Number.isInteger(frameWidth) && Number.isInteger(frameHeight);
+  const framesAlign =
+    Number.isInteger(frameWidth) && Number.isInteger(frameHeight);
 
   const metadata: SpritesheetMetadata = {
     ...baseMetadata,
@@ -249,18 +258,20 @@ export function validateSpritesheet(
   // Check frame alignment (WARNING)
   if (!framesAlign) {
     issues.push({
-      severity: 'warning',
-      code: 'FRAME_MISALIGNMENT',
+      severity: "warning",
+      code: "FRAME_MISALIGNMENT",
       message: `Image ${img.width}x${img.height} doesn't divide evenly into ${columns}x${rows} grid. Frame size: ${frameWidth.toFixed(2)}x${frameHeight.toFixed(2)}px`,
     });
   }
 
   // Check minimum frame size (WARNING)
-  if (metadata.frameWidth < SPRITE_CONSTRAINTS.MIN_FRAME_SIZE ||
-      metadata.frameHeight < SPRITE_CONSTRAINTS.MIN_FRAME_SIZE) {
+  if (
+    metadata.frameWidth < SPRITE_CONSTRAINTS.MIN_FRAME_SIZE ||
+    metadata.frameHeight < SPRITE_CONSTRAINTS.MIN_FRAME_SIZE
+  ) {
     issues.push({
-      severity: 'warning',
-      code: 'FRAME_TOO_SMALL',
+      severity: "warning",
+      code: "FRAME_TOO_SMALL",
       message: `Frame size ${metadata.frameWidth}x${metadata.frameHeight}px is below minimum ${SPRITE_CONSTRAINTS.MIN_FRAME_SIZE}x${SPRITE_CONSTRAINTS.MIN_FRAME_SIZE}px. Frames may appear pixelated.`,
     });
   }
@@ -275,7 +286,9 @@ export function validateSpritesheet(
 /**
  * Load and validate a single sprite image
  */
-export async function loadAndValidateSprite(file: File): Promise<SpriteValidationResult> {
+export async function loadAndValidateSprite(
+  file: File,
+): Promise<SpriteValidationResult> {
   const issues: SpriteValidationIssue[] = [];
 
   // Check format first
@@ -296,7 +309,7 @@ export async function loadAndValidateSprite(file: File): Promise<SpriteValidatio
 
     issues.push(...result.issues);
 
-    const hasErrors = issues.some(i => i.severity === 'error');
+    const hasErrors = issues.some((i) => i.severity === "error");
 
     return {
       valid: issues.length === 0,
@@ -308,11 +321,14 @@ export async function loadAndValidateSprite(file: File): Promise<SpriteValidatio
     return {
       valid: false,
       canImport: false,
-      issues: [{
-        severity: 'error',
-        code: 'LOAD_ERROR',
-        message: error instanceof Error ? error.message : 'Failed to load image',
-      }],
+      issues: [
+        {
+          severity: "error",
+          code: "LOAD_ERROR",
+          message:
+            error instanceof Error ? error.message : "Failed to load image",
+        },
+      ],
       metadata: null,
     };
   }
@@ -324,7 +340,7 @@ export async function loadAndValidateSprite(file: File): Promise<SpriteValidatio
 export async function loadAndValidateSpritesheet(
   file: File,
   columns: number,
-  rows: number
+  rows: number,
 ): Promise<SpritesheetValidationResult> {
   const issues: SpriteValidationIssue[] = [];
 
@@ -333,11 +349,13 @@ export async function loadAndValidateSpritesheet(
     return {
       valid: false,
       canImport: false,
-      issues: [{
-        severity: 'error',
-        code: 'INVALID_GRID',
-        message: 'Columns and rows must be at least 1',
-      }],
+      issues: [
+        {
+          severity: "error",
+          code: "INVALID_GRID",
+          message: "Columns and rows must be at least 1",
+        },
+      ],
       metadata: null,
     };
   }
@@ -360,7 +378,7 @@ export async function loadAndValidateSpritesheet(
 
     issues.push(...result.issues);
 
-    const hasErrors = issues.some(i => i.severity === 'error');
+    const hasErrors = issues.some((i) => i.severity === "error");
 
     return {
       valid: issues.length === 0,
@@ -372,11 +390,14 @@ export async function loadAndValidateSpritesheet(
     return {
       valid: false,
       canImport: false,
-      issues: [{
-        severity: 'error',
-        code: 'LOAD_ERROR',
-        message: error instanceof Error ? error.message : 'Failed to load image',
-      }],
+      issues: [
+        {
+          severity: "error",
+          code: "LOAD_ERROR",
+          message:
+            error instanceof Error ? error.message : "Failed to load image",
+        },
+      ],
       metadata: null,
     };
   }
@@ -387,7 +408,7 @@ export async function loadAndValidateSpritesheet(
  */
 export function validateLoadedSprite(
   img: HTMLImageElement,
-  filename: string
+  filename: string,
 ): SpriteValidationResult {
   const formatIssue = validateSpriteFormat(filename);
   if (formatIssue) {
@@ -400,7 +421,7 @@ export function validateLoadedSprite(
   }
 
   const result = validateSpriteImage(img, filename);
-  const hasErrors = result.issues.some(i => i.severity === 'error');
+  const hasErrors = result.issues.some((i) => i.severity === "error");
 
   return {
     valid: result.issues.length === 0,
@@ -417,17 +438,19 @@ export function validateLoadedSpritesheet(
   img: HTMLImageElement,
   filename: string,
   columns: number,
-  rows: number
+  rows: number,
 ): SpritesheetValidationResult {
   if (columns < 1 || rows < 1) {
     return {
       valid: false,
       canImport: false,
-      issues: [{
-        severity: 'error',
-        code: 'INVALID_GRID',
-        message: 'Columns and rows must be at least 1',
-      }],
+      issues: [
+        {
+          severity: "error",
+          code: "INVALID_GRID",
+          message: "Columns and rows must be at least 1",
+        },
+      ],
       metadata: null,
     };
   }
@@ -443,7 +466,7 @@ export function validateLoadedSpritesheet(
   }
 
   const result = validateSpritesheet(img, filename, columns, rows);
-  const hasErrors = result.issues.some(i => i.severity === 'error');
+  const hasErrors = result.issues.some((i) => i.severity === "error");
 
   return {
     valid: result.issues.length === 0,

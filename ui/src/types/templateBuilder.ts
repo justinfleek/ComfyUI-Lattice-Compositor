@@ -14,7 +14,7 @@
  * - TemplateExportSettings: Template export configuration
  */
 
-import type { AnimatableProperty } from './project';
+import type { AnimatableProperty } from "./project";
 
 // ============================================================
 // EXPRESSION CONTROL TYPES
@@ -26,12 +26,12 @@ import type { AnimatableProperty } from './project';
  * animatable values accessible to expressions
  */
 export type ExpressionControlType =
-  | 'slider'      // Numeric value with range
-  | 'checkbox'    // Boolean toggle
-  | 'dropdown'    // Predefined options
-  | 'color'       // Color picker
-  | 'point'       // 2D coordinate
-  | 'angle';      // Rotation dial
+  | "slider" // Numeric value with range
+  | "checkbox" // Boolean toggle
+  | "dropdown" // Predefined options
+  | "color" // Color picker
+  | "point" // 2D coordinate
+  | "angle"; // Rotation dial
 
 /**
  * Expression Control - A controllable value attached to a layer
@@ -43,7 +43,7 @@ export type ExpressionControlType =
  */
 export interface ExpressionControl {
   id: string;
-  name: string;                    // Display name (e.g., "Animation Speed")
+  name: string; // Display name (e.g., "Animation Speed")
   type: ExpressionControlType;
 
   // The animatable value
@@ -75,7 +75,7 @@ export interface ExpressionControlConfig {
   is3D?: boolean;
 
   // For angle
-  displayUnit?: 'degrees' | 'radians' | 'rotations';
+  displayUnit?: "degrees" | "radians" | "rotations";
 }
 
 export interface DropdownOption {
@@ -91,15 +91,15 @@ export interface DropdownOption {
  * Types of properties that can be exposed in Essential Graphics
  */
 export type ExposedPropertyType =
-  | 'sourceText'   // Editable text content
-  | 'color'        // Color picker
-  | 'number'       // Numeric value (from slider, position, etc.)
-  | 'checkbox'     // Boolean toggle
-  | 'dropdown'     // Predefined options
-  | 'point'        // 2D position
-  | 'media'        // Replaceable image/video
-  | 'font'         // Font selector
-  | 'layer';       // Layer reference picker (for Layer Control effect)
+  | "sourceText" // Editable text content
+  | "color" // Color picker
+  | "number" // Numeric value (from slider, position, etc.)
+  | "checkbox" // Boolean toggle
+  | "dropdown" // Predefined options
+  | "point" // 2D position
+  | "media" // Replaceable image/video
+  | "font" // Font selector
+  | "layer"; // Layer reference picker (for Layer Control effect)
 
 /**
  * An exposed property in the Essential Graphics panel
@@ -111,19 +111,19 @@ export interface ExposedProperty {
   id: string;
 
   // Display configuration
-  name: string;                    // User-friendly name shown in panel
+  name: string; // User-friendly name shown in panel
   type: ExposedPropertyType;
 
   // Source binding
-  sourceLayerId: string;           // Layer containing the property
-  sourcePropertyPath: string;      // Path to property (e.g., "data.text", "transform.position.x")
+  sourceLayerId: string; // Layer containing the property
+  sourcePropertyPath: string; // Path to property (e.g., "data.text", "transform.position.x")
 
   // For expression control sources
-  sourceControlId?: string;        // If from an expression control
+  sourceControlId?: string; // If from an expression control
 
   // Organization
-  groupId?: string;                // Parent group ID
-  order: number;                   // Display order
+  groupId?: string; // Parent group ID
+  order: number; // Display order
 
   // Configuration
   config: ExposedPropertyConfig;
@@ -152,7 +152,7 @@ export interface ExposedPropertyConfig {
   multiline?: boolean;
 
   // For media properties
-  acceptedTypes?: ('image' | 'video')[];
+  acceptedTypes?: ("image" | "video")[];
   aspectRatio?: number;
 
   // For font properties
@@ -174,7 +174,7 @@ export interface PropertyGroup {
   name: string;
   expanded: boolean;
   order: number;
-  color?: string;                  // Optional accent color
+  color?: string; // Optional accent color
 }
 
 // ============================================================
@@ -189,11 +189,11 @@ export interface PropertyGroup {
  */
 export interface TemplateConfig {
   // Template metadata
-  name: string;                    // Template name shown in browse panel
-  description?: string;            // Template description
+  name: string; // Template name shown in browse panel
+  description?: string; // Template description
   author?: string;
   version?: string;
-  tags?: string[];                 // For search/filtering
+  tags?: string[]; // For search/filtering
 
   // Master composition reference
   masterCompositionId: string;
@@ -206,14 +206,14 @@ export interface TemplateConfig {
   comments: TemplateComment[];
 
   // Poster frame for thumbnail
-  posterFrame: number;             // Frame number for preview thumbnail
+  posterFrame: number; // Frame number for preview thumbnail
 
   // Export settings
   exportSettings: TemplateExportSettings;
 
   // Created/modified timestamps
-  created: string;                 // ISO 8601
-  modified: string;                // ISO 8601
+  created: string; // ISO 8601
+  modified: string; // ISO 8601
 }
 
 /**
@@ -223,7 +223,7 @@ export interface TemplateComment {
   id: string;
   text: string;
   order: number;
-  groupId?: string;                // Can be placed in a group
+  groupId?: string; // Can be placed in a group
 }
 
 // ============================================================
@@ -242,7 +242,7 @@ export interface TemplateExportSettings {
   allowDurationChange: boolean;
 
   // Quality settings
-  posterQuality: 'low' | 'medium' | 'high';
+  posterQuality: "low" | "medium" | "high";
 }
 
 /**
@@ -251,11 +251,11 @@ export interface TemplateExportSettings {
  */
 export interface LatticeTemplate {
   // Metadata
-  formatVersion: string;           // Template format version
+  formatVersion: string; // Template format version
   templateConfig: TemplateConfig;
 
   // Composition data (serialized LatticeProject subset)
-  composition: any;                // Serialized composition
+  composition: any; // Serialized composition
 
   // Embedded assets
   assets: TemplateAsset[];
@@ -264,14 +264,14 @@ export interface LatticeTemplate {
   fonts: TemplateFont[];
 
   // Preview
-  posterImage: string;             // Base64 encoded poster frame
+  posterImage: string; // Base64 encoded poster frame
 }
 
 export interface TemplateAsset {
   id: string;
   name: string;
-  type: 'image' | 'video' | 'audio';
-  data: string;                    // Base64 encoded or URL
+  type: "image" | "video" | "audio";
+  data: string; // Base64 encoded or URL
   mimeType: string;
 }
 
@@ -279,8 +279,8 @@ export interface TemplateFont {
   family: string;
   style: string;
   embedded: boolean;
-  data?: string;                   // Base64 encoded font file if embedded
-  source?: 'google' | 'adobe' | 'local' | 'system';
+  data?: string; // Base64 encoded font file if embedded
+  source?: "google" | "adobe" | "local" | "system";
 }
 
 // ============================================================
@@ -292,7 +292,7 @@ export interface TemplateFont {
  */
 export interface TemplateBuilderState {
   // Current tab
-  activeTab: 'browse' | 'edit';
+  activeTab: "browse" | "edit";
 
   // Edit mode state
   masterCompositionId: string | null;
@@ -312,12 +312,12 @@ export interface TemplateBuilderState {
 export interface SavedTemplate {
   id: string;
   name: string;
-  importedFrom?: string;           // Original file location (if imported from file)
-  posterImage: string;             // Thumbnail
+  importedFrom?: string; // Original file location (if imported from file)
+  posterImage: string; // Thumbnail
   author?: string;
   tags?: string[];
-  importDate: string;              // When the template was imported/saved
-  templateData?: LatticeTemplate;  // Full template data
+  importDate: string; // When the template was imported/saved
+  templateData?: LatticeTemplate; // Full template data
 }
 
 // ============================================================
@@ -329,7 +329,7 @@ export interface SavedTemplate {
  */
 export function createDefaultTemplateConfig(
   compositionId: string,
-  compositionName: string
+  compositionName: string,
 ): TemplateConfig {
   return {
     name: compositionName,
@@ -342,10 +342,10 @@ export function createDefaultTemplateConfig(
       includeFonts: true,
       includeMedia: true,
       allowDurationChange: false,
-      posterQuality: 'high'
+      posterQuality: "high",
     },
     created: new Date().toISOString(),
-    modified: new Date().toISOString()
+    modified: new Date().toISOString(),
   };
 }
 
@@ -354,7 +354,7 @@ export function createDefaultTemplateConfig(
  */
 export function createExpressionControl(
   type: ExpressionControlType,
-  name: string
+  name: string,
 ): ExpressionControl {
   const id = `ctrl_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
 
@@ -362,28 +362,33 @@ export function createExpressionControl(
   let config: ExpressionControlConfig = {};
 
   switch (type) {
-    case 'slider':
+    case "slider":
       defaultValue = 0;
       config = { min: 0, max: 100, step: 1 };
       break;
-    case 'checkbox':
+    case "checkbox":
       defaultValue = false;
       break;
-    case 'dropdown':
+    case "dropdown":
       defaultValue = 0;
-      config = { options: [{ label: 'Option 1', value: 0 }, { label: 'Option 2', value: 1 }] };
+      config = {
+        options: [
+          { label: "Option 1", value: 0 },
+          { label: "Option 2", value: 1 },
+        ],
+      };
       break;
-    case 'color':
+    case "color":
       defaultValue = { r: 1, g: 1, b: 1, a: 1 };
       config = { includeAlpha: true };
       break;
-    case 'point':
+    case "point":
       defaultValue = { x: 0, y: 0 };
       config = { is3D: false };
       break;
-    case 'angle':
+    case "angle":
       defaultValue = 0;
-      config = { displayUnit: 'degrees' };
+      config = { displayUnit: "degrees" };
       break;
   }
 
@@ -393,14 +398,15 @@ export function createExpressionControl(
     type,
     value: {
       id: `${id}_value`,
-      name: 'Value',
-      type: type === 'color' ? 'color' : type === 'point' ? 'position' : 'number',
+      name: "Value",
+      type:
+        type === "color" ? "color" : type === "point" ? "position" : "number",
       value: defaultValue,
       animated: false,
-      keyframes: []
+      keyframes: [],
     },
     config,
-    expanded: true
+    expanded: true,
   };
 }
 
@@ -412,7 +418,7 @@ export function createExposedProperty(
   propertyPath: string,
   name: string,
   type: ExposedPropertyType,
-  order: number
+  order: number,
 ): ExposedProperty {
   return {
     id: `exp_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
@@ -421,29 +427,35 @@ export function createExposedProperty(
     sourceLayerId: layerId,
     sourcePropertyPath: propertyPath,
     order,
-    config: {}
+    config: {},
   };
 }
 
 /**
  * Create a property group
  */
-export function createPropertyGroup(name: string, order: number): PropertyGroup {
+export function createPropertyGroup(
+  name: string,
+  order: number,
+): PropertyGroup {
   return {
     id: `grp_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
     name,
     expanded: true,
-    order
+    order,
   };
 }
 
 /**
  * Create a template comment
  */
-export function createTemplateComment(text: string, order: number): TemplateComment {
+export function createTemplateComment(
+  text: string,
+  order: number,
+): TemplateComment {
   return {
     id: `cmt_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
     text,
-    order
+    order,
   };
 }

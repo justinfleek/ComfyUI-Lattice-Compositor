@@ -11,9 +11,9 @@
  * - Pre-loading of frame ranges for smooth playback
  */
 
-import { createLogger } from '@/utils/logger';
+import { createLogger } from "@/utils/logger";
 
-const logger = createLogger('VideoDecoder');
+const logger = createLogger("VideoDecoder");
 
 // ============================================================================
 // Types
@@ -57,7 +57,10 @@ export interface DecoderOptions {
   /** Whether to enable WebCodecs (default: true) */
   enableWebCodecs?: boolean;
   /** Hardware acceleration preference */
-  hardwareAcceleration?: 'prefer-hardware' | 'prefer-software' | 'no-preference';
+  hardwareAcceleration?:
+    | "prefer-hardware"
+    | "prefer-software"
+    | "no-preference";
 }
 
 // ============================================================================
@@ -73,10 +76,10 @@ export function isWebCodecsSupported(): boolean {
   if (webCodecsSupported !== null) return webCodecsSupported;
 
   webCodecsSupported = !!(
-    typeof VideoDecoder !== 'undefined' &&
-    typeof VideoEncoder !== 'undefined' &&
-    typeof EncodedVideoChunk !== 'undefined' &&
-    typeof VideoFrame !== 'undefined'
+    typeof VideoDecoder !== "undefined" &&
+    typeof VideoEncoder !== "undefined" &&
+    typeof EncodedVideoChunk !== "undefined" &&
+    typeof VideoFrame !== "undefined"
   );
 
   logger.info(`WebCodecs support: ${webCodecsSupported}`);
@@ -158,10 +161,6 @@ export class VideoDecoderService {
 
   // WebCodecs decoder
   private decoder: VideoDecoder | null = null;
-  private demuxer: any = null; // MP4Box demuxer
-
-  // Decode queue for WebCodecs
-  private pendingFrames = new Map<number, (frame: VideoFrameInfo) => void>();
   private decodedFrames: VideoFrame[] = [];
 
   // State
@@ -173,7 +172,7 @@ export class VideoDecoderService {
     this.options = {
       maxCacheSize: options.maxCacheSize ?? 300,
       enableWebCodecs: options.enableWebCodecs ?? true,
-      hardwareAcceleration: options.hardwareAcceleration ?? 'prefer-hardware',
+      hardwareAcceleration: options.hardwareAcceleration ?? "prefer-hardware",
     };
     this.frameCache = new FrameCache(this.options.maxCacheSize);
   }
@@ -195,9 +194,12 @@ export class VideoDecoderService {
       try {
         await this.initializeWebCodecs();
         this.useWebCodecs = true;
-        logger.info('Using WebCodecs for video decoding');
+        logger.info("Using WebCodecs for video decoding");
       } catch (error) {
-        logger.warn('WebCodecs initialization failed, falling back to HTMLVideoElement:', error);
+        logger.warn(
+          "WebCodecs initialization failed, falling back to HTMLVideoElement:",
+          error,
+        );
         await this.initializeFallback();
         this.useWebCodecs = false;
       }
@@ -226,19 +228,19 @@ export class VideoDecoderService {
     // Create decoder
     this.decoder = new VideoDecoder({
       output: (frame: VideoFrame) => this.handleDecodedFrame(frame),
-      error: (error: Error) => logger.error('VideoDecoder error:', error),
+      error: (error: Error) => logger.error("VideoDecoder error:", error),
     });
 
     // Configure decoder based on video format
     // For now, use a common configuration
     const config: VideoDecoderConfig = {
-      codec: 'avc1.42E01E', // H.264 baseline
+      codec: "avc1.42E01E", // H.264 baseline
       hardwareAcceleration: this.options.hardwareAcceleration,
     };
 
     const support = await VideoDecoder.isConfigSupported(config);
     if (!support.supported) {
-      throw new Error('Video codec not supported by WebCodecs');
+      throw new Error("Video codec not supported by WebCodecs");
     }
 
     this.decoder.configure(config);
@@ -249,10 +251,10 @@ export class VideoDecoderService {
    */
   private async initializeFallback(): Promise<void> {
     return new Promise((resolve, reject) => {
-      this.videoElement = document.createElement('video');
+      this.videoElement = document.createElement("video");
       this.videoElement.src = this.videoUrl;
-      this.videoElement.crossOrigin = 'anonymous';
-      this.videoElement.preload = 'metadata';
+      this.videoElement.crossOrigin = "anonymous";
+      this.videoElement.preload = "metadata";
       this.videoElement.muted = true;
 
       this.videoElement.onloadedmetadata = () => {
@@ -261,7 +263,7 @@ export class VideoDecoderService {
         // Detect FPS (default to 16 if not available)
         // WebKit browsers expose getVideoPlaybackQuality()
         let fps = 16;
-        if ('getVideoPlaybackQuality' in video) {
+        if ("getVideoPlaybackQuality" in video) {
           // Can't reliably get FPS without playing, use common defaults
           fps = this.detectFPS(video.duration);
         }
@@ -277,14 +279,14 @@ export class VideoDecoderService {
         };
 
         // Create canvas for frame extraction
-        this.fallbackCanvas = document.createElement('canvas');
+        this.fallbackCanvas = document.createElement("canvas");
         this.fallbackCanvas.width = video.videoWidth;
         this.fallbackCanvas.height = video.videoHeight;
-        this.fallbackCtx = this.fallbackCanvas.getContext('2d', {
+        this.fallbackCtx = this.fallbackCanvas.getContext("2d", {
           willReadFrequently: true,
         });
 
-        logger.info('Video loaded:', this.videoInfo);
+        logger.info("Video loaded:", this.videoInfo);
         resolve();
       };
 
@@ -316,7 +318,7 @@ export class VideoDecoderService {
    */
   private hasAudioTrack(video: HTMLVideoElement): boolean {
     // Check audioTracks API if available
-    if ('audioTracks' in video) {
+    if ("audioTracks" in video) {
       return (video as any).audioTracks.length > 0;
     }
     // Assume it has audio if we can't detect
@@ -336,7 +338,10 @@ export class VideoDecoderService {
     }
 
     // Clamp frame number
-    const clampedFrame = Math.max(0, Math.min(frameNumber, this.videoInfo!.frameCount - 1));
+    const clampedFrame = Math.max(
+      0,
+      Math.min(frameNumber, this.videoInfo?.frameCount - 1),
+    );
 
     // Check cache first
     const cached = this.frameCache.get(clampedFrame);
@@ -356,7 +361,9 @@ export class VideoDecoderService {
   /**
    * Extract a frame using the appropriate method
    */
-  private async extractFrame(frameNumber: number): Promise<VideoFrameInfo | null> {
+  private async extractFrame(
+    frameNumber: number,
+  ): Promise<VideoFrameInfo | null> {
     if (this.useWebCodecs && this.decoder) {
       return this.extractFrameWebCodecs(frameNumber);
     }
@@ -366,7 +373,9 @@ export class VideoDecoderService {
   /**
    * Extract frame using WebCodecs
    */
-  private async extractFrameWebCodecs(frameNumber: number): Promise<VideoFrameInfo | null> {
+  private async extractFrameWebCodecs(
+    frameNumber: number,
+  ): Promise<VideoFrameInfo | null> {
     // WebCodecs implementation would require:
     // 1. Seeking to nearest keyframe
     // 2. Decoding frames until target
@@ -380,8 +389,15 @@ export class VideoDecoderService {
   /**
    * Extract frame using HTMLVideoElement fallback
    */
-  private async extractFrameFallback(frameNumber: number): Promise<VideoFrameInfo | null> {
-    if (!this.videoElement || !this.fallbackCanvas || !this.fallbackCtx || !this.videoInfo) {
+  private async extractFrameFallback(
+    frameNumber: number,
+  ): Promise<VideoFrameInfo | null> {
+    if (
+      !this.videoElement ||
+      !this.fallbackCanvas ||
+      !this.fallbackCtx ||
+      !this.videoInfo
+    ) {
       return null;
     }
 
@@ -393,7 +409,7 @@ export class VideoDecoderService {
       const ctx = this.fallbackCtx!;
 
       const onSeeked = async () => {
-        video.removeEventListener('seeked', onSeeked);
+        video.removeEventListener("seeked", onSeeked);
 
         // Draw frame to canvas
         ctx.drawImage(video, 0, 0);
@@ -405,17 +421,17 @@ export class VideoDecoderService {
           resolve({
             frameNumber,
             timestamp,
-            width: this.videoInfo!.width,
-            height: this.videoInfo!.height,
+            width: this.videoInfo?.width,
+            height: this.videoInfo?.height,
             bitmap,
           });
         } catch (error) {
-          logger.warn('Failed to create bitmap:', error);
+          logger.warn("Failed to create bitmap:", error);
           resolve(null);
         }
       };
 
-      video.addEventListener('seeked', onSeeked);
+      video.addEventListener("seeked", onSeeked);
       video.currentTime = timestamp;
     });
   }
@@ -440,15 +456,13 @@ export class VideoDecoderService {
     }
 
     const start = Math.max(0, startFrame);
-    const end = Math.min(endFrame, this.videoInfo!.frameCount - 1);
+    const end = Math.min(endFrame, this.videoInfo?.frameCount - 1);
 
     const promises: Promise<void>[] = [];
 
     for (let frame = start; frame <= end; frame++) {
       if (!this.frameCache.has(frame)) {
-        promises.push(
-          this.getFrame(frame).then(() => {})
-        );
+        promises.push(this.getFrame(frame).then(() => {}));
       }
     }
 
@@ -498,7 +512,7 @@ export class VideoDecoderService {
    */
   clearCache(): void {
     this.frameCache.clear();
-    logger.debug('Frame cache cleared');
+    logger.debug("Frame cache cleared");
   }
 
   /**
@@ -529,7 +543,7 @@ export class VideoDecoderService {
     this.frameCache.clear();
 
     // Close decoder
-    if (this.decoder && this.decoder.state !== 'closed') {
+    if (this.decoder && this.decoder.state !== "closed") {
       this.decoder.close();
     }
     this.decoder = null;
@@ -542,7 +556,7 @@ export class VideoDecoderService {
 
     // Remove video element
     if (this.videoElement) {
-      this.videoElement.src = '';
+      this.videoElement.src = "";
       this.videoElement = null;
     }
 
@@ -553,7 +567,7 @@ export class VideoDecoderService {
     this.initialized = false;
     this.videoInfo = null;
 
-    logger.debug('VideoDecoderService disposed');
+    logger.debug("VideoDecoderService disposed");
   }
 }
 
@@ -566,7 +580,7 @@ export class VideoDecoderService {
  */
 export function createVideoDecoder(
   videoUrl: string,
-  options?: DecoderOptions
+  options?: DecoderOptions,
 ): VideoDecoderService {
   return new VideoDecoderService(videoUrl, options);
 }
@@ -586,7 +600,10 @@ class VideoDecoderPool {
   /**
    * Get or create a decoder for a video URL
    */
-  async getDecoder(videoUrl: string, options?: DecoderOptions): Promise<VideoDecoderService> {
+  async getDecoder(
+    videoUrl: string,
+    options?: DecoderOptions,
+  ): Promise<VideoDecoderService> {
     let decoder = this.decoders.get(videoUrl);
 
     if (!decoder) {

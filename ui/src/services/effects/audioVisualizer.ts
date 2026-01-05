@@ -7,11 +7,11 @@
  * Audio visualization effects for frequency spectrum and waveform display.
  */
 import {
-  registerEffectRenderer,
   createMatchingCanvas,
   type EffectStackResult,
-  type EvaluatedEffectParams
-} from '../effectProcessor';
+  type EvaluatedEffectParams,
+  registerEffectRenderer,
+} from "../effectProcessor";
 
 // ============================================================================
 // TYPES
@@ -22,31 +22,31 @@ export interface AudioSpectrumParams extends EvaluatedEffectParams {
   audioLayerId?: string;
 
   // Geometry
-  startPointX: number;        // Start X position
-  startPointY: number;        // Start Y position
-  endPointX: number;          // End X position
-  endPointY: number;          // End Y position
-  pathType: 'line' | 'circle'; // Use line between points or circular path
+  startPointX: number; // Start X position
+  startPointY: number; // Start Y position
+  endPointX: number; // End X position
+  endPointY: number; // End Y position
+  pathType: "line" | "circle"; // Use line between points or circular path
 
   // Frequency range
-  startFrequency: number;     // Hz (default: 20)
-  endFrequency: number;       // Hz (default: 10000)
-  frequencyBands: number;     // Number of bars (default: 64)
+  startFrequency: number; // Hz (default: 20)
+  endFrequency: number; // Hz (default: 10000)
+  frequencyBands: number; // Number of bars (default: 64)
 
   // Display
-  maxHeight: number;          // Maximum bar height in pixels (default: 100)
-  displayMode: 'digital' | 'analog_lines' | 'analog_dots';
-  sideOptions: 'side_a' | 'side_b' | 'side_a_b'; // Mirroring
+  maxHeight: number; // Maximum bar height in pixels (default: 100)
+  displayMode: "digital" | "analog_lines" | "analog_dots";
+  sideOptions: "side_a" | "side_b" | "side_a_b"; // Mirroring
 
   // Appearance
-  thickness: number;          // Line/bar width (default: 3)
-  softness: number;           // Edge softness (default: 0)
-  insideColor: string;        // Inner color (default: white)
-  outsideColor: string;       // Outer/gradient color (default: white)
+  thickness: number; // Line/bar width (default: 3)
+  softness: number; // Edge softness (default: 0)
+  insideColor: string; // Inner color (default: white)
+  outsideColor: string; // Outer/gradient color (default: white)
 
   // Audio timing
-  audioDuration: number;      // Smoothing in ms (default: 50)
-  audioOffset: number;        // Time offset in ms (default: 0)
+  audioDuration: number; // Smoothing in ms (default: 50)
+  audioOffset: number; // Time offset in ms (default: 0)
 }
 
 export interface AudioWaveformParams extends EvaluatedEffectParams {
@@ -58,12 +58,12 @@ export interface AudioWaveformParams extends EvaluatedEffectParams {
   startPointY: number;
   endPointX: number;
   endPointY: number;
-  pathType: 'line' | 'circle';
+  pathType: "line" | "circle";
 
   // Display
-  displayedSamples: number;   // How many samples to show (default: 200)
-  maxHeight: number;          // Maximum amplitude height (default: 100)
-  displayMode: 'digital' | 'analog_lines' | 'analog_dots';
+  displayedSamples: number; // How many samples to show (default: 200)
+  maxHeight: number; // Maximum amplitude height (default: 100)
+  displayMode: "digital" | "analog_lines" | "analog_dots";
 
   // Appearance
   thickness: number;
@@ -91,10 +91,17 @@ export function renderAudioSpectrum(
   params: AudioSpectrumParams,
   frame: number,
   audioData?: {
-    frequencyBands?: { sub: number[]; bass: number[]; lowMid: number[]; mid: number[]; highMid: number[]; high: number[] };
+    frequencyBands?: {
+      sub: number[];
+      bass: number[];
+      lowMid: number[];
+      mid: number[];
+      highMid: number[];
+      high: number[];
+    };
     spectralFlux?: number[];
     frameCount: number;
-  }
+  },
 ): EffectStackResult {
   const { canvas, ctx } = createMatchingCanvas(input.canvas);
 
@@ -109,12 +116,12 @@ export function renderAudioSpectrum(
     endPointY = canvas.height / 2,
     frequencyBands = 64,
     maxHeight = 100,
-    displayMode = 'digital',
-    sideOptions = 'side_a',
+    displayMode = "digital",
+    sideOptions = "side_a",
     thickness = 3,
     softness = 0,
-    insideColor = '#ffffff',
-    outsideColor = '#ffffff',
+    insideColor = "#ffffff",
+    outsideColor = "#ffffff",
   } = params;
 
   // Generate spectrum data (use actual audio data if available, else simulate)
@@ -134,7 +141,7 @@ export function renderAudioSpectrum(
   const perpY = dx / length;
 
   // Bar spacing
-  const bandWidth = length / frequencyBands;
+  const _bandWidth = length / frequencyBands;
 
   ctx.save();
 
@@ -153,8 +160,10 @@ export function renderAudioSpectrum(
 
     // Create gradient for bar
     const gradient = ctx.createLinearGradient(
-      x, y,
-      x + perpX * barHeight, y + perpY * barHeight
+      x,
+      y,
+      x + perpX * barHeight,
+      y + perpY * barHeight,
     );
     gradient.addColorStop(0, insideColor);
     gradient.addColorStop(1, outsideColor);
@@ -162,7 +171,7 @@ export function renderAudioSpectrum(
     ctx.strokeStyle = gradient;
     ctx.lineWidth = thickness;
 
-    if (displayMode === 'digital') {
+    if (displayMode === "digital") {
       // Digital: segmented bars
       const segments = Math.ceil(barHeight / 4);
       for (let s = 0; s < segments; s++) {
@@ -172,27 +181,27 @@ export function renderAudioSpectrum(
             x - thickness / 2 + perpX * segY,
             y + perpY * segY,
             thickness,
-            3
+            3,
           );
           // Mirror if side_a_b
-          if (sideOptions === 'side_a_b' || sideOptions === 'side_b') {
+          if (sideOptions === "side_a_b" || sideOptions === "side_b") {
             ctx.fillRect(
               x - thickness / 2 - perpX * segY,
               y - perpY * segY,
               thickness,
-              3
+              3,
             );
           }
         }
       }
-    } else if (displayMode === 'analog_lines') {
+    } else if (displayMode === "analog_lines") {
       // Analog lines: continuous
       ctx.beginPath();
       ctx.moveTo(x, y);
       ctx.lineTo(x + perpX * barHeight, y + perpY * barHeight);
       ctx.stroke();
 
-      if (sideOptions === 'side_a_b' || sideOptions === 'side_b') {
+      if (sideOptions === "side_a_b" || sideOptions === "side_b") {
         ctx.beginPath();
         ctx.moveTo(x, y);
         ctx.lineTo(x - perpX * barHeight, y - perpY * barHeight);
@@ -209,17 +218,19 @@ export function renderAudioSpectrum(
           x + perpX * dotY,
           y + perpY * dotY,
           thickness / 2,
-          0, Math.PI * 2
+          0,
+          Math.PI * 2,
         );
         ctx.fill();
 
-        if (sideOptions === 'side_a_b' || sideOptions === 'side_b') {
+        if (sideOptions === "side_a_b" || sideOptions === "side_b") {
           ctx.beginPath();
           ctx.arc(
             x - perpX * dotY,
             y - perpY * dotY,
             thickness / 2,
-            0, Math.PI * 2
+            0,
+            Math.PI * 2,
           );
           ctx.fill();
         }
@@ -239,9 +250,16 @@ function generateSpectrumData(
   frame: number,
   bands: number,
   audioData?: {
-    frequencyBands?: { sub: number[]; bass: number[]; lowMid: number[]; mid: number[]; highMid: number[]; high: number[] };
+    frequencyBands?: {
+      sub: number[];
+      bass: number[];
+      lowMid: number[];
+      mid: number[];
+      highMid: number[];
+      high: number[];
+    };
     frameCount: number;
-  }
+  },
 ): number[] {
   const spectrum: number[] = new Array(bands).fill(0);
 
@@ -259,11 +277,11 @@ function generateSpectrumData(
         value = sub[frame] || 0;
       } else if (t < 0.15) {
         value = bass[frame] || 0;
-      } else if (t < 0.30) {
+      } else if (t < 0.3) {
         value = lowMid[frame] || 0;
-      } else if (t < 0.50) {
+      } else if (t < 0.5) {
         value = mid[frame] || 0;
-      } else if (t < 0.70) {
+      } else if (t < 0.7) {
         value = highMid[frame] || 0;
       } else {
         value = high[frame] || 0;
@@ -306,7 +324,7 @@ export function renderAudioWaveform(
     amplitudeEnvelope?: number[];
     rmsEnergy?: number[];
     frameCount: number;
-  }
+  },
 ): EffectStackResult {
   const { canvas, ctx } = createMatchingCanvas(input.canvas);
 
@@ -321,11 +339,11 @@ export function renderAudioWaveform(
     endPointY = canvas.height / 2,
     displayedSamples = 200,
     maxHeight = 100,
-    displayMode = 'analog_lines',
+    displayMode = "analog_lines",
     thickness = 2,
     softness = 0,
-    insideColor = '#ffffff',
-    outsideColor = '#ffffff',
+    insideColor = "#ffffff",
+    outsideColor = "#ffffff",
   } = params;
 
   // Generate waveform data
@@ -352,8 +370,10 @@ export function renderAudioWaveform(
 
   // Create gradient
   const gradient = ctx.createLinearGradient(
-    startPointX + perpX * maxHeight, startPointY + perpY * maxHeight,
-    startPointX - perpX * maxHeight, startPointY - perpY * maxHeight
+    startPointX + perpX * maxHeight,
+    startPointY + perpY * maxHeight,
+    startPointX - perpX * maxHeight,
+    startPointY - perpY * maxHeight,
   );
   gradient.addColorStop(0, outsideColor);
   gradient.addColorStop(0.5, insideColor);
@@ -362,10 +382,10 @@ export function renderAudioWaveform(
   ctx.strokeStyle = gradient;
   ctx.fillStyle = gradient;
   ctx.lineWidth = thickness;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
 
-  if (displayMode === 'analog_lines') {
+  if (displayMode === "analog_lines") {
     // Draw continuous waveform line
     ctx.beginPath();
 
@@ -387,7 +407,7 @@ export function renderAudioWaveform(
     }
 
     ctx.stroke();
-  } else if (displayMode === 'digital') {
+  } else if (displayMode === "digital") {
     // Digital: vertical lines at each sample
     for (let i = 0; i < displayedSamples; i++) {
       const t = i / (displayedSamples - 1);
@@ -411,7 +431,13 @@ export function renderAudioWaveform(
       const offset = amplitude * maxHeight;
 
       ctx.beginPath();
-      ctx.arc(x + perpX * offset, y + perpY * offset, thickness, 0, Math.PI * 2);
+      ctx.arc(
+        x + perpX * offset,
+        y + perpY * offset,
+        thickness,
+        0,
+        Math.PI * 2,
+      );
       ctx.fill();
     }
   }
@@ -431,7 +457,7 @@ function generateWaveformData(
     amplitudeEnvelope?: number[];
     rmsEnergy?: number[];
     frameCount: number;
-  }
+  },
 ): number[] {
   const waveform: number[] = new Array(samples).fill(0);
   const halfSamples = Math.floor(samples / 2);
@@ -440,7 +466,10 @@ function generateWaveformData(
     // Use real audio data, centered on current frame
     for (let i = 0; i < samples; i++) {
       const sampleFrame = frame - halfSamples + i;
-      if (sampleFrame >= 0 && sampleFrame < audioData.amplitudeEnvelope.length) {
+      if (
+        sampleFrame >= 0 &&
+        sampleFrame < audioData.amplitudeEnvelope.length
+      ) {
         // Convert amplitude (0-1) to waveform (-1 to 1) with oscillation
         const amp = audioData.amplitudeEnvelope[sampleFrame];
         const oscillation = Math.sin(sampleFrame * 0.5); // Add oscillation
@@ -450,7 +479,7 @@ function generateWaveformData(
   } else {
     // Simulate waveform when no audio data
     for (let i = 0; i < samples; i++) {
-      const t = i / samples;
+      const _t = i / samples;
       // Create pleasing sine wave pattern
       const freq1 = Math.sin((frame + i) * 0.2) * 0.4;
       const freq2 = Math.sin((frame + i) * 0.07) * 0.3;
@@ -471,14 +500,28 @@ function generateWaveformData(
  */
 export function registerAudioVisualizerEffects(): void {
   // Audio Spectrum Effect
-  registerEffectRenderer('audio-spectrum', (input: EffectStackResult, params: EvaluatedEffectParams) => {
-    return renderAudioSpectrum(input, params as unknown as AudioSpectrumParams, 0);
-  });
+  registerEffectRenderer(
+    "audio-spectrum",
+    (input: EffectStackResult, params: EvaluatedEffectParams) => {
+      return renderAudioSpectrum(
+        input,
+        params as unknown as AudioSpectrumParams,
+        0,
+      );
+    },
+  );
 
   // Audio Waveform Effect
-  registerEffectRenderer('audio-waveform', (input: EffectStackResult, params: EvaluatedEffectParams) => {
-    return renderAudioWaveform(input, params as unknown as AudioWaveformParams, 0);
-  });
+  registerEffectRenderer(
+    "audio-waveform",
+    (input: EffectStackResult, params: EvaluatedEffectParams) => {
+      return renderAudioWaveform(
+        input,
+        params as unknown as AudioWaveformParams,
+        0,
+      );
+    },
+  );
 }
 
 // ============================================================================
@@ -486,42 +529,42 @@ export function registerAudioVisualizerEffects(): void {
 // ============================================================================
 
 export const AUDIO_SPECTRUM_DEFAULTS: AudioSpectrumParams = {
-  effectId: 'audio-spectrum',
+  effectId: "audio-spectrum",
   enabled: true,
   startPointX: 0,
   startPointY: 360,
   endPointX: 1920,
   endPointY: 360,
-  pathType: 'line',
+  pathType: "line",
   startFrequency: 20,
   endFrequency: 10000,
   frequencyBands: 64,
   maxHeight: 100,
-  displayMode: 'digital',
-  sideOptions: 'side_a',
+  displayMode: "digital",
+  sideOptions: "side_a",
   thickness: 3,
   softness: 0,
-  insideColor: '#ffffff',
-  outsideColor: '#4a90d9',
+  insideColor: "#ffffff",
+  outsideColor: "#4a90d9",
   audioDuration: 50,
   audioOffset: 0,
 };
 
 export const AUDIO_WAVEFORM_DEFAULTS: AudioWaveformParams = {
-  effectId: 'audio-waveform',
+  effectId: "audio-waveform",
   enabled: true,
   startPointX: 0,
   startPointY: 360,
   endPointX: 1920,
   endPointY: 360,
-  pathType: 'line',
+  pathType: "line",
   displayedSamples: 200,
   maxHeight: 100,
-  displayMode: 'analog_lines',
+  displayMode: "analog_lines",
   thickness: 2,
   softness: 0,
-  insideColor: '#ffffff',
-  outsideColor: '#ffffff',
+  insideColor: "#ffffff",
+  outsideColor: "#ffffff",
   audioDuration: 50,
   audioOffset: 0,
 };

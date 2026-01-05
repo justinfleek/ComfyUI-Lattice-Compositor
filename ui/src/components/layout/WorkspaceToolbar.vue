@@ -276,18 +276,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import { usePlaybackStore } from '@/stores/playbackStore';
-import { useThemeStore, type ThemeName } from '@/stores/themeStore';
-import MemoryIndicator from '@/components/common/MemoryIndicator.vue';
-import {
-  PhCursor, PhPen, PhTextT, PhHand, PhMagnifyingGlass, PhSparkle,
-  PhSquare, PhCircle, PhPolygon, PhStar, PhDownload,
-  PhSkipBack, PhRewind, PhPlay, PhPause, PhFastForward, PhSkipForward,
-  PhArrowCounterClockwise, PhArrowClockwise, PhMonitor, PhExport, PhLink,
-  PhCheck, PhX, PhPackage
-} from '@phosphor-icons/vue';
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { useCompositorStore } from "@/stores/compositorStore";
+import { usePlaybackStore } from "@/stores/playbackStore";
+import { type ThemeName, useThemeStore } from "@/stores/themeStore";
 
 const props = defineProps<{
   currentTool: string;
@@ -295,22 +287,22 @@ const props = defineProps<{
   gpuTier: string;
 }>();
 
-const emit = defineEmits<{
-  (e: 'update:currentTool', tool: string): void;
-  (e: 'import'): void;
-  (e: 'showPreview'): void;
-  (e: 'showExport'): void;
-  (e: 'showComfyUI'): void;
-  (e: 'showTemplateBuilder'): void;
+const _emit = defineEmits<{
+  (e: "update:currentTool", tool: string): void;
+  (e: "import"): void;
+  (e: "showPreview"): void;
+  (e: "showExport"): void;
+  (e: "showComfyUI"): void;
+  (e: "showTemplateBuilder"): void;
 }>();
 
 const store = useCompositorStore();
-const playbackStore = usePlaybackStore();
+const _playbackStore = usePlaybackStore();
 const themeStore = useThemeStore();
 
 // Shape tool state
-const isShapeTool = computed(() =>
-  ['rectangle', 'ellipse', 'polygon', 'star'].includes(props.currentTool)
+const _isShapeTool = computed(() =>
+  ["rectangle", "ellipse", "polygon", "star"].includes(props.currentTool),
 );
 const shapeFromCenter = ref(false);
 const shapeConstrain = ref(false);
@@ -328,42 +320,70 @@ const shapeOptions = computed(() => ({
 }));
 
 // Watch for shape option changes and update store
-watch(shapeOptions, (options) => {
-  store.setShapeToolOptions(options);
-}, { immediate: true, deep: true });
+watch(
+  shapeOptions,
+  (options) => {
+    store.setShapeToolOptions(options);
+  },
+  { immediate: true, deep: true },
+);
 
 // Segment state from store
-const segmentMode = computed(() => store.segmentMode);
-const segmentPendingMask = computed(() => store.segmentPendingMask);
-const segmentIsLoading = computed(() => store.segmentIsLoading);
+const _segmentMode = computed(() => store.segmentMode);
+const _segmentPendingMask = computed(() => store.segmentPendingMask);
+const _segmentIsLoading = computed(() => store.segmentIsLoading);
 
-function setSegmentMode(mode: 'point' | 'box') {
+function _setSegmentMode(mode: "point" | "box") {
   store.setSegmentMode(mode);
 }
 
-function confirmSegmentMask() {
+function _confirmSegmentMask() {
   store.confirmSegmentMask();
 }
 
-function clearSegmentMask() {
+function _clearSegmentMask() {
   store.clearSegmentPendingMask();
 }
 
 // Theme selector
 const showThemeSelector = ref(false);
-const currentTheme = computed(() => themeStore.currentTheme);
-const themeGradient = computed(() => themeStore.themeGradient);
+const _currentTheme = computed(() => themeStore.currentTheme);
+const _themeGradient = computed(() => themeStore.themeGradient);
 
-const themes: Array<{ name: ThemeName; label: string; gradient: string }> = [
-  { name: 'violet', label: 'Violet', gradient: 'linear-gradient(135deg, #8B5CF6, #EC4899)' },
-  { name: 'ocean', label: 'Ocean', gradient: 'linear-gradient(135deg, #06B6D4, #3B82F6)' },
-  { name: 'sunset', label: 'Rose', gradient: 'linear-gradient(135deg, #FB7185, #F43F5E)' },
-  { name: 'forest', label: 'Forest', gradient: 'linear-gradient(135deg, #10B981, #06B6D4)' },
-  { name: 'ember', label: 'Ember', gradient: 'linear-gradient(135deg, #EF4444, #F97316)' },
-  { name: 'mono', label: 'Mono', gradient: 'linear-gradient(135deg, #4B5563, #6B7280)' },
+const _themes: Array<{ name: ThemeName; label: string; gradient: string }> = [
+  {
+    name: "violet",
+    label: "Violet",
+    gradient: "linear-gradient(135deg, #8B5CF6, #EC4899)",
+  },
+  {
+    name: "ocean",
+    label: "Ocean",
+    gradient: "linear-gradient(135deg, #06B6D4, #3B82F6)",
+  },
+  {
+    name: "sunset",
+    label: "Rose",
+    gradient: "linear-gradient(135deg, #FB7185, #F43F5E)",
+  },
+  {
+    name: "forest",
+    label: "Forest",
+    gradient: "linear-gradient(135deg, #10B981, #06B6D4)",
+  },
+  {
+    name: "ember",
+    label: "Ember",
+    gradient: "linear-gradient(135deg, #EF4444, #F97316)",
+  },
+  {
+    name: "mono",
+    label: "Mono",
+    gradient: "linear-gradient(135deg, #4B5563, #6B7280)",
+  },
 ];
 
-function selectTheme(theme: ThemeName) {
+function _selectTheme(theme: ThemeName) {
   themeStore.setTheme(theme);
   showThemeSelector.value = false;
 }
@@ -371,64 +391,64 @@ function selectTheme(theme: ThemeName) {
 // Click outside handler for theme dropdown
 function handleClickOutside(event: MouseEvent) {
   const target = event.target as HTMLElement;
-  if (!target.closest('.theme-selector-wrapper')) {
+  if (!target.closest(".theme-selector-wrapper")) {
     showThemeSelector.value = false;
   }
 }
 
 onMounted(() => {
-  document.addEventListener('click', handleClickOutside);
+  document.addEventListener("click", handleClickOutside);
 });
 
 onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside);
+  document.removeEventListener("click", handleClickOutside);
 });
 
 // Timecode
-const formattedTimecode = computed(() => {
+const _formattedTimecode = computed(() => {
   const frame = store.currentFrame;
   const fps = store.activeComposition?.settings.fps || 16;
   const seconds = Math.floor(frame / fps);
   const frames = frame % fps;
   const minutes = Math.floor(seconds / 60);
   const secs = seconds % 60;
-  return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}:${frames.toString().padStart(2, '0')}`;
+  return `${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}:${frames.toString().padStart(2, "0")}`;
 });
 
 // Playback controls
-function goToStart() {
+function _goToStart() {
   store.setFrame(0);
 }
 
-function goToEnd() {
+function _goToEnd() {
   const frameCount = store.activeComposition?.settings.frameCount || 81;
   store.setFrame(frameCount - 1);
 }
 
-function stepBackward() {
+function _stepBackward() {
   const newFrame = Math.max(0, store.currentFrame - 1);
   store.setFrame(newFrame);
 }
 
-function stepForward() {
+function _stepForward() {
   const frameCount = store.activeComposition?.settings.frameCount || 81;
   const newFrame = Math.min(frameCount - 1, store.currentFrame + 1);
   store.setFrame(newFrame);
 }
 
-function togglePlay() {
+function _togglePlay() {
   store.togglePlayback();
 }
 
 // Undo/Redo
-const canUndo = computed(() => store.canUndo);
-const canRedo = computed(() => store.canRedo);
+const _canUndo = computed(() => store.canUndo);
+const _canRedo = computed(() => store.canRedo);
 
-function undo() {
+function _undo() {
   store.undo();
 }
 
-function redo() {
+function _redo() {
   store.redo();
 }
 </script>

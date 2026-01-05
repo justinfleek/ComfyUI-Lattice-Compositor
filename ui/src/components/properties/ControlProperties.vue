@@ -84,34 +84,35 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import type { Layer, ControlLayerData } from '@/types/project';
-import { ScrubableNumber } from '@/components/controls';
+import { computed } from "vue";
+import type { ControlLayerData, Layer } from "@/types/project";
 
 const props = defineProps<{
   layer: Layer;
 }>();
 
-const emit = defineEmits<{
-  (e: 'update', data: Partial<ControlLayerData>): void;
-}>();
+const emit =
+  defineEmits<(e: "update", data: Partial<ControlLayerData>) => void>();
 
-const controlData = computed(() => props.layer.data as ControlLayerData);
+const _controlData = computed(() => props.layer.data as ControlLayerData);
 
-const colorPresets = [
-  { name: 'Yellow', color: '#ffcc00' },
-  { name: 'Red', color: '#e74c3c' },
-  { name: 'Orange', color: '#e67e22' },
-  { name: 'Green', color: '#2ecc71' },
-  { name: 'Cyan', color: '#1abc9c' },
-  { name: 'Blue', color: '#3498db' },
-  { name: 'Purple', color: '#9b59b6' },
-  { name: 'Pink', color: '#e91e63' },
-  { name: 'White', color: '#ffffff' },
+const _colorPresets = [
+  { name: "Yellow", color: "#ffcc00" },
+  { name: "Red", color: "#e74c3c" },
+  { name: "Orange", color: "#e67e22" },
+  { name: "Green", color: "#2ecc71" },
+  { name: "Cyan", color: "#1abc9c" },
+  { name: "Blue", color: "#3498db" },
+  { name: "Purple", color: "#9b59b6" },
+  { name: "Pink", color: "#e91e63" },
+  { name: "White", color: "#ffffff" },
 ];
 
-function updateData<K extends keyof ControlLayerData>(key: K, value: ControlLayerData[K]) {
-  emit('update', { [key]: value } as Partial<ControlLayerData>);
+function _updateData<K extends keyof ControlLayerData>(
+  key: K,
+  value: ControlLayerData[K],
+) {
+  emit("update", { [key]: value } as Partial<ControlLayerData>);
 }
 </script>
 

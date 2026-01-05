@@ -1,10 +1,11 @@
 // Professional Control Components
-export { default as ScrubableNumber } from './ScrubableNumber.vue';
-export { default as SliderInput } from './SliderInput.vue';
-export { default as ColorPicker } from './ColorPicker.vue';
-export { default as AngleDial } from './AngleDial.vue';
-export { default as PositionXY } from './PositionXY.vue';
-export { default as CurveEditor } from './CurveEditor.vue';
+
+export { default as AngleDial } from "./AngleDial.vue";
+export { default as ColorPicker } from "./ColorPicker.vue";
+export { default as CurveEditor } from "./CurveEditor.vue";
+export { default as PositionXY } from "./PositionXY.vue";
+export { default as ScrubableNumber } from "./ScrubableNumber.vue";
+export { default as SliderInput } from "./SliderInput.vue";
 
 // Easing presets for CurveEditor
 export const EASING_PRESETS = {

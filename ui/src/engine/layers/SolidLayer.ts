@@ -8,19 +8,19 @@
  * - Shadow catchers (transparent surface that only shows shadows)
  */
 
-import * as THREE from 'three';
-import type { Layer, AnimatableProperty } from '@/types/project';
-import { BaseLayer } from './BaseLayer';
+import * as THREE from "three";
+import type { AnimatableProperty, Layer } from "@/types/project";
+import { BaseLayer } from "./BaseLayer";
 
 export interface SolidData {
   color: string;
   width: number;
   height: number;
-  animatedColor?: AnimatableProperty<string>;  // Hex color animation support
-  shadowCatcher?: boolean;                      // Shadow catcher mode
-  shadowOpacity?: number;                       // Shadow opacity (0-100)
-  shadowColor?: string;                         // Shadow color
-  receiveShadow?: boolean;                      // Receive shadows from lights
+  animatedColor?: AnimatableProperty<string>; // Hex color animation support
+  shadowCatcher?: boolean; // Shadow catcher mode
+  shadowOpacity?: number; // Shadow opacity (0-100)
+  shadowColor?: string; // Shadow color
+  receiveShadow?: boolean; // Receive shadows from lights
 }
 
 export class SolidLayer extends BaseLayer {
@@ -61,16 +61,16 @@ export class SolidLayer extends BaseLayer {
     this.animatedColor = solidData.animatedColor;
     this.shadowCatcher = solidData.shadowCatcher ?? false;
     this.shadowOpacity = solidData.shadowOpacity ?? 50;
-    this.shadowColor = solidData.shadowColor ?? '#000000';
+    this.shadowColor = solidData.shadowColor ?? "#000000";
     this.receiveShadow = solidData.receiveShadow ?? false;
 
-    console.log('[SolidLayer] Creating solid:', {
+    console.log("[SolidLayer] Creating solid:", {
       id: this.id,
       color: this.color,
       width: this.width,
       height: this.height,
       position: layerData.transform?.position?.value,
-      visible: layerData.visible
+      visible: layerData.visible,
     });
 
     // Create geometry
@@ -87,10 +87,10 @@ export class SolidLayer extends BaseLayer {
     // Add to group
     this.group.add(this.mesh);
 
-    console.log('[SolidLayer] Created mesh:', {
+    console.log("[SolidLayer] Created mesh:", {
       meshName: this.mesh.name,
       geometrySize: { w: this.width, h: this.height },
-      groupChildren: this.group.children.length
+      groupChildren: this.group.children.length,
     });
 
     // Apply initial blend mode
@@ -141,13 +141,13 @@ export class SolidLayer extends BaseLayer {
     const data = layerData.data as Partial<SolidData> | undefined;
 
     return {
-      color: data?.color ?? '#808080',
+      color: data?.color ?? "#808080",
       width: data?.width ?? 1920,
       height: data?.height ?? 1080,
       animatedColor: data?.animatedColor,
       shadowCatcher: data?.shadowCatcher ?? false,
       shadowOpacity: data?.shadowOpacity ?? 50,
-      shadowColor: data?.shadowColor ?? '#000000',
+      shadowColor: data?.shadowColor ?? "#000000",
       receiveShadow: data?.receiveShadow ?? false,
     };
   }
@@ -158,8 +158,10 @@ export class SolidLayer extends BaseLayer {
   setColor(color: string): void {
     this.color = color;
     // Only set color on non-shadow materials
-    if (!this.shadowCatcher && 'color' in this.material) {
-      (this.material as THREE.MeshBasicMaterial | THREE.MeshStandardMaterial).color.set(color);
+    if (!this.shadowCatcher && "color" in this.material) {
+      (
+        this.material as THREE.MeshBasicMaterial | THREE.MeshStandardMaterial
+      ).color.set(color);
       this.material.needsUpdate = true;
     }
   }
@@ -176,8 +178,8 @@ export class SolidLayer extends BaseLayer {
    */
   setDimensions(width: number, height: number): void {
     // Validate dimensions (NaN/0 would create invalid geometry)
-    const validWidth = (Number.isFinite(width) && width > 0) ? width : 1920;
-    const validHeight = (Number.isFinite(height) && height > 0) ? height : 1080;
+    const validWidth = Number.isFinite(width) && width > 0 ? width : 1920;
+    const validHeight = Number.isFinite(height) && height > 0 ? height : 1080;
 
     if (validWidth === this.width && validHeight === this.height) {
       return;
@@ -276,26 +278,33 @@ export class SolidLayer extends BaseLayer {
     // Evaluate animated color if present (only for non-shadow catcher)
     if (this.animatedColor?.animated && !this.shadowCatcher) {
       const color = this.evaluator.evaluate(this.animatedColor, frame);
-      if ('color' in this.material) {
-        (this.material as THREE.MeshBasicMaterial | THREE.MeshStandardMaterial).color.set(color);
+      if ("color" in this.material) {
+        (
+          this.material as THREE.MeshBasicMaterial | THREE.MeshStandardMaterial
+        ).color.set(color);
         this.material.needsUpdate = true;
       }
     }
   }
 
-  protected override onApplyEvaluatedState(state: import('../MotionEngine').EvaluatedLayer): void {
+  protected override onApplyEvaluatedState(
+    state: import("../MotionEngine").EvaluatedLayer,
+  ): void {
     // Apply evaluated color if present in properties (only for non-shadow catcher)
-    if (state.properties['color'] !== undefined && !this.shadowCatcher) {
-      if ('color' in this.material) {
-        (this.material as THREE.MeshBasicMaterial | THREE.MeshStandardMaterial).color.set(state.properties['color'] as string);
+    if (state.properties.color !== undefined && !this.shadowCatcher) {
+      if ("color" in this.material) {
+        (
+          this.material as THREE.MeshBasicMaterial | THREE.MeshStandardMaterial
+        ).color.set(state.properties.color as string);
         this.material.needsUpdate = true;
       }
     }
 
     // Apply shadow opacity
-    if (state.properties['shadowOpacity'] !== undefined && this.shadowCatcher) {
+    if (state.properties.shadowOpacity !== undefined && this.shadowCatcher) {
       if (this.material instanceof THREE.ShadowMaterial) {
-        this.material.opacity = (state.properties['shadowOpacity'] as number) / 100;
+        this.material.opacity =
+          (state.properties.shadowOpacity as number) / 100;
         this.material.needsUpdate = true;
       }
     }
@@ -321,7 +330,7 @@ export class SolidLayer extends BaseLayer {
     if (data?.width !== undefined || data?.height !== undefined) {
       this.setDimensions(
         data?.width ?? this.width,
-        data?.height ?? this.height
+        data?.height ?? this.height,
       );
     }
 

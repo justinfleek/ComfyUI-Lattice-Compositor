@@ -1,35 +1,35 @@
-import { test, expect } from '@playwright/test';
-import { CompositorHelper } from '../../helpers/compositor';
+import { expect, test } from "@playwright/test";
+import { CompositorHelper } from "../../helpers/compositor";
 
-test.describe('Tutorial 02: Neon Motion Trails - Phases 8-9 (Steps 136-178)', () => {
+test.describe("Tutorial 02: Neon Motion Trails - Phases 8-9 (Steps 136-178)", () => {
   let h: CompositorHelper;
 
   test.beforeEach(async ({ page }) => {
     h = new CompositorHelper(page);
-    await page.goto('/');
+    await page.goto("/");
     await page.waitForSelector('[data-testid="app-ready"]');
     await h.newProject();
-    await h.newComposition('Test', 1920, 1080, 30, 10);
-    await h.newShapeLayer('Light_Streak_01');
-    await h.setStrokeColor(0, '#FFFFFF');
+    await h.newComposition("Test", 1920, 1080, 30, 10);
+    await h.newShapeLayer("Light_Streak_01");
+    await h.setStrokeColor(0, "#FFFFFF");
     await h.setStrokeWidth(0, 15);
   });
 
-  test('Phase 8: Glow Effect (Steps 136-158)', async ({ page }) => {
+  test("Phase 8: Glow Effect (Steps 136-158)", async ({ page }) => {
     // Step 136-141: Add base glow
     await h.selectLayer(0);
-    await h.searchEffects('Glow');
-    await h.applyEffect('glow');
+    await h.searchEffects("Glow");
+    await h.applyEffect("glow");
     await h.configureGlow(0, {
       threshold: 60,
       radius: 30,
-      intensity: 1.5
+      intensity: 1.5,
     });
 
     // Step 145-148: Glow colors
     await h.configureGlow(0, {
-      colorA: '#FFFFFF',
-      colorB: '#FFFFFF'
+      colorA: "#FFFFFF",
+      colorB: "#FFFFFF",
     });
 
     // Step 153-158: Copy glow to multiple layers
@@ -55,24 +55,24 @@ test.describe('Tutorial 02: Neon Motion Trails - Phases 8-9 (Steps 136-178)', ()
     await h.redo();
   });
 
-  test('Phase 9: Stacking Glow Effects (Steps 159-178)', async ({ page }) => {
+  test("Phase 9: Stacking Glow Effects (Steps 159-178)", async ({ page }) => {
     // Step 159-161: Add second glow
     await h.selectLayer(0);
-    await h.searchEffects('Glow');
-    await h.applyEffect('glow');
-    await h.applyEffect('glow'); // Second glow
+    await h.searchEffects("Glow");
+    await h.applyEffect("glow");
+    await h.applyEffect("glow"); // Second glow
 
     // Step 162-164: Configure second glow (atmosphere)
     await h.configureGlow(1, {
       radius: 100,
-      intensity: 0.5
+      intensity: 0.5,
     });
 
     // Step 165-168: Add third glow (bloom)
-    await h.applyEffect('glow'); // Third glow
+    await h.applyEffect("glow"); // Third glow
     await h.configureGlow(2, {
       radius: 200,
-      intensity: 0.3
+      intensity: 0.3,
     });
 
     // Verify 3 stacked glows

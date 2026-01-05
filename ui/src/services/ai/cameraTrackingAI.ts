@@ -10,7 +10,11 @@
  * 3. Hybrid: Combines both for best results
  */
 
-import type { CameraTrackingSolve, CameraPose, CameraIntrinsics } from '@/types/cameraTracking';
+import type {
+  CameraIntrinsics,
+  CameraPose,
+  CameraTrackingSolve,
+} from "@/types/cameraTracking";
 
 /**
  * Camera motion primitives taxonomy (from CameraBench)
@@ -18,58 +22,61 @@ import type { CameraTrackingSolve, CameraPose, CameraIntrinsics } from '@/types/
  */
 export type CameraMotionPrimitive =
   // Static
-  | 'static'
-  | 'zoom_in'
-  | 'zoom_out'
+  | "static"
+  | "zoom_in"
+  | "zoom_out"
   // Translation
-  | 'push_in'
-  | 'pull_out'
-  | 'truck_left'
-  | 'truck_right'
-  | 'pedestal_up'
-  | 'pedestal_down'
-  | 'arc_left'
-  | 'arc_right'
+  | "push_in"
+  | "pull_out"
+  | "truck_left"
+  | "truck_right"
+  | "pedestal_up"
+  | "pedestal_down"
+  | "arc_left"
+  | "arc_right"
   // Rotation
-  | 'pan_left'
-  | 'pan_right'
-  | 'tilt_up'
-  | 'tilt_down'
-  | 'roll_clockwise'
-  | 'roll_counter_clockwise'
+  | "pan_left"
+  | "pan_right"
+  | "tilt_up"
+  | "tilt_down"
+  | "roll_clockwise"
+  | "roll_counter_clockwise"
   // Complex
-  | 'tracking_shot'
-  | 'crane_up'
-  | 'crane_down'
-  | 'random_motion'
-  | 'unknown';
+  | "tracking_shot"
+  | "crane_up"
+  | "crane_down"
+  | "random_motion"
+  | "unknown";
 
 /**
  * Map camera motion primitives to Lattice trajectory presets
  */
-export const MOTION_TO_TRAJECTORY: Record<CameraMotionPrimitive, string | null> = {
-  'static': null,
-  'zoom_in': 'dollyIn',
-  'zoom_out': 'dollyOut',
-  'push_in': 'dollyIn',
-  'pull_out': 'dollyOut',
-  'truck_left': 'truckLeft',
-  'truck_right': 'truckRight',
-  'pedestal_up': 'pedestalUp',
-  'pedestal_down': 'pedestalDown',
-  'arc_left': 'orbit',
-  'arc_right': 'orbit',
-  'pan_left': 'whipPan',
-  'pan_right': 'whipPan',
-  'tilt_up': 'craneUp',
-  'tilt_down': 'craneDown',
-  'roll_clockwise': null,
-  'roll_counter_clockwise': null,
-  'tracking_shot': 'dollyIn',
-  'crane_up': 'craneUp',
-  'crane_down': 'craneDown',
-  'random_motion': 'shake',
-  'unknown': null,
+export const MOTION_TO_TRAJECTORY: Record<
+  CameraMotionPrimitive,
+  string | null
+> = {
+  static: null,
+  zoom_in: "dollyIn",
+  zoom_out: "dollyOut",
+  push_in: "dollyIn",
+  pull_out: "dollyOut",
+  truck_left: "truckLeft",
+  truck_right: "truckRight",
+  pedestal_up: "pedestalUp",
+  pedestal_down: "pedestalDown",
+  arc_left: "orbit",
+  arc_right: "orbit",
+  pan_left: "whipPan",
+  pan_right: "whipPan",
+  tilt_up: "craneUp",
+  tilt_down: "craneDown",
+  roll_clockwise: null,
+  roll_counter_clockwise: null,
+  tracking_shot: "dollyIn",
+  crane_up: "craneUp",
+  crane_down: "craneDown",
+  random_motion: "shake",
+  unknown: null,
 };
 
 /**
@@ -81,7 +88,7 @@ export interface CameraMotionAnalysisRequest {
   /** Frame rate */
   fps: number;
   /** Analysis mode */
-  mode: 'semantic' | 'geometric' | 'hybrid';
+  mode: "semantic" | "geometric" | "hybrid";
   /** Optional: known camera intrinsics */
   intrinsics?: CameraIntrinsics;
 }
@@ -164,14 +171,14 @@ Respond in JSON format:
  * This sends frames to the backend which proxies to OpenAI/Anthropic
  */
 export async function analyzeWithVLM(
-  request: CameraMotionAnalysisRequest
+  request: CameraMotionAnalysisRequest,
 ): Promise<CameraMotionAnalysisResult> {
   // Sample frames evenly (max 8 for VLM context)
   const sampledFrames = sampleFrames(request.frames, 8);
 
-  const response = await fetch('/lattice/api/ai/camera-motion', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+  const response = await fetch("/lattice/api/ai/camera-motion", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       frames: sampledFrames,
       fps: request.fps,
@@ -210,18 +217,20 @@ function sampleFrames(frames: string[], maxFrames: number): string[] {
 function parseVLMResponse(raw: unknown): CameraMotionAnalysisResult {
   const data = raw as Record<string, unknown>;
 
-  const segments = (data.segments as Array<Record<string, unknown>> || []).map(seg => ({
+  const segments = (
+    (data.segments as Array<Record<string, unknown>>) || []
+  ).map((seg) => ({
     startFrame: Number(seg.startFrame) || 0,
     endFrame: Number(seg.endFrame) || 0,
-    motion: (seg.motion as CameraMotionPrimitive) || 'unknown',
+    motion: (seg.motion as CameraMotionPrimitive) || "unknown",
     confidence: Number(seg.confidence) || 0.5,
-    description: String(seg.description || ''),
+    description: String(seg.description || ""),
   }));
 
   return {
     segments,
-    summary: String(data.summary || 'No motion detected'),
-    suggestedPreset: MOTION_TO_TRAJECTORY[segments[0]?.motion || 'unknown'],
+    summary: String(data.summary || "No motion detected"),
+    suggestedPreset: MOTION_TO_TRAJECTORY[segments[0]?.motion || "unknown"],
   };
 }
 
@@ -251,7 +260,7 @@ export interface DepthBasedTrackingRequest {
  * - RAFT + depth for optical flow based
  */
 export function estimateCameraPosesFromDepth(
-  request: DepthBasedTrackingRequest
+  request: DepthBasedTrackingRequest,
 ): CameraTrackingSolve {
   const cameraPath: CameraPose[] = [];
   const frameCount = request.depthMaps.length;
@@ -285,14 +294,14 @@ export function estimateCameraPosesFromDepth(
   }
 
   return {
-    version: '1.0',
-    source: 'lattice-depth-tracker',
+    version: "1.0",
+    source: "lattice-depth-tracker",
     metadata: {
       sourceWidth: request.intrinsics.width,
       sourceHeight: request.intrinsics.height,
       frameRate: request.fps,
       frameCount,
-      solveMethod: 'depth-based',
+      solveMethod: "depth-based",
     },
     intrinsics: request.intrinsics,
     cameraPath,
@@ -320,7 +329,10 @@ export interface Uni3CCameraData {
   };
 }
 
-export function parseUni3CFormat(data: Uni3CCameraData, fps: number = 16): CameraTrackingSolve {
+export function parseUni3CFormat(
+  data: Uni3CCameraData,
+  fps: number = 16,
+): CameraTrackingSolve {
   const cameraPath: CameraPose[] = [];
 
   for (let i = 0; i < data.poses.length; i++) {
@@ -358,29 +370,32 @@ export function parseUni3CFormat(data: Uni3CCameraData, fps: number = 16): Camer
   };
 
   return {
-    version: '1.0',
-    source: 'uni3c',
+    version: "1.0",
+    source: "uni3c",
     metadata: {
       sourceWidth: width,
       sourceHeight: height,
       frameRate: fps,
       frameCount: data.poses.length,
-      solveMethod: 'uni3c-import',
+      solveMethod: "uni3c-import",
     },
     intrinsics,
     cameraPath,
     trackPoints2D: [],
-    trackPoints3D: data.point_cloud ?
-      data.point_cloud.points.map((p, i) => ({
-        id: `pt_${i}`,
-        position: { x: p[0], y: p[1], z: p[2] },
-        color: data.point_cloud?.colors?.[i] ?
-          { r: Math.round(data.point_cloud.colors[i][0] * 255),
-            g: Math.round(data.point_cloud.colors[i][1] * 255),
-            b: Math.round(data.point_cloud.colors[i][2] * 255) } :
-          { r: 255, g: 255, b: 255 },
-        track2DIDs: [],
-      })) : [],
+    trackPoints3D: data.point_cloud
+      ? data.point_cloud.points.map((p, i) => ({
+          id: `pt_${i}`,
+          position: { x: p[0], y: p[1], z: p[2] },
+          color: data.point_cloud?.colors?.[i]
+            ? {
+                r: Math.round(data.point_cloud.colors[i][0] * 255),
+                g: Math.round(data.point_cloud.colors[i][1] * 255),
+                b: Math.round(data.point_cloud.colors[i][2] * 255),
+              }
+            : { r: 255, g: 255, b: 255 },
+          track2DIDs: [],
+        }))
+      : [],
   };
 }
 
@@ -388,11 +403,22 @@ export function parseUni3CFormat(data: Uni3CCameraData, fps: number = 16): Camer
  * Convert 3x3 rotation matrix to quaternion
  * Returns { w, x, y, z } to match CameraPose.rotation type
  */
-function matrixToQuaternion(mat: number[][]): { w: number; x: number; y: number; z: number } {
+function matrixToQuaternion(mat: number[][]): {
+  w: number;
+  x: number;
+  y: number;
+  z: number;
+} {
   // Extract 3x3 rotation part
-  const m00 = mat[0][0], m01 = mat[0][1], m02 = mat[0][2];
-  const m10 = mat[1][0], m11 = mat[1][1], m12 = mat[1][2];
-  const m20 = mat[2][0], m21 = mat[2][1], m22 = mat[2][2];
+  const m00 = mat[0][0],
+    m01 = mat[0][1],
+    m02 = mat[0][2];
+  const m10 = mat[1][0],
+    m11 = mat[1][1],
+    m12 = mat[1][2];
+  const m20 = mat[2][0],
+    m21 = mat[2][1],
+    m22 = mat[2][2];
 
   const trace = m00 + m11 + m22;
   let x: number, y: number, z: number, w: number;
@@ -430,10 +456,12 @@ function matrixToQuaternion(mat: number[][]): { w: number; x: number; y: number;
  * Export camera tracking to Uni3C format
  */
 export function exportToUni3CFormat(
-  solve: CameraTrackingSolve
+  solve: CameraTrackingSolve,
 ): Uni3CCameraData {
   // Get first intrinsics if array
-  const intrinsics = Array.isArray(solve.intrinsics) ? solve.intrinsics[0] : solve.intrinsics;
+  const intrinsics = Array.isArray(solve.intrinsics)
+    ? solve.intrinsics[0]
+    : solve.intrinsics;
 
   // Build K matrix from intrinsics
   const fx = intrinsics.focalLength;
@@ -448,7 +476,7 @@ export function exportToUni3CFormat(
   ];
 
   // Convert camera path to 4x4 matrices (Uni3C expects 'poses')
-  const poses = solve.cameraPath.map(pose => {
+  const poses = solve.cameraPath.map((pose) => {
     const rotMat = quaternionToMatrix(pose.rotation);
     return [
       [rotMat[0][0], rotMat[0][1], rotMat[0][2], pose.position.x],
@@ -460,18 +488,25 @@ export function exportToUni3CFormat(
 
   // Convert 3D track points to point cloud
   const trackPoints = solve.trackPoints3D ?? [];
-  const point_cloud = trackPoints.length > 0 ? {
-    points: trackPoints.map(p => [p.position.x, p.position.y, p.position.z]),
-    colors: trackPoints.map(p => {
-      // Color is typed as { r, g, b } | undefined - convert to 0-1 range
-      const color = p.color;
-      if (color) {
-        return [color.r / 255, color.g / 255, color.b / 255];
-      }
-      // Default white color
-      return [1, 1, 1];
-    }),
-  } : undefined;
+  const point_cloud =
+    trackPoints.length > 0
+      ? {
+          points: trackPoints.map((p) => [
+            p.position.x,
+            p.position.y,
+            p.position.z,
+          ]),
+          colors: trackPoints.map((p) => {
+            // Color is typed as { r, g, b } | undefined - convert to 0-1 range
+            const color = p.color;
+            if (color) {
+              return [color.r / 255, color.g / 255, color.b / 255];
+            }
+            // Default white color
+            return [1, 1, 1];
+          }),
+        }
+      : undefined;
 
   return { K, poses, point_cloud };
 }
@@ -479,13 +514,18 @@ export function exportToUni3CFormat(
 /**
  * Convert quaternion to 3x3 rotation matrix
  */
-function quaternionToMatrix(q: { w: number; x: number; y: number; z: number }): number[][] {
+function quaternionToMatrix(q: {
+  w: number;
+  x: number;
+  y: number;
+  z: number;
+}): number[][] {
   const { w, x, y, z } = q;
 
   return [
-    [1 - 2*y*y - 2*z*z, 2*x*y - 2*z*w, 2*x*z + 2*y*w],
-    [2*x*y + 2*z*w, 1 - 2*x*x - 2*z*z, 2*y*z - 2*x*w],
-    [2*x*z - 2*y*w, 2*y*z + 2*x*w, 1 - 2*x*x - 2*y*y],
+    [1 - 2 * y * y - 2 * z * z, 2 * x * y - 2 * z * w, 2 * x * z + 2 * y * w],
+    [2 * x * y + 2 * z * w, 1 - 2 * x * x - 2 * z * z, 2 * y * z - 2 * x * w],
+    [2 * x * z - 2 * y * w, 2 * y * z + 2 * x * w, 1 - 2 * x * x - 2 * y * y],
   ];
 }
 
@@ -493,7 +533,7 @@ function quaternionToMatrix(q: { w: number; x: number; y: number; z: number }): 
  * Hybrid analysis: VLM semantic + depth geometric
  */
 export async function analyzeHybrid(
-  request: CameraMotionAnalysisRequest & { depthMaps?: ImageData[] }
+  request: CameraMotionAnalysisRequest & { depthMaps?: ImageData[] },
 ): Promise<CameraMotionAnalysisResult> {
   // Get semantic analysis from VLM
   const semanticResult = await analyzeWithVLM(request);
@@ -502,7 +542,9 @@ export async function analyzeHybrid(
   if (request.depthMaps && request.depthMaps.length > 0 && request.intrinsics) {
     // This would require RGB frames as ImageData
     // For now, just return semantic result with a note
-    console.log('Hybrid mode: depth maps provided but RGB ImageData required for geometric tracking');
+    console.log(
+      "Hybrid mode: depth maps provided but RGB ImageData required for geometric tracking",
+    );
   }
 
   return semanticResult;

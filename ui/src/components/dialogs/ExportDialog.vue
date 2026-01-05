@@ -171,14 +171,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import { matteExporter, type ExportOptions } from '@/services/matteExporter';
-import { projectCollectionService } from '@/services/projectCollection';
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { type ExportOptions, matteExporter } from "@/services/matteExporter";
+import { projectCollectionService } from "@/services/projectCollection";
+import { useCompositorStore } from "@/stores/compositorStore";
 
 const emit = defineEmits<{
-  (e: 'close'): void;
-  (e: 'exported'): void;
+  (e: "close"): void;
+  (e: "exported"): void;
 }>();
 
 const store = useCompositorStore();
@@ -191,7 +191,7 @@ const isCollecting = ref(false);
 const collectProgress = ref(0);
 
 // Collect project as ZIP
-async function collectProject() {
+async function _collectProject() {
   if (isCollecting.value || !store.project) return;
 
   isCollecting.value = true;
@@ -211,17 +211,19 @@ async function collectProject() {
       },
       (progress) => {
         collectProgress.value = progress.percent;
-      }
+      },
     );
 
     // Download the ZIP
-    const projectName = store.project.meta?.name || 'lattice-project';
+    const projectName = store.project.meta?.name || "lattice-project";
     projectCollectionService.downloadZip(blob, `${projectName}-collection.zip`);
 
-    console.log('[ExportDialog] Project collected successfully');
+    console.log("[ExportDialog] Project collected successfully");
   } catch (error) {
-    console.error('[ExportDialog] Collection failed:', error);
-    alert(`Collection failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    console.error("[ExportDialog] Collection failed:", error);
+    alert(
+      `Collection failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+    );
   } finally {
     isCollecting.value = false;
     collectProgress.value = 0;
@@ -229,15 +231,15 @@ async function collectProject() {
 }
 
 // State
-const selectedPreset = ref('720p (1280x720)');
+const selectedPreset = ref("720p (1280x720)");
 const customWidth = ref(1280);
 const customHeight = ref(720);
 const dimensionWarning = ref<string | undefined>();
-const matteMode = ref<'exclude_text' | 'include_all'>('exclude_text');
+const matteMode = ref<"exclude_text" | "include_all">("exclude_text");
 const previewUrl = ref<string | null>(null);
 const isExporting = ref(false);
 const exportProgress = ref(0);
-const progressMessage = ref('');
+const progressMessage = ref("");
 
 // Additional export options
 const exportDepthMaps = ref(false);
@@ -248,7 +250,11 @@ const exportWidth = computed(() => customWidth.value);
 const exportHeight = computed(() => customHeight.value);
 
 // Select a preset
-function selectPreset(preset: { label: string; width: number; height: number }): void {
+function _selectPreset(preset: {
+  label: string;
+  width: number;
+  height: number;
+}): void {
   selectedPreset.value = preset.label;
   customWidth.value = preset.width;
   customHeight.value = preset.height;
@@ -256,21 +262,24 @@ function selectPreset(preset: { label: string; width: number; height: number }):
 }
 
 // Validate custom dimensions
-function validateCustomDimensions(): void {
-  const validation = matteExporter.validateDimensions(customWidth.value, customHeight.value);
+function _validateCustomDimensions(): void {
+  const validation = matteExporter.validateDimensions(
+    customWidth.value,
+    customHeight.value,
+  );
 
   if (!validation.valid) {
     customWidth.value = validation.correctedWidth;
     customHeight.value = validation.correctedHeight;
     dimensionWarning.value = validation.message;
-    selectedPreset.value = '';
+    selectedPreset.value = "";
   } else {
     dimensionWarning.value = undefined;
     // Check if matches a preset
     const matchingPreset = resolutionPresets.find(
-      p => p.width === customWidth.value && p.height === customHeight.value
+      (p) => p.width === customWidth.value && p.height === customHeight.value,
     );
-    selectedPreset.value = matchingPreset?.label || '';
+    selectedPreset.value = matchingPreset?.label || "";
   }
 }
 
@@ -287,33 +296,33 @@ async function generatePreview(): Promise<void> {
   const options: ExportOptions = {
     width: exportWidth.value,
     height: exportHeight.value,
-    matteMode: matteMode.value
+    matteMode: matteMode.value,
   };
 
   previewUrl.value = await matteExporter.generatePreviewFrame(
     store.project,
     0,
-    options
+    options,
   );
 }
 
 // Start export
-async function startExport(): Promise<void> {
+async function _startExport(): Promise<void> {
   if (isExporting.value || !store.hasProject) return;
 
   isExporting.value = true;
   exportProgress.value = 0;
-  progressMessage.value = 'Generating matte frames...';
+  progressMessage.value = "Generating matte frames...";
 
   const options: ExportOptions = {
     width: exportWidth.value,
     height: exportHeight.value,
-    matteMode: matteMode.value
+    matteMode: matteMode.value,
   };
 
   try {
     // Dynamic import JSZip
-    const JSZip = (await import('jszip')).default;
+    const JSZip = (await import("jszip")).default;
     const zip = new JSZip();
 
     // Generate matte frames
@@ -322,21 +331,22 @@ async function startExport(): Promise<void> {
       options,
       (progress) => {
         const baseProgress = 0;
-        const matteWeight = exportDepthMaps.value || exportNormalMaps.value ? 0.5 : 1;
+        const matteWeight =
+          exportDepthMaps.value || exportNormalMaps.value ? 0.5 : 1;
         exportProgress.value = baseProgress + progress.percent * matteWeight;
         progressMessage.value = `Generating matte frame ${progress.frame + 1} of ${progress.total}...`;
-      }
+      },
     );
 
     // Add matte frames to ZIP
     matteFrames.forEach((blob, index) => {
-      const frameName = `matte_${String(index).padStart(4, '0')}.png`;
+      const frameName = `matte_${String(index).padStart(4, "0")}.png`;
       zip.file(frameName, blob);
     });
 
     // Generate depth maps if enabled
     if (exportDepthMaps.value) {
-      progressMessage.value = 'Generating depth maps...';
+      progressMessage.value = "Generating depth maps...";
       const depthFrames = await generateDepthFrames(
         store.frameCount,
         exportWidth.value,
@@ -346,17 +356,17 @@ async function startExport(): Promise<void> {
           const weight = exportNormalMaps.value ? 25 : 25;
           exportProgress.value = baseProgress + (frame / total) * weight;
           progressMessage.value = `Generating depth frame ${frame + 1} of ${total}...`;
-        }
+        },
       );
       depthFrames.forEach((blob, index) => {
-        const frameName = `depth_${String(index).padStart(4, '0')}.png`;
+        const frameName = `depth_${String(index).padStart(4, "0")}.png`;
         zip.file(frameName, blob);
       });
     }
 
     // Generate normal maps if enabled
     if (exportNormalMaps.value) {
-      progressMessage.value = 'Generating normal maps...';
+      progressMessage.value = "Generating normal maps...";
       const normalFrames = await generateNormalFrames(
         store.frameCount,
         exportWidth.value,
@@ -365,26 +375,23 @@ async function startExport(): Promise<void> {
           const baseProgress = exportDepthMaps.value ? 75 : 75;
           exportProgress.value = baseProgress + (frame / total) * 25;
           progressMessage.value = `Generating normal frame ${frame + 1} of ${total}...`;
-        }
+        },
       );
       normalFrames.forEach((blob, index) => {
-        const frameName = `normal_${String(index).padStart(4, '0')}.png`;
+        const frameName = `normal_${String(index).padStart(4, "0")}.png`;
         zip.file(frameName, blob);
       });
     }
 
     // Package and download ZIP
-    progressMessage.value = 'Creating ZIP archive...';
-    const content = await zip.generateAsync(
-      { type: 'blob' },
-      (metadata) => {
-        progressMessage.value = `Compressing... ${Math.round(metadata.percent)}%`;
-      }
-    );
+    progressMessage.value = "Creating ZIP archive...";
+    const content = await zip.generateAsync({ type: "blob" }, (metadata) => {
+      progressMessage.value = `Compressing... ${Math.round(metadata.percent)}%`;
+    });
 
     // Download
     const url = URL.createObjectURL(content);
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = url;
     link.download = `export_${Date.now()}.zip`;
     document.body.appendChild(link);
@@ -392,17 +399,16 @@ async function startExport(): Promise<void> {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
 
-    progressMessage.value = 'Export complete!';
-    emit('exported');
+    progressMessage.value = "Export complete!";
+    emit("exported");
 
     // Close after brief delay
     setTimeout(() => {
-      emit('close');
+      emit("close");
     }, 1000);
-
   } catch (err) {
-    console.error('[ExportDialog] Export failed:', err);
-    progressMessage.value = `Export failed: ${err instanceof Error ? err.message : 'Unknown error'}`;
+    console.error("[ExportDialog] Export failed:", err);
+    progressMessage.value = `Export failed: ${err instanceof Error ? err.message : "Unknown error"}`;
   } finally {
     isExporting.value = false;
   }
@@ -413,23 +419,23 @@ async function generateDepthFrames(
   frameCount: number,
   width: number,
   height: number,
-  onProgress?: (frame: number, total: number) => void
+  onProgress?: (frame: number, total: number) => void,
 ): Promise<Blob[]> {
   const frames: Blob[] = [];
   const canvas = new OffscreenCanvas(width, height);
-  const ctx = canvas.getContext('2d')!;
+  const ctx = canvas.getContext("2d")!;
 
   for (let frame = 0; frame < frameCount; frame++) {
     if (onProgress) onProgress(frame, frameCount);
 
     // Render depth as grayscale gradient (simulated depth based on layer order)
     // In a full implementation, this would use Three.js depth buffer
-    ctx.fillStyle = '#000000';
+    ctx.fillStyle = "#000000";
     ctx.fillRect(0, 0, width, height);
 
     // Get layers sorted by z-index/depth
     const layers = store.activeComposition?.layers || [];
-    const visibleLayers = layers.filter(layer => {
+    const visibleLayers = layers.filter((layer) => {
       const start = layer.startFrame ?? layer.inPoint ?? 0;
       const end = layer.endFrame ?? layer.outPoint ?? 80;
       return layer.visible && frame >= start && frame <= end;
@@ -437,20 +443,25 @@ async function generateDepthFrames(
 
     // Render each layer as a depth value (farther = darker, closer = brighter)
     for (let i = 0; i < visibleLayers.length; i++) {
-      const depth = Math.round((i / Math.max(visibleLayers.length - 1, 1)) * 255);
+      const depth = Math.round(
+        (i / Math.max(visibleLayers.length - 1, 1)) * 255,
+      );
       const gray = 255 - depth; // Invert: closer layers are brighter
       ctx.fillStyle = `rgb(${gray}, ${gray}, ${gray})`;
 
       // Simple rectangular representation (actual impl would render layer shapes)
       const layer = visibleLayers[i];
-      const pos = layer.transform?.position?.value || { x: width / 2, y: height / 2 };
+      const pos = layer.transform?.position?.value || {
+        x: width / 2,
+        y: height / 2,
+      };
       const scale = layer.transform?.scale?.value || { x: 1, y: 1 };
       const w = 200 * scale.x;
       const h = 150 * scale.y;
       ctx.fillRect(pos.x - w / 2, pos.y - h / 2, w, h);
     }
 
-    const blob = await canvas.convertToBlob({ type: 'image/png' });
+    const blob = await canvas.convertToBlob({ type: "image/png" });
     frames.push(blob);
   }
 
@@ -462,30 +473,33 @@ async function generateNormalFrames(
   frameCount: number,
   width: number,
   height: number,
-  onProgress?: (frame: number, total: number) => void
+  onProgress?: (frame: number, total: number) => void,
 ): Promise<Blob[]> {
   const frames: Blob[] = [];
   const canvas = new OffscreenCanvas(width, height);
-  const ctx = canvas.getContext('2d')!;
+  const ctx = canvas.getContext("2d")!;
 
   for (let frame = 0; frame < frameCount; frame++) {
     if (onProgress) onProgress(frame, frameCount);
 
     // Default normal map: flat surface pointing toward camera (RGB 128, 128, 255)
-    ctx.fillStyle = 'rgb(128, 128, 255)';
+    ctx.fillStyle = "rgb(128, 128, 255)";
     ctx.fillRect(0, 0, width, height);
 
     // In a full implementation, this would calculate actual surface normals
     // For now, generate a simple normal map with slight variation per layer
     const layers = store.activeComposition?.layers || [];
-    const visibleLayers = layers.filter(layer => {
+    const visibleLayers = layers.filter((layer) => {
       const start = layer.startFrame ?? layer.inPoint ?? 0;
       const end = layer.endFrame ?? layer.outPoint ?? 80;
       return layer.visible && frame >= start && frame <= end;
     });
 
     for (const layer of visibleLayers) {
-      const pos = layer.transform?.position?.value || { x: width / 2, y: height / 2 };
+      const pos = layer.transform?.position?.value || {
+        x: width / 2,
+        y: height / 2,
+      };
       const scale = layer.transform?.scale?.value || { x: 1, y: 1 };
       const w = 200 * scale.x;
       const h = 150 * scale.y;
@@ -497,7 +511,7 @@ async function generateNormalFrames(
       ctx.fillRect(pos.x - w / 2, pos.y - h / 2, w, h);
     }
 
-    const blob = await canvas.convertToBlob({ type: 'image/png' });
+    const blob = await canvas.convertToBlob({ type: "image/png" });
     frames.push(blob);
   }
 
@@ -510,22 +524,25 @@ watch(
   () => {
     generatePreview();
   },
-  { immediate: false }
+  { immediate: false },
 );
 
 // Initialize
 onMounted(() => {
   // Set initial dimensions from composition
   if (store.hasProject) {
-    const validation = matteExporter.validateDimensions(store.width, store.height);
+    const validation = matteExporter.validateDimensions(
+      store.width,
+      store.height,
+    );
     customWidth.value = validation.correctedWidth;
     customHeight.value = validation.correctedHeight;
 
     // Check if matches a preset
     const matchingPreset = resolutionPresets.find(
-      p => p.width === customWidth.value && p.height === customHeight.value
+      (p) => p.width === customWidth.value && p.height === customHeight.value,
     );
-    selectedPreset.value = matchingPreset?.label || '';
+    selectedPreset.value = matchingPreset?.label || "";
 
     if (!validation.valid) {
       dimensionWarning.value = validation.message;

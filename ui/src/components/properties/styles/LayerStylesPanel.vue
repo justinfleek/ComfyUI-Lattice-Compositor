@@ -208,31 +208,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import type { LayerStyles } from '@/types/layerStyles';
+import { computed, reactive } from "vue";
 import {
+  applyStylePreset,
+  clearLayerStyles,
+  copyLayerStyles,
+  getStylePresetNames,
+  hasStylesInClipboard,
+  pasteLayerStyles,
   setLayerStylesEnabled,
   setStyleEnabled,
-  copyLayerStyles,
-  pasteLayerStyles,
-  clearLayerStyles,
-  hasStylesInClipboard,
-  applyStylePreset,
-  getStylePresetNames,
-  updateStyleProperty
-} from '@/stores/actions/layerStyleActions';
-import StyleSection from './StyleSection.vue';
-import DropShadowEditor from './DropShadowEditor.vue';
-import InnerShadowEditor from './InnerShadowEditor.vue';
-import OuterGlowEditor from './OuterGlowEditor.vue';
-import InnerGlowEditor from './InnerGlowEditor.vue';
-import BevelEmbossEditor from './BevelEmbossEditor.vue';
-import SatinEditor from './SatinEditor.vue';
-import ColorOverlayEditor from './ColorOverlayEditor.vue';
-import GradientOverlayEditor from './GradientOverlayEditor.vue';
-import StrokeEditor from './StrokeEditor.vue';
-import BlendingOptionsEditor from './BlendingOptionsEditor.vue';
+  updateStyleProperty,
+} from "@/stores/actions/layerStyleActions";
+import { useCompositorStore } from "@/stores/compositorStore";
+import type { LayerStyles } from "@/types/layerStyles";
 
 const store = useCompositorStore();
 
@@ -247,45 +236,65 @@ const expandedSections = reactive({
   colorOverlay: false,
   gradientOverlay: false,
   stroke: false,
-  blendingOptions: false
+  blendingOptions: false,
 });
 
 // Computed properties
 const selectedLayer = computed(() => {
   const layers = store.getActiveCompLayers();
   const selected = store.selectedLayerIds[0];
-  return layers.find(l => l.id === selected) ?? null;
+  return layers.find((l) => l.id === selected) ?? null;
 });
 
 const layerStyles = computed(() => selectedLayer.value?.layerStyles);
 
 const stylesEnabled = computed(() => layerStyles.value?.enabled ?? false);
 
-const hasStyles = computed(() => !!layerStyles.value);
+const _hasStyles = computed(() => !!layerStyles.value);
 
-const canPaste = computed(() => hasStylesInClipboard());
+const _canPaste = computed(() => hasStylesInClipboard());
 
-const presetNames = computed(() => getStylePresetNames());
+const _presetNames = computed(() => getStylePresetNames());
 
 // Individual style enabled states
-const dropShadowEnabled = computed(() => layerStyles.value?.dropShadow?.enabled ?? false);
-const innerShadowEnabled = computed(() => layerStyles.value?.innerShadow?.enabled ?? false);
-const outerGlowEnabled = computed(() => layerStyles.value?.outerGlow?.enabled ?? false);
-const innerGlowEnabled = computed(() => layerStyles.value?.innerGlow?.enabled ?? false);
-const bevelEmbossEnabled = computed(() => layerStyles.value?.bevelEmboss?.enabled ?? false);
-const satinEnabled = computed(() => layerStyles.value?.satin?.enabled ?? false);
-const colorOverlayEnabled = computed(() => layerStyles.value?.colorOverlay?.enabled ?? false);
-const gradientOverlayEnabled = computed(() => layerStyles.value?.gradientOverlay?.enabled ?? false);
-const strokeEnabled = computed(() => layerStyles.value?.stroke?.enabled ?? false);
-const blendingOptionsEnabled = computed(() => !!layerStyles.value?.blendingOptions);
+const _dropShadowEnabled = computed(
+  () => layerStyles.value?.dropShadow?.enabled ?? false,
+);
+const _innerShadowEnabled = computed(
+  () => layerStyles.value?.innerShadow?.enabled ?? false,
+);
+const _outerGlowEnabled = computed(
+  () => layerStyles.value?.outerGlow?.enabled ?? false,
+);
+const _innerGlowEnabled = computed(
+  () => layerStyles.value?.innerGlow?.enabled ?? false,
+);
+const _bevelEmbossEnabled = computed(
+  () => layerStyles.value?.bevelEmboss?.enabled ?? false,
+);
+const _satinEnabled = computed(
+  () => layerStyles.value?.satin?.enabled ?? false,
+);
+const _colorOverlayEnabled = computed(
+  () => layerStyles.value?.colorOverlay?.enabled ?? false,
+);
+const _gradientOverlayEnabled = computed(
+  () => layerStyles.value?.gradientOverlay?.enabled ?? false,
+);
+const _strokeEnabled = computed(
+  () => layerStyles.value?.stroke?.enabled ?? false,
+);
+const blendingOptionsEnabled = computed(
+  () => !!layerStyles.value?.blendingOptions,
+);
 
 // Actions
-function toggleStyles() {
+function _toggleStyles() {
   if (!selectedLayer.value) return;
   setLayerStylesEnabled(store, selectedLayer.value.id, !stylesEnabled.value);
 }
 
-function toggleStyle(styleType: keyof LayerStyles, enabled: boolean) {
+function _toggleStyle(styleType: keyof LayerStyles, enabled: boolean) {
   if (!selectedLayer.value) return;
   setStyleEnabled(store, selectedLayer.value.id, styleType, enabled);
 
@@ -295,110 +304,175 @@ function toggleStyle(styleType: keyof LayerStyles, enabled: boolean) {
   }
 }
 
-function toggleBlendingOptions() {
+function _toggleBlendingOptions() {
   if (!selectedLayer.value) return;
-  setStyleEnabled(store, selectedLayer.value.id, 'blendingOptions', !blendingOptionsEnabled.value);
+  setStyleEnabled(
+    store,
+    selectedLayer.value.id,
+    "blendingOptions",
+    !blendingOptionsEnabled.value,
+  );
 }
 
-function copyStyles() {
+function _copyStyles() {
   if (!selectedLayer.value) return;
   copyLayerStyles(store, selectedLayer.value.id);
 }
 
-function pasteStyles() {
+function _pasteStyles() {
   if (!selectedLayer.value) return;
   pasteLayerStyles(store, selectedLayer.value.id);
 }
 
-function clearStyles() {
+function _clearStyles() {
   if (!selectedLayer.value) return;
   clearLayerStyles(store, selectedLayer.value.id);
 }
 
-function applyPreset(event: Event) {
+function _applyPreset(event: Event) {
   const select = event.target as HTMLSelectElement;
   const preset = select.value;
   if (!preset || !selectedLayer.value) return;
 
   applyStylePreset(store, selectedLayer.value.id, preset);
-  select.value = '';
+  select.value = "";
 }
 
-function formatPresetName(name: string): string {
+function _formatPresetName(name: string): string {
   return name
-    .split('-')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
+    .split("-")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 }
 
 // Style update handlers
-function updateDropShadow(updates: any) {
+function _updateDropShadow(updates: any) {
   if (!selectedLayer.value) return;
   Object.entries(updates).forEach(([key, value]) => {
-    updateStyleProperty(store, selectedLayer.value!.id, 'dropShadow', key as any, value);
+    updateStyleProperty(
+      store,
+      selectedLayer.value?.id,
+      "dropShadow",
+      key as any,
+      value,
+    );
   });
 }
 
-function updateInnerShadow(updates: any) {
+function _updateInnerShadow(updates: any) {
   if (!selectedLayer.value) return;
   Object.entries(updates).forEach(([key, value]) => {
-    updateStyleProperty(store, selectedLayer.value!.id, 'innerShadow', key as any, value);
+    updateStyleProperty(
+      store,
+      selectedLayer.value?.id,
+      "innerShadow",
+      key as any,
+      value,
+    );
   });
 }
 
-function updateOuterGlow(updates: any) {
+function _updateOuterGlow(updates: any) {
   if (!selectedLayer.value) return;
   Object.entries(updates).forEach(([key, value]) => {
-    updateStyleProperty(store, selectedLayer.value!.id, 'outerGlow', key as any, value);
+    updateStyleProperty(
+      store,
+      selectedLayer.value?.id,
+      "outerGlow",
+      key as any,
+      value,
+    );
   });
 }
 
-function updateInnerGlow(updates: any) {
+function _updateInnerGlow(updates: any) {
   if (!selectedLayer.value) return;
   Object.entries(updates).forEach(([key, value]) => {
-    updateStyleProperty(store, selectedLayer.value!.id, 'innerGlow', key as any, value);
+    updateStyleProperty(
+      store,
+      selectedLayer.value?.id,
+      "innerGlow",
+      key as any,
+      value,
+    );
   });
 }
 
-function updateBevelEmboss(updates: any) {
+function _updateBevelEmboss(updates: any) {
   if (!selectedLayer.value) return;
   Object.entries(updates).forEach(([key, value]) => {
-    updateStyleProperty(store, selectedLayer.value!.id, 'bevelEmboss', key as any, value);
+    updateStyleProperty(
+      store,
+      selectedLayer.value?.id,
+      "bevelEmboss",
+      key as any,
+      value,
+    );
   });
 }
 
-function updateSatin(updates: any) {
+function _updateSatin(updates: any) {
   if (!selectedLayer.value) return;
   Object.entries(updates).forEach(([key, value]) => {
-    updateStyleProperty(store, selectedLayer.value!.id, 'satin', key as any, value);
+    updateStyleProperty(
+      store,
+      selectedLayer.value?.id,
+      "satin",
+      key as any,
+      value,
+    );
   });
 }
 
-function updateColorOverlay(updates: any) {
+function _updateColorOverlay(updates: any) {
   if (!selectedLayer.value) return;
   Object.entries(updates).forEach(([key, value]) => {
-    updateStyleProperty(store, selectedLayer.value!.id, 'colorOverlay', key as any, value);
+    updateStyleProperty(
+      store,
+      selectedLayer.value?.id,
+      "colorOverlay",
+      key as any,
+      value,
+    );
   });
 }
 
-function updateGradientOverlay(updates: any) {
+function _updateGradientOverlay(updates: any) {
   if (!selectedLayer.value) return;
   Object.entries(updates).forEach(([key, value]) => {
-    updateStyleProperty(store, selectedLayer.value!.id, 'gradientOverlay', key as any, value);
+    updateStyleProperty(
+      store,
+      selectedLayer.value?.id,
+      "gradientOverlay",
+      key as any,
+      value,
+    );
   });
 }
 
-function updateStroke(updates: any) {
+function _updateStroke(updates: any) {
   if (!selectedLayer.value) return;
   Object.entries(updates).forEach(([key, value]) => {
-    updateStyleProperty(store, selectedLayer.value!.id, 'stroke', key as any, value);
+    updateStyleProperty(
+      store,
+      selectedLayer.value?.id,
+      "stroke",
+      key as any,
+      value,
+    );
   });
 }
 
-function updateBlendingOptions(updates: any) {
+function _updateBlendingOptions(updates: any) {
   if (!selectedLayer.value) return;
   Object.entries(updates).forEach(([key, value]) => {
-    updateStyleProperty(store, selectedLayer.value!.id, 'blendingOptions', key as any, value);
+    updateStyleProperty(
+      store,
+      selectedLayer.value?.id,
+      "blendingOptions",
+      key as any,
+      value,
+    );
   });
 }
 </script>

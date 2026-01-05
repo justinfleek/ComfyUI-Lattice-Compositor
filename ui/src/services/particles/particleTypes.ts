@@ -26,11 +26,11 @@ export interface Particle {
   emitterId: string;
   isSubParticle: boolean;
   // Sprite/texture support
-  rotation: number;           // Current rotation in radians
-  angularVelocity: number;    // Rotation speed in radians/frame
-  spriteIndex: number;        // For sprite sheets (frame index)
+  rotation: number; // Current rotation in radians
+  angularVelocity: number; // Rotation speed in radians/frame
+  spriteIndex: number; // For sprite sheets (frame index)
   // Collision tracking
-  collisionCount: number;     // Number of collisions this particle has had
+  collisionCount: number; // Number of collisions this particle has had
 }
 
 // ============================================================================
@@ -40,9 +40,9 @@ export interface Particle {
 export interface TurbulenceConfig {
   id: string;
   enabled: boolean;
-  scale: number;              // Noise frequency, 0.001-0.01 (smaller = larger swirls)
-  strength: number;           // Force magnitude, 0-500
-  evolutionSpeed: number;     // How fast noise changes over time, 0-1
+  scale: number; // Noise frequency, 0.001-0.01 (smaller = larger swirls)
+  strength: number; // Force magnitude, 0-500
+  evolutionSpeed: number; // How fast noise changes over time, 0-1
 }
 
 export interface GravityWellConfig {
@@ -52,7 +52,7 @@ export interface GravityWellConfig {
   y: number;
   strength: number;
   radius: number;
-  falloff: 'linear' | 'quadratic' | 'constant';
+  falloff: "linear" | "quadratic" | "constant";
   enabled: boolean;
 }
 
@@ -72,13 +72,13 @@ export interface VortexConfig {
 export interface LorenzAttractorConfig {
   id: string;
   name: string;
-  x: number;           // Center position X
-  y: number;           // Center position Y
-  sigma: number;       // Lorenz sigma parameter (default: 10)
-  rho: number;         // Lorenz rho parameter (default: 28)
-  beta: number;        // Lorenz beta parameter (default: 2.667)
-  strength: number;    // Force strength multiplier
-  radius: number;      // Influence radius
+  x: number; // Center position X
+  y: number; // Center position Y
+  sigma: number; // Lorenz sigma parameter (default: 10)
+  rho: number; // Lorenz rho parameter (default: 28)
+  beta: number; // Lorenz beta parameter (default: 2.667)
+  strength: number; // Force strength multiplier
+  radius: number; // Influence radius
   enabled: boolean;
 }
 
@@ -88,27 +88,27 @@ export interface LorenzAttractorConfig {
 
 // Emitter shape types for geometric emission
 export type EmitterShape =
-  | 'point'
-  | 'line'
-  | 'circle'
-  | 'box'
-  | 'sphere'
-  | 'ring'
-  | 'spline'
-  | 'depth-map'
-  | 'mask'
-  | 'cone'       // Cone-shaped emission volume
-  | 'image'      // Emit from non-transparent pixels of an image/layer
-  | 'depthEdge'; // Emit from depth discontinuities (silhouette edges)
+  | "point"
+  | "line"
+  | "circle"
+  | "box"
+  | "sphere"
+  | "ring"
+  | "spline"
+  | "depth-map"
+  | "mask"
+  | "cone" // Cone-shaped emission volume
+  | "image" // Emit from non-transparent pixels of an image/layer
+  | "depthEdge"; // Emit from depth discontinuities (silhouette edges)
 
 // Spline path emission configuration
 export interface SplinePathEmission {
-  layerId: string;                // ID of the SplineLayer to emit along
-  emitMode: 'uniform' | 'random' | 'start' | 'end' | 'sequential';
-  parameter: number;              // For 'start'/'end': offset, for 'uniform': interval, for 'sequential': speed
-  alignToPath: boolean;           // Align emission direction with path tangent
-  offset: number;                 // Perpendicular offset from path (normalized)
-  bidirectional: boolean;         // Emit from both directions along tangent
+  layerId: string; // ID of the SplineLayer to emit along
+  emitMode: "uniform" | "random" | "start" | "end" | "sequential";
+  parameter: number; // For 'start'/'end': offset, for 'uniform': interval, for 'sequential': speed
+  alignToPath: boolean; // Align emission direction with path tangent
+  offset: number; // Perpendicular offset from path (normalized)
+  bidirectional: boolean; // Emit from both directions along tangent
 }
 
 // Spline point query result from provider
@@ -122,28 +122,28 @@ export interface SplineQueryResult {
 export type SplinePathProvider = (
   layerId: string,
   t: number,
-  frame: number
+  frame: number,
 ) => SplineQueryResult | null;
 
 // Sprite/texture configuration for particles
 export interface SpriteConfig {
   enabled: boolean;
-  imageUrl: string | null;        // URL or data URL for sprite image
-  imageData: ImageBitmap | HTMLImageElement | null;  // Loaded image data
+  imageUrl: string | null; // URL or data URL for sprite image
+  imageData: ImageBitmap | HTMLImageElement | null; // Loaded image data
   // Sprite sheet settings
-  isSheet: boolean;               // Is this a sprite sheet?
-  columns: number;                // Grid columns for sprite sheet
-  rows: number;                   // Grid rows for sprite sheet
-  totalFrames: number;            // Total frames in sheet
-  frameRate: number;              // Animation FPS
-  playMode: 'loop' | 'once' | 'pingpong' | 'random';
+  isSheet: boolean; // Is this a sprite sheet?
+  columns: number; // Grid columns for sprite sheet
+  rows: number; // Grid rows for sprite sheet
+  totalFrames: number; // Total frames in sheet
+  frameRate: number; // Animation FPS
+  playMode: "loop" | "once" | "pingpong" | "random";
   // Billboard behavior
-  billboard: boolean;             // Always face camera
+  billboard: boolean; // Always face camera
   // Rotation
   rotationEnabled: boolean;
-  rotationSpeed: number;          // Degrees per frame
+  rotationSpeed: number; // Degrees per frame
   rotationSpeedVariance: number;
-  alignToVelocity: boolean;       // Rotate to face movement direction
+  alignToVelocity: boolean; // Rotate to face movement direction
 }
 
 export interface EmitterConfig {
@@ -168,13 +168,13 @@ export interface EmitterConfig {
   // Geometric emitter shape
   shape: EmitterShape;
   // Shape parameters (normalized 0-1 coordinates)
-  shapeRadius: number;            // For circle, sphere, ring
-  shapeWidth: number;             // For box, line
-  shapeHeight: number;            // For box
-  shapeDepth: number;             // For box (3D), sphere
-  shapeInnerRadius: number;       // For ring (donut)
-  emitFromEdge: boolean;          // Emit from edge only (not filled)
-  emitFromVolume: boolean;        // Emit from volume (3D shapes)
+  shapeRadius: number; // For circle, sphere, ring
+  shapeWidth: number; // For box, line
+  shapeHeight: number; // For box
+  shapeDepth: number; // For box (3D), sphere
+  shapeInnerRadius: number; // For ring (donut)
+  emitFromEdge: boolean; // Emit from edge only (not filled)
+  emitFromVolume: boolean; // Emit from volume (3D shapes)
   // Spline path emission (when shape = 'spline')
   splinePath: SplinePathEmission | null;
   // Sprite/texture configuration
@@ -187,15 +187,15 @@ export interface EmitterConfig {
 
 export interface SubEmitterConfig {
   id: string;
-  parentEmitterId: string;    // Which emitter's particles trigger this, or '*' for all
-  trigger: 'death';           // Only death trigger for now
-  spawnCount: number;         // 1-10 particles on trigger
-  inheritVelocity: number;    // 0-1, how much parent velocity inherited
+  parentEmitterId: string; // Which emitter's particles trigger this, or '*' for all
+  trigger: "death"; // Only death trigger for now
+  spawnCount: number; // 1-10 particles on trigger
+  inheritVelocity: number; // 0-1, how much parent velocity inherited
   size: number;
   sizeVariance: number;
-  lifetime: number;           // Frames
+  lifetime: number; // Frames
   speed: number;
-  spread: number;             // Degrees, emission cone
+  spread: number; // Degrees, emission cone
   color: [number, number, number];
   enabled: boolean;
 }
@@ -206,11 +206,11 @@ export interface SubEmitterConfig {
 
 export interface ConnectionConfig {
   enabled: boolean;
-  maxDistance: number;        // Pixels, connect if closer than this
-  maxConnections: number;     // Per particle, 1-5 (HARD LIMIT for performance)
-  lineWidth: number;          // 0.5-3
-  lineOpacity: number;        // 0-1
-  fadeByDistance: boolean;    // Opacity decreases with distance
+  maxDistance: number; // Pixels, connect if closer than this
+  maxConnections: number; // Per particle, 1-5 (HARD LIMIT for performance)
+  lineWidth: number; // 0.5-3
+  lineOpacity: number; // 0-1
+  fadeByDistance: boolean; // Opacity decreases with distance
 }
 
 // ============================================================================
@@ -221,24 +221,24 @@ export interface CollisionConfig {
   enabled: boolean;
   // Particle-to-particle collision
   particleCollision: boolean;
-  particleCollisionRadius: number;  // Multiplier on particle size for collision
-  particleCollisionResponse: 'bounce' | 'absorb' | 'explode';
+  particleCollisionRadius: number; // Multiplier on particle size for collision
+  particleCollisionResponse: "bounce" | "absorb" | "explode";
   particleCollisionDamping: number; // 0-1, velocity retained after collision
   // Layer/boundary collision
   layerCollision: boolean;
-  layerCollisionLayerId: string | null;  // Depth map layer for collision
-  layerCollisionThreshold: number;       // Depth threshold for collision
+  layerCollisionLayerId: string | null; // Depth map layer for collision
+  layerCollisionThreshold: number; // Depth threshold for collision
   // Floor/ceiling collision
   floorEnabled: boolean;
-  floorY: number;                   // Normalized Y position of floor (0-1)
+  floorY: number; // Normalized Y position of floor (0-1)
   ceilingEnabled: boolean;
-  ceilingY: number;                 // Normalized Y position of ceiling
+  ceilingY: number; // Normalized Y position of ceiling
   wallsEnabled: boolean;
   // Collision physics
-  bounciness: number;               // 0-1, how much velocity is preserved
-  friction: number;                 // Surface friction on collision
+  bounciness: number; // 0-1, how much velocity is preserved
+  friction: number; // Surface friction on collision
   // Spatial hashing for performance
-  spatialHashCellSize: number;      // Cell size for spatial hash (pixels)
+  spatialHashCellSize: number; // Cell size for spatial hash (pixels)
 }
 
 // ============================================================================
@@ -248,7 +248,7 @@ export interface CollisionConfig {
 export interface ParticleModulation {
   id: string;
   emitterId: string;
-  property: 'size' | 'speed' | 'opacity' | 'colorR' | 'colorG' | 'colorB';
+  property: "size" | "speed" | "opacity" | "colorR" | "colorG" | "colorB";
   startValue: number;
   endValue: number;
   easing: string;
@@ -265,7 +265,7 @@ export interface ParticleSystemConfig {
   windDirection: number;
   warmupPeriod: number;
   respectMaskBoundary: boolean;
-  boundaryBehavior: 'bounce' | 'kill' | 'wrap';
+  boundaryBehavior: "bounce" | "kill" | "wrap";
   friction: number;
   turbulenceFields: TurbulenceConfig[];
   subEmitters: SubEmitterConfig[];
@@ -278,26 +278,26 @@ export interface ParticleSystemConfig {
 // ============================================================================
 
 export interface RenderOptions {
-  blendMode: 'normal' | 'additive' | 'multiply' | 'screen';
+  blendMode: "normal" | "additive" | "multiply" | "screen";
   renderTrails: boolean;
   trailLength: number;
   trailOpacityFalloff: number;
-  particleShape: 'circle' | 'square' | 'triangle' | 'star' | 'sprite';
+  particleShape: "circle" | "square" | "triangle" | "star" | "sprite";
   glowEnabled: boolean;
   glowRadius: number;
   glowIntensity: number;
   // Motion blur settings
   motionBlur: boolean;
-  motionBlurStrength: number;   // 0-1, how much to stretch based on velocity
-  motionBlurSamples: number;    // Number of samples for blur (1-16)
+  motionBlurStrength: number; // 0-1, how much to stretch based on velocity
+  motionBlurSamples: number; // Number of samples for blur (1-16)
   // Particle connection settings
   connections: ConnectionConfig;
   // Sprite rendering settings
-  spriteSmoothing: boolean;     // Enable image smoothing for sprites
-  spriteOpacityByAge: boolean;  // Fade sprites based on particle age
+  spriteSmoothing: boolean; // Enable image smoothing for sprites
+  spriteOpacityByAge: boolean; // Fade sprites based on particle age
   // Emissive/bloom settings (for 3D rendering)
-  emissiveEnabled: boolean;     // Render particles as emissive (for bloom)
-  emissiveIntensity: number;    // Emissive intensity multiplier (0-10)
+  emissiveEnabled: boolean; // Render particles as emissive (for bloom)
+  emissiveIntensity: number; // Emissive intensity multiplier (0-10)
   emissiveColor: [number, number, number] | null; // Override color for emissive (null = use particle color)
 }
 

@@ -4,8 +4,8 @@
  * Manages selection state for layers, keyframes, and properties.
  * This is a focused store extracted from compositorStore for better maintainability.
  */
-import { defineStore } from 'pinia';
-import { storeLogger } from '@/utils/logger';
+import { defineStore } from "pinia";
+import { storeLogger } from "@/utils/logger";
 
 /** Modifier keys for selection operations */
 export interface SelectionModifiers {
@@ -38,17 +38,17 @@ interface SelectionState {
   selectedPropertyPath: string | null;
 
   // Tool state
-  currentTool: 'select' | 'pen' | 'text' | 'hand' | 'zoom';
+  currentTool: "select" | "pen" | "text" | "hand" | "zoom";
 }
 
-export const useSelectionStore = defineStore('selection', {
+export const useSelectionStore = defineStore("selection", {
   state: (): SelectionState => ({
     selectedLayerIds: [],
     lastSelectedLayerId: null,
     selectedKeyframeIds: [],
     selectedControlPoints: [],
     selectedPropertyPath: null,
-    currentTool: 'select',
+    currentTool: "select",
   }),
 
   getters: {
@@ -72,7 +72,7 @@ export const useSelectionStore = defineStore('selection', {
     selectLayer(layerId: string): void {
       this.selectedLayerIds = [layerId];
       this.lastSelectedLayerId = layerId;
-      storeLogger.debug('Selected layer:', layerId);
+      storeLogger.debug("Selected layer:", layerId);
     },
 
     /**
@@ -83,7 +83,7 @@ export const useSelectionStore = defineStore('selection', {
       if (layerIds.length > 0) {
         this.lastSelectedLayerId = layerIds[layerIds.length - 1];
       }
-      storeLogger.debug('Selected layers:', layerIds.length);
+      storeLogger.debug("Selected layers:", layerIds.length);
     },
 
     /**
@@ -127,7 +127,7 @@ export const useSelectionStore = defineStore('selection', {
     selectLayerWithModifiers(
       layerId: string,
       modifiers: SelectionModifiers,
-      orderedLayerIds?: string[]
+      orderedLayerIds?: string[],
     ): void {
       if (modifiers.shift && this.lastSelectedLayerId && orderedLayerIds) {
         // Shift+click: Range select
@@ -149,7 +149,11 @@ export const useSelectionStore = defineStore('selection', {
      * @param endLayerId Last layer in range
      * @param orderedLayerIds All layer IDs in display order
      */
-    selectRange(startLayerId: string, endLayerId: string, orderedLayerIds: string[]): void {
+    selectRange(
+      startLayerId: string,
+      endLayerId: string,
+      orderedLayerIds: string[],
+    ): void {
       const startIndex = orderedLayerIds.indexOf(startLayerId);
       const endIndex = orderedLayerIds.indexOf(endLayerId);
 
@@ -165,7 +169,7 @@ export const useSelectionStore = defineStore('selection', {
       this.selectedLayerIds = orderedLayerIds.slice(minIndex, maxIndex + 1);
       this.lastSelectedLayerId = endLayerId;
 
-      storeLogger.debug('Range selected layers:', this.selectedLayerIds.length);
+      storeLogger.debug("Range selected layers:", this.selectedLayerIds.length);
     },
 
     /**
@@ -209,7 +213,7 @@ export const useSelectionStore = defineStore('selection', {
       const aboveIndex = minIndex - 1;
       if (aboveIndex >= 0) {
         this.selectLayer(orderedLayerIds[aboveIndex]);
-        storeLogger.debug('Selected layer above:', orderedLayerIds[aboveIndex]);
+        storeLogger.debug("Selected layer above:", orderedLayerIds[aboveIndex]);
       }
     },
 
@@ -239,7 +243,7 @@ export const useSelectionStore = defineStore('selection', {
       const belowIndex = maxIndex + 1;
       if (belowIndex < orderedLayerIds.length) {
         this.selectLayer(orderedLayerIds[belowIndex]);
-        storeLogger.debug('Selected layer below:', orderedLayerIds[belowIndex]);
+        storeLogger.debug("Selected layer below:", orderedLayerIds[belowIndex]);
       }
     },
 
@@ -312,7 +316,11 @@ export const useSelectionStore = defineStore('selection', {
     /**
      * Select a single control point
      */
-    selectControlPoint(layerId: string, pointIndex: number, groupId?: string): void {
+    selectControlPoint(
+      layerId: string,
+      pointIndex: number,
+      groupId?: string,
+    ): void {
       this.selectedControlPoints = [{ layerId, pointIndex, groupId }];
     },
 
@@ -326,9 +334,13 @@ export const useSelectionStore = defineStore('selection', {
     /**
      * Add control point to selection
      */
-    addControlPointToSelection(layerId: string, pointIndex: number, groupId?: string): void {
+    addControlPointToSelection(
+      layerId: string,
+      pointIndex: number,
+      groupId?: string,
+    ): void {
       const exists = this.selectedControlPoints.some(
-        p => p.layerId === layerId && p.pointIndex === pointIndex
+        (p) => p.layerId === layerId && p.pointIndex === pointIndex,
       );
       if (!exists) {
         this.selectedControlPoints.push({ layerId, pointIndex, groupId });
@@ -340,16 +352,20 @@ export const useSelectionStore = defineStore('selection', {
      */
     removeControlPointFromSelection(layerId: string, pointIndex: number): void {
       this.selectedControlPoints = this.selectedControlPoints.filter(
-        p => !(p.layerId === layerId && p.pointIndex === pointIndex)
+        (p) => !(p.layerId === layerId && p.pointIndex === pointIndex),
       );
     },
 
     /**
      * Toggle control point selection
      */
-    toggleControlPointSelection(layerId: string, pointIndex: number, groupId?: string): void {
+    toggleControlPointSelection(
+      layerId: string,
+      pointIndex: number,
+      groupId?: string,
+    ): void {
       const index = this.selectedControlPoints.findIndex(
-        p => p.layerId === layerId && p.pointIndex === pointIndex
+        (p) => p.layerId === layerId && p.pointIndex === pointIndex,
       );
       if (index >= 0) {
         this.selectedControlPoints.splice(index, 1);
@@ -365,7 +381,7 @@ export const useSelectionStore = defineStore('selection', {
       layerId: string,
       pointIndex: number,
       modifiers: SelectionModifiers,
-      groupId?: string
+      groupId?: string,
     ): void {
       if (modifiers.ctrl) {
         this.toggleControlPointSelection(layerId, pointIndex, groupId);
@@ -383,14 +399,19 @@ export const useSelectionStore = defineStore('selection', {
     selectControlPointGroup(
       groupId: string,
       layerId: string,
-      pointIndicesInGroup: number[]
+      pointIndicesInGroup: number[],
     ): void {
-      this.selectedControlPoints = pointIndicesInGroup.map(pointIndex => ({
+      this.selectedControlPoints = pointIndicesInGroup.map((pointIndex) => ({
         layerId,
         pointIndex,
         groupId,
       }));
-      storeLogger.debug('Selected control point group:', groupId, 'points:', pointIndicesInGroup.length);
+      storeLogger.debug(
+        "Selected control point group:",
+        groupId,
+        "points:",
+        pointIndicesInGroup.length,
+      );
     },
 
     /**
@@ -399,11 +420,11 @@ export const useSelectionStore = defineStore('selection', {
     addControlPointGroupToSelection(
       groupId: string,
       layerId: string,
-      pointIndicesInGroup: number[]
+      pointIndicesInGroup: number[],
     ): void {
       for (const pointIndex of pointIndicesInGroup) {
         const exists = this.selectedControlPoints.some(
-          p => p.layerId === layerId && p.pointIndex === pointIndex
+          (p) => p.layerId === layerId && p.pointIndex === pointIndex,
         );
         if (!exists) {
           this.selectedControlPoints.push({ layerId, pointIndex, groupId });
@@ -423,7 +444,7 @@ export const useSelectionStore = defineStore('selection', {
      */
     isControlPointSelected(layerId: string, pointIndex: number): boolean {
       return this.selectedControlPoints.some(
-        p => p.layerId === layerId && p.pointIndex === pointIndex
+        (p) => p.layerId === layerId && p.pointIndex === pointIndex,
       );
     },
 
@@ -431,7 +452,7 @@ export const useSelectionStore = defineStore('selection', {
      * Get selected control points for a specific layer
      */
     getSelectedControlPointsForLayer(layerId: string): ControlPointSelection[] {
-      return this.selectedControlPoints.filter(p => p.layerId === layerId);
+      return this.selectedControlPoints.filter((p) => p.layerId === layerId);
     },
 
     // ============================================================
@@ -452,7 +473,7 @@ export const useSelectionStore = defineStore('selection', {
     /**
      * Set current tool
      */
-    setTool(tool: SelectionState['currentTool']): void {
+    setTool(tool: SelectionState["currentTool"]): void {
       this.currentTool = tool;
     },
 

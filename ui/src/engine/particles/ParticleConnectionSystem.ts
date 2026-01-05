@@ -7,8 +7,8 @@
  * Extracted from GPUParticleSystem.ts for modularity.
  */
 
-import * as THREE from 'three';
-import { PARTICLE_STRIDE, type ConnectionConfig } from './types';
+import * as THREE from "three";
+import { type ConnectionConfig, PARTICLE_STRIDE } from "./types";
 
 // ============================================================================
 // PARTICLE CONNECTION SYSTEM CLASS
@@ -46,10 +46,20 @@ export class ParticleConnectionSystem {
     const positions = new Float32Array(maxVertices * 3);
     const colors = new Float32Array(maxVertices * 4);
 
-    this.connectionGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    this.connectionGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 4));
-    (this.connectionGeometry.getAttribute('position') as THREE.BufferAttribute).setUsage(THREE.DynamicDrawUsage);
-    (this.connectionGeometry.getAttribute('color') as THREE.BufferAttribute).setUsage(THREE.DynamicDrawUsage);
+    this.connectionGeometry.setAttribute(
+      "position",
+      new THREE.BufferAttribute(positions, 3),
+    );
+    this.connectionGeometry.setAttribute(
+      "color",
+      new THREE.BufferAttribute(colors, 4),
+    );
+    (
+      this.connectionGeometry.getAttribute("position") as THREE.BufferAttribute
+    ).setUsage(THREE.DynamicDrawUsage);
+    (
+      this.connectionGeometry.getAttribute("color") as THREE.BufferAttribute
+    ).setUsage(THREE.DynamicDrawUsage);
 
     this.connectionMaterial = new THREE.LineBasicMaterial({
       vertexColors: true,
@@ -59,7 +69,10 @@ export class ParticleConnectionSystem {
       linewidth: this.config.lineWidth, // Note: linewidth only works in some WebGL contexts
     });
 
-    this.connectionMesh = new THREE.LineSegments(this.connectionGeometry, this.connectionMaterial);
+    this.connectionMesh = new THREE.LineSegments(
+      this.connectionGeometry,
+      this.connectionMaterial,
+    );
     this.connectionMesh.frustumCulled = false;
   }
 
@@ -75,14 +88,24 @@ export class ParticleConnectionSystem {
   update(particleBuffer: Float32Array): void {
     if (!this.config.enabled || !this.connectionGeometry) return;
 
-    const posAttr = this.connectionGeometry.getAttribute('position') as THREE.BufferAttribute;
-    const colorAttr = this.connectionGeometry.getAttribute('color') as THREE.BufferAttribute;
+    const posAttr = this.connectionGeometry.getAttribute(
+      "position",
+    ) as THREE.BufferAttribute;
+    const colorAttr = this.connectionGeometry.getAttribute(
+      "color",
+    ) as THREE.BufferAttribute;
 
     const maxDistSq = this.config.maxDistance * this.config.maxDistance;
     let vertexIndex = 0;
 
     // Build a list of active particle positions
-    const activeParticles: Array<{ index: number; x: number; y: number; z: number; color: number[] }> = [];
+    const activeParticles: Array<{
+      index: number;
+      x: number;
+      y: number;
+      z: number;
+      color: number[];
+    }> = [];
 
     for (let i = 0; i < this.maxParticles; i++) {
       const offset = i * PARTICLE_STRIDE;
@@ -114,7 +137,7 @@ export class ParticleConnectionSystem {
       const cellZ = Math.floor(p.z / cellSize);
       const key = `${cellX},${cellY},${cellZ}`;
       if (!grid.has(key)) grid.set(key, []);
-      grid.get(key)!.push(p);
+      grid.get(key)?.push(p);
     }
 
     // For each particle, find nearby particles using spatial hash
@@ -158,7 +181,7 @@ export class ParticleConnectionSystem {
                 let opacity = this.config.lineOpacity;
                 if (this.config.fadeByDistance) {
                   const dist = Math.sqrt(distSq);
-                  opacity *= 1 - (dist / this.config.maxDistance);
+                  opacity *= 1 - dist / this.config.maxDistance;
                 }
 
                 // Blend colors from both particles
@@ -170,26 +193,52 @@ export class ParticleConnectionSystem {
 
                 // Add line vertices
                 posAttr.setXYZ(vertexIndex, p1.x, p1.y, p1.z);
-                colorAttr.setXYZW(vertexIndex, color[0], color[1], color[2], opacity);
+                colorAttr.setXYZW(
+                  vertexIndex,
+                  color[0],
+                  color[1],
+                  color[2],
+                  opacity,
+                );
                 vertexIndex++;
 
                 posAttr.setXYZ(vertexIndex, p2.x, p2.y, p2.z);
-                colorAttr.setXYZW(vertexIndex, color[0], color[1], color[2], opacity);
+                colorAttr.setXYZW(
+                  vertexIndex,
+                  color[0],
+                  color[1],
+                  color[2],
+                  opacity,
+                );
                 vertexIndex++;
 
                 // Update connection counts
-                connectionCount.set(p1.index, (connectionCount.get(p1.index) ?? 0) + 1);
+                connectionCount.set(
+                  p1.index,
+                  (connectionCount.get(p1.index) ?? 0) + 1,
+                );
                 connectionCount.set(p2.index, p2Connections + 1);
 
                 // Check if we've maxed out this particle's connections
-                if ((connectionCount.get(p1.index) ?? 0) >= this.config.maxConnections) break;
+                if (
+                  (connectionCount.get(p1.index) ?? 0) >=
+                  this.config.maxConnections
+                )
+                  break;
               }
             }
-            if ((connectionCount.get(p1.index) ?? 0) >= this.config.maxConnections) break;
+            if (
+              (connectionCount.get(p1.index) ?? 0) >= this.config.maxConnections
+            )
+              break;
           }
-          if ((connectionCount.get(p1.index) ?? 0) >= this.config.maxConnections) break;
+          if (
+            (connectionCount.get(p1.index) ?? 0) >= this.config.maxConnections
+          )
+            break;
         }
-        if ((connectionCount.get(p1.index) ?? 0) >= this.config.maxConnections) break;
+        if ((connectionCount.get(p1.index) ?? 0) >= this.config.maxConnections)
+          break;
       }
     }
 

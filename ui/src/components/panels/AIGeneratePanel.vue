@@ -202,107 +202,126 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import { useSelectionStore } from '@/stores/selectionStore';
+import { computed, onMounted, ref } from "vue";
 import {
-  aiGeneration,
   type AIModelType,
-  type ModelInfo
-} from '@/services/aiGeneration';
+  aiGeneration,
+  type ModelInfo,
+} from "@/services/aiGeneration";
+import { useCompositorStore } from "@/stores/compositorStore";
+import { useSelectionStore } from "@/stores/selectionStore";
 
 const store = useCompositorStore();
 const selectionStore = useSelectionStore();
 
 // Source selection
-const sourceType = ref<'layer' | 'canvas' | 'file'>('layer');
+const sourceType = ref<"layer" | "canvas" | "file">("layer");
 const uploadedFile = ref<File | null>(null);
-const uploadedFileName = ref<string>('');
-const fileInput = ref<HTMLInputElement | null>(null);
+const uploadedFileName = ref<string>("");
+const _fileInput = ref<HTMLInputElement | null>(null);
 
 // Generation type
-const selectedType = ref<'depth' | 'normal' | 'segment'>('depth');
+const selectedType = ref<"depth" | "normal" | "segment">("depth");
 
 // Model
-const selectedModel = ref<AIModelType>('depth-anything');
+const selectedModel = ref<AIModelType>("depth-anything");
 const models = ref<ModelInfo[]>([]);
 
 // Options
 const depthOptions = ref({
-  colorMap: 'grayscale' as 'grayscale' | 'viridis' | 'plasma' | 'magma',
-  normalize: true
+  colorMap: "grayscale" as "grayscale" | "viridis" | "plasma" | "magma",
+  normalize: true,
 });
 const normalOptions = ref({
   strength: 100,
-  smoothing: 0
+  smoothing: 0,
 });
-const segmentOptions = ref({
-  autoMask: true
+const _segmentOptions = ref({
+  autoMask: true,
 });
 
 // Output
-const outputTarget = ref<'layer' | 'mask' | 'download'>('layer');
+const outputTarget = ref<"layer" | "mask" | "download">("layer");
 
 // State
 const isGenerating = ref(false);
-const statusMessage = ref('');
-const statusType = ref<'info' | 'success' | 'error'>('info');
+const statusMessage = ref("");
+const statusType = ref<"info" | "success" | "error">("info");
 const previewUrl = ref<string | null>(null);
 
 // Generation types
-const generationTypes = [
-  { id: 'depth', label: 'Depth', icon: '⬛', description: 'Estimate depth from image' },
-  { id: 'normal', label: 'Normal', icon: '🔮', description: 'Generate normal map' },
-  { id: 'segment', label: 'Segment', icon: '✂️', description: 'Segment objects' }
+const _generationTypes = [
+  {
+    id: "depth",
+    label: "Depth",
+    icon: "⬛",
+    description: "Estimate depth from image",
+  },
+  {
+    id: "normal",
+    label: "Normal",
+    icon: "🔮",
+    description: "Generate normal map",
+  },
+  {
+    id: "segment",
+    label: "Segment",
+    icon: "✂️",
+    description: "Segment objects",
+  },
 ] as const;
 
 // Computed
 const selectedLayerName = computed(() => {
   const layerId = selectionStore.selectedLayerIds[0];
   if (!layerId) return null;
-  const layer = store.layers.find(l => l.id === layerId);
+  const layer = store.layers.find((l) => l.id === layerId);
   return layer?.name || null;
 });
 
-const availableModels = computed(() => {
+const _availableModels = computed(() => {
   switch (selectedType.value) {
-    case 'depth':
-      return models.value.filter(m =>
-        m.type === 'depth-anything' || m.type === 'depth-anything-v2'
+    case "depth":
+      return models.value.filter(
+        (m) => m.type === "depth-anything" || m.type === "depth-anything-v2",
       );
-    case 'normal':
-      return models.value.filter(m => m.type === 'normal-crafter');
-    case 'segment':
-      return models.value.filter(m =>
-        m.type === 'segment-anything' || m.type === 'segment-anything-2'
+    case "normal":
+      return models.value.filter((m) => m.type === "normal-crafter");
+    case "segment":
+      return models.value.filter(
+        (m) => m.type === "segment-anything" || m.type === "segment-anything-2",
       );
     default:
       return models.value;
   }
 });
 
-const selectedModelInfo = computed(() => {
-  return models.value.find(m => m.type === selectedModel.value);
+const _selectedModelInfo = computed(() => {
+  return models.value.find((m) => m.type === selectedModel.value);
 });
 
 const canGenerate = computed(() => {
-  if (sourceType.value === 'layer' && !selectedLayerName.value) return false;
-  if (sourceType.value === 'file' && !uploadedFile.value) return false;
+  if (sourceType.value === "layer" && !selectedLayerName.value) return false;
+  if (sourceType.value === "file" && !uploadedFile.value) return false;
   return true;
 });
 
-const generateButtonText = computed(() => {
-  if (isGenerating.value) return 'Generating...';
+const _generateButtonText = computed(() => {
+  if (isGenerating.value) return "Generating...";
   switch (selectedType.value) {
-    case 'depth': return 'Generate Depth Map';
-    case 'normal': return 'Generate Normal Map';
-    case 'segment': return 'Segment Image';
-    default: return 'Generate';
+    case "depth":
+      return "Generate Depth Map";
+    case "normal":
+      return "Generate Normal Map";
+    case "segment":
+      return "Segment Image";
+    default:
+      return "Generate";
   }
 });
 
 // Methods
-function handleFileSelect(event: Event) {
+function _handleFileSelect(event: Event) {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
   if (file) {
@@ -314,43 +333,43 @@ function handleFileSelect(event: Event) {
 async function refreshModels() {
   try {
     models.value = aiGeneration.getAllModels();
-    statusMessage.value = 'Model status refreshed';
-    statusType.value = 'info';
-  } catch (error) {
-    statusMessage.value = 'Failed to refresh models';
-    statusType.value = 'error';
+    statusMessage.value = "Model status refreshed";
+    statusType.value = "info";
+  } catch (_error) {
+    statusMessage.value = "Failed to refresh models";
+    statusType.value = "error";
   }
 }
 
-async function generate() {
+async function _generate() {
   if (!canGenerate.value || isGenerating.value) return;
 
   isGenerating.value = true;
-  statusMessage.value = 'Starting generation...';
-  statusType.value = 'info';
+  statusMessage.value = "Starting generation...";
+  statusType.value = "info";
   previewUrl.value = null;
 
   try {
     // Get source image
     let sourceImage: ImageData | Blob | null = null;
 
-    if (sourceType.value === 'file' && uploadedFile.value) {
+    if (sourceType.value === "file" && uploadedFile.value) {
       sourceImage = uploadedFile.value;
-    } else if (sourceType.value === 'canvas') {
+    } else if (sourceType.value === "canvas") {
       // Capture from canvas
-      statusMessage.value = 'Canvas capture not yet implemented';
-      statusType.value = 'error';
+      statusMessage.value = "Canvas capture not yet implemented";
+      statusType.value = "error";
       return;
-    } else if (sourceType.value === 'layer') {
+    } else if (sourceType.value === "layer") {
       // Get layer content
-      statusMessage.value = 'Layer capture not yet implemented';
-      statusType.value = 'error';
+      statusMessage.value = "Layer capture not yet implemented";
+      statusType.value = "error";
       return;
     }
 
     if (!sourceImage) {
-      statusMessage.value = 'No source image available';
-      statusType.value = 'error';
+      statusMessage.value = "No source image available";
+      statusType.value = "error";
       return;
     }
 
@@ -358,58 +377,60 @@ async function generate() {
 
     let result;
     switch (selectedType.value) {
-      case 'depth':
+      case "depth":
         result = await aiGeneration.estimateDepth(sourceImage, {
-          model: selectedModel.value as 'depth-anything' | 'depth-anything-v2',
+          model: selectedModel.value as "depth-anything" | "depth-anything-v2",
           normalize: depthOptions.value.normalize,
-          colorMap: depthOptions.value.colorMap
+          colorMap: depthOptions.value.colorMap,
         });
         break;
-      case 'normal':
+      case "normal":
         result = await aiGeneration.generateNormalMap(sourceImage, {
-          model: 'normal-crafter',
+          model: "normal-crafter",
           strength: normalOptions.value.strength / 100,
-          smoothing: normalOptions.value.smoothing / 100
+          smoothing: normalOptions.value.smoothing / 100,
         });
         break;
-      case 'segment':
+      case "segment":
         result = await aiGeneration.segment(sourceImage, {
-          model: selectedModel.value as 'segment-anything' | 'segment-anything-2'
+          model: selectedModel.value as
+            | "segment-anything"
+            | "segment-anything-2",
         });
         break;
     }
 
     if (result?.success && result.data) {
       statusMessage.value = `Generation complete in ${result.processingTime.toFixed(0)}ms`;
-      statusType.value = 'success';
+      statusType.value = "success";
 
       // Create preview URL
-      const canvas = document.createElement('canvas');
+      const canvas = document.createElement("canvas");
       canvas.width = result.data.width;
       canvas.height = result.data.height;
-      const ctx = canvas.getContext('2d');
+      const ctx = canvas.getContext("2d");
       if (ctx) {
         ctx.putImageData(result.data, 0, 0);
         previewUrl.value = canvas.toDataURL();
       }
 
       // Handle output target
-      if (outputTarget.value === 'download' && previewUrl.value) {
-        const a = document.createElement('a');
+      if (outputTarget.value === "download" && previewUrl.value) {
+        const a = document.createElement("a");
         a.href = previewUrl.value;
         a.download = `${selectedType.value}_map.png`;
         a.click();
-      } else if (outputTarget.value === 'layer') {
-        statusMessage.value += ' - Create layer feature pending';
+      } else if (outputTarget.value === "layer") {
+        statusMessage.value += " - Create layer feature pending";
       }
     } else {
-      statusMessage.value = result?.error || 'Generation failed';
-      statusType.value = 'error';
+      statusMessage.value = result?.error || "Generation failed";
+      statusType.value = "error";
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
+    const message = error instanceof Error ? error.message : "Unknown error";
     statusMessage.value = `Error: ${message}`;
-    statusType.value = 'error';
+    statusType.value = "error";
   } finally {
     isGenerating.value = false;
   }

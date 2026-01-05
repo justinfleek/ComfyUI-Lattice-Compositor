@@ -11,9 +11,9 @@
  * DETERMINISM: Uses frame-based evaluation only
  */
 
-import * as THREE from 'three';
-import type { Layer, NormalLayerData } from '@/types/project';
-import { BaseLayer } from './BaseLayer';
+import * as THREE from "three";
+import type { Layer, NormalLayerData } from "@/types/project";
+import { BaseLayer } from "./BaseLayer";
 
 export class NormalLayer extends BaseLayer {
   private mesh: THREE.Mesh | null = null;
@@ -34,17 +34,17 @@ export class NormalLayer extends BaseLayer {
     const data = layerData.data as Partial<NormalLayerData> | undefined;
     return {
       assetId: data?.assetId ?? null,
-      visualizationMode: data?.visualizationMode ?? 'rgb',
-      format: data?.format ?? 'opengl',
+      visualizationMode: data?.visualizationMode ?? "rgb",
+      format: data?.format ?? "opengl",
       flipX: data?.flipX ?? false,
       flipY: data?.flipY ?? false,
       flipZ: data?.flipZ ?? false,
       arrowDensity: data?.arrowDensity ?? 16,
       arrowScale: data?.arrowScale ?? 1,
-      arrowColor: data?.arrowColor ?? '#00ff00',
+      arrowColor: data?.arrowColor ?? "#00ff00",
       lightDirection: data?.lightDirection ?? { x: 0.5, y: 0.5, z: 1.0 },
       lightIntensity: data?.lightIntensity ?? 1.0,
-      ambientIntensity: data?.ambientIntensity ?? 0.2
+      ambientIntensity: data?.ambientIntensity ?? 0.2,
     };
   }
 
@@ -57,17 +57,33 @@ export class NormalLayer extends BaseLayer {
         flipX: { value: this.normalData.flipX ? -1.0 : 1.0 },
         flipY: { value: this.normalData.flipY ? -1.0 : 1.0 },
         flipZ: { value: this.normalData.flipZ ? -1.0 : 1.0 },
-        lightDirection: { value: new THREE.Vector3(
-          // Validate light direction (NaN would corrupt lighting calculations after normalize())
-          Number.isFinite(this.normalData.lightDirection?.x) ? this.normalData.lightDirection.x : 0.5,
-          Number.isFinite(this.normalData.lightDirection?.y) ? this.normalData.lightDirection.y : 0.5,
-          Number.isFinite(this.normalData.lightDirection?.z) ? this.normalData.lightDirection.z : 1.0
-        ).normalize() },
-        lightIntensity: { value: Number.isFinite(this.normalData.lightIntensity) ? this.normalData.lightIntensity : 1.0 },
-        ambientIntensity: { value: Number.isFinite(this.normalData.ambientIntensity) ? this.normalData.ambientIntensity : 0.2 },
+        lightDirection: {
+          value: new THREE.Vector3(
+            // Validate light direction (NaN would corrupt lighting calculations after normalize())
+            Number.isFinite(this.normalData.lightDirection?.x)
+              ? this.normalData.lightDirection.x
+              : 0.5,
+            Number.isFinite(this.normalData.lightDirection?.y)
+              ? this.normalData.lightDirection.y
+              : 0.5,
+            Number.isFinite(this.normalData.lightDirection?.z)
+              ? this.normalData.lightDirection.z
+              : 1.0,
+          ).normalize(),
+        },
+        lightIntensity: {
+          value: Number.isFinite(this.normalData.lightIntensity)
+            ? this.normalData.lightIntensity
+            : 1.0,
+        },
+        ambientIntensity: {
+          value: Number.isFinite(this.normalData.ambientIntensity)
+            ? this.normalData.ambientIntensity
+            : 0.2,
+        },
         opacity: { value: 1.0 },
         visualizationMode: { value: this.getVisualizationModeIndex() },
-        isDirectX: { value: this.normalData.format === 'directx' ? 1.0 : 0.0 }
+        isDirectX: { value: this.normalData.format === "directx" ? 1.0 : 0.0 },
       },
       vertexShader: `
         varying vec2 vUv;
@@ -129,7 +145,7 @@ export class NormalLayer extends BaseLayer {
           gl_FragColor = vec4(color, opacity);
         }
       `,
-      transparent: true
+      transparent: true,
     });
 
     this.mesh = new THREE.Mesh(geometry, this.material);
@@ -139,10 +155,14 @@ export class NormalLayer extends BaseLayer {
 
   private getVisualizationModeIndex(): number {
     switch (this.normalData.visualizationMode) {
-      case 'rgb': return 0;
-      case 'hemisphere': return 1;
-      case 'lit': return 3;
-      default: return 0;
+      case "rgb":
+        return 0;
+      case "hemisphere":
+        return 1;
+      case "lit":
+        return 3;
+      default:
+        return 0;
     }
   }
 
@@ -157,21 +177,29 @@ export class NormalLayer extends BaseLayer {
   // ABSTRACT IMPLEMENTATIONS
   // ============================================================================
 
-  protected onEvaluateFrame(frame: number): void {
+  protected onEvaluateFrame(_frame: number): void {
     if (!this.material) return;
 
     // Update uniforms from data
     this.material.uniforms.flipX.value = this.normalData.flipX ? -1.0 : 1.0;
     this.material.uniforms.flipY.value = this.normalData.flipY ? -1.0 : 1.0;
     this.material.uniforms.flipZ.value = this.normalData.flipZ ? -1.0 : 1.0;
-    this.material.uniforms.visualizationMode.value = this.getVisualizationModeIndex();
-    this.material.uniforms.isDirectX.value = this.normalData.format === 'directx' ? 1.0 : 0.0;
+    this.material.uniforms.visualizationMode.value =
+      this.getVisualizationModeIndex();
+    this.material.uniforms.isDirectX.value =
+      this.normalData.format === "directx" ? 1.0 : 0.0;
 
     if (this.normalData.lightDirection) {
       // Validate light direction values (NaN would corrupt normalize() result)
-      const lx = Number.isFinite(this.normalData.lightDirection.x) ? this.normalData.lightDirection.x : 0.5;
-      const ly = Number.isFinite(this.normalData.lightDirection.y) ? this.normalData.lightDirection.y : 0.5;
-      const lz = Number.isFinite(this.normalData.lightDirection.z) ? this.normalData.lightDirection.z : 1.0;
+      const lx = Number.isFinite(this.normalData.lightDirection.x)
+        ? this.normalData.lightDirection.x
+        : 0.5;
+      const ly = Number.isFinite(this.normalData.lightDirection.y)
+        ? this.normalData.lightDirection.y
+        : 0.5;
+      const lz = Number.isFinite(this.normalData.lightDirection.z)
+        ? this.normalData.lightDirection.z
+        : 1.0;
       this.material.uniforms.lightDirection.value.set(lx, ly, lz).normalize();
     }
   }

@@ -19,7 +19,7 @@
 /**
  * RIFE model variants
  */
-export type RIFEModel = 'rife-v4.6' | 'rife-v4.0' | 'rife-v3.9' | 'film';
+export type RIFEModel = "rife-v4.6" | "rife-v4.0" | "rife-v3.9" | "film";
 
 /**
  * Interpolation factor (frame multiplication)
@@ -41,7 +41,7 @@ export interface InterpolationModel {
  * Interpolation result for a frame pair
  */
 export interface PairInterpolationResult {
-  status: 'success' | 'error';
+  status: "success" | "error";
   message?: string;
   frames?: string[]; // base64 PNG images
   count?: number;
@@ -52,7 +52,7 @@ export interface PairInterpolationResult {
  * Interpolation result for a sequence
  */
 export interface SequenceInterpolationResult {
-  status: 'success' | 'error';
+  status: "success" | "error";
   message?: string;
   frames?: string[]; // base64 PNG images
   original_count?: number;
@@ -65,7 +65,7 @@ export interface SequenceInterpolationResult {
  * Slow-mo result
  */
 export interface SlowMoResult {
-  status: 'success' | 'error';
+  status: "success" | "error";
   message?: string;
   frames?: string[];
   original_count?: number;
@@ -77,13 +77,16 @@ export interface SlowMoResult {
 /**
  * Progress callback
  */
-export type InterpolationProgressCallback = (progress: number, message: string) => void;
+export type InterpolationProgressCallback = (
+  progress: number,
+  message: string,
+) => void;
 
 // ============================================================================
 // API Communication
 // ============================================================================
 
-const API_BASE = '/lattice/video/interpolation';
+const API_BASE = "/lattice/video/interpolation";
 
 /**
  * Get available interpolation models
@@ -93,14 +96,14 @@ export async function getInterpolationModels(): Promise<InterpolationModel[]> {
     const response = await fetch(`${API_BASE}/models`);
     const data = await response.json();
 
-    if (data.status === 'success') {
+    if (data.status === "success") {
       return data.models;
     }
 
-    console.warn('Failed to get interpolation models:', data.message);
+    console.warn("Failed to get interpolation models:", data.message);
     return getDefaultModels();
   } catch (error) {
-    console.warn('Frame interpolation backend not available:', error);
+    console.warn("Frame interpolation backend not available:", error);
     return getDefaultModels();
   }
 }
@@ -111,26 +114,26 @@ export async function getInterpolationModels(): Promise<InterpolationModel[]> {
 function getDefaultModels(): InterpolationModel[] {
   return [
     {
-      id: 'rife-v4.6',
-      name: 'RIFE v4.6',
-      description: 'Latest RIFE - Best quality and speed balance',
+      id: "rife-v4.6",
+      name: "RIFE v4.6",
+      description: "Latest RIFE - Best quality and speed balance",
       supports_ensemble: true,
-      recommended: true
+      recommended: true,
     },
     {
-      id: 'rife-v4.0',
-      name: 'RIFE v4.0',
-      description: 'Stable RIFE v4 - Good all-around performance',
+      id: "rife-v4.0",
+      name: "RIFE v4.0",
+      description: "Stable RIFE v4 - Good all-around performance",
       supports_ensemble: true,
-      recommended: false
+      recommended: false,
     },
     {
-      id: 'film',
-      name: 'FILM',
-      description: 'Frame Interpolation for Large Motion - Google Research',
+      id: "film",
+      name: "FILM",
+      description: "Frame Interpolation for Large Motion - Google Research",
       supports_ensemble: false,
-      recommended: false
-    }
+      recommended: false,
+    },
   ];
 }
 
@@ -165,39 +168,39 @@ export async function interpolateFramePair(
     count?: number;
     model?: RIFEModel;
     ensemble?: boolean;
-  } = {}
+  } = {},
 ): Promise<PairInterpolationResult> {
   try {
     const frame1B64 = await frameToBase64(frame1);
     const frame2B64 = await frameToBase64(frame2);
 
     const response = await fetch(`${API_BASE}/pair`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         frame1: frame1B64,
         frame2: frame2B64,
         count: options.count ?? 1,
-        model: options.model ?? 'rife-v4.6',
-        ensemble: options.ensemble ?? false
-      })
+        model: options.model ?? "rife-v4.6",
+        ensemble: options.ensemble ?? false,
+      }),
     });
 
     const result = await response.json();
 
     if (!response.ok) {
       return {
-        status: 'error',
-        message: result.message || `HTTP ${response.status}`
+        status: "error",
+        message: result.message || `HTTP ${response.status}`,
       };
     }
 
     return result;
   } catch (error) {
-    console.error('Frame pair interpolation failed:', error);
+    console.error("Frame pair interpolation failed:", error);
     return {
-      status: 'error',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      status: "error",
+      message: error instanceof Error ? error.message : "Unknown error",
     };
   }
 }
@@ -226,37 +229,37 @@ export async function interpolateSequence(
     factor?: InterpolationFactor;
     model?: RIFEModel;
     ensemble?: boolean;
-  } = {}
+  } = {},
 ): Promise<SequenceInterpolationResult> {
   try {
-    const framesB64 = await Promise.all(frames.map(f => frameToBase64(f)));
+    const framesB64 = await Promise.all(frames.map((f) => frameToBase64(f)));
 
     const response = await fetch(`${API_BASE}/sequence`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         frames: framesB64,
         factor: options.factor ?? 2,
-        model: options.model ?? 'rife-v4.6',
-        ensemble: options.ensemble ?? false
-      })
+        model: options.model ?? "rife-v4.6",
+        ensemble: options.ensemble ?? false,
+      }),
     });
 
     const result = await response.json();
 
     if (!response.ok) {
       return {
-        status: 'error',
-        message: result.message || `HTTP ${response.status}`
+        status: "error",
+        message: result.message || `HTTP ${response.status}`,
       };
     }
 
     return result;
   } catch (error) {
-    console.error('Sequence interpolation failed:', error);
+    console.error("Sequence interpolation failed:", error);
     return {
-      status: 'error',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      status: "error",
+      message: error instanceof Error ? error.message : "Unknown error",
     };
   }
 }
@@ -281,36 +284,36 @@ export async function interpolateSequence(
 export async function createSlowMotion(
   frames: (string | Blob | ImageData)[],
   slowdown: number = 2.0,
-  model: RIFEModel = 'rife-v4.6'
+  model: RIFEModel = "rife-v4.6",
 ): Promise<SlowMoResult> {
   try {
-    const framesB64 = await Promise.all(frames.map(f => frameToBase64(f)));
+    const framesB64 = await Promise.all(frames.map((f) => frameToBase64(f)));
 
     const response = await fetch(`${API_BASE}/slowmo`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         frames: framesB64,
         slowdown,
-        model
-      })
+        model,
+      }),
     });
 
     const result = await response.json();
 
     if (!response.ok) {
       return {
-        status: 'error',
-        message: result.message || `HTTP ${response.status}`
+        status: "error",
+        message: result.message || `HTTP ${response.status}`,
       };
     }
 
     return result;
   } catch (error) {
-    console.error('Slow-motion creation failed:', error);
+    console.error("Slow-motion creation failed:", error);
     return {
-      status: 'error',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      status: "error",
+      message: error instanceof Error ? error.message : "Unknown error",
     };
   }
 }
@@ -328,16 +331,14 @@ export async function createSlowMotion(
 export function blendFrames(
   frame1: ImageData,
   frame2: ImageData,
-  t: number
+  t: number,
 ): ImageData {
   const width = frame1.width;
   const height = frame1.height;
   const result = new ImageData(width, height);
 
   for (let i = 0; i < frame1.data.length; i++) {
-    result.data[i] = Math.round(
-      frame1.data[i] * (1 - t) + frame2.data[i] * t
-    );
+    result.data[i] = Math.round(frame1.data[i] * (1 - t) + frame2.data[i] * t);
   }
 
   return result;
@@ -351,7 +352,7 @@ export function blendFrames(
 export function interpolateFramesClient(
   frame1: ImageData,
   frame2: ImageData,
-  count: number
+  count: number,
 ): ImageData[] {
   const results: ImageData[] = [];
 
@@ -370,10 +371,12 @@ export function interpolateFramesClient(
 /**
  * Convert frame to base64 string
  */
-async function frameToBase64(frame: string | Blob | ImageData): Promise<string> {
-  if (typeof frame === 'string') {
+async function frameToBase64(
+  frame: string | Blob | ImageData,
+): Promise<string> {
+  if (typeof frame === "string") {
     // Already base64 or data URL
-    return frame.includes(',') ? frame.split(',')[1] : frame;
+    return frame.includes(",") ? frame.split(",")[1] : frame;
   }
 
   if (frame instanceof Blob) {
@@ -392,7 +395,7 @@ function blobToBase64(blob: Blob): Promise<string> {
     const reader = new FileReader();
     reader.onloadend = () => {
       const result = reader.result as string;
-      resolve(result.split(',')[1]);
+      resolve(result.split(",")[1]);
     };
     reader.onerror = reject;
     reader.readAsDataURL(blob);
@@ -403,15 +406,15 @@ function blobToBase64(blob: Blob): Promise<string> {
  * Convert ImageData to base64 PNG
  */
 function imageDataToBase64(imageData: ImageData): string {
-  const canvas = document.createElement('canvas');
+  const canvas = document.createElement("canvas");
   canvas.width = imageData.width;
   canvas.height = imageData.height;
 
-  const ctx = canvas.getContext('2d')!;
+  const ctx = canvas.getContext("2d")!;
   ctx.putImageData(imageData, 0, 0);
 
-  const dataUrl = canvas.toDataURL('image/png');
-  return dataUrl.split(',')[1];
+  const dataUrl = canvas.toDataURL("image/png");
+  return dataUrl.split(",")[1];
 }
 
 /**
@@ -421,17 +424,17 @@ export async function base64ToImageData(base64: string): Promise<ImageData> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
-      const canvas = document.createElement('canvas');
+      const canvas = document.createElement("canvas");
       canvas.width = img.width;
       canvas.height = img.height;
 
-      const ctx = canvas.getContext('2d')!;
+      const ctx = canvas.getContext("2d")!;
       ctx.drawImage(img, 0, 0);
 
       resolve(ctx.getImageData(0, 0, img.width, img.height));
     };
     img.onerror = reject;
-    img.src = base64.startsWith('data:')
+    img.src = base64.startsWith("data:")
       ? base64
       : `data:image/png;base64,${base64}`;
   });
@@ -440,7 +443,10 @@ export async function base64ToImageData(base64: string): Promise<ImageData> {
 /**
  * Convert base64 to Blob
  */
-export function base64ToBlob(base64: string, mimeType: string = 'image/png'): Blob {
+export function base64ToBlob(
+  base64: string,
+  mimeType: string = "image/png",
+): Blob {
   const binary = atob(base64);
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) {
@@ -462,9 +468,9 @@ export const INTERPOLATION_PRESETS = {
    */
   quick2x: {
     factor: 2 as InterpolationFactor,
-    model: 'rife-v4.6' as RIFEModel,
+    model: "rife-v4.6" as RIFEModel,
     ensemble: false,
-    description: 'Fast 2x frame rate increase'
+    description: "Fast 2x frame rate increase",
   },
 
   /**
@@ -472,9 +478,9 @@ export const INTERPOLATION_PRESETS = {
    */
   quality2x: {
     factor: 2 as InterpolationFactor,
-    model: 'rife-v4.6' as RIFEModel,
+    model: "rife-v4.6" as RIFEModel,
     ensemble: true,
-    description: 'High-quality 2x frame rate increase'
+    description: "High-quality 2x frame rate increase",
   },
 
   /**
@@ -482,9 +488,9 @@ export const INTERPOLATION_PRESETS = {
    */
   slowmo4x: {
     factor: 4 as InterpolationFactor,
-    model: 'rife-v4.6' as RIFEModel,
+    model: "rife-v4.6" as RIFEModel,
     ensemble: false,
-    description: '4x slow-motion effect'
+    description: "4x slow-motion effect",
   },
 
   /**
@@ -492,9 +498,9 @@ export const INTERPOLATION_PRESETS = {
    */
   ultraSlowmo: {
     factor: 8 as InterpolationFactor,
-    model: 'rife-v4.6' as RIFEModel,
+    model: "rife-v4.6" as RIFEModel,
     ensemble: false,
-    description: '8x ultra slow-motion effect'
+    description: "8x ultra slow-motion effect",
   },
 
   /**
@@ -502,10 +508,10 @@ export const INTERPOLATION_PRESETS = {
    */
   film: {
     factor: 2 as InterpolationFactor,
-    model: 'film' as RIFEModel,
+    model: "film" as RIFEModel,
     ensemble: false,
-    description: 'FILM model for scenes with large motion'
-  }
+    description: "FILM model for scenes with large motion",
+  },
 } as const;
 
 /**
@@ -514,8 +520,8 @@ export const INTERPOLATION_PRESETS = {
 export async function isInterpolationAvailable(): Promise<boolean> {
   try {
     const response = await fetch(`${API_BASE}/models`, {
-      method: 'GET',
-      signal: AbortSignal.timeout(3000)
+      method: "GET",
+      signal: AbortSignal.timeout(3000),
     });
     return response.ok;
   } catch {

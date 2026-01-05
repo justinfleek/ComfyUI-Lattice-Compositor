@@ -15,10 +15,15 @@
  * - Each nested comp can have its own workflow inputs/outputs
  */
 
-import * as THREE from 'three';
-import type { Layer, NestedCompData, Composition, AnimatableProperty } from '@/types/project';
-import { BaseLayer } from './BaseLayer';
-import { KeyframeEvaluator } from '../animation/KeyframeEvaluator';
+import * as THREE from "three";
+import type {
+  AnimatableProperty,
+  Composition,
+  Layer,
+  NestedCompData,
+} from "@/types/project";
+import { KeyframeEvaluator } from "../animation/KeyframeEvaluator";
+import { BaseLayer } from "./BaseLayer";
 
 // ============================================================================
 // TYPES
@@ -26,11 +31,16 @@ import { KeyframeEvaluator } from '../animation/KeyframeEvaluator';
 
 export interface NestedCompRenderContext {
   /** Function to render a composition to a texture */
-  renderComposition: (compositionId: string, frame: number) => THREE.Texture | null;
+  renderComposition: (
+    compositionId: string,
+    frame: number,
+  ) => THREE.Texture | null;
   /** Function to get composition by ID */
   getComposition: (compositionId: string) => Composition | null;
   /** Function to get nested layer instances when collapsed */
-  getCompositionLayers?: (compositionId: string) => import('./BaseLayer').BaseLayer[];
+  getCompositionLayers?: (
+    compositionId: string,
+  ) => import("./BaseLayer").BaseLayer[];
 }
 
 /** Transform values for combining collapsed nested comp transforms */
@@ -68,10 +78,6 @@ export class NestedCompLayer extends BaseLayer {
   // Parent composition FPS for frame rate conversion
   private parentFPS: number = 16;
 
-  // Flatten transform state
-  private isCollapsed: boolean = false;
-  private collapsedLayerIds: string[] = [];
-
   constructor(layerData: Layer) {
     super(layerData);
 
@@ -98,12 +104,13 @@ export class NestedCompLayer extends BaseLayer {
     const data = layerData.data as NestedCompData | null;
 
     return {
-      compositionId: data?.compositionId ?? '',
+      compositionId: data?.compositionId ?? "",
       // Speed map (new naming)
       speedMapEnabled: data?.speedMapEnabled ?? data?.timeRemapEnabled ?? false,
       speedMap: data?.speedMap ?? data?.timeRemap,
       // Backwards compatibility aliases
-      timeRemapEnabled: data?.timeRemapEnabled ?? data?.speedMapEnabled ?? false,
+      timeRemapEnabled:
+        data?.timeRemapEnabled ?? data?.speedMapEnabled ?? false,
       timeRemap: data?.timeRemap ?? data?.speedMap,
       flattenTransform: data?.flattenTransform ?? false,
       overrideFrameRate: data?.overrideFrameRate ?? false,
@@ -148,7 +155,7 @@ export class NestedCompLayer extends BaseLayer {
    */
   setFPS(fps: number): void {
     // Validate FPS (NaN or <= 0 would break frame calculations)
-    this.parentFPS = (Number.isFinite(fps) && fps > 0) ? fps : 16;
+    this.parentFPS = Number.isFinite(fps) && fps > 0 ? fps : 16;
   }
 
   /**
@@ -160,14 +167,14 @@ export class NestedCompLayer extends BaseLayer {
     }
 
     this.cachedComposition = this.renderContext.getComposition(
-      this.nestedCompData.compositionId
+      this.nestedCompData.compositionId,
     );
 
     if (this.cachedComposition) {
       // Resize mesh to match composition
       this.resizeMesh(
         this.cachedComposition.settings.width,
-        this.cachedComposition.settings.height
+        this.cachedComposition.settings.height,
       );
     }
   }
@@ -197,14 +204,19 @@ export class NestedCompLayer extends BaseLayer {
     if (!this.cachedComposition) return 0;
 
     // Validate FPS values (NaN would corrupt frame calculations)
-    const rawNestedFps = this.nestedCompData.overrideFrameRate && this.nestedCompData.frameRate
-      ? this.nestedCompData.frameRate
-      : this.cachedComposition.settings.fps;
-    const nestedFps = (Number.isFinite(rawNestedFps) && rawNestedFps > 0) ? rawNestedFps : 16;
+    const rawNestedFps =
+      this.nestedCompData.overrideFrameRate && this.nestedCompData.frameRate
+        ? this.nestedCompData.frameRate
+        : this.cachedComposition.settings.fps;
+    const nestedFps =
+      Number.isFinite(rawNestedFps) && rawNestedFps > 0 ? rawNestedFps : 16;
 
     // If speed map is enabled, use that (overrides timeStretch)
-    const speedMapEnabled = this.nestedCompData.speedMapEnabled ?? this.nestedCompData.timeRemapEnabled;
-    const speedMapProp = this.nestedCompData.speedMap ?? this.nestedCompData.timeRemap;
+    const speedMapEnabled =
+      this.nestedCompData.speedMapEnabled ??
+      this.nestedCompData.timeRemapEnabled;
+    const speedMapProp =
+      this.nestedCompData.speedMap ?? this.nestedCompData.timeRemap;
     if (speedMapEnabled && speedMapProp) {
       const remappedTime = speedMapProp.animated
         ? this.nestedCompEvaluator.evaluate(speedMapProp, parentFrame)
@@ -229,11 +241,20 @@ export class NestedCompLayer extends BaseLayer {
 
     // Apply time stretch and frame rate conversion
     let nestedFrame: number;
-    if (this.nestedCompData.overrideFrameRate && this.nestedCompData.frameRate) {
+    if (
+      this.nestedCompData.overrideFrameRate &&
+      this.nestedCompData.frameRate
+    ) {
       // Validate parent FPS to prevent division by zero
-      const parentFps = (Number.isFinite(this.parentFPS) && this.parentFPS > 0) ? this.parentFPS : 16;
-      const childFps = (Number.isFinite(this.nestedCompData.frameRate) && this.nestedCompData.frameRate > 0)
-        ? this.nestedCompData.frameRate : 16;
+      const parentFps =
+        Number.isFinite(this.parentFPS) && this.parentFPS > 0
+          ? this.parentFPS
+          : 16;
+      const childFps =
+        Number.isFinite(this.nestedCompData.frameRate) &&
+        this.nestedCompData.frameRate > 0
+          ? this.nestedCompData.frameRate
+          : 16;
       nestedFrame = layerFrame * stretchFactor * (childFps / parentFps);
     } else {
       nestedFrame = layerFrame * stretchFactor;
@@ -264,13 +285,13 @@ export class NestedCompLayer extends BaseLayer {
     // Clamp to composition bounds
     const clampedFrame = Math.max(
       0,
-      Math.min(nestedFrame, this.cachedComposition.settings.frameCount - 1)
+      Math.min(nestedFrame, this.cachedComposition.settings.frameCount - 1),
     );
 
     // Request render of nested composition
     this.renderTexture = this.renderContext.renderComposition(
       this.nestedCompData.compositionId,
-      clampedFrame
+      clampedFrame,
     );
 
     // Update material with rendered texture
@@ -286,7 +307,9 @@ export class NestedCompLayer extends BaseLayer {
     }
   }
 
-  protected override onApplyEvaluatedState(state: import('../MotionEngine').EvaluatedLayer): void {
+  protected override onApplyEvaluatedState(
+    state: import("../MotionEngine").EvaluatedLayer,
+  ): void {
     const props = state.properties;
 
     // Apply opacity to material (opacity is on EvaluatedLayer, not transform)
@@ -299,9 +322,12 @@ export class NestedCompLayer extends BaseLayer {
 
     // Apply speed map if evaluated
     // Check both new 'speedMap' and legacy 'timeRemap' for backwards compatibility
-    const speedMapValue = props['speedMap'] ?? props['timeRemap'];
-    const speedMapEnabled = this.nestedCompData.speedMapEnabled ?? this.nestedCompData.timeRemapEnabled;
-    const speedMapProp = this.nestedCompData.speedMap ?? this.nestedCompData.timeRemap;
+    const speedMapValue = props.speedMap ?? props.timeRemap;
+    const speedMapEnabled =
+      this.nestedCompData.speedMapEnabled ??
+      this.nestedCompData.timeRemapEnabled;
+    const speedMapProp =
+      this.nestedCompData.speedMap ?? this.nestedCompData.timeRemap;
     if (speedMapValue !== undefined && speedMapEnabled && speedMapProp) {
       // Update the speed map value for the next evaluation cycle
       speedMapProp.value = speedMapValue as number;
@@ -424,9 +450,12 @@ export class NestedCompLayer extends BaseLayer {
 
     // Position: nested position offset by parent position (accounting for scale)
     const combinedPosition = {
-      x: parent.position.x + (nestedTransform.position.x * parent.scale.x / 100),
-      y: parent.position.y + (nestedTransform.position.y * parent.scale.y / 100),
-      z: parent.position.z + (nestedTransform.position.z * parent.scale.z / 100),
+      x:
+        parent.position.x + (nestedTransform.position.x * parent.scale.x) / 100,
+      y:
+        parent.position.y + (nestedTransform.position.y * parent.scale.y) / 100,
+      z:
+        parent.position.z + (nestedTransform.position.z * parent.scale.z) / 100,
     };
 
     // Rotation: add rotations (simplified - true 3D would use quaternions)
@@ -438,13 +467,14 @@ export class NestedCompLayer extends BaseLayer {
 
     // Scale: multiply scales
     const combinedScale = {
-      x: parent.scale.x * nestedTransform.scale.x / 100,
-      y: parent.scale.y * nestedTransform.scale.y / 100,
-      z: parent.scale.z * nestedTransform.scale.z / 100,
+      x: (parent.scale.x * nestedTransform.scale.x) / 100,
+      y: (parent.scale.y * nestedTransform.scale.y) / 100,
+      z: (parent.scale.z * nestedTransform.scale.z) / 100,
     };
 
     // Opacity: multiply (normalized to 0-100)
-    const combinedOpacity = (parent.opacity / 100) * (nestedTransform.opacity / 100) * 100;
+    const combinedOpacity =
+      (parent.opacity / 100) * (nestedTransform.opacity / 100) * 100;
 
     return {
       position: combinedPosition,
@@ -462,7 +492,7 @@ export class NestedCompLayer extends BaseLayer {
     if (!this.cachedComposition) {
       return [];
     }
-    return this.cachedComposition.layers.map(l => l.id);
+    return this.cachedComposition.layers.map((l) => l.id);
   }
 
   /**
@@ -473,7 +503,7 @@ export class NestedCompLayer extends BaseLayer {
     if (!this.cachedComposition) {
       return false;
     }
-    return this.cachedComposition.layers.some(l => l.threeD);
+    return this.cachedComposition.layers.some((l) => l.threeD);
   }
 
   /**
@@ -496,8 +526,13 @@ export class NestedCompLayer extends BaseLayer {
         this.setComposition(data.compositionId);
       }
       // Check speedMap first (new naming), then timeRemap (backwards compatibility)
-      if (data.speedMapEnabled !== undefined || data.timeRemapEnabled !== undefined) {
-        this.setSpeedMapEnabled(data.speedMapEnabled ?? data.timeRemapEnabled ?? false);
+      if (
+        data.speedMapEnabled !== undefined ||
+        data.timeRemapEnabled !== undefined
+      ) {
+        this.setSpeedMapEnabled(
+          data.speedMapEnabled ?? data.timeRemapEnabled ?? false,
+        );
       }
       if (data.speedMap !== undefined || data.timeRemap !== undefined) {
         this.setSpeedMap((data.speedMap ?? data.timeRemap)!);
@@ -505,10 +540,13 @@ export class NestedCompLayer extends BaseLayer {
       if (data.flattenTransform !== undefined) {
         this.setFlattenTransform(data.flattenTransform);
       }
-      if (data.overrideFrameRate !== undefined || data.frameRate !== undefined) {
+      if (
+        data.overrideFrameRate !== undefined ||
+        data.frameRate !== undefined
+      ) {
         this.setFrameRateOverride(
           data.overrideFrameRate ?? this.nestedCompData.overrideFrameRate,
-          data.frameRate ?? this.nestedCompData.frameRate
+          data.frameRate ?? this.nestedCompData.frameRate,
         );
       }
     }

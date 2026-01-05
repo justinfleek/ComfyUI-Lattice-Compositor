@@ -1,80 +1,85 @@
 /// <reference types="vitest" />
-import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
-import { resolve } from 'path'
+
+import { resolve } from "node:path";
+import vue from "@vitejs/plugin-vue";
+import { defineConfig } from "vite";
 
 export default defineConfig({
   plugins: [vue()],
   resolve: {
-    alias: { '@': resolve(__dirname, 'src') },
+    alias: { "@": resolve(__dirname, "src") },
   },
   test: {
     globals: true,
-    environment: 'node',
-    setupFiles: ['./src/__tests__/setup.ts'],
-    include: ['src/**/*.{test,spec}.{js,ts}'],
-    exclude: ['node_modules', 'dist'],
+    environment: "node",
+    setupFiles: ["./src/__tests__/setup.ts"],
+    include: ["src/**/*.{test,spec}.{js,ts}"],
+    exclude: ["node_modules", "dist"],
     coverage: {
-      provider: 'v8',
-      reporter: ['text', 'json', 'html'],
-      exclude: [
-        'node_modules/',
-        'src/__tests__/',
-        '**/*.d.ts',
-      ],
+      provider: "v8",
+      reporter: ["text", "json", "html"],
+      exclude: ["node_modules/", "src/__tests__/", "**/*.d.ts"],
     },
   },
   define: {
-    'process.env.NODE_ENV': '"production"',
-    'process.env': '{}',
-    'process': '{"env": {}}'
+    "process.env.NODE_ENV": '"production"',
+    "process.env": "{}",
+    process: '{"env": {}}',
   },
   build: {
-    outDir: '../web/js',
+    outDir: "../web/js",
     emptyOutDir: false,
     lib: {
-      entry: resolve(__dirname, 'src/main.ts'),
-      name: 'LatticeCompositor',
-      fileName: () => 'lattice-compositor.js',
-      formats: ['es']
+      entry: resolve(__dirname, "src/main.ts"),
+      name: "LatticeCompositor",
+      fileName: () => "lattice-compositor.js",
+      formats: ["es"],
     },
     rollupOptions: {
       output: {
         // Allow code splitting for lazy-loaded modules
         inlineDynamicImports: false,
-        assetFileNames: 'lattice-compositor[extname]',
+        assetFileNames: "lattice-compositor[extname]",
         // Named chunks for better caching
-        chunkFileNames: 'lattice-[name].js',
-        entryFileNames: 'lattice-compositor.js',
+        chunkFileNames: "lattice-[name].js",
+        entryFileNames: "lattice-compositor.js",
         // Manual chunks for heavy dependencies
         manualChunks(id) {
           // Three.js and related 3D libraries
-          if (id.includes('node_modules/three') ||
-              id.includes('node_modules/troika')) {
-            return 'three-vendor';
+          if (
+            id.includes("node_modules/three") ||
+            id.includes("node_modules/troika")
+          ) {
+            return "three-vendor";
           }
           // Export/encoding libraries
-          if (id.includes('node_modules/jszip') ||
-              id.includes('node_modules/mp4-muxer') ||
-              id.includes('node_modules/webm-muxer')) {
-            return 'export-vendor';
+          if (
+            id.includes("node_modules/jszip") ||
+            id.includes("node_modules/mp4-muxer") ||
+            id.includes("node_modules/webm-muxer")
+          ) {
+            return "export-vendor";
           }
           // Vue ecosystem
-          if (id.includes('node_modules/vue') ||
-              id.includes('node_modules/pinia') ||
-              id.includes('node_modules/@vue') ||
-              id.includes('node_modules/@vueuse')) {
-            return 'vue-vendor';
+          if (
+            id.includes("node_modules/vue") ||
+            id.includes("node_modules/pinia") ||
+            id.includes("node_modules/@vue") ||
+            id.includes("node_modules/@vueuse")
+          ) {
+            return "vue-vendor";
           }
           // UI components
-          if (id.includes('node_modules/splitpanes') ||
-              id.includes('node_modules/primevue') ||
-              id.includes('node_modules/primeicons')) {
-            return 'ui-vendor';
+          if (
+            id.includes("node_modules/splitpanes") ||
+            id.includes("node_modules/primevue") ||
+            id.includes("node_modules/primeicons")
+          ) {
+            return "ui-vendor";
           }
           // Security: SES sandbox (must be included, has side effects)
-          if (id.includes('node_modules/ses')) {
-            return 'security-vendor';
+          if (id.includes("node_modules/ses")) {
+            return "security-vendor";
           }
         },
       },
@@ -89,11 +94,11 @@ export default defineConfig({
       },
     },
     // Minification settings
-    minify: 'terser',
+    minify: "terser",
     terserOptions: {
       compress: {
         // Remove console.log in production (keep warn/error)
-        pure_funcs: ['console.debug'],
+        pure_funcs: ["console.debug"],
         // Dead code elimination
         dead_code: true,
         // Remove unreachable code
@@ -119,7 +124,7 @@ export default defineConfig({
       },
     },
     // Target modern browsers for smaller output
-    target: 'esnext',
+    target: "esnext",
     // Asset inlining
     assetsInlineLimit: 100000,
     // No sourcemaps in production
@@ -131,30 +136,30 @@ export default defineConfig({
   optimizeDeps: {
     // Pre-bundle these heavy dependencies
     include: [
-      'three',
-      'pinia',
-      'vue',
-      'ses', // Security sandbox - must be pre-bundled
+      "three",
+      "pinia",
+      "vue",
+      "ses", // Security sandbox - must be pre-bundled
     ],
     // Exclude workers from pre-bundling
     exclude: [],
   },
   // Worker configuration
   worker: {
-    format: 'es',
+    format: "es",
     plugins: () => [vue()],
     rollupOptions: {
       output: {
         // Workers get their own chunks
-        entryFileNames: 'worker-[name].js',
+        entryFileNames: "worker-[name].js",
       },
     },
   },
   server: {
     port: 5173,
     proxy: {
-      '/lattice': 'http://localhost:8188',
-      '/api': 'http://localhost:8188',
-    }
+      "/lattice": "http://localhost:8188",
+      "/api": "http://localhost:8188",
+    },
   },
-})
+});

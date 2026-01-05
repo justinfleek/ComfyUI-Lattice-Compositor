@@ -231,25 +231,32 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, computed, nextTick, shallowRef } from 'vue';
-import * as THREE from 'three';
-import { useCompositorStore } from '@/stores/compositorStore';
-import { useSelectionStore } from '@/stores/selectionStore';
-import { markLayerDirty } from '@/services/layerEvaluationCache';
-import { LatticeEngine } from '@/engine';
-import type { LatticeEngineConfig, PerformanceStats } from '@/engine';
-import type { LayerTransformUpdate } from '@/engine/LatticeEngine';
-import type { Layer, ControlPoint } from '@/types/project';
-import SplineEditor from './SplineEditor.vue';
-import MotionPathOverlay from './MotionPathOverlay.vue';
+import * as THREE from "three";
 import {
-  useCanvasSelection,
+  computed,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref,
+  shallowRef,
+  watch,
+} from "vue";
+import {
+  type SelectableItem,
+  type SelectionMode,
   useCanvasSegmentation,
+  useCanvasSelection,
   useShapeDrawing,
   useViewportGuides,
-  type SelectableItem,
-  type SelectionMode
-} from '@/composables';
+} from "@/composables";
+import type { LatticeEngineConfig, PerformanceStats } from "@/engine";
+import { LatticeEngine } from "@/engine";
+import type { LayerTransformUpdate } from "@/engine/LatticeEngine";
+import { markLayerDirty } from "@/services/layerEvaluationCache";
+import { useCompositorStore } from "@/stores/compositorStore";
+import { useSelectionStore } from "@/stores/selectionStore";
+import type { ControlPoint, Layer } from "@/types/project";
+import type SplineEditor from "./SplineEditor.vue";
 
 // Store
 const store = useCompositorStore();
@@ -258,7 +265,7 @@ const selection = useSelectionStore();
 // Refs
 const containerRef = ref<HTMLDivElement | null>(null);
 const canvasRef = ref<HTMLCanvasElement | null>(null);
-const splineEditorRef = ref<InstanceType<typeof SplineEditor> | null>(null);
+const _splineEditorRef = ref<InstanceType<typeof SplineEditor> | null>(null);
 
 // Engine instance (shallowRef for performance - don't make Three.js objects reactive)
 const engine = shallowRef<LatticeEngine | null>(null);
@@ -269,12 +276,12 @@ const zoom = ref(1);
 const canvasWidth = ref(800);
 const canvasHeight = ref(600);
 // Composition dimensions (in composition units, not pixels)
-const compositionWidth = computed(() => store.width || 832);
-const compositionHeight = computed(() => store.height || 480);
+const _compositionWidth = computed(() => store.width || 832);
+const _compositionHeight = computed(() => store.height || 480);
 const showDepthOverlay = ref(false);
-const depthColormap = ref<'viridis' | 'plasma' | 'grayscale'>('viridis');
+const depthColormap = ref<"viridis" | "plasma" | "grayscale">("viridis");
 const depthOpacity = ref(50);
-const renderMode = ref<'color' | 'depth' | 'normal'>('color');
+const renderMode = ref<"color" | "depth" | "normal">("color");
 const showPerformance = ref(false);
 const performanceStats = ref<PerformanceStats>({
   fps: 0,
@@ -283,26 +290,28 @@ const performanceStats = ref<PerformanceStats>({
   triangles: 0,
   textures: 0,
   geometries: 0,
-  memoryUsed: 0
+  memoryUsed: 0,
 });
 
 // Pan/zoom state
 const viewportTransform = ref<number[]>([1, 0, 0, 1, 0, 0]);
 
 // Viewer controls
-const zoomLevel = ref<string>('fit');
-const resolution = ref<'full' | 'half' | 'third' | 'quarter' | 'custom'>('full');
+const zoomLevel = ref<string>("fit");
+const resolution = ref<"full" | "half" | "third" | "quarter" | "custom">(
+  "full",
+);
 
 // Computed zoom display percentage
-const zoomDisplayPercent = computed(() => Math.round(zoom.value * 100));
+const _zoomDisplayPercent = computed(() => Math.round(zoom.value * 100));
 
 // Transform mode for transform controls
-const transformMode = ref<'translate' | 'rotate' | 'scale'>('translate');
+const transformMode = ref<"translate" | "rotate" | "scale">("translate");
 
 // Composition guide toggles (showSafeFrameGuides, showResolutionGuides come from useViewportGuides)
 const showGrid = ref(false);
-const showOutsideOverlay = ref(false);  // Disabled by default until fixed
-const showMotionPath = ref(true);  // Motion path visualization enabled by default
+const showOutsideOverlay = ref(false); // Disabled by default until fixed
+const _showMotionPath = ref(true); // Motion path visualization enabled by default
 
 // Segmentation composable
 const {
@@ -314,7 +323,7 @@ const {
   finishSegmentBox,
   handleSegmentPoint,
   getSegmentBoxStyle,
-  getMaskOverlayStyle
+  getMaskOverlayStyle,
 } = useCanvasSegmentation();
 
 // Shape drawing composable
@@ -329,7 +338,7 @@ const {
   startDrawing: startShapeDrawing,
   updateDrawing: updateShapeDrawing,
   cancelDrawing: cancelShapeDrawing,
-  finishDrawing: finishShapeDrawing
+  finishDrawing: finishShapeDrawing,
 } = useShapeDrawing();
 
 // Viewport guides composable
@@ -344,14 +353,14 @@ const {
   safeFrameBottomStyle,
   compositionBoundaryStyle,
   resolutionCropGuides,
-  triggerGuideUpdate
+  triggerGuideUpdate,
 } = useViewportGuides({
   containerRef,
   engine,
   canvasWidth,
   canvasHeight,
   zoom,
-  viewportTransform
+  viewportTransform,
 });
 
 // ============================================================
@@ -359,7 +368,7 @@ const {
 // ============================================================
 
 // Enable marquee selection only when using select tool
-const marqueeEnabled = computed(() => store.currentTool === 'select');
+const marqueeEnabled = computed(() => store.currentTool === "select");
 
 /**
  * Get all layers as selectable items with their screen-space bounds
@@ -395,12 +404,15 @@ function getSelectableItems(): SelectableItem[] {
     ];
 
     const rect = containerRef.value.getBoundingClientRect();
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    let minX = Infinity,
+      minY = Infinity,
+      maxX = -Infinity,
+      maxY = -Infinity;
 
     for (const corner of corners) {
       corner.project(camera);
-      const screenX = (corner.x + 1) / 2 * rect.width;
-      const screenY = (-corner.y + 1) / 2 * rect.height;
+      const screenX = ((corner.x + 1) / 2) * rect.width;
+      const screenY = ((-corner.y + 1) / 2) * rect.height;
       minX = Math.min(minX, screenX);
       minY = Math.min(minY, screenY);
       maxX = Math.max(maxX, screenX);
@@ -424,18 +436,21 @@ function getSelectableItems(): SelectableItem[] {
 /**
  * Handle marquee selection changes
  */
-function handleMarqueeSelectionChange(selectedIds: string[], mode: SelectionMode) {
-  if (mode === 'replace') {
+function handleMarqueeSelectionChange(
+  selectedIds: string[],
+  mode: SelectionMode,
+) {
+  if (mode === "replace") {
     if (selectedIds.length === 0) {
       selection.clearLayerSelection();
     } else {
       selection.selectLayers(selectedIds);
     }
-  } else if (mode === 'add') {
+  } else if (mode === "add") {
     for (const id of selectedIds) {
       selection.addToSelection(id);
     }
-  } else if (mode === 'subtract') {
+  } else if (mode === "subtract") {
     for (const id of selectedIds) {
       selection.removeFromSelection(id);
     }
@@ -462,11 +477,15 @@ const {
 });
 
 // Computed styles for segmentation overlays (use composable methods)
-const maskOverlayStyle = computed(() => getMaskOverlayStyle(viewportTransform.value));
-const segmentBoxStyle = computed(() => getSegmentBoxStyle(viewportTransform.value));
+const _maskOverlayStyle = computed(() =>
+  getMaskOverlayStyle(viewportTransform.value),
+);
+const _segmentBoxStyle = computed(() =>
+  getSegmentBoxStyle(viewportTransform.value),
+);
 
 // Shape preview style (bounds and path come from composable)
-const shapePreviewStyle = computed(() => {
+const _shapePreviewStyle = computed(() => {
   const bounds = shapePreviewBounds.value;
   if (!bounds) return {};
 
@@ -482,49 +501,49 @@ const shapePreviewStyle = computed(() => {
     left: `${Math.min(screenX1, screenX2)}px`,
     top: `${Math.min(screenY1, screenY2)}px`,
     width: `${Math.abs(screenX2 - screenX1)}px`,
-    height: `${Math.abs(screenY2 - screenY1)}px`
+    height: `${Math.abs(screenY2 - screenY1)}px`,
   };
 });
 
 // Safe frame and resolution guides are provided by useViewportGuides composable
 
 // Computed
-const hasDepthMap = computed(() => store.depthMap !== null);
-const isPenMode = computed(() => store.currentTool === 'pen');
+const _hasDepthMap = computed(() => store.depthMap !== null);
+const isPenMode = computed(() => store.currentTool === "pen");
 
 // Drag and drop state
 const isDragOver = ref(false);
 
-function onDragOver(event: DragEvent) {
-  if (event.dataTransfer?.types.includes('application/project-item')) {
+function _onDragOver(event: DragEvent) {
+  if (event.dataTransfer?.types.includes("application/project-item")) {
     isDragOver.value = true;
   }
 }
 
-function onDragLeave() {
+function _onDragLeave() {
   isDragOver.value = false;
 }
 
-function onDrop(event: DragEvent) {
+function _onDrop(event: DragEvent) {
   isDragOver.value = false;
 
-  const data = event.dataTransfer?.getData('application/project-item');
+  const data = event.dataTransfer?.getData("application/project-item");
   if (!data) return;
 
   try {
     const item = JSON.parse(data) as {
       id: string;
       name: string;
-      type: 'composition' | 'footage' | 'solid' | 'audio' | 'folder';
+      type: "composition" | "footage" | "solid" | "audio" | "folder";
     };
 
-    console.log('[ThreeCanvas] Dropped item:', item);
+    console.log("[ThreeCanvas] Dropped item:", item);
 
     // Handle footage items (images/videos)
-    if (item.type === 'footage') {
+    if (item.type === "footage") {
       const asset = store.project.assets[item.id];
       if (asset) {
-        if (asset.type === 'image' && asset.data) {
+        if (asset.type === "image" && asset.data) {
           // Load image to get dimensions and resize composition
           const img = new Image();
           img.onload = () => {
@@ -533,54 +552,62 @@ function onDrop(event: DragEvent) {
             if (compId) {
               store.updateCompositionSettings(compId, {
                 width: img.naturalWidth,
-                height: img.naturalHeight
+                height: img.naturalHeight,
               });
             }
 
             // Create the layer after resizing
-            const layer = store.createLayer('image', item.name);
+            const layer = store.createLayer("image", item.name);
             if (layer) {
               (layer.data as any).assetId = item.id;
               (layer.data as any).source = asset.data;
               store.selectLayer(layer.id);
-              console.log('[ThreeCanvas] Created image layer, resized comp to:', img.naturalWidth, 'x', img.naturalHeight);
+              console.log(
+                "[ThreeCanvas] Created image layer, resized comp to:",
+                img.naturalWidth,
+                "x",
+                img.naturalHeight,
+              );
             }
           };
           img.src = asset.data;
-        } else if (asset.type === 'video') {
-          const layer = store.createLayer('video', item.name);
+        } else if (asset.type === "video") {
+          const layer = store.createLayer("video", item.name);
           if (layer) {
             (layer.data as any).assetId = item.id;
             store.selectLayer(layer.id);
-            console.log('[ThreeCanvas] Created video layer from drop:', item.name);
+            console.log(
+              "[ThreeCanvas] Created video layer from drop:",
+              item.name,
+            );
           }
         }
       }
-    } else if (item.type === 'solid') {
-      const layer = store.createLayer('solid', item.name);
+    } else if (item.type === "solid") {
+      const layer = store.createLayer("solid", item.name);
       if (layer) {
         store.selectLayer(layer.id);
-        console.log('[ThreeCanvas] Created solid layer from drop:', item.name);
+        console.log("[ThreeCanvas] Created solid layer from drop:", item.name);
       }
     }
   } catch (e) {
-    console.error('[ThreeCanvas] Failed to handle drop:', e);
+    console.error("[ThreeCanvas] Failed to handle drop:", e);
   }
 }
 
 const activeSplineLayerId = computed(() => {
   const selectedLayer = store.selectedLayer;
-  if (selectedLayer?.type === 'spline') {
+  if (selectedLayer?.type === "spline") {
     return selectedLayer.id;
   }
   if (isPenMode.value) {
-    const splines = store.layers.filter(l => l.type === 'spline');
+    const splines = store.layers.filter((l) => l.type === "spline");
     return splines.length > 0 ? splines[splines.length - 1].id : null;
   }
   return null;
 });
 
-const viewportTransformArray = computed(() => viewportTransform.value);
+const _viewportTransformArray = computed(() => viewportTransform.value);
 
 // Initialize Three.js engine
 onMounted(async () => {
@@ -602,8 +629,8 @@ onMounted(async () => {
     pixelRatio: Math.min(window.devicePixelRatio, 2), // Cap at 2 for performance
     antialias: true,
     alpha: true,
-    backgroundColor: store.backgroundColor || '#050505',
-    powerPreference: 'high-performance'
+    backgroundColor: store.backgroundColor || "#050505",
+    powerPreference: "high-performance",
   };
 
   try {
@@ -618,7 +645,8 @@ onMounted(async () => {
     engine.value.setCameraCallbacks(
       (cameraId: string) => store.getCamera(cameraId),
       (cameraId: string, updates) => store.updateCamera(cameraId, updates),
-      (cameraId: string, frame: number) => store.getCameraAtFrame(cameraId, frame)
+      (cameraId: string, frame: number) =>
+        store.getCameraAtFrame(cameraId, frame),
     );
 
     // Wire up nested comp rendering - allows nested comp layers to render nested compositions
@@ -629,7 +657,7 @@ onMounted(async () => {
         // Get the composition data from store
         const comp = store.getComposition(compositionId);
         if (!comp) {
-          console.warn('[ThreeCanvas] Nested comp not found:', compositionId);
+          console.warn("[ThreeCanvas] Nested comp not found:", compositionId);
           return null;
         }
 
@@ -640,30 +668,33 @@ onMounted(async () => {
         }
 
         // Render the composition to a texture using the engine's nested comp system
-        return engine.value!.renderCompositionToTexture(
+        return engine.value?.renderCompositionToTexture(
           compositionId,
           comp.layers,
           {
             width: comp.settings.width,
             height: comp.settings.height,
-            fps: comp.settings.fps
+            fps: comp.settings.fps,
           },
-          frame
+          frame,
         );
       },
-      getComposition: (compositionId: string) => store.getComposition(compositionId)
+      getComposition: (compositionId: string) =>
+        store.getComposition(compositionId),
     });
 
     // Wire up audio reactivity - connects audio analysis to layer properties
-    engine.value.setAudioReactiveCallback(
-      (layerId: string, frame: number) => store.getAudioReactiveValuesForLayer(layerId, frame)
+    engine.value.setAudioReactiveCallback((layerId: string, frame: number) =>
+      store.getAudioReactiveValuesForLayer(layerId, frame),
     );
 
     // Initialize transform controls and wire callback to update store
     engine.value.initializeTransformControls();
-    engine.value.setTransformChangeCallback((layerId: string, transform: LayerTransformUpdate) => {
-      handleTransformChange(layerId, transform);
-    });
+    engine.value.setTransformChangeCallback(
+      (layerId: string, transform: LayerTransformUpdate) => {
+        handleTransformChange(layerId, transform);
+      },
+    );
 
     // Initialize particle systems with renderer and composition FPS
     engine.value.initializeParticleSystems();
@@ -703,9 +734,8 @@ onMounted(async () => {
 
     // Center on composition
     centerOnComposition();
-
   } catch (err) {
-    console.error('[ThreeCanvas] Failed to initialize engine:', err);
+    console.error("[ThreeCanvas] Failed to initialize engine:", err);
   } finally {
     loading.value = false;
   }
@@ -735,7 +765,7 @@ function setupWatchers() {
         engine.value.applyFrameState(frameState);
       }
     },
-    { deep: true }
+    { deep: true },
   );
 
   // Watch current frame - use MotionEngine as single source of truth
@@ -753,7 +783,7 @@ function setupWatchers() {
         // This is the canonical path - no interpolation happens in the engine
         engine.value.applyFrameState(frameState);
       }
-    }
+    },
   );
 
   // Watch composition size
@@ -762,11 +792,16 @@ function setupWatchers() {
     ([width, height]) => {
       if (engine.value) {
         // Update engine with new composition dimensions
-        engine.value.resize(canvasWidth.value, canvasHeight.value, width as number, height as number);
+        engine.value.resize(
+          canvasWidth.value,
+          canvasHeight.value,
+          width as number,
+          height as number,
+        );
         // Re-fit to viewport with new composition size
         centerOnComposition();
       }
-    }
+    },
   );
 
   // Watch source image
@@ -777,7 +812,7 @@ function setupWatchers() {
         await loadSourceImage(imageData);
       }
     },
-    { immediate: true }
+    { immediate: true },
   );
 
   // Watch depth map
@@ -788,7 +823,7 @@ function setupWatchers() {
         await loadDepthMap(depthData);
       }
     },
-    { immediate: true }
+    { immediate: true },
   );
 
   // Performance stats update
@@ -798,7 +833,7 @@ function setupWatchers() {
       if (stats) {
         performanceStats.value = stats;
       }
-    }
+    },
   );
 
   // Watch active camera and sync to engine
@@ -814,14 +849,15 @@ function setupWatchers() {
 
       // Find the camera layer that references this camera
       const cameraLayer = store.layers.find(
-        l => l.type === 'camera' && (l.data as any)?.cameraId === activeCameraId
+        (l) =>
+          l.type === "camera" && (l.data as any)?.cameraId === activeCameraId,
       );
 
       if (cameraLayer) {
         engine.value.setActiveCameraLayer(cameraLayer.id);
       }
     },
-    { immediate: true }
+    { immediate: true },
   );
 
   // Watch selected layer and sync transform controls
@@ -833,7 +869,7 @@ function setupWatchers() {
       const selectedId = selectedIds.length > 0 ? selectedIds[0] : null;
       engine.value.selectLayer(selectedId);
     },
-    { deep: true }
+    { deep: true },
   );
 
   // Watch view options and sync to engine
@@ -844,7 +880,7 @@ function setupWatchers() {
       showGrid.value = showGridVisible;
       engine.value.setCompositionGridVisible(showGridVisible);
     },
-    { immediate: true }
+    { immediate: true },
   );
 
   // Watch composition bounds toggle
@@ -857,7 +893,7 @@ function setupWatchers() {
       // Always hide 3D bounds - CSS version is used instead (see .composition-boundary)
       engine.value.setCompositionBoundsVisible(false);
     },
-    { immediate: true }
+    { immediate: true },
   );
 
   // Watch background color changes
@@ -866,7 +902,7 @@ function setupWatchers() {
     (newColor) => {
       if (!engine.value) return;
       engine.value.setBackground(newColor);
-    }
+    },
   );
 }
 
@@ -875,18 +911,22 @@ function syncLayersToEngine() {
   if (!engine.value) return;
 
   const engineLayerIds = new Set(engine.value.getLayerIds());
-  const storeLayerIds = new Set(store.layers.map(l => l.id));
+  const storeLayerIds = new Set(store.layers.map((l) => l.id));
 
-  console.log('[ThreeCanvas] syncLayersToEngine:', {
+  console.log("[ThreeCanvas] syncLayersToEngine:", {
     engineLayers: Array.from(engineLayerIds),
     storeLayers: Array.from(storeLayerIds),
-    storeLayerDetails: store.layers.map(l => ({ id: l.id, type: l.type, name: l.name }))
+    storeLayerDetails: store.layers.map((l) => ({
+      id: l.id,
+      type: l.type,
+      name: l.name,
+    })),
   });
 
   // Remove layers no longer in store
   for (const id of engineLayerIds) {
     if (!storeLayerIds.has(id)) {
-      console.log('[ThreeCanvas] Removing layer:', id);
+      console.log("[ThreeCanvas] Removing layer:", id);
       engine.value.removeLayer(id);
     }
   }
@@ -896,7 +936,12 @@ function syncLayersToEngine() {
     if (engineLayerIds.has(layer.id)) {
       engine.value.updateLayer(layer.id, layer);
     } else {
-      console.log('[ThreeCanvas] Adding layer:', layer.id, layer.type, layer.name);
+      console.log(
+        "[ThreeCanvas] Adding layer:",
+        layer.id,
+        layer.type,
+        layer.name,
+      );
       engine.value.addLayer(layer);
     }
   }
@@ -932,9 +977,8 @@ async function loadSourceImage(imageData: string) {
     // Create a background image layer in the engine
     // This is handled through the ResourceManager
     engine.value.setBackgroundImage(img);
-
   } catch (err) {
-    console.error('[ThreeCanvas] Failed to load source image:', err);
+    console.error("[ThreeCanvas] Failed to load source image:", err);
   } finally {
     loading.value = false;
   }
@@ -949,10 +993,10 @@ async function loadDepthMap(depthData: string) {
     engine.value.setDepthMap(img, {
       colormap: depthColormap.value,
       opacity: depthOpacity.value / 100,
-      visible: showDepthOverlay.value
+      visible: showDepthOverlay.value,
     });
   } catch (err) {
-    console.error('[ThreeCanvas] Failed to load depth map:', err);
+    console.error("[ThreeCanvas] Failed to load depth map:", err);
   }
 }
 
@@ -960,10 +1004,10 @@ async function loadDepthMap(depthData: string) {
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.crossOrigin = 'anonymous';
+    img.crossOrigin = "anonymous";
     img.onload = () => resolve(img);
     img.onerror = reject;
-    img.src = src.startsWith('data:') ? src : `data:image/png;base64,${src}`;
+    img.src = src.startsWith("data:") ? src : `data:image/png;base64,${src}`;
   });
 }
 
@@ -982,60 +1026,68 @@ function setupInputHandlers() {
   let selectClickStart: { x: number; y: number } | null = null;
 
   // Prevent default middle mouse behavior
-  container.addEventListener('mousedown', (e: MouseEvent) => {
+  container.addEventListener("mousedown", (e: MouseEvent) => {
     if (e.button === 1) {
       e.preventDefault();
     }
   });
 
-  container.addEventListener('auxclick', (e: MouseEvent) => {
+  container.addEventListener("auxclick", (e: MouseEvent) => {
     if (e.button === 1) {
       e.preventDefault();
     }
   });
 
   // Prevent browser context menu on right-click (we'll use it for orbit)
-  container.addEventListener('contextmenu', (e: Event) => {
+  container.addEventListener("contextmenu", (e: Event) => {
     e.preventDefault();
   });
 
   // Wheel zoom - simple zoom centered on composition
-  canvas.addEventListener('wheel', (e: WheelEvent) => {
-    e.preventDefault();
+  canvas.addEventListener(
+    "wheel",
+    (e: WheelEvent) => {
+      e.preventDefault();
 
-    const delta = e.deltaY;
-    let newZoom = zoom.value * (delta > 0 ? 0.9 : 1.1);
-    newZoom = Math.min(Math.max(newZoom, 0.1), 10);
+      const delta = e.deltaY;
+      let newZoom = zoom.value * (delta > 0 ? 0.9 : 1.1);
+      newZoom = Math.min(Math.max(newZoom, 0.1), 10);
 
-    // Update zoom state
-    zoom.value = newZoom;
-    viewportTransform.value[0] = newZoom;
-    viewportTransform.value[3] = newZoom;
+      // Update zoom state
+      zoom.value = newZoom;
+      viewportTransform.value[0] = newZoom;
+      viewportTransform.value[3] = newZoom;
 
-    if (engine.value) {
-      // Update camera zoom - this maintains centered view unless panning
-      engine.value.getCameraController().setZoom(newZoom);
-      // Force boundary update after camera change
-      cameraUpdateTrigger.value++;
-    }
-  }, { passive: false });
+      if (engine.value) {
+        // Update camera zoom - this maintains centered view unless panning
+        engine.value.getCameraController().setZoom(newZoom);
+        // Force boundary update after camera change
+        cameraUpdateTrigger.value++;
+      }
+    },
+    { passive: false },
+  );
 
   // Mouse down
-  canvas.addEventListener('mousedown', (e: MouseEvent) => {
+  canvas.addEventListener("mousedown", (e: MouseEvent) => {
     const currentTool = store.currentTool;
 
     // Middle mouse or Alt+Left for panning
-    if (e.button === 1 || currentTool === 'hand' || (e.button === 0 && e.altKey)) {
+    if (
+      e.button === 1 ||
+      currentTool === "hand" ||
+      (e.button === 0 && e.altKey)
+    ) {
       isPanning = true;
       lastPosX = e.clientX;
       lastPosY = e.clientY;
-      canvas.style.cursor = 'grabbing';
+      canvas.style.cursor = "grabbing";
       e.preventDefault();
       return;
     }
 
     // Zoom tool
-    if (currentTool === 'zoom') {
+    if (currentTool === "zoom") {
       if (e.shiftKey) {
         // Zoom out on shift+click
         const newZoom = Math.max(zoom.value * 0.7, 0.1);
@@ -1055,34 +1107,44 @@ function setupInputHandlers() {
     }
 
     // Text tool - create text layer at click position
-    if (currentTool === 'text') {
+    if (currentTool === "text") {
       const rect = canvas.getBoundingClientRect();
-      const scenePos = screenToScene(e.clientX - rect.left, e.clientY - rect.top);
+      const scenePos = screenToScene(
+        e.clientX - rect.left,
+        e.clientY - rect.top,
+      );
 
-      const newLayer = store.createLayer('text');
+      const newLayer = store.createLayer("text");
       if (newLayer.transform?.position) {
-        newLayer.transform.position.value = { x: scenePos.x, y: scenePos.y, z: 0 };
+        newLayer.transform.position.value = {
+          x: scenePos.x,
+          y: scenePos.y,
+          z: 0,
+        };
       }
       store.updateLayer(newLayer.id, {
         transform: {
           ...newLayer.transform,
           position: {
-            ...newLayer.transform!.position,
-            value: { x: scenePos.x, y: scenePos.y, z: 0 }
-          }
-        }
+            ...newLayer.transform?.position,
+            value: { x: scenePos.x, y: scenePos.y, z: 0 },
+          },
+        },
       });
       store.selectLayer(newLayer.id);
-      store.setTool('select');
+      store.setTool("select");
       return;
     }
 
     // Segment tool - click to segment or start box selection
-    if (currentTool === 'segment' && e.button === 0) {
+    if (currentTool === "segment" && e.button === 0) {
       const rect = canvas.getBoundingClientRect();
-      const scenePos = screenToScene(e.clientX - rect.left, e.clientY - rect.top);
+      const scenePos = screenToScene(
+        e.clientX - rect.left,
+        e.clientY - rect.top,
+      );
 
-      if (store.segmentMode === 'point') {
+      if (store.segmentMode === "point") {
         // Point mode - segment at click position
         handleSegmentPoint(scenePos.x, scenePos.y);
       } else {
@@ -1093,17 +1155,26 @@ function setupInputHandlers() {
     }
 
     // Shape tools - start drawing shape (use composable)
-    if (['rectangle', 'ellipse', 'polygon', 'star'].includes(currentTool) && e.button === 0) {
+    if (
+      ["rectangle", "ellipse", "polygon", "star"].includes(currentTool) &&
+      e.button === 0
+    ) {
       const rect = canvas.getBoundingClientRect();
-      const scenePos = screenToScene(e.clientX - rect.left, e.clientY - rect.top);
+      const scenePos = screenToScene(
+        e.clientX - rect.left,
+        e.clientY - rect.top,
+      );
 
-      startShapeDrawing(currentTool as 'rectangle' | 'ellipse' | 'polygon' | 'star', scenePos);
-      canvas.style.cursor = 'crosshair';
+      startShapeDrawing(
+        currentTool as "rectangle" | "ellipse" | "polygon" | "star",
+        scenePos,
+      );
+      canvas.style.cursor = "crosshair";
       return;
     }
 
     // Selection - raycast to find layer
-    if (currentTool === 'select' && e.button === 0) {
+    if (currentTool === "select" && e.button === 0) {
       // Don't handle selection if transform controls are being dragged
       if (engine.value?.isTransformDragging()) {
         return;
@@ -1127,7 +1198,7 @@ function setupInputHandlers() {
   });
 
   // Mouse move
-  canvas.addEventListener('mousemove', (e: MouseEvent) => {
+  canvas.addEventListener("mousemove", (e: MouseEvent) => {
     if (isPanning && engine.value) {
       const dx = e.clientX - lastPosX;
       const dy = e.clientY - lastPosY;
@@ -1143,8 +1214,8 @@ function setupInputHandlers() {
       // Calculate world units per screen pixel at current zoom
       // When zoomed out (zoom < 1), each screen pixel represents more world units
       const compHeight = store.height || 1080;
-      const fovRad = Math.PI * camera.getFOV() / 180;
-      const distance = (compHeight / 2) / Math.tan(fovRad / 2) / zoom.value;
+      const fovRad = (Math.PI * camera.getFOV()) / 180;
+      const distance = compHeight / 2 / Math.tan(fovRad / 2) / zoom.value;
       const viewHeight = 2 * distance * Math.tan(fovRad / 2);
       const container = containerRef.value;
 
@@ -1155,7 +1226,7 @@ function setupInputHandlers() {
         // Update pan - negative dx moves camera left (view shifts right)
         camera.setPan(
           currentPan.x - dx * worldPerPixel,
-          currentPan.y - dy * worldPerPixel  // Positive dy should move camera up (view shifts down)
+          currentPan.y - dy * worldPerPixel, // Positive dy should move camera up (view shifts down)
         );
 
         // Update viewportTransform for 2D overlays (screenToScene uses this)
@@ -1187,7 +1258,10 @@ function setupInputHandlers() {
     // Handle segment box drawing (use composable)
     if (isDrawingSegmentBox.value && store.segmentBoxStart) {
       const rect = canvas.getBoundingClientRect();
-      const scenePos = screenToScene(e.clientX - rect.left, e.clientY - rect.top);
+      const scenePos = screenToScene(
+        e.clientX - rect.left,
+        e.clientY - rect.top,
+      );
       updateSegmentBox(scenePos);
       return;
     }
@@ -1195,34 +1269,42 @@ function setupInputHandlers() {
     // Handle shape drawing (use composable)
     if (isDrawingShape.value && shapeDrawStart.value) {
       const rect = canvas.getBoundingClientRect();
-      const scenePos = screenToScene(e.clientX - rect.left, e.clientY - rect.top);
+      const scenePos = screenToScene(
+        e.clientX - rect.left,
+        e.clientY - rect.top,
+      );
       updateShapeDrawing(scenePos);
       return;
     }
 
     // Update cursor based on tool
     const currentTool = store.currentTool;
-    if (currentTool === 'hand') canvas.style.cursor = 'grab';
-    else if (currentTool === 'zoom') canvas.style.cursor = 'zoom-in';
-    else if (currentTool === 'text') canvas.style.cursor = 'text';
-    else if (currentTool === 'pen') canvas.style.cursor = 'crosshair';
-    else if (currentTool === 'segment') canvas.style.cursor = 'crosshair';
-    else if (['rectangle', 'ellipse', 'polygon', 'star'].includes(currentTool)) canvas.style.cursor = 'crosshair';
-    else canvas.style.cursor = 'default';
+    if (currentTool === "hand") canvas.style.cursor = "grab";
+    else if (currentTool === "zoom") canvas.style.cursor = "zoom-in";
+    else if (currentTool === "text") canvas.style.cursor = "text";
+    else if (currentTool === "pen") canvas.style.cursor = "crosshair";
+    else if (currentTool === "segment") canvas.style.cursor = "crosshair";
+    else if (["rectangle", "ellipse", "polygon", "star"].includes(currentTool))
+      canvas.style.cursor = "crosshair";
+    else canvas.style.cursor = "default";
   });
 
   // Mouse up
-  canvas.addEventListener('mouseup', (e: MouseEvent) => {
+  canvas.addEventListener("mouseup", (e: MouseEvent) => {
     if (isPanning) {
       isPanning = false;
-      canvas.style.cursor = store.currentTool === 'hand' ? 'grab' : 'default';
+      canvas.style.cursor = store.currentTool === "hand" ? "grab" : "default";
     }
     if (isZooming) {
       isZooming = false;
     }
 
     // Finish segment box selection (use composable)
-    if (isDrawingSegmentBox.value && store.segmentBoxStart && segmentBoxEnd.value) {
+    if (
+      isDrawingSegmentBox.value &&
+      store.segmentBoxStart &&
+      segmentBoxEnd.value
+    ) {
       finishSegmentBox();
     }
 
@@ -1248,7 +1330,7 @@ function setupInputHandlers() {
   });
 
   // Mouse leave
-  canvas.addEventListener('mouseleave', () => {
+  canvas.addEventListener("mouseleave", () => {
     isPanning = false;
     isZooming = false;
     selectClickStart = null; // Cancel pending selection clear
@@ -1264,11 +1346,14 @@ function setupInputHandlers() {
 }
 
 // Convert screen coordinates to scene coordinates
-function screenToScene(screenX: number, screenY: number): { x: number; y: number } {
+function screenToScene(
+  screenX: number,
+  screenY: number,
+): { x: number; y: number } {
   const vpt = viewportTransform.value;
   return {
     x: (screenX - vpt[4]) / vpt[0],
-    y: (screenY - vpt[5]) / vpt[3]
+    y: (screenY - vpt[5]) / vpt[3],
   };
 }
 
@@ -1278,8 +1363,11 @@ function screenToScene(screenX: number, screenY: number): { x: number; y: number
  * Handle transform changes from TransformControls
  * Updates the store with the new transform values
  */
-function handleTransformChange(layerId: string, transform: LayerTransformUpdate) {
-  const layer = store.layers.find(l => l.id === layerId);
+function handleTransformChange(
+  layerId: string,
+  transform: LayerTransformUpdate,
+) {
+  const layer = store.layers.find((l) => l.id === layerId);
   if (!layer) return;
 
   // Build the update object for the store
@@ -1293,27 +1381,43 @@ function handleTransformChange(layerId: string, transform: LayerTransformUpdate)
         value: {
           x: transform.position.x,
           y: transform.position.y,
-          z: transform.position.z ?? (layer.transform.position?.value as any)?.z ?? 0
-        }
-      }
+          z:
+            transform.position.z ??
+            (layer.transform.position?.value as any)?.z ??
+            0,
+        },
+      },
     };
   }
 
   // Handle rotation - for 3D layers use rotationX/Y/Z, for 2D use rotation
   if (layer.threeD) {
-    if (transform.rotationX !== undefined || transform.rotationY !== undefined || transform.rotationZ !== undefined) {
+    if (
+      transform.rotationX !== undefined ||
+      transform.rotationY !== undefined ||
+      transform.rotationZ !== undefined
+    ) {
       if (!updates.transform && layer.transform) {
         updates.transform = { ...layer.transform };
       }
       if (updates.transform) {
         if (transform.rotationX !== undefined) {
-          updates.transform.rotationX = { ...layer.transform!.rotationX!, value: transform.rotationX };
+          updates.transform.rotationX = {
+            ...layer.transform.rotationX!,
+            value: transform.rotationX,
+          };
         }
         if (transform.rotationY !== undefined) {
-          updates.transform.rotationY = { ...layer.transform!.rotationY!, value: transform.rotationY };
+          updates.transform.rotationY = {
+            ...layer.transform.rotationY!,
+            value: transform.rotationY,
+          };
         }
         if (transform.rotationZ !== undefined) {
-          updates.transform.rotationZ = { ...layer.transform!.rotationZ!, value: transform.rotationZ };
+          updates.transform.rotationZ = {
+            ...layer.transform.rotationZ!,
+            value: transform.rotationZ,
+          };
         }
       }
     }
@@ -1323,7 +1427,10 @@ function handleTransformChange(layerId: string, transform: LayerTransformUpdate)
       if (!updates.transform) {
         updates.transform = { ...layer.transform };
       }
-      updates.transform.rotation = { ...layer.transform.rotation!, value: transform.rotation };
+      updates.transform.rotation = {
+        ...layer.transform.rotation!,
+        value: transform.rotation,
+      };
     }
   }
 
@@ -1337,8 +1444,8 @@ function handleTransformChange(layerId: string, transform: LayerTransformUpdate)
       value: {
         x: transform.scale.x,
         y: transform.scale.y,
-        z: transform.scale.z ?? (layer.transform.scale?.value as any)?.z ?? 100
-      }
+        z: transform.scale.z ?? (layer.transform.scale?.value as any)?.z ?? 100,
+      },
     };
   }
 
@@ -1351,7 +1458,7 @@ function handleTransformChange(layerId: string, transform: LayerTransformUpdate)
 /**
  * Set transform mode (translate/rotate/scale)
  */
-function setTransformModeTo(mode: 'translate' | 'rotate' | 'scale') {
+function setTransformModeTo(mode: "translate" | "rotate" | "scale") {
   transformMode.value = mode;
   if (engine.value) {
     engine.value.setTransformMode(mode);
@@ -1402,7 +1509,7 @@ function centerOnComposition() {
 }
 
 // Render mode switching
-function setRenderMode(mode: 'color' | 'depth' | 'normal') {
+function setRenderMode(mode: "color" | "depth" | "normal") {
   renderMode.value = mode;
   if (engine.value) {
     engine.value.setRenderMode(mode);
@@ -1410,27 +1517,30 @@ function setRenderMode(mode: 'color' | 'depth' | 'normal') {
 }
 
 // Spline editor handlers
-function onPointAdded(_point: ControlPoint) {
+function _onPointAdded(_point: ControlPoint) {
   if (!activeSplineLayerId.value) {
-    const newLayer = store.createLayer('spline');
+    const newLayer = store.createLayer("spline");
     store.selectLayer(newLayer.id);
   }
 }
 
-function onPathUpdated() {
+function _onPathUpdated() {
   syncLayersToEngine();
 }
 
-function togglePenMode() {
-  if (store.currentTool === 'pen') {
-    store.setTool('select');
+function _togglePenMode() {
+  if (store.currentTool === "pen") {
+    store.setTool("select");
   } else {
-    store.setTool('pen');
+    store.setTool("pen");
   }
 }
 
 // Motion path event handlers
-function onMotionPathKeyframeSelected(keyframeId: string, addToSelection: boolean) {
+function _onMotionPathKeyframeSelected(
+  keyframeId: string,
+  addToSelection: boolean,
+) {
   // Select the keyframe in the selection store
   if (addToSelection) {
     selection.addKeyframeToSelection(keyframeId);
@@ -1439,15 +1549,15 @@ function onMotionPathKeyframeSelected(keyframeId: string, addToSelection: boolea
   }
 }
 
-function onMotionPathGoToFrame(frame: number) {
+function _onMotionPathGoToFrame(frame: number) {
   // Go to the keyframe's frame
   store.setFrame(frame);
 }
 
-function onMotionPathTangentUpdated(
+function _onMotionPathTangentUpdated(
   keyframeId: string,
-  tangentType: 'in' | 'out',
-  delta: { x: number; y: number }
+  tangentType: "in" | "out",
+  delta: { x: number; y: number },
 ) {
   // Get the selected layer (motion path only shows for single selected layer)
   const layerId = store.selectedLayerIds?.[0];
@@ -1461,11 +1571,12 @@ function onMotionPathTangentUpdated(
   if (!positionProp?.keyframes) return;
 
   // Find the keyframe by ID
-  const keyframe = positionProp.keyframes.find(kf => kf.id === keyframeId);
+  const keyframe = positionProp.keyframes.find((kf) => kf.id === keyframeId);
   if (!keyframe) return;
 
   // Initialize spatial tangent if not present
-  const tangentKey = tangentType === 'in' ? 'spatialInTangent' : 'spatialOutTangent';
+  const tangentKey =
+    tangentType === "in" ? "spatialInTangent" : "spatialOutTangent";
   if (!keyframe[tangentKey]) {
     keyframe[tangentKey] = { x: 0, y: 0, z: 0 };
   }
@@ -1523,7 +1634,7 @@ function resetCamera() {
 /**
  * Toggle composition grid visibility
  */
-function toggleGrid() {
+function _toggleGrid() {
   // Update through store - the watch will sync to local ref and engine
   store.updateViewOptions({ showGrid: !store.viewOptions.showGrid });
 }
@@ -1532,7 +1643,7 @@ function toggleGrid() {
  * Toggle outside overlay (safe area) visibility
  * Uses CSS-based overlays for screen-space guides that stay fixed
  */
-function toggleOutsideOverlay() {
+function _toggleOutsideOverlay() {
   showOutsideOverlay.value = !showOutsideOverlay.value;
   showSafeFrameGuides.value = showOutsideOverlay.value;
   // Note: We no longer use the 3D overlay from engine
@@ -1544,7 +1655,7 @@ function toggleOutsideOverlay() {
  * Toggle resolution crop guides (480p/720p/1080p)
  * Shows center-based crop guides for standard export resolutions
  */
-function toggleResolutionGuides() {
+function _toggleResolutionGuides() {
   showResolutionGuides.value = !showResolutionGuides.value;
 }
 
@@ -1564,12 +1675,12 @@ function setZoom(newZoom: number) {
 /**
  * Handle zoom dropdown selection
  */
-function onZoomSelect() {
-  if (zoomLevel.value === 'fit') {
+function _onZoomSelect() {
+  if (zoomLevel.value === "fit") {
     fitToView();
   } else {
     const newZoom = parseFloat(zoomLevel.value);
-    if (!isNaN(newZoom)) {
+    if (!Number.isNaN(newZoom)) {
       setZoom(newZoom);
       if (engine.value) {
         engine.value.getCameraController().setZoom(newZoom);
@@ -1581,7 +1692,7 @@ function onZoomSelect() {
 /**
  * Handle resolution dropdown change
  */
-function onResolutionChange() {
+function _onResolutionChange() {
   if (!engine.value) return;
 
   const comp = store.getActiveComp();
@@ -1592,10 +1703,17 @@ function onResolutionChange() {
 
   let factor = 1;
   switch (resolution.value) {
-    case 'half': factor = 0.5; break;
-    case 'third': factor = 1/3; break;
-    case 'quarter': factor = 0.25; break;
-    default: factor = 1;
+    case "half":
+      factor = 0.5;
+      break;
+    case "third":
+      factor = 1 / 3;
+      break;
+    case "quarter":
+      factor = 0.25;
+      break;
+    default:
+      factor = 1;
   }
 
   const newWidth = Math.round(fullWidth * factor);
@@ -1603,7 +1721,9 @@ function onResolutionChange() {
 
   // Update renderer resolution (affects render quality)
   engine.value.setResolution(newWidth, newHeight);
-  console.log(`[ThreeCanvas] Resolution changed to ${resolution.value}: ${newWidth}x${newHeight}`);
+  console.log(
+    `[ThreeCanvas] Resolution changed to ${resolution.value}: ${newWidth}x${newHeight}`,
+  );
 }
 
 // Capture frame for export
@@ -1614,14 +1734,14 @@ async function captureFrame(): Promise<string | null> {
   if (!result?.imageData) return null;
 
   // Convert ImageData to data URL
-  const canvas = document.createElement('canvas');
+  const canvas = document.createElement("canvas");
   canvas.width = result.width;
   canvas.height = result.height;
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext("2d");
   if (!ctx) return null;
 
   ctx.putImageData(result.imageData, 0, 0);
-  return canvas.toDataURL('image/png');
+  return canvas.toDataURL("image/png");
 }
 
 // Capture depth for ComfyUI
@@ -1632,24 +1752,24 @@ async function captureDepth(): Promise<string | null> {
   if (!result?.depthBuffer) return null;
 
   // Convert depth buffer to grayscale image data URL
-  const canvas = document.createElement('canvas');
+  const canvas = document.createElement("canvas");
   canvas.width = result.width;
   canvas.height = result.height;
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext("2d");
   if (!ctx) return null;
 
   const imageData = ctx.createImageData(result.width, result.height);
   for (let i = 0; i < result.depthBuffer.length; i++) {
     const value = Math.floor(result.depthBuffer[i] * 255);
     const idx = i * 4;
-    imageData.data[idx] = value;     // R
+    imageData.data[idx] = value; // R
     imageData.data[idx + 1] = value; // G
     imageData.data[idx + 2] = value; // B
-    imageData.data[idx + 3] = 255;   // A
+    imageData.data[idx + 3] = 255; // A
   }
 
   ctx.putImageData(imageData, 0, 0);
-  return canvas.toDataURL('image/png');
+  return canvas.toDataURL("image/png");
 }
 
 // Watch depth overlay settings
@@ -1687,7 +1807,7 @@ defineExpose({
   setRenderMode,
   transformMode,
   setTransformModeTo,
-  resetCamera
+  resetCamera,
 });
 </script>
 

@@ -5,7 +5,7 @@
  * This enables testing of browser-dependent code like MotionBlurProcessor.
  */
 
-import { vi } from 'vitest';
+import { vi } from "vitest";
 
 // ============================================================================
 // ImageData Mock
@@ -23,12 +23,16 @@ class MockImageData {
   readonly data: Uint8ClampedArray;
   readonly width: number;
   readonly height: number;
-  readonly colorSpace: PredefinedColorSpace = 'srgb';
+  readonly colorSpace: PredefinedColorSpace = "srgb";
 
   constructor(sw: number, sh: number);
   constructor(data: Uint8ClampedArray, sw: number, sh?: number);
-  constructor(dataOrWidth: Uint8ClampedArray | number, swOrHeight: number, sh?: number) {
-    if (typeof dataOrWidth === 'number') {
+  constructor(
+    dataOrWidth: Uint8ClampedArray | number,
+    swOrHeight: number,
+    sh?: number,
+  ) {
+    if (typeof dataOrWidth === "number") {
       // new ImageData(width, height)
       this.width = dataOrWidth;
       this.height = swOrHeight;
@@ -37,7 +41,7 @@ class MockImageData {
       // new ImageData(data, width, height?)
       this.data = dataOrWidth;
       this.width = swOrHeight;
-      this.height = sh ?? (dataOrWidth.length / 4 / swOrHeight);
+      this.height = sh ?? dataOrWidth.length / 4 / swOrHeight;
     }
   }
 }
@@ -48,29 +52,27 @@ class MockImageData {
 
 class MockOffscreenCanvasRenderingContext2D {
   canvas: MockOffscreenCanvas;
-  fillStyle: string | CanvasGradient | CanvasPattern = '#000000';
-  strokeStyle: string | CanvasGradient | CanvasPattern = '#000000';
+  fillStyle: string | CanvasGradient | CanvasPattern = "#000000";
+  strokeStyle: string | CanvasGradient | CanvasPattern = "#000000";
   lineWidth: number = 1;
   globalAlpha: number = 1;
-  globalCompositeOperation: GlobalCompositeOperation = 'source-over';
-  filter: string = 'none';
-
-  private imageData: MockImageData;
+  globalCompositeOperation: GlobalCompositeOperation = "source-over";
+  filter: string = "none";
 
   constructor(canvas: MockOffscreenCanvas) {
     this.canvas = canvas;
     this.imageData = new MockImageData(canvas.width, canvas.height);
   }
 
-  fillRect(x: number, y: number, w: number, h: number): void {
+  fillRect(_x: number, _y: number, _w: number, _h: number): void {
     // Mock implementation - fills with current fillStyle
   }
 
-  clearRect(x: number, y: number, w: number, h: number): void {
+  clearRect(_x: number, _y: number, _w: number, _h: number): void {
     // Mock implementation
   }
 
-  strokeRect(x: number, y: number, w: number, h: number): void {
+  strokeRect(_x: number, _y: number, _w: number, _h: number): void {
     // Mock implementation
   }
 
@@ -78,12 +80,14 @@ class MockOffscreenCanvasRenderingContext2D {
     image: CanvasImageSource,
     dx: number,
     dy: number,
-    dw?: number,
-    dh?: number
+    _dw?: number,
+    _dh?: number,
   ): void {
     // Mock implementation - copy image data if available
     if (image instanceof MockOffscreenCanvas) {
-      const srcCtx = image.getContext('2d') as unknown as MockOffscreenCanvasRenderingContext2D;
+      const srcCtx = image.getContext(
+        "2d",
+      ) as unknown as MockOffscreenCanvasRenderingContext2D;
       if (srcCtx) {
         const srcData = srcCtx.getImageData(0, 0, image.width, image.height);
         this.putImageData(srcData as unknown as ImageData, dx, dy);
@@ -91,14 +95,14 @@ class MockOffscreenCanvasRenderingContext2D {
     }
   }
 
-  getImageData(sx: number, sy: number, sw: number, sh: number): ImageData {
+  getImageData(_sx: number, _sy: number, sw: number, sh: number): ImageData {
     // Return a portion of the image data
     const data = new Uint8ClampedArray(sw * sh * 4);
     // Copy relevant portion (simplified - just returns empty data with correct size)
     return new MockImageData(data, sw, sh) as unknown as ImageData;
   }
 
-  putImageData(imageData: ImageData, dx: number, dy: number): void {
+  putImageData(imageData: ImageData, _dx: number, _dy: number): void {
     // Mock implementation - store image data
     this.imageData = imageData as MockImageData;
   }
@@ -106,38 +110,82 @@ class MockOffscreenCanvasRenderingContext2D {
   createImageData(sw: number, sh: number): ImageData;
   createImageData(imagedata: ImageData): ImageData;
   createImageData(swOrImageData: number | ImageData, sh?: number): ImageData {
-    if (typeof swOrImageData === 'number') {
+    if (typeof swOrImageData === "number") {
       return new MockImageData(swOrImageData, sh!) as unknown as ImageData;
     }
-    return new MockImageData(swOrImageData.width, swOrImageData.height) as unknown as ImageData;
+    return new MockImageData(
+      swOrImageData.width,
+      swOrImageData.height,
+    ) as unknown as ImageData;
   }
 
   save(): void {}
   restore(): void {}
-  scale(x: number, y: number): void {}
-  rotate(angle: number): void {}
-  translate(x: number, y: number): void {}
-  transform(a: number, b: number, c: number, d: number, e: number, f: number): void {}
-  setTransform(a: number, b: number, c: number, d: number, e: number, f: number): void {}
+  scale(_x: number, _y: number): void {}
+  rotate(_angle: number): void {}
+  translate(_x: number, _y: number): void {}
+  transform(
+    _a: number,
+    _b: number,
+    _c: number,
+    _d: number,
+    _e: number,
+    _f: number,
+  ): void {}
+  setTransform(
+    _a: number,
+    _b: number,
+    _c: number,
+    _d: number,
+    _e: number,
+    _f: number,
+  ): void {}
   resetTransform(): void {}
 
   beginPath(): void {}
   closePath(): void {}
-  moveTo(x: number, y: number): void {}
-  lineTo(x: number, y: number): void {}
-  arc(x: number, y: number, r: number, start: number, end: number, ccw?: boolean): void {}
-  arcTo(x1: number, y1: number, x2: number, y2: number, r: number): void {}
-  bezierCurveTo(cp1x: number, cp1y: number, cp2x: number, cp2y: number, x: number, y: number): void {}
-  quadraticCurveTo(cpx: number, cpy: number, x: number, y: number): void {}
-  rect(x: number, y: number, w: number, h: number): void {}
-  ellipse(x: number, y: number, rx: number, ry: number, rot: number, start: number, end: number, ccw?: boolean): void {}
+  moveTo(_x: number, _y: number): void {}
+  lineTo(_x: number, _y: number): void {}
+  arc(
+    _x: number,
+    _y: number,
+    _r: number,
+    _start: number,
+    _end: number,
+    _ccw?: boolean,
+  ): void {}
+  arcTo(_x1: number, _y1: number, _x2: number, _y2: number, _r: number): void {}
+  bezierCurveTo(
+    _cp1x: number,
+    _cp1y: number,
+    _cp2x: number,
+    _cp2y: number,
+    _x: number,
+    _y: number,
+  ): void {}
+  quadraticCurveTo(_cpx: number, _cpy: number, _x: number, _y: number): void {}
+  rect(_x: number, _y: number, _w: number, _h: number): void {}
+  ellipse(
+    _x: number,
+    _y: number,
+    _rx: number,
+    _ry: number,
+    _rot: number,
+    _start: number,
+    _end: number,
+    _ccw?: boolean,
+  ): void {}
 
-  fill(fillRule?: CanvasFillRule): void {}
+  fill(_fillRule?: CanvasFillRule): void {}
   stroke(): void {}
-  clip(fillRule?: CanvasFillRule): void {}
+  clip(_fillRule?: CanvasFillRule): void {}
 
-  isPointInPath(x: number, y: number): boolean { return false; }
-  isPointInStroke(x: number, y: number): boolean { return false; }
+  isPointInPath(_x: number, _y: number): boolean {
+    return false;
+  }
+  isPointInStroke(_x: number, _y: number): boolean {
+    return false;
+  }
 
   measureText(text: string): TextMetrics {
     return {
@@ -156,22 +204,37 @@ class MockOffscreenCanvasRenderingContext2D {
     };
   }
 
-  fillText(text: string, x: number, y: number, maxWidth?: number): void {}
-  strokeText(text: string, x: number, y: number, maxWidth?: number): void {}
+  fillText(_text: string, _x: number, _y: number, _maxWidth?: number): void {}
+  strokeText(_text: string, _x: number, _y: number, _maxWidth?: number): void {}
 
-  createLinearGradient(x0: number, y0: number, x1: number, y1: number): CanvasGradient {
+  createLinearGradient(
+    _x0: number,
+    _y0: number,
+    _x1: number,
+    _y1: number,
+  ): CanvasGradient {
     return {
       addColorStop: () => {},
     } as CanvasGradient;
   }
 
-  createRadialGradient(x0: number, y0: number, r0: number, x1: number, y1: number, r1: number): CanvasGradient {
+  createRadialGradient(
+    _x0: number,
+    _y0: number,
+    _r0: number,
+    _x1: number,
+    _y1: number,
+    _r1: number,
+  ): CanvasGradient {
     return {
       addColorStop: () => {},
     } as CanvasGradient;
   }
 
-  createPattern(image: CanvasImageSource, repetition: string | null): CanvasPattern | null {
+  createPattern(
+    _image: CanvasImageSource,
+    _repetition: string | null,
+  ): CanvasPattern | null {
     return {} as CanvasPattern;
   }
 }
@@ -189,8 +252,8 @@ class MockOffscreenCanvas {
     this.height = height;
   }
 
-  getContext(contextId: string, options?: any): any {
-    if (contextId === '2d') {
+  getContext(contextId: string, _options?: any): any {
+    if (contextId === "2d") {
       if (!this.context) {
         this.context = new MockOffscreenCanvasRenderingContext2D(this as any);
       }
@@ -200,7 +263,9 @@ class MockOffscreenCanvas {
   }
 
   convertToBlob(options?: ImageEncodeOptions): Promise<Blob> {
-    return Promise.resolve(new Blob(['mock-image-data'], { type: options?.type || 'image/png' }));
+    return Promise.resolve(
+      new Blob(["mock-image-data"], { type: options?.type || "image/png" }),
+    );
   }
 
   transferToImageBitmap(): ImageBitmap {
@@ -211,9 +276,11 @@ class MockOffscreenCanvas {
     } as ImageBitmap;
   }
 
-  addEventListener(type: string, listener: EventListener): void {}
-  removeEventListener(type: string, listener: EventListener): void {}
-  dispatchEvent(event: Event): boolean { return true; }
+  addEventListener(_type: string, _listener: EventListener): void {}
+  removeEventListener(_type: string, _listener: EventListener): void {}
+  dispatchEvent(_event: Event): boolean {
+    return true;
+  }
 }
 
 // ============================================================================
@@ -225,23 +292,25 @@ class MockHTMLCanvasElement {
   height: number = 150;
   private context: MockOffscreenCanvasRenderingContext2D | null = null;
 
-  getContext(contextId: string, options?: any): any {
-    if (contextId === '2d') {
+  getContext(contextId: string, _options?: any): any {
+    if (contextId === "2d") {
       if (!this.context) {
         const offscreen = new MockOffscreenCanvas(this.width, this.height);
-        this.context = offscreen.getContext('2d') as MockOffscreenCanvasRenderingContext2D;
+        this.context = offscreen.getContext(
+          "2d",
+        ) as MockOffscreenCanvasRenderingContext2D;
       }
       return this.context;
     }
     return null;
   }
 
-  toDataURL(type?: string, quality?: number): string {
-    return 'data:image/png;base64,mockdata';
+  toDataURL(_type?: string, _quality?: number): string {
+    return "data:image/png;base64,mockdata";
   }
 
-  toBlob(callback: BlobCallback, type?: string, quality?: number): void {
-    callback(new Blob(['mock-image-data'], { type: type || 'image/png' }));
+  toBlob(callback: BlobCallback, type?: string, _quality?: number): void {
+    callback(new Blob(["mock-image-data"], { type: type || "image/png" }));
   }
 }
 
@@ -251,7 +320,7 @@ class MockHTMLCanvasElement {
 
 async function mockCreateImageBitmap(
   image: ImageBitmapSource,
-  options?: ImageBitmapOptions
+  options?: ImageBitmapOptions,
 ): Promise<ImageBitmap>;
 async function mockCreateImageBitmap(
   image: ImageBitmapSource,
@@ -259,15 +328,15 @@ async function mockCreateImageBitmap(
   sy: number,
   sw: number,
   sh: number,
-  options?: ImageBitmapOptions
+  options?: ImageBitmapOptions,
 ): Promise<ImageBitmap>;
 async function mockCreateImageBitmap(
   image: ImageBitmapSource,
-  sxOrOptions?: number | ImageBitmapOptions,
-  sy?: number,
-  sw?: number,
-  sh?: number,
-  options?: ImageBitmapOptions
+  _sxOrOptions?: number | ImageBitmapOptions,
+  _sy?: number,
+  _sw?: number,
+  _sh?: number,
+  _options?: ImageBitmapOptions,
 ): Promise<ImageBitmap> {
   let width = 100;
   let height = 100;
@@ -316,23 +385,23 @@ function mockCancelAnimationFrame(id: number): void {
 // ============================================================================
 
 // Only install if not already present (avoid overwriting in browser environment)
-if (typeof globalThis.ImageData === 'undefined') {
+if (typeof globalThis.ImageData === "undefined") {
   (globalThis as any).ImageData = MockImageData;
 }
 
-if (typeof globalThis.OffscreenCanvas === 'undefined') {
+if (typeof globalThis.OffscreenCanvas === "undefined") {
   (globalThis as any).OffscreenCanvas = MockOffscreenCanvas;
 }
 
-if (typeof globalThis.HTMLCanvasElement === 'undefined') {
+if (typeof globalThis.HTMLCanvasElement === "undefined") {
   (globalThis as any).HTMLCanvasElement = MockHTMLCanvasElement;
 }
 
-if (typeof globalThis.createImageBitmap === 'undefined') {
+if (typeof globalThis.createImageBitmap === "undefined") {
   (globalThis as any).createImageBitmap = mockCreateImageBitmap;
 }
 
-if (typeof globalThis.requestAnimationFrame === 'undefined') {
+if (typeof globalThis.requestAnimationFrame === "undefined") {
   (globalThis as any).requestAnimationFrame = mockRequestAnimationFrame;
   (globalThis as any).cancelAnimationFrame = mockCancelAnimationFrame;
 }
@@ -345,18 +414,23 @@ if (typeof globalThis.requestAnimationFrame === 'undefined') {
 const originalCreateElement = document.createElement.bind(document);
 
 // Override to return mock canvas for canvas elements
-document.createElement = function(tagName: string, options?: ElementCreationOptions): any {
-  if (tagName.toLowerCase() === 'canvas') {
+document.createElement = (
+  tagName: string,
+  options?: ElementCreationOptions,
+): any => {
+  if (tagName.toLowerCase() === "canvas") {
     const mockCanvas = {
       width: 300,
       height: 150,
       style: {},
       _context2d: null as MockOffscreenCanvasRenderingContext2D | null,
       getContext(contextId: string, _options?: any): any {
-        if (contextId === '2d') {
+        if (contextId === "2d") {
           if (!this._context2d) {
             const offscreen = new MockOffscreenCanvas(this.width, this.height);
-            this._context2d = offscreen.getContext('2d') as MockOffscreenCanvasRenderingContext2D;
+            this._context2d = offscreen.getContext(
+              "2d",
+            ) as MockOffscreenCanvasRenderingContext2D;
             // Sync canvas reference
             (this._context2d as any).canvas = this;
           }
@@ -365,18 +439,30 @@ document.createElement = function(tagName: string, options?: ElementCreationOpti
         return null;
       },
       toDataURL(_type?: string, _quality?: number): string {
-        return 'data:image/png;base64,mockdata';
+        return "data:image/png;base64,mockdata";
       },
       toBlob(callback: BlobCallback, type?: string, _quality?: number): void {
-        callback(new Blob(['mock-image-data'], { type: type || 'image/png' }));
+        callback(new Blob(["mock-image-data"], { type: type || "image/png" }));
       },
       getBoundingClientRect() {
-        return { top: 0, left: 0, right: this.width, bottom: this.height, width: this.width, height: this.height, x: 0, y: 0, toJSON: () => ({}) };
+        return {
+          top: 0,
+          left: 0,
+          right: this.width,
+          bottom: this.height,
+          width: this.width,
+          height: this.height,
+          x: 0,
+          y: 0,
+          toJSON: () => ({}),
+        };
       },
       addEventListener() {},
       removeEventListener() {},
       setAttribute() {},
-      getAttribute() { return null; },
+      getAttribute() {
+        return null;
+      },
     };
     return mockCanvas as unknown as HTMLCanvasElement;
   }
@@ -393,71 +479,78 @@ const originalGetComputedStyle = globalThis.getComputedStyle;
 // Create a comprehensive mock CSSStyleDeclaration for SVG elements
 function createMockCSSStyleDeclaration(): CSSStyleDeclaration {
   const styleValues: Record<string, string> = {
-    'fill': '#000000',
-    'stroke': 'none',
-    'stroke-width': '1',
-    'fill-opacity': '1',
-    'stroke-opacity': '1',
-    'opacity': '1',
-    'display': 'inline',
-    'visibility': 'visible',
-    'color': '#000000',
-    'font-family': 'sans-serif',
-    'font-size': '16px',
-    'font-weight': '400',
-    'font-style': 'normal',
-    'text-decoration': 'none',
-    'transform': 'none',
-    'clip-path': 'none',
-    'mask': 'none',
-    'filter': 'none',
+    fill: "#000000",
+    stroke: "none",
+    "stroke-width": "1",
+    "fill-opacity": "1",
+    "stroke-opacity": "1",
+    opacity: "1",
+    display: "inline",
+    visibility: "visible",
+    color: "#000000",
+    "font-family": "sans-serif",
+    "font-size": "16px",
+    "font-weight": "400",
+    "font-style": "normal",
+    "text-decoration": "none",
+    transform: "none",
+    "clip-path": "none",
+    mask: "none",
+    filter: "none",
   };
 
   // Use a Proxy to return empty string for any unknown property (not undefined)
   const handler: ProxyHandler<any> = {
-    get(target, prop) {
+    get(_target, prop) {
       // Handle known methods/properties
-      if (prop === 'getPropertyValue') {
-        return (name: string) => styleValues[name] ?? '';
+      if (prop === "getPropertyValue") {
+        return (name: string) => styleValues[name] ?? "";
       }
-      if (prop === 'getPropertyPriority') {
-        return () => '';
+      if (prop === "getPropertyPriority") {
+        return () => "";
       }
-      if (prop === 'item') {
-        return (_index: number) => '';
+      if (prop === "item") {
+        return (_index: number) => "";
       }
-      if (prop === 'length') {
+      if (prop === "length") {
         return 0;
       }
-      if (prop === 'parentRule') {
+      if (prop === "parentRule") {
         return null;
       }
-      if (prop === 'cssText') {
-        return '';
+      if (prop === "cssText") {
+        return "";
       }
-      if (prop === 'removeProperty') {
-        return () => '';
+      if (prop === "removeProperty") {
+        return () => "";
       }
-      if (prop === 'setProperty') {
+      if (prop === "setProperty") {
         return () => {};
       }
       if (prop === Symbol.iterator) {
         return function* () {};
       }
       // For any style property, return the value or empty string
-      if (typeof prop === 'string') {
-        return styleValues[prop] ?? '';
+      if (typeof prop === "string") {
+        return styleValues[prop] ?? "";
       }
       return undefined;
-    }
+    },
   };
 
   return new Proxy({}, handler) as unknown as CSSStyleDeclaration;
 }
 
-(globalThis as any).getComputedStyle = function(element: Element, pseudoElt?: string | null): CSSStyleDeclaration {
+(globalThis as any).getComputedStyle = (
+  element: Element,
+  pseudoElt?: string | null,
+): CSSStyleDeclaration => {
   // For SVG elements or any element in test environment
-  if (element instanceof SVGElement || element?.constructor?.name?.includes('SVG') || element?.tagName?.toLowerCase() === 'svg') {
+  if (
+    element instanceof SVGElement ||
+    element?.constructor?.name?.includes("SVG") ||
+    element?.tagName?.toLowerCase() === "svg"
+  ) {
     return createMockCSSStyleDeclaration();
   }
 
@@ -483,13 +576,8 @@ function createMockCSSStyleDeclaration(): CSSStyleDeclaration {
 // SVGElement mock for Three.js SVGLoader
 // ============================================================================
 
-if (typeof globalThis.SVGElement === 'undefined') {
-  (globalThis as any).SVGElement = class SVGElement extends Element {
-    constructor() {
-      // @ts-ignore - need to call super
-      super();
-    }
-  };
+if (typeof globalThis.SVGElement === "undefined") {
+  (globalThis as any).SVGElement = class SVGElement extends Element {};
 }
 
 // ============================================================================
@@ -515,12 +603,11 @@ export {
 export function createTestImageData(
   width: number = 100,
   height: number = 100,
-  fill: number | { r: number; g: number; b: number; a: number } = 128
+  fill: number | { r: number; g: number; b: number; a: number } = 128,
 ): ImageData {
   const data = new Uint8ClampedArray(width * height * 4);
-  const color = typeof fill === 'number'
-    ? { r: fill, g: fill, b: fill, a: 255 }
-    : fill;
+  const color =
+    typeof fill === "number" ? { r: fill, g: fill, b: fill, a: 255 } : fill;
 
   for (let i = 0; i < data.length; i += 4) {
     data[i] = color.r;
@@ -534,7 +621,10 @@ export function createTestImageData(
 /**
  * Create a test OffscreenCanvas with specified dimensions
  */
-export function createTestCanvas(width: number, height: number): OffscreenCanvas {
+export function createTestCanvas(
+  width: number,
+  height: number,
+): OffscreenCanvas {
   return new MockOffscreenCanvas(width, height) as unknown as OffscreenCanvas;
 }
 
@@ -545,7 +635,7 @@ export function flushAnimationFrames(): void {
   const callbacks = Array.from(rafCallbacks.values());
   rafCallbacks.clear();
   const now = performance.now();
-  callbacks.forEach(cb => cb(now));
+  callbacks.forEach((cb) => cb(now));
 }
 
 // ============================================================================
@@ -560,7 +650,7 @@ const indexedDBMock = {
       objectStoreNames: { contains: vi.fn() },
     },
     addEventListener: vi.fn((event, callback) => {
-      if (event === 'success') {
+      if (event === "success") {
         setTimeout(() => callback({ target: { result: {} } }), 0);
       }
     }),
@@ -570,6 +660,6 @@ const indexedDBMock = {
   }),
 };
 
-if (typeof globalThis.indexedDB === 'undefined') {
-  vi.stubGlobal('indexedDB', indexedDBMock);
+if (typeof globalThis.indexedDB === "undefined") {
+  vi.stubGlobal("indexedDB", indexedDBMock);
 }

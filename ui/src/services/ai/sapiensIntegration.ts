@@ -17,12 +17,12 @@
 /**
  * Sapiens model sizes
  */
-export type SapiensModelSize = '0.3B' | '0.6B' | '1B' | '2B';
+export type SapiensModelSize = "0.3B" | "0.6B" | "1B" | "2B";
 
 /**
  * Sapiens task types
  */
-export type SapiensTask = 'depth' | 'normal' | 'pose' | 'segmentation';
+export type SapiensTask = "depth" | "normal" | "pose" | "segmentation";
 
 /**
  * Sapiens inference configuration
@@ -109,19 +109,37 @@ export interface SapiensPoseResult {
  * Body part segmentation labels (28 parts)
  */
 export const SAPIENS_BODY_PARTS = [
-  'background',
-  'head', 'neck', 'torso',
-  'left_upper_arm', 'left_lower_arm', 'left_hand',
-  'right_upper_arm', 'right_lower_arm', 'right_hand',
-  'left_upper_leg', 'left_lower_leg', 'left_foot',
-  'right_upper_leg', 'right_lower_leg', 'right_foot',
-  'left_eye', 'right_eye', 'left_ear', 'right_ear',
-  'nose', 'upper_lip', 'lower_lip',
-  'hair', 'left_eyebrow', 'right_eyebrow',
-  'left_shoulder', 'right_shoulder',
+  "background",
+  "head",
+  "neck",
+  "torso",
+  "left_upper_arm",
+  "left_lower_arm",
+  "left_hand",
+  "right_upper_arm",
+  "right_lower_arm",
+  "right_hand",
+  "left_upper_leg",
+  "left_lower_leg",
+  "left_foot",
+  "right_upper_leg",
+  "right_lower_leg",
+  "right_foot",
+  "left_eye",
+  "right_eye",
+  "left_ear",
+  "right_ear",
+  "nose",
+  "upper_lip",
+  "lower_lip",
+  "hair",
+  "left_eyebrow",
+  "right_eyebrow",
+  "left_shoulder",
+  "right_shoulder",
 ] as const;
 
-export type SapiensBodyPart = typeof SAPIENS_BODY_PARTS[number];
+export type SapiensBodyPart = (typeof SAPIENS_BODY_PARTS)[number];
 
 /**
  * Sapiens segmentation result
@@ -143,8 +161,8 @@ export interface SapiensSegmentationResult {
  * Default Sapiens configuration
  */
 export const DEFAULT_SAPIENS_CONFIG: SapiensConfig = {
-  modelSize: '1B',
-  backendUrl: '/lattice/api/sapiens',
+  modelSize: "1B",
+  backendUrl: "/lattice/api/sapiens",
   useBfloat16: true,
   batchSize: 4,
 };
@@ -164,18 +182,19 @@ export class SapiensService {
    */
   async estimateDepth(
     frames: ImageData[],
-    segmentationMasks?: Uint8Array[]
+    segmentationMasks?: Uint8Array[],
   ): Promise<SapiensDepthResult[]> {
     // If no segmentation masks provided, run segmentation first
-    const masks = segmentationMasks ||
-      (await this.runSegmentation(frames)).map(r => r.mask);
+    const masks =
+      segmentationMasks ||
+      (await this.runSegmentation(frames)).map((r) => r.mask);
 
     const response = await fetch(`${this.config.backendUrl}/depth`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        frames: frames.map(f => imageDataToBase64(f)),
-        masks: masks.map(m => uint8ArrayToBase64(m)),
+        frames: frames.map((f) => imageDataToBase64(f)),
+        masks: masks.map((m) => uint8ArrayToBase64(m)),
         modelSize: this.config.modelSize,
         useBfloat16: this.config.useBfloat16,
         batchSize: this.config.batchSize,
@@ -183,7 +202,9 @@ export class SapiensService {
     });
 
     if (!response.ok) {
-      throw new Error(`Sapiens depth estimation failed: ${response.statusText}`);
+      throw new Error(
+        `Sapiens depth estimation failed: ${response.statusText}`,
+      );
     }
 
     const data = await response.json();
@@ -202,17 +223,18 @@ export class SapiensService {
    */
   async estimateNormals(
     frames: ImageData[],
-    segmentationMasks?: Uint8Array[]
+    segmentationMasks?: Uint8Array[],
   ): Promise<SapiensNormalResult[]> {
-    const masks = segmentationMasks ||
-      (await this.runSegmentation(frames)).map(r => r.mask);
+    const masks =
+      segmentationMasks ||
+      (await this.runSegmentation(frames)).map((r) => r.mask);
 
     const response = await fetch(`${this.config.backendUrl}/normal`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        frames: frames.map(f => imageDataToBase64(f)),
-        masks: masks.map(m => uint8ArrayToBase64(m)),
+        frames: frames.map((f) => imageDataToBase64(f)),
+        masks: masks.map((m) => uint8ArrayToBase64(m)),
         modelSize: this.config.modelSize,
         useBfloat16: this.config.useBfloat16,
         batchSize: this.config.batchSize,
@@ -220,7 +242,9 @@ export class SapiensService {
     });
 
     if (!response.ok) {
-      throw new Error(`Sapiens normal estimation failed: ${response.statusText}`);
+      throw new Error(
+        `Sapiens normal estimation failed: ${response.statusText}`,
+      );
     }
 
     const data = await response.json();
@@ -237,10 +261,10 @@ export class SapiensService {
    */
   async estimatePose(frames: ImageData[]): Promise<SapiensPoseResult[]> {
     const response = await fetch(`${this.config.backendUrl}/pose`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        frames: frames.map(f => imageDataToBase64(f)),
+        frames: frames.map((f) => imageDataToBase64(f)),
         modelSize: this.config.modelSize,
         useBfloat16: this.config.useBfloat16,
         batchSize: this.config.batchSize,
@@ -258,12 +282,14 @@ export class SapiensService {
   /**
    * Run body part segmentation
    */
-  async runSegmentation(frames: ImageData[]): Promise<SapiensSegmentationResult[]> {
+  async runSegmentation(
+    frames: ImageData[],
+  ): Promise<SapiensSegmentationResult[]> {
     const response = await fetch(`${this.config.backendUrl}/segmentation`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        frames: frames.map(f => imageDataToBase64(f)),
+        frames: frames.map((f) => imageDataToBase64(f)),
         modelSize: this.config.modelSize,
         useBfloat16: this.config.useBfloat16,
         batchSize: this.config.batchSize,
@@ -295,7 +321,7 @@ export class SapiensService {
   }> {
     // Run segmentation first (required for depth/normal)
     const segmentation = await this.runSegmentation(frames);
-    const masks = segmentation.map(s => s.mask);
+    const masks = segmentation.map((s) => s.mask);
 
     // Run other tasks in parallel
     const [depth, normals, pose] = await Promise.all([
@@ -312,19 +338,19 @@ export class SapiensService {
  * Convert ImageData to base64 PNG
  */
 function imageDataToBase64(imageData: ImageData): string {
-  const canvas = document.createElement('canvas');
+  const canvas = document.createElement("canvas");
   canvas.width = imageData.width;
   canvas.height = imageData.height;
-  const ctx = canvas.getContext('2d')!;
+  const ctx = canvas.getContext("2d")!;
   ctx.putImageData(imageData, 0, 0);
-  return canvas.toDataURL('image/png').split(',')[1];
+  return canvas.toDataURL("image/png").split(",")[1];
 }
 
 /**
  * Convert Uint8Array to base64
  */
 function uint8ArrayToBase64(array: Uint8Array): string {
-  let binary = '';
+  let binary = "";
   for (let i = 0; i < array.length; i++) {
     binary += String.fromCharCode(array[i]);
   }
@@ -351,7 +377,7 @@ function base64ToArrayBuffer(base64: string): ArrayBuffer {
 export function depthToPointCloud(
   depthResult: SapiensDepthResult,
   rgbFrame: ImageData,
-  intrinsics: { fx: number; fy: number; cx: number; cy: number }
+  intrinsics: { fx: number; fy: number; cx: number; cy: number },
 ): {
   points: Array<{ x: number; y: number; z: number }>;
   colors: Array<{ r: number; g: number; b: number }>;
@@ -374,8 +400,8 @@ export function depthToPointCloud(
       if (depth <= 0 || depth > 10) continue;
 
       // Backproject to 3D
-      const px = (x - cx) * depth / fx;
-      const py = (y - cy) * depth / fy;
+      const px = ((x - cx) * depth) / fx;
+      const py = ((y - cy) * depth) / fy;
       const pz = depth;
 
       points.push({ x: px, y: py, z: pz });
@@ -399,7 +425,7 @@ export function depthToPointCloud(
 export function createUni3CCameraData(
   depthResults: SapiensDepthResult[],
   rgbFrames: ImageData[],
-  fps: number = 16
+  _fps: number = 16,
 ): {
   K: number[][];
   depth_maps: Float32Array[];
@@ -421,13 +447,13 @@ export function createUni3CCameraData(
     [0, 0, 1],
   ];
 
-  const depth_maps = depthResults.map(r => r.depthMap);
+  const depth_maps = depthResults.map((r) => r.depthMap);
 
   const point_clouds = depthResults.map((depth, i) => {
     const pc = depthToPointCloud(depth, rgbFrames[i], { fx, fy, cx, cy });
     return {
-      points: pc.points.map(p => [p.x, p.y, p.z]),
-      colors: pc.colors.map(c => [c.r, c.g, c.b]),
+      points: pc.points.map((p) => [p.x, p.y, p.z]),
+      colors: pc.colors.map((c) => [c.r, c.g, c.b]),
     };
   });
 
@@ -440,7 +466,9 @@ let sapiensService: SapiensService | null = null;
 /**
  * Get the Sapiens service singleton
  */
-export function getSapiensService(config?: Partial<SapiensConfig>): SapiensService {
+export function getSapiensService(
+  config?: Partial<SapiensConfig>,
+): SapiensService {
   if (!sapiensService || config) {
     sapiensService = new SapiensService(config);
   }

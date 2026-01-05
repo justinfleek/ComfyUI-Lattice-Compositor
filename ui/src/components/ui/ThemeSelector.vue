@@ -22,23 +22,47 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { useThemeStore, type ThemeName } from '@/stores/themeStore';
+import { computed } from "vue";
+import { type ThemeName, useThemeStore } from "@/stores/themeStore";
 
 const themeStore = useThemeStore();
 
-const currentTheme = computed(() => themeStore.currentTheme);
+const _currentTheme = computed(() => themeStore.currentTheme);
 
-const themes: Array<{ name: ThemeName; label: string; gradient: string }> = [
-  { name: 'violet', label: 'Violet', gradient: 'linear-gradient(135deg, #8B5CF6, #EC4899)' },
-  { name: 'ocean', label: 'Ocean', gradient: 'linear-gradient(135deg, #06B6D4, #3B82F6)' },
-  { name: 'sunset', label: 'Sunset', gradient: 'linear-gradient(135deg, #F59E0B, #EF4444)' },
-  { name: 'forest', label: 'Forest', gradient: 'linear-gradient(135deg, #10B981, #06B6D4)' },
-  { name: 'ember', label: 'Ember', gradient: 'linear-gradient(135deg, #EF4444, #F97316)' },
-  { name: 'mono', label: 'Mono', gradient: 'linear-gradient(135deg, #4B5563, #6B7280)' },
+const _themes: Array<{ name: ThemeName; label: string; gradient: string }> = [
+  {
+    name: "violet",
+    label: "Violet",
+    gradient: "linear-gradient(135deg, #8B5CF6, #EC4899)",
+  },
+  {
+    name: "ocean",
+    label: "Ocean",
+    gradient: "linear-gradient(135deg, #06B6D4, #3B82F6)",
+  },
+  {
+    name: "sunset",
+    label: "Sunset",
+    gradient: "linear-gradient(135deg, #F59E0B, #EF4444)",
+  },
+  {
+    name: "forest",
+    label: "Forest",
+    gradient: "linear-gradient(135deg, #10B981, #06B6D4)",
+  },
+  {
+    name: "ember",
+    label: "Ember",
+    gradient: "linear-gradient(135deg, #EF4444, #F97316)",
+  },
+  {
+    name: "mono",
+    label: "Mono",
+    gradient: "linear-gradient(135deg, #4B5563, #6B7280)",
+  },
 ];
 
-function setTheme(theme: ThemeName) {
+function _setTheme(theme: ThemeName) {
   themeStore.setTheme(theme);
 }
 </script>

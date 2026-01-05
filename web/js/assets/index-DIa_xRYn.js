@@ -167,9 +167,7 @@ const arrayIncludes$1 = uncurryThis$1(arrayPrototype.includes);
 const arrayJoin = uncurryThis$1(arrayPrototype.join);
 /** @type {<T, U>(thisArg: readonly T[], callbackfn: (value: T, index: number, array: T[]) => U, cbThisArg?: any) => U[]} */
 const arrayMap = /** @type {any} */ (uncurryThis$1(arrayPrototype.map));
-const arrayFlatMap = /** @type {any} */ (
-  uncurryThis$1(arrayPrototype.flatMap)
-);
+const arrayFlatMap = /** @type {any} */ (uncurryThis$1(arrayPrototype.flatMap));
 const arrayPop = uncurryThis$1(arrayPrototype.pop);
 /** @type {<T>(thisArg: T[], ...items: T[]) => number} */
 const arrayPush$1 = uncurryThis$1(arrayPrototype.push);
@@ -182,7 +180,7 @@ const arrayBufferSlice$1 = uncurryThis$1(arrayBufferPrototype$2.slice);
 /** @type {(b: ArrayBuffer) => number} */
 const arrayBufferGetByteLength = uncurryThis$1(
   // @ts-expect-error we know it is there on all conforming platforms
-  getOwnPropertyDescriptor$1(arrayBufferPrototype$2, 'byteLength').get,
+  getOwnPropertyDescriptor$1(arrayBufferPrototype$2, "byteLength").get,
 );
 //
 const typedArraySet = uncurryThis$1(typedArrayPrototype$1.set);
@@ -242,12 +240,11 @@ const functionToString = uncurryThis$1(functionPrototype.toString);
 const functionBind = uncurryThis$1(bind);
 uncurryThis$1(promisePrototype.catch);
 /** @type {<T, TResult1 = T, TResult2 = never>(thisArg: T, onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null) => Promise<TResult1 | TResult2>} */
-const promiseThen = /** @type {any} */ (
-  uncurryThis$1(promisePrototype.then)
-);
+const promiseThen = /** @type {any} */ (uncurryThis$1(promisePrototype.then));
 //
 const finalizationRegistryRegister =
-  FinalizationRegistry && uncurryThis$1(FinalizationRegistry.prototype.register);
+  FinalizationRegistry &&
+  uncurryThis$1(FinalizationRegistry.prototype.register);
 FinalizationRegistry &&
   uncurryThis$1(FinalizationRegistry.prototype.unregister);
 
@@ -264,8 +261,8 @@ FinalizationRegistry &&
  * | string
  * | symbol)}
  */
-const isPrimitive = val =>
-  !val || (typeof val !== 'object' && typeof val !== 'function');
+const isPrimitive = (val) =>
+  !val || (typeof val !== "object" && typeof val !== "function");
 
 /**
  * isError tests whether an object inherits from the intrinsic
@@ -278,13 +275,13 @@ const isPrimitive = val =>
  *
  * @param {any} value
  */
-const isError = value => value instanceof FERAL_ERROR;
+const isError = (value) => value instanceof FERAL_ERROR;
 
 /**
  * @template T
  * @param {T} x
  */
-const identity = x => x;
+const identity = (x) => x;
 
 // The original unsafe untamed eval function, which must not escape.
 // Sample at module initialization time, which is before lockdown can
@@ -299,13 +296,15 @@ const FERAL_FUNCTION = Function;
 
 const noEvalEvaluate = () => {
   // See https://github.com/endojs/endo/blob/master/packages/ses/error-codes/SES_NO_EVAL.md
-  throw TypeError$3('Cannot eval with evalTaming set to "no-eval" (SES_NO_EVAL)');
+  throw TypeError$3(
+    'Cannot eval with evalTaming set to "no-eval" (SES_NO_EVAL)',
+  );
 };
 
 // ////////////////// FERAL_STACK_GETTER FERAL_STACK_SETTER ////////////////////
 
-const er1StackDesc = getOwnPropertyDescriptor$1(Error('er1'), 'stack');
-const er2StackDesc = getOwnPropertyDescriptor$1(TypeError$3('er2'), 'stack');
+const er1StackDesc = getOwnPropertyDescriptor$1(Error("er1"), "stack");
+const er2StackDesc = getOwnPropertyDescriptor$1(TypeError$3("er2"), "stack");
 
 let feralStackGetter;
 let feralStackSetter;
@@ -320,9 +319,9 @@ if (er1StackDesc && er2StackDesc && er1StackDesc.get) {
     // accessor property, but within the same realm, all these accessor
     // properties have the same getter and have the same setter.
     // This is therefore the case that we repair.
-    typeof er1StackDesc.get === 'function' &&
+    typeof er1StackDesc.get === "function" &&
     er1StackDesc.get === er2StackDesc.get &&
-    typeof er1StackDesc.set === 'function' &&
+    typeof er1StackDesc.set === "function" &&
     er1StackDesc.set === er2StackDesc.set
   ) {
     // Otherwise, we have own stack accessor properties that are outside
@@ -333,7 +332,7 @@ if (er1StackDesc && er2StackDesc && er1StackDesc.get) {
   } else {
     // See https://github.com/endojs/endo/blob/master/packages/ses/error-codes/SES_UNEXPECTED_ERROR_OWN_STACK_ACCESSOR.md
     throw TypeError$3(
-      'Unexpected Error own stack accessor functions (SES_UNEXPECTED_ERROR_OWN_STACK_ACCESSOR)',
+      "Unexpected Error own stack accessor functions (SES_UNEXPECTED_ERROR_OWN_STACK_ACCESSOR)",
     );
   }
 }
@@ -369,12 +368,12 @@ const getAsyncGeneratorFunctionInstance = () => {
     // assemble the release build APK for React Native prod Android apps.
     // Delaying the error until runtime lets us customise lockdown behaviour.
     return new FERAL_FUNCTION(
-      'return (async function* AsyncGeneratorFunctionInstance() {})',
+      "return (async function* AsyncGeneratorFunctionInstance() {})",
     )();
   } catch (error) {
     // Note: `Error.prototype.jsEngine` is only set by React Native runtime, not Hermes:
     // https://github.com/facebook/react-native/blob/main/packages/react-native/ReactCommon/hermes/executor/HermesExecutorFactory.cpp#L224-L230
-    if (error.name === 'SyntaxError') {
+    if (error.name === "SyntaxError") {
       // Swallows Hermes error `async generators are unsupported` at runtime.
       // Note: `console` is not a JS built-in, so Hermes engine throws:
       // Uncaught ReferenceError: Property 'console' doesn't exist
@@ -382,7 +381,7 @@ const getAsyncGeneratorFunctionInstance = () => {
       // However React Native provides a `console` implementation when setting up error handling:
       // https://github.com/facebook/react-native/blob/main/packages/react-native/Libraries/Core/InitializeCore.js
       return undefined;
-    } else if (error.name === 'EvalError') {
+    } else if (error.name === "EvalError") {
       // eslint-disable-next-line no-empty-function
       return async function* AsyncGeneratorFunctionInstance() {};
     } else {
@@ -397,8 +396,7 @@ const getAsyncGeneratorFunctionInstance = () => {
  *
  * @type {AsyncGeneratorFunction | undefined}
  */
-const AsyncGeneratorFunctionInstance =
-  getAsyncGeneratorFunctionInstance();
+const AsyncGeneratorFunctionInstance = getAsyncGeneratorFunctionInstance();
 
 /** getThis returns globalThis in sloppy mode or undefined in strict mode. */
 function getThis() {
@@ -411,10 +409,20 @@ if (getThis()) {
 }
 
 const localThis = globalThis;
-const { Object: Object$3, Reflect: Reflect$3, Array, String, JSON: JSON$2, Error: Error$2 } = localThis;
+const {
+  Object: Object$3,
+  Reflect: Reflect$3,
+  Array,
+  String,
+  JSON: JSON$2,
+  Error: Error$2,
+} = localThis;
 const { freeze: freeze$3 } = Object$3;
 const { apply: apply$1 } = Reflect$3;
-const uncurryThis = (fn) => (receiver, ...args) => apply$1(fn, receiver, args);
+const uncurryThis =
+  (fn) =>
+  (receiver, ...args) =>
+    apply$1(fn, receiver, args);
 const arrayPush = uncurryThis(Array.prototype.push);
 const arrayIncludes = uncurryThis(Array.prototype.includes);
 const stringSplit = uncurryThis(String.prototype.split);
@@ -428,31 +436,42 @@ const Fail$7 = (literals, ...args) => {
 };
 const makeEnvironmentCaptor = (aGlobal, dropNames = false) => {
   const capturedEnvironmentOptionNames = [];
-  const getEnvironmentOption2 = (optionName, defaultSetting, optOtherValues = void 0) => {
-    typeof optionName === "string" || Fail$7`Environment option name ${q$6(optionName)} must be a string.`;
-    typeof defaultSetting === "string" || Fail$7`Environment option default setting ${q$6(
-      defaultSetting
-    )} must be a string.`;
+  const getEnvironmentOption2 = (
+    optionName,
+    defaultSetting,
+    optOtherValues = void 0,
+  ) => {
+    typeof optionName === "string" ||
+      Fail$7`Environment option name ${q$6(optionName)} must be a string.`;
+    typeof defaultSetting === "string" ||
+      Fail$7`Environment option default setting ${q$6(
+        defaultSetting,
+      )} must be a string.`;
     let setting = defaultSetting;
     const globalProcess = aGlobal.process || void 0;
-    const globalEnv = typeof globalProcess === "object" && globalProcess.env || void 0;
+    const globalEnv =
+      (typeof globalProcess === "object" && globalProcess.env) || void 0;
     if (typeof globalEnv === "object") {
       if (optionName in globalEnv) {
         if (!dropNames) {
           arrayPush(capturedEnvironmentOptionNames, optionName);
         }
         const optionValue = globalEnv[optionName];
-        typeof optionValue === "string" || Fail$7`Environment option named ${q$6(
-          optionName
-        )}, if present, must have a corresponding string value, got ${q$6(
-          optionValue
-        )}`;
+        typeof optionValue === "string" ||
+          Fail$7`Environment option named ${q$6(
+            optionName,
+          )}, if present, must have a corresponding string value, got ${q$6(
+            optionValue,
+          )}`;
         setting = optionValue;
       }
     }
-    optOtherValues === void 0 || setting === defaultSetting || arrayIncludes(optOtherValues, setting) || Fail$7`Unrecognized ${q$6(optionName)} value ${q$6(
-      setting
-    )}. Expected one of ${q$6([defaultSetting, ...optOtherValues])}`;
+    optOtherValues === void 0 ||
+      setting === defaultSetting ||
+      arrayIncludes(optOtherValues, setting) ||
+      Fail$7`Unrecognized ${q$6(optionName)} value ${q$6(
+        setting,
+      )}. Expected one of ${q$6([defaultSetting, ...optOtherValues])}`;
     return setting;
   };
   freeze$3(getEnvironmentOption2);
@@ -461,7 +480,8 @@ const makeEnvironmentCaptor = (aGlobal, dropNames = false) => {
     return freeze$3(option === "" ? [] : stringSplit(option, ","));
   };
   freeze$3(getEnvironmentOptionsList2);
-  const environmentOptionsListHas2 = (optionName, element) => arrayIncludes(getEnvironmentOptionsList2(optionName), element);
+  const environmentOptionsListHas2 = (optionName, element) =>
+    arrayIncludes(getEnvironmentOptionsList2(optionName), element);
   const getCapturedEnvironmentOptionNames = () => {
     return freeze$3([...capturedEnvironmentOptionNames]);
   };
@@ -470,14 +490,14 @@ const makeEnvironmentCaptor = (aGlobal, dropNames = false) => {
     getEnvironmentOption: getEnvironmentOption2,
     getEnvironmentOptionsList: getEnvironmentOptionsList2,
     environmentOptionsListHas: environmentOptionsListHas2,
-    getCapturedEnvironmentOptionNames
+    getCapturedEnvironmentOptionNames,
   });
 };
 freeze$3(makeEnvironmentCaptor);
 const {
   getEnvironmentOption,
   getEnvironmentOptionsList,
-  environmentOptionsListHas
+  environmentOptionsListHas,
 } = makeEnvironmentCaptor(localThis, true);
 
 /* global globalThis */
@@ -495,8 +515,12 @@ const {
   // eslint-disable-next-line no-restricted-globals
 } = globalThis;
 
-const { freeze: freeze$2, defineProperty: defineProperty$1, getPrototypeOf, getOwnPropertyDescriptor } =
-  Object$2;
+const {
+  freeze: freeze$2,
+  defineProperty: defineProperty$1,
+  getPrototypeOf,
+  getOwnPropertyDescriptor,
+} = Object$2;
 const { apply, ownKeys: ownKeys$1 } = Reflect$2;
 const { toStringTag } = Symbol$1;
 
@@ -505,7 +529,7 @@ const { slice, transfer: optTransfer } = arrayBufferPrototype$1;
 // @ts-expect-error TS doesn't know it'll be there
 const { get: arrayBufferByteLength } = getOwnPropertyDescriptor(
   arrayBufferPrototype$1,
-  'byteLength',
+  "byteLength",
 );
 
 const typedArrayPrototype = getPrototypeOf(Uint8Array.prototype);
@@ -513,7 +537,7 @@ const { set: uint8ArraySet } = typedArrayPrototype;
 // @ts-expect-error TS doesn't know it'll be there
 const { get: uint8ArrayBuffer } = getOwnPropertyDescriptor(
   typedArrayPrototype,
-  'buffer',
+  "buffer",
 );
 
 /**
@@ -547,9 +571,9 @@ const arrayBufferSlice = (realBuffer, start = undefined, end = undefined) =>
 let optArrayBufferTransfer;
 
 if (optTransfer) {
-  optArrayBufferTransfer = arrayBuffer => apply(optTransfer, arrayBuffer, []);
+  optArrayBufferTransfer = (arrayBuffer) => apply(optTransfer, arrayBuffer, []);
 } else if (optStructuredClone) {
-  optArrayBufferTransfer = arrayBuffer => {
+  optArrayBufferTransfer = (arrayBuffer) => {
     // Hopefully, a zero-length slice is cheap, but still enforces that
     // `arrayBuffer` is a genuine `ArrayBuffer` exotic object.
     arrayBufferSlice(arrayBuffer, 0, 0);
@@ -573,17 +597,17 @@ if (optTransfer) {
  */
 const buffers = new WeakMap$1();
 // Avoid post-hoc prototype lookups.
-for (const methodName of ['get', 'has', 'set']) {
+for (const methodName of ["get", "has", "set"]) {
   defineProperty$1(buffers, methodName, { value: buffers[methodName] });
 }
-const getBuffer = immuAB => {
+const getBuffer = (immuAB) => {
   // Safe because this WeakMap owns its get method.
   // eslint-disable-next-line @endo/no-polymorphic-call
   const result = buffers.get(immuAB);
   if (result) {
     return result;
   }
-  throw TypeError$2('Not an emulated Immutable ArrayBuffer');
+  throw TypeError$2("Not an emulated Immutable ArrayBuffer");
 };
 
 // Omits `constructor` so `Array.prototype.constructor` is inherited.
@@ -617,24 +641,24 @@ const ImmutableArrayBufferInternalPrototype = {
   },
   resize(_newByteLength = undefined) {
     getBuffer(this); // shim brand check
-    throw TypeError$2('Cannot resize an immutable ArrayBuffer');
+    throw TypeError$2("Cannot resize an immutable ArrayBuffer");
   },
   transfer(_newLength = undefined) {
     getBuffer(this); // shim brand check
-    throw TypeError$2('Cannot detach an immutable ArrayBuffer');
+    throw TypeError$2("Cannot detach an immutable ArrayBuffer");
   },
   transferToFixedLength(_newLength = undefined) {
     getBuffer(this); // shim brand check
-    throw TypeError$2('Cannot detach an immutable ArrayBuffer');
+    throw TypeError$2("Cannot detach an immutable ArrayBuffer");
   },
   transferToImmutable(_newLength = undefined) {
     getBuffer(this); // shim brand check
-    throw TypeError$2('Cannot detach an immutable ArrayBuffer');
+    throw TypeError$2("Cannot detach an immutable ArrayBuffer");
   },
   /**
    * See https://github.com/endojs/endo/tree/master/packages/immutable-arraybuffer#purposeful-violation
    */
-  [toStringTag]: 'ImmutableArrayBuffer',
+  [toStringTag]: "ImmutableArrayBuffer",
 };
 
 // Better fidelity emulation of a class prototype
@@ -653,7 +677,7 @@ for (const key of ownKeys$1(ImmutableArrayBufferInternalPrototype)) {
  * @param {ArrayBuffer} realBuffer
  * @returns {ArrayBuffer}
  */
-const makeImmutableArrayBufferInternal = realBuffer => {
+const makeImmutableArrayBufferInternal = (realBuffer) => {
   const result = /** @type {ArrayBuffer} */ (
     /** @type {unknown} */ ({
       __proto__: ImmutableArrayBufferInternalPrototype,
@@ -673,7 +697,7 @@ freeze$2(makeImmutableArrayBufferInternal);
  * @returns {boolean}
  */
 // eslint-disable-next-line @endo/no-polymorphic-call
-const isBufferImmutable = buffer => buffers.has(buffer);
+const isBufferImmutable = (buffer) => buffers.has(buffer);
 
 /**
  * Creates an immutable slice of the given buffer.
@@ -682,11 +706,7 @@ const isBufferImmutable = buffer => buffers.has(buffer);
  * @param {number} [end] The end index.
  * @returns {ArrayBuffer} The sliced immutable ArrayBuffer.
  */
-const sliceBufferToImmutable = (
-  buffer,
-  start = undefined,
-  end = undefined,
-) => {
+const sliceBufferToImmutable = (buffer, start = undefined, end = undefined) => {
   // Safe because this WeakMap owns its get method.
   // eslint-disable-next-line @endo/no-polymorphic-call
   let realBuffer = buffers.get(buffer);
@@ -736,7 +756,6 @@ const optTransferBufferToImmutable$1 = transferBufferToImmutable;
 
 /* global globalThis */
 
-
 const {
   ArrayBuffer,
   JSON: JSON$1,
@@ -751,7 +770,8 @@ const {
 // copy, no problem.
 const optTransferBufferToImmutable = optTransferBufferToImmutable$1;
 
-const { getOwnPropertyDescriptors, defineProperties, defineProperty } = Object$1;
+const { getOwnPropertyDescriptors, defineProperties, defineProperty } =
+  Object$1;
 const { ownKeys } = Reflect$1;
 const { prototype: arrayBufferPrototype } = ArrayBuffer;
 const { stringify: stringify$1 } = JSON$1;
@@ -813,7 +833,7 @@ for (const key of ownKeys(arrayBufferMethods)) {
 // Allowing polymorphic calls because these occur during initialization.
 // eslint-disable-next-line @endo/no-polymorphic-call
 const overwrites = ownKeys(arrayBufferMethods).filter(
-  key => key in arrayBufferPrototype,
+  (key) => key in arrayBufferPrototype,
 );
 if (overwrites.length > 0) {
   // eslint-disable-next-line @endo/no-polymorphic-call
@@ -829,7 +849,6 @@ defineProperties(
 
 // @ts-check
 
-
 /**
  * Prepend the correct indefinite article onto a noun, typically a typeof
  * result, e.g., "an object" vs. "a number"
@@ -837,9 +856,9 @@ defineProperties(
  * @param {string} str The noun to prepend
  * @returns {string} The noun prepended with a/an
  */
-const an = str => {
+const an = (str) => {
   str = `${str}`;
-  if (str.length >= 1 && stringIncludes('aeiouAEIOU', str[0])) {
+  if (str.length >= 1 && stringIncludes("aeiouAEIOU", str[0])) {
     return `an ${str}`;
   }
   return `a ${str}`;
@@ -877,12 +896,12 @@ const bestEffortStringify = (payload, spaces = undefined) => {
   const seenSet = new Set();
   const replacer = (_, val) => {
     switch (typeof val) {
-      case 'object': {
+      case "object": {
         if (val === null) {
           return null;
         }
         if (setHas(seenSet, val)) {
-          return '[Seen]';
+          return "[Seen]";
         }
         setAdd(seenSet, val);
         if (isError(val)) {
@@ -930,32 +949,32 @@ const bestEffortStringify = (payload, spaces = undefined) => {
           return val;
         }
         arraySort(names);
-        const entries = arrayMap(names, name => [name, val[name]]);
+        const entries = arrayMap(names, (name) => [name, val[name]]);
         return fromEntries(entries);
       }
-      case 'function': {
-        return `[Function ${val.name || '<anon>'}]`;
+      case "function": {
+        return `[Function ${val.name || "<anon>"}]`;
       }
-      case 'string': {
-        if (stringStartsWith(val, '[')) {
+      case "string": {
+        if (stringStartsWith(val, "[")) {
           return `[${val}]`;
         }
         return val;
       }
-      case 'undefined':
-      case 'symbol': {
+      case "undefined":
+      case "symbol": {
         return `[${String$1(val)}]`;
       }
-      case 'bigint': {
+      case "bigint": {
         return `[${val}n]`;
       }
-      case 'number': {
+      case "number": {
         if (is(val, NaN)) {
-          return '[NaN]';
+          return "[NaN]";
         } else if (val === Infinity) {
-          return '[Infinity]';
+          return "[Infinity]";
         } else if (val === -Infinity) {
-          return '[-Infinity]';
+          return "[-Infinity]";
         }
         return val;
       }
@@ -973,7 +992,7 @@ const bestEffortStringify = (payload, spaces = undefined) => {
     // the caught thing might be a proxy or other exotic
     // object rather than an error. The proxy might throw
     // whenever it is possible for it to.
-    return '[Something that failed to stringify]';
+    return "[Something that failed to stringify]";
   }
 };
 freeze$4(bestEffortStringify);
@@ -994,7 +1013,7 @@ const { freeze: freeze$1 } = Object;
 const { toStringTag: toStringTagSymbol } = Symbol;
 
 // eslint-disable-next-line no-restricted-globals
-const UNKNOWN_KEY = Symbol('UNKNOWN_KEY');
+const UNKNOWN_KEY = Symbol("UNKNOWN_KEY");
 
 /**
  * @template T
@@ -1018,7 +1037,7 @@ const deepCopyJsonable = (value, reviver) => {
 const freezingReviver = (_name, value) => freeze$1(value);
 
 /** @type {<T,>(value: T) => T} */
-const deepCopyAndFreezeJsonable = value =>
+const deepCopyAndFreezeJsonable = (value) =>
   deepCopyJsonable(value, freezingReviver);
 
 /**
@@ -1109,7 +1128,7 @@ const resetCell = (cell, oldKey, makeMap) => {
   }
   // WeakMap instances must be replaced when the key is unknown.
   if (!makeMap) {
-    throw Error$1('internal: makeMap is required with UNKNOWN_KEY');
+    throw Error$1("internal: makeMap is required with UNKNOWN_KEY");
   }
   cell.data = makeMap();
 };
@@ -1159,7 +1178,7 @@ const zeroMetrics = freeze$1({
 const makeCacheMapKit = (capacity, options = {}) => {
   if (!isSafeInteger$1(capacity) || capacity < 0) {
     throw TypeError$1(
-      'capacity must be a non-negative safe integer number <= 2**53 - 1',
+      "capacity must be a non-negative safe integer number <= 2**53 - 1",
     );
   }
 
@@ -1167,12 +1186,12 @@ const makeCacheMapKit = (capacity, options = {}) => {
    * @template V
    * @type {<V,>() => SingleEntryMap<K, V>}
    */
-  const makeMap = (MaybeCtor => {
+  const makeMap = ((MaybeCtor) => {
     try {
       // @ts-expect-error
       MaybeCtor();
       return /** @type {any} */ (MaybeCtor);
-    } catch (err) {
+    } catch (_err) {
       // @ts-expect-error
       const constructNewMap = () => new MaybeCtor();
       return constructNewMap;
@@ -1180,8 +1199,8 @@ const makeCacheMapKit = (capacity, options = {}) => {
   })(options.makeMap ?? WeakMap);
   const tag =
     /** @type {any} */ (makeMap()).clear === undefined
-      ? 'WeakCacheMap'
-      : 'CacheMap';
+      ? "WeakCacheMap"
+      : "CacheMap";
 
   /** @type {WeakMapAPI<K, CacheMapCell<K, V>>} */
   const keyToCell = makeMap();
@@ -1193,7 +1212,7 @@ const makeCacheMapKit = (capacity, options = {}) => {
     prev: undefined,
     data: {
       has: () => {
-        throw Error$1('internal: sentinel head cell has no data');
+        throw Error$1("internal: sentinel head cell has no data");
       },
     },
   });
@@ -1210,7 +1229,7 @@ const makeCacheMapKit = (capacity, options = {}) => {
    *
    * @type {(key: K) => (CacheMapCell<K, V> | undefined)}
    */
-  const touchKey = key => {
+  const touchKey = (key) => {
     metrics.totalQueryCount += 1;
     const cell = keyToCell.get(key);
     if (!cell?.data.has(key)) return undefined;
@@ -1221,14 +1240,14 @@ const makeCacheMapKit = (capacity, options = {}) => {
   };
 
   /** @type {WeakMapAPI<K, V>['has']} */
-  const has = key => {
+  const has = (key) => {
     const cell = touchKey(key);
     return cell !== undefined;
   };
   freeze$1(has);
 
   /** @type {WeakMapAPI<K, V>['get']} */
-  const get = key => {
+  const get = (key) => {
     const cell = touchKey(key);
     return cell?.data.get(key);
   };
@@ -1267,7 +1286,7 @@ const makeCacheMapKit = (capacity, options = {}) => {
   // "delete" is a keyword.
   const { delete: deleteEntry } = {
     /** @type {WeakMapAPI<K, V>['delete']} */
-    delete: key => {
+    delete: (key) => {
       const cell = keyToCell.get(key);
       if (!cell?.data.has(key)) {
         keyToCell.delete(key);
@@ -1300,7 +1319,6 @@ freeze$1(makeCacheMapKit);
 /* eslint-disable @endo/no-polymorphic-call */
 /* eslint-disable no-restricted-globals */
 
-
 /**
  * @import {CacheMapKit} from '@endo/cache-map';
  * @import {LogArgs} from './internal-types.js';
@@ -1322,7 +1340,7 @@ const makeNoteLogArgsArrayKit = (
 ) => {
   if (!isSafeInteger(argsPerErrorBudget) || argsPerErrorBudget < 1) {
     throw TypeError(
-      'argsPerErrorBudget must be a safe positive integer number',
+      "argsPerErrorBudget must be a safe positive integer number",
     );
   }
 
@@ -1359,7 +1377,7 @@ const makeNoteLogArgsArrayKit = (
    * @param {Error} error
    * @returns {LogArgs[] | undefined}
    */
-  const takeLogArgsArray = error => {
+  const takeLogArgsArray = (error) => {
     const result = noteLogArgsArrayMap.get(error);
     noteLogArgsArrayMap.delete(error);
     return result;
@@ -1376,7 +1394,7 @@ freeze(makeNoteLogArgsArrayKit);
 const declassifiers = new WeakMap$2();
 const quote = (payload, spaces = void 0) => {
   const result = freeze$4({
-    toString: freeze$4(() => bestEffortStringify(payload, spaces))
+    toString: freeze$4(() => bestEffortStringify(payload, spaces)),
   });
   weakmapSet(declassifiers, result, payload);
   return result;
@@ -1388,7 +1406,7 @@ const bare = (payload, spaces = void 0) => {
     return quote(payload, spaces);
   }
   const result = freeze$4({
-    toString: freeze$4(() => payload)
+    toString: freeze$4(() => payload),
   });
   weakmapSet(declassifiers, result, payload);
   return result;
@@ -1418,7 +1436,7 @@ const DetailsTokenProto = freeze$4({
       return "[Not a DetailsToken]";
     }
     return getMessageString(hiddenDetails);
-  }
+  },
 });
 freeze$4(DetailsTokenProto.toString);
 const redactedDetails = (template, ...args) => {
@@ -1432,9 +1450,8 @@ const redactedDetails = (template, ...args) => {
 };
 freeze$4(redactedDetails);
 const unredactedDetails = (template, ...args) => {
-  args = arrayMap(
-    args,
-    (arg) => weakmapHas(declassifiers, arg) ? arg : quote(arg)
+  args = arrayMap(args, (arg) =>
+    weakmapHas(declassifiers, arg) ? arg : quote(arg),
   );
   return redactedDetails(template, ...args);
 };
@@ -1489,26 +1506,25 @@ const sanitizeError = (error) => {
     const droppedNote = create(objectPrototype, restDescs);
     note(
       error,
-      redactedDetails`originally with properties ${quote(droppedNote)}`
+      redactedDetails`originally with properties ${quote(droppedNote)}`,
     );
   }
   for (const name of ownKeys$2(error)) {
     const desc = descs[name];
     if (desc && hasOwn(desc, "get")) {
       defineProperty$2(error, name, {
-        value: error[name]
+        value: error[name],
         // invoke the getter to convert to data property
       });
     }
   }
   freeze$4(error);
 };
-const makeError = (optDetails = redactedDetails`Assert failed`, errConstructor = universalThis.Error, {
-  errorName = void 0,
-  cause = void 0,
-  errors = void 0,
-  sanitize = true
-} = {}) => {
+const makeError = (
+  optDetails = redactedDetails`Assert failed`,
+  errConstructor = universalThis.Error,
+  { errorName = void 0, cause = void 0, errors = void 0, sanitize = true } = {},
+) => {
   if (typeof optDetails === "string") {
     optDetails = redactedDetails([optDetails]);
   }
@@ -1519,20 +1535,19 @@ const makeError = (optDetails = redactedDetails`Assert failed`, errConstructor =
   const messageString = getMessageString(hiddenDetails);
   const opts = cause && { cause };
   let error;
-  if (typeof AggregateError$1 !== "undefined" && errConstructor === AggregateError$1) {
+  if (
+    typeof AggregateError$1 !== "undefined" &&
+    errConstructor === AggregateError$1
+  ) {
     error = AggregateError$1(errors || [], messageString, opts);
   } else {
-    error = /** @type {ErrorConstructor} */
-    errConstructor(
-      messageString,
-      opts
-    );
+    error = /** @type {ErrorConstructor} */ errConstructor(messageString, opts);
     if (errors !== void 0) {
       defineProperty$2(error, "errors", {
         value: errors,
         writable: true,
         enumerable: false,
-        configurable: true
+        configurable: true,
       });
     }
   }
@@ -1601,13 +1616,17 @@ const loggedErrorHandler = {
       }
     }
     return result || [];
-  }
+  },
 };
 freeze$4(loggedErrorHandler);
 const makeAssert = (optRaise = void 0, unredacted = false) => {
   const details = unredacted ? unredactedDetails : redactedDetails;
   const assertFailedDetails = details`Check failed`;
-  const fail = (optDetails = assertFailedDetails, errConstructor = void 0, options = void 0) => {
+  const fail = (
+    optDetails = assertFailedDetails,
+    errConstructor = void 0,
+    options = void 0,
+  ) => {
     const reason = makeError(optDetails, errConstructor, options);
     if (optRaise !== void 0) {
       optRaise(reason);
@@ -1616,15 +1635,27 @@ const makeAssert = (optRaise = void 0, unredacted = false) => {
   };
   freeze$4(fail);
   const Fail = (template, ...args) => fail(details(template, ...args));
-  function baseAssert(flag, optDetails = void 0, errConstructor = void 0, options = void 0) {
+  function baseAssert(
+    flag,
+    optDetails = void 0,
+    errConstructor = void 0,
+    options = void 0,
+  ) {
     flag || fail(optDetails, errConstructor, options);
   }
-  const equal = (actual, expected, optDetails = void 0, errConstructor = void 0, options = void 0) => {
-    is(actual, expected) || fail(
-      optDetails || details`Expected ${actual} is same as ${expected}`,
-      errConstructor || RangeError$1,
-      options
-    );
+  const equal = (
+    actual,
+    expected,
+    optDetails = void 0,
+    errConstructor = void 0,
+    options = void 0,
+  ) => {
+    is(actual, expected) ||
+      fail(
+        optDetails || details`Expected ${actual} is same as ${expected}`,
+        errConstructor || RangeError$1,
+        options,
+      );
   };
   freeze$4(equal);
   const assertTypeof = (specimen, typename, optDetails) => {
@@ -1639,7 +1670,8 @@ const makeAssert = (optRaise = void 0, unredacted = false) => {
     fail(optDetails, TypeError$3);
   };
   freeze$4(assertTypeof);
-  const assertString = (specimen, optDetails = void 0) => assertTypeof(specimen, "string", optDetails);
+  const assertString = (specimen, optDetails = void 0) =>
+    assertTypeof(specimen, "string", optDetails);
   const assert2 = assign(baseAssert, {
     error: makeError,
     fail,
@@ -1651,7 +1683,7 @@ const makeAssert = (optRaise = void 0, unredacted = false) => {
     Fail,
     quote,
     bare,
-    makeAssert
+    makeAssert,
   });
   return freeze$4(assert2);
 };
@@ -1661,7 +1693,6 @@ const assertEqual = assert.equal;
 
 // Adapted from SES/Caja - Copyright (C) 2011 Google Inc.
 // Copyright (C) 2018 Agoric
-
 
 /**
  * @import {Harden} from '../types.js'
@@ -1683,7 +1714,7 @@ assert(getTypedArrayToStringTag);
  *
  * @param {unknown} object
  */
-const isTypedArray = object => {
+const isTypedArray = (object) => {
   // The object must pass a brand check or toStringTag will return undefined.
   const tag = apply$2(getTypedArrayToStringTag, object, []);
   return tag !== undefined;
@@ -1695,7 +1726,7 @@ const isTypedArray = object => {
  *
  * @param {string | symbol} propertyKey
  */
-const isCanonicalIntegerIndexString = propertyKey => {
+const isCanonicalIntegerIndexString = (propertyKey) => {
   const n = +String$1(propertyKey);
   return isInteger(n) && String$1(n) === propertyKey;
 };
@@ -1704,7 +1735,7 @@ const isCanonicalIntegerIndexString = propertyKey => {
  * @template T
  * @param {ArrayLike<T>} array
  */
-const freezeTypedArray = array => {
+const freezeTypedArray = (array) => {
   preventExtensions(array);
 
   // Downgrade writable expandos to readonly, even if non-configurable.
@@ -1740,7 +1771,7 @@ const freezeTypedArray = array => {
  */
 const makeHardener = () => {
   // Use a native hardener if possible.
-  if (typeof universalThis.harden === 'function') {
+  if (typeof universalThis.harden === "function") {
     const safeHarden = universalThis.harden;
     return safeHarden;
   }
@@ -1767,7 +1798,7 @@ const makeHardener = () => {
           return;
         }
         const type = typeof val;
-        if (type !== 'object' && type !== 'function') {
+        if (type !== "object" && type !== "function") {
           // future proof: break until someone figures out what it should do
           throw TypeError$3(`Unexpected typeof: ${type}`);
         }
@@ -1782,7 +1813,7 @@ const makeHardener = () => {
       /**
        * @param {any} obj
        */
-      const baseFreezeAndTraverse = obj => {
+      const baseFreezeAndTraverse = (obj) => {
         // Now freeze the object to ensure reactive
         // objects such as proxies won't add properties
         // during traversal, before they get frozen.
@@ -1805,25 +1836,28 @@ const makeHardener = () => {
         const proto = getPrototypeOf$1(obj);
         enqueue(proto);
 
-        arrayForEach(ownKeys$2(descs), (/** @type {string | symbol} */ name) => {
-          // The 'name' may be a symbol, and TypeScript doesn't like us to
-          // index arbitrary symbols on objects, so we pretend they're just
-          // strings.
-          const desc = descs[/** @type {string} */ (name)];
-          // getOwnPropertyDescriptors is guaranteed to return well-formed
-          // descriptors, but they still inherit from Object.prototype. If
-          // someone has poisoned Object.prototype to add 'value' or 'get'
-          // properties, then a simple 'if ("value" in desc)' or 'desc.value'
-          // test could be confused. We use hasOwnProperty to be sure about
-          // whether 'value' is present or not, which tells us for sure that
-          // this is a data property.
-          if (hasOwn(desc, 'value')) {
-            enqueue(desc.value);
-          } else {
-            enqueue(desc.get);
-            enqueue(desc.set);
-          }
-        });
+        arrayForEach(
+          ownKeys$2(descs),
+          (/** @type {string | symbol} */ name) => {
+            // The 'name' may be a symbol, and TypeScript doesn't like us to
+            // index arbitrary symbols on objects, so we pretend they're just
+            // strings.
+            const desc = descs[/** @type {string} */ (name)];
+            // getOwnPropertyDescriptors is guaranteed to return well-formed
+            // descriptors, but they still inherit from Object.prototype. If
+            // someone has poisoned Object.prototype to add 'value' or 'get'
+            // properties, then a simple 'if ("value" in desc)' or 'desc.value'
+            // test could be confused. We use hasOwnProperty to be sure about
+            // whether 'value' is present or not, which tells us for sure that
+            // this is a data property.
+            if (hasOwn(desc, "value")) {
+              enqueue(desc.value);
+            } else {
+              enqueue(desc.get);
+              enqueue(desc.set);
+            }
+          },
+        );
       };
 
       const freezeAndTraverse =
@@ -1831,12 +1865,12 @@ const makeHardener = () => {
           ? // On platforms without v8's error own stack accessor problem,
             // don't pay for any extra overhead.
             baseFreezeAndTraverse
-          : obj => {
+          : (obj) => {
               if (isError(obj)) {
                 // Only pay the overhead if it first passes this cheap isError
                 // check. Otherwise, it will be unrepaired, but won't be judged
                 // to be a passable error anyway, so will not be unsafe.
-                const stackDesc = getOwnPropertyDescriptor$1(obj, 'stack');
+                const stackDesc = getOwnPropertyDescriptor$1(obj, "stack");
                 if (
                   stackDesc &&
                   stackDesc.get === FERAL_STACK_GETTER &&
@@ -1845,7 +1879,7 @@ const makeHardener = () => {
                   // Can only repair if it is configurable. Otherwise, leave
                   // unrepaired, in which case it will not be judged passable,
                   // avoiding a safety problem.
-                  defineProperty$2(obj, 'stack', {
+                  defineProperty$2(obj, "stack", {
                     // NOTE: Calls getter during harden, which seems dangerous.
                     // But we're only calling the problematic getter whose
                     // hazards we think we understand.
@@ -1865,7 +1899,7 @@ const makeHardener = () => {
       };
 
       /** @param {any} value */
-      const markHardened = value => {
+      const markHardened = (value) => {
         weaksetAdd(hardened, value);
       };
 
@@ -1916,13 +1950,7 @@ const makeHardener = () => {
  * @param {Reporter} reporter Where to issue warning or error.
  * @returns {void}
  */
-const cauterizeProperty = (
-  obj,
-  prop,
-  known,
-  subPath,
-  { warn, error },
-) => {
+const cauterizeProperty = (obj, prop, known, subPath, { warn, error }) => {
   // Either the object lacks a permit or the object doesn't match the
   // permit.
   // If the permit is specifically false, not merely undefined,
@@ -1938,7 +1966,7 @@ const cauterizeProperty = (
     delete obj[prop];
   } catch (err) {
     if (hasOwn(obj, prop)) {
-      if (typeof obj === 'function' && prop === 'prototype') {
+      if (typeof obj === "function" && prop === "prototype") {
         obj.prototype = undefined;
         if (obj.prototype === undefined) {
           warn(`Tolerating undeletable ${subPath} === undefined`);
@@ -1957,7 +1985,7 @@ const constantProperties = {
   // *** Value Properties of the Global Object
   Infinity: Infinity,
   NaN: NaN,
-  undefined: void 0
+  undefined: void 0,
 };
 const universalPropertyNames = {
   // *** Function Properties of the Global Object
@@ -2027,7 +2055,7 @@ const universalPropertyNames = {
   ModuleSource: "ModuleSource",
   lockdown: "lockdown",
   harden: "harden",
-  HandledPromise: "HandledPromise"
+  HandledPromise: "HandledPromise",
   // TODO: Until Promise.delegate (see below).
 };
 const initialGlobalPropertyNames = {
@@ -2045,7 +2073,7 @@ const initialGlobalPropertyNames = {
   // From Error-stack proposal
   // Only on initial global. No corresponding
   // powerless form for other globals.
-  getStackString: "%InitialGetStackString%"
+  getStackString: "%InitialGetStackString%",
   // TODO https://github.com/Agoric/SES-shim/issues/551
   // Need initial WeakRef and FinalizationGroup in
   // start compartment only.
@@ -2060,7 +2088,7 @@ const sharedGlobalPropertyNames = {
   RegExp: "%SharedRegExp%",
   Symbol: "%SharedSymbol%",
   // *** Other Properties of the Global Object
-  Math: "%SharedMath%"
+  Math: "%SharedMath%",
   // TODO Temporal
   // https://github.com/tc39/proposal-temporal
   // Temporal: '%SharedTemporal%' // without Temporal.Now
@@ -2071,7 +2099,7 @@ const NativeErrors = [
   ReferenceError,
   SyntaxError,
   TypeError,
-  URIError
+  URIError,
   // https://github.com/endojs/endo/issues/550
   // Commented out to accommodate platforms prior to AggregateError.
   // Instead, conditional push below.
@@ -2083,7 +2111,7 @@ if (typeof AggregateError !== "undefined") {
 const FunctionInstance = {
   "[[Proto]]": "%FunctionPrototype%",
   length: "number",
-  name: "string"
+  name: "string",
   // Do not specify "prototype" here, since only Function instances that can
   // be used as a constructor have a prototype property. For constructors,
   // since prototype properties are instance-specific, we define it there.
@@ -2091,20 +2119,19 @@ const FunctionInstance = {
 const AsyncFunctionInstance = {
   // This property is not mentioned in ECMA 262, but is present in V8 and
   // necessary for lockdown to succeed.
-  "[[Proto]]": "%AsyncFunctionPrototype%"
+  "[[Proto]]": "%AsyncFunctionPrototype%",
 };
 const fn = FunctionInstance;
 const asyncFn = AsyncFunctionInstance;
 const getter = {
   get: fn,
-  set: "undefined"
+  set: "undefined",
 };
 const accessor = {
   get: fn,
-  set: fn
+  set: fn,
 };
-const strict = function() {
-};
+const strict = () => {};
 arrayForEach(["caller", "arguments"], (prop) => {
   try {
     strict[prop];
@@ -2122,7 +2149,7 @@ function NativeError(prototype) {
     // Properties of the NativeError Constructors
     "[[Proto]]": "%SharedError%",
     // NativeError.prototype
-    prototype
+    prototype,
   };
 }
 function NativeErrorPrototype(constructor) {
@@ -2136,7 +2163,7 @@ function NativeErrorPrototype(constructor) {
     toString: false,
     // Superfluously present in some versions of V8.
     // https://github.com/tc39/notes/blob/master/meetings/2021-10/oct-26.md#:~:text=However%2C%20Chrome%2093,and%20node%2016.11.
-    cause: false
+    cause: false,
   };
 }
 function TypedArray(prototype) {
@@ -2144,7 +2171,7 @@ function TypedArray(prototype) {
     // Properties of the TypedArray Constructors
     "[[Proto]]": "%TypedArray%",
     BYTES_PER_ELEMENT: "number",
-    prototype
+    prototype,
   };
 }
 function TypedArrayPrototype(constructor) {
@@ -2152,7 +2179,7 @@ function TypedArrayPrototype(constructor) {
     // Properties of the TypedArray Prototype Objects
     "[[Proto]]": "%TypedArrayPrototype%",
     BYTES_PER_ELEMENT: "number",
-    constructor
+    constructor,
   };
 }
 const CommonMath = {
@@ -2216,7 +2243,7 @@ const CommonMath = {
   // See https://github.com/Moddable-OpenSource/moddable/issues/523
   mod: false,
   // See https://github.com/Moddable-OpenSource/moddable/issues/523#issuecomment-1942904505
-  irandom: false
+  irandom: false,
 };
 const permitted = {
   // ECMA https://tc39.es/ecma262
@@ -2271,7 +2298,7 @@ const permitted = {
     // https://github.com/tc39/proposal-array-grouping
     groupBy: fn,
     // Seen on QuickJS
-    __getClass: false
+    __getClass: false,
   },
   "%ObjectPrototype%": {
     // Properties of the Object Prototype Object
@@ -2290,16 +2317,16 @@ const permitted = {
     __defineGetter__: fn,
     __defineSetter__: fn,
     __lookupGetter__: fn,
-    __lookupSetter__: fn
+    __lookupSetter__: fn,
   },
   "%UniqueFunction%": {
     // Properties of the Function Constructor
     "[[Proto]]": "%FunctionPrototype%",
-    prototype: "%FunctionPrototype%"
+    prototype: "%FunctionPrototype%",
   },
   "%InertFunction%": {
     "[[Proto]]": "%FunctionPrototype%",
-    prototype: "%FunctionPrototype%"
+    prototype: "%FunctionPrototype%",
   },
   "%FunctionPrototype%": {
     apply: fn,
@@ -2315,17 +2342,17 @@ const permitted = {
     // Seen on QuickJS. TODO grab getter for use by console
     fileName: false,
     // Seen on QuickJS. TODO grab getter for use by console
-    lineNumber: false
+    lineNumber: false,
   },
   Boolean: {
     // Properties of the Boolean Constructor
     "[[Proto]]": "%FunctionPrototype%",
-    prototype: "%BooleanPrototype%"
+    prototype: "%BooleanPrototype%",
   },
   "%BooleanPrototype%": {
     constructor: "Boolean",
     toString: fn,
-    valueOf: fn
+    valueOf: fn,
   },
   "%SharedSymbol%": {
     // Properties of the Symbol Constructor
@@ -2355,7 +2382,7 @@ const permitted = {
     // Seen at core-js https://github.com/zloirock/core-js#ecmascript-symbol
     useSetter: false,
     // Seen on QuickJS
-    operatorSet: false
+    operatorSet: false,
   },
   "%SymbolPrototype%": {
     // Properties of the Symbol Prototype Object
@@ -2364,7 +2391,7 @@ const permitted = {
     toString: fn,
     valueOf: fn,
     "@@toPrimitive": fn,
-    "@@toStringTag": "string"
+    "@@toStringTag": "string",
   },
   "%InitialError%": {
     // Properties of the Error Constructor
@@ -2377,7 +2404,7 @@ const permitted = {
     // Non standard, v8 only, used by several, tamed to accessor
     prepareStackTrace: accessor,
     // https://github.com/tc39/proposal-is-error
-    isError: fn
+    isError: fn,
   },
   "%SharedError%": {
     // Properties of the Error Constructor
@@ -2390,7 +2417,7 @@ const permitted = {
     // Non standard, v8 only, used by several, tamed to accessor
     prepareStackTrace: accessor,
     // https://github.com/tc39/proposal-is-error
-    isError: fn
+    isError: fn,
   },
   "%ErrorPrototype%": {
     constructor: "%SharedError%",
@@ -2404,7 +2431,7 @@ const permitted = {
     stack: accessor,
     // Superfluously present in some versions of V8.
     // https://github.com/tc39/notes/blob/master/meetings/2021-10/oct-26.md#:~:text=However%2C%20Chrome%2093,and%20node%2016.11.
-    cause: false
+    cause: false,
   },
   // NativeError
   EvalError: NativeError("%EvalErrorPrototype%"),
@@ -2450,7 +2477,7 @@ const permitted = {
     parseFloat: fn,
     parseInt: fn,
     POSITIVE_INFINITY: "number",
-    prototype: "%NumberPrototype%"
+    prototype: "%NumberPrototype%",
   },
   "%NumberPrototype%": {
     // Properties of the Number Prototype Object
@@ -2460,7 +2487,7 @@ const permitted = {
     toLocaleString: fn,
     toPrecision: fn,
     toString: fn,
-    valueOf: fn
+    valueOf: fn,
   },
   BigInt: {
     // Properties of the BigInt Constructor
@@ -2495,24 +2522,24 @@ const permitted = {
     // Seen on QuickJS
     floorLog2: false,
     // Seen on QuickJS
-    ctz: false
+    ctz: false,
   },
   "%BigIntPrototype%": {
     constructor: "BigInt",
     toLocaleString: fn,
     toString: fn,
     valueOf: fn,
-    "@@toStringTag": "string"
+    "@@toStringTag": "string",
   },
   "%InitialMath%": {
     ...CommonMath,
     // `%InitialMath%.random()` has the standard unsafe behavior
-    random: fn
+    random: fn,
   },
   "%SharedMath%": {
     ...CommonMath,
     // `%SharedMath%.random()` is tamed to always throw
-    random: fn
+    random: fn,
   },
   "%InitialDate%": {
     // Properties of the Date Constructor
@@ -2520,7 +2547,7 @@ const permitted = {
     now: fn,
     parse: fn,
     prototype: "%DatePrototype%",
-    UTC: fn
+    UTC: fn,
   },
   "%SharedDate%": {
     // Properties of the Date Constructor
@@ -2529,7 +2556,7 @@ const permitted = {
     now: fn,
     parse: fn,
     prototype: "%DatePrototype%",
-    UTC: fn
+    UTC: fn,
   },
   "%DatePrototype%": {
     constructor: "%SharedDate%",
@@ -2580,7 +2607,7 @@ const permitted = {
     // Annex B: Additional Properties of the Date.prototype Object
     getYear: fn,
     setYear: fn,
-    toGMTString: fn
+    toGMTString: fn,
   },
   // Text Processing
   String: {
@@ -2591,7 +2618,7 @@ const permitted = {
     prototype: "%StringPrototype%",
     raw: fn,
     // See https://github.com/Moddable-OpenSource/moddable/issues/523
-    fromArrayBuffer: false
+    fromArrayBuffer: false,
   },
   "%StringPrototype%": {
     // Properties of the String Prototype Object
@@ -2657,12 +2684,12 @@ const permitted = {
     // See https://github.com/Moddable-OpenSource/moddable/issues/523
     compare: false,
     // Seen on QuickJS
-    __quote: false
+    __quote: false,
   },
   "%StringIteratorPrototype%": {
     "[[Proto]]": "%IteratorPrototype%",
     next: fn,
-    "@@toStringTag": "string"
+    "@@toStringTag": "string",
   },
   "%InitialRegExp%": {
     // Properties of the RegExp Constructor
@@ -2691,7 +2718,7 @@ const permitted = {
     $6: false,
     $7: false,
     $8: false,
-    $9: false
+    $9: false,
   },
   "%SharedRegExp%": {
     // Properties of the RegExp Constructor
@@ -2699,7 +2726,7 @@ const permitted = {
     prototype: "%RegExpPrototype%",
     "@@species": getter,
     // https://github.com/tc39/proposal-regex-escaping
-    escape: fn
+    escape: fn,
   },
   "%RegExpPrototype%": {
     // Properties of the RegExp Prototype Object
@@ -2723,14 +2750,14 @@ const permitted = {
     unicode: getter,
     unicodeSets: getter,
     // Annex B: Additional Properties of the RegExp.prototype Object
-    compile: false
+    compile: false,
     // UNSAFE and suppressed.
   },
   "%RegExpStringIteratorPrototype%": {
     // The %RegExpStringIteratorPrototype% Object
     "[[Proto]]": "%IteratorPrototype%",
     next: fn,
-    "@@toStringTag": "string"
+    "@@toStringTag": "string",
   },
   // Indexed Collections
   Array: {
@@ -2745,7 +2772,7 @@ const permitted = {
     // https://tc39.es/proposal-relative-indexing-method/
     at: fn,
     // https://tc39.es/proposal-array-from-async/
-    fromAsync: fn
+    fromAsync: fn,
   },
   "%ArrayPrototype%": {
     // Properties of the Array Prototype Object
@@ -2810,7 +2837,7 @@ const permitted = {
       // https://github.com/tc39/proposal-array-grouping
       group: "boolean",
       groupToMap: "boolean",
-      groupBy: "boolean"
+      groupBy: "boolean",
     },
     // See https://github.com/tc39/proposal-array-find-from-last
     findLast: fn,
@@ -2828,13 +2855,13 @@ const permitted = {
     groupBy: fn,
     // Failed tc39 proposal
     // https://tc39.es/proposal-relative-indexing-method/
-    at: fn
+    at: fn,
   },
   "%ArrayIteratorPrototype%": {
     // The %ArrayIteratorPrototype% Object
     "[[Proto]]": "%IteratorPrototype%",
     next: fn,
-    "@@toStringTag": "string"
+    "@@toStringTag": "string",
   },
   // *** TypedArray Objects
   "%TypedArray%": {
@@ -2843,7 +2870,7 @@ const permitted = {
     from: fn,
     of: fn,
     prototype: "%TypedArrayPrototype%",
-    "@@species": getter
+    "@@species": getter,
   },
   "%TypedArrayPrototype%": {
     buffer: getter,
@@ -2887,7 +2914,7 @@ const permitted = {
     // https://github.com/tc39/proposal-change-array-by-copy
     toReversed: fn,
     toSorted: fn,
-    with: fn
+    with: fn,
   },
   // The TypedArray Constructors
   BigInt64Array: TypedArray("%BigInt64ArrayPrototype%"),
@@ -2907,7 +2934,7 @@ const permitted = {
     // https://github.com/tc39/proposal-arraybuffer-base64
     fromBase64: fn,
     // https://github.com/tc39/proposal-arraybuffer-base64
-    fromHex: fn
+    fromHex: fn,
   },
   "%BigInt64ArrayPrototype%": TypedArrayPrototype("BigInt64Array"),
   "%BigUint64ArrayPrototype%": TypedArrayPrototype("BigUint64Array"),
@@ -2930,7 +2957,7 @@ const permitted = {
     // https://github.com/tc39/proposal-arraybuffer-base64
     toBase64: fn,
     // https://github.com/tc39/proposal-arraybuffer-base64
-    toHex: fn
+    toHex: fn,
   },
   // *** Keyed Collections
   Map: {
@@ -2939,7 +2966,7 @@ const permitted = {
     "@@species": getter,
     prototype: "%MapPrototype%",
     // https://github.com/tc39/proposal-array-grouping
-    groupBy: fn
+    groupBy: fn,
   },
   "%MapPrototype%": {
     clear: fn,
@@ -2954,13 +2981,13 @@ const permitted = {
     size: getter,
     values: fn,
     "@@iterator": fn,
-    "@@toStringTag": "string"
+    "@@toStringTag": "string",
   },
   "%MapIteratorPrototype%": {
     // The %MapIteratorPrototype% Object
     "[[Proto]]": "%IteratorPrototype%",
     next: fn,
-    "@@toStringTag": "string"
+    "@@toStringTag": "string",
   },
   Set: {
     // Properties of the Set Constructor
@@ -2968,7 +2995,7 @@ const permitted = {
     prototype: "%SetPrototype%",
     "@@species": getter,
     // Seen on QuickJS
-    groupBy: false
+    groupBy: false,
   },
   "%SetPrototype%": {
     add: fn,
@@ -2996,18 +3023,18 @@ const permitted = {
     // See https://github.com/tc39/proposal-set-methods
     isSupersetOf: fn,
     // See https://github.com/tc39/proposal-set-methods
-    isDisjointFrom: fn
+    isDisjointFrom: fn,
   },
   "%SetIteratorPrototype%": {
     // The %SetIteratorPrototype% Object
     "[[Proto]]": "%IteratorPrototype%",
     next: fn,
-    "@@toStringTag": "string"
+    "@@toStringTag": "string",
   },
   WeakMap: {
     // Properties of the WeakMap Constructor
     "[[Proto]]": "%FunctionPrototype%",
-    prototype: "%WeakMapPrototype%"
+    prototype: "%WeakMapPrototype%",
   },
   "%WeakMapPrototype%": {
     constructor: "WeakMap",
@@ -3015,19 +3042,19 @@ const permitted = {
     get: fn,
     has: fn,
     set: fn,
-    "@@toStringTag": "string"
+    "@@toStringTag": "string",
   },
   WeakSet: {
     // Properties of the WeakSet Constructor
     "[[Proto]]": "%FunctionPrototype%",
-    prototype: "%WeakSetPrototype%"
+    prototype: "%WeakSetPrototype%",
   },
   "%WeakSetPrototype%": {
     add: fn,
     constructor: "WeakSet",
     delete: fn,
     has: fn,
-    "@@toStringTag": "string"
+    "@@toStringTag": "string",
   },
   // *** Structured Data
   ArrayBuffer: {
@@ -3039,7 +3066,7 @@ const permitted = {
     // See https://github.com/Moddable-OpenSource/moddable/issues/523
     fromString: false,
     // See https://github.com/Moddable-OpenSource/moddable/issues/523
-    fromBigInt: false
+    fromBigInt: false,
   },
   "%ArrayBufferPrototype%": {
     byteLength: getter,
@@ -3060,7 +3087,7 @@ const permitted = {
     // to be proposed
     transferToImmutable: fn,
     sliceToImmutable: fn,
-    immutable: getter
+    immutable: getter,
   },
   // If this exists, it is purely an artifact of how we currently shim
   // `transferToImmutable`. As natively implemented, there would be no
@@ -3083,7 +3110,7 @@ const permitted = {
     // to be proposed
     transferToImmutable: fn,
     sliceToImmutable: fn,
-    immutable: getter
+    immutable: getter,
   },
   // SharedArrayBuffer Objects
   SharedArrayBuffer: false,
@@ -3095,7 +3122,7 @@ const permitted = {
     "[[Proto]]": "%FunctionPrototype%",
     BYTES_PER_ELEMENT: "number",
     // Non std but undeletable on Safari.
-    prototype: "%DataViewPrototype%"
+    prototype: "%DataViewPrototype%",
   },
   "%DataViewPrototype%": {
     buffer: getter,
@@ -3126,7 +3153,7 @@ const permitted = {
     setUint8: fn,
     setUint16: fn,
     setUint32: fn,
-    "@@toStringTag": "string"
+    "@@toStringTag": "string",
   },
   // Atomics
   Atomics: false,
@@ -3137,7 +3164,7 @@ const permitted = {
     "@@toStringTag": "string",
     // https://github.com/tc39/proposal-json-parse-with-source/
     rawJSON: fn,
-    isRawJSON: fn
+    isRawJSON: fn,
   },
   // *** Control Abstraction Objects
   // https://github.com/tc39/proposal-iterator-helpers
@@ -3150,7 +3177,7 @@ const permitted = {
     zip: fn,
     zipKeyed: fn,
     // https://github.com/tc39/proposal-iterator-sequencing
-    concat: fn
+    concat: fn,
   },
   "%IteratorPrototype%": {
     // The %IteratorPrototype% Object
@@ -3173,27 +3200,27 @@ const permitted = {
     toAsync: fn,
     // https://github.com/tc39/proposal-explicit-resource-management
     // See https://github.com/Moddable-OpenSource/moddable/issues/523#issuecomment-1942904505
-    "@@dispose": false
+    "@@dispose": false,
   },
   // https://github.com/tc39/proposal-iterator-helpers
   "%WrapForValidIteratorPrototype%": {
     "[[Proto]]": "%IteratorPrototype%",
     next: fn,
-    return: fn
+    return: fn,
   },
   // https://github.com/tc39/proposal-iterator-helpers
   "%IteratorHelperPrototype%": {
     "[[Proto]]": "%IteratorPrototype%",
     next: fn,
     return: fn,
-    "@@toStringTag": "string"
+    "@@toStringTag": "string",
   },
   // https://github.com/tc39/proposal-async-iterator-helpers
   AsyncIterator: {
     // Properties of the Iterator Constructor
     "[[Proto]]": "%FunctionPrototype%",
     prototype: "%AsyncIteratorPrototype%",
-    from: fn
+    from: fn,
   },
   "%AsyncIteratorPrototype%": {
     // The %AsyncIteratorPrototype% Object
@@ -3214,37 +3241,37 @@ const permitted = {
     "@@toStringTag": "string",
     // https://github.com/tc39/proposal-explicit-resource-management
     // See https://github.com/Moddable-OpenSource/moddable/issues/523#issuecomment-1942904505
-    "@@asyncDispose": false
+    "@@asyncDispose": false,
   },
   // https://github.com/tc39/proposal-async-iterator-helpers
   "%WrapForValidAsyncIteratorPrototype%": {
     "[[Proto]]": "%AsyncIteratorPrototype%",
     next: fn,
-    return: fn
+    return: fn,
   },
   // https://github.com/tc39/proposal-async-iterator-helpers
   "%AsyncIteratorHelperPrototype%": {
     "[[Proto]]": "%AsyncIteratorPrototype%",
     next: fn,
     return: fn,
-    "@@toStringTag": "string"
+    "@@toStringTag": "string",
   },
   "%InertGeneratorFunction%": {
     // Properties of the GeneratorFunction Constructor
     "[[Proto]]": "%InertFunction%",
-    prototype: "%Generator%"
+    prototype: "%Generator%",
   },
   "%Generator%": {
     // Properties of the GeneratorFunction Prototype Object
     "[[Proto]]": "%FunctionPrototype%",
     constructor: "%InertGeneratorFunction%",
     prototype: "%GeneratorPrototype%",
-    "@@toStringTag": "string"
+    "@@toStringTag": "string",
   },
   "%InertAsyncGeneratorFunction%": {
     // Properties of the AsyncGeneratorFunction Constructor
     "[[Proto]]": "%InertFunction%",
-    prototype: "%AsyncGenerator%"
+    prototype: "%AsyncGenerator%",
   },
   "%AsyncGenerator%": {
     // Properties of the AsyncGeneratorFunction Prototype Object
@@ -3255,7 +3282,7 @@ const permitted = {
     // https://github.com/endojs/endo/issues/660
     // https://github.com/react-native-community/jsc-android-buildscripts/issues/181
     length: "number",
-    "@@toStringTag": "string"
+    "@@toStringTag": "string",
   },
   "%GeneratorPrototype%": {
     // Properties of the Generator Prototype Object
@@ -3264,7 +3291,7 @@ const permitted = {
     next: fn,
     return: fn,
     throw: fn,
-    "@@toStringTag": "string"
+    "@@toStringTag": "string",
   },
   "%AsyncGeneratorPrototype%": {
     // Properties of the AsyncGenerator Prototype Object
@@ -3273,7 +3300,7 @@ const permitted = {
     next: fn,
     return: fn,
     throw: fn,
-    "@@toStringTag": "string"
+    "@@toStringTag": "string",
   },
   // TODO: To be replaced with Promise.delegate
   //
@@ -3293,12 +3320,12 @@ const permitted = {
     get: fn,
     getSendOnly: fn,
     prototype: "%PromisePrototype%",
-    resolve: fn
+    resolve: fn,
   },
   // https://github.com/tc39/proposal-source-phase-imports?tab=readme-ov-file#js-module-source
   ModuleSource: {
     "[[Proto]]": "%AbstractModuleSource%",
-    prototype: "%ModuleSourcePrototype%"
+    prototype: "%ModuleSourcePrototype%",
   },
   "%ModuleSourcePrototype%": {
     "[[Proto]]": "%AbstractModuleSourcePrototype%",
@@ -3311,14 +3338,14 @@ const permitted = {
     // @endo/module-source provides a legacy interface
     imports: getter,
     exports: getter,
-    reexports: getter
+    reexports: getter,
   },
   "%AbstractModuleSource%": {
     "[[Proto]]": "%FunctionPrototype%",
-    prototype: "%AbstractModuleSourcePrototype%"
+    prototype: "%AbstractModuleSourcePrototype%",
   },
   "%AbstractModuleSourcePrototype%": {
-    constructor: "%AbstractModuleSource%"
+    constructor: "%AbstractModuleSource%",
   },
   Promise: {
     // Properties of the Promise Constructor
@@ -3335,7 +3362,7 @@ const permitted = {
     withResolvers: fn,
     "@@species": getter,
     // https://github.com/tc39/proposal-promise-try
-    try: fn
+    try: fn,
   },
   "%PromisePrototype%": {
     // Properties of the Promise Prototype Object
@@ -3347,12 +3374,12 @@ const permitted = {
     // Non-standard, used in node to prevent async_hooks from breaking
     "UniqueSymbol(async_id_symbol)": accessor,
     "UniqueSymbol(trigger_async_id_symbol)": accessor,
-    "UniqueSymbol(destroyed)": accessor
+    "UniqueSymbol(destroyed)": accessor,
   },
   "%InertAsyncFunction%": {
     // Properties of the AsyncFunction Constructor
     "[[Proto]]": "%InertFunction%",
-    prototype: "%AsyncFunctionPrototype%"
+    prototype: "%AsyncFunctionPrototype%",
   },
   "%AsyncFunctionPrototype%": {
     // Properties of the AsyncFunction Prototype Object
@@ -3362,7 +3389,7 @@ const permitted = {
     // https://github.com/endojs/endo/issues/660
     // https://github.com/react-native-community/jsc-android-buildscripts/issues/181
     length: "number",
-    "@@toStringTag": "string"
+    "@@toStringTag": "string",
   },
   // Reflection
   Reflect: {
@@ -3381,12 +3408,12 @@ const permitted = {
     preventExtensions: fn,
     set: fn,
     setPrototypeOf: fn,
-    "@@toStringTag": "string"
+    "@@toStringTag": "string",
   },
   Proxy: {
     // Properties of the Proxy Constructor
     "[[Proto]]": "%FunctionPrototype%",
-    revocable: fn
+    revocable: fn,
   },
   // Appendix B
   // Annex B: Additional Properties of the Global Object
@@ -3396,12 +3423,12 @@ const permitted = {
   "%UniqueCompartment%": {
     "[[Proto]]": "%FunctionPrototype%",
     prototype: "%CompartmentPrototype%",
-    toString: fn
+    toString: fn,
   },
   "%InertCompartment%": {
     "[[Proto]]": "%FunctionPrototype%",
     prototype: "%CompartmentPrototype%",
-    toString: fn
+    toString: fn,
   },
   "%CompartmentPrototype%": {
     constructor: "%InertCompartment%",
@@ -3412,18 +3439,18 @@ const permitted = {
     load: asyncFn,
     importNow: fn,
     module: fn,
-    "@@toStringTag": "string"
+    "@@toStringTag": "string",
   },
   lockdown: fn,
   harden: { ...fn, isFake: "boolean" },
-  "%InitialGetStackString%": fn
+  "%InitialGetStackString%": fn,
 };
 
 /**
  * @import {Reporter} from './reporting-types.js'
  */
 
-const isFunction = obj => typeof obj === 'function';
+const isFunction = (obj) => typeof obj === "function";
 
 // Like defineProperty, but throws if it would modify an existing property.
 // We use this to ensure that two conflicting attempts to define the same
@@ -3474,12 +3501,12 @@ function sampleGlobals(globalObject, newPropertyNames) {
 /**
  * @param {Reporter} reporter
  */
-const makeIntrinsicsCollector = reporter => {
+const makeIntrinsicsCollector = (reporter) => {
   /** @type {Record<any, any>} */
   const intrinsics = create(null);
   let pseudoNatives;
 
-  const addIntrinsics = newIntrinsics => {
+  const addIntrinsics = (newIntrinsics) => {
     initProperties(intrinsics, getOwnPropertyDescriptors$1(newIntrinsics));
   };
   freeze$4(addIntrinsics);
@@ -3493,19 +3520,19 @@ const makeIntrinsicsCollector = reporter => {
         // eslint-disable-next-line no-continue
         continue;
       }
-      if (!hasOwn(intrinsic, 'prototype')) {
+      if (!hasOwn(intrinsic, "prototype")) {
         // eslint-disable-next-line no-continue
         continue;
       }
       const permit = permitted[name];
-      if (typeof permit !== 'object') {
+      if (typeof permit !== "object") {
         throw TypeError$3(`Expected permit object at permits.${name}`);
       }
       const namePrototype = permit.prototype;
       if (!namePrototype) {
         cauterizeProperty(
           intrinsic,
-          'prototype',
+          "prototype",
           false,
           `${name}.prototype`,
           reporter,
@@ -3514,7 +3541,7 @@ const makeIntrinsicsCollector = reporter => {
         continue;
       }
       if (
-        typeof namePrototype !== 'string' ||
+        typeof namePrototype !== "string" ||
         !hasOwn(permitted, namePrototype)
       ) {
         throw TypeError$3(`Unrecognized ${name}.prototype permits entry`);
@@ -3539,10 +3566,10 @@ const makeIntrinsicsCollector = reporter => {
   };
   freeze$4(finalIntrinsics);
 
-  const isPseudoNative = obj => {
+  const isPseudoNative = (obj) => {
     if (!pseudoNatives) {
       throw TypeError$3(
-        'isPseudoNative can only be called after finalIntrinsics',
+        "isPseudoNative can only be called after finalIntrinsics",
       );
     }
     return weaksetHas(pseudoNatives, obj);
@@ -3601,7 +3628,6 @@ const getGlobalIntrinsics = (globalObject, reporter) => {
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 /**
  * @import {Reporter} from './reporting-types.js'
  */
@@ -3620,16 +3646,16 @@ function removeUnpermittedIntrinsics(
   reporter,
 ) {
   // These primitives are allowed for permits.
-  const primitives = ['undefined', 'boolean', 'number', 'string', 'symbol'];
+  const primitives = ["undefined", "boolean", "number", "string", "symbol"];
 
   // These symbols are allowed as well-known symbols
   const wellKnownSymbolNames = new Map(
     Symbol$2
       ? arrayMap(
           arrayFilter(
-            entries(permitted['%SharedSymbol%']),
+            entries(permitted["%SharedSymbol%"]),
             ([name, permit]) =>
-              permit === 'symbol' && typeof Symbol$2[name] === 'symbol',
+              permit === "symbol" && typeof Symbol$2[name] === "symbol",
           ),
           ([name]) => [Symbol$2[name], `@@${name}`],
         )
@@ -3643,13 +3669,13 @@ function removeUnpermittedIntrinsics(
    * @param {string | symbol} prop
    */
   function asStringPropertyName(path, prop) {
-    if (typeof prop === 'string') {
+    if (typeof prop === "string") {
       return prop;
     }
 
     const wellKnownSymbol = mapGet(wellKnownSymbolNames, prop);
 
-    if (typeof prop === 'symbol') {
+    if (typeof prop === "symbol") {
       if (wellKnownSymbol) {
         return wellKnownSymbol;
       } else {
@@ -3671,7 +3697,9 @@ function removeUnpermittedIntrinsics(
    */
   function visitPrototype(path, obj, protoName) {
     if (isPrimitive(obj)) {
-      throw TypeError$3(`Object expected: ${path}, ${String$1(obj)}, ${protoName}`);
+      throw TypeError$3(
+        `Object expected: ${path}, ${String$1(obj)}, ${protoName}`,
+      );
     }
     const proto = getPrototypeOf$1(obj);
 
@@ -3681,18 +3709,18 @@ function removeUnpermittedIntrinsics(
     }
 
     // Assert: protoName, if provided, is a string.
-    if (protoName !== undefined && typeof protoName !== 'string') {
+    if (protoName !== undefined && typeof protoName !== "string") {
       throw TypeError$3(`Malformed permit ${path}.__proto__`);
     }
 
     // If permit not specified, default to Object.prototype.
-    if (proto === intrinsics[protoName || '%ObjectPrototype%']) {
+    if (proto === intrinsics[protoName || "%ObjectPrototype%"]) {
       return;
     }
 
     // We can't clean [[Prototype]], therefore abort.
     throw TypeError$3(
-      `Unexpected [[Prototype]] at ${path}.__proto__ (expected ${protoName || '%ObjectPrototype%'})`,
+      `Unexpected [[Prototype]] at ${path}.__proto__ (expected ${protoName || "%ObjectPrototype%"})`,
     );
   }
 
@@ -3701,7 +3729,7 @@ function removeUnpermittedIntrinsics(
    * enforce permit for a single property value.
    */
   function isAllowedPropertyValue(path, value, prop, permit) {
-    if (typeof permit === 'object') {
+    if (typeof permit === "object") {
       // eslint-disable-next-line no-use-before-define
       visitProperties(path, value, permit);
       // The property is allowed.
@@ -3714,10 +3742,10 @@ function removeUnpermittedIntrinsics(
       return false;
     }
 
-    if (typeof permit === 'string') {
+    if (typeof permit === "string") {
       // A string permit can have one of two meanings:
 
-      if (prop === 'prototype' || prop === 'constructor') {
+      if (prop === "prototype" || prop === "constructor") {
         // For prototype and constructor value properties, the permit
         // is the name of an intrinsic.
         // Assumption: prototype and constructor cannot be primitives.
@@ -3764,7 +3792,7 @@ function removeUnpermittedIntrinsics(
     }
 
     // Is this a value property?
-    if (hasOwn(desc, 'value')) {
+    if (hasOwn(desc, "value")) {
       if (isAccessorPermit(permit)) {
         throw TypeError$3(`Accessor expected at ${path}`);
       }
@@ -3783,12 +3811,12 @@ function removeUnpermittedIntrinsics(
    * getSubPermit()
    */
   function getSubPermit(obj, permit, prop) {
-    const permitProp = prop === '__proto__' ? '--proto--' : prop;
+    const permitProp = prop === "__proto__" ? "--proto--" : prop;
     if (hasOwn(permit, permitProp)) {
       return permit[permitProp];
     }
 
-    if (typeof obj === 'function') {
+    if (typeof obj === "function") {
       if (hasOwn(FunctionInstance, permitProp)) {
         return FunctionInstance[permitProp];
       }
@@ -3806,10 +3834,10 @@ function removeUnpermittedIntrinsics(
       return;
     }
 
-    const protoName = permit['[[Proto]]'];
+    const protoName = permit["[[Proto]]"];
     visitPrototype(path, obj, protoName);
 
-    if (typeof obj === 'function') {
+    if (typeof obj === "function") {
       markVirtualizedNativeFunction(obj);
     }
 
@@ -3826,13 +3854,13 @@ function removeUnpermittedIntrinsics(
 
   // Start path with 'intrinsics' to clarify that properties are not
   // removed from the global object by the permitting operation.
-  visitProperties('intrinsics', intrinsics, permitted);
+  visitProperties("intrinsics", intrinsics, permitted);
 }
 
 function tameFunctionConstructors() {
   try {
     FERAL_FUNCTION.prototype.constructor("return 1");
-  } catch (ignore) {
+  } catch (_ignore) {
     return freeze$4({});
   }
   const newIntrinsics = {};
@@ -3847,9 +3875,9 @@ function tameFunctionConstructors() {
       throw e;
     }
     const FunctionPrototype = getPrototypeOf$1(FunctionInstance);
-    const InertConstructor = function() {
+    const InertConstructor = () => {
       throw TypeError$3(
-        "Function.prototype.constructor is not a valid constructor."
+        "Function.prototype.constructor is not a valid constructor.",
       );
     };
     defineProperties$1(InertConstructor, {
@@ -3858,11 +3886,11 @@ function tameFunctionConstructors() {
         value: name,
         writable: false,
         enumerable: false,
-        configurable: true
-      }
+        configurable: true,
+      },
     });
     defineProperties$1(FunctionPrototype, {
-      constructor: { value: InertConstructor }
+      constructor: { value: InertConstructor },
     });
     if (InertConstructor !== FERAL_FUNCTION.prototype.constructor) {
       setPrototypeOf(InertConstructor, FERAL_FUNCTION.prototype.constructor);
@@ -3873,25 +3901,24 @@ function tameFunctionConstructors() {
   repairFunction(
     "GeneratorFunction",
     "%InertGeneratorFunction%",
-    "(function*(){})"
+    "(function*(){})",
   );
   repairFunction(
     "AsyncFunction",
     "%InertAsyncFunction%",
-    "(async function(){})"
+    "(async function(){})",
   );
   if (AsyncGeneratorFunctionInstance !== void 0) {
     repairFunction(
       "AsyncGeneratorFunction",
       "%InertAsyncGeneratorFunction%",
-      "(async function*(){})"
+      "(async function*(){})",
     );
   }
   return newIntrinsics;
 }
 
 // @ts-check
-
 
 function tameDateConstructor() {
   const OriginalDate = Date;
@@ -3904,7 +3931,7 @@ function tameDateConstructor() {
      * See https://github.com/endojs/endo/issues/910#issuecomment-1581855420
      */
     now() {
-      throw TypeError$3('secure mode Calling %SharedDate%.now() throws');
+      throw TypeError$3("secure mode Calling %SharedDate%.now() throws");
     },
   };
 
@@ -3931,9 +3958,9 @@ function tameDateConstructor() {
    *
    * @param {{powers?: string}} [opts]
    */
-  const makeDateConstructor = ({ powers = 'none' } = {}) => {
+  const makeDateConstructor = ({ powers = "none" } = {}) => {
     let ResultDate;
-    if (powers === 'original') {
+    if (powers === "original") {
       // eslint-disable-next-line no-shadow
       ResultDate = function Date(...rest) {
         if (new.target === undefined) {
@@ -3946,12 +3973,12 @@ function tameDateConstructor() {
       ResultDate = function Date(...rest) {
         if (new.target === undefined) {
           throw TypeError$3(
-            'secure mode Calling %SharedDate% constructor as a function throws',
+            "secure mode Calling %SharedDate% constructor as a function throws",
           );
         }
         if (rest.length === 0) {
           throw TypeError$3(
-            'secure mode Calling new %SharedDate%() with no arguments throws',
+            "secure mode Calling new %SharedDate%() with no arguments throws",
           );
         }
         return construct(OriginalDate, rest, new.target);
@@ -3981,8 +4008,8 @@ function tameDateConstructor() {
     });
     return ResultDate;
   };
-  const InitialDate = makeDateConstructor({ powers: 'original' });
-  const SharedDate = makeDateConstructor({ powers: 'none' });
+  const InitialDate = makeDateConstructor({ powers: "original" });
+  const SharedDate = makeDateConstructor({ powers: "none" });
 
   defineProperties$1(InitialDate, {
     now: {
@@ -4006,8 +4033,8 @@ function tameDateConstructor() {
   });
 
   return {
-    '%InitialDate%': InitialDate,
-    '%SharedDate%': SharedDate,
+    "%InitialDate%": InitialDate,
+    "%SharedDate%": SharedDate,
   };
 }
 
@@ -4025,7 +4052,7 @@ function tameMathObject() {
      * See https://github.com/endojs/endo/issues/910#issuecomment-1581855420
      */
     random() {
-      throw TypeError$3('secure mode %SharedMath%.random() throws');
+      throw TypeError$3("secure mode %SharedMath%.random() throws");
     },
   };
 
@@ -4040,12 +4067,12 @@ function tameMathObject() {
   });
 
   return {
-    '%InitialMath%': initialMath,
-    '%SharedMath%': sharedMath,
+    "%InitialMath%": initialMath,
+    "%SharedMath%": sharedMath,
   };
 }
 
-function tameRegExpConstructor(regExpTaming = 'safe') {
+function tameRegExpConstructor(regExpTaming = "safe") {
   const RegExpPrototype = FERAL_REG_EXP.prototype;
 
   const makeRegExpConstructor = (_ = {}) => {
@@ -4076,7 +4103,7 @@ function tameRegExpConstructor(regExpTaming = 'safe') {
         speciesSymbol,
       );
       if (!speciesDesc) {
-        throw TypeError$3('no RegExp[Symbol.species] descriptor');
+        throw TypeError$3("no RegExp[Symbol.species] descriptor");
       }
       defineProperties$1(ResultRegExp, {
         [speciesSymbol]: speciesDesc,
@@ -4088,7 +4115,7 @@ function tameRegExpConstructor(regExpTaming = 'safe') {
   const InitialRegExp = makeRegExpConstructor();
   const SharedRegExp = makeRegExpConstructor();
 
-  if (regExpTaming !== 'unsafe') {
+  if (regExpTaming !== "unsafe") {
     // @ts-expect-error Deleted properties must be optional
     delete RegExpPrototype.compile;
   }
@@ -4097,8 +4124,8 @@ function tameRegExpConstructor(regExpTaming = 'safe') {
   });
 
   return {
-    '%InitialRegExp%': InitialRegExp,
-    '%SharedRegExp%': SharedRegExp,
+    "%InitialRegExp%": InitialRegExp,
+    "%SharedRegExp%": SharedRegExp,
   };
 }
 
@@ -4169,18 +4196,18 @@ function tameRegExpConstructor(regExpTaming = 'safe') {
  * cases.
  */
 const minEnablements = {
-  '%ObjectPrototype%': {
+  "%ObjectPrototype%": {
     toString: true,
   },
 
-  '%FunctionPrototype%': {
+  "%FunctionPrototype%": {
     toString: true, // set by "rollup"
   },
 
-  '%ErrorPrototype%': {
+  "%ErrorPrototype%": {
     name: true, // set by "precond", "ava", "node-fetch"
   },
-  '%IteratorPrototype%': {
+  "%IteratorPrototype%": {
     toString: true,
     // https://github.com/tc39/proposal-iterator-helpers
     constructor: true,
@@ -4193,12 +4220,12 @@ const minEnablements = {
  * Moderate enablements are usually good enough for legacy compat.
  */
 const moderateEnablements = {
-  '%ObjectPrototype%': {
+  "%ObjectPrototype%": {
     toString: true,
     valueOf: true,
   },
 
-  '%ArrayPrototype%': {
+  "%ArrayPrototype%": {
     toString: true,
     push: true, // set by "Google Analytics"
     concat: true, // set by mobx generated code (old TS compiler?)
@@ -4209,69 +4236,69 @@ const moderateEnablements = {
   // Function instances have their own 'name' and 'length' properties
   // which are configurable and non-writable. Thus, they are already
   // non-assignable anyway.
-  '%FunctionPrototype%': {
+  "%FunctionPrototype%": {
     constructor: true, // set by "regenerator-runtime"
     bind: true, // set by "underscore", "express"
     toString: true, // set by "rollup"
   },
 
-  '%ErrorPrototype%': {
+  "%ErrorPrototype%": {
     constructor: true, // set by "fast-json-patch", "node-fetch"
     message: true,
     name: true, // set by "precond", "ava", "node-fetch", "node 14"
     toString: true, // set by "bluebird"
   },
 
-  '%TypeErrorPrototype%': {
+  "%TypeErrorPrototype%": {
     constructor: true, // set by "readable-stream"
     message: true, // set by "tape"
     name: true, // set by "readable-stream", "node 14"
   },
 
-  '%SyntaxErrorPrototype%': {
+  "%SyntaxErrorPrototype%": {
     message: true, // to match TypeErrorPrototype.message
     name: true, // set by "node 14"
   },
 
-  '%RangeErrorPrototype%': {
+  "%RangeErrorPrototype%": {
     message: true, // to match TypeErrorPrototype.message
     name: true, // set by "node 14"
   },
 
-  '%URIErrorPrototype%': {
+  "%URIErrorPrototype%": {
     message: true, // to match TypeErrorPrototype.message
     name: true, // set by "node 14"
   },
 
-  '%EvalErrorPrototype%': {
+  "%EvalErrorPrototype%": {
     message: true, // to match TypeErrorPrototype.message
     name: true, // set by "node 14"
   },
 
-  '%ReferenceErrorPrototype%': {
+  "%ReferenceErrorPrototype%": {
     message: true, // to match TypeErrorPrototype.message
     name: true, // set by "node 14"
   },
 
   // https://github.com/endojs/endo/issues/550
-  '%AggregateErrorPrototype%': {
+  "%AggregateErrorPrototype%": {
     message: true, // to match TypeErrorPrototype.message
     name: true, // set by "node 14"?
   },
 
-  '%PromisePrototype%': {
+  "%PromisePrototype%": {
     constructor: true, // set by "core-js"
   },
 
-  '%TypedArrayPrototype%': '*', // set by https://github.com/feross/buffer
+  "%TypedArrayPrototype%": "*", // set by https://github.com/feross/buffer
 
-  '%Generator%': {
+  "%Generator%": {
     constructor: true,
     name: true,
     toString: true,
   },
 
-  '%IteratorPrototype%': {
+  "%IteratorPrototype%": {
     toString: true,
     // https://github.com/tc39/proposal-iterator-helpers
     constructor: true,
@@ -4321,7 +4348,7 @@ const severeEnablements = {
    * https://github.com/endojs/endo/blob/master/packages/ses/docs/lockdown.md#overridetaming-options
    * Open the triangles at the bottom of that section.
    */
-  '%ObjectPrototype%': '*',
+  "%ObjectPrototype%": "*",
 
   /**
    * The widely used Buffer defined at https://github.com/feross/buffer
@@ -4330,24 +4357,23 @@ const severeEnablements = {
    * include enough of the `TypeArray` methods that here, the `severe`
    * enablements just enable them all.
    */
-  '%TypedArrayPrototype%': '*',
+  "%TypedArrayPrototype%": "*",
 
   /**
    * Needed to work with Immer before https://github.com/immerjs/immer/pull/914
    * is accepted.
    */
-  '%MapPrototype%': '*',
+  "%MapPrototype%": "*",
 
   /**
    * Needed to work with Immer before https://github.com/immerjs/immer/pull/914
    * is accepted.
    */
-  '%SetPrototype%': '*',
+  "%SetPrototype%": "*",
 };
 
 // Adapted from SES/Caja
 // Copyright (C) 2011 Google Inc.
-
 
 /** @import {Reporter} from './reporting-types.js' */
 
@@ -4414,7 +4440,7 @@ function enablePropertyOverrides(
 ) {
   const debugProperties = new Set(overrideDebug);
   function enable(path, obj, prop, desc) {
-    if ('value' in desc && desc.configurable) {
+    if ("value" in desc && desc.configurable) {
       const { value } = desc;
 
       const isDebug = setHas(debugProperties, prop);
@@ -4453,7 +4479,7 @@ function enablePropertyOverrides(
         prop,
       );
 
-      defineProperty$2(getter, 'originalValue', {
+      defineProperty$2(getter, "originalValue", {
         value,
         writable: false,
         enumerable: false,
@@ -4484,7 +4510,9 @@ function enablePropertyOverrides(
     }
     // TypeScript does not allow symbols to be used as indexes because it
     // cannot recokon types of symbolized properties.
-    arrayForEach(ownKeys$2(descs), prop => enable(path, obj, prop, descs[prop]));
+    arrayForEach(ownKeys$2(descs), (prop) =>
+      enable(path, obj, prop, descs[prop]),
+    );
   }
 
   function enableProperties(path, obj, plan) {
@@ -4503,7 +4531,7 @@ function enablePropertyOverrides(
 
       if (subPlan === true) {
         enableProperty(subPath, obj, prop);
-      } else if (subPlan === '*') {
+      } else if (subPlan === "*") {
         enableAllProperties(subPath, desc.value);
       } else if (!isPrimitive(subPlan)) {
         enableProperties(subPath, desc.value, subPlan);
@@ -4515,15 +4543,15 @@ function enablePropertyOverrides(
 
   let plan;
   switch (overrideTaming) {
-    case 'min': {
+    case "min": {
       plan = minEnablements;
       break;
     }
-    case 'moderate': {
+    case "moderate": {
       plan = moderateEnablements;
       break;
     }
-    case 'severe': {
+    case "severe": {
       plan = severeEnablements;
       break;
     }
@@ -4533,7 +4561,7 @@ function enablePropertyOverrides(
   }
 
   // Do the repair.
-  enableProperties('root', intrinsics, plan);
+  enableProperties("root", intrinsics, plan);
 }
 
 const { Fail: Fail$6, quote: q$5 } = assert;
@@ -4570,12 +4598,12 @@ const tamedMethods$1 = {
 const nonLocaleCompare = tamedMethods$1.localeCompare;
 const numberToString = tamedMethods$1.toString;
 
-function tameLocaleMethods(intrinsics, localeTaming = 'safe') {
-  if (localeTaming === 'unsafe') {
+function tameLocaleMethods(intrinsics, localeTaming = "safe") {
+  if (localeTaming === "unsafe") {
     return;
   }
 
-  defineProperty$2(String$1.prototype, 'localeCompare', {
+  defineProperty$2(String$1.prototype, "localeCompare", {
     value: nonLocaleCompare,
   });
 
@@ -4585,11 +4613,11 @@ function tameLocaleMethods(intrinsics, localeTaming = 'safe') {
       for (const methodName of getOwnPropertyNames(intrinsic)) {
         const match = regexpExec(localePattern, methodName);
         if (match) {
-          typeof intrinsic[methodName] === 'function' ||
+          typeof intrinsic[methodName] === "function" ||
             Fail$6`expected ${q$5(methodName)} to be a function`;
           const nonLocaleMethodName = `${match[1]}${match[2]}`;
           const method = intrinsic[nonLocaleMethodName];
-          typeof method === 'function' ||
+          typeof method === "function" ||
             Fail$6`function ${q$5(nonLocaleMethodName)} not found`;
           defineProperty$2(intrinsic, methodName, { value: method });
         }
@@ -4599,7 +4627,7 @@ function tameLocaleMethods(intrinsics, localeTaming = 'safe') {
 
   // Numbers are special because toString accepts a radix instead of ignoring
   // all of the arguments that we would otherwise forward.
-  defineProperty$2(Number$1.prototype, 'toLocaleString', {
+  defineProperty$2(Number$1.prototype, "toLocaleString", {
     value: numberToString,
   });
 }
@@ -4612,14 +4640,14 @@ function tameLocaleMethods(intrinsics, localeTaming = 'safe') {
  *
  * @param {Function} evaluator
  */
-const makeEvalFunction = evaluator => {
+const makeEvalFunction = (evaluator) => {
   // We use the concise method syntax to create an eval without a
   // [[Construct]] behavior (such that the invocation "new eval()" throws
   // TypeError: eval is not a constructor"), but which still accepts a
   // 'this' binding.
   const newEval = {
     eval(source) {
-      if (typeof source !== 'string') {
+      if (typeof source !== "string") {
         // As per the runtime semantic of PerformEval [ECMAScript 18.2.1.1]:
         // If Type(source) is not String, return source.
         // TODO Recent proposals from Mike Samuel may change this non-string
@@ -4641,14 +4669,14 @@ const { Fail: Fail$5 } = assert;
  * the safety of `safe-eval` for confinement, unless `no-eval`
  * is specified (then a TypeError is thrown on use).
  */
-const makeFunctionConstructor = evaluator => {
+const makeFunctionConstructor = (evaluator) => {
   // Define an unused parameter to ensure Function.length === 1
   const newFunction = function Function(_body) {
     // Sanitize all parameters at the entry point.
     // eslint-disable-next-line prefer-rest-params
-    const bodyText = `${arrayPop(arguments) || ''}`;
+    const bodyText = `${arrayPop(arguments) || ""}`;
     // eslint-disable-next-line prefer-rest-params
-    const parameters = `${arrayJoin(arguments, ',')}`;
+    const parameters = `${arrayJoin(arguments, ",")}`;
 
     // Are parameters and bodyText valid code, or is someone
     // attempting an injection attack? This will throw a SyntaxError if:
@@ -4673,7 +4701,7 @@ const makeFunctionConstructor = evaluator => {
     // but is otherwise correctly validating.
     //
     // eslint-disable-next-line no-new
-    new FERAL_FUNCTION(parameters, '');
+    new FERAL_FUNCTION(parameters, "");
     // eslint-disable-next-line no-new
     new FERAL_FUNCTION(bodyText);
 
@@ -4712,13 +4740,13 @@ const setGlobalObjectSymbolUnscopables = (globalObject) => {
       assign(create(null), {
         set: freeze$4(() => {
           throw TypeError$3(
-            `Cannot set Symbol.unscopables of a Compartment's globalThis`
+            `Cannot set Symbol.unscopables of a Compartment's globalThis`,
           );
         }),
         enumerable: false,
-        configurable: false
-      })
-    )
+        configurable: false,
+      }),
+    ),
   );
 };
 const setGlobalObjectConstantProperties = (globalObject) => {
@@ -4727,24 +4755,27 @@ const setGlobalObjectConstantProperties = (globalObject) => {
       value: constant,
       writable: false,
       enumerable: false,
-      configurable: false
+      configurable: false,
     });
   }
 };
-const setGlobalObjectMutableProperties = (globalObject, {
-  intrinsics,
-  newGlobalPropertyNames,
-  makeCompartmentConstructor,
-  markVirtualizedNativeFunction,
-  parentCompartment
-}) => {
+const setGlobalObjectMutableProperties = (
+  globalObject,
+  {
+    intrinsics,
+    newGlobalPropertyNames,
+    makeCompartmentConstructor,
+    markVirtualizedNativeFunction,
+    parentCompartment,
+  },
+) => {
   for (const [name, intrinsicName] of entries(universalPropertyNames)) {
     if (hasOwn(intrinsics, intrinsicName)) {
       defineProperty$2(globalObject, name, {
         value: intrinsics[intrinsicName],
         writable: true,
         enumerable: false,
-        configurable: true
+        configurable: true,
       });
     }
   }
@@ -4754,12 +4785,12 @@ const setGlobalObjectMutableProperties = (globalObject, {
         value: intrinsics[intrinsicName],
         writable: true,
         enumerable: false,
-        configurable: true
+        configurable: true,
       });
     }
   }
   const perCompartmentGlobals = {
-    globalThis: globalObject
+    globalThis: globalObject,
   };
   perCompartmentGlobals.Compartment = freeze$4(
     makeCompartmentConstructor(
@@ -4768,23 +4799,27 @@ const setGlobalObjectMutableProperties = (globalObject, {
       markVirtualizedNativeFunction,
       {
         parentCompartment,
-        enforceNew: true
-      }
-    )
+        enforceNew: true,
+      },
+    ),
   );
   for (const [name, value] of entries(perCompartmentGlobals)) {
     defineProperty$2(globalObject, name, {
       value,
       writable: true,
       enumerable: false,
-      configurable: true
+      configurable: true,
     });
     if (typeof value === "function") {
       markVirtualizedNativeFunction(value);
     }
   }
 };
-const setGlobalObjectEvaluators = (globalObject, evaluator, markVirtualizedNativeFunction) => {
+const setGlobalObjectEvaluators = (
+  globalObject,
+  evaluator,
+  markVirtualizedNativeFunction,
+) => {
   {
     const f = freeze$4(makeEvalFunction(evaluator));
     markVirtualizedNativeFunction(f);
@@ -4792,7 +4827,7 @@ const setGlobalObjectEvaluators = (globalObject, evaluator, markVirtualizedNativ
       value: f,
       writable: true,
       enumerable: false,
-      configurable: true
+      configurable: true,
     });
   }
   {
@@ -4802,7 +4837,7 @@ const setGlobalObjectEvaluators = (globalObject, evaluator, markVirtualizedNativ
       value: f,
       writable: true,
       enumerable: false,
-      configurable: true
+      configurable: true,
     });
   }
 };
@@ -4850,7 +4885,7 @@ const scopeProxyHandlerProperties = {
     throw ReferenceError$1(`${String$1(prop)} is not defined`);
   },
 
-  has(_shadow, prop) {
+  has(_shadow, _prop) {
     // we must at least return true for all properties on the realm globalThis
     return true;
   },
@@ -4911,7 +4946,7 @@ const objTarget = freeze$4({ __proto__: null });
  * to prevent access to "start compartment globals". When "sloppyGlobalsMode"
  * is true, the Proxy will perform sets on the "globalObject".
  */
-const createSloppyGlobalsScopeTerminator = globalObject => {
+const createSloppyGlobalsScopeTerminator = (globalObject) => {
   const scopeProxyHandlerProperties = {
     // inherit scopeTerminator behavior
     ...strictScopeTerminatorHandler,
@@ -5034,7 +5069,7 @@ const makeEvalScopeKit = () => {
 
 // Captures a key and value of the form #key=value or @key=value
 const sourceMetaEntryRegExp =
-  '\\s*[@#]\\s*([a-zA-Z][a-zA-Z0-9]*)\\s*=\\s*([^\\s\\*]*)';
+  "\\s*[@#]\\s*([a-zA-Z][a-zA-Z0-9]*)\\s*=\\s*([^\\s\\*]*)";
 // Captures either a one-line or multi-line comment containing
 // one #key=value or @key=value.
 // Produces two pairs of capture groups, but the initial two may be undefined.
@@ -5048,8 +5083,8 @@ const sourceMetaEntriesRegExp = new FERAL_REG_EXP(
 /**
  * @param {string} src
  */
-const getSourceURL = src => {
-  let sourceURL = '<unknown>';
+const getSourceURL = (src) => {
+  let sourceURL = "<unknown>";
 
   // Our regular expression matches the last one or two comments with key value
   // pairs at the end of the source, avoiding a scan over the entire length of
@@ -5071,9 +5106,9 @@ const getSourceURL = src => {
     // may be undefined.
     // On the off-chance someone put two sourceURL comments in their code with
     // different commenting conventions, the latter has precedence.
-    if (match[3] === 'sourceURL') {
+    if (match[3] === "sourceURL") {
       sourceURL = match[4];
-    } else if (match[1] === 'sourceURL') {
+    } else if (match[1] === "sourceURL") {
       sourceURL = match[2];
     }
   }
@@ -5082,7 +5117,6 @@ const getSourceURL = src => {
 };
 
 // @ts-check
-
 
 /**
  * Find the first occurence of the given pattern and return
@@ -5101,14 +5135,14 @@ function getLineNumber(src, pattern) {
   // The importPattern incidentally captures an initial \n in
   // an attempt to reject a . prefix, so we need to offset
   // the line number in that case.
-  const adjustment = src[index] === '\n' ? 1 : 0;
+  const adjustment = src[index] === "\n" ? 1 : 0;
 
-  return stringSplit$1(stringSlice(src, 0, index), '\n').length + adjustment;
+  return stringSplit$1(stringSlice(src, 0, index), "\n").length + adjustment;
 }
 
 // /////////////////////////////////////////////////////////////////////////////
 
-const htmlCommentPattern = new FERAL_REG_EXP(`(?:${'<'}!--|--${'>'})`, 'g');
+const htmlCommentPattern = new FERAL_REG_EXP(`(?:${"<"}!--|--${">"})`, "g");
 
 /**
  * Conservatively reject the source text if it may contain text that some
@@ -5137,7 +5171,7 @@ const htmlCommentPattern = new FERAL_REG_EXP(`(?:${'<'}!--|--${'>'})`, 'g');
  * @param {string} src
  * @returns {string}
  */
-const rejectHtmlComments = src => {
+const rejectHtmlComments = (src) => {
   const lineNumber = getLineNumber(src, htmlCommentPattern);
   if (lineNumber < 0) {
     return src;
@@ -5171,16 +5205,16 @@ const rejectHtmlComments = src => {
  * @param {string} src
  * @returns {string}
  */
-const evadeHtmlCommentTest = src => {
-  const replaceFn = match => (match[0] === '<' ? '< ! --' : '-- >');
+const evadeHtmlCommentTest = (src) => {
+  const replaceFn = (match) => (match[0] === "<" ? "< ! --" : "-- >");
   return stringReplace(src, htmlCommentPattern, replaceFn);
 };
 
 // /////////////////////////////////////////////////////////////////////////////
 
 const importPattern = new FERAL_REG_EXP(
-  '(^|[^.]|\\.\\.\\.)\\bimport(\\s*(?:\\(|/[/*]))',
-  'g',
+  "(^|[^.]|\\.\\.\\.)\\bimport(\\s*(?:\\(|/[/*]))",
+  "g",
 );
 
 /**
@@ -5213,7 +5247,7 @@ const importPattern = new FERAL_REG_EXP(
  * @param {string} src
  * @returns {string}
  */
-const rejectImportExpressions = src => {
+const rejectImportExpressions = (src) => {
   const lineNumber = getLineNumber(src, importPattern);
   if (lineNumber < 0) {
     return src;
@@ -5241,7 +5275,7 @@ const rejectImportExpressions = src => {
  * @param {string} src
  * @returns {string}
  */
-const evadeImportExpressionTest = src => {
+const evadeImportExpressionTest = (src) => {
   const replaceFn = (_, p1, p2) => `${p1}__import__${p2}`;
   return stringReplace(src, importPattern, replaceFn);
 };
@@ -5249,8 +5283,8 @@ const evadeImportExpressionTest = src => {
 // /////////////////////////////////////////////////////////////////////////////
 
 const someDirectEvalPattern = new FERAL_REG_EXP(
-  '(^|[^.])\\beval(\\s*\\()',
-  'g',
+  "(^|[^.])\\beval(\\s*\\()",
+  "g",
 );
 
 /**
@@ -5285,7 +5319,7 @@ const someDirectEvalPattern = new FERAL_REG_EXP(
  * @param {string} src
  * @returns {string}
  */
-const rejectSomeDirectEvalExpressions = src => {
+const rejectSomeDirectEvalExpressions = (src) => {
   const lineNumber = getLineNumber(src, someDirectEvalPattern);
   if (lineNumber < 0) {
     return src;
@@ -5306,7 +5340,7 @@ const rejectSomeDirectEvalExpressions = src => {
  * @param {string} source
  * @returns {string}
  */
-const mandatoryTransforms = source => {
+const mandatoryTransforms = (source) => {
   source = rejectHtmlComments(source);
   source = rejectImportExpressions(source);
   return source;
@@ -5346,65 +5380,65 @@ freeze$4({
  */
 const keywords = [
   // 11.6.2.1 Keywords
-  'await',
-  'break',
-  'case',
-  'catch',
-  'class',
-  'const',
-  'continue',
-  'debugger',
-  'default',
-  'delete',
-  'do',
-  'else',
-  'export',
-  'extends',
-  'finally',
-  'for',
-  'function',
-  'if',
-  'import',
-  'in',
-  'instanceof',
-  'new',
-  'return',
-  'super',
-  'switch',
-  'this',
-  'throw',
-  'try',
-  'typeof',
-  'var',
-  'void',
-  'while',
-  'with',
-  'yield',
+  "await",
+  "break",
+  "case",
+  "catch",
+  "class",
+  "const",
+  "continue",
+  "debugger",
+  "default",
+  "delete",
+  "do",
+  "else",
+  "export",
+  "extends",
+  "finally",
+  "for",
+  "function",
+  "if",
+  "import",
+  "in",
+  "instanceof",
+  "new",
+  "return",
+  "super",
+  "switch",
+  "this",
+  "throw",
+  "try",
+  "typeof",
+  "var",
+  "void",
+  "while",
+  "with",
+  "yield",
 
   // Also reserved when parsing strict mode code
-  'let',
-  'static',
+  "let",
+  "static",
 
   // 11.6.2.2 Future Reserved Words
-  'enum',
+  "enum",
 
   // Also reserved when parsing strict mode code
-  'implements',
-  'package',
-  'protected',
-  'interface',
-  'private',
-  'public',
+  "implements",
+  "package",
+  "protected",
+  "interface",
+  "private",
+  "public",
 
   // Reserved but not mentioned in specs
-  'await',
+  "await",
 
-  'null',
-  'true',
-  'false',
+  "null",
+  "true",
+  "false",
 
-  'this',
-  'arguments',
+  "this",
+  "arguments",
 ];
 
 /**
@@ -5430,11 +5464,11 @@ const identifierPattern = /^[a-zA-Z_$][\w$]*$/;
  *
  * @param {string} name
  */
-const isValidIdentifierName = name => {
+const isValidIdentifierName = (name) => {
   // Ensure we have a valid identifier. We use regexpTest rather than
   // /../.test() to guard against the case where RegExp has been poisoned.
   return (
-    name !== 'eval' &&
+    name !== "eval" &&
     !arrayIncludes$1(keywords, name) &&
     regexpTest(identifierPattern, name)
   );
@@ -5463,7 +5497,7 @@ function isImmutableDataProperty(obj, name) {
     // can't have accessors and value properties at the same time, therefore
     // this check is sufficient. Using explicit own property deal with the
     // case where Object.prototype has been poisoned.
-    hasOwn(desc, 'value')
+    hasOwn(desc, "value")
   );
 }
 
@@ -5488,7 +5522,7 @@ const getScopeConstants = (globalObject, moduleLexicals = {}) => {
   // Collect all valid & immutable identifiers from the endowments.
   const moduleLexicalConstants = arrayFilter(
     moduleLexicalNames,
-    name =>
+    (name) =>
       isValidIdentifierName(name) &&
       isImmutableDataProperty(moduleLexicals, name),
   );
@@ -5497,7 +5531,7 @@ const getScopeConstants = (globalObject, moduleLexicals = {}) => {
   // are also not present in the endowments (immutable or not).
   const globalObjectConstants = arrayFilter(
     globalObjectNames,
-    name =>
+    (name) =>
       // Can't define a constant: it would prevent a
       // lookup on the endowments.
       !arrayIncludes$1(moduleLexicalNames, name) &&
@@ -5513,7 +5547,6 @@ const getScopeConstants = (globalObject, moduleLexicals = {}) => {
 
 // @ts-check
 
-
 /**
  * buildOptimizer()
  * Given an array of identifiers, the optimizer returns a `const` declaration
@@ -5524,11 +5557,11 @@ const getScopeConstants = (globalObject, moduleLexicals = {}) => {
  */
 function buildOptimizer(constants, name) {
   // No need to build an optimizer when there are no constants.
-  if (constants.length === 0) return '';
+  if (constants.length === 0) return "";
   // Use 'this' to avoid going through the scope proxy, which is unnecessary
   // since the optimizer only needs references to the safe global.
   // Destructure the constants from the target scope object.
-  return `const {${arrayJoin(constants, ',')}} = this.${name};`;
+  return `const {${arrayJoin(constants, ",")}} = this.${name};`;
 }
 
 /**
@@ -5541,18 +5574,18 @@ function buildOptimizer(constants, name) {
  * @param {object} context.globalObject
  * @param {object} context.scopeTerminator
  */
-const makeEvaluate = context => {
+const makeEvaluate = (context) => {
   const { globalObjectConstants, moduleLexicalConstants } = getScopeConstants(
     context.globalObject,
     context.moduleLexicals,
   );
   const globalObjectOptimizer = buildOptimizer(
     globalObjectConstants,
-    'globalObject',
+    "globalObject",
   );
   const moduleLexicalOptimizer = buildOptimizer(
     moduleLexicalConstants,
-    'moduleLexicals',
+    "moduleLexicals",
   );
 
   // Create a function in sloppy mode, so that we can use 'with'. It returns
@@ -5622,7 +5655,6 @@ const makeEvaluate = context => {
 
 // Portions adapted from V8 - Copyright 2016 the V8 project authors.
 // https://github.com/v8/v8/blob/master/src/builtins/builtins-function.cc
-
 
 const { Fail: Fail$2 } = assert;
 
@@ -5698,7 +5730,7 @@ const makeSafeEvaluator = ({
       err = e;
       throw e;
     } finally {
-      const unsafeEvalWasStillExposed = 'eval' in evalScope;
+      const unsafeEvalWasStillExposed = "eval" in evalScope;
       delete evalScope.eval;
       if (unsafeEvalWasStillExposed) {
         // Barring a defect in the SES shim, the evalScope should allow the
@@ -5726,7 +5758,7 @@ const makeSafeEvaluator = ({
   return { safeEvaluate };
 };
 
-const nativeSuffix = ') { [native code] }';
+const nativeSuffix = ") { [native code] }";
 
 // Note: Top level mutable state. Does not make anything worse, since the
 // patching of `Function.prototype.toString` is also globally stateful. We
@@ -5755,11 +5787,11 @@ const tameFunctionToString = () => {
       },
     };
 
-    defineProperty$2(functionPrototype, 'toString', {
+    defineProperty$2(functionPrototype, "toString", {
       value: tamingMethods.toString,
     });
 
-    markVirtualizedNativeFunction$1 = freeze$4(func =>
+    markVirtualizedNativeFunction$1 = freeze$4((func) =>
       weaksetAdd(virtualizedNativeFunctions, func),
     );
   }
@@ -5772,17 +5804,20 @@ function tameDomains(domainTaming = "safe") {
   }
   const globalProcess = universalThis.process || void 0;
   if (typeof globalProcess === "object") {
-    const domainDescriptor = getOwnPropertyDescriptor$1(globalProcess, "domain");
+    const domainDescriptor = getOwnPropertyDescriptor$1(
+      globalProcess,
+      "domain",
+    );
     if (domainDescriptor !== void 0 && domainDescriptor.get !== void 0) {
       throw TypeError$3(
-        `SES failed to lockdown, Node.js domains have been initialized (SES_NO_DOMAINS)`
+        `SES failed to lockdown, Node.js domains have been initialized (SES_NO_DOMAINS)`,
       );
     }
     defineProperty$2(globalProcess, "domain", {
       value: null,
       configurable: false,
       writable: false,
-      enumerable: false
+      enumerable: false,
     });
   }
 }
@@ -5806,22 +5841,24 @@ const tameModuleSource = () => {
     const ModuleSourceProto = getPrototypeOf$1(ModuleSource);
     if (ModuleSourceProto === functionPrototype) {
       setPrototypeOf(ModuleSource, AbstractModuleSource);
-      newIntrinsics['%AbstractModuleSource%'] = AbstractModuleSource;
-      newIntrinsics['%AbstractModuleSourcePrototype%'] =
+      newIntrinsics["%AbstractModuleSource%"] = AbstractModuleSource;
+      newIntrinsics["%AbstractModuleSourcePrototype%"] =
         AbstractModuleSource.prototype;
     } else {
-      newIntrinsics['%AbstractModuleSource%'] = ModuleSourceProto;
-      newIntrinsics['%AbstractModuleSourcePrototype%'] =
+      newIntrinsics["%AbstractModuleSource%"] = ModuleSourceProto;
+      newIntrinsics["%AbstractModuleSourcePrototype%"] =
         ModuleSourceProto.prototype;
     }
 
     const ModuleSourcePrototype = ModuleSource.prototype;
     if (ModuleSourcePrototype !== undefined) {
-      newIntrinsics['%ModuleSourcePrototype%'] = ModuleSourcePrototype;
+      newIntrinsics["%ModuleSourcePrototype%"] = ModuleSourcePrototype;
 
       // ModuleSource.prototype.__proto__ should be the
       // AbstractModuleSource.prototype.
-      const ModuleSourcePrototypeProto = getPrototypeOf$1(ModuleSourcePrototype);
+      const ModuleSourcePrototypeProto = getPrototypeOf$1(
+        ModuleSourcePrototype,
+      );
       if (ModuleSourcePrototypeProto === objectPrototype) {
         setPrototypeOf(ModuleSource.prototype, AbstractModuleSource.prototype);
       }
@@ -5832,7 +5869,6 @@ const tameModuleSource = () => {
 };
 
 // @ts-check
-
 
 /**
  * @import {FilterConsole, LogSeverity, VirtualConsole} from './types.js'
@@ -5851,7 +5887,7 @@ const tameModuleSource = () => {
  * @param {F} fn
  * @returns {F}
  */
-const defineName = (name, fn) => defineProperty$2(fn, 'name', { value: name });
+const defineName = (name, fn) => defineProperty$2(fn, "name", { value: name });
 
 // For our internal debugging purposes, uncomment
 // const internalDebugConsole = console;
@@ -5889,16 +5925,16 @@ const defineName = (name, fn) => defineProperty$2(fn, 'name', { value: name });
  * @type {readonly [ConsoleProps, LogSeverity | undefined][]}
  */
 const consoleLevelMethods = freeze$4([
-  ['debug', 'debug'], // (fmt?, ...args) verbose level on Chrome
-  ['log', 'log'], // (fmt?, ...args) info level on Chrome
-  ['info', 'info'], // (fmt?, ...args)
-  ['warn', 'warn'], // (fmt?, ...args)
-  ['error', 'error'], // (fmt?, ...args)
+  ["debug", "debug"], // (fmt?, ...args) verbose level on Chrome
+  ["log", "log"], // (fmt?, ...args) info level on Chrome
+  ["info", "info"], // (fmt?, ...args)
+  ["warn", "warn"], // (fmt?, ...args)
+  ["error", "error"], // (fmt?, ...args)
 
-  ['trace', 'log'], // (fmt?, ...args)
-  ['dirxml', 'log'], // (fmt?, ...args)          but TS typed (...data)
-  ['group', 'log'], // (fmt?, ...args)           but TS typed (...label)
-  ['groupCollapsed', 'log'], // (fmt?, ...args)  but TS typed (...label)
+  ["trace", "log"], // (fmt?, ...args)
+  ["dirxml", "log"], // (fmt?, ...args)          but TS typed (...data)
+  ["group", "log"], // (fmt?, ...args)           but TS typed (...label)
+  ["groupCollapsed", "log"], // (fmt?, ...args)  but TS typed (...label)
 ]);
 
 /**
@@ -5912,41 +5948,38 @@ const consoleLevelMethods = freeze$4([
  * @type {readonly [ConsoleProps, LogSeverity | undefined][]}
  */
 const consoleOtherMethods = freeze$4([
-  ['assert', 'error'], // (value, fmt?, ...args)
-  ['timeLog', 'log'], // (label?, ...args) no fmt string
+  ["assert", "error"], // (value, fmt?, ...args)
+  ["timeLog", "log"], // (label?, ...args) no fmt string
 
   // Insensitive to whether any argument is an error. All arguments can pass
   // thru to baseConsole as is.
-  ['clear', undefined], // ()
-  ['count', 'info'], // (label?)
-  ['countReset', undefined], // (label?)
-  ['dir', 'log'], // (item, options?)
-  ['groupEnd', 'log'], // ()
+  ["clear", undefined], // ()
+  ["count", "info"], // (label?)
+  ["countReset", undefined], // (label?)
+  ["dir", "log"], // (item, options?)
+  ["groupEnd", "log"], // ()
   // In theory tabular data may be or contain an error. However, we currently
   // do not detect these and may never.
-  ['table', 'log'], // (tabularData, properties?)
-  ['time', 'info'], // (label?)
-  ['timeEnd', 'info'], // (label?)
+  ["table", "log"], // (tabularData, properties?)
+  ["time", "info"], // (label?)
+  ["timeEnd", "info"], // (label?)
 
   // Node Inspector only, MDN, and TypeScript, but not whatwg
-  ['profile', undefined], // (label?)
-  ['profileEnd', undefined], // (label?)
-  ['timeStamp', undefined], // (label?)
+  ["profile", undefined], // (label?)
+  ["profileEnd", undefined], // (label?)
+  ["timeStamp", undefined], // (label?)
 ]);
 
 /** @type {readonly [ConsoleProps, LogSeverity | undefined][]} */
-freeze$4([
-  ...consoleLevelMethods,
-  ...consoleOtherMethods,
-]);
+freeze$4([...consoleLevelMethods, ...consoleOtherMethods]);
 // //////////////////////////// Causal Console /////////////////////////////////
 
 /** @type {ErrorInfo} */
 const ErrorInfo = {
-  NOTE: 'ERROR_NOTE:',
-  MESSAGE: 'ERROR_MESSAGE:',
-  CAUSE: 'cause:',
-  ERRORS: 'errors:',
+  NOTE: "ERROR_NOTE:",
+  MESSAGE: "ERROR_MESSAGE:",
+  CAUSE: "cause:",
+  ERRORS: "errors:",
 };
 freeze$4(ErrorInfo);
 
@@ -5965,7 +5998,7 @@ const makeCausalConsole = (baseConsole, loggedErrorHandler) => {
    * @returns {any}
    */
   const extractErrorArgs = (logArgs, subErrorsSink) => {
-    const argTags = arrayMap(logArgs, arg => {
+    const argTags = arrayMap(logArgs, (arg) => {
       if (isError(arg)) {
         arrayPush$1(subErrorsSink, arg);
         return `(${tagError(arg)})`;
@@ -6035,7 +6068,7 @@ const makeCausalConsole = (baseConsole, loggedErrorHandler) => {
   const errorsLogged = new WeakSet();
 
   /** @type {(severity: LogSeverity) => NoteCallback} */
-  const makeNoteCallback = severity => (error, noteLogArgs) => {
+  const makeNoteCallback = (severity) => (error, noteLogArgs) => {
     const subErrors = [];
     // Annotation arrived after the error has already been logged,
     // so just log the annotation immediately, rather than remembering it.
@@ -6079,11 +6112,11 @@ const makeCausalConsole = (baseConsole, loggedErrorHandler) => {
     // After the message but before any other annotations, show the stack.
     let stackString = getStackString(error);
     if (
-      typeof stackString === 'string' &&
+      typeof stackString === "string" &&
       stackString.length >= 1 &&
-      !stringEndsWith(stackString, '\n')
+      !stringEndsWith(stackString, "\n")
     ) {
-      stackString += '\n';
+      stackString += "\n";
     }
     // eslint-disable-next-line @endo/no-polymorphic-call
     baseConsole[severity](stackString);
@@ -6128,7 +6161,7 @@ const makeCausalConsole = (baseConsole, loggedErrorHandler) => {
      * @param {...any} args
      */
     const otherMethod = defineName(name, (...args) => {
-      // @ts-ignore
+      // @ts-expect-error
       // eslint-disable-next-line @endo/no-polymorphic-call
       baseConsole[name](...args);
       return undefined;
@@ -6163,14 +6196,18 @@ freeze$4(makeCausalConsole);
  */
 const indentAfterAllSeps = (str, sep, indents) => {
   const [firstLine, ...restLines] = stringSplit$1(str, sep);
-  const indentedRest = arrayFlatMap(restLines, line => [sep, ...indents, line]);
-  return ['', firstLine, ...indentedRest];
+  const indentedRest = arrayFlatMap(restLines, (line) => [
+    sep,
+    ...indents,
+    line,
+  ]);
+  return ["", firstLine, ...indentedRest];
 };
 
 /**
  * @param {LoggedErrorHandler} loggedErrorHandler
  */
-const defineCausalConsoleFromLogger = loggedErrorHandler => {
+const defineCausalConsoleFromLogger = (loggedErrorHandler) => {
   /**
    * Implement the `VirtualConsole` API badly by turning all calls into
    * calls on `tlogger`. We need to do this to have `console` logging
@@ -6180,13 +6217,13 @@ const defineCausalConsoleFromLogger = loggedErrorHandler => {
    * @param {Logger} tlogger
    * @returns {VirtualConsole}
    */
-  const makeCausalConsoleFromLogger = tlogger => {
+  const makeCausalConsoleFromLogger = (tlogger) => {
     const indents = [];
     const logWithIndent = (...args) => {
       if (indents.length > 0) {
-        args = arrayFlatMap(args, arg =>
-          typeof arg === 'string' && stringIncludes(arg, '\n')
-            ? indentAfterAllSeps(arg, '\n', indents)
+        args = arrayFlatMap(args, (arg) =>
+          typeof arg === "string" && stringIncludes(arg, "\n")
+            ? indentAfterAllSeps(arg, "\n", indents)
             : [arg],
         );
         args = [...indents, ...args];
@@ -6205,7 +6242,7 @@ const defineCausalConsoleFromLogger = loggedErrorHandler => {
       ]),
     ]);
     // https://console.spec.whatwg.org/#grouping
-    for (const name of ['group', 'groupCollapsed']) {
+    for (const name of ["group", "groupCollapsed"]) {
       if (baseConsole[name]) {
         baseConsole[name] = defineName(name, (...args) => {
           if (args.length >= 1) {
@@ -6214,16 +6251,16 @@ const defineCausalConsoleFromLogger = loggedErrorHandler => {
           }
           // A single space is enough;
           // the host console will separate them with additional spaces.
-          arrayPush$1(indents, ' ');
+          arrayPush$1(indents, " ");
         });
       } else {
         baseConsole[name] = defineName(name, () => {});
       }
     }
     baseConsole.groupEnd = defineName(
-      'groupEnd',
+      "groupEnd",
       baseConsole.groupEnd
-        ? (...args) => {
+        ? (..._args) => {
             arrayPop(indents);
           }
         : () => {},
@@ -6277,52 +6314,64 @@ const makeRejectionHandlers = (reportReason) => {
   return {
     rejectionHandledHandler,
     unhandledRejectionHandler,
-    processTerminationHandler
+    processTerminationHandler,
   };
 };
 
 const failFast = (message) => {
   throw TypeError$3(message);
 };
-const wrapLogger = (logger, thisArg) => freeze$4((...args) => apply$2(logger, thisArg, args));
-const tameConsole = (consoleTaming = "safe", errorTrapping = "platform", unhandledRejectionTrapping = "report", optGetStackString = void 0) => {
+const wrapLogger = (logger, thisArg) =>
+  freeze$4((...args) => apply$2(logger, thisArg, args));
+const tameConsole = (
+  consoleTaming = "safe",
+  errorTrapping = "platform",
+  unhandledRejectionTrapping = "report",
+  optGetStackString = void 0,
+) => {
   let loggedErrorHandler$1;
   if (optGetStackString === void 0) {
     loggedErrorHandler$1 = loggedErrorHandler;
   } else {
     loggedErrorHandler$1 = {
       ...loggedErrorHandler,
-      getStackString: optGetStackString
+      getStackString: optGetStackString,
     };
   }
-  const originalConsole = (
+  const originalConsole =
     /** @type {VirtualConsole} */
     // eslint-disable-next-line no-nested-ternary
-    typeof universalThis.console !== "undefined" ? universalThis.console : typeof universalThis.print === "function" ? (
-      // Make a good-enough console for eshost (including only functions that
-      // log at a specific level with no special argument interpretation).
-      // https://console.spec.whatwg.org/#logging
-      ((p) => freeze$4({ debug: p, log: p, info: p, warn: p, error: p }))(
-        // eslint-disable-next-line no-undef
-        wrapLogger(universalThis.print)
-      )
-    ) : void 0
-  );
-  if (originalConsole && originalConsole.log) {
+    typeof universalThis.console !== "undefined"
+      ? universalThis.console
+      : typeof universalThis.print === "function"
+        ? // Make a good-enough console for eshost (including only functions that
+          // log at a specific level with no special argument interpretation).
+          // https://console.spec.whatwg.org/#logging
+          ((p) => freeze$4({ debug: p, log: p, info: p, warn: p, error: p }))(
+            // eslint-disable-next-line no-undef
+            wrapLogger(universalThis.print),
+          )
+        : void 0;
+  if (originalConsole?.log) {
     for (const methodName of ["warn", "error"]) {
       if (!originalConsole[methodName]) {
         defineProperty$2(originalConsole, methodName, {
-          value: wrapLogger(originalConsole.log, originalConsole)
+          value: wrapLogger(originalConsole.log, originalConsole),
         });
       }
     }
   }
-  const ourConsole = (
+  const ourConsole =
     /** @type {VirtualConsole} */
-    consoleTaming === "unsafe" ? originalConsole : makeCausalConsole(originalConsole, loggedErrorHandler$1)
-  );
+    consoleTaming === "unsafe"
+      ? originalConsole
+      : makeCausalConsole(originalConsole, loggedErrorHandler$1);
   const globalProcess = universalThis.process || void 0;
-  if (errorTrapping !== "none" && typeof globalProcess === "object" && typeof globalProcess.on === "function") {
+  if (
+    errorTrapping !== "none" &&
+    typeof globalProcess === "object" &&
+    typeof globalProcess.on === "function"
+  ) {
     let terminate;
     if (errorTrapping === "platform" || errorTrapping === "exit") {
       const { exit } = globalProcess;
@@ -6339,7 +6388,11 @@ const tameConsole = (consoleTaming = "safe", errorTrapping = "platform", unhandl
       }
     });
   }
-  if (unhandledRejectionTrapping !== "none" && typeof globalProcess === "object" && typeof globalProcess.on === "function") {
+  if (
+    unhandledRejectionTrapping !== "none" &&
+    typeof globalProcess === "object" &&
+    typeof globalProcess.on === "function"
+  ) {
     const handleRejection = (reason) => {
       ourConsole.error("SES_UNHANDLED_REJECTION:", reason);
     };
@@ -6351,7 +6404,11 @@ const tameConsole = (consoleTaming = "safe", errorTrapping = "platform", unhandl
     }
   }
   const globalWindow = universalThis.window || void 0;
-  if (errorTrapping !== "none" && typeof globalWindow === "object" && typeof globalWindow.addEventListener === "function") {
+  if (
+    errorTrapping !== "none" &&
+    typeof globalWindow === "object" &&
+    typeof globalWindow.addEventListener === "function"
+  ) {
     globalWindow.addEventListener("error", (event) => {
       event.preventDefault();
       ourConsole.error("SES_UNCAUGHT_EXCEPTION:", event.error);
@@ -6360,7 +6417,11 @@ const tameConsole = (consoleTaming = "safe", errorTrapping = "platform", unhandl
       }
     });
   }
-  if (unhandledRejectionTrapping !== "none" && typeof globalWindow === "object" && typeof globalWindow.addEventListener === "function") {
+  if (
+    unhandledRejectionTrapping !== "none" &&
+    typeof globalWindow === "object" &&
+    typeof globalWindow.addEventListener === "function"
+  ) {
     const handleRejection = (reason) => {
       ourConsole.error("SES_UNHANDLED_REJECTION:", reason);
     };
@@ -6387,34 +6448,34 @@ const tameConsole = (consoleTaming = "safe", errorTrapping = "platform", unhandl
 // callSiteToFrame to shim the error stack proposal.
 const safeV8CallSiteMethodNames = [
   // suppress 'getThis' definitely
-  'getTypeName',
+  "getTypeName",
   // suppress 'getFunction' definitely
-  'getFunctionName',
-  'getMethodName',
-  'getFileName',
-  'getLineNumber',
-  'getColumnNumber',
-  'getEvalOrigin',
-  'isToplevel',
-  'isEval',
-  'isNative',
-  'isConstructor',
-  'isAsync',
+  "getFunctionName",
+  "getMethodName",
+  "getFileName",
+  "getLineNumber",
+  "getColumnNumber",
+  "getEvalOrigin",
+  "isToplevel",
+  "isEval",
+  "isNative",
+  "isConstructor",
+  "isAsync",
   // suppress 'isPromiseAll' for now
   // suppress 'getPromiseIndex' for now
 
   // Additional names found by experiment, absent from
   // https://v8.dev/docs/stack-trace-api
-  'getPosition',
-  'getScriptNameOrSourceURL',
+  "getPosition",
+  "getScriptNameOrSourceURL",
 
-  'toString', // TODO replace to use only permitted info
+  "toString", // TODO replace to use only permitted info
 ];
 
 // TODO this is a ridiculously expensive way to attenuate callsites.
 // Before that matters, we should switch to a reasonable representation.
-const safeV8CallSiteFacet = callSite => {
-  const methodEntry = name => {
+const safeV8CallSiteFacet = (callSite) => {
+  const methodEntry = (name) => {
     const method = callSite[name];
     return [name, () => apply$2(method, callSite, [])];
   };
@@ -6422,7 +6483,7 @@ const safeV8CallSiteFacet = callSite => {
   return create(o, {});
 };
 
-const safeV8SST = sst => arrayMap(sst, safeV8CallSiteFacet);
+const safeV8SST = (sst) => arrayMap(sst, safeV8CallSiteFacet);
 
 // If it has `/node_modules/` anywhere in it, on Node it is likely
 // to be a dependent package of the current package, and so to
@@ -6464,7 +6525,7 @@ const FILENAME_CENSORS = [
 // stack trace?
 // Exported only so it can be unit tested.
 // TODO Move so that it applies not just to v8.
-const filterFileName = fileName => {
+const filterFileName = (fileName) => {
   if (!fileName) {
     // Stack frames with no fileName should appear in concise stack traces.
     return true;
@@ -6549,11 +6610,11 @@ const CALLSITE_PATTERNS = [
 /**
  * @param {string} callSiteString
  */
-const shortenCallSiteString = callSiteString => {
+const shortenCallSiteString = (callSiteString) => {
   for (const filter of CALLSITE_PATTERNS) {
     const match = regexpExec(filter, callSiteString);
     if (match) {
-      return arrayJoin(arraySlice(match, 1), '');
+      return arrayJoin(arraySlice(match, 1), "");
     }
   }
   return callSiteString;
@@ -6565,9 +6626,9 @@ const tameV8ErrorConstructor = (
   errorTaming,
   stackFiltering,
 ) => {
-  if (errorTaming === 'unsafe-debug') {
+  if (errorTaming === "unsafe-debug") {
     throw TypeError$3(
-      'internal: v8+unsafe-debug special case should already be done',
+      "internal: v8+unsafe-debug special case should already be done",
     );
   }
   // TODO: Proper CallSite types
@@ -6576,13 +6637,13 @@ const tameV8ErrorConstructor = (
   const originalCaptureStackTrace = OriginalError.captureStackTrace;
 
   const omitFrames =
-    stackFiltering === 'concise' || stackFiltering === 'omit-frames';
+    stackFiltering === "concise" || stackFiltering === "omit-frames";
 
   const shortenPaths =
-    stackFiltering === 'concise' || stackFiltering === 'shorten-paths';
+    stackFiltering === "concise" || stackFiltering === "shorten-paths";
 
   // const callSiteFilter = _callSite => true;
-  const callSiteFilter = callSite => {
+  const callSiteFilter = (callSite) => {
     if (omitFrames) {
       // eslint-disable-next-line @endo/no-polymorphic-call
       return filterFileName(callSite.getFileName());
@@ -6590,7 +6651,7 @@ const tameV8ErrorConstructor = (
     return true;
   };
 
-  const callSiteStringifier = callSite => {
+  const callSiteStringifier = (callSite) => {
     let callSiteString = `${callSite}`;
     if (shortenPaths) {
       callSiteString = shortenCallSiteString(callSiteString);
@@ -6601,7 +6662,7 @@ const tameV8ErrorConstructor = (
   const stackStringFromSST = (_error, sst) =>
     arrayJoin(
       arrayMap(arrayFilter(sst, callSiteFilter), callSiteStringifier),
-      '',
+      "",
     );
 
   /**
@@ -6630,12 +6691,12 @@ const tameV8ErrorConstructor = (
     // but instead calls the real one, if no other cutoff is provided,
     // we cut this one off.
     captureStackTrace(error, optFn = tamedMethods.captureStackTrace) {
-      if (typeof originalCaptureStackTrace === 'function') {
+      if (typeof originalCaptureStackTrace === "function") {
         // OriginalError.captureStackTrace is only on v8
         apply$2(originalCaptureStackTrace, OriginalError, [error, optFn]);
         return;
       }
-      reflectSet(error, 'stack', '');
+      reflectSet(error, "stack", "");
     },
     // Shim of proposed special power, to reside by default only
     // in the start compartment, for getting the stack traceback
@@ -6651,7 +6712,7 @@ const tameV8ErrorConstructor = (
         void error.stack;
         stackInfo = weakmapGet(stackInfos, error);
         if (!stackInfo) {
-          stackInfo = { stackString: '' };
+          stackInfo = { stackString: "" };
           weakmapSet(stackInfos, error, stackInfo);
         }
       }
@@ -6669,13 +6730,13 @@ const tameV8ErrorConstructor = (
       return stackString;
     },
     prepareStackTrace(error, sst) {
-      if (errorTaming === 'unsafe') {
+      if (errorTaming === "unsafe") {
         const stackString = stackStringFromSST(error, sst);
         weakmapSet(stackInfos, error, { stackString });
         return `${error}${stackString}`;
       } else {
         weakmapSet(stackInfos, error, { callSites: sst });
-        return '';
+        return "";
       }
     },
   };
@@ -6704,7 +6765,7 @@ const tameV8ErrorConstructor = (
   // unattenuated sst.
   const systemPrepareFnSet = new WeakSet([defaultPrepareFn]);
 
-  const systemPrepareFnFor = inputPrepareFn => {
+  const systemPrepareFnFor = (inputPrepareFn) => {
     if (weaksetHas(systemPrepareFnSet, inputPrepareFn)) {
       return inputPrepareFn;
     }
@@ -6733,7 +6794,7 @@ const tameV8ErrorConstructor = (
         return OriginalError.prepareStackTrace;
       },
       set(inputPrepareStackTraceFn) {
-        if (typeof inputPrepareStackTraceFn === 'function') {
+        if (typeof inputPrepareStackTraceFn === "function") {
           const systemPrepareFn = systemPrepareFnFor(inputPrepareStackTraceFn);
           OriginalError.prepareStackTrace = systemPrepareFn;
         } else {
@@ -6751,32 +6812,32 @@ const tameV8ErrorConstructor = (
 // Present on at least FF and XS. Proposed by Error-proposal. The original
 // is dangerous, so tameErrorConstructor replaces it with a safe one.
 // We grab the original here before it gets replaced.
-const stackDesc = getOwnPropertyDescriptor$1(FERAL_ERROR.prototype, 'stack');
-const stackGetter = stackDesc && stackDesc.get;
+const stackDesc = getOwnPropertyDescriptor$1(FERAL_ERROR.prototype, "stack");
+const stackGetter = stackDesc?.get;
 
 // Use concise methods to obtain named functions without constructors.
 const tamedMethods = {
   getStackString(error) {
-    if (typeof stackGetter === 'function') {
+    if (typeof stackGetter === "function") {
       return apply$2(stackGetter, error, []);
-    } else if ('stack' in error) {
+    } else if ("stack" in error) {
       // The fallback is to just use the de facto `error.stack` if present
       return `${error.stack}`;
     }
-    return '';
+    return "";
   },
 };
 let initialGetStackString = tamedMethods.getStackString;
 
 function tameErrorConstructor(
-  errorTaming = 'safe',
-  stackFiltering = 'concise',
+  errorTaming = "safe",
+  stackFiltering = "concise",
 ) {
   const ErrorPrototype = FERAL_ERROR.prototype;
 
   const { captureStackTrace: originalCaptureStackTrace } = FERAL_ERROR;
   const platform =
-    typeof originalCaptureStackTrace === 'function' ? 'v8' : 'unknown';
+    typeof originalCaptureStackTrace === "function" ? "v8" : "unknown";
 
   const makeErrorConstructor = (_ = {}) => {
     // eslint-disable-next-line no-shadow
@@ -6787,7 +6848,7 @@ function tameErrorConstructor(
       } else {
         error = construct(FERAL_ERROR, rest, new.target);
       }
-      if (platform === 'v8') {
+      if (platform === "v8") {
         // TODO Likely expensive!
         apply$2(originalCaptureStackTrace, FERAL_ERROR, [error, ResultError]);
       }
@@ -6804,8 +6865,8 @@ function tameErrorConstructor(
     });
     return ResultError;
   };
-  const InitialError = makeErrorConstructor({ });
-  const SharedError = makeErrorConstructor({ });
+  const InitialError = makeErrorConstructor({});
+  const SharedError = makeErrorConstructor({});
   defineProperties$1(ErrorPrototype, {
     constructor: { value: SharedError },
   });
@@ -6824,21 +6885,21 @@ function tameErrorConstructor(
   defineProperties$1(InitialError, {
     stackTraceLimit: {
       get() {
-        if (typeof FERAL_ERROR.stackTraceLimit === 'number') {
+        if (typeof FERAL_ERROR.stackTraceLimit === "number") {
           // FERAL_ERROR.stackTraceLimit is only on v8
           return FERAL_ERROR.stackTraceLimit;
         }
         return undefined;
       },
       set(newLimit) {
-        if (typeof newLimit !== 'number') {
+        if (typeof newLimit !== "number") {
           // silently do nothing. This behavior doesn't precisely
           // emulate v8 edge-case behavior. But given the purpose
           // of this emulation, having edge cases err towards
           // harmless seems the safer option.
           return;
         }
-        if (typeof FERAL_ERROR.stackTraceLimit === 'number') {
+        if (typeof FERAL_ERROR.stackTraceLimit === "number") {
           // FERAL_ERROR.stackTraceLimit is only on v8
           FERAL_ERROR.stackTraceLimit = newLimit;
           // We place the useless return on the next line to ensure
@@ -6854,7 +6915,7 @@ function tameErrorConstructor(
     },
   });
 
-  if (errorTaming === 'unsafe-debug' && platform === 'v8') {
+  if (errorTaming === "unsafe-debug" && platform === "v8") {
     // This case is a kludge to work around
     // https://github.com/endojs/endo/issues/1798
     // https://github.com/endojs/endo/issues/2348
@@ -6887,9 +6948,9 @@ function tameErrorConstructor(
     });
 
     return {
-      '%InitialGetStackString%': initialGetStackString,
-      '%InitialError%': InitialError,
-      '%SharedError%': SharedError,
+      "%InitialGetStackString%": initialGetStackString,
+      "%InitialError%": InitialError,
+      "%SharedError%": SharedError,
     };
   }
 
@@ -6909,7 +6970,7 @@ function tameErrorConstructor(
     },
   });
 
-  if (platform === 'v8') {
+  if (platform === "v8") {
     // `SharedError.prepareStackTrace`, if it exists, must also be
     // powerless. However, from what we've heard, depd expects to be able to
     // assign to it without the assignment throwing. It is normally a function
@@ -6921,7 +6982,7 @@ function tameErrorConstructor(
     defineProperties$1(SharedError, {
       prepareStackTrace: {
         get() {
-          return () => '';
+          return () => "";
         },
         set(_prepareFn) {
           // do nothing
@@ -6931,8 +6992,8 @@ function tameErrorConstructor(
       },
       captureStackTrace: {
         value: (errorish, _constructorOpt) => {
-          defineProperty$2(errorish, 'stack', {
-            value: '',
+          defineProperty$2(errorish, "stack", {
+            value: "",
           });
         },
         writable: false,
@@ -6942,14 +7003,14 @@ function tameErrorConstructor(
     });
   }
 
-  if (platform === 'v8') {
+  if (platform === "v8") {
     initialGetStackString = tameV8ErrorConstructor(
       FERAL_ERROR,
       InitialError,
       errorTaming,
       stackFiltering,
     );
-  } else if (errorTaming === 'unsafe' || errorTaming === 'unsafe-debug') {
+  } else if (errorTaming === "unsafe" || errorTaming === "unsafe-debug") {
     // v8 has too much magic around their 'stack' own property for it to
     // coexist cleanly with this accessor. So only install it on non-v8
 
@@ -7014,14 +7075,13 @@ function tameErrorConstructor(
   }
 
   return {
-    '%InitialGetStackString%': initialGetStackString,
-    '%InitialError%': InitialError,
-    '%SharedError%': SharedError,
+    "%InitialGetStackString%": initialGetStackString,
+    "%InitialError%": InitialError,
+    "%SharedError%": SharedError,
   };
 }
 
-const noop = () => {
-};
+const noop = () => {};
 const asyncTrampoline = async (generatorFunc, args, errorWrapper) => {
   await null;
   const iterator = generatorFunc(...args);
@@ -7048,7 +7108,8 @@ const syncTrampoline = (generatorFunc, args) => {
   }
   return result.value;
 };
-const makeAlias = (compartment, specifier) => freeze$4({ compartment, specifier });
+const makeAlias = (compartment, specifier) =>
+  freeze$4({ compartment, specifier });
 const resolveAll = (imports, resolveHook, fullReferrerSpecifier) => {
   const resolvedImports = create(null);
   for (const importSpecifier of imports) {
@@ -7057,15 +7118,28 @@ const resolveAll = (imports, resolveHook, fullReferrerSpecifier) => {
   }
   return freeze$4(resolvedImports);
 };
-const loadModuleSource = (compartmentPrivateFields, moduleAliases, compartment, moduleSpecifier, moduleSource, enqueueJob, selectImplementation, moduleLoads, importMeta) => {
+const loadModuleSource = (
+  compartmentPrivateFields,
+  moduleAliases,
+  compartment,
+  moduleSpecifier,
+  moduleSource,
+  enqueueJob,
+  selectImplementation,
+  moduleLoads,
+  importMeta,
+) => {
   const { resolveHook, name: compartmentName } = weakmapGet(
     compartmentPrivateFields,
-    compartment
+    compartment,
   );
   const { imports } = moduleSource;
-  if (!isArray(imports) || arraySome(imports, (specifier) => typeof specifier !== "string")) {
+  if (
+    !isArray(imports) ||
+    arraySome(imports, (specifier) => typeof specifier !== "string")
+  ) {
     throw makeError(
-      redactedDetails`Invalid module source: 'imports' must be an array of strings, got ${imports} for module ${quote(moduleSpecifier)} of compartment ${quote(compartmentName)}`
+      redactedDetails`Invalid module source: 'imports' must be an array of strings, got ${imports} for module ${quote(moduleSpecifier)} of compartment ${quote(compartmentName)}`,
     );
   }
   const resolvedImports = resolveAll(imports, resolveHook, moduleSpecifier);
@@ -7074,7 +7148,7 @@ const loadModuleSource = (compartmentPrivateFields, moduleAliases, compartment, 
     moduleSource,
     moduleSpecifier,
     resolvedImports,
-    importMeta
+    importMeta,
   });
   for (const fullSpecifier of values(resolvedImports)) {
     enqueueJob(memoizedLoadWithErrorAnnotation, [
@@ -7084,19 +7158,27 @@ const loadModuleSource = (compartmentPrivateFields, moduleAliases, compartment, 
       fullSpecifier,
       enqueueJob,
       selectImplementation,
-      moduleLoads
+      moduleLoads,
     ]);
   }
   return moduleRecord;
 };
-function* loadWithoutErrorAnnotation(compartmentPrivateFields, moduleAliases, compartment, moduleSpecifier, enqueueJob, selectImplementation, moduleLoads) {
+function* loadWithoutErrorAnnotation(
+  compartmentPrivateFields,
+  moduleAliases,
+  compartment,
+  moduleSpecifier,
+  enqueueJob,
+  selectImplementation,
+  moduleLoads,
+) {
   const {
     importHook,
     importNowHook,
     moduleMap,
     moduleMapHook,
     moduleRecords,
-    parentCompartment
+    parentCompartment,
   } = weakmapGet(compartmentPrivateFields, compartment);
   if (mapHas(moduleRecords, moduleSpecifier)) {
     return mapGet(moduleRecords, moduleSpecifier);
@@ -7110,12 +7192,12 @@ function* loadWithoutErrorAnnotation(compartmentPrivateFields, moduleAliases, co
     if (moduleHook === void 0) {
       const moduleHookName = selectImplementation(
         "importHook",
-        "importNowHook"
+        "importNowHook",
       );
       throw makeError(
         redactedDetails`${bare(moduleHookName)} needed to load module ${quote(
-          moduleSpecifier
-        )} in compartment ${quote(compartment.name)}`
+          moduleSpecifier,
+        )} in compartment ${quote(compartment.name)}`,
       );
     }
     moduleDescriptor = moduleHook(moduleSpecifier);
@@ -7126,9 +7208,9 @@ function* loadWithoutErrorAnnotation(compartmentPrivateFields, moduleAliases, co
   if (typeof moduleDescriptor === "string") {
     throw makeError(
       redactedDetails`Cannot map module ${quote(moduleSpecifier)} to ${quote(
-        moduleDescriptor
+        moduleDescriptor,
       )} in parent compartment, use {source} module descriptor`,
-      TypeError$3
+      TypeError$3,
     );
   } else if (!isPrimitive(moduleDescriptor)) {
     let aliasDescriptor = weakmapGet(moduleAliases, moduleDescriptor);
@@ -7139,11 +7221,14 @@ function* loadWithoutErrorAnnotation(compartmentPrivateFields, moduleAliases, co
       if (typeof moduleDescriptor.namespace === "string") {
         const {
           compartment: aliasCompartment = parentCompartment,
-          namespace: aliasSpecifier
+          namespace: aliasSpecifier,
         } = moduleDescriptor;
-        if (isPrimitive(aliasCompartment) || !weakmapHas(compartmentPrivateFields, aliasCompartment)) {
+        if (
+          isPrimitive(aliasCompartment) ||
+          !weakmapHas(compartmentPrivateFields, aliasCompartment)
+        ) {
           throw makeError(
-            redactedDetails`Invalid compartment in module descriptor for specifier ${quote(moduleSpecifier)} in compartment ${quote(compartment.name)}`
+            redactedDetails`Invalid compartment in module descriptor for specifier ${quote(moduleSpecifier)} in compartment ${quote(compartment.name)}`,
           );
         }
         const aliasRecord = yield memoizedLoadWithErrorAnnotation(
@@ -7153,7 +7238,7 @@ function* loadWithoutErrorAnnotation(compartmentPrivateFields, moduleAliases, co
           aliasSpecifier,
           enqueueJob,
           selectImplementation,
-          moduleLoads
+          moduleLoads,
         );
         mapSet(moduleRecords, moduleSpecifier, aliasRecord);
         return aliasRecord;
@@ -7172,7 +7257,7 @@ function* loadWithoutErrorAnnotation(compartmentPrivateFields, moduleAliases, co
               for (const name of exports$1) {
                 env[name] = namespace[name];
               }
-            }
+            },
           };
           const importMeta = void 0;
           const moduleRecord2 = loadModuleSource(
@@ -7184,14 +7269,14 @@ function* loadWithoutErrorAnnotation(compartmentPrivateFields, moduleAliases, co
             enqueueJob,
             selectImplementation,
             moduleLoads,
-            importMeta
+            importMeta,
           );
           mapSet(moduleRecords, moduleSpecifier, moduleRecord2);
           return moduleRecord2;
         }
       } else {
         throw makeError(
-          redactedDetails`Invalid compartment in module descriptor for specifier ${quote(moduleSpecifier)} in compartment ${quote(compartment.name)}`
+          redactedDetails`Invalid compartment in module descriptor for specifier ${quote(moduleSpecifier)} in compartment ${quote(compartment.name)}`,
         );
       }
     }
@@ -7201,7 +7286,7 @@ function* loadWithoutErrorAnnotation(compartmentPrivateFields, moduleAliases, co
           source: loaderSpecifier,
           specifier: instanceSpecifier = moduleSpecifier,
           compartment: loaderCompartment = parentCompartment,
-          importMeta = void 0
+          importMeta = void 0,
         } = moduleDescriptor;
         const loaderRecord = yield memoizedLoadWithErrorAnnotation(
           compartmentPrivateFields,
@@ -7210,7 +7295,7 @@ function* loadWithoutErrorAnnotation(compartmentPrivateFields, moduleAliases, co
           loaderSpecifier,
           enqueueJob,
           selectImplementation,
-          moduleLoads
+          moduleLoads,
         );
         const { moduleSource: moduleSource2 } = loaderRecord;
         const moduleRecord2 = loadModuleSource(
@@ -7222,7 +7307,7 @@ function* loadWithoutErrorAnnotation(compartmentPrivateFields, moduleAliases, co
           enqueueJob,
           selectImplementation,
           moduleLoads,
-          importMeta
+          importMeta,
         );
         mapSet(moduleRecords, moduleSpecifier, moduleRecord2);
         return moduleRecord2;
@@ -7230,7 +7315,7 @@ function* loadWithoutErrorAnnotation(compartmentPrivateFields, moduleAliases, co
         const {
           source: moduleSource2,
           specifier: aliasSpecifier = moduleSpecifier,
-          importMeta
+          importMeta,
         } = moduleDescriptor;
         const aliasRecord = loadModuleSource(
           compartmentPrivateFields,
@@ -7241,7 +7326,7 @@ function* loadWithoutErrorAnnotation(compartmentPrivateFields, moduleAliases, co
           enqueueJob,
           selectImplementation,
           moduleLoads,
-          importMeta
+          importMeta,
         );
         mapSet(moduleRecords, moduleSpecifier, aliasRecord);
         return aliasRecord;
@@ -7249,7 +7334,7 @@ function* loadWithoutErrorAnnotation(compartmentPrivateFields, moduleAliases, co
     }
     if (moduleDescriptor.archive !== void 0) {
       throw makeError(
-        redactedDetails`Unsupported archive module descriptor for specifier ${quote(moduleSpecifier)} in compartment ${quote(compartment.name)}`
+        redactedDetails`Unsupported archive module descriptor for specifier ${quote(moduleSpecifier)} in compartment ${quote(compartment.name)}`,
       );
     }
     if (moduleDescriptor.record !== void 0) {
@@ -7257,7 +7342,7 @@ function* loadWithoutErrorAnnotation(compartmentPrivateFields, moduleAliases, co
         compartment: aliasCompartment = compartment,
         specifier: aliasSpecifier = moduleSpecifier,
         record: moduleSource2,
-        importMeta
+        importMeta,
       } = moduleDescriptor;
       const aliasRecord = loadModuleSource(
         compartmentPrivateFields,
@@ -7268,16 +7353,23 @@ function* loadWithoutErrorAnnotation(compartmentPrivateFields, moduleAliases, co
         enqueueJob,
         selectImplementation,
         moduleLoads,
-        importMeta
+        importMeta,
       );
       mapSet(moduleRecords, moduleSpecifier, aliasRecord);
       mapSet(moduleRecords, aliasSpecifier, aliasRecord);
       return aliasRecord;
     }
-    if (moduleDescriptor.compartment !== void 0 && moduleDescriptor.specifier !== void 0) {
-      if (isPrimitive(moduleDescriptor.compartment) || !weakmapHas(compartmentPrivateFields, moduleDescriptor.compartment) || typeof moduleDescriptor.specifier !== "string") {
+    if (
+      moduleDescriptor.compartment !== void 0 &&
+      moduleDescriptor.specifier !== void 0
+    ) {
+      if (
+        isPrimitive(moduleDescriptor.compartment) ||
+        !weakmapHas(compartmentPrivateFields, moduleDescriptor.compartment) ||
+        typeof moduleDescriptor.specifier !== "string"
+      ) {
         throw makeError(
-          redactedDetails`Invalid compartment in module descriptor for specifier ${quote(moduleSpecifier)} in compartment ${quote(compartment.name)}`
+          redactedDetails`Invalid compartment in module descriptor for specifier ${quote(moduleSpecifier)} in compartment ${quote(compartment.name)}`,
         );
       }
       const aliasRecord = yield memoizedLoadWithErrorAnnotation(
@@ -7287,7 +7379,7 @@ function* loadWithoutErrorAnnotation(compartmentPrivateFields, moduleAliases, co
         moduleDescriptor.specifier,
         enqueueJob,
         selectImplementation,
-        moduleLoads
+        moduleLoads,
       );
       mapSet(moduleRecords, moduleSpecifier, aliasRecord);
       return aliasRecord;
@@ -7301,22 +7393,30 @@ function* loadWithoutErrorAnnotation(compartmentPrivateFields, moduleAliases, co
       moduleSource,
       enqueueJob,
       selectImplementation,
-      moduleLoads
+      moduleLoads,
     );
     mapSet(moduleRecords, moduleSpecifier, moduleRecord);
     return moduleRecord;
   } else {
     throw makeError(
       redactedDetails`module descriptor must be a string or object for specifier ${quote(
-        moduleSpecifier
-      )} in compartment ${quote(compartment.name)}`
+        moduleSpecifier,
+      )} in compartment ${quote(compartment.name)}`,
     );
   }
 }
-const memoizedLoadWithErrorAnnotation = (compartmentPrivateFields, moduleAliases, compartment, moduleSpecifier, enqueueJob, selectImplementation, moduleLoads) => {
+const memoizedLoadWithErrorAnnotation = (
+  compartmentPrivateFields,
+  moduleAliases,
+  compartment,
+  moduleSpecifier,
+  enqueueJob,
+  selectImplementation,
+  moduleLoads,
+) => {
   const { name: compartmentName } = weakmapGet(
     compartmentPrivateFields,
-    compartment
+    compartment,
   );
   let compartmentLoading = mapGet(moduleLoads, compartment);
   if (compartmentLoading === void 0) {
@@ -7336,17 +7436,17 @@ const memoizedLoadWithErrorAnnotation = (compartmentPrivateFields, moduleAliases
       moduleSpecifier,
       enqueueJob,
       selectImplementation,
-      moduleLoads
+      moduleLoads,
     ],
     (error) => {
       note(
         error,
         redactedDetails`${error.message}, loading ${quote(moduleSpecifier)} in compartment ${quote(
-          compartmentName
-        )}`
+          compartmentName,
+        )}`,
       );
       throw error;
-    }
+    },
   );
   mapSet(compartmentLoading, moduleSpecifier, moduleLoading);
   return moduleLoading;
@@ -7362,7 +7462,7 @@ const asyncJobQueue = ({ errors = [], noAggregateErrors = false } = {}) => {
         } else {
           arrayPush$1(errors, error);
         }
-      })
+      }),
     );
   };
   const drainQueue = async () => {
@@ -7399,28 +7499,37 @@ const syncJobQueue = ({ errors = [], noAggregateErrors = false } = {}) => {
 };
 const throwAggregateError = ({ errors, errorPrefix }) => {
   if (errors.length > 0) {
-    const verbose = (
+    const verbose =
       /** @type {'' | 'verbose'} */
-      getEnvironmentOption("COMPARTMENT_LOAD_ERRORS", "", ["verbose"]) === "verbose"
-    );
+      getEnvironmentOption("COMPARTMENT_LOAD_ERRORS", "", ["verbose"]) ===
+      "verbose";
     throw TypeError$3(
       `${errorPrefix} (${errors.length} underlying failures: ${arrayJoin(
-        arrayMap(errors, (error) => error.message + (verbose ? error.stack : "")),
-        ", "
-      )}`
+        arrayMap(
+          errors,
+          (error) => error.message + (verbose ? error.stack : ""),
+        ),
+        ", ",
+      )}`,
     );
   }
 };
 const preferSync = (_asyncImpl, syncImpl) => syncImpl;
 const preferAsync = (asyncImpl, _syncImpl) => asyncImpl;
-const load = async (compartmentPrivateFields, moduleAliases, compartment, moduleSpecifier, { noAggregateErrors = false } = {}) => {
+const load = async (
+  compartmentPrivateFields,
+  moduleAliases,
+  compartment,
+  moduleSpecifier,
+  { noAggregateErrors = false } = {},
+) => {
   const { name: compartmentName } = weakmapGet(
     compartmentPrivateFields,
-    compartment
+    compartment,
   );
   const moduleLoads = new Map();
   const { enqueueJob, drainQueue, errors } = asyncJobQueue({
-    noAggregateErrors
+    noAggregateErrors,
   });
   enqueueJob(memoizedLoadWithErrorAnnotation, [
     compartmentPrivateFields,
@@ -7429,24 +7538,30 @@ const load = async (compartmentPrivateFields, moduleAliases, compartment, module
     moduleSpecifier,
     enqueueJob,
     preferAsync,
-    moduleLoads
+    moduleLoads,
   ]);
   await drainQueue();
   throwAggregateError({
     errors,
     errorPrefix: `Failed to load module ${quote(moduleSpecifier)} in package ${quote(
-      compartmentName
-    )}`
+      compartmentName,
+    )}`,
   });
 };
-const loadNow = (compartmentPrivateFields, moduleAliases, compartment, moduleSpecifier, { noAggregateErrors = false } = {}) => {
+const loadNow = (
+  compartmentPrivateFields,
+  moduleAliases,
+  compartment,
+  moduleSpecifier,
+  { noAggregateErrors = false } = {},
+) => {
   const { name: compartmentName } = weakmapGet(
     compartmentPrivateFields,
-    compartment
+    compartment,
   );
   const moduleLoads = new Map();
   const { enqueueJob, drainQueue, errors } = syncJobQueue({
-    noAggregateErrors
+    noAggregateErrors,
   });
   enqueueJob(memoizedLoadWithErrorAnnotation, [
     compartmentPrivateFields,
@@ -7455,14 +7570,14 @@ const loadNow = (compartmentPrivateFields, moduleAliases, compartment, moduleSpe
     moduleSpecifier,
     enqueueJob,
     preferSync,
-    moduleLoads
+    moduleLoads,
   ]);
   drainQueue();
   throwAggregateError({
     errors,
     errorPrefix: `Failed to load module ${quote(moduleSpecifier)} in package ${quote(
-      compartmentName
-    )}`
+      compartmentName,
+    )}`,
   });
 };
 
@@ -7477,7 +7592,6 @@ const loadNow = (compartmentPrivateFields, moduleAliases, compartment, moduleSpe
 // as reference errors until the properties of the actual module are known.
 // This provides the mechanism for modeling the public exports proxy
 // and eventually connecting it to to the proxied exports.
-
 
 const { quote: q$3 } = assert;
 
@@ -7504,7 +7618,7 @@ const deferExports = () => {
   const exportsTarget = create(null, {
     // Make this appear like an ESM module namespace object.
     [toStringTagSymbol$1]: {
-      value: 'Module',
+      value: "Module",
       writable: false,
       enumerable: false,
       configurable: false,
@@ -7549,7 +7663,7 @@ const deferExports = () => {
       ownKeys(_target) {
         if (!active) {
           throw TypeError$3(
-            'Cannot enumerate keys, the module has not yet begun to execute',
+            "Cannot enumerate keys, the module has not yet begun to execute",
           );
         }
         return ownKeys$2(exportsTarget);
@@ -7567,7 +7681,7 @@ const deferExports = () => {
       preventExtensions(_target) {
         if (!active) {
           throw TypeError$3(
-            'Cannot prevent extensions of module exports namespace, the module has not yet begun to execute',
+            "Cannot prevent extensions of module exports namespace, the module has not yet begun to execute",
           );
         }
         return reflectPreventExtensions(exportsTarget);
@@ -7575,7 +7689,7 @@ const deferExports = () => {
       isExtensible() {
         if (!active) {
           throw TypeError$3(
-            'Cannot check extensibility of module exports namespace, the module has not yet begun to execute',
+            "Cannot check extensibility of module exports namespace, the module has not yet begun to execute",
           );
         }
         return reflectIsExtensible(exportsTarget);
@@ -7584,7 +7698,7 @@ const deferExports = () => {
         return null;
       },
       setPrototypeOf(_target, _proto) {
-        throw TypeError$3('Cannot set prototype of module exports namespace');
+        throw TypeError$3("Cannot set prototype of module exports namespace");
       },
       defineProperty(_target, name, _descriptor) {
         throw TypeError$3(
@@ -7593,12 +7707,12 @@ const deferExports = () => {
       },
       apply(_target, _thisArg, _args) {
         throw TypeError$3(
-          'Cannot call module exports namespace, it is not a function',
+          "Cannot call module exports namespace, it is not a function",
         );
       },
       construct(_target, _args) {
         throw TypeError$3(
-          'Cannot construct module exports namespace, it is not a constructor',
+          "Cannot construct module exports namespace, it is not a constructor",
         );
       },
     }),
@@ -7698,8 +7812,8 @@ const compartmentEvaluate = (compartmentFields, source, options) => {
   // Perform this check first to avoid unnecessary sanitizing.
   // TODO Maybe relax string check and coerce instead:
   // https://github.com/tc39/proposal-dynamic-code-brand-checks
-  if (typeof source !== 'string') {
-    throw TypeError$3('first argument of evaluate() must be a string');
+  if (typeof source !== "string") {
+    throw TypeError$3("first argument of evaluate() must be a string");
   }
 
   // Extract options, and shallow-clone transforms.
@@ -7732,7 +7846,6 @@ const compartmentEvaluate = (compartmentFields, source, options) => {
 
 /** @import {ModuleExportsNamespace} from '../types.js' */
 
-
 const { quote: q$2 } = assert;
 
 const makeVirtualModuleInstance = (
@@ -7755,19 +7868,19 @@ const makeVirtualModuleInstance = (
   if (moduleSource.exports) {
     if (
       !isArray(moduleSource.exports) ||
-      arraySome(moduleSource.exports, name => typeof name !== 'string')
+      arraySome(moduleSource.exports, (name) => typeof name !== "string")
     ) {
       throw TypeError$3(
         `SES virtual module source "exports" property must be an array of strings for module ${moduleSpecifier}`,
       );
     }
-    arrayForEach(moduleSource.exports, name => {
+    arrayForEach(moduleSource.exports, (name) => {
       let value = exportsTarget[name];
       const updaters = [];
 
       const get = () => value;
 
-      const set = newValue => {
+      const set = (newValue) => {
         value = newValue;
         for (const updater of updaters) {
           updater(newValue);
@@ -7781,13 +7894,13 @@ const makeVirtualModuleInstance = (
         configurable: false,
       });
 
-      notifiers[name] = update => {
+      notifiers[name] = (update) => {
         arrayPush$1(updaters, update);
         update(value);
       };
     });
     // This is enough to support import * from cjs - the '*' field doesn't need to be in exports nor exportsTarget because import will only ever access it via notifiers
-    notifiers['*'] = update => {
+    notifiers["*"] = (update) => {
       update(exportsTarget);
     };
   }
@@ -7799,7 +7912,7 @@ const makeVirtualModuleInstance = (
     notifiers,
     exportsProxy,
     execute() {
-      if (reflectHas(localState, 'errorFromExecute')) {
+      if (reflectHas(localState, "errorFromExecute")) {
         throw localState.errorFromExecute;
       }
       if (!localState.activated) {
@@ -7888,7 +8001,7 @@ const makeModuleInstance = (
   let dynamicImport;
   if (needsImport) {
     /** @param {string} importSpecifier */
-    dynamicImport = async importSpecifier =>
+    dynamicImport = async (importSpecifier) =>
       compartmentImport(resolveHook(importSpecifier, moduleSpecifier));
   }
 
@@ -7912,13 +8025,15 @@ const makeModuleInstance = (
       // tdz sensitive getter
       const get = () => {
         if (tdz) {
-          throw ReferenceError$1(`binding ${q$2(localName)} not yet initialized`);
+          throw ReferenceError$1(
+            `binding ${q$2(localName)} not yet initialized`,
+          );
         }
         return value;
       };
 
       // leave tdz once
-      const init = freeze$4(initValue => {
+      const init = freeze$4((initValue) => {
         // init with initValue of a declared const binding, and return
         // it.
         if (!tdz) {
@@ -7938,7 +8053,7 @@ const makeModuleInstance = (
 
       // If still tdz, register update for notification later.
       // Otherwise, update now.
-      const notify = updater => {
+      const notify = (updater) => {
         if (updater === init) {
           // Prevent recursion.
           return;
@@ -7998,7 +8113,7 @@ const makeModuleInstance = (
         // tdz but always leaves tdz. Such reexporting creates a tree of
         // bindings. This lets the tree be hooked up even if the imported
         // module instance isn't initialized yet, as may happen in cycles.
-        const update = freeze$4(newValue => {
+        const update = freeze$4((newValue) => {
           value = newValue;
           tdz = false;
           for (const updater of updaters) {
@@ -8007,9 +8122,11 @@ const makeModuleInstance = (
         });
 
         // tdz sensitive setter
-        const set = newValue => {
+        const set = (newValue) => {
           if (tdz) {
-            throw ReferenceError$1(`binding ${q$2(localName)} not yet initialized`);
+            throw ReferenceError$1(
+              `binding ${q$2(localName)} not yet initialized`,
+            );
           }
           value = newValue;
           for (const updater of updaters) {
@@ -8019,7 +8136,7 @@ const makeModuleInstance = (
 
         // Always register the updater function.
         // If not in tdz, also update now.
-        const notify = updater => {
+        const notify = (updater) => {
           if (updater === update) {
             // Prevent recursion.
             return;
@@ -8058,10 +8175,10 @@ const makeModuleInstance = (
     },
   );
 
-  const notifyStar = update => {
+  const notifyStar = (update) => {
     update(exportsTarget);
   };
-  notifiers['*'] = notifyStar;
+  notifiers["*"] = notifyStar;
 
   // Per the calling convention for the moduleFunctor generated from
   // an ESM, the `imports` function gets called once up front
@@ -8129,7 +8246,7 @@ const makeModuleInstance = (
 
         // exported live binding state
         let value;
-        const update = newValue => (value = newValue);
+        const update = (newValue) => (value = newValue);
         notify(update);
         exportsProps[exportName] = {
           get() {
@@ -8151,7 +8268,7 @@ const makeModuleInstance = (
     // since all properties of the exports namespace must be keyed by a string
     // and the string must correspond to a valid identifier, sorting these
     // properties works for this specific case.
-    arrayForEach(arraySort(keys(exportsProps)), k =>
+    arrayForEach(arraySort(keys(exportsProps)), (k) =>
       defineProperty$2(exportsTarget, k, exportsProps[k]),
     );
 
@@ -8207,7 +8324,6 @@ const makeModuleInstance = (
 
 /* eslint-disable no-underscore-dangle */
 
-
 const { Fail: Fail$1, quote: q$1 } = assert;
 
 // `link` creates `ModuleInstances` and `ModuleNamespaces` for a module and its
@@ -8244,7 +8360,7 @@ const link = (
 };
 
 function mayBePrecompiledModuleSource(moduleSource) {
-  return typeof moduleSource.__syncModuleProgram__ === 'string';
+  return typeof moduleSource.__syncModuleProgram__ === "string";
 }
 
 function validatePrecompiledModuleSource(moduleSource, moduleSpecifier) {
@@ -8260,7 +8376,7 @@ function validatePrecompiledModuleSource(moduleSource, moduleSpecifier) {
 }
 
 function mayBeVirtualModuleSource(moduleSource) {
-  return typeof moduleSource.execute === 'function';
+  return typeof moduleSource.execute === "function";
 }
 
 function validateVirtualModuleSource(moduleSource, moduleSpecifier) {
@@ -8291,11 +8407,7 @@ function validateModuleSource(moduleSource, moduleSpecifier) {
     )}, for module ${q$1(moduleSpecifier)}`;
 }
 
-const instantiate = (
-  compartmentPrivateFields,
-  moduleAliases,
-  moduleRecord,
-) => {
+const instantiate = (compartmentPrivateFields, moduleAliases, moduleRecord) => {
   const { compartment, moduleSpecifier, resolvedImports, moduleSource } =
     moduleRecord;
   const { instances } = weakmapGet(compartmentPrivateFields, compartment);
@@ -8387,7 +8499,6 @@ const instantiate = (
  * @module
  */
 
-
 /**
  * @import {ImportHook, ImportMetaHook, ImportNowHook, ModuleDescriptor, ModuleExportsNamespace, ModuleMap, ModuleMapHook, ResolveHook, ModuleSource, CompartmentOptions} from '../types.js'
  * @import {Transform} from './lockdown.js'
@@ -8440,7 +8551,7 @@ const InertCompartment = function Compartment(
   _options = {},
 ) {
   throw TypeError$3(
-    'Compartment.prototype.constructor is not a valid constructor.',
+    "Compartment.prototype.constructor is not a valid constructor.",
   );
 };
 
@@ -8480,8 +8591,8 @@ const CompartmentPrototype = {
   },
 
   module(specifier) {
-    if (typeof specifier !== 'string') {
-      throw TypeError$3('first argument of module() must be a string');
+    if (typeof specifier !== "string") {
+      throw TypeError$3("first argument of module() must be a string");
     }
 
     const { exportsProxy } = getDeferredExports(
@@ -8498,8 +8609,8 @@ const CompartmentPrototype = {
     const { noNamespaceBox, noAggregateLoadErrors } =
       /** @type {CompartmentFields} */ (weakmapGet(privateFields, this));
 
-    if (typeof specifier !== 'string') {
-      throw TypeError$3('first argument of import() must be a string');
+    if (typeof specifier !== "string") {
+      throw TypeError$3("first argument of import() must be a string");
     }
 
     return promiseThen(
@@ -8524,8 +8635,8 @@ const CompartmentPrototype = {
   },
 
   async load(specifier) {
-    if (typeof specifier !== 'string') {
-      throw TypeError$3('first argument of load() must be a string');
+    if (typeof specifier !== "string") {
+      throw TypeError$3("first argument of load() must be a string");
     }
 
     const { noAggregateLoadErrors } = /** @type {CompartmentFields} */ (
@@ -8538,8 +8649,8 @@ const CompartmentPrototype = {
   },
 
   importNow(specifier) {
-    if (typeof specifier !== 'string') {
-      throw TypeError$3('first argument of importNow() must be a string');
+    if (typeof specifier !== "string") {
+      throw TypeError$3("first argument of importNow() must be a string");
     }
     const { noAggregateLoadErrors } = /** @type {CompartmentFields} */ (
       weakmapGet(privateFields, this)
@@ -8557,7 +8668,7 @@ const CompartmentPrototype = {
 // properties, e.g. Math.
 defineProperties$1(CompartmentPrototype, {
   [toStringTagSymbol$1]: {
-    value: 'Compartment',
+    value: "Compartment",
     writable: false,
     enumerable: false,
     configurable: true,
@@ -8614,9 +8725,9 @@ const compartmentOptions = (...args) => {
   }
   if (
     args.length === 1 &&
-    typeof args[0] === 'object' &&
+    typeof args[0] === "object" &&
     args[0] !== null &&
-    '__options__' in args[0]
+    "__options__" in args[0]
   ) {
     const { __options__, ...options } = args[0];
     assert(
@@ -8668,7 +8779,7 @@ const makeCompartmentConstructor = (
 
     // Extract options, and shallow-clone transforms.
     const {
-      name = '<unknown>',
+      name = "<unknown>",
       transforms = [],
       __shimTransforms__ = [],
       globals: endowmentsOption = {},
@@ -8696,8 +8807,6 @@ const makeCompartmentConstructor = (
     const deferredExports = new Map();
 
     const globalObject = {};
-
-    const compartment = this;
 
     setGlobalObjectSymbolUnscopables(globalObject);
 
@@ -8751,19 +8860,19 @@ const makeCompartmentConstructor = (
      * relative to the calling module's full specifier.
      * @returns {Promise<ModuleExportsNamespace>}
      */
-    const compartmentImport = async fullSpecifier => {
-      if (typeof resolveHook !== 'function') {
+    const compartmentImport = async (fullSpecifier) => {
+      if (typeof resolveHook !== "function") {
         throw TypeError$3(
           `Compartment does not support dynamic import: no configured resolveHook for compartment ${quote(name)}`,
         );
       }
-      await load(privateFields, moduleAliases, compartment, fullSpecifier, {
+      await load(privateFields, moduleAliases, this, fullSpecifier, {
         noAggregateErrors: noAggregateLoadErrors,
       });
       const { execute, exportsProxy } = link(
         privateFields,
         moduleAliases,
-        compartment,
+        this,
         fullSpecifier,
       );
       execute();
@@ -8826,8 +8935,8 @@ const getAnonymousIntrinsics = () => {
 
   // 9.2.4.1 %ThrowTypeError%
 
-  const argsCalleeDesc = getOwnPropertyDescriptor$1(makeArguments(), 'callee');
-  const ThrowTypeError = argsCalleeDesc && argsCalleeDesc.get;
+  const argsCalleeDesc = getOwnPropertyDescriptor$1(makeArguments(), "callee");
+  const ThrowTypeError = argsCalleeDesc?.get;
 
   // 21.1.5.2 The %StringIteratorPrototype% Object
 
@@ -8882,19 +8991,19 @@ const getAnonymousIntrinsics = () => {
   const AsyncFunction = getConstructorOf(AsyncFunctionInstance);
 
   const intrinsics = {
-    '%InertFunction%': InertFunction,
-    '%ArrayIteratorPrototype%': ArrayIteratorPrototype,
-    '%InertAsyncFunction%': AsyncFunction,
-    '%Generator%': Generator,
-    '%InertGeneratorFunction%': GeneratorFunction,
-    '%IteratorPrototype%': IteratorPrototype,
-    '%MapIteratorPrototype%': MapIteratorPrototype,
-    '%RegExpStringIteratorPrototype%': RegExpStringIteratorPrototype,
-    '%SetIteratorPrototype%': SetIteratorPrototype,
-    '%StringIteratorPrototype%': StringIteratorPrototype,
-    '%ThrowTypeError%': ThrowTypeError,
-    '%TypedArray%': TypedArray,
-    '%InertCompartment%': InertCompartment,
+    "%InertFunction%": InertFunction,
+    "%ArrayIteratorPrototype%": ArrayIteratorPrototype,
+    "%InertAsyncFunction%": AsyncFunction,
+    "%Generator%": Generator,
+    "%InertGeneratorFunction%": GeneratorFunction,
+    "%IteratorPrototype%": IteratorPrototype,
+    "%MapIteratorPrototype%": MapIteratorPrototype,
+    "%RegExpStringIteratorPrototype%": RegExpStringIteratorPrototype,
+    "%SetIteratorPrototype%": SetIteratorPrototype,
+    "%StringIteratorPrototype%": StringIteratorPrototype,
+    "%ThrowTypeError%": ThrowTypeError,
+    "%TypedArray%": TypedArray,
+    "%InertCompartment%": InertCompartment,
   };
 
   if (AsyncGeneratorFunctionInstance !== undefined) {
@@ -8911,19 +9020,19 @@ const getAnonymousIntrinsics = () => {
     const AsyncIteratorPrototype = getPrototypeOf$1(AsyncGeneratorPrototype);
 
     assign(intrinsics, {
-      '%AsyncGenerator%': AsyncGenerator,
-      '%InertAsyncGeneratorFunction%': AsyncGeneratorFunction,
-      '%AsyncGeneratorPrototype%': AsyncGeneratorPrototype,
-      '%AsyncIteratorPrototype%': AsyncIteratorPrototype,
+      "%AsyncGenerator%": AsyncGenerator,
+      "%InertAsyncGeneratorFunction%": AsyncGeneratorFunction,
+      "%AsyncGeneratorPrototype%": AsyncGeneratorPrototype,
+      "%AsyncIteratorPrototype%": AsyncIteratorPrototype,
     });
   }
 
   if (universalThis.Iterator) {
-    intrinsics['%IteratorHelperPrototype%'] = getPrototypeOf$1(
+    intrinsics["%IteratorHelperPrototype%"] = getPrototypeOf$1(
       // eslint-disable-next-line @endo/no-polymorphic-call
       universalThis.Iterator.from([]).take(0),
     );
-    intrinsics['%WrapForValidIteratorPrototype%'] = getPrototypeOf$1(
+    intrinsics["%WrapForValidIteratorPrototype%"] = getPrototypeOf$1(
       // eslint-disable-next-line @endo/no-polymorphic-call
       universalThis.Iterator.from({
         next() {
@@ -8934,11 +9043,11 @@ const getAnonymousIntrinsics = () => {
   }
 
   if (universalThis.AsyncIterator) {
-    intrinsics['%AsyncIteratorHelperPrototype%'] = getPrototypeOf$1(
+    intrinsics["%AsyncIteratorHelperPrototype%"] = getPrototypeOf$1(
       // eslint-disable-next-line @endo/no-polymorphic-call
       universalThis.AsyncIterator.from([]).take(0),
     );
-    intrinsics['%WrapForValidAsyncIteratorPrototype%'] = getPrototypeOf$1(
+    intrinsics["%WrapForValidAsyncIteratorPrototype%"] = getPrototypeOf$1(
       // eslint-disable-next-line @endo/no-polymorphic-call
       universalThis.AsyncIterator.from({ next() {} }),
     );
@@ -8951,7 +9060,7 @@ const getAnonymousIntrinsics = () => {
   const iabProto = getPrototypeOf$1(iab);
   if (iabProto !== ArrayBuffer$2.prototype) {
     // In a native implementation, these will be the same prototype
-    intrinsics['%ImmutableArrayBufferPrototype%'] = iabProto;
+    intrinsics["%ImmutableArrayBufferPrototype%"] = iabProto;
   }
 
   return intrinsics;
@@ -8963,7 +9072,7 @@ const getAnonymousIntrinsics = () => {
 
 /** @type {(safeHarden: Harden, hardenTaming: 'safe' | 'unsafe') => Harden} */
 const tameHarden = (safeHarden, hardenTaming) => {
-  if (hardenTaming === 'safe') {
+  if (hardenTaming === "safe") {
     return safeHarden;
   }
 
@@ -8980,7 +9089,7 @@ const tameHarden = (safeHarden, hardenTaming) => {
     return safeHarden;
   }
 
-  const fakeHarden = arg => arg;
+  const fakeHarden = (arg) => arg;
   fakeHarden.isFake = true;
   return freeze$4(fakeHarden);
 };
@@ -8992,28 +9101,28 @@ const tameSymbolConstructor = () => {
   const SharedSymbol = functionBind(Symbol$2, void 0);
   defineProperties$1(SymbolPrototype, {
     constructor: {
-      value: SharedSymbol
+      value: SharedSymbol,
       // leave other `constructor` attributes as is
-    }
+    },
   });
   const originalDescsEntries = entries(
-    getOwnPropertyDescriptors$1(OriginalSymbol)
+    getOwnPropertyDescriptors$1(OriginalSymbol),
   );
   const descs = fromEntries(
     arrayMap(originalDescsEntries, ([name, desc]) => [
       name,
-      { ...desc, configurable: true }
-    ])
+      { ...desc, configurable: true },
+    ]),
   );
   defineProperties$1(SharedSymbol, descs);
   return { "%SharedSymbol%": SharedSymbol };
 };
 
-const throws = thunk => {
+const throws = (thunk) => {
   try {
     thunk();
     return false;
-  } catch (er) {
+  } catch (_er) {
     return true;
   }
 };
@@ -9041,12 +9150,12 @@ const tameFauxDataProperty = (obj, prop, expectedValue) => {
     return false;
   }
   const desc = getOwnPropertyDescriptor$1(obj, prop);
-  if (!desc || 'value' in desc) {
+  if (!desc || "value" in desc) {
     // The property either doesn't exist, or is already an actual data property.
     return false;
   }
   const { get, set } = desc;
-  if (typeof get !== 'function' || typeof set !== 'function') {
+  if (typeof get !== "function" || typeof set !== "function") {
     // A faux data property has both a getter and a setter
     return false;
   }
@@ -9059,7 +9168,7 @@ const tameFauxDataProperty = (obj, prop, expectedValue) => {
     // expectedValue.
     return false;
   }
-  const testValue = 'Seems to be a setter';
+  const testValue = "Seems to be a setter";
   const subject1 = { __proto__: null };
   apply$2(set, subject1, [testValue]);
   if (subject1[prop] !== testValue) {
@@ -9084,7 +9193,7 @@ const tameFauxDataProperty = (obj, prop, expectedValue) => {
     // change anything.
     return false;
   }
-  if ('originalValue' in get) {
+  if ("originalValue" in get) {
     // The ses-shim uniquely, as far as we know, puts an `originalValue`
     // property on the getter, so that reflect property tranversal algorithms,
     // like `harden`, will traverse into the enulated value without
@@ -9198,18 +9307,18 @@ const tameFauxDataProperty = (obj, prop, expectedValue) => {
  *
  * @param {Record<any,any>} intrinsics
  */
-const tameFauxDataProperties = intrinsics => {
+const tameFauxDataProperties = (intrinsics) => {
   // https://github.com/tc39/proposal-iterator-helpers
   tameFauxDataProperty(
-    intrinsics['%IteratorPrototype%'],
-    'constructor',
+    intrinsics["%IteratorPrototype%"],
+    "constructor",
     intrinsics.Iterator,
   );
   // https://github.com/tc39/proposal-iterator-helpers
   tameFauxDataProperty(
-    intrinsics['%IteratorPrototype%'],
+    intrinsics["%IteratorPrototype%"],
     toStringTagSymbol$1,
-    'Iterator',
+    "Iterator",
   );
 };
 
@@ -9237,7 +9346,7 @@ const tameRegeneratorRuntime = () => {
 };
 
 const shimArrayBufferTransfer = () => {
-  if (typeof arrayBufferPrototype$2.transfer === 'function') {
+  if (typeof arrayBufferPrototype$2.transfer === "function") {
     // Assume already exists so does not need to be shimmed.
     // Such conditional shimming is ok in this case since ArrayBuffer.p.transfer
     // is already officially part of JS.
@@ -9246,7 +9355,7 @@ const shimArrayBufferTransfer = () => {
     return {};
   }
   const clone = universalThis.structuredClone;
-  if (typeof clone !== 'function') {
+  if (typeof clone !== "function") {
     // On a platform with neither `Array.prototype.transfer`
     // nor `structuredClone`, this shim does nothing.
     // For example, Node <= 16 has neither.
@@ -9278,7 +9387,7 @@ const shimArrayBufferTransfer = () => {
       if (newLength === undefined || newLength === oldLength) {
         return clone(this, { transfer: [this] });
       }
-      if (typeof newLength !== 'number') {
+      if (typeof newLength !== "number") {
         throw TypeError$3(`transfer newLength if provided must be a number`);
       }
       if (newLength > oldLength) {
@@ -9298,7 +9407,7 @@ const shimArrayBufferTransfer = () => {
     },
   };
 
-  defineProperty$2(arrayBufferPrototype$2, 'transfer', {
+  defineProperty$2(arrayBufferPrototype$2, "transfer", {
     // @ts-expect-error
     value: methods.transfer,
     writable: true,
@@ -9323,12 +9432,12 @@ const shimArrayBufferTransfer = () => {
  *
  * @param {(...message: Array<any>) => void} print
  */
-const makeReportPrinter = print => {
+const makeReportPrinter = (print) => {
   let indent = false;
   /** @param {Array<any>} args */
   const printIndent = (...args) => {
     if (indent) {
-      print(' ', ...args);
+      print(" ", ...args);
     } else {
       print(...args);
     }
@@ -9356,12 +9465,12 @@ const mute = () => {};
 /**
  * @param {"platform" | "console" | "none"} reporting
  */
-const chooseReporter = reporting => {
-  if (reporting === 'none') {
+const chooseReporter = (reporting) => {
+  if (reporting === "none") {
     return makeReportPrinter(mute);
   }
   if (
-    reporting === 'console' ||
+    reporting === "console" ||
     universalThis.window === universalThis ||
     universalThis.importScripts !== undefined
   ) {
@@ -9427,7 +9536,6 @@ const reportInGroup = (groupLabel, console, callback) => {
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 /** @import {LockdownOptions} from '../types.js' */
 
 const { Fail, details: X, quote: q } = assert;
@@ -9471,7 +9579,7 @@ const safeHarden = makeHardener();
 const probeHostEvaluators = () => {
   let functionAllowed;
   try {
-    functionAllowed = FERAL_FUNCTION('return true')();
+    functionAllowed = FERAL_FUNCTION("return true")();
   } catch (_error) {
     // We reach here if the Function() constructor is outright forbidden by a
     // strict Content Security Policy (containing either a `default-src` or a
@@ -9482,7 +9590,7 @@ const probeHostEvaluators = () => {
 
   let evalAllowed;
   try {
-    evalAllowed = FERAL_EVAL('true');
+    evalAllowed = FERAL_EVAL("true");
   } catch (_error) {
     // We reach here if `eval` is outright forbidden by a strict Content Security Policy,
     // not implemented in the host, or the host is configured to throw an exception.
@@ -9494,8 +9602,8 @@ const probeHostEvaluators = () => {
   let directEvalAllowed;
   if (functionAllowed && evalAllowed) {
     directEvalAllowed = FERAL_FUNCTION(
-      'eval',
-      'SES_changed',
+      "eval",
+      "SES_changed",
       `\
         eval("SES_changed = true");
         return SES_changed;
@@ -9544,68 +9652,81 @@ const repairIntrinsics = (options = {}) => {
 
   const {
     errorTaming = /** @type {'safe' | 'unsafe' | 'unsafe-debug'} */ (
-      getEnvironmentOption('LOCKDOWN_ERROR_TAMING', 'safe', ['unsafe', 'unsafe-debug'])
+      getEnvironmentOption("LOCKDOWN_ERROR_TAMING", "safe", [
+        "unsafe",
+        "unsafe-debug",
+      ])
     ),
     errorTrapping = /** @type {'platform' | 'none' | 'report' | 'abort' | 'exit'} */ (
-      getEnvironmentOption('LOCKDOWN_ERROR_TRAPPING', 'platform', [
-        'none',
-        'report',
-        'abort',
-        'exit',
+      getEnvironmentOption("LOCKDOWN_ERROR_TRAPPING", "platform", [
+        "none",
+        "report",
+        "abort",
+        "exit",
       ])
     ),
     reporting = /** @type {'platform' | 'console' | 'none'} */ (
-      getEnvironmentOption('LOCKDOWN_REPORTING', 'platform', ['console', 'none'])
+      getEnvironmentOption("LOCKDOWN_REPORTING", "platform", [
+        "console",
+        "none",
+      ])
     ),
     unhandledRejectionTrapping = /** @type {'none' | 'report'} */ (
-      getEnvironmentOption('LOCKDOWN_UNHANDLED_REJECTION_TRAPPING', 'report', ['none'])
+      getEnvironmentOption("LOCKDOWN_UNHANDLED_REJECTION_TRAPPING", "report", [
+        "none",
+      ])
     ),
     regExpTaming = /** @type {'safe' | 'unsafe'} */ (
-      getEnvironmentOption('LOCKDOWN_REGEXP_TAMING', 'safe', ['unsafe'])
+      getEnvironmentOption("LOCKDOWN_REGEXP_TAMING", "safe", ["unsafe"])
     ),
     localeTaming = /** @type {'safe' | 'unsafe'} */ (
-      getEnvironmentOption('LOCKDOWN_LOCALE_TAMING', 'safe', ['unsafe'])
+      getEnvironmentOption("LOCKDOWN_LOCALE_TAMING", "safe", ["unsafe"])
     ),
     consoleTaming = /** @type {'unsafe' | 'safe'} */ (
-      getEnvironmentOption('LOCKDOWN_CONSOLE_TAMING', 'safe', ['unsafe'])
+      getEnvironmentOption("LOCKDOWN_CONSOLE_TAMING", "safe", ["unsafe"])
     ),
     overrideTaming = /** @type {'moderate' | 'min' | 'severe'} */ (
-      getEnvironmentOption('LOCKDOWN_OVERRIDE_TAMING', 'moderate', ['min', 'severe'])
+      getEnvironmentOption("LOCKDOWN_OVERRIDE_TAMING", "moderate", [
+        "min",
+        "severe",
+      ])
     ),
     stackFiltering = /** @type {'concise' | 'omit-frames' | 'shorten-paths' | 'verbose'} */ (
-      getEnvironmentOption('LOCKDOWN_STACK_FILTERING', 'concise', [
-        'omit-frames',
-        'shorten-paths',
-        'verbose',
+      getEnvironmentOption("LOCKDOWN_STACK_FILTERING", "concise", [
+        "omit-frames",
+        "shorten-paths",
+        "verbose",
       ])
     ),
     domainTaming = /** @type {'safe' | 'unsafe'} */ (
-      getEnvironmentOption('LOCKDOWN_DOMAIN_TAMING', 'safe', ['unsafe'])
+      getEnvironmentOption("LOCKDOWN_DOMAIN_TAMING", "safe", ["unsafe"])
     ),
     evalTaming = /** @type {'safe-eval' | 'unsafe-eval' | 'no-eval'} */ (
-      getEnvironmentOption('LOCKDOWN_EVAL_TAMING', 'safe-eval', [
-        'unsafe-eval',
-        'no-eval',
+      getEnvironmentOption("LOCKDOWN_EVAL_TAMING", "safe-eval", [
+        "unsafe-eval",
+        "no-eval",
         // deprecated
-        'safeEval',
-        'unsafeEval',
-        'noEval',
+        "safeEval",
+        "unsafeEval",
+        "noEval",
       ])
     ),
     overrideDebug = /** @type {string[]} */ (
       arrayFilter(
-        stringSplit$1(getEnvironmentOption('LOCKDOWN_OVERRIDE_DEBUG', ''), ','),
+        stringSplit$1(getEnvironmentOption("LOCKDOWN_OVERRIDE_DEBUG", ""), ","),
         /** @param {string} debugName */
-        debugName => debugName !== '',
+        (debugName) => debugName !== "",
       )
     ),
     legacyRegeneratorRuntimeTaming = /** @type {'safe' | 'unsafe-ignore'} */ (
-      getEnvironmentOption('LOCKDOWN_LEGACY_REGENERATOR_RUNTIME_TAMING', 'safe', [
-        'unsafe-ignore',
-      ])
+      getEnvironmentOption(
+        "LOCKDOWN_LEGACY_REGENERATOR_RUNTIME_TAMING",
+        "safe",
+        ["unsafe-ignore"],
+      )
     ),
     __hardenTaming__ = /** @type {'safe' | 'unsafe'} */ (
-      getEnvironmentOption('LOCKDOWN_HARDEN_TAMING', 'safe', ['unsafe'])
+      getEnvironmentOption("LOCKDOWN_HARDEN_TAMING", "safe", ["unsafe"])
     ),
     dateTaming, // deprecated
     mathTaming, // deprecated
@@ -9639,7 +9760,9 @@ const repairIntrinsics = (options = {}) => {
       TypeError$3,
     );
   // See https://github.com/endojs/endo/blob/master/packages/ses/error-codes/SES_ALREADY_LOCKED_DOWN.md
-  priorRepairIntrinsics = TypeError$3('Prior lockdown (SES_ALREADY_LOCKED_DOWN)');
+  priorRepairIntrinsics = TypeError$3(
+    "Prior lockdown (SES_ALREADY_LOCKED_DOWN)",
+  );
   // Tease V8 to generate the stack string and release the closures the stack
   // trace retained:
   priorRepairIntrinsics.stack;
@@ -9649,7 +9772,7 @@ const repairIntrinsics = (options = {}) => {
 
   if (
     directEvalAllowed === false &&
-    evalTaming === 'safe-eval' &&
+    evalTaming === "safe-eval" &&
     (functionAllowed || evalAllowed)
   ) {
     // See https://github.com/endojs/endo/blob/master/packages/ses/error-codes/SES_DIRECT_EVAL.md
@@ -9678,13 +9801,13 @@ const repairIntrinsics = (options = {}) => {
   const seemsToBeLockedDown = () => {
     return (
       universalThis.Function.prototype.constructor !== universalThis.Function &&
-      // @ts-ignore harden is absent on globalThis type def.
-      typeof universalThis.harden === 'function' &&
-      // @ts-ignore lockdown is absent on globalThis type def.
-      typeof universalThis.lockdown === 'function' &&
+      // @ts-expect-error harden is absent on globalThis type def.
+      typeof universalThis.harden === "function" &&
+      // @ts-expect-error lockdown is absent on globalThis type def.
+      typeof universalThis.lockdown === "function" &&
       universalThis.Date.prototype.constructor !== universalThis.Date &&
-      typeof universalThis.Date.now === 'function' &&
-      // @ts-ignore does not recognize that Date constructor is a special
+      typeof universalThis.Date.now === "function" &&
+      // @ts-expect-error does not recognize that Date constructor is a special
       // Function.
       // eslint-disable-next-line @endo/no-polymorphic-call
       is(universalThis.Date.prototype.constructor.now(), NaN)
@@ -9734,7 +9857,7 @@ const repairIntrinsics = (options = {}) => {
 
   // The Node.js Buffer is a derived class of Uint8Array, and as such is often
   // passed around where a Uint8Array is expected.
-  if (typeof universalThis.Buffer === 'function') {
+  if (typeof universalThis.Buffer === "function") {
     hostIntrinsics.Buffer = universalThis.Buffer;
   }
 
@@ -9747,8 +9870,8 @@ const repairIntrinsics = (options = {}) => {
    * @type {((error: any) => string | undefined) | undefined}
    */
   let optGetStackString;
-  if (errorTaming === 'safe') {
-    optGetStackString = intrinsics['%InitialGetStackString%'];
+  if (errorTaming === "safe") {
+    optGetStackString = intrinsics["%InitialGetStackString%"];
   }
   const consoleRecord = tameConsole(
     consoleTaming,
@@ -9762,7 +9885,7 @@ const repairIntrinsics = (options = {}) => {
   // internal properties, but some of these properties expose internal versions
   // of classes from node's "primordials" concept.
   // eslint-disable-next-line no-underscore-dangle
-  if (typeof (/** @type {any} */ (consoleRecord.console)._times) === 'object') {
+  if (typeof (/** @type {any} */ (consoleRecord.console)._times) === "object") {
     // SafeMap is a derived Map class used internally by Node
     // There doesn't seem to be a cleaner way to reach it.
     hostIntrinsics.SafeMap = getPrototypeOf$1(
@@ -9771,9 +9894,9 @@ const repairIntrinsics = (options = {}) => {
     );
   }
 
-  // @ts-ignore assert is absent on globalThis type def.
+  // @ts-expect-error assert is absent on globalThis type def.
   if (
-    (errorTaming === 'unsafe' || errorTaming === 'unsafe-debug') &&
+    (errorTaming === "unsafe" || errorTaming === "unsafe-debug") &&
     universalThis.assert === assert
   ) {
     // If errorTaming is 'unsafe' or 'unsafe-debug' we replace the
@@ -9782,7 +9905,7 @@ const repairIntrinsics = (options = {}) => {
     // unmarked substitution values. IOW, it blabs information that
     // was supposed to be secret from callers, as an aid to debugging
     // at a further cost in safety.
-    // @ts-ignore assert is absent on globalThis type def.
+    // @ts-expect-error assert is absent on globalThis type def.
     universalThis.assert = makeAssert(undefined, true);
   }
 
@@ -9799,9 +9922,9 @@ const repairIntrinsics = (options = {}) => {
   // All remaining functions encountered during whitelisting are
   // branded as honorary native functions.
   reportInGroup(
-    'SES Removing unpermitted intrinsics',
+    "SES Removing unpermitted intrinsics",
     reporter,
-    groupReporter =>
+    (groupReporter) =>
       removeUnpermittedIntrinsics(
         intrinsics,
         markVirtualizedNativeFunction,
@@ -9822,9 +9945,9 @@ const repairIntrinsics = (options = {}) => {
   });
 
   if (
-    evalTaming === 'no-eval' ||
+    evalTaming === "no-eval" ||
     // deprecated
-    evalTaming === 'noEval'
+    evalTaming === "noEval"
   ) {
     setGlobalObjectEvaluators(
       universalThis,
@@ -9832,9 +9955,9 @@ const repairIntrinsics = (options = {}) => {
       markVirtualizedNativeFunction,
     );
   } else if (
-    evalTaming === 'safe-eval' ||
+    evalTaming === "safe-eval" ||
     // deprecated
-    evalTaming === 'safeEval'
+    evalTaming === "safeEval"
   ) {
     const { safeEvaluate } = makeSafeEvaluator({ globalObject: universalThis });
     setGlobalObjectEvaluators(
@@ -9842,7 +9965,7 @@ const repairIntrinsics = (options = {}) => {
       safeEvaluate,
       markVirtualizedNativeFunction,
     );
-  } else ;
+  } else;
 
   /**
    * 3. HARDEN to share the intrinsics.
@@ -9862,7 +9985,7 @@ const repairIntrinsics = (options = {}) => {
       );
     // See https://github.com/endojs/endo/blob/master/packages/ses/error-codes/SES_ALREADY_LOCKED_DOWN.md
     priorHardenIntrinsics = TypeError$3(
-      'Prior lockdown (SES_ALREADY_LOCKED_DOWN)',
+      "Prior lockdown (SES_ALREADY_LOCKED_DOWN)",
     );
     // Tease V8 to generate the stack string and release the closures the stack
     // trace retained:
@@ -9872,16 +9995,19 @@ const repairIntrinsics = (options = {}) => {
     // TODO consider moving this to the end of the repair phase, and
     // therefore before vetted shims rather than afterwards. It is not
     // clear yet which is better.
-    // @ts-ignore enablePropertyOverrides does its own input validation
-    reportInGroup('SES Enabling property overrides', reporter, groupReporter =>
-      enablePropertyOverrides(
-        intrinsics,
-        overrideTaming,
-        groupReporter,
-        overrideDebug,
-      ),
+    // @ts-expect-error enablePropertyOverrides does its own input validation
+    reportInGroup(
+      "SES Enabling property overrides",
+      reporter,
+      (groupReporter) =>
+        enablePropertyOverrides(
+          intrinsics,
+          overrideTaming,
+          groupReporter,
+          overrideDebug,
+        ),
     );
-    if (legacyRegeneratorRuntimeTaming === 'unsafe-ignore') {
+    if (legacyRegeneratorRuntimeTaming === "unsafe-ignore") {
       tameRegeneratorRuntime();
     }
 
@@ -9894,7 +10020,7 @@ const repairIntrinsics = (options = {}) => {
         // Harden evaluators
         Function: universalThis.Function,
         eval: universalThis.eval,
-        // @ts-ignore Compartment does exist on globalThis
+        // @ts-expect-error Compartment does exist on globalThis
         Compartment: universalThis.Compartment,
 
         // Harden Symbol
@@ -9917,13 +10043,12 @@ const repairIntrinsics = (options = {}) => {
 
 // @ts-check
 
-
 /** @import {LockdownOptions} from '../types.js' */
 
 /**
  * @param {LockdownOptions} [options]
  */
-universalThis.lockdown = options => {
+universalThis.lockdown = (options) => {
   const hardenIntrinsics = repairIntrinsics(options);
   universalThis.harden = hardenIntrinsics();
 };
@@ -9931,7 +10056,7 @@ universalThis.lockdown = options => {
 /**
  * @param {LockdownOptions} [options]
  */
-universalThis.repairIntrinsics = options => {
+universalThis.repairIntrinsics = (options) => {
   const hardenIntrinsics = repairIntrinsics(options);
   // Reveal hardenIntrinsics after repairs.
   universalThis.hardenIntrinsics = () => {
@@ -9942,16 +10067,16 @@ universalThis.repairIntrinsics = options => {
     // that is portable between JS and SES), the existence of harden in global
     // scope signals whether such code should attempt to use harden in the
     // defense of its own API.
-    // @ts-ignore harden not yet recognized on globalThis.
+    // @ts-expect-error harden not yet recognized on globalThis.
     universalThis.harden = hardenIntrinsics();
   };
 };
 
 const markVirtualizedNativeFunction = tameFunctionToString();
 
-const muteReporter = chooseReporter('none');
+const muteReporter = chooseReporter("none");
 
-// @ts-ignore Compartment is definitely on globalThis.
+// @ts-expect-error Compartment is definitely on globalThis.
 universalThis.Compartment = makeCompartmentConstructor(
   makeCompartmentConstructor,
   // Any reporting that would need to be done should have already been done
@@ -10007,7 +10132,7 @@ const makeCausalConsoleFromLoggerForSesAva =
  * versions of the ses-shim.
  */
 const MAKE_CAUSAL_CONSOLE_FROM_LOGGER_KEY_FOR_SES_AVA = symbolFor(
-  'MAKE_CAUSAL_CONSOLE_FROM_LOGGER_KEY_FOR_SES_AVA',
+  "MAKE_CAUSAL_CONSOLE_FROM_LOGGER_KEY_FOR_SES_AVA",
 );
 
 universalThis[MAKE_CAUSAL_CONSOLE_FROM_LOGGER_KEY_FOR_SES_AVA] =

@@ -2,27 +2,27 @@
  * Tests for motion recording service
  * Verifies smoothing, keyframe conversion, and simplification
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  smoothMotion,
-  smoothMotionMovingAverage,
   convertMotionToKeyframes,
-  simplifyKeyframes,
-  removeRedundantKeyframes,
-  processRecordedMotion,
+  getMotionAverageSpeed,
   getMotionBounds,
   getMotionPathLength,
-  getMotionAverageSpeed,
   MotionRecorder,
-  type RecordedMotion,
   type MotionSample,
-} from '@/services/motionRecording';
+  processRecordedMotion,
+  type RecordedMotion,
+  removeRedundantKeyframes,
+  simplifyKeyframes,
+  smoothMotion,
+  smoothMotionMovingAverage,
+} from "@/services/motionRecording";
 
 // Helper to create test motion
 function createTestMotion(
   pinId: string,
   samples: Array<{ time: number; x: number; y: number }>,
-  speed: number = 1.0
+  speed: number = 1.0,
 ): RecordedMotion {
   return { pinId, samples, recordingSpeed: speed };
 }
@@ -33,7 +33,7 @@ function createLinearMotion(
   start: { x: number; y: number },
   end: { x: number; y: number },
   durationMs: number,
-  sampleCount: number
+  sampleCount: number,
 ): RecordedMotion {
   const samples: MotionSample[] = [];
   for (let i = 0; i < sampleCount; i++) {
@@ -53,7 +53,7 @@ function createCircularMotion(
   center: { x: number; y: number },
   radius: number,
   durationMs: number,
-  sampleCount: number
+  sampleCount: number,
 ): RecordedMotion {
   const samples: MotionSample[] = [];
   for (let i = 0; i < sampleCount; i++) {
@@ -72,7 +72,7 @@ function createCircularMotion(
 function addNoise(motion: RecordedMotion, noiseLevel: number): RecordedMotion {
   return {
     ...motion,
-    samples: motion.samples.map(s => ({
+    samples: motion.samples.map((s) => ({
       time: s.time,
       x: s.x + (Math.random() - 0.5) * noiseLevel * 2,
       y: s.y + (Math.random() - 0.5) * noiseLevel * 2,
@@ -80,9 +80,15 @@ function addNoise(motion: RecordedMotion, noiseLevel: number): RecordedMotion {
   };
 }
 
-describe('smoothMotion', () => {
-  it('returns unchanged motion for smoothing = 0', () => {
-    const motion = createLinearMotion('pin1', { x: 0, y: 0 }, { x: 100, y: 100 }, 1000, 10);
+describe("smoothMotion", () => {
+  it("returns unchanged motion for smoothing = 0", () => {
+    const motion = createLinearMotion(
+      "pin1",
+      { x: 0, y: 0 },
+      { x: 100, y: 100 },
+      1000,
+      10,
+    );
     const smoothed = smoothMotion(motion, 0);
 
     expect(smoothed.samples.length).toBe(motion.samples.length);
@@ -92,15 +98,27 @@ describe('smoothMotion', () => {
     }
   });
 
-  it('preserves sample count after smoothing', () => {
-    const motion = createLinearMotion('pin1', { x: 0, y: 0 }, { x: 100, y: 100 }, 1000, 20);
+  it("preserves sample count after smoothing", () => {
+    const motion = createLinearMotion(
+      "pin1",
+      { x: 0, y: 0 },
+      { x: 100, y: 100 },
+      1000,
+      20,
+    );
     const smoothed = smoothMotion(motion, 50);
 
     expect(smoothed.samples.length).toBe(motion.samples.length);
   });
 
-  it('preserves timestamps after smoothing', () => {
-    const motion = createLinearMotion('pin1', { x: 0, y: 0 }, { x: 100, y: 100 }, 1000, 10);
+  it("preserves timestamps after smoothing", () => {
+    const motion = createLinearMotion(
+      "pin1",
+      { x: 0, y: 0 },
+      { x: 100, y: 100 },
+      1000,
+      10,
+    );
     const smoothed = smoothMotion(motion, 50);
 
     for (let i = 0; i < motion.samples.length; i++) {
@@ -108,9 +126,15 @@ describe('smoothMotion', () => {
     }
   });
 
-  it('reduces noise in samples', () => {
+  it("reduces noise in samples", () => {
     // Create a noisy line
-    const cleanMotion = createLinearMotion('pin1', { x: 0, y: 50 }, { x: 100, y: 50 }, 1000, 50);
+    const cleanMotion = createLinearMotion(
+      "pin1",
+      { x: 0, y: 50 },
+      { x: 100, y: 50 },
+      1000,
+      50,
+    );
     const noisyMotion = addNoise(cleanMotion, 10); // +/- 10px noise
 
     const smoothed = smoothMotion(noisyMotion, 80);
@@ -127,8 +151,8 @@ describe('smoothMotion', () => {
     expect(smoothedDeviation).toBeLessThan(noisyDeviation);
   });
 
-  it('handles short motion gracefully', () => {
-    const motion = createTestMotion('pin1', [
+  it("handles short motion gracefully", () => {
+    const motion = createTestMotion("pin1", [
       { time: 0, x: 10, y: 20 },
       { time: 100, x: 30, y: 40 },
     ]);
@@ -137,16 +161,16 @@ describe('smoothMotion', () => {
     expect(smoothed.samples.length).toBe(2);
   });
 
-  it('handles single sample gracefully', () => {
-    const motion = createTestMotion('pin1', [{ time: 0, x: 10, y: 20 }]);
+  it("handles single sample gracefully", () => {
+    const motion = createTestMotion("pin1", [{ time: 0, x: 10, y: 20 }]);
     const smoothed = smoothMotion(motion, 50);
     expect(smoothed.samples.length).toBe(1);
   });
 
-  it('higher smoothing produces smoother result', () => {
+  it("higher smoothing produces smoother result", () => {
     const noisyMotion = addNoise(
-      createLinearMotion('pin1', { x: 0, y: 50 }, { x: 100, y: 50 }, 1000, 100),
-      15
+      createLinearMotion("pin1", { x: 0, y: 50 }, { x: 100, y: 50 }, 1000, 100),
+      15,
     );
 
     const lowSmoothed = smoothMotion(noisyMotion, 20);
@@ -154,8 +178,12 @@ describe('smoothMotion', () => {
 
     // Calculate variance of y positions
     const calcVariance = (motion: RecordedMotion) => {
-      const mean = motion.samples.reduce((s, m) => s + m.y, 0) / motion.samples.length;
-      return motion.samples.reduce((s, m) => s + (m.y - mean) ** 2, 0) / motion.samples.length;
+      const mean =
+        motion.samples.reduce((s, m) => s + m.y, 0) / motion.samples.length;
+      return (
+        motion.samples.reduce((s, m) => s + (m.y - mean) ** 2, 0) /
+        motion.samples.length
+      );
     };
 
     const lowVariance = calcVariance(lowSmoothed);
@@ -166,9 +194,9 @@ describe('smoothMotion', () => {
   });
 });
 
-describe('smoothMotionMovingAverage', () => {
-  it('applies moving average correctly', () => {
-    const motion = createTestMotion('pin1', [
+describe("smoothMotionMovingAverage", () => {
+  it("applies moving average correctly", () => {
+    const motion = createTestMotion("pin1", [
       { time: 0, x: 0, y: 0 },
       { time: 100, x: 10, y: 10 },
       { time: 200, x: 20, y: 20 },
@@ -184,9 +212,15 @@ describe('smoothMotionMovingAverage', () => {
   });
 });
 
-describe('convertMotionToKeyframes', () => {
-  it('converts motion to keyframes at correct frames', () => {
-    const motion = createLinearMotion('pin1', { x: 0, y: 0 }, { x: 100, y: 100 }, 1000, 10);
+describe("convertMotionToKeyframes", () => {
+  it("converts motion to keyframes at correct frames", () => {
+    const motion = createLinearMotion(
+      "pin1",
+      { x: 0, y: 0 },
+      { x: 100, y: 100 },
+      1000,
+      10,
+    );
     const keyframes = convertMotionToKeyframes(motion, 30, 0);
 
     // 1000ms at 30fps = 30 frames + 1 (start)
@@ -203,8 +237,14 @@ describe('convertMotionToKeyframes', () => {
     expect(keyframes[30].value.y).toBeCloseTo(100, 1);
   });
 
-  it('respects startFrame parameter', () => {
-    const motion = createLinearMotion('pin1', { x: 0, y: 0 }, { x: 100, y: 100 }, 500, 5);
+  it("respects startFrame parameter", () => {
+    const motion = createLinearMotion(
+      "pin1",
+      { x: 0, y: 0 },
+      { x: 100, y: 100 },
+      500,
+      5,
+    );
     const keyframes = convertMotionToKeyframes(motion, 30, 100);
 
     // Should start at frame 100
@@ -212,9 +252,9 @@ describe('convertMotionToKeyframes', () => {
     expect(keyframes[keyframes.length - 1].frame).toBeGreaterThan(100);
   });
 
-  it('applies recording speed correctly - half speed', () => {
+  it("applies recording speed correctly - half speed", () => {
     const motion: RecordedMotion = {
-      pinId: 'pin1',
+      pinId: "pin1",
       samples: [
         { time: 0, x: 0, y: 0 },
         { time: 1000, x: 100, y: 100 },
@@ -229,9 +269,9 @@ describe('convertMotionToKeyframes', () => {
     expect(keyframes[keyframes.length - 1].frame).toBe(60);
   });
 
-  it('applies recording speed correctly - double speed', () => {
+  it("applies recording speed correctly - double speed", () => {
     const motion: RecordedMotion = {
-      pinId: 'pin1',
+      pinId: "pin1",
       samples: [
         { time: 0, x: 0, y: 0 },
         { time: 1000, x: 100, y: 100 },
@@ -246,41 +286,53 @@ describe('convertMotionToKeyframes', () => {
     expect(keyframes[keyframes.length - 1].frame).toBe(15);
   });
 
-  it('creates valid keyframe structure', () => {
-    const motion = createLinearMotion('testPin', { x: 50, y: 50 }, { x: 150, y: 150 }, 500, 5);
+  it("creates valid keyframe structure", () => {
+    const motion = createLinearMotion(
+      "testPin",
+      { x: 50, y: 50 },
+      { x: 150, y: 150 },
+      500,
+      5,
+    );
     const keyframes = convertMotionToKeyframes(motion, 24, 10);
 
     for (const kf of keyframes) {
       expect(kf.id).toBeDefined();
-      expect(typeof kf.frame).toBe('number');
-      expect(typeof kf.value.x).toBe('number');
-      expect(typeof kf.value.y).toBe('number');
-      expect(kf.interpolation).toBe('linear');
+      expect(typeof kf.frame).toBe("number");
+      expect(typeof kf.value.x).toBe("number");
+      expect(typeof kf.value.y).toBe("number");
+      expect(kf.interpolation).toBe("linear");
       expect(kf.inHandle).toBeDefined();
       expect(kf.outHandle).toBeDefined();
-      expect(kf.controlMode).toBe('smooth');
+      expect(kf.controlMode).toBe("smooth");
     }
   });
 
-  it('handles empty motion gracefully', () => {
-    const motion = createTestMotion('pin1', []);
+  it("handles empty motion gracefully", () => {
+    const motion = createTestMotion("pin1", []);
     const keyframes = convertMotionToKeyframes(motion, 30, 0);
     expect(keyframes.length).toBe(0);
   });
 
-  it('handles single sample motion', () => {
-    const motion = createTestMotion('pin1', [{ time: 0, x: 50, y: 50 }]);
+  it("handles single sample motion", () => {
+    const motion = createTestMotion("pin1", [{ time: 0, x: 50, y: 50 }]);
     const keyframes = convertMotionToKeyframes(motion, 30, 0);
     expect(keyframes.length).toBe(1);
     expect(keyframes[0].value.x).toBe(50);
   });
 });
 
-describe('simplifyKeyframes (Douglas-Peucker)', () => {
-  it('reduces keyframe count for near-linear motion', () => {
+describe("simplifyKeyframes (Douglas-Peucker)", () => {
+  it("reduces keyframe count for near-linear motion", () => {
     // Due to interpolation at frame boundaries, keyframes may have tiny deviations
     // Even "linear" motion may not be perfectly colinear
-    const motion = createLinearMotion('pin1', { x: 0, y: 0 }, { x: 100, y: 100 }, 1000, 10);
+    const motion = createLinearMotion(
+      "pin1",
+      { x: 0, y: 0 },
+      { x: 100, y: 100 },
+      1000,
+      10,
+    );
     const keyframes = convertMotionToKeyframes(motion, 30, 0);
 
     // With tolerance=1, should significantly reduce linear motion
@@ -291,12 +343,20 @@ describe('simplifyKeyframes (Douglas-Peucker)', () => {
 
     // First and last should be preserved
     expect(simplified[0].frame).toBe(keyframes[0].frame);
-    expect(simplified[simplified.length - 1].frame).toBe(keyframes[keyframes.length - 1].frame);
+    expect(simplified[simplified.length - 1].frame).toBe(
+      keyframes[keyframes.length - 1].frame,
+    );
   });
 
-  it('simplifies linear motion to few keyframes with high tolerance', () => {
+  it("simplifies linear motion to few keyframes with high tolerance", () => {
     // Create linear motion
-    const motion = createLinearMotion('pin1', { x: 0, y: 0 }, { x: 100, y: 100 }, 1000, 50);
+    const motion = createLinearMotion(
+      "pin1",
+      { x: 0, y: 0 },
+      { x: 100, y: 100 },
+      1000,
+      50,
+    );
     const keyframes = convertMotionToKeyframes(motion, 30, 0);
 
     // With high tolerance, should simplify to very few keyframes
@@ -305,14 +365,16 @@ describe('simplifyKeyframes (Douglas-Peucker)', () => {
     // Should be significantly reduced (2-4 keyframes for near-linear motion)
     expect(simplified.length).toBeLessThanOrEqual(4);
     expect(simplified[0].frame).toBe(keyframes[0].frame);
-    expect(simplified[simplified.length - 1].frame).toBe(keyframes[keyframes.length - 1].frame);
+    expect(simplified[simplified.length - 1].frame).toBe(
+      keyframes[keyframes.length - 1].frame,
+    );
   });
 
-  it('preserves curve points in non-linear motion', () => {
+  it("preserves curve points in non-linear motion", () => {
     // Create motion with a sharp turn
-    const motion = createTestMotion('pin1', [
+    const motion = createTestMotion("pin1", [
       { time: 0, x: 0, y: 0 },
-      { time: 500, x: 50, y: 0 },   // Moving right
+      { time: 500, x: 50, y: 0 }, // Moving right
       { time: 1000, x: 50, y: 50 }, // Sharp turn down
     ]);
 
@@ -323,12 +385,14 @@ describe('simplifyKeyframes (Douglas-Peucker)', () => {
     expect(simplified.length).toBeGreaterThan(2);
 
     // The turn around frame 15 (500ms at 30fps) should be preserved
-    const turnFrames = simplified.filter(kf => kf.frame >= 10 && kf.frame <= 20);
+    const turnFrames = simplified.filter(
+      (kf) => kf.frame >= 10 && kf.frame <= 20,
+    );
     expect(turnFrames.length).toBeGreaterThan(0);
   });
 
-  it('handles circular motion preserving shape', () => {
-    const motion = createCircularMotion('pin1', { x: 50, y: 50 }, 30, 1000, 50);
+  it("handles circular motion preserving shape", () => {
+    const motion = createCircularMotion("pin1", { x: 50, y: 50 }, 30, 1000, 50);
     const keyframes = convertMotionToKeyframes(motion, 30, 0);
 
     const simplified = simplifyKeyframes(keyframes, 2);
@@ -338,8 +402,8 @@ describe('simplifyKeyframes (Douglas-Peucker)', () => {
     expect(simplified.length).toBeLessThan(keyframes.length);
   });
 
-  it('handles two keyframes gracefully', () => {
-    const motion = createTestMotion('pin1', [
+  it("handles two keyframes gracefully", () => {
+    const motion = createTestMotion("pin1", [
       { time: 0, x: 0, y: 0 },
       { time: 100, x: 100, y: 100 },
     ]);
@@ -353,12 +417,12 @@ describe('simplifyKeyframes (Douglas-Peucker)', () => {
   });
 });
 
-describe('removeRedundantKeyframes', () => {
-  it('removes stationary keyframes', () => {
-    const motion = createTestMotion('pin1', [
+describe("removeRedundantKeyframes", () => {
+  it("removes stationary keyframes", () => {
+    const motion = createTestMotion("pin1", [
       { time: 0, x: 50, y: 50 },
-      { time: 100, x: 50, y: 50 },  // Same position
-      { time: 200, x: 50, y: 50 },  // Same position
+      { time: 100, x: 50, y: 50 }, // Same position
+      { time: 200, x: 50, y: 50 }, // Same position
       { time: 300, x: 100, y: 100 }, // Moved!
     ]);
     const keyframes = convertMotionToKeyframes(motion, 30, 0);
@@ -370,11 +434,19 @@ describe('removeRedundantKeyframes', () => {
 
     // First and last should be preserved
     expect(simplified[0].frame).toBe(keyframes[0].frame);
-    expect(simplified[simplified.length - 1].frame).toBe(keyframes[keyframes.length - 1].frame);
+    expect(simplified[simplified.length - 1].frame).toBe(
+      keyframes[keyframes.length - 1].frame,
+    );
   });
 
-  it('keeps frames with significant movement', () => {
-    const motion = createLinearMotion('pin1', { x: 0, y: 0 }, { x: 100, y: 100 }, 1000, 10);
+  it("keeps frames with significant movement", () => {
+    const motion = createLinearMotion(
+      "pin1",
+      { x: 0, y: 0 },
+      { x: 100, y: 100 },
+      1000,
+      10,
+    );
     const keyframes = convertMotionToKeyframes(motion, 30, 0);
 
     const simplified = removeRedundantKeyframes(keyframes, 1);
@@ -384,13 +456,13 @@ describe('removeRedundantKeyframes', () => {
   });
 });
 
-describe('MotionRecorder', () => {
+describe("MotionRecorder", () => {
   beforeEach(() => {
     vi.useFakeTimers();
   });
 
-  it('records samples during session', () => {
-    const recorder = new MotionRecorder('pin1', { minSampleInterval: 0 });
+  it("records samples during session", () => {
+    const recorder = new MotionRecorder("pin1", { minSampleInterval: 0 });
 
     recorder.start(0, 0);
     expect(recorder.recording).toBe(true);
@@ -403,15 +475,15 @@ describe('MotionRecorder', () => {
 
     const motion = recorder.stop();
 
-    expect(motion.pinId).toBe('pin1');
+    expect(motion.pinId).toBe("pin1");
     expect(motion.samples.length).toBe(3); // Initial + 2 added
     expect(motion.samples[0].x).toBe(0);
     expect(motion.samples[1].x).toBe(10);
     expect(motion.samples[2].x).toBe(20);
   });
 
-  it('respects minSampleInterval', () => {
-    const recorder = new MotionRecorder('pin1', { minSampleInterval: 50 });
+  it("respects minSampleInterval", () => {
+    const recorder = new MotionRecorder("pin1", { minSampleInterval: 50 });
 
     recorder.start(0, 0);
 
@@ -435,16 +507,16 @@ describe('MotionRecorder', () => {
     expect(motion.samples[1].x).toBe(4);
   });
 
-  it('stores recording speed', () => {
-    const recorder = new MotionRecorder('pin1', { speed: 0.5 });
+  it("stores recording speed", () => {
+    const recorder = new MotionRecorder("pin1", { speed: 0.5 });
     recorder.start(0, 0);
     const motion = recorder.stop();
 
     expect(motion.recordingSpeed).toBe(0.5);
   });
 
-  it('tracks duration correctly', () => {
-    const recorder = new MotionRecorder('pin1', { minSampleInterval: 0 });
+  it("tracks duration correctly", () => {
+    const recorder = new MotionRecorder("pin1", { minSampleInterval: 0 });
 
     recorder.start(0, 0);
     vi.advanceTimersByTime(500);
@@ -455,8 +527,8 @@ describe('MotionRecorder', () => {
     expect(recorder.duration).toBeCloseTo(1000, -1);
   });
 
-  it('ignores samples after stop', () => {
-    const recorder = new MotionRecorder('pin1', { minSampleInterval: 0 });
+  it("ignores samples after stop", () => {
+    const recorder = new MotionRecorder("pin1", { minSampleInterval: 0 });
 
     recorder.start(0, 0);
     recorder.addSample(10, 10);
@@ -469,10 +541,16 @@ describe('MotionRecorder', () => {
   });
 });
 
-describe('processRecordedMotion (full pipeline)', () => {
-  it('produces simplified keyframes from noisy input', () => {
+describe("processRecordedMotion (full pipeline)", () => {
+  it("produces simplified keyframes from noisy input", () => {
     // Create noisy circular motion
-    const cleanMotion = createCircularMotion('pin1', { x: 100, y: 100 }, 50, 2000, 100);
+    const cleanMotion = createCircularMotion(
+      "pin1",
+      { x: 100, y: 100 },
+      50,
+      2000,
+      100,
+    );
     const noisyMotion = addNoise(cleanMotion, 5);
 
     const keyframes = processRecordedMotion(noisyMotion, 30, 0, 50, 3);
@@ -486,9 +564,9 @@ describe('processRecordedMotion (full pipeline)', () => {
   });
 });
 
-describe('getMotionBounds', () => {
-  it('calculates correct bounds', () => {
-    const motion = createTestMotion('pin1', [
+describe("getMotionBounds", () => {
+  it("calculates correct bounds", () => {
+    const motion = createTestMotion("pin1", [
       { time: 0, x: 10, y: 20 },
       { time: 100, x: 50, y: 60 },
       { time: 200, x: 30, y: 40 },
@@ -504,8 +582,8 @@ describe('getMotionBounds', () => {
     expect(bounds.height).toBe(40);
   });
 
-  it('handles empty motion', () => {
-    const motion = createTestMotion('pin1', []);
+  it("handles empty motion", () => {
+    const motion = createTestMotion("pin1", []);
     const bounds = getMotionBounds(motion);
 
     expect(bounds.width).toBe(0);
@@ -513,33 +591,51 @@ describe('getMotionBounds', () => {
   });
 });
 
-describe('getMotionPathLength', () => {
-  it('calculates correct path length for straight line', () => {
-    const motion = createLinearMotion('pin1', { x: 0, y: 0 }, { x: 100, y: 0 }, 1000, 10);
+describe("getMotionPathLength", () => {
+  it("calculates correct path length for straight line", () => {
+    const motion = createLinearMotion(
+      "pin1",
+      { x: 0, y: 0 },
+      { x: 100, y: 0 },
+      1000,
+      10,
+    );
     const length = getMotionPathLength(motion);
 
     expect(length).toBeCloseTo(100, 0);
   });
 
-  it('calculates correct path length for diagonal', () => {
-    const motion = createLinearMotion('pin1', { x: 0, y: 0 }, { x: 30, y: 40 }, 1000, 10);
+  it("calculates correct path length for diagonal", () => {
+    const motion = createLinearMotion(
+      "pin1",
+      { x: 0, y: 0 },
+      { x: 30, y: 40 },
+      1000,
+      10,
+    );
     const length = getMotionPathLength(motion);
 
     expect(length).toBeCloseTo(50, 0); // 3-4-5 triangle
   });
 });
 
-describe('getMotionAverageSpeed', () => {
-  it('calculates correct average speed', () => {
+describe("getMotionAverageSpeed", () => {
+  it("calculates correct average speed", () => {
     // 100 pixels over 1000ms = 100 pixels/second
-    const motion = createLinearMotion('pin1', { x: 0, y: 0 }, { x: 100, y: 0 }, 1000, 10);
+    const motion = createLinearMotion(
+      "pin1",
+      { x: 0, y: 0 },
+      { x: 100, y: 0 },
+      1000,
+      10,
+    );
     const speed = getMotionAverageSpeed(motion);
 
     expect(speed).toBeCloseTo(100, 0);
   });
 
-  it('handles empty motion', () => {
-    const motion = createTestMotion('pin1', []);
+  it("handles empty motion", () => {
+    const motion = createTestMotion("pin1", []);
     const speed = getMotionAverageSpeed(motion);
     expect(speed).toBe(0);
   });

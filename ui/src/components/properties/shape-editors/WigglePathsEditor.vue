@@ -40,36 +40,42 @@
 </template>
 
 <script setup lang="ts">
-import type { WigglePathsOperator, WigglePointType } from '@/types/shapes';
-import { ScrubableNumber } from '@/components/controls';
-import KeyframeToggle from '../KeyframeToggle.vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import { createKeyframe } from '@/types/animation';
+import { useCompositorStore } from "@/stores/compositorStore";
+import { createKeyframe } from "@/types/animation";
+import type { WigglePathsOperator } from "@/types/shapes";
 
 const props = defineProps<{ operator: WigglePathsOperator; layerId: string }>();
-const emit = defineEmits(['update']);
+const emit = defineEmits(["update"]);
 const store = useCompositorStore();
 
-function updateNumber(prop: 'size' | 'detail' | 'correlation' | 'temporalPhase' | 'spatialPhase', value: number) {
+function _updateNumber(
+  prop: "size" | "detail" | "correlation" | "temporalPhase" | "spatialPhase",
+  value: number,
+) {
   const updated = { ...props.operator };
   updated[prop] = { ...updated[prop], value };
-  emit('update', updated);
+  emit("update", updated);
 }
 
-function updateMeta(key: string, value: any) {
+function _updateMeta(key: string, value: any) {
   const updated = { ...props.operator, [key]: value };
-  emit('update', updated);
+  emit("update", updated);
 }
 
-function toggleKeyframe(prop: 'size' | 'detail' | 'correlation' | 'temporalPhase' | 'spatialPhase') {
+function _toggleKeyframe(
+  prop: "size" | "detail" | "correlation" | "temporalPhase" | "spatialPhase",
+) {
   const updated = { ...props.operator };
   const animProp = updated[prop];
   const frame = store.currentFrame;
-  const hasKf = animProp.keyframes.some(k => k.frame === frame);
-  if (hasKf) { animProp.keyframes = animProp.keyframes.filter(k => k.frame !== frame); }
-  else { animProp.keyframes.push(createKeyframe(frame, animProp.value, 'linear')); }
+  const hasKf = animProp.keyframes.some((k) => k.frame === frame);
+  if (hasKf) {
+    animProp.keyframes = animProp.keyframes.filter((k) => k.frame !== frame);
+  } else {
+    animProp.keyframes.push(createKeyframe(frame, animProp.value, "linear"));
+  }
   animProp.animated = animProp.keyframes.length > 0;
-  emit('update', updated);
+  emit("update", updated);
 }
 </script>
 

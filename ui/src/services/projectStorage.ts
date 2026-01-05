@@ -5,14 +5,14 @@
  * Projects are stored as JSON files in the ComfyUI projects directory.
  */
 
-import type { LatticeProject } from '@/types/project';
-import { createLogger } from '@/utils/logger';
-import { validateProjectStructure, ValidationError } from '@/utils/security';
+import type { LatticeProject } from "@/types/project";
+import { createLogger } from "@/utils/logger";
+import { ValidationError, validateProjectStructure } from "@/utils/security";
 
-const logger = createLogger('ProjectStorage');
+const logger = createLogger("ProjectStorage");
 
 // Base URL for compositor API endpoints
-const API_BASE = '/lattice/compositor';
+const API_BASE = "/lattice/compositor";
 
 /**
  * Validate project ID format for security
@@ -20,7 +20,8 @@ const API_BASE = '/lattice/compositor';
  */
 function isValidProjectId(projectId: string): boolean {
   // Allow UUIDs (with or without hyphens)
-  const uuidPattern = /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i;
+  const uuidPattern =
+    /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i;
   // Allow alphanumeric with underscores (typical generated IDs like "project_1702345678901")
   const alphanumericPattern = /^[a-zA-Z0-9_-]{1,128}$/;
 
@@ -43,7 +44,7 @@ export interface ProjectInfo {
  * Save response from the backend
  */
 export interface SaveResult {
-  status: 'success' | 'error';
+  status: "success" | "error";
   project_id?: string;
   path?: string;
   message?: string;
@@ -53,7 +54,7 @@ export interface SaveResult {
  * Load response from the backend
  */
 export interface LoadResult {
-  status: 'success' | 'error';
+  status: "success" | "error";
   project?: LatticeProject;
   project_id?: string;
   message?: string;
@@ -63,7 +64,7 @@ export interface LoadResult {
  * List response from the backend
  */
 export interface ListResult {
-  status: 'success' | 'error';
+  status: "success" | "error";
   projects?: ProjectInfo[];
   message?: string;
 }
@@ -77,15 +78,15 @@ export interface ListResult {
  */
 export async function saveProject(
   project: LatticeProject,
-  projectId?: string
+  projectId?: string,
 ): Promise<SaveResult> {
   try {
-    logger.info(`Saving project${projectId ? ` (${projectId})` : ''}...`);
+    logger.info(`Saving project${projectId ? ` (${projectId})` : ""}...`);
 
     const response = await fetch(`${API_BASE}/save_project`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         project,
@@ -95,7 +96,7 @@ export async function saveProject(
 
     const result = await response.json();
 
-    if (result.status === 'success') {
+    if (result.status === "success") {
       logger.info(`Project saved: ${result.project_id}`);
     } else {
       logger.error(`Failed to save project: ${result.message}`);
@@ -103,10 +104,10 @@ export async function saveProject(
 
     return result;
   } catch (error) {
-    logger.error('Error saving project:', error);
+    logger.error("Error saving project:", error);
     return {
-      status: 'error',
-      message: error instanceof Error ? error.message : 'Unknown error',
+      status: "error",
+      message: error instanceof Error ? error.message : "Unknown error",
     };
   }
 }
@@ -122,18 +123,20 @@ export async function loadProject(projectId: string): Promise<LoadResult> {
   if (!isValidProjectId(projectId)) {
     logger.error(`Invalid project ID format: ${projectId}`);
     return {
-      status: 'error',
-      message: 'Invalid project ID format',
+      status: "error",
+      message: "Invalid project ID format",
     };
   }
 
   try {
     logger.info(`Loading project: ${projectId}...`);
 
-    const response = await fetch(`${API_BASE}/load_project/${encodeURIComponent(projectId)}`);
+    const response = await fetch(
+      `${API_BASE}/load_project/${encodeURIComponent(projectId)}`,
+    );
     const result = await response.json();
 
-    if (result.status === 'success') {
+    if (result.status === "success") {
       logger.info(`Project loaded: ${projectId}`);
     } else {
       logger.error(`Failed to load project: ${result.message}`);
@@ -141,10 +144,10 @@ export async function loadProject(projectId: string): Promise<LoadResult> {
 
     return result;
   } catch (error) {
-    logger.error('Error loading project:', error);
+    logger.error("Error loading project:", error);
     return {
-      status: 'error',
-      message: error instanceof Error ? error.message : 'Unknown error',
+      status: "error",
+      message: error instanceof Error ? error.message : "Unknown error",
     };
   }
 }
@@ -156,12 +159,12 @@ export async function loadProject(projectId: string): Promise<LoadResult> {
  */
 export async function listProjects(): Promise<ListResult> {
   try {
-    logger.info('Listing projects...');
+    logger.info("Listing projects...");
 
     const response = await fetch(`${API_BASE}/list_projects`);
     const result = await response.json();
 
-    if (result.status === 'success') {
+    if (result.status === "success") {
       logger.info(`Found ${result.projects?.length || 0} projects`);
     } else {
       logger.error(`Failed to list projects: ${result.message}`);
@@ -169,10 +172,10 @@ export async function listProjects(): Promise<ListResult> {
 
     return result;
   } catch (error) {
-    logger.error('Error listing projects:', error);
+    logger.error("Error listing projects:", error);
     return {
-      status: 'error',
-      message: error instanceof Error ? error.message : 'Unknown error',
+      status: "error",
+      message: error instanceof Error ? error.message : "Unknown error",
     };
   }
 }
@@ -183,16 +186,21 @@ export async function listProjects(): Promise<ListResult> {
  * @param projectId - The project ID to delete
  * @returns Delete result
  */
-export async function deleteProject(projectId: string): Promise<{ status: string; message?: string }> {
+export async function deleteProject(
+  projectId: string,
+): Promise<{ status: string; message?: string }> {
   try {
     logger.info(`Deleting project: ${projectId}...`);
 
-    const response = await fetch(`${API_BASE}/delete_project/${encodeURIComponent(projectId)}`, {
-      method: 'DELETE',
-    });
+    const response = await fetch(
+      `${API_BASE}/delete_project/${encodeURIComponent(projectId)}`,
+      {
+        method: "DELETE",
+      },
+    );
     const result = await response.json();
 
-    if (result.status === 'success') {
+    if (result.status === "success") {
       logger.info(`Project deleted: ${projectId}`);
     } else {
       logger.error(`Failed to delete project: ${result.message}`);
@@ -200,10 +208,10 @@ export async function deleteProject(projectId: string): Promise<{ status: string
 
     return result;
   } catch (error) {
-    logger.error('Error deleting project:', error);
+    logger.error("Error deleting project:", error);
     return {
-      status: 'error',
-      message: error instanceof Error ? error.message : 'Unknown error',
+      status: "error",
+      message: error instanceof Error ? error.message : "Unknown error",
     };
   }
 }
@@ -216,7 +224,7 @@ export async function deleteProject(projectId: string): Promise<{ status: string
 export async function isApiAvailable(): Promise<boolean> {
   try {
     const response = await fetch(`${API_BASE}/list_projects`, {
-      method: 'GET',
+      method: "GET",
     });
     return response.ok;
   } catch {
@@ -230,16 +238,19 @@ export async function isApiAvailable(): Promise<boolean> {
  * @param project - The project to export
  * @param filename - Optional filename (without extension)
  */
-export function exportProjectAsFile(project: LatticeProject, filename?: string): void {
-  const name = filename || project.meta?.name || 'lattice-project';
-  const safeName = name.replace(/[^a-zA-Z0-9-_]/g, '_');
+export function exportProjectAsFile(
+  project: LatticeProject,
+  filename?: string,
+): void {
+  const name = filename || project.meta?.name || "lattice-project";
+  const safeName = name.replace(/[^a-zA-Z0-9-_]/g, "_");
 
   const blob = new Blob([JSON.stringify(project, null, 2)], {
-    type: 'application/json',
+    type: "application/json",
   });
 
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
+  const a = document.createElement("a");
   a.href = url;
   a.download = `${safeName}.lattice.json`;
   document.body.appendChild(a);
@@ -256,7 +267,9 @@ export function exportProjectAsFile(project: LatticeProject, filename?: string):
  * @param file - The file to import
  * @returns The imported project
  */
-export async function importProjectFromFile(file: File): Promise<LatticeProject> {
+export async function importProjectFromFile(
+  file: File,
+): Promise<LatticeProject> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
 
@@ -274,13 +287,13 @@ export async function importProjectFromFile(file: File): Promise<LatticeProject>
         if (error instanceof ValidationError) {
           reject(new Error(`Invalid project file: ${error.message}`));
         } else {
-          reject(new Error('Invalid project file: Failed to parse JSON'));
+          reject(new Error("Invalid project file: Failed to parse JSON"));
         }
       }
     };
 
     reader.onerror = () => {
-      reject(new Error('Failed to read file'));
+      reject(new Error("Failed to read file"));
     };
 
     reader.readAsText(file);

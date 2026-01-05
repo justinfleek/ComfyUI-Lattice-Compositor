@@ -3,13 +3,22 @@
  * Generates geometry for camera wireframes, frustums, and guides
  */
 
-import type { Camera3D, ViewType, CustomViewState } from '../types/camera';
+import type { Camera3D, CustomViewState, ViewType } from "../types/camera";
 import {
-  vec3, subVec3, addVec3, scaleVec3, normalizeVec3, crossVec3,
-  lookAtMat4, perspectiveMat4, orthographicMat4, invertMat4,
-  transformPoint, focalLengthToFOV,
-  type Vec3, type Mat4
-} from './math3d';
+  addVec3,
+  crossVec3,
+  focalLengthToFOV,
+  lookAtMat4,
+  type Mat4,
+  normalizeVec3,
+  orthographicMat4,
+  perspectiveMat4,
+  scaleVec3,
+  subVec3,
+  transformPoint,
+  type Vec3,
+  vec3,
+} from "./math3d";
 
 export interface LineSegment {
   start: Vec3;
@@ -18,12 +27,12 @@ export interface LineSegment {
 }
 
 export interface CameraVisualization {
-  body: LineSegment[];           // Camera body wireframe
-  frustum: LineSegment[];        // View frustum cone
-  compositionBounds: LineSegment[];  // Comp as 3D rectangle
-  poiLine: LineSegment | null;   // Point of Interest connection
-  focalPlane: LineSegment[];     // DOF focus plane indicator
-  motionPath: Vec3[];            // Camera motion path points
+  body: LineSegment[]; // Camera body wireframe
+  frustum: LineSegment[]; // View frustum cone
+  compositionBounds: LineSegment[]; // Comp as 3D rectangle
+  poiLine: LineSegment | null; // Point of Interest connection
+  focalPlane: LineSegment[]; // DOF focus plane indicator
+  motionPath: Vec3[]; // Camera motion path points
 }
 
 export interface ViewMatrices {
@@ -35,37 +44,37 @@ export interface ViewMatrices {
 // Camera body dimensions (in world units)
 const CAMERA_BODY_SIZE = 40;
 const CAMERA_LENS_LENGTH = 30;
-const CAMERA_LENS_RADIUS = 15;
+const _CAMERA_LENS_RADIUS = 15;
 
 /**
  * Generate camera body wireframe geometry
  */
 export function generateCameraBody(camera: Camera3D): LineSegment[] {
   const lines: LineSegment[] = [];
-  const color = '#ffcc00';  // Yellow for camera
+  const color = "#ffcc00"; // Yellow for camera
 
   // Camera is at position, looking towards POI (two-node) or along orientation (one-node)
   const pos = camera.position;
 
   // Get camera forward direction
   let forward: Vec3;
-  if (camera.type === 'two-node') {
+  if (camera.type === "two-node") {
     forward = normalizeVec3(subVec3(camera.pointOfInterest, pos));
   } else {
     // One-node: use orientation to determine forward
-    const radX = camera.orientation.x * Math.PI / 180;
-    const radY = camera.orientation.y * Math.PI / 180;
+    const radX = (camera.orientation.x * Math.PI) / 180;
+    const radY = (camera.orientation.y * Math.PI) / 180;
     forward = vec3(
       Math.sin(radY) * Math.cos(radX),
       -Math.sin(radX),
-      Math.cos(radY) * Math.cos(radX)
+      Math.cos(radY) * Math.cos(radX),
     );
   }
 
   // Get right and up vectors
-  const worldUp = vec3(0, -1, 0);  // Y-down in AE coordinate system
+  const worldUp = vec3(0, -1, 0); // Y-down in AE coordinate system
   let right = normalizeVec3(crossVec3(forward, worldUp));
-  if (isNaN(right.x)) {
+  if (Number.isNaN(right.x)) {
     right = vec3(1, 0, 0);
   }
   const up = normalizeVec3(crossVec3(right, forward));
@@ -80,10 +89,12 @@ export function generateCameraBody(camera: Camera3D): LineSegment[] {
     const zOffset = z === 0 ? pos : bodyBack;
     for (let x = -1; x <= 1; x += 2) {
       for (let y = -1; y <= 1; y += 2) {
-        corners.push(addVec3(
-          addVec3(zOffset, scaleVec3(right, x * halfSize)),
-          scaleVec3(up, y * halfSize)
-        ));
+        corners.push(
+          addVec3(
+            addVec3(zOffset, scaleVec3(right, x * halfSize)),
+            scaleVec3(up, y * halfSize),
+          ),
+        );
       }
     }
   }
@@ -116,11 +127,11 @@ export function generateCameraBody(camera: Camera3D): LineSegment[] {
 
     const p1 = addVec3(
       addVec3(pos, scaleVec3(right, Math.cos(angle) * halfSize * 0.5)),
-      scaleVec3(up, Math.sin(angle) * halfSize * 0.5)
+      scaleVec3(up, Math.sin(angle) * halfSize * 0.5),
     );
     const p2 = addVec3(
       addVec3(pos, scaleVec3(right, Math.cos(nextAngle) * halfSize * 0.5)),
-      scaleVec3(up, Math.sin(nextAngle) * halfSize * 0.5)
+      scaleVec3(up, Math.sin(nextAngle) * halfSize * 0.5),
     );
 
     // Lens ring at camera position
@@ -140,34 +151,34 @@ export function generateFrustum(
   camera: Camera3D,
   compWidth: number,
   compHeight: number,
-  maxDistance: number = 2000
+  maxDistance: number = 2000,
 ): LineSegment[] {
   const lines: LineSegment[] = [];
-  const color = '#7c9cff';  // Blue for frustum
+  const color = "#7c9cff"; // Blue for frustum
 
   const fovY = focalLengthToFOV(camera.focalLength, camera.filmSize);
   const aspect = compWidth / compHeight;
-  const fovX = fovY * aspect;
+  const _fovX = fovY * aspect;
 
   const pos = camera.position;
 
   // Get camera basis vectors
   let forward: Vec3;
-  if (camera.type === 'two-node') {
+  if (camera.type === "two-node") {
     forward = normalizeVec3(subVec3(camera.pointOfInterest, pos));
   } else {
-    const radX = camera.orientation.x * Math.PI / 180;
-    const radY = camera.orientation.y * Math.PI / 180;
+    const radX = (camera.orientation.x * Math.PI) / 180;
+    const radY = (camera.orientation.y * Math.PI) / 180;
     forward = vec3(
       Math.sin(radY) * Math.cos(radX),
       -Math.sin(radX),
-      Math.cos(radY) * Math.cos(radX)
+      Math.cos(radY) * Math.cos(radX),
     );
   }
 
   const worldUp = vec3(0, -1, 0);
   let right = normalizeVec3(crossVec3(forward, worldUp));
-  if (isNaN(right.x)) {
+  if (Number.isNaN(right.x)) {
     right = vec3(1, 0, 0);
   }
   const up = normalizeVec3(crossVec3(right, forward));
@@ -176,27 +187,51 @@ export function generateFrustum(
   const near = camera.nearClip;
   const far = Math.min(camera.farClip, maxDistance);
 
-  const nearHalfHeight = near * Math.tan(fovY * Math.PI / 360);
+  const nearHalfHeight = near * Math.tan((fovY * Math.PI) / 360);
   const nearHalfWidth = nearHalfHeight * aspect;
-  const farHalfHeight = far * Math.tan(fovY * Math.PI / 360);
+  const farHalfHeight = far * Math.tan((fovY * Math.PI) / 360);
   const farHalfWidth = farHalfHeight * aspect;
 
   // Near plane corners
   const nearCenter = addVec3(pos, scaleVec3(forward, near));
   const nearCorners = [
-    addVec3(addVec3(nearCenter, scaleVec3(right, -nearHalfWidth)), scaleVec3(up, nearHalfHeight)),
-    addVec3(addVec3(nearCenter, scaleVec3(right, nearHalfWidth)), scaleVec3(up, nearHalfHeight)),
-    addVec3(addVec3(nearCenter, scaleVec3(right, nearHalfWidth)), scaleVec3(up, -nearHalfHeight)),
-    addVec3(addVec3(nearCenter, scaleVec3(right, -nearHalfWidth)), scaleVec3(up, -nearHalfHeight)),
+    addVec3(
+      addVec3(nearCenter, scaleVec3(right, -nearHalfWidth)),
+      scaleVec3(up, nearHalfHeight),
+    ),
+    addVec3(
+      addVec3(nearCenter, scaleVec3(right, nearHalfWidth)),
+      scaleVec3(up, nearHalfHeight),
+    ),
+    addVec3(
+      addVec3(nearCenter, scaleVec3(right, nearHalfWidth)),
+      scaleVec3(up, -nearHalfHeight),
+    ),
+    addVec3(
+      addVec3(nearCenter, scaleVec3(right, -nearHalfWidth)),
+      scaleVec3(up, -nearHalfHeight),
+    ),
   ];
 
   // Far plane corners
   const farCenter = addVec3(pos, scaleVec3(forward, far));
   const farCorners = [
-    addVec3(addVec3(farCenter, scaleVec3(right, -farHalfWidth)), scaleVec3(up, farHalfHeight)),
-    addVec3(addVec3(farCenter, scaleVec3(right, farHalfWidth)), scaleVec3(up, farHalfHeight)),
-    addVec3(addVec3(farCenter, scaleVec3(right, farHalfWidth)), scaleVec3(up, -farHalfHeight)),
-    addVec3(addVec3(farCenter, scaleVec3(right, -farHalfWidth)), scaleVec3(up, -farHalfHeight)),
+    addVec3(
+      addVec3(farCenter, scaleVec3(right, -farHalfWidth)),
+      scaleVec3(up, farHalfHeight),
+    ),
+    addVec3(
+      addVec3(farCenter, scaleVec3(right, farHalfWidth)),
+      scaleVec3(up, farHalfHeight),
+    ),
+    addVec3(
+      addVec3(farCenter, scaleVec3(right, farHalfWidth)),
+      scaleVec3(up, -farHalfHeight),
+    ),
+    addVec3(
+      addVec3(farCenter, scaleVec3(right, -farHalfWidth)),
+      scaleVec3(up, -farHalfHeight),
+    ),
   ];
 
   // Draw near plane
@@ -222,9 +257,9 @@ export function generateFrustum(
  */
 export function generateCompositionBounds(
   compWidth: number,
-  compHeight: number
+  compHeight: number,
 ): LineSegment[] {
-  const color = '#00ff88';  // Green for comp bounds
+  const color = "#00ff88"; // Green for comp bounds
 
   const corners: Vec3[] = [
     vec3(0, 0, 0),
@@ -239,8 +274,8 @@ export function generateCompositionBounds(
   }
 
   // Cross lines for center reference
-  lines.push({ start: corners[0], end: corners[2], color: '#005533' });
-  lines.push({ start: corners[1], end: corners[3], color: '#005533' });
+  lines.push({ start: corners[0], end: corners[2], color: "#005533" });
+  lines.push({ start: corners[1], end: corners[3], color: "#005533" });
 
   return lines;
 }
@@ -249,14 +284,14 @@ export function generateCompositionBounds(
  * Generate point of interest connection line
  */
 export function generatePOILine(camera: Camera3D): LineSegment | null {
-  if (camera.type !== 'two-node') {
+  if (camera.type !== "two-node") {
     return null;
   }
 
   return {
     start: camera.position,
     end: camera.pointOfInterest,
-    color: '#ff6600'  // Orange for POI connection
+    color: "#ff6600", // Orange for POI connection
   };
 }
 
@@ -266,13 +301,13 @@ export function generatePOILine(camera: Camera3D): LineSegment | null {
 export function generateFocalPlane(
   camera: Camera3D,
   compWidth: number,
-  compHeight: number
+  compHeight: number,
 ): LineSegment[] {
   if (!camera.depthOfField.enabled) {
     return [];
   }
 
-  const color = '#ff00ff';  // Magenta for focal plane
+  const color = "#ff00ff"; // Magenta for focal plane
   const lines: LineSegment[] = [];
 
   const pos = camera.position;
@@ -280,21 +315,21 @@ export function generateFocalPlane(
 
   // Get camera forward direction
   let forward: Vec3;
-  if (camera.type === 'two-node') {
+  if (camera.type === "two-node") {
     forward = normalizeVec3(subVec3(camera.pointOfInterest, pos));
   } else {
-    const radX = camera.orientation.x * Math.PI / 180;
-    const radY = camera.orientation.y * Math.PI / 180;
+    const radX = (camera.orientation.x * Math.PI) / 180;
+    const radY = (camera.orientation.y * Math.PI) / 180;
     forward = vec3(
       Math.sin(radY) * Math.cos(radX),
       -Math.sin(radX),
-      Math.cos(radY) * Math.cos(radX)
+      Math.cos(radY) * Math.cos(radX),
     );
   }
 
   const worldUp = vec3(0, -1, 0);
   let right = normalizeVec3(crossVec3(forward, worldUp));
-  if (isNaN(right.x)) {
+  if (Number.isNaN(right.x)) {
     right = vec3(1, 0, 0);
   }
   const up = normalizeVec3(crossVec3(right, forward));
@@ -307,10 +342,22 @@ export function generateFocalPlane(
   const halfHeight = compHeight / 4;
 
   const corners = [
-    addVec3(addVec3(center, scaleVec3(right, -halfWidth)), scaleVec3(up, halfHeight)),
-    addVec3(addVec3(center, scaleVec3(right, halfWidth)), scaleVec3(up, halfHeight)),
-    addVec3(addVec3(center, scaleVec3(right, halfWidth)), scaleVec3(up, -halfHeight)),
-    addVec3(addVec3(center, scaleVec3(right, -halfWidth)), scaleVec3(up, -halfHeight)),
+    addVec3(
+      addVec3(center, scaleVec3(right, -halfWidth)),
+      scaleVec3(up, halfHeight),
+    ),
+    addVec3(
+      addVec3(center, scaleVec3(right, halfWidth)),
+      scaleVec3(up, halfHeight),
+    ),
+    addVec3(
+      addVec3(center, scaleVec3(right, halfWidth)),
+      scaleVec3(up, -halfHeight),
+    ),
+    addVec3(
+      addVec3(center, scaleVec3(right, -halfWidth)),
+      scaleVec3(up, -halfHeight),
+    ),
   ];
 
   for (let i = 0; i < 4; i++) {
@@ -329,15 +376,19 @@ export function generateCameraVisualization(
   compHeight: number,
   showFrustum: boolean = true,
   showBounds: boolean = true,
-  showFocalPlane: boolean = false
+  showFocalPlane: boolean = false,
 ): CameraVisualization {
   return {
     body: generateCameraBody(camera),
     frustum: showFrustum ? generateFrustum(camera, compWidth, compHeight) : [],
-    compositionBounds: showBounds ? generateCompositionBounds(compWidth, compHeight) : [],
+    compositionBounds: showBounds
+      ? generateCompositionBounds(compWidth, compHeight)
+      : [],
     poiLine: generatePOILine(camera),
-    focalPlane: showFocalPlane ? generateFocalPlane(camera, compWidth, compHeight) : [],
-    motionPath: []  // Populated separately from keyframes
+    focalPlane: showFocalPlane
+      ? generateFocalPlane(camera, compWidth, compHeight)
+      : [],
+    motionPath: [], // Populated separately from keyframes
   };
 }
 
@@ -347,23 +398,23 @@ export function generateCameraVisualization(
 export function getCameraViewMatrices(
   camera: Camera3D,
   compWidth: number,
-  compHeight: number
+  compHeight: number,
 ): ViewMatrices {
   const aspect = compWidth / compHeight;
   const fovY = focalLengthToFOV(camera.focalLength, camera.filmSize);
 
   // View matrix
   let target: Vec3;
-  if (camera.type === 'two-node') {
+  if (camera.type === "two-node") {
     target = camera.pointOfInterest;
   } else {
     // One-node: calculate target from orientation
-    const radX = camera.orientation.x * Math.PI / 180;
-    const radY = camera.orientation.y * Math.PI / 180;
+    const radX = (camera.orientation.x * Math.PI) / 180;
+    const radY = (camera.orientation.y * Math.PI) / 180;
     const forward = vec3(
       Math.sin(radY) * Math.cos(radX),
       -Math.sin(radX),
-      Math.cos(radY) * Math.cos(radX)
+      Math.cos(radY) * Math.cos(radX),
     );
     target = addVec3(camera.position, scaleVec3(forward, 1000));
   }
@@ -371,7 +422,12 @@ export function getCameraViewMatrices(
   const view = lookAtMat4(camera.position, target, vec3(0, -1, 0));
 
   // Projection matrix
-  const projection = perspectiveMat4(fovY, aspect, camera.nearClip, camera.farClip);
+  const projection = perspectiveMat4(
+    fovY,
+    aspect,
+    camera.nearClip,
+    camera.farClip,
+  );
 
   // Combined view-projection
   const viewProjection = multiplyMat4Local(projection, view);
@@ -386,83 +442,79 @@ export function getOrthoViewMatrices(
   viewType: ViewType,
   compWidth: number,
   compHeight: number,
-  customView?: CustomViewState
+  customView?: CustomViewState,
 ): ViewMatrices {
   const aspect = compWidth / compHeight;
   let view: Mat4;
-  let size = 1000;  // Orthographic view size
+  let size = 1000; // Orthographic view size
 
   const centerX = compWidth / 2;
   const centerY = compHeight / 2;
 
   switch (viewType) {
-    case 'front':
+    case "front":
       view = lookAtMat4(
         vec3(centerX, centerY, -2000),
         vec3(centerX, centerY, 0),
-        vec3(0, -1, 0)
+        vec3(0, -1, 0),
       );
       break;
-    case 'back':
+    case "back":
       view = lookAtMat4(
         vec3(centerX, centerY, 2000),
         vec3(centerX, centerY, 0),
-        vec3(0, -1, 0)
+        vec3(0, -1, 0),
       );
       break;
-    case 'left':
+    case "left":
       view = lookAtMat4(
         vec3(-2000, centerY, 0),
         vec3(centerX, centerY, 0),
-        vec3(0, -1, 0)
+        vec3(0, -1, 0),
       );
       break;
-    case 'right':
+    case "right":
       view = lookAtMat4(
         vec3(centerX + 2000, centerY, 0),
         vec3(centerX, centerY, 0),
-        vec3(0, -1, 0)
+        vec3(0, -1, 0),
       );
       break;
-    case 'top':
+    case "top":
       view = lookAtMat4(
         vec3(centerX, -2000, 0),
         vec3(centerX, centerY, 0),
-        vec3(0, 0, 1)
+        vec3(0, 0, 1),
       );
       break;
-    case 'bottom':
+    case "bottom":
       view = lookAtMat4(
         vec3(centerX, centerY + 2000, 0),
         vec3(centerX, centerY, 0),
-        vec3(0, 0, -1)
+        vec3(0, 0, -1),
       );
       break;
-    case 'custom-1':
-    case 'custom-2':
-    case 'custom-3':
+    case "custom-1":
+    case "custom-2":
+    case "custom-3":
       if (customView) {
-        const phi = customView.orbitPhi * Math.PI / 180;
-        const theta = customView.orbitTheta * Math.PI / 180;
+        const phi = (customView.orbitPhi * Math.PI) / 180;
+        const theta = (customView.orbitTheta * Math.PI) / 180;
         const dist = customView.orbitDistance;
 
         const eye = vec3(
           customView.orbitCenter.x + dist * Math.sin(phi) * Math.sin(theta),
           customView.orbitCenter.y + dist * Math.cos(phi),
-          customView.orbitCenter.z + dist * Math.sin(phi) * Math.cos(theta)
+          customView.orbitCenter.z + dist * Math.sin(phi) * Math.cos(theta),
         );
 
-        view = lookAtMat4(
-          eye,
-          customView.orbitCenter,
-          vec3(0, -1, 0)
-        );
+        view = lookAtMat4(eye, customView.orbitCenter, vec3(0, -1, 0));
         size = 1000 / customView.orthoZoom;
       } else {
         view = lookAtMat4(
           vec3(centerX, centerY, -2000),
           vec3(centerX, centerY, 0),
-          vec3(0, -1, 0)
+          vec3(0, -1, 0),
         );
       }
       break;
@@ -470,7 +522,7 @@ export function getOrthoViewMatrices(
       view = lookAtMat4(
         vec3(centerX, centerY, -2000),
         vec3(centerX, centerY, 0),
-        vec3(0, -1, 0)
+        vec3(0, -1, 0),
       );
   }
 
@@ -480,7 +532,7 @@ export function getOrthoViewMatrices(
     -size,
     size,
     1,
-    10000
+    10000,
   );
 
   const viewProjection = multiplyMat4Local(projection, view);
@@ -514,14 +566,13 @@ export function projectToScreen(
   point: Vec3,
   viewProjection: Mat4,
   screenWidth: number,
-  screenHeight: number
+  screenHeight: number,
 ): { x: number; y: number; z: number; visible: boolean } {
   const transformed = transformPoint(viewProjection, point);
   const vp = viewProjection.elements;
 
   // Check if point is behind camera
-  const w = point.x * vp[3] + point.y * vp[7] +
-            point.z * vp[11] + vp[15];
+  const w = point.x * vp[3] + point.y * vp[7] + point.z * vp[11] + vp[15];
 
   if (w <= 0) {
     return { x: 0, y: 0, z: transformed.z, visible: false };
@@ -535,7 +586,7 @@ export function projectToScreen(
     x,
     y,
     z: transformed.z / w,
-    visible: true
+    visible: true,
   };
 }
 
@@ -544,12 +595,24 @@ export function projectToScreen(
  */
 export function generate3DAxes(
   center: Vec3,
-  length: number = 100
+  length: number = 100,
 ): LineSegment[] {
   return [
-    { start: center, end: addVec3(center, vec3(length, 0, 0)), color: '#ff0000' },  // X - Red
-    { start: center, end: addVec3(center, vec3(0, length, 0)), color: '#00ff00' },  // Y - Green
-    { start: center, end: addVec3(center, vec3(0, 0, length)), color: '#0000ff' },  // Z - Blue
+    {
+      start: center,
+      end: addVec3(center, vec3(length, 0, 0)),
+      color: "#ff0000",
+    }, // X - Red
+    {
+      start: center,
+      end: addVec3(center, vec3(0, length, 0)),
+      color: "#00ff00",
+    }, // Y - Green
+    {
+      start: center,
+      end: addVec3(center, vec3(0, 0, length)),
+      color: "#0000ff",
+    }, // Z - Blue
   ];
 }
 
@@ -559,11 +622,11 @@ export function generate3DAxes(
 export function generateGrid(
   compWidth: number,
   compHeight: number,
-  spacing: number = 100
+  spacing: number = 100,
 ): LineSegment[] {
   const lines: LineSegment[] = [];
-  const color = '#333333';
-  const centerColor = '#444444';
+  const color = "#333333";
+  const centerColor = "#444444";
 
   const centerX = compWidth / 2;
   const centerY = compHeight / 2;
@@ -575,7 +638,7 @@ export function generateGrid(
     lines.push({
       start: vec3(x, -extent, 0),
       end: vec3(x, extent + compHeight, 0),
-      color: isCenter ? centerColor : color
+      color: isCenter ? centerColor : color,
     });
   }
 
@@ -585,7 +648,7 @@ export function generateGrid(
     lines.push({
       start: vec3(-extent, y, 0),
       end: vec3(extent + compWidth, y, 0),
-      color: isCenter ? centerColor : color
+      color: isCenter ? centerColor : color,
     });
   }
 

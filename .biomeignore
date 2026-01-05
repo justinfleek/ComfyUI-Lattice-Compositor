@@ -1,0 +1,10 @@
+web/**
+node_modules/**
+dist/**
+.git/**
+coverage/**
+*.min.js
+*.bundle.js
+**/lattice-*.js
+**/worker-*.js
+

@@ -10,15 +10,15 @@
  * - Effect, Exporter, and UI plugins
  */
 
-import { createLogger } from '@/utils/logger';
+import { createLogger } from "@/utils/logger";
 
-const logger = createLogger('PluginManager');
+const logger = createLogger("PluginManager");
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-export type PluginType = 'effect' | 'exporter' | 'layer' | 'ui' | 'tool';
+export type PluginType = "effect" | "exporter" | "layer" | "ui" | "tool";
 
 export interface PluginManifest {
   /** Unique plugin identifier */
@@ -44,15 +44,15 @@ export interface PluginManifest {
 }
 
 export type PluginPermission =
-  | 'read-project'
-  | 'write-project'
-  | 'read-layers'
-  | 'write-layers'
-  | 'read-assets'
-  | 'write-assets'
-  | 'network'
-  | 'clipboard'
-  | 'notifications';
+  | "read-project"
+  | "write-project"
+  | "read-layers"
+  | "write-layers"
+  | "read-assets"
+  | "write-assets"
+  | "network"
+  | "clipboard"
+  | "notifications";
 
 export interface LatticePluginAPI {
   // Read-only project access
@@ -82,7 +82,10 @@ export interface LatticePluginAPI {
   registerTool?(tool: ToolDefinition): void;
 
   // Notifications
-  showNotification(message: string, type?: 'info' | 'success' | 'warning' | 'error'): void;
+  showNotification(
+    message: string,
+    type?: "info" | "success" | "warning" | "error",
+  ): void;
 
   // Logging
   log: {
@@ -94,19 +97,19 @@ export interface LatticePluginAPI {
 }
 
 export type PluginEvent =
-  | 'frameChange'
-  | 'selectionChange'
-  | 'layerChange'
-  | 'projectLoad'
-  | 'projectSave'
-  | 'compositionChange';
+  | "frameChange"
+  | "selectionChange"
+  | "layerChange"
+  | "projectLoad"
+  | "projectSave"
+  | "compositionChange";
 
 export interface PanelDefinition {
   id: string;
   name: string;
   icon?: string;
-  component: any;  // Vue component
-  position?: 'left' | 'right' | 'bottom';
+  component: any; // Vue component
+  position?: "left" | "right" | "bottom";
 }
 
 export interface MenuItemDefinition {
@@ -114,7 +117,7 @@ export interface MenuItemDefinition {
   label: string;
   icon?: string;
   shortcut?: string;
-  menu: 'file' | 'edit' | 'layer' | 'effect' | 'view' | 'help' | 'plugin';
+  menu: "file" | "edit" | "layer" | "effect" | "view" | "help" | "plugin";
   submenu?: string;
   action: () => void;
 }
@@ -123,7 +126,7 @@ export interface ContextMenuDefinition {
   id: string;
   label: string;
   icon?: string;
-  context: 'layer' | 'keyframe' | 'composition' | 'asset';
+  context: "layer" | "keyframe" | "composition" | "asset";
   action: (contextData: any) => void;
 }
 
@@ -132,13 +135,17 @@ export interface EffectDefinition {
   name: string;
   category: string;
   parameters: EffectParameter[];
-  render: (input: ImageData, params: Record<string, any>, frame: number) => ImageData | Promise<ImageData>;
+  render: (
+    input: ImageData,
+    params: Record<string, any>,
+    frame: number,
+  ) => ImageData | Promise<ImageData>;
 }
 
 export interface EffectParameter {
   id: string;
   name: string;
-  type: 'number' | 'color' | 'point' | 'angle' | 'dropdown' | 'checkbox';
+  type: "number" | "color" | "point" | "angle" | "dropdown" | "checkbox";
   defaultValue: any;
   min?: number;
   max?: number;
@@ -178,7 +185,7 @@ export interface LatticePlugin {
 export interface LoadedPlugin {
   manifest: PluginManifest;
   instance: LatticePlugin;
-  state: 'loading' | 'active' | 'error' | 'disabled';
+  state: "loading" | "active" | "error" | "disabled";
   error?: string;
   registrations: {
     panels: string[];
@@ -219,8 +226,12 @@ export class PluginManager {
   constructor() {
     // Initialize event listener maps
     const events: PluginEvent[] = [
-      'frameChange', 'selectionChange', 'layerChange',
-      'projectLoad', 'projectSave', 'compositionChange'
+      "frameChange",
+      "selectionChange",
+      "layerChange",
+      "projectLoad",
+      "projectSave",
+      "compositionChange",
     ];
     for (const event of events) {
       this.eventListeners.set(event, new Set());
@@ -282,7 +293,7 @@ export class PluginManager {
     const loadedPlugin: LoadedPlugin = {
       manifest,
       instance: plugin,
-      state: 'loading',
+      state: "loading",
       registrations: {
         panels: [],
         menuItems: [],
@@ -303,11 +314,12 @@ export class PluginManager {
       // Call plugin's onLoad
       await plugin.onLoad(api);
 
-      loadedPlugin.state = 'active';
+      loadedPlugin.state = "active";
       logger.info(`Plugin loaded: ${manifest.name} v${manifest.version}`);
     } catch (error) {
-      loadedPlugin.state = 'error';
-      loadedPlugin.error = error instanceof Error ? error.message : 'Unknown error';
+      loadedPlugin.state = "error";
+      loadedPlugin.error =
+        error instanceof Error ? error.message : "Unknown error";
       logger.error(`Failed to load plugin ${manifest.id}:`, error);
       throw error;
     }
@@ -341,9 +353,9 @@ export class PluginManager {
    */
   async enablePlugin(pluginId: string): Promise<void> {
     const plugin = this.plugins.get(pluginId);
-    if (!plugin || plugin.state !== 'disabled') return;
+    if (!plugin || plugin.state !== "disabled") return;
 
-    plugin.state = 'active';
+    plugin.state = "active";
     logger.info(`Plugin enabled: ${pluginId}`);
   }
 
@@ -352,9 +364,9 @@ export class PluginManager {
    */
   async disablePlugin(pluginId: string): Promise<void> {
     const plugin = this.plugins.get(pluginId);
-    if (!plugin || plugin.state !== 'active') return;
+    if (!plugin || plugin.state !== "active") return;
 
-    plugin.state = 'disabled';
+    plugin.state = "disabled";
     logger.info(`Plugin disabled: ${pluginId}`);
   }
 
@@ -366,70 +378,71 @@ export class PluginManager {
    * Create the API object for a plugin
    */
   private createPluginAPI(plugin: LoadedPlugin): LatticePluginAPI {
-    const manager = this;
-
     return {
       // Read-only access
-      getProject: () => manager.getProjectFn?.() ?? null,
-      getCurrentFrame: () => manager.getCurrentFrameFn?.() ?? 0,
-      getSelectedLayers: () => manager.getSelectedLayersFn?.() ?? [],
-      getLayer: (id) => manager.getLayerFn?.(id) ?? null,
-      getComposition: (id) => manager.getCompositionFn?.(id) ?? null,
-      getAsset: (id) => manager.getAssetFn?.(id) ?? null,
+      getProject: () => this.getProjectFn?.() ?? null,
+      getCurrentFrame: () => this.getCurrentFrameFn?.() ?? 0,
+      getSelectedLayers: () => this.getSelectedLayersFn?.() ?? [],
+      getLayer: (id) => this.getLayerFn?.(id) ?? null,
+      getComposition: (id) => this.getCompositionFn?.(id) ?? null,
+      getAsset: (id) => this.getAssetFn?.(id) ?? null,
 
       // Events
       on: (event, callback) => {
-        const listeners = manager.eventListeners.get(event);
+        const listeners = this.eventListeners.get(event);
         if (listeners) {
           listeners.add(callback);
-          plugin.registrations.events.set(event, plugin.registrations.events.get(event) || new Set());
-          plugin.registrations.events.get(event)!.add(callback);
+          plugin.registrations.events.set(
+            event,
+            plugin.registrations.events.get(event) || new Set(),
+          );
+          plugin.registrations.events.get(event)?.add(callback);
         }
-        return () => manager.eventListeners.get(event)?.delete(callback);
+        return () => this.eventListeners.get(event)?.delete(callback);
       },
 
       off: (event, callback) => {
-        manager.eventListeners.get(event)?.delete(callback);
+        this.eventListeners.get(event)?.delete(callback);
         plugin.registrations.events.get(event)?.delete(callback);
       },
 
       // UI registration
       registerPanel: (panel) => {
         plugin.registrations.panels.push(panel.id);
-        manager.onRegisterPanel?.(panel);
+        this.onRegisterPanel?.(panel);
       },
 
       registerMenuItem: (item) => {
         plugin.registrations.menuItems.push(item.id);
-        manager.onRegisterMenuItem?.(item);
+        this.onRegisterMenuItem?.(item);
       },
 
       registerContextMenu: (menu) => {
         plugin.registrations.contextMenus.push(menu.id);
-        manager.onRegisterContextMenu?.(menu);
+        this.onRegisterContextMenu?.(menu);
       },
 
       // Effect registration
       registerEffect: (effect) => {
         plugin.registrations.effects.push(effect.id);
-        manager.onRegisterEffect?.(effect);
+        this.onRegisterEffect?.(effect);
       },
 
       // Exporter registration
       registerExporter: (exporter) => {
         plugin.registrations.exporters.push(exporter.id);
-        manager.onRegisterExporter?.(exporter);
+        this.onRegisterExporter?.(exporter);
       },
 
       // Tool registration
       registerTool: (tool) => {
         plugin.registrations.tools.push(tool.id);
-        manager.onRegisterTool?.(tool);
+        this.onRegisterTool?.(tool);
       },
 
       // Notifications
-      showNotification: (message, type = 'info') => {
-        manager.onShowNotification?.(message, type);
+      showNotification: (message, type = "info") => {
+        this.onShowNotification?.(message, type);
       },
 
       // Logging
@@ -502,14 +515,14 @@ export class PluginManager {
    * Get plugins by type
    */
   getPluginsByType(type: PluginType): LoadedPlugin[] {
-    return this.getPlugins().filter(p => p.manifest.type === type);
+    return this.getPlugins().filter((p) => p.manifest.type === type);
   }
 
   /**
    * Get active plugins
    */
   getActivePlugins(): LoadedPlugin[] {
-    return this.getPlugins().filter(p => p.state === 'active');
+    return this.getPlugins().filter((p) => p.state === "active");
   }
 
   /**

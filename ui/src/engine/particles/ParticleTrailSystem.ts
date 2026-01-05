@@ -7,8 +7,8 @@
  * Extracted from GPUParticleSystem.ts for modularity.
  */
 
-import * as THREE from 'three';
-import { PARTICLE_STRIDE } from './types';
+import * as THREE from "three";
+import { PARTICLE_STRIDE } from "./types";
 
 // ============================================================================
 // TYPES
@@ -19,11 +19,11 @@ export interface TrailConfig {
   trailSegments: number;
   trailWidthStart: number;
   trailWidthEnd: number;
-  trailFadeMode: 'none' | 'alpha' | 'width' | 'both';
+  trailFadeMode: "none" | "alpha" | "width" | "both";
 }
 
 export interface TrailBlendingConfig {
-  blendMode: 'normal' | 'additive' | 'multiply' | 'screen' | 'premultiplied';
+  blendMode: "normal" | "additive" | "multiply" | "screen" | "premultiplied";
 }
 
 // ============================================================================
@@ -47,7 +47,7 @@ export class ParticleTrailSystem {
   constructor(
     maxParticles: number,
     config: TrailConfig,
-    blendingConfig: TrailBlendingConfig
+    blendingConfig: TrailBlendingConfig,
   ) {
     this.maxParticles = maxParticles;
     this.config = config;
@@ -62,24 +62,39 @@ export class ParticleTrailSystem {
    * Initialize trail rendering resources
    */
   initialize(): void {
-    const trailLength = Math.min(this.config.trailLength, this.TRAIL_POSITIONS_PER_PARTICLE);
+    const trailLength = Math.min(
+      this.config.trailLength,
+      this.TRAIL_POSITIONS_PER_PARTICLE,
+    );
     if (trailLength <= 0) return;
 
     const maxTrailVertices = this.maxParticles * trailLength * 2; // 2 vertices per segment
 
     // Trail history buffer: stores past positions for each particle
     // Format: [x, y, z, age] per trail point
-    this.trailBuffer = new Float32Array(this.maxParticles * this.TRAIL_POSITIONS_PER_PARTICLE * 4);
+    this.trailBuffer = new Float32Array(
+      this.maxParticles * this.TRAIL_POSITIONS_PER_PARTICLE * 4,
+    );
 
     // Create line geometry for trails
     this.trailGeometry = new THREE.BufferGeometry();
     const trailPositions = new Float32Array(maxTrailVertices * 3);
     const trailColors = new Float32Array(maxTrailVertices * 4);
 
-    this.trailGeometry.setAttribute('position', new THREE.BufferAttribute(trailPositions, 3));
-    this.trailGeometry.setAttribute('color', new THREE.BufferAttribute(trailColors, 4));
-    (this.trailGeometry.getAttribute('position') as THREE.BufferAttribute).setUsage(THREE.DynamicDrawUsage);
-    (this.trailGeometry.getAttribute('color') as THREE.BufferAttribute).setUsage(THREE.DynamicDrawUsage);
+    this.trailGeometry.setAttribute(
+      "position",
+      new THREE.BufferAttribute(trailPositions, 3),
+    );
+    this.trailGeometry.setAttribute(
+      "color",
+      new THREE.BufferAttribute(trailColors, 4),
+    );
+    (
+      this.trailGeometry.getAttribute("position") as THREE.BufferAttribute
+    ).setUsage(THREE.DynamicDrawUsage);
+    (
+      this.trailGeometry.getAttribute("color") as THREE.BufferAttribute
+    ).setUsage(THREE.DynamicDrawUsage);
 
     // Trail material
     this.trailMaterial = new THREE.LineBasicMaterial({
@@ -89,7 +104,10 @@ export class ParticleTrailSystem {
       depthWrite: false,
     });
 
-    this.trailMesh = new THREE.LineSegments(this.trailGeometry, this.trailMaterial);
+    this.trailMesh = new THREE.LineSegments(
+      this.trailGeometry,
+      this.trailMaterial,
+    );
     this.trailMesh.frustumCulled = false;
   }
 
@@ -104,11 +122,18 @@ export class ParticleTrailSystem {
   update(particleBuffer: Float32Array): void {
     if (!this.trailBuffer || !this.trailGeometry) return;
 
-    const trailLength = Math.min(this.config.trailLength, this.TRAIL_POSITIONS_PER_PARTICLE);
+    const trailLength = Math.min(
+      this.config.trailLength,
+      this.TRAIL_POSITIONS_PER_PARTICLE,
+    );
     if (trailLength <= 0) return;
 
-    const posAttr = this.trailGeometry.getAttribute('position') as THREE.BufferAttribute;
-    const colorAttr = this.trailGeometry.getAttribute('color') as THREE.BufferAttribute;
+    const posAttr = this.trailGeometry.getAttribute(
+      "position",
+    ) as THREE.BufferAttribute;
+    const colorAttr = this.trailGeometry.getAttribute(
+      "color",
+    ) as THREE.BufferAttribute;
 
     let vertexIndex = 0;
     const fadeMode = this.config.trailFadeMode;
@@ -178,7 +203,7 @@ export class ParticleTrailSystem {
         let alpha1 = currentColor[3];
         let alpha2 = currentColor[3];
 
-        if (fadeMode === 'alpha' || fadeMode === 'both') {
+        if (fadeMode === "alpha" || fadeMode === "both") {
           // Interpolate from 1.0 (start) to trailWidthEnd (end)
           const endAlpha = this.config.trailWidthEnd;
           alpha1 *= 1 - t1Ratio * (1 - endAlpha);
@@ -187,11 +212,23 @@ export class ParticleTrailSystem {
 
         // Set vertex positions
         posAttr.setXYZ(vertexIndex, x1, y1, z1);
-        colorAttr.setXYZW(vertexIndex, currentColor[0], currentColor[1], currentColor[2], alpha1);
+        colorAttr.setXYZW(
+          vertexIndex,
+          currentColor[0],
+          currentColor[1],
+          currentColor[2],
+          alpha1,
+        );
         vertexIndex++;
 
         posAttr.setXYZ(vertexIndex, x2, y2, z2);
-        colorAttr.setXYZW(vertexIndex, currentColor[0], currentColor[1], currentColor[2], alpha2);
+        colorAttr.setXYZW(
+          vertexIndex,
+          currentColor[0],
+          currentColor[1],
+          currentColor[2],
+          alpha2,
+        );
         vertexIndex++;
       }
     }
@@ -265,11 +302,11 @@ export class ParticleTrailSystem {
 
   private getThreeBlending(): THREE.Blending {
     switch (this.blendingConfig.blendMode) {
-      case 'additive':
+      case "additive":
         return THREE.AdditiveBlending;
-      case 'multiply':
+      case "multiply":
         return THREE.MultiplyBlending;
-      case 'screen':
+      case "screen":
         return THREE.CustomBlending;
       default:
         return THREE.NormalBlending;

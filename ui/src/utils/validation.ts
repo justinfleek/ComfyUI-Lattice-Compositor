@@ -53,10 +53,10 @@ export interface SafeNumberOptions {
 export function safeNumber(
   value: unknown,
   defaultValue: number,
-  options: SafeNumberOptions = {}
+  options: SafeNumberOptions = {},
 ): number {
   // Check if it's a finite number
-  if (typeof value !== 'number' || !Number.isFinite(value)) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
     return defaultValue;
   }
 
@@ -104,12 +104,20 @@ export function safeNumber(
  */
 export function safeFps(fps: unknown, defaultFps: number): number {
   // Validate defaultFps itself (developer error if invalid)
-  if (typeof defaultFps !== 'number' || !Number.isFinite(defaultFps) || defaultFps <= 0) {
-    console.error('[safeFps] Invalid defaultFps provided:', defaultFps, '- using WAN_DEFAULT_FPS');
+  if (
+    typeof defaultFps !== "number" ||
+    !Number.isFinite(defaultFps) ||
+    defaultFps <= 0
+  ) {
+    console.error(
+      "[safeFps] Invalid defaultFps provided:",
+      defaultFps,
+      "- using WAN_DEFAULT_FPS",
+    );
     defaultFps = 16; // Fallback to Wan default as last resort
   }
 
-  if (typeof fps !== 'number' || !Number.isFinite(fps) || fps <= 0) {
+  if (typeof fps !== "number" || !Number.isFinite(fps) || fps <= 0) {
     return defaultFps;
   }
   // Clamp to reasonable range (1-240 fps)
@@ -132,7 +140,7 @@ export function safeFps(fps: unknown, defaultFps: number): number {
 export function safeDivide(
   numerator: number,
   divisor: number,
-  defaultValue: number = 0
+  defaultValue: number = 0,
 ): number {
   if (!Number.isFinite(divisor) || divisor === 0) {
     return defaultValue;
@@ -159,10 +167,7 @@ export function safeDivide(
  * if (idx === null) return;  // Invalid index
  * const item = array[idx];   // Safe access
  */
-export function safeIndex(
-  index: unknown,
-  arrayLength: number
-): number | null {
+export function safeIndex(index: unknown, arrayLength: number): number | null {
   if (!Number.isInteger(index)) {
     return null;
   }
@@ -182,7 +187,7 @@ export function safeIndex(
 export function safeArrayAccess<T>(
   array: T[],
   index: unknown,
-  defaultValue: T
+  defaultValue: T,
 ): T {
   const idx = safeIndex(index, array.length);
   if (idx === null) {
@@ -204,7 +209,7 @@ export function safeArrayAccess<T>(
  * const frame = safeFrame(keyframe.frame, 0);
  */
 export function safeFrame(frame: unknown, defaultFrame: number = 0): number {
-  if (typeof frame !== 'number' || !Number.isFinite(frame)) {
+  if (typeof frame !== "number" || !Number.isFinite(frame)) {
     return defaultFrame;
   }
   return Math.max(0, Math.round(frame));
@@ -220,7 +225,7 @@ export function safeFrame(frame: unknown, defaultFrame: number = 0): number {
  */
 export function framesEqual(a: number, b: number): boolean {
   if (Number.isNaN(a) && Number.isNaN(b)) {
-    return true;  // Both NaN = equal (for finding NaN keyframes)
+    return true; // Both NaN = equal (for finding NaN keyframes)
   }
   return a === b;
 }
@@ -238,7 +243,7 @@ export function framesEqual(a: number, b: number): boolean {
  * material.opacity = 0.5;  // Safe
  */
 export function isValidObject(obj: unknown): obj is object {
-  return obj !== null && obj !== undefined && typeof obj === 'object';
+  return obj !== null && obj !== undefined && typeof obj === "object";
 }
 
 /**
@@ -247,16 +252,12 @@ export function isValidObject(obj: unknown): obj is object {
  * @example
  * const opacity = safeGet(material, 'opacity', 1.0);
  */
-export function safeGet<T>(
-  obj: unknown,
-  key: string,
-  defaultValue: T
-): T {
+export function safeGet<T>(obj: unknown, key: string, defaultValue: T): T {
   if (!isValidObject(obj)) {
     return defaultValue;
   }
   const value = (obj as Record<string, unknown>)[key];
-  return (value !== undefined && value !== null) ? value as T : defaultValue;
+  return value !== undefined && value !== null ? (value as T) : defaultValue;
 }
 
 // ============================================================================
@@ -276,9 +277,9 @@ export function safeGet<T>(
 export function safeLoopCount(
   count: unknown,
   defaultCount: number,
-  maxAllowed: number = 1000000
+  maxAllowed: number = 1000000,
 ): number {
-  if (typeof count !== 'number' || !Number.isFinite(count) || count < 0) {
+  if (typeof count !== "number" || !Number.isFinite(count) || count < 0) {
     return defaultCount;
   }
   return Math.min(Math.floor(count), maxAllowed);
@@ -298,11 +299,11 @@ export function logValidationWarning(
   functionName: string,
   paramName: string,
   value: unknown,
-  defaultUsed: unknown
+  defaultUsed: unknown,
 ): void {
   if (validationWarningsEnabled) {
     console.warn(
-      `[Validation] ${functionName}: Invalid ${paramName}=${value}, using default=${defaultUsed}`
+      `[Validation] ${functionName}: Invalid ${paramName}=${value}, using default=${defaultUsed}`,
     );
   }
 }

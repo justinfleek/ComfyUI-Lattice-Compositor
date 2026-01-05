@@ -32,7 +32,7 @@ export function jitter(
   amplitude: number = 50,
   octaves: number = 1,
   amplitudeMultiplier: number = 0.5,
-  time?: number
+  time?: number,
 ): number | number[] {
   const t = time ?? ctx.time;
   const { value } = ctx;
@@ -53,8 +53,12 @@ export function jitter(
     let freq = 1;
 
     for (let i = 0; i < octaves; i++) {
-      result += amp * Math.sin(t * frequency * freq * Math.PI * 2 + seed * 1000);
-      result += amp * 0.5 * Math.sin(t * frequency * freq * Math.PI * 2 * 1.5 + seed * 500);
+      result +=
+        amp * Math.sin(t * frequency * freq * Math.PI * 2 + seed * 1000);
+      result +=
+        amp *
+        0.5 *
+        Math.sin(t * frequency * freq * Math.PI * 2 * 1.5 + seed * 500);
       amp *= amplitudeMultiplier;
       freq *= 2;
     }
@@ -67,7 +71,7 @@ export function jitter(
     return result / denominator;
   };
 
-  if (typeof value === 'number') {
+  if (typeof value === "number") {
     return value + noise(0, t) * amplitude;
   }
 
@@ -83,7 +87,7 @@ export function temporalJitter(
   frequency: number = 5,
   amplitude: number = 50,
   octaves: number = 1,
-  time?: number
+  time?: number,
 ): number | number[] {
   const t = time ?? ctx.time;
 
@@ -104,7 +108,7 @@ export function temporalJitter(
   const smoothNoise = (seed: number, t: number): number => {
     const period = 1 / frequency;
     const index = Math.floor(t / period);
-    const frac = (t / period) - index;
+    const frac = t / period - index;
 
     // Generate deterministic random values
     const rand = (n: number) => {
@@ -122,22 +126,23 @@ export function temporalJitter(
     const t2 = frac * frac;
     const t3 = t2 * frac;
 
-    return 0.5 * (
-      (2 * v1) +
-      (-v0 + v2) * frac +
-      (2 * v0 - 5 * v1 + 4 * v2 - v3) * t2 +
-      (-v0 + 3 * v1 - 3 * v2 + v3) * t3
+    return (
+      0.5 *
+      (2 * v1 +
+        (-v0 + v2) * frac +
+        (2 * v0 - 5 * v1 + 4 * v2 - v3) * t2 +
+        (-v0 + 3 * v1 - 3 * v2 + v3) * t3)
     );
   };
 
   const { value } = ctx;
 
-  if (typeof value === 'number') {
+  if (typeof value === "number") {
     let result = 0;
     let amp = amplitude;
     let freq = frequency;
     for (let i = 0; i < octaves; i++) {
-      result += smoothNoise(i * 100, t * freq / frequency) * amp;
+      result += smoothNoise(i * 100, (t * freq) / frequency) * amp;
       amp *= 0.5;
       freq *= 2;
     }
@@ -149,7 +154,7 @@ export function temporalJitter(
     let amp = amplitude;
     let freq = frequency;
     for (let i = 0; i < octaves; i++) {
-      result += smoothNoise(idx * 100 + i * 1000, t * freq / frequency) * amp;
+      result += smoothNoise(idx * 100 + i * 1000, (t * freq) / frequency) * amp;
       amp *= 0.5;
       freq *= 2;
     }

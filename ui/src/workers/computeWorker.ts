@@ -16,13 +16,13 @@
 // ============================================================================
 
 export type WorkerMessageType =
-  | 'PARTICLE_STEP'
-  | 'PARTICLE_INIT'
-  | 'BEZIER_EVALUATE'
-  | 'BEZIER_ARC_LENGTH'
-  | 'IMAGE_BLUR'
-  | 'IMAGE_THRESHOLD'
-  | 'COMPUTE_HASH';
+  | "PARTICLE_STEP"
+  | "PARTICLE_INIT"
+  | "BEZIER_EVALUATE"
+  | "BEZIER_ARC_LENGTH"
+  | "IMAGE_BLUR"
+  | "IMAGE_THRESHOLD"
+  | "COMPUTE_HASH";
 
 export interface WorkerMessage<T = unknown> {
   type: WorkerMessageType;
@@ -60,7 +60,7 @@ interface ParticleConfig {
   windX: number;
   windY: number;
   friction: number;
-  boundaryBehavior: 'bounce' | 'kill' | 'wrap';
+  boundaryBehavior: "bounce" | "kill" | "wrap";
 }
 
 interface GravityWell {
@@ -68,7 +68,7 @@ interface GravityWell {
   y: number;
   strength: number;
   radius: number;
-  falloff: 'linear' | 'quadratic' | 'constant';
+  falloff: "linear" | "quadratic" | "constant";
 }
 
 interface Vortex {
@@ -116,11 +116,11 @@ function stepParticles(payload: ParticleStepPayload): ParticleStepResult {
         let force = well.strength * 0.0001;
 
         switch (well.falloff) {
-          case 'linear':
+          case "linear":
             force *= 1 - dist / well.radius;
             break;
-          case 'quadratic':
-            force *= Math.pow(1 - dist / well.radius, 2);
+          case "quadratic":
+            force *= (1 - dist / well.radius) ** 2;
             break;
         }
 
@@ -166,18 +166,30 @@ function stepParticles(payload: ParticleStepPayload): ParticleStepResult {
 
     // Handle boundaries
     switch (config.boundaryBehavior) {
-      case 'bounce':
-        if (p.x < 0) { p.x = 0; p.vx *= -0.8; }
-        if (p.x > 1) { p.x = 1; p.vx *= -0.8; }
-        if (p.y < 0) { p.y = 0; p.vy *= -0.8; }
-        if (p.y > 1) { p.y = 1; p.vy *= -0.8; }
+      case "bounce":
+        if (p.x < 0) {
+          p.x = 0;
+          p.vx *= -0.8;
+        }
+        if (p.x > 1) {
+          p.x = 1;
+          p.vx *= -0.8;
+        }
+        if (p.y < 0) {
+          p.y = 0;
+          p.vy *= -0.8;
+        }
+        if (p.y > 1) {
+          p.y = 1;
+          p.vy *= -0.8;
+        }
         break;
-      case 'kill':
+      case "kill":
         if (p.x < -0.1 || p.x > 1.1 || p.y < -0.1 || p.y > 1.1) {
           p.age = p.lifetime + 1;
         }
         break;
-      case 'wrap':
+      case "wrap":
         if (p.x < 0) p.x += 1;
         if (p.x > 1) p.x -= 1;
         if (p.y < 0) p.y += 1;
@@ -231,7 +243,10 @@ function evaluateBezier(points: BezierPoint[], t: number): BezierPoint {
   return evaluateBezier(newPoints, t);
 }
 
-function computeArcLengthTable(points: BezierPoint[], samples: number): number[] {
+function computeArcLengthTable(
+  points: BezierPoint[],
+  samples: number,
+): number[] {
   const lengths: number[] = [0];
   let totalLength = 0;
   let prevPoint = evaluateBezier(points, 0);
@@ -266,7 +281,10 @@ function boxBlur(imageData: ImageData, radius: number): ImageData {
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      let r = 0, g = 0, b = 0, a = 0;
+      let r = 0,
+        g = 0,
+        b = 0,
+        a = 0;
 
       for (let ky = -radius; ky <= radius; ky++) {
         for (let kx = -radius; kx <= radius; kx++) {
@@ -322,10 +340,10 @@ interface ComputeHashPayload {
 
 async function computeHash(data: string | ArrayBuffer): Promise<string> {
   const encoder = new TextEncoder();
-  const buffer = typeof data === 'string' ? encoder.encode(data) : data;
-  const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+  const buffer = typeof data === "string" ? encoder.encode(data) : data;
+  const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 // ============================================================================
@@ -339,35 +357,36 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
     let result: unknown;
 
     switch (type) {
-      case 'PARTICLE_STEP':
+      case "PARTICLE_STEP":
         result = stepParticles(payload as ParticleStepPayload);
         break;
 
-      case 'BEZIER_EVALUATE': {
+      case "BEZIER_EVALUATE": {
         const { points, t } = payload as BezierEvaluatePayload;
         result = evaluateBezier(points, t);
         break;
       }
 
-      case 'BEZIER_ARC_LENGTH': {
+      case "BEZIER_ARC_LENGTH": {
         const { points, samples } = payload as BezierArcLengthPayload;
         result = computeArcLengthTable(points, samples);
         break;
       }
 
-      case 'IMAGE_BLUR': {
+      case "IMAGE_BLUR": {
         const { imageData, radius } = payload as ImageBlurPayload;
         result = boxBlur(imageData, radius);
         break;
       }
 
-      case 'IMAGE_THRESHOLD': {
-        const { imageData, threshold: thresh } = payload as ImageThresholdPayload;
+      case "IMAGE_THRESHOLD": {
+        const { imageData, threshold: thresh } =
+          payload as ImageThresholdPayload;
         result = threshold(imageData, thresh);
         break;
       }
 
-      case 'COMPUTE_HASH': {
+      case "COMPUTE_HASH": {
         const { data } = payload as ComputeHashPayload;
         result = await computeHash(data);
         break;
@@ -398,4 +417,9 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
 };
 
 // Export types for main thread
-export type { WorkerParticle, ParticleConfig, ParticleStepPayload, ParticleStepResult };
+export type {
+  WorkerParticle,
+  ParticleConfig,
+  ParticleStepPayload,
+  ParticleStepResult,
+};

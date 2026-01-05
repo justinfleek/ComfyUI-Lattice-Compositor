@@ -12,17 +12,17 @@ const BT709_B = 0.0722;
 
 // Message types
 interface ScopeRequest {
-  type: 'analyze';
+  type: "analyze";
   payload: {
     imageData: Uint8ClampedArray;
     width: number;
     height: number;
-    scopes: ('histogram' | 'waveform' | 'vectorscope' | 'parade')[];
+    scopes: ("histogram" | "waveform" | "vectorscope" | "parade")[];
   };
 }
 
 interface ScopeResponse {
-  type: 'complete' | 'error';
+  type: "complete" | "error";
   payload: {
     histogram?: HistogramResult;
     waveform?: WaveformResult;
@@ -43,7 +43,7 @@ interface HistogramResult {
 interface WaveformResult {
   // Each entry is an array of [x, y] pixel positions to render
   // For efficiency, we sample rather than plot every pixel
-  lumaPoints: Float32Array;  // Flattened [x1, y1, x2, y2, ...]
+  lumaPoints: Float32Array; // Flattened [x1, y1, x2, y2, ...]
   rgbPoints?: {
     red: Float32Array;
     green: Float32Array;
@@ -79,35 +79,37 @@ interface ParadeResult {
 self.onmessage = (e: MessageEvent<ScopeRequest>) => {
   const { type, payload } = e.data;
 
-  if (type === 'analyze') {
+  if (type === "analyze") {
     try {
-      const result: ScopeResponse['payload'] = {};
+      const result: ScopeResponse["payload"] = {};
       const { imageData, width, height, scopes } = payload;
 
       // Create ImageData-like object for processing
       const pixels = imageData;
 
-      if (scopes.includes('histogram')) {
+      if (scopes.includes("histogram")) {
         result.histogram = computeHistogram(pixels, width, height);
       }
 
-      if (scopes.includes('waveform')) {
+      if (scopes.includes("waveform")) {
         result.waveform = computeWaveform(pixels, width, height);
       }
 
-      if (scopes.includes('vectorscope')) {
+      if (scopes.includes("vectorscope")) {
         result.vectorscope = computeVectorscope(pixels, width, height);
       }
 
-      if (scopes.includes('parade')) {
+      if (scopes.includes("parade")) {
         result.parade = computeParade(pixels, width, height);
       }
 
-      self.postMessage({ type: 'complete', payload: result } as ScopeResponse);
+      self.postMessage({ type: "complete", payload: result } as ScopeResponse);
     } catch (error) {
       self.postMessage({
-        type: 'error',
-        payload: { error: error instanceof Error ? error.message : 'Unknown error' }
+        type: "error",
+        payload: {
+          error: error instanceof Error ? error.message : "Unknown error",
+        },
       } as ScopeResponse);
     }
   }
@@ -116,7 +118,11 @@ self.onmessage = (e: MessageEvent<ScopeRequest>) => {
 /**
  * Compute histogram data
  */
-function computeHistogram(pixels: Uint8ClampedArray, width: number, height: number): HistogramResult {
+function computeHistogram(
+  pixels: Uint8ClampedArray,
+  _width: number,
+  _height: number,
+): HistogramResult {
   const red = new Array(256).fill(0);
   const green = new Array(256).fill(0);
   const blue = new Array(256).fill(0);
@@ -148,7 +154,11 @@ function computeHistogram(pixels: Uint8ClampedArray, width: number, height: numb
 /**
  * Compute waveform data (sampled for performance)
  */
-function computeWaveform(pixels: Uint8ClampedArray, width: number, height: number): WaveformResult {
+function computeWaveform(
+  pixels: Uint8ClampedArray,
+  width: number,
+  height: number,
+): WaveformResult {
   // Sample every Nth column for performance
   const sampleRate = Math.max(1, Math.floor(width / 256));
   const sampledWidth = Math.ceil(width / sampleRate);
@@ -174,7 +184,7 @@ function computeWaveform(pixels: Uint8ClampedArray, width: number, height: numbe
 
       // Normalize to 0-1 range
       const normalizedX = sx / sampledWidth;
-      const normalizedY = 1 - lum / 255;  // Invert Y for display
+      const normalizedY = 1 - lum / 255; // Invert Y for display
 
       points.push(normalizedX, normalizedY);
     }
@@ -183,14 +193,18 @@ function computeWaveform(pixels: Uint8ClampedArray, width: number, height: numbe
   return {
     lumaPoints: new Float32Array(points),
     width: sampledWidth,
-    height: 256
+    height: 256,
   };
 }
 
 /**
  * Compute vectorscope data
  */
-function computeVectorscope(pixels: Uint8ClampedArray, width: number, height: number): VectorscopeResult {
+function computeVectorscope(
+  pixels: Uint8ClampedArray,
+  width: number,
+  height: number,
+): VectorscopeResult {
   // 256x256 grid for UV values
   const data = new Uint32Array(256 * 256);
   let maxCount = 0;
@@ -251,29 +265,33 @@ function calculateVectorscopeTargets() {
     // Map to 0-255 grid
     return [
       Math.round((U + 0.5) * 255),
-      Math.round((0.5 - V) * 255)  // Inverted V for display
+      Math.round((0.5 - V) * 255), // Inverted V for display
     ];
   };
 
   return {
-    r: colorToUV(1, 0, 0),      // Red
-    y: colorToUV(1, 1, 0),      // Yellow
-    g: colorToUV(0, 1, 0),      // Green
-    c: colorToUV(0, 1, 1),      // Cyan
-    b: colorToUV(0, 0, 1),      // Blue
-    m: colorToUV(1, 0, 1),      // Magenta
+    r: colorToUV(1, 0, 0), // Red
+    y: colorToUV(1, 1, 0), // Yellow
+    g: colorToUV(0, 1, 0), // Green
+    c: colorToUV(0, 1, 1), // Cyan
+    b: colorToUV(0, 0, 1), // Blue
+    m: colorToUV(1, 0, 1), // Magenta
     // Skin tone line (I-line) - approximately from center toward skin tones
     skinLine: [
-      [128, 128],  // Center
-      [175, 95]    // Toward typical skin tones
-    ] as [[number, number], [number, number]]
+      [128, 128], // Center
+      [175, 95], // Toward typical skin tones
+    ] as [[number, number], [number, number]],
   };
 }
 
 /**
  * Compute RGB parade data
  */
-function computeParade(pixels: Uint8ClampedArray, width: number, height: number): ParadeResult {
+function computeParade(
+  pixels: Uint8ClampedArray,
+  width: number,
+  height: number,
+): ParadeResult {
   // Sample rate for performance
   const sampleRate = Math.max(1, Math.floor(width / 256));
   const sampledWidth = Math.ceil(width / sampleRate);
@@ -310,20 +328,27 @@ function computeParade(pixels: Uint8ClampedArray, width: number, height: number)
     red: {
       lumaPoints: new Float32Array(redPoints),
       width: sampledWidth,
-      height: 256
+      height: 256,
     },
     green: {
       lumaPoints: new Float32Array(greenPoints),
       width: sampledWidth,
-      height: 256
+      height: 256,
     },
     blue: {
       lumaPoints: new Float32Array(bluePoints),
       width: sampledWidth,
-      height: 256
-    }
+      height: 256,
+    },
   };
 }
 
 // Export types for the main thread
-export type { ScopeRequest, ScopeResponse, HistogramResult, WaveformResult, VectorscopeResult, ParadeResult };
+export type {
+  ScopeRequest,
+  ScopeResponse,
+  HistogramResult,
+  WaveformResult,
+  VectorscopeResult,
+  ParadeResult,
+};

@@ -4,16 +4,17 @@
  * Centralizes registration of all effect renderers.
  * Import this module to initialize the effect system.
  */
-import { registerBlurEffects } from './blurRenderer';
-import { registerColorEffects } from './colorRenderer';
-import { registerDistortEffects } from './distortRenderer';
-import { registerGenerateEffects } from './generateRenderer';
-import { registerTimeEffects } from './timeRenderer';
-import { registerStylizeEffects } from './stylizeRenderer';
-import { registerAudioVisualizerEffects } from './audioVisualizer';
-import { registerExpressionControlRenderers } from './expressionControlRenderer';
-import { registerCinematicBloomEffects } from './cinematicBloom';
-import { registerMeshDeformEffect } from './meshDeformRenderer';
+
+import { registerAudioVisualizerEffects } from "./audioVisualizer";
+import { registerBlurEffects } from "./blurRenderer";
+import { registerCinematicBloomEffects } from "./cinematicBloom";
+import { registerColorEffects } from "./colorRenderer";
+import { registerDistortEffects } from "./distortRenderer";
+import { registerExpressionControlRenderers } from "./expressionControlRenderer";
+import { registerGenerateEffects } from "./generateRenderer";
+import { registerMeshDeformEffect } from "./meshDeformRenderer";
+import { registerStylizeEffects } from "./stylizeRenderer";
+import { registerTimeEffects } from "./timeRenderer";
 
 /**
  * Initialize all effect renderers
@@ -32,162 +33,150 @@ export function initializeEffects(): void {
   registerMeshDeformEffect();
 }
 
-// Re-export blur effects
-export {
-  gaussianBlurRenderer,
-  gaussianBlurRendererAsync,
-  directionalBlurRenderer,
-  radialBlurRenderer,
-  boxBlurRenderer,
-  sharpenRenderer,
-  isWebGLBlurAvailable,
-  disposeWebGLBlur
-} from './blurRenderer';
-
-// Re-export color effects
-export {
-  brightnessContrastRenderer,
-  hueSaturationRenderer,
-  levelsRenderer,
-  tintRenderer,
-  curvesRenderer,
-  glowRenderer,
-  dropShadowRenderer,
-  colorBalanceRenderer,
-  exposureRenderer,
-  vibranceRenderer,
-  invertRenderer,
-  posterizeRenderer,
-  thresholdRenderer,
-  createSCurve,
-  createLiftCurve
-} from './colorRenderer';
-
-// Re-export distort effects
-export {
-  transformRenderer,
-  warpRenderer,
-  displacementMapRenderer,
-  turbulentDisplaceRenderer,
-  rippleDistortRenderer
-} from './distortRenderer';
-
-// Re-export generate effects
-export {
-  fillRenderer,
-  gradientRampRenderer,
-  fractalNoiseRenderer,
-  radioWavesRenderer,
-  ellipseRenderer,
-  clearNoiseTileCache,
-  getNoiseTileCacheStats
-} from './generateRenderer';
-
-// Re-export time effects
-export {
-  echoRenderer,
-  posterizeTimeRenderer,
-  timeDisplacementRenderer,
-  clearAllFrameBuffers
-} from './timeRenderer';
-
-// Mask system
-export {
-  renderMask,
-  combineMasks,
-  applyTrackMatte,
-  applyMasksToLayer
-} from './maskRenderer';
-
-// Re-export stylize effects
-export {
-  pixelSortRenderer,
-  glitchRenderer,
-  vhsRenderer,
-  rgbSplitRenderer,
-  scanlinesRenderer,
-  halftoneRenderer,
-  ditherRenderer,
-  rippleRenderer,
-  embossRenderer,
-  findEdgesRenderer,
-  mosaicRenderer
-} from './stylizeRenderer';
-
-// Matte edge effects (choker, spill suppressor, feathering)
-export {
-  applyChoker,
-  applySpillSuppressor,
-  applyEdgeFeather,
-  extractAlpha,
-  applyAlpha,
-  analyzeEdgeQuality,
-  createDefaultChokerParams,
-  createGreenScreenSpillParams,
-  createBlueScreenSpillParams,
-  type ChokerParams,
-  type SpillSuppressorParams,
-  type EdgeFeatherParams,
-} from './matteEdge';
-
 // Re-export audio visualizer effects
 export {
-  renderAudioSpectrum,
-  renderAudioWaveform,
-  registerAudioVisualizerEffects,
   AUDIO_SPECTRUM_DEFAULTS,
   AUDIO_WAVEFORM_DEFAULTS,
   type AudioSpectrumParams,
-  type AudioWaveformParams
-} from './audioVisualizer';
-
-// Re-export expression control utilities
+  type AudioWaveformParams,
+  registerAudioVisualizerEffects,
+  renderAudioSpectrum,
+  renderAudioWaveform,
+} from "./audioVisualizer";
+// Re-export blur effects
 export {
-  registerExpressionControlRenderers,
-  isExpressionControl,
-  getControlParameterName
-} from './expressionControlRenderer';
-
+  boxBlurRenderer,
+  directionalBlurRenderer,
+  disposeWebGLBlur,
+  gaussianBlurRenderer,
+  gaussianBlurRendererAsync,
+  isWebGLBlurAvailable,
+  radialBlurRenderer,
+  sharpenRenderer,
+} from "./blurRenderer";
 // Re-export cinematic bloom effects
 export {
+  applyChromaticAberration,
   cinematicBloomRenderer,
+  generateGaussianKernel,
+  generateInverseSquareKernel,
+  generateLensDirt,
   glowRenderer as simpleGlowRenderer,
   registerCinematicBloomEffects,
   tonemapACES,
-  tonemapReinhard,
   tonemapHable,
-  generateInverseSquareKernel,
-  generateGaussianKernel,
-  generateLensDirt,
-  applyChromaticAberration
-} from './cinematicBloom';
-
+  tonemapReinhard,
+} from "./cinematicBloom";
+// Re-export color effects
+export {
+  brightnessContrastRenderer,
+  colorBalanceRenderer,
+  createLiftCurve,
+  createSCurve,
+  curvesRenderer,
+  dropShadowRenderer,
+  exposureRenderer,
+  glowRenderer,
+  hueSaturationRenderer,
+  invertRenderer,
+  levelsRenderer,
+  posterizeRenderer,
+  thresholdRenderer,
+  tintRenderer,
+  vibranceRenderer,
+} from "./colorRenderer";
+// Re-export distort effects
+export {
+  displacementMapRenderer,
+  rippleDistortRenderer,
+  transformRenderer,
+  turbulentDisplaceRenderer,
+  warpRenderer,
+} from "./distortRenderer";
+// Re-export expression control utilities
+export {
+  getControlParameterName,
+  isExpressionControl,
+  registerExpressionControlRenderers,
+} from "./expressionControlRenderer";
+// Re-export generate effects
+export {
+  clearNoiseTileCache,
+  ellipseRenderer,
+  fillRenderer,
+  fractalNoiseRenderer,
+  getNoiseTileCacheStats,
+  gradientRampRenderer,
+  radioWavesRenderer,
+} from "./generateRenderer";
 // Re-export layer style renderers (Photoshop-style effects)
 export {
-  renderLayerStyles,
-  renderDropShadowStyle,
-  renderInnerShadowStyle,
-  renderOuterGlowStyle,
-  renderInnerGlowStyle,
-  renderBevelEmbossStyle,
-  renderSatinStyle,
-  renderColorOverlayStyle,
-  renderGradientOverlayStyle,
-  renderStrokeStyle,
-  // Utility functions
-  getValue as getStyleValue,
-  createMatchingCanvas as createStyleCanvas,
-  rgbaToString,
   angleToOffset,
   applyBlur as applyStyleBlur,
+  createMatchingCanvas as createStyleCanvas,
   dilateAlpha,
   erodeAlpha,
-  getCompositeOperation
-} from './layerStyleRenderer';
-
+  getCompositeOperation,
+  // Utility functions
+  getValue as getStyleValue,
+  renderBevelEmbossStyle,
+  renderColorOverlayStyle,
+  renderDropShadowStyle,
+  renderGradientOverlayStyle,
+  renderInnerGlowStyle,
+  renderInnerShadowStyle,
+  renderLayerStyles,
+  renderOuterGlowStyle,
+  renderSatinStyle,
+  renderStrokeStyle,
+  rgbaToString,
+} from "./layerStyleRenderer";
+// Mask system
+export {
+  applyMasksToLayer,
+  applyTrackMatte,
+  combineMasks,
+  renderMask,
+} from "./maskRenderer";
+// Matte edge effects (choker, spill suppressor, feathering)
+export {
+  analyzeEdgeQuality,
+  applyAlpha,
+  applyChoker,
+  applyEdgeFeather,
+  applySpillSuppressor,
+  type ChokerParams,
+  createBlueScreenSpillParams,
+  createDefaultChokerParams,
+  createGreenScreenSpillParams,
+  type EdgeFeatherParams,
+  extractAlpha,
+  type SpillSuppressorParams,
+} from "./matteEdge";
 // Re-export mesh deform effect (puppet pin-style deformation)
 export {
+  clearMeshDeformCaches,
   meshDeformRenderer,
   registerMeshDeformEffect,
-  clearMeshDeformCaches
-} from './meshDeformRenderer';
+} from "./meshDeformRenderer";
+// Re-export stylize effects
+export {
+  ditherRenderer,
+  embossRenderer,
+  findEdgesRenderer,
+  glitchRenderer,
+  halftoneRenderer,
+  mosaicRenderer,
+  pixelSortRenderer,
+  rgbSplitRenderer,
+  rippleRenderer,
+  scanlinesRenderer,
+  vhsRenderer,
+} from "./stylizeRenderer";
+// Re-export time effects
+export {
+  clearAllFrameBuffers,
+  echoRenderer,
+  posterizeTimeRenderer,
+  timeDisplacementRenderer,
+} from "./timeRenderer";

@@ -4,9 +4,9 @@
  * Handles point and box-based segmentation interactions on the canvas.
  */
 
-import { ref } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import { segmentByPoint, segmentByBox } from '@/services/segmentation';
+import { ref } from "vue";
+import { segmentByBox, segmentByPoint } from "@/services/segmentation";
+import { useCompositorStore } from "@/stores/compositorStore";
 
 export interface SegmentBoxState {
   isDrawing: boolean;
@@ -51,7 +51,11 @@ export function useCanvasSegmentation() {
    * Finish segment box drawing and trigger segmentation
    */
   async function finishSegmentBox(): Promise<boolean> {
-    if (!isDrawingSegmentBox.value || !store.segmentBoxStart || !segmentBoxEnd.value) {
+    if (
+      !isDrawingSegmentBox.value ||
+      !store.segmentBoxStart ||
+      !segmentBoxEnd.value
+    ) {
       cancelSegmentBox();
       return false;
     }
@@ -74,7 +78,7 @@ export function useCanvasSegmentation() {
    */
   async function handleSegmentPoint(x: number, y: number) {
     if (!store.sourceImage) {
-      console.warn('[useCanvasSegmentation] No source image for segmentation');
+      console.warn("[useCanvasSegmentation] No source image for segmentation");
       return;
     }
 
@@ -83,21 +87,31 @@ export function useCanvasSegmentation() {
     try {
       const result = await segmentByPoint(store.sourceImage, { x, y });
 
-      if (result.status === 'success' && result.masks && result.masks.length > 0) {
+      if (
+        result.status === "success" &&
+        result.masks &&
+        result.masks.length > 0
+      ) {
         // Set the first (best) mask as pending
         const mask = result.masks[0];
         store.setSegmentPendingMask({
           mask: mask.mask,
           bounds: mask.bounds,
           area: mask.area,
-          score: mask.score
+          score: mask.score,
         });
-        console.log('[useCanvasSegmentation] Segmentation successful, mask area:', mask.area);
+        console.log(
+          "[useCanvasSegmentation] Segmentation successful, mask area:",
+          mask.area,
+        );
       } else {
-        console.warn('[useCanvasSegmentation] Segmentation returned no masks:', result.message);
+        console.warn(
+          "[useCanvasSegmentation] Segmentation returned no masks:",
+          result.message,
+        );
       }
     } catch (err) {
-      console.error('[useCanvasSegmentation] Segmentation failed:', err);
+      console.error("[useCanvasSegmentation] Segmentation failed:", err);
     } finally {
       store.setSegmentLoading(false);
     }
@@ -106,9 +120,14 @@ export function useCanvasSegmentation() {
   /**
    * Handle box-based segmentation
    */
-  async function handleSegmentBox(x1: number, y1: number, x2: number, y2: number) {
+  async function handleSegmentBox(
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+  ) {
     if (!store.sourceImage) {
-      console.warn('[useCanvasSegmentation] No source image for segmentation');
+      console.warn("[useCanvasSegmentation] No source image for segmentation");
       return;
     }
 
@@ -117,7 +136,7 @@ export function useCanvasSegmentation() {
       Math.min(x1, x2),
       Math.min(y1, y2),
       Math.max(x1, x2),
-      Math.max(y1, y2)
+      Math.max(y1, y2),
     ];
 
     store.setSegmentLoading(true);
@@ -125,20 +144,30 @@ export function useCanvasSegmentation() {
     try {
       const result = await segmentByBox(store.sourceImage, box);
 
-      if (result.status === 'success' && result.masks && result.masks.length > 0) {
+      if (
+        result.status === "success" &&
+        result.masks &&
+        result.masks.length > 0
+      ) {
         const mask = result.masks[0];
         store.setSegmentPendingMask({
           mask: mask.mask,
           bounds: mask.bounds,
           area: mask.area,
-          score: mask.score
+          score: mask.score,
         });
-        console.log('[useCanvasSegmentation] Box segmentation successful, mask area:', mask.area);
+        console.log(
+          "[useCanvasSegmentation] Box segmentation successful, mask area:",
+          mask.area,
+        );
       } else {
-        console.warn('[useCanvasSegmentation] Box segmentation returned no masks:', result.message);
+        console.warn(
+          "[useCanvasSegmentation] Box segmentation returned no masks:",
+          result.message,
+        );
       }
     } catch (err) {
-      console.error('[useCanvasSegmentation] Box segmentation failed:', err);
+      console.error("[useCanvasSegmentation] Box segmentation failed:", err);
     } finally {
       store.setSegmentLoading(false);
     }
@@ -164,7 +193,7 @@ export function useCanvasSegmentation() {
       left: `${Math.min(x1, x2)}px`,
       top: `${Math.min(y1, y2)}px`,
       width: `${Math.abs(x2 - x1)}px`,
-      height: `${Math.abs(y2 - y1)}px`
+      height: `${Math.abs(y2 - y1)}px`,
     };
   }
 
@@ -187,7 +216,7 @@ export function useCanvasSegmentation() {
       left: `${screenX}px`,
       top: `${screenY}px`,
       width: `${screenWidth}px`,
-      height: `${screenHeight}px`
+      height: `${screenHeight}px`,
     };
   }
 
@@ -204,6 +233,6 @@ export function useCanvasSegmentation() {
     handleSegmentPoint,
     handleSegmentBox,
     getSegmentBoxStyle,
-    getMaskOverlayStyle
+    getMaskOverlayStyle,
   };
 }

@@ -11,24 +11,24 @@
  * - Transform change callbacks for store updates
  */
 
-import * as THREE from 'three';
-import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
-import type { SceneManager } from './core/SceneManager';
-import type { LayerManager } from './core/LayerManager';
-import type { CameraController } from './core/CameraController';
-import type { RenderPipeline } from './core/RenderPipeline';
+import * as THREE from "three";
+import { TransformControls } from "three/examples/jsm/controls/TransformControls.js";
+import type { CameraController } from "./core/CameraController";
+import type { LayerManager } from "./core/LayerManager";
+import type { RenderPipeline } from "./core/RenderPipeline";
+import type { SceneManager } from "./core/SceneManager";
 
 /** Layer transform update from TransformControls manipulation */
 export interface LayerTransformUpdate {
   position?: { x: number; y: number; z?: number };
-  rotation?: number;  // Z rotation in degrees
+  rotation?: number; // Z rotation in degrees
   rotationX?: number;
   rotationY?: number;
   rotationZ?: number;
   scale?: { x: number; y: number; z?: number };
 }
 
-export type TransformMode = 'translate' | 'rotate' | 'scale';
+export type TransformMode = "translate" | "rotate" | "scale";
 
 export interface TransformControlsManagerDeps {
   scene: SceneManager;
@@ -44,8 +44,10 @@ export interface TransformControlsManagerDeps {
 export class TransformControlsManager {
   private transformControls: TransformControls | null = null;
   private selectedLayerId: string | null = null;
-  private transformMode: TransformMode = 'translate';
-  private onTransformChange: ((layerId: string, transform: LayerTransformUpdate) => void) | null = null;
+  private transformMode: TransformMode = "translate";
+  private onTransformChange:
+    | ((layerId: string, transform: LayerTransformUpdate) => void)
+    | null = null;
 
   constructor(private readonly deps: TransformControlsManagerDeps) {}
 
@@ -94,19 +96,23 @@ export class TransformControlsManager {
 
       this.transformControls = new TransformControls(camera, domElement);
       this.transformControls.setMode(this.transformMode);
-      this.transformControls.setSpace('world');
+      this.transformControls.setSpace("world");
 
       // Style the controls
       this.transformControls.setSize(1.0);
 
       // Ensure all gizmo objects have proper children arrays
       // (fixes multi-Three.js instance issues)
-      this.ensureObjectChildren(this.transformControls as unknown as THREE.Object3D);
+      this.ensureObjectChildren(
+        this.transformControls as unknown as THREE.Object3D,
+      );
 
       // Add to scene (TransformControls extends Object3D internally)
-      this.deps.scene.addUIElement(this.transformControls as unknown as THREE.Object3D);
+      this.deps.scene.addUIElement(
+        this.transformControls as unknown as THREE.Object3D,
+      );
     } catch (e) {
-      console.error('[TransformControlsManager] Failed to initialize:', e);
+      console.error("[TransformControlsManager] Failed to initialize:", e);
       this.transformControls = null;
       return;
     }
@@ -115,13 +121,16 @@ export class TransformControlsManager {
     let isDragging = false;
 
     // Disable orbit/pan during transform and track dragging state
-    this.transformControls.addEventListener('dragging-changed', (event: any) => {
-      isDragging = event.value;
-      this.deps.emit('transform-dragging', { dragging: event.value });
-    });
+    this.transformControls.addEventListener(
+      "dragging-changed",
+      (event: any) => {
+        isDragging = event.value;
+        this.deps.emit("transform-dragging", { dragging: event.value });
+      },
+    );
 
     // Handle transform changes - ONLY when actually dragging
-    this.transformControls.addEventListener('change', () => {
+    this.transformControls.addEventListener("change", () => {
       // Only fire callback during actual drag operations, not on selection/attach
       if (!isDragging) return;
       if (!this.transformControls || !this.selectedLayerId) return;
@@ -141,8 +150,8 @@ export class TransformControlsManager {
       const transform: LayerTransformUpdate = {
         position: {
           x: object.position.x + anchorX,
-          y: -object.position.y + anchorY,  // Y is negated in 3D space
-          z: object.position.z + anchorZ
+          y: -object.position.y + anchorY, // Y is negated in 3D space
+          z: object.position.z + anchorZ,
         },
         rotationX: THREE.MathUtils.radToDeg(object.rotation.x),
         rotationY: THREE.MathUtils.radToDeg(object.rotation.y),
@@ -150,8 +159,8 @@ export class TransformControlsManager {
         scale: {
           x: object.scale.x * 100, // Convert back to percentage
           y: object.scale.y * 100,
-          z: object.scale.z * 100
-        }
+          z: object.scale.z * 100,
+        },
       };
 
       // Also set rotation for 2D layers
@@ -163,8 +172,8 @@ export class TransformControlsManager {
     });
 
     // Handle mouseup to finalize transform
-    this.transformControls.addEventListener('mouseUp', () => {
-      this.deps.emit('transform-end', { layerId: this.selectedLayerId });
+    this.transformControls.addEventListener("mouseUp", () => {
+      this.deps.emit("transform-end", { layerId: this.selectedLayerId });
     });
   }
 
@@ -173,7 +182,9 @@ export class TransformControlsManager {
    * Called whenever a layer is transformed via the controls
    */
   setTransformChangeCallback(
-    callback: ((layerId: string, transform: LayerTransformUpdate) => void) | null
+    callback:
+      | ((layerId: string, transform: LayerTransformUpdate) => void)
+      | null,
   ): void {
     this.onTransformChange = callback;
   }
@@ -193,7 +204,7 @@ export class TransformControlsManager {
       try {
         this.transformControls.detach();
       } catch (e) {
-        console.warn('[TransformControlsManager] detach error:', e);
+        console.warn("[TransformControlsManager] detach error:", e);
       }
     }
 
@@ -211,7 +222,7 @@ export class TransformControlsManager {
       try {
         this.transformControls.attach(layerObject);
       } catch (e) {
-        console.warn('[TransformControlsManager] attach error:', e);
+        console.warn("[TransformControlsManager] attach error:", e);
       }
     }
   }

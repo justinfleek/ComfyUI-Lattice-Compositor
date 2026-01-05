@@ -19,20 +19,20 @@
  * @see src/services/security/templateVerifier.ts
  */
 
-import { readFileSync } from 'fs';
-import nacl from 'tweetnacl';
+import { readFileSync } from "node:fs";
+import nacl from "tweetnacl";
 
 // ============================================================================
 // Helpers
 // ============================================================================
 
 function base64ToUint8Array(base64) {
-  const binary = Buffer.from(base64, 'base64');
+  const binary = Buffer.from(base64, "base64");
   return new Uint8Array(binary);
 }
 
 function uint8ArrayToBase64(bytes) {
-  return Buffer.from(bytes).toString('base64');
+  return Buffer.from(bytes).toString("base64");
 }
 
 /**
@@ -41,7 +41,7 @@ function uint8ArrayToBase64(bytes) {
  */
 function createCanonicalJson(obj) {
   return JSON.stringify(obj, (_, value) => {
-    if (value && typeof value === 'object' && !Array.isArray(value)) {
+    if (value && typeof value === "object" && !Array.isArray(value)) {
       const sorted = {};
       for (const key of Object.keys(value).sort()) {
         sorted[key] = value[key];
@@ -60,13 +60,17 @@ function main() {
   // Check arguments
   const args = process.argv.slice(2);
   if (args.length !== 1) {
-    console.error('Usage: LATTICE_SIGNING_KEY="..." node scripts/signTemplate.js <template.lattice.json>');
-    console.error('');
-    console.error('Environment variables:');
-    console.error('  LATTICE_SIGNING_KEY  Base64-encoded Ed25519 private key (64 bytes)');
-    console.error('');
-    console.error('Output:');
-    console.error('  Signed template JSON is written to stdout');
+    console.error(
+      'Usage: LATTICE_SIGNING_KEY="..." node scripts/signTemplate.js <template.lattice.json>',
+    );
+    console.error("");
+    console.error("Environment variables:");
+    console.error(
+      "  LATTICE_SIGNING_KEY  Base64-encoded Ed25519 private key (64 bytes)",
+    );
+    console.error("");
+    console.error("Output:");
+    console.error("  Signed template JSON is written to stdout");
     process.exit(1);
   }
 
@@ -75,9 +79,9 @@ function main() {
   // Check for private key
   const privateKeyBase64 = process.env.LATTICE_SIGNING_KEY;
   if (!privateKeyBase64) {
-    console.error('ERROR: LATTICE_SIGNING_KEY environment variable not set');
-    console.error('');
-    console.error('Set it with:');
+    console.error("ERROR: LATTICE_SIGNING_KEY environment variable not set");
+    console.error("");
+    console.error("Set it with:");
     console.error('  export LATTICE_SIGNING_KEY="your-base64-private-key"');
     process.exit(1);
   }
@@ -85,7 +89,7 @@ function main() {
   // Read template file
   let templateJson;
   try {
-    templateJson = readFileSync(templatePath, 'utf-8');
+    templateJson = readFileSync(templatePath, "utf-8");
   } catch (error) {
     console.error(`ERROR: Cannot read file: ${templatePath}`);
     console.error(error.message);
@@ -113,7 +117,7 @@ function main() {
       throw new Error(`Expected 64 bytes, got ${privateKey.length}`);
     }
   } catch (error) {
-    console.error('ERROR: Invalid private key format');
+    console.error("ERROR: Invalid private key format");
     console.error(error.message);
     process.exit(1);
   }
@@ -130,11 +134,11 @@ function main() {
 
   // Create signature block
   const signature = {
-    algorithm: 'Ed25519',
+    algorithm: "Ed25519",
     publicKey: uint8ArrayToBase64(publicKey),
     signature: uint8ArrayToBase64(signatureBytes),
     signedAt: new Date().toISOString(),
-    version: '1.0',
+    version: "1.0",
   };
 
   // Create signed template
@@ -147,7 +151,9 @@ function main() {
   console.log(JSON.stringify(signedTemplate, null, 2));
 
   // Log success to stderr (so it doesn't pollute stdout)
-  console.error(`SUCCESS: Signed template with key ${signature.publicKey.substring(0, 16)}...`);
+  console.error(
+    `SUCCESS: Signed template with key ${signature.publicKey.substring(0, 16)}...`,
+  );
   console.error(`Signature: ${signature.signature.substring(0, 32)}...`);
 }
 

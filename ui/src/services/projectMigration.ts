@@ -10,9 +10,9 @@
  * - Backwards compatibility
  */
 
-import { createLogger } from '@/utils/logger';
+import { createLogger } from "@/utils/logger";
 
-const logger = createLogger('ProjectMigration');
+const logger = createLogger("ProjectMigration");
 
 // ============================================================================
 // TYPES
@@ -72,7 +72,7 @@ const migrations: Migration[] = [
   {
     from: 1,
     to: 2,
-    description: 'Rename anchorPoint to origin, update trade dress terminology',
+    description: "Rename anchorPoint to origin, update trade dress terminology",
     migrate: (project: any) => {
       const migrated = JSON.parse(JSON.stringify(project));
 
@@ -139,7 +139,7 @@ const migrations: Migration[] = [
  * Get the schema version from a project
  */
 export function getProjectVersion(project: any): number {
-  if (typeof project?.schemaVersion === 'number') {
+  if (typeof project?.schemaVersion === "number") {
     return project.schemaVersion;
   }
 
@@ -163,7 +163,7 @@ function getMigrationPath(from: number, to: number): Migration[] {
   let current = from;
 
   while (current < to) {
-    const migration = migrations.find(m => m.from === current);
+    const migration = migrations.find((m) => m.from === current);
     if (!migration) {
       throw new Error(`No migration found from version ${current}`);
     }
@@ -226,8 +226,12 @@ export function migrateProject(project: any): MigrationResult {
     // Apply migrations in sequence
     let migrated = project;
     for (const migration of path) {
-      logger.info(`Migrating from v${migration.from} to v${migration.to}: ${migration.description}`);
-      changes.push(`v${migration.from} → v${migration.to}: ${migration.description}`);
+      logger.info(
+        `Migrating from v${migration.from} to v${migration.to}: ${migration.description}`,
+      );
+      changes.push(
+        `v${migration.from} → v${migration.to}: ${migration.description}`,
+      );
 
       migrated = migration.migrate(migrated);
     }
@@ -246,12 +250,12 @@ export function migrateProject(project: any): MigrationResult {
       changes,
     };
   } catch (error) {
-    logger.error('Migration failed:', error);
+    logger.error("Migration failed:", error);
     return {
       success: false,
       fromVersion,
       toVersion,
-      error: error instanceof Error ? error.message : 'Unknown migration error',
+      error: error instanceof Error ? error.message : "Unknown migration error",
       warnings,
       changes,
     };
@@ -265,7 +269,7 @@ export function stampProjectVersion(project: any): any {
   return {
     ...project,
     schemaVersion: CURRENT_SCHEMA_VERSION,
-    version: '1.0.0',  // Semantic version for display
+    version: "1.0.0", // Semantic version for display
     lastModified: new Date().toISOString(),
   };
 }
@@ -280,8 +284,11 @@ export function getAvailableMigrations(): Migration[] {
 /**
  * Get migration info for a specific version transition
  */
-export function getMigrationInfo(from: number, to: number): Migration | undefined {
-  return migrations.find(m => m.from === from && m.to === to);
+export function getMigrationInfo(
+  from: number,
+  to: number,
+): Migration | undefined {
+  return migrations.find((m) => m.from === from && m.to === to);
 }
 
 // ============================================================================

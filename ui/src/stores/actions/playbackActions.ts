@@ -5,10 +5,10 @@
  * Extracted from compositorStore.ts for modularity.
  */
 
-import { usePlaybackStore } from '../playbackStore';
-import { clearTimeEffectStateOnSeek } from '@/services/effects/timeRenderer';
-import { clearMaskPathCacheOnSeek } from '@/services/effects/maskRenderer';
-import type { Composition } from '@/types/project';
+import { clearMaskPathCacheOnSeek } from "@/services/effects/maskRenderer";
+import { clearTimeEffectStateOnSeek } from "@/services/effects/timeRenderer";
+import type { Composition } from "@/types/project";
+import { usePlaybackStore } from "../playbackStore";
 
 export interface PlaybackStore {
   isPlaying: boolean;
@@ -29,7 +29,9 @@ export function play(store: PlaybackStore): void {
     comp.settings.fps,
     comp.settings.frameCount,
     comp.currentFrame,
-    (frame: number) => { comp.currentFrame = frame; }
+    (frame: number) => {
+      comp.currentFrame = frame;
+    },
   );
 
   store.isPlaying = true;
@@ -138,7 +140,10 @@ export function jumpFrames(store: PlaybackStore, n: number): void {
   // Validate n (NaN bypasses Math.max/min)
   if (!Number.isFinite(n)) return;
 
-  const newFrame = Math.max(0, Math.min(comp.currentFrame + n, comp.settings.frameCount - 1));
+  const newFrame = Math.max(
+    0,
+    Math.min(comp.currentFrame + n, comp.settings.frameCount - 1),
+  );
   if (Math.abs(n) > 1) {
     clearTimeEffectStateOnSeek();
     clearMaskPathCacheOnSeek();

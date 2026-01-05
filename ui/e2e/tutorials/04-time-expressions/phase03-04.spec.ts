@@ -1,20 +1,20 @@
-import { test, expect } from '@playwright/test';
-import { CompositorHelper } from '../../helpers/compositor';
+import { expect, test } from "@playwright/test";
+import { CompositorHelper } from "../../helpers/compositor";
 
-test.describe('Tutorial 04: Time Remapping - Phases 3-4 (Steps 43-82)', () => {
+test.describe("Tutorial 04: Time Remapping - Phases 3-4 (Steps 43-82)", () => {
   let h: CompositorHelper;
 
   test.beforeEach(async ({ page }) => {
     h = new CompositorHelper(page);
-    await page.goto('/');
+    await page.goto("/");
     await page.waitForSelector('[data-testid="app-ready"]');
     await h.newProject();
-    await h.newComposition('Time_Test', 1920, 1080, 24, 10);
-    await h.newSolid('Footage');
+    await h.newComposition("Time_Test", 1920, 1080, 24, 10);
+    await h.newSolid("Footage");
     await h.setLayerEndFrame(0, 120);
   });
 
-  test('Phase 3: Time Reverse (Steps 43-58)', async ({ page }) => {
+  test("Phase 3: Time Reverse (Steps 43-58)", async ({ page }) => {
     // Step 43-47: Reverse playback
     await h.setTimeReverse(0, true);
     // At comp frame 0, sourceTime should be at end
@@ -30,14 +30,14 @@ test.describe('Tutorial 04: Time Remapping - Phases 3-4 (Steps 43-82)', () => {
 
     // Step 52-56: Combine reverse with stretch
     await h.setTimeStretch(0, -200); // Reversed AND half speed
-    await h.setTimeStretch(0, -50);  // Reversed AND double speed
+    await h.setTimeStretch(0, -50); // Reversed AND double speed
 
     // Step 57-58: Undo
     await h.undo();
     await h.redo();
   });
 
-  test('Phase 4: Enable SpeedMap (Steps 59-82)', async ({ page }) => {
+  test("Phase 4: Enable SpeedMap (Steps 59-82)", async ({ page }) => {
     // Step 59-62: Enable speedMap
     await h.enableSpeedMap(0);
     const enabled = await h.isSpeedMapEnabled(0);

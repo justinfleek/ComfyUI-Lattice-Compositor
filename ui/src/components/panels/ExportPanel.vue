@@ -166,34 +166,34 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
+import { computed, onMounted, ref } from "vue";
 import {
-  isWebCodecsSupported,
-  getSupportedCodecs,
-  WebCodecsVideoEncoder,
-  downloadVideo,
-  type VideoEncoderConfig,
-  type EncodingProgress,
-  type EncodedVideo,
-} from '@/services/export/videoEncoder';
-import {
-  exportFrameSequence,
-  getFormatInfo,
   downloadBlob,
+  exportFrameSequence,
   type FrameFormat,
   type FrameSequenceResult,
-} from '@/services/export/frameSequenceExporter';
+  getFormatInfo,
+} from "@/services/export/frameSequenceExporter";
+import {
+  downloadVideo,
+  type EncodedVideo,
+  type EncodingProgress,
+  getSupportedCodecs,
+  isWebCodecsSupported,
+  type VideoEncoderConfig,
+  WebCodecsVideoEncoder,
+} from "@/services/export/videoEncoder";
+import { useCompositorStore } from "@/stores/compositorStore";
 
 const store = useCompositorStore();
 
 // State
-const exportMode = ref<'video' | 'sequence'>('video');
+const exportMode = ref<"video" | "sequence">("video");
 const webCodecsSupported = ref(false);
-const backendAvailable = ref(false); // TODO: Check if ComfyUI backend is available
+const _backendAvailable = ref(false); // TODO: Check if ComfyUI backend is available
 const availableCodecs = ref<{ value: string; label: string }[]>([]);
-const selectedCodec = ref<'avc' | 'vp9' | 'vp8'>('avc');
-const selectedQuality = ref<'low' | 'medium' | 'high' | 'lossless'>('high');
+const selectedCodec = ref<"avc" | "vp9" | "vp8">("avc");
+const selectedQuality = ref<"low" | "medium" | "high" | "lossless">("high");
 const isExporting = ref(false);
 const exportComplete = ref(false);
 const encodedVideo = ref<EncodedVideo | null>(null);
@@ -206,12 +206,12 @@ const exportProgress = ref<EncodingProgress>({
 });
 
 // Frame sequence state
-const sequenceFormat = ref<FrameFormat>('png');
+const sequenceFormat = ref<FrameFormat>("png");
 const sequenceQuality = ref(95);
 const sequenceResult = ref<FrameSequenceResult | null>(null);
 
 // Computed format info
-const sequenceFormatInfo = computed(() => getFormatInfo(sequenceFormat.value));
+const _sequenceFormatInfo = computed(() => getFormatInfo(sequenceFormat.value));
 
 // Computed
 const activeComp = computed(() => store.getActiveComp());
@@ -219,7 +219,7 @@ const outputWidth = computed(() => activeComp.value?.settings.width || 1024);
 const outputHeight = computed(() => activeComp.value?.settings.height || 1024);
 const frameRate = computed(() => activeComp.value?.settings.fps || 16);
 const totalFrames = computed(() => activeComp.value?.settings.frameCount || 81);
-const duration = computed(() => {
+const _duration = computed(() => {
   const seconds = totalFrames.value / frameRate.value;
   const m = Math.floor(seconds / 60);
   const s = (seconds % 60).toFixed(2);
@@ -227,16 +227,16 @@ const duration = computed(() => {
 });
 const canExport = computed(() => {
   if (isExporting.value || store.layers.length === 0) return false;
-  if (exportMode.value === 'video') return webCodecsSupported.value;
+  if (exportMode.value === "video") return webCodecsSupported.value;
   return true; // Frame sequence always available (browser formats)
 });
-const exportStatusText = computed(() => {
-  if (exportComplete.value) return 'Export complete!';
+const _exportStatusText = computed(() => {
+  if (exportComplete.value) return "Export complete!";
   if (isExporting.value) {
-    if (exportMode.value === 'sequence') return 'Rendering frames...';
-    return 'Encoding...';
+    if (exportMode.value === "sequence") return "Rendering frames...";
+    return "Encoding...";
   }
-  return 'Ready';
+  return "Ready";
 });
 
 // Lifecycle
@@ -245,23 +245,26 @@ onMounted(async () => {
   if (webCodecsSupported.value) {
     const codecs = await getSupportedCodecs();
     availableCodecs.value = [];
-    if (codecs.includes('avc')) {
-      availableCodecs.value.push({ value: 'avc', label: 'H.264 (MP4)' });
+    if (codecs.includes("avc")) {
+      availableCodecs.value.push({ value: "avc", label: "H.264 (MP4)" });
     }
-    if (codecs.includes('vp9')) {
-      availableCodecs.value.push({ value: 'vp9', label: 'VP9 (WebM)' });
+    if (codecs.includes("vp9")) {
+      availableCodecs.value.push({ value: "vp9", label: "VP9 (WebM)" });
     }
-    if (codecs.includes('vp8')) {
-      availableCodecs.value.push({ value: 'vp8', label: 'VP8 (WebM)' });
+    if (codecs.includes("vp8")) {
+      availableCodecs.value.push({ value: "vp8", label: "VP8 (WebM)" });
     }
     if (availableCodecs.value.length > 0) {
-      selectedCodec.value = availableCodecs.value[0].value as 'avc' | 'vp9' | 'vp8';
+      selectedCodec.value = availableCodecs.value[0].value as
+        | "avc"
+        | "vp9"
+        | "vp8";
     }
   }
 });
 
 // Methods
-async function startExport() {
+async function _startExport() {
   if (!canExport.value) return;
 
   isExporting.value = true;
@@ -269,7 +272,7 @@ async function startExport() {
   encodedVideo.value = null;
   sequenceResult.value = null;
 
-  if (exportMode.value === 'sequence') {
+  if (exportMode.value === "sequence") {
     await startFrameSequenceExport();
   } else {
     await startVideoExport();
@@ -284,17 +287,19 @@ async function startFrameSequenceExport() {
         store.setFrame(frame);
 
         // Small delay to allow render
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise((resolve) => setTimeout(resolve, 10));
 
         // Get the WebGL canvas from the Three.js renderer
-        const glCanvas = document.querySelector('.three-canvas canvas') as HTMLCanvasElement;
+        const glCanvas = document.querySelector(
+          ".three-canvas canvas",
+        ) as HTMLCanvasElement;
 
         if (glCanvas) {
           // Create a new canvas with the composition dimensions
-          const canvas = document.createElement('canvas');
+          const canvas = document.createElement("canvas");
           canvas.width = outputWidth.value;
           canvas.height = outputHeight.value;
-          const ctx = canvas.getContext('2d');
+          const ctx = canvas.getContext("2d");
           if (ctx) {
             ctx.drawImage(glCanvas, 0, 0, canvas.width, canvas.height);
           }
@@ -302,16 +307,16 @@ async function startFrameSequenceExport() {
         }
 
         // Fallback: create placeholder
-        const canvas = document.createElement('canvas');
+        const canvas = document.createElement("canvas");
         canvas.width = outputWidth.value;
         canvas.height = outputHeight.value;
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext("2d");
         if (ctx) {
-          ctx.fillStyle = '#050505';
+          ctx.fillStyle = "#050505";
           ctx.fillRect(0, 0, canvas.width, canvas.height);
-          ctx.fillStyle = '#fff';
-          ctx.font = '24px sans-serif';
-          ctx.textAlign = 'center';
+          ctx.fillStyle = "#fff";
+          ctx.font = "24px sans-serif";
+          ctx.textAlign = "center";
           ctx.fillText(`Frame ${frame}`, canvas.width / 2, canvas.height / 2);
         }
         return canvas;
@@ -319,8 +324,8 @@ async function startFrameSequenceExport() {
       {
         format: sequenceFormat.value,
         quality: sequenceQuality.value,
-        filenamePattern: `${activeComp.value?.name || 'frame'}_{frame:04d}`,
-        outputDir: '',
+        filenamePattern: `${activeComp.value?.name || "frame"}_{frame:04d}`,
+        outputDir: "",
         startFrame: 0,
         endFrame: totalFrames.value - 1,
       },
@@ -331,17 +336,17 @@ async function startFrameSequenceExport() {
           percentage: (current / total) * 100,
           bytesWritten: 0,
         };
-      }
+      },
     );
 
     sequenceResult.value = result;
     exportComplete.value = result.success;
 
     if (result.errors.length > 0) {
-      console.warn('Frame sequence export warnings:', result.errors);
+      console.warn("Frame sequence export warnings:", result.errors);
     }
   } catch (error) {
-    console.error('Frame sequence export failed:', error);
+    console.error("Frame sequence export failed:", error);
     alert(`Export failed: ${(error as Error).message}`);
   } finally {
     isExporting.value = false;
@@ -367,8 +372,8 @@ async function startVideoExport() {
 
     // Create an offscreen canvas for rendering
     const canvas = new OffscreenCanvas(outputWidth.value, outputHeight.value);
-    const ctx = canvas.getContext('2d');
-    if (!ctx) throw new Error('Could not get 2D context');
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Could not get 2D context");
 
     // Render and encode each frame
     for (let frame = 0; frame < totalFrames.value; frame++) {
@@ -378,7 +383,7 @@ async function startVideoExport() {
       store.setFrame(frame);
 
       // Small delay to allow render
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       // Get the rendered frame from the canvas
       // Note: This requires the ThreeCanvas to provide a way to get the current frame
@@ -393,7 +398,7 @@ async function startVideoExport() {
       exportComplete.value = true;
     }
   } catch (error) {
-    console.error('Export failed:', error);
+    console.error("Export failed:", error);
     alert(`Export failed: ${(error as Error).message}`);
   } finally {
     isExporting.value = false;
@@ -403,30 +408,41 @@ async function startVideoExport() {
 
 async function captureCurrentFrame(
   canvas: OffscreenCanvas,
-  ctx: OffscreenCanvasRenderingContext2D
+  ctx: OffscreenCanvasRenderingContext2D,
 ): Promise<OffscreenCanvas> {
   // Try to get the WebGL canvas from the Three.js renderer
-  const glCanvas = document.querySelector('.three-canvas canvas') as HTMLCanvasElement;
+  const glCanvas = document.querySelector(
+    ".three-canvas canvas",
+  ) as HTMLCanvasElement;
 
   if (glCanvas) {
     ctx.drawImage(glCanvas, 0, 0, canvas.width, canvas.height);
   } else {
     // Fallback: render a gradient placeholder
-    const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-    gradient.addColorStop(0, '#050505');
-    gradient.addColorStop(1, '#0a0a0a');
+    const gradient = ctx.createLinearGradient(
+      0,
+      0,
+      canvas.width,
+      canvas.height,
+    );
+    gradient.addColorStop(0, "#050505");
+    gradient.addColorStop(1, "#0a0a0a");
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#fff';
-    ctx.font = '24px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('Frame ' + store.currentFrame, canvas.width / 2, canvas.height / 2);
+    ctx.fillStyle = "#fff";
+    ctx.font = "24px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(
+      `Frame ${store.currentFrame}`,
+      canvas.width / 2,
+      canvas.height / 2,
+    );
   }
 
   return canvas;
 }
 
-function cancelExport() {
+function _cancelExport() {
   isExporting.value = false;
   if (currentEncoder.value) {
     currentEncoder.value.cancel();
@@ -434,14 +450,14 @@ function cancelExport() {
   }
 }
 
-function downloadExport() {
+function _downloadExport() {
   if (encodedVideo.value) {
-    const compName = activeComp.value?.name || 'composition';
+    const compName = activeComp.value?.name || "composition";
     downloadVideo(encodedVideo.value, `${compName}-export`);
   }
 }
 
-function downloadSequence() {
+function _downloadSequence() {
   if (!sequenceResult.value || sequenceResult.value.frames.length === 0) return;
 
   // For single frames or small sequences, download individually
@@ -454,7 +470,7 @@ function downloadSequence() {
   } else {
     // For larger sequences, we would use JSZip in production
     // For now, download first 10 frames as a sample
-    console.log('Large sequence export - downloading first 10 frames');
+    console.log("Large sequence export - downloading first 10 frames");
     const sampleFrames = sequenceResult.value.frames.slice(0, 10);
     for (const frame of sampleFrames) {
       if (frame.blob) {
@@ -463,18 +479,18 @@ function downloadSequence() {
     }
     alert(
       `Downloaded first 10 frames as sample.\n` +
-      `Full ZIP export requires JSZip library.\n` +
-      `Total frames: ${sequenceResult.value.frames.length}`
+        `Full ZIP export requires JSZip library.\n` +
+        `Total frames: ${sequenceResult.value.frames.length}`,
     );
   }
 }
 
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return '0 B';
+function _formatBytes(bytes: number): string {
+  if (bytes === 0) return "0 B";
   const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const sizes = ["B", "KB", "MB", "GB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  return `${parseFloat((bytes / k ** i).toFixed(1))} ${sizes[i]}`;
 }
 </script>
 

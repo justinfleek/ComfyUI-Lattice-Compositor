@@ -5,8 +5,8 @@
  * These types bridge the gap between the project schema and the rendering layer.
  */
 
-import type * as THREE from 'three';
-import type { Layer, AnimatableProperty, LayerTransform } from '@/types/project';
+import type * as THREE from "three";
+import type { AnimatableProperty, Layer } from "@/types/project";
 
 // ============================================================================
 // Engine Configuration
@@ -44,7 +44,7 @@ export interface LatticeEngineConfig {
   debug?: boolean;
 
   /** Power preference for WebGL context */
-  powerPreference?: 'default' | 'high-performance' | 'low-power';
+  powerPreference?: "default" | "high-performance" | "low-power";
 }
 
 // ============================================================================
@@ -139,8 +139,8 @@ export interface CameraAnimationProps {
 export interface RenderTargetConfig {
   width: number;
   height: number;
-  format?: 'rgba' | 'rgb' | 'depth' | 'normal';
-  type?: 'uint8' | 'float16' | 'float32';
+  format?: "rgba" | "rgb" | "depth" | "normal";
+  type?: "uint8" | "float16" | "float32";
   samples?: number;
 }
 
@@ -171,15 +171,15 @@ export interface EffectConfig {
 }
 
 export interface BlurEffectConfig extends EffectConfig {
-  type: 'blur';
+  type: "blur";
   parameters: {
     radius: number;
-    quality: 'low' | 'medium' | 'high';
+    quality: "low" | "medium" | "high";
   };
 }
 
 export interface GlowEffectConfig extends EffectConfig {
-  type: 'glow';
+  type: "glow";
   parameters: {
     intensity: number;
     radius: number;
@@ -210,13 +210,13 @@ export interface TextRenderConfig {
   fontFamily?: string;
   fontSize?: number;
   fontWeight?: string | number;
-  fontStyle?: 'normal' | 'italic';
+  fontStyle?: "normal" | "italic";
   color?: string | number;
   outlineWidth?: number;
   outlineColor?: string | number;
   letterSpacing?: number;
   lineHeight?: number;
-  textAlign?: 'left' | 'center' | 'right';
+  textAlign?: "left" | "center" | "right";
   maxWidth?: number;
 }
 
@@ -232,12 +232,12 @@ export interface CharacterTransform {
 // ============================================================================
 
 export interface ParticleState {
-  position: Float32Array;  // x, y, z per particle
-  velocity: Float32Array;  // vx, vy, vz per particle
-  color: Float32Array;     // r, g, b, a per particle
-  size: Float32Array;      // size per particle
-  age: Float32Array;       // age per particle
-  lifetime: Float32Array;  // max lifetime per particle
+  position: Float32Array; // x, y, z per particle
+  velocity: Float32Array; // vx, vy, vz per particle
+  color: Float32Array; // r, g, b, a per particle
+  size: Float32Array; // size per particle
+  age: Float32Array; // age per particle
+  lifetime: Float32Array; // max lifetime per particle
 }
 
 export interface EmissionConfig {
@@ -279,7 +279,7 @@ export interface ExportFrameOptions {
   frame: number;
   width?: number;
   height?: number;
-  format?: 'png' | 'jpeg' | 'webp';
+  format?: "png" | "jpeg" | "webp";
   quality?: number;
   includeDepth?: boolean;
   includeNormal?: boolean;
@@ -290,7 +290,7 @@ export interface ExportSequenceOptions {
   endFrame: number;
   width?: number;
   height?: number;
-  format?: 'png' | 'jpeg' | 'webp';
+  format?: "png" | "jpeg" | "webp";
   quality?: number;
   onProgress?: (current: number, total: number) => void;
 }
@@ -322,18 +322,18 @@ export interface PerformanceConfig {
 // ============================================================================
 
 export type EngineEventType =
-  | 'frameStart'
-  | 'frameEnd'
-  | 'layerAdded'
-  | 'layerRemoved'
-  | 'layerUpdated'
-  | 'resize'
-  | 'resolutionChange'
-  | 'dispose'
-  | 'contextLost'
-  | 'contextRestored'
-  | 'transform-dragging'
-  | 'transform-end';
+  | "frameStart"
+  | "frameEnd"
+  | "layerAdded"
+  | "layerRemoved"
+  | "layerUpdated"
+  | "resize"
+  | "resolutionChange"
+  | "dispose"
+  | "contextLost"
+  | "contextRestored"
+  | "transform-dragging"
+  | "transform-end";
 
 export interface EngineEvent {
   type: EngineEventType;

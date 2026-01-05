@@ -10,167 +10,140 @@
 // - ComfyUI sub-graph mapping via workflowId references
 // ============================================================
 
-import type { EffectInstance } from './effects';
-import type { ShapeLayerData } from './shapes';
-import type { TemplateConfig } from './templateBuilder';
-import type { LayerStyles, GlobalLightSettings } from './layerStyles';
-// BlendMode re-exported from blendModes.ts (not imported here to avoid conflict with local BlendMode type)
-import type {
-  ParticleData,
-  ParticleEmitter,
-  ParticleTexture,
-  ParticlePhysics,
-  ParticleRendering,
-  ParticleLayerData,
-  ParticleVisualizationConfig,
-  ParticleSystemLayerConfig,
-  TurbulenceFieldConfig,
-  FlockingConfig,
-  CollisionConfig,
-  ConnectionRenderConfig,
-  AudioFeatureName,
-  AudioTargetType,
-  AudioCurveType,
-  AudioBindingConfig,
-  SubEmitterConfig,
-  EmitterShape,
-  DepthMapEmission,
-  MaskEmission,
-  SplinePathEmission,
-  SpriteConfig,
-  ParticleEmitterConfig,
-  GravityWellConfig,
-  VortexConfig,
-  ParticleModulationConfig,
-  ParticleRenderOptions,
-  AudioParticleMapping
-} from './particles';
-
 // Import types needed for local use in this file
-import type { AnimatableProperty } from './animation';
-import { createAnimatableProperty } from './animation';
-import type { LayerTransform, Vec3 } from './transform';
-import type { MatteType, LayerMask } from './masks';
-import type { SplineData, PathLayerData } from './spline';
-import type { TextData } from './text';
-
-// Re-export types from modular files for backwards compatibility
-// (Files importing from '@/types/project' directly need these)
-export type { EffectInstance } from './effects';
-export type { ShapeLayerData } from './shapes';
-export type { TemplateConfig } from './templateBuilder';
-export type { LayerStyles, GlobalLightSettings } from './layerStyles';
+import type { AnimatableProperty } from "./animation";
+import { createAnimatableProperty } from "./animation";
+import type { EffectInstance } from "./effects";
+import type { GlobalLightSettings, LayerStyles } from "./layerStyles";
+import type { LayerMask, MatteType } from "./masks";
+// BlendMode re-exported from blendModes.ts (not imported here to avoid conflict with local BlendMode type)
+import type { ParticleData, ParticleLayerData } from "./particles";
+import type { ShapeLayerData } from "./shapes";
+import type { PathLayerData, SplineData } from "./spline";
+import type { TemplateConfig } from "./templateBuilder";
+import type { TextData } from "./text";
+import type { LayerTransform, Vec3 } from "./transform";
 
 // Animation types (extracted to animation.ts)
 export type {
   AnimatableProperty,
-  PropertyExpression,
-  Keyframe,
-  BezierHandle,
-  ControlMode,
   BaseInterpolationType,
+  BezierHandle,
+  ClipboardKeyframe,
+  ControlMode,
   EasingType,
   InterpolationType,
+  Keyframe,
+  PropertyExpression,
   PropertyValue,
-  ClipboardKeyframe
-} from './animation';
-export { createAnimatableProperty, createKeyframe } from './animation';
-
-// Transform types (extracted to transform.ts)
-export type {
-  Vec2,
-  Vec3,
-  LayerTransform,
-} from './transform';
-export { createDefaultTransform, normalizeLayerTransform, createFollowPathConstraint } from './transform';
-
+} from "./animation";
+export { createAnimatableProperty, createKeyframe } from "./animation";
+// Re-export types from modular files for backwards compatibility
+// (Files importing from '@/types/project' directly need these)
+export type { EffectInstance } from "./effects";
+export type { GlobalLightSettings, LayerStyles } from "./layerStyles";
 // Mask types (extracted to masks.ts)
 export type {
-  MatteType,
-  TrackMatteType,
+  LayerMask,
   MaskMode,
   MaskPath,
   MaskVertex,
-  LayerMask
-} from './masks';
-export { createDefaultMask, createEllipseMask } from './masks';
-
-// Spline types (extracted to spline.ts)
-export type {
-  ControlPoint,
-  AnimatableControlPoint,
-  AnimatableHandle,
-  EvaluatedControlPoint,
-  SplineData,
-  PathLayerData,
-  SplinePathEffect,
-  SplinePathEffectType,
-  OffsetPathEffect,
-  RoughenEffect,
-  WigglePathEffect,
-  ZigZagEffect,
-  WaveEffect,
-  SplinePathEffectInstance,
-  SplineLODSettings,
-  LODLevel
-} from './spline';
-export { controlPointToAnimatable, animatableToControlPoint, createDefaultSplineData, createDefaultPathLayerData } from './spline';
-
-// Text types (extracted to text.ts)
-export type {
-  TextData,
-  TextAnimator,
-  TextRangeSelector,
-  TextWigglySelector,
-  TextExpressionSelector,
-  TextAnimatorProperties,
-  TextAnimatorPresetType
-} from './text';
-export { createDefaultTextData } from './text';
-
+  MatteType,
+  TrackMatteType,
+} from "./masks";
+export { createDefaultMask, createEllipseMask } from "./masks";
 // Particle types (extracted to particles.ts)
 export type {
-  ParticleData,
-  ParticleEmitter,
-  ParticleTexture,
-  ParticlePhysics,
-  ParticleRendering,
-  ParticleLayerData,
-  ParticleVisualizationConfig,
-  ParticleSystemLayerConfig,
-  TurbulenceFieldConfig,
-  FlockingConfig,
+  AudioBindingConfig,
+  AudioCurveType,
+  AudioFeatureName,
+  AudioParticleMapping,
+  AudioTargetType,
   CollisionConfig,
   ConnectionRenderConfig,
-  AudioFeatureName,
-  AudioTargetType,
-  AudioCurveType,
-  AudioBindingConfig,
-  SubEmitterConfig,
-  EmitterShape,
   DepthMapEmission,
+  EmitterShape,
+  FlockingConfig,
+  GravityWellConfig,
   MaskEmission,
+  ParticleData,
+  ParticleEmitter,
+  ParticleEmitterConfig,
+  ParticleLayerData,
+  ParticleModulationConfig,
+  ParticlePhysics,
+  ParticleRendering,
+  ParticleRenderOptions,
+  ParticleSystemLayerConfig,
+  ParticleTexture,
+  ParticleVisualizationConfig,
   SplinePathEmission,
   SpriteConfig,
-  ParticleEmitterConfig,
-  GravityWellConfig,
+  SubEmitterConfig,
+  TurbulenceFieldConfig,
   VortexConfig,
-  ParticleModulationConfig,
-  ParticleRenderOptions,
-  AudioParticleMapping
-} from './particles';
+} from "./particles";
+export type { ShapeLayerData } from "./shapes";
+// Spline types (extracted to spline.ts)
+export type {
+  AnimatableControlPoint,
+  AnimatableHandle,
+  ControlPoint,
+  EvaluatedControlPoint,
+  LODLevel,
+  OffsetPathEffect,
+  PathLayerData,
+  RoughenEffect,
+  SplineData,
+  SplineLODSettings,
+  SplinePathEffect,
+  SplinePathEffectInstance,
+  SplinePathEffectType,
+  WaveEffect,
+  WigglePathEffect,
+  ZigZagEffect,
+} from "./spline";
+export {
+  animatableToControlPoint,
+  controlPointToAnimatable,
+  createDefaultPathLayerData,
+  createDefaultSplineData,
+} from "./spline";
+export type { TemplateConfig } from "./templateBuilder";
+// Text types (extracted to text.ts)
+export type {
+  TextAnimator,
+  TextAnimatorPresetType,
+  TextAnimatorProperties,
+  TextData,
+  TextExpressionSelector,
+  TextRangeSelector,
+  TextWigglySelector,
+} from "./text";
+export { createDefaultTextData } from "./text";
+// Transform types (extracted to transform.ts)
+export type {
+  LayerTransform,
+  Vec2,
+  Vec3,
+} from "./transform";
+export {
+  createDefaultTransform,
+  createFollowPathConstraint,
+  normalizeLayerTransform,
+} from "./transform";
 
 // Layer data types are defined locally in this file (canonical source)
 // Note: layerData.ts contains older/different definitions - do not import from there
 
 export interface LatticeProject {
   version: "1.0.0";
-  schemaVersion?: number;  // Schema version for migrations (default: 1)
+  schemaVersion?: number; // Schema version for migrations (default: 1)
   meta: ProjectMeta;
 
   // Multi-composition support (professional workflow)
   compositions: Record<string, Composition>;
-  mainCompositionId: string;  // Which comp to export
+  mainCompositionId: string; // Which comp to export
 
   // Legacy single-comp alias (for backwards compatibility)
   composition: CompositionSettings;
@@ -181,7 +154,7 @@ export interface LatticeProject {
   // Access in expressions via: footage("filename.json").sourceData
   dataAssets?: Record<string, DataAssetReference>;
 
-  layers: Layer[];  // Layers for main composition (legacy)
+  layers: Layer[]; // Layers for main composition (legacy)
   currentFrame: number;
 }
 
@@ -191,10 +164,10 @@ export interface LatticeProject {
  */
 export interface DataAssetReference {
   id: string;
-  name: string;                    // Original filename
-  type: 'json' | 'csv' | 'tsv' | 'mgjson';
-  rawContent: string;              // Original file content
-  lastModified: number;            // Timestamp
+  name: string; // Original filename
+  type: "json" | "csv" | "tsv" | "mgjson";
+  rawContent: string; // Original file content
+  lastModified: number; // Timestamp
 
   // For JSON: the parsed data
   sourceData?: any;
@@ -208,8 +181,8 @@ export interface DataAssetReference {
 
 export interface ProjectMeta {
   name: string;
-  created: string;    // ISO 8601 date
-  modified: string;   // ISO 8601 date
+  created: string; // ISO 8601 date
+  modified: string; // ISO 8601 date
   author?: string;
 }
 
@@ -226,8 +199,8 @@ export interface Marker {
   frame: number;
   label: string;
   color: string;
-  duration?: number;   // Optional marker duration (for range markers)
-  comment?: string;    // Optional comment/note
+  duration?: number; // Optional marker duration (for range markers)
+  comment?: string; // Optional comment/note
 }
 
 // ============================================================
@@ -241,10 +214,10 @@ export interface Composition {
 
   // Nested composition metadata
   isNestedComp: boolean;
-  parentCompositionId?: string;  // If this is used as a nested comp
+  parentCompositionId?: string; // If this is used as a nested comp
 
   // ComfyUI sub-graph mapping
-  workflowId?: string;           // Maps to ComfyUI sub-graph ID
+  workflowId?: string; // Maps to ComfyUI sub-graph ID
   workflowInputs?: WorkflowInput[];
   workflowOutputs?: WorkflowOutput[];
 
@@ -261,16 +234,21 @@ export interface Composition {
 }
 
 export type ColorSpace =
-  | 'sRGB'
-  | 'linear-sRGB'
-  | 'Adobe-RGB'
-  | 'Display-P3'
-  | 'ProPhoto-RGB'
-  | 'ACEScg'
-  | 'Rec709'
-  | 'Rec2020';
+  | "sRGB"
+  | "linear-sRGB"
+  | "Adobe-RGB"
+  | "Display-P3"
+  | "ProPhoto-RGB"
+  | "ACEScg"
+  | "Rec709"
+  | "Rec2020";
 
-export type ViewTransform = 'sRGB' | 'Display-P3' | 'Rec709' | 'ACES-sRGB' | 'Filmic';
+export type ViewTransform =
+  | "sRGB"
+  | "Display-P3"
+  | "Rec709"
+  | "ACES-sRGB"
+  | "Filmic";
 
 export interface ColorSettings {
   /** Working color space for compositing */
@@ -278,21 +256,21 @@ export interface ColorSettings {
   /** View transform for preview */
   viewTransform: ViewTransform;
   /** Export color space */
-  exportColorSpace: ColorSpace | 'source';
+  exportColorSpace: ColorSpace | "source";
   /** Enable linear RGB compositing */
   linearCompositing: boolean;
 }
 
 export interface CompositionSettings {
-  width: number;      // Must be divisible by 8
-  height: number;     // Must be divisible by 8
+  width: number; // Must be divisible by 8
+  height: number; // Must be divisible by 8
   frameCount: number; // 81 default, auto-adjusted for video
-  fps: number;        // 16 for Phase 1
-  duration: number;   // Calculated: frameCount / fps
+  fps: number; // 16 for Phase 1
+  duration: number; // Calculated: frameCount / fps
   backgroundColor: string;
 
   // Auto-adjustment behavior
-  autoResizeToContent: boolean;  // Resize when video imported
+  autoResizeToContent: boolean; // Resize when video imported
 
   // Frame blending for time-remapped layers (Tutorial 04)
   // When enabled, layers with timeStretch or speedMap interpolate between frames
@@ -308,14 +286,14 @@ export interface CompositionSettings {
 
 export interface WorkflowInput {
   name: string;
-  type: 'image' | 'video' | 'latent' | 'mask' | 'number' | 'string';
+  type: "image" | "video" | "latent" | "mask" | "number" | "string";
   nodeId: string;
   inputName: string;
 }
 
 export interface WorkflowOutput {
   name: string;
-  type: 'image' | 'video' | 'latent';
+  type: "image" | "video" | "latent";
   nodeId: string;
   outputName: string;
 }
@@ -326,54 +304,54 @@ export interface WorkflowOutput {
 
 /** Asset types supported by the compositor */
 export type AssetType =
-  | 'depth_map'     // Depth map image
-  | 'image'         // Standard image (PNG, JPG, WebP)
-  | 'video'         // Video file (MP4, WebM)
-  | 'audio'         // Audio file (MP3, WAV, OGG)
-  | 'model'         // 3D model (GLTF, OBJ, FBX, USD)
-  | 'pointcloud'    // Point cloud (PLY, PCD, LAS)
-  | 'texture'       // PBR texture map
-  | 'material'      // Material definition (with texture refs)
-  | 'hdri'          // Environment map (HDR, EXR)
-  | 'svg'           // Vector graphic (for extrusion)
-  | 'sprite'        // Single image for particles (no grid)
-  | 'spritesheet'   // Sprite sheet for particles (grid of frames)
-  | 'lut';          // Color lookup table
+  | "depth_map" // Depth map image
+  | "image" // Standard image (PNG, JPG, WebP)
+  | "video" // Video file (MP4, WebM)
+  | "audio" // Audio file (MP3, WAV, OGG)
+  | "model" // 3D model (GLTF, OBJ, FBX, USD)
+  | "pointcloud" // Point cloud (PLY, PCD, LAS)
+  | "texture" // PBR texture map
+  | "material" // Material definition (with texture refs)
+  | "hdri" // Environment map (HDR, EXR)
+  | "svg" // Vector graphic (for extrusion)
+  | "sprite" // Single image for particles (no grid)
+  | "spritesheet" // Sprite sheet for particles (grid of frames)
+  | "lut"; // Color lookup table
 
 /** PBR texture map types */
 export type TextureMapType =
-  | 'albedo'        // Base color / diffuse
-  | 'normal'        // Normal map
-  | 'roughness'     // Roughness map
-  | 'metalness'     // Metalness map
-  | 'ao'            // Ambient occlusion
-  | 'emissive'      // Emissive map
-  | 'height'        // Height/displacement map
-  | 'opacity'       // Alpha/opacity map
-  | 'specular';     // Specular map (for non-PBR workflows)
+  | "albedo" // Base color / diffuse
+  | "normal" // Normal map
+  | "roughness" // Roughness map
+  | "metalness" // Metalness map
+  | "ao" // Ambient occlusion
+  | "emissive" // Emissive map
+  | "height" // Height/displacement map
+  | "opacity" // Alpha/opacity map
+  | "specular"; // Specular map (for non-PBR workflows)
 
 export interface AssetReference {
   id: string;
   type: AssetType;
-  source: 'comfyui_node' | 'file' | 'generated' | 'url';
+  source: "comfyui_node" | "file" | "generated" | "url";
   nodeId?: string;
   width: number;
   height: number;
-  data: string;       // Base64 or URL - always required for valid assets
-  filename?: string;  // Original filename
+  data: string; // Base64 or URL - always required for valid assets
+  filename?: string; // Original filename
 
   // Video/Audio specific metadata
-  frameCount?: number;    // Total frames in video
-  duration?: number;      // Duration in seconds
-  fps?: number;           // Source FPS (for video)
-  hasAudio?: boolean;     // Video has audio track
+  frameCount?: number; // Total frames in video
+  duration?: number; // Duration in seconds
+  fps?: number; // Source FPS (for video)
+  hasAudio?: boolean; // Video has audio track
   audioChannels?: number; // 1=mono, 2=stereo
-  sampleRate?: number;    // Audio sample rate
+  sampleRate?: number; // Audio sample rate
 
   // 3D Model metadata
   modelFormat?: ModelFormat;
   modelBoundingBox?: ModelBoundingBox;
-  modelAnimations?: string[];   // Animation clip names
+  modelAnimations?: string[]; // Animation clip names
   modelMeshCount?: number;
   modelVertexCount?: number;
 
@@ -383,18 +361,18 @@ export interface AssetReference {
 
   // Texture metadata
   textureMapType?: TextureMapType;
-  textureColorSpace?: 'srgb' | 'linear';
+  textureColorSpace?: "srgb" | "linear";
 
   // Material definition (references other texture assets)
   materialMaps?: {
-    albedo?: string;      // Asset ID for albedo texture
-    normal?: string;      // Asset ID for normal map
-    roughness?: string;   // Asset ID for roughness map
-    metalness?: string;   // Asset ID for metalness map
-    ao?: string;          // Asset ID for AO map
-    emissive?: string;    // Asset ID for emissive map
-    height?: string;      // Asset ID for height map
-    opacity?: string;     // Asset ID for opacity map
+    albedo?: string; // Asset ID for albedo texture
+    normal?: string; // Asset ID for normal map
+    roughness?: string; // Asset ID for roughness map
+    metalness?: string; // Asset ID for metalness map
+    ao?: string; // Asset ID for AO map
+    emissive?: string; // Asset ID for emissive map
+    height?: string; // Asset ID for height map
+    opacity?: string; // Asset ID for opacity map
   };
 
   // HDRI metadata
@@ -402,7 +380,7 @@ export interface AssetReference {
   hdriRotation?: number;
 
   // SVG metadata (for extrusion)
-  svgPaths?: number;      // Number of paths in SVG
+  svgPaths?: number; // Number of paths in SVG
   svgViewBox?: { x: number; y: number; width: number; height: number };
 
   // Sprite sheet metadata
@@ -424,7 +402,11 @@ export interface AssetReference {
  * - 'alongPath': Orient along motion path tangent
  * - 'toPointOfInterest': Orient toward a point of interest (for cameras/lights)
  */
-export type AutoOrientMode = 'off' | 'toCamera' | 'alongPath' | 'toPointOfInterest';
+export type AutoOrientMode =
+  | "off"
+  | "toCamera"
+  | "alongPath"
+  | "toPointOfInterest";
 
 /**
  * Follow Path Constraint - Position a layer along a path/spline layer
@@ -458,7 +440,7 @@ export interface FollowPathConstraint {
   banking: AnimatableProperty<number>;
 
   /** Loop behavior when progress goes beyond 0-1 */
-  loopMode: 'clamp' | 'loop' | 'pingpong';
+  loopMode: "clamp" | "loop" | "pingpong";
 }
 
 // createFollowPathConstraint is now in transform.ts
@@ -477,7 +459,7 @@ export interface AudioPathAnimation {
   pathData: string;
 
   /** Movement mode: 'amplitude' (direct mapping) or 'accumulate' (travel forward) */
-  movementMode: 'amplitude' | 'accumulate';
+  movementMode: "amplitude" | "accumulate";
 
   /** Sensitivity/speed multiplier */
   sensitivity: number;
@@ -510,30 +492,30 @@ export interface Layer {
   type: LayerType;
   visible: boolean;
   locked: boolean;
-  isolate: boolean;           // Isolate layer (show only this layer)
-  minimized?: boolean;        // Minimized layer (hide when minimized mode enabled)
-  threeD: boolean;            // 3D Layer Switch
+  isolate: boolean; // Isolate layer (show only this layer)
+  minimized?: boolean; // Minimized layer (hide when minimized mode enabled)
+  threeD: boolean; // 3D Layer Switch
   autoOrient?: AutoOrientMode; // Auto-orient behavior (billboard to camera, along path, etc.)
   followPath?: FollowPathConstraint; // Constrain layer position to follow a path layer
   audioPathAnimation?: AudioPathAnimation; // Animate position along SVG path based on audio
-  motionBlur: boolean;        // Motion Blur Switch
-  motionBlurSettings?: LayerMotionBlurSettings;  // Detailed motion blur configuration
+  motionBlur: boolean; // Motion Blur Switch
+  motionBlurSettings?: LayerMotionBlurSettings; // Detailed motion blur configuration
   flattenTransform?: boolean; // Flatten Transform / Continuously Rasterize
-  quality?: 'draft' | 'best';   // Quality switch
-  effectsEnabled?: boolean;     // Enable/disable all effects
-  frameBlending?: boolean;      // Frame blending for time-remapped footage
-  effectLayer?: boolean;        // Effects apply to layers below
+  quality?: "draft" | "best"; // Quality switch
+  effectsEnabled?: boolean; // Enable/disable all effects
+  frameBlending?: boolean; // Frame blending for time-remapped footage
+  effectLayer?: boolean; // Effects apply to layers below
   /** @deprecated Use effectLayer instead */
-  adjustmentLayer?: boolean;    // Effects apply to layers below (legacy)
-  audioEnabled?: boolean;       // Enable/disable audio for this layer
-  labelColor?: string;          // Layer label color (hex)
+  adjustmentLayer?: boolean; // Effects apply to layers below (legacy)
+  audioEnabled?: boolean; // Enable/disable audio for this layer
+  labelColor?: string; // Layer label color (hex)
 
   // 3D Material Options (for 3D layers)
   materialOptions?: LayerMaterialOptions;
 
   // Timing (primary properties)
-  startFrame: number;   // First visible frame (0-based)
-  endFrame: number;     // Last visible frame (0-based)
+  startFrame: number; // First visible frame (0-based)
+  endFrame: number; // Last visible frame (0-based)
   /** @deprecated Use 'startFrame' instead. Kept for backwards compatibility. */
   inPoint?: number;
   /** @deprecated Use 'endFrame' instead. Kept for backwards compatibility. */
@@ -548,7 +530,7 @@ export interface Layer {
   // 'startFrame' = layer start stays fixed, end moves
   // 'endFrame' = layer end stays fixed, start moves
   // 'currentFrame' = stretch around current playhead position
-  stretchAnchor?: 'startFrame' | 'endFrame' | 'currentFrame';
+  stretchAnchor?: "startFrame" | "endFrame" | "currentFrame";
 
   parentId: string | null;
   blendMode: BlendMode;
@@ -561,11 +543,11 @@ export interface Layer {
   };
 
   // Masking system
-  masks?: LayerMask[];           // Mask paths applied to this layer
-  matteType?: MatteType;         // Matte source mode (uses layer above)
-  matteLayerId?: string;         // ID of layer used as matte source
-  matteCompositionId?: string;   // Optional: ID of composition containing matte layer (for cross-comp mattes)
-  preserveTransparency?: boolean;   // Only paint on existing pixels
+  masks?: LayerMask[]; // Mask paths applied to this layer
+  matteType?: MatteType; // Matte source mode (uses layer above)
+  matteLayerId?: string; // ID of layer used as matte source
+  matteCompositionId?: string; // Optional: ID of composition containing matte layer (for cross-comp mattes)
+  preserveTransparency?: boolean; // Only paint on existing pixels
 
   // Deprecated aliases for backwards compatibility
   /** @deprecated Use matteType instead */
@@ -576,64 +558,85 @@ export interface Layer {
   trackMatteCompositionId?: string;
 
   properties: AnimatableProperty<any>[];
-  effects: EffectInstance[];  // Effect stack - processed top to bottom
+  effects: EffectInstance[]; // Effect stack - processed top to bottom
 
   // Layer Styles (Photoshop-style effects: drop shadow, bevel, stroke, etc.)
   // Renders BEFORE effects in fixed order: shadow → glow → bevel → overlay → stroke
   layerStyles?: LayerStyles;
 
   // All layer data types - must include every type from LayerDataMap
-  data: SplineData | PathLayerData | TextData | ParticleData | ParticleLayerData |
-        DepthflowLayerData | GeneratedMapData | CameraLayerData | ImageLayerData |
-        VideoData | NestedCompData | ProceduralMatteData | ShapeLayerData |
-        ModelLayerData | PointCloudLayerData |
-        // Previously missing - now matches LayerDataMap
-        DepthLayerData | NormalLayerData | AudioLayerData | ControlLayerData |
-        PoseLayerData | LightLayerData | SolidLayerData | NullLayerData |
-        GroupLayerData | EffectLayerData |
-        // Additional types used by Properties components
-        GeneratedLayerData | MatteLayerData | null;
+  data:
+    | SplineData
+    | PathLayerData
+    | TextData
+    | ParticleData
+    | ParticleLayerData
+    | DepthflowLayerData
+    | GeneratedMapData
+    | CameraLayerData
+    | ImageLayerData
+    | VideoData
+    | NestedCompData
+    | ProceduralMatteData
+    | ShapeLayerData
+    | ModelLayerData
+    | PointCloudLayerData
+    // Previously missing - now matches LayerDataMap
+    | DepthLayerData
+    | NormalLayerData
+    | AudioLayerData
+    | ControlLayerData
+    | PoseLayerData
+    | LightLayerData
+    | SolidLayerData
+    | NullLayerData
+    | GroupLayerData
+    | EffectLayerData
+    // Additional types used by Properties components
+    | GeneratedLayerData
+    | MatteLayerData
+    | null;
 }
 
 export type LayerType =
-  | 'depth'      // Depth map visualization
-  | 'normal'     // Normal map visualization
-  | 'spline'     // Bezier path (visible shape with stroke/fill)
-  | 'path'       // Motion path (invisible guide for text/camera/particles)
-  | 'text'       // Animated text
-  | 'shape'      // Vector shapes
-  | 'particle'   // Particle emitter (legacy)
-  | 'particles'  // New particle system layer
-  | 'depthflow'  // Depthflow parallax layer
-  | 'image'      // Static/animated image
-  | 'video'      // Video layer
-  | 'audio'      // Audio-only layer
-  | 'generated'  // AI-generated map (depth, normal, edge, etc.)
-  | 'camera'     // 2.5D/3D camera layer
-  | 'light'      // 3D Light layer
-  | 'solid'      // Solid color plane
-  | 'control'    // Control layer (transform-only)
-  | 'null'       // @deprecated Use 'control' instead
-  | 'group'      // Layer group
-  | 'nestedComp' // Nested composition
-  | 'matte'      // Procedural matte (animated patterns for track mattes)
-  | 'model'      // 3D model (GLTF, OBJ, FBX, USD)
-  | 'pointcloud' // Point cloud (PLY, PCD, LAS)
-  | 'pose'       // OpenPose skeleton (ControlNet pose conditioning)
-  | 'effectLayer'// Effect layer (effects apply to layers below)
-  | 'adjustment';// @deprecated Use 'effectLayer' instead
+  | "depth" // Depth map visualization
+  | "normal" // Normal map visualization
+  | "spline" // Bezier path (visible shape with stroke/fill)
+  | "path" // Motion path (invisible guide for text/camera/particles)
+  | "text" // Animated text
+  | "shape" // Vector shapes
+  | "particle" // Particle emitter (legacy)
+  | "particles" // New particle system layer
+  | "depthflow" // Depthflow parallax layer
+  | "image" // Static/animated image
+  | "video" // Video layer
+  | "audio" // Audio-only layer
+  | "generated" // AI-generated map (depth, normal, edge, etc.)
+  | "camera" // 2.5D/3D camera layer
+  | "light" // 3D Light layer
+  | "solid" // Solid color plane
+  | "control" // Control layer (transform-only)
+  | "null" // @deprecated Use 'control' instead
+  | "group" // Layer group
+  | "nestedComp" // Nested composition
+  | "matte" // Procedural matte (animated patterns for track mattes)
+  | "model" // 3D model (GLTF, OBJ, FBX, USD)
+  | "pointcloud" // Point cloud (PLY, PCD, LAS)
+  | "pose" // OpenPose skeleton (ControlNet pose conditioning)
+  | "effectLayer" // Effect layer (effects apply to layers below)
+  | "adjustment"; // @deprecated Use 'effectLayer' instead
 
 // ============================================================
 // MOTION BLUR SETTINGS
 // ============================================================
 
 export type MotionBlurType =
-  | 'standard'     // Standard shutter-based blur
-  | 'pixel'        // Pixel motion blur (analyzes frame differences)
-  | 'directional'  // Directional blur (fixed direction)
-  | 'radial'       // Radial blur (spin/zoom from center)
-  | 'vector'       // Vector-based (uses velocity data)
-  | 'adaptive';    // Auto-selects based on motion
+  | "standard" // Standard shutter-based blur
+  | "pixel" // Pixel motion blur (analyzes frame differences)
+  | "directional" // Directional blur (fixed direction)
+  | "radial" // Radial blur (spin/zoom from center)
+  | "vector" // Vector-based (uses velocity data)
+  | "adaptive"; // Auto-selects based on motion
 
 export interface LayerMotionBlurSettings {
   /** Blur type */
@@ -649,7 +652,7 @@ export interface LayerMotionBlurSettings {
   /** For directional blur: blur length in pixels */
   blurLength?: number;
   /** For radial blur: 'spin' or 'zoom' */
-  radialMode?: 'spin' | 'zoom';
+  radialMode?: "spin" | "zoom";
   /** For radial blur: center point (0-1 normalized) */
   radialCenterX?: number;
   radialCenterY?: number;
@@ -663,7 +666,7 @@ export interface LayerMotionBlurSettings {
 
 export interface LayerMaterialOptions {
   /** Whether this layer casts shadows */
-  castsShadows: 'off' | 'on' | 'only';
+  castsShadows: "off" | "on" | "only";
   /** Light transmission percentage (0-100) */
   lightTransmission: number;
   /** Whether this layer accepts shadows from other layers */
@@ -715,7 +718,7 @@ export type LayerDataMap = {
   null: NullLayerData;
   group: GroupLayerData;
   effectLayer: EffectLayerData;
-  adjustment: EffectLayerData;  // @deprecated - use effectLayer
+  adjustment: EffectLayerData; // @deprecated - use effectLayer
 };
 
 /**
@@ -729,7 +732,7 @@ export type AnyLayerData = LayerDataMap[keyof LayerDataMap];
  */
 export function isLayerOfType<T extends keyof LayerDataMap>(
   layer: Layer,
-  type: T
+  type: T,
 ): layer is Layer & { type: T; data: LayerDataMap[T] } {
   return layer.type === type;
 }
@@ -740,7 +743,7 @@ export function isLayerOfType<T extends keyof LayerDataMap>(
  */
 export function getLayerData<T extends keyof LayerDataMap>(
   layer: Layer,
-  type: T
+  type: T,
 ): LayerDataMap[T] | null {
   if (layer.type === type) {
     return layer.data as LayerDataMap[T];
@@ -754,58 +757,80 @@ export function getLayerData<T extends keyof LayerDataMap>(
  */
 export type BlendMode =
   // Normal
-  | 'normal'
-  | 'dissolve'
+  | "normal"
+  | "dissolve"
   // Darken
-  | 'darken'
-  | 'multiply'
-  | 'color-burn'
-  | 'linear-burn'
-  | 'darker-color'
+  | "darken"
+  | "multiply"
+  | "color-burn"
+  | "linear-burn"
+  | "darker-color"
   // Lighten
-  | 'lighten'
-  | 'screen'
-  | 'color-dodge'
-  | 'linear-dodge'
-  | 'lighter-color'
-  | 'add'
+  | "lighten"
+  | "screen"
+  | "color-dodge"
+  | "linear-dodge"
+  | "lighter-color"
+  | "add"
   // Contrast
-  | 'overlay'
-  | 'soft-light'
-  | 'hard-light'
-  | 'vivid-light'
-  | 'linear-light'
-  | 'pin-light'
-  | 'hard-mix'
+  | "overlay"
+  | "soft-light"
+  | "hard-light"
+  | "vivid-light"
+  | "linear-light"
+  | "pin-light"
+  | "hard-mix"
   // Inversion
-  | 'difference'
-  | 'exclusion'
-  | 'subtract'
-  | 'divide'
+  | "difference"
+  | "exclusion"
+  | "subtract"
+  | "divide"
   // Component (HSL)
-  | 'hue'
-  | 'saturation'
-  | 'color'
-  | 'luminosity'
+  | "hue"
+  | "saturation"
+  | "color"
+  | "luminosity"
   // AE-specific
-  | 'stencil-alpha'
-  | 'stencil-luma'
-  | 'silhouette-alpha'
-  | 'silhouette-luma'
-  | 'alpha-add'
-  | 'luminescent-premul';
+  | "stencil-alpha"
+  | "stencil-luma"
+  | "silhouette-alpha"
+  | "silhouette-luma"
+  | "alpha-add"
+  | "luminescent-premul";
 
 /**
  * Blend mode categories for UI organization
  */
 export const BLEND_MODE_CATEGORIES = {
-  normal: ['normal', 'dissolve'],
-  darken: ['darken', 'multiply', 'color-burn', 'linear-burn', 'darker-color'],
-  lighten: ['lighten', 'screen', 'color-dodge', 'linear-dodge', 'lighter-color', 'add'],
-  contrast: ['overlay', 'soft-light', 'hard-light', 'vivid-light', 'linear-light', 'pin-light', 'hard-mix'],
-  inversion: ['difference', 'exclusion', 'subtract', 'divide'],
-  component: ['hue', 'saturation', 'color', 'luminosity'],
-  utility: ['stencil-alpha', 'stencil-luma', 'silhouette-alpha', 'silhouette-luma', 'alpha-add', 'luminescent-premul']
+  normal: ["normal", "dissolve"],
+  darken: ["darken", "multiply", "color-burn", "linear-burn", "darker-color"],
+  lighten: [
+    "lighten",
+    "screen",
+    "color-dodge",
+    "linear-dodge",
+    "lighter-color",
+    "add",
+  ],
+  contrast: [
+    "overlay",
+    "soft-light",
+    "hard-light",
+    "vivid-light",
+    "linear-light",
+    "pin-light",
+    "hard-mix",
+  ],
+  inversion: ["difference", "exclusion", "subtract", "divide"],
+  component: ["hue", "saturation", "color", "luminosity"],
+  utility: [
+    "stencil-alpha",
+    "stencil-luma",
+    "silhouette-alpha",
+    "silhouette-luma",
+    "alpha-add",
+    "luminescent-premul",
+  ],
 } as const;
 
 // ============================================================
@@ -816,7 +841,7 @@ export interface ImageLayerData {
   assetId: string | null;
 
   // Display options
-  fit: 'none' | 'contain' | 'cover' | 'fill';  // How to fit image in layer bounds
+  fit: "none" | "contain" | "cover" | "fill"; // How to fit image in layer bounds
 
   // Optional cropping (for segmented regions)
   cropEnabled?: boolean;
@@ -828,8 +853,8 @@ export interface ImageLayerData {
   };
 
   // Source info (for regeneration/editing)
-  sourceType?: 'file' | 'generated' | 'segmented';
-  segmentationMaskId?: string;  // If created via segmentation
+  sourceType?: "file" | "generated" | "segmented";
+  segmentationMaskId?: string; // If created via segmentation
 }
 
 // ============================================================
@@ -841,10 +866,10 @@ export interface DepthLayerData {
   assetId: string | null;
 
   /** Visualization mode */
-  visualizationMode: 'grayscale' | 'colormap' | 'contour' | '3d-mesh';
+  visualizationMode: "grayscale" | "colormap" | "contour" | "3d-mesh";
 
   /** Color map preset for visualization */
-  colorMap: 'turbo' | 'viridis' | 'plasma' | 'inferno' | 'magma' | 'grayscale';
+  colorMap: "turbo" | "viridis" | "plasma" | "inferno" | "magma" | "grayscale";
 
   /** Invert depth values (near <-> far) */
   invert: boolean;
@@ -874,10 +899,10 @@ export interface NormalLayerData {
   assetId: string | null;
 
   /** Visualization mode */
-  visualizationMode: 'rgb' | 'hemisphere' | 'arrows' | 'lit';
+  visualizationMode: "rgb" | "hemisphere" | "arrows" | "lit";
 
   /** Normal map format */
-  format: 'opengl' | 'directx';
+  format: "opengl" | "directx";
 
   /** Flip channels */
   flipX: boolean;
@@ -934,7 +959,13 @@ export interface AudioLayerData {
 
 export interface GeneratedLayerData {
   /** Generated content type */
-  generationType: 'depth' | 'normal' | 'edge' | 'segment' | 'inpaint' | 'custom';
+  generationType:
+    | "depth"
+    | "normal"
+    | "edge"
+    | "segment"
+    | "inpaint"
+    | "custom";
 
   /** Source layer ID (input to generation) */
   sourceLayerId: string | null;
@@ -949,7 +980,7 @@ export interface GeneratedLayerData {
   generatedAssetId: string | null;
 
   /** Generation status */
-  status: 'pending' | 'generating' | 'complete' | 'error';
+  status: "pending" | "generating" | "complete" | "error";
   errorMessage?: string;
 
   /** Auto-regenerate when source changes */
@@ -992,7 +1023,7 @@ export interface ControlLayerData {
   showIcon: boolean;
 
   /** Icon shape */
-  iconShape: 'crosshair' | 'diamond' | 'circle' | 'square';
+  iconShape: "crosshair" | "diamond" | "circle" | "square";
 
   /** Icon color */
   iconColor: string;
@@ -1020,8 +1051,8 @@ export interface EffectLayerData {
 export function createDefaultEffectLayerData(): EffectLayerData {
   return {
     effectLayer: true,
-    adjustmentLayer: true,  // Backwards compatibility
-    color: '#FF6B6B',       // Default red color for effect layers
+    adjustmentLayer: true, // Backwards compatibility
+    color: "#FF6B6B", // Default red color for effect layers
   };
 }
 
@@ -1031,7 +1062,7 @@ export function createDefaultEffectLayerData(): EffectLayerData {
 
 export interface LightLayerData {
   /** Light type */
-  lightType: 'point' | 'spot' | 'directional' | 'ambient';
+  lightType: "point" | "spot" | "directional" | "ambient";
 
   /** Light color */
   color: string;
@@ -1043,7 +1074,7 @@ export interface LightLayerData {
   radius: number;
 
   /** Falloff type */
-  falloff: 'none' | 'linear' | 'quadratic' | 'smooth';
+  falloff: "none" | "linear" | "quadratic" | "smooth";
 
   /** Falloff distance */
   falloffDistance: number;
@@ -1073,11 +1104,11 @@ export interface LightLayerData {
  */
 export function createDefaultLightLayerData(): LightLayerData {
   return {
-    lightType: 'point',
-    color: '#ffffff',
+    lightType: "point",
+    color: "#ffffff",
     intensity: 100,
     radius: 500,
-    falloff: 'none',
+    falloff: "none",
     falloffDistance: 500,
     castShadows: false,
     shadowDarkness: 100,
@@ -1115,9 +1146,12 @@ export interface SolidLayerData {
 /**
  * Create default solid layer data
  */
-export function createDefaultSolidLayerData(width = 1920, height = 1080): SolidLayerData {
+export function createDefaultSolidLayerData(
+  width = 1920,
+  height = 1080,
+): SolidLayerData {
   return {
-    color: '#808080',
+    color: "#808080",
     width,
     height,
   };
@@ -1146,7 +1180,7 @@ export function createDefaultNullLayerData(): NullLayerData {
 // OpenPose skeleton for ControlNet conditioning
 // ============================================================
 
-export type PoseFormat = 'coco18' | 'body25' | 'custom';
+export type PoseFormat = "coco18" | "body25" | "custom";
 
 export interface PoseKeypoint {
   /** X position (0-1 normalized) */
@@ -1200,12 +1234,14 @@ export interface PoseLayerData {
  */
 export function createDefaultPoseLayerData(): PoseLayerData {
   return {
-    poses: [{
-      id: 'pose-1',
-      format: 'coco18',
-      keypoints: createDefaultTPose(),
-    }],
-    format: 'coco18',
+    poses: [
+      {
+        id: "pose-1",
+        format: "coco18",
+        keypoints: createDefaultTPose(),
+      },
+    ],
+    format: "coco18",
     normalized: true,
     boneWidth: 4,
     keypointRadius: 4,
@@ -1213,8 +1249,8 @@ export function createDefaultPoseLayerData(): PoseLayerData {
     showBones: true,
     showLabels: false,
     useDefaultColors: true,
-    customBoneColor: '#FFFFFF',
-    customKeypointColor: '#FF0000',
+    customBoneColor: "#FFFFFF",
+    customKeypointColor: "#FF0000",
     selectedKeypoint: -1,
     selectedPose: 0,
   };
@@ -1225,24 +1261,24 @@ export function createDefaultPoseLayerData(): PoseLayerData {
  */
 function createDefaultTPose(): PoseKeypoint[] {
   return [
-    { x: 0.5, y: 0.1, confidence: 1 },    // 0: nose
-    { x: 0.5, y: 0.2, confidence: 1 },    // 1: neck
-    { x: 0.35, y: 0.2, confidence: 1 },   // 2: right_shoulder
-    { x: 0.2, y: 0.2, confidence: 1 },    // 3: right_elbow
-    { x: 0.1, y: 0.2, confidence: 1 },    // 4: right_wrist
-    { x: 0.65, y: 0.2, confidence: 1 },   // 5: left_shoulder
-    { x: 0.8, y: 0.2, confidence: 1 },    // 6: left_elbow
-    { x: 0.9, y: 0.2, confidence: 1 },    // 7: left_wrist
-    { x: 0.4, y: 0.45, confidence: 1 },   // 8: right_hip
-    { x: 0.4, y: 0.65, confidence: 1 },   // 9: right_knee
-    { x: 0.4, y: 0.85, confidence: 1 },   // 10: right_ankle
-    { x: 0.6, y: 0.45, confidence: 1 },   // 11: left_hip
-    { x: 0.6, y: 0.65, confidence: 1 },   // 12: left_knee
-    { x: 0.6, y: 0.85, confidence: 1 },   // 13: left_ankle
-    { x: 0.45, y: 0.08, confidence: 1 },  // 14: right_eye
-    { x: 0.55, y: 0.08, confidence: 1 },  // 15: left_eye
-    { x: 0.4, y: 0.1, confidence: 1 },    // 16: right_ear
-    { x: 0.6, y: 0.1, confidence: 1 },    // 17: left_ear
+    { x: 0.5, y: 0.1, confidence: 1 }, // 0: nose
+    { x: 0.5, y: 0.2, confidence: 1 }, // 1: neck
+    { x: 0.35, y: 0.2, confidence: 1 }, // 2: right_shoulder
+    { x: 0.2, y: 0.2, confidence: 1 }, // 3: right_elbow
+    { x: 0.1, y: 0.2, confidence: 1 }, // 4: right_wrist
+    { x: 0.65, y: 0.2, confidence: 1 }, // 5: left_shoulder
+    { x: 0.8, y: 0.2, confidence: 1 }, // 6: left_elbow
+    { x: 0.9, y: 0.2, confidence: 1 }, // 7: left_wrist
+    { x: 0.4, y: 0.45, confidence: 1 }, // 8: right_hip
+    { x: 0.4, y: 0.65, confidence: 1 }, // 9: right_knee
+    { x: 0.4, y: 0.85, confidence: 1 }, // 10: right_ankle
+    { x: 0.6, y: 0.45, confidence: 1 }, // 11: left_hip
+    { x: 0.6, y: 0.65, confidence: 1 }, // 12: left_knee
+    { x: 0.6, y: 0.85, confidence: 1 }, // 13: left_ankle
+    { x: 0.45, y: 0.08, confidence: 1 }, // 14: right_eye
+    { x: 0.55, y: 0.08, confidence: 1 }, // 15: left_eye
+    { x: 0.4, y: 0.1, confidence: 1 }, // 16: right_ear
+    { x: 0.6, y: 0.1, confidence: 1 }, // 17: left_ear
   ];
 }
 
@@ -1252,7 +1288,14 @@ function createDefaultTPose(): PoseKeypoint[] {
 
 export interface MatteLayerData {
   /** Matte extraction method */
-  matteType: 'luminance' | 'alpha' | 'red' | 'green' | 'blue' | 'hue' | 'saturation';
+  matteType:
+    | "luminance"
+    | "alpha"
+    | "red"
+    | "green"
+    | "blue"
+    | "hue"
+    | "saturation";
 
   /** Invert the matte */
   invert: boolean;
@@ -1270,7 +1313,7 @@ export interface MatteLayerData {
   sourceLayerId: string | null;
 
   /** Preview mode */
-  previewMode: 'matte' | 'composite' | 'overlay';
+  previewMode: "matte" | "composite" | "overlay";
 }
 
 // ============================================================
@@ -1279,7 +1322,7 @@ export interface MatteLayerData {
 
 export interface LegacyParticleLayerData {
   /** @deprecated Use ParticleLayerData with 'particles' type instead */
-  emitterType: 'point' | 'line' | 'circle' | 'box';
+  emitterType: "point" | "line" | "circle" | "box";
   particleCount: number;
   lifetime: number;
   speed: number;
@@ -1297,15 +1340,15 @@ export interface VideoData {
   assetId: string | null;
 
   // Playback control
-  loop: boolean;              // Loop when reaching end
-  pingPong: boolean;          // Reverse at end instead of restart
-  startTime: number;          // Start offset in source video (seconds)
-  endTime?: number;           // End time in source (undefined = full duration)
-  speed: number;              // Playback speed (1 = normal, 2 = 2x, 0.5 = half)
+  loop: boolean; // Loop when reaching end
+  pingPong: boolean; // Reverse at end instead of restart
+  startTime: number; // Start offset in source video (seconds)
+  endTime?: number; // End time in source (undefined = full duration)
+  speed: number; // Playback speed (1 = normal, 2 = 2x, 0.5 = half)
 
   // Speed mapping (professional feature for time manipulation)
   speedMapEnabled: boolean;
-  speedMap?: AnimatableProperty<number>;  // Maps comp time to video time
+  speedMap?: AnimatableProperty<number>; // Maps comp time to video time
   /** @deprecated Use 'speedMapEnabled' instead */
   timeRemapEnabled?: boolean;
   /** @deprecated Use 'speedMap' instead */
@@ -1315,18 +1358,18 @@ export interface VideoData {
   // Unlike speedMap (which keyframes source time), Timewarp keyframes SPEED
   // and integrates the speed curve to calculate source frame
   timewarpEnabled?: boolean;
-  timewarpSpeed?: AnimatableProperty<number>;  // Speed % (100 = normal, 200 = 2x, 50 = 0.5x)
-  timewarpMethod?: 'whole-frames' | 'frame-mix' | 'pixel-motion';
+  timewarpSpeed?: AnimatableProperty<number>; // Speed % (100 = normal, 200 = 2x, 50 = 0.5x)
+  timewarpMethod?: "whole-frames" | "frame-mix" | "pixel-motion";
 
   // Frame blending for speed changes
-  frameBlending: 'none' | 'frame-mix' | 'pixel-motion';
+  frameBlending: "none" | "frame-mix" | "pixel-motion";
 
   // Audio
   audioEnabled: boolean;
-  audioLevel: number;         // 0-100
+  audioLevel: number; // 0-100
 
   // Poster frame (for thumbnails)
-  posterFrame: number;        // Frame to show when paused at start
+  posterFrame: number; // Frame to show when paused at start
 }
 
 // ============================================================
@@ -1334,11 +1377,11 @@ export interface VideoData {
 // ============================================================
 
 export interface NestedCompData {
-  compositionId: string;      // Reference to composition in project.compositions
+  compositionId: string; // Reference to composition in project.compositions
 
   // Speed mapping (time manipulation)
   speedMapEnabled: boolean;
-  speedMap?: AnimatableProperty<number>;  // Maps parent time to nested comp time
+  speedMap?: AnimatableProperty<number>; // Maps parent time to nested comp time
   /** @deprecated Use 'speedMapEnabled' instead */
   timeRemapEnabled?: boolean;
   /** @deprecated Use 'speedMap' instead */
@@ -1346,8 +1389,8 @@ export interface NestedCompData {
 
   // Timewarp - animatable speed with integration for smooth ramps
   timewarpEnabled?: boolean;
-  timewarpSpeed?: AnimatableProperty<number>;  // Speed % (100 = normal, 200 = 2x, 50 = 0.5x)
-  timewarpMethod?: 'whole-frames' | 'frame-mix' | 'pixel-motion';
+  timewarpSpeed?: AnimatableProperty<number>; // Speed % (100 = normal, 200 = 2x, 50 = 0.5x)
+  timewarpMethod?: "whole-frames" | "frame-mix" | "pixel-motion";
 
   // Flatten transform (render nested layers in parent's 3D space)
   flattenTransform: boolean;
@@ -1362,22 +1405,22 @@ export interface NestedCompData {
 // ============================================================
 
 export interface GeneratedMapData {
-  sourceLayerId: string;      // Which layer to generate from
+  sourceLayerId: string; // Which layer to generate from
   mapType: GeneratedMapType;
-  modelId: string;            // Which model to use
+  modelId: string; // Which model to use
   parameters: Record<string, any>;
-  cachedResult?: string;      // Base64 cached output
-  lastGenerated?: string;     // ISO timestamp
+  cachedResult?: string; // Base64 cached output
+  lastGenerated?: string; // ISO timestamp
 }
 
 export type GeneratedMapType =
-  | 'depth'         // DepthAnything V3
-  | 'normal'        // NormalCrafter
-  | 'edge'          // Canny/HED
-  | 'pose'          // DWPose/OpenPose
-  | 'segment'       // SAM2/MatSeg
-  | 'lineart'       // Lineart extraction
-  | 'softedge';     // Soft edge detection
+  | "depth" // DepthAnything V3
+  | "normal" // NormalCrafter
+  | "edge" // Canny/HED
+  | "pose" // DWPose/OpenPose
+  | "segment" // SAM2/MatSeg
+  | "lineart" // Lineart extraction
+  | "softedge"; // Soft edge detection
 
 // ============================================================
 // PROCEDURAL MATTE DATA (Animated patterns for track mattes)
@@ -1403,7 +1446,7 @@ export interface ProceduralMatteData {
     /** Animation phase offset (0-1) */
     phase: AnimatableProperty<number>;
     /** Animation direction (for gradients/wipes) */
-    direction: AnimatableProperty<number>;  // Degrees
+    direction: AnimatableProperty<number>; // Degrees
   };
 
   /** Invert the output (swap black/white) */
@@ -1411,11 +1454,11 @@ export interface ProceduralMatteData {
 
   /** Output levels (min/max black/white) */
   levels: {
-    inputBlack: AnimatableProperty<number>;   // 0-255
-    inputWhite: AnimatableProperty<number>;   // 0-255
-    gamma: AnimatableProperty<number>;        // 0.1-10
-    outputBlack: AnimatableProperty<number>;  // 0-255
-    outputWhite: AnimatableProperty<number>;  // 0-255
+    inputBlack: AnimatableProperty<number>; // 0-255
+    inputWhite: AnimatableProperty<number>; // 0-255
+    gamma: AnimatableProperty<number>; // 0.1-10
+    outputBlack: AnimatableProperty<number>; // 0-255
+    outputWhite: AnimatableProperty<number>; // 0-255
   };
 }
 
@@ -1423,100 +1466,100 @@ export interface ProceduralMatteData {
  * Available procedural pattern types
  */
 export type ProceduralMatteType =
-  | 'linear_gradient'   // Linear gradient (supports animated direction)
-  | 'radial_gradient'   // Radial gradient (center point animatable)
-  | 'angular_gradient'  // Conical/angular gradient
-  | 'ramp'              // Animated wipe/reveal
-  | 'noise'             // Fractal noise (Perlin/Simplex)
-  | 'checkerboard'      // Animated checkerboard
-  | 'circle'            // Animated circle (grow/shrink)
-  | 'rectangle'         // Animated rectangle
-  | 'grid'              // Grid pattern
-  | 'wave'              // Wave pattern (sine/triangle)
-  | 'venetian_blinds'   // Venetian blinds transition
-  | 'iris'              // Iris wipe (circular reveal)
-  | 'radial_wipe'       // Clock wipe
-  | 'dissolve';         // Random dissolve
+  | "linear_gradient" // Linear gradient (supports animated direction)
+  | "radial_gradient" // Radial gradient (center point animatable)
+  | "angular_gradient" // Conical/angular gradient
+  | "ramp" // Animated wipe/reveal
+  | "noise" // Fractal noise (Perlin/Simplex)
+  | "checkerboard" // Animated checkerboard
+  | "circle" // Animated circle (grow/shrink)
+  | "rectangle" // Animated rectangle
+  | "grid" // Grid pattern
+  | "wave" // Wave pattern (sine/triangle)
+  | "venetian_blinds" // Venetian blinds transition
+  | "iris" // Iris wipe (circular reveal)
+  | "radial_wipe" // Clock wipe
+  | "dissolve"; // Random dissolve
 
 /**
  * Pattern-specific parameters (varies by pattern type)
  */
 export interface ProceduralMatteParams {
   // Linear/Angular gradient
-  angle?: AnimatableProperty<number>;        // Direction in degrees
-  blend?: AnimatableProperty<number>;        // Blend width (0-1)
+  angle?: AnimatableProperty<number>; // Direction in degrees
+  blend?: AnimatableProperty<number>; // Blend width (0-1)
 
   // Radial gradient
-  centerX?: AnimatableProperty<number>;      // Center X (0-1)
-  centerY?: AnimatableProperty<number>;      // Center Y (0-1)
-  radius?: AnimatableProperty<number>;       // Radius (0-2)
+  centerX?: AnimatableProperty<number>; // Center X (0-1)
+  centerY?: AnimatableProperty<number>; // Center Y (0-1)
+  radius?: AnimatableProperty<number>; // Radius (0-2)
 
   // Ramp/Wipe
-  progress?: AnimatableProperty<number>;     // Wipe progress (0-1)
-  softness?: AnimatableProperty<number>;     // Edge softness
+  progress?: AnimatableProperty<number>; // Wipe progress (0-1)
+  softness?: AnimatableProperty<number>; // Edge softness
 
   // Noise
-  scale?: AnimatableProperty<number>;        // Noise scale
-  octaves?: number;                          // Fractal octaves (1-8)
-  persistence?: number;                      // Fractal persistence
-  lacunarity?: number;                       // Fractal lacunarity
-  seed?: number;                             // Random seed
+  scale?: AnimatableProperty<number>; // Noise scale
+  octaves?: number; // Fractal octaves (1-8)
+  persistence?: number; // Fractal persistence
+  lacunarity?: number; // Fractal lacunarity
+  seed?: number; // Random seed
 
   // Checkerboard/Grid
-  tilesX?: AnimatableProperty<number>;       // Horizontal tiles
-  tilesY?: AnimatableProperty<number>;       // Vertical tiles
-  rotation?: AnimatableProperty<number>;     // Pattern rotation
+  tilesX?: AnimatableProperty<number>; // Horizontal tiles
+  tilesY?: AnimatableProperty<number>; // Vertical tiles
+  rotation?: AnimatableProperty<number>; // Pattern rotation
 
   // Circle/Rectangle
-  width?: AnimatableProperty<number>;        // Shape width
-  height?: AnimatableProperty<number>;       // Shape height
+  width?: AnimatableProperty<number>; // Shape width
+  height?: AnimatableProperty<number>; // Shape height
   cornerRadius?: AnimatableProperty<number>; // Corner radius
 
   // Wave
-  frequency?: AnimatableProperty<number>;    // Wave frequency
-  amplitude?: AnimatableProperty<number>;    // Wave amplitude
-  waveType?: 'sine' | 'triangle' | 'square' | 'sawtooth';
+  frequency?: AnimatableProperty<number>; // Wave frequency
+  amplitude?: AnimatableProperty<number>; // Wave amplitude
+  waveType?: "sine" | "triangle" | "square" | "sawtooth";
 
   // Venetian blinds
-  slats?: AnimatableProperty<number>;        // Number of slats
+  slats?: AnimatableProperty<number>; // Number of slats
 
   // Iris
-  feather?: AnimatableProperty<number>;      // Edge feather
+  feather?: AnimatableProperty<number>; // Edge feather
 
   // Dissolve
-  randomness?: AnimatableProperty<number>;   // Dissolve randomness
-  blockSize?: AnimatableProperty<number>;    // Dissolve block size
+  randomness?: AnimatableProperty<number>; // Dissolve randomness
+  blockSize?: AnimatableProperty<number>; // Dissolve block size
 }
 
 /**
  * Create default procedural matte data
  */
 export function createDefaultProceduralMatteData(
-  patternType: ProceduralMatteType = 'linear_gradient'
+  patternType: ProceduralMatteType = "linear_gradient",
 ): ProceduralMatteData {
   return {
     patternType,
     parameters: {
-      angle: createAnimatableProperty('Angle', 0, 'number'),
-      blend: createAnimatableProperty('Blend', 0.5, 'number'),
-      progress: createAnimatableProperty('Progress', 0.5, 'number'),
-      centerX: createAnimatableProperty('Center X', 0.5, 'number'),
-      centerY: createAnimatableProperty('Center Y', 0.5, 'number'),
-      radius: createAnimatableProperty('Radius', 1, 'number'),
+      angle: createAnimatableProperty("Angle", 0, "number"),
+      blend: createAnimatableProperty("Blend", 0.5, "number"),
+      progress: createAnimatableProperty("Progress", 0.5, "number"),
+      centerX: createAnimatableProperty("Center X", 0.5, "number"),
+      centerY: createAnimatableProperty("Center Y", 0.5, "number"),
+      radius: createAnimatableProperty("Radius", 1, "number"),
     },
     animation: {
       enabled: false,
-      speed: createAnimatableProperty('Speed', 1, 'number'),
-      phase: createAnimatableProperty('Phase', 0, 'number'),
-      direction: createAnimatableProperty('Direction', 0, 'number'),
+      speed: createAnimatableProperty("Speed", 1, "number"),
+      phase: createAnimatableProperty("Phase", 0, "number"),
+      direction: createAnimatableProperty("Direction", 0, "number"),
     },
     inverted: false,
     levels: {
-      inputBlack: createAnimatableProperty('Input Black', 0, 'number'),
-      inputWhite: createAnimatableProperty('Input White', 255, 'number'),
-      gamma: createAnimatableProperty('Gamma', 1, 'number'),
-      outputBlack: createAnimatableProperty('Output Black', 0, 'number'),
-      outputWhite: createAnimatableProperty('Output White', 255, 'number'),
+      inputBlack: createAnimatableProperty("Input Black", 0, "number"),
+      inputWhite: createAnimatableProperty("Input White", 255, "number"),
+      gamma: createAnimatableProperty("Gamma", 1, "number"),
+      outputBlack: createAnimatableProperty("Output Black", 0, "number"),
+      outputWhite: createAnimatableProperty("Output White", 255, "number"),
     },
   };
 }
@@ -1524,26 +1567,25 @@ export function createDefaultProceduralMatteData(
 // Particle types moved to ./particles.ts
 // Re-exported above for backwards compatibility
 
-
 // ============================================================
 // DEPTHFLOW PARALLAX LAYER DATA (matching akatz-ai)
 // ============================================================
 
 export type DepthflowPreset =
-  | 'static'
-  | 'zoom_in'
-  | 'zoom_out'
-  | 'dolly_zoom_in'
-  | 'dolly_zoom_out'
-  | 'pan_left'
-  | 'pan_right'
-  | 'pan_up'
-  | 'pan_down'
-  | 'circle_cw'
-  | 'circle_ccw'
-  | 'horizontal_swing'
-  | 'vertical_swing'
-  | 'custom';
+  | "static"
+  | "zoom_in"
+  | "zoom_out"
+  | "dolly_zoom_in"
+  | "dolly_zoom_out"
+  | "pan_left"
+  | "pan_right"
+  | "pan_up"
+  | "pan_down"
+  | "circle_cw"
+  | "circle_ccw"
+  | "horizontal_swing"
+  | "vertical_swing"
+  | "custom";
 
 export interface DepthflowLayerData {
   sourceLayerId: string;
@@ -1557,7 +1599,7 @@ export interface DepthflowLayerData {
 
   // Camera sync - drives depthflow from 3D camera motion
   cameraSyncEnabled?: boolean;
-  cameraSyncLayerId?: string;  // ID of the camera layer to sync from
+  cameraSyncLayerId?: string; // ID of the camera layer to sync from
   cameraSyncConfig?: CameraToDepthflowConfig;
 }
 
@@ -1596,7 +1638,16 @@ export interface DepthflowConfig {
 // ============================================================
 
 /** Supported 3D model formats */
-export type ModelFormat = 'gltf' | 'glb' | 'obj' | 'fbx' | 'usd' | 'usda' | 'usdc' | 'usdz' | 'dae';
+export type ModelFormat =
+  | "gltf"
+  | "glb"
+  | "obj"
+  | "fbx"
+  | "usd"
+  | "usda"
+  | "usdc"
+  | "usdz"
+  | "dae";
 
 /** Model material override options */
 export interface ModelMaterialOverride {
@@ -1627,7 +1678,7 @@ export interface ModelMaterialOverride {
 /** Model animation clip info */
 export interface ModelAnimationClip {
   name: string;
-  duration: number;  // In seconds
+  duration: number; // In seconds
   frameCount: number;
 }
 
@@ -1648,7 +1699,13 @@ export interface ModelLayerData {
   format: ModelFormat;
 
   /** Model scale (uniform or per-axis) */
-  scale: AnimatableProperty<number> | { x: AnimatableProperty<number>; y: AnimatableProperty<number>; z: AnimatableProperty<number> };
+  scale:
+    | AnimatableProperty<number>
+    | {
+        x: AnimatableProperty<number>;
+        y: AnimatableProperty<number>;
+        z: AnimatableProperty<number>;
+      };
 
   /** Use uniform scale */
   uniformScale: boolean;
@@ -1711,24 +1768,24 @@ export interface ModelLayerData {
 // ============================================================
 
 /** Supported point cloud formats */
-export type PointCloudFormat = 'ply' | 'pcd' | 'las' | 'laz' | 'xyz' | 'pts';
+export type PointCloudFormat = "ply" | "pcd" | "las" | "laz" | "xyz" | "pts";
 
 /** Point cloud coloring mode */
 export type PointCloudColorMode =
-  | 'rgb'           // Use embedded RGB colors
-  | 'intensity'     // Color by intensity value
-  | 'height'        // Color by Z position (height map)
-  | 'depth'         // Color by distance from camera
-  | 'normal'        // Color by surface normal
-  | 'classification' // Color by point classification (LAS)
-  | 'uniform';      // Single uniform color
+  | "rgb" // Use embedded RGB colors
+  | "intensity" // Color by intensity value
+  | "height" // Color by Z position (height map)
+  | "depth" // Color by distance from camera
+  | "normal" // Color by surface normal
+  | "classification" // Color by point classification (LAS)
+  | "uniform"; // Single uniform color
 
 /** Point cloud rendering mode */
 export type PointCloudRenderMode =
-  | 'points'        // Standard GL_POINTS
-  | 'circles'       // Screen-space circles (anti-aliased)
-  | 'squares'       // Screen-space squares
-  | 'splats';       // Gaussian splats (3DGS-style)
+  | "points" // Standard GL_POINTS
+  | "circles" // Screen-space circles (anti-aliased)
+  | "squares" // Screen-space squares
+  | "splats"; // Gaussian splats (3DGS-style)
 
 /** Point cloud layer data */
 export interface PointCloudLayerData {
@@ -1838,20 +1895,20 @@ export interface CameraDepthOfField {
 // Camera path following configuration
 export interface CameraPathFollowing {
   enabled: boolean;
-  pathLayerId: string;              // ID of SplineLayer to follow
-  parameter: AnimatableProperty<number>;  // 0-1 position along path (can be keyframed)
-  lookAhead: number;                // Distance ahead to look (0-1 path units)
-  bankingStrength: number;          // How much to bank on turns (0-1)
-  offsetY: number;                  // Height offset from path
-  alignToPath: boolean;             // Auto-orient camera along path tangent
-  autoAdvance: boolean;             // Automatically advance along path each frame
-  autoAdvanceSpeed: number;         // Speed of auto-advance (path units per frame)
+  pathLayerId: string; // ID of SplineLayer to follow
+  parameter: AnimatableProperty<number>; // 0-1 position along path (can be keyframed)
+  lookAhead: number; // Distance ahead to look (0-1 path units)
+  bankingStrength: number; // How much to bank on turns (0-1)
+  offsetY: number; // Height offset from path
+  alignToPath: boolean; // Auto-orient camera along path tangent
+  autoAdvance: boolean; // Automatically advance along path each frame
+  autoAdvanceSpeed: number; // Speed of auto-advance (path units per frame)
 }
 
 // Camera shake configuration
 export interface CameraShakeData {
   enabled: boolean;
-  type: 'handheld' | 'impact' | 'earthquake' | 'subtle' | 'custom';
+  type: "handheld" | "impact" | "earthquake" | "subtle" | "custom";
   intensity: number;
   frequency: number;
   rotationEnabled: boolean;
@@ -1869,7 +1926,7 @@ export interface CameraRackFocusData {
   endDistance: number;
   duration: number;
   startFrame: number;
-  easing: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'snap';
+  easing: "linear" | "ease-in" | "ease-out" | "ease-in-out" | "snap";
   holdStart: number;
   holdEnd: number;
 }
@@ -1877,7 +1934,7 @@ export interface CameraRackFocusData {
 // Autofocus configuration
 export interface CameraAutoFocusData {
   enabled: boolean;
-  mode: 'center' | 'point' | 'nearest' | 'farthest';
+  mode: "center" | "point" | "nearest" | "farthest";
   focusPoint: { x: number; y: number };
   smoothing: number;
   threshold: number;
@@ -1888,7 +1945,7 @@ export interface CameraAutoFocusData {
 export interface CameraPathFollowingData {
   enabled: boolean;
   splineLayerId: string | null;
-  lookMode: 'tangent' | 'target' | 'fixed';
+  lookMode: "tangent" | "target" | "fixed";
   lookTarget: { x: number; y: number; z: number } | null;
   startOffset: number;
   speed: number;
@@ -1904,12 +1961,12 @@ export interface CameraTrajectoryKeyframes {
 }
 
 export interface CameraLayerData {
-  cameraId: string;      // Reference to the Camera3D object
-  isActiveCamera: boolean;  // Is this the composition's active camera?
+  cameraId: string; // Reference to the Camera3D object
+  isActiveCamera: boolean; // Is this the composition's active camera?
 
   // Camera3D object (inline storage)
   camera?: {
-    type: 'one-node' | 'two-node';
+    type: "one-node" | "two-node";
     position: Vec3;
     pointOfInterest: Vec3;
     zoom: number;
@@ -1965,7 +2022,7 @@ export interface ExtractedTexture {
   region: BoundingBox;
 
   // The extracted tileable texture
-  albedo: string;         // Base64 PNG
+  albedo: string; // Base64 PNG
 
   // Generated PBR maps
   pbr: {
@@ -1977,7 +2034,7 @@ export interface ExtractedTexture {
   };
 
   // Metadata
-  extractionMethod: 'matseg' | 'manual' | 'sdxl';
+  extractionMethod: "matseg" | "manual" | "sdxl";
   seamless: boolean;
   resolution: { width: number; height: number };
 }
@@ -1999,8 +2056,8 @@ export interface BoundingBox {
 }
 
 export interface ExportOptions {
-  format: 'png_sequence';
-  matteMode: 'exclude_text' | 'include_all';
+  format: "png_sequence";
+  matteMode: "exclude_text" | "include_all";
   resolution: { width: number; height: number };
 }
 
@@ -2034,17 +2091,20 @@ export function normalizeLayerTiming(layer: Layer): Layer {
 /**
  * Create a new empty project
  */
-export function createEmptyProject(width: number, height: number): LatticeProject {
-  const mainCompId = 'main';
+export function createEmptyProject(
+  width: number,
+  height: number,
+): LatticeProject {
+  const mainCompId = "main";
   const compositionSettings: CompositionSettings = {
     width,
     height,
     frameCount: 81,
     fps: 16,
     duration: 81 / 16,
-    backgroundColor: '#2d2d2d',
+    backgroundColor: "#2d2d2d",
     autoResizeToContent: true,
-    frameBlendingEnabled: false
+    frameBlendingEnabled: false,
   };
 
   return {
@@ -2053,7 +2113,7 @@ export function createEmptyProject(width: number, height: number): LatticeProjec
     meta: {
       name: "Untitled",
       created: new Date().toISOString(),
-      modified: new Date().toISOString()
+      modified: new Date().toISOString(),
     },
     // Multi-composition support
     compositions: {
@@ -2063,14 +2123,14 @@ export function createEmptyProject(width: number, height: number): LatticeProjec
         settings: compositionSettings,
         layers: [],
         currentFrame: 0,
-        isNestedComp: false
-      }
+        isNestedComp: false,
+      },
     },
     mainCompositionId: mainCompId,
     // Legacy alias
     composition: compositionSettings,
     assets: {},
     layers: [],
-    currentFrame: 0
+    currentFrame: 0,
   };
 }

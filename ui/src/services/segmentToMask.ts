@@ -11,7 +11,12 @@
  * 4. Create LayerMask with editable vertices
  */
 
-import type { LayerMask, MaskVertex, MaskPath, AnimatableProperty } from '@/types/project';
+import type {
+  AnimatableProperty,
+  LayerMask,
+  MaskPath,
+  MaskVertex,
+} from "@/types/project";
 
 // ============================================================================
 // TYPES
@@ -72,7 +77,7 @@ export interface SegmentToMaskOptions {
 export function extractContour(
   mask: ImageData | number[][],
   threshold: number = 128,
-  options: ContourOptions = {}
+  options: ContourOptions = {},
 ): Point2D[] {
   const { minDistance = 2, maxPoints = 1000 } = options;
 
@@ -105,14 +110,14 @@ export function extractContour(
   // Trace contour using Moore neighborhood
   const contour: Point2D[] = [];
   const directions = [
-    { dx: 1, dy: 0 },   // Right
-    { dx: 1, dy: 1 },   // Down-right
-    { dx: 0, dy: 1 },   // Down
-    { dx: -1, dy: 1 },  // Down-left
-    { dx: -1, dy: 0 },  // Left
+    { dx: 1, dy: 0 }, // Right
+    { dx: 1, dy: 1 }, // Down-right
+    { dx: 0, dy: 1 }, // Down
+    { dx: -1, dy: 1 }, // Down-left
+    { dx: -1, dy: 0 }, // Left
     { dx: -1, dy: -1 }, // Up-left
-    { dx: 0, dy: -1 },  // Up
-    { dx: 1, dy: -1 },  // Up-right
+    { dx: 0, dy: -1 }, // Up
+    { dx: 1, dy: -1 }, // Up-right
   ];
 
   let x = startX;
@@ -137,7 +142,13 @@ export function extractContour(
       const nx = x + dx;
       const ny = y + dy;
 
-      if (nx >= 0 && nx < width && ny >= 0 && ny < height && data[ny][nx] === 1) {
+      if (
+        nx >= 0 &&
+        nx < width &&
+        ny >= 0 &&
+        ny < height &&
+        data[ny][nx] === 1
+      ) {
         x = nx;
         y = ny;
         dir = checkDir;
@@ -184,8 +195,10 @@ function isEdgePixel(data: number[][], x: number, y: number): boolean {
 
   // Check 4-neighbors
   const neighbors = [
-    [x - 1, y], [x + 1, y],
-    [x, y - 1], [x, y + 1]
+    [x - 1, y],
+    [x + 1, y],
+    [x, y - 1],
+    [x, y + 1],
   ];
 
   for (const [nx, ny] of neighbors) {
@@ -208,7 +221,10 @@ function isEdgePixel(data: number[][], x: number, y: number): boolean {
  * @param options - Simplification options
  * @returns Simplified points
  */
-export function simplifyContour(points: Point2D[], options: SimplifyOptions = {}): Point2D[] {
+export function simplifyContour(
+  points: Point2D[],
+  options: SimplifyOptions = {},
+): Point2D[] {
   const { tolerance = 2.0, minPoints = 4, maxPoints = 100 } = options;
 
   if (points.length <= minPoints) return points;
@@ -262,16 +278,25 @@ function douglasPeucker(points: Point2D[], epsilon: number): Point2D[] {
 /**
  * Calculate perpendicular distance from point to line
  */
-function perpendicularDistance(point: Point2D, lineStart: Point2D, lineEnd: Point2D): number {
+function perpendicularDistance(
+  point: Point2D,
+  lineStart: Point2D,
+  lineEnd: Point2D,
+): number {
   const dx = lineEnd.x - lineStart.x;
   const dy = lineEnd.y - lineStart.y;
   const length = Math.sqrt(dx * dx + dy * dy);
 
   if (length === 0) return distance(point, lineStart);
 
-  const t = Math.max(0, Math.min(1,
-    ((point.x - lineStart.x) * dx + (point.y - lineStart.y) * dy) / (length * length)
-  ));
+  const t = Math.max(
+    0,
+    Math.min(
+      1,
+      ((point.x - lineStart.x) * dx + (point.y - lineStart.y) * dy) /
+        (length * length),
+    ),
+  );
 
   const projX = lineStart.x + t * dx;
   const projY = lineStart.y + t * dy;
@@ -312,7 +337,10 @@ function resampleContour(points: Point2D[], targetCount: number): Point2D[] {
  * @param options - Bezier fitting options
  * @returns Array of MaskVertex with bezier handles
  */
-export function fitBezierToContour(points: Point2D[], options: BezierFitOptions = {}): MaskVertex[] {
+export function fitBezierToContour(
+  points: Point2D[],
+  options: BezierFitOptions = {},
+): MaskVertex[] {
   const { cornerThreshold = 60 } = options;
 
   if (points.length < 2) return [];
@@ -336,13 +364,13 @@ export function fitBezierToContour(points: Point2D[], options: BezierFitOptions 
         inTangentX: 0,
         inTangentY: 0,
         outTangentX: 0,
-        outTangentY: 0
+        outTangentY: 0,
       });
     } else {
       // Smooth vertex - calculate tangents
       const tangentLength = Math.min(
         distance(prev, curr) / 3,
-        distance(curr, next) / 3
+        distance(curr, next) / 3,
       );
 
       // Direction from prev to next (smoothed)
@@ -360,7 +388,7 @@ export function fitBezierToContour(points: Point2D[], options: BezierFitOptions 
           inTangentX: -nx,
           inTangentY: -ny,
           outTangentX: nx,
-          outTangentY: ny
+          outTangentY: ny,
         });
       } else {
         vertices.push({
@@ -369,7 +397,7 @@ export function fitBezierToContour(points: Point2D[], options: BezierFitOptions 
           inTangentX: 0,
           inTangentY: 0,
           outTangentX: 0,
-          outTangentY: 0
+          outTangentY: 0,
         });
       }
     }
@@ -413,17 +441,14 @@ function distance(a: Point2D, b: Point2D): number {
  */
 export function segmentationToMask(
   mask: ImageData | HTMLCanvasElement | number[][],
-  options: SegmentToMaskOptions = {}
+  options: SegmentToMaskOptions = {},
 ): LayerMask | null {
-  const {
-    name = 'Mask from Segmentation',
-    color = '#FF00FF'
-  } = options;
+  const { name = "Mask from Segmentation", color = "#FF00FF" } = options;
 
   // Convert canvas to ImageData if needed
   let imageData: ImageData | number[][];
   if (mask instanceof HTMLCanvasElement) {
-    const ctx = mask.getContext('2d');
+    const ctx = mask.getContext("2d");
     if (!ctx) return null;
     imageData = ctx.getImageData(0, 0, mask.width, mask.height);
   } else {
@@ -433,7 +458,7 @@ export function segmentationToMask(
   // Extract contour
   const contour = extractContour(imageData, 128, options.contour);
   if (contour.length < 3) {
-    console.warn('Segmentation mask produced too few contour points');
+    console.warn("Segmentation mask produced too few contour points");
     return null;
   }
 
@@ -443,7 +468,7 @@ export function segmentationToMask(
   // Fit bezier curves
   const vertices = fitBezierToContour(simplified, options.bezier);
   if (vertices.length < 3) {
-    console.warn('Bezier fitting produced too few vertices');
+    console.warn("Bezier fitting produced too few vertices");
     return null;
   }
 
@@ -453,44 +478,44 @@ export function segmentationToMask(
   // Create mask path
   const path: MaskPath = {
     closed: true,
-    vertices
+    vertices,
   };
 
   // Create animatable properties
   const pathProp: AnimatableProperty<MaskPath> = {
     id: `path_${maskId}`,
-    name: 'Mask Path',
-    type: 'position',
+    name: "Mask Path",
+    type: "position",
     value: path,
     animated: false,
-    keyframes: []
+    keyframes: [],
   };
 
   const opacityProp: AnimatableProperty<number> = {
     id: `opacity_${maskId}`,
-    name: 'Mask Opacity',
-    type: 'number',
+    name: "Mask Opacity",
+    type: "number",
     value: 100,
     animated: false,
-    keyframes: []
+    keyframes: [],
   };
 
   const featherProp: AnimatableProperty<number> = {
     id: `feather_${maskId}`,
-    name: 'Mask Feather',
-    type: 'number',
+    name: "Mask Feather",
+    type: "number",
     value: 0,
     animated: false,
-    keyframes: []
+    keyframes: [],
   };
 
   const expansionProp: AnimatableProperty<number> = {
     id: `expansion_${maskId}`,
-    name: 'Mask Expansion',
-    type: 'number',
+    name: "Mask Expansion",
+    type: "number",
     value: 0,
     animated: false,
-    keyframes: []
+    keyframes: [],
   };
 
   // Create LayerMask
@@ -499,13 +524,13 @@ export function segmentationToMask(
     name,
     enabled: true,
     locked: false,
-    mode: 'add',
+    mode: "add",
     inverted: false,
     path: pathProp,
     opacity: opacityProp,
     feather: featherProp,
     expansion: expansionProp,
-    color
+    color,
   };
 
   return layerMask;
@@ -520,19 +545,28 @@ export function segmentationToMask(
  */
 export function batchSegmentationToMasks(
   masks: Array<ImageData | HTMLCanvasElement | number[][]>,
-  options: SegmentToMaskOptions = {}
+  options: SegmentToMaskOptions = {},
 ): LayerMask[] {
-  const colors = ['#FF00FF', '#00FFFF', '#FFFF00', '#FF8800', '#88FF00', '#0088FF'];
+  const colors = [
+    "#FF00FF",
+    "#00FFFF",
+    "#FFFF00",
+    "#FF8800",
+    "#88FF00",
+    "#0088FF",
+  ];
 
-  return masks.map((mask, index) => {
-    const maskOptions = {
-      ...options,
-      name: options.name ?? `Segmentation ${index + 1}`,
-      color: options.color ?? colors[index % colors.length]
-    };
+  return masks
+    .map((mask, index) => {
+      const maskOptions = {
+        ...options,
+        name: options.name ?? `Segmentation ${index + 1}`,
+        color: options.color ?? colors[index % colors.length],
+      };
 
-    return segmentationToMask(mask, maskOptions);
-  }).filter((m): m is LayerMask => m !== null);
+      return segmentationToMask(mask, maskOptions);
+    })
+    .filter((m): m is LayerMask => m !== null);
 }
 
 /**
@@ -571,7 +605,7 @@ export function refineMask(mask: LayerMask, targetPoints: number): LayerMask {
           inTangentX: 0,
           inTangentY: 0,
           outTangentX: 0,
-          outTangentY: 0
+          outTangentY: 0,
         };
         newVertices.push(newVertex);
       }
@@ -581,14 +615,14 @@ export function refineMask(mask: LayerMask, targetPoints: number): LayerMask {
   // Create new path
   const newPath: MaskPath = {
     closed: path.closed,
-    vertices: newVertices
+    vertices: newVertices,
   };
 
   return {
     ...mask,
     path: {
       ...mask.path,
-      value: newPath
-    }
+      value: newPath,
+    },
   };
 }

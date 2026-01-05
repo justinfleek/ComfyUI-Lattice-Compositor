@@ -9,53 +9,71 @@
  * - Expression-like math operations
  */
 
-import type { AudioAnalysis } from './audioFeatures';
-import { getFeatureAtFrame } from './audioFeatures';
-import { storeLogger } from '@/utils/logger';
+import { storeLogger } from "@/utils/logger";
+import type { AudioAnalysis } from "./audioFeatures";
+import { getFeatureAtFrame } from "./audioFeatures";
 
 // ============================================================================
 // Types
 // ============================================================================
 
 export type DriverSourceType =
-  | 'property'      // Another layer's property
-  | 'audio'         // Audio feature
-  | 'time'          // Frame/time based
-  | 'expression';   // Math expression
+  | "property" // Another layer's property
+  | "audio" // Audio feature
+  | "time" // Frame/time based
+  | "expression"; // Math expression
 
 export type PropertyPath =
-  | 'transform.position.x' | 'transform.position.y' | 'transform.position.z'
-  | 'transform.anchorPoint.x' | 'transform.anchorPoint.y' | 'transform.anchorPoint.z'
-  | 'transform.scale.x' | 'transform.scale.y' | 'transform.scale.z'
-  | 'transform.rotation' | 'transform.rotationX' | 'transform.rotationY' | 'transform.rotationZ'
-  | 'opacity'
+  | "transform.position.x"
+  | "transform.position.y"
+  | "transform.position.z"
+  | "transform.anchorPoint.x"
+  | "transform.anchorPoint.y"
+  | "transform.anchorPoint.z"
+  | "transform.scale.x"
+  | "transform.scale.y"
+  | "transform.scale.z"
+  | "transform.rotation"
+  | "transform.rotationX"
+  | "transform.rotationY"
+  | "transform.rotationZ"
+  | "opacity"
   // Spline control point properties (dynamic index)
   // Format: spline.controlPoint.{index}.{property}
   | `spline.controlPoint.${number}.x`
   | `spline.controlPoint.${number}.y`
   | `spline.controlPoint.${number}.depth`
   // Light properties
-  | 'light.intensity'
-  | 'light.color.r' | 'light.color.g' | 'light.color.b'
-  | 'light.colorTemperature'
-  | 'light.coneAngle' | 'light.penumbra' | 'light.falloff'
-  | 'light.shadow.intensity' | 'light.shadow.softness' | 'light.shadow.bias'
-  | 'light.poi.x' | 'light.poi.y' | 'light.poi.z'
-  | 'light.areaSize.width' | 'light.areaSize.height'
-  | 'light.physicalIntensity';
+  | "light.intensity"
+  | "light.color.r"
+  | "light.color.g"
+  | "light.color.b"
+  | "light.colorTemperature"
+  | "light.coneAngle"
+  | "light.penumbra"
+  | "light.falloff"
+  | "light.shadow.intensity"
+  | "light.shadow.softness"
+  | "light.shadow.bias"
+  | "light.poi.x"
+  | "light.poi.y"
+  | "light.poi.z"
+  | "light.areaSize.width"
+  | "light.areaSize.height"
+  | "light.physicalIntensity";
 
 /**
  * Check if a property path is a spline control point property
  */
 export function isSplineControlPointPath(path: string): path is PropertyPath {
-  return path.startsWith('spline.controlPoint.');
+  return path.startsWith("spline.controlPoint.");
 }
 
 /**
  * Check if a property path is a light property
  */
 export function isLightPropertyPath(path: string): path is PropertyPath {
-  return path.startsWith('light.');
+  return path.startsWith("light.");
 }
 
 /**
@@ -64,13 +82,13 @@ export function isLightPropertyPath(path: string): path is PropertyPath {
  */
 export function parseSplineControlPointPath(path: string): {
   index: number;
-  property: 'x' | 'y' | 'depth';
+  property: "x" | "y" | "depth";
 } | null {
   const match = path.match(/^spline\.controlPoint\.(\d+)\.(x|y|depth)$/);
   if (!match) return null;
   return {
     index: parseInt(match[1], 10),
-    property: match[2] as 'x' | 'y' | 'depth',
+    property: match[2] as "x" | "y" | "depth",
   };
 }
 
@@ -79,15 +97,23 @@ export function parseSplineControlPointPath(path: string): {
  */
 export function createSplineControlPointPath(
   index: number,
-  property: 'x' | 'y' | 'depth'
+  property: "x" | "y" | "depth",
 ): PropertyPath {
   return `spline.controlPoint.${index}.${property}` as PropertyPath;
 }
 
 export type AudioFeatureType =
-  | 'amplitude' | 'rms' | 'spectralCentroid'
-  | 'sub' | 'bass' | 'lowMid' | 'mid' | 'highMid' | 'high'
-  | 'onsets' | 'peaks';
+  | "amplitude"
+  | "rms"
+  | "spectralCentroid"
+  | "sub"
+  | "bass"
+  | "lowMid"
+  | "mid"
+  | "highMid"
+  | "high"
+  | "onsets"
+  | "peaks";
 
 export interface PropertyDriver {
   id: string;
@@ -107,19 +133,27 @@ export interface PropertyDriver {
 
   // For audio source
   audioFeature?: AudioFeatureType;
-  audioThreshold?: number;      // Values below this become 0
+  audioThreshold?: number; // Values below this become 0
   audioAboveThreshold?: boolean; // Only trigger when above threshold
 
   // Transform chain (applied in order)
   transforms: DriverTransform[];
 
   // How to combine with base value
-  blendMode: 'replace' | 'add' | 'multiply';
-  blendAmount: number;  // 0-1, for mixing with base value
+  blendMode: "replace" | "add" | "multiply";
+  blendAmount: number; // 0-1, for mixing with base value
 }
 
 export interface DriverTransform {
-  type: 'scale' | 'offset' | 'clamp' | 'smooth' | 'invert' | 'remap' | 'threshold' | 'oscillate';
+  type:
+    | "scale"
+    | "offset"
+    | "clamp"
+    | "smooth"
+    | "invert"
+    | "remap"
+    | "threshold"
+    | "oscillate";
 
   // Scale: value * factor
   factor?: number;
@@ -153,8 +187,16 @@ export interface DriverTransform {
 // Property Getter/Setter Types
 // ============================================================================
 
-export type PropertyGetter = (layerId: string, property: PropertyPath, frame: number) => number | null;
-export type PropertySetter = (layerId: string, property: PropertyPath, value: number) => void;
+export type PropertyGetter = (
+  layerId: string,
+  property: PropertyPath,
+  frame: number,
+) => number | null;
+export type PropertySetter = (
+  layerId: string,
+  property: PropertyPath,
+  value: number,
+) => void;
 
 // ============================================================================
 // Driver Evaluator
@@ -165,8 +207,6 @@ export class PropertyDriverSystem {
   private smoothedValues: Map<string, number> = new Map();
   private audioAnalysis: AudioAnalysis | null = null;
   private propertyGetter: PropertyGetter | null = null;
-
-  constructor() {}
 
   /**
    * Set the audio analysis data for audio-driven properties
@@ -188,9 +228,15 @@ export class PropertyDriverSystem {
    */
   addDriver(driver: PropertyDriver): boolean {
     // Check for circular dependencies before adding
-    if (driver.sourceType === 'property' && driver.sourceLayerId && driver.sourceProperty) {
+    if (
+      driver.sourceType === "property" &&
+      driver.sourceLayerId &&
+      driver.sourceProperty
+    ) {
       if (this.wouldCreateCycle(driver)) {
-        storeLogger.warn('PropertyDriverSystem: Cannot add driver: would create circular dependency');
+        storeLogger.warn(
+          "PropertyDriverSystem: Cannot add driver: would create circular dependency",
+        );
         return false;
       }
     }
@@ -204,7 +250,7 @@ export class PropertyDriverSystem {
    * Check if adding a driver would create a circular dependency
    */
   wouldCreateCycle(newDriver: PropertyDriver): boolean {
-    if (newDriver.sourceType !== 'property') return false;
+    if (newDriver.sourceType !== "property") return false;
     if (!newDriver.sourceLayerId || !newDriver.sourceProperty) return false;
 
     // Build a dependency graph and check for cycles
@@ -225,8 +271,12 @@ export class PropertyDriverSystem {
       // Find all drivers that have this as their target
       // Then check if any of their sources lead back to our target
       for (const driver of this.drivers.values()) {
-        if (driver.sourceType !== 'property') continue;
-        if (driver.targetLayerId !== layerId || driver.targetProperty !== property) continue;
+        if (driver.sourceType !== "property") continue;
+        if (
+          driver.targetLayerId !== layerId ||
+          driver.targetProperty !== property
+        )
+          continue;
         if (!driver.sourceLayerId || !driver.sourceProperty) continue;
 
         if (hasCycle(driver.sourceLayerId, driver.sourceProperty)) {
@@ -277,22 +327,34 @@ export class PropertyDriverSystem {
    * Get drivers for a specific target layer
    */
   getDriversForLayer(layerId: string): PropertyDriver[] {
-    return Array.from(this.drivers.values()).filter(d => d.targetLayerId === layerId);
+    return Array.from(this.drivers.values()).filter(
+      (d) => d.targetLayerId === layerId,
+    );
   }
 
   /**
    * Get drivers for a specific target property
    */
-  getDriversForProperty(layerId: string, property: PropertyPath): PropertyDriver[] {
+  getDriversForProperty(
+    layerId: string,
+    property: PropertyPath,
+  ): PropertyDriver[] {
     return Array.from(this.drivers.values()).filter(
-      d => d.targetLayerId === layerId && d.targetProperty === property && d.enabled
+      (d) =>
+        d.targetLayerId === layerId &&
+        d.targetProperty === property &&
+        d.enabled,
     );
   }
 
   /**
    * Evaluate a driver at a given frame
    */
-  evaluateDriver(driver: PropertyDriver, frame: number, baseValue: number): number {
+  evaluateDriver(
+    driver: PropertyDriver,
+    frame: number,
+    baseValue: number,
+  ): number {
     if (!driver.enabled) return baseValue;
 
     // Get source value
@@ -303,7 +365,12 @@ export class PropertyDriverSystem {
     value = this.applyTransforms(driver, value);
 
     // Blend with base value
-    return this.blendValue(baseValue, value, driver.blendMode, driver.blendAmount);
+    return this.blendValue(
+      baseValue,
+      value,
+      driver.blendMode,
+      driver.blendAmount,
+    );
   }
 
   /**
@@ -311,13 +378,13 @@ export class PropertyDriverSystem {
    */
   private getSourceValue(driver: PropertyDriver, frame: number): number | null {
     switch (driver.sourceType) {
-      case 'property':
+      case "property":
         return this.getPropertySourceValue(driver, frame);
 
-      case 'audio':
+      case "audio":
         return this.getAudioSourceValue(driver, frame);
 
-      case 'time':
+      case "time":
         return frame;
 
       default:
@@ -328,22 +395,40 @@ export class PropertyDriverSystem {
   /**
    * Get value from another property
    */
-  private getPropertySourceValue(driver: PropertyDriver, frame: number): number | null {
-    if (!this.propertyGetter || !driver.sourceLayerId || !driver.sourceProperty) {
+  private getPropertySourceValue(
+    driver: PropertyDriver,
+    frame: number,
+  ): number | null {
+    if (
+      !this.propertyGetter ||
+      !driver.sourceLayerId ||
+      !driver.sourceProperty
+    ) {
       return null;
     }
-    return this.propertyGetter(driver.sourceLayerId, driver.sourceProperty, frame);
+    return this.propertyGetter(
+      driver.sourceLayerId,
+      driver.sourceProperty,
+      frame,
+    );
   }
 
   /**
    * Get value from audio analysis
    */
-  private getAudioSourceValue(driver: PropertyDriver, frame: number): number | null {
+  private getAudioSourceValue(
+    driver: PropertyDriver,
+    frame: number,
+  ): number | null {
     if (!this.audioAnalysis || !driver.audioFeature) {
       return null;
     }
 
-    let value = getFeatureAtFrame(this.audioAnalysis, driver.audioFeature, frame);
+    let value = getFeatureAtFrame(
+      this.audioAnalysis,
+      driver.audioFeature,
+      frame,
+    );
 
     // Apply threshold if configured
     if (driver.audioThreshold !== undefined) {
@@ -372,18 +457,25 @@ export class PropertyDriverSystem {
   /**
    * Apply a single transform
    */
-  private applyTransform(driverId: string, transform: DriverTransform, value: number): number {
+  private applyTransform(
+    driverId: string,
+    transform: DriverTransform,
+    value: number,
+  ): number {
     switch (transform.type) {
-      case 'scale':
+      case "scale":
         return value * (transform.factor ?? 1);
 
-      case 'offset':
+      case "offset":
         return value + (transform.amount ?? 0);
 
-      case 'clamp':
-        return Math.max(transform.min ?? -Infinity, Math.min(transform.max ?? Infinity, value));
+      case "clamp":
+        return Math.max(
+          transform.min ?? -Infinity,
+          Math.min(transform.max ?? Infinity, value),
+        );
 
-      case 'smooth': {
+      case "smooth": {
         const prevValue = this.smoothedValues.get(driverId) ?? value;
         const smoothing = transform.smoothing ?? 0.5;
         const smoothed = prevValue * smoothing + value * (1 - smoothing);
@@ -391,10 +483,10 @@ export class PropertyDriverSystem {
         return smoothed;
       }
 
-      case 'invert':
+      case "invert":
         return 1 - value;
 
-      case 'remap': {
+      case "remap": {
         const inMin = transform.inMin ?? 0;
         const inMax = transform.inMax ?? 1;
         const outMin = transform.outMin ?? 0;
@@ -403,10 +495,10 @@ export class PropertyDriverSystem {
         return outMin + normalized * (outMax - outMin);
       }
 
-      case 'threshold':
+      case "threshold":
         return value > (transform.threshold ?? 0.5) ? 1 : 0;
 
-      case 'oscillate': {
+      case "oscillate": {
         const freq = transform.frequency ?? 1;
         const amp = transform.amplitude ?? 1;
         const phase = transform.phase ?? 0;
@@ -421,17 +513,22 @@ export class PropertyDriverSystem {
   /**
    * Blend driven value with base value
    */
-  private blendValue(base: number, driven: number, mode: PropertyDriver['blendMode'], amount: number): number {
+  private blendValue(
+    base: number,
+    driven: number,
+    mode: PropertyDriver["blendMode"],
+    amount: number,
+  ): number {
     let result: number;
 
     switch (mode) {
-      case 'replace':
+      case "replace":
         result = driven;
         break;
-      case 'add':
+      case "add":
         result = base + driven;
         break;
-      case 'multiply':
+      case "multiply":
         result = base * driven;
         break;
       default:
@@ -449,7 +546,7 @@ export class PropertyDriverSystem {
   evaluateLayerDrivers(
     layerId: string,
     frame: number,
-    baseValues: Map<PropertyPath, number>
+    baseValues: Map<PropertyPath, number>,
   ): Map<PropertyPath, number> {
     const result = new Map<PropertyPath, number>();
     const drivers = this.getDriversForLayer(layerId);
@@ -515,18 +612,18 @@ export class PropertyDriverSystem {
 export function createPropertyDriver(
   targetLayerId: string,
   targetProperty: PropertyPath,
-  sourceType: DriverSourceType = 'property'
+  sourceType: DriverSourceType = "property",
 ): PropertyDriver {
   return {
     id: `driver_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
-    name: 'New Driver',
+    name: "New Driver",
     enabled: true,
     targetLayerId,
     targetProperty,
     sourceType,
     transforms: [],
-    blendMode: 'add',
-    blendAmount: 1
+    blendMode: "add",
+    blendAmount: 1,
   };
 }
 
@@ -542,22 +639,22 @@ export function createAudioDriver(
     scale?: number;
     offset?: number;
     smoothing?: number;
-  } = {}
+  } = {},
 ): PropertyDriver {
-  const driver = createPropertyDriver(targetLayerId, targetProperty, 'audio');
+  const driver = createPropertyDriver(targetLayerId, targetProperty, "audio");
   driver.audioFeature = audioFeature;
   driver.audioThreshold = options.threshold ?? 0;
   driver.audioAboveThreshold = options.threshold !== undefined;
 
   // Add transforms based on options
   if (options.scale !== undefined && options.scale !== 1) {
-    driver.transforms.push({ type: 'scale', factor: options.scale });
+    driver.transforms.push({ type: "scale", factor: options.scale });
   }
   if (options.offset !== undefined && options.offset !== 0) {
-    driver.transforms.push({ type: 'offset', amount: options.offset });
+    driver.transforms.push({ type: "offset", amount: options.offset });
   }
   if (options.smoothing !== undefined && options.smoothing > 0) {
-    driver.transforms.push({ type: 'smooth', smoothing: options.smoothing });
+    driver.transforms.push({ type: "smooth", smoothing: options.smoothing });
   }
 
   return driver;
@@ -574,19 +671,23 @@ export function createPropertyLink(
   options: {
     scale?: number;
     offset?: number;
-    blendMode?: PropertyDriver['blendMode'];
-  } = {}
+    blendMode?: PropertyDriver["blendMode"];
+  } = {},
 ): PropertyDriver {
-  const driver = createPropertyDriver(targetLayerId, targetProperty, 'property');
+  const driver = createPropertyDriver(
+    targetLayerId,
+    targetProperty,
+    "property",
+  );
   driver.sourceLayerId = sourceLayerId;
   driver.sourceProperty = sourceProperty;
-  driver.blendMode = options.blendMode ?? 'add';
+  driver.blendMode = options.blendMode ?? "add";
 
   if (options.scale !== undefined && options.scale !== 1) {
-    driver.transforms.push({ type: 'scale', factor: options.scale });
+    driver.transforms.push({ type: "scale", factor: options.scale });
   }
   if (options.offset !== undefined && options.offset !== 0) {
-    driver.transforms.push({ type: 'offset', amount: options.offset });
+    driver.transforms.push({ type: "offset", amount: options.offset });
   }
 
   return driver;
@@ -599,18 +700,22 @@ export function createPropertyLink(
 export function createGearDriver(
   targetLayerId: string,
   sourceLayerId: string,
-  gearRatio: number = 1,  // How many times target rotates per source rotation
-  offset: number = 0       // Rotation offset in degrees
+  gearRatio: number = 1, // How many times target rotates per source rotation
+  offset: number = 0, // Rotation offset in degrees
 ): PropertyDriver {
-  const driver = createPropertyDriver(targetLayerId, 'transform.rotation', 'property');
-  driver.name = 'Gear Rotation';
+  const driver = createPropertyDriver(
+    targetLayerId,
+    "transform.rotation",
+    "property",
+  );
+  driver.name = "Gear Rotation";
   driver.sourceLayerId = sourceLayerId;
-  driver.sourceProperty = 'transform.rotation';
-  driver.blendMode = 'replace';
+  driver.sourceProperty = "transform.rotation";
+  driver.blendMode = "replace";
 
-  driver.transforms.push({ type: 'scale', factor: gearRatio });
+  driver.transforms.push({ type: "scale", factor: gearRatio });
   if (offset !== 0) {
-    driver.transforms.push({ type: 'offset', amount: offset });
+    driver.transforms.push({ type: "offset", amount: offset });
   }
 
   return driver;
@@ -622,27 +727,33 @@ export function createGearDriver(
  */
 export function createAudioLightDriver(
   lightLayerId: string,
-  audioFeature: AudioFeatureType = 'amplitude',
+  audioFeature: AudioFeatureType = "amplitude",
   options: {
     minIntensity?: number;
     maxIntensity?: number;
     smoothing?: number;
     threshold?: number;
-  } = {}
+  } = {},
 ): PropertyDriver {
-  const driver = createPropertyDriver(lightLayerId, 'light.intensity', 'audio');
-  driver.name = 'Audio Light Pulse';
+  const driver = createPropertyDriver(lightLayerId, "light.intensity", "audio");
+  driver.name = "Audio Light Pulse";
   driver.audioFeature = audioFeature;
   driver.audioThreshold = options.threshold ?? 0;
-  driver.blendMode = 'replace';
+  driver.blendMode = "replace";
 
   // Remap 0-1 audio to intensity range
   const minI = options.minIntensity ?? 0.2;
   const maxI = options.maxIntensity ?? 2.0;
-  driver.transforms.push({ type: 'remap', inMin: 0, inMax: 1, outMin: minI, outMax: maxI });
+  driver.transforms.push({
+    type: "remap",
+    inMin: 0,
+    inMax: 1,
+    outMin: minI,
+    outMax: maxI,
+  });
 
   if (options.smoothing !== undefined && options.smoothing > 0) {
-    driver.transforms.push({ type: 'smooth', smoothing: options.smoothing });
+    driver.transforms.push({ type: "smooth", smoothing: options.smoothing });
   }
 
   return driver;
@@ -654,25 +765,35 @@ export function createAudioLightDriver(
  */
 export function createAudioColorTempDriver(
   lightLayerId: string,
-  audioFeature: AudioFeatureType = 'spectralCentroid',
+  audioFeature: AudioFeatureType = "spectralCentroid",
   options: {
-    warmTemp?: number;   // Kelvin at low values (default 2700K warm)
-    coolTemp?: number;   // Kelvin at high values (default 8000K cool)
+    warmTemp?: number; // Kelvin at low values (default 2700K warm)
+    coolTemp?: number; // Kelvin at high values (default 8000K cool)
     smoothing?: number;
-  } = {}
+  } = {},
 ): PropertyDriver {
-  const driver = createPropertyDriver(lightLayerId, 'light.colorTemperature', 'audio');
-  driver.name = 'Audio Color Temperature';
+  const driver = createPropertyDriver(
+    lightLayerId,
+    "light.colorTemperature",
+    "audio",
+  );
+  driver.name = "Audio Color Temperature";
   driver.audioFeature = audioFeature;
-  driver.blendMode = 'replace';
+  driver.blendMode = "replace";
 
   // Map normalized spectral centroid to temperature range
   const warm = options.warmTemp ?? 2700;
   const cool = options.coolTemp ?? 8000;
-  driver.transforms.push({ type: 'remap', inMin: 0, inMax: 1, outMin: warm, outMax: cool });
+  driver.transforms.push({
+    type: "remap",
+    inMin: 0,
+    inMax: 1,
+    outMin: warm,
+    outMax: cool,
+  });
 
   if (options.smoothing !== undefined && options.smoothing > 0) {
-    driver.transforms.push({ type: 'smooth', smoothing: options.smoothing });
+    driver.transforms.push({ type: "smooth", smoothing: options.smoothing });
   }
 
   return driver;
@@ -686,35 +807,35 @@ export function createLightFollowDriver(
   lightLayerId: string,
   targetLayerId: string,
   options: {
-    axis?: 'poi' | 'position';  // Drive POI or light position itself
+    axis?: "poi" | "position"; // Drive POI or light position itself
     smoothing?: number;
     offset?: { x?: number; y?: number; z?: number };
-  } = {}
+  } = {},
 ): PropertyDriver[] {
   const drivers: PropertyDriver[] = [];
-  const axis = options.axis ?? 'poi';
-  const prefix = axis === 'poi' ? 'light.poi' : 'transform.position';
+  const axis = options.axis ?? "poi";
+  const prefix = axis === "poi" ? "light.poi" : "transform.position";
 
   // Create drivers for x, y, z
-  for (const coord of ['x', 'y', 'z'] as const) {
+  for (const coord of ["x", "y", "z"] as const) {
     const driver = createPropertyDriver(
       lightLayerId,
       `${prefix}.${coord}` as PropertyPath,
-      'property'
+      "property",
     );
     driver.name = `Light Follow ${coord.toUpperCase()}`;
     driver.sourceLayerId = targetLayerId;
     driver.sourceProperty = `transform.position.${coord}` as PropertyPath;
-    driver.blendMode = 'replace';
+    driver.blendMode = "replace";
 
     // Apply offset if specified
     const offsetValue = options.offset?.[coord];
     if (offsetValue !== undefined && offsetValue !== 0) {
-      driver.transforms.push({ type: 'offset', amount: offsetValue });
+      driver.transforms.push({ type: "offset", amount: offsetValue });
     }
 
     if (options.smoothing !== undefined && options.smoothing > 0) {
-      driver.transforms.push({ type: 'smooth', smoothing: options.smoothing });
+      driver.transforms.push({ type: "smooth", smoothing: options.smoothing });
     }
 
     drivers.push(driver);
@@ -730,45 +851,48 @@ export function getPropertyPathDisplayName(path: PropertyPath): string {
   // Check for spline control point paths first
   const splineParsed = parseSplineControlPointPath(path);
   if (splineParsed) {
-    const propName = splineParsed.property === 'x' ? 'X'
-      : splineParsed.property === 'y' ? 'Y'
-      : 'Depth';
+    const propName =
+      splineParsed.property === "x"
+        ? "X"
+        : splineParsed.property === "y"
+          ? "Y"
+          : "Depth";
     return `Control Point ${splineParsed.index} ${propName}`;
   }
 
   const names: Record<string, string> = {
-    'transform.position.x': 'Position X',
-    'transform.position.y': 'Position Y',
-    'transform.position.z': 'Position Z',
-    'transform.anchorPoint.x': 'Anchor Point X',
-    'transform.anchorPoint.y': 'Anchor Point Y',
-    'transform.anchorPoint.z': 'Anchor Point Z',
-    'transform.scale.x': 'Scale X',
-    'transform.scale.y': 'Scale Y',
-    'transform.scale.z': 'Scale Z',
-    'transform.rotation': 'Rotation',
-    'transform.rotationX': 'X Rotation',
-    'transform.rotationY': 'Y Rotation',
-    'transform.rotationZ': 'Z Rotation',
-    'opacity': 'Opacity',
+    "transform.position.x": "Position X",
+    "transform.position.y": "Position Y",
+    "transform.position.z": "Position Z",
+    "transform.anchorPoint.x": "Anchor Point X",
+    "transform.anchorPoint.y": "Anchor Point Y",
+    "transform.anchorPoint.z": "Anchor Point Z",
+    "transform.scale.x": "Scale X",
+    "transform.scale.y": "Scale Y",
+    "transform.scale.z": "Scale Z",
+    "transform.rotation": "Rotation",
+    "transform.rotationX": "X Rotation",
+    "transform.rotationY": "Y Rotation",
+    "transform.rotationZ": "Z Rotation",
+    opacity: "Opacity",
     // Light properties
-    'light.intensity': 'Light Intensity',
-    'light.color.r': 'Light Color Red',
-    'light.color.g': 'Light Color Green',
-    'light.color.b': 'Light Color Blue',
-    'light.colorTemperature': 'Color Temperature (K)',
-    'light.coneAngle': 'Cone Angle',
-    'light.penumbra': 'Penumbra',
-    'light.falloff': 'Falloff',
-    'light.shadow.intensity': 'Shadow Intensity',
-    'light.shadow.softness': 'Shadow Softness',
-    'light.shadow.bias': 'Shadow Bias',
-    'light.poi.x': 'Point of Interest X',
-    'light.poi.y': 'Point of Interest Y',
-    'light.poi.z': 'Point of Interest Z',
-    'light.areaSize.width': 'Area Light Width',
-    'light.areaSize.height': 'Area Light Height',
-    'light.physicalIntensity': 'Physical Intensity (lm)'
+    "light.intensity": "Light Intensity",
+    "light.color.r": "Light Color Red",
+    "light.color.g": "Light Color Green",
+    "light.color.b": "Light Color Blue",
+    "light.colorTemperature": "Color Temperature (K)",
+    "light.coneAngle": "Cone Angle",
+    "light.penumbra": "Penumbra",
+    "light.falloff": "Falloff",
+    "light.shadow.intensity": "Shadow Intensity",
+    "light.shadow.softness": "Shadow Softness",
+    "light.shadow.bias": "Shadow Bias",
+    "light.poi.x": "Point of Interest X",
+    "light.poi.y": "Point of Interest Y",
+    "light.poi.z": "Point of Interest Z",
+    "light.areaSize.width": "Area Light Width",
+    "light.areaSize.height": "Area Light Height",
+    "light.physicalIntensity": "Physical Intensity (lm)",
   };
   return names[path] || path;
 }
@@ -778,11 +902,20 @@ export function getPropertyPathDisplayName(path: PropertyPath): string {
  */
 export function getAllPropertyPaths(): PropertyPath[] {
   return [
-    'transform.position.x', 'transform.position.y', 'transform.position.z',
-    'transform.anchorPoint.x', 'transform.anchorPoint.y', 'transform.anchorPoint.z',
-    'transform.scale.x', 'transform.scale.y', 'transform.scale.z',
-    'transform.rotation', 'transform.rotationX', 'transform.rotationY', 'transform.rotationZ',
-    'opacity'
+    "transform.position.x",
+    "transform.position.y",
+    "transform.position.z",
+    "transform.anchorPoint.x",
+    "transform.anchorPoint.y",
+    "transform.anchorPoint.z",
+    "transform.scale.x",
+    "transform.scale.y",
+    "transform.scale.z",
+    "transform.rotation",
+    "transform.rotationX",
+    "transform.rotationY",
+    "transform.rotationZ",
+    "opacity",
   ];
 }
 
@@ -791,27 +924,38 @@ export function getAllPropertyPaths(): PropertyPath[] {
  */
 export function getLightPropertyPaths(): PropertyPath[] {
   return [
-    'light.intensity',
-    'light.color.r', 'light.color.g', 'light.color.b',
-    'light.colorTemperature',
-    'light.coneAngle', 'light.penumbra', 'light.falloff',
-    'light.shadow.intensity', 'light.shadow.softness', 'light.shadow.bias',
-    'light.poi.x', 'light.poi.y', 'light.poi.z',
-    'light.areaSize.width', 'light.areaSize.height',
-    'light.physicalIntensity'
+    "light.intensity",
+    "light.color.r",
+    "light.color.g",
+    "light.color.b",
+    "light.colorTemperature",
+    "light.coneAngle",
+    "light.penumbra",
+    "light.falloff",
+    "light.shadow.intensity",
+    "light.shadow.softness",
+    "light.shadow.bias",
+    "light.poi.x",
+    "light.poi.y",
+    "light.poi.z",
+    "light.areaSize.width",
+    "light.areaSize.height",
+    "light.physicalIntensity",
   ];
 }
 
 /**
  * Get all property paths for a specific layer type
  */
-export function getPropertyPathsForLayerType(layerType: string): PropertyPath[] {
+export function getPropertyPathsForLayerType(
+  layerType: string,
+): PropertyPath[] {
   const commonPaths = getAllPropertyPaths();
 
   switch (layerType) {
-    case 'light':
+    case "light":
       return [...commonPaths, ...getLightPropertyPaths()];
-    case 'spline':
+    case "spline":
       // Spline control points are dynamic, so we just return common paths
       // Individual control point paths are generated dynamically
       return commonPaths;

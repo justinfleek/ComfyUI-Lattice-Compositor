@@ -11,8 +11,8 @@
  * - Multi-segment bezier path support
  */
 
-import * as THREE from 'three';
-import type { ControlPoint } from '@/types/project';
+import * as THREE from "three";
+import type { ControlPoint } from "@/types/project";
 
 // ============================================================================
 // TYPES
@@ -22,8 +22,8 @@ export interface PathPoint {
   position: THREE.Vector3;
   tangent: THREE.Vector3;
   normal: THREE.Vector3;
-  t: number;           // Parameter 0-1
-  distance: number;    // Arc length distance from start
+  t: number; // Parameter 0-1
+  distance: number; // Arc length distance from start
 }
 
 export interface TextOnPathConfig {
@@ -49,7 +49,7 @@ export interface TextOnPathConfig {
   offset: number;
 
   /** Text alignment on path */
-  align: 'left' | 'center' | 'right';
+  align: "left" | "center" | "right";
 }
 
 export interface CharacterPlacement {
@@ -92,7 +92,7 @@ class ArcLengthTable {
 
   constructor(
     private curve: THREE.CurvePath<THREE.Vector3>,
-    resolution: number = 500
+    resolution: number = 500,
   ) {
     this.build(resolution);
   }
@@ -152,7 +152,8 @@ class ArcLengthTable {
       return entry.t;
     }
 
-    const ratio = (distance - prevEntry.distance) / (entry.distance - prevEntry.distance);
+    const ratio =
+      (distance - prevEntry.distance) / (entry.distance - prevEntry.distance);
     return prevEntry.t + ratio * (entry.t - prevEntry.t);
   }
 
@@ -209,14 +210,14 @@ export class TextOnPathService {
         new THREE.Vector3(
           p0.x + (p0.handleOut?.x ?? 0),
           -(p0.y + (p0.handleOut?.y ?? 0)),
-          z0
+          z0,
         ),
         new THREE.Vector3(
           p1.x + (p1.handleIn?.x ?? 0),
           -(p1.y + (p1.handleIn?.y ?? 0)),
-          z1
+          z1,
         ),
-        new THREE.Vector3(p1.x, -p1.y, z1)
+        new THREE.Vector3(p1.x, -p1.y, z1),
       );
 
       this.curve.add(bezier);
@@ -235,14 +236,14 @@ export class TextOnPathService {
         new THREE.Vector3(
           lastPoint.x + (lastPoint.handleOut?.x ?? 0),
           -(lastPoint.y + (lastPoint.handleOut?.y ?? 0)),
-          zLast
+          zLast,
         ),
         new THREE.Vector3(
           firstPoint.x + (firstPoint.handleIn?.x ?? 0),
           -(firstPoint.y + (firstPoint.handleIn?.y ?? 0)),
-          zFirst
+          zFirst,
         ),
-        new THREE.Vector3(firstPoint.x, -firstPoint.y, zFirst)
+        new THREE.Vector3(firstPoint.x, -firstPoint.y, zFirst),
       );
 
       this.curve.add(closingBezier);
@@ -287,7 +288,7 @@ export class TextOnPathService {
     characterWidths: number[],
     config: TextOnPathConfig,
     tracking: number = 0,
-    fontSize: number = 72
+    fontSize: number = 72,
   ): CharacterPlacement[] {
     if (!this.arcLengthTable || characterWidths.length === 0) {
       return [];
@@ -307,15 +308,17 @@ export class TextOnPathService {
     }
 
     // Calculate available path length (accounting for margins)
-    const availableLength = totalLength - config.firstMargin - config.lastMargin;
+    const availableLength =
+      totalLength - config.firstMargin - config.lastMargin;
 
     // Calculate starting position based on alignment
     let startDistance: number;
     switch (config.align) {
-      case 'center':
-        startDistance = config.firstMargin + (availableLength - totalTextWidth) / 2;
+      case "center":
+        startDistance =
+          config.firstMargin + (availableLength - totalTextWidth) / 2;
         break;
-      case 'right':
+      case "right":
         startDistance = config.firstMargin + availableLength - totalTextWidth;
         break;
       default: // 'left'
@@ -347,9 +350,12 @@ export class TextOnPathService {
       if (actualDistance < 0 || actualDistance > totalLength) {
         // For closed paths, wrap around; for open paths, hide
         if (config.forceAlignment) {
-          actualDistance = ((actualDistance % totalLength) + totalLength) % totalLength;
+          actualDistance =
+            ((actualDistance % totalLength) + totalLength) % totalLength;
         } else {
-          visible = actualDistance >= -charWidth && actualDistance <= totalLength + charWidth;
+          visible =
+            actualDistance >= -charWidth &&
+            actualDistance <= totalLength + charWidth;
           actualDistance = Math.max(0, Math.min(totalLength, actualDistance));
         }
       }
@@ -362,7 +368,11 @@ export class TextOnPathService {
       if (config.perpendicularToPath) {
         // Perpendicular to tangent (baseline along path)
         const angle = Math.atan2(pathPoint.tangent.y, pathPoint.tangent.x);
-        rotation = new THREE.Euler(0, 0, config.reversed ? angle + Math.PI : angle);
+        rotation = new THREE.Euler(
+          0,
+          0,
+          config.reversed ? angle + Math.PI : angle,
+        );
       } else {
         // Upright characters (no rotation)
         rotation = new THREE.Euler(0, 0, 0);
@@ -446,7 +456,7 @@ export function createDefaultPathConfig(): TextOnPathConfig {
     firstMargin: 0,
     lastMargin: 0,
     offset: 0,
-    align: 'left',
+    align: "left",
   };
 }
 

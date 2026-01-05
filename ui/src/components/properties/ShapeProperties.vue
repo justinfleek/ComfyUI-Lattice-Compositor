@@ -464,52 +464,59 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { computed, ref } from "vue";
+import { useCompositorStore } from "@/stores/compositorStore";
 import type {
-  Layer,
-  SplineData,
   AnimatableProperty,
+  Layer,
+  OffsetPathEffect,
+  RoughenEffect,
+  SplineData,
   SplinePathEffect,
   SplinePathEffectInstance,
   SplinePathEffectType,
-  OffsetPathEffect,
-  RoughenEffect,
+  WaveEffect,
   WigglePathEffect,
   ZigZagEffect,
-  WaveEffect,
-} from '@/types/project';
-import { useCompositorStore } from '@/stores/compositorStore';
-import { ScrubableNumber } from '@/components/controls';
+} from "@/types/project";
 
 const props = defineProps<{ layer: Layer }>();
-const emit = defineEmits(['update']);
+const emit = defineEmits(["update"]);
 const store = useCompositorStore();
 
-const expandedSections = ref<string[]>(['stroke', 'fill', 'trim']);
-const newEffectType = ref<SplinePathEffectType | ''>('');
+const expandedSections = ref<string[]>(["stroke", "fill", "trim"]);
+const newEffectType = ref<SplinePathEffectType | "">("");
 
 const shapeData = computed<SplineData>(() => {
-  return props.layer.data as SplineData || {
-    pathData: '',
-    controlPoints: [],
-    closed: false,
-    stroke: '#ffffff',
-    strokeWidth: 2,
-    strokeOpacity: 100,
-    strokeLineCap: 'round',
-    strokeLineJoin: 'round',
-    fill: '',
-    fillOpacity: 100,
-    trimStart: 0,
-    trimEnd: 100,
-    trimOffset: 0,
-  };
+  return (
+    (props.layer.data as SplineData) || {
+      pathData: "",
+      controlPoints: [],
+      closed: false,
+      stroke: "#ffffff",
+      strokeWidth: 2,
+      strokeOpacity: 100,
+      strokeLineCap: "round",
+      strokeLineJoin: "round",
+      fill: "",
+      fillOpacity: 100,
+      trimStart: 0,
+      trimEnd: 100,
+      trimOffset: 0,
+    }
+  );
 });
 
-const hasFill = computed(() => !!shapeData.value.fill && shapeData.value.fill !== 'transparent');
-const hasStroke = computed(() => !!shapeData.value.stroke && (shapeData.value.strokeWidth ?? 0) > 0);
-const strokeLineCap = computed(() => shapeData.value.strokeLineCap || 'round');
-const strokeLineJoin = computed(() => shapeData.value.strokeLineJoin || 'round');
+const _hasFill = computed(
+  () => !!shapeData.value.fill && shapeData.value.fill !== "transparent",
+);
+const _hasStroke = computed(
+  () => !!shapeData.value.stroke && (shapeData.value.strokeWidth ?? 0) > 0,
+);
+const _strokeLineCap = computed(() => shapeData.value.strokeLineCap || "round");
+const _strokeLineJoin = computed(
+  () => shapeData.value.strokeLineJoin || "round",
+);
 
 // Helper to get dash array value from number[] | AnimatableProperty<number[]>
 function getDashArray(): number[] {
@@ -520,14 +527,14 @@ function getDashArray(): number[] {
   return dashArray.value ?? [];
 }
 
-const hasDashes = computed(() => getDashArray().length > 0);
+const _hasDashes = computed(() => getDashArray().length > 0);
 
-const dashArrayString = computed(() => {
-  return getDashArray().join(', ') || '';
+const _dashArrayString = computed(() => {
+  return getDashArray().join(", ") || "";
 });
 
 // Toggle section visibility
-function toggleSection(section: string) {
+function _toggleSection(section: string) {
   const idx = expandedSections.value.indexOf(section);
   if (idx >= 0) {
     expandedSections.value.splice(idx, 1);
@@ -537,46 +544,59 @@ function toggleSection(section: string) {
 }
 
 // Find layers that reference this spline shape as a motion path
-const attachedLayers = computed(() => {
+const _attachedLayers = computed(() => {
   const layerId = props.layer.id;
-  const attached: Array<{ id: string; name: string; type: string; usage: string }> = [];
+  const attached: Array<{
+    id: string;
+    name: string;
+    type: string;
+    usage: string;
+  }> = [];
 
   for (const layer of store.layers) {
     // Check text layers for path reference
-    if (layer.type === 'text') {
+    if (layer.type === "text") {
       const textData = layer.data as { pathLayerId?: string } | null;
       if (textData?.pathLayerId === layerId) {
         attached.push({
           id: layer.id,
           name: layer.name,
           type: layer.type,
-          usage: 'Text on path',
+          usage: "Text on path",
         });
       }
     }
 
     // Check camera layers for spline path
-    if (layer.type === 'camera') {
-      const cameraData = layer.data as { pathFollowing?: { pathLayerId?: string } } | null;
+    if (layer.type === "camera") {
+      const cameraData = layer.data as {
+        pathFollowing?: { pathLayerId?: string };
+      } | null;
       if (cameraData?.pathFollowing?.pathLayerId === layerId) {
         attached.push({
           id: layer.id,
           name: layer.name,
           type: layer.type,
-          usage: 'Camera path',
+          usage: "Camera path",
         });
       }
     }
 
     // Check particle layers for spline emission
-    if (layer.type === 'particles') {
-      const particleData = layer.data as { emitters?: Array<{ shape?: string; splinePath?: { layerId?: string } }> } | null;
-      if (particleData?.emitters?.some(e => e.shape === 'spline' && e.splinePath?.layerId === layerId)) {
+    if (layer.type === "particles") {
+      const particleData = layer.data as {
+        emitters?: Array<{ shape?: string; splinePath?: { layerId?: string } }>;
+      } | null;
+      if (
+        particleData?.emitters?.some(
+          (e) => e.shape === "spline" && e.splinePath?.layerId === layerId,
+        )
+      ) {
         attached.push({
           id: layer.id,
           name: layer.name,
           type: layer.type,
-          usage: 'Particle emitter',
+          usage: "Particle emitter",
         });
       }
     }
@@ -586,114 +606,122 @@ const attachedLayers = computed(() => {
 });
 
 // Get layer icon for attached elements list
-function getLayerIcon(type: string): string {
+function _getLayerIcon(type: string): string {
   const icons: Record<string, string> = {
-    text: 'T',
-    camera: '🎥',
-    particles: '✨',
+    text: "T",
+    camera: "🎥",
+    particles: "✨",
   };
-  return icons[type] || '◇';
+  return icons[type] || "◇";
 }
 
 // Select attached layer
-function selectLayer(layerId: string) {
+function _selectLayer(layerId: string) {
   store.selectLayer(layerId);
 }
 
 // Update layer data
 function update(key: keyof SplineData | string, value: any) {
   store.updateLayer(props.layer.id, {
-    data: { ...shapeData.value, [key]: value }
+    data: { ...shapeData.value, [key]: value },
   });
-  emit('update');
+  emit("update");
 }
 
 // Toggle fill on/off
-function toggleFill(e: Event) {
+function _toggleFill(e: Event) {
   const checked = (e.target as HTMLInputElement).checked;
-  update('fill', checked ? '#ffffff' : '');
+  update("fill", checked ? "#ffffff" : "");
 }
 
 // Toggle stroke on/off
-function toggleStroke(e: Event) {
+function _toggleStroke(e: Event) {
   const checked = (e.target as HTMLInputElement).checked;
   if (checked) {
-    update('stroke', '#ffffff');
+    update("stroke", "#ffffff");
     if ((shapeData.value.strokeWidth ?? 0) <= 0) {
-      update('strokeWidth', 2);
+      update("strokeWidth", 2);
     }
   } else {
-    update('strokeWidth', 0);
+    update("strokeWidth", 0);
   }
 }
 
 // Update dash array from string input
-function updateDashArray(e: Event) {
+function _updateDashArray(e: Event) {
   const input = (e.target as HTMLInputElement).value;
   if (!input.trim()) {
-    update('strokeDashArray', []);
+    update("strokeDashArray", []);
     return;
   }
-  const values = input.split(',').map(v => parseFloat(v.trim())).filter(v => !isNaN(v) && v >= 0);
-  update('strokeDashArray', values);
+  const values = input
+    .split(",")
+    .map((v) => parseFloat(v.trim()))
+    .filter((v) => !Number.isNaN(v) && v >= 0);
+  update("strokeDashArray", values);
 }
 
 // Get animatable property from layer.properties
 function getProperty(name: string): AnimatableProperty<number> | undefined {
-  return props.layer.properties?.find(p => p.name === name) as AnimatableProperty<number> | undefined;
+  return props.layer.properties?.find((p) => p.name === name) as
+    | AnimatableProperty<number>
+    | undefined;
 }
 
 // Extract numeric value from number or AnimatableProperty
-function getNumericValue(value: number | AnimatableProperty<number> | undefined, fallback: number): number {
+function _getNumericValue(
+  value: number | AnimatableProperty<number> | undefined,
+  fallback: number,
+): number {
   if (value === undefined || value === null) return fallback;
-  if (typeof value === 'number') return value;
+  if (typeof value === "number") return value;
   // It's an AnimatableProperty, extract the value
   return value.value ?? fallback;
 }
 
 // Get property value (from animated property or direct data)
-function getPropertyValue(name: string): number | undefined {
+function _getPropertyValue(name: string): number | undefined {
   const prop = getProperty(name);
   return prop?.value;
 }
 
 // Check if property is animated (has keyframes)
-function isAnimated(name: string): boolean {
+function _isAnimated(name: string): boolean {
   const prop = getProperty(name);
   return prop?.animated ?? false;
 }
 
 // Update animatable property
-function updateAnimatable(propName: string, value: number, dataKey: string) {
+function _updateAnimatable(propName: string, value: number, dataKey: string) {
   // Update the data value
   update(dataKey, value);
 
   // Also update the property in layer.properties if it exists
   const prop = getProperty(propName);
   if (prop) {
-    const updatedProperties = (props.layer.properties || []).map(p =>
-      p.name === propName ? { ...p, value } : p
+    const updatedProperties = (props.layer.properties || []).map((p) =>
+      p.name === propName ? { ...p, value } : p,
     );
     store.updateLayer(props.layer.id, { properties: updatedProperties });
   }
 }
 
 // Toggle keyframe for a property
-function toggleKeyframe(propName: string, dataKey: string) {
+function _toggleKeyframe(propName: string, dataKey: string) {
   // Ensure property exists in layer.properties
   ensureProperty(propName, dataKey);
 
   const prop = getProperty(propName);
   if (prop) {
     const frame = store.currentFrame;
-    const hasKeyframeAtFrame = prop.keyframes.some(k => k.frame === frame);
+    const hasKeyframeAtFrame = prop.keyframes.some((k) => k.frame === frame);
 
     let updatedKeyframes: typeof prop.keyframes;
     let updatedAnimated: boolean;
 
     if (hasKeyframeAtFrame) {
       // Remove keyframe at current frame
-      updatedKeyframes = prop.keyframes.filter(k => k.frame !== frame);
+      updatedKeyframes = prop.keyframes.filter((k) => k.frame !== frame);
       updatedAnimated = updatedKeyframes.length > 0;
     } else {
       // Add keyframe at current frame
@@ -703,46 +731,52 @@ function toggleKeyframe(propName: string, dataKey: string) {
           id: `kf_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
           frame,
           value: prop.value,
-          interpolation: 'linear' as const,
+          interpolation: "linear" as const,
           inHandle: { frame: -5, value: 0, enabled: false },
           outHandle: { frame: 5, value: 0, enabled: false },
-          controlMode: 'corner' as const,
+          controlMode: "corner" as const,
         },
       ];
       updatedAnimated = true;
     }
 
     // Update via store to track in history
-    const updatedProperties = (props.layer.properties || []).map(p =>
+    const updatedProperties = (props.layer.properties || []).map((p) =>
       p.name === propName
         ? { ...p, keyframes: updatedKeyframes, animated: updatedAnimated }
-        : p
+        : p,
     );
     store.updateLayer(props.layer.id, { properties: updatedProperties });
-    emit('update');
+    emit("update");
   }
 }
 
 // Ensure a property exists in layer.properties for timeline display
 function ensureProperty(propName: string, dataKey: string) {
   const existingProperties = props.layer.properties || [];
-  const existing = existingProperties.find(p => p.name === propName);
+  const existing = existingProperties.find((p) => p.name === propName);
 
   if (!existing) {
     const currentValue = (shapeData.value as any)[dataKey] ?? 0;
     const newProperty = {
       id: `prop_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
       name: propName,
-      type: 'number',
+      type: "number",
       value: currentValue,
       animated: false,
       keyframes: [],
-      group: propName.includes('Trim') ? 'Trim Paths' : propName.includes('Stroke') ? 'Stroke' : propName.includes('Fill') ? 'Fill' : 'Shape',
+      group: propName.includes("Trim")
+        ? "Trim Paths"
+        : propName.includes("Stroke")
+          ? "Stroke"
+          : propName.includes("Fill")
+            ? "Fill"
+            : "Shape",
     } as AnimatableProperty<number>;
 
     // Update via store to track in history
     store.updateLayer(props.layer.id, {
-      properties: [...existingProperties, newProperty]
+      properties: [...existingProperties, newProperty],
     });
   }
 }
@@ -751,17 +785,19 @@ function ensureProperty(propName: string, dataKey: string) {
 // PATH EFFECTS
 // ============================================================================
 
-const pathEffects = computed<SplinePathEffectInstance[]>(() => {
-  return ((shapeData.value.pathEffects || []) as SplinePathEffectInstance[]).sort((a, b) => a.order - b.order);
+const _pathEffects = computed<SplinePathEffectInstance[]>(() => {
+  return (
+    (shapeData.value.pathEffects || []) as SplinePathEffectInstance[]
+  ).sort((a, b) => a.order - b.order);
 });
 
-function getEffectDisplayName(type: SplinePathEffectType): string {
+function _getEffectDisplayName(type: SplinePathEffectType): string {
   const names: Record<SplinePathEffectType, string> = {
-    offsetPath: 'Offset Path',
-    roughen: 'Roughen',
-    wiggle: 'Wiggle Path',
-    zigzag: 'Zig Zag',
-    wave: 'Wave',
+    offsetPath: "Offset Path",
+    roughen: "Roughen",
+    wiggle: "Wiggle Path",
+    zigzag: "Zig Zag",
+    wave: "Wave",
   };
   return names[type] || type;
 }
@@ -770,83 +806,87 @@ function generateId(): string {
   return `effect_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 }
 
-function createAnimatableProp(value: number, name: string): AnimatableProperty<number> {
+function createAnimatableProp(
+  value: number,
+  name: string,
+): AnimatableProperty<number> {
   return {
     id: generateId(),
     name,
-    type: 'number',
+    type: "number",
     value,
     animated: false,
     keyframes: [],
   };
 }
 
-function addEffect() {
+function _addEffect() {
   if (!newEffectType.value) return;
 
   const effects = [...(shapeData.value.pathEffects || [])];
-  const newOrder = effects.length > 0 ? Math.max(...effects.map(e => e.order)) + 1 : 0;
+  const newOrder =
+    effects.length > 0 ? Math.max(...effects.map((e) => e.order)) + 1 : 0;
 
   let newEffect: SplinePathEffect;
 
   switch (newEffectType.value) {
-    case 'offsetPath':
+    case "offsetPath":
       newEffect = {
         id: generateId(),
-        type: 'offsetPath',
+        type: "offsetPath",
         enabled: true,
         order: newOrder,
-        amount: createAnimatableProp(0, 'Offset Amount'),
-        lineJoin: 'round',
-        miterLimit: createAnimatableProp(4, 'Miter Limit'),
+        amount: createAnimatableProp(0, "Offset Amount"),
+        lineJoin: "round",
+        miterLimit: createAnimatableProp(4, "Miter Limit"),
       } as OffsetPathEffect;
       break;
-    case 'roughen':
+    case "roughen":
       newEffect = {
         id: generateId(),
-        type: 'roughen',
+        type: "roughen",
         enabled: true,
         order: newOrder,
-        size: createAnimatableProp(5, 'Roughen Size'),
-        detail: createAnimatableProp(2, 'Roughen Detail'),
+        size: createAnimatableProp(5, "Roughen Size"),
+        detail: createAnimatableProp(2, "Roughen Detail"),
         seed: Math.floor(Math.random() * 99999),
       } as RoughenEffect;
       break;
-    case 'wiggle':
+    case "wiggle":
       newEffect = {
         id: generateId(),
-        type: 'wiggle',
+        type: "wiggle",
         enabled: true,
         order: newOrder,
-        size: createAnimatableProp(10, 'Wiggle Size'),
-        detail: createAnimatableProp(3, 'Wiggle Detail'),
-        temporalPhase: createAnimatableProp(0, 'Temporal Phase'),
-        spatialPhase: createAnimatableProp(0, 'Spatial Phase'),
-        correlation: createAnimatableProp(50, 'Correlation'),
+        size: createAnimatableProp(10, "Wiggle Size"),
+        detail: createAnimatableProp(3, "Wiggle Detail"),
+        temporalPhase: createAnimatableProp(0, "Temporal Phase"),
+        spatialPhase: createAnimatableProp(0, "Spatial Phase"),
+        correlation: createAnimatableProp(50, "Correlation"),
         seed: Math.floor(Math.random() * 99999),
       } as WigglePathEffect;
       break;
-    case 'zigzag':
+    case "zigzag":
       newEffect = {
         id: generateId(),
-        type: 'zigzag',
+        type: "zigzag",
         enabled: true,
         order: newOrder,
-        size: createAnimatableProp(10, 'Zig Zag Size'),
-        ridgesPerSegment: createAnimatableProp(5, 'Ridges Per Segment'),
-        pointType: 'smooth',
+        size: createAnimatableProp(10, "Zig Zag Size"),
+        ridgesPerSegment: createAnimatableProp(5, "Ridges Per Segment"),
+        pointType: "smooth",
       } as ZigZagEffect;
       break;
-    case 'wave':
+    case "wave":
       newEffect = {
         id: generateId(),
-        type: 'wave',
+        type: "wave",
         enabled: true,
         order: newOrder,
-        amplitude: createAnimatableProp(10, 'Wave Amplitude'),
-        frequency: createAnimatableProp(2, 'Wave Frequency'),
-        phase: createAnimatableProp(0, 'Wave Phase'),
-        waveType: 'sine',
+        amplitude: createAnimatableProp(10, "Wave Amplitude"),
+        frequency: createAnimatableProp(2, "Wave Frequency"),
+        phase: createAnimatableProp(0, "Wave Phase"),
+        waveType: "sine",
       } as WaveEffect;
       break;
     default:
@@ -854,26 +894,30 @@ function addEffect() {
   }
 
   effects.push(newEffect);
-  update('pathEffects', effects);
-  newEffectType.value = '';
+  update("pathEffects", effects);
+  newEffectType.value = "";
 }
 
-function removeEffect(effectId: string) {
-  const effects = (shapeData.value.pathEffects || []).filter(e => e.id !== effectId);
-  update('pathEffects', effects);
+function _removeEffect(effectId: string) {
+  const effects = (shapeData.value.pathEffects || []).filter(
+    (e) => e.id !== effectId,
+  );
+  update("pathEffects", effects);
 }
 
-function toggleEffect(effectId: string) {
+function _toggleEffect(effectId: string) {
   const effects = [...(shapeData.value.pathEffects || [])];
-  const effect = effects.find(e => e.id === effectId);
+  const effect = effects.find((e) => e.id === effectId);
   if (effect) {
     effect.enabled = !effect.enabled;
-    update('pathEffects', effects);
+    update("pathEffects", effects);
   }
 }
 
-function moveEffect(index: number, direction: -1 | 1) {
-  const effects = [...(shapeData.value.pathEffects || [])].sort((a, b) => a.order - b.order);
+function _moveEffect(index: number, direction: -1 | 1) {
+  const effects = [...(shapeData.value.pathEffects || [])].sort(
+    (a, b) => a.order - b.order,
+  );
   const newIndex = index + direction;
   if (newIndex < 0 || newIndex >= effects.length) return;
 
@@ -882,74 +926,87 @@ function moveEffect(index: number, direction: -1 | 1) {
   effects[index].order = effects[newIndex].order;
   effects[newIndex].order = tempOrder;
 
-  update('pathEffects', effects);
+  update("pathEffects", effects);
 }
 
-function getEffectPropValue(effect: SplinePathEffect, propName: string): number {
-  const prop = (effect as any)[propName] as AnimatableProperty<number> | number | undefined;
+function _getEffectPropValue(
+  effect: SplinePathEffect,
+  propName: string,
+): number {
+  const prop = (effect as any)[propName] as
+    | AnimatableProperty<number>
+    | number
+    | undefined;
   if (prop === undefined) return 0;
-  if (typeof prop === 'number') return prop;
+  if (typeof prop === "number") return prop;
   return prop.value;
 }
 
-function isEffectPropAnimated(effect: SplinePathEffect, propName: string): boolean {
-  const prop = (effect as any)[propName] as AnimatableProperty<number> | undefined;
-  if (!prop || typeof prop === 'number') return false;
+function _isEffectPropAnimated(
+  effect: SplinePathEffect,
+  propName: string,
+): boolean {
+  const prop = (effect as any)[propName] as
+    | AnimatableProperty<number>
+    | undefined;
+  if (!prop || typeof prop === "number") return false;
   return prop.animated ?? false;
 }
 
-function updateEffectProp(effectId: string, propName: string, value: number) {
+function _updateEffectProp(effectId: string, propName: string, value: number) {
   const effects = [...(shapeData.value.pathEffects || [])];
-  const effect = effects.find(e => e.id === effectId);
+  const effect = effects.find((e) => e.id === effectId);
   if (!effect) return;
 
   const prop = (effect as any)[propName];
-  if (prop && typeof prop === 'object') {
+  if (prop && typeof prop === "object") {
     prop.value = value;
   } else {
     (effect as any)[propName] = value;
   }
 
-  update('pathEffects', effects);
+  update("pathEffects", effects);
 }
 
-function updateEffectMeta(effectId: string, key: string, value: any) {
+function _updateEffectMeta(effectId: string, key: string, value: any) {
   const effects = [...(shapeData.value.pathEffects || [])];
-  const effect = effects.find(e => e.id === effectId);
+  const effect = effects.find((e) => e.id === effectId);
   if (!effect) return;
 
   (effect as any)[key] = value;
-  update('pathEffects', effects);
+  update("pathEffects", effects);
 }
 
-function toggleEffectKeyframe(effectId: string, propName: string) {
+function _toggleEffectKeyframe(effectId: string, propName: string) {
   const effects = [...(shapeData.value.pathEffects || [])];
-  const effect = effects.find(e => e.id === effectId);
+  const effect = effects.find((e) => e.id === effectId);
   if (!effect) return;
 
-  const prop = (effect as any)[propName] as AnimatableProperty<number> | undefined;
-  if (!prop || typeof prop === 'number') return;
+  const prop = (effect as any)[propName] as
+    | AnimatableProperty<number>
+    | undefined;
+  if (!prop || typeof prop === "number") return;
 
   const frame = store.currentFrame;
-  const hasKeyframeAtFrame = prop.keyframes.some(k => k.frame === frame);
+  const hasKeyframeAtFrame = prop.keyframes.some((k) => k.frame === frame);
 
   if (hasKeyframeAtFrame) {
-    prop.keyframes = prop.keyframes.filter(k => k.frame !== frame);
+    prop.keyframes = prop.keyframes.filter((k) => k.frame !== frame);
     prop.animated = prop.keyframes.length > 0;
   } else {
     prop.keyframes.push({
       id: `kf_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
       frame,
       value: prop.value,
-      interpolation: 'linear' as const,
+      interpolation: "linear" as const,
       inHandle: { frame: -5, value: 0, enabled: false },
       outHandle: { frame: 5, value: 0, enabled: false },
-      controlMode: 'corner' as const,
+      controlMode: "corner" as const,
     });
     prop.animated = true;
   }
 
-  update('pathEffects', effects);
+  update("pathEffects", effects);
 }
 </script>
 

@@ -26,8 +26,8 @@
  * - Axiom 5: Particles are evaluated, not advanced
  */
 
-import type { Particle, ParticleSystemConfig } from '@/services/particleSystem';
-import { ParticleSystem } from '@/services/particleSystem';
+import type { Particle, ParticleSystemConfig } from "@/services/particleSystem";
+import { ParticleSystem } from "@/services/particleSystem";
 
 // ============================================================================
 // TYPES
@@ -158,7 +158,7 @@ export class ParticleSimulationController {
   constructor(
     config: ParticleSystemConfig,
     seed: number = 12345,
-    checkpointInterval: number = 30 // Cache every 30 frames (~2 seconds at 16fps)
+    checkpointInterval: number = 30, // Cache every 30 frames (~2 seconds at 16fps)
   ) {
     this.config = { ...config };
     this.seed = seed;
@@ -206,7 +206,10 @@ export class ParticleSimulationController {
 
       // Create checkpoint at interval boundaries
       const currentFrame = checkpointFrame + i + 1;
-      if (currentFrame % this.checkpointInterval === 0 && !this.checkpoints.has(currentFrame)) {
+      if (
+        currentFrame % this.checkpointInterval === 0 &&
+        !this.checkpoints.has(currentFrame)
+      ) {
         this.createCheckpoint(currentFrame);
       }
     }
@@ -277,14 +280,17 @@ export class ParticleSimulationController {
    * DETERMINISM: Captures RNG state for exact restoration
    */
   private createCheckpoint(frame: number): void {
-    const particles = this.system.getParticles().map((p) => this.serializeParticle(p));
+    const particles = this.system
+      .getParticles()
+      .map((p) => this.serializeParticle(p));
 
     // Access internal state for full checkpoint
     const checkpoint: Checkpoint = {
       frame,
       particles,
       emissionAccumulators: new Map(), // Would need access to system internals
-      nextParticleId: particles.length > 0 ? Math.max(...particles.map((p) => p.id)) + 1 : 0,
+      nextParticleId:
+        particles.length > 0 ? Math.max(...particles.map((p) => p.id)) + 1 : 0,
       noiseTime: 0, // Would need access to system internals
       frameCount: frame,
       // Capture RNG state from the particle system for deterministic restoration
@@ -341,7 +347,12 @@ export class ParticleSimulationController {
       age: p.age,
       lifetime: p.lifetime,
       size: p.size,
-      color: Object.freeze([...p.color]) as readonly [number, number, number, number],
+      color: Object.freeze([...p.color]) as readonly [
+        number,
+        number,
+        number,
+        number,
+      ],
       rotation: p.rotation,
       emitterId: p.emitterId,
     });
@@ -352,7 +363,9 @@ export class ParticleSimulationController {
    * DETERMINISM: No timestamps - only deterministic values
    */
   private createSnapshot(frame: number): ParticleSnapshot {
-    const particles = this.system.getParticles().map((p) => this.serializeParticle(p));
+    const particles = this.system
+      .getParticles()
+      .map((p) => this.serializeParticle(p));
 
     return Object.freeze({
       frame,
@@ -381,12 +394,15 @@ export class ParticleSimulationRegistry {
   getController(
     layerId: string,
     config: ParticleSystemConfig,
-    seed?: number
+    seed?: number,
   ): ParticleSimulationController {
     let controller = this.controllers.get(layerId);
 
     if (!controller) {
-      controller = new ParticleSimulationController(config, seed ?? this.generateSeed(layerId));
+      controller = new ParticleSimulationController(
+        config,
+        seed ?? this.generateSeed(layerId),
+      );
       this.controllers.set(layerId, controller);
     }
 
@@ -400,7 +416,7 @@ export class ParticleSimulationRegistry {
     layerId: string,
     frame: number,
     config: ParticleSystemConfig,
-    seed?: number
+    seed?: number,
   ): ParticleSnapshot {
     const controller = this.getController(layerId, config, seed);
     return controller.evaluateAtFrame(frame);
@@ -430,7 +446,7 @@ export class ParticleSimulationRegistry {
     let hash = 0;
     for (let i = 0; i < layerId.length; i++) {
       const char = layerId.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32bit integer
     }
     return Math.abs(hash);

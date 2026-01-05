@@ -69,9 +69,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import type { Layer, Keyframe } from '@/types/project';
+import { computed, ref } from "vue";
+import { useCompositorStore } from "@/stores/compositorStore";
+import type { Keyframe, Layer } from "@/types/project";
 
 interface Props {
   layer: Layer;
@@ -81,9 +81,9 @@ interface Props {
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-  (e: 'select', layerId: string): void;
-  (e: 'updateLayer', layerId: string, updates: Partial<Layer>): void;
-  (e: 'selectKeyframe', keyframeId: string): void;
+  (e: "select", layerId: string): void;
+  (e: "updateLayer", layerId: string, updates: Partial<Layer>): void;
+  (e: "selectKeyframe", keyframeId: string): void;
 }>();
 
 const store = useCompositorStore();
@@ -91,18 +91,20 @@ const store = useCompositorStore();
 const trackAreaRef = ref<HTMLDivElement | null>(null);
 
 // Selection state
-const isSelected = computed(() => store.selectedLayerIds.includes(props.layer.id));
-const selectedKeyframeIds = computed(() => store.selectedKeyframeIds);
+const _isSelected = computed(() =>
+  store.selectedLayerIds.includes(props.layer.id),
+);
+const _selectedKeyframeIds = computed(() => store.selectedKeyframeIds);
 
 // Calculate duration bar style using startFrame/endFrame (primary properties)
-const durationBarStyle = computed(() => {
+const _durationBarStyle = computed(() => {
   const inPercent = (props.layer.startFrame / props.frameCount) * 100;
   const outPercent = ((props.layer.endFrame + 1) / props.frameCount) * 100;
   const width = outPercent - inPercent;
 
   return {
     left: `${inPercent}%`,
-    width: `${width}%`
+    width: `${width}%`,
   };
 });
 
@@ -112,13 +114,13 @@ const allKeyframes = computed(() => {
 
   // From opacity
   if (props.layer.opacity.animated) {
-    props.layer.opacity.keyframes.forEach(kf => {
-      keyframes.push({ ...kf, propertyName: 'opacity' });
+    props.layer.opacity.keyframes.forEach((kf) => {
+      keyframes.push({ ...kf, propertyName: "opacity" });
     });
   }
 
   // From transform properties
-  ['position', 'scale', 'rotation'].forEach(propName => {
+  ["position", "scale", "rotation"].forEach((propName) => {
     const prop = (props.layer.transform as any)[propName];
     if (prop?.animated) {
       prop.keyframes.forEach((kf: Keyframe<any>) => {
@@ -128,17 +130,17 @@ const allKeyframes = computed(() => {
   });
 
   // From custom properties
-  props.layer.properties.forEach(prop => {
+  props.layer.properties.forEach((prop) => {
     if (prop.animated) {
-      prop.keyframes.forEach(kf => {
+      prop.keyframes.forEach((kf) => {
         keyframes.push({ ...kf, propertyName: prop.name });
       });
     }
   });
 
   // Deduplicate by frame (show one diamond per frame)
-  const frameMap = new Map<number, typeof keyframes[0]>();
-  keyframes.forEach(kf => {
+  const frameMap = new Map<number, (typeof keyframes)[0]>();
+  keyframes.forEach((kf) => {
     if (!frameMap.has(kf.frame)) {
       frameMap.set(kf.frame, kf);
     }
@@ -147,45 +149,45 @@ const allKeyframes = computed(() => {
   return Array.from(frameMap.values());
 });
 
-const hasKeyframes = computed(() => allKeyframes.value.length > 0);
+const _hasKeyframes = computed(() => allKeyframes.value.length > 0);
 
 // Get keyframe position as percentage
-function getKeyframePosition(frame: number): number {
+function _getKeyframePosition(frame: number): number {
   return (frame / props.frameCount) * 100;
 }
 
 // Actions
-function selectLayer() {
-  emit('select', props.layer.id);
+function _selectLayer() {
+  emit("select", props.layer.id);
 }
 
-function toggleVisibility() {
-  emit('updateLayer', props.layer.id, { visible: !props.layer.visible });
+function _toggleVisibility() {
+  emit("updateLayer", props.layer.id, { visible: !props.layer.visible });
 }
 
-function toggleLock() {
-  emit('updateLayer', props.layer.id, { locked: !props.layer.locked });
+function _toggleLock() {
+  emit("updateLayer", props.layer.id, { locked: !props.layer.locked });
 }
 
-function selectKeyframe(keyframeId: string) {
-  emit('selectKeyframe', keyframeId);
+function _selectKeyframe(keyframeId: string) {
+  emit("selectKeyframe", keyframeId);
 }
 
 // Trimming
-let trimType: 'in' | 'out' | null = null;
+let trimType: "in" | "out" | null = null;
 
-function startTrimIn(_event: MouseEvent) {
+function _startTrimIn(_event: MouseEvent) {
   if (props.layer.locked) return;
-  trimType = 'in';
-  document.addEventListener('mousemove', handleTrim);
-  document.addEventListener('mouseup', stopTrim);
+  trimType = "in";
+  document.addEventListener("mousemove", handleTrim);
+  document.addEventListener("mouseup", stopTrim);
 }
 
-function startTrimOut(_event: MouseEvent) {
+function _startTrimOut(_event: MouseEvent) {
   if (props.layer.locked) return;
-  trimType = 'out';
-  document.addEventListener('mousemove', handleTrim);
-  document.addEventListener('mouseup', stopTrim);
+  trimType = "out";
+  document.addEventListener("mousemove", handleTrim);
+  document.addEventListener("mouseup", stopTrim);
 }
 
 function handleTrim(event: MouseEvent) {
@@ -196,20 +198,24 @@ function handleTrim(event: MouseEvent) {
   const progress = Math.max(0, Math.min(1, x / rect.width));
   const frame = Math.round(progress * props.frameCount);
 
-  if (trimType === 'in') {
+  if (trimType === "in") {
     // Use startFrame/endFrame (primary properties)
     const newStartFrame = Math.min(frame, props.layer.endFrame - 1);
-    emit('updateLayer', props.layer.id, { startFrame: Math.max(0, newStartFrame) });
+    emit("updateLayer", props.layer.id, {
+      startFrame: Math.max(0, newStartFrame),
+    });
   } else {
     const newEndFrame = Math.max(frame, props.layer.startFrame + 1);
-    emit('updateLayer', props.layer.id, { endFrame: Math.min(props.frameCount - 1, newEndFrame) });
+    emit("updateLayer", props.layer.id, {
+      endFrame: Math.min(props.frameCount - 1, newEndFrame),
+    });
   }
 }
 
 function stopTrim() {
   trimType = null;
-  document.removeEventListener('mousemove', handleTrim);
-  document.removeEventListener('mouseup', stopTrim);
+  document.removeEventListener("mousemove", handleTrim);
+  document.removeEventListener("mouseup", stopTrim);
 }
 </script>
 

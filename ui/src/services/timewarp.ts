@@ -19,19 +19,19 @@
  * We approximate this integral using numerical integration.
  */
 
-import { interpolateProperty } from './interpolation';
-import type { AnimatableProperty } from '@/types/project';
+import type { AnimatableProperty } from "@/types/project";
+import { interpolateProperty } from "./interpolation";
 
 /**
  * Result of Timewarp evaluation
  */
 export interface TimewarpResult {
-  sourceFrame: number;        // The source frame to display (may be fractional)
-  sourceFrameFloor: number;   // Floor of source frame (for frame blending)
-  sourceFrameCeil: number;    // Ceiling of source frame (for frame blending)
-  blendFactor: number;        // 0-1 blend between floor and ceil
-  instantSpeed: number;       // Speed at this exact frame (for UI display)
-  effectiveDuration: number;  // How many source frames are covered by comp duration
+  sourceFrame: number; // The source frame to display (may be fractional)
+  sourceFrameFloor: number; // Floor of source frame (for frame blending)
+  sourceFrameCeil: number; // Ceiling of source frame (for frame blending)
+  blendFactor: number; // 0-1 blend between floor and ceil
+  instantSpeed: number; // Speed at this exact frame (for UI display)
+  effectiveDuration: number; // How many source frames are covered by comp duration
 }
 
 /**
@@ -50,7 +50,7 @@ export function evaluateTimewarp(
   compFrame: number,
   layerStartFrame: number,
   timewarpSpeed: AnimatableProperty<number>,
-  compDuration: number
+  compDuration: number,
 ): TimewarpResult {
   // Frame relative to layer start
   const relativeFrame = compFrame - layerStartFrame;
@@ -63,7 +63,11 @@ export function evaluateTimewarp(
       sourceFrameCeil: 0,
       blendFactor: 0,
       instantSpeed: speed,
-      effectiveDuration: calculateEffectiveDuration(layerStartFrame, compDuration, timewarpSpeed)
+      effectiveDuration: calculateEffectiveDuration(
+        layerStartFrame,
+        compDuration,
+        timewarpSpeed,
+      ),
     };
   }
 
@@ -71,7 +75,7 @@ export function evaluateTimewarp(
   const sourceFrame = integrateSpeedCurve(
     layerStartFrame,
     compFrame,
-    timewarpSpeed
+    timewarpSpeed,
   );
 
   // Get current speed for UI display
@@ -83,7 +87,11 @@ export function evaluateTimewarp(
   const blendFactor = sourceFrame - sourceFrameFloor;
 
   // Calculate effective source duration
-  const effectiveDuration = calculateEffectiveDuration(layerStartFrame, compDuration, timewarpSpeed);
+  const effectiveDuration = calculateEffectiveDuration(
+    layerStartFrame,
+    compDuration,
+    timewarpSpeed,
+  );
 
   return {
     sourceFrame,
@@ -91,7 +99,7 @@ export function evaluateTimewarp(
     sourceFrameCeil,
     blendFactor,
     instantSpeed,
-    effectiveDuration
+    effectiveDuration,
   };
 }
 
@@ -110,16 +118,17 @@ export function evaluateTimewarp(
 function integrateSpeedCurve(
   startFrame: number,
   endFrame: number,
-  timewarpSpeed: AnimatableProperty<number>
+  timewarpSpeed: AnimatableProperty<number>,
 ): number {
   const frameSpan = endFrame - startFrame;
 
   // For very short spans, use simple trapezoid
   if (frameSpan < 1) {
-    const avgSpeed = (
-      (interpolateProperty(timewarpSpeed, startFrame) as number) +
-      (interpolateProperty(timewarpSpeed, endFrame) as number)
-    ) / 2 / 100;
+    const avgSpeed =
+      ((interpolateProperty(timewarpSpeed, startFrame) as number) +
+        (interpolateProperty(timewarpSpeed, endFrame) as number)) /
+      2 /
+      100;
     return frameSpan * avgSpeed;
   }
 
@@ -155,7 +164,7 @@ function integrateSpeedCurve(
 function calculateEffectiveDuration(
   layerStartFrame: number,
   compDuration: number,
-  timewarpSpeed: AnimatableProperty<number>
+  timewarpSpeed: AnimatableProperty<number>,
 ): number {
   return integrateSpeedCurve(layerStartFrame, compDuration, timewarpSpeed);
 }
@@ -176,7 +185,7 @@ export function findCompFrameForSourceFrame(
   targetSourceFrame: number,
   layerStartFrame: number,
   timewarpSpeed: AnimatableProperty<number>,
-  maxCompFrame: number
+  maxCompFrame: number,
 ): number {
   // Binary search for the comp frame
   let low = layerStartFrame;
@@ -185,7 +194,11 @@ export function findCompFrameForSourceFrame(
 
   while (high - low > tolerance) {
     const mid = (low + high) / 2;
-    const sourceAtMid = integrateSpeedCurve(layerStartFrame, mid, timewarpSpeed);
+    const sourceAtMid = integrateSpeedCurve(
+      layerStartFrame,
+      mid,
+      timewarpSpeed,
+    );
 
     if (sourceAtMid < targetSourceFrame) {
       low = mid;
@@ -211,7 +224,7 @@ export function getTimewarpGraphData(
   layerStartFrame: number,
   layerEndFrame: number,
   timewarpSpeed: AnimatableProperty<number>,
-  sampleRate: number = 1
+  sampleRate: number = 1,
 ): {
   frames: number[];
   sourceFrames: number[];
@@ -256,12 +269,17 @@ export function mapKeyframesToTimewarp(
   keyframeFrames: number[],
   layerStartFrame: number,
   timewarpSpeed: AnimatableProperty<number>,
-  maxCompFrame: number
+  maxCompFrame: number,
 ): number[] {
-  return keyframeFrames.map(kfFrame => {
+  return keyframeFrames.map((kfFrame) => {
     // Find where this keyframe's SOURCE frame appears in comp time
     const sourceFrame = kfFrame - layerStartFrame;
-    return findCompFrameForSourceFrame(sourceFrame, layerStartFrame, timewarpSpeed, maxCompFrame);
+    return findCompFrameForSourceFrame(
+      sourceFrame,
+      layerStartFrame,
+      timewarpSpeed,
+      maxCompFrame,
+    );
   });
 }
 
@@ -270,10 +288,10 @@ export function mapKeyframesToTimewarp(
  * Returns keyframes for common speed ramp patterns
  */
 export function createSpeedRampPreset(
-  preset: 'slow-fast' | 'fast-slow' | 'slow-fast-slow' | 'impact' | 'rewind',
+  preset: "slow-fast" | "fast-slow" | "slow-fast-slow" | "impact" | "rewind",
   layerStartFrame: number,
   layerDuration: number,
-  fps: number = 16
+  fps: number = 16,
 ): AnimatableProperty<number> {
   const midFrame = layerStartFrame + layerDuration / 2;
   const endFrame = layerStartFrame + layerDuration;
@@ -281,176 +299,176 @@ export function createSpeedRampPreset(
 
   const baseProperty: AnimatableProperty<number> = {
     id: `prop_timewarp_speed_${Date.now()}`,
-    name: 'Timewarp Speed',
+    name: "Timewarp Speed",
     value: 100,
-    type: 'number',
+    type: "number",
     animated: true,
-    keyframes: []
+    keyframes: [],
   };
 
   switch (preset) {
-    case 'slow-fast':
+    case "slow-fast":
       // Start slow, end fast
       baseProperty.keyframes = [
         {
           id: `kf_${Date.now()}_1`,
           frame: layerStartFrame,
           value: 25,
-          interpolation: 'bezier',
-          controlMode: 'smooth',
+          interpolation: "bezier",
+          controlMode: "smooth",
           inHandle: { frame: -10, value: 0, enabled: true },
-          outHandle: { frame: 10, value: 20, enabled: true }
+          outHandle: { frame: 10, value: 20, enabled: true },
         },
         {
           id: `kf_${Date.now()}_2`,
           frame: endFrame,
           value: 200,
-          interpolation: 'bezier',
-          controlMode: 'smooth',
+          interpolation: "bezier",
+          controlMode: "smooth",
           inHandle: { frame: -10, value: -20, enabled: true },
-          outHandle: { frame: 10, value: 0, enabled: true }
-        }
+          outHandle: { frame: 10, value: 0, enabled: true },
+        },
       ];
       break;
 
-    case 'fast-slow':
+    case "fast-slow":
       // Start fast, end slow
       baseProperty.keyframes = [
         {
           id: `kf_${Date.now()}_1`,
           frame: layerStartFrame,
           value: 200,
-          interpolation: 'bezier',
-          controlMode: 'smooth',
+          interpolation: "bezier",
+          controlMode: "smooth",
           inHandle: { frame: -10, value: 0, enabled: true },
-          outHandle: { frame: 10, value: -20, enabled: true }
+          outHandle: { frame: 10, value: -20, enabled: true },
         },
         {
           id: `kf_${Date.now()}_2`,
           frame: endFrame,
           value: 25,
-          interpolation: 'bezier',
-          controlMode: 'smooth',
+          interpolation: "bezier",
+          controlMode: "smooth",
           inHandle: { frame: -10, value: 20, enabled: true },
-          outHandle: { frame: 10, value: 0, enabled: true }
-        }
+          outHandle: { frame: 10, value: 0, enabled: true },
+        },
       ];
       break;
 
-    case 'slow-fast-slow':
+    case "slow-fast-slow":
       // Slow at edges, fast in middle
       baseProperty.keyframes = [
         {
           id: `kf_${Date.now()}_1`,
           frame: layerStartFrame,
           value: 25,
-          interpolation: 'bezier',
-          controlMode: 'smooth',
+          interpolation: "bezier",
+          controlMode: "smooth",
           inHandle: { frame: -10, value: 0, enabled: true },
-          outHandle: { frame: 10, value: 0, enabled: true }
+          outHandle: { frame: 10, value: 0, enabled: true },
         },
         {
           id: `kf_${Date.now()}_2`,
           frame: midFrame,
           value: 200,
-          interpolation: 'bezier',
-          controlMode: 'smooth',
+          interpolation: "bezier",
+          controlMode: "smooth",
           inHandle: { frame: -10, value: 0, enabled: true },
-          outHandle: { frame: 10, value: 0, enabled: true }
+          outHandle: { frame: 10, value: 0, enabled: true },
         },
         {
           id: `kf_${Date.now()}_3`,
           frame: endFrame,
           value: 25,
-          interpolation: 'bezier',
-          controlMode: 'smooth',
+          interpolation: "bezier",
+          controlMode: "smooth",
           inHandle: { frame: -10, value: 0, enabled: true },
-          outHandle: { frame: 10, value: 0, enabled: true }
-        }
+          outHandle: { frame: 10, value: 0, enabled: true },
+        },
       ];
       break;
 
-    case 'impact':
+    case "impact":
       // Normal -> super slow at impact -> normal
       baseProperty.keyframes = [
         {
           id: `kf_${Date.now()}_1`,
           frame: layerStartFrame,
           value: 100,
-          interpolation: 'bezier',
-          controlMode: 'smooth',
+          interpolation: "bezier",
+          controlMode: "smooth",
           inHandle: { frame: -5, value: 0, enabled: true },
-          outHandle: { frame: 5, value: 0, enabled: true }
+          outHandle: { frame: 5, value: 0, enabled: true },
         },
         {
           id: `kf_${Date.now()}_2`,
           frame: impactFrame - fps * 0.1,
           value: 100,
-          interpolation: 'bezier',
-          controlMode: 'smooth',
+          interpolation: "bezier",
+          controlMode: "smooth",
           inHandle: { frame: -3, value: 0, enabled: true },
-          outHandle: { frame: 3, value: -30, enabled: true }
+          outHandle: { frame: 3, value: -30, enabled: true },
         },
         {
           id: `kf_${Date.now()}_3`,
           frame: impactFrame,
           value: 10,
-          interpolation: 'bezier',
-          controlMode: 'smooth',
+          interpolation: "bezier",
+          controlMode: "smooth",
           inHandle: { frame: -3, value: 30, enabled: true },
-          outHandle: { frame: 3, value: 30, enabled: true }
+          outHandle: { frame: 3, value: 30, enabled: true },
         },
         {
           id: `kf_${Date.now()}_4`,
           frame: impactFrame + fps * 0.3,
           value: 100,
-          interpolation: 'bezier',
-          controlMode: 'smooth',
+          interpolation: "bezier",
+          controlMode: "smooth",
           inHandle: { frame: -3, value: -30, enabled: true },
-          outHandle: { frame: 5, value: 0, enabled: true }
-        }
+          outHandle: { frame: 5, value: 0, enabled: true },
+        },
       ];
       break;
 
-    case 'rewind':
+    case "rewind":
       // Normal -> reverse -> normal
       baseProperty.keyframes = [
         {
           id: `kf_${Date.now()}_1`,
           frame: layerStartFrame,
           value: 100,
-          interpolation: 'bezier',
-          controlMode: 'smooth',
+          interpolation: "bezier",
+          controlMode: "smooth",
           inHandle: { frame: -5, value: 0, enabled: true },
-          outHandle: { frame: 5, value: 0, enabled: true }
+          outHandle: { frame: 5, value: 0, enabled: true },
         },
         {
           id: `kf_${Date.now()}_2`,
           frame: layerStartFrame + layerDuration * 0.3,
           value: 100,
-          interpolation: 'bezier',
-          controlMode: 'smooth',
+          interpolation: "bezier",
+          controlMode: "smooth",
           inHandle: { frame: -5, value: 0, enabled: true },
-          outHandle: { frame: 3, value: -50, enabled: true }
+          outHandle: { frame: 3, value: -50, enabled: true },
         },
         {
           id: `kf_${Date.now()}_3`,
           frame: midFrame,
-          value: -150,  // Reverse at 1.5x speed
-          interpolation: 'bezier',
-          controlMode: 'smooth',
+          value: -150, // Reverse at 1.5x speed
+          interpolation: "bezier",
+          controlMode: "smooth",
           inHandle: { frame: -3, value: 50, enabled: true },
-          outHandle: { frame: 3, value: 50, enabled: true }
+          outHandle: { frame: 3, value: 50, enabled: true },
         },
         {
           id: `kf_${Date.now()}_4`,
           frame: layerStartFrame + layerDuration * 0.7,
           value: 100,
-          interpolation: 'bezier',
-          controlMode: 'smooth',
+          interpolation: "bezier",
+          controlMode: "smooth",
           inHandle: { frame: -3, value: -50, enabled: true },
-          outHandle: { frame: 5, value: 0, enabled: true }
-        }
+          outHandle: { frame: 5, value: 0, enabled: true },
+        },
       ];
       break;
   }
@@ -463,5 +481,5 @@ export default {
   findCompFrameForSourceFrame,
   getTimewarpGraphData,
   mapKeyframesToTimewarp,
-  createSpeedRampPreset
+  createSpeedRampPreset,
 };

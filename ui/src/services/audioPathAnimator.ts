@@ -7,35 +7,35 @@
  * - accumulate: travels forward on sound, bounces at ends
  */
 
-export type MovementMode = 'amplitude' | 'accumulate';
+export type MovementMode = "amplitude" | "accumulate";
 
 export interface PathAnimatorConfig {
   movementMode: MovementMode;
-  sensitivity: number;        // Range (amplitude) or Speed (accumulate)
-  smoothing: number;          // 0-1, temporal smoothing
+  sensitivity: number; // Range (amplitude) or Speed (accumulate)
+  smoothing: number; // 0-1, temporal smoothing
   // Amplitude mode specifics
-  release: number;            // 0-1, how fast returns to start after beat (0.2=snappy, 0.8=slow)
-  amplitudeCurve: number;     // 1.0=linear, >1=noise gate/expander
+  release: number; // 0-1, how fast returns to start after beat (0.2=snappy, 0.8=slow)
+  amplitudeCurve: number; // 1.0=linear, >1=noise gate/expander
   // Accumulate mode specifics
-  flipOnBeat: boolean;        // Reverse direction on beat detection
-  beatThreshold: number;      // 0.02=sensitive, 0.1=only kicks
+  flipOnBeat: boolean; // Reverse direction on beat detection
+  beatThreshold: number; // 0.02=sensitive, 0.1=only kicks
   // Visual
-  motionBlur: boolean;        // Streak connecting previous to current frame
+  motionBlur: boolean; // Streak connecting previous to current frame
   motionBlurStrength: number; // 0-1
 }
 
 export interface PathAnimatorState {
-  position: number;           // 0-1 along path
-  direction: 1 | -1;          // For accumulate bounce/flip
-  previousPosition: number;   // For motion blur
-  smoothedValue: number;      // After smoothing applied
-  x: number;                  // Current X position on path
-  y: number;                  // Current Y position on path
-  angle: number;              // Current tangent angle on path
+  position: number; // 0-1 along path
+  direction: 1 | -1; // For accumulate bounce/flip
+  previousPosition: number; // For motion blur
+  smoothedValue: number; // After smoothing applied
+  x: number; // Current X position on path
+  y: number; // Current Y position on path
+  angle: number; // Current tangent angle on path
 }
 
 interface PathSegment {
-  type: 'M' | 'L' | 'C' | 'Q' | 'Z';
+  type: "M" | "L" | "C" | "Q" | "Z";
   points: number[];
   length: number;
   startT: number;
@@ -43,7 +43,7 @@ interface PathSegment {
 }
 
 const DEFAULT_CONFIG: PathAnimatorConfig = {
-  movementMode: 'amplitude',
+  movementMode: "amplitude",
   sensitivity: 1.0,
   smoothing: 0.3,
   release: 0.5,
@@ -51,7 +51,7 @@ const DEFAULT_CONFIG: PathAnimatorConfig = {
   flipOnBeat: true,
   beatThreshold: 0.05,
   motionBlur: false,
-  motionBlurStrength: 0.5
+  motionBlurStrength: 0.5,
 };
 
 export class AudioPathAnimator {
@@ -59,24 +59,30 @@ export class AudioPathAnimator {
   private state: PathAnimatorState;
   private pathSegments: PathSegment[] = [];
   private totalLength: number = 0;
-  private releaseState: number = 0;  // For amplitude mode release tracking
+  private releaseState: number = 0; // For amplitude mode release tracking
 
   /**
    * BUG-095 performance fix: Cache accumulated state at regular intervals
    * For accumulate mode, store position/direction every N frames to avoid O(n²)
    * When evaluating frame 1050, find checkpoint at 1000 and accumulate from there
    */
-  private accumulateCache = new Map<number, { position: number; direction: 1 | -1 }>();
-  private readonly CACHE_INTERVAL = 100;  // Cache every 100 frames
+  private accumulateCache = new Map<
+    number,
+    { position: number; direction: 1 | -1 }
+  >();
+  private readonly CACHE_INTERVAL = 100; // Cache every 100 frames
 
   /**
    * Create AudioPathAnimator
    * @param pathDataOrConfig - Either SVG path data string, or config object
    * @param config - Config object (if first param is path data)
    */
-  constructor(pathDataOrConfig?: string | Partial<PathAnimatorConfig>, config?: Partial<PathAnimatorConfig>) {
+  constructor(
+    pathDataOrConfig?: string | Partial<PathAnimatorConfig>,
+    config?: Partial<PathAnimatorConfig>,
+  ) {
     // Handle overloaded constructor signatures
-    if (typeof pathDataOrConfig === 'string') {
+    if (typeof pathDataOrConfig === "string") {
       // Called as: new AudioPathAnimator(pathData, config)
       this.config = { ...DEFAULT_CONFIG, ...(config || {}) };
       this.setPath(pathDataOrConfig);
@@ -92,7 +98,7 @@ export class AudioPathAnimator {
       smoothedValue: 0,
       x: 0,
       y: 0,
-      angle: 0
+      angle: 0,
     };
   }
 
@@ -117,71 +123,91 @@ export class AudioPathAnimator {
     let currentY = 0;
 
     for (const cmd of commands) {
-      const type = cmd[0].toUpperCase() as PathSegment['type'];
-      const nums = cmd.slice(1).trim().split(/[\s,]+/).map(Number).filter(n => !isNaN(n));
+      const type = cmd[0].toUpperCase() as PathSegment["type"];
+      const nums = cmd
+        .slice(1)
+        .trim()
+        .split(/[\s,]+/)
+        .map(Number)
+        .filter((n) => !Number.isNaN(n));
 
       switch (type) {
-        case 'M':
+        case "M":
           currentX = nums[0] || 0;
           currentY = nums[1] || 0;
           segments.push({
-            type: 'M',
+            type: "M",
             points: [currentX, currentY],
             length: 0,
             startT: 0,
-            endT: 0
+            endT: 0,
           });
           break;
 
-        case 'L':
+        case "L":
           segments.push({
-            type: 'L',
+            type: "L",
             points: [currentX, currentY, nums[0], nums[1]],
             length: 0,
             startT: 0,
-            endT: 0
+            endT: 0,
           });
           currentX = nums[0];
           currentY = nums[1];
           break;
 
-        case 'C':
+        case "C":
           segments.push({
-            type: 'C',
-            points: [currentX, currentY, nums[0], nums[1], nums[2], nums[3], nums[4], nums[5]],
+            type: "C",
+            points: [
+              currentX,
+              currentY,
+              nums[0],
+              nums[1],
+              nums[2],
+              nums[3],
+              nums[4],
+              nums[5],
+            ],
             length: 0,
             startT: 0,
-            endT: 0
+            endT: 0,
           });
           currentX = nums[4];
           currentY = nums[5];
           break;
 
-        case 'Q':
+        case "Q":
           segments.push({
-            type: 'Q',
+            type: "Q",
             points: [currentX, currentY, nums[0], nums[1], nums[2], nums[3]],
             length: 0,
             startT: 0,
-            endT: 0
+            endT: 0,
           });
           currentX = nums[2];
           currentY = nums[3];
           break;
 
-        case 'Z':
+        case "Z": {
           // Close path - line back to start
-          const firstMove = segments.find(s => s.type === 'M');
+          const firstMove = segments.find((s) => s.type === "M");
           if (firstMove) {
             segments.push({
-              type: 'L',
-              points: [currentX, currentY, firstMove.points[0], firstMove.points[1]],
+              type: "L",
+              points: [
+                currentX,
+                currentY,
+                firstMove.points[0],
+                firstMove.points[1],
+              ],
               length: 0,
               startT: 0,
-              endT: 0
+              endT: 0,
             });
           }
           break;
+        }
       }
     }
 
@@ -196,16 +222,16 @@ export class AudioPathAnimator {
 
     for (const segment of this.pathSegments) {
       switch (segment.type) {
-        case 'M':
+        case "M":
           segment.length = 0;
           break;
-        case 'L':
+        case "L":
           segment.length = this.lineLength(segment.points);
           break;
-        case 'C':
+        case "C":
           segment.length = this.bezierLength(segment.points, 3);
           break;
-        case 'Q':
+        case "Q":
           segment.length = this.bezierLength(segment.points, 2);
           break;
       }
@@ -252,13 +278,17 @@ export class AudioPathAnimator {
     return length;
   }
 
-  private getBezierPoint(points: number[], t: number, degree: number): { x: number; y: number } {
+  private getBezierPoint(
+    points: number[],
+    t: number,
+    degree: number,
+  ): { x: number; y: number } {
     if (degree === 2) {
       // Quadratic bezier
       const mt = 1 - t;
       return {
         x: mt * mt * points[0] + 2 * mt * t * points[2] + t * t * points[4],
-        y: mt * mt * points[1] + 2 * mt * t * points[3] + t * t * points[5]
+        y: mt * mt * points[1] + 2 * mt * t * points[3] + t * t * points[5],
       };
     } else {
       // Cubic bezier
@@ -266,8 +296,16 @@ export class AudioPathAnimator {
       const mt2 = mt * mt;
       const t2 = t * t;
       return {
-        x: mt2 * mt * points[0] + 3 * mt2 * t * points[2] + 3 * mt * t2 * points[4] + t2 * t * points[6],
-        y: mt2 * mt * points[1] + 3 * mt2 * t * points[3] + 3 * mt * t2 * points[5] + t2 * t * points[7]
+        x:
+          mt2 * mt * points[0] +
+          3 * mt2 * t * points[2] +
+          3 * mt * t2 * points[4] +
+          t2 * t * points[6],
+        y:
+          mt2 * mt * points[1] +
+          3 * mt2 * t * points[3] +
+          3 * mt * t2 * points[5] +
+          t2 * t * points[7],
       };
     }
   }
@@ -279,11 +317,12 @@ export class AudioPathAnimator {
     this.state.previousPosition = this.state.position;
 
     // Apply smoothing
-    const smoothedInput = this.state.smoothedValue * this.config.smoothing +
-                          audioValue * (1 - this.config.smoothing);
+    const smoothedInput =
+      this.state.smoothedValue * this.config.smoothing +
+      audioValue * (1 - this.config.smoothing);
     this.state.smoothedValue = smoothedInput;
 
-    if (this.config.movementMode === 'amplitude') {
+    if (this.config.movementMode === "amplitude") {
       this.updateAmplitudeMode(smoothedInput);
     } else {
       this.updateAccumulateMode(smoothedInput, isBeat);
@@ -300,7 +339,7 @@ export class AudioPathAnimator {
 
   private updateAmplitudeMode(audioValue: number): void {
     // Apply amplitude curve (power function for noise gate effect)
-    let processedValue = Math.pow(audioValue, this.config.amplitudeCurve);
+    const processedValue = audioValue ** this.config.amplitudeCurve;
 
     // Apply release envelope
     if (processedValue > this.releaseState) {
@@ -308,7 +347,7 @@ export class AudioPathAnimator {
     } else {
       // Exponential decay based on release setting
       // Lower release = faster decay (snappier)
-      const decayRate = 1 - (this.config.release * 0.95);
+      const decayRate = 1 - this.config.release * 0.95;
       this.releaseState *= decayRate;
     }
 
@@ -316,17 +355,25 @@ export class AudioPathAnimator {
     const finalValue = Math.max(processedValue, this.releaseState);
 
     // Map to position with sensitivity
-    this.state.position = Math.max(0, Math.min(1, finalValue * this.config.sensitivity));
+    this.state.position = Math.max(
+      0,
+      Math.min(1, finalValue * this.config.sensitivity),
+    );
   }
 
   private updateAccumulateMode(audioValue: number, isBeat: boolean): void {
     // Check for beat-triggered direction flip
-    if (this.config.flipOnBeat && isBeat && audioValue > this.config.beatThreshold) {
+    if (
+      this.config.flipOnBeat &&
+      isBeat &&
+      audioValue > this.config.beatThreshold
+    ) {
       this.state.direction *= -1;
     }
 
     // Accumulate position based on audio value
-    const delta = audioValue * this.config.sensitivity * 0.02 * this.state.direction;
+    const delta =
+      audioValue * this.config.sensitivity * 0.02 * this.state.direction;
     let newPosition = this.state.position + delta;
 
     // Bounce at boundaries
@@ -355,46 +402,53 @@ export class AudioPathAnimator {
     // Find the segment containing t
     let segment = this.pathSegments[0];
     for (const seg of this.pathSegments) {
-      if (seg.type !== 'M' && t >= seg.startT && t <= seg.endT) {
+      if (seg.type !== "M" && t >= seg.startT && t <= seg.endT) {
         segment = seg;
         break;
       }
     }
 
-    if (segment.type === 'M') {
+    if (segment.type === "M") {
       return { x: segment.points[0], y: segment.points[1], angle: 0 };
     }
 
     // Calculate local t within segment
-    const segmentT = segment.endT > segment.startT
-      ? (t - segment.startT) / (segment.endT - segment.startT)
-      : 0;
+    const segmentT =
+      segment.endT > segment.startT
+        ? (t - segment.startT) / (segment.endT - segment.startT)
+        : 0;
 
     let x: number, y: number;
     let tangentX: number, tangentY: number;
 
     switch (segment.type) {
-      case 'L':
-        x = segment.points[0] + (segment.points[2] - segment.points[0]) * segmentT;
-        y = segment.points[1] + (segment.points[3] - segment.points[1]) * segmentT;
+      case "L":
+        x =
+          segment.points[0] +
+          (segment.points[2] - segment.points[0]) * segmentT;
+        y =
+          segment.points[1] +
+          (segment.points[3] - segment.points[1]) * segmentT;
         tangentX = segment.points[2] - segment.points[0];
         tangentY = segment.points[3] - segment.points[1];
         break;
 
-      case 'Q': {
+      case "Q": {
         const result = this.getBezierPoint(segment.points, segmentT, 2);
         x = result.x;
         y = result.y;
         // Quadratic bezier tangent
         const mt = 1 - segmentT;
-        tangentX = 2 * mt * (segment.points[2] - segment.points[0]) +
-                   2 * segmentT * (segment.points[4] - segment.points[2]);
-        tangentY = 2 * mt * (segment.points[3] - segment.points[1]) +
-                   2 * segmentT * (segment.points[5] - segment.points[3]);
+        tangentX =
+          2 * mt * (segment.points[2] - segment.points[0]) +
+          2 * segmentT * (segment.points[4] - segment.points[2]);
+        tangentY =
+          2 * mt * (segment.points[3] - segment.points[1]) +
+          2 * segmentT * (segment.points[5] - segment.points[3]);
         break;
       }
 
-      case 'C': {
+      case "C": {
         const result = this.getBezierPoint(segment.points, segmentT, 3);
         x = result.x;
         y = result.y;
@@ -402,12 +456,14 @@ export class AudioPathAnimator {
         const mt = 1 - segmentT;
         const mt2 = mt * mt;
         const t2 = segmentT * segmentT;
-        tangentX = 3 * mt2 * (segment.points[2] - segment.points[0]) +
-                   6 * mt * segmentT * (segment.points[4] - segment.points[2]) +
-                   3 * t2 * (segment.points[6] - segment.points[4]);
-        tangentY = 3 * mt2 * (segment.points[3] - segment.points[1]) +
-                   6 * mt * segmentT * (segment.points[5] - segment.points[3]) +
-                   3 * t2 * (segment.points[7] - segment.points[5]);
+        tangentX =
+          3 * mt2 * (segment.points[2] - segment.points[0]) +
+          6 * mt * segmentT * (segment.points[4] - segment.points[2]) +
+          3 * t2 * (segment.points[6] - segment.points[4]);
+        tangentY =
+          3 * mt2 * (segment.points[3] - segment.points[1]) +
+          6 * mt * segmentT * (segment.points[5] - segment.points[3]) +
+          3 * t2 * (segment.points[7] - segment.points[5]);
         break;
       }
 
@@ -426,7 +482,9 @@ export class AudioPathAnimator {
   /**
    * Get motion blur trail points
    */
-  getMotionBlurTrail(steps: number = 5): Array<{ x: number; y: number; opacity: number }> {
+  getMotionBlurTrail(
+    steps: number = 5,
+  ): Array<{ x: number; y: number; opacity: number }> {
     if (!this.config.motionBlur) return [];
 
     const trail: Array<{ x: number; y: number; opacity: number }> = [];
@@ -454,7 +512,7 @@ export class AudioPathAnimator {
       smoothedValue: 0,
       x: 0,
       y: 0,
-      angle: 0
+      angle: 0,
     };
     this.releaseState = 0;
     // Clear accumulate cache on reset
@@ -499,7 +557,7 @@ export class AudioPathAnimator {
   evaluateAtFrame(
     frame: number,
     getAudioAtFrame: (f: number) => number,
-    isBeatAtFrame: (f: number) => boolean
+    isBeatAtFrame: (f: number) => boolean,
   ): PathAnimatorState {
     if (this.pathSegments.length === 0) {
       return {
@@ -509,7 +567,7 @@ export class AudioPathAnimator {
         smoothedValue: 0,
         x: 0,
         y: 0,
-        angle: 0
+        angle: 0,
       };
     }
 
@@ -517,12 +575,12 @@ export class AudioPathAnimator {
     let direction: 1 | -1 = 1;
     let smoothedValue: number;
 
-    if (this.config.movementMode === 'amplitude') {
+    if (this.config.movementMode === "amplitude") {
       // Amplitude mode: position directly from audio value at this frame
       const audioValue = getAudioAtFrame(frame);
 
       // Apply amplitude curve (power function for noise gate effect)
-      let processedValue = Math.pow(audioValue, this.config.amplitudeCurve);
+      const processedValue = audioValue ** this.config.amplitudeCurve;
 
       // For deterministic release envelope, we need to look at recent frames
       // Find the max audio value in a window based on release setting
@@ -530,9 +588,9 @@ export class AudioPathAnimator {
       let releaseEnvelope = processedValue;
       for (let f = Math.max(0, frame - releaseFrames); f < frame; f++) {
         const pastAudio = getAudioAtFrame(f);
-        const pastProcessed = Math.pow(pastAudio, this.config.amplitudeCurve);
+        const pastProcessed = pastAudio ** this.config.amplitudeCurve;
         // Apply decay based on distance
-        const decay = Math.pow(1 - (this.config.release * 0.95), frame - f);
+        const decay = (1 - this.config.release * 0.95) ** (frame - f);
         const decayedValue = pastProcessed * decay;
         releaseEnvelope = Math.max(releaseEnvelope, decayedValue);
       }
@@ -540,7 +598,6 @@ export class AudioPathAnimator {
       const finalValue = Math.max(processedValue, releaseEnvelope);
       position = Math.max(0, Math.min(1, finalValue * this.config.sensitivity));
       smoothedValue = audioValue;
-
     } else {
       // Accumulate mode: sum audio values from frame 0 to current frame
       // BUG-095 performance fix: Use cached checkpoints to avoid O(n²)
@@ -552,7 +609,8 @@ export class AudioPathAnimator {
       direction = 1;
 
       // Check cache for checkpoints (at multiples of CACHE_INTERVAL)
-      const checkpointFrame = Math.floor(frame / this.CACHE_INTERVAL) * this.CACHE_INTERVAL;
+      const checkpointFrame =
+        Math.floor(frame / this.CACHE_INTERVAL) * this.CACHE_INTERVAL;
       if (checkpointFrame > 0) {
         const cached = this.accumulateCache.get(checkpointFrame);
         if (cached) {
@@ -566,11 +624,16 @@ export class AudioPathAnimator {
           for (let f = 0; f <= checkpointFrame; f++) {
             const audioValue = getAudioAtFrame(f);
 
-            if (this.config.flipOnBeat && isBeatAtFrame(f) && audioValue > this.config.beatThreshold) {
+            if (
+              this.config.flipOnBeat &&
+              isBeatAtFrame(f) &&
+              audioValue > this.config.beatThreshold
+            ) {
               direction = direction === 1 ? -1 : 1;
             }
 
-            const delta = audioValue * this.config.sensitivity * 0.02 * direction;
+            const delta =
+              audioValue * this.config.sensitivity * 0.02 * direction;
             position += delta;
 
             if (position > 1) {
@@ -595,7 +658,11 @@ export class AudioPathAnimator {
         const audioValue = getAudioAtFrame(f);
 
         // Check for beat-triggered direction flip
-        if (this.config.flipOnBeat && isBeatAtFrame(f) && audioValue > this.config.beatThreshold) {
+        if (
+          this.config.flipOnBeat &&
+          isBeatAtFrame(f) &&
+          audioValue > this.config.beatThreshold
+        ) {
           direction = direction === 1 ? -1 : 1;
         }
 
@@ -631,9 +698,15 @@ export class AudioPathAnimator {
     let prevPosition = position;
     if (frame > 0) {
       // Quick evaluation for previous frame (simplified)
-      if (this.config.movementMode === 'amplitude') {
+      if (this.config.movementMode === "amplitude") {
         const prevAudio = getAudioAtFrame(prevFrame);
-        prevPosition = Math.max(0, Math.min(1, Math.pow(prevAudio, this.config.amplitudeCurve) * this.config.sensitivity));
+        prevPosition = Math.max(
+          0,
+          Math.min(
+            1,
+            prevAudio ** this.config.amplitudeCurve * this.config.sensitivity,
+          ),
+        );
       }
       // For accumulate mode, prevPosition is approximately position - last delta
     }
@@ -645,7 +718,7 @@ export class AudioPathAnimator {
       smoothedValue,
       x: pathPoint.x,
       y: pathPoint.y,
-      angle: pathPoint.angle
+      angle: pathPoint.angle,
     };
   }
 }

@@ -7,19 +7,19 @@
  * - Debug helpers (axis, grid)
  */
 
-import * as THREE from 'three';
-import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
-import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader.js';
+import * as THREE from "three";
+import { EXRLoader } from "three/examples/jsm/loaders/EXRLoader.js";
+import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
 
 /** Environment map configuration */
 export interface EnvironmentMapConfig {
   enabled: boolean;
-  url?: string | null;       // null when cleared, undefined when not set
+  url?: string | null; // null when cleared, undefined when not set
   intensity: number;
-  rotation: number;          // Y-axis rotation in degrees
-  backgroundBlur: number;    // 0-1, blur for background
-  useAsBackground: boolean;  // Show HDRI as scene background
-  toneMapping: boolean;      // Apply tone mapping
+  rotation: number; // Y-axis rotation in degrees
+  backgroundBlur: number; // 0-1, blur for background
+  useAsBackground: boolean; // Show HDRI as scene background
+  toneMapping: boolean; // Apply tone mapping
 }
 
 export class SceneManager {
@@ -78,7 +78,7 @@ export class SceneManager {
   constructor(backgroundColor: string | null = null) {
     // Create main scene
     this.scene = new THREE.Scene();
-    this.scene.name = 'LatticeScene';
+    this.scene.name = "LatticeScene";
 
     // Set background
     if (backgroundColor) {
@@ -89,16 +89,16 @@ export class SceneManager {
 
     // Create layer groups
     this.compositionGroup = new THREE.Group();
-    this.compositionGroup.name = 'composition';
+    this.compositionGroup.name = "composition";
     this.scene.add(this.compositionGroup);
 
     this.overlayGroup = new THREE.Group();
-    this.overlayGroup.name = 'overlay';
+    this.overlayGroup.name = "overlay";
     this.overlayGroup.renderOrder = 1000; // Render on top
     this.scene.add(this.overlayGroup);
 
     this.debugGroup = new THREE.Group();
-    this.debugGroup.name = 'debug';
+    this.debugGroup.name = "debug";
     this.debugGroup.visible = false;
     this.scene.add(this.debugGroup);
 
@@ -112,12 +112,12 @@ export class SceneManager {
   private setupDefaultLighting(): void {
     // Ambient light for base illumination
     const ambient = new THREE.AmbientLight(0xffffff, 0.6);
-    ambient.name = 'ambientLight';
+    ambient.name = "ambientLight";
     this.scene.add(ambient);
 
     // Key light (main directional)
     const keyLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    keyLight.name = 'keyLight';
+    keyLight.name = "keyLight";
     keyLight.position.set(1000, -1000, 2000);
     keyLight.castShadow = true;
     keyLight.shadow.mapSize.width = 2048;
@@ -126,7 +126,7 @@ export class SceneManager {
 
     // Fill light (softer, opposite side)
     const fillLight = new THREE.DirectionalLight(0xffffff, 0.3);
-    fillLight.name = 'fillLight';
+    fillLight.name = "fillLight";
     fillLight.position.set(-500, 500, 1000);
     this.scene.add(fillLight);
   }
@@ -263,7 +263,9 @@ export class SceneManager {
     // Object is from a different Three.js instance (common in ComfyUI
     // when model-viewer or other extensions load their own Three.js)
     // Try to make it work anyway by ensuring it has the required methods
-    console.warn('[SceneManager] UI element from different Three.js instance - attempting compatibility fix');
+    console.warn(
+      "[SceneManager] UI element from different Three.js instance - attempting compatibility fix",
+    );
 
     // Ensure the object has required methods by binding them from our THREE.Object3D
     // This is a compatibility shim for multi-Three.js environments
@@ -271,20 +273,20 @@ export class SceneManager {
     const obj = object as any;
 
     // Patch missing methods if they don't exist or are from wrong prototype
-    if (typeof obj.updateMatrixWorld !== 'function') {
+    if (typeof obj.updateMatrixWorld !== "function") {
       obj.updateMatrixWorld = proto.updateMatrixWorld.bind(obj);
     }
-    if (typeof obj.updateWorldMatrix !== 'function') {
+    if (typeof obj.updateWorldMatrix !== "function") {
       obj.updateWorldMatrix = proto.updateWorldMatrix.bind(obj);
     }
 
     // Recursively patch children
     if (obj.children && Array.isArray(obj.children)) {
       const patchChild = (child: any) => {
-        if (typeof child.updateMatrixWorld !== 'function') {
+        if (typeof child.updateMatrixWorld !== "function") {
           child.updateMatrixWorld = proto.updateMatrixWorld.bind(child);
         }
-        if (typeof child.updateWorldMatrix !== 'function') {
+        if (typeof child.updateWorldMatrix !== "function") {
           child.updateWorldMatrix = proto.updateWorldMatrix.bind(child);
         }
         if (child.children) {
@@ -302,10 +304,12 @@ export class SceneManager {
       }
       obj.parent = this.scene;
       this.scene.children.push(obj);
-      obj.dispatchEvent?.({ type: 'added' });
-      console.log('[SceneManager] Successfully added UI element with compatibility shim');
+      obj.dispatchEvent?.({ type: "added" });
+      console.log(
+        "[SceneManager] Successfully added UI element with compatibility shim",
+      );
     } catch (error) {
-      console.error('[SceneManager] Failed to add UI element:', error);
+      console.error("[SceneManager] Failed to add UI element:", error);
     }
   }
 
@@ -325,7 +329,7 @@ export class SceneManager {
       if (index !== -1) {
         this.scene.children.splice(index, 1);
         (object as any).parent = null;
-        object.dispatchEvent?.({ type: 'removed' });
+        object.dispatchEvent?.({ type: "removed" });
       }
     }
   }
@@ -371,8 +375,8 @@ export class SceneManager {
 
       // Only patch updateMatrixWorld if it's missing
       // (TransformControls from our bundle should have it)
-      if (typeof obj.updateMatrixWorld !== 'function') {
-        obj.updateMatrixWorld = function(force?: boolean) {
+      if (typeof obj.updateMatrixWorld !== "function") {
+        obj.updateMatrixWorld = function (force?: boolean) {
           try {
             if (this.matrixAutoUpdate) this.updateMatrix?.();
             if (this.matrixWorldNeedsUpdate || force) {
@@ -380,7 +384,10 @@ export class SceneManager {
                 if (this.parent === null) {
                   this.matrixWorld?.copy?.(this.matrix);
                 } else if (this.parent?.matrixWorld) {
-                  this.matrixWorld?.multiplyMatrices?.(this.parent.matrixWorld, this.matrix);
+                  this.matrixWorld?.multiplyMatrices?.(
+                    this.parent.matrixWorld,
+                    this.matrix,
+                  );
                 }
               }
               this.matrixWorldNeedsUpdate = false;
@@ -391,12 +398,15 @@ export class SceneManager {
             if (children && Array.isArray(children)) {
               for (let i = 0; i < children.length; i++) {
                 const child = children[i];
-                if (child && (child.matrixWorldAutoUpdate === true || force === true)) {
+                if (
+                  child &&
+                  (child.matrixWorldAutoUpdate === true || force === true)
+                ) {
                   child.updateMatrixWorld?.(force);
                 }
               }
             }
-          } catch (e) {
+          } catch (_e) {
             // Silently ignore errors in cross-instance objects
           }
         };
@@ -418,7 +428,7 @@ export class SceneManager {
         ensureMethods(child, 0);
       }
     } catch (e) {
-      console.warn('[SceneManager] Error in prepareForRender:', e);
+      console.warn("[SceneManager] Error in prepareForRender:", e);
     }
   }
 
@@ -437,13 +447,13 @@ export class SceneManager {
    * Add axis helper to debug group
    */
   addAxisHelper(size: number = 500): void {
-    const existing = this.debugGroup.getObjectByName('axisHelper');
+    const existing = this.debugGroup.getObjectByName("axisHelper");
     if (existing) {
       this.debugGroup.remove(existing);
     }
 
     const helper = new THREE.AxesHelper(size);
-    helper.name = 'axisHelper';
+    helper.name = "axisHelper";
     this.debugGroup.add(helper);
   }
 
@@ -451,13 +461,13 @@ export class SceneManager {
    * Add grid helper to debug group
    */
   addGridHelper(size: number = 2000, divisions: number = 40): void {
-    const existing = this.debugGroup.getObjectByName('gridHelper');
+    const existing = this.debugGroup.getObjectByName("gridHelper");
     if (existing) {
       this.debugGroup.remove(existing);
     }
 
     const helper = new THREE.GridHelper(size, divisions, 0x444444, 0x222222);
-    helper.name = 'gridHelper';
+    helper.name = "gridHelper";
     helper.rotation.x = Math.PI / 2; // Rotate to XY plane
     this.debugGroup.add(helper);
   }
@@ -482,7 +492,7 @@ export class SceneManager {
    */
   getBackground(): string | null {
     if (this.scene.background instanceof THREE.Color) {
-      return '#' + this.scene.background.getHexString();
+      return `#${this.scene.background.getHexString()}`;
     }
     return null;
   }
@@ -510,10 +520,12 @@ export class SceneManager {
    */
   async loadEnvironmentMap(
     url: string,
-    config?: Partial<EnvironmentMapConfig>
+    config?: Partial<EnvironmentMapConfig>,
   ): Promise<THREE.Texture> {
     if (!this.pmremGenerator) {
-      throw new Error('Environment support not initialized. Call initializeEnvironmentSupport() first.');
+      throw new Error(
+        "Environment support not initialized. Call initializeEnvironmentSupport() first.",
+      );
     }
 
     // Update config
@@ -524,8 +536,8 @@ export class SceneManager {
     this.envConfig.enabled = true;
 
     // Determine loader based on extension
-    const isHDR = url.toLowerCase().endsWith('.hdr');
-    const isEXR = url.toLowerCase().endsWith('.exr');
+    const isHDR = url.toLowerCase().endsWith(".hdr");
+    const isEXR = url.toLowerCase().endsWith(".exr");
 
     return new Promise((resolve, reject) => {
       if (isHDR) {
@@ -536,7 +548,7 @@ export class SceneManager {
           url,
           (texture) => this.processEnvironmentTexture(texture, resolve),
           undefined,
-          reject
+          reject,
         );
       } else if (isEXR) {
         if (!this.exrLoader) {
@@ -546,7 +558,7 @@ export class SceneManager {
           url,
           (texture) => this.processEnvironmentTexture(texture, resolve),
           undefined,
-          reject
+          reject,
         );
       } else {
         // Standard image format (jpg, png)
@@ -558,7 +570,7 @@ export class SceneManager {
             this.processEnvironmentTexture(texture, resolve);
           },
           undefined,
-          reject
+          reject,
         );
       }
     });
@@ -569,10 +581,10 @@ export class SceneManager {
    */
   private processEnvironmentTexture(
     texture: THREE.Texture,
-    resolve: (tex: THREE.Texture) => void
+    resolve: (tex: THREE.Texture) => void,
   ): void {
     // Generate PMREM from equirectangular texture
-    const envMap = this.pmremGenerator!.fromEquirectangular(texture).texture;
+    const envMap = this.pmremGenerator?.fromEquirectangular(texture).texture;
     texture.dispose();
 
     // Store and apply
@@ -600,12 +612,14 @@ export class SceneManager {
         this.scene.background = texture;
         this.scene.backgroundIntensity = this.envConfig.intensity;
         this.scene.backgroundBlurriness = this.envConfig.backgroundBlur;
-        this.scene.backgroundRotation.y = this.envConfig.rotation * (Math.PI / 180);
+        this.scene.backgroundRotation.y =
+          this.envConfig.rotation * (Math.PI / 180);
       }
 
       // Set environment intensity and rotation
       this.scene.environmentIntensity = this.envConfig.intensity;
-      this.scene.environmentRotation.y = this.envConfig.rotation * (Math.PI / 180);
+      this.scene.environmentRotation.y =
+        this.envConfig.rotation * (Math.PI / 180);
     } else {
       this.scene.environment = null;
       if (this.envConfig.useAsBackground) {
@@ -625,13 +639,15 @@ export class SceneManager {
       if (this.envConfig.enabled) {
         this.scene.environment = this.environmentMap;
         this.scene.environmentIntensity = this.envConfig.intensity;
-        this.scene.environmentRotation.y = this.envConfig.rotation * (Math.PI / 180);
+        this.scene.environmentRotation.y =
+          this.envConfig.rotation * (Math.PI / 180);
 
         if (this.envConfig.useAsBackground) {
           this.scene.background = this.environmentMap;
           this.scene.backgroundIntensity = this.envConfig.intensity;
           this.scene.backgroundBlurriness = this.envConfig.backgroundBlur;
-          this.scene.backgroundRotation.y = this.envConfig.rotation * (Math.PI / 180);
+          this.scene.backgroundRotation.y =
+            this.envConfig.rotation * (Math.PI / 180);
         }
       } else {
         this.scene.environment = null;
@@ -743,7 +759,7 @@ export class SceneManager {
     });
 
     this.compositionBounds = new THREE.LineLoop(geometry, material);
-    this.compositionBounds.name = 'compositionBounds';
+    this.compositionBounds.name = "compositionBounds";
     this.compositionBounds.renderOrder = 998;
     this.overlayGroup.add(this.compositionBounds);
   }
@@ -777,7 +793,7 @@ export class SceneManager {
       const w = this.compositionWidth;
       const h = this.compositionHeight;
       const gridGroup = new THREE.Group();
-      gridGroup.name = 'compositionGrid';
+      gridGroup.name = "compositionGrid";
 
       const material = new THREE.LineBasicMaterial({
         color: 0x333333,
@@ -803,10 +819,7 @@ export class SceneManager {
       const stepY = h / divisions;
       for (let i = 0; i <= divisions; i++) {
         const y = -i * stepY;
-        const points = [
-          new THREE.Vector3(0, y, 0),
-          new THREE.Vector3(w, y, 0),
-        ];
+        const points = [new THREE.Vector3(0, y, 0), new THREE.Vector3(w, y, 0)];
         const geometry = new THREE.BufferGeometry().setFromPoints(points);
         const line = new THREE.Line(geometry, material.clone());
         gridGroup.add(line);
@@ -876,12 +889,17 @@ export class SceneManager {
         originMarker.position.set(centerX, centerY, 0);
         originMarker.renderOrder = 998;
         gridGroup.add(originMarker);
-      } catch (meshError) {
+      } catch (_meshError) {
         // Mesh creation failed (likely Three.js multi-instance conflict)
         // Fall back to a simple crosshair at the origin
-        console.warn('[SceneManager] Could not create origin marker mesh, using crosshair fallback');
+        console.warn(
+          "[SceneManager] Could not create origin marker mesh, using crosshair fallback",
+        );
         const crossSize = 8;
-        const crossMat = new THREE.LineBasicMaterial({ color: 0xffffff, depthTest: false });
+        const crossMat = new THREE.LineBasicMaterial({
+          color: 0xffffff,
+          depthTest: false,
+        });
         const crossH = new THREE.BufferGeometry().setFromPoints([
           new THREE.Vector3(centerX - crossSize, centerY, 0),
           new THREE.Vector3(centerX + crossSize, centerY, 0),
@@ -907,7 +925,9 @@ export class SceneManager {
         new THREE.Vector3(centerX, 0, 0),
         new THREE.Vector3(centerX, -h, 0),
       ];
-      const vCenterGeom = new THREE.BufferGeometry().setFromPoints(vCenterPoints);
+      const vCenterGeom = new THREE.BufferGeometry().setFromPoints(
+        vCenterPoints,
+      );
       gridGroup.add(new THREE.Line(vCenterGeom, centerMaterial));
 
       // Horizontal center line (full width)
@@ -915,14 +935,16 @@ export class SceneManager {
         new THREE.Vector3(0, centerY, 0),
         new THREE.Vector3(w, centerY, 0),
       ];
-      const hCenterGeom = new THREE.BufferGeometry().setFromPoints(hCenterPoints);
+      const hCenterGeom = new THREE.BufferGeometry().setFromPoints(
+        hCenterPoints,
+      );
       gridGroup.add(new THREE.Line(hCenterGeom, centerMaterial.clone()));
 
       gridGroup.renderOrder = 997;
       this.compositionGrid = gridGroup;
       this.overlayGroup.add(gridGroup);
     } catch (error) {
-      console.warn('[SceneManager] Failed to create composition grid:', error);
+      console.warn("[SceneManager] Failed to create composition grid:", error);
       // Grid is not critical for functionality, continue without it
     }
   }
@@ -983,12 +1005,12 @@ export class SceneManager {
       });
 
       this.outsideOverlay = new THREE.Mesh(geometry, material);
-      this.outsideOverlay.name = 'outsideOverlay';
+      this.outsideOverlay.name = "outsideOverlay";
       this.outsideOverlay.position.z = -2; // Behind composition but in front of far background
       this.outsideOverlay.renderOrder = 996;
       this.overlayGroup.add(this.outsideOverlay);
     } catch (error) {
-      console.warn('[SceneManager] Failed to create outside overlay:', error);
+      console.warn("[SceneManager] Failed to create outside overlay:", error);
       // Overlay is not critical for functionality, continue without it
     }
   }
@@ -1010,7 +1032,7 @@ export class SceneManager {
    * Raycast against composition objects
    */
   raycastComposition(
-    raycaster: THREE.Raycaster
+    raycaster: THREE.Raycaster,
   ): THREE.Intersection<THREE.Object3D>[] {
     return raycaster.intersectObjects(this.compositionGroup.children, true);
   }
@@ -1034,7 +1056,7 @@ export class SceneManager {
       object.geometry?.dispose();
 
       if (Array.isArray(object.material)) {
-        object.material.forEach(m => {
+        object.material.forEach((m) => {
           this.disposeMaterial(m);
         });
       } else if (object.material) {

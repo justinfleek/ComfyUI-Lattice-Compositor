@@ -12,22 +12,21 @@
  * @module AttackSurfaceTests
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, expect, it, vi } from "vitest";
 
 // ============================================================================
 // CATEGORY 1: STATE CORRUPTION & RACE CONDITIONS
 // ============================================================================
 
-describe('ATTACK: State Corruption - Abort Mid-Export', () => {
-
-  it('should clean up partial files when aborted', async () => {
-    const { ExportPipeline } = await import('@/services/export/exportPipeline');
+describe("ATTACK: State Corruption - Abort Mid-Export", () => {
+  it("should clean up partial files when aborted", async () => {
+    const { ExportPipeline } = await import("@/services/export/exportPipeline");
 
     const filesCreated: string[] = [];
     const filesDeleted: string[] = [];
 
     // Mock file system
-    vi.mock('fs', () => ({
+    vi.mock("fs", () => ({
       writeFileSync: vi.fn((path) => filesCreated.push(path)),
       unlinkSync: vi.fn((path) => filesDeleted.push(path)),
       existsSync: vi.fn(() => true),
@@ -39,7 +38,7 @@ describe('ATTACK: State Corruption - Abort Mid-Export', () => {
       layers: [],
       cameraKeyframes: [],
       config: {
-        target: 'wan22-i2v',
+        target: "wan22-i2v",
         width: 512,
         height: 512,
         frameCount: 100,
@@ -47,7 +46,7 @@ describe('ATTACK: State Corruption - Abort Mid-Export', () => {
         startFrame: 0,
         exportReferenceFrame: true,
         exportDepthMap: true,
-        outputDirectory: '/tmp/test',
+        outputDirectory: "/tmp/test",
       } as any,
       abortSignal: abortController.signal,
     });
@@ -65,14 +64,14 @@ describe('ATTACK: State Corruption - Abort Mid-Export', () => {
     // This test documents expected behavior
   });
 
-  it('should prevent concurrent exports on same pipeline', async () => {
-    const { ExportPipeline } = await import('@/services/export/exportPipeline');
+  it("should prevent concurrent exports on same pipeline", async () => {
+    const { ExportPipeline } = await import("@/services/export/exportPipeline");
 
     const pipeline = new ExportPipeline({
       layers: [],
       cameraKeyframes: [],
       config: {
-        target: 'wan22-i2v',
+        target: "wan22-i2v",
         width: 512,
         height: 512,
         frameCount: 10,
@@ -92,11 +91,11 @@ describe('ATTACK: State Corruption - Abort Mid-Export', () => {
     expect(result1 || result2).toBeDefined();
   });
 
-  it('should handle abort during critical section (file write)', async () => {
-    const { ExportPipeline } = await import('@/services/export/exportPipeline');
+  it("should handle abort during critical section (file write)", async () => {
+    const { ExportPipeline } = await import("@/services/export/exportPipeline");
 
     let writeStarted = false;
-    let writeCompleted = false;
+    const writeCompleted = false;
 
     // Track when blob creation happens (during file write)
     const originalBlob = global.Blob;
@@ -113,7 +112,7 @@ describe('ATTACK: State Corruption - Abort Mid-Export', () => {
       layers: [],
       cameraKeyframes: [],
       config: {
-        target: 'wan22-i2v',
+        target: "wan22-i2v",
         width: 512,
         height: 512,
         frameCount: 10,
@@ -143,17 +142,16 @@ describe('ATTACK: State Corruption - Abort Mid-Export', () => {
   });
 });
 
-describe('ATTACK: State Corruption - Resume After Error', () => {
-
-  it('should reset internal state after failed export', async () => {
-    const { ExportPipeline } = await import('@/services/export/exportPipeline');
+describe("ATTACK: State Corruption - Resume After Error", () => {
+  it("should reset internal state after failed export", async () => {
+    const { ExportPipeline } = await import("@/services/export/exportPipeline");
 
     // First export with invalid config - should fail
     const pipeline1 = new ExportPipeline({
       layers: [],
       cameraKeyframes: [],
       config: {
-        target: 'wan22-i2v',
+        target: "wan22-i2v",
         width: 0, // Invalid
         height: 512,
         frameCount: 10,
@@ -170,7 +168,7 @@ describe('ATTACK: State Corruption - Resume After Error', () => {
       layers: [],
       cameraKeyframes: [],
       config: {
-        target: 'wan22-i2v',
+        target: "wan22-i2v",
         width: 512,
         height: 512,
         frameCount: 10,
@@ -190,16 +188,15 @@ describe('ATTACK: State Corruption - Resume After Error', () => {
 // CATEGORY 2: MEMORY EXHAUSTION / DoS
 // ============================================================================
 
-describe('ATTACK: Memory Exhaustion', () => {
-
-  it('should reject 4K × 4K × 1000 frames (would be 64GB+)', async () => {
-    const { ExportPipeline } = await import('@/services/export/exportPipeline');
+describe("ATTACK: Memory Exhaustion", () => {
+  it("should reject 4K × 4K × 1000 frames (would be 64GB+)", async () => {
+    const { ExportPipeline } = await import("@/services/export/exportPipeline");
 
     const pipeline = new ExportPipeline({
       layers: [],
       cameraKeyframes: [],
       config: {
-        target: 'wan22-i2v',
+        target: "wan22-i2v",
         width: 4096,
         height: 4096,
         frameCount: 1000,
@@ -216,7 +213,7 @@ describe('ATTACK: Memory Exhaustion', () => {
     expect(result).toBeDefined();
   });
 
-  it('should limit canvas context allocation', async () => {
+  it("should limit canvas context allocation", async () => {
     // Browsers typically limit to ~16 canvas contexts
     // Creating more should fail gracefully
 
@@ -225,14 +222,14 @@ describe('ATTACK: Memory Exhaustion', () => {
     try {
       for (let i = 0; i < 50; i++) {
         const canvas = new OffscreenCanvas(1024, 1024);
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext("2d");
         if (!ctx) {
           // This is expected behavior - graceful failure
           break;
         }
         canvases.push(canvas);
       }
-    } catch (e) {
+    } catch (_e) {
       // Expected to fail at some point
     }
 
@@ -240,21 +237,21 @@ describe('ATTACK: Memory Exhaustion', () => {
     expect(canvases.length).toBeLessThan(50);
   });
 
-  it('should handle deeply nested compositions', async () => {
-    const { ExportPipeline } = await import('@/services/export/exportPipeline');
+  it("should handle deeply nested compositions", async () => {
+    const { ExportPipeline } = await import("@/services/export/exportPipeline");
 
     // Create 100-level deep nested composition
     const createNestedLayer = (depth: number): any => {
       if (depth === 0) {
         return {
-          id: 'leaf',
-          type: 'solid',
+          id: "leaf",
+          type: "solid",
           visible: true,
         };
       }
       return {
         id: `nested-${depth}`,
-        type: 'nestedComp',
+        type: "nestedComp",
         visible: true,
         nestedComposition: {
           layers: [createNestedLayer(depth - 1)],
@@ -266,7 +263,7 @@ describe('ATTACK: Memory Exhaustion', () => {
       layers: [createNestedLayer(100)],
       cameraKeyframes: [],
       config: {
-        target: 'wan22-i2v',
+        target: "wan22-i2v",
         width: 512,
         height: 512,
         frameCount: 1,
@@ -281,17 +278,21 @@ describe('ATTACK: Memory Exhaustion', () => {
     expect(result).toBeDefined();
   });
 
-  it('should reject absurdly long trajectories', async () => {
-    const { exportWanMoveTrajectories } = await import('@/services/modelExport');
+  it("should reject absurdly long trajectories", async () => {
+    const { exportWanMoveTrajectories } = await import(
+      "@/services/modelExport"
+    );
 
     // 1 million points per trajectory
     const massiveTrajectory = {
-      id: 'massive',
-      points: Array(1000000).fill(null).map((_, i) => ({
-        frame: i,
-        x: Math.random() * 1920,
-        y: Math.random() * 1080,
-      })),
+      id: "massive",
+      points: Array(1000000)
+        .fill(null)
+        .map((_, i) => ({
+          frame: i,
+          x: Math.random() * 1920,
+          y: Math.random() * 1080,
+        })),
       visibility: Array(1000000).fill(true),
     };
 
@@ -300,7 +301,7 @@ describe('ATTACK: Memory Exhaustion', () => {
 
     try {
       exportWanMoveTrajectories([massiveTrajectory], 1920, 1080);
-    } catch (e) {
+    } catch (_e) {
       // Expected to fail
     }
 
@@ -315,18 +316,17 @@ describe('ATTACK: Memory Exhaustion', () => {
 // CATEGORY 3: MALICIOUS INPUT INJECTION
 // ============================================================================
 
-describe('ATTACK: Path Traversal', () => {
-
-  it('should reject path traversal in output directory', async () => {
-    const { ExportPipeline } = await import('@/services/export/exportPipeline');
+describe("ATTACK: Path Traversal", () => {
+  it("should reject path traversal in output directory", async () => {
+    const { ExportPipeline } = await import("@/services/export/exportPipeline");
 
     const maliciousPaths = [
-      '../../../etc/passwd',
-      '..\\..\\..\\Windows\\System32',
-      '/etc/passwd',
-      'C:\\Windows\\System32',
-      'file:///etc/passwd',
-      '%2e%2e%2f%2e%2e%2f', // URL encoded ../
+      "../../../etc/passwd",
+      "..\\..\\..\\Windows\\System32",
+      "/etc/passwd",
+      "C:\\Windows\\System32",
+      "file:///etc/passwd",
+      "%2e%2e%2f%2e%2e%2f", // URL encoded ../
     ];
 
     for (const maliciousPath of maliciousPaths) {
@@ -334,7 +334,7 @@ describe('ATTACK: Path Traversal', () => {
         layers: [],
         cameraKeyframes: [],
         config: {
-          target: 'wan22-i2v',
+          target: "wan22-i2v",
           width: 512,
           height: 512,
           frameCount: 1,
@@ -351,25 +351,25 @@ describe('ATTACK: Path Traversal', () => {
         // If it succeeded, verify the actual output path was sanitized
         const outputPath = Object.keys(result.outputFiles)[0];
         if (outputPath) {
-          expect(outputPath).not.toContain('..');
-          expect(outputPath).not.toContain('/etc/');
-          expect(outputPath).not.toContain('\\Windows\\');
+          expect(outputPath).not.toContain("..");
+          expect(outputPath).not.toContain("/etc/");
+          expect(outputPath).not.toContain("\\Windows\\");
         }
       }
     }
   });
 
-  it('should sanitize filename with special characters', async () => {
-    const { ExportPipeline } = await import('@/services/export/exportPipeline');
+  it("should sanitize filename with special characters", async () => {
+    const { ExportPipeline } = await import("@/services/export/exportPipeline");
 
     const maliciousFilenames = [
-      '../../../evil',
+      "../../../evil",
       'file<>:"/\\|?*name',
-      'CON', // Windows reserved
-      'NUL', // Windows reserved
-      'file\x00name', // Null byte
-      'a'.repeat(500), // Very long
-      '...', // Special
+      "CON", // Windows reserved
+      "NUL", // Windows reserved
+      "file\x00name", // Null byte
+      "a".repeat(500), // Very long
+      "...", // Special
     ];
 
     for (const filename of maliciousFilenames) {
@@ -377,7 +377,7 @@ describe('ATTACK: Path Traversal', () => {
         layers: [],
         cameraKeyframes: [],
         config: {
-          target: 'wan22-i2v',
+          target: "wan22-i2v",
           width: 512,
           height: 512,
           frameCount: 1,
@@ -395,10 +395,11 @@ describe('ATTACK: Path Traversal', () => {
   });
 });
 
-describe('ATTACK: Workflow JSON Injection', () => {
-
-  it('should reject workflow with __proto__ pollution', async () => {
-    const { validateWorkflow, injectParameters } = await import('@/services/comfyui/workflowTemplates');
+describe("ATTACK: Workflow JSON Injection", () => {
+  it("should reject workflow with __proto__ pollution", async () => {
+    const { validateWorkflow } = await import(
+      "@/services/comfyui/workflowTemplates"
+    );
 
     const maliciousWorkflow = JSON.parse(`{
       "__proto__": {
@@ -423,35 +424,37 @@ describe('ATTACK: Workflow JSON Injection', () => {
     expect(({} as any).isAdmin).not.toBe(true);
   });
 
-  it('should escape shell-like characters in node inputs', async () => {
-    const { generateWorkflowForTarget } = await import('@/services/comfyui/workflowTemplates');
+  it("should escape shell-like characters in node inputs", async () => {
+    const { generateWorkflowForTarget } = await import(
+      "@/services/comfyui/workflowTemplates"
+    );
 
     const params = {
-      prompt: '$(rm -rf /)',
-      negativePrompt: '`cat /etc/passwd`',
+      prompt: "$(rm -rf /)",
+      negativePrompt: "`cat /etc/passwd`",
       width: 512,
       height: 512,
       frameCount: 10,
       fps: 24,
-      referenceImage: 'test.png; rm -rf /',
+      referenceImage: "test.png; rm -rf /",
     };
 
-    const workflow = generateWorkflowForTarget('wan22-i2v', params as any);
+    const workflow = generateWorkflowForTarget("wan22-i2v", params as any);
 
     // Workflow should be generated but inputs should be safe strings
-    const workflowStr = JSON.stringify(workflow);
+    const _workflowStr = JSON.stringify(workflow);
 
     // These should be escaped or rejected, not executable
     // The key is they shouldn't cause issues when workflow runs in ComfyUI
     expect(workflow).toBeDefined();
   });
 
-  it('should handle circular references in layer data', async () => {
-    const { ExportPipeline } = await import('@/services/export/exportPipeline');
+  it("should handle circular references in layer data", async () => {
+    const { ExportPipeline } = await import("@/services/export/exportPipeline");
 
     const layer: any = {
-      id: 'circular',
-      type: 'solid',
+      id: "circular",
+      type: "solid",
       visible: true,
     };
     layer.parent = layer; // Circular reference
@@ -460,7 +463,7 @@ describe('ATTACK: Workflow JSON Injection', () => {
       layers: [layer],
       cameraKeyframes: [],
       config: {
-        target: 'wan22-i2v',
+        target: "wan22-i2v",
         width: 512,
         height: 512,
         frameCount: 1,
@@ -479,16 +482,15 @@ describe('ATTACK: Workflow JSON Injection', () => {
 // CATEGORY 4: BINARY FORMAT CORRUPTION
 // ============================================================================
 
-describe('ATTACK: NPY Binary Corruption', () => {
-
-  it('should produce valid NPY header for edge case shapes', async () => {
-    const { createNpyHeader } = await import('@/services/modelExport');
+describe("ATTACK: NPY Binary Corruption", () => {
+  it("should produce valid NPY header for edge case shapes", async () => {
+    const { createNpyHeader } = await import("@/services/modelExport");
 
     const edgeCaseShapes = [
-      [1],           // Single element
-      [1, 1],        // 1x1
-      [1, 1, 1],     // 1x1x1
-      [0, 10, 2],    // Zero dimension (valid in NumPy)
+      [1], // Single element
+      [1, 1], // 1x1
+      [1, 1, 1], // 1x1x1
+      [0, 10, 2], // Zero dimension (valid in NumPy)
       [10000, 10, 2], // Large first dimension
     ];
 
@@ -501,16 +503,18 @@ describe('ATTACK: NPY Binary Corruption', () => {
 
       // Header should start with magic number
       expect(header[0]).toBe(0x93); // \x93
-      expect(header[1]).toBe(0x4E); // N
+      expect(header[1]).toBe(0x4e); // N
       expect(header[2]).toBe(0x55); // U
-      expect(header[3]).toBe(0x4D); // M
+      expect(header[3]).toBe(0x4d); // M
       expect(header[4]).toBe(0x50); // P
       expect(header[5]).toBe(0x59); // Y
     }
   });
 
-  it('should handle float overflow in depth normalization', async () => {
-    const { convertDepthToFormat } = await import('@/services/export/depthRenderer');
+  it("should handle float overflow in depth normalization", async () => {
+    const { convertDepthToFormat } = await import(
+      "@/services/export/depthRenderer"
+    );
 
     // Depth values that would overflow float32
     const extremeDepthResult = {
@@ -527,7 +531,7 @@ describe('ATTACK: NPY Binary Corruption', () => {
       maxDepth: Number.MAX_VALUE,
     };
 
-    const output = convertDepthToFormat(extremeDepthResult, 'midas');
+    const output = convertDepthToFormat(extremeDepthResult, "midas");
 
     // Should not contain NaN or Infinity
     for (let i = 0; i < output.length; i++) {
@@ -535,8 +539,8 @@ describe('ATTACK: NPY Binary Corruption', () => {
     }
   });
 
-  it('should handle subnormal floats in trajectory data', async () => {
-    const { trajectoriesToNpy } = await import('@/services/modelExport');
+  it("should handle subnormal floats in trajectory data", async () => {
+    const { trajectoriesToNpy } = await import("@/services/modelExport");
 
     // Subnormal floats (very small numbers)
     const subnormalTrajectory = [
@@ -556,10 +560,11 @@ describe('ATTACK: NPY Binary Corruption', () => {
 // CATEGORY 5: DETERMINISM FAILURES
 // ============================================================================
 
-describe('ATTACK: Non-Deterministic Output', () => {
-
-  it('should produce identical output for identical input (depth)', async () => {
-    const { convertDepthToFormat } = await import('@/services/export/depthRenderer');
+describe("ATTACK: Non-Deterministic Output", () => {
+  it("should produce identical output for identical input (depth)", async () => {
+    const { convertDepthToFormat } = await import(
+      "@/services/export/depthRenderer"
+    );
 
     const depthResult = {
       depthBuffer: new Float32Array([100, 200, 300, 400, 500]),
@@ -569,8 +574,8 @@ describe('ATTACK: Non-Deterministic Output', () => {
       maxDepth: 500,
     };
 
-    const output1 = convertDepthToFormat(depthResult, 'midas');
-    const output2 = convertDepthToFormat(depthResult, 'midas');
+    const output1 = convertDepthToFormat(depthResult, "midas");
+    const output2 = convertDepthToFormat(depthResult, "midas");
 
     // Should be byte-for-byte identical
     expect(output1.length).toBe(output2.length);
@@ -579,8 +584,10 @@ describe('ATTACK: Non-Deterministic Output', () => {
     }
   });
 
-  it('should produce identical output for identical input (camera matrix)', async () => {
-    const { computeViewMatrix } = await import('@/services/export/cameraExportFormats');
+  it("should produce identical output for identical input (camera matrix)", async () => {
+    const { computeViewMatrix } = await import(
+      "@/services/export/cameraExportFormats"
+    );
 
     const camera = {
       position: { x: 100, y: 200, z: -500 },
@@ -601,11 +608,15 @@ describe('ATTACK: Non-Deterministic Output', () => {
     }
   });
 
-  it('should produce identical NPY for identical trajectories', async () => {
-    const { trajectoriesToNpy } = await import('@/services/modelExport');
+  it("should produce identical NPY for identical trajectories", async () => {
+    const { trajectoriesToNpy } = await import("@/services/modelExport");
 
     const trajectory = [
-      [[0, 0], [10, 10], [20, 20]],
+      [
+        [0, 0],
+        [10, 10],
+        [20, 20],
+      ],
     ];
 
     const blob1 = trajectoriesToNpy(trajectory);
@@ -623,11 +634,13 @@ describe('ATTACK: Non-Deterministic Output', () => {
     }
   });
 
-  it('should maintain frame timing precision over long exports', async () => {
-    const { exportCameraMatrices } = await import('@/services/export/cameraExportFormats');
+  it("should maintain frame timing precision over long exports", async () => {
+    const { exportCameraMatrices } = await import(
+      "@/services/export/cameraExportFormats"
+    );
 
     const camera = {
-      id: 'test',
+      id: "test",
       position: { x: 0, y: 0, z: -500 },
       orientation: { x: 0, y: 0, z: 0 },
       focalLength: 50,
@@ -645,7 +658,8 @@ describe('ATTACK: Non-Deterministic Output', () => {
     const expectedFrameDuration = 1 / 24;
 
     for (let i = 1; i < result.frames.length; i++) {
-      const actualDuration = result.frames[i].timestamp - result.frames[i - 1].timestamp;
+      const actualDuration =
+        result.frames[i].timestamp - result.frames[i - 1].timestamp;
       const drift = Math.abs(actualDuration - expectedFrameDuration);
 
       // Drift should be minimal (< 1 microsecond)
@@ -658,71 +672,82 @@ describe('ATTACK: Non-Deterministic Output', () => {
 // CATEGORY 6: CROSS-EXPORT STATE LEAKAGE
 // ============================================================================
 
-describe('ATTACK: Cross-Export State Leakage', () => {
-
-  it('should not leak data between different preset exports', async () => {
-    const { generateWorkflowForTarget } = await import('@/services/comfyui/workflowTemplates');
+describe("ATTACK: Cross-Export State Leakage", () => {
+  it("should not leak data between different preset exports", async () => {
+    const { generateWorkflowForTarget } = await import(
+      "@/services/comfyui/workflowTemplates"
+    );
 
     // Export 1: wan22-i2v with specific settings
     const params1 = {
-      prompt: 'SECRET_PROMPT_1',
+      prompt: "SECRET_PROMPT_1",
       width: 832,
       height: 480,
       frameCount: 81,
       fps: 16,
       seed: 11111,
-      referenceImage: 'secret1.png',
+      referenceImage: "secret1.png",
     };
 
-    const workflow1 = generateWorkflowForTarget('wan22-i2v', params1 as any);
+    const _workflow1 = generateWorkflowForTarget("wan22-i2v", params1 as any);
 
     // Export 2: motionctrl with different settings
     const params2 = {
-      prompt: 'DIFFERENT_PROMPT',
+      prompt: "DIFFERENT_PROMPT",
       width: 576,
       height: 320,
       frameCount: 16,
       fps: 24,
       seed: 22222,
-      referenceImage: 'public.png',
+      referenceImage: "public.png",
     };
 
-    const workflow2 = generateWorkflowForTarget('motionctrl', params2 as any);
+    const workflow2 = generateWorkflowForTarget("motionctrl", params2 as any);
 
     // Workflow 2 should not contain any data from workflow 1
     const workflow2Str = JSON.stringify(workflow2);
 
-    expect(workflow2Str).not.toContain('SECRET_PROMPT_1');
-    expect(workflow2Str).not.toContain('secret1.png');
-    expect(workflow2Str).not.toContain('11111');
+    expect(workflow2Str).not.toContain("SECRET_PROMPT_1");
+    expect(workflow2Str).not.toContain("secret1.png");
+    expect(workflow2Str).not.toContain("11111");
   });
 
-  it('should not retain camera data from previous export', async () => {
-    const { exportCameraForTarget } = await import('@/services/export/cameraExportFormats');
+  it("should not retain camera data from previous export", async () => {
+    const { exportCameraForTarget } = await import(
+      "@/services/export/cameraExportFormats"
+    );
 
     const camera = {
-      id: 'test',
+      id: "test",
       position: { x: 999, y: 888, z: -777 },
       orientation: { x: 45, y: 90, z: 0 },
       focalLength: 50,
       zoom: 1,
     };
 
-    const keyframes1 = [
-      { frame: 0, position: { x: 100, y: 0, z: -500 } },
-    ];
+    const keyframes1 = [{ frame: 0, position: { x: 100, y: 0, z: -500 } }];
 
     const keyframes2: any[] = []; // Empty keyframes
 
     // Export 1 with keyframes
-    const result1 = exportCameraForTarget('motionctrl', camera as any, keyframes1 as any, 10);
+    const _result1 = exportCameraForTarget(
+      "motionctrl",
+      camera as any,
+      keyframes1 as any,
+      10,
+    );
 
     // Export 2 without keyframes
-    const result2 = exportCameraForTarget('motionctrl', camera as any, keyframes2, 10);
+    const result2 = exportCameraForTarget(
+      "motionctrl",
+      camera as any,
+      keyframes2,
+      10,
+    );
 
     // Result 2 should not contain data from keyframes1
     const result2Str = JSON.stringify(result2);
-    expect(result2Str).not.toContain('100'); // x from keyframe1
+    expect(result2Str).not.toContain("100"); // x from keyframe1
   });
 });
 
@@ -730,16 +755,15 @@ describe('ATTACK: Cross-Export State Leakage', () => {
 // CATEGORY 7: EDGE VALUES THAT LOOK VALID
 // ============================================================================
 
-describe('ATTACK: Edge Values That Look Valid', () => {
-
-  it('should handle width = 8191 (just under GPU limit)', async () => {
-    const { ExportPipeline } = await import('@/services/export/exportPipeline');
+describe("ATTACK: Edge Values That Look Valid", () => {
+  it("should handle width = 8191 (just under GPU limit)", async () => {
+    const { ExportPipeline } = await import("@/services/export/exportPipeline");
 
     const pipeline = new ExportPipeline({
       layers: [],
       cameraKeyframes: [],
       config: {
-        target: 'wan22-i2v',
+        target: "wan22-i2v",
         width: 8191,
         height: 480,
         frameCount: 1,
@@ -754,14 +778,14 @@ describe('ATTACK: Edge Values That Look Valid', () => {
     expect(result).toBeDefined();
   });
 
-  it('should handle frameCount = 999 (just under typical limit)', async () => {
-    const { ExportPipeline } = await import('@/services/export/exportPipeline');
+  it("should handle frameCount = 999 (just under typical limit)", async () => {
+    const { ExportPipeline } = await import("@/services/export/exportPipeline");
 
     const pipeline = new ExportPipeline({
       layers: [],
       cameraKeyframes: [],
       config: {
-        target: 'wan22-i2v',
+        target: "wan22-i2v",
         width: 512,
         height: 512,
         frameCount: 999,
@@ -774,14 +798,14 @@ describe('ATTACK: Edge Values That Look Valid', () => {
     expect(result.success).toBe(true);
   });
 
-  it('should handle floating point fps (119.88 NTSC)', async () => {
-    const { ExportPipeline } = await import('@/services/export/exportPipeline');
+  it("should handle floating point fps (119.88 NTSC)", async () => {
+    const { ExportPipeline } = await import("@/services/export/exportPipeline");
 
     const pipeline = new ExportPipeline({
       layers: [],
       cameraKeyframes: [],
       config: {
-        target: 'wan22-i2v',
+        target: "wan22-i2v",
         width: 512,
         height: 512,
         frameCount: 10,
@@ -796,15 +820,15 @@ describe('ATTACK: Edge Values That Look Valid', () => {
     expect(result).toBeDefined();
   });
 
-  it('should handle Unicode in filenames', async () => {
-    const { ExportPipeline } = await import('@/services/export/exportPipeline');
+  it("should handle Unicode in filenames", async () => {
+    const { ExportPipeline } = await import("@/services/export/exportPipeline");
 
     const unicodeFilenames = [
-      '日本語ファイル',
-      'مرحبا',
-      '🎬🎥🎞️',
-      'файл',
-      'αβγδ',
+      "日本語ファイル",
+      "مرحبا",
+      "🎬🎥🎞️",
+      "файл",
+      "αβγδ",
     ];
 
     for (const filename of unicodeFilenames) {
@@ -812,7 +836,7 @@ describe('ATTACK: Edge Values That Look Valid', () => {
         layers: [],
         cameraKeyframes: [],
         config: {
-          target: 'wan22-i2v',
+          target: "wan22-i2v",
           width: 512,
           height: 512,
           frameCount: 1,
@@ -829,21 +853,23 @@ describe('ATTACK: Edge Values That Look Valid', () => {
     }
   });
 
-  it('should handle zero-byte reference image gracefully', async () => {
-    const { generateWorkflowForTarget } = await import('@/services/comfyui/workflowTemplates');
+  it("should handle zero-byte reference image gracefully", async () => {
+    const { generateWorkflowForTarget } = await import(
+      "@/services/comfyui/workflowTemplates"
+    );
 
     const params = {
-      prompt: 'test',
+      prompt: "test",
       width: 512,
       height: 512,
       frameCount: 10,
       fps: 24,
-      referenceImage: '', // Empty string
+      referenceImage: "", // Empty string
     };
 
     // Should throw or handle gracefully
     expect(() => {
-      generateWorkflowForTarget('wan22-i2v', params as any);
+      generateWorkflowForTarget("wan22-i2v", params as any);
     }).toThrow();
   });
 });
@@ -852,25 +878,26 @@ describe('ATTACK: Edge Values That Look Valid', () => {
 // CATEGORY 8: LAYER-SPECIFIC ATTACKS
 // ============================================================================
 
-describe('ATTACK: Layer Edge Cases', () => {
-
-  it('should handle layer with 0% scale (potential div by zero)', async () => {
-    const { ExportPipeline } = await import('@/services/export/exportPipeline');
+describe("ATTACK: Layer Edge Cases", () => {
+  it("should handle layer with 0% scale (potential div by zero)", async () => {
+    const { ExportPipeline } = await import("@/services/export/exportPipeline");
 
     const pipeline = new ExportPipeline({
-      layers: [{
-        id: 'zero-scale',
-        type: 'solid',
-        visible: true,
-        transform: {
-          position: { value: { x: 0, y: 0 } },
-          scale: { value: { x: 0, y: 0 } }, // Zero scale
-          rotation: { value: 0 },
+      layers: [
+        {
+          id: "zero-scale",
+          type: "solid",
+          visible: true,
+          transform: {
+            position: { value: { x: 0, y: 0 } },
+            scale: { value: { x: 0, y: 0 } }, // Zero scale
+            rotation: { value: 0 },
+          },
         },
-      }] as any,
+      ] as any,
       cameraKeyframes: [],
       config: {
-        target: 'wan22-i2v',
+        target: "wan22-i2v",
         width: 512,
         height: 512,
         frameCount: 1,
@@ -885,22 +912,24 @@ describe('ATTACK: Layer Edge Cases', () => {
     expect(result).toBeDefined();
   });
 
-  it('should handle layer with negative frame range', async () => {
-    const { ExportPipeline } = await import('@/services/export/exportPipeline');
+  it("should handle layer with negative frame range", async () => {
+    const { ExportPipeline } = await import("@/services/export/exportPipeline");
 
     const pipeline = new ExportPipeline({
-      layers: [{
-        id: 'negative-frames',
-        type: 'solid',
-        visible: true,
-        startFrame: -100,
-        endFrame: -50,
-        inPoint: -100,
-        outPoint: -50,
-      }] as any,
+      layers: [
+        {
+          id: "negative-frames",
+          type: "solid",
+          visible: true,
+          startFrame: -100,
+          endFrame: -50,
+          inPoint: -100,
+          outPoint: -50,
+        },
+      ] as any,
       cameraKeyframes: [],
       config: {
-        target: 'wan22-i2v',
+        target: "wan22-i2v",
         width: 512,
         height: 512,
         frameCount: 10,
@@ -915,12 +944,12 @@ describe('ATTACK: Layer Edge Cases', () => {
     expect(result).toBeDefined();
   });
 
-  it('should handle self-referencing nested composition', async () => {
-    const { ExportPipeline } = await import('@/services/export/exportPipeline');
+  it("should handle self-referencing nested composition", async () => {
+    const { ExportPipeline } = await import("@/services/export/exportPipeline");
 
     const comp: any = {
-      id: 'self-ref',
-      type: 'nestedComp',
+      id: "self-ref",
+      type: "nestedComp",
       visible: true,
     };
     comp.nestedComposition = {
@@ -931,7 +960,7 @@ describe('ATTACK: Layer Edge Cases', () => {
       layers: [comp],
       cameraKeyframes: [],
       config: {
-        target: 'wan22-i2v',
+        target: "wan22-i2v",
         width: 512,
         height: 512,
         frameCount: 1,
@@ -950,16 +979,15 @@ describe('ATTACK: Layer Edge Cases', () => {
 // CATEGORY 9: EXPORT-SPECIFIC STATE ATTACKS
 // ============================================================================
 
-describe('ATTACK: Export-Specific Edge Cases', () => {
-
-  it('should handle camera export with no keyframes', async () => {
-    const { ExportPipeline } = await import('@/services/export/exportPipeline');
+describe("ATTACK: Export-Specific Edge Cases", () => {
+  it("should handle camera export with no keyframes", async () => {
+    const { ExportPipeline } = await import("@/services/export/exportPipeline");
 
     const pipeline = new ExportPipeline({
       layers: [],
       cameraKeyframes: [], // Empty
       config: {
-        target: 'motionctrl',
+        target: "motionctrl",
         width: 576,
         height: 320,
         frameCount: 16,
@@ -975,18 +1003,20 @@ describe('ATTACK: Export-Specific Edge Cases', () => {
     expect(result).toBeDefined();
   });
 
-  it('should handle depth export with no 3D layers', async () => {
-    const { ExportPipeline } = await import('@/services/export/exportPipeline');
+  it("should handle depth export with no 3D layers", async () => {
+    const { ExportPipeline } = await import("@/services/export/exportPipeline");
 
     const pipeline = new ExportPipeline({
-      layers: [{
-        id: '2d-only',
-        type: 'solid', // 2D layer
-        visible: true,
-      }] as any,
+      layers: [
+        {
+          id: "2d-only",
+          type: "solid", // 2D layer
+          visible: true,
+        },
+      ] as any,
       cameraKeyframes: [],
       config: {
-        target: 'uni3c-camera',
+        target: "uni3c-camera",
         width: 512,
         height: 512,
         frameCount: 10,
@@ -1002,25 +1032,27 @@ describe('ATTACK: Export-Specific Edge Cases', () => {
     expect(result).toBeDefined();
   });
 
-  it('should handle TTM mask with non-existent layer', async () => {
-    const { ExportPipeline } = await import('@/services/export/exportPipeline');
+  it("should handle TTM mask with non-existent layer", async () => {
+    const { ExportPipeline } = await import("@/services/export/exportPipeline");
 
     const pipeline = new ExportPipeline({
-      layers: [{
-        id: 'real-layer',
-        type: 'solid',
-        visible: true,
-      }] as any,
+      layers: [
+        {
+          id: "real-layer",
+          type: "solid",
+          visible: true,
+        },
+      ] as any,
       cameraKeyframes: [],
       config: {
-        target: 'ttm',
+        target: "ttm",
         width: 512,
         height: 512,
         frameCount: 10,
         fps: 24,
         startFrame: 0,
         exportMaskVideo: true,
-        maskLayerId: 'non-existent-layer', // Layer doesn't exist
+        maskLayerId: "non-existent-layer", // Layer doesn't exist
       } as any,
     });
 
@@ -1028,7 +1060,12 @@ describe('ATTACK: Export-Specific Edge Cases', () => {
 
     // Should fail with clear error about missing layer
     expect(result.success).toBe(false);
-    expect(result.errors.some(e => e.toLowerCase().includes('layer') || e.toLowerCase().includes('mask'))).toBe(true);
+    expect(
+      result.errors.some(
+        (e) =>
+          e.toLowerCase().includes("layer") || e.toLowerCase().includes("mask"),
+      ),
+    ).toBe(true);
   });
 });
 
@@ -1036,22 +1073,23 @@ describe('ATTACK: Export-Specific Edge Cases', () => {
 // CATEGORY 10: RESOLUTION MISMATCH ATTACKS
 // ============================================================================
 
-describe('ATTACK: Resolution Mismatch', () => {
-
-  it('should handle layer larger than export resolution', async () => {
-    const { ExportPipeline } = await import('@/services/export/exportPipeline');
+describe("ATTACK: Resolution Mismatch", () => {
+  it("should handle layer larger than export resolution", async () => {
+    const { ExportPipeline } = await import("@/services/export/exportPipeline");
 
     const pipeline = new ExportPipeline({
-      layers: [{
-        id: 'huge-layer',
-        type: 'solid',
-        visible: true,
-        width: 8192,
-        height: 8192,
-      }] as any,
+      layers: [
+        {
+          id: "huge-layer",
+          type: "solid",
+          visible: true,
+          width: 8192,
+          height: 8192,
+        },
+      ] as any,
       cameraKeyframes: [],
       config: {
-        target: 'wan22-i2v',
+        target: "wan22-i2v",
         width: 512, // Much smaller than layer
         height: 512,
         frameCount: 1,
@@ -1066,14 +1104,14 @@ describe('ATTACK: Resolution Mismatch', () => {
     expect(result).toBeDefined();
   });
 
-  it('should handle non-standard aspect ratios', async () => {
-    const { ExportPipeline } = await import('@/services/export/exportPipeline');
+  it("should handle non-standard aspect ratios", async () => {
+    const { ExportPipeline } = await import("@/services/export/exportPipeline");
 
     const weirdAspectRatios = [
-      { width: 1, height: 1000 },   // 1:1000
-      { width: 1000, height: 1 },   // 1000:1
-      { width: 13, height: 7 },     // Prime numbers
-      { width: 333, height: 222 },  // Weird ratio
+      { width: 1, height: 1000 }, // 1:1000
+      { width: 1000, height: 1 }, // 1000:1
+      { width: 13, height: 7 }, // Prime numbers
+      { width: 333, height: 222 }, // Weird ratio
     ];
 
     for (const { width, height } of weirdAspectRatios) {
@@ -1081,7 +1119,7 @@ describe('ATTACK: Resolution Mismatch', () => {
         layers: [],
         cameraKeyframes: [],
         config: {
-          target: 'wan22-i2v',
+          target: "wan22-i2v",
           width,
           height,
           frameCount: 1,

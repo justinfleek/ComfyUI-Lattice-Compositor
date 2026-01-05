@@ -13,7 +13,7 @@
  * @see AUDIT/SECURITY_ARCHITECTURE.md
  */
 
-import { logRateLimit, logSecurityWarning } from './auditLog';
+import { logRateLimit, logSecurityWarning } from "./auditLog";
 
 // ============================================================================
 // Types
@@ -64,8 +64,8 @@ interface StoredRateLimits {
 // Constants
 // ============================================================================
 
-const STORAGE_KEY = 'lattice_rate_limits';
-const SESSION_KEY = 'lattice_session_counts';
+const STORAGE_KEY = "lattice_rate_limits";
+const SESSION_KEY = "lattice_session_counts";
 
 /**
  * Default rate limits for high-risk tools.
@@ -73,15 +73,15 @@ const SESSION_KEY = 'lattice_session_counts';
  */
 const DEFAULT_LIMITS: Record<string, RateLimitConfig> = {
   decomposeImage: {
-    toolName: 'decomposeImage',
-    maxPerDay: 10,        // Max 10 decompositions per day
-    maxPerSession: 3,     // Max 3 per session without explicit reset
+    toolName: "decomposeImage",
+    maxPerDay: 10, // Max 10 decompositions per day
+    maxPerSession: 3, // Max 3 per session without explicit reset
     vramCostMB: 28800,
   },
   vectorizeImage: {
-    toolName: 'vectorizeImage',
-    maxPerDay: 20,        // Max 20 vectorizations per day
-    maxPerSession: 5,     // Max 5 per session
+    toolName: "vectorizeImage",
+    maxPerDay: 20, // Max 20 vectorizations per day
+    maxPerSession: 5, // Max 5 per session
     vramCostMB: 4000,
   },
 };
@@ -91,7 +91,7 @@ const DEFAULT_LIMITS: Record<string, RateLimitConfig> = {
 // ============================================================================
 
 /** Custom limits (override defaults) */
-let customLimits: Record<string, RateLimitConfig> = {};
+const customLimits: Record<string, RateLimitConfig> = {};
 
 /** Session counts (in-memory, cleared on page refresh) */
 let sessionCounts: Record<string, number> = {};
@@ -104,7 +104,7 @@ let sessionCounts: Record<string, number> = {};
  * Get current UTC date string (YYYY-MM-DD).
  */
 function getCurrentDateUTC(): string {
-  return new Date().toISOString().split('T')[0];
+  return new Date().toISOString().split("T")[0];
 }
 
 /**
@@ -149,7 +149,7 @@ function loadStoredLimits(): StoredRateLimits {
       // Check if we need to reset (new day)
       const today = getCurrentDateUTC();
       if (data.date !== today) {
-        console.log('[SECURITY] Daily rate limits reset (new day)');
+        console.log("[SECURITY] Daily rate limits reset (new day)");
         return {
           date: today,
           counts: {},
@@ -160,7 +160,7 @@ function loadStoredLimits(): StoredRateLimits {
       return data;
     }
   } catch (error) {
-    console.warn('[SECURITY] Failed to load rate limits:', error);
+    console.warn("[SECURITY] Failed to load rate limits:", error);
   }
 
   // Default: fresh state
@@ -178,7 +178,7 @@ function saveStoredLimits(limits: StoredRateLimits): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(limits));
   } catch (error) {
-    console.warn('[SECURITY] Failed to save rate limits:', error);
+    console.warn("[SECURITY] Failed to save rate limits:", error);
   }
 }
 
@@ -192,7 +192,7 @@ function loadSessionCounts(): Record<string, number> {
       return JSON.parse(stored);
     }
   } catch (error) {
-    console.warn('[SECURITY] Failed to load session counts:', error);
+    console.warn("[SECURITY] Failed to load session counts:", error);
   }
   return {};
 }
@@ -204,7 +204,7 @@ function saveSessionCounts(): void {
   try {
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(sessionCounts));
   } catch (error) {
-    console.warn('[SECURITY] Failed to save session counts:', error);
+    console.warn("[SECURITY] Failed to save session counts:", error);
   }
 }
 
@@ -298,9 +298,11 @@ export async function recordToolCall(toolName: string): Promise<void> {
   const config = customLimits[toolName] || DEFAULT_LIMITS[toolName];
   const newStatus = checkRateLimit(toolName);
 
-  console.log(`[SECURITY] Rate limit recorded: ${toolName} ` +
-    `(today: ${newStatus.callsToday}/${newStatus.maxPerDay}, ` +
-    `session: ${newStatus.callsThisSession}/${newStatus.maxPerSession ?? '∞'})`);
+  console.log(
+    `[SECURITY] Rate limit recorded: ${toolName} ` +
+      `(today: ${newStatus.callsToday}/${newStatus.maxPerDay}, ` +
+      `session: ${newStatus.callsThisSession}/${newStatus.maxPerSession ?? "∞"})`,
+  );
 
   // Log if approaching limits
   if (config && newStatus.callsToday >= config.maxPerDay * 0.8) {
@@ -317,7 +319,9 @@ export async function resetSessionLimit(toolName: string): Promise<void> {
   sessionCounts[toolName] = 0;
   saveSessionCounts();
 
-  console.log(`[SECURITY] Session limit reset for ${toolName} (was: ${oldCount})`);
+  console.log(
+    `[SECURITY] Session limit reset for ${toolName} (was: ${oldCount})`,
+  );
   await logSecurityWarning(`Session limit reset by user: ${toolName}`, {
     toolName,
     previousCount: oldCount,
@@ -328,9 +332,11 @@ export async function resetSessionLimit(toolName: string): Promise<void> {
  * Reset ALL session limits.
  * Requires explicit confirmation.
  */
-export async function resetAllSessionLimits(confirmationCode: string): Promise<boolean> {
-  if (confirmationCode !== 'RESET_SESSION_LIMITS') {
-    console.warn('[SECURITY] Reset rejected: invalid confirmation code');
+export async function resetAllSessionLimits(
+  confirmationCode: string,
+): Promise<boolean> {
+  if (confirmationCode !== "RESET_SESSION_LIMITS") {
+    console.warn("[SECURITY] Reset rejected: invalid confirmation code");
     return false;
   }
 
@@ -338,8 +344,8 @@ export async function resetAllSessionLimits(confirmationCode: string): Promise<b
   sessionCounts = {};
   saveSessionCounts();
 
-  console.log('[SECURITY] All session limits reset');
-  await logSecurityWarning('All session limits reset by user', {
+  console.log("[SECURITY] All session limits reset");
+  await logSecurityWarning("All session limits reset by user", {
     previousCounts: oldCounts,
   });
 
@@ -355,7 +361,7 @@ export function getAllRateLimitStatus(): RateLimitStatus[] {
     ...Object.keys(customLimits),
   ]);
 
-  return Array.from(allTools).map(toolName => checkRateLimit(toolName));
+  return Array.from(allTools).map((toolName) => checkRateLimit(toolName));
 }
 
 /**
@@ -364,7 +370,10 @@ export function getAllRateLimitStatus(): RateLimitStatus[] {
  */
 export function setRateLimitConfig(config: RateLimitConfig): void {
   customLimits[config.toolName] = config;
-  console.log(`[SECURITY] Rate limit configured for ${config.toolName}:`, config);
+  console.log(
+    `[SECURITY] Rate limit configured for ${config.toolName}:`,
+    config,
+  );
 }
 
 /**
@@ -390,12 +399,17 @@ export function getRemainingCalls(toolName: string): {
 export function checkRateLimitWarnings(): {
   toolName: string;
   message: string;
-  severity: 'warning' | 'critical';
+  severity: "warning" | "critical";
 }[] {
-  const warnings: { toolName: string; message: string; severity: 'warning' | 'critical' }[] = [];
+  const warnings: {
+    toolName: string;
+    message: string;
+    severity: "warning" | "critical";
+  }[] = [];
 
   for (const status of getAllRateLimitStatus()) {
-    const config = customLimits[status.toolName] || DEFAULT_LIMITS[status.toolName];
+    const config =
+      customLimits[status.toolName] || DEFAULT_LIMITS[status.toolName];
     if (!config) continue;
 
     const dailyPercent = status.callsToday / status.maxPerDay;
@@ -404,13 +418,13 @@ export function checkRateLimitWarnings(): {
       warnings.push({
         toolName: status.toolName,
         message: `Daily limit reached for ${status.toolName}. Resets in ${status.resetsIn}.`,
-        severity: 'critical',
+        severity: "critical",
       });
     } else if (dailyPercent >= 0.8) {
       warnings.push({
         toolName: status.toolName,
         message: `${status.toolName}: ${status.callsToday}/${status.maxPerDay} daily calls used.`,
-        severity: 'warning',
+        severity: "warning",
       });
     }
 
@@ -419,7 +433,7 @@ export function checkRateLimitWarnings(): {
         warnings.push({
           toolName: status.toolName,
           message: `Session limit reached for ${status.toolName}. Manual reset required.`,
-          severity: 'critical',
+          severity: "critical",
         });
       }
     }

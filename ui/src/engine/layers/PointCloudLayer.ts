@@ -19,19 +19,18 @@
  * - Classification filtering (for LAS files)
  */
 
-import * as THREE from 'three';
-import { PLYLoader } from 'three/examples/jsm/loaders/PLYLoader.js';
-import { PCDLoader } from 'three/examples/jsm/loaders/PCDLoader.js';
+import * as THREE from "three";
+import { PCDLoader } from "three/examples/jsm/loaders/PCDLoader.js";
+import { PLYLoader } from "three/examples/jsm/loaders/PLYLoader.js";
+import { interpolateProperty } from "@/services/interpolation";
 import type {
   Layer,
-  PointCloudLayerData,
-  PointCloudFormat,
-  PointCloudColorMode,
-  PointCloudRenderMode,
   ModelBoundingBox,
-} from '@/types/project';
-import { BaseLayer } from './BaseLayer';
-import { interpolateProperty } from '@/services/interpolation';
+  PointCloudColorMode,
+  PointCloudLayerData,
+  PointCloudRenderMode,
+} from "@/types/project";
+import { BaseLayer } from "./BaseLayer";
 
 /** Point cloud vertex attributes */
 interface PointCloudAttributes {
@@ -105,8 +104,8 @@ export class PointCloudLayer extends BaseLayer {
     // Create default animatable properties
     const defaultPointSize = {
       id: `${layerData.id}_pointSize`,
-      name: 'Point Size',
-      type: 'number' as const,
+      name: "Point Size",
+      type: "number" as const,
       value: 2,
       animated: false,
       keyframes: [],
@@ -114,25 +113,25 @@ export class PointCloudLayer extends BaseLayer {
 
     const defaultOpacity = {
       id: `${layerData.id}_opacity`,
-      name: 'Opacity',
-      type: 'number' as const,
+      name: "Opacity",
+      type: "number" as const,
       value: 1,
       animated: false,
       keyframes: [],
     };
 
     return {
-      assetId: data?.assetId ?? '',
-      format: data?.format ?? 'ply',
+      assetId: data?.assetId ?? "",
+      format: data?.format ?? "ply",
       pointCount: data?.pointCount ?? 0,
       pointSize: data?.pointSize ?? defaultPointSize,
       sizeAttenuation: data?.sizeAttenuation ?? true,
       minPointSize: data?.minPointSize ?? 1,
       maxPointSize: data?.maxPointSize ?? 64,
-      colorMode: data?.colorMode ?? 'rgb',
-      uniformColor: data?.uniformColor ?? '#ffffff',
+      colorMode: data?.colorMode ?? "rgb",
+      uniformColor: data?.uniformColor ?? "#ffffff",
       colorGradient: data?.colorGradient,
-      renderMode: data?.renderMode ?? 'circles',
+      renderMode: data?.renderMode ?? "circles",
       opacity: data?.opacity ?? defaultOpacity,
       depthTest: data?.depthTest ?? true,
       depthWrite: data?.depthWrite ?? true,
@@ -166,28 +165,32 @@ export class PointCloudLayer extends BaseLayer {
       let geometry: THREE.BufferGeometry;
 
       switch (this.cloudData.format) {
-        case 'ply':
+        case "ply":
           geometry = await this.loadPLY(url);
           break;
-        case 'pcd':
+        case "pcd":
           geometry = await this.loadPCD(url);
           break;
-        case 'xyz':
-        case 'pts':
+        case "xyz":
+        case "pts":
           geometry = await this.loadXYZ(url);
           break;
-        case 'las':
-        case 'laz':
+        case "las":
+        case "laz":
           geometry = await this.loadLAS(url);
           break;
         default:
-          throw new Error(`Unsupported point cloud format: ${this.cloudData.format}`);
+          throw new Error(
+            `Unsupported point cloud format: ${this.cloudData.format}`,
+          );
       }
 
       this.setGeometry(geometry);
     } catch (error) {
-      this.loadError = error instanceof Error ? error.message : 'Unknown error';
-      console.error(`[PointCloudLayer] Failed to load point cloud: ${this.loadError}`);
+      this.loadError = error instanceof Error ? error.message : "Unknown error";
+      console.error(
+        `[PointCloudLayer] Failed to load point cloud: ${this.loadError}`,
+      );
       this.createPlaceholder();
     } finally {
       this.isLoading = false;
@@ -206,7 +209,7 @@ export class PointCloudLayer extends BaseLayer {
    */
   private loadPLY(url: string): Promise<THREE.BufferGeometry> {
     return new Promise((resolve, reject) => {
-      PointCloudLayer.plyLoader!.load(url, resolve, undefined, reject);
+      PointCloudLayer.plyLoader?.load(url, resolve, undefined, reject);
     });
   }
 
@@ -215,13 +218,13 @@ export class PointCloudLayer extends BaseLayer {
    */
   private loadPCD(url: string): Promise<THREE.BufferGeometry> {
     return new Promise((resolve, reject) => {
-      PointCloudLayer.pcdLoader!.load(
+      PointCloudLayer.pcdLoader?.load(
         url,
         (points: THREE.Points) => {
           resolve(points.geometry);
         },
         undefined,
-        reject
+        reject,
       );
     });
   }
@@ -232,7 +235,7 @@ export class PointCloudLayer extends BaseLayer {
   private async loadXYZ(url: string): Promise<THREE.BufferGeometry> {
     const response = await fetch(url);
     const text = await response.text();
-    const lines = text.trim().split('\n');
+    const lines = text.trim().split("\n");
 
     const positions: number[] = [];
     const colors: number[] = [];
@@ -243,7 +246,7 @@ export class PointCloudLayer extends BaseLayer {
         positions.push(
           parseFloat(parts[0]),
           parseFloat(parts[1]),
-          parseFloat(parts[2])
+          parseFloat(parts[2]),
         );
 
         // Optional RGB values
@@ -251,7 +254,7 @@ export class PointCloudLayer extends BaseLayer {
           colors.push(
             parseFloat(parts[3]) / 255,
             parseFloat(parts[4]) / 255,
-            parseFloat(parts[5]) / 255
+            parseFloat(parts[5]) / 255,
           );
         } else {
           colors.push(1, 1, 1);
@@ -260,8 +263,11 @@ export class PointCloudLayer extends BaseLayer {
     }
 
     const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    geometry.setAttribute(
+      "position",
+      new THREE.Float32BufferAttribute(positions, 3),
+    );
+    geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
 
     return geometry;
   }
@@ -277,16 +283,19 @@ export class PointCloudLayer extends BaseLayer {
 
     // Check signature "LASF"
     const signature = String.fromCharCode(
-      view.getUint8(0), view.getUint8(1), view.getUint8(2), view.getUint8(3)
+      view.getUint8(0),
+      view.getUint8(1),
+      view.getUint8(2),
+      view.getUint8(3),
     );
-    if (signature !== 'LASF') {
-      throw new Error('Invalid LAS file: missing LASF signature');
+    if (signature !== "LASF") {
+      throw new Error("Invalid LAS file: missing LASF signature");
     }
 
     // Parse header
     const versionMajor = view.getUint8(24);
     const versionMinor = view.getUint8(25);
-    const headerSize = view.getUint16(94, true);
+    const _headerSize = view.getUint16(94, true);
     const offsetToPointData = view.getUint32(96, true);
     const pointDataFormat = view.getUint8(104);
     const pointDataLength = view.getUint16(105, true);
@@ -322,8 +331,11 @@ export class PointCloudLayer extends BaseLayer {
     // Format 1: Format 0 + GPS Time (28 bytes)
     // Format 2: Format 0 + RGB (26 bytes)
     // Format 3: Format 1 + RGB (34 bytes)
-    const hasRGB = pointDataFormat === 2 || pointDataFormat === 3 ||
-                   pointDataFormat === 7 || pointDataFormat === 8;
+    const hasRGB =
+      pointDataFormat === 2 ||
+      pointDataFormat === 3 ||
+      pointDataFormat === 7 ||
+      pointDataFormat === 8;
 
     let offset = offsetToPointData;
     let loadedPoints = 0;
@@ -351,10 +363,16 @@ export class PointCloudLayer extends BaseLayer {
 
       // Read RGB if available
       if (hasRGB) {
-        const rgbOffset = pointDataFormat === 2 ? 20 :
-                         pointDataFormat === 3 ? 28 :
-                         pointDataFormat === 7 ? 30 :
-                         pointDataFormat === 8 ? 30 : 20;
+        const rgbOffset =
+          pointDataFormat === 2
+            ? 20
+            : pointDataFormat === 3
+              ? 28
+              : pointDataFormat === 7
+                ? 30
+                : pointDataFormat === 8
+                  ? 30
+                  : 20;
 
         if (offset + rgbOffset + 6 <= buffer.byteLength) {
           const r = view.getUint16(offset + rgbOffset, true) / 65535;
@@ -374,11 +392,16 @@ export class PointCloudLayer extends BaseLayer {
       loadedPoints++;
     }
 
-    console.log(`[PointCloudLayer] Loaded ${loadedPoints} points from LAS v${versionMajor}.${versionMinor} (format ${pointDataFormat})`);
+    console.log(
+      `[PointCloudLayer] Loaded ${loadedPoints} points from LAS v${versionMajor}.${versionMinor} (format ${pointDataFormat})`,
+    );
 
     const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    geometry.setAttribute(
+      "position",
+      new THREE.Float32BufferAttribute(positions, 3),
+    );
+    geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
 
     // Store intensity and classification for coloring modes
     this.originalAttributes = {
@@ -398,7 +421,7 @@ export class PointCloudLayer extends BaseLayer {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash;
     }
     return Math.abs(hash);
@@ -430,18 +453,21 @@ export class PointCloudLayer extends BaseLayer {
       positions.push(
         (this.seededRandom(baseSeed + i * 6) - 0.5) * size,
         (this.seededRandom(baseSeed + i * 6 + 1) - 0.5) * size,
-        (this.seededRandom(baseSeed + i * 6 + 2) - 0.5) * size
+        (this.seededRandom(baseSeed + i * 6 + 2) - 0.5) * size,
       );
       colors.push(
         this.seededRandom(baseSeed + i * 6 + 3),
         this.seededRandom(baseSeed + i * 6 + 4),
-        this.seededRandom(baseSeed + i * 6 + 5)
+        this.seededRandom(baseSeed + i * 6 + 5),
       );
     }
 
     const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    geometry.setAttribute(
+      "position",
+      new THREE.Float32BufferAttribute(positions, 3),
+    );
+    geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
 
     return geometry;
   }
@@ -470,7 +496,7 @@ export class PointCloudLayer extends BaseLayer {
     this.storeOriginalAttributes();
 
     // Update point count
-    const positionAttr = geometry.getAttribute('position');
+    const positionAttr = geometry.getAttribute("position");
     this.cloudData.pointCount = positionAttr ? positionAttr.count : 0;
 
     // Create material
@@ -499,12 +525,14 @@ export class PointCloudLayer extends BaseLayer {
   private storeOriginalAttributes(): void {
     if (!this.geometry) return;
 
-    const position = this.geometry.getAttribute('position');
-    const color = this.geometry.getAttribute('color');
-    const normal = this.geometry.getAttribute('normal');
+    const position = this.geometry.getAttribute("position");
+    const color = this.geometry.getAttribute("color");
+    const normal = this.geometry.getAttribute("normal");
 
     this.originalAttributes = {
-      positions: position ? new Float32Array(position.array) : new Float32Array(),
+      positions: position
+        ? new Float32Array(position.array)
+        : new Float32Array(),
       colors: color ? new Float32Array(color.array) : undefined,
       normals: normal ? new Float32Array(normal.array) : undefined,
     };
@@ -615,11 +643,16 @@ export class PointCloudLayer extends BaseLayer {
    */
   private getRenderModeValue(): number {
     switch (this.cloudData.renderMode) {
-      case 'points': return 0;
-      case 'circles': return 1;
-      case 'squares': return 2;
-      case 'splats': return 3;
-      default: return 1;
+      case "points":
+        return 0;
+      case "circles":
+        return 1;
+      case "squares":
+        return 2;
+      case "splats":
+        return 3;
+      default:
+        return 1;
     }
   }
 
@@ -631,9 +664,9 @@ export class PointCloudLayer extends BaseLayer {
     const data = new Uint8Array(size * 4);
 
     const stops = this.cloudData.colorGradient?.stops ?? [
-      { position: 0, color: '#0000ff' },
-      { position: 0.5, color: '#00ff00' },
-      { position: 1, color: '#ff0000' },
+      { position: 0, color: "#0000ff" },
+      { position: 0.5, color: "#00ff00" },
+      { position: 1, color: "#ff0000" },
     ];
 
     for (let i = 0; i < size; i++) {
@@ -707,42 +740,44 @@ export class PointCloudLayer extends BaseLayer {
 
     this.cloudData.colorMode = mode;
     const positions = this.originalAttributes.positions;
-    const count = positions.length / 3;
+    const _count = positions.length / 3;
 
     switch (mode) {
-      case 'rgb':
+      case "rgb":
         // Use original colors or white if none
         if (this.originalAttributes.colors) {
           this.geometry.setAttribute(
-            'color',
-            new THREE.Float32BufferAttribute(this.originalAttributes.colors, 3)
+            "color",
+            new THREE.Float32BufferAttribute(this.originalAttributes.colors, 3),
           );
         }
         this.material.uniforms.useUniformColor.value = 0;
         break;
 
-      case 'uniform':
+      case "uniform":
         this.material.uniforms.useUniformColor.value = 1;
-        this.material.uniforms.uniformColor.value.set(this.cloudData.uniformColor);
+        this.material.uniforms.uniformColor.value.set(
+          this.cloudData.uniformColor,
+        );
         break;
 
-      case 'height':
+      case "height":
         this.applyHeightColoring();
         break;
 
-      case 'depth':
+      case "depth":
         this.applyDepthColoring();
         break;
 
-      case 'normal':
+      case "normal":
         this.applyNormalColoring();
         break;
 
-      case 'intensity':
+      case "intensity":
         this.applyIntensityColoring();
         break;
 
-      case 'classification':
+      case "classification":
         this.applyClassificationColoring();
         break;
     }
@@ -754,7 +789,12 @@ export class PointCloudLayer extends BaseLayer {
    * Apply height-based coloring
    */
   private applyHeightColoring(): void {
-    if (!this.geometry || !this.originalAttributes || !this.cloudData.boundingBox) return;
+    if (
+      !this.geometry ||
+      !this.originalAttributes ||
+      !this.cloudData.boundingBox
+    )
+      return;
 
     const positions = this.originalAttributes.positions;
     const count = positions.length / 3;
@@ -777,15 +817,23 @@ export class PointCloudLayer extends BaseLayer {
       colors[i * 3 + 2] = color.b;
     }
 
-    this.geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-    this.material!.uniforms.useUniformColor.value = 0;
+    this.geometry.setAttribute(
+      "color",
+      new THREE.Float32BufferAttribute(colors, 3),
+    );
+    this.material?.uniforms.useUniformColor.value = 0;
   }
 
   /**
    * Apply depth-based coloring (distance from camera)
    */
   private applyDepthColoring(): void {
-    if (!this.geometry || !this.originalAttributes || !this.cloudData.boundingBox) return;
+    if (
+      !this.geometry ||
+      !this.originalAttributes ||
+      !this.cloudData.boundingBox
+    )
+      return;
 
     const positions = this.originalAttributes.positions;
     const count = positions.length / 3;
@@ -806,8 +854,11 @@ export class PointCloudLayer extends BaseLayer {
       colors[i * 3 + 2] = value;
     }
 
-    this.geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-    this.material!.uniforms.useUniformColor.value = 0;
+    this.geometry.setAttribute(
+      "color",
+      new THREE.Float32BufferAttribute(colors, 3),
+    );
+    this.material?.uniforms.useUniformColor.value = 0;
   }
 
   /**
@@ -828,15 +879,20 @@ export class PointCloudLayer extends BaseLayer {
         colors[i * 3 + 2] = normals[i * 3 + 2] * 0.5 + 0.5;
       }
 
-      this.geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+      this.geometry.setAttribute(
+        "color",
+        new THREE.Float32BufferAttribute(colors, 3),
+      );
     } else {
       // Compute normals if not available (simple approach)
-      console.warn('[PointCloudLayer] No normals available for normal coloring');
-      this.material!.uniforms.useUniformColor.value = 1;
-      this.material!.uniforms.uniformColor.value.set('#8080ff');
+      console.warn(
+        "[PointCloudLayer] No normals available for normal coloring",
+      );
+      this.material?.uniforms.useUniformColor.value = 1;
+      this.material?.uniforms.uniformColor.value.set("#8080ff");
     }
 
-    this.material!.uniforms.useUniformColor.value = 0;
+    this.material?.uniforms.useUniformColor.value = 0;
   }
 
   /**
@@ -851,7 +907,8 @@ export class PointCloudLayer extends BaseLayer {
       const colors = new Float32Array(count * 3);
 
       // Find min/max intensity
-      let min = Infinity, max = -Infinity;
+      let min = Infinity,
+        max = -Infinity;
       for (let i = 0; i < count; i++) {
         min = Math.min(min, intensities[i]);
         max = Math.max(max, intensities[i]);
@@ -873,11 +930,14 @@ export class PointCloudLayer extends BaseLayer {
         colors[i * 3 + 2] = t;
       }
 
-      this.geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-      this.material!.uniforms.useUniformColor.value = 0;
+      this.geometry.setAttribute(
+        "color",
+        new THREE.Float32BufferAttribute(colors, 3),
+      );
+      this.material?.uniforms.useUniformColor.value = 0;
     } else {
-      console.warn('[PointCloudLayer] No intensity data available');
-      this.material!.uniforms.useUniformColor.value = 1;
+      console.warn("[PointCloudLayer] No intensity data available");
+      this.material?.uniforms.useUniformColor.value = 1;
     }
   }
 
@@ -894,25 +954,25 @@ export class PointCloudLayer extends BaseLayer {
 
       // Standard LAS classification colors
       const classColors: Record<number, [number, number, number]> = {
-        0: [0.5, 0.5, 0.5],   // Never classified
-        1: [0.5, 0.5, 0.5],   // Unclassified
-        2: [0.6, 0.4, 0.2],   // Ground
-        3: [0.2, 0.8, 0.2],   // Low vegetation
-        4: [0.1, 0.6, 0.1],   // Medium vegetation
-        5: [0.0, 0.4, 0.0],   // High vegetation
-        6: [0.9, 0.2, 0.2],   // Building
-        7: [0.5, 0.5, 0.5],   // Low point (noise)
-        8: [0.5, 0.5, 0.5],   // Reserved
-        9: [0.2, 0.4, 0.8],   // Water
-        10: [0.8, 0.6, 0.4],  // Rail
-        11: [0.3, 0.3, 0.3],  // Road surface
-        12: [0.5, 0.5, 0.5],  // Reserved
-        13: [0.8, 0.8, 0.2],  // Wire - Guard
-        14: [0.8, 0.6, 0.2],  // Wire - Conductor
-        15: [0.9, 0.9, 0.9],  // Transmission Tower
-        16: [0.6, 0.6, 0.8],  // Wire - Connector
-        17: [0.4, 0.4, 0.6],  // Bridge Deck
-        18: [0.9, 0.1, 0.1],  // High Noise
+        0: [0.5, 0.5, 0.5], // Never classified
+        1: [0.5, 0.5, 0.5], // Unclassified
+        2: [0.6, 0.4, 0.2], // Ground
+        3: [0.2, 0.8, 0.2], // Low vegetation
+        4: [0.1, 0.6, 0.1], // Medium vegetation
+        5: [0.0, 0.4, 0.0], // High vegetation
+        6: [0.9, 0.2, 0.2], // Building
+        7: [0.5, 0.5, 0.5], // Low point (noise)
+        8: [0.5, 0.5, 0.5], // Reserved
+        9: [0.2, 0.4, 0.8], // Water
+        10: [0.8, 0.6, 0.4], // Rail
+        11: [0.3, 0.3, 0.3], // Road surface
+        12: [0.5, 0.5, 0.5], // Reserved
+        13: [0.8, 0.8, 0.2], // Wire - Guard
+        14: [0.8, 0.6, 0.2], // Wire - Conductor
+        15: [0.9, 0.9, 0.9], // Transmission Tower
+        16: [0.6, 0.6, 0.8], // Wire - Connector
+        17: [0.4, 0.4, 0.6], // Bridge Deck
+        18: [0.9, 0.1, 0.1], // High Noise
       };
 
       for (let i = 0; i < count; i++) {
@@ -923,11 +983,14 @@ export class PointCloudLayer extends BaseLayer {
         colors[i * 3 + 2] = color[2];
       }
 
-      this.geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-      this.material!.uniforms.useUniformColor.value = 0;
+      this.geometry.setAttribute(
+        "color",
+        new THREE.Float32BufferAttribute(colors, 3),
+      );
+      this.material?.uniforms.useUniformColor.value = 0;
     } else {
-      console.warn('[PointCloudLayer] No classification data available');
-      this.material!.uniforms.useUniformColor.value = 1;
+      console.warn("[PointCloudLayer] No classification data available");
+      this.material?.uniforms.useUniformColor.value = 1;
     }
   }
 
@@ -962,7 +1025,7 @@ export class PointCloudLayer extends BaseLayer {
   setPointSize(size: number): void {
     if (this.material) {
       // Validate size (NaN would corrupt shader uniform)
-      const validSize = (Number.isFinite(size) && size > 0) ? size : 2;
+      const validSize = Number.isFinite(size) && size > 0 ? size : 2;
       this.material.uniforms.pointSize.value = validSize;
     }
   }
@@ -973,7 +1036,9 @@ export class PointCloudLayer extends BaseLayer {
   setOpacity(opacity: number): void {
     if (this.material) {
       // Validate opacity (NaN would corrupt shader uniform)
-      const validOpacity = Number.isFinite(opacity) ? Math.max(0, Math.min(1, opacity)) : 1;
+      const validOpacity = Number.isFinite(opacity)
+        ? Math.max(0, Math.min(1, opacity))
+        : 1;
       this.material.uniforms.opacity.value = validOpacity;
     }
   }
@@ -1048,11 +1113,21 @@ export class PointCloudLayer extends BaseLayer {
     const layerId = this.id;
 
     // Evaluate animated point size
-    const size = interpolateProperty(this.cloudData.pointSize, frame, fps, layerId);
+    const size = interpolateProperty(
+      this.cloudData.pointSize,
+      frame,
+      fps,
+      layerId,
+    );
     this.setPointSize(size);
 
     // Evaluate animated opacity
-    const opacity = interpolateProperty(this.cloudData.opacity, frame, fps, layerId);
+    const opacity = interpolateProperty(
+      this.cloudData.opacity,
+      frame,
+      fps,
+      layerId,
+    );
     this.setOpacity(opacity);
 
     // Update bounding box helper
@@ -1061,15 +1136,17 @@ export class PointCloudLayer extends BaseLayer {
     }
   }
 
-  protected override onApplyEvaluatedState(state: import('../MotionEngine').EvaluatedLayer): void {
+  protected override onApplyEvaluatedState(
+    state: import("../MotionEngine").EvaluatedLayer,
+  ): void {
     const props = state.properties;
 
-    if (props['pointSize'] !== undefined) {
-      this.setPointSize(props['pointSize'] as number);
+    if (props.pointSize !== undefined) {
+      this.setPointSize(props.pointSize as number);
     }
 
-    if (props['opacity'] !== undefined) {
-      this.setOpacity(props['opacity'] as number);
+    if (props.opacity !== undefined) {
+      this.setOpacity(props.opacity as number);
     }
   }
 
@@ -1078,7 +1155,10 @@ export class PointCloudLayer extends BaseLayer {
 
     if (data) {
       // Handle asset change
-      if (data.assetId !== undefined && data.assetId !== this.cloudData.assetId) {
+      if (
+        data.assetId !== undefined &&
+        data.assetId !== this.cloudData.assetId
+      ) {
         this.cloudData.assetId = data.assetId;
         if (data.format) {
           this.cloudData.format = data.format;

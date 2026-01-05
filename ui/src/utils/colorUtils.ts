@@ -3,7 +3,7 @@
  * HSV, RGB, HSL conversions and hex parsing
  */
 
-import { clamp } from './arrayUtils';
+import { clamp } from "./arrayUtils";
 
 export type RGB = [number, number, number];
 export type HSV = [number, number, number];
@@ -23,18 +23,39 @@ export function hsvToRgb(h: number, s: number, v: number): RGB {
   const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
   const m = v - c;
 
-  let r = 0, g = 0, b = 0;
-  if (h < 60) { r = c; g = x; b = 0; }
-  else if (h < 120) { r = x; g = c; b = 0; }
-  else if (h < 180) { r = 0; g = c; b = x; }
-  else if (h < 240) { r = 0; g = x; b = c; }
-  else if (h < 300) { r = x; g = 0; b = c; }
-  else { r = c; g = 0; b = x; }
+  let r = 0,
+    g = 0,
+    b = 0;
+  if (h < 60) {
+    r = c;
+    g = x;
+    b = 0;
+  } else if (h < 120) {
+    r = x;
+    g = c;
+    b = 0;
+  } else if (h < 180) {
+    r = 0;
+    g = c;
+    b = x;
+  } else if (h < 240) {
+    r = 0;
+    g = x;
+    b = c;
+  } else if (h < 300) {
+    r = x;
+    g = 0;
+    b = c;
+  } else {
+    r = c;
+    g = 0;
+    b = x;
+  }
 
   return [
     Math.round((r + m) * 255),
     Math.round((g + m) * 255),
-    Math.round((b + m) * 255)
+    Math.round((b + m) * 255),
   ];
 }
 
@@ -60,9 +81,15 @@ export function rgbToHsv(r: number, g: number, b: number): HSV {
 
   if (d !== 0) {
     switch (max) {
-      case r: h = ((g - b) / d + (g < b ? 6 : 0)) * 60; break;
-      case g: h = ((b - r) / d + 2) * 60; break;
-      case b: h = ((r - g) / d + 4) * 60; break;
+      case r:
+        h = ((g - b) / d + (g < b ? 6 : 0)) * 60;
+        break;
+      case g:
+        h = ((b - r) / d + 2) * 60;
+        break;
+      case b:
+        h = ((r - g) / d + 4) * 60;
+        break;
     }
   }
 
@@ -82,18 +109,39 @@ export function hslToRgb(h: number, s: number, l: number): RGB {
   const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
   const m = l - c / 2;
 
-  let r = 0, g = 0, b = 0;
-  if (h < 60) { r = c; g = x; b = 0; }
-  else if (h < 120) { r = x; g = c; b = 0; }
-  else if (h < 180) { r = 0; g = c; b = x; }
-  else if (h < 240) { r = 0; g = x; b = c; }
-  else if (h < 300) { r = x; g = 0; b = c; }
-  else { r = c; g = 0; b = x; }
+  let r = 0,
+    g = 0,
+    b = 0;
+  if (h < 60) {
+    r = c;
+    g = x;
+    b = 0;
+  } else if (h < 120) {
+    r = x;
+    g = c;
+    b = 0;
+  } else if (h < 180) {
+    r = 0;
+    g = c;
+    b = x;
+  } else if (h < 240) {
+    r = 0;
+    g = x;
+    b = c;
+  } else if (h < 300) {
+    r = x;
+    g = 0;
+    b = c;
+  } else {
+    r = c;
+    g = 0;
+    b = x;
+  }
 
   return [
     Math.round((r + m) * 255),
     Math.round((g + m) * 255),
-    Math.round((b + m) * 255)
+    Math.round((b + m) * 255),
   ];
 }
 
@@ -120,9 +168,15 @@ export function rgbToHsl(r: number, g: number, b: number): HSL {
     s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
 
     switch (max) {
-      case r: h = ((g - b) / d + (g < b ? 6 : 0)) * 60; break;
-      case g: h = ((b - r) / d + 2) * 60; break;
-      case b: h = ((r - g) / d + 4) * 60; break;
+      case r:
+        h = ((g - b) / d + (g < b ? 6 : 0)) * 60;
+        break;
+      case g:
+        h = ((b - r) / d + 2) * 60;
+        break;
+      case b:
+        h = ((r - g) / d + 4) * 60;
+        break;
     }
   }
 
@@ -135,7 +189,7 @@ export function rgbToHsl(r: number, g: number, b: number): HSL {
  * @returns RGB tuple or null if invalid
  */
 export function hexToRgb(hex: string): RGB | null {
-  hex = hex.replace(/^#/, '');
+  hex = hex.replace(/^#/, "");
 
   // Handle short format #RGB
   if (hex.length === 3) {
@@ -148,7 +202,7 @@ export function hexToRgb(hex: string): RGB | null {
     const g = parseInt(hex.slice(2, 4), 16);
     const b = parseInt(hex.slice(4, 6), 16);
 
-    if (!isNaN(r) && !isNaN(g) && !isNaN(b)) {
+    if (!Number.isNaN(r) && !Number.isNaN(g) && !Number.isNaN(b)) {
       return [r, g, b];
     }
   }
@@ -162,16 +216,16 @@ export function hexToRgb(hex: string): RGB | null {
  * @returns RGBA tuple or null if invalid
  */
 export function hexToRgba(hex: string): RGBA | null {
-  hex = hex.replace(/^#/, '');
+  hex = hex.replace(/^#/, "");
 
   // Handle short format #RGB
   if (hex.length === 3) {
-    hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2] + 'ff';
+    hex = `${hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2]}ff`;
   }
 
   // Handle #RRGGBB (add alpha)
   if (hex.length === 6) {
-    hex = hex + 'ff';
+    hex = `${hex}ff`;
   }
 
   if (hex.length === 8) {
@@ -180,7 +234,12 @@ export function hexToRgba(hex: string): RGBA | null {
     const b = parseInt(hex.slice(4, 6), 16);
     const a = parseInt(hex.slice(6, 8), 16) / 255;
 
-    if (!isNaN(r) && !isNaN(g) && !isNaN(b) && !isNaN(a)) {
+    if (
+      !Number.isNaN(r) &&
+      !Number.isNaN(g) &&
+      !Number.isNaN(b) &&
+      !Number.isNaN(a)
+    ) {
       return [r, g, b, a];
     }
   }
@@ -196,9 +255,10 @@ export function hexToRgba(hex: string): RGBA | null {
  * @returns Hex color string (#RRGGBB)
  */
 export function rgbToHex(r: number, g: number, b: number): string {
-  const toHex = (n: number) => Math.max(0, Math.min(255, Math.round(n)))
-    .toString(16)
-    .padStart(2, '0');
+  const toHex = (n: number) =>
+    Math.max(0, Math.min(255, Math.round(n)))
+      .toString(16)
+      .padStart(2, "0");
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
 
@@ -211,9 +271,10 @@ export function rgbToHex(r: number, g: number, b: number): string {
  * @returns Hex color string (#RRGGBBAA)
  */
 export function rgbaToHex(r: number, g: number, b: number, a: number): string {
-  const toHex = (n: number) => Math.max(0, Math.min(255, Math.round(n)))
-    .toString(16)
-    .padStart(2, '0');
+  const toHex = (n: number) =>
+    Math.max(0, Math.min(255, Math.round(n)))
+      .toString(16)
+      .padStart(2, "0");
   return `#${toHex(r)}${toHex(g)}${toHex(b)}${toHex(a * 255)}`;
 }
 
@@ -242,7 +303,7 @@ export function parseColor(color: string): RGB | null {
   color = color.trim().toLowerCase();
 
   // Hex
-  if (color.startsWith('#')) {
+  if (color.startsWith("#")) {
     return hexToRgb(color);
   }
 
@@ -250,19 +311,21 @@ export function parseColor(color: string): RGB | null {
   const rgbMatch = color.match(/rgba?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
   if (rgbMatch) {
     return [
-      parseInt(rgbMatch[1]),
-      parseInt(rgbMatch[2]),
-      parseInt(rgbMatch[3])
+      parseInt(rgbMatch[1], 10),
+      parseInt(rgbMatch[2], 10),
+      parseInt(rgbMatch[3], 10),
     ];
   }
 
   // hsl() or hsla()
-  const hslMatch = color.match(/hsla?\s*\(\s*(\d+)\s*,\s*(\d+)%?\s*,\s*(\d+)%?/);
+  const hslMatch = color.match(
+    /hsla?\s*\(\s*(\d+)\s*,\s*(\d+)%?\s*,\s*(\d+)%?/,
+  );
   if (hslMatch) {
     return hslToRgb(
-      parseInt(hslMatch[1]),
-      parseInt(hslMatch[2]) / 100,
-      parseInt(hslMatch[3]) / 100
+      parseInt(hslMatch[1], 10),
+      parseInt(hslMatch[2], 10) / 100,
+      parseInt(hslMatch[3], 10) / 100,
     );
   }
 
@@ -283,7 +346,7 @@ export function lerpColor(color1: string, color2: string, t: number): string {
   return rgbToHex(
     Math.round(rgb1[0] + (rgb2[0] - rgb1[0]) * t),
     Math.round(rgb1[1] + (rgb2[1] - rgb1[1]) * t),
-    Math.round(rgb1[2] + (rgb2[2] - rgb1[2]) * t)
+    Math.round(rgb1[2] + (rgb2[2] - rgb1[2]) * t),
   );
 }
 
@@ -292,19 +355,32 @@ export function lerpColor(color1: string, color2: string, t: number): string {
  */
 export function getContrastColor(bgColor: string): string {
   const rgb = hexToRgb(bgColor);
-  if (!rgb) return '#ffffff';
+  if (!rgb) return "#ffffff";
 
   // Calculate luminance
   const luminance = (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]) / 255;
-  return luminance > 0.5 ? '#000000' : '#ffffff';
+  return luminance > 0.5 ? "#000000" : "#ffffff";
 }
 
 /**
  * Standard color swatches
  */
 export const STANDARD_SWATCHES = [
-  '#ff0000', '#ff8000', '#ffff00', '#80ff00',
-  '#00ff00', '#00ff80', '#00ffff', '#0080ff',
-  '#0000ff', '#8000ff', '#ff00ff', '#ff0080',
-  '#ffffff', '#c0c0c0', '#808080', '#404040', '#000000'
+  "#ff0000",
+  "#ff8000",
+  "#ffff00",
+  "#80ff00",
+  "#00ff00",
+  "#00ff80",
+  "#00ffff",
+  "#0080ff",
+  "#0000ff",
+  "#8000ff",
+  "#ff00ff",
+  "#ff0080",
+  "#ffffff",
+  "#c0c0c0",
+  "#808080",
+  "#404040",
+  "#000000",
 ];

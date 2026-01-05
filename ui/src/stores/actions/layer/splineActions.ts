@@ -5,12 +5,21 @@
  * animation, simplification, and smoothing.
  */
 
-import { storeLogger } from '@/utils/logger';
-import type { SplineData, ControlPoint, AnimatableControlPoint, AnimatableProperty, EvaluatedControlPoint } from '@/types/project';
-import { createAnimatableProperty, controlPointToAnimatable, animatableToControlPoint } from '@/types/project';
-import { markLayerDirty } from '@/services/layerEvaluationCache';
-import { interpolateProperty } from '@/services/interpolation';
-import type { LayerStore } from '../layerActions';
+import { interpolateProperty } from "@/services/interpolation";
+import { markLayerDirty } from "@/services/layerEvaluationCache";
+import type {
+  AnimatableControlPoint,
+  AnimatableProperty,
+  ControlPoint,
+  EvaluatedControlPoint,
+  SplineData,
+} from "@/types/project";
+import {
+  animatableToControlPoint,
+  controlPointToAnimatable,
+} from "@/types/project";
+import { storeLogger } from "@/utils/logger";
+import type { LayerStore } from "../layerActions";
 
 // ============================================================================
 // SPLINE CONTROL POINT INTERFACE
@@ -23,7 +32,7 @@ export interface SplineControlPoint {
   depth?: number;
   handleIn?: { x: number; y: number } | null;
   handleOut?: { x: number; y: number } | null;
-  type: 'corner' | 'smooth' | 'symmetric';
+  type: "corner" | "smooth" | "symmetric";
 }
 
 // ============================================================================
@@ -33,9 +42,13 @@ export interface SplineControlPoint {
 /**
  * Add a control point to a spline layer
  */
-export function addSplineControlPoint(store: LayerStore, layerId: string, point: SplineControlPoint): void {
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
-  if (!layer || layer.type !== 'spline' || !layer.data) return;
+export function addSplineControlPoint(
+  store: LayerStore,
+  layerId: string,
+  point: SplineControlPoint,
+): void {
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  if (!layer || layer.type !== "spline" || !layer.data) return;
 
   const splineData = layer.data as any;
   if (!splineData.controlPoints) {
@@ -48,16 +61,24 @@ export function addSplineControlPoint(store: LayerStore, layerId: string, point:
 /**
  * Insert a control point at a specific index in a spline layer
  */
-export function insertSplineControlPoint(store: LayerStore, layerId: string, point: SplineControlPoint, index: number): void {
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
-  if (!layer || layer.type !== 'spline' || !layer.data) return;
+export function insertSplineControlPoint(
+  store: LayerStore,
+  layerId: string,
+  point: SplineControlPoint,
+  index: number,
+): void {
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  if (!layer || layer.type !== "spline" || !layer.data) return;
 
   const splineData = layer.data as any;
   if (!splineData.controlPoints) {
     splineData.controlPoints = [];
   }
   // Clamp index to valid range
-  const insertIndex = Math.max(0, Math.min(index, splineData.controlPoints.length));
+  const insertIndex = Math.max(
+    0,
+    Math.min(index, splineData.controlPoints.length),
+  );
   splineData.controlPoints.splice(insertIndex, 0, point);
   store.project.meta.modified = new Date().toISOString();
 }
@@ -69,10 +90,10 @@ export function updateSplineControlPoint(
   store: LayerStore,
   layerId: string,
   pointId: string,
-  updates: Partial<SplineControlPoint>
+  updates: Partial<SplineControlPoint>,
 ): void {
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
-  if (!layer || layer.type !== 'spline' || !layer.data) return;
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  if (!layer || layer.type !== "spline" || !layer.data) return;
 
   const splineData = layer.data as any;
   const point = splineData.controlPoints?.find((p: any) => p.id === pointId);
@@ -85,14 +106,20 @@ export function updateSplineControlPoint(
 /**
  * Delete a spline control point
  */
-export function deleteSplineControlPoint(store: LayerStore, layerId: string, pointId: string): void {
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
-  if (!layer || layer.type !== 'spline' || !layer.data) return;
+export function deleteSplineControlPoint(
+  store: LayerStore,
+  layerId: string,
+  pointId: string,
+): void {
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  if (!layer || layer.type !== "spline" || !layer.data) return;
 
   const splineData = layer.data as any;
   if (!splineData.controlPoints) return;
 
-  const index = splineData.controlPoints.findIndex((p: any) => p.id === pointId);
+  const index = splineData.controlPoints.findIndex(
+    (p: any) => p.id === pointId,
+  );
   if (index >= 0) {
     splineData.controlPoints.splice(index, 1);
     store.project.meta.modified = new Date().toISOString();
@@ -107,22 +134,25 @@ export function deleteSplineControlPoint(store: LayerStore, layerId: string, poi
  * Enable animation mode on a spline layer
  * Converts static controlPoints to animatedControlPoints
  */
-export function enableSplineAnimation(store: LayerStore, layerId: string): void {
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
-  if (!layer || layer.type !== 'spline' || !layer.data) return;
+export function enableSplineAnimation(
+  store: LayerStore,
+  layerId: string,
+): void {
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  if (!layer || layer.type !== "spline" || !layer.data) return;
 
   const splineData = layer.data as SplineData;
 
   // Already animated?
   if (splineData.animated && splineData.animatedControlPoints) {
-    storeLogger.debug('Spline already in animated mode');
+    storeLogger.debug("Spline already in animated mode");
     return;
   }
 
   // Convert static control points to animatable
   const staticPoints = splineData.controlPoints || [];
-  const animatedPoints: AnimatableControlPoint[] = staticPoints.map(cp =>
-    controlPointToAnimatable(cp)
+  const animatedPoints: AnimatableControlPoint[] = staticPoints.map((cp) =>
+    controlPointToAnimatable(cp),
   );
 
   // Update spline data
@@ -132,7 +162,11 @@ export function enableSplineAnimation(store: LayerStore, layerId: string): void 
   store.project.meta.modified = new Date().toISOString();
   markLayerDirty(layerId);
 
-  storeLogger.debug('Enabled spline animation with', animatedPoints.length, 'control points');
+  storeLogger.debug(
+    "Enabled spline animation with",
+    animatedPoints.length,
+    "control points",
+  );
 }
 
 /**
@@ -143,11 +177,18 @@ export function addSplinePointKeyframe(
   store: LayerStore,
   layerId: string,
   pointId: string,
-  property: 'x' | 'y' | 'depth' | 'handleIn.x' | 'handleIn.y' | 'handleOut.x' | 'handleOut.y',
-  frame: number
+  property:
+    | "x"
+    | "y"
+    | "depth"
+    | "handleIn.x"
+    | "handleIn.y"
+    | "handleOut.x"
+    | "handleOut.y",
+  frame: number,
 ): void {
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
-  if (!layer || layer.type !== 'spline' || !layer.data) return;
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  if (!layer || layer.type !== "spline" || !layer.data) return;
 
   const splineData = layer.data as SplineData;
 
@@ -157,9 +198,9 @@ export function addSplinePointKeyframe(
   }
 
   // Find the animated control point
-  const point = splineData.animatedControlPoints?.find(p => p.id === pointId);
+  const point = splineData.animatedControlPoints?.find((p) => p.id === pointId);
   if (!point) {
-    storeLogger.warn('Control point not found:', pointId);
+    storeLogger.warn("Control point not found:", pointId);
     return;
   }
 
@@ -167,36 +208,38 @@ export function addSplinePointKeyframe(
   let animatableProp: AnimatableProperty<number> | undefined;
 
   switch (property) {
-    case 'x':
+    case "x":
       animatableProp = point.x;
       break;
-    case 'y':
+    case "y":
       animatableProp = point.y;
       break;
-    case 'depth':
+    case "depth":
       animatableProp = point.depth;
       break;
-    case 'handleIn.x':
+    case "handleIn.x":
       animatableProp = point.handleIn?.x;
       break;
-    case 'handleIn.y':
+    case "handleIn.y":
       animatableProp = point.handleIn?.y;
       break;
-    case 'handleOut.x':
+    case "handleOut.x":
       animatableProp = point.handleOut?.x;
       break;
-    case 'handleOut.y':
+    case "handleOut.y":
       animatableProp = point.handleOut?.y;
       break;
   }
 
   if (!animatableProp) {
-    storeLogger.warn('Property not found on control point:', property);
+    storeLogger.warn("Property not found on control point:", property);
     return;
   }
 
   // Check if keyframe already exists at this frame
-  const existingIdx = animatableProp.keyframes.findIndex(k => k.frame === frame);
+  const existingIdx = animatableProp.keyframes.findIndex(
+    (k) => k.frame === frame,
+  );
 
   if (existingIdx >= 0) {
     // Update existing keyframe
@@ -207,10 +250,10 @@ export function addSplinePointKeyframe(
       id: `kf_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
       frame,
       value: animatableProp.value,
-      interpolation: 'bezier',
-      controlMode: 'smooth',
+      interpolation: "bezier",
+      controlMode: "smooth",
       inHandle: { frame: -5, value: 0, enabled: true },
-      outHandle: { frame: 5, value: 0, enabled: true }
+      outHandle: { frame: 5, value: 0, enabled: true },
     });
 
     // Sort keyframes by frame
@@ -220,7 +263,14 @@ export function addSplinePointKeyframe(
   store.project.meta.modified = new Date().toISOString();
   markLayerDirty(layerId);
 
-  storeLogger.debug('Added keyframe to control point', pointId, 'property', property, 'at frame', frame);
+  storeLogger.debug(
+    "Added keyframe to control point",
+    pointId,
+    "property",
+    property,
+    "at frame",
+    frame,
+  );
 }
 
 /**
@@ -230,10 +280,10 @@ export function addSplinePointPositionKeyframe(
   store: LayerStore,
   layerId: string,
   pointId: string,
-  frame: number
+  frame: number,
 ): void {
-  addSplinePointKeyframe(store, layerId, pointId, 'x', frame);
-  addSplinePointKeyframe(store, layerId, pointId, 'y', frame);
+  addSplinePointKeyframe(store, layerId, pointId, "x", frame);
+  addSplinePointKeyframe(store, layerId, pointId, "y", frame);
 }
 
 /**
@@ -247,16 +297,18 @@ export function updateSplinePointWithKeyframe(
   x: number,
   y: number,
   frame: number,
-  addKeyframe: boolean = false
+  addKeyframe: boolean = false,
 ): void {
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
-  if (!layer || layer.type !== 'spline' || !layer.data) return;
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  if (!layer || layer.type !== "spline" || !layer.data) return;
 
   const splineData = layer.data as SplineData;
 
   if (splineData.animated && splineData.animatedControlPoints) {
     // Update animated control point
-    const point = splineData.animatedControlPoints.find(p => p.id === pointId);
+    const point = splineData.animatedControlPoints.find(
+      (p) => p.id === pointId,
+    );
     if (!point) return;
 
     point.x.value = x;
@@ -267,14 +319,14 @@ export function updateSplinePointWithKeyframe(
     }
 
     // Also update the static version for backwards compatibility
-    const staticPoint = splineData.controlPoints?.find(p => p.id === pointId);
+    const staticPoint = splineData.controlPoints?.find((p) => p.id === pointId);
     if (staticPoint) {
       staticPoint.x = x;
       staticPoint.y = y;
     }
   } else {
     // Update static control point
-    const point = splineData.controlPoints?.find(p => p.id === pointId);
+    const point = splineData.controlPoints?.find((p) => p.id === pointId);
     if (!point) return;
 
     point.x = x;
@@ -291,28 +343,28 @@ export function updateSplinePointWithKeyframe(
 export function getEvaluatedSplinePoints(
   store: LayerStore,
   layerId: string,
-  frame: number
+  frame: number,
 ): EvaluatedControlPoint[] {
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
-  if (!layer || layer.type !== 'spline' || !layer.data) return [];
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  if (!layer || layer.type !== "spline" || !layer.data) return [];
 
   const splineData = layer.data as SplineData;
 
   // If not animated, return static points as evaluated
   if (!splineData.animated || !splineData.animatedControlPoints) {
-    return (splineData.controlPoints || []).map(cp => ({
+    return (splineData.controlPoints || []).map((cp) => ({
       id: cp.id,
       x: cp.x,
       y: cp.y,
       depth: cp.depth ?? 0,
       handleIn: cp.handleIn ? { ...cp.handleIn } : null,
       handleOut: cp.handleOut ? { ...cp.handleOut } : null,
-      type: cp.type
+      type: cp.type,
     }));
   }
 
   // Evaluate animated control points at frame
-  return splineData.animatedControlPoints.map(acp => {
+  return splineData.animatedControlPoints.map((acp) => {
     const x = interpolateProperty(acp.x, frame);
     const y = interpolateProperty(acp.y, frame);
     const depth = acp.depth ? interpolateProperty(acp.depth, frame) : 0;
@@ -323,14 +375,14 @@ export function getEvaluatedSplinePoints(
     if (acp.handleIn) {
       handleIn = {
         x: interpolateProperty(acp.handleIn.x, frame),
-        y: interpolateProperty(acp.handleIn.y, frame)
+        y: interpolateProperty(acp.handleIn.y, frame),
       };
     }
 
     if (acp.handleOut) {
       handleOut = {
         x: interpolateProperty(acp.handleOut.x, frame),
-        y: interpolateProperty(acp.handleOut.y, frame)
+        y: interpolateProperty(acp.handleOut.y, frame),
       };
     }
 
@@ -341,7 +393,7 @@ export function getEvaluatedSplinePoints(
       depth,
       handleIn,
       handleOut,
-      type: animatableToControlPoint(acp).type
+      type: animatableToControlPoint(acp).type,
     };
   });
 }
@@ -350,8 +402,8 @@ export function getEvaluatedSplinePoints(
  * Check if a spline has animation enabled
  */
 export function isSplineAnimated(store: LayerStore, layerId: string): boolean {
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
-  if (!layer || layer.type !== 'spline' || !layer.data) return false;
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  if (!layer || layer.type !== "spline" || !layer.data) return false;
 
   const splineData = layer.data as SplineData;
   return !!splineData.animated;
@@ -360,14 +412,18 @@ export function isSplineAnimated(store: LayerStore, layerId: string): boolean {
 /**
  * Check if a control point has any keyframes
  */
-export function hasSplinePointKeyframes(store: LayerStore, layerId: string, pointId: string): boolean {
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
-  if (!layer || layer.type !== 'spline' || !layer.data) return false;
+export function hasSplinePointKeyframes(
+  store: LayerStore,
+  layerId: string,
+  pointId: string,
+): boolean {
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  if (!layer || layer.type !== "spline" || !layer.data) return false;
 
   const splineData = layer.data as SplineData;
   if (!splineData.animated || !splineData.animatedControlPoints) return false;
 
-  const point = splineData.animatedControlPoints.find(p => p.id === pointId);
+  const point = splineData.animatedControlPoints.find((p) => p.id === pointId);
   if (!point) return false;
 
   // Check if any property has keyframes
@@ -395,16 +451,20 @@ interface Point2D {
  * Simplify a spline by reducing control points using Douglas-Peucker algorithm
  * @param tolerance - Distance threshold in pixels (higher = more simplification)
  */
-export function simplifySpline(store: LayerStore, layerId: string, tolerance: number): void {
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
-  if (!layer || layer.type !== 'spline' || !layer.data) return;
+export function simplifySpline(
+  store: LayerStore,
+  layerId: string,
+  tolerance: number,
+): void {
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  if (!layer || layer.type !== "spline" || !layer.data) return;
 
   const splineData = layer.data as SplineData;
   const controlPoints = splineData.controlPoints;
   if (!controlPoints || controlPoints.length <= 2) return;
 
   // Convert to simple points for Douglas-Peucker
-  const points: Point2D[] = controlPoints.map(cp => ({ x: cp.x, y: cp.y }));
+  const points: Point2D[] = controlPoints.map((cp) => ({ x: cp.x, y: cp.y }));
 
   // Apply Douglas-Peucker simplification
   const simplified = douglasPeuckerSimplify(points, tolerance);
@@ -429,8 +489,8 @@ export function simplifySpline(store: LayerStore, layerId: string, tolerance: nu
 
   // Also update animated control points if present
   if (splineData.animated && splineData.animatedControlPoints) {
-    const newAnimatedPoints = splineData.animatedControlPoints.filter(acp =>
-      newControlPoints.some(cp => cp.id === acp.id)
+    const newAnimatedPoints = splineData.animatedControlPoints.filter((acp) =>
+      newControlPoints.some((cp) => cp.id === acp.id),
     );
     splineData.animatedControlPoints = newAnimatedPoints;
   }
@@ -438,13 +498,18 @@ export function simplifySpline(store: LayerStore, layerId: string, tolerance: nu
   store.project.meta.modified = new Date().toISOString();
   markLayerDirty(layerId);
 
-  storeLogger.debug(`Simplified spline from ${controlPoints.length} to ${newControlPoints.length} points`);
+  storeLogger.debug(
+    `Simplified spline from ${controlPoints.length} to ${newControlPoints.length} points`,
+  );
 }
 
 /**
  * Douglas-Peucker line simplification algorithm
  */
-function douglasPeuckerSimplify(points: Point2D[], tolerance: number): Point2D[] {
+function douglasPeuckerSimplify(
+  points: Point2D[],
+  tolerance: number,
+): Point2D[] {
   if (points.length <= 2) return [...points];
 
   // Find point with maximum distance from line between first and last
@@ -464,7 +529,10 @@ function douglasPeuckerSimplify(points: Point2D[], tolerance: number): Point2D[]
 
   // If max distance exceeds tolerance, recursively simplify
   if (maxDist > tolerance) {
-    const left = douglasPeuckerSimplify(points.slice(0, maxIndex + 1), tolerance);
+    const left = douglasPeuckerSimplify(
+      points.slice(0, maxIndex + 1),
+      tolerance,
+    );
     const right = douglasPeuckerSimplify(points.slice(maxIndex), tolerance);
     return [...left.slice(0, -1), ...right];
   } else {
@@ -475,17 +543,25 @@ function douglasPeuckerSimplify(points: Point2D[], tolerance: number): Point2D[]
 /**
  * Calculate perpendicular distance from point to line segment
  */
-function perpendicularDist(point: Point2D, lineStart: Point2D, lineEnd: Point2D): number {
+function perpendicularDist(
+  point: Point2D,
+  lineStart: Point2D,
+  lineEnd: Point2D,
+): number {
   const dx = lineEnd.x - lineStart.x;
   const dy = lineEnd.y - lineStart.y;
   const length = Math.sqrt(dx * dx + dy * dy);
 
   if (length < 0.0001) {
-    return Math.sqrt((point.x - lineStart.x) ** 2 + (point.y - lineStart.y) ** 2);
+    return Math.sqrt(
+      (point.x - lineStart.x) ** 2 + (point.y - lineStart.y) ** 2,
+    );
   }
 
   // Project point onto line
-  const t = ((point.x - lineStart.x) * dx + (point.y - lineStart.y) * dy) / (length * length);
+  const t =
+    ((point.x - lineStart.x) * dx + (point.y - lineStart.y) * dy) /
+    (length * length);
   const closest = {
     x: lineStart.x + t * dx,
     y: lineStart.y + t * dy,
@@ -498,9 +574,13 @@ function perpendicularDist(point: Point2D, lineStart: Point2D, lineEnd: Point2D)
  * Smooth spline handles to create smoother curves
  * @param amount - Smoothing amount 0-100 (100 = fully smooth bezier handles)
  */
-export function smoothSplineHandles(store: LayerStore, layerId: string, amount: number): void {
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
-  if (!layer || layer.type !== 'spline' || !layer.data) return;
+export function smoothSplineHandles(
+  store: LayerStore,
+  layerId: string,
+  amount: number,
+): void {
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  if (!layer || layer.type !== "spline" || !layer.data) return;
 
   const splineData = layer.data as SplineData;
   const controlPoints = splineData.controlPoints;
@@ -510,7 +590,8 @@ export function smoothSplineHandles(store: LayerStore, layerId: string, amount: 
 
   for (let i = 0; i < controlPoints.length; i++) {
     const cp = controlPoints[i];
-    const prev = controlPoints[(i - 1 + controlPoints.length) % controlPoints.length];
+    const prev =
+      controlPoints[(i - 1 + controlPoints.length) % controlPoints.length];
     const next = controlPoints[(i + 1) % controlPoints.length];
 
     // Skip first/last point if path is not closed
@@ -537,30 +618,42 @@ export function smoothSplineHandles(store: LayerStore, layerId: string, amount: 
     const handleLength = (distPrev + distNext) / 6;
 
     // Calculate ideal smooth handles
-    const idealIn = { x: cp.x - normalized.x * handleLength, y: cp.y - normalized.y * handleLength };
-    const idealOut = { x: cp.x + normalized.x * handleLength, y: cp.y + normalized.y * handleLength };
+    const idealIn = {
+      x: cp.x - normalized.x * handleLength,
+      y: cp.y - normalized.y * handleLength,
+    };
+    const idealOut = {
+      x: cp.x + normalized.x * handleLength,
+      y: cp.y + normalized.y * handleLength,
+    };
 
     // Blend current handles toward ideal
     if (cp.handleIn) {
       cp.handleIn = {
         x: cp.handleIn.x + (idealIn.x - cp.handleIn.x) * factor,
-        y: cp.handleIn.y + (idealIn.y - cp.handleIn.y) * factor
+        y: cp.handleIn.y + (idealIn.y - cp.handleIn.y) * factor,
       };
     } else {
-      cp.handleIn = { x: idealIn.x * factor + cp.x * (1 - factor), y: idealIn.y * factor + cp.y * (1 - factor) };
+      cp.handleIn = {
+        x: idealIn.x * factor + cp.x * (1 - factor),
+        y: idealIn.y * factor + cp.y * (1 - factor),
+      };
     }
 
     if (cp.handleOut) {
       cp.handleOut = {
         x: cp.handleOut.x + (idealOut.x - cp.handleOut.x) * factor,
-        y: cp.handleOut.y + (idealOut.y - cp.handleOut.y) * factor
+        y: cp.handleOut.y + (idealOut.y - cp.handleOut.y) * factor,
       };
     } else {
-      cp.handleOut = { x: idealOut.x * factor + cp.x * (1 - factor), y: idealOut.y * factor + cp.y * (1 - factor) };
+      cp.handleOut = {
+        x: idealOut.x * factor + cp.x * (1 - factor),
+        y: idealOut.y * factor + cp.y * (1 - factor),
+      };
     }
 
     // Set point type to smooth
-    cp.type = 'smooth';
+    cp.type = "smooth";
   }
 
   store.project.meta.modified = new Date().toISOString();

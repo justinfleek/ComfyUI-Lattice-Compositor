@@ -6,17 +6,17 @@
  */
 
 export {
-  MIDIService,
-  getMIDIService,
-  disposeMIDIService,
-  midiNoteToName,
-  noteNameToMidi,
   ccToNormalized,
-  normalizedToCC,
+  disposeMIDIService,
+  getMIDIService,
   type MIDIDeviceInfo,
-  type MIDIMessage,
-  type MIDIMessageType,
+  type MIDIEventCallback,
   type MIDIFilter,
   type MIDIMapping,
-  type MIDIEventCallback
-} from './MIDIService';
+  type MIDIMessage,
+  type MIDIMessageType,
+  MIDIService,
+  midiNoteToName,
+  normalizedToCC,
+  noteNameToMidi,
+} from "./MIDIService";

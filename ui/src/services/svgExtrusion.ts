@@ -15,9 +15,12 @@
  * - Particle mesh sources
  */
 
-import * as THREE from 'three';
-import { SVGLoader, SVGResult } from 'three/examples/jsm/loaders/SVGLoader.js';
-import { validateURL } from '@/utils/security';
+import * as THREE from "three";
+import {
+  SVGLoader,
+  type SVGResult,
+} from "three/examples/jsm/loaders/SVGLoader.js";
+import { validateURL } from "@/utils/security";
 
 // ============================================================================
 // TYPES
@@ -76,12 +79,12 @@ export interface ParsedSVGDocument {
  * Like Cinema 4D/Blender fillet caps for smooth, rounded edges
  */
 export type CapProfileType =
-  | 'flat'        // Standard flat cap (default)
-  | 'fillet'      // Rounded inward (concave) - smooth transition
-  | 'convex'      // Rounded outward (bulging)
-  | 'concave'     // Rounded inward (scooped)
-  | 'steps'       // Stepped/terraced profile
-  | 'custom';     // Custom profile curve
+  | "flat" // Standard flat cap (default)
+  | "fillet" // Rounded inward (concave) - smooth transition
+  | "convex" // Rounded outward (bulging)
+  | "concave" // Rounded inward (scooped)
+  | "steps" // Stepped/terraced profile
+  | "custom"; // Custom profile curve
 
 /**
  * Cap Profile Configuration - Cinema 4D/Blender style fillet caps
@@ -108,14 +111,14 @@ export interface CapProfileConfig {
 
 /** Extrusion configuration */
 export interface ExtrusionConfig {
-  depth: number;           // Extrusion depth (0-100)
+  depth: number; // Extrusion depth (0-100)
   bevelEnabled: boolean;
   bevelThickness: number;
   bevelSize: number;
   bevelOffset: number;
   bevelSegments: number;
-  curveSegments: number;   // Segments for curved paths
-  steps: number;           // Extrusion steps
+  curveSegments: number; // Segments for curved paths
+  steps: number; // Extrusion steps
 
   // ============================================
   // Fillet Cap Options (Cinema 4D/Blender style)
@@ -143,7 +146,9 @@ export interface ExtrusionConfig {
 /**
  * Create default fillet cap profile
  */
-export function createDefaultCapProfile(type: CapProfileType = 'fillet'): CapProfileConfig {
+export function createDefaultCapProfile(
+  type: CapProfileType = "fillet",
+): CapProfileConfig {
   return {
     type,
     radius: 2,
@@ -157,18 +162,20 @@ export function createDefaultCapProfile(type: CapProfileType = 'fillet'): CapPro
  * Generate profile curve points for cap geometry
  * Returns an array of points describing the cap cross-section
  */
-export function generateCapProfileCurve(config: CapProfileConfig): THREE.Vector2[] {
+export function generateCapProfileCurve(
+  config: CapProfileConfig,
+): THREE.Vector2[] {
   const points: THREE.Vector2[] = [];
   const { type, radius, segments, depth, tension, customProfile } = config;
 
   switch (type) {
-    case 'flat':
+    case "flat":
       // Simple flat cap - just two points
       points.push(new THREE.Vector2(0, 0));
       points.push(new THREE.Vector2(0, depth));
       break;
 
-    case 'fillet':
+    case "fillet":
       // Quarter-circle fillet (smooth rounded edge)
       for (let i = 0; i <= segments; i++) {
         const t = i / segments;
@@ -179,11 +186,11 @@ export function generateCapProfileCurve(config: CapProfileConfig): THREE.Vector2
       }
       break;
 
-    case 'convex':
+    case "convex":
       // Outward bulging profile
       for (let i = 0; i <= segments; i++) {
         const t = i / segments;
-        const angle = (Math.PI / 2) * t;
+        const _angle = (Math.PI / 2) * t;
         // Bulge outward using sine curve
         const bulge = Math.sin(Math.PI * t) * radius * 0.5;
         const x = -bulge; // Negative = outward
@@ -192,7 +199,7 @@ export function generateCapProfileCurve(config: CapProfileConfig): THREE.Vector2
       }
       break;
 
-    case 'concave':
+    case "concave":
       // Inward scooped profile
       for (let i = 0; i <= segments; i++) {
         const t = i / segments;
@@ -204,7 +211,7 @@ export function generateCapProfileCurve(config: CapProfileConfig): THREE.Vector2
       }
       break;
 
-    case 'steps':
+    case "steps": {
       // Stepped/terraced profile
       const stepCount = Math.max(2, Math.floor(segments / 2));
       const stepHeight = depth / stepCount;
@@ -218,8 +225,9 @@ export function generateCapProfileCurve(config: CapProfileConfig): THREE.Vector2
         }
       }
       break;
+    }
 
-    case 'custom':
+    case "custom":
       // Use custom profile curve if provided
       if (customProfile && customProfile.length >= 2) {
         for (const pt of customProfile) {
@@ -244,8 +252,8 @@ export function generateCapProfileCurve(config: CapProfileConfig): THREE.Vector2
 /** Layer configuration for extruded SVG */
 export interface SVGLayerConfig {
   pathId: string;
-  depth: number;           // Z position in scene
-  extrusionDepth: number;  // Thickness of extrusion
+  depth: number; // Z position in scene
+  extrusionDepth: number; // Thickness of extrusion
   scale: number;
   position: { x: number; y: number; z: number };
   rotation: { x: number; y: number; z: number };
@@ -254,7 +262,7 @@ export interface SVGLayerConfig {
 
 /** Material configuration for extrusion */
 export interface ExtrusionMaterialConfig {
-  type: 'basic' | 'standard' | 'physical';
+  type: "basic" | "standard" | "physical";
   color: string;
   metalness: number;
   roughness: number;
@@ -262,17 +270,17 @@ export interface ExtrusionMaterialConfig {
   emissiveIntensity: number;
   opacity: number;
   transparent: boolean;
-  side: 'front' | 'back' | 'double';
+  side: "front" | "back" | "double";
 }
 
 /** Mesh particle configuration from SVG */
 export interface SVGMeshParticleConfig {
-  pathId: string;          // Which SVG path to use
-  extrusionDepth: number;  // How thick the particle mesh
-  scale: number;           // Particle size multiplier
-  simplify: boolean;       // Reduce geometry complexity
+  pathId: string; // Which SVG path to use
+  extrusionDepth: number; // How thick the particle mesh
+  scale: number; // Particle size multiplier
+  simplify: boolean; // Reduce geometry complexity
   simplifyTolerance: number;
-  centerOrigin: boolean;   // Center mesh at origin
+  centerOrigin: boolean; // Center mesh at origin
 }
 
 // ============================================================================
@@ -298,7 +306,7 @@ export class SVGExtrusionService {
    */
   async loadFromURL(url: string, name?: string): Promise<ParsedSVGDocument> {
     // Validate URL to prevent SSRF attacks
-    const validatedUrl = validateURL(url, 'SVG loading', {
+    const validatedUrl = validateURL(url, "SVG loading", {
       allowData: true,
       allowBlob: true,
       allowHttp: true, // Allow HTTP for local development
@@ -313,7 +321,7 @@ export class SVGExtrusionService {
           resolve(doc);
         },
         undefined,
-        reject
+        reject,
       );
     });
   }
@@ -321,13 +329,13 @@ export class SVGExtrusionService {
   /**
    * Load and parse SVG from string content
    */
-  loadFromString(svgString: string, name: string = 'svg'): ParsedSVGDocument {
+  loadFromString(svgString: string, name: string = "svg"): ParsedSVGDocument {
     const parser = new DOMParser();
-    const svgDoc = parser.parseFromString(svgString, 'image/svg+xml');
-    const svgElement = svgDoc.querySelector('svg');
+    const svgDoc = parser.parseFromString(svgString, "image/svg+xml");
+    const svgElement = svgDoc.querySelector("svg");
 
     if (!svgElement) {
-      throw new Error('Invalid SVG: No SVG element found');
+      throw new Error("Invalid SVG: No SVG element found");
     }
 
     // Use SVGLoader to parse
@@ -344,8 +352,10 @@ export class SVGExtrusionService {
     const id = `svg_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
     const paths: ParsedSVGPath[] = [];
 
-    let minX = Infinity, minY = Infinity;
-    let maxX = -Infinity, maxY = -Infinity;
+    let minX = Infinity,
+      minY = Infinity;
+    let maxX = -Infinity,
+      maxY = -Infinity;
 
     // Parse each path
     data.paths.forEach((shapePath, index) => {
@@ -356,7 +366,7 @@ export class SVGExtrusionService {
       // Get fill color
       const fillColor = shapePath.userData?.style?.fill;
       const color = new THREE.Color(
-        fillColor && fillColor !== 'none' ? fillColor : '#ffffff'
+        fillColor && fillColor !== "none" ? fillColor : "#ffffff",
       );
 
       // Get fill opacity
@@ -374,9 +384,10 @@ export class SVGExtrusionService {
       maxX = Math.max(maxX, pathBounds.maxX);
       maxY = Math.max(maxY, pathBounds.maxY);
 
-      const strokeColorObj = strokeColor && strokeColor !== 'none'
-        ? new THREE.Color(strokeColor)
-        : null;
+      const strokeColorObj =
+        strokeColor && strokeColor !== "none"
+          ? new THREE.Color(strokeColor)
+          : null;
 
       paths.push({
         id: `${id}_path_${index}`,
@@ -389,7 +400,9 @@ export class SVGExtrusionService {
         strokeWidth,
         // CSS-compatible color strings for UI display
         fill: `#${color.getHexString()}`,
-        stroke: strokeColorObj ? `#${strokeColorObj.getHexString()}` : undefined,
+        stroke: strokeColorObj
+          ? `#${strokeColorObj.getHexString()}`
+          : undefined,
         bounds: pathBounds,
         originalTransform: new THREE.Matrix4(),
       });
@@ -422,9 +435,11 @@ export class SVGExtrusionService {
   /**
    * Calculate bounds for a set of shapes
    */
-  private calculatePathBounds(shapes: THREE.Shape[]): ParsedSVGPath['bounds'] {
-    let minX = Infinity, minY = Infinity;
-    let maxX = -Infinity, maxY = -Infinity;
+  private calculatePathBounds(shapes: THREE.Shape[]): ParsedSVGPath["bounds"] {
+    let minX = Infinity,
+      minY = Infinity;
+    let maxX = -Infinity,
+      maxY = -Infinity;
 
     for (const shape of shapes) {
       const points = shape.getPoints(50);
@@ -472,7 +487,7 @@ export class SVGExtrusionService {
    */
   createExtrudedGeometry(
     path: ParsedSVGPath,
-    config: Partial<ExtrusionConfig> = {}
+    config: Partial<ExtrusionConfig> = {},
   ): THREE.BufferGeometry {
     const cacheKey = `${path.id}_${JSON.stringify(config)}`;
     const cached = this.meshCache.get(cacheKey);
@@ -484,7 +499,7 @@ export class SVGExtrusionService {
     const useFilletCaps = useFrontCap || useBackCap;
 
     // Base extrude settings
-    let extrudeSettings: THREE.ExtrudeGeometryOptions = {
+    const extrudeSettings: THREE.ExtrudeGeometryOptions = {
       depth: config.depth ?? 10,
       bevelEnabled: config.bevelEnabled ?? false,
       bevelThickness: config.bevelThickness ?? 1,
@@ -498,13 +513,17 @@ export class SVGExtrusionService {
     // If using fillet caps, configure bevel to create the rounded profile
     // Three.js bevel IS essentially a fillet on the front face
     if (useFilletCaps && !config.bevelEnabled) {
-      const frontCap = useFrontCap ? config.frontCap! : createDefaultCapProfile('flat');
-      const backCap = useBackCap
+      const frontCap = useFrontCap
+        ? config.frontCap!
+        : createDefaultCapProfile("flat");
+      const _backCap = useBackCap
         ? config.backCap!
-        : (config.symmetricCaps && useFrontCap ? config.frontCap! : createDefaultCapProfile('flat'));
+        : config.symmetricCaps && useFrontCap
+          ? config.frontCap!
+          : createDefaultCapProfile("flat");
 
       // Use front cap settings for bevel (Three.js only supports front bevel natively)
-      if (useFrontCap && frontCap.type !== 'flat') {
+      if (useFrontCap && frontCap.type !== "flat") {
         extrudeSettings.bevelEnabled = true;
         extrudeSettings.bevelSize = frontCap.radius;
         extrudeSettings.bevelThickness = frontCap.depth;
@@ -525,12 +544,12 @@ export class SVGExtrusionService {
       geometries.push(geometry);
 
       // Add back cap geometry if needed (separate rounded cap on back face)
-      if (useBackCap && config.backCap && config.backCap.type !== 'flat') {
+      if (useBackCap && config.backCap && config.backCap.type !== "flat") {
         const backCapGeom = this.createFilletCapGeometry(
           shape,
           config.backCap,
           config.depth ?? 10,
-          'back'
+          "back",
         );
         if (backCapGeom) {
           geometries.push(backCapGeom);
@@ -568,9 +587,9 @@ export class SVGExtrusionService {
     shape: THREE.Shape,
     capConfig: CapProfileConfig,
     extrusionDepth: number,
-    face: 'front' | 'back'
+    face: "front" | "back",
   ): THREE.BufferGeometry | null {
-    if (capConfig.type === 'flat') return null;
+    if (capConfig.type === "flat") return null;
 
     // Generate the profile curve
     const profilePoints = generateCapProfileCurve(capConfig);
@@ -584,7 +603,7 @@ export class SVGExtrusionService {
 
     // Create layered offset shapes to approximate the fillet
     for (let i = 0; i < segments; i++) {
-      const t = i / segments;
+      const _t = i / segments;
       const profile = profilePoints[Math.min(i, profilePoints.length - 1)];
 
       // Calculate inset amount based on profile
@@ -595,10 +614,10 @@ export class SVGExtrusionService {
       if (inset > 0) {
         // For positive inset, we'd shrink the shape
         // This is a simplified approximation
-        const scaleFactor = 1 - (inset / 100); // Rough approximation
+        const scaleFactor = 1 - inset / 100; // Rough approximation
 
         const layerShape = new THREE.ShapeGeometry(shape);
-        const layerZ = face === 'front' ? zOffset : extrusionDepth - zOffset;
+        const layerZ = face === "front" ? zOffset : extrusionDepth - zOffset;
 
         // Scale the layer slightly
         layerShape.scale(scaleFactor, scaleFactor, 1);
@@ -623,7 +642,7 @@ export class SVGExtrusionService {
   createProfileExtrudedGeometry(
     path: ParsedSVGPath,
     profileCurve: THREE.Curve<THREE.Vector3>,
-    config: Partial<ExtrusionConfig> = {}
+    config: Partial<ExtrusionConfig> = {},
   ): THREE.BufferGeometry {
     const cacheKey = `${path.id}_profile_${JSON.stringify(config)}`;
     const cached = this.meshCache.get(cacheKey);
@@ -664,13 +683,13 @@ export class SVGExtrusionService {
    */
   createProfilePathFromCap(
     capConfig: CapProfileConfig,
-    extrusionDepth: number
+    extrusionDepth: number,
   ): THREE.CatmullRomCurve3 {
     const profile2D = generateCapProfileCurve(capConfig);
 
     // Convert 2D profile to 3D path (Z = depth)
-    const points3D = profile2D.map(p =>
-      new THREE.Vector3(0, 0, p.y) // Use Y as depth (Z in 3D)
+    const points3D = profile2D.map(
+      (p) => new THREE.Vector3(0, 0, p.y), // Use Y as depth (Z in 3D)
     );
 
     // Add the main extrusion segment
@@ -683,7 +702,9 @@ export class SVGExtrusionService {
     // Add mirrored back cap profile
     const backProfile = profile2D.slice().reverse();
     for (const p of backProfile) {
-      points3D.push(new THREE.Vector3(0, 0, extrusionDepth - capConfig.depth + p.y));
+      points3D.push(
+        new THREE.Vector3(0, 0, extrusionDepth - capConfig.depth + p.y),
+      );
     }
 
     return new THREE.CatmullRomCurve3(points3D);
@@ -717,7 +738,9 @@ export class SVGExtrusionService {
   /**
    * Merge multiple geometries into one
    */
-  private mergeGeometries(geometries: THREE.BufferGeometry[]): THREE.BufferGeometry {
+  private mergeGeometries(
+    geometries: THREE.BufferGeometry[],
+  ): THREE.BufferGeometry {
     // Calculate total vertex count
     let totalVertices = 0;
     let totalIndices = 0;
@@ -725,15 +748,15 @@ export class SVGExtrusionService {
     let hasUVs = true;
 
     for (const geom of geometries) {
-      const pos = geom.getAttribute('position');
+      const pos = geom.getAttribute("position");
       if (pos) totalVertices += pos.count;
 
       const idx = geom.getIndex();
       if (idx) totalIndices += idx.count;
       else totalIndices += pos?.count ?? 0;
 
-      if (!geom.getAttribute('normal')) hasNormals = false;
-      if (!geom.getAttribute('uv')) hasUVs = false;
+      if (!geom.getAttribute("normal")) hasNormals = false;
+      if (!geom.getAttribute("uv")) hasUVs = false;
     }
 
     // Create merged buffers
@@ -747,9 +770,9 @@ export class SVGExtrusionService {
     let indexVertexOffset = 0;
 
     for (const geom of geometries) {
-      const pos = geom.getAttribute('position');
-      const norm = geom.getAttribute('normal');
-      const uv = geom.getAttribute('uv');
+      const pos = geom.getAttribute("position");
+      const norm = geom.getAttribute("normal");
+      const uv = geom.getAttribute("uv");
       const idx = geom.getIndex();
 
       if (pos) {
@@ -783,12 +806,12 @@ export class SVGExtrusionService {
 
     // Create merged geometry
     const merged = new THREE.BufferGeometry();
-    merged.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    merged.setAttribute("position", new THREE.BufferAttribute(positions, 3));
     if (normals) {
-      merged.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+      merged.setAttribute("normal", new THREE.BufferAttribute(normals, 3));
     }
     if (uvs) {
-      merged.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+      merged.setAttribute("uv", new THREE.BufferAttribute(uvs, 2));
     }
     merged.setIndex(new THREE.BufferAttribute(indices, 1));
 
@@ -805,7 +828,7 @@ export class SVGExtrusionService {
   createMesh(
     path: ParsedSVGPath,
     extrusionConfig: Partial<ExtrusionConfig> = {},
-    materialConfig: Partial<ExtrusionMaterialConfig> = {}
+    materialConfig: Partial<ExtrusionMaterialConfig> = {},
   ): THREE.Mesh {
     const geometry = this.createExtrudedGeometry(path, extrusionConfig);
     const material = this.createMaterial(path, materialConfig);
@@ -822,11 +845,11 @@ export class SVGExtrusionService {
    */
   private createMaterial(
     path: ParsedSVGPath,
-    config: Partial<ExtrusionMaterialConfig> = {}
+    config: Partial<ExtrusionMaterialConfig> = {},
   ): THREE.Material {
-    const type = config.type ?? 'standard';
+    const type = config.type ?? "standard";
     const color = config.color ?? `#${path.color.getHexString()}`;
-    const side = this.getSide(config.side ?? 'double');
+    const side = this.getSide(config.side ?? "double");
 
     const baseParams = {
       color: new THREE.Color(color),
@@ -836,25 +859,23 @@ export class SVGExtrusionService {
     };
 
     switch (type) {
-      case 'basic':
+      case "basic":
         return new THREE.MeshBasicMaterial(baseParams);
 
-      case 'physical':
+      case "physical":
         return new THREE.MeshPhysicalMaterial({
           ...baseParams,
           metalness: config.metalness ?? 0,
           roughness: config.roughness ?? 0.5,
-          emissive: new THREE.Color(config.emissive ?? '#000000'),
+          emissive: new THREE.Color(config.emissive ?? "#000000"),
           emissiveIntensity: config.emissiveIntensity ?? 0,
         });
-
-      case 'standard':
       default:
         return new THREE.MeshStandardMaterial({
           ...baseParams,
           metalness: config.metalness ?? 0,
           roughness: config.roughness ?? 0.5,
-          emissive: new THREE.Color(config.emissive ?? '#000000'),
+          emissive: new THREE.Color(config.emissive ?? "#000000"),
           emissiveIntensity: config.emissiveIntensity ?? 0,
         });
     }
@@ -863,11 +884,14 @@ export class SVGExtrusionService {
   /**
    * Get THREE.Side from string
    */
-  private getSide(side: 'front' | 'back' | 'double'): THREE.Side {
+  private getSide(side: "front" | "back" | "double"): THREE.Side {
     switch (side) {
-      case 'front': return THREE.FrontSide;
-      case 'back': return THREE.BackSide;
-      case 'double': return THREE.DoubleSide;
+      case "front":
+        return THREE.FrontSide;
+      case "back":
+        return THREE.BackSide;
+      case "double":
+        return THREE.DoubleSide;
     }
   }
 
@@ -881,7 +905,7 @@ export class SVGExtrusionService {
    */
   createLayeredMeshes(
     document: ParsedSVGDocument,
-    layerConfigs: SVGLayerConfig[]
+    layerConfigs: SVGLayerConfig[],
   ): THREE.Group {
     const group = new THREE.Group();
     group.name = document.name;
@@ -897,7 +921,7 @@ export class SVGExtrusionService {
       const mesh = this.createMesh(
         path,
         { depth: config.extrusionDepth },
-        config.material
+        config.material,
       );
 
       // Apply transforms
@@ -905,12 +929,12 @@ export class SVGExtrusionService {
       mesh.position.set(
         config.position.x - centerX * config.scale,
         config.position.y + centerY * config.scale, // Flip Y
-        config.position.z + config.depth
+        config.position.z + config.depth,
       );
       mesh.rotation.set(
         config.rotation.x * (Math.PI / 180),
         config.rotation.y * (Math.PI / 180),
-        config.rotation.z * (Math.PI / 180)
+        config.rotation.z * (Math.PI / 180),
       );
 
       group.add(mesh);
@@ -927,7 +951,7 @@ export class SVGExtrusionService {
     document: ParsedSVGDocument,
     baseDepth: number = 0,
     depthIncrement: number = 5,
-    extrusionDepth: number = 2
+    extrusionDepth: number = 2,
   ): SVGLayerConfig[] {
     return document.paths.map((path, index) => ({
       pathId: path.id,
@@ -937,15 +961,15 @@ export class SVGExtrusionService {
       position: { x: 0, y: 0, z: 0 },
       rotation: { x: 0, y: 0, z: 0 },
       material: {
-        type: 'standard' as const,
+        type: "standard" as const,
         color: `#${path.color.getHexString()}`,
         metalness: 0,
         roughness: 0.5,
-        emissive: '#000000',
+        emissive: "#000000",
         emissiveIntensity: 0,
         opacity: path.fillOpacity,
         transparent: path.fillOpacity < 1,
-        side: 'double' as const,
+        side: "double" as const,
       },
     }));
   }
@@ -960,7 +984,7 @@ export class SVGExtrusionService {
    */
   createParticleMesh(
     path: ParsedSVGPath,
-    config: Partial<SVGMeshParticleConfig> = {}
+    config: Partial<SVGMeshParticleConfig> = {},
   ): THREE.BufferGeometry {
     const extrusionDepth = config.extrusionDepth ?? 1;
     const scale = config.scale ?? 1;
@@ -976,7 +1000,7 @@ export class SVGExtrusionService {
     if (config.simplify) {
       geometry = this.simplifyGeometry(
         geometry,
-        config.simplifyTolerance ?? 0.1
+        config.simplifyTolerance ?? 0.1,
       );
     }
 
@@ -984,7 +1008,7 @@ export class SVGExtrusionService {
     if (config.centerOrigin !== false) {
       geometry.computeBoundingBox();
       const center = new THREE.Vector3();
-      geometry.boundingBox!.getCenter(center);
+      geometry.boundingBox?.getCenter(center);
       geometry.translate(-center.x, -center.y, -center.z);
     }
 
@@ -1004,11 +1028,11 @@ export class SVGExtrusionService {
    */
   private simplifyGeometry(
     geometry: THREE.BufferGeometry,
-    tolerance: number
+    tolerance: number,
   ): THREE.BufferGeometry {
     // Note: For production, use a proper simplification library
     // This is a basic vertex welding implementation
-    const position = geometry.getAttribute('position');
+    const position = geometry.getAttribute("position");
     const index = geometry.getIndex();
 
     if (!position) return geometry;
@@ -1050,8 +1074,8 @@ export class SVGExtrusionService {
     // Create new geometry
     const simplified = new THREE.BufferGeometry();
     simplified.setAttribute(
-      'position',
-      new THREE.Float32BufferAttribute(newPositions, 3)
+      "position",
+      new THREE.Float32BufferAttribute(newPositions, 3),
     );
     simplified.setIndex(newIndices);
     simplified.computeVertexNormals();
@@ -1071,7 +1095,7 @@ export class SVGExtrusionService {
     path: ParsedSVGPath,
     tubeRadius: number = 1,
     tubularSegments: number = 64,
-    radialSegments: number = 8
+    radialSegments: number = 8,
   ): THREE.BufferGeometry[] {
     const geometries: THREE.BufferGeometry[] = [];
 
@@ -1090,7 +1114,7 @@ export class SVGExtrusionService {
         tubularSegments,
         tubeRadius,
         radialSegments,
-        false // closed
+        false, // closed
       );
 
       geometries.push(tubeGeometry);
@@ -1158,21 +1182,21 @@ export function createDefaultExtrusionConfig(): ExtrusionConfig {
 
 export function createDefaultMaterialConfig(): ExtrusionMaterialConfig {
   return {
-    type: 'standard',
-    color: '#ffffff',
+    type: "standard",
+    color: "#ffffff",
     metalness: 0,
     roughness: 0.5,
-    emissive: '#000000',
+    emissive: "#000000",
     emissiveIntensity: 0,
     opacity: 1,
     transparent: false,
-    side: 'double',
+    side: "double",
   };
 }
 
 export function createDefaultSVGMeshParticleConfig(): SVGMeshParticleConfig {
   return {
-    pathId: '',
+    pathId: "",
     extrusionDepth: 1,
     scale: 0.01,
     simplify: true,

@@ -187,35 +187,41 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, onUnmounted, watch, type CSSProperties } from 'vue';
 import {
-  onionSkinning,
+  type CSSProperties,
+  computed,
+  onMounted,
+  onUnmounted,
+  reactive,
+  ref,
+  watch,
+} from "vue";
+import {
   DEFAULT_ONION_SKIN_CONFIG,
-  ONION_SKIN_PRESETS,
-  type OnionSkinConfig
-} from '@/services/onionSkinning';
+  type OnionSkinConfig,
+  onionSkinning,
+} from "@/services/onionSkinning";
 
 // Emit for parent components
-const emit = defineEmits<{
-  (e: 'configChanged', config: OnionSkinConfig): void;
-}>();
+const emit =
+  defineEmits<(e: "configChanged", config: OnionSkinConfig) => void>();
 
 // Refs
 const containerRef = ref<HTMLElement | null>(null);
 const showDropdown = ref(false);
-const selectedPreset = ref('');
+const selectedPreset = ref("");
 
 // Local config copy (reactive)
 const config = reactive<OnionSkinConfig>({ ...DEFAULT_ONION_SKIN_CONFIG });
 
 // Dropdown position
 // Explicitly typed to satisfy Vue's style binding requirements
-const dropdownStyle = computed((): CSSProperties => {
+const _dropdownStyle = computed((): CSSProperties => {
   if (!containerRef.value) return {};
 
   const rect = containerRef.value.getBoundingClientRect();
   return {
-    position: 'fixed',
+    position: "fixed",
     top: `${rect.bottom + 4}px`,
     left: `${rect.left}px`,
     zIndex: 10000,
@@ -223,7 +229,7 @@ const dropdownStyle = computed((): CSSProperties => {
 });
 
 // Toggle dropdown
-function toggleDropdown() {
+function _toggleDropdown() {
   showDropdown.value = !showDropdown.value;
 }
 
@@ -235,7 +241,7 @@ function handleClickOutside(e: MouseEvent) {
     !containerRef.value.contains(e.target as Node)
   ) {
     // Check if click is inside dropdown
-    const dropdown = document.querySelector('.onion-dropdown');
+    const dropdown = document.querySelector(".onion-dropdown");
     if (dropdown && !dropdown.contains(e.target as Node)) {
       showDropdown.value = false;
     }
@@ -243,29 +249,29 @@ function handleClickOutside(e: MouseEvent) {
 }
 
 // Update service config
-function updateConfig() {
+function _updateConfig() {
   onionSkinning.setConfig(config);
-  selectedPreset.value = ''; // Clear preset when manually editing
-  emit('configChanged', { ...config });
+  selectedPreset.value = ""; // Clear preset when manually editing
+  emit("configChanged", { ...config });
 }
 
 // Apply preset
-function applyPreset() {
+function _applyPreset() {
   if (selectedPreset.value) {
     onionSkinning.applyPreset(selectedPreset.value);
     Object.assign(config, onionSkinning.getConfig());
-    emit('configChanged', { ...config });
+    emit("configChanged", { ...config });
   }
 }
 
 // Sync local config with service on mount
 onMounted(() => {
   Object.assign(config, onionSkinning.getConfig());
-  document.addEventListener('click', handleClickOutside);
+  document.addEventListener("click", handleClickOutside);
 });
 
 onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside);
+  document.removeEventListener("click", handleClickOutside);
 });
 
 // Watch for external config changes
@@ -274,7 +280,7 @@ watch(
   (newConfig) => {
     Object.assign(config, newConfig);
   },
-  { deep: true }
+  { deep: true },
 );
 </script>
 

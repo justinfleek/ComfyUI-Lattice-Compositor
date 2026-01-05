@@ -5,10 +5,10 @@
  * Provides context and evaluation for text animator expressions.
  */
 
-import type { ExpressionContext, TextAnimatorContext } from './types';
+import type { ExpressionContext, TextAnimatorContext } from "./types";
 
 // Re-export types
-export type { TextAnimatorContext } from './types';
+export type { TextAnimatorContext } from "./types";
 
 // ============================================================
 // TEXT ANIMATOR CONTEXT
@@ -27,9 +27,9 @@ export function createTextAnimatorContext(
   baseCtx: ExpressionContext,
   text: string,
   charIndex: number,
-  selectorValue: number = 1
+  selectorValue: number = 1,
 ): TextAnimatorContext {
-  const char = text[charIndex] || '';
+  const char = text[charIndex] || "";
 
   // Calculate word and line positions
   let wordIndex = 0;
@@ -40,13 +40,13 @@ export function createTextAnimatorContext(
   let currentLineStart = 0;
 
   for (let i = 0; i <= charIndex && i < text.length; i++) {
-    if (text[i] === ' ' || text[i] === '\t') {
+    if (text[i] === " " || text[i] === "\t") {
       if (i < charIndex) {
         wordIndex++;
         currentWordStart = i + 1;
       }
     }
-    if (text[i] === '\n') {
+    if (text[i] === "\n") {
       if (i < charIndex) {
         lineIndex++;
         currentLineStart = i + 1;
@@ -68,7 +68,7 @@ export function createTextAnimatorContext(
     wordIndex,
     lineIndex,
     charInWord,
-    charInLine
+    charInLine,
   };
 }
 
@@ -83,7 +83,10 @@ export function createTextAnimatorContext(
 export function evaluateTextAnimatorExpression(
   code: string,
   ctx: TextAnimatorContext,
-  evaluateCustomExpression: (code: string, ctx: ExpressionContext) => number | number[] | string
+  evaluateCustomExpression: (
+    code: string,
+    ctx: ExpressionContext,
+  ) => number | number[] | string,
 ): number | number[] | string {
   // Add text animator variables to context
   // BUG-017: Use JSON.stringify to properly escape ALL special characters

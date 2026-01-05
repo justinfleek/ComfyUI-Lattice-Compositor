@@ -6,20 +6,19 @@
  * z-space positioning.
  */
 
-import { storeLogger } from '@/utils/logger';
-import type { Layer, AssetReference, ImageLayerData } from '@/types/project';
 import {
-  getLayerDecompositionService,
-  type DecomposedLayer,
-  type DecompositionOptions,
-} from '@/services/layerDecomposition';
-import {
-  getLLMDepthEstimator,
-  estimateDepthsHeuristic,
-  type LayerAnalysisInput,
   type DepthEstimationResult,
+  estimateDepthsHeuristic,
+  getLLMDepthEstimator,
+  type LayerAnalysisInput,
   type LLMProvider,
-} from '@/services/ai/depthEstimation';
+} from "@/services/ai/depthEstimation";
+import {
+  type DecomposedLayer,
+  getLayerDecompositionService,
+} from "@/services/layerDecomposition";
+import type { AssetReference, ImageLayerData, Layer } from "@/types/project";
+import { storeLogger } from "@/utils/logger";
 
 // ============================================================================
 // Types
@@ -73,17 +72,17 @@ export interface DecompositionResult {
 export async function decomposeImageToLayers(
   store: DecompositionStore,
   imageDataUrl: string,
-  options: DecomposeAndCreateOptions = {}
+  options: DecomposeAndCreateOptions = {},
 ): Promise<DecompositionResult> {
   const {
     numLayers = 4,
     autoDepthEstimation = true,
-    depthProvider = 'openai',
+    depthProvider = "openai",
     zSpaceScale = 500,
     autoUnload = true,
     onProgress,
     groupLayers = true,
-    groupName = 'Decomposed Layers',
+    groupName = "Decomposed Layers",
   } = options;
 
   const service = getLayerDecompositionService();
@@ -91,7 +90,7 @@ export async function decomposeImageToLayers(
 
   try {
     // Step 1: Decompose image using Qwen model
-    onProgress?.('decomposing', 'Decomposing image into layers...', 0);
+    onProgress?.("decomposing", "Decomposing image into layers...", 0);
 
     const decomposed = await service.decomposeWithAutoSetup(
       imageDataUrl,
@@ -100,31 +99,33 @@ export async function decomposeImageToLayers(
         autoUnload,
         generateSemanticLabels: true,
       },
-      onProgress
+      onProgress,
     );
 
     if (!decomposed || decomposed.length === 0) {
-      throw new Error('Decomposition returned no layers');
+      throw new Error("Decomposition returned no layers");
     }
 
     storeLogger.info(`Decomposition complete: ${decomposed.length} layers`);
 
     // Step 2: Prepare layer analysis for depth estimation
-    onProgress?.('analyzing', 'Analyzing layer depths...', 50);
+    onProgress?.("analyzing", "Analyzing layer depths...", 50);
 
-    const layerInputs: LayerAnalysisInput[] = decomposed.map((layer, index) => ({
-      index,
-      label: layer.label,
-      imageDataUrl: layer.image,
-      // Could add alpha coverage analysis here
-    }));
+    const layerInputs: LayerAnalysisInput[] = decomposed.map(
+      (layer, index) => ({
+        index,
+        label: layer.label,
+        imageDataUrl: layer.image,
+        // Could add alpha coverage analysis here
+      }),
+    );
 
     // Step 3: Estimate depths
     let depthResult: DepthEstimationResult;
 
     if (autoDepthEstimation) {
       try {
-        onProgress?.('estimating', 'Estimating layer depths with AI...', 60);
+        onProgress?.("estimating", "Estimating layer depths with AI...", 60);
         const estimator = getLLMDepthEstimator();
         depthResult = await estimator.estimateDepths(layerInputs, {
           provider: depthProvider,
@@ -132,7 +133,10 @@ export async function decomposeImageToLayers(
           includeReasoning: true,
         });
       } catch (depthError) {
-        storeLogger.warn('LLM depth estimation failed, using heuristics:', depthError);
+        storeLogger.warn(
+          "LLM depth estimation failed, using heuristics:",
+          depthError,
+        );
         depthResult = estimateDepthsHeuristic(layerInputs, zSpaceScale);
       }
     } else {
@@ -142,30 +146,41 @@ export async function decomposeImageToLayers(
     // Step 4: Create group layer if requested
     let groupLayerId: string | undefined;
     if (groupLayers) {
-      onProgress?.('creating', 'Creating layer group...', 70);
-      const groupLayer = store.createLayer('null', groupName);
+      onProgress?.("creating", "Creating layer group...", 70);
+      const groupLayer = store.createLayer("null", groupName);
       groupLayerId = groupLayer.id;
     }
 
     // Step 5: Create image layers sorted by depth (farthest first)
-    onProgress?.('creating', 'Creating layers...', 75);
+    onProgress?.("creating", "Creating layers...", 75);
 
     // Sort by depth (higher depth = farther = should be created first to be behind)
-    const sortedLayers = [...decomposed].map((layer, index) => ({
-      decomposed: layer,
-      depth: depthResult.layers.find(d => d.layerIndex === index) || depthResult.layers[index],
-    })).sort((a, b) => (b.depth?.estimatedDepth || 0) - (a.depth?.estimatedDepth || 0));
+    const sortedLayers = [...decomposed]
+      .map((layer, index) => ({
+        decomposed: layer,
+        depth:
+          depthResult.layers.find((d) => d.layerIndex === index) ||
+          depthResult.layers[index],
+      }))
+      .sort(
+        (a, b) =>
+          (b.depth?.estimatedDepth || 0) - (a.depth?.estimatedDepth || 0),
+      );
 
     for (let i = 0; i < sortedLayers.length; i++) {
       const { decomposed: layer, depth } = sortedLayers[i];
 
-      onProgress?.('creating', `Creating layer ${i + 1}/${sortedLayers.length}...`, 75 + (i / sortedLayers.length) * 20);
+      onProgress?.(
+        "creating",
+        `Creating layer ${i + 1}/${sortedLayers.length}...`,
+        75 + (i / sortedLayers.length) * 20,
+      );
 
       const createdLayer = await createLayerFromDecomposed(
         store,
         layer,
         depth?.contentDescription || layer.label,
-        depth?.suggestedZPosition || 0
+        depth?.suggestedZPosition || 0,
       );
 
       if (createdLayer) {
@@ -178,11 +193,13 @@ export async function decomposeImageToLayers(
     }
 
     // Step 6: Finalize
-    onProgress?.('complete', `Created ${createdLayers.length} layers`, 100);
+    onProgress?.("complete", `Created ${createdLayers.length} layers`, 100);
     store.project.meta.modified = new Date().toISOString();
     store.pushHistory();
 
-    storeLogger.info(`Layer decomposition complete: ${createdLayers.length} layers created`);
+    storeLogger.info(
+      `Layer decomposition complete: ${createdLayers.length} layers created`,
+    );
 
     return {
       success: true,
@@ -190,11 +207,10 @@ export async function decomposeImageToLayers(
       groupLayerId,
       depthEstimation: depthResult,
     };
-
   } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-    storeLogger.error('Layer decomposition failed:', error);
-    onProgress?.('error', errorMsg, 0);
+    const errorMsg = error instanceof Error ? error.message : "Unknown error";
+    storeLogger.error("Layer decomposition failed:", error);
+    onProgress?.("error", errorMsg, 0);
 
     return {
       success: false,
@@ -211,7 +227,7 @@ async function createLayerFromDecomposed(
   store: DecompositionStore,
   decomposed: DecomposedLayer,
   name: string,
-  zPosition: number
+  zPosition: number,
 ): Promise<Layer | null> {
   try {
     // Generate asset ID
@@ -223,8 +239,8 @@ async function createLayerFromDecomposed(
     // Create asset reference
     const asset: AssetReference = {
       id: assetId,
-      type: 'image',
-      source: 'generated',
+      type: "image",
+      source: "generated",
       width: dimensions.width,
       height: dimensions.height,
       data: decomposed.image,
@@ -234,13 +250,13 @@ async function createLayerFromDecomposed(
     store.project.assets[assetId] = asset;
 
     // Create image layer
-    const layer = store.createLayer('image', name);
+    const layer = store.createLayer("image", name);
 
     // Set image data
     const imageData: ImageLayerData = {
       assetId,
-      fit: 'none',
-      sourceType: 'generated', // Created by AI decomposition
+      fit: "none",
+      sourceType: "generated", // Created by AI decomposition
     };
     layer.data = imageData;
 
@@ -259,11 +275,12 @@ async function createLayerFromDecomposed(
       };
     }
 
-    storeLogger.info(`Created decomposed layer: ${name} at z=${zPosition.toFixed(0)}`);
+    storeLogger.info(
+      `Created decomposed layer: ${name} at z=${zPosition.toFixed(0)}`,
+    );
     return layer;
-
   } catch (error) {
-    storeLogger.error('Failed to create layer from decomposed:', error);
+    storeLogger.error("Failed to create layer from decomposed:", error);
     return null;
   }
 }
@@ -271,11 +288,14 @@ async function createLayerFromDecomposed(
 /**
  * Get image dimensions from a data URL
  */
-function getImageDimensions(dataUrl: string): Promise<{ width: number; height: number }> {
+function getImageDimensions(
+  dataUrl: string,
+): Promise<{ width: number; height: number }> {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
-    img.onerror = () => reject(new Error('Failed to load image'));
+    img.onload = () =>
+      resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    img.onerror = () => reject(new Error("Failed to load image"));
     img.src = dataUrl;
   });
 }
@@ -308,7 +328,7 @@ export async function checkDecompositionModelStatus(): Promise<{
       downloaded: false,
       loaded: false,
       verified: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? error.message : "Unknown error",
     };
   }
 }
@@ -322,7 +342,7 @@ export async function downloadDecompositionModel(
     bytesDownloaded: number;
     totalBytes: number;
     percent: number;
-  }) => void
+  }) => void,
 ): Promise<{ success: boolean; error?: string }> {
   const service = getLayerDecompositionService();
 
@@ -332,9 +352,10 @@ export async function downloadDecompositionModel(
 
     if (onProgress) {
       stopPolling = service.pollDownloadProgress((progress) => {
-        const percent = progress.total_bytes > 0
-          ? (progress.bytes_downloaded / progress.total_bytes) * 100
-          : 0;
+        const percent =
+          progress.total_bytes > 0
+            ? (progress.bytes_downloaded / progress.total_bytes) * 100
+            : 0;
 
         onProgress({
           stage: progress.stage,
@@ -352,11 +373,10 @@ export async function downloadDecompositionModel(
     stopPolling?.();
 
     return { success: true };
-
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Download failed',
+      error: error instanceof Error ? error.message : "Download failed",
     };
   }
 }
@@ -388,7 +408,7 @@ export async function verifyDecompositionModel(): Promise<{
       filesChecked: 0,
       filesValid: 0,
       filesInvalid: [],
-      message: error instanceof Error ? error.message : 'Verification failed',
+      message: error instanceof Error ? error.message : "Verification failed",
     };
   }
 }

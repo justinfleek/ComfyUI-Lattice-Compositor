@@ -226,7 +226,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 
 interface PathPoint {
   x: number;
@@ -235,7 +235,7 @@ interface PathPoint {
 }
 
 interface PathSuggestion {
-  type: 'camera' | 'spline' | 'particle' | 'layer';
+  type: "camera" | "spline" | "particle" | "layer";
   description?: string;
   points?: PathPoint[];
   pathData?: string;
@@ -250,67 +250,68 @@ interface CameraSuggestion {
   endY: number;
 }
 
-const props = withDefaults(defineProps<{
-  width: number;
-  height: number;
-  suggestions: PathSuggestion[];
-  selectedIndex: number | null;
-  showGrid?: boolean;
-  showPoints?: boolean;
-  showLabels?: boolean;
-  showDepth?: boolean;
-  showLegend?: boolean;
-  showAnimation?: boolean;
-  gridSize?: number;
-}>(), {
-  showGrid: true,
-  showPoints: true,
-  showLabels: true,
-  showDepth: true,
-  showLegend: true,
-  showAnimation: true,
-  gridSize: 50,
-});
+const props = withDefaults(
+  defineProps<{
+    width: number;
+    height: number;
+    suggestions: PathSuggestion[];
+    selectedIndex: number | null;
+    showGrid?: boolean;
+    showPoints?: boolean;
+    showLabels?: boolean;
+    showDepth?: boolean;
+    showLegend?: boolean;
+    showAnimation?: boolean;
+    gridSize?: number;
+  }>(),
+  {
+    showGrid: true,
+    showPoints: true,
+    showLabels: true,
+    showDepth: true,
+    showLegend: true,
+    showAnimation: true,
+    gridSize: 50,
+  },
+);
 
-const emit = defineEmits<{
-  (e: 'select', index: number): void;
-}>();
+const _emit = defineEmits<(e: "select", index: number) => void>();
 
-const overlayRef = ref<HTMLElement | null>(null);
+const _overlayRef = ref<HTMLElement | null>(null);
 const animatedPosition = ref<{ x: number; y: number } | null>(null);
 let animationFrame = 0;
 let animationId: number | null = null;
 
 // Colors for different paths
 const pathColors = [
-  '#4a90d9', // Blue
-  '#d94a4a', // Red
-  '#4ad94a', // Green
-  '#d9d94a', // Yellow
-  '#d94ad9', // Magenta
-  '#4ad9d9', // Cyan
+  "#4a90d9", // Blue
+  "#d94a4a", // Red
+  "#4ad94a", // Green
+  "#d9d94a", // Yellow
+  "#d94ad9", // Magenta
+  "#4ad9d9", // Cyan
 ];
 
 // Computed
-const overlayStyle = computed(() => ({
+const _overlayStyle = computed(() => ({
   width: `${props.width}px`,
   height: `${props.height}px`,
 }));
 
-const cameraSuggestions = computed<CameraSuggestion[]>(() => {
+const _cameraSuggestions = computed<CameraSuggestion[]>(() => {
   return props.suggestions
-    .filter(s => s.type === 'camera' && s.points && s.points.length >= 2)
-    .map(s => ({
-      type: s.description?.split(' ')[0] || 'Camera',
-      startX: s.points![0].x,
-      startY: s.points![0].y,
-      endX: s.points![s.points!.length - 1].x,
-      endY: s.points![s.points!.length - 1].y,
+    .filter((s) => s.type === "camera" && s.points && s.points.length >= 2)
+    .map((s) => ({
+      type: s.description?.split(" ")[0] || "Camera",
+      startX: s.points?.[0].x,
+      startY: s.points?.[0].y,
+      endX: s.points?.[s.points?.length - 1].x,
+      endY: s.points?.[s.points?.length - 1].y,
     }));
 });
 
 // Methods
-function getPathColor(index: number, opacity: number): string {
+function _getPathColor(index: number, opacity: number): string {
   const baseColor = pathColors[index % pathColors.length];
   if (opacity === 1) return baseColor;
 
@@ -322,7 +323,7 @@ function getPathColor(index: number, opacity: number): string {
 }
 
 function pointsToPathData(points: PathPoint[]): string {
-  if (points.length < 2) return '';
+  if (points.length < 2) return "";
 
   // Create smooth cubic bezier path
   let d = `M ${points[0].x} ${points[0].y}`;
@@ -371,7 +372,7 @@ function startAnimation() {
     animationFrame = (animationFrame + 0.5) % (totalLength * 60);
     const t = animationFrame / (totalLength * 60);
     const segmentIndex = Math.min(Math.floor(t * totalLength), totalLength - 1);
-    const segmentT = (t * totalLength) - segmentIndex;
+    const segmentT = t * totalLength - segmentIndex;
 
     const p1 = points[segmentIndex];
     const p2 = points[segmentIndex + 1];
@@ -396,21 +397,28 @@ function stopAnimation() {
 }
 
 // Watch for changes to generate path data
-watch(() => props.suggestions, (newSuggestions) => {
-  for (const suggestion of newSuggestions) {
-    if (suggestion.points && !suggestion.pathData) {
-      suggestion.pathData = pointsToPathData(suggestion.points);
+watch(
+  () => props.suggestions,
+  (newSuggestions) => {
+    for (const suggestion of newSuggestions) {
+      if (suggestion.points && !suggestion.pathData) {
+        suggestion.pathData = pointsToPathData(suggestion.points);
+      }
     }
-  }
-}, { immediate: true, deep: true });
+  },
+  { immediate: true, deep: true },
+);
 
 // Watch for selection changes to animate
-watch(() => props.selectedIndex, () => {
-  stopAnimation();
-  if (props.showAnimation) {
-    startAnimation();
-  }
-});
+watch(
+  () => props.selectedIndex,
+  () => {
+    stopAnimation();
+    if (props.showAnimation) {
+      startAnimation();
+    }
+  },
+);
 
 onMounted(() => {
   if (props.showAnimation && props.selectedIndex !== null) {

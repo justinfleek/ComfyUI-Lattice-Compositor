@@ -1,19 +1,19 @@
-import { test, expect } from '@playwright/test';
-import { CompositorHelper } from '../../helpers/compositor';
+import { test } from "@playwright/test";
+import { CompositorHelper } from "../../helpers/compositor";
 
-test.describe('Tutorial 03: Mesh Deformation - Phases 11-13 (Steps 146-185)', () => {
+test.describe("Tutorial 03: Mesh Deformation - Phases 11-13 (Steps 146-185)", () => {
   let h: CompositorHelper;
 
   test.beforeEach(async ({ page }) => {
     h = new CompositorHelper(page);
-    await page.goto('/');
+    await page.goto("/");
     await page.waitForSelector('[data-testid="app-ready"]');
     await h.newProject();
-    await h.newComposition('Walk_Cycle', 1920, 1080, 30, 2);
-    await h.newSolid('Character');
+    await h.newComposition("Walk_Cycle", 1920, 1080, 30, 2);
+    await h.newSolid("Character");
   });
 
-  test('Phase 11: Loop Expressions (Steps 146-160)', async ({ page }) => {
+  test("Phase 11: Loop Expressions (Steps 146-160)", async ({ page }) => {
     // Setup walk cycle pins
     await h.selectDeformPinTool();
     await h.placePinAtPosition(960, 300);
@@ -22,7 +22,7 @@ test.describe('Tutorial 03: Mesh Deformation - Phases 11-13 (Steps 146-185)', ()
 
     // Create basic animation
     await h.goToStart();
-    await h.enablePinKeyframes(0, 1, 'position');
+    await h.enablePinKeyframes(0, 1, "position");
     await h.goToFrame(30);
     await h.movePinTo(0, 1, 880, 650);
     await h.goToFrame(60);
@@ -30,21 +30,21 @@ test.describe('Tutorial 03: Mesh Deformation - Phases 11-13 (Steps 146-185)', ()
 
     // Step 146-150: Add loop expression
     await h.selectPin(0, 1);
-    await h.openPinExpressions(0, 1, 'position');
+    await h.openPinExpressions(0, 1, "position");
     await h.setExpression('loopOut("cycle")');
     await h.closeExpressionEditor();
 
     // Step 151-155: Verify loop plays continuously
-    await h.goToFrame(90);  // Beyond keyframe range
+    await h.goToFrame(90); // Beyond keyframe range
     // Animation should continue due to loop
 
     // Step 156-160: Add pingpong variation
     await h.selectPin(0, 2);
-    await h.enablePinKeyframes(0, 2, 'position');
+    await h.enablePinKeyframes(0, 2, "position");
     await h.goToStart();
     await h.goToFrame(30);
     await h.movePinTo(0, 2, 1040, 650);
-    await h.openPinExpressions(0, 2, 'position');
+    await h.openPinExpressions(0, 2, "position");
     await h.setExpression('loopOut("pingpong")');
     await h.closeExpressionEditor();
 
@@ -53,7 +53,9 @@ test.describe('Tutorial 03: Mesh Deformation - Phases 11-13 (Steps 146-185)', ()
     await h.redo();
   });
 
-  test('Phase 12: Comprehensive Undo/Redo (Steps 161-175)', async ({ page }) => {
+  test("Phase 12: Comprehensive Undo/Redo (Steps 161-175)", async ({
+    page,
+  }) => {
     // Step 161-165: Build complex rig
     await h.selectDeformPinTool();
     await h.placePinAtPosition(960, 200);
@@ -92,7 +94,7 @@ test.describe('Tutorial 03: Mesh Deformation - Phases 11-13 (Steps 146-185)', ()
     await h.expectPinCount(0, 7);
   });
 
-  test('Phase 13: Save/Load Verification (Steps 176-185)', async ({ page }) => {
+  test("Phase 13: Save/Load Verification (Steps 176-185)", async ({ page }) => {
     // Step 176-178: Build complete character
     await h.selectDeformPinTool();
     await h.placePinAtPosition(960, 200);
@@ -109,7 +111,7 @@ test.describe('Tutorial 03: Mesh Deformation - Phases 11-13 (Steps 146-185)', ()
 
     // Add animation
     await h.goToStart();
-    await h.enablePinKeyframes(0, 0, 'position');
+    await h.enablePinKeyframes(0, 0, "position");
     await h.goToFrame(30);
     await h.movePinTo(0, 0, 980, 220);
 
@@ -125,16 +127,16 @@ test.describe('Tutorial 03: Mesh Deformation - Phases 11-13 (Steps 146-185)', ()
     await h.expectMeshDeformationEffect(0);
   });
 
-  test('DETERMINISM: Pin animation consistency', async ({ page }) => {
+  test("DETERMINISM: Pin animation consistency", async ({ page }) => {
     await h.selectDeformPinTool();
     await h.placePinAtPosition(960, 400);
 
     await h.goToStart();
-    await h.enablePinKeyframes(0, 0, 'position');
+    await h.enablePinKeyframes(0, 0, "position");
     await h.goToFrame(60);
     await h.movePinTo(0, 0, 1000, 450);
 
     // Verify determinism
-    await h.verifyDeterminism(['pin-position'], 30);
+    await h.verifyDeterminism(["pin-position"], 30);
   });
 });

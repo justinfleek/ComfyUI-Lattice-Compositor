@@ -73,27 +73,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
-import type {
-  Camera3D,
-  ViewType,
-  ViewLayout,
-  ViewportState,
-  CustomViewState,
-  ViewOptions
-} from '../../types/camera';
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { useCompositorStore } from "@/stores/compositorStore";
 import {
+  generate3DAxes,
   generateCameraVisualization,
+  generateGrid,
   getCameraViewMatrices,
   getOrthoViewMatrices,
-  projectToScreen,
-  generate3DAxes,
-  generateGrid,
   type LineSegment,
-  type ViewMatrices
-} from '../../services/camera3DVisualization';
-import { vec3 } from '../../services/math3d';
-import { useCompositorStore } from '@/stores/compositorStore';
+  projectToScreen,
+  type ViewMatrices,
+} from "../../services/camera3DVisualization";
+import { vec3 } from "../../services/math3d";
+import type {
+  Camera3D,
+  CustomViewState,
+  ViewLayout,
+  ViewType,
+} from "../../types/camera";
 
 // Store connection
 const store = useCompositorStore();
@@ -108,22 +106,27 @@ const viewOptions = computed(() => store.viewOptions);
 // Build layers array from store layers
 const layers = computed(() => {
   return store.layers
-    .filter(l => l.type !== 'camera') // Exclude camera layers themselves
-    .map(l => ({
+    .filter((l) => l.type !== "camera") // Exclude camera layers themselves
+    .map((l) => ({
       id: l.id,
       name: l.name,
       position: {
         x: l.transform.position.value.x,
         y: l.transform.position.value.y,
-        z: 0 // 2D layers at z=0
+        z: 0, // 2D layers at z=0
       },
-      selected: store.selectedLayerIds.includes(l.id)
+      selected: store.selectedLayerIds.includes(l.id),
     }));
 });
 
 // Canvas refs for each view
 const canvasRefs = ref<(HTMLCanvasElement | null)[]>([null, null, null, null]);
-const contexts = ref<(CanvasRenderingContext2D | null)[]>([null, null, null, null]);
+const contexts = ref<(CanvasRenderingContext2D | null)[]>([
+  null,
+  null,
+  null,
+  null,
+]);
 
 // Interaction state
 const isDragging = ref(false);
@@ -132,62 +135,72 @@ const dragViewIndex = ref(0);
 const dragButton = ref(0);
 
 // Layout options
-const layoutOptions = [
-  { value: '1-view' as ViewLayout, label: '1 View', icon: '□' },
-  { value: '2-view-horizontal' as ViewLayout, label: '2 Views Horizontal', icon: '⬚' },
-  { value: '2-view-vertical' as ViewLayout, label: '2 Views Vertical', icon: '⬛' },
-  { value: '4-view' as ViewLayout, label: '4 Views', icon: '⊞' },
+const _layoutOptions = [
+  { value: "1-view" as ViewLayout, label: "1 View", icon: "□" },
+  {
+    value: "2-view-horizontal" as ViewLayout,
+    label: "2 Views Horizontal",
+    icon: "⬚",
+  },
+  {
+    value: "2-view-vertical" as ViewLayout,
+    label: "2 Views Vertical",
+    icon: "⬛",
+  },
+  { value: "4-view" as ViewLayout, label: "4 Views", icon: "⊞" },
 ];
 
 // Computed properties
-const layout = computed(() => viewportState.value.layout);
+const _layout = computed(() => viewportState.value.layout);
 const activeViewIndex = computed(() => viewportState.value.activeViewIndex);
 const customViews = computed(() => viewportState.value.customViews);
 
 const activeViews = computed(() => {
   switch (viewportState.value.layout) {
-    case '1-view':
+    case "1-view":
       return [viewportState.value.views[0]];
-    case '2-view-horizontal':
-    case '2-view-vertical':
+    case "2-view-horizontal":
+    case "2-view-vertical":
       return viewportState.value.views.slice(0, 2);
-    case '4-view':
+    case "4-view":
       return viewportState.value.views.slice(0, 4);
     default:
       return [viewportState.value.views[0]];
   }
 });
 
-function setCanvasRef(el: HTMLCanvasElement | null, index: number) {
+function _setCanvasRef(el: HTMLCanvasElement | null, index: number) {
   canvasRefs.value[index] = el;
   if (el) {
-    contexts.value[index] = el.getContext('2d');
+    contexts.value[index] = el.getContext("2d");
   }
 }
 
-function isCustomView(viewType: ViewType): viewType is 'custom-1' | 'custom-2' | 'custom-3' {
-  return viewType.startsWith('custom-');
+function isCustomView(
+  viewType: ViewType,
+): viewType is "custom-1" | "custom-2" | "custom-3" {
+  return viewType.startsWith("custom-");
 }
 
-function getViewDisplayName(viewType: ViewType): string {
+function _getViewDisplayName(viewType: ViewType): string {
   const names: Record<ViewType, string> = {
-    'active-camera': 'Camera',
-    'custom-1': 'Custom 1',
-    'custom-2': 'Custom 2',
-    'custom-3': 'Custom 3',
-    'front': 'Front',
-    'back': 'Back',
-    'left': 'Left',
-    'right': 'Right',
-    'top': 'Top',
-    'bottom': 'Bottom',
+    "active-camera": "Camera",
+    "custom-1": "Custom 1",
+    "custom-2": "Custom 2",
+    "custom-3": "Custom 3",
+    front: "Front",
+    back: "Back",
+    left: "Left",
+    right: "Right",
+    top: "Top",
+    bottom: "Bottom",
   };
   return names[viewType];
 }
 
-function setActiveView(index: number) {
+function _setActiveView(index: number) {
   store.updateViewportState({
-    activeViewIndex: index
+    activeViewIndex: index,
   });
 }
 
@@ -195,65 +208,77 @@ function updateViewType(index: number, viewType: ViewType) {
   const newViews = [...viewportState.value.views];
   newViews[index] = viewType;
   store.updateViewportState({
-    views: newViews
+    views: newViews,
   });
 }
 
-function setLayout(newLayout: ViewLayout) {
+function _setLayout(newLayout: ViewLayout) {
   // Default views for 4-view layout: active-camera, top, front, right
-  const defaultFourViews: ViewType[] = ['active-camera', 'top', 'front', 'right'];
+  const defaultFourViews: ViewType[] = [
+    "active-camera",
+    "top",
+    "front",
+    "right",
+  ];
 
   // Ensure we have enough views
-  let newViews = [...viewportState.value.views];
+  const newViews = [...viewportState.value.views];
   while (newViews.length < 4) {
     // Fill with appropriate defaults from our 4-view preset
-    newViews.push(defaultFourViews[newViews.length] || 'front');
+    newViews.push(defaultFourViews[newViews.length] || "front");
   }
 
   store.updateViewportState({
     layout: newLayout,
     views: newViews,
-    activeViewIndex: Math.min(viewportState.value.activeViewIndex, getViewCount(newLayout) - 1)
+    activeViewIndex: Math.min(
+      viewportState.value.activeViewIndex,
+      getViewCount(newLayout) - 1,
+    ),
   });
 }
 
 function getViewCount(layout: ViewLayout): number {
   switch (layout) {
-    case '1-view': return 1;
-    case '2-view-horizontal':
-    case '2-view-vertical': return 2;
-    case '4-view': return 4;
-    default: return 1;
+    case "1-view":
+      return 1;
+    case "2-view-horizontal":
+    case "2-view-vertical":
+      return 2;
+    case "4-view":
+      return 4;
+    default:
+      return 1;
   }
 }
 
-function resetCustomView(viewType: 'custom-1' | 'custom-2' | 'custom-3') {
+function resetCustomView(viewType: "custom-1" | "custom-2" | "custom-3") {
   const defaultView: CustomViewState = {
     orbitCenter: { x: compWidth.value / 2, y: compHeight.value / 2, z: 0 },
     orbitDistance: 2000,
     orbitPhi: 60,
     orbitTheta: 45,
     orthoZoom: 1,
-    orthoOffset: { x: 0, y: 0 }
+    orthoOffset: { x: 0, y: 0 },
   };
 
   store.updateViewportState({
     customViews: {
       ...viewportState.value.customViews,
-      [viewType]: defaultView
-    }
+      [viewType]: defaultView,
+    },
   });
 }
 
 // Mouse interaction handlers
-function onCanvasMouseDown(e: MouseEvent, viewIndex: number) {
+function _onCanvasMouseDown(e: MouseEvent, viewIndex: number) {
   isDragging.value = true;
   dragStartPos.value = { x: e.clientX, y: e.clientY };
   dragViewIndex.value = viewIndex;
   dragButton.value = e.button;
 
-  document.addEventListener('mousemove', onCanvasMouseMove);
-  document.addEventListener('mouseup', onCanvasMouseUp);
+  document.addEventListener("mousemove", onCanvasMouseMove);
+  document.addEventListener("mouseup", onCanvasMouseUp);
 }
 
 function onCanvasMouseMove(e: MouseEvent) {
@@ -279,9 +304,9 @@ function onCanvasMouseMove(e: MouseEvent) {
           [viewType]: {
             ...customView,
             orbitTheta: newTheta,
-            orbitPhi: newPhi
-          }
-        }
+            orbitPhi: newPhi,
+          },
+        },
       });
     } else if (dragButton.value === 1 || dragButton.value === 2) {
       // Middle/right button: pan
@@ -292,10 +317,10 @@ function onCanvasMouseMove(e: MouseEvent) {
             ...customView,
             orthoOffset: {
               x: customView.orthoOffset.x + dx,
-              y: customView.orthoOffset.y + dy
-            }
-          }
-        }
+              y: customView.orthoOffset.y + dy,
+            },
+          },
+        },
       });
     }
   }
@@ -303,11 +328,11 @@ function onCanvasMouseMove(e: MouseEvent) {
 
 function onCanvasMouseUp() {
   isDragging.value = false;
-  document.removeEventListener('mousemove', onCanvasMouseMove);
-  document.removeEventListener('mouseup', onCanvasMouseUp);
+  document.removeEventListener("mousemove", onCanvasMouseMove);
+  document.removeEventListener("mouseup", onCanvasMouseUp);
 }
 
-function onCanvasWheel(e: WheelEvent, viewIndex: number) {
+function _onCanvasWheel(e: WheelEvent, viewIndex: number) {
   e.preventDefault();
 
   const viewType = activeViews.value[viewIndex];
@@ -321,9 +346,9 @@ function onCanvasWheel(e: WheelEvent, viewIndex: number) {
         ...viewportState.value.customViews,
         [viewType]: {
           ...customView,
-          orbitDistance: customView.orbitDistance * zoomFactor
-        }
-      }
+          orbitDistance: customView.orbitDistance * zoomFactor,
+        },
+      },
     });
   }
 }
@@ -343,17 +368,30 @@ function render() {
     ctx.scale(dpr, dpr);
 
     // Clear
-    ctx.fillStyle = '#1a1a1a';
+    ctx.fillStyle = "#1a1a1a";
     ctx.fillRect(0, 0, rect.width, rect.height);
 
     // Get view matrices
     let matrices: ViewMatrices;
-    if (viewType === 'active-camera' && camera.value) {
-      matrices = getCameraViewMatrices(camera.value, compWidth.value, compHeight.value);
+    if (viewType === "active-camera" && camera.value) {
+      matrices = getCameraViewMatrices(
+        camera.value,
+        compWidth.value,
+        compHeight.value,
+      );
     } else if (isCustomView(viewType)) {
-      matrices = getOrthoViewMatrices(viewType, compWidth.value, compHeight.value, customViews.value[viewType]);
+      matrices = getOrthoViewMatrices(
+        viewType,
+        compWidth.value,
+        compHeight.value,
+        customViews.value[viewType],
+      );
     } else {
-      matrices = getOrthoViewMatrices(viewType, compWidth.value, compHeight.value);
+      matrices = getOrthoViewMatrices(
+        viewType,
+        compWidth.value,
+        compHeight.value,
+      );
     }
 
     // Collect all lines to draw
@@ -366,7 +404,9 @@ function render() {
 
     // 3D axes
     if (viewOptions.value.show3DReferenceAxes) {
-      lines.push(...generate3DAxes(vec3(compWidth.value / 2, compHeight.value / 2, 0)));
+      lines.push(
+        ...generate3DAxes(vec3(compWidth.value / 2, compHeight.value / 2, 0)),
+      );
     }
 
     // Composition bounds
@@ -377,15 +417,16 @@ function render() {
         compHeight.value,
         false,
         true,
-        false
+        false,
       );
       lines.push(...viz.compositionBounds);
     }
 
     // Camera visualization (not for active-camera view)
-    if (viewType !== 'active-camera' && camera.value) {
-      const showWireframe = viewOptions.value.cameraWireframes === 'always' ||
-        (viewOptions.value.cameraWireframes === 'selected');
+    if (viewType !== "active-camera" && camera.value) {
+      const showWireframe =
+        viewOptions.value.cameraWireframes === "always" ||
+        viewOptions.value.cameraWireframes === "selected";
 
       if (showWireframe) {
         const viz = generateCameraVisualization(
@@ -394,7 +435,7 @@ function render() {
           compHeight.value,
           true,
           false,
-          viewOptions.value.showFocalPlane
+          viewOptions.value.showFocalPlane,
         );
         lines.push(...viz.body);
         lines.push(...viz.frustum);
@@ -407,8 +448,18 @@ function render() {
 
     // Draw all lines
     for (const line of lines) {
-      const start = projectToScreen(line.start, matrices.viewProjection, rect.width, rect.height);
-      const end = projectToScreen(line.end, matrices.viewProjection, rect.width, rect.height);
+      const start = projectToScreen(
+        line.start,
+        matrices.viewProjection,
+        rect.width,
+        rect.height,
+      );
+      const end = projectToScreen(
+        line.end,
+        matrices.viewProjection,
+        rect.width,
+        rect.height,
+      );
 
       if (!start.visible && !end.visible) continue;
 
@@ -423,16 +474,21 @@ function render() {
     // Draw layer handles
     if (viewOptions.value.showLayerHandles) {
       for (const layer of layers.value) {
-        const pos = projectToScreen(layer.position, matrices.viewProjection, rect.width, rect.height);
+        const pos = projectToScreen(
+          layer.position,
+          matrices.viewProjection,
+          rect.width,
+          rect.height,
+        );
         if (!pos.visible) continue;
 
         ctx.beginPath();
-        ctx.fillStyle = layer.selected ? '#ffcc00' : '#888888';
+        ctx.fillStyle = layer.selected ? "#ffcc00" : "#888888";
         ctx.arc(pos.x, pos.y, layer.selected ? 6 : 4, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '10px sans-serif';
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "10px sans-serif";
         ctx.fillText(layer.name, pos.x + 8, pos.y + 4);
       }
     }
@@ -441,9 +497,9 @@ function render() {
 
 function createDummyCamera(): Camera3D {
   return {
-    id: 'dummy',
-    name: 'Dummy',
-    type: 'two-node',
+    id: "dummy",
+    name: "Dummy",
+    type: "two-node",
     position: { x: compWidth.value / 2, y: compHeight.value / 2, z: -1500 },
     pointOfInterest: { x: compWidth.value / 2, y: compHeight.value / 2, z: 0 },
     orientation: { x: 0, y: 0, z: 0 },
@@ -454,30 +510,30 @@ function createDummyCamera(): Camera3D {
     focalLength: 50,
     angleOfView: 39.6,
     filmSize: 36,
-    measureFilmSize: 'horizontal',
+    measureFilmSize: "horizontal",
     depthOfField: {
       enabled: false,
       focusDistance: 1500,
       aperture: 50,
       fStop: 2.8,
       blurLevel: 1,
-      lockToZoom: false
+      lockToZoom: false,
     },
     iris: {
       shape: 7,
       rotation: 0,
       roundness: 0,
       aspectRatio: 1,
-      diffractionFringe: 0
+      diffractionFringe: 0,
     },
     highlight: {
       gain: 0,
       threshold: 1,
-      saturation: 1
+      saturation: 1,
     },
-    autoOrient: 'off',
+    autoOrient: "off",
     nearClip: 1,
-    farClip: 10000
+    farClip: 10000,
   };
 }
 
@@ -492,9 +548,11 @@ function animate() {
 // Keyboard shortcut handler
 function onKeyDown(e: KeyboardEvent) {
   // Only handle if viewport is focused (not typing in input)
-  if (document.activeElement?.tagName === 'INPUT' ||
-      document.activeElement?.tagName === 'TEXTAREA' ||
-      document.activeElement?.tagName === 'SELECT') {
+  if (
+    document.activeElement?.tagName === "INPUT" ||
+    document.activeElement?.tagName === "TEXTAREA" ||
+    document.activeElement?.tagName === "SELECT"
+  ) {
     return;
   }
 
@@ -502,62 +560,82 @@ function onKeyDown(e: KeyboardEvent) {
 
   // Numpad shortcuts for view presets
   switch (e.code) {
-    case 'Numpad1':
+    case "Numpad1":
       if (e.ctrlKey) {
         // Ctrl+Numpad1 = Back view
-        updateViewType(activeViewIndex.value, 'back');
+        updateViewType(activeViewIndex.value, "back");
       } else {
         // Numpad1 = Front view
-        updateViewType(activeViewIndex.value, 'front');
+        updateViewType(activeViewIndex.value, "front");
       }
       e.preventDefault();
       break;
 
-    case 'Numpad3':
+    case "Numpad3":
       if (e.ctrlKey) {
         // Ctrl+Numpad3 = Left view
-        updateViewType(activeViewIndex.value, 'left');
+        updateViewType(activeViewIndex.value, "left");
       } else {
         // Numpad3 = Right view
-        updateViewType(activeViewIndex.value, 'right');
+        updateViewType(activeViewIndex.value, "right");
       }
       e.preventDefault();
       break;
 
-    case 'Numpad7':
+    case "Numpad7":
       if (e.ctrlKey) {
         // Ctrl+Numpad7 = Bottom view
-        updateViewType(activeViewIndex.value, 'bottom');
+        updateViewType(activeViewIndex.value, "bottom");
       } else {
         // Numpad7 = Top view
-        updateViewType(activeViewIndex.value, 'top');
+        updateViewType(activeViewIndex.value, "top");
       }
       e.preventDefault();
       break;
 
-    case 'Numpad0':
+    case "Numpad0":
       // Numpad0 = Active camera view
-      updateViewType(activeViewIndex.value, 'active-camera');
+      updateViewType(activeViewIndex.value, "active-camera");
       e.preventDefault();
       break;
 
-    case 'Numpad5':
+    case "Numpad5":
       // Numpad5 = Toggle between ortho and perspective (switch to custom)
       if (!isCustomView(activeView)) {
         // Switch to custom view with current orientation
-        const targetView = 'custom-1' as const;
+        const targetView = "custom-1" as const;
         let theta = 0;
         let phi = 90;
 
         // Map current ortho view to spherical coords
         switch (activeView) {
-          case 'front': theta = 0; phi = 90; break;
-          case 'back': theta = 180; phi = 90; break;
-          case 'left': theta = -90; phi = 90; break;
-          case 'right': theta = 90; phi = 90; break;
-          case 'top': theta = 0; phi = 1; break;
-          case 'bottom': theta = 0; phi = 179; break;
-          default: theta = 45; phi = 60;
+          case "front":
+            theta = 0;
+            phi = 90;
+            break;
+          case "back":
+            theta = 180;
+            phi = 90;
+            break;
+          case "left":
+            theta = -90;
+            phi = 90;
+            break;
+          case "right":
+            theta = 90;
+            phi = 90;
+            break;
+          case "top":
+            theta = 0;
+            phi = 1;
+            break;
+          case "bottom":
+            theta = 0;
+            phi = 179;
+            break;
+          default:
+            theta = 45;
+            phi = 60;
         }
 
         store.updateViewportState({
@@ -567,8 +645,8 @@ function onKeyDown(e: KeyboardEvent) {
               ...viewportState.value.customViews[targetView],
               orbitTheta: theta,
               orbitPhi: phi,
-            }
-          }
+            },
+          },
         });
         updateViewType(activeViewIndex.value, targetView);
       } else {
@@ -577,22 +655,22 @@ function onKeyDown(e: KeyboardEvent) {
         const phi = customViews.value[activeView].orbitPhi;
 
         // Determine closest ortho view
-        let closestView: ViewType = 'front';
+        let closestView: ViewType = "front";
         if (phi < 30) {
-          closestView = 'top';
+          closestView = "top";
         } else if (phi > 150) {
-          closestView = 'bottom';
+          closestView = "bottom";
         } else {
           // Check theta for horizontal views
           const normalizedTheta = ((theta % 360) + 360) % 360;
           if (normalizedTheta >= 315 || normalizedTheta < 45) {
-            closestView = 'front';
+            closestView = "front";
           } else if (normalizedTheta >= 45 && normalizedTheta < 135) {
-            closestView = 'right';
+            closestView = "right";
           } else if (normalizedTheta >= 135 && normalizedTheta < 225) {
-            closestView = 'back';
+            closestView = "back";
           } else {
-            closestView = 'left';
+            closestView = "left";
           }
         }
         updateViewType(activeViewIndex.value, closestView);
@@ -600,14 +678,14 @@ function onKeyDown(e: KeyboardEvent) {
       e.preventDefault();
       break;
 
-    case 'NumpadDecimal':
-    case 'Period':
+    case "NumpadDecimal":
+    case "Period":
       // Focus on selected layer
       focusOnSelectedLayer();
       e.preventDefault();
       break;
 
-    case 'Home':
+    case "Home":
       // Reset view
       if (isCustomView(activeView)) {
         resetCustomView(activeView);
@@ -615,41 +693,41 @@ function onKeyDown(e: KeyboardEvent) {
       e.preventDefault();
       break;
 
-    case 'KeyG':
+    case "KeyG":
       // Toggle grid
       if (!e.ctrlKey && !e.metaKey) {
         store.updateViewOptions({
-          showGrid: !viewOptions.value.showGrid
+          showGrid: !viewOptions.value.showGrid,
         });
         e.preventDefault();
       }
       break;
 
-    case 'KeyH':
+    case "KeyH":
       // Toggle layer handles
       if (!e.ctrlKey && !e.metaKey) {
         store.updateViewOptions({
-          showLayerHandles: !viewOptions.value.showLayerHandles
+          showLayerHandles: !viewOptions.value.showLayerHandles,
         });
         e.preventDefault();
       }
       break;
 
-    case 'KeyC':
+    case "KeyC":
       // Toggle composition bounds
       if (!e.ctrlKey && !e.metaKey && !e.shiftKey) {
         store.updateViewOptions({
-          showCompositionBounds: !viewOptions.value.showCompositionBounds
+          showCompositionBounds: !viewOptions.value.showCompositionBounds,
         });
         e.preventDefault();
       }
       break;
 
-    case 'KeyA':
+    case "KeyA":
       // Toggle 3D axes
       if (!e.ctrlKey && !e.metaKey && e.shiftKey) {
         store.updateViewOptions({
-          show3DReferenceAxes: !viewOptions.value.show3DReferenceAxes
+          show3DReferenceAxes: !viewOptions.value.show3DReferenceAxes,
         });
         e.preventDefault();
       }
@@ -659,7 +737,9 @@ function onKeyDown(e: KeyboardEvent) {
 
 function focusOnSelectedLayer() {
   // Find first selected layer
-  const selectedLayer = store.layers.find(l => store.selectedLayerIds.includes(l.id));
+  const selectedLayer = store.layers.find((l) =>
+    store.selectedLayerIds.includes(l.id),
+  );
   if (!selectedLayer) return;
 
   // Get layer bounds (simplified - assumes layer at origin with 100x100 size)
@@ -677,8 +757,8 @@ function focusOnSelectedLayer() {
           ...customViews.value[activeView],
           orbitCenter: { x: pos.x + width / 2, y: pos.y + height / 2, z: 0 },
           orbitDistance: Math.max(width, height) * 3, // Zoom to fit
-        }
-      }
+        },
+      },
     });
   }
 }
@@ -686,19 +766,23 @@ function focusOnSelectedLayer() {
 onMounted(() => {
   animate();
   // Add keyboard listener
-  window.addEventListener('keydown', onKeyDown);
+  window.addEventListener("keydown", onKeyDown);
 });
 
 onUnmounted(() => {
   cancelAnimationFrame(animationId);
   // Remove keyboard listener
-  window.removeEventListener('keydown', onKeyDown);
+  window.removeEventListener("keydown", onKeyDown);
 });
 
 // Re-render when store values change
-watch([camera, viewportState, viewOptions, layers], () => {
-  // Animation loop handles this
-}, { deep: true });
+watch(
+  [camera, viewportState, viewOptions, layers],
+  () => {
+    // Animation loop handles this
+  },
+  { deep: true },
+);
 </script>
 
 <style scoped>

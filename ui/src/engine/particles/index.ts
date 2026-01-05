@@ -11,52 +11,45 @@
 
 // Core system
 export {
-  GPUParticleSystem,
   createDefaultConfig,
   createDefaultEmitter,
   createDefaultForceField,
-} from './GPUParticleSystem';
+  GPUParticleSystem,
+} from "./GPUParticleSystem";
 
 // Type exports
 export type {
-  // Core types
-  ParticleGPUData,
-  GPUParticleSystemConfig,
-  ParticleSystemState,
-  ParticleEvent,
-  ParticleEventHandler,
-  ParticleEventType,
-
+  AudioBinding,
+  // Audio types
+  AudioFeature,
+  AvoidanceConfig,
+  EmitterConfig,
   // Emitter types
   EmitterShape,
   EmitterShapeConfig,
-  EmitterConfig,
-
-  // Force field types
-  ForceFieldType,
-  ForceFieldConfig,
-
   // Behavior types
   FlockingConfig,
-  AvoidanceConfig,
-  PathFollowConfig,
-
-  // Sub-emitter types
-  SubEmitterTrigger,
-  SubEmitterConfig,
-
-  // Rendering types
-  ParticleRenderMode,
-  ParticleTextureConfig,
-  ParticleShadowConfig,
-  ParticleLightingConfig,
-  RenderConfig,
-
+  ForceFieldConfig,
+  // Force field types
+  ForceFieldType,
+  GPUParticleSystemConfig,
+  LifetimeModulation,
   // Modulation types
   ModulationCurve,
-  LifetimeModulation,
-
-  // Audio types
-  AudioFeature,
-  AudioBinding,
-} from './types';
+  ParticleEvent,
+  ParticleEventHandler,
+  ParticleEventType,
+  // Core types
+  ParticleGPUData,
+  ParticleLightingConfig,
+  // Rendering types
+  ParticleRenderMode,
+  ParticleShadowConfig,
+  ParticleSystemState,
+  ParticleTextureConfig,
+  PathFollowConfig,
+  RenderConfig,
+  SubEmitterConfig,
+  // Sub-emitter types
+  SubEmitterTrigger,
+} from "./types";

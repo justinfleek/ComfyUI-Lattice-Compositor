@@ -18,12 +18,12 @@
  * Attribution: https://github.com/filliptm/ComfyUI_Fill-Nodes
  */
 import {
-  registerEffectRenderer,
   createMatchingCanvas,
   type EffectStackResult,
-  type EvaluatedEffectParams
-} from '../effectProcessor';
-import { SeededRandom } from '../particleSystem';
+  type EvaluatedEffectParams,
+  registerEffectRenderer,
+} from "../effectProcessor";
+import { SeededRandom } from "../particleSystem";
 
 // ============================================================================
 // PIXEL SORT
@@ -41,15 +41,15 @@ import { SeededRandom } from '../particleSystem';
  */
 export function pixelSortRenderer(
   input: EffectStackResult,
-  params: EvaluatedEffectParams
+  params: EvaluatedEffectParams,
 ): EffectStackResult {
-  const direction = params.direction ?? 'horizontal';
+  const direction = params.direction ?? "horizontal";
   // Validate numeric params (NaN causes visual corruption)
   const rawThreshold = params.threshold ?? 0.25;
   const threshold = Number.isFinite(rawThreshold) ? rawThreshold : 0.25;
   const rawSmoothing = params.smoothing ?? 0.1;
   const smoothing = Number.isFinite(rawSmoothing) ? rawSmoothing : 0.1;
-  const sortBy = params.sort_by ?? 'saturation';
+  const sortBy = params.sort_by ?? "saturation";
   const reverse = params.reverse ?? false;
 
   const output = createMatchingCanvas(input.canvas);
@@ -63,32 +63,39 @@ export function pixelSortRenderer(
     const min = Math.min(r, g, b);
 
     switch (sortBy) {
-      case 'brightness':
+      case "brightness":
         return (r + g + b) / 3;
-      case 'hue': {
+      case "hue": {
         if (max === min) return 0;
         let h = 0;
         if (max === r) h = (g - b) / (max - min);
         else if (max === g) h = 2 + (b - r) / (max - min);
         else h = 4 + (r - g) / (max - min);
-        return ((h * 60) + 360) % 360;
+        return (h * 60 + 360) % 360;
       }
-      case 'saturation':
       default: {
         const l = (max + min) / 2;
         if (max === min) return 0;
-        return l > 0.5 ? (max - min) / (2 - max - min) : (max - min) / (max + min);
+        return l > 0.5
+          ? (max - min) / (2 - max - min)
+          : (max - min) / (max + min);
       }
     }
   };
 
-  const isVertical = direction === 'vertical';
+  const isVertical = direction === "vertical";
   const outerSize = isVertical ? width : height;
   const innerSize = isVertical ? height : width;
 
   for (let outer = 0; outer < outerSize; outer++) {
     // Collect pixels for this row/column
-    const pixels: Array<{ r: number; g: number; b: number; a: number; sortVal: number }> = [];
+    const pixels: Array<{
+      r: number;
+      g: number;
+      b: number;
+      a: number;
+      sortVal: number;
+    }> = [];
 
     for (let inner = 0; inner < innerSize; inner++) {
       const x = isVertical ? outer : inner;
@@ -105,7 +112,7 @@ export function pixelSortRenderer(
         g: data[idx + 1],
         b: data[idx + 2],
         a,
-        sortVal: getSortValue(r, g, b)
+        sortVal: getSortValue(r, g, b),
       });
     }
 
@@ -129,7 +136,9 @@ export function pixelSortRenderer(
     // Sort each interval
     for (const interval of intervals) {
       const segment = pixels.slice(interval.start, interval.end);
-      segment.sort((a, b) => reverse ? b.sortVal - a.sortVal : a.sortVal - b.sortVal);
+      segment.sort((a, b) =>
+        reverse ? b.sortVal - a.sortVal : a.sortVal - b.sortVal,
+      );
 
       for (let i = 0; i < segment.length; i++) {
         pixels[interval.start + i] = segment[i];
@@ -170,14 +179,16 @@ export function pixelSortRenderer(
 export function glitchRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams,
-  frame?: number
+  frame?: number,
 ): EffectStackResult {
   // Validate numeric params (NaN causes visual corruption and bypasses === 0 check)
   const rawGlitchAmount = params.glitch_amount ?? 5;
   const glitchAmount = Number.isFinite(rawGlitchAmount) ? rawGlitchAmount : 5;
   const colorOffset = params.color_offset ?? true;
   const rawBlockSize = params.block_size ?? 8;
-  const blockSize = Number.isFinite(rawBlockSize) ? Math.max(1, rawBlockSize) : 8;
+  const blockSize = Number.isFinite(rawBlockSize)
+    ? Math.max(1, rawBlockSize)
+    : 8;
   const rawSeed = params.seed ?? 12345;
   const seed = Number.isFinite(rawSeed) ? rawSeed : 12345;
   const scanlines = params.scanlines ?? true;
@@ -213,7 +224,7 @@ export function glitchRenderer(
 
       // Shift row
       for (let x = 0; x < width; x++) {
-        const srcX = ((x - shift) % width + width) % width;
+        const srcX = (((x - shift) % width) + width) % width;
         const dstIdx = (row * width + x) * 4;
         const srcIdx = srcX * 4;
 
@@ -291,7 +302,7 @@ export function glitchRenderer(
 export function vhsRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams,
-  frame?: number
+  frame?: number,
 ): EffectStackResult {
   const tracking = params.tracking ?? 0.5;
   const noise = params.noise ?? 0.3;
@@ -338,7 +349,7 @@ export function vhsRenderer(
         }
 
         for (let x = 0; x < width; x++) {
-          const srcX = ((x - shift) % width + width) % width;
+          const srcX = (((x - shift) % width) + width) % width;
           const dstIdx = (row * width + x) * 4;
           const srcIdx = srcX * 4;
 
@@ -370,7 +381,7 @@ export function vhsRenderer(
     for (let y = bandY; y < Math.min(bandY + bandHeight, height); y++) {
       for (let x = 0; x < width; x++) {
         const idx = (y * width + x) * 4;
-        const factor = 0.7 + (y - bandY) / bandHeight * 0.3;
+        const factor = 0.7 + ((y - bandY) / bandHeight) * 0.3;
         data[idx] = Math.floor(data[idx] * factor);
         data[idx + 1] = Math.floor(data[idx + 1] * factor);
         data[idx + 2] = Math.floor(data[idx + 2] * factor);
@@ -419,7 +430,7 @@ export function vhsRenderer(
  */
 export function rgbSplitRenderer(
   input: EffectStackResult,
-  params: EvaluatedEffectParams
+  params: EvaluatedEffectParams,
 ): EffectStackResult {
   const redOffsetX = params.red_offset_x ?? 5;
   const redOffsetY = params.red_offset_y ?? 0;
@@ -427,12 +438,17 @@ export function rgbSplitRenderer(
   const greenOffsetY = params.green_offset_y ?? 0;
   const blueOffsetX = params.blue_offset_x ?? -5;
   const blueOffsetY = params.blue_offset_y ?? 0;
-  const blendMode = params.blend_mode ?? 'screen';
+  const blendMode = params.blend_mode ?? "screen";
 
   // No offset = no change
-  if (redOffsetX === 0 && redOffsetY === 0 &&
-      greenOffsetX === 0 && greenOffsetY === 0 &&
-      blueOffsetX === 0 && blueOffsetY === 0) {
+  if (
+    redOffsetX === 0 &&
+    redOffsetY === 0 &&
+    greenOffsetX === 0 &&
+    greenOffsetY === 0 &&
+    blueOffsetX === 0 &&
+    blueOffsetY === 0
+  ) {
     return input;
   }
 
@@ -464,12 +480,12 @@ export function rgbSplitRenderer(
       let b = data[blueIdx + 2];
 
       // Apply blend mode
-      if (blendMode === 'screen') {
+      if (blendMode === "screen") {
         // Screen blend tends to lighten
-        r = 255 - ((255 - r) * (255 - data[idx]) / 255);
-        g = 255 - ((255 - g) * (255 - data[idx + 1]) / 255);
-        b = 255 - ((255 - b) * (255 - data[idx + 2]) / 255);
-      } else if (blendMode === 'add') {
+        r = 255 - ((255 - r) * (255 - data[idx])) / 255;
+        g = 255 - ((255 - g) * (255 - data[idx + 1])) / 255;
+        b = 255 - ((255 - b) * (255 - data[idx + 2])) / 255;
+      } else if (blendMode === "add") {
         r = Math.min(255, r + data[idx] * 0.3);
         g = Math.min(255, g + data[idx + 1] * 0.3);
         b = Math.min(255, b + data[idx + 2] * 0.3);
@@ -505,12 +521,12 @@ export function rgbSplitRenderer(
 export function scanlinesRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams,
-  frame?: number
+  frame?: number,
 ): EffectStackResult {
   const lineWidth = params.line_width ?? 2;
   const lineSpacing = params.line_spacing ?? 2;
   const opacity = params.opacity ?? 0.3;
-  const direction = params.direction ?? 'horizontal';
+  const direction = params.direction ?? "horizontal";
   const animate = params.animate ?? false;
 
   const output = createMatchingCanvas(input.canvas);
@@ -522,9 +538,9 @@ export function scanlinesRenderer(
   const data = imageData.data;
 
   const totalWidth = lineWidth + lineSpacing;
-  const offset = animate && frame !== undefined ? (frame % totalWidth) : 0;
+  const offset = animate && frame !== undefined ? frame % totalWidth : 0;
 
-  const isHorizontal = direction === 'horizontal';
+  const isHorizontal = direction === "horizontal";
   const outerSize = isHorizontal ? height : width;
 
   for (let outer = 0; outer < outerSize; outer++) {
@@ -563,11 +579,11 @@ export function scanlinesRenderer(
  */
 export function halftoneRenderer(
   input: EffectStackResult,
-  params: EvaluatedEffectParams
+  params: EvaluatedEffectParams,
 ): EffectStackResult {
   const dotSize = Math.max(2, params.dot_size ?? 6);
-  const angle = (params.angle ?? 45) * Math.PI / 180;
-  const colorMode = params.color_mode ?? 'grayscale';
+  const angle = ((params.angle ?? 45) * Math.PI) / 180;
+  const colorMode = params.color_mode ?? "grayscale";
 
   const output = createMatchingCanvas(input.canvas);
   const { width, height } = input.canvas;
@@ -575,7 +591,7 @@ export function halftoneRenderer(
   const data = inputData.data;
 
   // Clear output (white background for halftone)
-  output.ctx.fillStyle = '#ffffff';
+  output.ctx.fillStyle = "#ffffff";
   output.ctx.fillRect(0, 0, width, height);
 
   const cos = Math.cos(angle);
@@ -587,11 +603,18 @@ export function halftoneRenderer(
       // Rotate sample point
       const cx = gx + dotSize / 2;
       const cy = gy + dotSize / 2;
-      const rx = Math.floor(cos * (cx - width / 2) - sin * (cy - height / 2) + width / 2);
-      const ry = Math.floor(sin * (cx - width / 2) + cos * (cy - height / 2) + height / 2);
+      const _rx = Math.floor(
+        cos * (cx - width / 2) - sin * (cy - height / 2) + width / 2,
+      );
+      const _ry = Math.floor(
+        sin * (cx - width / 2) + cos * (cy - height / 2) + height / 2,
+      );
 
       // Get average color in cell
-      let totalR = 0, totalG = 0, totalB = 0, count = 0;
+      let totalR = 0,
+        totalG = 0,
+        totalB = 0,
+        count = 0;
       for (let sy = gy; sy < Math.min(gy + dotSize, height); sy++) {
         for (let sx = gx; sx < Math.min(gx + dotSize, width); sx++) {
           const idx = (sy * width + sx) * 4;
@@ -608,65 +631,71 @@ export function halftoneRenderer(
       const avgG = totalG / count;
       const avgB = totalB / count;
 
-      if (colorMode === 'grayscale') {
+      if (colorMode === "grayscale") {
         const brightness = (avgR + avgG + avgB) / 3 / 255;
-        const radius = (1 - brightness) * dotSize / 2;
+        const radius = ((1 - brightness) * dotSize) / 2;
 
         if (radius > 0.5) {
           output.ctx.beginPath();
           output.ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-          output.ctx.fillStyle = '#000000';
+          output.ctx.fillStyle = "#000000";
           output.ctx.fill();
         }
-      } else if (colorMode === 'rgb') {
+      } else if (colorMode === "rgb") {
         // RGB dots with slight offset
         const offsets = [
           { color: `rgb(${Math.floor(avgR)}, 0, 0)`, dx: -1, dy: 0 },
           { color: `rgb(0, ${Math.floor(avgG)}, 0)`, dx: 0, dy: 1 },
-          { color: `rgb(0, 0, ${Math.floor(avgB)})`, dx: 1, dy: 0 }
+          { color: `rgb(0, 0, ${Math.floor(avgB)})`, dx: 1, dy: 0 },
         ];
 
         for (const { color, dx, dy } of offsets) {
-          const brightness = color === offsets[0].color ? avgR :
-                            color === offsets[1].color ? avgG : avgB;
-          const radius = (brightness / 255) * dotSize / 3;
+          const brightness =
+            color === offsets[0].color
+              ? avgR
+              : color === offsets[1].color
+                ? avgG
+                : avgB;
+          const radius = ((brightness / 255) * dotSize) / 3;
           if (radius > 0.3) {
             output.ctx.beginPath();
             output.ctx.arc(cx + dx * 2, cy + dy * 2, radius, 0, Math.PI * 2);
             output.ctx.fillStyle = color;
-            output.ctx.globalCompositeOperation = 'multiply';
+            output.ctx.globalCompositeOperation = "multiply";
             output.ctx.fill();
-            output.ctx.globalCompositeOperation = 'source-over';
+            output.ctx.globalCompositeOperation = "source-over";
           }
         }
-      } else if (colorMode === 'cmyk') {
+      } else if (colorMode === "cmyk") {
         // Convert to CMYK
-        const r = avgR / 255, g = avgG / 255, b = avgB / 255;
+        const r = avgR / 255,
+          g = avgG / 255,
+          b = avgB / 255;
         const k = 1 - Math.max(r, g, b);
         const c = k < 1 ? (1 - r - k) / (1 - k) : 0;
         const m = k < 1 ? (1 - g - k) / (1 - k) : 0;
         const y = k < 1 ? (1 - b - k) / (1 - k) : 0;
 
         const cmykColors = [
-          { val: c, color: 'cyan', angle: 15 },
-          { val: m, color: 'magenta', angle: 75 },
-          { val: y, color: 'yellow', angle: 0 },
-          { val: k, color: 'black', angle: 45 }
+          { val: c, color: "cyan", angle: 15 },
+          { val: m, color: "magenta", angle: 75 },
+          { val: y, color: "yellow", angle: 0 },
+          { val: k, color: "black", angle: 45 },
         ];
 
         for (const { val, color, angle: a } of cmykColors) {
-          const radius = val * dotSize / 2;
+          const radius = (val * dotSize) / 2;
           if (radius > 0.3) {
-            const da = a * Math.PI / 180;
+            const da = (a * Math.PI) / 180;
             const dcx = cx + Math.cos(da) * dotSize * 0.1;
             const dcy = cy + Math.sin(da) * dotSize * 0.1;
 
             output.ctx.beginPath();
             output.ctx.arc(dcx, dcy, radius, 0, Math.PI * 2);
             output.ctx.fillStyle = color;
-            output.ctx.globalCompositeOperation = 'multiply';
+            output.ctx.globalCompositeOperation = "multiply";
             output.ctx.fill();
-            output.ctx.globalCompositeOperation = 'source-over';
+            output.ctx.globalCompositeOperation = "source-over";
           }
         }
       }
@@ -690,9 +719,9 @@ export function halftoneRenderer(
  */
 export function ditherRenderer(
   input: EffectStackResult,
-  params: EvaluatedEffectParams
+  params: EvaluatedEffectParams,
 ): EffectStackResult {
-  const method = params.method ?? 'ordered';
+  const method = params.method ?? "ordered";
   const levels = Math.max(2, Math.min(256, params.levels ?? 4));
   const matrixSize = params.matrix_size ?? 4;
 
@@ -709,14 +738,14 @@ export function ditherRenderer(
   // Bayer matrices
   const bayer2 = [
     [0, 2],
-    [3, 1]
+    [3, 1],
   ];
 
   const bayer4 = [
     [0, 8, 2, 10],
     [12, 4, 14, 6],
     [3, 11, 1, 9],
-    [15, 7, 13, 5]
+    [15, 7, 13, 5],
   ];
 
   const bayer8 = [
@@ -727,7 +756,7 @@ export function ditherRenderer(
     [3, 35, 11, 43, 1, 33, 9, 41],
     [51, 19, 59, 27, 49, 17, 57, 25],
     [15, 47, 7, 39, 13, 45, 5, 37],
-    [63, 31, 55, 23, 61, 29, 53, 21]
+    [63, 31, 55, 23, 61, 29, 53, 21],
   ];
 
   const matrix = matrixSize === 2 ? bayer2 : matrixSize === 8 ? bayer8 : bayer4;
@@ -738,18 +767,22 @@ export function ditherRenderer(
     return Math.round(val / step) * step;
   };
 
-  if (method === 'ordered') {
+  if (method === "ordered") {
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         const idx = (y * width + x) * 4;
-        const threshold = (matrix[y % matrix.length][x % matrix[0].length] / matrixMax - 0.5) * (256 / levels);
+        const threshold =
+          (matrix[y % matrix.length][x % matrix[0].length] / matrixMax - 0.5) *
+          (256 / levels);
 
         for (let c = 0; c < 3; c++) {
-          data[idx + c] = quantize(Math.max(0, Math.min(255, data[idx + c] + threshold)));
+          data[idx + c] = quantize(
+            Math.max(0, Math.min(255, data[idx + c] + threshold)),
+          );
         }
       }
     }
-  } else if (method === 'floyd_steinberg') {
+  } else if (method === "floyd_steinberg") {
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         const idx = (y * width + x) * 4;
@@ -763,21 +796,21 @@ export function ditherRenderer(
 
           // Distribute error
           if (x + 1 < width) {
-            data[(y * width + x + 1) * 4 + c] += error * 7 / 16;
+            data[(y * width + x + 1) * 4 + c] += (error * 7) / 16;
           }
           if (y + 1 < height) {
             if (x > 0) {
-              data[((y + 1) * width + x - 1) * 4 + c] += error * 3 / 16;
+              data[((y + 1) * width + x - 1) * 4 + c] += (error * 3) / 16;
             }
-            data[((y + 1) * width + x) * 4 + c] += error * 5 / 16;
+            data[((y + 1) * width + x) * 4 + c] += (error * 5) / 16;
             if (x + 1 < width) {
-              data[((y + 1) * width + x + 1) * 4 + c] += error * 1 / 16;
+              data[((y + 1) * width + x + 1) * 4 + c] += (error * 1) / 16;
             }
           }
         }
       }
     }
-  } else if (method === 'atkinson') {
+  } else if (method === "atkinson") {
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         const idx = (y * width + x) * 4;
@@ -791,9 +824,12 @@ export function ditherRenderer(
 
           // Atkinson distribution (only 6/8 of error)
           const offsets = [
-            [1, 0], [2, 0],
-            [-1, 1], [0, 1], [1, 1],
-            [0, 2]
+            [1, 0],
+            [2, 0],
+            [-1, 1],
+            [0, 1],
+            [1, 1],
+            [0, 2],
           ];
 
           for (const [dx, dy] of offsets) {
@@ -834,7 +870,7 @@ export function ditherRenderer(
 export function rippleRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams,
-  frame?: number
+  frame?: number,
 ): EffectStackResult {
   const amplitude = params.amplitude ?? 10;
   const wavelength = params.wavelength ?? 50;
@@ -848,7 +884,7 @@ export function rippleRenderer(
     phase = (phase + frame * 5) % 360;
   }
 
-  const phaseRad = phase * Math.PI / 180;
+  const phaseRad = (phase * Math.PI) / 180;
 
   if (amplitude === 0) return input;
 
@@ -870,8 +906,12 @@ export function rippleRenderer(
       const dist = Math.sqrt(dx * dx + dy * dy);
 
       // Calculate displacement
-      const decayFactor = decay > 0 ? Math.exp(-dist / maxDist * decay * 5) : 1;
-      const wave = Math.sin(dist / wavelength * Math.PI * 2 + phaseRad) * amplitude * decayFactor;
+      const decayFactor =
+        decay > 0 ? Math.exp((-dist / maxDist) * decay * 5) : 1;
+      const wave =
+        Math.sin((dist / wavelength) * Math.PI * 2 + phaseRad) *
+        amplitude *
+        decayFactor;
 
       // Displace perpendicular to radius (radial ripple)
       const angle = Math.atan2(dy, dx);
@@ -910,9 +950,9 @@ export function rippleRenderer(
  */
 export function embossRenderer(
   input: EffectStackResult,
-  params: EvaluatedEffectParams
+  params: EvaluatedEffectParams,
 ): EffectStackResult {
-  const direction = (params.direction ?? 135) * Math.PI / 180;
+  const direction = ((params.direction ?? 135) * Math.PI) / 180;
   const height = Math.max(1, params.height ?? 3);
   const amount = params.amount ?? 100;
 
@@ -965,7 +1005,7 @@ export function embossRenderer(
  */
 export function findEdgesRenderer(
   input: EffectStackResult,
-  params: EvaluatedEffectParams
+  params: EvaluatedEffectParams,
 ): EffectStackResult {
   const invert = params.invert ?? false;
   const blend = (params.blend_with_original ?? 0) / 100;
@@ -983,9 +1023,12 @@ export function findEdgesRenderer(
 
   for (let y = 1; y < height - 1; y++) {
     for (let x = 1; x < width - 1; x++) {
-      let gxR = 0, gyR = 0;
-      let gxG = 0, gyG = 0;
-      let gxB = 0, gyB = 0;
+      let gxR = 0,
+        gyR = 0;
+      let gxG = 0,
+        gyG = 0;
+      let gxB = 0,
+        gyB = 0;
 
       for (let ky = -1; ky <= 1; ky++) {
         for (let kx = -1; kx <= 1; kx++) {
@@ -1038,7 +1081,7 @@ export function findEdgesRenderer(
  */
 export function mosaicRenderer(
   input: EffectStackResult,
-  params: EvaluatedEffectParams
+  params: EvaluatedEffectParams,
 ): EffectStackResult {
   const hBlocks = Math.max(2, params.horizontal_blocks ?? 10);
   const vBlocks = Math.max(2, params.vertical_blocks ?? 10);
@@ -1062,7 +1105,10 @@ export function mosaicRenderer(
       const y2 = Math.floor((by + 1) * blockH);
 
       // Average color in block
-      let totalR = 0, totalG = 0, totalB = 0, count = 0;
+      let totalR = 0,
+        totalG = 0,
+        totalB = 0,
+        count = 0;
       for (let y = y1; y < y2 && y < height; y++) {
         for (let x = x1; x < x2 && x < width; x++) {
           const idx = (y * width + x) * 4;
@@ -1091,15 +1137,15 @@ export function mosaicRenderer(
  * Register all stylize effect renderers
  */
 export function registerStylizeEffects(): void {
-  registerEffectRenderer('pixel-sort', pixelSortRenderer);
-  registerEffectRenderer('glitch', glitchRenderer);
-  registerEffectRenderer('vhs', vhsRenderer);
-  registerEffectRenderer('rgb-split', rgbSplitRenderer);
-  registerEffectRenderer('scanlines', scanlinesRenderer);
-  registerEffectRenderer('halftone', halftoneRenderer);
-  registerEffectRenderer('dither', ditherRenderer);
-  registerEffectRenderer('ripple', rippleRenderer);
-  registerEffectRenderer('emboss', embossRenderer);
-  registerEffectRenderer('find-edges', findEdgesRenderer);
-  registerEffectRenderer('mosaic', mosaicRenderer);
+  registerEffectRenderer("pixel-sort", pixelSortRenderer);
+  registerEffectRenderer("glitch", glitchRenderer);
+  registerEffectRenderer("vhs", vhsRenderer);
+  registerEffectRenderer("rgb-split", rgbSplitRenderer);
+  registerEffectRenderer("scanlines", scanlinesRenderer);
+  registerEffectRenderer("halftone", halftoneRenderer);
+  registerEffectRenderer("dither", ditherRenderer);
+  registerEffectRenderer("ripple", rippleRenderer);
+  registerEffectRenderer("emboss", embossRenderer);
+  registerEffectRenderer("find-edges", findEdgesRenderer);
+  registerEffectRenderer("mosaic", mosaicRenderer);
 }

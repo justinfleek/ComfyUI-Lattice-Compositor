@@ -12,9 +12,9 @@
  * 5. Triangulate using Bowyer-Watson algorithm
  */
 
-import { createLogger } from '@/utils/logger';
+import { createLogger } from "@/utils/logger";
 
-const logger = createLogger('AlphaToMesh');
+const logger = createLogger("AlphaToMesh");
 
 // ============================================================================
 // TYPES
@@ -68,7 +68,7 @@ export interface AlphaToMeshOptions {
  */
 export function generateMeshFromAlpha(
   imageData: ImageData,
-  options: AlphaToMeshOptions = {}
+  options: AlphaToMeshOptions = {},
 ): MeshFromAlphaResult {
   const {
     triangleCount: targetTriangles = 200,
@@ -79,7 +79,9 @@ export function generateMeshFromAlpha(
 
   const { width, height, data } = imageData;
 
-  logger.debug(`Generating mesh from alpha: ${width}x${height}, target triangles: ${targetTriangles}`);
+  logger.debug(
+    `Generating mesh from alpha: ${width}x${height}, target triangles: ${targetTriangles}`,
+  );
 
   // Step 1: Extract alpha mask and find bounds
   const alphaMask = extractAlphaMask(data, width, height, alphaThreshold);
@@ -87,7 +89,7 @@ export function generateMeshFromAlpha(
 
   if (bounds.width === 0 || bounds.height === 0) {
     // No alpha content - return minimal mesh covering full image
-    logger.warn('No alpha content found, creating full-image mesh');
+    logger.warn("No alpha content found, creating full-image mesh");
     return createFullImageMesh(width, height);
   }
 
@@ -97,7 +99,7 @@ export function generateMeshFromAlpha(
     width,
     height,
     bounds,
-    minBoundarySpacing
+    minBoundarySpacing,
   );
 
   // Step 3: Apply expansion to boundary points
@@ -106,7 +108,7 @@ export function generateMeshFromAlpha(
     alphaMask,
     width,
     height,
-    expansion
+    expansion,
   );
 
   // Step 4: Generate interior points for triangle density
@@ -116,14 +118,14 @@ export function generateMeshFromAlpha(
     height,
     bounds,
     targetTriangles,
-    expandedBoundary.length
+    expandedBoundary.length,
   );
 
   // Combine all points
   const allPoints = [...expandedBoundary, ...interiorPoints];
 
   if (allPoints.length < 3) {
-    logger.warn('Not enough points for triangulation, creating minimal mesh');
+    logger.warn("Not enough points for triangulation, creating minimal mesh");
     return createFullImageMesh(width, height);
   }
 
@@ -131,7 +133,7 @@ export function generateMeshFromAlpha(
   const triangles = delaunayTriangulate(allPoints);
 
   if (triangles.length === 0) {
-    logger.warn('Triangulation failed, creating minimal mesh');
+    logger.warn("Triangulation failed, creating minimal mesh");
     return createFullImageMesh(width, height);
   }
 
@@ -149,7 +151,9 @@ export function generateMeshFromAlpha(
     triangleIndices[i * 3 + 2] = triangles[i].c;
   }
 
-  logger.debug(`Mesh generated: ${allPoints.length} vertices, ${triangles.length} triangles`);
+  logger.debug(
+    `Mesh generated: ${allPoints.length} vertices, ${triangles.length} triangles`,
+  );
 
   return {
     vertices,
@@ -176,7 +180,7 @@ function extractAlphaMask(
   data: Uint8ClampedArray,
   width: number,
   height: number,
-  threshold: number
+  threshold: number,
 ): boolean[] {
   const mask = new Array<boolean>(width * height);
   for (let i = 0; i < width * height; i++) {
@@ -192,8 +196,15 @@ function extractAlphaMask(
 function findAlphaBounds(
   mask: boolean[],
   width: number,
-  height: number
-): { minX: number; minY: number; maxX: number; maxY: number; width: number; height: number } {
+  height: number,
+): {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+  width: number;
+  height: number;
+} {
   let minX = width;
   let minY = height;
   let maxX = 0;
@@ -233,7 +244,7 @@ function extractBoundaryPoints(
   width: number,
   height: number,
   bounds: { minX: number; minY: number; maxX: number; maxY: number },
-  minSpacing: number
+  minSpacing: number,
 ): Point2D[] {
   const boundaryPixels: Point2D[] = [];
 
@@ -245,10 +256,14 @@ function extractBoundaryPoints(
 
       // Check if this pixel is on the boundary (has a non-solid neighbor)
       const hasEmptyNeighbor =
-        (x === 0 || !mask[idx - 1]) ||           // left
-        (x === width - 1 || !mask[idx + 1]) ||   // right
-        (y === 0 || !mask[idx - width]) ||       // top
-        (y === height - 1 || !mask[idx + width]); // bottom
+        x === 0 ||
+        !mask[idx - 1] || // left
+        x === width - 1 ||
+        !mask[idx + 1] || // right
+        y === 0 ||
+        !mask[idx - width] || // top
+        y === height - 1 ||
+        !mask[idx + width]; // bottom
 
       if (hasEmptyNeighbor) {
         boundaryPixels.push({ x, y });
@@ -304,11 +319,11 @@ function expandBoundary(
   mask: boolean[],
   width: number,
   height: number,
-  expansion: number
+  expansion: number,
 ): Point2D[] {
   if (expansion <= 0) return points;
 
-  return points.map(p => {
+  return points.map((p) => {
     // Calculate outward normal by sampling neighborhood
     const normal = calculateOutwardNormal(p, mask, width, height);
 
@@ -327,7 +342,7 @@ function calculateOutwardNormal(
   point: Point2D,
   mask: boolean[],
   width: number,
-  height: number
+  height: number,
 ): Point2D {
   const { x, y } = point;
   let nx = 0;
@@ -375,9 +390,16 @@ function generateInteriorPoints(
   mask: boolean[],
   width: number,
   height: number,
-  bounds: { minX: number; minY: number; maxX: number; maxY: number; width: number; height: number },
+  bounds: {
+    minX: number;
+    minY: number;
+    maxX: number;
+    maxY: number;
+    width: number;
+    height: number;
+  },
   targetTriangles: number,
-  boundaryPointCount: number
+  boundaryPointCount: number,
 ): Point2D[] {
   // Estimate needed interior points
   // Roughly: triangles ≈ 2 * vertices - 5 (for convex hull)
@@ -432,10 +454,10 @@ function delaunayTriangulate(points: Point2D[]): Triangle[] {
   }
 
   // Create super triangle that encompasses all points
-  const minX = Math.min(...points.map(p => p.x));
-  const maxX = Math.max(...points.map(p => p.x));
-  const minY = Math.min(...points.map(p => p.y));
-  const maxY = Math.max(...points.map(p => p.y));
+  const minX = Math.min(...points.map((p) => p.x));
+  const maxX = Math.max(...points.map((p) => p.x));
+  const minY = Math.min(...points.map((p) => p.y));
+  const maxY = Math.max(...points.map((p) => p.y));
 
   const dx = maxX - minX;
   const dy = maxY - minY;
@@ -451,7 +473,9 @@ function delaunayTriangulate(points: Point2D[]): Triangle[] {
   const superIndices = [points.length, points.length + 1, points.length + 2];
 
   // Initial triangle is the super triangle
-  let triangles: Triangle[] = [{ a: superIndices[0], b: superIndices[1], c: superIndices[2] }];
+  let triangles: Triangle[] = [
+    { a: superIndices[0], b: superIndices[1], c: superIndices[2] },
+  ];
 
   // Add each point one at a time
   for (let i = 0; i < points.length; i++) {
@@ -461,7 +485,14 @@ function delaunayTriangulate(points: Point2D[]): Triangle[] {
 
     // Find all triangles whose circumcircle contains the point
     for (const tri of triangles) {
-      if (isPointInCircumcircle(point, allPoints[tri.a], allPoints[tri.b], allPoints[tri.c])) {
+      if (
+        isPointInCircumcircle(
+          point,
+          allPoints[tri.a],
+          allPoints[tri.b],
+          allPoints[tri.c],
+        )
+      ) {
         badTriangles.push(tri);
       }
     }
@@ -503,7 +534,7 @@ function delaunayTriangulate(points: Point2D[]): Triangle[] {
     }
 
     // Remove bad triangles
-    triangles = triangles.filter(t => !badTriangles.includes(t));
+    triangles = triangles.filter((t) => !badTriangles.includes(t));
 
     // Create new triangles from polygon edges to new point
     for (const edge of polygon) {
@@ -513,10 +544,10 @@ function delaunayTriangulate(points: Point2D[]): Triangle[] {
 
   // Remove triangles that include super triangle vertices
   return triangles.filter(
-    t =>
+    (t) =>
       !superIndices.includes(t.a) &&
       !superIndices.includes(t.b) &&
-      !superIndices.includes(t.c)
+      !superIndices.includes(t.c),
   );
 }
 
@@ -527,7 +558,7 @@ function isPointInCircumcircle(
   point: Point2D,
   a: Point2D,
   b: Point2D,
-  c: Point2D
+  c: Point2D,
 ): boolean {
   const ax = a.x - point.x;
   const ay = a.y - point.y;
@@ -542,8 +573,7 @@ function isPointInCircumcircle(
     (cx * cx + cy * cy) * (ax * by - bx * ay);
 
   // Counter-clockwise orientation means positive det is inside
-  const orientation =
-    (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+  const orientation = (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
 
   return orientation > 0 ? det > 0 : det < 0;
 }
@@ -555,7 +585,10 @@ function isPointInCircumcircle(
 /**
  * Create a simple mesh covering the full image (fallback)
  */
-function createFullImageMesh(width: number, height: number): MeshFromAlphaResult {
+function createFullImageMesh(
+  width: number,
+  height: number,
+): MeshFromAlphaResult {
   // Create a simple grid mesh
   const cols = 4;
   const rows = 4;

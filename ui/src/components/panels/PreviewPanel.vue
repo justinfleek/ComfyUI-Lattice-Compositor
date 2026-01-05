@@ -160,24 +160,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import { storeToRefs } from 'pinia';
-import type { ParticleLayer } from '@/engine/layers/ParticleLayer';
-import type { LatticeEngine } from '@/engine/LatticeEngine';
+import { storeToRefs } from "pinia";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import type { LatticeEngine } from "@/engine/LatticeEngine";
+import type { ParticleLayer } from "@/engine/layers/ParticleLayer";
+import { useCompositorStore } from "@/stores/compositorStore";
 
 const props = defineProps<{
   engine?: LatticeEngine | null;
 }>();
 
 const store = useCompositorStore();
-const {
-  currentFrame,
-  fps,
-  frameCount,
-  layers,
-  isPlaying,
-} = storeToRefs(store);
+const { currentFrame, fps, frameCount, layers, isPlaying } = storeToRefs(store);
 
 // Playback state
 const loopPlayback = ref(true);
@@ -199,50 +193,50 @@ const adaptiveQuality = ref(true);
 const cacheStats = ref<Map<string, { cachedFrames: number }>>(new Map());
 
 // Computed
-const formattedTime = computed(() => {
+const _formattedTime = computed(() => {
   const seconds = currentFrame.value / fps.value;
   const minutes = Math.floor(seconds / 60);
   const secs = (seconds % 60).toFixed(2);
-  return `${minutes}:${secs.padStart(5, '0')}`;
+  return `${minutes}:${secs.padStart(5, "0")}`;
 });
 
-const cacheProgressText = computed(() => {
-  if (!isCaching.value) return '';
+const _cacheProgressText = computed(() => {
+  if (!isCaching.value) return "";
   return `${currentCachingFrame.value} / ${totalFramesToCache.value}`;
 });
 
 const particleLayers = computed(() => {
-  return layers.value.filter(l => l.type === 'particles');
+  return layers.value.filter((l) => l.type === "particles");
 });
 
 // Methods
-function togglePlayback() {
+function _togglePlayback() {
   store.togglePlayback();
 }
 
-function goToStart() {
+function _goToStart() {
   store.setFrame(renderRangeStart.value);
 }
 
-function goToEnd() {
+function _goToEnd() {
   store.setFrame(renderRangeEnd.value - 1);
 }
 
-function stepForward() {
+function _stepForward() {
   const next = Math.min(currentFrame.value + 1, frameCount.value - 1);
   store.setFrame(next);
 }
 
-function stepBackward() {
+function _stepBackward() {
   const prev = Math.max(currentFrame.value - 1, 0);
   store.setFrame(prev);
 }
 
-function getCacheCount(layerId: string): number {
+function _getCacheCount(layerId: string): number {
   return cacheStats.value.get(layerId)?.cachedFrames ?? 0;
 }
 
-async function cacheRenderRange() {
+async function _cacheRenderRange() {
   if (isCaching.value) return;
 
   const particleLayerObjects = getParticleLayerObjects();
@@ -262,7 +256,7 @@ async function cacheRenderRange() {
         (current, total) => {
           currentCachingFrame.value = current;
           cacheProgress.value = (current / total) * 100;
-        }
+        },
       );
 
       // Update cache stats for this layer
@@ -270,14 +264,14 @@ async function cacheRenderRange() {
       cacheStats.value.set(layer.id, { cachedFrames: stats.cachedFrames });
     }
   } catch (error) {
-    console.error('Error caching particle frames:', error);
+    console.error("Error caching particle frames:", error);
   } finally {
     isCaching.value = false;
     cacheProgress.value = 100;
   }
 }
 
-function clearAllCaches() {
+function _clearAllCaches() {
   const particleLayerObjects = getParticleLayerObjects();
   for (const layer of particleLayerObjects) {
     layer.clearCache();
@@ -292,7 +286,7 @@ function getParticleLayerObjects(): ParticleLayer[] {
   const result: ParticleLayer[] = [];
   for (const layerData of particleLayers.value) {
     const layer = props.engine.getLayer(layerData.id);
-    if (layer && 'preCacheFrames' in layer) {
+    if (layer && "preCacheFrames" in layer) {
       result.push(layer as ParticleLayer);
     }
   }
@@ -308,11 +302,15 @@ function updateCacheStats() {
 }
 
 // Initialize render range from composition
-watch(frameCount, (newCount) => {
-  if (renderRangeEnd.value > newCount) {
-    renderRangeEnd.value = newCount;
-  }
-}, { immediate: true });
+watch(
+  frameCount,
+  (newCount) => {
+    if (renderRangeEnd.value > newCount) {
+      renderRangeEnd.value = newCount;
+    }
+  },
+  { immediate: true },
+);
 
 // Update cache stats periodically
 let statsInterval: number | null = null;

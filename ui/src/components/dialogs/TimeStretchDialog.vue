@@ -115,9 +115,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import type { Layer, VideoData, NestedCompData } from '@/types/project';
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { useCompositorStore } from "@/stores/compositorStore";
+import type { Layer, NestedCompData, VideoData } from "@/types/project";
 
 const props = defineProps<{
   visible: boolean;
@@ -125,48 +125,51 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: 'close'): void;
-  (e: 'applied'): void;
+  (e: "close"): void;
+  (e: "applied"): void;
 }>();
 
 const store = useCompositorStore();
 
 // State
 const stretchFactor = ref(100);
-const holdInPlace = ref<'in-point' | 'current-frame' | 'out-point'>('in-point');
+const holdInPlace = ref<"in-point" | "current-frame" | "out-point">("in-point");
 const reversePlayback = ref(false);
 const originalDuration = ref(0);
 const currentStretchFactor = ref(100);
 
 // Speed presets
-const speedPresets = [
-  { label: '25%', value: 400 },   // Quarter speed
-  { label: '50%', value: 200 },   // Half speed
-  { label: '100%', value: 100 },  // Normal
-  { label: '200%', value: 50 },   // Double speed
-  { label: '400%', value: 25 },   // 4x speed
+const _speedPresets = [
+  { label: "25%", value: 400 }, // Quarter speed
+  { label: "50%", value: 200 }, // Half speed
+  { label: "100%", value: 100 }, // Normal
+  { label: "200%", value: 50 }, // Double speed
+  { label: "400%", value: 25 }, // 4x speed
 ];
 
 // Computed
 const layer = computed<Layer | undefined>(() => {
-  return store.layers.find(l => l.id === props.layerId);
+  return store.layers.find((l) => l.id === props.layerId);
 });
 
-const newDuration = computed(() => {
+const _newDuration = computed(() => {
   return originalDuration.value * (stretchFactor.value / 100);
 });
 
-const effectiveSpeed = computed(() => {
-  const speed = 100 / stretchFactor.value * 100;
+const _effectiveSpeed = computed(() => {
+  const speed = (100 / stretchFactor.value) * 100;
   return reversePlayback.value ? -speed : speed;
 });
 
 // Initialize when dialog opens
-watch(() => props.visible, (visible) => {
-  if (visible && layer.value) {
-    initializeFromLayer();
-  }
-});
+watch(
+  () => props.visible,
+  (visible) => {
+    if (visible && layer.value) {
+      initializeFromLayer();
+    }
+  },
+);
 
 function initializeFromLayer() {
   if (!layer.value) return;
@@ -180,7 +183,7 @@ function initializeFromLayer() {
   originalDuration.value = (endFrame - startFrame) / fps;
 
   // Get current speed/stretch factor
-  if ('speed' in data && data.speed) {
+  if ("speed" in data && data.speed) {
     currentStretchFactor.value = 100 / data.speed;
     stretchFactor.value = currentStretchFactor.value;
     reversePlayback.value = data.speed < 0;
@@ -191,45 +194,48 @@ function initializeFromLayer() {
   }
 }
 
-function updatePreview() {
+function _updatePreview() {
   // Preview calculations are automatic via computed properties
 }
 
-function reset() {
+function _reset() {
   stretchFactor.value = 100;
   reversePlayback.value = false;
-  holdInPlace.value = 'in-point';
+  holdInPlace.value = "in-point";
 }
 
 function cancel() {
-  emit('close');
+  emit("close");
 }
 
 function apply() {
   if (!layer.value) return;
 
   const speed = (reversePlayback.value ? -1 : 1) * (100 / stretchFactor.value);
-  const fps = store.fps || 30;
+  const _fps = store.fps || 30;
 
   // Calculate new layer bounds based on hold in place
   let newStartFrame = layer.value.startFrame ?? 0;
   let newEndFrame = layer.value.endFrame ?? store.frameCount;
   const currentDurationFrames = newEndFrame - newStartFrame;
-  const newDurationFrames = Math.round(currentDurationFrames * (stretchFactor.value / currentStretchFactor.value));
+  const newDurationFrames = Math.round(
+    currentDurationFrames * (stretchFactor.value / currentStretchFactor.value),
+  );
 
   switch (holdInPlace.value) {
-    case 'in-point':
+    case "in-point":
       // Stretch from start
       newEndFrame = newStartFrame + newDurationFrames;
       break;
-    case 'current-frame':
+    case "current-frame": {
       // Stretch around current frame
       const currentFrame = store.currentFrame;
       const ratio = (currentFrame - newStartFrame) / currentDurationFrames;
       newStartFrame = Math.round(currentFrame - ratio * newDurationFrames);
       newEndFrame = newStartFrame + newDurationFrames;
       break;
-    case 'out-point':
+    }
+    case "out-point":
       // Stretch from end
       newStartFrame = newEndFrame - newDurationFrames;
       break;
@@ -245,34 +251,34 @@ function apply() {
     speed,
   });
 
-  emit('applied');
-  emit('close');
+  emit("applied");
+  emit("close");
 }
 
-function formatDuration(seconds: number): string {
+function _formatDuration(seconds: number): string {
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
   const frames = Math.floor((seconds % 1) * (store.fps || 30));
-  return `${mins}:${secs.toString().padStart(2, '0')}:${frames.toString().padStart(2, '0')}`;
+  return `${mins}:${secs.toString().padStart(2, "0")}:${frames.toString().padStart(2, "0")}`;
 }
 
 // Keyboard shortcut handler
 function handleKeyDown(e: KeyboardEvent) {
   if (!props.visible) return;
 
-  if (e.key === 'Escape') {
+  if (e.key === "Escape") {
     cancel();
-  } else if (e.key === 'Enter' && !e.shiftKey) {
+  } else if (e.key === "Enter" && !e.shiftKey) {
     apply();
   }
 }
 
 onMounted(() => {
-  document.addEventListener('keydown', handleKeyDown);
+  document.addEventListener("keydown", handleKeyDown);
 });
 
 onUnmounted(() => {
-  document.removeEventListener('keydown', handleKeyDown);
+  document.removeEventListener("keydown", handleKeyDown);
 });
 </script>
 

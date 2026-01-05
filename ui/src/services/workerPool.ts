@@ -10,12 +10,12 @@
  */
 
 import type {
+  ParticleStepPayload,
+  ParticleStepResult,
   WorkerMessage,
   WorkerMessageType,
   WorkerResponse,
-  ParticleStepPayload,
-  ParticleStepResult,
-} from '@/workers/computeWorker';
+} from "@/workers/computeWorker";
 
 // ============================================================================
 // TYPES
@@ -50,14 +50,19 @@ export interface WorkerPoolConfig {
 export class WorkerPool {
   private workers: WorkerState[] = [];
   private pendingTasks: Map<string, PendingTask> = new Map();
-  private taskQueue: Array<{ message: WorkerMessage; resolve: (r: unknown) => void; reject: (e: Error) => void }> = [];
+  private taskQueue: Array<{
+    message: WorkerMessage;
+    resolve: (r: unknown) => void;
+    reject: (e: Error) => void;
+  }> = [];
   private nextTaskId = 0;
   private config: Required<WorkerPoolConfig>;
   private isDisposed = false;
 
   constructor(config: WorkerPoolConfig = {}) {
     this.config = {
-      workerCount: config.workerCount ?? Math.max(2, navigator.hardwareConcurrency - 1),
+      workerCount:
+        config.workerCount ?? Math.max(2, navigator.hardwareConcurrency - 1),
       taskTimeout: config.taskTimeout ?? 30000,
       recycleAfterTasks: config.recycleAfterTasks ?? 1000,
     };
@@ -79,8 +84,8 @@ export class WorkerPool {
    */
   private spawnWorker(): void {
     const worker = new Worker(
-      new URL('@/workers/computeWorker.ts', import.meta.url),
-      { type: 'module' }
+      new URL("@/workers/computeWorker.ts", import.meta.url),
+      { type: "module" },
     );
 
     const state: WorkerState = {
@@ -94,7 +99,7 @@ export class WorkerPool {
     };
 
     worker.onerror = (error) => {
-      console.error('Worker error:', error);
+      console.error("Worker error:", error);
       this.handleWorkerError(state, error);
     };
 
@@ -104,7 +109,10 @@ export class WorkerPool {
   /**
    * Handle worker message
    */
-  private handleWorkerMessage(state: WorkerState, response: WorkerResponse): void {
+  private handleWorkerMessage(
+    state: WorkerState,
+    response: WorkerResponse,
+  ): void {
     state.busy = false;
     state.taskCount++;
 
@@ -120,7 +128,7 @@ export class WorkerPool {
       if (response.success) {
         pending.resolve(response.result);
       } else {
-        pending.reject(new Error(response.error || 'Unknown worker error'));
+        pending.reject(new Error(response.error || "Unknown worker error"));
       }
     }
 
@@ -136,7 +144,7 @@ export class WorkerPool {
 
     // Reject all pending tasks for this worker
     // (in practice, we don't track which worker has which task, so we just log)
-    console.error('Worker crashed:', error.message);
+    console.error("Worker crashed:", error.message);
 
     // Recycle the crashed worker
     this.recycleWorker(state);
@@ -196,7 +204,7 @@ export class WorkerPool {
     state: WorkerState,
     message: WorkerMessage,
     resolve: (r: unknown) => void,
-    reject: (e: Error) => void
+    reject: (e: Error) => void,
   ): void {
     state.busy = true;
 
@@ -214,7 +222,11 @@ export class WorkerPool {
       const task = this.pendingTasks.get(message.id);
       if (task) {
         this.pendingTasks.delete(message.id);
-        task.reject(new Error(`Task ${message.type} timed out after ${this.config.taskTimeout}ms`));
+        task.reject(
+          new Error(
+            `Task ${message.type} timed out after ${this.config.taskTimeout}ms`,
+          ),
+        );
         state.busy = false;
         this.processQueue();
       }
@@ -229,7 +241,7 @@ export class WorkerPool {
   private execute<T>(type: WorkerMessageType, payload: unknown): Promise<T> {
     return new Promise((resolve, reject) => {
       if (this.isDisposed) {
-        reject(new Error('WorkerPool has been disposed'));
+        reject(new Error("WorkerPool has been disposed"));
         return;
       }
 
@@ -241,10 +253,19 @@ export class WorkerPool {
 
       const worker = this.getAvailableWorker();
       if (worker) {
-        this.dispatchToWorker(worker, message, resolve as (r: unknown) => void, reject);
+        this.dispatchToWorker(
+          worker,
+          message,
+          resolve as (r: unknown) => void,
+          reject,
+        );
       } else {
         // Queue the task
-        this.taskQueue.push({ message, resolve: resolve as (r: unknown) => void, reject });
+        this.taskQueue.push({
+          message,
+          resolve: resolve as (r: unknown) => void,
+          reject,
+        });
       }
     });
   }
@@ -256,43 +277,54 @@ export class WorkerPool {
   /**
    * Step particle simulation
    */
-  async stepParticles(payload: ParticleStepPayload): Promise<ParticleStepResult> {
-    return this.execute<ParticleStepResult>('PARTICLE_STEP', payload);
+  async stepParticles(
+    payload: ParticleStepPayload,
+  ): Promise<ParticleStepResult> {
+    return this.execute<ParticleStepResult>("PARTICLE_STEP", payload);
   }
 
   /**
    * Evaluate a bezier curve at parameter t
    */
-  async evaluateBezier(points: Array<{ x: number; y: number }>, t: number): Promise<{ x: number; y: number }> {
-    return this.execute('BEZIER_EVALUATE', { points, t });
+  async evaluateBezier(
+    points: Array<{ x: number; y: number }>,
+    t: number,
+  ): Promise<{ x: number; y: number }> {
+    return this.execute("BEZIER_EVALUATE", { points, t });
   }
 
   /**
    * Compute arc length table for a bezier curve
    */
-  async computeArcLengthTable(points: Array<{ x: number; y: number }>, samples: number): Promise<number[]> {
-    return this.execute('BEZIER_ARC_LENGTH', { points, samples });
+  async computeArcLengthTable(
+    points: Array<{ x: number; y: number }>,
+    samples: number,
+  ): Promise<number[]> {
+    return this.execute("BEZIER_ARC_LENGTH", { points, samples });
   }
 
   /**
    * Apply box blur to image data
    */
   async blurImage(imageData: ImageData, radius: number): Promise<ImageData> {
-    return this.execute('IMAGE_BLUR', { imageData, radius });
+    return this.execute("IMAGE_BLUR", { imageData, radius });
   }
 
   /**
    * Apply threshold to image data
    */
-  async thresholdImage(imageData: ImageData, threshold: number): Promise<ImageData> {
-    return this.execute('IMAGE_THRESHOLD', { imageData, threshold });
+  async thresholdImage(
+    imageData: ImageData,
+    threshold: number,
+  ): Promise<ImageData> {
+    return this.execute("IMAGE_THRESHOLD", { imageData, threshold });
   }
 
   /**
    * Compute SHA-256 hash
    */
   async computeHash(data: string | ArrayBuffer): Promise<string> {
-    return this.execute('COMPUTE_HASH', { data });
+    return this.execute("COMPUTE_HASH", { data });
   }
 
   /**
@@ -306,7 +338,7 @@ export class WorkerPool {
   } {
     return {
       workerCount: this.workers.length,
-      busyWorkers: this.workers.filter(w => w.busy).length,
+      busyWorkers: this.workers.filter((w) => w.busy).length,
       pendingTasks: this.pendingTasks.size,
       queuedTasks: this.taskQueue.length,
     };
@@ -319,14 +351,14 @@ export class WorkerPool {
     this.isDisposed = true;
 
     // Reject all pending tasks
-    for (const [id, task] of this.pendingTasks) {
-      task.reject(new Error('WorkerPool disposed'));
+    for (const [_id, task] of this.pendingTasks) {
+      task.reject(new Error("WorkerPool disposed"));
     }
     this.pendingTasks.clear();
 
     // Clear queue
     for (const task of this.taskQueue) {
-      task.reject(new Error('WorkerPool disposed'));
+      task.reject(new Error("WorkerPool disposed"));
     }
     this.taskQueue = [];
 

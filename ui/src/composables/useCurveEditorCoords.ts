@@ -5,7 +5,7 @@
  * Handles transformation between frame/value space and screen pixel space.
  */
 
-import type { Keyframe, AnimatableProperty } from '@/types/project';
+import type { AnimatableProperty, Keyframe } from "@/types/project";
 
 export interface CurveViewState {
   frameStart: number;
@@ -27,7 +27,7 @@ export const DEFAULT_CURVE_MARGIN: CurveMargin = {
   top: 10,
   right: 10,
   bottom: 10,
-  left: 10
+  left: 10,
 };
 
 // ============================================================
@@ -41,10 +41,12 @@ export function frameToScreenX(
   frame: number,
   viewState: CurveViewState,
   canvasWidth: number,
-  margin: CurveMargin = DEFAULT_CURVE_MARGIN
+  margin: CurveMargin = DEFAULT_CURVE_MARGIN,
 ): number {
   const graphWidth = canvasWidth - margin.left - margin.right;
-  const t = (frame - viewState.frameStart) / (viewState.frameEnd - viewState.frameStart);
+  const t =
+    (frame - viewState.frameStart) /
+    (viewState.frameEnd - viewState.frameStart);
   return margin.left + t * graphWidth;
 }
 
@@ -55,7 +57,7 @@ export function screenXToFrame(
   screenX: number,
   viewState: CurveViewState,
   canvasWidth: number,
-  margin: CurveMargin = DEFAULT_CURVE_MARGIN
+  margin: CurveMargin = DEFAULT_CURVE_MARGIN,
 ): number {
   const graphWidth = canvasWidth - margin.left - margin.right;
   const t = (screenX - margin.left) / graphWidth;
@@ -69,10 +71,11 @@ export function valueToScreenY(
   value: number,
   viewState: CurveViewState,
   canvasHeight: number,
-  margin: CurveMargin = DEFAULT_CURVE_MARGIN
+  margin: CurveMargin = DEFAULT_CURVE_MARGIN,
 ): number {
   const graphHeight = canvasHeight - margin.top - margin.bottom;
-  const t = (value - viewState.valueMin) / (viewState.valueMax - viewState.valueMin);
+  const t =
+    (value - viewState.valueMin) / (viewState.valueMax - viewState.valueMin);
   return canvasHeight - margin.bottom - t * graphHeight;
 }
 
@@ -83,7 +86,7 @@ export function screenYToValue(
   screenY: number,
   viewState: CurveViewState,
   canvasHeight: number,
-  margin: CurveMargin = DEFAULT_CURVE_MARGIN
+  margin: CurveMargin = DEFAULT_CURVE_MARGIN,
 ): number {
   const graphHeight = canvasHeight - margin.top - margin.bottom;
   const t = (canvasHeight - margin.bottom - screenY) / graphHeight;
@@ -101,7 +104,7 @@ export function getKeyframeScreenX(
   kf: Keyframe<any>,
   viewState: CurveViewState,
   canvasWidth: number,
-  margin?: CurveMargin
+  margin?: CurveMargin,
 ): number {
   return frameToScreenX(kf.frame, viewState, canvasWidth, margin);
 }
@@ -110,11 +113,11 @@ export function getKeyframeScreenX(
  * Get screen Y coordinate for a keyframe
  */
 export function getKeyframeScreenY(
-  prop: AnimatableProperty<any>,
+  _prop: AnimatableProperty<any>,
   kf: Keyframe<any>,
   viewState: CurveViewState,
   canvasHeight: number,
-  margin?: CurveMargin
+  margin?: CurveMargin,
 ): number {
   const value = getNumericValue(kf.value);
   return valueToScreenY(value, viewState, canvasHeight, margin);
@@ -124,8 +127,8 @@ export function getKeyframeScreenY(
  * Extract numeric value from keyframe value (handles number and object types)
  */
 export function getNumericValue(value: any): number {
-  if (typeof value === 'number') return value;
-  if (typeof value === 'object') return value.x ?? value.y ?? value.z ?? 0;
+  if (typeof value === "number") return value;
+  if (typeof value === "object") return value.x ?? value.y ?? value.z ?? 0;
   return 0;
 }
 
@@ -133,12 +136,17 @@ export function getNumericValue(value: any): number {
  * Get display value for a keyframe (for UI input fields)
  */
 export function getKeyframeDisplayValue(
-  selection: { propId: string; index: number; keyframe: Keyframe<any> } | undefined
+  selection:
+    | { propId: string; index: number; keyframe: Keyframe<any> }
+    | undefined,
 ): number {
   if (!selection) return 0;
   const value = selection.keyframe.value;
-  return typeof value === 'number' ? value :
-    typeof value === 'object' ? (value.x ?? 0) : 0;
+  return typeof value === "number"
+    ? value
+    : typeof value === "object"
+      ? (value.x ?? 0)
+      : 0;
 }
 
 // ============================================================
@@ -153,7 +161,7 @@ export function getOutHandleX(
   kfIndex: number,
   viewState: CurveViewState,
   canvasWidth: number,
-  margin?: CurveMargin
+  margin?: CurveMargin,
 ): number {
   const kf = prop.keyframes[kfIndex];
   if (!kf || !kf.outHandle?.enabled) {
@@ -171,11 +179,16 @@ export function getOutHandleY(
   kfIndex: number,
   viewState: CurveViewState,
   canvasHeight: number,
-  margin?: CurveMargin
+  margin?: CurveMargin,
 ): number {
   const kf = prop.keyframes[kfIndex];
   if (!kf || !kf.outHandle?.enabled) {
-    return valueToScreenY(getNumericValue(kf.value), viewState, canvasHeight, margin);
+    return valueToScreenY(
+      getNumericValue(kf.value),
+      viewState,
+      canvasHeight,
+      margin,
+    );
   }
   const handleValue = getNumericValue(kf.value) + kf.outHandle.value;
   return valueToScreenY(handleValue, viewState, canvasHeight, margin);
@@ -189,7 +202,7 @@ export function getInHandleX(
   kfIndex: number,
   viewState: CurveViewState,
   canvasWidth: number,
-  margin?: CurveMargin
+  margin?: CurveMargin,
 ): number {
   const kf = prop.keyframes[kfIndex];
   if (!kf || !kf.inHandle?.enabled) {
@@ -207,11 +220,16 @@ export function getInHandleY(
   kfIndex: number,
   viewState: CurveViewState,
   canvasHeight: number,
-  margin?: CurveMargin
+  margin?: CurveMargin,
 ): number {
   const kf = prop.keyframes[kfIndex];
   if (!kf || !kf.inHandle?.enabled) {
-    return valueToScreenY(getNumericValue(kf.value), viewState, canvasHeight, margin);
+    return valueToScreenY(
+      getNumericValue(kf.value),
+      viewState,
+      canvasHeight,
+      margin,
+    );
   }
   const handleValue = getNumericValue(kf.value) + kf.inHandle.value;
   return valueToScreenY(handleValue, viewState, canvasHeight, margin);
@@ -226,7 +244,7 @@ export function getInHandleY(
  */
 export function isKeyframeInView(
   kf: Keyframe<any>,
-  viewState: CurveViewState
+  viewState: CurveViewState,
 ): boolean {
   return kf.frame >= viewState.frameStart && kf.frame <= viewState.frameEnd;
 }
@@ -237,10 +255,10 @@ export function isKeyframeInView(
 export function calculateGridStep(
   range: number,
   pixelSize: number,
-  targetSpacing: number
+  targetSpacing: number,
 ): number {
-  const rawStep = range * targetSpacing / pixelSize;
-  const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
+  const rawStep = (range * targetSpacing) / pixelSize;
+  const magnitude = 10 ** Math.floor(Math.log10(rawStep));
   const normalized = rawStep / magnitude;
 
   if (normalized <= 1) return magnitude;
@@ -254,11 +272,12 @@ export function calculateGridStep(
  */
 export function getPropertyPath(prop: AnimatableProperty<any>): string {
   const name = prop.name.toLowerCase();
-  if (name === 'position') return 'transform.position';
-  if (name === 'scale') return 'transform.scale';
-  if (name === 'rotation') return 'transform.rotation';
-  if (name === 'opacity') return 'opacity';
-  if (name === 'origin' || name === 'anchor point') return 'transform.anchorPoint';
+  if (name === "position") return "transform.position";
+  if (name === "scale") return "transform.scale";
+  if (name === "rotation") return "transform.rotation";
+  if (name === "opacity") return "opacity";
+  if (name === "origin" || name === "anchor point")
+    return "transform.anchorPoint";
   return prop.id; // Custom properties use ID
 }
 
@@ -289,6 +308,6 @@ export function useCurveEditorCoords() {
     // Utilities
     isKeyframeInView,
     calculateGridStep,
-    getPropertyPath
+    getPropertyPath,
   };
 }

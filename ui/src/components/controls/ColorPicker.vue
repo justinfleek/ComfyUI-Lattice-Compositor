@@ -222,19 +222,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import {
-  hexToRgb,
-  rgbToHex,
-  rgbToHsv,
-  hsvToRgb,
-  rgbToHsl,
-  hslToRgb,
-  STANDARD_SWATCHES,
-  type RGB,
+  type HSL,
   type HSV,
-  type HSL
-} from '@/utils/colorUtils';
+  hexToRgb,
+  hslToRgb,
+  hsvToRgb,
+  type RGB,
+  rgbToHex,
+  rgbToHsl,
+  rgbToHsv,
+  STANDARD_SWATCHES,
+} from "@/utils/colorUtils";
 
 interface Props {
   modelValue: string;
@@ -247,15 +247,13 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   alpha: false,
   recentCount: 8,
-  teleport: true
+  teleport: true,
 });
 
-const emit = defineEmits<{
-  (e: 'update:modelValue', value: string): void;
-}>();
+const emit = defineEmits<(e: "update:modelValue", value: string) => void>();
 
-type ColorMode = 'hsv' | 'rgb' | 'hsl';
-const modes: ColorMode[] = ['hsv', 'rgb', 'hsl'];
+type ColorMode = "hsv" | "rgb" | "hsl";
+const _modes: ColorMode[] = ["hsv", "rgb", "hsl"];
 
 const containerRef = ref<HTMLDivElement | null>(null);
 const panelRef = ref<HTMLDivElement | null>(null);
@@ -264,7 +262,7 @@ const hueSliderRef = ref<HTMLDivElement | null>(null);
 const alphaSliderRef = ref<HTMLDivElement | null>(null);
 
 const isOpen = ref(false);
-const currentMode = ref<ColorMode>('hsv');
+const _currentMode = ref<ColorMode>("hsv");
 const alphaValue = ref(1);
 const recentColors = ref<string[]>([]);
 
@@ -273,15 +271,15 @@ const rgb = ref<RGB>([255, 255, 255]);
 const hsv = ref<HSV>([0, 0, 1]);
 const hsl = ref<HSL>([0, 0, 1]);
 
-const allSwatches = computed(() => props.swatches || STANDARD_SWATCHES);
+const _allSwatches = computed(() => props.swatches || STANDARD_SWATCHES);
 
-const panelStyle = computed(() => {
+const _panelStyle = computed(() => {
   if (!containerRef.value || !props.teleport) return {};
 
   const rect = containerRef.value.getBoundingClientRect();
   return {
     top: `${rect.bottom + 4}px`,
-    left: `${rect.left}px`
+    left: `${rect.left}px`,
   };
 });
 
@@ -297,10 +295,10 @@ function updateFromHex(hex: string): void {
 
 function emitColor(): void {
   const hex = rgbToHex(rgb.value[0], rgb.value[1], rgb.value[2]);
-  emit('update:modelValue', hex);
+  emit("update:modelValue", hex);
 }
 
-function togglePicker(): void {
+function _togglePicker(): void {
   isOpen.value = !isOpen.value;
 }
 
@@ -322,18 +320,18 @@ function addToRecent(color: string): void {
   }
 }
 
-function selectSwatch(color: string): void {
-  emit('update:modelValue', color);
+function _selectSwatch(color: string): void {
+  emit("update:modelValue", color);
 }
 
 // SV Square drag
 let isDraggingSV = false;
 
-function startSVDrag(e: MouseEvent): void {
+function _startSVDrag(e: MouseEvent): void {
   isDraggingSV = true;
   updateSV(e);
-  document.addEventListener('mousemove', onSVDrag);
-  document.addEventListener('mouseup', stopSVDrag);
+  document.addEventListener("mousemove", onSVDrag);
+  document.addEventListener("mouseup", stopSVDrag);
 }
 
 function onSVDrag(e: MouseEvent): void {
@@ -355,18 +353,18 @@ function updateSV(e: MouseEvent): void {
 
 function stopSVDrag(): void {
   isDraggingSV = false;
-  document.removeEventListener('mousemove', onSVDrag);
-  document.removeEventListener('mouseup', stopSVDrag);
+  document.removeEventListener("mousemove", onSVDrag);
+  document.removeEventListener("mouseup", stopSVDrag);
 }
 
 // Hue slider drag
 let isDraggingHue = false;
 
-function startHueDrag(e: MouseEvent): void {
+function _startHueDrag(e: MouseEvent): void {
   isDraggingHue = true;
   updateHue(e);
-  document.addEventListener('mousemove', onHueDrag);
-  document.addEventListener('mouseup', stopHueDrag);
+  document.addEventListener("mousemove", onHueDrag);
+  document.addEventListener("mouseup", stopHueDrag);
 }
 
 function onHueDrag(e: MouseEvent): void {
@@ -377,7 +375,10 @@ function updateHue(e: MouseEvent): void {
   if (!hueSliderRef.value) return;
 
   const rect = hueSliderRef.value.getBoundingClientRect();
-  const h = Math.max(0, Math.min(360, ((e.clientX - rect.left) / rect.width) * 360));
+  const h = Math.max(
+    0,
+    Math.min(360, ((e.clientX - rect.left) / rect.width) * 360),
+  );
 
   hsv.value = [h, hsv.value[1], hsv.value[2]];
   rgb.value = hsvToRgb(hsv.value[0], hsv.value[1], hsv.value[2]);
@@ -387,22 +388,24 @@ function updateHue(e: MouseEvent): void {
 
 function stopHueDrag(): void {
   isDraggingHue = false;
-  document.removeEventListener('mousemove', onHueDrag);
-  document.removeEventListener('mouseup', stopHueDrag);
+  document.removeEventListener("mousemove", onHueDrag);
+  document.removeEventListener("mouseup", stopHueDrag);
 }
 
 // Generic slider drag
 let draggingSlider: string | null = null;
 let sliderRect: DOMRect | null = null;
 
-function startSliderDrag(slider: string, e: MouseEvent): void {
+function _startSliderDrag(slider: string, e: MouseEvent): void {
   draggingSlider = slider;
-  const track = (e.target as HTMLElement).closest('.slider-track') as HTMLElement;
+  const track = (e.target as HTMLElement).closest(
+    ".slider-track",
+  ) as HTMLElement;
   if (track) {
     sliderRect = track.getBoundingClientRect();
     updateSlider(e);
-    document.addEventListener('mousemove', onSliderDrag);
-    document.addEventListener('mouseup', stopSliderDrag);
+    document.addEventListener("mousemove", onSliderDrag);
+    document.addEventListener("mouseup", stopSliderDrag);
   }
 }
 
@@ -413,35 +416,38 @@ function onSliderDrag(e: MouseEvent): void {
 function updateSlider(e: MouseEvent): void {
   if (!sliderRect || !draggingSlider) return;
 
-  const percent = Math.max(0, Math.min(1, (e.clientX - sliderRect.left) / sliderRect.width));
+  const percent = Math.max(
+    0,
+    Math.min(1, (e.clientX - sliderRect.left) / sliderRect.width),
+  );
 
   switch (draggingSlider) {
-    case 'r':
+    case "r":
       rgb.value = [Math.round(percent * 255), rgb.value[1], rgb.value[2]];
       hsv.value = rgbToHsv(rgb.value[0], rgb.value[1], rgb.value[2]);
       hsl.value = rgbToHsl(rgb.value[0], rgb.value[1], rgb.value[2]);
       break;
-    case 'g':
+    case "g":
       rgb.value = [rgb.value[0], Math.round(percent * 255), rgb.value[2]];
       hsv.value = rgbToHsv(rgb.value[0], rgb.value[1], rgb.value[2]);
       hsl.value = rgbToHsl(rgb.value[0], rgb.value[1], rgb.value[2]);
       break;
-    case 'b':
+    case "b":
       rgb.value = [rgb.value[0], rgb.value[1], Math.round(percent * 255)];
       hsv.value = rgbToHsv(rgb.value[0], rgb.value[1], rgb.value[2]);
       hsl.value = rgbToHsl(rgb.value[0], rgb.value[1], rgb.value[2]);
       break;
-    case 'h':
+    case "h":
       hsl.value = [percent * 360, hsl.value[1], hsl.value[2]];
       rgb.value = hslToRgb(hsl.value[0], hsl.value[1], hsl.value[2]);
       hsv.value = rgbToHsv(rgb.value[0], rgb.value[1], rgb.value[2]);
       break;
-    case 's':
+    case "s":
       hsl.value = [hsl.value[0], percent, hsl.value[2]];
       rgb.value = hslToRgb(hsl.value[0], hsl.value[1], hsl.value[2]);
       hsv.value = rgbToHsv(rgb.value[0], rgb.value[1], rgb.value[2]);
       break;
-    case 'l':
+    case "l":
       hsl.value = [hsl.value[0], hsl.value[1], percent];
       rgb.value = hslToRgb(hsl.value[0], hsl.value[1], hsl.value[2]);
       hsv.value = rgbToHsv(rgb.value[0], rgb.value[1], rgb.value[2]);
@@ -454,18 +460,18 @@ function updateSlider(e: MouseEvent): void {
 function stopSliderDrag(): void {
   draggingSlider = null;
   sliderRect = null;
-  document.removeEventListener('mousemove', onSliderDrag);
-  document.removeEventListener('mouseup', stopSliderDrag);
+  document.removeEventListener("mousemove", onSliderDrag);
+  document.removeEventListener("mouseup", stopSliderDrag);
 }
 
 // Alpha slider
 let isDraggingAlpha = false;
 
-function startAlphaDrag(e: MouseEvent): void {
+function _startAlphaDrag(e: MouseEvent): void {
   isDraggingAlpha = true;
   updateAlpha(e);
-  document.addEventListener('mousemove', onAlphaDrag);
-  document.addEventListener('mouseup', stopAlphaDrag);
+  document.addEventListener("mousemove", onAlphaDrag);
+  document.addEventListener("mouseup", stopAlphaDrag);
 }
 
 function onAlphaDrag(e: MouseEvent): void {
@@ -476,37 +482,40 @@ function updateAlpha(e: MouseEvent): void {
   if (!alphaSliderRef.value) return;
 
   const rect = alphaSliderRef.value.getBoundingClientRect();
-  alphaValue.value = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  alphaValue.value = Math.max(
+    0,
+    Math.min(1, (e.clientX - rect.left) / rect.width),
+  );
 }
 
 function stopAlphaDrag(): void {
   isDraggingAlpha = false;
-  document.removeEventListener('mousemove', onAlphaDrag);
-  document.removeEventListener('mouseup', stopAlphaDrag);
+  document.removeEventListener("mousemove", onAlphaDrag);
+  document.removeEventListener("mouseup", stopAlphaDrag);
 }
 
 // Input handlers
-function onHexInput(e: Event): void {
+function _onHexInput(e: Event): void {
   const input = e.target as HTMLInputElement;
   let value = input.value.trim();
 
-  if (!value.startsWith('#')) {
-    value = '#' + value;
+  if (!value.startsWith("#")) {
+    value = `#${value}`;
   }
 
   if (/^#[0-9a-f]{6}$/i.test(value)) {
-    emit('update:modelValue', value.toLowerCase());
+    emit("update:modelValue", value.toLowerCase());
   }
 }
 
-function onHexBlur(e: FocusEvent): void {
+function _onHexBlur(e: FocusEvent): void {
   const input = e.target as HTMLInputElement;
   input.value = props.modelValue;
 }
 
-function onRgbInput(index: number, e: Event): void {
+function _onRgbInput(index: number, e: Event): void {
   const input = e.target as HTMLInputElement;
-  const value = Math.max(0, Math.min(255, parseInt(input.value) || 0));
+  const value = Math.max(0, Math.min(255, parseInt(input.value, 10) || 0));
 
   const newRgb: RGB = [...rgb.value];
   newRgb[index] = value;
@@ -516,7 +525,7 @@ function onRgbInput(index: number, e: Event): void {
   emitColor();
 }
 
-function onHslInput(index: number, e: Event): void {
+function _onHslInput(index: number, e: Event): void {
   const input = e.target as HTMLInputElement;
   let value = parseFloat(input.value) || 0;
 
@@ -534,9 +543,10 @@ function onHslInput(index: number, e: Event): void {
   emitColor();
 }
 
-function onAlphaInput(e: Event): void {
+function _onAlphaInput(e: Event): void {
   const input = e.target as HTMLInputElement;
-  alphaValue.value = Math.max(0, Math.min(100, parseInt(input.value) || 0)) / 100;
+  alphaValue.value =
+    Math.max(0, Math.min(100, parseInt(input.value, 10) || 0)) / 100;
 }
 
 // Click outside handler
@@ -552,16 +562,20 @@ function onClickOutside(e: MouseEvent): void {
 }
 
 // Watch modelValue changes
-watch(() => props.modelValue, (newVal) => {
-  updateFromHex(newVal);
-}, { immediate: true });
+watch(
+  () => props.modelValue,
+  (newVal) => {
+    updateFromHex(newVal);
+  },
+  { immediate: true },
+);
 
 onMounted(() => {
-  document.addEventListener('mousedown', onClickOutside);
+  document.addEventListener("mousedown", onClickOutside);
 });
 
 onUnmounted(() => {
-  document.removeEventListener('mousedown', onClickOutside);
+  document.removeEventListener("mousedown", onClickOutside);
 });
 </script>
 

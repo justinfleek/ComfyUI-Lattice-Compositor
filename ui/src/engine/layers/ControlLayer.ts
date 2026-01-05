@@ -9,9 +9,9 @@
  * - Animation controllers
  */
 
-import * as THREE from 'three';
-import type { Layer } from '@/types/project';
-import { BaseLayer } from './BaseLayer';
+import * as THREE from "three";
+import type { Layer } from "@/types/project";
+import { BaseLayer } from "./BaseLayer";
 
 export class ControlLayer extends BaseLayer {
   /** Visual indicator (crosshair) for editor visibility */
@@ -114,7 +114,7 @@ export class ControlLayer extends BaseLayer {
    */
   setIndicatorSize(size: number): void {
     // Validate size (NaN/0/negative/Infinity would corrupt indicator geometry)
-    const validSize = (Number.isFinite(size) && size > 0) ? size : 50;
+    const validSize = Number.isFinite(size) && size > 0 ? size : 50;
     if (validSize === this.indicatorSize) return;
 
     this.indicatorSize = validSize;
@@ -157,7 +157,9 @@ export class ControlLayer extends BaseLayer {
     // Transform is handled by BaseLayer
   }
 
-  protected override onApplyEvaluatedState(_state: import('../MotionEngine').EvaluatedLayer): void {
+  protected override onApplyEvaluatedState(
+    _state: import("../MotionEngine").EvaluatedLayer,
+  ): void {
     // Control layers have no type-specific properties
     // All transforms are handled by BaseLayer
   }

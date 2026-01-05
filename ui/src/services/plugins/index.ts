@@ -5,20 +5,20 @@
  */
 
 export {
-  PluginManager,
-  getPluginManager,
-  type PluginType,
-  type PluginManifest,
-  type PluginPermission,
-  type LatticePluginAPI,
-  type PluginEvent,
-  type PanelDefinition,
-  type MenuItemDefinition,
   type ContextMenuDefinition,
   type EffectDefinition,
   type EffectParameter,
   type ExporterDefinition,
-  type ToolDefinition,
+  getPluginManager,
   type LatticePlugin,
+  type LatticePluginAPI,
   type LoadedPlugin,
-} from './PluginManager';
+  type MenuItemDefinition,
+  type PanelDefinition,
+  type PluginEvent,
+  PluginManager,
+  type PluginManifest,
+  type PluginPermission,
+  type PluginType,
+  type ToolDefinition,
+} from "./PluginManager";

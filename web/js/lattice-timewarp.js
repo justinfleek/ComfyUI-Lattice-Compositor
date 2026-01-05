@@ -1,4 +1,9 @@
-function createSpeedRampPreset(preset, layerStartFrame, layerDuration, fps = 16) {
+function createSpeedRampPreset(
+  preset,
+  layerStartFrame,
+  layerDuration,
+  fps = 16,
+) {
   const midFrame = layerStartFrame + layerDuration / 2;
   const endFrame = layerStartFrame + layerDuration;
   const impactFrame = layerStartFrame + layerDuration * 0.3;
@@ -8,7 +13,7 @@ function createSpeedRampPreset(preset, layerStartFrame, layerDuration, fps = 16)
     value: 100,
     type: "number",
     animated: true,
-    keyframes: []
+    keyframes: [],
   };
   switch (preset) {
     case "slow-fast":
@@ -20,7 +25,7 @@ function createSpeedRampPreset(preset, layerStartFrame, layerDuration, fps = 16)
           interpolation: "bezier",
           controlMode: "smooth",
           inHandle: { frame: -10, value: 0, enabled: true },
-          outHandle: { frame: 10, value: 20, enabled: true }
+          outHandle: { frame: 10, value: 20, enabled: true },
         },
         {
           id: `kf_${Date.now()}_2`,
@@ -29,8 +34,8 @@ function createSpeedRampPreset(preset, layerStartFrame, layerDuration, fps = 16)
           interpolation: "bezier",
           controlMode: "smooth",
           inHandle: { frame: -10, value: -20, enabled: true },
-          outHandle: { frame: 10, value: 0, enabled: true }
-        }
+          outHandle: { frame: 10, value: 0, enabled: true },
+        },
       ];
       break;
     case "fast-slow":
@@ -42,7 +47,7 @@ function createSpeedRampPreset(preset, layerStartFrame, layerDuration, fps = 16)
           interpolation: "bezier",
           controlMode: "smooth",
           inHandle: { frame: -10, value: 0, enabled: true },
-          outHandle: { frame: 10, value: -20, enabled: true }
+          outHandle: { frame: 10, value: -20, enabled: true },
         },
         {
           id: `kf_${Date.now()}_2`,
@@ -51,8 +56,8 @@ function createSpeedRampPreset(preset, layerStartFrame, layerDuration, fps = 16)
           interpolation: "bezier",
           controlMode: "smooth",
           inHandle: { frame: -10, value: 20, enabled: true },
-          outHandle: { frame: 10, value: 0, enabled: true }
-        }
+          outHandle: { frame: 10, value: 0, enabled: true },
+        },
       ];
       break;
     case "slow-fast-slow":
@@ -64,7 +69,7 @@ function createSpeedRampPreset(preset, layerStartFrame, layerDuration, fps = 16)
           interpolation: "bezier",
           controlMode: "smooth",
           inHandle: { frame: -10, value: 0, enabled: true },
-          outHandle: { frame: 10, value: 0, enabled: true }
+          outHandle: { frame: 10, value: 0, enabled: true },
         },
         {
           id: `kf_${Date.now()}_2`,
@@ -73,7 +78,7 @@ function createSpeedRampPreset(preset, layerStartFrame, layerDuration, fps = 16)
           interpolation: "bezier",
           controlMode: "smooth",
           inHandle: { frame: -10, value: 0, enabled: true },
-          outHandle: { frame: 10, value: 0, enabled: true }
+          outHandle: { frame: 10, value: 0, enabled: true },
         },
         {
           id: `kf_${Date.now()}_3`,
@@ -82,8 +87,8 @@ function createSpeedRampPreset(preset, layerStartFrame, layerDuration, fps = 16)
           interpolation: "bezier",
           controlMode: "smooth",
           inHandle: { frame: -10, value: 0, enabled: true },
-          outHandle: { frame: 10, value: 0, enabled: true }
-        }
+          outHandle: { frame: 10, value: 0, enabled: true },
+        },
       ];
       break;
     case "impact":
@@ -95,7 +100,7 @@ function createSpeedRampPreset(preset, layerStartFrame, layerDuration, fps = 16)
           interpolation: "bezier",
           controlMode: "smooth",
           inHandle: { frame: -5, value: 0, enabled: true },
-          outHandle: { frame: 5, value: 0, enabled: true }
+          outHandle: { frame: 5, value: 0, enabled: true },
         },
         {
           id: `kf_${Date.now()}_2`,
@@ -104,7 +109,7 @@ function createSpeedRampPreset(preset, layerStartFrame, layerDuration, fps = 16)
           interpolation: "bezier",
           controlMode: "smooth",
           inHandle: { frame: -3, value: 0, enabled: true },
-          outHandle: { frame: 3, value: -30, enabled: true }
+          outHandle: { frame: 3, value: -30, enabled: true },
         },
         {
           id: `kf_${Date.now()}_3`,
@@ -113,7 +118,7 @@ function createSpeedRampPreset(preset, layerStartFrame, layerDuration, fps = 16)
           interpolation: "bezier",
           controlMode: "smooth",
           inHandle: { frame: -3, value: 30, enabled: true },
-          outHandle: { frame: 3, value: 30, enabled: true }
+          outHandle: { frame: 3, value: 30, enabled: true },
         },
         {
           id: `kf_${Date.now()}_4`,
@@ -122,8 +127,8 @@ function createSpeedRampPreset(preset, layerStartFrame, layerDuration, fps = 16)
           interpolation: "bezier",
           controlMode: "smooth",
           inHandle: { frame: -3, value: -30, enabled: true },
-          outHandle: { frame: 5, value: 0, enabled: true }
-        }
+          outHandle: { frame: 5, value: 0, enabled: true },
+        },
       ];
       break;
     case "rewind":
@@ -135,7 +140,7 @@ function createSpeedRampPreset(preset, layerStartFrame, layerDuration, fps = 16)
           interpolation: "bezier",
           controlMode: "smooth",
           inHandle: { frame: -5, value: 0, enabled: true },
-          outHandle: { frame: 5, value: 0, enabled: true }
+          outHandle: { frame: 5, value: 0, enabled: true },
         },
         {
           id: `kf_${Date.now()}_2`,
@@ -144,7 +149,7 @@ function createSpeedRampPreset(preset, layerStartFrame, layerDuration, fps = 16)
           interpolation: "bezier",
           controlMode: "smooth",
           inHandle: { frame: -5, value: 0, enabled: true },
-          outHandle: { frame: 3, value: -50, enabled: true }
+          outHandle: { frame: 3, value: -50, enabled: true },
         },
         {
           id: `kf_${Date.now()}_3`,
@@ -154,7 +159,7 @@ function createSpeedRampPreset(preset, layerStartFrame, layerDuration, fps = 16)
           interpolation: "bezier",
           controlMode: "smooth",
           inHandle: { frame: -3, value: 50, enabled: true },
-          outHandle: { frame: 3, value: 50, enabled: true }
+          outHandle: { frame: 3, value: 50, enabled: true },
         },
         {
           id: `kf_${Date.now()}_4`,
@@ -163,8 +168,8 @@ function createSpeedRampPreset(preset, layerStartFrame, layerDuration, fps = 16)
           interpolation: "bezier",
           controlMode: "smooth",
           inHandle: { frame: -3, value: -50, enabled: true },
-          outHandle: { frame: 5, value: 0, enabled: true }
-        }
+          outHandle: { frame: 5, value: 0, enabled: true },
+        },
       ];
       break;
   }

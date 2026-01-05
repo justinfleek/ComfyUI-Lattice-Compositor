@@ -185,11 +185,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, inject } from 'vue';
-import type { ExposedProperty } from '@/types/templateBuilder';
-import type { Layer } from '@/types/project';
-import { getPropertyValue, setPropertyValue } from '@/services/templateBuilder';
-import { useCompositorStore } from '@/stores/compositorStore';
+import { computed, ref, watch } from "vue";
+import { getPropertyValue, setPropertyValue } from "@/services/templateBuilder";
+import { useCompositorStore } from "@/stores/compositorStore";
+import type { Layer } from "@/types/project";
+import type { ExposedProperty } from "@/types/templateBuilder";
 
 const props = defineProps<{
   property: ExposedProperty;
@@ -197,8 +197,8 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: 'update', propertyId: string, updates: Partial<ExposedProperty>): void;
-  (e: 'remove'): void;
+  (e: "update", propertyId: string, updates: Partial<ExposedProperty>): void;
+  (e: "remove"): void;
 }>();
 
 const compositorStore = useCompositorStore();
@@ -208,9 +208,12 @@ const localName = ref(props.property.name);
 const mediaFileInput = ref<HTMLInputElement | null>(null);
 
 // Watch for external changes
-watch(() => props.property.name, (newName) => {
-  localName.value = newName;
-});
+watch(
+  () => props.property.name,
+  (newName) => {
+    localName.value = newName;
+  },
+);
 
 // Current value from the layer
 const currentValue = computed(() => {
@@ -222,26 +225,38 @@ const currentValue = computed(() => {
 const availableLayers = computed(() => {
   const comp = compositorStore.activeComposition;
   if (!comp) return [];
-  return comp.layers.filter(l => l.id !== props.layer?.id);
+  return comp.layers.filter((l) => l.id !== props.layer?.id);
 });
 
 // Selected layer info for display
-const selectedLayerInfo = computed(() => {
-  if (!currentValue.value || props.property.type !== 'layer') return null;
-  return availableLayers.value.find(l => l.id === currentValue.value);
+const _selectedLayerInfo = computed(() => {
+  if (!currentValue.value || props.property.type !== "layer") return null;
+  return availableLayers.value.find((l) => l.id === currentValue.value);
 });
 
 // Available fonts
-const availableFonts = [
-  'Arial', 'Helvetica', 'Times New Roman', 'Georgia', 'Verdana',
-  'Courier New', 'Inter', 'Roboto', 'Open Sans', 'Lato',
-  'Montserrat', 'Poppins', 'Source Sans Pro', 'Nunito', 'Raleway'
+const _availableFonts = [
+  "Arial",
+  "Helvetica",
+  "Times New Roman",
+  "Georgia",
+  "Verdana",
+  "Courier New",
+  "Inter",
+  "Roboto",
+  "Open Sans",
+  "Lato",
+  "Montserrat",
+  "Poppins",
+  "Source Sans Pro",
+  "Nunito",
+  "Raleway",
 ];
 
 // Update property name
-function updateName() {
+function _updateName() {
   if (localName.value !== props.property.name) {
-    emit('update', props.property.id, { name: localName.value });
+    emit("update", props.property.id, { name: localName.value });
   }
 }
 
@@ -252,7 +267,7 @@ function updateValue(value: any) {
 }
 
 // Update point value
-function updatePointValue(axis: 'x' | 'y', value: number) {
+function _updatePointValue(axis: "x" | "y", value: number) {
   if (!props.layer) return;
   const current = currentValue.value || { x: 0, y: 0 };
   const updated = { ...current, [axis]: value };
@@ -260,18 +275,23 @@ function updatePointValue(axis: 'x' | 'y', value: number) {
 }
 
 // Color utilities
-function colorToHex(color: any): string {
-  if (!color) return '#ffffff';
-  if (typeof color === 'string') return color;
+function _colorToHex(color: any): string {
+  if (!color) return "#ffffff";
+  if (typeof color === "string") return color;
 
   const r = Math.round((color.r ?? 255) * (color.r > 1 ? 1 : 255));
   const g = Math.round((color.g ?? 255) * (color.g > 1 ? 1 : 255));
   const b = Math.round((color.b ?? 255) * (color.b > 1 ? 1 : 255));
 
-  return '#' + [r, g, b].map(c => c.toString(16).padStart(2, '0')).join('');
+  return `#${[r, g, b].map((c) => c.toString(16).padStart(2, "0")).join("")}`;
 }
 
-function hexToColor(hex: string): { r: number; g: number; b: number; a: number } {
+function _hexToColor(hex: string): {
+  r: number;
+  g: number;
+  b: number;
+  a: number;
+} {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   if (!result) return { r: 1, g: 1, b: 1, a: 1 };
 
@@ -279,34 +299,34 @@ function hexToColor(hex: string): { r: number; g: number; b: number; a: number }
     r: parseInt(result[1], 16) / 255,
     g: parseInt(result[2], 16) / 255,
     b: parseInt(result[3], 16) / 255,
-    a: 1
+    a: 1,
   };
 }
 
 // Media utilities
-function getMediaFilename(url: string): string {
-  if (!url) return '';
+function _getMediaFilename(url: string): string {
+  if (!url) return "";
   // Handle data URLs
-  if (url.startsWith('data:')) {
+  if (url.startsWith("data:")) {
     const match = url.match(/data:([^;]+)/);
-    return match ? `[${match[1]}]` : '[embedded]';
+    return match ? `[${match[1]}]` : "[embedded]";
   }
   // Handle regular URLs
   try {
     const urlObj = new URL(url, window.location.origin);
     const path = urlObj.pathname;
-    return path.split('/').pop() || 'media';
+    return path.split("/").pop() || "media";
   } catch {
-    return url.split('/').pop() || 'media';
+    return url.split("/").pop() || "media";
   }
 }
 
 // Media selection
-function selectMedia() {
+function _selectMedia() {
   mediaFileInput.value?.click();
 }
 
-async function handleMediaSelect(event: Event) {
+async function _handleMediaSelect(event: Event) {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
   if (!file) return;
@@ -316,11 +336,11 @@ async function handleMediaSelect(event: Event) {
     const dataUrl = await readFileAsDataURL(file);
     updateValue(dataUrl);
   } catch (error) {
-    console.error('[ExposedPropertyControl] Failed to read media file:', error);
+    console.error("[ExposedPropertyControl] Failed to read media file:", error);
   }
 
   // Reset input for re-selection of same file
-  input.value = '';
+  input.value = "";
 }
 
 function readFileAsDataURL(file: File): Promise<string> {

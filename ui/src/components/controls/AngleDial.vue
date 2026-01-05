@@ -31,7 +31,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { computed, ref } from "vue";
 
 interface Props {
   modelValue: number;
@@ -43,12 +43,10 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   size: 48,
   showValue: true,
-  disabled: false
+  disabled: false,
 });
 
-const emit = defineEmits<{
-  (e: 'update:modelValue', value: number): void;
-}>();
+const emit = defineEmits<(e: "update:modelValue", value: number) => void>();
 
 const dialRef = ref<HTMLDivElement | null>(null);
 const isDragging = ref(false);
@@ -61,16 +59,16 @@ function normalizeAngle(angle: number): number {
   return ((angle % 360) + 360) % 360;
 }
 
-function startDrag(e: MouseEvent): void {
+function _startDrag(e: MouseEvent): void {
   if (props.disabled) return;
 
   isDragging.value = true;
   updateAngle(e);
 
-  document.addEventListener('mousemove', onDrag);
-  document.addEventListener('mouseup', stopDrag);
-  document.body.style.cursor = 'grabbing';
-  document.body.style.userSelect = 'none';
+  document.addEventListener("mousemove", onDrag);
+  document.addEventListener("mouseup", stopDrag);
+  document.body.style.cursor = "grabbing";
+  document.body.style.userSelect = "none";
 }
 
 function onDrag(e: MouseEvent): void {
@@ -97,31 +95,31 @@ function updateAngle(e: MouseEvent): void {
     angle = Math.round(angle / 45) * 45;
   }
 
-  emit('update:modelValue', angle);
+  emit("update:modelValue", angle);
 }
 
 function stopDrag(): void {
   isDragging.value = false;
-  document.removeEventListener('mousemove', onDrag);
-  document.removeEventListener('mouseup', stopDrag);
-  document.body.style.cursor = '';
-  document.body.style.userSelect = '';
+  document.removeEventListener("mousemove", onDrag);
+  document.removeEventListener("mouseup", stopDrag);
+  document.body.style.cursor = "";
+  document.body.style.userSelect = "";
 }
 
-function onInput(e: Event): void {
+function _onInput(e: Event): void {
   const input = e.target as HTMLInputElement;
   const value = parseFloat(input.value);
 
-  if (!isNaN(value)) {
-    emit('update:modelValue', normalizeAngle(value));
+  if (!Number.isNaN(value)) {
+    emit("update:modelValue", normalizeAngle(value));
   }
 }
 
-function onBlur(e: FocusEvent): void {
+function _onBlur(e: FocusEvent): void {
   const input = e.target as HTMLInputElement;
   const value = parseFloat(input.value);
 
-  if (isNaN(value)) {
+  if (Number.isNaN(value)) {
     input.value = displayValue.value.toString();
   }
 }

@@ -7,7 +7,7 @@
  * Extracted from GPUParticleSystem.ts for modularity.
  */
 
-import { PARTICLE_STRIDE, type SubEmitterConfig } from './types';
+import { PARTICLE_STRIDE, type SubEmitterConfig } from "./types";
 
 // ============================================================================
 // TYPES
@@ -19,14 +19,17 @@ export interface DeathEvent {
 }
 
 export type RNGFunction = () => number;
-export type EmitCallback = (event: { index: number; emitterId: string; isSubEmitter: boolean }) => void;
+export type EmitCallback = (event: {
+  index: number;
+  emitterId: string;
+  isSubEmitter: boolean;
+}) => void;
 
 // ============================================================================
 // PARTICLE SUB-EMITTER SYSTEM CLASS
 // ============================================================================
 
 export class ParticleSubEmitter {
-  private readonly maxParticles: number;
   private subEmitters: Map<string, SubEmitterConfig> = new Map();
   private rng: RNGFunction;
   private onEmit?: EmitCallback;
@@ -90,7 +93,7 @@ export class ParticleSubEmitter {
    */
   processDeathEvents(
     particleBuffer: Float32Array,
-    freeIndices: number[]
+    freeIndices: number[],
   ): number {
     if (this.subEmitters.size === 0) {
       this.pendingDeathEvents = [];
@@ -104,14 +107,17 @@ export class ParticleSubEmitter {
     for (const death of deathQueue) {
       // Find sub-emitters triggered by death
       for (const subEmitter of this.subEmitters.values()) {
-        if (subEmitter.trigger !== 'death') continue;
+        if (subEmitter.trigger !== "death") continue;
         if (!subEmitter.parentEmitterId) continue;
 
         // Check parent emitter filter
         // '*' means trigger on any emitter's particles
         // Specific ID means only trigger on that emitter's particles
         // Note: death.emitterId may be undefined if particle tracking not implemented
-        if (subEmitter.parentEmitterId !== '*' && death.emitterId !== undefined) {
+        if (
+          subEmitter.parentEmitterId !== "*" &&
+          death.emitterId !== undefined
+        ) {
           if (death.emitterId !== subEmitter.parentEmitterId) continue;
         }
 
@@ -141,7 +147,9 @@ export class ParticleSubEmitter {
         const parentRotation = particleBuffer[offset + 10];
 
         // Spawn sub-particles
-        const count = subEmitter.emitCount + Math.floor((this.rng() - 0.5) * 2 * subEmitter.emitCountVariance);
+        const count =
+          subEmitter.emitCount +
+          Math.floor((this.rng() - 0.5) * 2 * subEmitter.emitCountVariance);
 
         for (let i = 0; i < count; i++) {
           if (freeIndices.length === 0) break;
@@ -161,7 +169,9 @@ export class ParticleSubEmitter {
 
           // Random direction within spread cone (spherical for death = explosion)
           const theta = this.rng() * Math.PI * 2;
-          const phi = Math.acos(1 - this.rng() * (1 - Math.cos(spread * Math.PI / 180)));
+          const phi = Math.acos(
+            1 - this.rng() * (1 - Math.cos((spread * Math.PI) / 180)),
+          );
           const newVelX = Math.sin(phi) * Math.cos(theta) * speed;
           const newVelY = Math.sin(phi) * Math.sin(theta) * speed;
           const newVelZ = Math.cos(phi) * speed;
@@ -178,19 +188,35 @@ export class ParticleSubEmitter {
 
           // Physical
           particleBuffer[subOffset + 8] = overrides.initialMass ?? 1; // mass
-          particleBuffer[subOffset + 9] = (overrides.initialSize ?? 5) * (subEmitter.inheritSize > 0 ? parentSize * subEmitter.inheritSize : 1);
+          particleBuffer[subOffset + 9] =
+            (overrides.initialSize ?? 5) *
+            (subEmitter.inheritSize > 0
+              ? parentSize * subEmitter.inheritSize
+              : 1);
 
           // Rotation
-          particleBuffer[subOffset + 10] = subEmitter.inheritRotation > 0 ? parentRotation * subEmitter.inheritRotation : this.rng() * Math.PI * 2;
-          particleBuffer[subOffset + 11] = overrides.initialAngularVelocity ?? 0;
+          particleBuffer[subOffset + 10] =
+            subEmitter.inheritRotation > 0
+              ? parentRotation * subEmitter.inheritRotation
+              : this.rng() * Math.PI * 2;
+          particleBuffer[subOffset + 11] =
+            overrides.initialAngularVelocity ?? 0;
 
           // Color inheritance
           const colorStart = overrides.colorStart ?? [1, 1, 1, 1];
           if (subEmitter.inheritColor > 0) {
-            particleBuffer[subOffset + 12] = parentColor[0] * subEmitter.inheritColor + colorStart[0] * (1 - subEmitter.inheritColor);
-            particleBuffer[subOffset + 13] = parentColor[1] * subEmitter.inheritColor + colorStart[1] * (1 - subEmitter.inheritColor);
-            particleBuffer[subOffset + 14] = parentColor[2] * subEmitter.inheritColor + colorStart[2] * (1 - subEmitter.inheritColor);
-            particleBuffer[subOffset + 15] = parentColor[3] * subEmitter.inheritColor + colorStart[3] * (1 - subEmitter.inheritColor);
+            particleBuffer[subOffset + 12] =
+              parentColor[0] * subEmitter.inheritColor +
+              colorStart[0] * (1 - subEmitter.inheritColor);
+            particleBuffer[subOffset + 13] =
+              parentColor[1] * subEmitter.inheritColor +
+              colorStart[1] * (1 - subEmitter.inheritColor);
+            particleBuffer[subOffset + 14] =
+              parentColor[2] * subEmitter.inheritColor +
+              colorStart[2] * (1 - subEmitter.inheritColor);
+            particleBuffer[subOffset + 15] =
+              parentColor[3] * subEmitter.inheritColor +
+              colorStart[3] * (1 - subEmitter.inheritColor);
           } else {
             particleBuffer[subOffset + 12] = colorStart[0];
             particleBuffer[subOffset + 13] = colorStart[1];
@@ -202,7 +228,11 @@ export class ParticleSubEmitter {
 
           // Emit callback
           if (this.onEmit) {
-            this.onEmit({ index, emitterId: subEmitter.id, isSubEmitter: true });
+            this.onEmit({
+              index,
+              emitterId: subEmitter.id,
+              isSubEmitter: true,
+            });
           }
         }
       }

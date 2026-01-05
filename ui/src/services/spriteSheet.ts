@@ -10,7 +10,7 @@
  * - Sprite atlas generation
  */
 
-import * as THREE from 'three';
+import * as THREE from "three";
 
 // ============================================================================
 // TYPES
@@ -24,10 +24,10 @@ export interface SpriteFrame {
   name?: string;
   /** UV coordinates (0-1 range) */
   uv: {
-    u: number;   // Left
-    v: number;   // Bottom (Three.js UV origin is bottom-left)
-    w: number;   // Width
-    h: number;   // Height
+    u: number; // Left
+    v: number; // Bottom (Three.js UV origin is bottom-left)
+    w: number; // Width
+    h: number; // Height
   };
   /** Pixel coordinates in source image */
   source: {
@@ -45,10 +45,10 @@ export interface SpriteFrame {
 /** Animation sequence definition */
 export interface SpriteAnimation {
   name: string;
-  frames: number[];           // Frame indices
-  frameRate: number;          // FPS
+  frames: number[]; // Frame indices
+  frameRate: number; // FPS
   loop: boolean;
-  pingPong: boolean;          // Play forward then backward
+  pingPong: boolean; // Play forward then backward
 }
 
 /** Sprite sheet configuration */
@@ -82,14 +82,17 @@ export interface SpriteSheetConfig {
 
 /** JSON metadata format (Aseprite/TexturePacker compatible) */
 export interface SpriteSheetMetadata {
-  frames: Record<string, {
-    frame: { x: number; y: number; w: number; h: number };
-    rotated?: boolean;
-    trimmed?: boolean;
-    spriteSourceSize?: { x: number; y: number; w: number; h: number };
-    sourceSize?: { w: number; h: number };
-    duration?: number;
-  }>;
+  frames: Record<
+    string,
+    {
+      frame: { x: number; y: number; w: number; h: number };
+      rotated?: boolean;
+      trimmed?: boolean;
+      spriteSourceSize?: { x: number; y: number; w: number; h: number };
+      sourceSize?: { w: number; h: number };
+      duration?: number;
+    }
+  >;
   meta?: {
     app?: string;
     version?: string;
@@ -100,7 +103,7 @@ export interface SpriteSheetMetadata {
       name: string;
       from: number;
       to: number;
-      direction?: 'forward' | 'reverse' | 'pingpong';
+      direction?: "forward" | "reverse" | "pingpong";
     }>;
   };
 }
@@ -108,11 +111,11 @@ export interface SpriteSheetMetadata {
 /** Particle texture config for sprite sheets */
 export interface ParticleSpriteConfig {
   spriteSheetId: string;
-  animationName?: string;       // Specific animation to play
-  startFrame?: number;          // Starting frame (random if not set)
+  animationName?: string; // Specific animation to play
+  startFrame?: number; // Starting frame (random if not set)
   randomStartFrame: boolean;
-  playAnimation: boolean;       // Animate through frames
-  frameRate?: number;           // Override default frame rate
+  playAnimation: boolean; // Animate through frames
+  frameRate?: number; // Override default frame rate
   loop: boolean;
 }
 
@@ -143,7 +146,7 @@ export class SpriteSheetService {
       name?: string;
       frameRate?: number;
       loop?: boolean;
-    } = {}
+    } = {},
   ): Promise<SpriteSheetConfig> {
     const texture = await this.loadTexture(url);
     const id = `spritesheet_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
@@ -199,9 +202,9 @@ export class SpriteSheetService {
     };
 
     // Create default animation with all frames
-    config.animations.set('all', {
-      name: 'all',
-      frames: frames.map(f => f.index),
+    config.animations.set("all", {
+      name: "all",
+      frames: frames.map((f) => f.index),
       frameRate: config.defaultFrameRate,
       loop: config.defaultLoop,
       pingPong: false,
@@ -220,7 +223,7 @@ export class SpriteSheetService {
     options: {
       name?: string;
       frameRate?: number;
-    } = {}
+    } = {},
   ): Promise<SpriteSheetConfig> {
     // Load image and metadata in parallel
     const [texture, metadataResponse] = await Promise.all([
@@ -294,15 +297,15 @@ export class SpriteSheetService {
           frames: animFrames,
           frameRate: config.defaultFrameRate,
           loop: true,
-          pingPong: tag.direction === 'pingpong',
+          pingPong: tag.direction === "pingpong",
         });
       }
     }
 
     // Create default animation with all frames
-    config.animations.set('all', {
-      name: 'all',
-      frames: frames.map(f => f.index),
+    config.animations.set("all", {
+      name: "all",
+      frames: frames.map((f) => f.index),
       frameRate: config.defaultFrameRate,
       loop: config.defaultLoop,
       pingPong: false,
@@ -328,7 +331,7 @@ export class SpriteSheetService {
           resolve(texture);
         },
         undefined,
-        reject
+        reject,
       );
     });
   }
@@ -345,7 +348,7 @@ export class SpriteSheetService {
       name?: string;
       frameRate?: number;
       loop?: boolean;
-    } = {}
+    } = {},
   ): SpriteSheetConfig {
     const id = options.id || `spritesheet_${Date.now()}`;
     const imageWidth = texture.image.width;
@@ -391,9 +394,9 @@ export class SpriteSheetService {
       defaultLoop: options.loop ?? true,
     };
 
-    config.animations.set('all', {
-      name: 'all',
-      frames: frames.map(f => f.index),
+    config.animations.set("all", {
+      name: "all",
+      frames: frames.map((f) => f.index),
       frameRate: config.defaultFrameRate,
       loop: config.defaultLoop,
       pingPong: false,
@@ -410,10 +413,7 @@ export class SpriteSheetService {
   /**
    * Add a custom animation to a sprite sheet
    */
-  addAnimation(
-    sheetId: string,
-    animation: SpriteAnimation
-  ): void {
+  addAnimation(sheetId: string, animation: SpriteAnimation): void {
     const sheet = this.sheets.get(sheetId);
     if (!sheet) {
       console.warn(`Sprite sheet not found: ${sheetId}`);
@@ -428,7 +428,7 @@ export class SpriteSheetService {
   getFrameAtTime(
     sheetId: string,
     animationName: string,
-    timeMs: number
+    timeMs: number,
   ): number {
     const sheet = this.sheets.get(sheetId);
     if (!sheet) return 0;
@@ -463,7 +463,7 @@ export class SpriteSheetService {
   /**
    * Get UV coordinates for a specific frame
    */
-  getFrameUV(sheetId: string, frameIndex: number): SpriteFrame['uv'] | null {
+  getFrameUV(sheetId: string, frameIndex: number): SpriteFrame["uv"] | null {
     const sheet = this.sheets.get(sheetId);
     if (!sheet || frameIndex < 0 || frameIndex >= sheet.frames.length) {
       return null;
@@ -480,7 +480,7 @@ export class SpriteSheetService {
    */
   getParticleTextureConfig(
     sheetId: string,
-    animationName?: string
+    animationName?: string,
   ): {
     diffuseMap: string;
     spriteSheetColumns: number;
@@ -494,7 +494,7 @@ export class SpriteSheetService {
 
     const animation = animationName
       ? sheet.animations.get(animationName)
-      : sheet.animations.get('all');
+      : sheet.animations.get("all");
 
     return {
       diffuseMap: sheet.url,
@@ -511,7 +511,7 @@ export class SpriteSheetService {
    */
   createSpriteMaterial(
     sheetId: string,
-    frameIndex: number
+    frameIndex: number,
   ): THREE.SpriteMaterial | null {
     const sheet = this.sheets.get(sheetId);
     if (!sheet?.texture) return null;
@@ -537,7 +537,7 @@ export class SpriteSheetService {
   updateSpriteMaterialFrame(
     material: THREE.SpriteMaterial,
     sheetId: string,
-    frameIndex: number
+    frameIndex: number,
   ): void {
     const sheet = this.sheets.get(sheetId);
     if (!sheet?.texture || !material.map) return;
@@ -622,7 +622,7 @@ export const spriteSheetService = new SpriteSheetService();
  */
 export function createDefaultParticleSpriteConfig(): ParticleSpriteConfig {
   return {
-    spriteSheetId: '',
+    spriteSheetId: "",
     randomStartFrame: true,
     playAnimation: true,
     loop: true,

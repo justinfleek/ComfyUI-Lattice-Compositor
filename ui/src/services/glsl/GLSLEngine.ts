@@ -21,13 +21,13 @@
 
 export interface ShaderUniforms {
   // Shadertoy-compatible uniforms
-  iResolution: [number, number, number];  // width, height, pixelAspectRatio
-  iTime: number;                           // Shader playback time (seconds)
-  iTimeDelta: number;                      // Time since last frame
-  iFrame: number;                          // Frame number
+  iResolution: [number, number, number]; // width, height, pixelAspectRatio
+  iTime: number; // Shader playback time (seconds)
+  iTimeDelta: number; // Time since last frame
+  iFrame: number; // Frame number
   iMouse: [number, number, number, number]; // xy = position, zw = click position
-  iDate: [number, number, number, number];  // year, month, day, seconds
-  iSampleRate: number;                      // Audio sample rate (44100)
+  iDate: [number, number, number, number]; // year, month, day, seconds
+  iSampleRate: number; // Audio sample rate (44100)
 
   // Custom uniforms
   [key: string]: number | number[] | boolean | WebGLTexture;
@@ -40,7 +40,7 @@ export interface ShaderCompileResult {
   errorLine?: number;
 }
 
-export type EdgeMode = 'clamp' | 'wrap' | 'mirror';
+export type EdgeMode = "clamp" | "wrap" | "mirror";
 
 export interface GLSLEngineOptions {
   preserveDrawingBuffer?: boolean;
@@ -392,7 +392,7 @@ export class GLSLEngine {
   private _isAvailable: boolean | null = null;
 
   private uniformLocations: Map<string, WebGLUniformLocation> = new Map();
-  private currentShaderSource: string = '';
+  private currentShaderSource: string = "";
 
   constructor(private options: GLSLEngineOptions = {}) {}
 
@@ -405,10 +405,12 @@ export class GLSLEngine {
     }
 
     try {
-      const testCanvas = document.createElement('canvas');
+      const testCanvas = document.createElement("canvas");
       testCanvas.width = 1;
       testCanvas.height = 1;
-      const gl = testCanvas.getContext('webgl') || testCanvas.getContext('experimental-webgl');
+      const gl =
+        testCanvas.getContext("webgl") ||
+        testCanvas.getContext("experimental-webgl");
       this._isAvailable = gl !== null;
     } catch {
       this._isAvailable = false;
@@ -425,7 +427,7 @@ export class GLSLEngine {
 
     // Create or resize canvas
     if (!this.canvas) {
-      this.canvas = document.createElement('canvas');
+      this.canvas = document.createElement("canvas");
     }
 
     if (this.currentWidth !== width || this.currentHeight !== height) {
@@ -440,10 +442,10 @@ export class GLSLEngine {
 
     // Get WebGL context
     if (!this.gl) {
-      this.gl = this.canvas.getContext('webgl', {
+      this.gl = this.canvas.getContext("webgl", {
         alpha: this.options.alpha ?? true,
         premultipliedAlpha: this.options.premultipliedAlpha ?? false,
-        preserveDrawingBuffer: this.options.preserveDrawingBuffer ?? true
+        preserveDrawingBuffer: this.options.preserveDrawingBuffer ?? true,
       }) as WebGLRenderingContext | null;
 
       if (!this.gl) return false;
@@ -451,18 +453,20 @@ export class GLSLEngine {
       // Create position buffer
       this.positionBuffer = this.gl.createBuffer();
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer);
-      this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array([
-        -1, -1, 1, -1, -1, 1,
-        -1, 1, 1, -1, 1, 1
-      ]), this.gl.STATIC_DRAW);
+      this.gl.bufferData(
+        this.gl.ARRAY_BUFFER,
+        new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]),
+        this.gl.STATIC_DRAW,
+      );
 
       // Create texture coordinate buffer
       this.texCoordBuffer = this.gl.createBuffer();
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.texCoordBuffer);
-      this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array([
-        0, 0, 1, 0, 0, 1,
-        0, 1, 1, 0, 1, 1
-      ]), this.gl.STATIC_DRAW);
+      this.gl.bufferData(
+        this.gl.ARRAY_BUFFER,
+        new Float32Array([0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1]),
+        this.gl.STATIC_DRAW,
+      );
 
       // Create framebuffer
       this.framebuffer = this.gl.createFramebuffer();
@@ -472,11 +476,37 @@ export class GLSLEngine {
     if (!this.outputTexture) {
       this.outputTexture = this.gl.createTexture();
       this.gl.bindTexture(this.gl.TEXTURE_2D, this.outputTexture);
-      this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, width, height, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, null);
-      this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
-      this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
-      this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
-      this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
+      this.gl.texImage2D(
+        this.gl.TEXTURE_2D,
+        0,
+        this.gl.RGBA,
+        width,
+        height,
+        0,
+        this.gl.RGBA,
+        this.gl.UNSIGNED_BYTE,
+        null,
+      );
+      this.gl.texParameteri(
+        this.gl.TEXTURE_2D,
+        this.gl.TEXTURE_MIN_FILTER,
+        this.gl.LINEAR,
+      );
+      this.gl.texParameteri(
+        this.gl.TEXTURE_2D,
+        this.gl.TEXTURE_MAG_FILTER,
+        this.gl.LINEAR,
+      );
+      this.gl.texParameteri(
+        this.gl.TEXTURE_2D,
+        this.gl.TEXTURE_WRAP_S,
+        this.gl.CLAMP_TO_EDGE,
+      );
+      this.gl.texParameteri(
+        this.gl.TEXTURE_2D,
+        this.gl.TEXTURE_WRAP_T,
+        this.gl.CLAMP_TO_EDGE,
+      );
     }
 
     return true;
@@ -485,9 +515,12 @@ export class GLSLEngine {
   /**
    * Compile a shader from source
    */
-  compileShader(fragmentSource: string, includeLibrary: boolean = true): ShaderCompileResult {
+  compileShader(
+    fragmentSource: string,
+    includeLibrary: boolean = true,
+  ): ShaderCompileResult {
     if (!this.init(1, 1)) {
-      return { success: false, program: null, error: 'WebGL not available' };
+      return { success: false, program: null, error: "WebGL not available" };
     }
 
     const gl = this.gl!;
@@ -506,9 +539,14 @@ export class GLSLEngine {
     gl.compileShader(vertexShader);
 
     if (!gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS)) {
-      const error = gl.getShaderInfoLog(vertexShader) || 'Unknown vertex shader error';
+      const error =
+        gl.getShaderInfoLog(vertexShader) || "Unknown vertex shader error";
       gl.deleteShader(vertexShader);
-      return { success: false, program: null, error: `Vertex shader: ${error}` };
+      return {
+        success: false,
+        program: null,
+        error: `Vertex shader: ${error}`,
+      };
     }
 
     // Compile fragment shader
@@ -517,7 +555,8 @@ export class GLSLEngine {
     gl.compileShader(fragmentShader);
 
     if (!gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS)) {
-      const error = gl.getShaderInfoLog(fragmentShader) || 'Unknown fragment shader error';
+      const error =
+        gl.getShaderInfoLog(fragmentShader) || "Unknown fragment shader error";
       gl.deleteShader(vertexShader);
       gl.deleteShader(fragmentShader);
 
@@ -539,7 +578,8 @@ export class GLSLEngine {
     gl.deleteShader(fragmentShader);
 
     if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-      const error = gl.getProgramInfoLog(program) || 'Unknown program link error';
+      const error =
+        gl.getProgramInfoLog(program) || "Unknown program link error";
       gl.deleteProgram(program);
       return { success: false, program: null, error: `Program link: ${error}` };
     }
@@ -555,7 +595,10 @@ export class GLSLEngine {
   /**
    * Set a shader to use (compiles if source changed)
    */
-  setShader(fragmentSource: string, includeLibrary: boolean = true): ShaderCompileResult {
+  setShader(
+    fragmentSource: string,
+    includeLibrary: boolean = true,
+  ): ShaderCompileResult {
     if (this.currentShaderSource === fragmentSource && this.program) {
       return { success: true, program: this.program };
     }
@@ -593,9 +636,9 @@ export class GLSLEngine {
       const location = this.getUniformLocation(name);
       if (!location) continue;
 
-      if (typeof value === 'number') {
+      if (typeof value === "number") {
         gl.uniform1f(location, value);
-      } else if (typeof value === 'boolean') {
+      } else if (typeof value === "boolean") {
         gl.uniform1i(location, value ? 1 : 0);
       } else if (Array.isArray(value)) {
         switch (value.length) {
@@ -618,10 +661,12 @@ export class GLSLEngine {
    */
   render(
     input: HTMLCanvasElement | ImageData,
-    uniforms: Partial<ShaderUniforms> = {}
+    uniforms: Partial<ShaderUniforms> = {},
   ): HTMLCanvasElement | null {
-    const width = input instanceof HTMLCanvasElement ? input.width : input.width;
-    const height = input instanceof HTMLCanvasElement ? input.height : input.height;
+    const width =
+      input instanceof HTMLCanvasElement ? input.width : input.width;
+    const height =
+      input instanceof HTMLCanvasElement ? input.height : input.height;
 
     if (!this.init(width, height) || !this.program) {
       return null;
@@ -636,8 +681,8 @@ export class GLSLEngine {
     gl.useProgram(this.program);
 
     // Set up attributes
-    const positionLoc = gl.getAttribLocation(this.program, 'a_position');
-    const texCoordLoc = gl.getAttribLocation(this.program, 'a_texCoord');
+    const positionLoc = gl.getAttribLocation(this.program, "a_position");
+    const texCoordLoc = gl.getAttribLocation(this.program, "a_texCoord");
 
     gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
     gl.enableVertexAttribArray(positionLoc);
@@ -655,9 +700,26 @@ export class GLSLEngine {
     gl.bindTexture(gl.TEXTURE_2D, this.inputTexture);
 
     if (input instanceof HTMLCanvasElement) {
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, input);
+      gl.texImage2D(
+        gl.TEXTURE_2D,
+        0,
+        gl.RGBA,
+        gl.RGBA,
+        gl.UNSIGNED_BYTE,
+        input,
+      );
     } else {
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(input.data.buffer));
+      gl.texImage2D(
+        gl.TEXTURE_2D,
+        0,
+        gl.RGBA,
+        width,
+        height,
+        0,
+        gl.RGBA,
+        gl.UNSIGNED_BYTE,
+        new Uint8Array(input.data.buffer),
+      );
     }
 
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
@@ -674,20 +736,26 @@ export class GLSLEngine {
       iMouse: [0, 0, 0, 0],
       iDate: [2025, 1, 1, 0],
       iSampleRate: 44100,
-      ...uniforms
+      ...uniforms,
     };
 
     this.setUniforms(defaultUniforms);
 
     // Set iChannel0 uniform
-    const channel0Loc = this.getUniformLocation('iChannel0');
+    const channel0Loc = this.getUniformLocation("iChannel0");
     if (channel0Loc) {
       gl.uniform1i(channel0Loc, 0);
     }
 
     // Render to framebuffer
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.outputTexture, 0);
+    gl.framebufferTexture2D(
+      gl.FRAMEBUFFER,
+      gl.COLOR_ATTACHMENT0,
+      gl.TEXTURE_2D,
+      this.outputTexture,
+      0,
+    );
 
     // Clear and draw
     gl.clearColor(0, 0, 0, 0);
@@ -702,10 +770,10 @@ export class GLSLEngine {
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
     // Copy to output canvas (flip Y)
-    const outputCanvas = document.createElement('canvas');
+    const outputCanvas = document.createElement("canvas");
     outputCanvas.width = width;
     outputCanvas.height = height;
-    const ctx = outputCanvas.getContext('2d')!;
+    const ctx = outputCanvas.getContext("2d")!;
     const imageData = ctx.createImageData(width, height);
 
     // WebGL has Y-flipped compared to canvas

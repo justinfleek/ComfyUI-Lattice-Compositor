@@ -14,10 +14,10 @@
  * - Black = transparent/hidden
  */
 
-import * as THREE from 'three';
-import type { Layer, ProceduralMatteData, ProceduralMatteType } from '@/types/project';
-import { BaseLayer } from './BaseLayer';
-import { KeyframeEvaluator } from '../animation/KeyframeEvaluator';
+import * as THREE from "three";
+import type { Layer, ProceduralMatteData } from "@/types/project";
+import { KeyframeEvaluator } from "../animation/KeyframeEvaluator";
+import { BaseLayer } from "./BaseLayer";
 
 // ============================================================================
 // PROCEDURAL MATTE LAYER
@@ -55,13 +55,14 @@ export class ProceduralMatteLayer extends BaseLayer {
     this.matteData = this.extractMatteData(layerData);
 
     // Initialize random seed - use deterministic seed based on layer ID
-    this.noiseSeed = this.matteData.parameters.seed ?? this.hashLayerId(layerData.id);
+    this.noiseSeed =
+      this.matteData.parameters.seed ?? this.hashLayerId(layerData.id);
 
     // Create render canvas
-    this.renderCanvas = document.createElement('canvas');
+    this.renderCanvas = document.createElement("canvas");
     this.renderCanvas.width = this.width;
     this.renderCanvas.height = this.height;
-    this.renderCtx = this.renderCanvas.getContext('2d')!;
+    this.renderCtx = this.renderCanvas.getContext("2d")!;
 
     // Create mesh
     this.createMesh();
@@ -83,21 +84,77 @@ export class ProceduralMatteLayer extends BaseLayer {
     if (!data) {
       // Create default linear gradient
       return {
-        patternType: 'linear_gradient',
+        patternType: "linear_gradient",
         parameters: {},
         animation: {
           enabled: false,
-          speed: { id: 'speed', name: 'Speed', type: 'number', value: 1, animated: false, keyframes: [] },
-          phase: { id: 'phase', name: 'Phase', type: 'number', value: 0, animated: false, keyframes: [] },
-          direction: { id: 'dir', name: 'Direction', type: 'number', value: 0, animated: false, keyframes: [] },
+          speed: {
+            id: "speed",
+            name: "Speed",
+            type: "number",
+            value: 1,
+            animated: false,
+            keyframes: [],
+          },
+          phase: {
+            id: "phase",
+            name: "Phase",
+            type: "number",
+            value: 0,
+            animated: false,
+            keyframes: [],
+          },
+          direction: {
+            id: "dir",
+            name: "Direction",
+            type: "number",
+            value: 0,
+            animated: false,
+            keyframes: [],
+          },
         },
         inverted: false,
         levels: {
-          inputBlack: { id: 'ib', name: 'Input Black', type: 'number', value: 0, animated: false, keyframes: [] },
-          inputWhite: { id: 'iw', name: 'Input White', type: 'number', value: 255, animated: false, keyframes: [] },
-          gamma: { id: 'g', name: 'Gamma', type: 'number', value: 1, animated: false, keyframes: [] },
-          outputBlack: { id: 'ob', name: 'Output Black', type: 'number', value: 0, animated: false, keyframes: [] },
-          outputWhite: { id: 'ow', name: 'Output White', type: 'number', value: 255, animated: false, keyframes: [] },
+          inputBlack: {
+            id: "ib",
+            name: "Input Black",
+            type: "number",
+            value: 0,
+            animated: false,
+            keyframes: [],
+          },
+          inputWhite: {
+            id: "iw",
+            name: "Input White",
+            type: "number",
+            value: 255,
+            animated: false,
+            keyframes: [],
+          },
+          gamma: {
+            id: "g",
+            name: "Gamma",
+            type: "number",
+            value: 1,
+            animated: false,
+            keyframes: [],
+          },
+          outputBlack: {
+            id: "ob",
+            name: "Output Black",
+            type: "number",
+            value: 0,
+            animated: false,
+            keyframes: [],
+          },
+          outputWhite: {
+            id: "ow",
+            name: "Output White",
+            type: "number",
+            value: 255,
+            animated: false,
+            keyframes: [],
+          },
         },
       };
     }
@@ -131,8 +188,8 @@ export class ProceduralMatteLayer extends BaseLayer {
    */
   setDimensions(width: number, height: number): void {
     // Validate dimensions (NaN/0 would create invalid canvas and geometry)
-    const validWidth = (Number.isFinite(width) && width > 0) ? width : 512;
-    const validHeight = (Number.isFinite(height) && height > 0) ? height : 512;
+    const validWidth = Number.isFinite(width) && width > 0 ? width : 512;
+    const validHeight = Number.isFinite(height) && height > 0 ? height : 512;
 
     this.width = validWidth;
     this.height = validHeight;
@@ -163,7 +220,10 @@ export class ProceduralMatteLayer extends BaseLayer {
 
   protected onUpdate(properties: Partial<Layer>): void {
     if (properties.data) {
-      this.matteData = this.extractMatteData({ ...properties, data: properties.data } as Layer);
+      this.matteData = this.extractMatteData({
+        ...properties,
+        data: properties.data,
+      } as Layer);
     }
   }
 
@@ -180,59 +240,67 @@ export class ProceduralMatteLayer extends BaseLayer {
     const h = this.height;
 
     // Clear canvas
-    ctx.fillStyle = 'black';
+    ctx.fillStyle = "black";
     ctx.fillRect(0, 0, w, h);
 
     // Get animation time (explicit types for TypeScript inference)
-    const speed: number = this.matteEvaluator.evaluate(this.matteData.animation.speed, frame);
-    const phase: number = this.matteEvaluator.evaluate(this.matteData.animation.phase, frame);
+    const speed: number = this.matteEvaluator.evaluate(
+      this.matteData.animation.speed,
+      frame,
+    );
+    const phase: number = this.matteEvaluator.evaluate(
+      this.matteData.animation.phase,
+      frame,
+    );
     // Use composition fps for correct animation timing (not hardcoded 60fps)
-    const time = this.matteData.animation.enabled ? (frame * speed / this.compositionFps + phase) : 0;
+    const time = this.matteData.animation.enabled
+      ? (frame * speed) / this.compositionFps + phase
+      : 0;
 
     // Render based on pattern type
     switch (this.matteData.patternType) {
-      case 'linear_gradient':
+      case "linear_gradient":
         this.renderLinearGradient(ctx, w, h, frame, time);
         break;
-      case 'radial_gradient':
+      case "radial_gradient":
         this.renderRadialGradient(ctx, w, h, frame, time);
         break;
-      case 'angular_gradient':
+      case "angular_gradient":
         this.renderAngularGradient(ctx, w, h, frame, time);
         break;
-      case 'ramp':
+      case "ramp":
         this.renderRamp(ctx, w, h, frame, time);
         break;
-      case 'noise':
+      case "noise":
         this.renderNoise(ctx, w, h, frame, time);
         break;
-      case 'checkerboard':
+      case "checkerboard":
         this.renderCheckerboard(ctx, w, h, frame, time);
         break;
-      case 'circle':
+      case "circle":
         this.renderCircle(ctx, w, h, frame, time);
         break;
-      case 'rectangle':
+      case "rectangle":
         this.renderRectangle(ctx, w, h, frame, time);
         break;
-      case 'iris':
+      case "iris":
         this.renderIris(ctx, w, h, frame, time);
         break;
-      case 'radial_wipe':
+      case "radial_wipe":
         this.renderRadialWipe(ctx, w, h, frame, time);
         break;
-      case 'venetian_blinds':
+      case "venetian_blinds":
         this.renderVenetianBlinds(ctx, w, h, frame, time);
         break;
-      case 'dissolve':
+      case "dissolve":
         this.renderDissolve(ctx, w, h, frame, time);
         break;
-      case 'wave':
+      case "wave":
         this.renderWave(ctx, w, h, frame, time);
         break;
       default:
         // Default to solid white
-        ctx.fillStyle = 'white';
+        ctx.fillStyle = "white";
         ctx.fillRect(0, 0, w, h);
     }
 
@@ -249,12 +317,19 @@ export class ProceduralMatteLayer extends BaseLayer {
   // PATTERN IMPLEMENTATIONS
   // ============================================================================
 
-  private renderLinearGradient(ctx: CanvasRenderingContext2D, w: number, h: number, frame: number, time: number): void {
+  private renderLinearGradient(
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    frame: number,
+    time: number,
+  ): void {
     const params = this.matteData.parameters;
-    const angle: number = this.matteEvaluator.evaluate(params.angle!, frame) + time * 360;
+    const angle: number =
+      this.matteEvaluator.evaluate(params.angle!, frame) + time * 360;
     const blend: number = this.matteEvaluator.evaluate(params.blend!, frame);
 
-    const rad = angle * Math.PI / 180;
+    const rad = (angle * Math.PI) / 180;
     const cos = Math.cos(rad);
     const sin = Math.sin(rad);
 
@@ -263,44 +338,71 @@ export class ProceduralMatteLayer extends BaseLayer {
     const cx = w / 2;
     const cy = h / 2;
 
-    const x1 = cx - cos * len / 2;
-    const y1 = cy - sin * len / 2;
-    const x2 = cx + cos * len / 2;
-    const y2 = cy + sin * len / 2;
+    const x1 = cx - (cos * len) / 2;
+    const y1 = cy - (sin * len) / 2;
+    const x2 = cx + (cos * len) / 2;
+    const y2 = cy + (sin * len) / 2;
 
     const gradient = ctx.createLinearGradient(x1, y1, x2, y2);
     const blendHalf = Math.max(0.001, blend / 2);
-    gradient.addColorStop(Math.max(0, 0.5 - blendHalf), 'black');
-    gradient.addColorStop(Math.min(1, 0.5 + blendHalf), 'white');
+    gradient.addColorStop(Math.max(0, 0.5 - blendHalf), "black");
+    gradient.addColorStop(Math.min(1, 0.5 + blendHalf), "white");
 
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, w, h);
   }
 
-  private renderRadialGradient(ctx: CanvasRenderingContext2D, w: number, h: number, frame: number, time: number): void {
+  private renderRadialGradient(
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    frame: number,
+    time: number,
+  ): void {
     const params = this.matteData.parameters;
-    const centerX: number = this.matteEvaluator.evaluate(params.centerX!, frame);
-    const centerY: number = this.matteEvaluator.evaluate(params.centerY!, frame);
-    const radius: number = this.matteEvaluator.evaluate(params.radius!, frame) + time * 0.5;
-    const blend: number = params.blend ? this.matteEvaluator.evaluate(params.blend, frame) : 0.3;
+    const centerX: number = this.matteEvaluator.evaluate(
+      params.centerX!,
+      frame,
+    );
+    const centerY: number = this.matteEvaluator.evaluate(
+      params.centerY!,
+      frame,
+    );
+    const radius: number =
+      this.matteEvaluator.evaluate(params.radius!, frame) + time * 0.5;
+    const blend: number = params.blend
+      ? this.matteEvaluator.evaluate(params.blend, frame)
+      : 0.3;
 
     const cx = centerX * w;
     const cy = centerY * h;
-    const r = radius * Math.max(w, h) / 2;
+    const r = (radius * Math.max(w, h)) / 2;
 
     const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
-    gradient.addColorStop(Math.max(0, 1 - blend), 'white');
-    gradient.addColorStop(1, 'black');
+    gradient.addColorStop(Math.max(0, 1 - blend), "white");
+    gradient.addColorStop(1, "black");
 
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, w, h);
   }
 
-  private renderAngularGradient(ctx: CanvasRenderingContext2D, w: number, h: number, frame: number, time: number): void {
+  private renderAngularGradient(
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    frame: number,
+    time: number,
+  ): void {
     const params = this.matteData.parameters;
-    const centerX: number = params.centerX ? this.matteEvaluator.evaluate(params.centerX, frame) : 0.5;
-    const centerY: number = params.centerY ? this.matteEvaluator.evaluate(params.centerY, frame) : 0.5;
-    const rotation: number = (params.angle ? this.matteEvaluator.evaluate(params.angle, frame) : 0) + time * 360;
+    const centerX: number = params.centerX
+      ? this.matteEvaluator.evaluate(params.centerX, frame)
+      : 0.5;
+    const centerY: number = params.centerY
+      ? this.matteEvaluator.evaluate(params.centerY, frame)
+      : 0.5;
+    const rotation: number =
+      (params.angle ? this.matteEvaluator.evaluate(params.angle, frame) : 0) +
+      time * 360;
 
     const cx = centerX * w;
     const cy = centerY * h;
@@ -311,9 +413,9 @@ export class ProceduralMatteLayer extends BaseLayer {
       for (let x = 0; x < w; x++) {
         const dx = x - cx;
         const dy = y - cy;
-        let angle = Math.atan2(dy, dx) * 180 / Math.PI + rotation;
+        let angle = (Math.atan2(dy, dx) * 180) / Math.PI + rotation;
         angle = ((angle % 360) + 360) % 360;
-        const value = Math.round(angle / 360 * 255);
+        const value = Math.round((angle / 360) * 255);
         const idx = (y * w + x) * 4;
         data[idx] = data[idx + 1] = data[idx + 2] = value;
         data[idx + 3] = 255;
@@ -323,15 +425,30 @@ export class ProceduralMatteLayer extends BaseLayer {
     ctx.putImageData(imageData, 0, 0);
   }
 
-  private renderRamp(ctx: CanvasRenderingContext2D, w: number, h: number, frame: number, time: number): void {
+  private renderRamp(
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    frame: number,
+    time: number,
+  ): void {
     const params = this.matteData.parameters;
-    const progress: number = this.matteEvaluator.evaluate(params.progress!, frame);
-    const softness: number = params.softness ? this.matteEvaluator.evaluate(params.softness, frame) : 0.1;
-    const angle: number = params.angle ? this.matteEvaluator.evaluate(params.angle, frame) : 0;
+    const progress: number = this.matteEvaluator.evaluate(
+      params.progress!,
+      frame,
+    );
+    const softness: number = params.softness
+      ? this.matteEvaluator.evaluate(params.softness, frame)
+      : 0.1;
+    const angle: number = params.angle
+      ? this.matteEvaluator.evaluate(params.angle, frame)
+      : 0;
 
-    const animProgress: number = this.matteData.animation.enabled ? (progress + time) % 1 : progress;
+    const animProgress: number = this.matteData.animation.enabled
+      ? (progress + time) % 1
+      : progress;
 
-    const rad = angle * Math.PI / 180;
+    const rad = (angle * Math.PI) / 180;
     const cos = Math.cos(rad);
     const sin = Math.sin(rad);
 
@@ -339,23 +456,31 @@ export class ProceduralMatteLayer extends BaseLayer {
     const cx = w / 2;
     const cy = h / 2;
 
-    const x1 = cx - cos * len / 2;
-    const y1 = cy - sin * len / 2;
-    const x2 = cx + cos * len / 2;
-    const y2 = cy + sin * len / 2;
+    const x1 = cx - (cos * len) / 2;
+    const y1 = cy - (sin * len) / 2;
+    const x2 = cx + (cos * len) / 2;
+    const y2 = cy + (sin * len) / 2;
 
     const gradient = ctx.createLinearGradient(x1, y1, x2, y2);
     const soft = Math.max(0.001, softness / 2);
-    gradient.addColorStop(Math.max(0, animProgress - soft), 'black');
-    gradient.addColorStop(Math.min(1, animProgress + soft), 'white');
+    gradient.addColorStop(Math.max(0, animProgress - soft), "black");
+    gradient.addColorStop(Math.min(1, animProgress + soft), "white");
 
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, w, h);
   }
 
-  private renderNoise(ctx: CanvasRenderingContext2D, w: number, h: number, frame: number, time: number): void {
+  private renderNoise(
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    frame: number,
+    time: number,
+  ): void {
     const params = this.matteData.parameters;
-    const scale: number = params.scale ? this.matteEvaluator.evaluate(params.scale, frame) : 50;
+    const scale: number = params.scale
+      ? this.matteEvaluator.evaluate(params.scale, frame)
+      : 50;
     const octaves = params.octaves ?? 4;
 
     const imageData = ctx.getImageData(0, 0, w, h);
@@ -375,7 +500,7 @@ export class ProceduralMatteLayer extends BaseLayer {
         }
 
         // Normalize to 0-255
-        const value = Math.round((noise + 1) / 2 * 255);
+        const value = Math.round(((noise + 1) / 2) * 255);
         const idx = (y * w + x) * 4;
         data[idx] = data[idx + 1] = data[idx + 2] = value;
         data[idx + 3] = 255;
@@ -385,11 +510,23 @@ export class ProceduralMatteLayer extends BaseLayer {
     ctx.putImageData(imageData, 0, 0);
   }
 
-  private renderCheckerboard(ctx: CanvasRenderingContext2D, w: number, h: number, frame: number, time: number): void {
+  private renderCheckerboard(
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    frame: number,
+    time: number,
+  ): void {
     const params = this.matteData.parameters;
-    const tilesX: number = params.tilesX ? this.matteEvaluator.evaluate(params.tilesX, frame) : 8;
-    const tilesY: number = params.tilesY ? this.matteEvaluator.evaluate(params.tilesY, frame) : 8;
-    const rotation: number = params.rotation ? this.matteEvaluator.evaluate(params.rotation, frame) : 0;
+    const tilesX: number = params.tilesX
+      ? this.matteEvaluator.evaluate(params.tilesX, frame)
+      : 8;
+    const tilesY: number = params.tilesY
+      ? this.matteEvaluator.evaluate(params.tilesY, frame)
+      : 8;
+    const rotation: number = params.rotation
+      ? this.matteEvaluator.evaluate(params.rotation, frame)
+      : 0;
 
     const tileW = w / tilesX;
     const tileH = h / tilesY;
@@ -397,13 +534,13 @@ export class ProceduralMatteLayer extends BaseLayer {
 
     ctx.save();
     ctx.translate(w / 2, h / 2);
-    ctx.rotate(rotation * Math.PI / 180);
+    ctx.rotate((rotation * Math.PI) / 180);
     ctx.translate(-w / 2 - offset, -h / 2);
 
     for (let y = -1; y <= tilesY + 1; y++) {
       for (let x = -1; x <= tilesX + 1; x++) {
         const isWhite = (x + y) % 2 === 0;
-        ctx.fillStyle = isWhite ? 'white' : 'black';
+        ctx.fillStyle = isWhite ? "white" : "black";
         ctx.fillRect(x * tileW, y * tileH, tileW, tileH);
       }
     }
@@ -411,80 +548,156 @@ export class ProceduralMatteLayer extends BaseLayer {
     ctx.restore();
   }
 
-  private renderCircle(ctx: CanvasRenderingContext2D, w: number, h: number, frame: number, time: number): void {
+  private renderCircle(
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    frame: number,
+    time: number,
+  ): void {
     const params = this.matteData.parameters;
-    const centerX: number = params.centerX ? this.matteEvaluator.evaluate(params.centerX, frame) : 0.5;
-    const centerY: number = params.centerY ? this.matteEvaluator.evaluate(params.centerY, frame) : 0.5;
-    const radius: number = params.radius ? this.matteEvaluator.evaluate(params.radius, frame) : 0.5;
-    const feather: number = params.feather ? this.matteEvaluator.evaluate(params.feather, frame) : 0;
+    const centerX: number = params.centerX
+      ? this.matteEvaluator.evaluate(params.centerX, frame)
+      : 0.5;
+    const centerY: number = params.centerY
+      ? this.matteEvaluator.evaluate(params.centerY, frame)
+      : 0.5;
+    const radius: number = params.radius
+      ? this.matteEvaluator.evaluate(params.radius, frame)
+      : 0.5;
+    const feather: number = params.feather
+      ? this.matteEvaluator.evaluate(params.feather, frame)
+      : 0;
 
     const cx = centerX * w;
     const cy = centerY * h;
-    const r = (radius + time * 0.5) * Math.min(w, h) / 2;
+    const r = ((radius + time * 0.5) * Math.min(w, h)) / 2;
 
     if (feather > 0) {
-      const gradient = ctx.createRadialGradient(cx, cy, Math.max(0, r - feather * 50), cx, cy, r);
-      gradient.addColorStop(0, 'white');
-      gradient.addColorStop(1, 'black');
+      const gradient = ctx.createRadialGradient(
+        cx,
+        cy,
+        Math.max(0, r - feather * 50),
+        cx,
+        cy,
+        r,
+      );
+      gradient.addColorStop(0, "white");
+      gradient.addColorStop(1, "black");
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, w, h);
     } else {
-      ctx.fillStyle = 'white';
+      ctx.fillStyle = "white";
       ctx.beginPath();
       ctx.arc(cx, cy, r, 0, Math.PI * 2);
       ctx.fill();
     }
   }
 
-  private renderRectangle(ctx: CanvasRenderingContext2D, w: number, h: number, frame: number, time: number): void {
+  private renderRectangle(
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    frame: number,
+    time: number,
+  ): void {
     const params = this.matteData.parameters;
-    const centerX: number = params.centerX ? this.matteEvaluator.evaluate(params.centerX, frame) : 0.5;
-    const centerY: number = params.centerY ? this.matteEvaluator.evaluate(params.centerY, frame) : 0.5;
-    const rectWidth: number = params.width ? this.matteEvaluator.evaluate(params.width, frame) : 0.5;
-    const rectHeight: number = params.height ? this.matteEvaluator.evaluate(params.height, frame) : 0.5;
-    const cornerRadius: number = params.cornerRadius ? this.matteEvaluator.evaluate(params.cornerRadius, frame) : 0;
+    const centerX: number = params.centerX
+      ? this.matteEvaluator.evaluate(params.centerX, frame)
+      : 0.5;
+    const centerY: number = params.centerY
+      ? this.matteEvaluator.evaluate(params.centerY, frame)
+      : 0.5;
+    const rectWidth: number = params.width
+      ? this.matteEvaluator.evaluate(params.width, frame)
+      : 0.5;
+    const rectHeight: number = params.height
+      ? this.matteEvaluator.evaluate(params.height, frame)
+      : 0.5;
+    const cornerRadius: number = params.cornerRadius
+      ? this.matteEvaluator.evaluate(params.cornerRadius, frame)
+      : 0;
 
     const cx = centerX * w;
     const cy = centerY * h;
     const rw = (rectWidth + time * 0.2) * w;
     const rh = (rectHeight + time * 0.2) * h;
-    const cr = cornerRadius * Math.min(rw, rh) / 2;
+    const cr = (cornerRadius * Math.min(rw, rh)) / 2;
 
-    ctx.fillStyle = 'white';
+    ctx.fillStyle = "white";
     ctx.beginPath();
     ctx.roundRect(cx - rw / 2, cy - rh / 2, rw, rh, cr);
     ctx.fill();
   }
 
-  private renderIris(ctx: CanvasRenderingContext2D, w: number, h: number, frame: number, time: number): void {
+  private renderIris(
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    frame: number,
+    time: number,
+  ): void {
     const params = this.matteData.parameters;
-    const progress: number = params.progress ? this.matteEvaluator.evaluate(params.progress, frame) : 0.5;
-    const feather: number = params.feather ? this.matteEvaluator.evaluate(params.feather, frame) : 0.1;
-    const centerX: number = params.centerX ? this.matteEvaluator.evaluate(params.centerX, frame) : 0.5;
-    const centerY: number = params.centerY ? this.matteEvaluator.evaluate(params.centerY, frame) : 0.5;
+    const progress: number = params.progress
+      ? this.matteEvaluator.evaluate(params.progress, frame)
+      : 0.5;
+    const feather: number = params.feather
+      ? this.matteEvaluator.evaluate(params.feather, frame)
+      : 0.1;
+    const centerX: number = params.centerX
+      ? this.matteEvaluator.evaluate(params.centerX, frame)
+      : 0.5;
+    const centerY: number = params.centerY
+      ? this.matteEvaluator.evaluate(params.centerY, frame)
+      : 0.5;
 
-    const animProgress: number = this.matteData.animation.enabled ? (progress + time) % 1 : progress;
+    const animProgress: number = this.matteData.animation.enabled
+      ? (progress + time) % 1
+      : progress;
     const cx = centerX * w;
     const cy = centerY * h;
     const maxRadius = Math.sqrt(w * w + h * h) / 2;
     const r = animProgress * maxRadius;
 
-    const gradient = ctx.createRadialGradient(cx, cy, Math.max(0, r - feather * 100), cx, cy, r);
-    gradient.addColorStop(0, 'white');
-    gradient.addColorStop(1, 'black');
+    const gradient = ctx.createRadialGradient(
+      cx,
+      cy,
+      Math.max(0, r - feather * 100),
+      cx,
+      cy,
+      r,
+    );
+    gradient.addColorStop(0, "white");
+    gradient.addColorStop(1, "black");
 
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, w, h);
   }
 
-  private renderRadialWipe(ctx: CanvasRenderingContext2D, w: number, h: number, frame: number, time: number): void {
+  private renderRadialWipe(
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    frame: number,
+    time: number,
+  ): void {
     const params = this.matteData.parameters;
-    const progress: number = params.progress ? this.matteEvaluator.evaluate(params.progress, frame) : 0.5;
-    const centerX: number = params.centerX ? this.matteEvaluator.evaluate(params.centerX, frame) : 0.5;
-    const centerY: number = params.centerY ? this.matteEvaluator.evaluate(params.centerY, frame) : 0.5;
-    const softness: number = params.softness ? this.matteEvaluator.evaluate(params.softness, frame) : 0.05;
+    const progress: number = params.progress
+      ? this.matteEvaluator.evaluate(params.progress, frame)
+      : 0.5;
+    const centerX: number = params.centerX
+      ? this.matteEvaluator.evaluate(params.centerX, frame)
+      : 0.5;
+    const centerY: number = params.centerY
+      ? this.matteEvaluator.evaluate(params.centerY, frame)
+      : 0.5;
+    const softness: number = params.softness
+      ? this.matteEvaluator.evaluate(params.softness, frame)
+      : 0.05;
 
-    const animProgress: number = this.matteData.animation.enabled ? (progress + time) % 1 : progress;
+    const animProgress: number = this.matteData.animation.enabled
+      ? (progress + time) % 1
+      : progress;
     const cx = centerX * w;
     const cy = centerY * h;
     const angle = animProgress * Math.PI * 2;
@@ -497,9 +710,10 @@ export class ProceduralMatteLayer extends BaseLayer {
       for (let x = 0; x < w; x++) {
         const dx = x - cx;
         const dy = y - cy;
-        let pixelAngle = Math.atan2(dy, dx) + Math.PI; // 0 to 2PI
+        const pixelAngle = Math.atan2(dy, dx) + Math.PI; // 0 to 2PI
         const diff = pixelAngle - angle;
-        const dist = Math.abs(((diff + Math.PI * 3) % (Math.PI * 2)) - Math.PI) / Math.PI;
+        const dist =
+          Math.abs(((diff + Math.PI * 3) % (Math.PI * 2)) - Math.PI) / Math.PI;
 
         let value = dist < 0.5 ? 255 : 0;
         if (softness > 0) {
@@ -518,35 +732,61 @@ export class ProceduralMatteLayer extends BaseLayer {
     ctx.putImageData(imageData, 0, 0);
   }
 
-  private renderVenetianBlinds(ctx: CanvasRenderingContext2D, w: number, h: number, frame: number, time: number): void {
+  private renderVenetianBlinds(
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    frame: number,
+    time: number,
+  ): void {
     const params = this.matteData.parameters;
-    const progress = params.progress ? this.matteEvaluator.evaluate(params.progress, frame) : 0.5;
-    const slats = params.slats ? this.matteEvaluator.evaluate(params.slats, frame) : 10;
-    const angle = params.angle ? this.matteEvaluator.evaluate(params.angle, frame) : 0;
+    const progress = params.progress
+      ? this.matteEvaluator.evaluate(params.progress, frame)
+      : 0.5;
+    const slats = params.slats
+      ? this.matteEvaluator.evaluate(params.slats, frame)
+      : 10;
+    const angle = params.angle
+      ? this.matteEvaluator.evaluate(params.angle, frame)
+      : 0;
 
-    const animProgress = this.matteData.animation.enabled ? (progress + time) % 1 : progress;
+    const animProgress = this.matteData.animation.enabled
+      ? (progress + time) % 1
+      : progress;
     const slatHeight = h / slats;
     const openAmount = animProgress * slatHeight;
 
     ctx.save();
     ctx.translate(w / 2, h / 2);
-    ctx.rotate(angle * Math.PI / 180);
+    ctx.rotate((angle * Math.PI) / 180);
     ctx.translate(-w / 2, -h / 2);
 
     for (let i = 0; i < slats; i++) {
-      ctx.fillStyle = 'white';
+      ctx.fillStyle = "white";
       ctx.fillRect(0, i * slatHeight, w, openAmount);
     }
 
     ctx.restore();
   }
 
-  private renderDissolve(ctx: CanvasRenderingContext2D, w: number, h: number, frame: number, time: number): void {
+  private renderDissolve(
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    frame: number,
+    time: number,
+  ): void {
     const params = this.matteData.parameters;
-    const progress = params.progress ? this.matteEvaluator.evaluate(params.progress, frame) : 0.5;
-    const blockSize = params.blockSize ? this.matteEvaluator.evaluate(params.blockSize, frame) : 4;
+    const progress = params.progress
+      ? this.matteEvaluator.evaluate(params.progress, frame)
+      : 0.5;
+    const blockSize = params.blockSize
+      ? this.matteEvaluator.evaluate(params.blockSize, frame)
+      : 4;
 
-    const animProgress = this.matteData.animation.enabled ? (progress + time) % 1 : progress;
+    const animProgress = this.matteData.animation.enabled
+      ? (progress + time) % 1
+      : progress;
     const imageData = ctx.getImageData(0, 0, w, h);
     const data = imageData.data;
 
@@ -578,16 +818,28 @@ export class ProceduralMatteLayer extends BaseLayer {
     ctx.putImageData(imageData, 0, 0);
   }
 
-  private renderWave(ctx: CanvasRenderingContext2D, w: number, h: number, frame: number, time: number): void {
+  private renderWave(
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    frame: number,
+    time: number,
+  ): void {
     const params = this.matteData.parameters;
-    const frequency = params.frequency ? this.matteEvaluator.evaluate(params.frequency, frame) : 4;
-    const amplitude = params.amplitude ? this.matteEvaluator.evaluate(params.amplitude, frame) : 0.5;
-    const angle = params.angle ? this.matteEvaluator.evaluate(params.angle, frame) : 0;
-    const waveType = params.waveType ?? 'sine';
+    const frequency = params.frequency
+      ? this.matteEvaluator.evaluate(params.frequency, frame)
+      : 4;
+    const amplitude = params.amplitude
+      ? this.matteEvaluator.evaluate(params.amplitude, frame)
+      : 0.5;
+    const angle = params.angle
+      ? this.matteEvaluator.evaluate(params.angle, frame)
+      : 0;
+    const waveType = params.waveType ?? "sine";
 
     const imageData = ctx.getImageData(0, 0, w, h);
     const data = imageData.data;
-    const rad = angle * Math.PI / 180;
+    const rad = (angle * Math.PI) / 180;
 
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
@@ -595,17 +847,17 @@ export class ProceduralMatteLayer extends BaseLayer {
         const rx = (x - w / 2) * Math.cos(rad) - (y - h / 2) * Math.sin(rad);
 
         // Calculate wave
-        const phase = (rx / w * frequency + time) * Math.PI * 2;
+        const phase = ((rx / w) * frequency + time) * Math.PI * 2;
         let wave: number;
 
         switch (waveType) {
-          case 'triangle':
+          case "triangle":
             wave = Math.abs(((phase / Math.PI) % 2) - 1) * 2 - 1;
             break;
-          case 'square':
+          case "square":
             wave = Math.sin(phase) >= 0 ? 1 : -1;
             break;
-          case 'sawtooth':
+          case "sawtooth":
             wave = ((phase / Math.PI) % 2) - 1;
             break;
           default: // sine
@@ -640,17 +892,27 @@ export class ProceduralMatteLayer extends BaseLayer {
     // Validate values (NaN would corrupt image processing)
     const validInputBlack = Number.isFinite(inputBlack) ? inputBlack : 0;
     const validInputWhite = Number.isFinite(inputWhite) ? inputWhite : 255;
-    const validGamma = (Number.isFinite(gamma) && gamma > 0) ? gamma : 1;
+    const validGamma = Number.isFinite(gamma) && gamma > 0 ? gamma : 1;
     const validOutputBlack = Number.isFinite(outputBlack) ? outputBlack : 0;
     const validOutputWhite = Number.isFinite(outputWhite) ? outputWhite : 255;
 
     // Skip if default values
-    if (validInputBlack === 0 && validInputWhite === 255 && validGamma === 1 &&
-        validOutputBlack === 0 && validOutputWhite === 255) {
+    if (
+      validInputBlack === 0 &&
+      validInputWhite === 255 &&
+      validGamma === 1 &&
+      validOutputBlack === 0 &&
+      validOutputWhite === 255
+    ) {
       return;
     }
 
-    const imageData = this.renderCtx.getImageData(0, 0, this.width, this.height);
+    const imageData = this.renderCtx.getImageData(
+      0,
+      0,
+      this.width,
+      this.height,
+    );
     const data = imageData.data;
     // Guard against division by zero (when inputWhite === inputBlack)
     const inputRange = Math.max(1, validInputWhite - validInputBlack);
@@ -660,10 +922,13 @@ export class ProceduralMatteLayer extends BaseLayer {
       let value = data[i];
 
       // Input levels
-      value = Math.max(0, Math.min(255, (value - validInputBlack) / inputRange * 255));
+      value = Math.max(
+        0,
+        Math.min(255, ((value - validInputBlack) / inputRange) * 255),
+      );
 
       // Gamma correction
-      value = Math.pow(value / 255, 1 / validGamma) * 255;
+      value = (value / 255) ** (1 / validGamma) * 255;
 
       // Output levels
       value = validOutputBlack + (value / 255) * outputRange;
@@ -678,7 +943,12 @@ export class ProceduralMatteLayer extends BaseLayer {
    * Invert the canvas
    */
   private invertCanvas(): void {
-    const imageData = this.renderCtx.getImageData(0, 0, this.width, this.height);
+    const imageData = this.renderCtx.getImageData(
+      0,
+      0,
+      this.width,
+      this.height,
+    );
     const data = imageData.data;
 
     for (let i = 0; i < data.length; i += 4) {
@@ -709,7 +979,7 @@ export class ProceduralMatteLayer extends BaseLayer {
     let hash = 0;
     for (let i = 0; i < id.length; i++) {
       const char = id.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32bit integer
     }
     return Math.abs(hash) % 65536;
@@ -734,7 +1004,9 @@ export class ProceduralMatteLayer extends BaseLayer {
     const v = yf * yf * (3 - 2 * yf);
 
     // Bilinear interpolation
-    return (tl + u * (tr - tl) + v * (bl - tl) + u * v * (tl - tr - bl + br)) * 2 - 1;
+    return (
+      (tl + u * (tr - tl) + v * (bl - tl) + u * v * (tl - tr - bl + br)) * 2 - 1
+    );
   }
 
   // ============================================================================

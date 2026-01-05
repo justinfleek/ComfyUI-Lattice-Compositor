@@ -14,28 +14,28 @@
  * - Color Match
  */
 import {
-  registerEffectRenderer,
   createMatchingCanvas,
   type EffectStackResult,
-  type EvaluatedEffectParams
-} from '../effectProcessor';
+  type EvaluatedEffectParams,
+  registerEffectRenderer,
+} from "../effectProcessor";
 
 // Import advanced color grading effects
 import {
-  liftGammaGainRenderer as _liftGammaGainRenderer,
+  colorMatchRenderer as _colorMatchRenderer,
   hslSecondaryRenderer as _hslSecondaryRenderer,
   hueVsCurvesRenderer as _hueVsCurvesRenderer,
-  colorMatchRenderer as _colorMatchRenderer,
-  registerColorGradingEffects
-} from './colorGrading';
+  liftGammaGainRenderer as _liftGammaGainRenderer,
+  registerColorGradingEffects,
+} from "./colorGrading";
 
 // Re-export for backwards compatibility
 export {
-  liftGammaGainRenderer,
+  colorMatchRenderer,
   hslSecondaryRenderer,
   hueVsCurvesRenderer,
-  colorMatchRenderer
-} from './colorGrading';
+  liftGammaGainRenderer,
+} from "./colorGrading";
 
 // Local aliases for internal use
 const liftGammaGainRenderer = _liftGammaGainRenderer;
@@ -57,7 +57,7 @@ const colorMatchRenderer = _colorMatchRenderer;
  */
 export function brightnessContrastRenderer(
   input: EffectStackResult,
-  params: EvaluatedEffectParams
+  params: EvaluatedEffectParams,
 ): EffectStackResult {
   // Validate numeric params (NaN causes black pixel corruption)
   const rawBrightness = params.brightness ?? 0;
@@ -72,7 +72,12 @@ export function brightnessContrastRenderer(
   }
 
   const output = createMatchingCanvas(input.canvas);
-  const imageData = input.ctx.getImageData(0, 0, input.canvas.width, input.canvas.height);
+  const imageData = input.ctx.getImageData(
+    0,
+    0,
+    input.canvas.width,
+    input.canvas.height,
+  );
   const data = imageData.data;
 
   // Calculate contrast factor
@@ -183,7 +188,7 @@ function hslToRgb(h: number, s: number, l: number): [number, number, number] {
  */
 export function hueSaturationRenderer(
   input: EffectStackResult,
-  params: EvaluatedEffectParams
+  params: EvaluatedEffectParams,
 ): EffectStackResult {
   // Validate numeric params (NaN causes black pixel corruption)
   const rawHue = params.master_hue ?? 0;
@@ -195,12 +200,22 @@ export function hueSaturationRenderer(
   const colorize = params.colorize ?? false;
 
   // No change needed
-  if (hueShift === 0 && saturationShift === 0 && lightnessShift === 0 && !colorize) {
+  if (
+    hueShift === 0 &&
+    saturationShift === 0 &&
+    lightnessShift === 0 &&
+    !colorize
+  ) {
     return input;
   }
 
   const output = createMatchingCanvas(input.canvas);
-  const imageData = input.ctx.getImageData(0, 0, input.canvas.width, input.canvas.height);
+  const imageData = input.ctx.getImageData(
+    0,
+    0,
+    input.canvas.width,
+    input.canvas.height,
+  );
   const data = imageData.data;
 
   for (let i = 0; i < data.length; i += 4) {
@@ -257,7 +272,7 @@ export function hueSaturationRenderer(
  */
 export function levelsRenderer(
   input: EffectStackResult,
-  params: EvaluatedEffectParams
+  params: EvaluatedEffectParams,
 ): EffectStackResult {
   // Validate numeric params (NaN causes black pixel corruption)
   const rawInputBlack = params.input_black ?? 0;
@@ -265,20 +280,30 @@ export function levelsRenderer(
   const rawInputWhite = params.input_white ?? 255;
   const inputWhite = Number.isFinite(rawInputWhite) ? rawInputWhite : 255;
   const rawGamma = params.gamma ?? 1;
-  const gamma = (Number.isFinite(rawGamma) && rawGamma > 0) ? rawGamma : 1;
+  const gamma = Number.isFinite(rawGamma) && rawGamma > 0 ? rawGamma : 1;
   const rawOutputBlack = params.output_black ?? 0;
   const outputBlack = Number.isFinite(rawOutputBlack) ? rawOutputBlack : 0;
   const rawOutputWhite = params.output_white ?? 255;
   const outputWhite = Number.isFinite(rawOutputWhite) ? rawOutputWhite : 255;
 
   // No change needed
-  if (inputBlack === 0 && inputWhite === 255 && gamma === 1 &&
-      outputBlack === 0 && outputWhite === 255) {
+  if (
+    inputBlack === 0 &&
+    inputWhite === 255 &&
+    gamma === 1 &&
+    outputBlack === 0 &&
+    outputWhite === 255
+  ) {
     return input;
   }
 
   const output = createMatchingCanvas(input.canvas);
-  const imageData = input.ctx.getImageData(0, 0, input.canvas.width, input.canvas.height);
+  const imageData = input.ctx.getImageData(
+    0,
+    0,
+    input.canvas.width,
+    input.canvas.height,
+  );
   const data = imageData.data;
 
   // Build lookup table for performance
@@ -292,7 +317,7 @@ export function levelsRenderer(
     value = Math.max(0, Math.min(1, value));
 
     // Gamma correction
-    value = Math.pow(value, 1 / gamma);
+    value = value ** (1 / gamma);
 
     // Output levels
     value = outputBlack + value * outputRange;
@@ -326,7 +351,7 @@ export function levelsRenderer(
  */
 export function tintRenderer(
   input: EffectStackResult,
-  params: EvaluatedEffectParams
+  params: EvaluatedEffectParams,
 ): EffectStackResult {
   const blackColor = params.map_black_to ?? { r: 0, g: 0, b: 0 };
   const whiteColor = params.map_white_to ?? { r: 255, g: 255, b: 255 };
@@ -340,7 +365,12 @@ export function tintRenderer(
   }
 
   const output = createMatchingCanvas(input.canvas);
-  const imageData = input.ctx.getImageData(0, 0, input.canvas.width, input.canvas.height);
+  const imageData = input.ctx.getImageData(
+    0,
+    0,
+    input.canvas.width,
+    input.canvas.height,
+  );
   const data = imageData.data;
 
   for (let i = 0; i < data.length; i += 4) {
@@ -374,14 +404,20 @@ export function tintRenderer(
  * Curve point structure for bezier curves
  */
 interface CurvePoint {
-  x: number;  // Input value 0-255
-  y: number;  // Output value 0-255
+  x: number; // Input value 0-255
+  y: number; // Output value 0-255
 }
 
 /**
  * Evaluate a cubic bezier curve at parameter t
  */
-function cubicBezier(p0: number, p1: number, p2: number, p3: number, t: number): number {
+function cubicBezier(
+  p0: number,
+  p1: number,
+  p2: number,
+  p3: number,
+  t: number,
+): number {
   const t2 = t * t;
   const t3 = t2 * t;
   const mt = 1 - t;
@@ -446,12 +482,12 @@ function buildCurveLUT(points: CurvePoint[]): Uint8Array {
 
     if (segmentIndex > 0) {
       const pPrev = sortedPoints[segmentIndex - 1];
-      tangent0 = (p1.y - pPrev.y) / (p1.x - pPrev.x || 1) * (p1.x - p0.x);
+      tangent0 = ((p1.y - pPrev.y) / (p1.x - pPrev.x || 1)) * (p1.x - p0.x);
     }
 
     if (segmentIndex < sortedPoints.length - 2) {
       const pNext = sortedPoints[segmentIndex + 2];
-      tangent1 = (pNext.y - p0.y) / (pNext.x - p0.x || 1) * (p1.x - p0.x);
+      tangent1 = ((pNext.y - p0.y) / (pNext.x - p0.x || 1)) * (p1.x - p0.x);
     }
 
     // Control points for cubic bezier
@@ -486,7 +522,7 @@ function buildCurveLUT(points: CurvePoint[]): Uint8Array {
  */
 export function curvesRenderer(
   input: EffectStackResult,
-  params: EvaluatedEffectParams
+  params: EvaluatedEffectParams,
 ): EffectStackResult {
   const masterCurve = params.master_curve as CurvePoint[] | undefined;
   const redCurve = params.red_curve as CurvePoint[] | undefined;
@@ -498,21 +534,47 @@ export function curvesRenderer(
   const blend = Number.isFinite(rawBlend) ? rawBlend / 100 : 1;
 
   // Check if any curves are defined
-  const hasCurves = masterCurve || redCurve || greenCurve || blueCurve || alphaCurve;
+  const hasCurves =
+    masterCurve || redCurve || greenCurve || blueCurve || alphaCurve;
 
   if (!hasCurves || blend === 0) {
     return input;
   }
 
   // Build lookup tables for each channel
-  const masterLUT = buildCurveLUT(masterCurve ?? [{ x: 0, y: 0 }, { x: 255, y: 255 }]);
-  const redLUT = buildCurveLUT(redCurve ?? [{ x: 0, y: 0 }, { x: 255, y: 255 }]);
-  const greenLUT = buildCurveLUT(greenCurve ?? [{ x: 0, y: 0 }, { x: 255, y: 255 }]);
-  const blueLUT = buildCurveLUT(blueCurve ?? [{ x: 0, y: 0 }, { x: 255, y: 255 }]);
+  const masterLUT = buildCurveLUT(
+    masterCurve ?? [
+      { x: 0, y: 0 },
+      { x: 255, y: 255 },
+    ],
+  );
+  const redLUT = buildCurveLUT(
+    redCurve ?? [
+      { x: 0, y: 0 },
+      { x: 255, y: 255 },
+    ],
+  );
+  const greenLUT = buildCurveLUT(
+    greenCurve ?? [
+      { x: 0, y: 0 },
+      { x: 255, y: 255 },
+    ],
+  );
+  const blueLUT = buildCurveLUT(
+    blueCurve ?? [
+      { x: 0, y: 0 },
+      { x: 255, y: 255 },
+    ],
+  );
   const alphaLUT = alphaCurve ? buildCurveLUT(alphaCurve) : null;
 
   const output = createMatchingCanvas(input.canvas);
-  const imageData = input.ctx.getImageData(0, 0, input.canvas.width, input.canvas.height);
+  const imageData = input.ctx.getImageData(
+    0,
+    0,
+    input.canvas.width,
+    input.canvas.height,
+  );
   const data = imageData.data;
 
   for (let i = 0; i < data.length; i += 4) {
@@ -570,7 +632,10 @@ export function createSCurve(amount: number = 0.5): CurvePoint[] {
 /**
  * Convenience function to create a highlight/shadow lift curve
  */
-export function createLiftCurve(shadowLift: number = 0, highlightLift: number = 0): CurvePoint[] {
+export function createLiftCurve(
+  shadowLift: number = 0,
+  highlightLift: number = 0,
+): CurvePoint[] {
   return [
     { x: 0, y: Math.max(0, Math.min(128, shadowLift)) },
     { x: 128, y: 128 },
@@ -600,7 +665,7 @@ export function createLiftCurve(shadowLift: number = 0, highlightLift: number = 
 export function glowRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams,
-  frame?: number
+  frame?: number,
 ): EffectStackResult {
   // Validate numeric params (NaN causes black pixel corruption)
   const rawThreshold = params.glow_threshold ?? 128;
@@ -610,26 +675,28 @@ export function glowRenderer(
   // Support both new 'glow_intensity' (0-10 range) and legacy (0-400 percentage)
   const rawIntensity = params.glow_intensity ?? 100;
   const validIntensity = Number.isFinite(rawIntensity) ? rawIntensity : 100;
-  const intensity = validIntensity <= 10 ? validIntensity : validIntensity / 100;
+  const intensity =
+    validIntensity <= 10 ? validIntensity : validIntensity / 100;
 
   // Support both 'composite_original' (from definition) and legacy 'glow_operation'
   // composite_original: 'on-top' | 'behind' | 'none'
   // glow_operation: 'add' | 'screen' | 'lighten'
-  const composite = params.composite_original ?? 'on-top';
-  const operation = params.glow_operation ?? (composite === 'on-top' ? 'add' : 'lighten');
+  const composite = params.composite_original ?? "on-top";
+  const operation =
+    params.glow_operation ?? (composite === "on-top" ? "add" : "lighten");
 
   // Glow Colors (original or custom A/B colors)
-  const glowColors = params.glow_colors ?? 'original';
+  const glowColors = params.glow_colors ?? "original";
   const colorA = params.color_a ?? { r: 255, g: 255, b: 255, a: 1 };
   const colorB = params.color_b ?? { r: 255, g: 128, b: 0, a: 1 };
 
   // Color Looping (animated color cycling)
-  const colorLooping = params.color_looping ?? 'none';
+  const colorLooping = params.color_looping ?? "none";
   const rawLoopSpeed = params.color_looping_speed ?? 1;
   const colorLoopingSpeed = Number.isFinite(rawLoopSpeed) ? rawLoopSpeed : 1;
 
   // Glow Dimensions (horizontal, vertical, or both)
-  const glowDimensions = params.glow_dimensions ?? 'both';
+  const glowDimensions = params.glow_dimensions ?? "both";
 
   // No glow if intensity is 0 or radius is 0
   if (intensity === 0 || radius === 0) {
@@ -641,23 +708,24 @@ export function glowRenderer(
 
   // Calculate color looping blend factor
   let colorBlend = 0; // 0 = Color A, 1 = Color B
-  if (colorLooping !== 'none' && frame !== undefined) {
+  if (colorLooping !== "none" && frame !== undefined) {
     // Use injected FPS from context, fallback to 16 (WAN standard)
     // Validate fps (nullish coalescing doesn't catch NaN)
-    const fps = (Number.isFinite(params._fps) && params._fps > 0) ? params._fps : 16;
+    const fps =
+      Number.isFinite(params._fps) && params._fps > 0 ? params._fps : 16;
     const time = frame / fps;
     const cycle = (time * colorLoopingSpeed) % 1;
 
     switch (colorLooping) {
-      case 'sawtooth_ab':
+      case "sawtooth_ab":
         // A → B → A → B (smooth ramp from A to B, then snap back)
         colorBlend = cycle;
         break;
-      case 'sawtooth_ba':
+      case "sawtooth_ba":
         // B → A → B → A (smooth ramp from B to A, then snap back)
         colorBlend = 1 - cycle;
         break;
-      case 'triangle':
+      case "triangle":
         // A → B → A (ping-pong)
         colorBlend = cycle < 0.5 ? cycle * 2 : 2 - cycle * 2;
         break;
@@ -667,24 +735,27 @@ export function glowRenderer(
   }
 
   // Calculate the effective glow color (lerp between A and B)
-  const effectiveColor = glowColors === 'ab' ? {
-    r: colorA.r + (colorB.r - colorA.r) * colorBlend,
-    g: colorA.g + (colorB.g - colorA.g) * colorBlend,
-    b: colorA.b + (colorB.b - colorA.b) * colorBlend,
-    a: colorA.a + (colorB.a - colorA.a) * colorBlend
-  } : null;
+  const effectiveColor =
+    glowColors === "ab"
+      ? {
+          r: colorA.r + (colorB.r - colorA.r) * colorBlend,
+          g: colorA.g + (colorB.g - colorA.g) * colorBlend,
+          b: colorA.b + (colorB.b - colorA.b) * colorBlend,
+          a: colorA.a + (colorB.a - colorA.a) * colorBlend,
+        }
+      : null;
 
   // Step 1: Extract bright areas above threshold
   // Use _sourceCanvas if provided (for additive stacking), otherwise use input
   // This ensures stacked glows extract from original layer, not from previous glow output
   const sourceCanvas = params._sourceCanvas as HTMLCanvasElement | undefined;
-  const thresholdCanvas = document.createElement('canvas');
+  const thresholdCanvas = document.createElement("canvas");
   thresholdCanvas.width = width;
   thresholdCanvas.height = height;
-  const thresholdCtx = thresholdCanvas.getContext('2d')!;
+  const thresholdCtx = thresholdCanvas.getContext("2d")!;
 
   // Get image data from source canvas (original) or input canvas (chain)
-  const sourceCtx = sourceCanvas?.getContext('2d');
+  const sourceCtx = sourceCanvas?.getContext("2d");
   const inputData = sourceCtx
     ? sourceCtx.getImageData(0, 0, width, height)
     : input.ctx.getImageData(0, 0, width, height);
@@ -727,28 +798,28 @@ export function glowRenderer(
   thresholdCtx.putImageData(thresholdData, 0, 0);
 
   // Step 2: Blur the threshold image (with dimension control)
-  const blurCanvas = document.createElement('canvas');
+  const blurCanvas = document.createElement("canvas");
   blurCanvas.width = width;
   blurCanvas.height = height;
-  const blurCtx = blurCanvas.getContext('2d')!;
+  const blurCtx = blurCanvas.getContext("2d")!;
 
   // Apply directional or full blur based on glow dimensions
-  if (glowDimensions === 'horizontal') {
+  if (glowDimensions === "horizontal") {
     // Horizontal-only blur: apply blur, then scale vertically to 1px and stretch back
     // This is a CSS filter approximation - true directional blur would need pixel manipulation
-    const tempCanvas = document.createElement('canvas');
+    const tempCanvas = document.createElement("canvas");
     tempCanvas.width = width;
     tempCanvas.height = 1;
-    const tempCtx = tempCanvas.getContext('2d')!;
+    const tempCtx = tempCanvas.getContext("2d")!;
 
     // Draw threshold to 1-pixel height (average vertically)
     tempCtx.drawImage(thresholdCanvas, 0, 0, width, 1);
 
     // Apply horizontal blur
-    const blurTemp = document.createElement('canvas');
+    const blurTemp = document.createElement("canvas");
     blurTemp.width = width;
     blurTemp.height = 1;
-    const blurTempCtx = blurTemp.getContext('2d')!;
+    const blurTempCtx = blurTemp.getContext("2d")!;
     blurTempCtx.filter = `blur(${radius}px)`;
     blurTempCtx.drawImage(tempCanvas, 0, 0);
 
@@ -756,25 +827,25 @@ export function glowRenderer(
     blurCtx.drawImage(blurTemp, 0, 0, width, height);
 
     // Multiply with original threshold to restore vertical detail
-    blurCtx.globalCompositeOperation = 'multiply';
+    blurCtx.globalCompositeOperation = "multiply";
     blurCtx.filter = `blur(${radius}px)`;
     blurCtx.drawImage(thresholdCanvas, 0, 0);
-    blurCtx.globalCompositeOperation = 'source-over';
-  } else if (glowDimensions === 'vertical') {
+    blurCtx.globalCompositeOperation = "source-over";
+  } else if (glowDimensions === "vertical") {
     // Vertical-only blur: similar approach but rotated
-    const tempCanvas = document.createElement('canvas');
+    const tempCanvas = document.createElement("canvas");
     tempCanvas.width = 1;
     tempCanvas.height = height;
-    const tempCtx = tempCanvas.getContext('2d')!;
+    const tempCtx = tempCanvas.getContext("2d")!;
 
     // Draw threshold to 1-pixel width (average horizontally)
     tempCtx.drawImage(thresholdCanvas, 0, 0, 1, height);
 
     // Apply vertical blur
-    const blurTemp = document.createElement('canvas');
+    const blurTemp = document.createElement("canvas");
     blurTemp.width = 1;
     blurTemp.height = height;
-    const blurTempCtx = blurTemp.getContext('2d')!;
+    const blurTempCtx = blurTemp.getContext("2d")!;
     blurTempCtx.filter = `blur(${radius}px)`;
     blurTempCtx.drawImage(tempCanvas, 0, 0);
 
@@ -782,10 +853,10 @@ export function glowRenderer(
     blurCtx.drawImage(blurTemp, 0, 0, width, height);
 
     // Multiply with original threshold to restore horizontal detail
-    blurCtx.globalCompositeOperation = 'multiply';
+    blurCtx.globalCompositeOperation = "multiply";
     blurCtx.filter = `blur(${radius}px)`;
     blurCtx.drawImage(thresholdCanvas, 0, 0);
-    blurCtx.globalCompositeOperation = 'source-over';
+    blurCtx.globalCompositeOperation = "source-over";
   } else {
     // Both dimensions - standard blur
     blurCtx.filter = `blur(${radius}px)`;
@@ -793,13 +864,13 @@ export function glowRenderer(
   }
 
   // Step 3: Composite glow with original based on composite mode
-  if (composite === 'none') {
+  if (composite === "none") {
     // Show glow only, no original
     output.ctx.drawImage(blurCanvas, 0, 0);
-  } else if (composite === 'behind') {
+  } else if (composite === "behind") {
     // Draw glow first, then original on top
     output.ctx.drawImage(blurCanvas, 0, 0);
-    output.ctx.globalCompositeOperation = 'source-over';
+    output.ctx.globalCompositeOperation = "source-over";
     output.ctx.drawImage(input.canvas, 0, 0);
   } else {
     // 'on-top' mode (default): Draw original, then glow on top with blend mode
@@ -807,15 +878,14 @@ export function glowRenderer(
 
     // Add glow using selected blend mode
     switch (operation) {
-      case 'screen':
-        output.ctx.globalCompositeOperation = 'screen';
+      case "screen":
+        output.ctx.globalCompositeOperation = "screen";
         break;
-      case 'lighten':
-        output.ctx.globalCompositeOperation = 'lighten';
+      case "lighten":
+        output.ctx.globalCompositeOperation = "lighten";
         break;
-      case 'add':
       default:
-        output.ctx.globalCompositeOperation = 'lighter';
+        output.ctx.globalCompositeOperation = "lighter";
         break;
     }
 
@@ -823,7 +893,7 @@ export function glowRenderer(
   }
 
   // Reset composite operation
-  output.ctx.globalCompositeOperation = 'source-over';
+  output.ctx.globalCompositeOperation = "source-over";
 
   return output;
 }
@@ -845,14 +915,16 @@ export function glowRenderer(
  */
 export function dropShadowRenderer(
   input: EffectStackResult,
-  params: EvaluatedEffectParams
+  params: EvaluatedEffectParams,
 ): EffectStackResult {
   const shadowColor = params.shadow_color ?? { r: 0, g: 0, b: 0, a: 0.5 };
   // Validate numeric params (NaN causes visual corruption)
   const rawOpacity = params.opacity ?? 50;
   const opacity = Number.isFinite(rawOpacity) ? rawOpacity / 100 : 0.5;
   const rawDirection = params.direction ?? 135;
-  const direction = Number.isFinite(rawDirection) ? rawDirection * Math.PI / 180 : 135 * Math.PI / 180;
+  const direction = Number.isFinite(rawDirection)
+    ? (rawDirection * Math.PI) / 180
+    : (135 * Math.PI) / 180;
   const rawDistance = params.distance ?? 5;
   const distance = Number.isFinite(rawDistance) ? rawDistance : 5;
   const rawSoftness = params.softness ?? 5;
@@ -876,7 +948,7 @@ export function dropShadowRenderer(
   output.ctx.drawImage(input.canvas, 0, 0);
 
   // Reset shadow for the second draw
-  output.ctx.shadowColor = 'transparent';
+  output.ctx.shadowColor = "transparent";
   output.ctx.shadowBlur = 0;
   output.ctx.shadowOffsetX = 0;
   output.ctx.shadowOffsetY = 0;
@@ -910,7 +982,7 @@ export function dropShadowRenderer(
  */
 export function colorBalanceRenderer(
   input: EffectStackResult,
-  params: EvaluatedEffectParams
+  params: EvaluatedEffectParams,
 ): EffectStackResult {
   // Validate numeric params (NaN causes black pixel corruption)
   const safeDiv100 = (val: unknown, def: number) => {
@@ -929,14 +1001,27 @@ export function colorBalanceRenderer(
   const preserveLuminosity = params.preserve_luminosity ?? true;
 
   // No change if all values are 0
-  if (shadowR === 0 && shadowG === 0 && shadowB === 0 &&
-      midtoneR === 0 && midtoneG === 0 && midtoneB === 0 &&
-      highlightR === 0 && highlightG === 0 && highlightB === 0) {
+  if (
+    shadowR === 0 &&
+    shadowG === 0 &&
+    shadowB === 0 &&
+    midtoneR === 0 &&
+    midtoneG === 0 &&
+    midtoneB === 0 &&
+    highlightR === 0 &&
+    highlightG === 0 &&
+    highlightB === 0
+  ) {
     return input;
   }
 
   const output = createMatchingCanvas(input.canvas);
-  const imageData = input.ctx.getImageData(0, 0, input.canvas.width, input.canvas.height);
+  const imageData = input.ctx.getImageData(
+    0,
+    0,
+    input.canvas.width,
+    input.canvas.height,
+  );
   const data = imageData.data;
 
   for (let i = 0; i < data.length; i += 4) {
@@ -956,9 +1041,18 @@ export function colorBalanceRenderer(
     const midtoneWeight = 1 - shadowWeight - highlightWeight;
 
     // Apply adjustments per tonal range
-    const rAdjust = shadowR * shadowWeight + midtoneR * midtoneWeight + highlightR * highlightWeight;
-    const gAdjust = shadowG * shadowWeight + midtoneG * midtoneWeight + highlightG * highlightWeight;
-    const bAdjust = shadowB * shadowWeight + midtoneB * midtoneWeight + highlightB * highlightWeight;
+    const rAdjust =
+      shadowR * shadowWeight +
+      midtoneR * midtoneWeight +
+      highlightR * highlightWeight;
+    const gAdjust =
+      shadowG * shadowWeight +
+      midtoneG * midtoneWeight +
+      highlightG * highlightWeight;
+    const bAdjust =
+      shadowB * shadowWeight +
+      midtoneB * midtoneWeight +
+      highlightB * highlightWeight;
 
     r = r + rAdjust * 255;
     g = g + gAdjust * 255;
@@ -999,7 +1093,7 @@ export function colorBalanceRenderer(
  */
 export function exposureRenderer(
   input: EffectStackResult,
-  params: EvaluatedEffectParams
+  params: EvaluatedEffectParams,
 ): EffectStackResult {
   // Validate numeric params (NaN causes black pixel corruption)
   const rawExposure = params.exposure ?? 0;
@@ -1007,7 +1101,7 @@ export function exposureRenderer(
   const rawOffset = params.offset ?? 0;
   const offset = Number.isFinite(rawOffset) ? rawOffset : 0;
   const rawGamma = params.gamma ?? 1;
-  const gamma = (Number.isFinite(rawGamma) && rawGamma > 0) ? rawGamma : 1;
+  const gamma = Number.isFinite(rawGamma) && rawGamma > 0 ? rawGamma : 1;
 
   // No change if all values are default
   if (exposure === 0 && offset === 0 && gamma === 1) {
@@ -1015,12 +1109,17 @@ export function exposureRenderer(
   }
 
   const output = createMatchingCanvas(input.canvas);
-  const imageData = input.ctx.getImageData(0, 0, input.canvas.width, input.canvas.height);
+  const imageData = input.ctx.getImageData(
+    0,
+    0,
+    input.canvas.width,
+    input.canvas.height,
+  );
   const data = imageData.data;
 
   // Build lookup table for performance
   const lut = new Uint8Array(256);
-  const exposureMultiplier = Math.pow(2, exposure);
+  const exposureMultiplier = 2 ** exposure;
   const gammaInv = 1 / gamma;
 
   for (let i = 0; i < 256; i++) {
@@ -1036,7 +1135,7 @@ export function exposureRenderer(
     value = Math.max(0, Math.min(1, value));
 
     // Apply gamma
-    value = Math.pow(value, gammaInv);
+    value = value ** gammaInv;
 
     lut[i] = Math.round(value * 255);
   }
@@ -1065,7 +1164,7 @@ export function exposureRenderer(
  */
 export function vibranceRenderer(
   input: EffectStackResult,
-  params: EvaluatedEffectParams
+  params: EvaluatedEffectParams,
 ): EffectStackResult {
   // Validate numeric params (NaN causes black pixel corruption)
   const rawVibrance = params.vibrance ?? 0;
@@ -1079,7 +1178,12 @@ export function vibranceRenderer(
   }
 
   const output = createMatchingCanvas(input.canvas);
-  const imageData = input.ctx.getImageData(0, 0, input.canvas.width, input.canvas.height);
+  const imageData = input.ctx.getImageData(
+    0,
+    0,
+    input.canvas.width,
+    input.canvas.height,
+  );
   const data = imageData.data;
 
   for (let i = 0; i < data.length; i += 4) {
@@ -1097,12 +1201,19 @@ export function vibranceRenderer(
 
     // Vibrance: boost less saturated colors more
     // Also protect skin tones (orange-ish colors)
-    const skinProtection = 1 - Math.max(0, Math.min(1,
-      Math.abs(r - 0.8) * 2 + Math.abs(g - 0.5) * 2 + Math.abs(b - 0.3) * 3
-    ));
+    const skinProtection =
+      1 -
+      Math.max(
+        0,
+        Math.min(
+          1,
+          Math.abs(r - 0.8) * 2 + Math.abs(g - 0.5) * 2 + Math.abs(b - 0.3) * 3,
+        ),
+      );
 
     // Vibrance amount inversely proportional to current saturation
-    const vibranceAmount = vibrance * (1 - currentSat) * (1 - skinProtection * 0.5);
+    const vibranceAmount =
+      vibrance * (1 - currentSat) * (1 - skinProtection * 0.5);
 
     // Combined saturation adjustment
     const satAdjust = 1 + saturation + vibranceAmount;
@@ -1135,19 +1246,24 @@ export function vibranceRenderer(
  */
 export function invertRenderer(
   input: EffectStackResult,
-  params: EvaluatedEffectParams
+  params: EvaluatedEffectParams,
 ): EffectStackResult {
   // Validate blend param (NaN causes black pixel corruption)
   const rawBlend = params.blend ?? 100;
   const blend = Number.isFinite(rawBlend) ? rawBlend / 100 : 1;
-  const channel = params.channel ?? 'rgb';
+  const channel = params.channel ?? "rgb";
 
   if (blend === 0) {
     return input;
   }
 
   const output = createMatchingCanvas(input.canvas);
-  const imageData = input.ctx.getImageData(0, 0, input.canvas.width, input.canvas.height);
+  const imageData = input.ctx.getImageData(
+    0,
+    0,
+    input.canvas.width,
+    input.canvas.height,
+  );
   const data = imageData.data;
 
   for (let i = 0; i < data.length; i += 4) {
@@ -1160,28 +1276,28 @@ export function invertRenderer(
     let b = origB;
 
     switch (channel) {
-      case 'rgb':
+      case "rgb":
         r = 255 - r;
         g = 255 - g;
         b = 255 - b;
         break;
-      case 'red':
+      case "red":
         r = 255 - r;
         break;
-      case 'green':
+      case "green":
         g = 255 - g;
         break;
-      case 'blue':
+      case "blue":
         b = 255 - b;
         break;
-      case 'hue':
-      case 'saturation':
-      case 'lightness': {
+      case "hue":
+      case "saturation":
+      case "lightness": {
         // Convert to HSL, invert component, convert back
         let [h, s, l] = rgbToHsl(r, g, b);
-        if (channel === 'hue') h = (h + 0.5) % 1;
-        else if (channel === 'saturation') s = 1 - s;
-        else if (channel === 'lightness') l = 1 - l;
+        if (channel === "hue") h = (h + 0.5) % 1;
+        else if (channel === "saturation") s = 1 - s;
+        else if (channel === "lightness") l = 1 - l;
         [r, g, b] = hslToRgb(h, s, l);
         break;
       }
@@ -1215,18 +1331,25 @@ export function invertRenderer(
  */
 export function posterizeRenderer(
   input: EffectStackResult,
-  params: EvaluatedEffectParams
+  params: EvaluatedEffectParams,
 ): EffectStackResult {
   // Validate levels (NaN bypasses Math.max/min clamps, corrupting LUT)
   const rawLevels = params.levels ?? 6;
-  const levels = Number.isFinite(rawLevels) ? Math.max(2, Math.min(256, rawLevels)) : 6;
+  const levels = Number.isFinite(rawLevels)
+    ? Math.max(2, Math.min(256, rawLevels))
+    : 6;
 
   if (levels === 256) {
     return input;
   }
 
   const output = createMatchingCanvas(input.canvas);
-  const imageData = input.ctx.getImageData(0, 0, input.canvas.width, input.canvas.height);
+  const imageData = input.ctx.getImageData(
+    0,
+    0,
+    input.canvas.width,
+    input.canvas.height,
+  );
   const data = imageData.data;
 
   // Build lookup table
@@ -1234,7 +1357,7 @@ export function posterizeRenderer(
   const step = 255 / (levels - 1);
 
   for (let i = 0; i < 256; i++) {
-    const level = Math.round(i / 255 * (levels - 1));
+    const level = Math.round((i / 255) * (levels - 1));
     lut[i] = Math.round(level * step);
   }
 
@@ -1261,14 +1384,19 @@ export function posterizeRenderer(
  */
 export function thresholdRenderer(
   input: EffectStackResult,
-  params: EvaluatedEffectParams
+  params: EvaluatedEffectParams,
 ): EffectStackResult {
   // Validate threshold param (NaN causes incorrect threshold comparison)
   const rawThreshold = params.threshold ?? 128;
   const threshold = Number.isFinite(rawThreshold) ? rawThreshold : 128;
 
   const output = createMatchingCanvas(input.canvas);
-  const imageData = input.ctx.getImageData(0, 0, input.canvas.width, input.canvas.height);
+  const imageData = input.ctx.getImageData(
+    0,
+    0,
+    input.canvas.width,
+    input.canvas.height,
+  );
   const data = imageData.data;
 
   for (let i = 0; i < data.length; i += 4) {
@@ -1309,7 +1437,7 @@ export function thresholdRenderer(
  */
 export function vignetteRenderer(
   input: EffectStackResult,
-  params: EvaluatedEffectParams
+  params: EvaluatedEffectParams,
 ): EffectStackResult {
   // Validate numeric params (NaN causes black pixel corruption)
   const rawAmount = params.amount ?? 0;
@@ -1327,7 +1455,12 @@ export function vignetteRenderer(
   }
 
   const output = createMatchingCanvas(input.canvas);
-  const imageData = input.ctx.getImageData(0, 0, input.canvas.width, input.canvas.height);
+  const imageData = input.ctx.getImageData(
+    0,
+    0,
+    input.canvas.width,
+    input.canvas.height,
+  );
   const data = imageData.data;
   const width = input.canvas.width;
   const height = input.canvas.height;
@@ -1359,8 +1492,8 @@ export function vignetteRenderer(
       if (dist > midpoint) {
         // Smooth falloff using smoothstep
         const t = (dist - midpoint) / (1 - midpoint + 0.001);
-        const smoothT = t * t * (3 - 2 * t);  // Smoothstep
-        factor = Math.pow(smoothT, 1 / featherMult);
+        const smoothT = t * t * (3 - 2 * t); // Smoothstep
+        factor = smoothT ** (1 / featherMult);
       }
 
       // Apply vignette (darken or lighten based on amount sign)
@@ -1388,7 +1521,7 @@ interface LUT3D {
   size: number;
   domainMin: [number, number, number];
   domainMax: [number, number, number];
-  data: Float32Array;  // RGB values in row-major order
+  data: Float32Array; // RGB values in row-major order
 }
 
 // Global LUT cache
@@ -1398,8 +1531,8 @@ const lutCache = new Map<string, LUT3D>();
  * Parse a .cube LUT file
  */
 export function parseCubeLUT(content: string): LUT3D {
-  const lines = content.split('\n');
-  let title = 'Untitled';
+  const lines = content.split("\n");
+  let title = "Untitled";
   let size = 0;
   let domainMin: [number, number, number] = [0, 0, 0];
   let domainMax: [number, number, number] = [1, 1, 1];
@@ -1407,16 +1540,16 @@ export function parseCubeLUT(content: string): LUT3D {
 
   for (const line of lines) {
     const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
+    if (!trimmed || trimmed.startsWith("#")) continue;
 
-    if (trimmed.startsWith('TITLE')) {
-      title = trimmed.replace(/^TITLE\s*"?|"?\s*$/g, '');
-    } else if (trimmed.startsWith('LUT_3D_SIZE')) {
+    if (trimmed.startsWith("TITLE")) {
+      title = trimmed.replace(/^TITLE\s*"?|"?\s*$/g, "");
+    } else if (trimmed.startsWith("LUT_3D_SIZE")) {
       size = parseInt(trimmed.split(/\s+/)[1], 10);
-    } else if (trimmed.startsWith('DOMAIN_MIN')) {
+    } else if (trimmed.startsWith("DOMAIN_MIN")) {
       const parts = trimmed.split(/\s+/).slice(1).map(Number);
       domainMin = [parts[0] ?? 0, parts[1] ?? 0, parts[2] ?? 0];
-    } else if (trimmed.startsWith('DOMAIN_MAX')) {
+    } else if (trimmed.startsWith("DOMAIN_MAX")) {
       const parts = trimmed.split(/\s+/).slice(1).map(Number);
       domainMax = [parts[0] ?? 1, parts[1] ?? 1, parts[2] ?? 1];
     } else if (/^[\d.\-e]+\s+[\d.\-e]+\s+[\d.\-e]+/.test(trimmed)) {
@@ -1425,7 +1558,7 @@ export function parseCubeLUT(content: string): LUT3D {
   }
 
   if (size === 0) {
-    throw new Error('Invalid .cube file: missing LUT_3D_SIZE');
+    throw new Error("Invalid .cube file: missing LUT_3D_SIZE");
   }
 
   const data = new Float32Array(size * size * size * 3);
@@ -1442,7 +1575,12 @@ export function parseCubeLUT(content: string): LUT3D {
 /**
  * Trilinear interpolation in 3D LUT
  */
-function sampleLUT3D(lut: LUT3D, r: number, g: number, b: number): [number, number, number] {
+function sampleLUT3D(
+  lut: LUT3D,
+  r: number,
+  g: number,
+  b: number,
+): [number, number, number] {
   const size = lut.size;
   const maxIdx = size - 1;
 
@@ -1464,7 +1602,12 @@ function sampleLUT3D(lut: LUT3D, r: number, g: number, b: number): [number, numb
   const bFrac = bIdx - b0;
 
   // Helper to get LUT value at index
-  const getLUT = (ri: number, gi: number, bi: number, channel: number): number => {
+  const getLUT = (
+    ri: number,
+    gi: number,
+    bi: number,
+    channel: number,
+  ): number => {
     const idx = ((bi * size + gi) * size + ri) * 3 + channel;
     return lut.data[idx] ?? 0;
   };
@@ -1509,7 +1652,7 @@ function sampleLUT3D(lut: LUT3D, r: number, g: number, b: number): [number, numb
  */
 export function lutRenderer(
   input: EffectStackResult,
-  params: EvaluatedEffectParams
+  params: EvaluatedEffectParams,
 ): EffectStackResult {
   const lutData = params.lutData as string;
   // Validate intensity param (NaN causes black pixel corruption)
@@ -1531,13 +1674,18 @@ export function lutRenderer(
       lut = parseCubeLUT(content);
       lutCache.set(lutData, lut);
     } catch (e) {
-      console.warn('Failed to parse LUT:', e);
+      console.warn("Failed to parse LUT:", e);
       return input;
     }
   }
 
   const output = createMatchingCanvas(input.canvas);
-  const imageData = input.ctx.getImageData(0, 0, input.canvas.width, input.canvas.height);
+  const imageData = input.ctx.getImageData(
+    0,
+    0,
+    input.canvas.width,
+    input.canvas.height,
+  );
   const data = imageData.data;
 
   for (let i = 0; i < data.length; i += 4) {
@@ -1550,9 +1698,18 @@ export function lutRenderer(
     const [lr, lg, lb] = sampleLUT3D(lut, r, g, b);
 
     // Blend with original based on intensity
-    data[i] = Math.max(0, Math.min(255, (r * (1 - intensity) + lr * intensity) * 255));
-    data[i + 1] = Math.max(0, Math.min(255, (g * (1 - intensity) + lg * intensity) * 255));
-    data[i + 2] = Math.max(0, Math.min(255, (b * (1 - intensity) + lb * intensity) * 255));
+    data[i] = Math.max(
+      0,
+      Math.min(255, (r * (1 - intensity) + lr * intensity) * 255),
+    );
+    data[i + 1] = Math.max(
+      0,
+      Math.min(255, (g * (1 - intensity) + lg * intensity) * 255),
+    );
+    data[i + 2] = Math.max(
+      0,
+      Math.min(255, (b * (1 - intensity) + lb * intensity) * 255),
+    );
   }
 
   output.ctx.putImageData(imageData, 0, 0);
@@ -1593,21 +1750,21 @@ export function clearLUTCache(): void {
  */
 export function registerColorEffects(): void {
   // Register basic color effects
-  registerEffectRenderer('brightness-contrast', brightnessContrastRenderer);
-  registerEffectRenderer('hue-saturation', hueSaturationRenderer);
-  registerEffectRenderer('levels', levelsRenderer);
-  registerEffectRenderer('tint', tintRenderer);
-  registerEffectRenderer('curves', curvesRenderer);
-  registerEffectRenderer('glow', glowRenderer);
-  registerEffectRenderer('drop-shadow', dropShadowRenderer);
-  registerEffectRenderer('color-balance', colorBalanceRenderer);
-  registerEffectRenderer('exposure', exposureRenderer);
-  registerEffectRenderer('vibrance', vibranceRenderer);
-  registerEffectRenderer('invert', invertRenderer);
-  registerEffectRenderer('posterize', posterizeRenderer);
-  registerEffectRenderer('threshold', thresholdRenderer);
-  registerEffectRenderer('vignette', vignetteRenderer);
-  registerEffectRenderer('lut', lutRenderer);
+  registerEffectRenderer("brightness-contrast", brightnessContrastRenderer);
+  registerEffectRenderer("hue-saturation", hueSaturationRenderer);
+  registerEffectRenderer("levels", levelsRenderer);
+  registerEffectRenderer("tint", tintRenderer);
+  registerEffectRenderer("curves", curvesRenderer);
+  registerEffectRenderer("glow", glowRenderer);
+  registerEffectRenderer("drop-shadow", dropShadowRenderer);
+  registerEffectRenderer("color-balance", colorBalanceRenderer);
+  registerEffectRenderer("exposure", exposureRenderer);
+  registerEffectRenderer("vibrance", vibranceRenderer);
+  registerEffectRenderer("invert", invertRenderer);
+  registerEffectRenderer("posterize", posterizeRenderer);
+  registerEffectRenderer("threshold", thresholdRenderer);
+  registerEffectRenderer("vignette", vignetteRenderer);
+  registerEffectRenderer("lut", lutRenderer);
 
   // Register advanced color grading effects from colorGrading.ts
   registerColorGradingEffects();
@@ -1639,5 +1796,5 @@ export default {
   clearLUTCache,
   createSCurve,
   createLiftCurve,
-  registerColorEffects
+  registerColorEffects,
 };

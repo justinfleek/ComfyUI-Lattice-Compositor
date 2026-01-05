@@ -8,42 +8,38 @@
  * - Pucker/Bloat, Wiggle, Zig-Zag, Roughen, Wave, Twist
  */
 
+import polygonClipping from "polygon-clipping";
 import type {
-  Point2D,
-  BezierVertex,
   BezierPath,
-  TrimMode,
+  BezierVertex,
   MergeMode,
   OffsetJoin,
-  WigglePointType,
-  ZigZagPointType,
-} from '@/types/shapes';
-import { SeededRandom } from './particleSystem';
-import polygonClipping from 'polygon-clipping';
-import * as bezierBoolean from './bezierBoolean';
-import { createLogger } from '@/utils/logger';
+  Point2D,
+} from "@/types/shapes";
+import { createLogger } from "@/utils/logger";
+import * as bezierBoolean from "./bezierBoolean";
 
 // Import path modifiers
 import {
   puckerBloat as _puckerBloat,
-  wigglePath as _wigglePath,
-  zigZagPath as _zigZagPath,
   roughenPath as _roughenPath,
-  wavePath as _wavePath,
   twistPath as _twistPath,
   type WaveType as _WaveType,
-} from './shape/pathModifiers';
+  wavePath as _wavePath,
+  wigglePath as _wigglePath,
+  zigZagPath as _zigZagPath,
+} from "./shape/pathModifiers";
 
 // Re-export for backwards compatibility
 export {
   puckerBloat,
-  wigglePath,
-  zigZagPath,
   roughenPath,
-  wavePath,
   twistPath,
   type WaveType,
-} from './shape/pathModifiers';
+  wavePath,
+  wigglePath,
+  zigZagPath,
+} from "./shape/pathModifiers";
 
 // Local aliases for internal use
 const puckerBloat = _puckerBloat;
@@ -54,7 +50,7 @@ const wavePath = _wavePath;
 const twistPath = _twistPath;
 type WaveType = _WaveType;
 
-const logger = createLogger('ShapeOperations');
+const logger = createLogger("ShapeOperations");
 
 // Type alias for polygon-clipping library types
 type Ring = [number, number][];
@@ -128,7 +124,11 @@ export function rotatePoint(p: Point2D, angle: number): Point2D {
 }
 
 /** Rotate point around center */
-export function rotateAround(p: Point2D, center: Point2D, angle: number): Point2D {
+export function rotateAround(
+  p: Point2D,
+  center: Point2D,
+  angle: number,
+): Point2D {
   const translated = subtractPoints(p, center);
   const rotated = rotatePoint(translated, angle);
   return addPoints(rotated, center);
@@ -169,7 +169,7 @@ export function cubicBezierPoint(
   p1: Point2D,
   p2: Point2D,
   p3: Point2D,
-  t: number
+  t: number,
 ): Point2D {
   const mt = 1 - t;
   const mt2 = mt * mt;
@@ -191,15 +191,21 @@ export function cubicBezierDerivative(
   p1: Point2D,
   p2: Point2D,
   p3: Point2D,
-  t: number
+  t: number,
 ): Point2D {
   const mt = 1 - t;
   const mt2 = mt * mt;
   const t2 = t * t;
 
   return {
-    x: 3 * mt2 * (p1.x - p0.x) + 6 * mt * t * (p2.x - p1.x) + 3 * t2 * (p3.x - p2.x),
-    y: 3 * mt2 * (p1.y - p0.y) + 6 * mt * t * (p2.y - p1.y) + 3 * t2 * (p3.y - p2.y),
+    x:
+      3 * mt2 * (p1.x - p0.x) +
+      6 * mt * t * (p2.x - p1.x) +
+      3 * t2 * (p3.x - p2.x),
+    y:
+      3 * mt2 * (p1.y - p0.y) +
+      6 * mt * t * (p2.y - p1.y) +
+      3 * t2 * (p3.y - p2.y),
   };
 }
 
@@ -212,7 +218,7 @@ export function splitCubicBezier(
   p1: Point2D,
   p2: Point2D,
   p3: Point2D,
-  t: number
+  t: number,
 ): [Point2D[], Point2D[]] {
   const q0 = lerpPoint(p0, p1, t);
   const q1 = lerpPoint(p1, p2, t);
@@ -237,7 +243,7 @@ export function cubicBezierLength(
   p1: Point2D,
   p2: Point2D,
   p3: Point2D,
-  subdivisions: number = 32
+  subdivisions: number = 32,
 ): number {
   let length = 0;
   let prev = p0;
@@ -259,7 +265,9 @@ export function getPathLength(path: BezierPath): number {
   if (path.vertices.length < 2) return 0;
 
   let totalLength = 0;
-  const numSegments = path.closed ? path.vertices.length : path.vertices.length - 1;
+  const numSegments = path.closed
+    ? path.vertices.length
+    : path.vertices.length - 1;
 
   for (let i = 0; i < numSegments; i++) {
     const v0 = path.vertices[i];
@@ -282,7 +290,7 @@ export function getPathLength(path: BezierPath): number {
 export function getPointAtDistance(
   path: BezierPath,
   targetDistance: number,
-  totalLength?: number
+  totalLength?: number,
 ): { point: Point2D; tangent: Point2D; t: number } | null {
   if (path.vertices.length < 2) return null;
 
@@ -293,7 +301,9 @@ export function getPointAtDistance(
   targetDistance = Math.max(0, Math.min(pathLength, targetDistance));
 
   let accumulatedLength = 0;
-  const numSegments = path.closed ? path.vertices.length : path.vertices.length - 1;
+  const numSegments = path.closed
+    ? path.vertices.length
+    : path.vertices.length - 1;
 
   for (let i = 0; i < numSegments; i++) {
     const v0 = path.vertices[i];
@@ -342,7 +352,7 @@ export function trimPath(
   path: BezierPath,
   startPercent: number,
   endPercent: number,
-  offsetDegrees: number = 0
+  offsetDegrees: number = 0,
 ): BezierPath {
   if (path.vertices.length < 2) return clonePath(path);
 
@@ -351,8 +361,8 @@ export function trimPath(
 
   // Apply offset (convert degrees to path percentage)
   const offsetPercent = (offsetDegrees / 360) * 100;
-  let start = ((startPercent + offsetPercent) % 100 + 100) % 100;
-  let end = ((endPercent + offsetPercent) % 100 + 100) % 100;
+  let start = (((startPercent + offsetPercent) % 100) + 100) % 100;
+  let end = (((endPercent + offsetPercent) % 100) + 100) % 100;
 
   // Handle wrap-around for closed paths
   if (start > end && path.closed) {
@@ -377,7 +387,7 @@ function trimPathSimple(
   path: BezierPath,
   startPercent: number,
   endPercent: number,
-  totalLength: number
+  totalLength: number,
 ): BezierPath {
   const startDist = (startPercent / 100) * totalLength;
   const endDist = (endPercent / 100) * totalLength;
@@ -388,7 +398,9 @@ function trimPathSimple(
 
   const result: BezierVertex[] = [];
   let accumulatedLength = 0;
-  const numSegments = path.closed ? path.vertices.length : path.vertices.length - 1;
+  const numSegments = path.closed
+    ? path.vertices.length
+    : path.vertices.length - 1;
 
   let inTrimRegion = false;
   let lastPoint: Point2D | null = null;
@@ -419,7 +431,13 @@ function trimPathSimple(
         // Need to split both ends
         const [, right] = splitCubicBezier(p0, p1, p2, p3, tStart);
         const newTEnd = (tEnd - tStart) / (1 - tStart);
-        const [left] = splitCubicBezier(right[0], right[1], right[2], right[3], newTEnd);
+        const [left] = splitCubicBezier(
+          right[0],
+          right[1],
+          right[2],
+          right[3],
+          newTEnd,
+        );
         trimmedPoints = left;
       } else if (tStart > 0) {
         // Split at start only
@@ -446,7 +464,10 @@ function trimPathSimple(
       } else if (lastPoint && distance(lastPoint, trimmedPoints[0]) > 0.01) {
         // Gap in path, update last vertex's out handle
         if (result.length > 0) {
-          result[result.length - 1].outHandle = subtractPoints(trimmedPoints[1], result[result.length - 1].point);
+          result[result.length - 1].outHandle = subtractPoints(
+            trimmedPoints[1],
+            result[result.length - 1].point,
+          );
         }
       }
 
@@ -520,20 +541,20 @@ export function mergePaths(paths: BezierPath[], mode: MergeMode): BezierPath[] {
 
     for (const existing of result) {
       switch (mode) {
-        case 'add':
+        case "add":
           newPolygons.push(...polygonUnion(existing, polygons[i]));
           break;
-        case 'subtract':
-        case 'minusFront':
+        case "subtract":
+        case "minusFront":
           newPolygons.push(...polygonDifference(existing, polygons[i]));
           break;
-        case 'minusBack':
+        case "minusBack":
           newPolygons.push(...polygonDifference(polygons[i], existing));
           break;
-        case 'intersect':
+        case "intersect":
           newPolygons.push(...polygonIntersection(existing, polygons[i]));
           break;
-        case 'exclude':
+        case "exclude":
           newPolygons.push(...polygonXor(existing, polygons[i]));
           break;
       }
@@ -549,7 +570,11 @@ export function mergePaths(paths: BezierPath[], mode: MergeMode): BezierPath[] {
 /**
  * Boolean operation type for direct use
  */
-export type BooleanOperationType = 'union' | 'subtract' | 'intersect' | 'exclude';
+export type BooleanOperationType =
+  | "union"
+  | "subtract"
+  | "intersect"
+  | "exclude";
 
 /**
  * Perform a boolean operation on multiple BezierPaths
@@ -566,7 +591,7 @@ export type BooleanOperationType = 'union' | 'subtract' | 'intersect' | 'exclude
 export function booleanOperation(
   paths: BezierPath[],
   operation: BooleanOperationType,
-  segmentsPerCurve: number = 32
+  segmentsPerCurve: number = 32,
 ): BezierPath[] {
   if (paths.length === 0) return [];
   if (paths.length === 1) return [clonePath(paths[0])];
@@ -574,12 +599,16 @@ export function booleanOperation(
   // Try Paper.js bezier-aware boolean first for better curve preservation
   const bezierResult = tryBezierBoolean(paths, operation);
   if (bezierResult) {
-    logger.debug(`Bezier boolean ${operation} succeeded with ${bezierResult.length} output paths`);
+    logger.debug(
+      `Bezier boolean ${operation} succeeded with ${bezierResult.length} output paths`,
+    );
     return bezierResult;
   }
 
   // Fallback to polygon-clipping if bezier boolean fails
-  logger.debug(`Bezier boolean failed, falling back to polygon-clipping for ${operation}`);
+  logger.debug(
+    `Bezier boolean failed, falling back to polygon-clipping for ${operation}`,
+  );
   return fallbackPolygonBoolean(paths, operation, segmentsPerCurve);
 }
 
@@ -589,16 +618,17 @@ export function booleanOperation(
  */
 function tryBezierBoolean(
   paths: BezierPath[],
-  operation: BooleanOperationType
+  operation: BooleanOperationType,
 ): BezierPath[] | null {
   try {
     // Map operation type to bezierBoolean operation
-    const opMap: Record<BooleanOperationType, bezierBoolean.BooleanOperation> = {
-      'union': 'unite',
-      'subtract': 'subtract',
-      'intersect': 'intersect',
-      'exclude': 'exclude',
-    };
+    const opMap: Record<BooleanOperationType, bezierBoolean.BooleanOperation> =
+      {
+        union: "unite",
+        subtract: "subtract",
+        intersect: "intersect",
+        exclude: "exclude",
+      };
 
     const bezierOp = opMap[operation];
     if (!bezierOp) return null;
@@ -610,7 +640,11 @@ function tryBezierBoolean(
       const newResults: BezierPath[] = [];
 
       for (const currentPath of resultPaths) {
-        const opResult = bezierBoolean.booleanOperation(currentPath, paths[i], bezierOp);
+        const opResult = bezierBoolean.booleanOperation(
+          currentPath,
+          paths[i],
+          bezierOp,
+        );
         if (!opResult.success) {
           return null; // Fallback to polygon-clipping
         }
@@ -622,7 +656,7 @@ function tryBezierBoolean(
 
     return resultPaths.length > 0 ? resultPaths : null;
   } catch (error) {
-    logger.warn('Bezier boolean operation failed:', error);
+    logger.warn("Bezier boolean operation failed:", error);
     return null;
   }
 }
@@ -634,10 +668,10 @@ function tryBezierBoolean(
 function fallbackPolygonBoolean(
   paths: BezierPath[],
   operation: BooleanOperationType,
-  segmentsPerCurve: number
+  segmentsPerCurve: number,
 ): BezierPath[] {
   // Convert all paths to polygon-clipping MultiPolygon format
-  const multiPolygons: MultiPolygon[] = paths.map(path => {
+  const multiPolygons: MultiPolygon[] = paths.map((path) => {
     const polygon = pathToPolygon(path, segmentsPerCurve);
     return [point2DArrayToPolygon(polygon)];
   });
@@ -654,28 +688,28 @@ function fallbackPolygonBoolean(
     }
 
     switch (operation) {
-      case 'union':
+      case "union":
         // Accumulate union operations
         result = multiPolygons[0];
         for (let i = 1; i < multiPolygons.length; i++) {
           result = polygonClipping.union(result, multiPolygons[i]);
         }
         break;
-      case 'subtract':
+      case "subtract":
         // Subtract all subsequent paths from the first
         result = multiPolygons[0];
         for (let i = 1; i < multiPolygons.length; i++) {
           result = polygonClipping.difference(result, multiPolygons[i]);
         }
         break;
-      case 'intersect':
+      case "intersect":
         // Accumulate intersection operations
         result = multiPolygons[0];
         for (let i = 1; i < multiPolygons.length; i++) {
           result = polygonClipping.intersection(result, multiPolygons[i]);
         }
         break;
-      case 'exclude':
+      case "exclude":
         // Accumulate xor operations
         result = multiPolygons[0];
         for (let i = 1; i < multiPolygons.length; i++) {
@@ -804,7 +838,11 @@ function simplifyPolygon(points: Point2D[], tolerance: number): Point2D[] {
 /**
  * Calculate perpendicular distance from point to line
  */
-function perpendicularDistance(point: Point2D, lineStart: Point2D, lineEnd: Point2D): number {
+function perpendicularDistance(
+  point: Point2D,
+  lineStart: Point2D,
+  lineEnd: Point2D,
+): number {
   const dx = lineEnd.x - lineStart.x;
   const dy = lineEnd.y - lineStart.y;
   const lineLengthSq = dx * dx + dy * dy;
@@ -813,9 +851,14 @@ function perpendicularDistance(point: Point2D, lineStart: Point2D, lineEnd: Poin
     return distance(point, lineStart);
   }
 
-  const t = Math.max(0, Math.min(1,
-    ((point.x - lineStart.x) * dx + (point.y - lineStart.y) * dy) / lineLengthSq
-  ));
+  const t = Math.max(
+    0,
+    Math.min(
+      1,
+      ((point.x - lineStart.x) * dx + (point.y - lineStart.y) * dy) /
+        lineLengthSq,
+    ),
+  );
 
   const projection = {
     x: lineStart.x + t * dx,
@@ -830,7 +873,9 @@ function perpendicularDistance(point: Point2D, lineStart: Point2D, lineEnd: Poin
  */
 function pathToPolygon(path: BezierPath, segments: number = 16): Point2D[] {
   const points: Point2D[] = [];
-  const numSegments = path.closed ? path.vertices.length : path.vertices.length - 1;
+  const numSegments = path.closed
+    ? path.vertices.length
+    : path.vertices.length - 1;
 
   for (let i = 0; i < numSegments; i++) {
     const v0 = path.vertices[i];
@@ -854,7 +899,7 @@ function pathToPolygon(path: BezierPath, segments: number = 16): Point2D[] {
  * Convert polygon back to bezier path (with straight segments)
  */
 function polygonToPath(polygon: Point2D[]): BezierPath {
-  const vertices: BezierVertex[] = polygon.map(p => ({
+  const vertices: BezierVertex[] = polygon.map((p) => ({
     point: clonePoint(p),
     inHandle: { x: 0, y: 0 },
     outHandle: { x: 0, y: 0 },
@@ -870,7 +915,7 @@ function polygonToPath(polygon: Point2D[]): BezierPath {
  * Convert Point2D[] to polygon-clipping Ring format
  */
 function point2DArrayToRing(points: Point2D[]): Ring {
-  return points.map(p => [p.x, p.y] as [number, number]);
+  return points.map((p) => [p.x, p.y] as [number, number]);
 }
 
 /**
@@ -972,8 +1017,8 @@ function polygonXor(a: Point2D[], b: Point2D[]): Point2D[][] {
 export function offsetPath(
   path: BezierPath,
   amount: number,
-  join: OffsetJoin = 'miter',
-  miterLimit: number = 4
+  join: OffsetJoin = "miter",
+  miterLimit: number = 4,
 ): BezierPath {
   if (path.vertices.length < 2 || Math.abs(amount) < 0.001) {
     return clonePath(path);
@@ -995,27 +1040,29 @@ export function offsetPath(
     if (i === 0 && !isClosed) {
       // First vertex of open path
       inDir = { x: 0, y: 0 };
-      outDir = normalize(subtractPoints(
-        addPoints(next.point, next.inHandle),
-        addPoints(curr.point, curr.outHandle)
-      ));
+      outDir = normalize(
+        subtractPoints(
+          addPoints(next.point, next.inHandle),
+          addPoints(curr.point, curr.outHandle),
+        ),
+      );
     } else if (i === numVertices - 1 && !isClosed) {
       // Last vertex of open path
-      inDir = normalize(subtractPoints(
-        addPoints(curr.point, curr.inHandle),
-        addPoints(prev.point, prev.outHandle)
-      ));
+      inDir = normalize(
+        subtractPoints(
+          addPoints(curr.point, curr.inHandle),
+          addPoints(prev.point, prev.outHandle),
+        ),
+      );
       outDir = { x: 0, y: 0 };
     } else {
       // Interior vertex or closed path vertex
-      inDir = normalize(subtractPoints(
-        curr.point,
-        addPoints(prev.point, prev.outHandle)
-      ));
-      outDir = normalize(subtractPoints(
-        addPoints(curr.point, curr.outHandle),
-        curr.point
-      ));
+      inDir = normalize(
+        subtractPoints(curr.point, addPoints(prev.point, prev.outHandle)),
+      );
+      outDir = normalize(
+        subtractPoints(addPoints(curr.point, curr.outHandle), curr.point),
+      );
     }
 
     // Calculate offset direction (perpendicular to average tangent)
@@ -1035,7 +1082,7 @@ export function offsetPath(
       const angle = Math.acos(Math.max(-1, Math.min(1, dot(inDir, outDir))));
       if (angle > 0.01) {
         const miterFactor = 1 / Math.cos(angle / 2);
-        if (join === 'miter' && miterFactor <= miterLimit) {
+        if (join === "miter" && miterFactor <= miterLimit) {
           offsetDir = scalePoint(offsetDir, miterFactor);
         }
       }
@@ -1065,8 +1112,8 @@ export function offsetPathMultiple(
   baseAmount: number,
   copies: number,
   copyOffset: number,
-  join: OffsetJoin = 'miter',
-  miterLimit: number = 4
+  join: OffsetJoin = "miter",
+  miterLimit: number = 4,
 ): BezierPath[] {
   const results: BezierPath[] = [clonePath(path)];
 
@@ -1158,7 +1205,7 @@ export function generateRectangle(
   position: Point2D,
   size: Point2D,
   roundness: number = 0,
-  direction: 1 | -1 = 1
+  direction: 1 | -1 = 1,
 ): BezierPath {
   const hw = size.x / 2;
   const hh = size.y / 2;
@@ -1179,7 +1226,7 @@ export function generateRectangle(
   if (r < 0.01) {
     // Sharp corners
     return {
-      vertices: corners.map(p => ({
+      vertices: corners.map((p) => ({
         point: p,
         inHandle: { x: 0, y: 0 },
         outHandle: { x: 0, y: 0 },
@@ -1199,7 +1246,7 @@ export function generateRectangle(
 
     // Direction along this edge
     const dir = normalize(subtractPoints(next, curr));
-    const perp = perpendicular(dir);
+    const _perp = perpendicular(dir);
 
     // Start of rounded corner
     vertices.push({
@@ -1225,7 +1272,7 @@ export function generateRectangle(
 export function generateEllipse(
   position: Point2D,
   size: Point2D,
-  direction: 1 | -1 = 1
+  direction: 1 | -1 = 1,
 ): BezierPath {
   const rx = size.x / 2;
   const ry = size.y / 2;
@@ -1233,22 +1280,26 @@ export function generateEllipse(
 
   // 4 vertices for ellipse (using kappa for perfect circle approximation)
   let vertices: BezierVertex[] = [
-    { // Top
+    {
+      // Top
       point: { x: position.x, y: position.y - ry },
       inHandle: { x: -rx * kappa, y: 0 },
       outHandle: { x: rx * kappa, y: 0 },
     },
-    { // Right
+    {
+      // Right
       point: { x: position.x + rx, y: position.y },
       inHandle: { x: 0, y: -ry * kappa },
       outHandle: { x: 0, y: ry * kappa },
     },
-    { // Bottom
+    {
+      // Bottom
       point: { x: position.x, y: position.y + ry },
       inHandle: { x: rx * kappa, y: 0 },
       outHandle: { x: -rx * kappa, y: 0 },
     },
-    { // Left
+    {
+      // Left
       point: { x: position.x - rx, y: position.y },
       inHandle: { x: 0, y: ry * kappa },
       outHandle: { x: 0, y: -ry * kappa },
@@ -1256,7 +1307,7 @@ export function generateEllipse(
   ];
 
   if (direction === -1) {
-    vertices = vertices.reverse().map(v => ({
+    vertices = vertices.reverse().map((v) => ({
       point: v.point,
       inHandle: v.outHandle,
       outHandle: v.inHandle,
@@ -1275,7 +1326,7 @@ export function generatePolygon(
   radius: number,
   roundness: number = 0,
   rotation: number = 0,
-  direction: 1 | -1 = 1
+  direction: 1 | -1 = 1,
 ): BezierPath {
   const numPoints = Math.max(3, Math.floor(points));
   const angleStep = (Math.PI * 2) / numPoints;
@@ -1294,18 +1345,24 @@ export function generatePolygon(
 
     // Calculate handles for roundness
     const handleLength = radius * (roundness / 100) * 0.5;
-    const tangentAngle = angle + Math.PI / 2 * direction;
+    const tangentAngle = angle + (Math.PI / 2) * direction;
 
     vertices.push({
       point,
-      inHandle: roundness > 0 ? {
-        x: Math.cos(tangentAngle) * handleLength,
-        y: Math.sin(tangentAngle) * handleLength,
-      } : { x: 0, y: 0 },
-      outHandle: roundness > 0 ? {
-        x: -Math.cos(tangentAngle) * handleLength,
-        y: -Math.sin(tangentAngle) * handleLength,
-      } : { x: 0, y: 0 },
+      inHandle:
+        roundness > 0
+          ? {
+              x: Math.cos(tangentAngle) * handleLength,
+              y: Math.sin(tangentAngle) * handleLength,
+            }
+          : { x: 0, y: 0 },
+      outHandle:
+        roundness > 0
+          ? {
+              x: -Math.cos(tangentAngle) * handleLength,
+              y: -Math.sin(tangentAngle) * handleLength,
+            }
+          : { x: 0, y: 0 },
     });
   }
 
@@ -1323,7 +1380,7 @@ export function generateStar(
   outerRoundness: number = 0,
   innerRoundness: number = 0,
   rotation: number = 0,
-  direction: 1 | -1 = 1
+  direction: 1 | -1 = 1,
 ): BezierPath {
   const numPoints = Math.max(3, Math.floor(points));
   const angleStep = Math.PI / numPoints;
@@ -1345,18 +1402,24 @@ export function generateStar(
     };
 
     const handleLength = radius * (roundness / 100) * 0.3;
-    const tangentAngle = angle + Math.PI / 2 * direction;
+    const tangentAngle = angle + (Math.PI / 2) * direction;
 
     vertices.push({
       point,
-      inHandle: roundness > 0 ? {
-        x: Math.cos(tangentAngle) * handleLength,
-        y: Math.sin(tangentAngle) * handleLength,
-      } : { x: 0, y: 0 },
-      outHandle: roundness > 0 ? {
-        x: -Math.cos(tangentAngle) * handleLength,
-        y: -Math.sin(tangentAngle) * handleLength,
-      } : { x: 0, y: 0 },
+      inHandle:
+        roundness > 0
+          ? {
+              x: Math.cos(tangentAngle) * handleLength,
+              y: Math.sin(tangentAngle) * handleLength,
+            }
+          : { x: 0, y: 0 },
+      outHandle:
+        roundness > 0
+          ? {
+              x: -Math.cos(tangentAngle) * handleLength,
+              y: -Math.sin(tangentAngle) * handleLength,
+            }
+          : { x: 0, y: 0 },
     });
   }
 
@@ -1373,7 +1436,7 @@ export function generateStar(
 export function simplifyPath(
   path: BezierPath,
   tolerance: number,
-  straightLines: boolean = false
+  straightLines: boolean = false,
 ): BezierPath {
   if (path.vertices.length <= 2) return clonePath(path);
 
@@ -1423,7 +1486,6 @@ function douglasPeucker(points: Point2D[], tolerance: number): Point2D[] {
   }
 }
 
-
 /**
  * Fit bezier curves to a sequence of points
  */
@@ -1441,7 +1503,7 @@ function fitBezierToPoints(points: Point2D[], closed: boolean): BezierPath {
 
     const handleLength = Math.min(
       distance(curr, prev) * 0.3,
-      distance(curr, next) * 0.3
+      distance(curr, next) * 0.3,
     );
 
     const avgDir = normalize(subtractPoints(toNext, toPrev));
@@ -1465,7 +1527,8 @@ export function smoothPath(path: BezierPath, amount: number): BezierPath {
   const factor = amount / 100;
 
   const result: BezierVertex[] = path.vertices.map((v, i) => {
-    const prev = path.vertices[(i - 1 + path.vertices.length) % path.vertices.length];
+    const prev =
+      path.vertices[(i - 1 + path.vertices.length) % path.vertices.length];
     const next = path.vertices[(i + 1) % path.vertices.length];
 
     // Calculate ideal smooth handles
@@ -1473,7 +1536,8 @@ export function smoothPath(path: BezierPath, amount: number): BezierPath {
     const toNext = subtractPoints(next.point, v.point);
 
     const avgDir = normalize(subtractPoints(toNext, toPrev));
-    const idealHandleLength = (distance(v.point, prev.point) + distance(v.point, next.point)) / 6;
+    const idealHandleLength =
+      (distance(v.point, prev.point) + distance(v.point, next.point)) / 6;
 
     // Blend current handles toward ideal
     const idealIn = scalePoint(avgDir, -idealHandleLength);
@@ -1499,13 +1563,13 @@ export function smoothPath(path: BezierPath, amount: number): BezierPath {
 export function applyRepeater(
   paths: BezierPath[],
   copies: number,
-  offset: number,
+  _offset: number,
   anchorPoint: Point2D,
   position: Point2D,
   scale: Point2D,
   rotation: number,
   startOpacity: number,
-  endOpacity: number
+  endOpacity: number,
 ): { paths: BezierPath[]; opacities: number[] }[] {
   const results: { paths: BezierPath[]; opacities: number[] }[] = [];
 
@@ -1525,8 +1589,14 @@ export function applyRepeater(
     const copyOpacity = startOpacity + (endOpacity - startOpacity) * t;
 
     // Transform each path
-    const transformedPaths = paths.map(path => {
-      return transformPath(path, anchorPoint, copyPosition, copyScale, copyRotation);
+    const transformedPaths = paths.map((path) => {
+      return transformPath(
+        path,
+        anchorPoint,
+        copyPosition,
+        copyScale,
+        copyRotation,
+      );
     });
 
     results.push({
@@ -1546,7 +1616,7 @@ export function transformPath(
   anchorPoint: Point2D,
   position: Point2D,
   scale: Point2D,
-  rotation: number
+  rotation: number,
 ): BezierPath {
   const rotRad = (rotation * Math.PI) / 180;
   const cos = Math.cos(rotRad);
@@ -1572,7 +1642,7 @@ export function transformPath(
     };
   };
 
-  const vertices: BezierVertex[] = path.vertices.map(v => {
+  const vertices: BezierVertex[] = path.vertices.map((v) => {
     const newPoint = transformPoint(v.point);
     const absIn = addPoints(v.point, v.inHandle);
     const absOut = addPoints(v.point, v.outHandle);

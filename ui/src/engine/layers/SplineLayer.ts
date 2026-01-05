@@ -18,48 +18,43 @@
  * - Same frame + same project = identical curve geometry
  */
 
-import * as THREE from 'three';
-import { Line2 } from 'three/examples/jsm/lines/Line2.js';
-import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry.js';
-import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
-import type {
-  Layer,
-  SplineData,
-  ControlPoint,
-  AnimatableControlPoint,
-  EvaluatedControlPoint,
-  AnimatableProperty,
-  SplinePathEffect,
-} from '@/types/project';
-import type { BezierPath, BezierVertex, Point2D } from '@/types/shapes';
-import { BaseLayer } from './BaseLayer';
-import { interpolateProperty } from '@/services/interpolation';
+import * as THREE from "three";
+import { Line2 } from "three/examples/jsm/lines/Line2.js";
+import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js";
+import { LineMaterial } from "three/examples/jsm/lines/LineMaterial.js";
+import { interpolateProperty } from "@/services/interpolation";
+import { meshWarpDeformation } from "@/services/meshWarpDeformation";
 import {
-  trimPath,
+  createSplineControlPointPath,
+  isSplineControlPointPath,
+} from "@/services/propertyDriver";
+import {
   offsetPath,
+  roughenPath,
+  trimPath,
+  type WaveType,
+  wavePath,
   wigglePath,
   zigZagPath,
-  roughenPath,
-  wavePath,
-  type WaveType,
-} from '@/services/shapeOperations';
+} from "@/services/shapeOperations";
 import {
-  isSplineControlPointPath,
-  parseSplineControlPointPath,
-  createSplineControlPointPath,
-} from '@/services/propertyDriver';
-import {
-  vectorLOD,
-  type LODLevel,
   type LODContext,
-} from '@/services/vectorLOD';
-import {
-  meshWarpDeformation,
-  type MeshWarpDeformationService,
-  // Backwards compatibility
-  meshWarpDeformation as puppetDeformation,
-} from '@/services/meshWarpDeformation';
-import type { WarpPin, WarpMesh, WarpPinType } from '@/types/meshWarp';
+  type LODLevel,
+  vectorLOD,
+} from "@/services/vectorLOD";
+import type { WarpPin, WarpPinType } from "@/types/meshWarp";
+import type {
+  AnimatableControlPoint,
+  AnimatableProperty,
+  ControlPoint,
+  EvaluatedControlPoint,
+  Layer,
+  SplineData,
+  SplinePathEffect,
+} from "@/types/project";
+import type { BezierPath, BezierVertex, Point2D } from "@/types/shapes";
+import { BaseLayer } from "./BaseLayer";
+
 // Backwards compatibility type aliases
 type PuppetPin = WarpPin;
 
@@ -89,7 +84,7 @@ export class SplineLayer extends BaseLayer {
   private cachedEvaluatedPoints: EvaluatedControlPoint[] | null = null;
 
   /** Hash of last evaluated points for change detection */
-  private lastPointsHash: string = '';
+  private lastPointsHash: string = "";
 
   /** Trim start property (static or animated) */
   private trimStartProp?: number | AnimatableProperty<number>;
@@ -124,14 +119,13 @@ export class SplineLayer extends BaseLayer {
 
   /** Warp pins for this spline (stored on layer, mesh managed by service) */
   private warpPins: WarpPin[] = [];
-
-  // Backwards compatibility getters
-  /** @deprecated Use warpEnabled instead */
-  private get puppetEnabled(): boolean { return this.warpEnabled; }
-  private set puppetEnabled(val: boolean) { this.warpEnabled = val; }
   /** @deprecated Use warpPins instead */
-  private get puppetPins(): WarpPin[] { return this.warpPins; }
-  private set puppetPins(val: WarpPin[]) { this.warpPins = val; }
+  private get puppetPins(): WarpPin[] {
+    return this.warpPins;
+  }
+  private set puppetPins(val: WarpPin[]) {
+    this.warpPins = val;
+  }
 
   constructor(layerData: Layer) {
     super(layerData);
@@ -173,10 +167,10 @@ export class SplineLayer extends BaseLayer {
     return {
       controlPoints: data?.controlPoints ?? [],
       closed: data?.closed ?? false,
-      stroke: data?.stroke ?? '#00ff00',
+      stroke: data?.stroke ?? "#00ff00",
       strokeWidth: data?.strokeWidth ?? 2,
-      fill: data?.fill ?? '',
-      pathData: data?.pathData ?? '',
+      fill: data?.fill ?? "",
+      pathData: data?.pathData ?? "",
     };
   }
 
@@ -198,7 +192,7 @@ export class SplineLayer extends BaseLayer {
 
       // Use pre-generated levels if available, otherwise generate them
       if (lodSettings?.levels && lodSettings.levels.length > 0) {
-        this.lodLevels = lodSettings.levels.map(level => ({
+        this.lodLevels = lodSettings.levels.map((level) => ({
           tolerance: level.tolerance,
           controlPoints: level.controlPoints,
           pointCount: level.controlPoints.length,
@@ -214,8 +208,8 @@ export class SplineLayer extends BaseLayer {
         this.lodLevels = vectorLOD.generateLODLevels(
           this.layerData.id,
           points,
-          4,  // 4 levels
-          tolerance
+          4, // 4 levels
+          tolerance,
         );
       }
     }
@@ -226,23 +220,6 @@ export class SplineLayer extends BaseLayer {
    */
   public updateLODContext(context: Partial<LODContext>): void {
     this.lodContext = { ...this.lodContext, ...context };
-  }
-
-  /**
-   * Get control points at appropriate LOD level
-   */
-  private getPointsAtLOD(points: ControlPoint[]): ControlPoint[] {
-    if (!this.lodEnabled || this.lodLevels.length === 0) {
-      return points;
-    }
-
-    // Select appropriate LOD level based on context
-    const level = vectorLOD.selectLODLevel(this.lodLevels, this.lodContext);
-    if (level) {
-      return level.controlPoints;
-    }
-
-    return points;
   }
 
   /**
@@ -259,16 +236,7 @@ export class SplineLayer extends BaseLayer {
     this.warpEnabled = true;
 
     // Build the warp mesh using the deformation service
-    meshWarpDeformation.buildMesh(
-      this.layerData.id,
-      data.controlPoints,
-      pins
-    );
-  }
-
-  /** @deprecated Use initializeWarp instead */
-  private initializePuppet(data: SplineData | null): void {
-    return this.initializeWarp(data);
+    meshWarpDeformation.buildMesh(this.layerData.id, data.controlPoints, pins);
   }
 
   /**
@@ -284,10 +252,10 @@ export class SplineLayer extends BaseLayer {
     meshWarpDeformation.buildMesh(
       this.layerData.id,
       this.splineData.controlPoints,
-      this.warpPins
+      this.warpPins,
     );
 
-    this.lastPointsHash = ''; // Force rebuild
+    this.lastPointsHash = ""; // Force rebuild
   }
 
   /** @deprecated Use enableWarpMode instead */
@@ -305,7 +273,7 @@ export class SplineLayer extends BaseLayer {
     this.warpPins = [];
     meshWarpDeformation.clearMesh(this.layerData.id);
 
-    this.lastPointsHash = ''; // Force rebuild
+    this.lastPointsHash = ""; // Force rebuild
   }
 
   /** @deprecated Use disableWarpMode instead */
@@ -335,10 +303,10 @@ export class SplineLayer extends BaseLayer {
   public addWarpPin(
     x: number,
     y: number,
-    type: WarpPinType = 'position'
+    type: WarpPinType = "position",
   ): WarpPin {
     // Import the helper function to create default pins
-    const { createDefaultWarpPin } = require('@/types/meshWarp');
+    const { createDefaultWarpPin } = require("@/types/meshWarp");
     const id = `pin_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
     const pin = createDefaultWarpPin(id, x, y, type);
@@ -352,7 +320,7 @@ export class SplineLayer extends BaseLayer {
     // Add pin to the deformation mesh
     meshWarpDeformation.addPin(this.layerData.id, pin);
 
-    this.lastPointsHash = ''; // Force rebuild
+    this.lastPointsHash = ""; // Force rebuild
     return pin;
   }
 
@@ -360,7 +328,7 @@ export class SplineLayer extends BaseLayer {
   public addPuppetPin(
     x: number,
     y: number,
-    type: 'position' | 'rotation' | 'starch' = 'position'
+    type: "position" | "rotation" | "starch" = "position",
   ): WarpPin {
     return this.addWarpPin(x, y, type);
   }
@@ -370,7 +338,7 @@ export class SplineLayer extends BaseLayer {
    * @param pinId - The ID of the pin to remove
    */
   public removeWarpPin(pinId: string): void {
-    const index = this.warpPins.findIndex(p => p.id === pinId);
+    const index = this.warpPins.findIndex((p) => p.id === pinId);
     if (index === -1) return;
 
     this.warpPins.splice(index, 1);
@@ -381,7 +349,7 @@ export class SplineLayer extends BaseLayer {
       this.disableWarpMode();
     }
 
-    this.lastPointsHash = ''; // Force rebuild
+    this.lastPointsHash = ""; // Force rebuild
   }
 
   /** @deprecated Use removeWarpPin instead */
@@ -408,7 +376,7 @@ export class SplineLayer extends BaseLayer {
    * @param y - New Y position
    */
   public updateWarpPinPosition(pinId: string, x: number, y: number): void {
-    const pin = this.warpPins.find(p => p.id === pinId);
+    const pin = this.warpPins.find((p) => p.id === pinId);
     if (!pin) return;
 
     // Validate coordinates (NaN would corrupt warp mesh calculations)
@@ -416,9 +384,14 @@ export class SplineLayer extends BaseLayer {
     const validY = Number.isFinite(y) ? y : 0;
 
     pin.position.value = { x: validX, y: validY };
-    meshWarpDeformation.updatePinPosition(this.layerData.id, pinId, validX, validY);
+    meshWarpDeformation.updatePinPosition(
+      this.layerData.id,
+      pinId,
+      validX,
+      validY,
+    );
 
-    this.lastPointsHash = ''; // Force rebuild
+    this.lastPointsHash = ""; // Force rebuild
   }
 
   /** @deprecated Use updateWarpPinPosition instead */
@@ -442,7 +415,7 @@ export class SplineLayer extends BaseLayer {
       this.disableWarpMode();
     }
 
-    this.lastPointsHash = ''; // Force rebuild
+    this.lastPointsHash = ""; // Force rebuild
   }
 
   /** @deprecated Use setWarpPins instead */
@@ -478,14 +451,14 @@ export class SplineLayer extends BaseLayer {
         new THREE.Vector3(
           p0.handleOut?.x ?? p0.x,
           -(p0.handleOut?.y ?? p0.y),
-          z0
+          z0,
         ),
         new THREE.Vector3(
           p1.handleIn?.x ?? p1.x,
           -(p1.handleIn?.y ?? p1.y),
-          z1
+          z1,
         ),
-        new THREE.Vector3(p1.x, -p1.y, z1)
+        new THREE.Vector3(p1.x, -p1.y, z1),
       );
 
       this.curve.add(bezier);
@@ -505,14 +478,14 @@ export class SplineLayer extends BaseLayer {
         new THREE.Vector3(
           lastPoint.handleOut?.x ?? lastPoint.x,
           -(lastPoint.handleOut?.y ?? lastPoint.y),
-          zLast
+          zLast,
         ),
         new THREE.Vector3(
           firstPoint.handleIn?.x ?? firstPoint.x,
           -(firstPoint.handleIn?.y ?? firstPoint.y),
-          zFirst
+          zFirst,
         ),
-        new THREE.Vector3(firstPoint.x, -firstPoint.y, zFirst)
+        new THREE.Vector3(firstPoint.x, -firstPoint.y, zFirst),
       );
 
       this.curve.add(closingBezier);
@@ -639,7 +612,9 @@ export class SplineLayer extends BaseLayer {
   /**
    * Get point and rotation for placing objects along path
    */
-  getTransformAt(t: number): { position: THREE.Vector3; rotation: number } | null {
+  getTransformAt(
+    t: number,
+  ): { position: THREE.Vector3; rotation: number } | null {
     const point = this.getPointAt(t);
     const tangent = this.getTangentAt(t);
 
@@ -677,7 +652,7 @@ export class SplineLayer extends BaseLayer {
    */
   setStrokeWidth(width: number): void {
     // Validate width (NaN/0 would corrupt LineMaterial rendering)
-    const validWidth = (Number.isFinite(width) && width > 0) ? width : 2;
+    const validWidth = Number.isFinite(width) && width > 0 ? width : 2;
     this.splineData.strokeWidth = validWidth;
     if (this.lineMesh) {
       (this.lineMesh.material as LineMaterial).linewidth = validWidth;
@@ -694,7 +669,9 @@ export class SplineLayer extends BaseLayer {
       (this.fillMesh.material as THREE.MeshBasicMaterial).color.set(color);
     } else if (color && this.splineData.closed && this.curve) {
       // Create fill if it doesn't exist
-      const curvePoints = this.curve.getPoints(this.splineData.controlPoints.length * 20);
+      const curvePoints = this.curve.getPoints(
+        this.splineData.controlPoints.length * 20,
+      );
       this.createFill(curvePoints);
     }
   }
@@ -704,11 +681,14 @@ export class SplineLayer extends BaseLayer {
    */
   setResolution(width: number, height: number): void {
     // Validate dimensions (NaN would corrupt LineMaterial resolution)
-    const validWidth = (Number.isFinite(width) && width > 0) ? width : 1920;
-    const validHeight = (Number.isFinite(height) && height > 0) ? height : 1080;
+    const validWidth = Number.isFinite(width) && width > 0 ? width : 1920;
+    const validHeight = Number.isFinite(height) && height > 0 ? height : 1080;
     this.resolution.set(validWidth, validHeight);
     if (this.lineMesh) {
-      (this.lineMesh.material as LineMaterial).resolution.set(validWidth, validHeight);
+      (this.lineMesh.material as LineMaterial).resolution.set(
+        validWidth,
+        validHeight,
+      );
     }
   }
 
@@ -734,7 +714,7 @@ export class SplineLayer extends BaseLayer {
     // Clear cache to force re-evaluation
     this.lastEvaluatedFrame = -1;
     this.cachedEvaluatedPoints = null;
-    this.lastPointsHash = '';
+    this.lastPointsHash = "";
   }
 
   /**
@@ -747,11 +727,11 @@ export class SplineLayer extends BaseLayer {
     }
 
     // Import the conversion function dynamically to avoid circular deps
-    const { controlPointToAnimatable } = require('@/types/project');
+    const { controlPointToAnimatable } = require("@/types/project");
 
     // Convert static points to animated
     const animatedPoints = this.splineData.controlPoints.map(
-      (cp: ControlPoint) => controlPointToAnimatable(cp)
+      (cp: ControlPoint) => controlPointToAnimatable(cp),
     );
 
     this.setAnimatedControlPoints(animatedPoints);
@@ -764,11 +744,11 @@ export class SplineLayer extends BaseLayer {
   disableAnimation(): void {
     if (!this.animatedPoints) return;
 
-    const { animatableToControlPoint } = require('@/types/project');
+    const { animatableToControlPoint } = require("@/types/project");
 
     // Convert animated points back to static using current values
     this.splineData.controlPoints = this.animatedPoints.map(
-      (acp: AnimatableControlPoint) => animatableToControlPoint(acp)
+      (acp: AnimatableControlPoint) => animatableToControlPoint(acp),
     );
 
     this.animatedPoints = null;
@@ -776,7 +756,7 @@ export class SplineLayer extends BaseLayer {
     this.splineData.animated = false;
     this.lastEvaluatedFrame = -1;
     this.cachedEvaluatedPoints = null;
-    this.lastPointsHash = '';
+    this.lastPointsHash = "";
 
     this.buildSpline();
   }
@@ -807,7 +787,7 @@ export class SplineLayer extends BaseLayer {
    */
   setTrimStart(value: number): void {
     this.trimStartProp = value;
-    this.lastPointsHash = ''; // Force rebuild
+    this.lastPointsHash = ""; // Force rebuild
   }
 
   /**
@@ -816,7 +796,7 @@ export class SplineLayer extends BaseLayer {
    */
   setTrimEnd(value: number): void {
     this.trimEndProp = value;
-    this.lastPointsHash = ''; // Force rebuild
+    this.lastPointsHash = ""; // Force rebuild
   }
 
   /**
@@ -825,7 +805,7 @@ export class SplineLayer extends BaseLayer {
    */
   setTrimOffset(value: number): void {
     this.trimOffsetProp = value;
-    this.lastPointsHash = ''; // Force rebuild
+    this.lastPointsHash = ""; // Force rebuild
   }
 
   /**
@@ -834,7 +814,7 @@ export class SplineLayer extends BaseLayer {
    */
   setAnimatedTrimStart(prop: AnimatableProperty<number>): void {
     this.trimStartProp = prop;
-    this.lastPointsHash = '';
+    this.lastPointsHash = "";
   }
 
   /**
@@ -843,7 +823,7 @@ export class SplineLayer extends BaseLayer {
    */
   setAnimatedTrimEnd(prop: AnimatableProperty<number>): void {
     this.trimEndProp = prop;
-    this.lastPointsHash = '';
+    this.lastPointsHash = "";
   }
 
   /**
@@ -852,7 +832,7 @@ export class SplineLayer extends BaseLayer {
    */
   setAnimatedTrimOffset(prop: AnimatableProperty<number>): void {
     this.trimOffsetProp = prop;
-    this.lastPointsHash = '';
+    this.lastPointsHash = "";
   }
 
   /**
@@ -872,9 +852,11 @@ export class SplineLayer extends BaseLayer {
    */
   hasTrimPath(): boolean {
     // Check if any trim property is set (not undefined)
-    return this.trimStartProp !== undefined ||
-           this.trimEndProp !== undefined ||
-           this.trimOffsetProp !== undefined;
+    return (
+      this.trimStartProp !== undefined ||
+      this.trimEndProp !== undefined ||
+      this.trimOffsetProp !== undefined
+    );
   }
 
   /**
@@ -883,7 +865,7 @@ export class SplineLayer extends BaseLayer {
    */
   setPathEffects(effects: SplinePathEffect[]): void {
     this.pathEffects = effects;
-    this.lastPointsHash = ''; // Force rebuild
+    this.lastPointsHash = ""; // Force rebuild
   }
 
   /**
@@ -912,7 +894,7 @@ export class SplineLayer extends BaseLayer {
   private evaluateControlPointAtFrame(
     acp: AnimatableControlPoint,
     frame: number,
-    index: number
+    index: number,
   ): EvaluatedControlPoint {
     // Use composition fps for correct animation timing (not hardcoded 30fps)
     const fps = this.compositionFps;
@@ -921,22 +903,28 @@ export class SplineLayer extends BaseLayer {
     // Get interpolated values first
     const interpolatedX = interpolateProperty(acp.x, frame, fps, layerId);
     const interpolatedY = interpolateProperty(acp.y, frame, fps, layerId);
-    const interpolatedDepth = acp.depth ? interpolateProperty(acp.depth, frame, fps, layerId) : 0;
+    const interpolatedDepth = acp.depth
+      ? interpolateProperty(acp.depth, frame, fps, layerId)
+      : 0;
 
     // Apply driven value overrides
     return {
       id: acp.id,
-      x: this.getDrivenControlPointValue(index, 'x', interpolatedX),
-      y: this.getDrivenControlPointValue(index, 'y', interpolatedY),
-      depth: this.getDrivenControlPointValue(index, 'depth', interpolatedDepth),
-      handleIn: acp.handleIn ? {
-        x: interpolateProperty(acp.handleIn.x, frame, fps, layerId),
-        y: interpolateProperty(acp.handleIn.y, frame, fps, layerId),
-      } : null,
-      handleOut: acp.handleOut ? {
-        x: interpolateProperty(acp.handleOut.x, frame, fps, layerId),
-        y: interpolateProperty(acp.handleOut.y, frame, fps, layerId),
-      } : null,
+      x: this.getDrivenControlPointValue(index, "x", interpolatedX),
+      y: this.getDrivenControlPointValue(index, "y", interpolatedY),
+      depth: this.getDrivenControlPointValue(index, "depth", interpolatedDepth),
+      handleIn: acp.handleIn
+        ? {
+            x: interpolateProperty(acp.handleIn.x, frame, fps, layerId),
+            y: interpolateProperty(acp.handleIn.y, frame, fps, layerId),
+          }
+        : null,
+      handleOut: acp.handleOut
+        ? {
+            x: interpolateProperty(acp.handleOut.x, frame, fps, layerId),
+            y: interpolateProperty(acp.handleOut.y, frame, fps, layerId),
+          }
+        : null,
       type: acp.type,
       group: acp.group,
     };
@@ -956,7 +944,11 @@ export class SplineLayer extends BaseLayer {
     // Use cached result if same frame AND no driven values have changed
     // Note: We don't cache when driven values are present to ensure reactivity
     const hasDrivenValues = this.hasSplineDrivers();
-    if (frame === this.lastEvaluatedFrame && this.cachedEvaluatedPoints && !hasDrivenValues) {
+    if (
+      frame === this.lastEvaluatedFrame &&
+      this.cachedEvaluatedPoints &&
+      !hasDrivenValues
+    ) {
       return this.cachedEvaluatedPoints;
     }
 
@@ -965,15 +957,15 @@ export class SplineLayer extends BaseLayer {
     if (this.animatedPoints && this.animatedPoints.length > 0) {
       // Animated spline - interpolate each control point
       points = this.animatedPoints.map((acp, index) =>
-        this.evaluateControlPointAtFrame(acp, frame, index)
+        this.evaluateControlPointAtFrame(acp, frame, index),
       );
     } else {
       // Static spline - convert ControlPoint to EvaluatedControlPoint
       points = this.splineData.controlPoints.map((cp, index) => ({
         id: cp.id,
-        x: this.getDrivenControlPointValue(index, 'x', cp.x),
-        y: this.getDrivenControlPointValue(index, 'y', cp.y),
-        depth: this.getDrivenControlPointValue(index, 'depth', cp.depth ?? 0),
+        x: this.getDrivenControlPointValue(index, "x", cp.x),
+        y: this.getDrivenControlPointValue(index, "y", cp.y),
+        depth: this.getDrivenControlPointValue(index, "depth", cp.depth ?? 0),
         handleIn: cp.handleIn,
         handleOut: cp.handleOut,
         type: cp.type,
@@ -1008,8 +1000,8 @@ export class SplineLayer extends BaseLayer {
    */
   private getDrivenControlPointValue(
     index: number,
-    property: 'x' | 'y' | 'depth',
-    baseValue: number
+    property: "x" | "y" | "depth",
+    baseValue: number,
   ): number {
     const path = createSplineControlPointPath(index, property);
     return this.getDrivenOrBase(path, baseValue);
@@ -1021,9 +1013,9 @@ export class SplineLayer extends BaseLayer {
    */
   private computePointsHash(points: EvaluatedControlPoint[]): string {
     // Simple hash using position values (sufficient for change detection)
-    return points.map(p =>
-      `${p.x.toFixed(2)},${p.y.toFixed(2)},${p.depth.toFixed(2)}`
-    ).join('|');
+    return points
+      .map((p) => `${p.x.toFixed(2)},${p.y.toFixed(2)},${p.depth.toFixed(2)}`)
+      .join("|");
   }
 
   // ============================================================================
@@ -1039,12 +1031,12 @@ export class SplineLayer extends BaseLayer {
   private evaluateStaticOrAnimated(
     prop: number | AnimatableProperty<number> | undefined,
     frame: number,
-    defaultValue: number
+    defaultValue: number,
   ): number {
     if (prop === undefined) {
       return defaultValue;
     }
-    if (typeof prop === 'number') {
+    if (typeof prop === "number") {
       return prop;
     }
     // It's an AnimatableProperty - use composition fps for correct timing
@@ -1054,7 +1046,11 @@ export class SplineLayer extends BaseLayer {
   /**
    * Check if trim is active (differs from default values)
    */
-  private isTrimActive(trimStart: number, trimEnd: number, trimOffset: number): boolean {
+  private isTrimActive(
+    trimStart: number,
+    trimEnd: number,
+    trimOffset: number,
+  ): boolean {
     // Default values that result in showing the full path
     return trimStart !== 0 || trimEnd !== 100 || trimOffset !== 0;
   }
@@ -1063,15 +1059,17 @@ export class SplineLayer extends BaseLayer {
    * Check if any path effects are enabled
    */
   private hasActivePathEffects(): boolean {
-    return this.pathEffects?.some(e => e.enabled) ?? false;
+    return this.pathEffects?.some((e) => e.enabled) ?? false;
   }
 
   /**
    * Convert EvaluatedControlPoint[] to BezierPath format for shapeOperations
    * Note: EvaluatedControlPoint handles are ABSOLUTE, BezierVertex handles are RELATIVE
    */
-  private evaluatedPointsToBezierPath(points: EvaluatedControlPoint[]): BezierPath {
-    const vertices: BezierVertex[] = points.map(p => {
+  private evaluatedPointsToBezierPath(
+    points: EvaluatedControlPoint[],
+  ): BezierPath {
+    const vertices: BezierVertex[] = points.map((p) => {
       // Convert absolute handles to relative handles
       const inHandle: Point2D = p.handleIn
         ? { x: p.handleIn.x - p.x, y: p.handleIn.y - p.y }
@@ -1099,21 +1097,24 @@ export class SplineLayer extends BaseLayer {
    */
   private bezierPathToEvaluatedPoints(
     bezierPath: BezierPath,
-    originalPoints: EvaluatedControlPoint[]
+    originalPoints: EvaluatedControlPoint[],
   ): EvaluatedControlPoint[] {
     // If the trimmed path has different vertex count, we need to handle depth
     // For now, use depth=0 for new vertices (trim typically creates new interpolated points)
     return bezierPath.vertices.map((v, i) => {
       // Try to find closest original point for depth value
-      const originalDepth = i < originalPoints.length ? originalPoints[i].depth : 0;
+      const originalDepth =
+        i < originalPoints.length ? originalPoints[i].depth : 0;
 
       // Convert relative handles back to absolute
-      const handleIn = (v.inHandle.x !== 0 || v.inHandle.y !== 0)
-        ? { x: v.point.x + v.inHandle.x, y: v.point.y + v.inHandle.y }
-        : null;
-      const handleOut = (v.outHandle.x !== 0 || v.outHandle.y !== 0)
-        ? { x: v.point.x + v.outHandle.x, y: v.point.y + v.outHandle.y }
-        : null;
+      const handleIn =
+        v.inHandle.x !== 0 || v.inHandle.y !== 0
+          ? { x: v.point.x + v.inHandle.x, y: v.point.y + v.inHandle.y }
+          : null;
+      const handleOut =
+        v.outHandle.x !== 0 || v.outHandle.y !== 0
+          ? { x: v.point.x + v.outHandle.x, y: v.point.y + v.outHandle.y }
+          : null;
 
       return {
         id: `trimmed_${i}`,
@@ -1122,7 +1123,7 @@ export class SplineLayer extends BaseLayer {
         depth: originalDepth,
         handleIn,
         handleOut,
-        type: 'smooth' as const,
+        type: "smooth" as const,
       };
     });
   }
@@ -1143,59 +1144,143 @@ export class SplineLayer extends BaseLayer {
 
     // Sort effects by order
     const sortedEffects = [...this.pathEffects]
-      .filter(e => e.enabled)
+      .filter((e) => e.enabled)
       .sort((a, b) => a.order - b.order);
 
     let result = bezierPath;
 
     for (const effect of sortedEffects) {
       switch (effect.type) {
-        case 'offsetPath': {
-          const offsetEffect = effect as import('@/types/project').OffsetPathEffect;
-          const amount = interpolateProperty(offsetEffect.amount, frame, fps, layerId);
-          const miterLimit = interpolateProperty(offsetEffect.miterLimit, frame, fps, layerId);
-          result = offsetPath(result, amount, offsetEffect.lineJoin, miterLimit);
+        case "offsetPath": {
+          const offsetEffect =
+            effect as import("@/types/project").OffsetPathEffect;
+          const amount = interpolateProperty(
+            offsetEffect.amount,
+            frame,
+            fps,
+            layerId,
+          );
+          const miterLimit = interpolateProperty(
+            offsetEffect.miterLimit,
+            frame,
+            fps,
+            layerId,
+          );
+          result = offsetPath(
+            result,
+            amount,
+            offsetEffect.lineJoin,
+            miterLimit,
+          );
           break;
         }
-        case 'wiggle': {
-          const wiggleEffect = effect as import('@/types/project').WigglePathEffect;
-          const size = interpolateProperty(wiggleEffect.size, frame, fps, layerId);
-          const detail = interpolateProperty(wiggleEffect.detail, frame, fps, layerId);
-          const temporalPhase = interpolateProperty(wiggleEffect.temporalPhase, frame, fps, layerId);
-          const spatialPhase = interpolateProperty(wiggleEffect.spatialPhase, frame, fps, layerId);
-          const correlation = interpolateProperty(wiggleEffect.correlation, frame, fps, layerId);
+        case "wiggle": {
+          const wiggleEffect =
+            effect as import("@/types/project").WigglePathEffect;
+          const size = interpolateProperty(
+            wiggleEffect.size,
+            frame,
+            fps,
+            layerId,
+          );
+          const detail = interpolateProperty(
+            wiggleEffect.detail,
+            frame,
+            fps,
+            layerId,
+          );
+          const temporalPhase = interpolateProperty(
+            wiggleEffect.temporalPhase,
+            frame,
+            fps,
+            layerId,
+          );
+          const spatialPhase = interpolateProperty(
+            wiggleEffect.spatialPhase,
+            frame,
+            fps,
+            layerId,
+          );
+          const correlation = interpolateProperty(
+            wiggleEffect.correlation,
+            frame,
+            fps,
+            layerId,
+          );
           result = wigglePath(
             result,
             size,
             detail,
-            'smooth', // WigglePathEffect pointType mapping
+            "smooth", // WigglePathEffect pointType mapping
             correlation,
             temporalPhase,
             spatialPhase,
-            wiggleEffect.seed
+            wiggleEffect.seed,
           );
           break;
         }
-        case 'zigzag': {
-          const zigzagEffect = effect as import('@/types/project').ZigZagEffect;
-          const size = interpolateProperty(zigzagEffect.size, frame, fps, layerId);
-          const ridges = interpolateProperty(zigzagEffect.ridgesPerSegment, frame, fps, layerId);
+        case "zigzag": {
+          const zigzagEffect = effect as import("@/types/project").ZigZagEffect;
+          const size = interpolateProperty(
+            zigzagEffect.size,
+            frame,
+            fps,
+            layerId,
+          );
+          const ridges = interpolateProperty(
+            zigzagEffect.ridgesPerSegment,
+            frame,
+            fps,
+            layerId,
+          );
           result = zigZagPath(result, size, ridges, zigzagEffect.pointType);
           break;
         }
-        case 'roughen': {
-          const roughenEffect = effect as import('@/types/project').RoughenEffect;
-          const size = interpolateProperty(roughenEffect.size, frame, fps, layerId);
-          const detail = interpolateProperty(roughenEffect.detail, frame, fps, layerId);
+        case "roughen": {
+          const roughenEffect =
+            effect as import("@/types/project").RoughenEffect;
+          const size = interpolateProperty(
+            roughenEffect.size,
+            frame,
+            fps,
+            layerId,
+          );
+          const detail = interpolateProperty(
+            roughenEffect.detail,
+            frame,
+            fps,
+            layerId,
+          );
           result = roughenPath(result, size, detail, roughenEffect.seed);
           break;
         }
-        case 'wave': {
-          const waveEffect = effect as import('@/types/project').WaveEffect;
-          const amplitude = interpolateProperty(waveEffect.amplitude, frame, fps, layerId);
-          const frequency = interpolateProperty(waveEffect.frequency, frame, fps, layerId);
-          const phase = interpolateProperty(waveEffect.phase, frame, fps, layerId);
-          result = wavePath(result, amplitude, frequency, phase, waveEffect.waveType as WaveType);
+        case "wave": {
+          const waveEffect = effect as import("@/types/project").WaveEffect;
+          const amplitude = interpolateProperty(
+            waveEffect.amplitude,
+            frame,
+            fps,
+            layerId,
+          );
+          const frequency = interpolateProperty(
+            waveEffect.frequency,
+            frame,
+            fps,
+            layerId,
+          );
+          const phase = interpolateProperty(
+            waveEffect.phase,
+            frame,
+            fps,
+            layerId,
+          );
+          result = wavePath(
+            result,
+            amplitude,
+            frequency,
+            phase,
+            waveEffect.waveType as WaveType,
+          );
           break;
         }
       }
@@ -1208,7 +1293,9 @@ export class SplineLayer extends BaseLayer {
    * Build spline geometry from evaluated control points
    * Called when control points change during animation
    */
-  private buildSplineFromEvaluatedPoints(points: EvaluatedControlPoint[]): void {
+  private buildSplineFromEvaluatedPoints(
+    points: EvaluatedControlPoint[],
+  ): void {
     // Clear existing meshes
     this.clearMeshes();
 
@@ -1232,14 +1319,14 @@ export class SplineLayer extends BaseLayer {
         new THREE.Vector3(
           p0.handleOut?.x ?? p0.x,
           -(p0.handleOut?.y ?? p0.y),
-          z0
+          z0,
         ),
         new THREE.Vector3(
           p1.handleIn?.x ?? p1.x,
           -(p1.handleIn?.y ?? p1.y),
-          z1
+          z1,
         ),
-        new THREE.Vector3(p1.x, -p1.y, z1)
+        new THREE.Vector3(p1.x, -p1.y, z1),
       );
 
       this.curve.add(bezier);
@@ -1259,14 +1346,14 @@ export class SplineLayer extends BaseLayer {
         new THREE.Vector3(
           lastPoint.handleOut?.x ?? lastPoint.x,
           -(lastPoint.handleOut?.y ?? lastPoint.y),
-          zLast
+          zLast,
         ),
         new THREE.Vector3(
           firstPoint.handleIn?.x ?? firstPoint.x,
           -(firstPoint.handleIn?.y ?? firstPoint.y),
-          zFirst
+          zFirst,
         ),
-        new THREE.Vector3(firstPoint.x, -firstPoint.y, zFirst)
+        new THREE.Vector3(firstPoint.x, -firstPoint.y, zFirst),
       );
 
       this.curve.add(closingBezier);
@@ -1312,9 +1399,17 @@ export class SplineLayer extends BaseLayer {
 
   protected onEvaluateFrame(frame: number): void {
     // Evaluate trim properties (these may be animated even if control points aren't)
-    const trimStart = this.evaluateStaticOrAnimated(this.trimStartProp, frame, 0);
+    const trimStart = this.evaluateStaticOrAnimated(
+      this.trimStartProp,
+      frame,
+      0,
+    );
     const trimEnd = this.evaluateStaticOrAnimated(this.trimEndProp, frame, 100);
-    const trimOffset = this.evaluateStaticOrAnimated(this.trimOffsetProp, frame, 0);
+    const trimOffset = this.evaluateStaticOrAnimated(
+      this.trimOffsetProp,
+      frame,
+      0,
+    );
 
     const needsTrim = this.isTrimActive(trimStart, trimEnd, trimOffset);
     const hasEffects = this.hasActivePathEffects();
@@ -1322,20 +1417,30 @@ export class SplineLayer extends BaseLayer {
     const hasWarp = this.warpEnabled && this.warpPins.length > 0;
 
     // Skip if not animated and no trim/effects/LOD/warp needed
-    if (!this.isAnimated() && !needsTrim && !hasEffects && !useLOD && !hasWarp) {
+    if (
+      !this.isAnimated() &&
+      !needsTrim &&
+      !hasEffects &&
+      !useLOD &&
+      !hasWarp
+    ) {
       return;
     }
 
     // Evaluate control points at this frame
-    let evaluatedPoints = this.getEvaluatedControlPoints(frame);
+    const evaluatedPoints = this.getEvaluatedControlPoints(frame);
 
     // Compute hash including trim values, LOD state, and warp for change detection
-    const lodHash = useLOD ? `|lod:${this.lodContext.isPlaying},${this.lodContext.zoom.toFixed(2)}` : '';
-    const trimHash = needsTrim || hasEffects
-      ? `|trim:${trimStart.toFixed(2)},${trimEnd.toFixed(2)},${trimOffset.toFixed(2)}|fx:${frame}`
-      : '';
-    const warpHash = hasWarp ? `|warp:${frame}` : '';
-    const pointsHash = this.computePointsHash(evaluatedPoints) + trimHash + lodHash + warpHash;
+    const lodHash = useLOD
+      ? `|lod:${this.lodContext.isPlaying},${this.lodContext.zoom.toFixed(2)}`
+      : "";
+    const trimHash =
+      needsTrim || hasEffects
+        ? `|trim:${trimStart.toFixed(2)},${trimEnd.toFixed(2)},${trimOffset.toFixed(2)}|fx:${frame}`
+        : "";
+    const warpHash = hasWarp ? `|warp:${frame}` : "";
+    const pointsHash =
+      this.computePointsHash(evaluatedPoints) + trimHash + lodHash + warpHash;
 
     // Only rebuild if points or trim have actually changed
     if (pointsHash !== this.lastPointsHash) {
@@ -1344,7 +1449,7 @@ export class SplineLayer extends BaseLayer {
       // Apply mesh warp deformation first (deforms the base shape)
       if (hasWarp) {
         // Convert EvaluatedControlPoint[] to ControlPoint[] for the deformation service
-        const controlPoints: ControlPoint[] = evaluatedPoints.map(ep => ({
+        const controlPoints: ControlPoint[] = evaluatedPoints.map((ep) => ({
           id: ep.id,
           x: ep.x,
           y: ep.y,
@@ -1359,11 +1464,11 @@ export class SplineLayer extends BaseLayer {
         const deformedPoints = meshWarpDeformation.getDeformedControlPoints(
           this.layerData.id,
           frame,
-          controlPoints
+          controlPoints,
         );
 
         // Convert back to EvaluatedControlPoint format
-        finalPoints = deformedPoints.map(cp => ({
+        finalPoints = deformedPoints.map((cp) => ({
           id: cp.id,
           x: cp.x,
           y: cp.y,
@@ -1391,16 +1496,22 @@ export class SplineLayer extends BaseLayer {
         }
 
         // Convert back to EvaluatedControlPoint format
-        finalPoints = this.bezierPathToEvaluatedPoints(bezierPath, evaluatedPoints);
+        finalPoints = this.bezierPathToEvaluatedPoints(
+          bezierPath,
+          evaluatedPoints,
+        );
       }
 
       // Apply LOD simplification during playback/scrubbing
       if (useLOD && finalPoints.length > 50) {
-        const lodLevel = vectorLOD.selectLODLevel(this.lodLevels, this.lodContext);
+        const lodLevel = vectorLOD.selectLODLevel(
+          this.lodLevels,
+          this.lodContext,
+        );
         if (lodLevel && lodLevel.pointCount < finalPoints.length) {
           // Use simplified points from LOD level
           // Map LOD points to evaluated format with all required fields
-          finalPoints = lodLevel.controlPoints.map((cp, i) => ({
+          finalPoints = lodLevel.controlPoints.map((cp, _i) => ({
             id: cp.id,
             x: cp.x,
             y: cp.y,
@@ -1437,19 +1548,24 @@ export class SplineLayer extends BaseLayer {
     }
 
     // Use LOD if frame rate is suffering
-    if ((this.lodContext.currentFPS ?? 60) < (this.lodContext.targetFPS ?? 60) * 0.8) {
+    if (
+      (this.lodContext.currentFPS ?? 60) <
+      (this.lodContext.targetFPS ?? 60) * 0.8
+    ) {
       return true;
     }
 
     return false;
   }
 
-  protected override onApplyEvaluatedState(state: import('../MotionEngine').EvaluatedLayer): void {
+  protected override onApplyEvaluatedState(
+    state: import("../MotionEngine").EvaluatedLayer,
+  ): void {
     const props = state.properties;
 
     // Apply evaluated control points if present
-    if (props['controlPoints'] !== undefined) {
-      let points = props['controlPoints'] as EvaluatedControlPoint[];
+    if (props.controlPoints !== undefined) {
+      let points = props.controlPoints as EvaluatedControlPoint[];
 
       // BUG-094 fix: Apply audio-reactive control point modifiers
       points = this.applySplineAudioModifiers(points);
@@ -1465,7 +1581,7 @@ export class SplineLayer extends BaseLayer {
       if (this.hasSplineAudioModifiers()) {
         const currentPoints = this.getEvaluatedControlPoints(state.frame);
         const modifiedPoints = this.applySplineAudioModifiers(currentPoints);
-        const pointsHash = this.computePointsHash(modifiedPoints) + '|audio';
+        const pointsHash = `${this.computePointsHash(modifiedPoints)}|audio`;
         if (pointsHash !== this.lastPointsHash) {
           this.buildSplineFromEvaluatedPoints(modifiedPoints);
           this.lastPointsHash = pointsHash;
@@ -1474,12 +1590,12 @@ export class SplineLayer extends BaseLayer {
     }
 
     // Apply stroke properties
-    if (props['strokeWidth'] !== undefined) {
-      this.setStrokeWidth(props['strokeWidth'] as number);
+    if (props.strokeWidth !== undefined) {
+      this.setStrokeWidth(props.strokeWidth as number);
     }
 
-    if (props['strokeColor'] !== undefined) {
-      this.setStroke(props['strokeColor'] as string);
+    if (props.strokeColor !== undefined) {
+      this.setStroke(props.strokeColor as string);
     }
   }
 
@@ -1489,7 +1605,7 @@ export class SplineLayer extends BaseLayer {
   private hasSplineAudioModifiers(): boolean {
     const audioMod = this.currentAudioModifiers;
     for (const key in audioMod) {
-      if (key.startsWith('splineControlPoint_')) {
+      if (key.startsWith("splineControlPoint_")) {
         const value = (audioMod as any)[key];
         if (value !== undefined && value !== 0) {
           return true;
@@ -1505,7 +1621,9 @@ export class SplineLayer extends BaseLayer {
    * @param points - Input control points
    * @returns Modified control points with audio modifiers applied
    */
-  private applySplineAudioModifiers(points: EvaluatedControlPoint[]): EvaluatedControlPoint[] {
+  private applySplineAudioModifiers(
+    points: EvaluatedControlPoint[],
+  ): EvaluatedControlPoint[] {
     const audioMod = this.currentAudioModifiers;
 
     // Quick check if any spline modifiers exist
@@ -1516,9 +1634,15 @@ export class SplineLayer extends BaseLayer {
     // Apply modifiers to each control point
     return points.map((point, index) => {
       // Get audio modifiers for this control point index
-      const xMod = (audioMod as any)[`splineControlPoint_${index}_x`] as number | undefined;
-      const yMod = (audioMod as any)[`splineControlPoint_${index}_y`] as number | undefined;
-      const depthMod = (audioMod as any)[`splineControlPoint_${index}_depth`] as number | undefined;
+      const xMod = (audioMod as any)[`splineControlPoint_${index}_x`] as
+        | number
+        | undefined;
+      const yMod = (audioMod as any)[`splineControlPoint_${index}_y`] as
+        | number
+        | undefined;
+      const depthMod = (audioMod as any)[`splineControlPoint_${index}_depth`] as
+        | number
+        | undefined;
 
       // If no modifiers for this point, return unchanged
       if (!xMod && !yMod && !depthMod) {
@@ -1586,21 +1710,21 @@ export class SplineLayer extends BaseLayer {
       // Handle trim path updates
       if (data.trimStart !== undefined) {
         this.trimStartProp = data.trimStart;
-        this.lastPointsHash = ''; // Force rebuild on next frame
+        this.lastPointsHash = ""; // Force rebuild on next frame
       }
       if (data.trimEnd !== undefined) {
         this.trimEndProp = data.trimEnd;
-        this.lastPointsHash = '';
+        this.lastPointsHash = "";
       }
       if (data.trimOffset !== undefined) {
         this.trimOffsetProp = data.trimOffset;
-        this.lastPointsHash = '';
+        this.lastPointsHash = "";
       }
 
       // Handle path effects updates
       if (data.pathEffects !== undefined) {
         this.pathEffects = data.pathEffects;
-        this.lastPointsHash = ''; // Force rebuild on next frame
+        this.lastPointsHash = ""; // Force rebuild on next frame
       }
 
       // Handle warp pin updates (support both warpPins and deprecated puppetPins)

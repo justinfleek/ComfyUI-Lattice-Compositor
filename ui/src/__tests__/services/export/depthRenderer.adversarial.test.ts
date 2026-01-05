@@ -11,21 +11,21 @@
  * @module DepthRendererAdversarialTests
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, expect, it } from "vitest";
 
 import {
-  renderDepthFrame,
-  convertDepthToFormat,
-  depthToImageData,
-  depthToGrayscaleImageData,
   applyColormap,
-  generateDepthMetadata,
-  type DepthRenderResult,
+  convertDepthToFormat,
   type DepthRenderOptions,
-} from '@/services/export/depthRenderer';
-import type { Camera3D } from '@/types/camera';
-import type { Layer } from '@/types/project';
-import type { DepthMapFormat } from '@/types/export';
+  type DepthRenderResult,
+  depthToGrayscaleImageData,
+  depthToImageData,
+  generateDepthMetadata,
+  renderDepthFrame,
+} from "@/services/export/depthRenderer";
+import type { Camera3D } from "@/types/camera";
+import type { DepthMapFormat } from "@/types/export";
+import type { Layer } from "@/types/project";
 
 // ============================================================================
 // Test Fixtures
@@ -33,9 +33,9 @@ import type { DepthMapFormat } from '@/types/export';
 
 function createValidCamera(overrides: Partial<Camera3D> = {}): Camera3D {
   return {
-    id: 'test-camera',
-    name: 'Test Camera',
-    type: 'perspective',
+    id: "test-camera",
+    name: "Test Camera",
+    type: "perspective",
     position: { x: 0, y: 0, z: -500 },
     orientation: { x: 0, y: 0, z: 0 },
     xRotation: 0,
@@ -59,9 +59,9 @@ function createValidCamera(overrides: Partial<Camera3D> = {}): Camera3D {
 
 function createValidLayer(overrides: Partial<Layer> = {}): Layer {
   return {
-    id: 'test-layer',
-    name: 'Test Layer',
-    type: 'solid',
+    id: "test-layer",
+    name: "Test Layer",
+    type: "solid",
     visible: true,
     startFrame: 0,
     endFrame: 100,
@@ -76,7 +76,9 @@ function createValidLayer(overrides: Partial<Layer> = {}): Layer {
   } as unknown as Layer;
 }
 
-function createDepthResult(overrides: Partial<DepthRenderResult> = {}): DepthRenderResult {
+function createDepthResult(
+  overrides: Partial<DepthRenderResult> = {},
+): DepthRenderResult {
   const width = overrides.width ?? 512;
   const height = overrides.height ?? 512;
   return {
@@ -93,16 +95,15 @@ function createDepthResult(overrides: Partial<DepthRenderResult> = {}): DepthRen
 // CRITICAL: Division by Zero - Depth Normalization
 // ============================================================================
 
-describe('CRITICAL: convertDepthToFormat - Division by Zero', () => {
-
-  it('should handle minDepth === maxDepth (zero range)', () => {
+describe("CRITICAL: convertDepthToFormat - Division by Zero", () => {
+  it("should handle minDepth === maxDepth (zero range)", () => {
     const result = createDepthResult({
       minDepth: 500,
       maxDepth: 500, // Same as min = zero range
     });
 
     // Should not crash - should return uniform mid-gray
-    const output = convertDepthToFormat(result, 'midas');
+    const output = convertDepthToFormat(result, "midas");
 
     expect(output).toBeInstanceOf(Uint8Array);
 
@@ -113,13 +114,13 @@ describe('CRITICAL: convertDepthToFormat - Division by Zero', () => {
     }
   });
 
-  it('should handle very small depth range', () => {
+  it("should handle very small depth range", () => {
     const result = createDepthResult({
       minDepth: 500,
       maxDepth: 500.00001, // Extremely small range
     });
 
-    const output = convertDepthToFormat(result, 'midas');
+    const output = convertDepthToFormat(result, "midas");
 
     // Should not produce NaN/Infinity
     for (let i = 0; i < output.length; i++) {
@@ -127,26 +128,26 @@ describe('CRITICAL: convertDepthToFormat - Division by Zero', () => {
     }
   });
 
-  it('should handle NaN in minDepth/maxDepth', () => {
+  it("should handle NaN in minDepth/maxDepth", () => {
     const result = createDepthResult({
       minDepth: NaN,
       maxDepth: NaN,
     });
 
     // depthRange = NaN - NaN = NaN, should trigger fallback
-    const output = convertDepthToFormat(result, 'midas');
+    const output = convertDepthToFormat(result, "midas");
 
     // Should not crash
     expect(output).toBeInstanceOf(Uint8Array);
   });
 
-  it('should handle Infinity in depth range', () => {
+  it("should handle Infinity in depth range", () => {
     const result = createDepthResult({
       minDepth: -Infinity,
       maxDepth: Infinity,
     });
 
-    const output = convertDepthToFormat(result, 'midas');
+    const output = convertDepthToFormat(result, "midas");
 
     // Should produce valid output (fallback to mid-gray)
     expect(output).toBeInstanceOf(Uint8Array);
@@ -155,7 +156,7 @@ describe('CRITICAL: convertDepthToFormat - Division by Zero', () => {
     }
   });
 
-  it('should handle NaN values in depth buffer', () => {
+  it("should handle NaN values in depth buffer", () => {
     const buffer = new Float32Array(100);
     buffer.fill(500);
     buffer[50] = NaN; // One NaN value
@@ -166,7 +167,7 @@ describe('CRITICAL: convertDepthToFormat - Division by Zero', () => {
       height: 10,
     });
 
-    const output = convertDepthToFormat(result, 'midas');
+    const output = convertDepthToFormat(result, "midas");
 
     // NaN should be converted to fallback value
     expect(output).toBeInstanceOf(Uint8Array);
@@ -178,17 +179,16 @@ describe('CRITICAL: convertDepthToFormat - Division by Zero', () => {
 // CRITICAL: Unknown Format Handling
 // ============================================================================
 
-describe('CRITICAL: convertDepthToFormat - Unknown Format', () => {
-
-  it('should throw for unknown depth format', () => {
+describe("CRITICAL: convertDepthToFormat - Unknown Format", () => {
+  it("should throw for unknown depth format", () => {
     const result = createDepthResult();
 
     expect(() => {
-      convertDepthToFormat(result, 'unknown-format' as DepthMapFormat);
+      convertDepthToFormat(result, "unknown-format" as DepthMapFormat);
     }).toThrow(/unknown.*format|valid formats/i);
   });
 
-  it('should throw for null format', () => {
+  it("should throw for null format", () => {
     const result = createDepthResult();
 
     expect(() => {
@@ -196,7 +196,7 @@ describe('CRITICAL: convertDepthToFormat - Unknown Format', () => {
     }).toThrow(/unknown.*format|valid formats/i);
   });
 
-  it('should throw for undefined format', () => {
+  it("should throw for undefined format", () => {
     const result = createDepthResult();
 
     expect(() => {
@@ -209,9 +209,8 @@ describe('CRITICAL: convertDepthToFormat - Unknown Format', () => {
 // CRITICAL: Dimension Validation
 // ============================================================================
 
-describe('CRITICAL: convertDepthToFormat - Invalid Dimensions', () => {
-
-  it('should throw for zero width', () => {
+describe("CRITICAL: convertDepthToFormat - Invalid Dimensions", () => {
+  it("should throw for zero width", () => {
     const result = createDepthResult({
       width: 0,
       height: 512,
@@ -219,11 +218,11 @@ describe('CRITICAL: convertDepthToFormat - Invalid Dimensions', () => {
     });
 
     expect(() => {
-      convertDepthToFormat(result, 'midas');
+      convertDepthToFormat(result, "midas");
     }).toThrow(/invalid.*dimensions|width.*0/i);
   });
 
-  it('should throw for zero height', () => {
+  it("should throw for zero height", () => {
     const result = createDepthResult({
       width: 512,
       height: 0,
@@ -231,18 +230,18 @@ describe('CRITICAL: convertDepthToFormat - Invalid Dimensions', () => {
     });
 
     expect(() => {
-      convertDepthToFormat(result, 'midas');
+      convertDepthToFormat(result, "midas");
     }).toThrow(/invalid.*dimensions|height.*0/i);
   });
 
-  it('should throw for negative dimensions', () => {
+  it("should throw for negative dimensions", () => {
     const result = createDepthResult({
       width: -512,
       height: -512,
     });
 
     expect(() => {
-      convertDepthToFormat(result, 'midas');
+      convertDepthToFormat(result, "midas");
     }).toThrow(/invalid.*dimensions/i);
   });
 });
@@ -251,11 +250,10 @@ describe('CRITICAL: convertDepthToFormat - Invalid Dimensions', () => {
 // HIGH: 16-bit vs 8-bit Format Handling
 // ============================================================================
 
-describe('HIGH: convertDepthToFormat - Bit Depth Handling', () => {
-
-  it('should produce 8-bit output for MiDaS format', () => {
+describe("HIGH: convertDepthToFormat - Bit Depth Handling", () => {
+  it("should produce 8-bit output for MiDaS format", () => {
     const result = createDepthResult();
-    const output = convertDepthToFormat(result, 'midas');
+    const output = convertDepthToFormat(result, "midas");
 
     expect(output).toBeInstanceOf(Uint8Array);
 
@@ -266,10 +264,10 @@ describe('HIGH: convertDepthToFormat - Bit Depth Handling', () => {
     }
   });
 
-  it('should produce 16-bit output for ZoeDepth format', () => {
+  it("should produce 16-bit output for ZoeDepth format", () => {
     const result = createDepthResult();
     // Fixed: format name is 'zoe' not 'zoedepth'
-    const output = convertDepthToFormat(result, 'zoe');
+    const output = convertDepthToFormat(result, "zoe");
 
     expect(output).toBeInstanceOf(Uint16Array);
 
@@ -280,14 +278,14 @@ describe('HIGH: convertDepthToFormat - Bit Depth Handling', () => {
     }
   });
 
-  it('should produce 16-bit output for Depth-Pro format', () => {
+  it("should produce 16-bit output for Depth-Pro format", () => {
     const result = createDepthResult();
-    const output = convertDepthToFormat(result, 'depth-pro');
+    const output = convertDepthToFormat(result, "depth-pro");
 
     expect(output).toBeInstanceOf(Uint16Array);
   });
 
-  it('should handle inversion correctly for MiDaS', () => {
+  it("should handle inversion correctly for MiDaS", () => {
     // MiDaS inverts: 0 = far, 255 = near
     const buffer = new Float32Array(4);
     buffer[0] = 100; // Near
@@ -303,7 +301,7 @@ describe('HIGH: convertDepthToFormat - Bit Depth Handling', () => {
       maxDepth: 1000,
     });
 
-    const output = convertDepthToFormat(result, 'midas');
+    const output = convertDepthToFormat(result, "midas");
 
     // Near (100) should be high value (inverted)
     expect(output[0]).toBeGreaterThan(200);
@@ -317,23 +315,22 @@ describe('HIGH: convertDepthToFormat - Bit Depth Handling', () => {
 // HIGH: depthToImageData - Channel Packing
 // ============================================================================
 
-describe('HIGH: depthToImageData - 16-bit Channel Packing', () => {
-
-  it('should pack 16-bit into RG channels when packChannels=true', () => {
+describe("HIGH: depthToImageData - 16-bit Channel Packing", () => {
+  it("should pack 16-bit into RG channels when packChannels=true", () => {
     const depth16 = new Uint16Array([0, 256, 65535, 32768]);
     const imageData = depthToImageData(depth16, 2, 2, true);
 
     // Value 0: R=0, G=0
-    expect(imageData.data[0]).toBe(0);  // R
-    expect(imageData.data[1]).toBe(0);  // G
+    expect(imageData.data[0]).toBe(0); // R
+    expect(imageData.data[1]).toBe(0); // G
 
     // Value 256 = 0x0100: R=1, G=0
-    expect(imageData.data[4]).toBe(1);  // R (high byte)
-    expect(imageData.data[5]).toBe(0);  // G (low byte)
+    expect(imageData.data[4]).toBe(1); // R (high byte)
+    expect(imageData.data[5]).toBe(0); // G (low byte)
 
     // Value 65535 = 0xFFFF: R=255, G=255
-    expect(imageData.data[8]).toBe(255);  // R
-    expect(imageData.data[9]).toBe(255);  // G
+    expect(imageData.data[8]).toBe(255); // R
+    expect(imageData.data[9]).toBe(255); // G
 
     // Blue channel should always be 0
     expect(imageData.data[2]).toBe(0);
@@ -341,7 +338,7 @@ describe('HIGH: depthToImageData - 16-bit Channel Packing', () => {
     expect(imageData.data[10]).toBe(0);
   });
 
-  it('should convert 16-bit to 8-bit grayscale when packChannels=false', () => {
+  it("should convert 16-bit to 8-bit grayscale when packChannels=false", () => {
     const depth16 = new Uint16Array([0, 32768, 65535]); // 0, ~50%, 100%
     const imageData = depthToImageData(depth16, 3, 1, false);
 
@@ -359,7 +356,7 @@ describe('HIGH: depthToImageData - 16-bit Channel Packing', () => {
     expect(imageData.data[8]).toBe(255);
   });
 
-  it('should handle 8-bit depth data', () => {
+  it("should handle 8-bit depth data", () => {
     const depth8 = new Uint8Array([0, 128, 255]);
     const imageData = depthToImageData(depth8, 3, 1);
 
@@ -373,7 +370,7 @@ describe('HIGH: depthToImageData - 16-bit Channel Packing', () => {
     expect(imageData.data[6]).toBe(128);
   });
 
-  it('should always set alpha to 255', () => {
+  it("should always set alpha to 255", () => {
     const depth8 = new Uint8Array([100]);
     const imageData = depthToImageData(depth8, 1, 1);
 
@@ -385,22 +382,21 @@ describe('HIGH: depthToImageData - 16-bit Channel Packing', () => {
 // HIGH: Colormap Application
 // ============================================================================
 
-describe('HIGH: applyColormap - Value Clamping', () => {
-
-  it('should clamp values < 0 to 0', () => {
+describe("HIGH: applyColormap - Value Clamping", () => {
+  it("should clamp values < 0 to 0", () => {
     // This shouldn't happen with Uint arrays, but test the clamping logic
     const depth8 = new Uint8Array([0, 128, 255]);
-    const imageData = applyColormap(depth8, 3, 1, 'viridis');
+    const imageData = applyColormap(depth8, 3, 1, "viridis");
 
     // Should not crash
     expect(imageData.width).toBe(3);
     expect(imageData.height).toBe(1);
   });
 
-  it('should handle all colormap types', () => {
+  it("should handle all colormap types", () => {
     const depth8 = new Uint8Array([0, 64, 128, 192, 255]);
 
-    const colormaps = ['grayscale', 'viridis', 'magma', 'plasma'] as const;
+    const colormaps = ["grayscale", "viridis", "magma", "plasma"] as const;
 
     for (const colormap of colormaps) {
       const imageData = applyColormap(depth8, 5, 1, colormap);
@@ -414,9 +410,9 @@ describe('HIGH: applyColormap - Value Clamping', () => {
     }
   });
 
-  it('should default to grayscale for unknown colormap', () => {
+  it("should default to grayscale for unknown colormap", () => {
     const depth8 = new Uint8Array([128]);
-    const imageData = applyColormap(depth8, 1, 1, 'unknown' as any);
+    const imageData = applyColormap(depth8, 1, 1, "unknown" as any);
 
     // Should fall through to grayscale (R=G=B)
     expect(imageData.data[0]).toBe(imageData.data[1]);
@@ -428,9 +424,8 @@ describe('HIGH: applyColormap - Value Clamping', () => {
 // MEDIUM: renderDepthFrame - Layer Processing
 // ============================================================================
 
-describe('MEDIUM: renderDepthFrame - Layer Edge Cases', () => {
-
-  it('should handle empty layers array', () => {
+describe("MEDIUM: renderDepthFrame - Layer Edge Cases", () => {
+  it("should handle empty layers array", () => {
     const options: DepthRenderOptions = {
       width: 512,
       height: 512,
@@ -448,7 +443,7 @@ describe('MEDIUM: renderDepthFrame - Layer Edge Cases', () => {
     expect(result.depthBuffer[0]).toBe(1000);
   });
 
-  it('should skip invisible layers', () => {
+  it("should skip invisible layers", () => {
     const options: DepthRenderOptions = {
       width: 64,
       height: 64,
@@ -465,7 +460,7 @@ describe('MEDIUM: renderDepthFrame - Layer Edge Cases', () => {
     expect(result.depthBuffer[0]).toBe(1000);
   });
 
-  it('should skip layers with zero opacity', () => {
+  it("should skip layers with zero opacity", () => {
     const options: DepthRenderOptions = {
       width: 64,
       height: 64,
@@ -482,7 +477,7 @@ describe('MEDIUM: renderDepthFrame - Layer Edge Cases', () => {
     expect(result.depthBuffer[0]).toBe(1000);
   });
 
-  it('should handle layer with no transform', () => {
+  it("should handle layer with no transform", () => {
     const layer = createValidLayer();
     delete (layer as any).transform;
 
@@ -506,13 +501,12 @@ describe('MEDIUM: renderDepthFrame - Layer Edge Cases', () => {
 // MEDIUM: Metadata Generation
 // ============================================================================
 
-describe('MEDIUM: generateDepthMetadata', () => {
-
-  it('should generate valid metadata', () => {
-    const metadata = generateDepthMetadata('midas', 100, 1920, 1080, 10, 1000);
+describe("MEDIUM: generateDepthMetadata", () => {
+  it("should generate valid metadata", () => {
+    const metadata = generateDepthMetadata("midas", 100, 1920, 1080, 10, 1000);
 
     expect(metadata).toMatchObject({
-      format: 'midas',
+      format: "midas",
       frameCount: 100,
       width: 1920,
       height: 1080,
@@ -522,12 +516,12 @@ describe('MEDIUM: generateDepthMetadata', () => {
       },
     });
 
-    expect(metadata).toHaveProperty('generatedAt');
-    expect(metadata).toHaveProperty('generator');
+    expect(metadata).toHaveProperty("generatedAt");
+    expect(metadata).toHaveProperty("generator");
   });
 
-  it('should handle NaN depth range', () => {
-    const metadata = generateDepthMetadata('zoe', 50, 512, 512, NaN, NaN) as {
+  it("should handle NaN depth range", () => {
+    const metadata = generateDepthMetadata("zoe", 50, 512, 512, NaN, NaN) as {
       actualRange: { min: number; max: number };
     };
 
@@ -541,9 +535,8 @@ describe('MEDIUM: generateDepthMetadata', () => {
 // EDGE: depthToGrayscaleImageData Convenience Function
 // ============================================================================
 
-describe('EDGE: depthToGrayscaleImageData', () => {
-
-  it('should always produce grayscale output', () => {
+describe("EDGE: depthToGrayscaleImageData", () => {
+  it("should always produce grayscale output", () => {
     const depth16 = new Uint16Array([0, 32768, 65535]);
     const imageData = depthToGrayscaleImageData(depth16, 3, 1);
 

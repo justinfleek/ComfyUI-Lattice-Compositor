@@ -9,19 +9,19 @@
  * 2. StarVector - AI-powered for icons/logos (1B model)
  */
 
-import { createLogger } from '@/utils/logger';
-import { getComfyUIClient } from './comfyui/comfyuiClient';
+import type { ControlPoint } from "@/types/project";
+import { createLogger } from "@/utils/logger";
+import { getComfyUIClient } from "./comfyui/comfyuiClient";
 import {
+  canAllocate,
   registerAllocation,
   unregisterAllocation,
-  canAllocate,
   VRAM_ESTIMATES,
-} from './memoryBudget';
-import type { ControlPoint } from '@/types/project';
+} from "./memoryBudget";
 
-const logger = createLogger('Vectorize');
+const logger = createLogger("Vectorize");
 
-const STARVECTOR_ALLOCATION_ID = 'model:starvector-1b';
+const STARVECTOR_ALLOCATION_ID = "model:starvector-1b";
 
 // ============================================================================
 // Types
@@ -51,7 +51,7 @@ export interface VectorPath {
 }
 
 export interface VectorizeResult {
-  status: 'success' | 'error';
+  status: "success" | "error";
   message?: string;
   paths: VectorPath[];
   width: number;
@@ -62,11 +62,11 @@ export interface VectorizeResult {
 
 export interface VTraceOptions {
   /** Curve fitting mode: 'spline' for bezier curves, 'polygon' for straight lines */
-  mode?: 'spline' | 'polygon' | 'pixel';
+  mode?: "spline" | "polygon" | "pixel";
   /** Color mode: 'color' preserves colors, 'binary' for black/white */
-  colorMode?: 'color' | 'binary';
+  colorMode?: "color" | "binary";
   /** Layer stacking mode */
-  hierarchical?: 'stacked' | 'cutout';
+  hierarchical?: "stacked" | "cutout";
   /** Remove small artifacts (0-100, higher = more filtering) */
   filterSpeckle?: number;
   /** Color quantization precision (1-10) */
@@ -95,9 +95,9 @@ export interface StarVectorOptions {
 // ============================================================================
 
 export const DEFAULT_VTRACE_OPTIONS: Required<VTraceOptions> = {
-  mode: 'spline',
-  colorMode: 'color',
-  hierarchical: 'stacked',
+  mode: "spline",
+  colorMode: "color",
+  hierarchical: "stacked",
   filterSpeckle: 4,
   colorPrecision: 6,
   layerDifference: 16,
@@ -132,18 +132,20 @@ export class VectorizeService {
       const response = await fetch(`${this.baseUrl}/lattice/vectorize/status`);
 
       if (!response.ok) {
-        throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+        throw new Error(
+          `Server returned ${response.status}: ${response.statusText}`,
+        );
       }
 
       const result = await response.json();
 
-      if (result.status === 'success') {
+      if (result.status === "success") {
         return result.data;
       }
 
-      throw new Error(result.message || 'Failed to get status');
+      throw new Error(result.message || "Failed to get status");
     } catch (error) {
-      logger.error('Failed to get vectorize status:', error);
+      logger.error("Failed to get vectorize status:", error);
       throw error;
     }
   }
@@ -157,14 +159,14 @@ export class VectorizeService {
    */
   async trace(
     imageDataUrl: string,
-    options: VTraceOptions = {}
+    options: VTraceOptions = {},
   ): Promise<VectorizeResult> {
     const opts = { ...DEFAULT_VTRACE_OPTIONS, ...options };
 
     try {
       const response = await fetch(`${this.baseUrl}/lattice/vectorize/trace`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           image: imageDataUrl,
           mode: opts.mode,
@@ -183,14 +185,14 @@ export class VectorizeService {
 
       const result = await response.json();
 
-      if (result.status === 'error') {
+      if (result.status === "error") {
         throw new Error(result.message);
       }
 
       logger.info(`Traced image: ${result.pathCount} paths`);
       return result;
     } catch (error) {
-      logger.error('Image tracing failed:', error);
+      logger.error("Image tracing failed:", error);
       throw error;
     }
   }
@@ -204,20 +206,22 @@ export class VectorizeService {
    */
   async vectorizeWithAI(
     imageDataUrl: string,
-    options: StarVectorOptions = {}
+    options: StarVectorOptions = {},
   ): Promise<VectorizeResult> {
     const opts = { ...DEFAULT_STARVECTOR_OPTIONS, ...options };
 
     // Check if we have enough memory
-    const memCheck = canAllocate(VRAM_ESTIMATES['model:starvector'] || 2500);
+    const memCheck = canAllocate(VRAM_ESTIMATES["model:starvector"] || 2500);
     if (!memCheck.canProceed) {
-      throw new Error(memCheck.warning?.message || 'Insufficient GPU memory for StarVector');
+      throw new Error(
+        memCheck.warning?.message || "Insufficient GPU memory for StarVector",
+      );
     }
 
     try {
       const response = await fetch(`${this.baseUrl}/lattice/vectorize/ai`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           image: imageDataUrl,
           max_length: opts.maxLength,
@@ -226,14 +230,14 @@ export class VectorizeService {
 
       const result = await response.json();
 
-      if (result.status === 'error') {
+      if (result.status === "error") {
         throw new Error(result.message);
       }
 
       logger.info(`AI vectorized: ${result.pathCount} paths`);
       return result;
     } catch (error) {
-      logger.error('AI vectorization failed:', error);
+      logger.error("AI vectorization failed:", error);
       throw error;
     }
   }
@@ -242,43 +246,46 @@ export class VectorizeService {
    * Download and load StarVector model
    */
   async loadStarVectorModel(
-    onProgress?: (stage: string, message: string) => void
+    onProgress?: (stage: string, message: string) => void,
   ): Promise<void> {
     // Check memory before loading
-    const memCheck = canAllocate(VRAM_ESTIMATES['model:starvector'] || 2500);
+    const memCheck = canAllocate(VRAM_ESTIMATES["model:starvector"] || 2500);
     if (!memCheck.canProceed) {
-      throw new Error(memCheck.warning?.message || 'Insufficient GPU memory');
+      throw new Error(memCheck.warning?.message || "Insufficient GPU memory");
     }
 
     try {
-      onProgress?.('downloading', 'Downloading StarVector model (~2.5GB)...');
+      onProgress?.("downloading", "Downloading StarVector model (~2.5GB)...");
 
-      const response = await fetch(`${this.baseUrl}/lattice/vectorize/download-starvector`, {
-        method: 'POST',
-      });
+      const response = await fetch(
+        `${this.baseUrl}/lattice/vectorize/download-starvector`,
+        {
+          method: "POST",
+        },
+      );
 
       const result = await response.json();
 
-      if (result.status === 'error') {
+      if (result.status === "error") {
         throw new Error(result.message);
       }
 
       // Register memory allocation
       registerAllocation(
         STARVECTOR_ALLOCATION_ID,
-        'StarVector 1B Model',
-        'model',
-        VRAM_ESTIMATES['model:starvector'] || 2500,
+        "StarVector 1B Model",
+        "model",
+        VRAM_ESTIMATES["model:starvector"] || 2500,
         {
           canUnload: true,
           unloadFn: () => this.unloadStarVectorModel(),
-        }
+        },
       );
 
-      onProgress?.('complete', 'StarVector model loaded');
-      logger.info('StarVector model loaded');
+      onProgress?.("complete", "StarVector model loaded");
+      logger.info("StarVector model loaded");
     } catch (error) {
-      logger.error('Failed to load StarVector:', error);
+      logger.error("Failed to load StarVector:", error);
       throw error;
     }
   }
@@ -288,20 +295,23 @@ export class VectorizeService {
    */
   async unloadStarVectorModel(): Promise<void> {
     try {
-      const response = await fetch(`${this.baseUrl}/lattice/vectorize/unload-starvector`, {
-        method: 'POST',
-      });
+      const response = await fetch(
+        `${this.baseUrl}/lattice/vectorize/unload-starvector`,
+        {
+          method: "POST",
+        },
+      );
 
       const result = await response.json();
 
-      if (result.status === 'error') {
+      if (result.status === "error") {
         throw new Error(result.message);
       }
 
       unregisterAllocation(STARVECTOR_ALLOCATION_ID);
-      logger.info('StarVector model unloaded');
+      logger.info("StarVector model unloaded");
     } catch (error) {
-      logger.error('Failed to unload StarVector:', error);
+      logger.error("Failed to unload StarVector:", error);
       throw error;
     }
   }
@@ -319,32 +329,32 @@ export class VectorizeService {
   async vectorize(
     imageDataUrl: string,
     options: {
-      mode?: 'auto' | 'trace' | 'ai';
+      mode?: "auto" | "trace" | "ai";
       traceOptions?: VTraceOptions;
       aiOptions?: StarVectorOptions;
     } = {},
-    onProgress?: (stage: string, message: string) => void
+    onProgress?: (stage: string, message: string) => void,
   ): Promise<VectorizeResult> {
-    const mode = options.mode ?? 'trace';
+    const mode = options.mode ?? "trace";
 
-    if (mode === 'ai') {
+    if (mode === "ai") {
       // Check if StarVector is loaded
-      onProgress?.('checking', 'Checking StarVector model...');
+      onProgress?.("checking", "Checking StarVector model...");
       const status = await this.getStatus();
 
       if (!status.starvector.loaded) {
         if (!status.starvector.downloaded) {
-          onProgress?.('downloading', 'Downloading StarVector model...');
+          onProgress?.("downloading", "Downloading StarVector model...");
         }
         await this.loadStarVectorModel(onProgress);
       }
 
-      onProgress?.('vectorizing', 'Running AI vectorization...');
+      onProgress?.("vectorizing", "Running AI vectorization...");
       return await this.vectorizeWithAI(imageDataUrl, options.aiOptions);
     }
 
     // Default to VTracer (fast, works with any image)
-    onProgress?.('tracing', 'Tracing image to vectors...');
+    onProgress?.("tracing", "Tracing image to vectors...");
     return await this.trace(imageDataUrl, options.traceOptions);
   }
 }
@@ -373,11 +383,11 @@ export function getVectorizeService(serverAddress?: string): VectorizeService {
 export function normalizeControlPoints(
   paths: VectorPath[],
   options: {
-    groupByPath?: boolean;  // Assign group IDs based on path
-    prefix?: string;        // ID prefix
-  } = {}
+    groupByPath?: boolean; // Assign group IDs based on path
+    prefix?: string; // ID prefix
+  } = {},
 ): VectorPath[] {
-  const { groupByPath = false, prefix = 'vec' } = options;
+  const { groupByPath = false, prefix = "vec" } = options;
 
   return paths.map((path, pathIdx) => {
     const groupId = groupByPath ? `${prefix}_path_${pathIdx}` : undefined;
@@ -390,7 +400,9 @@ export function normalizeControlPoints(
         group: groupId,
         // Ensure handles are in correct format (absolute positions)
         handleIn: cp.handleIn ? { x: cp.handleIn.x, y: cp.handleIn.y } : null,
-        handleOut: cp.handleOut ? { x: cp.handleOut.x, y: cp.handleOut.y } : null,
+        handleOut: cp.handleOut
+          ? { x: cp.handleOut.x, y: cp.handleOut.y }
+          : null,
       })),
     };
   });
@@ -420,19 +432,22 @@ export function mergePaths(paths: VectorPath[]): VectorPath | null {
   }
 
   return {
-    id: 'merged_path',
+    id: "merged_path",
     fill: paths[0].fill,
-    stroke: paths[0].stroke || '#000000',
+    stroke: paths[0].stroke || "#000000",
     controlPoints: mergedPoints,
-    closed: false,  // Merged paths are typically not closed
+    closed: false, // Merged paths are typically not closed
   };
 }
 
 /**
  * Filter paths by minimum point count
  */
-export function filterSmallPaths(paths: VectorPath[], minPoints: number = 3): VectorPath[] {
-  return paths.filter(path => path.controlPoints.length >= minPoints);
+export function filterSmallPaths(
+  paths: VectorPath[],
+  minPoints: number = 3,
+): VectorPath[] {
+  return paths.filter((path) => path.controlPoints.length >= minPoints);
 }
 
 /**
@@ -441,7 +456,7 @@ export function filterSmallPaths(paths: VectorPath[], minPoints: number = 3): Ve
  */
 export function simplifyPath(
   controlPoints: ControlPoint[],
-  tolerance: number = 2.0
+  tolerance: number = 2.0,
 ): ControlPoint[] {
   if (controlPoints.length <= 2) return controlPoints;
 
@@ -481,7 +496,7 @@ export function simplifyPath(
 function perpendicularDistance(
   point: ControlPoint,
   lineStart: ControlPoint,
-  lineEnd: ControlPoint
+  lineEnd: ControlPoint,
 ): number {
   const dx = lineEnd.x - lineStart.x;
   const dy = lineEnd.y - lineStart.y;
@@ -489,23 +504,23 @@ function perpendicularDistance(
   if (dx === 0 && dy === 0) {
     // Line is a point
     return Math.sqrt(
-      Math.pow(point.x - lineStart.x, 2) +
-      Math.pow(point.y - lineStart.y, 2)
+      (point.x - lineStart.x) ** 2 + (point.y - lineStart.y) ** 2,
     );
   }
 
-  const t = Math.max(0, Math.min(1,
-    ((point.x - lineStart.x) * dx + (point.y - lineStart.y) * dy) /
-    (dx * dx + dy * dy)
-  ));
+  const t = Math.max(
+    0,
+    Math.min(
+      1,
+      ((point.x - lineStart.x) * dx + (point.y - lineStart.y) * dy) /
+        (dx * dx + dy * dy),
+    ),
+  );
 
   const projX = lineStart.x + t * dx;
   const projY = lineStart.y + t * dy;
 
-  return Math.sqrt(
-    Math.pow(point.x - projX, 2) +
-    Math.pow(point.y - projY, 2)
-  );
+  return Math.sqrt((point.x - projX) ** 2 + (point.y - projY) ** 2);
 }
 
 /**
@@ -515,18 +530,26 @@ function perpendicularDistance(
 export function autoGroupPoints(
   controlPoints: ControlPoint[],
   options: {
-    method?: 'grid' | 'proximity' | 'quadrant';
-    gridSize?: number;      // For grid method
-    threshold?: number;     // For proximity method
-    numGroups?: number;     // Target number of groups
-  } = {}
+    method?: "grid" | "proximity" | "quadrant";
+    gridSize?: number; // For grid method
+    threshold?: number; // For proximity method
+    numGroups?: number; // Target number of groups
+  } = {},
 ): ControlPoint[] {
-  const { method = 'quadrant', gridSize = 100, threshold = 50, numGroups = 4 } = options;
+  const {
+    method = "quadrant",
+    gridSize = 100,
+    threshold = 50,
+    numGroups = 4,
+  } = options;
 
   if (controlPoints.length === 0) return [];
 
   // Calculate bounds
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  let minX = Infinity,
+    minY = Infinity,
+    maxX = -Infinity,
+    maxY = -Infinity;
   for (const cp of controlPoints) {
     minX = Math.min(minX, cp.x);
     minY = Math.min(minY, cp.y);
@@ -537,33 +560,31 @@ export function autoGroupPoints(
   const width = maxX - minX || 1;
   const height = maxY - minY || 1;
 
-  return controlPoints.map(cp => {
+  return controlPoints.map((cp) => {
     let group: string;
 
     switch (method) {
-      case 'grid': {
+      case "grid": {
         const gridX = Math.floor((cp.x - minX) / gridSize);
         const gridY = Math.floor((cp.y - minY) / gridSize);
         group = `grid_${gridX}_${gridY}`;
         break;
       }
 
-      case 'quadrant': {
+      case "quadrant": {
         const normX = (cp.x - minX) / width;
         const normY = (cp.y - minY) / height;
 
-        if (normX < 0.5 && normY < 0.5) group = 'top_left';
-        else if (normX >= 0.5 && normY < 0.5) group = 'top_right';
-        else if (normX < 0.5 && normY >= 0.5) group = 'bottom_left';
-        else group = 'bottom_right';
+        if (normX < 0.5 && normY < 0.5) group = "top_left";
+        else if (normX >= 0.5 && normY < 0.5) group = "top_right";
+        else if (normX < 0.5 && normY >= 0.5) group = "bottom_left";
+        else group = "bottom_right";
         break;
       }
-
-      case 'proximity':
       default: {
         // Simple k-means-style grouping
         const normX = (cp.x - minX) / width;
-        const normY = (cp.y - minY) / height;
+        const _normY = (cp.y - minY) / height;
         const groupIdx = Math.floor(normX * numGroups) % numGroups;
         group = `region_${groupIdx}`;
         break;
@@ -575,6 +596,6 @@ export function autoGroupPoints(
 }
 
 // Add to VRAM_ESTIMATES (extend the memory budget)
-if (typeof VRAM_ESTIMATES === 'object') {
-  (VRAM_ESTIMATES as Record<string, number>)['model:starvector'] = 2500;
+if (typeof VRAM_ESTIMATES === "object") {
+  (VRAM_ESTIMATES as Record<string, number>)["model:starvector"] = 2500;
 }

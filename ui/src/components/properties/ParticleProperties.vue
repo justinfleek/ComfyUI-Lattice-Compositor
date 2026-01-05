@@ -687,40 +687,27 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { computed, onMounted, ref, watch } from "vue";
+import { ParticleGPUCompute } from "@/services/particleGPU";
+import { useCompositorStore } from "@/stores/compositorStore";
+import { usePresetStore } from "@/stores/presetStore";
+import type { ParticlePreset } from "@/types/presets";
 import type {
-  Layer,
-  ParticleLayerData,
-  ParticleSystemLayerConfig,
-  ParticleEmitterConfig,
-  GravityWellConfig,
-  VortexConfig,
-  ParticleModulationConfig,
-  ParticleRenderOptions,
-  TurbulenceFieldConfig,
-  SubEmitterConfig,
+  AudioBindingConfig,
+  CollisionConfig,
   ConnectionRenderConfig,
   FlockingConfig,
-  CollisionConfig,
-  AudioBindingConfig,
-} from '@/types/project';
-import { usePresetStore } from '@/stores/presetStore';
-import { useCompositorStore } from '@/stores/compositorStore';
-import type { ParticlePreset } from '@/types/presets';
-import { ParticleGPUCompute } from '@/services/particleGPU';
-
-// Child components for particle property sections
-import {
-  ParticleVisualizationSection,
-  ParticleFlockingSection,
-  ParticleCollisionSection,
-  ParticleTurbulenceSection,
-  ParticleSubEmittersSection,
-  ParticleModulationsSection,
-  ParticleAudioBindingsSection,
-  ParticleForceFieldsSection,
-  ParticleRenderSection,
-} from './particle';
+  GravityWellConfig,
+  Layer,
+  ParticleEmitterConfig,
+  ParticleLayerData,
+  ParticleModulationConfig,
+  ParticleRenderOptions,
+  ParticleSystemLayerConfig,
+  SubEmitterConfig,
+  TurbulenceFieldConfig,
+  VortexConfig,
+} from "@/types/project";
 
 // Preset Store
 const presetStore = usePresetStore();
@@ -730,16 +717,20 @@ presetStore.initialize();
 const compositorStore = useCompositorStore();
 
 // Computed: Image layers for mask emission
-const imageLayers = computed(() =>
-  compositorStore.layers.filter(l => l.type === 'image' || l.type === 'video' || l.type === 'solid')
+const _imageLayers = computed(() =>
+  compositorStore.layers.filter(
+    (l) => l.type === "image" || l.type === "video" || l.type === "solid",
+  ),
 );
 
 // Computed: Depth layers for depth edge emission
-const depthLayers = computed(() =>
-  compositorStore.layers.filter(l =>
-    l.type === 'image' &&
-    (l.name.toLowerCase().includes('depth') || (l.data && 'isDepthMap' in l.data && l.data.isDepthMap))
-  )
+const _depthLayers = computed(() =>
+  compositorStore.layers.filter(
+    (l) =>
+      l.type === "image" &&
+      (l.name.toLowerCase().includes("depth") ||
+        (l.data && "isDepthMap" in l.data && l.data.isDepthMap)),
+  ),
 );
 
 // WebGPU Detection
@@ -750,18 +741,18 @@ onMounted(async () => {
 });
 
 // Preset UI State
-const selectedPresetId = ref('');
+const selectedPresetId = ref("");
 const showSaveDialog = ref(false);
-const newPresetName = ref('');
-const newPresetDescription = ref('');
-const newPresetTags = ref('');
+const newPresetName = ref("");
+const newPresetDescription = ref("");
+const newPresetTags = ref("");
 
 // Computed preset lists
-const builtInPresets = computed(() =>
-  presetStore.particlePresets.filter(p => p.isBuiltIn)
+const _builtInPresets = computed(() =>
+  presetStore.particlePresets.filter((p) => p.isBuiltIn),
 );
-const userPresets = computed(() =>
-  presetStore.particlePresets.filter(p => !p.isBuiltIn)
+const _userPresets = computed(() =>
+  presetStore.particlePresets.filter((p) => !p.isBuiltIn),
 );
 const isBuiltInPreset = computed(() => {
   if (!selectedPresetId.value) return false;
@@ -775,25 +766,24 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  particleCount: 0
+  particleCount: 0,
 });
 
-const emit = defineEmits<{
-  (e: 'update', data: Partial<ParticleLayerData>): void;
-}>();
+const emit =
+  defineEmits<(e: "update", data: Partial<ParticleLayerData>) => void>();
 
 // UI State - persist expanded sections per layer
 const expandedSectionsMap = ref<Map<string, Set<string>>>(new Map());
 const expandedEmittersMap = ref<Map<string, Set<string>>>(new Map());
-const forceTab = ref<'wells' | 'vortices'>('wells');
+const _forceTab = ref<"wells" | "vortices">("wells");
 
 // Get/set expanded sections for current layer
 const expandedSections = computed({
   get: () => {
     const layerId = props.layer?.id;
-    if (!layerId) return new Set(['system', 'emitters']);
+    if (!layerId) return new Set(["system", "emitters"]);
     if (!expandedSectionsMap.value.has(layerId)) {
-      expandedSectionsMap.value.set(layerId, new Set(['system', 'emitters']));
+      expandedSectionsMap.value.set(layerId, new Set(["system", "emitters"]));
     }
     return expandedSectionsMap.value.get(layerId)!;
   },
@@ -802,7 +792,7 @@ const expandedSections = computed({
     if (layerId) {
       expandedSectionsMap.value.set(layerId, val);
     }
-  }
+  },
 });
 
 const expandedEmitters = computed({
@@ -819,77 +809,87 @@ const expandedEmitters = computed({
     if (layerId) {
       expandedEmittersMap.value.set(layerId, val);
     }
-  }
+  },
 });
 
 // Watch for layer changes to ensure UI stays in sync
-watch(() => props.layer?.id, (newId, oldId) => {
-  if (newId && newId !== oldId) {
-    // Initialize expanded sections for new layer if not already set
-    if (!expandedSectionsMap.value.has(newId)) {
-      expandedSectionsMap.value.set(newId, new Set(['system', 'emitters']));
+watch(
+  () => props.layer?.id,
+  (newId, oldId) => {
+    if (newId && newId !== oldId) {
+      // Initialize expanded sections for new layer if not already set
+      if (!expandedSectionsMap.value.has(newId)) {
+        expandedSectionsMap.value.set(newId, new Set(["system", "emitters"]));
+      }
+      if (!expandedEmittersMap.value.has(newId)) {
+        expandedEmittersMap.value.set(newId, new Set<string>());
+      }
     }
-    if (!expandedEmittersMap.value.has(newId)) {
-      expandedEmittersMap.value.set(newId, new Set<string>());
-    }
-  }
-}, { immediate: true });
+  },
+  { immediate: true },
+);
 
 // Deep watch for layer data changes to ensure computed properties update
-watch(() => props.layer?.data, () => {
-  // Force re-evaluation of computed properties when layer data changes externally
-}, { deep: true });
+watch(
+  () => props.layer?.data,
+  () => {
+    // Force re-evaluation of computed properties when layer data changes externally
+  },
+  { deep: true },
+);
 
 // Get layer data with defaults
 const layerData = computed((): ParticleLayerData => {
   const data = props.layer.data as ParticleLayerData | null;
-  return data || {
-    systemConfig: {
-      maxParticles: 10000,
-      gravity: 0,
-      windStrength: 0,
-      windDirection: 0,
-      warmupPeriod: 0,
-      respectMaskBoundary: false,
-      boundaryBehavior: 'kill',
-      friction: 0.01
-    },
-    emitters: [],
-    gravityWells: [],
-    vortices: [],
-    modulations: [],
-    renderOptions: {
-      blendMode: 'additive',
-      renderTrails: false,
-      trailLength: 5,
-      trailOpacityFalloff: 0.7,
-      particleShape: 'circle',
-      glowEnabled: false,
-      glowRadius: 10,
-      glowIntensity: 0.5,
-      motionBlur: false,
-      motionBlurStrength: 0.5,
-      motionBlurSamples: 8,
-      connections: {
-        enabled: false,
-        maxDistance: 100,
-        maxConnections: 3,
-        lineWidth: 1,
-        lineOpacity: 0.5,
-        fadeByDistance: true
+  return (
+    data || {
+      systemConfig: {
+        maxParticles: 10000,
+        gravity: 0,
+        windStrength: 0,
+        windDirection: 0,
+        warmupPeriod: 0,
+        respectMaskBoundary: false,
+        boundaryBehavior: "kill",
+        friction: 0.01,
       },
-      // Sprite defaults
-      spriteEnabled: false,
-      spriteImageUrl: '',
-      spriteColumns: 1,
-      spriteRows: 1,
-      spriteAnimate: false,
-      spriteFrameRate: 10,
-      spriteRandomStart: false
-    },
-    turbulenceFields: [],
-    subEmitters: []
-  };
+      emitters: [],
+      gravityWells: [],
+      vortices: [],
+      modulations: [],
+      renderOptions: {
+        blendMode: "additive",
+        renderTrails: false,
+        trailLength: 5,
+        trailOpacityFalloff: 0.7,
+        particleShape: "circle",
+        glowEnabled: false,
+        glowRadius: 10,
+        glowIntensity: 0.5,
+        motionBlur: false,
+        motionBlurStrength: 0.5,
+        motionBlurSamples: 8,
+        connections: {
+          enabled: false,
+          maxDistance: 100,
+          maxConnections: 3,
+          lineWidth: 1,
+          lineOpacity: 0.5,
+          fadeByDistance: true,
+        },
+        // Sprite defaults
+        spriteEnabled: false,
+        spriteImageUrl: "",
+        spriteColumns: 1,
+        spriteRows: 1,
+        spriteAnimate: false,
+        spriteFrameRate: 10,
+        spriteRandomStart: false,
+      },
+      turbulenceFields: [],
+      subEmitters: [],
+    }
+  );
 });
 
 const systemConfig = computed(() => layerData.value.systemConfig);
@@ -902,53 +902,65 @@ const turbulenceFields = computed(() => layerData.value.turbulenceFields || []);
 const subEmitters = computed(() => layerData.value.subEmitters || []);
 
 // Flocking config with defaults
-const flocking = computed(() => layerData.value.flocking || {
-  enabled: false,
-  separationWeight: 50,
-  separationRadius: 25,
-  alignmentWeight: 50,
-  alignmentRadius: 50,
-  cohesionWeight: 50,
-  cohesionRadius: 50,
-  maxSpeed: 200,
-  maxForce: 10,
-  perceptionAngle: 270,
-});
+const flocking = computed(
+  () =>
+    layerData.value.flocking || {
+      enabled: false,
+      separationWeight: 50,
+      separationRadius: 25,
+      alignmentWeight: 50,
+      alignmentRadius: 50,
+      cohesionWeight: 50,
+      cohesionRadius: 50,
+      maxSpeed: 200,
+      maxForce: 10,
+      perceptionAngle: 270,
+    },
+);
 
 // Collision config with defaults
-const collision = computed(() => layerData.value.collision || {
-  enabled: false,
-  particleCollision: false,
-  particleRadius: 5,
-  bounciness: 0.5,
-  friction: 0.1,
-  boundaryEnabled: false,
-  boundaryBehavior: 'bounce' as const,
-  boundaryPadding: 0,
-});
+const collision = computed(
+  () =>
+    layerData.value.collision || {
+      enabled: false,
+      particleCollision: false,
+      particleRadius: 5,
+      bounciness: 0.5,
+      friction: 0.1,
+      boundaryEnabled: false,
+      boundaryBehavior: "bounce" as const,
+      boundaryPadding: 0,
+    },
+);
 
-const connections = computed(() => renderOptions.value.connections || {
-  enabled: false,
-  maxDistance: 100,
-  maxConnections: 3,
-  lineWidth: 1,
-  lineOpacity: 0.5,
-  fadeByDistance: true
-});
+const connections = computed(
+  () =>
+    renderOptions.value.connections || {
+      enabled: false,
+      maxDistance: 100,
+      maxConnections: 3,
+      lineWidth: 1,
+      lineOpacity: 0.5,
+      fadeByDistance: true,
+    },
+);
 const audioBindings = computed(() => layerData.value.audioBindings || []);
-const particleCount = computed(() => props.particleCount);
+const _particleCount = computed(() => props.particleCount);
 
 // Visualization settings (CC Particle World style)
-const visualization = computed(() => layerData.value.visualization || {
-  showHorizon: false,
-  showGrid: false,
-  showAxis: false,
-  gridSize: 100,
-  gridDepth: 500,
-});
+const visualization = computed(
+  () =>
+    layerData.value.visualization || {
+      showHorizon: false,
+      showGrid: false,
+      showAxis: false,
+      gridSize: 100,
+      gridDepth: 500,
+    },
+);
 
 // Section toggle - using new Set to trigger reactivity
-function toggleSection(section: string): void {
+function _toggleSection(section: string): void {
   const current = expandedSections.value;
   const newSet = new Set(current);
   if (newSet.has(section)) {
@@ -959,7 +971,7 @@ function toggleSection(section: string): void {
   expandedSections.value = newSet;
 }
 
-function toggleEmitter(id: string): void {
+function _toggleEmitter(id: string): void {
   const current = expandedEmitters.value;
   const newSet = new Set(current);
   if (newSet.has(id)) {
@@ -971,11 +983,13 @@ function toggleEmitter(id: string): void {
 }
 
 // Preset functions
-function applySelectedPreset(): void {
+function _applySelectedPreset(): void {
   if (!selectedPresetId.value) return;
 
-  const preset = presetStore.getPreset(selectedPresetId.value) as ParticlePreset | undefined;
-  if (!preset || preset.category !== 'particle') return;
+  const preset = presetStore.getPreset(selectedPresetId.value) as
+    | ParticlePreset
+    | undefined;
+  if (!preset || preset.category !== "particle") return;
 
   // Merge preset config with current data
   const config = preset.config;
@@ -991,9 +1005,10 @@ function applySelectedPreset(): void {
   // Apply gravity if specified
   if (config.gravity !== undefined) {
     // Handle gravity as either a number or an object with y property
-    const gravityValue = typeof config.gravity === 'number'
-      ? config.gravity
-      : (config.gravity as { y?: number })?.y ?? 0;
+    const gravityValue =
+      typeof config.gravity === "number"
+        ? config.gravity
+        : ((config.gravity as { y?: number })?.y ?? 0);
     updates.systemConfig = {
       ...(updates.systemConfig || systemConfig.value),
       gravity: gravityValue,
@@ -1001,44 +1016,53 @@ function applySelectedPreset(): void {
   }
 
   // Apply emitter defaults if specified
-  if (config.emissionRate || config.lifespan || config.startSize || config.endSize) {
+  if (
+    config.emissionRate ||
+    config.lifespan ||
+    config.startSize ||
+    config.endSize
+  ) {
     const defaultEmitter = emitters.value[0] || createDefaultEmitter();
-    updates.emitters = [{
-      ...defaultEmitter,
-      emissionRate: config.emissionRate ?? defaultEmitter.emissionRate,
-      lifespan: config.lifespan ?? defaultEmitter.lifespan,
-      startSize: config.startSize ?? defaultEmitter.startSize,
-      endSize: config.endSize ?? defaultEmitter.endSize,
-      startColor: config.startColor ?? defaultEmitter.startColor,
-      endColor: config.endColor ?? defaultEmitter.endColor,
-      velocitySpread: config.velocitySpread ?? defaultEmitter.velocitySpread,
-    }];
+    updates.emitters = [
+      {
+        ...defaultEmitter,
+        emissionRate: config.emissionRate ?? defaultEmitter.emissionRate,
+        lifespan: config.lifespan ?? defaultEmitter.lifespan,
+        startSize: config.startSize ?? defaultEmitter.startSize,
+        endSize: config.endSize ?? defaultEmitter.endSize,
+        startColor: config.startColor ?? defaultEmitter.startColor,
+        endColor: config.endColor ?? defaultEmitter.endColor,
+        velocitySpread: config.velocitySpread ?? defaultEmitter.velocitySpread,
+      },
+    ];
   }
 
   // Apply turbulence if specified
   if (config.turbulenceStrength !== undefined) {
-    updates.turbulenceFields = [{
-      id: 'turbulence-from-preset',
-      enabled: true,
-      strength: config.turbulenceStrength,
-      scale: 0.01,
-      evolutionSpeed: 1,  // Required field
-      octaves: 3,
-      persistence: 0.5,
-      animationSpeed: 1,
-    }];
+    updates.turbulenceFields = [
+      {
+        id: "turbulence-from-preset",
+        enabled: true,
+        strength: config.turbulenceStrength,
+        scale: 0.01,
+        evolutionSpeed: 1, // Required field
+        octaves: 3,
+        persistence: 0.5,
+        animationSpeed: 1,
+      },
+    ];
   }
 
-  emit('update', updates);
+  emit("update", updates);
 }
 
 function createDefaultEmitter(): ParticleEmitterConfig {
   return {
     id: `emitter_${Date.now()}`,
-    name: 'New Emitter',
+    name: "New Emitter",
     x: 0.5,
     y: 0.5,
-    direction: 270,  // degrees, upward
+    direction: 270, // degrees, upward
     spread: 30,
     speed: 100,
     speedVariance: 30,
@@ -1053,7 +1077,7 @@ function createDefaultEmitter(): ParticleEmitterConfig {
     burstOnBeat: false,
     burstCount: 10,
     // Shape properties
-    shape: 'point',
+    shape: "point",
     shapeRadius: 0,
     shapeWidth: 0,
     shapeHeight: 0,
@@ -1072,7 +1096,7 @@ function createDefaultEmitter(): ParticleEmitterConfig {
       rows: 1,
       totalFrames: 1,
       frameRate: 30,
-      playMode: 'loop',
+      playMode: "loop",
       billboard: false,
       rotationEnabled: false,
       rotationSpeed: 0,
@@ -1083,21 +1107,21 @@ function createDefaultEmitter(): ParticleEmitterConfig {
     lifespan: 2,
     startSize: 10,
     endSize: 2,
-    startColor: '#ffffff',
-    endColor: '#ffffff',
+    startColor: "#ffffff",
+    endColor: "#ffffff",
     startOpacity: 1,
     endOpacity: 0,
     velocitySpread: 30,
   };
 }
 
-function saveCurrentAsPreset(): void {
+function _saveCurrentAsPreset(): void {
   if (!newPresetName.value.trim()) return;
 
   const tags = newPresetTags.value
-    .split(',')
-    .map(t => t.trim())
-    .filter(t => t.length > 0);
+    .split(",")
+    .map((t) => t.trim())
+    .filter((t) => t.length > 0);
 
   // Extract current config
   const emitter = emitters.value[0];
@@ -1120,45 +1144,52 @@ function saveCurrentAsPreset(): void {
     {
       description: newPresetDescription.value.trim() || undefined,
       tags: tags.length > 0 ? tags : undefined,
-    }
+    },
   );
 
   // Reset dialog
   showSaveDialog.value = false;
-  newPresetName.value = '';
-  newPresetDescription.value = '';
-  newPresetTags.value = '';
+  newPresetName.value = "";
+  newPresetDescription.value = "";
+  newPresetTags.value = "";
 }
 
-function deleteSelectedPreset(): void {
+function _deleteSelectedPreset(): void {
   if (!selectedPresetId.value || isBuiltInPreset.value) return;
 
-  if (confirm('Delete this preset?')) {
+  if (confirm("Delete this preset?")) {
     presetStore.deletePreset(selectedPresetId.value);
-    selectedPresetId.value = '';
+    selectedPresetId.value = "";
   }
 }
 
 // Update functions
-function updateSystemConfig(key: keyof ParticleSystemLayerConfig, value: any): void {
-  emit('update', {
-    systemConfig: { ...systemConfig.value, [key]: value }
+function _updateSystemConfig(
+  key: keyof ParticleSystemLayerConfig,
+  value: any,
+): void {
+  emit("update", {
+    systemConfig: { ...systemConfig.value, [key]: value },
   });
 }
 
-function updateEmitter(id: string, key: keyof ParticleEmitterConfig, value: any): void {
-  const updated = emitters.value.map(e =>
-    e.id === id ? { ...e, [key]: value } : e
+function updateEmitter(
+  id: string,
+  key: keyof ParticleEmitterConfig,
+  value: any,
+): void {
+  const updated = emitters.value.map((e) =>
+    e.id === id ? { ...e, [key]: value } : e,
   );
-  emit('update', { emitters: updated });
+  emit("update", { emitters: updated });
 }
 
-function updateEmitterColor(id: string, hex: string): void {
+function _updateEmitterColor(id: string, hex: string): void {
   const rgb = hexToRgb(hex);
-  updateEmitter(id, 'color', rgb);
+  updateEmitter(id, "color", rgb);
 }
 
-function addEmitter(): void {
+function _addEmitter(): void {
   const newEmitter: ParticleEmitterConfig = {
     id: `emitter_${Date.now()}`,
     name: `Emitter ${emitters.value.length + 1}`,
@@ -1179,7 +1210,7 @@ function addEmitter(): void {
     burstOnBeat: false,
     burstCount: 20,
     // Shape properties
-    shape: 'point',
+    shape: "point",
     shapeRadius: 0,
     shapeWidth: 0,
     shapeHeight: 0,
@@ -1198,7 +1229,7 @@ function addEmitter(): void {
       rows: 1,
       totalFrames: 1,
       frameRate: 30,
-      playMode: 'loop',
+      playMode: "loop",
       billboard: false,
       rotationEnabled: false,
       rotationSpeed: 0,
@@ -1206,22 +1237,26 @@ function addEmitter(): void {
       alignToVelocity: false,
     },
   };
-  emit('update', { emitters: [...emitters.value, newEmitter] });
+  emit("update", { emitters: [...emitters.value, newEmitter] });
   expandedEmitters.value.add(newEmitter.id);
 }
 
-function removeEmitter(id: string): void {
-  emit('update', { emitters: emitters.value.filter(e => e.id !== id) });
+function _removeEmitter(id: string): void {
+  emit("update", { emitters: emitters.value.filter((e) => e.id !== id) });
 }
 
-function updateGravityWell(id: string, key: keyof GravityWellConfig, value: any): void {
-  const updated = gravityWells.value.map(w =>
-    w.id === id ? { ...w, [key]: value } : w
+function _updateGravityWell(
+  id: string,
+  key: keyof GravityWellConfig,
+  value: any,
+): void {
+  const updated = gravityWells.value.map((w) =>
+    w.id === id ? { ...w, [key]: value } : w,
   );
-  emit('update', { gravityWells: updated });
+  emit("update", { gravityWells: updated });
 }
 
-function addGravityWell(): void {
+function _addGravityWell(): void {
   const newWell: GravityWellConfig = {
     id: `well_${Date.now()}`,
     name: `Gravity Well ${gravityWells.value.length + 1}`,
@@ -1229,24 +1264,26 @@ function addGravityWell(): void {
     y: 0.5,
     strength: 100,
     radius: 0.3,
-    falloff: 'quadratic',
-    enabled: true
+    falloff: "quadratic",
+    enabled: true,
   };
-  emit('update', { gravityWells: [...gravityWells.value, newWell] });
+  emit("update", { gravityWells: [...gravityWells.value, newWell] });
 }
 
-function removeGravityWell(id: string): void {
-  emit('update', { gravityWells: gravityWells.value.filter(w => w.id !== id) });
+function _removeGravityWell(id: string): void {
+  emit("update", {
+    gravityWells: gravityWells.value.filter((w) => w.id !== id),
+  });
 }
 
-function updateVortex(id: string, key: keyof VortexConfig, value: any): void {
-  const updated = vortices.value.map(v =>
-    v.id === id ? { ...v, [key]: value } : v
+function _updateVortex(id: string, key: keyof VortexConfig, value: any): void {
+  const updated = vortices.value.map((v) =>
+    v.id === id ? { ...v, [key]: value } : v,
   );
-  emit('update', { vortices: updated });
+  emit("update", { vortices: updated });
 }
 
-function addVortex(): void {
+function _addVortex(): void {
   const newVortex: VortexConfig = {
     id: `vortex_${Date.now()}`,
     name: `Vortex ${vortices.value.length + 1}`,
@@ -1256,88 +1293,104 @@ function addVortex(): void {
     radius: 0.3,
     rotationSpeed: 5,
     inwardPull: 10,
-    enabled: true
+    enabled: true,
   };
-  emit('update', { vortices: [...vortices.value, newVortex] });
+  emit("update", { vortices: [...vortices.value, newVortex] });
 }
 
-function removeVortex(id: string): void {
-  emit('update', { vortices: vortices.value.filter(v => v.id !== id) });
+function _removeVortex(id: string): void {
+  emit("update", { vortices: vortices.value.filter((v) => v.id !== id) });
 }
 
-function updateModulation(id: string, key: keyof ParticleModulationConfig, value: any): void {
-  const updated = modulations.value.map(m =>
-    m.id === id ? { ...m, [key]: value } : m
+function _updateModulation(
+  id: string,
+  key: keyof ParticleModulationConfig,
+  value: any,
+): void {
+  const updated = modulations.value.map((m) =>
+    m.id === id ? { ...m, [key]: value } : m,
   );
-  emit('update', { modulations: updated });
+  emit("update", { modulations: updated });
 }
 
-function addModulation(): void {
+function _addModulation(): void {
   const newMod: ParticleModulationConfig = {
     id: `mod_${Date.now()}`,
-    emitterId: '*',
-    property: 'opacity',
+    emitterId: "*",
+    property: "opacity",
     startValue: 1,
     endValue: 0,
-    easing: 'linear'
+    easing: "linear",
   };
-  emit('update', { modulations: [...modulations.value, newMod] });
+  emit("update", { modulations: [...modulations.value, newMod] });
 }
 
-function removeModulation(id: string): void {
-  emit('update', { modulations: modulations.value.filter(m => m.id !== id) });
+function _removeModulation(id: string): void {
+  emit("update", { modulations: modulations.value.filter((m) => m.id !== id) });
 }
 
-function updateRenderOption(key: keyof ParticleRenderOptions, value: any): void {
-  emit('update', {
-    renderOptions: { ...renderOptions.value, [key]: value }
+function _updateRenderOption(
+  key: keyof ParticleRenderOptions,
+  value: any,
+): void {
+  emit("update", {
+    renderOptions: { ...renderOptions.value, [key]: value },
   });
 }
 
 // Connection functions
-function updateConnection(key: keyof ConnectionRenderConfig, value: any): void {
-  emit('update', {
+function _updateConnection(
+  key: keyof ConnectionRenderConfig,
+  value: any,
+): void {
+  emit("update", {
     renderOptions: {
       ...renderOptions.value,
-      connections: { ...connections.value, [key]: value }
-    }
+      connections: { ...connections.value, [key]: value },
+    },
   });
 }
 
 // Turbulence functions
-function updateTurbulence(id: string, key: keyof TurbulenceFieldConfig, value: any): void {
-  const updated = turbulenceFields.value.map(t =>
-    t.id === id ? { ...t, [key]: value } : t
+function _updateTurbulence(
+  id: string,
+  key: keyof TurbulenceFieldConfig,
+  value: any,
+): void {
+  const updated = turbulenceFields.value.map((t) =>
+    t.id === id ? { ...t, [key]: value } : t,
   );
-  emit('update', { turbulenceFields: updated });
+  emit("update", { turbulenceFields: updated });
 }
 
-function addTurbulence(): void {
+function _addTurbulence(): void {
   const newTurb: TurbulenceFieldConfig = {
     id: `turb_${Date.now()}`,
     enabled: true,
     scale: 0.005,
     strength: 100,
-    evolutionSpeed: 0.1
+    evolutionSpeed: 0.1,
   };
-  emit('update', { turbulenceFields: [...turbulenceFields.value, newTurb] });
+  emit("update", { turbulenceFields: [...turbulenceFields.value, newTurb] });
 }
 
-function removeTurbulence(id: string): void {
-  emit('update', { turbulenceFields: turbulenceFields.value.filter(t => t.id !== id) });
+function _removeTurbulence(id: string): void {
+  emit("update", {
+    turbulenceFields: turbulenceFields.value.filter((t) => t.id !== id),
+  });
 }
 
 // Flocking functions
-function updateFlocking(key: keyof FlockingConfig, value: any): void {
-  emit('update', {
-    flocking: { ...flocking.value, [key]: value }
+function _updateFlocking(key: keyof FlockingConfig, value: any): void {
+  emit("update", {
+    flocking: { ...flocking.value, [key]: value },
   });
 }
 
 // Collision functions
-function updateCollision(key: keyof CollisionConfig, value: any): void {
-  emit('update', {
-    collision: { ...collision.value, [key]: value }
+function _updateCollision(key: keyof CollisionConfig, value: any): void {
+  emit("update", {
+    collision: { ...collision.value, [key]: value },
   });
 }
 
@@ -1350,63 +1403,76 @@ interface VisualizationConfig {
   gridDepth: number;
 }
 
-function updateVisualization(key: keyof VisualizationConfig, value: any): void {
-  emit('update', {
-    visualization: { ...visualization.value, [key]: value }
+function _updateVisualization(
+  key: keyof VisualizationConfig,
+  value: any,
+): void {
+  emit("update", {
+    visualization: { ...visualization.value, [key]: value },
   });
 }
 
 // Audio binding functions
-function addAudioBinding(): void {
+function _addAudioBinding(): void {
   const newBinding: AudioBindingConfig = {
     id: `audio_${Date.now()}`,
     enabled: true,
-    feature: 'amplitude',
+    feature: "amplitude",
     smoothing: 0.3,
     min: 0,
     max: 1,
-    target: 'emitter',
-    targetId: emitters.value[0]?.id || '',
-    parameter: 'emissionRate',
+    target: "emitter",
+    targetId: emitters.value[0]?.id || "",
+    parameter: "emissionRate",
     outputMin: 1,
     outputMax: 50,
-    curve: 'linear',
+    curve: "linear",
     stepCount: 5,
-    triggerMode: 'continuous',
-    threshold: 0.5
+    triggerMode: "continuous",
+    threshold: 0.5,
   };
-  emit('update', { audioBindings: [...audioBindings.value, newBinding] });
+  emit("update", { audioBindings: [...audioBindings.value, newBinding] });
 }
 
-function updateAudioBinding(id: string, key: keyof AudioBindingConfig, value: any): void {
-  const updated = audioBindings.value.map(b =>
-    b.id === id ? { ...b, [key]: value } : b
+function _updateAudioBinding(
+  id: string,
+  key: keyof AudioBindingConfig,
+  value: any,
+): void {
+  const updated = audioBindings.value.map((b) =>
+    b.id === id ? { ...b, [key]: value } : b,
   );
-  emit('update', { audioBindings: updated });
+  emit("update", { audioBindings: updated });
 }
 
-function removeAudioBinding(id: string): void {
-  emit('update', { audioBindings: audioBindings.value.filter(b => b.id !== id) });
+function _removeAudioBinding(id: string): void {
+  emit("update", {
+    audioBindings: audioBindings.value.filter((b) => b.id !== id),
+  });
 }
 
 // Sub-emitter functions
-function updateSubEmitter(id: string, key: keyof SubEmitterConfig, value: any): void {
-  const updated = subEmitters.value.map(s =>
-    s.id === id ? { ...s, [key]: value } : s
+function updateSubEmitter(
+  id: string,
+  key: keyof SubEmitterConfig,
+  value: any,
+): void {
+  const updated = subEmitters.value.map((s) =>
+    s.id === id ? { ...s, [key]: value } : s,
   );
-  emit('update', { subEmitters: updated });
+  emit("update", { subEmitters: updated });
 }
 
-function updateSubEmitterColor(id: string, hex: string): void {
+function _updateSubEmitterColor(id: string, hex: string): void {
   const rgb = hexToRgb(hex);
-  updateSubEmitter(id, 'color', rgb);
+  updateSubEmitter(id, "color", rgb);
 }
 
-function addSubEmitter(): void {
+function _addSubEmitter(): void {
   const newSub: SubEmitterConfig = {
     id: `sub_${Date.now()}`,
-    parentEmitterId: '*',
-    trigger: 'death',
+    parentEmitterId: "*",
+    trigger: "death",
     spawnCount: 3,
     inheritVelocity: 0.5,
     size: 5,
@@ -1415,24 +1481,28 @@ function addSubEmitter(): void {
     speed: 50,
     spread: 360,
     color: [255, 200, 100],
-    enabled: true
+    enabled: true,
   };
-  emit('update', { subEmitters: [...subEmitters.value, newSub] });
+  emit("update", { subEmitters: [...subEmitters.value, newSub] });
 }
 
-function removeSubEmitter(id: string): void {
-  emit('update', { subEmitters: subEmitters.value.filter(s => s.id !== id) });
+function _removeSubEmitter(id: string): void {
+  emit("update", { subEmitters: subEmitters.value.filter((s) => s.id !== id) });
 }
 
 // Color utilities
-function rgbToHex(rgb: [number, number, number]): string {
-  return '#' + rgb.map(c => c.toString(16).padStart(2, '0')).join('');
+function _rgbToHex(rgb: [number, number, number]): string {
+  return `#${rgb.map((c) => c.toString(16).padStart(2, "0")).join("")}`;
 }
 
 function hexToRgb(hex: string): [number, number, number] {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return result
-    ? [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)]
+    ? [
+        parseInt(result[1], 16),
+        parseInt(result[2], 16),
+        parseInt(result[3], 16),
+      ]
     : [255, 255, 255];
 }
 </script>

@@ -8,11 +8,11 @@
  * - Export optimization
  */
 
-import type { ControlPoint, SplineData } from '@/types/project';
-import type { BezierPath, BezierVertex, Point2D } from '@/types/shapes';
-import { createLogger } from '@/utils/logger';
+import type { ControlPoint, SplineData } from "@/types/project";
+import type { Point2D } from "@/types/shapes";
+import { createLogger } from "@/utils/logger";
 
-const logger = createLogger('VectorLOD');
+const logger = createLogger("VectorLOD");
 
 // ============================================================================
 // Types
@@ -35,7 +35,7 @@ export interface LODConfig {
   /** Enable LOD system */
   enabled: boolean;
   /** When to use LOD */
-  mode: 'zoom' | 'playback' | 'both';
+  mode: "zoom" | "playback" | "both";
   /** Pre-generated LOD levels */
   levels: LODLevel[];
   /** Max points for preview mode */
@@ -69,7 +69,7 @@ export interface LODContext {
 
 export const DEFAULT_LOD_CONFIG: LODConfig = {
   enabled: true,
-  mode: 'both',
+  mode: "both",
   levels: [],
   maxPointsForPreview: 100,
   simplificationTolerance: 2.0,
@@ -98,7 +98,7 @@ export class VectorLODService {
     layerId: string,
     controlPoints: ControlPoint[],
     levelCount: number = 4,
-    baseTolerance: number = 2.0
+    baseTolerance: number = 2.0,
   ): LODLevel[] {
     // Check cache first
     if (layerId && this.lodCache.has(layerId)) {
@@ -119,7 +119,11 @@ export class VectorLODService {
     // Generate progressively simplified levels based on base tolerance
     const toleranceMultipliers = [0.5, 1, 2, 5, 10];
 
-    for (let i = 0; i < Math.min(levelCount - 1, toleranceMultipliers.length); i++) {
+    for (
+      let i = 0;
+      i < Math.min(levelCount - 1, toleranceMultipliers.length);
+      i++
+    ) {
       const tolerance = baseTolerance * toleranceMultipliers[i];
       const simplified = this.simplifyPath(controlPoints, tolerance);
 
@@ -140,7 +144,10 @@ export class VectorLODService {
       this.lodCache.set(layerId, levels);
     }
 
-    logger.debug('Generated LOD levels:', levels.map(l => l.pointCount));
+    logger.debug(
+      "Generated LOD levels:",
+      levels.map((l) => l.pointCount),
+    );
     return levels;
   }
 
@@ -160,7 +167,7 @@ export class VectorLODService {
    */
   selectLODLevel(levels: LODLevel[], context: LODContext): LODLevel {
     if (levels.length === 0) {
-      throw new Error('No LOD levels available');
+      throw new Error("No LOD levels available");
     }
 
     // Always return highest quality if LOD not needed
@@ -211,7 +218,7 @@ export class VectorLODService {
   cullOffScreenPoints(
     points: ControlPoint[],
     viewport: { x: number; y: number; width: number; height: number },
-    margin: number = 50
+    margin: number = 50,
   ): ControlPoint[] {
     const minX = viewport.x - margin;
     const minY = viewport.y - margin;
@@ -254,17 +261,21 @@ export class VectorLODService {
     if (points.length <= 2) return [...points];
 
     // Convert to simple point array for algorithm
-    const simplePoints = points.map(p => ({ x: p.x, y: p.y }));
+    const simplePoints = points.map((p) => ({ x: p.x, y: p.y }));
     const simplified = this.rdpSimplify(simplePoints, tolerance);
 
     // Map back to control points
     const result: ControlPoint[] = [];
     let simplifiedIndex = 0;
 
-    for (let i = 0; i < points.length && simplifiedIndex < simplified.length; i++) {
+    for (
+      let i = 0;
+      i < points.length && simplifiedIndex < simplified.length;
+      i++
+    ) {
       const p = points[i];
       const s = simplified[simplifiedIndex];
-      
+
       if (Math.abs(p.x - s.x) < 0.01 && Math.abs(p.y - s.y) < 0.01) {
         result.push({ ...p });
         simplifiedIndex++;
@@ -313,20 +324,29 @@ export class VectorLODService {
   /**
    * Calculate perpendicular distance from point to line
    */
-  private perpendicularDistance(point: Point2D, lineStart: Point2D, lineEnd: Point2D): number {
+  private perpendicularDistance(
+    point: Point2D,
+    lineStart: Point2D,
+    lineEnd: Point2D,
+  ): number {
     const dx = lineEnd.x - lineStart.x;
     const dy = lineEnd.y - lineStart.y;
     const lineLengthSq = dx * dx + dy * dy;
 
     if (lineLengthSq === 0) {
       return Math.sqrt(
-        (point.x - lineStart.x) ** 2 + (point.y - lineStart.y) ** 2
+        (point.x - lineStart.x) ** 2 + (point.y - lineStart.y) ** 2,
       );
     }
 
-    const t = Math.max(0, Math.min(1,
-      ((point.x - lineStart.x) * dx + (point.y - lineStart.y) * dy) / lineLengthSq
-    ));
+    const t = Math.max(
+      0,
+      Math.min(
+        1,
+        ((point.x - lineStart.x) * dx + (point.y - lineStart.y) * dy) /
+          lineLengthSq,
+      ),
+    );
 
     const projX = lineStart.x + t * dx;
     const projY = lineStart.y + t * dy;
@@ -355,17 +375,17 @@ export class VectorLODService {
    */
   shouldUseLOD(splineData: SplineData, context: LODContext): boolean {
     if (!splineData.lod?.enabled) return false;
-    
+
     const pointCount = splineData.controlPoints.length;
-    
+
     // Skip LOD for simple paths
     if (pointCount < 50) return false;
 
     // Use LOD during playback
-    if (context.isPlaying && splineData.lod.mode !== 'zoom') return true;
+    if (context.isPlaying && splineData.lod.mode !== "zoom") return true;
 
     // Use LOD when zoomed out
-    if (context.zoom < 0.5 && splineData.lod.mode !== 'playback') return true;
+    if (context.zoom < 0.5 && splineData.lod.mode !== "playback") return true;
 
     return false;
   }
@@ -373,12 +393,15 @@ export class VectorLODService {
   /**
    * Auto-generate LOD config for a spline if point count exceeds threshold
    */
-  autoGenerateLOD(splineData: SplineData, threshold: number = 200): LODConfig | null {
+  autoGenerateLOD(
+    splineData: SplineData,
+    threshold: number = 200,
+  ): LODConfig | null {
     if (splineData.controlPoints.length < threshold) {
       return null;
     }
 
-    const levels = this.generateLODLevels('', splineData.controlPoints, 4, 2.0);
+    const levels = this.generateLODLevels("", splineData.controlPoints, 4, 2.0);
 
     return {
       ...DEFAULT_LOD_CONFIG,
@@ -405,23 +428,34 @@ export function generateLODLevels(
   layerId: string,
   points: ControlPoint[],
   levelCount?: number,
-  baseTolerance?: number
+  baseTolerance?: number,
 ): LODLevel[] {
-  return vectorLODService.generateLODLevels(layerId, points, levelCount, baseTolerance);
+  return vectorLODService.generateLODLevels(
+    layerId,
+    points,
+    levelCount,
+    baseTolerance,
+  );
 }
 
-export function selectLODLevel(levels: LODLevel[], context: LODContext): LODLevel {
+export function selectLODLevel(
+  levels: LODLevel[],
+  context: LODContext,
+): LODLevel {
   return vectorLODService.selectLODLevel(levels, context);
 }
 
-export function simplifyPath(points: ControlPoint[], tolerance: number): ControlPoint[] {
+export function simplifyPath(
+  points: ControlPoint[],
+  tolerance: number,
+): ControlPoint[] {
   return vectorLODService.simplifyPath(points, tolerance);
 }
 
 export function cullOffScreenPoints(
   points: ControlPoint[],
   viewport: { x: number; y: number; width: number; height: number },
-  margin?: number
+  margin?: number,
 ): ControlPoint[] {
   return vectorLODService.cullOffScreenPoints(points, viewport, margin);
 }

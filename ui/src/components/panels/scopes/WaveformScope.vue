@@ -8,7 +8,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue';
+import { onMounted, ref, watch } from "vue";
 
 interface WaveformResult {
   lumaPoints: Float32Array;
@@ -26,10 +26,10 @@ const canvasWidth = 256;
 const canvasHeight = 150;
 
 // IRE levels (video legal range)
-const IRE_LEVELS = {
-  black: 0,     // 0 IRE (16 in 8-bit video)
-  white: 100,   // 100 IRE (235 in 8-bit video)
-  super: 109    // Super white
+const _IRE_LEVELS = {
+  black: 0, // 0 IRE (16 in 8-bit video)
+  white: 100, // 100 IRE (235 in 8-bit video)
+  super: 109, // Super white
 };
 
 onMounted(() => {
@@ -44,11 +44,11 @@ function drawWaveform() {
   const canvas = canvasRef.value;
   if (!canvas) return;
 
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext("2d");
   if (!ctx) return;
 
   // Clear
-  ctx.fillStyle = '#000';
+  ctx.fillStyle = "#000";
   ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
   // Draw grid and IRE levels
@@ -71,13 +71,13 @@ function drawWaveform() {
 }
 
 function drawGrid(ctx: CanvasRenderingContext2D) {
-  ctx.strokeStyle = 'rgba(60, 60, 60, 0.5)';
+  ctx.strokeStyle = "rgba(60, 60, 60, 0.5)";
   ctx.lineWidth = 1;
 
   // Horizontal lines at IRE levels
   const irePositions = [0, 25, 50, 75, 100];
 
-  irePositions.forEach(ire => {
+  irePositions.forEach((ire) => {
     const y = canvasHeight - (ire / 100) * canvasHeight;
     ctx.beginPath();
     ctx.moveTo(0, y);
@@ -86,17 +86,17 @@ function drawGrid(ctx: CanvasRenderingContext2D) {
   });
 
   // IRE labels
-  ctx.fillStyle = 'rgba(100, 100, 100, 0.8)';
-  ctx.font = '9px monospace';
-  ctx.textAlign = 'left';
+  ctx.fillStyle = "rgba(100, 100, 100, 0.8)";
+  ctx.font = "9px monospace";
+  ctx.textAlign = "left";
 
-  irePositions.forEach(ire => {
+  irePositions.forEach((ire) => {
     const y = canvasHeight - (ire / 100) * canvasHeight;
     ctx.fillText(`${ire}`, 2, y - 2);
   });
 
   // Legal range indicators
-  ctx.strokeStyle = 'rgba(255, 200, 0, 0.3)';
+  ctx.strokeStyle = "rgba(255, 200, 0, 0.3)";
   ctx.lineWidth = 1;
 
   // Black level (16/255 ≈ 6.3%)

@@ -18,8 +18,8 @@
  * - Sprite sheet animation
  */
 
-import * as THREE from 'three';
-import type { Particle, RenderOptions, EmitterConfig } from './particleSystem';
+import * as THREE from "three";
+import type { Particle, RenderOptions } from "./particleSystem";
 
 // ============================================================================
 // TYPES
@@ -205,9 +205,6 @@ export class GPUParticleRenderer {
   // Sprite texture
   private spriteTexture: THREE.Texture | null = null;
 
-  // Depth texture for soft particles
-  private depthTexture: THREE.DepthTexture | null = null;
-
   // Current particle count
   private activeCount: number = 0;
 
@@ -229,37 +226,37 @@ export class GPUParticleRenderer {
     const positions = new Float32Array(this.config.maxParticles * 3);
     this.positionAttr = new THREE.BufferAttribute(positions, 3);
     this.positionAttr.setUsage(THREE.DynamicDrawUsage);
-    this.geometry.setAttribute('position', this.positionAttr);
+    this.geometry.setAttribute("position", this.positionAttr);
 
     // Color (r, g, b, a)
     const colors = new Float32Array(this.config.maxParticles * 4);
     this.colorAttr = new THREE.BufferAttribute(colors, 4);
     this.colorAttr.setUsage(THREE.DynamicDrawUsage);
-    this.geometry.setAttribute('particleColor', this.colorAttr);
+    this.geometry.setAttribute("particleColor", this.colorAttr);
 
     // Size
     const sizes = new Float32Array(this.config.maxParticles);
     this.sizeAttr = new THREE.BufferAttribute(sizes, 1);
     this.sizeAttr.setUsage(THREE.DynamicDrawUsage);
-    this.geometry.setAttribute('size', this.sizeAttr);
+    this.geometry.setAttribute("size", this.sizeAttr);
 
     // Velocity (for motion blur)
     const velocities = new Float32Array(this.config.maxParticles * 3);
     this.velocityAttr = new THREE.BufferAttribute(velocities, 3);
     this.velocityAttr.setUsage(THREE.DynamicDrawUsage);
-    this.geometry.setAttribute('velocity', this.velocityAttr);
+    this.geometry.setAttribute("velocity", this.velocityAttr);
 
     // Age and lifetime
     const ages = new Float32Array(this.config.maxParticles * 2);
     this.ageAttr = new THREE.BufferAttribute(ages, 2);
     this.ageAttr.setUsage(THREE.DynamicDrawUsage);
-    this.geometry.setAttribute('ageLifetime', this.ageAttr);
+    this.geometry.setAttribute("ageLifetime", this.ageAttr);
 
     // Rotation
     const rotations = new Float32Array(this.config.maxParticles);
     this.rotationAttr = new THREE.BufferAttribute(rotations, 1);
     this.rotationAttr.setUsage(THREE.DynamicDrawUsage);
-    this.geometry.setAttribute('rotation', this.rotationAttr);
+    this.geometry.setAttribute("rotation", this.rotationAttr);
 
     // Create shader material
     this.material = new THREE.ShaderMaterial({
@@ -305,7 +302,11 @@ export class GPUParticleRenderer {
    * Update particle data from CPU simulation
    * Efficient bulk update of all attributes
    */
-  updateParticles(particles: readonly Particle[], canvasWidth: number, canvasHeight: number): void {
+  updateParticles(
+    particles: readonly Particle[],
+    canvasWidth: number,
+    canvasHeight: number,
+  ): void {
     const count = Math.min(particles.length, this.config.maxParticles);
     this.activeCount = count;
 
@@ -405,21 +406,20 @@ export class GPUParticleRenderer {
   /**
    * Set blend mode
    */
-  setBlendMode(mode: RenderOptions['blendMode']): void {
+  setBlendMode(mode: RenderOptions["blendMode"]): void {
     switch (mode) {
-      case 'additive':
+      case "additive":
         this.material.blending = THREE.AdditiveBlending;
         break;
-      case 'multiply':
+      case "multiply":
         this.material.blending = THREE.MultiplyBlending;
         break;
-      case 'screen':
+      case "screen":
         // Three.js doesn't have screen blending, use custom
         this.material.blending = THREE.CustomBlending;
         this.material.blendSrc = THREE.OneFactor;
         this.material.blendDst = THREE.OneMinusSrcColorFactor;
         break;
-      case 'normal':
       default:
         this.material.blending = THREE.NormalBlending;
         break;
@@ -516,7 +516,7 @@ export class InstancedParticleRenderer {
   constructor(
     geometry: THREE.BufferGeometry,
     material: THREE.Material,
-    maxInstances: number = 100000
+    maxInstances: number = 100000,
   ) {
     this.maxInstances = maxInstances;
 
@@ -529,7 +529,7 @@ export class InstancedParticleRenderer {
     this.colorArray = new Float32Array(maxInstances * 4);
     this.colorAttr = new THREE.InstancedBufferAttribute(this.colorArray, 4);
     this.colorAttr.setUsage(THREE.DynamicDrawUsage);
-    this.mesh.geometry.setAttribute('instanceColor', this.colorAttr);
+    this.mesh.geometry.setAttribute("instanceColor", this.colorAttr);
 
     // Start with 0 visible
     this.mesh.count = 0;
@@ -548,7 +548,7 @@ export class InstancedParticleRenderer {
   updateInstances(
     particles: readonly Particle[],
     canvasWidth: number,
-    canvasHeight: number
+    canvasHeight: number,
   ): void {
     const count = Math.min(particles.length, this.maxInstances);
     this.activeCount = count;
@@ -614,7 +614,7 @@ export class InstancedParticleRenderer {
  * Create a GPU particle renderer with default settings
  */
 export function createGPUParticleRenderer(
-  config?: Partial<GPUParticleRendererConfig>
+  config?: Partial<GPUParticleRendererConfig>,
 ): GPUParticleRenderer {
   return new GPUParticleRenderer(config);
 }
@@ -623,28 +623,27 @@ export function createGPUParticleRenderer(
  * Create an instanced renderer for a specific shape
  */
 export function createInstancedParticleRenderer(
-  shape: 'circle' | 'square' | 'triangle' | 'star',
-  maxInstances?: number
+  shape: "circle" | "square" | "triangle" | "star",
+  maxInstances?: number,
 ): InstancedParticleRenderer {
   let geometry: THREE.BufferGeometry;
 
   switch (shape) {
-    case 'circle':
+    case "circle":
       geometry = new THREE.CircleGeometry(0.5, 16);
       break;
-    case 'square':
+    case "square":
       geometry = new THREE.PlaneGeometry(1, 1);
       break;
-    case 'triangle':
+    case "triangle": {
       geometry = new THREE.BufferGeometry();
       const vertices = new Float32Array([
-        0, 0.5, 0,
-        -0.5, -0.5, 0,
-        0.5, -0.5, 0,
+        0, 0.5, 0, -0.5, -0.5, 0, 0.5, -0.5, 0,
       ]);
-      geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+      geometry.setAttribute("position", new THREE.BufferAttribute(vertices, 3));
       break;
-    case 'star':
+    }
+    case "star":
       geometry = createStarGeometry(5, 0.5, 0.25);
       break;
     default:
@@ -665,7 +664,7 @@ export function createInstancedParticleRenderer(
 function createStarGeometry(
   points: number,
   outerRadius: number,
-  innerRadius: number
+  innerRadius: number,
 ): THREE.BufferGeometry {
   const geometry = new THREE.BufferGeometry();
   const vertices: number[] = [];
@@ -673,11 +672,7 @@ function createStarGeometry(
   for (let i = 0; i < points * 2; i++) {
     const radius = i % 2 === 0 ? outerRadius : innerRadius;
     const angle = (i / (points * 2)) * Math.PI * 2 - Math.PI / 2;
-    vertices.push(
-      Math.cos(angle) * radius,
-      Math.sin(angle) * radius,
-      0
-    );
+    vertices.push(Math.cos(angle) * radius, Math.sin(angle) * radius, 0);
   }
 
   // Create triangles from center
@@ -690,7 +685,10 @@ function createStarGeometry(
   // Add center vertex
   vertices.push(0, 0, 0);
 
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+  geometry.setAttribute(
+    "position",
+    new THREE.Float32BufferAttribute(vertices, 3),
+  );
   geometry.setIndex(indices);
   geometry.computeVertexNormals();
 

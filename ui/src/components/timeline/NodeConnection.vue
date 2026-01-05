@@ -54,8 +54,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { useThemeStore } from '@/stores/themeStore';
+import { computed } from "vue";
+import { useThemeStore } from "@/stores/themeStore";
 
 interface ConnectionPoint {
   x: number;
@@ -66,7 +66,7 @@ interface Connection {
   id: string;
   start: ConnectionPoint;
   end: ConnectionPoint;
-  type: 'visual' | 'parameter' | 'modifier';
+  type: "visual" | "parameter" | "modifier";
   color?: string;
 }
 
@@ -76,33 +76,36 @@ const props = defineProps<{
   height: number;
 }>();
 
-const themeStore = useThemeStore();
+const _themeStore = useThemeStore();
 
-const viewBox = computed(() => `0 0 ${props.width} ${props.height}`);
+const _viewBox = computed(() => `0 0 ${props.width} ${props.height}`);
 
 // Theme-aware colors
-const gradientStart = computed(() => 'var(--lattice-accent, #8B5CF6)');
-const gradientEnd = computed(() => 'var(--lattice-accent-secondary, #EC4899)');
-const parameterColor = computed(() => 'var(--lattice-info, #3B82F6)');
-const modifierColor = computed(() => 'var(--lattice-warning, #F59E0B)');
+const _gradientStart = computed(() => "var(--lattice-accent, #8B5CF6)");
+const _gradientEnd = computed(() => "var(--lattice-accent-secondary, #EC4899)");
+const _parameterColor = computed(() => "var(--lattice-info, #3B82F6)");
+const _modifierColor = computed(() => "var(--lattice-warning, #F59E0B)");
 
 // Categorize connections by type
-const visualConnections = computed(() =>
-  props.connections.filter(c => c.type === 'visual')
+const _visualConnections = computed(() =>
+  props.connections.filter((c) => c.type === "visual"),
 );
 
-const parameterConnections = computed(() =>
-  props.connections.filter(c => c.type === 'parameter')
+const _parameterConnections = computed(() =>
+  props.connections.filter((c) => c.type === "parameter"),
 );
 
-const modifierConnections = computed(() =>
-  props.connections.filter(c => c.type === 'modifier')
+const _modifierConnections = computed(() =>
+  props.connections.filter((c) => c.type === "modifier"),
 );
 
 /**
  * Generate a smooth bezier curve path between two points
  */
-function generateBezierPath(start: ConnectionPoint, end: ConnectionPoint): string {
+function _generateBezierPath(
+  start: ConnectionPoint,
+  end: ConnectionPoint,
+): string {
   // Calculate control points for a smooth S-curve
   const dx = end.x - start.x;
   const dy = end.y - start.y;

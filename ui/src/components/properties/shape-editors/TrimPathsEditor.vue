@@ -44,41 +44,39 @@
 </template>
 
 <script setup lang="ts">
-import type { TrimPathsOperator, TrimMode } from '@/types/shapes';
-import { ScrubableNumber } from '@/components/controls';
-import KeyframeToggle from '../KeyframeToggle.vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import { createKeyframe } from '@/types/animation';
+import { useCompositorStore } from "@/stores/compositorStore";
+import { createKeyframe } from "@/types/animation";
+import type { TrimMode, TrimPathsOperator } from "@/types/shapes";
 
 const props = defineProps<{ operator: TrimPathsOperator; layerId: string }>();
-const emit = defineEmits(['update']);
+const emit = defineEmits(["update"]);
 const store = useCompositorStore();
 
-function updateNumber(prop: 'start' | 'end' | 'offset', value: number) {
+function _updateNumber(prop: "start" | "end" | "offset", value: number) {
   const updated = { ...props.operator };
   updated[prop] = { ...updated[prop], value };
-  emit('update', updated);
+  emit("update", updated);
 }
 
-function updateMode(e: Event) {
+function _updateMode(e: Event) {
   const updated = { ...props.operator };
   updated.mode = (e.target as HTMLSelectElement).value as TrimMode;
-  emit('update', updated);
+  emit("update", updated);
 }
 
-function toggleKeyframe(prop: 'start' | 'end' | 'offset') {
+function _toggleKeyframe(prop: "start" | "end" | "offset") {
   const updated = { ...props.operator };
   const animProp = updated[prop];
   const frame = store.currentFrame;
 
-  const hasKf = animProp.keyframes.some(k => k.frame === frame);
+  const hasKf = animProp.keyframes.some((k) => k.frame === frame);
   if (hasKf) {
-    animProp.keyframes = animProp.keyframes.filter(k => k.frame !== frame);
+    animProp.keyframes = animProp.keyframes.filter((k) => k.frame !== frame);
   } else {
-    animProp.keyframes.push(createKeyframe(frame, animProp.value, 'linear'));
+    animProp.keyframes.push(createKeyframe(frame, animProp.value, "linear"));
   }
   animProp.animated = animProp.keyframes.length > 0;
-  emit('update', updated);
+  emit("update", updated);
 }
 </script>
 

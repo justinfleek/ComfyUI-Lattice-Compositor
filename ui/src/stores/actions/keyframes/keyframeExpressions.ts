@@ -7,10 +7,10 @@
  * Extracted from keyframeActions.ts for modularity.
  */
 
-import { storeLogger } from '@/utils/logger';
-import type { Layer, AnimatableProperty, Keyframe, PropertyExpression } from '@/types/project';
-import { markLayerDirty } from '@/services/layerEvaluationCache';
-import { findPropertyByPath, KeyframeStore } from '../keyframeActions';
+import { markLayerDirty } from "@/services/layerEvaluationCache";
+import type { Keyframe, PropertyExpression } from "@/types/project";
+import { storeLogger } from "@/utils/logger";
+import { findPropertyByPath, type KeyframeStore } from "../keyframeActions";
 
 // ============================================================================
 // EXPRESSION METHODS
@@ -23,17 +23,20 @@ export function setPropertyExpression(
   store: KeyframeStore,
   layerId: string,
   propertyPath: string,
-  expression: PropertyExpression
+  expression: PropertyExpression,
 ): boolean {
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) {
-    storeLogger.warn('setPropertyExpression: layer not found:', layerId);
+    storeLogger.warn("setPropertyExpression: layer not found:", layerId);
     return false;
   }
 
   const property = findPropertyByPath(layer, propertyPath);
   if (!property) {
-    storeLogger.warn('setPropertyExpression: property not found:', propertyPath);
+    storeLogger.warn(
+      "setPropertyExpression: property not found:",
+      propertyPath,
+    );
     return false;
   }
 
@@ -42,7 +45,7 @@ export function setPropertyExpression(
   markLayerDirty(layerId);
   store.pushHistory();
 
-  storeLogger.debug('Set expression on', propertyPath, ':', expression.name);
+  storeLogger.debug("Set expression on", propertyPath, ":", expression.name);
   return true;
 }
 
@@ -53,10 +56,10 @@ export function enablePropertyExpression(
   store: KeyframeStore,
   layerId: string,
   propertyPath: string,
-  expressionName: string = 'custom',
-  params: Record<string, number | string | boolean> = {}
+  expressionName: string = "custom",
+  params: Record<string, number | string | boolean> = {},
 ): boolean {
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) return false;
 
   const property = findPropertyByPath(layer, propertyPath);
@@ -64,9 +67,9 @@ export function enablePropertyExpression(
 
   const expression: PropertyExpression = {
     enabled: true,
-    type: expressionName === 'custom' ? 'custom' : 'preset',
+    type: expressionName === "custom" ? "custom" : "preset",
     name: expressionName,
-    params
+    params,
   };
 
   property.expression = expression;
@@ -83,9 +86,9 @@ export function enablePropertyExpression(
 export function disablePropertyExpression(
   store: KeyframeStore,
   layerId: string,
-  propertyPath: string
+  propertyPath: string,
 ): boolean {
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) return false;
 
   const property = findPropertyByPath(layer, propertyPath);
@@ -105,9 +108,9 @@ export function disablePropertyExpression(
 export function togglePropertyExpression(
   store: KeyframeStore,
   layerId: string,
-  propertyPath: string
+  propertyPath: string,
 ): boolean {
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) return false;
 
   const property = findPropertyByPath(layer, propertyPath);
@@ -127,9 +130,9 @@ export function togglePropertyExpression(
 export function removePropertyExpression(
   store: KeyframeStore,
   layerId: string,
-  propertyPath: string
+  propertyPath: string,
 ): boolean {
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) return false;
 
   const property = findPropertyByPath(layer, propertyPath);
@@ -149,9 +152,9 @@ export function removePropertyExpression(
 export function getPropertyExpression(
   store: KeyframeStore,
   layerId: string,
-  propertyPath: string
+  propertyPath: string,
 ): PropertyExpression | undefined {
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) return undefined;
 
   const property = findPropertyByPath(layer, propertyPath);
@@ -164,9 +167,9 @@ export function getPropertyExpression(
 export function hasPropertyExpression(
   store: KeyframeStore,
   layerId: string,
-  propertyPath: string
+  propertyPath: string,
 ): boolean {
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) return false;
 
   const property = findPropertyByPath(layer, propertyPath);
@@ -180,9 +183,9 @@ export function updateExpressionParams(
   store: KeyframeStore,
   layerId: string,
   propertyPath: string,
-  params: Record<string, number | string | boolean>
+  params: Record<string, number | string | boolean>,
 ): boolean {
-  const layer = store.getActiveCompLayers().find(l => l.id === layerId);
+  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) return false;
 
   const property = findPropertyByPath(layer, propertyPath);
@@ -203,7 +206,11 @@ export function updateExpressionParams(
 export interface BakeExpressionStore extends KeyframeStore {
   fps: number;
   frameCount: number;
-  evaluatePropertyAtFrame(layerId: string, propertyPath: string, frame: number): any;
+  evaluatePropertyAtFrame(
+    layerId: string,
+    propertyPath: string,
+    frame: number,
+  ): any;
 }
 
 /**
@@ -224,29 +231,36 @@ export function convertExpressionToKeyframes(
   propertyPath: string,
   startFrame?: number,
   endFrame?: number,
-  sampleRate: number = 1
+  sampleRate: number = 1,
 ): number {
   const layer = store.getLayerById(layerId);
   if (!layer) {
-    storeLogger.warn('convertExpressionToKeyframes: layer not found:', layerId);
+    storeLogger.warn("convertExpressionToKeyframes: layer not found:", layerId);
     return 0;
   }
 
   const property = findPropertyByPath(layer, propertyPath);
   if (!property) {
-    storeLogger.warn('convertExpressionToKeyframes: property not found:', propertyPath);
+    storeLogger.warn(
+      "convertExpressionToKeyframes: property not found:",
+      propertyPath,
+    );
     return 0;
   }
 
   if (!property.expression?.enabled) {
-    storeLogger.warn('convertExpressionToKeyframes: no active expression on property');
+    storeLogger.warn(
+      "convertExpressionToKeyframes: no active expression on property",
+    );
     return 0;
   }
 
   const start = startFrame ?? 0;
   const end = endFrame ?? store.frameCount;
   // Validate sampleRate (Math.round(NaN) = NaN, Math.max(1, NaN) = NaN)
-  const rate = Number.isFinite(sampleRate) ? Math.max(1, Math.round(sampleRate)) : 1;
+  const rate = Number.isFinite(sampleRate)
+    ? Math.max(1, Math.round(sampleRate))
+    : 1;
 
   // Clear existing keyframes
   property.keyframes = [];
@@ -263,10 +277,10 @@ export function convertExpressionToKeyframes(
         id: `kf_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
         frame,
         value,
-        interpolation: 'linear',
+        interpolation: "linear",
         inHandle: { frame: 0, value: 0, enabled: false },
         outHandle: { frame: 0, value: 0, enabled: false },
-        controlMode: 'smooth'
+        controlMode: "smooth",
       };
 
       property.keyframes.push(keyframe);
@@ -283,7 +297,11 @@ export function convertExpressionToKeyframes(
   store.project.meta.modified = new Date().toISOString();
   store.pushHistory();
 
-  storeLogger.info('convertExpressionToKeyframes: created', keyframesCreated, 'keyframes');
+  storeLogger.info(
+    "convertExpressionToKeyframes: created",
+    keyframesCreated,
+    "keyframes",
+  );
   return keyframesCreated;
 }
 
@@ -293,7 +311,7 @@ export function convertExpressionToKeyframes(
 export function canBakeExpression(
   store: KeyframeStore,
   layerId: string,
-  propertyPath: string
+  propertyPath: string,
 ): boolean {
   const layer = store.getLayerById(layerId);
   if (!layer) return false;

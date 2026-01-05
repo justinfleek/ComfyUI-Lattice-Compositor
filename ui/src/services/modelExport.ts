@@ -9,10 +9,10 @@
  * - camera-comfyUI (4x4 matrices)
  */
 
-import * as THREE from 'three';
-import type { Camera3D } from '@/types/camera';
-import type { Layer, ControlPoint, SplineData } from '@/types/project';
-import { interpolateProperty } from './interpolation';
+import * as THREE from "three";
+import type { Camera3D } from "@/types/camera";
+import type { Layer, SplineData } from "@/types/project";
+import { interpolateProperty } from "./interpolation";
 
 // ============================================================================
 // CAMERA MATRIX EXPORT (camera-comfyUI compatible)
@@ -36,7 +36,7 @@ export function camera3DToMatrix4x4(camera: Camera3D): number[][] {
   const position = new THREE.Vector3(
     camera.position.x,
     camera.position.y,
-    camera.position.z
+    camera.position.z,
   );
 
   // Combine all rotations (orientation + individual axes)
@@ -44,7 +44,7 @@ export function camera3DToMatrix4x4(camera: Camera3D): number[][] {
     THREE.MathUtils.degToRad(camera.orientation.x + camera.xRotation),
     THREE.MathUtils.degToRad(camera.orientation.y + camera.yRotation),
     THREE.MathUtils.degToRad(camera.orientation.z + camera.zRotation),
-    'XYZ'
+    "XYZ",
   );
 
   const quaternion = new THREE.Quaternion().setFromEuler(euler);
@@ -60,7 +60,7 @@ export function camera3DToMatrix4x4(camera: Camera3D): number[][] {
     [elements[0], elements[4], elements[8], elements[12]],
     [elements[1], elements[5], elements[9], elements[13]],
     [elements[2], elements[6], elements[10], elements[14]],
-    [elements[3], elements[7], elements[11], elements[15]]
+    [elements[3], elements[7], elements[11], elements[15]],
   ];
 }
 
@@ -82,12 +82,12 @@ export interface CameraTrajectoryExport {
 }
 
 export function exportCameraTrajectory(
-  cameras: Camera3D[],  // One per frame (interpolated)
+  cameras: Camera3D[], // One per frame (interpolated)
   fps: number,
   width: number,
-  height: number
+  height: number,
 ): CameraTrajectoryExport {
-  const matrices = cameras.map(cam => camera3DToMatrix4x4(cam));
+  const matrices = cameras.map((cam) => camera3DToMatrix4x4(cam));
 
   return {
     matrices,
@@ -98,8 +98,8 @@ export function exportCameraTrajectory(
       nearClip: cameras[0]?.nearClip ?? 1,
       farClip: cameras[0]?.farClip ?? 10000,
       width,
-      height
-    }
+      height,
+    },
   };
 }
 
@@ -207,11 +207,12 @@ export function extractLayerTrajectory(
   endFrame: number,
   getPositionAtFrame: (layer: Layer, frame: number) => { x: number; y: number },
   // Optional extended getter for full 3D transform data
-  getTransformAtFrame?: (layer: Layer, frame: number) => TransformAtFrame
+  getTransformAtFrame?: (layer: Layer, frame: number) => TransformAtFrame,
 ): PointTrajectory {
   const points: Array<{ frame: number; x: number; y: number; z?: number }> = [];
   const visibility: boolean[] = [];
-  const rotation: Array<{ frame: number; x: number; y: number; z: number }> = [];
+  const rotation: Array<{ frame: number; x: number; y: number; z: number }> =
+    [];
   const scale: Array<{ frame: number; x: number; y: number }> = [];
 
   for (let frame = startFrame; frame <= endFrame; frame++) {
@@ -227,7 +228,7 @@ export function extractLayerTrajectory(
         frame,
         x: transform.position.x,
         y: transform.position.y,
-        z: transform.position.z
+        z: transform.position.z,
       });
 
       if (transform.rotation) {
@@ -235,7 +236,7 @@ export function extractLayerTrajectory(
           frame,
           x: transform.rotation.x,
           y: transform.rotation.y,
-          z: transform.rotation.z
+          z: transform.rotation.z,
         });
       }
 
@@ -243,7 +244,7 @@ export function extractLayerTrajectory(
         scale.push({
           frame,
           x: transform.scale.x,
-          y: transform.scale.y
+          y: transform.scale.y,
         });
       }
     } else {
@@ -256,7 +257,7 @@ export function extractLayerTrajectory(
   const result: PointTrajectory = {
     id: layer.id,
     points,
-    visibility
+    visibility,
   };
 
   // Only include rotation/scale if we have data
@@ -277,13 +278,13 @@ export function extractLayerTrajectory(
 export function extractSplineTrajectories(
   splineData: SplineData,
   startFrame: number,
-  endFrame: number
+  endFrame: number,
 ): PointTrajectory[] {
   const frameCount = endFrame - startFrame + 1;
 
   // Check if using animated control points
   if (splineData.animated && splineData.animatedControlPoints?.length) {
-    return splineData.animatedControlPoints.map(acp => {
+    return splineData.animatedControlPoints.map((acp) => {
       const points: Array<{ frame: number; x: number; y: number }> = [];
 
       for (let i = 0; i < frameCount; i++) {
@@ -297,20 +298,20 @@ export function extractSplineTrajectories(
       return {
         id: acp.id,
         points,
-        visibility: Array(frameCount).fill(true)
+        visibility: Array(frameCount).fill(true),
       };
     });
   }
 
   // Fall back to static control points
-  return splineData.controlPoints.map(cp => ({
+  return splineData.controlPoints.map((cp) => ({
     id: cp.id,
     points: Array.from({ length: frameCount }, (_, i) => ({
       frame: startFrame + i,
       x: cp.x,
-      y: cp.y
+      y: cp.y,
     })),
-    visibility: Array(frameCount).fill(true)
+    visibility: Array(frameCount).fill(true),
   }));
 }
 
@@ -322,9 +323,18 @@ export function exportWanMoveTrajectories(
   trajectories: PointTrajectory[],
   imageWidth: number,
   imageHeight: number,
-  options?: { include3D?: boolean; includeRotation?: boolean; includeScale?: boolean }
+  options?: {
+    include3D?: boolean;
+    includeRotation?: boolean;
+    includeScale?: boolean;
+  },
 ): WanMoveTrajectoryExport {
-  const opts = { include3D: true, includeRotation: true, includeScale: true, ...options };
+  const opts = {
+    include3D: true,
+    includeRotation: true,
+    includeScale: true,
+    ...options,
+  };
 
   if (trajectories.length === 0) {
     return {
@@ -337,28 +347,32 @@ export function exportWanMoveTrajectories(
         imageHeight,
         is3D: false,
         hasRotation: false,
-        hasScale: false
-      }
+        hasScale: false,
+      },
     };
   }
 
   const numFrames = trajectories[0].points.length;
 
   // Check if any trajectory has 3D data
-  const has3D = trajectories.some(t => t.points.some(p => p.z !== undefined));
-  const hasRotation = trajectories.some(t => t.rotation && t.rotation.length > 0);
-  const hasScale = trajectories.some(t => t.scale && t.scale.length > 0);
+  const has3D = trajectories.some((t) =>
+    t.points.some((p) => p.z !== undefined),
+  );
+  const hasRotation = trajectories.some(
+    (t) => t.rotation && t.rotation.length > 0,
+  );
+  const hasScale = trajectories.some((t) => t.scale && t.scale.length > 0);
 
   // Convert to [num_points, num_frames, 2 or 3] format
-  const trajArray = trajectories.map(traj =>
-    traj.points.map(pt =>
-      (opts.include3D && has3D) ? [pt.x, pt.y, pt.z ?? 0] : [pt.x, pt.y]
-    )
+  const trajArray = trajectories.map((traj) =>
+    traj.points.map((pt) =>
+      opts.include3D && has3D ? [pt.x, pt.y, pt.z ?? 0] : [pt.x, pt.y],
+    ),
   );
 
   // Convert visibility to [num_points, num_frames] format (1 or 0)
-  const visArray = trajectories.map(traj =>
-    traj.visibility.map(v => v ? 1 : 0)
+  const visArray = trajectories.map((traj) =>
+    traj.visibility.map((v) => (v ? 1 : 0)),
   );
 
   const result: WanMoveTrajectoryExport = {
@@ -371,25 +385,25 @@ export function exportWanMoveTrajectories(
       imageHeight,
       is3D: opts.include3D && has3D,
       hasRotation: opts.includeRotation && hasRotation,
-      hasScale: opts.includeScale && hasScale
-    }
+      hasScale: opts.includeScale && hasScale,
+    },
   };
 
   // Add rotation data if present
   if (opts.includeRotation && hasRotation) {
-    result.rotations = trajectories.map(traj =>
+    result.rotations = trajectories.map((traj) =>
       traj.rotation
-        ? traj.rotation.map(r => [r.x, r.y, r.z])
-        : Array(numFrames).fill([0, 0, 0])
+        ? traj.rotation.map((r) => [r.x, r.y, r.z])
+        : Array(numFrames).fill([0, 0, 0]),
     );
   }
 
   // Add scale data if present
   if (opts.includeScale && hasScale) {
-    result.scales = trajectories.map(traj =>
+    result.scales = trajectories.map((traj) =>
       traj.scale
-        ? traj.scale.map(s => [s.x, s.y])
-        : Array(numFrames).fill([1, 1])
+        ? traj.scale.map((s) => [s.x, s.y])
+        : Array(numFrames).fill([1, 1]),
     );
   }
 
@@ -403,7 +417,7 @@ export function exportWanMoveTrajectories(
 /**
  * ATI trajectory instruction types
  */
-export type ATITrajectoryType = 'free' | 'circular' | 'static' | 'pan';
+export type ATITrajectoryType = "free" | "circular" | "static" | "pan";
 
 export interface ATITrajectoryInstruction {
   type: ATITrajectoryType;
@@ -420,7 +434,7 @@ export function calculatePanSpeed(
   layer: Layer,
   startFrame: number,
   endFrame: number,
-  getPositionAtFrame: (layer: Layer, frame: number) => { x: number; y: number }
+  getPositionAtFrame: (layer: Layer, frame: number) => { x: number; y: number },
 ): { x: number; y: number } {
   if (endFrame <= startFrame) return { x: 0, y: 0 };
 
@@ -430,7 +444,7 @@ export function calculatePanSpeed(
 
   return {
     x: (endPos.x - startPos.x) / frameCount,
-    y: (endPos.y - startPos.y) / frameCount
+    y: (endPos.y - startPos.y) / frameCount,
   };
 }
 
@@ -439,13 +453,13 @@ export function calculatePanSpeed(
  */
 export function exportATITrajectory(
   trajectory: PointTrajectory,
-  imageWidth: number,
-  imageHeight: number
+  _imageWidth: number,
+  _imageHeight: number,
 ): ATITrajectoryInstruction {
   const points = trajectory.points;
 
   if (points.length < 2) {
-    return { type: 'static' };
+    return { type: "static" };
   }
 
   // Check if it's a linear pan (constant velocity)
@@ -462,8 +476,10 @@ export function exportATITrajectory(
     const actualDx = points[i].x - points[i - 1].x;
     const actualDy = points[i].y - points[i - 1].y;
 
-    if (Math.abs(actualDx - expectedDxPerFrame) > 1 ||
-        Math.abs(actualDy - expectedDyPerFrame) > 1) {
+    if (
+      Math.abs(actualDx - expectedDxPerFrame) > 1 ||
+      Math.abs(actualDy - expectedDyPerFrame) > 1
+    ) {
       isLinear = false;
       break;
     }
@@ -471,18 +487,18 @@ export function exportATITrajectory(
 
   if (isLinear && (Math.abs(dx) > 5 || Math.abs(dy) > 5)) {
     return {
-      type: 'pan',
+      type: "pan",
       panSpeed: {
         x: expectedDxPerFrame,
-        y: expectedDyPerFrame
-      }
+        y: expectedDyPerFrame,
+      },
     };
   }
 
   // Otherwise, export as free trajectory
   return {
-    type: 'free',
-    points: points.map(p => ({ x: p.x, y: p.y }))
+    type: "free",
+    points: points.map((p) => ({ x: p.x, y: p.y })),
   };
 }
 
@@ -524,7 +540,7 @@ export interface TTMExport {
 
   // Model-specific params
   modelConfig: {
-    model: 'wan' | 'cogvideox' | 'svd';
+    model: "wan" | "cogvideox" | "svd";
     tweakIndex: number;
     tstrongIndex: number;
     inferenceSteps: number;
@@ -547,7 +563,7 @@ export interface TTMSingleLayerExport {
   motionMask: string;
   trajectory: Array<{ x: number; y: number }>;
   modelConfig: {
-    model: 'wan' | 'cogvideox' | 'svd';
+    model: "wan" | "cogvideox" | "svd";
     tweakIndex: number;
     tstrongIndex: number;
     inferenceSteps: number;
@@ -562,22 +578,25 @@ export function generateMotionMask(
   layer: Layer,
   compWidth: number,
   compHeight: number,
-  getLayerBounds: (layer: Layer, frame: number) => { x: number; y: number; width: number; height: number }
+  getLayerBounds: (
+    layer: Layer,
+    frame: number,
+  ) => { x: number; y: number; width: number; height: number },
 ): ImageData {
   // Create canvas for mask
-  const canvas = document.createElement('canvas');
+  const canvas = document.createElement("canvas");
   canvas.width = compWidth;
   canvas.height = compHeight;
-  const ctx = canvas.getContext('2d')!;
+  const ctx = canvas.getContext("2d")!;
 
   // Fill with black (static region)
-  ctx.fillStyle = 'black';
+  ctx.fillStyle = "black";
   ctx.fillRect(0, 0, compWidth, compHeight);
 
   // Draw white rectangle for layer bounds (motion region)
   const layerStart = layer.startFrame ?? layer.inPoint ?? 0;
   const bounds = getLayerBounds(layer, layerStart);
-  ctx.fillStyle = 'white';
+  ctx.fillStyle = "white";
   ctx.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
 
   return ctx.getImageData(0, 0, compWidth, compHeight);
@@ -591,19 +610,22 @@ export function generateCombinedMotionMask(
   layers: Layer[],
   compWidth: number,
   compHeight: number,
-  getLayerBounds: (layer: Layer, frame: number) => { x: number; y: number; width: number; height: number }
+  getLayerBounds: (
+    layer: Layer,
+    frame: number,
+  ) => { x: number; y: number; width: number; height: number },
 ): ImageData {
-  const canvas = document.createElement('canvas');
+  const canvas = document.createElement("canvas");
   canvas.width = compWidth;
   canvas.height = compHeight;
-  const ctx = canvas.getContext('2d')!;
+  const ctx = canvas.getContext("2d")!;
 
   // Fill with black (static region)
-  ctx.fillStyle = 'black';
+  ctx.fillStyle = "black";
   ctx.fillRect(0, 0, compWidth, compHeight);
 
   // Draw each layer's bounds in white
-  ctx.fillStyle = 'white';
+  ctx.fillStyle = "white";
   for (const layer of layers) {
     const layerStartFrame = layer.startFrame ?? layer.inPoint ?? 0;
     const bounds = getLayerBounds(layer, layerStartFrame);
@@ -617,12 +639,12 @@ export function generateCombinedMotionMask(
  * Convert ImageData to base64 PNG
  */
 export function imageDataToBase64(imageData: ImageData): string {
-  const canvas = document.createElement('canvas');
+  const canvas = document.createElement("canvas");
   canvas.width = imageData.width;
   canvas.height = imageData.height;
-  const ctx = canvas.getContext('2d')!;
+  const ctx = canvas.getContext("2d")!;
   ctx.putImageData(imageData, 0, 0);
-  return canvas.toDataURL('image/png');
+  return canvas.toDataURL("image/png");
 }
 
 /**
@@ -635,21 +657,34 @@ export function exportTTMLayer(
   compWidth: number,
   compHeight: number,
   getPositionAtFrame: (layer: Layer, frame: number) => { x: number; y: number },
-  getLayerBounds: (layer: Layer, frame: number) => { x: number; y: number; width: number; height: number }
+  getLayerBounds: (
+    layer: Layer,
+    frame: number,
+  ) => { x: number; y: number; width: number; height: number },
 ): TTMLayerExport {
   // Generate mask for this layer
-  const maskData = generateMotionMask(layer, compWidth, compHeight, getLayerBounds);
+  const maskData = generateMotionMask(
+    layer,
+    compWidth,
+    compHeight,
+    getLayerBounds,
+  );
   const maskBase64 = imageDataToBase64(maskData);
 
   // Extract trajectory
-  const trajectory = extractLayerTrajectory(layer, startFrame, endFrame, getPositionAtFrame);
+  const trajectory = extractLayerTrajectory(
+    layer,
+    startFrame,
+    endFrame,
+    getPositionAtFrame,
+  );
 
   return {
     layerId: layer.id,
     layerName: layer.name,
     motionMask: maskBase64,
     trajectory: trajectory.points,
-    visibility: trajectory.visibility
+    visibility: trajectory.visibility,
   };
 }
 
@@ -660,12 +695,12 @@ export function exportTTMLayer(
 /**
  * Light-X camera motion types
  */
-export type LightXMotionStyle = 'gradual' | 'bullet' | 'direct' | 'dolly-zoom';
+export type LightXMotionStyle = "gradual" | "bullet" | "direct" | "dolly-zoom";
 
 /**
  * Light-X relighting source types
  */
-export type LightXRelightSource = 'text' | 'reference' | 'hdr' | 'background';
+export type LightXRelightSource = "text" | "reference" | "hdr" | "background";
 
 export interface LightXExport {
   // Camera trajectory
@@ -687,28 +722,24 @@ export interface LightXExport {
 /**
  * Detect motion style from camera animation
  */
-export function detectMotionStyle(
-  cameras: Camera3D[]
-): LightXMotionStyle {
-  if (cameras.length < 2) return 'static' as any;
+export function detectMotionStyle(cameras: Camera3D[]): LightXMotionStyle {
+  if (cameras.length < 2) return "static" as any;
 
   const first = cameras[0];
   const last = cameras[cameras.length - 1];
 
   // Check for dolly zoom (position changes while FOV changes)
-  const positionChange = Math.sqrt(
-    Math.pow(last.position.z - first.position.z, 2)
-  );
+  const positionChange = Math.sqrt((last.position.z - first.position.z) ** 2);
   const fovChange = Math.abs(last.angleOfView - first.angleOfView);
 
   if (positionChange > 100 && fovChange > 5) {
-    return 'dolly-zoom';
+    return "dolly-zoom";
   }
 
   // Check for bullet time (orbit around POI)
   const yRotationChange = Math.abs(last.yRotation - first.yRotation);
   if (yRotationChange > 45) {
-    return 'bullet';
+    return "bullet";
   }
 
   // Check for gradual (smooth linear motion)
@@ -728,7 +759,7 @@ export function detectMotionStyle(
     }
   }
 
-  return isSmooth ? 'gradual' : 'direct';
+  return isSmooth ? "gradual" : "direct";
 }
 
 // ============================================================================
@@ -736,13 +767,13 @@ export function detectMotionStyle(
 // ============================================================================
 
 export type ModelTarget =
-  | 'camera-comfyui'
-  | 'wan-move'
-  | 'wan-move-3d'
-  | 'ati'
-  | 'ttm'
-  | 'light-x'
-  | 'particles';
+  | "camera-comfyui"
+  | "wan-move"
+  | "wan-move-3d"
+  | "ati"
+  | "ttm"
+  | "light-x"
+  | "particles";
 
 export interface UnifiedExportOptions {
   target: ModelTarget;
@@ -756,19 +787,22 @@ export interface UnifiedExportOptions {
 
   // Callbacks for getting animated values
   getPositionAtFrame: (layer: Layer, frame: number) => { x: number; y: number };
-  getLayerBounds: (layer: Layer, frame: number) => { x: number; y: number; width: number; height: number };
+  getLayerBounds: (
+    layer: Layer,
+    frame: number,
+  ) => { x: number; y: number; width: number; height: number };
 
   // Extended callback for full 3D transform data (optional, for 3D exports)
   getTransformAtFrame?: (layer: Layer, frame: number) => TransformAtFrame;
 
   // TTM-specific options (Time-to-Move)
-  ttmModel?: 'wan' | 'cogvideox' | 'svd';
-  ttmTweakIndex?: number;       // Dual-clock denoising tweak parameter
-  ttmTstrongIndex?: number;     // Dual-clock denoising tstrong parameter
-  ttmInferenceSteps?: number;   // Number of inference steps
+  ttmModel?: "wan" | "cogvideox" | "svd";
+  ttmTweakIndex?: number; // Dual-clock denoising tweak parameter
+  ttmTstrongIndex?: number; // Dual-clock denoising tstrong parameter
+  ttmInferenceSteps?: number; // Number of inference steps
 
   // Light-X options
-  lightXRelighting?: LightXExport['relighting'];
+  lightXRelighting?: LightXExport["relighting"];
 
   // Particle export options
   particleData?: ParticleTrajectoryExport;
@@ -781,46 +815,71 @@ export interface UnifiedExportResult {
   files: {
     name: string;
     content: string | Blob;
-    type: 'json' | 'npy' | 'png' | 'tensor';
+    type: "json" | "npy" | "png" | "tensor";
   }[];
-  error?: string;  // Error message if success is false
+  error?: string; // Error message if success is false
 }
 
 /**
  * Export compositor data for a specific model
  */
 export async function exportForModel(
-  options: UnifiedExportOptions
+  options: UnifiedExportOptions,
 ): Promise<UnifiedExportResult> {
-  const { target, layers, cameras, compWidth, compHeight, fps, startFrame, endFrame } = options;
+  const {
+    target,
+    layers,
+    cameras,
+    compWidth,
+    compHeight,
+    fps,
+    startFrame,
+    endFrame,
+  } = options;
 
   switch (target) {
-    case 'camera-comfyui': {
-      const trajectory = exportCameraTrajectory(cameras, fps, compWidth, compHeight);
+    case "camera-comfyui": {
+      const trajectory = exportCameraTrajectory(
+        cameras,
+        fps,
+        compWidth,
+        compHeight,
+      );
       return {
         success: true,
         target,
         data: trajectory,
-        files: [{
-          name: 'camera_trajectory.json',
-          content: JSON.stringify(trajectory, null, 2),
-          type: 'json'
-        }]
+        files: [
+          {
+            name: "camera_trajectory.json",
+            content: JSON.stringify(trajectory, null, 2),
+            type: "json",
+          },
+        ],
       };
     }
 
-    case 'wan-move': {
+    case "wan-move": {
       // Extract trajectories from animated layers
       const trajectories: PointTrajectory[] = [];
       for (const layer of layers) {
         if (layer.transform.position.animated) {
           trajectories.push(
-            extractLayerTrajectory(layer, startFrame, endFrame, options.getPositionAtFrame)
+            extractLayerTrajectory(
+              layer,
+              startFrame,
+              endFrame,
+              options.getPositionAtFrame,
+            ),
           );
         }
       }
 
-      const wanMoveData = exportWanMoveTrajectories(trajectories, compWidth, compHeight);
+      const wanMoveData = exportWanMoveTrajectories(
+        trajectories,
+        compWidth,
+        compHeight,
+      );
 
       // Convert to pseudo-NPY format (JSON representation)
       // Real NPY export would require a proper binary encoder
@@ -830,43 +889,53 @@ export async function exportForModel(
         data: wanMoveData,
         files: [
           {
-            name: 'trajectories.json',
+            name: "trajectories.json",
             content: JSON.stringify(wanMoveData.trajectories, null, 2),
-            type: 'json'
+            type: "json",
           },
           {
-            name: 'visibility.json',
+            name: "visibility.json",
             content: JSON.stringify(wanMoveData.visibility, null, 2),
-            type: 'json'
+            type: "json",
           },
           {
-            name: 'metadata.json',
+            name: "metadata.json",
             content: JSON.stringify(wanMoveData.metadata, null, 2),
-            type: 'json'
-          }
-        ]
+            type: "json",
+          },
+        ],
       };
     }
 
-    case 'ati': {
+    case "ati": {
       // Export trajectories with pan speed calculation
       const atiInstructions: ATITrajectoryInstruction[] = [];
 
       for (const layer of layers) {
         if (layer.transform.position.animated) {
           const trajectory = extractLayerTrajectory(
-            layer, startFrame, endFrame, options.getPositionAtFrame
+            layer,
+            startFrame,
+            endFrame,
+            options.getPositionAtFrame,
           );
-          atiInstructions.push(exportATITrajectory(trajectory, compWidth, compHeight));
+          atiInstructions.push(
+            exportATITrajectory(trajectory, compWidth, compHeight),
+          );
         }
       }
 
       // Also export camera as trajectory if animated
       if (cameras.length > 1) {
-        const camTrajectory = exportCameraTrajectory(cameras, fps, compWidth, compHeight);
+        const _camTrajectory = exportCameraTrajectory(
+          cameras,
+          fps,
+          compWidth,
+          compHeight,
+        );
         atiInstructions.push({
-          type: 'circular', // Camera motion is typically orbital
-          points: cameras.map(c => ({ x: c.position.x, y: c.position.y }))
+          type: "circular", // Camera motion is typically orbital
+          points: cameras.map((c) => ({ x: c.position.x, y: c.position.y })),
         });
       }
 
@@ -874,17 +943,21 @@ export async function exportForModel(
         success: true,
         target,
         data: atiInstructions,
-        files: [{
-          name: 'ati_trajectories.json',
-          content: JSON.stringify(atiInstructions, null, 2),
-          type: 'json'
-        }]
+        files: [
+          {
+            name: "ati_trajectories.json",
+            content: JSON.stringify(atiInstructions, null, 2),
+            type: "json",
+          },
+        ],
       };
     }
 
-    case 'ttm': {
+    case "ttm": {
       // MULTI-LAYER SUPPORT: Find ALL animated layers, not just the first
-      const animatedLayers = layers.filter(l => l.transform.position.animated);
+      const animatedLayers = layers.filter(
+        (l) => l.transform.position.animated,
+      );
 
       if (animatedLayers.length === 0) {
         return {
@@ -892,12 +965,12 @@ export async function exportForModel(
           target,
           data: null,
           files: [],
-          error: 'No animated layers found for TTM export'
+          error: "No animated layers found for TTM export",
         };
       }
 
       // Export each layer separately
-      const layerExports: TTMLayerExport[] = animatedLayers.map(layer =>
+      const layerExports: TTMLayerExport[] = animatedLayers.map((layer) =>
         exportTTMLayer(
           layer,
           startFrame,
@@ -905,49 +978,52 @@ export async function exportForModel(
           compWidth,
           compHeight,
           options.getPositionAtFrame,
-          options.getLayerBounds
-        )
+          options.getLayerBounds,
+        ),
       );
 
       // Generate combined motion mask (all layers in one image)
       const combinedMaskData = generateCombinedMotionMask(
-        animatedLayers, compWidth, compHeight, options.getLayerBounds
+        animatedLayers,
+        compWidth,
+        compHeight,
+        options.getLayerBounds,
       );
       const combinedMaskBase64 = imageDataToBase64(combinedMaskData);
 
       const frameCount = endFrame - startFrame + 1;
 
       const ttmExport: TTMExport = {
-        referenceImage: '', // Filled by caller/export pipeline
-        lastFrame: '', // Filled by caller/export pipeline
+        referenceImage: "", // Filled by caller/export pipeline
+        lastFrame: "", // Filled by caller/export pipeline
         layers: layerExports,
         combinedMotionMask: combinedMaskBase64,
         modelConfig: {
-          model: options.ttmModel || 'wan',
+          model: options.ttmModel || "wan",
           tweakIndex: options.ttmTweakIndex ?? 10,
           tstrongIndex: options.ttmTstrongIndex ?? 20,
-          inferenceSteps: options.ttmInferenceSteps ?? 50
+          inferenceSteps: options.ttmInferenceSteps ?? 50,
         },
         metadata: {
           layerCount: animatedLayers.length,
           frameCount,
           width: compWidth,
-          height: compHeight
-        }
+          height: compHeight,
+        },
       };
 
       // Generate file outputs
-      const files: UnifiedExportResult['files'] = [
+      const files: UnifiedExportResult["files"] = [
         {
-          name: 'ttm_config.json',
+          name: "ttm_config.json",
           content: JSON.stringify(ttmExport, null, 2),
-          type: 'json' as const
+          type: "json" as const,
         },
         {
-          name: 'combined_motion_mask.png',
+          name: "combined_motion_mask.png",
           content: combinedMaskBase64,
-          type: 'png' as const
-        }
+          type: "png" as const,
+        },
       ];
 
       // Add per-layer mask files
@@ -955,17 +1031,21 @@ export async function exportForModel(
         files.push({
           name: `layer_${index}_${layerExport.layerId}_mask.png`,
           content: layerExport.motionMask,
-          type: 'png' as const
+          type: "png" as const,
         });
         files.push({
           name: `layer_${index}_${layerExport.layerId}_trajectory.json`,
-          content: JSON.stringify({
-            layerId: layerExport.layerId,
-            layerName: layerExport.layerName,
-            trajectory: layerExport.trajectory,
-            visibility: layerExport.visibility
-          }, null, 2),
-          type: 'json' as const
+          content: JSON.stringify(
+            {
+              layerId: layerExport.layerId,
+              layerName: layerExport.layerName,
+              trajectory: layerExport.trajectory,
+              visibility: layerExport.visibility,
+            },
+            null,
+            2,
+          ),
+          type: "json" as const,
         });
       });
 
@@ -973,21 +1053,26 @@ export async function exportForModel(
         success: true,
         target,
         data: ttmExport,
-        files
+        files,
       };
     }
 
-    case 'light-x': {
-      const cameraTrajectory = exportCameraTrajectory(cameras, fps, compWidth, compHeight);
+    case "light-x": {
+      const cameraTrajectory = exportCameraTrajectory(
+        cameras,
+        fps,
+        compWidth,
+        compHeight,
+      );
       const motionStyle = detectMotionStyle(cameras);
 
       const lightXExport: LightXExport = {
         cameraTrajectory,
         motionStyle,
         relighting: options.lightXRelighting || {
-          source: 'text',
-          textPrompt: 'natural lighting'
-        }
+          source: "text",
+          textPrompt: "natural lighting",
+        },
       };
 
       return {
@@ -996,34 +1081,36 @@ export async function exportForModel(
         data: lightXExport,
         files: [
           {
-            name: 'lightx_config.json',
+            name: "lightx_config.json",
             content: JSON.stringify(lightXExport, null, 2),
-            type: 'json'
+            type: "json",
           },
           {
-            name: 'camera_matrices.json',
+            name: "camera_matrices.json",
             content: JSON.stringify(cameraTrajectory.matrices, null, 2),
-            type: 'json'
-          }
-        ]
+            type: "json",
+          },
+        ],
       };
     }
 
-    case 'wan-move-3d': {
+    case "wan-move-3d": {
       // Extract trajectories with full 3D transform data
       const trajectories: PointTrajectory[] = [];
       for (const layer of layers) {
-        if (layer.transform.position.animated ||
-            layer.transform.rotation.animated ||
-            layer.transform.scale.animated) {
+        if (
+          layer.transform.position.animated ||
+          layer.transform.rotation.animated ||
+          layer.transform.scale.animated
+        ) {
           trajectories.push(
             extractLayerTrajectory(
               layer,
               startFrame,
               endFrame,
               options.getPositionAtFrame,
-              options.getTransformAtFrame
-            )
+              options.getTransformAtFrame,
+            ),
           );
         }
       }
@@ -1032,60 +1119,60 @@ export async function exportForModel(
         trajectories,
         compWidth,
         compHeight,
-        { include3D: true, includeRotation: true, includeScale: true }
+        { include3D: true, includeRotation: true, includeScale: true },
       );
 
       // Build files including rotation/scale if present
-      const files: UnifiedExportResult['files'] = [
+      const files: UnifiedExportResult["files"] = [
         {
-          name: 'trajectories_3d.json',
+          name: "trajectories_3d.json",
           content: JSON.stringify(wanMove3DData.trajectories, null, 2),
-          type: 'json'
+          type: "json",
         },
         {
-          name: 'visibility.json',
+          name: "visibility.json",
           content: JSON.stringify(wanMove3DData.visibility, null, 2),
-          type: 'json'
+          type: "json",
         },
         {
-          name: 'metadata.json',
+          name: "metadata.json",
           content: JSON.stringify(wanMove3DData.metadata, null, 2),
-          type: 'json'
-        }
+          type: "json",
+        },
       ];
 
       if (wanMove3DData.rotations) {
         files.push({
-          name: 'rotations.json',
+          name: "rotations.json",
           content: JSON.stringify(wanMove3DData.rotations, null, 2),
-          type: 'json'
+          type: "json",
         });
       }
 
       if (wanMove3DData.scales) {
         files.push({
-          name: 'scales.json',
+          name: "scales.json",
           content: JSON.stringify(wanMove3DData.scales, null, 2),
-          type: 'json'
+          type: "json",
         });
       }
 
       // Also add NPY binary for trajectories
       files.push({
-        name: 'trajectories.npy',
+        name: "trajectories.npy",
         content: trajectoriesToNpy(wanMove3DData.trajectories),
-        type: 'npy'
+        type: "npy",
       });
 
       return {
         success: true,
         target,
         data: wanMove3DData,
-        files
+        files,
       };
     }
 
-    case 'particles': {
+    case "particles": {
       // Export particle trajectory data
       if (!options.particleData) {
         return {
@@ -1093,29 +1180,29 @@ export async function exportForModel(
           target,
           data: null,
           files: [],
-          error: 'No particle data provided for export'
+          error: "No particle data provided for export",
         };
       }
 
       const particleData = options.particleData;
 
       // Create JSON export
-      const files: UnifiedExportResult['files'] = [
+      const files: UnifiedExportResult["files"] = [
         {
-          name: 'particles.json',
+          name: "particles.json",
           content: JSON.stringify(particleData, null, 2),
-          type: 'json'
+          type: "json",
         },
         {
-          name: 'particle_metadata.json',
+          name: "particle_metadata.json",
           content: JSON.stringify(particleData.metadata, null, 2),
-          type: 'json'
+          type: "json",
         },
         {
-          name: 'emitter_config.json',
+          name: "emitter_config.json",
           content: JSON.stringify(particleData.emitterConfig, null, 2),
-          type: 'json'
-        }
+          type: "json",
+        },
       ];
 
       // Create NPY for particle positions (flatten to [total_positions, 4] where 4 = frame, x, y, z)
@@ -1129,7 +1216,7 @@ export async function exportForModel(
       if (allPositions.length > 0) {
         // Create NPY header for [N, 4] float32 array
         const shape = [allPositions.length, 4];
-        const header = createNpyHeader(shape, '<f4');
+        const header = createNpyHeader(shape, "<f4");
 
         // Flatten to Float32Array
         const flat = allPositions.flat();
@@ -1142,9 +1229,9 @@ export async function exportForModel(
         result.set(dataBytes, header.length);
 
         files.push({
-          name: 'particle_positions.npy',
-          content: new Blob([result], { type: 'application/octet-stream' }),
-          type: 'npy'
+          name: "particle_positions.npy",
+          content: new Blob([result], { type: "application/octet-stream" }),
+          type: "npy",
         });
       }
 
@@ -1152,7 +1239,7 @@ export async function exportForModel(
         success: true,
         target,
         data: particleData,
-        files
+        files,
       };
     }
 
@@ -1161,7 +1248,7 @@ export async function exportForModel(
         success: false,
         target,
         data: null,
-        files: []
+        files: [],
       };
   }
 }
@@ -1174,29 +1261,36 @@ export async function exportForModel(
  * Create NPY file header for float32 array
  * NPY format: https://numpy.org/doc/stable/reference/generated/numpy.lib.format.html
  */
-export function createNpyHeader(shape: number[], dtype: string = '<f4'): Uint8Array {
+export function createNpyHeader(
+  shape: number[],
+  dtype: string = "<f4",
+): Uint8Array {
   const header = {
     descr: dtype,
     fortran_order: false,
-    shape: shape
+    shape: shape,
   };
 
   const headerStr = JSON.stringify(header)
     .replace(/"/g, "'")
-    .replace(/: /g, ': ')
-    .replace(/, /g, ', ');
+    .replace(/: /g, ": ")
+    .replace(/, /g, ", ");
 
   // Pad to 64-byte alignment
   const headerBytes = new TextEncoder().encode(headerStr);
   const padLen = 64 - ((10 + headerBytes.length) % 64);
-  const paddedHeader = headerStr + ' '.repeat(padLen - 1) + '\n';
+  const paddedHeader = `${headerStr + " ".repeat(padLen - 1)}\n`;
 
   // NPY magic number + version
-  const magic = new Uint8Array([0x93, 0x4E, 0x55, 0x4D, 0x50, 0x59, 0x01, 0x00]);
+  const magic = new Uint8Array([
+    0x93, 0x4e, 0x55, 0x4d, 0x50, 0x59, 0x01, 0x00,
+  ]);
   const headerLenBytes = new Uint8Array(2);
   new DataView(headerLenBytes.buffer).setUint16(0, paddedHeader.length, true);
 
-  const fullHeader = new Uint8Array(magic.length + headerLenBytes.length + paddedHeader.length);
+  const fullHeader = new Uint8Array(
+    magic.length + headerLenBytes.length + paddedHeader.length,
+  );
   fullHeader.set(magic, 0);
   fullHeader.set(headerLenBytes, magic.length);
   fullHeader.set(new TextEncoder().encode(paddedHeader), magic.length + 2);
@@ -1217,7 +1311,7 @@ export function trajectoriesToNpy(trajectories: number[][][]): Blob {
   }
 
   const shape = [trajectories.length, trajectories[0]?.length || 0, 2];
-  const header = createNpyHeader(shape, '<f4');
+  const header = createNpyHeader(shape, "<f4");
 
   // Create float32 data
   const data = new Float32Array(flat);
@@ -1228,7 +1322,7 @@ export function trajectoriesToNpy(trajectories: number[][][]): Blob {
   result.set(header, 0);
   result.set(dataBytes, header.length);
 
-  return new Blob([result], { type: 'application/octet-stream' });
+  return new Blob([result], { type: "application/octet-stream" });
 }
 
 export default {
@@ -1238,5 +1332,5 @@ export default {
   exportWanMoveTrajectories,
   exportATITrajectory,
   exportForModel,
-  trajectoriesToNpy
+  trajectoriesToNpy,
 };

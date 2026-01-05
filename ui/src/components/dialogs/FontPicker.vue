@@ -100,8 +100,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick } from 'vue';
-import { fontService, type FontCategory } from '@/services/fontService';
+import { computed, nextTick, onMounted, ref } from "vue";
+import { type FontCategory, fontService } from "@/services/fontService";
 
 interface Props {
   currentFont: string;
@@ -110,23 +110,23 @@ interface Props {
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-  (e: 'select', fontFamily: string): void;
-  (e: 'close'): void;
+  (e: "select", fontFamily: string): void;
+  (e: "close"): void;
 }>();
 
 // Refs
 const searchInputRef = ref<HTMLInputElement | null>(null);
 
 // State
-const searchQuery = ref('');
+const searchQuery = ref("");
 const selectedPreviewFont = ref(props.currentFont);
-const previewText = ref('The quick brown fox jumps over the lazy dog');
-const expandedCategories = ref(new Set(['Web Safe']));
+const _previewText = ref("The quick brown fox jumps over the lazy dog");
+const expandedCategories = ref(new Set(["Web Safe"]));
 const fontCategories = ref<FontCategory[]>([]);
 const hasSystemFonts = ref<boolean | null>(null);
 
 // Filter categories based on search
-const filteredCategories = computed(() => {
+const _filteredCategories = computed(() => {
   if (!searchQuery.value.trim()) {
     return fontCategories.value;
   }
@@ -134,13 +134,13 @@ const filteredCategories = computed(() => {
   const query = searchQuery.value.toLowerCase();
 
   return fontCategories.value
-    .map(category => ({
+    .map((category) => ({
       ...category,
-      fonts: category.fonts.filter(font =>
-        font.family.toLowerCase().includes(query)
-      )
+      fonts: category.fonts.filter((font) =>
+        font.family.toLowerCase().includes(query),
+      ),
     }))
-    .filter(category => category.fonts.length > 0);
+    .filter((category) => category.fonts.length > 0);
 });
 
 // Initialize
@@ -160,7 +160,7 @@ onMounted(async () => {
 });
 
 // Category toggle
-function toggleCategory(categoryName: string): void {
+function _toggleCategory(categoryName: string): void {
   if (expandedCategories.value.has(categoryName)) {
     expandedCategories.value.delete(categoryName);
   } else {
@@ -169,7 +169,7 @@ function toggleCategory(categoryName: string): void {
 }
 
 // Font selection
-async function selectFont(fontFamily: string): Promise<void> {
+async function _selectFont(fontFamily: string): Promise<void> {
   selectedPreviewFont.value = fontFamily;
 
   // Ensure font is loaded for preview
@@ -177,19 +177,19 @@ async function selectFont(fontFamily: string): Promise<void> {
 }
 
 // Confirm selection
-function confirmSelection(): void {
+function _confirmSelection(): void {
   if (selectedPreviewFont.value) {
-    emit('select', selectedPreviewFont.value);
+    emit("select", selectedPreviewFont.value);
   }
 }
 
 // Request system fonts
-async function requestSystemFonts(): Promise<void> {
+async function _requestSystemFonts(): Promise<void> {
   const success = await fontService.requestSystemFontAccess();
   if (success) {
     fontCategories.value = fontService.getFontCategories();
     hasSystemFonts.value = true;
-    expandedCategories.value.add('System Fonts');
+    expandedCategories.value.add("System Fonts");
   }
 }
 </script>

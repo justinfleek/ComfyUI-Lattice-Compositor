@@ -10,8 +10,11 @@
  * These renderers simply pass through the input unchanged.
  */
 
-import type { EffectStackResult, EvaluatedEffectParams } from '../effectProcessor';
-import { registerEffectRenderer } from '../effectProcessor';
+import type {
+  EffectStackResult,
+  EvaluatedEffectParams,
+} from "../effectProcessor";
+import { registerEffectRenderer } from "../effectProcessor";
 
 /**
  * Passthrough renderer for Slider Control
@@ -19,7 +22,7 @@ import { registerEffectRenderer } from '../effectProcessor';
  */
 function sliderControlRenderer(
   input: EffectStackResult,
-  params: EvaluatedEffectParams
+  _params: EvaluatedEffectParams,
 ): EffectStackResult {
   // No pixel processing - just pass through
   // The slider value is available via params.slider for expression access
@@ -31,7 +34,7 @@ function sliderControlRenderer(
  */
 function checkboxControlRenderer(
   input: EffectStackResult,
-  params: EvaluatedEffectParams
+  _params: EvaluatedEffectParams,
 ): EffectStackResult {
   // Value: 1 when checked, 0 when unchecked
   return input;
@@ -42,7 +45,7 @@ function checkboxControlRenderer(
  */
 function dropdownMenuControlRenderer(
   input: EffectStackResult,
-  params: EvaluatedEffectParams
+  _params: EvaluatedEffectParams,
 ): EffectStackResult {
   // Value: 1-based index of selected option
   return input;
@@ -53,7 +56,7 @@ function dropdownMenuControlRenderer(
  */
 function colorControlRenderer(
   input: EffectStackResult,
-  params: EvaluatedEffectParams
+  _params: EvaluatedEffectParams,
 ): EffectStackResult {
   // Value: { r, g, b, a } color object
   return input;
@@ -64,7 +67,7 @@ function colorControlRenderer(
  */
 function pointControlRenderer(
   input: EffectStackResult,
-  params: EvaluatedEffectParams
+  _params: EvaluatedEffectParams,
 ): EffectStackResult {
   // Value: { x, y } point object
   return input;
@@ -75,7 +78,7 @@ function pointControlRenderer(
  */
 function point3DControlRenderer(
   input: EffectStackResult,
-  params: EvaluatedEffectParams
+  _params: EvaluatedEffectParams,
 ): EffectStackResult {
   // Value: { x, y, z } 3D point object
   return input;
@@ -86,7 +89,7 @@ function point3DControlRenderer(
  */
 function angleControlRenderer(
   input: EffectStackResult,
-  params: EvaluatedEffectParams
+  _params: EvaluatedEffectParams,
 ): EffectStackResult {
   // Value: angle in degrees
   return input;
@@ -97,7 +100,7 @@ function angleControlRenderer(
  */
 function layerControlRenderer(
   input: EffectStackResult,
-  params: EvaluatedEffectParams
+  _params: EvaluatedEffectParams,
 ): EffectStackResult {
   // Value: layer ID reference
   return input;
@@ -107,14 +110,14 @@ function layerControlRenderer(
  * Register all Expression Control renderers
  */
 export function registerExpressionControlRenderers(): void {
-  registerEffectRenderer('slider-control', sliderControlRenderer);
-  registerEffectRenderer('checkbox-control', checkboxControlRenderer);
-  registerEffectRenderer('dropdown-menu-control', dropdownMenuControlRenderer);
-  registerEffectRenderer('color-control', colorControlRenderer);
-  registerEffectRenderer('point-control', pointControlRenderer);
-  registerEffectRenderer('3d-point-control', point3DControlRenderer);
-  registerEffectRenderer('angle-control', angleControlRenderer);
-  registerEffectRenderer('layer-control', layerControlRenderer);
+  registerEffectRenderer("slider-control", sliderControlRenderer);
+  registerEffectRenderer("checkbox-control", checkboxControlRenderer);
+  registerEffectRenderer("dropdown-menu-control", dropdownMenuControlRenderer);
+  registerEffectRenderer("color-control", colorControlRenderer);
+  registerEffectRenderer("point-control", pointControlRenderer);
+  registerEffectRenderer("3d-point-control", point3DControlRenderer);
+  registerEffectRenderer("angle-control", angleControlRenderer);
+  registerEffectRenderer("layer-control", layerControlRenderer);
 }
 
 /**
@@ -122,14 +125,14 @@ export function registerExpressionControlRenderers(): void {
  */
 export function isExpressionControl(effectKey: string): boolean {
   return [
-    'slider-control',
-    'checkbox-control',
-    'dropdown-menu-control',
-    'color-control',
-    'point-control',
-    '3d-point-control',
-    'angle-control',
-    'layer-control'
+    "slider-control",
+    "checkbox-control",
+    "dropdown-menu-control",
+    "color-control",
+    "point-control",
+    "3d-point-control",
+    "angle-control",
+    "layer-control",
   ].includes(effectKey);
 }
 
@@ -139,14 +142,23 @@ export function isExpressionControl(effectKey: string): boolean {
  */
 export function getControlParameterName(effectKey: string): string {
   switch (effectKey) {
-    case 'slider-control': return 'slider';
-    case 'checkbox-control': return 'checkbox';
-    case 'dropdown-menu-control': return 'menu';
-    case 'color-control': return 'color';
-    case 'point-control': return 'point';
-    case '3d-point-control': return 'point3D';
-    case 'angle-control': return 'angle';
-    case 'layer-control': return 'layer';
-    default: return 'value';
+    case "slider-control":
+      return "slider";
+    case "checkbox-control":
+      return "checkbox";
+    case "dropdown-menu-control":
+      return "menu";
+    case "color-control":
+      return "color";
+    case "point-control":
+      return "point";
+    case "3d-point-control":
+      return "point3D";
+    case "angle-control":
+      return "angle";
+    case "layer-control":
+      return "layer";
+    default:
+      return "value";
   }
 }

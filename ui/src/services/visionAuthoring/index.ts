@@ -26,52 +26,51 @@
  * ```
  */
 
+// Services
+export {
+  MotionIntentResolver,
+  motionIntentResolver,
+} from "./MotionIntentResolver";
+export {
+  MotionIntentTranslator,
+  motionIntentTranslator,
+} from "./MotionIntentTranslator";
 // Types
+// Re-export ControlPoint from types for convenience
 export type {
+  // Intent types
+  CameraMotionIntent,
+  // Motion types
+  CameraMotionType,
+  ControlPoint,
+  DepthEstimationResult,
+  DepthLayer,
+  DepthModelId,
+  EasingType,
+  // Translation types
+  KeyframeBatch,
+  LayerMotionIntent,
+  LayerMotionType,
+  MotionIntensity,
+  MotionIntentResult,
+  NewLayerSpec,
+  NewSplineSpec,
+  ParticleBehavior,
+  ParticleMotionIntent,
+  PathSuggestionResult,
+  // Suggestion types
+  PointSuggestion,
   // Scene context
   SceneContext,
   SegmentationMask,
-
-  // Intent types
-  CameraMotionIntent,
-  SplineMotionIntent,
-  ParticleMotionIntent,
-  LayerMotionIntent,
-  MotionIntentResult,
-
-  // Motion types
-  CameraMotionType,
-  MotionIntensity,
-  EasingType,
-  SplineUsage,
-  ParticleBehavior,
-  LayerMotionType,
-
-  // Suggestion types
-  PointSuggestion,
-  TrajectorySuggestion,
-  PathSuggestionResult,
-  DepthLayer,
-
-  // Translation types
-  KeyframeBatch,
-  TranslationResult,
-  NewLayerSpec,
-  NewSplineSpec,
-
-  // Configuration
-  VisionModelId,
-  VisionModelConfig,
-  DepthModelId,
-  DepthEstimationResult,
   SegmentationModelId,
   SegmentationRequest,
   SegmentationResult,
-} from './types';
-
-// Services
-export { MotionIntentResolver, motionIntentResolver } from './MotionIntentResolver';
-export { MotionIntentTranslator, motionIntentTranslator } from './MotionIntentTranslator';
-
-// Re-export ControlPoint from types for convenience
-export type { ControlPoint } from './types';
+  SplineMotionIntent,
+  SplineUsage,
+  TrajectorySuggestion,
+  TranslationResult,
+  VisionModelConfig,
+  // Configuration
+  VisionModelId,
+} from "./types";

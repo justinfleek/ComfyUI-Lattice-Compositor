@@ -25,24 +25,29 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { useToastStore, type ToastType } from '@/stores/toastStore';
+import { computed } from "vue";
+import { type ToastType, useToastStore } from "@/stores/toastStore";
 
 const toastStore = useToastStore();
 
-const toasts = computed(() => toastStore.toasts);
+const _toasts = computed(() => toastStore.toasts);
 
-function dismiss(id: string): void {
+function _dismiss(id: string): void {
   toastStore.removeToast(id);
 }
 
-function getIcon(type: ToastType): string {
+function _getIcon(type: ToastType): string {
   switch (type) {
-    case 'success': return '✓';
-    case 'error': return '✕';
-    case 'warning': return '⚠';
-    case 'info': return 'ℹ';
-    default: return '';
+    case "success":
+      return "✓";
+    case "error":
+      return "✕";
+    case "warning":
+      return "⚠";
+    case "info":
+      return "ℹ";
+    default:
+      return "";
   }
 }
 </script>

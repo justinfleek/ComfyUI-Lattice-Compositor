@@ -13,46 +13,46 @@
  */
 
 import {
-  registerEffectRenderer,
   createMatchingCanvas,
   type EffectStackResult,
-  type EvaluatedEffectParams
-} from '../effectProcessor';
+  type EvaluatedEffectParams,
+  registerEffectRenderer,
+} from "../effectProcessor";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-export type TonemapOperator = 'none' | 'aces' | 'reinhard' | 'hable';
-export type BloomBlendMode = 'add' | 'screen' | 'overlay' | 'soft_light';
+export type TonemapOperator = "none" | "aces" | "reinhard" | "hable";
+export type BloomBlendMode = "add" | "screen" | "overlay" | "soft_light";
 
 export interface CinematicBloomParams {
   // Core glow
-  intensity: number;           // 0-10 (default 1.0)
-  threshold: number;           // 0-1 (default 0.8)
-  radius: number;              // 0-200 pixels (default 50)
+  intensity: number; // 0-10 (default 1.0)
+  threshold: number; // 0-1 (default 0.8)
+  radius: number; // 0-200 pixels (default 50)
 
   // Inverse-square falloff
-  falloffMode: 'gaussian' | 'inverse_square' | 'exponential';
-  falloffExponent: number;     // For exponential mode (default 2.0)
+  falloffMode: "gaussian" | "inverse_square" | "exponential";
+  falloffExponent: number; // For exponential mode (default 2.0)
 
   // Per-channel radius multipliers (for color fringing)
-  radiusR: number;             // 0-2 (default 1.0)
-  radiusG: number;             // 0-2 (default 1.0)
-  radiusB: number;             // 0-2 (default 1.0)
+  radiusR: number; // 0-2 (default 1.0)
+  radiusG: number; // 0-2 (default 1.0)
+  radiusB: number; // 0-2 (default 1.0)
 
   // Tonemapping
   tonemap: TonemapOperator;
-  exposure: number;            // -5 to 5 (default 0)
+  exposure: number; // -5 to 5 (default 0)
 
   // Chromatic aberration
   chromaticAberration: number; // 0-20 pixels (default 0)
 
   // Lens dirt
   lensDirtEnabled: boolean;
-  lensDirtIntensity: number;   // 0-1 (default 0.5)
-  lensDirtScale: number;       // 0.5-2 (default 1)
-  lensDirtTexture?: string;    // Optional texture data URL
+  lensDirtIntensity: number; // 0-1 (default 0.5)
+  lensDirtScale: number; // 0.5-2 (default 1)
+  lensDirtTexture?: string; // Optional texture data URL
 
   // Blending
   blendMode: BloomBlendMode;
@@ -90,34 +90,38 @@ export function tonemapReinhard(x: number, whitePoint: number = 4.0): number {
  */
 export function tonemapHable(x: number): number {
   const A = 0.15; // Shoulder Strength
-  const B = 0.50; // Linear Strength
-  const C = 0.10; // Linear Angle
-  const D = 0.20; // Toe Strength
+  const B = 0.5; // Linear Strength
+  const C = 0.1; // Linear Angle
+  const D = 0.2; // Toe Strength
   const E = 0.02; // Toe Numerator
-  const F = 0.30; // Toe Denominator
+  const F = 0.3; // Toe Denominator
 
-  return ((x * (A * x + C * B) + D * E) / (x * (A * x + B) + D * F)) - E / F;
+  return (x * (A * x + C * B) + D * E) / (x * (A * x + B) + D * F) - E / F;
 }
 
 /**
  * Apply tonemapping to an RGB value (0-1 range input, 0-1 range output)
  */
-function applyTonemap(r: number, g: number, b: number, operator: TonemapOperator): [number, number, number] {
+function applyTonemap(
+  r: number,
+  g: number,
+  b: number,
+  operator: TonemapOperator,
+): [number, number, number] {
   switch (operator) {
-    case 'aces':
+    case "aces":
       return [tonemapACES(r), tonemapACES(g), tonemapACES(b)];
-    case 'reinhard':
+    case "reinhard":
       return [tonemapReinhard(r), tonemapReinhard(g), tonemapReinhard(b)];
-    case 'hable': {
+    case "hable": {
       const W = 11.2; // White point
       const whiteScale = 1.0 / tonemapHable(W);
       return [
         tonemapHable(r) * whiteScale,
         tonemapHable(g) * whiteScale,
-        tonemapHable(b) * whiteScale
+        tonemapHable(b) * whiteScale,
       ];
     }
-    case 'none':
     default:
       return [Math.min(1, r), Math.min(1, g), Math.min(1, b)];
   }
@@ -163,7 +167,10 @@ export function generateInverseSquareKernel(radius: number): Float32Array {
  * Generate kernel with exponential falloff
  * weight = exp(-|x|^exponent / σ)
  */
-function generateExponentialKernel(radius: number, exponent: number): Float32Array {
+function generateExponentialKernel(
+  radius: number,
+  exponent: number,
+): Float32Array {
   const size = Math.ceil(radius) * 2 + 1;
   const kernel = new Float32Array(size);
   const center = Math.floor(size / 2);
@@ -172,7 +179,7 @@ function generateExponentialKernel(radius: number, exponent: number): Float32Arr
   let sum = 0;
   for (let i = 0; i < size; i++) {
     const x = Math.abs(i - center);
-    const weight = Math.exp(-Math.pow(x, exponent) / (sigma * sigma));
+    const weight = Math.exp(-(x ** exponent) / (sigma * sigma));
     kernel[i] = weight;
     sum += weight;
   }
@@ -220,7 +227,7 @@ function applyBlur1D(
   height: number,
   kernel: Float32Array,
   horizontal: boolean,
-  channel: number // 0=R, 1=G, 2=B, 3=A
+  channel: number, // 0=R, 1=G, 2=B, 3=A
 ): void {
   const kernelSize = kernel.length;
   const kernelHalf = Math.floor(kernelSize / 2);
@@ -260,8 +267,8 @@ function applyBloomBlur(
   radiusR: number,
   radiusG: number,
   radiusB: number,
-  falloffMode: 'gaussian' | 'inverse_square' | 'exponential',
-  falloffExponent: number
+  falloffMode: "gaussian" | "inverse_square" | "exponential",
+  falloffExponent: number,
 ): Float32Array {
   const result = new Float32Array(imageData.length);
   const temp = new Float32Array(imageData.length);
@@ -279,13 +286,12 @@ function applyBloomBlur(
     // Generate kernel based on falloff mode
     let kernel: Float32Array;
     switch (falloffMode) {
-      case 'inverse_square':
+      case "inverse_square":
         kernel = generateInverseSquareKernel(radius);
         break;
-      case 'exponential':
+      case "exponential":
         kernel = generateExponentialKernel(radius, falloffExponent);
         break;
-      case 'gaussian':
       default:
         kernel = generateGaussianKernel(radius);
         break;
@@ -316,18 +322,18 @@ function applyBloomBlur(
 function extractBrightAreas(
   imageData: ImageData,
   threshold: number,
-  exposure: number
+  exposure: number,
 ): Float32Array {
   const { data, width, height } = imageData;
   const result = new Float32Array(width * height * 4);
 
-  const exposureMult = Math.pow(2, exposure);
+  const exposureMult = 2 ** exposure;
 
   for (let i = 0; i < data.length; i += 4) {
     // Convert to linear space (approximate gamma 2.2)
-    let r = Math.pow(data[i] / 255, 2.2) * exposureMult;
-    let g = Math.pow(data[i + 1] / 255, 2.2) * exposureMult;
-    let b = Math.pow(data[i + 2] / 255, 2.2) * exposureMult;
+    const r = (data[i] / 255) ** 2.2 * exposureMult;
+    const g = (data[i + 1] / 255) ** 2.2 * exposureMult;
+    const b = (data[i + 2] / 255) ** 2.2 * exposureMult;
     const a = data[i + 3] / 255;
 
     // Calculate luminance
@@ -336,8 +342,13 @@ function extractBrightAreas(
     // Soft knee threshold (smoother transition)
     const knee = 0.1;
     const soft = luminance - threshold + knee;
-    const contribution = Math.max(0, soft * soft / (4 * knee));
-    const factor = luminance > threshold ? 1 : (threshold - knee < luminance ? contribution / luminance : 0);
+    const contribution = Math.max(0, (soft * soft) / (4 * knee));
+    const factor =
+      luminance > threshold
+        ? 1
+        : threshold - knee < luminance
+          ? contribution / luminance
+          : 0;
 
     result[i] = r * factor;
     result[i + 1] = g * factor;
@@ -357,7 +368,7 @@ function extractBrightAreas(
  */
 export function applyChromaticAberration(
   imageData: ImageData,
-  amount: number
+  amount: number,
 ): ImageData {
   if (amount <= 0) return imageData;
 
@@ -383,11 +394,11 @@ export function applyChromaticAberration(
       const offset = amount * normalizedDist;
 
       // Red channel - offset outward
-      const rxR = Math.round(x + dx * offset / dist);
-      const ryR = Math.round(y + dy * offset / dist);
+      const rxR = Math.round(x + (dx * offset) / dist);
+      const ryR = Math.round(y + (dy * offset) / dist);
       // Blue channel - offset inward
-      const rxB = Math.round(x - dx * offset / dist);
-      const ryB = Math.round(y - dy * offset / dist);
+      const rxB = Math.round(x - (dx * offset) / dist);
+      const ryB = Math.round(y - (dy * offset) / dist);
 
       // Clamp coordinates
       const clampX = (v: number) => Math.max(0, Math.min(width - 1, v));
@@ -397,10 +408,10 @@ export function applyChromaticAberration(
       const idxR = (clampY(ryR) * width + clampX(rxR)) * 4;
       const idxB = (clampY(ryB) * width + clampX(rxB)) * 4;
 
-      dst[idx] = data[idxR];         // Red from outer
-      dst[idx + 1] = data[idx + 1];  // Green stays centered
+      dst[idx] = data[idxR]; // Red from outer
+      dst[idx + 1] = data[idx + 1]; // Green stays centered
       dst[idx + 2] = data[idxB + 2]; // Blue from inner
-      dst[idx + 3] = data[idx + 3];  // Alpha unchanged
+      dst[idx + 3] = data[idx + 3]; // Alpha unchanged
     }
   }
 
@@ -419,7 +430,7 @@ export function generateLensDirt(
   width: number,
   height: number,
   scale: number,
-  seed: number = 12345
+  seed: number = 12345,
 ): Float32Array {
   const result = new Float32Array(width * height);
 
@@ -488,7 +499,9 @@ export function generateLensDirt(
         const rx2 = dx * cosA + dy * sinA;
         const ry2 = -dx * sinA + dy * cosA;
         // Ellipse distance
-        const dist = Math.sqrt((rx2 * rx2) / (rx * rx) + (ry2 * ry2) / (ry * ry));
+        const dist = Math.sqrt(
+          (rx2 * rx2) / (rx * rx) + (ry2 * ry2) / (ry * ry),
+        );
         if (dist < 1) {
           const falloff = 1 - dist;
           const idx = y * width + x;
@@ -509,7 +522,7 @@ function applyLensDirt(
   dirt: Float32Array,
   width: number,
   height: number,
-  intensity: number
+  intensity: number,
 ): void {
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
@@ -517,9 +530,9 @@ function applyLensDirt(
       const bloomIdx = dirtIdx * 4;
       const dirtValue = dirt[dirtIdx] * intensity;
 
-      bloom[bloomIdx] *= (1 + dirtValue);
-      bloom[bloomIdx + 1] *= (1 + dirtValue);
-      bloom[bloomIdx + 2] *= (1 + dirtValue);
+      bloom[bloomIdx] *= 1 + dirtValue;
+      bloom[bloomIdx + 1] *= 1 + dirtValue;
+      bloom[bloomIdx + 2] *= 1 + dirtValue;
     }
   }
 }
@@ -539,9 +552,7 @@ function blendScreen(base: number, blend: number): number {
  * Overlay blend: combines multiply and screen
  */
 function blendOverlay(base: number, blend: number): number {
-  return base < 0.5
-    ? 2 * base * blend
-    : 1 - 2 * (1 - base) * (1 - blend);
+  return base < 0.5 ? 2 * base * blend : 1 - 2 * (1 - base) * (1 - blend);
 }
 
 /**
@@ -551,9 +562,8 @@ function blendSoftLight(base: number, blend: number): number {
   if (blend <= 0.5) {
     return base - (1 - 2 * blend) * base * (1 - base);
   } else {
-    const d = base <= 0.25
-      ? ((16 * base - 12) * base + 4) * base
-      : Math.sqrt(base);
+    const d =
+      base <= 0.25 ? ((16 * base - 12) * base + 4) * base : Math.sqrt(base);
     return base + (2 * blend - 1) * (d - base);
   }
 }
@@ -566,7 +576,7 @@ function blendBloom(
   bloom: Float32Array,
   intensity: number,
   mode: BloomBlendMode,
-  tonemap: TonemapOperator
+  tonemap: TonemapOperator,
 ): ImageData {
   const { width, height, data } = original;
   const result = new ImageData(width, height);
@@ -574,9 +584,9 @@ function blendBloom(
 
   for (let i = 0; i < data.length; i += 4) {
     // Original in linear space
-    const origR = Math.pow(data[i] / 255, 2.2);
-    const origG = Math.pow(data[i + 1] / 255, 2.2);
-    const origB = Math.pow(data[i + 2] / 255, 2.2);
+    const origR = (data[i] / 255) ** 2.2;
+    const origG = (data[i + 1] / 255) ** 2.2;
+    const origB = (data[i + 2] / 255) ** 2.2;
 
     // Bloom contribution (already in linear space)
     const bloomR = bloom[i] * intensity;
@@ -586,22 +596,21 @@ function blendBloom(
     let finalR: number, finalG: number, finalB: number;
 
     switch (mode) {
-      case 'screen':
+      case "screen":
         finalR = blendScreen(origR, bloomR);
         finalG = blendScreen(origG, bloomG);
         finalB = blendScreen(origB, bloomB);
         break;
-      case 'overlay':
+      case "overlay":
         finalR = blendOverlay(origR, bloomR);
         finalG = blendOverlay(origG, bloomG);
         finalB = blendOverlay(origB, bloomB);
         break;
-      case 'soft_light':
+      case "soft_light":
         finalR = blendSoftLight(origR, bloomR);
         finalG = blendSoftLight(origG, bloomG);
         finalB = blendSoftLight(origB, bloomB);
         break;
-      case 'add':
       default:
         finalR = origR + bloomR;
         finalG = origG + bloomG;
@@ -613,9 +622,13 @@ function blendBloom(
     [finalR, finalG, finalB] = applyTonemap(finalR, finalG, finalB, tonemap);
 
     // Convert back to sRGB
-    dst[i] = Math.round(Math.pow(Math.max(0, Math.min(1, finalR)), 1 / 2.2) * 255);
-    dst[i + 1] = Math.round(Math.pow(Math.max(0, Math.min(1, finalG)), 1 / 2.2) * 255);
-    dst[i + 2] = Math.round(Math.pow(Math.max(0, Math.min(1, finalB)), 1 / 2.2) * 255);
+    dst[i] = Math.round(Math.max(0, Math.min(1, finalR)) ** (1 / 2.2) * 255);
+    dst[i + 1] = Math.round(
+      Math.max(0, Math.min(1, finalG)) ** (1 / 2.2) * 255,
+    );
+    dst[i + 2] = Math.round(
+      Math.max(0, Math.min(1, finalB)) ** (1 / 2.2) * 255,
+    );
     dst[i + 3] = data[i + 3];
   }
 
@@ -654,24 +667,36 @@ let cachedLensDirtScale = 0;
  */
 export function cinematicBloomRenderer(
   input: EffectStackResult,
-  params: EvaluatedEffectParams
+  params: EvaluatedEffectParams,
 ): EffectStackResult {
   // Extract parameters with defaults
   const intensity = Math.max(0, Math.min(10, params.intensity ?? 1.0));
   const threshold = Math.max(0, Math.min(1, params.threshold ?? 0.8));
   const radius = Math.max(0, Math.min(200, params.radius ?? 50));
-  const falloffMode = (params.falloff_mode ?? 'inverse_square') as 'gaussian' | 'inverse_square' | 'exponential';
-  const falloffExponent = Math.max(1, Math.min(4, params.falloff_exponent ?? 2));
+  const falloffMode = (params.falloff_mode ?? "inverse_square") as
+    | "gaussian"
+    | "inverse_square"
+    | "exponential";
+  const falloffExponent = Math.max(
+    1,
+    Math.min(4, params.falloff_exponent ?? 2),
+  );
   const radiusR = Math.max(0, Math.min(2, params.radius_r ?? 1.0)) * radius;
   const radiusG = Math.max(0, Math.min(2, params.radius_g ?? 1.0)) * radius;
   const radiusB = Math.max(0, Math.min(2, params.radius_b ?? 1.0)) * radius;
-  const tonemap = (params.tonemap ?? 'aces') as TonemapOperator;
+  const tonemap = (params.tonemap ?? "aces") as TonemapOperator;
   const exposure = Math.max(-5, Math.min(5, params.exposure ?? 0));
-  const chromaticAberration = Math.max(0, Math.min(20, params.chromatic_aberration ?? 0));
+  const chromaticAberration = Math.max(
+    0,
+    Math.min(20, params.chromatic_aberration ?? 0),
+  );
   const lensDirtEnabled = params.lens_dirt_enabled ?? false;
-  const lensDirtIntensity = Math.max(0, Math.min(1, params.lens_dirt_intensity ?? 0.5));
+  const lensDirtIntensity = Math.max(
+    0,
+    Math.min(1, params.lens_dirt_intensity ?? 0.5),
+  );
   const lensDirtScale = Math.max(0.5, Math.min(2, params.lens_dirt_scale ?? 1));
-  const blendMode = (params.blend_mode ?? 'add') as BloomBlendMode;
+  const blendMode = (params.blend_mode ?? "add") as BloomBlendMode;
 
   // Skip if intensity is zero
   if (intensity <= 0 || radius <= 0) {
@@ -684,7 +709,7 @@ export function cinematicBloomRenderer(
   // Use _sourceCanvas if provided (for additive stacking), otherwise use input
   // This ensures stacked blooms extract from original layer, not from previous bloom output
   const sourceCanvas = params._sourceCanvas as HTMLCanvasElement | undefined;
-  const sourceCtx = sourceCanvas?.getContext('2d');
+  const sourceCtx = sourceCanvas?.getContext("2d");
   let originalData = sourceCtx
     ? sourceCtx.getImageData(0, 0, width, height)
     : input.ctx.getImageData(0, 0, width, height);
@@ -706,16 +731,18 @@ export function cinematicBloomRenderer(
     radiusG,
     radiusB,
     falloffMode,
-    falloffExponent
+    falloffExponent,
   );
 
   // Apply lens dirt if enabled
   if (lensDirtEnabled) {
     // Generate or use cached lens dirt
-    if (!cachedLensDirt ||
-        cachedLensDirtWidth !== width ||
-        cachedLensDirtHeight !== height ||
-        cachedLensDirtScale !== lensDirtScale) {
+    if (
+      !cachedLensDirt ||
+      cachedLensDirtWidth !== width ||
+      cachedLensDirtHeight !== height ||
+      cachedLensDirtScale !== lensDirtScale
+    ) {
       cachedLensDirt = generateLensDirt(width, height, lensDirtScale);
       cachedLensDirtWidth = width;
       cachedLensDirtHeight = height;
@@ -725,7 +752,13 @@ export function cinematicBloomRenderer(
   }
 
   // Blend bloom with original
-  const result = blendBloom(originalData, blurred, intensity, blendMode, tonemap);
+  const result = blendBloom(
+    originalData,
+    blurred,
+    intensity,
+    blendMode,
+    tonemap,
+  );
 
   // Output
   const output = createMatchingCanvas(input.canvas);
@@ -749,7 +782,7 @@ export function cinematicBloomRenderer(
  */
 export function glowRenderer(
   input: EffectStackResult,
-  params: EvaluatedEffectParams
+  params: EvaluatedEffectParams,
 ): EffectStackResult {
   const threshold = (params.glow_threshold ?? 50) / 100;
   const radius = params.glow_radius ?? 25;
@@ -765,18 +798,18 @@ export function glowRenderer(
     intensity,
     threshold,
     radius,
-    falloff_mode: 'gaussian',
+    falloff_mode: "gaussian",
     falloff_exponent: 2,
     radius_r: 1,
     radius_g: 1,
     radius_b: 1,
-    tonemap: 'none',
+    tonemap: "none",
     exposure: 0,
     chromatic_aberration: 0,
     lens_dirt_enabled: false,
     lens_dirt_intensity: 0,
     lens_dirt_scale: 1,
-    blend_mode: 'add',
+    blend_mode: "add",
     _sourceCanvas: params._sourceCanvas,
   });
 }
@@ -789,8 +822,8 @@ export function glowRenderer(
  * Register cinematic bloom effect renderers
  */
 export function registerCinematicBloomEffects(): void {
-  registerEffectRenderer('cinematic-bloom', cinematicBloomRenderer);
-  registerEffectRenderer('glow', glowRenderer);
+  registerEffectRenderer("cinematic-bloom", cinematicBloomRenderer);
+  registerEffectRenderer("glow", glowRenderer);
 }
 
 export default {
@@ -804,5 +837,5 @@ export default {
   generateInverseSquareKernel,
   generateGaussianKernel,
   generateLensDirt,
-  applyChromaticAberration
+  applyChromaticAberration,
 };

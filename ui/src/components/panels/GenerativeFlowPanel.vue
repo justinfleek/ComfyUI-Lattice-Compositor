@@ -153,75 +153,79 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
+import { computed, onMounted, ref, watch } from "vue";
+import { getAllDataAssets } from "@/services/dataImport";
 import {
-  FLOW_PRESETS,
-  generateFromPreset,
-  generateSpiralFlow,
-  generateWaveFlow,
-  generateExplosionFlow,
-  generateVortexFlow,
-  generateDataRiverFlow,
-  generateMorphFlow,
-  generateSwarmFlow,
-  generateDataDrivenFlow,
   exportAsJSON,
   exportAsNPYData,
-  type WanMoveTrajectory,
+  FLOW_PRESETS,
   type GenerativeFlowConfig,
-} from '@/services/export/wanMoveExport';
-import { getAllDataAssets } from '@/services/dataImport';
+  generateDataRiverFlow,
+  generateExplosionFlow,
+  generateFromPreset,
+  generateMorphFlow,
+  generateSpiralFlow,
+  generateSwarmFlow,
+  generateVortexFlow,
+  generateWaveFlow,
+  type WanMoveTrajectory,
+} from "@/services/export/wanMoveExport";
+import { useCompositorStore } from "@/stores/compositorStore";
 
-const store = useCompositorStore();
+const _store = useCompositorStore();
 
 // State
-const selectedPreset = ref<string>('neural-flow');
-const patternType = ref<GenerativeFlowConfig['pattern']>('spiral');
+const selectedPreset = ref<string>("neural-flow");
+const patternType = ref<GenerativeFlowConfig["pattern"]>("spiral");
 const numPoints = ref(200);
 const numFrames = ref(81); // 5 seconds @ 16fps
 const width = ref(832);
 const height = ref(480);
 const seed = ref(42);
-const useDataDriven = ref(false);
-const selectedDataAsset = ref('');
-const dataMapping = ref<'speed' | 'amplitude' | 'phase' | 'direction'>('speed');
+const _useDataDriven = ref(false);
+const selectedDataAsset = ref("");
+const _dataMapping = ref<"speed" | "amplitude" | "phase" | "direction">(
+  "speed",
+);
 const isGenerating = ref(false);
 const generatedTrajectory = ref<WanMoveTrajectory | null>(null);
-const statusMessage = ref('');
-const statusType = ref<'success' | 'error' | 'info'>('info');
+const statusMessage = ref("");
+const statusType = ref<"success" | "error" | "info">("info");
 const previewCanvas = ref<HTMLCanvasElement | null>(null);
 
 // Computed
 const dataAssets = computed(() => getAllDataAssets());
-const hasDataAssets = computed(() => dataAssets.value.length > 0);
+const _hasDataAssets = computed(() => dataAssets.value.length > 0);
 
 // Methods
-function formatPresetName(name: string): string {
+function _formatPresetName(name: string): string {
   return name
-    .split('-')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
+    .split("-")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 }
 
-function setResolution(w: number, h: number) {
+function _setResolution(w: number, h: number) {
   width.value = w;
   height.value = h;
 }
 
-function randomizeSeed() {
+function _randomizeSeed() {
   seed.value = Math.floor(Math.random() * 1000000);
 }
 
 function generateTrajectory(): WanMoveTrajectory {
-  if (selectedPreset.value !== 'custom' && selectedPreset.value in FLOW_PRESETS) {
+  if (
+    selectedPreset.value !== "custom" &&
+    selectedPreset.value in FLOW_PRESETS
+  ) {
     return generateFromPreset(
       selectedPreset.value as keyof typeof FLOW_PRESETS,
       numPoints.value,
       numFrames.value,
       width.value,
       height.value,
-      seed.value
+      seed.value,
     );
   }
 
@@ -231,24 +235,32 @@ function generateTrajectory(): WanMoveTrajectory {
     numFrames: numFrames.value,
     width: width.value,
     height: height.value,
-    params: { seed: seed.value }
+    params: { seed: seed.value },
   };
 
   switch (patternType.value) {
-    case 'spiral': return generateSpiralFlow(config);
-    case 'wave': return generateWaveFlow(config);
-    case 'explosion': return generateExplosionFlow(config);
-    case 'vortex': return generateVortexFlow(config);
-    case 'data-river': return generateDataRiverFlow(config);
-    case 'morph': return generateMorphFlow(config);
-    case 'swarm': return generateSwarmFlow(config);
-    default: return generateSpiralFlow(config);
+    case "spiral":
+      return generateSpiralFlow(config);
+    case "wave":
+      return generateWaveFlow(config);
+    case "explosion":
+      return generateExplosionFlow(config);
+    case "vortex":
+      return generateVortexFlow(config);
+    case "data-river":
+      return generateDataRiverFlow(config);
+    case "morph":
+      return generateMorphFlow(config);
+    case "swarm":
+      return generateSwarmFlow(config);
+    default:
+      return generateSpiralFlow(config);
   }
 }
 
-async function generatePreview() {
+async function _generatePreview() {
   isGenerating.value = true;
-  statusMessage.value = '';
+  statusMessage.value = "";
 
   try {
     // Generate trajectory
@@ -258,10 +270,10 @@ async function generatePreview() {
     drawPreview();
 
     statusMessage.value = `Generated ${generatedTrajectory.value.metadata.numPoints} trajectories`;
-    statusType.value = 'success';
+    statusType.value = "success";
   } catch (error) {
-    statusMessage.value = `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
-    statusType.value = 'error';
+    statusMessage.value = `Error: ${error instanceof Error ? error.message : "Unknown error"}`;
+    statusType.value = "error";
   } finally {
     isGenerating.value = false;
   }
@@ -271,7 +283,7 @@ function drawPreview() {
   const canvas = previewCanvas.value;
   if (!canvas || !generatedTrajectory.value) return;
 
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext("2d");
   if (!ctx) return;
 
   const { tracks, metadata } = generatedTrajectory.value;
@@ -279,7 +291,7 @@ function drawPreview() {
   const scaleY = canvas.height / metadata.height;
 
   // Clear
-  ctx.fillStyle = '#0a0a0a';
+  ctx.fillStyle = "#0a0a0a";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   // Draw trajectories
@@ -312,22 +324,22 @@ function drawPreview() {
   }
 
   // Draw frame info
-  ctx.fillStyle = 'rgba(255,255,255,0.5)';
-  ctx.font = '10px monospace';
+  ctx.fillStyle = "rgba(255,255,255,0.5)";
+  ctx.font = "10px monospace";
   ctx.fillText(`${tracks.length} pts × ${metadata.numFrames} frames`, 5, 12);
 }
 
-function exportJSON() {
+function _exportJSON() {
   if (!generatedTrajectory.value) return;
 
   const json = exportAsJSON(generatedTrajectory.value);
-  downloadFile(json, 'trajectory.json', 'application/json');
+  downloadFile(json, "trajectory.json", "application/json");
 
-  statusMessage.value = 'Exported trajectory.json';
-  statusType.value = 'success';
+  statusMessage.value = "Exported trajectory.json";
+  statusType.value = "success";
 }
 
-function exportForWanMove() {
+function _exportForWanMove() {
   if (!generatedTrajectory.value) return;
 
   const npyData = exportAsNPYData(generatedTrajectory.value);
@@ -338,23 +350,24 @@ function exportForWanMove() {
     visibility: Array.from(npyData.visibility),
     shape: npyData.shape,
     metadata: generatedTrajectory.value.metadata,
-    _note: 'Use numpy.array(tracks).reshape(shape.tracks) in Python'
+    _note: "Use numpy.array(tracks).reshape(shape.tracks) in Python",
   };
 
   downloadFile(
     JSON.stringify(exportData, null, 2),
-    'wan_move_trajectory.json',
-    'application/json'
+    "wan_move_trajectory.json",
+    "application/json",
   );
 
-  statusMessage.value = 'Exported wan_move_trajectory.json - reshape in Python for .npy';
-  statusType.value = 'success';
+  statusMessage.value =
+    "Exported wan_move_trajectory.json - reshape in Python for .npy";
+  statusType.value = "success";
 }
 
 function downloadFile(content: string, filename: string, mimeType: string) {
   const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
+  const a = document.createElement("a");
   a.href = url;
   a.download = filename;
   a.click();
@@ -363,7 +376,7 @@ function downloadFile(content: string, filename: string, mimeType: string) {
 
 // Watch for preset changes
 watch(selectedPreset, (newPreset) => {
-  if (newPreset !== 'custom' && newPreset in FLOW_PRESETS) {
+  if (newPreset !== "custom" && newPreset in FLOW_PRESETS) {
     const preset = FLOW_PRESETS[newPreset as keyof typeof FLOW_PRESETS];
     patternType.value = preset.pattern;
   }

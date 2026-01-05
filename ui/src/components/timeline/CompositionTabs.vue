@@ -93,23 +93,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import type { Composition } from '@/types/project';
+import { computed, nextTick, onMounted, onUnmounted, ref } from "vue";
+import { useCompositorStore } from "@/stores/compositorStore";
+import type { Composition } from "@/types/project";
 
 const emit = defineEmits<{
-  (e: 'newComposition'): void;
-  (e: 'openCompositionSettings'): void;
+  (e: "newComposition"): void;
+  (e: "openCompositionSettings"): void;
 }>();
 
 const store = useCompositorStore();
 
 // Computed from store
-const breadcrumbPath = computed(() => store.breadcrumbPath);
+const _breadcrumbPath = computed(() => store.breadcrumbPath);
 
 // State
 const editingId = ref<string | null>(null);
-const editingName = ref('');
+const editingName = ref("");
 const renameInput = ref<HTMLInputElement | null>(null);
 
 const contextMenu = ref<{
@@ -121,33 +121,33 @@ const contextMenu = ref<{
   visible: false,
   x: 0,
   y: 0,
-  comp: null
+  comp: null,
 });
 
 // Computed
-const openCompositions = computed(() => store.openCompositions);
+const _openCompositions = computed(() => store.openCompositions);
 const activeCompositionId = computed(() => store.activeCompositionId);
 const mainCompositionId = computed(() => store.project.mainCompositionId);
 
 // Methods
-function switchToComposition(compId: string) {
+function _switchToComposition(compId: string) {
   store.switchComposition(compId);
 }
 
-function closeTab(compId: string) {
+function _closeTab(compId: string) {
   store.closeCompositionTab(compId);
 }
 
 // Breadcrumb navigation
-function navigateToBreadcrumb(idx: number) {
+function _navigateToBreadcrumb(idx: number) {
   store.navigateToBreadcrumb(idx);
 }
 
-function navigateBack() {
+function _navigateBack() {
   store.navigateBack();
 }
 
-function formatCompInfo(comp: Composition): string {
+function _formatCompInfo(comp: Composition): string {
   const s = comp.settings;
   return `${s.width}x${s.height} ${s.fps}fps`;
 }
@@ -161,25 +161,25 @@ function startRename(comp: Composition) {
   });
 }
 
-function finishRename() {
+function _finishRename() {
   if (editingId.value && editingName.value.trim()) {
     store.renameComposition(editingId.value, editingName.value.trim());
   }
   editingId.value = null;
-  editingName.value = '';
+  editingName.value = "";
 }
 
-function cancelRename() {
+function _cancelRename() {
   editingId.value = null;
-  editingName.value = '';
+  editingName.value = "";
 }
 
-function showContextMenu(event: MouseEvent, comp: Composition) {
+function _showContextMenu(event: MouseEvent, comp: Composition) {
   contextMenu.value = {
     visible: true,
     x: event.clientX,
     y: event.clientY,
-    comp
+    comp,
   };
 }
 
@@ -188,29 +188,32 @@ function hideContextMenu() {
   contextMenu.value.comp = null;
 }
 
-function openCompSettings() {
+function _openCompSettings() {
   // Switch to the composition first if not active
-  if (contextMenu.value.comp && contextMenu.value.comp.id !== activeCompositionId.value) {
+  if (
+    contextMenu.value.comp &&
+    contextMenu.value.comp.id !== activeCompositionId.value
+  ) {
     store.switchComposition(contextMenu.value.comp.id);
   }
-  emit('openCompositionSettings');
+  emit("openCompositionSettings");
   hideContextMenu();
 }
 
-function renameFromMenu() {
+function _renameFromMenu() {
   if (contextMenu.value.comp) {
     startRename(contextMenu.value.comp);
   }
   hideContextMenu();
 }
 
-function duplicateComposition() {
+function _duplicateComposition() {
   if (contextMenu.value.comp) {
     const original = contextMenu.value.comp;
     const newComp = store.createComposition(
       `${original.name} Copy`,
       original.settings,
-      original.isNestedComp
+      original.isNestedComp,
     );
 
     // Deep clone and copy layers with new IDs
@@ -236,28 +239,40 @@ function duplicateComposition() {
       newComp.layers.push(clonedLayer);
     }
 
-    console.log('[CompositionTabs] Duplicated:', newComp.name, 'with', newComp.layers.length, 'layers');
+    console.log(
+      "[CompositionTabs] Duplicated:",
+      newComp.name,
+      "with",
+      newComp.layers.length,
+      "layers",
+    );
   }
   hideContextMenu();
 }
 
-function openInNewTab() {
+function _openInNewTab() {
   if (contextMenu.value.comp) {
     store.switchComposition(contextMenu.value.comp.id);
   }
   hideContextMenu();
 }
 
-function setAsMainComp() {
+function _setAsMainComp() {
   if (contextMenu.value.comp) {
     store.project.mainCompositionId = contextMenu.value.comp.id;
-    console.log('[CompositionTabs] Set main composition:', contextMenu.value.comp.name);
+    console.log(
+      "[CompositionTabs] Set main composition:",
+      contextMenu.value.comp.name,
+    );
   }
   hideContextMenu();
 }
 
-function deleteComposition() {
-  if (contextMenu.value.comp && contextMenu.value.comp.id !== mainCompositionId.value) {
+function _deleteComposition() {
+  if (
+    contextMenu.value.comp &&
+    contextMenu.value.comp.id !== mainCompositionId.value
+  ) {
     store.deleteComposition(contextMenu.value.comp.id);
   }
   hideContextMenu();
@@ -271,11 +286,11 @@ function handleOutsideClick() {
 }
 
 onMounted(() => {
-  document.addEventListener('click', handleOutsideClick);
+  document.addEventListener("click", handleOutsideClick);
 });
 
 onUnmounted(() => {
-  document.removeEventListener('click', handleOutsideClick);
+  document.removeEventListener("click", handleOutsideClick);
 });
 </script>
 

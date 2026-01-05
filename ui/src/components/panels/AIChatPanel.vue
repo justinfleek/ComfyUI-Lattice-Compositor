@@ -140,39 +140,39 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick, watch } from 'vue';
-import DOMPurify from 'dompurify';
-import { getAIAgent, type AIMessage } from '@/services/ai';
+import DOMPurify from "dompurify";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { type AIMessage, getAIAgent } from "@/services/ai";
 
 // ============================================================================
 // STATE
 // ============================================================================
 
-const selectedModel = ref<'gpt-4o' | 'claude-sonnet'>('gpt-4o');
-const inputText = ref('');
+const selectedModel = ref<"gpt-4o" | "claude-sonnet">("gpt-4o");
+const inputText = ref("");
 const messages = ref<AIMessage[]>([]);
 const isProcessing = ref(false);
-const processingText = ref('Thinking...');
+const processingText = ref("Thinking...");
 const messagesContainer = ref<HTMLElement | null>(null);
 const apiConnected = ref(false);
 const apiError = ref(false);
 
-const examplePrompts = [
-  'Fade in a title over 1 second',
-  'Create floating particles that drift upward',
-  'Make the selected layer bounce in from the left',
-  'Add a glow effect to all text layers',
+const _examplePrompts = [
+  "Fade in a title over 1 second",
+  "Create floating particles that drift upward",
+  "Make the selected layer bounce in from the left",
+  "Add a glow effect to all text layers",
 ];
 
 // ============================================================================
 // COMPUTED
 // ============================================================================
 
-const statusText = computed(() => {
+const _statusText = computed(() => {
   if (isProcessing.value) return `Processing with ${selectedModel.value}...`;
-  if (apiError.value) return 'API not configured';
+  if (apiError.value) return "API not configured";
   if (apiConnected.value) return `Ready (${selectedModel.value})`;
-  return 'Checking API status...';
+  return "Checking API status...";
 });
 
 // ============================================================================
@@ -181,10 +181,10 @@ const statusText = computed(() => {
 
 async function checkApiStatus() {
   try {
-    const response = await fetch('/lattice/api/status');
+    const response = await fetch("/lattice/api/status");
     const data = await response.json();
 
-    if (data.status === 'success') {
+    if (data.status === "success") {
       apiConnected.value = data.providers.openai || data.providers.anthropic;
       apiError.value = !apiConnected.value;
     }
@@ -198,9 +198,9 @@ async function sendMessage() {
   const text = inputText.value.trim();
   if (!text || isProcessing.value) return;
 
-  inputText.value = '';
+  inputText.value = "";
   isProcessing.value = true;
-  processingText.value = 'Thinking...';
+  processingText.value = "Thinking...";
 
   try {
     const agent = getAIAgent();
@@ -209,18 +209,19 @@ async function sendMessage() {
     (agent as any).config.model = selectedModel.value;
 
     // Process instruction
-    const response = await agent.processInstruction(text);
+    const _response = await agent.processInstruction(text);
 
     // Update messages from agent history
     messages.value = agent.getHistory();
 
     scrollToBottom();
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
 
     // Add error message
     messages.value.push({
-      role: 'assistant',
+      role: "assistant",
       content: `Error: ${errorMessage}`,
       timestamp: Date.now(),
     });
@@ -229,56 +230,56 @@ async function sendMessage() {
   }
 }
 
-function clearHistory() {
+function _clearHistory() {
   const agent = getAIAgent();
   agent.clearHistory();
   messages.value = [];
 }
 
-function useExample(example: string) {
+function _useExample(example: string) {
   inputText.value = example;
   sendMessage();
 }
 
-function formatTime(timestamp: number): string {
+function _formatTime(timestamp: number): string {
   const date = new Date(timestamp);
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-function formatContent(content: string): string {
+function _formatContent(content: string): string {
   // Convert markdown-style formatting to HTML
   const formatted = content
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.*?)\*/g, '<em>$1</em>')
-    .replace(/`(.*?)`/g, '<code>$1</code>')
-    .replace(/\n/g, '<br>');
+    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.*?)\*/g, "<em>$1</em>")
+    .replace(/`(.*?)`/g, "<code>$1</code>")
+    .replace(/\n/g, "<br>");
   // Sanitize to prevent XSS attacks
   return DOMPurify.sanitize(formatted);
 }
 
-function formatToolName(name: string): string {
+function _formatToolName(name: string): string {
   // Convert camelCase to Title Case with spaces
   return name
-    .replace(/([A-Z])/g, ' $1')
+    .replace(/([A-Z])/g, " $1")
     .replace(/^./, (str) => str.toUpperCase())
     .trim();
 }
 
-function getToolIcon(name: string): string {
+function _getToolIcon(name: string): string {
   const icons: Record<string, string> = {
-    createLayer: '+',
-    deleteLayer: '-',
-    duplicateLayer: '++',
-    addKeyframe: 'K',
-    removeKeyframe: '-K',
-    addEffect: 'fx',
-    setLayerProperty: '=',
-    setLayerTransform: 'T',
-    configureParticles: 'P',
-    setTextContent: 'A',
-    setSplinePoints: '~',
+    createLayer: "+",
+    deleteLayer: "-",
+    duplicateLayer: "++",
+    addKeyframe: "K",
+    removeKeyframe: "-K",
+    addEffect: "fx",
+    setLayerProperty: "=",
+    setLayerTransform: "T",
+    configureParticles: "P",
+    setTextContent: "A",
+    setSplinePoints: "~",
   };
-  return icons[name] || '*';
+  return icons[name] || "*";
 }
 
 function scrollToBottom() {

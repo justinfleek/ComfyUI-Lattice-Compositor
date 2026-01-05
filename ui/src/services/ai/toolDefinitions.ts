@@ -23,12 +23,12 @@ export interface ToolResult {
 }
 
 export interface ToolDefinition {
-  type: 'function';
+  type: "function";
   function: {
     name: string;
     description: string;
     parameters: {
-      type: 'object';
+      type: "object";
       properties: Record<string, any>;
       required?: string[];
     };
@@ -44,146 +44,158 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   // LAYER MANAGEMENT
   // ==========================================================================
   {
-    type: 'function',
+    type: "function",
     function: {
-      name: 'createLayer',
-      description: 'Create a new layer in the composition. Returns the new layer ID.',
+      name: "createLayer",
+      description:
+        "Create a new layer in the composition. Returns the new layer ID.",
       parameters: {
-        type: 'object',
+        type: "object",
         properties: {
           type: {
-            type: 'string',
-            enum: ['solid', 'text', 'shape', 'spline', 'particles', 'image', 'camera', 'control', 'nested'],
-            description: 'The type of layer to create',
+            type: "string",
+            enum: [
+              "solid",
+              "text",
+              "shape",
+              "spline",
+              "particles",
+              "image",
+              "camera",
+              "control",
+              "nested",
+            ],
+            description: "The type of layer to create",
           },
           name: {
-            type: 'string',
-            description: 'Display name for the layer',
+            type: "string",
+            description: "Display name for the layer",
           },
           properties: {
-            type: 'object',
-            description: 'Initial properties for the layer (type-specific)',
+            type: "object",
+            description: "Initial properties for the layer (type-specific)",
           },
           position: {
-            type: 'object',
+            type: "object",
             properties: {
-              x: { type: 'number' },
-              y: { type: 'number' },
+              x: { type: "number" },
+              y: { type: "number" },
             },
-            description: 'Initial position',
+            description: "Initial position",
           },
           inPoint: {
-            type: 'number',
-            description: 'Frame where layer appears (default: 0)',
+            type: "number",
+            description: "Frame where layer appears (default: 0)",
           },
           outPoint: {
-            type: 'number',
-            description: 'Frame where layer disappears (default: composition duration)',
+            type: "number",
+            description:
+              "Frame where layer disappears (default: composition duration)",
           },
         },
-        required: ['type'],
+        required: ["type"],
       },
     },
   },
   {
-    type: 'function',
+    type: "function",
     function: {
-      name: 'deleteLayer',
-      description: 'Delete a layer from the composition',
+      name: "deleteLayer",
+      description: "Delete a layer from the composition",
       parameters: {
-        type: 'object',
+        type: "object",
         properties: {
           layerId: {
-            type: 'string',
-            description: 'ID of the layer to delete',
+            type: "string",
+            description: "ID of the layer to delete",
           },
         },
-        required: ['layerId'],
+        required: ["layerId"],
       },
     },
   },
   {
-    type: 'function',
+    type: "function",
     function: {
-      name: 'duplicateLayer',
-      description: 'Create a copy of an existing layer',
+      name: "duplicateLayer",
+      description: "Create a copy of an existing layer",
       parameters: {
-        type: 'object',
+        type: "object",
         properties: {
           layerId: {
-            type: 'string',
-            description: 'ID of the layer to duplicate',
+            type: "string",
+            description: "ID of the layer to duplicate",
           },
           newName: {
-            type: 'string',
-            description: 'Name for the duplicated layer',
+            type: "string",
+            description: "Name for the duplicated layer",
           },
         },
-        required: ['layerId'],
+        required: ["layerId"],
       },
     },
   },
   {
-    type: 'function',
+    type: "function",
     function: {
-      name: 'renameLayer',
-      description: 'Change the display name of a layer',
+      name: "renameLayer",
+      description: "Change the display name of a layer",
       parameters: {
-        type: 'object',
+        type: "object",
         properties: {
           layerId: {
-            type: 'string',
-            description: 'ID of the layer to rename',
+            type: "string",
+            description: "ID of the layer to rename",
           },
           name: {
-            type: 'string',
-            description: 'New name for the layer',
+            type: "string",
+            description: "New name for the layer",
           },
         },
-        required: ['layerId', 'name'],
+        required: ["layerId", "name"],
       },
     },
   },
   {
-    type: 'function',
+    type: "function",
     function: {
-      name: 'setLayerParent',
-      description: 'Set a layer\'s parent (for hierarchical transforms)',
+      name: "setLayerParent",
+      description: "Set a layer's parent (for hierarchical transforms)",
       parameters: {
-        type: 'object',
+        type: "object",
         properties: {
           layerId: {
-            type: 'string',
-            description: 'ID of the child layer',
+            type: "string",
+            description: "ID of the child layer",
           },
           parentId: {
-            type: 'string',
-            description: 'ID of the parent layer (null to unparent)',
+            type: "string",
+            description: "ID of the parent layer (null to unparent)",
             nullable: true,
           },
         },
-        required: ['layerId'],
+        required: ["layerId"],
       },
     },
   },
   {
-    type: 'function',
+    type: "function",
     function: {
-      name: 'reorderLayers',
-      description: 'Change the stacking order of layers',
+      name: "reorderLayers",
+      description: "Change the stacking order of layers",
       parameters: {
-        type: 'object',
+        type: "object",
         properties: {
           layerId: {
-            type: 'string',
-            description: 'ID of the layer to move',
+            type: "string",
+            description: "ID of the layer to move",
           },
           newIndex: {
-            type: 'number',
-            description: 'New index in the layer stack (0 = top)',
+            type: "number",
+            description: "New index in the layer stack (0 = top)",
           },
         },
-        required: ['layerId', 'newIndex'],
+        required: ["layerId", "newIndex"],
       },
     },
   },
@@ -192,63 +204,64 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   // PROPERTY MODIFICATION
   // ==========================================================================
   {
-    type: 'function',
+    type: "function",
     function: {
-      name: 'setLayerProperty',
-      description: 'Set a property value on a layer (non-animated)',
+      name: "setLayerProperty",
+      description: "Set a property value on a layer (non-animated)",
       parameters: {
-        type: 'object',
+        type: "object",
         properties: {
           layerId: {
-            type: 'string',
-            description: 'ID of the layer',
+            type: "string",
+            description: "ID of the layer",
           },
           propertyPath: {
-            type: 'string',
-            description: 'Dot-notation path to property (e.g., "position.x", "opacity", "text")',
+            type: "string",
+            description:
+              'Dot-notation path to property (e.g., "position.x", "opacity", "text")',
           },
           value: {
-            description: 'Value to set (type depends on property)',
+            description: "Value to set (type depends on property)",
           },
         },
-        required: ['layerId', 'propertyPath', 'value'],
+        required: ["layerId", "propertyPath", "value"],
       },
     },
   },
   {
-    type: 'function',
+    type: "function",
     function: {
-      name: 'setLayerTransform',
-      description: 'Set multiple transform properties at once',
+      name: "setLayerTransform",
+      description: "Set multiple transform properties at once",
       parameters: {
-        type: 'object',
+        type: "object",
         properties: {
           layerId: {
-            type: 'string',
-            description: 'ID of the layer',
+            type: "string",
+            description: "ID of the layer",
           },
           position: {
-            type: 'object',
-            properties: { x: { type: 'number' }, y: { type: 'number' } },
+            type: "object",
+            properties: { x: { type: "number" }, y: { type: "number" } },
           },
           scale: {
-            type: 'object',
-            properties: { x: { type: 'number' }, y: { type: 'number' } },
+            type: "object",
+            properties: { x: { type: "number" }, y: { type: "number" } },
           },
           rotation: {
-            type: 'number',
-            description: 'Rotation in degrees',
+            type: "number",
+            description: "Rotation in degrees",
           },
           opacity: {
-            type: 'number',
-            description: 'Opacity 0-100',
+            type: "number",
+            description: "Opacity 0-100",
           },
           anchorPoint: {
-            type: 'object',
-            properties: { x: { type: 'number' }, y: { type: 'number' } },
+            type: "object",
+            properties: { x: { type: "number" }, y: { type: "number" } },
           },
         },
-        required: ['layerId'],
+        required: ["layerId"],
       },
     },
   },
@@ -257,117 +270,132 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   // KEYFRAME ANIMATION
   // ==========================================================================
   {
-    type: 'function',
+    type: "function",
     function: {
-      name: 'addKeyframe',
-      description: 'Add a keyframe to animate a property',
+      name: "addKeyframe",
+      description: "Add a keyframe to animate a property",
       parameters: {
-        type: 'object',
+        type: "object",
         properties: {
           layerId: {
-            type: 'string',
-            description: 'ID of the layer',
+            type: "string",
+            description: "ID of the layer",
           },
           propertyPath: {
-            type: 'string',
-            description: 'Property to animate (e.g., "position", "opacity", "scale")',
+            type: "string",
+            description:
+              'Property to animate (e.g., "position", "opacity", "scale")',
           },
           frame: {
-            type: 'number',
-            description: 'Frame number (0-80)',
+            type: "number",
+            description: "Frame number (0-80)",
           },
           value: {
-            description: 'Value at this keyframe',
+            description: "Value at this keyframe",
           },
           interpolation: {
-            type: 'string',
-            enum: ['linear', 'bezier', 'hold', 'easeIn', 'easeOut', 'easeInOut',
-                   'easeInQuad', 'easeOutQuad', 'easeInOutQuad',
-                   'easeInCubic', 'easeOutCubic', 'easeInOutCubic',
-                   'easeInElastic', 'easeOutElastic', 'easeOutBounce'],
-            description: 'Interpolation type (default: linear)',
+            type: "string",
+            enum: [
+              "linear",
+              "bezier",
+              "hold",
+              "easeIn",
+              "easeOut",
+              "easeInOut",
+              "easeInQuad",
+              "easeOutQuad",
+              "easeInOutQuad",
+              "easeInCubic",
+              "easeOutCubic",
+              "easeInOutCubic",
+              "easeInElastic",
+              "easeOutElastic",
+              "easeOutBounce",
+            ],
+            description: "Interpolation type (default: linear)",
           },
         },
-        required: ['layerId', 'propertyPath', 'frame', 'value'],
+        required: ["layerId", "propertyPath", "frame", "value"],
       },
     },
   },
   {
-    type: 'function',
+    type: "function",
     function: {
-      name: 'removeKeyframe',
-      description: 'Remove a keyframe from a property',
+      name: "removeKeyframe",
+      description: "Remove a keyframe from a property",
       parameters: {
-        type: 'object',
+        type: "object",
         properties: {
           layerId: {
-            type: 'string',
-            description: 'ID of the layer',
+            type: "string",
+            description: "ID of the layer",
           },
           propertyPath: {
-            type: 'string',
-            description: 'Property path',
+            type: "string",
+            description: "Property path",
           },
           frame: {
-            type: 'number',
-            description: 'Frame number of keyframe to remove',
+            type: "number",
+            description: "Frame number of keyframe to remove",
           },
         },
-        required: ['layerId', 'propertyPath', 'frame'],
+        required: ["layerId", "propertyPath", "frame"],
       },
     },
   },
   {
-    type: 'function',
+    type: "function",
     function: {
-      name: 'setKeyframeEasing',
-      description: 'Change the interpolation of an existing keyframe',
+      name: "setKeyframeEasing",
+      description: "Change the interpolation of an existing keyframe",
       parameters: {
-        type: 'object',
+        type: "object",
         properties: {
           layerId: {
-            type: 'string',
-            description: 'ID of the layer',
+            type: "string",
+            description: "ID of the layer",
           },
           propertyPath: {
-            type: 'string',
-            description: 'Property path',
+            type: "string",
+            description: "Property path",
           },
           frame: {
-            type: 'number',
-            description: 'Frame number of keyframe',
+            type: "number",
+            description: "Frame number of keyframe",
           },
           interpolation: {
-            type: 'string',
-            description: 'New interpolation type',
+            type: "string",
+            description: "New interpolation type",
           },
         },
-        required: ['layerId', 'propertyPath', 'frame', 'interpolation'],
+        required: ["layerId", "propertyPath", "frame", "interpolation"],
       },
     },
   },
   {
-    type: 'function',
+    type: "function",
     function: {
-      name: 'scaleKeyframeTiming',
-      description: 'Scale all keyframes on a layer to speed up or slow down animation',
+      name: "scaleKeyframeTiming",
+      description:
+        "Scale all keyframes on a layer to speed up or slow down animation",
       parameters: {
-        type: 'object',
+        type: "object",
         properties: {
           layerId: {
-            type: 'string',
-            description: 'ID of the layer',
+            type: "string",
+            description: "ID of the layer",
           },
           scaleFactor: {
-            type: 'number',
-            description: 'Scale factor (0.5 = 2x faster, 2.0 = 2x slower)',
+            type: "number",
+            description: "Scale factor (0.5 = 2x faster, 2.0 = 2x slower)",
           },
           propertyPath: {
-            type: 'string',
-            description: 'Specific property to scale (omit for all properties)',
+            type: "string",
+            description: "Specific property to scale (omit for all properties)",
           },
         },
-        required: ['layerId', 'scaleFactor'],
+        required: ["layerId", "scaleFactor"],
       },
     },
   },
@@ -376,53 +404,60 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   // EXPRESSIONS
   // ==========================================================================
   {
-    type: 'function',
+    type: "function",
     function: {
-      name: 'setExpression',
-      description: 'Apply an expression to a property for dynamic animation',
+      name: "setExpression",
+      description: "Apply an expression to a property for dynamic animation",
       parameters: {
-        type: 'object',
+        type: "object",
         properties: {
           layerId: {
-            type: 'string',
-            description: 'ID of the layer',
+            type: "string",
+            description: "ID of the layer",
           },
           propertyPath: {
-            type: 'string',
-            description: 'Property to apply expression to',
+            type: "string",
+            description: "Property to apply expression to",
           },
           expressionType: {
-            type: 'string',
-            enum: ['jitter', 'repeatAfter', 'repeatBefore', 'inertia', 'bounce', 'elastic'],
-            description: 'Type of expression',
+            type: "string",
+            enum: [
+              "jitter",
+              "repeatAfter",
+              "repeatBefore",
+              "inertia",
+              "bounce",
+              "elastic",
+            ],
+            description: "Type of expression",
           },
           params: {
-            type: 'object',
-            description: 'Expression parameters (varies by type)',
+            type: "object",
+            description: "Expression parameters (varies by type)",
           },
         },
-        required: ['layerId', 'propertyPath', 'expressionType'],
+        required: ["layerId", "propertyPath", "expressionType"],
       },
     },
   },
   {
-    type: 'function',
+    type: "function",
     function: {
-      name: 'removeExpression',
-      description: 'Remove an expression from a property',
+      name: "removeExpression",
+      description: "Remove an expression from a property",
       parameters: {
-        type: 'object',
+        type: "object",
         properties: {
           layerId: {
-            type: 'string',
-            description: 'ID of the layer',
+            type: "string",
+            description: "ID of the layer",
           },
           propertyPath: {
-            type: 'string',
-            description: 'Property to remove expression from',
+            type: "string",
+            description: "Property to remove expression from",
           },
         },
-        required: ['layerId', 'propertyPath'],
+        required: ["layerId", "propertyPath"],
       },
     },
   },
@@ -431,78 +466,93 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   // EFFECTS
   // ==========================================================================
   {
-    type: 'function',
+    type: "function",
     function: {
-      name: 'addEffect',
-      description: 'Add an effect to a layer',
+      name: "addEffect",
+      description: "Add an effect to a layer",
       parameters: {
-        type: 'object',
+        type: "object",
         properties: {
           layerId: {
-            type: 'string',
-            description: 'ID of the layer',
+            type: "string",
+            description: "ID of the layer",
           },
           effectType: {
-            type: 'string',
-            enum: ['gaussianBlur', 'motionBlur', 'radialBlur', 'zoomBlur',
-                   'brightnessContrast', 'hueSaturation', 'colorBalance', 'tint',
-                   'glow', 'dropShadow', 'stroke',
-                   'bulge', 'twirl', 'wave', 'displacement',
-                   'gradient', 'fractalNoise', 'checkerboard'],
-            description: 'Type of effect',
+            type: "string",
+            enum: [
+              "gaussianBlur",
+              "motionBlur",
+              "radialBlur",
+              "zoomBlur",
+              "brightnessContrast",
+              "hueSaturation",
+              "colorBalance",
+              "tint",
+              "glow",
+              "dropShadow",
+              "stroke",
+              "bulge",
+              "twirl",
+              "wave",
+              "displacement",
+              "gradient",
+              "fractalNoise",
+              "checkerboard",
+            ],
+            description: "Type of effect",
           },
           params: {
-            type: 'object',
-            description: 'Effect parameters',
+            type: "object",
+            description: "Effect parameters",
           },
         },
-        required: ['layerId', 'effectType'],
+        required: ["layerId", "effectType"],
       },
     },
   },
   {
-    type: 'function',
+    type: "function",
     function: {
-      name: 'updateEffect',
-      description: 'Update parameters of an existing effect',
+      name: "updateEffect",
+      description: "Update parameters of an existing effect",
       parameters: {
-        type: 'object',
+        type: "object",
         properties: {
           layerId: {
-            type: 'string',
-            description: 'ID of the layer',
+            type: "string",
+            description: "ID of the layer",
           },
           effectId: {
-            type: 'string',
-            description: 'ID of the effect',
+            type: "string",
+            description: "ID of the effect",
           },
           params: {
-            type: 'object',
-            description: 'Parameters to update',
+            type: "object",
+            description: "Parameters to update",
           },
         },
-        required: ['layerId', 'effectId', 'params'],
+        required: ["layerId", "effectId", "params"],
       },
     },
   },
   {
-    type: 'function',
+    type: "function",
     function: {
-      name: 'removeEffect',
-      description: 'Remove an effect from a layer',
+      name: "removeEffect",
+      description: "Remove an effect from a layer",
       parameters: {
-        type: 'object',
+        type: "object",
         properties: {
           layerId: {
-            type: 'string',
-            description: 'ID of the layer',
+            type: "string",
+            description: "ID of the layer",
           },
           effectId: {
-            type: 'string',
-            description: 'ID of the effect to remove',
+            type: "string",
+            description: "ID of the effect to remove",
           },
         },
-        required: ['layerId', 'effectId'],
+        required: ["layerId", "effectId"],
       },
     },
   },
@@ -511,49 +561,109 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   // PARTICLE SYSTEM
   // ==========================================================================
   {
-    type: 'function',
+    type: "function",
     function: {
-      name: 'configureParticles',
-      description: 'Configure a particle layer\'s emission and behavior',
+      name: "configureParticles",
+      description: "Configure a particle layer's emission and behavior",
       parameters: {
-        type: 'object',
+        type: "object",
         properties: {
           layerId: {
-            type: 'string',
-            description: 'ID of the particle layer',
+            type: "string",
+            description: "ID of the particle layer",
           },
           emitter: {
-            type: 'object',
+            type: "object",
             properties: {
-              type: { type: 'string', enum: ['point', 'line', 'box', 'circle', 'path'] },
-              position: { type: 'object', properties: { x: { type: 'number' }, y: { type: 'number' } } },
-              size: { type: 'object', properties: { width: { type: 'number' }, height: { type: 'number' } } },
-              pathReference: { type: 'string' },
+              type: {
+                type: "string",
+                enum: ["point", "line", "box", "circle", "path"],
+              },
+              position: {
+                type: "object",
+                properties: { x: { type: "number" }, y: { type: "number" } },
+              },
+              size: {
+                type: "object",
+                properties: {
+                  width: { type: "number" },
+                  height: { type: "number" },
+                },
+              },
+              pathReference: { type: "string" },
             },
           },
           particles: {
-            type: 'object',
+            type: "object",
             properties: {
-              count: { type: 'number' },
-              lifetime: { type: 'object', properties: { min: { type: 'number' }, max: { type: 'number' } } },
-              speed: { type: 'object', properties: { min: { type: 'number' }, max: { type: 'number' } } },
-              direction: { type: 'object', properties: { min: { type: 'number' }, max: { type: 'number' } } },
-              size: { type: 'object', properties: { start: { type: 'number' }, end: { type: 'number' } } },
-              opacity: { type: 'object', properties: { start: { type: 'number' }, end: { type: 'number' } } },
-              color: { type: 'object' },
-              rotation: { type: 'object', properties: { initial: { type: 'number' }, speed: { type: 'number' } } },
+              count: { type: "number" },
+              lifetime: {
+                type: "object",
+                properties: {
+                  min: { type: "number" },
+                  max: { type: "number" },
+                },
+              },
+              speed: {
+                type: "object",
+                properties: {
+                  min: { type: "number" },
+                  max: { type: "number" },
+                },
+              },
+              direction: {
+                type: "object",
+                properties: {
+                  min: { type: "number" },
+                  max: { type: "number" },
+                },
+              },
+              size: {
+                type: "object",
+                properties: {
+                  start: { type: "number" },
+                  end: { type: "number" },
+                },
+              },
+              opacity: {
+                type: "object",
+                properties: {
+                  start: { type: "number" },
+                  end: { type: "number" },
+                },
+              },
+              color: { type: "object" },
+              rotation: {
+                type: "object",
+                properties: {
+                  initial: { type: "number" },
+                  speed: { type: "number" },
+                },
+              },
             },
           },
           physics: {
-            type: 'object',
+            type: "object",
             properties: {
-              gravity: { type: 'object', properties: { x: { type: 'number' }, y: { type: 'number' } } },
-              wind: { type: 'object', properties: { x: { type: 'number' }, y: { type: 'number' } } },
-              turbulence: { type: 'object', properties: { strength: { type: 'number' }, scale: { type: 'number' } } },
+              gravity: {
+                type: "object",
+                properties: { x: { type: "number" }, y: { type: "number" } },
+              },
+              wind: {
+                type: "object",
+                properties: { x: { type: "number" }, y: { type: "number" } },
+              },
+              turbulence: {
+                type: "object",
+                properties: {
+                  strength: { type: "number" },
+                  scale: { type: "number" },
+                },
+              },
             },
           },
         },
-        required: ['layerId'],
+        required: ["layerId"],
       },
     },
   },
@@ -562,247 +672,279 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   // CAMERA SYSTEM
   // ==========================================================================
   {
-    type: 'function',
+    type: "function",
     function: {
-      name: 'applyCameraTrajectory',
-      description: 'Apply a predefined camera trajectory/motion preset to a camera layer. Creates smooth animated camera movements like orbit, dolly, crane, and more.',
+      name: "applyCameraTrajectory",
+      description:
+        "Apply a predefined camera trajectory/motion preset to a camera layer. Creates smooth animated camera movements like orbit, dolly, crane, and more.",
       parameters: {
-        type: 'object',
+        type: "object",
         properties: {
           cameraLayerId: {
-            type: 'string',
-            description: 'ID of the camera layer to apply trajectory to',
+            type: "string",
+            description: "ID of the camera layer to apply trajectory to",
           },
           trajectoryType: {
-            type: 'string',
+            type: "string",
             enum: [
-              'orbit', 'orbit_reverse', 'swing1', 'swing2',
-              'dolly_in', 'dolly_out', 'pan_left', 'pan_right',
-              'tilt_up', 'tilt_down', 'zoom_in', 'zoom_out',
-              'circle', 'figure8', 'spiral_in', 'spiral_out',
-              'crane_up', 'crane_down', 'truck_left', 'truck_right',
-              'arc_left', 'arc_right',
+              "orbit",
+              "orbit_reverse",
+              "swing1",
+              "swing2",
+              "dolly_in",
+              "dolly_out",
+              "pan_left",
+              "pan_right",
+              "tilt_up",
+              "tilt_down",
+              "zoom_in",
+              "zoom_out",
+              "circle",
+              "figure8",
+              "spiral_in",
+              "spiral_out",
+              "crane_up",
+              "crane_down",
+              "truck_left",
+              "truck_right",
+              "arc_left",
+              "arc_right",
             ],
-            description: 'Type of camera trajectory preset',
+            description: "Type of camera trajectory preset",
           },
           startFrame: {
-            type: 'number',
-            description: 'Frame to start the trajectory (default: 0)',
+            type: "number",
+            description: "Frame to start the trajectory (default: 0)",
           },
           duration: {
-            type: 'number',
-            description: 'Duration in frames (default: composition length)',
+            type: "number",
+            description: "Duration in frames (default: composition length)",
           },
           amplitude: {
-            type: 'number',
-            description: 'Strength multiplier for the motion (default: 1.0)',
+            type: "number",
+            description: "Strength multiplier for the motion (default: 1.0)",
           },
           loops: {
-            type: 'number',
-            description: 'Number of complete cycles for orbits/circles (default: 1)',
+            type: "number",
+            description:
+              "Number of complete cycles for orbits/circles (default: 1)",
           },
           easing: {
-            type: 'string',
-            enum: ['linear', 'ease-in', 'ease-out', 'ease-in-out', 'bounce'],
-            description: 'Easing type for the motion (default: ease-in-out)',
+            type: "string",
+            enum: ["linear", "ease-in", "ease-out", "ease-in-out", "bounce"],
+            description: "Easing type for the motion (default: ease-in-out)",
           },
           center: {
-            type: 'object',
+            type: "object",
             properties: {
-              x: { type: 'number' },
-              y: { type: 'number' },
-              z: { type: 'number' },
+              x: { type: "number" },
+              y: { type: "number" },
+              z: { type: "number" },
             },
-            description: 'Center point for orbit/swing trajectories (default: composition center)',
+            description:
+              "Center point for orbit/swing trajectories (default: composition center)",
           },
         },
-        required: ['cameraLayerId', 'trajectoryType'],
+        required: ["cameraLayerId", "trajectoryType"],
       },
     },
   },
   {
-    type: 'function',
+    type: "function",
     function: {
-      name: 'addCameraShake',
-      description: 'Add camera shake effect for handheld, impact, or earthquake simulation',
+      name: "addCameraShake",
+      description:
+        "Add camera shake effect for handheld, impact, or earthquake simulation",
       parameters: {
-        type: 'object',
+        type: "object",
         properties: {
           cameraLayerId: {
-            type: 'string',
-            description: 'ID of the camera layer',
+            type: "string",
+            description: "ID of the camera layer",
           },
           shakeType: {
-            type: 'string',
-            enum: ['handheld', 'impact', 'earthquake', 'subtle'],
-            description: 'Type of camera shake preset',
+            type: "string",
+            enum: ["handheld", "impact", "earthquake", "subtle"],
+            description: "Type of camera shake preset",
           },
           intensity: {
-            type: 'number',
-            description: 'Shake intensity 0-1 (default: varies by type)',
+            type: "number",
+            description: "Shake intensity 0-1 (default: varies by type)",
           },
           frequency: {
-            type: 'number',
-            description: 'Shake frequency multiplier (default: 1.0)',
+            type: "number",
+            description: "Shake frequency multiplier (default: 1.0)",
           },
           startFrame: {
-            type: 'number',
-            description: 'Frame to start shake (default: 0)',
+            type: "number",
+            description: "Frame to start shake (default: 0)",
           },
           duration: {
-            type: 'number',
-            description: 'Duration in frames (default: entire composition)',
+            type: "number",
+            description: "Duration in frames (default: entire composition)",
           },
           decay: {
-            type: 'number',
-            description: 'Shake decay 0-1, higher = more decay over time (default: 0)',
+            type: "number",
+            description:
+              "Shake decay 0-1, higher = more decay over time (default: 0)",
           },
           rotationEnabled: {
-            type: 'boolean',
-            description: 'Enable rotation shake (default: true for most types)',
+            type: "boolean",
+            description: "Enable rotation shake (default: true for most types)",
           },
           seed: {
-            type: 'number',
-            description: 'Random seed for deterministic shake (default: random)',
+            type: "number",
+            description:
+              "Random seed for deterministic shake (default: random)",
           },
         },
-        required: ['cameraLayerId', 'shakeType'],
+        required: ["cameraLayerId", "shakeType"],
       },
     },
   },
   {
-    type: 'function',
+    type: "function",
     function: {
-      name: 'applyRackFocus',
-      description: 'Create a rack focus effect - smooth focus transition between two distances. Used for shifting audience attention between foreground and background.',
+      name: "applyRackFocus",
+      description:
+        "Create a rack focus effect - smooth focus transition between two distances. Used for shifting audience attention between foreground and background.",
       parameters: {
-        type: 'object',
+        type: "object",
         properties: {
           cameraLayerId: {
-            type: 'string',
-            description: 'ID of the camera layer',
+            type: "string",
+            description: "ID of the camera layer",
           },
           startDistance: {
-            type: 'number',
-            description: 'Starting focus distance in pixels',
+            type: "number",
+            description: "Starting focus distance in pixels",
           },
           endDistance: {
-            type: 'number',
-            description: 'Ending focus distance in pixels',
+            type: "number",
+            description: "Ending focus distance in pixels",
           },
           startFrame: {
-            type: 'number',
-            description: 'Frame to start the rack focus (default: 0)',
+            type: "number",
+            description: "Frame to start the rack focus (default: 0)",
           },
           duration: {
-            type: 'number',
-            description: 'Duration of the focus transition in frames (default: 30)',
+            type: "number",
+            description:
+              "Duration of the focus transition in frames (default: 30)",
           },
           easing: {
-            type: 'string',
-            enum: ['linear', 'ease-in', 'ease-out', 'ease-in-out', 'snap'],
-            description: 'Easing type for focus transition (default: ease-in-out)',
+            type: "string",
+            enum: ["linear", "ease-in", "ease-out", "ease-in-out", "snap"],
+            description:
+              "Easing type for focus transition (default: ease-in-out)",
           },
           holdStart: {
-            type: 'number',
-            description: 'Frames to hold at start focus before transitioning (default: 0)',
+            type: "number",
+            description:
+              "Frames to hold at start focus before transitioning (default: 0)",
           },
           holdEnd: {
-            type: 'number',
-            description: 'Frames to hold at end focus after transitioning (default: 0)',
+            type: "number",
+            description:
+              "Frames to hold at end focus after transitioning (default: 0)",
           },
         },
-        required: ['cameraLayerId', 'startDistance', 'endDistance'],
+        required: ["cameraLayerId", "startDistance", "endDistance"],
       },
     },
   },
   {
-    type: 'function',
+    type: "function",
     function: {
-      name: 'setCameraPathFollowing',
-      description: 'Make a camera follow a spline path. The camera will move along the path and optionally look at a target or along the path tangent.',
+      name: "setCameraPathFollowing",
+      description:
+        "Make a camera follow a spline path. The camera will move along the path and optionally look at a target or along the path tangent.",
       parameters: {
-        type: 'object',
+        type: "object",
         properties: {
           cameraLayerId: {
-            type: 'string',
-            description: 'ID of the camera layer',
+            type: "string",
+            description: "ID of the camera layer",
           },
           splineLayerId: {
-            type: 'string',
-            description: 'ID of the spline layer to follow (null to disable)',
+            type: "string",
+            description: "ID of the spline layer to follow (null to disable)",
             nullable: true,
           },
           lookMode: {
-            type: 'string',
-            enum: ['tangent', 'target', 'fixed'],
-            description: 'How the camera should orient: tangent (look along path), target (look at specific point), fixed (maintain direction)',
+            type: "string",
+            enum: ["tangent", "target", "fixed"],
+            description:
+              "How the camera should orient: tangent (look along path), target (look at specific point), fixed (maintain direction)",
           },
           lookTarget: {
-            type: 'object',
+            type: "object",
             properties: {
-              x: { type: 'number' },
-              y: { type: 'number' },
-              z: { type: 'number' },
+              x: { type: "number" },
+              y: { type: "number" },
+              z: { type: "number" },
             },
             description: 'Point to look at when lookMode is "target"',
           },
           startOffset: {
-            type: 'number',
-            description: 'Starting position along path 0-1 (default: 0)',
+            type: "number",
+            description: "Starting position along path 0-1 (default: 0)",
           },
           speed: {
-            type: 'number',
-            description: 'Speed multiplier for path traversal (default: 1.0)',
+            type: "number",
+            description: "Speed multiplier for path traversal (default: 1.0)",
           },
           bankAmount: {
-            type: 'number',
-            description: 'Amount of banking/roll on curves 0-1 (default: 0)',
+            type: "number",
+            description: "Amount of banking/roll on curves 0-1 (default: 0)",
           },
           smoothing: {
-            type: 'number',
-            description: 'Path smoothing amount 0-1 (default: 0.5)',
+            type: "number",
+            description: "Path smoothing amount 0-1 (default: 0.5)",
           },
         },
-        required: ['cameraLayerId'],
+        required: ["cameraLayerId"],
       },
     },
   },
   {
-    type: 'function',
+    type: "function",
     function: {
-      name: 'setCameraAutoFocus',
-      description: 'Enable depth-aware autofocus on a camera. The camera will automatically adjust focus based on depth map.',
+      name: "setCameraAutoFocus",
+      description:
+        "Enable depth-aware autofocus on a camera. The camera will automatically adjust focus based on depth map.",
       parameters: {
-        type: 'object',
+        type: "object",
         properties: {
           cameraLayerId: {
-            type: 'string',
-            description: 'ID of the camera layer',
+            type: "string",
+            description: "ID of the camera layer",
           },
           enabled: {
-            type: 'boolean',
-            description: 'Enable or disable autofocus',
+            type: "boolean",
+            description: "Enable or disable autofocus",
           },
           mode: {
-            type: 'string',
-            enum: ['center', 'point', 'nearest', 'farthest'],
-            description: 'Autofocus mode: center (center of frame), point (specific point), nearest/farthest (extreme depth)',
+            type: "string",
+            enum: ["center", "point", "nearest", "farthest"],
+            description:
+              "Autofocus mode: center (center of frame), point (specific point), nearest/farthest (extreme depth)",
           },
           focusPoint: {
-            type: 'object',
+            type: "object",
             properties: {
-              x: { type: 'number', description: 'X position 0-1' },
-              y: { type: 'number', description: 'Y position 0-1' },
+              x: { type: "number", description: "X position 0-1" },
+              y: { type: "number", description: "Y position 0-1" },
             },
             description: 'Focus point when mode is "point" (normalized 0-1)',
           },
           smoothing: {
-            type: 'number',
-            description: 'Focus smoothing 0-1, higher = smoother transitions (default: 0.8)',
+            type: "number",
+            description:
+              "Focus smoothing 0-1, higher = smoother transitions (default: 0.8)",
           },
         },
-        required: ['cameraLayerId'],
+        required: ["cameraLayerId"],
       },
     },
   },
@@ -811,69 +953,74 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   // TEXT SPECIFIC
   // ==========================================================================
   {
-    type: 'function',
+    type: "function",
     function: {
-      name: 'setTextContent',
-      description: 'Set the text content and styling of a text layer',
+      name: "setTextContent",
+      description: "Set the text content and styling of a text layer",
       parameters: {
-        type: 'object',
+        type: "object",
         properties: {
           layerId: {
-            type: 'string',
-            description: 'ID of the text layer',
+            type: "string",
+            description: "ID of the text layer",
           },
           text: {
-            type: 'string',
-            description: 'Text content',
+            type: "string",
+            description: "Text content",
           },
           fontSize: {
-            type: 'number',
-            description: 'Font size in pixels',
+            type: "number",
+            description: "Font size in pixels",
           },
           fontFamily: {
-            type: 'string',
-            description: 'Font family name',
+            type: "string",
+            description: "Font family name",
           },
           fontWeight: {
-            type: 'number',
-            description: 'Font weight (100-900)',
+            type: "number",
+            description: "Font weight (100-900)",
           },
           color: {
-            type: 'object',
-            properties: { r: { type: 'number' }, g: { type: 'number' }, b: { type: 'number' }, a: { type: 'number' } },
+            type: "object",
+            properties: {
+              r: { type: "number" },
+              g: { type: "number" },
+              b: { type: "number" },
+              a: { type: "number" },
+            },
           },
           alignment: {
-            type: 'string',
-            enum: ['left', 'center', 'right'],
+            type: "string",
+            enum: ["left", "center", "right"],
           },
         },
-        required: ['layerId'],
+        required: ["layerId"],
       },
     },
   },
   {
-    type: 'function',
+    type: "function",
     function: {
-      name: 'setTextPath',
-      description: 'Attach text to follow a spline path',
+      name: "setTextPath",
+      description: "Attach text to follow a spline path",
       parameters: {
-        type: 'object',
+        type: "object",
         properties: {
           textLayerId: {
-            type: 'string',
-            description: 'ID of the text layer',
+            type: "string",
+            description: "ID of the text layer",
           },
           splineLayerId: {
-            type: 'string',
-            description: 'ID of the spline layer to follow (null to detach)',
+            type: "string",
+            description: "ID of the spline layer to follow (null to detach)",
             nullable: true,
           },
           startOffset: {
-            type: 'number',
-            description: 'Starting position along path (0-1)',
+            type: "number",
+            description: "Starting position along path (0-1)",
           },
         },
-        required: ['textLayerId'],
+        required: ["textLayerId"],
       },
     },
   },
@@ -882,36 +1029,44 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   // SPLINE/PATH
   // ==========================================================================
   {
-    type: 'function',
+    type: "function",
     function: {
-      name: 'setSplinePoints',
-      description: 'Set the control points of a spline layer',
+      name: "setSplinePoints",
+      description: "Set the control points of a spline layer",
       parameters: {
-        type: 'object',
+        type: "object",
         properties: {
           layerId: {
-            type: 'string',
-            description: 'ID of the spline layer',
+            type: "string",
+            description: "ID of the spline layer",
           },
           points: {
-            type: 'array',
+            type: "array",
             items: {
-              type: 'object',
+              type: "object",
               properties: {
-                x: { type: 'number' },
-                y: { type: 'number' },
-                handleIn: { type: 'object', properties: { x: { type: 'number' }, y: { type: 'number' } }, nullable: true },
-                handleOut: { type: 'object', properties: { x: { type: 'number' }, y: { type: 'number' } }, nullable: true },
+                x: { type: "number" },
+                y: { type: "number" },
+                handleIn: {
+                  type: "object",
+                  properties: { x: { type: "number" }, y: { type: "number" } },
+                  nullable: true,
+                },
+                handleOut: {
+                  type: "object",
+                  properties: { x: { type: "number" }, y: { type: "number" } },
+                  nullable: true,
+                },
               },
             },
-            description: 'Array of control points',
+            description: "Array of control points",
           },
           closed: {
-            type: 'boolean',
-            description: 'Whether the path is closed',
+            type: "boolean",
+            description: "Whether the path is closed",
           },
         },
-        required: ['layerId', 'points'],
+        required: ["layerId", "points"],
       },
     },
   },
@@ -920,35 +1075,35 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   // TIME REMAPPING
   // ==========================================================================
   {
-    type: 'function',
+    type: "function",
     function: {
-      name: 'setTimeRemap',
-      description: 'Enable time remapping on a layer to control playback speed',
+      name: "setTimeRemap",
+      description: "Enable time remapping on a layer to control playback speed",
       parameters: {
-        type: 'object',
+        type: "object",
         properties: {
           layerId: {
-            type: 'string',
-            description: 'ID of the layer',
+            type: "string",
+            description: "ID of the layer",
           },
           enabled: {
-            type: 'boolean',
-            description: 'Enable or disable time remapping',
+            type: "boolean",
+            description: "Enable or disable time remapping",
           },
           keyframes: {
-            type: 'array',
+            type: "array",
             items: {
-              type: 'object',
+              type: "object",
               properties: {
-                frame: { type: 'number', description: 'Output frame' },
-                value: { type: 'number', description: 'Source frame to show' },
-                interpolation: { type: 'string' },
+                frame: { type: "number", description: "Output frame" },
+                value: { type: "number", description: "Source frame to show" },
+                interpolation: { type: "string" },
               },
             },
-            description: 'Time remap keyframes',
+            description: "Time remap keyframes",
           },
         },
-        required: ['layerId'],
+        required: ["layerId"],
       },
     },
   },
@@ -957,36 +1112,36 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   // PLAYBACK CONTROL
   // ==========================================================================
   {
-    type: 'function',
+    type: "function",
     function: {
-      name: 'setCurrentFrame',
-      description: 'Jump to a specific frame',
+      name: "setCurrentFrame",
+      description: "Jump to a specific frame",
       parameters: {
-        type: 'object',
+        type: "object",
         properties: {
           frame: {
-            type: 'number',
-            description: 'Frame number (0-80)',
+            type: "number",
+            description: "Frame number (0-80)",
           },
         },
-        required: ['frame'],
+        required: ["frame"],
       },
     },
   },
   {
-    type: 'function',
+    type: "function",
     function: {
-      name: 'playPreview',
-      description: 'Start or stop playback preview',
+      name: "playPreview",
+      description: "Start or stop playback preview",
       parameters: {
-        type: 'object',
+        type: "object",
         properties: {
           play: {
-            type: 'boolean',
-            description: 'True to play, false to stop',
+            type: "boolean",
+            description: "True to play, false to stop",
           },
         },
-        required: ['play'],
+        required: ["play"],
       },
     },
   },
@@ -995,90 +1150,98 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   // AI IMAGE PROCESSING
   // ==========================================================================
   {
-    type: 'function',
+    type: "function",
     function: {
-      name: 'decomposeImage',
-      description: 'Use AI to decompose an image into multiple RGBA layers (requires Qwen-Image-Layered model). Creates separate image layers for background, foreground, and intermediate elements.',
+      name: "decomposeImage",
+      description:
+        "Use AI to decompose an image into multiple RGBA layers (requires Qwen-Image-Layered model). Creates separate image layers for background, foreground, and intermediate elements.",
       parameters: {
-        type: 'object',
+        type: "object",
         properties: {
           sourceLayerId: {
-            type: 'string',
-            description: 'ID of the image layer to decompose',
+            type: "string",
+            description: "ID of the image layer to decompose",
           },
           numLayers: {
-            type: 'number',
-            description: 'Number of layers to generate (3-16, default 4)',
+            type: "number",
+            description: "Number of layers to generate (3-16, default 4)",
             minimum: 3,
             maximum: 16,
           },
         },
-        required: ['sourceLayerId'],
+        required: ["sourceLayerId"],
       },
     },
   },
   {
-    type: 'function',
+    type: "function",
     function: {
-      name: 'vectorizeImage',
-      description: 'Convert an image layer to vector spline paths. Creates one or more SplineLayer(s) with keyframeable control points that can be animated individually, by group, or as a whole layer. Ideal for logos, icons, and graphics.',
+      name: "vectorizeImage",
+      description:
+        "Convert an image layer to vector spline paths. Creates one or more SplineLayer(s) with keyframeable control points that can be animated individually, by group, or as a whole layer. Ideal for logos, icons, and graphics.",
       parameters: {
-        type: 'object',
+        type: "object",
         properties: {
           sourceLayerId: {
-            type: 'string',
-            description: 'ID of the image layer to vectorize',
+            type: "string",
+            description: "ID of the image layer to vectorize",
           },
           mode: {
-            type: 'string',
-            enum: ['trace', 'ai'],
-            description: 'Vectorization mode: "trace" (VTracer, fast, works on any image) or "ai" (StarVector, best for icons/logos)',
+            type: "string",
+            enum: ["trace", "ai"],
+            description:
+              'Vectorization mode: "trace" (VTracer, fast, works on any image) or "ai" (StarVector, best for icons/logos)',
           },
           separateLayers: {
-            type: 'boolean',
-            description: 'Create separate layer for each path (default: true)',
+            type: "boolean",
+            description: "Create separate layer for each path (default: true)",
           },
           groupByPath: {
-            type: 'boolean',
-            description: 'Assign group IDs to control points for group animation (default: true)',
+            type: "boolean",
+            description:
+              "Assign group IDs to control points for group animation (default: true)",
           },
           autoGroupByRegion: {
-            type: 'boolean',
-            description: 'Auto-group points by quadrant region (default: false)',
+            type: "boolean",
+            description:
+              "Auto-group points by quadrant region (default: false)",
           },
           enableAnimation: {
-            type: 'boolean',
-            description: 'Enable keyframe animation on created layers (default: true)',
+            type: "boolean",
+            description:
+              "Enable keyframe animation on created layers (default: true)",
           },
           traceOptions: {
-            type: 'object',
-            description: 'VTracer-specific options (only used if mode is "trace")',
+            type: "object",
+            description:
+              'VTracer-specific options (only used if mode is "trace")',
             properties: {
               colorMode: {
-                type: 'string',
-                enum: ['color', 'binary'],
-                description: 'Color mode: "color" for full color, "binary" for black & white',
+                type: "string",
+                enum: ["color", "binary"],
+                description:
+                  'Color mode: "color" for full color, "binary" for black & white',
               },
               filterSpeckle: {
-                type: 'number',
-                description: 'Filter speckle size (0-100, default 4)',
+                type: "number",
+                description: "Filter speckle size (0-100, default 4)",
               },
               cornerThreshold: {
-                type: 'number',
-                description: 'Corner threshold in degrees (0-180, default 60)',
+                type: "number",
+                description: "Corner threshold in degrees (0-180, default 60)",
               },
               colorPrecision: {
-                type: 'number',
-                description: 'Color precision (1-10, default 6)',
+                type: "number",
+                description: "Color precision (1-10, default 6)",
               },
               layerDifference: {
-                type: 'number',
-                description: 'Layer difference threshold (1-256, default 16)',
+                type: "number",
+                description: "Layer difference threshold (1-256, default 16)",
               },
             },
           },
         },
-        required: ['sourceLayerId'],
+        required: ["sourceLayerId"],
       },
     },
   },
@@ -1087,49 +1250,49 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   // UTILITY
   // ==========================================================================
   {
-    type: 'function',
+    type: "function",
     function: {
-      name: 'getLayerInfo',
-      description: 'Get detailed information about a layer',
+      name: "getLayerInfo",
+      description: "Get detailed information about a layer",
       parameters: {
-        type: 'object',
+        type: "object",
         properties: {
           layerId: {
-            type: 'string',
-            description: 'ID of the layer',
+            type: "string",
+            description: "ID of the layer",
           },
         },
-        required: ['layerId'],
+        required: ["layerId"],
       },
     },
   },
   {
-    type: 'function',
+    type: "function",
     function: {
-      name: 'findLayers',
-      description: 'Find layers by name or type',
+      name: "findLayers",
+      description: "Find layers by name or type",
       parameters: {
-        type: 'object',
+        type: "object",
         properties: {
           name: {
-            type: 'string',
-            description: 'Layer name to search for (partial match)',
+            type: "string",
+            description: "Layer name to search for (partial match)",
           },
           type: {
-            type: 'string',
-            description: 'Layer type to filter by',
+            type: "string",
+            description: "Layer type to filter by",
           },
         },
       },
     },
   },
   {
-    type: 'function',
+    type: "function",
     function: {
-      name: 'getProjectState',
-      description: 'Get a summary of the current project state',
+      name: "getProjectState",
+      description: "Get a summary of the current project state",
       parameters: {
-        type: 'object',
+        type: "object",
         properties: {},
       },
     },

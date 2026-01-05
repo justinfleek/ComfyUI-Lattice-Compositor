@@ -11,7 +11,7 @@
  * - Cell size should be >= max interaction radius
  */
 
-import { PARTICLE_STRIDE } from './types';
+import { PARTICLE_STRIDE } from "./types";
 
 // ============================================================================
 // TYPES
@@ -76,7 +76,7 @@ export class SpatialHashGrid {
       if (!this.cells.has(key)) {
         this.cells.set(key, []);
       }
-      this.cells.get(key)!.push(i);
+      this.cells.get(key)?.push(i);
       this.particleCells.set(i, key);
     }
   }
@@ -133,7 +133,7 @@ export class SpatialHashGrid {
     pz: number,
     radius: number,
     particleBuffer: Float32Array,
-    excludeIndex?: number
+    excludeIndex?: number,
   ): number[] {
     const radiusSq = radius * radius;
     const result: number[] = [];

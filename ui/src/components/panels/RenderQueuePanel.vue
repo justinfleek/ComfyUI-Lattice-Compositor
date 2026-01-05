@@ -183,14 +183,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, onUnmounted } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import {
+import { onMounted, onUnmounted, reactive, ref } from "vue";
+import type {
+  RenderedFrame,
+  RenderJob,
   RenderQueueManager,
-  type RenderJob,
-  type RenderQueueStats,
-  type RenderedFrame,
-} from '@/services/renderQueue';
+  RenderQueueStats,
+} from "@/services/renderQueue";
+import { useCompositorStore } from "@/stores/compositorStore";
 
 const store = useCompositorStore();
 
@@ -214,13 +214,13 @@ const showAddJobDialog = ref(false);
 
 // New job form
 const newJob = reactive({
-  name: 'Render Job',
+  name: "Render Job",
   startFrame: 0,
   endFrame: 80,
   width: 512,
   height: 512,
   fps: 16,
-  format: 'png-sequence' as const,
+  format: "png-sequence" as const,
   quality: 95,
 });
 
@@ -228,7 +228,7 @@ const newJob = reactive({
 function initFromComposition() {
   const comp = store.getActiveComp();
   if (comp) {
-    newJob.name = comp.name || 'Render Job';
+    newJob.name = comp.name || "Render Job";
     newJob.startFrame = 0;
     newJob.endFrame = comp.settings.frameCount - 1;
     newJob.width = comp.settings.width;
@@ -241,23 +241,23 @@ function initFromComposition() {
 onMounted(async () => {
   try {
     // Import and create queue manager
-    const { RenderQueueManager } = await import('@/services/renderQueue');
+    const { RenderQueueManager } = await import("@/services/renderQueue");
     queueManager = new RenderQueueManager({
       maxConcurrentJobs: 1,
       workerPoolSize: 4,
       batchSize: 10,
       autoSaveInterval: 5000,
-      dbName: 'lattice-render-queue',
+      dbName: "lattice-render-queue",
     });
 
     await queueManager.initialize();
 
     // Subscribe to progress updates
-    queueManager.onProgress((jobId, progress) => {
+    queueManager.onProgress((_jobId, _progress) => {
       refreshJobs();
     });
 
-    queueManager.onJobComplete((jobId) => {
+    queueManager.onJobComplete((_jobId) => {
       refreshJobs();
     });
 
@@ -268,7 +268,7 @@ onMounted(async () => {
     refreshJobs();
     initFromComposition();
   } catch (err) {
-    console.error('Failed to initialize render queue:', err);
+    console.error("Failed to initialize render queue:", err);
   }
 });
 
@@ -287,25 +287,33 @@ function refreshJobs() {
 function updateStats() {
   const allJobs = jobs.value;
   stats.totalJobs = allJobs.length;
-  stats.activeJobs = allJobs.filter(j => j.progress.status === 'rendering').length;
-  stats.pendingJobs = allJobs.filter(j => j.progress.status === 'pending').length;
-  stats.completedJobs = allJobs.filter(j => j.progress.status === 'completed').length;
-  stats.failedJobs = allJobs.filter(j => j.progress.status === 'failed').length;
+  stats.activeJobs = allJobs.filter(
+    (j) => j.progress.status === "rendering",
+  ).length;
+  stats.pendingJobs = allJobs.filter(
+    (j) => j.progress.status === "pending",
+  ).length;
+  stats.completedJobs = allJobs.filter(
+    (j) => j.progress.status === "completed",
+  ).length;
+  stats.failedJobs = allJobs.filter(
+    (j) => j.progress.status === "failed",
+  ).length;
 }
 
 // Queue controls
-function startQueue() {
+function _startQueue() {
   queueManager?.start();
   isRunning.value = true;
   isPaused.value = false;
 }
 
-function pauseQueue() {
+function _pauseQueue() {
   queueManager?.pause();
   isPaused.value = true;
 }
 
-function stopQueue() {
+function _stopQueue() {
   queueManager?.stop();
   isRunning.value = false;
   isPaused.value = false;
@@ -313,12 +321,12 @@ function stopQueue() {
 }
 
 // Job actions
-async function addJob() {
+async function _addJob() {
   if (!queueManager) return;
 
   const comp = store.getActiveComp();
   if (!comp) {
-    console.error('No active composition');
+    console.error("No active composition");
     return;
   }
 
@@ -339,24 +347,24 @@ async function addJob() {
   refreshJobs();
 }
 
-function pauseJob(jobId: string) {
+function _pauseJob(_jobId: string) {
   queueManager?.pause();
   isPaused.value = true;
 }
 
-function resumeJob(jobId: string) {
+function _resumeJob(_jobId: string) {
   queueManager?.resume();
   isPaused.value = false;
 }
 
-async function removeJob(jobId: string) {
+async function _removeJob(jobId: string) {
   await queueManager?.removeJob(jobId);
   refreshJobs();
 }
 
-async function downloadJob(jobId: string) {
+async function _downloadJob(jobId: string) {
   if (!queueManager) {
-    console.error('Queue manager not initialized');
+    console.error("Queue manager not initialized");
     return;
   }
 
@@ -364,41 +372,47 @@ async function downloadJob(jobId: string) {
     // Get job info and frames
     const job = await queueManager.getJob(jobId);
     if (!job) {
-      console.error('Job not found:', jobId);
+      console.error("Job not found:", jobId);
       return;
     }
 
     const frames = await queueManager.getFrames(jobId);
     if (!frames || frames.length === 0) {
-      console.error('No frames found for job:', jobId);
+      console.error("No frames found for job:", jobId);
       return;
     }
 
     // Sort frames by frame number
-    frames.sort((a: RenderedFrame, b: RenderedFrame) => a.frameNumber - b.frameNumber);
+    frames.sort(
+      (a: RenderedFrame, b: RenderedFrame) => a.frameNumber - b.frameNumber,
+    );
 
     // Dynamically import JSZip
-    const JSZip = (await import('jszip')).default;
+    const JSZip = (await import("jszip")).default;
     const zip = new JSZip();
 
     // Add frames to ZIP (RenderJob extends RenderJobConfig, so properties are directly on job)
-    const format = job.format || 'png-sequence';
-    const extension = format.includes('png') ? 'png' : format.includes('jpg') ? 'jpg' : 'webp';
+    const format = job.format || "png-sequence";
+    const extension = format.includes("png")
+      ? "png"
+      : format.includes("jpg")
+        ? "jpg"
+        : "webp";
 
     for (const frame of frames) {
-      const paddedNumber = frame.frameNumber.toString().padStart(5, '0');
+      const paddedNumber = frame.frameNumber.toString().padStart(5, "0");
       const filename = `frame_${paddedNumber}.${extension}`;
       zip.file(filename, frame.data);
     }
 
     // Generate ZIP blob
-    const zipBlob = await zip.generateAsync({ type: 'blob' });
+    const zipBlob = await zip.generateAsync({ type: "blob" });
 
     // Create download link
     const url = URL.createObjectURL(zipBlob);
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = url;
-    link.download = `${job.name || 'render'}_frames.zip`;
+    link.download = `${job.name || "render"}_frames.zip`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -406,16 +420,16 @@ async function downloadJob(jobId: string) {
 
     console.log(`Downloaded ${frames.length} frames for job:`, jobId);
   } catch (error) {
-    console.error('Failed to download job:', error);
+    console.error("Failed to download job:", error);
   }
 }
 
 // Format time helper
-function formatTime(seconds: number): string {
-  if (!seconds || seconds === Infinity) return '--:--';
+function _formatTime(seconds: number): string {
+  if (!seconds || seconds === Infinity) return "--:--";
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 </script>
 

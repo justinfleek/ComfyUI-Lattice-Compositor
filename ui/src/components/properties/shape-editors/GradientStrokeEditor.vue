@@ -115,38 +115,46 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import type { GradientStrokeShape, ShapeColor, LineCap, LineJoin } from '@/types/shapes';
-import { ScrubableNumber } from '@/components/controls';
-import KeyframeToggle from '../KeyframeToggle.vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import { createKeyframe } from '@/types/animation';
+import { computed } from "vue";
+import { useCompositorStore } from "@/stores/compositorStore";
+import { createKeyframe } from "@/types/animation";
+import type {
+  GradientStrokeShape,
+  LineCap,
+  LineJoin,
+  ShapeColor,
+} from "@/types/shapes";
 
 const props = defineProps<{ shape: GradientStrokeShape; layerId: string }>();
-const emit = defineEmits(['update']);
+const emit = defineEmits(["update"]);
 const store = useCompositorStore();
 
 // Gradient preview CSS
-const gradientPreviewStyle = computed(() => {
+const _gradientPreviewStyle = computed(() => {
   const g = props.shape.gradient.value;
-  const stops = g.stops.map(s => `rgba(${s.color.r}, ${s.color.g}, ${s.color.b}, ${s.color.a}) ${s.position * 100}%`).join(', ');
+  const stops = g.stops
+    .map(
+      (s) =>
+        `rgba(${s.color.r}, ${s.color.g}, ${s.color.b}, ${s.color.a}) ${s.position * 100}%`,
+    )
+    .join(", ");
 
-  if (g.type === 'linear') {
+  if (g.type === "linear") {
     return { background: `linear-gradient(90deg, ${stops})` };
   } else {
     return { background: `radial-gradient(circle, ${stops})` };
   }
 });
 
-const dashPatternDisplay = computed(() => {
+const _dashPatternDisplay = computed(() => {
   const pattern = props.shape.dashPattern?.value || [];
-  return pattern.length > 0 ? pattern.join(', ') : 'No dashes';
+  return pattern.length > 0 ? pattern.join(", ") : "No dashes";
 });
 
-function colorToHex(color: ShapeColor): string {
-  const r = Math.round(color.r).toString(16).padStart(2, '0');
-  const g = Math.round(color.g).toString(16).padStart(2, '0');
-  const b = Math.round(color.b).toString(16).padStart(2, '0');
+function _colorToHex(color: ShapeColor): string {
+  const r = Math.round(color.r).toString(16).padStart(2, "0");
+  const g = Math.round(color.g).toString(16).padStart(2, "0");
+  const b = Math.round(color.b).toString(16).padStart(2, "0");
   return `#${r}${g}${b}`;
 }
 
@@ -157,91 +165,109 @@ function hexToColor(hex: string): ShapeColor {
   return { r, g, b, a: 1 };
 }
 
-function updateGradientType(e: Event) {
+function _updateGradientType(e: Event) {
   const updated = { ...props.shape };
   updated.gradient = {
     ...updated.gradient,
-    value: { ...updated.gradient.value, type: (e.target as HTMLSelectElement).value as 'linear' | 'radial' }
+    value: {
+      ...updated.gradient.value,
+      type: (e.target as HTMLSelectElement).value as "linear" | "radial",
+    },
   };
-  emit('update', updated);
+  emit("update", updated);
 }
 
-function updateNumber(prop: 'width' | 'opacity' | 'dashOffset', value: number) {
+function _updateNumber(
+  prop: "width" | "opacity" | "dashOffset",
+  value: number,
+) {
   const updated = { ...props.shape };
   updated[prop] = { ...updated[prop], value };
-  emit('update', updated);
+  emit("update", updated);
 }
 
-function toggleKeyframe(prop: 'width' | 'opacity' | 'dashOffset') {
+function _toggleKeyframe(prop: "width" | "opacity" | "dashOffset") {
   const updated = { ...props.shape };
   const animProp = updated[prop];
   const frame = store.currentFrame;
-  const hasKf = animProp.keyframes.some(k => k.frame === frame);
+  const hasKf = animProp.keyframes.some((k) => k.frame === frame);
   if (hasKf) {
-    animProp.keyframes = animProp.keyframes.filter(k => k.frame !== frame);
+    animProp.keyframes = animProp.keyframes.filter((k) => k.frame !== frame);
   } else {
-    animProp.keyframes.push(createKeyframe(frame, animProp.value, 'linear'));
+    animProp.keyframes.push(createKeyframe(frame, animProp.value, "linear"));
   }
   animProp.animated = animProp.keyframes.length > 0;
-  emit('update', updated);
+  emit("update", updated);
 }
 
-function updateLineCap(e: Event) {
+function _updateLineCap(e: Event) {
   const updated = { ...props.shape };
   updated.lineCap = (e.target as HTMLSelectElement).value as LineCap;
-  emit('update', updated);
+  emit("update", updated);
 }
 
-function updateLineJoin(e: Event) {
+function _updateLineJoin(e: Event) {
   const updated = { ...props.shape };
   updated.lineJoin = (e.target as HTMLSelectElement).value as LineJoin;
-  emit('update', updated);
+  emit("update", updated);
 }
 
-function updateMiterLimit(value: number) {
+function _updateMiterLimit(value: number) {
   const updated = { ...props.shape };
   updated.miterLimit = value;
-  emit('update', updated);
+  emit("update", updated);
 }
 
-function updateBlendMode(e: Event) {
+function _updateBlendMode(e: Event) {
   const updated = { ...props.shape };
   updated.blendMode = (e.target as HTMLSelectElement).value;
-  emit('update', updated);
+  emit("update", updated);
 }
 
-function updateStopColor(index: number, hex: string) {
+function _updateStopColor(index: number, hex: string) {
   const updated = { ...props.shape };
   const stops = [...updated.gradient.value.stops];
   stops[index] = { ...stops[index], color: hexToColor(hex) };
-  updated.gradient = { ...updated.gradient, value: { ...updated.gradient.value, stops } };
-  emit('update', updated);
+  updated.gradient = {
+    ...updated.gradient,
+    value: { ...updated.gradient.value, stops },
+  };
+  emit("update", updated);
 }
 
-function updateStopPosition(index: number, position: number) {
+function _updateStopPosition(index: number, position: number) {
   const updated = { ...props.shape };
   const stops = [...updated.gradient.value.stops];
   stops[index] = { ...stops[index], position };
-  updated.gradient = { ...updated.gradient, value: { ...updated.gradient.value, stops } };
-  emit('update', updated);
+  updated.gradient = {
+    ...updated.gradient,
+    value: { ...updated.gradient.value, stops },
+  };
+  emit("update", updated);
 }
 
-function addStop() {
+function _addStop() {
   const updated = { ...props.shape };
   const stops = [...updated.gradient.value.stops];
   stops.push({ position: 0.5, color: { r: 128, g: 128, b: 128, a: 1 } });
   stops.sort((a, b) => a.position - b.position);
-  updated.gradient = { ...updated.gradient, value: { ...updated.gradient.value, stops } };
-  emit('update', updated);
+  updated.gradient = {
+    ...updated.gradient,
+    value: { ...updated.gradient.value, stops },
+  };
+  emit("update", updated);
 }
 
-function removeStop(index: number) {
+function _removeStop(index: number) {
   if (props.shape.gradient.value.stops.length <= 2) return;
   const updated = { ...props.shape };
   const stops = [...updated.gradient.value.stops];
   stops.splice(index, 1);
-  updated.gradient = { ...updated.gradient, value: { ...updated.gradient.value, stops } };
-  emit('update', updated);
+  updated.gradient = {
+    ...updated.gradient,
+    value: { ...updated.gradient.value, stops },
+  };
+  emit("update", updated);
 }
 </script>
 

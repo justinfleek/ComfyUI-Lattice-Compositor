@@ -1,0 +1,58 @@
+{
+  // Disable “electric” auto-closing behavior
+  "editor.autoClosingBrackets": "never",
+  "editor.autoClosingQuotes": "never",
+  "editor.autoSurround": "never",
+
+  // Reduce bracket visuals
+  "editor.bracketPairColorization.enabled": false,
+  "editor.guides.bracketPairs": false,
+
+  // Turn off suggestions/inline helpers
+  "editor.parameterHints.enabled": false,
+  "editor.inlineSuggest.enabled": false,
+  "editor.suggestOnTriggerCharacters": false,
+  "editor.quickSuggestions": {
+    "other": false,
+    "comments": false,
+    "strings": false
+  },
+
+  // Diagnostics on, but render none in the editor (no underlines)
+  "editor.renderValidationDecorations": "off",
+  "problems.decorations.enabled": false,
+  "editor.showUnused": false,
+  "editor.lightbulb.enabled": "off",
+  "editor.codeLens": false,
+  "editor.inlayHints.enabled": "off",
+  "editor.links": false,
+
+  // Keep analysis/validation enabled (we're only changing how it looks)
+  "typescript.validate.enable": true,
+  "javascript.validate.enable": true,
+  "eslint.enable": true,
+  "css.validate": true,
+  "scss.validate": true,
+  "less.validate": true,
+  // Do not override theme palette colors
+  "workbench.colorCustomizations": {},
+
+  // Keep visuals cleaner
+  "editor.renderWhitespace": "none",
+  "editor.renderControlCharacters": false,
+  "editor.occurrencesHighlight": "off",
+  "editor.semanticHighlighting.enabled": false,
+
+  // Optional: avoid surprise formatting
+  "editor.formatOnType": false,
+  "editor.formatOnSave": false,
+
+  // Python path configuration for new src/lattice/ structure
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/src"
+  ],
+  "python.analysis.autoImportCompletions": true,
+  "python.analysis.typeCheckingMode": "basic",
+  "python.analysis.diagnosticMode": "workspace",
+  "python.analysis.stubPath": "${workspaceFolder}/src"
+}

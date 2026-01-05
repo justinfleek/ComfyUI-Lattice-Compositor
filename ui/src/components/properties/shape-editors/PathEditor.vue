@@ -22,15 +22,17 @@
 </template>
 
 <script setup lang="ts">
-import type { PathShape } from '@/types/shapes';
+import type { PathShape } from "@/types/shapes";
 
 const props = defineProps<{ shape: PathShape; layerId: string }>();
-const emit = defineEmits(['update']);
+const emit = defineEmits(["update"]);
 
-function updateDirection(e: Event) {
+function _updateDirection(e: Event) {
   const updated = { ...props.shape };
-  updated.direction = parseInt((e.target as HTMLSelectElement).value) as 1 | -1;
-  emit('update', updated);
+  updated.direction = parseInt((e.target as HTMLSelectElement).value, 10) as
+    | 1
+    | -1;
+  emit("update", updated);
 }
 </script>
 

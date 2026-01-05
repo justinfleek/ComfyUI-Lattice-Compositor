@@ -5,12 +5,12 @@
  * Extracted from compositorStore for better maintainability.
  */
 
-import { storeLogger } from '@/utils/logger';
 import {
+  type CacheStats,
   getFrameCache,
   initializeFrameCache,
-  type CacheStats
-} from '@/services/frameCache';
+} from "@/services/frameCache";
+import { storeLogger } from "@/utils/logger";
 
 export interface CacheStore {
   // State
@@ -21,10 +21,13 @@ export interface CacheStore {
   // Methods the store must provide
   project: {
     meta: { modified: string };
-    compositions: Record<string, {
-      layers: { id: string }[];
-      settings: object;
-    }>;
+    compositions: Record<
+      string,
+      {
+        layers: { id: string }[];
+        settings: object;
+      }
+    >;
   };
 }
 
@@ -35,19 +38,22 @@ export interface CacheStore {
 export async function initializeCache(store: CacheStore): Promise<void> {
   if (store.frameCacheEnabled) {
     await initializeFrameCache();
-    storeLogger.info('Frame cache initialized');
+    storeLogger.info("Frame cache initialized");
   }
 }
 
 /**
  * Enable or disable frame caching
  */
-export function setFrameCacheEnabled(store: CacheStore, enabled: boolean): void {
+export function setFrameCacheEnabled(
+  store: CacheStore,
+  enabled: boolean,
+): void {
   store.frameCacheEnabled = enabled;
   if (!enabled) {
     clearFrameCache();
   }
-  storeLogger.info('Frame cache', enabled ? 'enabled' : 'disabled');
+  storeLogger.info("Frame cache", enabled ? "enabled" : "disabled");
 }
 
 /**
@@ -55,7 +61,7 @@ export function setFrameCacheEnabled(store: CacheStore, enabled: boolean): void 
  */
 export function getCachedFrame(
   store: CacheStore,
-  frame: number
+  frame: number,
 ): ImageData | null {
   if (!store.frameCacheEnabled) return null;
 
@@ -69,12 +75,17 @@ export function getCachedFrame(
 export async function cacheFrame(
   store: CacheStore,
   frame: number,
-  imageData: ImageData
+  imageData: ImageData,
 ): Promise<void> {
   if (!store.frameCacheEnabled) return;
 
   const cache = getFrameCache();
-  await cache.set(frame, store.activeCompositionId, imageData, store.projectStateHash);
+  await cache.set(
+    frame,
+    store.activeCompositionId,
+    imageData,
+    store.projectStateHash,
+  );
 }
 
 /**
@@ -93,12 +104,17 @@ export function isFrameCached(store: CacheStore, frame: number): boolean {
 export async function startPreCache(
   store: CacheStore,
   currentFrame: number,
-  direction: 'forward' | 'backward' | 'both' = 'both'
+  direction: "forward" | "backward" | "both" = "both",
 ): Promise<void> {
   if (!store.frameCacheEnabled) return;
 
   const cache = getFrameCache();
-  await cache.startPreCache(currentFrame, store.activeCompositionId, store.projectStateHash, direction);
+  await cache.startPreCache(
+    currentFrame,
+    store.activeCompositionId,
+    store.projectStateHash,
+    direction,
+  );
 }
 
 /**
@@ -119,7 +135,7 @@ export function invalidateFrameCache(store: CacheStore): void {
 export function clearFrameCache(): void {
   const cache = getFrameCache();
   cache.clear();
-  storeLogger.info('Frame cache cleared');
+  storeLogger.info("Frame cache cleared");
 }
 
 /**
@@ -136,12 +152,12 @@ export function getFrameCacheStats(): CacheStats {
  */
 export function computeProjectHash(store: CacheStore): string {
   const comp = store.project.compositions[store.activeCompositionId];
-  if (!comp) return '';
+  if (!comp) return "";
 
   // Create a simplified fingerprint of the composition state
   const fingerprint = {
     layerCount: comp.layers?.length ?? 0,
-    layerIds: comp.layers?.map(l => l.id).join(',') ?? '',
+    layerIds: comp.layers?.map((l) => l.id).join(",") ?? "",
     modified: store.project.meta.modified,
     settings: comp.settings,
   };
@@ -157,7 +173,7 @@ export function computeProjectHash(store: CacheStore): string {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
+    hash = (hash << 5) - hash + char;
     hash = hash & hash; // Convert to 32-bit integer
   }
   return hash.toString(16);

@@ -13,17 +13,22 @@
  * - Divide (split into separate pieces)
  */
 
-import paper from 'paper';
-import type { Point2D, BezierVertex, BezierPath } from '@/types/shapes';
-import { createLogger } from '@/utils/logger';
+import paper from "paper";
+import type { BezierPath, BezierVertex, Point2D } from "@/types/shapes";
+import { createLogger } from "@/utils/logger";
 
-const logger = createLogger('BezierBoolean');
+const logger = createLogger("BezierBoolean");
 
 // ============================================================================
 // Types
 // ============================================================================
 
-export type BooleanOperation = 'unite' | 'subtract' | 'intersect' | 'exclude' | 'divide';
+export type BooleanOperation =
+  | "unite"
+  | "subtract"
+  | "intersect"
+  | "exclude"
+  | "divide";
 
 export interface BooleanOptions {
   /** Whether to close the resulting paths (default: true for area operations) */
@@ -57,13 +62,13 @@ function initializePaper(): void {
 
   // Paper.js needs a canvas or can run headless
   // Create a temporary offscreen canvas for headless operation
-  const canvas = document.createElement('canvas');
+  const canvas = document.createElement("canvas");
   canvas.width = 1;
   canvas.height = 1;
 
   paper.setup(canvas);
   paperInitialized = true;
-  logger.debug('Paper.js initialized for bezier boolean operations');
+  logger.debug("Paper.js initialized for bezier boolean operations");
 }
 
 // ============================================================================
@@ -81,7 +86,8 @@ function latticePathToPaperPath(path: BezierPath): paper.Path {
 
   for (let i = 0; i < path.vertices.length; i++) {
     const v = path.vertices[i];
-    const prevV = path.vertices[(i - 1 + path.vertices.length) % path.vertices.length];
+    const prevV =
+      path.vertices[(i - 1 + path.vertices.length) % path.vertices.length];
 
     if (i === 0) {
       // First point: just moveTo
@@ -93,16 +99,21 @@ function latticePathToPaperPath(path: BezierPath): paper.Path {
 
       // Check if this is a straight line (no handles)
       if (
-        Math.abs(handleOut.x) < 0.001 && Math.abs(handleOut.y) < 0.001 &&
-        Math.abs(handleIn.x) < 0.001 && Math.abs(handleIn.y) < 0.001
+        Math.abs(handleOut.x) < 0.001 &&
+        Math.abs(handleOut.y) < 0.001 &&
+        Math.abs(handleIn.x) < 0.001 &&
+        Math.abs(handleIn.y) < 0.001
       ) {
         paperPath.lineTo(new paper.Point(v.point.x, v.point.y));
       } else {
         // Bezier curve
         paperPath.cubicCurveTo(
-          new paper.Point(prevV.point.x + handleOut.x, prevV.point.y + handleOut.y),
+          new paper.Point(
+            prevV.point.x + handleOut.x,
+            prevV.point.y + handleOut.y,
+          ),
           new paper.Point(v.point.x + handleIn.x, v.point.y + handleIn.y),
-          new paper.Point(v.point.x, v.point.y)
+          new paper.Point(v.point.x, v.point.y),
         );
       }
     }
@@ -116,15 +127,23 @@ function latticePathToPaperPath(path: BezierPath): paper.Path {
     const handleIn = firstV.inHandle;
 
     if (
-      Math.abs(handleOut.x) < 0.001 && Math.abs(handleOut.y) < 0.001 &&
-      Math.abs(handleIn.x) < 0.001 && Math.abs(handleIn.y) < 0.001
+      Math.abs(handleOut.x) < 0.001 &&
+      Math.abs(handleOut.y) < 0.001 &&
+      Math.abs(handleIn.x) < 0.001 &&
+      Math.abs(handleIn.y) < 0.001
     ) {
       paperPath.closePath();
     } else {
       paperPath.cubicCurveTo(
-        new paper.Point(lastV.point.x + handleOut.x, lastV.point.y + handleOut.y),
-        new paper.Point(firstV.point.x + handleIn.x, firstV.point.y + handleIn.y),
-        new paper.Point(firstV.point.x, firstV.point.y)
+        new paper.Point(
+          lastV.point.x + handleOut.x,
+          lastV.point.y + handleOut.y,
+        ),
+        new paper.Point(
+          firstV.point.x + handleIn.x,
+          firstV.point.y + handleIn.y,
+        ),
+        new paper.Point(firstV.point.x, firstV.point.y),
       );
     }
   }
@@ -148,8 +167,14 @@ function paperPathToLatticePath(paperPath: paper.Path): BezierPath {
 
     vertices.push({
       point: { x: point.x, y: point.y },
-      inHandle: handleIn.length > 0.001 ? { x: handleIn.x, y: handleIn.y } : { x: 0, y: 0 },
-      outHandle: handleOut.length > 0.001 ? { x: handleOut.x, y: handleOut.y } : { x: 0, y: 0 },
+      inHandle:
+        handleIn.length > 0.001
+          ? { x: handleIn.x, y: handleIn.y }
+          : { x: 0, y: 0 },
+      outHandle:
+        handleOut.length > 0.001
+          ? { x: handleOut.x, y: handleOut.y }
+          : { x: 0, y: 0 },
     });
   }
 
@@ -193,7 +218,7 @@ export function booleanOperation(
   pathA: BezierPath,
   pathB: BezierPath,
   operation: BooleanOperation,
-  options: BooleanOptions = {}
+  options: BooleanOptions = {},
 ): BooleanResult {
   try {
     initializePaper();
@@ -206,19 +231,19 @@ export function booleanOperation(
 
     // Perform operation
     switch (operation) {
-      case 'unite':
+      case "unite":
         result = paperA.unite(paperB, { insert: options.insert ?? false });
         break;
-      case 'subtract':
+      case "subtract":
         result = paperA.subtract(paperB, { insert: options.insert ?? false });
         break;
-      case 'intersect':
+      case "intersect":
         result = paperA.intersect(paperB, { insert: options.insert ?? false });
         break;
-      case 'exclude':
+      case "exclude":
         result = paperA.exclude(paperB, { insert: options.insert ?? false });
         break;
-      case 'divide':
+      case "divide":
         result = paperA.divide(paperB, { insert: options.insert ?? false });
         break;
     }
@@ -243,7 +268,7 @@ export function booleanOperation(
     return {
       paths: [],
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? error.message : "Unknown error",
     };
   }
 }
@@ -251,36 +276,56 @@ export function booleanOperation(
 /**
  * Union (combine) two paths
  */
-export function unite(pathA: BezierPath, pathB: BezierPath, options?: BooleanOptions): BooleanResult {
-  return booleanOperation(pathA, pathB, 'unite', options);
+export function unite(
+  pathA: BezierPath,
+  pathB: BezierPath,
+  options?: BooleanOptions,
+): BooleanResult {
+  return booleanOperation(pathA, pathB, "unite", options);
 }
 
 /**
  * Subtract pathB from pathA
  */
-export function subtract(pathA: BezierPath, pathB: BezierPath, options?: BooleanOptions): BooleanResult {
-  return booleanOperation(pathA, pathB, 'subtract', options);
+export function subtract(
+  pathA: BezierPath,
+  pathB: BezierPath,
+  options?: BooleanOptions,
+): BooleanResult {
+  return booleanOperation(pathA, pathB, "subtract", options);
 }
 
 /**
  * Intersect two paths (area common to both)
  */
-export function intersect(pathA: BezierPath, pathB: BezierPath, options?: BooleanOptions): BooleanResult {
-  return booleanOperation(pathA, pathB, 'intersect', options);
+export function intersect(
+  pathA: BezierPath,
+  pathB: BezierPath,
+  options?: BooleanOptions,
+): BooleanResult {
+  return booleanOperation(pathA, pathB, "intersect", options);
 }
 
 /**
  * Exclude (XOR) two paths (area in either but not both)
  */
-export function exclude(pathA: BezierPath, pathB: BezierPath, options?: BooleanOptions): BooleanResult {
-  return booleanOperation(pathA, pathB, 'exclude', options);
+export function exclude(
+  pathA: BezierPath,
+  pathB: BezierPath,
+  options?: BooleanOptions,
+): BooleanResult {
+  return booleanOperation(pathA, pathB, "exclude", options);
 }
 
 /**
  * Divide pathA by pathB (split into separate pieces)
  */
-export function divide(pathA: BezierPath, pathB: BezierPath, options?: BooleanOptions): BooleanResult {
-  return booleanOperation(pathA, pathB, 'divide', options);
+export function divide(
+  pathA: BezierPath,
+  pathB: BezierPath,
+  options?: BooleanOptions,
+): BooleanResult {
+  return booleanOperation(pathA, pathB, "divide", options);
 }
 
 // ============================================================================
@@ -290,7 +335,10 @@ export function divide(pathA: BezierPath, pathB: BezierPath, options?: BooleanOp
 /**
  * Union multiple paths into one
  */
-export function uniteAll(paths: BezierPath[], options?: BooleanOptions): BooleanResult {
+export function uniteAll(
+  paths: BezierPath[],
+  options?: BooleanOptions,
+): BooleanResult {
   if (paths.length === 0) {
     return { paths: [], success: true };
   }
@@ -313,7 +361,10 @@ export function uniteAll(paths: BezierPath[], options?: BooleanOptions): Boolean
 /**
  * Intersect multiple paths (area common to all)
  */
-export function intersectAll(paths: BezierPath[], options?: BooleanOptions): BooleanResult {
+export function intersectAll(
+  paths: BezierPath[],
+  options?: BooleanOptions,
+): BooleanResult {
   if (paths.length === 0) {
     return { paths: [], success: true };
   }
@@ -344,7 +395,10 @@ export function intersectAll(paths: BezierPath[], options?: BooleanOptions): Boo
 /**
  * Simplify a path by removing redundant points while preserving shape
  */
-export function simplifyPath(path: BezierPath, tolerance: number = 2.5): BezierPath {
+export function simplifyPath(
+  path: BezierPath,
+  tolerance: number = 2.5,
+): BezierPath {
   try {
     initializePaper();
 
@@ -355,7 +409,7 @@ export function simplifyPath(path: BezierPath, tolerance: number = 2.5): BezierP
 
     return result;
   } catch (error) {
-    logger.warn('Path simplification failed:', error);
+    logger.warn("Path simplification failed:", error);
     return path;
   }
 }
@@ -363,7 +417,10 @@ export function simplifyPath(path: BezierPath, tolerance: number = 2.5): BezierP
 /**
  * Flatten a path by converting curves to line segments
  */
-export function flattenPath(path: BezierPath, tolerance: number = 0.25): BezierPath {
+export function flattenPath(
+  path: BezierPath,
+  tolerance: number = 0.25,
+): BezierPath {
   try {
     initializePaper();
 
@@ -374,7 +431,7 @@ export function flattenPath(path: BezierPath, tolerance: number = 0.25): BezierP
 
     return result;
   } catch (error) {
-    logger.warn('Path flattening failed:', error);
+    logger.warn("Path flattening failed:", error);
     return path;
   }
 }
@@ -393,7 +450,7 @@ export function smoothPath(path: BezierPath): BezierPath {
 
     return result;
   } catch (error) {
-    logger.warn('Path smoothing failed:', error);
+    logger.warn("Path smoothing failed:", error);
     return path;
   }
 }
@@ -411,7 +468,7 @@ export function getPathArea(path: BezierPath): number {
 
     return area;
   } catch (error) {
-    logger.warn('Failed to calculate path area:', error);
+    logger.warn("Failed to calculate path area:", error);
     return 0;
   }
 }
@@ -429,7 +486,7 @@ export function getPathLength(path: BezierPath): number {
 
     return length;
   } catch (error) {
-    logger.warn('Failed to calculate path length:', error);
+    logger.warn("Failed to calculate path length:", error);
     return 0;
   }
 }
@@ -437,17 +494,22 @@ export function getPathLength(path: BezierPath): number {
 /**
  * Get a point on the path at a given offset (0-1 normalized)
  */
-export function getPointOnPath(path: BezierPath, offset: number): Point2D | null {
+export function getPointOnPath(
+  path: BezierPath,
+  offset: number,
+): Point2D | null {
   try {
     initializePaper();
 
     const paperPath = latticePathToPaperPath(path);
-    const point = paperPath.getPointAt(paperPath.length * Math.max(0, Math.min(1, offset)));
+    const point = paperPath.getPointAt(
+      paperPath.length * Math.max(0, Math.min(1, offset)),
+    );
     paperPath.remove();
 
     return point ? { x: point.x, y: point.y } : null;
   } catch (error) {
-    logger.warn('Failed to get point on path:', error);
+    logger.warn("Failed to get point on path:", error);
     return null;
   }
 }
@@ -455,17 +517,22 @@ export function getPointOnPath(path: BezierPath, offset: number): Point2D | null
 /**
  * Get tangent vector at a point on the path
  */
-export function getTangentOnPath(path: BezierPath, offset: number): Point2D | null {
+export function getTangentOnPath(
+  path: BezierPath,
+  offset: number,
+): Point2D | null {
   try {
     initializePaper();
 
     const paperPath = latticePathToPaperPath(path);
-    const tangent = paperPath.getTangentAt(paperPath.length * Math.max(0, Math.min(1, offset)));
+    const tangent = paperPath.getTangentAt(
+      paperPath.length * Math.max(0, Math.min(1, offset)),
+    );
     paperPath.remove();
 
     return tangent ? { x: tangent.x, y: tangent.y } : null;
   } catch (error) {
-    logger.warn('Failed to get tangent on path:', error);
+    logger.warn("Failed to get tangent on path:", error);
     return null;
   }
 }
@@ -473,17 +540,22 @@ export function getTangentOnPath(path: BezierPath, offset: number): Point2D | nu
 /**
  * Get normal vector at a point on the path
  */
-export function getNormalOnPath(path: BezierPath, offset: number): Point2D | null {
+export function getNormalOnPath(
+  path: BezierPath,
+  offset: number,
+): Point2D | null {
   try {
     initializePaper();
 
     const paperPath = latticePathToPaperPath(path);
-    const normal = paperPath.getNormalAt(paperPath.length * Math.max(0, Math.min(1, offset)));
+    const normal = paperPath.getNormalAt(
+      paperPath.length * Math.max(0, Math.min(1, offset)),
+    );
     paperPath.remove();
 
     return normal ? { x: normal.x, y: normal.y } : null;
   } catch (error) {
-    logger.warn('Failed to get normal on path:', error);
+    logger.warn("Failed to get normal on path:", error);
     return null;
   }
 }
@@ -506,7 +578,7 @@ export function pathsIntersect(pathA: BezierPath, pathB: BezierPath): boolean {
 
     return hasIntersections;
   } catch (error) {
-    logger.warn('Failed to check path intersections:', error);
+    logger.warn("Failed to check path intersections:", error);
     return false;
   }
 }
@@ -514,7 +586,10 @@ export function pathsIntersect(pathA: BezierPath, pathB: BezierPath): boolean {
 /**
  * Get intersection points between two paths
  */
-export function getPathIntersections(pathA: BezierPath, pathB: BezierPath): Point2D[] {
+export function getPathIntersections(
+  pathA: BezierPath,
+  pathB: BezierPath,
+): Point2D[] {
   try {
     initializePaper();
 
@@ -522,14 +597,14 @@ export function getPathIntersections(pathA: BezierPath, pathB: BezierPath): Poin
     const paperB = latticePathToPaperPath(pathB);
 
     const intersections = paperA.getIntersections(paperB);
-    const points = intersections.map(i => ({ x: i.point.x, y: i.point.y }));
+    const points = intersections.map((i) => ({ x: i.point.x, y: i.point.y }));
 
     paperA.remove();
     paperB.remove();
 
     return points;
   } catch (error) {
-    logger.warn('Failed to get path intersections:', error);
+    logger.warn("Failed to get path intersections:", error);
     return [];
   }
 }

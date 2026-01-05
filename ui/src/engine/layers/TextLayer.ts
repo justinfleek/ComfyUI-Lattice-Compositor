@@ -38,41 +38,49 @@
  * - Opacity (animatable)
  */
 
-import * as THREE from 'three';
-import { Text as TroikaText } from 'troika-three-text';
-import type { Layer, TextData, AnimatableProperty, ControlPoint } from '@/types/project';
-import type { ResourceManager } from '../core/ResourceManager';
-import { BaseLayer } from './BaseLayer';
-import { KeyframeEvaluator } from '../animation/KeyframeEvaluator';
-import {
-  TextOnPathService,
-  createDefaultPathConfig,
-  type TextOnPathConfig,
-  type CharacterPlacement,
-} from '@/services/textOnPath';
+import * as THREE from "three";
+import { Text as TroikaText } from "troika-three-text";
 import {
   calculateCompleteCharacterInfluence,
   calculateWigglyOffset,
-} from '@/services/textAnimator';
+} from "@/services/textAnimator";
 import {
-  textShaper,
-  loadFontForShaping,
-  type FontMetrics,
-} from '@/services/textShaper';
-import type { TextAnimator } from '@/types/project';
+  type CharacterPlacement,
+  createDefaultPathConfig,
+  type TextOnPathConfig,
+  TextOnPathService,
+} from "@/services/textOnPath";
+import { loadFontForShaping, textShaper } from "@/services/textShaper";
+import type {
+  AnimatableProperty,
+  ControlPoint,
+  Layer,
+  TextAnimator,
+  TextData,
+} from "@/types/project";
+import { KeyframeEvaluator } from "../animation/KeyframeEvaluator";
+import type { ResourceManager } from "../core/ResourceManager";
+import { BaseLayer } from "./BaseLayer";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
 /** Anchor point grouping mode for text animation */
-export type AnchorPointGrouping = 'character' | 'word' | 'line' | 'all';
+export type AnchorPointGrouping = "character" | "word" | "line" | "all";
 
 /** Fill and stroke rendering order */
-export type FillStrokeOrder = 'perCharacter' | 'fillOverStroke' | 'strokeOverFill';
+export type FillStrokeOrder =
+  | "perCharacter"
+  | "fillOverStroke"
+  | "strokeOverFill";
 
 /** Inter-character blending mode */
-export type InterCharacterBlending = 'normal' | 'multiply' | 'screen' | 'overlay';
+export type InterCharacterBlending =
+  | "normal"
+  | "multiply"
+  | "screen"
+  | "overlay";
 
 /** Per-character transform for animation */
 export interface CharacterTransform {
@@ -87,8 +95,6 @@ export interface CharacterTransform {
 // ============================================================================
 
 export class TextLayer extends BaseLayer {
-  private readonly resources: ResourceManager;
-
   // Text rendering
   private textMesh: InstanceType<typeof TroikaText>;
   private perCharacterGroup: THREE.Group | null = null;
@@ -100,14 +106,12 @@ export class TextLayer extends BaseLayer {
   // Animatable text properties (from layer.properties)
   private fontSizeProp?: AnimatableProperty<number>;
   private trackingProp?: AnimatableProperty<number>;
-  private lineSpacingProp?: AnimatableProperty<number>;
   private fillColorProp?: AnimatableProperty<string>;
   private strokeColorProp?: AnimatableProperty<string>;
   private strokeWidthProp?: AnimatableProperty<number>;
   private pathOffsetProp?: AnimatableProperty<number>;
   private firstMarginProp?: AnimatableProperty<number>;
   private lastMarginProp?: AnimatableProperty<number>;
-  private characterOffsetProp?: AnimatableProperty<number>;
 
   // Per-character animation
   private characterTransforms?: AnimatableProperty<CharacterTransform[]>;
@@ -115,15 +119,10 @@ export class TextLayer extends BaseLayer {
   // Path following service
   private textOnPath: TextOnPathService;
   private pathConfig: TextOnPathConfig;
-  private pathControlPoints: ControlPoint[] = [];
-  private pathClosed: boolean = false;
 
   // Character width cache (recalculated when text/font changes)
   private characterWidths: number[] = [];
   private characterWidthsDirty: boolean = true;
-
-  // Font metrics for accurate character widths (loaded async)
-  private fontMetrics: FontMetrics | null = null;
   private fontLoadingPromise: Promise<void> | null = null;
   private useAccurateMetrics: boolean = false;
 
@@ -206,9 +205,11 @@ export class TextLayer extends BaseLayer {
             this.createCharacterMeshes();
           }
         }
-      } catch (error) {
+      } catch (_error) {
         // Silently fall back to heuristics if font loading fails
-        console.debug(`TextLayer: Could not load font metrics for "${fontFamily}", using heuristics`);
+        console.debug(
+          `TextLayer: Could not load font metrics for "${fontFamily}", using heuristics`,
+        );
         this.useAccurateMetrics = false;
       }
     })();
@@ -227,13 +228,13 @@ export class TextLayer extends BaseLayer {
     const data = layerData.data as TextData | null;
 
     return {
-      text: data?.text ?? 'Text',
-      fontFamily: data?.fontFamily ?? 'Impact',
+      text: data?.text ?? "Text",
+      fontFamily: data?.fontFamily ?? "Impact",
       fontSize: data?.fontSize ?? 72,
-      fontWeight: data?.fontWeight ?? '400',
-      fontStyle: data?.fontStyle ?? 'normal',
-      fill: data?.fill ?? '#ffffff',
-      stroke: data?.stroke ?? '',
+      fontWeight: data?.fontWeight ?? "400",
+      fontStyle: data?.fontStyle ?? "normal",
+      fill: data?.fill ?? "#ffffff",
+      stroke: data?.stroke ?? "",
       strokeWidth: data?.strokeWidth ?? 0,
 
       // Character properties
@@ -247,7 +248,7 @@ export class TextLayer extends BaseLayer {
       // Paragraph (aliases)
       letterSpacing: data?.letterSpacing ?? data?.tracking ?? 0,
       lineHeight: data?.lineHeight ?? data?.lineSpacing ?? 1.2,
-      textAlign: data?.textAlign ?? 'left',
+      textAlign: data?.textAlign ?? "left",
 
       // Path options (full AE parity)
       pathLayerId: data?.pathLayerId ?? null,
@@ -257,13 +258,13 @@ export class TextLayer extends BaseLayer {
       pathFirstMargin: data?.pathFirstMargin ?? 0,
       pathLastMargin: data?.pathLastMargin ?? 0,
       pathOffset: data?.pathOffset ?? 0,
-      pathAlign: data?.pathAlign ?? 'left',
+      pathAlign: data?.pathAlign ?? "left",
 
       // More Options
-      anchorPointGrouping: data?.anchorPointGrouping ?? 'character',
+      anchorPointGrouping: data?.anchorPointGrouping ?? "character",
       groupingAlignment: data?.groupingAlignment ?? { x: 0, y: 0 },
-      fillAndStroke: data?.fillAndStroke ?? 'fill-over-stroke',
-      interCharacterBlending: data?.interCharacterBlending ?? 'normal',
+      fillAndStroke: data?.fillAndStroke ?? "fill-over-stroke",
+      interCharacterBlending: data?.interCharacterBlending ?? "normal",
 
       // 3D
       perCharacter3D: data?.perCharacter3D ?? false,
@@ -281,34 +282,34 @@ export class TextLayer extends BaseLayer {
 
     for (const prop of layerData.properties) {
       switch (prop.name) {
-        case 'Font Size':
+        case "Font Size":
           this.fontSizeProp = prop as AnimatableProperty<number>;
           break;
-        case 'Tracking':
+        case "Tracking":
           this.trackingProp = prop as AnimatableProperty<number>;
           break;
-        case 'Line Spacing':
+        case "Line Spacing":
           this.lineSpacingProp = prop as AnimatableProperty<number>;
           break;
-        case 'Fill Color':
+        case "Fill Color":
           this.fillColorProp = prop as AnimatableProperty<string>;
           break;
-        case 'Stroke Color':
+        case "Stroke Color":
           this.strokeColorProp = prop as AnimatableProperty<string>;
           break;
-        case 'Stroke Width':
+        case "Stroke Width":
           this.strokeWidthProp = prop as AnimatableProperty<number>;
           break;
-        case 'Path Offset':
+        case "Path Offset":
           this.pathOffsetProp = prop as AnimatableProperty<number>;
           break;
-        case 'First Margin':
+        case "First Margin":
           this.firstMarginProp = prop as AnimatableProperty<number>;
           break;
-        case 'Last Margin':
+        case "Last Margin":
           this.lastMarginProp = prop as AnimatableProperty<number>;
           break;
-        case 'Character Offset':
+        case "Character Offset":
           this.characterOffsetProp = prop as AnimatableProperty<number>;
           break;
       }
@@ -350,8 +351,8 @@ export class TextLayer extends BaseLayer {
     text.fontSize = this.textData.fontSize;
 
     // Font weight and style (using type assertions - Troika supports these but types are incomplete)
-    (text as any).fontWeight = this.textData.fontWeight || '400';
-    (text as any).fontStyle = this.textData.fontStyle || 'normal';
+    (text as any).fontWeight = this.textData.fontWeight || "400";
+    (text as any).fontStyle = this.textData.fontStyle || "normal";
 
     // Colors
     text.color = this.textData.fill;
@@ -367,7 +368,7 @@ export class TextLayer extends BaseLayer {
     // Alignment
     text.textAlign = this.textData.textAlign;
     text.anchorX = this.getAnchorX();
-    text.anchorY = 'middle';
+    text.anchorY = "middle";
 
     // Rendering quality settings
     text.depthOffset = 0;
@@ -396,8 +397,16 @@ export class TextLayer extends BaseLayer {
    */
   private getFontUrl(fontFamily: string): string | undefined {
     const systemFonts = [
-      'Arial', 'Helvetica', 'Times New Roman', 'Georgia', 'Verdana',
-      'Courier New', 'Impact', 'Comic Sans MS', 'Trebuchet MS', 'Palatino',
+      "Arial",
+      "Helvetica",
+      "Times New Roman",
+      "Georgia",
+      "Verdana",
+      "Courier New",
+      "Impact",
+      "Comic Sans MS",
+      "Trebuchet MS",
+      "Palatino",
     ];
 
     if (systemFonts.includes(fontFamily)) {
@@ -405,12 +414,17 @@ export class TextLayer extends BaseLayer {
     }
 
     const googleFonts: Record<string, string> = {
-      'Roboto': 'https://fonts.gstatic.com/s/roboto/v30/KFOmCnqEu92Fr1Mu4mxK.woff2',
-      'Open Sans': 'https://fonts.gstatic.com/s/opensans/v35/memSYaGs126MiZpBA-UvWbX2vVnXBbObj2OVZyOOSr4dVJWUgsjZ0B4gaVI.woff2',
-      'Lato': 'https://fonts.gstatic.com/s/lato/v24/S6uyw4BMUTPHjx4wXg.woff2',
-      'Montserrat': 'https://fonts.gstatic.com/s/montserrat/v26/JTUHjIg1_i6t8kCHKm4532VJOt5-QNFgpCtr6Hw5aXo.woff2',
-      'Oswald': 'https://fonts.gstatic.com/s/oswald/v53/TK3_WkUHHAIjg75cFRf3bXL8LICs1_FvsUZiYA.woff2',
-      'Poppins': 'https://fonts.gstatic.com/s/poppins/v21/pxiEyp8kv8JHgFVrJJfecg.woff2',
+      Roboto:
+        "https://fonts.gstatic.com/s/roboto/v30/KFOmCnqEu92Fr1Mu4mxK.woff2",
+      "Open Sans":
+        "https://fonts.gstatic.com/s/opensans/v35/memSYaGs126MiZpBA-UvWbX2vVnXBbObj2OVZyOOSr4dVJWUgsjZ0B4gaVI.woff2",
+      Lato: "https://fonts.gstatic.com/s/lato/v24/S6uyw4BMUTPHjx4wXg.woff2",
+      Montserrat:
+        "https://fonts.gstatic.com/s/montserrat/v26/JTUHjIg1_i6t8kCHKm4532VJOt5-QNFgpCtr6Hw5aXo.woff2",
+      Oswald:
+        "https://fonts.gstatic.com/s/oswald/v53/TK3_WkUHHAIjg75cFRf3bXL8LICs1_FvsUZiYA.woff2",
+      Poppins:
+        "https://fonts.gstatic.com/s/poppins/v21/pxiEyp8kv8JHgFVrJJfecg.woff2",
     };
 
     return googleFonts[fontFamily];
@@ -422,11 +436,14 @@ export class TextLayer extends BaseLayer {
    * - ◀ (left) button makes text appear on LEFT (anchor right edge)
    * - ▶ (right) button makes text appear on RIGHT (anchor left edge)
    */
-  private getAnchorX(): 'left' | 'center' | 'right' {
+  private getAnchorX(): "left" | "center" | "right" {
     switch (this.textData.textAlign) {
-      case 'left': return 'right';  // Anchor right edge so text extends left
-      case 'right': return 'left';  // Anchor left edge so text extends right
-      default: return 'center';
+      case "left":
+        return "right"; // Anchor right edge so text extends left
+      case "right":
+        return "left"; // Anchor left edge so text extends right
+      default:
+        return "center";
     }
   }
 
@@ -438,7 +455,10 @@ export class TextLayer extends BaseLayer {
    * Set the path from SplineLayer control points
    * Called by LayerManager when connecting text to a spline
    */
-  setPathFromControlPoints(controlPoints: ControlPoint[], closed: boolean = false): void {
+  setPathFromControlPoints(
+    controlPoints: ControlPoint[],
+    closed: boolean = false,
+  ): void {
     this.pathControlPoints = controlPoints;
     this.pathClosed = closed;
 
@@ -497,7 +517,7 @@ export class TextLayer extends BaseLayer {
       this.characterWidths,
       this.pathConfig,
       this.textData.tracking,
-      this.textData.fontSize
+      this.textData.fontSize,
     );
 
     // Apply placements to character meshes
@@ -508,7 +528,11 @@ export class TextLayer extends BaseLayer {
    * Apply character placements to meshes
    */
   private applyPlacements(placements: CharacterPlacement[]): void {
-    for (let i = 0; i < this.characterMeshes.length && i < placements.length; i++) {
+    for (
+      let i = 0;
+      i < this.characterMeshes.length && i < placements.length;
+      i++
+    ) {
       const mesh = this.characterMeshes[i];
       const placement = placements[i];
 
@@ -555,7 +579,7 @@ export class TextLayer extends BaseLayer {
         {
           kern: this.textData.kerning ?? true,
           letterSpacing: this.textData.tracking ?? 0,
-        }
+        },
       );
       this.characterWidthsDirty = false;
       return;
@@ -568,15 +592,15 @@ export class TextLayer extends BaseLayer {
     for (let i = 0; i < text.length; i++) {
       const char = text[i];
       // Narrow characters
-      if ('iIl1|!.,;:\'"'.includes(char)) {
+      if ("iIl1|!.,;:'\"".includes(char)) {
         this.characterWidths.push(avgCharWidth * 0.4);
       }
       // Wide characters
-      else if ('mwMW'.includes(char)) {
+      else if ("mwMW".includes(char)) {
         this.characterWidths.push(avgCharWidth * 1.3);
       }
       // Space
-      else if (char === ' ') {
+      else if (char === " ") {
         this.characterWidths.push(avgCharWidth * 0.5);
       }
       // Average
@@ -641,16 +665,19 @@ export class TextLayer extends BaseLayer {
 
     // Calculate positions for horizontal layout
     this.ensureCharacterWidths();
-    const totalWidth = this.characterWidths.reduce((a, b) => a + b, 0) +
-      (text.length - 1) * (this.textData.tracking / 1000) * this.textData.fontSize;
+    const totalWidth =
+      this.characterWidths.reduce((a, b) => a + b, 0) +
+      (text.length - 1) *
+        (this.textData.tracking / 1000) *
+        this.textData.fontSize;
 
     // Determine start X based on alignment
     let startX = 0;
     switch (this.textData.textAlign) {
-      case 'center':
+      case "center":
         startX = -totalWidth / 2;
         break;
-      case 'right':
+      case "right":
         startX = -totalWidth;
         break;
       default:
@@ -666,14 +693,15 @@ export class TextLayer extends BaseLayer {
       charMesh.text = char;
       charMesh.font = this.getFontUrl(this.textData.fontFamily) ?? null;
       charMesh.fontSize = this.textData.fontSize;
-      (charMesh as any).fontWeight = this.textData.fontWeight || '400';
-      (charMesh as any).fontStyle = this.textData.fontStyle || 'normal';
+      (charMesh as any).fontWeight = this.textData.fontWeight || "400";
+      (charMesh as any).fontStyle = this.textData.fontStyle || "normal";
       charMesh.color = this.textData.fill;
-      charMesh.anchorX = 'center';
-      charMesh.anchorY = 'middle';
+      charMesh.anchorX = "center";
+      charMesh.anchorY = "middle";
 
       if (this.textData.stroke && this.textData.strokeWidth > 0) {
-        charMesh.outlineWidth = this.textData.strokeWidth / this.textData.fontSize;
+        charMesh.outlineWidth =
+          this.textData.strokeWidth / this.textData.fontSize;
         charMesh.outlineColor = this.textData.stroke;
         (charMesh as any).outlineBlur = 0.005;
       }
@@ -687,7 +715,8 @@ export class TextLayer extends BaseLayer {
       charMesh.position.y = 0;
       charMesh.position.z = 0;
 
-      xOffset += charWidth + (this.textData.tracking / 1000) * this.textData.fontSize;
+      xOffset +=
+        charWidth + (this.textData.tracking / 1000) * this.textData.fontSize;
 
       charMesh.sync();
       this.characterMeshes.push(charMesh);
@@ -718,7 +747,7 @@ export class TextLayer extends BaseLayer {
   setText(text: string): void {
     // Cap text length to prevent performance issues (10,000 chars max)
     const MAX_TEXT_LENGTH = 10000;
-    const validText = (text ?? '').slice(0, MAX_TEXT_LENGTH);
+    const validText = (text ?? "").slice(0, MAX_TEXT_LENGTH);
     this.textData.text = validText;
     this.textMesh.text = validText;
     this.textMesh.sync();
@@ -754,7 +783,7 @@ export class TextLayer extends BaseLayer {
 
   setFontSize(size: number): void {
     // Validate size (NaN/0 would cause division errors in stroke width calculations)
-    const validSize = (Number.isFinite(size) && size > 0) ? size : 72;
+    const validSize = Number.isFinite(size) && size > 0 ? size : 72;
     this.textData.fontSize = validSize;
     this.textMesh.fontSize = validSize;
     this.textMesh.sync();
@@ -786,7 +815,7 @@ export class TextLayer extends BaseLayer {
   }
 
   setFontStyle(style: string): void {
-    this.textData.fontStyle = style as 'normal' | 'italic';
+    this.textData.fontStyle = style as "normal" | "italic";
     (this.textMesh as any).fontStyle = style;
     this.textMesh.sync();
 
@@ -818,7 +847,7 @@ export class TextLayer extends BaseLayer {
 
     const outlineWidth = width > 0 ? width / this.textData.fontSize : 0;
     this.textMesh.outlineWidth = outlineWidth;
-    this.textMesh.outlineColor = width > 0 ? color : '';
+    this.textMesh.outlineColor = width > 0 ? color : "";
     // Force material update for stroke changes
     if (this.textMesh.material) {
       (this.textMesh.material as THREE.Material).needsUpdate = true;
@@ -826,7 +855,7 @@ export class TextLayer extends BaseLayer {
 
     for (const charMesh of this.characterMeshes) {
       charMesh.outlineWidth = outlineWidth;
-      charMesh.outlineColor = width > 0 ? color : '';
+      charMesh.outlineColor = width > 0 ? color : "";
       if (charMesh.material) {
         (charMesh.material as THREE.Material).needsUpdate = true;
       }
@@ -849,7 +878,7 @@ export class TextLayer extends BaseLayer {
     }
   }
 
-  setTextAlign(align: 'left' | 'center' | 'right'): void {
+  setTextAlign(align: "left" | "center" | "right"): void {
     this.textData.textAlign = align;
     this.textMesh.textAlign = align;
     this.textMesh.anchorX = this.getAnchorX();
@@ -942,7 +971,7 @@ export class TextLayer extends BaseLayer {
     this.textData.anchorPointGrouping = grouping;
   }
 
-  setFillAndStroke(order: 'fill-over-stroke' | 'stroke-over-fill'): void {
+  setFillAndStroke(order: "fill-over-stroke" | "stroke-over-fill"): void {
     this.textData.fillAndStroke = order;
   }
 
@@ -1018,47 +1047,53 @@ export class TextLayer extends BaseLayer {
     super.setCompositionFps(fps);
   }
 
-  protected override onApplyEvaluatedState(state: import('../MotionEngine').EvaluatedLayer): void {
+  protected override onApplyEvaluatedState(
+    state: import("../MotionEngine").EvaluatedLayer,
+  ): void {
     const props = state.properties;
     const frame = state.frame;
 
     // Apply evaluated text properties
-    if (props['fontSize'] !== undefined) {
-      this.setFontSize(props['fontSize'] as number);
+    if (props.fontSize !== undefined) {
+      this.setFontSize(props.fontSize as number);
     }
 
-    if (props['tracking'] !== undefined) {
-      this.setTracking(props['tracking'] as number);
+    if (props.tracking !== undefined) {
+      this.setTracking(props.tracking as number);
     }
 
-    if (props['fillColor'] !== undefined) {
-      this.setFillColor(props['fillColor'] as string);
+    if (props.fillColor !== undefined) {
+      this.setFillColor(props.fillColor as string);
     }
 
-    if (props['strokeColor'] !== undefined || props['strokeWidth'] !== undefined) {
+    if (props.strokeColor !== undefined || props.strokeWidth !== undefined) {
       this.setStroke(
-        (props['strokeColor'] as string) ?? this.textData.stroke,
-        (props['strokeWidth'] as number) ?? this.textData.strokeWidth
+        (props.strokeColor as string) ?? this.textData.stroke,
+        (props.strokeWidth as number) ?? this.textData.strokeWidth,
       );
     }
 
     // Path animation properties
-    if (props['pathOffset'] !== undefined) {
-      this.setPathOffset(props['pathOffset'] as number);
+    if (props.pathOffset !== undefined) {
+      this.setPathOffset(props.pathOffset as number);
     }
 
-    if (props['firstMargin'] !== undefined) {
-      this.setFirstMargin(props['firstMargin'] as number);
+    if (props.firstMargin !== undefined) {
+      this.setFirstMargin(props.firstMargin as number);
     }
 
-    if (props['lastMargin'] !== undefined) {
-      this.setLastMargin(props['lastMargin'] as number);
+    if (props.lastMargin !== undefined) {
+      this.setLastMargin(props.lastMargin as number);
     }
 
     // BUG-094 fix: Apply pathPosition audio modifier
     // pathPosition is 0-1, pathOffset is 0-100%, so multiply by 100
     const audioMod = this.currentAudioModifiers;
-    if (audioMod.pathPosition !== undefined && audioMod.pathPosition !== 0 && this.textOnPath.hasPath()) {
+    if (
+      audioMod.pathPosition !== undefined &&
+      audioMod.pathPosition !== 0 &&
+      this.textOnPath.hasPath()
+    ) {
       // Apply as additive to current pathOffset (convert 0-1 to percentage points)
       const additionalOffset = audioMod.pathPosition * 100;
       this.setPathOffset(this.textData.pathOffset + additionalOffset);
@@ -1091,9 +1126,16 @@ export class TextLayer extends BaseLayer {
   private applyCharacterTransforms(frame: number): void {
     if (!this.characterTransforms) return;
 
-    const transforms = this.textEvaluator.evaluate(this.characterTransforms, frame);
+    const transforms = this.textEvaluator.evaluate(
+      this.characterTransforms,
+      frame,
+    );
 
-    for (let i = 0; i < this.characterMeshes.length && i < transforms.length; i++) {
+    for (
+      let i = 0;
+      i < this.characterMeshes.length && i < transforms.length;
+      i++
+    ) {
       const charMesh = this.characterMeshes[i];
       const t = transforms[i];
 
@@ -1178,7 +1220,7 @@ export class TextLayer extends BaseLayer {
           totalChars,
           animator,
           frame,
-          fps
+          fps,
         );
 
         // Skip if no influence
@@ -1196,9 +1238,17 @@ export class TextLayer extends BaseLayer {
           const scaleVal = this.getAnimatorPropertyValue(props.scale, frame);
           // Scale is percentage-based (100 = no change)
           // Blend from original scale to animator scale value
-          const scaleX = original.scaleX + ((scaleVal.x / 100) - 1) * original.scaleX * influence;
-          const scaleY = original.scaleY + ((scaleVal.y / 100) - 1) * original.scaleY * influence;
-          charMesh.scale.set(Math.max(0.001, scaleX), Math.max(0.001, scaleY), 1);
+          const scaleX =
+            original.scaleX +
+            (scaleVal.x / 100 - 1) * original.scaleX * influence;
+          const scaleY =
+            original.scaleY +
+            (scaleVal.y / 100 - 1) * original.scaleY * influence;
+          charMesh.scale.set(
+            Math.max(0.001, scaleX),
+            Math.max(0.001, scaleY),
+            1,
+          );
         }
 
         // Apply Rotation
@@ -1210,18 +1260,25 @@ export class TextLayer extends BaseLayer {
 
         // Apply Opacity
         if (props.opacity !== undefined) {
-          const opacityVal = this.getAnimatorPropertyValue(props.opacity, frame);
+          const opacityVal = this.getAnimatorPropertyValue(
+            props.opacity,
+            frame,
+          );
           // Opacity is 0-100, influence determines blend
           // At influence=0: original opacity, at influence=1: animator opacity value
           const targetOpacity = opacityVal / 100;
-          const blendedOpacity = original.opacity * (1 - influence) + targetOpacity * influence;
+          const blendedOpacity =
+            original.opacity * (1 - influence) + targetOpacity * influence;
           charMesh.fillOpacity = Math.max(0, Math.min(1, blendedOpacity));
           charMesh.outlineOpacity = charMesh.fillOpacity;
         }
 
         // Apply Fill Color
         if (props.fillColor) {
-          const colorVal = this.getAnimatorPropertyValue(props.fillColor, frame);
+          const colorVal = this.getAnimatorPropertyValue(
+            props.fillColor,
+            frame,
+          );
           // Blend colors using influence
           // For simplicity, we'll use the color when influence > 0.5
           if (influence > 0.5) {
@@ -1231,9 +1288,13 @@ export class TextLayer extends BaseLayer {
 
         // Apply Tracking offset
         if (props.tracking) {
-          const trackingVal = this.getAnimatorPropertyValue(props.tracking, frame);
+          const trackingVal = this.getAnimatorPropertyValue(
+            props.tracking,
+            frame,
+          );
           // Tracking is in thousandths of an em, convert to letter spacing
-          charMesh.letterSpacing = original.letterSpacing + (trackingVal / 1000) * influence;
+          charMesh.letterSpacing =
+            original.letterSpacing + (trackingVal / 1000) * influence;
         }
 
         // Apply Wiggly position offset (if wiggly selector is enabled)
@@ -1242,10 +1303,12 @@ export class TextLayer extends BaseLayer {
             i,
             animator.wigglySelector,
             frame,
-            fps
+            fps,
           );
-          charMesh.position.x += wiggleOffset.x * this.textData.fontSize * influence;
-          charMesh.position.y += wiggleOffset.y * this.textData.fontSize * influence;
+          charMesh.position.x +=
+            wiggleOffset.x * this.textData.fontSize * influence;
+          charMesh.position.y +=
+            wiggleOffset.y * this.textData.fontSize * influence;
         }
 
         // Apply Blur (if supported via material)
@@ -1271,7 +1334,10 @@ export class TextLayer extends BaseLayer {
   /**
    * Get the current value of an animator property (animated or static)
    */
-  private getAnimatorPropertyValue<T>(prop: AnimatableProperty<T>, frame: number): T {
+  private getAnimatorPropertyValue<T>(
+    prop: AnimatableProperty<T>,
+    frame: number,
+  ): T {
     if (!prop.animated || prop.keyframes.length === 0) {
       return prop.value;
     }
@@ -1309,7 +1375,7 @@ export class TextLayer extends BaseLayer {
       if (data.stroke !== undefined || data.strokeWidth !== undefined) {
         this.setStroke(
           data.stroke ?? this.textData.stroke,
-          data.strokeWidth ?? this.textData.strokeWidth
+          data.strokeWidth ?? this.textData.strokeWidth,
         );
       }
       if (data.tracking !== undefined) {
@@ -1343,7 +1409,11 @@ export class TextLayer extends BaseLayer {
       if (data.perCharacter3D !== undefined) {
         if (data.perCharacter3D && !this.perCharacterGroup) {
           this.enablePerCharacter3D();
-        } else if (!data.perCharacter3D && !this.textOnPath.hasPath() && this.perCharacterGroup) {
+        } else if (
+          !data.perCharacter3D &&
+          !this.textOnPath.hasPath() &&
+          this.perCharacterGroup
+        ) {
           this.disablePerCharacter3D();
         }
       }

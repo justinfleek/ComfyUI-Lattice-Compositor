@@ -100,10 +100,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue';
-import { SliderInput, ScrubableNumber, AngleDial } from '@/components/controls';
-import AssetUploader from './AssetUploader.vue';
-import type { EnvironmentMapConfig } from '@/engine/core/SceneManager';
+import { reactive, ref, watch } from "vue";
+import type { EnvironmentMapConfig } from "@/engine/core/SceneManager";
 
 interface EnvironmentPreset {
   id: string;
@@ -119,12 +117,12 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  'update:modelValue': [value: EnvironmentMapConfig];
-  'load-hdri': [url: string];
+  "update:modelValue": [value: EnvironmentMapConfig];
+  "load-hdri": [url: string];
   // Events for AssetsPanel
-  'update': [settings: Partial<EnvironmentMapConfig>];
-  'load': [file: File];
-  'clear': [];
+  update: [settings: Partial<EnvironmentMapConfig>];
+  load: [file: File];
+  clear: [];
 }>();
 
 // Default config
@@ -137,67 +135,98 @@ const defaultConfig: EnvironmentMapConfig = {
   toneMapping: true,
 };
 
-const configState = reactive<EnvironmentMapConfig>({ ...defaultConfig, ...props.modelValue, ...props.config });
+const configState = reactive<EnvironmentMapConfig>({
+  ...defaultConfig,
+  ...props.modelValue,
+  ...props.config,
+});
 const selectedPreset = ref<string | null>(null);
 
 // Alias for template compatibility (avoiding conflict with props.config)
-const config = configState;
+const _config = configState;
 
 // Built-in presets (these would normally link to actual HDRI files)
-const presets: EnvironmentPreset[] = [
-  { id: 'studio', name: 'Studio', color: 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%)' },
-  { id: 'outdoor', name: 'Outdoor', color: 'linear-gradient(135deg, #87CEEB 0%, #98D8C8 100%)' },
-  { id: 'sunset', name: 'Sunset', color: 'linear-gradient(135deg, #ff6b6b 0%, #ffa600 100%)' },
-  { id: 'night', name: 'Night', color: 'linear-gradient(135deg, #1a1a3e 0%, #0d0d1a 100%)' },
+const _presets: EnvironmentPreset[] = [
+  {
+    id: "studio",
+    name: "Studio",
+    color: "linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%)",
+  },
+  {
+    id: "outdoor",
+    name: "Outdoor",
+    color: "linear-gradient(135deg, #87CEEB 0%, #98D8C8 100%)",
+  },
+  {
+    id: "sunset",
+    name: "Sunset",
+    color: "linear-gradient(135deg, #ff6b6b 0%, #ffa600 100%)",
+  },
+  {
+    id: "night",
+    name: "Night",
+    color: "linear-gradient(135deg, #1a1a3e 0%, #0d0d1a 100%)",
+  },
 ];
 
 // Watch for external changes
-watch(() => props.modelValue, (newVal) => {
-  if (newVal) {
-    Object.assign(configState, { ...defaultConfig, ...newVal });
-  }
-}, { deep: true });
+watch(
+  () => props.modelValue,
+  (newVal) => {
+    if (newVal) {
+      Object.assign(configState, { ...defaultConfig, ...newVal });
+    }
+  },
+  { deep: true },
+);
 
-watch(() => props.config, (newVal) => {
-  if (newVal) {
-    Object.assign(configState, { ...defaultConfig, ...newVal });
-  }
-}, { deep: true });
+watch(
+  () => props.config,
+  (newVal) => {
+    if (newVal) {
+      Object.assign(configState, { ...defaultConfig, ...newVal });
+    }
+  },
+  { deep: true },
+);
 
 // Methods
-function updateConfig<K extends keyof EnvironmentMapConfig>(key: K, value: EnvironmentMapConfig[K]) {
+function _updateConfig<K extends keyof EnvironmentMapConfig>(
+  key: K,
+  value: EnvironmentMapConfig[K],
+) {
   configState[key] = value;
   emitUpdate();
 }
 
-function onHdriUpload(file: File, dataUrl?: string) {
+function _onHdriUpload(file: File, dataUrl?: string) {
   if (dataUrl) {
     configState.url = dataUrl;
     selectedPreset.value = null;
     emitUpdate();
-    emit('load-hdri', dataUrl);
-    emit('load', file);
+    emit("load-hdri", dataUrl);
+    emit("load", file);
   }
 }
 
-function onHdriRemove() {
+function _onHdriRemove() {
   configState.url = undefined;
   emitUpdate();
-  emit('clear');
+  emit("clear");
 }
 
-function applyPreset(preset: EnvironmentPreset) {
+function _applyPreset(preset: EnvironmentPreset) {
   selectedPreset.value = preset.id;
   if (preset.url) {
     configState.url = preset.url;
-    emit('load-hdri', preset.url);
+    emit("load-hdri", preset.url);
   }
   emitUpdate();
 }
 
 function emitUpdate() {
-  emit('update:modelValue', { ...configState });
-  emit('update', { ...configState });
+  emit("update:modelValue", { ...configState });
+  emit("update", { ...configState });
 }
 </script>
 

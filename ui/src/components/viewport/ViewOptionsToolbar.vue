@@ -115,9 +115,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import type { ViewType, ViewOptions, WireframeVisibility } from '@/types/camera';
+import { computed } from "vue";
+import { useCompositorStore } from "@/stores/compositorStore";
+import type {
+  ViewOptions,
+  ViewType,
+  WireframeVisibility,
+} from "@/types/camera";
 
 const store = useCompositorStore();
 
@@ -126,27 +130,28 @@ const viewportState = computed(() => store.viewportState);
 
 type ViewOptionKey = keyof ViewOptions;
 
-function toggleOption(key: ViewOptionKey) {
+function _toggleOption(key: ViewOptionKey) {
   const current = viewOptions.value[key];
-  if (typeof current === 'boolean') {
+  if (typeof current === "boolean") {
     store.updateViewOptions({ [key]: !current });
   }
 }
 
-function setCameraWireframes(value: WireframeVisibility) {
+function _setCameraWireframes(value: WireframeVisibility) {
   store.updateViewOptions({ cameraWireframes: value });
 }
 
-function setView(viewType: ViewType) {
+function _setView(viewType: ViewType) {
   const newViews = [...viewportState.value.views];
   newViews[viewportState.value.activeViewIndex] = viewType;
   store.updateViewportState({ views: newViews });
 }
 
-function resetView() {
-  const activeView = viewportState.value.views[viewportState.value.activeViewIndex];
-  if (activeView.startsWith('custom-')) {
-    const customViewKey = activeView as 'custom-1' | 'custom-2' | 'custom-3';
+function _resetView() {
+  const activeView =
+    viewportState.value.views[viewportState.value.activeViewIndex];
+  if (activeView.startsWith("custom-")) {
+    const customViewKey = activeView as "custom-1" | "custom-2" | "custom-3";
     store.updateViewportState({
       customViews: {
         ...viewportState.value.customViews,
@@ -156,22 +161,25 @@ function resetView() {
           orbitPhi: 60,
           orbitTheta: 45,
           orthoZoom: 1,
-          orthoOffset: { x: 0, y: 0 }
-        }
-      }
+          orthoOffset: { x: 0, y: 0 },
+        },
+      },
     });
   }
 }
 
-function focusSelected() {
-  const selectedLayer = store.layers.find(l => store.selectedLayerIds.includes(l.id));
+function _focusSelected() {
+  const selectedLayer = store.layers.find((l) =>
+    store.selectedLayerIds.includes(l.id),
+  );
   if (!selectedLayer) return;
 
   const pos = selectedLayer.transform.position.value;
-  const activeView = viewportState.value.views[viewportState.value.activeViewIndex];
+  const activeView =
+    viewportState.value.views[viewportState.value.activeViewIndex];
 
-  if (activeView.startsWith('custom-')) {
-    const customViewKey = activeView as 'custom-1' | 'custom-2' | 'custom-3';
+  if (activeView.startsWith("custom-")) {
+    const customViewKey = activeView as "custom-1" | "custom-2" | "custom-3";
     const currentView = viewportState.value.customViews[customViewKey];
 
     store.updateViewportState({
@@ -181,8 +189,8 @@ function focusSelected() {
           ...currentView,
           orbitCenter: { x: pos.x, y: pos.y, z: 0 },
           orbitDistance: Math.min(currentView.orbitDistance, 1000),
-        }
-      }
+        },
+      },
     });
   }
 }

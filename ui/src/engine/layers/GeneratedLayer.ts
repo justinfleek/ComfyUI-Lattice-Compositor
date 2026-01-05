@@ -13,9 +13,9 @@
  * DETERMINISM: Output is deterministic given same model + seed + input
  */
 
-import * as THREE from 'three';
-import type { Layer, GeneratedLayerData } from '@/types/project';
-import { BaseLayer } from './BaseLayer';
+import * as THREE from "three";
+import type { GeneratedLayerData, Layer } from "@/types/project";
+import { BaseLayer } from "./BaseLayer";
 
 export class GeneratedLayer extends BaseLayer {
   private mesh: THREE.Mesh | null = null;
@@ -36,15 +36,15 @@ export class GeneratedLayer extends BaseLayer {
   private extractGeneratedData(layerData: Layer): GeneratedLayerData {
     const data = layerData.data as Partial<GeneratedLayerData> | undefined;
     return {
-      generationType: data?.generationType ?? 'depth',
+      generationType: data?.generationType ?? "depth",
       sourceLayerId: data?.sourceLayerId ?? null,
-      model: data?.model ?? 'depth-anything-v2',
+      model: data?.model ?? "depth-anything-v2",
       parameters: data?.parameters ?? {},
       generatedAssetId: data?.generatedAssetId ?? null,
-      status: data?.status ?? 'pending',
+      status: data?.status ?? "pending",
       autoRegenerate: data?.autoRegenerate ?? false,
       lastGenerated: data?.lastGenerated,
-      errorMessage: data?.errorMessage
+      errorMessage: data?.errorMessage,
     };
   }
 
@@ -55,7 +55,7 @@ export class GeneratedLayer extends BaseLayer {
       color: 0xffffff,
       transparent: true,
       opacity: 1.0,
-      side: THREE.DoubleSide
+      side: THREE.DoubleSide,
     });
 
     this.mesh = new THREE.Mesh(geometry, this.material);
@@ -72,7 +72,7 @@ export class GeneratedLayer extends BaseLayer {
     const material = new THREE.MeshBasicMaterial({
       color: this.getStatusColor(),
       transparent: true,
-      opacity: 0.8
+      opacity: 0.8,
     });
 
     this.statusIndicator = new THREE.Mesh(geometry, material);
@@ -83,11 +83,16 @@ export class GeneratedLayer extends BaseLayer {
 
   private getStatusColor(): number {
     switch (this.generatedData.status) {
-      case 'pending': return 0xffaa00;    // Orange
-      case 'generating': return 0x00aaff; // Blue
-      case 'complete': return 0x00ff00;   // Green
-      case 'error': return 0xff0000;      // Red
-      default: return 0x888888;            // Gray
+      case "pending":
+        return 0xffaa00; // Orange
+      case "generating":
+        return 0x00aaff; // Blue
+      case "complete":
+        return 0x00ff00; // Green
+      case "error":
+        return 0xff0000; // Red
+      default:
+        return 0x888888; // Gray
     }
   }
 
@@ -103,10 +108,12 @@ export class GeneratedLayer extends BaseLayer {
   // ABSTRACT IMPLEMENTATIONS
   // ============================================================================
 
-  protected onEvaluateFrame(frame: number): void {
+  protected onEvaluateFrame(_frame: number): void {
     // Update status indicator color
     if (this.statusIndicator) {
-      (this.statusIndicator.material as THREE.MeshBasicMaterial).color.setHex(this.getStatusColor());
+      (this.statusIndicator.material as THREE.MeshBasicMaterial).color.setHex(
+        this.getStatusColor(),
+      );
     }
 
     // Generated layers show their output image
@@ -155,16 +162,17 @@ export class GeneratedLayer extends BaseLayer {
    * Trigger regeneration of the content
    */
   async regenerate(): Promise<void> {
-    this.generatedData.status = 'generating';
+    this.generatedData.status = "generating";
 
     try {
       // Generation would be handled by AI service
       // This is a placeholder for the generation pipeline
-      this.generatedData.status = 'complete';
+      this.generatedData.status = "complete";
       this.generatedData.lastGenerated = new Date().toISOString();
     } catch (error) {
-      this.generatedData.status = 'error';
-      this.generatedData.errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.generatedData.status = "error";
+      this.generatedData.errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
     }
   }
 }

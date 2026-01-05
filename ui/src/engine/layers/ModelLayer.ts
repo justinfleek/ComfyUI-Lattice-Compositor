@@ -18,32 +18,39 @@
  * - Depth/Normal material modes for matte export
  */
 
-import * as THREE from 'three';
-import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
-import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
-import { ColladaLoader, type Collada } from 'three/examples/jsm/loaders/ColladaLoader.js';
-import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
-import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader.js';
-import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
-import { SkeletonHelper } from 'three';
+import * as THREE from "three";
+import { SkeletonHelper } from "three";
+import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
+import {
+  type Collada,
+  ColladaLoader,
+} from "three/examples/jsm/loaders/ColladaLoader.js";
+import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
+import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader.js";
+import {
+  type GLTF,
+  GLTFLoader,
+} from "three/examples/jsm/loaders/GLTFLoader.js";
+import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
+import { interpolateProperty } from "@/services/interpolation";
 import type {
   Layer,
-  ModelLayerData,
-  ModelFormat,
-  ModelMaterialOverride,
   ModelAnimationClip,
   ModelBoundingBox,
-} from '@/types/project';
-import { BaseLayer } from './BaseLayer';
-import { interpolateProperty } from '@/services/interpolation';
+  ModelLayerData,
+  ModelMaterialOverride,
+} from "@/types/project";
+import { BaseLayer } from "./BaseLayer";
 
 export class ModelLayer extends BaseLayer {
   /** The loaded 3D model */
   private model: THREE.Group | THREE.Object3D | null = null;
 
   /** Original materials (for restoring after override) */
-  private originalMaterials: Map<THREE.Mesh, THREE.Material | THREE.Material[]> = new Map();
+  private originalMaterials: Map<
+    THREE.Mesh,
+    THREE.Material | THREE.Material[]
+  > = new Map();
 
   /** Animation mixer for animated models */
   private mixer: THREE.AnimationMixer | null = null;
@@ -98,7 +105,7 @@ export class ModelLayer extends BaseLayer {
 
       // Set up DRACO decoder for compressed meshes
       ModelLayer.dracoLoader = new DRACOLoader();
-      ModelLayer.dracoLoader.setDecoderPath('/draco/');
+      ModelLayer.dracoLoader.setDecoderPath("/draco/");
       ModelLayer.gltfLoader.setDRACOLoader(ModelLayer.dracoLoader);
 
       // Set up meshopt decoder
@@ -127,16 +134,16 @@ export class ModelLayer extends BaseLayer {
     // Create default animatable property
     const defaultScale = {
       id: `${layerData.id}_scale`,
-      name: 'Scale',
-      type: 'number' as const,
+      name: "Scale",
+      type: "number" as const,
       value: 1,
       animated: false,
       keyframes: [],
     };
 
     return {
-      assetId: data?.assetId ?? '',
-      format: data?.format ?? 'gltf',
+      assetId: data?.assetId ?? "",
+      format: data?.format ?? "gltf",
       scale: data?.scale ?? defaultScale,
       uniformScale: data?.uniformScale ?? true,
       materialOverride: data?.materialOverride,
@@ -172,23 +179,23 @@ export class ModelLayer extends BaseLayer {
       let loadedObject: THREE.Object3D;
 
       switch (this.modelData.format) {
-        case 'gltf':
-        case 'glb':
+        case "gltf":
+        case "glb":
           loadedObject = await this.loadGLTF(url);
           break;
-        case 'obj':
+        case "obj":
           loadedObject = await this.loadOBJ(url);
           break;
-        case 'fbx':
+        case "fbx":
           loadedObject = await this.loadFBX(url);
           break;
-        case 'dae':
+        case "dae":
           loadedObject = await this.loadCollada(url);
           break;
-        case 'usd':
-        case 'usda':
-        case 'usdc':
-        case 'usdz':
+        case "usd":
+        case "usda":
+        case "usdc":
+        case "usdz":
           loadedObject = await this.loadUSD(url);
           break;
         default:
@@ -197,7 +204,7 @@ export class ModelLayer extends BaseLayer {
 
       this.setModel(loadedObject);
     } catch (error) {
-      this.loadError = error instanceof Error ? error.message : 'Unknown error';
+      this.loadError = error instanceof Error ? error.message : "Unknown error";
       console.error(`[ModelLayer] Failed to load model: ${this.loadError}`);
       this.createPlaceholder();
     } finally {
@@ -219,7 +226,7 @@ export class ModelLayer extends BaseLayer {
    */
   private loadGLTF(url: string): Promise<THREE.Object3D> {
     return new Promise((resolve, reject) => {
-      ModelLayer.gltfLoader!.load(
+      ModelLayer.gltfLoader?.load(
         url,
         (gltf: GLTF) => {
           // Extract animations
@@ -230,7 +237,7 @@ export class ModelLayer extends BaseLayer {
           resolve(gltf.scene);
         },
         undefined,
-        reject
+        reject,
       );
     });
   }
@@ -240,7 +247,7 @@ export class ModelLayer extends BaseLayer {
    */
   private loadOBJ(url: string): Promise<THREE.Object3D> {
     return new Promise((resolve, reject) => {
-      ModelLayer.objLoader!.load(url, resolve, undefined, reject);
+      ModelLayer.objLoader?.load(url, resolve, undefined, reject);
     });
   }
 
@@ -249,7 +256,7 @@ export class ModelLayer extends BaseLayer {
    */
   private loadFBX(url: string): Promise<THREE.Object3D> {
     return new Promise((resolve, reject) => {
-      ModelLayer.fbxLoader!.load(
+      ModelLayer.fbxLoader?.load(
         url,
         (object: THREE.Group) => {
           // FBX files often contain animations
@@ -260,7 +267,7 @@ export class ModelLayer extends BaseLayer {
           resolve(object);
         },
         undefined,
-        reject
+        reject,
       );
     });
   }
@@ -270,7 +277,7 @@ export class ModelLayer extends BaseLayer {
    */
   private loadCollada(url: string): Promise<THREE.Object3D> {
     return new Promise((resolve, reject) => {
-      ModelLayer.colladaLoader!.load(
+      ModelLayer.colladaLoader?.load(
         url,
         (collada: Collada) => {
           // Collada may have animations
@@ -281,7 +288,7 @@ export class ModelLayer extends BaseLayer {
           resolve(collada.scene);
         },
         undefined,
-        reject
+        reject,
       );
     });
   }
@@ -295,13 +302,17 @@ export class ModelLayer extends BaseLayer {
     // For now, we'll try to use USDZLoader if available, or create a placeholder
     try {
       // Dynamic import to avoid bundle bloat if not used
-      const { USDZLoader } = await import('three/examples/jsm/loaders/USDZLoader.js');
+      const { USDZLoader } = await import(
+        "three/examples/jsm/loaders/USDZLoader.js"
+      );
       const loader = new USDZLoader();
       return new Promise((resolve, reject) => {
         loader.load(url, resolve, undefined, reject);
       });
     } catch {
-      console.warn('[ModelLayer] USD/USDZ loader not available. Creating placeholder.');
+      console.warn(
+        "[ModelLayer] USD/USDZ loader not available. Creating placeholder.",
+      );
       return this.createUSDPlaceholder();
     }
   }
@@ -311,7 +322,7 @@ export class ModelLayer extends BaseLayer {
    */
   private createUSDPlaceholder(): THREE.Object3D {
     const group = new THREE.Group();
-    group.name = 'usd_placeholder';
+    group.name = "usd_placeholder";
 
     // Create a simple cube with USD icon texture
     const geometry = new THREE.BoxGeometry(100, 100, 100);
@@ -446,8 +457,8 @@ export class ModelLayer extends BaseLayer {
         clips: [],
         time: {
           id: `${this.id}_anim_time`,
-          name: 'Animation Time',
-          type: 'number' as const,
+          name: "Animation Time",
+          type: "number" as const,
           value: 0,
           animated: false,
           keyframes: [],
@@ -488,7 +499,7 @@ export class ModelLayer extends BaseLayer {
     this.currentAction = this.mixer.clipAction(clip);
     this.currentAction.setLoop(
       this.modelData.animation?.loop ? THREE.LoopRepeat : THREE.LoopOnce,
-      Infinity
+      Infinity,
     );
     this.currentAction.play();
 
@@ -551,7 +562,10 @@ export class ModelLayer extends BaseLayer {
   /**
    * Apply material override to a single mesh
    */
-  private applyMaterialOverrideToMesh(mesh: THREE.Mesh, override: ModelMaterialOverride): void {
+  private applyMaterialOverrideToMesh(
+    mesh: THREE.Mesh,
+    override: ModelMaterialOverride,
+  ): void {
     // Use depth material for depth map export
     if (override.useDepthMaterial) {
       mesh.material = new THREE.MeshDepthMaterial({
@@ -590,8 +604,9 @@ export class ModelLayer extends BaseLayer {
       material.opacity = override.opacityOverride;
     }
 
-    if (override.flatShading !== undefined && 'flatShading' in material) {
-      (material as THREE.MeshStandardMaterial).flatShading = override.flatShading;
+    if (override.flatShading !== undefined && "flatShading" in material) {
+      (material as THREE.MeshStandardMaterial).flatShading =
+        override.flatShading;
       material.needsUpdate = true;
     }
 
@@ -683,7 +698,7 @@ export class ModelLayer extends BaseLayer {
   setScale(scale: number | { x: number; y: number; z: number }): void {
     if (!this.model) return;
 
-    if (typeof scale === 'number') {
+    if (typeof scale === "number") {
       // Validate scale (NaN would corrupt model transform)
       const validScale = Number.isFinite(scale) ? scale : 1;
       this.model.scale.setScalar(validScale);
@@ -775,14 +790,22 @@ export class ModelLayer extends BaseLayer {
 
     // Evaluate animated scale
     let scale: number;
-    if (typeof this.modelData.scale === 'object' && 'value' in this.modelData.scale) {
+    if (
+      typeof this.modelData.scale === "object" &&
+      "value" in this.modelData.scale
+    ) {
       scale = interpolateProperty(this.modelData.scale, frame, fps, layerId);
       this.setScale(scale);
     }
 
     // Evaluate animation time if keyframed
     if (this.modelData.animation?.time) {
-      const time = interpolateProperty(this.modelData.animation.time, frame, fps, layerId);
+      const time = interpolateProperty(
+        this.modelData.animation.time,
+        frame,
+        fps,
+        layerId,
+      );
       this.setAnimationTime(time);
     }
 
@@ -798,15 +821,17 @@ export class ModelLayer extends BaseLayer {
     }
   }
 
-  protected override onApplyEvaluatedState(state: import('../MotionEngine').EvaluatedLayer): void {
+  protected override onApplyEvaluatedState(
+    state: import("../MotionEngine").EvaluatedLayer,
+  ): void {
     const props = state.properties;
 
-    if (props['scale'] !== undefined) {
-      this.setScale(props['scale'] as number);
+    if (props.scale !== undefined) {
+      this.setScale(props.scale as number);
     }
 
-    if (props['animationTime'] !== undefined) {
-      this.setAnimationTime(props['animationTime'] as number);
+    if (props.animationTime !== undefined) {
+      this.setAnimationTime(props.animationTime as number);
     }
   }
 
@@ -815,7 +840,10 @@ export class ModelLayer extends BaseLayer {
 
     if (data) {
       // Handle asset change (requires reload)
-      if (data.assetId !== undefined && data.assetId !== this.modelData.assetId) {
+      if (
+        data.assetId !== undefined &&
+        data.assetId !== this.modelData.assetId
+      ) {
         this.modelData.assetId = data.assetId;
         if (data.format) {
           this.modelData.format = data.format;

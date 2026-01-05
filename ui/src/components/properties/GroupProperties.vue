@@ -87,68 +87,70 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import type { Layer, GroupLayerData, LayerType } from '@/types/project';
+import { computed } from "vue";
+import { useCompositorStore } from "@/stores/compositorStore";
+import type { GroupLayerData, Layer, LayerType } from "@/types/project";
 
 const props = defineProps<{
   layer: Layer;
 }>();
 
-const emit = defineEmits<{
-  (e: 'update', data: Partial<GroupLayerData>): void;
-}>();
+const emit =
+  defineEmits<(e: "update", data: Partial<GroupLayerData>) => void>();
 
 const store = useCompositorStore();
 
-const groupData = computed(() => props.layer.data as GroupLayerData);
+const _groupData = computed(() => props.layer.data as GroupLayerData);
 
 // Find child layers (layers that have this group as parent)
 const childLayers = computed(() => {
-  return store.layers.filter(l => l.parentId === props.layer.id);
+  return store.layers.filter((l) => l.parentId === props.layer.id);
 });
 
-const childCount = computed(() => childLayers.value.length);
+const _childCount = computed(() => childLayers.value.length);
 
-const colorPresets = [
-  { name: 'Red', color: '#e74c3c' },
-  { name: 'Orange', color: '#e67e22' },
-  { name: 'Yellow', color: '#f1c40f' },
-  { name: 'Green', color: '#2ecc71' },
-  { name: 'Cyan', color: '#1abc9c' },
-  { name: 'Blue', color: '#3498db' },
-  { name: 'Purple', color: '#9b59b6' },
-  { name: 'Pink', color: '#e91e63' },
-  { name: 'Gray', color: '#888888' },
+const _colorPresets = [
+  { name: "Red", color: "#e74c3c" },
+  { name: "Orange", color: "#e67e22" },
+  { name: "Yellow", color: "#f1c40f" },
+  { name: "Green", color: "#2ecc71" },
+  { name: "Cyan", color: "#1abc9c" },
+  { name: "Blue", color: "#3498db" },
+  { name: "Purple", color: "#9b59b6" },
+  { name: "Pink", color: "#e91e63" },
+  { name: "Gray", color: "#888888" },
 ];
 
-function updateData<K extends keyof GroupLayerData>(key: K, value: GroupLayerData[K]) {
-  emit('update', { [key]: value } as Partial<GroupLayerData>);
+function _updateData<K extends keyof GroupLayerData>(
+  key: K,
+  value: GroupLayerData[K],
+) {
+  emit("update", { [key]: value } as Partial<GroupLayerData>);
 }
 
-function selectLayer(layerId: string) {
+function _selectLayer(layerId: string) {
   store.selectLayer(layerId);
 }
 
-function getLayerIcon(type: LayerType): string {
+function _getLayerIcon(type: LayerType): string {
   const icons: Record<string, string> = {
-    image: '🖼',
-    video: '🎬',
-    solid: '■',
-    null: '◇',
-    text: 'T',
-    spline: '〰',
-    shape: '◆',
-    particles: '✦',
-    camera: '📷',
-    light: '💡',
-    group: '📁',
-    audio: '🔊',
-    depth: '🌊',
-    normal: '🧭',
-    generated: '🤖',
+    image: "🖼",
+    video: "🎬",
+    solid: "■",
+    null: "◇",
+    text: "T",
+    spline: "〰",
+    shape: "◆",
+    particles: "✦",
+    camera: "📷",
+    light: "💡",
+    group: "📁",
+    audio: "🔊",
+    depth: "🌊",
+    normal: "🧭",
+    generated: "🤖",
   };
-  return icons[type] || '•';
+  return icons[type] || "•";
 }
 </script>
 

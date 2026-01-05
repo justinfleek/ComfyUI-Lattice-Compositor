@@ -1,38 +1,38 @@
-import { test, expect } from '@playwright/test';
-import { CompositorHelper } from '../../helpers/compositor';
+import { expect, test } from "@playwright/test";
+import { CompositorHelper } from "../../helpers/compositor";
 
-test.describe('Tutorial 04: Time Remapping - Phases 7-8 (Steps 136-180)', () => {
+test.describe("Tutorial 04: Time Remapping - Phases 7-8 (Steps 136-180)", () => {
   let h: CompositorHelper;
 
   test.beforeEach(async ({ page }) => {
     h = new CompositorHelper(page);
-    await page.goto('/');
+    await page.goto("/");
     await page.waitForSelector('[data-testid="app-ready"]');
     await h.newProject();
-    await h.newComposition('Time_Test', 1920, 1080, 24, 10);
-    await h.newSolid('Footage');
+    await h.newComposition("Time_Test", 1920, 1080, 24, 10);
+    await h.newSolid("Footage");
     await h.setLayerEndFrame(0, 240);
     await h.setTimeStretch(0, 200); // Slow motion
   });
 
-  test('Phase 7: Frame Blending (Steps 136-162)', async ({ page }) => {
+  test("Phase 7: Frame Blending (Steps 136-162)", async ({ page }) => {
     // Step 136-140: Frame blending modes
-    await h.setFrameBlending(0, 'none');
-    await h.setFrameBlending(0, 'mix');
-    await h.setFrameBlending(0, 'motion');
+    await h.setFrameBlending(0, "none");
+    await h.setFrameBlending(0, "mix");
+    await h.setFrameBlending(0, "motion");
 
     // Step 141-145: Frame Mix mode
-    await h.setFrameBlending(0, 'mix');
+    await h.setFrameBlending(0, "mix");
     // Frames crossfade/dissolve
 
     // Step 146-150: Pixel Motion mode
-    await h.setFrameBlending(0, 'motion');
+    await h.setFrameBlending(0, "motion");
     // Optical flow synthesis
 
     // Step 151-154: Compare modes
     await h.duplicateLayer();
-    await h.setFrameBlending(0, 'motion');
-    await h.setFrameBlending(1, 'mix');
+    await h.setFrameBlending(0, "motion");
+    await h.setFrameBlending(1, "mix");
 
     // Step 155-157: Composition frame blending
     await h.enableCompFrameBlending();
@@ -53,7 +53,7 @@ test.describe('Tutorial 04: Time Remapping - Phases 7-8 (Steps 136-180)', () => 
     await h.redo();
   });
 
-  test('Phase 8: Posterize Time Effect (Steps 163-180)', async ({ page }) => {
+  test("Phase 8: Posterize Time Effect (Steps 163-180)", async ({ page }) => {
     // Step 163-168: Add PosterizeTime effect
     await h.addPosterizeTimeEffect(0);
 

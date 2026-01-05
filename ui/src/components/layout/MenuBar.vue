@@ -479,14 +479,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import { useHistoryStore } from '@/stores/historyStore';
+import { computed, ref } from "vue";
+import { useCompositorStore } from "@/stores/compositorStore";
+import { useHistoryStore } from "@/stores/historyStore";
 
 const emit = defineEmits<{
-  (e: 'action', action: string): void;
-  (e: 'showPreferences'): void;
-  (e: 'showProjectSettings'): void;
+  (e: "action", action: string): void;
+  (e: "showPreferences"): void;
+  (e: "showProjectSettings"): void;
 }>();
 
 const compositorStore = useCompositorStore();
@@ -496,11 +496,13 @@ const activeMenu = ref<string | null>(null);
 let closeTimeout: ReturnType<typeof setTimeout> | null = null;
 
 // Computed properties
-const canUndo = computed(() => historyStore.canUndo);
-const canRedo = computed(() => historyStore.canRedo);
-const hasSelection = computed(() => compositorStore.selectedLayerIds.length > 0);
-const projectName = computed(() => compositorStore.project?.meta?.name || '');
-const hasUnsavedChanges = computed(() => historyStore.currentIndex > 0);
+const _canUndo = computed(() => historyStore.canUndo);
+const _canRedo = computed(() => historyStore.canRedo);
+const _hasSelection = computed(
+  () => compositorStore.selectedLayerIds.length > 0,
+);
+const _projectName = computed(() => compositorStore.project?.meta?.name || "");
+const _hasUnsavedChanges = computed(() => historyStore.currentIndex > 0);
 
 // View state (these should come from a view store in a real implementation)
 const showGrid = ref(false);
@@ -510,7 +512,7 @@ const showSafeZones = ref(false);
 const showTransparency = ref(false);
 const showMotionBlur = ref(false);
 
-function toggleMenu(menu: string) {
+function _toggleMenu(menu: string) {
   if (activeMenu.value === menu) {
     activeMenu.value = null;
   } else {
@@ -518,14 +520,14 @@ function toggleMenu(menu: string) {
   }
 }
 
-function openMenu(menu: string) {
+function _openMenu(menu: string) {
   if (activeMenu.value !== null) {
     activeMenu.value = menu;
   }
   cancelClose();
 }
 
-function scheduleClose() {
+function _scheduleClose() {
   closeTimeout = setTimeout(() => {
     activeMenu.value = null;
   }, 150);
@@ -538,51 +540,51 @@ function cancelClose() {
   }
 }
 
-function handleAction(action: string) {
+function _handleAction(action: string) {
   activeMenu.value = null;
 
   // Handle view toggles locally
   switch (action) {
-    case 'toggleGrid':
+    case "toggleGrid":
       showGrid.value = !showGrid.value;
       break;
-    case 'toggleRulers':
+    case "toggleRulers":
       showRulers.value = !showRulers.value;
       break;
-    case 'toggleGuides':
+    case "toggleGuides":
       showGuides.value = !showGuides.value;
       break;
-    case 'toggleSafeZones':
+    case "toggleSafeZones":
       showSafeZones.value = !showSafeZones.value;
       break;
-    case 'toggleTransparency':
+    case "toggleTransparency":
       showTransparency.value = !showTransparency.value;
       break;
-    case 'toggleMotionBlur':
+    case "toggleMotionBlur":
       showMotionBlur.value = !showMotionBlur.value;
       break;
-    case 'preferences':
-      emit('showPreferences');
+    case "preferences":
+      emit("showPreferences");
       return;
-    case 'projectSettings':
-      emit('showProjectSettings');
+    case "projectSettings":
+      emit("showProjectSettings");
       return;
   }
 
-  emit('action', action);
+  emit("action", action);
 }
 
 // Close menu when clicking outside
 function handleClickOutside(e: MouseEvent) {
   const target = e.target as HTMLElement;
-  if (!target.closest('.menu-bar')) {
+  if (!target.closest(".menu-bar")) {
     activeMenu.value = null;
   }
 }
 
 // Add click listener
-if (typeof window !== 'undefined') {
-  window.addEventListener('click', handleClickOutside);
+if (typeof window !== "undefined") {
+  window.addEventListener("click", handleClickOutside);
 }
 </script>
 

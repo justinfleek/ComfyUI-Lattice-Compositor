@@ -109,80 +109,87 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import type { PropertyDriver, PropertyPath, DriverTransform } from '@/services/propertyDriver';
+import { computed, ref } from "vue";
+import type { DriverTransform, PropertyPath } from "@/services/propertyDriver";
+import { useCompositorStore } from "@/stores/compositorStore";
 
 const props = defineProps<{
   layerId: string;
 }>();
 
 const store = useCompositorStore();
-const expanded = ref(true);
+const _expanded = ref(true);
 const showAddMenu = ref(false);
 
 const newDriver = ref({
-  audioFeature: 'amplitude' as 'amplitude' | 'bass' | 'mid' | 'high' | 'rms',
-  targetProperty: 'transform.position.y' as PropertyPath,
+  audioFeature: "amplitude" as "amplitude" | "bass" | "mid" | "high" | "rms",
+  targetProperty: "transform.position.y" as PropertyPath,
   scale: 100,
-  threshold: 0
+  threshold: 0,
 });
 
-const drivers = computed(() => {
+const _drivers = computed(() => {
   return store.getDriversForLayer(props.layerId);
 });
 
-function formatProperty(prop?: PropertyPath | string): string {
-  if (!prop) return '?';
+function _formatProperty(prop?: PropertyPath | string): string {
+  if (!prop) return "?";
   const names: Record<string, string> = {
-    'transform.position.x': 'Pos X',
-    'transform.position.y': 'Pos Y',
-    'transform.position.z': 'Pos Z',
-    'transform.scale.x': 'Scale X',
-    'transform.scale.y': 'Scale Y',
-    'transform.rotation': 'Rotation',
-    'transform.rotationX': 'Rot X',
-    'transform.rotationY': 'Rot Y',
-    'transform.rotationZ': 'Rot Z',
-    'opacity': 'Opacity'
+    "transform.position.x": "Pos X",
+    "transform.position.y": "Pos Y",
+    "transform.position.z": "Pos Z",
+    "transform.scale.x": "Scale X",
+    "transform.scale.y": "Scale Y",
+    "transform.rotation": "Rotation",
+    "transform.rotationX": "Rot X",
+    "transform.rotationY": "Rot Y",
+    "transform.rotationZ": "Rot Z",
+    opacity: "Opacity",
   };
   return names[prop] || prop;
 }
 
-function getSourceLayerName(layerId?: string): string {
-  if (!layerId) return '?';
-  const layer = store.layers.find(l => l.id === layerId);
+function _getSourceLayerName(layerId?: string): string {
+  if (!layerId) return "?";
+  const layer = store.layers.find((l) => l.id === layerId);
   return layer?.name || layerId.slice(0, 8);
 }
 
-function formatTransform(t: DriverTransform): string {
+function _formatTransform(t: DriverTransform): string {
   switch (t.type) {
-    case 'scale': return `Scale: ${t.factor}`;
-    case 'offset': return `Offset: ${t.amount}`;
-    case 'clamp': return `Clamp: ${t.min}-${t.max}`;
-    case 'smooth': return `Smooth: ${t.smoothing}`;
-    case 'threshold': return `Threshold: ${t.threshold}`;
-    default: return t.type;
+    case "scale":
+      return `Scale: ${t.factor}`;
+    case "offset":
+      return `Offset: ${t.amount}`;
+    case "clamp":
+      return `Clamp: ${t.min}-${t.max}`;
+    case "smooth":
+      return `Smooth: ${t.smoothing}`;
+    case "threshold":
+      return `Threshold: ${t.threshold}`;
+    default:
+      return t.type;
   }
 }
 
-function toggleDriver(driverId: string) {
+function _toggleDriver(driverId: string) {
   store.togglePropertyDriver(driverId);
 }
 
-function removeDriver(driverId: string) {
+function _removeDriver(driverId: string) {
   store.removePropertyDriver(driverId);
 }
 
-function createAudioDriver() {
+function _createAudioDriver() {
   store.createAudioPropertyDriver(
     props.layerId,
     newDriver.value.targetProperty,
     newDriver.value.audioFeature,
     {
       scale: newDriver.value.scale,
-      threshold: newDriver.value.threshold > 0 ? newDriver.value.threshold : undefined
-    }
+      threshold:
+        newDriver.value.threshold > 0 ? newDriver.value.threshold : undefined,
+    },
   );
   showAddMenu.value = false;
 }

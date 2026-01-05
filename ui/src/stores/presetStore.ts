@@ -11,24 +11,24 @@
  * - Search and filtering
  */
 
-import { defineStore } from 'pinia';
+import { defineStore } from "pinia";
 import type {
+  AnimationPreset,
+  CameraShakePreset,
+  CameraTrajectoryPreset,
+  ParticlePreset,
+  PathEffectPreset,
   Preset,
   PresetCategory,
   PresetCollection,
-  ParticlePreset,
-  PathEffectPreset,
-  CameraShakePreset,
-  CameraTrajectoryPreset,
   TextStylePreset,
-  AnimationPreset,
-} from '@/types/presets';
+} from "@/types/presets";
 import {
   BUILT_IN_PARTICLE_PRESETS,
   BUILT_IN_PATH_EFFECT_PRESETS,
-} from '@/types/presets';
+} from "@/types/presets";
 
-const STORAGE_KEY = 'lattice-presets';
+const STORAGE_KEY = "lattice-presets";
 const PRESET_VERSION = 1;
 
 interface PresetState {
@@ -36,7 +36,7 @@ interface PresetState {
   loaded: boolean;
 }
 
-export const usePresetStore = defineStore('presets', {
+export const usePresetStore = defineStore("presets", {
   state: (): PresetState => ({
     presets: [],
     loaded: false,
@@ -59,49 +59,61 @@ export const usePresetStore = defineStore('presets', {
      */
     byCategory(): (category: PresetCategory) => Preset[] {
       return (category: PresetCategory) =>
-        this.allPresets.filter(p => p.category === category);
+        this.allPresets.filter((p) => p.category === category);
     },
 
     /**
      * Get particle presets
      */
     particlePresets(): ParticlePreset[] {
-      return this.allPresets.filter(p => p.category === 'particle') as ParticlePreset[];
+      return this.allPresets.filter(
+        (p) => p.category === "particle",
+      ) as ParticlePreset[];
     },
 
     /**
      * Get path effect presets
      */
     pathEffectPresets(): PathEffectPreset[] {
-      return this.allPresets.filter(p => p.category === 'path-effect') as PathEffectPreset[];
+      return this.allPresets.filter(
+        (p) => p.category === "path-effect",
+      ) as PathEffectPreset[];
     },
 
     /**
      * Get camera shake presets
      */
     cameraShakePresets(): CameraShakePreset[] {
-      return this.allPresets.filter(p => p.category === 'camera-shake') as CameraShakePreset[];
+      return this.allPresets.filter(
+        (p) => p.category === "camera-shake",
+      ) as CameraShakePreset[];
     },
 
     /**
      * Get camera trajectory presets
      */
     cameraTrajectoryPresets(): CameraTrajectoryPreset[] {
-      return this.allPresets.filter(p => p.category === 'camera-trajectory') as CameraTrajectoryPreset[];
+      return this.allPresets.filter(
+        (p) => p.category === "camera-trajectory",
+      ) as CameraTrajectoryPreset[];
     },
 
     /**
      * Get text style presets
      */
     textStylePresets(): TextStylePreset[] {
-      return this.allPresets.filter(p => p.category === 'text-style') as TextStylePreset[];
+      return this.allPresets.filter(
+        (p) => p.category === "text-style",
+      ) as TextStylePreset[];
     },
 
     /**
      * Get animation presets
      */
     animationPresets(): AnimationPreset[] {
-      return this.allPresets.filter(p => p.category === 'animation') as AnimationPreset[];
+      return this.allPresets.filter(
+        (p) => p.category === "animation",
+      ) as AnimationPreset[];
     },
 
     /**
@@ -113,13 +125,14 @@ export const usePresetStore = defineStore('presets', {
         let results = this.allPresets;
 
         if (category) {
-          results = results.filter(p => p.category === category);
+          results = results.filter((p) => p.category === category);
         }
 
-        return results.filter(p =>
-          p.name.toLowerCase().includes(q) ||
-          p.description?.toLowerCase().includes(q) ||
-          p.tags?.some(t => t.toLowerCase().includes(q))
+        return results.filter(
+          (p) =>
+            p.name.toLowerCase().includes(q) ||
+            p.description?.toLowerCase().includes(q) ||
+            p.tags?.some((t) => t.toLowerCase().includes(q)),
         );
       };
     },
@@ -128,7 +141,7 @@ export const usePresetStore = defineStore('presets', {
      * Get user-created presets (excludes built-ins)
      */
     userPresets(): Preset[] {
-      return this.presets.filter(p => !p.isBuiltIn);
+      return this.presets.filter((p) => !p.isBuiltIn);
     },
   },
 
@@ -146,7 +159,7 @@ export const usePresetStore = defineStore('presets', {
           this.presets = data.presets || [];
         }
       } catch (error) {
-        console.warn('Failed to load presets from localStorage:', error);
+        console.warn("Failed to load presets from localStorage:", error);
         this.presets = [];
       }
 
@@ -160,12 +173,12 @@ export const usePresetStore = defineStore('presets', {
       try {
         const collection: PresetCollection = {
           version: PRESET_VERSION,
-          presets: this.presets.filter(p => !p.isBuiltIn),
+          presets: this.presets.filter((p) => !p.isBuiltIn),
           exportedAt: Date.now(),
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(collection));
       } catch (error) {
-        console.error('Failed to save presets to localStorage:', error);
+        console.error("Failed to save presets to localStorage:", error);
       }
     },
 
@@ -179,7 +192,7 @@ export const usePresetStore = defineStore('presets', {
     /**
      * Add a new preset
      */
-    addPreset(preset: Omit<Preset, 'id' | 'createdAt' | 'updatedAt'>): string {
+    addPreset(preset: Omit<Preset, "id" | "createdAt" | "updatedAt">): string {
       const id = this.generateId();
       const now = Date.now();
 
@@ -200,7 +213,7 @@ export const usePresetStore = defineStore('presets', {
      * Update an existing preset
      */
     updatePreset(id: string, updates: Partial<Preset>): boolean {
-      const index = this.presets.findIndex(p => p.id === id);
+      const index = this.presets.findIndex((p) => p.id === id);
       if (index === -1) return false;
 
       // Don't allow updating built-in presets
@@ -220,7 +233,7 @@ export const usePresetStore = defineStore('presets', {
      * Delete a preset
      */
     deletePreset(id: string): boolean {
-      const index = this.presets.findIndex(p => p.id === id);
+      const index = this.presets.findIndex((p) => p.id === id);
       if (index === -1) return false;
 
       // Don't allow deleting built-in presets
@@ -235,7 +248,7 @@ export const usePresetStore = defineStore('presets', {
      * Duplicate a preset
      */
     duplicatePreset(id: string): string | null {
-      const preset = this.allPresets.find(p => p.id === id);
+      const preset = this.allPresets.find((p) => p.id === id);
       if (!preset) return null;
 
       const duplicated = {
@@ -249,14 +262,16 @@ export const usePresetStore = defineStore('presets', {
       delete (duplicated as any).createdAt;
       delete (duplicated as any).updatedAt;
 
-      return this.addPreset(duplicated as Omit<Preset, 'id' | 'createdAt' | 'updatedAt'>);
+      return this.addPreset(
+        duplicated as Omit<Preset, "id" | "createdAt" | "updatedAt">,
+      );
     },
 
     /**
      * Get a preset by ID
      */
     getPreset(id: string): Preset | undefined {
-      return this.allPresets.find(p => p.id === id);
+      return this.allPresets.find((p) => p.id === id);
     },
 
     /**
@@ -264,7 +279,7 @@ export const usePresetStore = defineStore('presets', {
      */
     exportPresets(presetIds?: string[]): string {
       const presetsToExport = presetIds
-        ? this.allPresets.filter(p => presetIds.includes(p.id))
+        ? this.allPresets.filter((p) => presetIds.includes(p.id))
         : this.userPresets;
 
       const collection: PresetCollection = {
@@ -287,7 +302,7 @@ export const usePresetStore = defineStore('presets', {
         const collection = JSON.parse(jsonString) as PresetCollection;
 
         if (!collection.presets || !Array.isArray(collection.presets)) {
-          errors.push('Invalid preset collection format');
+          errors.push("Invalid preset collection format");
           return { imported, errors };
         }
 
@@ -301,7 +316,7 @@ export const usePresetStore = defineStore('presets', {
 
             // Check for duplicate names in same category
             const existing = this.presets.find(
-              p => p.name === preset.name && p.category === preset.category
+              (p) => p.name === preset.name && p.category === preset.category,
             );
 
             if (existing) {
@@ -310,7 +325,9 @@ export const usePresetStore = defineStore('presets', {
             } else {
               // Add new preset (remove id to generate new one)
               const { id, createdAt, updatedAt, ...presetData } = preset;
-              this.addPreset(presetData as Omit<Preset, 'id' | 'createdAt' | 'updatedAt'>);
+              this.addPreset(
+                presetData as Omit<Preset, "id" | "createdAt" | "updatedAt">,
+              );
             }
 
             imported++;
@@ -330,19 +347,19 @@ export const usePresetStore = defineStore('presets', {
      */
     saveParticlePreset(
       name: string,
-      config: ParticlePreset['config'],
+      config: ParticlePreset["config"],
       options?: {
         description?: string;
         tags?: string[];
         thumbnail?: string;
-      }
+      },
     ): string {
       return this.addPreset({
         name,
-        category: 'particle',
+        category: "particle",
         config,
         ...options,
-      } as Omit<ParticlePreset, 'id' | 'createdAt' | 'updatedAt'>);
+      } as Omit<ParticlePreset, "id" | "createdAt" | "updatedAt">);
     },
 
     /**
@@ -350,18 +367,18 @@ export const usePresetStore = defineStore('presets', {
      */
     savePathEffectPreset(
       name: string,
-      effects: PathEffectPreset['effects'],
+      effects: PathEffectPreset["effects"],
       options?: {
         description?: string;
         tags?: string[];
-      }
+      },
     ): string {
       return this.addPreset({
         name,
-        category: 'path-effect',
+        category: "path-effect",
         effects,
         ...options,
-      } as Omit<PathEffectPreset, 'id' | 'createdAt' | 'updatedAt'>);
+      } as Omit<PathEffectPreset, "id" | "createdAt" | "updatedAt">);
     },
 
     /**
@@ -369,18 +386,18 @@ export const usePresetStore = defineStore('presets', {
      */
     saveCameraShakePreset(
       name: string,
-      config: CameraShakePreset['config'],
+      config: CameraShakePreset["config"],
       options?: {
         description?: string;
         tags?: string[];
-      }
+      },
     ): string {
       return this.addPreset({
         name,
-        category: 'camera-shake',
+        category: "camera-shake",
         config,
         ...options,
-      } as Omit<CameraShakePreset, 'id' | 'createdAt' | 'updatedAt'>);
+      } as Omit<CameraShakePreset, "id" | "createdAt" | "updatedAt">);
     },
 
     /**
@@ -388,18 +405,18 @@ export const usePresetStore = defineStore('presets', {
      */
     saveCameraTrajectoryPreset(
       name: string,
-      config: CameraTrajectoryPreset['config'],
+      config: CameraTrajectoryPreset["config"],
       options?: {
         description?: string;
         tags?: string[];
-      }
+      },
     ): string {
       return this.addPreset({
         name,
-        category: 'camera-trajectory',
+        category: "camera-trajectory",
         config,
         ...options,
-      } as Omit<CameraTrajectoryPreset, 'id' | 'createdAt' | 'updatedAt'>);
+      } as Omit<CameraTrajectoryPreset, "id" | "createdAt" | "updatedAt">);
     },
 
     /**
@@ -407,25 +424,25 @@ export const usePresetStore = defineStore('presets', {
      */
     saveTextStylePreset(
       name: string,
-      style: TextStylePreset['style'],
+      style: TextStylePreset["style"],
       options?: {
         description?: string;
         tags?: string[];
-      }
+      },
     ): string {
       return this.addPreset({
         name,
-        category: 'text-style',
+        category: "text-style",
         style,
         ...options,
-      } as Omit<TextStylePreset, 'id' | 'createdAt' | 'updatedAt'>);
+      } as Omit<TextStylePreset, "id" | "createdAt" | "updatedAt">);
     },
 
     /**
      * Clear all user presets
      */
     clearUserPresets() {
-      this.presets = this.presets.filter(p => p.isBuiltIn);
+      this.presets = this.presets.filter((p) => p.isBuiltIn);
       this.persist();
     },
   },

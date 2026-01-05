@@ -4,14 +4,28 @@
  * Manages audio state including loading, analysis, and reactive mappings.
  * This is a focused store extracted from compositorStore for better maintainability.
  */
-import { defineStore } from 'pinia';
-import { storeLogger } from '@/utils/logger';
-import type { AudioAnalysis, PeakData, PeakDetectionConfig } from '@/services/audioFeatures';
-import { getFeatureAtFrame, detectPeaks, isBeatAtFrame } from '@/services/audioFeatures';
-import { loadAndAnalyzeAudio, cancelAnalysis } from '@/services/audioWorkerClient';
-import type { AudioMapping, TargetParameter } from '@/services/audioReactiveMapping';
-import { AudioReactiveMapper } from '@/services/audioReactiveMapping';
-import type { AudioParticleMapping } from '@/types/project';
+import { defineStore } from "pinia";
+import type {
+  AudioAnalysis,
+  PeakData,
+  PeakDetectionConfig,
+} from "@/services/audioFeatures";
+import {
+  detectPeaks,
+  getFeatureAtFrame,
+  isBeatAtFrame,
+} from "@/services/audioFeatures";
+import type {
+  AudioMapping,
+  TargetParameter,
+} from "@/services/audioReactiveMapping";
+import { AudioReactiveMapper } from "@/services/audioReactiveMapping";
+import {
+  cancelAnalysis,
+  loadAndAnalyzeAudio,
+} from "@/services/audioWorkerClient";
+import type { AudioParticleMapping } from "@/types/project";
+import { storeLogger } from "@/utils/logger";
 
 interface StemData {
   buffer: AudioBuffer;
@@ -25,7 +39,7 @@ interface AudioState {
   audioFile: File | null;
 
   // Loading state
-  loadingState: 'idle' | 'decoding' | 'analyzing' | 'complete' | 'error';
+  loadingState: "idle" | "decoding" | "analyzing" | "complete" | "error";
   loadingProgress: number;
   loadingPhase: string;
   loadingError: string | null;
@@ -49,17 +63,17 @@ interface AudioState {
 
   // Stem reactivity support
   stemBuffers: Map<string, StemData>;
-  activeStemName: string | null;  // null = use main audio
+  activeStemName: string | null; // null = use main audio
 }
 
-export const useAudioStore = defineStore('audio', {
+export const useAudioStore = defineStore("audio", {
   state: (): AudioState => ({
     audioBuffer: null,
     audioAnalysis: null,
     audioFile: null,
-    loadingState: 'idle',
+    loadingState: "idle",
     loadingProgress: 0,
-    loadingPhase: '',
+    loadingPhase: "",
     loadingError: null,
     audioContext: null,
     audioSource: null,
@@ -77,36 +91,44 @@ export const useAudioStore = defineStore('audio', {
 
   getters: {
     isLoaded: (state) => state.audioAnalysis !== null,
-    isLoading: (state) => state.loadingState === 'decoding' || state.loadingState === 'analyzing',
-    hasError: (state) => state.loadingState === 'error',
+    isLoading: (state) =>
+      state.loadingState === "decoding" || state.loadingState === "analyzing",
+    hasError: (state) => state.loadingState === "error",
     duration: (state) => state.audioBuffer?.duration ?? 0,
     bpm: (state) => state.audioAnalysis?.bpm ?? 0,
     frameCount: (state) => state.audioAnalysis?.frameCount ?? 0,
 
     // Waveform integration helpers
     /** Check if audio buffer is loaded (for waveform rendering) */
-    hasAudioBuffer: (state) => (_assetId?: string) => state.audioBuffer !== null,
+    hasAudioBuffer: (state) => (_assetId?: string) =>
+      state.audioBuffer !== null,
     /** Get audio buffer for waveform generation */
     getAudioBuffer: (state) => (_assetId?: string) => state.audioBuffer,
     /** Get beat timestamps in seconds
      *  @param _assetId - Optional asset ID (unused, for API compatibility)
      *  Uses the fps from the audio analysis (derived from frameCount/duration)
      */
-    getBeats: (state) => (_assetId?: string): number[] | undefined => {
-      if (!state.audioAnalysis) return undefined;
-      // Calculate fps from analysis data: fps = frameCount / duration
-      // This ensures we use the same fps that was used during analysis
-      const fps = state.audioAnalysis.frameCount / state.audioAnalysis.duration;
-      const beats: number[] = [];
-      for (let frame = 0; frame < state.audioAnalysis.frameCount; frame++) {
-        if (isBeatAtFrame(state.audioAnalysis, frame)) {
-          beats.push(frame / fps);
+    getBeats:
+      (state) =>
+      (_assetId?: string): number[] | undefined => {
+        if (!state.audioAnalysis) return undefined;
+        // Calculate fps from analysis data: fps = frameCount / duration
+        // This ensures we use the same fps that was used during analysis
+        const fps =
+          state.audioAnalysis.frameCount / state.audioAnalysis.duration;
+        const beats: number[] = [];
+        for (let frame = 0; frame < state.audioAnalysis.frameCount; frame++) {
+          if (isBeatAtFrame(state.audioAnalysis, frame)) {
+            beats.push(frame / fps);
+          }
         }
-      }
-      return beats.length > 0 ? beats : undefined;
-    },
+        return beats.length > 0 ? beats : undefined;
+      },
     /** Get BPM for audio */
-    getBPM: (state) => (_assetId?: string): number | undefined => state.audioAnalysis?.bpm,
+    getBPM:
+      (state) =>
+      (_assetId?: string): number | undefined =>
+        state.audioAnalysis?.bpm,
 
     // Stem reactivity getters
     /** Get list of available stem names */
@@ -142,49 +164,45 @@ export const useAudioStore = defineStore('audio', {
       this.audioFile = file;
       this.audioBuffer = null;
       this.audioAnalysis = null;
-      this.loadingState = 'decoding';
+      this.loadingState = "decoding";
       this.loadingProgress = 0;
-      this.loadingPhase = 'Preparing...';
+      this.loadingPhase = "Preparing...";
       this.loadingError = null;
 
       try {
-        const result = await loadAndAnalyzeAudio(
-          file,
-          fps,
-          {
-            onProgress: (progress) => {
-              if (progress.phase === 'decoding') {
-                this.loadingState = 'decoding';
-              } else {
-                this.loadingState = 'analyzing';
-              }
-              this.loadingProgress = progress.progress;
-              this.loadingPhase = progress.message;
+        const result = await loadAndAnalyzeAudio(file, fps, {
+          onProgress: (progress) => {
+            if (progress.phase === "decoding") {
+              this.loadingState = "decoding";
+            } else {
+              this.loadingState = "analyzing";
             }
-          }
-        );
+            this.loadingProgress = progress.progress;
+            this.loadingPhase = progress.message;
+          },
+        });
 
         this.audioBuffer = result.buffer;
         this.audioAnalysis = result.analysis;
-        this.loadingState = 'complete';
+        this.loadingState = "complete";
         this.loadingProgress = 1;
-        this.loadingPhase = 'Complete';
+        this.loadingPhase = "Complete";
 
         // Initialize the audio reactive mapper
         this.initializeReactiveMapper();
 
-        storeLogger.debug('Audio loaded:', {
+        storeLogger.debug("Audio loaded:", {
           duration: this.audioBuffer.duration,
           bpm: this.audioAnalysis.bpm,
-          frameCount: this.audioAnalysis.frameCount
+          frameCount: this.audioAnalysis.frameCount,
         });
       } catch (error) {
-        storeLogger.error('Failed to load audio:', error);
+        storeLogger.error("Failed to load audio:", error);
         this.audioFile = null;
         this.audioBuffer = null;
         this.audioAnalysis = null;
         this.reactiveMapper = null;
-        this.loadingState = 'error';
+        this.loadingState = "error";
         this.loadingError = (error as Error).message;
       }
     },
@@ -194,9 +212,9 @@ export const useAudioStore = defineStore('audio', {
      */
     cancelLoad(): void {
       cancelAnalysis();
-      this.loadingState = 'idle';
+      this.loadingState = "idle";
       this.loadingProgress = 0;
-      this.loadingPhase = '';
+      this.loadingPhase = "";
       this.loadingError = null;
     },
 
@@ -332,7 +350,7 @@ export const useAudioStore = defineStore('audio', {
      * Remove audio mapping by ID
      */
     removeMapping(mappingId: string): void {
-      const index = this.reactiveMappings.findIndex(m => m.id === mappingId);
+      const index = this.reactiveMappings.findIndex((m) => m.id === mappingId);
       if (index >= 0) {
         this.reactiveMappings.splice(index, 1);
       }
@@ -346,7 +364,7 @@ export const useAudioStore = defineStore('audio', {
      * Update audio mapping
      */
     updateMapping(mappingId: string, updates: Partial<AudioMapping>): void {
-      const mapping = this.reactiveMappings.find(m => m.id === mappingId);
+      const mapping = this.reactiveMappings.find((m) => m.id === mappingId);
       if (mapping) {
         Object.assign(mapping, updates);
       }
@@ -384,7 +402,9 @@ export const useAudioStore = defineStore('audio', {
      */
     getActiveMappingsForLayer(layerId: string): AudioMapping[] {
       return this.reactiveMappings.filter(
-        m => m.enabled && (m.targetLayerId === layerId || m.targetLayerId === undefined)
+        (m) =>
+          m.enabled &&
+          (m.targetLayerId === layerId || m.targetLayerId === undefined),
       );
     },
 
@@ -392,7 +412,10 @@ export const useAudioStore = defineStore('audio', {
      * Get audio reactive values for a specific layer at a specific frame
      * This is called by the engine during frame evaluation
      */
-    getValuesForLayerAtFrame(layerId: string, frame: number): Map<TargetParameter, number> {
+    getValuesForLayerAtFrame(
+      layerId: string,
+      frame: number,
+    ): Map<TargetParameter, number> {
       if (!this.reactiveMapper) return new Map();
       return this.reactiveMapper.getValuesForLayerAtFrame(layerId, frame);
     },
@@ -418,7 +441,7 @@ export const useAudioStore = defineStore('audio', {
      */
     playAudioFromFrame(frame: number, fps: number): void {
       if (!this.audioBuffer) {
-        storeLogger.debug('No audio loaded');
+        storeLogger.debug("No audio loaded");
         return;
       }
 
@@ -428,7 +451,7 @@ export const useAudioStore = defineStore('audio', {
       const context = this.ensureAudioContext();
 
       // Resume context if suspended (browser autoplay policy)
-      if (context.state === 'suspended') {
+      if (context.state === "suspended") {
         context.resume();
       }
 
@@ -453,7 +476,12 @@ export const useAudioStore = defineStore('audio', {
         this.isPlayingAudio = false;
       };
 
-      storeLogger.debug('Audio playback started at frame', frame, 'time', startTime);
+      storeLogger.debug(
+        "Audio playback started at frame",
+        frame,
+        "time",
+        startTime,
+      );
     },
 
     /**
@@ -470,7 +498,7 @@ export const useAudioStore = defineStore('audio', {
         this.audioSource = null;
       }
       this.isPlayingAudio = false;
-      storeLogger.debug('Audio playback stopped');
+      storeLogger.debug("Audio playback stopped");
     },
 
     /**
@@ -491,7 +519,10 @@ export const useAudioStore = defineStore('audio', {
      */
     getCurrentAudioTime(): number {
       if (!this.isPlayingAudio || !this.audioContext) return 0;
-      return this.audioStartOffset + (this.audioContext.currentTime - this.audioStartTime);
+      return (
+        this.audioStartOffset +
+        (this.audioContext.currentTime - this.audioStartTime)
+      );
     },
 
     /**
@@ -506,7 +537,7 @@ export const useAudioStore = defineStore('audio', {
       const context = this.ensureAudioContext();
 
       // Resume context if suspended
-      if (context.state === 'suspended') {
+      if (context.state === "suspended") {
         context.resume();
       }
 
@@ -544,13 +575,17 @@ export const useAudioStore = defineStore('audio', {
      * @param audioData - Blob or data URL containing the stem audio
      * @param fps - Frames per second for analysis
      */
-    async loadStem(stemName: string, audioData: Blob | string, fps: number): Promise<void> {
+    async loadStem(
+      stemName: string,
+      audioData: Blob | string,
+      fps: number,
+    ): Promise<void> {
       storeLogger.debug(`Loading stem: ${stemName}`);
 
       try {
         // Convert data URL to Blob if needed
         let blob: Blob;
-        if (typeof audioData === 'string') {
+        if (typeof audioData === "string") {
           // Data URL
           const response = await fetch(audioData);
           blob = await response.blob();
@@ -559,25 +594,25 @@ export const useAudioStore = defineStore('audio', {
         }
 
         // Create a File from the Blob for the worker
-        const file = new File([blob], `${stemName}.wav`, { type: 'audio/wav' });
+        const file = new File([blob], `${stemName}.wav`, { type: "audio/wav" });
 
         // Analyze the stem using the same worker
         const result = await loadAndAnalyzeAudio(file, fps, {
           onProgress: (progress) => {
             storeLogger.debug(`Stem ${stemName} analysis: ${progress.message}`);
-          }
+          },
         });
 
         // Store the stem data
         this.stemBuffers.set(stemName, {
           buffer: result.buffer,
-          analysis: result.analysis
+          analysis: result.analysis,
         });
 
         storeLogger.debug(`Stem ${stemName} loaded:`, {
           duration: result.buffer.duration,
           bpm: result.analysis.bpm,
-          frameCount: result.analysis.frameCount
+          frameCount: result.analysis.frameCount,
         });
       } catch (error) {
         storeLogger.error(`Failed to load stem ${stemName}:`, error);
@@ -597,7 +632,7 @@ export const useAudioStore = defineStore('audio', {
       }
 
       this.activeStemName = stemName;
-      storeLogger.debug(`Active stem set to: ${stemName ?? 'main audio'}`);
+      storeLogger.debug(`Active stem set to: ${stemName ?? "main audio"}`);
 
       // Re-initialize the reactive mapper with the new analysis
       this.initializeReactiveMapperForActiveStem();
@@ -699,7 +734,7 @@ export const useAudioStore = defineStore('audio', {
         info.push({
           name,
           duration: data.buffer.duration,
-          bpm: data.analysis.bpm
+          bpm: data.analysis.bpm,
         });
       }
 

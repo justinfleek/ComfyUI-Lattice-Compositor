@@ -16,22 +16,22 @@
 // ============================================================================
 
 export type AIModelType =
-  | 'depth-anything'
-  | 'depth-anything-v2'
-  | 'normal-crafter'
-  | 'mat-seg'
-  | 'segment-anything'
-  | 'segment-anything-2'
-  | 'stable-diffusion'
-  | 'sdxl'
-  | 'flux';
+  | "depth-anything"
+  | "depth-anything-v2"
+  | "normal-crafter"
+  | "mat-seg"
+  | "segment-anything"
+  | "segment-anything-2"
+  | "stable-diffusion"
+  | "sdxl"
+  | "flux";
 
 export type ModelStatus =
-  | 'not-loaded'
-  | 'loading'
-  | 'ready'
-  | 'error'
-  | 'unloading';
+  | "not-loaded"
+  | "loading"
+  | "ready"
+  | "error"
+  | "unloading";
 
 export interface ModelInfo {
   type: AIModelType;
@@ -44,21 +44,21 @@ export interface ModelInfo {
 }
 
 export interface DepthEstimationOptions {
-  model: 'depth-anything' | 'depth-anything-v2';
+  model: "depth-anything" | "depth-anything-v2";
   outputSize?: { width: number; height: number };
   normalize?: boolean;
-  colorMap?: 'grayscale' | 'viridis' | 'plasma' | 'magma';
+  colorMap?: "grayscale" | "viridis" | "plasma" | "magma";
 }
 
 export interface NormalMapOptions {
-  model: 'normal-crafter';
+  model: "normal-crafter";
   outputSize?: { width: number; height: number };
   strength?: number; // 0-1
   smoothing?: number; // 0-1
 }
 
 export interface SegmentationOptions {
-  model: 'mat-seg' | 'segment-anything' | 'segment-anything-2';
+  model: "mat-seg" | "segment-anything" | "segment-anything-2";
   outputSize?: { width: number; height: number };
   point?: { x: number; y: number }; // For SAM point prompt
   box?: { x1: number; y1: number; x2: number; y2: number }; // For SAM box prompt
@@ -66,7 +66,7 @@ export interface SegmentationOptions {
 }
 
 export interface GenerationOptions {
-  model: 'stable-diffusion' | 'sdxl' | 'flux';
+  model: "stable-diffusion" | "sdxl" | "flux";
   prompt: string;
   negativePrompt?: string;
   width: number;
@@ -95,59 +95,62 @@ export interface SegmentationResult extends InferenceResult<ImageData> {
 // MODEL REGISTRY
 // ============================================================================
 
-const MODEL_INFO: Record<AIModelType, Omit<ModelInfo, 'status' | 'error' | 'loadTime'>> = {
-  'depth-anything': {
-    type: 'depth-anything',
-    name: 'Depth Anything',
-    description: 'Monocular depth estimation with high accuracy',
+const MODEL_INFO: Record<
+  AIModelType,
+  Omit<ModelInfo, "status" | "error" | "loadTime">
+> = {
+  "depth-anything": {
+    type: "depth-anything",
+    name: "Depth Anything",
+    description: "Monocular depth estimation with high accuracy",
     memoryRequired: 1500,
   },
-  'depth-anything-v2': {
-    type: 'depth-anything-v2',
-    name: 'Depth Anything V2',
-    description: 'Improved depth estimation with better details',
+  "depth-anything-v2": {
+    type: "depth-anything-v2",
+    name: "Depth Anything V2",
+    description: "Improved depth estimation with better details",
     memoryRequired: 2000,
   },
-  'normal-crafter': {
-    type: 'normal-crafter',
-    name: 'NormalCrafter',
-    description: 'Normal map generation from images',
+  "normal-crafter": {
+    type: "normal-crafter",
+    name: "NormalCrafter",
+    description: "Normal map generation from images",
     memoryRequired: 1200,
   },
-  'mat-seg': {
-    type: 'mat-seg',
-    name: 'Material Segmentation',
-    description: 'Segment materials and surfaces',
+  "mat-seg": {
+    type: "mat-seg",
+    name: "Material Segmentation",
+    description: "Segment materials and surfaces",
     memoryRequired: 800,
   },
-  'segment-anything': {
-    type: 'segment-anything',
-    name: 'Segment Anything (SAM)',
-    description: 'Zero-shot image segmentation',
+  "segment-anything": {
+    type: "segment-anything",
+    name: "Segment Anything (SAM)",
+    description: "Zero-shot image segmentation",
     memoryRequired: 2500,
   },
-  'segment-anything-2': {
-    type: 'segment-anything-2',
-    name: 'Segment Anything 2',
-    description: 'Improved segmentation with video support',
+  "segment-anything-2": {
+    type: "segment-anything-2",
+    name: "Segment Anything 2",
+    description: "Improved segmentation with video support",
     memoryRequired: 3000,
   },
-  'stable-diffusion': {
-    type: 'stable-diffusion',
-    name: 'Stable Diffusion 1.5',
-    description: 'Text-to-image generation',
+  "stable-diffusion": {
+    type: "stable-diffusion",
+    name: "Stable Diffusion 1.5",
+    description: "Text-to-image generation",
     memoryRequired: 4000,
   },
-  'sdxl': {
-    type: 'sdxl',
-    name: 'Stable Diffusion XL',
-    description: 'High-resolution text-to-image',
+  sdxl: {
+    type: "sdxl",
+    name: "Stable Diffusion XL",
+    description: "High-resolution text-to-image",
     memoryRequired: 6000,
   },
-  'flux': {
-    type: 'flux',
-    name: 'FLUX',
-    description: 'State-of-the-art text-to-image',
+  flux: {
+    type: "flux",
+    name: "FLUX",
+    description: "State-of-the-art text-to-image",
     memoryRequired: 8000,
   },
 };
@@ -160,12 +163,12 @@ class AIGenerationService {
   private modelStatus: Map<AIModelType, ModelStatus> = new Map();
   private loadErrors: Map<AIModelType, string> = new Map();
   private loadTimes: Map<AIModelType, number> = new Map();
-  private baseUrl: string = '/lattice/ai';
+  private baseUrl: string = "/lattice/ai";
 
   constructor() {
     // Initialize all models as not loaded
     for (const type of Object.keys(MODEL_INFO) as AIModelType[]) {
-      this.modelStatus.set(type, 'not-loaded');
+      this.modelStatus.set(type, "not-loaded");
     }
   }
 
@@ -180,7 +183,7 @@ class AIGenerationService {
     const base = MODEL_INFO[type];
     return {
       ...base,
-      status: this.modelStatus.get(type) || 'not-loaded',
+      status: this.modelStatus.get(type) || "not-loaded",
       error: this.loadErrors.get(type),
       loadTime: this.loadTimes.get(type),
     };
@@ -190,21 +193,23 @@ class AIGenerationService {
    * Get all available models
    */
   getAllModels(): ModelInfo[] {
-    return (Object.keys(MODEL_INFO) as AIModelType[]).map(type => this.getModelInfo(type));
+    return (Object.keys(MODEL_INFO) as AIModelType[]).map((type) =>
+      this.getModelInfo(type),
+    );
   }
 
   /**
    * Get currently loaded models
    */
   getLoadedModels(): ModelInfo[] {
-    return this.getAllModels().filter(m => m.status === 'ready');
+    return this.getAllModels().filter((m) => m.status === "ready");
   }
 
   /**
    * Check if a model is available
    */
   isModelAvailable(type: AIModelType): boolean {
-    return this.modelStatus.get(type) === 'ready';
+    return this.modelStatus.get(type) === "ready";
   }
 
   /**
@@ -213,36 +218,38 @@ class AIGenerationService {
   async loadModel(type: AIModelType): Promise<boolean> {
     const currentStatus = this.modelStatus.get(type);
 
-    if (currentStatus === 'ready') return true;
-    if (currentStatus === 'loading') {
+    if (currentStatus === "ready") return true;
+    if (currentStatus === "loading") {
       // Wait for existing load
       return this.waitForModelReady(type);
     }
 
-    this.modelStatus.set(type, 'loading');
+    this.modelStatus.set(type, "loading");
     this.loadErrors.delete(type);
 
     const startTime = performance.now();
 
     try {
       const response = await fetch(`${this.baseUrl}/load`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ model: type }),
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Failed to load model: ${response.status}`);
+        throw new Error(
+          errorData.error || `Failed to load model: ${response.status}`,
+        );
       }
 
       this.loadTimes.set(type, performance.now() - startTime);
-      this.modelStatus.set(type, 'ready');
+      this.modelStatus.set(type, "ready");
       return true;
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
+      const message = error instanceof Error ? error.message : "Unknown error";
       this.loadErrors.set(type, message);
-      this.modelStatus.set(type, 'error');
+      this.modelStatus.set(type, "error");
       return false;
     }
   }
@@ -253,14 +260,14 @@ class AIGenerationService {
   async unloadModel(type: AIModelType): Promise<boolean> {
     const currentStatus = this.modelStatus.get(type);
 
-    if (currentStatus !== 'ready') return true;
+    if (currentStatus !== "ready") return true;
 
-    this.modelStatus.set(type, 'unloading');
+    this.modelStatus.set(type, "unloading");
 
     try {
       const response = await fetch(`${this.baseUrl}/unload`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ model: type }),
       });
 
@@ -268,25 +275,28 @@ class AIGenerationService {
         throw new Error(`Failed to unload model: ${response.status}`);
       }
 
-      this.modelStatus.set(type, 'not-loaded');
+      this.modelStatus.set(type, "not-loaded");
       this.loadTimes.delete(type);
       return true;
-    } catch (error) {
+    } catch (_error) {
       // Reset to ready if unload fails
-      this.modelStatus.set(type, 'ready');
+      this.modelStatus.set(type, "ready");
       return false;
     }
   }
 
-  private async waitForModelReady(type: AIModelType, timeout: number = 60000): Promise<boolean> {
+  private async waitForModelReady(
+    type: AIModelType,
+    timeout: number = 60000,
+  ): Promise<boolean> {
     const start = Date.now();
 
     while (Date.now() - start < timeout) {
       const status = this.modelStatus.get(type);
-      if (status === 'ready') return true;
-      if (status === 'error') return false;
+      if (status === "ready") return true;
+      if (status === "error") return false;
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
 
     return false;
@@ -301,7 +311,7 @@ class AIGenerationService {
    */
   async estimateDepth(
     image: ImageData | HTMLCanvasElement | Blob,
-    options: DepthEstimationOptions = { model: 'depth-anything' }
+    options: DepthEstimationOptions = { model: "depth-anything" },
   ): Promise<InferenceResult<ImageData>> {
     const startTime = performance.now();
 
@@ -318,11 +328,11 @@ class AIGenerationService {
 
     try {
       const formData = new FormData();
-      formData.append('image', await this.imageToBlob(image));
-      formData.append('options', JSON.stringify(options));
+      formData.append("image", await this.imageToBlob(image));
+      formData.append("options", JSON.stringify(options));
 
       const response = await fetch(`${this.baseUrl}/depth`, {
-        method: 'POST',
+        method: "POST",
         body: formData,
       });
 
@@ -342,7 +352,7 @@ class AIGenerationService {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
         processingTime: performance.now() - startTime,
         modelUsed: options.model,
       };
@@ -358,7 +368,7 @@ class AIGenerationService {
    */
   async generateNormalMap(
     image: ImageData | HTMLCanvasElement | Blob,
-    options: NormalMapOptions = { model: 'normal-crafter' }
+    options: NormalMapOptions = { model: "normal-crafter" },
   ): Promise<InferenceResult<ImageData>> {
     const startTime = performance.now();
 
@@ -374,11 +384,11 @@ class AIGenerationService {
 
     try {
       const formData = new FormData();
-      formData.append('image', await this.imageToBlob(image));
-      formData.append('options', JSON.stringify(options));
+      formData.append("image", await this.imageToBlob(image));
+      formData.append("options", JSON.stringify(options));
 
       const response = await fetch(`${this.baseUrl}/normal`, {
-        method: 'POST',
+        method: "POST",
         body: formData,
       });
 
@@ -398,7 +408,7 @@ class AIGenerationService {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
         processingTime: performance.now() - startTime,
         modelUsed: options.model,
       };
@@ -414,7 +424,7 @@ class AIGenerationService {
    */
   async segment(
     image: ImageData | HTMLCanvasElement | Blob,
-    options: SegmentationOptions
+    options: SegmentationOptions,
   ): Promise<SegmentationResult> {
     const startTime = performance.now();
 
@@ -430,11 +440,11 @@ class AIGenerationService {
 
     try {
       const formData = new FormData();
-      formData.append('image', await this.imageToBlob(image));
-      formData.append('options', JSON.stringify(options));
+      formData.append("image", await this.imageToBlob(image));
+      formData.append("options", JSON.stringify(options));
 
       const response = await fetch(`${this.baseUrl}/segment`, {
-        method: 'POST',
+        method: "POST",
         body: formData,
       });
 
@@ -447,8 +457,8 @@ class AIGenerationService {
       // Convert mask data to ImageData
       const masks = await Promise.all(
         (result.masks || []).map((maskBase64: string) =>
-          this.base64ToImageData(maskBase64)
-        )
+          this.base64ToImageData(maskBase64),
+        ),
       );
 
       return {
@@ -463,7 +473,7 @@ class AIGenerationService {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
         processingTime: performance.now() - startTime,
         modelUsed: options.model,
       };
@@ -476,10 +486,10 @@ class AIGenerationService {
   async segmentInteractive(
     image: ImageData | HTMLCanvasElement | Blob,
     point?: { x: number; y: number },
-    box?: { x1: number; y1: number; x2: number; y2: number }
+    box?: { x1: number; y1: number; x2: number; y2: number },
   ): Promise<SegmentationResult> {
     return this.segment(image, {
-      model: 'segment-anything-2',
+      model: "segment-anything-2",
       point,
       box,
     });
@@ -493,7 +503,7 @@ class AIGenerationService {
    * Generate an image from text prompt
    */
   async generate(
-    options: GenerationOptions
+    options: GenerationOptions,
   ): Promise<InferenceResult<ImageData>> {
     const startTime = performance.now();
 
@@ -509,8 +519,8 @@ class AIGenerationService {
 
     try {
       const response = await fetch(`${this.baseUrl}/generate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(options),
       });
 
@@ -530,7 +540,7 @@ class AIGenerationService {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
         processingTime: performance.now() - startTime,
         modelUsed: options.model,
       };
@@ -541,7 +551,9 @@ class AIGenerationService {
   // UTILITY METHODS
   // ========================================
 
-  private async imageToBlob(image: ImageData | HTMLCanvasElement | Blob): Promise<Blob> {
+  private async imageToBlob(
+    image: ImageData | HTMLCanvasElement | Blob,
+  ): Promise<Blob> {
     if (image instanceof Blob) {
       return image;
     }
@@ -550,22 +562,22 @@ class AIGenerationService {
       return new Promise((resolve, reject) => {
         image.toBlob((blob) => {
           if (blob) resolve(blob);
-          else reject(new Error('Failed to convert canvas to blob'));
-        }, 'image/png');
+          else reject(new Error("Failed to convert canvas to blob"));
+        }, "image/png");
       });
     }
 
     // ImageData
     const canvas = new OffscreenCanvas(image.width, image.height);
-    const ctx = canvas.getContext('2d')!;
+    const ctx = canvas.getContext("2d")!;
     ctx.putImageData(image, 0, 0);
-    return canvas.convertToBlob({ type: 'image/png' });
+    return canvas.convertToBlob({ type: "image/png" });
   }
 
   private async blobToImageData(blob: Blob): Promise<ImageData> {
     const bitmap = await createImageBitmap(blob);
     const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
-    const ctx = canvas.getContext('2d')!;
+    const ctx = canvas.getContext("2d")!;
     ctx.drawImage(bitmap, 0, 0);
     return ctx.getImageData(0, 0, bitmap.width, bitmap.height);
   }
@@ -601,7 +613,7 @@ class AIGenerationService {
     try {
       const response = await fetch(`${this.baseUrl}/status`);
       if (!response.ok) {
-        throw new Error('Backend unavailable');
+        throw new Error("Backend unavailable");
       }
       return await response.json();
     } catch {
@@ -638,7 +650,7 @@ export default aiGeneration;
  * Quick depth estimation with default settings
  */
 export async function estimateDepth(
-  image: ImageData | HTMLCanvasElement | Blob
+  image: ImageData | HTMLCanvasElement | Blob,
 ): Promise<ImageData | null> {
   const result = await aiGeneration.estimateDepth(image);
   return result.success ? result.data! : null;
@@ -648,7 +660,7 @@ export async function estimateDepth(
  * Quick normal map generation with default settings
  */
 export async function generateNormalMap(
-  image: ImageData | HTMLCanvasElement | Blob
+  image: ImageData | HTMLCanvasElement | Blob,
 ): Promise<ImageData | null> {
   const result = await aiGeneration.generateNormalMap(image);
   return result.success ? result.data! : null;
@@ -660,7 +672,7 @@ export async function generateNormalMap(
 export async function segmentAtPoint(
   image: ImageData | HTMLCanvasElement | Blob,
   x: number,
-  y: number
+  y: number,
 ): Promise<ImageData | null> {
   const result = await aiGeneration.segmentInteractive(image, { x, y });
   return result.success ? result.data! : null;

@@ -11,19 +11,19 @@
  * - Generic JSON with camera path
  */
 
+import { useCompositorStore } from "@/stores/compositorStore";
+import type { AnimatableProperty } from "@/types/animation";
+import { createAnimatableProperty, createKeyframe } from "@/types/animation";
 import type {
-  CameraTrackingSolve,
+  BlenderFormat,
+  CameraIntrinsics,
+  CameraPose,
   CameraTrackingImportOptions,
   CameraTrackingImportResult,
-  CameraPose,
-  TrackPoint3D,
-  CameraIntrinsics,
+  CameraTrackingSolve,
   COLMAPFormat,
-  BlenderFormat,
-} from '@/types/cameraTracking';
-import { useCompositorStore } from '@/stores/compositorStore';
-import type { AnimatableProperty } from '@/types/animation';
-import { createKeyframe, createAnimatableProperty } from '@/types/animation';
+  TrackPoint3D,
+} from "@/types/cameraTracking";
 
 /**
  * Parse Lattice native JSON format
@@ -32,7 +32,9 @@ export function parseLatticeTrackingJSON(json: string): CameraTrackingSolve {
   const data = JSON.parse(json);
 
   if (!data.version || !data.cameraPath) {
-    throw new Error('Invalid Lattice tracking format: missing version or cameraPath');
+    throw new Error(
+      "Invalid Lattice tracking format: missing version or cameraPath",
+    );
   }
 
   return data as CameraTrackingSolve;
@@ -59,33 +61,54 @@ export function parseCOLMAPOutput(files: {
   // Get first camera for intrinsics
   const firstCamera = cameras[0];
   if (!firstCamera) {
-    throw new Error('No cameras found in COLMAP output');
+    throw new Error("No cameras found in COLMAP output");
   }
 
   // Convert to our format
   const intrinsics: CameraIntrinsics = {
     focalLength: firstCamera.params[0], // fx
     principalPoint: {
-      x: firstCamera.params.length > 1 ? firstCamera.params[1] : firstCamera.width / 2,
-      y: firstCamera.params.length > 2 ? firstCamera.params[2] : firstCamera.height / 2,
+      x:
+        firstCamera.params.length > 1
+          ? firstCamera.params[1]
+          : firstCamera.width / 2,
+      y:
+        firstCamera.params.length > 2
+          ? firstCamera.params[2]
+          : firstCamera.height / 2,
     },
     width: firstCamera.width,
     height: firstCamera.height,
-    model: 'pinhole',
+    model: "pinhole",
   };
 
   // Convert images to camera path
   const cameraPath: CameraPose[] = images.map((img, index) => {
     // COLMAP stores camera-to-world inverse, need to invert
     // Quaternion is already world-to-camera, position needs adjustment
-    const qw = img.qw, qx = img.qx, qy = img.qy, qz = img.qz;
+    const qw = img.qw,
+      qx = img.qx,
+      qy = img.qy,
+      qz = img.qz;
 
     // Camera position in world = -R^T * t
     const rotMatrix = quaternionToMatrix(qw, qx, qy, qz);
     const worldPos = {
-      x: -(rotMatrix[0] * img.tx + rotMatrix[1] * img.ty + rotMatrix[2] * img.tz),
-      y: -(rotMatrix[3] * img.tx + rotMatrix[4] * img.ty + rotMatrix[5] * img.tz),
-      z: -(rotMatrix[6] * img.tx + rotMatrix[7] * img.ty + rotMatrix[8] * img.tz),
+      x: -(
+        rotMatrix[0] * img.tx +
+        rotMatrix[1] * img.ty +
+        rotMatrix[2] * img.tz
+      ),
+      y: -(
+        rotMatrix[3] * img.tx +
+        rotMatrix[4] * img.ty +
+        rotMatrix[5] * img.tz
+      ),
+      z: -(
+        rotMatrix[6] * img.tx +
+        rotMatrix[7] * img.ty +
+        rotMatrix[8] * img.tz
+      ),
     };
 
     return {
@@ -96,17 +119,17 @@ export function parseCOLMAPOutput(files: {
   });
 
   // Convert 3D points
-  const trackPoints3D: TrackPoint3D[] = points3D.map(pt => ({
+  const trackPoints3D: TrackPoint3D[] = points3D.map((pt) => ({
     id: `pt_${pt.id}`,
     position: { x: pt.x, y: pt.y, z: pt.z },
     color: { r: pt.r, g: pt.g, b: pt.b },
-    track2DIDs: pt.trackIds.map(id => `track_${id}`),
+    track2DIDs: pt.trackIds.map((id) => `track_${id}`),
     error: pt.error,
   }));
 
   return {
-    version: '1.0',
-    source: 'colmap',
+    version: "1.0",
+    source: "colmap",
     metadata: {
       sourceWidth: firstCamera.width,
       sourceHeight: firstCamera.height,
@@ -124,19 +147,19 @@ export function parseCOLMAPOutput(files: {
  */
 function parseCOLMAPCameras(content: string): COLMAPFormat.Camera[] {
   const cameras: COLMAPFormat.Camera[] = [];
-  const lines = content.split('\n');
+  const lines = content.split("\n");
 
   for (const line of lines) {
-    if (line.startsWith('#') || !line.trim()) continue;
+    if (line.startsWith("#") || !line.trim()) continue;
 
     const parts = line.trim().split(/\s+/);
     if (parts.length < 5) continue;
 
     cameras.push({
-      id: parseInt(parts[0]),
+      id: parseInt(parts[0], 10),
       model: parts[1],
-      width: parseInt(parts[2]),
-      height: parseInt(parts[3]),
+      width: parseInt(parts[2], 10),
+      height: parseInt(parts[3], 10),
       params: parts.slice(4).map(parseFloat),
     });
   }
@@ -149,12 +172,12 @@ function parseCOLMAPCameras(content: string): COLMAPFormat.Camera[] {
  */
 function parseCOLMAPImages(content: string): COLMAPFormat.Image[] {
   const images: COLMAPFormat.Image[] = [];
-  const lines = content.split('\n');
+  const lines = content.split("\n");
   let i = 0;
 
   while (i < lines.length) {
     const line = lines[i];
-    if (line.startsWith('#') || !line.trim()) {
+    if (line.startsWith("#") || !line.trim()) {
       i++;
       continue;
     }
@@ -163,7 +186,7 @@ function parseCOLMAPImages(content: string): COLMAPFormat.Image[] {
     const parts = line.trim().split(/\s+/);
     if (parts.length >= 10) {
       const image: COLMAPFormat.Image = {
-        id: parseInt(parts[0]),
+        id: parseInt(parts[0], 10),
         qw: parseFloat(parts[1]),
         qx: parseFloat(parts[2]),
         qy: parseFloat(parts[3]),
@@ -171,14 +194,14 @@ function parseCOLMAPImages(content: string): COLMAPFormat.Image[] {
         tx: parseFloat(parts[5]),
         ty: parseFloat(parts[6]),
         tz: parseFloat(parts[7]),
-        cameraId: parseInt(parts[8]),
+        cameraId: parseInt(parts[8], 10),
         name: parts[9],
         points2D: [],
       };
 
       // Next line contains 2D points
       i++;
-      if (i < lines.length && !lines[i].startsWith('#')) {
+      if (i < lines.length && !lines[i].startsWith("#")) {
         const pointLine = lines[i].trim();
         if (pointLine) {
           const pointParts = pointLine.split(/\s+/);
@@ -187,7 +210,7 @@ function parseCOLMAPImages(content: string): COLMAPFormat.Image[] {
               image.points2D.push({
                 x: parseFloat(pointParts[j]),
                 y: parseFloat(pointParts[j + 1]),
-                point3DId: parseInt(pointParts[j + 2]),
+                point3DId: parseInt(pointParts[j + 2], 10),
               });
             }
           }
@@ -207,23 +230,26 @@ function parseCOLMAPImages(content: string): COLMAPFormat.Image[] {
  */
 function parseCOLMAPPoints3D(content: string): COLMAPFormat.Point3D[] {
   const points: COLMAPFormat.Point3D[] = [];
-  const lines = content.split('\n');
+  const lines = content.split("\n");
 
   for (const line of lines) {
-    if (line.startsWith('#') || !line.trim()) continue;
+    if (line.startsWith("#") || !line.trim()) continue;
 
     const parts = line.trim().split(/\s+/);
     if (parts.length >= 8) {
       points.push({
-        id: parseInt(parts[0]),
+        id: parseInt(parts[0], 10),
         x: parseFloat(parts[1]),
         y: parseFloat(parts[2]),
         z: parseFloat(parts[3]),
-        r: parseInt(parts[4]),
-        g: parseInt(parts[5]),
-        b: parseInt(parts[6]),
+        r: parseInt(parts[4], 10),
+        g: parseInt(parts[5], 10),
+        b: parseInt(parts[6], 10),
         error: parseFloat(parts[7]),
-        trackIds: parts.slice(8).filter((_, i) => i % 2 === 0).map(n => parseInt(n)),
+        trackIds: parts
+          .slice(8)
+          .filter((_, i) => i % 2 === 0)
+          .map((n) => parseInt(n, 10)),
       });
     }
   }
@@ -238,39 +264,44 @@ export function parseBlenderTrackingJSON(json: string): CameraTrackingSolve {
   const data: BlenderFormat.MotionTrackingData = JSON.parse(json);
 
   const intrinsics: CameraIntrinsics = {
-    focalLength: (data.camera.focal_length / data.camera.sensor_width) * data.clip_width,
+    focalLength:
+      (data.camera.focal_length / data.camera.sensor_width) * data.clip_width,
     principalPoint: {
       x: data.clip_width / 2,
       y: data.clip_height / 2,
     },
     width: data.clip_width,
     height: data.clip_height,
-    model: 'pinhole',
+    model: "pinhole",
   };
 
   // Convert camera path if reconstruction exists
-  const cameraPath: CameraPose[] = data.reconstruction?.camera_poses?.map(pose => ({
-    frame: pose.frame,
-    position: {
-      x: pose.location[0],
-      y: pose.location[1],
-      z: pose.location[2],
-    },
-    rotation: {
-      w: pose.rotation[0],
-      x: pose.rotation[1],
-      y: pose.rotation[2],
-      z: pose.rotation[3],
-    },
-  })) || [];
+  const cameraPath: CameraPose[] =
+    data.reconstruction?.camera_poses?.map((pose) => ({
+      frame: pose.frame,
+      position: {
+        x: pose.location[0],
+        y: pose.location[1],
+        z: pose.location[2],
+      },
+      rotation: {
+        w: pose.rotation[0],
+        x: pose.rotation[1],
+        y: pose.rotation[2],
+        z: pose.rotation[3],
+      },
+    })) || [];
 
   // Convert 3D points
-  const trackPoints3D: TrackPoint3D[] = data.reconstruction?.points?.map((pt, i) => ({
-    id: `pt_${i}`,
-    position: { x: pt.co[0], y: pt.co[1], z: pt.co[2] },
-    color: pt.color ? { r: pt.color[0] * 255, g: pt.color[1] * 255, b: pt.color[2] * 255 } : undefined,
-    track2DIDs: [],
-  })) || [];
+  const trackPoints3D: TrackPoint3D[] =
+    data.reconstruction?.points?.map((pt, i) => ({
+      id: `pt_${i}`,
+      position: { x: pt.co[0], y: pt.co[1], z: pt.co[2] },
+      color: pt.color
+        ? { r: pt.color[0] * 255, g: pt.color[1] * 255, b: pt.color[2] * 255 }
+        : undefined,
+      track2DIDs: [],
+    })) || [];
 
   // Get frame count from tracks
   let maxFrame = 0;
@@ -281,8 +312,8 @@ export function parseBlenderTrackingJSON(json: string): CameraTrackingSolve {
   }
 
   return {
-    version: '1.0',
-    source: 'blender',
+    version: "1.0",
+    source: "blender",
     metadata: {
       sourceWidth: data.clip_width,
       sourceHeight: data.clip_height,
@@ -298,25 +329,27 @@ export function parseBlenderTrackingJSON(json: string): CameraTrackingSolve {
 /**
  * Detect format from file content
  */
-export function detectTrackingFormat(content: string): 'lattice' | 'blender' | 'colmap' | 'unknown' {
+export function detectTrackingFormat(
+  content: string,
+): "lattice" | "blender" | "colmap" | "unknown" {
   try {
     const json = JSON.parse(content);
 
     if (json.version && json.source && json.cameraPath) {
-      return 'lattice';
+      return "lattice";
     }
 
     if (json.fps && json.tracks && json.clip_width) {
-      return 'blender';
+      return "blender";
     }
   } catch {
     // Not JSON, check for COLMAP text format
-    if (content.includes('# Camera list') || content.includes('CAMERA_ID')) {
-      return 'colmap';
+    if (content.includes("# Camera list") || content.includes("CAMERA_ID")) {
+      return "colmap";
     }
   }
 
-  return 'unknown';
+  return "unknown";
 }
 
 /**
@@ -324,7 +357,7 @@ export function detectTrackingFormat(content: string): 'lattice' | 'blender' | '
  */
 export async function importCameraTracking(
   solve: CameraTrackingSolve,
-  options: CameraTrackingImportOptions = {}
+  options: CameraTrackingImportOptions = {},
 ): Promise<CameraTrackingImportResult> {
   const store = useCompositorStore();
   const result: CameraTrackingImportResult = {
@@ -338,13 +371,17 @@ export async function importCameraTracking(
     const frameOffset = options.frameOffset ?? 0;
 
     // Apply coordinate transformations to camera path
-    const transformedPath = solve.cameraPath.map(pose => ({
+    const transformedPath = solve.cameraPath.map((pose) => ({
       ...pose,
       frame: pose.frame + frameOffset,
       position: {
         x: pose.position.x * scale + offset.x,
-        y: (options.flipY ? -pose.position.y : pose.position.y) * scale + offset.y,
-        z: (options.flipZ ? -pose.position.z : pose.position.z) * scale + offset.z,
+        y:
+          (options.flipY ? -pose.position.y : pose.position.y) * scale +
+          offset.y,
+        z:
+          (options.flipZ ? -pose.position.z : pose.position.z) * scale +
+          offset.z,
       },
     }));
 
@@ -356,45 +393,51 @@ export async function importCameraTracking(
         : solve.intrinsics;
 
       // Calculate FOV from focal length
-      const fov = 2 * Math.atan(intrinsics.height / (2 * intrinsics.focalLength)) * (180 / Math.PI);
+      const _fov =
+        2 *
+        Math.atan(intrinsics.height / (2 * intrinsics.focalLength)) *
+        (180 / Math.PI);
 
       // Create position keyframes
-      const positionKeyframes = transformedPath.map(pose =>
-        createKeyframe(pose.frame, pose.position, 'linear')
+      const positionKeyframes = transformedPath.map((pose) =>
+        createKeyframe(pose.frame, pose.position, "linear"),
       );
 
       // Create rotation keyframes (convert quaternion to euler)
-      const rotationKeyframes = transformedPath.map(pose => {
+      const rotationKeyframes = transformedPath.map((pose) => {
         const euler = quaternionToEuler(
           pose.rotation.w,
           pose.rotation.x,
           pose.rotation.y,
-          pose.rotation.z
+          pose.rotation.z,
         );
-        return createKeyframe(pose.frame, euler, 'linear');
+        return createKeyframe(pose.frame, euler, "linear");
       });
 
       // Create camera layer
-      const cameraLayer = store.addLayer('camera', `Tracked Camera (${solve.source})`);
+      const cameraLayer = store.addLayer(
+        "camera",
+        `Tracked Camera (${solve.source})`,
+      );
 
       if (cameraLayer) {
         // Apply keyframed transform
         // Position uses { x, y, z? } - z is optional but we include it for 3D
         const positionProp = createAnimatableProperty(
-          'position',
+          "position",
           transformedPath[0]?.position ?? { x: 0, y: 0, z: 0 },
-          'position',
-          'Transform'
+          "position",
+          "Transform",
         );
         positionProp.animated = true;
         positionProp.keyframes = positionKeyframes as any; // keyframes match the value type
 
         // Use orientation for 3D rotation (vector3), rotation is for 2D (number)
         const orientationProp = createAnimatableProperty(
-          'orientation',
+          "orientation",
           rotationKeyframes[0]?.value ?? { x: 0, y: 0, z: 0 },
-          'vector3',
-          'Transform'
+          "vector3",
+          "Transform",
         );
         orientationProp.animated = true;
         orientationProp.keyframes = rotationKeyframes as any;
@@ -415,7 +458,11 @@ export async function importCameraTracking(
     }
 
     // Create null objects at track points if requested
-    if (options.createNulls && solve.trackPoints3D && solve.trackPoints3D.length > 0) {
+    if (
+      options.createNulls &&
+      solve.trackPoints3D &&
+      solve.trackPoints3D.length > 0
+    ) {
       result.nullLayerIds = [];
       const maxNulls = 100; // Limit to avoid creating thousands
 
@@ -424,18 +471,27 @@ export async function importCameraTracking(
       for (const point of pointsToCreate) {
         const pos = {
           x: point.position.x * scale + offset.x,
-          y: (options.flipY ? -point.position.y : point.position.y) * scale + offset.y,
-          z: (options.flipZ ? -point.position.z : point.position.z) * scale + offset.z,
+          y:
+            (options.flipY ? -point.position.y : point.position.y) * scale +
+            offset.y,
+          z:
+            (options.flipZ ? -point.position.z : point.position.z) * scale +
+            offset.z,
         };
 
-        const nullLayer = store.addLayer('control', `Track Point ${point.id}`);
+        const nullLayer = store.addLayer("control", `Track Point ${point.id}`);
 
         if (nullLayer) {
           store.updateLayer(nullLayer.id, {
             threeD: true,
             transform: {
               ...nullLayer.transform,
-              position: createAnimatableProperty('position', pos, 'position', 'Transform') as any,
+              position: createAnimatableProperty(
+                "position",
+                pos,
+                "position",
+                "Transform",
+              ) as any,
             },
           });
 
@@ -445,25 +501,33 @@ export async function importCameraTracking(
 
       if (solve.trackPoints3D.length > maxNulls) {
         result.warnings?.push(
-          `Only created ${maxNulls} null objects out of ${solve.trackPoints3D.length} track points`
+          `Only created ${maxNulls} null objects out of ${solve.trackPoints3D.length} track points`,
         );
       }
     }
 
     // Create point cloud layer if requested
-    if (options.pointCloud?.create && solve.trackPoints3D && solve.trackPoints3D.length > 0) {
+    if (
+      options.pointCloud?.create &&
+      solve.trackPoints3D &&
+      solve.trackPoints3D.length > 0
+    ) {
       const maxPoints = options.pointCloud.maxPoints ?? 50000;
       const pointSize = options.pointCloud.pointSize ?? 2;
 
       const positions: number[] = [];
       const colors: number[] = [];
 
-      for (let i = 0; i < Math.min(solve.trackPoints3D.length, maxPoints); i++) {
+      for (
+        let i = 0;
+        i < Math.min(solve.trackPoints3D.length, maxPoints);
+        i++
+      ) {
         const pt = solve.trackPoints3D[i];
         positions.push(
           pt.position.x * scale + offset.x,
           (options.flipY ? -pt.position.y : pt.position.y) * scale + offset.y,
-          (options.flipZ ? -pt.position.z : pt.position.z) * scale + offset.z
+          (options.flipZ ? -pt.position.z : pt.position.z) * scale + offset.z,
         );
 
         if (pt.color) {
@@ -473,7 +537,10 @@ export async function importCameraTracking(
         }
       }
 
-      const pointCloudLayer = store.addLayer('pointcloud', `Track Points (${solve.source})`);
+      const pointCloudLayer = store.addLayer(
+        "pointcloud",
+        `Track Points (${solve.source})`,
+      );
 
       if (pointCloudLayer) {
         // Note: point cloud data structure may vary - cast as any for flexibility
@@ -482,7 +549,7 @@ export async function importCameraTracking(
             positions: new Float32Array(positions),
             colors: new Float32Array(colors),
             pointSize,
-            format: 'xyz_rgb',
+            format: "xyz_rgb",
           } as any,
         });
         result.pointCloudLayerId = pointCloudLayer.id;
@@ -491,7 +558,7 @@ export async function importCameraTracking(
 
     result.success = true;
   } catch (error) {
-    result.error = error instanceof Error ? error.message : 'Unknown error';
+    result.error = error instanceof Error ? error.message : "Unknown error";
     result.success = false;
   }
 
@@ -501,15 +568,32 @@ export async function importCameraTracking(
 /**
  * Convert quaternion to rotation matrix (row-major)
  */
-function quaternionToMatrix(w: number, x: number, y: number, z: number): number[] {
-  const xx = x * x, yy = y * y, zz = z * z;
-  const xy = x * y, xz = x * z, yz = y * z;
-  const wx = w * x, wy = w * y, wz = w * z;
+function quaternionToMatrix(
+  w: number,
+  x: number,
+  y: number,
+  z: number,
+): number[] {
+  const xx = x * x,
+    yy = y * y,
+    zz = z * z;
+  const xy = x * y,
+    xz = x * z,
+    yz = y * z;
+  const wx = w * x,
+    wy = w * y,
+    wz = w * z;
 
   return [
-    1 - 2 * (yy + zz), 2 * (xy - wz), 2 * (xz + wy),
-    2 * (xy + wz), 1 - 2 * (xx + zz), 2 * (yz - wx),
-    2 * (xz - wy), 2 * (yz + wx), 1 - 2 * (xx + yy),
+    1 - 2 * (yy + zz),
+    2 * (xy - wz),
+    2 * (xz + wy),
+    2 * (xy + wz),
+    1 - 2 * (xx + zz),
+    2 * (yz - wx),
+    2 * (xz - wy),
+    2 * (yz + wx),
+    1 - 2 * (xx + yy),
   ];
 }
 
@@ -520,7 +604,7 @@ function quaternionToEuler(
   w: number,
   x: number,
   y: number,
-  z: number
+  z: number,
 ): { x: number; y: number; z: number } {
   // Roll (X-axis rotation)
   const sinr_cosp = 2 * (w * x + y * z);
@@ -531,7 +615,7 @@ function quaternionToEuler(
   const sinp = 2 * (w * y - z * x);
   let pitch: number;
   if (Math.abs(sinp) >= 1) {
-    pitch = Math.sign(sinp) * Math.PI / 2; // Clamp to ±90°
+    pitch = (Math.sign(sinp) * Math.PI) / 2; // Clamp to ±90°
   } else {
     pitch = Math.asin(sinp);
   }
@@ -554,12 +638,12 @@ function quaternionToEuler(
  * Export current camera animation to Lattice tracking format
  */
 export function exportCameraToTrackingFormat(
-  layerId: string
+  layerId: string,
 ): CameraTrackingSolve | null {
   const store = useCompositorStore();
-  const layer = store.layers.find(l => l.id === layerId);
+  const layer = store.layers.find((l) => l.id === layerId);
 
-  if (!layer || layer.type !== 'camera') {
+  if (!layer || layer.type !== "camera") {
     return null;
   }
 
@@ -577,17 +661,21 @@ export function exportCameraToTrackingFormat(
   const allFrames = new Set<number>();
 
   if (positionProp?.keyframes) {
-    positionProp.keyframes.forEach(kf => allFrames.add(kf.frame));
+    positionProp.keyframes.forEach((kf) => allFrames.add(kf.frame));
   }
   if (orientationProp?.keyframes) {
-    orientationProp.keyframes.forEach(kf => allFrames.add(kf.frame));
+    orientationProp.keyframes.forEach((kf) => allFrames.add(kf.frame));
   }
 
   // Helper to ensure z is defined
-  const ensureZ = (v: { x: number; y: number; z?: number }): { x: number; y: number; z: number } => ({
+  const ensureZ = (v: {
+    x: number;
+    y: number;
+    z?: number;
+  }): { x: number; y: number; z: number } => ({
     x: v.x,
     y: v.y,
-    z: v.z ?? 0
+    z: v.z ?? 0,
   });
 
   // If no keyframes, just export default pose
@@ -627,11 +715,12 @@ export function exportCameraToTrackingFormat(
   };
 
   const fov = cameraData?.fov?.value ?? 50;
-  const focalLength = comp.settings.height / (2 * Math.tan((fov * Math.PI / 180) / 2));
+  const focalLength =
+    comp.settings.height / (2 * Math.tan((fov * Math.PI) / 180 / 2));
 
   return {
-    version: '1.0',
-    source: 'custom',
+    version: "1.0",
+    source: "custom",
     metadata: {
       sourceWidth: comp.settings.width,
       sourceHeight: comp.settings.height,
@@ -640,10 +729,13 @@ export function exportCameraToTrackingFormat(
     },
     intrinsics: {
       focalLength,
-      principalPoint: { x: comp.settings.width / 2, y: comp.settings.height / 2 },
+      principalPoint: {
+        x: comp.settings.width / 2,
+        y: comp.settings.height / 2,
+      },
       width: comp.settings.width,
       height: comp.settings.height,
-      model: 'pinhole',
+      model: "pinhole",
     },
     cameraPath,
   };
@@ -655,15 +747,15 @@ export function exportCameraToTrackingFormat(
 function eulerToQuaternion(
   x: number,
   y: number,
-  z: number
+  z: number,
 ): { w: number; x: number; y: number; z: number } {
   const toRad = Math.PI / 180;
-  const cx = Math.cos(x * toRad / 2);
-  const sx = Math.sin(x * toRad / 2);
-  const cy = Math.cos(y * toRad / 2);
-  const sy = Math.sin(y * toRad / 2);
-  const cz = Math.cos(z * toRad / 2);
-  const sz = Math.sin(z * toRad / 2);
+  const cx = Math.cos((x * toRad) / 2);
+  const sx = Math.sin((x * toRad) / 2);
+  const cy = Math.cos((y * toRad) / 2);
+  const sy = Math.sin((y * toRad) / 2);
+  const cz = Math.cos((z * toRad) / 2);
+  const sz = Math.sin((z * toRad) / 2);
 
   return {
     w: cx * cy * cz + sx * sy * sz,
@@ -678,7 +770,7 @@ function eulerToQuaternion(
  */
 function interpolatePositionProperty(
   prop: AnimatableProperty<{ x: number; y: number; z?: number }> | undefined,
-  frame: number
+  frame: number,
 ): { x: number; y: number; z?: number } {
   if (!prop) {
     return { x: 0, y: 0, z: 0 };
@@ -723,7 +815,7 @@ function interpolatePositionProperty(
  */
 function interpolateOrientationProperty(
   prop: AnimatableProperty<{ x: number; y: number; z: number }> | undefined,
-  frame: number
+  frame: number,
 ): { x: number; y: number; z: number } {
   if (!prop) {
     return { x: 0, y: 0, z: 0 };

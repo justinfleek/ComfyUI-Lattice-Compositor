@@ -12,17 +12,43 @@
  * 5. Layer deletion cleans up properly
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
-import { createLayer, duplicateLayer, setLayerParent, getLayerById } from '@/stores/actions/layerActions';
-import { getDefaultLayerData } from '@/stores/actions/layer/layerDefaults';
-import type { Layer, LayerType, AnimatableProperty } from '@/types/project';
+import { describe, expect, it } from "vitest";
+import { getDefaultLayerData } from "@/stores/actions/layer/layerDefaults";
+import {
+  createLayer,
+  duplicateLayer,
+  setLayerParent,
+} from "@/stores/actions/layerActions";
+import type { Layer, LayerType } from "@/types/project";
 
 // All 26 layer types as per CLAUDE.md
 const ALL_LAYER_TYPES: LayerType[] = [
-  'image', 'video', 'audio', 'solid', 'text', 'shape', 'spline', 'path',
-  'particles', 'particle', 'camera', 'light', 'control', 'null',
-  'nestedComp', 'depthflow', 'depth', 'normal', 'matte', 'model',
-  'pointcloud', 'group', 'generated', 'pose', 'effectLayer', 'adjustment'
+  "image",
+  "video",
+  "audio",
+  "solid",
+  "text",
+  "shape",
+  "spline",
+  "path",
+  "particles",
+  "particle",
+  "camera",
+  "light",
+  "control",
+  "null",
+  "nestedComp",
+  "depthflow",
+  "depth",
+  "normal",
+  "matte",
+  "model",
+  "pointcloud",
+  "group",
+  "generated",
+  "pose",
+  "effectLayer",
+  "adjustment",
 ];
 
 // Mock store interface matching LayerStore
@@ -33,27 +59,27 @@ function createMockStore(composition?: { width: number; height: number }) {
   return {
     project: {
       composition: comp,
-      meta: { modified: '' }
+      meta: { modified: "" },
     },
     clipboard: {
       layers: [] as Layer[],
-      keyframes: []
+      keyframes: [],
     },
     getActiveComp: () => ({
       settings: { width: comp.width, height: comp.height, frameCount: 81 },
-      layers
+      layers,
     }),
     getActiveCompLayers: () => layers,
     pushHistory: () => {},
     // Helper to get a layer by ID
-    _getLayers: () => layers
+    _getLayers: () => layers,
   };
 }
 
-describe('Layer Creation Pipeline', () => {
-  describe('Layer Type Creation', () => {
+describe("Layer Creation Pipeline", () => {
+  describe("Layer Type Creation", () => {
     // Test each layer type individually to ensure coverage
-    ALL_LAYER_TYPES.forEach(layerType => {
+    ALL_LAYER_TYPES.forEach((layerType) => {
       it(`creates ${layerType} layer with correct structure`, () => {
         const store = createMockStore();
         const layer = createLayer(store, layerType, `Test ${layerType}`);
@@ -72,59 +98,59 @@ describe('Layer Creation Pipeline', () => {
 
         // Position should be animatable with correct structure
         expect(layer.transform.position.value).toBeDefined();
-        expect(typeof layer.transform.position.value.x).toBe('number');
-        expect(typeof layer.transform.position.value.y).toBe('number');
+        expect(typeof layer.transform.position.value.x).toBe("number");
+        expect(typeof layer.transform.position.value.y).toBe("number");
         expect(Array.isArray(layer.transform.position.keyframes)).toBe(true);
 
         // Opacity must be an AnimatableProperty
         expect(layer.opacity).toBeDefined();
-        expect(typeof layer.opacity.value).toBe('number');
+        expect(typeof layer.opacity.value).toBe("number");
         expect(Array.isArray(layer.opacity.keyframes)).toBe(true);
 
         // Required properties
-        expect(typeof layer.visible).toBe('boolean');
-        expect(typeof layer.locked).toBe('boolean');
-        expect(typeof layer.startFrame).toBe('number');
-        expect(typeof layer.endFrame).toBe('number');
+        expect(typeof layer.visible).toBe("boolean");
+        expect(typeof layer.locked).toBe("boolean");
+        expect(typeof layer.startFrame).toBe("number");
+        expect(typeof layer.endFrame).toBe("number");
         expect(Array.isArray(layer.effects)).toBe(true);
         expect(Array.isArray(layer.properties)).toBe(true);
       });
     });
   });
 
-  describe('Layer Default Data Integrity', () => {
+  describe("Layer Default Data Integrity", () => {
     const context = { width: 1920, height: 1080 };
 
-    it('text layer has all required text properties', () => {
-      const data = getDefaultLayerData('text', context);
+    it("text layer has all required text properties", () => {
+      const data = getDefaultLayerData("text", context);
       expect(data).toBeDefined();
 
       // Required text properties
-      expect(data).toHaveProperty('text');
-      expect(data).toHaveProperty('fontFamily');
-      expect(data).toHaveProperty('fontSize');
-      expect(typeof (data as any).fontSize).toBe('number');
+      expect(data).toHaveProperty("text");
+      expect(data).toHaveProperty("fontFamily");
+      expect(data).toHaveProperty("fontSize");
+      expect(typeof (data as any).fontSize).toBe("number");
       expect((data as any).fontSize).toBeGreaterThan(0);
-      expect(data).toHaveProperty('fill');
-      expect(data).toHaveProperty('textAlign');
+      expect(data).toHaveProperty("fill");
+      expect(data).toHaveProperty("textAlign");
     });
 
-    it('solid layer uses composition dimensions', () => {
-      const data = getDefaultLayerData('solid', context);
+    it("solid layer uses composition dimensions", () => {
+      const data = getDefaultLayerData("solid", context);
       expect(data).toBeDefined();
       expect((data as any).width).toBe(1920);
       expect((data as any).height).toBe(1080);
       expect((data as any).color).toBeTruthy();
     });
 
-    it('particles layer has complete system config', () => {
-      const data = getDefaultLayerData('particles', context);
+    it("particles layer has complete system config", () => {
+      const data = getDefaultLayerData("particles", context);
       expect(data).toBeDefined();
 
       const particleData = data as any;
       expect(particleData.systemConfig).toBeDefined();
-      expect(typeof particleData.systemConfig.maxParticles).toBe('number');
-      expect(typeof particleData.systemConfig.gravity).toBe('number');
+      expect(typeof particleData.systemConfig.maxParticles).toBe("number");
+      expect(typeof particleData.systemConfig.gravity).toBe("number");
 
       // Must have at least one emitter
       expect(Array.isArray(particleData.emitters)).toBe(true);
@@ -136,12 +162,12 @@ describe('Layer Creation Pipeline', () => {
       expect(emitter.y).toBe(context.height / 2);
     });
 
-    it('pose layer has valid COCO18 keypoints', () => {
-      const data = getDefaultLayerData('pose', context);
+    it("pose layer has valid COCO18 keypoints", () => {
+      const data = getDefaultLayerData("pose", context);
       expect(data).toBeDefined();
 
       const poseData = data as any;
-      expect(poseData.format).toBe('coco18');
+      expect(poseData.format).toBe("coco18");
       expect(Array.isArray(poseData.poses)).toBe(true);
       expect(poseData.poses.length).toBeGreaterThan(0);
 
@@ -150,10 +176,10 @@ describe('Layer Creation Pipeline', () => {
       expect(keypoints.length).toBe(18);
 
       // Each keypoint must have x, y, confidence
-      keypoints.forEach((kp: any, idx: number) => {
-        expect(typeof kp.x).toBe('number');
-        expect(typeof kp.y).toBe('number');
-        expect(typeof kp.confidence).toBe('number');
+      keypoints.forEach((kp: any, _idx: number) => {
+        expect(typeof kp.x).toBe("number");
+        expect(typeof kp.y).toBe("number");
+        expect(typeof kp.confidence).toBe("number");
         // Normalized coordinates must be 0-1
         expect(kp.x).toBeGreaterThanOrEqual(0);
         expect(kp.x).toBeLessThanOrEqual(1);
@@ -162,19 +188,19 @@ describe('Layer Creation Pipeline', () => {
       });
     });
 
-    it('depthflow layer has preset config', () => {
-      const data = getDefaultLayerData('depthflow', context);
+    it("depthflow layer has preset config", () => {
+      const data = getDefaultLayerData("depthflow", context);
       expect(data).toBeDefined();
 
       const depthData = data as any;
       expect(depthData.config).toBeDefined();
-      expect(depthData.config.preset).toBe('static');
-      expect(typeof depthData.config.zoom).toBe('number');
-      expect(typeof depthData.config.depthScale).toBe('number');
+      expect(depthData.config.preset).toBe("static");
+      expect(typeof depthData.config.zoom).toBe("number");
+      expect(typeof depthData.config.depthScale).toBe("number");
     });
 
-    it('shape layer has valid shape structure', () => {
-      const data = getDefaultLayerData('shape', context);
+    it("shape layer has valid shape structure", () => {
+      const data = getDefaultLayerData("shape", context);
       expect(data).toBeDefined();
 
       const shapeData = data as any;
@@ -183,39 +209,39 @@ describe('Layer Creation Pipeline', () => {
 
       // Should have a group with shapes
       const group = shapeData.contents[0];
-      expect(group.type).toBe('group');
+      expect(group.type).toBe("group");
       expect(Array.isArray(group.contents)).toBe(true);
     });
 
-    it('camera layer has default camera data', () => {
-      const data = getDefaultLayerData('camera', context);
+    it("camera layer has default camera data", () => {
+      const data = getDefaultLayerData("camera", context);
       expect(data).toBeDefined();
-      expect(data).toHaveProperty('cameraId');
-      expect(data).toHaveProperty('isActiveCamera');
+      expect(data).toHaveProperty("cameraId");
+      expect(data).toHaveProperty("isActiveCamera");
     });
   });
 
-  describe('Layer Positioning', () => {
-    it('centers layer position in composition', () => {
+  describe("Layer Positioning", () => {
+    it("centers layer position in composition", () => {
       const store = createMockStore({ width: 1920, height: 1080 });
-      const layer = createLayer(store, 'solid', 'Centered Layer');
+      const layer = createLayer(store, "solid", "Centered Layer");
 
       // Position should be centered
       expect(layer.transform.position.value.x).toBe(960);
       expect(layer.transform.position.value.y).toBe(540);
     });
 
-    it('centers layer in custom composition size', () => {
+    it("centers layer in custom composition size", () => {
       const store = createMockStore({ width: 512, height: 512 });
-      const layer = createLayer(store, 'solid', 'Small Comp Layer');
+      const layer = createLayer(store, "solid", "Small Comp Layer");
 
       expect(layer.transform.position.value.x).toBe(256);
       expect(layer.transform.position.value.y).toBe(256);
     });
 
-    it('sets correct timing based on composition', () => {
+    it("sets correct timing based on composition", () => {
       const store = createMockStore();
-      const layer = createLayer(store, 'solid', 'Timed Layer');
+      const layer = createLayer(store, "solid", "Timed Layer");
 
       expect(layer.startFrame).toBe(0);
       expect(layer.endFrame).toBe(80); // frameCount - 1 = 81 - 1 = 80
@@ -226,70 +252,74 @@ describe('Layer Creation Pipeline', () => {
     });
   });
 
-  describe('Layer Duplication', () => {
-    it('duplicates layer with new ID', () => {
+  describe("Layer Duplication", () => {
+    it("duplicates layer with new ID", () => {
       const store = createMockStore();
-      const original = createLayer(store, 'solid', 'Original');
+      const original = createLayer(store, "solid", "Original");
       const duplicate = duplicateLayer(store, original.id);
 
       expect(duplicate).toBeDefined();
-      expect(duplicate!.id).not.toBe(original.id);
-      expect(duplicate!.name).toBe('Original Copy');
-      expect(duplicate!.type).toBe(original.type);
+      expect(duplicate?.id).not.toBe(original.id);
+      expect(duplicate?.name).toBe("Original Copy");
+      expect(duplicate?.type).toBe(original.type);
     });
 
-    it('deep clones transform values', () => {
+    it("deep clones transform values", () => {
       const store = createMockStore();
-      const original = createLayer(store, 'solid', 'Original');
+      const original = createLayer(store, "solid", "Original");
       original.transform.position.value = { x: 100, y: 200 };
 
       const duplicate = duplicateLayer(store, original.id);
 
       // Values should be equal but not same reference
-      expect(duplicate!.transform.position.value.x).toBe(100);
-      expect(duplicate!.transform.position.value.y).toBe(200);
+      expect(duplicate?.transform.position.value.x).toBe(100);
+      expect(duplicate?.transform.position.value.y).toBe(200);
 
       // Modifying duplicate should not affect original
-      duplicate!.transform.position.value.x = 500;
+      duplicate?.transform.position.value.x = 500;
       expect(original.transform.position.value.x).toBe(100);
     });
 
-    it('regenerates keyframe IDs on duplicate', () => {
+    it("regenerates keyframe IDs on duplicate", () => {
       const store = createMockStore();
-      const original = createLayer(store, 'solid', 'Animated');
+      const original = createLayer(store, "solid", "Animated");
 
       // Add a keyframe
       original.transform.position.animated = true;
-      original.transform.position.keyframes = [{
-        id: 'kf_original',
-        frame: 0,
-        value: { x: 0, y: 0 },
-        interpolation: 'linear',
-        inHandle: { frame: 0, value: 0, enabled: false },
-        outHandle: { frame: 0, value: 0, enabled: false },
-        controlMode: 'smooth'
-      }];
+      original.transform.position.keyframes = [
+        {
+          id: "kf_original",
+          frame: 0,
+          value: { x: 0, y: 0 },
+          interpolation: "linear",
+          inHandle: { frame: 0, value: 0, enabled: false },
+          outHandle: { frame: 0, value: 0, enabled: false },
+          controlMode: "smooth",
+        },
+      ];
 
       const duplicate = duplicateLayer(store, original.id);
 
-      expect(duplicate!.transform.position.keyframes[0].id).not.toBe('kf_original');
+      expect(duplicate?.transform.position.keyframes[0].id).not.toBe(
+        "kf_original",
+      );
     });
   });
 
-  describe('Layer Parenting', () => {
-    it('sets parent correctly', () => {
+  describe("Layer Parenting", () => {
+    it("sets parent correctly", () => {
       const store = createMockStore();
-      const parent = createLayer(store, 'control', 'Parent');
-      const child = createLayer(store, 'solid', 'Child');
+      const parent = createLayer(store, "control", "Parent");
+      const child = createLayer(store, "solid", "Child");
 
       setLayerParent(store, child.id, parent.id);
 
       expect(child.parentId).toBe(parent.id);
     });
 
-    it('prevents self-parenting', () => {
+    it("prevents self-parenting", () => {
       const store = createMockStore();
-      const layer = createLayer(store, 'solid', 'Self');
+      const layer = createLayer(store, "solid", "Self");
 
       setLayerParent(store, layer.id, layer.id);
 
@@ -297,11 +327,11 @@ describe('Layer Creation Pipeline', () => {
       expect(layer.parentId).toBeNull();
     });
 
-    it('prevents circular parenting', () => {
+    it("prevents circular parenting", () => {
       const store = createMockStore();
-      const grandparent = createLayer(store, 'control', 'Grandparent');
-      const parent = createLayer(store, 'control', 'Parent');
-      const child = createLayer(store, 'solid', 'Child');
+      const grandparent = createLayer(store, "control", "Grandparent");
+      const parent = createLayer(store, "control", "Parent");
+      const child = createLayer(store, "solid", "Child");
 
       // Set up chain: grandparent -> parent -> child
       setLayerParent(store, parent.id, grandparent.id);
@@ -314,10 +344,10 @@ describe('Layer Creation Pipeline', () => {
       expect(grandparent.parentId).toBeNull();
     });
 
-    it('clears parent with null', () => {
+    it("clears parent with null", () => {
       const store = createMockStore();
-      const parent = createLayer(store, 'control', 'Parent');
-      const child = createLayer(store, 'solid', 'Child');
+      const parent = createLayer(store, "control", "Parent");
+      const child = createLayer(store, "solid", "Child");
 
       setLayerParent(store, child.id, parent.id);
       expect(child.parentId).toBe(parent.id);
@@ -327,34 +357,34 @@ describe('Layer Creation Pipeline', () => {
     });
   });
 
-  describe('Layer Deletion', () => {
+  describe("Layer Deletion", () => {
     // NOTE: deleteLayer() calls useSelectionStore() which requires active Pinia.
     // These tests verify the manual deletion logic instead of calling deleteLayer().
     // In a full E2E test with Vue app context, deleteLayer would work properly.
 
-    it('layer can be removed from layers array manually', () => {
+    it("layer can be removed from layers array manually", () => {
       const store = createMockStore();
-      const layer = createLayer(store, 'solid', 'To Delete');
+      const layer = createLayer(store, "solid", "To Delete");
       const layerId = layer.id;
       const layers = store._getLayers();
 
       expect(layers.length).toBe(1);
 
       // Simulate manual deletion (what deleteLayer does internally)
-      const index = layers.findIndex(l => l.id === layerId);
+      const index = layers.findIndex((l) => l.id === layerId);
       expect(index).toBeGreaterThanOrEqual(0);
       layers.splice(index, 1);
 
       expect(layers.length).toBe(0);
-      expect(layers.find(l => l.id === layerId)).toBeUndefined();
+      expect(layers.find((l) => l.id === layerId)).toBeUndefined();
     });
 
-    it('deletion of non-existent layer index is safe', () => {
+    it("deletion of non-existent layer index is safe", () => {
       const store = createMockStore();
       const layers = store._getLayers();
 
       // Find returns -1 for non-existent
-      const index = layers.findIndex(l => l.id === 'non_existent_id');
+      const index = layers.findIndex((l) => l.id === "non_existent_id");
       expect(index).toBe(-1);
 
       // Splice with -1 would remove last element, so guard check is needed
@@ -363,14 +393,14 @@ describe('Layer Creation Pipeline', () => {
       }).not.toThrow();
     });
 
-    it('deletion triggers modified timestamp update', () => {
+    it("deletion triggers modified timestamp update", () => {
       const store = createMockStore();
-      const layer = createLayer(store, 'solid', 'To Delete');
-      store.project.meta.modified = '';
+      const layer = createLayer(store, "solid", "To Delete");
+      store.project.meta.modified = "";
 
       // Simulate what deleteLayer does
       const layers = store._getLayers();
-      const index = layers.findIndex(l => l.id === layer.id);
+      const index = layers.findIndex((l) => l.id === layer.id);
       if (index >= 0) {
         layers.splice(index, 1);
         store.project.meta.modified = new Date().toISOString();
@@ -380,10 +410,10 @@ describe('Layer Creation Pipeline', () => {
     });
   });
 
-  describe('Animatable Property Structure', () => {
-    it('creates valid animatable property for position', () => {
+  describe("Animatable Property Structure", () => {
+    it("creates valid animatable property for position", () => {
       const store = createMockStore();
-      const layer = createLayer(store, 'solid', 'Test');
+      const layer = createLayer(store, "solid", "Test");
 
       const position = layer.transform.position;
 
@@ -392,46 +422,49 @@ describe('Layer Creation Pipeline', () => {
         id: expect.any(String),
         name: expect.any(String),
         type: expect.any(String),
-        value: expect.objectContaining({ x: expect.any(Number), y: expect.any(Number) }),
-        keyframes: expect.any(Array)
+        value: expect.objectContaining({
+          x: expect.any(Number),
+          y: expect.any(Number),
+        }),
+        keyframes: expect.any(Array),
       });
     });
 
-    it('creates valid animatable property for opacity', () => {
+    it("creates valid animatable property for opacity", () => {
       const store = createMockStore();
-      const layer = createLayer(store, 'solid', 'Test');
+      const layer = createLayer(store, "solid", "Test");
 
       const opacity = layer.opacity;
 
       expect(opacity.value).toBe(100); // Default opacity is 100%
-      expect(opacity.type).toBe('number');
+      expect(opacity.type).toBe("number");
       expect(Array.isArray(opacity.keyframes)).toBe(true);
     });
 
-    it('creates audio properties for video/audio layers', () => {
+    it("creates audio properties for video/audio layers", () => {
       const store = createMockStore();
 
-      const videoLayer = createLayer(store, 'video', 'Video');
+      const videoLayer = createLayer(store, "video", "Video");
       expect(videoLayer.audio).toBeDefined();
-      expect(videoLayer.audio!.level).toBeDefined();
-      expect(typeof videoLayer.audio!.level.value).toBe('number');
+      expect(videoLayer.audio?.level).toBeDefined();
+      expect(typeof videoLayer.audio?.level.value).toBe("number");
 
-      const audioLayer = createLayer(store, 'audio', 'Audio');
+      const audioLayer = createLayer(store, "audio", "Audio");
       expect(audioLayer.audio).toBeDefined();
-      expect(audioLayer.audio!.level).toBeDefined();
+      expect(audioLayer.audio?.level).toBeDefined();
     });
 
-    it('creates spline-specific properties array', () => {
+    it("creates spline-specific properties array", () => {
       const store = createMockStore();
-      const splineLayer = createLayer(store, 'spline', 'Spline');
+      const splineLayer = createLayer(store, "spline", "Spline");
 
       // Spline layers have custom properties for timeline
       expect(splineLayer.properties.length).toBeGreaterThan(0);
 
-      const propertyNames = splineLayer.properties.map(p => p.name);
-      expect(propertyNames).toContain('Stroke Width');
-      expect(propertyNames).toContain('Trim Start');
-      expect(propertyNames).toContain('Trim End');
+      const propertyNames = splineLayer.properties.map((p) => p.name);
+      expect(propertyNames).toContain("Stroke Width");
+      expect(propertyNames).toContain("Trim Start");
+      expect(propertyNames).toContain("Trim End");
     });
   });
 });

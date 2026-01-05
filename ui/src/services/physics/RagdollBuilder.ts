@@ -10,41 +10,41 @@
  */
 
 import type {
-  RagdollConfig,
-  RagdollBone,
-  RagdollState,
-  RigidBodyConfig,
-  PhysicsVec2,
-  PhysicsMaterial,
   CollisionFilter,
   HumanoidRagdollPreset,
-} from '@/types/physics';
-import { HUMANOID_PRESETS, MATERIAL_PRESETS } from '@/types/physics';
-
-import type { JointConfig, PivotJointConfig } from '@/types/physics';
+  JointConfig,
+  PhysicsMaterial,
+  PhysicsVec2,
+  PivotJointConfig,
+  RagdollBone,
+  RagdollConfig,
+  RagdollState,
+  RigidBodyConfig,
+} from "@/types/physics";
+import { HUMANOID_PRESETS, MATERIAL_PRESETS } from "@/types/physics";
 
 // =============================================================================
 // RAGDOLL BONE NAMES
 // =============================================================================
 
 export const HUMANOID_BONES = {
-  HEAD: 'head',
-  NECK: 'neck',
-  TORSO_UPPER: 'torso_upper',
-  TORSO_LOWER: 'torso_lower',
-  PELVIS: 'pelvis',
-  UPPER_ARM_L: 'upper_arm_l',
-  LOWER_ARM_L: 'lower_arm_l',
-  HAND_L: 'hand_l',
-  UPPER_ARM_R: 'upper_arm_r',
-  LOWER_ARM_R: 'lower_arm_r',
-  HAND_R: 'hand_r',
-  UPPER_LEG_L: 'upper_leg_l',
-  LOWER_LEG_L: 'lower_leg_l',
-  FOOT_L: 'foot_l',
-  UPPER_LEG_R: 'upper_leg_r',
-  LOWER_LEG_R: 'lower_leg_r',
-  FOOT_R: 'foot_r',
+  HEAD: "head",
+  NECK: "neck",
+  TORSO_UPPER: "torso_upper",
+  TORSO_LOWER: "torso_lower",
+  PELVIS: "pelvis",
+  UPPER_ARM_L: "upper_arm_l",
+  LOWER_ARM_L: "lower_arm_l",
+  HAND_L: "hand_l",
+  UPPER_ARM_R: "upper_arm_r",
+  LOWER_ARM_R: "lower_arm_r",
+  HAND_R: "hand_r",
+  UPPER_LEG_L: "upper_leg_l",
+  LOWER_LEG_L: "lower_leg_l",
+  FOOT_L: "foot_l",
+  UPPER_LEG_R: "upper_leg_r",
+  LOWER_LEG_R: "lower_leg_r",
+  FOOT_R: "foot_r",
 } as const;
 
 // =============================================================================
@@ -156,9 +156,9 @@ export class RagdollBuilder {
     // Pelvis (root)
     this.addBone({
       id: HUMANOID_BONES.PELVIS,
-      name: 'Pelvis',
-      length: p.hipWidth * scale / 100,
-      width: p.hipWidth * scale / 100 * 0.5,
+      name: "Pelvis",
+      length: (p.hipWidth * scale) / 100,
+      width: ((p.hipWidth * scale) / 100) * 0.5,
       mass: m.torso * 0.2,
       angleLimits: { min: -Math.PI * 0.1, max: Math.PI * 0.1 },
       jointStiffness: 0.8,
@@ -168,10 +168,10 @@ export class RagdollBuilder {
     // Torso Lower
     this.addBone({
       id: HUMANOID_BONES.TORSO_LOWER,
-      name: 'Lower Torso',
+      name: "Lower Torso",
       parent: HUMANOID_BONES.PELVIS,
-      length: p.torsoLength * scale / 100 * 0.4,
-      width: p.shoulderWidth * scale / 100 * 0.6,
+      length: ((p.torsoLength * scale) / 100) * 0.4,
+      width: ((p.shoulderWidth * scale) / 100) * 0.6,
       mass: m.torso * 0.3,
       angleLimits: { min: -Math.PI * 0.15, max: Math.PI * 0.15 },
       jointStiffness: 0.7,
@@ -181,10 +181,10 @@ export class RagdollBuilder {
     // Torso Upper
     this.addBone({
       id: HUMANOID_BONES.TORSO_UPPER,
-      name: 'Upper Torso',
+      name: "Upper Torso",
       parent: HUMANOID_BONES.TORSO_LOWER,
-      length: p.torsoLength * scale / 100 * 0.4,
-      width: p.shoulderWidth * scale / 100,
+      length: ((p.torsoLength * scale) / 100) * 0.4,
+      width: (p.shoulderWidth * scale) / 100,
       mass: m.torso * 0.4,
       angleLimits: { min: -Math.PI * 0.2, max: Math.PI * 0.2 },
       jointStiffness: 0.7,
@@ -194,10 +194,10 @@ export class RagdollBuilder {
     // Neck
     this.addBone({
       id: HUMANOID_BONES.NECK,
-      name: 'Neck',
+      name: "Neck",
       parent: HUMANOID_BONES.TORSO_UPPER,
-      length: p.headSize * scale / 100 * 0.3,
-      width: p.headSize * scale / 100 * 0.3,
+      length: ((p.headSize * scale) / 100) * 0.3,
+      width: ((p.headSize * scale) / 100) * 0.3,
       mass: m.head * 0.1,
       angleLimits: { min: -Math.PI * 0.25, max: Math.PI * 0.25 },
       jointStiffness: 0.5,
@@ -207,10 +207,10 @@ export class RagdollBuilder {
     // Head
     this.addBone({
       id: HUMANOID_BONES.HEAD,
-      name: 'Head',
+      name: "Head",
       parent: HUMANOID_BONES.NECK,
-      length: p.headSize * scale / 100,
-      width: p.headSize * scale / 100 * 0.8,
+      length: (p.headSize * scale) / 100,
+      width: ((p.headSize * scale) / 100) * 0.8,
       mass: m.head * 0.9,
       angleLimits: { min: -Math.PI * 0.3, max: Math.PI * 0.3 },
       jointStiffness: 0.5,
@@ -220,10 +220,10 @@ export class RagdollBuilder {
     // Left Arm
     this.addBone({
       id: HUMANOID_BONES.UPPER_ARM_L,
-      name: 'Upper Arm Left',
+      name: "Upper Arm Left",
       parent: HUMANOID_BONES.TORSO_UPPER,
-      length: p.armLength * scale / 100 * 0.45,
-      width: p.armLength * scale / 100 * 0.15,
+      length: ((p.armLength * scale) / 100) * 0.45,
+      width: ((p.armLength * scale) / 100) * 0.15,
       mass: m.upperArm,
       angleLimits: { min: -Math.PI * 0.9, max: Math.PI * 0.1 },
       jointStiffness: 0.4,
@@ -232,10 +232,10 @@ export class RagdollBuilder {
 
     this.addBone({
       id: HUMANOID_BONES.LOWER_ARM_L,
-      name: 'Lower Arm Left',
+      name: "Lower Arm Left",
       parent: HUMANOID_BONES.UPPER_ARM_L,
-      length: p.armLength * scale / 100 * 0.4,
-      width: p.armLength * scale / 100 * 0.12,
+      length: ((p.armLength * scale) / 100) * 0.4,
+      width: ((p.armLength * scale) / 100) * 0.12,
       mass: m.lowerArm,
       angleLimits: { min: 0, max: Math.PI * 0.8 },
       jointStiffness: 0.4,
@@ -244,10 +244,10 @@ export class RagdollBuilder {
 
     this.addBone({
       id: HUMANOID_BONES.HAND_L,
-      name: 'Hand Left',
+      name: "Hand Left",
       parent: HUMANOID_BONES.LOWER_ARM_L,
-      length: p.armLength * scale / 100 * 0.15,
-      width: p.armLength * scale / 100 * 0.1,
+      length: ((p.armLength * scale) / 100) * 0.15,
+      width: ((p.armLength * scale) / 100) * 0.1,
       mass: m.hand,
       angleLimits: { min: -Math.PI * 0.3, max: Math.PI * 0.3 },
       jointStiffness: 0.3,
@@ -257,10 +257,10 @@ export class RagdollBuilder {
     // Right Arm
     this.addBone({
       id: HUMANOID_BONES.UPPER_ARM_R,
-      name: 'Upper Arm Right',
+      name: "Upper Arm Right",
       parent: HUMANOID_BONES.TORSO_UPPER,
-      length: p.armLength * scale / 100 * 0.45,
-      width: p.armLength * scale / 100 * 0.15,
+      length: ((p.armLength * scale) / 100) * 0.45,
+      width: ((p.armLength * scale) / 100) * 0.15,
       mass: m.upperArm,
       angleLimits: { min: -Math.PI * 0.1, max: Math.PI * 0.9 },
       jointStiffness: 0.4,
@@ -269,10 +269,10 @@ export class RagdollBuilder {
 
     this.addBone({
       id: HUMANOID_BONES.LOWER_ARM_R,
-      name: 'Lower Arm Right',
+      name: "Lower Arm Right",
       parent: HUMANOID_BONES.UPPER_ARM_R,
-      length: p.armLength * scale / 100 * 0.4,
-      width: p.armLength * scale / 100 * 0.12,
+      length: ((p.armLength * scale) / 100) * 0.4,
+      width: ((p.armLength * scale) / 100) * 0.12,
       mass: m.lowerArm,
       angleLimits: { min: -Math.PI * 0.8, max: 0 },
       jointStiffness: 0.4,
@@ -281,10 +281,10 @@ export class RagdollBuilder {
 
     this.addBone({
       id: HUMANOID_BONES.HAND_R,
-      name: 'Hand Right',
+      name: "Hand Right",
       parent: HUMANOID_BONES.LOWER_ARM_R,
-      length: p.armLength * scale / 100 * 0.15,
-      width: p.armLength * scale / 100 * 0.1,
+      length: ((p.armLength * scale) / 100) * 0.15,
+      width: ((p.armLength * scale) / 100) * 0.1,
       mass: m.hand,
       angleLimits: { min: -Math.PI * 0.3, max: Math.PI * 0.3 },
       jointStiffness: 0.3,
@@ -294,10 +294,10 @@ export class RagdollBuilder {
     // Left Leg
     this.addBone({
       id: HUMANOID_BONES.UPPER_LEG_L,
-      name: 'Upper Leg Left',
+      name: "Upper Leg Left",
       parent: HUMANOID_BONES.PELVIS,
-      length: p.legLength * scale / 100 * 0.45,
-      width: p.legLength * scale / 100 * 0.15,
+      length: ((p.legLength * scale) / 100) * 0.45,
+      width: ((p.legLength * scale) / 100) * 0.15,
       mass: m.upperLeg,
       angleLimits: { min: -Math.PI * 0.3, max: Math.PI * 0.5 },
       jointStiffness: 0.5,
@@ -306,10 +306,10 @@ export class RagdollBuilder {
 
     this.addBone({
       id: HUMANOID_BONES.LOWER_LEG_L,
-      name: 'Lower Leg Left',
+      name: "Lower Leg Left",
       parent: HUMANOID_BONES.UPPER_LEG_L,
-      length: p.legLength * scale / 100 * 0.4,
-      width: p.legLength * scale / 100 * 0.12,
+      length: ((p.legLength * scale) / 100) * 0.4,
+      width: ((p.legLength * scale) / 100) * 0.12,
       mass: m.lowerLeg,
       angleLimits: { min: -Math.PI * 0.7, max: 0 },
       jointStiffness: 0.5,
@@ -318,10 +318,10 @@ export class RagdollBuilder {
 
     this.addBone({
       id: HUMANOID_BONES.FOOT_L,
-      name: 'Foot Left',
+      name: "Foot Left",
       parent: HUMANOID_BONES.LOWER_LEG_L,
-      length: p.legLength * scale / 100 * 0.15,
-      width: p.legLength * scale / 100 * 0.08,
+      length: ((p.legLength * scale) / 100) * 0.15,
+      width: ((p.legLength * scale) / 100) * 0.08,
       mass: m.foot,
       angleLimits: { min: -Math.PI * 0.2, max: Math.PI * 0.3 },
       jointStiffness: 0.4,
@@ -331,10 +331,10 @@ export class RagdollBuilder {
     // Right Leg
     this.addBone({
       id: HUMANOID_BONES.UPPER_LEG_R,
-      name: 'Upper Leg Right',
+      name: "Upper Leg Right",
       parent: HUMANOID_BONES.PELVIS,
-      length: p.legLength * scale / 100 * 0.45,
-      width: p.legLength * scale / 100 * 0.15,
+      length: ((p.legLength * scale) / 100) * 0.45,
+      width: ((p.legLength * scale) / 100) * 0.15,
       mass: m.upperLeg,
       angleLimits: { min: -Math.PI * 0.5, max: Math.PI * 0.3 },
       jointStiffness: 0.5,
@@ -343,10 +343,10 @@ export class RagdollBuilder {
 
     this.addBone({
       id: HUMANOID_BONES.LOWER_LEG_R,
-      name: 'Lower Leg Right',
+      name: "Lower Leg Right",
       parent: HUMANOID_BONES.UPPER_LEG_R,
-      length: p.legLength * scale / 100 * 0.4,
-      width: p.legLength * scale / 100 * 0.12,
+      length: ((p.legLength * scale) / 100) * 0.4,
+      width: ((p.legLength * scale) / 100) * 0.12,
       mass: m.lowerLeg,
       angleLimits: { min: 0, max: Math.PI * 0.7 },
       jointStiffness: 0.5,
@@ -355,10 +355,10 @@ export class RagdollBuilder {
 
     this.addBone({
       id: HUMANOID_BONES.FOOT_R,
-      name: 'Foot Right',
+      name: "Foot Right",
       parent: HUMANOID_BONES.LOWER_LEG_R,
-      length: p.legLength * scale / 100 * 0.15,
-      width: p.legLength * scale / 100 * 0.08,
+      length: ((p.legLength * scale) / 100) * 0.15,
+      width: ((p.legLength * scale) / 100) * 0.08,
       mass: m.foot,
       angleLimits: { min: -Math.PI * 0.3, max: Math.PI * 0.2 },
       jointStiffness: 0.4,
@@ -410,7 +410,10 @@ export function convertRagdollToPhysics(config: RagdollConfig): {
   }
 
   // Calculate bone positions (recursive)
-  function calculateBonePosition(bone: RagdollBone): { position: PhysicsVec2; angle: number } {
+  function calculateBonePosition(bone: RagdollBone): {
+    position: PhysicsVec2;
+    angle: number;
+  } {
     if (bonePositions.has(bone.id)) {
       return {
         position: bonePositions.get(bone.id)!,
@@ -466,7 +469,7 @@ export function convertRagdollToPhysics(config: RagdollConfig): {
     bodies.push({
       id: bodyId,
       layerId: config.layerId,
-      type: 'dynamic',
+      type: "dynamic",
       mass: bone.mass,
       position: {
         x: position.x + centerOffset.x,
@@ -476,7 +479,7 @@ export function convertRagdollToPhysics(config: RagdollConfig): {
       angle,
       angularVelocity: 0,
       shape: {
-        type: 'capsule',
+        type: "capsule",
         length: bone.length,
         radius: bone.width * 0.5,
       },
@@ -484,7 +487,7 @@ export function convertRagdollToPhysics(config: RagdollConfig): {
       filter: config.selfCollision
         ? { ...config.filter }
         : { ...config.filter, group: -1 }, // Negative group = no self-collision
-      response: 'collide',
+      response: "collide",
       linearDamping: config.damping,
       angularDamping: config.damping * 2,
       canSleep: true,
@@ -505,7 +508,7 @@ export function convertRagdollToPhysics(config: RagdollConfig): {
     // Pivot joint at connection point
     const joint: PivotJointConfig = {
       id: jointId,
-      type: 'pivot',
+      type: "pivot",
       bodyA: parentBodyId,
       bodyB: childBodyId,
       anchorA: {
@@ -541,7 +544,12 @@ export function convertRagdollToPhysics(config: RagdollConfig): {
 export function extractRagdollState(
   ragdollId: string,
   bones: RagdollBone[],
-  getBodyState: (id: string) => { position: PhysicsVec2; velocity: PhysicsVec2; angle: number; angularVelocity: number } | null
+  getBodyState: (id: string) => {
+    position: PhysicsVec2;
+    velocity: PhysicsVec2;
+    angle: number;
+    angularVelocity: number;
+  } | null,
 ): RagdollState {
   const boneStates = [];
 
@@ -571,7 +579,13 @@ export function extractRagdollState(
  */
 export function applyRagdollState(
   state: RagdollState,
-  setBodyState: (id: string, position: PhysicsVec2, velocity: PhysicsVec2, angle: number, angularVelocity: number) => void
+  setBodyState: (
+    id: string,
+    position: PhysicsVec2,
+    velocity: PhysicsVec2,
+    angle: number,
+    angularVelocity: number,
+  ) => void,
 ): void {
   for (const boneState of state.bones) {
     const bodyId = `${state.id}_${boneState.id}`;
@@ -580,7 +594,7 @@ export function applyRagdollState(
       boneState.position,
       boneState.velocity,
       boneState.angle,
-      boneState.angularVelocity
+      boneState.angularVelocity,
     );
   }
 }

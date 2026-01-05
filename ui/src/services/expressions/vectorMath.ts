@@ -39,12 +39,15 @@ export function vectorSub(a: number[], b: number[]): number[] {
  * Vector multiplication (component-wise or scalar)
  * mul(vec, scalar) or mul(vec1, vec2)
  */
-export function vectorMul(a: number[] | number, b: number[] | number): number[] {
-  if (typeof a === 'number' && Array.isArray(b)) {
-    return b.map(v => v * a);
+export function vectorMul(
+  a: number[] | number,
+  b: number[] | number,
+): number[] {
+  if (typeof a === "number" && Array.isArray(b)) {
+    return b.map((v) => v * a);
   }
-  if (Array.isArray(a) && typeof b === 'number') {
-    return a.map(v => v * b);
+  if (Array.isArray(a) && typeof b === "number") {
+    return a.map((v) => v * b);
   }
   if (Array.isArray(a) && Array.isArray(b)) {
     const maxLen = Math.max(a.length, b.length);
@@ -61,18 +64,21 @@ export function vectorMul(a: number[] | number, b: number[] | number): number[] 
  * Vector division (component-wise or scalar)
  * div(vec, scalar) or div(vec1, vec2)
  */
-export function vectorDiv(a: number[] | number, b: number[] | number): number[] {
-  if (typeof a === 'number' && Array.isArray(b)) {
-    return b.map(v => a / (v || 1));
+export function vectorDiv(
+  a: number[] | number,
+  b: number[] | number,
+): number[] {
+  if (typeof a === "number" && Array.isArray(b)) {
+    return b.map((v) => a / (v || 1));
   }
-  if (Array.isArray(a) && typeof b === 'number') {
-    return a.map(v => v / (b || 1));
+  if (Array.isArray(a) && typeof b === "number") {
+    return a.map((v) => v / (b || 1));
   }
   if (Array.isArray(a) && Array.isArray(b)) {
     const maxLen = Math.max(a.length, b.length);
     const result: number[] = [];
     for (let i = 0; i < maxLen; i++) {
-      result.push((a[i] || 0) / ((b[i] || 1)));
+      result.push((a[i] || 0) / (b[i] || 1));
     }
     return result;
   }
@@ -86,7 +92,7 @@ export function vectorDiv(a: number[] | number, b: number[] | number): number[] 
 export function vectorNormalize(vec: number[]): number[] {
   const len = Math.sqrt(vec.reduce((sum, v) => sum + v * v, 0));
   if (len === 0) return vec.map(() => 0);
-  return vec.map(v => v / len);
+  return vec.map((v) => v / len);
 }
 
 /**
@@ -108,14 +114,14 @@ export function vectorDot(a: number[], b: number[]): number {
  */
 export function vectorCross(a: number[], b: number[]): number[] {
   // Ensure 3D vectors
-  const ax = a[0] || 0, ay = a[1] || 0, az = a[2] || 0;
-  const bx = b[0] || 0, by = b[1] || 0, bz = b[2] || 0;
+  const ax = a[0] || 0,
+    ay = a[1] || 0,
+    az = a[2] || 0;
+  const bx = b[0] || 0,
+    by = b[1] || 0,
+    bz = b[2] || 0;
 
-  return [
-    ay * bz - az * by,
-    az * bx - ax * bz,
-    ax * by - ay * bx
-  ];
+  return [ay * bz - az * by, az * bx - ax * bz, ax * by - ay * bx];
 }
 
 /**
@@ -141,7 +147,11 @@ export function vectorLength(a: number[], b?: number[]): number {
  * Clamp vector components
  * clamp(vec, min, max)
  */
-export function vectorClamp(vec: number[], min: number | number[], max: number | number[]): number[] {
+export function vectorClamp(
+  vec: number[],
+  min: number | number[],
+  max: number | number[],
+): number[] {
   // BUG-018: Use ?? with Infinity defaults for missing array elements
   // || 0 was wrong - caused values to be clamped to 0 instead of passing through
   return vec.map((v, i) => {
@@ -156,7 +166,7 @@ export function vectorClamp(vec: number[], min: number | number[], max: number |
  * noise(val) or noise(valArray)
  */
 export function noise(val: number | number[]): number {
-  if (typeof val === 'number') {
+  if (typeof val === "number") {
     // 1D noise
     const x = Math.sin(val * 12.9898) * 43758.5453;
     return (x - Math.floor(x)) * 2 - 1;
@@ -171,13 +181,13 @@ export function noise(val: number | number[]): number {
  * Degree-based trigonometry helpers
  */
 export const degreeTrig = {
-  sin: (deg: number): number => Math.sin(deg * Math.PI / 180),
-  cos: (deg: number): number => Math.cos(deg * Math.PI / 180),
-  tan: (deg: number): number => Math.tan(deg * Math.PI / 180),
-  asin: (val: number): number => Math.asin(val) * 180 / Math.PI,
-  acos: (val: number): number => Math.acos(val) * 180 / Math.PI,
-  atan: (val: number): number => Math.atan(val) * 180 / Math.PI,
-  atan2: (y: number, x: number): number => Math.atan2(y, x) * 180 / Math.PI,
+  sin: (deg: number): number => Math.sin((deg * Math.PI) / 180),
+  cos: (deg: number): number => Math.cos((deg * Math.PI) / 180),
+  tan: (deg: number): number => Math.tan((deg * Math.PI) / 180),
+  asin: (val: number): number => (Math.asin(val) * 180) / Math.PI,
+  acos: (val: number): number => (Math.acos(val) * 180) / Math.PI,
+  atan: (val: number): number => (Math.atan(val) * 180) / Math.PI,
+  atan2: (y: number, x: number): number => (Math.atan2(y, x) * 180) / Math.PI,
 };
 
 // ============================================================

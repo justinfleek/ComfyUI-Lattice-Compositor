@@ -819,26 +819,28 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, reactive, onMounted } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import { ScrubableNumber } from '@/components/controls';
-import { fontService, type FontCategory } from '@/services/fontService';
+import { computed, onMounted, ref } from "vue";
+import { isExpressionSafe } from "@/services/expressions/expressionValidator";
+import { type FontCategory, fontService } from "@/services/fontService";
 import {
-  TEXT_ANIMATOR_PRESET_LIST,
   applyTextAnimatorPreset,
   createTextAnimator,
-  type TextAnimatorPreset,
-} from '@/services/textAnimator';
-import type { TextAnimator, TextAnimatorPresetType, TextRangeSelector, TextWigglySelector, TextExpressionSelector } from '@/types/project';
-import {
-  DEFAULT_WIGGLY_SELECTOR,
   DEFAULT_EXPRESSION_SELECTOR,
+  DEFAULT_WIGGLY_SELECTOR,
   EXPRESSION_PRESETS,
-} from '@/services/textAnimator';
-import { isExpressionSafe } from '@/services/expressions/expressionValidator';
+  TEXT_ANIMATOR_PRESET_LIST,
+} from "@/services/textAnimator";
+import { useCompositorStore } from "@/stores/compositorStore";
+import type {
+  TextAnimator,
+  TextAnimatorPresetType,
+  TextExpressionSelector,
+  TextRangeSelector,
+  TextWigglySelector,
+} from "@/types/project";
 
 const props = defineProps<{ layer: any }>();
-const emit = defineEmits(['update']);
+const emit = defineEmits(["update"]);
 const store = useCompositorStore();
 
 // Font loading state
@@ -848,8 +850,8 @@ const loadingFonts = ref(false);
 
 // Text Animator state
 const expandedAnimators = ref<Set<string>>(new Set());
-const selectedPreset = ref<TextAnimatorPresetType | ''>('');
-const animatorPresets = TEXT_ANIMATOR_PRESET_LIST;
+const _selectedPreset = ref<TextAnimatorPresetType | "">("");
+const _animatorPresets = TEXT_ANIMATOR_PRESET_LIST;
 
 onMounted(async () => {
   await fontService.initialize();
@@ -858,7 +860,7 @@ onMounted(async () => {
 });
 
 // Request system font access (requires user interaction)
-async function requestFontAccess() {
+async function _requestFontAccess() {
   loadingFonts.value = true;
   try {
     const success = await fontService.requestSystemFontAccess();
@@ -875,11 +877,15 @@ const textData = computed(() => props.layer.data);
 const transform = computed(() => props.layer.transform);
 // Include both visible spline layers AND invisible path layers as potential text paths
 // Users can put text on a logo shape (spline) or an invisible motion guide (path)
-const splineLayers = computed(() => store.layers.filter(l => l.type === 'spline' || l.type === 'path'));
-const animators = computed<TextAnimator[]>(() => textData.value.animators || []);
+const _splineLayers = computed(() =>
+  store.layers.filter((l) => l.type === "spline" || l.type === "path"),
+);
+const animators = computed<TextAnimator[]>(
+  () => textData.value.animators || [],
+);
 
 // Text Animator functions
-function toggleAnimatorExpanded(animatorId: string) {
+function _toggleAnimatorExpanded(animatorId: string) {
   if (expandedAnimators.value.has(animatorId)) {
     expandedAnimators.value.delete(animatorId);
   } else {
@@ -887,7 +893,7 @@ function toggleAnimatorExpanded(animatorId: string) {
   }
 }
 
-function addAnimator(presetType?: TextAnimatorPresetType) {
+function _addAnimator(presetType?: TextAnimatorPresetType) {
   const newAnimator = presetType
     ? applyTextAnimatorPreset(presetType, 45)
     : createTextAnimator(`Animator ${animators.value.length + 1}`);
@@ -895,18 +901,18 @@ function addAnimator(presetType?: TextAnimatorPresetType) {
   const currentAnimators = [...animators.value, newAnimator];
   store.updateLayerData(props.layer.id, { animators: currentAnimators });
   expandedAnimators.value.add(newAnimator.id);
-  emit('update');
+  emit("update");
 }
 
-function removeAnimator(animatorId: string) {
-  const currentAnimators = animators.value.filter(a => a.id !== animatorId);
+function _removeAnimator(animatorId: string) {
+  const currentAnimators = animators.value.filter((a) => a.id !== animatorId);
   store.updateLayerData(props.layer.id, { animators: currentAnimators });
   expandedAnimators.value.delete(animatorId);
-  emit('update');
+  emit("update");
 }
 
-function duplicateAnimator(animatorId: string) {
-  const source = animators.value.find(a => a.id === animatorId);
+function _duplicateAnimator(animatorId: string) {
+  const source = animators.value.find((a) => a.id === animatorId);
   if (!source) return;
 
   const duplicated: TextAnimator = structuredClone(source);
@@ -916,55 +922,63 @@ function duplicateAnimator(animatorId: string) {
   const currentAnimators = [...animators.value, duplicated];
   store.updateLayerData(props.layer.id, { animators: currentAnimators });
   expandedAnimators.value.add(duplicated.id);
-  emit('update');
+  emit("update");
 }
 
-function toggleAnimatorEnabled(animatorId: string) {
-  const animator = animators.value.find(a => a.id === animatorId);
+function _toggleAnimatorEnabled(animatorId: string) {
+  const animator = animators.value.find((a) => a.id === animatorId);
   if (!animator) return;
 
-  const currentAnimators = animators.value.map(a =>
-    a.id === animatorId ? { ...a, enabled: !a.enabled } : a
+  const currentAnimators = animators.value.map((a) =>
+    a.id === animatorId ? { ...a, enabled: !a.enabled } : a,
   );
   store.updateLayerData(props.layer.id, { animators: currentAnimators });
-  emit('update');
+  emit("update");
 }
 
-function updateAnimatorName(animatorId: string, name: string) {
-  const currentAnimators = animators.value.map(a =>
-    a.id === animatorId ? { ...a, name } : a
+function _updateAnimatorName(animatorId: string, name: string) {
+  const currentAnimators = animators.value.map((a) =>
+    a.id === animatorId ? { ...a, name } : a,
   );
   store.updateLayerData(props.layer.id, { animators: currentAnimators });
-  emit('update');
+  emit("update");
 }
 
-function updateRangeSelector(animatorId: string, key: keyof TextRangeSelector, value: any) {
-  const currentAnimators = animators.value.map(a => {
+function _updateRangeSelector(
+  animatorId: string,
+  key: keyof TextRangeSelector,
+  value: any,
+) {
+  const currentAnimators = animators.value.map((a) => {
     if (a.id !== animatorId) return a;
     const updated = { ...a };
-    if (key === 'start' || key === 'end' || key === 'offset') {
+    if (key === "start" || key === "end" || key === "offset") {
       // Update animatable property value
       updated.rangeSelector = {
         ...updated.rangeSelector,
         [key]: {
           ...updated.rangeSelector[key],
-          value
-        }
+          value,
+        },
       };
     } else {
       updated.rangeSelector = {
         ...updated.rangeSelector,
-        [key]: value
+        [key]: value,
       };
     }
     return updated;
   });
   store.updateLayerData(props.layer.id, { animators: currentAnimators });
-  emit('update');
+  emit("update");
 }
 
-function updateAnimatorProperty(animatorId: string, propKey: string, value: any) {
-  const currentAnimators = animators.value.map(a => {
+function _updateAnimatorProperty(
+  animatorId: string,
+  propKey: string,
+  value: any,
+) {
+  const currentAnimators = animators.value.map((a) => {
     if (a.id !== animatorId) return a;
     const updated = { ...a };
 
@@ -975,8 +989,12 @@ function updateAnimatorProperty(animatorId: string, propKey: string, value: any)
     } else {
       // Add or update property
       // Use 'position' for object types like {x, y} vectors, 'number' for scalars
-      const propType = typeof value === 'number' ? 'number'
-        : (typeof value === 'string' ? 'color' : 'position');
+      const propType =
+        typeof value === "number"
+          ? "number"
+          : typeof value === "string"
+            ? "color"
+            : "position";
       updated.properties = {
         ...updated.properties,
         [propKey]: {
@@ -985,27 +1003,33 @@ function updateAnimatorProperty(animatorId: string, propKey: string, value: any)
           type: propType,
           value,
           animated: false,
-          keyframes: []
-        }
+          keyframes: [],
+        },
       };
     }
     return updated;
   });
   store.updateLayerData(props.layer.id, { animators: currentAnimators });
-  emit('update');
+  emit("update");
 }
 
-function getAnimatorPropertyValue(animator: TextAnimator, propKey: string): any {
+function _getAnimatorPropertyValue(
+  animator: TextAnimator,
+  propKey: string,
+): any {
   return animator.properties[propKey]?.value;
 }
 
-function hasAnimatorProperty(animator: TextAnimator, propKey: string): boolean {
+function _hasAnimatorProperty(
+  animator: TextAnimator,
+  propKey: string,
+): boolean {
   return propKey in animator.properties;
 }
 
 // Wiggly Selector functions
-function toggleWigglySelector(animatorId: string) {
-  const currentAnimators = animators.value.map(a => {
+function _toggleWigglySelector(animatorId: string) {
+  const currentAnimators = animators.value.map((a) => {
     if (a.id !== animatorId) return a;
     const updated = { ...a };
     if (updated.wigglySelector?.enabled) {
@@ -1020,31 +1044,38 @@ function toggleWigglySelector(animatorId: string) {
     return updated;
   });
   store.updateLayerData(props.layer.id, { animators: currentAnimators });
-  emit('update');
+  emit("update");
 }
 
-function updateWigglySelector(animatorId: string, key: keyof TextWigglySelector, value: any) {
-  const currentAnimators = animators.value.map(a => {
+function _updateWigglySelector(
+  animatorId: string,
+  key: keyof TextWigglySelector,
+  value: any,
+) {
+  const currentAnimators = animators.value.map((a) => {
     if (a.id !== animatorId) return a;
     const updated = { ...a };
     updated.wigglySelector = {
       ...(updated.wigglySelector || DEFAULT_WIGGLY_SELECTOR),
-      [key]: value
+      [key]: value,
     };
     return updated;
   });
   store.updateLayerData(props.layer.id, { animators: currentAnimators });
-  emit('update');
+  emit("update");
 }
 
 // Expression Selector functions
-function toggleExpressionSelector(animatorId: string) {
-  const currentAnimators = animators.value.map(a => {
+function _toggleExpressionSelector(animatorId: string) {
+  const currentAnimators = animators.value.map((a) => {
     if (a.id !== animatorId) return a;
     const updated = { ...a };
     if (updated.expressionSelector?.enabled) {
       // Disable
-      updated.expressionSelector = { ...updated.expressionSelector, enabled: false };
+      updated.expressionSelector = {
+        ...updated.expressionSelector,
+        enabled: false,
+      };
     } else {
       // Enable (create if doesn't exist)
       updated.expressionSelector = updated.expressionSelector
@@ -1054,167 +1085,188 @@ function toggleExpressionSelector(animatorId: string) {
     return updated;
   });
   store.updateLayerData(props.layer.id, { animators: currentAnimators });
-  emit('update');
+  emit("update");
 }
 
-async function updateExpressionSelector(animatorId: string, key: keyof TextExpressionSelector, value: any) {
+async function updateExpressionSelector(
+  animatorId: string,
+  key: keyof TextExpressionSelector,
+  value: any,
+) {
   // SECURITY: Validate amountExpression before applying (DoS protection)
-  if (key === 'amountExpression' && typeof value === 'string' && value.trim()) {
+  if (key === "amountExpression" && typeof value === "string" && value.trim()) {
     const safe = await isExpressionSafe(value);
     if (!safe) {
-      console.error('[SECURITY] Expression blocked - timeout detected (possible infinite loop)');
-      alert('Expression blocked: This expression appears to contain an infinite loop and could hang your browser.');
+      console.error(
+        "[SECURITY] Expression blocked - timeout detected (possible infinite loop)",
+      );
+      alert(
+        "Expression blocked: This expression appears to contain an infinite loop and could hang your browser.",
+      );
       return;
     }
   }
 
-  const currentAnimators = animators.value.map(a => {
+  const currentAnimators = animators.value.map((a) => {
     if (a.id !== animatorId) return a;
     const updated = { ...a };
     updated.expressionSelector = {
       ...(updated.expressionSelector || DEFAULT_EXPRESSION_SELECTOR),
-      [key]: value
+      [key]: value,
     };
     return updated;
   });
   store.updateLayerData(props.layer.id, { animators: currentAnimators });
-  emit('update');
+  emit("update");
 }
 
-function applyExpressionPreset(animatorId: string, presetKey: string) {
-  const expression = EXPRESSION_PRESETS[presetKey as keyof typeof EXPRESSION_PRESETS];
+function _applyExpressionPreset(animatorId: string, presetKey: string) {
+  const expression =
+    EXPRESSION_PRESETS[presetKey as keyof typeof EXPRESSION_PRESETS];
   if (expression) {
-    updateExpressionSelector(animatorId, 'amountExpression', expression);
+    updateExpressionSelector(animatorId, "amountExpression", expression);
   }
 }
 
 // Expression presets list for dropdown
-const expressionPresetList = Object.entries(EXPRESSION_PRESETS).map(([key, value]) => ({
-  key,
-  label: key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
-  expression: value
-}));
+const _expressionPresetList = Object.entries(EXPRESSION_PRESETS).map(
+  ([key, value]) => ({
+    key,
+    label: key
+      .replace(/([A-Z])/g, " $1")
+      .replace(/^./, (str) => str.toUpperCase()),
+    expression: value,
+  }),
+);
 
 function getProperty(name: string) {
-    return props.layer.properties?.find((p: any) => p.name === name);
+  return props.layer.properties?.find((p: any) => p.name === name);
 }
 
-function getPropertyValue(name: string) {
-    const p = getProperty(name);
-    return p ? p.value : null;
+function _getPropertyValue(name: string) {
+  const p = getProperty(name);
+  return p ? p.value : null;
 }
 
-function updateText(val: string) {
-    // Use store action to update text property
-    store.setPropertyValue(props.layer.id, 'Source Text', val);
-    // Also update the layer data directly for immediate render
-    store.updateLayerData(props.layer.id, { text: val });
-    emit('update');
+function _updateText(val: string) {
+  // Use store action to update text property
+  store.setPropertyValue(props.layer.id, "Source Text", val);
+  // Also update the layer data directly for immediate render
+  store.updateLayerData(props.layer.id, { text: val });
+  emit("update");
 }
 
 function updateData(key: string, val: any) {
-    // Use store action to update layer data
-    store.updateLayerData(props.layer.id, { [key]: val });
+  // Use store action to update layer data
+  store.updateLayerData(props.layer.id, { [key]: val });
 
-    // Sync to animatable property via store
-    const map: Record<string, string> = {
-        'fill': 'Fill Color',
-        'stroke': 'Stroke Color',
-        'fontSize': 'Font Size',
-        'strokeWidth': 'Stroke Width'
-    };
-    if (map[key]) {
-        store.setPropertyValue(props.layer.id, map[key], val);
-    }
-    emit('update');
+  // Sync to animatable property via store
+  const map: Record<string, string> = {
+    fill: "Fill Color",
+    stroke: "Stroke Color",
+    fontSize: "Font Size",
+    strokeWidth: "Stroke Width",
+  };
+  if (map[key]) {
+    store.setPropertyValue(props.layer.id, map[key], val);
+  }
+  emit("update");
 }
 
-function updateAnimatable(name: string, val: number) {
-    // Use store action to update property value
-    store.setPropertyValue(props.layer.id, name, val);
+function _updateAnimatable(name: string, val: number) {
+  // Use store action to update property value
+  store.setPropertyValue(props.layer.id, name, val);
 
-    // Also update static data for immediate render via store
-    const keyMap: Record<string, string> = {
-        'Font Size': 'fontSize',
-        'Stroke Width': 'strokeWidth',
-        'Tracking': 'tracking',
-        'Line Spacing': 'lineSpacing',
-        'Baseline Shift': 'baselineShift',
-        'Character Offset': 'characterOffset',
-        'Path Offset': 'pathOffset',
-        'First Margin': 'pathFirstMargin',
-        'Last Margin': 'pathLastMargin'
-    };
-    if (keyMap[name]) {
-        store.updateLayerData(props.layer.id, { [keyMap[name]]: val });
-    }
-    emit('update');
+  // Also update static data for immediate render via store
+  const keyMap: Record<string, string> = {
+    "Font Size": "fontSize",
+    "Stroke Width": "strokeWidth",
+    Tracking: "tracking",
+    "Line Spacing": "lineSpacing",
+    "Baseline Shift": "baselineShift",
+    "Character Offset": "characterOffset",
+    "Path Offset": "pathOffset",
+    "First Margin": "pathFirstMargin",
+    "Last Margin": "pathLastMargin",
+  };
+  if (keyMap[name]) {
+    store.updateLayerData(props.layer.id, { [keyMap[name]]: val });
+  }
+  emit("update");
 }
 
-function isPropertyAnimated(name: string): boolean {
-    const prop = getProperty(name);
-    return prop?.animated ?? false;
+function _isPropertyAnimated(name: string): boolean {
+  const prop = getProperty(name);
+  return prop?.animated ?? false;
 }
 
-function toggleKeyframe(name: string) {
-    const prop = getProperty(name);
-    if (!prop) return;
+function _toggleKeyframe(name: string) {
+  const prop = getProperty(name);
+  if (!prop) return;
 
-    const currentFrame = store.currentFrame;
+  const currentFrame = store.currentFrame;
 
-    // Check if keyframe exists at current frame
-    const existingKf = prop.keyframes?.find((kf: any) => kf.frame === currentFrame);
+  // Check if keyframe exists at current frame
+  const existingKf = prop.keyframes?.find(
+    (kf: any) => kf.frame === currentFrame,
+  );
 
-    if (existingKf) {
-        // Remove keyframe via store
-        store.removeKeyframe(props.layer.id, name, existingKf.id);
-    } else {
-        // Add keyframe at current frame via store
-        store.addKeyframe(props.layer.id, name, prop.value, currentFrame);
-    }
+  if (existingKf) {
+    // Remove keyframe via store
+    store.removeKeyframe(props.layer.id, name, existingKf.id);
+  } else {
+    // Add keyframe at current frame via store
+    store.addKeyframe(props.layer.id, name, prop.value, currentFrame);
+  }
 
-    emit('update');
+  emit("update");
 }
 
-function updateTransform(propName: string, axis: string | null, val: number) {
-    const prop = transform.value[propName];
-    let newValue: any;
-    if (axis) {
-        newValue = { ...prop.value, [axis]: val };
-    } else {
-        newValue = val;
-    }
-    // Use store action to update transform property
-    store.setPropertyValue(props.layer.id, `transform.${propName}`, newValue);
-    emit('update');
+function _updateTransform(propName: string, axis: string | null, val: number) {
+  const prop = transform.value[propName];
+  let newValue: any;
+  if (axis) {
+    newValue = { ...prop.value, [axis]: val };
+  } else {
+    newValue = val;
+  }
+  // Use store action to update transform property
+  store.setPropertyValue(props.layer.id, `transform.${propName}`, newValue);
+  emit("update");
 }
 
-function updateOpacity(val: number) {
-    // Use store action to update opacity
-    store.setPropertyValue(props.layer.id, 'opacity', val);
-    emit('update');
+function _updateOpacity(val: number) {
+  // Use store action to update opacity
+  store.setPropertyValue(props.layer.id, "opacity", val);
+  emit("update");
 }
 
-function toggleBold() {
-    updateData('fontWeight', textData.value.fontWeight === 'bold' ? '400' : 'bold');
+function _toggleBold() {
+  updateData(
+    "fontWeight",
+    textData.value.fontWeight === "bold" ? "400" : "bold",
+  );
 }
-function toggleItalic() {
-    updateData('fontStyle', textData.value.fontStyle === 'italic' ? 'normal' : 'italic');
+function _toggleItalic() {
+  updateData(
+    "fontStyle",
+    textData.value.fontStyle === "italic" ? "normal" : "italic",
+  );
 }
 
-function toggleCase(caseType: 'uppercase' | 'smallcaps' | 'normal') {
-    updateData('textCase', caseType);
+function _toggleCase(caseType: "uppercase" | "smallcaps" | "normal") {
+  updateData("textCase", caseType);
 }
 
-function toggleVerticalAlign(align: 'super' | 'sub' | 'baseline') {
-    updateData('verticalAlign', align);
+function _toggleVerticalAlign(align: "super" | "sub" | "baseline") {
+  updateData("verticalAlign", align);
 }
 
 // Handle font change - ensure Google fonts are loaded
-async function handleFontChange(family: string) {
-    // Ensure the font is loaded before applying
-    await fontService.ensureFont(family);
-    updateData('fontFamily', family);
+async function _handleFontChange(family: string) {
+  // Ensure the font is loaded before applying
+  await fontService.ensureFont(family);
+  updateData("fontFamily", family);
 }
 </script>
 

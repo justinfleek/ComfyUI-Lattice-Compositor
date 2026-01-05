@@ -11,19 +11,19 @@
  * - Support for position, rotation, and starch pins
  */
 
-import type { ControlPoint } from '@/types/project';
 import type {
-  WarpPin,
-  WarpMesh,
-  WarpPinRestState,
   WarpDeformationResult,
+  WarpMesh,
+  WarpPin,
+  WarpPinRestState,
   WarpWeightOptions,
-} from '@/types/meshWarp';
-import { DEFAULT_WARP_WEIGHT_OPTIONS, createEmptyWarpMesh } from '@/types/meshWarp';
-import { interpolateProperty } from './interpolation';
-import { createLogger } from '@/utils/logger';
+} from "@/types/meshWarp";
+import { DEFAULT_WARP_WEIGHT_OPTIONS } from "@/types/meshWarp";
+import type { ControlPoint } from "@/types/project";
+import { createLogger } from "@/utils/logger";
+import { interpolateProperty } from "./interpolation";
 
-const logger = createLogger('MeshWarpDeformation');
+const logger = createLogger("MeshWarpDeformation");
 
 // ============================================================================
 // TYPES
@@ -52,12 +52,12 @@ function distance(a: Point2D, b: Point2D): number {
 }
 
 /** Linear interpolation between two values */
-function lerp(a: number, b: number, t: number): number {
+function _lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t;
 }
 
 /** Clamp a value between min and max */
-function clamp(value: number, min: number, max: number): number {
+function _clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
@@ -65,7 +65,7 @@ function clamp(value: number, min: number, max: number): number {
 function rotatePoint(
   point: Point2D,
   origin: Point2D,
-  angleDegrees: number
+  angleDegrees: number,
 ): Point2D {
   const angleRadians = (angleDegrees * Math.PI) / 180;
   const cos = Math.cos(angleRadians);
@@ -80,11 +80,7 @@ function rotatePoint(
 }
 
 /** Scale a point relative to an origin */
-function scalePoint(
-  point: Point2D,
-  origin: Point2D,
-  scale: number
-): Point2D {
+function scalePoint(point: Point2D, origin: Point2D, scale: number): Point2D {
   return {
     x: origin.x + (point.x - origin.x) * scale,
     y: origin.y + (point.y - origin.y) * scale,
@@ -105,10 +101,10 @@ function delaunayTriangulate(points: Point2D[]): Triangle[] {
   }
 
   // Create super triangle that encompasses all points
-  const minX = Math.min(...points.map(p => p.x));
-  const maxX = Math.max(...points.map(p => p.x));
-  const minY = Math.min(...points.map(p => p.y));
-  const maxY = Math.max(...points.map(p => p.y));
+  const minX = Math.min(...points.map((p) => p.x));
+  const maxX = Math.max(...points.map((p) => p.x));
+  const minY = Math.min(...points.map((p) => p.y));
+  const maxY = Math.max(...points.map((p) => p.y));
 
   const dx = maxX - minX;
   const dy = maxY - minY;
@@ -124,7 +120,9 @@ function delaunayTriangulate(points: Point2D[]): Triangle[] {
   const superIndices = [points.length, points.length + 1, points.length + 2];
 
   // Initial triangle is the super triangle
-  let triangles: Triangle[] = [{ a: superIndices[0], b: superIndices[1], c: superIndices[2] }];
+  let triangles: Triangle[] = [
+    { a: superIndices[0], b: superIndices[1], c: superIndices[2] },
+  ];
 
   // Add each point one at a time
   for (let i = 0; i < points.length; i++) {
@@ -134,7 +132,14 @@ function delaunayTriangulate(points: Point2D[]): Triangle[] {
 
     // Find all triangles whose circumcircle contains the point
     for (const tri of triangles) {
-      if (isPointInCircumcircle(point, allPoints[tri.a], allPoints[tri.b], allPoints[tri.c])) {
+      if (
+        isPointInCircumcircle(
+          point,
+          allPoints[tri.a],
+          allPoints[tri.b],
+          allPoints[tri.c],
+        )
+      ) {
         badTriangles.push(tri);
       }
     }
@@ -176,7 +181,7 @@ function delaunayTriangulate(points: Point2D[]): Triangle[] {
     }
 
     // Remove bad triangles
-    triangles = triangles.filter(t => !badTriangles.includes(t));
+    triangles = triangles.filter((t) => !badTriangles.includes(t));
 
     // Create new triangles from polygon edges to new point
     for (const edge of polygon) {
@@ -186,10 +191,10 @@ function delaunayTriangulate(points: Point2D[]): Triangle[] {
 
   // Remove triangles that include super triangle vertices
   return triangles.filter(
-    t =>
+    (t) =>
       !superIndices.includes(t.a) &&
       !superIndices.includes(t.b) &&
-      !superIndices.includes(t.c)
+      !superIndices.includes(t.c),
   );
 }
 
@@ -200,7 +205,7 @@ function isPointInCircumcircle(
   point: Point2D,
   a: Point2D,
   b: Point2D,
-  c: Point2D
+  c: Point2D,
 ): boolean {
   const ax = a.x - point.x;
   const ay = a.y - point.y;
@@ -215,8 +220,7 @@ function isPointInCircumcircle(
     (cx * cx + cy * cy) * (ax * by - bx * ay);
 
   // Counter-clockwise orientation means positive det is inside
-  const orientation =
-    (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+  const orientation = (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
 
   return orientation > 0 ? det > 0 : det < 0;
 }
@@ -231,7 +235,7 @@ function isPointInCircumcircle(
 function calculateWeights(
   vertices: Float32Array,
   pins: WarpPin[],
-  options: WarpWeightOptions = DEFAULT_WARP_WEIGHT_OPTIONS
+  options: WarpWeightOptions = DEFAULT_WARP_WEIGHT_OPTIONS,
 ): Float32Array {
   const vertexCount = vertices.length / 2;
   const pinCount = pins.length;
@@ -259,10 +263,6 @@ function calculateWeights(
       let weight: number;
 
       switch (options.method) {
-        case 'bounded':
-        case 'radial-basis':
-        case 'heat-diffusion':
-        case 'inverse-distance':
         default: {
           // Inverse distance weighting with falloff
           if (dist < 0.001) {
@@ -272,11 +272,11 @@ function calculateWeights(
           } else {
             // Smooth falloff using radius
             const normalizedDist = dist / pin.radius;
-            weight = Math.pow(1 / (1 + normalizedDist), options.falloffPower);
+            weight = (1 / (1 + normalizedDist)) ** options.falloffPower;
 
             // Apply stiffness (starch pins reduce deformation)
             if (pin.stiffness > 0) {
-              weight *= (1 - pin.stiffness * 0.5);
+              weight *= 1 - pin.stiffness * 0.5;
             }
           }
           break;
@@ -325,7 +325,7 @@ interface EvaluatedPinState {
 function evaluatePinAtFrame(
   pin: WarpPin,
   restState: WarpPinRestState,
-  frame: number
+  frame: number,
 ): EvaluatedPinState {
   const position = {
     x: interpolateProperty(pin.position, frame).x,
@@ -340,7 +340,9 @@ function evaluatePinAtFrame(
   };
 
   // Evaluate inFront for overlap pins
-  const inFront = pin.inFront ? interpolateProperty(pin.inFront, frame) : undefined;
+  const inFront = pin.inFront
+    ? interpolateProperty(pin.inFront, frame)
+    : undefined;
 
   return { position, rotation, scale, delta, inFront };
 }
@@ -348,10 +350,7 @@ function evaluatePinAtFrame(
 /**
  * Deform a mesh based on pin positions at a specific frame
  */
-function deformMesh(
-  mesh: WarpMesh,
-  frame: number
-): Float32Array {
+function deformMesh(mesh: WarpMesh, frame: number): Float32Array {
   const { originalVertices, pins, weights, pinRestStates, vertexCount } = mesh;
   const pinCount = pins.length;
 
@@ -361,7 +360,7 @@ function deformMesh(
 
   // Evaluate all pins at this frame
   const pinStates = pins.map((pin, i) =>
-    evaluatePinAtFrame(pin, pinRestStates[i], frame)
+    evaluatePinAtFrame(pin, pinRestStates[i], frame),
   );
 
   // Create output array
@@ -370,7 +369,7 @@ function deformMesh(
   for (let v = 0; v < vertexCount; v++) {
     const origX = originalVertices[v * 2];
     const origY = originalVertices[v * 2 + 1];
-    const origPoint = { x: origX, y: origY };
+    const _origPoint = { x: origX, y: origY };
 
     let deformedX = 0;
     let deformedY = 0;
@@ -389,7 +388,7 @@ function deformMesh(
 
       // Apply translation (only for position and advanced pins)
       // Other pin types (starch, overlap, bend, rotation) use fixed reference positions
-      if (pin.type === 'position' || pin.type === 'advanced') {
+      if (pin.type === "position" || pin.type === "advanced") {
         pinDeformed = {
           x: pinDeformed.x + pinState.delta.x,
           y: pinDeformed.y + pinState.delta.y,
@@ -398,26 +397,29 @@ function deformMesh(
 
       // Apply rotation (around pin's rest position)
       // For rotation/bend/advanced pins, or any pin with rotation change
-      if (pin.type === 'rotation' || pin.type === 'bend' || pin.type === 'advanced' ||
-          Math.abs(pinState.rotation - restState.rotation) > 0.001) {
+      if (
+        pin.type === "rotation" ||
+        pin.type === "bend" ||
+        pin.type === "advanced" ||
+        Math.abs(pinState.rotation - restState.rotation) > 0.001
+      ) {
         const rotationDelta = pinState.rotation - restState.rotation;
         pinDeformed = rotatePoint(
           pinDeformed,
           pinState.position,
-          rotationDelta
+          rotationDelta,
         );
       }
 
       // Apply scale (around pin's rest position)
       // For bend/advanced pins, or any pin with scale change
-      if (pin.type === 'bend' || pin.type === 'advanced' ||
-          Math.abs(pinState.scale - restState.scale) > 0.001) {
+      if (
+        pin.type === "bend" ||
+        pin.type === "advanced" ||
+        Math.abs(pinState.scale - restState.scale) > 0.001
+      ) {
         const scaleDelta = pinState.scale / restState.scale;
-        pinDeformed = scalePoint(
-          pinDeformed,
-          pinState.position,
-          scaleDelta
-        );
+        pinDeformed = scalePoint(pinDeformed, pinState.position, scaleDelta);
       }
 
       // Accumulate weighted contribution
@@ -454,7 +456,7 @@ export class MeshWarpDeformationService {
     layerId: string,
     controlPoints: ControlPoint[],
     pins: WarpPin[],
-    options: WarpWeightOptions = DEFAULT_WARP_WEIGHT_OPTIONS
+    options: WarpWeightOptions = DEFAULT_WARP_WEIGHT_OPTIONS,
   ): WarpMesh {
     // Convert control points to flat vertex array
     const vertices = new Float32Array(controlPoints.length * 2);
@@ -464,7 +466,7 @@ export class MeshWarpDeformationService {
     }
 
     // Create pin rest states
-    const pinRestStates: WarpPinRestState[] = pins.map(pin => ({
+    const pinRestStates: WarpPinRestState[] = pins.map((pin) => ({
       pinId: pin.id,
       position: { ...pin.position.value },
       rotation: pin.rotation.value,
@@ -474,8 +476,8 @@ export class MeshWarpDeformationService {
 
     // Triangulate the mesh (control points + pins)
     const allPoints: Point2D[] = [
-      ...controlPoints.map(cp => ({ x: cp.x, y: cp.y })),
-      ...pins.map(pin => pin.position.value),
+      ...controlPoints.map((cp) => ({ x: cp.x, y: cp.y })),
+      ...pins.map((pin) => pin.position.value),
     ];
     const triangles = delaunayTriangulate(allPoints);
 
@@ -502,7 +504,9 @@ export class MeshWarpDeformationService {
     // Cache the mesh
     this.meshCache.set(layerId, mesh);
 
-    logger.debug(`Built warp mesh: ${controlPoints.length} vertices, ${pins.length} pins`);
+    logger.debug(
+      `Built warp mesh: ${controlPoints.length} vertices, ${pins.length} pins`,
+    );
 
     return mesh;
   }
@@ -527,13 +531,13 @@ export class MeshWarpDeformationService {
   updateMeshPins(
     layerId: string,
     pins: WarpPin[],
-    options: WarpWeightOptions = DEFAULT_WARP_WEIGHT_OPTIONS
+    options: WarpWeightOptions = DEFAULT_WARP_WEIGHT_OPTIONS,
   ): void {
     const mesh = this.meshCache.get(layerId);
     if (!mesh) return;
 
     mesh.pins = pins;
-    mesh.pinRestStates = pins.map(pin => ({
+    mesh.pinRestStates = pins.map((pin) => ({
       pinId: pin.id,
       position: { ...pin.position.value },
       rotation: pin.rotation.value,
@@ -549,7 +553,7 @@ export class MeshWarpDeformationService {
   addPin(
     layerId: string,
     pin: WarpPin,
-    options: WarpWeightOptions = DEFAULT_WARP_WEIGHT_OPTIONS
+    options: WarpWeightOptions = DEFAULT_WARP_WEIGHT_OPTIONS,
   ): void {
     const mesh = this.meshCache.get(layerId);
     if (!mesh) return;
@@ -570,12 +574,12 @@ export class MeshWarpDeformationService {
   removePin(
     layerId: string,
     pinId: string,
-    options: WarpWeightOptions = DEFAULT_WARP_WEIGHT_OPTIONS
+    options: WarpWeightOptions = DEFAULT_WARP_WEIGHT_OPTIONS,
   ): void {
     const mesh = this.meshCache.get(layerId);
     if (!mesh) return;
 
-    const pinIndex = mesh.pins.findIndex(p => p.id === pinId);
+    const pinIndex = mesh.pins.findIndex((p) => p.id === pinId);
     if (pinIndex === -1) return;
 
     mesh.pins.splice(pinIndex, 1);
@@ -589,7 +593,7 @@ export class MeshWarpDeformationService {
   getDeformedControlPoints(
     layerId: string,
     frame: number,
-    originalControlPoints: ControlPoint[]
+    originalControlPoints: ControlPoint[],
   ): ControlPoint[] {
     const mesh = this.meshCache.get(layerId);
     if (!mesh || mesh.pins.length === 0) {
@@ -599,25 +603,27 @@ export class MeshWarpDeformationService {
     const deformedVertices = deformMesh(mesh, frame);
 
     // Reconstruct control points with deformed positions
-    const deformedPoints: ControlPoint[] = originalControlPoints.map((cp, i) => {
-      const newX = deformedVertices[i * 2];
-      const newY = deformedVertices[i * 2 + 1];
-      const dx = newX - cp.x;
-      const dy = newY - cp.y;
+    const deformedPoints: ControlPoint[] = originalControlPoints.map(
+      (cp, i) => {
+        const newX = deformedVertices[i * 2];
+        const newY = deformedVertices[i * 2 + 1];
+        const dx = newX - cp.x;
+        const dy = newY - cp.y;
 
-      return {
-        ...cp,
-        x: newX,
-        y: newY,
-        // Also offset handles to maintain shape
-        handleIn: cp.handleIn
-          ? { x: cp.handleIn.x + dx, y: cp.handleIn.y + dy }
-          : null,
-        handleOut: cp.handleOut
-          ? { x: cp.handleOut.x + dx, y: cp.handleOut.y + dy }
-          : null,
-      };
-    });
+        return {
+          ...cp,
+          x: newX,
+          y: newY,
+          // Also offset handles to maintain shape
+          handleIn: cp.handleIn
+            ? { x: cp.handleIn.x + dx, y: cp.handleIn.y + dy }
+            : null,
+          handleOut: cp.handleOut
+            ? { x: cp.handleOut.x + dx, y: cp.handleOut.y + dy }
+            : null,
+        };
+      },
+    );
 
     return deformedPoints;
   }
@@ -632,7 +638,7 @@ export class MeshWarpDeformationService {
     const vertices = deformMesh(mesh, frame);
 
     // Convert to control point format
-    const controlPoints: WarpDeformationResult['controlPoints'] = [];
+    const controlPoints: WarpDeformationResult["controlPoints"] = [];
     for (let i = 0; i < mesh.vertexCount; i++) {
       controlPoints.push({
         x: vertices[i * 2],
@@ -655,11 +661,16 @@ export class MeshWarpDeformationService {
   /**
    * Update a pin's position (for UI dragging)
    */
-  updatePinPosition(layerId: string, pinId: string, x: number, y: number): void {
+  updatePinPosition(
+    layerId: string,
+    pinId: string,
+    x: number,
+    y: number,
+  ): void {
     const mesh = this.meshCache.get(layerId);
     if (!mesh) return;
 
-    const pin = mesh.pins.find(p => p.id === pinId);
+    const pin = mesh.pins.find((p) => p.id === pinId);
     if (pin) {
       pin.position.value = { x, y };
     }
@@ -683,11 +694,7 @@ export const meshWarpDeformation = new MeshWarpDeformationService();
 // EXPORTS
 // ============================================================================
 
-export {
-  delaunayTriangulate,
-  calculateWeights,
-  deformMesh,
-};
+export { delaunayTriangulate, calculateWeights, deformMesh };
 
 // Backwards compatibility aliases
 /** @deprecated Use MeshWarpDeformationService instead */

@@ -4,10 +4,10 @@
  * Detects GPU capabilities and returns appropriate rendering tier.
  */
 
-import { engineLogger } from '@/utils/logger';
+import { engineLogger } from "@/utils/logger";
 
 export interface GPUTier {
-  tier: 'cpu' | 'webgl' | 'webgpu' | 'blackwell';
+  tier: "cpu" | "webgl" | "webgpu" | "blackwell";
   vram: number;
   features: string[];
 }
@@ -33,70 +33,70 @@ async function estimateVRAM(adapter: GPUAdapter): Promise<number> {
  */
 export async function detectGPUTier(): Promise<GPUTier> {
   // Check WebGPU (best for canvas rendering)
-  if ('gpu' in navigator) {
+  if ("gpu" in navigator) {
     try {
       const gpu = navigator.gpu;
       const adapter = await gpu.requestAdapter({
-        powerPreference: 'high-performance'
+        powerPreference: "high-performance",
       });
 
       if (adapter) {
         // Get adapter info - method varies by browser version
-        let deviceName = '';
-        if ('info' in adapter) {
+        let deviceName = "";
+        if ("info" in adapter) {
           // Newer API
           const info = (adapter as any).info;
-          deviceName = info?.device || info?.description || '';
+          deviceName = info?.device || info?.description || "";
         }
 
         // Detect Blackwell (RTX 50 series)
         if (
-          deviceName.includes('RTX 50') ||
-          deviceName.toLowerCase().includes('blackwell') ||
-          deviceName.includes('B100') ||
-          deviceName.includes('B200')
+          deviceName.includes("RTX 50") ||
+          deviceName.toLowerCase().includes("blackwell") ||
+          deviceName.includes("B100") ||
+          deviceName.includes("B200")
         ) {
           return {
-            tier: 'blackwell',
+            tier: "blackwell",
             vram: await estimateVRAM(adapter),
-            features: ['fp4_tensor', 'webgpu', 'cuda_12']
+            features: ["fp4_tensor", "webgpu", "cuda_12"],
           };
         }
 
         return {
-          tier: 'webgpu',
+          tier: "webgpu",
           vram: await estimateVRAM(adapter),
-          features: ['webgpu']
+          features: ["webgpu"],
         };
       }
     } catch (error) {
-      engineLogger.warn('WebGPU detection failed:', error);
+      engineLogger.warn("WebGPU detection failed:", error);
     }
   }
 
   // Fallback to WebGL
-  const canvas = document.createElement('canvas');
-  const gl = canvas.getContext('webgl2');
+  const canvas = document.createElement("canvas");
+  const gl = canvas.getContext("webgl2");
   if (gl) {
-    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+    const debugInfo = gl.getExtension("WEBGL_debug_renderer_info");
     const renderer = debugInfo
       ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)
-      : 'Unknown';
+      : "Unknown";
 
-    engineLogger.debug('WebGL renderer:', renderer);
+    engineLogger.debug("WebGL renderer:", renderer);
 
     return {
-      tier: 'webgl',
+      tier: "webgl",
       vram: 0, // Can't detect in WebGL
-      features: ['webgl2']
+      features: ["webgl2"],
     };
   }
 
   // CPU fallback
   return {
-    tier: 'cpu',
+    tier: "cpu",
     vram: 0,
-    features: []
+    features: [],
   };
 }
 

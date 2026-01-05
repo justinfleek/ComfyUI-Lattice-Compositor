@@ -15,8 +15,8 @@
  * Output: Canvas frames or WebM video with white shapes on #000000
  */
 
-import { createBezierCurve } from '../arcLength';
-import type { ControlPoint } from '@/types/spline';
+import type { ControlPoint } from "@/types/spline";
+import { createBezierCurve } from "../arcLength";
 
 // Extended type with optional z coordinate for 3D curves
 type SplineControlPoint = ControlPoint & {
@@ -24,14 +24,27 @@ type SplineControlPoint = ControlPoint & {
   handleIn?: { x: number; y: number; z?: number } | null;
   handleOut?: { x: number; y: number; z?: number } | null;
 };
-import * as THREE from 'three';
+
+import * as THREE from "three";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-export type PathFollowerShape = 'circle' | 'square' | 'triangle' | 'diamond' | 'arrow' | 'custom';
-export type PathFollowerEasing = 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'ease-in-cubic' | 'ease-out-cubic';
+export type PathFollowerShape =
+  | "circle"
+  | "square"
+  | "triangle"
+  | "diamond"
+  | "arrow"
+  | "custom";
+export type PathFollowerEasing =
+  | "linear"
+  | "ease-in"
+  | "ease-out"
+  | "ease-in-out"
+  | "ease-in-cubic"
+  | "ease-out-cubic";
 
 export interface PathFollowerConfig {
   /** Unique identifier */
@@ -71,7 +84,7 @@ export interface PathFollowerConfig {
 
   /** Loop mode */
   loop: boolean;
-  loopMode?: 'restart' | 'pingpong';
+  loopMode?: "restart" | "pingpong";
 
   /** Scale animation (optional) */
   scaleStart?: number;
@@ -99,7 +112,7 @@ export interface VACEExportConfig {
   pathFollowers: PathFollowerConfig[];
 
   /** Output format */
-  outputFormat: 'canvas' | 'webm' | 'frames';
+  outputFormat: "canvas" | "webm" | "frames";
 
   /** Quality settings */
   antiAlias: boolean;
@@ -125,12 +138,12 @@ export interface VACEFrame {
 // ============================================================================
 
 const EASING_FUNCTIONS: Record<PathFollowerEasing, (t: number) => number> = {
-  'linear': (t) => t,
-  'ease-in': (t) => t * t,
-  'ease-out': (t) => t * (2 - t),
-  'ease-in-out': (t) => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t,
-  'ease-in-cubic': (t) => t * t * t,
-  'ease-out-cubic': (t) => (--t) * t * t + 1,
+  linear: (t) => t,
+  "ease-in": (t) => t * t,
+  "ease-out": (t) => t * (2 - t),
+  "ease-in-out": (t) => (t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t),
+  "ease-in-cubic": (t) => t * t * t,
+  "ease-out-cubic": (t) => --t * t * t + 1,
 };
 
 // ============================================================================
@@ -166,9 +179,17 @@ export class PathFollower {
       // Create cubic bezier curve from control points
       const curve = createBezierCurve(
         { x: p0.x, y: p0.y, z: p0.z || 0 },
-        { x: p0.x + (p0.handleOut?.x || 0), y: p0.y + (p0.handleOut?.y || 0), z: (p0.z || 0) + (p0.handleOut?.z || 0) },
-        { x: p1.x + (p1.handleIn?.x || 0), y: p1.y + (p1.handleIn?.y || 0), z: (p1.z || 0) + (p1.handleIn?.z || 0) },
-        { x: p1.x, y: p1.y, z: p1.z || 0 }
+        {
+          x: p0.x + (p0.handleOut?.x || 0),
+          y: p0.y + (p0.handleOut?.y || 0),
+          z: (p0.z || 0) + (p0.handleOut?.z || 0),
+        },
+        {
+          x: p1.x + (p1.handleIn?.x || 0),
+          y: p1.y + (p1.handleIn?.y || 0),
+          z: (p1.z || 0) + (p1.handleIn?.z || 0),
+        },
+        { x: p1.x, y: p1.y, z: p1.z || 0 },
       );
 
       curvePath.add(curve);
@@ -181,9 +202,17 @@ export class PathFollower {
 
       const closingCurve = createBezierCurve(
         { x: last.x, y: last.y, z: last.z || 0 },
-        { x: last.x + (last.handleOut?.x || 0), y: last.y + (last.handleOut?.y || 0), z: (last.z || 0) + (last.handleOut?.z || 0) },
-        { x: first.x + (first.handleIn?.x || 0), y: first.y + (first.handleIn?.y || 0), z: (first.z || 0) + (first.handleIn?.z || 0) },
-        { x: first.x, y: first.y, z: first.z || 0 }
+        {
+          x: last.x + (last.handleOut?.x || 0),
+          y: last.y + (last.handleOut?.y || 0),
+          z: (last.z || 0) + (last.handleOut?.z || 0),
+        },
+        {
+          x: first.x + (first.handleIn?.x || 0),
+          y: first.y + (first.handleIn?.y || 0),
+          z: (first.z || 0) + (first.handleIn?.z || 0),
+        },
+        { x: first.x, y: first.y, z: first.z || 0 },
       );
 
       curvePath.add(closingCurve);
@@ -198,8 +227,21 @@ export class PathFollower {
    * Speed is implicitly determined by: pathLength / duration
    */
   getStateAtFrame(frame: number): PathFollowerState {
-    const { startFrame, duration, easing, loop, loopMode, alignToPath, rotationOffset } = this.config;
-    const { scaleStart = 1, scaleEnd = 1, opacityStart = 1, opacityEnd = 1 } = this.config;
+    const {
+      startFrame,
+      duration,
+      easing,
+      loop,
+      loopMode,
+      alignToPath,
+      rotationOffset,
+    } = this.config;
+    const {
+      scaleStart = 1,
+      scaleEnd = 1,
+      opacityStart = 1,
+      opacityEnd = 1,
+    } = this.config;
 
     // Default state (not visible)
     const defaultState: PathFollowerState = {
@@ -208,7 +250,7 @@ export class PathFollower {
       scale: 1,
       opacity: 0,
       progress: 0,
-      visible: false
+      visible: false,
     };
 
     if (!this.curvePath || this.pathLength === 0) {
@@ -226,7 +268,7 @@ export class PathFollower {
     // After animation ends (handle looping)
     if (localFrame >= duration) {
       if (loop) {
-        if (loopMode === 'pingpong') {
+        if (loopMode === "pingpong") {
           const cycles = Math.floor(localFrame / duration);
           localFrame = localFrame % duration;
           if (cycles % 2 === 1) {
@@ -268,7 +310,7 @@ export class PathFollower {
       scale,
       opacity,
       progress,
-      visible: opacity > 0
+      visible: opacity > 0,
     };
   }
 
@@ -295,7 +337,7 @@ export class PathFollower {
 function renderShape(
   ctx: CanvasRenderingContext2D,
   state: PathFollowerState,
-  config: PathFollowerConfig
+  config: PathFollowerConfig,
 ): void {
   if (!state.visible || state.opacity <= 0) return;
 
@@ -318,22 +360,22 @@ function renderShape(
   ctx.beginPath();
 
   switch (shape) {
-    case 'circle':
+    case "circle":
       ctx.ellipse(0, 0, scaledWidth / 2, scaledHeight / 2, 0, 0, Math.PI * 2);
       break;
 
-    case 'square':
+    case "square":
       ctx.rect(-scaledWidth / 2, -scaledHeight / 2, scaledWidth, scaledHeight);
       break;
 
-    case 'triangle':
+    case "triangle":
       ctx.moveTo(0, -scaledHeight / 2);
       ctx.lineTo(scaledWidth / 2, scaledHeight / 2);
       ctx.lineTo(-scaledWidth / 2, scaledHeight / 2);
       ctx.closePath();
       break;
 
-    case 'diamond':
+    case "diamond":
       ctx.moveTo(0, -scaledHeight / 2);
       ctx.lineTo(scaledWidth / 2, 0);
       ctx.lineTo(0, scaledHeight / 2);
@@ -341,10 +383,10 @@ function renderShape(
       ctx.closePath();
       break;
 
-    case 'arrow':
+    case "arrow": {
       // Arrow pointing right (rotated by path tangent)
       const arrowHead = scaledWidth * 0.4;
-      const arrowTail = scaledWidth * 0.6;
+      const _arrowTail = scaledWidth * 0.6;
       const arrowWidth = scaledHeight * 0.3;
       const arrowHeadWidth = scaledHeight * 0.5;
 
@@ -357,6 +399,7 @@ function renderShape(
       ctx.lineTo(scaledWidth / 2 - arrowHead, arrowHeadWidth);
       ctx.closePath();
       break;
+    }
 
     default:
       // Default to circle
@@ -386,7 +429,7 @@ export class VACEControlExporter {
 
   private initializeFollowers(): void {
     this.pathFollowers = this.config.pathFollowers.map(
-      followerConfig => new PathFollower(followerConfig)
+      (followerConfig) => new PathFollower(followerConfig),
     );
   }
 
@@ -397,14 +440,14 @@ export class VACEControlExporter {
     const { width, height, backgroundColor, antiAlias } = this.config;
 
     // Create canvas
-    const canvas = document.createElement('canvas');
+    const canvas = document.createElement("canvas");
     canvas.width = width;
     canvas.height = height;
-    const ctx = canvas.getContext('2d', { alpha: false })!;
+    const ctx = canvas.getContext("2d", { alpha: false })!;
 
     // Configure anti-aliasing
     ctx.imageSmoothingEnabled = antiAlias;
-    ctx.imageSmoothingQuality = 'high';
+    ctx.imageSmoothingQuality = "high";
 
     // Fill background (typically black for VACE)
     ctx.fillStyle = backgroundColor;
@@ -424,7 +467,7 @@ export class VACEControlExporter {
     return {
       frameNumber,
       canvas,
-      states
+      states,
     };
   }
 
@@ -449,14 +492,19 @@ export class VACEControlExporter {
   /**
    * Get path statistics for each follower
    */
-  getPathStats(): Array<{ id: string; length: number; speed: number; duration: number }> {
-    return this.pathFollowers.map(follower => {
+  getPathStats(): Array<{
+    id: string;
+    length: number;
+    speed: number;
+    duration: number;
+  }> {
+    return this.pathFollowers.map((follower) => {
       const config = follower.getConfig();
       return {
         id: config.id,
         length: follower.getPathLength(),
         speed: follower.getSpeed(),
-        duration: config.duration
+        duration: config.duration,
       };
     });
   }
@@ -469,7 +517,7 @@ export class VACEControlExporter {
     const { width, height } = this.config;
 
     for (const frame of this.renderAllFrames()) {
-      const ctx = frame.canvas.getContext('2d')!;
+      const ctx = frame.canvas.getContext("2d")!;
       frames.push(ctx.getImageData(0, 0, width, height));
     }
 
@@ -488,28 +536,28 @@ export class VACEControlExporter {
 export function createPathFollower(
   id: string,
   controlPoints: SplineControlPoint[],
-  options: Partial<PathFollowerConfig> = {}
+  options: Partial<PathFollowerConfig> = {},
 ): PathFollowerConfig {
   return {
     id,
     controlPoints,
     closed: options.closed ?? false,
-    shape: options.shape ?? 'circle',
+    shape: options.shape ?? "circle",
     size: options.size ?? [20, 20],
-    fillColor: options.fillColor ?? '#FFFFFF',
+    fillColor: options.fillColor ?? "#FFFFFF",
     strokeColor: options.strokeColor,
     strokeWidth: options.strokeWidth,
     startFrame: options.startFrame ?? 0,
     duration: options.duration ?? 60,
-    easing: options.easing ?? 'ease-in-out',
+    easing: options.easing ?? "ease-in-out",
     alignToPath: options.alignToPath ?? true,
     rotationOffset: options.rotationOffset ?? 0,
     loop: options.loop ?? false,
-    loopMode: options.loopMode ?? 'restart',
+    loopMode: options.loopMode ?? "restart",
     scaleStart: options.scaleStart ?? 1,
     scaleEnd: options.scaleEnd ?? 1,
     opacityStart: options.opacityStart ?? 1,
-    opacityEnd: options.opacityEnd ?? 1
+    opacityEnd: options.opacityEnd ?? 1,
   };
 }
 
@@ -518,7 +566,7 @@ export function createPathFollower(
  */
 export function createVACEExportConfig(
   pathFollowers: PathFollowerConfig[],
-  options: Partial<VACEExportConfig> = {}
+  options: Partial<VACEExportConfig> = {},
 ): VACEExportConfig {
   return {
     width: options.width ?? 512,
@@ -526,24 +574,30 @@ export function createVACEExportConfig(
     startFrame: options.startFrame ?? 0,
     endFrame: options.endFrame ?? 80,
     frameRate: options.frameRate ?? 16,
-    backgroundColor: options.backgroundColor ?? '#000000',
+    backgroundColor: options.backgroundColor ?? "#000000",
     pathFollowers,
-    outputFormat: options.outputFormat ?? 'canvas',
-    antiAlias: options.antiAlias ?? true
+    outputFormat: options.outputFormat ?? "canvas",
+    antiAlias: options.antiAlias ?? true,
   };
 }
 
 /**
  * Calculate duration needed for a specific speed (pixels per frame)
  */
-export function calculateDurationForSpeed(pathLength: number, pixelsPerFrame: number): number {
+export function calculateDurationForSpeed(
+  pathLength: number,
+  pixelsPerFrame: number,
+): number {
   return Math.ceil(pathLength / pixelsPerFrame);
 }
 
 /**
  * Calculate speed given path length and duration
  */
-export function calculateSpeed(pathLength: number, durationFrames: number): number {
+export function calculateSpeed(
+  pathLength: number,
+  durationFrames: number,
+): number {
   return pathLength / durationFrames;
 }
 
@@ -555,12 +609,12 @@ export function splineLayerToPathFollower(
   controlPoints: SplineControlPoint[],
   closed: boolean,
   totalFrames: number,
-  options: Partial<PathFollowerConfig> = {}
+  options: Partial<PathFollowerConfig> = {},
 ): PathFollowerConfig {
   return createPathFollower(layerId, controlPoints, {
     closed,
     duration: totalFrames,
-    ...options
+    ...options,
   });
 }
 
@@ -575,5 +629,5 @@ export default {
   createVACEExportConfig,
   calculateDurationForSpeed,
   calculateSpeed,
-  splineLayerToPathFollower
+  splineLayerToPathFollower,
 };

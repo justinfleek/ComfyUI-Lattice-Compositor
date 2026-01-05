@@ -8,45 +8,40 @@
  * - RIFE (Megvii Research) for frame interpolation
  */
 
+// Frame Interpolation (RIFE-based)
 export {
-  renderTransition,
-  getTransitionProgress,
+  base64ToBlob as interpolationBase64ToBlob,
+  // Utilities
+  base64ToImageData,
+  // Client-side fallback
+  blendFrames,
+  createSlowMotion,
+  // API functions
+  getInterpolationModels,
+  // Presets
+  INTERPOLATION_PRESETS,
+  type InterpolationFactor,
+  type InterpolationModel,
+  type InterpolationProgressCallback,
+  interpolateFramePair,
+  interpolateFramesClient,
+  interpolateSequence,
+  isInterpolationAvailable,
+  type PairInterpolationResult,
+  // Types
+  type RIFEModel,
+  type SequenceInterpolationResult,
+  type SlowMoResult,
+} from "./frameInterpolation";
+export {
   createDefaultTransition,
   getAllTransitionModes,
   getTransitionModeName,
+  getTransitionProgress,
+  renderTransition,
   TRANSITION_PRESETS,
   type TransitionBlendMode,
-  type TransitionEasing,
   type TransitionConfig,
-  type TransitionState
-} from './transitions';
-
-// Frame Interpolation (RIFE-based)
-export {
-  // Types
-  type RIFEModel,
-  type InterpolationFactor,
-  type InterpolationModel,
-  type PairInterpolationResult,
-  type SequenceInterpolationResult,
-  type SlowMoResult,
-  type InterpolationProgressCallback,
-
-  // API functions
-  getInterpolationModels,
-  interpolateFramePair,
-  interpolateSequence,
-  createSlowMotion,
-
-  // Client-side fallback
-  blendFrames,
-  interpolateFramesClient,
-
-  // Utilities
-  base64ToImageData,
-  base64ToBlob as interpolationBase64ToBlob,
-
-  // Presets
-  INTERPOLATION_PRESETS,
-  isInterpolationAvailable
-} from './frameInterpolation';
+  type TransitionEasing,
+  type TransitionState,
+} from "./transitions";

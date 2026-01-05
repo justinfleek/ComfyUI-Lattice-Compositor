@@ -7,10 +7,10 @@
  * Supports viridis, plasma, and grayscale colormaps.
  */
 
-import * as THREE from 'three';
+import * as THREE from "three";
 
 export interface ColormapSettings {
-  colormap: 'viridis' | 'plasma' | 'grayscale';
+  colormap: "viridis" | "plasma" | "grayscale";
   opacity: number;
 }
 
@@ -96,7 +96,7 @@ const COLORMAP_FRAGMENT_SHADER = `
  * Get colormap index from name
  */
 export function getColormapIndex(colormap: string): number {
-  return colormap === 'viridis' ? 0 : colormap === 'plasma' ? 1 : 2;
+  return colormap === "viridis" ? 0 : colormap === "plasma" ? 1 : 2;
 }
 
 /**
@@ -106,7 +106,7 @@ export function getColormapIndex(colormap: string): number {
  */
 export function createColormapMaterial(
   texture: THREE.Texture,
-  settings: ColormapSettings
+  settings: ColormapSettings,
 ): THREE.ShaderMaterial {
   return new THREE.ShaderMaterial({
     uniforms: {
@@ -126,7 +126,7 @@ export function createColormapMaterial(
  */
 export function updateColormapUniform(
   material: THREE.ShaderMaterial,
-  colormap: 'viridis' | 'plasma' | 'grayscale'
+  colormap: "viridis" | "plasma" | "grayscale",
 ): void {
   material.uniforms.colormap.value = getColormapIndex(colormap);
 }
@@ -136,7 +136,7 @@ export function updateColormapUniform(
  */
 export function updateOpacityUniform(
   material: THREE.ShaderMaterial,
-  opacity: number
+  opacity: number,
 ): void {
   material.uniforms.opacity.value = opacity;
 }

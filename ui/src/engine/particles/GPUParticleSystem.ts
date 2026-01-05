@@ -48,41 +48,49 @@
  * - Memory: 64 bytes per particle (cache-line aligned)
  */
 
-import * as THREE from 'three';
+import * as THREE from "three";
+import { ParticleAudioReactive } from "./ParticleAudioReactive";
 import {
-  PARTICLE_STRIDE,
-  type GPUParticleSystemConfig,
-  type EmitterConfig,
-  type ForceFieldConfig,
-  type SubEmitterConfig,
-  type ParticleSystemState,
+  type CollisionConfig,
+  ParticleCollisionSystem,
+} from "./ParticleCollisionSystem";
+import { ParticleConnectionSystem } from "./ParticleConnectionSystem";
+import {
+  getEmissionDirection,
+  getEmitterPosition,
+  type SplineProvider,
+} from "./ParticleEmitterLogic";
+import { ParticleFlockingSystem } from "./ParticleFlockingSystem";
+import { calculateForceField } from "./ParticleForceCalculator";
+import { ParticleFrameCacheSystem } from "./ParticleFrameCache";
+import { ParticleGPUPhysics } from "./ParticleGPUPhysics";
+import { ParticleModulationCurves } from "./ParticleModulationCurves";
+import type { ParticleSubEmitter } from "./ParticleSubEmitter";
+import { ParticleTextureSystem } from "./ParticleTextureSystem";
+import {
+  ParticleTrailSystem,
+  type TrailBlendingConfig,
+  type TrailConfig,
+} from "./ParticleTrailSystem";
+import {
+  PARTICLE_FRAGMENT_SHADER,
+  PARTICLE_VERTEX_SHADER,
+} from "./particleShaders";
+import { SpatialHashGrid } from "./SpatialHashGrid";
+import {
   type AudioFeature,
-  type AudioBinding,
+  type ConnectionConfig,
+  type EmitterConfig,
+  type FlockingConfig,
+  type ForceFieldConfig,
+  type GPUParticleSystemConfig,
+  type ModulationCurve,
+  PARTICLE_STRIDE,
   type ParticleEvent,
   type ParticleEventHandler,
-  type ModulationCurve,
-  type FlockingConfig,
-  type ConnectionConfig,
-} from './types';
-import {
-  PARTICLE_VERTEX_SHADER,
-  PARTICLE_FRAGMENT_SHADER,
-  PARTICLE_GLOW_VERTEX_SHADER,
-  PARTICLE_GLOW_FRAGMENT_SHADER,
-} from './particleShaders';
-import { ParticleGPUPhysics, MAX_FORCE_FIELDS } from './ParticleGPUPhysics';
-import { ParticleTrailSystem, type TrailConfig, type TrailBlendingConfig } from './ParticleTrailSystem';
-import { ParticleConnectionSystem } from './ParticleConnectionSystem';
-import { ParticleCollisionSystem, type CollisionConfig } from './ParticleCollisionSystem';
-import { ParticleFlockingSystem } from './ParticleFlockingSystem';
-import { ParticleSubEmitter, type DeathEvent } from './ParticleSubEmitter';
-import { getEmitterPosition, getEmissionDirection, type SplineProvider } from './ParticleEmitterLogic';
-import { calculateForceField, getForceFieldTypeIndex, getFalloffTypeIndex } from './ParticleForceCalculator';
-import { ParticleTextureSystem } from './ParticleTextureSystem';
-import { ParticleAudioReactive } from './ParticleAudioReactive';
-import { ParticleFrameCacheSystem } from './ParticleFrameCache';
-import { SpatialHashGrid } from './SpatialHashGrid';
-import { ParticleModulationCurves, type ModulationTextures, type LifetimeModulation } from './ParticleModulationCurves';
+  type ParticleSystemState,
+  type SubEmitterConfig,
+} from "./types";
 
 // ============================================================================
 // Constants
@@ -90,8 +98,8 @@ import { ParticleModulationCurves, type ModulationTextures, type LifetimeModulat
 
 // PARTICLE_STRIDE is imported from ./types
 // MAX_FORCE_FIELDS is imported from ./ParticleGPUPhysics
-const MAX_EMITTERS = 32;
-const SPATIAL_CELL_SIZE = 50;  // Pixels
+const _MAX_EMITTERS = 32;
+const SPATIAL_CELL_SIZE = 50; // Pixels
 
 /**
  * Cached particle state for a specific frame
@@ -109,7 +117,7 @@ interface ParticleFrameCache {
 }
 
 // Attribute layout for transform feedback
-const PARTICLE_ATTRIBUTES = {
+const _PARTICLE_ATTRIBUTES = {
   position: { size: 3, offset: 0 },
   velocity: { size: 3, offset: 3 },
   life: { size: 2, offset: 6 },
@@ -125,12 +133,12 @@ const PARTICLE_ATTRIBUTES = {
 export function createDefaultEmitter(id?: string): EmitterConfig {
   return {
     id: id || `emitter_${Date.now()}`,
-    name: 'Emitter',
+    name: "Emitter",
     enabled: true,
     // Default to center of standard 832x480 composition
     position: { x: 416, y: 240, z: 0 },
     rotation: { x: 0, y: 0, z: 0 },
-    shape: { type: 'point' },
+    shape: { type: "point" },
     emissionRate: 100,
     emissionRateVariance: 0,
     burstCount: 0,
@@ -158,7 +166,10 @@ export function createDefaultEmitter(id?: string): EmitterConfig {
   };
 }
 
-export function createDefaultForceField(type: ForceFieldConfig['type'], id?: string): ForceFieldConfig {
+export function createDefaultForceField(
+  type: ForceFieldConfig["type"],
+  id?: string,
+): ForceFieldConfig {
   const base: ForceFieldConfig = {
     id: id || `force_${Date.now()}`,
     name: type.charAt(0).toUpperCase() + type.slice(1),
@@ -169,35 +180,35 @@ export function createDefaultForceField(type: ForceFieldConfig['type'], id?: str
     position: { x: 416, y: 240, z: 0 },
     falloffStart: 0,
     falloffEnd: 500,
-    falloffType: 'linear',
+    falloffType: "linear",
   };
 
   switch (type) {
-    case 'gravity':
+    case "gravity":
       base.direction = { x: 0, y: 1, z: 0 };
       base.strength = 98;
       break;
-    case 'vortex':
+    case "vortex":
       base.vortexAxis = { x: 0, y: 0, z: 1 };
       base.inwardForce = 20;
       break;
-    case 'turbulence':
+    case "turbulence":
       base.noiseScale = 0.005;
       base.noiseSpeed = 0.5;
       base.noiseOctaves = 3;
       base.noiseLacunarity = 2;
       base.noiseGain = 0.5;
       break;
-    case 'drag':
+    case "drag":
       base.linearDrag = 0.1;
       base.quadraticDrag = 0.01;
       break;
-    case 'wind':
+    case "wind":
       base.windDirection = { x: 1, y: 0, z: 0 };
       base.gustStrength = 50;
       base.gustFrequency = 0.1;
       break;
-    case 'lorenz':
+    case "lorenz":
       base.lorenzSigma = 10;
       base.lorenzRho = 28;
       base.lorenzBeta = 2.667;
@@ -210,8 +221,8 @@ export function createDefaultForceField(type: ForceFieldConfig['type'], id?: str
 export function createDefaultConfig(): GPUParticleSystemConfig {
   return {
     maxParticles: 100000,
-    simulationSpace: 'world',
-    deltaTimeMode: 'variable',
+    simulationSpace: "world",
+    deltaTimeMode: "variable",
     fixedDeltaTime: 1 / 60,
     timeScale: 1,
     warmupFrames: 0,
@@ -220,11 +231,11 @@ export function createDefaultConfig(): GPUParticleSystemConfig {
     subEmitters: [],
     lifetimeModulation: {},
     render: {
-      mode: 'billboard',
+      mode: "billboard",
       sortByDepth: true,
       depthWrite: false,
       depthTest: true,
-      blendMode: 'normal',
+      blendMode: "normal",
       stretchFactor: 1,
       minStretch: 1,
       maxStretch: 4,
@@ -232,7 +243,7 @@ export function createDefaultConfig(): GPUParticleSystemConfig {
       trailSegments: 8,
       trailWidthStart: 1,
       trailWidthEnd: 0,
-      trailFadeMode: 'both',
+      trailFadeMode: "both",
       texture: {},
       shadow: {
         castShadows: false,
@@ -274,15 +285,11 @@ export function createDefaultConfig(): GPUParticleSystemConfig {
 export class GPUParticleSystem {
   private config: GPUParticleSystemConfig;
   private gl: WebGL2RenderingContext | null = null;
-  private renderer: THREE.WebGLRenderer | null = null;
 
   // Double-buffered particle data
   private particleBufferA: Float32Array;
   private particleBufferB: Float32Array;
-  private currentBuffer: 'A' | 'B' = 'A';
-
-  // WebGL resources (render only - GPU physics resources managed by ParticleGPUPhysics)
-  private renderProgram: WebGLProgram | null = null;
+  private currentBuffer: "A" | "B" = "A";
 
   // Three.js integration
   private particleMesh: THREE.Mesh | null = null;
@@ -295,7 +302,10 @@ export class GPUParticleSystem {
   private colorOverLifetimeTexture: THREE.DataTexture | null = null;
 
   // Emitter state
-  private emitters: Map<string, EmitterConfig & { accumulator: number; velocity: THREE.Vector3 }> = new Map();
+  private emitters: Map<
+    string,
+    EmitterConfig & { accumulator: number; velocity: THREE.Vector3 }
+  > = new Map();
   private forceFields: Map<string, ForceFieldConfig> = new Map();
   private subEmitters: Map<string, SubEmitterConfig> = new Map();
 
@@ -316,7 +326,6 @@ export class GPUParticleSystem {
 
   // Pool of free particle indices
   private freeIndices: number[] = [];
-  private nextParticleIndex = 0;
 
   // Track which emitter spawned each particle (for sub-emitter filtering)
   private particleEmitters: Map<number, string> = new Map();
@@ -324,7 +333,10 @@ export class GPUParticleSystem {
   // BUG-073 fix: Store initial size/opacity for lifetime modulation
   // Without this, *= modulation causes exponential decay
   // BUG-070 fix: Also store random offset for deterministic random modulation
-  private particleInitialValues: Map<number, { size: number; opacity: number; randomOffset: number }> = new Map();
+  private particleInitialValues: Map<
+    number,
+    { size: number; opacity: number; randomOffset: number }
+  > = new Map();
 
   // Trail system - extracted to ParticleTrailSystem.ts
   private trailSystem: ParticleTrailSystem | null = null;
@@ -369,10 +381,15 @@ export class GPUParticleSystem {
 
     // Validate and cap maxParticles to prevent memory exhaustion (max 1M particles = ~64MB per buffer)
     const MAX_SAFE_PARTICLES = 1000000;
-    if (!Number.isFinite(this.config.maxParticles) || this.config.maxParticles <= 0) {
+    if (
+      !Number.isFinite(this.config.maxParticles) ||
+      this.config.maxParticles <= 0
+    ) {
       this.config.maxParticles = 100000; // Default
     } else if (this.config.maxParticles > MAX_SAFE_PARTICLES) {
-      console.warn(`GPUParticleSystem: maxParticles capped from ${this.config.maxParticles} to ${MAX_SAFE_PARTICLES}`);
+      console.warn(
+        `GPUParticleSystem: maxParticles capped from ${this.config.maxParticles} to ${MAX_SAFE_PARTICLES}`,
+      );
       this.config.maxParticles = MAX_SAFE_PARTICLES;
     }
 
@@ -393,15 +410,19 @@ export class GPUParticleSystem {
     this.rng = this.createSeededRandom(this.initialRngSeed);
 
     // Add configured emitters and force fields
-    this.config.emitters.forEach(e => this.addEmitter(e));
-    this.config.forceFields.forEach(f => this.addForceField(f));
-    this.config.subEmitters.forEach(s => this.addSubEmitter(s));
+    this.config.emitters.forEach((e) => this.addEmitter(e));
+    this.config.forceFields.forEach((f) => this.addForceField(f));
+    this.config.subEmitters.forEach((s) => this.addSubEmitter(s));
 
     // Initialize extracted subsystems
     this.textureSystem = new ParticleTextureSystem();
     this.audioSystem = new ParticleAudioReactive();
     this.audioSystem.setBindings(this.config.audioBindings);
-    this.frameCacheSystem = new ParticleFrameCacheSystem(this.config.maxParticles, 5, 200);
+    this.frameCacheSystem = new ParticleFrameCacheSystem(
+      this.config.maxParticles,
+      5,
+      200,
+    );
 
     // Initialize shared spatial hash grid (used by flocking and collision)
     this.spatialHash = new SpatialHashGrid({
@@ -428,7 +449,7 @@ export class GPUParticleSystem {
     this.gl = renderer.getContext() as WebGL2RenderingContext;
 
     if (!this.gl) {
-      throw new Error('WebGL2 context required for GPU particle system');
+      throw new Error("WebGL2 context required for GPU particle system");
     }
 
     // Create Three.js mesh for rendering (creates material)
@@ -446,10 +467,15 @@ export class GPUParticleSystem {
     this.gpuPhysics = new ParticleGPUPhysics({
       maxParticles: this.config.maxParticles,
     });
-    this.gpuPhysics.initialize(renderer, this.particleBufferA, this.particleBufferB);
+    this.gpuPhysics.initialize(
+      renderer,
+      this.particleBufferA,
+      this.particleBufferB,
+    );
 
     // Calculate GPU memory usage
-    this.state.gpuMemoryBytes = this.config.maxParticles * PARTICLE_STRIDE * 4 * 2;  // Double buffered
+    this.state.gpuMemoryBytes =
+      this.config.maxParticles * PARTICLE_STRIDE * 4 * 2; // Double buffered
   }
 
   /**
@@ -474,18 +500,24 @@ export class GPUParticleSystem {
   private createModulationTextures(): void {
     if (!this.modulationSystem) return;
 
-    const textures = this.modulationSystem.createTextures(this.config.lifetimeModulation);
+    const textures = this.modulationSystem.createTextures(
+      this.config.lifetimeModulation,
+    );
     this.sizeOverLifetimeTexture = textures.sizeOverLifetime;
     this.opacityOverLifetimeTexture = textures.opacityOverLifetime;
     this.colorOverLifetimeTexture = textures.colorOverLifetime;
 
     // BUG-072 fix: Wire up colorOverLifetime texture to shader
     // Check if user configured colorOverLifetime (not just default white)
-    const hasColorConfig = this.config.lifetimeModulation.colorOverLifetime &&
-                           this.config.lifetimeModulation.colorOverLifetime.length > 0;
+    const hasColorConfig =
+      this.config.lifetimeModulation.colorOverLifetime &&
+      this.config.lifetimeModulation.colorOverLifetime.length > 0;
     if (this.material && this.colorOverLifetimeTexture) {
-      this.material.uniforms.colorOverLifetime.value = this.colorOverLifetimeTexture;
-      this.material.uniforms.hasColorOverLifetime.value = hasColorConfig ? 1 : 0;
+      this.material.uniforms.colorOverLifetime.value =
+        this.colorOverLifetimeTexture;
+      this.material.uniforms.hasColorOverLifetime.value = hasColorConfig
+        ? 1
+        : 0;
     }
   }
 
@@ -494,7 +526,11 @@ export class GPUParticleSystem {
    * Delegates to ParticleModulationCurves
    * @param randomOffset - BUG-070 fix: Per-particle random offset for deterministic random curves
    */
-  private evaluateModulationCurve(curve: ModulationCurve, t: number, randomOffset?: number): number {
+  private evaluateModulationCurve(
+    curve: ModulationCurve,
+    t: number,
+    randomOffset?: number,
+  ): number {
     return this.modulationSystem?.evaluateCurve(curve, t, randomOffset) ?? 1;
   }
 
@@ -504,36 +540,44 @@ export class GPUParticleSystem {
   private createParticleMesh(): void {
     // Create quad geometry for billboards
     const quadVertices = new Float32Array([
-      -1, -1,  1, -1,  1, 1,
-      -1, -1,  1, 1,  -1, 1,
+      -1, -1, 1, -1, 1, 1, -1, -1, 1, 1, -1, 1,
     ]);
-    const quadUVs = new Float32Array([
-      0, 0,  1, 0,  1, 1,
-      0, 0,  1, 1,  0, 1,
-    ]);
+    const quadUVs = new Float32Array([0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1]);
 
     this.instancedGeometry = new THREE.InstancedBufferGeometry();
-    this.instancedGeometry.setAttribute('position', new THREE.BufferAttribute(quadVertices, 2));
-    this.instancedGeometry.setAttribute('uv', new THREE.BufferAttribute(quadUVs, 2));
+    this.instancedGeometry.setAttribute(
+      "position",
+      new THREE.BufferAttribute(quadVertices, 2),
+    );
+    this.instancedGeometry.setAttribute(
+      "uv",
+      new THREE.BufferAttribute(quadUVs, 2),
+    );
 
     // Create instanced attributes from particle buffer
     const positionAttr = new THREE.InstancedBufferAttribute(
-      new Float32Array(this.config.maxParticles * 3), 3
+      new Float32Array(this.config.maxParticles * 3),
+      3,
     );
     const velocityAttr = new THREE.InstancedBufferAttribute(
-      new Float32Array(this.config.maxParticles * 3), 3
+      new Float32Array(this.config.maxParticles * 3),
+      3,
     );
     const lifeAttr = new THREE.InstancedBufferAttribute(
-      new Float32Array(this.config.maxParticles * 2), 2
+      new Float32Array(this.config.maxParticles * 2),
+      2,
     );
     const physicalAttr = new THREE.InstancedBufferAttribute(
-      new Float32Array(this.config.maxParticles * 2), 2
+      new Float32Array(this.config.maxParticles * 2),
+      2,
     );
     const rotationAttr = new THREE.InstancedBufferAttribute(
-      new Float32Array(this.config.maxParticles * 2), 2
+      new Float32Array(this.config.maxParticles * 2),
+      2,
     );
     const colorAttr = new THREE.InstancedBufferAttribute(
-      new Float32Array(this.config.maxParticles * 4), 4
+      new Float32Array(this.config.maxParticles * 4),
+      4,
     );
 
     positionAttr.setUsage(THREE.DynamicDrawUsage);
@@ -543,12 +587,12 @@ export class GPUParticleSystem {
     rotationAttr.setUsage(THREE.DynamicDrawUsage);
     colorAttr.setUsage(THREE.DynamicDrawUsage);
 
-    this.instancedGeometry.setAttribute('i_position', positionAttr);
-    this.instancedGeometry.setAttribute('i_velocity', velocityAttr);
-    this.instancedGeometry.setAttribute('i_life', lifeAttr);
-    this.instancedGeometry.setAttribute('i_physical', physicalAttr);
-    this.instancedGeometry.setAttribute('i_rotation', rotationAttr);
-    this.instancedGeometry.setAttribute('i_color', colorAttr);
+    this.instancedGeometry.setAttribute("i_position", positionAttr);
+    this.instancedGeometry.setAttribute("i_velocity", velocityAttr);
+    this.instancedGeometry.setAttribute("i_life", lifeAttr);
+    this.instancedGeometry.setAttribute("i_physical", physicalAttr);
+    this.instancedGeometry.setAttribute("i_rotation", rotationAttr);
+    this.instancedGeometry.setAttribute("i_color", colorAttr);
 
     // Create shader material
     this.material = new THREE.ShaderMaterial({
@@ -574,7 +618,7 @@ export class GPUParticleSystem {
       trailSegments: this.config.render.trailSegments ?? 8,
       trailWidthStart: this.config.render.trailWidthStart ?? 1,
       trailWidthEnd: this.config.render.trailWidthEnd ?? 0.5,
-      trailFadeMode: this.config.render.trailFadeMode ?? 'alpha',
+      trailFadeMode: this.config.render.trailFadeMode ?? "alpha",
     };
 
     const blendingConfig: TrailBlendingConfig = {
@@ -584,7 +628,7 @@ export class GPUParticleSystem {
     this.trailSystem = new ParticleTrailSystem(
       this.config.maxParticles,
       trailConfig,
-      blendingConfig
+      blendingConfig,
     );
     this.trailSystem.initialize();
   }
@@ -594,7 +638,8 @@ export class GPUParticleSystem {
    */
   private updateTrails(): void {
     if (!this.trailSystem) return;
-    const buffer = this.currentBuffer === 'A' ? this.particleBufferA : this.particleBufferB;
+    const buffer =
+      this.currentBuffer === "A" ? this.particleBufferA : this.particleBufferB;
     this.trailSystem.update(buffer);
   }
 
@@ -609,7 +654,10 @@ export class GPUParticleSystem {
    * Initialize particle connection system
    */
   initializeConnections(config: ConnectionConfig): void {
-    this.connectionSystem = new ParticleConnectionSystem(this.config.maxParticles, config);
+    this.connectionSystem = new ParticleConnectionSystem(
+      this.config.maxParticles,
+      config,
+    );
     this.connectionSystem.initialize();
   }
 
@@ -619,7 +667,8 @@ export class GPUParticleSystem {
    */
   private updateConnections(): void {
     if (!this.connectionSystem) return;
-    const buffer = this.currentBuffer === 'A' ? this.particleBufferA : this.particleBufferB;
+    const buffer =
+      this.currentBuffer === "A" ? this.particleBufferA : this.particleBufferB;
     this.connectionSystem.update(buffer);
   }
 
@@ -640,7 +689,10 @@ export class GPUParticleSystem {
    * Initialize collision system
    */
   initializeCollisions(config: Partial<CollisionConfig>): void {
-    this.collisionSystem = new ParticleCollisionSystem(this.config.maxParticles, config);
+    this.collisionSystem = new ParticleCollisionSystem(
+      this.config.maxParticles,
+      config,
+    );
     // Share the spatial hash grid with collision system
     if (this.spatialHash) {
       this.collisionSystem.setSpatialHash(this.spatialHash);
@@ -652,7 +704,8 @@ export class GPUParticleSystem {
    */
   private applyCollisions(): void {
     if (!this.collisionSystem) return;
-    const buffer = this.currentBuffer === 'A' ? this.particleBufferA : this.particleBufferB;
+    const buffer =
+      this.currentBuffer === "A" ? this.particleBufferA : this.particleBufferB;
     this.collisionSystem.update(buffer);
   }
 
@@ -660,7 +713,10 @@ export class GPUParticleSystem {
    * Initialize flocking system
    */
   initializeFlocking(config: FlockingConfig): void {
-    this.flockingSystem = new ParticleFlockingSystem(this.config.maxParticles, config);
+    this.flockingSystem = new ParticleFlockingSystem(
+      this.config.maxParticles,
+      config,
+    );
     // Share the spatial hash grid with flocking system
     if (this.spatialHash) {
       this.flockingSystem.setSpatialHash(this.spatialHash);
@@ -689,15 +745,21 @@ export class GPUParticleSystem {
    * Load a particle texture from URL or data URI
    * Delegates to ParticleTextureSystem
    */
-  loadTexture(url: string, spriteSheet?: {
-    columns?: number;
-    rows?: number;
-    animate?: boolean;
-    frameRate?: number;
-    randomStart?: boolean;
-  }): Promise<void> {
+  loadTexture(
+    url: string,
+    spriteSheet?: {
+      columns?: number;
+      rows?: number;
+      animate?: boolean;
+      frameRate?: number;
+      randomStart?: boolean;
+    },
+  ): Promise<void> {
     if (this.textureSystem) {
-      this.textureSystem.setRenderTargets(this.material, this.instancedGeometry);
+      this.textureSystem.setRenderTargets(
+        this.material,
+        this.instancedGeometry,
+      );
       return this.textureSystem.loadTexture(url, spriteSheet);
     }
     return Promise.resolve();
@@ -708,9 +770,24 @@ export class GPUParticleSystem {
    * BUG-067 fix: All 9 shapes now supported
    * Delegates to ParticleTextureSystem
    */
-  setProceduralShape(shape: 'none' | 'circle' | 'ring' | 'square' | 'star' | 'noise' | 'line' | 'triangle' | 'shadedSphere' | 'fadedSphere'): void {
+  setProceduralShape(
+    shape:
+      | "none"
+      | "circle"
+      | "ring"
+      | "square"
+      | "star"
+      | "noise"
+      | "line"
+      | "triangle"
+      | "shadedSphere"
+      | "fadedSphere",
+  ): void {
     if (this.textureSystem) {
-      this.textureSystem.setRenderTargets(this.material, this.instancedGeometry);
+      this.textureSystem.setRenderTargets(
+        this.material,
+        this.instancedGeometry,
+      );
       this.textureSystem.setProceduralShape(shape);
     }
   }
@@ -734,13 +811,19 @@ export class GPUParticleSystem {
     maxStretch?: number;
   }): void {
     if (this.textureSystem) {
-      this.textureSystem.setRenderTargets(this.material, this.instancedGeometry);
-      this.textureSystem.setMotionBlur({
-        enabled: config.enabled,
-        strength: config.strength ?? 0.1,
-        minStretch: config.minStretch ?? 1.0,
-        maxStretch: config.maxStretch ?? 4.0,
-      }, this.config.render);
+      this.textureSystem.setRenderTargets(
+        this.material,
+        this.instancedGeometry,
+      );
+      this.textureSystem.setMotionBlur(
+        {
+          enabled: config.enabled,
+          strength: config.strength ?? 0.1,
+          minStretch: config.minStretch ?? 1.0,
+          maxStretch: config.maxStretch ?? 4.0,
+        },
+        this.config.render,
+      );
     }
   }
 
@@ -748,9 +831,16 @@ export class GPUParticleSystem {
    * Initialize glow effect rendering
    * Delegates to ParticleTextureSystem
    */
-  initializeGlow(config: { enabled: boolean; radius: number; intensity: number }): void {
+  initializeGlow(config: {
+    enabled: boolean;
+    radius: number;
+    intensity: number;
+  }): void {
     if (this.textureSystem) {
-      this.textureSystem.setRenderTargets(this.material, this.instancedGeometry);
+      this.textureSystem.setRenderTargets(
+        this.material,
+        this.instancedGeometry,
+      );
       this.textureSystem.initializeGlow(config);
     }
   }
@@ -759,7 +849,11 @@ export class GPUParticleSystem {
    * Update glow configuration
    * Delegates to ParticleTextureSystem
    */
-  setGlow(config: { enabled?: boolean; radius?: number; intensity?: number }): void {
+  setGlow(config: {
+    enabled?: boolean;
+    radius?: number;
+    intensity?: number;
+  }): void {
     this.textureSystem?.setGlow(config);
   }
 
@@ -849,9 +943,10 @@ export class GPUParticleSystem {
   step(deltaTime: number): void {
     const startTime = performance.now();
 
-    const dt = this.config.deltaTimeMode === 'fixed'
-      ? this.config.fixedDeltaTime
-      : deltaTime * this.config.timeScale;
+    const dt =
+      this.config.deltaTimeMode === "fixed"
+        ? this.config.fixedDeltaTime
+        : deltaTime * this.config.timeScale;
 
     // 1. Emit new particles
     this.emitParticles(dt);
@@ -860,12 +955,15 @@ export class GPUParticleSystem {
     if (this.gpuPhysics?.isEnabled()) {
       const result = this.gpuPhysics.update(
         dt,
-        { simulationTime: this.state.simulationTime, frameCount: this.state.frameCount },
+        {
+          simulationTime: this.state.simulationTime,
+          frameCount: this.state.frameCount,
+        },
         this.particleBufferA,
         this.particleBufferB,
         this.forceFields,
         this.freeIndices,
-        (index) => this.emit('particleDeath', { index })
+        (index) => this.emit("particleDeath", { index }),
       );
       if (result.particleCount >= 0) {
         this.state.particleCount = result.particleCount;
@@ -877,23 +975,37 @@ export class GPUParticleSystem {
 
     // 3. Handle sub-emitter triggers (using extracted module)
     if (this.subEmitterSystem?.hasSubEmitters()) {
-      const buffer = this.currentBuffer === 'A' ? this.particleBufferA : this.particleBufferB;
-      const spawnCount = this.subEmitterSystem.processDeathEvents(buffer, this.freeIndices);
+      const buffer =
+        this.currentBuffer === "A"
+          ? this.particleBufferA
+          : this.particleBufferB;
+      const spawnCount = this.subEmitterSystem.processDeathEvents(
+        buffer,
+        this.freeIndices,
+      );
       this.state.particleCount += spawnCount;
     }
 
     // 4. Rebuild shared spatial hash (used by both flocking and collision)
     // Only rebuild if either system needs it - avoids O(n) when neither is enabled
-    const needsSpatialHash = this.flockingSystem?.isEnabled() ||
-                             (this.collisionSystem?.isEnabled() && this.collisionSystem.getConfig().particleCollision);
+    const needsSpatialHash =
+      this.flockingSystem?.isEnabled() ||
+      (this.collisionSystem?.isEnabled() &&
+        this.collisionSystem.getConfig().particleCollision);
     if (needsSpatialHash && this.spatialHash) {
-      const buffer = this.currentBuffer === 'A' ? this.particleBufferA : this.particleBufferB;
+      const buffer =
+        this.currentBuffer === "A"
+          ? this.particleBufferA
+          : this.particleBufferB;
       this.spatialHash.rebuild(buffer);
     }
 
     // 5. Apply flocking (using extracted module and shared spatial hash)
     if (this.flockingSystem?.isEnabled()) {
-      const buffer = this.currentBuffer === 'A' ? this.particleBufferA : this.particleBufferB;
+      const buffer =
+        this.currentBuffer === "A"
+          ? this.particleBufferA
+          : this.particleBufferB;
       this.flockingSystem.applyFlocking(buffer, dt);
     }
 
@@ -935,8 +1047,14 @@ export class GPUParticleSystem {
       if (!emitter.enabled) continue;
 
       // Get audio-modulated emission rate (validate to prevent NaN accumulator)
-      let emissionRate = Number.isFinite(emitter.emissionRate) ? emitter.emissionRate : 100;
-      const audioMod = this.getAudioModulation('emitter', emitter.id, 'emissionRate');
+      let emissionRate = Number.isFinite(emitter.emissionRate)
+        ? emitter.emissionRate
+        : 100;
+      const audioMod = this.getAudioModulation(
+        "emitter",
+        emitter.id,
+        "emissionRate",
+      );
       if (audioMod !== undefined && Number.isFinite(audioMod)) {
         emissionRate *= audioMod;
       }
@@ -944,8 +1062,13 @@ export class GPUParticleSystem {
       emissionRate = Math.max(0, Math.min(emissionRate, 100000));
 
       // Check for beat-triggered burst (uses 'onsets' from audio analysis)
-      if (emitter.burstOnBeat && this.state.currentAudioFeatures.get('onsets') === 1) {
-        const burstCount = Math.floor(emitter.burstCount * emitter.beatEmissionMultiplier);
+      if (
+        emitter.burstOnBeat &&
+        this.state.currentAudioFeatures.get("onsets") === 1
+      ) {
+        const burstCount = Math.floor(
+          emitter.burstCount * emitter.beatEmissionMultiplier,
+        );
         for (let i = 0; i < burstCount; i++) {
           this.spawnParticle(emitter);
         }
@@ -964,12 +1087,17 @@ export class GPUParticleSystem {
   /**
    * Spawn a single particle from an emitter
    */
-  private spawnParticle(emitter: EmitterConfig & { velocity: THREE.Vector3 }): number {
+  private spawnParticle(
+    emitter: EmitterConfig & { velocity: THREE.Vector3 },
+  ): number {
     if (this.freeIndices.length === 0) {
       // Find oldest particle to recycle
       let oldestIndex = 0;
       let oldestAge = 0;
-      const buffer = this.currentBuffer === 'A' ? this.particleBufferA : this.particleBufferB;
+      const buffer =
+        this.currentBuffer === "A"
+          ? this.particleBufferA
+          : this.particleBufferB;
 
       for (let i = 0; i < this.config.maxParticles; i++) {
         const age = buffer[i * PARTICLE_STRIDE + 6];
@@ -982,7 +1110,8 @@ export class GPUParticleSystem {
     }
 
     const index = this.freeIndices.pop()!;
-    const buffer = this.currentBuffer === 'A' ? this.particleBufferA : this.particleBufferB;
+    const buffer =
+      this.currentBuffer === "A" ? this.particleBufferA : this.particleBufferB;
     const offset = index * PARTICLE_STRIDE;
 
     // Track which emitter spawned this particle (for sub-emitter filtering)
@@ -994,11 +1123,14 @@ export class GPUParticleSystem {
     // Calculate initial velocity (using extracted module)
     const dir = getEmissionDirection(emitter, this.rng);
     // Validate speed (NaN would corrupt velocity calculations)
-    const rawSpeed = emitter.initialSpeed + (this.rng() - 0.5) * 2 * emitter.speedVariance;
+    const rawSpeed =
+      emitter.initialSpeed + (this.rng() - 0.5) * 2 * emitter.speedVariance;
     const speed = Number.isFinite(rawSpeed) ? rawSpeed : 200;
 
     // Inherit emitter velocity
-    const inheritVel = emitter.velocity.clone().multiplyScalar(emitter.inheritEmitterVelocity);
+    const inheritVel = emitter.velocity
+      .clone()
+      .multiplyScalar(emitter.inheritEmitterVelocity);
 
     // Write particle data
     buffer[offset + 0] = pos.x;
@@ -1009,22 +1141,35 @@ export class GPUParticleSystem {
     buffer[offset + 4] = dir.y * speed + inheritVel.y;
     buffer[offset + 5] = dir.z * speed + inheritVel.z;
 
-    buffer[offset + 6] = 0;  // age
+    buffer[offset + 6] = 0; // age
     // Validate lifetime (NaN/0 would cause division by zero in age/lifetime calculations)
-    const rawLifetime = emitter.lifetime + (this.rng() - 0.5) * 2 * emitter.lifetimeVariance;
-    buffer[offset + 7] = (Number.isFinite(rawLifetime) && rawLifetime > 0) ? rawLifetime : 120;
+    const rawLifetime =
+      emitter.lifetime + (this.rng() - 0.5) * 2 * emitter.lifetimeVariance;
+    buffer[offset + 7] =
+      Number.isFinite(rawLifetime) && rawLifetime > 0 ? rawLifetime : 120;
 
-    buffer[offset + 8] = emitter.initialMass + (this.rng() - 0.5) * 2 * emitter.massVariance;
-    buffer[offset + 9] = emitter.initialSize + (this.rng() - 0.5) * 2 * emitter.sizeVariance;
+    buffer[offset + 8] =
+      emitter.initialMass + (this.rng() - 0.5) * 2 * emitter.massVariance;
+    buffer[offset + 9] =
+      emitter.initialSize + (this.rng() - 0.5) * 2 * emitter.sizeVariance;
 
-    buffer[offset + 10] = emitter.initialRotation + this.rng() * emitter.rotationVariance;
-    buffer[offset + 11] = emitter.initialAngularVelocity + (this.rng() - 0.5) * 2 * emitter.angularVelocityVariance;
+    buffer[offset + 10] =
+      emitter.initialRotation + this.rng() * emitter.rotationVariance;
+    buffer[offset + 11] =
+      emitter.initialAngularVelocity +
+      (this.rng() - 0.5) * 2 * emitter.angularVelocityVariance;
 
     // Interpolate color
     const colorT = this.rng() * emitter.colorVariance;
-    buffer[offset + 12] = emitter.colorStart[0] + (emitter.colorEnd[0] - emitter.colorStart[0]) * colorT;
-    buffer[offset + 13] = emitter.colorStart[1] + (emitter.colorEnd[1] - emitter.colorStart[1]) * colorT;
-    buffer[offset + 14] = emitter.colorStart[2] + (emitter.colorEnd[2] - emitter.colorStart[2]) * colorT;
+    buffer[offset + 12] =
+      emitter.colorStart[0] +
+      (emitter.colorEnd[0] - emitter.colorStart[0]) * colorT;
+    buffer[offset + 13] =
+      emitter.colorStart[1] +
+      (emitter.colorEnd[1] - emitter.colorStart[1]) * colorT;
+    buffer[offset + 14] =
+      emitter.colorStart[2] +
+      (emitter.colorEnd[2] - emitter.colorStart[2]) * colorT;
     buffer[offset + 15] = emitter.colorStart[3];
 
     // BUG-073 fix: Store initial size/opacity for lifetime modulation
@@ -1033,11 +1178,11 @@ export class GPUParticleSystem {
     this.particleInitialValues.set(index, {
       size: buffer[offset + 9],
       opacity: buffer[offset + 15],
-      randomOffset: this.rng(),  // Computed once at spawn, used throughout lifetime
+      randomOffset: this.rng(), // Computed once at spawn, used throughout lifetime
     });
 
     this.state.particleCount++;
-    this.emit('particleBirth', { index, emitterId: emitter.id });
+    this.emit("particleBirth", { index, emitterId: emitter.id });
 
     return index;
   }
@@ -1053,7 +1198,8 @@ export class GPUParticleSystem {
    * Update particle physics (CPU implementation)
    */
   private updatePhysics(dt: number): void {
-    const buffer = this.currentBuffer === 'A' ? this.particleBufferA : this.particleBufferB;
+    const buffer =
+      this.currentBuffer === "A" ? this.particleBufferA : this.particleBufferB;
 
     for (let i = 0; i < this.config.maxParticles; i++) {
       const offset = i * PARTICLE_STRIDE;
@@ -1072,7 +1218,7 @@ export class GPUParticleSystem {
       let vy = buffer[offset + 4];
       let vz = buffer[offset + 5];
       const mass = buffer[offset + 8];
-      let angularVelocity = buffer[offset + 11];
+      const angularVelocity = buffer[offset + 11];
 
       // BUG-073 fix: Get initial values for modulation to prevent exponential decay
       // BUG-070 fix: Get randomOffset for deterministic random curves
@@ -1084,64 +1230,96 @@ export class GPUParticleSystem {
       // BUG-071 fix: Evaluate all lifetime modulation curves BEFORE physics
       const lifeRatio = age / lifetime;
       const sizeMod = this.evaluateModulationCurve(
-        this.config.lifetimeModulation.sizeOverLifetime || { type: 'constant', value: 1 },
+        this.config.lifetimeModulation.sizeOverLifetime || {
+          type: "constant",
+          value: 1,
+        },
         lifeRatio,
-        randomOffset
+        randomOffset,
       );
       const opacityMod = this.evaluateModulationCurve(
-        this.config.lifetimeModulation.opacityOverLifetime || { type: 'constant', value: 1 },
+        this.config.lifetimeModulation.opacityOverLifetime || {
+          type: "constant",
+          value: 1,
+        },
         lifeRatio,
-        randomOffset
+        randomOffset,
       );
       // BUG-071 fix: New lifetime modulation properties
       const speedMod = this.evaluateModulationCurve(
-        this.config.lifetimeModulation.speedOverLifetime || { type: 'constant', value: 1 },
+        this.config.lifetimeModulation.speedOverLifetime || {
+          type: "constant",
+          value: 1,
+        },
         lifeRatio,
-        randomOffset
+        randomOffset,
       );
       const rotationSpeedMod = this.evaluateModulationCurve(
-        this.config.lifetimeModulation.rotationSpeedOverLifetime || { type: 'constant', value: 1 },
+        this.config.lifetimeModulation.rotationSpeedOverLifetime || {
+          type: "constant",
+          value: 1,
+        },
         lifeRatio,
-        randomOffset
+        randomOffset,
       );
       const gravityMod = this.evaluateModulationCurve(
-        this.config.lifetimeModulation.gravityModifier || { type: 'constant', value: 1 },
+        this.config.lifetimeModulation.gravityModifier || {
+          type: "constant",
+          value: 1,
+        },
         lifeRatio,
-        randomOffset
+        randomOffset,
       );
       const dragMod = this.evaluateModulationCurve(
-        this.config.lifetimeModulation.dragOverLifetime || { type: 'constant', value: 0 },
+        this.config.lifetimeModulation.dragOverLifetime || {
+          type: "constant",
+          value: 0,
+        },
         lifeRatio,
-        randomOffset
+        randomOffset,
       );
       const noiseMod = this.evaluateModulationCurve(
-        this.config.lifetimeModulation.noiseAmplitudeOverLifetime || { type: 'constant', value: 1 },
+        this.config.lifetimeModulation.noiseAmplitudeOverLifetime || {
+          type: "constant",
+          value: 1,
+        },
         lifeRatio,
-        randomOffset
+        randomOffset,
       );
 
       // Accumulate forces
-      let fx = 0, fy = 0, fz = 0;
+      let fx = 0,
+        fy = 0,
+        fz = 0;
 
       // Apply force fields with BUG-071 modifiers
       for (const field of this.forceFields.values()) {
         if (!field.enabled) continue;
 
-        const force = calculateForceField(field, px, py, pz, vx, vy, vz, mass, this.state.simulationTime);
+        const force = calculateForceField(
+          field,
+          px,
+          py,
+          pz,
+          vx,
+          vy,
+          vz,
+          mass,
+          this.state.simulationTime,
+        );
 
         // BUG-071 fix: Apply gravityModifier to gravity forces
-        if (field.type === 'gravity') {
+        if (field.type === "gravity") {
           fx += force.x * gravityMod;
           fy += force.y * gravityMod;
           fz += force.z * gravityMod;
         }
         // BUG-071 fix: Apply noiseAmplitudeOverLifetime to turbulence forces
-        else if (field.type === 'turbulence') {
+        else if (field.type === "turbulence") {
           fx += force.x * noiseMod;
           fy += force.y * noiseMod;
           fz += force.z * noiseMod;
-        }
-        else {
+        } else {
           fx += force.x;
           fy += force.y;
           fz += force.z;
@@ -1194,9 +1372,9 @@ export class GPUParticleSystem {
       buffer[offset + 4] = vy;
       buffer[offset + 5] = vz;
       buffer[offset + 6] = age + dt;
-      buffer[offset + 9] = initialSize * sizeMod;  // BUG-073 fix: multiply initial, not current
+      buffer[offset + 9] = initialSize * sizeMod; // BUG-073 fix: multiply initial, not current
       buffer[offset + 10] = rotation;
-      buffer[offset + 15] = initialOpacity * opacityMod;  // BUG-073 fix: multiply initial, not current
+      buffer[offset + 15] = initialOpacity * opacityMod; // BUG-073 fix: multiply initial, not current
 
       // Check if particle died
       if (age + dt >= lifetime) {
@@ -1211,7 +1389,7 @@ export class GPUParticleSystem {
         this.particleInitialValues.delete(i);
         this.freeIndices.push(i);
         this.state.particleCount--;
-        this.emit('particleDeath', { index: i });
+        this.emit("particleDeath", { index: i });
       }
     }
   }
@@ -1228,7 +1406,11 @@ export class GPUParticleSystem {
    * Get audio modulation for a specific parameter
    * Delegates to ParticleAudioReactive
    */
-  private getAudioModulation(target: string, targetId: string, parameter: string): number | undefined {
+  private getAudioModulation(
+    target: string,
+    targetId: string,
+    parameter: string,
+  ): number | undefined {
     return this.audioSystem?.getModulation(target, targetId, parameter);
   }
 
@@ -1238,14 +1420,27 @@ export class GPUParticleSystem {
   private updateInstanceBuffers(): void {
     if (!this.instancedGeometry) return;
 
-    const buffer = this.currentBuffer === 'A' ? this.particleBufferA : this.particleBufferB;
+    const buffer =
+      this.currentBuffer === "A" ? this.particleBufferA : this.particleBufferB;
 
-    const posAttr = this.instancedGeometry.getAttribute('i_position') as THREE.InstancedBufferAttribute;
-    const velAttr = this.instancedGeometry.getAttribute('i_velocity') as THREE.InstancedBufferAttribute;
-    const lifeAttr = this.instancedGeometry.getAttribute('i_life') as THREE.InstancedBufferAttribute;
-    const physAttr = this.instancedGeometry.getAttribute('i_physical') as THREE.InstancedBufferAttribute;
-    const rotAttr = this.instancedGeometry.getAttribute('i_rotation') as THREE.InstancedBufferAttribute;
-    const colAttr = this.instancedGeometry.getAttribute('i_color') as THREE.InstancedBufferAttribute;
+    const posAttr = this.instancedGeometry.getAttribute(
+      "i_position",
+    ) as THREE.InstancedBufferAttribute;
+    const velAttr = this.instancedGeometry.getAttribute(
+      "i_velocity",
+    ) as THREE.InstancedBufferAttribute;
+    const lifeAttr = this.instancedGeometry.getAttribute(
+      "i_life",
+    ) as THREE.InstancedBufferAttribute;
+    const physAttr = this.instancedGeometry.getAttribute(
+      "i_physical",
+    ) as THREE.InstancedBufferAttribute;
+    const rotAttr = this.instancedGeometry.getAttribute(
+      "i_rotation",
+    ) as THREE.InstancedBufferAttribute;
+    const colAttr = this.instancedGeometry.getAttribute(
+      "i_color",
+    ) as THREE.InstancedBufferAttribute;
 
     // Copy data from particle buffer to instance attributes
     for (let i = 0; i < this.config.maxParticles; i++) {
@@ -1256,7 +1451,13 @@ export class GPUParticleSystem {
       lifeAttr.setXY(i, buffer[src + 6], buffer[src + 7]);
       physAttr.setXY(i, buffer[src + 8], buffer[src + 9]);
       rotAttr.setXY(i, buffer[src + 10], buffer[src + 11]);
-      colAttr.setXYZW(i, buffer[src + 12], buffer[src + 13], buffer[src + 14], buffer[src + 15]);
+      colAttr.setXYZW(
+        i,
+        buffer[src + 12],
+        buffer[src + 13],
+        buffer[src + 14],
+        buffer[src + 15],
+      );
     }
 
     posAttr.needsUpdate = true;
@@ -1326,17 +1527,19 @@ export class GPUParticleSystem {
     return {
       diffuseMap: { value: null },
       hasDiffuseMap: { value: 0 },
-      proceduralShape: { value: 1 },  // Circle by default
+      proceduralShape: { value: 1 }, // Circle by default
       // Sprite sheet uniforms
-      spriteSheetSize: { value: new THREE.Vector2(1, 1) },  // columns, rows
+      spriteSheetSize: { value: new THREE.Vector2(1, 1) }, // columns, rows
       spriteFrameCount: { value: 1 },
       animateSprite: { value: 0 },
       spriteFrameRate: { value: 10 },
       time: { value: 0 },
-      randomStartFrame: { value: 0 },  // BUG-068 fix: Per-particle random start frame
+      randomStartFrame: { value: 0 }, // BUG-068 fix: Per-particle random start frame
       // Motion blur uniforms
       motionBlurEnabled: { value: this.config.render.motionBlur ? 1 : 0 },
-      motionBlurStrength: { value: this.config.render.motionBlurStrength ?? 0.1 },
+      motionBlurStrength: {
+        value: this.config.render.motionBlurStrength ?? 0.1,
+      },
       minStretch: { value: this.config.render.minStretch ?? 1.0 },
       maxStretch: { value: this.config.render.maxStretch ?? 4.0 },
       // BUG-072 fix: Color over lifetime texture
@@ -1350,10 +1553,14 @@ export class GPUParticleSystem {
    */
   private getThreeBlending(): THREE.Blending {
     switch (this.config.render.blendMode) {
-      case 'additive': return THREE.AdditiveBlending;
-      case 'multiply': return THREE.MultiplyBlending;
-      case 'screen': return THREE.CustomBlending;
-      default: return THREE.NormalBlending;
+      case "additive":
+        return THREE.AdditiveBlending;
+      case "multiply":
+        return THREE.MultiplyBlending;
+      case "screen":
+        return THREE.CustomBlending;
+      default:
+        return THREE.NormalBlending;
     }
   }
 
@@ -1365,7 +1572,7 @@ export class GPUParticleSystem {
     if (!this.eventHandlers.has(event)) {
       this.eventHandlers.set(event, new Set());
     }
-    this.eventHandlers.get(event)!.add(handler);
+    this.eventHandlers.get(event)?.add(handler);
   }
 
   off(event: string, handler: ParticleEventHandler): void {
@@ -1378,7 +1585,7 @@ export class GPUParticleSystem {
       timestamp: performance.now(),
       data,
     };
-    this.eventHandlers.get(type)?.forEach(handler => handler(event));
+    this.eventHandlers.get(type)?.forEach((handler) => handler(event));
   }
 
   // ============================================================================
@@ -1392,7 +1599,8 @@ export class GPUParticleSystem {
   private createSeededRandom(seed: number): () => number {
     this.currentRngState = seed;
     return () => {
-      this.currentRngState = (this.currentRngState * 1103515245 + 12345) & 0x7fffffff;
+      this.currentRngState =
+        (this.currentRngState * 1103515245 + 12345) & 0x7fffffff;
       return this.currentRngState / 0x7fffffff;
     };
   }
@@ -1409,11 +1617,13 @@ export class GPUParticleSystem {
    */
   getConfig(): { emitters: EmitterConfig[]; forceFields: ForceFieldConfig[] } {
     // Extract EmitterConfig from the stored emitters (removing runtime-only fields)
-    const emitters: EmitterConfig[] = Array.from(this.emitters.values()).map(e => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { accumulator, velocity, ...config } = e;
-      return config;
-    });
+    const emitters: EmitterConfig[] = Array.from(this.emitters.values()).map(
+      (e) => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { accumulator, velocity, ...config } = e;
+        return config;
+      },
+    );
 
     return {
       emitters,
@@ -1430,7 +1640,8 @@ export class GPUParticleSystem {
    */
   cacheCurrentState(frame: number): void {
     if (!this.frameCacheSystem) return;
-    const currentBuffer = this.currentBuffer === 'A' ? this.particleBufferA : this.particleBufferB;
+    const currentBuffer =
+      this.currentBuffer === "A" ? this.particleBufferA : this.particleBufferB;
     this.frameCacheSystem.cacheState(
       frame,
       currentBuffer,
@@ -1439,9 +1650,9 @@ export class GPUParticleSystem {
       this.state.simulationTime,
       this.currentRngState,
       this.emitters,
-      this.particleEmitters,  // BUG-063 fix: Cache particle-to-emitter tracking
-      this.audioSystem?.getSmoothedAudioValues() ?? new Map(),  // BUG-064 fix: Cache audio EMA history
-      this.particleInitialValues  // BUG-073 fix: Cache initial size/opacity for modulation
+      this.particleEmitters, // BUG-063 fix: Cache particle-to-emitter tracking
+      this.audioSystem?.getSmoothedAudioValues() ?? new Map(), // BUG-064 fix: Cache audio EMA history
+      this.particleInitialValues, // BUG-073 fix: Cache initial size/opacity for modulation
     );
   }
 
@@ -1454,7 +1665,8 @@ export class GPUParticleSystem {
     if (!cached) return false;
 
     // Restore particle buffers
-    const targetBuffer = this.currentBuffer === 'A' ? this.particleBufferA : this.particleBufferB;
+    const targetBuffer =
+      this.currentBuffer === "A" ? this.particleBufferA : this.particleBufferB;
     targetBuffer.set(cached.particleBuffer);
 
     // Restore state
@@ -1581,13 +1793,15 @@ export class GPUParticleSystem {
     cacheInterval: number;
     maxCacheSize: number;
   } {
-    return this.frameCacheSystem?.getStats() ?? {
-      cachedFrames: 0,
-      version: 0,
-      currentFrame: -1,
-      cacheInterval: 5,
-      maxCacheSize: 200,
-    };
+    return (
+      this.frameCacheSystem?.getStats() ?? {
+        cachedFrames: 0,
+        version: 0,
+        currentFrame: -1,
+        cacheInterval: 5,
+        maxCacheSize: 200,
+      }
+    );
   }
 
   /**

@@ -60,36 +60,52 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import type { GradientOverlayStyle, GradientOverlayUpdate, GradientOverlayType } from '@/types/layerStyles';
-import type { BlendMode } from '@/types/project';
+import { computed } from "vue";
+import type {
+  GradientOverlayStyle,
+  GradientOverlayUpdate,
+} from "@/types/layerStyles";
+import type { BlendMode } from "@/types/project";
 
 const props = defineProps<{
   style: GradientOverlayStyle;
 }>();
 
-const emit = defineEmits<{
-  (e: 'update', updates: GradientOverlayUpdate): void;
-}>();
+const _emit =
+  defineEmits<(e: "update", updates: GradientOverlayUpdate) => void>();
 
-const blendModes: BlendMode[] = [
-  'normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten',
-  'color-dodge', 'color-burn', 'hard-light', 'soft-light'
+const _blendModes: BlendMode[] = [
+  "normal",
+  "multiply",
+  "screen",
+  "overlay",
+  "darken",
+  "lighten",
+  "color-dodge",
+  "color-burn",
+  "hard-light",
+  "soft-light",
 ];
 
-function formatMode(mode: string): string {
-  return mode.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+function _formatMode(mode: string): string {
+  return mode
+    .split("-")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
 }
 
-const gradientCSS = computed(() => {
+const _gradientCSS = computed(() => {
   const grad = props.style.gradient.value;
   if (!grad || !grad.stops) {
-    return 'linear-gradient(90deg, #000, #fff)';
+    return "linear-gradient(90deg, #000, #fff)";
   }
 
   const stops = grad.stops
-    .map(s => `rgba(${s.color.r}, ${s.color.g}, ${s.color.b}, ${s.color.a}) ${s.position * 100}%`)
-    .join(', ');
+    .map(
+      (s) =>
+        `rgba(${s.color.r}, ${s.color.g}, ${s.color.b}, ${s.color.a}) ${s.position * 100}%`,
+    )
+    .join(", ");
 
   return `linear-gradient(${props.style.angle.value}deg, ${stops})`;
 });

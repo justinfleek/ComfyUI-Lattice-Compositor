@@ -17,7 +17,7 @@
  * @module services/audio/enhancedBeatDetection
  */
 
-import { AudioAnalysis, detectOnsets, detectBPM } from '../audioFeatures';
+import type { AudioAnalysis } from "../audioFeatures";
 
 // ============================================================================
 // Types
@@ -34,7 +34,7 @@ export interface EnhancedBeat {
   /** Confidence that this is a real beat (0-1) */
   confidence: number;
   /** Type of beat */
-  type: 'detected' | 'interpolated' | 'filled';
+  type: "detected" | "interpolated" | "filled";
   /** Musical position (e.g., 1.1, 1.2, 1.3, 1.4 for quarter notes in measure 1) */
   musicalPosition?: number;
 }
@@ -92,7 +92,7 @@ export const DEFAULT_BEAT_CONFIG: EnhancedBeatConfig = {
   fillGaps: true,
   interpolate: true,
   timeSignature: 4,
-  targetBPM: 0
+  targetBPM: 0,
 };
 
 // ============================================================================
@@ -110,13 +110,13 @@ export const DEFAULT_BEAT_CONFIG: EnhancedBeatConfig = {
 export function createEnhancedBeatGrid(
   analysis: AudioAnalysis,
   fps: number,
-  config: Partial<EnhancedBeatConfig> = {}
+  config: Partial<EnhancedBeatConfig> = {},
 ): BeatGrid {
   const cfg: EnhancedBeatConfig = { ...DEFAULT_BEAT_CONFIG, ...config };
 
   // Get initial beats and BPM
   const detectedBeats = analysis.onsets;
-  let bpm = cfg.targetBPM > 0 ? cfg.targetBPM : analysis.bpm;
+  const bpm = cfg.targetBPM > 0 ? cfg.targetBPM : analysis.bpm;
 
   // Calculate frames per beat
   const framesPerBeat = (fps * 60) / bpm;
@@ -125,11 +125,11 @@ export function createEnhancedBeatGrid(
   const firstBeatFrame = findFirstStrongBeat(analysis, detectedBeats, fps);
 
   // Convert detected beats to enhanced beats
-  let beats: EnhancedBeat[] = detectedBeats.map(frame => ({
+  let beats: EnhancedBeat[] = detectedBeats.map((frame) => ({
     frame,
     strength: calculateBeatStrength(analysis, frame),
     confidence: 1.0,
-    type: 'detected' as const
+    type: "detected" as const,
   }));
 
   // Fill gaps if enabled
@@ -143,21 +143,32 @@ export function createEnhancedBeatGrid(
   }
 
   // Calculate BPM confidence
-  const bpmConfidence = calculateBPMConfidence(beats, framesPerBeat, cfg.positionTolerance);
+  const bpmConfidence = calculateBPMConfidence(
+    beats,
+    framesPerBeat,
+    cfg.positionTolerance,
+  );
 
   // Assign musical positions
-  beats = assignMusicalPositions(beats, firstBeatFrame, framesPerBeat, cfg.timeSignature);
+  beats = assignMusicalPositions(
+    beats,
+    firstBeatFrame,
+    framesPerBeat,
+    cfg.timeSignature,
+  );
 
   // BUG-080 fix: Filter out low-confidence beats
-  beats = beats.filter(b => b.confidence >= cfg.minConfidence);
+  beats = beats.filter((b) => b.confidence >= cfg.minConfidence);
 
   // Sort by frame
   beats.sort((a, b) => a.frame - b.frame);
 
   // Find downbeats
   const downbeats = beats
-    .filter(b => b.musicalPosition !== undefined && b.musicalPosition % 1 < 0.001)
-    .map(b => b.frame);
+    .filter(
+      (b) => b.musicalPosition !== undefined && b.musicalPosition % 1 < 0.001,
+    )
+    .map((b) => b.frame);
 
   return {
     bpm,
@@ -166,7 +177,7 @@ export function createEnhancedBeatGrid(
     framesPerBeat,
     beats,
     downbeats,
-    timeSignature: cfg.timeSignature
+    timeSignature: cfg.timeSignature,
   };
 }
 
@@ -183,7 +194,7 @@ function fillBeatGaps(
   beats: EnhancedBeat[],
   framesPerBeat: number,
   config: EnhancedBeatConfig,
-  analysis: AudioAnalysis
+  analysis: AudioAnalysis,
 ): EnhancedBeat[] {
   if (beats.length < 2) return beats;
 
@@ -210,8 +221,8 @@ function fillBeatGaps(
             result.push({
               frame: filledFrame,
               strength: strength * 0.8, // Reduce strength for filled beats
-              confidence: 0.6 - (j * 0.1), // Lower confidence for later fills
-              type: 'filled'
+              confidence: 0.6 - j * 0.1, // Lower confidence for later fills
+              type: "filled",
             });
           }
         }
@@ -234,27 +245,27 @@ function fillBeatGaps(
 function interpolateBeats(
   beats: EnhancedBeat[],
   framesPerBeat: number,
-  tolerance: number
+  tolerance: number,
 ): EnhancedBeat[] {
   if (beats.length < 4) return beats;
 
   // Find the best grid offset using majority voting
-  const offsets = beats.map(b => b.frame % framesPerBeat);
+  const offsets = beats.map((b) => b.frame % framesPerBeat);
   const avgOffset = offsets.reduce((a, b) => a + b, 0) / offsets.length;
 
-  return beats.map(beat => {
+  return beats.map((beat) => {
     // Calculate expected grid position
     const gridPosition = Math.round((beat.frame - avgOffset) / framesPerBeat);
     const expectedFrame = gridPosition * framesPerBeat + avgOffset;
     const deviation = Math.abs(beat.frame - expectedFrame);
 
     // Only interpolate if within tolerance
-    if (deviation <= tolerance && beat.type === 'detected') {
+    if (deviation <= tolerance && beat.type === "detected") {
       return {
         ...beat,
         frame: Math.round(expectedFrame),
-        type: 'interpolated' as const,
-        confidence: beat.confidence * (1 - deviation / tolerance * 0.2)
+        type: "interpolated" as const,
+        confidence: beat.confidence * (1 - (deviation / tolerance) * 0.2),
       };
     }
 
@@ -272,7 +283,7 @@ function interpolateBeats(
 function findFirstStrongBeat(
   analysis: AudioAnalysis,
   beats: number[],
-  fps: number
+  fps: number,
 ): number {
   if (beats.length === 0) return 0;
 
@@ -296,7 +307,10 @@ function findFirstStrongBeat(
  * Calculate beat strength from audio analysis
  */
 function calculateBeatStrength(analysis: AudioAnalysis, frame: number): number {
-  const clampedFrame = Math.max(0, Math.min(frame, analysis.amplitudeEnvelope.length - 1));
+  const clampedFrame = Math.max(
+    0,
+    Math.min(frame, analysis.amplitudeEnvelope.length - 1),
+  );
 
   // Combine multiple features for strength estimation
   const amplitude = analysis.amplitudeEnvelope[clampedFrame] || 0;
@@ -313,21 +327,21 @@ function calculateBeatStrength(analysis: AudioAnalysis, frame: number): number {
 function calculateBPMConfidence(
   beats: EnhancedBeat[],
   framesPerBeat: number,
-  tolerance: number
+  tolerance: number,
 ): number {
   if (beats.length < 4) return 0.3;
 
   // Calculate how well beats align with expected tempo
   let alignedCount = 0;
-  const detectedBeats = beats.filter(b => b.type === 'detected');
+  const detectedBeats = beats.filter((b) => b.type === "detected");
 
   for (let i = 1; i < detectedBeats.length; i++) {
     const interval = detectedBeats[i].frame - detectedBeats[i - 1].frame;
-    const deviation = Math.abs(interval - framesPerBeat);
+    const _deviation = Math.abs(interval - framesPerBeat);
     const multipleDeviation = Math.min(
       Math.abs(interval - framesPerBeat),
       Math.abs(interval - framesPerBeat * 2),
-      Math.abs(interval - framesPerBeat / 2)
+      Math.abs(interval - framesPerBeat / 2),
     );
 
     if (multipleDeviation <= tolerance) {
@@ -345,16 +359,16 @@ function assignMusicalPositions(
   beats: EnhancedBeat[],
   firstBeatFrame: number,
   framesPerBeat: number,
-  timeSignature: number
+  timeSignature: number,
 ): EnhancedBeat[] {
-  return beats.map(beat => {
+  return beats.map((beat) => {
     const beatsFromFirst = (beat.frame - firstBeatFrame) / framesPerBeat;
     const measure = Math.floor(beatsFromFirst / timeSignature) + 1;
     const beatInMeasure = (beatsFromFirst % timeSignature) + 1;
 
     return {
       ...beat,
-      musicalPosition: measure + (beatInMeasure - 1) / 10 // e.g., 1.1, 1.2, 1.3, 1.4
+      musicalPosition: measure + (beatInMeasure - 1) / 10, // e.g., 1.1, 1.2, 1.3, 1.4
     };
   });
 }
@@ -372,7 +386,7 @@ function assignMusicalPositions(
  */
 export function generateSubBeats(
   grid: BeatGrid,
-  subdivision: 2 | 4 | 8 = 2
+  subdivision: 2 | 4 | 8 = 2,
 ): number[] {
   const subBeats: number[] = [];
   const framesPerSubBeat = grid.framesPerBeat / subdivision;
@@ -395,7 +409,7 @@ export function generateSubBeats(
  */
 export function getNearestBeat(
   grid: BeatGrid,
-  frame: number
+  frame: number,
 ): EnhancedBeat | null {
   if (grid.beats.length === 0) return null;
 
@@ -424,9 +438,9 @@ export function getNearestBeat(
 export function isOnBeat(
   grid: BeatGrid,
   frame: number,
-  tolerance: number = 2
+  tolerance: number = 2,
 ): boolean {
-  return grid.beats.some(b => Math.abs(b.frame - frame) <= tolerance);
+  return grid.beats.some((b) => Math.abs(b.frame - frame) <= tolerance);
 }
 
 /**
@@ -440,9 +454,9 @@ export function isOnBeat(
 export function isOnDownbeat(
   grid: BeatGrid,
   frame: number,
-  tolerance: number = 2
+  tolerance: number = 2,
 ): boolean {
-  return grid.downbeats.some(db => Math.abs(db - frame) <= tolerance);
+  return grid.downbeats.some((db) => Math.abs(db - frame) <= tolerance);
 }
 
 /**
@@ -459,7 +473,7 @@ export function isOnDownbeat(
 export function getBeatIntensity(
   grid: BeatGrid,
   frame: number,
-  decay: number = 0.9
+  decay: number = 0.9,
 ): number {
   const nearest = getNearestBeat(grid, frame);
   if (!nearest) return 0;
@@ -472,7 +486,7 @@ export function getBeatIntensity(
   }
 
   // Exponential decay from beat
-  const decayFactor = Math.pow(decay, framesSinceBeat);
+  const decayFactor = decay ** framesSinceBeat;
   return nearest.strength * decayFactor;
 }
 
@@ -485,10 +499,7 @@ export function getBeatIntensity(
  * @param frame - Target frame
  * @returns Pulsing intensity (0-1)
  */
-export function getPulseIntensity(
-  grid: BeatGrid,
-  frame: number
-): number {
+export function getPulseIntensity(grid: BeatGrid, frame: number): number {
   // Find position within beat cycle
   const beatPhase = (frame % grid.framesPerBeat) / grid.framesPerBeat;
 
@@ -503,7 +514,10 @@ export function getPulseIntensity(
 /**
  * Preset configurations for different music genres
  */
-export const BEAT_DETECTION_PRESETS: Record<string, Partial<EnhancedBeatConfig>> = {
+export const BEAT_DETECTION_PRESETS: Record<
+  string,
+  Partial<EnhancedBeatConfig>
+> = {
   /**
    * Electronic/EDM - Strong regular beats
    */
@@ -513,7 +527,7 @@ export const BEAT_DETECTION_PRESETS: Record<string, Partial<EnhancedBeatConfig>>
     minGapBeats: 1.2,
     maxGapBeats: 2,
     positionTolerance: 2,
-    timeSignature: 4
+    timeSignature: 4,
   },
 
   /**
@@ -525,7 +539,7 @@ export const BEAT_DETECTION_PRESETS: Record<string, Partial<EnhancedBeatConfig>>
     minGapBeats: 1.5,
     maxGapBeats: 4,
     positionTolerance: 3,
-    timeSignature: 4
+    timeSignature: 4,
   },
 
   /**
@@ -537,7 +551,7 @@ export const BEAT_DETECTION_PRESETS: Record<string, Partial<EnhancedBeatConfig>>
     minGapBeats: 2,
     maxGapBeats: 8,
     positionTolerance: 5,
-    timeSignature: 4
+    timeSignature: 4,
   },
 
   /**
@@ -549,7 +563,7 @@ export const BEAT_DETECTION_PRESETS: Record<string, Partial<EnhancedBeatConfig>>
     minGapBeats: 2,
     maxGapBeats: 16,
     positionTolerance: 6,
-    timeSignature: 4
+    timeSignature: 4,
   },
 
   /**
@@ -561,7 +575,7 @@ export const BEAT_DETECTION_PRESETS: Record<string, Partial<EnhancedBeatConfig>>
     minGapBeats: 1.3,
     maxGapBeats: 3,
     positionTolerance: 2,
-    timeSignature: 4
+    timeSignature: 4,
   },
 
   /**
@@ -573,8 +587,8 @@ export const BEAT_DETECTION_PRESETS: Record<string, Partial<EnhancedBeatConfig>>
     minGapBeats: 1.5,
     maxGapBeats: 4,
     positionTolerance: 3,
-    timeSignature: 3
-  }
+    timeSignature: 3,
+  },
 };
 
 /**

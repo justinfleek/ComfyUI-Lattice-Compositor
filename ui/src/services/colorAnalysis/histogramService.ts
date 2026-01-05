@@ -5,29 +5,29 @@
  * monitoring and auto-correction algorithms.
  */
 
-import { BT709_R, BT709_G, BT709_B } from '../../utils/labColorUtils';
+import { BT709_B, BT709_G, BT709_R } from "../../utils/labColorUtils";
 
 /**
  * Statistics for a single channel
  */
 export interface ChannelStats {
-  min: number;           // Minimum value (0-255)
-  max: number;           // Maximum value (0-255)
-  mean: number;          // Average value
-  median: number;        // Median value
-  stdDev: number;        // Standard deviation
-  clippedLow: number;    // Percentage of pixels at 0 (0-100)
-  clippedHigh: number;   // Percentage of pixels at 255 (0-100)
-  mode: number;          // Most common value
-  percentile5: number;   // 5th percentile
-  percentile95: number;  // 95th percentile
+  min: number; // Minimum value (0-255)
+  max: number; // Maximum value (0-255)
+  mean: number; // Average value
+  median: number; // Median value
+  stdDev: number; // Standard deviation
+  clippedLow: number; // Percentage of pixels at 0 (0-100)
+  clippedHigh: number; // Percentage of pixels at 255 (0-100)
+  mode: number; // Most common value
+  percentile5: number; // 5th percentile
+  percentile95: number; // 95th percentile
 }
 
 /**
  * Complete histogram data for an image
  */
 export interface HistogramData {
-  red: Uint32Array;           // 256 bins
+  red: Uint32Array; // 256 bins
   green: Uint32Array;
   blue: Uint32Array;
   luminance: Uint32Array;
@@ -61,7 +61,7 @@ export interface WaveformData {
   columns: Uint8Array[];
   width: number;
   height: number;
-  mode: 'luma' | 'rgb';
+  mode: "luma" | "rgb";
 
   // RGB mode - separate waveforms
   redColumns?: Uint8Array[];
@@ -85,8 +85,8 @@ export interface VectorscopeData {
   // 2D array: vectorscope[u + 128][v + 128] = count
   // U: -128 to +127 (B-Y chrominance)
   // V: -128 to +127 (R-Y chrominance)
-  data: Uint32Array;  // 256x256 flattened
-  maxCount: number;   // For normalization
+  data: Uint32Array; // 256x256 flattened
+  maxCount: number; // For normalization
   width: 256;
   height: 256;
 }
@@ -131,7 +131,7 @@ export function computeHistogram(imageData: ImageData): HistogramData {
     red: computeChannelStats(red, redCumulative, pixelCount),
     green: computeChannelStats(green, greenCumulative, pixelCount),
     blue: computeChannelStats(blue, blueCumulative, pixelCount),
-    luminance: computeChannelStats(luminance, luminanceCumulative, pixelCount)
+    luminance: computeChannelStats(luminance, luminanceCumulative, pixelCount),
   };
 
   return {
@@ -146,14 +146,16 @@ export function computeHistogram(imageData: ImageData): HistogramData {
     stats,
     pixelCount,
     width,
-    height
+    height,
   };
 }
 
 /**
  * Compute cumulative histogram from histogram
  */
-export function computeCumulativeHistogram(histogram: Uint32Array): Uint32Array {
+export function computeCumulativeHistogram(
+  histogram: Uint32Array,
+): Uint32Array {
   const cumulative = new Uint32Array(256);
   cumulative[0] = histogram[0];
 
@@ -170,7 +172,7 @@ export function computeCumulativeHistogram(histogram: Uint32Array): Uint32Array 
 export function findHistogramPercentile(
   cumulative: Uint32Array,
   percentile: number,
-  totalPixels: number
+  totalPixels: number,
 ): number {
   const target = (percentile / 100) * totalPixels;
 
@@ -189,7 +191,7 @@ export function findHistogramPercentile(
 function computeChannelStats(
   histogram: Uint32Array,
   cumulative: Uint32Array,
-  pixelCount: number
+  pixelCount: number,
 ): ChannelStats {
   // Find min/max
   let min = 0;
@@ -219,7 +221,7 @@ function computeChannelStats(
   // Calculate standard deviation
   let variance = 0;
   for (let i = 0; i < 256; i++) {
-    variance += histogram[i] * Math.pow(i - mean, 2);
+    variance += histogram[i] * (i - mean) ** 2;
   }
   const stdDev = Math.sqrt(variance / pixelCount);
 
@@ -254,7 +256,7 @@ function computeChannelStats(
     clippedHigh,
     mode,
     percentile5,
-    percentile95
+    percentile95,
   };
 }
 
@@ -263,7 +265,7 @@ function computeChannelStats(
  */
 export function computeWaveform(
   imageData: ImageData,
-  mode: 'luma' | 'rgb' = 'luma'
+  mode: "luma" | "rgb" = "luma",
 ): WaveformData {
   const { data, width, height } = imageData;
 
@@ -277,7 +279,7 @@ export function computeWaveform(
   let greenColumns: Uint8Array[] | undefined;
   let blueColumns: Uint8Array[] | undefined;
 
-  if (mode === 'rgb') {
+  if (mode === "rgb") {
     redColumns = [];
     greenColumns = [];
     blueColumns = [];
@@ -301,7 +303,7 @@ export function computeWaveform(
       columns[x][y] = Math.min(255, Math.max(0, lum));
 
       // RGB mode
-      if (mode === 'rgb' && redColumns && greenColumns && blueColumns) {
+      if (mode === "rgb" && redColumns && greenColumns && blueColumns) {
         redColumns[x][y] = r;
         greenColumns[x][y] = g;
         blueColumns[x][y] = b;
@@ -316,7 +318,7 @@ export function computeWaveform(
     mode,
     redColumns,
     greenColumns,
-    blueColumns
+    blueColumns,
   };
 }
 
@@ -352,20 +354,20 @@ export function computeParade(imageData: ImageData): ParadeData {
       columns: redColumns,
       width,
       height,
-      mode: 'luma'
+      mode: "luma",
     },
     green: {
       columns: greenColumns,
       width,
       height,
-      mode: 'luma'
+      mode: "luma",
     },
     blue: {
       columns: blueColumns,
       width,
       height,
-      mode: 'luma'
-    }
+      mode: "luma",
+    },
   };
 }
 
@@ -392,8 +394,8 @@ export function computeVectorscope(imageData: ImageData): VectorscopeData {
     // Chrominance (scaled for display)
     // U = 0.5 * (B - Y) / (1 - BT709_B)
     // V = 0.5 * (R - Y) / (1 - BT709_R)
-    const U = 0.5 * (b - Y) / (1 - BT709_B);
-    const V = 0.5 * (r - Y) / (1 - BT709_R);
+    const U = (0.5 * (b - Y)) / (1 - BT709_B);
+    const V = (0.5 * (r - Y)) / (1 - BT709_R);
 
     // Map to grid coordinates (0-255)
     // U and V range from approximately -0.5 to +0.5
@@ -417,7 +419,7 @@ export function computeVectorscope(imageData: ImageData): VectorscopeData {
     data: vectorData,
     maxCount,
     width: 256,
-    height: 256
+    height: 256,
   };
 }
 
@@ -429,7 +431,7 @@ export function buildHistogramMatchingLUT(
   sourceHist: Uint32Array,
   targetHist: Uint32Array,
   sourcePixels: number,
-  targetPixels: number
+  targetPixels: number,
 ): Uint8Array {
   // Compute cumulative histograms (normalized to 0-1)
   const sourceCDF = new Float32Array(256);
@@ -475,7 +477,7 @@ export function applyHistogramMatching(
   redLUT: Uint8Array,
   greenLUT: Uint8Array,
   blueLUT: Uint8Array,
-  strength: number = 1.0
+  strength: number = 1.0,
 ): ImageData {
   const { data, width, height } = imageData;
   const output = new ImageData(width, height);
@@ -502,21 +504,21 @@ export function applyHistogramMatching(
  */
 export function calculateAutoLevels(
   histogram: HistogramData,
-  clipPercent: number = 0.1
+  clipPercent: number = 0.1,
 ): { inputBlack: number; inputWhite: number } {
-  const stats = histogram.stats.luminance;
+  const _stats = histogram.stats.luminance;
 
   // Use percentiles to avoid outlier influence
   const inputBlack = findHistogramPercentile(
     histogram.luminanceCumulative,
     clipPercent,
-    histogram.pixelCount
+    histogram.pixelCount,
   );
 
   const inputWhite = findHistogramPercentile(
     histogram.luminanceCumulative,
     100 - clipPercent,
-    histogram.pixelCount
+    histogram.pixelCount,
   );
 
   return { inputBlack, inputWhite };
@@ -529,10 +531,10 @@ export function calculateAutoLevels(
 export function calculateWhiteBalanceCorrection(
   sampledR: number,
   sampledG: number,
-  sampledB: number
+  sampledB: number,
 ): { temperature: number; tint: number } {
   // Target is neutral gray (equal RGB)
-  const targetGray = (sampledR + sampledG + sampledB) / 3;
+  const _targetGray = (sampledR + sampledG + sampledB) / 3;
 
   // Calculate deviation from neutral
   // Temperature: blue-yellow axis (more blue = higher temp, more yellow = lower temp)
@@ -550,7 +552,7 @@ export function calculateWhiteBalanceCorrection(
 
   return {
     temperature: Math.max(-100, Math.min(100, temperature)),
-    tint: Math.max(-100, Math.min(100, tint))
+    tint: Math.max(-100, Math.min(100, tint)),
   };
 }
 
@@ -565,7 +567,7 @@ export function isClipped(histogram: HistogramData): {
 
   return {
     shadowsClipped: histogram.stats.luminance.clippedLow > threshold,
-    highlightsClipped: histogram.stats.luminance.clippedHigh > threshold
+    highlightsClipped: histogram.stats.luminance.clippedHigh > threshold,
   };
 }
 

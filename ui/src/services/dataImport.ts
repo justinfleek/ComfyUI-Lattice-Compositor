@@ -7,23 +7,22 @@
  */
 
 import type {
-  DataAsset,
-  JSONDataAsset,
   CSVDataAsset,
-  DataFileType,
-  DataParseResult,
   CSVParseOptions,
-  JSONParseOptions,
+  CSVSourceData,
+  DataAsset,
+  DataParseResult,
   FootageDataAccessor,
-  CSVSourceData
-} from '@/types/dataAsset';
+  JSONDataAsset,
+  JSONParseOptions,
+} from "@/types/dataAsset";
 import {
-  isJSONAsset,
-  isCSVAsset,
   getDataFileType,
-  isSupportedDataFile
-} from '@/types/dataAsset';
-import { parseAndSanitize } from './security/jsonSanitizer';
+  isCSVAsset,
+  isJSONAsset,
+  isSupportedDataFile,
+} from "@/types/dataAsset";
+import { parseAndSanitize } from "./security/jsonSanitizer";
 
 // ============================================================================
 // DATA STORE (In-memory storage for data assets)
@@ -41,21 +40,21 @@ const dataAssets: Map<string, DataAsset> = new Map();
 export function parseJSON(
   content: string,
   name: string,
-  options: JSONParseOptions = {}
+  options: JSONParseOptions = {},
 ): DataParseResult {
   let processedContent = content;
 
   // Strip comments if allowed
   if (options.allowComments) {
     // Remove single-line comments
-    processedContent = processedContent.replace(/\/\/.*$/gm, '');
+    processedContent = processedContent.replace(/\/\/.*$/gm, "");
     // Remove multi-line comments
-    processedContent = processedContent.replace(/\/\*[\s\S]*?\*\//g, '');
+    processedContent = processedContent.replace(/\/\*[\s\S]*?\*\//g, "");
   }
 
   // Use security-hardened JSON parser with depth/size limits
   const result = parseAndSanitize(processedContent, {
-    maxDepth: 50,           // Prevent deeply nested JSON bombs
+    maxDepth: 50, // Prevent deeply nested JSON bombs
     maxArrayLength: 100_000, // Prevent large array allocation
     maxStringLength: 10 * 1024 * 1024, // 10MB max string
     maxTotalKeys: 1_000_000, // Prevent many small objects
@@ -65,22 +64,25 @@ export function parseJSON(
   if (!result.valid) {
     return {
       success: false,
-      error: `Failed to parse JSON: ${result.error}`
+      error: `Failed to parse JSON: ${result.error}`,
     };
   }
 
   // Log any security warnings
   if (result.warnings.length > 0) {
-    console.warn(`[DataImport] Security warnings for ${name}:`, result.warnings);
+    console.warn(
+      `[DataImport] Security warnings for ${name}:`,
+      result.warnings,
+    );
   }
 
   const asset: JSONDataAsset = {
     id: `data_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
     name,
-    type: name.toLowerCase().endsWith('.mgjson') ? 'mgjson' : 'json',
+    type: name.toLowerCase().endsWith(".mgjson") ? "mgjson" : "json",
     rawContent: content,
     lastModified: Date.now(),
-    sourceData: result.data
+    sourceData: result.data,
   };
 
   return { success: true, asset };
@@ -96,13 +98,13 @@ export function parseJSON(
 export function parseCSV(
   content: string,
   name: string,
-  options: CSVParseOptions = {}
+  options: CSVParseOptions = {},
 ): DataParseResult {
   const {
-    delimiter = ',',
+    delimiter = ",",
     hasHeaders = true,
     trimWhitespace = true,
-    skipEmptyRows = true
+    skipEmptyRows = true,
   } = options;
 
   const warnings: string[] = [];
@@ -135,7 +137,7 @@ export function parseCSV(
   if (rows.length === 0) {
     return {
       success: false,
-      error: 'CSV file is empty or contains no valid data'
+      error: "CSV file is empty or contains no valid data",
     };
   }
 
@@ -147,11 +149,11 @@ export function parseCSV(
   for (let i = 0; i < dataRows.length; i++) {
     if (dataRows[i].length !== expectedColumns) {
       warnings.push(
-        `Row ${i + (hasHeaders ? 2 : 1)} has ${dataRows[i].length} columns, expected ${expectedColumns}`
+        `Row ${i + (hasHeaders ? 2 : 1)} has ${dataRows[i].length} columns, expected ${expectedColumns}`,
       );
       // Pad or trim to match
       while (dataRows[i].length < expectedColumns) {
-        dataRows[i].push('');
+        dataRows[i].push("");
       }
       if (dataRows[i].length > expectedColumns) {
         dataRows[i] = dataRows[i].slice(0, expectedColumns);
@@ -162,19 +164,19 @@ export function parseCSV(
   const asset: CSVDataAsset = {
     id: `data_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
     name,
-    type: delimiter === '\t' ? 'tsv' : 'csv',
+    type: delimiter === "\t" ? "tsv" : "csv",
     rawContent: content,
     lastModified: Date.now(),
     headers,
     rows: dataRows,
     numRows: dataRows.length + (hasHeaders ? 1 : 0), // Include header in count
-    numColumns: headers.length
+    numColumns: headers.length,
   };
 
   return {
     success: true,
     asset,
-    warnings: warnings.length > 0 ? warnings : undefined
+    warnings: warnings.length > 0 ? warnings : undefined,
   };
 }
 
@@ -184,9 +186,9 @@ export function parseCSV(
 export function parseTSV(
   content: string,
   name: string,
-  options: Omit<CSVParseOptions, 'delimiter'> = {}
+  options: Omit<CSVParseOptions, "delimiter"> = {},
 ): DataParseResult {
-  return parseCSV(content, name, { ...options, delimiter: '\t' });
+  return parseCSV(content, name, { ...options, delimiter: "\t" });
 }
 
 /**
@@ -194,7 +196,7 @@ export function parseTSV(
  */
 function parseCSVLine(line: string, delimiter: string): string[] {
   const result: string[] = [];
-  let current = '';
+  let current = "";
   let inQuotes = false;
 
   for (let i = 0; i < line.length; i++) {
@@ -219,7 +221,7 @@ function parseCSVLine(line: string, delimiter: string): string[] {
       } else if (char === delimiter) {
         // End of field
         result.push(current);
-        current = '';
+        current = "";
       } else {
         current += char;
       }
@@ -241,29 +243,29 @@ function parseCSVLine(line: string, delimiter: string): string[] {
  */
 export function parseDataFile(
   content: string,
-  filename: string
+  filename: string,
 ): DataParseResult {
   const fileType = getDataFileType(filename);
 
   if (!fileType) {
     return {
       success: false,
-      error: `Unsupported file type: ${filename}. Supported types: .json, .csv, .tsv, .mgjson`
+      error: `Unsupported file type: ${filename}. Supported types: .json, .csv, .tsv, .mgjson`,
     };
   }
 
   switch (fileType) {
-    case 'json':
-    case 'mgjson':
+    case "json":
+    case "mgjson":
       return parseJSON(content, filename);
-    case 'csv':
+    case "csv":
       return parseCSV(content, filename);
-    case 'tsv':
+    case "tsv":
       return parseTSV(content, filename);
     default:
       return {
         success: false,
-        error: `Unknown file type: ${fileType}`
+        error: `Unknown file type: ${fileType}`,
       };
   }
 }
@@ -277,7 +279,7 @@ export function parseDataFile(
  */
 export function importDataAsset(
   content: string,
-  filename: string
+  filename: string,
 ): DataParseResult {
   const result = parseDataFile(content, filename);
 
@@ -296,7 +298,7 @@ export async function importDataFromFile(file: File): Promise<DataParseResult> {
   if (!isSupportedDataFile(file.name)) {
     return {
       success: false,
-      error: `Unsupported file type: ${file.name}`
+      error: `Unsupported file type: ${file.name}`,
     };
   }
 
@@ -306,7 +308,7 @@ export async function importDataFromFile(file: File): Promise<DataParseResult> {
   } catch (error) {
     return {
       success: false,
-      error: `Failed to read file: ${error instanceof Error ? error.message : 'Unknown error'}`
+      error: `Failed to read file: ${error instanceof Error ? error.message : "Unknown error"}`,
     };
   }
 }
@@ -342,13 +344,16 @@ export function clearDataAssets(): void {
 /**
  * Reload data asset from raw content
  */
-export function reloadDataAsset(name: string, newContent?: string): DataParseResult {
+export function reloadDataAsset(
+  name: string,
+  newContent?: string,
+): DataParseResult {
   const existing = dataAssets.get(name);
 
   if (!existing) {
     return {
       success: false,
-      error: `Data asset not found: ${name}`
+      error: `Data asset not found: ${name}`,
     };
   }
 
@@ -372,7 +377,9 @@ export function reloadDataAsset(name: string, newContent?: string): DataParseRes
 /**
  * Create a footage accessor for use in expressions
  */
-export function createFootageAccessor(name: string): FootageDataAccessor | null {
+export function createFootageAccessor(
+  name: string,
+): FootageDataAccessor | null {
   const asset = getDataAsset(name);
 
   if (!asset) {
@@ -396,7 +403,7 @@ function createJSONAccessor(asset: JSONDataAsset): FootageDataAccessor {
   return {
     name: asset.name,
     type: asset.type,
-    sourceData: asset.sourceData
+    sourceData: asset.sourceData,
   };
 }
 
@@ -405,13 +412,13 @@ function createJSONAccessor(asset: JSONDataAsset): FootageDataAccessor {
  */
 function createCSVAccessor(asset: CSVDataAsset): FootageDataAccessor {
   // Convert CSV to JSON-like array for sourceData access
-  const sourceData: CSVSourceData = asset.rows.map(row => {
+  const sourceData: CSVSourceData = asset.rows.map((row) => {
     const obj: Record<string, any> = {};
     asset.headers.forEach((header, index) => {
       const value = row[index];
       // Try to parse as number
       const numValue = parseFloat(value);
-      obj[header] = isNaN(numValue) ? value : numValue;
+      obj[header] = Number.isNaN(numValue) ? value : numValue;
     });
     return obj;
   });
@@ -426,11 +433,11 @@ function createCSVAccessor(asset: CSVDataAsset): FootageDataAccessor {
 
       // Determine column index
       let colIndex: number;
-      if (typeof colRef === 'string') {
+      if (typeof colRef === "string") {
         colIndex = asset.headers.indexOf(colRef);
         if (colIndex === -1) {
           console.warn(`[DataImport] Column not found: ${colRef}`);
-          return '';
+          return "";
         }
       } else {
         colIndex = colRef;
@@ -438,30 +445,30 @@ function createCSVAccessor(asset: CSVDataAsset): FootageDataAccessor {
 
       // Row 0 = headers, Row 1+ = data
       if (rowIndex === 0) {
-        return asset.headers[colIndex] || '';
+        return asset.headers[colIndex] || "";
       }
 
       const dataRowIndex = rowIndex - 1;
       if (dataRowIndex < 0 || dataRowIndex >= asset.rows.length) {
         console.warn(`[DataImport] Row index out of bounds: ${rowIndex}`);
-        return '';
+        return "";
       }
 
       if (colIndex < 0 || colIndex >= asset.numColumns) {
         console.warn(`[DataImport] Column index out of bounds: ${colIndex}`);
-        return '';
+        return "";
       }
 
       const value = asset.rows[dataRowIndex][colIndex];
 
       // Try to parse as number
       const numValue = parseFloat(value);
-      return isNaN(numValue) ? value : numValue;
+      return Number.isNaN(numValue) ? value : numValue;
     },
 
     numRows: () => asset.numRows,
     numColumns: () => asset.numColumns,
-    headers: () => [...asset.headers]
+    headers: () => [...asset.headers],
   };
 }
 
@@ -474,9 +481,9 @@ function createCSVAccessor(asset: CSVDataAsset): FootageDataAccessor {
  */
 export function extractArrayFromJSON(
   asset: JSONDataAsset,
-  path: string
+  path: string,
 ): any[] | null {
-  const parts = path.split('.');
+  const parts = path.split(".");
   let current = asset.sourceData;
 
   for (const part of parts) {
@@ -492,11 +499,8 @@ export function extractArrayFromJSON(
 /**
  * Get value from JSON data at path
  */
-export function getJSONValue(
-  asset: JSONDataAsset,
-  path: string
-): any {
-  const parts = path.split('.');
+export function getJSONValue(asset: JSONDataAsset, path: string): any {
+  const parts = path.split(".");
   let current = asset.sourceData;
 
   for (const part of parts) {
@@ -535,11 +539,10 @@ export function countCSVRows(asset: CSVDataAsset): number {
  */
 export function getUniqueColumnValues(
   asset: CSVDataAsset,
-  column: string | number
+  column: string | number,
 ): string[] {
-  const colIndex = typeof column === 'string'
-    ? asset.headers.indexOf(column)
-    : column;
+  const colIndex =
+    typeof column === "string" ? asset.headers.indexOf(column) : column;
 
   if (colIndex === -1 || colIndex >= asset.numColumns) {
     return [];
@@ -558,11 +561,10 @@ export function getUniqueColumnValues(
  */
 export function sumCSVColumn(
   asset: CSVDataAsset,
-  column: string | number
+  column: string | number,
 ): number {
-  const colIndex = typeof column === 'string'
-    ? asset.headers.indexOf(column)
-    : column;
+  const colIndex =
+    typeof column === "string" ? asset.headers.indexOf(column) : column;
 
   if (colIndex === -1 || colIndex >= asset.numColumns) {
     return 0;
@@ -571,7 +573,7 @@ export function sumCSVColumn(
   let sum = 0;
   for (const row of asset.rows) {
     const value = parseFloat(row[colIndex]);
-    if (!isNaN(value)) {
+    if (!Number.isNaN(value)) {
       sum += value;
     }
   }
@@ -584,11 +586,10 @@ export function sumCSVColumn(
  */
 export function maxCSVColumn(
   asset: CSVDataAsset,
-  column: string | number
+  column: string | number,
 ): number {
-  const colIndex = typeof column === 'string'
-    ? asset.headers.indexOf(column)
-    : column;
+  const colIndex =
+    typeof column === "string" ? asset.headers.indexOf(column) : column;
 
   if (colIndex === -1 || colIndex >= asset.numColumns) {
     return 0;
@@ -597,7 +598,7 @@ export function maxCSVColumn(
   let max = -Infinity;
   for (const row of asset.rows) {
     const value = parseFloat(row[colIndex]);
-    if (!isNaN(value) && value > max) {
+    if (!Number.isNaN(value) && value > max) {
       max = value;
     }
   }
@@ -610,11 +611,10 @@ export function maxCSVColumn(
  */
 export function minCSVColumn(
   asset: CSVDataAsset,
-  column: string | number
+  column: string | number,
 ): number {
-  const colIndex = typeof column === 'string'
-    ? asset.headers.indexOf(column)
-    : column;
+  const colIndex =
+    typeof column === "string" ? asset.headers.indexOf(column) : column;
 
   if (colIndex === -1 || colIndex >= asset.numColumns) {
     return 0;
@@ -623,7 +623,7 @@ export function minCSVColumn(
   let min = Infinity;
   for (const row of asset.rows) {
     const value = parseFloat(row[colIndex]);
-    if (!isNaN(value) && value < min) {
+    if (!Number.isNaN(value) && value < min) {
       min = value;
     }
   }
@@ -661,5 +661,5 @@ export default {
   getUniqueColumnValues,
   sumCSVColumn,
   maxCSVColumn,
-  minCSVColumn
+  minCSVColumn,
 };

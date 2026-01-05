@@ -27,7 +27,7 @@
  * ============================================================================
  */
 
-import { useCompositorStore } from '@/stores/compositorStore';
+import { useCompositorStore } from "@/stores/compositorStore";
 
 export interface PreprocessorInfo {
   id: string;
@@ -35,12 +35,12 @@ export interface PreprocessorInfo {
   description: string;
   category: string;
   inputs: Record<string, PreprocessorInput>;
-  source?: string;  // Attribution source
-  is_video?: boolean;  // For video-specific preprocessors
+  source?: string; // Attribution source
+  is_video?: boolean; // For video-specific preprocessors
 }
 
 export interface PreprocessorInput {
-  type: 'combo' | 'int' | 'float' | 'bool' | 'string';
+  type: "combo" | "int" | "float" | "bool" | "string";
   default: any;
   min?: number;
   max?: number;
@@ -55,49 +55,68 @@ export interface PreprocessorResult {
   execution_time?: number;
 }
 
-export type PreprocessorCategory = 'depth' | 'normal' | 'pose' | 'edge' | 'lineart' | 'scribble' | 'segmentation' | 'video' | 'other';
+export type PreprocessorCategory =
+  | "depth"
+  | "normal"
+  | "pose"
+  | "edge"
+  | "lineart"
+  | "scribble"
+  | "segmentation"
+  | "video"
+  | "other";
 
 // Map generationType to preprocessor categories
 const TYPE_TO_CATEGORY: Record<string, PreprocessorCategory[]> = {
-  depth: ['depth'],
-  normal: ['normal'],
-  edge: ['edge', 'lineart', 'scribble'],
-  segment: ['segmentation'],
-  pose: ['pose', 'video'],  // Include video pose preprocessors
-  video: ['video', 'normal'],  // Video includes NormalCrafter
-  custom: ['depth', 'normal', 'pose', 'edge', 'lineart', 'scribble', 'segmentation', 'video', 'other'],
+  depth: ["depth"],
+  normal: ["normal"],
+  edge: ["edge", "lineart", "scribble"],
+  segment: ["segmentation"],
+  pose: ["pose", "video"], // Include video pose preprocessors
+  video: ["video", "normal"], // Video includes NormalCrafter
+  custom: [
+    "depth",
+    "normal",
+    "pose",
+    "edge",
+    "lineart",
+    "scribble",
+    "segmentation",
+    "video",
+    "other",
+  ],
 };
 
 // Default preprocessors for each generation type
 const DEFAULT_PREPROCESSORS: Record<string, string> = {
-  depth: 'depth_anything_v2',
-  normal: 'normal_bae',
-  edge: 'canny',
-  segment: 'oneformer_ade20k',
-  pose: 'dwpose',
-  video: 'normalcrafter',
-  custom: 'depth_anything_v2',
+  depth: "depth_anything_v2",
+  normal: "normal_bae",
+  edge: "canny",
+  segment: "oneformer_ade20k",
+  pose: "dwpose",
+  video: "normalcrafter",
+  custom: "depth_anything_v2",
 };
 
 // Attribution sources
 export const ATTRIBUTION_SOURCES = {
   controlnet_aux: {
-    name: 'comfyui_controlnet_aux',
-    repo: 'https://github.com/Fannovel16/comfyui_controlnet_aux',
-    author: 'Fannovel16',
-    license: 'Apache 2.0',
+    name: "comfyui_controlnet_aux",
+    repo: "https://github.com/Fannovel16/comfyui_controlnet_aux",
+    author: "Fannovel16",
+    license: "Apache 2.0",
   },
   normalcrafter: {
-    name: 'NormalCrafter / ComfyUI-NormalCrafterWrapper',
-    repo: 'https://github.com/Binyr/NormalCrafter | https://github.com/AIWarper/ComfyUI-NormalCrafterWrapper',
-    author: 'Binyr, AIWarper',
-    license: 'Research / MIT',
+    name: "NormalCrafter / ComfyUI-NormalCrafterWrapper",
+    repo: "https://github.com/Binyr/NormalCrafter | https://github.com/AIWarper/ComfyUI-NormalCrafterWrapper",
+    author: "Binyr, AIWarper",
+    license: "Research / MIT",
   },
   wan_animate: {
-    name: 'ComfyUI-WanAnimatePreprocess',
-    repo: 'https://github.com/kijai/ComfyUI-WanAnimatePreprocess',
-    author: 'Kijai',
-    license: 'MIT',
+    name: "ComfyUI-WanAnimatePreprocess",
+    repo: "https://github.com/kijai/ComfyUI-WanAnimatePreprocess",
+    author: "Kijai",
+    license: "MIT",
   },
 };
 
@@ -105,372 +124,396 @@ export const ATTRIBUTION_SOURCES = {
 export const PREPROCESSOR_REGISTRY: Record<string, PreprocessorInfo> = {
   // DEPTH
   depth_anything_v2: {
-    id: 'depth_anything_v2',
-    display_name: 'Depth Anything V2',
-    description: 'State-of-the-art monocular depth estimation',
-    category: 'depth',
+    id: "depth_anything_v2",
+    display_name: "Depth Anything V2",
+    description: "State-of-the-art monocular depth estimation",
+    category: "depth",
     inputs: {
-      ckpt_name: { type: 'combo', options: ['depth_anything_v2_vitl.pth', 'depth_anything_v2_vitb.pth', 'depth_anything_v2_vits.pth'], default: 'depth_anything_v2_vitl.pth' },
-      resolution: { type: 'int', default: 512, min: 64, max: 2048, step: 8 },
+      ckpt_name: {
+        type: "combo",
+        options: [
+          "depth_anything_v2_vitl.pth",
+          "depth_anything_v2_vitb.pth",
+          "depth_anything_v2_vits.pth",
+        ],
+        default: "depth_anything_v2_vitl.pth",
+      },
+      resolution: { type: "int", default: 512, min: 64, max: 2048, step: 8 },
     },
   },
   midas: {
-    id: 'midas',
-    display_name: 'MiDaS Depth',
-    description: 'MiDaS depth estimation with multiple model options',
-    category: 'depth',
+    id: "midas",
+    display_name: "MiDaS Depth",
+    description: "MiDaS depth estimation with multiple model options",
+    category: "depth",
     inputs: {
-      a: { type: 'float', default: 6.28, min: 0, max: 20 },
-      bg_threshold: { type: 'float', default: 0.1, min: 0, max: 1, step: 0.01 },
-      resolution: { type: 'int', default: 512, min: 64, max: 2048, step: 8 },
+      a: { type: "float", default: 6.28, min: 0, max: 20 },
+      bg_threshold: { type: "float", default: 0.1, min: 0, max: 1, step: 0.01 },
+      resolution: { type: "int", default: 512, min: 64, max: 2048, step: 8 },
     },
   },
   zoe_depth: {
-    id: 'zoe_depth',
-    display_name: 'ZoeDepth',
-    description: 'Zero-shot depth estimation',
-    category: 'depth',
+    id: "zoe_depth",
+    display_name: "ZoeDepth",
+    description: "Zero-shot depth estimation",
+    category: "depth",
     inputs: {
-      resolution: { type: 'int', default: 512, min: 64, max: 2048, step: 8 },
+      resolution: { type: "int", default: 512, min: 64, max: 2048, step: 8 },
     },
   },
   leres: {
-    id: 'leres',
-    display_name: 'LeReS Depth',
-    description: 'Learning to Recover 3D Scene Shape from a Single Image',
-    category: 'depth',
+    id: "leres",
+    display_name: "LeReS Depth",
+    description: "Learning to Recover 3D Scene Shape from a Single Image",
+    category: "depth",
     inputs: {
-      rm_nearest: { type: 'float', default: 0.0, min: 0, max: 1, step: 0.01 },
-      rm_background: { type: 'float', default: 0.0, min: 0, max: 1, step: 0.01 },
-      boost: { type: 'bool', default: false },
-      resolution: { type: 'int', default: 512, min: 64, max: 2048, step: 8 },
+      rm_nearest: { type: "float", default: 0.0, min: 0, max: 1, step: 0.01 },
+      rm_background: {
+        type: "float",
+        default: 0.0,
+        min: 0,
+        max: 1,
+        step: 0.01,
+      },
+      boost: { type: "bool", default: false },
+      resolution: { type: "int", default: 512, min: 64, max: 2048, step: 8 },
     },
   },
   marigold: {
-    id: 'marigold',
-    display_name: 'Marigold Depth',
-    description: 'Diffusion-based depth estimation',
-    category: 'depth',
+    id: "marigold",
+    display_name: "Marigold Depth",
+    description: "Diffusion-based depth estimation",
+    category: "depth",
     inputs: {
-      resolution: { type: 'int', default: 512, min: 64, max: 2048, step: 8 },
+      resolution: { type: "int", default: 512, min: 64, max: 2048, step: 8 },
     },
   },
   depth_fm: {
-    id: 'depth_fm',
-    display_name: 'DepthFM',
-    description: 'Fast Monocular Depth Estimation with Flow Matching',
-    category: 'depth',
+    id: "depth_fm",
+    display_name: "DepthFM",
+    description: "Fast Monocular Depth Estimation with Flow Matching",
+    category: "depth",
     inputs: {
-      resolution: { type: 'int', default: 512, min: 64, max: 2048, step: 8 },
+      resolution: { type: "int", default: 512, min: 64, max: 2048, step: 8 },
     },
   },
 
   // NORMAL
   normal_bae: {
-    id: 'normal_bae',
-    display_name: 'Normal BAE',
-    description: 'Boundary-Aware Normal estimation',
-    category: 'normal',
+    id: "normal_bae",
+    display_name: "Normal BAE",
+    description: "Boundary-Aware Normal estimation",
+    category: "normal",
     inputs: {
-      resolution: { type: 'int', default: 512, min: 64, max: 2048, step: 8 },
+      resolution: { type: "int", default: 512, min: 64, max: 2048, step: 8 },
     },
   },
   normal_dsine: {
-    id: 'normal_dsine',
-    display_name: 'DSINE Normal',
-    description: 'Rethinking Inductive Biases for Surface Normal Estimation',
-    category: 'normal',
+    id: "normal_dsine",
+    display_name: "DSINE Normal",
+    description: "Rethinking Inductive Biases for Surface Normal Estimation",
+    category: "normal",
     inputs: {
-      resolution: { type: 'int', default: 512, min: 64, max: 2048, step: 8 },
+      resolution: { type: "int", default: 512, min: 64, max: 2048, step: 8 },
     },
   },
 
   // POSE
   dwpose: {
-    id: 'dwpose',
-    display_name: 'DWPose',
-    description: 'Effective Whole-body Pose Estimation (best quality)',
-    category: 'pose',
+    id: "dwpose",
+    display_name: "DWPose",
+    description: "Effective Whole-body Pose Estimation (best quality)",
+    category: "pose",
     inputs: {
-      detect_hand: { type: 'bool', default: true },
-      detect_body: { type: 'bool', default: true },
-      detect_face: { type: 'bool', default: true },
-      resolution: { type: 'int', default: 512, min: 64, max: 2048, step: 8 },
+      detect_hand: { type: "bool", default: true },
+      detect_body: { type: "bool", default: true },
+      detect_face: { type: "bool", default: true },
+      resolution: { type: "int", default: 512, min: 64, max: 2048, step: 8 },
     },
   },
   openpose: {
-    id: 'openpose',
-    display_name: 'OpenPose',
-    description: 'Classic pose estimation',
-    category: 'pose',
+    id: "openpose",
+    display_name: "OpenPose",
+    description: "Classic pose estimation",
+    category: "pose",
     inputs: {
-      detect_hand: { type: 'bool', default: false },
-      detect_body: { type: 'bool', default: true },
-      detect_face: { type: 'bool', default: false },
-      resolution: { type: 'int', default: 512, min: 64, max: 2048, step: 8 },
+      detect_hand: { type: "bool", default: false },
+      detect_body: { type: "bool", default: true },
+      detect_face: { type: "bool", default: false },
+      resolution: { type: "int", default: 512, min: 64, max: 2048, step: 8 },
     },
   },
   animal_pose: {
-    id: 'animal_pose',
-    display_name: 'Animal Pose',
-    description: 'Pose estimation for animals',
-    category: 'pose',
+    id: "animal_pose",
+    display_name: "Animal Pose",
+    description: "Pose estimation for animals",
+    category: "pose",
     inputs: {
-      resolution: { type: 'int', default: 512, min: 64, max: 2048, step: 8 },
+      resolution: { type: "int", default: 512, min: 64, max: 2048, step: 8 },
     },
   },
   mediapipe_face: {
-    id: 'mediapipe_face',
-    display_name: 'MediaPipe Face',
-    description: 'Face mesh detection using MediaPipe',
-    category: 'pose',
+    id: "mediapipe_face",
+    display_name: "MediaPipe Face",
+    description: "Face mesh detection using MediaPipe",
+    category: "pose",
     inputs: {
-      max_faces: { type: 'int', default: 10, min: 1, max: 20 },
-      min_confidence: { type: 'float', default: 0.5, min: 0, max: 1, step: 0.01 },
-      resolution: { type: 'int', default: 512, min: 64, max: 2048, step: 8 },
+      max_faces: { type: "int", default: 10, min: 1, max: 20 },
+      min_confidence: {
+        type: "float",
+        default: 0.5,
+        min: 0,
+        max: 1,
+        step: 0.01,
+      },
+      resolution: { type: "int", default: 512, min: 64, max: 2048, step: 8 },
     },
   },
   densepose: {
-    id: 'densepose',
-    display_name: 'DensePose',
-    description: 'Dense human pose estimation',
-    category: 'pose',
+    id: "densepose",
+    display_name: "DensePose",
+    description: "Dense human pose estimation",
+    category: "pose",
     inputs: {
-      cmap: { type: 'combo', options: ['viridis', 'parula'], default: 'viridis' },
-      resolution: { type: 'int', default: 512, min: 64, max: 2048, step: 8 },
+      cmap: {
+        type: "combo",
+        options: ["viridis", "parula"],
+        default: "viridis",
+      },
+      resolution: { type: "int", default: 512, min: 64, max: 2048, step: 8 },
     },
   },
 
   // EDGE DETECTION
   canny: {
-    id: 'canny',
-    display_name: 'Canny Edge',
-    description: 'Classic Canny edge detection',
-    category: 'edge',
+    id: "canny",
+    display_name: "Canny Edge",
+    description: "Classic Canny edge detection",
+    category: "edge",
     inputs: {
-      low_threshold: { type: 'int', default: 100, min: 0, max: 255 },
-      high_threshold: { type: 'int', default: 200, min: 0, max: 255 },
-      resolution: { type: 'int', default: 512, min: 64, max: 2048, step: 8 },
+      low_threshold: { type: "int", default: 100, min: 0, max: 255 },
+      high_threshold: { type: "int", default: 200, min: 0, max: 255 },
+      resolution: { type: "int", default: 512, min: 64, max: 2048, step: 8 },
     },
   },
   hed: {
-    id: 'hed',
-    display_name: 'HED',
-    description: 'Holistically-Nested Edge Detection',
-    category: 'edge',
+    id: "hed",
+    display_name: "HED",
+    description: "Holistically-Nested Edge Detection",
+    category: "edge",
     inputs: {
-      safe: { type: 'bool', default: true },
-      resolution: { type: 'int', default: 512, min: 64, max: 2048, step: 8 },
+      safe: { type: "bool", default: true },
+      resolution: { type: "int", default: 512, min: 64, max: 2048, step: 8 },
     },
   },
   softedge_hed: {
-    id: 'softedge_hed',
-    display_name: 'Soft Edge HED',
-    description: 'Soft edge variant of HED',
-    category: 'edge',
+    id: "softedge_hed",
+    display_name: "Soft Edge HED",
+    description: "Soft edge variant of HED",
+    category: "edge",
     inputs: {
-      safe: { type: 'bool', default: true },
-      resolution: { type: 'int', default: 512, min: 64, max: 2048, step: 8 },
+      safe: { type: "bool", default: true },
+      resolution: { type: "int", default: 512, min: 64, max: 2048, step: 8 },
     },
   },
   pidinet: {
-    id: 'pidinet',
-    display_name: 'PidiNet',
-    description: 'Pixel Difference Networks for edge detection',
-    category: 'edge',
+    id: "pidinet",
+    display_name: "PidiNet",
+    description: "Pixel Difference Networks for edge detection",
+    category: "edge",
     inputs: {
-      safe: { type: 'bool', default: true },
-      resolution: { type: 'int', default: 512, min: 64, max: 2048, step: 8 },
+      safe: { type: "bool", default: true },
+      resolution: { type: "int", default: 512, min: 64, max: 2048, step: 8 },
     },
   },
   softedge_pidinet: {
-    id: 'softedge_pidinet',
-    display_name: 'Soft Edge PidiNet',
-    description: 'Soft edge variant of PidiNet',
-    category: 'edge',
+    id: "softedge_pidinet",
+    display_name: "Soft Edge PidiNet",
+    description: "Soft edge variant of PidiNet",
+    category: "edge",
     inputs: {
-      safe: { type: 'bool', default: true },
-      resolution: { type: 'int', default: 512, min: 64, max: 2048, step: 8 },
+      safe: { type: "bool", default: true },
+      resolution: { type: "int", default: 512, min: 64, max: 2048, step: 8 },
     },
   },
   teed: {
-    id: 'teed',
-    display_name: 'TEED',
-    description: 'Tiny and Efficient Edge Detector',
-    category: 'edge',
+    id: "teed",
+    display_name: "TEED",
+    description: "Tiny and Efficient Edge Detector",
+    category: "edge",
     inputs: {
-      safe_steps: { type: 'int', default: 2, min: 0, max: 10 },
-      resolution: { type: 'int', default: 512, min: 64, max: 2048, step: 8 },
+      safe_steps: { type: "int", default: 2, min: 0, max: 10 },
+      resolution: { type: "int", default: 512, min: 64, max: 2048, step: 8 },
     },
   },
 
   // LINEART
   lineart: {
-    id: 'lineart',
-    display_name: 'LineArt',
-    description: 'Realistic lineart extraction',
-    category: 'lineart',
+    id: "lineart",
+    display_name: "LineArt",
+    description: "Realistic lineart extraction",
+    category: "lineart",
     inputs: {
-      coarse: { type: 'bool', default: false },
-      resolution: { type: 'int', default: 512, min: 64, max: 2048, step: 8 },
+      coarse: { type: "bool", default: false },
+      resolution: { type: "int", default: 512, min: 64, max: 2048, step: 8 },
     },
   },
   lineart_coarse: {
-    id: 'lineart_coarse',
-    display_name: 'LineArt Coarse',
-    description: 'Coarse lineart extraction',
-    category: 'lineart',
+    id: "lineart_coarse",
+    display_name: "LineArt Coarse",
+    description: "Coarse lineart extraction",
+    category: "lineart",
     inputs: {
-      resolution: { type: 'int', default: 512, min: 64, max: 2048, step: 8 },
+      resolution: { type: "int", default: 512, min: 64, max: 2048, step: 8 },
     },
   },
   lineart_anime: {
-    id: 'lineart_anime',
-    display_name: 'LineArt Anime',
-    description: 'Anime-style lineart extraction',
-    category: 'lineart',
+    id: "lineart_anime",
+    display_name: "LineArt Anime",
+    description: "Anime-style lineart extraction",
+    category: "lineart",
     inputs: {
-      resolution: { type: 'int', default: 512, min: 64, max: 2048, step: 8 },
+      resolution: { type: "int", default: 512, min: 64, max: 2048, step: 8 },
     },
   },
   lineart_manga: {
-    id: 'lineart_manga',
-    display_name: 'LineArt Manga',
-    description: 'Manga-style lineart extraction',
-    category: 'lineart',
+    id: "lineart_manga",
+    display_name: "LineArt Manga",
+    description: "Manga-style lineart extraction",
+    category: "lineart",
     inputs: {
-      resolution: { type: 'int', default: 512, min: 64, max: 2048, step: 8 },
+      resolution: { type: "int", default: 512, min: 64, max: 2048, step: 8 },
     },
   },
   anime_face_segment: {
-    id: 'anime_face_segment',
-    display_name: 'Anime Face Segment',
-    description: 'Anime face segmentation',
-    category: 'lineart',
+    id: "anime_face_segment",
+    display_name: "Anime Face Segment",
+    description: "Anime face segmentation",
+    category: "lineart",
     inputs: {
-      resolution: { type: 'int', default: 512, min: 64, max: 2048, step: 8 },
+      resolution: { type: "int", default: 512, min: 64, max: 2048, step: 8 },
     },
   },
 
   // SCRIBBLE
   scribble_hed: {
-    id: 'scribble_hed',
-    display_name: 'Scribble HED',
-    description: 'HED-based scribble extraction',
-    category: 'scribble',
+    id: "scribble_hed",
+    display_name: "Scribble HED",
+    description: "HED-based scribble extraction",
+    category: "scribble",
     inputs: {
-      safe: { type: 'bool', default: true },
-      resolution: { type: 'int', default: 512, min: 64, max: 2048, step: 8 },
+      safe: { type: "bool", default: true },
+      resolution: { type: "int", default: 512, min: 64, max: 2048, step: 8 },
     },
   },
   scribble_pidinet: {
-    id: 'scribble_pidinet',
-    display_name: 'Scribble PidiNet',
-    description: 'PidiNet-based scribble extraction',
-    category: 'scribble',
+    id: "scribble_pidinet",
+    display_name: "Scribble PidiNet",
+    description: "PidiNet-based scribble extraction",
+    category: "scribble",
     inputs: {
-      safe: { type: 'bool', default: true },
-      resolution: { type: 'int', default: 512, min: 64, max: 2048, step: 8 },
+      safe: { type: "bool", default: true },
+      resolution: { type: "int", default: 512, min: 64, max: 2048, step: 8 },
     },
   },
   scribble_xdog: {
-    id: 'scribble_xdog',
-    display_name: 'Scribble XDoG',
-    description: 'Extended Difference of Gaussians scribble',
-    category: 'scribble',
+    id: "scribble_xdog",
+    display_name: "Scribble XDoG",
+    description: "Extended Difference of Gaussians scribble",
+    category: "scribble",
     inputs: {
-      threshold: { type: 'int', default: 32, min: 0, max: 255 },
-      resolution: { type: 'int', default: 512, min: 64, max: 2048, step: 8 },
+      threshold: { type: "int", default: 32, min: 0, max: 255 },
+      resolution: { type: "int", default: 512, min: 64, max: 2048, step: 8 },
     },
   },
   binary: {
-    id: 'binary',
-    display_name: 'Binary',
-    description: 'Binary threshold conversion',
-    category: 'scribble',
+    id: "binary",
+    display_name: "Binary",
+    description: "Binary threshold conversion",
+    category: "scribble",
     inputs: {
-      bin_threshold: { type: 'int', default: 100, min: 0, max: 255 },
-      resolution: { type: 'int', default: 512, min: 64, max: 2048, step: 8 },
+      bin_threshold: { type: "int", default: 100, min: 0, max: 255 },
+      resolution: { type: "int", default: 512, min: 64, max: 2048, step: 8 },
     },
   },
 
   // SEGMENTATION
   sam: {
-    id: 'sam',
-    display_name: 'SAM',
-    description: 'Segment Anything Model',
-    category: 'segmentation',
+    id: "sam",
+    display_name: "SAM",
+    description: "Segment Anything Model",
+    category: "segmentation",
     inputs: {
-      resolution: { type: 'int', default: 512, min: 64, max: 2048, step: 8 },
+      resolution: { type: "int", default: 512, min: 64, max: 2048, step: 8 },
     },
   },
   oneformer_ade20k: {
-    id: 'oneformer_ade20k',
-    display_name: 'OneFormer ADE20K',
-    description: 'OneFormer trained on ADE20K (150 classes)',
-    category: 'segmentation',
+    id: "oneformer_ade20k",
+    display_name: "OneFormer ADE20K",
+    description: "OneFormer trained on ADE20K (150 classes)",
+    category: "segmentation",
     inputs: {
-      resolution: { type: 'int', default: 512, min: 64, max: 2048, step: 8 },
+      resolution: { type: "int", default: 512, min: 64, max: 2048, step: 8 },
     },
   },
   oneformer_coco: {
-    id: 'oneformer_coco',
-    display_name: 'OneFormer COCO',
-    description: 'OneFormer trained on COCO (133 classes)',
-    category: 'segmentation',
+    id: "oneformer_coco",
+    display_name: "OneFormer COCO",
+    description: "OneFormer trained on COCO (133 classes)",
+    category: "segmentation",
     inputs: {
-      resolution: { type: 'int', default: 512, min: 64, max: 2048, step: 8 },
+      resolution: { type: "int", default: 512, min: 64, max: 2048, step: 8 },
     },
   },
   uniformer: {
-    id: 'uniformer',
-    display_name: 'UniFormer',
-    description: 'Unified segmentation model',
-    category: 'segmentation',
+    id: "uniformer",
+    display_name: "UniFormer",
+    description: "Unified segmentation model",
+    category: "segmentation",
     inputs: {
-      resolution: { type: 'int', default: 512, min: 64, max: 2048, step: 8 },
+      resolution: { type: "int", default: 512, min: 64, max: 2048, step: 8 },
     },
   },
   color_shuffle: {
-    id: 'color_shuffle',
-    display_name: 'Color Shuffle',
-    description: 'Shuffle colors for data augmentation',
-    category: 'segmentation',
+    id: "color_shuffle",
+    display_name: "Color Shuffle",
+    description: "Shuffle colors for data augmentation",
+    category: "segmentation",
     inputs: {
-      resolution: { type: 'int', default: 512, min: 64, max: 2048, step: 8 },
+      resolution: { type: "int", default: 512, min: 64, max: 2048, step: 8 },
     },
   },
 
   // OTHER
   mlsd: {
-    id: 'mlsd',
-    display_name: 'M-LSD',
-    description: 'Mobile Line Segment Detection',
-    category: 'other',
+    id: "mlsd",
+    display_name: "M-LSD",
+    description: "Mobile Line Segment Detection",
+    category: "other",
     inputs: {
-      score_thr: { type: 'float', default: 0.1, min: 0, max: 1, step: 0.01 },
-      dist_thr: { type: 'float', default: 0.1, min: 0, max: 1, step: 0.01 },
-      resolution: { type: 'int', default: 512, min: 64, max: 2048, step: 8 },
+      score_thr: { type: "float", default: 0.1, min: 0, max: 1, step: 0.01 },
+      dist_thr: { type: "float", default: 0.1, min: 0, max: 1, step: 0.01 },
+      resolution: { type: "int", default: 512, min: 64, max: 2048, step: 8 },
     },
   },
   tile: {
-    id: 'tile',
-    display_name: 'Tile',
-    description: 'Tile preprocessor for upscaling workflows',
-    category: 'other',
+    id: "tile",
+    display_name: "Tile",
+    description: "Tile preprocessor for upscaling workflows",
+    category: "other",
     inputs: {
-      pyrUp_iters: { type: 'int', default: 3, min: 0, max: 10 },
-      resolution: { type: 'int', default: 512, min: 64, max: 2048, step: 8 },
+      pyrUp_iters: { type: "int", default: 3, min: 0, max: 10 },
+      resolution: { type: "int", default: 512, min: 64, max: 2048, step: 8 },
     },
   },
   inpaint: {
-    id: 'inpaint',
-    display_name: 'Inpaint Preprocessor',
-    description: 'Prepare mask for inpainting',
-    category: 'other',
-    source: 'controlnet_aux',
+    id: "inpaint",
+    display_name: "Inpaint Preprocessor",
+    description: "Prepare mask for inpainting",
+    category: "other",
+    source: "controlnet_aux",
     inputs: {
-      resolution: { type: 'int', default: 512, min: 64, max: 2048, step: 8 },
+      resolution: { type: "int", default: 512, min: 64, max: 2048, step: 8 },
     },
   },
 
@@ -479,21 +522,22 @@ export const PREPROCESSOR_REGISTRY: Record<string, PreprocessorInfo> = {
   // Video-to-Normal diffusion model - temporally consistent normal sequences
   // ========================================================================
   normalcrafter: {
-    id: 'normalcrafter',
-    display_name: 'NormalCrafter (Video)',
-    description: 'Temporally consistent normal maps from video - ICCV 2025 (Binyr)',
-    category: 'normal',
-    source: 'normalcrafter',
+    id: "normalcrafter",
+    display_name: "NormalCrafter (Video)",
+    description:
+      "Temporally consistent normal maps from video - ICCV 2025 (Binyr)",
+    category: "normal",
+    source: "normalcrafter",
     is_video: true,
     inputs: {
-      seed: { type: 'int', default: 42, min: 0, max: 2147483647 },
-      max_res_dimension: { type: 'int', default: 1024, min: 256, max: 2048 },
-      window_size: { type: 'int', default: 14, min: 1, max: 32 },
-      time_step_size: { type: 'int', default: 10, min: 1, max: 20 },
-      decode_chunk_size: { type: 'int', default: 4, min: 1, max: 16 },
-      fps_for_time_ids: { type: 'int', default: 7, min: 1, max: 60 },
-      motion_bucket_id: { type: 'int', default: 127, min: 0, max: 255 },
-      noise_aug_strength: { type: 'float', default: 0.0, min: 0.0, max: 1.0 },
+      seed: { type: "int", default: 42, min: 0, max: 2147483647 },
+      max_res_dimension: { type: "int", default: 1024, min: 256, max: 2048 },
+      window_size: { type: "int", default: 14, min: 1, max: 32 },
+      time_step_size: { type: "int", default: 10, min: 1, max: 20 },
+      decode_chunk_size: { type: "int", default: 4, min: 1, max: 16 },
+      fps_for_time_ids: { type: "int", default: 7, min: 1, max: 60 },
+      motion_bucket_id: { type: "int", default: 127, min: 0, max: 255 },
+      noise_aug_strength: { type: "float", default: 0.0, min: 0.0, max: 1.0 },
     },
   },
 
@@ -502,45 +546,57 @@ export const PREPROCESSOR_REGISTRY: Record<string, PreprocessorInfo> = {
   // For Wan 2.2 video animation preprocessing
   // ========================================================================
   vitpose: {
-    id: 'vitpose',
-    display_name: 'ViTPose + Face (Video)',
-    description: 'ViTPose detection with face for video animation (Kijai)',
-    category: 'video',
-    source: 'wan_animate',
+    id: "vitpose",
+    display_name: "ViTPose + Face (Video)",
+    description: "ViTPose detection with face for video animation (Kijai)",
+    category: "video",
+    source: "wan_animate",
     is_video: true,
     inputs: {
-      width: { type: 'int', default: 832, min: 64, max: 2048 },
-      height: { type: 'int', default: 480, min: 64, max: 2048 },
+      width: { type: "int", default: 832, min: 64, max: 2048 },
+      height: { type: "int", default: 480, min: 64, max: 2048 },
     },
   },
   vitpose_draw: {
-    id: 'vitpose_draw',
-    display_name: 'Draw ViTPose Skeleton',
-    description: 'Render ViTPose skeleton visualization (Kijai)',
-    category: 'video',
-    source: 'wan_animate',
+    id: "vitpose_draw",
+    display_name: "Draw ViTPose Skeleton",
+    description: "Render ViTPose skeleton visualization (Kijai)",
+    category: "video",
+    source: "wan_animate",
     inputs: {
-      width: { type: 'int', default: 832, min: 64, max: 2048 },
-      height: { type: 'int', default: 480, min: 64, max: 2048 },
-      retarget_padding: { type: 'int', default: 16, min: 0, max: 512 },
-      body_stick_width: { type: 'int', default: -1, min: -1, max: 20 },
-      hand_stick_width: { type: 'int', default: -1, min: -1, max: 20 },
-      draw_head: { type: 'bool', default: true },
+      width: { type: "int", default: 832, min: 64, max: 2048 },
+      height: { type: "int", default: 480, min: 64, max: 2048 },
+      retarget_padding: { type: "int", default: 16, min: 0, max: 512 },
+      body_stick_width: { type: "int", default: -1, min: -1, max: 20 },
+      hand_stick_width: { type: "int", default: -1, min: -1, max: 20 },
+      draw_head: { type: "bool", default: true },
     },
   },
   vitpose_one_to_all: {
-    id: 'vitpose_one_to_all',
-    display_name: 'Pose One-to-All Animation',
-    description: 'Transfer single pose to video sequence (Kijai)',
-    category: 'video',
-    source: 'wan_animate',
+    id: "vitpose_one_to_all",
+    display_name: "Pose One-to-All Animation",
+    description: "Transfer single pose to video sequence (Kijai)",
+    category: "video",
+    source: "wan_animate",
     is_video: true,
     inputs: {
-      width: { type: 'int', default: 832, min: 64, max: 2048, step: 2 },
-      height: { type: 'int', default: 480, min: 64, max: 2048, step: 2 },
-      align_to: { type: 'combo', options: ['ref', 'pose', 'none'], default: 'ref' },
-      draw_face_points: { type: 'combo', options: ['full', 'weak', 'none'], default: 'full' },
-      draw_head: { type: 'combo', options: ['full', 'weak', 'none'], default: 'full' },
+      width: { type: "int", default: 832, min: 64, max: 2048, step: 2 },
+      height: { type: "int", default: 480, min: 64, max: 2048, step: 2 },
+      align_to: {
+        type: "combo",
+        options: ["ref", "pose", "none"],
+        default: "ref",
+      },
+      draw_face_points: {
+        type: "combo",
+        options: ["full", "weak", "none"],
+        default: "full",
+      },
+      draw_head: {
+        type: "combo",
+        options: ["full", "weak", "none"],
+        default: "full",
+      },
     },
   },
 };
@@ -548,17 +604,24 @@ export const PREPROCESSOR_REGISTRY: Record<string, PreprocessorInfo> = {
 /**
  * Get preprocessors by category
  */
-export function getPreprocessorsByCategory(category: PreprocessorCategory): PreprocessorInfo[] {
-  return Object.values(PREPROCESSOR_REGISTRY).filter(p => p.category === category);
+export function getPreprocessorsByCategory(
+  category: PreprocessorCategory,
+): PreprocessorInfo[] {
+  return Object.values(PREPROCESSOR_REGISTRY).filter(
+    (p) => p.category === category,
+  );
 }
 
 /**
  * Get preprocessors matching a generation type
  */
-export function getPreprocessorsForType(generationType: string): PreprocessorInfo[] {
-  const categories = TYPE_TO_CATEGORY[generationType] || TYPE_TO_CATEGORY.custom;
-  return Object.values(PREPROCESSOR_REGISTRY).filter(p =>
-    categories.includes(p.category as PreprocessorCategory)
+export function getPreprocessorsForType(
+  generationType: string,
+): PreprocessorInfo[] {
+  const categories =
+    TYPE_TO_CATEGORY[generationType] || TYPE_TO_CATEGORY.custom;
+  return Object.values(PREPROCESSOR_REGISTRY).filter((p) =>
+    categories.includes(p.category as PreprocessorCategory),
   );
 }
 
@@ -566,7 +629,7 @@ export function getPreprocessorsForType(generationType: string): PreprocessorInf
  * Get default preprocessor for a generation type
  */
 export function getDefaultPreprocessor(generationType: string): string {
-  return DEFAULT_PREPROCESSORS[generationType] || 'depth_anything_v2';
+  return DEFAULT_PREPROCESSORS[generationType] || "depth_anything_v2";
 }
 
 /**
@@ -574,14 +637,17 @@ export function getDefaultPreprocessor(generationType: string): string {
  */
 export async function fetchPreprocessorList(): Promise<PreprocessorInfo[]> {
   try {
-    const response = await fetch('/lattice/preprocessors/list');
+    const response = await fetch("/lattice/preprocessors/list");
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
     const data = await response.json();
     return data.preprocessors || [];
   } catch (error) {
-    console.warn('[PreprocessorService] Failed to fetch from backend, using local registry:', error);
+    console.warn(
+      "[PreprocessorService] Failed to fetch from backend, using local registry:",
+      error,
+    );
     return Object.values(PREPROCESSOR_REGISTRY);
   }
 }
@@ -589,7 +655,9 @@ export async function fetchPreprocessorList(): Promise<PreprocessorInfo[]> {
 /**
  * Fetch preprocessor info from backend
  */
-export async function fetchPreprocessorInfo(id: string): Promise<PreprocessorInfo | null> {
+export async function fetchPreprocessorInfo(
+  id: string,
+): Promise<PreprocessorInfo | null> {
   try {
     const response = await fetch(`/lattice/preprocessors/${id}/info`);
     if (!response.ok) {
@@ -597,7 +665,10 @@ export async function fetchPreprocessorInfo(id: string): Promise<PreprocessorInf
     }
     return await response.json();
   } catch (error) {
-    console.warn(`[PreprocessorService] Failed to fetch info for ${id}, using local registry:`, error);
+    console.warn(
+      `[PreprocessorService] Failed to fetch info for ${id}, using local registry:`,
+      error,
+    );
     return PREPROCESSOR_REGISTRY[id] || null;
   }
 }
@@ -613,28 +684,33 @@ export async function fetchPreprocessorInfo(id: string): Promise<PreprocessorInf
 export async function executePreprocessor(
   preprocessorId: string,
   imageData: string,
-  options: Record<string, any> = {}
+  options: Record<string, any> = {},
 ): Promise<PreprocessorResult> {
   const startTime = Date.now();
 
   try {
     // Strip data: prefix if present
-    const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
+    const base64Data = imageData.replace(/^data:image\/\w+;base64,/, "");
 
-    const response = await fetch(`/lattice/preprocessors/${preprocessorId}/execute`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+    const response = await fetch(
+      `/lattice/preprocessors/${preprocessorId}/execute`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          image: base64Data,
+          options: options,
+        }),
       },
-      body: JSON.stringify({
-        image: base64Data,
-        options: options,
-      }),
-    });
+    );
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+      throw new Error(
+        errorData.error || `HTTP ${response.status}: ${response.statusText}`,
+      );
     }
 
     const result = await response.json();
@@ -647,7 +723,7 @@ export async function executePreprocessor(
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? error.message : "Unknown error",
       execution_time: Date.now() - startTime,
     };
   }
@@ -660,27 +736,27 @@ export async function executePreprocessor(
 export async function renderLayerToImage(
   layerId: string,
   frame: number,
-  resolution: number = 512
+  resolution: number = 512,
 ): Promise<string | null> {
   try {
     // Get the canvas from the engine
     const engine = (window as any).__latticeEngine;
     if (!engine) {
-      console.error('[PreprocessorService] Engine not available');
+      console.error("[PreprocessorService] Engine not available");
       return null;
     }
 
     // Render the specific layer
     const canvas = await engine.renderLayerToCanvas(layerId, frame, resolution);
     if (!canvas) {
-      console.error('[PreprocessorService] Failed to render layer');
+      console.error("[PreprocessorService] Failed to render layer");
       return null;
     }
 
     // Convert to base64
-    return canvas.toDataURL('image/png');
+    return canvas.toDataURL("image/png");
   } catch (error) {
-    console.error('[PreprocessorService] Error rendering layer:', error);
+    console.error("[PreprocessorService] Error rendering layer:", error);
     return null;
   }
 }
@@ -691,48 +767,64 @@ export async function renderLayerToImage(
  */
 export async function generateFromLayer(
   sourceLayerId: string,
-  targetLayerId: string,
+  _targetLayerId: string,
   preprocessorId: string,
   options: Record<string, any> = {},
   frame: number = 0,
-  onProgress?: (status: string) => void
+  onProgress?: (status: string) => void,
 ): Promise<{
   success: boolean;
   assetId?: string;
   error?: string;
 }> {
   try {
-    onProgress?.('Rendering source layer...');
+    onProgress?.("Rendering source layer...");
 
     // Get source layer image
-    const sourceImage = await renderLayerToImage(sourceLayerId, frame, options.resolution || 512);
+    const sourceImage = await renderLayerToImage(
+      sourceLayerId,
+      frame,
+      options.resolution || 512,
+    );
     if (!sourceImage) {
-      return { success: false, error: 'Failed to render source layer' };
+      return { success: false, error: "Failed to render source layer" };
     }
 
-    onProgress?.('Processing with ' + (PREPROCESSOR_REGISTRY[preprocessorId]?.display_name || preprocessorId) + '...');
+    onProgress?.(
+      "Processing with " +
+        (PREPROCESSOR_REGISTRY[preprocessorId]?.display_name ||
+          preprocessorId) +
+        "...",
+    );
 
     // Execute preprocessor
-    const result = await executePreprocessor(preprocessorId, sourceImage, options);
+    const result = await executePreprocessor(
+      preprocessorId,
+      sourceImage,
+      options,
+    );
 
     if (!result.success || !result.result_image) {
-      return { success: false, error: result.error || 'Preprocessor failed' };
+      return { success: false, error: result.error || "Preprocessor failed" };
     }
 
-    onProgress?.('Creating asset...');
+    onProgress?.("Creating asset...");
 
     // Create asset from result
-    const assetId = await createAssetFromBase64(result.result_image, `generated_${preprocessorId}_${Date.now()}.png`);
+    const assetId = await createAssetFromBase64(
+      result.result_image,
+      `generated_${preprocessorId}_${Date.now()}.png`,
+    );
 
     if (!assetId) {
-      return { success: false, error: 'Failed to create asset' };
+      return { success: false, error: "Failed to create asset" };
     }
 
     return { success: true, assetId };
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : "Unknown error",
     };
   }
 }
@@ -740,7 +832,10 @@ export async function generateFromLayer(
 /**
  * Create an asset from base64 image data
  */
-async function createAssetFromBase64(base64Data: string, filename: string): Promise<string | null> {
+async function createAssetFromBase64(
+  base64Data: string,
+  filename: string,
+): Promise<string | null> {
   try {
     const store = useCompositorStore();
 
@@ -748,13 +843,15 @@ async function createAssetFromBase64(base64Data: string, filename: string): Prom
     const assetId = `generated_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
 
     // Get image dimensions from the base64 data
-    const dimensions = await getImageDimensions(`data:image/png;base64,${base64Data}`);
+    const dimensions = await getImageDimensions(
+      `data:image/png;base64,${base64Data}`,
+    );
 
     // Create the asset reference
     const asset = {
       id: assetId,
-      type: 'image' as const, // Generated images are stored as image assets
-      source: 'generated' as const,
+      type: "image" as const, // Generated images are stored as image assets
+      source: "generated" as const,
       width: dimensions.width,
       height: dimensions.height,
       data: `data:image/png;base64,${base64Data}`,
@@ -766,7 +863,7 @@ async function createAssetFromBase64(base64Data: string, filename: string): Prom
 
     return assetId;
   } catch (error) {
-    console.error('[PreprocessorService] Error creating asset:', error);
+    console.error("[PreprocessorService] Error creating asset:", error);
     return null;
   }
 }
@@ -774,8 +871,10 @@ async function createAssetFromBase64(base64Data: string, filename: string): Prom
 /**
  * Get image dimensions from a data URL
  */
-function getImageDimensions(dataUrl: string): Promise<{ width: number; height: number }> {
-  return new Promise((resolve, reject) => {
+function getImageDimensions(
+  dataUrl: string,
+): Promise<{ width: number; height: number }> {
+  return new Promise((resolve, _reject) => {
     const img = new Image();
     img.onload = () => {
       resolve({ width: img.width, height: img.height });

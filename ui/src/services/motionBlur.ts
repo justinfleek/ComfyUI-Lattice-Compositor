@@ -9,54 +9,52 @@
  * - Shutter Angle/Samples control
  */
 
-import type { AnimatableProperty } from '@/types/project';
-
 // ============================================================================
 // TYPES
 // ============================================================================
 
 export type MotionBlurType =
-  | 'none'           // No motion blur
-  | 'standard'       // Standard AE motion blur (shutter-based)
-  | 'pixel'          // Pixel Motion Blur (analyzes frame differences)
-  | 'directional'    // Directional Blur (single direction)
-  | 'radial'         // Radial Blur (zoom/spin from center)
-  | 'vector'         // Vector Motion Blur (uses velocity data)
-  | 'adaptive';      // Adaptive (auto-selects based on motion)
+  | "none" // No motion blur
+  | "standard" // Standard AE motion blur (shutter-based)
+  | "pixel" // Pixel Motion Blur (analyzes frame differences)
+  | "directional" // Directional Blur (single direction)
+  | "radial" // Radial Blur (zoom/spin from center)
+  | "vector" // Vector Motion Blur (uses velocity data)
+  | "adaptive"; // Adaptive (auto-selects based on motion)
 
-export type RadialBlurMode = 'spin' | 'zoom';
+export type RadialBlurMode = "spin" | "zoom";
 
 export interface MotionBlurSettings {
   enabled: boolean;
   type: MotionBlurType;
 
   // Standard/Vector blur settings
-  shutterAngle: number;         // 0-720 degrees (180 = standard film, 360 = full exposure)
-  shutterPhase: number;         // -180 to 180 degrees (timing offset)
-  samplesPerFrame: number;      // 2-64 (quality vs performance)
+  shutterAngle: number; // 0-720 degrees (180 = standard film, 360 = full exposure)
+  shutterPhase: number; // -180 to 180 degrees (timing offset)
+  samplesPerFrame: number; // 2-64 (quality vs performance)
 
   // Pixel Motion Blur settings
-  pixelBlurLength: number;      // 0-100% blur intensity
-  vectorDetail: number;         // 1-100 motion vector precision
+  pixelBlurLength: number; // 0-100% blur intensity
+  vectorDetail: number; // 1-100 motion vector precision
 
   // Directional Blur settings
-  direction: number;            // 0-360 degrees
-  blurLength: number;           // Pixels of blur
+  direction: number; // 0-360 degrees
+  blurLength: number; // Pixels of blur
 
   // Radial Blur settings
-  radialMode: RadialBlurMode;   // 'spin' or 'zoom'
-  radialAmount: number;         // 0-100
-  radialCenterX: number;        // 0-1 normalized
-  radialCenterY: number;        // 0-1 normalized
+  radialMode: RadialBlurMode; // 'spin' or 'zoom'
+  radialAmount: number; // 0-100
+  radialCenterX: number; // 0-1 normalized
+  radialCenterY: number; // 0-1 normalized
 
   // Advanced settings
-  adaptiveThreshold: number;    // Min velocity for blur (px/frame)
-  motionBlurQuality: 'draft' | 'normal' | 'high';
+  adaptiveThreshold: number; // Min velocity for blur (px/frame)
+  motionBlurQuality: "draft" | "normal" | "high";
   useGPU: boolean;
 
   // Composition fps for preset enforcement (optional)
   // When set, suggestSettings() will validate against this fps
-  targetFps?: number;           // Composition fps these settings were tuned for
+  targetFps?: number; // Composition fps these settings were tuned for
 }
 
 export interface VelocityData {
@@ -79,7 +77,7 @@ export interface MotionBlurFrame {
 export function createDefaultMotionBlurSettings(): MotionBlurSettings {
   return {
     enabled: false,
-    type: 'standard',
+    type: "standard",
     shutterAngle: 180,
     shutterPhase: -90,
     samplesPerFrame: 16,
@@ -87,12 +85,12 @@ export function createDefaultMotionBlurSettings(): MotionBlurSettings {
     vectorDetail: 50,
     direction: 0,
     blurLength: 10,
-    radialMode: 'zoom',
+    radialMode: "zoom",
     radialAmount: 50,
     radialCenterX: 0.5,
     radialCenterY: 0.5,
     adaptiveThreshold: 2,
-    motionBlurQuality: 'normal',
+    motionBlurQuality: "normal",
     useGPU: true,
   };
 }
@@ -108,17 +106,20 @@ export class MotionBlurProcessor {
 
   // Cached canvases for compositing
   private workCanvas: OffscreenCanvas;
-  private workCtx: OffscreenCanvasRenderingContext2D;
   private outputCanvas: OffscreenCanvas;
   private outputCtx: OffscreenCanvasRenderingContext2D;
 
-  constructor(width: number, height: number, settings?: Partial<MotionBlurSettings>) {
+  constructor(
+    width: number,
+    height: number,
+    settings?: Partial<MotionBlurSettings>,
+  ) {
     this.settings = { ...createDefaultMotionBlurSettings(), ...settings };
 
     this.workCanvas = new OffscreenCanvas(width, height);
-    this.workCtx = this.workCanvas.getContext('2d')!;
+    this.workCtx = this.workCanvas.getContext("2d")!;
     this.outputCanvas = new OffscreenCanvas(width, height);
-    this.outputCtx = this.outputCanvas.getContext('2d')!;
+    this.outputCtx = this.outputCanvas.getContext("2d")!;
   }
 
   // ============================================================================
@@ -135,9 +136,9 @@ export class MotionBlurProcessor {
 
   resize(width: number, height: number): void {
     this.workCanvas = new OffscreenCanvas(width, height);
-    this.workCtx = this.workCanvas.getContext('2d')!;
+    this.workCtx = this.workCanvas.getContext("2d")!;
     this.outputCanvas = new OffscreenCanvas(width, height);
-    this.outputCtx = this.outputCanvas.getContext('2d')!;
+    this.outputCtx = this.outputCanvas.getContext("2d")!;
     this.frameBuffer = [];
   }
 
@@ -149,15 +150,32 @@ export class MotionBlurProcessor {
    * Calculate velocity from transform changes between frames
    */
   calculateVelocity(
-    prevTransform: { x: number; y: number; rotation: number; scaleX: number; scaleY: number },
-    currTransform: { x: number; y: number; rotation: number; scaleX: number; scaleY: number },
-    deltaTime: number = 1
+    prevTransform: {
+      x: number;
+      y: number;
+      rotation: number;
+      scaleX: number;
+      scaleY: number;
+    },
+    currTransform: {
+      x: number;
+      y: number;
+      rotation: number;
+      scaleX: number;
+      scaleY: number;
+    },
+    deltaTime: number = 1,
   ): VelocityData {
     return {
       x: (currTransform.x - prevTransform.x) / deltaTime,
       y: (currTransform.y - prevTransform.y) / deltaTime,
       rotation: (currTransform.rotation - prevTransform.rotation) / deltaTime,
-      scale: ((currTransform.scaleX - prevTransform.scaleX) + (currTransform.scaleY - prevTransform.scaleY)) / 2 / deltaTime,
+      scale:
+        (currTransform.scaleX -
+          prevTransform.scaleX +
+          (currTransform.scaleY - prevTransform.scaleY)) /
+        2 /
+        deltaTime,
     };
   }
 
@@ -178,11 +196,16 @@ export class MotionBlurProcessor {
   applyMotionBlur(
     sourceCanvas: OffscreenCanvas | HTMLCanvasElement,
     velocity: VelocityData,
-    frame: number
+    frame: number,
   ): OffscreenCanvas {
-    if (!this.settings.enabled || this.settings.type === 'none') {
+    if (!this.settings.enabled || this.settings.type === "none") {
       // Return copy of source
-      this.outputCtx.clearRect(0, 0, this.outputCanvas.width, this.outputCanvas.height);
+      this.outputCtx.clearRect(
+        0,
+        0,
+        this.outputCanvas.width,
+        this.outputCanvas.height,
+      );
       this.outputCtx.drawImage(sourceCanvas, 0, 0);
       return this.outputCanvas;
     }
@@ -191,17 +214,17 @@ export class MotionBlurProcessor {
     this.addFrameToBuffer(sourceCanvas, velocity, frame);
 
     switch (this.settings.type) {
-      case 'standard':
+      case "standard":
         return this.applyStandardBlur(sourceCanvas, velocity);
-      case 'pixel':
+      case "pixel":
         return this.applyPixelMotionBlur(sourceCanvas);
-      case 'directional':
+      case "directional":
         return this.applyDirectionalBlur(sourceCanvas);
-      case 'radial':
+      case "radial":
         return this.applyRadialBlur(sourceCanvas);
-      case 'vector':
+      case "vector":
         return this.applyVectorBlur(sourceCanvas, velocity);
-      case 'adaptive':
+      case "adaptive":
         return this.applyAdaptiveBlur(sourceCanvas, velocity);
       default:
         this.outputCtx.drawImage(sourceCanvas, 0, 0);
@@ -215,11 +238,11 @@ export class MotionBlurProcessor {
   private addFrameToBuffer(
     canvas: OffscreenCanvas | HTMLCanvasElement,
     velocity: VelocityData,
-    frame: number
+    frame: number,
   ): void {
     // Clone the canvas
     const cloned = new OffscreenCanvas(canvas.width, canvas.height);
-    const ctx = cloned.getContext('2d')!;
+    const ctx = cloned.getContext("2d")!;
     ctx.drawImage(canvas, 0, 0);
 
     this.frameBuffer.push({
@@ -244,7 +267,7 @@ export class MotionBlurProcessor {
    */
   private applyStandardBlur(
     sourceCanvas: OffscreenCanvas | HTMLCanvasElement,
-    velocity: VelocityData
+    velocity: VelocityData,
   ): OffscreenCanvas {
     const { shutterAngle, shutterPhase, samplesPerFrame } = this.settings;
 
@@ -256,7 +279,12 @@ export class MotionBlurProcessor {
     const blurDistX = velocity.x * exposureRatio;
     const blurDistY = velocity.y * exposureRatio;
 
-    this.outputCtx.clearRect(0, 0, this.outputCanvas.width, this.outputCanvas.height);
+    this.outputCtx.clearRect(
+      0,
+      0,
+      this.outputCanvas.width,
+      this.outputCanvas.height,
+    );
 
     // Composite multiple samples along motion vector
     const samples = this.getSampleCount();
@@ -265,7 +293,7 @@ export class MotionBlurProcessor {
     this.outputCtx.globalAlpha = alpha;
 
     for (let i = 0; i < samples; i++) {
-      const t = (i / (samples - 1)) - 0.5 + phaseOffset;
+      const t = i / (samples - 1) - 0.5 + phaseOffset;
       const offsetX = blurDistX * t;
       const offsetY = blurDistY * t;
 
@@ -285,10 +313,15 @@ export class MotionBlurProcessor {
    * Creates blur based on pixel movement vectors
    */
   private applyPixelMotionBlur(
-    sourceCanvas: OffscreenCanvas | HTMLCanvasElement
+    sourceCanvas: OffscreenCanvas | HTMLCanvasElement,
   ): OffscreenCanvas {
     if (this.frameBuffer.length < 2) {
-      this.outputCtx.clearRect(0, 0, this.outputCanvas.width, this.outputCanvas.height);
+      this.outputCtx.clearRect(
+        0,
+        0,
+        this.outputCanvas.width,
+        this.outputCanvas.height,
+      );
       this.outputCtx.drawImage(sourceCanvas, 0, 0);
       return this.outputCanvas;
     }
@@ -296,15 +329,27 @@ export class MotionBlurProcessor {
     const { pixelBlurLength, vectorDetail } = this.settings;
     const blurStrength = pixelBlurLength / 100;
 
-    this.outputCtx.clearRect(0, 0, this.outputCanvas.width, this.outputCanvas.height);
+    this.outputCtx.clearRect(
+      0,
+      0,
+      this.outputCanvas.width,
+      this.outputCanvas.height,
+    );
 
     // Blend recent frames based on motion
-    const frameCount = Math.min(this.frameBuffer.length, Math.ceil(vectorDetail / 20) + 2);
+    const frameCount = Math.min(
+      this.frameBuffer.length,
+      Math.ceil(vectorDetail / 20) + 2,
+    );
     const alpha = 1 / frameCount;
 
     this.outputCtx.globalAlpha = alpha;
 
-    for (let i = this.frameBuffer.length - frameCount; i < this.frameBuffer.length; i++) {
+    for (
+      let i = this.frameBuffer.length - frameCount;
+      i < this.frameBuffer.length;
+      i++
+    ) {
       if (i >= 0) {
         const frame = this.frameBuffer[i];
         const timeOffset = (this.frameBuffer.length - 1 - i) * blurStrength;
@@ -313,7 +358,7 @@ export class MotionBlurProcessor {
         this.outputCtx.save();
         this.outputCtx.translate(
           -frame.velocity.x * timeOffset * 0.5,
-          -frame.velocity.y * timeOffset * 0.5
+          -frame.velocity.y * timeOffset * 0.5,
         );
         this.outputCtx.drawImage(frame.canvas, 0, 0);
         this.outputCtx.restore();
@@ -337,7 +382,7 @@ export class MotionBlurProcessor {
    * Independent of actual motion
    */
   private applyDirectionalBlur(
-    sourceCanvas: OffscreenCanvas | HTMLCanvasElement
+    sourceCanvas: OffscreenCanvas | HTMLCanvasElement,
   ): OffscreenCanvas {
     const { direction, blurLength } = this.settings;
 
@@ -346,7 +391,12 @@ export class MotionBlurProcessor {
     const dx = Math.cos(angleRad) * blurLength;
     const dy = Math.sin(angleRad) * blurLength;
 
-    this.outputCtx.clearRect(0, 0, this.outputCanvas.width, this.outputCanvas.height);
+    this.outputCtx.clearRect(
+      0,
+      0,
+      this.outputCanvas.width,
+      this.outputCanvas.height,
+    );
 
     const samples = this.getSampleCount();
     const alpha = 1 / samples;
@@ -354,7 +404,7 @@ export class MotionBlurProcessor {
     this.outputCtx.globalAlpha = alpha;
 
     for (let i = 0; i < samples; i++) {
-      const t = (i / (samples - 1)) - 0.5;
+      const t = i / (samples - 1) - 0.5;
       const offsetX = dx * t;
       const offsetY = dy * t;
 
@@ -373,14 +423,20 @@ export class MotionBlurProcessor {
    * Radial blur - zoom or spin blur from center point
    */
   private applyRadialBlur(
-    sourceCanvas: OffscreenCanvas | HTMLCanvasElement
+    sourceCanvas: OffscreenCanvas | HTMLCanvasElement,
   ): OffscreenCanvas {
-    const { radialMode, radialAmount, radialCenterX, radialCenterY } = this.settings;
+    const { radialMode, radialAmount, radialCenterX, radialCenterY } =
+      this.settings;
 
     const centerX = this.outputCanvas.width * radialCenterX;
     const centerY = this.outputCanvas.height * radialCenterY;
 
-    this.outputCtx.clearRect(0, 0, this.outputCanvas.width, this.outputCanvas.height);
+    this.outputCtx.clearRect(
+      0,
+      0,
+      this.outputCanvas.width,
+      this.outputCanvas.height,
+    );
 
     const samples = this.getSampleCount();
     const alpha = 1 / samples;
@@ -389,12 +445,12 @@ export class MotionBlurProcessor {
     this.outputCtx.globalAlpha = alpha;
 
     for (let i = 0; i < samples; i++) {
-      const t = (i / (samples - 1)) - 0.5;
+      const t = i / (samples - 1) - 0.5;
 
       this.outputCtx.save();
       this.outputCtx.translate(centerX, centerY);
 
-      if (radialMode === 'spin') {
+      if (radialMode === "spin") {
         // Spin blur - rotate around center
         const angle = t * amount * 0.2; // Max ~11 degrees per sample
         this.outputCtx.rotate(angle);
@@ -423,7 +479,7 @@ export class MotionBlurProcessor {
    */
   private applyVectorBlur(
     sourceCanvas: OffscreenCanvas | HTMLCanvasElement,
-    velocity: VelocityData
+    velocity: VelocityData,
   ): OffscreenCanvas {
     const { shutterAngle, vectorDetail } = this.settings;
     const exposureRatio = shutterAngle / 360;
@@ -434,7 +490,12 @@ export class MotionBlurProcessor {
     const blurRotation = velocity.rotation * exposureRatio * 0.01;
     const blurScale = velocity.scale * exposureRatio * 0.001;
 
-    this.outputCtx.clearRect(0, 0, this.outputCanvas.width, this.outputCanvas.height);
+    this.outputCtx.clearRect(
+      0,
+      0,
+      this.outputCanvas.width,
+      this.outputCanvas.height,
+    );
 
     const samples = Math.ceil((vectorDetail / 100) * this.getSampleCount());
     const alpha = 1 / samples;
@@ -445,7 +506,7 @@ export class MotionBlurProcessor {
     this.outputCtx.globalAlpha = alpha;
 
     for (let i = 0; i < samples; i++) {
-      const t = (i / (samples - 1)) - 0.5;
+      const t = i / (samples - 1) - 0.5;
 
       this.outputCtx.save();
       this.outputCtx.translate(centerX, centerY);
@@ -473,13 +534,18 @@ export class MotionBlurProcessor {
    */
   private applyAdaptiveBlur(
     sourceCanvas: OffscreenCanvas | HTMLCanvasElement,
-    velocity: VelocityData
+    velocity: VelocityData,
   ): OffscreenCanvas {
     const magnitude = this.getVelocityMagnitude(velocity);
 
     // Below threshold - no blur
     if (magnitude < this.settings.adaptiveThreshold) {
-      this.outputCtx.clearRect(0, 0, this.outputCanvas.width, this.outputCanvas.height);
+      this.outputCtx.clearRect(
+        0,
+        0,
+        this.outputCanvas.width,
+        this.outputCanvas.height,
+      );
       this.outputCtx.drawImage(sourceCanvas, 0, 0);
       return this.outputCanvas;
     }
@@ -487,8 +553,11 @@ export class MotionBlurProcessor {
     // High rotation - use radial spin
     if (Math.abs(velocity.rotation) > magnitude * 0.5) {
       const origMode = this.settings.radialMode;
-      this.settings.radialMode = 'spin';
-      this.settings.radialAmount = Math.min(100, Math.abs(velocity.rotation) * 2);
+      this.settings.radialMode = "spin";
+      this.settings.radialAmount = Math.min(
+        100,
+        Math.abs(velocity.rotation) * 2,
+      );
       const result = this.applyRadialBlur(sourceCanvas);
       this.settings.radialMode = origMode;
       return result;
@@ -497,8 +566,11 @@ export class MotionBlurProcessor {
     // High scale change - use radial zoom
     if (Math.abs(velocity.scale) > 0.1) {
       const origMode = this.settings.radialMode;
-      this.settings.radialMode = 'zoom';
-      this.settings.radialAmount = Math.min(100, Math.abs(velocity.scale) * 500);
+      this.settings.radialMode = "zoom";
+      this.settings.radialAmount = Math.min(
+        100,
+        Math.abs(velocity.scale) * 500,
+      );
       const result = this.applyRadialBlur(sourceCanvas);
       this.settings.radialMode = origMode;
       return result;
@@ -518,9 +590,9 @@ export class MotionBlurProcessor {
   private getSampleCount(): number {
     const base = this.settings.samplesPerFrame;
     switch (this.settings.motionBlurQuality) {
-      case 'draft':
+      case "draft":
         return Math.max(4, Math.floor(base / 2));
-      case 'high':
+      case "high":
         return Math.min(64, base * 2);
       default:
         return base;
@@ -554,93 +626,96 @@ export class MotionBlurProcessor {
 // MOTION BLUR PRESETS
 // ============================================================================
 
-export const MOTION_BLUR_PRESETS: Record<string, Partial<MotionBlurSettings>> = {
+export const MOTION_BLUR_PRESETS: Record<
+  string,
+  Partial<MotionBlurSettings>
+> = {
   // Film Standards
-  'film_24fps': {
-    type: 'standard',
+  film_24fps: {
+    type: "standard",
     shutterAngle: 180,
     shutterPhase: -90,
     samplesPerFrame: 16,
   },
-  'film_cinematic': {
-    type: 'standard',
+  film_cinematic: {
+    type: "standard",
     shutterAngle: 172.8, // 1/48s at 24fps
     shutterPhase: -90,
     samplesPerFrame: 16,
   },
-  'film_smooth': {
-    type: 'standard',
+  film_smooth: {
+    type: "standard",
     shutterAngle: 270,
     shutterPhase: -90,
     samplesPerFrame: 24,
   },
 
   // Video Standards
-  'video_30fps': {
-    type: 'standard',
+  video_30fps: {
+    type: "standard",
     shutterAngle: 180,
     shutterPhase: -90,
     samplesPerFrame: 12,
   },
-  'video_60fps': {
-    type: 'standard',
+  video_60fps: {
+    type: "standard",
     shutterAngle: 180,
     shutterPhase: -90,
     samplesPerFrame: 8,
   },
 
   // Stylized
-  'action_crisp': {
-    type: 'standard',
+  action_crisp: {
+    type: "standard",
     shutterAngle: 90,
     shutterPhase: -45,
     samplesPerFrame: 8,
   },
-  'dreamy': {
-    type: 'standard',
+  dreamy: {
+    type: "standard",
     shutterAngle: 360,
     shutterPhase: -180,
     samplesPerFrame: 32,
   },
-  'staccato': {
-    type: 'standard',
+  staccato: {
+    type: "standard",
     shutterAngle: 45,
     shutterPhase: -22.5,
     samplesPerFrame: 4,
   },
 
   // Directional Effects
-  'speed_horizontal': {
-    type: 'directional',
+  speed_horizontal: {
+    type: "directional",
     direction: 0,
     blurLength: 20,
     samplesPerFrame: 16,
   },
-  'speed_vertical': {
-    type: 'directional',
+  speed_vertical: {
+    type: "directional",
     direction: 90,
     blurLength: 20,
     samplesPerFrame: 16,
   },
-  'diagonal_streak': {
-    type: 'directional',
+  diagonal_streak: {
+    type: "directional",
     direction: 45,
     blurLength: 30,
     samplesPerFrame: 24,
   },
 
   // Radial Effects
-  'zoom_impact': {
-    type: 'radial',
-    radialMode: 'zoom',
+  zoom_impact: {
+    type: "radial",
+    radialMode: "zoom",
     radialAmount: 75,
     radialCenterX: 0.5,
     radialCenterY: 0.5,
     samplesPerFrame: 24,
   },
-  'spin_vortex': {
-    type: 'radial',
-    radialMode: 'spin',
+  spin_vortex: {
+    type: "radial",
+    radialMode: "spin",
     radialAmount: 50,
     radialCenterX: 0.5,
     radialCenterY: 0.5,
@@ -648,20 +723,20 @@ export const MOTION_BLUR_PRESETS: Record<string, Partial<MotionBlurSettings>> = 
   },
 
   // Advanced
-  'pixel_smooth': {
-    type: 'pixel',
+  pixel_smooth: {
+    type: "pixel",
     pixelBlurLength: 60,
     vectorDetail: 70,
     samplesPerFrame: 16,
   },
-  'vector_accurate': {
-    type: 'vector',
+  vector_accurate: {
+    type: "vector",
     shutterAngle: 180,
     vectorDetail: 90,
     samplesPerFrame: 24,
   },
-  'adaptive_auto': {
-    type: 'adaptive',
+  adaptive_auto: {
+    type: "adaptive",
     shutterAngle: 180,
     adaptiveThreshold: 3,
     samplesPerFrame: 16,

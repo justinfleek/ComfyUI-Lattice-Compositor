@@ -10,11 +10,11 @@
 export interface AnimatableProperty<T> {
   id: string;
   name: string;
-  type: 'number' | 'position' | 'color' | 'enum' | 'vector3';
-  value: T;             // Default/current value
+  type: "number" | "position" | "color" | "enum" | "vector3";
+  value: T; // Default/current value
   animated: boolean;
   keyframes: Keyframe<T>[];
-  group?: string;       // Property group for timeline organization (e.g., "Transform", "Text", "More Options")
+  group?: string; // Property group for timeline organization (e.g., "Transform", "Text", "More Options")
 
   // Expression system - applies post-interpolation modifications
   expression?: PropertyExpression;
@@ -28,7 +28,7 @@ export interface PropertyExpression {
   /** Whether the expression is active */
   enabled: boolean;
   /** Expression type: 'preset' for named expressions, 'custom' for user scripts */
-  type: 'preset' | 'custom';
+  type: "preset" | "custom";
   /** Expression name (for presets: 'jitter', 'repeatAfter', 'inertia', etc.) */
   name: string;
   /** Expression parameters */
@@ -40,12 +40,12 @@ export interface PropertyExpression {
  */
 export interface Keyframe<T> {
   id: string;
-  frame: number;        // 0-80
+  frame: number; // 0-80
   value: T;
   interpolation: InterpolationType;
   inHandle: BezierHandle;
   outHandle: BezierHandle;
-  controlMode: ControlMode;  // How handles behave when dragged
+  controlMode: ControlMode; // How handles behave when dragged
   // Spatial tangents for position keyframes (motion path curves)
   spatialInTangent?: { x: number; y: number; z: number };
   spatialOutTangent?: { x: number; y: number; z: number };
@@ -55,29 +55,49 @@ export interface Keyframe<T> {
  * Bezier handle for keyframe curves
  */
 export interface BezierHandle {
-  frame: number;   // Frame offset from keyframe (negative for inHandle, positive for outHandle)
-  value: number;   // Value offset from keyframe (can be positive or negative)
+  frame: number; // Frame offset from keyframe (negative for inHandle, positive for outHandle)
+  value: number; // Value offset from keyframe (can be positive or negative)
   enabled: boolean; // Whether this handle is active (for graph editor)
 }
 
 // Control mode for bezier handles (industry standard)
-export type ControlMode = 'symmetric' | 'smooth' | 'corner';
+export type ControlMode = "symmetric" | "smooth" | "corner";
 
 // Base interpolation types
-export type BaseInterpolationType = 'linear' | 'bezier' | 'hold';
+export type BaseInterpolationType = "linear" | "bezier" | "hold";
 
 // All easing function names
 export type EasingType =
-  | 'easeInSine' | 'easeOutSine' | 'easeInOutSine'
-  | 'easeInQuad' | 'easeOutQuad' | 'easeInOutQuad'
-  | 'easeInCubic' | 'easeOutCubic' | 'easeInOutCubic'
-  | 'easeInQuart' | 'easeOutQuart' | 'easeInOutQuart'
-  | 'easeInQuint' | 'easeOutQuint' | 'easeInOutQuint'
-  | 'easeInExpo' | 'easeOutExpo' | 'easeInOutExpo'
-  | 'easeInCirc' | 'easeOutCirc' | 'easeInOutCirc'
-  | 'easeInBack' | 'easeOutBack' | 'easeInOutBack'
-  | 'easeInElastic' | 'easeOutElastic' | 'easeInOutElastic'
-  | 'easeInBounce' | 'easeOutBounce' | 'easeInOutBounce';
+  | "easeInSine"
+  | "easeOutSine"
+  | "easeInOutSine"
+  | "easeInQuad"
+  | "easeOutQuad"
+  | "easeInOutQuad"
+  | "easeInCubic"
+  | "easeOutCubic"
+  | "easeInOutCubic"
+  | "easeInQuart"
+  | "easeOutQuart"
+  | "easeInOutQuart"
+  | "easeInQuint"
+  | "easeOutQuint"
+  | "easeInOutQuint"
+  | "easeInExpo"
+  | "easeOutExpo"
+  | "easeInOutExpo"
+  | "easeInCirc"
+  | "easeOutCirc"
+  | "easeInOutCirc"
+  | "easeInBack"
+  | "easeOutBack"
+  | "easeInOutBack"
+  | "easeInElastic"
+  | "easeOutElastic"
+  | "easeInOutElastic"
+  | "easeInBounce"
+  | "easeOutBounce"
+  | "easeInOutBounce";
 
 // Combined interpolation type (base types + easing functions)
 export type InterpolationType = BaseInterpolationType | EasingType;
@@ -91,12 +111,12 @@ export type InterpolationType = BaseInterpolationType | EasingType;
  * Used for type-safe clipboard operations and generic property handling.
  */
 export type PropertyValue =
-  | number                                           // Opacity, rotation, scalar values
-  | string                                           // Enum values, hex colors
-  | { x: number; y: number }                         // Vec2 (2D position/scale)
-  | { x: number; y: number; z?: number }             // Position/Scale (optional z)
-  | { x: number; y: number; z: number }              // Vec3 (orientation, 3D vectors)
-  | { r: number; g: number; b: number; a: number };  // RGBA color
+  | number // Opacity, rotation, scalar values
+  | string // Enum values, hex colors
+  | { x: number; y: number } // Vec2 (2D position/scale)
+  | { x: number; y: number; z?: number } // Position/Scale (optional z)
+  | { x: number; y: number; z: number } // Vec3 (orientation, 3D vectors)
+  | { r: number; g: number; b: number; a: number }; // RGBA color
 
 /**
  * Clipboard keyframe entry with property path context
@@ -117,8 +137,8 @@ export interface ClipboardKeyframe {
 export function createAnimatableProperty<T>(
   name: string,
   value: T,
-  type: 'number' | 'position' | 'color' | 'enum' | 'vector3' = 'number',
-  group?: string
+  type: "number" | "position" | "color" | "enum" | "vector3" = "number",
+  group?: string,
 ): AnimatableProperty<T> {
   return {
     id: `prop_${name}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
@@ -127,7 +147,7 @@ export function createAnimatableProperty<T>(
     value,
     animated: false,
     keyframes: [],
-    group
+    group,
   };
 }
 
@@ -137,7 +157,7 @@ export function createAnimatableProperty<T>(
 export function createKeyframe<T>(
   frame: number,
   value: T,
-  interpolation: InterpolationType = 'linear'
+  interpolation: InterpolationType = "linear",
 ): Keyframe<T> {
   return {
     id: `kf_${frame}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
@@ -146,6 +166,6 @@ export function createKeyframe<T>(
     interpolation,
     inHandle: { frame: -5, value: 0, enabled: true },
     outHandle: { frame: 5, value: 0, enabled: true },
-    controlMode: 'smooth'
+    controlMode: "smooth",
   };
 }

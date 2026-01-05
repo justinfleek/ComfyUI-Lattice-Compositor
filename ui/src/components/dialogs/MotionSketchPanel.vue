@@ -177,18 +177,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onUnmounted } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
+import { computed, onUnmounted, ref, watch } from "vue";
 import {
-  MotionRecorder,
-  smoothMotion,
   convertMotionToKeyframes,
-  simplifyKeyframes,
+  getMotionAverageSpeed,
   getMotionBounds,
   getMotionPathLength,
-  getMotionAverageSpeed,
-  type RecordedMotion
-} from '@/services/motionRecording';
+  MotionRecorder,
+  type RecordedMotion,
+  simplifyKeyframes,
+  smoothMotion,
+} from "@/services/motionRecording";
+import { useCompositorStore } from "@/stores/compositorStore";
 
 const props = defineProps<{
   visible: boolean;
@@ -214,37 +214,39 @@ const recordedMotion = ref<RecordedMotion | null>(null);
 let recorder: MotionRecorder | null = null;
 
 // Computed
-const targetLayerName = computed(() => {
+const _targetLayerName = computed(() => {
   const layers = store.selectedLayerIds;
   if (layers.length === 0) return null;
   const layer = store.getLayerById(layers[0]);
-  return layer?.name || 'Unknown Layer';
+  return layer?.name || "Unknown Layer";
 });
 
-const statusText = computed(() => {
-  if (isRecording.value) return 'Recording...';
-  if (recordedMotion.value) return 'Motion recorded';
-  return 'Ready to record';
+const _statusText = computed(() => {
+  if (isRecording.value) return "Recording...";
+  if (recordedMotion.value) return "Motion recorded";
+  return "Ready to record";
 });
 
-const motionDuration = computed(() => {
-  if (!recordedMotion.value || recordedMotion.value.samples.length < 2) return 0;
+const _motionDuration = computed(() => {
+  if (!recordedMotion.value || recordedMotion.value.samples.length < 2)
+    return 0;
   const samples = recordedMotion.value.samples;
   return samples[samples.length - 1].time - samples[0].time;
 });
 
-const pathLength = computed(() => {
+const _pathLength = computed(() => {
   if (!recordedMotion.value) return 0;
   return getMotionPathLength(recordedMotion.value);
 });
 
-const avgSpeed = computed(() => {
+const _avgSpeed = computed(() => {
   if (!recordedMotion.value) return 0;
   return getMotionAverageSpeed(recordedMotion.value);
 });
 
 const previewPoints = computed(() => {
-  if (!recordedMotion.value || recordedMotion.value.samples.length < 2) return [];
+  if (!recordedMotion.value || recordedMotion.value.samples.length < 2)
+    return [];
 
   const bounds = getMotionBounds(recordedMotion.value);
   const padding = 10;
@@ -259,15 +261,15 @@ const previewPoints = computed(() => {
   const offsetX = padding + (previewW - bounds.width * scale) / 2;
   const offsetY = padding + (previewH - bounds.height * scale) / 2;
 
-  return recordedMotion.value.samples.map(s => ({
+  return recordedMotion.value.samples.map((s) => ({
     x: (s.x - bounds.minX) * scale + offsetX,
-    y: (s.y - bounds.minY) * scale + offsetY
+    y: (s.y - bounds.minY) * scale + offsetY,
   }));
 });
 
-const previewPath = computed(() => {
+const _previewPath = computed(() => {
   const points = previewPoints.value;
-  if (points.length < 2) return '';
+  if (points.length < 2) return "";
 
   let d = `M ${points[0].x} ${points[0].y}`;
   for (let i = 1; i < points.length; i++) {
@@ -277,24 +279,24 @@ const previewPath = computed(() => {
 });
 
 // Methods
-function formatDuration(ms: number): string {
+function _formatDuration(ms: number): string {
   const seconds = ms / 1000;
   return `${seconds.toFixed(2)}s`;
 }
 
-function startRecording() {
+function _startRecording() {
   const layerId = store.selectedLayerIds[0];
   if (!layerId) return;
 
   recorder = new MotionRecorder(layerId, {
     speed: captureSpeed.value,
     smoothing: smoothing.value,
-    minSampleInterval: 16
+    minSampleInterval: 16,
   });
 
   isRecording.value = true;
   recordedMotion.value = null;
-  emit('startCapture');
+  emit("startCapture");
 }
 
 function stopRecording() {
@@ -303,7 +305,7 @@ function stopRecording() {
     recorder = null;
   }
   isRecording.value = false;
-  emit('stopCapture');
+  emit("stopCapture");
 }
 
 // Called from parent when mouse moves during recording
@@ -320,7 +322,7 @@ function initRecording(x: number, y: number) {
   }
 }
 
-function applyMotion() {
+function _applyMotion() {
   if (!recordedMotion.value || recordedMotion.value.samples.length < 2) return;
 
   const layerId = store.selectedLayerIds[0];
@@ -334,12 +336,12 @@ function applyMotion() {
   const simplified = simplifyKeyframes(keyframes, simplifyTolerance.value);
 
   // Apply keyframes to layer position
-  simplified.forEach(kf => {
-    store.addKeyframe(layerId, 'transform.position', kf.value, kf.frame);
+  simplified.forEach((kf) => {
+    store.addKeyframe(layerId, "transform.position", kf.value, kf.frame);
   });
 
-  emit('apply', simplified);
-  emit('close');
+  emit("apply", simplified);
+  emit("close");
 }
 
 // Cleanup
@@ -351,18 +353,21 @@ onUnmounted(() => {
 });
 
 // Reset when dialog opens
-watch(() => props.visible, (visible) => {
-  if (visible) {
-    recordedMotion.value = null;
-    isRecording.value = false;
-  }
-});
+watch(
+  () => props.visible,
+  (visible) => {
+    if (visible) {
+      recordedMotion.value = null;
+      isRecording.value = false;
+    }
+  },
+);
 
 // Expose methods for parent component
 defineExpose({
   addSample,
   initRecording,
-  stopRecording
+  stopRecording,
 });
 </script>
 

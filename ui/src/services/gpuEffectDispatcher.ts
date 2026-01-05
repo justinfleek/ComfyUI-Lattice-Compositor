@@ -16,16 +16,16 @@
  * - Async processing with frame batching
  */
 
-import { webgpuRenderer, type WebGPUCapabilities } from './webgpuRenderer';
-import { getGLSLEngine, type GLSLEngine } from './glsl/GLSLEngine';
-import { detectGPUTier, type GPUTier } from './gpuDetection';
-import { engineLogger } from '@/utils/logger';
+import { engineLogger } from "@/utils/logger";
+import { type GLSLEngine, getGLSLEngine } from "./glsl/GLSLEngine";
+import { detectGPUTier, type GPUTier } from "./gpuDetection";
+import { webgpuRenderer } from "./webgpuRenderer";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-export type GPURenderPath = 'webgpu' | 'webgl2' | 'canvas2d';
+export type GPURenderPath = "webgpu" | "webgl2" | "canvas2d";
 
 export interface GPUCapabilityInfo {
   preferredPath: GPURenderPath;
@@ -37,9 +37,9 @@ export interface GPUCapabilityInfo {
 
 export interface EffectGPUMapping {
   effectKey: string;
-  webgpuMethod?: string;  // Method name on webgpuRenderer
-  webglShader?: string;   // GLSL shader source
-  preferGPU: boolean;     // Whether to prefer GPU for this effect
+  webgpuMethod?: string; // Method name on webgpuRenderer
+  webglShader?: string; // GLSL shader source
+  preferGPU: boolean; // Whether to prefer GPU for this effect
 }
 
 export interface TexturePoolEntry {
@@ -61,7 +61,7 @@ export interface TexturePoolEntry {
 
 const GLSL_SHADERS: Record<string, string> = {
   // RGB Split (Chromatic Aberration)
-  'rgb-split': `
+  "rgb-split": `
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 uv = fragCoord / iResolution.xy;
   float amount = 0.01; // Will be overridden by uniform
@@ -75,7 +75,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 }`,
 
   // Mosaic (Pixelation)
-  'mosaic': `
+  mosaic: `
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 uv = fragCoord / iResolution.xy;
   float blockSize = 10.0; // Will be overridden
@@ -87,7 +87,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 }`,
 
   // Emboss
-  'emboss': `
+  emboss: `
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 uv = fragCoord / iResolution.xy;
   vec2 texel = 1.0 / iResolution.xy;
@@ -102,7 +102,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 }`,
 
   // Find Edges (Sobel)
-  'find-edges': `
+  "find-edges": `
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 uv = fragCoord / iResolution.xy;
   vec2 texel = 1.0 / iResolution.xy;
@@ -132,7 +132,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 }`,
 
   // Scanlines
-  'scanlines': `
+  scanlines: `
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 uv = fragCoord / iResolution.xy;
   vec4 color = texture2D(iChannel0, uv);
@@ -147,7 +147,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 }`,
 
   // Halftone
-  'halftone': `
+  halftone: `
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 uv = fragCoord / iResolution.xy;
   float dotSize = 4.0;
@@ -165,7 +165,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 }`,
 
   // VHS Effect
-  'vhs': `
+  vhs: `
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 uv = fragCoord / iResolution.xy;
 
@@ -189,7 +189,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 }`,
 
   // Ripple (Water)
-  'ripple': `
+  ripple: `
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 uv = fragCoord / iResolution.xy;
   vec2 center = vec2(0.5, 0.5);
@@ -209,7 +209,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 }`,
 
   // Glitch
-  'glitch': `
+  glitch: `
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 uv = fragCoord / iResolution.xy;
 
@@ -236,50 +236,86 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
 const EFFECT_GPU_MAPPINGS: EffectGPUMapping[] = [
   // Blur effects - excellent GPU candidates (WebGPU)
-  { effectKey: 'gaussian-blur', webgpuMethod: 'blur', preferGPU: true },
-  { effectKey: 'radial-blur', webgpuMethod: 'radialBlur', preferGPU: true },
-  { effectKey: 'directional-blur', webgpuMethod: 'directionalBlur', preferGPU: true },
-  { effectKey: 'box-blur', webgpuMethod: 'blur', preferGPU: true },
+  { effectKey: "gaussian-blur", webgpuMethod: "blur", preferGPU: true },
+  { effectKey: "radial-blur", webgpuMethod: "radialBlur", preferGPU: true },
+  {
+    effectKey: "directional-blur",
+    webgpuMethod: "directionalBlur",
+    preferGPU: true,
+  },
+  { effectKey: "box-blur", webgpuMethod: "blur", preferGPU: true },
 
   // Color effects - good GPU candidates (WebGPU)
-  { effectKey: 'brightness-contrast', webgpuMethod: 'colorCorrect', preferGPU: true },
-  { effectKey: 'hue-saturation', webgpuMethod: 'colorCorrect', preferGPU: true },
-  { effectKey: 'levels', webgpuMethod: 'levels', preferGPU: true },
-  { effectKey: 'glow', webgpuMethod: 'glow', preferGPU: true },
+  {
+    effectKey: "brightness-contrast",
+    webgpuMethod: "colorCorrect",
+    preferGPU: true,
+  },
+  {
+    effectKey: "hue-saturation",
+    webgpuMethod: "colorCorrect",
+    preferGPU: true,
+  },
+  { effectKey: "levels", webgpuMethod: "levels", preferGPU: true },
+  { effectKey: "glow", webgpuMethod: "glow", preferGPU: true },
 
   // Distort effects - excellent GPU candidates (WebGPU)
-  { effectKey: 'warp', webgpuMethod: 'warp', preferGPU: true },
-  { effectKey: 'displacement-map', webgpuMethod: 'displacement', preferGPU: true },
-  { effectKey: 'turbulent-displace', webgpuMethod: 'warp', preferGPU: true },
-  { effectKey: 'ripple-distort', webglShader: GLSL_SHADERS['ripple'], preferGPU: true },
+  { effectKey: "warp", webgpuMethod: "warp", preferGPU: true },
+  {
+    effectKey: "displacement-map",
+    webgpuMethod: "displacement",
+    preferGPU: true,
+  },
+  { effectKey: "turbulent-displace", webgpuMethod: "warp", preferGPU: true },
+  {
+    effectKey: "ripple-distort",
+    webglShader: GLSL_SHADERS.ripple,
+    preferGPU: true,
+  },
 
   // Stylize effects - good GPU candidates (WebGL via GLSL)
-  { effectKey: 'rgb-split', webglShader: GLSL_SHADERS['rgb-split'], preferGPU: true },
-  { effectKey: 'mosaic', webglShader: GLSL_SHADERS['mosaic'], preferGPU: true },
-  { effectKey: 'emboss', webglShader: GLSL_SHADERS['emboss'], preferGPU: true },
-  { effectKey: 'find-edges', webglShader: GLSL_SHADERS['find-edges'], preferGPU: true },
-  { effectKey: 'scanlines', webglShader: GLSL_SHADERS['scanlines'], preferGPU: true },
-  { effectKey: 'halftone', webglShader: GLSL_SHADERS['halftone'], preferGPU: true },
-  { effectKey: 'vhs', webglShader: GLSL_SHADERS['vhs'], preferGPU: true },
-  { effectKey: 'ripple', webglShader: GLSL_SHADERS['ripple'], preferGPU: true },
-  { effectKey: 'glitch', webglShader: GLSL_SHADERS['glitch'], preferGPU: true },
+  {
+    effectKey: "rgb-split",
+    webglShader: GLSL_SHADERS["rgb-split"],
+    preferGPU: true,
+  },
+  { effectKey: "mosaic", webglShader: GLSL_SHADERS.mosaic, preferGPU: true },
+  { effectKey: "emboss", webglShader: GLSL_SHADERS.emboss, preferGPU: true },
+  {
+    effectKey: "find-edges",
+    webglShader: GLSL_SHADERS["find-edges"],
+    preferGPU: true,
+  },
+  {
+    effectKey: "scanlines",
+    webglShader: GLSL_SHADERS.scanlines,
+    preferGPU: true,
+  },
+  {
+    effectKey: "halftone",
+    webglShader: GLSL_SHADERS.halftone,
+    preferGPU: true,
+  },
+  { effectKey: "vhs", webglShader: GLSL_SHADERS.vhs, preferGPU: true },
+  { effectKey: "ripple", webglShader: GLSL_SHADERS.ripple, preferGPU: true },
+  { effectKey: "glitch", webglShader: GLSL_SHADERS.glitch, preferGPU: true },
 
   // Effects that work better on CPU (complex logic, branching)
-  { effectKey: 'pixel-sort', preferGPU: false },  // Requires sorting - CPU better
-  { effectKey: 'dither', preferGPU: false },  // Error diffusion needs CPU
-  { effectKey: 'tint', preferGPU: false },
-  { effectKey: 'curves', preferGPU: false },  // LUT-based is complex
-  { effectKey: 'drop-shadow', preferGPU: false },  // Multi-pass
-  { effectKey: 'invert', preferGPU: false },  // Too simple, overhead not worth it
-  { effectKey: 'posterize', preferGPU: false },  // Simple CPU op
-  { effectKey: 'threshold', preferGPU: false },  // Simple CPU op
+  { effectKey: "pixel-sort", preferGPU: false }, // Requires sorting - CPU better
+  { effectKey: "dither", preferGPU: false }, // Error diffusion needs CPU
+  { effectKey: "tint", preferGPU: false },
+  { effectKey: "curves", preferGPU: false }, // LUT-based is complex
+  { effectKey: "drop-shadow", preferGPU: false }, // Multi-pass
+  { effectKey: "invert", preferGPU: false }, // Too simple, overhead not worth it
+  { effectKey: "posterize", preferGPU: false }, // Simple CPU op
+  { effectKey: "threshold", preferGPU: false }, // Simple CPU op
 
   // Generate effects - depends on complexity
-  { effectKey: 'fill', preferGPU: false },  // Too simple
-  { effectKey: 'gradient-ramp', preferGPU: true },
-  { effectKey: 'fractal-noise', preferGPU: true },
-  { effectKey: 'radio-waves', preferGPU: true },
-  { effectKey: 'ellipse', preferGPU: false },
+  { effectKey: "fill", preferGPU: false }, // Too simple
+  { effectKey: "gradient-ramp", preferGPU: true },
+  { effectKey: "fractal-noise", preferGPU: true },
+  { effectKey: "radio-waves", preferGPU: true },
+  { effectKey: "ellipse", preferGPU: false },
 ];
 
 // ============================================================================
@@ -330,7 +366,7 @@ class TexturePool {
    * Release a texture back to the pool
    */
   release(texture: ImageData): void {
-    const entry = this.pool.find(e => e.texture === texture);
+    const entry = this.pool.find((e) => e.texture === texture);
     if (entry) {
       entry.inUse = false;
       entry.lastUsed = Date.now();
@@ -342,8 +378,8 @@ class TexturePool {
    */
   cleanup(): void {
     const now = Date.now();
-    this.pool = this.pool.filter(entry =>
-      entry.inUse || (now - entry.lastUsed) <= this.maxAge
+    this.pool = this.pool.filter(
+      (entry) => entry.inUse || now - entry.lastUsed <= this.maxAge,
     );
   }
 
@@ -358,7 +394,7 @@ class TexturePool {
    * Get pool statistics
    */
   getStats(): { total: number; inUse: number; available: number } {
-    const inUse = this.pool.filter(e => e.inUse).length;
+    const inUse = this.pool.filter((e) => e.inUse).length;
     return {
       total: this.pool.length,
       inUse,
@@ -373,10 +409,10 @@ class TexturePool {
 
 class GPUEffectDispatcher {
   private capabilities: GPUCapabilityInfo = {
-    preferredPath: 'canvas2d',
+    preferredPath: "canvas2d",
     webgpuAvailable: false,
     webgl2Available: false,
-    gpuTier: { tier: 'cpu', vram: 0, features: [] },
+    gpuTier: { tier: "cpu", vram: 0, features: [] },
     initialized: false,
   };
 
@@ -414,11 +450,11 @@ class GPUEffectDispatcher {
 
       // Determine preferred path
       if (webgpuAvailable) {
-        this.capabilities.preferredPath = 'webgpu';
+        this.capabilities.preferredPath = "webgpu";
       } else if (this.capabilities.webgl2Available) {
-        this.capabilities.preferredPath = 'webgl2';
+        this.capabilities.preferredPath = "webgl2";
       } else {
-        this.capabilities.preferredPath = 'canvas2d';
+        this.capabilities.preferredPath = "canvas2d";
       }
 
       this.capabilities.initialized = true;
@@ -426,16 +462,16 @@ class GPUEffectDispatcher {
       // Build effect routing table
       this.buildEffectRoutes();
 
-      engineLogger.info('GPU Effect Dispatcher initialized', {
+      engineLogger.info("GPU Effect Dispatcher initialized", {
         preferredPath: this.capabilities.preferredPath,
         gpuTier: gpuTier.tier,
         webgpu: webgpuAvailable,
         webgl2: this.capabilities.webgl2Available,
       });
     } catch (error) {
-      engineLogger.error('GPU Effect Dispatcher initialization failed:', error);
+      engineLogger.error("GPU Effect Dispatcher initialization failed:", error);
       this.capabilities.initialized = true;
-      this.capabilities.preferredPath = 'canvas2d';
+      this.capabilities.preferredPath = "canvas2d";
     }
   }
 
@@ -446,16 +482,16 @@ class GPUEffectDispatcher {
     this.effectRoutes.clear();
 
     for (const mapping of EFFECT_GPU_MAPPINGS) {
-      let route: GPURenderPath = 'canvas2d';
+      let route: GPURenderPath = "canvas2d";
 
       if (mapping.preferGPU) {
         // Prefer WebGPU for effects that have WebGPU methods
         if (this.capabilities.webgpuAvailable && mapping.webgpuMethod) {
-          route = 'webgpu';
+          route = "webgpu";
         }
         // Fall back to WebGL2 for effects with GLSL shaders
         else if (this.capabilities.webgl2Available && mapping.webglShader) {
-          route = 'webgl2';
+          route = "webgl2";
         }
         // Effects without GPU implementation stay on canvas2d
       }
@@ -468,7 +504,7 @@ class GPUEffectDispatcher {
     for (const route of this.effectRoutes.values()) {
       routeCounts[route]++;
     }
-    engineLogger.debug('Effect routes built', routeCounts);
+    engineLogger.debug("Effect routes built", routeCounts);
   }
 
   /**
@@ -482,7 +518,7 @@ class GPUEffectDispatcher {
    * Get the rendering path for a specific effect
    */
   getEffectRoute(effectKey: string): GPURenderPath {
-    return this.effectRoutes.get(effectKey) || 'canvas2d';
+    return this.effectRoutes.get(effectKey) || "canvas2d";
   }
 
   /**
@@ -490,7 +526,7 @@ class GPUEffectDispatcher {
    */
   shouldUseGPU(effectKey: string): boolean {
     const route = this.getEffectRoute(effectKey);
-    return route !== 'canvas2d';
+    return route !== "canvas2d";
   }
 
   /**
@@ -504,7 +540,7 @@ class GPUEffectDispatcher {
   async processEffect(
     effectKey: string,
     input: ImageData | HTMLCanvasElement,
-    params: Record<string, any>
+    params: Record<string, any>,
   ): Promise<ImageData> {
     // Ensure initialized
     if (!this.capabilities.initialized) {
@@ -512,23 +548,36 @@ class GPUEffectDispatcher {
     }
 
     const route = this.getEffectRoute(effectKey);
-    const mapping = EFFECT_GPU_MAPPINGS.find(m => m.effectKey === effectKey);
+    const mapping = EFFECT_GPU_MAPPINGS.find((m) => m.effectKey === effectKey);
 
     try {
       switch (route) {
-        case 'webgpu':
+        case "webgpu":
           if (mapping?.webgpuMethod) {
-            return await this.processWebGPU(effectKey, input, params, mapping.webgpuMethod);
+            return await this.processWebGPU(
+              effectKey,
+              input,
+              params,
+              mapping.webgpuMethod,
+            );
           }
           break;
-        case 'webgl2':
+        case "webgl2":
           if (mapping?.webglShader) {
-            return await this.processWebGL(effectKey, input, params, mapping.webglShader);
+            return await this.processWebGL(
+              effectKey,
+              input,
+              params,
+              mapping.webglShader,
+            );
           }
           break;
       }
     } catch (error) {
-      engineLogger.warn(`GPU processing failed for ${effectKey}, falling back to Canvas2D:`, error);
+      engineLogger.warn(
+        `GPU processing failed for ${effectKey}, falling back to Canvas2D:`,
+        error,
+      );
     }
 
     // Canvas2D fallback - return input unchanged (actual processing done by original renderer)
@@ -542,11 +591,11 @@ class GPUEffectDispatcher {
     effectKey: string,
     input: ImageData | HTMLCanvasElement,
     params: Record<string, any>,
-    methodName: string
+    methodName: string,
   ): Promise<ImageData> {
     const renderer = webgpuRenderer as any;
 
-    if (typeof renderer[methodName] !== 'function') {
+    if (typeof renderer[methodName] !== "function") {
       throw new Error(`WebGPU method ${methodName} not found`);
     }
 
@@ -563,10 +612,10 @@ class GPUEffectDispatcher {
     effectKey: string,
     input: ImageData | HTMLCanvasElement,
     params: Record<string, any>,
-    shaderSource: string
+    shaderSource: string,
   ): Promise<ImageData> {
     if (!this.glslEngine) {
-      throw new Error('GLSL engine not available');
+      throw new Error("GLSL engine not available");
     }
 
     const result = this.glslEngine.setShader(shaderSource);
@@ -579,7 +628,7 @@ class GPUEffectDispatcher {
 
     const canvas = this.glslEngine.render(input, uniforms);
     if (!canvas) {
-      throw new Error('WebGL render failed');
+      throw new Error("WebGL render failed");
     }
 
     return this.toImageData(canvas);
@@ -588,17 +637,20 @@ class GPUEffectDispatcher {
   /**
    * Map effect parameters to WebGPU format
    */
-  private mapParamsToWebGPU(effectKey: string, params: Record<string, any>): any {
+  private mapParamsToWebGPU(
+    effectKey: string,
+    params: Record<string, any>,
+  ): any {
     switch (effectKey) {
-      case 'gaussian-blur':
-      case 'box-blur':
+      case "gaussian-blur":
+      case "box-blur":
         return {
           radius: params.radius ?? 10,
-          quality: params.quality ?? 'high',
-          direction: params.direction ?? 'both',
+          quality: params.quality ?? "high",
+          direction: params.direction ?? "both",
         };
 
-      case 'radial-blur':
+      case "radial-blur":
         return {
           centerX: params.centerX ?? 0.5,
           centerY: params.centerY ?? 0.5,
@@ -606,22 +658,22 @@ class GPUEffectDispatcher {
           samples: params.samples ?? 32,
         };
 
-      case 'directional-blur':
+      case "directional-blur":
         return {
           angle: params.angle ?? 0,
           length: params.length ?? 20,
           samples: params.samples ?? 32,
         };
 
-      case 'brightness-contrast':
+      case "brightness-contrast":
         return {
-          brightness: (params.brightness ?? 0) / 100,  // Convert 0-100 to 0-1
+          brightness: (params.brightness ?? 0) / 100, // Convert 0-100 to 0-1
           contrast: (params.contrast ?? 0) / 100,
           saturation: 0,
           hue: 0,
         };
 
-      case 'hue-saturation':
+      case "hue-saturation":
         return {
           brightness: 0,
           contrast: 0,
@@ -629,7 +681,7 @@ class GPUEffectDispatcher {
           hue: params.hue ?? 0,
         };
 
-      case 'levels':
+      case "levels":
         return {
           inputBlack: (params.inputBlack ?? 0) / 255,
           inputWhite: (params.inputWhite ?? 255) / 255,
@@ -638,7 +690,7 @@ class GPUEffectDispatcher {
           outputWhite: (params.outputWhite ?? 255) / 255,
         };
 
-      case 'glow':
+      case "glow":
         return {
           radius: params.radius ?? 20,
           intensity: params.intensity ?? 1,
@@ -646,22 +698,22 @@ class GPUEffectDispatcher {
           color: params.color,
         };
 
-      case 'warp':
-      case 'turbulent-displace':
-      case 'ripple-distort':
+      case "warp":
+      case "turbulent-displace":
+      case "ripple-distort":
         return {
-          style: params.style ?? 'wave',
+          style: params.style ?? "wave",
           bend: params.amount ?? params.bend ?? 0.5,
           hDistort: params.hDistort ?? 0,
           vDistort: params.vDistort ?? 0,
         };
 
-      case 'displacement-map':
+      case "displacement-map":
         return {
           maxHorizontal: params.maxHorizontal ?? 50,
           maxVertical: params.maxVertical ?? 50,
-          hChannel: params.hChannel ?? 'red',
-          vChannel: params.vChannel ?? 'green',
+          hChannel: params.hChannel ?? "red",
+          vChannel: params.vChannel ?? "green",
         };
 
       default:
@@ -672,7 +724,10 @@ class GPUEffectDispatcher {
   /**
    * Map effect parameters to GLSL uniforms
    */
-  private mapParamsToGLSL(effectKey: string, params: Record<string, any>): Record<string, any> {
+  private mapParamsToGLSL(
+    effectKey: string,
+    params: Record<string, any>,
+  ): Record<string, any> {
     // Base uniforms - frame time for animated effects
     const baseUniforms: Record<string, any> = {
       iTime: (params._frame ?? 0) / (params._fps ?? 30),
@@ -680,48 +735,48 @@ class GPUEffectDispatcher {
     };
 
     switch (effectKey) {
-      case 'rgb-split':
+      case "rgb-split":
         return {
           ...baseUniforms,
-          amount: (params.amount ?? 10) / 1000,  // Convert pixels to UV offset
+          amount: (params.amount ?? 10) / 1000, // Convert pixels to UV offset
           angle: params.angle ?? 0,
         };
 
-      case 'mosaic':
+      case "mosaic":
         return {
           ...baseUniforms,
           blockSize: params.blockSize ?? params.size ?? 10,
         };
 
-      case 'emboss':
+      case "emboss":
         return {
           ...baseUniforms,
           strength: params.strength ?? 1,
           angle: params.angle ?? 135,
         };
 
-      case 'find-edges':
+      case "find-edges":
         return {
           ...baseUniforms,
           threshold: params.threshold ?? 0.1,
           invert: params.invert ? 1 : 0,
         };
 
-      case 'scanlines':
+      case "scanlines":
         return {
           ...baseUniforms,
           lineSpacing: params.spacing ?? params.lineSpacing ?? 2,
           lineIntensity: params.intensity ?? params.lineIntensity ?? 0.15,
         };
 
-      case 'halftone':
+      case "halftone":
         return {
           ...baseUniforms,
           dotSize: params.dotSize ?? params.size ?? 4,
           angle: params.angle ?? 0,
         };
 
-      case 'vhs':
+      case "vhs":
         return {
           ...baseUniforms,
           aberration: (params.chromaShift ?? params.aberration ?? 2) / 1000,
@@ -729,7 +784,7 @@ class GPUEffectDispatcher {
           scanlineStrength: params.scanlines ?? params.scanlineStrength ?? 0.04,
         };
 
-      case 'ripple':
+      case "ripple":
         return {
           ...baseUniforms,
           amplitude: (params.amplitude ?? 3) / 100,
@@ -739,7 +794,7 @@ class GPUEffectDispatcher {
           centerY: params.centerY ?? 0.5,
         };
 
-      case 'glitch':
+      case "glitch":
         return {
           ...baseUniforms,
           glitchStrength: (params.strength ?? 5) / 100,
@@ -761,7 +816,7 @@ class GPUEffectDispatcher {
       effectKey: string;
       input: ImageData | HTMLCanvasElement;
       params: Record<string, any>;
-    }>
+    }>,
   ): Promise<ImageData[]> {
     // Ensure initialized
     if (!this.capabilities.initialized) {
@@ -775,7 +830,7 @@ class GPUEffectDispatcher {
       const result = await this.processEffect(
         effect.effectKey,
         effect.input,
-        effect.params
+        effect.params,
       );
       results.push(result);
     }
@@ -804,7 +859,7 @@ class GPUEffectDispatcher {
     if (input instanceof ImageData) {
       return input;
     }
-    const ctx = input.getContext('2d')!;
+    const ctx = input.getContext("2d")!;
     return ctx.getImageData(0, 0, input.width, input.height);
   }
 
@@ -819,10 +874,12 @@ class GPUEffectDispatcher {
     return {
       capabilities: this.getCapabilities(),
       texturePool: this.texturePool.getStats(),
-      effectRoutes: Array.from(this.effectRoutes.entries()).map(([effect, route]) => ({
-        effect,
-        route,
-      })),
+      effectRoutes: Array.from(this.effectRoutes.entries()).map(
+        ([effect, route]) => ({
+          effect,
+          route,
+        }),
+      ),
     };
   }
 

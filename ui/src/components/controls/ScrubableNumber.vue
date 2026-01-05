@@ -46,7 +46,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { computed, ref } from "vue";
 
 interface Props {
   modelValue: number;
@@ -56,7 +56,7 @@ interface Props {
   step?: number;
   precision?: number;
   unit?: string;
-  suffix?: string;  // Alias for unit (backward compatibility)
+  suffix?: string; // Alias for unit (backward compatibility)
   default?: number;
   sensitivity?: number;
   disabled?: boolean;
@@ -68,12 +68,10 @@ const props = withDefaults(defineProps<Props>(), {
   step: 1,
   precision: 2,
   sensitivity: 1,
-  disabled: false
+  disabled: false,
 });
 
-const emit = defineEmits<{
-  (e: 'update:modelValue', value: number): void;
-}>();
+const emit = defineEmits<(e: "update:modelValue", value: number) => void>();
 
 const inputRef = ref<HTMLInputElement | null>(null);
 const isScrubbing = ref(false);
@@ -82,9 +80,9 @@ const scrubStartValue = ref(0);
 const isDragging = ref(false);
 const dragThreshold = 3; // pixels before considering it a drag vs click
 
-const defaultValue = computed(() => props.default ?? props.modelValue);
-const showReset = computed(() => props.default !== undefined);
-const displayUnit = computed(() => props.unit || props.suffix);
+const _defaultValue = computed(() => props.default ?? props.modelValue);
+const _showReset = computed(() => props.default !== undefined);
+const _displayUnit = computed(() => props.unit || props.suffix);
 
 const displayValue = computed(() => {
   if (Number.isInteger(props.modelValue) && props.precision === 0) {
@@ -98,11 +96,11 @@ function clamp(value: number): number {
 }
 
 function round(value: number): number {
-  const factor = Math.pow(10, props.precision);
+  const factor = 10 ** props.precision;
   return Math.round(value * factor) / factor;
 }
 
-function startScrub(e: MouseEvent): void {
+function _startScrub(e: MouseEvent): void {
   if (props.disabled) return;
   e.preventDefault();
 
@@ -110,14 +108,14 @@ function startScrub(e: MouseEvent): void {
   scrubStartX.value = e.clientX;
   scrubStartValue.value = props.modelValue;
 
-  document.addEventListener('mousemove', onScrubMove);
-  document.addEventListener('mouseup', stopScrub);
-  document.body.style.cursor = 'ew-resize';
-  document.body.style.userSelect = 'none';
+  document.addEventListener("mousemove", onScrubMove);
+  document.addEventListener("mouseup", stopScrub);
+  document.body.style.cursor = "ew-resize";
+  document.body.style.userSelect = "none";
 }
 
 // Handle mousedown on input - detect drag vs click
-function onInputMouseDown(e: MouseEvent): void {
+function _onInputMouseDown(e: MouseEvent): void {
   if (props.disabled) return;
 
   // Only trigger on left mouse button
@@ -132,13 +130,16 @@ function onInputMouseDown(e: MouseEvent): void {
     const deltaY = Math.abs(moveEvent.clientY - startY);
 
     // If moved beyond threshold, start scrubbing
-    if (!isDragging.value && (deltaX > dragThreshold || deltaY > dragThreshold)) {
+    if (
+      !isDragging.value &&
+      (deltaX > dragThreshold || deltaY > dragThreshold)
+    ) {
       isDragging.value = true;
       isScrubbing.value = true;
       scrubStartX.value = startX;
       scrubStartValue.value = props.modelValue;
-      document.body.style.cursor = 'ew-resize';
-      document.body.style.userSelect = 'none';
+      document.body.style.cursor = "ew-resize";
+      document.body.style.userSelect = "none";
 
       // Blur the input to prevent text selection issues
       inputRef.value?.blur();
@@ -150,20 +151,20 @@ function onInputMouseDown(e: MouseEvent): void {
   };
 
   const onMouseUp = () => {
-    document.removeEventListener('mousemove', onMouseMove);
-    document.removeEventListener('mouseup', onMouseUp);
+    document.removeEventListener("mousemove", onMouseMove);
+    document.removeEventListener("mouseup", onMouseUp);
 
     if (isDragging.value) {
       isScrubbing.value = false;
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
     }
     // If not dragging, the click will focus the input normally
     isDragging.value = false;
   };
 
-  document.addEventListener('mousemove', onMouseMove);
-  document.addEventListener('mouseup', onMouseUp);
+  document.addEventListener("mousemove", onMouseMove);
+  document.addEventListener("mouseup", onMouseUp);
 }
 
 function onScrubMove(e: MouseEvent): void {
@@ -178,56 +179,56 @@ function onScrubMove(e: MouseEvent): void {
   const newValue = round(clamp(scrubStartValue.value + deltaValue));
 
   if (newValue !== props.modelValue) {
-    emit('update:modelValue', newValue);
+    emit("update:modelValue", newValue);
   }
 }
 
 function stopScrub(): void {
   isScrubbing.value = false;
-  document.removeEventListener('mousemove', onScrubMove);
-  document.removeEventListener('mouseup', stopScrub);
-  document.body.style.cursor = '';
-  document.body.style.userSelect = '';
+  document.removeEventListener("mousemove", onScrubMove);
+  document.removeEventListener("mouseup", stopScrub);
+  document.body.style.cursor = "";
+  document.body.style.userSelect = "";
 }
 
-function onInput(e: Event): void {
+function _onInput(e: Event): void {
   const input = e.target as HTMLInputElement;
   const value = parseFloat(input.value);
 
-  if (!isNaN(value)) {
-    emit('update:modelValue', round(clamp(value)));
+  if (!Number.isNaN(value)) {
+    emit("update:modelValue", round(clamp(value)));
   }
 }
 
-function onKeyDown(e: KeyboardEvent): void {
+function _onKeyDown(e: KeyboardEvent): void {
   if (props.disabled) return;
 
   let delta = 0;
-  if (e.key === 'ArrowUp') delta = props.step;
-  else if (e.key === 'ArrowDown') delta = -props.step;
+  if (e.key === "ArrowUp") delta = props.step;
+  else if (e.key === "ArrowDown") delta = -props.step;
 
   if (delta !== 0) {
     e.preventDefault();
     if (e.shiftKey) delta *= 10;
     if (e.ctrlKey || e.metaKey) delta *= 0.1;
 
-    emit('update:modelValue', round(clamp(props.modelValue + delta)));
+    emit("update:modelValue", round(clamp(props.modelValue + delta)));
   }
 }
 
-function onBlur(e: FocusEvent): void {
+function _onBlur(e: FocusEvent): void {
   const input = e.target as HTMLInputElement;
   const value = parseFloat(input.value);
 
-  if (isNaN(value)) {
+  if (Number.isNaN(value)) {
     // Reset to current model value if invalid
     input.value = displayValue.value.toString();
   }
 }
 
-function reset(): void {
+function _reset(): void {
   if (props.default !== undefined) {
-    emit('update:modelValue', props.default);
+    emit("update:modelValue", props.default);
   }
 }
 </script>

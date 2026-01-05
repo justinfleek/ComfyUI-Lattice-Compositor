@@ -10,16 +10,15 @@
  * - Opacity and visibility controls
  */
 
-import * as THREE from 'three';
-import type { SceneManager } from './core/SceneManager';
+import * as THREE from "three";
+import type { SceneManager } from "./core/SceneManager";
 import {
   createColormapMaterial,
   updateColormapUniform,
   updateOpacityUniform,
-  type ColormapSettings,
-} from './utils/colormapShader';
+} from "./utils/colormapShader";
 
-export type ColormapType = 'viridis' | 'plasma' | 'grayscale';
+export type ColormapType = "viridis" | "plasma" | "grayscale";
 
 export interface DepthMapSettings {
   colormap: ColormapType;
@@ -31,7 +30,7 @@ export class BackgroundManager {
   private backgroundImage: THREE.Mesh | null = null;
   private depthMapMesh: THREE.Mesh | null = null;
   private depthMapSettings: DepthMapSettings = {
-    colormap: 'viridis',
+    colormap: "viridis",
     opacity: 0.5,
     visible: false,
   };
@@ -77,7 +76,7 @@ export class BackgroundManager {
    */
   setDepthMap(
     image: HTMLImageElement,
-    options: { colormap?: ColormapType; opacity?: number; visible?: boolean }
+    options: { colormap?: ColormapType; opacity?: number; visible?: boolean },
   ): void {
     this.depthMapSettings = {
       colormap: options.colormap ?? this.depthMapSettings.colormap,

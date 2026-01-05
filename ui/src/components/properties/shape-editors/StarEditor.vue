@@ -89,50 +89,72 @@
 </template>
 
 <script setup lang="ts">
-import type { StarShape } from '@/types/shapes';
-import { ScrubableNumber } from '@/components/controls';
-import KeyframeToggle from '../KeyframeToggle.vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import { createKeyframe } from '@/types/animation';
+import { useCompositorStore } from "@/stores/compositorStore";
+import { createKeyframe } from "@/types/animation";
+import type { StarShape } from "@/types/shapes";
 
 const props = defineProps<{ shape: StarShape; layerId: string }>();
-const emit = defineEmits(['update']);
+const emit = defineEmits(["update"]);
 const store = useCompositorStore();
 
-function updatePoint(prop: 'position', axis: 'x' | 'y', value: number) {
+function _updatePoint(prop: "position", axis: "x" | "y", value: number) {
   const updated = { ...props.shape };
   updated[prop] = {
     ...updated[prop],
-    value: { ...updated[prop].value, [axis]: value }
+    value: { ...updated[prop].value, [axis]: value },
   };
-  emit('update', updated);
+  emit("update", updated);
 }
 
-function updateNumber(prop: 'points' | 'outerRadius' | 'innerRadius' | 'outerRoundness' | 'innerRoundness' | 'rotation', value: number) {
+function _updateNumber(
+  prop:
+    | "points"
+    | "outerRadius"
+    | "innerRadius"
+    | "outerRoundness"
+    | "innerRoundness"
+    | "rotation",
+  value: number,
+) {
   const updated = { ...props.shape };
   updated[prop] = { ...updated[prop], value };
-  emit('update', updated);
+  emit("update", updated);
 }
 
-function updateDirection(e: Event) {
+function _updateDirection(e: Event) {
   const updated = { ...props.shape };
-  updated.direction = parseInt((e.target as HTMLSelectElement).value) as 1 | -1;
-  emit('update', updated);
+  updated.direction = parseInt((e.target as HTMLSelectElement).value, 10) as
+    | 1
+    | -1;
+  emit("update", updated);
 }
 
-function toggleKeyframe(prop: 'position' | 'points' | 'outerRadius' | 'innerRadius' | 'outerRoundness' | 'innerRoundness' | 'rotation') {
+function _toggleKeyframe(
+  prop:
+    | "position"
+    | "points"
+    | "outerRadius"
+    | "innerRadius"
+    | "outerRoundness"
+    | "innerRoundness"
+    | "rotation",
+) {
   const updated = { ...props.shape };
   const animProp = updated[prop];
   const frame = store.currentFrame;
 
-  const hasKf = animProp.keyframes.some(k => k.frame === frame);
+  const hasKf = animProp.keyframes.some((k) => k.frame === frame);
   if (hasKf) {
-    animProp.keyframes = animProp.keyframes.filter(k => k.frame !== frame) as typeof animProp.keyframes;
+    animProp.keyframes = animProp.keyframes.filter(
+      (k) => k.frame !== frame,
+    ) as typeof animProp.keyframes;
   } else {
-    (animProp.keyframes as unknown[]).push(createKeyframe(frame, animProp.value, 'linear'));
+    (animProp.keyframes as unknown[]).push(
+      createKeyframe(frame, animProp.value, "linear"),
+    );
   }
   animProp.animated = animProp.keyframes.length > 0;
-  emit('update', updated);
+  emit("update", updated);
 }
 </script>
 

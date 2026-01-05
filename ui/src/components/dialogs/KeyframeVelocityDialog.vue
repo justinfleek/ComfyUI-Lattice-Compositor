@@ -155,7 +155,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { computed, ref, watch } from "vue";
 
 const props = defineProps<{
   visible: boolean;
@@ -169,12 +169,14 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: [];
-  confirm: [settings: {
-    incomingVelocity: number;
-    outgoingVelocity: number;
-    incomingInfluence: number;
-    outgoingInfluence: number;
-  }];
+  confirm: [
+    settings: {
+      incomingVelocity: number;
+      outgoingVelocity: number;
+      incomingInfluence: number;
+      outgoingInfluence: number;
+    },
+  ];
 }>();
 
 // Form state
@@ -185,15 +187,15 @@ const outgoingInfluence = ref(33.33);
 const linkVelocities = ref(false);
 
 // Determine unit based on property type
-const velocityUnit = computed(() => {
-  const type = props.propertyType?.toLowerCase() || '';
-  if (type.includes('rotation') || type.includes('angle')) {
-    return 'deg/sec';
+const _velocityUnit = computed(() => {
+  const type = props.propertyType?.toLowerCase() || "";
+  if (type.includes("rotation") || type.includes("angle")) {
+    return "deg/sec";
   }
-  if (type.includes('opacity') || type.includes('scale')) {
-    return '%/sec';
+  if (type.includes("opacity") || type.includes("scale")) {
+    return "%/sec";
   }
-  return 'px/sec';
+  return "px/sec";
 });
 
 // Link velocities when checkbox is enabled
@@ -210,26 +212,29 @@ watch(outgoingVelocity, (newVal) => {
 });
 
 // Reset to initial values when dialog opens
-watch(() => props.visible, (visible) => {
-  if (visible) {
-    incomingVelocity.value = props.initialInVelocity ?? 0;
-    outgoingVelocity.value = props.initialOutVelocity ?? 0;
-    incomingInfluence.value = props.initialInInfluence ?? 33.33;
-    outgoingInfluence.value = props.initialOutInfluence ?? 33.33;
-    linkVelocities.value = false;
-  }
-});
+watch(
+  () => props.visible,
+  (visible) => {
+    if (visible) {
+      incomingVelocity.value = props.initialInVelocity ?? 0;
+      outgoingVelocity.value = props.initialOutVelocity ?? 0;
+      incomingInfluence.value = props.initialInInfluence ?? 33.33;
+      outgoingInfluence.value = props.initialOutInfluence ?? 33.33;
+      linkVelocities.value = false;
+    }
+  },
+);
 
 // Generate SVG path for incoming velocity curve
-const incomingCurvePath = computed(() => {
+const _incomingCurvePath = computed(() => {
   const influence = incomingInfluence.value / 100;
   const velocity = Math.min(Math.max(incomingVelocity.value / 100, -1), 1);
 
   // Control points for bezier
   const x1 = 0;
   const y1 = 60;
-  const cpX = 100 - (influence * 100);
-  const cpY = 40 + (velocity * 20);
+  const cpX = 100 - influence * 100;
+  const cpY = 40 + velocity * 20;
   const x2 = 100;
   const y2 = 40;
 
@@ -237,29 +242,29 @@ const incomingCurvePath = computed(() => {
 });
 
 // Generate SVG path for outgoing velocity curve
-const outgoingCurvePath = computed(() => {
+const _outgoingCurvePath = computed(() => {
   const influence = outgoingInfluence.value / 100;
   const velocity = Math.min(Math.max(outgoingVelocity.value / 100, -1), 1);
 
   // Control points for bezier
   const x1 = 100;
   const y1 = 40;
-  const cpX = 100 + (influence * 100);
-  const cpY = 40 - (velocity * 20);
+  const cpX = 100 + influence * 100;
+  const cpY = 40 - velocity * 20;
   const x2 = 200;
   const y2 = 20;
 
   return `M ${x1} ${y1} Q ${cpX} ${cpY} ${x2} ${y2}`;
 });
 
-function confirm() {
-  emit('confirm', {
+function _confirm() {
+  emit("confirm", {
     incomingVelocity: incomingVelocity.value,
     outgoingVelocity: outgoingVelocity.value,
     incomingInfluence: incomingInfluence.value,
-    outgoingInfluence: outgoingInfluence.value
+    outgoingInfluence: outgoingInfluence.value,
   });
-  emit('close');
+  emit("close");
 }
 </script>
 

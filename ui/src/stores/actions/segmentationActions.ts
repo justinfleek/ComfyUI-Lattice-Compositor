@@ -5,17 +5,17 @@
  * Used by Time-to-Move and other diffusion model integrations.
  */
 
-import { storeLogger } from '@/utils/logger';
-import type { Layer, AssetReference, ImageLayerData } from '@/types/project';
 import {
-  segmentByPoint,
+  applyMaskToImage,
+  autoSegment,
+  type SegmentationMask,
+  type SegmentationPoint,
   segmentByBox,
   segmentByMultiplePoints,
-  autoSegment,
-  applyMaskToImage,
-  type SegmentationPoint,
-  type SegmentationMask,
-} from '@/services/segmentation';
+  segmentByPoint,
+} from "@/services/segmentation";
+import type { AssetReference, ImageLayerData, Layer } from "@/types/project";
+import { storeLogger } from "@/utils/logger";
 
 export interface SegmentationStore {
   sourceImage: string | null;
@@ -29,7 +29,7 @@ export interface SegmentationStore {
 }
 
 export interface SegmentationOptions {
-  model?: 'sam2' | 'matseg';
+  model?: "sam2" | "matseg";
   layerName?: string;
   positionAtCenter?: boolean;
 }
@@ -48,14 +48,14 @@ export async function createLayerFromMask(
   sourceImageBase64: string,
   mask: SegmentationMask,
   name?: string,
-  positionAtCenter: boolean = false
+  positionAtCenter: boolean = false,
 ): Promise<Layer | null> {
   try {
     // Apply mask to source image to get transparent PNG
     const maskedImageBase64 = await applyMaskToImage(
       sourceImageBase64,
       mask.mask,
-      mask.bounds
+      mask.bounds,
     );
 
     // Generate asset ID
@@ -64,24 +64,24 @@ export async function createLayerFromMask(
     // Create asset reference
     const asset: AssetReference = {
       id: assetId,
-      type: 'image',
-      source: 'generated',
+      type: "image",
+      source: "generated",
       width: mask.bounds.width,
       height: mask.bounds.height,
-      data: maskedImageBase64
+      data: maskedImageBase64,
     };
 
     // Add asset to project
     store.project.assets[assetId] = asset;
 
     // Create image layer
-    const layer = store.createLayer('image', name || 'Segmented');
+    const layer = store.createLayer("image", name || "Segmented");
 
     // Set image data
     const imageData: ImageLayerData = {
       assetId,
-      fit: 'none', // Don't scale - use original size
-      sourceType: 'segmented'
+      fit: "none", // Don't scale - use original size
+      sourceType: "segmented",
     };
     layer.data = imageData;
 
@@ -90,13 +90,13 @@ export async function createLayerFromMask(
       // Center of composition
       layer.transform.position.value = {
         x: store.project.composition.width / 2,
-        y: store.project.composition.height / 2
+        y: store.project.composition.height / 2,
       };
     } else {
       // Position at the mask's center in the original image
       layer.transform.position.value = {
         x: mask.bounds.x + mask.bounds.width / 2,
-        y: mask.bounds.y + mask.bounds.height / 2
+        y: mask.bounds.y + mask.bounds.height / 2,
       };
     }
 
@@ -105,17 +105,19 @@ export async function createLayerFromMask(
     if (originProp) {
       originProp.value = {
         x: mask.bounds.width / 2,
-        y: mask.bounds.height / 2
+        y: mask.bounds.height / 2,
       };
     }
 
     store.project.meta.modified = new Date().toISOString();
     store.pushHistory();
 
-    storeLogger.info(`Created segmented layer: ${layer.name} (${mask.bounds.width}x${mask.bounds.height})`);
+    storeLogger.info(
+      `Created segmented layer: ${layer.name} (${mask.bounds.width}x${mask.bounds.height})`,
+    );
     return layer;
   } catch (err) {
-    storeLogger.error('Failed to create layer from mask:', err);
+    storeLogger.error("Failed to create layer from mask:", err);
     return null;
   }
 }
@@ -126,27 +128,41 @@ export async function createLayerFromMask(
 export async function segmentToLayerByPoint(
   store: SegmentationStore,
   point: SegmentationPoint,
-  options: SegmentationOptions = {}
+  options: SegmentationOptions = {},
 ): Promise<Layer | null> {
   const sourceImage = store.sourceImage;
   if (!sourceImage) {
-    storeLogger.error('No source image available for segmentation');
+    storeLogger.error("No source image available for segmentation");
     return null;
   }
 
   try {
-    const result = await segmentByPoint(sourceImage, point, options.model || 'sam2');
+    const result = await segmentByPoint(
+      sourceImage,
+      point,
+      options.model || "sam2",
+    );
 
-    if (result.status !== 'success' || !result.masks || result.masks.length === 0) {
-      storeLogger.error('Segmentation failed:', result.message);
+    if (
+      result.status !== "success" ||
+      !result.masks ||
+      result.masks.length === 0
+    ) {
+      storeLogger.error("Segmentation failed:", result.message);
       return null;
     }
 
     // Use the first (best) mask
     const mask = result.masks[0];
-    return createLayerFromMask(store, sourceImage, mask, options.layerName, options.positionAtCenter);
+    return createLayerFromMask(
+      store,
+      sourceImage,
+      mask,
+      options.layerName,
+      options.positionAtCenter,
+    );
   } catch (err) {
-    storeLogger.error('Segmentation error:', err);
+    storeLogger.error("Segmentation error:", err);
     return null;
   }
 }
@@ -157,26 +173,40 @@ export async function segmentToLayerByPoint(
 export async function segmentToLayerByBox(
   store: SegmentationStore,
   box: [number, number, number, number],
-  options: SegmentationOptions = {}
+  options: SegmentationOptions = {},
 ): Promise<Layer | null> {
   const sourceImage = store.sourceImage;
   if (!sourceImage) {
-    storeLogger.error('No source image available for segmentation');
+    storeLogger.error("No source image available for segmentation");
     return null;
   }
 
   try {
-    const result = await segmentByBox(sourceImage, box, options.model || 'sam2');
+    const result = await segmentByBox(
+      sourceImage,
+      box,
+      options.model || "sam2",
+    );
 
-    if (result.status !== 'success' || !result.masks || result.masks.length === 0) {
-      storeLogger.error('Segmentation failed:', result.message);
+    if (
+      result.status !== "success" ||
+      !result.masks ||
+      result.masks.length === 0
+    ) {
+      storeLogger.error("Segmentation failed:", result.message);
       return null;
     }
 
     const mask = result.masks[0];
-    return createLayerFromMask(store, sourceImage, mask, options.layerName, options.positionAtCenter);
+    return createLayerFromMask(
+      store,
+      sourceImage,
+      mask,
+      options.layerName,
+      options.positionAtCenter,
+    );
   } catch (err) {
-    storeLogger.error('Segmentation error:', err);
+    storeLogger.error("Segmentation error:", err);
     return null;
   }
 }
@@ -188,11 +218,11 @@ export async function segmentToLayerByMultiplePoints(
   store: SegmentationStore,
   foregroundPoints: SegmentationPoint[],
   backgroundPoints: SegmentationPoint[] = [],
-  options: SegmentationOptions = {}
+  options: SegmentationOptions = {},
 ): Promise<Layer | null> {
   const sourceImage = store.sourceImage;
   if (!sourceImage) {
-    storeLogger.error('No source image available for segmentation');
+    storeLogger.error("No source image available for segmentation");
     return null;
   }
 
@@ -201,18 +231,28 @@ export async function segmentToLayerByMultiplePoints(
       sourceImage,
       foregroundPoints,
       backgroundPoints,
-      options.model || 'sam2'
+      options.model || "sam2",
     );
 
-    if (result.status !== 'success' || !result.masks || result.masks.length === 0) {
-      storeLogger.error('Segmentation failed:', result.message);
+    if (
+      result.status !== "success" ||
+      !result.masks ||
+      result.masks.length === 0
+    ) {
+      storeLogger.error("Segmentation failed:", result.message);
       return null;
     }
 
     const mask = result.masks[0];
-    return createLayerFromMask(store, sourceImage, mask, options.layerName, options.positionAtCenter);
+    return createLayerFromMask(
+      store,
+      sourceImage,
+      mask,
+      options.layerName,
+      options.positionAtCenter,
+    );
   } catch (err) {
-    storeLogger.error('Segmentation error:', err);
+    storeLogger.error("Segmentation error:", err);
     return null;
   }
 }
@@ -222,28 +262,32 @@ export async function segmentToLayerByMultiplePoints(
  */
 export async function autoSegmentToLayers(
   store: SegmentationStore,
-  options: AutoSegmentOptions = {}
+  options: AutoSegmentOptions = {},
 ): Promise<Layer[]> {
   const sourceImage = store.sourceImage;
   if (!sourceImage) {
-    storeLogger.error('No source image available for segmentation');
+    storeLogger.error("No source image available for segmentation");
     return [];
   }
 
   try {
     const result = await autoSegment(sourceImage, {
-      model: options.model || 'sam2',
+      model: options.model || "sam2",
       minArea: options.minArea || 1000,
-      maxMasks: options.maxMasks || 10
+      maxMasks: options.maxMasks || 10,
     });
 
-    if (result.status !== 'success' || !result.masks || result.masks.length === 0) {
-      storeLogger.error('Auto-segmentation failed:', result.message);
+    if (
+      result.status !== "success" ||
+      !result.masks ||
+      result.masks.length === 0
+    ) {
+      storeLogger.error("Auto-segmentation failed:", result.message);
       return [];
     }
 
     const layers: Layer[] = [];
-    const prefix = options.namePrefix || 'Segment';
+    const prefix = options.namePrefix || "Segment";
 
     for (let i = 0; i < result.masks.length; i++) {
       const mask = result.masks[i];
@@ -252,7 +296,7 @@ export async function autoSegmentToLayers(
         sourceImage,
         mask,
         `${prefix} ${i + 1}`,
-        false // Don't center - preserve original position
+        false, // Don't center - preserve original position
       );
       if (layer) {
         layers.push(layer);
@@ -261,7 +305,7 @@ export async function autoSegmentToLayers(
 
     return layers;
   } catch (err) {
-    storeLogger.error('Auto-segmentation error:', err);
+    storeLogger.error("Auto-segmentation error:", err);
     return [];
   }
 }

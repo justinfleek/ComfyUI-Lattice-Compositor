@@ -13,7 +13,7 @@
  * - Cache invalidation on composition changes
  */
 
-import { detectGPUTier, type GPUTier } from './gpuDetection';
+import { detectGPUTier, type GPUTier } from "./gpuDetection";
 
 // ============================================================================
 // TYPES
@@ -71,7 +71,7 @@ export interface CacheStats {
 // DEFAULT CONFIGURATIONS BY GPU TIER
 // ============================================================================
 
-const TIER_CONFIGS: Record<GPUTier['tier'], Partial<FrameCacheConfig>> = {
+const TIER_CONFIGS: Record<GPUTier["tier"], Partial<FrameCacheConfig>> = {
   blackwell: {
     maxFrames: 500,
     maxMemoryBytes: 4 * 1024 * 1024 * 1024, // 4GB
@@ -209,8 +209,11 @@ export class FrameCache {
   private compositionKeyMap: Map<string, Set<string>> = new Map();
 
   // Pre-caching state
-  private preCacheQueue: Array<{ frame: number; compositionId: string; priority: number }> = [];
-  private isPreCaching: boolean = false;
+  private preCacheQueue: Array<{
+    frame: number;
+    compositionId: string;
+    priority: number;
+  }> = [];
   private preCacheAbort: AbortController | null = null;
 
   // Composition state tracking
@@ -256,7 +259,11 @@ export class FrameCache {
    * Get a cached frame
    * @returns The cached frame or null if not found/invalid
    */
-  get(frame: number, compositionId: string, currentStateHash?: string): ImageData | null {
+  get(
+    frame: number,
+    compositionId: string,
+    currentStateHash?: string,
+  ): ImageData | null {
     const key = this.getCacheKey(frame, compositionId);
     const cached = this.cache.get(key);
 
@@ -290,7 +297,11 @@ export class FrameCache {
   /**
    * Get a cached frame (async, supports compression)
    */
-  async getAsync(frame: number, compositionId: string, currentStateHash?: string): Promise<ImageData | null> {
+  async getAsync(
+    frame: number,
+    compositionId: string,
+    currentStateHash?: string,
+  ): Promise<ImageData | null> {
     const key = this.getCacheKey(frame, compositionId);
     const cached = this.cache.get(key);
 
@@ -324,7 +335,7 @@ export class FrameCache {
     frame: number,
     compositionId: string,
     imageData: ImageData,
-    stateHash: string
+    stateHash: string,
   ): Promise<void> {
     const key = this.getCacheKey(frame, compositionId);
 
@@ -336,8 +347,15 @@ export class FrameCache {
     // BUG-038 FIX: Validate imageData dimensions to prevent NaN corrupting memory counter
     const width = imageData.width;
     const height = imageData.height;
-    if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
-      console.warn('frameCache.set(): Invalid imageData dimensions, skipping cache');
+    if (
+      !Number.isFinite(width) ||
+      !Number.isFinite(height) ||
+      width <= 0 ||
+      height <= 0
+    ) {
+      console.warn(
+        "frameCache.set(): Invalid imageData dimensions, skipping cache",
+      );
       return;
     }
 
@@ -469,7 +487,7 @@ export class FrameCache {
     currentFrame: number,
     compositionId: string,
     stateHash: string,
-    direction: 'forward' | 'backward' | 'both' = 'both'
+    direction: "forward" | "backward" | "both" = "both",
   ): Promise<void> {
     if (!this.config.predictivePreCache || !this.renderFrame) {
       return;
@@ -485,17 +503,20 @@ export class FrameCache {
     this.preCacheQueue = [];
     // BUG-037 FIX: Validate preCacheWindow to prevent infinite loop
     const rawWindow = this.config.preCacheWindow;
-    const window = (Number.isFinite(rawWindow) && rawWindow > 0) ? Math.min(rawWindow, 1000) : 10;
+    const window =
+      Number.isFinite(rawWindow) && rawWindow > 0
+        ? Math.min(rawWindow, 1000)
+        : 10;
 
     for (let i = 1; i <= window; i++) {
-      if (direction !== 'backward') {
+      if (direction !== "backward") {
         this.preCacheQueue.push({
           frame: currentFrame + i,
           compositionId,
           priority: window - i, // Closer frames have higher priority
         });
       }
-      if (direction !== 'forward') {
+      if (direction !== "forward") {
         this.preCacheQueue.push({
           frame: currentFrame - i,
           compositionId,
@@ -519,7 +540,12 @@ export class FrameCache {
         try {
           const imageData = await this.renderFrame(item.frame);
           if (!signal.aborted) {
-            await this.set(item.frame, item.compositionId, imageData, stateHash);
+            await this.set(
+              item.frame,
+              item.compositionId,
+              imageData,
+              stateHash,
+            );
           }
         } catch (error) {
           // Frame render failed, skip
@@ -591,7 +617,7 @@ export class FrameCache {
         this.cache.delete(oldestKey);
 
         // Update composition index
-        const compositionId = oldestKey.split(':')[0];
+        const compositionId = oldestKey.split(":")[0];
         const keySet = this.compositionKeyMap.get(compositionId);
         if (keySet) {
           keySet.delete(oldestKey);
@@ -607,12 +633,12 @@ export class FrameCache {
   private async compressFrame(imageData: ImageData): Promise<Blob> {
     // Create offscreen canvas for compression
     const canvas = new OffscreenCanvas(imageData.width, imageData.height);
-    const ctx = canvas.getContext('2d')!;
+    const ctx = canvas.getContext("2d")!;
     ctx.putImageData(imageData, 0, 0);
 
     // Use WebP for good compression with quality
     return canvas.convertToBlob({
-      type: 'image/webp',
+      type: "image/webp",
       quality: this.config.compressionQuality,
     });
   }
@@ -627,7 +653,7 @@ export class FrameCache {
 
     // Draw to canvas and extract ImageData
     const canvas = new OffscreenCanvas(cached.width, cached.height);
-    const ctx = canvas.getContext('2d')!;
+    const ctx = canvas.getContext("2d")!;
     ctx.drawImage(bitmap, 0, 0);
     bitmap.close();
 

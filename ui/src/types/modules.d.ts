@@ -2,24 +2,32 @@
  * Module declarations for packages without TypeScript support
  */
 
-declare module 'splitpanes' {
-  import { DefineComponent } from 'vue';
-  export const Splitpanes: DefineComponent<{
-    horizontal?: boolean;
-    pushOtherPanes?: boolean;
-    dblClickSplitter?: boolean;
-    rtl?: boolean;
-  }, {}, any>;
-  export const Pane: DefineComponent<{
-    size?: number | string;
-    minSize?: number | string;
-    maxSize?: number | string;
-  }, {}, any>;
+declare module "splitpanes" {
+  import { DefineComponent } from "vue";
+  export const Splitpanes: DefineComponent<
+    {
+      horizontal?: boolean;
+      pushOtherPanes?: boolean;
+      dblClickSplitter?: boolean;
+      rtl?: boolean;
+    },
+    {},
+    any
+  >;
+  export const Pane: DefineComponent<
+    {
+      size?: number | string;
+      minSize?: number | string;
+      maxSize?: number | string;
+    },
+    {},
+    any
+  >;
 }
 
 // Three.js post-processing types (from examples)
-declare module 'three/examples/jsm/postprocessing/Pass' {
-  import * as THREE from 'three';
+declare module "three/examples/jsm/postprocessing/Pass" {
+  import * as THREE from "three";
   export class Pass {
     enabled: boolean;
     needsSwap: boolean;
@@ -31,7 +39,7 @@ declare module 'three/examples/jsm/postprocessing/Pass' {
       writeBuffer: THREE.WebGLRenderTarget,
       readBuffer: THREE.WebGLRenderTarget,
       deltaTime?: number,
-      maskActive?: boolean
+      maskActive?: boolean,
     ): void;
     dispose(): void;
   }
@@ -50,14 +58,14 @@ declare namespace THREE {
       writeBuffer: WebGLRenderTarget,
       readBuffer: WebGLRenderTarget,
       deltaTime?: number,
-      maskActive?: boolean
+      maskActive?: boolean,
     ): void;
     dispose(): void;
   }
 }
 
-declare module 'troika-three-text' {
-  import * as THREE from 'three';
+declare module "troika-three-text" {
+  import * as THREE from "three";
 
   export class Text extends THREE.Mesh {
     text: string;
@@ -65,7 +73,7 @@ declare module 'troika-three-text' {
     font: string | null;
     color: number | string;
     maxWidth: number;
-    textAlign: 'left' | 'right' | 'center' | 'justify';
+    textAlign: "left" | "right" | "center" | "justify";
     anchorX: number | string;
     anchorY: number | string;
     letterSpacing: number;
@@ -88,8 +96,5 @@ declare module 'troika-three-text' {
     dispose(): void;
   }
 
-  export function preloadFont(
-    font: string,
-    callback?: () => void
-  ): void;
+  export function preloadFont(font: string, callback?: () => void): void;
 }

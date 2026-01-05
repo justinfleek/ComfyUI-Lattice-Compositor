@@ -56,46 +56,47 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { computed, onMounted, ref } from "vue";
 import {
-  memoryState,
-  initializeGPUDetection,
-  getWarning,
   freeMemory,
+  getWarning,
+  initializeGPUDetection,
+  memoryState,
   unloadableItems,
-  type MemoryCategory,
-} from '@/services/memoryBudget';
+} from "@/services/memoryBudget";
 
-const showDetails = ref(false);
+const _showDetails = ref(false);
 const isCleaningUp = ref(false);
 
 // Computed values from memory state
-const usagePercent = computed(() => Math.round(memoryState.usagePercent.value * 100));
+const usagePercent = computed(() =>
+  Math.round(memoryState.usagePercent.value * 100),
+);
 const totalUsage = computed(() => memoryState.totalUsageMB.value);
 const available = computed(() => memoryState.availableVRAM.value);
 const warningLevel = computed(() => memoryState.warningLevel.value);
-const gpuInfo = computed(() => memoryState.gpuInfo.value);
-const usageByCategory = computed(() => memoryState.usageByCategory.value);
-const warning = computed(() => getWarning());
-const unloadableCount = computed(() => unloadableItems.value.length);
+const _gpuInfo = computed(() => memoryState.gpuInfo.value);
+const _usageByCategory = computed(() => memoryState.usageByCategory.value);
+const _warning = computed(() => getWarning());
+const _unloadableCount = computed(() => unloadableItems.value.length);
 
-const warningClass = computed(() => ({
-  'level-none': warningLevel.value === 'none',
-  'level-info': warningLevel.value === 'info',
-  'level-warning': warningLevel.value === 'warning',
-  'level-critical': warningLevel.value === 'critical',
+const _warningClass = computed(() => ({
+  "level-none": warningLevel.value === "none",
+  "level-info": warningLevel.value === "info",
+  "level-warning": warningLevel.value === "warning",
+  "level-critical": warningLevel.value === "critical",
 }));
 
-const usageText = computed(() => {
+const _usageText = computed(() => {
   return `${formatMB(totalUsage.value)} / ${formatMB(available.value)}`;
 });
 
-const tooltipText = computed(() => {
+const _tooltipText = computed(() => {
   const percent = usagePercent.value;
-  if (warningLevel.value === 'critical') {
+  if (warningLevel.value === "critical") {
     return `CRITICAL: ${percent}% GPU memory used - cleanup needed!`;
   }
-  if (warningLevel.value === 'warning') {
+  if (warningLevel.value === "warning") {
     return `Warning: ${percent}% GPU memory used - consider cleanup`;
   }
   return `GPU Memory: ${percent}% used`;
@@ -108,20 +109,20 @@ function formatMB(mb: number): string {
   return `${Math.round(mb)}MB`;
 }
 
-function formatCategory(category: string): string {
+function _formatCategory(category: string): string {
   const labels: Record<string, string> = {
-    model: 'AI Models',
-    texture: 'Textures',
-    framebuffer: 'Frame Cache',
-    particles: 'Particles',
-    geometry: '3D Geometry',
-    audio: 'Audio',
-    other: 'Other',
+    model: "AI Models",
+    texture: "Textures",
+    framebuffer: "Frame Cache",
+    particles: "Particles",
+    geometry: "3D Geometry",
+    audio: "Audio",
+    other: "Other",
   };
   return labels[category] || category;
 }
 
-async function performCleanup() {
+async function _performCleanup() {
   isCleaningUp.value = true;
   try {
     const target = totalUsage.value * 0.3; // Try to free 30%

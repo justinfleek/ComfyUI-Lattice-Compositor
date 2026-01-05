@@ -11,9 +11,9 @@
  * Extracted from GPUParticleSystem.ts for modularity.
  */
 
-import * as THREE from 'three';
-import { PARTICLE_STRIDE, type FlockingConfig } from './types';
-import { SpatialHashGrid } from './SpatialHashGrid';
+import * as THREE from "three";
+import type { SpatialHashGrid } from "./SpatialHashGrid";
+import { type FlockingConfig, PARTICLE_STRIDE } from "./types";
 
 // ============================================================================
 // PARTICLE FLOCKING SYSTEM CLASS
@@ -96,9 +96,10 @@ export class ParticleFlockingSystem {
       const speed = Math.sqrt(vx * vx + vy * vy + vz * vz);
 
       // Precompute perception angle cosine threshold (360° means all neighbors visible)
-      const perceptionCos = this.config.perceptionAngle >= 360
-        ? -1.0  // -1 means all angles pass
-        : Math.cos((this.config.perceptionAngle / 2) * Math.PI / 180);
+      const perceptionCos =
+        this.config.perceptionAngle >= 360
+          ? -1.0 // -1 means all angles pass
+          : Math.cos(((this.config.perceptionAngle / 2) * Math.PI) / 180);
 
       // Use shared spatial hash for neighbor queries
       for (const j of this.spatialHash.getNeighbors(px, py, pz)) {
@@ -123,7 +124,10 @@ export class ParticleFlockingSystem {
           const toNeighborZ = -dz / dist;
 
           // Dot product with normalized velocity (facing direction)
-          const dot = (vx / speed) * toNeighborX + (vy / speed) * toNeighborY + (vz / speed) * toNeighborZ;
+          const dot =
+            (vx / speed) * toNeighborX +
+            (vy / speed) * toNeighborY +
+            (vz / speed) * toNeighborZ;
 
           // If dot < perceptionCos, neighbor is outside field of view
           if (dot < perceptionCos) continue;
@@ -137,11 +141,13 @@ export class ParticleFlockingSystem {
 
         // Alignment - match velocity with neighbors
         if (dist < this.config.alignmentRadius) {
-          alignment.add(new THREE.Vector3(
-            particleBuffer[jOffset + 3],
-            particleBuffer[jOffset + 4],
-            particleBuffer[jOffset + 5]
-          ));
+          alignment.add(
+            new THREE.Vector3(
+              particleBuffer[jOffset + 3],
+              particleBuffer[jOffset + 4],
+              particleBuffer[jOffset + 5],
+            ),
+          );
           alignmentCount++;
         }
 
@@ -154,14 +160,23 @@ export class ParticleFlockingSystem {
 
       // Apply weighted forces
       if (separationCount > 0) {
-        separation.divideScalar(separationCount).normalize().multiplyScalar(this.config.separationWeight);
+        separation
+          .divideScalar(separationCount)
+          .normalize()
+          .multiplyScalar(this.config.separationWeight);
       }
       if (alignmentCount > 0) {
-        alignment.divideScalar(alignmentCount).normalize().multiplyScalar(this.config.alignmentWeight);
+        alignment
+          .divideScalar(alignmentCount)
+          .normalize()
+          .multiplyScalar(this.config.alignmentWeight);
       }
       if (cohesionCount > 0) {
         cohesion.divideScalar(cohesionCount);
-        cohesion.sub(new THREE.Vector3(px, py, pz)).normalize().multiplyScalar(this.config.cohesionWeight);
+        cohesion
+          .sub(new THREE.Vector3(px, py, pz))
+          .normalize()
+          .multiplyScalar(this.config.cohesionWeight);
       }
 
       // Combine steering forces
@@ -178,8 +193,8 @@ export class ParticleFlockingSystem {
       // Limit speed
       const newSpeed = Math.sqrt(
         particleBuffer[offset + 3] ** 2 +
-        particleBuffer[offset + 4] ** 2 +
-        particleBuffer[offset + 5] ** 2
+          particleBuffer[offset + 4] ** 2 +
+          particleBuffer[offset + 5] ** 2,
       );
       if (newSpeed > this.config.maxSpeed) {
         const scale = this.config.maxSpeed / newSpeed;

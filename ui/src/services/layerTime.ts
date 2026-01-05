@@ -18,8 +18,8 @@
  * regardless of playback history or scrubbing order.
  */
 
-import type { Layer, AnimatableProperty } from '@/types/project';
-import { interpolateProperty } from './interpolation';
+import type { AnimatableProperty, Layer } from "@/types/project";
+import { interpolateProperty } from "./interpolation";
 
 // ============================================================================
 // TYPES
@@ -89,9 +89,16 @@ export interface SourceTimeResult {
 export function getSourceTime(
   compFrame: number,
   layer: Layer,
-  options: SourceTimeOptions
+  options: SourceTimeOptions,
 ): SourceTimeResult {
-  const { fps, speedMap, speedMapEnabled = false, sourceDuration, loop = false, pingPong = false } = options;
+  const {
+    fps,
+    speedMap,
+    speedMapEnabled = false,
+    sourceDuration,
+    loop = false,
+    pingPong = false,
+  } = options;
 
   // Get time stretch (default 100 = normal speed)
   const timeStretch = layer.timeStretch ?? 100;
@@ -149,7 +156,8 @@ export function getSourceTime(
       } else {
         // Simple loop
         const originalFrame = sourceFrame;
-        sourceFrame = ((sourceFrame % sourceDuration) + sourceDuration) % sourceDuration;
+        sourceFrame =
+          ((sourceFrame % sourceDuration) + sourceDuration) % sourceDuration;
         wasAdjusted = sourceFrame !== originalFrame;
       }
     } else {
@@ -179,10 +187,13 @@ export function getSourceTime(
  * @param timeStretch - Time stretch percentage (100 = normal)
  * @returns Stretched duration in frames
  */
-export function getStretchedDuration(sourceDuration: number, timeStretch: number): number {
+export function getStretchedDuration(
+  sourceDuration: number,
+  timeStretch: number,
+): number {
   if (timeStretch === 0) return sourceDuration;
   // 100% stretch = same duration, 200% = 2x duration, 50% = 0.5x duration
-  return Math.round(sourceDuration * Math.abs(timeStretch) / 100);
+  return Math.round((sourceDuration * Math.abs(timeStretch)) / 100);
 }
 
 /**
@@ -196,14 +207,14 @@ export function getStretchedDuration(sourceDuration: number, timeStretch: number
 export function calculateStretchedEndpoints(
   layer: Layer,
   newTimeStretch: number,
-  anchorFrame?: number
+  anchorFrame?: number,
 ): { startFrame: number; endFrame: number } {
   const currentStretch = layer.timeStretch ?? 100;
-  const anchor = layer.stretchAnchor ?? 'startFrame';
+  const anchor = layer.stretchAnchor ?? "startFrame";
 
   const currentDuration = layer.endFrame - layer.startFrame;
   // Calculate original source duration
-  const sourceDuration = currentDuration * 100 / Math.abs(currentStretch);
+  const sourceDuration = (currentDuration * 100) / Math.abs(currentStretch);
   // Calculate new stretched duration
   const newDuration = getStretchedDuration(sourceDuration, newTimeStretch);
 
@@ -217,20 +228,21 @@ export function calculateStretchedEndpoints(
     endFrame = startFrame + newDuration;
   } else {
     switch (anchor) {
-      case 'startFrame':
+      case "startFrame":
         // Keep start fixed, adjust end
         endFrame = startFrame + newDuration;
         break;
-      case 'endFrame':
+      case "endFrame":
         // Keep end fixed, adjust start
         startFrame = endFrame - newDuration;
         break;
-      case 'currentFrame':
+      case "currentFrame": {
         // Stretch around center (default if no specific frame given)
         const center = (layer.startFrame + layer.endFrame) / 2;
         startFrame = Math.round(center - newDuration / 2);
         endFrame = startFrame + newDuration;
         break;
+      }
     }
   }
 
@@ -244,7 +256,10 @@ export function calculateStretchedEndpoints(
  * @param compFrame - Composition frame
  * @returns True if layer is visible at this frame
  */
-export function isLayerVisibleAtFrame(layer: Layer, compFrame: number): boolean {
+export function isLayerVisibleAtFrame(
+  layer: Layer,
+  compFrame: number,
+): boolean {
   const start = layer.startFrame ?? 0;
   const end = layer.endFrame ?? 80;
   return compFrame >= start && compFrame <= end;
@@ -268,7 +283,7 @@ export function getSourceFrame(
   fps: number,
   speedMap?: AnimatableProperty<number>,
   speedMapEnabled?: boolean,
-  sourceDuration?: number
+  sourceDuration?: number,
 ): number {
   const result = getSourceTime(compFrame, layer, {
     fps,

@@ -99,9 +99,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
-import { easings } from '@/services/easing';
-import type { InterpolationType, BaseInterpolationType, ControlMode } from '@/types/project';
+import { computed, ref, watch } from "vue";
+import { easings } from "@/services/easing";
+import type {
+  BaseInterpolationType,
+  ControlMode,
+  InterpolationType,
+} from "@/types/project";
 
 const props = defineProps<{
   visible: boolean;
@@ -112,54 +116,61 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: [];
-  confirm: [settings: {
-    interpolation: BaseInterpolationType;
-    easingPreset: string;
-    controlMode: ControlMode;
-  }];
+  confirm: [
+    settings: {
+      interpolation: BaseInterpolationType;
+      easingPreset: string;
+      controlMode: ControlMode;
+    },
+  ];
 }>();
 
-const interpolationType = ref<BaseInterpolationType>('bezier');
-const easingPreset = ref<string>('easeInOutCubic');
-const controlMode = ref<ControlMode>('smooth');
+const interpolationType = ref<BaseInterpolationType>("bezier");
+const easingPreset = ref<string>("easeInOutCubic");
+const controlMode = ref<ControlMode>("smooth");
 
 // Reset to initial values when dialog opens
-watch(() => props.visible, (visible) => {
-  if (visible) {
-    // Convert easing names to 'bezier' (easing is handled via easingPreset field)
-    const initial = props.initialInterpolation;
-    const isBaseType = initial === 'linear' || initial === 'bezier' || initial === 'hold';
-    interpolationType.value = isBaseType ? initial : 'bezier';
-    controlMode.value = props.initialControlMode || 'smooth';
-    easingPreset.value = 'easeInOutCubic';
-  }
-});
+watch(
+  () => props.visible,
+  (visible) => {
+    if (visible) {
+      // Convert easing names to 'bezier' (easing is handled via easingPreset field)
+      const initial = props.initialInterpolation;
+      const isBaseType =
+        initial === "linear" || initial === "bezier" || initial === "hold";
+      interpolationType.value = isBaseType ? initial : "bezier";
+      controlMode.value = props.initialControlMode || "smooth";
+      easingPreset.value = "easeInOutCubic";
+    }
+  },
+);
 
 // Generate SVG path for curve preview
-const curvePath = computed(() => {
-  if (interpolationType.value !== 'bezier') {
-    return 'M 0 100 L 100 0';
+const _curvePath = computed(() => {
+  if (interpolationType.value !== "bezier") {
+    return "M 0 100 L 100 0";
   }
 
-  const easingFn = easings[easingPreset.value as keyof typeof easings] || easings.linear;
+  const easingFn =
+    easings[easingPreset.value as keyof typeof easings] || easings.linear;
   const points: string[] = [];
 
   for (let i = 0; i <= 100; i += 2) {
     const t = i / 100;
     const y = 100 - easingFn(t) * 100;
-    points.push(`${i === 0 ? 'M' : 'L'} ${i} ${y}`);
+    points.push(`${i === 0 ? "M" : "L"} ${i} ${y}`);
   }
 
-  return points.join(' ');
+  return points.join(" ");
 });
 
-function confirm() {
-  emit('confirm', {
+function _confirm() {
+  emit("confirm", {
     interpolation: interpolationType.value,
     easingPreset: easingPreset.value,
-    controlMode: controlMode.value
+    controlMode: controlMode.value,
   });
-  emit('close');
+  emit("close");
 }
 </script>
 

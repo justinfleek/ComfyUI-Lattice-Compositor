@@ -16,9 +16,9 @@
  * - Limb color customization
  */
 
-import * as THREE from 'three';
-import { BaseLayer } from './BaseLayer';
-import type { Layer, AnimatableProperty, Vec2, Vec3 } from '@/types/project';
+import * as THREE from "three";
+import type { AnimatableProperty, Layer, Vec2 } from "@/types/project";
+import { BaseLayer } from "./BaseLayer";
 
 // ============================================================================
 // OPENPOSE SKELETON DEFINITIONS
@@ -29,24 +29,24 @@ import type { Layer, AnimatableProperty, Vec2, Vec3 } from '@/types/project';
  * Index: [name, parent index (-1 = root)]
  */
 export const COCO_KEYPOINTS = [
-  { name: 'nose', parent: -1 },           // 0
-  { name: 'neck', parent: 0 },            // 1
-  { name: 'right_shoulder', parent: 1 },  // 2
-  { name: 'right_elbow', parent: 2 },     // 3
-  { name: 'right_wrist', parent: 3 },     // 4
-  { name: 'left_shoulder', parent: 1 },   // 5
-  { name: 'left_elbow', parent: 5 },      // 6
-  { name: 'left_wrist', parent: 6 },      // 7
-  { name: 'right_hip', parent: 1 },       // 8
-  { name: 'right_knee', parent: 8 },      // 9
-  { name: 'right_ankle', parent: 9 },     // 10
-  { name: 'left_hip', parent: 1 },        // 11
-  { name: 'left_knee', parent: 11 },      // 12
-  { name: 'left_ankle', parent: 12 },     // 13
-  { name: 'right_eye', parent: 0 },       // 14
-  { name: 'left_eye', parent: 0 },        // 15
-  { name: 'right_ear', parent: 14 },      // 16
-  { name: 'left_ear', parent: 15 },       // 17
+  { name: "nose", parent: -1 }, // 0
+  { name: "neck", parent: 0 }, // 1
+  { name: "right_shoulder", parent: 1 }, // 2
+  { name: "right_elbow", parent: 2 }, // 3
+  { name: "right_wrist", parent: 3 }, // 4
+  { name: "left_shoulder", parent: 1 }, // 5
+  { name: "left_elbow", parent: 5 }, // 6
+  { name: "left_wrist", parent: 6 }, // 7
+  { name: "right_hip", parent: 1 }, // 8
+  { name: "right_knee", parent: 8 }, // 9
+  { name: "right_ankle", parent: 9 }, // 10
+  { name: "left_hip", parent: 1 }, // 11
+  { name: "left_knee", parent: 11 }, // 12
+  { name: "left_ankle", parent: 12 }, // 13
+  { name: "right_eye", parent: 0 }, // 14
+  { name: "left_eye", parent: 0 }, // 15
+  { name: "right_ear", parent: 14 }, // 16
+  { name: "left_ear", parent: 15 }, // 17
 ] as const;
 
 /**
@@ -55,25 +55,25 @@ export const COCO_KEYPOINTS = [
  */
 export const COCO_BONES: [number, number][] = [
   // Head
-  [0, 1],   // nose -> neck
-  [0, 14],  // nose -> right_eye
-  [0, 15],  // nose -> left_eye
+  [0, 1], // nose -> neck
+  [0, 14], // nose -> right_eye
+  [0, 15], // nose -> left_eye
   [14, 16], // right_eye -> right_ear
   [15, 17], // left_eye -> left_ear
   // Torso
-  [1, 2],   // neck -> right_shoulder
-  [1, 5],   // neck -> left_shoulder
-  [1, 8],   // neck -> right_hip
-  [1, 11],  // neck -> left_hip
+  [1, 2], // neck -> right_shoulder
+  [1, 5], // neck -> left_shoulder
+  [1, 8], // neck -> right_hip
+  [1, 11], // neck -> left_hip
   // Right arm
-  [2, 3],   // right_shoulder -> right_elbow
-  [3, 4],   // right_elbow -> right_wrist
+  [2, 3], // right_shoulder -> right_elbow
+  [3, 4], // right_elbow -> right_wrist
   // Left arm
-  [5, 6],   // left_shoulder -> left_elbow
-  [6, 7],   // left_elbow -> left_wrist
+  [5, 6], // left_shoulder -> left_elbow
+  [6, 7], // left_elbow -> left_wrist
   // Right leg
-  [8, 9],   // right_hip -> right_knee
-  [9, 10],  // right_knee -> right_ankle
+  [8, 9], // right_hip -> right_knee
+  [9, 10], // right_knee -> right_ankle
   // Left leg
   [11, 12], // left_hip -> left_knee
   [12, 13], // left_knee -> left_ankle
@@ -84,15 +84,15 @@ export const COCO_BONES: [number, number][] = [
  */
 export const OPENPOSE_COLORS: Record<string, string> = {
   // Head - yellow/orange
-  head: '#FFD700',
+  head: "#FFD700",
   // Right side - warm colors (red/orange)
-  right_arm: '#FF0000',
-  right_leg: '#FF6600',
+  right_arm: "#FF0000",
+  right_leg: "#FF6600",
   // Left side - cool colors (blue/cyan)
-  left_arm: '#0000FF',
-  left_leg: '#00CCFF',
+  left_arm: "#0000FF",
+  left_leg: "#00CCFF",
   // Torso - green
-  torso: '#00FF00',
+  torso: "#00FF00",
 };
 
 /**
@@ -100,9 +100,9 @@ export const OPENPOSE_COLORS: Record<string, string> = {
  */
 export function getBoneColor(boneIndex: number): string {
   const bone = COCO_BONES[boneIndex];
-  if (!bone) return '#FFFFFF';
+  if (!bone) return "#FFFFFF";
 
-  const [start, end] = bone;
+  const [_start, _end] = bone;
 
   // Head bones (0-4)
   if (boneIndex <= 4) return OPENPOSE_COLORS.head;
@@ -122,14 +122,14 @@ export function getBoneColor(boneIndex: number): string {
   // Left leg (15-16)
   if (boneIndex >= 15 && boneIndex <= 16) return OPENPOSE_COLORS.left_leg;
 
-  return '#FFFFFF';
+  return "#FFFFFF";
 }
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-export type PoseFormat = 'coco18' | 'body25' | 'custom';
+export type PoseFormat = "coco18" | "body25" | "custom";
 
 export interface PoseKeypoint {
   /** X position (0-1 normalized or pixel coordinates) */
@@ -184,33 +184,34 @@ export interface PoseLayerData {
 // DEFAULT VALUES
 // ============================================================================
 
-export function createDefaultPose(format: PoseFormat = 'coco18'): Pose {
-  const keypointCount = format === 'coco18' ? 18 : format === 'body25' ? 25 : 18;
+export function createDefaultPose(format: PoseFormat = "coco18"): Pose {
+  const keypointCount =
+    format === "coco18" ? 18 : format === "body25" ? 25 : 18;
 
   // Create default T-pose
   const keypoints: PoseKeypoint[] = [];
 
-  if (format === 'coco18') {
+  if (format === "coco18") {
     // Default T-pose positions (normalized 0-1)
     const defaultPositions: [number, number][] = [
-      [0.5, 0.1],   // 0: nose
-      [0.5, 0.2],   // 1: neck
-      [0.35, 0.2],  // 2: right_shoulder
-      [0.25, 0.2],  // 3: right_elbow
-      [0.15, 0.2],  // 4: right_wrist
-      [0.65, 0.2],  // 5: left_shoulder
-      [0.75, 0.2],  // 6: left_elbow
-      [0.85, 0.2],  // 7: left_wrist
-      [0.4, 0.45],  // 8: right_hip
-      [0.4, 0.65],  // 9: right_knee
-      [0.4, 0.85],  // 10: right_ankle
-      [0.6, 0.45],  // 11: left_hip
-      [0.6, 0.65],  // 12: left_knee
-      [0.6, 0.85],  // 13: left_ankle
+      [0.5, 0.1], // 0: nose
+      [0.5, 0.2], // 1: neck
+      [0.35, 0.2], // 2: right_shoulder
+      [0.25, 0.2], // 3: right_elbow
+      [0.15, 0.2], // 4: right_wrist
+      [0.65, 0.2], // 5: left_shoulder
+      [0.75, 0.2], // 6: left_elbow
+      [0.85, 0.2], // 7: left_wrist
+      [0.4, 0.45], // 8: right_hip
+      [0.4, 0.65], // 9: right_knee
+      [0.4, 0.85], // 10: right_ankle
+      [0.6, 0.45], // 11: left_hip
+      [0.6, 0.65], // 12: left_knee
+      [0.6, 0.85], // 13: left_ankle
       [0.45, 0.08], // 14: right_eye
       [0.55, 0.08], // 15: left_eye
-      [0.4, 0.1],   // 16: right_ear
-      [0.6, 0.1],   // 17: left_ear
+      [0.4, 0.1], // 16: right_ear
+      [0.6, 0.1], // 17: left_ear
     ];
 
     for (const [x, y] of defaultPositions) {
@@ -226,14 +227,14 @@ export function createDefaultPose(format: PoseFormat = 'coco18'): Pose {
   return {
     id: `pose_default_${format}`,
     keypoints,
-    format
+    format,
   };
 }
 
 export function createDefaultPoseLayerData(): PoseLayerData {
   return {
-    poses: [createDefaultPose('coco18')],
-    format: 'coco18',
+    poses: [createDefaultPose("coco18")],
+    format: "coco18",
     normalized: true,
     boneWidth: 4,
     keypointRadius: 6,
@@ -241,11 +242,11 @@ export function createDefaultPoseLayerData(): PoseLayerData {
     showBones: true,
     showLabels: false,
     useDefaultColors: true,
-    customBoneColor: '#FFFFFF',
-    customKeypointColor: '#FF0000',
-    backgroundColor: '#000000',
+    customBoneColor: "#FFFFFF",
+    customKeypointColor: "#FF0000",
+    backgroundColor: "#000000",
     boneOpacity: 1.0,
-    keypointOpacity: 1.0
+    keypointOpacity: 1.0,
   };
 }
 
@@ -254,12 +255,11 @@ export function createDefaultPoseLayerData(): PoseLayerData {
 // ============================================================================
 
 export class PoseLayer extends BaseLayer {
-  type = 'pose' as const;
+  type = "pose" as const;
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
   private texture: THREE.CanvasTexture;
   private mesh: THREE.Mesh;
-  private lastRenderedFrame: number = -1;
 
   // Composition dimensions (set by LayerManager when composition changes)
   private compWidth: number = 512;
@@ -269,10 +269,10 @@ export class PoseLayer extends BaseLayer {
     super(layerData);
 
     // Create canvas for 2D pose rendering
-    this.canvas = document.createElement('canvas');
+    this.canvas = document.createElement("canvas");
     this.canvas.width = this.compWidth;
     this.canvas.height = this.compHeight;
-    this.ctx = this.canvas.getContext('2d')!;
+    this.ctx = this.canvas.getContext("2d")!;
 
     // Create Three.js texture and mesh
     this.texture = new THREE.CanvasTexture(this.canvas);
@@ -283,7 +283,7 @@ export class PoseLayer extends BaseLayer {
     const material = new THREE.MeshBasicMaterial({
       map: this.texture,
       transparent: true,
-      side: THREE.DoubleSide
+      side: THREE.DoubleSide,
     });
 
     this.mesh = new THREE.Mesh(geometry, material);
@@ -294,10 +294,10 @@ export class PoseLayer extends BaseLayer {
    * Get pose data with defaults
    */
   private getPoseData(): PoseLayerData {
-    const data = this.layerData.data as Partial<PoseLayerData> || {};
+    const data = (this.layerData.data as Partial<PoseLayerData>) || {};
     return {
       ...createDefaultPoseLayerData(),
-      ...data
+      ...data,
     };
   }
 
@@ -334,32 +334,34 @@ export class PoseLayer extends BaseLayer {
     pose: Pose,
     width: number,
     height: number,
-    data: PoseLayerData
+    data: PoseLayerData,
   ): void {
     const { ctx } = this;
     const { keypoints } = pose;
 
     // Convert normalized coords to pixels if needed
-    const toPixel = (kp: PoseKeypoint): { x: number; y: number; visible: boolean } => {
+    const toPixel = (
+      kp: PoseKeypoint,
+    ): { x: number; y: number; visible: boolean } => {
       if (data.normalized) {
         return {
           x: kp.x * width,
           y: kp.y * height,
-          visible: kp.confidence > 0.1
+          visible: kp.confidence > 0.1,
         };
       }
       return {
         x: kp.x,
         y: kp.y,
-        visible: kp.confidence > 0.1
+        visible: kp.confidence > 0.1,
       };
     };
 
     // Render bones first (behind keypoints)
     if (data.showBones) {
-      const bones = pose.format === 'coco18' ? COCO_BONES : COCO_BONES;
+      const bones = pose.format === "coco18" ? COCO_BONES : COCO_BONES;
 
-      ctx.lineCap = 'round';
+      ctx.lineCap = "round";
       ctx.lineWidth = data.boneWidth;
       ctx.globalAlpha = data.boneOpacity;
 
@@ -413,7 +415,7 @@ export class PoseLayer extends BaseLayer {
         ctx.fill();
 
         // White border for visibility
-        ctx.strokeStyle = '#FFFFFF';
+        ctx.strokeStyle = "#FFFFFF";
         ctx.lineWidth = 1;
         ctx.stroke();
       });
@@ -422,17 +424,21 @@ export class PoseLayer extends BaseLayer {
     // Render labels
     if (data.showLabels) {
       ctx.globalAlpha = 1;
-      ctx.font = '10px sans-serif';
-      ctx.fillStyle = '#FFFFFF';
-      ctx.textAlign = 'center';
+      ctx.font = "10px sans-serif";
+      ctx.fillStyle = "#FFFFFF";
+      ctx.textAlign = "center";
 
-      const names = pose.format === 'coco18' ? COCO_KEYPOINTS : COCO_KEYPOINTS;
+      const names = pose.format === "coco18" ? COCO_KEYPOINTS : COCO_KEYPOINTS;
       keypoints.forEach((kp, index) => {
         const point = toPixel(kp);
         if (!point.visible) return;
         if (index >= names.length) return;
 
-        ctx.fillText(names[index].name, point.x, point.y - data.keypointRadius - 2);
+        ctx.fillText(
+          names[index].name,
+          point.x,
+          point.y - data.keypointRadius - 2,
+        );
       });
     }
 
@@ -445,8 +451,8 @@ export class PoseLayer extends BaseLayer {
    */
   setCompositionSize(width: number, height: number): void {
     // Validate dimensions (NaN/0 would create invalid canvas)
-    this.compWidth = (Number.isFinite(width) && width > 0) ? width : 512;
-    this.compHeight = (Number.isFinite(height) && height > 0) ? height : 512;
+    this.compWidth = Number.isFinite(width) && width > 0 ? width : 512;
+    this.compHeight = Number.isFinite(height) && height > 0 ? height : 512;
   }
 
   /**
@@ -500,20 +506,22 @@ export class PoseLayer extends BaseLayer {
         pose_keypoints_3d: [],
         face_keypoints_3d: [],
         hand_left_keypoints_3d: [],
-        hand_right_keypoints_3d: []
+        hand_right_keypoints_3d: [],
       });
     }
 
     return {
       version: 1.3,
-      people
+      people,
     };
   }
 
   /**
    * Import pose from OpenPose JSON
    */
-  importOpenPoseJSON(json: { people?: Array<{ pose_keypoints_2d?: number[] }> }): void {
+  importOpenPoseJSON(json: {
+    people?: Array<{ pose_keypoints_2d?: number[] }>;
+  }): void {
     const data = this.getPoseData();
     const newPoses: Pose[] = [];
 
@@ -527,14 +535,14 @@ export class PoseLayer extends BaseLayer {
             keypoints.push({
               x: kp[i],
               y: kp[i + 1],
-              confidence: kp[i + 2]
+              confidence: kp[i + 2],
             });
           }
 
           newPoses.push({
             id: `pose_imported_${newPoses.length}`,
             keypoints,
-            format: 'coco18'
+            format: "coco18",
           });
         }
       }
@@ -551,22 +559,22 @@ export class PoseLayer extends BaseLayer {
    */
   flipPoseHorizontal(poseId: string): void {
     const data = this.getPoseData();
-    const pose = data.poses.find(p => p.id === poseId);
+    const pose = data.poses.find((p) => p.id === poseId);
     if (!pose) return;
 
     // Flip X coordinates
     for (const kp of pose.keypoints) {
-      kp.x = data.normalized ? (1 - kp.x) : (this.canvas.width - kp.x);
+      kp.x = data.normalized ? 1 - kp.x : this.canvas.width - kp.x;
     }
 
     // Swap left/right keypoints for COCO format
-    if (pose.format === 'coco18') {
+    if (pose.format === "coco18") {
       const swaps: [number, number][] = [
-        [2, 5],   // shoulders
-        [3, 6],   // elbows
-        [4, 7],   // wrists
-        [8, 11],  // hips
-        [9, 12],  // knees
+        [2, 5], // shoulders
+        [3, 6], // elbows
+        [4, 7], // wrists
+        [8, 11], // hips
+        [9, 12], // knees
         [10, 13], // ankles
         [14, 15], // eyes
         [16, 17], // ears
@@ -593,10 +601,10 @@ export class PoseLayer extends BaseLayer {
    * Render to specific dimensions for export
    */
   renderForExport(width: number, height: number): HTMLCanvasElement {
-    const exportCanvas = document.createElement('canvas');
+    const exportCanvas = document.createElement("canvas");
     exportCanvas.width = width;
     exportCanvas.height = height;
-    const exportCtx = exportCanvas.getContext('2d')!;
+    const exportCtx = exportCanvas.getContext("2d")!;
 
     // Temporarily swap canvas
     const originalCanvas = this.canvas;
@@ -631,7 +639,9 @@ export class PoseLayer extends BaseLayer {
  */
 export function scalePose(pose: Pose, scale: number): void {
   // Find center
-  let sumX = 0, sumY = 0, count = 0;
+  let sumX = 0,
+    sumY = 0,
+    count = 0;
   for (const kp of pose.keypoints) {
     if (kp.confidence > 0.1) {
       sumX += kp.x;
@@ -660,7 +670,9 @@ export function rotatePose(pose: Pose, angleDegrees: number): void {
   const sin = Math.sin(angle);
 
   // Find center
-  let sumX = 0, sumY = 0, count = 0;
+  let sumX = 0,
+    sumY = 0,
+    count = 0;
   for (const kp of pose.keypoints) {
     if (kp.confidence > 0.1) {
       sumX += kp.x;
@@ -697,7 +709,7 @@ export function translatePose(pose: Pose, dx: number, dy: number): void {
  */
 export function interpolatePoses(pose1: Pose, pose2: Pose, t: number): Pose {
   if (pose1.keypoints.length !== pose2.keypoints.length) {
-    throw new Error('Poses must have same number of keypoints');
+    throw new Error("Poses must have same number of keypoints");
   }
 
   const keypoints: PoseKeypoint[] = [];
@@ -709,14 +721,14 @@ export function interpolatePoses(pose1: Pose, pose2: Pose, t: number): Pose {
     keypoints.push({
       x: kp1.x + (kp2.x - kp1.x) * t,
       y: kp1.y + (kp2.y - kp1.y) * t,
-      confidence: Math.min(kp1.confidence, kp2.confidence)
+      confidence: Math.min(kp1.confidence, kp2.confidence),
     });
   }
 
   return {
     id: `interpolated_${Date.now()}`,
     keypoints,
-    format: pose1.format
+    format: pose1.format,
   };
 }
 

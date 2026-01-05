@@ -4,19 +4,18 @@
  * UI for configuring and executing exports to ComfyUI
  */
 
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { computed, onMounted, ref, watch } from "vue";
+import { EXPORT_PRESETS, EXPORT_TARGET_INFO } from "@/config/exportPresets";
+import { getComfyUIClient } from "@/services/comfyui/comfyuiClient";
+import { exportToComfyUI } from "@/services/export/exportPipeline";
 import type {
-  ExportConfig,
-  ExportTarget,
-  ExportProgress,
-  DepthMapFormat,
   ControlType,
-} from '@/types/export';
-import type { Layer } from '@/types/project';
-import { EXPORT_PRESETS, EXPORT_TARGET_INFO, RESOLUTION_PRESETS, FRAME_COUNT_PRESETS } from '@/config/exportPresets';
-import { exportToComfyUI } from '@/services/export/exportPipeline';
-import { getComfyUIClient } from '@/services/comfyui/comfyuiClient';
-import ScrubableNumber from '@/components/controls/ScrubableNumber.vue';
+  DepthMapFormat,
+  ExportConfig,
+  ExportProgress,
+  ExportTarget,
+} from "@/types/export";
+import type { Layer } from "@/types/project";
 
 // ============================================================================
 // Props & Emits
@@ -40,10 +39,12 @@ const emit = defineEmits<{
 // State
 // ============================================================================
 
-const activeTab = ref<'target' | 'output' | 'generation' | 'comfyui'>('target');
+const _activeTab = ref<"target" | "output" | "generation" | "comfyui">(
+  "target",
+);
 
 // Export target
-const selectedTarget = ref<ExportTarget>('wan22-i2v');
+const selectedTarget = ref<ExportTarget>("wan22-i2v");
 
 // Output settings
 const width = ref(832);
@@ -59,20 +60,22 @@ const exportControlImages = ref(false);
 const exportCameraData = ref(true);
 const exportReferenceFrame = ref(true);
 const exportLastFrame = ref(false);
-const depthFormat = ref<DepthMapFormat>('midas');
-const controlType = ref<ControlType>('depth');
+const depthFormat = ref<DepthMapFormat>("midas");
+const controlType = ref<ControlType>("depth");
 
 // Generation settings
-const prompt = ref('');
-const negativePrompt = ref('blurry, low quality, distorted');
+const prompt = ref("");
+const negativePrompt = ref("blurry, low quality, distorted");
 const seed = ref<number | undefined>(undefined);
 const steps = ref(30);
 const cfgScale = ref(5);
 
 // ComfyUI settings
-const comfyuiServer = ref('127.0.0.1:8188');
+const comfyuiServer = ref("127.0.0.1:8188");
 const autoQueueWorkflow = ref(false);
-const connectionStatus = ref<'disconnected' | 'connecting' | 'connected' | 'error'>('disconnected');
+const connectionStatus = ref<
+  "disconnected" | "connecting" | "connected" | "error"
+>("disconnected");
 
 // Export state
 const isExporting = ref(false);
@@ -84,59 +87,69 @@ const abortController = ref<AbortController | null>(null);
 // Computed
 // ============================================================================
 
-const targetInfo = computed(() => EXPORT_TARGET_INFO[selectedTarget.value]);
+const _targetInfo = computed(() => EXPORT_TARGET_INFO[selectedTarget.value]);
 
-const targetCategories = computed(() => ({
-  'Wan 2.2': ['wan22-i2v', 'wan22-t2v', 'wan22-fun-camera', 'wan22-first-last', 'wan-move'] as ExportTarget[],
-  'Uni3C': ['uni3c-camera', 'uni3c-motion'] as ExportTarget[],
-  'MotionCtrl': ['motionctrl', 'motionctrl-svd'] as ExportTarget[],
-  'Camera': ['animatediff-cameractrl', 'camera-comfyui', 'ati'] as ExportTarget[],
-  'Advanced': ['light-x', 'ttm', 'cogvideox'] as ExportTarget[],
-  'ControlNet': ['controlnet-depth', 'controlnet-canny', 'controlnet-lineart'] as ExportTarget[],
-  'Custom': ['custom-workflow'] as ExportTarget[],
+const _targetCategories = computed(() => ({
+  "Wan 2.2": [
+    "wan22-i2v",
+    "wan22-t2v",
+    "wan22-fun-camera",
+    "wan22-first-last",
+    "wan-move",
+  ] as ExportTarget[],
+  Uni3C: ["uni3c-camera", "uni3c-motion"] as ExportTarget[],
+  MotionCtrl: ["motionctrl", "motionctrl-svd"] as ExportTarget[],
+  Camera: ["animatediff-cameractrl", "camera-comfyui", "ati"] as ExportTarget[],
+  Advanced: ["light-x", "ttm", "cogvideox"] as ExportTarget[],
+  ControlNet: [
+    "controlnet-depth",
+    "controlnet-canny",
+    "controlnet-lineart",
+  ] as ExportTarget[],
+  Custom: ["custom-workflow"] as ExportTarget[],
 }));
 
-const targetDisplayName = computed(() => {
+const _targetDisplayName = computed(() => {
   const names: Record<ExportTarget, string> = {
-    'wan22-i2v': 'Image to Video',
-    'wan22-t2v': 'Text to Video',
-    'wan22-fun-camera': 'Fun Camera',
-    'wan22-first-last': 'First + Last Frame',
-    'wan-move': 'Point Trajectories',
-    'uni3c-camera': 'Camera Control',
-    'uni3c-motion': 'Motion + Camera',
-    'motionctrl': 'MotionCtrl',
-    'motionctrl-svd': 'MotionCtrl SVD',
-    'cogvideox': 'CogVideoX I2V',
-    'animatediff-cameractrl': 'CameraCtrl',
-    'camera-comfyui': '4x4 Matrices',
-    'ati': 'Any Trajectory',
-    'light-x': 'Relighting',
-    'ttm': 'Cut & Drag',
-    'ttm-wan': 'TTM WAN',
-    'ttm-cogvideox': 'TTM CogVideoX',
-    'ttm-svd': 'TTM SVD',
-    'controlnet-depth': 'Depth',
-    'controlnet-canny': 'Canny Edge',
-    'controlnet-lineart': 'Line Art',
-    'custom-workflow': 'Custom Workflow',
+    "wan22-i2v": "Image to Video",
+    "wan22-t2v": "Text to Video",
+    "wan22-fun-camera": "Fun Camera",
+    "wan22-first-last": "First + Last Frame",
+    "wan-move": "Point Trajectories",
+    "uni3c-camera": "Camera Control",
+    "uni3c-motion": "Motion + Camera",
+    motionctrl: "MotionCtrl",
+    "motionctrl-svd": "MotionCtrl SVD",
+    cogvideox: "CogVideoX I2V",
+    "animatediff-cameractrl": "CameraCtrl",
+    "camera-comfyui": "4x4 Matrices",
+    ati: "Any Trajectory",
+    "light-x": "Relighting",
+    ttm: "Cut & Drag",
+    "ttm-wan": "TTM WAN",
+    "ttm-cogvideox": "TTM CogVideoX",
+    "ttm-svd": "TTM SVD",
+    "controlnet-depth": "Depth",
+    "controlnet-canny": "Canny Edge",
+    "controlnet-lineart": "Line Art",
+    "custom-workflow": "Custom Workflow",
   };
   return names;
 });
 
-const depthFormats: { value: DepthMapFormat; label: string }[] = [
-  { value: 'midas', label: 'MiDaS (8-bit inverted)' },
-  { value: 'zoe', label: 'Zoe (16-bit linear)' },
-  { value: 'depth-pro', label: 'Depth-Pro (metric)' },
-  { value: 'normalized', label: 'Normalized (0-1)' },
+const _depthFormats: { value: DepthMapFormat; label: string }[] = [
+  { value: "midas", label: "MiDaS (8-bit inverted)" },
+  { value: "zoe", label: "Zoe (16-bit linear)" },
+  { value: "depth-pro", label: "Depth-Pro (metric)" },
+  { value: "normalized", label: "Normalized (0-1)" },
 ];
 
-const controlTypes: { value: ControlType; label: string }[] = [
-  { value: 'depth', label: 'Depth' },
-  { value: 'canny', label: 'Canny Edge' },
-  { value: 'lineart', label: 'Line Art' },
-  { value: 'softedge', label: 'Soft Edge' },
-  { value: 'normal', label: 'Normal Map' },
+const _controlTypes: { value: ControlType; label: string }[] = [
+  { value: "depth", label: "Depth" },
+  { value: "canny", label: "Canny Edge" },
+  { value: "lineart", label: "Line Art" },
+  { value: "softedge", label: "Soft Edge" },
+  { value: "normal", label: "Normal Map" },
 ];
 
 // ============================================================================
@@ -159,41 +172,48 @@ function selectTarget(target: ExportTarget) {
   // Update export options based on target
   const info = EXPORT_TARGET_INFO[target];
   if (info) {
-    exportDepthMap.value = info.requiredInputs.includes('depth_sequence') || info.requiredInputs.includes('depth_map');
-    exportCameraData.value = info.requiredInputs.includes('camera_data') || info.requiredInputs.includes('camera_trajectory') || info.requiredInputs.includes('camera_poses');
-    exportReferenceFrame.value = info.requiredInputs.includes('reference_image') || info.requiredInputs.includes('first_frame');
-    exportLastFrame.value = info.requiredInputs.includes('last_frame');
-    exportControlImages.value = target.startsWith('controlnet-');
+    exportDepthMap.value =
+      info.requiredInputs.includes("depth_sequence") ||
+      info.requiredInputs.includes("depth_map");
+    exportCameraData.value =
+      info.requiredInputs.includes("camera_data") ||
+      info.requiredInputs.includes("camera_trajectory") ||
+      info.requiredInputs.includes("camera_poses");
+    exportReferenceFrame.value =
+      info.requiredInputs.includes("reference_image") ||
+      info.requiredInputs.includes("first_frame");
+    exportLastFrame.value = info.requiredInputs.includes("last_frame");
+    exportControlImages.value = target.startsWith("controlnet-");
   }
 }
 
 async function checkConnection() {
-  connectionStatus.value = 'connecting';
+  connectionStatus.value = "connecting";
 
   try {
     const client = getComfyUIClient(comfyuiServer.value);
     const connected = await client.checkConnection();
-    connectionStatus.value = connected ? 'connected' : 'error';
+    connectionStatus.value = connected ? "connected" : "error";
   } catch {
-    connectionStatus.value = 'error';
+    connectionStatus.value = "error";
   }
 }
 
-function applyResolutionPreset(preset: { width: number; height: number }) {
+function _applyResolutionPreset(preset: { width: number; height: number }) {
   width.value = preset.width;
   height.value = preset.height;
 }
 
-function applyFrameCountPreset(count: number) {
+function _applyFrameCountPreset(count: number) {
   frameCount.value = count;
   endFrame.value = Math.min(endFrame.value, count);
 }
 
-function randomizeSeed() {
+function _randomizeSeed() {
   seed.value = Math.floor(Math.random() * 2147483647);
 }
 
-async function startExport() {
+async function _startExport() {
   isExporting.value = true;
   exportError.value = null;
   abortController.value = new AbortController();
@@ -206,7 +226,7 @@ async function startExport() {
     fps: fps.value,
     startFrame: startFrame.value,
     endFrame: endFrame.value,
-    outputDir: '',
+    outputDir: "",
     filenamePrefix: `lattice_${selectedTarget.value}_${Date.now()}`,
     exportDepthMap: exportDepthMap.value,
     exportControlImages: exportControlImages.value,
@@ -231,16 +251,17 @@ async function startExport() {
       config,
       (progress) => {
         exportProgress.value = progress;
-      }
+      },
     );
 
     if (result.success) {
-      emit('exported', result);
+      emit("exported", result);
     } else {
-      exportError.value = result.errors.join('\n');
+      exportError.value = result.errors.join("\n");
     }
   } catch (error) {
-    exportError.value = error instanceof Error ? error.message : 'Export failed';
+    exportError.value =
+      error instanceof Error ? error.message : "Export failed";
   } finally {
     isExporting.value = false;
     abortController.value = null;
@@ -253,11 +274,11 @@ function cancelExport() {
   }
 }
 
-function close() {
+function _close() {
   if (isExporting.value) {
     cancelExport();
   }
-  emit('close');
+  emit("close");
 }
 
 // ============================================================================

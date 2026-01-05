@@ -3,9 +3,8 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue';
-import WorkspaceLayout from './components/layout/WorkspaceLayout.vue';
-import { useThemeStore } from './stores/themeStore';
+import { onMounted } from "vue";
+import { useThemeStore } from "./stores/themeStore";
 
 const themeStore = useThemeStore();
 

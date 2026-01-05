@@ -1,22 +1,22 @@
-import { test, expect } from '@playwright/test';
-import { CompositorHelper } from '../helpers/compositor';
+import { expect, test } from "@playwright/test";
+import { CompositorHelper } from "../helpers/compositor";
 
-test.describe('Tutorial 01: Phases 10-13 (Steps 241-355)', () => {
+test.describe("Tutorial 01: Phases 10-13 (Steps 241-355)", () => {
   let h: CompositorHelper;
 
   test.beforeEach(async ({ page }) => {
     h = new CompositorHelper(page);
-    await page.goto('/');
+    await page.goto("/");
     await page.waitForSelector('[data-testid="app-ready"]');
     await h.newProject();
-    await h.newComposition('Test', 1920, 1080, 16, 5);
-    await h.newSolid('Layer1');
+    await h.newComposition("Test", 1920, 1080, 16, 5);
+    await h.newSolid("Layer1");
   });
 
-  test('Phase 10: Easing & CurveEditor (Steps 241-275)', async ({ page }) => {
+  test("Phase 10: Easing & CurveEditor (Steps 241-275)", async ({ page }) => {
     await h.selectLayer(0);
     await h.isolatePosition();
-    await h.toggleStopwatch('position');
+    await h.toggleStopwatch("position");
     await h.goToFrame(16);
     // Change position to create animation
 
@@ -28,11 +28,11 @@ test.describe('Tutorial 01: Phases 10-13 (Steps 241-355)', () => {
     await expect(page.locator('[data-testid="curve-editor"]')).toBeVisible();
 
     // Step 261-265: Graph types
-    await h.setCurveEditorGraphType('value');
-    await h.setCurveEditorGraphType('speed');
+    await h.setCurveEditorGraphType("value");
+    await h.setCurveEditorGraphType("speed");
 
     // Step 266-270: Separate dimensions
-    await h.separateDimensions('position');
+    await h.separateDimensions("position");
 
     await h.toggleCurveEditor();
 
@@ -41,22 +41,22 @@ test.describe('Tutorial 01: Phases 10-13 (Steps 241-355)', () => {
     await h.redo();
   });
 
-  test('Phase 11: Fading Elements (Steps 276-295)', async ({ page }) => {
+  test("Phase 11: Fading Elements (Steps 276-295)", async ({ page }) => {
     await h.selectLayer(0);
 
     // Step 280-286: Fade in
     await h.isolateOpacity();
     await h.goToStart();
-    await h.toggleStopwatch('opacity');
-    await h.setPropertyValue('opacity', '0');
+    await h.toggleStopwatch("opacity");
+    await h.setPropertyValue("opacity", "0");
     await h.goToFrame(15);
-    await h.setPropertyValue('opacity', '100');
+    await h.setPropertyValue("opacity", "100");
 
     // Step 287-291: Fade out
     await h.goToFrame(65);
     // Add keyframe at current value
     await h.goToFrame(80);
-    await h.setPropertyValue('opacity', '0');
+    await h.setPropertyValue("opacity", "0");
 
     // Step 292-295: Apply easing
     await h.smoothEase();
@@ -66,9 +66,9 @@ test.describe('Tutorial 01: Phases 10-13 (Steps 241-355)', () => {
     await h.redo();
   });
 
-  test('Phase 12: Text Layers (Steps 296-325)', async ({ page }) => {
+  test("Phase 12: Text Layers (Steps 296-325)", async ({ page }) => {
     // Step 296-300: Create text
-    await h.newTextLayer('LATTICE COMPOSITOR');
+    await h.newTextLayer("LATTICE COMPOSITOR");
     await h.expectLayerCount(2);
 
     // Step 301-307: Character Panel
@@ -82,14 +82,14 @@ test.describe('Tutorial 01: Phases 10-13 (Steps 241-355)', () => {
     // Step 311-318: Animate text
     await h.selectLayer(0);
     await h.isolatePosition();
-    await h.toggleStopwatch('position');
+    await h.toggleStopwatch("position");
 
     // UNDO TEST
     await h.undo();
     await h.redo();
   });
 
-  test('Phase 13: Align Panel & Snapping (Steps 326-355)', async ({ page }) => {
+  test("Phase 13: Align Panel & Snapping (Steps 326-355)", async ({ page }) => {
     // Step 326-333: Align Panel
     await h.openAlignPanel();
     await h.selectLayer(0);

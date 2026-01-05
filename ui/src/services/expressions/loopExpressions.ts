@@ -6,14 +6,19 @@
  * - repeatBefore: Loop animation before first keyframe
  */
 
-import type { Keyframe } from '@/types/project';
-import { interpolateAtTime, subtractValues, addValues, scaleValue } from './expressionHelpers';
+import type { Keyframe } from "@/types/project";
+import {
+  addValues,
+  interpolateAtTime,
+  scaleValue,
+  subtractValues,
+} from "./expressionHelpers";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-export type LoopType = 'cycle' | 'pingpong' | 'offset' | 'continue';
+export type LoopType = "cycle" | "pingpong" | "offset" | "continue";
 
 /**
  * Minimal expression context for loop expressions
@@ -36,14 +41,15 @@ export interface LoopExpressionContext {
  */
 export function repeatAfter(
   ctx: LoopExpressionContext,
-  type: LoopType = 'cycle',
-  numKeyframes: number = 0
+  type: LoopType = "cycle",
+  numKeyframes: number = 0,
 ): number | number[] {
   const { time, keyframes, fps } = ctx;
 
   if (keyframes.length < 2) return ctx.value;
 
-  const startIdx = numKeyframes > 0 ? Math.max(0, keyframes.length - numKeyframes) : 0;
+  const startIdx =
+    numKeyframes > 0 ? Math.max(0, keyframes.length - numKeyframes) : 0;
   const startKey = keyframes[startIdx];
   const endKey = keyframes[keyframes.length - 1];
 
@@ -56,12 +62,12 @@ export function repeatAfter(
   const elapsed = time - endTime;
 
   switch (type) {
-    case 'cycle': {
+    case "cycle": {
       // Repeat from start
       const cycleTime = startTime + (elapsed % duration);
       return interpolateAtTime(keyframes, cycleTime, fps);
     }
-    case 'pingpong': {
+    case "pingpong": {
       // Alternate forward/backward
       const cycles = Math.floor(elapsed / duration);
       const cycleProgress = (elapsed % duration) / duration;
@@ -70,7 +76,7 @@ export function repeatAfter(
       const cycleTime = startTime + t * duration;
       return interpolateAtTime(keyframes, cycleTime, fps);
     }
-    case 'offset': {
+    case "offset": {
       // Add cumulative offset each cycle
       const cycles = Math.floor(elapsed / duration);
       const cycleTime = startTime + (elapsed % duration);
@@ -78,18 +84,20 @@ export function repeatAfter(
       const delta = subtractValues(endKey.value, startKey.value);
       return addValues(baseValue, scaleValue(delta, cycles + 1));
     }
-    case 'continue': {
+    case "continue": {
       // Continue at last velocity (BUG-015: ensure type matching)
       const velocity = ctx.velocity;
       const value = ctx.value;
-      if (typeof velocity === 'number' && typeof value === 'number') {
+      if (typeof velocity === "number" && typeof value === "number") {
         return value + velocity * elapsed;
       }
       if (Array.isArray(velocity) && Array.isArray(value)) {
         return value.map((v, i) => v + (velocity[i] ?? 0) * elapsed);
       }
       // Type mismatch - return unchanged
-      console.warn('[Expressions] Type mismatch between value and velocity in repeatAfter');
+      console.warn(
+        "[Expressions] Type mismatch between value and velocity in repeatAfter",
+      );
       return value;
     }
     default: {
@@ -106,14 +114,17 @@ export function repeatAfter(
  */
 export function repeatBefore(
   ctx: LoopExpressionContext,
-  type: LoopType = 'cycle',
-  numKeyframes: number = 0
+  type: LoopType = "cycle",
+  numKeyframes: number = 0,
 ): number | number[] {
   const { time, keyframes, fps } = ctx;
 
   if (keyframes.length < 2) return ctx.value;
 
-  const endIdx = numKeyframes > 0 ? Math.min(keyframes.length - 1, numKeyframes - 1) : keyframes.length - 1;
+  const endIdx =
+    numKeyframes > 0
+      ? Math.min(keyframes.length - 1, numKeyframes - 1)
+      : keyframes.length - 1;
   const startKey = keyframes[0];
   const endKey = keyframes[endIdx];
 
@@ -126,11 +137,11 @@ export function repeatBefore(
   const elapsed = startTime - time;
 
   switch (type) {
-    case 'cycle': {
+    case "cycle": {
       const cycleTime = endTime - (elapsed % duration);
       return interpolateAtTime(keyframes, cycleTime, fps);
     }
-    case 'pingpong': {
+    case "pingpong": {
       const cycles = Math.floor(elapsed / duration);
       const cycleProgress = (elapsed % duration) / duration;
       const isReverse = cycles % 2 === 1;
@@ -138,25 +149,27 @@ export function repeatBefore(
       const cycleTime = startTime + t * duration;
       return interpolateAtTime(keyframes, cycleTime, fps);
     }
-    case 'offset': {
+    case "offset": {
       const cycles = Math.floor(elapsed / duration);
       const cycleTime = endTime - (elapsed % duration);
       const baseValue = interpolateAtTime(keyframes, cycleTime, fps);
       const delta = subtractValues(startKey.value, endKey.value);
       return addValues(baseValue, scaleValue(delta, cycles + 1));
     }
-    case 'continue': {
+    case "continue": {
       // Continue at last velocity (BUG-015: ensure type matching)
       const velocity = ctx.velocity;
       const value = ctx.value;
-      if (typeof velocity === 'number' && typeof value === 'number') {
+      if (typeof velocity === "number" && typeof value === "number") {
         return value - velocity * elapsed;
       }
       if (Array.isArray(velocity) && Array.isArray(value)) {
         return value.map((v, i) => v - (velocity[i] ?? 0) * elapsed);
       }
       // Type mismatch - return unchanged
-      console.warn('[Expressions] Type mismatch between value and velocity in repeatBefore');
+      console.warn(
+        "[Expressions] Type mismatch between value and velocity in repeatBefore",
+      );
       return value;
     }
     default: {

@@ -25,28 +25,28 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import type { MergePathsOperator, MergeMode } from '@/types/shapes';
+import { computed } from "vue";
+import type { MergeMode, MergePathsOperator } from "@/types/shapes";
 
 const props = defineProps<{ operator: MergePathsOperator; layerId: string }>();
-const emit = defineEmits(['update']);
+const emit = defineEmits(["update"]);
 
-const modeDescription = computed(() => {
+const _modeDescription = computed(() => {
   const descs: Record<MergeMode, string> = {
-    add: 'Combines all paths into one',
-    subtract: 'Removes overlapping areas',
-    intersect: 'Keeps only overlapping areas',
-    exclude: 'Removes overlapping, keeps the rest',
-    minusFront: 'Back shape minus front shapes',
-    minusBack: 'Front shape minus back shapes',
+    add: "Combines all paths into one",
+    subtract: "Removes overlapping areas",
+    intersect: "Keeps only overlapping areas",
+    exclude: "Removes overlapping, keeps the rest",
+    minusFront: "Back shape minus front shapes",
+    minusBack: "Front shape minus back shapes",
   };
   return descs[props.operator.mode];
 });
 
-function updateMode(e: Event) {
+function _updateMode(e: Event) {
   const updated = { ...props.operator };
   updated.mode = (e.target as HTMLSelectElement).value as MergeMode;
-  emit('update', updated);
+  emit("update", updated);
 }
 </script>
 

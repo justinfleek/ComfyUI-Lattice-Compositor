@@ -8,16 +8,16 @@
  * in a composition, matching Photoshop/After Effects behavior.
  */
 
-import type { GlobalLightSettings } from '@/types/layerStyles';
-import type { AnimatableProperty } from '@/types/project';
-import { interpolateProperty } from './interpolation';
+import type { GlobalLightSettings } from "@/types/layerStyles";
+import type { AnimatableProperty } from "@/types/project";
+import { interpolateProperty } from "./interpolation";
 
 // ============================================================================
 // DEFAULT VALUES
 // ============================================================================
 
-const DEFAULT_ANGLE = 120;      // Degrees (0 = right, 90 = top, counterclockwise)
-const DEFAULT_ALTITUDE = 30;   // Degrees (0 = horizontal, 90 = directly above)
+const DEFAULT_ANGLE = 120; // Degrees (0 = right, 90 = top, counterclockwise)
+const DEFAULT_ALTITUDE = 30; // Degrees (0 = horizontal, 90 = directly above)
 
 // ============================================================================
 // GLOBAL LIGHT CACHE
@@ -38,7 +38,7 @@ const globalLightCache = new Map<string, GlobalLightSettings>();
 function createAnimatableProperty<T>(
   name: string,
   value: T,
-  type: 'number' | 'color' | 'position' = 'number'
+  type: "number" | "color" | "position" = "number",
 ): AnimatableProperty<T> {
   return {
     id: `global-light-${name}-${Date.now()}`,
@@ -46,7 +46,7 @@ function createAnimatableProperty<T>(
     type,
     value,
     animated: false,
-    keyframes: []
+    keyframes: [],
   };
 }
 
@@ -55,8 +55,11 @@ function createAnimatableProperty<T>(
  */
 export function createDefaultGlobalLight(): GlobalLightSettings {
   return {
-    angle: createAnimatableProperty('Global Light Angle', DEFAULT_ANGLE),
-    altitude: createAnimatableProperty('Global Light Altitude', DEFAULT_ALTITUDE)
+    angle: createAnimatableProperty("Global Light Angle", DEFAULT_ANGLE),
+    altitude: createAnimatableProperty(
+      "Global Light Altitude",
+      DEFAULT_ALTITUDE,
+    ),
   };
 }
 
@@ -83,14 +86,16 @@ export function getGlobalLight(compositionId: string): GlobalLightSettings {
  */
 export function getGlobalLightAngle(
   compositionId: string,
-  frame: number = 0
+  frame: number = 0,
 ): number {
   const settings = getGlobalLight(compositionId);
 
   if (settings.angle.animated && settings.angle.keyframes.length > 0) {
     // Use interpolation service for proper keyframe evaluation
     const interpolated = interpolateProperty(settings.angle, frame);
-    return typeof interpolated === 'number' ? interpolated : settings.angle.value;
+    return typeof interpolated === "number"
+      ? interpolated
+      : settings.angle.value;
   }
 
   return settings.angle.value;
@@ -102,14 +107,16 @@ export function getGlobalLightAngle(
  */
 export function getGlobalLightAltitude(
   compositionId: string,
-  frame: number = 0
+  frame: number = 0,
 ): number {
   const settings = getGlobalLight(compositionId);
 
   if (settings.altitude.animated && settings.altitude.keyframes.length > 0) {
     // Use interpolation service for proper keyframe evaluation
     const interpolated = interpolateProperty(settings.altitude, frame);
-    return typeof interpolated === 'number' ? interpolated : settings.altitude.value;
+    return typeof interpolated === "number"
+      ? interpolated
+      : settings.altitude.value;
   }
 
   return settings.altitude.value;
@@ -124,7 +131,7 @@ export function getGlobalLightAltitude(
  */
 export function setGlobalLightAngle(
   compositionId: string,
-  angle: number
+  angle: number,
 ): void {
   const settings = getGlobalLight(compositionId);
   settings.angle.value = normalizeAngle(angle);
@@ -135,7 +142,7 @@ export function setGlobalLightAngle(
  */
 export function setGlobalLightAltitude(
   compositionId: string,
-  altitude: number
+  altitude: number,
 ): void {
   const settings = getGlobalLight(compositionId);
   settings.altitude.value = clamp(altitude, 0, 90);
@@ -147,7 +154,7 @@ export function setGlobalLightAltitude(
 export function setGlobalLightDirection(
   compositionId: string,
   angle: number,
-  altitude: number
+  altitude: number,
 ): void {
   setGlobalLightAngle(compositionId, angle);
   setGlobalLightAltitude(compositionId, altitude);
@@ -158,7 +165,7 @@ export function setGlobalLightDirection(
  */
 export function setGlobalLightSettings(
   compositionId: string,
-  settings: GlobalLightSettings
+  settings: GlobalLightSettings,
 ): void {
   globalLightCache.set(compositionId, settings);
 }
@@ -172,7 +179,7 @@ export function setGlobalLightSettings(
  */
 export function enableGlobalLightAngleAnimation(
   compositionId: string,
-  enabled: boolean = true
+  enabled: boolean = true,
 ): void {
   const settings = getGlobalLight(compositionId);
   settings.angle.animated = enabled;
@@ -183,7 +190,7 @@ export function enableGlobalLightAngleAnimation(
  */
 export function enableGlobalLightAltitudeAnimation(
   compositionId: string,
-  enabled: boolean = true
+  enabled: boolean = true,
 ): void {
   const settings = getGlobalLight(compositionId);
   settings.altitude.animated = enabled;
@@ -214,21 +221,21 @@ function clamp(value: number, min: number, max: number): number {
  */
 export function getLightDirection(
   compositionId: string,
-  frame: number = 0
+  frame: number = 0,
 ): { x: number; y: number; z: number } {
   const angle = getGlobalLightAngle(compositionId, frame);
   const altitude = getGlobalLightAltitude(compositionId, frame);
 
   // Convert to radians
-  const angleRad = (angle - 90) * Math.PI / 180;  // Adjust so 0° = right
-  const altitudeRad = altitude * Math.PI / 180;
+  const angleRad = ((angle - 90) * Math.PI) / 180; // Adjust so 0° = right
+  const altitudeRad = (altitude * Math.PI) / 180;
 
   // Calculate direction vector
   const cosAlt = Math.cos(altitudeRad);
   return {
     x: Math.cos(angleRad) * cosAlt,
     y: -Math.sin(angleRad) * cosAlt,
-    z: Math.sin(altitudeRad)
+    z: Math.sin(altitudeRad),
   };
 }
 
@@ -238,14 +245,14 @@ export function getLightDirection(
 export function getShadowOffset(
   compositionId: string,
   distance: number,
-  frame: number = 0
+  frame: number = 0,
 ): { x: number; y: number } {
   const angle = getGlobalLightAngle(compositionId, frame);
-  const angleRad = (angle - 90) * Math.PI / 180;
+  const angleRad = ((angle - 90) * Math.PI) / 180;
 
   return {
     x: Math.cos(angleRad) * distance,
-    y: -Math.sin(angleRad) * distance
+    y: -Math.sin(angleRad) * distance,
   };
 }
 
@@ -276,7 +283,7 @@ export function clearGlobalLightCache(): void {
  * Serialize global light settings for save
  */
 export function serializeGlobalLight(
-  compositionId: string
+  compositionId: string,
 ): GlobalLightSettings | undefined {
   return globalLightCache.get(compositionId);
 }
@@ -286,7 +293,7 @@ export function serializeGlobalLight(
  */
 export function deserializeGlobalLight(
   compositionId: string,
-  settings: GlobalLightSettings
+  settings: GlobalLightSettings,
 ): void {
   globalLightCache.set(compositionId, settings);
 }
@@ -295,9 +302,4 @@ export function deserializeGlobalLight(
 // EXPORTS
 // ============================================================================
 
-export {
-  DEFAULT_ANGLE,
-  DEFAULT_ALTITUDE,
-  normalizeAngle,
-  clamp
-};
+export { DEFAULT_ANGLE, DEFAULT_ALTITUDE, normalizeAngle, clamp };

@@ -167,10 +167,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import type { WarpPin, WarpPinType } from '@/types/meshWarp';
-import { createDefaultWarpPin } from '@/types/meshWarp';
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { useCompositorStore } from "@/stores/compositorStore";
+import type { WarpPin, WarpPinType } from "@/types/meshWarp";
+import { createDefaultWarpPin } from "@/types/meshWarp";
 
 // Props
 const props = defineProps<{
@@ -182,17 +182,17 @@ const props = defineProps<{
 
 // Emits
 const emit = defineEmits<{
-  (e: 'pin-added', pin: WarpPin): void;
-  (e: 'pin-removed', pinId: string): void;
-  (e: 'pin-moved', pinId: string, x: number, y: number): void;
-  (e: 'pin-selected', pinId: string | null): void;
+  (e: "pin-added", pin: WarpPin): void;
+  (e: "pin-removed", pinId: string): void;
+  (e: "pin-moved", pinId: string, x: number, y: number): void;
+  (e: "pin-selected", pinId: string | null): void;
 }>();
 
 // Store
 const store = useCompositorStore();
 
 // Local state
-const pinTool = ref<WarpPinType | 'delete'>('position');
+const pinTool = ref<WarpPinType | "delete">("position");
 const selectedPinId = ref<string | null>(null);
 const draggingPinId = ref<string | null>(null);
 const dragStartPos = ref<{ x: number; y: number } | null>(null);
@@ -201,73 +201,77 @@ const dragStartPos = ref<{ x: number; y: number } | null>(null);
 const pins = computed<WarpPin[]>(() => {
   if (!props.layerId) return [];
   const layer = store.getLayerById(props.layerId);
-  if (!layer || layer.type !== 'spline') return [];
+  if (!layer || layer.type !== "spline") return [];
   // Support both old 'puppetPins' and new 'warpPins' property names
   return (layer.data as any)?.warpPins ?? (layer.data as any)?.puppetPins ?? [];
 });
 
 const selectedPin = computed(() => {
   if (!selectedPinId.value) return null;
-  return pins.value.find(p => p.id === selectedPinId.value) ?? null;
+  return pins.value.find((p) => p.id === selectedPinId.value) ?? null;
 });
 
-const selectedPinRadius = computed({
+const _selectedPinRadius = computed({
   get: () => selectedPin.value?.radius ?? 50,
   set: (value: number) => {
     if (selectedPin.value && props.layerId) {
-      updatePinProperty(selectedPinId.value!, 'radius', value);
+      updatePinProperty(selectedPinId.value!, "radius", value);
     }
-  }
+  },
 });
 
-const selectedPinStiffness = computed({
+const _selectedPinStiffness = computed({
   get: () => selectedPin.value?.stiffness ?? 0,
   set: (value: number) => {
     if (selectedPin.value && props.layerId) {
-      updatePinProperty(selectedPinId.value!, 'stiffness', value);
+      updatePinProperty(selectedPinId.value!, "stiffness", value);
     }
-  }
+  },
 });
 
-const activeToolTip = computed(() => {
+const _activeToolTip = computed(() => {
   switch (pinTool.value) {
-    case 'position':
-      return 'Click to add position pin, drag to move';
-    case 'rotation':
-      return 'Click to add rotation pin';
-    case 'starch':
-      return 'Click to add starch (stiffness) pin';
-    case 'delete':
-      return 'Click pin to delete';
+    case "position":
+      return "Click to add position pin, drag to move";
+    case "rotation":
+      return "Click to add rotation pin";
+    case "starch":
+      return "Click to add starch (stiffness) pin";
+    case "delete":
+      return "Click pin to delete";
     default:
-      return '';
+      return "";
   }
 });
 
-const overlayStyle = computed(() => ({
-  position: 'absolute' as const,
-  top: '0',
-  left: '0',
-  width: '100%',
-  height: '100%',
-  pointerEvents: props.isActive ? 'auto' as const : 'none' as const,
+const _overlayStyle = computed(() => ({
+  position: "absolute" as const,
+  top: "0",
+  left: "0",
+  width: "100%",
+  height: "100%",
+  pointerEvents: props.isActive ? ("auto" as const) : ("none" as const),
 }));
 
 // Methods
-function getPinColor(type: WarpPinType): string {
+function _getPinColor(type: WarpPinType): string {
   switch (type) {
-    case 'position': return '#4bcde0';
-    case 'rotation': return '#f5c343';
-    case 'starch': return '#e24b4b';
-    default: return '#ffffff';
+    case "position":
+      return "#4bcde0";
+    case "rotation":
+      return "#f5c343";
+    case "starch":
+      return "#e24b4b";
+    default:
+      return "#ffffff";
   }
 }
 
-function setPinTool(tool: WarpPinType | 'delete') {
+function setPinTool(tool: WarpPinType | "delete") {
   pinTool.value = tool;
 }
 
-function handleMouseDown(event: MouseEvent) {
+function _handleMouseDown(event: MouseEvent) {
   if (!props.layerId || !props.isActive) return;
 
   const rect = (event.target as SVGElement).getBoundingClientRect();
@@ -278,29 +282,29 @@ function handleMouseDown(event: MouseEvent) {
   const clickedPin = findPinAt(x, y);
 
   if (clickedPin) {
-    if (pinTool.value === 'delete') {
+    if (pinTool.value === "delete") {
       // Delete the pin
       removePinFromLayer(clickedPin.id);
-      emit('pin-removed', clickedPin.id);
+      emit("pin-removed", clickedPin.id);
     } else {
       // Select and start dragging
       selectedPinId.value = clickedPin.id;
       draggingPinId.value = clickedPin.id;
       dragStartPos.value = { x, y };
-      emit('pin-selected', clickedPin.id);
+      emit("pin-selected", clickedPin.id);
     }
-  } else if (pinTool.value !== 'delete') {
+  } else if (pinTool.value !== "delete") {
     // Add new pin
     const newPin = addPinToLayer(x, y, pinTool.value as WarpPinType);
     if (newPin) {
       selectedPinId.value = newPin.id;
-      emit('pin-added', newPin);
-      emit('pin-selected', newPin.id);
+      emit("pin-added", newPin);
+      emit("pin-selected", newPin.id);
     }
   }
 }
 
-function handleMouseMove(event: MouseEvent) {
+function _handleMouseMove(event: MouseEvent) {
   if (!draggingPinId.value || !props.layerId) return;
 
   const rect = (event.target as SVGElement).getBoundingClientRect();
@@ -309,10 +313,10 @@ function handleMouseMove(event: MouseEvent) {
 
   // Update pin position
   updatePinPosition(draggingPinId.value, x, y);
-  emit('pin-moved', draggingPinId.value, x, y);
+  emit("pin-moved", draggingPinId.value, x, y);
 }
 
-function handleMouseUp() {
+function _handleMouseUp() {
   draggingPinId.value = null;
   dragStartPos.value = null;
 }
@@ -329,7 +333,11 @@ function findPinAt(x: number, y: number): WarpPin | null {
   return null;
 }
 
-function addPinToLayer(x: number, y: number, type: WarpPinType): WarpPin | null {
+function addPinToLayer(
+  x: number,
+  y: number,
+  type: WarpPinType,
+): WarpPin | null {
   if (!props.layerId) return null;
 
   const id = `pin_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -340,12 +348,13 @@ function addPinToLayer(x: number, y: number, type: WarpPinType): WarpPin | null 
   if (!layer) return null;
 
   // Support both old and new property names, prefer new
-  const currentPins = (layer.data as any)?.warpPins ?? (layer.data as any)?.puppetPins ?? [];
+  const currentPins =
+    (layer.data as any)?.warpPins ?? (layer.data as any)?.puppetPins ?? [];
   store.updateLayer(props.layerId, {
     data: {
       ...(layer.data as any),
       warpPins: [...currentPins, newPin],
-    }
+    },
   });
 
   return newPin;
@@ -357,17 +366,18 @@ function removePinFromLayer(pinId: string): void {
   const layer = store.getLayerById(props.layerId);
   if (!layer) return;
 
-  const currentPins: WarpPin[] = (layer.data as any)?.warpPins ?? (layer.data as any)?.puppetPins ?? [];
+  const currentPins: WarpPin[] =
+    (layer.data as any)?.warpPins ?? (layer.data as any)?.puppetPins ?? [];
   store.updateLayer(props.layerId, {
     data: {
       ...(layer.data as any),
-      warpPins: currentPins.filter(p => p.id !== pinId),
-    }
+      warpPins: currentPins.filter((p) => p.id !== pinId),
+    },
   });
 
   if (selectedPinId.value === pinId) {
     selectedPinId.value = null;
-    emit('pin-selected', null);
+    emit("pin-selected", null);
   }
 }
 
@@ -377,15 +387,16 @@ function updatePinPosition(pinId: string, x: number, y: number): void {
   const layer = store.getLayerById(props.layerId);
   if (!layer) return;
 
-  const currentPins: WarpPin[] = (layer.data as any)?.warpPins ?? (layer.data as any)?.puppetPins ?? [];
-  const updatedPins = currentPins.map(p => {
+  const currentPins: WarpPin[] =
+    (layer.data as any)?.warpPins ?? (layer.data as any)?.puppetPins ?? [];
+  const updatedPins = currentPins.map((p) => {
     if (p.id === pinId) {
       return {
         ...p,
         position: {
           ...p.position,
-          value: { x, y }
-        }
+          value: { x, y },
+        },
       };
     }
     return p;
@@ -395,7 +406,7 @@ function updatePinPosition(pinId: string, x: number, y: number): void {
     data: {
       ...(layer.data as any),
       warpPins: updatedPins,
-    }
+    },
   });
 }
 
@@ -405,12 +416,13 @@ function updatePinProperty(pinId: string, property: string, value: any): void {
   const layer = store.getLayerById(props.layerId);
   if (!layer) return;
 
-  const currentPins: WarpPin[] = (layer.data as any)?.warpPins ?? (layer.data as any)?.puppetPins ?? [];
-  const updatedPins = currentPins.map(p => {
+  const currentPins: WarpPin[] =
+    (layer.data as any)?.warpPins ?? (layer.data as any)?.puppetPins ?? [];
+  const updatedPins = currentPins.map((p) => {
     if (p.id === pinId) {
       return {
         ...p,
-        [property]: value
+        [property]: value,
       };
     }
     return p;
@@ -420,7 +432,7 @@ function updatePinProperty(pinId: string, property: string, value: any): void {
     data: {
       ...(layer.data as any),
       warpPins: updatedPins,
-    }
+    },
   });
 }
 
@@ -429,46 +441,49 @@ function handleKeyDown(event: KeyboardEvent) {
   if (!props.isActive) return;
 
   switch (event.key.toLowerCase()) {
-    case 'p':
-      setPinTool('position');
+    case "p":
+      setPinTool("position");
       break;
-    case 'r':
-      setPinTool('rotation');
+    case "r":
+      setPinTool("rotation");
       break;
-    case 's':
-      setPinTool('starch');
+    case "s":
+      setPinTool("starch");
       break;
-    case 'd':
-    case 'delete':
-    case 'backspace':
+    case "d":
+    case "delete":
+    case "backspace":
       if (selectedPinId.value) {
         removePinFromLayer(selectedPinId.value);
-        emit('pin-removed', selectedPinId.value);
+        emit("pin-removed", selectedPinId.value);
       } else {
-        setPinTool('delete');
+        setPinTool("delete");
       }
       break;
-    case 'escape':
+    case "escape":
       selectedPinId.value = null;
-      emit('pin-selected', null);
+      emit("pin-selected", null);
       break;
   }
 }
 
 // Lifecycle
 onMounted(() => {
-  window.addEventListener('keydown', handleKeyDown);
+  window.addEventListener("keydown", handleKeyDown);
 });
 
 onUnmounted(() => {
-  window.removeEventListener('keydown', handleKeyDown);
+  window.removeEventListener("keydown", handleKeyDown);
 });
 
 // Watch for layer changes
-watch(() => props.layerId, () => {
-  selectedPinId.value = null;
-  emit('pin-selected', null);
-});
+watch(
+  () => props.layerId,
+  () => {
+    selectedPinId.value = null;
+    emit("pin-selected", null);
+  },
+);
 </script>
 
 <style scoped>

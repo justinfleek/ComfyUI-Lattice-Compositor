@@ -135,32 +135,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { Splitpanes, Pane } from 'splitpanes';
-import type { Camera3D } from '@/types/camera';
-import { useCompositorStore } from '@/stores/compositorStore';
+import { computed } from "vue";
+import { useCompositorStore } from "@/stores/compositorStore";
+import type { Camera3D } from "@/types/camera";
 
 const store = useCompositorStore();
-const selectedLayerId = computed(() => store.selectedLayerIds[0] || '');
+const _selectedLayerId = computed(() => store.selectedLayerIds[0] || "");
 
-// Panels
-import PropertiesPanel from '@/components/panels/PropertiesPanel.vue';
-import EffectControlsPanel from '@/components/panels/EffectControlsPanel.vue';
-import CameraProperties from '@/components/panels/CameraProperties.vue';
-import AudioPanel from '@/components/panels/AudioPanel.vue';
-import AlignPanel from '@/components/panels/AlignPanel.vue';
-import PreviewPanel from '@/components/panels/PreviewPanel.vue';
-import ScopesPanel from '@/components/panels/ScopesPanel.vue';
-import DriverList from '@/components/panels/DriverList.vue';
-import CollapsiblePanel from '@/components/panels/CollapsiblePanel.vue';
-
-// AI Panels
-import AIChatPanel from '@/components/panels/AIChatPanel.vue';
-import AIGeneratePanel from '@/components/panels/AIGeneratePanel.vue';
-import GenerativeFlowPanel from '@/components/panels/GenerativeFlowPanel.vue';
-import LayerDecompositionPanel from '@/components/panels/LayerDecompositionPanel.vue';
-
-export type AITab = 'chat' | 'generate' | 'flow' | 'decompose';
+export type AITab = "chat" | "generate" | "flow" | "decompose";
 
 export interface ExpandedPanels {
   properties: boolean;
@@ -184,13 +166,13 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  'update:expandedPanels': [panels: ExpandedPanels];
-  'update:aiTab': [tab: AITab];
-  'updateCamera': [camera: Camera3D];
+  "update:expandedPanels": [panels: ExpandedPanels];
+  "update:aiTab": [tab: AITab];
+  updateCamera: [camera: Camera3D];
 }>();
 
-function updatePanel(panel: keyof ExpandedPanels, expanded: boolean) {
-  emit('update:expandedPanels', {
+function _updatePanel(panel: keyof ExpandedPanels, expanded: boolean) {
+  emit("update:expandedPanels", {
     ...props.expandedPanels,
     [panel]: expanded,
   });

@@ -5,9 +5,9 @@
  * and estimate their relative depths for automatic z-space placement.
  */
 
-import { createLogger } from '@/utils/logger';
+import { createLogger } from "@/utils/logger";
 
-const logger = createLogger('DepthEstimation');
+const logger = createLogger("DepthEstimation");
 
 // ============================================================================
 // Types
@@ -16,11 +16,11 @@ const logger = createLogger('DepthEstimation');
 export interface LayerDepthEstimate {
   layerIndex: number;
   layerName: string;
-  estimatedDepth: number;      // 0 (nearest) to 100 (farthest)
-  confidence: number;          // 0-1
-  reasoning: string;           // LLM explanation
-  suggestedZPosition: number;  // Compositor z-space units
-  contentDescription: string;  // What the layer contains
+  estimatedDepth: number; // 0 (nearest) to 100 (farthest)
+  confidence: number; // 0-1
+  reasoning: string; // LLM explanation
+  suggestedZPosition: number; // Compositor z-space units
+  contentDescription: string; // What the layer contains
 }
 
 export interface DepthEstimationResult {
@@ -40,11 +40,11 @@ export interface LayerAnalysisInput {
   centroid?: { x: number; y: number };
 }
 
-export type LLMProvider = 'openai' | 'anthropic';
+export type LLMProvider = "openai" | "anthropic";
 
 export interface DepthEstimationOptions {
   provider?: LLMProvider;
-  zSpaceScale?: number;      // Max z-space distance (default 500)
+  zSpaceScale?: number; // Max z-space distance (default 500)
   includeReasoning?: boolean; // Include LLM reasoning (default true)
 }
 
@@ -110,7 +110,7 @@ export class LLMDepthEstimator {
 
   constructor(serverAddress?: string) {
     // Use the AI proxy endpoint
-    this.baseUrl = serverAddress ? `http://${serverAddress}` : '';
+    this.baseUrl = serverAddress ? `http://${serverAddress}` : "";
   }
 
   /**
@@ -118,10 +118,10 @@ export class LLMDepthEstimator {
    */
   async estimateDepths(
     layers: LayerAnalysisInput[],
-    options: DepthEstimationOptions = {}
+    options: DepthEstimationOptions = {},
   ): Promise<DepthEstimationResult> {
     const {
-      provider = 'openai',
+      provider = "openai",
       zSpaceScale = 500,
       includeReasoning = true,
     } = options;
@@ -129,15 +129,17 @@ export class LLMDepthEstimator {
     if (layers.length === 0) {
       return {
         layers: [],
-        sceneDescription: 'No layers provided',
+        sceneDescription: "No layers provided",
         depthRange: { near: 0, far: 0 },
         success: false,
-        error: 'No layers to analyze',
+        error: "No layers to analyze",
       };
     }
 
     try {
-      logger.info(`Estimating depths for ${layers.length} layers using ${provider}`);
+      logger.info(
+        `Estimating depths for ${layers.length} layers using ${provider}`,
+      );
 
       // Build the prompt with layer information
       const userPrompt = this.buildUserPrompt(layers);
@@ -149,18 +151,24 @@ export class LLMDepthEstimator {
       const parsed = this.parseResponse(response);
 
       // Map depths to z-space positions
-      const result = this.mapToZSpace(parsed, layers, zSpaceScale, includeReasoning);
+      const result = this.mapToZSpace(
+        parsed,
+        layers,
+        zSpaceScale,
+        includeReasoning,
+      );
 
-      logger.info(`Depth estimation complete: ${result.layers.length} layers analyzed`);
+      logger.info(
+        `Depth estimation complete: ${result.layers.length} layers analyzed`,
+      );
       return result;
-
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      logger.error('Depth estimation failed:', error);
+      const errorMsg = error instanceof Error ? error.message : "Unknown error";
+      logger.error("Depth estimation failed:", error);
 
       return {
         layers: this.generateFallbackEstimates(layers, zSpaceScale),
-        sceneDescription: 'Fallback: depth estimated by layer order',
+        sceneDescription: "Fallback: depth estimated by layer order",
         depthRange: { near: 0, far: zSpaceScale },
         success: false,
         error: errorMsg,
@@ -172,21 +180,23 @@ export class LLMDepthEstimator {
    * Build the user prompt with layer metadata
    */
   private buildUserPrompt(layers: LayerAnalysisInput[]): string {
-    const layerDescriptions = layers.map((layer, i) => {
-      let desc = `Layer ${i + 1} "${layer.label}"`;
+    const layerDescriptions = layers
+      .map((layer, i) => {
+        let desc = `Layer ${i + 1} "${layer.label}"`;
 
-      if (layer.alphaCoverage !== undefined) {
-        desc += `\n  - Alpha coverage: ${(layer.alphaCoverage * 100).toFixed(1)}%`;
-      }
-      if (layer.centroid) {
-        desc += `\n  - Center position: (${layer.centroid.x.toFixed(0)}, ${layer.centroid.y.toFixed(0)})`;
-      }
-      if (layer.bounds) {
-        desc += `\n  - Size: ${layer.bounds.width}x${layer.bounds.height} pixels`;
-      }
+        if (layer.alphaCoverage !== undefined) {
+          desc += `\n  - Alpha coverage: ${(layer.alphaCoverage * 100).toFixed(1)}%`;
+        }
+        if (layer.centroid) {
+          desc += `\n  - Center position: (${layer.centroid.x.toFixed(0)}, ${layer.centroid.y.toFixed(0)})`;
+        }
+        if (layer.bounds) {
+          desc += `\n  - Size: ${layer.bounds.width}x${layer.bounds.height} pixels`;
+        }
 
-      return desc;
-    }).join('\n\n');
+        return desc;
+      })
+      .join("\n\n");
 
     return `Analyze these ${layers.length} image layers extracted from a single photograph.
 Each layer has transparency (RGBA) and represents a different depth plane in the scene.
@@ -204,24 +214,24 @@ Respond with JSON only.`;
   private async callVisionAPI(
     layers: LayerAnalysisInput[],
     prompt: string,
-    provider: LLMProvider
+    provider: LLMProvider,
   ): Promise<string> {
     // Build the request for the AI proxy endpoint
     const messages = [
       {
-        role: 'system',
+        role: "system",
         content: DEPTH_ESTIMATION_SYSTEM_PROMPT,
       },
       {
-        role: 'user',
+        role: "user",
         content: [
-          { type: 'text', text: prompt },
+          { type: "text", text: prompt },
           // Include layer images for vision analysis
-          ...layers.slice(0, 5).map(layer => ({
-            type: 'image_url',
+          ...layers.slice(0, 5).map((layer) => ({
+            type: "image_url",
             image_url: {
               url: layer.imageDataUrl,
-              detail: 'low', // Use low detail to reduce tokens
+              detail: "low", // Use low detail to reduce tokens
             },
           })),
         ],
@@ -229,20 +239,22 @@ Respond with JSON only.`;
     ];
 
     const requestBody = {
-      model: provider === 'openai' ? 'gpt-4o' : 'claude-sonnet',
+      model: provider === "openai" ? "gpt-4o" : "claude-sonnet",
       messages,
       max_tokens: 2048,
       temperature: 0.2, // Low temperature for consistent results
     };
 
     const response = await fetch(`${this.baseUrl}/lattice/api/ai/agent`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
-      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `API request failed: ${response.status} ${response.statusText}`,
+      );
     }
 
     const result = await response.json();
@@ -252,12 +264,13 @@ Respond with JSON only.`;
     }
 
     // Extract the text content from the response
-    const content = result.choices?.[0]?.message?.content ||
-                   result.content?.[0]?.text ||
-                   result.response;
+    const content =
+      result.choices?.[0]?.message?.content ||
+      result.content?.[0]?.text ||
+      result.response;
 
     if (!content) {
-      throw new Error('Empty response from LLM');
+      throw new Error("Empty response from LLM");
     }
 
     return content;
@@ -295,18 +308,18 @@ Respond with JSON only.`;
       const parsed = JSON.parse(jsonStr);
 
       return {
-        sceneDescription: parsed.sceneDescription || 'Scene analyzed',
+        sceneDescription: parsed.sceneDescription || "Scene analyzed",
         layers: (parsed.layers || []).map((layer: any) => ({
           index: layer.index ?? 0,
           depth: Math.max(0, Math.min(100, layer.depth ?? 50)),
-          content: layer.content || 'Unknown',
+          content: layer.content || "Unknown",
           confidence: Math.max(0, Math.min(1, layer.confidence ?? 0.5)),
-          reasoning: layer.reasoning || '',
+          reasoning: layer.reasoning || "",
         })),
       };
     } catch (parseError) {
-      logger.error('Failed to parse LLM response:', parseError, response);
-      throw new Error('Failed to parse depth estimation response');
+      logger.error("Failed to parse LLM response:", parseError, response);
+      throw new Error("Failed to parse depth estimation response");
     }
   }
 
@@ -317,13 +330,17 @@ Respond with JSON only.`;
     parsed: ReturnType<typeof this.parseResponse>,
     layers: LayerAnalysisInput[],
     zSpaceScale: number,
-    includeReasoning: boolean
+    includeReasoning: boolean,
   ): DepthEstimationResult {
     const layerEstimates: LayerDepthEstimate[] = layers.map((layer, i) => {
       // Find matching estimate from LLM
-      const estimate = parsed.layers.find(e => e.index === i) ||
-                       parsed.layers[i] ||
-                       { depth: 50, content: layer.label, confidence: 0.5, reasoning: 'No estimate' };
+      const estimate = parsed.layers.find((e) => e.index === i) ||
+        parsed.layers[i] || {
+          depth: 50,
+          content: layer.label,
+          confidence: 0.5,
+          reasoning: "No estimate",
+        };
 
       // Convert depth (0-100) to z-space
       // Higher depth = farther = more negative z (or we can use positive z going away)
@@ -335,14 +352,14 @@ Respond with JSON only.`;
         layerName: layer.label,
         estimatedDepth: estimate.depth,
         confidence: estimate.confidence,
-        reasoning: includeReasoning ? estimate.reasoning : '',
+        reasoning: includeReasoning ? estimate.reasoning : "",
         suggestedZPosition: suggestedZ,
         contentDescription: estimate.content,
       };
     });
 
     // Calculate depth range
-    const depths = layerEstimates.map(e => e.estimatedDepth);
+    const depths = layerEstimates.map((e) => e.estimatedDepth);
     const depthRange = {
       near: Math.min(...depths),
       far: Math.max(...depths),
@@ -361,7 +378,7 @@ Respond with JSON only.`;
    */
   private generateFallbackEstimates(
     layers: LayerAnalysisInput[],
-    zSpaceScale: number
+    zSpaceScale: number,
   ): LayerDepthEstimate[] {
     return layers.map((layer, i) => {
       // Simple heuristic: first layer is background, last is foreground
@@ -373,7 +390,7 @@ Respond with JSON only.`;
         layerName: layer.label,
         estimatedDepth: depth,
         confidence: 0.3, // Low confidence for fallback
-        reasoning: 'Fallback: estimated by layer order',
+        reasoning: "Fallback: estimated by layer order",
         suggestedZPosition: (depth / 100) * zSpaceScale,
         contentDescription: layer.label,
       };
@@ -387,7 +404,9 @@ Respond with JSON only.`;
 
 let defaultEstimator: LLMDepthEstimator | null = null;
 
-export function getLLMDepthEstimator(serverAddress?: string): LLMDepthEstimator {
+export function getLLMDepthEstimator(
+  serverAddress?: string,
+): LLMDepthEstimator {
   if (!defaultEstimator) {
     defaultEstimator = new LLMDepthEstimator(serverAddress);
   }
@@ -403,7 +422,7 @@ export function getLLMDepthEstimator(serverAddress?: string): LLMDepthEstimator 
  */
 export function estimateDepthsHeuristic(
   layers: LayerAnalysisInput[],
-  zSpaceScale: number = 500
+  zSpaceScale: number = 500,
 ): DepthEstimationResult {
   const estimates: LayerDepthEstimate[] = layers.map((layer, i) => {
     let depth: number;
@@ -414,40 +433,40 @@ export function estimateDepthsHeuristic(
     const label = layer.label.toLowerCase();
 
     // Check for semantic keywords
-    if (label.includes('sky') || label.includes('background')) {
+    if (label.includes("sky") || label.includes("background")) {
       depth = 95;
       confidence = 0.8;
-      reasoning = 'Label indicates background/sky';
-    } else if (label.includes('foreground') || label.includes('subject')) {
+      reasoning = "Label indicates background/sky";
+    } else if (label.includes("foreground") || label.includes("subject")) {
       depth = 15;
       confidence = 0.8;
-      reasoning = 'Label indicates foreground';
-    } else if (label.includes('mid') || label.includes('middle')) {
+      reasoning = "Label indicates foreground";
+    } else if (label.includes("mid") || label.includes("middle")) {
       depth = 50;
       confidence = 0.6;
-      reasoning = 'Label indicates midground';
+      reasoning = "Label indicates midground";
     } else if (layer.alphaCoverage !== undefined) {
       // Use alpha coverage as a heuristic
       // High coverage = likely background, low coverage = likely foreground detail
       if (layer.alphaCoverage > 0.8) {
         depth = 90;
         confidence = 0.5;
-        reasoning = 'High alpha coverage suggests background';
+        reasoning = "High alpha coverage suggests background";
       } else if (layer.alphaCoverage < 0.2) {
         depth = 20;
         confidence = 0.5;
-        reasoning = 'Low alpha coverage suggests foreground detail';
+        reasoning = "Low alpha coverage suggests foreground detail";
       } else {
         depth = 50;
         confidence = 0.4;
-        reasoning = 'Medium alpha coverage';
+        reasoning = "Medium alpha coverage";
       }
     } else {
       // Fall back to layer order
       const position = i / (layers.length - 1 || 1);
       depth = Math.round((1 - position) * 100);
       confidence = 0.3;
-      reasoning = 'Estimated by layer order';
+      reasoning = "Estimated by layer order";
     }
 
     return {
@@ -461,11 +480,11 @@ export function estimateDepthsHeuristic(
     };
   });
 
-  const depths = estimates.map(e => e.estimatedDepth);
+  const depths = estimates.map((e) => e.estimatedDepth);
 
   return {
     layers: estimates,
-    sceneDescription: 'Scene analyzed using heuristics',
+    sceneDescription: "Scene analyzed using heuristics",
     depthRange: {
       near: Math.min(...depths),
       far: Math.max(...depths),

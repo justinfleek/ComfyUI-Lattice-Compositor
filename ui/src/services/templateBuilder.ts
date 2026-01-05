@@ -9,24 +9,23 @@
  * - Template export preparation (.lattice.json)
  */
 
+import type { EffectInstance } from "../types/effects";
+import type { AnimatableProperty, Composition, Layer } from "../types/project";
 import type {
-  TemplateConfig,
   ExposedProperty,
   ExposedPropertyType,
+  LatticeTemplate,
   PropertyGroup,
   TemplateComment,
-  ExposedPropertyConfig,
-  LatticeTemplate,
-  TemplateExportSettings
-} from '../types/templateBuilder';
-import type { Composition, Layer, AnimatableProperty } from '../types/project';
-import type { EffectInstance } from '../types/effects';
+  TemplateConfig,
+  TemplateExportSettings,
+} from "../types/templateBuilder";
 import {
   createDefaultTemplateConfig,
   createExposedProperty,
   createPropertyGroup,
-  createTemplateComment
-} from '../types/templateBuilder';
+  createTemplateComment,
+} from "../types/templateBuilder";
 
 // ============================================================
 // TEMPLATE CONFIGURATION MANAGEMENT
@@ -54,7 +53,12 @@ export function clearTemplate(composition: Composition): void {
  */
 export function updateTemplateMetadata(
   config: TemplateConfig,
-  updates: Partial<Pick<TemplateConfig, 'name' | 'description' | 'author' | 'version' | 'tags' | 'posterFrame'>>
+  updates: Partial<
+    Pick<
+      TemplateConfig,
+      "name" | "description" | "author" | "version" | "tags" | "posterFrame"
+    >
+  >,
 ): void {
   Object.assign(config, updates);
   config.modified = new Date().toISOString();
@@ -70,51 +74,47 @@ export function updateTemplateMetadata(
 export const EXPOSABLE_PROPERTIES: Record<string, ExposablePropertyDef[]> = {
   // Common transform properties (all layers)
   common: [
-    { path: 'transform.position', name: 'Position', type: 'point' },
-    { path: 'transform.position.x', name: 'Position X', type: 'number' },
-    { path: 'transform.position.y', name: 'Position Y', type: 'number' },
-    { path: 'transform.rotation', name: 'Rotation', type: 'number' },
-    { path: 'transform.scale', name: 'Scale', type: 'point' },
-    { path: 'transform.scale.x', name: 'Scale X', type: 'number' },
-    { path: 'transform.scale.y', name: 'Scale Y', type: 'number' },
-    { path: 'transform.anchor', name: 'Anchor Point', type: 'point' },
-    { path: 'transform.opacity', name: 'Opacity', type: 'number' }
+    { path: "transform.position", name: "Position", type: "point" },
+    { path: "transform.position.x", name: "Position X", type: "number" },
+    { path: "transform.position.y", name: "Position Y", type: "number" },
+    { path: "transform.rotation", name: "Rotation", type: "number" },
+    { path: "transform.scale", name: "Scale", type: "point" },
+    { path: "transform.scale.x", name: "Scale X", type: "number" },
+    { path: "transform.scale.y", name: "Scale Y", type: "number" },
+    { path: "transform.anchor", name: "Anchor Point", type: "point" },
+    { path: "transform.opacity", name: "Opacity", type: "number" },
   ],
 
   // Text layer specific
   text: [
-    { path: 'data.text', name: 'Source Text', type: 'sourceText' },
-    { path: 'data.fontSize', name: 'Font Size', type: 'number' },
-    { path: 'data.fontFamily', name: 'Font', type: 'font' },
-    { path: 'data.fill', name: 'Fill Color', type: 'color' },
-    { path: 'data.stroke', name: 'Stroke Color', type: 'color' },
-    { path: 'data.strokeWidth', name: 'Stroke Width', type: 'number' },
-    { path: 'data.letterSpacing', name: 'Letter Spacing', type: 'number' },
-    { path: 'data.lineHeight', name: 'Line Height', type: 'number' }
+    { path: "data.text", name: "Source Text", type: "sourceText" },
+    { path: "data.fontSize", name: "Font Size", type: "number" },
+    { path: "data.fontFamily", name: "Font", type: "font" },
+    { path: "data.fill", name: "Fill Color", type: "color" },
+    { path: "data.stroke", name: "Stroke Color", type: "color" },
+    { path: "data.strokeWidth", name: "Stroke Width", type: "number" },
+    { path: "data.letterSpacing", name: "Letter Spacing", type: "number" },
+    { path: "data.lineHeight", name: "Line Height", type: "number" },
   ],
 
   // Solid layer
-  solid: [
-    { path: 'data.color', name: 'Color', type: 'color' }
-  ],
+  solid: [{ path: "data.color", name: "Color", type: "color" }],
 
   // Image layer
-  image: [
-    { path: 'data.source', name: 'Source', type: 'media' }
-  ],
+  image: [{ path: "data.source", name: "Source", type: "media" }],
 
   // Video layer
   video: [
-    { path: 'data.source', name: 'Source', type: 'media' },
-    { path: 'data.volume', name: 'Volume', type: 'number' }
+    { path: "data.source", name: "Source", type: "media" },
+    { path: "data.volume", name: "Volume", type: "number" },
   ],
 
   // Shape layer
   shape: [
-    { path: 'data.fill.color', name: 'Fill Color', type: 'color' },
-    { path: 'data.stroke.color', name: 'Stroke Color', type: 'color' },
-    { path: 'data.stroke.width', name: 'Stroke Width', type: 'number' }
-  ]
+    { path: "data.fill.color", name: "Fill Color", type: "color" },
+    { path: "data.stroke.color", name: "Stroke Color", type: "color" },
+    { path: "data.stroke.width", name: "Stroke Width", type: "number" },
+  ],
 };
 
 interface ExposablePropertyDef {
@@ -143,7 +143,7 @@ export function getExposableProperties(layer: Layer): ExposablePropertyDef[] {
         properties.push({
           path: `effects.${effectIndex}.parameters.${paramKey}`,
           name: `${effect.name} - ${param.name}`,
-          type: paramType
+          type: paramType,
         });
       });
     });
@@ -157,16 +157,16 @@ export function getExposableProperties(layer: Layer): ExposablePropertyDef[] {
  */
 function getPropertyType(param: AnimatableProperty<any>): ExposedPropertyType {
   switch (param.type) {
-    case 'number':
-      return 'number';
-    case 'color':
-      return 'color';
-    case 'position':
-      return 'point';
-    case 'enum':
-      return 'dropdown';
+    case "number":
+      return "number";
+    case "color":
+      return "color";
+    case "position":
+      return "point";
+    case "enum":
+      return "dropdown";
     default:
-      return 'number';
+      return "number";
   }
 }
 
@@ -178,10 +178,16 @@ export function addExposedProperty(
   layerId: string,
   propertyPath: string,
   name: string,
-  type: ExposedPropertyType
+  type: ExposedPropertyType,
 ): ExposedProperty {
   const order = config.exposedProperties.length;
-  const exposed = createExposedProperty(layerId, propertyPath, name, type, order);
+  const exposed = createExposedProperty(
+    layerId,
+    propertyPath,
+    name,
+    type,
+    order,
+  );
   config.exposedProperties.push(exposed);
   config.modified = new Date().toISOString();
   return exposed;
@@ -190,8 +196,11 @@ export function addExposedProperty(
 /**
  * Remove an exposed property
  */
-export function removeExposedProperty(config: TemplateConfig, propertyId: string): boolean {
-  const index = config.exposedProperties.findIndex(p => p.id === propertyId);
+export function removeExposedProperty(
+  config: TemplateConfig,
+  propertyId: string,
+): boolean {
+  const index = config.exposedProperties.findIndex((p) => p.id === propertyId);
   if (index === -1) return false;
 
   config.exposedProperties.splice(index, 1);
@@ -211,9 +220,9 @@ export function removeExposedProperty(config: TemplateConfig, propertyId: string
 export function updateExposedProperty(
   config: TemplateConfig,
   propertyId: string,
-  updates: Partial<ExposedProperty>
+  updates: Partial<ExposedProperty>,
 ): boolean {
-  const property = config.exposedProperties.find(p => p.id === propertyId);
+  const property = config.exposedProperties.find((p) => p.id === propertyId);
   if (!property) return false;
 
   Object.assign(property, updates);
@@ -226,12 +235,12 @@ export function updateExposedProperty(
  */
 export function reorderExposedProperties(
   config: TemplateConfig,
-  propertyIds: string[]
+  propertyIds: string[],
 ): void {
   const reordered: ExposedProperty[] = [];
 
   propertyIds.forEach((id, index) => {
-    const property = config.exposedProperties.find(p => p.id === id);
+    const property = config.exposedProperties.find((p) => p.id === id);
     if (property) {
       property.order = index;
       reordered.push(property);
@@ -239,7 +248,7 @@ export function reorderExposedProperties(
   });
 
   // Add any properties that weren't in the reorder list
-  config.exposedProperties.forEach(p => {
+  config.exposedProperties.forEach((p) => {
     if (!reordered.includes(p)) {
       p.order = reordered.length;
       reordered.push(p);
@@ -257,7 +266,10 @@ export function reorderExposedProperties(
 /**
  * Add a property group
  */
-export function addPropertyGroup(config: TemplateConfig, name: string): PropertyGroup {
+export function addPropertyGroup(
+  config: TemplateConfig,
+  name: string,
+): PropertyGroup {
   const order = config.groups.length;
   const group = createPropertyGroup(name, order);
   config.groups.push(group);
@@ -268,12 +280,15 @@ export function addPropertyGroup(config: TemplateConfig, name: string): Property
 /**
  * Remove a property group
  */
-export function removePropertyGroup(config: TemplateConfig, groupId: string): boolean {
-  const index = config.groups.findIndex(g => g.id === groupId);
+export function removePropertyGroup(
+  config: TemplateConfig,
+  groupId: string,
+): boolean {
+  const index = config.groups.findIndex((g) => g.id === groupId);
   if (index === -1) return false;
 
   // Remove group from properties
-  config.exposedProperties.forEach(p => {
+  config.exposedProperties.forEach((p) => {
     if (p.groupId === groupId) {
       p.groupId = undefined;
     }
@@ -290,9 +305,9 @@ export function removePropertyGroup(config: TemplateConfig, groupId: string): bo
 export function movePropertyToGroup(
   config: TemplateConfig,
   propertyId: string,
-  groupId: string | undefined
+  groupId: string | undefined,
 ): boolean {
-  const property = config.exposedProperties.find(p => p.id === propertyId);
+  const property = config.exposedProperties.find((p) => p.id === propertyId);
   if (!property) return false;
 
   property.groupId = groupId;
@@ -303,9 +318,12 @@ export function movePropertyToGroup(
 /**
  * Reorder groups
  */
-export function reorderGroups(config: TemplateConfig, groupIds: string[]): void {
+export function reorderGroups(
+  config: TemplateConfig,
+  groupIds: string[],
+): void {
   groupIds.forEach((id, index) => {
-    const group = config.groups.find(g => g.id === id);
+    const group = config.groups.find((g) => g.id === id);
     if (group) {
       group.order = index;
     }
@@ -322,7 +340,10 @@ export function reorderGroups(config: TemplateConfig, groupIds: string[]): void 
 /**
  * Add a comment/instruction
  */
-export function addComment(config: TemplateConfig, text: string): TemplateComment {
+export function addComment(
+  config: TemplateConfig,
+  text: string,
+): TemplateComment {
   const order = config.comments.length + config.exposedProperties.length;
   const comment = createTemplateComment(text, order);
   config.comments.push(comment);
@@ -336,9 +357,9 @@ export function addComment(config: TemplateConfig, text: string): TemplateCommen
 export function updateComment(
   config: TemplateConfig,
   commentId: string,
-  text: string
+  text: string,
 ): boolean {
-  const comment = config.comments.find(c => c.id === commentId);
+  const comment = config.comments.find((c) => c.id === commentId);
   if (!comment) return false;
 
   comment.text = text;
@@ -349,8 +370,11 @@ export function updateComment(
 /**
  * Remove a comment
  */
-export function removeComment(config: TemplateConfig, commentId: string): boolean {
-  const index = config.comments.findIndex(c => c.id === commentId);
+export function removeComment(
+  config: TemplateConfig,
+  commentId: string,
+): boolean {
+  const index = config.comments.findIndex((c) => c.id === commentId);
   if (index === -1) return false;
 
   config.comments.splice(index, 1);
@@ -366,7 +390,7 @@ export function removeComment(config: TemplateConfig, commentId: string): boolea
  * Get the value of a property at a path
  */
 export function getPropertyValue(layer: Layer, propertyPath: string): any {
-  const parts = propertyPath.split('.');
+  const parts = propertyPath.split(".");
   let current: any = layer;
 
   for (const part of parts) {
@@ -375,14 +399,14 @@ export function getPropertyValue(layer: Layer, propertyPath: string): any {
     // Handle array indexing (e.g., effects.0.parameters.blur)
     const arrayMatch = part.match(/^(\d+)$/);
     if (arrayMatch && Array.isArray(current)) {
-      current = current[parseInt(arrayMatch[1])];
+      current = current[parseInt(arrayMatch[1], 10)];
     } else {
       current = current[part];
     }
   }
 
   // If it's an AnimatableProperty, return the value
-  if (current && typeof current === 'object' && 'value' in current) {
+  if (current && typeof current === "object" && "value" in current) {
     return current.value;
   }
 
@@ -392,8 +416,12 @@ export function getPropertyValue(layer: Layer, propertyPath: string): any {
 /**
  * Set the value of a property at a path
  */
-export function setPropertyValue(layer: Layer, propertyPath: string, value: any): boolean {
-  const parts = propertyPath.split('.');
+export function setPropertyValue(
+  layer: Layer,
+  propertyPath: string,
+  value: any,
+): boolean {
+  const parts = propertyPath.split(".");
   let current: any = layer;
 
   // Navigate to parent
@@ -403,7 +431,7 @@ export function setPropertyValue(layer: Layer, propertyPath: string, value: any)
 
     const arrayMatch = part.match(/^(\d+)$/);
     if (arrayMatch && Array.isArray(current)) {
-      current = current[parseInt(arrayMatch[1])];
+      current = current[parseInt(arrayMatch[1], 10)];
     } else {
       current = current[part];
     }
@@ -414,7 +442,11 @@ export function setPropertyValue(layer: Layer, propertyPath: string, value: any)
   const lastPart = parts[parts.length - 1];
 
   // If target is an AnimatableProperty, set the value property
-  if (current[lastPart] && typeof current[lastPart] === 'object' && 'value' in current[lastPart]) {
+  if (
+    current[lastPart] &&
+    typeof current[lastPart] === "object" &&
+    "value" in current[lastPart]
+  ) {
     current[lastPart].value = value;
   } else {
     current[lastPart] = value;
@@ -434,16 +466,16 @@ export function setPropertyValue(layer: Layer, propertyPath: string, value: any)
 export function getEffectControlValue(
   layer: Layer,
   effectName: string,
-  parameterName: string
+  parameterName: string,
 ): any {
   if (!layer.effects) return null;
 
   // Find effect by name
-  const effect = layer.effects.find(e => e.name === effectName);
+  const effect = layer.effects.find((e) => e.name === effectName);
   if (!effect) return null;
 
   // Find parameter by name
-  const paramKey = parameterName.toLowerCase().replace(/\s+/g, '_');
+  const paramKey = parameterName.toLowerCase().replace(/\s+/g, "_");
   const param = effect.parameters[paramKey];
   if (!param) return null;
 
@@ -456,14 +488,15 @@ export function getEffectControlValue(
 export function getExpressionControls(layer: Layer): EffectInstance[] {
   if (!layer.effects) return [];
 
-  return layer.effects.filter(e =>
-    e.effectKey === 'slider-control' ||
-    e.effectKey === 'checkbox-control' ||
-    e.effectKey === 'dropdown-menu-control' ||
-    e.effectKey === 'color-control' ||
-    e.effectKey === 'point-control' ||
-    e.effectKey === 'angle-control' ||
-    e.effectKey === 'layer-control'
+  return layer.effects.filter(
+    (e) =>
+      e.effectKey === "slider-control" ||
+      e.effectKey === "checkbox-control" ||
+      e.effectKey === "dropdown-menu-control" ||
+      e.effectKey === "color-control" ||
+      e.effectKey === "point-control" ||
+      e.effectKey === "angle-control" ||
+      e.effectKey === "layer-control",
   );
 }
 
@@ -477,10 +510,12 @@ export function getExpressionControls(layer: Layer): EffectInstance[] {
 export function prepareTemplateExport(
   composition: Composition,
   assets: Record<string, any>,
-  posterImageData: string
+  posterImageData: string,
 ): LatticeTemplate | null {
   if (!composition.templateConfig) {
-    console.error('[TemplateBuilder] Cannot export - no template configuration');
+    console.error(
+      "[TemplateBuilder] Cannot export - no template configuration",
+    );
     return null;
   }
 
@@ -489,15 +524,19 @@ export function prepareTemplateExport(
   // Validate all exposed properties exist
   const validProperties: ExposedProperty[] = [];
   for (const prop of config.exposedProperties) {
-    const layer = composition.layers.find(l => l.id === prop.sourceLayerId);
+    const layer = composition.layers.find((l) => l.id === prop.sourceLayerId);
     if (!layer) {
-      console.warn(`[TemplateBuilder] Skipping property "${prop.name}" - layer not found`);
+      console.warn(
+        `[TemplateBuilder] Skipping property "${prop.name}" - layer not found`,
+      );
       continue;
     }
 
     const value = getPropertyValue(layer, prop.sourcePropertyPath);
     if (value === undefined) {
-      console.warn(`[TemplateBuilder] Skipping property "${prop.name}" - property not found`);
+      console.warn(
+        `[TemplateBuilder] Skipping property "${prop.name}" - property not found`,
+      );
       continue;
     }
 
@@ -506,15 +545,15 @@ export function prepareTemplateExport(
 
   // Build template
   const template: LatticeTemplate = {
-    formatVersion: '1.0.0',
+    formatVersion: "1.0.0",
     templateConfig: {
       ...config,
-      exposedProperties: validProperties
+      exposedProperties: validProperties,
     },
     composition: serializeComposition(composition),
     assets: collectAssets(composition, assets, config.exportSettings),
     fonts: collectFonts(composition, config.exportSettings),
-    posterImage: posterImageData
+    posterImage: posterImageData,
   };
 
   return template;
@@ -539,17 +578,17 @@ function serializeComposition(composition: Composition): any {
 function collectAssets(
   composition: Composition,
   assets: Record<string, any>,
-  settings: TemplateExportSettings
+  settings: TemplateExportSettings,
 ): any[] {
   if (!settings.includeMedia) return [];
 
   const usedAssetIds = new Set<string>();
 
   // Find all asset references in layers
-  composition.layers.forEach(layer => {
-    if (layer.data && typeof layer.data === 'object') {
+  composition.layers.forEach((layer) => {
+    if (layer.data && typeof layer.data === "object") {
       const data = layer.data as any;
-      if (data.source && typeof data.source === 'string') {
+      if (data.source && typeof data.source === "string") {
         usedAssetIds.add(data.source);
       }
       if (data.assetId) {
@@ -560,15 +599,15 @@ function collectAssets(
 
   // Collect referenced assets
   const collectedAssets: any[] = [];
-  usedAssetIds.forEach(assetId => {
+  usedAssetIds.forEach((assetId) => {
     const asset = assets[assetId];
     if (asset) {
       collectedAssets.push({
         id: assetId,
         name: asset.name || assetId,
-        type: asset.type || 'image',
+        type: asset.type || "image",
         data: asset.data || asset.url,
-        mimeType: asset.mimeType || 'image/png'
+        mimeType: asset.mimeType || "image/png",
       });
     }
   });
@@ -581,14 +620,14 @@ function collectAssets(
  */
 function collectFonts(
   composition: Composition,
-  settings: TemplateExportSettings
+  settings: TemplateExportSettings,
 ): any[] {
   const fonts: any[] = [];
   const fontFamilies = new Set<string>();
 
   // Find all font references in text layers
-  composition.layers.forEach(layer => {
-    if (layer.type === 'text' && layer.data) {
+  composition.layers.forEach((layer) => {
+    if (layer.type === "text" && layer.data) {
       const data = layer.data as any;
       if (data.fontFamily) {
         fontFamilies.add(data.fontFamily);
@@ -597,12 +636,12 @@ function collectFonts(
   });
 
   // Build font references
-  fontFamilies.forEach(family => {
+  fontFamilies.forEach((family) => {
     fonts.push({
       family,
-      style: 'normal',
+      style: "normal",
       embedded: settings.includeFonts,
-      source: 'google' // Assume Google Fonts for now
+      source: "google", // Assume Google Fonts for now
     });
   });
 
@@ -615,14 +654,14 @@ function collectFonts(
 export async function exportTemplate(
   composition: Composition,
   assets: Record<string, any>,
-  posterImageData: string
+  posterImageData: string,
 ): Promise<Blob | null> {
   const template = prepareTemplateExport(composition, assets, posterImageData);
   if (!template) return null;
 
   // Create JSON blob
   const json = JSON.stringify(template, null, 2);
-  return new Blob([json], { type: 'application/json' });
+  return new Blob([json], { type: "application/json" });
 }
 
 // ============================================================
@@ -634,24 +673,26 @@ export async function exportTemplate(
  */
 export function validateTemplate(
   config: TemplateConfig,
-  composition: Composition
+  composition: Composition,
 ): TemplateValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
 
   // Check template name
-  if (!config.name || config.name.trim() === '') {
-    errors.push('Template name is required');
+  if (!config.name || config.name.trim() === "") {
+    errors.push("Template name is required");
   }
 
   // Check exposed properties
   if (config.exposedProperties.length === 0) {
-    warnings.push('No properties exposed - template will have no editable controls');
+    warnings.push(
+      "No properties exposed - template will have no editable controls",
+    );
   }
 
   // Validate each exposed property
-  config.exposedProperties.forEach(prop => {
-    const layer = composition.layers.find(l => l.id === prop.sourceLayerId);
+  config.exposedProperties.forEach((prop) => {
+    const layer = composition.layers.find((l) => l.id === prop.sourceLayerId);
     if (!layer) {
       errors.push(`Property "${prop.name}" references missing layer`);
       return;
@@ -659,13 +700,17 @@ export function validateTemplate(
 
     const value = getPropertyValue(layer, prop.sourcePropertyPath);
     if (value === undefined) {
-      errors.push(`Property "${prop.name}" path not found: ${prop.sourcePropertyPath}`);
+      errors.push(
+        `Property "${prop.name}" path not found: ${prop.sourcePropertyPath}`,
+      );
     }
   });
 
   // Check groups
-  config.groups.forEach(group => {
-    const propsInGroup = config.exposedProperties.filter(p => p.groupId === group.id);
+  config.groups.forEach((group) => {
+    const propsInGroup = config.exposedProperties.filter(
+      (p) => p.groupId === group.id,
+    );
     if (propsInGroup.length === 0) {
       warnings.push(`Group "${group.name}" is empty`);
     }
@@ -674,7 +719,7 @@ export function validateTemplate(
   return {
     valid: errors.length === 0,
     errors,
-    warnings
+    warnings,
   };
 }
 
@@ -692,29 +737,29 @@ export interface TemplateValidationResult {
  * Get organized properties grouped by their groups
  */
 export function getOrganizedProperties(
-  config: TemplateConfig
+  config: TemplateConfig,
 ): OrganizedProperties {
   const ungrouped: (ExposedProperty | TemplateComment)[] = [];
   const groups: Map<string, (ExposedProperty | TemplateComment)[]> = new Map();
 
   // Initialize groups
-  config.groups.forEach(group => {
+  config.groups.forEach((group) => {
     groups.set(group.id, []);
   });
 
   // Organize properties
-  config.exposedProperties.forEach(prop => {
+  config.exposedProperties.forEach((prop) => {
     if (prop.groupId && groups.has(prop.groupId)) {
-      groups.get(prop.groupId)!.push(prop);
+      groups.get(prop.groupId)?.push(prop);
     } else {
       ungrouped.push(prop);
     }
   });
 
   // Organize comments
-  config.comments.forEach(comment => {
+  config.comments.forEach((comment) => {
     if (comment.groupId && groups.has(comment.groupId)) {
-      groups.get(comment.groupId)!.push(comment);
+      groups.get(comment.groupId)?.push(comment);
     } else {
       ungrouped.push(comment);
     }
@@ -722,16 +767,16 @@ export function getOrganizedProperties(
 
   // Sort by order
   ungrouped.sort((a, b) => a.order - b.order);
-  groups.forEach(items => {
+  groups.forEach((items) => {
     items.sort((a, b) => a.order - b.order);
   });
 
   return {
     ungrouped,
-    groups: config.groups.map(group => ({
+    groups: config.groups.map((group) => ({
       group,
-      items: groups.get(group.id) || []
-    }))
+      items: groups.get(group.id) || [],
+    })),
   };
 }
 
@@ -746,13 +791,17 @@ export interface OrganizedProperties {
 /**
  * Check if an item is an ExposedProperty
  */
-export function isExposedProperty(item: ExposedProperty | TemplateComment): item is ExposedProperty {
-  return 'sourceLayerId' in item;
+export function isExposedProperty(
+  item: ExposedProperty | TemplateComment,
+): item is ExposedProperty {
+  return "sourceLayerId" in item;
 }
 
 /**
  * Check if an item is a TemplateComment
  */
-export function isTemplateComment(item: ExposedProperty | TemplateComment): item is TemplateComment {
-  return 'text' in item && !('sourceLayerId' in item);
+export function isTemplateComment(
+  item: ExposedProperty | TemplateComment,
+): item is TemplateComment {
+  return "text" in item && !("sourceLayerId" in item);
 }

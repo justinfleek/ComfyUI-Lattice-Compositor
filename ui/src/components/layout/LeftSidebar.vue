@@ -53,24 +53,20 @@
 </template>
 
 <script setup lang="ts">
-import ProjectPanel from '@/components/panels/ProjectPanel.vue';
-import EffectsPanel from '@/components/panels/EffectsPanel.vue';
-import AssetsPanel from '@/components/panels/AssetsPanel.vue';
-
-export type LeftTab = 'project' | 'effects' | 'assets';
+export type LeftTab = "project" | "effects" | "assets";
 
 defineProps<{
   modelValue: LeftTab;
 }>();
 
 defineEmits<{
-  'update:modelValue': [tab: LeftTab];
-  'openCompositionSettings': [];
-  'createLayersFromSvg': [svgId: string];
-  'useMeshAsEmitter': [meshId: string];
-  'environmentUpdate': [settings: any];
-  'environmentLoad': [settings: any];
-  'environmentClear': [];
+  "update:modelValue": [tab: LeftTab];
+  openCompositionSettings: [];
+  createLayersFromSvg: [svgId: string];
+  useMeshAsEmitter: [meshId: string];
+  environmentUpdate: [settings: any];
+  environmentLoad: [settings: any];
+  environmentClear: [];
 }>();
 </script>
 

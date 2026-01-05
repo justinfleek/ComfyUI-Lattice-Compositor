@@ -109,16 +109,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { computed, ref } from "vue";
 import {
-  useTrackPoints,
+  clearSelection,
+  deselectTrack,
   getPointsAtFrame,
   getTrackPositions,
   selectTrack,
-  deselectTrack,
-  clearSelection,
   setTrackPosition,
-} from '@/services/trackPointService';
+  useTrackPoints,
+} from "@/services/trackPointService";
 
 const props = defineProps<{
   width: number;
@@ -130,18 +130,18 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: 'point-click', trackId: string, event: MouseEvent): void;
-  (e: 'point-drag', trackId: string, x: number, y: number): void;
-  (e: 'selection-change', trackIds: string[]): void;
+  (e: "point-click", trackId: string, event: MouseEvent): void;
+  (e: "point-drag", trackId: string, x: number, y: number): void;
+  (e: "selection-change", trackIds: string[]): void;
 }>();
 
 const trackPoints = useTrackPoints();
 
 // Get points at current frame
-const points = computed(() => getPointsAtFrame(props.currentFrame));
+const _points = computed(() => getPointsAtFrame(props.currentFrame));
 
 // Get tracks with path data for trails
-const tracksWithPaths = computed(() => {
+const _tracksWithPaths = computed(() => {
   if (!props.showTrails) return [];
 
   const tracks: Array<{ id: string; color: string; pathD: string }> = [];
@@ -167,7 +167,7 @@ const tracksWithPaths = computed(() => {
     tracks.push({
       id: track.id,
       color: track.color,
-      pathD: pathParts.join(' '),
+      pathD: pathParts.join(" "),
     });
   }
 
@@ -175,17 +175,17 @@ const tracksWithPaths = computed(() => {
 });
 
 // Selection state
-const isSelecting = ref(false);
-const selectionStart = ref({ x: 0, y: 0 });
-const selectionEnd = ref({ x: 0, y: 0 });
+const _isSelecting = ref(false);
+const _selectionStart = ref({ x: 0, y: 0 });
+const _selectionEnd = ref({ x: 0, y: 0 });
 
 // Drag state
 const isDragging = ref(false);
 const dragTrackId = ref<string | null>(null);
 
-function onPointClick(
+function _onPointClick(
   point: { trackId: string; selected: boolean },
-  event: MouseEvent
+  event: MouseEvent,
 ) {
   if (event.shiftKey) {
     // Toggle selection
@@ -199,14 +199,14 @@ function onPointClick(
     selectTrack(point.trackId, false);
   }
 
-  emit('point-click', point.trackId, event);
-  emit('selection-change', Array.from(trackPoints.selectedTracks.value.map(t => t.id)));
+  emit("point-click", point.trackId, event);
+  emit(
+    "selection-change",
+    Array.from(trackPoints.selectedTracks.value.map((t) => t.id)),
+  );
 }
 
-function onPointMouseDown(
-  point: { trackId: string },
-  event: MouseEvent
-) {
+function _onPointMouseDown(point: { trackId: string }, event: MouseEvent) {
   if (!props.editable) return;
 
   isDragging.value = true;
@@ -215,7 +215,9 @@ function onPointMouseDown(
   const handleMouseMove = (moveEvent: MouseEvent) => {
     if (!isDragging.value || !dragTrackId.value) return;
 
-    const rect = (event.target as SVGElement).ownerSVGElement?.getBoundingClientRect();
+    const rect = (
+      event.target as SVGElement
+    ).ownerSVGElement?.getBoundingClientRect();
     if (!rect) return;
 
     const x = (moveEvent.clientX - rect.left) / props.width;
@@ -226,24 +228,24 @@ function onPointMouseDown(
     const clampedY = Math.max(0, Math.min(1, y));
 
     setTrackPosition(dragTrackId.value, props.currentFrame, clampedX, clampedY);
-    emit('point-drag', dragTrackId.value, clampedX, clampedY);
+    emit("point-drag", dragTrackId.value, clampedX, clampedY);
   };
 
   const handleMouseUp = () => {
     isDragging.value = false;
     dragTrackId.value = null;
-    document.removeEventListener('mousemove', handleMouseMove);
-    document.removeEventListener('mouseup', handleMouseUp);
+    document.removeEventListener("mousemove", handleMouseMove);
+    document.removeEventListener("mouseup", handleMouseUp);
   };
 
-  document.addEventListener('mousemove', handleMouseMove);
-  document.addEventListener('mouseup', handleMouseUp);
+  document.addEventListener("mousemove", handleMouseMove);
+  document.addEventListener("mouseup", handleMouseUp);
 }
 
 // Handle click on background to clear selection
-function onBackgroundClick() {
+function _onBackgroundClick() {
   clearSelection();
-  emit('selection-change', []);
+  emit("selection-change", []);
 }
 </script>
 

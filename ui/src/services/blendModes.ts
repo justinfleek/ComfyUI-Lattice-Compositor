@@ -15,7 +15,7 @@
  * require pixel-level implementation.
  */
 
-import type { BlendMode } from '../types/project';
+import type { BlendMode } from "../types/project";
 
 // ============================================================================
 // TYPES
@@ -37,20 +37,20 @@ type NativeCompositeOp = GlobalCompositeOperation;
  * Map BlendMode to Canvas 2D globalCompositeOperation where supported
  */
 const NATIVE_BLEND_MAP: Partial<Record<BlendMode, NativeCompositeOp>> = {
-  'normal': 'source-over',
-  'multiply': 'multiply',
-  'screen': 'screen',
-  'overlay': 'overlay',
-  'darken': 'darken',
-  'lighten': 'lighten',
-  'color-dodge': 'color-dodge',
-  'color-burn': 'color-burn',
-  'hard-light': 'hard-light',
-  'soft-light': 'soft-light',
-  'difference': 'difference',
-  'exclusion': 'exclusion',
-  'add': 'lighter',
-  'linear-dodge': 'lighter', // Linear Dodge is same as Add
+  normal: "source-over",
+  multiply: "multiply",
+  screen: "screen",
+  overlay: "overlay",
+  darken: "darken",
+  lighten: "lighten",
+  "color-dodge": "color-dodge",
+  "color-burn": "color-burn",
+  "hard-light": "hard-light",
+  "soft-light": "soft-light",
+  difference: "difference",
+  exclusion: "exclusion",
+  add: "lighter",
+  "linear-dodge": "lighter", // Linear Dodge is same as Add
 };
 
 /**
@@ -155,13 +155,21 @@ function clamp(value: number): number {
  * Dissolve blend (requires random, uses frame-based seeded random)
  */
 function blendDissolve(
-  baseR: number, baseG: number, baseB: number, baseA: number,
-  blendR: number, blendG: number, blendB: number, blendA: number,
-  x: number, y: number, frame: number
+  baseR: number,
+  baseG: number,
+  baseB: number,
+  baseA: number,
+  blendR: number,
+  blendG: number,
+  blendB: number,
+  blendA: number,
+  x: number,
+  y: number,
+  frame: number,
 ): [number, number, number, number] {
   // Seeded random based on position and frame
   const seed = ((x * 73856093) ^ (y * 19349663) ^ (frame * 83492791)) % 1000000;
-  const random = (seed / 1000000);
+  const random = seed / 1000000;
 
   // If random < blend opacity, show blend pixel
   const blendOpacity = blendA / 255;
@@ -182,8 +190,12 @@ function blendLinearBurn(base: number, blend: number): number {
  * Darker Color: Return pixel with lower luminance
  */
 function blendDarkerColor(
-  baseR: number, baseG: number, baseB: number,
-  blendR: number, blendG: number, blendB: number
+  baseR: number,
+  baseG: number,
+  baseB: number,
+  blendR: number,
+  blendG: number,
+  blendB: number,
 ): [number, number, number] {
   const baseLum = getLuminance(baseR, baseG, baseB);
   const blendLum = getLuminance(blendR, blendG, blendB);
@@ -198,8 +210,12 @@ function blendDarkerColor(
  * Lighter Color: Return pixel with higher luminance
  */
 function blendLighterColor(
-  baseR: number, baseG: number, baseB: number,
-  blendR: number, blendG: number, blendB: number
+  baseR: number,
+  baseG: number,
+  baseB: number,
+  blendR: number,
+  blendG: number,
+  blendB: number,
 ): [number, number, number] {
   const baseLum = getLuminance(baseR, baseG, baseB);
   const blendLum = getLuminance(blendR, blendG, blendB);
@@ -217,12 +233,12 @@ function blendVividLight(base: number, blend: number): number {
   if (blend <= 128) {
     // Color Burn
     if (blend === 0) return 0;
-    return clamp(255 - (255 - base) * 255 / (2 * blend));
+    return clamp(255 - ((255 - base) * 255) / (2 * blend));
   } else {
     // Color Dodge
     const adjusted = 2 * (blend - 128);
     if (adjusted === 255) return 255;
-    return clamp(base * 255 / (255 - adjusted));
+    return clamp((base * 255) / (255 - adjusted));
   }
 }
 
@@ -280,8 +296,12 @@ function blendDivide(base: number, blend: number): number {
  * Hue blend: Take hue from blend, saturation and luminance from base
  */
 function blendHue(
-  baseR: number, baseG: number, baseB: number,
-  blendR: number, blendG: number, blendB: number
+  baseR: number,
+  baseG: number,
+  baseB: number,
+  blendR: number,
+  blendG: number,
+  blendB: number,
 ): [number, number, number] {
   const [, baseSat, baseLum] = rgbToHsl(baseR, baseG, baseB);
   const [blendHue] = rgbToHsl(blendR, blendG, blendB);
@@ -293,8 +313,12 @@ function blendHue(
  * Saturation blend: Take saturation from blend, hue and luminance from base
  */
 function blendSaturation(
-  baseR: number, baseG: number, baseB: number,
-  blendR: number, blendG: number, blendB: number
+  baseR: number,
+  baseG: number,
+  baseB: number,
+  blendR: number,
+  blendG: number,
+  blendB: number,
 ): [number, number, number] {
   const [baseHue, , baseLum] = rgbToHsl(baseR, baseG, baseB);
   const [, blendSat] = rgbToHsl(blendR, blendG, blendB);
@@ -306,8 +330,12 @@ function blendSaturation(
  * Color blend: Take hue and saturation from blend, luminance from base
  */
 function blendColor(
-  baseR: number, baseG: number, baseB: number,
-  blendR: number, blendG: number, blendB: number
+  baseR: number,
+  baseG: number,
+  baseB: number,
+  blendR: number,
+  blendG: number,
+  blendB: number,
 ): [number, number, number] {
   const [, , baseLum] = rgbToHsl(baseR, baseG, baseB);
   const [blendHue, blendSat] = rgbToHsl(blendR, blendG, blendB);
@@ -319,8 +347,12 @@ function blendColor(
  * Luminosity blend: Take luminance from blend, hue and saturation from base
  */
 function blendLuminosity(
-  baseR: number, baseG: number, baseB: number,
-  blendR: number, blendG: number, blendB: number
+  baseR: number,
+  baseG: number,
+  baseB: number,
+  blendR: number,
+  blendG: number,
+  blendB: number,
 ): [number, number, number] {
   const [baseHue, baseSat] = rgbToHsl(baseR, baseG, baseB);
   const [, , blendLum] = rgbToHsl(blendR, blendG, blendB);
@@ -347,16 +379,16 @@ export function blendImages(
   blend: HTMLCanvasElement,
   mode: BlendMode,
   opacity: number = 1,
-  frame: number = 0
+  frame: number = 0,
 ): BlendResult {
   const width = base.width;
   const height = base.height;
 
   // Create output canvas
-  const output = document.createElement('canvas');
+  const output = document.createElement("canvas");
   output.width = width;
   output.height = height;
-  const ctx = output.getContext('2d')!;
+  const ctx = output.getContext("2d")!;
 
   // Try native blend mode first (much faster)
   const nativeOp = getNativeBlendOp(mode);
@@ -370,15 +402,15 @@ export function blendImages(
     ctx.drawImage(blend, 0, 0);
 
     // Reset
-    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalCompositeOperation = "source-over";
     ctx.globalAlpha = 1;
 
     return { canvas: output, ctx };
   }
 
   // Pixel-level blending for modes Canvas 2D doesn't support
-  const baseCtx = base.getContext('2d')!;
-  const blendCtx = blend.getContext('2d')!;
+  const baseCtx = base.getContext("2d")!;
+  const blendCtx = blend.getContext("2d")!;
 
   const baseData = baseCtx.getImageData(0, 0, width, height);
   const blendData = blendCtx.getImageData(0, 0, width, height);
@@ -406,110 +438,181 @@ export function blendImages(
 
       // Apply blend mode
       switch (mode) {
-        case 'dissolve': {
+        case "dissolve": {
           const [r, g, b, a] = blendDissolve(
-            baseR, baseG, baseB, baseA,
-            blendR, blendG, blendB, blendA,
-            x, y, frame
+            baseR,
+            baseG,
+            baseB,
+            baseA,
+            blendR,
+            blendG,
+            blendB,
+            blendA,
+            x,
+            y,
+            frame,
           );
-          resultR = r; resultG = g; resultB = b; resultA = a;
+          resultR = r;
+          resultG = g;
+          resultB = b;
+          resultA = a;
           break;
         }
 
-        case 'linear-burn':
+        case "linear-burn":
           resultR = blendLinearBurn(baseR, blendR);
           resultG = blendLinearBurn(baseG, blendG);
           resultB = blendLinearBurn(baseB, blendB);
           resultA = baseA;
           break;
 
-        case 'darker-color': {
-          const [r, g, b] = blendDarkerColor(baseR, baseG, baseB, blendR, blendG, blendB);
-          resultR = r; resultG = g; resultB = b; resultA = baseA;
+        case "darker-color": {
+          const [r, g, b] = blendDarkerColor(
+            baseR,
+            baseG,
+            baseB,
+            blendR,
+            blendG,
+            blendB,
+          );
+          resultR = r;
+          resultG = g;
+          resultB = b;
+          resultA = baseA;
           break;
         }
 
-        case 'lighter-color': {
-          const [r, g, b] = blendLighterColor(baseR, baseG, baseB, blendR, blendG, blendB);
-          resultR = r; resultG = g; resultB = b; resultA = baseA;
+        case "lighter-color": {
+          const [r, g, b] = blendLighterColor(
+            baseR,
+            baseG,
+            baseB,
+            blendR,
+            blendG,
+            blendB,
+          );
+          resultR = r;
+          resultG = g;
+          resultB = b;
+          resultA = baseA;
           break;
         }
 
-        case 'vivid-light':
+        case "vivid-light":
           resultR = blendVividLight(baseR, blendR);
           resultG = blendVividLight(baseG, blendG);
           resultB = blendVividLight(baseB, blendB);
           resultA = baseA;
           break;
 
-        case 'linear-light':
+        case "linear-light":
           resultR = blendLinearLight(baseR, blendR);
           resultG = blendLinearLight(baseG, blendG);
           resultB = blendLinearLight(baseB, blendB);
           resultA = baseA;
           break;
 
-        case 'pin-light':
+        case "pin-light":
           resultR = blendPinLight(baseR, blendR);
           resultG = blendPinLight(baseG, blendG);
           resultB = blendPinLight(baseB, blendB);
           resultA = baseA;
           break;
 
-        case 'hard-mix':
+        case "hard-mix":
           resultR = blendHardMix(baseR, blendR);
           resultG = blendHardMix(baseG, blendG);
           resultB = blendHardMix(baseB, blendB);
           resultA = baseA;
           break;
 
-        case 'subtract':
+        case "subtract":
           resultR = blendSubtract(baseR, blendR);
           resultG = blendSubtract(baseG, blendG);
           resultB = blendSubtract(baseB, blendB);
           resultA = baseA;
           break;
 
-        case 'divide':
+        case "divide":
           resultR = blendDivide(baseR, blendR);
           resultG = blendDivide(baseG, blendG);
           resultB = blendDivide(baseB, blendB);
           resultA = baseA;
           break;
 
-        case 'hue': {
-          const [r, g, b] = blendHue(baseR, baseG, baseB, blendR, blendG, blendB);
-          resultR = r; resultG = g; resultB = b; resultA = baseA;
+        case "hue": {
+          const [r, g, b] = blendHue(
+            baseR,
+            baseG,
+            baseB,
+            blendR,
+            blendG,
+            blendB,
+          );
+          resultR = r;
+          resultG = g;
+          resultB = b;
+          resultA = baseA;
           break;
         }
 
-        case 'saturation': {
-          const [r, g, b] = blendSaturation(baseR, baseG, baseB, blendR, blendG, blendB);
-          resultR = r; resultG = g; resultB = b; resultA = baseA;
+        case "saturation": {
+          const [r, g, b] = blendSaturation(
+            baseR,
+            baseG,
+            baseB,
+            blendR,
+            blendG,
+            blendB,
+          );
+          resultR = r;
+          resultG = g;
+          resultB = b;
+          resultA = baseA;
           break;
         }
 
-        case 'color': {
-          const [r, g, b] = blendColor(baseR, baseG, baseB, blendR, blendG, blendB);
-          resultR = r; resultG = g; resultB = b; resultA = baseA;
+        case "color": {
+          const [r, g, b] = blendColor(
+            baseR,
+            baseG,
+            baseB,
+            blendR,
+            blendG,
+            blendB,
+          );
+          resultR = r;
+          resultG = g;
+          resultB = b;
+          resultA = baseA;
           break;
         }
 
-        case 'luminosity': {
-          const [r, g, b] = blendLuminosity(baseR, baseG, baseB, blendR, blendG, blendB);
-          resultR = r; resultG = g; resultB = b; resultA = baseA;
+        case "luminosity": {
+          const [r, g, b] = blendLuminosity(
+            baseR,
+            baseG,
+            baseB,
+            blendR,
+            blendG,
+            blendB,
+          );
+          resultR = r;
+          resultG = g;
+          resultB = b;
+          resultA = baseA;
           break;
         }
 
         // Stencil/Silhouette modes (AE-specific)
-        case 'stencil-alpha':
+        case "stencil-alpha":
           resultR = baseR;
           resultG = baseG;
           resultB = baseB;
           resultA = Math.round((baseA / 255) * (blendA / 255) * 255);
           break;
 
-        case 'stencil-luma': {
+        case "stencil-luma": {
           const blendLum = getLuminance(blendR, blendG, blendB) / 255;
           resultR = baseR;
           resultG = baseG;
@@ -518,14 +621,14 @@ export function blendImages(
           break;
         }
 
-        case 'silhouette-alpha':
+        case "silhouette-alpha":
           resultR = baseR;
           resultG = baseG;
           resultB = baseB;
           resultA = Math.round((baseA / 255) * (1 - blendA / 255) * 255);
           break;
 
-        case 'silhouette-luma': {
+        case "silhouette-luma": {
           const blendLum = getLuminance(blendR, blendG, blendB) / 255;
           resultR = baseR;
           resultG = baseG;
@@ -534,14 +637,14 @@ export function blendImages(
           break;
         }
 
-        case 'alpha-add':
+        case "alpha-add":
           resultR = baseR;
           resultG = baseG;
           resultB = baseB;
           resultA = clamp(baseA + blendA);
           break;
 
-        case 'luminescent-premul':
+        case "luminescent-premul":
           // Luminescent premultiply - useful for light effects
           resultR = clamp(baseR + blendR * (blendA / 255));
           resultG = clamp(baseG + blendG * (blendA / 255));
@@ -589,91 +692,137 @@ export function blendImages(
  * Apply blend mode to a single pixel (for real-time preview)
  */
 export function blendPixel(
-  baseR: number, baseG: number, baseB: number, baseA: number,
-  blendR: number, blendG: number, blendB: number, blendA: number,
+  baseR: number,
+  baseG: number,
+  baseB: number,
+  baseA: number,
+  blendR: number,
+  blendG: number,
+  blendB: number,
+  blendA: number,
   mode: BlendMode,
-  opacity: number = 1
+  opacity: number = 1,
 ): [number, number, number, number] {
-  let resultR = blendR, resultG = blendG, resultB = blendB, resultA = blendA;
+  let resultR = blendR,
+    resultG = blendG,
+    resultB = blendB,
+    resultA = blendA;
 
   switch (mode) {
-    case 'normal':
+    case "normal":
       break;
 
-    case 'multiply':
+    case "multiply":
       resultR = (baseR * blendR) / 255;
       resultG = (baseG * blendG) / 255;
       resultB = (baseB * blendB) / 255;
       break;
 
-    case 'screen':
+    case "screen":
       resultR = 255 - ((255 - baseR) * (255 - blendR)) / 255;
       resultG = 255 - ((255 - baseG) * (255 - blendG)) / 255;
       resultB = 255 - ((255 - baseB) * (255 - blendB)) / 255;
       break;
 
-    case 'overlay':
-      resultR = baseR < 128 ? (2 * baseR * blendR) / 255 : 255 - (2 * (255 - baseR) * (255 - blendR)) / 255;
-      resultG = baseG < 128 ? (2 * baseG * blendG) / 255 : 255 - (2 * (255 - baseG) * (255 - blendG)) / 255;
-      resultB = baseB < 128 ? (2 * baseB * blendB) / 255 : 255 - (2 * (255 - baseB) * (255 - blendB)) / 255;
+    case "overlay":
+      resultR =
+        baseR < 128
+          ? (2 * baseR * blendR) / 255
+          : 255 - (2 * (255 - baseR) * (255 - blendR)) / 255;
+      resultG =
+        baseG < 128
+          ? (2 * baseG * blendG) / 255
+          : 255 - (2 * (255 - baseG) * (255 - blendG)) / 255;
+      resultB =
+        baseB < 128
+          ? (2 * baseB * blendB) / 255
+          : 255 - (2 * (255 - baseB) * (255 - blendB)) / 255;
       break;
 
-    case 'linear-burn':
+    case "linear-burn":
       resultR = blendLinearBurn(baseR, blendR);
       resultG = blendLinearBurn(baseG, blendG);
       resultB = blendLinearBurn(baseB, blendB);
       break;
 
-    case 'vivid-light':
+    case "vivid-light":
       resultR = blendVividLight(baseR, blendR);
       resultG = blendVividLight(baseG, blendG);
       resultB = blendVividLight(baseB, blendB);
       break;
 
-    case 'linear-light':
+    case "linear-light":
       resultR = blendLinearLight(baseR, blendR);
       resultG = blendLinearLight(baseG, blendG);
       resultB = blendLinearLight(baseB, blendB);
       break;
 
-    case 'pin-light':
+    case "pin-light":
       resultR = blendPinLight(baseR, blendR);
       resultG = blendPinLight(baseG, blendG);
       resultB = blendPinLight(baseB, blendB);
       break;
 
-    case 'hard-mix':
+    case "hard-mix":
       resultR = blendHardMix(baseR, blendR);
       resultG = blendHardMix(baseG, blendG);
       resultB = blendHardMix(baseB, blendB);
       break;
 
-    case 'subtract':
+    case "subtract":
       resultR = blendSubtract(baseR, blendR);
       resultG = blendSubtract(baseG, blendG);
       resultB = blendSubtract(baseB, blendB);
       break;
 
-    case 'divide':
+    case "divide":
       resultR = blendDivide(baseR, blendR);
       resultG = blendDivide(baseG, blendG);
       resultB = blendDivide(baseB, blendB);
       break;
 
-    case 'hue':
-      [resultR, resultG, resultB] = blendHue(baseR, baseG, baseB, blendR, blendG, blendB);
+    case "hue":
+      [resultR, resultG, resultB] = blendHue(
+        baseR,
+        baseG,
+        baseB,
+        blendR,
+        blendG,
+        blendB,
+      );
       break;
 
-    case 'saturation':
-      [resultR, resultG, resultB] = blendSaturation(baseR, baseG, baseB, blendR, blendG, blendB);
+    case "saturation":
+      [resultR, resultG, resultB] = blendSaturation(
+        baseR,
+        baseG,
+        baseB,
+        blendR,
+        blendG,
+        blendB,
+      );
       break;
 
-    case 'color':
-      [resultR, resultG, resultB] = blendColor(baseR, baseG, baseB, blendR, blendG, blendB);
+    case "color":
+      [resultR, resultG, resultB] = blendColor(
+        baseR,
+        baseG,
+        baseB,
+        blendR,
+        blendG,
+        blendB,
+      );
       break;
 
-    case 'luminosity':
-      [resultR, resultG, resultB] = blendLuminosity(baseR, baseG, baseB, blendR, blendG, blendB);
+    case "luminosity":
+      [resultR, resultG, resultB] = blendLuminosity(
+        baseR,
+        baseG,
+        baseB,
+        blendR,
+        blendG,
+        blendB,
+      );
       break;
 
     // Add other modes as needed...
@@ -697,13 +846,35 @@ export function blendPixel(
  */
 export function getBlendModeCategories(): Record<string, BlendMode[]> {
   return {
-    'Normal': ['normal', 'dissolve'],
-    'Darken': ['darken', 'multiply', 'color-burn', 'linear-burn', 'darker-color'],
-    'Lighten': ['lighten', 'screen', 'color-dodge', 'linear-dodge', 'lighter-color', 'add'],
-    'Contrast': ['overlay', 'soft-light', 'hard-light', 'vivid-light', 'linear-light', 'pin-light', 'hard-mix'],
-    'Inversion': ['difference', 'exclusion', 'subtract', 'divide'],
-    'Component': ['hue', 'saturation', 'color', 'luminosity'],
-    'Utility': ['stencil-alpha', 'stencil-luma', 'silhouette-alpha', 'silhouette-luma', 'alpha-add', 'luminescent-premul']
+    Normal: ["normal", "dissolve"],
+    Darken: ["darken", "multiply", "color-burn", "linear-burn", "darker-color"],
+    Lighten: [
+      "lighten",
+      "screen",
+      "color-dodge",
+      "linear-dodge",
+      "lighter-color",
+      "add",
+    ],
+    Contrast: [
+      "overlay",
+      "soft-light",
+      "hard-light",
+      "vivid-light",
+      "linear-light",
+      "pin-light",
+      "hard-mix",
+    ],
+    Inversion: ["difference", "exclusion", "subtract", "divide"],
+    Component: ["hue", "saturation", "color", "luminosity"],
+    Utility: [
+      "stencil-alpha",
+      "stencil-luma",
+      "silhouette-alpha",
+      "silhouette-luma",
+      "alpha-add",
+      "luminescent-premul",
+    ],
   };
 }
 
@@ -712,40 +883,40 @@ export function getBlendModeCategories(): Record<string, BlendMode[]> {
  */
 export function getBlendModeDisplayName(mode: BlendMode): string {
   const names: Record<BlendMode, string> = {
-    'normal': 'Normal',
-    'dissolve': 'Dissolve',
-    'darken': 'Darken',
-    'multiply': 'Multiply',
-    'color-burn': 'Color Burn',
-    'linear-burn': 'Linear Burn',
-    'darker-color': 'Darker Color',
-    'lighten': 'Lighten',
-    'screen': 'Screen',
-    'color-dodge': 'Color Dodge',
-    'linear-dodge': 'Linear Dodge (Add)',
-    'lighter-color': 'Lighter Color',
-    'add': 'Add',
-    'overlay': 'Overlay',
-    'soft-light': 'Soft Light',
-    'hard-light': 'Hard Light',
-    'vivid-light': 'Vivid Light',
-    'linear-light': 'Linear Light',
-    'pin-light': 'Pin Light',
-    'hard-mix': 'Hard Mix',
-    'difference': 'Difference',
-    'exclusion': 'Exclusion',
-    'subtract': 'Subtract',
-    'divide': 'Divide',
-    'hue': 'Hue',
-    'saturation': 'Saturation',
-    'color': 'Color',
-    'luminosity': 'Luminosity',
-    'stencil-alpha': 'Stencil Alpha',
-    'stencil-luma': 'Stencil Luma',
-    'silhouette-alpha': 'Silhouette Alpha',
-    'silhouette-luma': 'Silhouette Luma',
-    'alpha-add': 'Alpha Add',
-    'luminescent-premul': 'Luminescent Premul'
+    normal: "Normal",
+    dissolve: "Dissolve",
+    darken: "Darken",
+    multiply: "Multiply",
+    "color-burn": "Color Burn",
+    "linear-burn": "Linear Burn",
+    "darker-color": "Darker Color",
+    lighten: "Lighten",
+    screen: "Screen",
+    "color-dodge": "Color Dodge",
+    "linear-dodge": "Linear Dodge (Add)",
+    "lighter-color": "Lighter Color",
+    add: "Add",
+    overlay: "Overlay",
+    "soft-light": "Soft Light",
+    "hard-light": "Hard Light",
+    "vivid-light": "Vivid Light",
+    "linear-light": "Linear Light",
+    "pin-light": "Pin Light",
+    "hard-mix": "Hard Mix",
+    difference: "Difference",
+    exclusion: "Exclusion",
+    subtract: "Subtract",
+    divide: "Divide",
+    hue: "Hue",
+    saturation: "Saturation",
+    color: "Color",
+    luminosity: "Luminosity",
+    "stencil-alpha": "Stencil Alpha",
+    "stencil-luma": "Stencil Luma",
+    "silhouette-alpha": "Silhouette Alpha",
+    "silhouette-luma": "Silhouette Luma",
+    "alpha-add": "Alpha Add",
+    "luminescent-premul": "Luminescent Premul",
   };
 
   return names[mode] || mode;
@@ -757,5 +928,5 @@ export default {
   isNativeBlendMode,
   getNativeBlendOp,
   getBlendModeCategories,
-  getBlendModeDisplayName
+  getBlendModeDisplayName,
 };

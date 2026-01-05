@@ -222,16 +222,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue';
+import { onMounted, ref, watch } from "vue";
 
 export interface RenderSettings {
-  quality: 'draft' | 'standard' | 'best';
-  resolution: 'full' | 'half' | 'third' | 'quarter' | 'custom';
+  quality: "draft" | "standard" | "best";
+  resolution: "full" | "half" | "third" | "quarter" | "custom";
   customWidth?: number;
   customHeight?: number;
-  frameRate: 'inherit' | '16' | '24' | '30' | '60' | 'custom';
+  frameRate: "inherit" | "16" | "24" | "30" | "60" | "custom";
   customFps?: number;
-  timeSpan: 'workArea' | 'full' | 'custom';
+  timeSpan: "workArea" | "full" | "custom";
   startFrame?: number;
   endFrame?: number;
   motionBlur: boolean;
@@ -247,22 +247,24 @@ const props = defineProps<{
   settings: RenderSettings;
 }>();
 
-const emit = defineEmits<{
-  (e: 'update:settings', settings: RenderSettings): void;
-}>();
+const emit =
+  defineEmits<(e: "update:settings", settings: RenderSettings) => void>();
 
 // Local copy of settings for editing
-const localSettings = ref<RenderSettings>({ ...getDefaultSettings(), ...props.settings });
+const localSettings = ref<RenderSettings>({
+  ...getDefaultSettings(),
+  ...props.settings,
+});
 
 function getDefaultSettings(): RenderSettings {
   return {
-    quality: 'standard',
-    resolution: 'full',
+    quality: "standard",
+    resolution: "full",
     customWidth: 832,
     customHeight: 480,
-    frameRate: 'inherit',
+    frameRate: "inherit",
     customFps: 16,
-    timeSpan: 'workArea',
+    timeSpan: "workArea",
     startFrame: 0,
     endFrame: 80,
     motionBlur: false,
@@ -271,25 +273,30 @@ function getDefaultSettings(): RenderSettings {
     shutterPhase: -90,
     skipExisting: false,
     useCache: true,
-    useMultiProcessing: false
+    useMultiProcessing: false,
   };
 }
 
 // Sync with prop changes
-watch(() => props.settings, (newSettings) => {
-  localSettings.value = { ...getDefaultSettings(), ...newSettings };
-}, { deep: true });
+watch(
+  () => props.settings,
+  (newSettings) => {
+    localSettings.value = { ...getDefaultSettings(), ...newSettings };
+  },
+  { deep: true },
+);
 
 // Emit updates
 function emitUpdate() {
-  emit('update:settings', { ...localSettings.value });
+  emit("update:settings", { ...localSettings.value });
 }
 
-function handleResolutionChange() {
+function _handleResolutionChange() {
   // Set default custom size when switching to custom
-  if (localSettings.value.resolution === 'custom') {
+  if (localSettings.value.resolution === "custom") {
     if (!localSettings.value.customWidth) localSettings.value.customWidth = 832;
-    if (!localSettings.value.customHeight) localSettings.value.customHeight = 480;
+    if (!localSettings.value.customHeight)
+      localSettings.value.customHeight = 480;
   }
   emitUpdate();
 }

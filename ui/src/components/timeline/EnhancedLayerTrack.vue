@@ -176,19 +176,28 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick, onMounted, onUnmounted, watch } from 'vue';
-import { useCompositorStore } from '@/stores/compositorStore';
-import { useAudioStore } from '@/stores/audioStore';
-import { convertTextLayerToSplines } from '@/stores/actions/layerActions';
-import PropertyTrack from './PropertyTrack.vue';
-import { createWaveformData, renderTimelineWaveform, getWaveformData, type WaveformData } from '@/services/timelineWaveform';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import {
-  PhEye, PhEyeSlash, PhSpeakerHigh, PhSpeakerSlash, PhLock, PhLockOpen,
-  PhSun, PhImage, PhFilmStrip, PhTextT, PhCamera, PhPackage
-} from '@phosphor-icons/vue';
+  createWaveformData,
+  getWaveformData,
+  renderTimelineWaveform,
+  type WaveformData,
+} from "@/services/timelineWaveform";
+import { convertTextLayerToSplines } from "@/stores/actions/layerActions";
+import { useAudioStore } from "@/stores/audioStore";
+import { useCompositorStore } from "@/stores/compositorStore";
 
-const props = defineProps(['layer', 'index', 'layoutMode', 'isExpandedExternal', 'allLayers', 'frameCount', 'pixelsPerFrame', 'gridStyle']);
-const emit = defineEmits(['toggleExpand', 'select', 'updateLayer']);
+const props = defineProps([
+  "layer",
+  "index",
+  "layoutMode",
+  "isExpandedExternal",
+  "allLayers",
+  "frameCount",
+  "pixelsPerFrame",
+  "gridStyle",
+]);
+const emit = defineEmits(["toggleExpand", "select", "updateLayer"]);
 const store = useCompositorStore();
 const audioStore = useAudioStore();
 
@@ -197,89 +206,120 @@ const waveformCanvasRef = ref<HTMLCanvasElement | null>(null);
 const waveformData = ref<WaveformData | null>(null);
 
 // Check if layer is an audio layer type
-const isAudioLayer = computed(() => props.layer.type === 'audio' || props.layer.type === 'video');
+const isAudioLayer = computed(
+  () => props.layer.type === "audio" || props.layer.type === "video",
+);
 
 // Get audio asset ID for the layer
 const audioAssetId = computed(() => {
-  if (props.layer.type === 'audio') {
+  if (props.layer.type === "audio") {
     return props.layer.data?.assetId || props.layer.id;
   }
-  if (props.layer.type === 'video') {
+  if (props.layer.type === "video") {
     return props.layer.data?.audioAssetId;
   }
   return null;
 });
 
 const localExpanded = ref(false);
-const isExpanded = computed(() => props.isExpandedExternal ?? localExpanded.value);
-const isSelected = computed(() => store.selectedLayerIds.includes(props.layer.id));
+const isExpanded = computed(
+  () => props.isExpandedExternal ?? localExpanded.value,
+);
+const isSelected = computed(() =>
+  store.selectedLayerIds.includes(props.layer.id),
+);
 
 // Drag reorder state
 const isDragTarget = ref(false);
 
-function onDragStart(event: DragEvent) {
-  event.dataTransfer?.setData('application/layer-reorder', props.layer.id);
-  event.dataTransfer!.effectAllowed = 'move';
+function _onDragStart(event: DragEvent) {
+  event.dataTransfer?.setData("application/layer-reorder", props.layer.id);
+  event.dataTransfer!.effectAllowed = "move";
 }
 
-function onDragEnd() {
+function _onDragEnd() {
   isDragTarget.value = false;
 }
 
-function onDragOver(event: DragEvent) {
-  const data = event.dataTransfer?.types.includes('application/layer-reorder');
+function _onDragOver(event: DragEvent) {
+  const data = event.dataTransfer?.types.includes("application/layer-reorder");
   if (data) {
     isDragTarget.value = true;
   }
 }
 
-function onDragLeave() {
+function _onDragLeave() {
   isDragTarget.value = false;
 }
 
-function onDrop(event: DragEvent) {
+function _onDrop(event: DragEvent) {
   isDragTarget.value = false;
 
   // Check for Alt+drag asset replacement
   if (event.altKey) {
-    const projectItemData = event.dataTransfer?.getData('application/project-item');
+    const projectItemData = event.dataTransfer?.getData(
+      "application/project-item",
+    );
     if (projectItemData) {
       try {
         const item = JSON.parse(projectItemData);
-        if (item && (item.type === 'asset' || item.type === 'composition')) {
+        if (item && (item.type === "asset" || item.type === "composition")) {
           // Replace layer source with new asset
           store.replaceLayerSource(props.layer.id, item);
-          console.log(`[Lattice] Replaced layer source: ${props.layer.name} → ${item.name}`);
+          console.log(
+            `[Lattice] Replaced layer source: ${props.layer.name} → ${item.name}`,
+          );
           return;
         }
       } catch (e) {
-        console.error('[Lattice] Failed to parse project item for replacement:', e);
+        console.error(
+          "[Lattice] Failed to parse project item for replacement:",
+          e,
+        );
       }
     }
   }
 
   // Normal layer reorder handling
-  const draggedLayerId = event.dataTransfer?.getData('application/layer-reorder');
+  const draggedLayerId = event.dataTransfer?.getData(
+    "application/layer-reorder",
+  );
   if (!draggedLayerId || draggedLayerId === props.layer.id) return;
 
   // Find the indices
   const layers = store.layers;
-  const draggedIndex = layers.findIndex(l => l.id === draggedLayerId);
-  const targetIndex = layers.findIndex(l => l.id === props.layer.id);
+  const draggedIndex = layers.findIndex((l) => l.id === draggedLayerId);
+  const targetIndex = layers.findIndex((l) => l.id === props.layer.id);
 
-  if (draggedIndex !== -1 && targetIndex !== -1 && draggedIndex !== targetIndex) {
+  if (
+    draggedIndex !== -1 &&
+    targetIndex !== -1 &&
+    draggedIndex !== targetIndex
+  ) {
     store.moveLayer(draggedLayerId, targetIndex);
-    console.log(`[Lattice] Moved layer from index ${draggedIndex} to ${targetIndex}`);
+    console.log(
+      `[Lattice] Moved layer from index ${draggedIndex} to ${targetIndex}`,
+    );
   }
 }
 
 // Only video and audio layers have audio capability
-const hasAudioCapability = computed(() => ['video', 'audio', 'nestedComp'].includes(props.layer.type));
+const _hasAudioCapability = computed(() =>
+  ["video", "audio", "nestedComp"].includes(props.layer.type),
+);
 // Check if layer is a text layer (for Convert to Splines feature)
-const isTextLayer = computed(() => props.layer.type === 'text');
-const expandedGroups = ref<string[]>(['Transform', 'Text', 'More Options', 'Stroke', 'Fill', 'Trim Paths', 'Path Options']);
+const _isTextLayer = computed(() => props.layer.type === "text");
+const expandedGroups = ref<string[]>([
+  "Transform",
+  "Text",
+  "More Options",
+  "Stroke",
+  "Fill",
+  "Trim Paths",
+  "Path Options",
+]);
 const isRenaming = ref(false);
-const renameVal = ref('');
+const renameVal = ref("");
 const renameInput = ref<HTMLInputElement | null>(null);
 
 // Context menu state
@@ -293,29 +333,31 @@ const colorPickerX = ref(0);
 const colorPickerY = ref(0);
 
 // Layer label colors
-const labelColors = [
-  '#999999', // None (gray)
-  '#e24b4b', // Red
-  '#f5c343', // Yellow
-  '#c8e04d', // Lime
-  '#4be08e', // Sea Green
-  '#4bcde0', // Aqua
-  '#5b8ef0', // Blue
-  '#9d70e8', // Purple
-  '#e070d0', // Pink
-  '#e0a070', // Peach
-  '#e07070', // Light Red
-  '#70e0a0', // Mint
-  '#7090e0', // Sky Blue
-  '#a070e0', // Violet
-  '#e07090', // Rose
-  '#90c8e0', // Pale Blue
+const _labelColors = [
+  "#999999", // None (gray)
+  "#e24b4b", // Red
+  "#f5c343", // Yellow
+  "#c8e04d", // Lime
+  "#4be08e", // Sea Green
+  "#4bcde0", // Aqua
+  "#5b8ef0", // Blue
+  "#9d70e8", // Purple
+  "#e070d0", // Pink
+  "#e0a070", // Peach
+  "#e07070", // Light Red
+  "#70e0a0", // Mint
+  "#7090e0", // Sky Blue
+  "#a070e0", // Violet
+  "#e07090", // Rose
+  "#90c8e0", // Pale Blue
 ];
 
-const availableParents = computed(() => props.allLayers?.filter((l: any) => l.id !== props.layer.id) || []);
+const _availableParents = computed(
+  () => props.allLayers?.filter((l: any) => l.id !== props.layer.id) || [],
+);
 
 // Grouping Logic
-const groupedProperties = computed(() => {
+const _groupedProperties = computed(() => {
   const groups: Record<string, any[]> = {};
   const t = props.layer.transform;
   const transformProps: any[] = [];
@@ -325,43 +367,77 @@ const groupedProperties = computed(() => {
     if (prop) transformProps.push({ path, name, property: prop });
   };
 
-  add('transform.anchorPoint', 'Origin', t.anchorPoint);
-  add('transform.position', 'Position', t.position);
+  add("transform.anchorPoint", "Origin", t.anchorPoint);
+  add("transform.position", "Position", t.position);
 
   // Z Position: Use 'transform.position' path - PropertyTrack handles Z extraction based on name
   if (props.layer.threeD && t.position) {
     transformProps.push({
-      path: 'transform.position',
-      name: 'Z Position',
-      property: t.position // Pass full position property, PropertyTrack handles .z
+      path: "transform.position",
+      name: "Z Position",
+      property: t.position, // Pass full position property, PropertyTrack handles .z
     });
   }
 
-  add('transform.scale', 'Scale', t.scale);
+  add("transform.scale", "Scale", t.scale);
 
   if (props.layer.threeD) {
-    if (t.orientation) transformProps.push({ path: 'transform.orientation', name: 'Orientation', property: t.orientation });
-    if (t.rotationX) transformProps.push({ path: 'transform.rotationX', name: 'X Rotation', property: t.rotationX });
-    if (t.rotationY) transformProps.push({ path: 'transform.rotationY', name: 'Y Rotation', property: t.rotationY });
-    if (t.rotationZ) transformProps.push({ path: 'transform.rotationZ', name: 'Z Rotation', property: t.rotationZ });
+    if (t.orientation)
+      transformProps.push({
+        path: "transform.orientation",
+        name: "Orientation",
+        property: t.orientation,
+      });
+    if (t.rotationX)
+      transformProps.push({
+        path: "transform.rotationX",
+        name: "X Rotation",
+        property: t.rotationX,
+      });
+    if (t.rotationY)
+      transformProps.push({
+        path: "transform.rotationY",
+        name: "Y Rotation",
+        property: t.rotationY,
+      });
+    if (t.rotationZ)
+      transformProps.push({
+        path: "transform.rotationZ",
+        name: "Z Rotation",
+        property: t.rotationZ,
+      });
   } else {
-    if (t.rotation) transformProps.push({ path: 'transform.rotation', name: 'Rotation', property: t.rotation });
+    if (t.rotation)
+      transformProps.push({
+        path: "transform.rotation",
+        name: "Rotation",
+        property: t.rotation,
+      });
   }
-  if (props.layer.opacity) transformProps.push({ path: 'opacity', name: 'Opacity', property: props.layer.opacity });
+  if (props.layer.opacity)
+    transformProps.push({
+      path: "opacity",
+      name: "Opacity",
+      property: props.layer.opacity,
+    });
 
-  groups['Transform'] = transformProps;
+  groups.Transform = transformProps;
 
   // Geometry Options (for 3D layers)
   if (props.layer.threeD) {
-    groups['Geometry Options'] = [
-      { path: 'geometry.renderer', name: 'Renderer', property: { value: 'Classic 3D', type: 'dropdown' } }
+    groups["Geometry Options"] = [
+      {
+        path: "geometry.renderer",
+        name: "Renderer",
+        property: { value: "Classic 3D", type: "dropdown" },
+      },
     ];
   }
 
   // Material Options (for 3D layers)
   if (props.layer.threeD) {
     const mat = props.layer.materialOptions || {
-      castsShadows: 'off',
+      castsShadows: "off",
       lightTransmission: 0,
       acceptsShadows: true,
       acceptsLights: true,
@@ -369,41 +445,120 @@ const groupedProperties = computed(() => {
       diffuse: 50,
       specularIntensity: 50,
       specularShininess: 5,
-      metal: 100
+      metal: 100,
     };
-    groups['Material Options'] = [
-      { path: 'materialOptions.castsShadows', name: 'Casts Shadows', property: { value: mat.castsShadows, type: 'dropdown' } },
-      { path: 'materialOptions.lightTransmission', name: 'Light Transmission', property: { value: mat.lightTransmission, type: 'percent' } },
-      { path: 'materialOptions.acceptsShadows', name: 'Accepts Shadows', property: { value: mat.acceptsShadows, type: 'boolean' } },
-      { path: 'materialOptions.acceptsLights', name: 'Accepts Lights', property: { value: mat.acceptsLights, type: 'boolean' } },
-      { path: 'materialOptions.ambient', name: 'Ambient', property: { value: mat.ambient, type: 'percent' } },
-      { path: 'materialOptions.diffuse', name: 'Diffuse', property: { value: mat.diffuse, type: 'percent' } },
-      { path: 'materialOptions.specularIntensity', name: 'Specular Intensity', property: { value: mat.specularIntensity, type: 'percent' } },
-      { path: 'materialOptions.specularShininess', name: 'Specular Shininess', property: { value: mat.specularShininess, type: 'percent' } },
-      { path: 'materialOptions.metal', name: 'Metal', property: { value: mat.metal, type: 'percent' } }
+    groups["Material Options"] = [
+      {
+        path: "materialOptions.castsShadows",
+        name: "Casts Shadows",
+        property: { value: mat.castsShadows, type: "dropdown" },
+      },
+      {
+        path: "materialOptions.lightTransmission",
+        name: "Light Transmission",
+        property: { value: mat.lightTransmission, type: "percent" },
+      },
+      {
+        path: "materialOptions.acceptsShadows",
+        name: "Accepts Shadows",
+        property: { value: mat.acceptsShadows, type: "boolean" },
+      },
+      {
+        path: "materialOptions.acceptsLights",
+        name: "Accepts Lights",
+        property: { value: mat.acceptsLights, type: "boolean" },
+      },
+      {
+        path: "materialOptions.ambient",
+        name: "Ambient",
+        property: { value: mat.ambient, type: "percent" },
+      },
+      {
+        path: "materialOptions.diffuse",
+        name: "Diffuse",
+        property: { value: mat.diffuse, type: "percent" },
+      },
+      {
+        path: "materialOptions.specularIntensity",
+        name: "Specular Intensity",
+        property: { value: mat.specularIntensity, type: "percent" },
+      },
+      {
+        path: "materialOptions.specularShininess",
+        name: "Specular Shininess",
+        property: { value: mat.specularShininess, type: "percent" },
+      },
+      {
+        path: "materialOptions.metal",
+        name: "Metal",
+        property: { value: mat.metal, type: "percent" },
+      },
     ];
   }
 
   // Path Options (for spline layers) - Closed is NOT animatable
-  if (props.layer.type === 'spline' && props.layer.data) {
+  if (props.layer.type === "spline" && props.layer.data) {
     const splineData = props.layer.data as any;
-    groups['Path Options'] = [
-      { path: 'data.closed', name: 'Closed', property: { value: splineData.closed ?? false, type: 'boolean', animatable: false } }
+    groups["Path Options"] = [
+      {
+        path: "data.closed",
+        name: "Closed",
+        property: {
+          value: splineData.closed ?? false,
+          type: "boolean",
+          animatable: false,
+        },
+      },
     ];
 
     // More Options: Line Cap, Line Join, Dashes (non-animatable)
-    groups['More Options'] = [
-      { path: 'data.lineCap', name: 'Line Cap', property: { value: splineData.lineCap ?? 'round', type: 'dropdown', options: ['butt', 'round', 'square'], animatable: false } },
-      { path: 'data.lineJoin', name: 'Line Join', property: { value: splineData.lineJoin ?? 'round', type: 'dropdown', options: ['miter', 'round', 'bevel'], animatable: false } },
-      { path: 'data.dashArray', name: 'Dashes', property: { value: splineData.dashArray ?? '', type: 'string', placeholder: '10, 5', animatable: false } },
-      { path: 'data.dashOffset', name: 'Dash Offset', property: { value: splineData.dashOffset ?? 0, type: 'number', animatable: false } }
+    groups["More Options"] = [
+      {
+        path: "data.lineCap",
+        name: "Line Cap",
+        property: {
+          value: splineData.lineCap ?? "round",
+          type: "dropdown",
+          options: ["butt", "round", "square"],
+          animatable: false,
+        },
+      },
+      {
+        path: "data.lineJoin",
+        name: "Line Join",
+        property: {
+          value: splineData.lineJoin ?? "round",
+          type: "dropdown",
+          options: ["miter", "round", "bevel"],
+          animatable: false,
+        },
+      },
+      {
+        path: "data.dashArray",
+        name: "Dashes",
+        property: {
+          value: splineData.dashArray ?? "",
+          type: "string",
+          placeholder: "10, 5",
+          animatable: false,
+        },
+      },
+      {
+        path: "data.dashOffset",
+        name: "Dash Offset",
+        property: {
+          value: splineData.dashOffset ?? 0,
+          type: "number",
+          animatable: false,
+        },
+      },
     ];
   }
 
   // Custom Properties (Text, etc.)
   if (props.layer.properties) {
     props.layer.properties.forEach((p: any) => {
-      const g = p.group || 'Properties';
+      const g = p.group || "Properties";
       if (!groups[g]) groups[g] = [];
       groups[g].push({ path: p.name, name: p.name, property: p });
     });
@@ -411,10 +566,10 @@ const groupedProperties = computed(() => {
   return groups;
 });
 
-const barStyle = computed(() => {
+const _barStyle = computed(() => {
   const frameCount = props.frameCount || 81;
   const inPoint = props.layer.inPoint ?? 0;
-  const outPoint = props.layer.outPoint ?? (frameCount - 1);
+  const outPoint = props.layer.outPoint ?? frameCount - 1;
 
   // Use CSS percentages - positions relative to parent container width
   // This ensures layer bar fills viewport when layer spans full composition
@@ -423,21 +578,37 @@ const barStyle = computed(() => {
 
   return {
     left: `${leftPct}%`,
-    width: `${widthPct}%`
+    width: `${widthPct}%`,
   };
 });
 
-function selectLayer() { emit('select', props.layer.id); }
-function toggleExpand() { emit('toggleExpand', props.layer.id, !isExpanded.value); }
-function toggleGroup(g: string) {
-    if(expandedGroups.value.includes(g)) expandedGroups.value = expandedGroups.value.filter(x => x !== g);
-    else expandedGroups.value.push(g);
+function _selectLayer() {
+  emit("select", props.layer.id);
 }
-function getLayerIcon(t: string) { return { text: 'T', solid: '■', camera: '◎', nestedComp: '▣', image: '▧', video: '▶' }[t] || '•'; }
+function _toggleExpand() {
+  emit("toggleExpand", props.layer.id, !isExpanded.value);
+}
+function _toggleGroup(g: string) {
+  if (expandedGroups.value.includes(g))
+    expandedGroups.value = expandedGroups.value.filter((x) => x !== g);
+  else expandedGroups.value.push(g);
+}
+function _getLayerIcon(t: string) {
+  return (
+    {
+      text: "T",
+      solid: "■",
+      camera: "◎",
+      nestedComp: "▣",
+      image: "▧",
+      video: "▶",
+    }[t] || "•"
+  );
+}
 
 // Double-click: enter nested comp or start rename
-function handleDoubleClick() {
-  if (props.layer.type === 'nestedComp' && props.layer.data?.compositionId) {
+function _handleDoubleClick() {
+  if (props.layer.type === "nestedComp" && props.layer.data?.compositionId) {
     // Enter the nested composition
     store.enterNestedComp(props.layer.data.compositionId);
   } else {
@@ -446,10 +617,25 @@ function handleDoubleClick() {
   }
 }
 
-function startRename() { isRenaming.value = true; renameVal.value = props.layer.name; nextTick(() => renameInput.value?.focus()); }
-function saveRename() { emit('updateLayer', props.layer.id, { name: renameVal.value }); isRenaming.value = false; }
-function setParent(e: Event) { emit('updateLayer', props.layer.id, { parentId: (e.target as HTMLSelectElement).value || null }); }
-function setBlendMode(e: Event) { emit('updateLayer', props.layer.id, { blendMode: (e.target as HTMLSelectElement).value }); }
+function startRename() {
+  isRenaming.value = true;
+  renameVal.value = props.layer.name;
+  nextTick(() => renameInput.value?.focus());
+}
+function _saveRename() {
+  emit("updateLayer", props.layer.id, { name: renameVal.value });
+  isRenaming.value = false;
+}
+function _setParent(e: Event) {
+  emit("updateLayer", props.layer.id, {
+    parentId: (e.target as HTMLSelectElement).value || null,
+  });
+}
+function _setBlendMode(e: Event) {
+  emit("updateLayer", props.layer.id, {
+    blendMode: (e.target as HTMLSelectElement).value,
+  });
+}
 // Layer bar drag/resize state
 const isDragging = ref(false);
 const isResizingLeft = ref(false);
@@ -505,29 +691,29 @@ function snapToNearest(value: number, targets: number[]): number {
   return minDist <= SNAP_TOLERANCE ? nearest : value;
 }
 
-function startDrag(e: MouseEvent) {
+function _startDrag(e: MouseEvent) {
   isDragging.value = true;
   dragStartX.value = e.clientX;
   dragStartInPoint.value = props.layer.inPoint ?? 0;
-  dragStartOutPoint.value = props.layer.outPoint ?? (props.frameCount - 1);
-  document.addEventListener('mousemove', onDrag);
-  document.addEventListener('mouseup', stopDrag);
+  dragStartOutPoint.value = props.layer.outPoint ?? props.frameCount - 1;
+  document.addEventListener("mousemove", onDrag);
+  document.addEventListener("mouseup", stopDrag);
 }
 
-function startResizeLeft(e: MouseEvent) {
+function _startResizeLeft(e: MouseEvent) {
   isResizingLeft.value = true;
   dragStartX.value = e.clientX;
   dragStartInPoint.value = props.layer.inPoint ?? 0;
-  document.addEventListener('mousemove', onResizeLeft);
-  document.addEventListener('mouseup', stopDrag);
+  document.addEventListener("mousemove", onResizeLeft);
+  document.addEventListener("mouseup", stopDrag);
 }
 
-function startResizeRight(e: MouseEvent) {
+function _startResizeRight(e: MouseEvent) {
   isResizingRight.value = true;
   dragStartX.value = e.clientX;
-  dragStartOutPoint.value = props.layer.outPoint ?? (props.frameCount - 1);
-  document.addEventListener('mousemove', onResizeRight);
-  document.addEventListener('mouseup', stopDrag);
+  dragStartOutPoint.value = props.layer.outPoint ?? props.frameCount - 1;
+  document.addEventListener("mousemove", onResizeRight);
+  document.addEventListener("mouseup", stopDrag);
 }
 
 function onDrag(e: MouseEvent) {
@@ -567,7 +753,10 @@ function onDrag(e: MouseEvent) {
     newInPoint = newOutPoint - duration;
   }
 
-  emit('updateLayer', props.layer.id, { inPoint: newInPoint, outPoint: newOutPoint });
+  emit("updateLayer", props.layer.id, {
+    inPoint: newInPoint,
+    outPoint: newOutPoint,
+  });
 }
 
 function onResizeLeft(e: MouseEvent) {
@@ -582,10 +771,10 @@ function onResizeLeft(e: MouseEvent) {
   }
 
   // Clamp: can't go below 0 or past outPoint
-  const outPoint = props.layer.outPoint ?? (props.frameCount - 1);
+  const outPoint = props.layer.outPoint ?? props.frameCount - 1;
   newInPoint = Math.max(0, Math.min(newInPoint, outPoint - 1));
 
-  emit('updateLayer', props.layer.id, { inPoint: newInPoint });
+  emit("updateLayer", props.layer.id, { inPoint: newInPoint });
 }
 
 function onResizeRight(e: MouseEvent) {
@@ -601,43 +790,79 @@ function onResizeRight(e: MouseEvent) {
 
   // Clamp: can't go past frameCount or before inPoint
   const inPoint = props.layer.inPoint ?? 0;
-  newOutPoint = Math.max(inPoint + 1, Math.min(newOutPoint, props.frameCount - 1));
+  newOutPoint = Math.max(
+    inPoint + 1,
+    Math.min(newOutPoint, props.frameCount - 1),
+  );
 
-  emit('updateLayer', props.layer.id, { outPoint: newOutPoint });
+  emit("updateLayer", props.layer.id, { outPoint: newOutPoint });
 }
 
 function stopDrag() {
   isDragging.value = false;
   isResizingLeft.value = false;
   isResizingRight.value = false;
-  document.removeEventListener('mousemove', onDrag);
-  document.removeEventListener('mousemove', onResizeLeft);
-  document.removeEventListener('mousemove', onResizeRight);
-  document.removeEventListener('mouseup', stopDrag);
+  document.removeEventListener("mousemove", onDrag);
+  document.removeEventListener("mousemove", onResizeLeft);
+  document.removeEventListener("mousemove", onResizeRight);
+  document.removeEventListener("mouseup", stopDrag);
 }
-function toggleVis() { emit('updateLayer', props.layer.id, { visible: !props.layer.visible }); }
-function toggleLock() { emit('updateLayer', props.layer.id, { locked: !props.layer.locked }); }
-function toggleAudio() { emit('updateLayer', props.layer.id, { audioEnabled: props.layer.audioEnabled === false ? true : false }); }
-function toggleIsolate() { emit('updateLayer', props.layer.id, { isolate: !props.layer.isolate }); }
-function toggleMinimized() { emit('updateLayer', props.layer.id, { minimized: !props.layer.minimized }); }
-function toggleFlattenTransform() { emit('updateLayer', props.layer.id, { flattenTransform: !props.layer.flattenTransform }); }
-function toggleQuality() { emit('updateLayer', props.layer.id, { quality: props.layer.quality === 'best' ? 'draft' : 'best' }); }
-function toggleEffects() { emit('updateLayer', props.layer.id, { effectsEnabled: props.layer.effectsEnabled === false ? true : false }); }
-function toggleFrameBlend() { emit('updateLayer', props.layer.id, { frameBlending: !props.layer.frameBlending }); }
-function toggleMotionBlur() { emit('updateLayer', props.layer.id, { motionBlur: !props.layer.motionBlur }); }
-function toggleEffectLayer() {
+function _toggleVis() {
+  emit("updateLayer", props.layer.id, { visible: !props.layer.visible });
+}
+function _toggleLock() {
+  emit("updateLayer", props.layer.id, { locked: !props.layer.locked });
+}
+function _toggleAudio() {
+  emit("updateLayer", props.layer.id, {
+    audioEnabled: props.layer.audioEnabled === false,
+  });
+}
+function _toggleIsolate() {
+  emit("updateLayer", props.layer.id, { isolate: !props.layer.isolate });
+}
+function _toggleMinimized() {
+  emit("updateLayer", props.layer.id, { minimized: !props.layer.minimized });
+}
+function _toggleFlattenTransform() {
+  emit("updateLayer", props.layer.id, {
+    flattenTransform: !props.layer.flattenTransform,
+  });
+}
+function _toggleQuality() {
+  emit("updateLayer", props.layer.id, {
+    quality: props.layer.quality === "best" ? "draft" : "best",
+  });
+}
+function _toggleEffects() {
+  emit("updateLayer", props.layer.id, {
+    effectsEnabled: props.layer.effectsEnabled === false,
+  });
+}
+function _toggleFrameBlend() {
+  emit("updateLayer", props.layer.id, {
+    frameBlending: !props.layer.frameBlending,
+  });
+}
+function _toggleMotionBlur() {
+  emit("updateLayer", props.layer.id, { motionBlur: !props.layer.motionBlur });
+}
+function _toggleEffectLayer() {
   const currentState = props.layer.effectLayer || props.layer.adjustmentLayer;
-  emit('updateLayer', props.layer.id, { effectLayer: !currentState, adjustmentLayer: !currentState });
+  emit("updateLayer", props.layer.id, {
+    effectLayer: !currentState,
+    adjustmentLayer: !currentState,
+  });
 }
-function toggleColorPicker(e: MouseEvent) {
+function _toggleColorPicker(e: MouseEvent) {
   const rect = (e.target as HTMLElement).getBoundingClientRect();
   colorPickerX.value = rect.left;
   colorPickerY.value = rect.bottom + 4;
   showColorPicker.value = !showColorPicker.value;
 }
 
-function setLabelColor(color: string) {
-  emit('updateLayer', props.layer.id, { labelColor: color });
+function _setLabelColor(color: string) {
+  emit("updateLayer", props.layer.id, { labelColor: color });
   showColorPicker.value = false;
 }
 
@@ -646,7 +871,7 @@ function closeColorPicker() {
 }
 
 // Reset transform to default values
-function resetTransform() {
+function _resetTransform() {
   const comp = store.getActiveComp();
   if (!comp) return;
 
@@ -660,16 +885,21 @@ function resetTransform() {
     rotationY: 0,
     rotationZ: 0,
     orientation: { x: 0, y: 0, z: 0 },
-    opacity: 100
+    opacity: 100,
   };
 
   // Reset each transform property value (keep keyframes but update current value)
   const t = props.layer.transform;
   if (t.anchorPoint) t.anchorPoint.value = { ...defaultTransform.anchorPoint };
-  if (t.position) t.position.value = props.layer.threeD
-    ? { ...defaultTransform.position }
-    : { x: defaultTransform.position.x, y: defaultTransform.position.y };
-  if (t.scale) t.scale.value = { x: defaultTransform.scale.x, y: defaultTransform.scale.y };
+  if (t.position)
+    t.position.value = props.layer.threeD
+      ? { ...defaultTransform.position }
+      : { x: defaultTransform.position.x, y: defaultTransform.position.y };
+  if (t.scale)
+    t.scale.value = {
+      x: defaultTransform.scale.x,
+      y: defaultTransform.scale.y,
+    };
   if (t.rotation) t.rotation.value = defaultTransform.rotation;
   if (t.rotationX) t.rotationX.value = defaultTransform.rotationX;
   if (t.rotationY) t.rotationY.value = defaultTransform.rotationY;
@@ -678,17 +908,20 @@ function resetTransform() {
   if (props.layer.opacity) props.layer.opacity.value = defaultTransform.opacity;
 
   store.project.meta.modified = new Date().toISOString();
-  console.log('[EnhancedLayerTrack] Reset transform for layer:', props.layer.name);
+  console.log(
+    "[EnhancedLayerTrack] Reset transform for layer:",
+    props.layer.name,
+  );
 }
 
 // Context menu functions
-function showContextMenu(e: MouseEvent) {
+function _showContextMenu(e: MouseEvent) {
   contextMenuX.value = e.clientX;
   contextMenuY.value = e.clientY;
   contextMenuVisible.value = true;
   // Select the layer when showing context menu
   if (!isSelected.value) {
-    emit('select', props.layer.id);
+    emit("select", props.layer.id);
   }
 }
 
@@ -696,12 +929,12 @@ function hideContextMenu() {
   contextMenuVisible.value = false;
 }
 
-function duplicateLayer() {
+function _duplicateLayer() {
   store.duplicateLayer(props.layer.id);
   hideContextMenu();
 }
 
-function renameFromMenu() {
+function _renameFromMenu() {
   hideContextMenu();
   nextTick(() => {
     isRenaming.value = true;
@@ -710,30 +943,30 @@ function renameFromMenu() {
   });
 }
 
-function toggleLayerVisibility() {
-  emit('updateLayer', props.layer.id, { visible: !props.layer.visible });
+function _toggleLayerVisibility() {
+  emit("updateLayer", props.layer.id, { visible: !props.layer.visible });
   hideContextMenu();
 }
 
-function toggleLayerLock() {
-  emit('updateLayer', props.layer.id, { locked: !props.layer.locked });
+function _toggleLayerLock() {
+  emit("updateLayer", props.layer.id, { locked: !props.layer.locked });
   hideContextMenu();
 }
 
-function toggleLayer3D() {
+function _toggleLayer3D() {
   store.toggleLayer3D(props.layer.id);
   hideContextMenu();
 }
 
-function nestLayer() {
+function _nestLayer() {
   store.selectLayer(props.layer.id);
-  store.nestSelectedLayers(props.layer.name + ' Nested');
+  store.nestSelectedLayers(`${props.layer.name} Nested`);
   hideContextMenu();
 }
 
-async function convertToSplines() {
+async function _convertToSplines() {
   hideContextMenu();
-  if (props.layer.type !== 'text') return;
+  if (props.layer.type !== "text") return;
 
   try {
     const result = await convertTextLayerToSplines(store, props.layer.id, {
@@ -743,14 +976,17 @@ async function convertToSplines() {
     });
 
     if (result) {
-      console.log('[EnhancedLayerTrack] Text converted to splines:', result);
+      console.log("[EnhancedLayerTrack] Text converted to splines:", result);
     }
   } catch (error) {
-    console.error('[EnhancedLayerTrack] Failed to convert text to splines:', error);
+    console.error(
+      "[EnhancedLayerTrack] Failed to convert text to splines:",
+      error,
+    );
   }
 }
 
-function deleteLayer() {
+function _deleteLayer() {
   store.deleteLayer(props.layer.id);
   hideContextMenu();
 }
@@ -763,8 +999,8 @@ function handleOutsideClick(e: MouseEvent) {
   if (showColorPicker.value) {
     // Check if click was inside color picker
     const target = e.target as HTMLElement;
-    const colorPicker = document.querySelector('.layer-color-picker');
-    const labelBox = target.closest('.label-box');
+    const colorPicker = document.querySelector(".layer-color-picker");
+    const labelBox = target.closest(".label-box");
     if (colorPicker?.contains(target) || labelBox) {
       return; // Don't close if clicked inside picker or on label box
     }
@@ -803,7 +1039,7 @@ async function initializeWaveform() {
     audioAssetId.value,
     audioBuffer,
     beats,
-    bpm
+    bpm,
   );
 
   renderWaveformToCanvas();
@@ -822,14 +1058,15 @@ function renderWaveformToCanvas() {
   const frameCount = props.frameCount || 81;
   const fps = store.fps || 16;
   const inPoint = props.layer.inPoint ?? props.layer.startFrame ?? 0;
-  const outPoint = props.layer.outPoint ?? props.layer.endFrame ?? (frameCount - 1);
+  const outPoint =
+    props.layer.outPoint ?? props.layer.endFrame ?? frameCount - 1;
 
   // BUG-097 fix: visibleStart/visibleEnd should match layer timing since canvas
   // represents the layer bar, not the full timeline viewport
   renderTimelineWaveform(canvas, waveformData.value, {
     layerId: props.layer.id,
     audioId: audioAssetId.value!,
-    layerColor: props.layer.labelColor || '#D4A574',
+    layerColor: props.layer.labelColor || "#D4A574",
     startFrame: inPoint,
     endFrame: outPoint,
     visibleStart: inPoint,
@@ -842,12 +1079,17 @@ function renderWaveformToCanvas() {
 
 // Watch for changes that require waveform re-render
 watch(
-  () => [props.frameCount, props.pixelsPerFrame, props.layer.inPoint, props.layer.outPoint],
+  () => [
+    props.frameCount,
+    props.pixelsPerFrame,
+    props.layer.inPoint,
+    props.layer.outPoint,
+  ],
   () => {
     if (waveformData.value) {
       nextTick(() => renderWaveformToCanvas());
     }
-  }
+  },
 );
 
 // Watch for audio buffer availability
@@ -858,11 +1100,11 @@ watch(
       initializeWaveform();
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 onMounted(() => {
-  document.addEventListener('click', handleOutsideClick);
+  document.addEventListener("click", handleOutsideClick);
   // Initialize waveform if audio layer
   if (isAudioLayer.value && audioAssetId.value) {
     initializeWaveform();
@@ -870,7 +1112,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  document.removeEventListener('click', handleOutsideClick);
+  document.removeEventListener("click", handleOutsideClick);
 });
 </script>
 
