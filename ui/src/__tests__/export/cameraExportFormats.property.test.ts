@@ -1003,3 +1003,250 @@ describe("PROPERTY: exportCameraForTarget", () => {
     );
   });
 });
+
+// ============================================================================
+// detectUni3CTrajectoryType Property Tests
+// ============================================================================
+
+describe("PROPERTY: detectUni3CTrajectoryType", () => {
+  it("returns valid Uni3C trajectory type for any keyframes", () => {
+    fc.assert(
+      fc.property(sortedKeyframesArb, (keyframes) => {
+        const result = detectUni3CTrajectoryType(keyframes);
+
+        const validTypes = [
+          "orbit",
+          "custom",
+          "free1",
+          "free2",
+          "free3",
+          "target1",
+          "target2",
+        ];
+        expect(validTypes).toContain(result);
+      }),
+    );
+  });
+});
+
+// ============================================================================
+// detectCameraCtrlMotionType Property Tests
+// ============================================================================
+
+describe("PROPERTY: detectCameraCtrlMotionType", () => {
+  it("returns valid CameraCtrl motion type for any keyframes", () => {
+    fc.assert(
+      fc.property(sortedKeyframesArb, (keyframes) => {
+        const result = detectCameraCtrlMotionType(keyframes);
+
+        const validTypes = [
+          "Static",
+          "Move Forward",
+          "Move Backward",
+          "Move Left",
+          "Move Right",
+          "Move Up",
+          "Move Down",
+          "Rotate Left",
+          "Rotate Right",
+          "Rotate Up",
+          "Rotate Down",
+          "Roll Left",
+          "Roll Right",
+        ];
+        expect(validTypes).toContain(result);
+      }),
+    );
+  });
+});
+
+// ============================================================================
+// exportToCameraCtrl Property Tests
+// ============================================================================
+
+describe("PROPERTY: exportToCameraCtrl", () => {
+  it("returns valid CameraCtrl poses for any keyframes", () => {
+    fc.assert(
+      fc.property(
+        sortedKeyframesArb,
+        fc.integer({ min: 1, max: 100 }),
+        (keyframes, frameCount) => {
+          const result = exportToCameraCtrl(keyframes, frameCount);
+
+          expect(result).toHaveProperty("motion_type");
+          expect(result).toHaveProperty("speed");
+          expect(result).toHaveProperty("frame_length");
+
+          expect(typeof result.speed).toBe("number");
+          expect(result.speed).toBeGreaterThanOrEqual(0);
+          expect(result.speed).toBeLessThanOrEqual(100);
+          expect(result.frame_length).toBe(frameCount);
+        },
+      ),
+    );
+  });
+});
+
+// ============================================================================
+// Edge Case Tests
+// ============================================================================
+
+describe("EDGE CASES: Camera Export", () => {
+  it("handles NaN in keyframe position gracefully", () => {
+    const camera: Camera3D = {
+      id: "test",
+      name: "test",
+      type: "one-node",
+      position: { x: 0, y: 0, z: 0 },
+      pointOfInterest: { x: 0, y: 0, z: 0 },
+      orientation: { x: 0, y: 0, z: 0 },
+      xRotation: 0,
+      yRotation: 0,
+      zRotation: 0,
+      focalLength: 50,
+      zoom: 1,
+      angleOfView: 39.6,
+      filmSize: 36,
+      measureFilmSize: "horizontal",
+      depthOfField: {
+        enabled: false,
+        focusDistance: 100,
+        aperture: 2.8,
+        fStop: 2.8,
+        blurLevel: 0,
+        lockToZoom: false,
+      },
+      iris: {
+        shape: 0,
+        rotation: 0,
+        roundness: 1,
+        aspectRatio: 1,
+        diffractionFringe: 0,
+      },
+      highlight: {
+        gain: 0,
+        threshold: 0,
+        saturation: 0,
+      },
+      autoOrient: "off",
+      nearClip: 1,
+      farClip: 10000,
+    };
+
+    const keyframes: CameraKeyframe[] = [
+      { frame: 0, position: { x: NaN, y: 0, z: 0 } },
+      { frame: 10, position: { x: 100, y: 0, z: 0 } },
+    ];
+
+    // This should either handle gracefully or return camera defaults
+    const result = interpolateCameraAtFrame(camera, keyframes, 5);
+
+    // Document: NaN handling behavior - result should have valid structure
+    expect(result).toHaveProperty("position");
+    expect(result).toHaveProperty("rotation");
+  });
+
+  it("handles angles > 360 degrees", () => {
+    const camera: Camera3D = {
+      id: "test",
+      name: "test",
+      type: "one-node",
+      position: { x: 0, y: 0, z: 0 },
+      pointOfInterest: { x: 0, y: 0, z: 0 },
+      orientation: { x: 0, y: 0, z: 0 },
+      xRotation: 0,
+      yRotation: 0,
+      zRotation: 0,
+      focalLength: 50,
+      zoom: 1,
+      angleOfView: 39.6,
+      filmSize: 36,
+      measureFilmSize: "horizontal",
+      depthOfField: {
+        enabled: false,
+        focusDistance: 100,
+        aperture: 2.8,
+        fStop: 2.8,
+        blurLevel: 0,
+        lockToZoom: false,
+      },
+      iris: {
+        shape: 0,
+        rotation: 0,
+        roundness: 1,
+        aspectRatio: 1,
+        diffractionFringe: 0,
+      },
+      highlight: {
+        gain: 0,
+        threshold: 0,
+        saturation: 0,
+      },
+      autoOrient: "off",
+      nearClip: 1,
+      farClip: 10000,
+    };
+
+    const keyframes: CameraKeyframe[] = [
+      { frame: 0, orientation: { x: 0, y: 0, z: 0 } },
+      { frame: 10, orientation: { x: 0, y: 720, z: 0 } }, // 720 degrees
+    ];
+
+    const result = interpolateCameraAtFrame(camera, keyframes, 5);
+
+    // Result should be finite (not NaN/Infinity)
+    expect(Number.isFinite(result.rotation.y)).toBe(true);
+  });
+
+  it("handles division by zero when keyframes have same frame", () => {
+    const camera: Camera3D = {
+      id: "test",
+      name: "test",
+      type: "one-node",
+      position: { x: 0, y: 0, z: 0 },
+      pointOfInterest: { x: 0, y: 0, z: 0 },
+      orientation: { x: 0, y: 0, z: 0 },
+      xRotation: 0,
+      yRotation: 0,
+      zRotation: 0,
+      focalLength: 50,
+      zoom: 1,
+      angleOfView: 39.6,
+      filmSize: 36,
+      measureFilmSize: "horizontal",
+      depthOfField: {
+        enabled: false,
+        focusDistance: 100,
+        aperture: 2.8,
+        fStop: 2.8,
+        blurLevel: 0,
+        lockToZoom: false,
+      },
+      iris: {
+        shape: 0,
+        rotation: 0,
+        roundness: 1,
+        aspectRatio: 1,
+        diffractionFringe: 0,
+      },
+      highlight: {
+        gain: 0,
+        threshold: 0,
+        saturation: 0,
+      },
+      autoOrient: "off",
+      nearClip: 1,
+      farClip: 10000,
+    };
+
+    const keyframes: CameraKeyframe[] = [
+      { frame: 5, position: { x: 0, y: 0, z: 0 } },
+      { frame: 5, position: { x: 100, y: 0, z: 0 } }, // Same frame - potential div by zero
+    ];
+
+    // Should not produce NaN from division by zero
+    const result = interpolateCameraAtFrame(camera, keyframes, 5);
+
+    expect(Number.isNaN(result.position.x)).toBe(false);
+  });
+});
